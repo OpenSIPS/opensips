@@ -29,7 +29,7 @@
 #include "../../proxy.h"
 #include "../../mem/mem.h"
 
-#include "nathelper.h"
+#include "rtpproxy.h"
 
 void
 rtpproxy_pre_fwd(struct sip_msg *msg, cb_type_t cb_type, void *mod_args, void *core_args)

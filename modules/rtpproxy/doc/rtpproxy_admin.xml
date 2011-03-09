@@ -1,0 +1,862 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is used by &osips; to communicate with RTPProxy, a media
+		relay proxy used to make the communication between user agents behind
+		NAT possible.
+	</para>
+	<para>
+		This module is also used along with RTPProxy to record media streams
+		between user agents or to play media to either &ua;c or &ua;s.
+	</para>
+	</section>
+
+
+	<section>
+	<title>Multiple RTPProxy usage</title>
+	<para>
+		Currently, the rtpproxy module can support multiple rtpproxies for
+		balancing/distribution and control/selection purposes.
+	</para>
+	<para>
+		The module allows the definition of several sets of rtpproxies - 
+		load-balancing will be performed over a set and the user has the
+		ability to choose what set should be used. The set is selected via
+		its id - the id being defined along with the set. Refer to the 
+		<quote>rtpproxy_sock</quote> module parameter definition for syntax
+		description.
+	</para>
+	<para>
+		The balancing inside a set is done automatically by the module based on
+		the weight of each rtpproxy from the set. Note that if rtpproxy has weight
+		0, it will be used only when no other rtpproxies  (with a different
+		weight value than 0) respond. Default weight is 1.
+	</para>
+	<para>
+		The selection of the set is done from script prior using 
+		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
+		functions - see the set_rtp_proxy_set() function.
+	</para>
+	<para>
+		For backward compatibility reasons, a set with no id take by default 
+		the id 0. Also if no set is explicitly set before 
+		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
+		the 0 id set will be used.
+	</para>
+	<para>
+		IMPORTANT: if you use multiple sets, take care and use the same set for
+		both rtpproxy_offer()/rtpproxy_answer() and unforce_rtpproxy()!!
+	</para>
+	</section>
+
+	<section>
+	<title>RTPProxy timeout notifications</title>
+	<para>
+		Nathelper module can also receive timeout notifications from multiple
+		rtpproxies. RTPProxy can be configured to send notifications when
+		a session doesn't receive any media for a configurable interval of
+		time. The rtpproxy modules has implemented a listener for such
+		notifications and when received it terminates the dialog at SIP
+		level (send BYE to both ends), with the help of dialog module.
+	</para>
+	<para>
+		In our tests with RTPProxy we observed some limitations and also
+		provide a patch for it against git commit
+		<quote>600c80493793bafd2d69427bc22fcb43faad98c5</quote>.
+		It contains an addition and implements separate timeout parameters
+		for the phases of session establishment and ongoing sessions.
+		In the official code a single timeout parameter controls
+		both session establishment and rtp timeout and the timeout
+		notification is also sent in the call establishment phase.
+		This is a problem since we want to detect rtp timeout fast, but also
+		allow a longer period for call establishment.
+	</para>
+	<para>
+		To enable timeout notification there are several steps that you must follow:
+		<para>
+			Start &osips; timeout detection by setting the <quote>rtpp_notify_socket</quote>
+			module parameter in your configuration script. This is the socket where further
+			notification will be received from rtpproxies. This socket must be a TCP or 
+			UNIX socket. Also, for all the calls that require notification, the
+			engage_rtp_proxy(), rtpproxy_offer() and rtpproxy_answer() functions must
+			be called with the <quote>n</quote> flag.   
+		</para>
+		<para>
+			Configure RTPProxy to use timeout notification by adding
+			the following command line parameters:
+			<itemizedlist>
+				<listitem>
+					<para><quote> -n timeout_socket</quote> - specifies
+						where the notifications will be sent. This socket
+						must be the same as <quote>rtpp_notify_socket</quote>
+						&osips; module parameter. This parameter is mandatory.
+					</para>
+				</listitem>
+				<listitem>
+					<para><quote> -T ttl</quote> - limits the rtp session
+						timeout to <quote>ttl</quote>. This parameter
+						is optional and the default value is 60 seconds.
+					</para>
+				</listitem>
+				<listitem>
+					<para><quote> -W ttl</quote> - limits the session
+						establishment timeout to <quote>ttl</quote>.
+						This parameter is optional and the default value 
+						is 60 seconds.
+					</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+			<para>
+				All of the previous parameters can be used with the offical
+				RTPProxy release, except for the last one. It has been
+				added, together with other modifications to RTPProxy in order
+				to work properly. The patch is located in the
+				<emphasis>patches</emphasis> directory in the module.
+			</para>
+			<para>
+				To get the patched version from git you must follow theese steps:
+				<itemizedlist>
+					<listitem>
+						<para>
+							Get the latest source code: <quote>git clone git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy</quote>
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+							Make a branch from the commit: <quote>git checkout
+								-b branch_name 600c80493793bafd2d69427bc22fcb43faad98c5</quote>
+						</para>
+					</listitem>
+					<listitem>
+						<para>
+							Patch RTPProxy: <quote>patch &lt;
+								path_to_rtpproxy_patch</quote>
+						</para>
+					</listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				The patched version can also be found at:
+				http://opensips.org/pub/rtpproxy/
+			</para>
+	</para>
+	</section>
+
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>a database</emphasis> module - only if you want
+				to load use a database table from where to load the rtp proxies
+				sets.
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>dialog</emphasis> module - if using the engage_rtp_proxy
+				functions or RTPProxy timeout notifications.
+			</para>
+			</listitem>
+
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>rtpproxy_sock</varname> (string)</title>
+		<para>
+		Definition of socket(s) used to connect to (a set) RTPProxy. It may 
+		specify a UNIX socket or an IPv4/IPv6 UDP socket.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NONE</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtpproxy_sock</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# single rtproxy with specific weight
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221=2")
+# multiple rtproxies for LB
+modparam("rtpproxy", "rtpproxy_sock",
+	"udp:localhost:12221 udp:localhost:12222")
+# multiple sets of multiple rtproxies
+modparam("rtpproxy", "rtpproxy_sock",
+	"1 == udp:localhost:12221 udp:localhost:12222")
+modparam("rtpproxy", "rtpproxy_sock",
+	"2 == udp:localhost:12225")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>rtpproxy_disable_tout</varname> (integer)</title>
+		<para>
+		Once RTPProxy was found unreachable and marked as disable, rtpproxy
+		will not attempt to establish communication to RTPProxy for 
+		rtpproxy_disable_tout seconds.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>60</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtpproxy_disable_tout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpproxy_disable_tout", 20)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>rtpproxy_timeout</varname> (string)</title>
+		<para>
+		Timeout value in waiting for reply from RTPProxy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtpproxy_timeout</varname> parameter to 200ms</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpproxy_timeout", "0.2")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>rtpproxy_autobridge</varname> (integer)</title>
+		<para>
+		Enable auto-bridging feature
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Enable auto-bridging feature</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpproxy_autobridge", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>rtpproxy_tout</varname> (integer)</title>
+		<para>
+		Obsolete. see rtpproxy_timeout.
+		</para>
+	</section>
+	<section>
+		<title><varname>rtpproxy_retr</varname> (integer)</title>
+		<para>
+		How many times rtpproxy should retry to send and receive after
+		timeout was generated.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rtpproxy_retr</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpproxy_retr", 2)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>nortpproxy_str</varname> (string)</title>
+		<para>
+		The parameter sets the SDP attribute used by rtpproxy to mark
+		the packet SDP informations have already been mangled.
+		</para>
+		<para>
+		If empty string, no marker will be added or checked.
+		</para>
+		<note><para>
+		The string must be a complete SDP line, including the EOH (\r\n).
+		</para></note>
+		<para>
+		<emphasis>
+			Default value is <quote>a=nortpproxy:yes\r\n</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>nortpproxy_str</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			The database url. This parameter should be set if you want to 
+			use a database table from where to load or reload definitions of
+			socket(s) used to connect to (a set) RTPProxy. The record from
+			the database table will be read at start up (added to the ones
+			defined with the rtpproxy_sock module parameter) and when the MI command
+			nh_reload_rtpp is issued(the definitions will be replaced with the
+			ones from the database table).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "db_url", 
+		"mysql://opensips:opensipsrw@192.168.2.132/opensips")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+			The name of the database table containing definitions of
+			socket(s) used to connect to (a set) RTPProxy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>nh_sockets</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "db_table", "nh_rtpp") 
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>rtpp_socket_col</varname> (string)</title>
+		<para>
+			The name rtpp socket column in the database table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rtpproxy_sock</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>rtpp_socket_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket") 
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>set_id_col</varname> (string)</title>
+		<para>
+			The name set id column in the database table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>set_id</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>set_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "set_id_col", "rtpp_set_id") 
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>rtpp_notify_socket</varname> (string)</title>
+		<para>
+			The name set id column in the database table.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>rtpp_notify_socket</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+</section>
+
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">set_rtp_proxy_set()</function>
+		</title>
+		<para>
+		Sets the Id of the rtpproxy set to be used for the next 
+		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
+		command.
+		</para>
+		<para>
+		Paramter can also be a pseudo-variable that contain (as string
+		or integer) the ID of the rtpproxy set to be used.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+		BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>fix_nated_contact</function> usage</title>
+		<programlisting format="linespecific">
+...
+set_rtp_proxy_set("2");
+rtpproxy_offer();
+...
+</programlisting>
+		</example>
+	</section>
+		<section>
+				<title>
+				<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
+				</title>
+
+				<para>
+                Rewrites &sdp; body to ensure that media is passed through
+				an &rtp; proxy. It uses the dialog module facilities to keep track
+				when the rtpproxy session must be updated. Function must only be
+				called for the initial INVITE
+				and internally takes care of rewriting the body of 200 OKs and ACKs.
+				</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>flags</emphasis> - flags to turn on some features.
+			</para>
+			<itemizedlist>
+				<listitem><para>
+				<emphasis>a</emphasis> - flags that UA from which message is
+				received doesn't support symmetric RTP.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>l</emphasis> - force <quote>lookup</quote>, that is,
+				only rewrite SDP when corresponding session is already exists 
+				in the RTP proxy. By default is on when the session is to be
+				completed (reply in non-swap or ACK in swap mode).
+				</para></listitem>
+				<listitem><para>
+				<emphasis>i</emphasis> - flags that message is received from 
+				UA in the LAN (internal network). Only makes sense when 
+				RTP proxy is running in the bridge mode.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>e</emphasis> - flags that message is received from 
+				UA in the WAN (external network). Only makes sense when RTP 
+				proxy is running in the bridge mode.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>f</emphasis> - instructs rtpproxy to ignore marks 
+				inserted by another rtpproxy in transit to indicate that the 
+				session is already goes through another proxy. Allows creating 
+				chain of proxies.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>r</emphasis> - flags that IP address in SDP should 
+				be trusted. Without this flag, rtpproxy ignores address in 
+				the SDP and uses source address of the SIP message as media 
+				address which is passed to the RTP proxy.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>o</emphasis> - flags that IP from the origin 
+				description (o=) should be also changed.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>c</emphasis> - flags to change the session-level 
+				SDP connection (c=) IP if media-description also includes 
+				connection information.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>w</emphasis> - flags that for the UA from which 
+				message is received, support symmetric RTP must be forced.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>zNN</emphasis> - requests the RTPproxy to perform
+				re-packetization of RTP traffic coming from the UA which
+				has sent the current message to increase or decrease payload
+				size per each RTP packet forwarded if possible.  The NN is the
+				target payload size in ms, for the most codecs its value should
+				be in 10ms increments, however for some codecs the increment
+				could differ (e.g. 30ms for GSM or 20ms for G.723).  The
+				RTPproxy would select the closest value supported by the codec.
+				This feature could be used for significantly reducing bandwith
+				overhead for low bitrate codecs, for example with G.729 going
+				from 10ms to 100ms saves two thirds of the network bandwith.
+				</para></listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem><para>
+		<emphasis>ip_address</emphasis> - new SDP IP address.
+		</para></listitem>
+		</itemizedlist>
+				<para>
+				This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
+				</para>
+				<example>
+				<title><function>engage_rtp_proxy</function> usage</title>
+				<programlisting format="linespecific">
+		...
+		if (is_method("INVITE") &amp;&amp;
+		has_totag()) {engage_rtp_proxy();};
+		...
+		</programlisting>
+				</example>
+			</section>
+
+        <section>
+                <title>
+                <function moreinfo="none">rtpproxy_offer([flags [, ip_address]])</function>
+                </title>
+                <para>
+                Rewrites &sdp; body to ensure that media is passed through
+                an &rtp; proxy. To be invoked
+		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
+		when SDPs are in 200 OK and ACK.
+                </para>
+                <para>
+		See engage_rtp_proxy() function description above for the meaning of the
+		parameters.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE.
+                </para>
+		<example>
+		<title><function>rtpproxy_offer</function> usage</title>
+		<programlisting format="linespecific">
+route {
+...
+    if (is_method("INVITE")) {
+        if (has_sdp()) {
+            if (rtpproxy_offer())
+                t_on_reply("1");
+        } else {
+            t_on_reply("2");
+        }
+    }
+    if (is_method("ACK") &amp;&amp; has_sdp())
+        rtpproxy_answer();
+...
+}
+
+onreply_route[1]
+{
+...
+    if (has_sdp())
+        rtpproxy_answer();
+...
+}
+
+onreply_route[2]
+{
+...
+    if (has_sdp())
+        rtpproxy_offer();
+...
+}
+</programlisting>
+                </example>
+	</section>
+        <section>
+                <title>
+                <function moreinfo="none">rtpproxy_answer([flags [, ip_address]])</function>
+                </title>
+		<para>
+		Rewrites &sdp; body to ensure that media is passed through
+		an &rtp; proxy. To be invoked
+		on 200 OK for the cases the SDPs are in INVITE and 200 OK and on ACK
+		when SDPs are in 200 OK and ACK.
+		</para>
+		<para>
+		See engage_rtp_proxy() function description above for the meaning of the
+		parameters.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>rtpproxy_answer</function> usage</title>
+		<para>
+		See rtpproxy_offer() function example above for example.
+		</para>
+		</example>
+        </section>
+	<section>
+		<title>
+		<function moreinfo="none">unforce_rtp_proxy()</function>
+		</title>
+		<para>
+		Tears down the RTPProxy session for the current call.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>unforce_rtp_proxy</function> usage</title>
+		<programlisting format="linespecific">
+...
+unforce_rtp_proxy();
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="rtpproxy_stream2xxx">
+	<title>
+	    <function>rtpproxy_stream2uac(prompt_name, count)</function>,
+	    <function>rtpproxy_stream2uas(prompt_name, count)</function>
+	</title>
+	<para>
+	    Instruct the RTPproxy to stream prompt/announcement pre-encoded with
+	    the makeann command from the RTPproxy distribution. The uac/uas
+	    suffix selects who will hear the announcement relatively to the current
+	    transaction - UAC or UAS. For example invoking the
+	    <function>rtpproxy_stream2uac</function> in the request processing
+	    block on ACK transaction will play the prompt to the UA that has
+	    generated original INVITE and ACK while
+	    <function>rtpproxy_stop_stream2uas</function> on 183 in reply
+	    processing block will play the prompt to the UA that has generated 183.
+	</para>
+	<para>
+	    Apart from generating announcements, another possible application
+	    of this function is implementing music on hold (MOH) functionality.
+	    When count is -1, the streaming will be in loop indefinitely until
+	    the appropriate <function>rtpproxy_stop_stream2xxx</function> is issued.
+	</para>
+	<para>
+	    In order to work correctly, functions require that the session in the
+	    RTPproxy already exists. Also those functions don't alted SDP, so that
+	    they are not substitute for calling <function>rtpproxy_offer</function>
+	    or <function>rtpproxy_answer</function>.
+	</para>
+	<para>
+	    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
+	</para>
+	<para>Meaning of the parameters is as follows:</para>
+	<itemizedlist>
+	    <listitem>
+		<para>
+		    <emphasis>prompt_name</emphasis> - name of the prompt to
+		    stream.  Should be either absolute pathname or pathname
+		    relative to the directory where RTPproxy runs.
+		</para>
+	    </listitem>
+	    <listitem>
+		<para>
+		    <emphasis>count</emphasis> - number of times the prompt
+		    should be repeated.  The value of -1 means that it will
+		    be streaming in loop indefinitely, until appropriate
+		    <function>rtpproxy_stop_stream2xxx</function> is issued.
+		</para>
+	    </listitem>
+	</itemizedlist>
+	<example>
+	    <title><function>rtpproxy_stream2xxx</function> usage</title>
+	    <programlisting>
+...
+    if (is_method("INVITE")) {
+        rtpproxy_offer();
+        if ($rb=~ "0\.0\.0\.0") {
+            rtpproxy_stream2uas("/var/rtpproxy/prompts/music_on_hold", "-1");
+        } else {
+            rtpproxy_stop_stream2uas();
+        };
+    };
+...
+	    </programlisting>
+	</example>
+	</section>
+	<section id="rtpproxy_stop_stream2xxx">
+	<title>
+	    <function>rtpproxy_stop_stream2uac()</function>,
+	    <function>rtpproxy_stop_stream2uas()</function>
+	</title>
+	<para>
+	    Stop streaming of announcement/prompt/MOH started previously by the
+	    respective <function>rtpproxy_stream2xxx</function>.  The uac/uas
+	    suffix selects whose announcement relatively to tha current
+	    transaction should be stopped - UAC or UAS.
+	</para>
+	<para>
+	    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
+	</para>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">start_recording()</function>
+		</title>
+		<para>
+		This command will send a signal to the RTP-Proxy to record 
+		the RTP stream on the RTP-Proxy.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>start_recording</function> usage</title>
+		<programlisting format="linespecific">
+...
+start_recording();
+...
+		</programlisting>
+		</example>
+	</section>
+	</section>
+
+
+	<section>
+		<title><acronym>MI</acronym> Commands</title>
+
+		<section>
+			<title><function moreinfo="none">nh_enable_rtpp</function></title>
+			<para>
+			Enables a rtp proxy if parameter value is greater than 0.
+			Disables it if a zero value is given.
+			</para>
+			<para>
+			The first parameter is the rtp proxy url (exactly as defined in 
+			the config file).
+			</para>
+			<para>
+			The second parameter value must be a number in decimal.
+			</para>
+			<para>
+			NOTE: if a rtpproxy is defined multiple times (in the same or
+			diferente sete), all its instances will be enables/disabled.
+			</para>
+			<example>
+			<title>
+			<function moreinfo="none">nh_enable_rtpp</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
+...
+			</programlisting>
+			</example>
+		</section>
+				
+			<section>
+			<title><function moreinfo="none">nh_show_rtpp</function></title>
+			<para>
+			Displays all the rtp proxies and their information: set and 
+			status (disabled or not, weight and recheck_ticks).
+			</para>
+			<para>
+			No parameter.
+			</para>
+			<example>
+			<title>
+				<function moreinfo="none">nh_show_rtpp</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo nh_show_rtpp 
+...
+			</programlisting>
+			</example>
+		</section>
+
+		<section>
+			<title><function moreinfo="none">nh_reload_rtpp</function></title>
+			<para>
+			Reload rtp proxies sets from database. The function will delete all
+			previous records and populate the list with the entries from the
+			database table. The db_url parameter must be set if you want to use
+			this command.
+			</para>
+			<para>
+			No parameter.
+			</para>
+			<example>
+			<title>
+				<function moreinfo="none">nh_reload_rtpp</function> usage</title>
+			<programlisting format="linespecific">
+...
+$ opensipsctl fifo nh_reload_rtpp 
+...
+			</programlisting>
+			</example>
+		</section>
+
+
+	</section>
+
+</chapter>
+

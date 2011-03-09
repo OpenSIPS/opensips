@@ -39,7 +39,7 @@
 #include "../../pt.h"
 #include "../../sr_module.h"
 
-#include "nathelper.h"
+#include "rtpproxy.h"
 
 #if !defined(AF_LOCAL)
 #define AF_LOCAL AF_UNIX
