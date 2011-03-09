@@ -497,7 +497,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	if (last_dst) {
 		for( i=0 ; i<rl->n ; i++) {
 			if (lb_dlg_binds.unset_profile( req, &last_dst->profile_id,
-			call_res[i]->profile)!=0)
+			call_res[i]->profile)!=1)
 				LM_ERR("failed to remove from profile\n");
 		}
 	}
