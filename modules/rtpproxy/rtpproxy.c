@@ -1,4 +1,4 @@
-/* $Id: rtpproxy.c 7723 2011-02-10 15:03:37Z anca_vamanu $
+/* $Id$
  *
  * Copyright (C) 2003-2008 Sippy Software, Inc., http://www.sippysoft.com
  *

@@ -1,4 +1,4 @@
-/* $Id: nathelper.c 6682 2010-03-09 17:46:14Z bogdan_iancu $
+/* $Id$
  *
  * Copyright (C) 2010 Voice System
  *

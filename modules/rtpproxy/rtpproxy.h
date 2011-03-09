@@ -1,4 +1,4 @@
-/* $Id: nathelper.h 7546 2010-12-15 17:19:49Z anca_vamanu $
+/* $Id$
  *
  * Copyright (C) 2003-2008 Sippy Software, Inc., http://www.sippysoft.com
  *
