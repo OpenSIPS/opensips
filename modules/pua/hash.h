@@ -69,6 +69,7 @@ typedef struct publ
 {
 	str content_type;
 	str body;
+	str extra_headers;
 	int expires;
 	void* cb_param;
 	struct publ* next;

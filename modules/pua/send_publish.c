@@ -160,8 +160,8 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 		pending_publ->content_type.len;
 	if(pending_publ->body.s)
 		size+= sizeof(str) + pending_publ->body.len;
-	if(presentity->extra_headers)
-		size+= sizeof(str) + presentity->extra_headers->len;
+	if(pending_publ->extra_headers.s)
+		size+= sizeof(str) + pending_publ->extra_headers.len;
 	if(presentity->outbound_proxy)
 		size+= presentity->outbound_proxy->len;
 
@@ -196,15 +196,16 @@ publ_info_t* construct_pending_publ(ua_pres_t* presentity)
 	p->pres_uri->len = presentity->pres_uri->len;
 	size+= presentity->pres_uri->len;
 
-	if(presentity->extra_headers)
+	if(pending_publ->extra_headers.s)
 	{
 		p->extra_headers = (str*)((char*)p + size);
 		size+= sizeof(str);
 		p->extra_headers->s = (char*)p + size;
-		memcpy(p->extra_headers->s, presentity->extra_headers->s, presentity->extra_headers->len);
-		p->extra_headers->len = presentity->extra_headers->len;
-		size+= presentity->extra_headers->len;
+		memcpy(p->extra_headers->s, pending_publ->extra_headers.s, pending_publ->extra_headers.len);
+		p->extra_headers->len = pending_publ->extra_headers.len;
+		size+= pending_publ->extra_headers.len;
 	}
+
 	if(presentity->outbound_proxy)
 	{
 		p->outbound_proxy.s = (char*)p + size;
@@ -347,7 +348,8 @@ publ_t* build_pending_publ(publ_info_t* publ)
 	int size;
 
 	size = sizeof(publ_t) + ((publ->body)?publ->body->len:0) +
-		publ->content_type.len;
+		publ->content_type.len +
+		((publ->extra_headers)?publ->extra_headers->len:0);
 	p = (publ_t*)shm_malloc(size);
 	if(p == NULL)
 	{
@@ -362,6 +364,14 @@ publ_t* build_pending_publ(publ_info_t* publ)
 		memcpy(p->body.s, publ->body->s, publ->body->len);
 		p->body.len = publ->body->len;
 		size+= publ->body->len;
+	}
+	if(publ->extra_headers && publ->extra_headers->s)
+	{
+		p->extra_headers.s = (char*)p + size;
+		memcpy(p->extra_headers.s, publ->extra_headers->s, publ->extra_headers->len);
+		p->extra_headers.len = publ->extra_headers->len;
+		size+= publ->extra_headers->len;
+		LM_DBG("saved [%.*s]\n", p->extra_headers.len, p->extra_headers.s);
 	}
 	CONT_COPY(p, p->content_type, publ->content_type);
 	p->expires = publ->expires;
