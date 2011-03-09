@@ -203,6 +203,12 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		td.rem_target    = ci->req_uri;
 	else
 		td.rem_target    = ci->to_uri;
+	if(td.rem_target.s[0] == '<')
+	{
+		td.rem_target.s++;
+		td.rem_target.len-=2;
+	}
+
 	td.rem_dname  = ci->to_dname;
 
 	td.loc_uri    = ci->from_uri;

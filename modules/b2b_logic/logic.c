@@ -2414,6 +2414,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	str value= {value_content, strlen(value_content)};
 	unsigned char* value_type= NULL;
 	unsigned int param_no;
+	str check_uri;
 
 	value_type = xmlNodeGetAttrContentByName(value_node, "type");
 	if(value_type == NULL)
@@ -2511,14 +2512,15 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		*client_to = sip_hdr->body;
 		trim(client_to);
 		
-		if(client_to->s[0] == '<')
+		check_uri = *client_to;
+		if(check_uri.s[0] == '<')
 		{
-			client_to->s++;
-			client_to->len-=2;
+			check_uri.s++;
+			check_uri.len-=2;
 		}
-		if(parse_uri(client_to->s, client_to->len, &sip_uri)< 0)
+		if(parse_uri(check_uri.s, check_uri.len, &sip_uri)< 0)
 		{
-			LM_ERR("Not a valid sip uri [%.*s]\n", client_to->len, client_to->s);
+			LM_ERR("Not a valid sip uri [%.*s]\n", check_uri.len, check_uri.s);
 			goto error;
 		}
 	}
@@ -2549,19 +2551,21 @@ int udh_to_uri(str user, str host, str port, str* uri)
 	size = user.len + host.len + port.len+7;
 	LM_DBG("user:host:port [%.*s][%.*s][%.*s]\n",
 		user.len, user.s, host.len, host.s, port.len, port.s);
-	uri->s = (char*)pkg_malloc(size);
+	uri->s = (char*)pkg_malloc(size + 2);
 	if(uri->s == NULL)
 	{
 		LM_ERR("No more memory [%d]\n", size);
 		return -1;
 	}
 
-	uri->len = sprintf(uri->s, "sip:%.*s@%.*s", user.len, user.s,
+	uri->len = sprintf(uri->s, "<sip:%.*s@%.*s", user.len, user.s,
 			host.len, host.s);
 	if(port.s)
 	{
 		uri->len += sprintf(uri->s+uri->len, ":%.*s", port.len, port.s);
 	}
+	uri->s[uri->len] = '>';
+	uri->len++;
 	return 0;
 }
 
