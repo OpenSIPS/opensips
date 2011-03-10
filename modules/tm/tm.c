@@ -1109,9 +1109,9 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 		}
 		ret = t_relay_to( p_msg, (struct proxy_l *)proxy, (int)(long)flags );
 		if (ret<0) {
-			return t_relay_inerr2scripterr();
+			ret = t_relay_inerr2scripterr();
 		}
-		return ret;
+		return ret?ret:1;
 	} else {
 		/* transaction already created */
 
@@ -1132,9 +1132,9 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 		ret = t_forward_nonack( t, p_msg, (struct proxy_l *)proxy);
 		if (ret<=0 ) {
 			LM_ERR("t_forward_nonack failed\n");
-			return t_relay_inerr2scripterr();
+			ret = t_relay_inerr2scripterr();
 		}
-		return ret;
+		return ret?ret:1;
 	}
 
 route_err:
