@@ -1919,6 +1919,50 @@ error:
 	return -1;
 }
 
+
+int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
+{
+	b2bl_tuple_t* tuple;
+	unsigned int hash_index, local_index;
+
+	if(!key)
+	{
+		LM_ERR("null key\n");
+		return -1;
+	}
+	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
+	{
+		LM_ERR("Failed to parse key [%.*s]\n", key->len, key->s);
+		return -1;
+	}
+
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("No tuple found\n");
+		goto error;
+	}
+	if(tuple->cbf || tuple->cb_param || tuple->cb_mask)
+	{
+		LM_ERR("callback already registered\n");
+		goto error;
+	}
+
+	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
+	tuple->cb_param = cb_param;
+
+	lock_release(&b2bl_htable[hash_index].lock);
+
+	return 0;
+error:
+	return -1;
+	lock_release(&b2bl_htable[hash_index].lock);
+}
+
+
 int b2b_logic_bind(b2bl_api_t* api)
 {
 	if (!api)
@@ -1934,6 +1978,7 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->bridge_msg    = b2bl_bridge_msg;
 	api->terminate_call= b2bl_terminate_call;
 	api->get_stats     = b2bl_get_stats;
+	api->register_cb   = b2bl_register_cb;
 
 	return 0;
 }
