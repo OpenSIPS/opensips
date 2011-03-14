@@ -657,6 +657,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	query_vals[n_query_cols].val.str_val = presentity->etag;
 	n_query_cols++;
 
+	result_cols[0] = &str_etag_col;
+
 	if(presentity->etag_new)
 	{
 		if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
