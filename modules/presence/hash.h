@@ -41,6 +41,8 @@ struct presentity;
 #define PKG_MEM_STR       "pkg"
 #define SHARE_MEM         "share"
 
+#define ETAG_LEN  128
+
 #define ERR_MEM(mem_type)  \
 		do {	LM_ERR("No more %s memory\n",mem_type);\
 				goto error;\
@@ -121,8 +123,10 @@ typedef struct pres_entry
 {
 	str pres_uri;
 	int event;
-	int publ_count;
+	int etag_count;
 	char* sphere;
+	char etag[ETAG_LEN];
+	int etag_len;
 	struct pres_entry* next;
 }pres_entry_t;
 
@@ -135,12 +139,17 @@ typedef struct pres_htable
 phtable_t* new_phtable(void);
 
 pres_entry_t* search_phtable(str* pres_uri, int event, unsigned int hash_code);
+pres_entry_t* search_phtable_etag(str* pres_uri, int event,
+		str* etag, unsigned int hash_code);
 
-int insert_phtable(str* pres_uri, int event, char* sphere);
+void update_pres_etag(pres_entry_t* p, str* etag);
+
+int insert_phtable(str* pres_uri, int event, str* etag, char* sphere);
 
 int update_phtable(struct presentity* presentity, str pres_uri, str body);
 
-int delete_phtable(str* pres_uri, int event);
+int delete_phtable(pres_entry_t* p, unsigned int hash_code);
+int delete_phtable_query(str *pres_uri, int event, str* etag);
 
 void destroy_phtable(void);
 

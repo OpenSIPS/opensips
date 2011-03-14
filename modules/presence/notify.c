@@ -699,7 +699,8 @@ str* build_empty_bla_body(str pres_uri)
 	}
 	xmlDocSetRootElement(doc, node);
 
-	attr =  xmlNewProp(node, BAD_CAST "xmlns",BAD_CAST  "urn:ietf:params:xml:ns:dialog-info");
+	attr = xmlNewProp(node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:dialog-info");
 	if(attr== NULL)
 	{
 		LM_ERR("failed to initialize node attribute\n");
@@ -1702,7 +1703,7 @@ error:
 }
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_body, str* extra_hdrs)
+		str* rules_doc, str* dialog_body)
 {
 	str *notify_body = NULL;
 	str notify_extra_hdrs = {NULL, 0};
@@ -1721,7 +1722,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	if(p->event->agg_nbody)
 	{
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag,
-				NULL, dialog_body, extra_hdrs?extra_hdrs:&notify_extra_hdrs);
+				NULL, dialog_body, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1733,8 +1734,9 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	while(s)
 	{
 		s->auth_rules_doc= rules_doc;
+		LM_INFO("notify\n");
 		if(notify(s, NULL, notify_body?notify_body:body,
-			0, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
+			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs)< 0 )
 		{
 			LM_ERR("Could not send notify for %.*s\n",
 					p->event->name.len, p->event->name.s);
@@ -1792,6 +1794,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 	while(s)
 	{
+		LM_INFO("notify\n");
 		if(notify(s, watcher_subs, notify_body, 0, NULL)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
@@ -1975,9 +1978,10 @@ jump_over_body:
 		goto error;
 	}
 
-	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s\n",
+	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
 		td->rem_uri.len, td->rem_uri.s, td->hooks.next_hop->len, td->hooks.next_hop->s,
-		td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s);
+		td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
+		td->id.loc_tag.len, td->id.loc_tag.s, td->loc_seq.value);
 
 	free_tm_dlg(td);
 	
@@ -2095,8 +2099,8 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 	}
 	else
 	{
-		LM_WARN("completed with status [%d] and to_tag [%.*s]\n",
-			ps->code, cb?cb->to_tag.len:0, cb?cb->to_tag.s:"");
+		LM_WARN("completed with status [%d] and to_tag [%.*s], cseq [%.*s]\n",
+			ps->code, cb?cb->to_tag.len:0, cb?cb->to_tag.s:"", t->cseq_n.len, t->cseq_n.s);
 	}
 
 	if(ps->code == 481)
@@ -2155,16 +2159,16 @@ str* create_winfo_xml(watcher_t* watchers, char* version,
 	char* buffer= NULL;
 	watcher_t* w;
 
-    LIBXML_TEST_VERSION;
-    
-	doc = xmlNewDoc(BAD_CAST "1.0");
-    root_node = xmlNewNode(NULL, BAD_CAST "watcherinfo");
-    xmlDocSetRootElement(doc, root_node);
+	LIBXML_TEST_VERSION;
 
-    xmlNewProp(root_node, BAD_CAST "xmlns",
+	doc = xmlNewDoc(BAD_CAST "1.0");
+	root_node = xmlNewNode(NULL, BAD_CAST "watcherinfo");
+	xmlDocSetRootElement(doc, root_node);
+
+	xmlNewProp(root_node, BAD_CAST "xmlns",
 			BAD_CAST "urn:ietf:params:xml:ns:watcherinfo");
-    xmlNewProp(root_node, BAD_CAST "version", BAD_CAST version );
-   
+	xmlNewProp(root_node, BAD_CAST "version", BAD_CAST version );
+
 	if(STATE_FLAG & FULL_STATE_FLAG)
 	{
 		if( xmlNewProp(root_node, BAD_CAST "state", BAD_CAST "full") == NULL)
@@ -2174,9 +2178,8 @@ str* create_winfo_xml(watcher_t* watchers, char* version,
 		}
 	}
 	else
-	{	
-		if( xmlNewProp(root_node, BAD_CAST "state", 
-					BAD_CAST "partial")== NULL) 
+	{
+		if( xmlNewProp(root_node, BAD_CAST "state", BAD_CAST "partial")==NULL)
 		{
 			LM_ERR("while adding new attribute\n");
 			goto error;

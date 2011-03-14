@@ -261,7 +261,7 @@ no_notify:
 			LM_ERR("getting rules doc\n");
 			goto error;
 		}
-		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL, NULL)< 0)
+		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL)< 0)
 		{
 			LM_ERR("sending Notify request\n");
 			goto error;
@@ -274,7 +274,7 @@ no_notify:
 		}
 		rules_doc= NULL;
 		/* delete from hash table */
-		if(delete_phtable(&p[i].uri, ev.parsed)< 0)
+		if(delete_phtable_query(&p[i].uri, ev.parsed, &p[i].p->etag)< 0)
 		{
 			LM_ERR("deleting from pres hash table\n");
 			free_event_params(ev.params, PKG_MEM_TYPE);
@@ -287,10 +287,10 @@ no_notify:
 		LM_ERR("in use_table\n");
 		goto error;
 	}
-	
+
 //	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 
-	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0) 
+	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0)
 		LM_ERR("cleaning expired messages\n");
 	
 	for(i= 0; i< n; i++)
@@ -346,9 +346,9 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	struct sip_uri puri;
 	str body;
 	int lexpire;
-	presentity_t* presentity = 0;
+	presentity_t presentity;
 	struct hdr_field* hdr;
-	int etag_gen = 0;
+	int etag_new = 0;
 	str etag={NULL, 0};
 	str extra_hdrs={NULL, 0};
 	str* sender= NULL;
@@ -397,36 +397,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		goto unsupported_event;
 	}
 
-	/* examine the SIP-If-Match header field */
-	hdr = get_header_by_static_name( msg, "SIP-If-Match");
-	if( hdr==NULL )
-	{
-		LM_DBG("SIP-If-Match header not found\n");
-		etag.s = generate_ETag(0);
-		if(etag.s == NULL)
-		{
-			LM_ERR("when generating etag\n");
-			reply_code = 500;
-			reply_str= pu_500_rpl;
-			goto error;
-		}
-		etag.len=(strlen(etag.s));
-		etag_gen=1;
-		LM_DBG("new etag  = %.*s \n", etag.len, etag.s);
-	}
-	else
-	{
-		LM_DBG("SIP-If-Match header found\n");
-		etag.s = (char*)pkg_malloc(hdr->body.len+ 1);
-		if(etag.s== NULL)
-		{
-			ERR_MEM(PKG_MEM_STR);
-		}
-		memcpy(etag.s, hdr->body.s, hdr->body.len );
-		etag.len = hdr->body.len;
-		etag.s[ etag.len] = '\0';
-		LM_DBG("existing etag  = %.*s \n", etag.len, etag.s);
-	}
 
 	/* examine the expire header field */
 	if(msg->expires && msg->expires->body.len > 0)
@@ -457,6 +427,28 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	pres_user= msg->parsed_uri.user;
 	pres_domain= msg->parsed_uri.host;
 
+	/* examine the SIP-If-Match header field */
+	hdr = get_header_by_static_name( msg, "SIP-If-Match");
+	if( hdr==NULL )
+	{
+		LM_DBG("SIP-If-Match header not found\n");
+		if(generate_ETag(0, &etag) < 0)
+		{
+			LM_ERR("when generating etag\n");
+			reply_code = 500;
+			reply_str= pu_500_rpl;
+			goto error;
+		}
+		etag_new=1;
+		LM_DBG("new etag= %.*s\n", etag.len, etag.s);
+	}
+	else
+	{
+		LM_DBG("SIP-If-Match header found\n");
+		etag = hdr->body;
+		LM_DBG("existing etag= %.*s\n", etag.len, etag.s);
+	}
+
 	if (!msg->content_length) 
 	{
 		LM_ERR("no Content-Length header found!\n");
@@ -467,7 +459,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	if ( get_content_length(msg) == 0 )
 	{
 		body.s = NULL;
-		if (etag_gen)
+		if (etag_new)
 		{
 			if (event->mandatory_body)
 			{
@@ -535,25 +527,29 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		}
 	}
 
-	/* now we have all the necessary values */
-	/* fill in the filds of the structure */
-
-	presentity= new_presentity(&pres_domain, &pres_user, lexpire, event,
-			&etag, sender);
-	if(presentity== NULL)
-	{
-		LM_ERR("creating presentity structure\n");
-		reply_code = 500;
-		reply_str = pu_500_rpl;
-		goto error;
-	}
-
 	/* build extra headers list */
 	if (event->extra_hdrs)
 		build_extra_hdrs(msg, event->extra_hdrs, &extra_hdrs);
 
+	/* now we have all the necessary values */
+	/* fill in the filds of the structure */
+	memset(&presentity, 0, sizeof(presentity_t));
+	presentity.domain = pres_domain;
+	presentity.user   = pres_user;
+	presentity.etag   = etag;
+	if(sender)
+		presentity.sender= sender;
+	presentity.event= event;
+	presentity.expires = lexpire;
+	presentity.received_time= (int)time(NULL);
+	if(extra_hdrs.s)
+		presentity.extra_hdrs = &extra_hdrs;
+	presentity.etag_new = etag_new;
+	presentity.sphere = sphere;
+	presentity.body = body;
+
 	/* querry the database and update or insert */
-	if(update_presentity(msg, presentity, &body, etag_gen, &sent_reply, sphere, &extra_hdrs) <0)
+	if(update_presentity(msg, &presentity, &sent_reply) <0)
 	{
 		LM_ERR("when updating presentity\n");
 		reply_code = 500;
@@ -561,10 +557,6 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		goto error;
 	}
 
-	if(presentity)
-		pkg_free(presentity);
-	if(etag.s)
-		pkg_free(etag.s);
 	if(sender)
 		pkg_free(sender);
 	if(sphere)
@@ -592,11 +584,6 @@ error:
 			LM_ERR("failed to send error reply\n");
 		}
 	}
-	
-	if(presentity)
-		pkg_free(presentity);
-	if(etag.s)
-		pkg_free(etag.s);
 	if(sender)
 		pkg_free(sender);
 	if(sphere)
@@ -605,7 +592,6 @@ error:
 		pkg_free(extra_hdrs.s);
 
 	return -1;
-
 }
 
 

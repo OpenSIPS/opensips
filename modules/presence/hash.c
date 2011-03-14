@@ -456,8 +456,8 @@ void destroy_phtable(void)
 	}
 	shm_free(pres_htable);
 }
-/* entry must be locked before calling this function */
 
+/* entry must be locked before calling this function */
 pres_entry_t* search_phtable(str* pres_uri,int event, unsigned int hash_code)
 {
 	pres_entry_t* p;
@@ -476,29 +476,46 @@ pres_entry_t* search_phtable(str* pres_uri,int event, unsigned int hash_code)
 	return NULL;
 }
 
-int insert_phtable(str* pres_uri, int event, char* sphere)
+pres_entry_t* search_phtable_etag(str* pres_uri, int event,
+		str* etag, unsigned int hash_code)
+{
+	pres_entry_t* p;
+
+	LM_DBG("pres_uri= %.*s, event=%d, etag= %.*s\n", pres_uri->len,  pres_uri->s,
+			event, etag->len, etag->s);
+	p= pres_htable[hash_code].entries->next;
+	while(p)
+	{
+		LM_DBG("found etag = %.*s\n", p->etag_len, p->etag);
+		if( p->event== event && p->pres_uri.len== pres_uri->len &&
+				strncmp(p->pres_uri.s, pres_uri->s, pres_uri->len)== 0 &&
+				p->etag_len == etag->len && strncmp(p->etag, etag->s, etag->len)== 0 )
+		{
+			return p;
+		}
+		p= p->next;
+	}
+	return NULL;
+}
+
+void update_pres_etag(pres_entry_t* p, str* etag)
+{
+	LM_DBG("etag = %.*s\n", etag->len, etag->s);
+	memcpy(p->etag, etag->s, etag->len);
+	p->etag_len = etag->len;
+	p->etag_count++;
+}
+
+int insert_phtable(str* pres_uri, int event, str* etag, char* sphere)
 {
 	unsigned int hash_code;
 	pres_entry_t* p= NULL;
 	int size;
 
-	hash_code= core_hash(pres_uri, NULL, phtable_size);
-
-	lock_get(&pres_htable[hash_code].lock);
-
-	p= search_phtable(pres_uri, event, hash_code);
-	if(p)
-	{
-		p->publ_count++;
-		lock_release(&pres_htable[hash_code].lock);
-		return 0;
-	}
 	size= sizeof(pres_entry_t)+ pres_uri->len;
-
 	p= (pres_entry_t*)shm_malloc(size);
 	if(p== NULL)
 	{
-		lock_release(&pres_htable[hash_code].lock);
 		ERR_MEM(SHARE_MEM);
 	}
 	memset(p, 0, size);
@@ -513,67 +530,70 @@ int insert_phtable(str* pres_uri, int event, char* sphere)
 		p->sphere= (char*)shm_malloc(strlen(sphere)+ 1);
 		if(p->sphere== NULL)
 		{
-			lock_release(&pres_htable[hash_code].lock);
 			ERR_MEM(SHARE_MEM);
 		}
 		strcpy(p->sphere, sphere);
 	}
-
 	p->event= event;
-	p->publ_count = 1;
+	update_pres_etag(p, etag);
+
+	hash_code= core_hash(pres_uri, NULL, phtable_size);
+	lock_get(&pres_htable[hash_code].lock);
+
 	p->next= pres_htable[hash_code].entries->next;
 	pres_htable[hash_code].entries->next= p;
 
 	lock_release(&pres_htable[hash_code].lock);
-	
+
 	return 0;
 
 error:
+	if(p)
+		shm_free(p);
 	return -1;
 }
 
-int delete_phtable(str* pres_uri, int event)
+int delete_phtable_query(str *pres_uri, int event, str* etag)
 {
+	pres_entry_t* p;
 	unsigned int hash_code;
-	pres_entry_t* p= NULL, *prev_p= NULL;
 
-	hash_code= core_hash(pres_uri, NULL, phtable_size);
-
+	hash_code = core_hash(pres_uri, 0, phtable_size);
 	lock_get(&pres_htable[hash_code].lock);
-
-	p= search_phtable(pres_uri, event, hash_code);
-	if(p== NULL)
+	p = search_phtable_etag(pres_uri, event, etag, hash_code);
+	if(p == NULL)
 	{
-		LM_DBG("record not found\n");
+		LM_ERR("Record not found [%.*s]\n", etag->len, etag->s);
 		lock_release(&pres_htable[hash_code].lock);
-		return 0;
+		return -1;
 	}
-
-	p->publ_count--;
-	if(p->publ_count== 0)
-	{
-		LM_DBG("Count = 0, delete\n");
-		/* delete record */	
-		prev_p= pres_htable[hash_code].entries;
-		while(prev_p->next)
-		{
-			if(prev_p->next== p)
-				break;
-			prev_p= prev_p->next;
-		}
-		if(prev_p->next== NULL)
-		{
-			LM_ERR("record not found\n");
-			lock_release(&pres_htable[hash_code].lock);
-			return -1;
-		}
-		prev_p->next= p->next;
-		if(p->sphere)
-			shm_free(p->sphere);
-
-		shm_free(p);
-	}
+	delete_phtable(p, hash_code);
 	lock_release(&pres_htable[hash_code].lock);
+	return 0;
+}
+
+int delete_phtable(pres_entry_t* p, unsigned int hash_code)
+{
+	pres_entry_t* prev_p= NULL;
+
+	LM_DBG("Count = 0, delete\n");
+	/* delete record */	
+	prev_p= pres_htable[hash_code].entries;
+	while(prev_p->next)
+	{
+		if(prev_p->next== p)
+			break;
+		prev_p= prev_p->next;
+	}
+	if(prev_p->next== NULL)
+	{
+		LM_ERR("record not found\n");
+		return -1;
+	}
+	prev_p->next= p->next;
+	if(p->sphere)
+		shm_free(p->sphere);
+	shm_free(p);
 
 	return 0;
 }

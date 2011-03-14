@@ -100,7 +100,7 @@ void printf_subs(subs_t* subs);
 int query_db_notify(str* pres_uri,pres_ev_t* event, subs_t* watcher_subs );
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_publish, str* extra_hdrs);
+		str* rules_doc, str* dialog_publish);
 
 int notify(subs_t* subs, subs_t* watcher_subs, str* n_body,int force_null_body, str* extra_hdrs);
 

@@ -448,7 +448,7 @@ send_notify:
 			goto error;
 		}
 	}
-
+	LM_INFO("notify\n");
 	if(notify(subs, NULL, NULL, 0 , NULL)< 0)
 	{
 		LM_ERR("Failed to send notify request\n");
@@ -1293,6 +1293,7 @@ int handle_expired_subs(subs_t* s)
 	s->reason.len= 7;
 	s->expires= 0;
 
+	LM_INFO("notify\n");
 	if(send_notify_request(s, NULL, NULL, 1, NULL)< 0)
 	{
 		LM_ERR("send Notify not successful\n");
