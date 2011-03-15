@@ -96,6 +96,7 @@ static int fixup_presence(void** param, int param_no);
 static int fixup_subscribe(void** param, int param_no);
 static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param);
 static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param);
+static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param);
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array);
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
@@ -160,9 +161,10 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "refreshWatchers", mi_refreshWatchers,    0,  0,  0},
-	{ "cleanup",         mi_cleanup,            0,  0,  0},
-	{  0,                0,                     0,  0,  0}
+	{ "refreshWatchers",   mi_refreshWatchers,    0,  0,  0},
+	{ "cleanup",           mi_cleanup,            0,  0,  0},
+	{ "pres_phtable_list", mi_list_phtable,       0,  0,  0},
+	{  0,                  0,                     0,  0,  0}
 };
 
 /** module exports */
@@ -614,6 +616,69 @@ static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param)
 		
 	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 }
+
+
+static inline int mi_print_phtable_record(struct mi_node *rpl, pres_entry_t* pres)
+{
+	struct mi_node* node;
+	struct mi_attr* attr;
+	char* p;
+	int len;
+
+	node = add_mi_node_child(rpl, 0, "pres_uri", 8, pres->pres_uri.s, pres->pres_uri.len);
+	if (node==0) goto error;
+	p= int2str((unsigned long)pres->event, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "event", 5, p, len);
+	if(attr == NULL) goto error;
+	p= int2str((unsigned long)pres->etag_count, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "etag_count", 10, p, len);
+	if(attr == NULL) goto error;
+	if (pres->sphere)
+	{
+		attr = add_mi_attr(node, MI_DUP_VALUE, "sphere", 6,
+						pres->sphere, strlen(pres->sphere));
+		if(attr == NULL) goto error;
+	}
+	attr = add_mi_attr(node, MI_DUP_VALUE, "etag", 4, pres->etag, pres->etag_len);
+	if(attr == NULL) goto error;
+
+	return 0;
+error:
+	LM_ERR("failed to add node\n");
+	return -1;
+}
+
+static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param)
+{
+	
+	struct mi_root *rpl_tree;
+	struct mi_node* rpl;
+	pres_entry_t* p;
+	unsigned int i;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+	rpl = &rpl_tree->node;
+
+	for(i= 0; i<phtable_size; i++)
+	{
+		lock_get(&pres_htable[i].lock);
+		p = pres_htable[i].entries->next;
+		while(p)
+		{
+			if(mi_print_phtable_record(rpl, p)<0) goto error;
+			p= p->next;;
+		}
+		lock_release(&pres_htable[i].lock);
+	}
+	return rpl_tree;
+error:
+	lock_release(&pres_htable[i].lock);
+	LM_ERR("Unable to create reply\n");
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
+
 
 int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
         db_val_t* query_vals, int n_query_cols, subs_t** subs_array)
