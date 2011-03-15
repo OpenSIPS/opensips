@@ -628,8 +628,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 					LM_ERR("failed to update record\n");
 					/* delete it */
 					q = p->next;
-					delete_htable(p->hash_index, p->local_index);
-					pua_db_delete(p);
+					delete_htable_safe(p, p->hash_index);
 					p = q;
 				}
 				else

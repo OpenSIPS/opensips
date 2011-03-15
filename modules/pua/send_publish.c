@@ -425,8 +425,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		if(publ->expires== 0)
 		{
 			LM_DBG("expires= 0- delete from hash table\n");
-			lock_release(&HashT->p_records[hash_index].lock);
-			goto send_publish;
+			delete_htable_safe(presentity, hash_index);
 		}
 	}
 	lock_release(&HashT->p_records[hash_index].lock);
@@ -470,8 +469,6 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		pres_id = new_publ_record(publ, ev, &tuple_id);
 	}
 
-send_publish:
-
 	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type, 
 				(etag.s?&etag:NULL), publ->extra_headers, ((body)?1:0));
 	if(str_hdr == NULL)
@@ -494,8 +491,8 @@ send_publish:
 			str_hdr,								/* Optional headers */
 			body,									/* Message body */
 			((publ->outbound_proxy.s)?&publ->outbound_proxy:0),/*Outbound proxy*/
-			publ_cback_func,						/* Callback function */
-			(void*)pres_id,								/* Callback parameter */
+			publ->expires?publ_cback_func:0,		/* Callback function */
+			(void*)pres_id,							/* Callback parameter */
 			0
 			);
 	pkg_free(str_hdr);

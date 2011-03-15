@@ -400,6 +400,115 @@ unsigned long insert_htable(ua_pres_t* presentity)
 	return pres_id;
 }
 
+static void pua_db_delete(ua_pres_t* pres)
+{
+	db_key_t cols[6];
+	db_val_t vals[6];
+	int n_query_cols= 0;
+
+	cols[n_query_cols] = &str_pres_uri_col;
+	vals[n_query_cols].type = DB_STR;
+	vals[n_query_cols].nul = 0;
+	vals[n_query_cols].val.str_val = *pres->pres_uri;
+	n_query_cols++;
+
+	if(pres->flag)
+	{
+		cols[n_query_cols] = &str_flag_col;
+		vals[n_query_cols].type = DB_INT;
+		vals[n_query_cols].nul = 0;
+		vals[n_query_cols].val.int_val = pres->flag;
+		n_query_cols++;
+	}
+
+	cols[n_query_cols] = &str_event_col;
+	vals[n_query_cols].type = DB_INT;
+	vals[n_query_cols].nul = 0;
+	vals[n_query_cols].val.int_val = pres->event;
+	n_query_cols++;
+
+	if(pres->id.s && pres->id.len)
+	{
+		cols[n_query_cols] = &str_pres_id_col;
+		vals[n_query_cols].type = DB_STR;
+		vals[n_query_cols].nul = 0;
+		vals[n_query_cols].val.str_val = pres->id;
+		n_query_cols++;
+	}
+
+	if(pres->watcher_uri)
+	{
+		cols[n_query_cols] = &str_watcher_uri_col;
+		vals[n_query_cols].type = DB_STR;
+		vals[n_query_cols].nul = 0;
+		vals[n_query_cols].val.str_val = *pres->watcher_uri;
+		n_query_cols++;
+	
+		if(pres->remote_contact.s)
+		{
+			cols[n_query_cols] = &str_remote_contact_col;
+			vals[n_query_cols].type = DB_STR;
+			vals[n_query_cols].nul = 0;
+			vals[n_query_cols].val.str_val = pres->remote_contact;
+			n_query_cols++;
+		}
+	}
+	else
+	{
+		if(pres->etag.s)
+		{
+			cols[n_query_cols] = &str_etag_col;
+			vals[n_query_cols].type = DB_STR;
+			vals[n_query_cols].nul = 0;
+			vals[n_query_cols].val.str_val = pres->etag;
+			n_query_cols++;
+		}
+	}
+	/* should not search after etag because I don't know if it has been updated */	
+
+	if(pua_dbf.use_table(pua_db, &db_table)< 0)
+	{
+		LM_ERR("in use table\n");
+		return;
+	}
+
+	if(pua_dbf.delete(pua_db, cols, 0, vals, n_query_cols)< 0)
+	{
+		LM_ERR("Sql delete failed\n");
+		return;
+	}
+}
+
+
+void free_htable_entry(ua_pres_t* p)
+{
+	/* delete from database also */
+	pua_db_delete(p);
+
+	if(p->etag.s)
+	{
+		shm_free(p->etag.s);
+	}
+	else
+	if(p->remote_contact.s)
+		shm_free(p->remote_contact.s);
+	shm_free(p);
+}
+
+void delete_htable_safe(ua_pres_t* p, unsigned int hash_index)
+{
+	ua_pres_t *q= NULL;
+
+	q = HashT->p_records[hash_index].entity;
+	while(q && q->next!=p)
+		q = q->next;
+
+	if(q)
+		q->next = p->next;
+	free_htable_entry(p);
+}
+
+
 void delete_htable(unsigned int hash_index, unsigned int local_index)
 {
 	ua_pres_t* p= NULL, *q= NULL;
@@ -407,19 +516,12 @@ void delete_htable(unsigned int hash_index, unsigned int local_index)
 	lock_get(&HashT->p_records[hash_index].lock);
 
 	q = HashT->p_records[hash_index].entity;
-	for(p= HashT->p_records[hash_index].entity->next; p; p=p->next)
+	for(p= q->next; p; p=p->next)
 	{
 		if(p->local_index == local_index)
 		{
 			q->next = p->next;
-			if(p->etag.s)
-			{
-				shm_free(p->etag.s);
-			}
-			else
-			if(p->remote_contact.s)
-				shm_free(p->remote_contact.s);
-			shm_free(p);
+			free_htable_entry(p);
 			break;
 		}
 		q = p;
@@ -693,85 +795,6 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 
 	return 1;
 
-}
-
-void pua_db_delete(ua_pres_t* pres)
-{
-	db_key_t cols[6];
-	db_val_t vals[6];
-	int n_query_cols= 0;
-
-	cols[n_query_cols] = &str_pres_uri_col;
-	vals[n_query_cols].type = DB_STR;
-	vals[n_query_cols].nul = 0;
-	vals[n_query_cols].val.str_val = *pres->pres_uri;
-	n_query_cols++;
-
-	if(pres->flag)
-	{
-		cols[n_query_cols] = &str_flag_col;
-		vals[n_query_cols].type = DB_INT;
-		vals[n_query_cols].nul = 0;
-		vals[n_query_cols].val.int_val = pres->flag;
-		n_query_cols++;
-	}
-
-	cols[n_query_cols] = &str_event_col;
-	vals[n_query_cols].type = DB_INT;
-	vals[n_query_cols].nul = 0;
-	vals[n_query_cols].val.int_val = pres->event;
-	n_query_cols++;
-
-	if(pres->id.s && pres->id.len)
-	{
-		cols[n_query_cols] = &str_pres_id_col;
-		vals[n_query_cols].type = DB_STR;
-		vals[n_query_cols].nul = 0;
-		vals[n_query_cols].val.str_val = pres->id;
-		n_query_cols++;
-	}
-
-	if(pres->watcher_uri)
-	{
-		cols[n_query_cols] = &str_watcher_uri_col;
-		vals[n_query_cols].type = DB_STR;
-		vals[n_query_cols].nul = 0;
-		vals[n_query_cols].val.str_val = *pres->watcher_uri;
-		n_query_cols++;
-	
-		if(pres->remote_contact.s)
-		{
-			cols[n_query_cols] = &str_remote_contact_col;
-			vals[n_query_cols].type = DB_STR;
-			vals[n_query_cols].nul = 0;
-			vals[n_query_cols].val.str_val = pres->remote_contact;
-			n_query_cols++;
-		}
-	}
-	else
-	{
-		if(pres->etag.s)
-		{
-			cols[n_query_cols] = &str_etag_col;
-			vals[n_query_cols].type = DB_STR;
-			vals[n_query_cols].nul = 0;
-			vals[n_query_cols].val.str_val = pres->etag;
-			n_query_cols++;
-		}
-	}
-	/* should not search after etag because I don't know if it has been updated */	
-
-	if(pua_dbf.use_table(pua_db, &db_table)< 0)
-	{
-		LM_ERR("in use table\n");
-		return;
-	}
-
-	if(pua_dbf.delete(pua_db, cols, 0, vals, n_query_cols)< 0)
-	{
-		LM_ERR("Sql delete failed\n");
-		return;
-	}
 }
 
 

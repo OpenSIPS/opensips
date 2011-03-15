@@ -187,6 +187,6 @@ static inline int get_event_flag(str* event)
 }
 
 int update_contact(struct sip_msg* msg, char* str1, char* str2);
-void pua_db_delete(ua_pres_t* pres);
+void delete_htable_safe(ua_pres_t* p, unsigned int hash_index);
 
 #endif

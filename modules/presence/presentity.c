@@ -791,18 +791,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 				goto error;
 			}
 			*sent_reply= 1;
-			if( publ_notify(presentity, pres_uri, body.s?&body:0, &presentity->etag,
-					rules_doc, NULL)< 0 )
-			{
-				LM_ERR("while sending notify\n");
-				goto error;
-			}
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 			{
 				LM_ERR("unsuccessful sql use table\n");
 				goto error;
 			}
-
 		//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 			if(pa_dbf.delete(pa_db,query_cols,0,query_vals,n_query_cols)<0)
 			{
@@ -812,7 +805,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			LM_DBG("Expires=0, deleted from db %.*s\n",
 					presentity->user.len,presentity->user.s);
 
-			goto done;
+
+			if( publ_notify(presentity, pres_uri, body.s?&body:0, &presentity->etag,
+					rules_doc, NULL)< 0 )
+			{
+				LM_ERR("while sending notify\n");
+				goto error;
+			}
+			goto send_mxd_notify;
 		}
 
 		if(presentity->event->etag_not_new== 0)
@@ -935,6 +935,7 @@ send_notify:
 		goto error;
 	}
 
+send_mxd_notify:
 	/* if event dialog -> send Notify for presence also */
 	if(mix_dialog_presence && *pres_event_p &&
 			presentity->event->evp->parsed == EVENT_DIALOG)

@@ -250,9 +250,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		presentity = get_htable_safe(hentity->hash_index, hentity->local_index);
 		if(presentity)
 		{
-			pua_db_delete(presentity);
+			delete_htable_safe(presentity, hentity->hash_index);
 			lock_release(&HashT->p_records[hentity->hash_index].lock);
-			delete_htable(hentity->hash_index, hentity->local_index);
 		}
 		lock_release(&HashT->p_records[hentity->hash_index].lock);
 		goto done;
@@ -358,9 +357,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			if(presentity)
 			{
 				hentity->event= presentity->event;
-				pua_db_delete(presentity);
+				delete_htable_safe(presentity, hentity->hash_index);
 				lock_release(&HashT->p_records[hentity->hash_index].lock);
-				delete_htable(hentity->hash_index, hentity->local_index);
 			}
 			lock_release(&HashT->p_records[hentity->hash_index].lock);
 
@@ -429,9 +427,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			presentity = get_htable_safe(hentity->hash_index, hentity->local_index);
 			if(presentity)
 			{
-				pua_db_delete(presentity);
+				delete_htable_safe(presentity, hentity->hash_index);
 				lock_release(&HashT->p_records[hentity->hash_index].lock);
-				delete_htable(hentity->hash_index, hentity->local_index);
 			}
 			lock_release(&HashT->p_records[hentity->hash_index].lock);
 			goto done;

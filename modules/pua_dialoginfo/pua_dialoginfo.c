@@ -302,9 +302,9 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	case DLGCB_EXPIRED:
 		LM_DBG("dialog over, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
-			dialog_publish("terminated", &from, &peer_to_body, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+			dialog_publish("terminated", &from, &peer_to_body, &(dlg->callid), 1, 0, 0, 0);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
-			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
+			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
 		break;
 	case DLGCB_CONFIRMED:
 	case DLGCB_REQ_WITHIN:
@@ -367,9 +367,9 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	default:
 		LM_ERR("unhandled dialog callback type %d received, from=%.*s\n", type, dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
-			dialog_publish("terminated", &from, &peer_to_body, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+			dialog_publish("terminated", &from, &peer_to_body, &(dlg->callid), 1, 0, 0, 0);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
-			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
+			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
 	}
 error:
 	if(peer_uri.s)
