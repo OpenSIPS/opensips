@@ -32,6 +32,7 @@
 
 #include "../../str.h"
 #include "../tm/t_hooks.h"
+#include "../dialog/dlg_cb.h"
 
 
 /* various acc variables */
