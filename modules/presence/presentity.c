@@ -609,6 +609,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	pres_entry_t* p= NULL;
 	unsigned int hash_code;
 	str body = presentity->body;
+	str *extra_hdrs = presentity->extra_hdrs;
 	db_res_t *result= NULL;
 
 	*sent_reply= 0;
@@ -711,12 +712,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		query_vals[n_query_cols].val.int_val = presentity->received_time;
 		n_query_cols++;
 
-		if(presentity->extra_hdrs)
+		if(extra_hdrs)
 		{
 			query_cols[n_query_cols] = &str_extra_hdrs_col;
 			query_vals[n_query_cols].type = DB_BLOB;
 			query_vals[n_query_cols].nul = 0;
-			query_vals[n_query_cols].val.str_val = *presentity->extra_hdrs;
+			query_vals[n_query_cols].val.str_val = *extra_hdrs;
 			n_query_cols++;
 		}
 
@@ -866,12 +867,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		}
 		n_update_cols++;
 
-		if(presentity->extra_hdrs)
+		if(extra_hdrs)
 		{
 			update_keys[n_update_cols] = &str_extra_hdrs_col;
 			update_vals[n_update_cols].type = DB_BLOB;
 			update_vals[n_update_cols].nul = 0;
-			update_vals[n_update_cols].val.str_val = *presentity->extra_hdrs;
+			update_vals[n_update_cols].val.str_val = *extra_hdrs;
 			n_update_cols++;
 		}
 
@@ -921,7 +922,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		}
 		*sent_reply= 1;
 
-		if(!body.s)
+		if(!body.s && !extra_hdrs)
 			goto done;
 	}
 
