@@ -49,6 +49,7 @@
 
 
 #include "udp_server.h"
+#include "socket_info.h"
 #include "globals.h"
 #include "config.h"
 #include "dprint.h"
@@ -149,85 +150,6 @@ qa_passed:
 }
 
 #endif
-
-/**
- * Tries to find the maximum receiver buffer size. This value is
- * system dependend, thus it need to detected on startup.
- *
- * \param udp_sock checked socket
- * \return zero on success, -1 otherwise
- */
-int probe_max_receive_buffer(int udp_sock)
-{
-	unsigned int optval, ioptval, ioptvallen, foptval, foptvallen, voptval, voptvallen;
-	int phase=0;
-
-	/* try to increase buffer size as much as we can */
-	ioptvallen=sizeof(ioptval);
-	if (getsockopt( udp_sock, SOL_SOCKET, SO_RCVBUF, (void*) &ioptval,
-		    &ioptvallen) == -1 )
-	{
-		LM_ERR("getsockopt: %s\n", strerror(errno));
-		return -1;
-	}
-	if ( ioptval==0 )
-	{
-		LM_DBG(" getsockopt: SO_RCVBUF initially set to 0; resetting to %d\n",
-			BUFFER_INCREMENT );
-		ioptval=BUFFER_INCREMENT;
-	} else LM_DBG("getsockopt SO_RCVBUF is initially %d\n", ioptval );
-	for (optval=ioptval; ;  ) {
-		/* increase size; double in initial phase, add linearly later */
-		if (phase==0) optval <<= 1; else optval+=BUFFER_INCREMENT;
-		if (optval > maxbuffer){
-			if (phase==1) break; 
-			else { phase=1; optval >>=1; continue; }
-		}
-		LM_DBG("trying SO_RCVBUF: %d\n", optval );
-		if (setsockopt( udp_sock, SOL_SOCKET, SO_RCVBUF,
-			(void*)&optval, sizeof(optval)) ==-1){
-			/* Solaris returns -1 if asked size too big; Linux ignores */
-			LM_DBG("setsockopt: SOL_SOCKET failed"
-					" for %d, phase %d: %s\n", optval, phase, strerror(errno));
-			/* if setting buffer size failed and still in the aggressive
-			   phase, try less aggressively; otherwise give up */
-			if (phase==0) { phase=1; optval >>=1 ; continue; } 
-			else break;
-		} 
-		/* verify if change has taken effect */
-		/* Linux note -- otherwise I would never know that; funny thing: Linux
-		   doubles size for which we asked in setsockopt */
-		voptvallen=sizeof(voptval);
-		if (getsockopt( udp_sock, SOL_SOCKET, SO_RCVBUF, (void*) &voptval,
-		    &voptvallen) == -1 )
-		{
-			LM_ERR("getsockopt: %s\n", strerror(errno));
-			return -1;
-		} else {
-			LM_DBG("setting SO_RCVBUF; set=%d,verify=%d\n", 
-				optval, voptval);
-			if (voptval<optval) {
-				LM_DBG("setting SO_RCVBUF has no effect\n");
-				/* if setting buffer size failed and still in the aggressive
-				phase, try less aggressively; otherwise give up */
-				if (phase==0) { phase=1; optval >>=1 ; continue; } 
-				else break;
-			} 
-		}
-	
-	} /* for ... */
-	foptvallen=sizeof(foptval);
-	if (getsockopt( udp_sock, SOL_SOCKET, SO_RCVBUF, (void*) &foptval,
-		    &foptvallen) == -1 )
-	{
-		LM_ERR("getsockopt: %s\n", strerror(errno));
-		return -1;
-	}
-	LM_INFO("using a UDP receive buffer of %d kb\n", (foptval/1024));
-
-	return 0;
-}
-
 
 #ifdef USE_MCAST
 
@@ -374,7 +296,8 @@ int udp_init(struct socket_info* sock_info)
 	}
 #endif /* USE_MCAST */
 
-	if (probe_max_receive_buffer(sock_info->socket)==-1) goto error;
+	if (probe_max_sock_buff(sock_info->socket,0,MAX_RECV_BUFFER_SIZE,
+				BUFFER_INCREMENT)==-1) goto error;
 	
 	if (bind(sock_info->socket,  &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s: %s\n", sock_info->socket, &addr->s, 

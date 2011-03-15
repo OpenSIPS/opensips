@@ -46,6 +46,7 @@
 #include "dprint.h"
 
 #define MAX_RECV_BUFFER_SIZE	256*1024
+#define MAX_SEND_BUFFER_SIZE	512*1024
 #define BUFFER_INCREMENT	2048
 
 enum sip_protos { PROTO_NONE, PROTO_UDP, PROTO_TCP, PROTO_TLS, PROTO_SCTP };

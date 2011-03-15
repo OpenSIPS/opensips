@@ -178,6 +178,13 @@ static int init_sock_opt(int s)
 		LM_WARN("setsockopt tos: %s\n",	strerror(errno));
 		/* continue since this is not critical */
 	}
+
+	if (probe_max_sock_buff(s,1,MAX_SEND_BUFFER_SIZE,BUFFER_INCREMENT))
+	{
+		LM_WARN("setsockopt tcp snd buff: %s\n",	strerror(errno));
+		/* continue since this is not critical */
+	}
+
 	/* non-blocking */
 	flags=fcntl(s, F_GETFL);
 	if (flags==-1){
@@ -860,6 +867,14 @@ int tcp_init(struct socket_info* sock_info)
 		LM_WARN("setsockopt tos: %s\n", strerror(errno));
 		/* continue since this is not critical */
 	}
+
+	if (probe_max_sock_buff(sock_info->socket,1,MAX_SEND_BUFFER_SIZE,
+				BUFFER_INCREMENT))
+	{
+		LM_WARN("setsockopt tcp snd buff: %s\n",	strerror(errno));
+		/* continue since this is not critical */
+	}
+
 	if (bind(sock_info->socket, &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s:%d : %s\n",
  				sock_info->socket, &addr->s, 

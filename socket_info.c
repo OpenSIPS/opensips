@@ -1258,3 +1258,103 @@ void print_aliases(void)
 			printf("             %s: %.*s:*\n", get_proto_name(a->proto), 
 					a->alias.len, a->alias.s);
 }
+
+/*
+ * Arguments :
+ *		sock - socket to have buffer increased
+ *		buff_choice - 0 for receive buff, 1 for send buff
+ *		buff_max - max size of socket buffer we are looking for
+ *		buff_increment - increment nr of bytes after reaching limit
+ *
+ *	Returns :
+ *		0 in case of success
+ *		1 in case of failure
+*/
+int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment)
+{
+	unsigned int optval, ioptval, ioptvallen, foptval, foptvallen, voptval, voptvallen;
+	int phase=0;
+	int buff_opt;
+	char *info;
+	
+	if (buff_choice == 0)
+	{
+		info = "rcv";
+		buff_opt = SO_RCVBUF;
+	}
+	else if (buff_choice == 1)
+	{
+		info = "snd";
+		buff_opt = SO_SNDBUF;
+	}
+	else
+	{
+		LM_WARN("Called with unimplemented buff_choice - %d\n",buff_choice);
+		return 1;
+	}
+
+	/* try to increase buffer size as much as we can */
+	ioptvallen=sizeof(ioptval);
+	if (getsockopt( sock, SOL_SOCKET, buff_opt, (void*) &ioptval,
+		    &ioptvallen) == -1 )
+	{
+		LM_ERR("getsockopt: %s\n", strerror(errno));
+		return -1;
+	}
+	if ( ioptval==0 )
+	{
+		LM_DBG(" getsockopt: %s initially set to 0; resetting to %d\n",
+			info,buff_increment );
+		ioptval=buff_increment;
+	} else LM_DBG("getsockopt: %s is initially %d\n",info, ioptval );
+	for (optval=ioptval; ;  ) {
+		/* increase size; double in initial phase, add linearly later */
+		if (phase==0) optval <<= 1; else optval+=buff_increment;
+		if (optval > maxbuffer){
+			if (phase==1) break; 
+			else { phase=1; optval >>=1; continue; }
+		}
+		LM_DBG("trying : %d\n", optval );
+		if (setsockopt( sock, SOL_SOCKET, buff_opt,
+			(void*)&optval, sizeof(optval)) ==-1){
+			/* Solaris returns -1 if asked size too big; Linux ignores */
+			LM_DBG("setsockopt: SOL_SOCKET failed"
+					" for %d, phase %d: %s\n", optval, phase, strerror(errno));
+			/* if setting buffer size failed and still in the aggressive
+			   phase, try less aggressively; otherwise give up */
+			if (phase==0) { phase=1; optval >>=1 ; continue; } 
+			else break;
+		} 
+		/* verify if change has taken effect */
+		/* Linux note -- otherwise I would never know that; funny thing: Linux
+		   doubles size for which we asked in setsockopt */
+		voptvallen=sizeof(voptval);
+		if (getsockopt( sock, SOL_SOCKET, buff_opt, (void*) &voptval,
+		    &voptvallen) == -1 )
+		{
+			LM_ERR("getsockopt: %s\n", strerror(errno));
+			return -1;
+		} else {
+			LM_DBG("setting %s: set=%d,verify=%d\n",info,
+				optval, voptval);
+			if (voptval<optval) {
+				LM_DBG("setting buf has no effect\n");
+				/* if setting buffer size failed and still in the aggressive
+				phase, try less aggressively; otherwise give up */
+				if (phase==0) { phase=1; optval >>=1 ; continue; } 
+				else break;
+			} 
+		}
+	
+	} /* for ... */
+	foptvallen=sizeof(foptval);
+	if (getsockopt( sock, SOL_SOCKET, buff_opt, (void*) &foptval,
+		    &foptvallen) == -1 )
+	{
+		LM_ERR("getsockopt: %s\n", strerror(errno));
+		return -1;
+	}
+	LM_INFO("using %s buffer of %d kb\n",info, (foptval/1024));
+
+	return 0;
+}
