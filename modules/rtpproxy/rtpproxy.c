@@ -2181,6 +2181,12 @@ rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 {
 	if(rtpp_notify_socket.s)
 	{
+		if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
+			LM_ERR("bad request or missing TO hdr\n");
+			return -1;
+		}
+
+
 		/* if an initial request - create a new dialog */
 		if(get_to(msg)->tag_value.s == NULL)
 			dlg_api.create_dlg(msg);
