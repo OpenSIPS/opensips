@@ -784,6 +784,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		/* record found */
 		if(presentity->expires == 0)
 		{
+			/* delete from hash table */
+			if(p && delete_phtable(p, hash_code)< 0)
+			{
+					LM_ERR("deleting record from hash table failed\n");
+			}
+
 			lock_release(&pres_htable[hash_code].lock);
 			if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
 			{
@@ -817,14 +823,24 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 		if(presentity->event->etag_not_new== 0)
 		{
-			if(generate_ETag(presentity->etag_count, &etag)< 0)
+			if(generate_ETag(p?p->etag_count:0, &etag) < 0)
 			{
 				LM_ERR("while generating etag\n");
 				lock_release(&pres_htable[hash_code].lock);
 				goto error;
 			}
 			cur_etag= etag;
-			update_pres_etag(p, &etag);
+			if(p)
+				update_pres_etag(p, &etag);
+			else
+			{
+				if(insert_phtable(&pres_uri, presentity->event->evp->parsed,
+							&presentity->etag, presentity->sphere)< 0)
+				{
+					LM_ERR("inserting record in hash table\n");
+					goto error;
+				}
+			}
 		}
 		else
 		{
