@@ -97,6 +97,7 @@ static int fixup_subscribe(void** param, int param_no);
 static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param);
 static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param);
 static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param);
+static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param);
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array);
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
@@ -164,6 +165,7 @@ static mi_export_t mi_cmds[] = {
 	{ "refreshWatchers",   mi_refreshWatchers,    0,  0,  0},
 	{ "cleanup",           mi_cleanup,            0,  0,  0},
 	{ "pres_phtable_list", mi_list_phtable,       0,  0,  0},
+	{ "subs_phtable_list", mi_list_shtable,       0,  0,  0},
 	{  0,                  0,                     0,  0,  0}
 };
 
@@ -626,7 +628,7 @@ static inline int mi_print_phtable_record(struct mi_node *rpl, pres_entry_t* pre
 	int len;
 
 	node = add_mi_node_child(rpl, 0, "pres_uri", 8, pres->pres_uri.s, pres->pres_uri.len);
-	if (node==0) goto error;
+	if(node == NULL) goto error;
 	p= int2str((unsigned long)pres->event, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "event", 5, p, len);
 	if(attr == NULL) goto error;
@@ -674,6 +676,96 @@ static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param)
 	return rpl_tree;
 error:
 	lock_release(&pres_htable[i].lock);
+	LM_ERR("Unable to create reply\n");
+	free_mi_tree(rpl_tree);
+	return NULL;
+}
+
+
+static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
+{
+	struct mi_node *node, *node1;
+	struct mi_attr *attr;
+	char *p;
+	int len;
+
+	node = add_mi_node_child(rpl, 0, "pres_uri", 8, s->pres_uri.s, s->pres_uri.len);
+	if (node==NULL) goto error;
+	attr = add_mi_attr(node, MI_DUP_VALUE, "event", 5, s->event->name.s, s->event->name.len);
+	if (attr==NULL) goto error;
+	/*
+	attr = add_mi_attr(node, MI_DUP_VALUE, "event_id", 8, s->event_id.s, s->event_id.len);
+	if (attr==NULL) goto error;
+	*/
+	p= int2str((unsigned long)s->status, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "status", 6, p, len);
+	if (attr==NULL) goto error;
+	p= int2str((unsigned long)s->expires, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+	if (attr==NULL) goto error;
+	p= int2str((unsigned long)s->db_flag, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "db_flag", 7, p, len);
+	if (attr==NULL) goto error;
+	p= int2str((unsigned long)s->version, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "version", 7, p, len);
+	if (attr==NULL) goto error;
+
+	node1 = add_mi_node_child(node, 0, "to_user", 7, s->to_user.s, s->to_user.len);
+	if (node1==NULL) goto error;
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "to_domain", 9, s->to_domain.s, s->to_domain.len);
+	if (attr==NULL) goto error;
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "to_tag", 6, s->to_tag.s, s->to_tag.len);
+	if (attr==NULL) goto error;
+
+	node1 = add_mi_node_child(node, 0, "from_user", 9, s->from_user.s, s->from_user.len);
+	if (node1==NULL) goto error;
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "from_domain", 11,
+				s->from_domain.s, s->from_domain.len);
+	if (attr==NULL) goto error;
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "from_tag", 8, s->from_tag.s, s->from_tag.len);
+	if (attr==NULL) goto error;
+
+	node1 = add_mi_node_child(node, 0, "callid", 6, s->callid.s, s->callid.len);
+	if (node1==NULL) goto error;
+	p= int2str((unsigned long)s->local_cseq, &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "local_cseq", 10, p, len);
+	if (attr==NULL) goto error;
+	p= int2str((unsigned long)s->remote_cseq, &len);
+	attr = add_mi_attr(node1, MI_DUP_VALUE, "remote_cseq", 11, p, len);
+	if (attr==NULL) goto error;
+
+	return 0;
+error:
+	LM_ERR("failed to add node\n");
+	return -1;
+}
+
+
+static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node* rpl;
+	subs_t *s;
+	unsigned int i;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+	rpl = &rpl_tree->node;
+
+	for(i= 0; i< shtable_size; i++)
+	{
+		lock_get(&subs_htable[i].lock);
+		s = subs_htable[i].entries->next;
+		while(s)
+		{
+			if(mi_print_shtable_record(rpl, s)<0) goto error;
+			s= s->next;
+		}
+		lock_release(&subs_htable[i].lock);
+	}
+	return rpl_tree;
+error:
+	lock_release(&subs_htable[i].lock);
 	LM_ERR("Unable to create reply\n");
 	free_mi_tree(rpl_tree);
 	return NULL;
