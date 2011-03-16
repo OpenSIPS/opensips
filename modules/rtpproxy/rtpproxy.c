@@ -140,6 +140,8 @@
  *            (osas)
  */
 
+#include <sys/types.h>
+#include <netinet/in.h>
 #ifndef __USE_BSD
 #define  __USE_BSD
 #endif
@@ -150,6 +152,7 @@
 #include <sys/un.h>
 #include <poll.h>
 #include <stdlib.h>
+#include <sys/uio.h>
 
 #include "../../dprint.h"
 #include "../../data_lump.h"
@@ -163,17 +166,17 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/parser_f.h"
 #include "../../parser/sdp/sdp_helpr_funcs.h"
-#include "rtpproxy.h"
-#include "nhelpr_funcs.h"
-#include "rtpproxy_stream.h"
-#include "rtpproxy_callbacks.h"
 #include "../../db/db.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_multipart.h"
 #include "../../msg_callbacks.h"
-
 #include "../../rw_locking.h"
+
+#include "rtpproxy.h"
+#include "nhelpr_funcs.h"
+#include "rtpproxy_stream.h"
+#include "rtpproxy_callbacks.h"
 
 #define NH_TABLE_VERSION  0
 

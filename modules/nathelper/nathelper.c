@@ -46,6 +46,8 @@
  * 2010-09-23 Remove force-rtp-proxy function
  */
 
+#include <sys/types.h>
+#include <netinet/in.h>
 #ifndef __USE_BSD
 #define  __USE_BSD
 #endif
