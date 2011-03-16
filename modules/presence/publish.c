@@ -284,7 +284,7 @@ error:
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 	{
 		LM_ERR("in use_table\n");
-		goto error;
+		goto clean;
 	}
 
 	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
@@ -292,6 +292,7 @@ error:
 	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0)
 		LM_ERR("cleaning expired messages\n");
 
+clean:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 
