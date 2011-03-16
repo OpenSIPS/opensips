@@ -142,7 +142,7 @@ modparam("registrant", "timer_interval", 120)
 			</listitem>
 			<listitem>
 			<para><emphasis>outbound proxy</emphasis>
-				- URI pointing to the outbond proxy (not implemented yet).
+				- URI pointing to the outbond proxy.
 				An empty value means no putbound proxy (not mandatory);</para>
 			</listitem>
 			<listitem>

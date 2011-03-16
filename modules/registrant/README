@@ -128,9 +128,8 @@ modparam("registrant", "timer_interval", 120)
    Meaning of the fields is as follows:
      * registrar - URI pointing to the remote registrar (mandatory
        field);
-     * outbound proxy - URI pointing to the outbond proxy (not
-       implemented yet). An empty value means no putbound proxy
-       (not mandatory);
+     * outbound proxy - URI pointing to the outbond proxy. An
+       empty value means no putbound proxy (not mandatory);
      * aor - URI defining the address of record (mandatory field);
      * third party registrant - URI defining the third party
        registrant (not mandatory);

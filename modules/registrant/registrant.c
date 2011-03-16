@@ -32,6 +32,7 @@
 #include <regex.h>
 
 #include "utime.h"
+
 #include "../../sr_module.h"
 #include "../../timer.h"
 #include "../../parser/parse_uri.h"
@@ -776,7 +777,7 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 		rec = reg_htable[i].first;
 		while (rec) {
 			node = add_mi_node_child(rpl, MI_DUP_VALUE, "AOR", 3,
-						rec->td.rem_uri.s, rec->td.rem_uri.len);
+					rec->td.rem_uri.s, rec->td.rem_uri.len);
 			if(node == NULL) goto error;
 			p = int2str(rec->state, &len);
 			attr = add_mi_attr(node, MI_DUP_VALUE, "state", 5, p, len);
@@ -792,20 +793,25 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
                         if(attr == NULL) goto error;
 
 			node1 = add_mi_node_child(node, MI_DUP_VALUE, "registrar", 9,
-						rec->td.rem_target.s, rec->td.rem_target.len);
+					rec->td.rem_target.s, rec->td.rem_target.len);
 			if(node1 == NULL) goto error;
 
 			node1 = add_mi_node_child(node, MI_DUP_VALUE, "binding", 7,
-						rec->contact_uri.s, rec->contact_uri.len);
+					rec->contact_uri.s, rec->contact_uri.len);
 			if(node1 == NULL) goto error;
 
 			if(rec->td.loc_uri.s != rec->td.rem_uri.s) {
 				node1 = add_mi_node_child(node, MI_DUP_VALUE,
-							"third_party_registrant", 12,
-							rec->td.loc_uri.s, rec->td.loc_uri.len);
+						"third_party_registrant", 12,
+						rec->td.loc_uri.s, rec->td.loc_uri.len);
 				if(node1 == NULL) goto error;
 			}
 
+			if (rec->td.obp.s && rec->td.obp.len) {
+				node1 = add_mi_node_child(node, MI_DUP_VALUE,
+						"proxy", 5, rec->td.obp.s, rec->td.obp.len);
+				if(node1 == NULL) goto error;
+			}
 
 			rec = rec->next;
 		}

@@ -61,6 +61,11 @@ void reg_print_record(reg_record_t *rec) {
 			rec->contact_uri.len, rec->contact_uri.s,
 			rec->contact_params.s, rec->contact_params.len,
 			rec->contact_params.len, rec->contact_params.s);
+	if (rec->td.obp.s && rec->td.obp.len) {
+		LM_DBG(" Proxy=[%p][%d]->[%.*s]\n",
+			rec->td.obp.s, rec->td.obp.len, rec->td.obp.len, rec->td.obp.s);
+	}
+
 	return;
 }
 
@@ -121,7 +126,7 @@ int add_record(uac_reg_map_t *uac, str *now)
 	size = sizeof(reg_record_t) + MD5_LEN +
 		uac->to_uri.len + uac->from_uri.len + uac->registrar_uri.len +
 		uac->auth_user.len + uac->auth_password.len +
-		uac->contact_uri.len + uac->contact_params.len;
+		uac->contact_uri.len + uac->contact_params.len + uac->proxy_uri.len;
 	record = (reg_record_t *)shm_malloc(size);
 	if(!record) {
 		LM_ERR("oom\n");
@@ -157,6 +162,14 @@ int add_record(uac_reg_map_t *uac, str *now)
 	td->rem_uri.len = uac->to_uri.len;
 	memcpy(p, uac->to_uri.s, uac->to_uri.len);
 	p += uac->to_uri.len;
+
+	/* Setting the outbound proxy */
+	if (uac->proxy_uri.s && uac->proxy_uri.len) {
+		td->obp.s = p;
+		td->obp.len = uac->proxy_uri.len;
+		memcpy(p, uac->proxy_uri.s, uac->proxy_uri.len);
+		p += uac->proxy_uri.len;
+	}
 
 	/* Setting the local URI */
 	if(uac->from_uri.s && uac->from_uri.len) {
