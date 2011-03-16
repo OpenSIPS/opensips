@@ -4494,12 +4494,15 @@ int pv_parse_argv_name(pv_spec_p sp, str *in)
 
 	v_arg = search_argv(in);
 	if (!v_arg) {
-		return -1;
+		LM_DBG("$argv(%.*s) not found\n", in->len, in->s);
+		sp->pvp.pvv.len = 0;
+		sp->pvp.pvv.s = 0;
+	} else {
+		sp->pvp.pvv = v_arg->value;
+		sp->pvp.pvn.u.isname.name.s = v_arg->name;
 	}
 
 	sp->pvp.pvn.type = PV_NAME_PVAR;
-	sp->pvp.pvn.u.isname.name.s = v_arg->name;
-	sp->pvp.pvv = v_arg->value;
 
 	return 0;
 }
