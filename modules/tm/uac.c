@@ -218,6 +218,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	if(!dialog->hooks.next_hop && w_calculate_hooks(dialog)<0)
 		goto error2;
 
+	if(dialog->obp.s)
+		dialog->hooks.next_hop = &dialog->obp;
+
 	LM_DBG("next_hop=<%.*s>\n",dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 

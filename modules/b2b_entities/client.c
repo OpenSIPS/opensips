@@ -218,21 +218,9 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
 	td.send_sock = ci->send_sock;
+
 	if(ci->dst_uri.len)
-	{
-		td.route_set = (rr_t*)pkg_malloc(sizeof(rr_t)+ci->dst_uri.len);
-		if(td.route_set == NULL)
-		{
-			LM_ERR("No more memory");
-		}
-		else
-		{
-			memset(td.route_set, 0, sizeof(rr_t)+ci->dst_uri.len);
-			td.route_set->nameaddr.uri.s = (char*)td.route_set + sizeof(rr_t);
-			memcpy(td.route_set->nameaddr.uri.s, ci->dst_uri.s, ci->dst_uri.len);
-			td.route_set->nameaddr.uri.len = ci->dst_uri.len;
-		}
-	}
+		td.obp = ci->dst_uri;
 
 	tmb.setlocalTholder(&dlg->uac_tran);
 	

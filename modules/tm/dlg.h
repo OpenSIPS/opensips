@@ -92,6 +92,7 @@ typedef struct dlg {
 	dlg_seq_t rem_seq;      /* Remote sequence number */
 	str loc_uri;            /* Local URI */
 	str rem_uri;            /* Remote URI */
+	str obp;                /* Outbound proxy */
 	str rem_target;         /* Remote target URI */
 	str loc_dname;			/* Local Display Name */
 	str rem_dname;			/* Remote Display Name */
