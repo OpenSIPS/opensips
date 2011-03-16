@@ -115,7 +115,7 @@ void inline build_extra_hdrs(struct sip_msg* msg, const str* map, str* extra_hdr
 
 void msg_presentity_clean(unsigned int ticks,void *param)
 {
-//	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
+	static db_ps_t my_ps_delete = NULL;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
 	db_op_t  db_ops[2] ;
@@ -277,37 +277,24 @@ no_notify:
 		if(delete_phtable_query(&p[i].uri, ev.parsed, &p[i].p->etag)< 0)
 		{
 			LM_ERR("deleting from pres hash table\n");
-			free_event_params(ev.params, PKG_MEM_TYPE);
-			goto error;
 		}
 	}
 
+error:
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 	{
 		LM_ERR("in use_table\n");
 		goto error;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 
 	if (pa_dbf.delete(pa_db, db_keys, db_ops, db_vals, 1) < 0)
 		LM_ERR("cleaning expired messages\n");
-	
-	for(i= 0; i< n; i++)
-	{
-		if(p[i].p)
-			pkg_free(p[i].p);
-		if(p[i].uri.s)
-			pkg_free(p[i].uri.s);
 
-	}
-	pkg_free(p);
-
-	return;
-
-error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
+
 	if(p)
 	{
 		for(i= 0; i< n; i++)
@@ -328,8 +315,6 @@ error:
 			pkg_free(rules_doc->s);
 		pkg_free(rules_doc);
 	}
-
-	return;	
 }
 
 /**
