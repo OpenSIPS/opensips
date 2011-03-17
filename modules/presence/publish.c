@@ -146,7 +146,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	db_ops[0] = OP_LT;
 	db_vals[0].type = DB_INT;
 	db_vals[0].nul = 0;
-	db_vals[0].val.int_val = (int)time(NULL);
+	db_vals[0].val.int_val = (int)time(NULL) -10;
 
 	result_cols[user_col= n_result_cols++] = &str_username_col;
 	result_cols[domain_col=n_result_cols++] = &str_domain_col;

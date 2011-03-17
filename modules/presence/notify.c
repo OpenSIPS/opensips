@@ -927,7 +927,7 @@ error:
 	return NULL;
 }
 
-str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
+str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body,
 		str* contact, str* dbody, str* extra_hdrs)
 {
 	int body_col, extra_hdrs_col, expires_col, etag_col= 0;
@@ -987,7 +987,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 	}
 
 	/* search in hash table if any record exists */
-	if(search_phtable(&pres_uri, event->evp->parsed, hash_code)== NULL)
+	if( !etag && search_phtable(&pres_uri, event->evp->parsed, hash_code)== NULL)
 	{
 		LM_DBG("No record exists in hash_table\n");
 		if(!fallback2db)
@@ -1245,6 +1245,12 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 			body_array[body_cnt++] = dialog_body;
 		}
 
+		/* if the Publish with expires=0 has body -> use this one */
+		if(etag && publ_body && build_off_n>=0) 
+		{
+			body_array[build_off_n] = publ_body;
+			build_off_n = -1;
+		}
 		notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, build_off_n);
 		if(notify_body == NULL)
 		{
@@ -1721,7 +1727,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	/* if the event does not require aggregation - we have the final body */
 	if(p->event->agg_nbody)
 	{
-		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag,
+		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, body,
 				NULL, dialog_body, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs);
 		if(notify_body == NULL)
 		{
@@ -1782,7 +1788,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 	if(event->type & PUBL_TYPE)
 	{
-		notify_body = get_p_notify_body(*pres_uri, event, NULL, NULL, NULL, &notify_extra_hdrs);
+		notify_body = get_p_notify_body(*pres_uri, event, 0, 0, 0, 0, &notify_extra_hdrs);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1893,7 +1899,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			else
 			{
 				notify_body = get_p_notify_body(subs->pres_uri,
-						subs->event, NULL, (subs->contact.s)?&subs->contact:NULL,
+						subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
 						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
