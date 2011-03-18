@@ -630,12 +630,12 @@ if(method=="SUBSCRIBE")
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		:refreshWatchers:fifo_reply
-		sip:11@192.168.2.132
-		presence
-		1
-		_empty_line_
-		</programlisting>
+:refreshWatchers:fifo_reply
+sip:11@192.168.2.132
+presence
+1
+_empty_line_
+	</programlisting>
 	</section>
 
 	<section>
@@ -655,8 +655,50 @@ if(method=="SUBSCRIBE")
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-		:cleanup:fifo_reply
-		_empty_line_
+:cleanup:fifo_reply
+_empty_line_
+	  </programlisting>
+	</section>
+
+	<section>
+	  <title>
+		<function moreinfo="none">pres_phtable_list</function>
+	  </title>
+	  <para>
+		Lists all the presentity records.
+	  </para>
+	  <para>
+		Name: <emphasis>pres_phtable_list</emphasis>
+	  </para>
+	  <para>Parameters:<emphasis>none.</emphasis></para>
+
+	  <para>
+		MI FIFO Command Format:
+	  </para>
+	  <programlisting  format="linespecific">
+:pres_phtable_list:fifo_reply
+_empty_line_
+	  </programlisting>
+	</section>
+
+	<section>
+	  <title>
+		<function moreinfo="none">subs_phtable_list</function>
+	  </title>
+	  <para>
+		Lists all the subscription records.
+	  </para>
+	  <para>
+		Name: <emphasis>subs_phtable_list</emphasis>
+	  </para>
+	  <para>Parameters:<emphasis>none.</emphasis></para>
+
+	  <para>
+		MI FIFO Command Format:
+	  </para>
+	  <programlisting  format="linespecific">
+:subs_phtable_list:fifo_reply
+_empty_line_
 	  </programlisting>
 	</section>
 
