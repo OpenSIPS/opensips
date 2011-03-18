@@ -155,6 +155,7 @@ int xml_add_events(void)
 	event.content_type.len= 20;
 
 	event.mandatory_body = 1;
+	event.mandatory_timeout_notification = 1;
 	event.type= PUBL_TYPE;
 	event.req_auth= 1;
 	event.apply_auth_nbody= pres_apply_auth;
@@ -178,6 +179,7 @@ int xml_add_events(void)
 	event.content_type.s= "application/watcherinfo+xml";
 	event.content_type.len= 27;
 	event.mandatory_body = 1;
+	event.mandatory_timeout_notification = 1;
 	event.type= WINFO_TYPE;
 	event.free_body= free_xml_body;
 	event.default_expires= 3600;
@@ -194,6 +196,7 @@ int xml_add_events(void)
 	event.name.len= 10;
 
 	event.mandatory_body = 1;
+	event.mandatory_timeout_notification = 1;
 //	event.etag_not_new= 1;
 	event.evs_publ_handl= xml_publ_handl;
 	event.content_type.s= "application/dialog-info+xml";

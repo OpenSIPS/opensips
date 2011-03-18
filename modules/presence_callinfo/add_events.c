@@ -112,6 +112,7 @@ int callinfo_add_events(void)
 	event.extra_hdrs = extra_hdrs;
 
 	event.default_expires= 3600;
+	event.mandatory_timeout_notification = 1;
 	event.type = PUBL_TYPE;
 	event.evs_publ_handl = callinfo_publ_handl;
 

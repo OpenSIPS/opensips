@@ -149,6 +149,7 @@ int mwi_add_events(void)
     event.content_type.len = 34;
 
     event.mandatory_body = 1;
+    event.mandatory_timeout_notification = 1;
     event.default_expires= 3600;
     event.type = PUBL_TYPE;
 	event.req_auth = 0;

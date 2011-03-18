@@ -88,11 +88,17 @@ struct pres_ev
 	 * 1 - body is mandatory
 	 */
 	int mandatory_body;
-	int etag_not_new;
+	/* Flag that sets the requirements for timeout notification:
+	 *
+	 * 0 - NOTIFY with reason "timeout" is not mandatory
+	 * 1 - NOTIFY with reason "timeout" is mandatory
+	 */
+	int mandatory_timeout_notification;
 	/*
 	 *  0 - the standard mechanism (allocating new etag for each Publish)
 	 *  1 - allocating an etag only for an initial Publish 
 	 * */
+	int etag_not_new;
 	/* fileds that deal with authorization rules*/
 	/*
 	 *  req_auth -> flag 0  - if not require 

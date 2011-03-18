@@ -1287,17 +1287,20 @@ error:
 
 int handle_expired_subs(subs_t* s)
 {
-	/* send Notify with state=terminated;reason=timeout */
-	s->status= TERMINATED_STATUS;
-	s->reason.s= "timeout";
-	s->reason.len= 7;
-	s->expires= 0;
-
-	LM_INFO("notify\n");
-	if(send_notify_request(s, NULL, NULL, 1, NULL)< 0)
+	if (s->event->mandatory_timeout_notification)
 	{
-		LM_ERR("send Notify not successful\n");
-		return -1;
+		/* send Notify with state=terminated;reason=timeout */
+		s->status= TERMINATED_STATUS;
+		s->reason.s= "timeout";
+		s->reason.len= 7;
+		s->expires= 0;
+
+		LM_INFO("notify\n");
+		if(send_notify_request(s, NULL, NULL, 1, NULL)< 0)
+		{
+			LM_ERR("send Notify not successful\n");
+			return -1;
+		}
 	}
 	
 	return 0;
