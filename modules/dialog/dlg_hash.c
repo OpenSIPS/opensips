@@ -851,7 +851,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	if (node1==0)
 		goto error;
 
-	p= int2str((unsigned long)dlg->tl.timeout, &len);
+	p= int2str((unsigned long)((unsigned int)time(0) +
+				dlg->tl.timeout - get_ticks()), &len);
 	node1 = add_mi_node_child(node,MI_DUP_VALUE, "timeout", 7, p, len);
 	if (node1==0)
 		goto error;
