@@ -1933,6 +1933,20 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	{
 		if(callid.s)
 		{
+		    /* This is a special case of paralel forking:
+		     * - this is the cancelled branch of a paralel call fork
+		     *   and the entity was deleted already.
+		     */
+		    /* FIXME: we may revisit the logic of paralel forking and properly ignore
+		     *        this kind of callbacks.
+		     */
+		    if (method_id==METHOD_INVITE && statuscode==487)
+			LM_DBG("No dialog found reply %d for method %.*s, [%.*s]\n",
+			 statuscode,
+			 msg==FAKED_REPLY?get_cseq(ps->req)->method.len:get_cseq(msg)->method.len,
+			 msg==FAKED_REPLY?get_cseq(ps->req)->method.s:get_cseq(msg)->method.s,
+			callid.len, callid.s);
+		    else
 			LM_ERR("No dialog found reply %d for method %.*s, [%.*s]\n",
 			 statuscode,
 			 msg==FAKED_REPLY?get_cseq(ps->req)->method.len:get_cseq(msg)->method.len,
