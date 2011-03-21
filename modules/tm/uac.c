@@ -300,6 +300,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			/* disable parallel forking */
 			set_dset_state( 0 /*disable*/);
 
+			/* transfer current message context back to t */
+			new_cell->uac[0].br_flags = req->flags;
+
 			/* run the route */
 			swap_route_type( backup_route_type, LOCAL_ROUTE);
 			run_top_route( local_rlist.a, req);
