@@ -429,7 +429,8 @@ void b2bl_clean(unsigned int ticks, void* param)
 			if((tuple->lifetime > 0 && tuple->lifetime < now)
 					|| ((now - tuple->insert_time) > max_duration))  /* if an expired dialog */
 			{
-				LM_INFO("Found an expired dialog. Send BYE in both sides and delete\n");
+				LM_INFO("Found expired tuple [%.*s]: delete and send BYEs\n",
+					tuple->key->len, tuple->key->s);
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
 					if(tuple->bridge_entities[0]->dlginfo &&
@@ -1623,6 +1624,7 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	int i;
 	b2b_notify_t cback;
 	str* client_id = NULL;
+	unsigned int logic_restored = 0;
 
 	LM_DBG("Add tuple key [%.*s]\n", tuple->key->len, tuple->key->s);
 	if(b2bl_parse_key(tuple->key, &hash_index, &local_index)< 0)
@@ -1646,19 +1648,23 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	{
 		if(!tuple->bridge_entities[i]->to_uri.len)
 			continue;
-		LM_DBG("Restore logic info i=%d\n", i);
+		LM_DBG("Restore logic info for tuple:entity [%.*s][%d]\n",
+				b2bl_key->len, b2bl_key->s, i);
 
 		if(tuple->bridge_entities[i]->type == B2B_SERVER)
 			cback = b2b_server_notify;
 		else
 			cback = b2b_client_notify;
 
-		/* restore to the entities from b2b_entities module the parameter and callback function */
+		/* restore to the entities from b2b_entities module
+		 * the parameter and callback function */
 		if(b2b_api.restore_logic_info(tuple->bridge_entities[i]->type,
 			&tuple->bridge_entities[i]->key, cback)< 0)
-		{
-			LM_DBG("Failed to restore logic info for entity %d\n", i);
-		}
+			LM_WARN("Failed to restore logic info for tuple:entity [%.*s][%d]\n",
+				b2bl_key->len, b2bl_key->s, i);
+		else
+			logic_restored = 1;
+
 		entity= b2bl_create_new_entity(tuple->bridge_entities[i]->type,
 			&tuple->bridge_entities[i]->key,&tuple->bridge_entities[i]->to_uri,
 			&tuple->bridge_entities[i]->from_uri, 0, &tuple->bridge_entities[i]->scenario_id, 0);
@@ -1691,6 +1697,10 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		shm_tuple->bridge_entities[1]->peer = shm_tuple->bridge_entities[0];
 	if(shm_tuple->bridge_entities[0])
 		shm_tuple->bridge_entities[0]->peer = shm_tuple->bridge_entities[1];
+
+	/* Mark tuple without entities as expired */
+	if(logic_restored==0)
+		shm_tuple->lifetime = 1;
 
 	return 0;
 error:

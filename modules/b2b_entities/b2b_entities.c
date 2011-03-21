@@ -371,7 +371,7 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 	dlg = b2b_search_htable(table, hash_index, local_index);
 	if(dlg == NULL)
 	{
-		LM_ERR("No dialog found\n");
+		LM_ERR("No dialog found for key [%.*s]\n", key->len, key->s);
 		return -1;
 	}
 	dlg->b2b_cback = cback;
