@@ -30,7 +30,7 @@ CREATE TABLE b2b_entities (
     CONSTRAINT b2b_entities_b2b_entities_idx UNIQUE (type, tag0, tag1, callid)
 );
 
-INSERT INTO version (table_name, table_version) values ('b2b_logic','1');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
 CREATE TABLE b2b_logic (
     id SERIAL PRIMARY KEY NOT NULL,
     si_key VARCHAR(64) NOT NULL,
@@ -43,6 +43,7 @@ CREATE TABLE b2b_logic (
     sparam3 VARCHAR(64),
     sparam4 VARCHAR(64),
     sdp TEXT,
+    lifetime INTEGER DEFAULT 0 NOT NULL,
     e1_type INTEGER NOT NULL,
     e1_sid VARCHAR(64) NOT NULL,
     e1_from VARCHAR(128) NOT NULL,

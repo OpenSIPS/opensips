@@ -30,7 +30,7 @@ CREATE TABLE b2b_entities (
     CONSTRAINT b2b_entities_idx UNIQUE (type, tag0, tag1, callid)
 ) ENGINE=MyISAM;
 
-INSERT INTO version (table_name, table_version) values ('b2b_logic','1');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
 CREATE TABLE b2b_logic (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     si_key CHAR(64) NOT NULL,
@@ -43,6 +43,7 @@ CREATE TABLE b2b_logic (
     sparam3 CHAR(64),
     sparam4 CHAR(64),
     sdp TEXT(64),
+    lifetime INT(10) DEFAULT 0 NOT NULL,
     e1_type INT(2) NOT NULL,
     e1_sid CHAR(64) NOT NULL,
     e1_from CHAR(128) NOT NULL,

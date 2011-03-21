@@ -38,7 +38,7 @@ END b2b_entities_tr;
 /
 BEGIN map2users('b2b_entities'); END;
 /
-INSERT INTO version (table_name, table_version) values ('b2b_logic','1');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
 CREATE TABLE b2b_logic (
     id NUMBER(10) PRIMARY KEY,
     si_key VARCHAR2(64),
@@ -51,6 +51,7 @@ CREATE TABLE b2b_logic (
     sparam3 VARCHAR2(64),
     sparam4 VARCHAR2(64),
     sdp CLOB(64),
+    lifetime NUMBER(10) DEFAULT 0 NOT NULL,
     e1_type NUMBER(10),
     e1_sid VARCHAR2(64),
     e1_from VARCHAR2(128),

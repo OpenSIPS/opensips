@@ -9,7 +9,7 @@
 
 <table id="b2b_logic" xmlns:db="http://docbook.org/ns/docbook">
     <name>b2b_logic</name>
-    <version>1</version>
+    <version>2</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Table for the b2b_logic module. More information can be found at: &OPENSIPS_MOD_DOC;b2b_logic.html
@@ -102,6 +102,14 @@
         <size>&user_len;</size>
         <null/>
         <description>Scenario id</description>
+    </column>
+
+    <column>
+        <name>lifetime</name>
+        <type>int</type>
+        <size>10</size>
+        <default>0</default>
+        <description>Lifetime</description>
     </column>
 
     <column>

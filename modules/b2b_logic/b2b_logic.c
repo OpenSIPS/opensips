@@ -49,7 +49,7 @@
 #include "b2b_logic.h"
 #include "b2b_load.h"
 
-#define TABLE_VERSION 1
+#define TABLE_VERSION 2
 #define B2BL_FETCH_SIZE  128
 
 /** Functions declarations */
@@ -144,8 +144,9 @@ static str str_e3_sid_col      = str_init("e3_sid");
 static str str_e3_to_col       = str_init("e3_to");
 static str str_e3_from_col     = str_init("e3_from");
 static str str_e3_key_col      = str_init("e3_key");
+static str str_lifetime_col    = str_init("lifetime");
 
-#define DB_COLS_NO  25
+#define DB_COLS_NO  26
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -1456,6 +1457,7 @@ void b2b_logic_dump(int no_lock)
 	int e1_type_col, e1_sid_col, e1_to_col, e1_from_col, e1_key_col;
 	int e2_type_col, e2_sid_col, e2_to_col, e2_from_col, e2_key_col;
 	int e3_type_col, e3_sid_col, e3_to_col, e3_from_col, e3_key_col;
+	int lifetime_col;
 	int n_query_cols= 0;
 	int n_insert_cols, n_query_update;
 	int i;
@@ -1488,6 +1490,8 @@ void b2b_logic_dump(int no_lock)
 	qvals[sstate_col].type                 = DB_INT;
 	qcols[next_sstate_col= n_query_cols++] = &str_next_sstate_col;
 	qvals[next_sstate_col].type            = DB_INT;
+	qcols[lifetime_col= n_query_cols++]    = &str_lifetime_col;
+	qvals[lifetime_col].type               = DB_INT;
 	qcols[e1_type_col= n_query_cols++]     = &str_e1_type_col;
 	qvals[e1_type_col].type                = DB_INT;
 	qcols[e1_sid_col= n_query_cols++]      = &str_e1_sid_col;
@@ -1560,6 +1564,10 @@ void b2b_logic_dump(int no_lock)
 
 			qvals[sstate_col].val.int_val        = tuple->scenario_state;
 			qvals[next_sstate_col].val.int_val   = tuple->next_scenario_state;
+			if(tuple->lifetime)
+				qvals[lifetime_col].val.int_val  = tuple->lifetime - get_ticks() + (int)time(NULL);
+			else
+				qvals[lifetime_col].val.int_val  = 0;
 			qvals[e1_type_col].val.int_val       = tuple->bridge_entities[0]->type;
 			qvals[e1_sid_col].val.str_val        = tuple->bridge_entities[0]->scenario_id;
 			qvals[e1_to_col].val.str_val         = tuple->bridge_entities[0]->to_uri;
@@ -1639,6 +1647,7 @@ int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		LM_ERR("Failed to insert new tuple\n");
 		return -1;
 	}
+	shm_tuple->lifetime = tuple->lifetime;
 	lock_release(&b2bl_htable[hash_index].lock);
 	shm_tuple->scenario_state= tuple->scenario_state;
 	shm_tuple->next_scenario_state= tuple->next_scenario_state;
@@ -1716,6 +1725,7 @@ int b2b_logic_restore(void)
 	int e1_type_col, e1_sid_col, e1_to_col, e1_from_col, e1_key_col;
 	int e2_type_col, e2_sid_col, e2_to_col, e2_from_col, e2_key_col;
 	int e3_type_col, e3_sid_col, e3_to_col, e3_from_col, e3_key_col;
+	int lifetime_col;
 	int n_result_cols= 0;
 	int i;
 	int nr_rows;
@@ -1749,6 +1759,7 @@ int b2b_logic_restore(void)
 	result_cols[sparam3_col    = n_result_cols++] =&str_sparam3_col;
 	result_cols[sparam4_col    = n_result_cols++] =&str_sparam4_col;
 	result_cols[sdp_col        = n_result_cols++] =&str_sdp_col;
+	result_cols[lifetime_col   = n_result_cols++] =&str_lifetime_col;
 	result_cols[e1_type_col    = n_result_cols++] =&str_e1_type_col;
 	result_cols[e1_sid_col     = n_result_cols++] =&str_e1_sid_col;
 	result_cols[e1_to_col      = n_result_cols++] =&str_e1_to_col;
@@ -1898,6 +1909,9 @@ int b2b_logic_restore(void)
 			tuple.bridge_entities[0] = &bridge_entities[0];
 			tuple.bridge_entities[1] = &bridge_entities[1];
 			tuple.bridge_entities[2] = &bridge_entities[2];
+
+			if(row_vals[lifetime_col].val.int_val)
+				tuple.lifetime = row_vals[lifetime_col].val.int_val - (int)time(NULL) + get_ticks();
 
 			if(b2bl_add_tuple(&tuple, params) < 0)
 			{
