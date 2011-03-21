@@ -1345,6 +1345,15 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 			p = int2str((unsigned long)(tuple->scenario_state), &len);
 			attr = add_mi_attr(node, MI_DUP_VALUE, "scenario_state", 14, p, len);
 			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(tuple->insert_time), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "insert_time", 11, p, len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(tuple->lifetime), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "lifetime", 8, p, len);
+			if(attr == NULL) goto error;
+			p = int2str((unsigned long)(tuple->db_flag), &len);
+			attr = add_mi_attr(node, MI_DUP_VALUE, "db_flag", 7, p, len);
+			if(attr == NULL) goto error;
 
 			if (tuple->scenario)
 			{
