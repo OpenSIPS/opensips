@@ -1783,6 +1783,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	struct cseq_body cb;
 	struct hdr_field cseq;
 	enum b2b_entity_type etype=(htable==server_htable?B2B_SERVER:B2B_CLIENT);
+	struct hdr_field callid_hdr, from_hdr, to_hdr;
+	struct to_body to_hdr_parsed, from_hdr_parsed;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -2003,6 +2005,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 dummy_reply:
 			memset(&dummy_msg, 0, sizeof(struct sip_msg));
+			dummy_msg.id = 1;
 			dummy_msg.first_line.type = SIP_REPLY;
 			dummy_msg.first_line.u.reply.statuscode = statuscode;
 			dummy_msg.first_line.u.reply.reason.s = "Timeout";
@@ -2011,6 +2014,22 @@ dummy_reply:
 			memset(&cseq, 0, sizeof(struct hdr_field));
 			cb.method = t->method;
 
+			parse_to(t->to.s+4, t->to.s+t->to.len, &to_hdr_parsed);
+			parse_to(t->from.s+6, t->from.s+t->from.len, &from_hdr_parsed);
+			from_hdr.parsed   = (struct hdr_field*)&from_hdr_parsed;
+			to_hdr.parsed     = (struct hdr_field*)&to_hdr_parsed;
+
+			from_hdr.body = t->from; 
+			to_hdr.body = t->to; 
+			callid_hdr.body.s = t->callid.s + 9;
+			callid_hdr.body.len = t->callid.len - 9;
+			
+			dummy_msg.callid = &callid_hdr;
+			dummy_msg.from = &from_hdr;
+			dummy_msg.to = &to_hdr;
+			LM_DBG("from=%.*s to=%.*s\n", t->from.len, t->from.s, t->to.len, t->to.s);
+			LM_DBG("from tag= %.*s\n", from_hdr_parsed.tag_value.len, from_hdr_parsed.tag_value.s);
+			dummy_msg.parsed_flag = HDR_EOH_F;
 			cseq.parsed = &cb;
 			dummy_msg.cseq = &cseq;
 			msg = &dummy_msg;
@@ -2268,9 +2287,11 @@ done:
 	}
 
 	/* run the b2b route */
-	if(reply_routeid > 0 && ps->rpl!=FAKED_REPLY)
-		run_top_route(rlist[reply_routeid].a, ps->rpl);
-
+//	if(reply_routeid > 0 && ps->rpl!=FAKED_REPLY)
+	if(reply_routeid > 0) {
+		msg->flags = t->uac[0].br_flags;
+		run_top_route(rlist[reply_routeid].a, msg);
+	}
 	return;
 error:
 	if(param.s)

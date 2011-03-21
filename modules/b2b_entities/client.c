@@ -162,6 +162,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		random_info.s = int2str(rand(), &random_info.len);
 	}
 
+	dlg->send_sock = ci->send_sock;
 	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
 
 	/* callid must have the special format */
@@ -191,6 +192,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* create the tm dialog structure with the a costum callid */
 	memset(&td, 0, sizeof(dlg_t));
 	td.loc_seq.value = dlg->cseq[CALLER_LEG];
+	dlg->last_invite_cseq = dlg->cseq[CALLER_LEG];
 	td.loc_seq.is_set = 1;
 
 	td.id.call_id = *callid;
