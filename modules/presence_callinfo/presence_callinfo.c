@@ -41,6 +41,8 @@
 #include "presence_callinfo.h"
 
 
+int call_info_timeout_notification = 1;
+int line_seize_timeout_notification = 0;
 
 /* module functions */
 static int mod_init(void);
@@ -58,6 +60,8 @@ static cmd_export_t cmds[] =
 
 /* module exported paramaters */
 static param_export_t params[] = {
+    {"call_info_timeout_notification",  INT_PARAM, &call_info_timeout_notification},
+    {"line_seize_timeout_notification", INT_PARAM, &line_seize_timeout_notification},
     {0, 0, 0}
 };
 

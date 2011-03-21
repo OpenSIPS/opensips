@@ -32,6 +32,11 @@
 #include "../presence/event_list.h"
 #include "presence_callinfo.h"
 
+
+extern int call_info_timeout_notification;
+extern int line_seize_timeout_notification;
+
+
 static str extra_hdrs[] = {
 	str_init("Call-Info"),
 	{NULL,0},
@@ -112,7 +117,7 @@ int callinfo_add_events(void)
 	event.extra_hdrs = extra_hdrs;
 
 	event.default_expires= 3600;
-	event.mandatory_timeout_notification = 1;
+	event.mandatory_timeout_notification = call_info_timeout_notification;
 	event.type = PUBL_TYPE;
 	event.evs_publ_handl = callinfo_publ_handl;
 
@@ -131,6 +136,7 @@ int callinfo_add_events(void)
 	event.name.len = 10;
 
 	event.default_expires= 15;
+	event.mandatory_timeout_notification = line_seize_timeout_notification;
 	event.type = PUBL_TYPE;
 	event.evs_publ_handl = lineseize_publ_handl;
 
