@@ -432,10 +432,10 @@ alias_db() {
 $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping aliases for user=<$2>"
 				echo
-				if [ $DBENGINE -eq "MYSQL" ] ; then
+				if [ $DBENGINE == "MYSQL" ] ; then
 					QUERY="SELECT CONCAT($DA_ALIAS_USER_COLUMN,\
 	'@',$DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
-				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				elif [ $DBENGINE == "PGSQL" ] ; then
 					QUERY="SELECT ($DA_ALIAS_USER_COLUMN || \
 	'@' || $DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
 				fi
@@ -492,10 +492,10 @@ $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
 			
 			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSIPSUSER' AND \
 $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			if [ $DBENGINE -eq "MYSQL" ] ; then
+			if [ $DBENGINE == "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($DA_USER_COLUMN,'@',$DA_DOMAIN_COLUMN) \
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
-			elif [ $DBENGINE -eq "PGSQL" ] ; then
+			elif [ $DBENGINE == "PGSQL" ] ; then
 				QUERY="SELECT ($DA_USER_COLUMN || '@' || $DA_DOMAIN_COLUMN) \
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			fi
@@ -651,7 +651,7 @@ avpops() {
 							exit 1
 						fi
 						is_aor "$1"
-						if [ "$?" -eq "0" ] ; then
+						if [ $? -eq 0 ] ; then
 							set_user $1
 							if [ "$CLAUSE" = "" ] ; then
 								CLAUSE=" WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
@@ -753,7 +753,7 @@ FROM $AVP_TABLE $CLAUSE;"
 			fi
 						
 			is_aor "$1"
-			if [ "$?" -eq "0" ] ; then
+			if [ $? -eq 0 ] ; then
 				set_user $1
 			else
 				AVP_UUID=$1
@@ -797,7 +797,7 @@ VALUES ('$AVP_UUID','$OSIPSUSER','$OSIPSDOMAIN','$2',$3,'$4',NOW());"
 							exit 1
 						fi
 						is_aor "$1"
-						if [ "$?" -eq "0" ] ; then
+						if [ $? -eq 0 ] ; then
 							set_user $1
 							if [ "$CLAUSE" = "" ] ; then
 								CLAUSE="WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
@@ -1800,11 +1800,11 @@ speeddial() {
 $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping speed-dials for user=<$2>"
 				echo
-				if [ $DBENGINE -eq "MYSQL" ] ; then
+				if [ $DBENGINE == "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
 	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
-				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				elif [ $DBENGINE == "PGSQL" ] ; then
 				QUERY="SELECT ($SD_SD_USER_COLUMN || '@' || \
 	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
 	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
@@ -1835,12 +1835,12 @@ $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				else
 					exit 1
 				fi
-				if [ $DBENGINE -eq "MYSQL" ] ; then
+				if [ $DBENGINE == "MYSQL" ] ; then
 					QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', CONCAT($SD_USER_COLUMN,'@',\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
 $SD_DESC_COLUMN FROM $SD_TABLE;"
-				elif [ $DBENGINE -eq "PGSQL" ] ; then
+				elif [ $DBENGINE == "PGSQL" ] ; then
 					QUERY="SELECT ($SD_SD_USER_COLUMN||'@'||\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', ($SD_USER_COLUMN||'@'||\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
@@ -1885,11 +1885,11 @@ $SD_DESC_COLUMN FROM $SD_TABLE;"
 			
 			CLAUSE="WHERE $SD_SD_USER_COLUMN='$OSIPSUSER' AND \
 $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			if [ $DBENGINE -eq "MYSQL" ] ; then
+			if [ $DBENGINE == "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_USER_COLUMN,'@',$SD_DOMAIN_COLUMN) \
 	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 	$SD_TABLE $CLAUSE ; "
-			elif [ $DBENGINE -eq "PGSQL" ] ; then
+			elif [ $DBENGINE == "PGSQL" ] ; then
 				QUERY="SELECT ($SD_USER_COLUMN || '@' || $SD_DOMAIN_COLUMN) \
 	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 	$SD_TABLE $CLAUSE ; "
