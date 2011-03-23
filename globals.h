@@ -125,6 +125,7 @@ extern int memdump; /*!< debugging level for dumping memory status */
 extern int execmsgthreshold;  /*!< Maximum number of microseconds a SIP msg processing can last
 						before triggering Warning log */
 extern int execdnsthreshold;
+extern int tcpthreshold;
 extern int mhomed; /*!< looking up outbound interface ? */
 
 extern int my_argc; /*!< command-line arguments */

@@ -593,17 +593,39 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 #define start_expire_timer(begin,threshold) \
 	do { \
 		if ((threshold))	\
-			gettimeofday(&(start), NULL); \
+			gettimeofday(&(begin), NULL); \
 	} while(0) \
 
-#define stop_expire_timer(begin,threshold,func_info,extra_s,extra_len) \
+#define stop_expire_timer(begin,threshold,func_info,extra_s,extra_len,tcp) \
 	do { \
 		if ((threshold)) \
-		log_expiry(&(begin),(threshold),(func_info),(extra_s),(extra_len)); \
+			log_expiry(get_time_diff(&(begin)),(threshold),(func_info),(extra_s),(extra_len),tcp); \
 	} while(0)
 
-static inline void log_expiry(struct timeval *begin,int expire,
-							const char *func_info,char *extra_dbg,int dbg_len)
+
+
+int tcp_timeout_con_get;
+int tcp_timeout_receive_fd;
+int tcp_timeout_send;
+
+#define reset_tcp_vars(threshold) \
+	do { \
+		if (threshold) \
+		{ \
+			tcp_timeout_con_get=0; \
+			tcp_timeout_receive_fd=0; \
+			tcp_timeout_send=0; \
+		} \
+	} while(0)
+
+#define get_time_difference(begin,threshold,tcp_dbg) \
+	do { \
+		if ((threshold)) \
+			tcp_dbg = get_time_diff(&(begin)); \
+	} while(0)
+
+
+static inline int get_time_diff(struct timeval *begin)
 {
 	struct timeval end;
 	long seconds,useconds,mtime;
@@ -612,10 +634,26 @@ static inline void log_expiry(struct timeval *begin,int expire,
 	seconds  = end.tv_sec  - begin->tv_sec;
 	useconds = end.tv_usec - begin->tv_usec;
 	mtime = ((seconds) * 1000000 + useconds);
+        
+	return mtime;
+}
 
-	if (mtime > expire)
-		LM_WARN("threshold exceeded : %s took too long - %ld us. Source : %.*s\n",
-				func_info,mtime,dbg_len,extra_dbg);
+
+
+static inline void log_expiry(int time_diff,int expire,
+					const char *func_info,char *extra_dbg,int dbg_len,int tcp)
+{
+	if (time_diff > expire)
+	{
+		if (tcp)
+			LM_WARN("threshold exceeded : tcp took too long : "
+				"con_get=%d, rcv_fd=%d, send=%d. Source : %.*s\n",
+				tcp_timeout_con_get,tcp_timeout_receive_fd,
+				tcp_timeout_send,dbg_len,extra_dbg);
+		else
+			LM_WARN("threshold exceeded : %s took too long - %d us."
+					"Source : %.*s\n",func_info,time_diff,dbg_len,extra_dbg);
+	}
 }
 
 int user2uid(int* uid, int* gid, char* user);

@@ -547,7 +547,7 @@ struct rdata* get_record(char* name, int type)
 
 	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
-	stop_expire_timer(start,execdnsthreshold,"dns",name,strlen(name));
+	stop_expire_timer(start,execdnsthreshold,"dns",name,strlen(name),0);
 	if (size<0) {
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
 		goto not_found;

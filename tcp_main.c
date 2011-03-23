@@ -679,8 +679,13 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	int fd;
 	long response[2];
 	int n;
+	struct timeval get,rcv,snd;
 	
 	port=0;
+
+	reset_tcp_vars(tcpthreshold);
+	start_expire_timer(get,tcpthreshold);
+
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
@@ -689,6 +694,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 		c=tcpconn_get(id, 0, 0, tcp_con_lifetime);
 	}else{
 		LM_CRIT("tcp_send called with null id & to\n");
+		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 		return -1;
 	}
 	
@@ -700,6 +706,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 				goto no_id;
 			}else{
 				LM_ERR("id %d not found, dropping\n", id);
+				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 				return -1;
 			}
 		}else goto get_fd;
@@ -710,6 +717,7 @@ no_id:
 			/* create tcp connection */
 			if ((c=tcpconn_connect(send_sock, to, type))==0){
 				LM_ERR("connect failed\n");
+				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 				return -1;
 			}
 			c->refcnt++; /* safe to do it w/o locking, it's not yet
@@ -720,6 +728,7 @@ no_id:
 			response[0]=(long)c;
 			response[1]=CONN_NEW;
 			n=send_fd(unix_tcp_sock, response, sizeof(response), c->s);
+			get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 			if (n<=0){
 				LM_ERR("failed send_fd: %s (%d)\n",	strerror(errno), errno);
 				n=-1;
@@ -728,22 +737,26 @@ no_id:
 			goto send_it;
 		}
 get_fd:
+		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 			/* todo: see if this is not the same process holding
 			 *  c  and if so send directly on c->fd */
 			LM_DBG("tcp connection found (%p), acquiring fd\n", c);
 			/* get the fd */
 			response[0]=(long)c;
 			response[1]=CONN_GET_FD;
+			start_expire_timer(rcv,tcpthreshold);
 			n=send_all(unix_tcp_sock, response, sizeof(response));
 			if (n<=0){
 				LM_ERR("failed to get fd(write):%s (%d)\n",	
 						strerror(errno), errno);
 				n=-1;
+				get_time_difference(rcv,tcpthreshold,tcp_timeout_receive_fd);
 				goto release_c;
 			}
 			LM_DBG("c= %p, n=%d\n", c, n);
 			tmp=c;
 			n=receive_fd(unix_tcp_sock, &c, sizeof(c), &fd, MSG_WAITALL);
+			get_time_difference(rcv,tcpthreshold,tcp_timeout_receive_fd);
 			if (n<=0){
 				LM_ERR("failed to get fd(receive_fd):"
 							" %s (%d)\n", strerror(errno), errno);
@@ -773,7 +786,11 @@ send_it:
 	else
 #endif
 		/* n=tcp_blocking_write(c, fd, buf, len); */
+		start_expire_timer(snd,tcpthreshold);
 		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000); 
+		get_time_difference(snd,tcpthreshold,tcp_timeout_send);
+	
+		stop_expire_timer(get,tcpthreshold,0,buf,(int)len,1);
 	lock_release(&c->write_lock);
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);

@@ -215,10 +215,12 @@ int check_via =  0;
 /* debugging level for memory stats */
 int memlog = L_DBG + 10;
 int memdump = L_DBG + 10;
-/* debugging in case msg processing takes too long disabled by default */
+/* debugging in case msg processing takes. too long disabled by default */
 int execmsgthreshold = 0;
-/* debugging in case dns takes too long disabled by default */
+/* debugging in case dns takes too long. disabled by default */
 int execdnsthreshold = 0;
+/* debugging in case tcp stuff take too long. disabled by default */
+int tcpthreshold = 0;
 /* should replies include extensive warnings? by default yes,
    good for trouble-shooting
 */
