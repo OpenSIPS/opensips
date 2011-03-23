@@ -120,9 +120,36 @@ alice@example  presence  bob@example  watcher@example
 	
 	<section>
 	  <title>Exported Parameters</title>
+	<section>
+	  <title><varname>call_info_timeout_notification</varname> (int)</title>
 		<para>
-		  None.
+		Enables or disables call_info event timeout notifications.
 		</para>
+		<para><emphasis>Default value is <quote>1</quote></emphasis> (enabled).</para>
+		<example>
+		<title>Set <varname>call_info_timeout_notification</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_callinfo", "call_info_timeout_notification", 0)
+...
+		</programlisting>
+		</example>
+	</section>
+	<section>
+	  <title><varname>line_seize_timeout_notification</varname> (int)</title>
+		<para>
+		Enables or disables line_seize event timeout notifications.
+		</para>
+		<para><emphasis>Default value is <quote>0</quote></emphasis> (disabled).</para>
+		<example>
+		<title>Set <varname>line_seize_timeout_notification</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_callinfo", "line_seize_timeout_notification", 1)
+...
+		</programlisting>
+		</example>
+	</section>
         </section>
 
         <section>
