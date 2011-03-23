@@ -129,7 +129,10 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 		return -1;
 	}
 	/* a connected call */
-	tuple->lifetime = 0;
+	if(max_duration)
+		tuple->lifetime = get_ticks() + max_duration;
+	else
+		tuple->lifetime = 0;
 	entity = b2bl_search_entity(tuple, entity_key, src, &ent_head);
 	if(entity == NULL)
 	{
@@ -3371,11 +3374,14 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	}
 	e1->state = 0;
 	tuple->scenario_state = B2B_BRIDGING_STATE;
-	tuple->lifetime = -1;
+	if(max_duration)
+		tuple->lifetime = get_ticks() + max_duration;
+	else
+		tuple->lifetime = 0;
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	return 0;
-	
+
 error:
 	if(tuple)
 		b2b_mark_todel(tuple);
@@ -3550,7 +3556,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 	bridging_entity->state = 0;
-	tuple->lifetime = -1;
+	if(max_duration)
+		tuple->lifetime = get_ticks() + max_duration;
+	else
+		tuple->lifetime = 0;
 
 	tuple->bridge_entities[0] = bridging_entity;
 	tuple->bridge_entities[1] = entity;

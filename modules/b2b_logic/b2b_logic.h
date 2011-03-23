@@ -98,6 +98,7 @@ extern str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len;
 extern int use_init_sdp;
 extern str server_address;
+extern unsigned int max_duration;
 
 static inline int b2b_get_request_id(str* request)
 {

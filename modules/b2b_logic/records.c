@@ -62,10 +62,10 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 
 	if(tuple)
 	{
-		LM_GEN1(log_level, "[%p]->[%.*s] to_del=[%d] insert_time=[%d] lifetime=[%d]"
+		LM_GEN1(log_level, "[%p]->[%.*s] to_del=[%d] lifetime=[%d]"
 			" bridge_entities[%p][%p][%p]\n",
 			tuple, tuple->key->len, tuple->key->s,
-			tuple->to_del, tuple->insert_time, tuple->lifetime,
+			tuple->to_del, tuple->lifetime,
 			tuple->bridge_entities[0], tuple->bridge_entities[1],
 			tuple->bridge_entities[2]);
 		for (index = 0; index < MAX_B2BL_ENT; index++)
@@ -141,7 +141,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	tuple->local_contact.len = local_contact.len;
 
 	tuple->scenario = scenario;
-	tuple->insert_time = get_ticks();
 
 	if(msg)
 	{

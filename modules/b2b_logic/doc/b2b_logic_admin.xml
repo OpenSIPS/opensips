@@ -246,8 +246,9 @@ modparam("b2b_logic", "update_period", 60)
 		<para>
 		<emphasis>Default value is <quote>12 * 3600 (12 hours)</quote>.</emphasis>
 		</para>
+		<para>If you set it to 0, there will be no limitation.</para>
 		<example>
-		<title>Set <varname>update_period</varname> parameter</title>
+		<title>Set <varname>max_duration</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("b2b_logic", "max_duration", 7200)

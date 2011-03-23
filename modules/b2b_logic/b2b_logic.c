@@ -98,7 +98,7 @@ static str default_headers[HDR_DEFAULT_LEN]=
 };
 int use_init_sdp = 0;
 enum b2bl_caller_type b2bl_caller;
-static unsigned int max_duration = 12*3600;
+unsigned int max_duration = 12*3600;
 
 int_str b2bl_key_avp_name;
 unsigned short b2bl_key_avp_type;
@@ -427,8 +427,7 @@ void b2bl_clean(unsigned int ticks, void* param)
 		while(tuple)
 		{
 			tuple_next = tuple->next;
-			if((tuple->lifetime > 0 && tuple->lifetime < now)
-					|| ((now - tuple->insert_time) > max_duration))  /* if an expired dialog */
+			if(tuple->lifetime > 0 && tuple->lifetime < now)
 			{
 				LM_INFO("Found expired tuple [%.*s]: delete and send BYEs\n",
 					tuple->key->len, tuple->key->s);
@@ -1342,9 +1341,6 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 			if(attr == NULL) goto error;
 			p = int2str((unsigned long)(tuple->scenario_state), &len);
 			attr = add_mi_attr(node, MI_DUP_VALUE, "scenario_state", 14, p, len);
-			if(attr == NULL) goto error;
-			p = int2str((unsigned long)(tuple->insert_time), &len);
-			attr = add_mi_attr(node, MI_DUP_VALUE, "insert_time", 11, p, len);
 			if(attr == NULL) goto error;
 			p = int2str((unsigned long)(tuple->lifetime), &len);
 			attr = add_mi_attr(node, MI_DUP_VALUE, "lifetime", 8, p, len);
