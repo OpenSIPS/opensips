@@ -1721,6 +1721,7 @@ int b2b_logic_restore(void)
 	int n_result_cols= 0;
 	int i;
 	int nr_rows;
+	int now;
 	db_res_t *result= NULL;
 	db_row_t *rows = NULL;
 	db_val_t *row_vals= NULL;
@@ -1798,6 +1799,7 @@ int b2b_logic_restore(void)
 		LM_DBG("loading information from database %i records\n", nr_rows);
 
 		rows = RES_ROWS(result);
+		now = (int)time(NULL) + get_ticks();
 
 		/* for every row */
 		for(i=0; i<nr_rows; i++)
@@ -1903,7 +1905,16 @@ int b2b_logic_restore(void)
 			tuple.bridge_entities[2] = &bridge_entities[2];
 
 			if(row_vals[lifetime_col].val.int_val)
-				tuple.lifetime = row_vals[lifetime_col].val.int_val - (int)time(NULL) + get_ticks();
+			{
+				if(row_vals[lifetime_col].val.int_val > now)
+				{
+					tuple.lifetime = row_vals[lifetime_col].val.int_val - now;
+				}
+				else
+				{
+					tuple.lifetime = 1;
+				}
+			}
 
 			if(b2bl_add_tuple(&tuple, params) < 0)
 			{
