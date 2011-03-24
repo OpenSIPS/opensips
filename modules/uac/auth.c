@@ -35,6 +35,7 @@
 #include "../../pvar.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
+#include "../../parser/parse_authenticate.h"
 #include "../tm/tm_load.h"
 
 #include "auth.h"
@@ -200,46 +201,6 @@ void destroy_credentials(void)
 }
 
 
-static inline struct hdr_field *get_autenticate_hdr(struct sip_msg *rpl,
-																int rpl_code)
-{
-	struct hdr_field *hdr;
-	str hdr_name;
-
-	/* what hdr should we look for */
-	if (rpl_code==WWW_AUTH_CODE)
-	{
-		hdr_name.s = WWW_AUTH_HDR;
-		hdr_name.len = WWW_AUTH_HDR_LEN;
-	} else if (rpl_code==PROXY_AUTH_CODE) {
-		hdr_name.s = PROXY_AUTH_HDR;
-		hdr_name.len = PROXY_AUTH_HDR_LEN;
-	} else {
-		LM_ERR("reply is not an "
-			"auth request\n");
-		goto error;
-	}
-
-	LM_DBG("looking for header \"%.*s\"\n",
-		hdr_name.len, hdr_name.s);
-
-	/* search the auth hdr, but first parse them all */
-	if (parse_headers( rpl, HDR_EOH_F, 0)<0)
-	{
-		LM_ERR("failed to parse reply\n");
-		goto error;
-	}
-	hdr = get_header_by_name( rpl , hdr_name.s, hdr_name.len);
-	if (hdr)
-		return hdr;
-
-	LM_ERR("reply has no "
-		"auth hdr (%.*s)\n", hdr_name.len, hdr_name.s);
-error:
-	return 0;
-}
-
-
 static inline struct uac_credential *lookup_realm( str *realm)
 {
 	struct uac_credential *crd;
@@ -367,13 +328,12 @@ error:
 
 int uac_auth( struct sip_msg *msg)
 {
-	static struct authenticate_body auth;
+	struct authenticate_body *auth = NULL;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct uac_credential *crd;
 	int code, branch;
 	struct sip_msg *rpl;
 	struct cell *t;
-	struct hdr_field *hdr;
 	HASHHEX response;
 	str *new_hdr;
 
@@ -407,19 +367,16 @@ int uac_auth( struct sip_msg *msg)
 		goto error;
 	}
 
-	hdr = get_autenticate_hdr( rpl, code);
-	if (hdr==0)
-	{
-		LM_ERR("failed to extract authenticate hdr\n");
-		goto error;
+	if (code==WWW_AUTH_CODE) {
+		if (0 == parse_www_authenticate_header(rpl))
+			auth = get_www_authenticate(rpl);
+	} else if (code==PROXY_AUTH_CODE) {
+		if (0 == parse_proxy_authenticate_header(rpl))
+			auth = get_proxy_authenticate(rpl);
 	}
 
-	LM_DBG("header found; body=<%.*s>\n",
-		hdr->body.len, hdr->body.s);
-
-	if (parse_authenticate_body( &hdr->body, &auth)<0)
-	{
-		LM_ERR("failed to parse auth hdr body\n");
+	if (auth == NULL) {
+		LM_ERR("Unable to extract authentication info\n");
 		goto error;
 	}
 
@@ -427,24 +384,24 @@ int uac_auth( struct sip_msg *msg)
 	crd = 0;
 	/* first look into AVP, if set */
 	if ( auth_realm_spec.type==PVT_AVP )
-		crd = get_avp_credential( msg, &auth.realm );
+		crd = get_avp_credential( msg, &auth->realm );
 	/* if not found, look into predefined credentials */
 	if (crd==0)
-		crd = lookup_realm( &auth.realm );
+		crd = lookup_realm( &auth->realm );
 	/* found? */
 	if (crd==0)
 	{
 		LM_DBG("no credential for realm \"%.*s\"\n",
-			auth.realm.len, auth.realm.s);
+			auth->realm.len, auth->realm.s);
 		goto error;
 	}
 
 	/* do authentication */
-	do_uac_auth( msg, &t->uac[branch].uri, crd, &auth, &auth_nc_cnonce, response);
+	do_uac_auth( msg, &t->uac[branch].uri, crd, auth, &auth_nc_cnonce, response);
 
 	/* build the authorization header */
 	new_hdr = build_authorization_hdr( code, &t->uac[branch].uri,
-		crd, &auth, &auth_nc_cnonce, response);
+		crd, auth, &auth_nc_cnonce, response);
 	if (new_hdr==0)
 	{
 		LM_ERR("failed to build authorization hdr\n");

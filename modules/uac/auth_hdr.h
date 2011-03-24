@@ -30,17 +30,9 @@
 #define _UAC_AUTH_HDR_H_
 
 #include "../../str.h"
+#include "../../parser/parse_authenticate.h"
 
 #include "auth.h"
-
-struct authenticate_body {
-	int flags;
-	str realm;
-	str domain;
-	str nonce;
-	str opaque;
-	str qop;
-};
 
 struct authenticate_nc_cnonce {
 	str *nc;
@@ -52,8 +44,6 @@ struct authenticate_nc_cnonce {
 #define AUTHENTICATE_STALE       (1<<2)
 #define QOP_AUTH                 (1<<3)
 #define QOP_AUTH_INT             (1<<4)
-
-int parse_authenticate_body( str *body, struct authenticate_body *auth);
 
 str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
