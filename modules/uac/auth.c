@@ -285,6 +285,7 @@ static inline struct uac_credential *get_avp_credential(struct sip_msg *msg,
 
 static inline void do_uac_auth(struct sip_msg *req, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
+		struct authenticate_nc_cnonce *auth_nc_cnonce,
 		HASHHEX response)
 {
 	HASHHEX ha1;
@@ -301,8 +302,8 @@ static inline void do_uac_auth(struct sip_msg *req, str *uri,
 			auth, 0/*hentity*/, ha2 );
 
 		uac_calc_response( ha1, ha2, auth, &nc, &cnonce, response);
-		auth->nc = &nc;
-		auth->cnonce = &cnonce;
+		auth_nc_cnonce->nc = &nc;
+		auth_nc_cnonce->cnonce = &cnonce;
 	} else {
 		/* do authentication */
 		uac_calc_HA1( crd, auth, 0/*cnonce*/, ha1);
@@ -367,6 +368,7 @@ error:
 int uac_auth( struct sip_msg *msg)
 {
 	static struct authenticate_body auth;
+	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct uac_credential *crd;
 	int code, branch;
 	struct sip_msg *rpl;
@@ -438,11 +440,11 @@ int uac_auth( struct sip_msg *msg)
 	}
 
 	/* do authentication */
-	do_uac_auth( msg, &t->uac[branch].uri, crd, &auth, response);
+	do_uac_auth( msg, &t->uac[branch].uri, crd, &auth, &auth_nc_cnonce, response);
 
 	/* build the authorization header */
 	new_hdr = build_authorization_hdr( code, &t->uac[branch].uri,
-		crd, &auth, response);
+		crd, &auth, &auth_nc_cnonce, response);
 	if (new_hdr==0)
 	{
 		LM_ERR("failed to build authorization hdr\n");

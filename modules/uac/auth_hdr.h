@@ -40,6 +40,9 @@ struct authenticate_body {
 	str nonce;
 	str opaque;
 	str qop;
+};
+
+struct authenticate_nc_cnonce {
 	str *nc;
 	str *cnonce;
 };
@@ -54,6 +57,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth);
 
 str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
+		struct authenticate_nc_cnonce *auth_nc_cnonce,
 		char *response);
 
 #endif

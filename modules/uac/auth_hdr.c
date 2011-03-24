@@ -313,6 +313,7 @@ error:
 
 str* build_authorization_hdr(int code, str *uri, 
 		struct uac_credential *crd, struct authenticate_body *auth,
+		struct authenticate_nc_cnonce *auth_nc_cnonce,
 		char *response)
 {
 	static str hdr;
@@ -335,8 +336,8 @@ str* build_authorization_hdr(int code, str *uri,
 		ALGORITHM_FIELD_LEN + CRLF_LEN;
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 		len += QOP_FIELD_LEN + 4 /*auth*/ + FIELD_SEPARATOR_UQ_LEN +
-				NC_FIELD_LEN + auth->nc->len + FIELD_SEPARATOR_UQ_LEN +
-				CNONCE_FIELD_LEN + auth->cnonce->len + FIELD_SEPARATOR_LEN;
+				NC_FIELD_LEN + auth_nc_cnonce->nc->len + FIELD_SEPARATOR_UQ_LEN +
+				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce->len + FIELD_SEPARATOR_LEN;
 
 	hdr.s = (char*)pkg_malloc( len + 1);
 	if (hdr.s==0)
@@ -383,10 +384,10 @@ str* build_authorization_hdr(int code, str *uri,
 		add_string( p, "auth", 4);
 		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S, 
 			FIELD_SEPARATOR_UQ_LEN+NC_FIELD_LEN);
-		add_string( p, auth->nc->s, auth->nc->len);
+		add_string( p, auth_nc_cnonce->nc->s, auth_nc_cnonce->nc->len);
 		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S, 
 			FIELD_SEPARATOR_UQ_LEN+CNONCE_FIELD_LEN);
-		add_string( p, auth->cnonce->s, auth->cnonce->len);
+		add_string( p, auth_nc_cnonce->cnonce->s, auth_nc_cnonce->cnonce->len);
 	}
 	/* RESPONSE */
 	add_string( p, FIELD_SEPARATOR_S RESPONSE_FIELD_S,
