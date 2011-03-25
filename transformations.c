@@ -932,9 +932,13 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				answer = find_next_sdp_line(answer,bodylimit,searchLine,bodylimit);
 				if (!answer || answer == bodylimit)
 				{
-					LM_ERR("No such line [%c] nr %d in SDP body. Max fields = %d\n",
+					val->flags = PV_VAL_STR;
+					val->rs.s = "";
+					val->rs.len = 0;
+
+					LM_DBG("No such line [%c] nr %d in SDP body. Max fields = %d\n",
 							searchLine,entryNo,i);
-					return -1;
+					return 0;
 				}
 			}
 
