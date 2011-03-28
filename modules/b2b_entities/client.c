@@ -266,13 +266,7 @@ error:
 dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 {
 	dlg_t* td =NULL;
-/*
-	if(dlg->legs == NULL)
-	{
-		LM_ERR("Tried to send a request when no call leg info exists\n");
-		return 0;
-	}
-*/
+
 	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
 	if(td == NULL)
 	{
@@ -286,24 +280,28 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 
 	td->id.call_id = dlg->callid;
 	td->id.loc_tag = dlg->tag[CALLER_LEG];
-	td->id.rem_tag = leg->tag;
-
-	LM_DBG("Rem_target = %.*s\n", leg->contact.len, leg->contact.s);
-	td->rem_target = leg->contact;
 
 	td->loc_uri = dlg->from_uri;
 	td->rem_uri = dlg->to_uri;
 	td->loc_dname = dlg->from_dname;
 	td->rem_dname = dlg->to_dname;
 
-	if(leg->route_set.s && leg->route_set.len)
+	if(leg)
 	{
-		if(parse_rr_body(leg->route_set.s, leg->route_set.len,
-			&td->route_set)< 0)
+		if(leg->route_set.s && leg->route_set.len)
 		{
-			LM_ERR("failed to parse record route body\n");
-			goto error;
+			if(parse_rr_body(leg->route_set.s, leg->route_set.len,
+				&td->route_set)< 0)
+			{
+				LM_ERR("failed to parse record route body\n");
+				goto error;
+			}
 		}
+
+		td->id.rem_tag = leg->tag;
+
+		LM_DBG("Rem_target = %.*s\n", leg->contact.len, leg->contact.s);
+		td->rem_target = leg->contact;
 	}
 	td->state= DLG_CONFIRMED ;
 	td->send_sock = dlg->send_sock;
