@@ -1558,6 +1558,8 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		goto error;
 	}
 
+	parse_method(method->s, method->s+method->len, &method_value);
+
 	if(dlg->state == B2B_TERMINATED)
 	{
 		LM_ERR("Can not send request [%.*s] for entity type [%d] "
@@ -1565,7 +1567,11 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 			method->len, method->s, et,
 			dlg, b2b_key->len, b2b_key->s);
 		lock_release(&table[hash_index].lock);
-		return 0;
+		if(method_value==METHOD_BYE || method_value==METHOD_CANCEL)
+			return 0;
+		else
+			return -1;
+		
 	}
 
 	if(b2breq_complete_ehdr(extra_headers, &ehdr, body,
@@ -1574,8 +1580,6 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;
 	}
-
-	parse_method(method->s, method->s+method->len, &method_value);
 
 	if(dlg->state < B2B_CONFIRMED)
 	{
