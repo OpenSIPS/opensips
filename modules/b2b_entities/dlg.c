@@ -51,6 +51,30 @@ str bye = str_init(BYE);
 }while(0)
 
 
+void print_b2b_dlg(b2b_dlg_t *dlg)
+{
+	dlg_leg_t *leg = dlg->legs;
+
+	LM_DBG("dlg[%p][%p][%p]: [%.*s] id=[%d] state=[%d] db_flag=[%d]\n",
+		dlg, dlg->prev, dlg->next, dlg->ruri.len, dlg->ruri.s,
+		dlg->id, dlg->state, dlg->db_flag);
+	LM_DBG("  from=[%.*s] [%.*s]\n",
+		dlg->from_dname.len, dlg->from_dname.s, dlg->from_uri.len, dlg->from_uri.s);
+	LM_DBG("    to=[%.*s] [%.*s]\n",
+		dlg->to_dname.len, dlg->to_dname.s, dlg->to_uri.len, dlg->to_uri.s);
+	LM_DBG("callid=[%.*s] tag=[%.*s][%.*s]\n",
+		dlg->callid.len, dlg->callid.s,
+		dlg->tag[0].len, dlg->tag[0].s, dlg->tag[1].len, dlg->tag[1].s);
+	while(leg)
+	{
+		LM_DBG("leg[%p][%p] id=[%d] tag=[%.*s] cseq=[%d]\n",
+			leg, leg->next, leg->id, leg->tag.len, leg->tag.s, leg->cseq);
+		leg = leg->next;
+	}
+	return;
+}
+
+
 b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid)
 {

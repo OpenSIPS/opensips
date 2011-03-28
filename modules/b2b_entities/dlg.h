@@ -153,6 +153,9 @@ typedef b2b_entry_t* b2b_table;
 b2b_table server_htable;
 b2b_table client_htable;
 
+
+void print_b2b_dlg(b2b_dlg_t *dlg);
+
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src);
 
 b2b_dlg_t* b2b_htable_search_safe(str callid, str to_tag, str from_tag);
