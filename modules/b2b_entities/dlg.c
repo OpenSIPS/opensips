@@ -2078,17 +2078,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		}
 		else
 		{
-			if(msg != FAKED_REPLY)
-			{
-				b2b_delete_legs(&dlg->legs);
-				leg = b2b_add_leg(dlg, msg, &to_tag);
-				if(leg == NULL)
-				{
-					LM_ERR("Failed to add dialog leg\n");
-					lock_release(&htable[hash_index].lock);
-					goto error;
-				}
-			}
+			b2b_delete_legs(&dlg->legs);
 			dlg->state = B2B_TERMINATED;
 		}
 
