@@ -44,6 +44,9 @@
 
 #define DLG_ESTABLISHED   1
 
+#define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN + 5*3 + 40)
+
+
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
 typedef struct b2b_dlginfo

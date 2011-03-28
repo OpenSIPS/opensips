@@ -40,7 +40,6 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 
-#define B2B_MAX_KEY_SIZE     (B2B_MAX_PREFIX_LEN + 5*3 + 40)
 #define BUF_LEN              1024
 
 str ack = str_init(ACK);

@@ -115,7 +115,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
 		+ ci->from_dname.len + ci->to_dname.len +
-		from_tag.len + ci->local_contact.len + B2BL_MAX_KEY_LEN;
+		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE + B2BL_MAX_KEY_LEN;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -189,6 +189,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		LM_ERR("no more shared memory\n");
 		goto error;
 	}
+	CONT_COPY(dlg, dlg->callid, (*callid));
+
 	/* create the tm dialog structure with the a costum callid */
 	memset(&td, 0, sizeof(dlg_t));
 	td.loc_seq.value = dlg->cseq[CALLER_LEG];
