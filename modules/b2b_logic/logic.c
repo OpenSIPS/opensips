@@ -2227,16 +2227,31 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
-		return 0;
+		return NULL;
 	}
-	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
 
+	/* process the body */
+	if(msg->content_length)
+	{
+		body.len = get_content_length(msg);
+		if(body.len != 0 )
+		{
+			body.s=get_body(msg);
+			if (body.s== NULL) 
+			{
+				LM_ERR("cannot extract body\n");
+				return NULL;
+			}
+		}
+	}
+
+	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
 	tuple = b2bl_insert_new(msg, hash_index, NULL, NULL, NULL, custom_hdrs, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
 		pkg_free(to_uri.s);
-		return 0;
+		return NULL;
 	}
 	tuple->cbf = cbf;
 	tuple->cb_mask = cb_mask;
@@ -2263,21 +2278,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 	tuple->servers[0]->type = B2B_SERVER;
 	tuple->servers[0]->no = 0;
-
-	/* process the body */
-	if(msg->content_length)
-	{
-		body.len = get_content_length(msg);
-		if(body.len != 0 )
-		{
-			body.s=get_body(msg);
-			if (body.s== NULL) 
-			{
-				LM_ERR("cannot extract body\n");
-				goto error;
-			}
-		}
-	}
 
 	if(b2b_extra_headers(msg, b2bl_key, custom_hdrs, &extra_headers)< 0)
 	{
