@@ -97,6 +97,11 @@ char* get_status_str(int status_flag)
 	return NULL;
 }
 
+static void pkg_free_w(char* s)
+{
+	pkg_free(s);
+}
+
 inline void printf_subs(subs_t* subs)
 {	
 	LM_DBG("\n\t[pres_uri]= %.*s\n\t[to_user]= %.*s\t[to_domain]= %.*s"
@@ -928,7 +933,7 @@ error:
 }
 
 str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body,
-		str* contact, str* dbody, str* extra_hdrs)
+		str* contact, str* dbody, str* extra_hdrs, free_body_t** free_fct)
 {
 	int body_col, extra_hdrs_col, expires_col, etag_col= 0;
 	db_res_t *result = NULL;
@@ -1020,6 +1025,8 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 					LM_ERR("Failed to construct body\n");
 					return NULL;
 				}
+				if(notify_body)
+					LM_DBG("Built empty pres info %p\n", notify_body->s);
 				goto done;
 			}
 			return NULL;
@@ -1056,8 +1063,11 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 
 			notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, -1);
 			if(notify_body)
+			{
 				goto done;
+			}
 		}
+		LM_DBG("build empty pres info\n");
 		if(event->build_empty_pres_info)
 		{
 			notify_body = event->build_empty_pres_info(&pres_uri, extra_hdrs);
@@ -1121,6 +1131,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 			memcpy(notify_body->s, row_vals[body_col].val.string_val, len);
 			notify_body->len= len;
 			pa_dbf.free_result(pa_db, result);
+			*free_fct = (free_body_t*)pkg_free_w;
 
 			return notify_body;
 		}
@@ -1277,7 +1288,7 @@ done:
 		pkg_free(local_dialog_body);
 	}
 
-
+	*free_fct = event->free_body;
 	return notify_body;
 
 error:
@@ -1715,6 +1726,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	str notify_extra_hdrs = {NULL, 0};
 	subs_t* subs_array= NULL, *s= NULL;
 	int ret_code= -1;
+	free_body_t* free_fct = 0;
 
 	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
 	if(subs_array == NULL)
@@ -1728,7 +1740,8 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	if(p->event->agg_nbody)
 	{
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, body,
-				NULL, dialog_body, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs);
+				NULL, dialog_body,
+				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1761,8 +1774,8 @@ done:
 	{
 		if(notify_body->s)
 		{
-			if(	p->event->agg_nbody== NULL && p->event->apply_auth_nbody== NULL)
-				pkg_free(notify_body->s);
+			if( free_fct)
+				free_fct(notify_body->s);
 			else
 				p->event->free_body(notify_body->s);
 		}
@@ -1777,6 +1790,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	str notify_extra_hdrs = {NULL, 0};
 	str* notify_body = NULL;
 	int ret_code= -1;
+	free_body_t* free_fct = 0;
 
 	subs_array= get_subs_dialog(pres_uri, event , NULL);
 	if(subs_array == NULL)
@@ -1788,7 +1802,8 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 	if(event->type & PUBL_TYPE)
 	{
-		notify_body = get_p_notify_body(*pres_uri, event, 0, 0, 0, 0, &notify_extra_hdrs);
+		notify_body = get_p_notify_body(*pres_uri, event, 0, 0, 0, 0,
+				&notify_extra_hdrs, &free_fct);
 		if(notify_body == NULL)
 		{
 			LM_DBG("Could not get the notify_body\n");
@@ -1824,8 +1839,8 @@ done:
 			if(event->type & WINFO_TYPE)
 				pkg_free(notify_body->s);
 			else
-			if(event->agg_nbody== NULL && event->apply_auth_nbody== NULL)
-				pkg_free(notify_body->s);
+			if (free_fct)
+				free_fct(notify_body->s);
 			else
 				event->free_body(notify_body->s);
 		}
@@ -1847,6 +1862,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	c_back_param *cb_param= NULL;
 	str* final_body= NULL;
 	str* aux_body = 0;
+	free_body_t* free_fct = 0;
 
 	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
 	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
@@ -1900,7 +1916,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			{
 				notify_body = get_p_notify_body(subs->pres_uri,
 						subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
-						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs);
+						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs, &free_fct);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
@@ -1916,11 +1932,12 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 					}
 					if(final_body)
 					{
-						xmlFree(notify_body->s);
+						free_fct(notify_body->s);
 						pkg_free(notify_body);
 						notify_body= final_body;
 					}
 				}
+				LM_DBG("built notify_body %p\n", notify_body->s);
 			}
 		}
 	}
@@ -1937,7 +1954,8 @@ jump_over_body:
 	}
 
 	/* build extra headers */
-	if( build_str_hdr( subs, notify_body?1:0, &str_hdr, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
+	if( build_str_hdr( subs, notify_body?1:0, &str_hdr,
+				extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 	{
 		LM_ERR("while building headers\n");
 		goto error;
@@ -2005,10 +2023,10 @@ jump_over_body:
 				if(subs->event->type& WINFO_TYPE )
 					xmlFree(notify_body->s);
 				else
-				if(subs->event->apply_auth_nbody== NULL && subs->event->agg_nbody== NULL)
-					pkg_free(notify_body->s);
+				if(free_fct)
+					free_fct(notify_body->s);
 				else
-				subs->event->free_body(notify_body->s);
+					subs->event->free_body(notify_body->s);
 			}
 			pkg_free(notify_body);
 		}
