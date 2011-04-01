@@ -42,6 +42,10 @@
 #define B2B_TOP_HIDING_SCENARY_LEN  strlen("top hiding")
 
 
+#define B2BL_ENT_NEW		0
+#define B2BL_ENT_CONFIRMED	1
+
+
 #define b2b_peer(type) ((type+1)%2)
 
 #define HDR_LST_LEN       32

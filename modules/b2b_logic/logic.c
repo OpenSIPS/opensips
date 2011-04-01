@@ -362,7 +362,7 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple)
 	{
 		if(!bentity->disconnected)
 		{
-			if(bentity->state == DLG_CONFIRMED)
+			if(bentity->state == B2BL_ENT_CONFIRMED)
 			{
 				method = &method_bye;
 			}
@@ -607,12 +607,12 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	if(entity_no == 0) /* the first reply -> must send INVITE on the other side  */
 	{
 		LM_DBG("Send invite to %.*s\n", bentity1->to_uri.len, bentity1->to_uri.s);
-		if(bentity1->key.s && bentity1->state < DLG_CONFIRMED) /* already been in this step*/
+		if(bentity1->key.s && bentity1->state < B2BL_ENT_CONFIRMED) /* already been in this step*/
 		{
 			LM_ERR("A retransmission of the reply from the first leg\n");
 			return -1;
 		}
-		if(bentity1->type == B2B_CLIENT && bentity1->state!=DLG_CONFIRMED)
+		if(bentity1->type == B2B_CLIENT && bentity1->state!=B2BL_ENT_CONFIRMED)
 		{
 			memset(&ci, 0, sizeof(client_info_t));
 			ci.method        = method_invite;
@@ -648,7 +648,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("cannot parse cseq number\n");
 				return -1;
 			}
-			bentity0->state = DLG_CONFIRMED;
+			bentity0->state = B2BL_ENT_CONFIRMED;
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
 					b2b_add_dlginfo, tuple->key);
 			if(client_id == NULL)
@@ -685,7 +685,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
 				return -1;
 			}
-			bentity1->state = DLG_NEW;
+			bentity1->state = B2BL_ENT_NEW;
 		}
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
@@ -712,7 +712,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* the second -> send ACK with body to the first entity
 		and ACK without a body to the second entity*/
 
-		bentity1->state = DLG_CONFIRMED;
+		bentity1->state = B2BL_ENT_CONFIRMED;
 
 		bentity1->stats.setup_time = get_ticks() - bentity1->stats.start_time;
 		bentity1->stats.start_time = get_ticks();
@@ -1092,7 +1092,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			break;
 
 		case METHOD_INVITE:
-			if(entity->state!=DLG_CONFIRMED)
+			if(entity->state!=B2BL_ENT_CONFIRMED)
 			{
 				if(statuscode >= 300)
 				{
@@ -1155,8 +1155,8 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						tuple->bridge_entities[1] = tuple->clients[0];
 					}
 					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
-					entity->state = DLG_CONFIRMED;
-					peer->state = DLG_CONFIRMED;
+					entity->state = B2BL_ENT_CONFIRMED;
+					peer->state = B2BL_ENT_CONFIRMED;
 					b2bl_print_tuple(tuple, L_DBG);
 					entity->stats.setup_time = get_ticks() - entity->stats.start_time;
 					entity->stats.start_time = get_ticks();
@@ -3022,7 +3022,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		}
 		LM_DBG("End peer dialog [%p]\n", old_entity);	
 		old_entity->peer = NULL;
-		if(old_entity->disconnected && old_entity->state==DLG_CONFIRMED)
+		if(old_entity->disconnected && old_entity->state==B2BL_ENT_CONFIRMED)
 		{
 			b2b_api.send_reply(old_entity->type, &old_entity->key,
 					METHOD_BYE, 200, &ok, 0, 0, old_entity->dlginfo);
@@ -3036,7 +3036,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 
 	if(tuple->scenario_state == B2B_BRIDGING_STATE &&
 			tuple->bridge_entities[0]== tuple->servers[0] &&
-			tuple->servers[0]->state== DLG_CONFIRMED)
+			tuple->servers[0]->state== B2BL_ENT_CONFIRMED)
 	{
 		LM_DBG("Do the second step of the bridging\n");
 		/* do the second step of bridging */
@@ -3256,7 +3256,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		LM_ERR("entity not found for key 2 [%.*s]\n", key2->len, key2->s);
 		goto error;
 	}
-	if(e2->state != DLG_CONFIRMED)
+	if(e2->state != B2BL_ENT_CONFIRMED)
 	{
 		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",e2->key.len,
 				e2->key.s, key2->len, key2->s);
@@ -3265,7 +3265,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 
 	if(e)
 	{
-		if(e->disconnected && e->state==DLG_CONFIRMED)
+		if(e->disconnected && e->state==B2BL_ENT_CONFIRMED)
 			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
 		else
 			b2b_end_dialog(e, tuple);
@@ -3339,7 +3339,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	e = tuple->bridge_entities[1];
 	if(e)
 	{
-		if(e->disconnected && e->state==DLG_CONFIRMED)
+		if(e->disconnected && e->state==B2BL_ENT_CONFIRMED)
 			b2b_api.send_reply(e->type,&e->key,METHOD_BYE,200,&ok,0,0,e->dlginfo);
 		b2b_end_dialog(e, tuple);
 		e->peer = NULL;
@@ -3445,7 +3445,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 
-	if(bridging_entity->state != DLG_CONFIRMED)
+	if(bridging_entity->state != B2BL_ENT_CONFIRMED)
 	{
 		LM_ERR("Wrong state for entity ek= [%.*s], tk=[%.*s]\n",bridging_entity->key.len,
 				bridging_entity->key.s, key->len, key->s);
