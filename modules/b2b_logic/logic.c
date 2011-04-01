@@ -354,7 +354,7 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple)
 
 	if (bentity->next || bentity->prev)
 	{
-		LM_ERR("Inconsistent state for entity [%pp\n", bentity);
+		LM_ERR("Inconsistent state for entity [%p]\n", bentity);
 		b2bl_print_tuple(tuple, L_ERR);
 		return;
 	}
