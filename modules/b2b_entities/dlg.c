@@ -2016,8 +2016,8 @@ dummy_reply:
 
 			parse_to(t->to.s+4, t->to.s+t->to.len, &to_hdr_parsed);
 			parse_to(t->from.s+6, t->from.s+t->from.len, &from_hdr_parsed);
-			from_hdr.parsed   = (struct hdr_field*)&from_hdr_parsed;
-			to_hdr.parsed     = (struct hdr_field*)&to_hdr_parsed;
+			from_hdr.parsed   = (struct hdr_field*)(void*)&from_hdr_parsed;
+			to_hdr.parsed     = (struct hdr_field*)(void*)&to_hdr_parsed;
 
 			from_hdr.body = t->from; 
 			to_hdr.body = t->to; 
