@@ -63,7 +63,7 @@
 
 #define TABLE_VERSION 6
 
-#define GET_LEN(p)	*(p) | *(p+1) << 8
+#define GET_LEN(p)	(*((unsigned char*)p) | *((unsigned char*)p+1) << 8)
 #define MAX_LEN_VALUE 65535
 #define SET_LEN(p,n) \
 	do { \
