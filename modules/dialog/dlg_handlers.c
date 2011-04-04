@@ -1255,7 +1255,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	n = m = 0;
 	if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
-	str2int( &(leg->r_cseq), &n)!=0 || n<=m ) {
+	str2int( &(leg->r_cseq), &m)!=0 || n<m ) {
 		LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
 		return -1;
 	}
