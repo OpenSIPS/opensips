@@ -571,7 +571,7 @@ avp_db_query("delete from subscriber","","2");
 			</title>
 			<para>
 			Deletes from memory the AVPs with <emphasis>name</emphasis> or,
-			if empty, all AVPs.
+			if *, all AVPs.
 			</para>
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
