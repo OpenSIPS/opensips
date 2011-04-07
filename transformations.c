@@ -126,16 +126,16 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs.s = _tr_buffer;
 			val->rs.len = MD5_LEN;
 			break;
-    case TR_S_CRC32:
-      if(!(val->flags&PV_VAL_STR))
-              val->rs.s = int2str(val->ri, &val->rs.len);
-      unsigned int crc_val;
-      int length = 10;
-      crc32_uint(&val->rs,&crc_val);
-      val->rs.len = length;
-      val->rs.s = int2str(crc_val,&length);
-      val->flags = PV_VAL_STR;
-      break;
+		case TR_S_CRC32:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+			unsigned int crc_val;
+			int length = 10;
+			crc32_uint(&val->rs,&crc_val);
+			val->rs.len = length;
+			val->rs.s = int2str(crc_val,&length);
+			val->flags = PV_VAL_STR;
+			break;
 		case TR_S_ENCODEHEXA:
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
@@ -144,8 +144,8 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			j = 0;
 			for(i=0; i<val->rs.len; i++)
 			{
-				_tr_buffer[j++] = fourbits2char[val->rs.s[i] >> 4];
-				_tr_buffer[j++] = fourbits2char[val->rs.s[i] & 0xf];
+				_tr_buffer[j++] = fourbits2char[(unsigned char)val->rs.s[i] >> 4];
+				_tr_buffer[j++] = fourbits2char[(unsigned char)val->rs.s[i] & 0xf];
 			}
 			_tr_buffer[j] = '\0';
 			memset(val, 0, sizeof(pv_value_t));
@@ -1043,12 +1043,13 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->flags = PV_VAL_STR;
 			break;
 		case TR_IP_RESOLVE:
+			val->flags = PV_VAL_STR;
 			server = resolvehost(val->rs.s,0);
 			if (!server || !server->h_addr)
 			{
-				LM_ERR("Could not resolve hostname %.*s\n",
-						val->rs.len,val->rs.s);
-				return -1;
+				val->rs.s = "";
+				val->rs.len = 0;
+				return 0;
 			}
 
 			if (server->h_addrtype == AF_INET)
@@ -1066,13 +1067,14 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			else
 			{
 				LM_ERR("Unexpected IP address type \n");
-				return -1;
+				val->rs.s = "";
+				val->rs.len = 0;
+				return 0;
 			}
 			
 			buffer = ip_addr2a(&ip);
 			val->rs.s = buffer;
 			val->rs.len = strlen(buffer);
-			val->flags = PV_VAL_STR;
 			break;
 
 		default:
