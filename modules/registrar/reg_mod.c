@@ -85,6 +85,8 @@ static int registered_fixup(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
 
+static int fixup_domain_avp_param(void **param, int param_no);
+
 
 int default_expires = 3600; 			/*!< Default expires value in seconds */
 qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
@@ -146,6 +148,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
 		REQUEST_ROUTE },
+	{"is_other_contact",      (cmd_function)is_other_contact_f, 2,
+		fixup_domain_avp_param, 0, REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -416,3 +420,38 @@ error:
 	return -1;
 }
 
+static int fixup_domain_avp_param(void **param, int param_no)
+{
+	str s;
+	pv_spec_p spec;
+	udomain_t *d;
+
+	if (param_no > 2) {
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+
+	if (param_no == 1) {
+		if (ul.register_udomain((char*)*param, &d) < 0) {
+	        LM_ERR("failed to register domain\n");
+			return E_UNSPEC;
+		}
+		*param = (void*)d;
+	    return 0;
+	}
+
+	spec = pkg_malloc(sizeof(pv_spec_t));
+	if (!spec) {
+		LM_ERR("no more pkg mem\n");
+		return E_OUT_OF_MEM;
+	}
+	s.s = (char*)(*param);
+	s.len = strlen(s.s);
+	if (!pv_parse_spec(&s, spec) || spec->type != PVT_AVP) {
+		LM_ERR("malformed avp definition %s\n", s.s);
+		return E_UNSPEC;
+	}
+
+	*param = (void*)spec;
+	return 0;
+}

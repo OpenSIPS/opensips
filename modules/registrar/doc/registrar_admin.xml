@@ -687,6 +687,46 @@ if (registered("location","$fu")) {
 
 	<section>
 		<title>
+		<function moreinfo="none">is_other_contact(domain , IPs)</function>
+		</title>
+		<para>
+		This function returns true if there are any other contacts registered,
+		different from the ones from the IPs avp.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Name of table that should be 
+			used for contacts lookup.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>IPs</emphasis> - an AVP containing the IP's that
+				will be compared with the contacts from usrloc.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>is_other_contact</function> usage</title>
+		<programlisting format="linespecific">
+...
+
+if (is_other_contact("location", "$avp(s:ips)")) {
+	sl_send_reply("403", "Forbidden");
+	...
+};
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">add_sock_hdr(hdr_name)</function>
 		</title>
 		<para>

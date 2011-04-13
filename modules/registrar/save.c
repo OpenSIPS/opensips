@@ -795,3 +795,97 @@ error:
 	return 0;
 }
 
+ucontact_t* get_contacts(udomain_t *_d, str *_aor) {
+	urecord_t *r = NULL;
+
+	/* returns all contacts */
+	ul.lock_udomain(_d, _aor);
+	ul.get_urecord(_d, _aor, &r);
+	ul.unlock_udomain(_d, _aor);
+	
+	return r ? r->contacts : NULL;
+}
+
+int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
+{
+	pv_spec_p spec = (pv_spec_p)_s;
+	struct usr_avp *avp = NULL;
+	str ip, contact;
+	str uri, aor;
+	ucontact_t *c;
+	contact_t* ct;
+	int exp, found;
+	
+	if (parse_message(msg) < 0) {
+		LM_ERR("unable to parse message\n");
+		return -2;
+	}
+	/* msg doesn't have contacts */
+	if (!msg->contact ||
+			!(ct = (((contact_body_t*)msg->contact->parsed)->contacts)))
+		return -1;
+
+
+	while (ct) {
+		/* if expires is 0 */
+		calc_contact_expires(msg, ct->expires, &exp);
+		if (exp)
+			break;
+		ct = ct->next;
+	}
+
+	if (!ct) {
+		LM_DBG("contact has expire 0\n");
+		return -1;
+	}
+
+	uri = get_to(msg)->uri;
+	if (extract_aor(&uri, &aor) < 0) {
+		LM_ERR("failed to extract AOR record\n");
+		return -2;
+	}
+
+	c = get_contacts((udomain_t*)_d, &aor);
+	if (!c) {
+		/* dont't test anything */
+		LM_DBG("no contact found for aor=<%.*s>\n", aor.len, aor.s);
+		return -1;
+	}
+
+	while (c) {
+		if (!c->received.len || !c->received.s || c->received.len < 4 /* sip:*/) {
+			c = c->next;
+			continue;
+		}
+
+		/* skip "sip:" */
+		contact.len = c->received.len - 4;
+		contact.s = c->received.s + 4;
+		avp = NULL;
+		found = 0;
+
+		/* the ip should always be a string */
+		while ((avp = search_first_avp(spec->pvp.pvn.u.isname.type,
+						spec->pvp.pvn.u.isname.name, (int_str *)&ip, avp))!=0) {
+			if (!(avp->flags & AVP_VAL_STR)) {
+				LM_NOTICE("avp value should be string\n");
+				continue;
+			}
+			if (contact.len > ip.len && contact.s[ip.len] == ':' &&
+					!memcmp(contact.s, ip.s, ip.len)) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			LM_DBG("no contact <%.*s> registered earlier\n",
+					contact.len, contact.s);
+			return 1;
+		}
+
+		c = c->next;
+	}
+
+	return -1;
+}
