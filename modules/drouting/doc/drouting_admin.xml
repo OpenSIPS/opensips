@@ -1346,7 +1346,8 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 				<listitem>
 					<emphasis>groupID</emphasis> - the routing group the
 					caller belongs to - this may be a static numerical 
-					value or an AVP specification. If none specified, the 
+					value or an AVP specification (value must be numerical 
+					type, string types are ignored!). If none specified, the
 					function will automatically try to query the dr_group 
 					table to get this information;
 				</listitem>
