@@ -6,7 +6,7 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright � 2005-2008 voice-system.ro
+   Copyright © 2005-2008 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -222,7 +222,7 @@ Chapter 1. Admin Guide
 1.1.5.1. Gateway Addresses
 
    Default name for the table storing gateway addresses is
-   "dr_gateways". Gateway addresses are stored in a separate table
+   “dr_gateways”. Gateway addresses are stored in a separate table
    because of need to access them independent of Dynamic Routing
    processing (e.g., adding/ removing gateway PRI prefix
    before/after performing other operation -- receiving/relaying
@@ -261,13 +261,13 @@ Chapter 1. Admin Guide
    inside the whole destination list ( like: 2,4;5,78,23;4;7;2 ).
    The destinations from within a group may be act differently
    (like load-balancing, random selection, etc), depending of the
-   "sort_order" parameter - more about this is available under the
-   "do_routing()" function section.
+   “sort_order” parameter - more about this is available under the
+   “do_routing()” function section.
 
 1.1.5.3. Routing Rules
 
    Default name for the table storing rule definitions is
-   "dr_rules".
+   “dr_rules”.
 
    Table 1.3. Definition of dr_rules table
    Column name     Type     Default            Description
@@ -318,53 +318,53 @@ Chapter 1. Admin Guide
        Detailed description of time recurrence attributes:
           + dtstart - specifies the beginning of the first period.
           + duration - specifies the duration of the period. For a
-            recurring interval, the "duration" parameter MUST be
+            recurring interval, the “duration” parameter MUST be
             small enough such that subsequent intervals do not
             overlap. For non-recurring intervals, durations of any
             positive length are permitted, zero-length duration
-            means "forever". Negative-length durations are not
+            means “forever”. Negative-length durations are not
             allowed.
-          + freq - takes one of the following values: "daily", to
+          + freq - takes one of the following values: “daily”, to
             specify repeating periods based on an interval of a
-            day or more; "weekly", to specify repeating periods
-            based on an interval of a week or more; "monthly", to
+            day or more; “weekly”, to specify repeating periods
+            based on an interval of a week or more; “monthly”, to
             specify repeating periods based on an interval of a
-            month or more; and "yearly", to specify repeating
+            month or more; and “yearly”, to specify repeating
             periods based on an interval of a year or more. These
             values are not case-sensitive.
           + until - defines an iCalendar COS DATE or DATE-TIME
             value which bounds the recurrence rule in an inclusive
-            manner. If the value specified by "until" is
+            manner. If the value specified by “until” is
             synchronized with the specified recurrence, this date
             or date-time becomes the last instance of the
             recurrence. If not present, the recurrence is
             considered to repeat forever.
           + interval - contains a positive integer representing
             how often the recurrence rule repeats. The default
-            value is "1", meaning every day for a "daily" rule,
-            every week for a "weekly" rule, every month for a
-            "monthly" rule and every year for a "yearly" rule.
+            value is “1”, meaning every day for a “daily” rule,
+            every week for a “weekly” rule, every month for a
+            “monthly” rule and every year for a “yearly” rule.
           + interval - contains a positive integer representing
             how often the recurrence rule repeats. The default
-            value is "1", meaning every day for a "daily" rule,
-            every week for a "weekly" rule, every month for a
-            "monthly" rule and every year for a "yearly" rule.
+            value is “1”, meaning every day for a “daily” rule,
+            every week for a “weekly” rule, every month for a
+            “monthly” rule and every year for a “yearly” rule.
           + byday - specifies a comma-separated list of days of
-            the week. "MO" indicates Monday; "TU" indicates
-            Tuesday; "WE" indicates Wednesday; "TH" indicates
-            Thursday; "FR" indicates Friday; "SA" indicates
-            Saturday; "SU" indicates Sunday. These values are not
+            the week. “MO” indicates Monday; “TU” indicates
+            Tuesday; “WE” indicates Wednesday; “TH” indicates
+            Thursday; “FR” indicates Friday; “SA” indicates
+            Saturday; “SU” indicates Sunday. These values are not
             case-sensitive.
-            Each "byday" value can also be preceded by a positive
+            Each “byday” value can also be preceded by a positive
             (+n) or negative (-n) integer. If present, this
             indicates the nth occurrence of the specific day
-            within the "monthly" or "yearly" recurrence. For
-            example, within a "monthly" rule, +1MO (or simply 1MO)
+            within the “monthly” or “yearly” recurrence. For
+            example, within a “monthly” rule, +1MO (or simply 1MO)
             represents the first Monday within the month, whereas
             -1MO represents the last Monday of the month. If an
             integer modifier is not present, it means all days of
             this type within the specified frequency. For example,
-            within a "monthly" rule, MO represents all Mondays
+            within a “monthly” rule, MO represents all Mondays
             within the month.
           + bymonthday - parameter specifies a comma-separated
             list of days of the month. Valid values are 1 to 31 or
@@ -380,41 +380,41 @@ Chapter 1. Admin Guide
             are 1 to 53 or -53 to -1.
           + bymonth - parameter specifies a comma-separated list
             of months of the year. Valid values are 1 to 12.
-       A recurrence is specified by including the "freq"
+       A recurrence is specified by including the “freq”
        parameter, which indicates the type of recurrence rule.
-       Parameters other than "dtstart" and "duration" SHOULD NOT
-       be specified unless "freq" is present.
+       Parameters other than “dtstart” and “duration” SHOULD NOT
+       be specified unless “freq” is present.
        If byxxx parameter values are found which are beyond the
-       available scope (ie, bymonthday="30" in February), they are
+       available scope (ie, bymonthday=“30” in February), they are
        simply ignored.
        Byxxx parameters modify the recurrence in some manner.
        Byxxx rule parts for a period of time which is the same or
        greater than the frequency generally reduce or limit the
        number of occurrences of the recurrence generated. For
-       example, freq="daily" bymonth="1" reduces the number of
-       recurrence instances from all days (if the "bymonth"
+       example, freq=“daily” bymonth=“1” reduces the number of
+       recurrence instances from all days (if the “bymonth”
        parameter is not present) to all days in January. Byxxx
        parameters for a period of time less than the frequency
        generally increase or expand the number of occurrences of
-       the recurrence. For example, freq="yearly" bymonth="1,2"
+       the recurrence. For example, freq=“yearly” bymonth=“1,2”
        increases the number of days within the yearly recurrence
-       set from 1 (if "bymonth" parameter is not present) to 2.
+       set from 1 (if “bymonth” parameter is not present) to 2.
        If multiple Byxxx parameters are specified, then after
-       evaluating the specified "freq" and "interval" parameters,
+       evaluating the specified “freq” and “interval” parameters,
        the Byxxx parameters are applied to the current set of
-       evaluated occurrences in the following order: "bymonth",
-       "byweekno", "byyearday", "bymonthday", "byday"; then
-       "until" is evaluated.
+       evaluated occurrences in the following order: “bymonth”,
+       “byweekno”, “byyearday”, “bymonthday”, “byday”; then
+       “until” is evaluated.
        Here is an example of evaluating multiple Byxxx parameters.
-       dtstart="19970105T083000" duration="10M" freq="yearly"
-       interval="2" bymonth="1" byday="SU"
-       First, the interval="2" would be applied to freq="yearly"
-       to arrive at "every other year" . Then, bymonth="1" would
-       be applied to arrive at "every January, every other year".
-       Then, byday="SU" would be applied to arrive at "every
-       Sunday in January, every other year, from 8:30 to 8:40 ".
+       dtstart=“19970105T083000” duration=“10M” freq=“yearly”
+       interval=“2” bymonth=“1” byday=“SU”
+       First, the interval=“2” would be applied to freq=“yearly”
+       to arrive at “every other year” . Then, bymonth=“1” would
+       be applied to arrive at “every January, every other year”.
+       Then, byday=“SU” would be applied to arrive at “every
+       Sunday in January, every other year, from 8:30 to 8:40 ”.
        The appropriate minutes and hours have been retrieved from
-       the "dtstart" and "duration" parameters.
+       the “dtstart” and “duration” parameters.
     d. priority column
        If many rules are eligible, choose the one with highest
        priority.
@@ -425,11 +425,11 @@ Chapter 1. Admin Guide
        modification is performed at signaling level.
     f. gwlist column
        A comma separated list of gateway identifiers corresponding
-       to a row in table "dr_gateways". The first gateway is tried
+       to a row in table “dr_gateways”. The first gateway is tried
        first and if failure the second one, and so on. If no
        gateway is left a negative response is sent back to the
        user. You can use a predefined list from the table
-       "dr_gw_lists" preceded by the character "#".
+       “dr_gw_lists” preceded by the character "#".
     g. Routing Rules Examples
        Table 1.5. Sample dr_rules records
 
@@ -439,7 +439,7 @@ Chapter 1. Admin Guide
    2 8 0049 20040101T083000 0 0 1,2 Rule 2
    3 7,8,9 0049 20040101T083000 0 0 3 Rule 3
        (The time recurrence for first rule is:
-       "20040101T083000|10H|weekly|||MO,TU,WE,TH,FR")
+       “20040101T083000|10H|weekly|||MO,TU,WE,TH,FR”)
 
 1.1.6. Routing Rule Processing
 
@@ -491,7 +491,7 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -503,7 +503,7 @@ modparam("drouting", "db_url",
 
    The name of the db table storing gateway addresses.
 
-   Default value is "dr_gateways".
+   Default value is “dr_gateways”.
 
    Example 1.2. Set drd_table parameter
 ...
@@ -514,7 +514,7 @@ modparam("drouting", "drd_table", "dr_gateways")
 
    The name of the db table storing routing rules.
 
-   Default value is "dr_rules".
+   Default value is “dr_rules”.
 
    Example 1.3. Set drr_table parameter
 ...
@@ -525,7 +525,7 @@ modparam("drouting", "drr_table", "rules")
 
    The name of the db table storing groups.
 
-   Default value is "dr_groups".
+   Default value is “dr_groups”.
 
    Example 1.4. Set drg_table parameter
 ...
@@ -540,7 +540,7 @@ modparam("drouting", "drg_table", "groups")
    members of the group as a individual elements. Very useful to
    reuse a list of gateways in different places.
 
-   Default value is "dr_gw_lists".
+   Default value is “dr_gw_lists”.
 
    Example 1.5. Set drl_table parameter
 ...
@@ -552,7 +552,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
    The name of the avp for storing Request URIs to be later used
    (alternative destiantions for the current one).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.6. Set ruri_avp parameter
 ...
@@ -567,7 +567,7 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
    selected (via the use_next_gw() function), the AVP will be
    updated with the attrs of the new used destination.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.7. Set gw_attrs_avp parameter
 ...
@@ -580,7 +580,7 @@ modparam("drouting", "gw_attrs_avp", '$avp(i:67)')
    The name of the avp for storing the attributes of the current
    matched routing rule (see dr_rules table).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.8. Set rule_attrs_avp parameter
 ...
@@ -595,7 +595,7 @@ modparam("drouting", "rule_attrs_avp", '$avp(i:66)')
    the use_next_gw() function), the AVP will be updated with the
    ID of the new selected gateway/destination.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.9. Set gw_id_avp parameter
 ...
@@ -608,7 +608,7 @@ modparam("drouting", "gw_id_avp", '$avp(i:334)')
    The name of the avp for storing the id of the current matched
    routing rule (see dr_rules table).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.10. Set rule_id_avp parameter
 ...
@@ -624,7 +624,7 @@ modparam("drouting", "rule_id_avp", '$avp(i:335)')
 
    Multiple instances of this param are allowed.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.11. Set define_blacklist parameter
 ...
@@ -637,7 +637,7 @@ modparam("drouting", "define_blacklist", 'list= 4,2')
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
-   Default value is "1".
+   Default value is “1”.
 
    Example 1.12. Set use_domain parameter
 ...
@@ -649,7 +649,7 @@ modparam("drouting", "use_domain", 0)
    The name of the column in group db table where the username is
    stored.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.13. Set drg_user_col parameter
 ...
@@ -661,7 +661,7 @@ modparam("drouting", "drg_user_col", "user")
    The name of the column in group db table where the domain is
    stored.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.14. Set drg_domain_col parameter
 ...
@@ -673,7 +673,7 @@ modparam("drouting", "drg_domain_col", "host")
    The name of the column in group db table where the group id is
    stored.
 
-   Default value is "groupid".
+   Default value is “groupid”.
 
    Example 1.15. Set drg_grpid_col parameter
 ...
@@ -685,7 +685,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
    The number of rows that should be fetched from the result of a
    query in rules db table.
 
-   Default value is "2000".
+   Default value is “2000”.
 
    Example 1.16. Set fetch_rows parameter
 ...
@@ -698,7 +698,7 @@ modparam("drouting", "fetch_rows", 1500)
    startup. If not enabled, the GW name will be blindly used
    during routing.
 
-   Default value is "1 (enabled)".
+   Default value is “1 (enabled)”.
 
    Example 1.17. Set force_dns parameter
 ...
@@ -711,7 +711,7 @@ modparam("drouting", "force_dns", 0)
    done. If set to 0, the probing will be disabled as
    functionality (for all destinations)
 
-   Default value is "30".
+   Default value is “30”.
 
    Example 1.18. Set probing_interval parameter
 ...
@@ -722,7 +722,7 @@ modparam("drouting", "probing_interval", 60)
 
    The SIP method to be used for the probing requests.
 
-   Default value is ""OPTIONS"".
+   Default value is “"OPTIONS"”.
 
    Example 1.19. Set probing_method parameter
 ...
@@ -733,7 +733,7 @@ modparam("drouting", "probing_method", "INFO")
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
-   Default value is ""sip:prober@localhost"".
+   Default value is “"sip:prober@localhost"”.
 
    Example 1.20. Set probing_from parameter
 ...
@@ -746,7 +746,7 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
    here will be considered as valid reply codes for probing
    messages, apart for 200.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.21. Set probing_reply_codes parameter
 ...
@@ -764,8 +764,9 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 
    The function can take two optional parameters:
      * groupID - the routing group the caller belongs to - this
-       may be a static numerical value or an AVP specification. If
-       none specified, the function will automatically try to
+       may be a static numerical value or an AVP specification
+       (value must be numerical type, string types are ignored!).
+       If none specified, the function will automatically try to
        query the dr_group table to get this information;
      * sort_order - defines how the destination list should be
        processed (ordering of the elements). Possible modes are
