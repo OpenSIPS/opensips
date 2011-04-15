@@ -121,74 +121,77 @@ int bind_ip_port(int ip, int port, int* sockfd){
 }
 
 static int stun_mod_init(void){
-    int rc = 0;
-    str s;
+	str s;
 
-    rc = inet_pton(AF_INET, primary_ip, &ip1);
-    if(rc < 1){			/* rc == 1 means succes */
-	LM_ERR("Invalid ip1\n");/* perror("inet_pton()"); */
-	return -1;
-    }
+	if (inet_pton(AF_INET, primary_ip, &ip1) < 1) {
+		LM_ERR("Invalid ip1 : %s\n",strerror(errno));
+		return -1;
+	}
 
-    rc = inet_pton(AF_INET, alternate_ip, &ip2);
-    if(rc < 1){
-	LM_ERR("Invalid ip2\n");
-	return -1;
-    }
+	if (inet_pton(AF_INET, alternate_ip, &ip2) < 1) {
+		LM_ERR("Invalid ip2 : %s\n",strerror(errno));
+		return -1;
+	}
 
-    ip1 = ntohl(ip1);
-    ip2 = ntohl(ip2);
-    /* ut.h str2ceva; verificari port */
-    port1 = atoi(primary_port);
-    if(!(0<port1 && port1< 65536)){
-	LM_ERR("Invalid port1\n");
-	return -1;
-    }
-    port2 = atoi(alternate_port);
-    if(!(0<port2 && port2< 65536)){
-	LM_ERR("Invalid port2\n");
-	return -1;
-    }
+	ip1 = ntohl(ip1);
+	ip2 = ntohl(ip2);
 
+	port1 = atoi(primary_port);
+	if(!(0<port1 && port1< 65536)){
+		LM_ERR("Invalid port1\n");
+		return -1;
+	}
 
-    s.s = primary_ip; s.len = strlen(primary_ip);
-    grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
-    if(!grep1){
-	LM_ERR("grep_sock_in()1 failed\n");
-	return -1;
-    }
+	port2 = atoi(alternate_port);
+	if(!(0<port2 && port2< 65536)){
+		LM_ERR("Invalid port2\n");
+		return -1;
+	}
 
-    rc = 0;
-    grep2 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
-    if(!grep2){
-	LM_DBG("socketfd2 not found\n");
-	rc |= bind_ip_port(ip1, port2, &sockfd2);
-    }
+	s.s = primary_ip; s.len = strlen(primary_ip);
+	grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
+	if(!grep1){
+		LM_ERR("IP1:port1 not found in listening sockets\n");
+		return -1;
+	}
 
+	grep2 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
+	if(!grep2){
+		LM_DBG("IP1:port2 not found in listening sockets\n");
+		if (bind_ip_port(ip1, port2, &sockfd2)!=0) {
+			LM_ERR("failed to bind for IP1:port2\n");
+			return -1;
+		}
+	}
 
-    s.s = alternate_ip; s.len = strlen(alternate_ip);
-    grep3 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
-    if(!grep3){
-	LM_DBG("socketfd3 not found\n");
-	rc |= bind_ip_port(ip2, port1, &sockfd3);
-    }
+	s.s = alternate_ip; s.len = strlen(alternate_ip);
+	grep3 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
+	if(!grep3){
+		LM_DBG("IP2:port1 not found in listening sockets\n");
+		if (bind_ip_port(ip2, port1, &sockfd3)!=0) {
+			LM_ERR("failed to bind for IP2:port1\n");
+			return -1;
+		}
+	}
 
-    grep4 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
-    if(!grep4){
-	LM_DBG("socketfd4 not found\n");
-	rc |= bind_ip_port(ip2, port2, &sockfd4);
-    }
-    
-    /* register for BINDING_REQUEST */
-    rc |= register_udprecv_cb(&receive, 0,
-	    (T8) (BINDING_REQUEST>>8), (T8)BINDING_REQUEST);
+	grep4 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
+	if(!grep4){
+		LM_DBG("IP2:port2 not found in listening sockets\n");
+		if (bind_ip_port(ip2, port2, &sockfd4)!=0) {
+			LM_ERR("failed to bind for IP2:port2\n");
+			return -1;
+		}
+	}
 
-    if(rc)
-	LM_ERR("stun init failed\n");
-    else
+	/* register for BINDING_REQUEST */
+	if (register_udprecv_cb(&receive, 0, (T8) (BINDING_REQUEST>>8),
+	(T8)BINDING_REQUEST) != 0) {
+		LM_ERR("failed to install UDP recv callback\n");
+		return -1;
+	}
+
 	LM_DBG("stun init succeded\n");
-
-    return rc;
+	return 0;
 }
 
 void stun_loop(int rank){
