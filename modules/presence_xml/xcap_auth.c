@@ -61,6 +61,9 @@ int pres_watcher_allowed(subs_t* subs)
 
 	if(subs->auth_rules_doc== NULL)
 	{
+		subs->status= PENDING_STATUS;
+		subs->reason.s= NULL;
+		subs->reason.len= 0;
 		return 0;
 	}
 
