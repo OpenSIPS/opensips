@@ -126,13 +126,13 @@ static int stun_mod_init(void){
 
     rc = inet_pton(AF_INET, primary_ip, &ip1);
     if(rc < 1){			/* rc == 1 means succes */
-	LM_DBG("Invalid ip1\n");/* perror("inet_pton()"); */
+	LM_ERR("Invalid ip1\n");/* perror("inet_pton()"); */
 	return -1;
     }
 
     rc = inet_pton(AF_INET, alternate_ip, &ip2);
     if(rc < 1){
-	LM_DBG("Invalid ip2\n");
+	LM_ERR("Invalid ip2\n");
 	return -1;
     }
 
@@ -141,12 +141,12 @@ static int stun_mod_init(void){
     /* ut.h str2ceva; verificari port */
     port1 = atoi(primary_port);
     if(!(0<port1 && port1< 65536)){
-	LM_DBG("Invalid port1\n");
+	LM_ERR("Invalid port1\n");
 	return -1;
     }
     port2 = atoi(alternate_port);
     if(!(0<port2 && port2< 65536)){
-	LM_DBG("Invalid port2\n");
+	LM_ERR("Invalid port2\n");
 	return -1;
     }
 
@@ -154,7 +154,7 @@ static int stun_mod_init(void){
     s.s = primary_ip; s.len = strlen(primary_ip);
     grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
     if(!grep1){
-	LM_DBG("grep_sock_in()1 failed\n");
+	LM_ERR("grep_sock_in()1 failed\n");
 	return -1;
     }
 
@@ -184,7 +184,7 @@ static int stun_mod_init(void){
 	    (T8) (BINDING_REQUEST>>8), (T8)BINDING_REQUEST);
 
     if(rc)
-	LM_DBG("stun init failed\n");
+	LM_ERR("stun init failed\n");
     else
 	LM_DBG("stun init succeded\n");
 
