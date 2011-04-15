@@ -94,42 +94,41 @@ struct module_exports exports = {
 /* init */
 int bind_ip_port(int ip, int port, int* sockfd){
 
-    struct sockaddr_in server;
+	struct sockaddr_in server;
 
-    int rc;
+	int rc;
 
-    *sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if(*sockfd < 0){
-	perror("socket()");
-	return -1;
-    }
+	*sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if(*sockfd < 0){
+		LM_ERR("socket failed : %s\n",strerror(errno));
+		return -1;
+	}
 
-    memset(&server, 0, sizeof(server));	    /* zero structure */
-    server.sin_family = AF_INET;	    /* internet address family */
-    server.sin_port = htons(port);
-    server.sin_addr.s_addr = htonl(ip);
+	memset(&server, 0, sizeof(server));	    /* zero structure */
+	server.sin_family = AF_INET;	    /* internet address family */
+	server.sin_port = htons(port);
+	server.sin_addr.s_addr = htonl(ip);
 
+	/* bind to the local address */
+	rc = bind(*sockfd, (struct sockaddr *)&server, sizeof(server));
+	if(rc < 0){
+		LM_ERR("bind failed : %s\n",strerror(errno));
+		return -2;
+	}
 
-    /* bind to the local address */
-    rc = bind(*sockfd, (struct sockaddr *)&server, sizeof(server));
-    if(rc < 0){
-	perror("bind()");
-	return -2;
-    }
-
-    return 0;
+	return 0;
 }
 
 static int stun_mod_init(void){
 	str s;
 
 	if (inet_pton(AF_INET, primary_ip, &ip1) < 1) {
-		LM_ERR("Invalid ip1 : %s\n",strerror(errno));
+		LM_ERR("Invalid ip1 %s : %s\n",primary_ip, strerror(errno));
 		return -1;
 	}
 
 	if (inet_pton(AF_INET, alternate_ip, &ip2) < 1) {
-		LM_ERR("Invalid ip2 : %s\n",strerror(errno));
+		LM_ERR("Invalid ip2 %s : %s\n",alternate_ip, strerror(errno));
 		return -1;
 	}
 
@@ -138,28 +137,31 @@ static int stun_mod_init(void){
 
 	port1 = atoi(primary_port);
 	if(!(0<port1 && port1< 65536)){
-		LM_ERR("Invalid port1\n");
+		LM_ERR("Invalid port1 %s\n",primary_port);
 		return -1;
 	}
 
 	port2 = atoi(alternate_port);
 	if(!(0<port2 && port2< 65536)){
-		LM_ERR("Invalid port2\n");
+		LM_ERR("Invalid port2 %s\n",alternate_port);
 		return -1;
 	}
 
 	s.s = primary_ip; s.len = strlen(primary_ip);
 	grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
 	if(!grep1){
-		LM_ERR("IP1:port1 not found in listening sockets\n");
+		LM_ERR("IP1:port1 [%s:%d] not found in listening sockets\n",
+			primary_ip, port1);
 		return -1;
 	}
 
 	grep2 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
 	if(!grep2){
-		LM_DBG("IP1:port2 not found in listening sockets\n");
+		LM_DBG("IP1:port2 [%s:%d] not found in listening sockets\n",
+			primary_ip, port2);
 		if (bind_ip_port(ip1, port2, &sockfd2)!=0) {
-			LM_ERR("failed to bind for IP1:port2\n");
+			LM_ERR("failed to bind for IP1:port2 [%s:%d]\n",
+				primary_ip, port2);
 			return -1;
 		}
 	}
@@ -167,18 +169,22 @@ static int stun_mod_init(void){
 	s.s = alternate_ip; s.len = strlen(alternate_ip);
 	grep3 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
 	if(!grep3){
-		LM_DBG("IP2:port1 not found in listening sockets\n");
+		LM_DBG("IP2:port1 [%s:%d] not found in listening sockets\n",
+			alternate_ip, port1);
 		if (bind_ip_port(ip2, port1, &sockfd3)!=0) {
-			LM_ERR("failed to bind for IP2:port1\n");
+			LM_ERR("failed to bind for IP2:port1 [%s:%d]\n",
+				alternate_ip, port1);
 			return -1;
 		}
 	}
 
 	grep4 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
 	if(!grep4){
-		LM_DBG("IP2:port2 not found in listening sockets\n");
+		LM_DBG("IP2:port2 [%s:%d] not found in listening sockets\n",
+			alternate_ip, port2);
 		if (bind_ip_port(ip2, port2, &sockfd4)!=0) {
-			LM_ERR("failed to bind for IP2:port2\n");
+			LM_ERR("failed to bind for IP2:port2 [%s:%d]\n",
+				alternate_ip, port2);
 			return -1;
 		}
 	}
