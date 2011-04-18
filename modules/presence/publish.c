@@ -45,8 +45,6 @@
 #include "publish.h"
 #include "presentity.h"
 
-extern gen_lock_set_t* set;
-
 static str pu_400_rpl = str_init("Bad request");
 static str pu_500_rpl  = str_init("Server Internal Error");
 static str pu_489_rpl  = str_init("Bad Event");

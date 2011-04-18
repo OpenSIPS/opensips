@@ -855,9 +855,13 @@ str* get_presence_from_dialog(str* pres_uri, struct sip_uri* uri,
 	int ringing_state = 0;
 	int dlg_state;
 	int state;
+	pres_entry_t* p;
 
-	/* search for dialog event publications */
-	if(search_phtable(pres_uri, (*dialog_event_p)->evp->parsed, hash_code)== NULL)
+	lock_get(&pres_htable[hash_code].lock);
+	p= search_phtable(pres_uri, (*dialog_event_p)->evp->parsed, hash_code);
+	lock_release(&pres_htable[hash_code].lock);
+
+	if(p == NULL)
 	{
 		LM_DBG("No record exists in hashtable, pres_uri=[%.*s] event=[dialog]\n",
 				pres_uri->len, pres_uri->s);
@@ -951,6 +955,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 	int body_cnt = 0;
 	str* dialog_body= NULL, *local_dialog_body = NULL;
 	int init_i = 0;
+	pres_entry_t* p;
 
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0)
 	{
@@ -992,7 +997,11 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 	}
 
 	/* search in hash table if any record exists */
-	if( !etag && search_phtable(&pres_uri, event->evp->parsed, hash_code)== NULL)
+	lock_get(&pres_htable[hash_code].lock);
+	p= search_phtable(&pres_uri, event->evp->parsed, hash_code);
+	lock_release(&pres_htable[hash_code].lock);
+
+	if( !etag && p== NULL)
 	{
 		LM_DBG("No record exists in hash_table\n");
 		if(!fallback2db)

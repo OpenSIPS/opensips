@@ -832,9 +832,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 			cur_etag= etag;
 			if(p)
+			{
 				update_pres_etag(p, &etag);
+				lock_release(&pres_htable[hash_code].lock);
+			}
 			else
 			{
+				lock_release(&pres_htable[hash_code].lock);
 				if(insert_phtable(&pres_uri, presentity->event->evp->parsed,
 							&presentity->etag, presentity->sphere)< 0)
 				{
@@ -845,9 +849,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		}
 		else
 		{
+			lock_release(&pres_htable[hash_code].lock);
 			cur_etag= presentity->etag;
 		}
-		lock_release(&pres_htable[hash_code].lock);
 
 		n_update_cols= 0;
 		update_keys[n_update_cols] = &str_etag_col;
