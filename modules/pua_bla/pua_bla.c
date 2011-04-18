@@ -71,7 +71,7 @@ static param_export_t params[]=
 	{"header_name",      STR_PARAM, &header_name.s       },
 	{"outbound_proxy",   STR_PARAM, &bla_outbound_proxy.s},
 	{"presence_server",  STR_PARAM, &presence_server.s   },
-	{0,							 0,			0            }
+	{0,                  0,                 0            }
 };
 
 /** module exports */
@@ -90,7 +90,7 @@ struct module_exports exports= {
  	 destroy,					/* destroy function */
 	 child_init                 /* per-child init function */
 };
-	
+
 /**
  * init module function
  */

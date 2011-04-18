@@ -64,8 +64,10 @@ void bla_cb(ucontact_t* c, int type, void* param)
 	subs.to_uri= reg_from_uri;
 
 	uri.s = (char*)pkg_malloc(sizeof(char)*(c->aor->len+default_domain.len+6));
-	if(uri.s == NULL)
+	if(uri.s == NULL) {
+		LM_ERR( "pkg_malloc uri failed" );
 		goto error;
+	}
 
 	memcpy(uri.s, "sip:", 4);
 	uri.len = 4;

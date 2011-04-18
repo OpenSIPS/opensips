@@ -38,9 +38,184 @@
 #include "notify_body.h"
 #include "presence_xml.h"
 
-str* offline_nbody(str* body);
-str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n);
 str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node);
+
+enum {
+	OFFB_STATUS_OK = 0,
+	OFFB_STATUS_NO_DIALOG,
+	OFFB_STATUS_ERROR,
+};
+typedef int (offb_f) (str* body, str** offline_body);
+
+#define GET_LAST_XML_ERROR(e, msg) \
+	(e) = xmlGetLastError(); (msg) = (e) ? (e)->message : "unknown error"
+
+int dialog_offline_body(str* body, str** offline_body)
+{
+	xmlDocPtr doc= NULL;
+	xmlNodePtr node;
+	xmlErrorPtr xml_error;
+	str* new_body = NULL;
+	char *err_msg;
+	int rc = OFFB_STATUS_ERROR;
+
+	if (!offline_body)
+	{
+		LM_ERR("invalid parameter");
+		return OFFB_STATUS_ERROR;
+	}
+	*offline_body = NULL;
+
+	doc= xmlParseMemory(body->s, body->len);
+	if(doc==  NULL)
+	{
+		GET_LAST_XML_ERROR(xml_error, err_msg);
+		LM_ERR("xml memory parsing failed: %s\n", err_msg);
+		goto done;
+	}
+	node= xmlDocGetNodeByName(doc, "dialog", NULL);
+	if(node== NULL)
+	{
+		LM_DBG("no dialog nodes found");
+		rc = OFFB_STATUS_NO_DIALOG;
+		goto done;
+	}
+	node= xmlNodeGetChildByName(node,  "state");
+	if(node== NULL)
+	{
+		LM_ERR("while extracting state node\n");
+		goto done;
+	}
+	xmlNodeSetContent(node, (const unsigned char*)"terminated");
+
+	new_body = (str*)pkg_malloc(sizeof(str));
+	if(new_body == NULL)
+	{
+		LM_ERR("No more pkg memory");
+		goto done;
+	}
+	memset(new_body, 0, sizeof(str));
+
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&new_body->s,
+		&new_body->len);
+
+	*offline_body = new_body;
+	rc = OFFB_STATUS_OK;
+
+done:
+	if (doc)
+	    xmlFreeDoc(doc);
+
+	return rc;
+}
+
+int presence_offline_body(str* body, str** offline_body)
+{
+	xmlDocPtr doc= NULL;
+	xmlDocPtr new_doc= NULL;
+	xmlNodePtr node, tuple_node= NULL, status_node;
+	xmlNodePtr root_node, add_node, pres_node;
+	xmlErrorPtr	xml_error;
+	str* new_body;
+	char *err_msg;
+	int rc = OFFB_STATUS_ERROR;
+
+	doc= xmlParseMemory(body->s, body->len);
+	if(doc==  NULL)
+	{
+		GET_LAST_XML_ERROR(xml_error, err_msg);
+		LM_ERR("xml memory parsing failed: %s\n", err_msg);
+		goto done;
+	}
+	node= xmlDocGetNodeByName(doc, "basic", NULL);
+	if(node== NULL)
+	{
+		LM_ERR("while extracting basic node\n");
+		goto done;
+	}
+	xmlNodeSetContent(node, (const unsigned char*)"closed");
+
+	tuple_node= xmlDocGetNodeByName(doc, "tuple", NULL);
+	if(tuple_node== NULL)
+	{
+		LM_ERR("while extracting tuple node\n");
+		goto done;
+	}
+	status_node= xmlDocGetNodeByName(doc, "status", NULL);
+	if(status_node== NULL)
+	{
+		LM_ERR("while extracting tuple node\n");
+		goto done;
+	}
+
+	pres_node= xmlDocGetNodeByName(doc, "presence", NULL);
+	if(node== NULL)
+	{
+		LM_ERR("while extracting presence node\n");
+		goto done;
+	}
+
+	new_doc = xmlNewDoc(BAD_CAST "1.0");
+	if(new_doc==0)
+	{
+		GET_LAST_XML_ERROR(xml_error, err_msg);
+		LM_ERR("failed to create new XML document: %s\n", err_msg);
+		goto done;
+	}
+
+	root_node= xmlCopyNode(pres_node, 2);
+	if(root_node== NULL)
+	{
+		GET_LAST_XML_ERROR(xml_error, err_msg);
+		LM_ERR("failed to copy root node: %s\n", err_msg);
+		goto done;
+	}
+	xmlNewProp(root_node, BAD_CAST "xmlns",
+			BAD_CAST "urn:ietf:params:xml:ns:pidf");
+	xmlDocSetRootElement(new_doc, root_node);
+
+	tuple_node= xmlCopyNode(tuple_node, 2);
+	if(tuple_node== NULL)
+	{
+		GET_LAST_XML_ERROR(xml_error, err_msg);
+		LM_ERR("failed to copy tuple node: %s\n", err_msg);
+		goto done;
+	}
+
+	xmlAddChild(root_node, tuple_node);
+
+	add_node= xmlCopyNode(status_node, 1);
+	if(add_node== NULL)
+	{
+		GET_LAST_XML_ERROR(xml_error, err_msg);
+		LM_ERR("failed to copy status node: %s\n", err_msg);
+		goto done;
+	}
+
+	xmlAddChild(tuple_node, add_node);
+
+	new_body = (str*)pkg_malloc(sizeof(str));
+	if(new_body == NULL)
+	{
+		LM_ERR("No more pkg memory");
+		goto done;
+	}
+	memset(new_body, 0, sizeof(str));
+
+	xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&new_body->s,
+		&new_body->len);
+
+	*offline_body = new_body;
+	rc = OFFB_STATUS_OK;
+
+done:
+	if(doc)
+		xmlFreeDoc(doc);
+	if(new_doc)
+		xmlFreeDoc(new_doc);
+
+	return rc;
+}
 
 void free_xml_body(char* body)
 {
@@ -51,11 +226,211 @@ void free_xml_body(char* body)
 	body= NULL;
 }
 
+str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n,
+		char* root_name, char* elem_name)
+{
+	int i, j= 0, append ;
+	xmlNodePtr p_root= NULL, new_p_root= NULL ;
+	xmlDocPtr* xml_array ;
+	xmlNodePtr node = NULL;
+	xmlNodePtr add_node = NULL ;
+	str *body= NULL;
+	char* id= NULL, *elem_id = NULL;
+	xmlDocPtr pidf_manip_doc= NULL;
+	str* pidf_doc= NULL;
 
-str* pres_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n, int off_index)
+	xml_array = (xmlDocPtr*)pkg_malloc( (n+2)*sizeof(xmlDocPtr));
+	if(xml_array== NULL)
+	{
+	
+		LM_ERR("while alocating memory");
+		return NULL;
+	}
+	memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;
+
+	/* if pidf_manipulation usage is configured */
+	if(pidf_manipulation)
+	{
+		if( get_rules_doc(pres_user, pres_domain, PIDF_MANIPULATION, &pidf_doc)< 0)
+		{
+			LM_ERR("while getting xcap tree for doc_type PIDF_MANIPULATION\n");
+			goto error;
+		}
+		if(pidf_doc== NULL)
+		{
+			LM_DBG("No PIDF_MANIPULATION doc for [user]= %.*s [domain]= %.*s\n",
+			pres_user->len, pres_user->s, pres_domain->len, pres_domain->s);
+		}
+		else
+		{
+			pidf_manip_doc= xmlParseMemory(pidf_doc->s, pidf_doc->len);
+			pkg_free(pidf_doc->s);
+			pkg_free(pidf_doc);
+
+			if(pidf_manip_doc== NULL)
+			{
+				LM_ERR("parsing xml memory\n");
+				goto error;
+			}		
+			else
+			{	
+				xml_array[0]= pidf_manip_doc;
+				j++;
+			}
+		}
+	}
+
+	for(i=0; i<n; i++)
+	{
+		if(body_array[i] == NULL )
+			continue;
+
+		xml_array[j] = NULL;
+		xml_array[j] = xmlParseMemory( body_array[i]->s, body_array[i]->len );
+		LM_DBG("i = [%d] - body: %.*s\n", i,  body_array[i]->len, body_array[i]->s);
+
+		if( xml_array[j]== NULL)
+		{
+			LM_ERR("while parsing xml body message\n");
+			goto error;
+		}
+		j++;
+	}
+
+	if(j== 0)  /* no body */
+	{
+		if(xml_array)
+			pkg_free(xml_array);
+		return NULL;
+	}
+
+	j--;
+	p_root = xmlDocGetNodeByName( xml_array[j], root_name, NULL);
+	if(p_root ==NULL)
+	{
+		LM_ERR("while geting the xml_tree root\n");
+		goto error;
+	}
+
+	for(i= j-1; i>=0; i--)
+	{
+		LM_DBG("i = %d\n", i);
+
+		new_p_root= xmlDocGetNodeByName( xml_array[i], root_name, NULL);
+		if(new_p_root ==NULL)
+		{
+			LM_ERR("while geting the xml_tree root\n");
+			goto error;
+		}
+		
+		node= xmlNodeGetChildByName(new_p_root, elem_name);
+		if(node== NULL)
+		{
+			LM_DBG("no %s node found\n", elem_name);
+			append = 1;
+			goto append_label;
+		}
+		elem_id= xmlNodeGetAttrContentByName(node, "id");
+		if(elem_id== NULL)
+		{
+			LM_ERR("while extracting %s id\n", elem_name);
+			goto error;
+		}
+		append= 1;
+		for (node = p_root->children; node!=NULL; node = node->next)
+		{
+			if( xmlStrcasecmp(node->name,(unsigned char*)"text")==0)
+				continue;
+
+			if( xmlStrcasecmp(node->name,(unsigned char*)elem_name)==0)
+			{
+				id = xmlNodeGetAttrContentByName(node, "id");
+				if(id== NULL)
+				{
+					LM_ERR("while extracting %s id\n", elem_name);
+					goto error;
+				}
+
+				if(xmlStrcasecmp((unsigned char*)elem_id,
+							(unsigned char*)id )== 0)
+				{
+					append = 0;
+					xmlFree(id);
+					break;
+				}
+				xmlFree(id);
+			}
+		}
+		xmlFree(elem_id);
+		elem_id= NULL;
+
+append_label:
+		if(append)
+		{
+			LM_DBG("in if\n");
+			for(node= new_p_root->children; node; node= node->next)
+			{
+				LM_DBG("adding node [%s]\n", node->name);
+				add_node= xmlCopyNode(node, 1);
+				if(add_node== NULL)
+				{
+					LM_ERR("while copying node [%s]\n", node->name);
+					goto error;
+				}
+
+				if(xmlAddChild(p_root, add_node)== NULL)
+				{
+					LM_ERR("while adding child\n");
+					goto error;
+				}
+			}
+		}
+	}
+
+	body = (str*)pkg_malloc(sizeof(str));
+	if(body == NULL)
+	{
+		ERR_MEM(PKG_MEM_STR);
+	}
+
+	xmlDocDumpMemory(xml_array[j],(xmlChar**)(void*)&body->s, 
+			&body->len);
+
+	LM_DBG("body = %.*s\n", body->len, body->s);
+
+	for(i=0; i<=j; i++)
+	{
+		if(xml_array[i]!=NULL)
+			xmlFreeDoc( xml_array[i]);
+	}
+	if(xml_array!=NULL)
+		pkg_free(xml_array);
+
+	return body;
+
+error:
+	if(xml_array!=NULL)
+	{
+		for(i=0; i<=j; i++)
+		{
+			if(xml_array[i]!=NULL)
+				xmlFreeDoc( xml_array[i]);
+		}
+		pkg_free(xml_array);
+	}
+	if(elem_id)
+		xmlFree(elem_id);
+	if(body)
+		pkg_free(body);
+	return NULL;
+}
+
+str* event_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n,
+		int off_index, offb_f offline_body_fct, char* root_name, char* elem_name)
 {
 	str* n_body= NULL;
 	str* body= NULL;
+	int status = OFFB_STATUS_OK;
 
 	if(body_array== NULL && !pidf_manipulation)
 		return NULL;
@@ -63,34 +438,44 @@ str* pres_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n, i
 	if(off_index>= 0)
 	{
 		body= body_array[off_index];
-		body_array[off_index]= offline_nbody(body);
-
-		if(body_array[off_index]== NULL || body_array[off_index]->s== NULL)
+		status = offline_body_fct(body, &n_body);
+		if (status != OFFB_STATUS_OK && status != OFFB_STATUS_NO_DIALOG)
 		{
-			LM_ERR("while constructing offline body\n");
+			LM_ERR("constructing offline body failed\n"); 
 			return NULL;
 		}
+
+		body_array[off_index]= n_body;
 	}
 	LM_DBG("[user]=%.*s  [domain]= %.*s\n",
 			pres_user->len, pres_user->s, pres_domain->len, pres_domain->s);
-	n_body= agregate_xmls(pres_user, pres_domain, body_array, n);
+	n_body= agregate_xmls(pres_user, pres_domain, body_array, n, root_name, elem_name);
 	if(n_body== NULL && n!= 0)
 	{
 		LM_ERR("while aggregating body\n");
 	}
 
-	if(off_index>= 0)
+	if(off_index>= 0 && status == OFFB_STATUS_OK)
 	{
 		xmlFree(body_array[off_index]->s);
 		pkg_free(body_array[off_index]);
 		body_array[off_index]= body;
 	}
 
-	xmlCleanupParser();
-    xmlMemoryDump();
-
 	return n_body;
-}	
+}
+
+str* dialog_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n, int off_index)
+{
+	return event_agg_nbody(pres_user, pres_domain, body_array, n, off_index,
+			dialog_offline_body, "dialog-info", "dialog");
+}
+
+str* presence_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n, int off_index)
+{
+	return event_agg_nbody(pres_user, pres_domain, body_array, n, off_index,
+			presence_offline_body, "presence", "tuple");
+}
 
 int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody)
 {
@@ -131,8 +516,6 @@ int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody)
 	}
 
 	xmlFreeDoc(doc);
-	xmlCleanupParser();
-    xmlMemoryDump();
 
 	*final_nbody= n_body;
 	return 1;
@@ -419,8 +802,6 @@ done:
 	xmlFree(occurence_ID);
 	xmlFree(deviceID);
 	xmlFree(service_uri);
-    xmlCleanupParser();
-    xmlMemoryDump();
 
     return new_body;
 error:
@@ -441,305 +822,5 @@ error:
 	if(service_uri)
 		xmlFree(service_uri);
 
-	return NULL;
-}	
-
-str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
-{
-	int i, j= 0, append ;
-	xmlNodePtr p_root= NULL, new_p_root= NULL ;
-	xmlDocPtr* xml_array ;
-	xmlNodePtr node = NULL;
-	xmlNodePtr add_node = NULL ;
-	str *body= NULL;
-	char* id= NULL, *tuple_id = NULL;
-	xmlDocPtr pidf_manip_doc= NULL;
-	str* pidf_doc= NULL;
-
-	xml_array = (xmlDocPtr*)pkg_malloc( (n+2)*sizeof(xmlDocPtr));
-	if(xml_array== NULL)
-	{
-	
-		LM_ERR("while alocating memory");
-		return NULL;
-	}
-	memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;
-
-	/* if pidf_manipulation usage is configured */
-	if(pidf_manipulation)
-	{
-		if( get_rules_doc(pres_user, pres_domain, PIDF_MANIPULATION, &pidf_doc)< 0)
-		{
-			LM_ERR("while getting xcap tree for doc_type PIDF_MANIPULATION\n");
-			goto error;
-		}	
-		if(pidf_doc== NULL)
-		{
-			LM_DBG("No PIDF_MANIPULATION doc for [user]= %.*s [domain]= %.*s\n"
-			,pres_user->len, pres_user->s, pres_domain->len, pres_domain->s);
-		}
-		else
-		{
-			pidf_manip_doc= xmlParseMemory(pidf_doc->s, pidf_doc->len);
-			pkg_free(pidf_doc->s);
-			pkg_free(pidf_doc);
-
-			if(pidf_manip_doc== NULL)
-			{
-				LM_ERR("parsing xml memory\n");
-				goto error;
-			}		
-			else
-			{	
-				xml_array[0]= pidf_manip_doc;
-				j++;
-			}
-		}
-	}
-	
-	for(i=0; i<n; i++)
-	{
-		if(body_array[i] == NULL )
-			continue;
-
-		xml_array[j] = NULL;
-		xml_array[j] = xmlParseMemory( body_array[i]->s, body_array[i]->len );
-		LM_DBG("i = [%d] - body: %.*s\n", i,  body_array[i]->len, body_array[i]->s);
-
-		if( xml_array[j]== NULL)
-		{
-			LM_ERR("while parsing xml body message\n");
-			goto error;
-		}
-		j++;
-	}
-
-	if(j== 0)  /* no body */
-	{
-		if(xml_array)
-			pkg_free(xml_array);
-		return NULL;
-	}
-
-	j--;
-	p_root = xmlDocGetNodeByName( xml_array[j], "presence", NULL);
-	if(p_root ==NULL)
-	{
-		LM_ERR("while geting the xml_tree root\n");
-		goto error;
-	}
-
-	for(i= j-1; i>=0; i--)
-	{
-		LM_DBG("i = %d\n", i);
-
-		new_p_root= xmlDocGetNodeByName( xml_array[i], "presence", NULL);
-		if(new_p_root ==NULL)
-		{
-			LM_ERR("while geting the xml_tree root\n");
-			goto error;
-		}
-
-		node= xmlNodeGetChildByName(new_p_root, "tuple");
-		if(node== NULL)
-		{
-			LM_DBG("no tuple node found\n");
-			append = 1;
-			goto append_label;
-		}
-		tuple_id= xmlNodeGetAttrContentByName(node, "id");
-		if(tuple_id== NULL)
-		{
-			LM_ERR("while extracting tuple id\n");
-			goto error;
-		}
-		append= 1;
-		for (node = p_root->children; node!=NULL; node = node->next)
-		{		
-			if( xmlStrcasecmp(node->name,(unsigned char*)"text")==0)
-				continue;
-			
-			if( xmlStrcasecmp(node->name,(unsigned char*)"tuple")==0)
-			{
-				id = xmlNodeGetAttrContentByName(node, "id");
-				if(id== NULL)
-				{
-					LM_ERR("while extracting tuple id\n");
-					goto error;
-				}
-				
-				if(xmlStrcasecmp((unsigned char*)tuple_id,
-							(unsigned char*)id )== 0)
-				{
-					append = 0;
-					xmlFree(id);
-					break;
-				}
-				xmlFree(id);
-			}
-		}
-		xmlFree(tuple_id);
-		tuple_id= NULL;
-
-append_label:
-		if(append) 
-		{
-			LM_DBG("in if\n");
-			for(node= new_p_root->children; node; node= node->next)
-			{
-				LM_DBG("adding node [%s]\n", node->name);
-				add_node= xmlCopyNode(node, 1);
-				if(add_node== NULL)
-				{
-					LM_ERR("while copying node [%s]\n", node->name);
-					goto error;
-				}
-
-				if(xmlAddChild(p_root, add_node)== NULL)
-				{
-					LM_ERR("while adding child\n");
-					goto error;
-				}
-			}
-		}
-	}
-
-	body = (str*)pkg_malloc(sizeof(str));
-	if(body == NULL)
-	{
-		ERR_MEM(PKG_MEM_STR);
-	}
-
-	xmlDocDumpMemory(xml_array[j],(xmlChar**)(void*)&body->s, 
-			&body->len);
-
-	LM_DBG("body = %.*s\n", body->len, body->s);
-
-  	for(i=0; i<=j; i++)
-	{
-		if(xml_array[i]!=NULL)
-			xmlFreeDoc( xml_array[i]);
-	}
-	if(xml_array!=NULL)
-		pkg_free(xml_array);
-    
-	xmlCleanupParser();
-    xmlMemoryDump();
-
-	return body;
-
-error:
-	if(xml_array!=NULL)
-	{
-		for(i=0; i<=j; i++)
-		{
-			if(xml_array[i]!=NULL)
-				xmlFreeDoc( xml_array[i]);
-		}
-		pkg_free(xml_array);
-	}
-	if(tuple_id)
-		xmlFree(tuple_id);
-	if(body)
-		pkg_free(body);
-
-	return NULL;
-}
-
-str* offline_nbody(str* body)
-{
-	xmlDocPtr doc= NULL;
-	xmlDocPtr new_doc= NULL;
-	xmlNodePtr node, tuple_node= NULL, status_node;
-	xmlNodePtr root_node, add_node, pres_node;
-	str* new_body;
-
-	doc= xmlParseMemory(body->s, body->len);
-	if(doc==  NULL)
-	{
-		LM_ERR("while parsing xml memory\n");
-		return NULL;
-	}
-	node= xmlDocGetNodeByName(doc, "basic", NULL);
-	if(node== NULL)
-	{
-		LM_ERR("while extracting basic node\n");
-		goto error;
-	}
-	xmlNodeSetContent(node, (const unsigned char*)"closed");
-
-	tuple_node= xmlDocGetNodeByName(doc, "tuple", NULL);
-	if(tuple_node== NULL)
-	{
-		LM_ERR("while extracting tuple node\n");
-		goto error;
-	}
-	status_node= xmlDocGetNodeByName(doc, "status", NULL);
-	if(status_node== NULL)
-	{
-		LM_ERR("while extracting tuple node\n");
-		goto error;
-	}
-
-	pres_node= xmlDocGetNodeByName(doc, "presence", NULL);
-	if(node== NULL)
-	{
-		LM_ERR("while extracting presence node\n");
-		goto error;
-	}
-
-	new_doc = xmlNewDoc(BAD_CAST "1.0");
-	if(new_doc==0)
-		goto error;
-	root_node= xmlCopyNode(pres_node, 2);
-	if(root_node== NULL)
-	{
-		LM_ERR("while copying root node\n");
-		goto error;
-	}
-	xmlNewProp(root_node, BAD_CAST "xmlns",
-			BAD_CAST "urn:ietf:params:xml:ns:pidf");
-	xmlDocSetRootElement(new_doc, root_node);
-
-	tuple_node= xmlCopyNode(tuple_node, 2);
-	if(tuple_node== NULL)
-	{
-		LM_ERR("no tuple node found\n");
-		goto error;
-	}
-
-	xmlAddChild(root_node, tuple_node);
-
-	add_node= xmlCopyNode(status_node, 1);
-	if(add_node== NULL)
-	{
-		LM_ERR("while copying node\n");
-		goto error;
-	}
-
-	xmlAddChild(tuple_node, add_node);
-
-	new_body = (str*)pkg_malloc(sizeof(str));
-	if(new_body == NULL)
-	{
-		ERR_MEM(PKG_MEM_STR);
-	}
-	memset(new_body, 0, sizeof(str));
-
-	xmlDocDumpMemory(new_doc,(xmlChar**)(void*)&new_body->s,
-		&new_body->len);
-
-	xmlFreeDoc(doc);
-	xmlFreeDoc(new_doc);
-	xmlCleanupParser();
-	xmlMemoryDump();
-
-	return new_body;
-
-error:
-	if(doc)
-		xmlFreeDoc(doc);
-	if(new_doc)
-		xmlFreeDoc(new_doc);
 	return NULL;
 }

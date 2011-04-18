@@ -227,21 +227,36 @@ int bla_same_dialog(unsigned char* n_callid, unsigned char* n_fromtag, unsigned 
 	return 1;
 }
 
-int fix_rem_target(xmlDocPtr doc, int* allocated)
+int dialog_fix_remote_target(str *body, str *fixed_body)
 {
+	xmlDocPtr doc = NULL;
 	xmlNodePtr n_dlg_node;
 	xmlNodePtr remote_node;
 	xmlNodePtr identity_node;
 	xmlNodePtr node;
+	xmlErrorPtr	xml_error;
 	unsigned char* attr;
+
+	if (!fixed_body)
+	{
+		LM_ERR("invalid NULL fixed_body pointer\n");
+		goto error;
+	}
+
+	doc = xmlParseMemory(body->s, body->len);
+	if (!doc)
+	{
+		xml_error = xmlGetLastError();
+		LM_ERR("Failed to parse xml dialog body: %s\n",
+			xml_error ? xml_error->message : "unknown error");
+		goto error;
+	}
 
 	n_dlg_node  = xmlNodeGetChildByName(doc->children, "dialog");
 	for(; n_dlg_node; n_dlg_node=n_dlg_node->next)
 	{
 		if(xmlStrcasecmp(n_dlg_node->name, (unsigned char*)"dialog")!= 0)
 			continue;
-
-		/* only for the ones that don't have state terminated */
 
 		/* change the remote target - don't let it pass contact on the other side */
 		remote_node = xmlNodeGetChildByName(n_dlg_node, "remote");
@@ -274,233 +289,21 @@ int fix_rem_target(xmlDocPtr doc, int* allocated)
 				}
 				xmlNewProp(node, BAD_CAST "uri", attr);
 				xmlFree(attr);
-				*allocated= 1;
 			}
 		}
 	}
-	return 0;
-error:
-	return -1;
-}
 
-/*	It does the following functions:
- *		- check if Notifies must be sent ( no if: no dialog in notify body or a full state notify )
- *		- modify the target in notify body
- *		- update the stored aggregate state
- * */
-int bla_aggregate_state(str* old_body, str* notify_body, str* update_body,
-		int* bla_update_publish, int* allocated, int* send_notify)
-{
-	xmlDocPtr old_doc= NULL, notify_doc= NULL;
-	xmlNodePtr dlg_node, n_dlg_node;
-	xmlNodePtr aux_dlg_node, state_node;
-	unsigned char* state = NULL;
-	unsigned char* n_callid= NULL,*n_totag= NULL,*n_fromtag= NULL,*dir= NULL;
-	unsigned char* o_callid= NULL,*o_totag= NULL,*o_fromtag= NULL;
+	xmlDocDumpMemory(doc, (xmlChar **)(void *)&fixed_body->s,
+		&fixed_body->len);
 
-	*allocated = 0;
-	*bla_update_publish = 0;
-
-	notify_doc = xmlParseMemory(notify_body->s, notify_body->len);
-	if(notify_doc== NULL)
-	{
-		LM_ERR("failed to parse new body xml document\n");
-		goto error;
-	}
-	/* if no dialog in new body, do not update */
-	n_dlg_node  = xmlNodeGetChildByName(notify_doc->children, "dialog");
-	if(n_dlg_node == NULL)
-	{
-		LM_INFO("No dialog found in new body, so Notify with the old one\n");
-		*send_notify = 0;
-		xmlFreeDoc(notify_doc);
-		return 0;
-	}
-	/* if full state in new body, do not update */
-	state= xmlNodeGetAttrContentByName(notify_doc->children, "state");
-	if(state == NULL) /* no state node found */
-	{
-		LM_ERR("No state attr found in new body\n");
-		goto error;
-	}
-	if(xmlStrcasecmp(state, (unsigned char*)"full")== 0)
-	{
-		LM_DBG("A full state notify - don't propagate\n");
-		*send_notify = 0;
-		xmlFreeDoc(notify_doc);
-		xmlFree(state);
-		return 0;
-	}
-	xmlFree(state);
-
-	LM_DBG("Update the stored state\n");
-	/* check if the old body has a dialog */
-	old_doc = xmlParseMemory(old_body->s, old_body->len);
-	if(old_doc== NULL)
-	{
-		LM_ERR("failed to parse old body xml document\n");
-		goto error;
-	}
-
-	/* fix remote target in new body */
-	if(fix_remote_target)
-	{
-		if(fix_rem_target(notify_doc, allocated)< 0)
-		{
-			LM_ERR("Failed to fix remote target\n");
-			*allocated = 0;
-		}
-		if(*allocated)
-			xmlDocDumpMemory(notify_doc,(xmlChar**)(void*)&notify_body->s,
-			&notify_body->len);
-	}
-
-	/* if no previous record of a dialog, the new body should be written */
-	dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
-	if(dlg_node == NULL)
-	{
-		/* change the state to full */
-		if( xmlSetProp(n_dlg_node, BAD_CAST "version", BAD_CAST "full")== NULL)
-		{
-			LM_ERR("while setting version attribute\n");
-			goto error;
-		}
-
-		xmlDocDumpMemory(notify_doc,(xmlChar**)(void*)&update_body->s,
-			&update_body->len);
-		*bla_update_publish = 1;
-		goto done;
-	}
-
-	/* check the dialogs in old body and delete the terminated ones */
-	while(dlg_node)
-	{
-		if(xmlStrcasecmp(dlg_node->name, (unsigned char*)"dialog")!= 0)
-		{
-			dlg_node = dlg_node->next;
-			continue;
-		}
-		/* if a different one, check the state */
-		state_node = xmlNodeGetChildByName(dlg_node, "state");
-		if(state_node== NULL)
-		{
-			LM_ERR("No state defined for dialog\n");
-			goto error;
-		}
-		/* if state is terminated -> delete the node */
-		state = xmlNodeGetContent(state_node) ;
-		if(state == NULL)
-		{
-			LM_ERR("Wrong formated document - no dialog state\n");
-			goto error;
-		}
-		if(xmlStrcasecmp(state, (unsigned char*)"terminated")== 0)
-		{
-			aux_dlg_node = dlg_node->next;
-			xmlFree(state);
-			xmlUnlinkNode(dlg_node);
-			xmlFreeNode(dlg_node);
-			dlg_node = aux_dlg_node;
-			continue;
-		}
-		xmlFree(state);
-		dlg_node = dlg_node->next;
-	}
-
-	/* check and update the dialogs with the info in new body */
-	n_dlg_node  = xmlNodeGetChildByName(notify_doc->children, "dialog");
-	for(; n_dlg_node; n_dlg_node=n_dlg_node->next)
-	{
-		if(xmlStrcasecmp(n_dlg_node->name, (unsigned char*)"dialog")!= 0)
-		{
-			continue;
-		}
-
-		/* extract dialog information from the new body */
-		bla_extract_dlginfo(n_dlg_node, n_callid, n_fromtag, n_totag);
-		dlg_node = xmlNodeGetChildByName(old_doc->children, "dialog");
-		while(dlg_node)
-		{
-			if(xmlStrcasecmp(dlg_node->name, (unsigned char*)"dialog")!= 0)
-			{
-				dlg_node = dlg_node->next;
-				continue;
-			}
-			bla_extract_dlginfo(dlg_node, o_callid, o_fromtag, o_totag);
-
-			/* if it is the same dialog*/
-			if(bla_same_dialog(n_callid, n_fromtag, n_totag,
-						o_callid, o_fromtag, o_totag))
-			{
-				/* delete the node */
-				xmlUnlinkNode(dlg_node);
-				xmlFreeNode(dlg_node);
-				LM_DBG("Found the same dialog - replace the node with the new one\n");
-				if(o_callid)
-					xmlFree(o_callid);
-				if(o_fromtag)
-					xmlFree(o_fromtag);
-				if(o_totag)
-					xmlFree(o_totag);
-				break;
-			}
-			if(o_callid)
-				xmlFree(o_callid);
-			if(o_fromtag)
-				xmlFree(o_fromtag);
-			if(o_totag)
-				xmlFree(o_totag);
-
-			dlg_node = dlg_node->next;
-		}
-		if(n_callid)
-			xmlFree(n_callid);
-		if(n_totag)
-			xmlFree(n_totag);
-		if(n_fromtag)
-			xmlFree(n_fromtag);
-
-		/* copy the dialog from the new body */
-		if((aux_dlg_node= xmlCopyNode(n_dlg_node, 1))== NULL)
-		{
-			LM_ERR("failed to copy dialog node\n");
-			goto error;
-		}
-		if(aux_dlg_node->ns != NULL)
-		{
-			/* dump redundant namespace added by xmlCopyNode */
-			xmlFreeNsList(aux_dlg_node->nsDef);
-			aux_dlg_node->nsDef = NULL;
-			aux_dlg_node->ns = NULL;
-		}
-
-		if(xmlAddChild(old_doc->children, aux_dlg_node)== NULL)
-		{
-			LM_ERR("while adding child\n");
-			goto error;
-		}
-	}
-
-	xmlDocDumpMemory(old_doc,(xmlChar**)(void*)&update_body->s,
-		&update_body->len);
-	*bla_update_publish = 1;
-
-done:
-	xmlFreeDoc(notify_doc);
-	xmlFreeDoc(old_doc);
-	xmlCleanupParser();
-	xmlMemoryDump();
+	xmlFreeDoc(doc);
+	
 	return 0;
 
 error:
-	if(notify_doc)
-		xmlFreeDoc(notify_doc);
-	if(old_doc)
-		xmlFreeDoc(old_doc);
-	if(*allocated)
-		xmlFree(notify_body->s);
-	xmlCleanupParser();
-    xmlMemoryDump();
+	if (doc)
+		xmlFreeDoc(doc);
+
 	return -1;
 }
 
@@ -603,6 +406,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	int n_query_cols = 0;
 	int n_update_cols = 0;
 	str etag= {NULL, 0};
+	str notify_body = {NULL, 0};
 	str cur_etag= {NULL, 0};
 	str* rules_doc= NULL;
 	str pres_uri= {NULL, 0};
@@ -776,6 +580,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					*sent_reply= 1;
 					goto done;
 			}
+
+
 			pa_dbf.free_result(pa_db, result);
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
 					presentity->etag.len, presentity->etag.s);
@@ -899,6 +705,18 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 		if(body.s)
 		{
+			if (fix_remote_target)
+			    {
+				if (dialog_fix_remote_target(&body, &notify_body)== 0)
+				{
+					body.s = notify_body.s;
+					body.len = notify_body.len;
+				}
+				else
+				{
+					LM_ERR("Failed to fix remote target\n");
+				}
+			}
 			update_keys[n_update_cols] = &str_body_col;
 			update_vals[n_update_cols].type = DB_BLOB;
 			update_vals[n_update_cols].nul = 0;
@@ -989,6 +807,9 @@ send_mxd_notify:
 	}
 
 done:
+	if (notify_body.s)
+		xmlFree(notify_body.s);
+
 	if(rules_doc)
 	{
 		if(rules_doc->s)
@@ -1000,6 +821,14 @@ done:
 	return 0;
 
 error:
+	if(result)
+		pa_dbf.free_result(pa_db, result);
+	if(etag.s)
+		pkg_free(etag.s);
+
+	if (notify_body.s)
+		xmlFree(notify_body.s);
+
 	if(rules_doc)
 	{
 		if(rules_doc->s)

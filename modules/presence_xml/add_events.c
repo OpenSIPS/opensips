@@ -160,7 +160,7 @@ int xml_add_events(void)
 	event.req_auth= 1;
 	event.apply_auth_nbody= pres_apply_auth;
 	event.get_auth_status= pres_watcher_allowed;
-	event.agg_nbody= pres_agg_nbody;
+	event.agg_nbody= presence_agg_nbody;
 	event.evs_publ_handl= xml_publ_handl;
 	event.free_body= free_xml_body;
 	event.default_expires= 3600;
@@ -199,6 +199,7 @@ int xml_add_events(void)
 	event.mandatory_timeout_notification = 1;
 //	event.etag_not_new= 1;
 	event.evs_publ_handl= xml_publ_handl;
+	event.agg_nbody= dialog_agg_nbody;
 	event.content_type.s= "application/dialog-info+xml";
 	event.content_type.len= 27;
 	event.type= PUBL_TYPE;
