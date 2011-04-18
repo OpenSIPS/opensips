@@ -156,7 +156,16 @@ if(is_method("REGISTER") && to_uri=~"bla_aor@opensips.org")
 ...
 if(is_method("NOTIFY") && to_uri=~"bla_aor@opensips.org")
 {
-                if( bla_handle_notify() )
-                        t_reply("200", "OK");
+		bla_handle_notify();
+		if ( $rc == 1 ) {
+			xlog( "LM_INFO", "BLA NOTIFY OK" );
+			t_reply( "200", "OK" );
+		} else if ( $rc == -1 ) {
+			xlog( "LM_ERR", "Bad BLA NOTIFY request" );
+			t_reply( "400", "Bad request (BLA NOTIFY)" );
+		} else if ( $rc == -2 ) {
+			xlog( "LM_ERR", "Dialog not found" );
+			t_reply( "404", "Dialog not found (BLA NOTIFY)" );
+		}
 }
 ...

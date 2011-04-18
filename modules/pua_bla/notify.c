@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <libxml/parser.h>
+
 #include "../../parser/parse_content.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_from.h"
@@ -35,6 +37,77 @@
 #include "pua_bla.h"
 
 #define DEFAULT_EXPIRES  3600
+
+static int bla_body_is_valid(str *bla_body)
+{
+	xmlDocPtr	doc = NULL;
+	xmlNodePtr	node = NULL;
+	xmlErrorPtr	xml_err = NULL;
+	int		valid = 0;
+	
+	doc = xmlParseMemory(bla_body->s, bla_body->len);
+	if (!doc)
+	{
+		xml_err = xmlGetLastError();
+		LM_ERR("invalid body: %s", xml_err ? xml_err->message :
+						"xmlParseMemory failed");
+		LM_DBG("invalid body content: %.*s", bla_body->len, bla_body->s);
+
+		goto done;
+	}
+
+	node = doc->children;
+	if (!node)
+	{
+		LM_ERR("invalid body: no XML content");
+		goto done;
+	}
+	if (node->next)
+	{
+		/* may only have one root dialog-info node */
+		LM_ERR("invalid body: multiple root elements");
+		goto done;
+	}
+	if (xmlStrcasecmp(node->name, BAD_CAST "dialog-info") != 0)
+	{
+		LM_ERR("invalid body: required dialog-info element "
+			"not found (found <%s> instead)",
+			(unsigned char *)node->name);
+		goto done;
+	}
+
+	if (!node->children)
+	{
+		LM_DBG("valid blank dialog-info body");
+		valid = 1;
+
+		goto done;
+	}
+
+	for (node = node->children; node; node = node->next)
+	{
+		if (node->type == XML_ELEMENT_NODE &&
+			xmlStrcasecmp(node->name, BAD_CAST "dialog") != 0)
+		{
+			break;
+		}
+	}
+	if (node)
+	{
+		LM_ERR("invalid body: invalid element <%s> found",
+			(unsigned char *)node->name);
+		goto done;
+	}
+
+	LM_DBG("valid body");
+	valid = 1;
+
+done:
+	if (doc)
+		xmlFreeDoc(doc);
+
+    	return valid;
+}
 
 int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 {
@@ -134,6 +207,12 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 			return -1;
 		}
 		body.len = get_content_length( msg );
+
+		if (!bla_body_is_valid( &body ))
+		{
+			LM_ERR("bad XML body!");
+			return -1;
+		}
 	}
    	
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
@@ -160,7 +239,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(pua_is_dialog(&dialog)< 0)
 	{
 		LM_ERR("Notify in a non existing dialog\n");
-		return -1;
+		return -2;
 	}
 
 	/* parse Subscription-State and extract expires if existing */
