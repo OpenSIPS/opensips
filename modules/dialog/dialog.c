@@ -100,7 +100,7 @@ struct rr_binds d_rrb;
 pv_spec_t timeout_avp;
 
 /* db stuff */
-static str db_url = str_init(DEFAULT_DB_URL);
+static str db_url = {NULL,0};
 static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 
 extern int last_dst_leg;
@@ -528,7 +528,7 @@ static int mod_init(void)
 	if (timeout_spec.s)
 		timeout_spec.len = strlen(timeout_spec.s);
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 1 /*can be null*/);
 	call_id_column.len = strlen(call_id_column.s);
 	from_uri_column.len = strlen(from_uri_column.s);
 	from_tag_column.len = strlen(from_tag_column.s);

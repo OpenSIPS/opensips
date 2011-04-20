@@ -417,11 +417,11 @@ int estimate_available_rows( int payload_size, int column_count);
 					return -1; \
 				} \
 			} else { \
-				db_url.s = db_default_url; \
-				db_url.len = strlen(db_url.s); \
+				_db_url.s = db_default_url; \
+				_db_url.len = strlen(_db_url.s); \
 			} \
 		} else {\
-			db_url.len = strlen(db_url.s); \
+			_db_url.len = strlen(_db_url.s); \
 		} \
 	}while(0)
 

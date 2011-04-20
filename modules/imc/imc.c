@@ -61,7 +61,7 @@
 
 db_con_t *imc_db = NULL;
 db_func_t imc_dbf;
-static str db_url  = str_init(DEFAULT_DB_URL);
+static str db_url  = {NULL, 0};
 str outbound_proxy = {NULL, 0};
 
 static str rooms_table   = str_init("imc_rooms");
@@ -362,7 +362,7 @@ static int mod_init(void)
 	members_table.len = strlen(members_table.s);
 
 	/*  binding to mysql module */
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len, db_url.s);
 	
 	if (db_bind_mod(&db_url, &imc_dbf))

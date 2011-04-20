@@ -45,7 +45,7 @@
 
 
 /* db stuff */
-static str db_url = str_init(DEFAULT_DB_URL);
+static str db_url = {NULL, 0};
 static char *table_name = NULL;
 
 /* dialog stuff */
@@ -253,7 +253,7 @@ static int mod_init(void)
 {
 	LM_INFO("Load-Balancer module - initializing\n");
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 
 	/* Load dialog API */
 	if (load_dlg_api(&lb_dlg_binds) != 0) {

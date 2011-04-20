@@ -73,7 +73,7 @@ static int mi_child_init(void);
 /*
  * Module parameter variables
  */
-static str db_url = {DEFAULT_RODB_URL, DEFAULT_RODB_URL_LEN};
+static str db_url = {NULL, 0};
 int db_mode = 0;			/* Database usage mode: 0 = no cache, 1 = cache */
 str domain_table = {DOMAIN_TABLE, DOMAIN_TABLE_LEN}; /* Name of domain table */
 str domain_col = {DOMAIN_COL, DOMAIN_COL_LEN};       /* Name of domain column */
@@ -153,7 +153,7 @@ static int mod_init(void)
 
 	LM_DBG("Initializing\n");
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	domain_table.len = strlen(domain_table.s);
 	domain_col.len = strlen(domain_col.s);
 

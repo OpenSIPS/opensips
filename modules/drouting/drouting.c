@@ -405,11 +405,7 @@ static int dr_init(void)
 	LM_INFO("Dynamic-Routing - initializing\n");
 
 	/* check the module params */
-	if (db_url.s==NULL || db_url.s[0]==0) {
-		LM_CRIT("mandatory parameter \"DB_URL\" found empty\n");
-		goto error;
-	}
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 
 	drd_table.len = strlen(drd_table.s);
 	if (drd_table.s[0]==0) {

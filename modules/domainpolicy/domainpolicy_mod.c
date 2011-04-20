@@ -71,8 +71,10 @@ static int child_init(int rank);
 /*
  * Module parameter variables
  */
-static str db_url         = str_init(DEFAULT_RODB_URL);
-str domainpolicy_table    = str_init(DOMAINPOLICY_TABLE);     /* Name of domainpolicy table */
+static str db_url         = {NULL, 0};
+/* Name of domainpolicy table */
+str domainpolicy_table    = str_init(DOMAINPOLICY_TABLE);
+
 str domainpolicy_col_rule = str_init(DOMAINPOLICY_COL_RULE);
 str domainpolicy_col_type = str_init(DOMAINPOLICY_COL_TYPE);
 str domainpolicy_col_att  = str_init(DOMAINPOLICY_COL_ATT);
@@ -154,8 +156,8 @@ static int mod_init(void)
 	int ver;
 
 	LM_INFO("initializing...\n");
-	
-	db_url.len = strlen(db_url.s);
+
+	init_db_url( db_url , 0 /*cannot be null*/);
 	domainpolicy_table.len = strlen(domainpolicy_table.s);
 	domainpolicy_col_rule.len = strlen(domainpolicy_col_rule.s);
 	domainpolicy_col_type.len = strlen(domainpolicy_col_type.s);
