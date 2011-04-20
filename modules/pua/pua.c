@@ -305,6 +305,7 @@ static int db_restore(void)
 	int watcher_col,callid_col,totag_col,fromtag_col,cseq_col,remote_contact_col;
 	int event_col,contact_col,tuple_col,record_route_col, extra_headers_col;
 	int version_col;
+	int no_rows = 10;
 
 	result_cols[puri_col=n_result_cols++]	= &str_pres_uri_col;
 	result_cols[touri_col=n_result_cols++]	= &str_to_uri_col;
@@ -344,7 +345,11 @@ static int db_restore(void)
 			LM_ERR("while querying table\n");
 			return -1;
 		}
-		if(pua_dbf.fetch_result(pua_db, &res, 500 /*rows*/)<0)
+		no_rows = estimate_available_rows( 128+128+8+8+4+32+64+64+128+
+			128+64+64+16+64, n_result_cols);
+		if (no_rows==0) no_rows = 10;
+
+		if(pua_dbf.fetch_result(pua_db, &res, no_rows)<0)
 		{
 			LM_ERR("Error fetching rows\n");
 			return -1;
@@ -555,7 +560,7 @@ static int db_restore(void)
 		} /* end for(all rows)*/
 
 		if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
-			if(pua_dbf.fetch_result(pua_db, &res, 500/*rows*/)<0) {
+			if(pua_dbf.fetch_result(pua_db, &res, no_rows)<0) {
 				LM_ERR( "fetching rows (1)\n");
 				goto error;
 			}
