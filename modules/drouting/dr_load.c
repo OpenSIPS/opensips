@@ -134,8 +134,6 @@ static struct dr_gwl_tmp* dr_gw_lists = NULL;
 		}\
 	} while(0)
 
-extern int dr_fetch_rows;
-
 
 static int add_tmp_gw_list(unsigned int id, char *list)
 {
@@ -301,6 +299,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	int i,n;
 	int version;
 	int column_count;
+	int no_rows = 10;
 
 	res = 0;
 	ri = 0;
@@ -351,7 +350,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+		no_rows = estimate_available_rows( 4+15+4+32+4+128+4, column_count);
+		if (no_rows==0) no_rows = 10;
+		if(dr_dbf->fetch_result(db_hdl, &res, no_rows )<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
@@ -411,7 +412,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			n++;
 		}
 		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-			if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+			if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 				LM_ERR( "fetching rows (1)\n");
 				goto error;
 			}
@@ -443,7 +444,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+		no_rows = estimate_available_rows( 4+64, 2/*cols*/);
+		if (no_rows==0) no_rows = 10;
+		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
@@ -475,7 +478,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				}
 			}
 			if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-				if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+				if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 					LM_ERR( "fetching rows (1)\n");
 					goto error;
 				}
@@ -507,7 +510,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+		no_rows = estimate_available_rows( 4+32+32+128+32+64+128, 8/*cols*/);
+		if (no_rows==0) no_rows = 10;
+		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
@@ -605,7 +610,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			n++;
 		}
 		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-			if(dr_dbf->fetch_result(db_hdl, &res, dr_fetch_rows)<0) {
+			if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 				LM_ERR( "fetching rows (1)\n");
 				goto error;
 			}

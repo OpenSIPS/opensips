@@ -1201,26 +1201,6 @@ modparam("drouting", "drg_grpid_col", "grpid")
 	</section>
 
 	<section>
-		<title><varname>fetch_rows</varname> (int)</title>
-		<para>
-		</para>
-		The number of rows that should be fetched from the result of a
-		query in rules db table.
-		<para>
-		<emphasis>Default value is <quote>2000</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>fetch_rows</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "fetch_rows", 1500)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>force_dns</varname> (int)</title>
 		<para>
 		Force DNS resolving of GW/destination names (if not IPs) during 

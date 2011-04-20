@@ -84,7 +84,6 @@ static int use_domain = 1;
  * - 1 - random order, full set
  * - 2 - random order, one per set
  */
-int dr_fetch_rows = 1000;
 int dr_force_dns = 1;
 
 /* DRG table columns */
@@ -206,7 +205,6 @@ static param_export_t params[] = {
 	{"rule_attrs_avp",  STR_PARAM, &rule_attrs_avp_spec.s},
 	{"gw_id_avp",       STR_PARAM, &gw_id_avp_spec.s     },
 	{"rule_id_avp",     STR_PARAM, &rule_id_avp_spec.s   },
-	{"fetch_rows",      INT_PARAM, &dr_fetch_rows        },
 	{"force_dns",       INT_PARAM, &dr_force_dns         },
 	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
 	{ "probing_interval",      INT_PARAM, &dr_prob_interval         },
