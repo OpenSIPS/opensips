@@ -38,7 +38,6 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
-#include "../../globals.h"
 
 #include "alookup.h"
 
