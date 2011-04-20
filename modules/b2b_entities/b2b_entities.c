@@ -46,7 +46,6 @@
 #include "dlg.h"
 
 #define TABLE_VERSION 1
-#define B2BE_FETCH_SIZE  128
 
 /** Functions declarations */
 static int mod_init(void);
@@ -686,6 +685,7 @@ int b2b_entities_restore(void)
 	b2b_table htable;
 	unsigned int hsize;
 	int type;
+	int no_rows = 10;
 
 	if(b2be_db == NULL)
 	{
@@ -731,7 +731,9 @@ int b2b_entities_restore(void)
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
 		}
-		if(b2be_dbf.fetch_result(b2be_db,&result,B2BE_FETCH_SIZE)<0)
+		no_rows = estimate_available_rows( n_result_cols*128, n_result_cols);
+		if (no_rows==0) no_rows = 10;
+		if(b2be_dbf.fetch_result(b2be_db,&result,no_rows)<0)
 		{
 			LM_ERR("fetching rows failed\n");
 			return -1;
@@ -868,8 +870,7 @@ int b2b_entities_restore(void)
 
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(b2be_dbf, DB_CAP_FETCH)) {
-			if (b2be_dbf.fetch_result( b2be_db, &result,
-				B2BE_FETCH_SIZE ) < 0) 
+			if (b2be_dbf.fetch_result( b2be_db, &result, no_rows) < 0) 
 			{
 				LM_ERR("fetching more rows failed\n");
 				goto error;
