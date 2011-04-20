@@ -415,7 +415,7 @@ proceed, you need to make sure MySQL is installed on your box.
        'opensipsctl add <name> <password> <email>'
 
 8) default values (database url, users and passwords) are:
-   - DEFAULT_DB_URL="mysql://opensips:opensipsrw@localhost/opensips"
+   - db_default_url="mysql://opensips:opensipsrw@localhost/opensips"
    - r/w user: opensips ; passwd: opensipsrw
    - r/o user: opensipsro ; passwd: opensipsro
      VERY IMPORTANT NOTE: for security reasons, do change the values of 
