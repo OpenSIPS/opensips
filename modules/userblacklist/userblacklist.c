@@ -57,7 +57,7 @@ struct check_blacklist_fs_t {
 };
 
 
-static str db_url       = str_init(DEFAULT_RODB_URL);
+static str db_url       = {NULL, 0};
 static str db_table     = str_init("userblacklist");
 static int use_domain   = 0;
 
@@ -532,7 +532,7 @@ struct mi_root * mi_reload_blacklist(struct mi_root* cmd, void* param)
 static int mod_init(void)
 {
 	LM_INFO("initializing ...\n");
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	db_table.len = strlen(db_table.s);
 
 	if (db_bind(&db_url) != 0) return -1;

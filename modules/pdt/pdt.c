@@ -72,7 +72,7 @@ static db_func_t pdt_dbf;
 
 
 /** parameters */
-static str db_url = str_init(DEFAULT_DB_URL);
+static str db_url = {NULL, 0};
 static str db_table = str_init("pdt");
 static str sdomain_column = str_init("sdomain");
 static str prefix_column  = str_init("prefix");
@@ -161,7 +161,7 @@ static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	db_table.len = strlen(db_table.s);
 	sdomain_column.len = strlen(sdomain_column.s);
 	prefix_column.len = strlen(prefix_column.s);

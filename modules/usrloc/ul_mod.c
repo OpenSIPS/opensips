@@ -104,7 +104,7 @@ str path_col        = str_init(PATH_COL);		/*!< Name of column containing the Pa
 str sock_col        = str_init(SOCK_COL);		/*!< Name of column containing the received socket */
 str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the supported methods */
 str last_mod_col     = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
-str db_url          = str_init(DEFAULT_DB_URL);		/*!< Database URL */
+str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
 int db_mode         = 0;				/*!< Database sync scheme: 0-no db, 1-write through, 2-write back, 3-only db */
 int use_domain      = 0;				/*!< Whether usrloc should use domain part of aor */
@@ -211,6 +211,7 @@ static int mod_init(void)
 	LM_DBG("initializing\n");
 
 	/* Compute the lengths of string parameters */
+	init_db_url( db_url , 1 /*can be null*/);
 	user_col.len = strlen(user_col.s);
 	domain_col.len = strlen(domain_col.s);
 	contact_col.len = strlen(contact_col.s);
@@ -226,7 +227,6 @@ static int mod_init(void)
 	sock_col.len = strlen(sock_col.s);
 	methods_col.len = strlen(methods_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
-	db_url.len = strlen(db_url.s);
 
 	if(ul_hash_size<=1)
 		ul_hash_size = 512;
@@ -260,6 +260,10 @@ static int mod_init(void)
 
 	/* Shall we use database ? */
 	if (db_mode != NO_DB) { /* Yes */
+		if (db_url.s==NULL || db_url.len==0) {
+			LM_ERR("selected db_mode requires a db connection -> db_url \n");
+			return -1;
+		}
 		if (db_bind_mod(&db_url, &ul_dbf) < 0) { /* Find database module */
 			LM_ERR("failed to bind database module\n");
 			return -1;

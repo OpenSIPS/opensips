@@ -51,7 +51,7 @@ static int child_init(int rank);
 static int mod_init(void);
 
 /* Module parameter variables */
-static str db_url    = str_init(DEFAULT_RODB_URL);
+static str db_url    = {NULL,0};
 str user_column      = str_init("username");
 str domain_column    = str_init("domain");
 str sd_user_column   = str_init("sd_username");
@@ -132,7 +132,7 @@ static int mod_init(void)
 {
 	LM_DBG("initializing\n");
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	user_column.len = strlen(user_column.s);
 	domain_column.len = strlen(domain_column.s);
 	sd_user_column.len = strlen(sd_user_column.s);

@@ -74,7 +74,7 @@ static void trace_msg_out(struct sip_msg* req, str  *buffer,
 
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 
-static str db_url             = str_init(DEFAULT_RODB_URL);
+static str db_url             = {NULL, 0};
 static str siptrace_table     = str_init("sip_trace");
 static str date_column        = str_init("time_stamp");  /* 00 */
 static str callid_column      = str_init("callid");      /* 01 */
@@ -211,7 +211,7 @@ static int mod_init(void)
 {
 	pv_spec_t avp_spec;
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	siptrace_table.len = strlen(siptrace_table.s);
 	date_column.len = strlen(date_column.s);
 	callid_column.len = strlen(callid_column.s);
