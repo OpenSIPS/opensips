@@ -14,12 +14,6 @@ DBRWUSER=${DBRWUSER:-opensips}
 # password user with full privileges over DBNAME database
 DBRWPW=${DBRWPW:-opensipsrw}
 
-# read-only user
-DBROUSER=${DBROUSER:-opensipsro}
-
-# password for read-only user
-DBROPW=${DBROPW:-opensipsro}
-
 # user name column
 USERCOL=${USERCOL:-username}
 

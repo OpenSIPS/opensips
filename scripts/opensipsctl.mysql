@@ -1,5 +1,5 @@
 #
-# $Id: opensipsctl.mysql 3519 2008-01-10 12:45:43Z henningw $
+# $Id$
 #
 # opensips control tool for maintaining opensips
 #
@@ -37,12 +37,6 @@ mysql_query() {
 	$MYSQL $2 -h $DBHOST -u $DBRWUSER "-p$DBRWPW" -e "$1 ;" $DBNAME
 }
 
-# input: sql query, optional mysql command-line params
-mysql_ro_query() {
-	$MYSQL $2 -h $DBHOST -u $DBROUSER "-p$DBROPW" -e "$1 ;" $DBNAME
-}
-
 DBCMD=mysql_query
-DBROCMD=mysql_ro_query
 DBRAWPARAMS="-B"
 

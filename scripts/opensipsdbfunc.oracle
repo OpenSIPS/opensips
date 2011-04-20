@@ -19,12 +19,6 @@ prompt_oracle_pw()
 		fi
 		CURDBUSER="$DBRWUSER"
 		;;
-	    ro)
-		if [ -n "$DBROPW" ]; then
-			return
-		fi
-		CURDBUSER="$DBROUSER"
-		;;
 	    root)
 		if [ -n "$DBROOTPW" ]; then
 			return
@@ -50,11 +44,6 @@ prompt_oracle_pw()
 		read DBRWPW
 		export DBRWPW
 		CURPW=$DBRWPW
-		;;
-	    ro)
-		read DBROPW
-		export DBROPW
-		CURPW=$DBROPW
 		;;
 	    root)
 		read DBROOTPW

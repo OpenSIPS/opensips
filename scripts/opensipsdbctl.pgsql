@@ -86,10 +86,10 @@ if [ $? -ne 0 ] ; then
 fi
 
 # postgresql users are not dropped automatically
-sql_query "template1" "drop user \"$DBRWUSER\"; drop user \"$DBROUSER\";"
+sql_query "template1" "drop user \"$DBRWUSER\";"
 
 if [ $? -ne 0 ] ; then
-	mwarn "Could not drop $DBRWUSER or $DBROUSER users, try to continue.."
+	mwarn "Could not drop $DBRWUSER user, try to continue.."
 else 
 	minfo "Database user deleted"
 fi
@@ -130,29 +130,22 @@ for TABLE in $STANDARD_MODULES; do
     fi
 done
 
-sql_query "$1" "CREATE USER $DBRWUSER WITH PASSWORD '$DBRWPW';
-		CREATE USER $DBROUSER WITH PASSWORD '$DBROPW';"
+sql_query "$1" "CREATE USER $DBRWUSER WITH PASSWORD '$DBRWPW';"
 if [ $? -ne 0 ] ; then
 	mwarn "Create user in database failed, perhaps they already exist? Try to continue.."
 fi
 
 for TABLE in $STANDARD_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
-	sql_query "$1" "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;"
 	if [ $TABLE != "version" ] ; then
 		if [ $TABLE == "dr_gateways" ] 
 		then
-	                sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_gwid_seq TO $DBRWUSER;"
-        		sql_query "$1" "GRANT SELECT ON TABLE "$TABLE"_gwid_seq TO $DBROUSER;"
-
+			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_gwid_seq TO $DBRWUSER;"
 		elif [ $TABLE == "dr_rules" ] 
 		then
-	                sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
-        		sql_query "$1" "GRANT SELECT ON TABLE "$TABLE"_ruleid_seq TO $DBROUSER;"
-
-		else		
+			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
+		else
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
-    			sql_query "$1" "GRANT SELECT ON TABLE "$TABLE"_id_seq TO $DBROUSER;"
 		fi
 	fi
 
@@ -211,9 +204,7 @@ fi
 
 for TABLE in $PRESENCE_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
-	sql_query "$1" "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;"
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
-    sql_query "$1" "GRANT SELECT ON TABLE "$TABLE"_id_seq TO $DBROUSER;"
 	if [ $? -ne 0 ] ; then
 		merr "Grant privileges to presence tables failed!"
 		exit 1
@@ -244,10 +235,8 @@ done
 
 for TABLE in $EXTRA_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
-	sql_query "$1" "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;"
 	if [ $TABLE != "route_tree" ] ; then
 		sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
-	    sql_query "$1" "GRANT SELECT ON TABLE "$TABLE"_id_seq TO $DBROUSER;"
 	fi
 	if [ $? -ne 0 ] ; then
 		merr "Grant privileges to extra tables failed!"

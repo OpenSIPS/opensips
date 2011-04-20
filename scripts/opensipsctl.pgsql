@@ -1,5 +1,5 @@
 #
-# $Id: opensipsctl.pgsql 3519 2008-01-10 12:45:43Z henningw $
+# $Id$
 #
 # sc: opensips control; tool for maintaining opensips
 #
@@ -45,17 +45,6 @@ pgsql_query() {
 		-c "$1"
 }
 
-# input: sql query, optional pgsql command-line params
-pgsql_ro_query() {
-	mdbg "pgsql_ro_query: $PGSQL $2 -h $DBHOST -U $DBROUSER $DBNAME -c '$1'"
-	PGPASSWORD="$DBROPW" $PGSQL $2 \
-		-h $DBHOST \
-		-U $DBROUSER \
-		$DBNAME \
-		-c "$1"
-}
-
 DBCMD=pgsql_query
-DBROCMD=pgsql_ro_query
 DBRAWPARAMS="-A -q -t"
 

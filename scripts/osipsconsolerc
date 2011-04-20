@@ -32,12 +32,6 @@
 ## password for database read/write user
 # DBRWPW=opensipsrw
 
-## database read only user
-# DBROUSER=opensipsro
-
-## password for database read only user
-# DBROPW=opensipsro
-
 ## database super user (for ORACLE this is 'scheme-creator' user)
 # DBROOTUSER=root
 

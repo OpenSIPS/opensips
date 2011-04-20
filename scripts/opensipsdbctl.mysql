@@ -153,11 +153,6 @@ sql_query "" "
 	GRANT ALL PRIVILEGES ON $1.* TO '${DBRWUSER}'@'$DBHOST' IDENTIFIED BY '$DBRWPW';
 "
 fi
-if [ "$DBROOTUSER" != "$DBROUSER" ] ; then
-sql_query "" "
-	GRANT SELECT ON $1.* TO '$DBROUSER' IDENTIFIED BY '$DBROPW';
-	GRANT SELECT ON $1.* TO '${DBROUSER}'@'$DBHOST' IDENTIFIED BY '$DBROPW';"
-fi
 
 
 if [ $? -ne 0 ] ; then

@@ -53,7 +53,7 @@ if [ -z "$SED" ]; then
 fi
 
 SED_ROOTUSER="$SED -e s/%DBROOTUSER%/$DBROOTUSER/g"
-SED_USERS="$SED_ROOTUSER;s/%DBROUSER%/$DBROUSER/g;s/%DBRWUSER%/$DBRWUSER/g"
+SED_USERS="$SED_ROOTUSER;s/%DBRWUSER%/$DBRWUSER/g"
 
 #################################################################
 # config vars
@@ -87,10 +87,9 @@ fi
 
 oracle_root_cmd $1
 
-echo "DROP USER $DBROUSER CASCADE;
-      DROP USER $DBRWUSER CASCADE;" | $ORACLE_ROOT_CMD >$ORALOG
+echo "DROP USER $DBRWUSER CASCADE;" | $ORACLE_ROOT_CMD >$ORALOG
 if [ $? -ne 0 ] || check_oracle_log ; then
-	mwarn "Could not drop $DBRWUSER or $DBROUSER users, try to continue.."
+	mwarn "Could not drop $DBRWUSER, try to continue.."
 else
 	minfo "Database user deleted"
 fi
@@ -173,13 +172,9 @@ if [ $? -ne 0 ] || check_oracle_log ; then
 fi
 
 prompt_oracle_pw rw
-prompt_oracle_pw ro
-echo "create user $DBROUSER identified by $DBROPW
+echo "create user $DBRWUSER identified by $DBRWPW
     default tablespace DATA temporary tablespace TEMP profile DEFAULT;
- grant connect to $DBROUSER;
- create user $DBRWUSER identified by $DBRWPW
-    default tablespace DATA temporary tablespace TEMP profile DEFAULT;
- grant connect to $DBRWUSER;" | $ORACLE_ROOT_CMD >$ORALOG
+    grant connect to $DBRWUSER;" | $ORACLE_ROOT_CMD >$ORALOG
 if [ $? -ne 0 ] || check_oracle_log ; then
 	mwarn "Create user in database scheme failed, perhaps they allready exist? Try to continue.."
 fi
@@ -282,12 +277,12 @@ oracle_dump()
 		SUFF="@$1"
 	fi
 	if [ -n "$OPENSIPS_ORASEL" ]; then
-		$OPENSIPS_ORASEL ${DBROUSER}/${DBROPW}$SUFF -BLNe \
+		$OPENSIPS_ORASEL ${DBRWUSER}/${DBRWPW}$SUFF -BLNe \
 		    "select * from table(dump_tables('$DBROOTUSER'));" >$2
-	else
+	else/
 		echo "set feed 0 lin 8000 pages 0
 		    select * from table(dump_tables('$DBROOTUSER'));" | \
-			$SQLPLUS -S -L -R 3 ${DBROUSER}/${DBROPW}$SUFF >$2
+			$SQLPLUS -S -L -R 3 ${DBRWUSER}/${DBRWPW}$SUFF >$2
 	fi
 	return $?
 }

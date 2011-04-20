@@ -10,7 +10,7 @@ PATH=$PATH:/usr/local/sbin/
 
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
-TEST="false"
+TEST="true"
 ### include config files
 if [ -f /etc/opensips/opensipsctlrc ]; then
 	. /etc/opensips/opensipsctlrc
@@ -193,7 +193,7 @@ is_user() {
 	QUERY="select count(*) from $SUB_TABLE where \
 $SUBSCRIBER_COLUMN='$OSIPSUSER' and $REALM_COLUMN='$OSIPSDOMAIN';"
 
-	CNT=`$DBROCMD "$QUERY" "$DBRAWPARAMS" | $EGREP -v ERROR | $LAST_LINE`
+	CNT=`$DBCMD "$QUERY" "$DBRAWPARAMS" | $EGREP -v ERROR | $LAST_LINE`
 	mdbg "is_user: user counter=$CNT"
 	if [ "$CNT" = "0" ] ; then
 		false
@@ -211,7 +211,7 @@ is_value_in_db() {
 	VALUE=$3
 	
 	QUERY="select count(*) from $TABLE where $COL='$VALUE';"
-	CNT=`$DBROCMD "$QUERY" "$DBRAWPARAMS" | $EGREP -v ERROR | $LAST_LINE`
+	CNT=`$DBCMD "$QUERY" "$DBRAWPARAMS" | $EGREP -v ERROR | $LAST_LINE`
 	mdbg "is_value_in_db: counter=$CNT"
 	if [ "$CNT" = "0" ] ; then
 		false
@@ -247,7 +247,7 @@ acl() {
 				exit 1
 			fi
 			QUERY="select * FROM $ACL_TABLE $CLAUSE ; "
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 
 			;;
 
@@ -370,7 +370,7 @@ check_db_alias() {
 
 	QUERY="select count(*) from $DA_TABLE where $DA_ALIAS_USER_COLUMN='$1' \
 and $DA_ALIAS_DOMAIN_COLUMN='$2';"
-	CNT=`$DBROCMD "$QUERY" | $EGREP -v ERROR | $LAST_LINE`
+	CNT=`$DBCMD "$QUERY" | $EGREP -v ERROR | $LAST_LINE`
 	mdbg "check_db_alias: alias counter=$CNT"
 	if [ "$CNT" = "0" ] ; then
 		ALIAS_DB_EXISTS=0
@@ -443,7 +443,7 @@ $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping aliases for user=<$2>"
 				echo
 
-				$DBROCMD "$QUERY"
+				$DBCMD "$QUERY"
 									# | $AWK 'BEGIN {line=0;}
 									#		/^\+/ { next }
 									#		{	if(line==0) print "ALIASES";
@@ -460,7 +460,7 @@ $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				fi
 				QUERY="SELECT $DA_ALIAS_USER_COLUMN, $DA_ALIAS_DOMAIN_COLUMN,\
 $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
-				$DBROCMD "$QUERY"
+				$DBCMD "$QUERY"
 					# | $AWK 'BEGIN {line=0;}
 					#	/^\+/ { next }
 					#	{	line++;
@@ -500,7 +500,7 @@ $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			fi
 	
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			#TMP_UUID=`sql_ro_query "$QUERY" | $AWK 'BEGIN {line=0;}
 			#								/^\+/ { next } 
 			#								{ line++;
@@ -715,7 +715,7 @@ FROM $AVP_TABLE $CLAUSE;"
 			mdbg "Query: $QUERY"
 			mecho "Dumping AVPs"
 			echo
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			# | $AWK 'BEGIN {line=0;}
 			#		/^\+/ { next }
 			#		{	if(line==0) print "##   UUID   \tUserID     \tAttribute     \tType     \tValue\n";
@@ -916,7 +916,7 @@ db_ops() {
 				merr "missing query parameter"
 				exit 1
 			fi
-			$DBROCMD "$1"
+			$DBCMD "$1"
 			;;
 		run)
 			shift
@@ -942,7 +942,7 @@ db_ops() {
 				merr "missing query value"
 				exit 1
 			fi
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 		show)
 			shift
@@ -951,7 +951,7 @@ db_ops() {
 				exit 1
 			fi
 			QUERY="select * FROM $1;"
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 		*)
 			usage_db_ops
@@ -976,7 +976,7 @@ domain() {
 		showdb)
 			require_dbengine
 			QUERY="select * FROM $DOMAIN_TABLE ; "
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 		add)
 			require_dbengine
@@ -1036,7 +1036,7 @@ address() {
 		show)
 			require_dbengine
 			QUERY="select * FROM $ADDRESS_TABLE ; "
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 		add)
 			require_dbengine
@@ -1123,14 +1123,14 @@ cr() {
 		show)
 			mecho "cr routing tree"
 			QUERY="select * FROM $ROUTE_TREE_TABLE ORDER BY $CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN; "
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			mecho "cr routes"
 			QUERY="select * FROM $CARRIERROUTE_TABLE ORDER BY \
 				$CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN,\
 				$CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN,\
 				$CARRIERROUTE_CARRIERROUTE_DOMAIN_COLUMN,\
 				$CARRIERROUTE_CARRIERROUTE_PROB_COLUMN;"
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 		reload)
 			$CTLCMD cr_reload_routes
@@ -1274,7 +1274,7 @@ dispatcher() {
 		show)
 			mecho "dispatcher gateways"
 			QUERY="select * FROM $DISPATCHER_TABLE ORDER BY $DISPATCHER_SETID_COLUMN; "
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 		addgw)
 			shift
@@ -1355,7 +1355,7 @@ dialplan() {
 				mecho "dialplan tables"
 				QUERY="select * FROM $DIALPLAN_TABLE ORDER BY $DIALPLAN_DPID_COLUMN, $DIALPLAN_PR_COLUMN; "
 			fi
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 
 		addrule)
@@ -1579,7 +1579,7 @@ $REALM_COLUMN='$OSIPSDOMAIN' "
 			fi
 			QUERY="select $SUBSCRIBER_COLUMN, $RPID_COLUMN FROM $SUB_TABLE \
 $CLAUSE ; "
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			;;
 
 		add|rm)
@@ -1672,7 +1672,7 @@ $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping speed-dials for user=<$2>"
 				echo
 
-				$DBROCMD "$QUERY"
+				$DBCMD "$QUERY"
 					#| $AWK 'BEGIN {line=0;}
 					#	/^\+/ { next }
 		#{ if(line==0) print "##   SpeedDial   \tNew-URI     \tDescription\n";
@@ -1706,7 +1706,7 @@ $SD_SD_DOMAIN_COLUMN) AS 'Short number', ($SD_USER_COLUMN||'@'||\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
 $SD_DESC_COLUMN FROM $SD_TABLE;"
 				fi
-				$DBROCMD "$QUERY"
+				$DBCMD "$QUERY"
 				#| $AWK 'BEGIN {line=0;}
 				#	/^\+/ { next }
 				#	{	line++;
@@ -1755,7 +1755,7 @@ $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 	$SD_TABLE $CLAUSE ; "
 			fi
 			mecho "Details for speeddial <$2>"
-			$DBROCMD "$QUERY"
+			$DBCMD "$QUERY"
 			# | $AWK 'BEGIN {line=0;} /^\+/ { next } 
 			# { 
 			#	  if(line==0) print "##  SIP-ID    \tNew-URI   \tDescritpion\n";

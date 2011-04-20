@@ -93,8 +93,6 @@ my $DBNAME = "";
 my $DBHOST = "";
 my $DBPORT = "";
 my $DBRWUSER = "";
-my $DBROUSER = "";
-my $DBROPW = "";
 my $DBROOTUSER = "";
 my $DBRWPW = "";
 my $CTLENGINE = "";
@@ -355,19 +353,6 @@ while ( $#content gt -1 ){
 			}
 		}
 
-			# the read-only user for whom password may be stored here
-		if ( $DBROUSER eq "" ) {
-			if ( $arr[0] =~ /^\s*DBROUSER/ ) {
-				$DBROUSER = $arr[1];
-			}
-		}
-
-		if ( $DBROPW eq "" ) {
-			if ( $arr[0] =~ /^\s*DBROPW/ ) {
-				$DBROPW = $arr[1];
-			}			
-		}
-
 		# full privileges SQL user
 		if ( $DBROOTUSER eq "" ) {
 			if ( $arr[0] =~ /^\s*DBROOTUSER/ ) {
@@ -479,15 +464,6 @@ if ( $DBRWUSER  eq "" ) {
 
 if ( $DBRWPW  eq ""  ) {
 	$DBRWPW = 'opensipsrw';
-}
-
-# the read-only user for whom password may be stored here
-if ( $DBROUSER  eq ""  ) {
-	$DBROUSER = 'opensipsro';
-}
-
-if ( $DBROPW  eq "" ) {
-	$DBROPW = 'opensipsro';
 }
 
 # full privileges SQL user
@@ -4791,7 +4767,7 @@ sub db_ops() {
 				print "Missing query parameter\n";
 				return;
 			}
-			&db_ro_query($cmd[2]);
+			&db_query($cmd[2]);
 		}
 		elsif ($cmd[1] =~ /^run$/) {
 			
@@ -4823,7 +4799,7 @@ sub db_ops() {
 			#	print "Missing query value\n";
 			#	return;
 			#}
-			&db_ro_query($QUERY);
+			&db_query($QUERY);
 		}
 		elsif ($cmd[1] =~ /^show$/) {
 			if ( $#cmd != 2 ) {
@@ -4831,7 +4807,7 @@ sub db_ops() {
 				return;
 			}
 
-			&db_ro_query("SELECT * FROM $cmd[2]");
+			&db_query("SELECT * FROM $cmd[2]");
 			
 		}
 		elsif ($cmd[1] =~ /^h$/) {
@@ -5653,8 +5629,6 @@ sub mysql_opensips_create() {
 	&mysql_query("create database $db;" . 
 	"GRANT ALL PRIVILEGES ON $db.\* TO \'$DBRWUSER\' IDENTIFIED  BY \'$DBRWPW\'; " .
 	"GRANT ALL PRIVILEGES ON $db.* TO \'${DBRWUSER}\'\@\'$DBHOST\' IDENTIFIED BY \'$DBRWPW\';" .
-	"GRANT SELECT ON $db.* TO \'$DBROUSER\' IDENTIFIED BY \'$DBROPW\';" .
-	"GRANT SELECT ON " . $db. ".\* TO \'" . ${DBROUSER} . "\'\@\'" . $DBHOST . "\' IDENTIFIED BY \'".$DBROPW."\';");
 	if ($? == 0 )	{
 		print "Database $db....created\n";
 	} else {
@@ -5762,17 +5736,10 @@ sub pgsql_opensips_create() {	# pars: <database name>
 		print "Creating user $DBRWUSER in database failed!\n";
 	}
 	
-	&pgsql_query ($db,"CREATE USER $DBROUSER WITH PASSWORD '$DBROPW';");
-	if ( $? == 0 )	{
-		print "Creating user $DBROUSER in database succeded!\n";
-	} else {
-		print "Creating user $DBROUSER in database failed!\n";
-	}
 
 	foreach $TABLE ( @STANDARD_TABLES ) {
 		#print $TABLE;
 		&pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
-		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;");
                 if ( $TABLE !~ /version/ ) {
                         if ( ($TABLE !~ /dr_gateways/) && ($TABLE !~ /nh_sockets/) && ($TABLE !~ /dr_rules/) ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
@@ -5781,7 +5748,6 @@ sub pgsql_opensips_create() {	# pars: <database name>
                                 } else {
                                         print "Privileges to standard tables succeded!\n";
                                 }
-                                &pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;" );
                         } elsif ( $TABLE =~ /dr_gateways/ ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_gwid_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
@@ -5789,7 +5755,6 @@ sub pgsql_opensips_create() {	# pars: <database name>
                                 } else {
                                         print "Privileges to standard tables succeded!\n";
                                 }
-                                &pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_gwid_seq TO $DBROUSER;" );
                         } elsif ( $TABLE =~ /dr_rules/ ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_ruleid_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
@@ -5797,7 +5762,6 @@ sub pgsql_opensips_create() {	# pars: <database name>
                                 } else {
                                         print "Privileges to standard tables succeded!\n";
                                 }
-                                &pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_ruleid_seq TO $DBROUSER;" );
                         }
 
 		}
@@ -6008,9 +5972,7 @@ sub pgsql_presence_create(){ # pars: <database name>
 
 	foreach $TABLE (@PRESENCE_TABLES) {
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
-		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;");
 		&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
-	    	&pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;");
 		if ($? == 0 )	{
 			print "Granting privileges to presence tables succeded!\n";
 		} else {
@@ -6171,13 +6133,6 @@ sub pgsql_extra_create() { # pars: <database name>
 			print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
 		}
 
-		&pgsql_query ($db, "GRANT SELECT ON TABLE $TABLE TO $DBROUSER;" );
-		if ($? == 0 )	{
-			print "Granting privileges on $TABLE to $DBROUSER succeded!\n";
-		} else {
-			print "Granting priviliges on $TABLE to $DBROUSER failed!\n";
-		}
-
 		if ( $TABLE !~ /route_tree/ ) {
 			&pgsql_query ($db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
 			if ($? == 0 )	{
@@ -6186,12 +6141,6 @@ sub pgsql_extra_create() { # pars: <database name>
 				print "Granting priviliges on $TABLE to $DBRWUSER failed!\n";
 			}	
 
-		 	&pgsql_query ($db, "GRANT SELECT ON TABLE " . $TABLE . "_id_seq TO $DBROUSER;" );
-			if ($? == 0 )	{
-				print "Granting privileges on $TABLE to $DBROUSER succeded!\n";
-			} else {
-				print "Granting priviliges on $TABLE to $DBROUSER failed!\n";
-			}	
 		}
 	}
 
@@ -6714,22 +6663,6 @@ sub db_query() {
 }
 
 
-sub db_ro_query(){
-
-	my $query = $_[0];	
-
-		if ($DBENGINE =~ /^mysql$/) {
-			&db_mysql_ro_query($query);
-		}
-		elsif ($DBENGINE =~ /^Pg$/) {
-			&db_pgsql_ro_query($query);
-		}
-		elsif ($DBENGINE =~ /^DBTEXT$/) {
-			&db_dbtext_query($query);
-		}
-}
-
-
 # input: sql query, optional mysql command-line params
 sub db_mysql_query() {
 	
@@ -6746,20 +6679,6 @@ sub db_mysql_query() {
 }
 
 
-# input: sql query, optional mysql command-line params
-sub db_mysql_ro_query() {
-
-	my $query = $_[0];
-
-	system("$MYSQL -h $DBHOST -u$DBROUSER \"-p$DBROPW\" -D $DBNAME -e \"$query\" ;");
-	if ( $? != 0 ) {		
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-
 # input: sql query, optional pgsql command-line params
 sub db_pgsql_query() {
 
@@ -6768,15 +6687,6 @@ sub db_pgsql_query() {
 
 	print "pgsql_query: $PGSQL -A -q -t -P fieldsep=\'	\' -h $DBHOST -U $DBRWUSER $DBNAME -c \'$query\'\n";
 	system("$PGSQL -A -q -t -P fieldsep=\"	\" -h $DBHOST -U $DBRWUSER \"-W$DBRWPW\" $DBNAME \ -c \"$query\"");
-}
-
-
-# input: sql query, optional pgsql command-line params
-sub db_pgsql_ro_query() {
-
-	my $query = $_[0];
-	print "pgsql_ro_query: $PGSQL -h $DBHOST -U $DBROUSER -W $DBNAME -c '$query'\n";
-	system("$PGSQL -h $DBHOST -U $DBROUSER \"-W$DBROPW\" $DBNAME -c \"$query;\"");
 }
 
 
