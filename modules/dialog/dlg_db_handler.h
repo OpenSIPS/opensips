@@ -67,8 +67,6 @@
 #define DIALOG_TABLE_TOTAL_COL_NO	21
 #define DIALOG_TABLE_FIX_COL_NO		18
 
-#define DIALOG_FETCH_SIZE			128
-
 extern str call_id_column; 
 extern str from_uri_column;
 extern str from_tag_column;

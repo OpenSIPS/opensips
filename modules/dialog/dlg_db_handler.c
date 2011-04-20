@@ -207,7 +207,7 @@ void destroy_dlg_db(void)
 
 
 
-static int select_entire_dialog_table(db_res_t ** res)
+static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 {
 	db_key_t query_cols[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
 			&h_id_column,		&call_id_column,	&from_uri_column,
@@ -229,7 +229,10 @@ static int select_entire_dialog_table(db_res_t ** res)
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
 		}
-		if(dialog_dbf.fetch_result(dialog_db_handle,res,DIALOG_FETCH_SIZE)<0){
+		*no_rows = estimate_available_rows( 4+4+128+64+32+54+32+4+4+4+16+16
+			+256+256+64+64+32+32+256+256+4, 21 /*cols*/);
+		if (*no_rows==0) *no_rows = 10;
+		if(dialog_dbf.fetch_result(dialog_db_handle,res,*no_rows)<0){
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
@@ -379,10 +382,10 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2;
 	unsigned int next_id;
-	
+	int no_rows = 10;
 
 	res = 0;
-	if((nr_rows = select_entire_dialog_table(&res)) < 0)
+	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
 		goto end;
 
 	nr_rows = RES_ROW_N(res);
@@ -526,8 +529,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(dialog_dbf, DB_CAP_FETCH)) {
-			if (dialog_dbf.fetch_result( dialog_db_handle, &res,
-			DIALOG_FETCH_SIZE ) < 0) {
+			if (dialog_dbf.fetch_result( dialog_db_handle, &res,no_rows) < 0) {
 				LM_ERR("fetching more rows failed\n");
 				goto error;
 			}
