@@ -62,7 +62,7 @@ int HASH_SIZE= -1;
 extern int bind_pua(pua_api_t* api);
 int min_expires= 300;
 int default_expires=3600;
-static str db_url = str_init(DEFAULT_DB_URL);
+static str db_url = {NULL, 0};
 str db_table= str_init("pua");
 int update_period= 100;
 pua_event_t* pua_evlist= NULL;
@@ -168,10 +168,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len, db_url.s);
-	db_table.len = db_table.s ? strlen(db_table.s) : 0;
-	
+	init_db_url( db_url , 0 /*cannot be null*/);
+	db_table.len = strlen(db_table.s);
+
 	/* binding to database module  */
 	if (db_bind_mod(&db_url, &pua_dbf))
 	{

@@ -71,7 +71,7 @@ str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
 str rls_xcap_table= str_init("xcap");
 
-str db_url= str_init(DEFAULT_DB_URL);
+str db_url= {NULL, 0};
 int hash_size= 512;
 shtable_t rls_table;
 int pid;
@@ -294,9 +294,8 @@ static int mod_init(void)
 	rlsubs_table.len= strlen(rlsubs_table.s);
 	rlpres_table.len= strlen(rlpres_table.s);
 	rls_xcap_table.len= strlen(rls_xcap_table.s);
-	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len, db_url.s);
-	
+	init_db_url( db_url , 0 /*cannot be null*/);
+
 	/* binding to mysql module  */
 	if (db_bind_mod(&db_url, &rls_dbf))
 	{

@@ -71,7 +71,7 @@
 
 
 /* modules param variables */
-static str db_url           = str_init(DEFAULT_DB_URL); /* database url */
+static str db_url          = {NULL, 0}; /* database url */
 static str db_table        = str_init("cpl");  /* database table */
 static char *dtd_file      = 0;  /* name of the DTD file for CPL parser */
 static char *lookup_domain = 0;
@@ -231,7 +231,7 @@ static int cpl_init(void)
 	pv_spec_t avp_spec;
 	unsigned short avp_type;
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	db_table.len = strlen(db_table.s);
 	if (timer_avp.s) timer_avp.len = strlen(timer_avp.s);
 

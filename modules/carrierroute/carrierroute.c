@@ -36,6 +36,7 @@
 #include "../../ut.h"
 #include "../../error.h"
 #include "../../prime_hash.h"
+#include "../../db/db.h"
 #include "carrierroute.h"
 #include "load_data.h"
 #include "route_fifo.h"
@@ -43,7 +44,7 @@
 #include "route_func.h"
 
 
-str db_url = str_init(DEFAULT_RODB_URL);
+str db_url = {NULL, 0};
 str db_table = str_init("carrierroute");
 str db_failure_table = str_init("carrierfailureroute");
 str subscriber_table = str_init("subscriber");
@@ -261,7 +262,7 @@ static enum hash_source hash_fixup(const char * my_hash_source) {
  */
 static int mod_init(void) {
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	db_table.len = strlen(db_table.s);
 	carrier_table.len = strlen(carrier_table.s);
 	subscriber_table.len = strlen(subscriber_table.s);

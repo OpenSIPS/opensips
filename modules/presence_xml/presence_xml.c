@@ -67,7 +67,7 @@ update_watchers_t pres_update_watchers;
 pres_get_sphere_t pres_get_sphere;
 
 str xcap_table= str_init("xcap");
-str db_url = str_init(DEFAULT_DB_URL);
+str db_url = {NULL, 0};
 int force_active= 0;
 int pidf_manipulation= 0;
 int integrated_xcap_server= 0;
@@ -153,9 +153,8 @@ static int mod_init(void)
 {
 	bind_presence_t bind_presence;
 	presence_api_t pres;
-		
-	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n",ZSW(db_url.s),db_url.len, db_url.s);
+
+	init_db_url( db_url , 1 /*can be null*/);
 	xcap_table.len = xcap_table.s ? strlen(xcap_table.s) : 0;
 
 	if(force_active==0)
