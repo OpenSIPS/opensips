@@ -91,7 +91,7 @@ struct sig_binds sigb;
 /*
  * Module parameter variables
  */
-static str db_url           = {DEFAULT_RODB_URL, DEFAULT_RODB_URL_LEN};
+static str db_url           = {NULL,0};
 str user_column             = {USER_COL, USER_COL_LEN};
 str domain_column           = {DOMAIN_COL, DOMAIN_COL_LEN};
 str pass_column             = {PASS_COL, PASS_COL_LEN};
@@ -173,7 +173,7 @@ static int mod_init(void)
 
 	LM_INFO("initializing...\n");
 
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	user_column.len = strlen(user_column.s);
 	domain_column.len = strlen(domain_column.s);
 	pass_column.len = strlen(pass_column.s);

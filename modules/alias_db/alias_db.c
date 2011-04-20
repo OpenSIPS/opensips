@@ -38,6 +38,7 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
+#include "../../globals.h"
 
 #include "alookup.h"
 
@@ -59,7 +60,7 @@ static int find_fixup(void** param, int param_no);
 
 
 /* Module parameter variables */
-static str db_url       = str_init(DEFAULT_RODB_URL);
+static str db_url       = {NULL,0};
 str user_column         = str_init("username");
 str domain_column       = str_init("domain");
 str alias_user_column   = str_init("alias_username");
@@ -213,7 +214,7 @@ static int child_init(int rank)
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 	user_column.len = strlen(user_column.s);
 	domain_column.len = strlen(domain_column.s);
 	alias_domain_column.len = strlen(alias_domain_column.s);
