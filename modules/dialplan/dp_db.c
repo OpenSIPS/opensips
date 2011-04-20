@@ -44,8 +44,6 @@ str subst_exp_column=   str_init(SUBST_EXP_COL);
 str repl_exp_column =   str_init(REPL_EXP_COL);
 str attrs_column    =   str_init(ATTRS_COL); 
 
-extern int dp_fetch_rows;
-
 static db_con_t* dp_db_handle    = 0; /* database connection handle */
 static db_func_t dp_dbf;
 
@@ -187,12 +185,10 @@ int dp_load_db(void)
 		&dpid_column,	&pr_column,
 		&match_op_column,	&match_exp_column,	&match_len_column,
 		&subst_exp_column,	&repl_exp_column,	&attrs_column };
-
 	db_key_t order = &pr_column;
-
 	dpl_node_t *rule;
+	int no_rows = 10;
 
-	LM_DBG("init\n");
 	if( (*crt_idx) != (*next_idx)){
 		LM_WARN("a load command already generated, aborting reload...\n");
 		return 0;
@@ -209,7 +205,10 @@ int dp_load_db(void)
 			LM_ERR("failed to query database!\n");
 			return -1;
 		}
-		if(dp_dbf.fetch_result(dp_db_handle, &res, dp_fetch_rows)<0) {
+		no_rows = estimate_available_rows( 4+4+4+64+4+64+64+128,
+			DP_TABLE_COL_NO);
+		if (no_rows==0) no_rows = 10;
+		if(dp_dbf.fetch_result(dp_db_handle, &res, no_rows)<0) {
 			LM_ERR("failed to fetch\n");
 			if (res)
 				dp_dbf.free_result(dp_db_handle, res);
@@ -252,7 +251,7 @@ int dp_load_db(void)
 		}
 
 		if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
-			if(dp_dbf.fetch_result(dp_db_handle, &res, dp_fetch_rows)<0) {
+			if(dp_dbf.fetch_result(dp_db_handle, &res, no_rows)<0) {
 				LM_ERR("failure while fetching!\n");
 				if (res)
 					dp_dbf.free_result(dp_db_handle, res);

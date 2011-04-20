@@ -64,8 +64,6 @@ pv_spec_t * attr_pvar = NULL;
 str default_param_s = str_init(DEFAULT_PARAM);
 dp_param_p default_par2 = NULL;
 
-int dp_fetch_rows = 1000;
-
 /* reader-writers lock */
 rw_lock_t *ref_lock = NULL; 
 
@@ -83,7 +81,6 @@ static param_export_t mod_params[]={
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
 	{ "attrs_pvar",	    STR_PARAM,	&attr_pvar_s.s},
 	{ "attribute_pvar",	STR_PARAM,	&attr_pvar_s.s},
-	{ "fetch_rows",		INT_PARAM,	&dp_fetch_rows},
 	{0,0,0}
 };
 
@@ -182,9 +179,6 @@ static int mod_init(void)
 		LM_CRIT("failed to init lock\n");
 		return -1;
 	}
-
-	if(dp_fetch_rows<=0)
-		dp_fetch_rows = 1000;
 
 	if(init_data() != 0) {
 		LM_ERR("could not initialize data\n");

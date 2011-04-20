@@ -499,27 +499,6 @@ modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
 		</example>
 	</section>
 
-	<section>
-		<title><varname>fetch_rows</varname> (int)</title>
-		<para>
-		The number of rows to be fetched at once from database/
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>1000</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>fetch_rows</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialplan", "fetch_rows", 4000)
-...
-		</programlisting>
-		</example>
-	</section>
-
-
 	</section>
 
 
