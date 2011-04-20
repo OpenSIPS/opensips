@@ -321,6 +321,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	char* domain;
 	int i;
 	int n;
+	int no_rows = 10;
 
 	urecord_t* r;
 	ucontact_t* c;
@@ -356,7 +357,10 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			LM_ERR("db_query (1) failed\n");
 			return -1;
 		}
-		if(ul_dbf.fetch_result(_c, &res, ul_fetch_rows)<0) {
+		no_rows = estimate_available_rows( 32+64+4+8+128+8+4+4+64
+			+32+128+16+8+8+32, 15);
+		if (no_rows==0) no_rows = 10;
+		if(ul_dbf.fetch_result(_c, &res, no_rows)<0) {
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
@@ -437,7 +441,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 		}
 
 		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-			if(ul_dbf.fetch_result(_c, &res, ul_fetch_rows)<0) {
+			if(ul_dbf.fetch_result(_c, &res, no_rows)<0) {
 				LM_ERR("fetching rows (1) failed\n");
 				ul_dbf.free_result(_c, res);
 				return -1;
