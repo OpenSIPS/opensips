@@ -405,4 +405,24 @@ typedef int (*db_bind_api_f)(const str* mod, db_func_t *dbb);
  */
 int estimate_available_rows( int payload_size, int column_count);
 
+
+
+#define init_db_url(_db_url , _can_be_null) \
+	do{\
+		if (_db_url.s==NULL) {\
+			if (db_default_url==NULL) { \
+				if (!_can_be_null) {\
+					LM_ERR("DB URL is not defined!\n"); \
+					return -1; \
+				} \
+			} else { \
+				db_url.s = db_default_url; \
+				db_url.len = strlen(db_url.s); \
+			} \
+		} else {\
+			db_url.len = strlen(db_url.s); \
+		} \
+	}while(0)
+
+
 #endif /* DB_H */
