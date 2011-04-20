@@ -603,7 +603,10 @@ static inline int get_contact_body_field(pv_value_t *res,struct hdr_field *cth,
 				return pv_get_null(NULL, NULL, res);
 			res->rs.s = ct->params->name.s;
 			for( p=ct->params ; p->next ; p=p->next);
-			res->rs.len = (p->body.s+p->body.len) - res->rs.s;
+			if (p->body.len && p->body.s)
+				res->rs.len = (p->body.s+p->body.len) - res->rs.s;
+			else
+				res->rs.len = (p->name.s+p->name.len) - res->rs.s;
 			break;
 		default:
 			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.type);
