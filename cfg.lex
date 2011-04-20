@@ -310,6 +310,7 @@ DST_BLACKLIST		"dst_blacklist"
 MAX_WHILE_LOOPS "max_while_loops"
 DISABLE_STATELESS_FWD	"disable_stateless_fwd"
 DB_VERSION_TABLE "db_version_table"
+DB_DEFAULT_URL "db_default_url"
 DISABLE_503_TRANSLATION "disable_503_translation"
 
 MPATH	mpath
@@ -585,6 +586,8 @@ WHITESPACE	[ \t\r\n]
 									return DISABLE_STATELESS_FWD; }
 <INITIAL>{DB_VERSION_TABLE}	{	count(); yylval.strval=yytext;
 									return DB_VERSION_TABLE; }
+<INITIAL>{DB_DEFAULT_URL}	{	count(); yylval.strval=yytext;
+									return DB_DEFAULT_URL; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
 

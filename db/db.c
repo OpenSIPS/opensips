@@ -54,6 +54,7 @@
 #include "db.h"
 
 char *db_version_table = VERSION_TABLE;
+char *db_default_url = NULL;
 
 /** maximal length of a SQL URL */
 static unsigned int MAX_URL_LENGTH = 255;

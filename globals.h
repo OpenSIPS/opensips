@@ -150,5 +150,7 @@ extern time_t startup_time;
 
 extern char *db_version_table;
 
+extern char *db_default_url;
+
 extern int disable_503_translation;
 #endif
