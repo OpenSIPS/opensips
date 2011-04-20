@@ -94,7 +94,7 @@ static db_func_t jabber_dbf;
 
 /** parameters */
 
-static str db_url   = str_init("mysql://root@127.0.0.1/sip_jab");
+static str db_url   = {NULL, 0};
 static str db_table = str_init("jusers");
 char *registrar=NULL; /*"sip:registrar@example.org";*/
 
@@ -202,7 +202,7 @@ static int mod_init(void)
 	load_ih_f load_ih;
 #endif
 	int  i;
-	db_url.len = strlen(db_url.s);
+	init_db_url( db_url , 0 /*cannot be null*/);
 
 	LM_INFO("initializing ...\n");
 	if(!jdomain)

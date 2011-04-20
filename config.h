@@ -154,12 +154,6 @@
 
 #define PATH_MAX_GUESS	1024			/*!< maximum path length */
 
-#define DEFAULT_DB_URL "mysql://opensips:opensipsrw@localhost/opensips"
-#define DEFAULT_DB_URL_LEN (sizeof(DEFAULT_DB_URL) - 1)
-
-#define DEFAULT_RODB_URL "mysql://opensipsro:opensipsro@localhost/opensips"
-#define DEFAULT_RODB_URL_LEN (sizeof(DEFAULT_RODB_URL) - 1)
-
 #define VERSION_TABLE     "version" 		/*!< Table holding versions of other opensips tables */
 #define VERSION_COLUMN    "table_version"	/*!< Column name for the version value in version table */
 #define TABLENAME_COLUMN  "table_name"		/*!< Column name of the table name column in the version table */

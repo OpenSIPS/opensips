@@ -122,7 +122,7 @@ struct tm_binds tmb;
 
 /** parameters */
 
-static str ms_db_url = str_init(DEFAULT_DB_URL);
+static str ms_db_url = {NULL, 0};
 static str ms_db_table = str_init("silo");
 str  ms_reminder = {NULL, 0};
 str  ms_outbound_proxy = {NULL, 0};
@@ -259,7 +259,7 @@ static int mod_init(void)
 {
 	pv_spec_t avp_spec;
 
-	ms_db_url.len = strlen (ms_db_url.s);
+	init_db_url( ms_db_url , 0 /*cannot be null*/);
 	ms_db_table.len = strlen (ms_db_table.s);
 	sc_mid.len = strlen(sc_mid.s);
 	sc_from.len = strlen(sc_from.s);
