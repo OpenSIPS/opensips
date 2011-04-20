@@ -182,6 +182,7 @@ int load_route_data(struct rewrite_data * rd) {
 	str tmp_reply_code;
 	str tmp_next_domain;
 	str tmp_comment;
+	int no_rows=10;
 
 	if( (strlen("SELECT DISTINCT  FROM  WHERE = ")
 			+ db_table.len + columns[COL_DOMAIN]->len
@@ -241,7 +242,10 @@ int load_route_data(struct rewrite_data * rd) {
 			LM_ERR("Failed to query database to prepare fetchrow.\n");
 			return -1;
 		}
-		if(dbf.fetch_result(dbh, &res, cr_fetch_rows) < 0) {
+		no_rows = estimate_available_rows( 4+64+64+64+4+4+4+64+4+64+64+128, 
+			COLUMN_NUM);
+		if (no_rows==0) no_rows = 10;
+		if(dbf.fetch_result(dbh, &res, no_rows) < 0) {
 			LM_ERR("Fetching rows failed\n");
 			return -1;
 		}
@@ -295,7 +299,7 @@ int load_route_data(struct rewrite_data * rd) {
 			}
 		}
 		if (DB_CAPABILITY(dbf, DB_CAP_FETCH)) {
-			if(dbf.fetch_result(dbh, &res, cr_fetch_rows) < 0) {
+			if(dbf.fetch_result(dbh, &res, no_rows) < 0) {
 				LM_ERR("fetching rows failed\n");
 				dbf.free_result(dbh, res);
 				return -1;
