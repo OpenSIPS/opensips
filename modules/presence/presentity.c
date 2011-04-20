@@ -47,7 +47,6 @@
 #include "hash.h"
 #include "utils_func.h"
 
-#define PRESENTITY_FETCH_SIZE			128
 
 #define DLG_STATES_NO  4
 char* dialog_states[]= {  "trying",
@@ -857,6 +856,7 @@ int pres_htable_restore(void)
 	char* sphere= NULL;
 	int nr_rows;
 	str etag;
+	int no_rows = 10;
 
 	result_cols[user_col= n_result_cols++]= &str_username_col;
 	result_cols[domain_col= n_result_cols++]= &str_domain_col;
@@ -881,7 +881,9 @@ int pres_htable_restore(void)
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
 		}
-		if(pa_dbf.fetch_result(pa_db,&result,PRESENTITY_FETCH_SIZE)<0)
+		no_rows = estimate_available_rows( 32+32+32+4+64, n_result_cols);
+		if (no_rows==0) no_rows = 10;
+		if(pa_dbf.fetch_result(pa_db,&result, no_rows)<0)
 		{
 			LM_ERR("fetching rows failed\n");
 			return -1;
@@ -976,8 +978,7 @@ int pres_htable_restore(void)
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) 
 		{
-			if (pa_dbf.fetch_result( pa_db, &result,
-			PRESENTITY_FETCH_SIZE ) < 0) 
+			if (pa_dbf.fetch_result( pa_db, &result, no_rows) < 0) 
 			{
 				LM_ERR("fetching more rows failed\n");
 				goto error;

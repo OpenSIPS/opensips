@@ -39,7 +39,6 @@
 #include "notify.h"
 #include "../pua/hash.h"
 
-#define ACTW_FETCH_SIZE  128
 
 int get_stored_info(struct sip_msg* msg, subs_t* subs, int* error_ret,
 		str* reply_str);
@@ -1793,6 +1792,7 @@ int restore_db_subs(void)
 	int port, proto;
 	str host;
 	int nr_rows;
+	int no_rows = 10;
 
 	result_cols[pres_uri_col=n_result_cols++]	=&str_presentity_uri_col;
 	result_cols[expires_col=n_result_cols++]=&str_expires_col;
@@ -1835,7 +1835,10 @@ int restore_db_subs(void)
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
 		}
-		if(pa_dbf.fetch_result(pa_db,&result,ACTW_FETCH_SIZE)<0)
+		no_rows = estimate_available_rows( 64+4+32+4+64+64+64+64+128
+			+32+32+8+8+256+32+64+64+8+8+8, n_result_cols);
+		if (no_rows==0) no_rows = 10;
+		if(pa_dbf.fetch_result(pa_db,&result, no_rows)<0)
 		{
 			LM_ERR("fetching rows failed\n");
 			goto error;
@@ -1993,8 +1996,7 @@ int restore_db_subs(void)
 
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) {
-			if (pa_dbf.fetch_result( pa_db, &result,
-			ACTW_FETCH_SIZE ) < 0) {
+			if (pa_dbf.fetch_result( pa_db, &result, no_rows ) < 0) {
 				LM_ERR("fetching more rows failed\n");
 				goto error;
 			}
