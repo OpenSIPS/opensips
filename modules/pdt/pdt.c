@@ -61,7 +61,6 @@
 
 #define NR_KEYS			3
 
-int pdt_fetch_rows = 1000;
 
 /** structures containing prefix-domain pairs */
 pdt_tree_t **_ptree = NULL; 
@@ -122,7 +121,6 @@ static param_export_t params[]={
 	{"domain_column",  STR_PARAM, &domain_column.s},
 	{"prefix",         STR_PARAM, &prefix.s},
 	{"char_list",      STR_PARAM, &pdt_char_list.s},
-	{"fetch_rows",     INT_PARAM, &pdt_fetch_rows},
 	{"check_domain",   INT_PARAM, &pdt_check_domain},
 	{0, 0, 0}
 };
@@ -167,9 +165,6 @@ static int mod_init(void)
 	prefix_column.len = strlen(prefix_column.s);
 	domain_column.len = strlen(domain_column.s);
 	prefix.len = strlen(prefix.s);
-
-	if(pdt_fetch_rows<=0)
-		pdt_fetch_rows = 1000;
 
 	pdt_char_list.len = strlen(pdt_char_list.s);
 	if(pdt_char_list.len<=0)
@@ -537,6 +532,7 @@ static int pdt_load_db(void)
 	int i, ret;
 	pdt_tree_t *_ptree_new = NULL; 
 	pdt_tree_t *old_tree = NULL; 
+	int no_rows = 10;
 
 	if(db_con==NULL)
 	{
@@ -556,7 +552,9 @@ static int pdt_load_db(void)
 			LM_ERR("Error while querying db\n");
 			return -1;
 		}
-		if(pdt_dbf.fetch_result(db_con, &db_res, pdt_fetch_rows)<0)
+		no_rows = estimate_available_rows( 64+16+64, 3);
+		if (no_rows==0) no_rows = 10;
+		if(pdt_dbf.fetch_result(db_con, &db_res, no_rows)<0)
 		{
 			LM_ERR("Error while fetching result\n");
 			if (db_res)
@@ -619,7 +617,7 @@ static int pdt_load_db(void)
 			}
 	 	}
 		if (DB_CAPABILITY(pdt_dbf, DB_CAP_FETCH)) {
-			if(pdt_dbf.fetch_result(db_con, &db_res, pdt_fetch_rows)<0) {
+			if(pdt_dbf.fetch_result(db_con, &db_res, no_rows)<0) {
 				LM_ERR("Error while fetching!\n");
 				if (db_res)
 					pdt_dbf.free_result(db_con, db_res);
