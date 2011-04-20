@@ -33,7 +33,6 @@
 #include "lb_db.h"
 
 #define LB_TABLE_VERSION  2
-#define LB_FETCH_ROWS     100
 
 str lb_id_column			=	str_init(LB_ID_COL);
 str lb_grpid_column			=	str_init(LB_GRP_ID_COL);
@@ -123,6 +122,7 @@ int lb_db_load_data( struct lb_data *data)
 	char *resource, *uri;
 	int id, group, pmode;
 	unsigned int flags;
+	int no_rows = 10;
 
 
 	lb_dbf.use_table( lb_db_handle, &lb_table_name);
@@ -138,7 +138,9 @@ int lb_db_load_data( struct lb_data *data)
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
-		if(lb_dbf.fetch_result( lb_db_handle, &res, LB_FETCH_ROWS)<0) {
+		no_rows = estimate_available_rows( 4+4+64+256+8, 5/*cols*/);
+		if (no_rows==0) no_rows = 10;
+		if(lb_dbf.fetch_result( lb_db_handle, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			return -1;
 		}
@@ -191,7 +193,7 @@ int lb_db_load_data( struct lb_data *data)
 			n++;
 		}
 		if (DB_CAPABILITY( lb_dbf, DB_CAP_FETCH)) {
-			if(lb_dbf.fetch_result(lb_db_handle, &res, LB_FETCH_ROWS)<0) {
+			if(lb_dbf.fetch_result(lb_db_handle, &res, no_rows)<0) {
 				LM_ERR( "fetching rows (1)\n");
 				return -1;
 			}
