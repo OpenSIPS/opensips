@@ -35,6 +35,7 @@
  *  2005-02-25  uri types added (sip, sips & tel)  (andrei)
  *  2006-02-17  Session-Expires, Min-SE (dhsueh@somanetworks.com)
  *  2007-09-09  added sdp structure (osas)
+ *  2011-04-20  added support for URI unknown parameters (osas)
  */
 
 
@@ -99,6 +100,8 @@ enum request_method {
 #define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
                                       * a dialog */
 
+/* define the # of unknown URI parameters to parse */
+#define URI_MAX_U_PARAMS 5
 
 #define IFISMETHOD(methodname,firstchar)                                  \
 if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
@@ -162,6 +165,10 @@ struct sip_uri {
 	str method_val;
 	str lr_val; /* lr value placeholder for lr=on a.s.o*/
 	str r2_val;
+	/* unknown params */
+	str u_name[URI_MAX_U_PARAMS]; /* Unknown param names */
+	str u_val[URI_MAX_U_PARAMS];  /* Unknown param valss */
+	unsigned short u_params_no;   /* No of unknown params */
 };
 
 

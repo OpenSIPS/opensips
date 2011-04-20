@@ -31,7 +31,8 @@
  * 2005-02-25  preliminary tel uri support (andrei)
  * 2005-03-03  more tel uri fixes (andrei)
  * 2006-11-28  Added statistic support for the number of bad URI's
- *             (Jeffrey Magder - SOMA Networks
+ *             (Jeffrey Magder - SOMA Networks)
+ *  2011-04-20  added support for URI unknown parameters (osas)
  */
 
 
@@ -52,7 +53,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	enum states  {	URI_INIT, URI_USER, URI_PASSWORD, URI_PASSWORD_ALPHA,
 					URI_HOST, URI_HOST_P,
 					URI_HOST6_P, URI_HOST6_END, URI_PORT, 
-					URI_PARAM, URI_PARAM_P, URI_VAL_P, URI_HEADERS,
+					URI_PARAM, URI_PARAM_P, URI_PARAM_VAL_P, URI_VAL_P, URI_HEADERS,
 					/* param states */
 					/* transport */
 					PT_T, PT_R, PT_A, PT_N, PT_S, PT_P, PT_O, PT_R2, PT_T2,
@@ -96,6 +97,9 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	int error_headers;
 	unsigned int scheme;
 	uri_type backup;
+#ifdef EXTRA_DEBUG
+	int i;
+#endif
 	
 #define SIP_SCH		0x3a706973
 #define SIPS_SCH	0x73706973
@@ -161,6 +165,24 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					param_val->s=(v_start); \
 					param_val->len=(p-(v_start)) 
 
+#define u_param_set(t_start, v_start) \
+			if (uri->u_params_no < URI_MAX_U_PARAMS){ \
+				if((v_start)>(t_start)){ \
+					uri->u_name[uri->u_params_no].s=(t_start); \
+					uri->u_name[uri->u_params_no].len=((v_start)-(t_start)-1); \
+					if(p>(v_start)) { \
+						uri->u_val[uri->u_params_no].s=(v_start); \
+						uri->u_val[uri->u_params_no].len=(p-(v_start)); \
+					} \
+				} else { \
+					uri->u_name[uri->u_params_no].s=(t_start); \
+					uri->u_name[uri->u_params_no].len=(p-(t_start)); \
+				} \
+				uri->u_params_no++; \
+			} else { \
+				LM_ERR("unknown URI param list excedeed\n"); \
+			}
+
 #define semicolon_case \
 					case';': \
 						if (pass){ \
@@ -205,6 +227,20 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					colon_case; \
 						break
 
+#define u_param_common_cases \
+					case '@': \
+						/* ughhh, this is still the user */ \
+						still_at_user; \
+						break; \
+					semicolon_case; \
+						u_param_set(b, v); \
+						break; \
+					question_case; \
+						u_param_set(b, v); \
+						break; \
+					colon_case; \
+						break
+
 #define value_common_cases \
 					case '@': \
 						/* ughhh, this is still the user */ \
@@ -227,7 +263,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					case c2: \
 						state=(new_state); \
 						break; \
-					param_common_cases; \
+					u_param_common_cases; \
 					default: \
 						state=URI_PARAM_P; \
 				} \
@@ -254,7 +290,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					case d2: \
 						state=(new_state_d); \
 						break; \
-					param_common_cases; \
+					u_param_common_cases; \
 					default: \
 						state=URI_PARAM_P; \
 				} \
@@ -576,6 +612,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=PR2_R;
 						break;
 					default:
+						b=p;
 						state=URI_PARAM_P;
 				}
 				break;
@@ -583,7 +620,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 				/* supported params:
 				 *  maddr, transport, ttl, lr, user, method, r2  */
 				switch(*p){
-					param_common_cases;
+					u_param_common_cases;
+					case '=':
+						v=p + 1;
+						state=URI_PARAM_VAL_P;
+						break;
+				};
+				break;
+			case URI_PARAM_VAL_P: /* value of the ignored current param */
+				switch(*p){
+					u_param_common_cases;
 				};
 				break;
 			/* ugly but fast param names parsing */
@@ -861,6 +907,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			break;
 		case URI_PARAM:
 		case URI_PARAM_P:
+			u_param_set(b, v);
 		/* intermediate param states */
 		case PT_T: /* transport */
 		case PT_R:
@@ -1025,6 +1072,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->lr_val.len, ZSW(uri->lr_val.s)); 
 	LM_DBG("   r2=<%.*s>, val=<%.*s>\n", uri->r2.len, ZSW(uri->r2.s),
 			uri->r2_val.len, ZSW(uri->r2_val.s)); 
+	for(i=0; i<URI_MAX_U_PARAMS && uri->u_name[i].s; i++)
+		LM_DBG("uname=[%p]-><%.*s> uval=[%p]-><%.*s>\n",
+			uri->u_name[i].s, uri->u_name[i].len, uri->u_name[i].s,
+			uri->u_val[i].s, uri->u_val[i].len, uri->u_val[i].s);
+	if (i!=uri->u_params_no)
+		LM_ERR("inconsisten # of u_name:[%d]!=[%d]\n", i, uri->u_params_no);
 #endif
 	return 0;
 	
