@@ -907,6 +907,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			break;
 		case URI_PARAM:
 		case URI_PARAM_P:
+		case URI_PARAM_VAL_P:
 			u_param_set(b, v);
 		/* intermediate param states */
 		case PT_T: /* transport */
@@ -1168,5 +1169,146 @@ int parse_orig_ruri(struct sip_msg* msg)
 	}
 
 	msg->parsed_orig_ruri_ok = 1;
+	return 0;
+}
+
+#define compare_uri_val(field,cmpfunc) \
+	do { \
+		if (first.field.len != second.field.len) \
+		{ \
+			LM_DBG("Different URI field - " #field "\n"); \
+			return 1; \
+		} \
+		else \
+		{ \
+			if (first.field.len != 0) \
+				if (cmpfunc(first.field.s,second.field.s,first.field.len)) \
+				{ \
+					LM_DBG("Different URI field - " #field "\n"); \
+					return 1; \
+				} \
+		} \
+	} while (0)
+
+/* Compare 2 SIP URIs according to RFC 3261
+ * 
+ * Return value : 0 if URIs match
+ *				  1 if URIs don't match
+ *				 -1 if errors have occured
+ */
+int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
+					str *raw_uri_b,struct sip_uri *parsed_uri_b)
+{
+	struct sip_uri first;
+	struct sip_uri second;
+	int i,j;
+
+	if ( (!raw_uri_a && !parsed_uri_b) || (!raw_uri_b && !parsed_uri_b) )
+	{
+		LM_ERR("Provide either a raw or parsed form of a SIP URI\n");
+		return -1;
+	}
+
+	if (raw_uri_a && raw_uri_b)
+	{
+		
+		/* maybe we're lucky and straight-forward comparison succeeds */
+		if (raw_uri_a->len == raw_uri_b->len)
+			if (strncasecmp(raw_uri_a->s,raw_uri_b->s,raw_uri_a->len) == 0)
+			{
+				LM_DBG("straight-forward URI match\n");
+				return 0;
+			}
+	}
+
+	/* XXX - maybe if we have two parsed sip_uris,
+	 * or only one parsed and one raw,
+	 * it should be possible to do a straight-forward
+	 * URI match ? */
+
+	if (parsed_uri_a)
+		first = *parsed_uri_a;
+	else
+	{
+		if (parse_uri(raw_uri_a->s,raw_uri_a->len,&first) < 0)
+		{
+			LM_ERR("Failed to parse first URI\n");
+			return -1;
+		}
+	}
+
+	if (parsed_uri_b)
+		second = *parsed_uri_b;
+	else
+	{
+		if (parse_uri(raw_uri_b->s,raw_uri_b->len,&second) < 0)
+		{
+			LM_ERR("Failed to parse second URI\n");
+			return -1;
+		}
+	}
+
+	if (first.type != second.type)
+	{
+		LM_DBG("Different uri types\n");
+		return 1;
+	}
+
+	compare_uri_val(user,strncmp);
+	compare_uri_val(passwd,strncmp);
+	compare_uri_val(host,strncasecmp);
+	compare_uri_val(port,strncmp);
+
+	compare_uri_val(transport_val,strncasecmp);
+	compare_uri_val(ttl_val,strncasecmp);
+	compare_uri_val(user_param_val,strncasecmp);
+	compare_uri_val(maddr_val,strncasecmp);
+	compare_uri_val(method_val,strncasecmp);
+	/* XXX - small doubts about this
+	 * should we accept that ;lr=on
+	 * matched ;lr ? */
+	compare_uri_val(lr_val,strncasecmp);
+	compare_uri_val(r2_val,strncasecmp);
+
+	if (first.u_params_no == 0 || second.u_params_no == 0)
+		/* one URI doesn't have other params,
+		 * automatically all unknown params in other URI match
+		 */
+		goto headers_check;
+
+	for (i=0;i<first.u_params_no;i++)
+		for (j=0;j<second.u_params_no;j++)
+			if (first.u_name[i].len == second.u_name[j].len &&
+                strncasecmp(first.u_name[i].s,second.u_name[j].s,
+							first.u_name[i].len) == 0)
+				{
+                    /* point of no return - matching unkown parameter names */
+					if (first.u_val[i].len != second.u_val[j].len)
+					{
+						LM_DBG("Different URI param value for param %.*s\n",
+								first.u_name[i].len,first.u_name[i].s);
+						return 1;
+					}
+					else
+					{
+						if (strncasecmp(first.u_val[i].s,second.u_val[j].s,
+							second.u_val[j].len))
+						{
+							LM_DBG("Different URI param value for param %.*s\n",
+								first.u_name[i].len,first.u_name[i].s);
+							return 1;
+						}
+						else
+							break;
+					}
+				}
+
+	/* got here, it means all unknown params in first URI have been resolved
+		=> first URI matched second URI, and the other way around
+	*/
+
+headers_check:
+	 /* XXX Do we really care ? */
+	compare_uri_val(headers,strncasecmp);
 	return 0;
 }

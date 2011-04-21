@@ -40,5 +40,7 @@
 int parse_uri(char *buf, int len, struct sip_uri* uri);
 int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
+int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
+					str *raw_uri_b,struct sip_uri *parsed_uri_b);
 
 #endif /* PARSE_URI_H */
