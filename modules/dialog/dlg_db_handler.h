@@ -85,6 +85,9 @@ extern str to_contact_column;
 extern str from_contact_column;
 extern str to_sock_column;
 extern str from_sock_column;
+extern str profiles_column;
+extern str vars_column;
+extern str sflags_column;
 extern str dialog_table_name;
 extern int dlg_db_mode;
 
