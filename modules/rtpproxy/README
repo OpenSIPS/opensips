@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 voice-system.ro
    Revision History
-   Revision $Revision: 5901 $ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 7796 $ $Date: 2011-03-10 00:23:25 +0200
+                              (Thu, 10 Mar 2011) $
      __________________________________________________________
 
    Table of Contents
@@ -365,7 +365,7 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 
 1.5.12. rtpp_notify_socket (string)
 
-   The name set id column in the database table.
+   The socket used by OpenSIPS to receive timeout notifications.
 
    Default value is “NULL”.
 

@@ -433,7 +433,7 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 	<section>
 		<title><varname>rtpp_notify_socket</varname> (string)</title>
 		<para>
-			The name set id column in the database table.
+			The socket used by &osips; to receive timeout notifications.
 		</para>
 		<para>
 		<emphasis>
