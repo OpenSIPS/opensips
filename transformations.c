@@ -43,6 +43,7 @@
 
 #include "parser/parse_param.h"
 #include "parser/parse_uri.h"
+#include "parser/parse_via.h"
 #include "parser/parse_to.h"
 #include "parser/sdp/sdp_helpr_funcs.h"
 
@@ -616,6 +617,152 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	}
 done:
 	return 0;
+}
+
+
+static str _tr_via = {0, 0};
+static struct via_body *_tr_parsed_via = 0;
+
+int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	pv_value_t v;
+	str sv;
+	struct via_param *pit;
+
+	// WATCHOUT: need at least 2 chars so \r\n check wont segfault
+	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=2)
+		return -1;
+
+	if(_tr_via.len==0 || _tr_via.len!=val->rs.len ||
+			strncmp(_tr_via.s, val->rs.s, val->rs.len)!=0
+			|| _tr_parsed_via==0)
+	{
+		if(val->rs.len>_tr_via.len)
+		{
+			if(_tr_via.s) pkg_free(_tr_via.s);
+			_tr_via.s = (char*)pkg_malloc((val->rs.len+4)*sizeof(char));
+			if(_tr_via.s==NULL)
+			{
+				LM_ERR("no more private memory\n");
+				goto error;
+			}
+		}
+		_tr_via.len = val->rs.len;
+		memcpy(_tr_via.s, val->rs.s, val->rs.len);
+		// $hdr PV strips off the terminating CRLR
+		// parse_via wants to parse a full message (including
+		// multiple vias), not just a header line.  Fake this
+		_tr_via.s[_tr_via.len++] = '\r';
+		_tr_via.s[_tr_via.len++] = '\n';
+		_tr_via.s[_tr_via.len++] = 'A';	// anything other than V
+		_tr_via.s[_tr_via.len] = '\0';
+		/* reset old values */
+		free_via_list(_tr_parsed_via);
+		if ( (_tr_parsed_via=pkg_malloc(sizeof(struct via_body))) == NULL ) {
+			LM_ERR("no more private memory\n");
+			goto error;
+		}
+		memset(_tr_parsed_via, 0, sizeof(struct via_body));
+		parse_via(_tr_via.s, _tr_via.s+_tr_via.len, _tr_parsed_via);
+		if(_tr_parsed_via->error != PARSE_OK) {
+			LM_ERR("invalid via [%.*s]\n", val->rs.len,
+					val->rs.s);
+			goto error;
+		}
+	}
+	memset(val, 0, sizeof(pv_value_t));
+	val->flags = PV_VAL_STR;
+
+	switch(subtype)
+	{
+		case TR_VIA_NAME:
+			val->rs = (_tr_parsed_via->name.s)?_tr_parsed_via->name:_tr_empty;
+			break;
+		case TR_VIA_VERSION:
+			val->rs = (_tr_parsed_via->version.s)?_tr_parsed_via->version:_tr_empty;
+			break;
+		case TR_VIA_TRANSPORT:
+			val->rs = (_tr_parsed_via->transport.s)?_tr_parsed_via->transport:_tr_empty;
+			break;
+		case TR_VIA_HOST:
+			val->rs = (_tr_parsed_via->host.s)?_tr_parsed_via->host:_tr_empty;
+			break;
+		case TR_VIA_PORT:
+			val->flags |= PV_TYPE_INT|PV_VAL_INT;
+			val->rs = (_tr_parsed_via->port_str.s)?_tr_parsed_via->port_str:_tr_empty;
+			val->ri = _tr_parsed_via->port;
+			break;
+		case TR_VIA_PARAMS:
+			val->rs = (_tr_parsed_via->params.s)?_tr_parsed_via->params:_tr_empty;
+			break;
+		case TR_VIA_COMMENT:
+			val->rs = (_tr_parsed_via->comment.s)?_tr_parsed_via->comment:_tr_empty;
+			break;
+		case TR_VIA_PARAM:	// param by name
+			if(tp==NULL)
+			{
+				LM_ERR("param invalid parameters\n");
+				return -1;
+			}
+			if(_tr_parsed_via->params.len<=0)
+			{
+				val->rs = _tr_empty;
+				val->flags = PV_VAL_STR;
+				val->ri = 0;
+				break;
+			}
+
+			if(tp->type==TR_PARAM_STRING)
+			{
+				sv = tp->v.s;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
+				{
+					LM_ERR("param cannot get p1\n");
+					return -1;
+				}
+				sv = v.rs;
+			}
+			for (pit = _tr_parsed_via->param_lst; pit; pit=pit->next)
+			{
+				if (pit->name.len==sv.len
+						&& strncasecmp(pit->name.s, sv.s, sv.len)==0)
+				{
+					val->rs = pit->value;
+					goto done;
+				}
+			}
+			val->rs = _tr_empty;
+			break;
+		case TR_VIA_BRANCH:
+			val->rs = (_tr_parsed_via->branch&&_tr_parsed_via->branch->value.s)?_tr_parsed_via->branch->value: _tr_empty;
+			break;
+		case TR_VIA_RECEIVED:
+			val->rs = (_tr_parsed_via->received&&_tr_parsed_via->received->value.s)?_tr_parsed_via->received->value: _tr_empty;
+			break;
+		case TR_VIA_RPORT:
+			val->rs = (_tr_parsed_via->rport&&_tr_parsed_via->rport->value.s)?_tr_parsed_via->rport->value: _tr_empty;
+			break;
+		default:
+			LM_ERR("unknown subtype %d\n",
+					subtype);
+			return -1;
+	}
+done:
+	return 0;
+
+error:
+	if ( _tr_via.s ) {
+		pkg_free(_tr_via.s);
+	}
+	memset(&_tr_via, 0, sizeof(str));
+	if ( _tr_parsed_via ) {
+	    	free_via_list(_tr_parsed_via);
+		_tr_parsed_via = 0;
+	}
+	return -1;
 }
 
 static str _tr_csv_str = {0,0};
@@ -1471,6 +1618,14 @@ char* parse_transformation(str *in, trans_t **tr)
 			if(p0==NULL)
 				goto error;
 			p = p0;
+		} else if(tclass.len==3 && strncasecmp(tclass.s, "via", 3)==0) {
+			t->type = TR_VIA;
+			t->trf = tr_eval_via;
+			s.s = p; s.len = in->s + in->len - p;
+			p0 = tr_parse_via(&s, t);
+			if(p0==NULL)
+				goto error;
+			p = p0;
 		} else if(tclass.len==5 && strncasecmp(tclass.s, "param", 5)==0) {
 			t->type = TR_PARAMLIST;
 			t->trf = tr_eval_paramlist;
@@ -1901,6 +2056,96 @@ char* tr_parse_uri(str* in, trans_t *t)
 		return p;
 	} else if(name.len==2 && strncasecmp(name.s, "r2", 2)==0) {
 		t->subtype = TR_URI_R2;
+		return p;
+	}
+
+
+	LM_ERR("unknown transformation: %.*s/%.*s!\n", in->len,
+			in->s, name.len, name.s);
+error:
+	if(tp)
+		free_tr_param(tp);
+	if(spec)
+		pv_spec_free(spec);
+	return NULL;
+}
+
+
+char* tr_parse_via(str* in, trans_t *t)
+{
+	char *p;
+	char *p0;
+	char *ps;
+	str name;
+	str s;
+	pv_spec_t *spec = NULL;
+	tr_param_t *tp = NULL;
+
+	if(in==NULL || in->s==NULL || t==NULL)
+		return NULL;
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while(*p && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
+	if(*p=='\0')
+	{
+		LM_ERR("invalid transformation: %.*s\n", in->len, in->s);
+		goto error;
+	}
+	name.len = p - name.s;
+	trim(&name);
+
+	if(name.len==4 && strncasecmp(name.s, "name", 4)==0)
+	{
+		t->subtype = TR_VIA_NAME;
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "version", 7)==0)
+	{
+		t->subtype = TR_VIA_VERSION;
+		return p;
+	} else if(name.len==9 && strncasecmp(name.s, "transport", 9)==0) {
+		t->subtype = TR_VIA_TRANSPORT;
+		return p;
+	} else if((name.len==4 && strncasecmp(name.s, "host", 4)==0)
+			|| (name.len==6 && strncasecmp(name.s, "domain", 6)==0)) {
+		t->subtype = TR_VIA_HOST;
+		return p;
+	} else if(name.len==4 && strncasecmp(name.s, "port", 4)==0) {
+		t->subtype = TR_VIA_PORT;
+		return p;
+	} else if(name.len==6 && strncasecmp(name.s, "params", 6)==0) {
+		t->subtype = TR_VIA_PARAMS;
+		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "param", 5)==0) {
+		t->subtype = TR_VIA_PARAM;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid param transformation: %.*s\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid param transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "comment", 7)==0) {
+		t->subtype = TR_VIA_COMMENT;
+		return p;
+	} else if(name.len==6 && strncasecmp(name.s, "branch", 6)==0) {
+		t->subtype = TR_VIA_BRANCH;
+		return p;
+	} else if(name.len==8 && strncasecmp(name.s, "received", 8)==0) {
+		t->subtype = TR_VIA_RECEIVED;
+		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "rport", 5)==0) {
+		t->subtype = TR_VIA_RPORT;
 		return p;
 	}
 

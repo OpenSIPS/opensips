@@ -39,7 +39,7 @@
 #define TR_PARAM_MARKER		','
 
 enum _tr_type { TR_NONE=0, TR_STRING, TR_URI, TR_PARAMLIST, TR_NAMEADDR, TR_CSV,
-	TR_SDP,TR_IP
+	TR_SDP,TR_IP, TR_VIA
 };
 enum _tr_s_subtype { 
 	TR_S_NONE=0, TR_S_LEN, TR_S_INT, TR_S_MD5, TR_S_SUBSTR,
@@ -52,6 +52,11 @@ enum _tr_uri_subtype {
 	TR_URI_PARAMS, TR_URI_PARAM, TR_URI_HEADERS, TR_URI_TRANSPORT, TR_URI_TTL,
 	TR_URI_UPARAM, TR_URI_MADDR, TR_URI_METHOD, TR_URI_LR,
 	TR_URI_R2
+};
+enum _tr_via_subtype {
+        TR_VIA_NONE=0, TR_VIA_NAME, TR_VIA_VERSION, TR_VIA_TRANSPORT,
+	TR_VIA_HOST, TR_VIA_PORT, TR_VIA_PARAMS, TR_VIA_PARAM,
+	TR_VIA_COMMENT, TR_VIA_BRANCH, TR_VIA_RECEIVED, TR_VIA_RPORT
 };
 enum _tr_param_subtype {
 	TR_PL_NONE=0, TR_PL_VALUE, TR_PL_VALUEAT, TR_PL_NAME, TR_PL_COUNT
@@ -91,6 +96,7 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val);
 char* parse_transformation(str *in, trans_t **tr);
 char* tr_parse_string(str* in, trans_t *t);
 char* tr_parse_uri(str* in, trans_t *t);
+char* tr_parse_via(str* in, trans_t *t);
 char* tr_parse_paramlist(str* in, trans_t *t);
 char* tr_parse_nameaddr(str* in, trans_t *t);
 char* tr_parse_csv(str *in,trans_t *t);
