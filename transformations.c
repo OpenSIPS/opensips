@@ -1443,6 +1443,41 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
 
+
+		case TR_PL_EXIST:
+			if(tp==NULL)
+			{
+				LM_ERR("value invalid parameters\n");
+				return -1;
+			}
+
+			if(tp->type==TR_PARAM_STRING)
+			{
+				sv = tp->v.s;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
+				{
+					LM_ERR("value cannot get p1\n");
+					return -1;
+				}
+				sv = v.rs;
+			}
+			
+			val->ri = 0;
+			for (pit = _tr_params_list; pit; pit=pit->next)
+			{
+				if (pit->name.len==sv.len
+						&& strncasecmp(pit->name.s, sv.s, sv.len)==0)
+				{
+					val->ri = 1;
+					break;
+				}
+			}
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			goto done;
+
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -2192,6 +2227,27 @@ char* tr_parse_paramlist(str* in, trans_t *t)
 	if(name.len==5 && strncasecmp(name.s, "value", 5)==0)
 	{
 		t->subtype = TR_PL_VALUE;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid value transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid value transformation: %.*s!\n",
+					in->len, in->s);
+			goto error;
+		}
+		return p;
+
+	} else if(name.len==5 && strncasecmp(name.s, "exist", 5)==0) {
+		t->subtype = TR_PL_EXIST;
 		if(*p!=TR_PARAM_MARKER)
 		{
 			LM_ERR("invalid value transformation: %.*s\n",

@@ -1882,6 +1882,67 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return pv_get_null(msg, param, res);
 }
 
+
+static int pv_get_hdr_prolog(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res, pv_value_t* tv)
+{
+	if(msg==NULL || res==NULL || param==NULL)
+		return -1;
+
+	/* get the name */
+	if(param->pvn.type == PV_NAME_PVAR)
+	{
+		if(pv_get_spec_name(msg, param, tv)!=0 || (!(tv->flags&PV_VAL_STR)))
+		{
+			LM_ERR("invalid name\n");
+			return -1;
+		}
+	} else {
+		if(param->pvn.u.isname.type == AVP_NAME_STR)
+		{
+			tv->flags = PV_VAL_STR;
+			tv->rs = param->pvn.u.isname.name.s;
+		} else {
+			tv->flags = 0;
+			tv->ri = param->pvn.u.isname.name.n;
+		}
+	}
+	/* we need to be sure we have parsed all headers */
+	if(parse_headers(msg, HDR_EOH_F, 0)<0)
+	{
+		LM_ERR("error parsing headers\n");
+		return pv_get_null(msg, param, res);
+	}
+	return 1;
+}
+
+static int pv_get_hdrcnt(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	pv_value_t tv;
+	struct hdr_field *hf;
+	unsigned int n;
+	int ret;
+
+	if ( (ret=pv_get_hdr_prolog(msg,  param, res, &tv)) <= 0 )
+	    	return ret;
+
+	n = 0;
+	if (tv.flags==0) {
+		/* it is a known header -> use type to find it */
+		for (hf=msg->headers; hf; hf=hf->next) {
+			if (tv.ri==hf->type) 
+			        ++n;
+		}
+	} else {
+		/* it is an un-known header -> use name to find it */
+		for (hf=msg->headers; hf; hf=hf->next) {
+			if (hf->type==HDR_OTHER_T && hf->name.len==tv.rs.len
+			&& strncasecmp(hf->name.s, tv.rs.s, hf->name.len)==0)
+				++n;
+		}
+	}
+	return pv_get_uintval(msg, param, res, n);
+}
+
 static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	int idx;
@@ -1891,34 +1952,10 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	struct hdr_field *hf0;
 	char *p;
 	int n;
+	int ret;
 
-	if(msg==NULL || res==NULL || param==NULL)
-		return -1;
-
-	/* get the name */
-	if(param->pvn.type == PV_NAME_PVAR)
-	{
-		if(pv_get_spec_name(msg, param, &tv)!=0 || (!(tv.flags&PV_VAL_STR)))
-		{
-			LM_ERR("invalid name\n");
-			return -1;
-		}
-	} else {
-		if(param->pvn.u.isname.type == AVP_NAME_STR)
-		{
-			tv.flags = PV_VAL_STR;
-			tv.rs = param->pvn.u.isname.name.s;
-		} else {
-			tv.flags = 0;
-			tv.ri = param->pvn.u.isname.name.n;
-		}
-	}
-	/* we need to be sure we have parsed all headers */
-	if(parse_headers(msg, HDR_EOH_F, 0)<0)
-	{
-		LM_ERR("error parsing headers\n");
-		return pv_get_null(msg, param, res);
-	}
+	if ( (ret=pv_get_hdr_prolog(msg,  param, res, &tv)) <= 0 )
+	    	return ret;
 
 	if (tv.flags==0) {
 		/* it is a known header -> use type to find it */
@@ -2940,6 +2977,8 @@ static pv_export_t _pv_names_table[] = {
 	{{"avp", (sizeof("avp")-1)}, PVT_AVP, pv_get_avp, pv_set_avp,
 		pv_parse_avp_name, pv_parse_index, 0, 0},
 	{{"hdr", (sizeof("hdr")-1)}, PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
+		pv_parse_index, 0, 0},
+	{{"hdrcnt", (sizeof("hdrcnt")-1)}, PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name,
 		pv_parse_index, 0, 0},
 	{{"var", (sizeof("var")-1)}, PVT_SCRIPTVAR, pv_get_scriptvar,
 		pv_set_scriptvar, pv_parse_scriptvar_name, 0, 0, 0},

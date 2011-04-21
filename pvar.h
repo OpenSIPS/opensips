@@ -107,6 +107,7 @@ enum _pv_type {
 	PVT_AUTH_DURI,        PVT_DIV_REASON,        PVT_DIV_PRIVACY,
 	PVT_AUTH_DOMAIN,      PVT_AUTH_NONCE,        PVT_AUTH_RESPONSE,
 	PVT_TIME,             PVT_PATH,              PVT_ARGV,
+	PVT_HDRCNT,
 	PVT_EXTRA /* keep it last */
 };
 
