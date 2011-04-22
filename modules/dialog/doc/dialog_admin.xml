@@ -861,6 +861,66 @@ modparam("dialog", "timeout_column", "timeout_c_name")
 	</section>
 
 	<section>
+		<title><varname>profiles_column</varname> (string)</title>
+		<para>
+			The column's name in the database to store the dialogs' profiles.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>profiles</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>profiles_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "profiles_column", "profiles_c_name")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>vars_column</varname> (string)</title>
+		<para>
+			The column's name in the database to store the dialogs' vars.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>vars</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>vars_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "vars_column", "vars_c_name")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>sflags_column</varname> (string)</title>
+		<para>
+			The column's name in the database to store the dialogs' script flags.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>script_flags</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sflags_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "sflags_column", "sflags_c_name")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
 			List of names for profiles with values.
