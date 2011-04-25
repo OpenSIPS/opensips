@@ -735,6 +735,22 @@ int fixup_igp_igp(void** param, int param_no)
 	return fixup_igp(param);
 }
 
+/*! \brief
+ * fixup for functions that get three parameters
+ * - first parameter is converted to gparam_t (int or PV)
+ * - second parameter is converted to gparam_t (int or PV)
+ * - third parameter is converted to gparam_t (int or PV)
+ */
+int fixup_igp_igp_igp(void** param, int param_no)
+{
+	if (param_no < 1 || param_no > 3 )
+	{
+		LM_ERR("invalid parameter number %d\n", param_no);
+		return E_UNSPEC;
+	}
+	return fixup_igp(param);
+}
+
 int fixup_sgp_sgp(void** param, int param_no)
 {
 	if (param_no != 1 && param_no != 2 )

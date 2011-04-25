@@ -627,7 +627,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_dst(set, alg)</function>
+		<function moreinfo="none">ds_select_dst(set, alg [, max_results])</function>
 		</title>
 		<para>
 		The method selects a destination from addresses set.
@@ -701,6 +701,14 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 			</listitem>
 			</itemizedlist>
 		</listitem>
+		<listitem>
+			<para>
+			<emphasis>max_results</emphasis> - If specified, only that many results
+			will be put into the specified avp for failover. This allows having many
+			destinations but limit the useless traffic in case of a number that is
+			bound to fail everywhere.
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		If the bit 2 in 'flags' is set, the rest of the addresses from the
@@ -717,12 +725,14 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 ...
 ds_select_dst("1", "0");
 ...
+ds_select_dst("1", "0", "5");
+...
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_domain(set, alg)</function>
+		<function moreinfo="none">ds_select_domain(set, alg [, max_results])</function>
 		</title>
 		<para>
 		The method selects a destination from addresses set  and rewrites the

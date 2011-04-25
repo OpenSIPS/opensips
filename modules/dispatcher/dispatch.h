@@ -90,7 +90,7 @@ int ds_connect_db();
 void ds_disconnect_db();
 int ds_load_db();
 int ds_destroy_list();
-int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode);
+int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_results);
 int ds_next_dst(struct sip_msg *msg, int mode);
 int ds_set_state(int group, str *address, int state, int type);
 int ds_mark_dst(struct sip_msg *msg, int mode);

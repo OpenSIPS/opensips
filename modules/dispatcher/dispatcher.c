@@ -115,7 +115,9 @@ static int mod_init(void);
 static int child_init(int);
 
 static int w_ds_select_dst(struct sip_msg*, char*, char*);
+static int w_ds_select_dst_limited(struct sip_msg*, char*, char*, char*);
 static int w_ds_select_domain(struct sip_msg*, char*, char*);
+static int w_ds_select_domain_limited(struct sip_msg*, char*, char*, char*);
 static int w_ds_next_dst(struct sip_msg*, char*, char*);
 static int w_ds_next_domain(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst0(struct sip_msg*, char*, char*);
@@ -139,7 +141,11 @@ static int mi_child_init(void);
 static cmd_export_t cmds[]={
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst,    2, fixup_igp_igp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited,    3, fixup_igp_igp_igp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2, fixup_igp_igp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited, 3, fixup_igp_igp_igp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, ds_warn_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
@@ -473,7 +479,35 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 		return -1;
 	}
 
-	return ds_select_dst(msg, s, a, 0 /*set dst uri*/);
+	return ds_select_dst(msg, s, a, 0 /*set dst uri*/, 1000);
+}
+
+/**
+ * same wrapper as w_ds_select_dst, but it allows cutting down the result set
+ */
+static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
+{
+	int a, s, m;
+
+	if(msg==NULL)
+		return -1;
+	if(fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+	{
+		LM_ERR("no dst set value\n");
+		return -1;
+	}
+	if(fixup_get_ivalue(msg, (gparam_p)alg, &a)!=0)
+	{
+		LM_ERR("no alg value\n");
+		return -1;
+	}
+	if(fixup_get_ivalue(msg, (gparam_p)max_results, &m)!=0)
+	{
+		LM_ERR("no max results value\n");
+		return -1;
+	}
+
+	return ds_select_dst(msg, s, a, 0 /*set dst uri*/, m);
 }
 
 /**
@@ -496,7 +530,35 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 		return -1;
 	}
 
-	return ds_select_dst(msg, s, a, 1/*set host port*/);
+	return ds_select_dst(msg, s, a, 1/*set host port*/, 1000);
+}
+
+/**
+ *
+ */
+static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
+{
+	int a, s, m;
+	if(msg==NULL)
+		return -1;
+
+	if(fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+	{
+		LM_ERR("no dst set value\n");
+		return -1;
+	}
+	if(fixup_get_ivalue(msg, (gparam_p)alg, &a)!=0)
+	{
+		LM_ERR("no alg value\n");
+		return -1;
+	}
+	if(fixup_get_ivalue(msg, (gparam_p)max_results, &m)!=0)
+	{
+		LM_ERR("no max results value\n");
+		return -1;
+	}
+
+	return ds_select_dst(msg, s, a, 1/*set host port*/, m);
 }
 
 /**

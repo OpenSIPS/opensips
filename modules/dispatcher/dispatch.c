@@ -1080,16 +1080,34 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri, int mode)
 	return 0;
 }
 
+static int is_default_destination_entry(ds_set_p idx, int i) {
+	return ds_use_default!=0 && i==(idx->nr-1);
+}
+
+static int count_inactive_destinations(ds_set_p idx) {
+	int count = 0, i;
+
+	for(i=0; i<idx->nr; i++)
+		if(idx->dlist[i].flags & DS_INACTIVE_DST)
+			/* only count inactive entries that are not default */
+			if(!is_default_destination_entry(idx, i))
+				count++;
+
+	return count;
+}
+
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
+int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_results)
 {
-	int i, cnt;
+	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
 	int ds_id;
 	int_str avp_val;
 	ds_set_p idx = NULL;
+	int inactive_dst_count = 0;
+	int destination_entries_to_skip = 0;
 
 	if(msg==NULL)
 	{
@@ -1261,30 +1279,25 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode)
 			}
 		}
 	
+		inactive_dst_count = count_inactive_destinations(idx);
+		/* don't count inactive and default entries into total */
+		destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_use_default!=0);
+		destination_entries_to_skip -= max_results;
+
 		/* add to avp */
 
-		for(i=ds_id-1; i>=0; i--)
-		{
-			if((idx->dlist[i].flags & DS_INACTIVE_DST)
-					|| (ds_use_default!=0 && i==(idx->nr-1)))
-				continue;
-			LM_DBG("using entry [%d/%d]\n", set, i);
-			avp_val.s = idx->dlist[i].uri;
-			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
-				return -1;
-			cnt++;
-			if (attrs_avp_name.n) {
-				avp_val.s = idx->dlist[i].attrs;
-				if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
-					return -1;
-			}
-		}
+		for(i_unwrapped = ds_id-1+idx->nr; i_unwrapped>ds_id; i_unwrapped--) {
+			i = i_unwrapped % idx->nr;
 
-		for(i=idx->nr-1; i>ds_id; i--)
-		{	
 			if((idx->dlist[i].flags & DS_INACTIVE_DST)
 					|| (ds_use_default!=0 && i==(idx->nr-1)))
 				continue;
+			if(destination_entries_to_skip > 0) {
+				LM_DBG("skipped entry [%d/%d] (would crete more than %i results)\n", set, i, max_results);
+				destination_entries_to_skip--;
+				continue;
+			}
+
 			LM_DBG("using entry [%d/%d]\n", set, i);
 			avp_val.s = idx->dlist[i].uri;
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
