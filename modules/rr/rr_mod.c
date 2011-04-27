@@ -126,7 +126,6 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] ={ 
 	{"append_fromtag",                 INT_PARAM, &append_fromtag                },
 	{"enable_double_rr",               INT_PARAM, &enable_double_rr              },
-	{"enable_full_lr",                 INT_PARAM, &enable_full_lr                },
 #ifdef ENABLE_USER_CHECK
 	{"ignore_user",                    STR_PARAM, &ignore_user                   },
 #endif
