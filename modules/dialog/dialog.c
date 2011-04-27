@@ -748,7 +748,7 @@ static int w_create_dialog(struct sip_msg *req)
 {
 	struct cell *t;
 	/* is the dialog already created? */
-	if (current_dlg_pointer!=NULL)
+	if (get_current_dialog()!=NULL)
 		return 1;
 
 	t = d_tmb.t_gett();
