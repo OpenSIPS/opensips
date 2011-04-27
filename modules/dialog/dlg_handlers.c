@@ -907,6 +907,10 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	&& new_state==DLG_STATE_CONFIRMED) {
 		LM_DBG("sequential request successfully processed (dst_leg=%d)\n",
 			dst_leg);
+
+		/* within dialog request */
+		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
+
 		timeout = get_dlg_timeout(req);
 		/* update timer during sequential request? */
 		if (timeout!=default_timeout) {
@@ -923,9 +927,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 					update_dialog_dbinfo(dlg);
 			}
 		}
-
-		/* within dialog request */
-		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
 		if ( (event!=DLG_EVENT_REQACK) &&
 		(dlg->cbs.types)&DLGCB_RESPONSE_WITHIN ) {
