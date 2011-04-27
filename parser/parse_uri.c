@@ -1201,6 +1201,7 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 {
 	struct sip_uri first;
 	struct sip_uri second;
+	char matched[URI_MAX_U_PARAMS];
 	int i,j;
 
 	if ( (!raw_uri_a && !parsed_uri_b) || (!raw_uri_b && !parsed_uri_b) )
@@ -1276,13 +1277,16 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 		 */
 		goto headers_check;
 
+	memset(matched,0,URI_MAX_U_PARAMS);
+
 	for (i=0;i<first.u_params_no;i++)
 		for (j=0;j<second.u_params_no;j++)
-			if (first.u_name[i].len == second.u_name[j].len &&
+			if (matched[j] == 0 &&
+				(first.u_name[i].len == second.u_name[j].len &&
                 strncasecmp(first.u_name[i].s,second.u_name[j].s,
-							first.u_name[i].len) == 0)
+							first.u_name[i].len) == 0))
 				{
-                    /* point of no return - matching unkown parameter names */
+                    /* point of no return - matching unkown parameter values */
 					if (first.u_val[i].len != second.u_val[j].len)
 					{
 						LM_DBG("Different URI param value for param %.*s\n",
@@ -1291,6 +1295,13 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					}
 					else
 					{
+						if (first.u_val[i].len == 0)
+						{
+							/* no value for unknown params - match */
+							matched[j] = 1;
+							break;
+						}
+
 						if (strncasecmp(first.u_val[i].s,second.u_val[j].s,
 							second.u_val[j].len))
 						{
@@ -1299,7 +1310,10 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 							return 1;
 						}
 						else
+						{
+							matched[j] = 1;
 							break;
+						}
 					}
 				}
 
