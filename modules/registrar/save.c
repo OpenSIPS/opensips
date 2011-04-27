@@ -795,29 +795,24 @@ error:
 	return 0;
 }
 
-ucontact_t* get_contacts(udomain_t *_d, str *_aor) {
-	urecord_t *r = NULL;
-
-	/* returns all contacts */
-	ul.lock_udomain(_d, _aor);
-	ul.get_urecord(_d, _aor, &r);
-	ul.unlock_udomain(_d, _aor);
-	
-	return r ? r->contacts : NULL;
-}
-
 int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 {
 	pv_spec_p spec = (pv_spec_p)_s;
 	struct usr_avp *avp = NULL;
+	urecord_t *r = NULL;
 	str ip, contact;
 	str uri, aor;
 	ucontact_t *c;
 	contact_t* ct;
 	int exp, found;
+	udomain_t* ud = (udomain_t*)_d;
 	
 	if (parse_message(msg) < 0) {
 		LM_ERR("unable to parse message\n");
+		return -2;
+	}
+	if (!ud) {
+		LM_ERR("no location specified\n");
 		return -2;
 	}
 	/* msg doesn't have contacts */
@@ -845,12 +840,16 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 		return -2;
 	}
 
-	c = get_contacts((udomain_t*)_d, &aor);
-	if (!c) {
+	ul.lock_udomain(ud, &aor);
+	ul.get_urecord(ud, &aor, &r);
+	if (!r) {
 		/* dont't test anything */
 		LM_DBG("no contact found for aor=<%.*s>\n", aor.len, aor.s);
-		return -1;
-	}
+		found = -1;
+		goto end;
+	} else {
+		c = r->contacts;
+	}	
 
 	while (c) {
 		if (!c->received.len || !c->received.s || c->received.len < 4 /* sip:*/) {
@@ -881,11 +880,15 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 		if (!found) {
 			LM_DBG("no contact <%.*s> registered earlier\n",
 					contact.len, contact.s);
-			return 1;
+			found = 1;
+			goto end;
 		}
 
 		c = c->next;
 	}
+	found = -1;
 
-	return -1;
+end:
+	ul.unlock_udomain(ud, &aor);
+	return found;
 }
