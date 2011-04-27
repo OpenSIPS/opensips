@@ -35,6 +35,7 @@
 #include "../../error.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
+#include "../../db/db.h"
 
 #include "dt.h"
 #include "db.h"
