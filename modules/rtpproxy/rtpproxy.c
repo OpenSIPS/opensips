@@ -2146,7 +2146,7 @@ set_rtp_proxy_set_f(struct sip_msg * msg, char * str1, char * str2)
 
 	if (rtpp_list != NULL) {
 		selected_rtpp_set = rtpp_list;
-		return 0;
+		return 1;
 	} else {
 		LM_ERR("RTP Proxy set ID %d is not configured.\n", int_val);
 		return -2;
