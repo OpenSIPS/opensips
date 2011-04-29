@@ -1265,9 +1265,6 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 	compare_uri_val(user_param_val,strncasecmp);
 	compare_uri_val(maddr_val,strncasecmp);
 	compare_uri_val(method_val,strncasecmp);
-	/* XXX - small doubts about this
-	 * should we accept that ;lr=on
-	 * matched ;lr ? */
 	compare_uri_val(lr_val,strncasecmp);
 	compare_uri_val(r2_val,strncasecmp);
 
