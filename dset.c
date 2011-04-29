@@ -396,6 +396,22 @@ int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
 }
 
 
+int remove_branch( unsigned int idx)
+{
+	if (dset_state==0 || idx>=nr_branches)
+		return -1;
+
+	/* not last branch ?*/
+	if ( idx+1!=nr_branches )
+		memmove( branches+idx , branches+idx+1,
+			(nr_branches-idx-1)*sizeof(struct branch) );
+	
+	nr_branches--;
+
+	return 0;
+}
+
+
 /*! \brief
  * Create a Contact header field from the dset
  * array

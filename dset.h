@@ -60,6 +60,12 @@ char* get_branch( unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
 
 
 /*! \brief
+ * Removes a given branch in the current transaction
+ */
+int remove_branch( unsigned int idx);
+
+
+/*! \brief
  * Disable/Enables parallel branch usage (read and write)
  */
 void set_dset_state(unsigned char enable);
