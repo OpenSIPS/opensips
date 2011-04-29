@@ -218,6 +218,7 @@ extern int line;
 %token STRIP
 %token STRIP_TAIL
 %token APPEND_BRANCH
+%token REMOVE_BRANCH
 %token PV_PRINTF
 %token SET_USER
 %token SET_USERPASS
@@ -2184,6 +2185,10 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T,
 						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
+		| REMOVE_BRANCH LPAREN NUMBER RPAREN {
+						mk_action1($$, REMOVE_BRANCH_T, NUMBER_ST, (void*)$3);}
+		| REMOVE_BRANCH LPAREN script_var RPAREN {
+						mk_action1( $$, REMOVE_BRANCH_T, SCRIPTVAR_ST, $3);}
 
 		| PV_PRINTF LPAREN STRING COMMA STRING RPAREN {
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));

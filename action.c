@@ -423,6 +423,20 @@ int do_action(struct action* a, struct sip_msg* msg)
 					msg->force_send_socket);
 			}
 			break;
+		case REMOVE_BRANCH_T:
+			if (a->elem[0].type == SCRIPTVAR_ST) {
+				spec = (pv_spec_t*)a->elem[0].u.data;
+				if( pv_get_spec_value(msg, spec, &val)!=0
+				|| (val.flags&PV_VAL_NULL) || !(val.flags&PV_VAL_INT) ) {
+					ret=-1;
+					break;
+				}
+				i = val.ri;
+			} else {
+				i=a->elem[0].u.number;
+			}
+			ret = (remove_branch((unsigned int)i)==0)?1:-1;
+			break;
 		case LEN_GT_T:
 			if (a->elem[0].type!=NUMBER_ST) {
 				LM_ALERT("BUG in len_gt type %d\n",
