@@ -82,12 +82,12 @@ int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 	if(dlginfo->fromtag.s)
 		size+= dlginfo->fromtag.len;
 	new_dlginfo = (b2b_dlginfo_t*)shm_malloc(size);
-	memset(new_dlginfo, 0, size);
 	if(new_dlginfo == NULL)
 	{
 		LM_ERR("No more shared memory\n");
 		return -1;
 	}
+	memset(new_dlginfo, 0, size);
 	size = sizeof(b2b_dlginfo_t);
 
 	if( dlginfo->totag.s)
