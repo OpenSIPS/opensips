@@ -12,9 +12,9 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-09-23 17:34:55 +0300
+   Revision $Revision$ $Date: 2009-09-23 10:34:55 -0400
                               (Wed, 23 Sep 2009) $
      __________________________________________________________
 
@@ -45,6 +45,7 @@ Bogdan-Andrei Iancu
               1.3.10. max_contacts (integer)
               1.3.11. retry_after (integer)
               1.3.12. sock_hdr_name (string)
+              1.3.13. mcontact_avp (string)
 
         1.4. Exported Functions
 
@@ -78,11 +79,12 @@ Bogdan-Andrei Iancu
    1.10. Set max_contacts parameter
    1.11. Set retry_after parameter
    1.12. Set sock_hdr_namer parameter
-   1.13. save usage
-   1.14. lookup usage
-   1.15. registered usage
-   1.16. is_other_contact usage
-   1.17. add_sock_hdr usage
+   1.13. Set mcontact_avp parameter
+   1.14. save usage
+   1.15. lookup usage
+   1.16. registered usage
+   1.17. is_other_contact usage
+   1.18. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -102,9 +104,9 @@ Chapter 1. Admin Guide
      * off - stores the value of the Path headers into usrloc
        without passing it back to the UAC in the reply.
      * lazy - stores the Path header and passes it back to the UAC
-       if Path-support is indicated by the “path” param in the
+       if Path-support is indicated by the "path" param in the
        Supported HF.
-     * strict - rejects the registration with “420 Bad Extension”
+     * strict - rejects the registration with "420 Bad Extension"
        if there's a Path header but no support for it is indicated
        by the UAC. Otherwise it's stored and passed back to the
        UAC.
@@ -118,7 +120,7 @@ Chapter 1. Admin Guide
 
    The whole process is transparent to the user, so no config
    changes are required beside setting the registrar-parameters
-   “use_path” and “path_mode”.
+   "use_path" and "path_mode".
 
 1.2. Dependencies
 
@@ -196,7 +198,7 @@ modparam("registrar", "default_q", 1000)
    The parameter specifies the message flag to be used to control
    the module behaviour regarding TCP connections. If the flag is
    set for a REGISTER via TCP containing a TCP contact, the
-   module, via the “save()” functions will set the lifetime of the
+   module, via the "save()" functions will set the lifetime of the
    TCP connection to the contact expire value. By doing this, the
    TCP connection will stay on as long as the contact is valid.
 
@@ -324,6 +326,22 @@ modparam("registrar", "retry_after", 30)
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
 
+1.3.13. mcontact_avp (string)
+
+   AVP to store the modified binding that is set during cached
+   registrations scenario (when REGISTER is forwarded to another
+   registrar). The AVP will be used to extract the imposed expires
+   from the 200ok reply.
+
+   This make sens only in cached registrations scenario.
+
+   Default value is NULL.
+
+   Example 1.13. Set mcontact_avp parameter
+...
+modparam("registrar", "mcontact_avp", "$avp(s:register)")
+...
+
 1.4. Exported Functions
 
 1.4.1.  save(domain [,flags ,[aor]])
@@ -364,30 +382,30 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
           + 'p1' (Path support - lazy mode) The Path header is
             saved into usrloc, but is only included in the reply
             if path support is indicated in the registration
-            request by the “path” option of the “Supported”
+            request by the "path" option of the "Supported"
             header.
           + 'p2' (Path support - strict mode) The path header is
             only saved into usrloc, if path support is indicated
-            in the registration request by the “path” option of
-            the “Supported” header. If no path support is
-            indicated, the request is rejected with “420 - Bad
-            Extension” and the header “Unsupported: path” is
-            included in the reply along with the received “Path”
+            in the registration request by the "path" option of
+            the "Supported" header. If no path support is
+            indicated, the request is rejected with "420 - Bad
+            Extension" and the header "Unsupported: path" is
+            included in the reply along with the received "Path"
             header. This mode is the one recommended by RFC-3327.
-          + 'v' (path receiVed) if set, the “received” parameter
+          + 'v' (path receiVed) if set, the "received" parameter
             of the first Path URI of a registration is set as
             received-uri and the NAT branch flag is set for this
             contact. This is useful if the registrar is placed
             behind a SIP loadbalancer, which passes the nat'ed UAC
-            address as “received” parameter in it's Path uri.
+            address as "received" parameter in it's Path uri.
        This parameter is a string composed of a set of flags.
      * aor (optional) - Variable contain a custom AOR; if missing,
        the AOR will be taken from the default place - the TO
        header URI.
 
-   This function can be used from REQUEST_ROUTE.
+   This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.13. save usage
+   Example 1.14. save usage
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
@@ -442,7 +460,7 @@ save("location","mr", "$avp(i:1)");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.14. lookup usage
+   Example 1.15. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -482,7 +500,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.15. registered usage
+   Example 1.16. registered usage
 ...
 if (registered("location")) {
         sl_send_reply("100", "Trying");
@@ -506,7 +524,7 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.16. is_other_contact usage
+   Example 1.17. is_other_contact usage
 ...
 
 if (is_other_contact("location", "$avp(s:ips)")) {
@@ -518,7 +536,7 @@ if (is_other_contact("location", "$avp(s:ips)")) {
 1.4.5.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
-   “hdr_name” which contains the description of the received
+   "hdr_name" which contains the description of the received
    socket (proto:ip:port)
 
    This make sens only in multiple replicated servers scenarios.
@@ -528,7 +546,7 @@ if (is_other_contact("location", "$avp(s:ips)")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.17. add_sock_hdr usage
+   Example 1.18. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -559,66 +577,66 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-        What happend with the old “append_branch” module parameter?
+        What happend with the old "append_branch" module parameter?
 
-        It was removed as global option, as the “lookup” function takes
+        It was removed as global option, as the "lookup" function takes
         this option via the flag "b" (append Branches) See the
-        documentation of the “lookup” function.
+        documentation of the "lookup" function.
 
    2.2.
 
-        What happend with the old “method_filtering” module parameter?
+        What happend with the old "method_filtering" module parameter?
 
-        It was removed as global option, as the “lookup” function takes
+        It was removed as global option, as the "lookup" function takes
         this option via the flag "m" (Method filtering) See the
-        documentation of the “lookup” function.
+        documentation of the "lookup" function.
 
    2.3.
 
-        What happend with the old “sock_flag” module parameter?
+        What happend with the old "sock_flag" module parameter?
 
-        It was removed as global option, as the “save” function takes
+        It was removed as global option, as the "save" function takes
         this option via the flag "s" (Socket header) See the
-        documentation of the “save” function.
+        documentation of the "save" function.
 
    2.4.
 
-        What happend with the old “use_path” and “path_mode” module
+        What happend with the old "use_path" and "path_mode" module
         parameters?
 
-        They were removed as global option, as the “save” function
+        They were removed as global option, as the "save" function
         takes these options via the flag "px" (path support) See the
-        documentation of the “save” function.
+        documentation of the "save" function.
 
    2.5.
 
-        What happend with the old “path_use_received” module parameter?
+        What happend with the old "path_use_received" module parameter?
 
-        It was removed as global option, as the “save” function takes
+        It was removed as global option, as the "save" function takes
         this option via the flag "v" (path receiVed) See the
-        documentation of the “save” function.
+        documentation of the "save" function.
 
    2.6.
 
-        What happend with the old “nat_flag” module parameter?
+        What happend with the old "nat_flag" module parameter?
 
         It was removed, as the module internally loads this value from
-        the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
+        the "USRLOC" module (see the "nat_bflag" USRLOC parameter).
 
    2.7.
 
-        What happend with the old “use_domain” module parameter?
+        What happend with the old "use_domain" module parameter?
 
         It was removed, as the module internally loads this option from
-        the “USRLOC” module. This was done in order to simplify the
+        the "USRLOC" module. This was done in order to simplify the
         configuration.
 
    2.8.
 
-        What happend with the old “save_noreply” and “save_memory”
+        What happend with the old "save_noreply" and "save_memory"
         functions?
 
-        There functions were merged into the new “save(domain,flags)”
+        There functions were merged into the new "save(domain,flags)"
         functions. If a reply should be sent or if the DB should be
         updated also is controlled via the flags.
 

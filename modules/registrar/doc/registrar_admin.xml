@@ -394,7 +394,34 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		</programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>mcontact_avp</varname> (string)</title>
+		<para>
+		AVP to store the modified binding that is set during cached
+		registrations scenario (when REGISTER is forwarded to another
+		registrar).  The AVP will be used to extract the imposed
+		expires from the 200ok reply.
+		</para>
+		<para>
+		This make sens only in cached registrations scenario.
+		</para>
+		<para>
+		<emphasis>
+			Default value is NULL.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mcontact_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrar", "mcontact_avp", "$avp(s:register)")
+...
+		</programlisting>
+		</example>
 	</section>
+	</section>
+
 	<section>
 	<title>Exported Functions</title>
 	<section>
@@ -505,7 +532,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE.
+		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>
 		<example>
 		<title><function>save</function> usage</title>
