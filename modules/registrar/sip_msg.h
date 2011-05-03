@@ -52,6 +52,12 @@ int check_contacts(struct sip_msg* _m, int* _s);
 
 
 /*! \brief
+ * Set to NULL the pointer to the first contact in message
+ */
+void reset_first_contact(void);
+
+
+/*! \brief
  * Get the first contact in message
  */
 contact_t* get_first_contact(struct sip_msg* _m);

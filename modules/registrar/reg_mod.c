@@ -104,6 +104,11 @@ char* rcv_avp_param = 0;
 unsigned short rcv_avp_type = 0;
 int_str rcv_avp_name;
 
+char* mct_avp_param = 0;
+unsigned short mct_avp_type = 0;
+int_str mct_avp_name;
+
+
 int reg_use_domain = 0;
 /*!< Realm prefix to be removed */
 char* realm_pref    = "";
@@ -122,6 +127,8 @@ stat_var *default_expire_stat;
 
 /** SIGNALING binds */
 struct sig_binds sigb;
+/** TM bind */
+struct tm_binds tmb;
 
 
 /*! \brief
@@ -129,11 +136,11 @@ struct sig_binds sigb;
  */
 static cmd_export_t cmds[] = {
 	{"save",         (cmd_function)save,         1,  registrar_fixup,  0,
-		REQUEST_ROUTE },
+		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         2,  registrar_fixup,  0,
-		REQUEST_ROUTE },
+		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
-		REQUEST_ROUTE },
+		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
 	{"lookup",       (cmd_function)lookup,       2,  registrar_fixup,  0,
@@ -170,6 +177,7 @@ static param_export_t params[] = {
 	{"max_contacts",       INT_PARAM, &max_contacts        },
 	{"retry_after",        INT_PARAM, &retry_after         },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s     },
+	{"mcontact_avp",       STR_PARAM, &mct_avp_param       },
 	{0, 0, 0}
 };
 
@@ -222,6 +230,10 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* load TM API */
+	memset(&tmb, 0, sizeof(struct tm_binds));
+	load_tm_api(&tmb);
+
 	realm_prefix.s = realm_pref;
 	realm_prefix.len = strlen(realm_pref);
 
@@ -243,6 +255,24 @@ static int mod_init(void)
 	} else {
 		rcv_avp_name.n = 0;
 		rcv_avp_type = 0;
+	}
+
+	if (mct_avp_param && *mct_avp_param) {
+		s.s = mct_avp_param; s.len = strlen(s.s);
+		if (pv_parse_spec(&s, &avp_spec)==0
+				|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %s AVP definition\n", mct_avp_param);
+			return -1;
+		}
+
+		if(pv_get_avp_name(0, &avp_spec.pvp, &mct_avp_name, &mct_avp_type)!=0)
+		{
+			LM_ERR("[%s]- invalid AVP definition\n", mct_avp_param);
+			return -1;
+		}
+	} else {
+		mct_avp_name.n = 0;
+		mct_avp_type = 0;
 	}
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);

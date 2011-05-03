@@ -48,6 +48,7 @@
 #include "../../usr_avp.h"
 #include "../usrloc/usrloc.h"
 #include "../signaling/signaling.h"
+#include "../tm/tm_load.h"
 
 /* if DB support is used, this values must not exceed the 
  * storage capacity of the DB columns! See db/schema/entities.xml */
@@ -92,6 +93,8 @@ extern unsigned short aor_avp_type;
 extern int_str aor_avp_name;
 extern unsigned short rcv_avp_type;
 extern int_str rcv_avp_name;
+extern unsigned short mct_avp_type;
+extern int_str mct_avp_name;
 
 extern str rcv_param;
 extern int max_contacts;
@@ -101,6 +104,7 @@ extern str sock_hdr_name;
 usrloc_api_t ul;  /*!< Structure containing pointers to usrloc functions */
 
 extern struct sig_binds sigb;
+extern struct tm_binds tmb;
 
 extern stat_var *accepted_registrations;
 extern stat_var *rejected_registrations;

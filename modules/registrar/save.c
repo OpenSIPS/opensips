@@ -51,12 +51,14 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_uri.h"
+#include "../../parser/parse_expires.h"
 #include "../../dprint.h"
 #include "../../trim.h"
 #include "../../ut.h"
 #include "../../qvalue.h"
 #include "../../dset.h"
 #include "../../mod_fix.h"
+#include "../../data_lump.h"
 #ifdef USE_TCP
 #include "../../tcp_server.h"
 #endif
@@ -686,10 +688,11 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
  * Process REGISTER request and save it's contacts
  */
 #define is_cflag_set(_name) ((sctx.flags)&(_name))
-int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
+int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* _s)
 {
 	struct save_ctx  sctx;
 	contact_t* c;
+	contact_t* forced_c;
 	int st;
 	str uri;
 	str flags_s;
@@ -734,6 +737,8 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 			}
 		}
 	}
+	if(route_type == ONREPLY_ROUTE)
+		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
 
 	/* if no max_contact per AOR is defined, use the global one */
 	if (sctx.max_contacts == -1)
@@ -743,12 +748,24 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 		goto error;
 	}
 
-	if (check_contacts(_m, &st) > 0) {
-		goto error;
+	if (forced_binding) {
+		if (parse_contacts(forced_binding, &forced_c) < 0) {
+			LM_ERR("Unable to parse forced binding [%.*s]\n",
+				forced_binding->len, forced_binding->s);
+			goto error;
+		}
+		/* prevent processing all the headers from the message */
+		reset_first_contact();
+		st = 0;
+		c = forced_c;
+	} else {
+		if (check_contacts(_m, &st) > 0) {
+			goto error;
+		}
+		c = get_first_contact(_m);
 	}
 
 	get_act_time();
-	c = get_first_contact(_m);
 
 	if (_s) {
 		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
@@ -794,6 +811,175 @@ error:
 
 	return 0;
 }
+
+#define MAX_FORCED_BINDING_LEN 256
+int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
+{
+	struct sip_msg* msg = _m;
+	struct cell* t = NULL;
+	contact_t* _c;
+	contact_t* reply_c = NULL;
+	contact_t* request_c = NULL;
+	int st;
+	int ret;
+	int requested_exp = 0;
+	int enforced_exp = 0;
+	int_str val;
+	struct lump* l;
+	char* p;
+	char forced_binding_buf[MAX_FORCED_BINDING_LEN];
+	str forced_binding = {NULL, 0};
+	str *binding_uri;
+
+	if(_m->first_line.type != SIP_REPLY)
+		return save_aux(_m, NULL, _d, _f, _s);
+
+	memset(&val, 0, sizeof(int_str));
+	if(!tmb.t_gett) {
+		LM_ERR("TM module not loaded - can not save on reply\n");
+		return -1;
+	}
+	t = tmb.t_gett();
+	if(!t || t==T_UNDEFINED) {
+		LM_ERR("Transaction not created on Register - can not save on reply\n");
+		return -1;
+	}
+	msg = t->uas.request;
+	if(!msg) {
+		LM_ERR("NULL request - can not save on reply\n");
+		return -1;
+	}
+
+	if (parse_message(_m) < 0) return -1;
+	if (check_contacts(_m, &st) > 0) return -1;
+	if (parse_message(msg) < 0) return -1;
+	if (check_contacts(msg, &st) > 0) return -1;
+
+	/* msg - request
+	   _m  - reply 
+	*/
+	request_c = get_first_contact(msg);
+	if(request_c) {
+		/* For now, we deal only with the first contact
+		 * FIXME: implement multiple contact handling - see check_contacts() */
+		if(!request_c->expires || !request_c->expires->body.len) {
+			if (((exp_body_t*)(msg->expires->parsed))->valid) {
+				requested_exp = ((exp_body_t*)(msg->expires->parsed))->val;
+			} else {
+				LM_WARN("No expired defined\n");
+			}
+		} else {
+			if (str2int(&(request_c->expires->body), (unsigned int*)&requested_exp)<0) {
+				LM_ERR("unable to get expires from [%.*s]\n",
+					request_c->expires->body.len, request_c->expires->body.s);
+				return -1;
+			}
+		}
+		LM_DBG("Binding received from client [%.*s] with requested expires [%d]\n",
+				request_c->uri.len, request_c->uri.s, requested_exp);
+
+		/* We will use the Contact from request:
+		 *  - check if a modified contact was set in avp */
+		if (mct_avp_name.n!=0 &&
+			search_first_avp(mct_avp_type,mct_avp_name,&val,0)
+			&& val.s.len > 0) {
+			LM_DBG("Binding sent to upper registrar [%.*s]\n",
+					val.s.len, val.s.s);
+			binding_uri = &val.s;
+		} else {
+			binding_uri = &request_c->uri;
+		}
+
+		if (requested_exp) {
+			/* Let's get the contact from reply */
+			_c = get_first_contact(_m);
+			while (_c) {
+				if (compare_uris(binding_uri, NULL, &_c->uri, NULL) == 0) {
+					if(_c->expires && _c->expires->body.len) {
+						if(str2int(&(_c->expires->body),
+							(unsigned int*)&enforced_exp)<0) {
+							LM_ERR("unable to get expires from [%.*s]\n",
+								_c->expires->body.len,
+								_c->expires->body.s);
+							return -1;
+						}
+						LM_DBG("Binding received from upper registrar"
+							" [%.*s] with imposed expires [%d]\n",
+							_c->uri.len, _c->uri.s, enforced_exp);
+						reply_c = _c;
+						forced_binding.len = request_c->uri.len + 11 +
+									reply_c->expires->body.len;
+						if (forced_binding.len <= MAX_FORCED_BINDING_LEN) {
+							forced_binding.s = forced_binding_buf;
+							forced_binding_buf[0] = '<';
+							memcpy(&forced_binding_buf[1],
+								request_c->uri.s,
+								request_c->uri.len);
+							memcpy(&forced_binding_buf[request_c->uri.len + 1],
+								">;expires=", 10);
+							memcpy(&forced_binding_buf[request_c->uri.len + 11],
+								reply_c->expires->body.s,
+								reply_c->expires->body.len);
+							LM_DBG("forcing binding [%.*s]\n",
+								forced_binding.len,
+								forced_binding.s);
+							break;
+						} else {
+							LM_ERR("forced binding to BIG:"
+								" %d > MAX_FORCED_BINDING_LEN\n",
+								forced_binding.len);
+							return -1;
+						}
+					}
+				} else {
+					LM_DBG("Unmatched binding [%.*s]\n",
+							_c->uri.len, _c->uri.s);
+				}
+				_c = get_next_contact(_c);
+			}
+		}
+		ret = save_aux(msg, forced_binding.s?&forced_binding:NULL, _d, _f, _s);
+	} else {
+		LM_DBG("No Contact in request => this is an interogation\n");
+		ret = 1;
+	}
+
+
+	/* if the contact was changed in register - put the modif value */
+	if(request_c && requested_exp && val.s.s) {
+		if(reply_c) {
+			LM_DBG("replacing contact uri [%.*s] with [%.*s]\n",
+				reply_c->uri.len, reply_c->uri.s,
+				request_c->uri.len, request_c->uri.s);
+			/* replace with what was received in Register */
+			/* reply_c->uri - now contains the initial received value */
+			if((l=del_lump(_m, reply_c->uri.s - _m->buf, reply_c->uri.len, 0))==0) {
+				LM_ERR("Failed to delete contact uri lump\n");
+				ret = -1;
+				goto done;
+			}
+			p = pkg_malloc( request_c->uri.len);
+			if (p==0) {
+				LM_ERR("no more pkg mem\n");
+				ret = -1;
+				goto done;
+			}
+			memcpy( p, request_c->uri.s, request_c->uri.len );
+			if (insert_new_lump_after( l, p, request_c->uri.len, 0)==0) {
+				LM_ERR("insert new lump failed\n");
+				pkg_free(p);
+				ret =-1;
+				goto done;
+			}
+		}
+	}
+
+done:
+	clean_msg_clone(t->uas.request, t->uas.request, t->uas.end_request);
+
+	return ret;
+}
+
 
 int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 {

@@ -32,7 +32,7 @@
 
 #include "../../parser/hf.h"
 #include "../../dprint.h"
-#include "../../parser/parse_expires.h"  
+#include "../../parser/parse_expires.h"
 #include "../../ut.h"
 #include "../../qvalue.h"
 #include "reg_mod.h"                     /* Module parameters */
@@ -183,10 +183,18 @@ int check_contacts(struct sip_msg* _m, int* _s)
 			p = p->next;
 		}
 	}
-	
+
 	return 0;
 }
 
+
+/*! \brief
+ * Set to NULL the pointer to the first contact in message
+ */
+void reset_first_contact(void)
+{
+	act_contact = NULL;
+}
 
 /*! \brief
  * Get the first contact in message
@@ -194,7 +202,7 @@ int check_contacts(struct sip_msg* _m, int* _s)
 contact_t* get_first_contact(struct sip_msg* _m)
 {
 	if (_m->contact == 0) return 0;
-	
+
 	act_contact = _m->contact;
 	return (((contact_body_t*)_m->contact->parsed)->contacts);
 }
@@ -205,9 +213,10 @@ contact_t* get_first_contact(struct sip_msg* _m)
  */
 contact_t* get_next_contact(contact_t* _c)
 {
-	struct hdr_field* p;
+	struct hdr_field* p = NULL;
 	if (_c->next == 0) {
-		p = act_contact->next;
+		if (act_contact)
+			p = act_contact->next;
 		while(p) {
 			if (p->type == HDR_CONTACT_T) {
 				act_contact = p;
