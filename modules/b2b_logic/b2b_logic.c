@@ -416,6 +416,7 @@ void b2bl_clean(unsigned int ticks, void* param)
 	b2bl_tuple_t* tuple, *tuple_next;
 	unsigned int now;
 	str bye = {BYE, BYE_LEN};
+	b2b_req_data_t req_data;
 
 	now = get_ticks();
 
@@ -433,13 +434,23 @@ void b2bl_clean(unsigned int ticks, void* param)
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
 					if(!tuple->bridge_entities[0]->disconnected)
-						b2b_api.send_request(tuple->bridge_entities[0]->type,
-							&tuple->bridge_entities[0]->key, &bye, 0, 0,
-							 tuple->bridge_entities[0]->dlginfo, 0);
+					{
+						memset(&req_data, 0, sizeof(b2b_req_data_t));
+						req_data.et =tuple->bridge_entities[0]->type;
+						req_data.b2b_key =&tuple->bridge_entities[0]->key;
+						req_data.method =&bye;
+						req_data.dlginfo =tuple->bridge_entities[0]->dlginfo;
+						b2b_api.send_request(&req_data);
+					}
 					if(!tuple->bridge_entities[1]->disconnected)
-						b2b_api.send_request(tuple->bridge_entities[1]->type,
-						&tuple->bridge_entities[1]->key, &bye, 0, 0,
-						tuple->bridge_entities[1]->dlginfo, 0);
+					{
+						memset(&req_data, 0, sizeof(b2b_req_data_t));
+						req_data.et =tuple->bridge_entities[1]->type;
+						req_data.b2b_key =&tuple->bridge_entities[1]->key;
+						req_data.method =&bye;
+						req_data.dlginfo =tuple->bridge_entities[1]->dlginfo;
+						b2b_api.send_request(&req_data);
+					}
 				}
 				b2bl_delete(tuple, i, 0);
 			}
@@ -1100,6 +1111,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	str meth_bye = {BYE, BYE_LEN};
 	unsigned int hash_index, local_index;
 	str ok= str_init("ok");
+	b2b_req_data_t req_data;
+	b2b_rpl_data_t rpl_data;
 
 	node = cmd->node.kids;
 	if(node == NULL)
@@ -1197,14 +1210,24 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	/* send BYE to old client */
 	if(old_entity->disconnected)
 	{
-		b2b_api.send_reply(old_entity->type, &old_entity->key,
-				METHOD_BYE, 200, &ok, 0, 0, old_entity->dlginfo);
+		memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+		rpl_data.et =old_entity->type;
+		rpl_data.b2b_key =&old_entity->key;
+		rpl_data.method =METHOD_BYE;
+		rpl_data.code =200;
+		rpl_data.text =&ok;
+		rpl_data.dlginfo =old_entity->dlginfo;
+		b2b_api.send_reply(&rpl_data);
 	}
 	else
 	{
 		old_entity->disconnected = 1;
-		b2b_api.send_request(old_entity->type, &old_entity->key,
-				&meth_bye, 0, 0, old_entity->dlginfo, 0);
+		memset(&req_data, 0, sizeof(b2b_req_data_t));
+		req_data.et =old_entity->type;
+		req_data.b2b_key =&old_entity->key;
+		req_data.method =&meth_bye;
+		req_data.dlginfo =old_entity->dlginfo;
+		b2b_api.send_request(&req_data);
 	}
 
 	if (0 == b2bl_drop_entity(old_entity, tuple))
@@ -1232,8 +1255,12 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
-	b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &meth_inv,
-				 0, 0, bridging_entity->dlginfo, 0);
+	memset(&req_data, 0, sizeof(b2b_req_data_t));
+	req_data.et =bridging_entity->type;
+	req_data.b2b_key =&bridging_entity->key;
+	req_data.method =&meth_inv;
+	req_data.dlginfo =bridging_entity->dlginfo;
+	b2b_api.send_request(&req_data);
 
 	lock_release(&b2bl_htable[hash_index].lock);
 

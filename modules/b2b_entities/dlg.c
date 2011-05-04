@@ -1059,9 +1059,15 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
  *	body    : the body to be included in the request(optional)
  *	extra_headers  : the extra headers to be included in the request(optional)
  * */
-int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
-		int code,str* text,str* body,str* extra_headers,b2b_dlginfo_t* dlginfo)
+int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 {
+	enum b2b_entity_type et = rpl_data->et;
+	str* b2b_key = rpl_data->b2b_key;
+	int sip_method = rpl_data->method;
+	int code = rpl_data->code;
+	str* extra_headers = rpl_data->extra_headers;
+	b2b_dlginfo_t* dlginfo = rpl_data->dlginfo;
+
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
 	str* to_tag = NULL;
@@ -1265,7 +1271,7 @@ int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int sip_method,
 	ehdr.s = buffer;
 
 	/* send reply */
-	if(tmb.t_reply_with_body(tm_tran, code, text, body, &ehdr, to_tag) < 0)
+	if(tmb.t_reply_with_body(tm_tran, code, rpl_data->text, rpl_data->body, &ehdr, to_tag) < 0)
 	{
 		LM_ERR("failed to send reply with tm\n");
 		goto error;
@@ -1508,9 +1514,13 @@ error:
  *	dlginfo : extra params for matching the dialog
  *	no_cb   : no callback required
  * */
-int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
-		str* extra_headers, str* body, b2b_dlginfo_t* dlginfo, unsigned int no_cb)
+int b2b_send_request(b2b_req_data_t* req_data)
 {
+	enum b2b_entity_type et = req_data->et;
+	str* b2b_key = req_data->b2b_key;
+	str* method = req_data->method;
+	b2b_dlginfo_t* dlginfo = req_data->dlginfo;
+
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg;
 	str ehdr = {NULL, 0};
@@ -1574,7 +1584,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		
 	}
 
-	if(b2breq_complete_ehdr(extra_headers, &ehdr, body,
+	if(b2breq_complete_ehdr(req_data->extra_headers, &ehdr, req_data->body,
 			((et==B2B_SERVER)?&dlg->contact[CALLEE_LEG]:&dlg->contact[CALLER_LEG]))< 0)
 	{
 		LM_ERR("Failed to complete extra headers\n");
@@ -1602,7 +1612,7 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 			dlg->last_method == METHOD_INVITE)
 	{
 		/* send it ACK so that you can send the new request */
-		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, body, no_cb);
+		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, req_data->body, req_data->no_cb);
 		dlg->state= B2B_ESTABLISHED;
 	}
 
@@ -1633,15 +1643,15 @@ int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
 		{
 			if(dlg->state == B2B_CONFIRMED)
 			{
-				b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, no_cb);
+				b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, req_data->no_cb);
 			}
-			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, body, no_cb);
+			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, req_data->body, req_data->no_cb);
 			method_value = METHOD_BYE;
 		}
 	}
 	else
 	{
-		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr, body, no_cb);
+		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr, req_data->body, req_data->no_cb);
 	}
 
 	if(ret < 0)

@@ -149,6 +149,31 @@ typedef struct b2b_entry
 
 typedef b2b_entry_t* b2b_table;
 
+
+typedef struct b2b_req_data
+{
+	enum b2b_entity_type et;
+	str* b2b_key;
+	str* method;
+	str* extra_headers;
+	str* body;
+	b2b_dlginfo_t* dlginfo;
+	unsigned int no_cb;
+}b2b_req_data_t;
+
+typedef struct b2b_rpl_data
+{
+	enum b2b_entity_type et;
+	str* b2b_key;
+	int method;
+	int code;
+	str* text;
+	str* body;
+	str* extra_headers;
+	b2b_dlginfo_t* dlginfo;
+}b2b_rpl_data_t;
+
+
 /** Hash table declaration: for client and server dialogs */
 b2b_table server_htable;
 b2b_table client_htable;
@@ -179,17 +204,13 @@ typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
 		b2b_add_dlginfo_t add_dlginfo_f, str* param);
 
-int b2b_send_reply(enum b2b_entity_type et, str* b2b_key, int meth, int code,
-		str* text, str* body, str* extra_headers, b2b_dlginfo_t* dlginfo);
+int b2b_send_reply(b2b_rpl_data_t*);
 
-typedef int (*b2b_send_reply_t)(enum b2b_entity_type et,str* b2b_key,int meth,
-		int code, str* text,str* body,str* extra_headers,b2b_dlginfo_t* dlginfo);
+typedef int (*b2b_send_reply_t)(b2b_rpl_data_t*);
 
-typedef int (*b2b_send_request_t)(enum b2b_entity_type , str* , str* ,
-		str* , str*, b2b_dlginfo_t*, unsigned int );
+typedef int (*b2b_send_request_t)(b2b_req_data_t*);
 
-int b2b_send_request(enum b2b_entity_type et, str* b2b_key, str* method,
-		str* extra_headers, str* body, b2b_dlginfo_t*, unsigned int no_cb);
+int b2b_send_request(b2b_req_data_t*);
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index);
 
