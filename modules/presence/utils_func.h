@@ -74,7 +74,7 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 static inline int get_local_contact(struct sip_msg* msg, str* contact)
 {
 	str ip;
-	char* proto;
+	char* proto =0;
 	int len;
 	static char buf[LCONTACT_BUF_SIZE];
 
@@ -86,7 +86,7 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 	{
 		case PROTO_NONE:
 		case PROTO_UDP:
-			proto= "udp"; break;
+			proto= 0; break;
 		case PROTO_TCP:
 			proto= "tcp"; break;
 		case PROTO_TLS:
@@ -110,15 +110,18 @@ static inline int get_local_contact(struct sip_msg* msg, str* contact)
 		return -1;
 	}
 
-	len= sprintf(contact->s+contact->len, ":%d;transport=", msg->rcv.dst_port);
+	len= sprintf(contact->s+contact->len, ":%d", msg->rcv.dst_port);
 	if(len< 0)
 	{
 		LM_ERR("unsuccessful sprintf\n");
 		return -1;
 	}
 	contact->len+= len;
-	strncpy(contact->s+ contact->len, proto, 3);
-	contact->len += 3;
+	if(proto)
+	{
+		sprintf(contact->s+ contact->len, ";transport=%s", proto);
+		contact->len += 14;
+	}
 
 	return 0;
 }

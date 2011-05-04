@@ -678,10 +678,10 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 
 bad_event:
 
-	LM_ERR("Missing or unsupported event header field value\n");
+	LM_INFO("Missing or unsupported event header field value\n");
 
 	if(parsed_event && parsed_event->text.s)
-		LM_ERR("\tevent= %.*s\n",parsed_event->text.len,parsed_event->text.s);
+		LM_INFO("\tevent= %.*s\n",parsed_event->text.len,parsed_event->text.s);
 
 	reply_code= BAD_EVENT_CODE;
 	reply_str= pu_489_rpl;
