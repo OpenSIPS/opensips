@@ -2998,7 +2998,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	e1->stats.start_time = get_ticks();
 	e1->stats.call_time = 0;
 	if(b2b_api.send_request(e1->type, &e1->key, &method_invite, &maxfwd_hdr,
-			0, e1->dlginfo) > 0)
+			0, e1->dlginfo) < 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
@@ -3163,7 +3163,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	if(b2b_api.send_request(bridging_entity->type, &bridging_entity->key, &method_invite,
-			tuple->extra_headers, &body, bridging_entity->dlginfo) > 0)
+			tuple->extra_headers, &body, bridging_entity->dlginfo) < 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
