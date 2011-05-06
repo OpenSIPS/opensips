@@ -95,6 +95,20 @@ typedef struct b2bl_entry
 
 typedef b2bl_entry_t* b2bl_table_t;
 
+
+#define PREP_REQ_DATA(entity) do{		\
+	req_data.et =(entity)->type;		\
+	req_data.b2b_key =&(entity)->key;	\
+	req_data.dlginfo =(entity)->dlginfo;	\
+}while(0)
+
+#define PREP_RPL_DATA(entity) do{		\
+	rpl_data.et =(entity)->type;		\
+	rpl_data.b2b_key =&(entity)->key;	\
+	rpl_data.dlginfo =(entity)->dlginfo;	\
+}while(0)
+
+
 void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,

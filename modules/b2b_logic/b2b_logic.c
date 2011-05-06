@@ -436,19 +436,15 @@ void b2bl_clean(unsigned int ticks, void* param)
 					if(!tuple->bridge_entities[0]->disconnected)
 					{
 						memset(&req_data, 0, sizeof(b2b_req_data_t));
-						req_data.et =tuple->bridge_entities[0]->type;
-						req_data.b2b_key =&tuple->bridge_entities[0]->key;
+						PREP_REQ_DATA(tuple->bridge_entities[0]);
 						req_data.method =&bye;
-						req_data.dlginfo =tuple->bridge_entities[0]->dlginfo;
 						b2b_api.send_request(&req_data);
 					}
 					if(!tuple->bridge_entities[1]->disconnected)
 					{
 						memset(&req_data, 0, sizeof(b2b_req_data_t));
-						req_data.et =tuple->bridge_entities[1]->type;
-						req_data.b2b_key =&tuple->bridge_entities[1]->key;
+						PREP_REQ_DATA(tuple->bridge_entities[1]);
 						req_data.method =&bye;
-						req_data.dlginfo =tuple->bridge_entities[1]->dlginfo;
 						b2b_api.send_request(&req_data);
 					}
 				}
@@ -1211,22 +1207,18 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	if(old_entity->disconnected)
 	{
 		memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
-		rpl_data.et =old_entity->type;
-		rpl_data.b2b_key =&old_entity->key;
+		PREP_RPL_DATA(old_entity);
 		rpl_data.method =METHOD_BYE;
 		rpl_data.code =200;
 		rpl_data.text =&ok;
-		rpl_data.dlginfo =old_entity->dlginfo;
 		b2b_api.send_reply(&rpl_data);
 	}
 	else
 	{
 		old_entity->disconnected = 1;
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
-		req_data.et =old_entity->type;
-		req_data.b2b_key =&old_entity->key;
+		PREP_REQ_DATA(old_entity);
 		req_data.method =&meth_bye;
-		req_data.dlginfo =old_entity->dlginfo;
 		b2b_api.send_request(&req_data);
 	}
 
@@ -1256,10 +1248,8 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
-	req_data.et =bridging_entity->type;
-	req_data.b2b_key =&bridging_entity->key;
+	PREP_REQ_DATA(bridging_entity);
 	req_data.method =&meth_inv;
-	req_data.dlginfo =bridging_entity->dlginfo;
 	b2b_api.send_request(&req_data);
 
 	lock_release(&b2bl_htable[hash_index].lock);
