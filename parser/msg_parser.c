@@ -52,6 +52,7 @@
 #include "../globals.h"
 #include "../core_stats.h"
 #include "../errinfo.h"
+#include "../dset.h"
 #include "parse_hname2.h"
 #include "parse_uri.h"
 #include "parse_content.h"
@@ -731,6 +732,7 @@ int set_ruri(struct sip_msg* msg, str* uri)
 		msg->new_uri.s = ptr;
 		msg->new_uri.len = uri->len;
 	}
+	set_ruri_q(Q_UNSPECIFIED);
 	msg->parsed_uri_ok = 0;
 	return 0;
 }
