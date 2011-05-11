@@ -1101,7 +1101,7 @@ static int mi_child_init(void)
 	
 	LM_DBG("Database connection opened successfully\n");
 
-	return 0;
+	return child_init(1);
 }
 
 static int _add_proxies_from_database(void) {
@@ -1196,7 +1196,6 @@ int connect_rtpproxies(void)
 	struct addrinfo hints, *res;
 	struct rtpp_set  *rtpp_list;
 	struct rtpp_node *pnode;
-
 
 	if(rtpp_set_list==NULL )
 		return 0;
@@ -2515,6 +2514,22 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	return 1;
 };
 
+int rtpp_get_error(char *command)
+{
+	int ret;
+	str val;
+	if (!command || command[0] != 'E')
+		return 0;
+	val.s = command + 1;
+	val.len = strlen(val.s) - 1 /* newline */;
+
+	if (str2sint(&val, &ret)) {
+		LM_ERR("bad error received from RTPProxy: %s\n", command);
+		return -1;
+	}
+	return ret;
+}
+
 int
 force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 {
@@ -2522,7 +2537,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 	str from_tag, to_tag, tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip, enable_notification;
-	int pf, pf1, force;
+	int pf, pf1, force, err;
 	struct options opts, rep_opts, pt_opts;
 	char *cp, *cp1;
 	char  *cpend, *next;
@@ -2924,8 +2939,26 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
   					vcnt = (to_tag.len > 0) ? 18 : 14;
   				}
   				cp = send_rtpp_command(args->node, v, vcnt);
+				LM_DBG("proxy reply: %s\n", cp);
+				/* check error */
+				err = rtpp_get_error(cp);
+				/* checking only port error */
+				if (err == 7 || err == 10) {
+					cp = NULL;
+					args->node->rn_disabled = 1; 
+					args->node->rn_disabled = get_ticks() +
+						rtpproxy_disable_tout; 
+					args->node = select_rtpp_node(args->callid, 0);
+					if (!args->node) {
+						LM_ERR("no available proxies\n");
+						goto error;
+					}
+					LM_DBG("trying new rtpproxy node %p\n", args->node);
+				} else if (err) {
+					LM_ERR("unhandled rtpproxy error: %d\n", err);
+					goto error;
+				}
 			} while (cp == NULL);
-			LM_DBG("proxy reply: %s\n", cp);
 			/* Parse proxy reply to <argc,argv> */
 			argc = 0;
 			memset(argv, 0, sizeof(argv));
