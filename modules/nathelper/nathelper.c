@@ -1438,7 +1438,7 @@ static int mi_child_init(void)
 	
 	LM_DBG("Database connection opened successfully\n");
 
-	return 0;
+	return child_init(1);
 }
 
 static int _add_proxies_from_database(void) {
