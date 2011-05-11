@@ -438,6 +438,13 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 			single = 0;
 		}
 
+		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+depl);
+		if(!lmp->u.value) {
+			LM_ERR("No more pkg memory\n");
+			ret = -1;
+			goto end;
+		}
+
 		for( i = lmp->len -1 ; i>=0;i--)
 			lmp->u.value[i+depl] = lmp->u.value[i];
 
@@ -452,6 +459,14 @@ static int stream_process(struct sdp_stream_cell *cell,int pos,str * s, str* ss,
 
 	if( op == ADD_TO_BACK && buff_len >0 )
 	{
+
+		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len+1);
+		if(!lmp->u.value) {
+			LM_ERR("No more pkg memory\n");
+			ret = -1;
+			goto end;
+		}
+
 
 		if( lmp->len > 0)
 		{
