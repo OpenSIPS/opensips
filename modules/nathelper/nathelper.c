@@ -1421,6 +1421,12 @@ mod_init(void)
 
 static int mi_child_init(void)
 {
+	if(child_init(1) < 0)
+	{
+		LM_ERR("Failed to initial rtpp socks\n");
+		return -1;
+	}
+
 	if(!db_url.s)
 		return 0;
 	
@@ -1438,7 +1444,7 @@ static int mi_child_init(void)
 	
 	LM_DBG("Database connection opened successfully\n");
 
-	return child_init(1);
+	return 0;
 }
 
 static int _add_proxies_from_database(void) {
