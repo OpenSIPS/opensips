@@ -463,6 +463,26 @@ modparam("dialog", "db_update_period", 120)
 		</example>
 	</section>
 
+<section>
+		<title><varname>ping_interval</varname> (integer)</title>
+		<para>
+			The interval (seconds) at which OpenSIPS will generate in-dialog pings for dialogs. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>10</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ping_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "ping_interval", 20)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>table_name</varname> (string)</title>
 		<para>
@@ -973,6 +993,15 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 		<para>
 		The function creats the dialog for the currently processed request. The
 		request must be an initial request.
+
+		Optionally,the function also receives a string parameter, which specifies
+		whether the dialog end-points should be pinged via SIP options
+		messages. The parameter can be "C" to specify to only ping the
+		caller, "c" to only ping the callee or "Cc" to ping both dialog
+		sides. If the extra string parameter is provided and one
+		end-point fails to respond to a options ping, OpenSIPS will
+		terminate the dialog from the middle.
+
 		</para>
 		<para>
 		The function returns true if the dialog was successfully created or 
@@ -986,6 +1015,12 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 		<programlisting format="linespecific">
 ...
 create_dialog();
+...
+#ping caller
+create_dialog("C");
+...
+#ping caller and callee
+create_dialog("Cc");
 ...
 </programlisting>
 		</example>

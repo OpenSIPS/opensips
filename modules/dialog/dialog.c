@@ -79,6 +79,7 @@ static char* rr_param = "did";
 static int dlg_flag = -1;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
+static int ping_interval = 10; /* seconds */
 static int seq_match_mode = SEQ_MATCH_STRICT_ID;
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
@@ -113,6 +114,8 @@ static int fixup_profile(void** param, int param_no);
 static int fixup_get_profile2(void** param, int param_no);
 static int fixup_get_profile3(void** param, int param_no);
 static int w_create_dialog(struct sip_msg*);
+static int w_create_dialog2(struct sip_msg*,char *);
+static int fixup_create_dlg2(void **param,int param_no);
 static int w_validate_dialog(struct sip_msg*);
 static int w_fix_route_dialog(struct sip_msg*);
 static int w_set_dlg_profile(struct sip_msg*, char*, char*);
@@ -140,6 +143,8 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
+			0, REQUEST_ROUTE},
+	{"create_dialog", (cmd_function)w_create_dialog2,		1,fixup_create_dlg2,
 			0, REQUEST_ROUTE},
 	{"set_dlg_profile", (cmd_function)w_set_dlg_profile,  1,fixup_profile,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
@@ -196,6 +201,7 @@ static param_export_t mod_params[]={
 	{ "bye_on_timeout_flag",   INT_PARAM, &bye_on_timeout_flag      },
 	{ "timeout_avp",           STR_PARAM, &timeout_spec.s           },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
+	{ "ping_interval",         INT_PARAM, &ping_interval            },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
 	{ "dlg_match_mode",        INT_PARAM, &seq_match_mode           },
 	{ "db_url",                STR_PARAM, &db_url.s                 },
@@ -395,6 +401,33 @@ static int fixup_dlg_flag(void** param, int param_no)
 	return 0;
 }
 
+static int fixup_create_dlg2(void **param, int param_no)
+{
+	unsigned int flags=0;
+	char *str_flags;
+	char *p;
+
+	str_flags = (char *)*param;
+
+	for (p=str_flags;*p;p++)
+	{
+		switch (*p)
+		{
+			case 'C':
+				flags |= DLG_FLAG_PING_CALLER;
+				break;
+			case 'c':
+				flags |= DLG_FLAG_PING_CALLEE;
+				break;
+			default:
+				LM_DBG("unknown create_dialog flag : [%c] . Skipping\n",*p);
+		}
+	}
+
+	*param=(void *)(unsigned int)flags;
+
+	return 0;
+}
 
 static int fixup_dlg_sval(void** param, int param_no)
 {
@@ -599,6 +632,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (ping_interval<=0) {
+		LM_ERR("Non-positive ping interval not accepted!!\n");
+		return -1;
+	}
+
 	/* update the len of the extra headers */
 	if (dlg_extra_hdrs.s)
 		dlg_extra_hdrs.len = strlen(dlg_extra_hdrs.s);
@@ -659,6 +697,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if ( register_timer( dlg_ping_routine, 0, ping_interval)<0) {
+		LM_ERR("failed to register timer 2 \n");
+		return -1;
+	}
+
 	/* init handlers */
 	init_dlg_handlers( rr_param, dlg_flag,
 		timeout_spec.s?&timeout_avp:0, default_timeout, seq_match_mode);
@@ -666,6 +709,11 @@ static int mod_init(void)
 	/* init timer */
 	if (init_dlg_timer(dlg_ontimeout)!=0) {
 		LM_ERR("cannot init timer list\n");
+		return -1;
+	}
+
+	if (init_dlg_ping_timer()!=0) {
+		LM_ERR("cannot init ping timer\n");
 		return -1;
 	}
 
@@ -744,6 +792,7 @@ static void mod_destroy(void)
 	dlg_db_mode = DB_MODE_NONE;
 	destroy_dlg_table();
 	destroy_dlg_timer();
+	destroy_ping_timer();
 	destroy_dlg_callbacks( DLGCB_CREATED|DLGCB_LOADED );
 	destroy_dlg_handlers();
 	destroy_dlg_profiles();
@@ -758,12 +807,29 @@ static int w_create_dialog(struct sip_msg *req)
 		return 1;
 
 	t = d_tmb.t_gett();
-	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req)!=0)
+	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req,0)!=0)
 		return -1;
 
 	return 1;
 }
 
+static int w_create_dialog2(struct sip_msg *req,char *param)
+{
+	struct cell *t;
+	int flags=0;
+
+	/* is the dialog already created? */
+	if (current_dlg_pointer!=NULL)
+		return 1;
+
+	flags |= (unsigned int)(unsigned long)param;
+
+	t = d_tmb.t_gett();
+	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req,flags)!=0)
+		return -1;
+
+	return 1;
+}
 
 static int w_validate_dialog(struct sip_msg *req)
 {
@@ -1221,6 +1287,3 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 
 	return 0;
 }
-
-
-

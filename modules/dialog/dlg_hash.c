@@ -52,6 +52,7 @@
 #include "../../hash_func.h"
 #include "../../mi/mi.h"
 #include "../../route.h"
+#include "../../md5utils.h"
 #include "../tm/tm_load.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
@@ -206,6 +207,8 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 
+	remove_ping_timer(dlg);
+
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
 
 	free_dlg_dlg(dlg);
@@ -293,8 +296,6 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 
 	return dlg;
 }
-
-
 
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while

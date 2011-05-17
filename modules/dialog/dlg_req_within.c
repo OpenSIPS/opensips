@@ -36,6 +36,7 @@
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../socket_info.h"
+#include "../../parser/parse_methods.h"
 #include "../tm/dlg.h"
 #include "../tm/tm_load.h"
 #include "../../mi/tree.h"
@@ -51,8 +52,6 @@
 
 extern str dlg_extra_hdrs;
 
-
-
 int free_tm_dlg(dlg_t *td)
 {
 	if(td)
@@ -63,8 +62,6 @@ int free_tm_dlg(dlg_t *td)
 	}
 	return 0;
 }
-
-
 
 dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 {
@@ -79,6 +76,26 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 	}
 	memset(td, 0, sizeof(dlg_t));
 
+	if ((dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_PING_CALLER)) ||
+		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)))
+	{
+		dlg_lock_dlg(cell);
+		if (cell->legs[dst_leg].last_gen_cseq == 0)
+		{
+			/* no OPTIONS pings for this dlg yet */
+			dlg_unlock_dlg(cell);
+			goto before_strcseq;
+		}
+		else
+		{
+			/* OPTIONS pings sent, use new cseq */
+			td->loc_seq.value = ++(cell->legs[dst_leg].last_gen_cseq);
+			td->loc_seq.is_set=1;
+			dlg_unlock_dlg(cell);
+			goto after_strcseq;
+		}
+	}
+before_strcseq:
 	/*local sequence number*/
 	cseq = cell->legs[dst_leg].r_cseq;
 	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
@@ -87,6 +104,76 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 	}
 	/*we don not increase here the cseq as this will be done by TM*/
 	td->loc_seq.value = loc_seq;
+	td->loc_seq.is_set = 1;
+
+after_strcseq:
+
+	/*route set*/
+	if( cell->legs[dst_leg].route_set.s && cell->legs[dst_leg].route_set.len){
+		if( parse_rr_body(cell->legs[dst_leg].route_set.s,
+			cell->legs[dst_leg].route_set.len, &td->route_set) !=0){
+		 	LM_ERR("failed to parse route set\n");
+			goto error;
+		}
+	} 
+
+	/*remote target--- Request URI*/
+	if (cell->legs[dst_leg].contact.s==0 || cell->legs[dst_leg].contact.len==0){
+		LM_ERR("no contact available\n");
+		goto error;
+	}
+	td->rem_target = cell->legs[dst_leg].contact;
+
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? cell->from_uri: cell->to_uri;
+	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? cell->to_uri: cell->from_uri;
+	td->id.call_id = cell->callid;
+	td->id.rem_tag = cell->legs[dst_leg].tag;
+	td->id.loc_tag = cell->legs[src_leg].tag;
+
+	td->state= DLG_CONFIRMED;
+	td->send_sock = cell->legs[dst_leg].bind_addr;
+
+	return td;
+
+error:
+	free_tm_dlg(td);
+	return NULL;
+}
+
+
+
+dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
+{
+	dlg_t* td = NULL;
+	str cseq;
+	unsigned int loc_seq;
+	struct dlg_entry *d_entry = &(d_table->entries[cell->h_entry]);
+
+	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
+	if(!td){
+		LM_ERR("out of pkg memory\n");
+		return NULL;
+	}
+	memset(td, 0, sizeof(dlg_t));
+
+	/*local sequence number*/
+	cseq = cell->legs[dst_leg].r_cseq;
+	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
+		LM_ERR("invalid cseq\n");
+		goto error;
+	}
+
+	dlg_lock( d_table, d_entry);
+
+	if (cell->legs[dst_leg].last_gen_cseq == 0)
+		cell->legs[dst_leg].last_gen_cseq = loc_seq+1;
+	else
+		cell->legs[dst_leg].last_gen_cseq++;
+
+	cell->legs[dst_leg].reply_received = 0;
+
+	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
+	dlg_unlock( d_table, d_entry);
 	td->loc_seq.is_set = 1;
 
 	/*route set*/
@@ -159,6 +246,9 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 			/* successfully removed from timer list */
 			unref++;
 		}
+
+		if (remove_ping_timer(dlg) == 0)
+			unref++;
 
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
@@ -320,8 +410,6 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	return res;
 }
 
-
-
 /*parameters from MI: h_entry, h_id of the requested dialog*/
 struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 
@@ -383,4 +471,61 @@ end:
 error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
+}
+
+int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
+		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release)
+{
+	dlg_t* dialog_info;
+	struct dlg_cell *old_cell;
+	int result;
+	unsigned int method_type;
+
+	if (parse_method(method->s,method->s+method->len,&method_type) == 0)
+	{
+		LM_ERR("Failed to parse method - [%.*s]\n",method->len,method->s);
+		return -1;
+	}
+
+	if (method_type == METHOD_INVITE && (body == NULL || body->s == NULL ||
+				body->len == 0))
+	{
+		LM_ERR("Cannot send INVITE without SDP body\n");
+		return -1;
+	}
+
+	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg)) == 0)
+	{
+		LM_ERR("failed to create dlg_t\n");
+		return -1;
+	}
+
+	LM_DBG("sending [%.*s] to %s (%d)\n",method->len,method->s,
+		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
+
+	old_cell = current_dlg_pointer;
+	current_dlg_pointer = dlg;
+
+	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+
+	result = d_tmb.t_request_within
+		(method,         /* method*/
+		hdrs,		    /* extra headers*/
+		body,          /* body*/
+		dialog_info,   /* dialog structure*/
+		func,  /* callback function*/
+		param,   /* callback parameter*/
+		release);         /* release function*/
+
+	current_dlg_pointer = old_cell;
+
+	if(result < 0)
+	{
+		LM_ERR("failed to send the in-dialog request\n");
+		free_tm_dlg(dialog_info);
+		return -1;
+	}
+
+	free_tm_dlg(dialog_info);
+	return 0;
 }

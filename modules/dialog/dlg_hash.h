@@ -67,6 +67,8 @@
 #define DLG_FLAG_HASBYE        (1<<2)
 #define DLG_FLAG_BYEONTIMEOUT  (1<<3)
 #define DLG_FLAG_ISINIT        (1<<4)
+#define DLG_FLAG_PING_CALLER   (1<<5)
+#define DLG_FLAG_PING_CALLEE   (1<<6)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
@@ -84,6 +86,8 @@ struct dlg_leg {
 	str contact;
 	str route_uris[64];
 	int nr_uris;
+	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
+	char reply_received;
 	struct socket_info *bind_addr;
 };
 
@@ -106,6 +110,7 @@ struct dlg_cell
 	unsigned int         from_rr_nb;
 	unsigned int         user_flags;
 	struct dlg_tl        tl;
+	struct dlg_ping_list *pl;
 	str                  callid;
 	str                  from_uri;
 	str                  to_uri;
@@ -353,7 +358,6 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 	}
 */
 }
-
 
 int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context);
 

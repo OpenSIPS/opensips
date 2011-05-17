@@ -43,6 +43,13 @@
 #define SEQ_MATCH_FALLBACK   1
 #define SEQ_MATCH_NO_ID      2
 
+struct _dlg_cseq{
+	struct dlg_cell *dlg;
+	str cseq;
+};
+
+typedef struct _dlg_cseq dlg_cseq_wrapper;
+
 typedef int (*create_dlg_f)(struct sip_msg *req);
 
 void init_dlg_handlers(char *rr_param, int dlg_flag,
@@ -51,7 +58,7 @@ void init_dlg_handlers(char *rr_param, int dlg_flag,
 
 void destroy_dlg_handlers();
 
-int dlg_create_dialog(struct cell* t, struct sip_msg *req);
+int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags);
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param);
 

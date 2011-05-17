@@ -30,10 +30,14 @@
 #include "../../mem/shm_mem.h"
 #include "../../timer.h"
 #include "dlg_timer.h"
+#include "dlg_hash.h"
+#include "dlg_req_within.h"
 
 struct dlg_timer *d_timer = 0;
 dlg_timer_handler timer_hdl = 0;
 
+struct dlg_ping_timer *ping_timer=0;
+str options_str=str_init("OPTIONS");
 
 int init_dlg_timer( dlg_timer_handler hdl )
 {
@@ -67,6 +71,47 @@ error0:
 	return -1;
 }
 
+int init_dlg_ping_timer(void)
+{
+	ping_timer = (struct dlg_ping_timer*)shm_malloc(sizeof(struct dlg_timer));
+	if (ping_timer==0) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+
+	memset(ping_timer,0,sizeof(struct dlg_ping_timer));
+	ping_timer->lock = lock_alloc();
+	if (ping_timer->lock == 0) {
+		LM_ERR("failed to alloc lock\n");
+		goto error0;
+	}
+
+	if (lock_init(ping_timer->lock) == 0) {
+		LM_ERR("failed to init lock\n");
+		goto error1;
+	}
+
+	return 0;
+
+error1:
+	lock_dealloc(ping_timer->lock);
+error0:
+	shm_free(ping_timer);
+	ping_timer=0;
+	return -1;
+}
+
+void destroy_ping_timer(void)
+{
+	if (ping_timer ==0)
+		return;
+
+	lock_destroy(ping_timer->lock);
+	lock_dealloc(ping_timer->lock);
+
+	shm_free(ping_timer);
+	ping_timer=0;
+}
 
 
 void destroy_dlg_timer(void)
@@ -99,8 +144,6 @@ static inline void insert_dlg_timer_unsafe(struct dlg_tl *tl)
 	tl->next->prev = tl;
 }
 
-
-
 int insert_dlg_timer(struct dlg_tl *tl, int interval)
 {
 	lock_get( d_timer->lock);
@@ -120,7 +163,41 @@ int insert_dlg_timer(struct dlg_tl *tl, int interval)
 	return 0;
 }
 
+int insert_ping_timer(struct dlg_cell* dlg)
+{
+	struct dlg_ping_list *node;
 
+	node = shm_malloc(sizeof(struct dlg_ping_list));
+	if (node == 0) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+	
+	node->dlg = dlg;
+	node->next = 0;
+	node->prev = 0;
+
+	lock_get( ping_timer->lock );
+
+	dlg->pl = node;
+
+	if (ping_timer->first == 0)
+		ping_timer->first = node;
+	else {
+		node->next = ping_timer->first;
+		ping_timer->first->prev = node;
+		ping_timer->first = node;
+	}
+
+	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
+	dlg->legs[callee_idx(dlg)].reply_received = 1;
+
+
+	lock_release( ping_timer->lock);
+	LM_DBG("Inserted dlg [%p] in ping timer list\n",dlg);
+
+	return 0;
+}
 
 static inline void remove_dlg_timer_unsafe(struct dlg_tl *tl)
 {
@@ -163,7 +240,42 @@ int remove_dlg_timer(struct dlg_tl *tl)
 	return 0;
 }
 
+static inline void detach_node_unsafe(struct dlg_ping_list *it)
+{
+	if (it->next && it->prev) {
+		it->prev->next = it->next;
+		it->next->prev = it->prev;
+	}
+	else if (it->next) {
+		it->next->prev = 0;
+		ping_timer->first = it->next;
+	}
+	else if (it->prev) {
+		it->prev->next = 0;
+	}
+	else
+		ping_timer->first = 0;
+}
 
+/* returns:
+ * 0 if removed succesfully
+ * 1 if dlg not found in list
+ */
+int remove_ping_timer(struct dlg_cell *dlg)
+{
+	lock_get(ping_timer->lock);
+	if (dlg->pl)
+	{
+		detach_node_unsafe(dlg->pl);
+		shm_free(dlg->pl);
+		dlg->pl = 0;
+		lock_release(ping_timer->lock);
+		return 0;
+	}
+
+	lock_release(ping_timer->lock);
+	return 1;
+}
 
 /* returns :
      0 - dialog was inserted in timer list with the new timeout
@@ -186,8 +298,6 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout )
 	lock_release( d_timer->lock);
 	return 0;
 }
-
-
 
 static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
 {
@@ -232,8 +342,6 @@ static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
 	return ret;
 }
 
-
-
 void dlg_timer_routine(unsigned int ticks , void * attr)
 {
 	struct dlg_tl *tl, *ctl;
@@ -250,3 +358,182 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 	}
 }
 
+/* removes expired dlgs from main ping_timer list
+ * and links them back into a new list */
+struct dlg_ping_list* get_timeout_dlgs(void)
+{
+	struct dlg_ping_list *ret = NULL,*it=NULL;
+	struct dlg_cell *current;
+	int detached;
+
+	lock_get(ping_timer->lock);
+
+	for (it=ping_timer->first;it;it=it->next) {
+		current = it->dlg;
+		detached = 0;
+		if (current->flags & DLG_FLAG_PING_CALLER) {
+			dlg_lock_dlg(current);
+			if (current->legs[DLG_CALLER_LEG].reply_received == 0) {
+				dlg_unlock_dlg(current);
+
+				detach_node_unsafe(it);
+				detached=1;
+
+				if (ret == NULL)
+					ret = it;
+				else
+					ret->next = it;
+			}
+			else
+				dlg_unlock_dlg(current);
+		}
+
+		if (detached == 0) {
+			if (current->flags & DLG_FLAG_PING_CALLEE) {
+				dlg_lock_dlg(current);
+				if (current->legs[callee_idx(current)].reply_received == 0) {
+					dlg_unlock_dlg(current);
+
+					detach_node_unsafe(it);
+					if (ret == NULL)
+						ret = it;
+					else
+						ret->next = it;
+				}
+				else
+					dlg_unlock_dlg(current);
+			}
+		}
+	}
+
+	lock_release(ping_timer->lock);
+
+	return ret;
+}
+
+void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
+{
+	struct sip_msg *rpl;
+	int statuscode;
+	struct dlg_cell *dlg;
+
+	if(ps == NULL || ps->rpl == NULL)
+	{
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if( ps->param== NULL )
+	{
+			LM_ERR("Null callback parameter\n");
+			return;
+	}
+	
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	dlg = *(ps->param);
+
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (rpl == FAKED_REPLY) {
+		/* timeout occured, nothing else to do, let destroy cb do unref */
+		return;
+	}
+
+	if (statuscode >= 300)
+		LM_WARN("Response code received > 300. Maybe bogus request sent ?\n");
+
+	dlg_lock_dlg(dlg);
+	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
+	dlg_unlock_dlg(dlg);
+}
+
+/* Duplicate code for the sake of quickly knowing where the reply came from,
+ * without any further checks */
+void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
+{
+	struct sip_msg *rpl;
+	int statuscode;
+	struct dlg_cell *dlg;
+
+	if(ps == NULL || ps->rpl == NULL)
+	{
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if( ps->param== NULL )
+	{
+			LM_ERR("Null callback parameter\n");
+			return;
+	}
+	
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	dlg = *(ps->param);
+
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (rpl == FAKED_REPLY) {
+		/* timeout occured, nothing else to do, let destroy cb do unref */
+		return;
+	}
+
+	if (statuscode >= 300)
+		LM_WARN("Response code received > 300. Maybe bogus request sent ?\n");
+	
+	dlg_lock_dlg(dlg);
+	dlg->legs[callee_idx(dlg)].reply_received = 1;
+	dlg_unlock_dlg(dlg);
+}
+
+void unref_dlg_cb(void *dlg)
+{
+	if (!d_table)
+		return;
+	unref_dlg((struct dlg_cell*)dlg,1);
+}
+
+void dlg_ping_routine(unsigned int ticks , void * attr)
+{
+	struct dlg_ping_list *expired,*it,*curr;
+	struct dlg_cell *dlg;
+
+	expired = get_timeout_dlgs();
+
+	it = expired;
+	while (it) {
+		dlg = it->dlg;
+		LM_DBG("dialog %p has expired\n",dlg);
+		curr = it->next;
+		shm_free(it);
+		dlg->pl = 0;
+		it = curr;
+
+		/* no longer reffed in list */
+		unref_dlg(dlg,1);
+		/* dlg is still reffed in TM callback. deletion from memory
+		 * will happen only on 408 timeout */
+
+		/* FIXME - maybe better not to send BYE both ways as we know for sure one
+		 * end in down . */
+		dlg_end_dlg(dlg,0);
+	}
+
+	/* ping_timer->first now contains all active dialogs */
+	it = ping_timer->first;
+	while (it) {
+		dlg = it->dlg;
+		if (dlg->flags & DLG_FLAG_PING_CALLER) {
+			ref_dlg(dlg,1);
+			send_leg_msg(dlg,&options_str,callee_idx(dlg),DLG_CALLER_LEG,0,0,
+				reply_from_caller,dlg,unref_dlg_cb);
+		}
+
+		if (dlg->flags & DLG_FLAG_PING_CALLEE) {
+			ref_dlg(dlg,1);
+			send_leg_msg(dlg,&options_str,DLG_CALLER_LEG,callee_idx(dlg),0,0,
+				reply_from_callee,dlg,unref_dlg_cb);
+		}
+
+		it = it->next;
+	}
+}

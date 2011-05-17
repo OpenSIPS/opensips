@@ -41,30 +41,31 @@ Bogdan-Andrei Iancu
               1.5.11. db_url (string)
               1.5.12. db_mode (integer)
               1.5.13. db_update_period (integer)
-              1.5.14. table_name (string)
-              1.5.15. callid_column (string)
-              1.5.16. from_uri_column (string)
-              1.5.17. from_tag_column (string)
-              1.5.18. to_uri_column (string)
-              1.5.19. to_tag_column (string)
-              1.5.20. caller_cseq_column (string)
-              1.5.21. callee_cseq_column (string)
-              1.5.22. caller_route_column (string)
-              1.5.23. callee_route_column (string)
-              1.5.24. caller_contact_column (string)
-              1.5.25. callee_contact_column (string)
-              1.5.26. caller_sock_column (string)
-              1.5.27. callee_sock_column (string)
-              1.5.28. h_id_column (string)
-              1.5.29. h_entry_column (string)
-              1.5.30. state_column (string)
-              1.5.31. start_time_column (string)
-              1.5.32. timeout_column (string)
-              1.5.33. profiles_column (string)
-              1.5.34. vars_column (string)
-              1.5.35. sflags_column (string)
-              1.5.36. profiles_with_value (string)
-              1.5.37. profiles_no_value (string)
+              1.5.14. ping_interval (integer)
+              1.5.15. table_name (string)
+              1.5.16. callid_column (string)
+              1.5.17. from_uri_column (string)
+              1.5.18. from_tag_column (string)
+              1.5.19. to_uri_column (string)
+              1.5.20. to_tag_column (string)
+              1.5.21. caller_cseq_column (string)
+              1.5.22. callee_cseq_column (string)
+              1.5.23. caller_route_column (string)
+              1.5.24. callee_route_column (string)
+              1.5.25. caller_contact_column (string)
+              1.5.26. callee_contact_column (string)
+              1.5.27. caller_sock_column (string)
+              1.5.28. callee_sock_column (string)
+              1.5.29. h_id_column (string)
+              1.5.30. h_entry_column (string)
+              1.5.31. state_column (string)
+              1.5.32. start_time_column (string)
+              1.5.33. timeout_column (string)
+              1.5.34. profiles_column (string)
+              1.5.35. vars_column (string)
+              1.5.36. sflags_column (string)
+              1.5.37. profiles_with_value (string)
+              1.5.38. profiles_no_value (string)
 
         1.6. Exported Functions
 
@@ -132,43 +133,44 @@ Bogdan-Andrei Iancu
    1.11. Set db_url parameter
    1.12. Set db_mode parameter
    1.13. Set db_update_period parameter
-   1.14. Set table_name parameter
-   1.15. Set callid_column parameter
-   1.16. Set from_uri_column parameter
-   1.17. Set from_tag_column parameter
-   1.18. Set to_uri_column parameter
-   1.19. Set to_tag_column parameter
-   1.20. Set caller_cseq_column parameter
-   1.21. Set callee_cseq_column parameter
-   1.22. Set caller_route_column parameter
-   1.23. Set to_route_column parameter
-   1.24. Set caller_contact_column parameter
-   1.25. Set callee_contact_column parameter
-   1.26. Set caller_sock_column parameter
-   1.27. Set callee_sock_column parameter
-   1.28. Set h_id_column parameter
-   1.29. Set h_entry_column parameter
-   1.30. Set state_column parameter
-   1.31. Set start_time_column parameter
-   1.32. Set timeout_column parameter
-   1.33. Set profiles_column parameter
-   1.34. Set vars_column parameter
-   1.35. Set sflags_column parameter
-   1.36. Set profiles_with_value parameter
-   1.37. Set profiles_no_value parameter
-   1.38. create_dialog() usage
-   1.39. validate_dialog() usage
-   1.40. fix_route_dialog() usage
-   1.41. get_dialog_info usage
-   1.42. set_dlg_profile usage
-   1.43. unset_dlg_profile usage
-   1.44. is_in_profile usage
-   1.45. get_profile_size usage
-   1.46. set_dlg_flag usage
-   1.47. reset_dlg_flag usage
-   1.48. is_dlg_flag_set usage
-   1.49. store_dlg_value usage
-   1.50. fetch_dlg_value usage
+   1.14. Set ping_interval parameter
+   1.15. Set table_name parameter
+   1.16. Set callid_column parameter
+   1.17. Set from_uri_column parameter
+   1.18. Set from_tag_column parameter
+   1.19. Set to_uri_column parameter
+   1.20. Set to_tag_column parameter
+   1.21. Set caller_cseq_column parameter
+   1.22. Set callee_cseq_column parameter
+   1.23. Set caller_route_column parameter
+   1.24. Set to_route_column parameter
+   1.25. Set caller_contact_column parameter
+   1.26. Set callee_contact_column parameter
+   1.27. Set caller_sock_column parameter
+   1.28. Set callee_sock_column parameter
+   1.29. Set h_id_column parameter
+   1.30. Set h_entry_column parameter
+   1.31. Set state_column parameter
+   1.32. Set start_time_column parameter
+   1.33. Set timeout_column parameter
+   1.34. Set profiles_column parameter
+   1.35. Set vars_column parameter
+   1.36. Set sflags_column parameter
+   1.37. Set profiles_with_value parameter
+   1.38. Set profiles_no_value parameter
+   1.39. create_dialog() usage
+   1.40. validate_dialog() usage
+   1.41. fix_route_dialog() usage
+   1.42. get_dialog_info usage
+   1.43. set_dlg_profile usage
+   1.44. unset_dlg_profile usage
+   1.45. is_in_profile usage
+   1.46. get_profile_size usage
+   1.47. set_dlg_flag usage
+   1.48. reset_dlg_flag usage
+   1.49. is_dlg_flag_set usage
+   1.50. store_dlg_value usage
+   1.51. fetch_dlg_value usage
 
 Chapter 1. Admin Guide
 
@@ -449,286 +451,298 @@ modparam("dialog", "db_mode", 1)
 modparam("dialog", "db_update_period", 120)
 ...
 
-1.5.14. table_name (string)
+1.5.14. ping_interval (integer)
+
+   The interval (seconds) at which OpenSIPS will generate
+   in-dialog pings for dialogs.
+
+   Default value is “10”.
+
+   Example 1.14. Set ping_interval parameter
+...
+modparam("dialog", "ping_interval", 20)
+...
+
+1.5.15. table_name (string)
 
    If you want to store the information about the dialogs in a
    database a table name must be specified.
 
    Default value is “dialog”.
 
-   Example 1.14. Set table_name parameter
+   Example 1.15. Set table_name parameter
 ...
 modparam("dialog", "table_name", "my_dialog")
 ...
 
-1.5.15. callid_column (string)
+1.5.16. callid_column (string)
 
    The column's name in the database to store the dialogs' callid.
 
    Default value is “callid”.
 
-   Example 1.15. Set callid_column parameter
+   Example 1.16. Set callid_column parameter
 ...
 modparam("dialog", "callid_column", "callid_c_name")
 ...
 
-1.5.16. from_uri_column (string)
+1.5.17. from_uri_column (string)
 
    The column's name in the database to store the caller's sip
    address.
 
    Default value is “from_uri”.
 
-   Example 1.16. Set from_uri_column parameter
+   Example 1.17. Set from_uri_column parameter
 ...
 modparam("dialog", "from_uri_column", "from_uri_c_name")
 ...
 
-1.5.17. from_tag_column (string)
+1.5.18. from_tag_column (string)
 
    The column's name in the database to store the From tag from
    the Invite request.
 
    Default value is “from_tag”.
 
-   Example 1.17. Set from_tag_column parameter
+   Example 1.18. Set from_tag_column parameter
 ...
 modparam("dialog", "from_tag_column", "from_tag_c_name")
 ...
 
-1.5.18. to_uri_column (string)
+1.5.19. to_uri_column (string)
 
    The column's name in the database to store the calee's sip
    address.
 
    Default value is “to_uri”.
 
-   Example 1.18. Set to_uri_column parameter
+   Example 1.19. Set to_uri_column parameter
 ...
 modparam("dialog", "to_uri_column", "to_uri_c_name")
 ...
 
-1.5.19. to_tag_column (string)
+1.5.20. to_tag_column (string)
 
    The column's name in the database to store the To tag from the
    200 OK response to the Invite request, if present.
 
    Default value is “to_tag”.
 
-   Example 1.19. Set to_tag_column parameter
+   Example 1.20. Set to_tag_column parameter
 ...
 modparam("dialog", "to_tag_column", "to_tag_c_name")
 ...
 
-1.5.20. caller_cseq_column (string)
+1.5.21. caller_cseq_column (string)
 
    The column's name in the database to store the cseq from caller
    side.
 
    Default value is “caller_cseq”.
 
-   Example 1.20. Set caller_cseq_column parameter
+   Example 1.21. Set caller_cseq_column parameter
 ...
 modparam("dialog", "caller_cseq_column", "column_name")
 ...
 
-1.5.21. callee_cseq_column (string)
+1.5.22. callee_cseq_column (string)
 
    The column's name in the database to store the cseq from callee
    side.
 
    Default value is “callee_cseq”.
 
-   Example 1.21. Set callee_cseq_column parameter
+   Example 1.22. Set callee_cseq_column parameter
 ...
 modparam("dialog", "callee_cseq_column", "column_name")
 ...
 
-1.5.22. caller_route_column (string)
+1.5.23. caller_route_column (string)
 
    The column's name in the database to store the route records
    from caller side (proxy to caller).
 
    Default value is “caller_route_set”.
 
-   Example 1.22. Set caller_route_column parameter
+   Example 1.23. Set caller_route_column parameter
 ...
 modparam("dialog", "caller_route_column", "column_name")
 ...
 
-1.5.23. callee_route_column (string)
+1.5.24. callee_route_column (string)
 
    The column's name in the database to store the route records
    from callee side (proxy to callee).
 
    Default value is “callee_route_set”.
 
-   Example 1.23. Set to_route_column parameter
+   Example 1.24. Set to_route_column parameter
 ...
 modparam("dialog", "to_route_column", "column_name")
 ...
 
-1.5.24. caller_contact_column (string)
+1.5.25. caller_contact_column (string)
 
    The column's name in the database to store the caller's contact
    uri.
 
    Default value is “from_contact”.
 
-   Example 1.24. Set caller_contact_column parameter
+   Example 1.25. Set caller_contact_column parameter
 ...
 modparam("dialog", "caller_contact_column", "column_name")
 ...
 
-1.5.25. callee_contact_column (string)
+1.5.26. callee_contact_column (string)
 
    The column's name in the database to store the callee's contact
    uri.
 
    Default value is “callee_contact”.
 
-   Example 1.25. Set callee_contact_column parameter
+   Example 1.26. Set callee_contact_column parameter
 ...
 modparam("dialog", "callee_contact_column", "column_name")
 ...
 
-1.5.26. caller_sock_column (string)
+1.5.27. caller_sock_column (string)
 
    The column's name in the database to store the information
    about the local interface receiving the traffic from caller.
 
    Default value is “caller_sock”.
 
-   Example 1.26. Set caller_sock_column parameter
+   Example 1.27. Set caller_sock_column parameter
 ...
 modparam("dialog", "caller_sock_column", "column_name")
 ...
 
-1.5.27. callee_sock_column (string)
+1.5.28. callee_sock_column (string)
 
    The column's name in the database to store information about
    the local interface receiving the traffic from callee.
 
    Default value is “callee_contact”.
 
-   Example 1.27. Set callee_sock_column parameter
+   Example 1.28. Set callee_sock_column parameter
 ...
 modparam("dialog", "callee_sock_column", "column_name")
 ...
 
-1.5.28. h_id_column (string)
+1.5.29. h_id_column (string)
 
    The column's name in the database to store the dialogs' hash id
    information.
 
    Default value is “hash_id”.
 
-   Example 1.28. Set h_id_column parameter
+   Example 1.29. Set h_id_column parameter
 ...
 modparam("dialog", "h_id_column", "hash_id_c_name")
 ...
 
-1.5.29. h_entry_column (string)
+1.5.30. h_entry_column (string)
 
    The column's name in the database to store the dialogs' hash
    entry information.
 
    Default value is “hash_entry”.
 
-   Example 1.29. Set h_entry_column parameter
+   Example 1.30. Set h_entry_column parameter
 ...
 modparam("dialog", "h_entry_column", "h_entry_c_name")
 ...
 
-1.5.30. state_column (string)
+1.5.31. state_column (string)
 
    The column's name in the database to store the dialogs' state
    information.
 
    Default value is “state”.
 
-   Example 1.30. Set state_column parameter
+   Example 1.31. Set state_column parameter
 ...
 modparam("dialog", "state_column", "state_c_name")
 ...
 
-1.5.31. start_time_column (string)
+1.5.32. start_time_column (string)
 
    The column's name in the database to store the dialogs' start
    time information.
 
    Default value is “start_time”.
 
-   Example 1.31. Set start_time_column parameter
+   Example 1.32. Set start_time_column parameter
 ...
 modparam("dialog", "start_time_column", "start_time_c_name")
 ...
 
-1.5.32. timeout_column (string)
+1.5.33. timeout_column (string)
 
    The column's name in the database to store the dialogs'
    timeout.
 
    Default value is “timeout”.
 
-   Example 1.32. Set timeout_column parameter
+   Example 1.33. Set timeout_column parameter
 ...
 modparam("dialog", "timeout_column", "timeout_c_name")
 ...
 
-1.5.33. profiles_column (string)
+1.5.34. profiles_column (string)
 
    The column's name in the database to store the dialogs'
    profiles.
 
    Default value is “profiles”.
 
-   Example 1.33. Set profiles_column parameter
+   Example 1.34. Set profiles_column parameter
 ...
 modparam("dialog", "profiles_column", "profiles_c_name")
 ...
 
-1.5.34. vars_column (string)
+1.5.35. vars_column (string)
 
    The column's name in the database to store the dialogs' vars.
 
    Default value is “vars”.
 
-   Example 1.34. Set vars_column parameter
+   Example 1.35. Set vars_column parameter
 ...
 modparam("dialog", "vars_column", "vars_c_name")
 ...
 
-1.5.35. sflags_column (string)
+1.5.36. sflags_column (string)
 
    The column's name in the database to store the dialogs' script
    flags.
 
    Default value is “script_flags”.
 
-   Example 1.35. Set sflags_column parameter
+   Example 1.36. Set sflags_column parameter
 ...
 modparam("dialog", "sflags_column", "sflags_c_name")
 ...
 
-1.5.36. profiles_with_value (string)
+1.5.37. profiles_with_value (string)
 
    List of names for profiles with values.
 
    Default value is “empty”.
 
-   Example 1.36. Set profiles_with_value parameter
+   Example 1.37. Set profiles_with_value parameter
 ...
 modparam("dialog", "profiles_with_value", "caller ; my_profile")
 ...
 
-1.5.37. profiles_no_value (string)
+1.5.38. profiles_no_value (string)
 
    List of names for profiles without values.
 
    Default value is “empty”.
 
-   Example 1.37. Set profiles_no_value parameter
+   Example 1.38. Set profiles_no_value parameter
 ...
 modparam("dialog", "profiles_no_value", "inbound ; outbound")
 ...
@@ -738,16 +752,29 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 1.6.1.  create_dialog()
 
    The function creats the dialog for the currently processed
-   request. The request must be an initial request.
+   request. The request must be an initial request. Optionally,the
+   function also receives a string parameter, which specifies
+   whether the dialog end-points should be pinged via SIP options
+   messages. The parameter can be "C" to specify to only ping the
+   caller, "c" to only ping the callee or "Cc" to ping both dialog
+   sides. If the extra string parameter is provided and one
+   end-point fails to respond to a options ping, OpenSIPS will
+   terminate the dialog from the middle.
 
    The function returns true if the dialog was successfully
    created or if the dialog was previously created.
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.38. create_dialog() usage
+   Example 1.39. create_dialog() usage
 ...
 create_dialog();
+...
+#ping caller
+create_dialog("C");
+...
+#ping caller and callee
+create_dialog("Cc");
 ...
 
 1.6.2.  validate_dialog()
@@ -765,7 +792,7 @@ create_dialog();
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.39. validate_dialog() usage
+   Example 1.40. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -787,7 +814,7 @@ create_dialog();
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.40. fix_route_dialog() usage
+   Example 1.41. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -823,7 +850,7 @@ create_dialog();
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.41. get_dialog_info usage
+   Example 1.42. get_dialog_info usage
 ...
 if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
         xlog("caller $fU has another ongoing, talking to callee $var(x)\
@@ -856,7 +883,7 @@ $dlg_val(callee) = $ru;
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.42. set_dlg_profile usage
+   Example 1.43. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
@@ -878,7 +905,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.43. unset_dlg_profile usage
+   Example 1.44. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
@@ -905,7 +932,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.44. is_in_profile usage
+   Example 1.45. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -936,7 +963,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.45. get_profile_size usage
+   Example 1.46. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
@@ -959,7 +986,7 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.46. set_dlg_flag usage
+   Example 1.47. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
@@ -978,7 +1005,7 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.47. reset_dlg_flag usage
+   Example 1.48. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
@@ -997,7 +1024,7 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.48. is_dlg_flag_set usage
+   Example 1.49. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
@@ -1022,7 +1049,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.49. store_dlg_value usage
+   Example 1.50. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1048,7 +1075,7 @@ $dlg_val("account_type") = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.50. fetch_dlg_value usage
+   Example 1.51. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(i:2)");
 fetch_dlg_value("account type","$var(account)");
