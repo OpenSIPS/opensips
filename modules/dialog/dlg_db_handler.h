@@ -44,6 +44,8 @@
 #define TIMEOUT_COL				"timeout"
 #define TO_CSEQ_COL				"callee_cseq"
 #define FROM_CSEQ_COL			"caller_cseq"
+#define FROM_PING_CSEQ_COL		"caller_ping_cseq"
+#define TO_PING_CSEQ_COL		"callee_ping_cseq"
 #define TO_ROUTE_COL			"callee_route_set"
 #define FROM_ROUTE_COL			"caller_route_set"
 #define TO_CONTACT_COL			"callee_contact"
@@ -64,8 +66,8 @@
 #define DB_MODE_DELAYED				2
 #define DB_MODE_SHUTDOWN			3
 
-#define DIALOG_TABLE_TOTAL_COL_NO	21
-#define DIALOG_TABLE_FIX_COL_NO		18
+#define DIALOG_TABLE_TOTAL_COL_NO	23
+#define DIALOG_TABLE_FIX_COL_NO		20
 
 extern str call_id_column; 
 extern str from_uri_column;
@@ -79,6 +81,8 @@ extern str start_time_column;
 extern str timeout_column;
 extern str to_cseq_column;
 extern str from_cseq_column;
+extern str to_ping_cseq_column;
+extern str from_ping_cseq_column;
 extern str to_route_column;
 extern str from_route_column;
 extern str to_contact_column;

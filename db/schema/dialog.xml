@@ -95,7 +95,21 @@
 		<name>callee_cseq</name>
 		<type>string</type>
 		<size>&cseq_len;</size>
-		<description>Last Cseq number on the caller side.</description>
+		<description>Last Cseq number on the callee side.</description>
+	</column>
+
+	<column>
+		<name>caller_ping_cseq</name>
+		<type>unsigned int</type>
+		<size>&cseq_len;</size>
+		<description>Last Cseq number of pings generated on caller side.</description>
+	</column>
+
+	<column>
+		<name>callee_ping_cseq</name>
+		<type>unsigned int</type>
+		<size>&cseq_len;</size>
+		<description>Last Cseq number of pings generated on callee side.</description>
 	</column>
 
 	<column>

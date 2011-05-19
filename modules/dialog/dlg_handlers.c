@@ -922,7 +922,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	int timeout;
 	unsigned int update_val;
 	unsigned int dir,dst_leg;
-	int ret = 0,ok = 0;
+	int ret = 0,ok = 1;
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
 	char *final_cseq;
@@ -1041,35 +1041,37 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 		LM_DBG("BYE successfully processed\n");
 
-		dlg_lock (d_table,d_entry);
+		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+			dlg_lock (d_table,d_entry);
 
-		if (dlg->legs[dst_leg].last_gen_cseq) {
+			if (dlg->legs[dst_leg].last_gen_cseq) {
 
-			update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
-			dlg_unlock (d_table,d_entry);
+				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+				dlg_unlock (d_table,d_entry);
 
-			if (update_msg_cseq(req,0,update_val) != 0)
-				LM_ERR("failed to update BYE msg cseq\n");
+				if (update_msg_cseq(req,0,update_val) != 0)
+					LM_ERR("failed to update BYE msg cseq\n");
 
-			msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
+				msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
 
-			final_cseq = shm_malloc(msg_cseq->len + 1);
-			if (final_cseq == 0) {
-				LM_ERR("no more shm mem\n");
-				goto after_unlock5;
+				final_cseq = shm_malloc(msg_cseq->len + 1);
+				if (final_cseq == 0) {
+					LM_ERR("no more shm mem\n");
+					goto after_unlock5;
+				}
+
+				memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
+				final_cseq[msg_cseq->len] = 0;
+
+				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+				fix_final_cseq,
+				(void*)final_cseq, 0)<0 ) {
+					LM_ERR("failed to register TMCB (2)\n");
+				}
 			}
-
-			memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
-			final_cseq[msg_cseq->len] = 0;
-
-			if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-			fix_final_cseq,
-			(void*)final_cseq, 0)<0 ) {
-				LM_ERR("failed to register TMCB (2)\n");
-			}
+			else
+				dlg_unlock (d_table,d_entry);
 		}
-		else
-			dlg_unlock (d_table,d_entry);
 
 after_unlock5:
 
@@ -1136,20 +1138,24 @@ after_unlock5:
 				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 			}
 
-			dlg_lock (d_table, d_entry);
+			if (dlg->flags & DLG_FLAG_PING_CALLER || 
+					dlg->flags & DLG_FLAG_PING_CALLEE) {
 
-			if (dlg->legs[dst_leg].last_gen_cseq) {
-				
-				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
-				dlg_unlock( d_table, d_entry );
+				dlg_lock (d_table, d_entry);
 
-				if (update_msg_cseq(req,0,update_val) != 0) {
-					LM_ERR("failed to update sequential request msg cseq\n");
-					ok = 0;
+				if (dlg->legs[dst_leg].last_gen_cseq) {
+					
+					update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+					dlg_unlock( d_table, d_entry );
+
+					if (update_msg_cseq(req,0,update_val) != 0) {
+						LM_ERR("failed to update sequential request msg cseq\n");
+						ok = 0;
+					}
 				}
+				else
+					dlg_unlock( d_table, d_entry );
 			}
-			else
-				dlg_unlock( d_table, d_entry );
 
 			if (ok) {
 				dlg->flags |= DLG_FLAG_CHANGED;
@@ -1159,69 +1165,84 @@ after_unlock5:
 		}
 		else
 		{
-			dlg_lock (d_table, d_entry);
+			if (dlg->flags & DLG_FLAG_PING_CALLER || 
+					dlg->flags & DLG_FLAG_PING_CALLEE) {
 
-			if (dlg->legs[dst_leg].last_gen_cseq) {
-				update_val = dlg->legs[dst_leg].last_gen_cseq;
-				dlg_unlock( d_table, d_entry );
+				dlg_lock (d_table, d_entry);
 
-				if (update_msg_cseq(req,0,update_val) != 0) {
-					LM_ERR("failed to update ACK msg cseq\n");
+				if (dlg->legs[dst_leg].last_gen_cseq) {
+					update_val = dlg->legs[dst_leg].last_gen_cseq;
+					dlg_unlock( d_table, d_entry );
+
+					if (update_msg_cseq(req,0,update_val) != 0) {
+						LM_ERR("failed to update ACK msg cseq\n");
+					}
 				}
+				else 
+					dlg_unlock( d_table, d_entry );
 			}
-			else 
-				dlg_unlock( d_table, d_entry );
 		}
 
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
 		if ( event!=DLG_EVENT_REQACK) {
-			/* ref the dialog as registered into the transaction callback.
-			 * unref will be done when the callback will be destroyed */
-			ref_dlg( dlg , 1);
 			/* register callback for the replies of this request */
-			dlg_lock( d_table, d_entry);
 
-			if (dlg->legs[dst_leg].last_gen_cseq) {
-				dlg_unlock( d_table,d_entry);
+			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+				dlg_lock( d_table, d_entry);
+				if (dlg->legs[dst_leg].last_gen_cseq) {
+					/* ref the dialog as registered into the transaction callback.
+					 * unref will be done when the callback will be destroyed */
+					ref_dlg_unsafe( dlg, 1);
+					dlg_unlock( d_table,d_entry);
 
-				if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
-					LM_ERR("failed to parse cseq header \n");
-					unref_dlg(dlg,1);
-					goto prack_check;
-				}
+					if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
+						LM_ERR("failed to parse cseq header \n");
+						unref_dlg(dlg,1);
+						goto prack_check;
+					}
 
-				msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
-				dlg_cseq_wrapper *wrap = shm_malloc(sizeof(dlg_cseq_wrapper) +
-						msg_cseq->len);
+					msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
+					dlg_cseq_wrapper *wrap = shm_malloc(sizeof(dlg_cseq_wrapper) +
+							msg_cseq->len);
 
-				if (wrap == 0){
-					LM_ERR("No more shm mem\n");
-					unref_dlg(dlg, 1);
-					goto prack_check;
-				}
+					if (wrap == 0){
+						LM_ERR("No more shm mem\n");
+						unref_dlg(dlg, 1);
+						goto prack_check;
+					}
 
-				wrap->dlg = dlg;
-				wrap->cseq.s = (char *)(wrap + 1);
-				wrap->cseq.len = msg_cseq->len;
-				memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
+					wrap->dlg = dlg;
+					wrap->cseq.s = (char *)(wrap + 1);
+					wrap->cseq.len = msg_cseq->len;
+					memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
 
-				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-				(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply_mod_cseq:dlg_seq_up_onreply_mod_cseq,
-				(void*)wrap, unreference_dialog_cseq)<0 ) {
-					LM_ERR("failed to register TMCB (2)\n");
-					unref_dlg( dlg , 1);
-					shm_free(wrap);
-				}
-			}
-			else {
-				dlg_unlock ( d_table, d_entry );
-				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-				(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
-				(void*)dlg, unreference_dialog)<0 ) {
-					LM_ERR("failed to register TMCB (2)\n");
+					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+					(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply_mod_cseq:dlg_seq_up_onreply_mod_cseq,
+					(void*)wrap, unreference_dialog_cseq)<0 ) {
+						LM_ERR("failed to register TMCB (2)\n");
 						unref_dlg( dlg , 1);
+						shm_free(wrap);
+					}
+				}
+				else {
+					/* dialog is in ping timer list
+					 * but no pings have been generated yet */
+					dlg_unlock ( d_table, d_entry );
+					goto regular_indlg_req;
+				}
+			} else {
+regular_indlg_req:
+				if (dlg->cbs.types & DLGCB_RESPONSE_WITHIN)
+				{
+					ref_dlg( dlg , 1);
+					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+					(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
+					(void*)dlg, unreference_dialog)<0 ) {
+						LM_ERR("failed to register TMCB (2)\n");
+							unref_dlg( dlg , 1);
+					}
 				}
 			}
 		}
