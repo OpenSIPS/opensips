@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','4');
+INSERT INTO version (table_name, table_version) values ('dialog','5');
 CREATE TABLE dialog (
     id SERIAL PRIMARY KEY NOT NULL,
     hash_entry INTEGER NOT NULL,
@@ -10,6 +10,8 @@ CREATE TABLE dialog (
     to_tag VARCHAR(64) NOT NULL,
     caller_cseq VARCHAR(11) NOT NULL,
     callee_cseq VARCHAR(11) NOT NULL,
+    caller_ping_cseq INTEGER NOT NULL,
+    callee_ping_cseq INTEGER NOT NULL,
     caller_route_set TEXT,
     callee_route_set TEXT,
     caller_contact VARCHAR(128) NOT NULL,

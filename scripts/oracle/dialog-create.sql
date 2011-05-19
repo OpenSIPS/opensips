@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','4');
+INSERT INTO version (table_name, table_version) values ('dialog','5');
 CREATE TABLE dialog (
     id NUMBER(10) PRIMARY KEY,
     hash_entry NUMBER(10),
@@ -10,6 +10,8 @@ CREATE TABLE dialog (
     to_tag VARCHAR2(64),
     caller_cseq VARCHAR2(11),
     callee_cseq VARCHAR2(11),
+    caller_ping_cseq NUMBER(10),
+    callee_ping_cseq NUMBER(10),
     caller_route_set CLOB(512),
     callee_route_set CLOB(512),
     caller_contact VARCHAR2(128),
