@@ -44,6 +44,7 @@ Ovidiu Sas
               1.3.10. b2bl_key_avp (string)
               1.3.11. b2bl_from_param_spec (string)
               1.3.12. server_address (str)
+              1.3.13. init_callid_hdr (str)
 
         1.4. Exported Functions
 
@@ -81,8 +82,9 @@ Ovidiu Sas
    1.10. Set b2bl_key_avp parameter
    1.11. Set b2bl_from_param_spec parameter
    1.12. Set server_address parameter
-   1.13. b2b_init_request usage
-   1.14. b2b_bridge_request usage
+   1.13. Set init_callid_hdr parameter
+   1.14. b2b_init_request usage
+   1.15. b2b_bridge_request usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -309,7 +311,19 @@ route{
 
    Example 1.12. Set server_address parameter
 ...
-modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
+modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
+...
+
+1.3.13. init_callid_hdr (str)
+
+   The module offers the possibility to insert the original callid
+   in a header in the generated Invites. If you want this, set
+   this parameter to the name of the header in which to insert the
+   original callid.
+
+   Example 1.13. Set init_callid_hdr parameter
+...
+modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
 1.4. Exported Functions
@@ -337,7 +351,7 @@ Note
    from the script will result in the transaction remaining in
    memory for ever.
 
-   Example 1.13. b2b_init_request usage
+   Example 1.14. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
@@ -355,7 +369,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
      * entity_no - a pseudo-variable that holds the entity of the
        particapnt to bridge.
 
-   Example 1.14. b2b_bridge_request usage
+   Example 1.15. b2b_bridge_request usage
 ...
 modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
 ...

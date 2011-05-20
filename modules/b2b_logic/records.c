@@ -712,6 +712,9 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 	for(i = 0; i< hdrs_no; i++)
 		len += hdrs[i]->len;
 
+	if(init_callid_hdr.len && msg && msg->callid)
+		len+= init_callid_hdr.len + msg->callid->len;
+
 	if(len == 0)
 		return 0;
 
@@ -740,8 +743,16 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 		memcpy(p, custom_hdrs->s, custom_hdrs_len);
 		p += custom_hdrs_len;
 	}
+
+	if(init_callid_hdr.s && msg && msg->callid)
+	{
+		memcpy(p, init_callid_hdr.s, init_callid_hdr.len);
+		p += init_callid_hdr.len;
+		len = sprintf(p, ": %.*s", msg->callid->name.s +msg->callid->len -msg->callid->body.s, msg->callid->body.s);
+		p += len;
+	}
+
 	extra_headers->len = p - extra_headers->s;
 
 	return 0;
 }
-

@@ -321,11 +321,29 @@ route{
 		<title>Set <varname>server_address</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_entities", "server_address", "sip:sa@10.10.10.10:5060")
+modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 	</programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>init_callid_hdr</varname> (str)</title>
+		<para>
+			The module offers the possibility to insert the original callid in a header
+			in the generated Invites. If you want this, set this parameter to the name
+			of the header in which to insert the original callid.
+		</para>
+		<example>
+		<title>Set <varname>init_callid_hdr</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
+...
+	</programlisting>
+		</example>
+	</section>
+
 
 	</section>
 

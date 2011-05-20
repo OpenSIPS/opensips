@@ -115,6 +115,7 @@ static str db_url= {0, 0};
 static db_con_t *b2bl_db = NULL;
 static db_func_t b2bl_dbf;
 static str dbtable= str_init("b2b_logic");
+str init_callid_hdr={0, 0};
 
 str server_address = {0, 0};
 
@@ -177,6 +178,7 @@ static param_export_t params[]=
 	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
 	{"b2bl_from_spec_param",STR_PARAM,            &b2bl_from_spec_param.s    },
 	{"server_address",  STR_PARAM,                &server_address.s          },
+	{"init_callid_hdr", STR_PARAM,                &init_callid_hdr.s         },
 	{0,                    0,                          0                     }
 };
 
@@ -399,6 +401,9 @@ next_hdr:
 			i--;
 	}
 	custom_headers_lst_len = i +1;
+
+	if(init_callid_hdr.s)
+		init_callid_hdr.len = strlen(init_callid_hdr.s);
 
 	register_timer(b2bl_clean, 0, b2b_clean_period);
 	register_timer(b2bl_db_update, 0, b2b_update_period);

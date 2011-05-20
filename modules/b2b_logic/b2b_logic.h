@@ -103,6 +103,7 @@ int custom_headers_lst_len;
 extern int use_init_sdp;
 extern str server_address;
 extern unsigned int max_duration;
+extern str init_callid_hdr;
 
 static inline int b2b_get_request_id(str* request)
 {
