@@ -207,6 +207,45 @@ modparam("b2b_logic", "use_init_sdp", 1)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>server_address</varname> (str)</title>
+		<para>
+			The IP address of the machine that will be used as Contact in
+			the generated messages. This is compulsory only when using external
+			scenarios. For the script scenarios, if it is not set, it is constructed
+			dynamically from the socket where the initiating request was received.
+			This socket will be used to send all the requests, replies for that
+			scenario instantiation.
+		</para>
+		<example>
+		<title>Set <varname>server_address</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>init_callid_hdr</varname> (str)</title>
+		<para>
+				The module offers the possibility to insert the original callid in a header
+				in the generated Invites. If you want this, set this parameter to the name
+				of the header in which to insert the original callid.
+		</para>
+
+		<example>
+			<title>Set <varname>init_callid_hdr</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
+...
+		</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 	<section>

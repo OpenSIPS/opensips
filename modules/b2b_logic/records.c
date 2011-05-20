@@ -637,9 +637,13 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
 	for(i = 0; i< hdrs_no; i++)
 		len += hdrs[i]->len;
 
+	if(init_callid_hdr.len && msg && msg->callid)
+		len+= init_callid_hdr.len + msg->callid->len;
+
 	if(len == 0)
 		return 0;
 
+	LM_DBG("len = %d\n", len);
 	extra_headers->s = (char*)pkg_malloc(len);
 	if(extra_headers->s == NULL)
 	{
@@ -655,8 +659,17 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* extra_headers)
 		memcpy(p, hdrs[i]->name.s, hdrs[i]->len);
 		p += hdrs[i]->len;
 	}
+
+	if(init_callid_hdr.s && msg && msg->callid)
+	{
+		memcpy(p, init_callid_hdr.s, init_callid_hdr.len);
+		p += init_callid_hdr.len;
+		len = sprintf(p, ": %.*s", msg->callid->name.s +msg->callid->len -msg->callid->body.s, msg->callid->body.s);
+		p += len;
+	}
+
 	extra_headers->len = p - extra_headers->s;
+	LM_DBG("extra_headers->len= %d\n", extra_headers->len);
 
 	return 0;
 }
-

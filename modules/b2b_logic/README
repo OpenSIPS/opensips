@@ -32,6 +32,8 @@ Anca-Maria Vamanu
               1.3.4. cleanup_period (int)
               1.3.5. custom_headers (str)
               1.3.6. use_init_sdp (int)
+              1.3.7. server_address (str)
+              1.3.8. init_callid_hdr (str)
 
         1.4. Exported Functions
 
@@ -50,7 +52,9 @@ Anca-Maria Vamanu
    1.4. Set cleanup_period parameter
    1.5. Set parameter
    1.6. Set parameter
-   1.7. b2b_init_request usage
+   1.7. Set server_address parameter
+   1.8. Set init_callid_hdr parameter
+   1.9. b2b_init_request usage
 
 Chapter 1. Admin Guide
 
@@ -192,6 +196,32 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 modparam("b2b_logic", "use_init_sdp", 1)
 ...
 
+1.3.7. server_address (str)
+
+   The IP address of the machine that will be used as Contact in
+   the generated messages. This is compulsory only when using
+   external scenarios. For the script scenarios, if it is not set,
+   it is constructed dynamically from the socket where the
+   initiating request was received. This socket will be used to
+   send all the requests, replies for that scenario instantiation.
+
+   Example 1.7. Set server_address parameter
+...
+modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
+...
+
+1.3.8. init_callid_hdr (str)
+
+   The module offers the possibility to insert the original callid
+   in a header in the generated Invites. If you want this, set
+   this parameter to the name of the header in which to insert the
+   original callid.
+
+   Example 1.8. Set init_callid_hdr parameter
+...
+modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
+...
+
 1.4. Exported Functions
 
 1.4.1.  b2b_init_request
@@ -215,7 +245,7 @@ modparam("b2b_logic", "use_init_sdp", 1)
    t_newtran() from the script will result in the transaction
    remaining in memory for ever.
 
-   Example 1.7. b2b_init_request usage
+   Example 1.9. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
