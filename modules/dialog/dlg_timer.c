@@ -440,7 +440,17 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 	}
 
 	if (statuscode >= 300)
-		LM_WARN("Response code received > 300. Maybe bogus request sent ?\n");
+	{
+/*		if (!rpl->callid && 
+				(parse_headers(rpl,HDR_CALLID_F,0)<0||!rpl->callid)){
+
+			LM_WARN("Response code received > 300 for . Code = %d ." 
+					"No valid callid header ! \n",statuscode);
+		}
+*/
+		LM_WARN("Response code received > 300 for . Code = %d ."
+				"Reply = [%.*s]\n",statuscode,rpl->len,rpl->buf);
+	}
 
 	dlg_lock_dlg(dlg);
 	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
@@ -478,7 +488,18 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 	}
 
 	if (statuscode >= 300)
-		LM_WARN("Response code received > 300. Maybe bogus request sent ?\n");
+	{
+/*		if (!rpl->callid && 
+				(parse_headers(rpl,HDR_CALLID_F,0)<0||!rpl->callid)){
+
+			LM_WARN("Response code received > 300 for . Code = %d ." 
+					"No valid callid header ! \n",statuscode);
+		}
+*/
+		LM_WARN("Response code received > 300 for . Code = %d ."
+				"Reply = [%.*s]\n",statuscode,rpl->len,rpl->buf);
+
+	}
 	
 	dlg_lock_dlg(dlg);
 	dlg->legs[callee_idx(dlg)].reply_received = 1;
