@@ -69,7 +69,6 @@ void timeout_listener_process(int rank)
 	char* p;
 	unsigned int h_entry, h_id;
 	str id;
-	char* socket_name;
 	unsigned short port;
 	struct sockaddr* saddr;
 	int len, i,n;
@@ -91,13 +90,7 @@ void timeout_listener_process(int rank)
 			return;
 		}
 		n = p- rtpp_notify_socket.s;
-		socket_name = (char *)pkg_malloc(n +1);
-		if(!socket_name) {
-			LM_ERR("no more private memory\n");
-			return;
-		}
-		memcpy(socket_name, rtpp_notify_socket.s, n);
-		socket_name[n] = '\0';
+		rtpp_notify_socket.s[n] = 0;
 
 		id.s = p+1;
 		id.len = rtpp_notify_socket.len - n -1;
@@ -107,7 +100,7 @@ void timeout_listener_process(int rank)
 			return;
 		}
 		memset(&saddr_in, 0, sizeof(saddr_in));
-		saddr_in.sin_addr.s_addr = inet_addr(socket_name);
+		saddr_in.sin_addr.s_addr = inet_addr(rtpp_notify_socket.s);
 		saddr_in.sin_family = AF_INET;
 		saddr_in.sin_port = htons(port);
 
@@ -118,7 +111,7 @@ void timeout_listener_process(int rank)
 		}
 		saddr = (struct sockaddr*)&saddr_in;
 		len = sizeof(saddr_in);
-		LM_DBG("binding socket %d to %s:%d\n", socket_fd, socket_name, port);
+		LM_DBG("binding socket %d to %s:%d\n", socket_fd, rtpp_notify_socket.s, port);
 	} else {
 		if(strncmp("unix:", rtpp_notify_socket.s, 5) == 0) {
 			rtpp_notify_socket.s += 5;
