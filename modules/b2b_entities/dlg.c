@@ -2112,11 +2112,14 @@ dummy_reply:
 			from_hdr.parsed   = (struct hdr_field*)(void*)&from_hdr_parsed;
 			to_hdr.parsed     = (struct hdr_field*)(void*)&to_hdr_parsed;
 
-			from_hdr.body = t->from; 
-			to_hdr.body = t->to; 
-			callid_hdr.body.s = t->callid.s + 9;
+			from_hdr.body       = t->from;
+			to_hdr.body         = t->to;
+			callid_hdr.name.s   = t->callid.s;
+			callid_hdr.name.len = 7;
+			callid_hdr.body.s   = t->callid.s + 9;
 			callid_hdr.body.len = t->callid.len - 9;
-			
+			callid_hdr.len      = t->callid.len;
+
 			dummy_msg.callid = &callid_hdr;
 			dummy_msg.from = &from_hdr;
 			dummy_msg.to = &to_hdr;
