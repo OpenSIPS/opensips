@@ -87,7 +87,7 @@ static int ospLoadRoutes(
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
     OSPE_OPERATOR_NAME type;
-    OSPE_DEST_PROTOCOL protocol;
+    OSPE_PROTOCOL_NAME protocol;
     OSPE_DEST_OSPENABLED enabled;
     int result = 0;
 
@@ -183,22 +183,22 @@ static int ospLoadRoutes(
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest protocol (%d)\n", errorcode);
-            protocol = OSPC_DPROT_SIP;
+            protocol = OSPC_PROTNAME_SIP;
         }
         switch (protocol) {
-            case OSPC_DPROT_Q931:
-            case OSPC_DPROT_LRQ:
-            case OSPC_DPROT_IAX:
-            case OSPC_DPROT_T37:
-            case OSPC_DPROT_T38:
-            case OSPC_DPROT_SKYPE:
-            case OSPC_DPROT_SMPP:
-            case OSPC_DPROT_XMPP:
+            case OSPC_PROTNAME_Q931:
+            case OSPC_PROTNAME_LRQ:
+            case OSPC_PROTNAME_IAX:
+            case OSPC_PROTNAME_T37:
+            case OSPC_PROTNAME_T38:
+            case OSPC_PROTNAME_SKYPE:
+            case OSPC_PROTNAME_SMPP:
+            case OSPC_PROTNAME_XMPP:
                 dest->supported = 0;
                 break;
-            case OSPC_DPROT_SIP:
-            case OSPC_DPROT_UNDEFINED:
-            case OSPC_DPROT_UNKNOWN:
+            case OSPC_PROTNAME_SIP:
+            case OSPC_PROTNAME_UNDEFINED:
+            case OSPC_PROTNAME_UNKNOWN:
             default:
                 dest->supported = 1;
                 break;
@@ -466,8 +466,8 @@ int ospRequestRouting(
             opname[OSPC_OPNAME_MNC],
             divuser,
             divhostbuf,
-            callids[0]->ospmCallIdLen,
-            callids[0]->ospmCallIdVal,
+            callids[0]->Length,
+            callids[0]->Value,
             destcount,
             cinfostr);
 
@@ -493,14 +493,14 @@ int ospRequestRouting(
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
-                callids[0]->ospmCallIdLen,
-                callids[0]->ospmCallIdVal);
+                callids[0]->Length,
+                callids[0]->Value);
             result = MODULE_RETURNCODE_TRUE;
         } else {
             LM_ERR("failed to request auth and routing (%d), call_id '%.*s'\n",
                 errorcode,
-                callids[0]->ospmCallIdLen,
-                callids[0]->ospmCallIdVal);
+                callids[0]->Length,
+                callids[0]->Value);
             switch (errorcode) {
                 case OSPC_ERR_TRAN_ROUTE_BLOCKED:
                     result = -403;

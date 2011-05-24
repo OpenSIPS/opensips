@@ -311,8 +311,8 @@ static int ospReportUsageFromCookie(
     if (release == OSP_RELEASE_ORIG) {
         LM_DBG("orig '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
             firstvia,
-            callid->ospmCallIdLen,
-            callid->ospmCallIdVal,
+            callid->Length,
+            callid->Value,
             transid);
         if (originator == NULL) {
             originator = firstvia;
@@ -324,8 +324,8 @@ static int ospReportUsageFromCookie(
         release = OSP_RELEASE_TERM;
         LM_DBG("term '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
             firstvia,
-            callid->ospmCallIdLen,
-            callid->ospmCallIdVal,
+            callid->Length,
+            callid->Value,
             transid);
         if (originator == NULL) {
             originator = nexthop;
@@ -369,8 +369,8 @@ static int ospReportUsageFromCookie(
         OSPC_NFORMAT_E164,
         called,
         OSPC_NFORMAT_E164,
-        callid->ospmCallIdLen,
-        callid->ospmCallIdVal,
+        callid->Length,
+        callid->Value,
         0,
         NULL,
         NULL);
@@ -433,14 +433,14 @@ int ospReportUsage(
             {
                 if (strncmp(token, OSP_ORIG_COOKIE, strlen(OSP_ORIG_COOKIE)) == 0) {
                     LM_INFO("report orig duration for call_id '%.*s'\n",
-                        callid->ospmCallIdLen,
-                        callid->ospmCallIdVal);
+                        callid->Length,
+                        callid->Value);
                     ospReportUsageFromCookie(msg, token + strlen(OSP_ORIG_COOKIE) + 1, callid, release, OSPC_ROLE_SOURCE);
                     result = MODULE_RETURNCODE_TRUE;
                 } else if (strncmp(token, OSP_TERM_COOKIE, strlen(OSP_TERM_COOKIE)) == 0) {
                     LM_INFO("report term duration for call_id '%.*s'\n",
-                        callid->ospmCallIdLen,
-                        callid->ospmCallIdVal);
+                        callid->Length,
+                        callid->Value);
                     ospReportUsageFromCookie(msg, token + strlen(OSP_TERM_COOKIE) + 1, callid, release, OSPC_ROLE_DESTINATION);
                     result = MODULE_RETURNCODE_TRUE;
                 } else {
@@ -452,8 +452,8 @@ int ospReportUsage(
         if (result == MODULE_RETURNCODE_FALSE) {
             LM_DBG("without orig or term OSP information\n");
             LM_INFO("report other duration for call_id '%.*s'\n",
-               callid->ospmCallIdLen,
-               callid->ospmCallIdVal);
+               callid->Length,
+               callid->Value);
             ospReportUsageFromCookie(msg, NULL, callid, release, OSPC_ROLE_SOURCE);
             result = MODULE_RETURNCODE_TRUE;
         }

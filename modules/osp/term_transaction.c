@@ -112,12 +112,12 @@ int ospValidateHeader (
             dest.calling,
             dest.called,
             _osp_validate_callid == 0 ? "No" : "Yes",
-            callid->ospmCallIdLen,
-            callid->ospmCallIdVal);
+            callid->Length,
+            callid->Value);
 
         if (_osp_validate_callid != 0) {
-            callidsize = callid->ospmCallIdLen;
-            callidval = callid->ospmCallIdVal;
+            callidsize = callid->Length;
+            callidval = callid->Value;
         }
 
         errorcode = OSPPTransactionValidateAuthorisation(
@@ -141,12 +141,12 @@ int ospValidateHeader (
             _osp_token_format);
 
         if ((errorcode == OSPC_ERR_NO_ERROR) && (authorized == 1)) {
-            if (callid->ospmCallIdLen > sizeof(dest.callid) - 1) {
+            if (callid->Length > sizeof(dest.callid) - 1) {
                 dest.callidsize = sizeof(dest.callid) - 1;
             } else {
-                dest.callidsize = callid->ospmCallIdLen;
+                dest.callidsize = callid->Length;
             }
-            memcpy(dest.callid, callid->ospmCallIdVal, dest.callidsize);
+            memcpy(dest.callid, callid->Value, dest.callidsize);
             dest.callid[dest.callidsize] = 0;
             dest.transid = ospGetTransactionId(transaction);
             dest.type = OSPC_ROLE_DESTINATION;
