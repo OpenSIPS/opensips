@@ -424,7 +424,7 @@ static int fixup_create_dlg2(void **param, int param_no)
 		}
 	}
 
-	*param=(void *)(unsigned int)flags;
+	*param=(void *)(unsigned long)flags;
 
 	return 0;
 }

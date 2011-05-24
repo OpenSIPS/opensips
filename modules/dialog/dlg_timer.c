@@ -435,22 +435,15 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY) {
-		/* timeout occured, nothing else to do, let destroy cb do unref */
+		/* timeout occured, nothing else to do now
+		 * next time timer fires, it will detect ping reply was not received
+		 */
 		return;
 	}
 
 	if (statuscode >= 300)
-	{
-/*		if (!rpl->callid && 
-				(parse_headers(rpl,HDR_CALLID_F,0)<0||!rpl->callid)){
-
-			LM_WARN("Response code received > 300 for . Code = %d ." 
-					"No valid callid header ! \n",statuscode);
-		}
-*/
-		LM_WARN("Response code received > 300 for . Code = %d ."
-				"Reply = [%.*s]\n",statuscode,rpl->len,rpl->buf);
-	}
+		LM_WARN("Response code received > 300 . Code = %d "
+				"Callid = [%.*s]\n",statuscode,dlg->callid.len,dlg->callid.s);
 
 	dlg_lock_dlg(dlg);
 	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
@@ -483,23 +476,15 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (rpl == FAKED_REPLY) {
-		/* timeout occured, nothing else to do, let destroy cb do unref */
+		/* timeout occured, nothing else to do now
+		 * next time timer fires, it will detect ping reply was not received
+		 */
 		return;
 	}
 
 	if (statuscode >= 300)
-	{
-/*		if (!rpl->callid && 
-				(parse_headers(rpl,HDR_CALLID_F,0)<0||!rpl->callid)){
-
-			LM_WARN("Response code received > 300 for . Code = %d ." 
-					"No valid callid header ! \n",statuscode);
-		}
-*/
-		LM_WARN("Response code received > 300 for . Code = %d ."
-				"Reply = [%.*s]\n",statuscode,rpl->len,rpl->buf);
-
-	}
+		LM_WARN("Response code received > 300 . Code = %d "
+				"Callid = [%.*s]\n",statuscode,dlg->callid.len,dlg->callid.s);
 	
 	dlg_lock_dlg(dlg);
 	dlg->legs[callee_idx(dlg)].reply_received = 1;
