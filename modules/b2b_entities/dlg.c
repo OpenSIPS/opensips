@@ -1031,7 +1031,16 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	}
 
 	if(!on_reply)
+	{
+		if(!msg->via1->branch)
+		{
+			LM_ERR("No via branch found\n");
+			if(dlg.route_set[CALLER_LEG].s)
+				pkg_free(dlg.route_set[CALLER_LEG].s);
+			return 0;
+		}
 		dlg.id = core_hash(&dlg.ruri, &msg->via1->branch->value, server_hsize);
+	}
 
 	if(param)
 		dlg.param = *param;
