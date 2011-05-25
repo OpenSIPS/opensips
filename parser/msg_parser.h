@@ -136,6 +136,9 @@ if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
 enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T};
 typedef enum _uri_type uri_type;
 
+/* define the # of unknown URI parameters to parse */
+#define URI_MAX_U_PARAMS 5
+
 struct sip_uri {
 	str user;     /* Username */
 	str passwd;   /* Password */
@@ -162,6 +165,11 @@ struct sip_uri {
 	str method_val;
 	str lr_val; /* lr value placeholder for lr=on a.s.o*/
 	str r2_val;
+
+	/* unknown params */
+	str u_name[URI_MAX_U_PARAMS]; /* Unknown param names */
+	str u_val[URI_MAX_U_PARAMS];  /* Unknown param valss */
+	unsigned short u_params_no;   /* No of unknown params */
 };
 
 
