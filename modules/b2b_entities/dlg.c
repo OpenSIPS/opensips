@@ -551,7 +551,7 @@ search_dialog:
 		if(dlg == NULL)
 		{
 			lock_release(&server_htable[hash_index].lock);
-			LM_DBG("No dialog found for cancel\n");
+			LM_DBG("CANCEL - No dialog found for cancel\n");
 			return 1;
 		}
 		table = server_htable;
@@ -561,11 +561,11 @@ search_dialog:
 		{
 			if(ret== 0)
 			{
-				LM_DBG("It is a retransmission, drop\n");
+				LM_DBG("CANCEL - It is a retransmission, drop\n");
 				tmb.unref_cell(tmb.t_gett());
 			}
 			else
-				LM_DBG("Error when creating tm transaction\n");
+				LM_DBG("CANCEL - Error when creating tm transaction\n");
 			lock_release(&server_htable[hash_index].lock);
 			return 0;
 		}
@@ -993,7 +993,16 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	}
 
 	if(!on_reply)
+	{
+		if(!msg->via1->branch)
+		{
+			LM_ERR("No via branch found\n");
+			if(dlg.route_set[CALLER_LEG].s)
+				pkg_free(dlg.route_set[CALLER_LEG].s);
+			return 0;
+		}
 		dlg.id = core_hash(&dlg.ruri, &msg->via1->branch->value, server_hsize);
+	}
 
 	if(param)
 		dlg.param = *param;
@@ -1003,7 +1012,8 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	if(shm_dlg == NULL)
 	{
 		LM_ERR("failed to copy dialog structure in shared memory\n");
-		pkg_free(dlg.route_set[CALLER_LEG].s);
+		if(dlg.route_set[CALLER_LEG].s)
+			pkg_free(dlg.route_set[CALLER_LEG].s);
 		return 0;
 	}
 	if(dlg.route_set[CALLER_LEG].s)
