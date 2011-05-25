@@ -1236,8 +1236,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
 	unsigned int n,m;
-	struct sip_uri curi,msg_uri;
-	int r_proto, c_proto, r_port, c_port,nr_routes,i;
+	int nr_routes,i;
 	str *rr_uri,*route_uris;
 
 	if (last_dst_leg<0) {
@@ -1267,7 +1266,6 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		return 0;
 
 	if (leg->contact.len) {
-		
 		rr_uri = d_rrb.get_remote_target(req);
 		if (rr_uri == NULL)
 		{
@@ -1275,36 +1273,10 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 			return -1;
 		}
 
-		if ( parse_uri(rr_uri->s,rr_uri->len,&msg_uri)<0 ||
-		parse_uri( leg->contact.s, leg->contact.len, &curi)!=0 ) {
-			LM_ERR("failed to parse RURI/Contacts\n");
-			return -1;
-		}
-		/* check proto */
-		r_proto = (msg_uri.proto==PROTO_NONE) ?
-			PROTO_UDP : msg_uri.proto;
-		c_proto = (curi.proto==PROTO_NONE) ?
-			PROTO_UDP : curi.proto;
-		if ( r_proto!=c_proto ) {
-			LM_DBG("RURI/Contact PROTO test failed ruri=[%.*s], old=[%.*s]\n",
-				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
-			return -1;
-		}
-		/* check port */
-		r_port=(msg_uri.port_no==0) ?
-			( (r_proto==PROTO_TLS)?5061:5060) : msg_uri.port_no ;
-		c_port=(curi.port_no==0) ?
-			( (c_proto==PROTO_TLS)?5061:5060) : curi.port_no ;
-		if ( r_port!=c_port ) {
-			LM_DBG("RURI/Contact PORT test failed ruri=[%.*s], old=[%.*s]\n",
-				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
-			return -1;
-		}
-		/* host (as string) */
-		if ( curi.host.len!=msg_uri.host.len ||
-		memcmp(msg_uri.host.s, curi.host.s, curi.host.len)!=0 ) {
-			LM_DBG("RURI/Contact HOST test failed ruri=[%.*s], old=[%.*s]\n",
-				rr_uri->len,rr_uri->s,leg->contact.len,leg->contact.s);
+		if (compare_uris(rr_uri,0,&leg->contact,0))
+		{
+			LM_ERR("failed to validate remote contact: dlg=[%.*s] , req=[%.*s]\n",
+					leg->contact.len,leg->contact.s,rr_uri->len,rr_uri->s);
 			return -1;
 		}
 	}
@@ -1344,8 +1316,8 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 			LM_DBG("route %d. req=[%.*s],dlg=[%.*s]\n",
 					i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
 					leg->route_uris[i].s);
-			if (route_uris[i].len != leg->route_uris[i].len ||
-					memcmp(route_uris[i].s,leg->route_uris[i].s,route_uris[i].len)){
+			if (compare_uris(&route_uris[i],0,&leg->route_uris[i],0))
+			{
 				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
 						i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
 						leg->route_uris[i].s);
