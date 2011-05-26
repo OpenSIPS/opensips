@@ -72,6 +72,7 @@
 
 extern struct socket_info *probing_sock;
 static int _ds_table_version = DS_TABLE_VERSION_NEW;
+extern event_id_t dispatch_evi_id;
 
 typedef struct _ds_dest
 {
@@ -1423,10 +1424,17 @@ int ds_mark_dst(struct sip_msg *msg, int mode)
 	return (ret==0)?1:-1;
 }
 
+/* event parameters */
+static str address_str = str_init("address");
+static str status_str = str_init("status");
+static str inactive_str = str_init("inactive");
+static str active_str = str_init("active");
+
 int ds_set_state(int group, str *address, int state, int type)
 {
 	int i=0;
 	ds_set_p idx = NULL;
+	evi_params_p list = NULL;
 
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
@@ -1477,7 +1485,29 @@ int ds_set_state(int group, str *address, int state, int type)
 				idx->dlist[i].flags |= state;
 			else
 				idx->dlist[i].flags &= ~state;
-				
+			if (dispatch_evi_id == EVI_ERROR) {
+				LM_ERR("event not registered %d\n", dispatch_evi_id);
+			} else if (evi_probe_event(dispatch_evi_id)) {
+				if (!(list = evi_get_params()))
+					return 0;
+				if (evi_param_add_str(list, &address_str, address)) {
+					LM_ERR("unable to add address parameter\n");
+					evi_free_params(list);
+					return 0;
+				}
+				if (evi_param_add_str(list, &status_str,
+							type ? &inactive_str : &active_str)) {
+					LM_ERR("unable to add status parameter\n");
+					evi_free_params(list);
+					return 0;
+				}
+
+				if (evi_raise_event(dispatch_evi_id, list)) {
+					LM_ERR("unable to send event\n");
+				}
+			} else {
+				LM_DBG("no event sent\n");
+			}
 			return 0;
 		}
 		i++;

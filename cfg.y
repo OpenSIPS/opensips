@@ -218,7 +218,6 @@ extern int line;
 %token STRIP
 %token STRIP_TAIL
 %token APPEND_BRANCH
-%token REMOVE_BRANCH
 %token PV_PRINTF
 %token SET_USER
 %token SET_USERPASS
@@ -280,6 +279,7 @@ extern int line;
 %token XLOG
 %token XLOG_BUF_SIZE
 %token XLOG_FORCE_COLOR
+%token RAISE_EVENT
 %token CONSTRUCT_URI
 
 /* config vars. */
@@ -368,7 +368,6 @@ extern int line;
 %token DST_BLACKLIST
 %token DISABLE_STATELESS_FWD
 %token DB_VERSION_TABLE
-%token DB_DEFAULT_URL
 %token DISABLE_503_TRANSLATION
 
 
@@ -1063,8 +1062,6 @@ assign_stm: DEBUG EQUAL snumber {
 				}
 		| DB_VERSION_TABLE EQUAL STRING { db_version_table=$3; }
 		| DB_VERSION_TABLE EQUAL error { yyerror("string value expected"); }
-		| DB_DEFAULT_URL EQUAL STRING { db_default_url=$3; }
-		| DB_DEFAULT_URL EQUAL error { yyerror("string value expected"); }
 		| DISABLE_503_TRANSLATION EQUAL NUMBER { disable_503_translation=$3; }
 		| DISABLE_503_TRANSLATION EQUAL error {
 				yyerror("string value expected");
@@ -2185,10 +2182,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
 		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T,
 						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
-		| REMOVE_BRANCH LPAREN NUMBER RPAREN {
-						mk_action1($$, REMOVE_BRANCH_T, NUMBER_ST, (void*)$3);}
-		| REMOVE_BRANCH LPAREN script_var RPAREN {
-						mk_action1( $$, REMOVE_BRANCH_T, SCRIPTVAR_ST, $3);}
 
 		| PV_PRINTF LPAREN STRING COMMA STRING RPAREN {
 				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
@@ -2463,6 +2456,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action1($$, XLOG_T, STR_ST, $3); }
 		| XLOG LPAREN STRING COMMA STRING RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
+		| RAISE_EVENT LPAREN STRING RPAREN {
+				mk_action1($$, RAISE_EVENT_T, STR_ST, $3); }
+		| RAISE_EVENT LPAREN STRING COMMA script_var RPAREN {
+				mk_action2($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST, $3, $5); }
+		| RAISE_EVENT LPAREN STRING COMMA script_var COMMA script_var RPAREN {
+				mk_action3($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST, SCRIPTVAR_ST, $3, $5, $7); }
 		| CONSTRUCT_URI LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA STRING COMMA script_var RPAREN {
 				elems[0].type = STR_ST; 
 				elems[0].u.data = $3; 

@@ -147,7 +147,6 @@ PREFIX			"prefix"
 STRIP			"strip"
 STRIP_TAIL		"strip_tail"
 APPEND_BRANCH	"append_branch"
-REMOVE_BRANCH	"remove_branch"
 PV_PRINTF		"pv_printf"|"avp_printf"
 IF				"if"
 ELSE			"else"
@@ -170,6 +169,7 @@ XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG			"xlog"
+RAISE_EVENT		"raise_event"
 CONSTRUCT_URI	"construct_uri"
 
 /*ACTION LVALUES*/
@@ -311,7 +311,6 @@ DST_BLACKLIST		"dst_blacklist"
 MAX_WHILE_LOOPS "max_while_loops"
 DISABLE_STATELESS_FWD	"disable_stateless_fwd"
 DB_VERSION_TABLE "db_version_table"
-DB_DEFAULT_URL "db_default_url"
 DISABLE_503_TRANSLATION "disable_503_translation"
 
 MPATH	mpath
@@ -420,8 +419,6 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{STRIP_TAIL}	{ count(); yylval.strval=yytext; return STRIP_TAIL; }
 <INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext; 
 								return APPEND_BRANCH; }
-<INITIAL>{REMOVE_BRANCH}	{ count(); yylval.strval=yytext; 
-								return REMOVE_BRANCH; }
 <INITIAL>{PV_PRINTF}	{ count(); yylval.strval=yytext; 
 								return PV_PRINTF; }
 <INITIAL>{FORCE_RPORT}	{ count(); yylval.strval=yytext; return FORCE_RPORT; }
@@ -467,6 +464,8 @@ WHITESPACE	[ \t\r\n]
 									return XLOG_BUF_SIZE; }
 <INITIAL>{XLOG_FORCE_COLOR}	{	count(); yylval.strval=yytext;
 									return XLOG_FORCE_COLOR;}
+<INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
+									return RAISE_EVENT;}
 <INITIAL>{CONSTRUCT_URI}	{	count(); yylval.strval=yytext;
 									return CONSTRUCT_URI;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
@@ -589,8 +588,6 @@ WHITESPACE	[ \t\r\n]
 									return DISABLE_STATELESS_FWD; }
 <INITIAL>{DB_VERSION_TABLE}	{	count(); yylval.strval=yytext;
 									return DB_VERSION_TABLE; }
-<INITIAL>{DB_DEFAULT_URL}	{	count(); yylval.strval=yytext;
-									return DB_DEFAULT_URL; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
 

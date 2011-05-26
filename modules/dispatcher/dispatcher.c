@@ -110,6 +110,10 @@ static int options_codes_no;
 static char *probing_sock_s = NULL;
 struct socket_info *probing_sock = NULL;
 
+/* event */
+static str dispatcher_event = str_init("E_DISPATCHER_STATUS");
+event_id_t dispatch_evi_id;
+
 /** module functions */
 static int mod_init(void);
 static int child_init(int);
@@ -423,6 +427,9 @@ static int mod_init(void)
 		}
 	}
 
+	dispatch_evi_id = evi_publish_event(dispatcher_event); 
+	if (dispatch_evi_id == EVI_ERROR)
+		LM_ERR("cannot register dispatcher event\n");
 	return 0;
 }
 

@@ -39,6 +39,7 @@
 #include <assert.h>
 
 #include "../../mem/shm_mem.h"
+#include "../../evi/evi_modules.h"
 #include "../../locking.h"
 #include "../../timer.h"
 #include "../../ip_addr.h"
@@ -56,7 +57,38 @@ extern gen_lock_t*       timer_lock;
 extern struct list_link* timer;
 extern int               timeout;
 extern int               pike_log_level;
+extern int               pike_start_level;
+extern int               pike_stop_level;
+extern event_id_t        pike_event_id;
 
+static inline void pike_raise_event(char *ip)
+{
+	evi_params_p list;
+	str ip_str;
+	static str parameter_str = { "ip", 2 };
+
+	if (pike_event_id == EVI_ERROR) {
+		LM_ERR("event not registered %d\n", pike_event_id);
+		return;
+	}
+
+	if (evi_probe_event(pike_event_id)) {
+		if (!(list = evi_get_params()))
+			return;
+		ip_str.s = ip;
+		ip_str.len = strlen(ip);
+		if (evi_param_add_str(list, &parameter_str, &ip_str)) {
+			LM_ERR("unable to add socket parameter\n");
+			evi_free_params(list);
+			return;
+		}
+		if (evi_raise_event(pike_event_id, list)) {
+			LM_ERR("unable to send event %d\n", pike_event_id);
+		}
+	} else {
+		LM_DBG("no event sent\n");
+	}
+}
 
 
 int pike_check_req(struct sip_msg *msg)
@@ -156,6 +188,7 @@ int pike_check_req(struct sip_msg *msg)
 		if (flags&NEWRED_NODE) {
 			LM_GEN1( pike_log_level,
 				"PIKE - BLOCKing ip %s, node=%p\n",ip_addr2a(ip),node);
+			pike_raise_event(ip_addr2a(ip));
 			return -2;
 		}
 		return -1;

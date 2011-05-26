@@ -74,6 +74,7 @@
 
 #include "script_var.h"
 #include "xlog.h"
+#include "evi/evi_modules.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -1098,6 +1099,28 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 
 			break;
+		case RAISE_EVENT_T:
+			if (a->elem[0].type != NUMBER_ST) {
+				LM_ERR("invalid event id\n");
+				ret=E_BUG;
+				break;
+			}
+			if (a->elem[2].u.data) {
+				/* three parameters specified */
+				ret = evi_raise_script_event((event_id_t)a->elem[0].u.number,
+						a->elem[1].u.data, a->elem[2].u.data);
+			} else {
+				/* two parameters specified */
+				ret = evi_raise_script_event((event_id_t)a->elem[0].u.number,
+						NULL, a->elem[1].u.data);
+			}
+			if (ret <= 0) {
+				LM_ERR("cannot raise event\n");
+				ret=E_UNSPEC;
+				break;
+			}
+			break;
+
 		case CONSTRUCT_URI_T:
 			for (i=0;i<5;i++)
 			{

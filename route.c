@@ -74,6 +74,7 @@
 #include "parser/parse_to.h"
 #include "mem/mem.h"
 #include "xlog.h"
+#include "evi/evi_modules.h"
 
 
 /* main routing script table  */
@@ -255,6 +256,7 @@ static int fix_actions(struct action* a)
 	pv_elem_t *model=NULL;
 	pv_elem_t *models[5]; 
 	xl_level_p xlp;
+	event_id_t ev_id;
 
 	if (a==0){
 		LM_CRIT("null pointer\n");
@@ -656,6 +658,31 @@ static int fix_actions(struct action* a)
 
 					t->elem[1].u.data = model;
 					t->elem[1].type = SCRIPTVAR_ELEM_ST;
+				}
+				break;
+			case RAISE_EVENT_T:
+				s.s = t->elem[0].u.data;
+				s.len = strlen(s.s);
+				ev_id = evi_publish_event(s);
+				if (ev_id == EVI_ERROR) {
+					LM_ERR("cannot subscribe event\n");
+					ret=E_UNSPEC;
+					goto error;
+				}
+				t->elem[0].u.number = ev_id;
+				t->elem[0].type = NUMBER_ST;
+				if (t->elem[1].u.data && 
+						((pv_spec_p)t->elem[1].u.data)->type != PVT_AVP) {
+					LM_ERR("second parameter should be an avp\n");
+					ret=E_UNSPEC;
+					goto error;
+				}
+				/* if was called with 3 parameters */
+				if (t->elem[2].u.data &&
+						((pv_spec_p)t->elem[2].u.data)->type != PVT_AVP) {
+					LM_ERR("third parameter should be also an avp\n");
+					ret=E_UNSPEC;
+					goto error;
 				}
 				break;
 			case CONSTRUCT_URI_T:

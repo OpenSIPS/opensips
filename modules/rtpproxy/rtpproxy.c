@@ -172,6 +172,7 @@
 #include "../../parser/parse_multipart.h"
 #include "../../msg_callbacks.h"
 #include "../../rw_locking.h"
+#include "../../evi/evi_modules.h"
 
 #include "rtpproxy.h"
 #include "nhelpr_funcs.h"
@@ -231,6 +232,13 @@
 static str param1_name = str_init("rtpproxy_1");
 static str param2_name = str_init("rtpproxy_2");
 
+/* parameters name for event signaling */
+static str event_name = str_init("E_RTPPROXY_STATUS");
+static str socket_name = str_init("socket");
+static str status_name = str_init("status");
+static str status_connected = str_init("connected");
+static str status_disconnected = str_init("disconnected");
+
 static int extract_mediainfo(str *, str *, str *);
 static int alter_mediaip(struct sip_msg *, str *, str *, int, str *, int, int);
 static char *gencookie();
@@ -277,6 +285,8 @@ struct rtpp_notify_head * rtpp_notify_h = 0;
 
 int connect_rtpproxies();
 int update_rtpp_proxies();
+
+static inline void raise_rtpproxy_event(struct rtpp_node *node, int status);
 
 
 static struct {
@@ -328,6 +338,8 @@ static str rtpp_sock_col = str_init("rtpproxy_sock");
 static str set_id_col = str_init("set_id");
 static db_con_t *db_connection = NULL;
 static db_func_t db_functions;
+
+static event_id_t ei_id = EVI_ERROR;
 
 static rw_lock_t *nh_lock=NULL;
 
@@ -778,6 +790,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 					crt_rtpp->rn_recheck_ticks = 
 						enable? MI_MIN_RECHECK_TICKS : MI_MAX_RECHECK_TICKS;
 					crt_rtpp->rn_disabled = enable?0:1;
+					raise_rtpproxy_event(crt_rtpp, crt_rtpp->rn_disabled);
 				}
 			}
 		}
@@ -1078,6 +1091,10 @@ mod_init(void)
     {
         exports.procs = 0;
     }
+
+	ei_id = evi_publish_event(event_name); 
+	if (ei_id == EVI_ERROR)
+		LM_ERR("cannot register event\n");
 
 	return 0;
 }
@@ -1766,6 +1783,39 @@ rtpp_checkcap(struct rtpp_node *node, char *cap, int caplen)
 	return 1;
 }
 
+static inline void raise_rtpproxy_event(struct rtpp_node *node, int status)
+{
+	evi_params_p list = NULL;
+	if (ei_id == EVI_ERROR) {
+		LM_ERR("event not registered %d\n", ei_id);
+		return;
+	}
+
+	if (evi_probe_event(ei_id)) {
+		if (!(list = evi_get_params()))
+			return;
+		if (evi_param_add_str(list, &socket_name, &node->rn_url)) {
+			LM_ERR("unable to add socket parameter\n");
+			goto free;
+		}
+		if (evi_param_add_str(list, &status_name, status ?
+					&status_connected : &status_disconnected)) {
+			LM_ERR("unable to add status parameter\n");
+			goto free;
+		}
+		if (evi_raise_event(ei_id, list)) {
+			LM_ERR("unable to send event\n");
+		}
+	} else {
+		LM_DBG("no event sent\n");
+	}
+	return;
+free:
+	evi_free_params(list);
+}
+
+
+
 static int
 rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 {
@@ -1826,12 +1876,15 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 	} else {
 		node->abr_supported = 0;
 	}
+	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
 	LM_WARN("support for RTP proxy <%s> has been disabled%s\n", node->rn_url.s,
 	    rtpproxy_disable_tout < 0 ? "" : " temporarily");
 	if (rtpproxy_disable_tout >= 0)
 		node->rn_recheck_ticks = get_ticks() + rtpproxy_disable_tout;
+	if (cp)
+		raise_rtpproxy_event(node, 0);
 
 	return 1;
 }
@@ -1939,7 +1992,7 @@ badproxy:
 	LM_ERR("proxy <%s> does not respond, disable it\n", node->rn_url.s);
 	node->rn_disabled = 1;
 	node->rn_recheck_ticks = get_ticks() + rtpproxy_disable_tout;
-	
+	raise_rtpproxy_event(node, 0);
 	return NULL;
 }
 
@@ -2954,6 +3007,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 					args->node->rn_disabled = 1; 
 					args->node->rn_disabled = get_ticks() +
 						rtpproxy_disable_tout; 
+					raise_rtpproxy_event(args->node, 0);
 					args->node = select_rtpp_node(args->callid, 0);
 					if (!args->node) {
 						LM_ERR("no available proxies\n");

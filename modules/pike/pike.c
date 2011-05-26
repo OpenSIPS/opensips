@@ -44,6 +44,7 @@
 #include "../../script_cb.h"
 #include "../../ut.h"
 #include "../../mem/shm_mem.h"
+#include "../../evi/evi_modules.h"
 #include "../../timer.h"
 #include "../../locking.h"
 #include "ip_tree.h"
@@ -70,6 +71,10 @@ int pike_log_level = L_WARN;
 /* global variables */
 gen_lock_t*             timer_lock=0;
 struct list_link*       timer = 0;
+
+/* event id */
+static str pike_block_event = str_init("E_PIKE_BLOCKED");
+event_id_t pike_event_id = EVI_ERROR;
 
 
 static cmd_export_t cmds[]={
@@ -162,6 +167,8 @@ static int pike_init(void)
 			goto error3;
 		}
 	}
+	if((pike_event_id = evi_publish_event(pike_block_event)) == EVI_ERROR)
+		LM_ERR("cannot register pike flood start event\n");
 
 	return 0;
 error3:

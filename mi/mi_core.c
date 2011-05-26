@@ -48,6 +48,7 @@
 #include "../mem/mem.h"
 #include "../memcache.h"
 #include "mi.h"
+#include "../evi/event_interface.h"
 
 
 static str    up_since_ctime;
@@ -529,6 +530,7 @@ static mi_export_t mi_core_cmds[] = {
 	{ "cache_store", mi_cachestore,                0,  0,  0 },
 	{ "cache_fetch", mi_cachefetch,                0,  0,  0 },
 	{ "cache_remove",mi_cacheremove,               0,  0,  0 },
+	{ "event_subscribe", mi_event_subscribe,       0,  0,  0 },
 	{ 0, 0, 0, 0, 0}
 };
 

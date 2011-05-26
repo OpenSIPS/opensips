@@ -37,6 +37,8 @@
 #include "config.h"
 #include "dprint.h"
 #include "str.h"
+#include "evi/evi_modules.h"
+#include "evi/evi_core.h"
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
@@ -643,17 +645,55 @@ static inline int get_time_diff(struct timeval *begin)
 static inline void log_expiry(int time_diff,int expire,
 					const char *func_info,char *extra_dbg,int dbg_len,int tcp)
 {
+	str param;
+	evi_params_p list;
+	static str func_str = str_init("source");
+	static str time_str = str_init("time");
+	static str extra_str = str_init("extra");
+
 	if (time_diff > expire)
 	{
-		if (tcp)
+		if (tcp) {
 			LM_WARN("threshold exceeded : tcp took too long : "
 				"con_get=%d, rcv_fd=%d, send=%d. Source : %.*s\n",
 				tcp_timeout_con_get,tcp_timeout_receive_fd,
 				tcp_timeout_send,dbg_len,extra_dbg);
-		else
+			time_diff = tcp_timeout_send + tcp_timeout_receive_fd +
+				tcp_timeout_con_get;
+		} else
 			LM_WARN("threshold exceeded : %s took too long - %d us."
 					"Source : %.*s\n",func_info,time_diff,dbg_len,extra_dbg);
+		if (evi_probe_event(EVI_THRESHOLD_ID)) {
+
+			param.s = (char *)func_info;
+			param.len = strlen(func_info);
+			if (!(list = evi_get_params()))
+				return;
+			if (evi_param_add_str(list, &func_str, &param)) {
+				LM_ERR("unable to add func parameter\n");
+				goto error;
+			}
+			if (evi_param_add_int(list, &time_str, &time_diff)) {
+				LM_ERR("unable to add time parameter\n");
+				goto error;
+			}
+			param.s = extra_dbg;
+			param.len = dbg_len;
+			if (evi_param_add_str(list, &extra_str, &param)) {
+				LM_ERR("unable to add extra parameter\n");
+				goto error;
+			}
+			if (evi_raise_event(EVI_THRESHOLD_ID, list)) {
+				LM_ERR("unable to send event\n");
+			}
+
+		} else {
+			LM_DBG("no event raised\n");
+		}
 	}
+	return;
+error:	
+	evi_free_params(list);
 }
 
 int user2uid(int* uid, int* gid, char* user);

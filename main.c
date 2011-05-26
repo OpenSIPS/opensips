@@ -1369,6 +1369,12 @@ try_again:
 		LM_ERR("failed to initialize MI core\n");
 		goto error;
 	}
+	/* Register core events */
+	if (evi_register_core() != 0) {
+		LM_ERR("failed register core events\n");
+		goto error;
+	}
+
 	/* init black list engine */
 	if (init_black_lists()!=0) {
 		LM_CRIT("failed to init black lists\n");

@@ -1,0 +1,143 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This is a module which provides a UNIX/UDP SOCKET transport layer 
+		implementation for the Event Interface. 
+	</para>
+	</section>
+
+	<section>
+	<title>DATAGRAM events syntax</title>
+	<para>
+		The raised events will follow the following grammar:
+		<itemizedlist>
+			<listitem><para><emphasis>
+			event = event_name (argument '\n')*
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			event_name = non-quoted_string'\n'
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			argument = ((arg_name '::')? arg_value)? | (arg_value)
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			arg_name = not-quoted_string
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			arg_value = not-quoted_string | '"' string '"'
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			not-quoted_string = string - {',",\n,\r}
+			</emphasis></para></listitem>
+		</itemizedlist>
+	</para>
+	<para>The event name can contain any non-quoted string character, but
+		it is recommended to follow the syntax:
+		E_<emphasis>MODULE_NAME</emphasis>_<emphasis>EXTRA_NAME</emphasis>
+	</para>
+	</section>
+	
+	<section>
+	<title>DATAGRAM socket syntax</title>
+	<para>
+		There are two types of sockets used by this module, based on the
+		sockets type. An UNIX socket should follow this syntax:
+		<para><emphasis>['unix:'] unix_socket_path</emphasis></para>
+	</para>
+	<para>
+		An UDP socket should follow this syntax:
+		<para><emphasis>'udp:' address ':' port</emphasis></para>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<para>
+		No parameter exported by this module.
+			This module doesn't export any parameter
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Example</title>
+		<para>
+			This is an example of an event raised by the pike module
+			when it decides an ip should be blocked:
+		</para>
+		<example>
+		<title>E_PIKE_BLOCKED event</title>
+		<programlisting format="linespecific">
+
+E_PIKE_BLOCKED
+ip::192.168.2.11
+
+</programlisting>
+		</example>
+
+		<example>
+		<title>UNIX socket</title>
+		<programlisting format="linespecific">
+
+unix:/tmp/opensips_event.sock
+
+</programlisting>
+		</example>
+
+		<example>
+		<title>UDP socket</title>
+		<programlisting format="linespecific">
+
+udp:127.0.0.1:8081
+
+</programlisting>
+		</example>
+
+	</section>
+</chapter>
+
