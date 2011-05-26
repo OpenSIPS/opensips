@@ -445,6 +445,13 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 		LM_WARN("Response code received > 300 . Code = %d "
 				"Callid = [%.*s]\n",statuscode,dlg->callid.len,dlg->callid.s);
 
+	if (statuscode == 481)
+	{
+		/* call/transaction does not exist 
+		 * terminate the dialog */
+		return;
+	}
+
 	dlg_lock_dlg(dlg);
 	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
 	dlg_unlock_dlg(dlg);
@@ -486,6 +493,13 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 		LM_WARN("Response code received > 300 . Code = %d "
 				"Callid = [%.*s]\n",statuscode,dlg->callid.len,dlg->callid.s);
 	
+	if (statuscode == 481)
+	{
+		/* call/transaction does not exist 
+		 * terminate the dialog */
+		return;
+	}
+
 	dlg_lock_dlg(dlg);
 	dlg->legs[callee_idx(dlg)].reply_received = 1;
 	dlg_unlock_dlg(dlg);
