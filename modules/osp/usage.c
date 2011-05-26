@@ -218,6 +218,11 @@ static int ospReportUsageFromCookie(
     unsigned releasecode;
     char firstvia[OSP_STRBUF_SIZE];
     char from[OSP_STRBUF_SIZE];
+    char rpid[OSP_STRBUF_SIZE];
+    char pai[OSP_STRBUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
+    char divhost[OSP_STRBUF_SIZE];
+    char pci[OSP_STRBUF_SIZE];
     char to[OSP_STRBUF_SIZE];
     char nexthop[OSP_STRBUF_SIZE];
     char* calling;
@@ -299,6 +304,10 @@ static int ospReportUsageFromCookie(
 
     ospGetViaAddress(msg, firstvia, sizeof(firstvia));
     ospGetFromUserpart(msg, from, sizeof(from));
+    ospGetRpidUserpart(msg, rpid, sizeof(rpid));
+    ospGetPaiUserpart(msg, pai, sizeof(pai));
+    ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost));
+    ospGetPChargeInfoUserpart(msg, pci, sizeof(pci));
     ospGetToUserpart(msg, to, sizeof(to));
     ospGetNextHop(msg, nexthop, sizeof(nexthop));
 
@@ -382,6 +391,11 @@ static int ospReportUsageFromCookie(
             transaction,
             destcount);
     }
+
+    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
+    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
+    OSPPTransactionSetDiversion(transaction, divuser, divhost);
+    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
 
     ospReportUsageWrapper(
         transaction,
@@ -522,6 +536,11 @@ static int ospReportUsageFromDestination(
     OSPTTRANHANDLE transaction,
     osp_dest* dest)
 {
+    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, dest->rpid);
+    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, dest->pai);
+    OSPPTransactionSetDiversion(transaction, dest->divuser, dest->divhost);
+    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, dest->pci);
+
     ospReportUsageWrapper(
         transaction,                                          /* In - Transaction handle */
         dest->lastcode,                                       /* In - Release Code */

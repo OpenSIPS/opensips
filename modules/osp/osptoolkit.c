@@ -145,6 +145,14 @@ static OSPTTHREADRETURN ospReportUsageWork(
         usage->transaction,
         usage->cause);
 
+#if 0
+    OSPPTransactionSetTermCause(
+        usage->transaction,
+        OSPC_TCAUSE_SIP,
+        usage->cause,
+        NULL);
+#endif
+
     for (i = 1; i <= MAX_RETRIES; i++) {
         errorcode = OSPPTransactionReportUsage(
             usage->transaction,

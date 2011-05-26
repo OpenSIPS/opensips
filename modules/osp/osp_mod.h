@@ -51,7 +51,6 @@
 #define OSP_DEF_TIMEOUT                 (60 * 1000)
 #define OSP_DEF_DESTS                   5
 #define OSP_MAX_DESTS                   12
-#define OSP_DEF_USERPID                 1
 #define OSP_DEF_USENP                   1
 #define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0

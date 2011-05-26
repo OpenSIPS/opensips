@@ -58,6 +58,11 @@ typedef struct _osp_dest {
     char npcic[OSP_STRBUF_SIZE];
     int npdi;
     char opname[OSPC_OPNAME_NUMBER][OSP_STRBUF_SIZE];
+    char rpid[OSP_STRBUF_SIZE];
+    char pai[OSP_STRBUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
+    char divhost[OSP_STRBUF_SIZE];
+    char pci[OSP_STRBUF_SIZE];
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize;
     unsigned int timelimit;

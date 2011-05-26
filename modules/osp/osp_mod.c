@@ -65,7 +65,6 @@ extern int _osp_retry_delay;
 extern int _osp_retry_limit;
 extern int _osp_timeout;
 extern int _osp_max_dests;
-extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
 extern int _osp_append_userphone;
@@ -157,7 +156,6 @@ static param_export_t params[]={
     { "retry_limit",                      INT_PARAM, &_osp_retry_limit },
     { "timeout",                          INT_PARAM, &_osp_timeout },
     { "max_destinations",                 INT_PARAM, &_osp_max_dests },
-    { "use_rpid_for_calling_number",      INT_PARAM, &_osp_use_rpid },
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
@@ -417,7 +415,6 @@ static void ospDumpParameters(void)
     LM_INFO("    retry_limit '%d' ", _osp_retry_limit);
     LM_INFO("    timeout '%d' ", _osp_timeout);
     LM_INFO("    validate_call_id '%d' ", _osp_validate_callid);
-    LM_INFO("    use_rpid_for_calling_number '%d' ", _osp_use_rpid);
     LM_INFO("    use_number_portability '%d' ", _osp_use_np);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);

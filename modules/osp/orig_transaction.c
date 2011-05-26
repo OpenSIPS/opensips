@@ -58,7 +58,7 @@ const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 const str OSP_CALLING_NAME = {"_osp_calling_translated_", 24};
 
-static int ospLoadRoutes(OSPTTRANHANDLE transaction, int destcount, char* source, char* srcdev, char* origcalled, time_t authtime);
+static int ospLoadRoutes(OSPTTRANHANDLE transaction, int destcount, char* source, char* srcdev, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
 static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format);
 static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
@@ -78,7 +78,12 @@ static int ospLoadRoutes(
     char* source,
     char* srcdev,
     char* origcalled,
-    time_t authtime)
+    time_t authtime,
+    char* rpid,
+    char* pai,
+    char* divuser,
+    char* divhost,
+    char* pci)
 {
     int count;
     int errorcode;
@@ -226,6 +231,11 @@ static int ospLoadRoutes(
         dest->type = OSPC_ROLE_SOURCE;
         dest->transid = ospGetTransactionId(transaction);
         dest->authtime = authtime;
+        strncpy(dest->rpid, rpid, sizeof(dest->rpid) - 1);
+        strncpy(dest->pai, pai, sizeof(dest->pai) - 1);
+        strncpy(dest->divuser, divuser, sizeof(dest->divuser) - 1);
+        strncpy(dest->divhost, divhost, sizeof(dest->divhost) - 1);
+        strncpy(dest->pci, pci, sizeof(dest->pci) - 1);
 
         LM_INFO("get destination '%d': "
             "valid after '%s' "
@@ -238,12 +248,14 @@ static int ospLoadRoutes(
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            /*
             "spid '%s' "
             "ocn '%s' "
             "spn '%s' "
             "altspn '%s' "
             "mcc '%s' "
             "mnc '%s' "
+            */
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
@@ -259,12 +271,14 @@ static int ospLoadRoutes(
             dest->nprn,
             dest->npcic,
             dest->npdi,
+            /*
             dest->opname[OSPC_OPNAME_SPID],
             dest->opname[OSPC_OPNAME_OCN],
             dest->opname[OSPC_OPNAME_SPN],
             dest->opname[OSPC_OPNAME_ALTSPN],
             dest->opname[OSPC_OPNAME_MCC],
             dest->opname[OSPC_OPNAME_MNC],
+            */
             dest->supported,
             dest->networkid,
             dest->tokensize);
@@ -315,9 +329,12 @@ int ospRequestRouting(
     char sourcebuf[OSP_STRBUF_SIZE];
     char srcdev[OSP_STRBUF_SIZE];
     char srcdevbuf[OSP_STRBUF_SIZE];
+    char rpid[OSP_STRBUF_SIZE];
+    char pai[OSP_STRBUF_SIZE];
     char divuser[OSP_STRBUF_SIZE];
     char divhost[OSP_STRBUF_SIZE];
     char divhostbuf[OSP_STRBUF_SIZE];
+    char pci[OSP_STRBUF_SIZE];
     struct usr_avp* snidavp = NULL;
     int_str snidval;
     char snid[OSP_STRBUF_SIZE];
@@ -339,7 +356,7 @@ int ospRequestRouting(
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errorcode);
-    } else if ((ospGetRpidUserpart(msg, calling, sizeof(calling)) != 0) && (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0)) {
+    } else if (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
     } else if ((ospGetUriUserpart(msg, called, sizeof(called)) != 0) && (ospGetToUserpart(msg, called, sizeof(called)) != 0)) {
         LM_ERR("failed to extract called number\n");
@@ -383,12 +400,24 @@ int ospRequestRouting(
             }
         }
 
+        if (ospGetRpidUserpart(msg, rpid, sizeof(rpid)) == 0) {
+            OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
+        }
+
+        if (ospGetPaiUserpart(msg, pai, sizeof(pai)) == 0) {
+            OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
+        }
+
         if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
             ospConvertToOutAddress(divhost, divhostbuf, sizeof(divhostbuf));
         } else {
             divhostbuf[0] = '\0';
         }
         OSPPTransactionSetDiversion(transaction, divuser, divhostbuf);
+
+        if (ospGetPChargeInfoUserpart(msg, pci, sizeof(pci)) == 0) {
+            OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+        }
 
         if ((_osp_snid_avpname.n != 0) &&
             ((snidavp = search_first_avp(_osp_snid_avptype, _osp_snid_avpname, &snidval, 0)) != NULL) &&
@@ -437,14 +466,19 @@ int ospRequestRouting(
             "nprn '%s' "
             "npcic '%s' "
             "npdi '%d' "
+            /*
             "spid '%s' "
             "ocn '%s' "
             "spn '%s' "
             "altspn '%s' "
             "mcc '%s' "
             "mnc '%s' "
-            "diversion_user '%s' "
-            "diversion_host '%s' "
+            */
+            "rpid '%s' "
+            "pai '%s' "
+            "div_user '%s' "
+            "div_host '%s' "
+            "pci '%s' "
             "call_id '%.*s' "
             "dest_count '%d' "
             "%s\n",
@@ -458,14 +492,19 @@ int ospRequestRouting(
             rn,
             cic,
             npdi,
+            /*
             opname[OSPC_OPNAME_SPID],
             opname[OSPC_OPNAME_OCN],
             opname[OSPC_OPNAME_SPN],
             opname[OSPC_OPNAME_ALTSPN],
             opname[OSPC_OPNAME_MCC],
             opname[OSPC_OPNAME_MNC],
+            */
+            rpid,
+            pai,
             divuser,
             divhostbuf,
+            pci,
             callids[0]->Length,
             callids[0]->Value,
             destcount,
@@ -489,7 +528,7 @@ int ospRequestRouting(
             detaillog);        /* memory location for detaillog to be stored */
 
         if ((errorcode == OSPC_ERR_NO_ERROR) &&
-            (ospLoadRoutes(transaction, destcount, source, srcdev, called, authtime) == 0))
+            (ospLoadRoutes(transaction, destcount, source, srcdev, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
@@ -565,7 +604,7 @@ static int ospSetCalling(
     char buffer[OSP_STRBUF_SIZE];
     int result;
 
-    if ((ospGetRpidUserpart(msg, calling, sizeof(calling)) != 0) && (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0)) {
+    if (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
         result = -1;
     } else if (strcmp(calling, dest->calling) == 0) {

@@ -91,7 +91,7 @@ int ospValidateHeader (
 
     if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction) != OSPC_ERR_NO_ERROR)) {
         LM_ERR("failed to create a new OSP transaction handle (%d)\n", errorcode);
-    } else if ((ospGetRpidUserpart(msg, dest.calling, sizeof(dest.calling)) != 0) && (ospGetFromUserpart(msg, dest.calling, sizeof(dest.calling)) != 0)) {
+    } else if (ospGetFromUserpart(msg, dest.calling, sizeof(dest.calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
     } else if ((ospGetUriUserpart(msg, dest.called, sizeof(dest.called)) != 0) && (ospGetToUserpart(msg, dest.called, sizeof(dest.called)) != 0)) {
         LM_ERR("failed to extract called number\n");
