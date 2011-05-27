@@ -84,7 +84,6 @@ static int seq_match_mode = SEQ_MATCH_STRICT_ID;
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 str dlg_extra_hdrs = {NULL,0};
-int bye_on_timeout_flag = -1;
 
 /* statistic variables */
 int dlg_enable_stats = 1;
@@ -198,7 +197,6 @@ static param_export_t mod_params[]={
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
 	{ "rr_param",              STR_PARAM, &rr_param                 },
 	{ "dlg_flag",              INT_PARAM, &dlg_flag                 },
-	{ "bye_on_timeout_flag",   INT_PARAM, &bye_on_timeout_flag      },
 	{ "timeout_avp",           STR_PARAM, &timeout_spec.s           },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
 	{ "ping_interval",         INT_PARAM, &ping_interval            },
@@ -578,15 +576,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (bye_on_timeout_flag==-1) {
-		bye_on_timeout_flag = 0;
-	} else if (bye_on_timeout_flag>MAX_FLAG) {
-		LM_ERR("invalid bye_on_timeout flag %d!!\n",bye_on_timeout_flag);
-		return -1;
-	} else {
-		bye_on_timeout_flag = 1<<bye_on_timeout_flag;
-	}
-
 	if (rr_param==0 || rr_param[0]==0) {
 		LM_ERR("empty rr_param!!\n");
 		return -1;
@@ -818,6 +807,10 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 			case 'p':
 				flags |= DLG_FLAG_PING_CALLEE;
 				LM_DBG("will ping callee\n");
+				break;
+			case 'B':
+				flags |= DLG_FLAG_BYEONTIMEOUT;
+				LM_DBG("bye on timeout activated\n");
 				break;
 			default:
 				LM_DBG("unknown create_dialog flag : [%c] . Skipping\n",*p);

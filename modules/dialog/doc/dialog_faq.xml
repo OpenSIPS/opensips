@@ -19,6 +19,19 @@
 	</qandaentry>
 	<qandaentry>
 		<question>
+		<para>What happend with <quote>bye_on_timeout_flag</quote> 
+		parameter?</para>
+		</question>
+		<answer>
+		<para>
+			The parameter was removed in a dialog module parameter restructuring.
+			To keep the bye on timeout behavior, you need to provide a "B" 
+			string parameter to the create_dialog() function.
+		</para>
+		</answer>
+	</qandaentry>
+	<qandaentry>
+		<question>
 		<para>Where can I find more about OpenSIPS?</para>
 		</question>
 		<answer>

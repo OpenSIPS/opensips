@@ -79,7 +79,6 @@ static int       seq_match_mode;
 static int       shutdown_done = 0;
 
 extern struct rr_binds d_rrb;
-extern int bye_on_timeout_flag;
 
 /* statistic variables */
 extern stat_var *early_dlgs;
@@ -715,9 +714,6 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 		current_dlg_pointer->lifetime = get_dlg_timeout(param->req);
 
-		if (param->req->flags&bye_on_timeout_flag)
-			current_dlg_pointer->flags |= DLG_FLAG_BYEONTIMEOUT;
-
 		t->dialog_ctx = (void*)current_dlg_pointer;
 
 		/* dialog is fully initialized */
@@ -814,11 +810,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 
 		dlg->lifetime = get_dlg_timeout(req);
 
-		if (req->flags&bye_on_timeout_flag)
-			dlg->flags |= DLG_FLAG_BYEONTIMEOUT;
-
 		t->dialog_ctx = (void*) dlg;
-
 		dlg->flags |= DLG_FLAG_ISINIT;
 	}
 

@@ -759,7 +759,8 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
    caller, "p" to only ping the callee or "Pp" to ping both dialog
    sides. If the extra string parameter is provided and one
    end-point fails to respond to a options ping, OpenSIPS will
-   terminate the dialog from the middle.
+   terminate the dialog from the middle. The string parameter can
+   also contain "B" to activate the bye on timeout behavior.
 
    The function returns true if the dialog was successfully
    created or if the dialog was previously created.
@@ -775,6 +776,9 @@ create_dialog("P");
 ...
 #ping caller and callee
 create_dialog("Pp");
+
+#bye on timeout
+create_dialog("B");
 ...
 
 1.6.2.  validate_dialog()
@@ -1357,11 +1361,19 @@ Chapter 3. Frequently Asked Questions
 
    3.2.
 
+       What happend with “bye_on_timeout_flag” parameter?
+
+       The parameter was removed in a dialog module parameter
+       restructuring. To keep the bye on timeout behavior, you need to
+       provide a "B" string parameter to the create_dialog() function.
+
+   3.3.
+
        Where can I find more about OpenSIPS?
 
        Take a look at http://www.opensips.org/.
 
-   3.3.
+   3.4.
 
        Where can I post a question about this module?
 
@@ -1379,7 +1391,7 @@ Chapter 3. Frequently Asked Questions
        If you want to keep the mail private, send it to
        <users@lists.opensips.org>.
 
-   3.4.
+   3.5.
 
        How can I report a bug?
 

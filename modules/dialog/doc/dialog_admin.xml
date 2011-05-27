@@ -1002,6 +1002,9 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 		end-point fails to respond to a options ping, OpenSIPS will
 		terminate the dialog from the middle.
 
+		The string parameter can also contain "B" to activate the bye on
+		timeout behavior.
+
 		</para>
 		<para>
 		The function returns true if the dialog was successfully created or 
@@ -1021,6 +1024,9 @@ create_dialog("P");
 ...
 #ping caller and callee
 create_dialog("Pp");
+
+#bye on timeout
+create_dialog("B");
 ...
 </programlisting>
 		</example>
