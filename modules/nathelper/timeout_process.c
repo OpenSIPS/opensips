@@ -154,7 +154,7 @@ void timeout_listener_process(int rank)
 
 	/* open socket for listening */
 	if(listen(socket_fd, 10) == -1) {
-		LM_ERR("socket listen failed\n");
+		LM_ERR("socket listen failed: %s(%d)\n", strerror(errno), errno);
 		close(socket_fd);
 		return;
 	}
@@ -181,13 +181,14 @@ void timeout_listener_process(int rank)
 		}
 		lock_release(rtpp_notify_h->lock);
 
+		rtpp_lst = NULL;
 		/* there is a new connection */
 		if (pfds[0].revents & POLLIN) {
 			i = sizeof(rtpp_info);
 			memset(&rtpp_info, 0, i);
 			connect_fd = accept(socket_fd, &rtpp_info, (socklen_t *)&i);
 			if(connect_fd < 0) {
-				LM_ERR("socket accept failed\n");
+				LM_ERR("socket accept failed: %s(%d)\n", strerror(errno), errno);
 				continue;
 			}
 
@@ -246,7 +247,6 @@ void timeout_listener_process(int rank)
 							break;
 				} else {
 					LM_ERR("cannot accept this type of connection\n");
-					continue;
 				}
 			}
 
