@@ -47,7 +47,6 @@ extern int _osp_work_mode;
 extern char _osp_in_device[];
 extern int _osp_use_np;
 extern int _osp_append_userphone;
-extern int _osp_append_dnid;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
 extern int_str _osp_srcdev_avpname;
@@ -777,7 +776,7 @@ int ospRebuildDestionationUri(
     /* ";user=phone" */
     uriparamsize = _osp_append_userphone ? USERPHONE.len : 0;
     /* destination network ID parameter */
-    dnidsize = (_osp_append_dnid && dest->networkid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->networkid) : 0;
+    dnidsize = (_osp_dnid_location && dest->networkid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->networkid) : 0;
 
     LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d) '%d'\n",
         dest->called,
@@ -860,7 +859,7 @@ int ospRebuildDestionationUri(
         buffer += count;
     }
 
-    if ((_osp_append_dnid != 0) && (_osp_dnid_location == 1) && (dest->networkid[0] != '\0')) {
+    if ((_osp_dnid_location == 1) && (dest->networkid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
         buffer += count;
     }
@@ -875,13 +874,18 @@ int ospRebuildDestionationUri(
         buffer += USERPHONE.len;
     }
 
-    if ((_osp_append_dnid != 0) && (_osp_dnid_location == 0) && (dest->networkid[0] != '\0')) {
+    if ((_osp_dnid_location == 2) && (dest->networkid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
         buffer += count;
     }
 
     if (format == 1) {
-      *buffer++ = '>';
+        *buffer++ = '>';
+
+        if ((_osp_dnid_location == 3) && (dest->networkid[0] != '\0')) {
+            count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
+            buffer += count;
+        }
     }
 
 /*

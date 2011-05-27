@@ -52,10 +52,9 @@
 #define OSP_DEF_DESTS                   5
 #define OSP_MAX_DESTS                   12
 #define OSP_DEF_USENP                   1
-#define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
+#define OSP_DEF_REDIRURI                1   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0
-#define OSP_DEF_APPENDNID               1
-#define OSP_DEF_DNIDLOC                 0
+#define OSP_DEF_DNIDLOC                 2
 #define OSP_DEF_DNIDPARAM               "networkid"
 #define OSP_DEF_SRCIPAVP                "$avp(s:_osp_source_device_)"
 #define OSP_DEF_SNIDAVP                 "$avp(s:_osp_source_networkid_)"

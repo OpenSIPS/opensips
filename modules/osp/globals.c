@@ -62,7 +62,6 @@ int _osp_max_dests = OSP_DEF_DESTS;
 int _osp_use_np = OSP_DEF_USENP;
 int _osp_redir_uri = OSP_DEF_REDIRURI;
 int _osp_append_userphone = OSP_DEF_USERPHONE;
-int _osp_append_dnid = OSP_DEF_APPENDNID;
 int _osp_dnid_location = OSP_DEF_DNIDLOC;
 char* _osp_dnid_param = OSP_DEF_DNIDPARAM;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
