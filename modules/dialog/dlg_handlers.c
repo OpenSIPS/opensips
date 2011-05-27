@@ -72,7 +72,6 @@
 #include "dlg_req_within.h"
 
 static str       rr_param;
-static int       dlg_flag;
 static pv_spec_t *timeout_avp;
 static int       default_timeout;
 static int       seq_match_mode;
@@ -93,14 +92,12 @@ int  last_dst_leg = -1;
 
 
 
-void init_dlg_handlers(char *rr_param_p, int dlg_flag_idx,
+void init_dlg_handlers(char *rr_param_p,
 		pv_spec_t *timeout_avp_p ,int default_timeout_p, 
 		int seq_match_mode_p)
 {
 	rr_param.s = rr_param_p;
 	rr_param.len = strlen(rr_param.s);
-
-	dlg_flag = (dlg_flag_idx==-1) ? 0 : (1<<dlg_flag_idx) ;
 
 	timeout_avp = timeout_avp_p;
 	default_timeout = default_timeout_p;
@@ -718,15 +715,6 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog is fully initialized */
 		current_dlg_pointer->flags |= DLG_FLAG_ISINIT;
-	} else {
-		/* should we create dialog? */
-		if ( (param->req->flags & dlg_flag) == 0 )
-			return;
-
-		/* create the dialog */
-		/* TODO - flags set to 0. Find way to pass them here 
-		 * Flag going to be deprecated => solves this problem*/
-		dlg_create_dialog(t, param->req,0);
 	}
 }
 

@@ -26,9 +26,8 @@
 	<section>
 	<title>How it works</title>
 	<para>
-	To create the dialog associated to an initial request, the flag 
-	<quote>dlg_flag</quote> (<xref linkend="dlg-flag-id"/>) must be set before
-	creating the corresponding transaction.
+	To create the dialog associated to an initial request, you must call
+	the create_dialog() function, with or without parameter..
 	</para>
 	<para>
 	The dialog is automatically destroyed when a <quote>BYE</quote> is 
@@ -38,13 +37,6 @@
 	<quote>timeout_avp</quote> - <xref linkend="timeout-avp-id"/>). The 
 	dialog timeout is reset each time a sequential (except ACKs) request 
 	passes.
-	</para>
-	<para>
-	The module is able to cut/terminate the call from the middle (proxy side)
-	when the dialog gives timeout. By setting the 
-	<quote>bye_on_timeout_flag</quote> - 
-	<xref linkend="bye-on-timeout-flag-id"/> on dialog creation, BYEs will be
-	automatically sent (in both directions) when the timeout event occurs.
 	</para>
 	</section>
 
@@ -225,54 +217,6 @@ modparam("dialog", "rr_param", "xyz")
 </programlisting>
 		</example>
 	</section>
-
-	<section id="dlg-flag-id">
-		<title><varname>dlg_flag</varname> (integer)</title>
-		<para>
-		Flag to be used for marking if a dialog should be constructed for the
-		current request (make sense only for initial requests).
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>none</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>dlg_flag</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "dlg_flag", 4)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="bye-on-timeout-flag-id">
-		<title><varname>bye_on_timeout_flag</varname> (integer)</title>
-		<para>
-		Message falg to be set if you want the dialog module to automatically
-		send BYE requests (in both directions) when the dialog give timeout.
-		</para>
-		<para>
-		The flag must be set for the initial INVITE and before creating the
-		dialog (before doing t_relay() or t_newtran()). You cannot change this
-		option (of sending the BYEs at timeout event) during the dialog.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>none</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>bye_on_timeout_flag</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "bye_on_timeout_flag", 6)
-...
-</programlisting>
-		</example>
-	</section>
-
 
 	<section id="timeout-avp-id">
 		<title><varname>timeout_avp</varname> (string)</title>

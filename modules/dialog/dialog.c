@@ -76,7 +76,6 @@ static void mod_destroy(void);
 static int dlg_hash_size = 4096;
 int log_profile_hash_size = 4;
 static char* rr_param = "did";
-static int dlg_flag = -1;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
 static int ping_interval = 30; /* seconds */
@@ -196,7 +195,6 @@ static param_export_t mod_params[]={
 	{ "hash_size",             INT_PARAM, &dlg_hash_size            },
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
 	{ "rr_param",              STR_PARAM, &rr_param                 },
-	{ "dlg_flag",              INT_PARAM, &dlg_flag                 },
 	{ "timeout_avp",           STR_PARAM, &timeout_spec.s           },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
 	{ "ping_interval",         INT_PARAM, &ping_interval            },
@@ -564,10 +562,6 @@ static int mod_init(void)
 	dialog_table_name.len = strlen(dialog_table_name.s);
 
 	/* param checkings */
-	if ( dlg_flag!=-1 && dlg_flag>MAX_FLAG) {
-		LM_ERR("invalid dlg flag %d!!\n",dlg_flag);
-		return -1;
-	}
 
 	if( log_profile_hash_size <= 0)
 	{
@@ -669,7 +663,7 @@ static int mod_init(void)
 	}
 
 	/* init handlers */
-	init_dlg_handlers( rr_param, dlg_flag,
+	init_dlg_handlers( rr_param,
 		timeout_spec.s?&timeout_avp:0, default_timeout, seq_match_mode);
 
 	/* init timer */

@@ -32,6 +32,18 @@
 	</qandaentry>
 	<qandaentry>
 		<question>
+		<para>What happend with <quote>dlg_flag</quote> 
+		parameter?</para>
+		</question>
+		<answer>
+		<para>
+			The parameter is considered obsolete. The only way to
+			create a dialog is to call the create_dialog() function
+		</para>
+		</answer>
+	</qandaentry>
+	<qandaentry>
+		<question>
 		<para>Where can I find more about OpenSIPS?</para>
 		</question>
 		<answer>
