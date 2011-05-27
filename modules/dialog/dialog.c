@@ -403,30 +403,7 @@ static int fixup_dlg_flag(void** param, int param_no)
 
 static int fixup_create_dlg2(void **param, int param_no)
 {
-	unsigned int flags=0;
-	char *str_flags;
-	char *p;
-
-	str_flags = (char *)*param;
-
-	for (p=str_flags;*p;p++)
-	{
-		switch (*p)
-		{
-			case 'C':
-				flags |= DLG_FLAG_PING_CALLER;
-				break;
-			case 'c':
-				flags |= DLG_FLAG_PING_CALLEE;
-				break;
-			default:
-				LM_DBG("unknown create_dialog flag : [%c] . Skipping\n",*p);
-		}
-	}
-
-	*param=(void *)(unsigned long)flags;
-
-	return 0;
+	return fixup_sgp(param);
 }
 
 static int fixup_dlg_sval(void** param, int param_no)
@@ -816,13 +793,36 @@ static int w_create_dialog(struct sip_msg *req)
 static int w_create_dialog2(struct sip_msg *req,char *param)
 {
 	struct cell *t;
+	str res = {0,0};
 	int flags=0;
+	char *p;
 
 	/* is the dialog already created? */
 	if (current_dlg_pointer!=NULL)
 		return 1;
 
-	flags |= (unsigned int)(unsigned long)param;
+	if (fixup_get_svalue(req, (gparam_p)param, &res) !=0)
+	{
+		LM_ERR("no create dialog flags\n");
+		return -1;
+	}
+
+	for (p=res.s;p<res.s+res.len;p++)
+	{
+		switch (*p)
+		{
+			case 'P':
+				flags |= DLG_FLAG_PING_CALLER;
+				LM_DBG("will ping caller\n");
+				break;
+			case 'p':
+				flags |= DLG_FLAG_PING_CALLEE;
+				LM_DBG("will ping callee\n");
+				break;
+			default:
+				LM_DBG("unknown create_dialog flag : [%c] . Skipping\n",*p);
+		}
+	}
 
 	t = d_tmb.t_gett();
 	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req,flags)!=0)

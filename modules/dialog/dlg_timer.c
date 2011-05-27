@@ -438,6 +438,8 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 		/* timeout occured, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
+		LM_INFO("terminating dialog ( due to timeout ) "
+					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
 		return;
 	}
 
@@ -449,6 +451,9 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 	{
 		/* call/transaction does not exist 
 		 * terminate the dialog */
+		LM_INFO("terminating dialog ( due to 481 ) "
+				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+
 		return;
 	}
 
@@ -486,6 +491,8 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 		/* timeout occured, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
+		LM_INFO("terminating dialog ( due to timeout ) "
+					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
 		return;
 	}
 
@@ -497,6 +504,8 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 	{
 		/* call/transaction does not exist 
 		 * terminate the dialog */
+		LM_INFO("terminating dialog ( due to 481 ) "
+				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
 		return;
 	}
 
