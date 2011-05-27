@@ -478,6 +478,19 @@ static void dlg_seq_down_onreply(struct cell* t, int type,
 
 	return;
 }
+ 
+inline static int get_dlg_timeout_update(struct sip_msg *req)
+{
+	pv_value_t pv_val;
+
+	if( timeout_avp && pv_get_spec_value( req, timeout_avp, &pv_val)==0
+	&& pv_val.flags&PV_VAL_INT && pv_val.ri>0 ) {
+		return pv_val.ri;
+	}
+	return 0;
+}
+
+
 
 
 inline static int get_dlg_timeout(struct sip_msg *req)
@@ -911,9 +924,9 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
-		timeout = get_dlg_timeout(req);
+		timeout = get_dlg_timeout_update(req);
 		/* update timer during sequential request? */
-		if (timeout!=default_timeout) {
+		if (timeout != 0) {
 			dlg->lifetime = timeout;
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
