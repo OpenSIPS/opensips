@@ -219,8 +219,7 @@ void timeout_listener_process(int rank)
 
 					lock_get(rtpp_notify_h->lock);
 					rtpp_lst->next = rtpp_notify_h->rtpp_list;
-					if (!rtpp_notify_h->rtpp_list)
-						rtpp_notify_h->rtpp_list = rtpp_lst;
+					rtpp_notify_h->rtpp_list = rtpp_lst;
 				}
 			} else {
 				/* search if I can find this connection */
@@ -425,8 +424,7 @@ int init_rtpp_notify_list(void)
 			}
 
 			rtpp_lst->next = rtpp_notify_h->rtpp_list;
-			if (!rtpp_notify_h->rtpp_list)
-				rtpp_notify_h->rtpp_list = rtpp_lst;
+			rtpp_notify_h->rtpp_list = rtpp_lst;
 
 		}
 	}
@@ -493,8 +491,7 @@ void update_rtpproxy_list(void)
 					return;
 				}
 				rtpp_lst->next = rtpp_notify_h->rtpp_list;
-				if (!rtpp_notify_h->rtpp_list)
-					rtpp_notify_h->rtpp_list = rtpp_lst;
+				rtpp_notify_h->rtpp_list = rtpp_lst;
 			}
 		}
 	}
