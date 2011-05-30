@@ -748,7 +748,9 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 	{
 		memcpy(p, init_callid_hdr.s, init_callid_hdr.len);
 		p += init_callid_hdr.len;
-		len = sprintf(p, ": %.*s", msg->callid->name.s +msg->callid->len -msg->callid->body.s, msg->callid->body.s);
+		len = sprintf(p, ": %.*s",
+			(int)(msg->callid->name.s +msg->callid->len -msg->callid->body.s),
+			msg->callid->body.s);
 		p += len;
 	}
 
