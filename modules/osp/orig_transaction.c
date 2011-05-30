@@ -92,7 +92,6 @@ static int ospLoadRoutes(
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
     OSPE_OPERATOR_NAME type;
-    OSPE_PROTOCOL_NAME protocol;
     OSPE_DEST_OSPENABLED enabled;
     int result = 0;
 
@@ -184,13 +183,13 @@ static int ospLoadRoutes(
             }
         }
 
-        errorcode = OSPPTransactionGetDestProtocol(transaction, &protocol);
+        errorcode = OSPPTransactionGetDestProtocol(transaction, &dest->protocol);
         if (errorcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest protocol (%d)\n", errorcode);
-            protocol = OSPC_PROTNAME_SIP;
+            dest->protocol = OSPC_PROTNAME_SIP;
         }
-        switch (protocol) {
+        switch (dest->protocol) {
             case OSPC_PROTNAME_Q931:
             case OSPC_PROTNAME_LRQ:
             case OSPC_PROTNAME_IAX:
@@ -256,6 +255,7 @@ static int ospLoadRoutes(
             "mcc '%s' "
             "mnc '%s' "
             */
+        	"protocol '%d' "
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
@@ -279,6 +279,7 @@ static int ospLoadRoutes(
             dest->opname[OSPC_OPNAME_MCC],
             dest->opname[OSPC_OPNAME_MNC],
             */
+            dest->protocol,
             dest->supported,
             dest->networkid,
             dest->tokensize);
@@ -414,6 +415,8 @@ int ospRequestRouting(
             divhostbuf[0] = '\0';
         }
         OSPPTransactionSetDiversion(transaction, divuser, divhostbuf);
+
+        OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
 
         if (ospGetPChargeInfoUserpart(msg, pci, sizeof(pci)) == 0) {
             OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);

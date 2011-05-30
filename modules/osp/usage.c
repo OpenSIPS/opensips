@@ -366,6 +366,9 @@ static int ospReportUsageFromCookie(
             break;
     }
 
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
+
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,
         transid,
@@ -504,6 +507,9 @@ static int ospBuildUsageFromDestination(
     ospConvertToOutAddress(dest->source, source, sizeof(source));
     ospConvertToOutAddress(dest->host, host, sizeof(host));
     ospConvertToOutAddress(dest->destdev, destdev, sizeof(destdev));
+
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, dest->protocol);
 
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,

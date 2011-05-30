@@ -148,6 +148,10 @@ int ospCheckOrigDestination(void)
                 result = 0;
                 break;
             } else {
+                /* Make it looks like used */
+                dest->used = 1;
+                /* 111 means wrong protocol */
+                dest->lastcode = 111;
                 LM_DBG("destination does not been supported\n");
             }
         } else {
@@ -157,6 +161,7 @@ int ospCheckOrigDestination(void)
 
     if (result == -1) {
         LM_DBG("there is not unused destination\n");
+        ospReportOrigSetupUsage();
     }
 
     return result;

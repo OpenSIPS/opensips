@@ -66,6 +66,7 @@ typedef struct _osp_dest {
     unsigned char token[OSP_TOKENBUF_SIZE];
     unsigned int tokensize;
     unsigned int timelimit;
+    OSPE_PROTOCOL_NAME protocol;
     int lastcode;
     time_t authtime;
     time_t time100;
