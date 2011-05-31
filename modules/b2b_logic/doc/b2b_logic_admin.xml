@@ -343,7 +343,30 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 	</programlisting>
 		</example>
 	</section>
-
+	<section>
+		<title><varname>db_mode</varname> (int)</title>
+		<para>
+			The B2B modules have support for the 3 type of database storage
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>NO DB STORAGE - set this parameter to 0</listitem>
+				<listitem>WRITE THROUGH (synchronous write in database) - set this parameter to 1</listitem>
+				<listitem>WRITE BACK (update in db from time to time) - set this parameter to 2</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>Default value is <quote>2</quote> (WRITE BACK).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "db_mode", 1)
+...
+	</programlisting>
+		</example>
+	</section>
 
 	</section>
 

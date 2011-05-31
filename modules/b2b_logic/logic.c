@@ -40,6 +40,7 @@
 #include "../../trim.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
+#include "../../msg_translator.h"
 #include "../b2b_entities/dlg.h"
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
@@ -47,6 +48,7 @@
 #include "records.h"
 #include "pidf.h"
 #include "b2b_logic.h"
+#include "b2bl_db.h"
 
 #define BUF_LEN  128
 
@@ -76,6 +78,46 @@ static str method_cancel= {CANCEL, CANCEL_LEN};
 
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
+
+int b2b_apply_body_lumps(struct sip_msg* msg, str* new_body)
+{
+	int len;
+	char* buf = 0;
+	unsigned int offset=0, s_offset;
+	str body;
+
+	body.s=get_body(msg);
+
+	if(!msg->body_lumps)
+		return 0;
+	len = lumps_len(msg, msg->body_lumps, 0)
+		+ get_content_length(msg);
+
+	LM_DBG("*** len = %d\n", len);
+
+	buf=(char*)pkg_malloc(len+1);
+	if (buf==0){
+		LM_ERR("out of pkg mem\n");
+		return -1;
+	}
+	buf[len]='\0';
+	s_offset=body.s - msg->buf;
+	process_lumps(msg, msg->body_lumps, buf, &offset, &s_offset, 0);
+
+	LM_DBG("offset = %d, s_offset=%d\n", offset, s_offset);
+	//memcpy(buf+offset, msg->buf+s_offset, len-s_offset);
+
+	new_body->s = buf;
+	new_body->len = len;
+
+	memcpy(buf+offset, msg->buf+s_offset, len - offset);
+
+	LM_DBG("new_body= [%.*s], len=%d\n", new_body->len, new_body->s, len);
+	LM_DBG("last chars %d - %d\n", buf[len-1], buf[len-2]);
+
+	return 0;
+}
+
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
@@ -159,6 +201,7 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 	}
 
 	lock_release(&b2bl_htable[hash_index].lock);
+
 	return 0;
 }
 
@@ -1042,6 +1085,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 		{
 			LM_DBG("Received reply and there are no more entities-> delete\n");
 			b2bl_delete(tuple, hash_index, 0);
+			tuple = 0;
 		}
 		goto done;
 	}
@@ -1083,6 +1127,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 				{
 					LM_DBG("Delete this b2bl record\n");
 					b2bl_delete(tuple, hash_index, 0);
+					tuple = 0;
 				}
 				goto done;
 			}
@@ -1125,6 +1170,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 			LM_DBG("Received reply for BYE - delete\n");
 			b2bl_delete(tuple, hash_index, 0);
+			tuple = 0;
 			goto done;
 			break;
 
@@ -1177,7 +1223,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 									e->key.len, e->key.s);
 							}
 							b2b_api.entity_delete(e->type, &e->key,
-										e->dlginfo);
+										e->dlginfo, 0);
 							LM_DBG("destroying dlginfo=[%p]\n",
 									e->dlginfo);
 							if(e->dlginfo)
@@ -1257,11 +1303,16 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	}
 
 done:
-	UPDATE_DBFLAG(tuple, tuple->db_flag);
+	if(tuple)
+	{
+		if(b2bl_db_mode == WRITE_THROUGH)
+			b2bl_db_update(tuple);
+		else
+			UPDATE_DBFLAG(tuple, tuple->db_flag);
+	}
 done1:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
-
 error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	return -1;
@@ -1372,6 +1423,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				b2b_api.send_reply(&rpl_data);
 		}
 		b2bl_delete(tuple, hash_index, 0);
+		tuple = 0;
 		goto done;
 	}
 
@@ -1466,6 +1518,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			{
 				LM_DBG("Delete this b2bl record after process_bridge_bye\n");
 				b2bl_delete(tuple, hash_index, 0);
+				tuple = 0;
 			}
 
 			goto done;
@@ -1773,6 +1826,7 @@ send_usual_request:
 				rpl_data.text =&ok;
 				b2b_api.send_reply(&rpl_data);
 				b2bl_delete(tuple, hash_index, 0);
+				tuple = 0;
 				goto done;
 			}
 			else
@@ -1797,7 +1851,13 @@ send_usual_request:
 		}
 
 done:
-	UPDATE_DBFLAG(tuple, tuple->db_flag);
+	if(tuple)
+	{
+		if(b2bl_db_mode == WRITE_THROUGH)
+			b2bl_db_update(tuple);
+		else
+			UPDATE_DBFLAG(tuple, tuple->db_flag);
+	}
 
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
@@ -1814,6 +1874,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	str* b2bl_key = (str*)param;
 	str body= {NULL, 0};
 	str extra_headers = {NULL, 0};
+	str new_body={NULL, 0};
+	int ret = -1;
 
 	if(b2bl_key == NULL)
 	{
@@ -1842,14 +1904,26 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	/* process the body */
 	if(msg->content_length)
 	{
-		body.len = get_content_length(msg);
-		if(body.len != 0 )
+		/* apply body lumps if there are any */
+		if(msg->body_lumps)
 		{
-			body.s=get_body(msg);
-			if (body.s== NULL) 
+			if(b2b_apply_body_lumps(msg, &new_body) < 0)
 			{
-				LM_ERR("cannot extract body\n");
-				return -1;
+				LM_ERR("failed to apply lumps\n");
+			}
+			body = new_body;
+		}
+		else
+		{
+			body.len = get_content_length(msg);
+			if(body.len != 0 )
+			{
+				body.s=get_body(msg);
+				if (body.s== NULL) 
+				{
+					LM_ERR("cannot extract body\n");
+					return -1;
+				}
 			}
 		}
 	}
@@ -1858,7 +1932,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
 	{
 		LM_ERR("Failed to construct extra headers\n");
-		return -1;
+		goto done;
 	}
 
 	LM_DBG("b2b_entities notification cb for [%.*s] with entity [%.*s]\n",
@@ -1866,22 +1940,26 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 	if(type == B2B_REPLY)
 	{
-		return b2b_logic_notify_reply(src, msg, key, &body, &extra_headers,
-                				b2bl_key, hash_index, local_index);
+		ret = b2b_logic_notify_reply(src, msg, key, &body, &extra_headers,
+						b2bl_key, hash_index, local_index);
 	}
 	else
 	if(type == B2B_REQUEST)
 	{
-		return b2b_logic_notify_request(src, msg, key, &body, &extra_headers,
-                				b2bl_key, hash_index, local_index);
+		ret = b2b_logic_notify_request(src, msg, key, &body, &extra_headers,
+		 				b2bl_key, hash_index, local_index);
 	}
 	else
 	{
 		LM_ERR("got notification for [%.*s] from [%.*s] with unknown event type [%d]\n",
 			b2bl_key->len, b2bl_key->s, key->len, key->s, type);
 	}
-
-	return -1;
+done:
+	if(new_body.s)
+		pkg_free(new_body.s);
+	if(extra_headers.s)
+		pkg_free(extra_headers.s);
+	return ret;
 }
 
 
@@ -2301,6 +2379,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	str uri;
 	qvalue_t q;
 	str from_tag_gen= {0, 0};
+	str new_body={0, 0};
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri)< 0)
 	{
@@ -2311,25 +2390,36 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	/* process the body */
 	if(msg->content_length)
 	{
-		body.len = get_content_length(msg);
-		if(body.len != 0 )
+		/* apply body lumps if there are any */
+		if(msg->body_lumps)
 		{
-			body.s=get_body(msg);
-			if (body.s== NULL) 
+			if(b2b_apply_body_lumps(msg, &new_body) < 0)
 			{
-				LM_ERR("cannot extract body\n");
-				return NULL;
+				LM_ERR("failed to apply lumps\n");
+			}
+			body = new_body;
+		}
+		else
+		{
+			body.len = get_content_length(msg);
+			if(body.len != 0 )
+			{
+				body.s=get_body(msg);
+				if (body.s== NULL) 
+				{
+					LM_ERR("cannot extract body\n");
+					return NULL;
+				}
 			}
 		}
 	}
 
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
-	tuple = b2bl_insert_new(msg, hash_index, NULL, NULL, NULL, custom_hdrs, &b2bl_key);
+	tuple = b2bl_insert_new(msg, hash_index, NULL, NULL, NULL, custom_hdrs, -1, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
-		pkg_free(to_uri.s);
-		return NULL;
+		goto error;
 	}
 	tuple->cbf = cbf;
 	tuple->cb_mask = cb_mask;
@@ -2458,6 +2548,11 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->bridge_entities[1] = tuple->clients[0];
 	b2bl_print_tuple(tuple, L_DBG);
 
+	if(b2bl_db_mode == WRITE_THROUGH)
+	{
+		b2bl_db_insert(tuple);
+	}
+
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	pkg_free(to_uri.s);
@@ -2465,7 +2560,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	pkg_free(client_id);
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
-	
+	if(new_body.s)
+		pkg_free(new_body.s);
 	return b2bl_key;
 error:
 	lock_release(&b2bl_htable[hash_index].lock);
@@ -2477,6 +2573,8 @@ error:
 		pkg_free(to_uri.s);
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
+	if(new_body.s)
+		pkg_free(new_body.s);
 	return NULL;
 }
 
@@ -2671,6 +2769,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	unsigned int index;
 	str to_uri={NULL, 0}, from_uri, from_dname;
 	int eno = 0;
+	str new_body={0, 0};
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
 	{
@@ -2687,15 +2786,26 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 		/* process the body */
 		if(msg->content_length)
 		{
-			body.len = get_content_length(msg);
-			if(body.len != 0 )
+			/* apply body lumps if there are any */
+			if(msg->body_lumps)
 			{
-				body.s=get_body(msg);
-				if (body.s== NULL) 
+				if(b2b_apply_body_lumps(msg, &new_body) < 0)
 				{
-					LM_ERR("cannot extract body\n");
-					pkg_free(to_uri.s);
-					return NULL;
+					LM_ERR("failed to apply lumps\n");
+				}
+				body = new_body;
+			}
+			else
+			{
+				body.len = get_content_length(msg);
+				if(body.len != 0 )
+				{
+					body.s=get_body(msg);
+					if (body.s== NULL) 
+					{
+						LM_ERR("cannot extract body\n");
+						goto error;
+					}
 				}
 			}
 		}
@@ -2721,7 +2831,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 
 	/* create new scenario instance record */
 	tuple = b2bl_insert_new(msg, hash_index, scenario_struct,
-			args, body.s?&body:NULL, custom_hdrs, &b2bl_key);
+			args, body.s?&body:NULL, custom_hdrs, -1, &b2bl_key);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -2929,8 +3039,14 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	tuple->cbf = cbf;
 	tuple->cb_mask = cb_mask;
 	tuple->cb_param = cb_param;
-	
+
+	if(b2bl_db_mode == WRITE_THROUGH)
+		b2bl_db_insert(tuple);
+
 	lock_release(&b2bl_htable[hash_index].lock);
+
+	if(new_body.s)
+		pkg_free(new_body.s);
 
 	return b2bl_key;
 
@@ -2946,6 +3062,8 @@ error:
 	}
 	if(to_uri.s)
 		pkg_free(to_uri.s);
+	if(new_body.s)
+		pkg_free(new_body.s);
 	return NULL;
 }
 
@@ -3508,7 +3626,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2bl_entity_id_t *old_entity;
 	b2bl_entity_id_t *entity;
 	str* server_id;
-	str body;
+	str body, new_body = {0, 0};
 	str to_uri={NULL,0}, from_uri, from_dname;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
@@ -3606,7 +3724,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		}
 
 		/* destroy the old_entity */
-		b2b_api.entity_delete(old_entity->type, &old_entity->key, old_entity->dlginfo);
+		b2b_api.entity_delete(old_entity->type, &old_entity->key, old_entity->dlginfo, 1);
 		if(old_entity->dlginfo)
 			shm_free(old_entity->dlginfo);
 		shm_free(old_entity);
@@ -3655,14 +3773,26 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	/* send reInvite to the old entity*/
 	if(msg->content_length)
 	{
-		body.len = get_content_length(msg);
-		if(body.len != 0 )
+		/* apply body lumps if there are any */
+		if(msg->body_lumps)
 		{
-			body.s=get_body(msg);
-			if (body.s== NULL) 
+			if(b2b_apply_body_lumps(msg, &new_body) < 0)
 			{
-				LM_ERR("cannot extract body\n");
-				goto error;
+				LM_ERR("failed to apply lumps\n");
+			}
+			body = new_body;
+		}
+		else
+		{
+			body.len = get_content_length(msg);
+			if(body.len != 0 )
+			{
+				body.s=get_body(msg);
+				if (body.s== NULL) 
+				{
+					LM_ERR("cannot extract body\n");
+					goto error;
+				}
 			}
 		}
 	}
@@ -3688,11 +3818,15 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2bl_print_tuple(tuple, L_DBG);
 
 	lock_release(&b2bl_htable[hash_index].lock);
+	if(new_body.s)
+		pkg_free(new_body.s);
 	return 0;
 
 error:
 	if(tuple)
 		b2b_mark_todel(tuple);
 	lock_release(&b2bl_htable[hash_index].lock);
+	if(new_body.s)
+		pkg_free(new_body.s);
 	return -1;
 }

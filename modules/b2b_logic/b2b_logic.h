@@ -104,6 +104,12 @@ extern int use_init_sdp;
 extern str server_address;
 extern unsigned int max_duration;
 extern str init_callid_hdr;
+extern str db_url;
+extern db_con_t *b2bl_db ;
+extern db_func_t b2bl_dbf;
+extern str b2bl_dbtable;
+extern char* b2bl_db_buf;
+extern int b2bl_db_mode;
 
 static inline int b2b_get_request_id(str* request)
 {
@@ -140,5 +146,7 @@ int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
 int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param);
 int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
 b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list);
+b2b_scenario_t* get_scenario_id(str* sid);
+void b2bl_db_init(void);
 
 #endif

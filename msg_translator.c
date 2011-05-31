@@ -423,8 +423,8 @@ static inline int lump_check_opt(	struct lump *l,
 
 /*! \brief computes the "unpacked" len of a lump list,
    code moved from build_req_from_req */
-static inline int lumps_len(struct sip_msg* msg, struct lump* lumps,
-											struct socket_info* send_sock)
+int lumps_len(struct sip_msg* msg, struct lump* lumps,
+									struct socket_info* send_sock)
 {
 	unsigned int s_offset, new_len;
 	struct lump *t, *r;
@@ -690,12 +690,12 @@ skip_after:
 /*! \brief another helper functions, adds/Removes the lump,
 	code moved form build_req_from_req  */
 
-static inline void process_lumps(	struct sip_msg* msg,
-					                                struct lump* lumps,
-									char* new_buf, 
-									unsigned int* new_buf_offs, 
-									unsigned int* orig_offs,
-									struct socket_info* send_sock)
+void process_lumps(	struct sip_msg* msg,
+						struct lump* lumps,
+						char* new_buf, 
+						unsigned int* new_buf_offs, 
+						unsigned int* orig_offs,
+						struct socket_info* send_sock)
 {
 	struct lump *t, *r;
 	char* orig;

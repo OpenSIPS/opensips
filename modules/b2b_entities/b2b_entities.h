@@ -36,15 +36,22 @@
 #include "dlg.h"
 #include "client.h"
 #include "server.h"
+#include "../../db/db.h"
 
-extern str b2b_key_prefix;
-#define B2B_MAX_PREFIX_LEN    5
+/* modes to write in db */
+#define NO_DB         0
+#define WRITE_THROUGH 1
+#define WRITE_BACK    2
 
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
 		b2b_notify_t cback);
 
 typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* key,
 		str* param);
+typedef void (*b2b_db_delete_t)(str param);
+
+extern str b2b_key_prefix;
+#define B2B_MAX_PREFIX_LEN    5
 
 typedef struct b2b_api
 {
@@ -53,6 +60,7 @@ typedef struct b2b_api
 	b2b_send_request_t        send_request;
 	b2b_send_reply_t          send_reply;
 	b2b_entity_delete_t       entity_delete;
+	b2b_db_delete_t           entities_db_delete;
 	b2b_restore_linfo_t       restore_logic_info;
 	b2b_update_b2bl_param_t   update_b2bl_param;
 }b2b_api_t;
@@ -64,8 +72,11 @@ extern struct tm_binds tmb;
 extern int req_routeid;
 extern int reply_routeid;
 extern int replication_mode;
+extern db_con_t *b2be_db;
+extern db_func_t b2be_dbf;
+extern str b2be_dbtable;
+extern int b2be_db_mode;
 
-int b2b_load_api(b2b_api_t* api);
 typedef int(*load_b2b_f) (b2b_api_t* api);
 
 static inline int load_b2b_api( struct b2b_api *b2b_api)

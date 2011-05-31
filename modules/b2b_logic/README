@@ -45,6 +45,7 @@ Ovidiu Sas
               1.3.11. b2bl_from_param_spec (string)
               1.3.12. server_address (str)
               1.3.13. init_callid_hdr (str)
+              1.3.14. db_mode (int)
 
         1.4. Exported Functions
 
@@ -83,8 +84,9 @@ Ovidiu Sas
    1.11. Set b2bl_from_param_spec parameter
    1.12. Set server_address parameter
    1.13. Set init_callid_hdr parameter
-   1.14. b2b_init_request usage
-   1.15. b2b_bridge_request usage
+   1.14. Set db_mode parameter
+   1.15. b2b_init_request usage
+   1.16. b2b_bridge_request usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -326,6 +328,23 @@ modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
+1.3.14. db_mode (int)
+
+   The B2B modules have support for the 3 type of database storage
+
+     * NO DB STORAGE - set this parameter to 0
+     * WRITE THROUGH (synchronous write in database) - set this
+       parameter to 1
+     * WRITE BACK (update in db from time to time) - set this
+       parameter to 2
+
+   Default value is “2” (WRITE BACK).
+
+   Example 1.14. Set db_mode parameter
+...
+modparam("b2b_logic", "db_mode", 1)
+...
+
 1.4. Exported Functions
 
 1.4.1.  b2b_init_request
@@ -351,7 +370,7 @@ Note
    from the script will result in the transaction remaining in
    memory for ever.
 
-   Example 1.14. b2b_init_request usage
+   Example 1.15. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
@@ -369,7 +388,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
      * entity_no - a pseudo-variable that holds the entity of the
        particapnt to bridge.
 
-   Example 1.15. b2b_bridge_request usage
+   Example 1.16. b2b_bridge_request usage
 ...
 modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
 ...

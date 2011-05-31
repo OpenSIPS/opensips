@@ -181,7 +181,8 @@ b2b_table client_htable;
 
 void print_b2b_dlg(b2b_dlg_t *dlg);
 
-str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src);
+str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
+		int src, int reload);
 
 b2b_dlg_t* b2b_htable_search_safe(str callid, str to_tag, str from_tag);
 
@@ -221,10 +222,10 @@ str* b2b_key_copy_shm(str* b2b_key);
 void shm_free_param(void* param);
 
 void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
-	 b2b_dlginfo_t* dlginfo);
+	 b2b_dlginfo_t* dlginfo, int db_del);
 
 typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
-	 b2b_dlginfo_t* dlginfo);
+	 b2b_dlginfo_t* dlginfo, int db_del);
 b2b_dlg_t* b2b_search_htable(b2b_table table, 
 		unsigned int hash_index, unsigned int local_index);
 
@@ -234,7 +235,5 @@ void print_b2b_entities(void);
 
 int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 		str* contact);
-
-void b2b_db_delete(b2b_dlg_t* dlg, int type);
 
 #endif

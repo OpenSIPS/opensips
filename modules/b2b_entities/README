@@ -33,6 +33,7 @@ Anca-Maria Vamanu
               1.3.5. db_url (str)
               1.3.6. update_period (int)
               1.3.7. b2b_key_prefix (string)
+              1.3.8. db_mode (int)
 
         1.4. Exported Functions
 
@@ -56,6 +57,7 @@ Anca-Maria Vamanu
    1.5. Set db_url parameter
    1.6. Set update_period parameter
    1.7. Set b2b_key_prefix parameter
+   1.8. Set db_mode parameter
    2.1. b2b_api_t structure
 
 Chapter 1. Admin Guide
@@ -179,6 +181,23 @@ modparam("b2b_entities", "update_period", 60)
    Example 1.7. Set b2b_key_prefix parameter
 ...
 modparam("b2b_entities", "b2b_key_prefix", "B2B1")
+...
+
+1.3.8. db_mode (int)
+
+   The B2B modules have support for the 3 type of database storage
+
+     * NO DB STORAGE - set this parameter to 0
+     * WRITE THROUGH (synchronous write in database) - set this
+       parameter to 1
+     * WRITE BACK (update in db from time to time) - set this
+       parameter to 2
+
+   Default value is “2” (WRITE BACK).
+
+   Example 1.8. Set db_mode parameter
+...
+modparam("b2b_logic", "db_mode", 1)
 ...
 
 1.4. Exported Functions

@@ -167,7 +167,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	/* callid must have the special format */
 	dlg->db_flag = NO_UPDATEDB_FLAG;
-	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT);
+	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT, 0);
 	if(callid == NULL)
 	{
 		LM_ERR("Inserting new record in hash table failed\n");

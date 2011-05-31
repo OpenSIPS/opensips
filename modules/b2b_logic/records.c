@@ -92,7 +92,7 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 /* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* body, str* custom_hdrs, str** b2bl_key_s)
+		str* args[], str* body, str* custom_hdrs, int local_index, str** b2bl_key_s)
 {
 	b2bl_tuple_t * it, *prev_it;
 	b2bl_tuple_t* tuple;
@@ -220,24 +220,68 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	lock_get(&b2bl_htable[hash_index].lock);
 
-	it = b2bl_htable[hash_index].first;
-	if(it == NULL)
+	if(local_index>= 0) /* a local index specified */ 
 	{
-		b2bl_htable[hash_index].first = tuple;
-		tuple->prev = tuple->next = NULL;
-		tuple->id = 0;
+		tuple->id = local_index;
+		if(b2bl_htable[hash_index].first == NULL)
+		{
+			b2bl_htable[hash_index].first = tuple;
+			tuple->prev = tuple->next = NULL;
+		}
+		else
+		{
+			prev_it = 0;
+			/*insert it in the proper place  */
+			for(it = b2bl_htable[hash_index].first; it && it->id<local_index; it=it->next)
+			{
+				prev_it = it;	
+			}
+			if(!prev_it)
+			{
+				b2bl_htable[hash_index].first = tuple;
+				tuple->prev = 0;
+				tuple->next = it;
+				it->prev = tuple;
+			}
+			else
+			{
+				tuple->prev = prev_it; 
+				prev_it->next = tuple;
+				tuple->next = it;
+				if(it)
+					it->prev = tuple;
+			}
+		}		
 	}
 	else
 	{
-		while(it)
+
+		it = b2bl_htable[hash_index].first;
+		if(it == NULL)
 		{
-			prev_it = it;
-			it = it->next;
+			b2bl_htable[hash_index].first = tuple;
+			tuple->prev = tuple->next = NULL;
+			tuple->id = 0;
 		}
-		prev_it->next = tuple;
-		tuple->prev = prev_it;
-		tuple->id = prev_it->id +1;
+		else
+		{
+			while(it)
+			{
+				prev_it = it;
+				it = it->next;
+			}
+			prev_it->next = tuple;
+			tuple->prev = prev_it;
+			tuple->id = prev_it->id +1;
+		}
 	}
+	LM_DBG("for hi[%d]:\n", hash_index);
+	for(it = b2bl_htable[hash_index].first; it; it=it->next)
+	{
+		LM_DBG("%d->", it->id);	
+	}
+	LM_DBG("\n");
+	
 
 	b2bl_key = b2bl_generate_key(hash_index, tuple->id);
 	if(b2bl_key == NULL)
@@ -334,11 +378,10 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	return found;
 }
 
-
 void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head)
 {
 	unchain_ent(entity, head);
-	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 0);
 	LM_DBG("destroying dlginfo=[%p]\n", entity->dlginfo);
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
@@ -365,7 +408,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	{
 		LM_DBG("delete entity [%p]->[%.*s] from tuple [%.*s]\n",
 			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
-		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo);
+		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 1);
 	}
 	else
 	{
@@ -506,7 +549,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		if (e)
 		{
 			if (e->key.s && e->key.len && !not_del_b2be)
-				b2b_api.entity_delete(e->type, &e->key, e->dlginfo);
+				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0);
 			if(e->dlginfo)
 				shm_free(e->dlginfo);
 			shm_free(e);
@@ -515,12 +558,14 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		if (e)
 		{
 			if (e->key.s && e->key.len && !not_del_b2be)
-				b2b_api.entity_delete(e->type, &e->key, e->dlginfo);
+				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0);
 			if(e->dlginfo)
 				shm_free(e->dlginfo);
 			shm_free(e);
 		}
 	}
+	/* clean up all entities in b2b_entities from db */
+	b2b_api.entities_db_delete(*tuple->key);
 
 //	if(tuple->bridge_entities[1] && tuple->bridge_entities[1]->key.s != NULL)
 //		shm_free(tuple->bridge_entities[1]->key.s);
@@ -604,9 +649,12 @@ b2bl_tuple_t* b2bl_search_tuple_safe(unsigned int hash_index, unsigned int local
 {
 	b2bl_tuple_t* tuple;
 
+
 	tuple = b2bl_htable[hash_index].first;
 	while(tuple && tuple->id != local_index)
+	{
 		tuple = tuple->next;
+	}
 
 	return tuple;
 }

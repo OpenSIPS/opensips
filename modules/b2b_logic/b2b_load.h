@@ -79,6 +79,9 @@ typedef int (*b2bl_get_stats_f)(str* key, b2bl_dlg_stat_t* stat);
 int b2bl_register_cb(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 typedef int (*b2bl_register_cb_f)(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 
+int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f, void* param);
+typedef int (*b2bl_restore_upper_info_f)(str* b2bl_key, b2bl_cback_f, void* param);
+
 typedef struct b2bl_api
 {
 	b2bl_init_f init;
@@ -90,6 +93,7 @@ typedef struct b2bl_api
 	b2bl_bridge_msg_t bridge_msg;
 	b2bl_get_stats_f get_stats;
 	b2bl_register_cb_f register_cb;
+	b2bl_restore_upper_info_f restore_upper_info;
 }b2bl_api_t;
 
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
