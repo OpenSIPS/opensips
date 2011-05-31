@@ -82,6 +82,7 @@ struct dlg_leg {
 	int id;
 	str tag;
 	str r_cseq;
+	str inv_cseq;
 	str route_set;
 	str contact;
 	str route_uris[64];
@@ -214,7 +215,8 @@ struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		str *cseq, struct socket_info *sock);
 
-int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq);
+int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
+						int field_type);
 
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 													str *rr, str *contact );

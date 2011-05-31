@@ -226,8 +226,8 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		get_routing_info(msg, is_req, &skip_recs, &contact, &rr_set);
 		dlg->from_rr_nb = skip_recs;
 	} else {
-		/* use the same as in caller part */
-		cseq = dlg->legs[DLG_CALLER_LEG].r_cseq;
+		/* use the same as in invite cseq in caller leg */
+		cseq = dlg->legs[DLG_CALLER_LEG].inv_cseq;
 		rr_set.len = contact.len = 0;
 		rr_set.s = contact.s = NULL;
 	}
@@ -883,9 +883,10 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 	return 0;
 }
 
-
+/* update inv_cseq field if update_field=1
+ * else update r_cseq */
 static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
-															unsigned int leg)
+											unsigned int leg, int update_field)
 {
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
 	!req->cseq->parsed) {
@@ -893,7 +894,7 @@ static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 		return -1;
 	}
 
-	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number));
+	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number),update_field);
 }
 
 
@@ -912,7 +913,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	int event;
 	int timeout;
 	unsigned int update_val;
-	unsigned int dir,dst_leg;
+	unsigned int dir,dst_leg,src_leg;
 	int ret = 0,ok = 1;
 	struct dlg_entry *d_entry;
 	str *msg_cseq;
@@ -1030,7 +1031,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		dlg->profile_links = NULL;
 		
 
-		LM_DBG("BYE successfully processed\n");
+		LM_DBG("BYE successfully processed - dst_leg = %d\n",last_dst_leg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 			dlg_lock (d_table,d_entry);
@@ -1124,9 +1125,22 @@ after_unlock5:
 				LM_ERR("failed to update dialog lifetime\n");
 		}
 		if ( event!=DLG_EVENT_REQACK ) {
-			if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg)!=0) {
+			if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg,0)!=0) {
 				ok = 0;
 				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
+			}
+
+			if (req->first_line.u.request.method_value == METHOD_INVITE)
+			{
+				if (dst_leg == DLG_CALLER_LEG)
+					src_leg = callee_idx(dlg);
+				else
+					src_leg = DLG_CALLER_LEG;
+
+				if (update_cseqs(dlg,req,src_leg,1) != 0) {
+					ok=0;
+					LM_ERR("failed to update inv cseq on leg %d\n",src_leg);
+				}
 			}
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER || 
@@ -1242,7 +1256,7 @@ regular_indlg_req:
 prack_check:
 	if ( event==DLG_EVENT_REQPRACK && new_state==DLG_STATE_EARLY) {
 		LM_DBG("PRACK successfully processed (dst_leg=%d)\n",dst_leg);
-		if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg)!=0)
+		if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg,0)!=0)
 			LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 	}
 
@@ -1533,7 +1547,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
 	unsigned int n,m;
-	int nr_routes,i;
+	int nr_routes,i,src_leg;
 	str *rr_uri,*route_uris;
 
 	if (last_dst_leg<0) {
@@ -1543,7 +1557,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	leg = & dlg->legs[ last_dst_leg ];
 
-	/* first check the cseq (if it's increasing) */
+	/* first check the cseq */
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
 	!req->cseq->parsed) {
 		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
@@ -1551,11 +1565,28 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	}
 
 	n = m = 0;
-	if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
-	str2int( &(leg->r_cseq), &m)!=0 || n<m ) {
-		LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
-		return -1;
+
+	if (req->first_line.u.request.method_value == METHOD_ACK) {
+		/* ACKs should have the same cseq as INVITEs */
+		if (last_dst_leg == DLG_CALLER_LEG)
+			src_leg = callee_idx(dlg);
+		else
+			src_leg = DLG_CALLER_LEG;
+
+		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
+		str2int( &(dlg->legs[src_leg].inv_cseq), &m)!=0 || n!=m ) {
+			LM_DBG("cseq test for ACK falied recv=%d, old=%d\n",n,m);
+			return -1;
+		}
+	} else {
+		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
+		str2int( &(leg->r_cseq), &m)!=0 || n<m ) {
+			LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
+			return -1;
+		}
 	}
+
+
 
 	LM_DBG("CSEQ validation passed\n");
 
