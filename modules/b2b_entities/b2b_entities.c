@@ -67,6 +67,7 @@ db_con_t *b2be_db = NULL;
 db_func_t b2be_dbf;
 str b2be_dbtable= str_init("b2b_entities");
 static int b2b_update_period = 100;
+str b2b_key_prefix = str_init("B2B");
 int b2be_db_mode = WRITE_BACK;
 
 #define DB_COLS_NO  26
