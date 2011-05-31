@@ -127,11 +127,13 @@ static int datagram_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 {
 	if (!sock1 || !sock2)
 		return 0;
-	/* if UDP sockets and both have ports but different */
-	if (sock1->flags & DGRAM_UDP_FLAG && sock1->flags & EVI_PORT
-			&& sock2->flags & DGRAM_UDP_FLAG && sock2->flags & EVI_PORT
-			&& sock1->port != sock2->port)
-			return 0;
+	/* if the sockets have different types */
+	if ((sock1->flags & (DGRAM_UDP_FLAG|DGRAM_UNIX_FLAG)) !=
+			(sock2->flags & (DGRAM_UDP_FLAG|DGRAM_UNIX_FLAG)))
+		return 0;
+	if (((sock1->flags & EVI_PORT) != (sock2->flags & EVI_PORT)) ||
+			((sock1->flags & EVI_PORT) && (sock1->port != sock2->port)))
+		return 0;
 	
 	if (sock1->flags & EVI_ADDRESS && sock2->flags & EVI_ADDRESS) {
 		if (!memcmp(sock1->address.s, sock2->address.s,
@@ -205,12 +207,12 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 			LM_ERR("failed to resolve %s\n", host);
 			goto error;
 		}
-		sock->flags |= EVI_SOCKET;
+		sock->flags |= EVI_SOCKET | DGRAM_UDP_FLAG;
 	} else {
 		sock->s_addr.unix_addr.sun_family = AF_LOCAL;
 		memcpy(sock->s_addr.unix_addr.sun_path, host, len);
 		sock->s_addr.unix_addr.sun_path[len] = 0;
-		sock->flags |= EVI_SOCKET;
+		sock->flags |= EVI_SOCKET | DGRAM_UNIX_FLAG;
 	}
 
 	LM_DBG("address is <%.*s>\n", len, host);
