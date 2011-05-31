@@ -43,7 +43,7 @@ typedef struct _osp_usage {
     time_t alert;               /* Call alert time */
     time_t connect;             /* Call connect time */
     unsigned haspdd;            /* Is PDD Info present */
-    unsigned pdd;               /* Post Dial Delay */
+    unsigned pdd;               /* Post Dial Delay, in seconds */
     unsigned release;           /* EP that released the call */
 } osp_usage;
 
@@ -82,7 +82,7 @@ unsigned long long ospGetTransactionId(
  * param ospvAlertTime Call alert time
  * param ospvConnectTime Call connected  time
  * param ospvIsPDDInfoPresent If post dial delay information avaliable
- * param ospvPostDialDelay Post dial delay information
+ * param ospvPostDialDelay Post dial delay information, in seconds
  * param ospvReleaseSource Which side release the call
  */
 void ospReportUsageWrapper(
@@ -162,7 +162,7 @@ static OSPTTHREADRETURN ospReportUsageWork(
             usage->alert,
             usage->connect,
             usage->haspdd,
-            usage->pdd,
+            usage->pdd * 1000,
             usage->release,
             NULL, -1, -1, -1, -1, NULL, NULL);
 

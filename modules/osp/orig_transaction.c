@@ -58,8 +58,8 @@ const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 const str OSP_CALLING_NAME = {"_osp_calling_translated_", 24};
 
-static int ospLoadRoutes(OSPTTRANHANDLE transaction, int destcount, char* source, char* srcdev, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
-static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format);
+static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, char* source, char* srcdev, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
+static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format, int redirect);
 static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
 /*
@@ -73,7 +73,7 @@ static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
  * return 0 success, -1 failure
  */
 static int ospLoadRoutes(
-    OSPTTRANHANDLE transaction,
+    OSPTTRANHANDLE trans,
     int destcount,
     char* source,
     char* srcdev,
@@ -86,7 +86,7 @@ static int ospLoadRoutes(
     char* pci)
 {
     int count;
-    int errorcode;
+    int errcode;
     osp_dest* dest;
     osp_dest dests[OSP_DEF_DESTS];
     char host[OSP_STRBUF_SIZE];
@@ -108,8 +108,8 @@ static int ospLoadRoutes(
         strncpy(dest->origcalled, origcalled, sizeof(dest->origcalled) - 1);
 
         if (count == 0) {
-            errorcode = OSPPTransactionGetFirstDestination(
-                transaction,
+            errcode = OSPPTransactionGetFirstDestination(
+                trans,
                 sizeof(dest->validafter),
                 dest->validafter,
                 dest->validuntil,
@@ -127,8 +127,8 @@ static int ospLoadRoutes(
                 &dest->tokensize,
                 dest->token);
         } else {
-            errorcode = OSPPTransactionGetNextDestination(
-                transaction,
+            errcode = OSPPTransactionGetNextDestination(
+                trans,
                 0,
                 sizeof(dest->validafter),
                 dest->validafter,
@@ -148,9 +148,9 @@ static int ospLoadRoutes(
                 dest->token);
         }
 
-        if (errorcode != OSPC_ERR_NO_ERROR) {
+        if (errcode != OSPC_ERR_NO_ERROR) {
             LM_ERR("failed to load routes (%d) expected '%d' current '%d'\n",
-                errorcode,
+                errcode,
                 destcount,
                 count);
             result = -1;
@@ -159,34 +159,34 @@ static int ospLoadRoutes(
 
         ospConvertToInAddress(host, dest->host, sizeof(dest->host));
 
-        errorcode = OSPPTransactionGetNumberPortabilityParameters(transaction,
+        errcode = OSPPTransactionGetNumberPortabilityParameters(trans,
             sizeof(dest->nprn),
             dest->nprn,
             sizeof(dest->npcic),
             dest->npcic,
             &dest->npdi);
-        if (errorcode != OSPC_ERR_NO_ERROR) {
-            LM_DBG("cannot get number portability parameters (%d)\n", errorcode);
+        if (errcode != OSPC_ERR_NO_ERROR) {
+            LM_DBG("cannot get number portability parameters (%d)\n", errcode);
             dest->nprn[0] = '\0';
             dest->npcic[0] = '\0';
             dest->npdi = 0;
         }
 
         for (type = OSPC_OPNAME_START; type < OSPC_OPNAME_NUMBER; type++) {
-            errorcode = OSPPTransactionGetOperatorName(transaction,
+            errcode = OSPPTransactionGetOperatorName(trans,
                 type,
                 sizeof(dest->opname[type]),
                 dest->opname[type]);
-            if (errorcode != OSPC_ERR_NO_ERROR) {
-                LM_DBG("cannot get operator name '%d' (%d)\n", type, errorcode);
+            if (errcode != OSPC_ERR_NO_ERROR) {
+                LM_DBG("cannot get operator name '%d' (%d)\n", type, errcode);
                 dest->opname[type][0] = '\0';
             }
         }
 
-        errorcode = OSPPTransactionGetDestProtocol(transaction, &dest->protocol);
-        if (errorcode != OSPC_ERR_NO_ERROR) {
+        errcode = OSPPTransactionGetDestProtocol(trans, &dest->protocol);
+        if (errcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
-            LM_DBG("cannot get dest protocol (%d)\n", errorcode);
+            LM_DBG("cannot get dest protocol (%d)\n", errcode);
             dest->protocol = OSPC_PROTNAME_SIP;
         }
         switch (dest->protocol) {
@@ -208,27 +208,27 @@ static int ospLoadRoutes(
                 break;
         }
 
-        errorcode = OSPPTransactionIsDestOSPEnabled(transaction, &enabled);
-        if (errorcode != OSPC_ERR_NO_ERROR) {
+        errcode = OSPPTransactionIsDestOSPEnabled(trans, &enabled);
+        if (errcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
-            LM_DBG("cannot get dest OSP version (%d)\n", errorcode);
+            LM_DBG("cannot get dest OSP version (%d)\n", errcode);
         } else if (enabled == OSPC_DOSP_FALSE) {
             /* Destination device does not support OSP. Do not send token to it */
             dest->token[0] = '\0';
             dest->tokensize = 0;
         }
 
-        errorcode = OSPPTransactionGetDestinationNetworkId(transaction, sizeof(dest->networkid), dest->networkid);
-        if (errorcode != OSPC_ERR_NO_ERROR) {
+        errcode = OSPPTransactionGetDestinationNetworkId(trans, sizeof(dest->networkid), dest->networkid);
+        if (errcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
-            LM_DBG("cannot get dest network ID (%d)\n", errorcode);
+            LM_DBG("cannot get dest network ID (%d)\n", errcode);
             dest->networkid[0] = '\0';
         }
 
         strncpy(dest->source, source, sizeof(dest->source) - 1);
         strncpy(dest->srcdev, srcdev, sizeof(dest->srcdev) - 1);
         dest->type = OSPC_ROLE_SOURCE;
-        dest->transid = ospGetTransactionId(transaction);
+        dest->transid = ospGetTransactionId(trans);
         dest->authtime = authtime;
         strncpy(dest->rpid, rpid, sizeof(dest->rpid) - 1);
         strncpy(dest->pai, pai, sizeof(dest->pai) - 1);
@@ -255,7 +255,7 @@ static int ospLoadRoutes(
             "mcc '%s' "
             "mnc '%s' "
             */
-        	"protocol '%d' "
+            "protocol '%d' "
             "supported '%d' "
             "network id '%s' "
             "token size '%d'\n",
@@ -317,7 +317,7 @@ int ospRequestRouting(
     char* ignore1,
     char* ignore2)
 {
-    int errorcode;
+    int errcode;
     time_t authtime;
     char calling[OSP_STRBUF_SIZE];
     char called[OSP_STRBUF_SIZE];
@@ -352,11 +352,11 @@ int ospRequestRouting(
     char tohostbuf[OSP_STRBUF_SIZE];
     const char* preferred[2] = { NULL };
     unsigned int destcount;
-    OSPTTRANHANDLE transaction = -1;
+    OSPTTRANHANDLE trans = -1;
     int result = MODULE_RETURNCODE_FALSE;
 
-    if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction)) != OSPC_ERR_NO_ERROR) {
-        LM_ERR("failed to create new OSP transaction (%d)\n", errorcode);
+    if ((errcode = OSPPTransactionNew(_osp_provider, &trans)) != OSPC_ERR_NO_ERROR) {
+        LM_ERR("failed to create new OSP transaction (%d)\n", errcode);
     } else if (ospGetFromUserpart(msg, calling, sizeof(calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
     } else if ((ospGetUriUserpart(msg, called, sizeof(called)) != 0) && (ospGetToUserpart(msg, called, sizeof(called)) != 0)) {
@@ -375,7 +375,7 @@ int ospRequestRouting(
 
         switch (_osp_service_type) {
         case 1:
-            OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_NPQUERY);
+            OSPPTransactionSetServiceType(trans, OSPC_SERVICE_NPQUERY);
 
             ospGetToHostpart(msg, tohost, sizeof(tohost));
             ospConvertToOutAddress(tohost, tohostbuf, sizeof(tohostbuf));
@@ -385,28 +385,28 @@ int ospRequestRouting(
             break;
         case 0:
         default:
-            OSPPTransactionSetServiceType(transaction, OSPC_SERVICE_VOICE);
+            OSPPTransactionSetServiceType(trans, OSPC_SERVICE_VOICE);
 
             destcount = _osp_max_dests;
             break;
         }
 
         if (ospGetNpParameters(msg, rn, sizeof(rn), cic, sizeof(cic), &npdi) == 0) {
-            OSPPTransactionSetNumberPortability(transaction, rn, cic, npdi);
+            OSPPTransactionSetNumberPortability(trans, rn, cic, npdi);
         }
 
         for (type = OSPC_OPNAME_START; type < OSPC_OPNAME_NUMBER; type++) {
             if (ospGetOperatorName(msg, type, opname[type], sizeof(opname[type])) == 0) {
-                OSPPTransactionSetOperatorName(transaction, type, opname[type]);
+                OSPPTransactionSetOperatorName(trans, type, opname[type]);
             }
         }
 
         if (ospGetRpidUserpart(msg, rpid, sizeof(rpid)) == 0) {
-            OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
+            OSPPTransactionSetRemotePartyId(trans, OSPC_NFORMAT_E164, rpid);
         }
 
         if (ospGetPaiUserpart(msg, pai, sizeof(pai)) == 0) {
-            OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
+            OSPPTransactionSetAssertedId(trans, OSPC_NFORMAT_E164, pai);
         }
 
         if (ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost)) == 0) {
@@ -414,12 +414,12 @@ int ospRequestRouting(
         } else {
             divhostbuf[0] = '\0';
         }
-        OSPPTransactionSetDiversion(transaction, divuser, divhostbuf);
+        OSPPTransactionSetDiversion(trans, divuser, divhostbuf);
 
-        OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+        OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
 
         if (ospGetPChargeInfoUserpart(msg, pci, sizeof(pci)) == 0) {
-            OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+            OSPPTransactionSetChargeInfo(trans, OSPC_NFORMAT_E164, pci);
         }
 
         if ((_osp_snid_avpname.n != 0) &&
@@ -428,7 +428,7 @@ int ospRequestRouting(
         {
             snprintf(snid, sizeof(snid), "%.*s", snidval.s.len, snidval.s.s);
             snid[sizeof(snid) - 1] = '\0';
-            OSPPTransactionSetNetworkIds(transaction, snid, "");
+            OSPPTransactionSetNetworkIds(trans, snid, "");
         } else {
             snid[0] = '\0';
         }
@@ -451,7 +451,7 @@ int ospRequestRouting(
             cinfostr[0] = '\0';
             for (i = 0; i < cinfonum; i++) {
                 if (cinfo[cinfonum - i - 1][0] != '\0') {
-                    OSPPTransactionSetCustomInfo(transaction, i, cinfo[cinfonum - i - 1]);
+                    OSPPTransactionSetCustomInfo(trans, i, cinfo[cinfonum - i - 1]);
                     snprintf(cinfostr + strlen(cinfostr), sizeof(cinfostr) - strlen(cinfostr), "custom_info%d '%s' ", i + 1, cinfo[cinfonum - i - 1]);
                 }
             }
@@ -514,8 +514,8 @@ int ospRequestRouting(
             cinfostr);
 
         /* try to request authorization */
-        errorcode = OSPPTransactionRequestAuthorisation(
-            transaction,       /* transaction handle */
+        errcode = OSPPTransactionRequestAuthorisation(
+            trans,             /* transaction handle */
             sourcebuf,         /* from the configuration file */
             srcdevbuf,         /* source device of call, protocol specific, in OSP format */
             calling,           /* calling number in nodotted e164 notation */
@@ -530,8 +530,8 @@ int ospRequestRouting(
             &logsize,          /* size allocated for detaillog (next param) 0=no log */
             detaillog);        /* memory location for detaillog to be stored */
 
-        if ((errorcode == OSPC_ERR_NO_ERROR) &&
-            (ospLoadRoutes(transaction, destcount, source, srcdev, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
+        if ((errcode == OSPC_ERR_NO_ERROR) &&
+            (ospLoadRoutes(trans, destcount, source, srcdev, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
@@ -540,10 +540,10 @@ int ospRequestRouting(
             result = MODULE_RETURNCODE_TRUE;
         } else {
             LM_ERR("failed to request auth and routing (%d), call_id '%.*s'\n",
-                errorcode,
+                errcode,
                 callids[0]->Length,
                 callids[0]->Value);
-            switch (errorcode) {
+            switch (errcode) {
                 case OSPC_ERR_TRAN_ROUTE_BLOCKED:
                     result = -403;
                     break;
@@ -565,8 +565,8 @@ int ospRequestRouting(
         OSPPCallIdDelete(&(callids[0]));
     }
 
-    if (transaction != -1) {
-        OSPPTransactionDelete(transaction);
+    if (trans != -1) {
+        OSPPTransactionDelete(trans);
     }
 
     return result;
@@ -678,13 +678,15 @@ int ospCheckCalling(
  * param isfirst Is first destination
  * param type Main or branch route block
  * param format URI format
+ * param redirect Is for redirect
  * return MODULE_RETURNCODE_TRUE success MODULE_RETURNCODE_FALSE failure
  */
 static int ospPrepareDestination(
     struct sip_msg* msg,
     int isfirst,
     int type,
-    int format)
+    int format,
+    int redirect)
 {
     char buffer[OSP_HEADERBUF_SIZE];
     str newuri = { buffer, sizeof(buffer) };
@@ -702,6 +704,10 @@ static int ospPrepareDestination(
             dest->transid);
 
         if (type == OSP_MAIN_ROUTE) {
+            if (redirect) {
+                dest->lastcode = 300;
+            }
+
             if (isfirst == OSP_FIRST_ROUTE) {
                 set_ruri(msg, &newuri);
             } else {
@@ -753,9 +759,33 @@ int ospPrepareRoute(
     int result = MODULE_RETURNCODE_TRUE;
 
     /* The first parameter will be ignored */
-    result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_BRANCH_ROUTE, 0);
+    result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_BRANCH_ROUTE, 0, 0);
 
     return result;
+}
+
+/*
+ * Prepare all redirect OSP routes
+ *     This function does not work in branch route block.
+ * param msg SIP message
+ * param ignore1
+ * param ignore2
+ * return MODULE_RETURNCODE_TRUE success, MODULE_RETURNCODE_FALSE failure
+ */
+int ospPrepareRedirectRoutes(
+    struct sip_msg* msg,
+    char* ignore1,
+    char* ignore2)
+{
+    int result = MODULE_RETURNCODE_TRUE;
+
+    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 1);
+        result == MODULE_RETURNCODE_TRUE;
+        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 1))
+    {
+    }
+
+    return MODULE_RETURNCODE_TRUE;
 }
 
 /*
@@ -773,9 +803,9 @@ int ospPrepareAllRoutes(
 {
     int result = MODULE_RETURNCODE_TRUE;
 
-    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri);
+    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 0);
         result == MODULE_RETURNCODE_TRUE;
-        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri))
+        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 0))
     {
     }
 

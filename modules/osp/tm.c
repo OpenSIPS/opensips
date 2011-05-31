@@ -1,14 +1,14 @@
 /*
- * opensips osp module. 
+ * opensips osp module.
  *
- * This module enables opensips to communicate with an Open Settlement 
- * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI 
+ * This module enables opensips to communicate with an Open Settlement
+ * Protocol (OSP) server.  The Open Settlement Protocol is an ETSI
  * defined standard for Inter-Domain VoIP pricing, authorization
- * and usage exchange.  The technical specifications for OSP 
+ * and usage exchange.  The technical specifications for OSP
  * (ETSI TS 101 321 V4.1.1) are available at www.etsi.org.
  *
  * Uli Abend was the original contributor to this module.
- * 
+ *
  * Copyright (C) 2001-2005 Fhg Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -70,8 +70,8 @@ int ospInitTm(void)
  * param ps
  */
 static void ospOnReq(
-    struct cell* t, 
-    int type, 
+    struct cell* t,
+    int type,
     struct tmcb_params* ps)
 {
     int tmcb_types;
@@ -80,7 +80,7 @@ static void ospOnReq(
     tmcb_types =
 //        TMCB_REQUEST_FWDED |
 //        TMCB_RESPONSE_FWDED |
-        TMCB_ON_FAILURE | 
+        TMCB_ON_FAILURE |
 //        TMCB_LOCAL_COMPLETED |
         /* report on completed transactions */
         TMCB_RESPONSE_OUT |
@@ -106,8 +106,8 @@ static void ospOnReq(
  * param ps
  */
 static void ospTmcbFunc(
-    struct cell* t, 
-    int type, 
+    struct cell* t,
+    int type,
     struct tmcb_params* ps)
 {
     if (type & TMCB_RESPONSE_OUT) {
