@@ -64,6 +64,7 @@ extern int _osp_persistence;
 extern int _osp_retry_delay;
 extern int _osp_retry_limit;
 extern int _osp_timeout;
+extern int _osp_non_sip;
 extern int _osp_max_dests;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
@@ -155,6 +156,7 @@ static param_export_t params[]={
     { "retry_delay",                      INT_PARAM, &_osp_retry_delay },
     { "retry_limit",                      INT_PARAM, &_osp_retry_limit },
     { "timeout",                          INT_PARAM, &_osp_timeout },
+    { "support_nonsip_protocol",          INT_PARAM, &_osp_non_sip },
     { "max_destinations",                 INT_PARAM, &_osp_max_dests },
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
@@ -420,6 +422,7 @@ static void ospDumpParameters(void)
     LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
     LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
+    LM_INFO("    support_nonsip_protocol '%d'\n", _osp_non_sip);
     if (_osp_srcdev_avpname.n == 0) {
         LM_INFO("    source device IP disabled\n");
     } else if (_osp_srcdev_avptype & AVP_NAME_STR) {

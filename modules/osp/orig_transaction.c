@@ -43,6 +43,7 @@
 extern int _osp_service_type;
 extern char _osp_in_device[];
 extern char _osp_out_device[];
+extern int _osp_non_sip;
 extern int _osp_max_dests;
 extern int _osp_redir_uri;
 extern int_str _osp_snid_avpname;
@@ -198,7 +199,11 @@ static int ospLoadRoutes(
             case OSPC_PROTNAME_SKYPE:
             case OSPC_PROTNAME_SMPP:
             case OSPC_PROTNAME_XMPP:
-                dest->supported = 0;
+                if (_osp_non_sip) {
+                    dest->supported = 1;
+                } else {
+                    dest->supported = 0;
+                }
                 break;
             case OSPC_PROTNAME_SIP:
             case OSPC_PROTNAME_UNDEFINED:

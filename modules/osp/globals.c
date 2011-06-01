@@ -58,6 +58,7 @@ int _osp_persistence = OSP_DEF_PERSISTENCE;
 int _osp_retry_delay = OSP_DEF_DELAY;
 int _osp_retry_limit = OSP_DEF_RETRY;
 int _osp_timeout = OSP_DEF_TIMEOUT;
+int _osp_non_sip = OSP_DEF_NONSIP;
 int _osp_max_dests = OSP_DEF_DESTS;
 int _osp_use_np = OSP_DEF_USENP;
 int _osp_redir_uri = OSP_DEF_REDIRURI;
