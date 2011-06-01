@@ -170,6 +170,8 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 			shm_free(dlg->legs[i].r_cseq.s);
 			if (dlg->legs[i].inv_cseq.s)
 				shm_free(dlg->legs[i].inv_cseq.s);
+			if (dlg->legs[i].prev_cseq.s)
+				shm_free(dlg->legs[i].prev_cseq.s);
 			if (dlg->legs[i].contact.s)
 				shm_free(dlg->legs[i].contact.s); /* + route_set */
 		}
@@ -388,11 +390,14 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		leg->inv_cseq.len = cseq->len;
 		memcpy(leg->inv_cseq.s,cseq->s,cseq->len);
 
-		/* set cseq for caller to 1
+		/* set cseq for caller to 0
 		 * future requests to the caller leg will update this
-		 * needed for proper validation of in-dialog requests */
+		 * needed for proper validation of in-dialog requests 
+		 *
+		 * TM also increases this value by one, if dialog
+		 * is terminated from the middle, so 0 is ok*/
 		leg->r_cseq.len = 1;
-		leg->r_cseq.s[0]='1';
+		leg->r_cseq.s[0]='0';
 	} else {
 		/* cseq */
 		leg->r_cseq.len = cseq->len;
@@ -426,8 +431,7 @@ int dlg_update_cseq(struct dlg_cell * dlg, unsigned int leg, str *cseq,int inv)
 
 	if ( update_cseq->s ) {
 		if (update_cseq->len < cseq->len) {
-			shm_free(update_cseq->s);
-			update_cseq->s = (char*)shm_malloc(cseq->len);
+			update_cseq->s = (char*)shm_realloc(update_cseq->s,cseq->len);
 			if (update_cseq->s==NULL) {
 				LM_ERR("no more shm mem for realloc (%d)\n",cseq->len);
 				goto error;

@@ -897,6 +897,37 @@ static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
 	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number),update_field);
 }
 
+/* move r_cseq to prev_cseq in leg */
+static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
+{
+	str* r_cseq,*prev_cseq;
+	
+	r_cseq = &dlg->legs[leg_no].r_cseq;
+	prev_cseq = &dlg->legs[leg_no].prev_cseq;
+
+	if ( prev_cseq->s ) {
+		if (prev_cseq->len < r_cseq->len) {
+			prev_cseq->s = (char*)shm_realloc(prev_cseq->s,r_cseq->len);
+			if (prev_cseq->s==NULL) {
+				LM_ERR("no more shm mem for realloc (%d)\n",r_cseq->len);
+				return -1;
+			}
+		}
+	} else {
+		prev_cseq->s = (char*)shm_malloc(r_cseq->len);
+		if (prev_cseq->s==NULL) {
+			LM_ERR("no more shm mem for malloc (%d)\n",r_cseq->len);
+			return -1;
+		}
+	}
+
+	memcpy( prev_cseq->s, r_cseq->s, r_cseq->len );
+	prev_cseq->len = r_cseq->len;
+	
+	LM_DBG("prev_cseq = %.*s for leg %d\n",prev_cseq->len,prev_cseq->s,leg_no);
+	return 0;
+}
+
 
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
@@ -1125,13 +1156,14 @@ after_unlock5:
 				LM_ERR("failed to update dialog lifetime\n");
 		}
 		if ( event!=DLG_EVENT_REQACK ) {
-			if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg,0)!=0) {
+
+			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
+				update_cseqs(dlg,req,dst_leg,0)) {
 				ok = 0;
 				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 			}
 
-			if (req->first_line.u.request.method_value == METHOD_INVITE)
-			{
+			if (req->first_line.u.request.method_value == METHOD_INVITE) {
 				if (dst_leg == DLG_CALLER_LEG)
 					src_leg = callee_idx(dlg);
 				else
@@ -1256,8 +1288,9 @@ regular_indlg_req:
 prack_check:
 	if ( event==DLG_EVENT_REQPRACK && new_state==DLG_STATE_EARLY) {
 		LM_DBG("PRACK successfully processed (dst_leg=%d)\n",dst_leg);
-		if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg,0)!=0)
-			LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
+			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
+				update_cseqs(dlg,req,dst_leg,0))
+				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 	}
 
 	if(new_state==DLG_STATE_CONFIRMED && old_state==DLG_STATE_CONFIRMED_NA){
@@ -1580,7 +1613,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		}
 	} else {
 		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
-		str2int( &(leg->r_cseq), &m)!=0 || n<m ) {
+		str2int( &(leg->prev_cseq), &m)!=0 || n<=m ) {
 			LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
 			return -1;
 		}

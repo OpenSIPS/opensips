@@ -81,8 +81,9 @@
 struct dlg_leg {
 	int id;
 	str tag;
-	str r_cseq;
-	str inv_cseq;
+	str r_cseq;		/* last cseq received targeting this leg */
+	str prev_cseq;	/* prev cseq received targeting this leg */
+	str inv_cseq;	/* last cseq of invite received from this leg */
 	str route_set;
 	str contact;
 	str route_uris[64];
