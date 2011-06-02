@@ -2949,6 +2949,23 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	return 1;
 };
 
+static inline int rtpp_get_error(char *command)
+{
+	int ret;
+	str val;
+	if (!command || command[0] != 'E')
+		return 0;
+	val.s = command + 1;
+	val.len = strlen(val.s) - 1 /* newline */;
+
+	if (str2sint(&val, &ret)) {
+		LM_ERR("bad error received from RTPProxy: %s\n", command);
+		return -1;
+	}
+	return ret;
+}
+
+
 static int
 force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str body)
 {
@@ -2956,7 +2973,7 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 	str callid, from_tag, to_tag, tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip, enable_notification;
-	int pf, pf1, force;
+	int pf, pf1, force, err;
 	struct options opts, rep_opts, pt_opts;
 	char *cp, *cp1;
 	char  *cpend, *next;
@@ -3363,8 +3380,23 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
  				else
  				{
  					vcnt = (to_tag.len > 0) ? 18 : 14;
- 				}
- 				cp = send_rtpp_command(node, v, vcnt);
+				}
+				cp = send_rtpp_command(node, v, vcnt);
+				if (!cp && !create) {
+					LM_ERR("cannot lookup a session on a different RTPProxy\n");
+					goto error;
+				}
+				if (cp && (err = rtpp_get_error(cp))) {
+					/* checking only for internal errors */
+					if (err >= 6 && err <= 10) {
+						cp = NULL;
+						node->rn_disabled = 1;
+						node->rn_disabled = get_ticks() + rtpproxy_disable_tout;
+					} else {
+						LM_ERR("unhandled rtpproxy error: %d\n", err);
+						goto error;
+					}
+				}
 			} while (cp == NULL);
 			LM_DBG("proxy reply: %s\n", cp);
 			/* Parse proxy reply to <argc,argv> */
