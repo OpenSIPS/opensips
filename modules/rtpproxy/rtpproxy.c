@@ -2573,7 +2573,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	return 1;
 };
 
-int rtpp_get_error(char *command)
+static inline int rtpp_get_error(char *command)
 {
 	int ret;
 	str val;
@@ -2998,27 +2998,34 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
   					vcnt = (to_tag.len > 0) ? 18 : 14;
   				}
   				cp = send_rtpp_command(args->node, v, vcnt);
-				LM_DBG("proxy reply: %s\n", cp);
-				/* check error */
-				err = rtpp_get_error(cp);
-				/* checking only port error */
-				if (err == 7 || err == 10) {
-					cp = NULL;
-					args->node->rn_disabled = 1; 
-					args->node->rn_disabled = get_ticks() +
-						rtpproxy_disable_tout; 
-					raise_rtpproxy_event(args->node, 0);
+				if (!cp && !create) {
+					LM_ERR("cannot lookup a session on a different RTPProxy\n");
+					goto error;
+				}
+				if (cp && (err = rtpp_get_error(cp))) {
+					/* check internal errors */
+					if (err >= 7 && err <= 10) {
+						cp = NULL;
+						args->node->rn_disabled = 1; 
+						args->node->rn_disabled = get_ticks() +
+							rtpproxy_disable_tout; 
+						raise_rtpproxy_event(args->node, 0);
+					} else {
+						LM_ERR("unhandled rtpproxy error: %d\n", err);
+						goto error;
+					}
+				}
+				/* if not successfull choose a different rtpproxy */
+				if (!cp) {
 					args->node = select_rtpp_node(args->callid, 0);
 					if (!args->node) {
 						LM_ERR("no available proxies\n");
 						goto error;
 					}
-					LM_DBG("trying new rtpproxy node %p\n", args->node);
-				} else if (err) {
-					LM_ERR("unhandled rtpproxy error: %d\n", err);
-					goto error;
+					LM_DBG("trying new rtpproxy node %s\n", args->node->rn_address);
 				}
 			} while (cp == NULL);
+			LM_DBG("proxy reply: %s\n", cp);
 			/* Parse proxy reply to <argc,argv> */
 			argc = 0;
 			memset(argv, 0, sizeof(argv));
