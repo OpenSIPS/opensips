@@ -1043,9 +1043,16 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 			continue;
 		}
 
-		/* skip "sip:" */
-		contact.len = c->received.len - 4;
 		contact.s = c->received.s + 4;
+		/* check for "sips:" */
+		if (*contact.s == ':') {
+			contact.len = c->received.len - 5;
+			contact.s++;
+		} else {
+			/* skip "sip:" */
+			contact.len = c->received.len - 4;
+		}
+
 		avp = NULL;
 		found = 0;
 
@@ -1056,8 +1063,8 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 				LM_NOTICE("avp value should be string\n");
 				continue;
 			}
-			if (contact.len > ip.len && contact.s[ip.len] == ':' &&
-					!memcmp(contact.s, ip.s, ip.len)) {
+			if ((contact.len == ip.len || (contact.len>ip.len && contact.s[ip.len]==':'))
+					&& !memcmp(contact.s, ip.s, ip.len)) {
 				found = 1;
 				break;
 			}
