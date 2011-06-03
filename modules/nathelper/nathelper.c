@@ -401,7 +401,7 @@ static char **rtpp_strings=0;
 static int rtpp_set_count = 0;
 static unsigned int current_msg_id = (unsigned int)-1;
 /* RTP proxy balancing list */
-struct rtpp_set_head * rtpp_set_list =0;
+struct rtpp_set_head ** rtpp_set_list =0;
 struct rtpp_set * selected_rtpp_set =0;
 struct rtpp_set ** default_rtpp_set=0;
 
@@ -730,7 +730,7 @@ static int nathelper_add_rtpproxy_set( char * rtp_proxies, int set_id)
 	}
 
 	/*search for the current_id*/
-	rtpp_list = rtpp_set_list ? rtpp_set_list->rset_first : 0;
+	rtpp_list = (*rtpp_set_list) ? (*rtpp_set_list)->rset_first : 0;
 	while( rtpp_list != 0 && rtpp_list->id_set!=my_current_id)
 		rtpp_list = rtpp_list->rset_next;
 
@@ -753,24 +753,24 @@ static int nathelper_add_rtpproxy_set( char * rtp_proxies, int set_id)
 	}
 
 	if (new_list) {
-		if(!rtpp_set_list){/*initialize the list of set -
+		if(!(*rtpp_set_list)){/*initialize the list of set -
 							 executed only on the first call*/
-			rtpp_set_list = shm_malloc(sizeof(struct rtpp_set_head));
-			if(!rtpp_set_list){
+			*rtpp_set_list = shm_malloc(sizeof(struct rtpp_set_head));
+			if(!(*rtpp_set_list)){
 				LM_ERR("no shm memory left\n");
 				return -1;
 			}
-			memset(rtpp_set_list, 0, sizeof(struct rtpp_set_head));
+			memset(*rtpp_set_list, 0, sizeof(struct rtpp_set_head));
 		}
 
 		/*update the list of set info*/
-		if(!rtpp_set_list->rset_first){
-			rtpp_set_list->rset_first = rtpp_list;
+		if(!(*rtpp_set_list)->rset_first){
+			(*rtpp_set_list)->rset_first = rtpp_list;
 		}else{
-			rtpp_set_list->rset_last->rset_next = rtpp_list;
+			(*rtpp_set_list)->rset_last->rset_next = rtpp_list;
 		}
 
-		rtpp_set_list->rset_last = rtpp_list;
+		(*rtpp_set_list)->rset_last = rtpp_list;
 		rtpp_set_count++;
 	}
 
@@ -887,7 +887,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 
 	found = 0;
 
-	if(rtpp_set_list ==NULL)
+	if(*rtpp_set_list ==NULL)
 		goto end;
 
 	node = cmd_tree->node.kids;
@@ -907,7 +907,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if( strno2int( &node->value, &enable) <0)
 		goto error;
 
-	for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
 					rtpp_list = rtpp_list->rset_next){
 
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
@@ -997,7 +997,7 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* para
 	}
 
 	lock_start_write( nh_lock );
-	if(rtpp_set_list) {
+	if(*rtpp_set_list) {
 		free_rtpp_sets();
 	}
 	*rtpp_no = 0;
@@ -1051,12 +1051,12 @@ static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 		return 0;
 	}
 
-	if(rtpp_set_list ==NULL)
+	if(*rtpp_set_list ==NULL)
 		return root;
 
 	node = &root->node;
 
-	for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
 					rtpp_list = rtpp_list->rset_next){
 
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
@@ -1286,8 +1286,20 @@ mod_init(void)
 		return -1;
 	}
 
+	if (!(rtpp_set_list = (struct rtpp_set_head **)
+				shm_malloc(sizeof(struct rtpp_set_head *)))) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+	*rtpp_set_list = 0;
+
 	if(db_url.s == NULL)
 	{
+		if (rtpp_sets == 0) {
+			LM_ERR("no rtpproxy set specified\n");
+			return -1;
+		}
+
 		/* storing the list of rtp proxy sets in shared memory*/
 		for(i=0;i<rtpp_sets;i++){
 			if(nathelper_add_rtpproxy_set(rtpp_strings[i], -1) !=0){
@@ -1354,7 +1366,7 @@ mod_init(void)
 	*default_rtpp_set = NULL;
 
 	/* any rtpproxy configured? */
-	if(rtpp_set_list)
+	if(*rtpp_set_list)
 		*default_rtpp_set = select_rtpp_set(DEFAULT_RTPP_SET_ID);
 
 	/* configure rtpproxy timeout */
@@ -1484,8 +1496,9 @@ static int _add_proxies_from_database(void) {
 		LM_DBG("No proxies were found\n");
 		if(db_functions.free_result(db_connection, result) < 0){
 			LM_ERR("Error freeing result\n");
+			return -1;
 		}
-		return -1;
+		return 0;
 	}
 
 	for(rowCount=0; rowCount < RES_ROW_N(result); rowCount++) {
@@ -1524,7 +1537,7 @@ child_init(int rank)
 	if (rank<=0 && rank!=PROC_TIMER)
 		return 0;
 
-	if(rtpp_set_list==NULL )
+	if(*rtpp_set_list==NULL )
 		return 0;
 
 	mypid = getpid();
@@ -1541,8 +1554,10 @@ int connect_rtpproxies(void)
 	struct rtpp_node *pnode;
 
 
-	if(rtpp_set_list==NULL )
+	LM_DBG("[RTPProxy] set list %p\n", *rtpp_set_list);
+	if(!(*rtpp_set_list) )
 		return 0;
+	LM_DBG("[Re]connecting sockets (%d > %d)\n", *rtpp_no, rtpp_number);
 
 	if (*rtpp_no > rtpp_number) {
 		rtpp_socks = (int*)pkg_realloc(rtpp_socks, *rtpp_no * sizeof(int) );
@@ -1553,7 +1568,7 @@ int connect_rtpproxies(void)
 	}
 	rtpp_number = *rtpp_no;
 
-	for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != 0;
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != 0;
 		rtpp_list = rtpp_list->rset_next){
 
 		for (pnode=rtpp_list->rn_first; pnode!=0; pnode = pnode->rn_next){
@@ -1622,7 +1637,7 @@ rptest:
 int update_rtpp_proxies(void) {
 	int i;
 
-	LM_DBG("updating list from %d to %d\n", my_version, *list_version);
+	LM_DBG("updating list from %d to %d [%d]\n", my_version, *list_version, rtpp_number);
 	my_version = *list_version;
 	for (i = 0; i < rtpp_number; i++) {
 		shutdown(rtpp_socks[i], SHUT_RDWR);
@@ -1638,7 +1653,7 @@ void free_rtpp_sets(void)
 	struct rtpp_set * crt_list, * last_list;
 	struct rtpp_node * crt_rtpp, *last_rtpp;
 
-	for(crt_list = rtpp_set_list->rset_first; crt_list != NULL; ){
+	for(crt_list = (*rtpp_set_list)->rset_first; crt_list != NULL; ){
 
 		for(crt_rtpp = crt_list->rn_first; crt_rtpp != NULL;  ){
 
@@ -1655,8 +1670,8 @@ void free_rtpp_sets(void)
 		shm_free(last_list);
 		last_list = NULL;
 	}
-	rtpp_set_list->rset_first = NULL;
-	rtpp_set_list->rset_last = NULL;
+	(*rtpp_set_list)->rset_first = NULL;
+	(*rtpp_set_list)->rset_last = NULL;
 }
 
 static void mod_destroy(void)
@@ -1668,10 +1683,11 @@ static void mod_destroy(void)
 	if (default_rtpp_set)
 		shm_free(default_rtpp_set);
 
-	if(rtpp_set_list == NULL)
+	if(!rtpp_set_list || *rtpp_set_list == NULL)
 		return;
 
 	free_rtpp_sets();
+	shm_free(*rtpp_set_list);
 	shm_free(rtpp_set_list);
 
 	if(nh_lock)
@@ -2472,6 +2488,8 @@ error:
 	return 1;
 }
 
+
+
 char *
 send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 {
@@ -2587,12 +2605,12 @@ static struct rtpp_set * select_rtpp_set(int id_set ){
 	struct rtpp_set * rtpp_list;
 	/*is it a valid set_id?*/
 	
-	if(!rtpp_set_list || !rtpp_set_list->rset_first){
+	if(!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first){
 		LM_ERR("no rtp_proxy configured\n");
 		return 0;
 	}
 
-	for(rtpp_list=rtpp_set_list->rset_first; rtpp_list!=0 && 
+	for(rtpp_list=(*rtpp_set_list)->rset_first; rtpp_list!=0 && 
 		rtpp_list->id_set!=id_set; rtpp_list=rtpp_list->rset_next);
 	if(!rtpp_list){
 		LM_ERR(" script error-invalid id_set to be selected\n");

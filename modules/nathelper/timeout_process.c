@@ -411,12 +411,12 @@ int init_rtpp_notify_list(void)
 	struct rtpp_node * crt_rtpp;
 	struct rtpp_notify_node *rtpp_lst=NULL;
 
-	if (!rtpp_set_list->rset_first) {
-		LM_ERR("null rtpproxy set list\n");
-		return -1;
+	if (!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first) {
+		LM_DBG("null rtpproxy set list\n");
+		return 0;
 	}
 
-	for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 				crt_rtpp = crt_rtpp->rn_next) {
@@ -473,10 +473,14 @@ void update_rtpproxy_list(void)
 	struct rtpp_node * crt_rtpp;
 	struct rtpp_notify_node *rtpp_lst, *r_prev, *rl;
 
+	if (!rtpp_set_list || !(*rtpp_set_list)) {
+		LM_DBG("no rtpproxy set\n");
+		return;
+	}
 	LM_DBG("updating rtppproxy list\n");
 
 	/* add new rtppproxies */
-	for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 				crt_rtpp = crt_rtpp->rn_next) {
@@ -510,7 +514,7 @@ void update_rtpproxy_list(void)
 		/* don't update for unix sockets */
 		if (rtpp_lst->mode == 0)
 			goto loop;
-		for(rtpp_list = rtpp_set_list->rset_first; rtpp_list != NULL; 
+		for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
 				rtpp_list = rtpp_list->rset_next) {
 			for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next) {
