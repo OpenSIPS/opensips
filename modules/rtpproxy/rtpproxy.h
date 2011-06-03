@@ -109,7 +109,7 @@ typedef struct rtpp_set_param{
 extern str rtpp_notify_socket;
 extern struct dlg_binds dlg_api;
 extern int detect_rtp_idle;
-extern struct rtpp_set_head * rtpp_set_list;
+extern struct rtpp_set_head ** rtpp_set_list;
 extern struct rtpp_notify_head * rtpp_notify_h;
 int init_rtpp_notify_list();
 void timeout_listener_process(int rank);
