@@ -145,6 +145,28 @@ modparam("exec", "time_to_kill", 20)
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>async</varname> (integer)</title>
+		<para>
+		Turns on the asynchronous mode for 'exec_cmd' function. All commands
+		will be executed by a different process and the caller will continue
+		it's flow, without waiting for a response.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>async</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("exec", "async", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 	<section>
 	<title>Exported Functions</title>

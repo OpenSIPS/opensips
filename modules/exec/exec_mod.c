@@ -44,6 +44,7 @@
 
 
 unsigned int time_to_kill=0;
+unsigned int async=0;
 
 static int mod_init( void );
 
@@ -80,7 +81,13 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"time_to_kill", INT_PARAM, &time_to_kill},
 	{"setvars",      INT_PARAM, &setvars     },
+	{"async",		 INT_PARAM, &async       },
 	{0, 0, 0}
+};
+
+static proc_export_t procs[] = {
+	{"EXEC asynchronous execution",  0,  0, exec_async_proc, 1, 0},
+	{0,0,0,0,0,0}
 };
 
 
@@ -97,7 +104,7 @@ struct module_exports exports= {
 	0,              /* exported statistics */
 	0,              /* exported MI functions */
 	0,              /* exported pseudo-variables */
-	0,              /* extra processes */
+	procs,          /* extra processes */
 	mod_init,       /* initialization module */
 	0,              /* response function */
 	exec_shutdown,  /* destroy function */
@@ -114,6 +121,32 @@ static int mod_init( void )
 {
 	LM_INFO("exec - initializing\n");
 	if (time_to_kill) initialize_kill();
+
+	if (async) {
+		/* init exeternal structure if async enabled */
+		exec_async_list = shm_malloc(sizeof(exec_list_t));
+		if (!exec_async_list) {
+			LM_ERR("no more shm memory\n");
+			return -1;
+		}
+		memset(exec_async_list, 0, sizeof(exec_list_t));
+		exec_async_list->lock = lock_alloc();
+		if (!exec_async_list->lock) {
+			LM_ERR("cannot alloc asyncronous lock \n");
+			return -1;
+		}
+		if (!lock_init(exec_async_list->lock)) {
+			LM_ERR("failed to init lock\n");
+			return -1;
+		}
+	} else {
+#ifdef STATIC_EXEC
+		exec_exports.procs = 0;
+#else
+		exports.procs = 0;
+#endif
+	}
+
 	return 0;
 }
 
@@ -183,7 +216,10 @@ inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo)
 	
 	LM_DBG("executing [%s]\n", command.s);
 	
-	ret=exec_msg(msg, command.s);
+	if(async)
+		ret=exec_async(msg, command.s);
+	else
+		ret=exec_msg(msg, command.s);
 	if (setvars) {
 		unset_env(backup);
 	}

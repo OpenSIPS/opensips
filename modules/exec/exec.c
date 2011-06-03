@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <unistd.h>
 /* 
 #include <sys/resource.h>
 */
@@ -48,6 +49,11 @@
 #include "../../usr_avp.h"
 
 #include "exec.h"
+
+#define SLEEP_INTERVAL		300
+
+/* used by async process */
+exec_list_p exec_async_list;
 
 int exec_msg(struct sip_msg *msg, char *cmd )
 {
@@ -87,6 +93,106 @@ error01:
 		ret=-1;
 	}
 	return ret;
+}
+
+void exec_async_proc(int rank)
+{
+	int pid, status;
+	exec_cmd_t *cmd, *prev;
+	const char *argv[] = { NULL };
+
+	LM_DBG("started asyncronous process with rank %d\n", rank);
+
+	/* never stops listening */
+	for (;;) {
+		/* checks to see if there is anything in queue */
+		lock_get(exec_async_list->lock);
+		for (cmd = exec_async_list->first; cmd && cmd->pid; cmd = cmd->next);
+		lock_release(exec_async_list->lock);
+
+		if (cmd) {
+			if ((pid = fork()) < 0) {
+				LM_ERR("failed to fork\n");
+			} else if (pid) {
+				exec_async_list->active_childs++;
+				cmd->pid = pid;
+			} else {
+				LM_DBG("running command %s\n", cmd->cmd);
+				/* call command */
+				execv(cmd->cmd, (char * const *)argv);
+				LM_ERR("failed to run command\n");
+				exit(0);
+			}
+		}
+
+		/* wait for child processes if any */
+		if (exec_async_list->active_childs) {
+			pid = waitpid(-1, &status, WNOHANG);
+			if (pid > 0) {
+				/* search for ended child and delete it */
+				lock_get(exec_async_list->lock);
+				for (cmd = exec_async_list->first, prev = NULL;
+						cmd && cmd->pid != pid;
+						prev = cmd, cmd = cmd->next);
+				if (!cmd) {
+					LM_ERR("[BUG] child %d not present anymore\n", pid);
+				} else {
+					/* if not the first element */
+					if (prev) {
+						prev->next = cmd->next;
+						if (!prev->next)
+							exec_async_list->last = prev;
+					} else {
+						exec_async_list->first = cmd->next;
+						if (!cmd->next)
+							exec_async_list->last = NULL;
+					}
+					/* check for status */
+					if (!WIFEXITED(status) || WEXITSTATUS(status)) {
+						LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
+									cmd->cmd, status, errno, strerror(errno));
+					} else {
+						LM_DBG("cmd %s successfully ended\n", cmd->cmd);
+					}
+					shm_free(cmd);
+					exec_async_list->active_childs--;
+				}
+				lock_release(exec_async_list->lock);
+			}
+		}
+		/* if nothing to do - sleep */
+		if (!exec_async_list->first && !exec_async_list->active_childs)
+			usleep(SLEEP_INTERVAL);
+	}
+}
+
+int exec_async(struct sip_msg *msg, char *cmd )
+{
+	exec_cmd_t *elem;
+
+	/* alloc memory for command */
+	elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1);
+	if (!elem) {
+		LM_ERR("no more shm memory\n");
+		goto error;
+	}
+	memset(elem, 0, sizeof(exec_cmd_t));
+	elem->cmd = (char *)(elem + 1);
+	memcpy(elem->cmd, cmd, strlen(cmd));
+
+	/* add command in list at the end */
+	lock_get(exec_async_list->lock);
+	if (exec_async_list->last) {
+		exec_async_list->last->next = elem;
+	} else {
+		exec_async_list->first = exec_async_list->last = elem;
+	}
+	lock_release(exec_async_list->lock);
+
+	return 1;
+error:
+	LM_ERR("cmd %s failed to execute, errno=%d: %s\n", cmd, errno, strerror(errno));
+	return -1;
 }
 
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {

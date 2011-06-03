@@ -26,6 +26,26 @@
 #define _EXEC_H
 
 #include "../../pvar.h"
+#include "../../locking.h"
+
+typedef struct _exec_cmd {
+	char *cmd;
+	int pid;
+	struct _exec_cmd *next;
+} exec_cmd_t;
+
+typedef struct _exec_list {
+	int active_childs;
+	gen_lock_t *lock;
+	exec_cmd_t *first, *last;
+} exec_list_t, *exec_list_p;
+
+/* list head */
+extern exec_list_p exec_async_list;
+
+/* process that waits for asyncronous executions */
+void exec_async_proc(int rank);
+int exec_async(struct sip_msg *msg, char *cmd );
 
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len);
 int exec_msg(struct sip_msg *msg, char *cmd );
