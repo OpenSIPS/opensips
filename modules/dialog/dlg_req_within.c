@@ -390,6 +390,12 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	int i,res = 0;
 	int callee;
 
+	/* lookup_dlg has incremented the reference count !! */
+	if (dlg->state == DLG_STATE_UNCONFIRMED || dlg->state == DLG_STATE_EARLY) {
+		LM_DBG("cannot terminate a dialog in EARLY or UNCONFIRMED state\n");
+		return 0;
+	}
+
 	if ((build_extra_hdr(dlg, extra_hdrs, &str_hdr)) != 0){
 		LM_ERR("failed to create extra headers\n");
 		return -1;

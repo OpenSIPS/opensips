@@ -1702,12 +1702,6 @@ int terminate_dlg(unsigned int h_entry, unsigned int h_id)
 	if(!dlg)
 		return 0;
 	
-	/* lookup_dlg has incremented the reference count !! */
-	if (dlg->state == DLG_STATE_UNCONFIRMED || dlg->state == DLG_STATE_EARLY) {
-		unref_dlg(dlg, 1);
-		return 0;
-	}
-
 	if ( dlg_end_dlg( dlg, 0) ) {
 		LM_ERR("Failed to end dialog");
 		ret = -1;
