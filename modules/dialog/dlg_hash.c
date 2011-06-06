@@ -167,6 +167,11 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 		for( i=0 ; i<dlg->legs_no[DLG_LEGS_USED] ; i++) {
 			shm_free(dlg->legs[i].tag.s);
 			shm_free(dlg->legs[i].r_cseq.s);
+			if (dlg->legs[i].inv_cseq.s)
+				shm_free(dlg->legs[i].inv_cseq.s);
+			if (dlg->legs[i].prev_cseq.s)
+				shm_free(dlg->legs[i].prev_cseq.s);
+
 			if (dlg->legs[i].contact.s)
 				shm_free(dlg->legs[i].contact.s); /* + route_set */
 		}
@@ -327,6 +332,17 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		return -1;
 	}
 
+	if (dlg->legs_no[DLG_LEGS_USED] == 0) {
+		/* first leg = caller. also store inv cseq */
+		leg->inv_cseq.s = (char *)shm_malloc( cseq->len);
+		if (leg->inv_cseq.s == NULL) {
+			LM_ERR("no more shm mem\n");
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			return -1;
+		}
+	}
+
 	if (contact->len) {
 		/* contact */
 		leg->contact.s = shm_malloc(rr->len + contact->len);
@@ -366,9 +382,24 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 	leg->tag.len = tag->len;
 	memcpy( leg->tag.s, tag->s, tag->len);
 
-	/* cseq */
-	leg->r_cseq.len = cseq->len;
-	memcpy( leg->r_cseq.s, cseq->s, cseq->len);
+	if (dlg->legs_no[DLG_LEGS_USED] == 0) {
+		/* first leg = caller . store inv cseq */
+		leg->inv_cseq.len = cseq->len;
+		memcpy(leg->inv_cseq.s,cseq->s,cseq->len);
+
+		/* set cseq for caller to 0
+		* future requests to the caller leg will update this
+		* needed for proper validation of in-dialog requests 
+		*
+		* TM also increases this value by one, if dialog
+		* is terminated from the middle, so 0 is ok*/
+		leg->r_cseq.len = 1;
+		leg->r_cseq.s[0]='0';
+	} else {
+		/* cseq */
+		leg->r_cseq.len = cseq->len;
+		memcpy( leg->r_cseq.s, cseq->s, cseq->len);
+	}
 
 	/* socket */
 	leg->bind_addr = sock;
@@ -384,39 +415,50 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 	return 0;
 }
 
-
-
-int dlg_update_cseq(struct dlg_cell * dlg, unsigned int leg, str *cseq)
+/* update cseq filed in leg
+ * if inv = 1, update the inv_cseq field
+ * else, update the r_cseq */
+int dlg_update_cseq(struct dlg_cell * dlg, unsigned int leg, str *cseq,int inv)
 {
-	if ( dlg->legs[leg].r_cseq.s ) {
-		if (dlg->legs[leg].r_cseq.len < cseq->len) {
-			shm_free(dlg->legs[leg].r_cseq.s);
-			dlg->legs[leg].r_cseq.s = (char*)shm_malloc(cseq->len);
-			if (dlg->legs[leg].r_cseq.s==NULL) {
+	str* update_cseq;
+
+	if (inv == 1)
+		update_cseq = &dlg->legs[leg].inv_cseq;
+	else
+		update_cseq = &dlg->legs[leg].r_cseq;
+
+	if ( update_cseq->s ) {
+		if (update_cseq->len < cseq->len) {
+			update_cseq->s = (char*)shm_realloc(update_cseq->s,cseq->len);
+			if (update_cseq->s==NULL) {
 				LM_ERR("no more shm mem for realloc (%d)\n",cseq->len);
 				goto error;
 			}
 		}
 	} else {
-		dlg->legs[leg].r_cseq.s = (char*)shm_malloc(cseq->len);
-		if (dlg->legs[leg].r_cseq.s==NULL) {
+		update_cseq->s = (char*)shm_malloc(cseq->len);
+		if (update_cseq->s==NULL) {
 			LM_ERR("no more shm mem for malloc (%d)\n",cseq->len);
 			goto error;
 		}
 	}
 
-	memcpy( dlg->legs[leg].r_cseq.s, cseq->s, cseq->len );
-	dlg->legs[leg].r_cseq.len = cseq->len;
+	memcpy( update_cseq->s, cseq->s, cseq->len );
+	update_cseq->len = cseq->len;
 
-	LM_DBG("dlg %p[%d]: cseq is %.*s\n", dlg,leg,
-		dlg->legs[leg].r_cseq.len, dlg->legs[leg].r_cseq.s);
+	if (inv == 1)
+		LM_DBG("dlg %p[%d]: last invite cseq is %.*s\n", dlg,leg,
+			dlg->legs[leg].inv_cseq.len, dlg->legs[leg].inv_cseq.s);
+	else
+		LM_DBG("dlg %p[%d]: cseq is %.*s\n", dlg,leg,
+			dlg->legs[leg].r_cseq.len, dlg->legs[leg].r_cseq.s);
+
 	return 0;
+
 error:
-	LM_ERR("not more shm mem\n");
+	LM_ERR("no more shm mem\n");
 	return -1;
 }
-
-
 
 int dlg_update_routing(struct dlg_cell *dlg, unsigned int leg,
 													str *rr, str *contact )

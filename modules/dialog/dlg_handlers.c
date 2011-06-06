@@ -228,8 +228,8 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		get_routing_info(msg, is_req, &skip_recs, &contact, &rr_set);
 		dlg->from_rr_nb = skip_recs;
 	} else {
-		/* use the same as in caller part */
-		cseq = dlg->legs[DLG_CALLER_LEG].r_cseq;
+		/* use the same as in invite cseq in caller leg */
+		cseq = dlg->legs[DLG_CALLER_LEG].inv_cseq;
 		rr_set.len = contact.len = 0;
 		rr_set.s = contact.s = NULL;
 	}
@@ -736,19 +736,50 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 	return 0;
 }
 
-
+/* update inv_cseq field if update_field=1
+ * else update r_cseq */
 static inline int update_cseqs(struct dlg_cell *dlg, struct sip_msg *req,
-															unsigned int leg)
+									unsigned int leg, int update_field)
 {
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
-	!req->cseq->parsed) {
+					!req->cseq->parsed) {
 		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
 		return -1;
 	}
 
-	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number));
+	return dlg_update_cseq(dlg, leg, &((get_cseq(req))->number),update_field);
 }
 
+/* move r_cseq to prev_cseq in leg */
+static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
+{
+	str* r_cseq,*prev_cseq;
+
+	r_cseq = &dlg->legs[leg_no].r_cseq;
+	prev_cseq = &dlg->legs[leg_no].prev_cseq;
+
+	if ( prev_cseq->s ) {
+		if (prev_cseq->len < r_cseq->len) {
+			prev_cseq->s = (char*)shm_realloc(prev_cseq->s,r_cseq->len);
+			if (prev_cseq->s==NULL) {
+				LM_ERR("no more shm mem for realloc (%d)\n",r_cseq->len);
+				return -1;
+			}
+		}
+	} else {
+		prev_cseq->s = (char*)shm_malloc(r_cseq->len);
+		if (prev_cseq->s==NULL) {
+			LM_ERR("no more shm mem for malloc (%d)\n",r_cseq->len);
+			return -1;
+		}
+	}
+
+	memcpy( prev_cseq->s, r_cseq->s, r_cseq->len );
+	prev_cseq->len = r_cseq->len;
+
+	LM_DBG("prev_cseq = %.*s for leg %d\n",prev_cseq->len,prev_cseq->s,leg_no);
+	return 0;
+}
 
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
@@ -764,8 +795,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	int unref;
 	int event;
 	int timeout;
-	unsigned int dir,dst_leg;
-	int ret = 0;
+	unsigned int dir,dst_leg,src_leg;
+	int ret = 0,ok=1;
 
 	/* as this callback is triggered from loose_route, which can be 
 	   accidentaly called more than once from script, we need to be sure 
@@ -932,9 +963,25 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				LM_ERR("failed to update dialog lifetime\n");
 		}
 		if ( event!=DLG_EVENT_REQACK ) {
-			if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg)!=0) {
+			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
+						update_cseqs(dlg, req, dst_leg,0)!=0) {
 				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
-			} else {
+				ok = 0;
+			}
+			
+			if (req->first_line.u.request.method_value == METHOD_INVITE) {
+				if (dst_leg == DLG_CALLER_LEG)
+					src_leg = callee_idx(dlg);
+				else
+					src_leg = DLG_CALLER_LEG;
+
+				if (update_cseqs(dlg,req,src_leg,1) != 0) {
+					ok=0;
+					LM_ERR("failed to update inv cseq on leg %d\n",src_leg);
+				}
+			}
+
+			if (ok) {
 				dlg->flags |= DLG_FLAG_CHANGED;
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
@@ -958,7 +1005,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 	if ( event==DLG_EVENT_REQPRACK && new_state==DLG_STATE_EARLY) {
 		LM_DBG("PRACK successfully processed (dst_leg=%d)\n",dst_leg);
-		if (dst_leg==-1 || update_cseqs(dlg, req, dst_leg)!=0)
+		if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
+					 update_cseqs(dlg, req, dst_leg,0)!=0)
 			LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 	}
 
