@@ -555,6 +555,9 @@ int ospRequestRouting(
                 case OSPC_ERR_TRAN_ROUTE_NOT_FOUND:
                     result = -404;
                     break;
+                case OSPC_ERR_TRAN_CALLING_INVALID:
+                	result = -428;
+                	break;
                 case OSPC_ERR_TRAN_CALLED_FILTERING:
                     result = -484;
                     break;
