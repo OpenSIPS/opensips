@@ -308,8 +308,8 @@ void timeout_listener_process(int rank)
 				rtpp_lst->index = 0;
 				lock_release(rtpp_notify_h->lock);
 				nfds--;
-				shutdown(i, SHUT_RDWR);
-				close(i);
+				shutdown(pfds[i].fd, SHUT_RDWR);
+				close(pfds[i].fd);
 
 				if (nfds == i)
 					continue;
