@@ -1297,7 +1297,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 {
 	struct dlg_leg *leg;
 	unsigned int n,m;
-	int nr_routes,i;
+	int nr_routes,i,src_leg;
 	str *rr_uri,*route_uris;
 
 	if (last_dst_leg<0) {
@@ -1307,7 +1307,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	leg = & dlg->legs[ last_dst_leg ];
 
-	/* first check the cseq (if it's increasing) */
+	/* first check the cseq */
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
 	!req->cseq->parsed) {
 		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
@@ -1315,10 +1315,25 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	}
 
 	n = m = 0;
-	if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
-	str2int( &(leg->r_cseq), &m)!=0 || n<m ) {
-		LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
-		return -1;
+
+	if (req->first_line.u.request.method_value == METHOD_ACK) {
+		/* ACKs should have the same cseq as INVITEs */
+		if (last_dst_leg == DLG_CALLER_LEG)
+			src_leg = callee_idx(dlg);
+		else
+			src_leg = DLG_CALLER_LEG;
+
+		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
+		str2int( &(dlg->legs[src_leg].inv_cseq), &m)!=0 || n!=m ) {
+			LM_DBG("cseq test for ACK falied recv=%d, old=%d\n",n,m);
+			return -1;
+		}
+	} else {
+		if ( str2int( &((get_cseq(req))->number), &n)!=0 ||
+		str2int( &(leg->prev_cseq), &m)!=0 || n<=m ) {
+			LM_DBG("cseq test falied recv=%d, old=%d\n",n,m);
+			return -1;
+		}
 	}
 
 	LM_DBG("CSEQ validation passed\n");
