@@ -201,6 +201,7 @@ static inline int hdr_allocs_parse(struct hdr_field* hdr)
 		case HDR_CALL_INFO_T:
 		case HDR_WWW_AUTHENTICATE_T:
 		case HDR_PROXY_AUTHENTICATE_T:
+		case HDR_ALLOW_T:
 			return 1;
 		default:
 			return 0;
