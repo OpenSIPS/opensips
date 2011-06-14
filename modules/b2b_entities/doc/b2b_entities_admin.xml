@@ -214,7 +214,7 @@ modparam("b2b_entities", "b2b_key_prefix", "B2B1")
 		<title>Set <varname>db_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_logic", "db_mode", 1)
+modparam("b2b_entities", "db_mode", 1)
 ...
 	</programlisting>
 		</example>

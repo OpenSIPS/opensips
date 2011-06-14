@@ -8,7 +8,7 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright © 2009 Anca-Maria
+   Copyright � 2009 Anca-Maria
    Vamanu
    Revision History
    Revision $Revision: $ $Date: $
@@ -106,7 +106,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the b2b server entities.
    It is the 2 logarithmic value of the real size.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -118,7 +118,7 @@ modparam("b2b_entities", "server_hsize", 10)
    The size of the hash table that stores the b2b client entities.
    It is the 2 logarithmic value of the real size.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.2. Set client_hsize parameter
 ...
@@ -160,7 +160,7 @@ modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.
 
    The time interval at which to update the info in database.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.6. Set update_period parameter
 ...
@@ -176,7 +176,7 @@ modparam("b2b_entities", "update_period", 60)
    callid or totag to see if it has the format it uses to
    determine if the request was sent by it.
 
-   Default value is “B2B”.
+   Default value is "B2B".
 
    Example 1.7. Set b2b_key_prefix parameter
 ...
@@ -193,11 +193,11 @@ modparam("b2b_entities", "b2b_key_prefix", "B2B1")
      * WRITE BACK (update in db from time to time) - set this
        parameter to 2
 
-   Default value is “2” (WRITE BACK).
+   Default value is "2" (WRITE BACK).
 
    Example 1.8. Set db_mode parameter
 ...
-modparam("b2b_logic", "db_mode", 1)
+modparam("b2b_entities", "db_mode", 1)
 ...
 
 1.4. Exported Functions
