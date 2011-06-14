@@ -209,6 +209,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	int backup_route_type;
 	unsigned int hi;
 	struct socket_info* send_sock;
+	struct lump* prev_add_rm, *prev_body_lumps;
 
 	ret=-1;
 	
@@ -320,6 +321,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			if (req->dst_uri.s)
 				{ pkg_free(req->dst_uri.s); req->dst_uri.s=0; req->dst_uri.len=0; }
 
+			prev_add_rm = req->add_rm;
+			prev_body_lumps = req->body_lumps;
+
 			if (req->add_rm || req->body_lumps) {
 				LM_DBG("re-building the buffer (sip_msg changed) - lumps are"
 					"%p %p\n",req->add_rm, req->body_lumps);
@@ -331,6 +335,17 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					LM_ERR("no more shm mem\n"); 
 					/* keep original buffer */
 				} else {
+					/* update shortcuts */
+					/* if we have only body lumps */
+					if(!prev_add_rm && prev_body_lumps)
+					{
+						new_cell->from.s = new_cell->from.s - buf + buf1;
+						new_cell->to.s = new_cell->to.s - buf + buf1;
+						new_cell->callid.s = new_cell->callid.s - buf + buf1;
+						new_cell->cseq_n.s = new_cell->cseq_n.s - buf + buf1;
+						new_cell->uac[0].uri.s = new_cell->uac[0].uri.s - buf + buf1;
+					}
+
 					shm_free(buf);
 					buf = buf1;
 					buf_len = buf_len1;

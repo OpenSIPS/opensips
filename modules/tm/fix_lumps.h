@@ -82,6 +82,7 @@ inline static void free_via_clen_lump( struct lump **list )
 			}
 			if (prev_lump) prev_lump->next = lump->next;
 			else *list = lump->next;
+			LM_DBG("Deleted lump [%p]\n", lump);
 			if (!(lump->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
 				free_lump(lump);
 			if (!(lump->flags&LUMPFLAG_SHMEM))
