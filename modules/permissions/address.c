@@ -131,13 +131,14 @@ int reload_address_table(void)
 		new_subnet_table = subnet_table_1;
 	}
 
+	row = RES_ROWS(res);
 	LM_DBG("number of rows in address table: %d\n", RES_ROW_N(res));
 
 	if (RES_COL_N(res) != 8) {
 		LM_ERR("too many columns\n");
 		goto error;
 	}
-	
+
 	for (i = 0; i < RES_ROW_N(res); i++) {
 
 		val = ROW_VALUES(row + i);
