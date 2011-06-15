@@ -135,7 +135,7 @@ int reload_address_table(void)
 
 	LM_DBG("number of rows in address table: %d\n", RES_ROW_N(res));
 
-	if (ROW_N(row) != 8) {
+	if (RES_COL_N(res) != 8) {
 		LM_ERR("too many columns\n");
 		goto error;
 	}
