@@ -210,7 +210,6 @@ struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
 Bool have_dlg_api = False;
 
-static int dialog_flag = -1;
 static unsigned dialog_default_timeout = 12*3600;  // 12 hours
 
 stat_var *keepalive_endpoints = 0;
@@ -1468,7 +1467,11 @@ NAT_Keepalive(struct sip_msg *msg)
             return -1;
         }
         msg->msg_flags |= FL_DO_KEEPALIVE;
-        setflag(msg, dialog_flag); // have the dialog module trace this dialog
+		if ( dlg_api.create_dlg(msg) < 0) {
+			LM_ERR("error creating new dialog\n");
+			return -1;
+		}
+
         return 1;
 
     default:
@@ -1801,14 +1804,6 @@ mod_init(void)
     if (load_dlg_api(&dlg_api)==0) {
         have_dlg_api = True;
 
-        // load dlg_flag and default_timeout parameters from the dialog module
-        param = find_param_export("dialog", "dlg_flag", INT_PARAM);
-        if (!param) {
-            LM_ERR("cannot find dlg_flag parameter in the dialog module\n");
-            return -1;
-        }
-        dialog_flag = *param;
-
         param = find_param_export("dialog", "default_timeout", INT_PARAM);
         if (!param) {
             LM_ERR("cannot find default_timeout parameter in the dialog module\n");
@@ -1917,7 +1912,10 @@ preprocess_request(struct sip_msg *msg, void *_param)
     }
     totag = get_to(msg)->tag_value;
     if (totag.s==0 || totag.len==0) {
-        setflag(msg, dialog_flag);
+		if ( dlg_api.create_dlg(msg) < 0) {
+			LM_ERR("error creating new dialog\n");
+			return -1;
+		}
     }
 
     return 1;
