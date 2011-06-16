@@ -140,7 +140,6 @@ static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), {0}, 0};
 
 
 struct dlg_binds dlg_api;
-static int dialog_flag = -1;
 
 AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
 
@@ -1027,7 +1026,10 @@ CallControl(struct sip_msg *msg, char *str1, char *str2)
     if (result == 1) {
         // A call with a time limit that will be traced by callcontrol
         msg->msg_flags |= FL_USE_CALL_CONTROL;
-        setflag(msg, dialog_flag); // have the dialog module trace this dialog
+		if ( dlg_api.create_dlg(msg) < 0) {
+			LM_ERR("error creating new dialog\n");
+			return -5;
+		}
     }
 
     return result;
@@ -1041,7 +1043,6 @@ static int
 mod_init(void)
 {
     pv_spec_t avp_spec;
-    int *param;
 
     // initialize the canonical_uri_avp structure
     if (canonical_uri_avp.spec.s==NULL || *(canonical_uri_avp.spec.s)==0) {
@@ -1078,14 +1079,6 @@ mod_init(void)
         LM_CRIT("cannot load the dialog module API\n");
         return -1;
     }
-
-    // load dlg_flag and default_timeout parameters from the dialog module
-    param = find_param_export("dialog", "dlg_flag", INT_PARAM);
-    if (!param) {
-        LM_CRIT("cannot find dlg_flag parameter in the dialog module\n");
-        return -1;
-    }
-    dialog_flag = *param;
 
     // register dialog creation callback
     if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
