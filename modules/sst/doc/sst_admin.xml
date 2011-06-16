@@ -343,7 +343,6 @@ route {
 
 ...
 modparam("dialog", "timeout_avp", "$avp(i:4242)")
-modparam("dialog", "dlg_flag", 5)
 ...
 modparam("sst", "sst_flag", 6)
 modparam("sst", "timeout_avp", "$avp(i:4242)")
@@ -357,8 +356,8 @@ route {
 		exit;
 	}
 	# track the session timers via the dialog module
-	setflag(5);
 	setflag(6);
+	create_dialog();
   }
 }
 
