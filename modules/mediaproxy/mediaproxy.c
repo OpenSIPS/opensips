@@ -185,7 +185,6 @@ static MediaproxySocket mediaproxy_socket = {
 
 struct dlg_binds dlg_api;
 Bool have_dlg_api = False;
-static int dialog_flag = -1;
 
 // The AVP where the caller signaling IP is stored (if defined)
 static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), {0}, 0};
@@ -1891,8 +1890,13 @@ EngageMediaProxy(struct sip_msg *msg)
         LM_ERR("engage_media_proxy requires the dialog module to be loaded and configured\n");
         return -1;
     }
+
     msg->msg_flags |= FL_USE_MEDIA_PROXY;
-    setflag(msg, dialog_flag); // have the dialog module trace this dialog
+	if ( dlg_api.create_dlg(msg) < 0) {
+		LM_ERR("error creating new dialog\n");
+		return -1;
+	}
+
     return 1;
 }
 
@@ -1936,7 +1940,6 @@ static int
 mod_init(void)
 {
     pv_spec_t avp_spec;
-    int *param;
 
     // initialize the signaling_ip_avp structure
     if (signaling_ip_avp.spec.s==NULL || *(signaling_ip_avp.spec.s)==0) {
@@ -1993,14 +1996,6 @@ mod_init(void)
     // bind to the dialog API
     if (load_dlg_api(&dlg_api)==0) {
         have_dlg_api = True;
-
-        // load dlg_flag and default_timeout parameters from the dialog module
-        param = find_param_export("dialog", "dlg_flag", INT_PARAM);
-        if (!param) {
-            LM_CRIT("cannot find dlg_flag parameter in the dialog module\n");
-            return -1;
-        }
-        dialog_flag = *param;
 
         // register dialog creation callback
         if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
