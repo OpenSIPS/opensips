@@ -565,7 +565,8 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		}
 	}
 	/* clean up all entities in b2b_entities from db */
-	b2b_api.entities_db_delete(*tuple->key);
+	if(!not_del_b2be)
+		b2b_api.entities_db_delete(*tuple->key);
 
 //	if(tuple->bridge_entities[1] && tuple->bridge_entities[1]->key.s != NULL)
 //		shm_free(tuple->bridge_entities[1]->key.s);
