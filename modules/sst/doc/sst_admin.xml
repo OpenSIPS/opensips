@@ -278,10 +278,10 @@ modparam("sst", "reject_to_small", 0)
 		need to tell the sst module which flag value you are
 		assigning to sst.</para>
 
-		<para>In most cases when ever you set the dialog flag
-		you will want to set the sst flag. If the dialog flag
-		is not set and the sst flag is set, it will not have
-		any effect.</para>
+		<para>In most cases when ever you create a new dialog
+		via create_dialog() function,you will want to set the sst flag. 
+		If create_dialog() is not called and the sst flag is set, 
+		it will not have any effect.</para>
 
 		<para>This parameter must be set of the module will
 		not load.</para>
@@ -295,14 +295,13 @@ modparam("sst", "reject_to_small", 0)
 		<title>Set <varname>sst_flag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "dlg_flag", 5)
 modparam("sst", "sst_flag", 6)
 ...
 route {
   ...
   if (method=="INVITE") {
-    setflag(5); # set the dialog flag
     setflag(6); # Set the sst flag
+    create_dialog(); # and then create the dialog
   }
   ...
 }
