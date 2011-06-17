@@ -46,6 +46,9 @@
 str ack = str_init(ACK);
 str bye = str_init(BYE);
 
+/* used to make WRITE_THROUGH db mode more efficient */
+b2b_dlg_t* current_dlg= NULL;
+
 #define UPDATE_DBFLAG(dlg) do{ \
 	if(b2be_db_mode == WRITE_BACK && dlg->db_flag==NO_UPDATEDB_FLAG) \
 			dlg->db_flag = UPDATEDB_FLAG; \
@@ -487,7 +490,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str host;
 	int port;
 	int etype= B2B_NONE;
-	
+	int dlg_state = 0;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -767,6 +770,11 @@ logic_notify:
 			}
 			else
 			{
+				if(method_value == METHOD_INVITE || method_value == METHOD_BYE)
+				{
+					tmb.t_setkr(REQ_FWDED);
+				}
+
 				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
 				{
 					if(dlg->uas_tran->uas.request) /* there is another transaction for which no reply was sent out */
@@ -825,13 +833,11 @@ logic_notify:
 			LM_ERR("Failed to update in database\n");
 	}
 */
+	current_dlg = dlg;
+	dlg_state = dlg->state;
 	lock_release(&table[hash_index].lock);
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0);
-	if(method_value == METHOD_INVITE || method_value == METHOD_BYE)
-	{
-		tmb.t_setkr(REQ_FWDED);
-	}
 
 	if(param.s)
 		pkg_free(param.s);
@@ -840,7 +846,8 @@ done:
 	if(req_routeid > 0)
 		run_top_route(rlist[req_routeid].a, msg);
 
-	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg->state>B2B_CONFIRMED)
+	current_dlg = 0;
+	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
 	{
 		/* search the dialog */
 		lock_get(&table[hash_index].lock);
@@ -1296,6 +1303,12 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 
 	dlg->last_reply_code = code;
 	UPDATE_DBFLAG(dlg);
+
+	if(b2be_db_mode==WRITE_THROUGH && current_dlg!=dlg && dlg->state>B2B_CONFIRMED) {
+		if(b2be_db_update(dlg, et) < 0)
+			LM_ERR("Failed to update in database\n");
+	}
+
 	lock_release(&table[hash_index].lock);
 	
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact.len
@@ -1711,6 +1724,12 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		goto error;
 	}
 	set_dlg_state(dlg, method_value);
+
+	if(b2be_db_mode==WRITE_THROUGH && current_dlg!=dlg && dlg->state>B2B_CONFIRMED) {
+		if(b2be_db_update(dlg, et) < 0)
+			LM_ERR("Failed to update in database\n");
+	}
+
 	lock_release(&table[hash_index].lock);
 
 	return 0;
@@ -1911,6 +1930,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	int dlg_based_search = 0;
 	struct hdr_field callid_hdr, from_hdr, to_hdr;
 	struct to_body to_hdr_parsed, from_hdr_parsed;
+	int dlg_state = 0;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -2125,6 +2145,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 		if(method_id != METHOD_INVITE)
 		{
+			current_dlg = dlg;
+			dlg_state = dlg->state;
 			lock_release(&htable[hash_index].lock);
 			if(msg == FAKED_REPLY)
 				goto dummy_reply;
@@ -2135,6 +2157,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 			/* if reinvite */
 			LM_DBG("Non final negative reply for reINVITE\n");
+			current_dlg = dlg;
+			dlg_state = dlg->state;
 			lock_release(&htable[hash_index].lock);
 			if(msg == FAKED_REPLY)
 				goto dummy_reply;
@@ -2146,6 +2170,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			dlg->state = B2B_TERMINATED;
 		}
 
+		current_dlg = dlg;
+		dlg_state = dlg->state;
 		UPDATE_DBFLAG(dlg);
 		lock_release(&htable[hash_index].lock);
 		if(msg == FAKED_REPLY)
@@ -2389,8 +2415,9 @@ dummy_reply:
 						b2be_db_insert(dlg, etype);
 					}
 
+					current_dlg = dlg;
+					dlg_state = dlg->state;
 					lock_release(&htable[hash_index].lock);
-
 
 					if(add_infof && add_infof(param.s?&param:0, b2b_key,
 							etype,&dlginfo)< 0)
@@ -2418,6 +2445,11 @@ dummy_reply:
 		}
 	}
 done:
+	if(dlg)
+	{
+		current_dlg = dlg;
+		dlg_state = dlg->state;
+	}
 	lock_release(&htable[hash_index].lock);
 	/* I have to inform the logic that a reply was received */
 done1:
@@ -2435,7 +2467,8 @@ done1:
 		run_top_route(rlist[reply_routeid].a, msg);
 	}
 
-	if(b2be_db_mode == WRITE_THROUGH && dlg->state>B2B_CONFIRMED)
+	current_dlg = 0;
+	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
 		lock_get(&htable[hash_index].lock);
 		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)

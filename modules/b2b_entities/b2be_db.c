@@ -141,9 +141,9 @@ int b2be_db_insert(b2b_dlg_t* dlg, int type)
 	}
 
 	qvals[0].val.int_val = type;
-	qvals[1].val.str_val     = dlg->tag[0];
-	qvals[2].val.str_val     = dlg->tag[1];
-	qvals[3].val.str_val     = dlg->callid;
+	qvals[1].val.str_val = dlg->tag[0];
+	qvals[2].val.str_val = dlg->tag[1];
+	qvals[3].val.str_val = dlg->callid;
 	qvals[4].val.str_val = dlg->ruri;
 	qvals[5].val.str_val = dlg->from_uri;
 	qvals[6].val.str_val = dlg->from_dname;

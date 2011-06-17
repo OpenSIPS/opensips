@@ -291,10 +291,10 @@ static int child_init(int rank)
 	if (db_url.s)
 	{
 		if (b2be_dbf.init==0)
-	    {
-	        LM_CRIT("child_init: database not bound\n");
-	        return -1;
-	    }
+		{
+			LM_CRIT("child_init: database not bound\n");
+			return -1;
+		}
 
 		b2be_db = b2be_dbf.init(&db_url);
 		if(!b2be_db)
