@@ -255,6 +255,8 @@ static inline void detach_node_unsafe(struct dlg_ping_list *it)
 	}
 	else
 		ping_timer->first = 0;
+
+	it->next = it->prev = 0;
 }
 
 /* returns:
@@ -362,15 +364,17 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
  * and links them back into a new list */
 struct dlg_ping_list* get_timeout_dlgs(void)
 {
-	struct dlg_ping_list *ret = NULL,*it=NULL;
+	struct dlg_ping_list *ret = NULL,*it=NULL,*next=NULL;
 	struct dlg_cell *current;
 	int detached;
 
 	lock_get(ping_timer->lock);
 
-	for (it=ping_timer->first;it;it=it->next) {
+	for (it=ping_timer->first;it;it=next) {
 		current = it->dlg;
+		next = it->next;
 		detached = 0;
+
 		if (current->flags & DLG_FLAG_PING_CALLER) {
 			dlg_lock_dlg(current);
 			if (current->legs[DLG_CALLER_LEG].reply_received == 0) {
@@ -382,7 +386,10 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 				if (ret == NULL)
 					ret = it;
 				else
-					ret->next = it;
+				{
+					it->next = ret;
+					ret = it;
+				}
 			}
 			else
 				dlg_unlock_dlg(current);
@@ -398,7 +405,10 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 					if (ret == NULL)
 						ret = it;
 					else
-						ret->next = it;
+					{
+						it->next = ret;
+						ret = it;
+					}
 				}
 				else
 					dlg_unlock_dlg(current);
@@ -543,18 +553,27 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 	it = ping_timer->first;
 	while (it) {
 		dlg = it->dlg;
-		if (dlg->flags & DLG_FLAG_PING_CALLER) {
-			ref_dlg(dlg,1);
-			send_leg_msg(dlg,&options_str,callee_idx(dlg),DLG_CALLER_LEG,0,0,
-				reply_from_caller,dlg,unref_dlg_cb);
-		}
 
-		if (dlg->flags & DLG_FLAG_PING_CALLEE) {
-			ref_dlg(dlg,1);
-			send_leg_msg(dlg,&options_str,DLG_CALLER_LEG,callee_idx(dlg),0,0,
-				reply_from_callee,dlg,unref_dlg_cb);
-		}
+		/* do not ping ended dialogs */
+		if (dlg->state != DLG_STATE_DELETED) {
+			if (dlg->flags & DLG_FLAG_PING_CALLER) {
+				ref_dlg(dlg,1);
+				if (send_leg_msg(dlg,&options_str,callee_idx(dlg),
+				DLG_CALLER_LEG,0,0,reply_from_caller,dlg,unref_dlg_cb) < 0) {
+					LM_ERR("failed to ping caller\n");
+					unref_dlg(dlg,1);
+				}
+			}
 
+			if (dlg->flags & DLG_FLAG_PING_CALLEE) {
+				ref_dlg(dlg,1);
+				if (send_leg_msg(dlg,&options_str,DLG_CALLER_LEG,
+				callee_idx(dlg),0,0,reply_from_callee,dlg,unref_dlg_cb) < 0) {
+					LM_ERR("failed to ping callee\n");
+					unref_dlg(dlg,1);
+				}
+			}
+		}
 		it = it->next;
 	}
 }
