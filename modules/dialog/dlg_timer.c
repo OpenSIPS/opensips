@@ -434,7 +434,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
-	if (rpl == FAKED_REPLY) {
+	if (rpl == FAKED_REPLY || statuscode == 408) {
 		/* timeout occured, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
@@ -442,10 +442,6 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
 		return;
 	}
-
-	if (statuscode >= 300)
-		LM_WARN("Response code received > 300 . Code = %d "
-				"Callid = [%.*s]\n",statuscode,dlg->callid.len,dlg->callid.s);
 
 	if (statuscode == 481)
 	{
@@ -487,7 +483,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
-	if (rpl == FAKED_REPLY) {
+	if (rpl == FAKED_REPLY || statuscode == 408) {
 		/* timeout occured, nothing else to do now
 		 * next time timer fires, it will detect ping reply was not received
 		 */
@@ -496,10 +492,6 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 		return;
 	}
 
-	if (statuscode >= 300)
-		LM_WARN("Response code received > 300 . Code = %d "
-				"Callid = [%.*s]\n",statuscode,dlg->callid.len,dlg->callid.s);
-	
 	if (statuscode == 481)
 	{
 		/* call/transaction does not exist 
