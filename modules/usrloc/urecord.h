@@ -40,6 +40,7 @@
 #include "hslot.h"
 #include "../../str.h"
 #include "../../qvalue.h"
+#include "../../db/db_insertq.h"
 #include "ucontact.h"
 
 
@@ -95,7 +96,7 @@ void mem_delete_ucontact(urecord_t* _r, ucontact_t* _c);
 /*
  * Timer handler
  */
-int timer_urecord(urecord_t* _r);
+int timer_urecord(urecord_t* _r,query_list_t **ins_list);
 
 
 /*

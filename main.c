@@ -144,6 +144,7 @@
 
 #include "version.h"
 #include "mi/mi_core.h"
+#include "db/db_insertq.h"
 
 static char id[]="@(#) $Id$";
 static char* version=OPENSIPS_FULL_VERSION;
@@ -339,6 +340,7 @@ void cleanup(int show_status)
 		shm_unlock(); /* hack: force-unlock the shared memory lock in case
 					 some process crashed and let it locked; this will 
 					 allow an almost gracious shutdown */
+	handle_ql_shutdown();
 	destroy_modules();
 #ifdef USE_TCP
 	destroy_tcp();
@@ -1403,6 +1405,18 @@ try_again:
 		LM_ERR("used pv context that was not defined\n");
 		goto error;
 	}
+
+	/* init query list now in shm
+	 * so all processes that will be forked from now on
+	 * will have access to it 
+	 *
+	 * if it fails, give it a try and carry on */
+	if (init_ql_support() != 0) {
+		LM_ERR("failed to initialise buffering query list\n");
+		query_buffer_size = 0;
+		*query_list = NULL;
+	}
+
 	/* init multi processes support */
 	if (init_multi_proc_support()!=0) {
 		LM_ERR("failed to init multi-proc support\n");
@@ -1422,7 +1436,6 @@ try_again:
 		LM_ERR("failed to fix configuration with err code %d\n", r);
 		goto error;
 	};
-
 
 	ret=main_loop();
 

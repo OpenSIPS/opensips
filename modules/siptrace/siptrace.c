@@ -36,6 +36,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
 #include "../../db/db.h"
+#include "../../db/db_insertq.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_from.h"
 #include "../../pvar.h"
@@ -531,6 +532,7 @@ static int sip_trace(struct sip_msg *msg)
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+6];
 	int_str         avp_value;
 	struct usr_avp *avp;
+	static query_list_t *ins_list = NULL;
 
 	if(msg==NULL)
 	{
@@ -649,7 +651,9 @@ static int sip_trace(struct sip_msg *msg)
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 1...\n");
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -667,7 +671,9 @@ static int sip_trace(struct sip_msg *msg)
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
-	LM_DBG("storing info...\n");
+	LM_DBG("storing info 2...\n");
+	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		CON_RESET_INSLIST(db_con);
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
@@ -681,8 +687,10 @@ static int sip_trace(struct sip_msg *msg)
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 3...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -804,6 +812,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	struct usr_avp *avp;
 	struct ip_addr to_ip;
 	int len;
+	static query_list_t *ins_list = NULL;
 
 	if( trace_is_off() )
 	{
@@ -940,8 +949,10 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 4...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -958,8 +969,10 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
-	LM_DBG("storing info...\n");
+	LM_DBG("storing info 5...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -972,8 +985,10 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 6...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1003,6 +1018,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	int_str        avp_value;
 	struct usr_avp *avp;
 	char statusbuf[8];
+	static query_list_t *ins_list = NULL;
 
 	if(t==NULL || t->uas.request==0 || ps==NULL)
 	{
@@ -1120,8 +1136,10 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 7...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1138,8 +1156,10 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
-	LM_DBG("storing info...\n");
+	LM_DBG("storing info 8...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -1152,8 +1172,10 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("storing info ...\n");
+		LM_DBG("storing info 9...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1187,6 +1209,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	char statusbuf[8];
 	str *sbuf;
 	struct dest_info *dst;
+	static query_list_t *ins_list = NULL;
 
 	if (t==NULL || t->uas.request==0 || ps==NULL)
 	{
@@ -1336,8 +1359,10 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 10...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1354,8 +1379,10 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
-	LM_DBG("storing info...\n");
+	LM_DBG("storing info 11...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -1368,8 +1395,10 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("### - storing info (%d) ...\n", faked);
+		LM_DBG("### - storing info 12 (%d) ...\n", faked);
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1408,6 +1437,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	struct ip_addr to_ip;
 	int len;
 	char statusbuf[5];
+	static query_list_t *ins_list = NULL;
 
 	if(req==NULL || sl_param==NULL)
 	{
@@ -1537,8 +1567,10 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		db_vals[9].val.str_val.s   = "";
 		db_vals[9].val.str_val.len = 0;
 	
-		LM_DBG("storing info...\n");
+		LM_DBG("storing info 13...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");
@@ -1555,8 +1587,10 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
-	LM_DBG("storing info...\n");
+	LM_DBG("storing info 14...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
 		LM_ERR("error storing trace\n");
@@ -1569,8 +1603,10 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("### - storing info (%d) ...\n", faked);
+		LM_DBG("### - storing info 15 (%d) ...\n", faked);
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
+		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
 			LM_ERR("error storing trace\n");

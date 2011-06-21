@@ -265,6 +265,8 @@ MEMDUMP		"memdump"|"mem_dump"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
 EXECDNSTHRESHOLD		"execdnsthreshold"|"exec_dns_threshold"
 TCPTHRESHOLD			"tcpthreshold"|"tcp_threshold"
+QUERYBUFFERSIZE			query_buffer_size
+QUERYFLUSHTIME			query_flush_time
 SIP_WARNING sip_warning
 SERVER_SIGNATURE server_signature
 SERVER_HEADER server_header
@@ -518,6 +520,8 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
 <INITIAL>{EXECDNSTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECDNSTHRESHOLD; }
 <INITIAL>{TCPTHRESHOLD}	{ count(); yylval.strval=yytext; return TCPTHRESHOLD; }
+<INITIAL>{QUERYBUFFERSIZE}	{ count(); yylval.strval=yytext; return QUERYBUFFERSIZE; }
+<INITIAL>{QUERYFLUSHTIME}	{ count(); yylval.strval=yytext; return QUERYFLUSHTIME; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{USER}		{ count(); yylval.strval=yytext; return USER; }
 <INITIAL>{GROUP}	{ count(); yylval.strval=yytext; return GROUP; }

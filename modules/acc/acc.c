@@ -43,6 +43,7 @@
 #include "../../mem/mem.h"
 #include "../../usr_avp.h"
 #include "../../db/db.h"
+#include "../../db/db_insertq.h"
 #include "../../parser/hf.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
@@ -488,6 +489,7 @@ void acc_db_close(void)
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 {
 	static db_ps_t my_ps = NULL;
+	static query_list_t *ins_list = NULL;
 	int m;
 	int n;
 	int i;
@@ -511,6 +513,8 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 
 	/* multi-leg columns */
 	if ( !leg_info ) {
+		if (con_set_inslist(db_handle,&ins_list,db_keys,m) < 0 )
+			CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
 			LM_ERR("failed to insert into database\n");
 			return -1;
@@ -520,6 +524,8 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 		do {
 			for ( i = m; i < m + n; i++)
 				VAL_STR(db_vals+i)=val_arr[i];
+			if (con_set_inslist(db_handle,&ins_list,db_keys,m+n) < 0 )
+				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n) < 0) {
 				LM_ERR("failed to insert into database\n");
 				return -1;
@@ -538,6 +544,7 @@ int acc_db_cdrs_request(struct dlg_cell *dlg)
 	time_t created, start_time;
 	str core_s, leg_s, extra_s;
 	short nr_legs, leg_values, nr;
+	static query_list_t *ins_list = NULL;
 
 	core_s.s = leg_s.s = extra_s.s = NULL;
 	core_s.len = leg_s.len = extra_s.len = 0;
@@ -565,6 +572,8 @@ int acc_db_cdrs_request(struct dlg_cell *dlg)
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if (!leg_info) {
+		if (con_set_inslist(db_handle,&ins_list,db_keys,total) < 0 )
+			CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, total) < 0) {
 			LM_ERR("failed to insert into database\n");
 			goto end;
@@ -576,6 +585,8 @@ int acc_db_cdrs_request(struct dlg_cell *dlg)
 			complete_dlg_values(&leg_s,val_arr+nr,leg_values);
 			for (j = 0; j<leg_values; j++)
 				VAL_STR(db_vals+nr+j+1) = val_arr[nr+j];
+			if (con_set_inslist(db_handle,&ins_list,db_keys,total) < 0 )
+				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle,db_keys,db_vals,total) < 0) {
 				LM_ERR("failed inserting into database\n");
 				goto end;

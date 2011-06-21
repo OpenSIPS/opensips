@@ -101,6 +101,7 @@
 #include "pvar.h"
 #include "blacklists.h"
 #include "xlog.h"
+#include "db/db_insertq.h"
 
 
 #include "config.h"
@@ -309,6 +310,8 @@ extern int line;
 %token EXECMSGTHRESHOLD
 %token EXECDNSTHRESHOLD
 %token TCPTHRESHOLD
+%token QUERYBUFFERSIZE
+%token QUERYFLUSHTIME
 %token SIP_WARNING
 %token SOCK_MODE
 %token SOCK_USER
@@ -634,6 +637,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| EXECDNSTHRESHOLD EQUAL error { yyerror("int value expected"); }
 		| TCPTHRESHOLD EQUAL NUMBER { tcpthreshold=$3; }
 		| TCPTHRESHOLD EQUAL error { yyerror("int value expected"); }
+		| QUERYBUFFERSIZE EQUAL NUMBER { query_buffer_size=$3; }
+		| QUERYBUFFERSIZE EQUAL error { yyerror("int value expected"); }
+		| QUERYFLUSHTIME EQUAL NUMBER { query_flush_time=$3; }
+		| QUERYFLUSHTIME EQUAL error { yyerror("int value expected"); }
 		| SIP_WARNING EQUAL NUMBER { sip_warning=$3; }
 		| SIP_WARNING EQUAL error { yyerror("boolean value expected"); }
 		| USER EQUAL STRING     { user=$3; }

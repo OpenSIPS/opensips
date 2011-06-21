@@ -41,6 +41,7 @@
 #include "../../socket_info.h"
 #include "../../dprint.h"
 #include "../../db/db.h"
+#include "../../db/db_insertq.h"
 #include "ul_mod.h"
 #include "ul_callback.h"
 #include "urecord.h"
@@ -374,7 +375,7 @@ int st_flush_ucontact(ucontact_t* _c)
 /*! \brief
  * Insert contact into the database
  */
-int db_insert_ucontact(ucontact_t* _c)
+int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list)
 {
 	static db_ps_t my_ps = NULL;
 	char* dom;
@@ -502,6 +503,11 @@ int db_insert_ucontact(ucontact_t* _c)
 
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+	if (ins_list) {
+		if (con_set_inslist(ul_dbh,ins_list,keys,
+					(use_domain) ? (15) : (14)) < 0 )
+			CON_RESET_INSLIST(ul_dbh);
+	}
 
 	if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
 		LM_ERR("inserting contact in db failed\n");

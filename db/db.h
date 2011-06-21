@@ -51,7 +51,6 @@
 #include "db_ps.h"
 #include "../globals.h"
 
-
 /**
  * \brief Specify table name that will be used for subsequent operations.
  * 

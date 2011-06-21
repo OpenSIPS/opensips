@@ -72,10 +72,13 @@
 #include "../../db/db.h"
 #include "../../db/db_ut.h"
 #include "../../db/db_query.h"
+#include "../../db/db_insertq.h"
 #include "dbase.h"
 #include "pg_con.h"
 #include "val.h"
 #include "res.h"
+
+static int submit_func_called;
 
 static int free_query(const db_con_t* _con);
 
@@ -137,6 +140,8 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		LM_ERR("invalid parameter value\n");
 		return(-1);
 	}
+
+	submit_func_called = 1;
 
 	/* this bit of nonsense in case our connection get screwed up */
 	switch(PQstatus(CON_CONNECTION(_con)))
@@ -497,12 +502,29 @@ int db_postgres_insert(const db_con_t* _h, const db_key_t* _k,
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	int tmp = db_do_insert(_h, _k, _v, _n, db_postgres_val2str,
 		db_postgres_submit_query);
-	/* finish the async query, otherwise the next query will not complete */
-	if (db_postgres_store_result(_h, &_r) != 0)
-		LM_WARN("unexpected result returned");
+
+	if (submit_func_called)
+	{
+		/* finish the async query, 
+		 * otherwise the next query will not complete */
+
+		/* only call this if the DB API has effectively called
+		 * our submit_query function
+		 *
+		 * in case of insert queueing,
+		 * it may postpone calling the insert func until
+		 * enough rows have piled up */
+		if (db_postgres_store_result(_h, &_r) != 0)
+			LM_WARN("unexpected result returned");
+
+		submit_func_called = 0;
+	}
 	
 	if (_r)
 		db_free_result(_r);
+
+	if (CON_HAS_INSLIST(_h))
+		CON_RESET_INSLIST(_h);
 
 	return tmp;
 }

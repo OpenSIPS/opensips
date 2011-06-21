@@ -32,6 +32,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../db/db.h"
+#include "../../db/db_insertq.h"
 #include "../../dprint.h"
 #include "avpops_parse.h"
 #include "avpops_db.h"
@@ -360,8 +361,13 @@ int db_store_avp(struct db_url *url, db_key_t *keys, db_val_t *vals,
 													int n, const str *table)
 {
 	int r;
+	static query_list_t *ins_list = NULL;
+
 	if (set_table( url, table ,"store")!=0)
 		return -1;
+
+	if (con_set_inslist(url->hdl,&ins_list,keys,n) < 0 )
+		CON_RESET_INSLIST(url->hdl);
 
 	r = url->dbf.insert( url->hdl, keys, vals, n);
 	if (r<0) {

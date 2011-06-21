@@ -677,8 +677,9 @@ int mem_timer_udomain(udomain_t* _d)
 {
 	struct urecord* ptr;
 	void ** dest;
-	int i;
+	int i,ret=0;
 	map_iterator_t it,prev;
+	static query_list_t *ins_list = NULL;
 
 	for(i=0; i<_d->size; i++)
 	{
@@ -698,7 +699,7 @@ int mem_timer_udomain(udomain_t* _d)
 			prev = it;
 			iterator_next(&it);
 
-			if (timer_urecord(ptr) < 0) {
+			if ((ret =timer_urecord(ptr,&ins_list)) < 0) {
 				LM_ERR("timer_urecord failed\n");
 				unlock_ulslot(_d, i);
 				return -1;
@@ -714,6 +715,16 @@ int mem_timer_udomain(udomain_t* _d)
 		
 		unlock_ulslot(_d, i);
 	}
+
+	if (ret) {
+		LM_DBG("usrloc timer attempting to flush rows to DB\n");
+		/* flush everything to DB
+		 * so that next-time timer fires
+		 * we are sure that DB updates will be succesful */
+		if (ql_flush_rows(&ul_dbf,ul_dbh,ins_list) < 0)
+			LM_ERR("failed to flush rows to DB\n");
+	}
+
 	return 0;
 }
 

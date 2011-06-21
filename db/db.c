@@ -258,7 +258,7 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 	void* con;
 	db_con_t* res;
 
-	int con_size = sizeof(db_con_t) + sizeof(void *);
+	int con_size = sizeof(db_con_t) + sizeof(void *) + url->len;
 	id = 0;
 	res = 0;
 
@@ -278,7 +278,13 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 		LM_ERR("no private memory left\n");
 		return 0;
 	}
+
 	memset(res, 0, con_size);
+
+	/* fill in the URL info */
+	res->url.s = (char *)res + sizeof(db_con_t) + sizeof(void *);
+	res->url.len = url->len;
+	memcpy(res->url.s,url->s,url->len);
 
 	id = new_db_id(url);
 	if (!id) {

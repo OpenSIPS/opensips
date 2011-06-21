@@ -40,6 +40,7 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../hash_func.h"
+#include "../../db/db_insertq.h"
 #include "ul_mod.h"
 #include "utime.h"
 #include "ul_callback.h"
@@ -282,11 +283,11 @@ static inline int wt_timer(urecord_t* _r)
 /*! \brief
  * Write-back timer
  */
-static inline int wb_timer(urecord_t* _r)
+static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 {
 	ucontact_t* ptr, *t;
 	cstate_t old_state;
-	int op;
+	int op,ins_done=0;
 
 	ptr = _r->contacts;
 
@@ -323,10 +324,12 @@ static inline int wb_timer(urecord_t* _r)
 				break;
 
 			case 1: /* insert */
-				if (db_insert_ucontact(ptr) < 0) {
+				if (db_insert_ucontact(ptr,ins_list) < 0) {
 					LM_ERR("inserting contact into database failed\n");
 					ptr->state = old_state;
 				}
+				if (ins_done == 0)
+					ins_done = 1;
 				break;
 
 			case 2: /* update */
@@ -341,19 +344,19 @@ static inline int wb_timer(urecord_t* _r)
 		}
 	}
 
-	return 0;
+	return ins_done;
 }
 
 
 
-int timer_urecord(urecord_t* _r)
+int timer_urecord(urecord_t* _r,query_list_t **ins_list)
 {
 	switch(db_mode) {
 	case NO_DB:         return nodb_timer(_r);
 	/* use also the write_back timer routine to handle the failed
 	 * realtime inserts/updates */
-	case WRITE_THROUGH: return wb_timer(_r); /*wt_timer(_r);*/
-	case WRITE_BACK:    return wb_timer(_r);
+	case WRITE_THROUGH: return wb_timer(_r,ins_list); /*wt_timer(_r);*/
+	case WRITE_BACK:    return wb_timer(_r,ins_list);
 	}
 
 	return 0; /* Makes gcc happy */
@@ -433,7 +436,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	}
 
 	if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
-		if (db_insert_ucontact(*_c) < 0) {
+		if (db_insert_ucontact(*_c,0) < 0) {
 			LM_ERR("failed to insert in database\n");
 		} else {
 			(*_c)->state = CS_SYNC;

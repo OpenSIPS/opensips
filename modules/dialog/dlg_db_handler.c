@@ -36,6 +36,7 @@
 #include "../../ut.h"
 #include "../../timer.h"
 #include "../../db/db.h"
+#include "../../db/db_insertq.h"
 #include "../../str.h"
 #include "../../socket_info.h"
 #include "dlg_hash.h"
@@ -372,9 +373,6 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg)
 	current_dlg_pointer = NULL;
 }
 
-
-
-/* TODO - Add and update newly added info : generated pings */
 static int load_dialog_info_from_db(int dlg_hash_size)
 {
 	db_res_t * res;
@@ -901,7 +899,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 	struct dlg_entry entry;
 	struct dlg_cell  * cell; 
 	unsigned char on_shutdown;
-	int callee_leg;
+	int callee_leg,ins_done=0;
+	static query_list_t *ins_list = NULL;
 
 	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
 			&h_id_column,		&call_id_column,		&from_uri_column,
@@ -990,12 +989,18 @@ void dialog_update_db(unsigned int ticks, void * param)
 				set_final_update_cols(values+20, cell, on_shutdown);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+				if (con_set_inslist(dialog_db_handle,
+				&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
+					CON_RESET_INSLIST(dialog_db_handle);
 
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys, 
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db\n");
 					goto error;
 				}
+
+				if (ins_done==0)
+					ins_done=1;
 
 				/* dialog saved */
 				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
@@ -1036,6 +1041,15 @@ void dialog_update_db(unsigned int ticks, void * param)
 		}
 		dlg_unlock( d_table, &entry);
 
+	}
+
+	if (ins_done) {
+		LM_DBG("dlg timer attempting to flush rows to DB\n");
+		/* flush everything to DB
+		 * so that next-time timer fires
+		 * we are sure that DB updates will be succesful */
+		if (ql_flush_rows(&dialog_dbf,dialog_db_handle,ins_list) < 0)
+			LM_ERR("failed to flush rows to DB\n");
 	}
 
 	return;

@@ -42,6 +42,7 @@
 #include <time.h>
 #include "../../qvalue.h"
 #include "../../str.h"
+#include "../../db/db_insertq.h"
 
 
 
@@ -181,7 +182,7 @@ int st_flush_ucontact(ucontact_t* _c);
 /*! \brief
  * Insert contact into the database
  */
-int db_insert_ucontact(ucontact_t* _c);
+int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list);
 
 
 /*! \brief

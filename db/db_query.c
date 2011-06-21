@@ -33,8 +33,10 @@
 
 #include <stdio.h>
 #include "../dprint.h"
+#include "../locking.h"
 #include "db_ut.h"
 #include "db_query.h"
+#include "db_insertq.h"
 
 static str  sql_str;
 static char sql_buf[SQL_BUF_LEN];
@@ -145,35 +147,132 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 	const int _n, int (*val2str) (const db_con_t*, const db_val_t*, char*, int*),
 	int (*submit_query)(const db_con_t* _h, const str* _c))
 {
-	int off, ret;
+	int off, ret,i,no_rows=0;
+	db_val_t **buffered_rows = NULL;
 
 	if (!_h || !_k || !_v || !_n || !val2str || !submit_query) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
+	
+	/* insert buffering is enabled ? */
+	if (CON_HAS_INSLIST(_h) && !CON_HAS_PS(_h))
+	{
+		if (IS_INSTANT_FLUSH(_h))
+		{
+			/* if caller signals it's flush time ( timer, etc ), 
+			 * detach rows in queue 
+			 * the caller is holding the lock at this point */
+			no_rows = ql_detach_rows_unsafe(_h->ins_list,&buffered_rows);
+			CON_FLUSH_RESET(_h,_h->ins_list);
 
+			if (no_rows == -1)
+			{
+				LM_ERR("failed to detach rows for insertion\n");
+				goto error;
+			}
+
+			if (no_rows > 0)
+				goto build_query;
+			else
+			{
+				/* caller wanted to make sure that everything if flushed
+				 * but queue is empty */
+				return 0;
+			}
+		}
+		
+		/* if connection has prepared statement, leave
+		the row insertion to the proper module func,
+		as the submit_query func provided is a dummy one*/
+		if ( (no_rows = ql_row_add(_h->ins_list,_v,&buffered_rows)) < 0)
+		{
+			LM_ERR("failed to insert row to buffered list \n");
+			goto error;
+		}
+
+		if (no_rows == 0)
+		{
+			/* wait for queries to pile up */
+			return 0;
+		}
+	}
+
+build_query:
 	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
 	if (ret < 0 || ret >= SQL_BUF_LEN) goto error;
 	off = ret;
 
 	ret = db_print_columns(sql_buf + off, SQL_BUF_LEN - off, _k, _n);
-	if (ret < 0) return -1;
+	if (ret < 0) goto error;
 	off += ret;
 
-	ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, ") values (");
-	if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error;
-	off += ret;
+	if (CON_HAS_INSLIST(_h))
+	{
+		if (buffered_rows != NULL || CON_HAS_PS(_h))
+		{
+			/* if we have to insert now, build the query 
+			 * 
+			 * if a prep stmt is provided,
+			 * build a prep stmt with query_buffer_size elements */
 
-	ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n, val2str);
-	if (ret < 0) return -1;
-	off += ret;
+			if (CON_HAS_PS(_h))
+				no_rows = query_buffer_size;
 
-	if (off + 2 > SQL_BUF_LEN) goto error;
+			ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, ") values");
+			if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error;
+			off += ret;
+
+			for (i=0;i<no_rows;i++)
+			{
+				sql_buf[off++]='(';
+				ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off,
+										CON_HAS_PS(_h)?_v:buffered_rows[i], _n, val2str);
+				if (ret < 0) goto error;
+				off += ret;
+				sql_buf[off++]=')';
+
+				if (i != (no_rows -1))
+					sql_buf[off++]=',';
+
+				/* if we have a PS, leave the function handling prep stmts
+				   in the module to free the rows once it's done */
+				if (!CON_HAS_PS(_h))
+					shm_free(buffered_rows[i]);
+			}
+
+			if (off + 1 > SQL_BUF_LEN) goto error0;
+			sql_buf[off] = '\0';
+			sql_str.s = sql_buf;
+			sql_str.len = off;
+
+			goto submit;
+		}
+		else 
+		{
+			/* wait for queries to pile up */
+			return 0;
+		}
+	}
+	else
+	{
+		ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, ") values (");
+		if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error0;
+		off += ret;
+
+		ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n, val2str);
+		if (ret < 0) goto error0;
+		off += ret;
+
+		if (off + 2 > SQL_BUF_LEN) goto error0;
+	}
+
 	sql_buf[off++] = ')';
 	sql_buf[off] = '\0';
 	sql_str.s = sql_buf;
 	sql_str.len = off;
 
+submit:
 	if (submit_query(_h, &sql_str) < 0) {
 	        LM_ERR("error while submitting query\n");
 		return -2;
@@ -181,6 +280,8 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 	return 0;
 
 error:
+	cleanup_rows(buffered_rows);
+error0:
 	LM_ERR("error while preparing insert operation\n");
 	return -1;
 }
