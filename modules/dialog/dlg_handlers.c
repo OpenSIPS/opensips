@@ -1583,7 +1583,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	int nr_routes,i,src_leg;
 	str *rr_uri,*route_uris;
 
-	if (last_dst_leg<0) {
+	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
 		LM_ERR("Script error - validate function before having a dialog\n");
 		return -1;
 	}

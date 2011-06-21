@@ -844,7 +844,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 			}
 			break;
 		default:
-			LM_CRIT("unknown event %d in state %d "
+			LM_INFO("unknown event %d in state %d "
 				"for dlg %p [%u:%u] with clid '%.*s' and tags '%.*s' '%.*s'\n",
 				event, dlg->state, dlg, dlg->h_entry, dlg->h_id,
 				dlg->callid.len, dlg->callid.s,
