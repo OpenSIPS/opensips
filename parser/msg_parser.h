@@ -404,4 +404,10 @@ int set_dst_uri(struct sip_msg* msg, str* uri);
 int set_path_vector(struct sip_msg* msg, str* path);
 
 
+/*
+ * Parses a buffer containing a well formed SIP message and extracts the bodies
+ * for FROM , TO and CSEQ headers.
+ */
+int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq);
+
 #endif
