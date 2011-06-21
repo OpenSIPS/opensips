@@ -798,3 +798,124 @@ int set_path_vector(struct sip_msg* msg, str* path)
 	}
 	return 0;
 }
+
+
+/* convenience macros */
+#define LC(_cp) ((*(_cp))|0x20)
+#define SET_FOUND(_new_state) \
+	do{\
+		fill->s=b;fill->len=p-b;\
+		LM_DBG("hdr %d extracted as <%.*s>\n",\
+			flag,fill->len,fill->s);\
+		flags&=~(flag);\
+		if (flags) {state=_new_state;}\
+		else {goto done;}\
+	}while(0)
+#define GET_CSEQ() \
+	do{\
+		for(p++;p<end&&isspace((int)*p);p++);\
+		for(fill->s=b;p<end&&isdigit((int)*p);p++);\
+		fill->len=p-fill->s;\
+		if ( (flags&=~(flag))==0) goto done;\
+		state=1;\
+	}while(0)
+int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq)
+{
+	char *end, *p;
+	char *b;
+	str  *fill;
+	int state;
+	int flags;
+	int flag;
+
+	p = buf;
+	end = buf+len;
+	state = 1;
+	b = 0;
+	flags = ((from!=0)?0x1:0) | ((to!=0)?0x2:0) | ((cseq!=0)?0x4:0);
+	flag = 0;
+	fill = 0;
+
+	while(p<end) {
+		switch (*p) {
+			case '\n':
+			case '\r':
+				switch (state) {
+					case 4: state=5;break;
+					case 5: case 6: state=6;break;
+					default : state=2;break;
+				}
+				break;
+			case ' ':
+			case '\t':
+				switch (state) {
+					case 4: case 6: state=5; break;
+					case 2: state=1; break;/*folded line*/
+				}
+				break;
+			case ':':
+				switch (state) {
+					case 4:case 5: state=5;if(flag==0x04)GET_CSEQ();break;
+					case 6: SET_FOUND(1);break;/*found*/
+					case 2: state=1;break;
+				}
+				break;
+			case 'f':
+			case 'F':
+				if (state==5) break;
+				if (state==6) SET_FOUND(2);/*found*/;
+				if (state!=2) {state = 1;break;}
+				/* hdr starting with 'f' */
+				if (from==0) break;
+				b = p;
+				if (p+3<end && LC(p+1)=='r' && LC(p+2)=='o' && LC(p+3)=='m')
+					p+=3;
+				state = 4; /* "f" or "from" found */
+				fill = from;
+				flag = 0x1;
+				break;
+			case 't':
+			case 'T':
+				if (state==5) break;
+				if (state==6) SET_FOUND(2);/*found*/;
+				if (state!=2) {state = 1;break;}
+				/* hdr starting with 't' */
+				if (to==0) break;
+				b = p;
+				if (p+1<end && LC(p+1)=='o')
+					p+=1;
+				state = 4; /* "t" or "to" found */
+				fill = to;
+				flag = 0x2;
+				break;
+			case 'c':
+			case 'C':
+				if (state==5) break;
+				if (state==6) SET_FOUND(2);/*found*/;
+				if (state!=2) {state = 1;break;}
+				/* hdr starting with 'c' */
+				if (cseq==0) break;
+				if (p+3<end && LC(p+1)=='s' && LC(p+2)=='e' && LC(p+3)=='q') {
+					b = p;
+					p+=3;
+					state = 4; /* "cseq" found */
+					fill = cseq;
+					flag = 0x4;
+				}
+				break;
+			default:
+				switch (state) {
+					case 2:case 4: state=1; break;
+					case 6: SET_FOUND(1);break;/*found*/;
+				}
+		}
+		p++;
+	}
+
+	LM_CRIT("no hdrs found in outgoing buffer\n");
+	return -1;
+done:
+	return 0;
+}
+
+
