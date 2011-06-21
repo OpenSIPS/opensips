@@ -20,9 +20,9 @@ Jan Janak
 
    <jan@iptel.org>
 
-   Copyright � 2002, 2003 FhG FOKUS
+   Copyright © 2002, 2003 FhG FOKUS
 
-   Copyright � 2005 voice-system.ro
+   Copyright © 2005 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -48,6 +48,7 @@ Jan Janak
               1.3.6. calculate_ha1 (integer)
               1.3.7. use_domain (integer)
               1.3.8. load_credentials (string)
+              1.3.9. skip_version_check (int)
 
         1.4. Exported Functions
 
@@ -64,8 +65,9 @@ Jan Janak
    1.6. calculate_ha1 parameter usage
    1.7. use_domain parameter usage
    1.8. load_credentials parameter usage
-   1.9. www_authorize usage
-   1.10. proxy_authorize usage
+   1.9. skip_version_check parameter usage
+   1.10. www_authorize usage
+   1.11. proxy_authorize usage
 
 Chapter 1. Admin Guide
 
@@ -107,7 +109,7 @@ Chapter 1. Admin Guide
    the database resides.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/opensips".
+   “mysql://opensipsro:opensipsro@localhost/opensips”.
 
    Example 1.1. db_url parameter usage
 modparam("auth_db", "db_url", "dbdriver://username:password@dbhost/dbnam
@@ -119,7 +121,7 @@ e")
    is fine for most people. Use the parameter if you really need
    to change it.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.2. user_column parameter usage
 modparam("auth_db", "user_column", "user")
@@ -130,7 +132,7 @@ modparam("auth_db", "user_column", "user")
    Default value is fine for most people. Use the parameter if you
    really need to change it.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.3. domain_column parameter usage
 modparam("auth_db", "domain_column", "domain")
@@ -144,7 +146,7 @@ modparam("auth_db", "domain_column", "domain")
    know plaintext passwords and they cannot be obtained from HA1
    strings.
 
-   Default value is "ha1".
+   Default value is “ha1”.
 
    Example 1.4. password_column parameter usage
 modparam("auth_db", "password_column", "password")
@@ -168,18 +170,18 @@ modparam("auth_db", "password_column_2", "ha1_2")
    passwords or a pre-calculated HA1 string for authentification.
 
    If the parameter is set to 1 and the username parameter of
-   credentials contains also "@domain" (some user agents append
+   credentials contains also “@domain” (some user agents append
    the domain to the username parameter), then the server will use
    the HA1 values from the column specified in the
-   "password_column_2" parameter. If the username parameter
+   “password_column_2” parameter. If the username parameter
    doesn't contain a domain, the server will use the HA1 values
-   from the column given in the "password_column"parameter.
+   from the column given in the “password_column”parameter.
 
    If the parameter is set to 0 then the HA1 value will be
-   calculated from the column specified in the "password_column"
+   calculated from the column specified in the “password_column”
    parameter.
 
-   The "password_column_2" column contains also HA1 strings but
+   The “password_column_2” column contains also HA1 strings but
    they should be calculated including the domain in the username
    parameter (as opposed to password_column which (when containing
    HA1 strings) should always contain HA1 strings calculated
@@ -204,7 +206,7 @@ modparam("auth_db", "calculate_ha1", 1)
    IMPORTANT: before turning on this parameter, be sure that the
    domain column in subscriber table is properly populated.
 
-   Default value is "0 (false)".
+   Default value is “0 (false)”.
 
    Example 1.7. use_domain parameter usage
 modparam("auth_db", "use_domain", 1)
@@ -224,12 +226,23 @@ modparam("auth_db", "use_domain", 1)
      * avp_specification = '$avp(' + 'i:'ID | 's:'NAME | alias +
        ')'
 
-   Default value of this parameter is "rpid".
+   Default value of this parameter is “rpid”.
 
    Example 1.8. load_credentials parameter usage
 # load rpid column into $avp(i:13) and email_address column
 # into $avp(s:email_address)
 modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
+
+1.3.9. skip_version_check (int)
+
+   This parameter specifies not to check the auth table version.
+   This parameter should be set when a custom authentication table
+   is used.
+
+   Default value is “0 (false)”.
+
+   Example 1.9. skip_version_check parameter usage
+modparam("auth_db", "skip_version_check", 1)
 
 1.4. Exported Functions
 
@@ -257,7 +270,7 @@ modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
        should present to the user so it can decide what username
        and password to use. Usually this is domain of the host the
        server is running on.
-       If an empty string "" is used then the server will generate
+       If an empty string “” is used then the server will generate
        it from the request. In case of REGISTER requests To header
        field domain will be used (because this header field
        represents a user being registered), for all other messages
@@ -268,7 +281,7 @@ modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.9. www_authorize usage
+   Example 1.10. www_authorize usage
 ...
 if (www_authorize("siphub.net", "subscriber")) {
         www_challenge("siphub.net", "1");
@@ -299,7 +312,7 @@ if (www_authorize("siphub.net", "subscriber")) {
        should present to the user so it can decide what username
        and password to use. Usually this is domain of the host the
        server is running on.
-       If an empty string "" is used then the server will generate
+       If an empty string “” is used then the server will generate
        it from the request. From header field domain will be used
        as realm.
        The string may contain pseudo variables.
@@ -308,7 +321,7 @@ if (www_authorize("siphub.net", "subscriber")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.10. proxy_authorize usage
+   Example 1.11. proxy_authorize usage
 ...
 if (!proxy_authorize("", "subscriber)) {
         proxy_challenge("", "1");  # Realm will be autogenerated
