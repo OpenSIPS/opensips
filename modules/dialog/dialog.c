@@ -113,6 +113,7 @@ static int fixup_get_profile2(void** param, int param_no);
 static int fixup_get_profile3(void** param, int param_no);
 static int w_create_dialog(struct sip_msg*);
 static int w_create_dialog2(struct sip_msg*,char *);
+static int w_match_dialog(struct sip_msg*);
 static int fixup_create_dlg2(void **param,int param_no);
 static int w_validate_dialog(struct sip_msg*);
 static int w_fix_route_dialog(struct sip_msg*);
@@ -142,7 +143,7 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
 			0, REQUEST_ROUTE},
-	{"create_dialog", (cmd_function)w_create_dialog2,		1,fixup_create_dlg2,
+	{"create_dialog", (cmd_function)w_create_dialog2,     1,fixup_create_dlg2,
 			0, REQUEST_ROUTE},
 	{"set_dlg_profile", (cmd_function)w_set_dlg_profile,  1,fixup_profile,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
@@ -186,6 +187,8 @@ static cmd_export_t cmds[]={
 	{"get_dialog_info",(cmd_function)w_get_dlg_info,      4,fixup_get_info,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
+	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
+			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
@@ -818,6 +821,27 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	return 1;
 }
 
+
+static int w_match_dialog(struct sip_msg *msg)
+{
+	int backup;
+
+	/* dialog already found ? */
+	if (get_current_dialog()!=NULL)
+		return 1;
+
+	/* small trick to force SIP-wise matching */
+	backup = seq_match_mode;
+	seq_match_mode = SEQ_MATCH_FALLBACK;
+
+	dlg_onroute( msg, NULL, NULL);
+
+	seq_match_mode = backup;
+
+	return (current_dlg_pointer==NULL)?-1:1;
+}
+
+
 static int w_validate_dialog(struct sip_msg *req)
 {
 	struct dlg_cell *dlg;
@@ -835,6 +859,7 @@ static int w_validate_dialog(struct sip_msg *req)
 	return 1;
 }
 
+
 static int w_fix_route_dialog(struct sip_msg *req)
 {
 	struct dlg_cell *dlg;
@@ -848,6 +873,7 @@ static int w_fix_route_dialog(struct sip_msg *req)
 
 	return 1;
 }
+
 
 static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 {
@@ -878,7 +904,6 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 }
 
 
-
 static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 {
 	pv_elem_t *pve;
@@ -906,7 +931,6 @@ static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 	}
 	return 1;
 }
-
 
 
 static int w_is_in_profile(struct sip_msg *msg, char *profile, char *value)
@@ -943,11 +967,8 @@ static int w_get_profile_size(struct sip_msg *msg, char *profile,
 	unsigned short avp_type;
 	script_var_t * sc_var;
 
-	
 	pve = (pv_elem_t *)value;
 	sp_dest = (pv_spec_t *)result;
-
-
 
 	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {
 		if ( pv_printf_s(msg, pve, &val_s)!=0 || 

@@ -978,6 +978,48 @@ create_dialog("B");
 
 	<section>
 		<title>
+		<function moreinfo="none">match_dialog()</function>
+		</title>
+		<para>
+		This function is to be used to match a sequential (in-dialog) request
+		to an existing dialog. In other words, the function will try to match 
+		the current request to an known ongoing dialog.
+		</para>
+		<para>
+		The function tries to use (for dialog matching) the DID (Dialog ID)
+		from Route header and also falls back to SIP-wise matching.
+		</para>
+		<para>
+		As sequential requests are automaically matched to the dialog when 
+		doing "loose_route()" form script, this function is intended to:
+		(A) controll the place in your script where the dialog matching is done
+		and (B) to cope with bogus sequential requests that do not have Route 
+		headers, so they are not handled by loose_route().
+		</para>
+		<para>
+		The function returns true if a dialog exists for the request.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>match_dialog()</function> usage</title>
+		<programlisting format="linespecific">
+...
+    if (has_totag()) {
+        loose_route();
+        if ($DLG_status==NULL &amp;&amp; !match_dialog() ) {
+            xlog(" cannot match request to a dialog \n");
+        }
+    }
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title>
 		<function moreinfo="none">validate_dialog()</function>
 		</title>
 		<para>
