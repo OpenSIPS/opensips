@@ -157,7 +157,7 @@ sdp_mangle_port("-12000");
 
 	<section>
 		<title>
-		<function moreinfo="none">encode_contact(encoding_prefix)</function>
+		<function moreinfo="none">encode_contact(encoding_prefix, public_ip)</function>
 		</title>
 		<para>
 		This function will encode uri-s inside Contact header in the following 
@@ -176,6 +176,9 @@ sdp_mangle_port("-12000");
 			to determine that a contact is encoded publicip--a routable &ip;, 
 			most probably you should
 			put your external &ip; of your &nat; box.
+			</para>
+			<para><emphasis>public_ip</emphasis> - The public IP which will be
+			used in the encoded contact, as described by the example above.
 			</para>
 		</listitem>
 		</itemizedlist>

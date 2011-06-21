@@ -8,7 +8,7 @@ Edited by
 
 Gabriel Vasile
 
-   Copyright � 2003 Fill in here
+   Copyright © 2003 Fill in here
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -32,7 +32,7 @@ Gabriel Vasile
 
               1.4.1. sdp_mangle_ip(pattern, newip)
               1.4.2. sdp_mangle_port(offset)
-              1.4.3. encode_contact(encoding_prefix)
+              1.4.3. encode_contact(encoding_prefix, public_ip)
               1.4.4. decode_contact()
               1.4.5. decode_contact_header()
 
@@ -79,7 +79,7 @@ Warning
    Otherwise it is possible for the decoding step to fail/produce
    wrong results.
 
-   Default value is "*".
+   Default value is “*”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -105,7 +105,7 @@ modparam("mangler", "contact_flds_separator", "-")
        SDP package in lines c=IN IP4 ip. This lines will only be
        mangled if located IP is in the network described by this
        pattern. Examples of valid patterns are
-       "10.0.0.0/255.0.0.0" or "10.0.0.0/8" etc.
+       “10.0.0.0/255.0.0.0” or “10.0.0.0/8” etc.
      * newip - A string representing the new IP to be put inside
        SDP package if old IP address matches pattern.
 
@@ -135,7 +135,7 @@ sdp_mangle_ip("10.0.0.0/8","193.175.135.38");
 sdp_mangle_port("-12000");
 ...
 
-1.4.3.  encode_contact(encoding_prefix)
+1.4.3.  encode_contact(encoding_prefix, public_ip)
 
    This function will encode uri-s inside Contact header in the
    following manner
@@ -149,6 +149,8 @@ sdp_mangle_port("-12000");
      * encoding_prefix - Something to allow us to determine that a
        contact is encoded publicip--a routable IP, most probably
        you should put your external IP of your NAT box.
+       public_ip - The public IP which will be used in the encoded
+       contact, as described by the example above.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
