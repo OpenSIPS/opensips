@@ -12,7 +12,7 @@ Edited by
 
 Juha Heinanen
 
-   Copyright � 2006 voice-system.ro
+   Copyright © 2006 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -91,12 +91,13 @@ Chapter 1. Admin Guide
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libxml.
-     * libxmlrpc-c3 version 0.9.10.
-     * libxmlrpc-c3-dev version 0.9.10.
+     * libxmlrpc-c3 version 0.9.10 - 0.9.42. (using other versions
+       may be dangerous and lead to opensips blocking)
+     * libxmlrpc-c3-dev version 0.9.10 - 0.9.42.
 
    If libxmlrpc-c3[-dev] package is not available on your system,
    you may check if packages for your OS are not available on the
-   "xmlrpc-c"project ( http://xmlrpc-c.sourceforge.net/).
+   “xmlrpc-c”project ( http://xmlrpc-c.sourceforge.net/).
    Otherwise you need to install the library and devel headers
    from the sources. In both cases, keep in mind to use the 0.9.10
    version!!.
@@ -167,7 +168,7 @@ modparam("mi_xmlrpc", "buffer_size", 8192)
 1.6. Example
 
    This is an example showing the xmlrpc format for the
-   "get_statistics dialog: tm:" MI commad: response.
+   “get_statistics dialog: tm:” MI commad: response.
 
    Example 1.5. XMLRPC request
 

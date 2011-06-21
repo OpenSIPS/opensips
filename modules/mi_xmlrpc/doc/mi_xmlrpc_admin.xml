@@ -76,12 +76,12 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>libxmlrpc-c3</emphasis> version 0.9.10.
+				<emphasis>libxmlrpc-c3</emphasis> version 0.9.10 - 0.9.42. (using other versions may be dangerous and lead to opensips blocking)
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>libxmlrpc-c3-dev</emphasis> version 0.9.10.
+				<emphasis>libxmlrpc-c3-dev</emphasis> version 0.9.10 - 0.9.42.
 			</para>
 			</listitem>
 			</itemizedlist>
