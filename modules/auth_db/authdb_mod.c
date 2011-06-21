@@ -108,6 +108,7 @@ auth_api_t auth_api;
 char *credentials_list      = DEFAULT_CRED_LIST;
 struct aaa_avp *credentials = 0; /* Parsed list of credentials to load */
 int credentials_n           = 0; /* Number of credentials in the list */
+int skip_version_check      = 0; /* skips version check for custom db */
 
 /*
  * Exported functions
@@ -131,6 +132,7 @@ static param_export_t params[] = {
 	{"calculate_ha1",     INT_PARAM, &calc_ha1           },
 	{"use_domain",        INT_PARAM, &use_domain         },
 	{"load_credentials",  STR_PARAM, &credentials_list   },
+	{"skip_version_check",INT_PARAM, &skip_version_check },
 	{0, 0, 0}
 };
 
@@ -246,7 +248,8 @@ static int auth_fixup(void** param, int param_no)
 			LM_ERR("unable to open database connection\n");
 			return -1;
 		}
-		if(db_check_table_version(&auth_dbf, dbh, &name, TABLE_VERSION) < 0) {
+		if(skip_version_check == 0 &&
+			db_check_table_version(&auth_dbf, dbh, &name, TABLE_VERSION) < 0) {
 			LM_ERR("error during table version check.\n");
 			auth_dbf.close(dbh);
 			return -1;

@@ -253,6 +253,23 @@ modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>skip_version_check</varname> (int)</title>
+		<para>
+		This parameter specifies not to check the auth table version. This
+		parameter should be set when a custom authentication table is used.
+		</para>
+		<para>
+		Default value is <quote>0 (false)</quote>.
+		</para>
+		<example>
+		<title><varname>skip_version_check</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth_db", "skip_version_check", 1)
+		</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
