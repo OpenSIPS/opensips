@@ -24,6 +24,7 @@
  */
 
 #include "db_insertq.h"
+#include "db_cap.h"
 #include "../timer.h"
 
 int query_buffer_size = 0;
@@ -456,12 +457,19 @@ next_query:
  *
  * also takes care of initialisation of this is the first process
  * attempting to execute this type of query */
-inline int con_set_inslist(db_con_t *con,query_list_t **list,
+inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 							db_key_t *cols,int col_no)
 {
 	query_list_t *entry;
 
+	/* if buffering not enabled, ignore */
 	if (query_buffer_size <= 1)
+		return 0;
+
+	/* if buffering is enabled, but user is using a module
+	 * that does not support multiple inserts,
+	 * also ignore */
+	if (!DB_CAPABILITY(*dbf,DB_CAP_MULTIPLE_INSERT))
 		return 0;
 
 	/* first time we are being called from this process */
@@ -581,8 +589,11 @@ void ql_timer_routine(unsigned int ticks,void *param)
 	}
 }
 
-int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
+inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
 {
+	if (query_buffer_size <= 1 || !entry)
+		return 0;
+
 	/* simulate the finding of the right query list */
 	conn->ins_list = entry;
 	/* tell the core that we need to flush right away */

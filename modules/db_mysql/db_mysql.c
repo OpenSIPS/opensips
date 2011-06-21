@@ -31,6 +31,7 @@
 
 #include "../../sr_module.h"
 #include "../../db/db.h"
+#include "../../db/db_cap.h"
 #include "dbase.h"
 #include "db_mysql.h"
 
@@ -111,6 +112,7 @@ int db_mysql_bind_api(const str* mod, db_func_t *dbb)
 	dbb->last_inserted_id = db_last_inserted_id;
 	dbb->insert_update    = db_insert_update;
 
+	dbb->cap |= DB_CAP_MULTIPLE_INSERT;
 	return 0;
 }
 

@@ -32,6 +32,7 @@
 #include "../../sr_module.h"
 #include "../../db/db_con.h"
 #include "../../db/db.h"
+#include "../../db/db_cap.h"
 #include "dbase.h"
 
 
@@ -92,6 +93,7 @@ int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 	dbb->delete           = db_postgres_delete; 
 	dbb->update           = db_postgres_update;
 
+	dbb->cap |= DB_CAP_MULTIPLE_INSERT;
 	return 0;
 }
 

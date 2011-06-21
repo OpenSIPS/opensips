@@ -366,7 +366,7 @@ int db_store_avp(struct db_url *url, db_key_t *keys, db_val_t *vals,
 	if (set_table( url, table ,"store")!=0)
 		return -1;
 
-	if (con_set_inslist(url->hdl,&ins_list,keys,n) < 0 )
+	if (con_set_inslist(&url->dbf,url->hdl,&ins_list,keys,n) < 0 )
 		CON_RESET_INSLIST(url->hdl);
 
 	r = url->dbf.insert( url->hdl, keys, vals, n);

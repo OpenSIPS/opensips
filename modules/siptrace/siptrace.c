@@ -652,7 +652,7 @@ static int sip_trace(struct sip_msg *msg)
 		db_vals[9].val.str_val.len = 0;
 	
 		LM_DBG("storing info 1...\n");
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
@@ -672,7 +672,7 @@ static int sip_trace(struct sip_msg *msg)
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
 	LM_DBG("storing info 2...\n");
-	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 		CON_RESET_INSLIST(db_con);
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
@@ -689,7 +689,7 @@ static int sip_trace(struct sip_msg *msg)
 
 		LM_DBG("storing info 3...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -951,7 +951,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	
 		LM_DBG("storing info 4...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -971,7 +971,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	LM_DBG("storing info 5...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
-	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
@@ -987,7 +987,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 		LM_DBG("storing info 6...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -1138,7 +1138,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	
 		LM_DBG("storing info 7...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -1158,7 +1158,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 
 	LM_DBG("storing info 8...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
-	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
@@ -1174,7 +1174,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 
 		LM_DBG("storing info 9...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -1361,7 +1361,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	
 		LM_DBG("storing info 10...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -1381,7 +1381,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 
 	LM_DBG("storing info 11...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
-	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
@@ -1397,7 +1397,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 
 		LM_DBG("### - storing info 12 (%d) ...\n", faked);
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -1569,7 +1569,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	
 		LM_DBG("storing info 13...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{
@@ -1589,7 +1589,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 
 	LM_DBG("storing info 14...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
-	if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 		CON_RESET_INSLIST(db_con);
 	if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 	{
@@ -1605,7 +1605,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 
 		LM_DBG("### - storing info 15 (%d) ...\n", faked);
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if (con_set_inslist(db_con,&ins_list,db_keys,NR_KEYS) < 0 )
+		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
 		if(db_funcs.insert(db_con, db_keys, db_vals, NR_KEYS) < 0)
 		{

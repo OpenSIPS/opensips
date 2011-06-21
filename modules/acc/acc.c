@@ -513,7 +513,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 
 	/* multi-leg columns */
 	if ( !leg_info ) {
-		if (con_set_inslist(db_handle,&ins_list,db_keys,m) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,m) < 0 )
 			CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
 			LM_ERR("failed to insert into database\n");
@@ -524,7 +524,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 		do {
 			for ( i = m; i < m + n; i++)
 				VAL_STR(db_vals+i)=val_arr[i];
-			if (con_set_inslist(db_handle,&ins_list,db_keys,m+n) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,m+n) < 0 )
 				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n) < 0) {
 				LM_ERR("failed to insert into database\n");
@@ -572,7 +572,7 @@ int acc_db_cdrs_request(struct dlg_cell *dlg)
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if (!leg_info) {
-		if (con_set_inslist(db_handle,&ins_list,db_keys,total) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
 			CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, total) < 0) {
 			LM_ERR("failed to insert into database\n");
@@ -585,7 +585,7 @@ int acc_db_cdrs_request(struct dlg_cell *dlg)
 			complete_dlg_values(&leg_s,val_arr+nr,leg_values);
 			for (j = 0; j<leg_values; j++)
 				VAL_STR(db_vals+nr+j+1) = val_arr[nr+j];
-			if (con_set_inslist(db_handle,&ins_list,db_keys,total) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
 				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle,db_keys,db_vals,total) < 0) {
 				LM_ERR("failed inserting into database\n");

@@ -989,7 +989,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				set_final_update_cols(values+20, cell, on_shutdown);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
-				if (con_set_inslist(dialog_db_handle,
+				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
 				&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
 					CON_RESET_INSLIST(dialog_db_handle);
 
