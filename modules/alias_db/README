@@ -14,7 +14,7 @@ Daniel-Constantin Mierla
 
    <team@voice-system.ro>
 
-   Copyright � 2005-2009 voice-system.ro
+   Copyright © 2005-2009 voice-system.ro
      __________________________________________________________
 
    Table of Contents
@@ -91,7 +91,7 @@ Chapter 1. Admin Guide
    Database URL.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/opensips".
+   “mysql://opensipsro:opensipsro@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -103,7 +103,7 @@ me")
 
    Name of the column storing username.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.2. Set user_column parameter
 ...
@@ -114,7 +114,7 @@ modparam("alias_db", "user_column", "susername")
 
    Name of the column storing user's domain.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.3. Set domain_column parameter
 ...
@@ -125,7 +125,7 @@ modparam("alias_db", "domain_column", "sdomain")
 
    Name of the column storing alias username.
 
-   Default value is "alias_username".
+   Default value is “alias_username”.
 
    Example 1.4. Set alias_user_column parameter
 ...
@@ -136,7 +136,7 @@ modparam("alias_db", "alias_user_column", "auser")
 
    Name of the column storing alias domain.
 
-   Default value is "alias_domain".
+   Default value is “alias_domain”.
 
    Example 1.5. Set alias_domain_column parameter
 ...
@@ -148,7 +148,7 @@ modparam("alias_db", "alias_domain_column", "adomain")
    Specifies the prefix to be stripped from the domain in R-URI
    before doing the search.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.6. Set domain_prefix parameter
 ...
@@ -160,7 +160,7 @@ modparam("alias_db", "domain_prefix", "sip.")
    If the alias resolves to many SIP IDs, the first is replacing
    the R-URI, the rest are added as branches.
 
-   Default value is "0" (0 - don't add branches; 1 - add
+   Default value is “0” (0 - don't add branches; 1 - add
    branches).
 
    Example 1.7. Set append_branches parameter
@@ -238,7 +238,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
    Example 1.9. alias_db_find() usage
 ...
 # do revers alias lookup and find the alias for the FROM URI
-alias_db_find("dbaliases" , "$fu", "$avp(s:from_alias)", "r");
+alias_db_find("dbaliases" , "$fu", "$avp(from_alias)", "r");
 ...
 
 Chapter 2. Frequently Asked Questions

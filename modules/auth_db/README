@@ -223,15 +223,14 @@ modparam("auth_db", "use_domain", 1)
      * load_credentials = credential (';' credential)*
      * credential = (avp_specification '=' column_name) |
        (column_name)
-     * avp_specification = '$avp(' + 'i:'ID | 's:'NAME | alias +
-       ')'
+     * avp_specification = '$avp(' + NAME + ')'
 
    Default value of this parameter is “rpid”.
 
    Example 1.8. load_credentials parameter usage
-# load rpid column into $avp(i:13) and email_address column
-# into $avp(s:email_address)
-modparam("auth_db", "load_credentials", "$avp(i:13)=rpid;email_address")
+# load rpid column into $avp(13) and email_address column
+# into $avp(email_address)
+modparam("auth_db", "load_credentials", "$avp(13)=rpid;email_address")
 
 1.3.9. skip_version_check (int)
 

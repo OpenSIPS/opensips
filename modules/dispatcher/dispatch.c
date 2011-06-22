@@ -1265,7 +1265,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
 
-	if(dst_avp_name.n!=0)
+	if(dst_avp_name >= 0)
 	{
 		if(ds_use_default!=0 && ds_id!=idx->nr-1)
 		{
@@ -1273,7 +1273,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 				return -1;
 			cnt++;
-			if (attrs_avp_name.n) {
+			if (attrs_avp_name >= 0) {
 				avp_val.s = idx->dlist[idx->nr-1].attrs;
 				if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
 					return -1;
@@ -1304,7 +1304,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 				return -1;
 			cnt++;
-			if (attrs_avp_name.n) {
+			if (attrs_avp_name >= 0) {
 				avp_val.s = idx->dlist[i].attrs;
 				if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
 					return -1;
@@ -1319,20 +1319,20 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	}
 
 done:
-	if (attrs_avp_name.n) {
+	if (attrs_avp_name>= 0) {
 		avp_val.s = idx->dlist[ds_id].attrs;
 		if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
 			return -1;
 	}
 
-	if(grp_avp_name.n!=0) {
+	if(grp_avp_name>=0) {
 		/* add to avp the group id */
 		avp_val.n = set;
 		if(add_avp(grp_avp_type, grp_avp_name, avp_val)!=0)
 			return -1;
 	}
 
-	if(cnt_avp_name.n!=0) {
+	if(cnt_avp_name>=0) {
 		/* add to avp the number of dst */
 		avp_val.n = cnt;
 		if(add_avp(cnt_avp_type, cnt_avp_name, avp_val)!=0)
@@ -1349,7 +1349,7 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 	struct usr_avp *attr_avp;
 	int_str avp_value;
 
-	if(!(ds_flags&DS_FAILOVER_ON) || dst_avp_name.n==0)
+	if(!(ds_flags&DS_FAILOVER_ON) || dst_avp_name < 0)
 	{
 		LM_WARN("failover support disabled\n");
 		return -1;
@@ -1362,7 +1362,7 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 	avp = search_next_avp(prev_avp, &avp_value);
 	destroy_avp(prev_avp);
 
-	if (attrs_avp_name.n) {
+	if (attrs_avp_name >= 0) {
 		attr_avp = search_first_avp(attrs_avp_type, attrs_avp_name, NULL, 0);
 		if (attr_avp)
 			destroy_avp(attr_avp);

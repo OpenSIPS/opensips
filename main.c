@@ -1356,6 +1356,12 @@ try_again:
 #endif
 	LM_INFO("using %i Mb private memory per process\n", ((PKG_MEM_POOL_SIZE/1024)/1024));
 
+	/* init avps */
+	if (init_extra_avps() != 0) {
+		LM_ERR("error while initializing avps\n");
+		goto error;
+	}
+
 	/* init serial forking engine */
 	if (init_serialization()!=0) {
 		LM_ERR("failed to initialize serialization\n");
@@ -1371,6 +1377,7 @@ try_again:
 		LM_ERR("failed to initialize MI core\n");
 		goto error;
 	}
+
 	/* Register core events */
 	if (evi_register_core() != 0) {
 		LM_ERR("failed register core events\n");

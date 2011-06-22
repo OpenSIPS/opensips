@@ -8,7 +8,7 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright � 2009 voice-system.ro
+   Copyright © 2009 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -152,7 +152,7 @@ Chapter 1. Admin Guide
    are stored.
 
    Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -164,7 +164,7 @@ modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost
 
    The name of the DB table containing the load-balancing rules.
 
-   Default value is "load_balancer".
+   Default value is “load_balancer”.
 
    Example 1.2. Set db_table parameter
 ...
@@ -177,7 +177,7 @@ modparam("load_balancer", "db_table", "lb")
    done. If set to 0, the probing will be disabled as
    functionality (for all destinations)
 
-   Default value is "30".
+   Default value is “30”.
 
    Example 1.3. Set probing_interval parameter
 ...
@@ -188,7 +188,7 @@ modparam("load_balancer", "probing_interval", 60)
 
    The SIP method to be used for the probing requests.
 
-   Default value is ""OPTIONS"".
+   Default value is “"OPTIONS"”.
 
    Example 1.4. Set probing_method parameter
 ...
@@ -199,7 +199,7 @@ modparam("load_balancer", "probing_method", "INFO")
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
-   Default value is ""sip:prober@localhost"".
+   Default value is “"sip:prober@localhost"”.
 
    Example 1.5. Set probing_from parameter
 ...
@@ -212,7 +212,7 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
    here will be considered as valid reply codes for probing
    messages, apart for 200.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.6. Set probing_reply_codes parameter
 ...

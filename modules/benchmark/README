@@ -15,9 +15,9 @@ Bastian Friedrich
 
    <bastian.friedrich@collax.com>
 
-   Copyright � 2007 Collax GmbH
+   Copyright © 2007 Collax GmbH
 
-   Copyright � 2007 Voice System SRL
+   Copyright © 2007 Voice System SRL
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -119,7 +119,7 @@ Chapter 1. Admin Guide
        soon as that feature is implemented.
      * 1 - Globally enable benchmarking
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.1. Set enable parameter
 ...
@@ -136,7 +136,7 @@ modparam("benchmark", "enable", 1)
    automatically. Instead bm_poll_results MI command can be used
    to retrieve the results and clean the local values.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.2. Set granularity parameter
 ...
@@ -155,7 +155,7 @@ modparam("benchmark", "granularity", 500)
      * 3 - L_INFO
      * 4 - L_DBG
 
-   Default value is "3" (L_INFO).
+   Default value is “3” (L_INFO).
 
    Example 1.3. Set loglevel parameter
 ...
@@ -168,7 +168,7 @@ modparam("benchmark", "loglevel", 4)
 
 1.4.1.  bm_start_timer(name)
 
-   Start timer "name". A later call to "bm_log_timer()" logs this
+   Start timer “name”. A later call to “bm_log_timer()” logs this
    timer..
 
    Example 1.4. bm_start_timer usage
@@ -184,7 +184,7 @@ bm_start_timer("test");
        interval. This equals the granularity variable.
 
      * Last sum is the accumulated duration in the current logging
-       interval (i.e. for the last "granularity" calls).
+       interval (i.e. for the last “granularity” calls).
 
      * Last min is the minimum duration between start/log_timer
        calls during the last interval.

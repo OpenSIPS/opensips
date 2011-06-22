@@ -335,7 +335,7 @@ int legs2strar( struct acc_extra *legs, struct sip_msg *rq, str *val_arr,
 {
 	static struct usr_avp *avp[MAX_ACC_LEG];
 	unsigned short name_type;
-	int_str name;
+	int name;
 	int_str value;
 	int    n;
 	int    found;

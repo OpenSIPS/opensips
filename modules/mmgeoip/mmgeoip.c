@@ -130,7 +130,8 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	char rslt_buf[256], ipaddr_buf[256], field_buf[256];
 	char *token=0, *saveptr=0;
 
-	int_str dst_name=(int_str)0, rslt=(int_str)0;
+	int dst_name=-1;
+	int_str rslt=(int_str)0;
 	unsigned short dstType=0;
 
 	/* Sanity checks */

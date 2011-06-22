@@ -57,10 +57,10 @@
 #define OSP_DEF_APPENDNID               1
 #define OSP_DEF_DNIDLOC                 0
 #define OSP_DEF_DNIDPARAM               "networkid"
-#define OSP_DEF_SRCIPAVP                "$avp(s:_osp_source_device_)"
-#define OSP_DEF_SNIDAVP                 "$avp(s:_osp_source_networkid_)"
+#define OSP_DEF_SRCIPAVP                "$avp(osp_source_device_)"
+#define OSP_DEF_SNIDAVP                 "$avp(osp_source_networkid_)"
 #define OSP_DEF_CINFOS                  8
-#define OSP_DEF_CINFOAVP                "$avp(s:_osp_custom_info_)"
+#define OSP_DEF_CINFOAVP                "$avp(osp_custom_info_)"
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024

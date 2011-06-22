@@ -91,4 +91,8 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 int do_lb_disable(struct sip_msg *req, struct lb_data *data);
 
 
+/* failover stuff */
+extern int grp_avp_name;
+extern int mask_avp_name;
+extern int id_avp_name;
 #endif

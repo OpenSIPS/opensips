@@ -234,7 +234,7 @@ modparam("dialog", "rr_param", "xyz")
 		<title>Set <varname>timeout_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "timeout_avp", "$avp(i:10)")
+modparam("dialog", "timeout_avp", "$avp(10)")
 ...
 </programlisting>
 		</example>
@@ -1491,7 +1491,7 @@ $dlg_val("account_type") = "prepaid";
 		<title><function>fetch_dlg_value</function> usage</title>
 		<programlisting format="linespecific">
 ...
-fetch_dlg_value("inv_src_ip","$avp(i:2)");
+fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
 # or
 $var(account) = $dlg_val("account_type");

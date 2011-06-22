@@ -34,6 +34,7 @@
 #include "../../ut.h"
 #include "../../mod_fix.h"
 #include "../../rw_locking.h"
+#include "../../usr_avp.h"
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
 #include "lb_parser.h"
@@ -68,6 +69,16 @@ static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy(void);
 static int mi_child_init();
+
+/* failover stuff */
+static str grp_avp_name_s = str_init("lb_grp");
+static str mask_avp_name_s = str_init("lb_mask");
+static str id_avp_name_s = str_init("lb_id");
+int grp_avp_name;
+int mask_avp_name;
+int id_avp_name;
+
+
 
 static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_lb_resize(struct mi_root *cmd_tree, void *param);
@@ -320,6 +331,20 @@ static int mod_init(void)
 			}
 		}
 
+	}
+
+	/* parse avps */
+	if (!parse_avp_spec(&grp_avp_name_s, &grp_avp_name)) {
+		LM_ERR("cannot parse group avp\n");
+		return -1;
+	}
+	if (!parse_avp_spec(&mask_avp_name_s, &mask_avp_name)) {
+		LM_ERR("cannot parse mask avp\n");
+		return -1;
+	}
+	if (!parse_avp_spec(&id_avp_name_s, &id_avp_name)) {
+		LM_ERR("cannot parse id avp\n");
+		return -1;
 	}
 
 	return 0;

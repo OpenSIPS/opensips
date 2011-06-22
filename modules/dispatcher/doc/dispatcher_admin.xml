@@ -198,7 +198,7 @@ modparam("dispatcher", "force_dst", 1)
 		<title>Set the <quote>dst_avp</quote> parameter</title>
  <programlisting format="linespecific">
  ...
- modparam("dispatcher", "dst_avp", "$avp(i:271)")
+ modparam("dispatcher", "dst_avp", "$avp(271)")
  ...
  </programlisting>
 		</example>
@@ -224,7 +224,7 @@ modparam("dispatcher", "force_dst", 1)
 		<title>Set the <quote>attrs_avp</quote> parameter</title>
  <programlisting format="linespecific">
  ...
- modparam("dispatcher", "attrs_avp", "$avp(i:272)")
+ modparam("dispatcher", "attrs_avp", "$avp(272)")
  ...
  </programlisting>
 		</example>
@@ -250,7 +250,7 @@ modparam("dispatcher", "force_dst", 1)
 		<title>Set the <quote>grp_avp</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "grp_avp", "$avp(i:273)")
+modparam("dispatcher", "grp_avp", "$avp(273)")
 ...
 </programlisting>
 		</example>
@@ -276,7 +276,7 @@ modparam("dispatcher", "grp_avp", "$avp(i:273)")
 		<title>Set the <quote>cnt_avp</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "cnt_avp", "$avp(i:274)")
+modparam("dispatcher", "cnt_avp", "$avp(274)")
 ...
 </programlisting>
 		</example>
@@ -299,10 +299,10 @@ modparam("dispatcher", "cnt_avp", "$avp(i:274)")
 		</emphasis>
 		</para>
 		<example>
-		<title>Use $avp(i:273) for hashing:</title>
+		<title>Use $avp(273) for hashing:</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "hash_pvar", "$avp(i:273)")
+modparam("dispatcher", "hash_pvar", "$avp(273)")
 ...
 </programlisting>
 		</example>

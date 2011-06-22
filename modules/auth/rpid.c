@@ -48,7 +48,7 @@
 
 /* rpid AVP specs */
 static unsigned short rpid_avp_type;
-static int_str rpid_avp_name;
+static int rpid_avp_name;
 
 
 /*
@@ -73,7 +73,7 @@ int init_rpid_avp(char *rpid_avp_param)
 			return -1;
 		}
 	} else {
-		rpid_avp_name.n = 0;
+		rpid_avp_name = -1;
 		rpid_avp_type = 0;
 	}
 
@@ -84,7 +84,7 @@ int init_rpid_avp(char *rpid_avp_param)
 /*
  * Gets the RPID avp specs
  */
-void get_rpid_avp( int_str *rpid_avp_p, int *rpid_avp_type_p )
+void get_rpid_avp( int *rpid_avp_p, int *rpid_avp_type_p )
 {
 	*rpid_avp_p = rpid_avp_name;
 	*rpid_avp_type_p = rpid_avp_type;
@@ -148,7 +148,7 @@ int append_rpid_hf(struct sip_msg* _m, char* _s1, char* _s2)
 	char *at;
 	int_str val;
 
-	if (rpid_avp_name.n==0) {
+	if (rpid_avp_name==-1) {
 		LM_ERR("rpid avp not defined\n");
 		return -1;
 	}
@@ -208,7 +208,7 @@ int append_rpid_hf_p(struct sip_msg* _m, char* _prefix, char* _suffix)
 	str* p, *s;
 	int_str val;
 
-	if (rpid_avp_name.n==0) {
+	if (rpid_avp_name==-1) {
 		LM_ERR("rpid avp not defined\n");
 		return -1;
 	}
@@ -270,7 +270,7 @@ int is_rpid_user_e164(struct sip_msg* _m, char* _s1, char* _s2)
 	struct sip_uri uri;
 	int_str val;
 
-	if (rpid_avp_name.n==0) {
+	if (rpid_avp_name==-1) {
 		LM_ERR("rpid avp not defined\n");
 		return -1;
 	}

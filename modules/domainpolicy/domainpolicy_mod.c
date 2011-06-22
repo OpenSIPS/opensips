@@ -91,14 +91,8 @@ str send_socket_avp           = str_init(DEF_SEND_SOCKET_AVP);
  * Other module variables
  */
 
-int_str port_override_name, transport_override_name, domain_prefix_name, 
+int port_override_name, transport_override_name, domain_prefix_name, 
 	domain_suffix_name, domain_replacement_name, send_socket_name;
-unsigned short port_override_avp_name_str;
-unsigned short transport_override_avp_name_str;
-unsigned short domain_prefix_avp_name_str;
-unsigned short domain_suffix_avp_name_str;
-unsigned short domain_replacement_avp_name_str;
-unsigned short send_socket_avp_name_str;
 
 /*
  * Exported functions
@@ -152,7 +146,6 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
-	unsigned int par;
 	int ver;
 
 	LM_INFO("initializing...\n");
@@ -194,71 +187,35 @@ static int mod_init(void)
 
 	/* Assign AVP parameter names */
 	LM_INFO("AVP\n");
-	if (str2int(&port_override_avp, &par) == 0) {
-		if (!par) {
-			LM_ERR("port_override_avp not defined!\n");
-			return -1;
-		}
-		port_override_name.n = par;
-		port_override_avp_name_str = 0;
-	} else {
-		port_override_name.s = port_override_avp;
-		port_override_avp_name_str = AVP_NAME_STR;
+	port_override_name = get_avp_id(&port_override_avp);
+	if (port_override_name < 0) {
+		LM_ERR("invalid port_override_avp!\n");
+		return -1;
 	}
-	if (str2int(&transport_override_avp, &par) == 0) {
-		if (!par) {
-			LM_ERR(" transport_override_avp not defined!\n");
-			return -1;
-		}
-		transport_override_name.n = par;
-		transport_override_avp_name_str = 0;
-	} else {
-		transport_override_name.s = transport_override_avp;
-		transport_override_avp_name_str = AVP_NAME_STR;
+	transport_override_name = get_avp_id(&transport_override_avp);
+	if (transport_override_name < 0) {
+		LM_ERR("invalid transport_override_avp!\n");
+		return -1;
 	}
-	if (str2int(&domain_prefix_avp, &par) == 0) {
-		if (!par) {
-			LM_ERR("domain_prefix_avp not defined!\n");
-			return -1;
-		}
-		domain_prefix_name.n = par;
-		domain_prefix_avp_name_str = 0;
-	} else {
-		domain_prefix_name.s = domain_prefix_avp;
-		domain_prefix_avp_name_str = AVP_NAME_STR;
+	domain_prefix_name = get_avp_id(&domain_prefix_avp);
+	if (domain_prefix_name < 0) {
+		LM_ERR("invalid domain_prefix_avp!\n");
+		return -1;
 	}
-	if (str2int(&domain_suffix_avp, &par) == 0) {
-		if (!par) {
-			LM_ERR(" domain_suffix_avp not defined!\n");
-			return -1;
-		}
-		domain_suffix_name.n = par;
-		domain_suffix_avp_name_str = 0;
-	} else {
-		domain_suffix_name.s = domain_suffix_avp;
-		domain_suffix_avp_name_str = AVP_NAME_STR;
+	domain_suffix_name = get_avp_id(&domain_suffix_avp);
+	if (domain_suffix_name < 0) {
+		LM_ERR("invalid domain_suffix_avp!\n");
+		return -1;
 	}
-	if (str2int(&domain_replacement_avp, &par) == 0) {
-		if (!par) {
-			LM_ERR(" domain_replacement_avp not defined!\n");
-			return -1;
-		}
-		domain_replacement_name.n = par;
-		domain_replacement_avp_name_str = 0;
-	} else {
-		domain_replacement_name.s = domain_replacement_avp;
-		domain_replacement_avp_name_str = AVP_NAME_STR;
+	domain_replacement_name = get_avp_id(&domain_replacement_avp);
+	if (domain_replacement_name < 0) {
+		LM_ERR("invalid domain_replacement_avp!\n");
+		return -1;
 	}
-	if (str2int(&send_socket_avp, &par) == 0) {
-		if (!par) {
-			LM_ERR(" send_socket_avp not defined!\n");
-			return -1;
-		}
-		send_socket_name.n = par;
-		send_socket_avp_name_str = 0;
-	} else {
-		send_socket_name.s = send_socket_avp;
-		send_socket_avp_name_str = AVP_NAME_STR;
+	send_socket_name = get_avp_id(&send_socket_avp);
+	if (send_socket_name < 0) {
+		LM_ERR("invalid send_socket_avp!\n");
+		return -1;
 	}
 
 	return 0;

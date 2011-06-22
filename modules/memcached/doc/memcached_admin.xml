@@ -155,7 +155,7 @@ modparam("memcached", "server","y = random_url:8888" );
 		<programlisting format="linespecific">
 ...
 cache_store("memcached_group1","key","$ru value");
-cache_fetch("memcached_y","key",$avp(i:10));
+cache_fetch("memcached_y","key",$avp(10));
 cache_remove("memcached_group1","key");
 ...
 	</programlisting>

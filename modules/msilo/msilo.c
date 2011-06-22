@@ -145,7 +145,7 @@ int  ms_add_date = 1;
 int  ms_max_messages = 0;
 
 static str ms_snd_time_avp_param = {NULL, 0};
-int_str ms_snd_time_avp_name;
+int ms_snd_time_avp_name = -1;
 unsigned short ms_snd_time_avp_type;
 
 str msg_type = str_init("MESSAGE");
@@ -720,7 +720,7 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	db_vals[nr_keys].type = DB_INT;
 	db_vals[nr_keys].nul = 0;
 	db_vals[nr_keys].val.int_val = 0;
-	if(ms_snd_time_avp_name.n!=0)
+	if(ms_snd_time_avp_name >= 0)
 	{
 		avp = NULL;
 		avp=search_first_avp(ms_snd_time_avp_type, ms_snd_time_avp_name,

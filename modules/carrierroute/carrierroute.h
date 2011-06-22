@@ -126,7 +126,7 @@ struct multiparam_t {
 		str s;
 		struct {
 			unsigned short flags;
-			int_str name;
+			int name;
 		} a;
 		pv_elem_t *p;
 	} u;

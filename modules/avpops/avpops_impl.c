@@ -98,14 +98,14 @@ void init_store_avps(str **db_columns)
  * value 1 - attr name
  * value 2 - attr type
  */
-static int dbrow2avp(struct db_row *row, struct db_param *dbp, int_str attr,
+static int dbrow2avp(struct db_row *row, struct db_param *dbp, int attr,
 											int attr_type, int just_val_flags)
 {
 	unsigned int uint;
 	int  db_flags;
 	str  atmp;
 	str  vtmp;
-	int_str avp_attr;
+	int avp_attr;
 	int_str avp_val;
 	int flags;
 
@@ -133,13 +133,6 @@ static int dbrow2avp(struct db_row *row, struct db_param *dbp, int_str attr,
 		uint = (unsigned int)row->values[2].val.int_val;
 		db_flags = ((uint&AVPOPS_DB_NAME_INT)?0:AVP_NAME_STR) |
 			((uint&AVPOPS_DB_VAL_INT)?0:AVP_VAL_STR);
-	
-		LM_DBG("db_flags=%d, flags=%d\n",db_flags,flags);
-		/* does the avp type match ? */
-		if(!((flags&(AVPOPS_VAL_INT|AVPOPS_VAL_STR))==0 ||
-				((flags&AVPOPS_VAL_INT)&&((db_flags&AVP_NAME_STR)==0)) ||
-				((flags&AVPOPS_VAL_STR)&&(db_flags&AVP_NAME_STR))))
-			return -2;
 	} else {
 		/* check the validity of value column */
 		if (row->values[0].nul || (row->values[0].type!=DB_STRING &&
@@ -166,19 +159,10 @@ static int dbrow2avp(struct db_row *row, struct db_param *dbp, int_str attr,
 		} else {
 			atmp = row->values[1].val.str_val;
 		}
-		if (db_flags&AVP_NAME_STR)
-		{
-			/* name is string */
-			avp_attr.s = atmp;
-		} else {
-			/* name is ID */
-			if (str2int( &atmp, &uint)==-1)
-			{
-				LM_ERR("name is not ID as flags say <%s>\n", atmp.s);
-				return -1;
-			}
-			avp_attr.n = (int)uint;
-		}
+		/* there is always a name here - get the ID */
+		avp_attr = get_avp_id(&atmp);
+		if (avp_attr < 0)
+			return -2;
 	}
 
 	/* now get the value as correct type */
@@ -265,7 +249,7 @@ static inline void int_str2db_val( int_str is_val, str *val, int is_s)
 }
 
 static int avpops_get_aname(struct sip_msg* msg, struct fis_param *ap,
-		int_str *avp_name, unsigned short *name_type)
+		int *avp_name, unsigned short *name_type)
 {
 	if(ap==NULL || avp_name==NULL || name_type==NULL)
 	{
@@ -287,7 +271,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 	str              uuid;
 	int  i, n, sh_flg;
 	str *s0, *s1, *s2;
-	int_str avp_name;
+	int avp_name;
 	int avp_type = 0;
 	pv_value_t xvalue;
 
@@ -372,6 +356,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 			}
 		}
 	}
+	LM_DBG("attr dbp %s\n", dbp->sa.s);
 
 	/* do DB query */
 	res = db_load_avp( url, s0, s1,
@@ -390,20 +375,23 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 	for( n=0,i=0 ; i<res->n ; i++)
 	{
 		/* validate row */
-		memset(&avp_name, 0, sizeof(int_str));
+		avp_name = -1;
 		if(dbp->a.type==AVPOPS_VAL_PVAR)
 		{
 			if(pv_has_dname(&dbp->a.u.sval))
 			{
 				if(xvalue.flags&PV_TYPE_INT)
 				{
-					avp_name.n = xvalue.ri;
+					avp_name = xvalue.ri;
 				} else {
-					avpops_str2int_str(xvalue.rs, avp_name);
-					avp_type = AVP_NAME_STR;
+					avp_name = get_avp_id(&xvalue.rs);
+					if (avp_name < 0) {
+						LM_ERR("cannot get avp id\n");
+						return -1;
+					}
 				}
 			} else {
-				avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name;
+				avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
 				avp_type = dbp->a.u.sval.pvp.pvn.u.isname.type;
 			}
 		}
@@ -539,7 +527,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	struct usr_avp   **avp_list;
 	struct usr_avp   *avp;
 	unsigned short   name_type;
-	int_str          avp_name;
+	int              avp_name;
 	int_str          i_s;
 	str              uuid;
 	int              keys_nr;
@@ -604,12 +592,14 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	store_vals[4].val.str_val = (s1)?*s1:empty;
 	if (use_domain || sp->opd&AVPOPS_FLAG_DOMAIN0)
 		store_vals[5].val.str_val = (s2)?*s2:empty;
+	avp_name = -1;
 
 	/* is dynamic avp name ? */
 	if(dbp->a.type==AVPOPS_VAL_PVAR)
 	{
 		if(pv_has_dname(&dbp->a.u.sval))
 		{
+			/* TODO change here to be aware of the int name */
 			if(pv_get_spec_name(msg, &(dbp->a.u.sval.pvp), &xvalue)!=0)
 			{
 				LM_CRIT("failed to get value for P2\n");
@@ -623,31 +613,40 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			if(xvalue.flags&PV_TYPE_INT)
 			{
 				name_type = 0;
-				avp_name.n = xvalue.ri;
+				avp_name = xvalue.ri;
 			} else {
 				name_type = AVP_NAME_STR;
+				avp_name = -1;
 			}
 			if(xvalue.flags&PV_VAL_STR)
 			{
 				if(xvalue.rs.len>=AVPOPS_ATTR_LEN)
 				{
-				LM_ERR("name too long [%d/%.*s...]\n",
-					xvalue.rs.len, 16, xvalue.rs.s);
-				goto error;
-			}
-			dbp->sa.s = avpops_attr_buf;
-			memcpy(dbp->sa.s, xvalue.rs.s, xvalue.rs.len);
-			dbp->sa.len = xvalue.rs.len;
-			dbp->sa.s[dbp->sa.len] = '\0';
-			avp_name.s = dbp->sa;
+					LM_ERR("name too long [%d/%.*s...]\n",
+						xvalue.rs.len, 16, xvalue.rs.s);
+					goto error;
+				}
+				dbp->sa.s = avpops_attr_buf;
+				memcpy(dbp->sa.s, xvalue.rs.s, xvalue.rs.len);
+				dbp->sa.len = xvalue.rs.len;
+				dbp->sa.s[dbp->sa.len] = '\0';
+				avp_name = get_avp_id(&dbp->sa);
+				/* search for the id only once */
+				if (avp_name < 0) {
+					LM_ERR("cannot find avp\n");
+					goto error;
+				}
 			} else {
 				LM_INFO("no string value for p2\n");
 				goto error;
 			}
 		} else {
 			name_type = dbp->a.u.sval.pvp.pvn.u.isname.type;
-			avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name;
+			avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
 		}
+	} else {
+		LM_WARN("TODO: avp is not a dinamic name <%.*s> name is %d\n", dbp->sa.len, dbp->sa.s, avp_name);
+		avp_name = -1;
 	}
 
 	/* set the script flags */
@@ -657,13 +656,21 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	/* set uuid/(username and domain) fields */
 
 	n =0 ;
-
 	if ((dbp->a.opd&AVPOPS_VAL_NONE)==0)
 	{
+		/* if avp wasn't found yet */
+		if (avp_name < 0) {
+			avp_name = get_avp_id(&dbp->sa);
+			/* search for the id only once */
+			if (avp_name < 0) {
+				LM_ERR("cannot find avp\n");
+				goto error;
+			}
+		}
 		/* avp name is known ->set it and its type */
 		store_vals[1].val.str_val = dbp->sa; /*attr name*/
-		avp = search_first_avp( name_type, avp_name, &i_s, 0);
-		for( ; avp; avp=search_first_avp( name_type, avp_name, &i_s, avp))
+		avp = search_first_avp( 0, avp_name, &i_s, 0);
+		for( ; avp; avp=search_first_avp( 0, avp_name, &i_s, avp))
 		{
 			/* don't insert avps which were loaded */
 			if (avp->flags&AVP_IS_IN_DB)
@@ -693,19 +700,13 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			/* don't insert avps which were loaded */
 			if (avp->flags&AVP_IS_IN_DB)
 				continue;
-			/* check if type match */
-			if ( !( (dbp->a.opd&(AVPOPS_VAL_INT|AVPOPS_VAL_STR))==0 ||
-				((dbp->a.opd&AVPOPS_VAL_INT)&&((avp->flags&AVP_NAME_STR))==0)
-				||((dbp->a.opd&AVPOPS_VAL_STR)&&(avp->flags&AVP_NAME_STR))))
-				continue;
 
 			/* set attribute name and type */
 			if ( (sn=get_avp_name(avp))==0 )
 				i_s.n = avp->id;
 			else
 				i_s.s = *sn;
-			int_str2db_val( i_s, &store_vals[1].val.str_val,
-				avp->flags&AVP_NAME_STR);
+			int_str2db_val( i_s, &store_vals[1].val.str_val, AVP_NAME_STR);
 			store_vals[3].val.int_val =
 				(avp->flags&AVP_NAME_STR?0:AVPOPS_DB_NAME_INT)|
 				(avp->flags&AVP_VAL_STR?0:AVPOPS_DB_VAL_INT);
@@ -764,7 +765,7 @@ int ops_delete_avp(struct sip_msg* msg, struct fis_param *ap)
 	struct usr_avp *avp;
 	struct usr_avp *avp_next;
 	unsigned short name_type;
-	int_str avp_name;
+	int avp_name;
 	int n;
 
 	n = 0;
@@ -819,8 +820,8 @@ int ops_copy_avp( struct sip_msg* msg, struct fis_param* src,
 	int_str         avp_val2;
 	unsigned short name_type1;
 	unsigned short name_type2;
-	int_str avp_name1;
-	int_str avp_name2;
+	int avp_name1;
+	int avp_name2;
 	int n;
 
 	n = 0;
@@ -911,7 +912,7 @@ int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 	struct usr_avp *avp;
 	unsigned short name_type;
 	int_str        avp_val;
-	int_str        avp_name;
+	int        avp_name;
 	str            val;
 	int            act_type;
 	int            n;
@@ -1049,8 +1050,8 @@ int ops_check_avp( struct sip_msg* msg, struct fis_param* src,
 	struct usr_avp    *avp1;
 	struct usr_avp    *avp2;
 	regmatch_t        pmatch;
-	int_str           avp_name1;
-	int_str           avp_name2;
+	int               avp_name1;
+	int               avp_name2;
 	int_str           avp_val;
 	int_str           check_val;
 	int               check_flags;
@@ -1345,8 +1346,8 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 	int_str         avp_val;
 	unsigned short name_type1;
 	unsigned short name_type2;
-	int_str         avp_name1;
-	int_str         avp_name2;
+	int            avp_name1;
+	int            avp_name2;
 	int n;
 	int nmatches;
 	str* result;
@@ -1379,7 +1380,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 		name_type2 = name_type1;
 		avp_name2 = avp_name1;
 	}
-	
+/* TODO: delete?	
 	if(name_type2&AVP_NAME_STR)
 	{
 		if(avp_name2.s.len>=STR_BUF_SIZE)
@@ -1391,7 +1392,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 		str_buf[avp_name2.s.len] = '\0';
 		avp_name2.s.s = str_buf;
 	}
-
+*/
 	while(avp)
 	{
 		if(!is_avp_str_val(avp))
@@ -1452,9 +1453,9 @@ int ops_op_avp( struct sip_msg* msg, struct fis_param** av,
 	struct usr_avp    *avp1;
 	struct usr_avp    *avp2;
 	struct usr_avp    *prev_avp;
-	int_str           avp_name1;
-	int_str           avp_name2;
-	int_str           avp_name3;
+	int               avp_name1;
+	int               avp_name2;
+	int               avp_name3;
 	int_str           avp_val;
 	int_str           op_val;
 	int               op_flags;
@@ -1496,6 +1497,7 @@ int ops_op_avp( struct sip_msg* msg, struct fis_param** av,
 			goto error;
 		}
 	}
+/* TODO: delete?
 	if(name_type3&AVP_NAME_STR)
 	{
 		if(avp_name3.s.len>=STR_BUF_SIZE)
@@ -1507,6 +1509,7 @@ int ops_op_avp( struct sip_msg* msg, struct fis_param** av,
 		str_buf[avp_name3.s.len] = '\0';
 		avp_name3.s.s = str_buf;
 	}
+*/
 	prev_avp = 0;
 	result = 0;
 
@@ -1643,7 +1646,7 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 {
 	struct usr_avp *avp;
 	unsigned short    name_type;
-	int_str avp_name;
+	int avp_name;
 	int_str avp_value;
 	int index;
 	int findex;
@@ -1702,7 +1705,7 @@ int w_insert_avp(struct sip_msg* msg, char* name, char* value,
 		char *index_char)
 {
 	int              index = *(int*)index_char;
-	int_str          avp_name;
+	int              avp_name;
 	struct usr_avp   *avp= NULL, *prev_avp= NULL;
 	struct usr_avp   *avp_new;
 	unsigned short   name_type;

@@ -144,10 +144,11 @@ int rad_destroy_message(aaa_conn* rh, aaa_message* message) {
  */
 int extract_avp(VALUE_PAIR* vp) {
 	static str names, values;
+	int name;
 	unsigned int r;
 	char *p;
 	char *end;
-	int_str name, value;
+	int_str value;
 	unsigned short flags = 0;
 
 	/* empty? */
@@ -158,12 +159,11 @@ int extract_avp(VALUE_PAIR* vp) {
 	end = vp->strvalue + vp->lvalue;
 
 	/* get name */
-	if (*p != '#') {
-		/* name AVP */
-		flags |= AVP_NAME_STR;
-		names.s = p;
-	} else
-		names.s = ++p;
+	if (*p == '#') {
+		/* name is always a string */
+		++p;
+	}
+	names.s = p;
 
 	names.len = 0;
 	while (p < end && *p != ':' && *p != '#')
@@ -188,16 +188,6 @@ int extract_avp(VALUE_PAIR* vp) {
 		return -1;
 	}
 
-	if (!(flags&AVP_NAME_STR)) {
-		/* convert name to id*/
-		if (str2int(&names,&r)!=0 ) {
-			LM_ERR("invalid AVP ID '%.*s'\n", names.len,names.s);
-			return -1;
-		}
-		name.n = (int)r;
-	} else
-		name.s = names;
-
 	if (!(flags&AVP_VAL_STR)) {
 		/* convert value to integer */
 		if (str2int(&values,&r) != 0) {
@@ -208,14 +198,17 @@ int extract_avp(VALUE_PAIR* vp) {
 	} else
 		value.s = values;
 
+	name = get_avp_id(&names);
+	if (name < 0) {
+		LM_ERR("cannot get AVP id (%.*s)\n", names.len, names.s);
+		return -1;
+	}
 	if (add_avp( flags, name, value) < 0) {
 		LM_ERR("unable to create a new AVP\n");
 		return -1;
 	} else {
-		LM_DBG("AVP '%.*s'/%d='%.*s'/%d has been added\n",
-			(flags&AVP_NAME_STR)?name.s.len:4,
-			(flags&AVP_NAME_STR)?name.s.s:"null",
-			(flags&AVP_NAME_STR)?0:name.n,
+		LM_DBG("AVP '%.*s'='%.*s'/%d has been added\n",
+			names.len, names.s,
 			(flags&AVP_VAL_STR)?value.s.len:4,
 			(flags&AVP_VAL_STR)?value.s.s:"null",
 			(flags&AVP_VAL_STR)?0:value.n );

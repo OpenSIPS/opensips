@@ -159,10 +159,8 @@ static int generate_avps(db_res_t* result)
 				return -1;
 			}
 
-			LM_DBG("set string AVP \"%s\"/%d = \"%.*s\"\n",
-				(cred->avp_type&AVP_NAME_STR)?cred->avp_name.s.s:"",
-				(cred->avp_type&AVP_NAME_STR)?0:cred->avp_name.n,
-				ivalue.s.len, ZSW(ivalue.s.s));
+			LM_DBG("set string AVP %d = \"%.*s\"\n",
+					cred->avp_name, ivalue.s.len, ZSW(ivalue.s.s));
 			break;
 		case DB_STRING:
 			ivalue.s.s = (char*)VAL_STRING(&(result->rows[0].values[i]));
@@ -176,10 +174,8 @@ static int generate_avps(db_res_t* result)
 				return -1;
 			}
 
-			LM_DBG("set string AVP \"%s\"/%d = \"%.*s\"\n",
-				(cred->avp_type&AVP_NAME_STR)?cred->avp_name.s.s:"",
-				(cred->avp_type&AVP_NAME_STR)?0:cred->avp_name.n,
-				ivalue.s.len, ZSW(ivalue.s.s));
+			LM_DBG("set string AVP %d = \"%.*s\"\n",
+					cred->avp_name, ivalue.s.len, ZSW(ivalue.s.s));
 			break;
 		case DB_INT:
 			if (VAL_NULL(&(result->rows[0].values[i])))
@@ -192,10 +188,8 @@ static int generate_avps(db_res_t* result)
 				return -1;
 			}
 
-			LM_DBG("set int AVP \"%s\"/%d = %d\n",
-				(cred->avp_type&AVP_NAME_STR)?cred->avp_name.s.s:"",
-				(cred->avp_type&AVP_NAME_STR)?0:cred->avp_name.n,
-				ivalue.n);
+			LM_DBG("set string AVP %d = \"%.*s\"\n",
+					cred->avp_name, ivalue.s.len, ZSW(ivalue.s.s));
 			break;
 		default:
 			LM_ERR("subscriber table column %d `%.*s' has unsuported type. "

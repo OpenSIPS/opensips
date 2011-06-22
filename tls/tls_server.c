@@ -550,12 +550,6 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 
 	struct usr_avp *avp;
 	int_str val;
-	int_str avp_tlscdom_name;
-	unsigned short avp_tlscdom_name_type;
-
-	// we use integer name avp, configured via opensips.cfg
-	avp_tlscdom_name.n = tls_client_domain_avp;
-	avp_tlscdom_name_type = 0;
 
 	/*
 	* new connection within a single process, no lock necessary 
@@ -584,9 +578,8 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 		}
 	} else if (c->state == S_CONN_CONNECT) {
 		avp = NULL;
-		if (avp_tlscdom_name.n) {
-			avp = search_first_avp(avp_tlscdom_name_type, avp_tlscdom_name,
-				&val, 0);
+		if (tls_client_domain_avp > 0) {
+			avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
 		} else {
 			LM_DBG("name based TLS client domains are disabled\n");
 		}

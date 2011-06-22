@@ -57,9 +57,9 @@
 
 /* fr_timer AVP specs */
 static int     fr_timer_avp_type;
-static int_str fr_timer_avp;
+static int     fr_timer_avp;
 static int     fr_inv_timer_avp_type;
-static int_str fr_inv_timer_avp;
+static int     fr_inv_timer_avp;
 
 static str relay_reason_100 = str_init("Giving a try");
 
@@ -297,7 +297,7 @@ int init_avp_params(char *fr_timer_param, char *fr_inv_timer_param)
 		}
 		fr_timer_avp_type = avp_flags;
 	} else {
-		fr_timer_avp.n = 0;
+		fr_timer_avp = -1;
 		fr_timer_avp_type = 0;
 	}
 
@@ -317,7 +317,7 @@ int init_avp_params(char *fr_timer_param, char *fr_inv_timer_param)
 		}
 		fr_inv_timer_avp_type = avp_flags;
 	} else {
-		fr_inv_timer_avp.n = 0;
+		fr_inv_timer_avp = -1;
 		fr_inv_timer_avp_type = 0;
 	}
 	return 0;
@@ -327,7 +327,7 @@ int init_avp_params(char *fr_timer_param, char *fr_inv_timer_param)
 /*
  * Get the FR_{INV}_TIMER from corresponding AVP
  */
-static inline int avp2timer(utime_t *timer, int type, int_str name)
+static inline int avp2timer(utime_t *timer, int type, int name)
 {
 	struct usr_avp *avp;
 	int_str val_istr;
@@ -353,7 +353,7 @@ static inline int avp2timer(utime_t *timer, int type, int_str name)
 
 int fr_avp2timer(utime_t* timer)
 {
-	if (fr_timer_avp.n!=0)
+	if (fr_timer_avp>=0)
 		return avp2timer( timer, fr_timer_avp_type, fr_timer_avp);
 	else
 		return 1;
@@ -362,7 +362,7 @@ int fr_avp2timer(utime_t* timer)
 
 int fr_inv_avp2timer(utime_t* timer)
 {
-	if (fr_inv_timer_avp.n!=0)
+	if (fr_inv_timer_avp>=0)
 		return avp2timer( timer, fr_inv_timer_avp_type, fr_inv_timer_avp);
 	else
 		return 1;

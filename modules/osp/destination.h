@@ -68,6 +68,7 @@ typedef struct _osp_dest {
     time_t time200;
 } osp_dest;
 
+int ospParseAvps(void);
 osp_dest* ospInitDestination(osp_dest* dest);
 int ospSaveOrigDestination(osp_dest* dest);
 int ospSaveTermDestination(osp_dest* dest);

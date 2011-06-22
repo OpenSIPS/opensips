@@ -50,7 +50,7 @@ struct serial_contact {
 #define SERIAL_AVP_ALIAS  "serial_branch"	/*!< avp alias to be used */
 #define SERIAL_AVL_ID     0xff3434		/*!< avp ID of serial AVP */
 
-static int_str serial_avp;
+static int serial_avp;
 
 
 
@@ -58,8 +58,11 @@ int init_serialization(void)
 {
 	str alias = { SERIAL_AVP_ALIAS, sizeof(SERIAL_AVP_ALIAS)-1 };
 
-	serial_avp.n = SERIAL_AVL_ID;
-	return add_avp_galias( &alias, 0 /*type*/, serial_avp );
+	if (parse_avp_spec(&alias, &serial_avp)) {
+		LM_ERR("cannot parse avp spec\n");
+		return -1;
+	}
+	return 0;
 }
 
 

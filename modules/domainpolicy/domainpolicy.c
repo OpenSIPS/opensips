@@ -102,7 +102,7 @@ static int stack_succeeded(struct avp_stack *stack) {
 
 static void stack_to_avp(struct avp_stack *stack) {
 	int j;
-	int_str  avp_att;
+	int  avp_att;
 	int_str  avp_val;
 	unsigned int intval;
 
@@ -113,84 +113,25 @@ static void stack_to_avp(struct avp_stack *stack) {
 		LM_DBG("process AVP: name='%s' value='%s'\n", 
 					stack->avp[j].att, stack->avp[j].val);
 
-		/* if the second character is a ':', ignore the prefix
-		 * this allows specifying the name with i:... or s:... too
-		 * Note: the first character is ignored!!!
-		 */
-		if ( stack->avp[j].att[0] && stack->avp[j].att[1]==':' ) { 
+		/* we will only use string avps
+		 * so all names are strings */
+		avp_val.s.s = stack->avp[j].att;
+		avp_val.s.len = strlen(avp_val.s.s);
 
-			switch (stack->avp[j].att[0]) {
-			case 'i':
-			case 'I':
-				intval = 1;
-				break;
-			case 's':
-			case 'S':
-				intval = 0;
-				break;
-			default:
-				LM_ERR("invalid type '%c'\n",stack->avp[j].att[0]);
-				continue;
-			}
-			avp_att.s.s = (char *) &(stack->avp[j].att[2]); 
-		} else {
-			avp_att.s.s = stack->avp[j].att;
-		}
-		avp_att.s.len = strlen(avp_att.s.s);
-		if (!avp_att.s.len) {
-			LM_ERR("empty AVP name string!\n");
+		avp_att = get_avp_id(&avp_val.s);
+		if (avp_att < 0) {
+			LM_ERR("cannot find %s avp\n", avp_val.s.s);
 			continue;
 		}
+		LM_DBG("create string named AVP <s:%.*s>\n", 
+				avp_val.s.len, ZSW(avp_val.s.s));
 
 		avp_val.s.s = stack->avp[j].val; 
 		avp_val.s.len = strlen(avp_val.s.s);
 
-		if (intval==1) {
-			/* integer type explicitely forced with i: */
-			if (str2int(&(avp_att.s), &intval) == 0) {
-				/* integer named AVP */
-				if (!intval) {
-					LM_ERR("nameless integer AVP!\n");
-					continue;
-				}
-				avp_att.n = intval;
-				LM_DBG("create integer named AVP <i:%d>\n", avp_att.n);
-				add_avp(AVP_VAL_STR, avp_att, avp_val);
-				continue;
-			} else { 
-				LM_ERR("integer AVP is not an integer!\n");
-				continue;
-			}
-		} 
-
-		if (intval==2) {
-			/* string type undefined */
-			/* convert name into integer. if it succeeds then it is
-			 * an integer named AVP. If it fails, then it is a string
-			 * named AVP
-			 */
-			if (str2int(&(avp_att.s), &intval) == 0) {
-				/* integer named AVP */
-				if (!intval) {
-					LM_ERR("nameless integer AVP!\n");
-					continue;
-				}
-				avp_att.n = intval;
-				LM_DBG("create integer named AVP <i:%d>\n", avp_att.n);
-				add_avp(AVP_VAL_STR, avp_att, avp_val);
-				continue;
-			} else { 
-				LM_DBG("create string named AVP <s:%.*s>\n", 
-						avp_att.s.len, ZSW(avp_att.s.s));
-				add_avp(AVP_NAME_STR | AVP_VAL_STR, avp_att, avp_val);
-				continue;
-			}
-		} 
-
 		/* intval==0, string type explicitely forced with s: */
-		LM_DBG("create string named AVP <s:%.*s>\n", 
-				avp_att.s.len, ZSW(avp_att.s.s));
-		add_avp(AVP_NAME_STR | AVP_VAL_STR, avp_att, avp_val);
+		if(add_avp(AVP_VAL_STR, avp_att, avp_val))
+			LM_ERR("cannot add avp\n");
 	}
 }
 
@@ -512,7 +453,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
     stack_reset(&stack);
     /* If we're in a recursive call, set the domain-replacement */
     if ( rec_level > 0 ) {
-	stack_push(&stack, domain_replacement_name.s.s, domain->s);
+	stack_push(&stack, domain_replacement_avp.s, domain->s);
 	stack.succeeded = 0;
     }
 
@@ -534,7 +475,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 	stack_reset(&stack);
 	/* If we're in a recursive call, set the domain-replacement */
 	if ( rec_level > 0 ) {
-	    stack_push(&stack, domain_replacement_name.s.s, (char *) domain->s);
+	    stack_push(&stack, domain_replacement_avp.s, (char *) domain->s);
 	    stack.succeeded = 0;
 	}
     } else {
@@ -709,7 +650,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 	    stack_reset(&stack);
 	    /* If we're in a recursive call, set the domain-replacement */
 	    if ( rec_level > 0 ) {
-		stack_push(&stack, domain_replacement_name.s.s, (char *) domain->s);
+		stack_push(&stack, domain_replacement_avp.s, (char *) domain->s);
 		stack.succeeded = 0;
 	    }
 	    failed = 1;
@@ -790,7 +731,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	 */
 
 	/* search for send_socket AVP */
-	avp = search_first_avp(send_socket_avp_name_str, send_socket_name, &val, 0);
+	avp = search_first_avp(0, send_socket_name, &val, 0);
 	if (avp) {
 		if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
 			LM_ERR("empty or non-string send_socket_avp, "
@@ -837,7 +778,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	LM_DBG("domain is %.*s.\n", domain->len, ZSW(domain->s));
 
 	/* search for prefix and add it to duri buffer */
-	avp = search_first_avp(domain_prefix_avp_name_str, domain_prefix_name, &val, 0);
+	avp = search_first_avp(0, domain_prefix_name, &val, 0);
 	if (avp) {
 		if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
 			LM_ERR("empty or non-string domain_prefix_avp, return with error ...\n");
@@ -857,7 +798,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 
 
 	/* add domain to duri buffer */
-	avp = search_first_avp(domain_replacement_avp_name_str, domain_replacement_name, &val, 0);
+	avp = search_first_avp(0, domain_replacement_name, &val, 0);
 	if (avp) {
 		if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
 			LM_ERR("empty or non-string domain_replacement_avp, return with"
@@ -882,7 +823,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	}
 	
 	/* search for suffix and add it to duri buffer */
-	avp = search_first_avp(domain_suffix_avp_name_str, domain_suffix_name, &val, 0);
+	avp = search_first_avp(0, domain_suffix_name, &val, 0);
 	if (avp) {
 		if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
 			LM_ERR("empty or non-string domain_suffix_avp,return with error .."
@@ -902,7 +843,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	}
 
 	/* search for port override and add it to duri buffer */
-	avp = search_first_avp(port_override_avp_name_str, port_override_name, &val, 0);
+	avp = search_first_avp(0, port_override_name, &val, 0);
 	if (avp) {
 		if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
 			LM_ERR("empty or non-string port_override_avp, return with error ...\n");
@@ -935,7 +876,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	}
 
 	/* search for transport override and add it to duri buffer */
-	avp = search_first_avp(transport_override_avp_name_str, transport_override_name, &val, 0);
+	avp = search_first_avp(0, transport_override_name, &val, 0);
 	if (avp) {
 		if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
 			LM_ERR("empty or non-string transport_override_avp, "

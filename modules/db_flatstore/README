@@ -8,7 +8,7 @@ Edited by
 
 Jan Janak
 
-   Copyright � 2004, 2005 FhG FOKUS
+   Copyright © 2004, 2005 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -40,7 +40,7 @@ Jan Janak
 
    List of Examples
 
-   1.1. Set "flush" parameter
+   1.1. Set “flush” parameter
 
 Chapter 1. Admin Guide
 
@@ -140,7 +140,7 @@ opensipsctl fifo flat_rotate
 
    Default value is 1.
 
-   Example 1.1. Set "flush" parameter
+   Example 1.1. Set “flush” parameter
 ...
 modparam("db_flatstore", "flush", 0)
 ...

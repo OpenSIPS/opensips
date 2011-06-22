@@ -47,6 +47,7 @@
 #include "../../dset.h"
 #include "../../action.h"
 #include "../../usr_avp.h"
+#include "../../ut.h"
 
 #include "exec.h"
 
@@ -346,9 +347,18 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 		avp_type = 0;
 		if(crt==NULL)
 		{
-			avp_name.n = i+1;
+			avp_name.s.s = int2str(i + 1, &avp_name.s.len);
+			if (!avp_name.s.s) {
+				LM_ERR("cannot convert %d to string\n", i + 1);
+				goto error;
+			}
+			avp_name.n = get_avp_id(&avp_name.s);
+			if (avp_name.n < 0) {
+				LM_ERR("cannot get avp id\n");
+				goto error;
+			}
 		} else {
-			if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name, &avp_type)!=0)
+			if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name.n, &avp_type)!=0)
 			{
 				LM_ERR("can't get item name [%d]\n",i);
 				goto error;
@@ -358,7 +368,7 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 		avp_type |= AVP_VAL_STR;
 		avp_val.s = res;
 	
-		if(add_avp(avp_type, avp_name, avp_val)!=0)
+		if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 		{
 			LM_ERR("unable to add avp\n");
 			goto error;
@@ -417,9 +427,18 @@ int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	avp_type = 0;
 	if(crt==NULL)
 	{
-		avp_name.n = 1;
+		avp_name.s.s = int2str(1, &avp_name.s.len);
+		if (!avp_name.s.s) {
+			LM_ERR("cannot convert 1 to string\n");
+			goto error;
+		}
+		avp_name.n = get_avp_id(&avp_name.s);
+		if (avp_name.n < 0) {
+			LM_ERR("cannot get avp id\n");
+			goto error;
+		}
 	} else {
-		if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name, &avp_type)!=0)
+		if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name.n, &avp_type)!=0)
 		{
 			LM_ERR("can't get item name\n");
 			goto error;
@@ -429,7 +448,7 @@ int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	avp_type |= AVP_VAL_STR;
 	avp_val.s = res;
 	
-	if(add_avp(avp_type, avp_name, avp_val)!=0)
+	if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 	{
 		LM_ERR("unable to add avp\n");
 		goto error;

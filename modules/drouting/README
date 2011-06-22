@@ -555,7 +555,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
    Example 1.6. Set ruri_avp parameter
 ...
 modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
-modparam("drouting", "ruri_avp", '$avp(i:33)')
+modparam("drouting", "ruri_avp", '$avp(33)')
 ...
 
 1.3.7. gw_attrs_avp (str)
@@ -569,8 +569,8 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
 
    Example 1.7. Set gw_attrs_avp parameter
 ...
-modparam("drouting", "gw_attrs_avp", '$avp(s:gw_attrs)')
-modparam("drouting", "gw_attrs_avp", '$avp(i:67)')
+modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
+modparam("drouting", "gw_attrs_avp", '$avp(67)')
 ...
 
 1.3.8. rule_attrs_avp (str)
@@ -582,8 +582,8 @@ modparam("drouting", "gw_attrs_avp", '$avp(i:67)')
 
    Example 1.8. Set rule_attrs_avp parameter
 ...
-modparam("drouting", "rule_attrs_avp", '$avp(s:rule_attrs)')
-modparam("drouting", "rule_attrs_avp", '$avp(i:66)')
+modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
+modparam("drouting", "rule_attrs_avp", '$avp(66)')
 ...
 
 1.3.9. gw_id_avp (str)
@@ -597,8 +597,8 @@ modparam("drouting", "rule_attrs_avp", '$avp(i:66)')
 
    Example 1.9. Set gw_id_avp parameter
 ...
-modparam("drouting", "gw_id_avp", '$avp(s:gw_id)')
-modparam("drouting", "gw_id_avp", '$avp(i:334)')
+modparam("drouting", "gw_id_avp", '$avp(gw_id)')
+modparam("drouting", "gw_id_avp", '$avp(334)')
 ...
 
 1.3.10. rule_id_avp (str)
@@ -610,8 +610,8 @@ modparam("drouting", "gw_id_avp", '$avp(i:334)')
 
    Example 1.10. Set rule_id_avp parameter
 ...
-modparam("drouting", "rule_id_avp", '$avp(s:rule_id)')
-modparam("drouting", "rule_id_avp", '$avp(i:335)')
+modparam("drouting", "rule_id_avp", '$avp(rule_id)')
+modparam("drouting", "rule_id_avp", '$avp(335)')
 ...
 
 1.3.11. define_blacklist (str)
@@ -779,8 +779,8 @@ do_routing();
 # group id 0, sort 0
 do_routing("0");
 ...
-# group id from $avp(i:10), sort 0
-do_routing("$avp(i:10)");
+# group id from $avp(10), sort 0
+do_routing("$avp(10)");
 ...
 # all groups, sort 1
 do_routing("","1");

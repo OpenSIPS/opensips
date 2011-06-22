@@ -68,7 +68,7 @@ typedef struct _dr_group {
 	union {
 		unsigned int grp_id;
 		struct _avp_id{
-			int_str name;
+			int name;
 			unsigned short type;
 		}avp_id;
 	}u;

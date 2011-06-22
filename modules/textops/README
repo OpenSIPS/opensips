@@ -23,10 +23,10 @@ Ovidiu Sas
 
    <osas@voipembedded.com>
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 03:45:05 -0400
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2010-12-07 19:37:12 +0200
+                              (Tue, 07 Dec 2010) $
      __________________________________________________________
 
    Table of Contents
@@ -69,7 +69,7 @@ Ovidiu Sas
               1.3.23. is_method(name)
               1.3.24. remove_hf(hname)
               1.3.25. has_body(), has_body(mime)
-              1.3.26. is_audio_on_hold(),
+              1.3.26. is_audio_on_hold()
               1.3.27. is_privacy(privacy_type)
               1.3.28. strip_body(), strip_body(mime)
               1.3.29. add_body(body_text, new_content_type)
@@ -142,7 +142,7 @@ Chapter 1. Admin Guide
 1.1.1. Known Limitations
 
    search ignores folded lines. For example,
-   search("(From|f):.*@foo.bar") doesn't match the following From
+   search(“(From|f):.*@foo.bar”) doesn't match the following From
    header field:
 From: medabeda
  <sip:medameda@foo.bar>;tag=1234
@@ -558,7 +558,7 @@ append_urihf("CC-Diversion: ", "\r\n");
 Note
 
    The function is also able to distinguish the compact names. For
-   exmaple "From" will match with "f"
+   exmaple “From” will match with “f”
 
    Meaning of the parameters is as follows:
      * hf_name - Header field name.(long or compact form)
@@ -575,8 +575,8 @@ if (is_present_hf("From")) log(1, "From HF Present");
 
    Adds a time header to the reply of the request. You must use it
    before functions that are likely to send a reply, e.g., save()
-   from 'registrar' module. Header format is: "Date: %a, %d %b %Y
-   %H:%M:%S GMT", with the legend:
+   from 'registrar' module. Header format is: “Date: %a, %d %b %Y
+   %H:%M:%S GMT”, with the legend:
      * %a abbreviated week of day name (locale)
      * %d day of month as decimal number
      * %b abbreviated month name (locale)
@@ -634,7 +634,7 @@ if(is_method("OPTION|UPDATE"))
 
 1.3.24.  remove_hf(hname)
 
-   Remove from message all headers with name "hname"
+   Remove from message all headers with name “hname”
 
    Returns true if at least one header is found and removed.
 
@@ -655,11 +655,11 @@ if(remove_hf("User-Agent"))
 1.3.25.  has_body(), has_body(mime)
 
    The function returns true if the SIP message has a body
-   attached. The checked includes also the "Content-Lenght" header
+   attached. The checked includes also the “Content-Lenght” header
    presence and value.
 
    If a paramter is given, the mime described will be also checked
-   against the "Content-Type" header.
+   against the “Content-Type” header.
 
    If the SIP message has a multipart body and mime is not a
    multipart type , it will search through all the parts for the
@@ -668,7 +668,7 @@ if(remove_hf("User-Agent"))
    It will not handle multi-layer multiparts
 
    Meaning of the parameters is as follows:
-     * mime - mime to be checked against the "Content-Type"
+     * mime - mime to be checked against the “Content-Type”
        header. If not present or 0, this check will be disabled.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -682,7 +682,7 @@ if(has_body("application/sdp"))
 }
 ...
 
-1.3.26.  is_audio_on_hold(),
+1.3.26.  is_audio_on_hold()
 
    The function returns true if the SIP message has an SDP body
    attached and at least one audio stream in on hold.
@@ -692,7 +692,7 @@ if(has_body("application/sdp"))
 
    Example 1.26. is_audio_on_hold usage
 ...
-if(s_audio_on_hold())
+if(is_audio_on_hold())
 {
     # do interesting stuff here
 }
@@ -731,7 +731,7 @@ if(is_privacy("id"))
    It will not handle multi-layer multiparts
 
    Meaning of the parameters is as follows:
-     * mime - mime to be checked against the "Content-Type"
+     * mime - mime to be checked against the “Content-Type”
        header. If not present or 0, this check will be disabled.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

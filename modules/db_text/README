@@ -10,7 +10,7 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright � 2003, 2004 FhG FOKUS
+   Copyright © 2003, 2004 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -87,11 +87,11 @@ Chapter 1. Admin Guide
      * a database is represented by a directory in the local file
        system. NOTE: when you use dbtext in OpenSIPS, the database
        URL for modules must be the path to the directory where the
-       table-files are located, prefixed by "dbtext://", e.g.,
-       "dbtext:///var/dbtext/ser". If there is no "/" after
-       "dbtext://" then "CFG_DIR/" is inserted at the beginning of
+       table-files are located, prefixed by “dbtext://”, e.g.,
+       “dbtext:///var/dbtext/ser”. If there is no “/” after
+       “dbtext://” then “CFG_DIR/” is inserted at the beginning of
        the database path. So, either you provide an absolute path
-       to database directory or a relative one to "CFG_DIR"
+       to database directory or a relative one to “CFG_DIR”
        directory.
      * a table is represented by a text file inside database
        directory.
@@ -103,7 +103,7 @@ Chapter 1. Admin Guide
      * the name of column must not include white spaces.
      * the format of a column definition is: name(type,attr).
      * between two column definitions must be a white space, e.g.,
-       "first_name(str) last_name(str)".
+       “first_name(str) last_name(str)”.
      * the type of a column can be:
           + int - integer numbers.
           + double - real numbers with two decimals.
@@ -116,12 +116,12 @@ Chapter 1. Admin Guide
           + if no attribute is set, the fields of the column
             cannot have null value.
      * each other line is a row with data. The line ends with
-       "\n".
-     * the fields are separated by ":".
+       “\n”.
+     * the fields are separated by “:”.
      * no value between two ':' (or between ':' and start/end of a
-       row) means "null" value.
-     * next characters must be escaped in strings: "\n", "\r",
-       "\t", ":".
+       row) means “null” value.
+     * next characters must be escaped in strings: “\n”, “\r”,
+       “\t”, “:”.
      * 0 -- the zero value must be escaped too.
 
    Example 1.1. Sample of a dbtext table
@@ -175,7 +175,7 @@ suser:supasswd:xxx:alpha.org:xxx
    file on disk has changed, and if yes, will re-load table from
    file.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.4. Set db_mode parameter
 ...
@@ -193,11 +193,11 @@ modparam("db_text", "db_mode", 1)
 
    REMINDER: when you use dbtext in OpenSIPS, the database URL for
    modules must be the path to the directory where the table-files
-   are located, prefixed by "dbtext://", e.g.,
-   "dbtext:///var/dbtext/ser". If there is no "/" after
-   "dbtext://" then "CFG_DIR/" is inserted at the beginning of the
+   are located, prefixed by “dbtext://”, e.g.,
+   “dbtext:///var/dbtext/ser”. If there is no “/” after
+   “dbtext://” then “CFG_DIR/” is inserted at the beginning of the
    database path. So, either you provide an absolute path to
-   database directory or a relative one to "CFG_DIR" directory.
+   database directory or a relative one to “CFG_DIR” directory.
 
    Example 1.5. Load the dbtext module
 ...

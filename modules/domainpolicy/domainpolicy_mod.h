@@ -47,16 +47,9 @@ extern str domainpolicy_col_val;   	/* Value column name */
  * Other module variables
  */
 
-extern int_str port_override_name, transport_override_name, 
+extern int port_override_name, transport_override_name, 
 		domain_prefix_name, domain_suffix_name, domain_replacement_name,
 		send_socket_name, target_name;
-
-extern unsigned short port_override_avp_name_str;
-extern unsigned short transport_override_avp_name_str;
-extern unsigned short domain_prefix_avp_name_str;
-extern unsigned short domain_suffix_avp_name_str;
-extern unsigned short domain_replacement_avp_name_str;
-extern unsigned short send_socket_avp_name_str;
-
+extern str domain_replacement_avp;
 
 #endif /* DOMAINPOLICY_MOD_H */

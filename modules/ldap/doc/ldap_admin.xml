@@ -462,13 +462,13 @@ modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
                 <para>Subtree search with LDAP session named
                 <varname>ldap1</varname>, base
                 <varname>dc=example,dc=com</varname> using search filter
-                <varname>(cn=$(avp(s:name)))</varname> and returning
+                <varname>(cn=$(avp(name)))</varname> and returning
                 <varname>SIPIdentityUserName</varname> and
                 <varname>SIPIdentityServiceLevel</varname> attributes</para>
 
                 <programlisting>
 ldap://ldap_1/dc=example,dc=com?
-       SIPIdentityUserName,SIPIdentityServiceLevel?sub?(cn=$(avp(s:name)))
+       SIPIdentityUserName,SIPIdentityServiceLevel?sub?(cn=$(avp(name)))
 	        </programlisting>
               </example>
             </listitem>
@@ -548,8 +548,8 @@ if (!ldap_search("ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=$rU)"))
 }
 xlog("L_INFO", "ldap_search: found [$retcode] entries for (cn=$rU)");
 
-# save telephone number in $avp(s:tel_number)
-ldap_result("telephoneNumber/$avp(s:tel_number)");
+# save telephone number in $avp(tel_number)
+ldap_result("telephoneNumber/$avp(tel_number)");
 ...
 			</programlisting>
         </example>
@@ -589,8 +589,8 @@ ldap_result("telephoneNumber/$avp(s:tel_number)");
 
             <listitem>
               <para>Specification of destination AVP, e.g.
-              <varname>$avp(s:service_level)</varname> or
-              <varname>$avp(i:12)</varname></para>
+              <varname>$avp(service_level)</varname> or
+              <varname>$avp(12)</varname></para>
             </listitem>
           </varlistentry>
 		  
@@ -660,8 +660,8 @@ ldap_result("telephoneNumber/$avp(s:tel_number)");
 # ldap_search call
 ...
 
-# save SIPIdentityServiceLevel in $avp(s:service_level)
-if (!ldap_result("SIPIdentityServiceLevel/$avp(s:service_level)"))
+# save SIPIdentityServiceLevel in $avp(service_level)
+if (!ldap_result("SIPIdentityServiceLevel/$avp(service_level)"))
 {
     switch ($retcode)
     {
@@ -678,8 +678,8 @@ if (!ldap_result("SIPIdentityServiceLevel/$avp(s:service_level)"))
     }
 }
 
-# save SIP URI domain in $avp(i:10)
-ldap_result("SIPIdentitySIPURI/$avp(i:10)", "/^[^@]+@(.+)$/\1/");
+# save SIP URI domain in $avp(10)
+ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
 ...
 			</programlisting>
         </example>
@@ -849,18 +849,18 @@ if (!ldap_result_check("sn/$ru", "/^sip:([^@]).*$/\1/"))
 # ldap_search call
 ...
 
-ldap_result("telephonenumber/$avp(s:tel1)");
+ldap_result("telephonenumber/$avp(tel1)");
 if (ldap_result_next())
 {
-	ldap_result("telephonenumber/$avp(s:tel2)");
+	ldap_result("telephonenumber/$avp(tel2)");
 }
 if (ldap_result_next())
 {
-	ldap_result("telephonenumber/$avp(s:tel3)");
+	ldap_result("telephonenumber/$avp(tel3)");
 }
 if (ldap_result_next())
 {
-	ldap_result("telephonenumber/$avp(s:tel4)");
+	ldap_result("telephonenumber/$avp(tel4)");
 }	
 ...
 			</programlisting>
@@ -945,7 +945,7 @@ if (ldap_result_next())
             <listitem>
               <para>String to apply RFC 4515 and URL escpaing rules to.
 	      AVPs and pseudo variables do get expanded. Example:
-              <varname>"cn=$avp(s:name)"</varname></para>
+              <varname>"cn=$avp(name)"</varname></para>
             </listitem>
           </varlistentry>
 
@@ -954,8 +954,8 @@ if (ldap_result_next())
 
             <listitem>
               <para>Specification of AVP to store resulting RFC 4515
-	      and URL encoded string, e.g. <varname>$avp(s:ldap_search)</varname>
-	      or <varname>$avp(i:10)</varname></para>
+	      and URL encoded string, e.g. <varname>$avp(ldap_search)</varname>
+	      or <varname>$avp(10)</varname></para>
             </listitem>
           </varlistentry>
         </variablelist>
@@ -991,16 +991,16 @@ if (ldap_result_next())
 
           <programlisting>
 ...
-if (!ldap_filter_url_encode("cn=$avp(s:name)", "$avp(s:name_esc)"))
+if (!ldap_filter_url_encode("cn=$avp(name)", "$avp(name_esc)"))
 {
     # RFC 4515/URL encoding failed --> silently discard request
     exit;
 }
 
-xlog("L_INFO", "encoded LDAP filter component: [$avp(s:name_esc)]\n");
+xlog("L_INFO", "encoded LDAP filter component: [$avp(name_esc)]\n");
 
 if (ldap_search(
-     "ldap://h350/ou=commObjects,dc=example,dc=com??sub?($avp(s:name_esc))")) 
+     "ldap://h350/ou=commObjects,dc=example,dc=com??sub?($avp(name_esc))")) 
     { ... }
 ...
 			</programlisting>

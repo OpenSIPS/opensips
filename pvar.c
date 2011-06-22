@@ -1769,7 +1769,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	unsigned short name_type;
-	int_str avp_name;
+	int avp_name;
 	int_str avp_value;
 	struct usr_avp *avp;
 	int_str avp_value0;
@@ -2150,7 +2150,7 @@ static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	int_str avp_name;
+	int avp_name;
 	int_str avp_val;
 	int flags;
 	unsigned short name_type;
@@ -2904,8 +2904,9 @@ int pv_parse_avp_name(pv_spec_p sp, str *in)
 		return 0;
 	}
 	/*LM_DBG("static name [%.*s]\n", in->len, in->s);*/
-	if(parse_avp_spec(in, &sp->pvp.pvn.u.isname.type,
-				&sp->pvp.pvn.u.isname.name)!=0)
+	/* always an int type from now */
+	sp->pvp.pvn.u.isname.type = 0;
+	if(parse_avp_spec(in, &sp->pvp.pvn.u.isname.name.n)!=0)
 	{
 		LM_ERR("bad avp name [%.*s]\n", in->len, in->s);
 		return -1;
@@ -3790,26 +3791,20 @@ int pv_get_spec_name(struct sip_msg* msg, pv_param_p ip, pv_value_t *name)
 	return 0;
 }
 
-int pv_get_avp_name(struct sip_msg* msg, pv_param_p ip, int_str *avp_name,
+int pv_get_avp_name(struct sip_msg* msg, pv_param_p ip, int *avp_name,
 		unsigned short *name_type)
 {
 	pv_value_t tv;
 	if(ip==NULL || avp_name==NULL || name_type==NULL)
 		return -1;
-	memset(avp_name, 0, sizeof(int_str));
+	*avp_name = 0;
 	*name_type = 0;
 
 	if(ip->pvn.type==PV_NAME_INTSTR)
 	{
 		*name_type = ip->pvn.u.isname.type;
-		if(ip->pvn.u.isname.type&AVP_NAME_STR)
-		{
-			avp_name->s = ip->pvn.u.isname.name.s;
-			*name_type |= AVP_NAME_STR;
-		} else {
-			avp_name->n = ip->pvn.u.isname.name.n;
-			*name_type &= AVP_SCRIPT_MASK;
-		}
+		*avp_name = ip->pvn.u.isname.name.n;
+		*name_type &= AVP_SCRIPT_MASK;
 		return 0;
 	}
 	/* pvar */
@@ -3826,10 +3821,14 @@ int pv_get_avp_name(struct sip_msg* msg, pv_param_p ip, int_str *avp_name,
 		
 	if((tv.flags&PV_TYPE_INT) && (tv.flags&PV_VAL_INT))
 	{
-		avp_name->n = tv.ri;
+		*avp_name = tv.ri;
 	} else {
-		avp_name->s = tv.rs;
-		*name_type = AVP_NAME_STR;
+		/* search the name here */
+		*avp_name = get_avp_id(&tv.rs);
+		if (*avp_name == 0) {
+			LM_ERR("cannot find avp %.*s\n", tv.rs.len, tv.rs.s);
+			return -1;
+		}
 	}
 	return 0;
 }

@@ -90,7 +90,7 @@ struct cpl_enviroment    cpl_env = {
 		0,   /* udomain */
 		0,   /* no branches on lookup */
 		0,   /* timer avp type */
-		{0}, /* timer avp name/ID */
+		-1,  /* timer avp name/ID */
 		0    /* use_domain */
 };
 

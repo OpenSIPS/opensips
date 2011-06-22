@@ -59,9 +59,9 @@
 # define INLINE
 #endif
 
-#define SIGNALING_IP_AVP_SPEC  "$avp(s:signaling_ip)"
-#define MEDIA_RELAY_AVP_SPEC   "$avp(s:media_relay)"
-#define ICE_CANDIDATE_AVP_SPEC "$avp(s:ice_candidate)"
+#define SIGNALING_IP_AVP_SPEC  "$avp(mp_signaling_ip)"
+#define MEDIA_RELAY_AVP_SPEC   "$avp(mp_media_relay)"
+#define ICE_CANDIDATE_AVP_SPEC "$avp(mp_ice_candidate)"
 
 #define NO_CANDIDATE -1
 
@@ -150,7 +150,7 @@ typedef struct SessionInfo {
 
 typedef struct AVP_Param {
     str spec;
-    int_str name;
+    int name;
     unsigned short type;
 } AVP_Param;
 
@@ -187,13 +187,13 @@ struct dlg_binds dlg_api;
 Bool have_dlg_api = False;
 
 // The AVP where the caller signaling IP is stored (if defined)
-static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), {0}, 0};
+static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 
 // The AVP where the application-defined media relay IP is stored
-static AVP_Param media_relay_avp = {str_init(MEDIA_RELAY_AVP_SPEC), {0}, 0};
+static AVP_Param media_relay_avp = {str_init(MEDIA_RELAY_AVP_SPEC), -1, 0};
 
 // The AVP where the ICE candidate priority is stored (if defined)
-static AVP_Param ice_candidate_avp = {str_init(ICE_CANDIDATE_AVP_SPEC), {0}, 0};
+static AVP_Param ice_candidate_avp = {str_init(ICE_CANDIDATE_AVP_SPEC), -1, 0};
 
 static cmd_export_t commands[] = {
     {"engage_media_proxy", (cmd_function)EngageMediaProxy, 0, 0, 0, REQUEST_ROUTE},

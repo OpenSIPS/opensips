@@ -49,5 +49,5 @@ char           *tls_ciphers_list = 0;
 int             tls_handshake_timeout = 30;
 int             tls_send_timeout      = 30;
 /* per default, the TLS domains do not have a name */
-int             tls_client_domain_avp = 0;
+int             tls_client_domain_avp = -1;
 

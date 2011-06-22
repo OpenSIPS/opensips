@@ -449,9 +449,14 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 			avp_type = 0;
 			if(crt==NULL)
 			{
-				avp_name.n = j+1;
+				avp_name.s.s = int2str(j+1, &avp_name.s.len);
+				avp_name.n = get_avp_id(&avp_name.s);
+				if (avp_name.n < 0) {
+					LM_ERR("cannot convert avp %d\n", j+1);
+					goto next_avp;
+				}
 			} else {
-				if(pv_get_avp_name(msg, &crt->sname.pvp, &avp_name,
+				if(pv_get_avp_name(msg, &crt->sname.pvp, &avp_name.n,
 							&avp_type)!=0)
 				{
 					LM_ERR("cant get avp name [%d/%d]\n", i, j);
@@ -501,7 +506,7 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 				default:
 					goto next_avp;
 			}
-			if(add_avp(avp_type, avp_name, avp_val)!=0)
+			if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 			{
 				LM_ERR("unable to add avp\n");
 				db_close_query( url, db_res );

@@ -273,7 +273,7 @@ modparam("b2b_logic", "max_duration", 7200)
 		<title>Set <varname>b2bl_key_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 ...
 	</programlisting>
 		</example>
@@ -430,16 +430,16 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 			<title><function>b2b_bridge_request</function> usage</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 ...
 route(X)
 {
    # handling b2b calls here
    ...
    b2b_init_request("top hiding");
-   xlog("L_INFO","[$mi] got b2bl_key='$avp(i:99)'\n");
+   xlog("L_INFO","[$mi] got b2bl_key='$avp(99)'\n");
    # saving the b2b key into the local cache
-   cache_store("local","some_b2bl_key_identifier","$avp(i:99)");
+   cache_store("local","some_b2bl_key_identifier","$avp(99)");
    ...
 }
 
@@ -448,9 +448,9 @@ route(Y)
    # handling calls to bridge to existing b2b calls
    ...
    # retrieving the key of a b2b call
-   cache_fetch("local","some_b2bl_key_identifier", $avp(i:98) );
+   cache_fetch("local","some_b2bl_key_identifier", $avp(98) );
    $var(entity) = 1;
-   b2b_bridge_request("$avp(i:98)","$var(entity)");
+   b2b_bridge_request("$avp(98)","$var(entity)");
    ...
 }
 ...

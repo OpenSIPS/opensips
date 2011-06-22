@@ -56,7 +56,7 @@
 #define DEF_RPID_PREFIX ""
 #define DEF_RPID_SUFFIX ";party=calling;id-type=subscriber;screen=yes"
 #define DEF_STRIP_REALM ""
-#define DEF_RPID_AVP "$avp(s:rpid)"
+#define DEF_RPID_AVP "$avp(rpid)"
 
 
 static str auth_500_err = str_init("Server Internal Error");

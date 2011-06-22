@@ -10,7 +10,7 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright � 2006 voice-system.ro
+   Copyright © 2006 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -161,8 +161,8 @@ modparam("siptrace", "enable_ack_trace", 1)
 
    Example 1.5. Set traced_user_avp parameter
 ...
-modparam("siptrace", "traced_user_avp", "$avp(i:123)")
-modparam("siptrace", "traced_user_avp", "$avp(s:user)")
+modparam("siptrace", "traced_user_avp", "$avp(123)")
+modparam("siptrace", "traced_user_avp", "$avp(user)")
 ...
 
 1.3.6. trace_table_avp (str)
@@ -177,8 +177,8 @@ modparam("siptrace", "traced_user_avp", "$avp(s:user)")
 
    Example 1.6. Set trace_table_avp parameter
 ...
-modparam("siptrace", "trace_table_avp", "$avp(i:345)")
-modparam("siptrace", "trace_table_avp", "$avp(s:siptrace_table)")
+modparam("siptrace", "trace_table_avp", "$avp(345)")
+modparam("siptrace", "trace_table_avp", "$avp(siptrace_table)")
 ...
 
 1.3.7. duplicate_uri (str)
@@ -263,7 +263,7 @@ if(is_method("INVITE") && !has_totag())
           + off
        The parameter is optional - if missing, the command will
        return the status of the SIP message tracing (as string
-       "on" or "off" ) without changing anything.
+       “on” or “off” ) without changing anything.
 
    MI FIFO Command Format:
                 :sip_trace:_reply_fifo_file_

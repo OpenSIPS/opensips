@@ -99,11 +99,11 @@ struct sip_uri *dup_uri = 0;
 int *trace_on_flag = NULL;
 
 static unsigned short traced_user_avp_type = 0;
-static int_str traced_user_avp;
+static int traced_user_avp;
 static str traced_user_avp_str = {NULL, 0};
 
 static unsigned short trace_table_avp_type = 0;
-static int_str trace_table_avp;
+static int trace_table_avp;
 static str trace_table_avp_str = {NULL, 0};
 
 static str trace_local_ip = {NULL, 0};
@@ -326,7 +326,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		traced_user_avp.n = 0;
+		traced_user_avp = -1;
 		traced_user_avp_type = 0;
 	}
 	if(trace_table_avp_str.s && trace_table_avp_str.len > 0)
@@ -346,7 +346,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		trace_table_avp.n = 0;
+		trace_table_avp = -1;
 		trace_table_avp_type = 0;
 	}
 
@@ -451,7 +451,7 @@ static int trace_dialog(struct sip_msg *msg)
 
 	/* store in dialog the user avps for tracing ; we will restore 
 	 them for each transactin from the dialog */
-	if(traced_user_avp.n!=0) {
+	if(traced_user_avp>=0) {
 		n = 0;
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
@@ -497,13 +497,11 @@ static inline str* siptrace_get_table(void)
 	static int_str         avp_value;
 	struct usr_avp *avp;
 
-	if(trace_table_avp.n==0)
+	if(trace_table_avp < 0)
 		return &siptrace_table;
 
-	avp = NULL;
-	if(trace_table_avp.n!=0)
-		avp=search_first_avp(trace_table_avp_type, trace_table_avp,
-				&avp_value, 0);
+	avp=search_first_avp(trace_table_avp_type, trace_table_avp,
+			&avp_value, 0);
 
 	if(avp==NULL || !is_avp_str_val(avp) || avp_value.s.len<=0)
 		return &siptrace_table;
@@ -547,7 +545,7 @@ static int sip_trace(struct sip_msg *msg)
 	}
 
 	avp = NULL;
-	if(traced_user_avp.n!=0)
+	if(traced_user_avp>=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
@@ -738,7 +736,7 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	avp = NULL;
-	if(traced_user_avp.n!=0)
+	if(traced_user_avp>=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
@@ -821,7 +819,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	}
 
 	avp = NULL;
-	if(traced_user_avp.n!=0)
+	if(traced_user_avp>=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
@@ -1035,7 +1033,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	avp = NULL;
-	if(traced_user_avp.n!=0)
+	if(traced_user_avp>=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
@@ -1218,7 +1216,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	avp = NULL;
-	if(traced_user_avp.n!=0)
+	if(traced_user_avp>=0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 
@@ -1452,7 +1450,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 
 	avp = NULL;
-	if(traced_user_avp.n!=0)
+	if(traced_user_avp >= 0)
 		avp=search_first_avp(traced_user_avp_type, traced_user_avp,
 				&avp_value, 0);
 

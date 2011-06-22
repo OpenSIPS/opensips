@@ -219,9 +219,8 @@ static int ospInitMod(void)
     if (ospInitTm() < 0) {
         return -1;
     }
-
-    /* everything is fine, initialization done */
-    return 0;
+    /* everything is fine till now */
+	return ospParseAvps();
 }
 
 /*

@@ -99,28 +99,28 @@ static rt_data_t **rdata = 0;
 
 struct _dr_avp{
 	unsigned short type; /* AVP ID */
-	int_str name; /* AVP name*/
+	int name; /* AVP name*/
 };
 
 /* AVP used to store serial RURIs */
-struct _dr_avp ruri_avp = { 0, {.n=(int)0xad346b2f} };
-static str ruri_avp_spec = {0,0};
+struct _dr_avp ruri_avp = { 0, -1 };
+static str ruri_avp_spec = str_init("$avp(0xad346b2f)");
 
 /* AVP used to store GW ATTRs */
-struct _dr_avp gw_attrs_avp = { 0, {.n=(int)0xad346b30} };
-static str gw_attrs_avp_spec = {0,0};
+struct _dr_avp gw_attrs_avp = { 0, -1 };
+static str gw_attrs_avp_spec = str_init("$avp(0xad346b30)");
 
 /* AVP used to store RULE ATTRs */
-struct _dr_avp rule_attrs_avp = { 0, {.n=(int)0xad346b31} };
-static str rule_attrs_avp_spec = {0,0};
+struct _dr_avp rule_attrs_avp = { 0, -1 };
+static str rule_attrs_avp_spec = str_init("$avp(0xad346b31)");
 
 /* AVP used to store GW IDs */
-struct _dr_avp gw_id_avp = { 0, {.n=(int)0xad346b32} };
-static str gw_id_avp_spec = {0,0};
+struct _dr_avp gw_id_avp = { 0, -1 };
+static str gw_id_avp_spec = str_init("$avp(0xad346b32)");
 
 /* AVP used to store rule IDs */
-struct _dr_avp rule_id_avp = { 0, {.n=(int)0xad346b33} };
-static str rule_id_avp_spec = {0,0};
+struct _dr_avp rule_id_avp = { 0, -1 };
+static str rule_id_avp_spec = str_init("$avp(0xad346b33)");
 
 /* statistic data */
 int tree_size = 0;

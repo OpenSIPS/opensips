@@ -321,7 +321,7 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 			} else {
 				if (received_found==0) {
 					memset(&val, 0, sizeof(int_str));
-					if (rcv_avp_name.n!=0
+					if (rcv_avp_name>=0
 								&& search_first_avp(rcv_avp_type, rcv_avp_name, &val, 0)
 								&& val.s.len > 0) {
 						if (val.s.len>RECEIVED_MAX_SIZE) {
@@ -880,7 +880,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 
 		/* We will use the Contact from request:
 		 *  - check if a modified contact was set in avp */
-		if (mct_avp_name.n!=0 &&
+		if (mct_avp_name >= 0 &&
 			search_first_avp(mct_avp_type,mct_avp_name,&val,0)
 			&& val.s.len > 0) {
 			LM_DBG("Binding sent to upper registrar [%.*s]\n",
@@ -1058,7 +1058,7 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 
 		/* the ip should always be a string */
 		while ((avp = search_first_avp(spec->pvp.pvn.u.isname.type,
-						spec->pvp.pvn.u.isname.name, (int_str *)&ip, avp))!=0) {
+						spec->pvp.pvn.u.isname.name.n, (int_str *)&ip, avp))!=0) {
 			if (!(avp->flags & AVP_VAL_STR)) {
 				LM_NOTICE("avp value should be string\n");
 				continue;

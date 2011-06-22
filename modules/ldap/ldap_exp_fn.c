@@ -49,7 +49,6 @@
 #define STR_BUF_SIZE 1024
 #define ESC_BUF_SIZE 65536
 
-static char str_buf[STR_BUF_SIZE];
 static char esc_buf[ESC_BUF_SIZE];
 
 
@@ -102,7 +101,8 @@ int ldap_write_result(
 	struct ldap_result_params* _lrp,
 	struct subst_expr* _se)
 {
-	int_str                    dst_avp_name, dst_avp_val;
+	int                        dst_avp_name;
+	int_str dst_avp_val;
 	unsigned short             dst_avp_type;
 	int                        nmatches, rc, i, added_avp_count = 0;
 	struct berval              **attr_vals;
@@ -121,17 +121,6 @@ int ldap_write_result(
 	{
 		LM_ERR("error getting dst AVP name\n");
 		return -2;
-	}
-	if (dst_avp_type & AVP_NAME_STR)
-	{
-		if (dst_avp_name.s.len >= STR_BUF_SIZE)
-		{
-			LM_ERR("dst AVP name too long\n");
-			return -2;
-		}
-		strncpy(str_buf, dst_avp_name.s.s, dst_avp_name.s.len);
-		str_buf[dst_avp_name.s.len] = '\0';
-		dst_avp_name.s.s = str_buf;
 	}
 
 	/*
@@ -314,7 +303,7 @@ int ldap_filter_url_encode(
 	pv_spec_t* _dst_avp_spec)
 {
 	str             filter_component_str, esc_str;	
-	int_str         dst_avp_name;
+	int         dst_avp_name;
 	unsigned short  dst_avp_type;
 
 	/*
@@ -338,17 +327,6 @@ int ldap_filter_url_encode(
 	{
 		LM_ERR("error getting dst AVP name\n");
 		return -1;
-	}
-	if (dst_avp_type & AVP_NAME_STR)
-	{
-		if (dst_avp_name.s.len >= STR_BUF_SIZE)
-		{
-			LM_ERR("dst AVP name too long\n");
-			return -1;
-		}
-		strncpy(str_buf, dst_avp_name.s.s, dst_avp_name.s.len);
-		str_buf[dst_avp_name.s.len] = '\0';
-		dst_avp_name.s.s = str_buf;
 	}
 
 	/*

@@ -8,7 +8,7 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -107,13 +107,13 @@ Chapter 1. Admin Guide
    because the gateway has only one GSM number, the destination
    SIP address has to be encapsulated into the SMS body. The
    gateway expects to find a SIP address at the beginning of the
-   SMS body in "sip:user.host" format. Everything before the SIP
+   SMS body in “sip:user.host” format. Everything before the SIP
    address will be discarded, the useful text begins exactly after
-   the address (for example SMS="For sip:user@host hello world!!"
-   -> SIP= "hello world") In order to facilitate replying, the
+   the address (for example SMS=“For sip:user@host hello world!!”
+   -> SIP= “hello world”) In order to facilitate replying, the
    gateway sends all the SMS messages with a header containing the
-   source SIP address in the following format: "From sip:user@host
-   (if you reply DONOT remove it)<new_line>". When an SMS-reply is
+   source SIP address in the following format: “From sip:user@host
+   (if you reply DONOT remove it)<new_line>”. When an SMS-reply is
    received having this header (all of it or truncated at the
    end), the header will be left out (it will not be in the SIP
    message).
@@ -146,7 +146,7 @@ modem_param       = name "=" value
        (/dev/ttyS0, /dev/modem, etc.).
      * p=pin (optional) - SIM PIN - default is NULL.
      * m=mode (optional) - Modem working mode
-       ("ASCII","OLD","DIGICOM", "NEW"). Default value is "NEW".
+       (“ASCII”,“OLD”,“DIGICOM”, “NEW”). Default value is “NEW”.
      * c=SMS_Center (optional) - SMS center number for that modem.
        Default is the SMS center set on the SIM card.
      * b=baudrate (optional) - Default is 19600.
@@ -213,8 +213,8 @@ modparam("sms", "links", "NOKIA[D1;d2]")
 
    The default network to use. If no one specified, the first
    defined network is used. This parameter is useful only if the
-   "sms_send_msg" exported function is used (see Section 1.4,
-   "Exported Functions").
+   “sms_send_msg” exported function is used (see Section 1.4,
+   “Exported Functions”).
 
    Example 1.4. Set default_net parameter
 ...

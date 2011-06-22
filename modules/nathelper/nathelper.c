@@ -178,7 +178,7 @@ static int natping_processes = 1;
 
 static char* rcv_avp_param = NULL;
 static unsigned short rcv_avp_type = 0;
-static int_str rcv_avp_name;
+static int rcv_avp_name = -1;
 
 static char *natping_socket = 0;
 static int raw_sock = -1;
@@ -280,7 +280,7 @@ fixup_fix_sdp(void** param, int param_no)
 
 static int fixup_fix_nated_register(void** param, int param_no)
 {
-	if (rcv_avp_name.n == 0) {
+	if (rcv_avp_name < 0) {
 		LM_ERR("you must set 'received_avp' parameter. Must be same value as"
 				" parameter 'received_avp' of registrar module\n");
 		return -1;
@@ -411,7 +411,7 @@ mod_init(void)
 			return -1;
 		}
 	} else {
-		rcv_avp_name.n = 0;
+		rcv_avp_name = -1;
 		rcv_avp_type = 0;
 	}
 
@@ -1395,7 +1395,7 @@ fix_nated_register_f(struct sip_msg* msg, char* str1, char* str2)
 	str uri;
 	int_str val;
 
-	if(rcv_avp_name.n==0)
+	if(rcv_avp_name < 0)
 		return 1;
 
 	if (create_rcv_uri(&uri, msg) < 0) {

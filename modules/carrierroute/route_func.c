@@ -110,7 +110,7 @@ int mp2carrier_id(struct sip_msg * _msg, struct multiparam_t *mp) {
 	case MP_AVP:
 		avp = search_first_avp(mp->u.a.flags, mp->u.a.name, &avp_val, 0);
 		if (!avp) {
-			LM_ERR("cannot find AVP '%.*s'\n", mp->u.a.name.s.len, mp->u.a.name.s.s);
+			LM_ERR("cannot find AVP '%d'\n", mp->u.a.name);
 			return -1;
 		}
 		if ((avp->flags&AVP_VAL_STR)==0) {
@@ -166,7 +166,7 @@ int mp2domain_id(struct sip_msg * _msg, struct multiparam_t *mp) {
 	case MP_AVP:
 		avp = search_first_avp(mp->u.a.flags, mp->u.a.name, &avp_val, 0);
 		if (!avp) {
-			LM_ERR("cannot find AVP '%.*s'\n", mp->u.a.name.s.len, mp->u.a.name.s.s);
+			LM_ERR("cannot find AVP '%d'\n", mp->u.a.name);
 			return -1;
 		}
 		if ((avp->flags&AVP_VAL_STR)==0) {

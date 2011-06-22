@@ -74,13 +74,13 @@ static str cnt_avp_param = {NULL, 0};
 static str attrs_avp_param = {NULL, 0};
 str hash_pvar_param = {NULL, 0};
 
-int_str dst_avp_name;
+int dst_avp_name;
 unsigned short dst_avp_type;
-int_str grp_avp_name;
+int grp_avp_name;
 unsigned short grp_avp_type;
-int_str cnt_avp_name;
+int cnt_avp_name;
 unsigned short cnt_avp_type;
-int_str attrs_avp_name;
+int attrs_avp_name;
 unsigned short attrs_avp_type;
 
 pv_elem_t * hash_param_model = NULL;
@@ -304,7 +304,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		dst_avp_name.n = 0;
+		dst_avp_name = -1;
 		dst_avp_type = 0;
 	}
 
@@ -325,7 +325,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		grp_avp_name.n = 0;
+		grp_avp_name = -1;
 		grp_avp_type = 0;
 	}
 
@@ -346,7 +346,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		cnt_avp_name.n = 0;
+		cnt_avp_name = -1;
 		cnt_avp_type = 0;
 	}
 
@@ -365,7 +365,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		attrs_avp_name.n = 0;
+		attrs_avp_name = -1;
 		attrs_avp_type = 0;
 	}
 

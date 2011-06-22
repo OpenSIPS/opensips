@@ -493,7 +493,7 @@ modparam("dialplan", "attrs_col", "column_name")
 		<title>Set <varname>attrs_pvar</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
+modparam("dialplan", "attrs_pvar", "$avp(dest)")
 ...
 		</programlisting>
 		</example>
@@ -558,8 +558,8 @@ modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
 	<title><function>dp_translate</function> usage</title>
 	<programlisting format="linespecific">
 ...
-dp_translate("240", "$ruri.user/$avp(s:dest)");
-xlog("translated to var $avp(s:dest) \n");
+dp_translate("240", "$ruri.user/$avp(dest)");
+xlog("translated to var $avp(dest) \n");
 ...
 	</programlisting>
 	</example>
@@ -567,8 +567,8 @@ xlog("translated to var $avp(s:dest) \n");
 	<title><function>dp_translate</function> usage</title>
 	<programlisting format="linespecific">
 ...
-$avp(s:src) = $ruri.user;
-dp_translate("$var(x)", "$avp(s:src)/$var(y)");
+$avp(src) = $ruri.user;
+dp_translate("$var(x)", "$avp(src)/$var(y)");
 xlog("translated to var $var(y) \n");
 ...
 	</programlisting>

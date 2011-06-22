@@ -102,7 +102,7 @@
 		<programlisting format="linespecific">
 		
 ...
-modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(i:10) 
+modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(10) 
 			,   Sip-From-Tag=$si,Sip-To-Tag=$tt      )      ")
 ...
 

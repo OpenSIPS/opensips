@@ -61,8 +61,9 @@
 # define INLINE
 #endif
 
-#define CANONICAL_URI_AVP_SPEC "$avp(s:can_uri)"
-#define SIGNALING_IP_AVP_SPEC  "$avp(s:signaling_ip)"
+#define CANONICAL_URI_AVP_SPEC "$avp(cc_can_uri)"
+#define SIGNALING_IP_AVP_SPEC  "$avp(cc_signaling_ip)"
+#define DIVERTER_AVP_SPEC  "$avp(805)"
 
 // Although `AF_LOCAL' is mandated by POSIX.1g, `AF_UNIX' is portable to
 // more systems.  `AF_UNIX' was the traditional name stemming from BSD, so
@@ -86,7 +87,7 @@ typedef int Bool;
 
 typedef struct AVP_Param {
     str spec;
-    int_str name;
+    int name;
     unsigned short type;
 } AVP_Param;
 
@@ -130,13 +131,17 @@ static CallControlSocket callcontrol_socket = {
 };
 
 static int disable = False;
-static int diverter_avp_id = 805;
+/*
+ * static int diverter_avp_id = 805;
+ * the new avp should always be a string
+ */
+static AVP_Param diverter_avp_id = {str_init(DIVERTER_AVP_SPEC), -1, 0};
 
 /* The AVP where the canonical URI is stored (if defined) */
-static AVP_Param canonical_uri_avp = {str_init(CANONICAL_URI_AVP_SPEC), {0}, 0};
+static AVP_Param canonical_uri_avp = {str_init(CANONICAL_URI_AVP_SPEC), -1, 0};
 
 /* The AVP where the caller signaling IP is stored (if defined) */
-static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), {0}, 0};
+static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 
 
 struct dlg_binds dlg_api;
@@ -157,7 +162,7 @@ static param_export_t parameters[] = {
     {"disable",           INT_PARAM, &disable},
     {"socket_name",       STR_PARAM, &(callcontrol_socket.name)},
     {"socket_timeout",    INT_PARAM, &(callcontrol_socket.timeout)},
-    {"diverter_avp_id",   INT_PARAM, &diverter_avp_id},
+    {"diverter_avp_id",   STR_PARAM, &(diverter_avp_id.spec.s)},
     {"canonical_uri_avp", STR_PARAM, &(canonical_uri_avp.spec.s)},
     {"signaling_ip_avp",  STR_PARAM, &(signaling_ip_avp.spec.s)},
     {0, 0, 0}
@@ -426,15 +431,14 @@ get_diverter(struct sip_msg *msg)
 {
     struct hdr_field *header;
     dig_cred_t *credentials;
-    int_str avpname, avpvalue;
+    int_str avpvalue;
     static str diverter;
 
     diverter.s   = "None";
     diverter.len = 4;
 
-    avpname.n = diverter_avp_id;
-
-    if (search_first_avp(AVP_VAL_STR, avpname, &avpvalue, NULL)) {
+    if (search_first_avp(diverter_avp_id.type|AVP_VAL_STR,
+				diverter_avp_id.name, &avpvalue, NULL)) {
         // have a diverted call
         diverter = avpvalue.s;
     } else {
@@ -1073,6 +1077,22 @@ mod_init(void)
         LM_CRIT("invalid AVP specification for signaling_ip_avp: `%s'\n", signaling_ip_avp.spec.s);
         return -1;
     }
+
+	// initialize the diverter_avp_id structure
+    if (diverter_avp_id.spec.s==NULL || *(diverter_avp_id.spec.s)==0) {
+        LM_ERR("missing/empty diverter_avp parameter. using default.\n");
+        signaling_ip_avp.spec.s = DIVERTER_AVP_SPEC;
+    }
+    diverter_avp_id.spec.len = strlen(diverter_avp_id.spec.s);
+    if (pv_parse_spec(&(diverter_avp_id.spec), &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+        LM_CRIT("invalid AVP specification for diverter_avp_id: `%s'\n", diverter_avp_id.spec.s);
+        return -1;
+    }
+    if (pv_get_avp_name(0, &(avp_spec.pvp), &(diverter_avp_id.name), &(diverter_avp_id.type))!=0) {
+        LM_CRIT("invalid AVP specification for diverter_avp_id: `%s'\n", diverter_avp_id.spec.s);
+        return -1;
+    }
+
 
     // bind to the dialog API
     if (load_dlg_api(&dlg_api)!=0) {

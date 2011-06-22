@@ -348,23 +348,23 @@ enum_query("e164.arpa.","+sip+voice:sip");
 		<programlisting format="linespecific">
 ...
 # search for "e2u+sip" in freenum.org 
-enum_pv_query("$avp(i:100)", "freenum.org.");
+enum_pv_query("$avp(100)", "freenum.org.");
 ...
 # search for "e2u+sip" in default tree (configured as parameter)
 enum_pv_query("$fU");
 ...
 # search for "e2u+voice:sip" in e164.arpa
-enum_pv_query("$avp(i:100)","e164.arpa.","voice");
+enum_pv_query("$avp(100)","e164.arpa.","voice");
 ...
 # search for service type "sip" or "voice:sip" or "video:sip"
 # note the '+' sign in front of the second parameter
 enum_pv_query("$fU","e164.arpa.","+sip+voice:sip+video:sip");
 ...
 # quering for service sip and voice:sip
-enum_pv_query("$avp(i:100)","e164.arpa.");
-enum_pv_query("$avp(i:100)","e164.arpa.","voice");
+enum_pv_query("$avp(100)","e164.arpa.");
+enum_pv_query("$avp(100)","e164.arpa.","voice");
 # or use instead
-enum_pv_query("$avp(i:100)","e164.arpa.","+sip+voice:sip");
+enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
 ...
 </programlisting>
 		</example>

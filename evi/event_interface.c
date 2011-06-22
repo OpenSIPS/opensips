@@ -318,13 +318,13 @@ int evi_raise_script_event(event_id_t id, void * _a, void * _v)
 
 	/* handle parameters */
 	while ((v_avp = search_first_avp(vals->pvp.pvn.u.isname.type,
-					vals->pvp.pvn.u.isname.name, &val, v_avp))) {
+					vals->pvp.pvn.u.isname.name.n, &val, v_avp))) {
 		at = NULL;
 		/* check attribute */
 		if (attrs) {
 			err = -1;
 			a_avp = search_first_avp(attrs->pvp.pvn.u.isname.type,
-					attrs->pvp.pvn.u.isname.name, &attr, a_avp);
+					attrs->pvp.pvn.u.isname.name.n, &attr, a_avp);
 			if (!a_avp) {
 				LM_ERR("missing attribute\n");
 				goto error;
@@ -348,7 +348,7 @@ int evi_raise_script_event(event_id_t id, void * _a, void * _v)
 
 	/* check if there were too many attribute names */
 	if (attrs && a_avp && search_first_avp(attrs->pvp.pvn.u.isname.type,
-				attrs->pvp.pvn.u.isname.name, &attr, a_avp)) {
+				attrs->pvp.pvn.u.isname.name.n, &attr, a_avp)) {
 		/* only signal error - continue */
 		LM_ERR("too many attribute names\n");
 	}

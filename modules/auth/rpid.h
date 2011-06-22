@@ -44,7 +44,7 @@ int init_rpid_avp(char *rpid_avp_param);
 /*
  * Get the RPID avp specs
  */
-void get_rpid_avp( int_str *rpid_avp_p, int *rpid_avp_type_p );
+void get_rpid_avp( int *rpid_avp_p, int *rpid_avp_type_p );
 
 
 /*

@@ -102,11 +102,11 @@ int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
 char* rcv_avp_param = 0;
 unsigned short rcv_avp_type = 0;
-int_str rcv_avp_name;
+int rcv_avp_name;
 
 char* mct_avp_param = 0;
 unsigned short mct_avp_type = 0;
-int_str mct_avp_name;
+int mct_avp_name;
 
 
 int reg_use_domain = 0;
@@ -253,7 +253,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		rcv_avp_name.n = 0;
+		rcv_avp_name = -1;
 		rcv_avp_type = 0;
 	}
 
@@ -271,7 +271,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		mct_avp_name.n = 0;
+		mct_avp_name = -1;
 		mct_avp_type = 0;
 	}
 

@@ -267,8 +267,8 @@ modparam("closeddial", "use_domain", 1)
 if($(rU{s.len}) == 2)
 {
         # Group AVP could be loaded at register time.
-        $avp(s:group)="companyA";
-        cd_lookup("closeddial", "$avp(s:group)");
+        $avp(group)="companyA";
+        cd_lookup("closeddial", "$avp(group)");
 };
 ...
 

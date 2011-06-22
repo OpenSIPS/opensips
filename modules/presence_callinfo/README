@@ -10,9 +10,9 @@ Ovidiu Sas
 
    <osas@voipembedded.com>
 
-   Copyright � 2010 VoIP Embedded, Inc.
+   Copyright © 2010 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision: 7754 $ $Date: 2011-02-23 13:57:21 -0500
+   Revision $Revision: 7754 $ $Date: 2011-02-23 20:57:21 +0200
                               (Wed, 23 Feb 2011) $
      __________________________________________________________
 
@@ -123,7 +123,7 @@ alice@example  presence  bob@example  watcher@example
 
    Enables or disables call_info event timeout notifications.
 
-   Default value is "1" (enabled).
+   Default value is “1” (enabled).
 
    Example 1.1. Set call_info_timeout_notification parameter
 ...
@@ -134,7 +134,7 @@ modparam("presence_callinfo", "call_info_timeout_notification", 0)
 
    Enables or disables line_seize event timeout notifications.
 
-   Default value is "0" (disabled).
+   Default value is “0” (disabled).
 
    Example 1.2. Set line_seize_timeout_notification parameter
 ...

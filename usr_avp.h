@@ -57,7 +57,7 @@ typedef union {
 
 
 struct usr_avp {
-	unsigned short id;
+	int id;
 	unsigned short flags;
 	struct usr_avp *next;
 	void *data;
@@ -80,41 +80,44 @@ struct usr_avp {
 
 #define GALIAS_CHAR_MARKER  '$'
 
-struct usr_avp* new_avp(unsigned short flags, int_str name, int_str val);
+/* init function */
+int init_extra_avps();
+
+struct usr_avp* new_avp(unsigned short flags, int name, int_str val);
 
 /* add functions */
-int add_avp( unsigned short flags, int_str name, int_str val);
+int add_avp( unsigned short flags, int id, int_str val);
 
 /* search functions */
-struct usr_avp *search_first_avp( unsigned short flags, int_str name,
+struct usr_avp *search_first_avp( unsigned short flags, int id,
 									int_str *val,  struct usr_avp *start);
 struct usr_avp *search_next_avp( struct usr_avp *avp, int_str *val  );
 struct usr_avp *search_index_avp(unsigned short flags,
-					int_str name, int_str *val, unsigned int index);
+					int name, int_str *val, unsigned int index);
 
 /* free functions */
 void reset_avps( );
 void destroy_avp( struct usr_avp *avp);
-void destroy_index_avp( unsigned short flags, int_str name, int index);
-int  destroy_avps( unsigned short flags, int_str name, int all);
+void destroy_index_avp( unsigned short flags, int name, int index);
+int  destroy_avps( unsigned short flags, int name, int all);
 void destroy_avp_list( struct usr_avp **list );
 void destroy_avp_list_unsafe( struct usr_avp **list );
 
 /* get func */
 void get_avp_val(struct usr_avp *avp, int_str *val );
 str* get_avp_name(struct usr_avp *avp);
+str* get_avp_name_id(int id);
 struct usr_avp** set_avp_list( struct usr_avp **list );
 struct usr_avp** get_avp_list( );
 
 /* replace function */
-int replace_avp(unsigned short flags, int_str name, int_str val, int index);
+int replace_avp(unsigned short flags, int name, int_str val, int index);
 
 /* global alias functions (manipulation and parsing)*/
+int get_avp_id(str *alias);
 int add_avp_galias_str(char *alias_definition);
-int lookup_avp_galias(str *alias, int *type, int_str *avp_name);
 int add_avp_galias(str *alias, int type, int_str avp_name);
-int parse_avp_name( str *name, int *type, int_str *avp_name);
-int parse_avp_spec( str *name, int *type, int_str *avp_name);
+int parse_avp_spec( str *name, int *avp_name);
 
 #endif
 

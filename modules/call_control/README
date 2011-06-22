@@ -16,7 +16,7 @@ Irina-Maria Stanescu
 
    <ironmissy@gmail.com>
 
-   Copyright � 2005-2008 Dan Pascu
+   Copyright © 2005-2008 Dan Pascu
    Revision History
    Revision $Revision$ $Date: 2009-09-17 15:45:11 +0300
                               (Thu, 17 Sep 2009) $
@@ -170,7 +170,7 @@ Chapter 1. Admin Guide
    there is no limit associated with the call, allowing the use of
    the same configuration without changes.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.1. Setting the disable parameter
 ...
@@ -182,7 +182,7 @@ modparam("call_control", "disable", 1)
    It is the path to the filesystem socket where the callcontrol
    application listens for commands from the module.
 
-   Default value is "/var/run/callcontrol/socket".
+   Default value is “/var/run/callcontrol/socket”.
 
    Example 1.2. Setting the socket_name parameter
 ...
@@ -194,7 +194,7 @@ modparam("call_control", "socket_name", "/var/run/callcontrol/socket")
    How much time (in milliseconds) to wait for an answer from the
    callcontrol application.
 
-   Default value is "500" (ms).
+   Default value is “500” (ms).
 
    Example 1.3. Setting the socket_timeout parameter
 ...
@@ -222,11 +222,11 @@ modparam("call_control", "socket_timeout", 500)
    or caller's IP address (whichever yields a rate forst, in this
    order).
 
-   Default value is "$avp(s:signaling_ip)".
+   Default value is “$avp(cc_signaling_ip)”.
 
    Example 1.4. Setting the signaling_ip_avp parameter
 ...
-modparam("call_control", "signaling_ip_avp", "$avp(s:signaling_ip)")
+modparam("call_control", "signaling_ip_avp", "$avp(cc_signaling_ip)")
 ...
 
 1.5.5. canonical_uri_avp (string)
@@ -238,22 +238,22 @@ modparam("call_control", "signaling_ip_avp", "$avp(s:signaling_ip)")
    username of the ruri needs to have a different, canonical form
    in the rating engine computation than it has in the ruri.
 
-   Default value is "$avp(s:can_uri)".
+   Default value is “$avp(cc_can_uri)”.
 
    Example 1.5. Setting the canonical_uri_avp parameter
 ...
-modparam("call_control", "canonical_uri_avp", "$avp(s:can_uri)")
+modparam("call_control", "canonical_uri_avp", "$avp(cc_can_uri)")
 ...
 
 1.5.6. diverter_avp_id (string)
 
-   Specification of the id of an integer AVP which holds an
-   optional application defined diverter SIP URI. When this is
-   set, it will be used by the rating engine as the billing party
-   when finding the rates to apply to a given call, otherwise, the
-   caller's URI taken from the From field will be used. When set,
-   this AVP should contain a value in the form "user@domain" (no
-   sip: prefix should be used).
+   Specification of the id of an AVP which holds an optional
+   application defined diverter SIP URI. When this is set, it will
+   be used by the rating engine as the billing party when finding
+   the rates to apply to a given call, otherwise, the caller's URI
+   taken from the From field will be used. When set, this AVP
+   should contain a value in the form “user@domain” (no sip:
+   prefix should be used).
 
    This is useful when a destination diverts a call, thus becoming
    the new caller. In this case the billing party is the diverter
@@ -263,16 +263,16 @@ modparam("call_control", "canonical_uri_avp", "$avp(s:can_uri)")
    diverter AVP should the set to B's URI, because B is the
    billing party in the call not A after the call was diverted.
 
-   Default value is "805".
+   Default value is “$avp(805)”.
 
    Example 1.6. Setting the diverter_avp_id parameter
 ...
-modparam("call_control", "diverter_avp_id", 805)
+modparam("call_control", "diverter_avp_id", "$avp(805)")
 
 route {
   ...
   # alice@example.com is paying for this call
-  $avp(i:805) = "alice@example.com";
+  $avp(805) = "alice@example.com";
   ...
 }
 ...
@@ -293,13 +293,13 @@ route {
    If the parameter is not set, the default initialize message is
    sent.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.7. Setting the init parameter
 
 ...
 modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
-                        authruri=$du another_field = $avp(i:10)")
+                        authruri=$du another_field = $avp(10)")
 ...
 
 1.5.8. start (string)
@@ -317,13 +317,13 @@ modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
 
    If the parameter is not set, the default start message is sent.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.8. Setting the start parameter
 
 ...
 modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
-                        authruri=$du another_field = $avp(i:10)")
+                        authruri=$du another_field = $avp(10)")
 ...
 
 1.5.9. stop (string)
@@ -341,13 +341,13 @@ modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
 
    If the parameter is not set, the default stop message is sent.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.9. Setting the stop parameter
 
 ...
 modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
-                        authruri=$du another_field = $avp(i:10)")
+                        authruri=$du another_field = $avp(10)")
 ...
 
 1.6. Exported Functions
@@ -379,15 +379,15 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
    Example 1.10. Using the call_control function
 
 ...
-if (is_avp_set("$avp(i:805)")) {
+if (is_avp_set("$avp(805)")) {
     # the diverter AVP is set, use it as billing party
-    $avp(s:billing_party_domain) = $(avp(i:805){uri.domain});
+    $avp(billing_party_domain) = $(avp(805){uri.domain});
 } else {
-    $avp(s:billing_party_domain) = $fd;
+    $avp(billing_party_domain) = $fd;
 }
 
 if (method==INVITE && !has_totag() &&
-    is_domain_local("$avp(s:billing_party_domain)")) {
+    is_domain_local("$avp(billing_party_domain)")) {
     call_control();
     switch ($retcode) {
     case 2:

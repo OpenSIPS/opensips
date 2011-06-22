@@ -1003,7 +1003,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
 		<programlisting format="linespecific">
 ...
 modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
-modparam("drouting", "ruri_avp", '$avp(i:33)')
+modparam("drouting", "ruri_avp", '$avp(33)')
 ...
 	</programlisting>
 		</example>
@@ -1025,8 +1025,8 @@ modparam("drouting", "ruri_avp", '$avp(i:33)')
 		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "gw_attrs_avp", '$avp(s:gw_attrs)')
-modparam("drouting", "gw_attrs_avp", '$avp(i:67)')
+modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
+modparam("drouting", "gw_attrs_avp", '$avp(67)')
 ...
 	</programlisting>
 		</example>
@@ -1046,8 +1046,8 @@ modparam("drouting", "gw_attrs_avp", '$avp(i:67)')
 		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "rule_attrs_avp", '$avp(s:rule_attrs)')
-modparam("drouting", "rule_attrs_avp", '$avp(i:66)')
+modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
+modparam("drouting", "rule_attrs_avp", '$avp(66)')
 ...
 	</programlisting>
 		</example>
@@ -1070,8 +1070,8 @@ modparam("drouting", "rule_attrs_avp", '$avp(i:66)')
 		<title>Set <varname>gw_id_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "gw_id_avp", '$avp(s:gw_id)')
-modparam("drouting", "gw_id_avp", '$avp(i:334)')
+modparam("drouting", "gw_id_avp", '$avp(gw_id)')
+modparam("drouting", "gw_id_avp", '$avp(334)')
 ...
 	</programlisting>
 		</example>
@@ -1092,8 +1092,8 @@ modparam("drouting", "gw_id_avp", '$avp(i:334)')
 		<title>Set <varname>rule_id_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "rule_id_avp", '$avp(s:rule_id)')
-modparam("drouting", "rule_id_avp", '$avp(i:335)')
+modparam("drouting", "rule_id_avp", '$avp(rule_id)')
+modparam("drouting", "rule_id_avp", '$avp(335)')
 ...
 	</programlisting>
 		</example>
@@ -1375,8 +1375,8 @@ do_routing();
 # group id 0, sort 0
 do_routing("0");
 ...
-# group id from $avp(i:10), sort 0
-do_routing("$avp(i:10)");
+# group id from $avp(10), sort 0
+do_routing("$avp(10)");
 ...
 # all groups, sort 1
 do_routing("","1");

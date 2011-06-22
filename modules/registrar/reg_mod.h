@@ -89,12 +89,10 @@ extern int reg_use_domain;
 extern str realm_prefix;
 extern float def_q;
 
-extern unsigned short aor_avp_type;
-extern int_str aor_avp_name;
 extern unsigned short rcv_avp_type;
-extern int_str rcv_avp_name;
+extern int rcv_avp_name;
 extern unsigned short mct_avp_type;
-extern int_str mct_avp_name;
+extern int mct_avp_name;
 
 extern str rcv_param;
 extern int max_contacts;

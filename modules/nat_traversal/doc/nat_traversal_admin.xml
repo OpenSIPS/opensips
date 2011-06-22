@@ -722,7 +722,7 @@ if (method=="INVITE" &amp;&amp; $hdr(X-Scope)=="nat-relay") {
       <title>Using <varname>$source_uri</varname> to set the received AVP on registrars</title>
         <programlisting format="linespecific">
 ...
-modparam("registrar", "received_avp", "$avp(s:received_uri)")
+modparam("registrar", "received_avp", "$avp(received_uri)")
 modparam("registrar", "tcp_persistent_flag", 10)
 ...
 # This code runs on the registrar, assuming it has received the
@@ -737,9 +737,9 @@ if (method=="REGISTER") {
             setflag(10);
         }
         force_rport();
-        $avp(s:received_uri) = $source_uri;
+        $avp(received_uri) = $source_uri;
         # or we could add some extra parameters to it if needed
-        # $avp(s:received_uri) = $source_uri + ";relayed=false" 
+        # $avp(received_uri) = $source_uri + ";relayed=false" 
     }
     if (!www_authorize("", "subscriber")) {
         www_challenge("", "0");

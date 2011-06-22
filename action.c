@@ -1026,7 +1026,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			if(ret > 0)
 			{
 				int_str res;
-				int_str avp_name;
+				int avp_name;
 				unsigned short avp_type;
 
 				spec = (pv_spec_t*)a->elem[2].u.data;
@@ -1145,7 +1145,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			if (result.s)
 			{
 				int_str res;
-				int_str avp_name;
+				int avp_name;
 				unsigned short avp_type;
 
 				spec = (pv_spec_t*)a->elem[5].u.data;

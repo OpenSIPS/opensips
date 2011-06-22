@@ -8,7 +8,7 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright � 2009 Anca-Maria
+   Copyright © 2009 Anca-Maria
    Vamanu
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
@@ -64,7 +64,7 @@ Chapter 1. Admin Guide
    The size of the hash table. This parameter will be used as the
    power of 2 when computing table size.
 
-   Default value is "9 (512)".
+   Default value is “9 (512)”.
 
    Example 1.1. Set cache_table_size parameter
 ...
@@ -76,7 +76,7 @@ modparam("localcache", "cache_table_size", 10)
    The time interval in seconds at which to go through all the
    records and delete the expired ones.
 
-   Default value is "600 (10 minutes)".
+   Default value is “600 (10 minutes)”.
 
    Example 1.2. Set cache_clean_period parameter
 ...

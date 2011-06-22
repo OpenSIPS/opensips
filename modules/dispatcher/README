@@ -96,7 +96,7 @@ Carsten Bock
    1.7. Set the “attrs_avp” parameter
    1.8. Set the “grp_avp” parameter
    1.9. Set the “cnt_avp” parameter
-   1.10. Use $avp(i:273) for hashing:
+   1.10. Use $avp(273) for hashing:
    1.11. Use combination of PVs for hashing:
    1.12. Set the “setid_pvar” parameter
    1.13. Set the “ds_ping_method” parameter
@@ -239,7 +239,7 @@ Note
 
    Example 1.6. Set the “dst_avp” parameter
  ...
- modparam("dispatcher", "dst_avp", "$avp(i:271)")
+ modparam("dispatcher", "dst_avp", "$avp(271)")
  ...
 
 1.3.7. attrs_avp (str)
@@ -257,7 +257,7 @@ Note
 
    Example 1.7. Set the “attrs_avp” parameter
  ...
- modparam("dispatcher", "attrs_avp", "$avp(i:272)")
+ modparam("dispatcher", "attrs_avp", "$avp(272)")
  ...
 
 1.3.8. grp_avp (str)
@@ -274,7 +274,7 @@ Note
 
    Example 1.8. Set the “grp_avp” parameter
 ...
-modparam("dispatcher", "grp_avp", "$avp(i:273)")
+modparam("dispatcher", "grp_avp", "$avp(273)")
 ...
 
 1.3.9. cnt_avp (str)
@@ -291,7 +291,7 @@ Note
 
    Example 1.9. Set the “cnt_avp” parameter
 ...
-modparam("dispatcher", "cnt_avp", "$avp(i:274)")
+modparam("dispatcher", "cnt_avp", "$avp(274)")
 ...
 
 1.3.10. hash_pvar (str)
@@ -305,9 +305,9 @@ Note
 
    Default value is “null” - disabled.
 
-   Example 1.10. Use $avp(i:273) for hashing:
+   Example 1.10. Use $avp(273) for hashing:
 ...
-modparam("dispatcher", "hash_pvar", "$avp(i:273)")
+modparam("dispatcher", "hash_pvar", "$avp(273)")
 ...
 
    Example 1.11. Use combination of PVs for hashing:

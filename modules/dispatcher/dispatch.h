@@ -61,13 +61,13 @@ extern str ds_dest_attrs_col;
 extern int ds_flags; 
 extern int ds_use_default;
 
-extern int_str dst_avp_name;
+extern int dst_avp_name;
 extern unsigned short dst_avp_type;
-extern int_str grp_avp_name;
+extern int grp_avp_name;
 extern unsigned short grp_avp_type;
-extern int_str cnt_avp_name;
+extern int cnt_avp_name;
 extern unsigned short cnt_avp_type;
-extern int_str attrs_avp_name;
+extern int attrs_avp_name;
 extern unsigned short attrs_avp_type;
 
 extern pv_elem_t * hash_param_model;

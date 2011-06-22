@@ -10,7 +10,7 @@ Dan Pascu
 
    <dan@ag-projects.com>
 
-   Copyright � 2008 Dan Pascu
+   Copyright © 2008 Dan Pascu
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -380,7 +380,7 @@ Chapter 1. Admin Guide
    message. A negative value or zero will disable the keepalive
    functionality.
 
-   Default value is "60".
+   Default value is “60”.
 
    Example 1.1. Setting the keepalive_interval parameter
 ...
@@ -394,7 +394,7 @@ modparam("nat_traversal", "keepalive_interval", 90)
    generates smaller replies from user agents, but they are almost
    entirely negative replies. Apparently almost none of the user
    agents understand that the purpose of the NOTIFY with a
-   "keep-alive" event is to keep NAT open, even though many user
+   “keep-alive” event is to keep NAT open, even though many user
    agents send such NOTIFY requests themselves. However this does
    not affect the result at all, since the purpose is to trigger a
    response from the user agent behind NAT, positive or negative
@@ -410,7 +410,7 @@ modparam("nat_traversal", "keepalive_interval", 90)
    than negative replies or replies to NOTIFY requests. For this
    reason the default value for the used method is NOTIFY.
 
-   Default value is "NOTIFY".
+   Default value is “NOTIFY”.
 
    Example 1.2. Setting the keepalive_method parameter
 ...
@@ -426,7 +426,7 @@ modparam("nat_traversal", "keepalive_method", "OPTIONS")
    the same interface on which the request that triggered
    keepalive functionality arrived.
 
-   Default value is "sip:keepalive@proxy_ip" with proxy_ip being
+   Default value is “sip:keepalive@proxy_ip” with proxy_ip being
    the actual IP of the outgoing interface.
 
    Example 1.3. Setting the keepalive_from parameter
@@ -467,7 +467,7 @@ PS\r\nX-MyHeader: some_value\r\n")
    which case it will store it in the OpenSIPS working directory,
    or an absolute path.
 
-   Default value is undefined "keepalive_state".
+   Default value is undefined “keepalive_state”.
 
    Example 1.5. Setting the keepalive_state_file parameter
 ...
@@ -655,7 +655,7 @@ if (method=="INVITE" && $hdr(X-Scope)=="nat-relay") {
    Example 1.10. Using $source_uri to set the received AVP on
    registrars
 ...
-modparam("registrar", "received_avp", "$avp(s:received_uri)")
+modparam("registrar", "received_avp", "$avp(received_uri)")
 modparam("registrar", "tcp_persistent_flag", 10)
 ...
 # This code runs on the registrar, assuming it has received the
@@ -670,9 +670,9 @@ if (method=="REGISTER") {
             setflag(10);
         }
         force_rport();
-        $avp(s:received_uri) = $source_uri;
+        $avp(received_uri) = $source_uri;
         # or we could add some extra parameters to it if needed
-        # $avp(s:received_uri) = $source_uri + ";relayed=false"
+        # $avp(received_uri) = $source_uri + ";relayed=false"
     }
     if (!www_authorize("", "subscriber")) {
         www_challenge("", "0");

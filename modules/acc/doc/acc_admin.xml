@@ -581,7 +581,7 @@ modparam("acc", "log_facility", "LOG_DAEMON")
 		<title>log_extra example</title>
 		<programlisting format="linespecific">
 modparam("acc", "log_extra",
-	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(i:123)")
+	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 </programlisting>
 		</example>
 	</section>
@@ -669,7 +669,7 @@ modparam("acc", "service_type", 15)
 		<title>aaa_extra example</title>
 		<programlisting format="linespecific">
 modparam("acc", "aaa_extra",
-	"via=$hdr(Via[*]); email=$avp(s:email); Bcontact=$ct / reply")
+	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 </programlisting>
 		</example>
 	</section>
@@ -872,7 +872,7 @@ modparam("acc", "acc_time_column", "time")
 		<example>
 		<title>db_extra example</title>
 		<programlisting format="linespecific">
-modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(s:email)")
+modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 </programlisting>
 		</example>
 	</section>
@@ -952,7 +952,7 @@ modparam("acc", "diameter_client_port", 3000)
 		<example>
 		<title>diameter_extra example</title>
 		<programlisting format="linespecific">
-modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(s:email)")
+modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
 </programlisting>
 		</example>
 	</section>

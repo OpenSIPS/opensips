@@ -18,11 +18,11 @@ Edited by
 
 Irina-Maria Stanescu
 
-   Copyright � 2003 Miklos Tirpak
+   Copyright © 2003 Miklos Tirpak
 
-   Copyright � 2006-2008 Juha Heinanen
+   Copyright © 2006-2008 Juha Heinanen
 
-   Copyright � 2009 Irina-Maria Stanescu
+   Copyright © 2009 Irina-Maria Stanescu
    Revision History
    Revision $Revision$ $Date: 2009-09-17 15:53:52 +0300
                               (Thu, 17 Sep 2009) $
@@ -164,7 +164,7 @@ Chapter 1. Admin Guide
 
    Function for registration checking is called allow_register and
    the algorithm is very similar to the algorithm described in
-   Section 1.1.1, "Call Routing". The only difference is in the
+   Section 1.1.1, “Call Routing”. The only difference is in the
    way how pairs are created.
 
    Instead of From header field the function uses To header field
@@ -176,7 +176,7 @@ Chapter 1. Admin Guide
    1), (To, Contact 2), (To, Contact 3), and so on..
 
    The algorithm of matching is same as described in
-   Section 1.1.1, "Call Routing".
+   Section 1.1.1, “Call Routing”.
 
 1.1.3. URI Permissions
 
@@ -243,7 +243,7 @@ Chapter 1. Admin Guide
    don't specify full pathname then the directory in which is the
    main config file is located will be used.
 
-   Default value is "permissions.allow".
+   Default value is “permissions.allow”.
 
    Example 1.1. Set default_allow_file parameter
 ...
@@ -257,7 +257,7 @@ modparam("permissions", "default_allow_file", "/etc/permissions.allow")
    pathname then the directory in which the main config file is
    located will be used.
 
-   Default value is "permissions.deny".
+   Default value is “permissions.deny”.
 
    Example 1.2. Set default_deny_file parameter
 ...
@@ -292,7 +292,7 @@ Note
 
    Including leading dot.
 
-   Default value is ".allow".
+   Default value is “.allow”.
 
    Example 1.4. Set allow_suffix parameter
 ...
@@ -309,7 +309,7 @@ Note
 
    Including leading dot.
 
-   Default value is ".deny".
+   Default value is “.deny”.
 
    Example 1.5. Set deny_suffix parameter
 ...
@@ -320,7 +320,7 @@ modparam("permissions", "deny_suffix", ".deny")
 
    This is URL of the database to be used.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.6. Set db_url parameter
 ...
@@ -333,7 +333,7 @@ bname")
    Name of database table containing matching rules used by
    allow_register function.
 
-   Default value is "address".
+   Default value is “address”.
 
    Example 1.7. Set address_table parameter
 ...
@@ -345,7 +345,7 @@ modparam("permissions", "address_table", "pbx")
    Name of address table column containing group identifier of the
    address.
 
-   Default value is "grp".
+   Default value is “grp”.
 
    Example 1.8. Set grp_col parameter
 ...
@@ -357,7 +357,7 @@ modparam("permissions", "grp_col", "group_id")
    Name of address table column containing IP address part of the
    address.
 
-   Default value is "ip".
+   Default value is “ip”.
 
    Example 1.9. Set ip_col parameter
 ...
@@ -369,7 +369,7 @@ modparam("permissions", "ip_col", "ipess")
    Name of address table column containing network mask of the
    address. Possible values are 0-32.
 
-   Default value is "mask".
+   Default value is “mask”.
 
    Example 1.10. Set mask_col parameter
 ...
@@ -381,7 +381,7 @@ modparam("permissions", "mask_col", "subnet_length")
    Name of address table column containing port part of the
    address.
 
-   Default value is "port".
+   Default value is “port”.
 
    Example 1.11. Set port_col parameter
 ...
@@ -392,11 +392,11 @@ modparam("permissions", "port_col", "prt")
 
    Name of address table column containing transport protocol that
    is matched against transport protocol of received request.
-   Possible values that can be stored in proto_col are "any",
-   "udp", "tcp", "tls", "sctp", and "none". Value "any" matches
-   always and value "none" never.
+   Possible values that can be stored in proto_col are “any”,
+   “udp”, “tcp”, “tls”, “sctp”, and “none”. Value “any” matches
+   always and value “none” never.
 
-   Default value is "proto".
+   Default value is “proto”.
 
    Example 1.12. Set proto_col parameter
 ...
@@ -409,7 +409,7 @@ modparam("permissions", "proto_col", "transport")
    is matched against the arguments received by check_address or
    check_source_address.
 
-   Default value is "pattern".
+   Default value is “pattern”.
 
    Example 1.13. Set pattern_col parameter
 ...
@@ -422,7 +422,7 @@ modparam("permissions", "pattern_col", "regexp")
    as value to a pvar given as argument to check_address or
    check_source_address in case the function succedes.
 
-   Default value is "context_info".
+   Default value is “context_info”.
 
    Example 1.14. Set info_col parameter
 ...
@@ -434,7 +434,7 @@ modparam("permissions", "info_col", "info_col")
 1.4.1.  allow_routing()
 
    Returns true if all pairs constructed as described in
-   Section 1.1.1, "Call Routing" have appropriate permissions
+   Section 1.1.1, “Call Routing” have appropriate permissions
    according to the configuration files. This function uses
    default configuration files specified in default_allow_file and
    default_deny_file.
@@ -451,7 +451,7 @@ if (allow_routing()) {
 1.4.2.  allow_routing(basename)
 
    Returns true if all pairs constructed as described in
-   Section 1.1.1, "Call Routing" have appropriate permissions
+   Section 1.1.1, “Call Routing” have appropriate permissions
    according to the configuration files given as parameters.
 
    Meaning of the parameters is as follows:
@@ -474,7 +474,7 @@ if (allow_routing("basename")) {
 1.4.3.  allow_routing(allow_file,deny_file)
 
    Returns true if all pairs constructed as described in
-   Section 1.1.1, "Call Routing" have appropriate permissions
+   Section 1.1.1, “Call Routing” have appropriate permissions
    according to the configuration files given as parameters.
 
    Meaning of the parameters is as follows:
@@ -499,7 +499,7 @@ if (allow_routing("rules.allow", "rules.deny")) {
 1.4.4.  allow_register(basename)
 
    The function returns true if all pairs constructed as described
-   in Section 1.1.2, "Registration Permissions" have appropriate
+   in Section 1.1.2, “Registration Permissions” have appropriate
    permissions according to the configuration files given as
    parameters.
 
@@ -528,7 +528,7 @@ if (method=="REGISTER") {
 1.4.5.  allow_register(allow_file, deny_file)
 
    The function returns true if all pairs constructed as described
-   in Section 1.1.2, "Registration Permissions" have appropriate
+   in Section 1.1.2, “Registration Permissions” have appropriate
    permissions according to the configuration files given as
    parameters.
 
@@ -559,7 +559,7 @@ if (method=="REGISTER") {
 1.4.6.  allow_uri(basename, pvar)
 
    Returns true if the pair constructed as described in
-   Section 1.1.3, "URI Permissions" have appropriate permissions
+   Section 1.1.3, “URI Permissions” have appropriate permissions
    according to the configuration files specified by the
    parameter.
 
@@ -590,7 +590,7 @@ pattern]])
 
    Returns 1 if group id, IP address, port and protocol given as
    arguments match an IP subnet found in cached address table, as
-   described in Section 1.1.4, "Address Permissions" . The
+   described in Section 1.1.4, “Address Permissions” . The
    function takes 4 mandatory arguments and 2 optional ones.
 
    This function can be useful to check if a request can be

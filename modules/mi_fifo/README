@@ -8,7 +8,7 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright � 2006 voice-system.ro
+   Copyright © 2006 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -132,7 +132,7 @@ modparam("mi_fifo", "fifo_user", "root")
 
    Directory to be used for creating the reply FIFO files.
 
-   Default value is "/tmp/"
+   Default value is “/tmp/”
 
    Example 1.5. Set reply_dir parameter
 ...
@@ -145,7 +145,7 @@ modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
    structure is tree oriendeted, the depth level will printed as
    indentation.
 
-   Default value is ""\t" (TAB)".
+   Default value is “"\t" (TAB)”.
 
    Example 1.6. Set reply_indent parameter
 ...
@@ -159,7 +159,7 @@ modparam("mi_fifo", "reply_indent", "    ")
 1.6. Example
 
    This is an example showing the FIFO format for the
-   "get_statistics dialog: tm:" MI commad: response.
+   “get_statistics dialog: tm:” MI commad: response.
 
    Example 1.7. FIFO request
 

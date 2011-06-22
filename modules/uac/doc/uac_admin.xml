@@ -228,7 +228,7 @@ modparam("uac","credential","username:domain:password")
 				<title>Set <varname>auth_realm_avp</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","auth_realm_avp","$avp(i:10)")
+modparam("uac","auth_realm_avp","$avp(10)")
 ...
 				</programlisting>
 			</example>
@@ -251,7 +251,7 @@ modparam("uac","auth_realm_avp","$avp(i:10)")
 				<title>Set <varname>auth_username_avp</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","auth_username_avp","$avp(i:11)")
+modparam("uac","auth_username_avp","$avp(11)")
 ...
 				</programlisting>
 			</example>
@@ -274,7 +274,7 @@ modparam("uac","auth_username_avp","$avp(i:11)")
 				<title>Set <varname>auth_password_avp</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("uac","auth_password_avp","$avp(i:12)")
+modparam("uac","auth_password_avp","$avp(12)")
 ...
 				</programlisting>
 			</example>
@@ -333,7 +333,7 @@ modparam("uac", "force_dialog", yes)
 				<programlisting format="linespecific">
 ...
 # replace both display and uri
-uac_replace_from("$avp(s:display)","$avp(s:uri)");
+uac_replace_from("$avp(display)","$avp(uri)");
 # replace only display and do not touch uri
 uac_replace_from("batman","");
 # remove display and replace uri

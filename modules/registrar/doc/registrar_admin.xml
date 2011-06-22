@@ -285,7 +285,7 @@ modparam("registrar", "case_sensitive", 0)
 		<title>Set <varname>received_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "received_avp", "$avp(s:rcv)")
+modparam("registrar", "received_avp", "$avp(rcv)")
 ...
 </programlisting>
 		</example>
@@ -415,7 +415,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		<title>Set <varname>mcontact_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "mcontact_avp", "$avp(s:register)")
+modparam("registrar", "mcontact_avp", "$avp(register)")
 ...
 		</programlisting>
 		</example>
@@ -743,7 +743,7 @@ if (registered("location","$fu")) {
 		<programlisting format="linespecific">
 ...
 
-if (is_other_contact("location", "$avp(s:ips)")) {
+if (is_other_contact("location", "$avp(ips)")) {
 	sl_send_reply("403", "Forbidden");
 	...
 };

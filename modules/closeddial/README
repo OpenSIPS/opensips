@@ -6,7 +6,7 @@ Edited by
 
 Sergio Gutierrez
 
-   Copyright � 2010
+   Copyright © 2009
    Revision History
    Revision $Revision$ $Date: 2009-02-07 18:00:00 -0500$
      __________________________________________________________
@@ -47,7 +47,7 @@ Sergio Gutierrez
    1.5. Set user_column parameter
    1.6. Set cd_domain_column parameter
    1.7. Set new_uri_column parameter
-   1.8. Set user_column parameter
+   1.8. Set use_domain parameter
    1.9. cd_lookup usage
 
 Chapter 1. Admin Guide
@@ -83,7 +83,7 @@ Chapter 1. Admin Guide
    URL of the database table to be used.
 
    Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -95,7 +95,7 @@ ips")
 
    Column of the table which stores the username
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.2. Set user_column parameter
 ...
@@ -107,7 +107,7 @@ modparam("closeddial", "user_column", "user")
    Column of the table which stores the domain associated to
    usernames.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.3. Set domain_column parameter
 ...
@@ -119,7 +119,7 @@ modparam("closeddial", "domain_column", "domain")
    Column of the table which stores the group_id which groups the
    usernames.
 
-   Default value is "group_id".
+   Default value is “group_id”.
 
    Example 1.4. Set group_id_column parameter
 ...
@@ -131,7 +131,7 @@ modparam("closeddial", "group_id_column", "groupid")
    Column of the table which stores the closed dial code
    associated to a username.
 
-   Default value is "cd_username".
+   Default value is “cd_username”.
 
    Example 1.5. Set user_column parameter
 ...
@@ -143,7 +143,7 @@ modparam("closeddial", "cd_user_column", "cd_user")
    Column of the table which stores the domain associated to
    closed dial usernames.
 
-   Default value is "cd_domain".
+   Default value is “cd_domain”.
 
    Example 1.6. Set cd_domain_column parameter
 ...
@@ -155,7 +155,7 @@ modparam("closeddial", "cd_domain_column", "cddomain")
    Column of the table which stores the new URI which will be used
    to rewrite the request, in case a possitive match be found.
 
-   Default value is "new_uri".
+   Default value is “new_uri”.
 
    Example 1.7. Set new_uri_column parameter
 ...
@@ -168,7 +168,7 @@ modparam("closeddial", "new_uri_column", "new_uri")
    also used for searching new uri; otherwise only the username
    part will be used.
 
-   Default value is "0 (no)".
+   Default value is “0 (no)”.
 
    Example 1.8. Set use_domain parameter
 ...
@@ -204,8 +204,8 @@ modparam("closeddial", "use_domain", 1)
 if($(rU{s.len}) == 2)
 {
         # Group AVP could be loaded at register time.
-        $avp(s:group)="companyA";
-        cd_lookup("closeddial", "$avp(s:group)");
+        $avp(group)="companyA";
+        cd_lookup("closeddial", "$avp(group)");
 };
 ...
 

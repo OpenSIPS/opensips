@@ -14,7 +14,7 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright � 2004 FhG FOKUS
+   Copyright © 2004 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -73,7 +73,7 @@ Chapter 1. Admin Guide
 
    The module exports external commands that can be used to change
    the global flags via Management Interface. The MI commands are:
-   "set_gflag", "reset_gflag" and "is_gflag".
+   “set_gflag”, “reset_gflag” and “is_gflag”.
 
 1.2. Dependencies
 
@@ -87,7 +87,7 @@ Chapter 1. Admin Guide
 
    The initial value of global flags bitmap.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.1. initial parameter usage
 modparam("gflags", "initial", 15)
@@ -96,9 +96,9 @@ modparam("gflags", "initial", 15)
 
 1.4.1. set_gflag(flag)
 
-   Set the bit at the position "flag" in global flags.
+   Set the bit at the position “flag” in global flags.
 
-   "flag" can have a value in the range of 0..31.
+   “flag” can have a value in the range of 0..31.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
@@ -110,9 +110,9 @@ set_gflag("4");
 
 1.4.2. reset_gflag(flag)
 
-   Reset the bit at the position "flag" in global flags.
+   Reset the bit at the position “flag” in global flags.
 
-   "flag" can have a value in the range of 0..31.
+   “flag” can have a value in the range of 0..31.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
@@ -124,9 +124,9 @@ reset_gflag("4");
 
 1.4.3. is_gflag(flag)
 
-   Check if bit at the position "flag" in global flags is set.
+   Check if bit at the position “flag” in global flags is set.
 
-   "flag" can have a value in the range of 0..31.
+   “flag” can have a value in the range of 0..31.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.

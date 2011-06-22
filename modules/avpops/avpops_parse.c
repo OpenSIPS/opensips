@@ -147,14 +147,15 @@ struct fis_param *avpops_parse_pvar(char *in)
 
 int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 {
-	unsigned long ul;
 	str   tmp;
 	str   s0;
+	str *s1;
 	char  have_scheme;
 	char *p;
 	char *p0;
 	unsigned int flags;
 
+	LM_DBG("parse: %s\n", s);
 	tmp.s = s;
 	/* parse the attribute name - check first if it's not an alias */
 	p0=strchr(tmp.s, '/');
@@ -168,12 +169,9 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 			return E_UNSPEC;
 		}
 		switch(*s) {
+			/* deteleted because of the new avp format */
 			case 's': case 'S':
-				dbp->a.opd = AVPOPS_VAL_NONE|AVPOPS_VAL_STR;
-			break;
 			case 'i': case 'I':
-				dbp->a.opd = AVPOPS_VAL_NONE|AVPOPS_VAL_INT;
-			break;
 			case '*': case 'a': case 'A':
 				dbp->a.opd = AVPOPS_VAL_NONE;
 			break;
@@ -211,33 +209,24 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 	if (dbp->a.type == AVPOPS_VAL_PVAR)
 	{
 		dbp->a.opd = AVPOPS_VAL_PVAR;
-		if(pv_has_sname(&dbp->a.u.sval))
+		if(pv_has_iname(&dbp->a.u.sval))
 		{
-			dbp->sa.s=(char*)pkg_malloc(
-					dbp->a.u.sval.pvp.pvn.u.isname.name.s.len+1);
+			s1 = get_avp_name_id(dbp->a.u.sval.pvp.pvn.u.isname.name.n);
+			if (!s1)
+			{
+				LM_ERR("cannot find avp name\n");
+				goto error;
+			}
+			dbp->sa.s=(char*)pkg_malloc(s1->len + 1);
 			if (dbp->sa.s==0)
 			{
 				LM_ERR("no more pkg mem\n");
 				goto error;
 			}
-			memcpy(dbp->sa.s, dbp->a.u.sval.pvp.pvn.u.isname.name.s.s,
-					dbp->a.u.sval.pvp.pvn.u.isname.name.s.len);
-			dbp->sa.len = dbp->a.u.sval.pvp.pvn.u.isname.name.s.len;
+			memcpy(dbp->sa.s, s1->s, s1->len);
+			dbp->sa.len = s1->len;
 			dbp->sa.s[dbp->sa.len] = 0;
 			dbp->a.opd = AVPOPS_VAL_PVAR|AVPOPS_VAL_STR;
-		} else if(pv_has_iname(&dbp->a.u.sval)) {
-			ul = (unsigned long)dbp->a.u.sval.pvp.pvn.u.isname.name.n;
-			tmp.s = int2str( ul, &(tmp.len) );
-			dbp->sa.s = (char*)pkg_malloc( tmp.len + 1 );
-			if (dbp->sa.s==0)
-			{
-				LM_ERR("no more pkg mem\n");
-				goto error;
-			}
-			memcpy( dbp->sa.s, tmp.s, tmp.len);
-			dbp->sa.len = tmp.len;
-			dbp->sa.s[dbp->sa.len] = 0;
-			dbp->a.opd = AVPOPS_VAL_PVAR|AVPOPS_VAL_INT;
 		}
 	}
 

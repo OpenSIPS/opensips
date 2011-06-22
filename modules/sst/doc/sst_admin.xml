@@ -230,9 +230,9 @@ modparam("sst", "sst_interval", 2400)
 		<title>Set <varname>timeout_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "timeout_avp", "$avp(i:10)")
+modparam("dialog", "timeout_avp", "$avp(10)")
 # Set the sst modules timeout_avp to be the same value
-modparam("sst", "timeout_avp", "$avp(i:10)")
+modparam("sst", "timeout_avp", "$avp(10)")
 ...
 </programlisting>
 		</example>
@@ -342,10 +342,10 @@ route {
 		<programlisting format="linespecific">
 
 ...
-modparam("dialog", "timeout_avp", "$avp(i:4242)")
+modparam("dialog", "timeout_avp", "$avp(4242)")
 ...
 modparam("sst", "sst_flag", 6)
-modparam("sst", "timeout_avp", "$avp(i:4242)")
+modparam("sst", "timeout_avp", "$avp(4242)")
 modparam("sst", "min_se", 2400) # Must be >= 90
 ...
 

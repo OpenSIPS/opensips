@@ -128,35 +128,15 @@ Chapter 1. Admin Guide
 1.3. AVP naming format
 
    The format of the parameters specifying an AVP in functions
-   exported by this module is: $avp(avp_flags:avp_name) or
-   $avp(avp_alias).
-     * avp_flags = type_flags [script_flags]; type_flags = 'I' |
-       'i' | 'S' | 's'; script_flags = 0..255
-       'I' or 'i' means that the type of avp name is integer (ID)
-       'S' or 's' means that the type of avp name is string
-       The type flag is mandatory.
-       script_flags must be an 8 bit unsigned number, therefore
-       can be set up to 8 flags. If no script flag is provided,
-       the name will match all AVPs, regardless they have or not a
-       script flag set (preserves the compatibility with the old
-       naming schema).
+   exported by this module is: $avp(avp_name).
      * avp_name = string | integer
-       string - might be any alphanumeric string, wich contain
-       following characters: [a-z] [A-Z] [0-9] '_'
-       integer - might be an unsigned integer, greater than zero,
-       up to 2^16-1
-     * avp_alias = string
        string - might be any alphanumeric string, wich contain
        following characters: [a-z] [A-Z] [0-9] '_'
 
    Example 1.1. AVP naming examples
 ...
-$avp(i:11) - the AVP identified by integer 11
-$avp(s:foo) - the AVP identified by the string 'foo'
-$avp(bar) - the AVP identified by the AVP alias 'bar'
-$avp(i3:123) - the AVP identified by the integer 123 which has script fl
-ags 1
-    and 2 set
+$avp(11) - the AVP identified by name 11
+$avp(foo) - the AVP identified by the string 'foo'
 ...
 
 1.4. Exported Parameters
@@ -339,12 +319,12 @@ modparam("avpops", "buf_size", 1024)
 
    Example 1.13. avp_db_load usage
 ...
-avp_db_load("$fu","$avp(i:678)");
+avp_db_load("$fu","$avp(678)");
 avp_db_load("$ru/domain","i/domain_preferences");
-avp_db_load("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
-avp_db_load("$ru","$avp(i:123)/$some_scheme");
+avp_db_load("$avp(uuid)","$avp(404fwd)/fwd_table");
+avp_db_load("$ru","$avp(123)/$some_scheme");
 # use DB URL id 3
-avp_db_load("$ru","$avp(i:1)","3");
+avp_db_load("$ru","$avp(1)","3");
 ...
 
 1.5.2.  avp_db_store(source,name[,db_id])
@@ -360,10 +340,10 @@ avp_db_load("$ru","$avp(i:1)","3");
 
    Example 1.14. avp_db_store usage
 ...
-avp_db_store("$tu","$avp(i:678)");
+avp_db_store("$tu","$avp(678)");
 avp_db_store("$ru/username","$avp(email)");
 # use DB URL id 3
-avp_db_store("$ru","$avp(i:1)","3");
+avp_db_store("$ru","$avp(1)","3");
 ...
 
 1.5.3.  avp_db_delete(source,name[,db_id])
@@ -379,11 +359,11 @@ avp_db_store("$ru","$avp(i:1)","3");
 
    Example 1.15. avp_db_delete usage
 ...
-avp_db_delete("$tu","$avp(i:678)");
+avp_db_delete("$tu","$avp(678)");
 avp_db_delete("$ru/username","$avp(email)");
-avp_db_delete("$avp(s:uuid)","$avp(s:404fwd)/fwd_table");
+avp_db_delete("$avp(uuid)","$avp(404fwd)/fwd_table");
 # use DB URL id 3
-avp_db_delete("$ru","$avp(i:1)","3");
+avp_db_delete("$ru","$avp(1)","3");
 ...
 
 1.5.4.  avp_db_query(query[[,dest],db_id])
@@ -402,11 +382,11 @@ avp_db_delete("$ru","$avp(i:1)","3");
        attacker to alter your database content.
      * dest - a list with AVP names where to store the result. The
        format is “$avp(name1);$avp(name2);...”. If this parameter
-       is ommited, the result is stored in
-       “$avp(i:1);$avp(i:2);...”. If the result gives many rows,
-       then multiple AVPs with corresponding name will be added.
-       The value type of the AVP (string or integer) will be
-       derived from the type of the columns.
+       is ommited, the result is stored in “$avp(1);$avp(2);...”.
+       If the result gives many rows, then multiple AVPs with
+       corresponding name will be added. The value type of the AVP
+       (string or integer) will be derived from the type of the
+       columns.
      * db_id - reference to a defined DB URL (a numerical id) -
        see the “db_url” module parameter.
 
@@ -417,7 +397,7 @@ avp_db_delete("$ru","$avp(i:1)","3");
 ...
 avp_db_query("select password, ha1 from subscriber where username='$tu'"
 ,
-        "$avp(i:678);$avp(i:679)");
+        "$avp(678);$avp(679)");
 avp_db_query("delete from subscriber");
 avp_db_query("delete from subscriber","","2");
 ...
@@ -439,7 +419,7 @@ avp_db_query("delete from subscriber","","2");
 
    Example 1.17. avp_delete usage
 ...
-avp_delete("$avp(i:678)/g");
+avp_delete("$avp(678)/g");
 avp_delete("$avp(email)");
 avp_delete("i");
 avp_delete("a3");
@@ -470,10 +450,10 @@ avp_delete("a3");
    Example 1.18. avp_pushto usage
 ...
 avp_pushto("$ru/domain","$fd");
-avp_pushto("$ru","$avp(i:678)");
-avp_pushto("$ru/domain","$avp(s:backup_domains)/g");
-avp_pushto("$du","$avp(i:679)");
-avp_pushto("$br","$avp(i:680)");
+avp_pushto("$ru","$avp(678)");
+avp_pushto("$ru/domain","$avp(backup_domains)/g");
+avp_pushto("$du","$avp(679)");
+avp_pushto("$br","$avp(680)");
 ...
 
 1.5.7.  avp_check(name,op_value)
@@ -511,11 +491,11 @@ avp_pushto("$br","$avp(i:680)");
 
    Example 1.19. avp_check usage
 ...
-avp_check("$avp(i:678)", "lt/i:345/g");
+avp_check("$avp(678)", "lt/345/g");
 avp_check("$fd","eq/$td/I");
-avp_check("$avp(s:foo)","gt/$avp($bar)/g");
-avp_check("$avp(s:foo)","re/sip:.*@bar.net/g");
-avp_check("$avp(s:foo)","fm/$avp(fm_avp)/g");
+avp_check("$avp(foo)","gt/$avp($bar)/g");
+avp_check("$avp(foo)","re/sip:.*@bar.net/g");
+avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 ...
 
 1.5.8.  avp_copy(old_name,new_name)
@@ -536,7 +516,7 @@ avp_check("$avp(s:foo)","fm/$avp(fm_avp)/g");
 
    Example 1.20. avp_copy usage
 ...
-avp_copy("$avp(i:678)", "$avp(s:345)/g");
+avp_copy("$avp(678)", "$avp(345)/g");
 avp_copy("$avp(old)","$avp(new)/gd");
 ...
 
@@ -561,8 +541,8 @@ avp_copy("$avp(old)","$avp(new)/gd");
 
    Example 1.21. avp_printf usage
 ...
-avp_printf("$avp(i:20)", "This is a $rm request with call-id $hdr(call-i
-d)");
+avp_printf("$avp(20)", "This is a $rm request with call-id $hdr(call-id)
+");
 ...
 
 1.5.10.  avp_subst(avps, subst)
@@ -593,14 +573,14 @@ d)");
 
    Example 1.22. avp_subst usage
 ...
-# if avp i:678 has a string value in e-mail format, replace the
+# if avp 678 has a string value in e-mail format, replace the
 # domain part with the value of domain part from R-URI
-avp_subst("$avp(i:678)", "/(.*)@(.*)/\1@$rd/");
+avp_subst("$avp(678)", "/(.*)@(.*)/\1@$rd/");
 
-# if any avp i:678 has a string value in e-mail format, replace the
+# if any avp 678 has a string value in e-mail format, replace the
 # domain part with the value of domain part from R-URI
-# and place the result in avp i:679
-avp_subst("$avp(i:678)/$avp(i:679)/g", "/(.*)@(.*)/\1@$rd/");
+# and place the result in avp 679
+avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 ...
 
    IMPORTANT NOTE: if the replacement string includes src_avp or
@@ -638,7 +618,7 @@ avp_subst("$avp(i:678)/$avp(i:679)/g", "/(.*)@(.*)/\1@$rd/");
 
    Example 1.23. avp_op usage
 ...
-avp_op("$avp(i:678)", "add/i:345/g");
+avp_op("$avp(678)", "add/345/g");
 avp_op("$avp(number)","sub/$avp(number2)/d");
 ...
 
@@ -657,7 +637,7 @@ avp_op("$avp(number)","sub/$avp(number2)/d");
 
    Example 1.24. is_avp_set usage
 ...
-if(is_avp_set("$avp(i:678)"))
+if(is_avp_set("$avp(678)"))
     log("AVP with integer id 678 exists\n");
 ...
 
@@ -682,5 +662,5 @@ avp_print();
 
    Example 1.26. avp_print usage
 ...
-avp_insert("avp(i:20)", "$hdr(From)", 2);
+avp_insert("avp(20)", "$hdr(From)", 2);
 ...

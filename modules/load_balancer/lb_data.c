@@ -38,11 +38,6 @@
 /* dialog stuff */
 extern struct dlg_binds lb_dlg_binds;
 
-/* failover stuff */
-static int_str grp_avp_name = {.n=(int)0xffffdd00};
-static int_str mask_avp_name = {.n=(int)0xffffdd02};
-static int_str id_avp_name = {.n=(int)0xffffdd04};
-
 
 
 struct lb_data* load_lb_data(void)

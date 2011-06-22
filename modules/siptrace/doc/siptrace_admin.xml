@@ -173,8 +173,8 @@ modparam("siptrace", "enable_ack_trace", 1)
 		<title>Set <varname>traced_user_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("siptrace", "traced_user_avp", "$avp(i:123)")
-modparam("siptrace", "traced_user_avp", "$avp(s:user)")
+modparam("siptrace", "traced_user_avp", "$avp(123)")
+modparam("siptrace", "traced_user_avp", "$avp(user)")
 ...
 </programlisting>
 		</example>
@@ -198,8 +198,8 @@ modparam("siptrace", "traced_user_avp", "$avp(s:user)")
 		<title>Set <varname>trace_table_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("siptrace", "trace_table_avp", "$avp(i:345)")
-modparam("siptrace", "trace_table_avp", "$avp(s:siptrace_table)")
+modparam("siptrace", "trace_table_avp", "$avp(345)")
+modparam("siptrace", "trace_table_avp", "$avp(siptrace_table)")
 ...
 </programlisting>
 		</example>

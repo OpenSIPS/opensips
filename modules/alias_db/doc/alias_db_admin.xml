@@ -319,7 +319,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 		<programlisting format="linespecific">
 ...
 # do revers alias lookup and find the alias for the FROM URI
-alias_db_find("dbaliases" , "$fu", "$avp(s:from_alias)", "r");
+alias_db_find("dbaliases" , "$fu", "$avp(from_alias)", "r");
 ...
 </programlisting>
 		</example>

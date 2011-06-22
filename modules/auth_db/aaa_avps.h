@@ -36,7 +36,7 @@
 
 
 struct aaa_avp {
-	int_str avp_name;
+	int avp_name;
 	unsigned short avp_type;
 	str attr_name;
 	struct aaa_avp *next;
@@ -47,8 +47,6 @@ struct aaa_avp {
 static inline void free_aaa_avp(struct aaa_avp *avp)
 {
 	if (avp) {
-		if (avp->avp_type&AVP_NAME_STR && avp->avp_name.s.s!=avp->attr_name.s)
-			pkg_free(avp->avp_name.s.s);
 		if (avp->attr_name.s)
 			pkg_free(avp->attr_name.s);
 		pkg_free(avp);
@@ -74,7 +72,7 @@ static inline int parse_aaa_avps(char *definition,
 										struct aaa_avp **avp_def, int *cnt)
 {
 	struct aaa_avp *avp;
-	int_str avp_name;
+	int avp_name = -1;
 	pv_spec_t avp_spec;
 	str  foo;
 	char *p;
@@ -123,19 +121,7 @@ static inline int parse_aaa_avps(char *definition,
 			foo.s[foo.len] = t;
 
 			/* copy the avp name into the avp structure */
-			if (avp->avp_type&AVP_NAME_STR) {
-				avp->avp_name.s.s =
-					(char*)pkg_malloc(avp_name.s.len+1);
-				if (avp->avp_name.s.s==0) {
-					LM_ERR("no more pkg mem\n");
-					goto error;
-				}
-				avp->avp_name.s.len = avp_name.s.len;
-				memcpy(avp->avp_name.s.s, avp_name.s.s, avp_name.s.len);
-				avp->avp_name.s.s[avp->avp_name.s.len] = 0;
-			} else {
-				avp->avp_name.n = avp_name.n;
-			}
+			avp->avp_name = avp_name;
 			/* go to after the equal sign */
 			p = s+1;
 		}
@@ -155,10 +141,12 @@ static inline int parse_aaa_avps(char *definition,
 		memcpy( avp->attr_name.s, foo.s, foo.len );
 		avp->attr_name.s[foo.len] = 0;
 		/* was an avp name specified? */
-		if (avp->avp_name.s.s==0) {
-			/* use as avp_name the attr name */
-			avp->avp_type = AVP_NAME_STR;
-			avp->avp_name.s = avp->attr_name;
+		if (avp_name < 0) {
+			avp->avp_name = get_avp_id(&avp->attr_name);
+			if (avp->avp_name < 0) {
+				LM_ERR("cannot get avp ip\n");
+				goto error;
+			}
 		}
 		/* link the element */
 		avp->next = *avp_def;

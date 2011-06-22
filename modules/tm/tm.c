@@ -1365,7 +1365,7 @@ struct sip_msg* tm_pv_context_request(struct sip_msg* msg)
 int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val)
 {
-	int_str avp_name;
+	int avp_name;
 	int_str avp_value;
 	unsigned short name_type;
 	int idx, idxf, res=0;
@@ -1507,7 +1507,7 @@ success:
 int pv_set_tm_branch_avp(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val)
 {
-	int_str avp_name;
+	int avp_name;
 	int_str avp_val;
 	int flags, res=0;
 	unsigned short name_type;

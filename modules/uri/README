@@ -16,9 +16,9 @@ Edited by
 
 Irina-Maria Stanescu
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
 
-   Copyright � 2005, 2009 voice-system.ro
+   Copyright © 2005, 2009 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-08-25 13:26:51 +0300
                               (Tue, 25 Aug 2009) $
@@ -158,7 +158,7 @@ modparam("uri", "use_sip_uri_host", 1)
    If the db_url string is not set, you will not be able to use
    the DB related functions.
 
-   Default value is ">NULL".
+   Default value is “>NULL”.
 
    Example 1.4. Set db_url parameter
 ...
@@ -169,11 +169,11 @@ modparam("uri", "db_url", "mysql://username:password@localhost/opensips"
 1.3.5. db_table (string)
 
    The DB table that should be used. Its possible to use the
-   "subscriber" and "uri" table. If the "uri" table should be
-   used, an additional parameter (Section 1.3.9, "use_uri_table
-   (integer)") must be set.
+   “subscriber” and “uri” table. If the “uri” table should be
+   used, an additional parameter (Section 1.3.9, “use_uri_table
+   (integer)”) must be set.
 
-   Default value is "subscriber".
+   Default value is “subscriber”.
 
    Example 1.5. Set uri_table parameter
 ...
@@ -184,7 +184,7 @@ modparam("uri", "db_table", "uri")
 
    Column holding usernames in the table.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.6. Set user_column parameter
 ...
@@ -195,7 +195,7 @@ modparam("uri", "user_column", "username")
 
    Column holding domain in the table.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.7. Set domain_column parameter
 ...
@@ -206,7 +206,7 @@ modparam("uri", "domain_column", "domain")
 
    Column holding URI username in the table.
 
-   Default value is "uri_user".
+   Default value is “uri_user”.
 
    Example 1.8. Set uriuser_column parameter
 ...
@@ -215,10 +215,10 @@ modparam("uri", "uriuser_column", "uri_user")
 
 1.3.9. use_uri_table (integer)
 
-   Specify if the "uri" table should be used for checkings instead
-   of "subscriber" table. A non-zero value means true.
+   Specify if the “uri” table should be used for checkings instead
+   of “subscriber” table. A non-zero value means true.
 
-   Default value is "0 (false)".
+   Default value is “0 (false)”.
 
    Example 1.9. Set use_uri_table parameter
 ...
@@ -231,11 +231,11 @@ modparam("uri", "use_uri_table", 1)
    identify the users (along with username). This is useful in
    multi domain setups, a non-zero value means true.
 
-   This parameter is only evaluated for calls to "does_uri_exist",
+   This parameter is only evaluated for calls to “does_uri_exist”,
    all other functions checks the digest username and realm
-   against the given username, if the "uri" table is used.
+   against the given username, if the “uri” table is used.
 
-   Default value is "0 (false)".
+   Default value is “0 (false)”.
 
    Example 1.10. Set use_domain parameter
 ...
@@ -415,7 +415,7 @@ if (uri_param("param1","value1")) {
    Add to RURI a parameter (name=value);
 
    Meaning of the parameters is as follows:
-     * param - parameter to be appended in "name=value" format.
+     * param - parameter to be appended in “name=value” format.
 
    This function can be used from REQUEST_ROUTE.
 

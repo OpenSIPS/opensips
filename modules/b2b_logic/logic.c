@@ -59,7 +59,7 @@
 
 static str maxfwd_hdr={"Max-Forwards: 70\r\n", 18};
 extern b2b_scenario_t* script_scenarios;
-extern int_str b2bl_key_avp_name;
+extern int b2bl_key_avp_name;
 extern unsigned short b2bl_key_avp_type;
 
 struct to_body* get_b2bl_from(struct sip_msg* msg);
@@ -1054,7 +1054,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 
 	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
 
-	if (b2bl_key_avp_name.n)
+	if (b2bl_key_avp_name >= 0)
 	{
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 		avp_val.s = *b2bl_key;
@@ -1366,7 +1366,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 
 	LM_DBG("b2b_entity key = %.*s\n", key->len, key->s);
 
-	if (b2bl_key_avp_name.n)
+	if (b2bl_key_avp_name >= 0)
 	{
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 		avp_val.s = *b2bl_key;
@@ -3088,7 +3088,7 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 
 	if(key)
 	{
-		if (b2bl_key_avp_name.n)
+		if (b2bl_key_avp_name >= 0)
 		{
 			avp_val.s = *key;
 			if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
@@ -3106,7 +3106,7 @@ str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENAR
 {
 	b2b_scenario_t* scenario_struct;
 
-	if (b2bl_key_avp_name.n)
+	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	if(name->len == B2B_TOP_HIDING_SCENARY_LEN &&
@@ -3134,7 +3134,7 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	b2b_scenario_t* scenario_struct;
 	str* key;
 
-	if (b2bl_key_avp_name.n)
+	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	/* find the scenario with the corresponding id */

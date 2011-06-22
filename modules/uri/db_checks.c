@@ -373,7 +373,7 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 int set_result_pv(struct sip_msg* _msg, unsigned short _avp_type, int_str _avp_val, char* _res_avp)
 {
 	pv_spec_t* _avp = (pv_spec_t*) _res_avp;
-	int_str avp_name;
+	int avp_name;
 	unsigned short avp_type;
 
 

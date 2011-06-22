@@ -1638,7 +1638,10 @@ add(p_name, p_val)
 		}
 
 		if (RETVAL == 0) {
-			RETVAL = add_avp(flags, name, val);
+			if (flags & AVP_NAME_STR) {
+				name.n = get_avp_id(&name.s);
+			}
+			RETVAL = add_avp(flags, name.n, val);
 		}
 	}
   OUTPUT:
@@ -1680,7 +1683,10 @@ get(p_name)
 	}
 	
 	if (err == 0) {
-		first_avp = search_first_avp(flags, name, &val, NULL);
+		if (flags & AVP_NAME_STR) {
+			name.n = get_avp_id(&name.s);
+		}
+		first_avp = search_first_avp(flags, name.n, &val, NULL);
 		
 		if (first_avp != NULL) { /* found correct AVP */
 			if (is_avp_str_val(first_avp)) {
@@ -1731,7 +1737,10 @@ destroy(p_name)
 	}
 	
 	if (RETVAL == 1) {
-		first_avp = search_first_avp(flags, name, &val, NULL);
+		if (flags & AVP_NAME_STR) {
+			name.n = get_avp_id(&name.s);
+		}
+		first_avp = search_first_avp(flags, name.n, &val, NULL);
 		
 		if (first_avp != NULL) { /* found correct AVP */
 			destroy_avp(first_avp);

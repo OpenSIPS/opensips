@@ -279,7 +279,7 @@ exec_msg("echo TEST > /tmp/$rU.txt");
 		<programlisting format="linespecific">
 ...
 exec_avp("echo TEST");
-exec_avp("echo TEST", "$avp(s:test)");
+exec_avp("echo TEST", "$avp(test)");
 ...
 </programlisting>
 		</example>
@@ -320,7 +320,7 @@ exec_avp("echo TEST", "$avp(s:test)");
 		<programlisting format="linespecific">
 ...
 exec_getenv("HOSTNAME");
-exec_getenv("HOSTNAME", "$avp(s:test)");
+exec_getenv("HOSTNAME", "$avp(test)");
 ...
 </programlisting>
 		</example>

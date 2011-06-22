@@ -230,7 +230,7 @@ modparam("mediaproxy", "mediaproxy_timeout", 500)
 
       <para>
         <emphasis>
-          Default value is <quote>$avp(s:signaling_ip)</quote>.
+          Default value is <quote>$avp(signaling_ip)</quote>.
         </emphasis>
       </para>
 
@@ -238,7 +238,7 @@ modparam("mediaproxy", "mediaproxy_timeout", 500)
       <title>Setting the <varname>signaling_ip_avp</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("mediaproxy", "signaling_ip_avp", "$avp(s:nat_ip)")
+modparam("mediaproxy", "signaling_ip_avp", "$avp(nat_ip)")
 ...
         </programlisting>
       </example>
@@ -257,7 +257,7 @@ modparam("mediaproxy", "signaling_ip_avp", "$avp(s:nat_ip)")
 
       <para>
         <emphasis>
-          Default value is <quote>$avp(s:media_relay)</quote>.
+          Default value is <quote>$avp(media_relay)</quote>.
         </emphasis>
       </para>
 
@@ -265,7 +265,7 @@ modparam("mediaproxy", "signaling_ip_avp", "$avp(s:nat_ip)")
       <title>Setting the <varname>media_relay_avp</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("mediaproxy", "media_relay_avp", "$avp(s:media_relay)")
+modparam("mediaproxy", "media_relay_avp", "$avp(media_relay)")
 ...
         </programlisting>
       </example>
@@ -312,7 +312,7 @@ modparam("mediaproxy", "ice_candidate", "low-priority")
 
       <para>
         <emphasis>
-          Default value is <quote>$avp(s:ice_candidate)</quote>.
+          Default value is <quote>$avp(ice_candidate)</quote>.
         </emphasis>
       </para>
 
@@ -320,7 +320,7 @@ modparam("mediaproxy", "ice_candidate", "low-priority")
       <title>Setting the <varname>ice_candidate_avp</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("mediaproxy", "ice_candidate_avp", "$avp(s:ice_candidate)")
+modparam("mediaproxy", "ice_candidate_avp", "$avp(ice_candidate)")
 ...
         </programlisting>
       </example>
@@ -370,7 +370,7 @@ modparam("mediaproxy", "ice_candidate_avp", "$avp(s:ice_candidate)")
 ...
 if (method==INVITE &amp;&amp; !has_totag()) {
     # We can also use a specific media relay if we need to
-    #$avp(s:media_relay) = "1.2.3.4";
+    #$avp(media_relay) = "1.2.3.4";
     engage_media_proxy();
 }
 ...
@@ -419,7 +419,7 @@ if (method==INVITE &amp;&amp; !has_totag()) {
 ...
 if (method==INVITE) {
     # We can also use a specific media relay if we need to
-    #$avp(s:media_relay) = "1.2.3.4";
+    #$avp(media_relay) = "1.2.3.4";
     use_media_proxy();
 }
 ...

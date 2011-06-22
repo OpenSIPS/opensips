@@ -112,11 +112,10 @@ int h350_auth_lookup(
 	str                digest_username,
 	                   digest_username_escaped,
 	                   digest_password;
-	static char        digest_username_buf[DIGEST_USERNAME_BUF_SIZE],
-	                   username_avp_name_buf[AVP_NAME_STR_BUF_LEN],
-			   password_avp_name_buf[AVP_NAME_STR_BUF_LEN];
+	static char        digest_username_buf[DIGEST_USERNAME_BUF_SIZE];
 	struct berval      **attr_vals = NULL;
-	int_str            username_avp_name, password_avp_name, avp_val;
+	int                username_avp_name, password_avp_name;
+	int_str avp_val;
 	unsigned short     username_avp_type, password_avp_type;
 	int                rc, ld_result_count;
 
@@ -149,17 +148,6 @@ int h350_auth_lookup(
 		LM_ERR("error getting AVP name - pv_get_avp_name failed\n");
 		return E_H350_INTERNAL;
 	}
-	if (username_avp_type & AVP_NAME_STR)
-	{
-		if (username_avp_name.s.len >= AVP_NAME_STR_BUF_LEN)
-		{
-			LM_ERR("username AVP name too long\n");
-			return E_H350_INTERNAL;
-		}
-		strncpy(username_avp_name_buf, username_avp_name.s.s, username_avp_name.s.len);
-                username_avp_name_buf[username_avp_name.s.len] = '\0';
-                username_avp_name.s.s = username_avp_name_buf;
-	}
 
 	if (pv_get_avp_name(_msg,
 						&(_avp_specs->password_avp_spec.pvp),
@@ -170,20 +158,6 @@ int h350_auth_lookup(
                 LM_ERR("error getting AVP name - pv_get_avp_name failed\n");
                 return E_H350_INTERNAL;
         }
-        if (password_avp_type & AVP_NAME_STR)
-        {
-                if (password_avp_name.s.len >= AVP_NAME_STR_BUF_LEN)
-                {
-                        LM_ERR("password AVP name too long\n");
-                        return E_H350_INTERNAL;
-                }
-                strncpy(password_avp_name_buf, 
-						password_avp_name.s.s, 
-						password_avp_name.s.len);
-                password_avp_name_buf[password_avp_name.s.len] = '\0';
-                password_avp_name.s.s = password_avp_name_buf;
-        }
-	
 
 	/* 
 	 * search for sip digest username in H.350, store digest password
@@ -284,7 +258,8 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 	struct berval **attr_vals;
 	size_t        nmatch = 5;
 	regmatch_t    pmatch[5];
-	int_str       avp_name, avp_val;
+	int       avp_name;
+	int_str   avp_val;
 	str           avp_val_str, avp_name_str, 
 	              avp_name_prefix_str, call_pref_timeout_str;
 	int           call_pref_timeout;
@@ -371,7 +346,11 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 		avp_name_str.s = call_pref_avp_name;
 		avp_name_str.len = avp_name_prefix_str.len + pmatch[2].rm_eo - pmatch[2].rm_so;
 
-		avp_name.s = avp_name_str;
+		avp_name = get_avp_id(&avp_name_str);
+		if (avp_name <= 0) {
+			LM_ERR("cannot get avp id\n");
+			continue;
+		}
 		
 		/* add avp */
 		if (add_avp(AVP_NAME_STR | AVP_VAL_STR, avp_name, avp_val) < 0)
@@ -392,8 +371,12 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 		/* calculate call preference timeout avp name */
 		memcpy(	avp_name_str.s + avp_name_str.len, "_t", 2);
 		avp_name_str.len += 2;
-		avp_name.s = avp_name_str;
-
+		avp_name = get_avp_id(&avp_name_str);
+		if (avp_name <= 0) {
+			LM_ERR("cannot get avp id\n");
+			continue;
+		}
+	
 		/* calculate timeout avp value */
 		call_pref_timeout_str.s = attr_vals[i]->bv_val + pmatch[4].rm_so;
 		call_pref_timeout_str.len = pmatch[4].rm_eo - pmatch[4].rm_so;
@@ -429,7 +412,8 @@ int h350_service_level(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 {
 	int           i, rc, avp_count = 0;
         str           avp_name_prefix;
-	int_str       avp_name, avp_val;
+	int_str avp_name;
+	int_str avp_val;
 	struct berval **attr_vals;
 	static char   service_level_avp_name[AVP_NAME_STR_BUF_LEN];
 
@@ -488,10 +472,15 @@ int h350_service_level(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 		avp_name.s.s = service_level_avp_name;
 		avp_name.s.len = avp_name_prefix.len + attr_vals[i]->bv_len;
 		
+		avp_name.n = get_avp_id(&avp_name.s);
+		if (avp_name.n <= 0) {
+			LM_ERR("cannot get avp id\n");
+			continue;
+		}
 		/* avp value = 1 */
 		avp_val.n = 1;
 
-                if (add_avp(AVP_NAME_STR, avp_name, avp_val) < 0)
+                if (add_avp(AVP_NAME_STR, avp_name.n, avp_val) < 0)
                 {
                         LM_ERR("failed to create new AVP\n");
                         ldap_api.ldap_value_free_len(attr_vals);

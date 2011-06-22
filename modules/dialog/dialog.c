@@ -963,7 +963,7 @@ static int w_get_profile_size(struct sip_msg *msg, char *profile,
 	pv_spec_t *sp_dest;
 	unsigned int size;
 	int_str res;
-	int_str avp_name;
+	int avp_name;
 	unsigned short avp_type;
 	script_var_t * sc_var;
 
@@ -1078,7 +1078,7 @@ int w_fetch_dlg_value(struct sip_msg *msg, char *name, char *result)
 
 	pv_spec_t *sp_dest;
 	int_str res;
-	int_str avp_name;
+	int avp_name;
 	unsigned short avp_type;
 	script_var_t * sc_var;
 

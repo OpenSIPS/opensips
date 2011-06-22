@@ -98,7 +98,7 @@ int use_init_sdp = 0;
 enum b2bl_caller_type b2bl_caller;
 unsigned int max_duration = 12*3600;
 
-int_str b2bl_key_avp_name;
+int b2bl_key_avp_name;
 unsigned short b2bl_key_avp_type;
 static str b2bl_key_avp_param = {NULL, 0};
 
@@ -297,7 +297,7 @@ static int mod_init(void)
 			return -1;
 		}
 	} else {
-		b2bl_key_avp_name.n = 0;
+		b2bl_key_avp_name = -1;
 		b2bl_key_avp_type = 0;
 	}
 

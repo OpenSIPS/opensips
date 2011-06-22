@@ -40,77 +40,61 @@
 #include "mem/shm_mem.h"
 #include "mem/mem.h"
 #include "usr_avp.h"
+#include "locking.h"
 
 
 /* usr_avp data bodies */
-struct str_int_data {
-	str  name;
-	int  val;
-};
-
-struct str_str_data {
-	str  name;
-	str  val;
-};
-
-/* avp aliases structs*/
-struct avp_spec {
-	int type;
-	int_str name;
-};
-
-struct avp_galias {
+struct avp_alias {
 	str alias;
-	struct avp_spec  avp;
-	struct avp_galias *next;
+	int id;
+	struct avp_alias *next;
 };
 
-static struct avp_galias *galiases = 0;
+static struct avp_alias *galiases = 0;
+static struct avp_alias **extra_galiases = 0;
+static gen_lock_t *extra_lock;
 static struct usr_avp *global_avps = 0;
 static struct usr_avp **crt_avps  = &global_avps;
 
 
-
-inline static unsigned short compute_ID( str *name )
+int init_extra_avps(void)
 {
-	char *p;
-	unsigned short id;
-
-	id=0;
-	for( p=name->s+name->len-1 ; p>=name->s ; p-- )
-		id ^= *p;
-	return id;
+	extra_lock = lock_alloc();
+	if (!extra_lock) {
+		LM_ERR("cannot allocate lock\n");
+		return -1;
+	}
+	if (!lock_init(extra_lock)) {
+		LM_ERR("cannot init lock\n");
+		return -1;
+	}
+	extra_galiases = shm_malloc(sizeof(struct avp_alias *));
+	if (!extra_galiases) {
+		LM_ERR("no more shm memory for extra aliases\n");
+		return -1;
+	}
+	*extra_galiases = 0;
+	return 0;
 }
 
-struct usr_avp* new_avp(unsigned short flags, int_str name, int_str val)
+
+struct usr_avp* new_avp(unsigned short flags, int id, int_str val)
 {
 	struct usr_avp *avp;
 	str *s;
-	struct str_int_data *sid;
-	struct str_str_data *ssd;
 	int len;
 
 	assert( crt_avps!=0 );
 
-	if ( name.n==0 ) {
-		LM_ERR("0 ID or NULL NAME AVP!\n");
+	if (id < 0) {
+		LM_ERR("invalid AVP name!\n");
 		goto error;
 	}
 
 	/* compute the required mem size */
 	len = sizeof(struct usr_avp);
-	if (flags&AVP_NAME_STR) {
-		if ( name.s.s==0 || name.s.len==0) {
-			LM_ERR("empty avp name!\n");
-			goto error;
-		}
-		if (flags&AVP_VAL_STR)
-			len += sizeof(struct str_str_data)-sizeof(void*) + name.s.len
-				+ (val.s.len+1);
-		else
-			len += sizeof(struct str_int_data)-sizeof(void*) + name.s.len;
-	} else if (flags&AVP_VAL_STR)
-			len += sizeof(str)-sizeof(void*) + (val.s.len+1);
+	if (flags & AVP_VAL_STR)
+		len += sizeof(str)-sizeof(void*) + (val.s.len+1);
 
 	avp = (struct usr_avp*)shm_malloc( len );
 	if (avp==0) {
@@ -119,42 +103,17 @@ struct usr_avp* new_avp(unsigned short flags, int_str name, int_str val)
 	}
 
 	avp->flags = flags;
-	avp->id = (flags&AVP_NAME_STR)? compute_ID(&name.s) : name.n ;
+	avp->id = id ;
 
-
-	switch ( flags&(AVP_NAME_STR|AVP_VAL_STR) )
-	{
-		case 0:
-			/* avp type ID, int value */
-			avp->data = (void*)(long)val.n;
-			break;
-		case AVP_NAME_STR:
-			/* avp type str, int value */
-			sid = (struct str_int_data*)(void*)&(avp->data);
-			sid->val = val.n;
-			sid->name.len =name.s.len;
-			sid->name.s = (char*)sid + sizeof(struct str_int_data);
-			memcpy( sid->name.s , name.s.s, name.s.len);
-			break;
-		case AVP_VAL_STR:
-			/* avp type ID, str value */
-			s = (str*)(void*)&(avp->data);
-			s->len = val.s.len;
-			s->s = (char*)s + sizeof(str);
-			memcpy( s->s, val.s.s , s->len);
-			s->s[s->len] = 0;
-			break;
-		case AVP_NAME_STR|AVP_VAL_STR:
-			/* avp type str, str value */
-			ssd = (struct str_str_data*)(void*)&(avp->data);
-			ssd->name.len = name.s.len;
-			ssd->name.s = (char*)ssd + sizeof(struct str_str_data);
-			memcpy( ssd->name.s , name.s.s, name.s.len);
-			ssd->val.len = val.s.len;
-			ssd->val.s = ssd->name.s + ssd->name.len;
-			memcpy( ssd->val.s , val.s.s, val.s.len);
-			ssd->val.s[ssd->val.len] = 0;
-			break;
+	if (flags & AVP_VAL_STR) {
+		/* avp type ID, str value */
+		s = (str*)(void*)&(avp->data);
+		s->len = val.s.len;
+		s->s = (char*)s + sizeof(str);
+		memcpy( s->s, val.s.s , s->len);
+		s->s[s->len] = 0;
+	} else {
+		avp->data = (void *)(long)val.n;
 	}
 
 	return avp;
@@ -162,7 +121,7 @@ error:
 	return NULL;
 }
 
-int add_avp(unsigned short flags, int_str name, int_str val)
+int add_avp(unsigned short flags, int name, int_str val)
 {
 	struct usr_avp* avp;
 
@@ -178,7 +137,7 @@ int add_avp(unsigned short flags, int_str name, int_str val)
 }
 
 struct usr_avp *search_index_avp(unsigned short flags,
-					int_str name, int_str *val, unsigned int index)
+					int name, int_str *val, unsigned int index)
 {
 	struct usr_avp *avp = NULL;
 
@@ -191,7 +150,7 @@ struct usr_avp *search_index_avp(unsigned short flags,
 	return 0;
 }
 
-int replace_avp(unsigned short flags, int_str name, int_str val, int index)
+int replace_avp(unsigned short flags, int name, int_str val, int index)
 {
 	struct usr_avp* avp, *avp_prev;
 	struct usr_avp* avp_new, *avp_del;
@@ -227,34 +186,40 @@ int replace_avp(unsigned short flags, int_str name, int_str val, int index)
 	return 0;
 }
 
-/* get value functions */
-
-inline str* get_avp_name(struct usr_avp *avp)
+/* get name functions */
+static inline str* __get_avp_name(int id, struct avp_alias *head)
 {
-	void *data;
-	switch ( avp->flags&(AVP_NAME_STR|AVP_VAL_STR) )
-	{
-		case 0:
-			/* avp type ID, int value */
-		case AVP_VAL_STR:
-			/* avp type ID, str value */
-			return 0;
-		case AVP_NAME_STR:
-			/* avp type str, int value */
-			data = (void*)&avp->data;
-			return &((struct str_int_data*)data)->name;
-		case AVP_NAME_STR|AVP_VAL_STR:
-			/* avp type str, str value */
-			data = (void*)&avp->data;
-			return &((struct str_str_data*)data)->name;
+	for ( ; head; head = head->next) {
+		if (head->id == id)
+			return &head->alias;
 	}
-
-	LM_ERR("unknown avp type (name&val) %d\n",
-		avp->flags&(AVP_NAME_STR|AVP_VAL_STR));
-	return 0;
+	return NULL;
 }
 
 
+inline str* get_avp_name_id(int id)
+{
+	str *name;
+
+	if (id < 0)
+		return NULL;
+
+	name = __get_avp_name(id, galiases);
+	/* search extra galiases */
+	if (name)
+		return name;
+	lock_get(extra_lock);
+	name = __get_avp_name(id, *extra_galiases);
+	lock_release(extra_lock);
+	return name;
+}
+
+inline str* get_avp_name(struct usr_avp *avp)
+{
+	return get_avp_name_id(avp->id);
+}
+
+/* get value functions */
 inline void get_avp_val(struct usr_avp *avp, int_str *val)
 {
 	void *data;
@@ -262,26 +227,13 @@ inline void get_avp_val(struct usr_avp *avp, int_str *val)
 	if (avp==0 || val==0)
 		return;
 
-	switch ( avp->flags&(AVP_NAME_STR|AVP_VAL_STR) ) {
-		case 0:
-			/* avp type ID, int value */
+	if (avp->flags & AVP_VAL_STR) {
+		/* avp type ID, str value */
+		data = (void*)&avp->data;
+		val->s = *((str*)data);
+	} else {
+		/* avp type ID, int value */
 			val->n = (long)(avp->data);
-			break;
-		case AVP_NAME_STR:
-			/* avp type str, int value */
-			data = (void*)&avp->data;
-			val->n = ((struct str_int_data*)data)->val;
-			break;
-		case AVP_VAL_STR:
-			/* avp type ID, str value */
-			data = (void*)&avp->data;
-			val->s = *((str*)data);
-			break;
-		case AVP_NAME_STR|AVP_VAL_STR:
-			/* avp type str, str value */
-			data = (void*)&avp->data;
-			val->s = ((struct str_str_data*)data)->val;
-			break;
 	}
 }
 
@@ -298,11 +250,10 @@ struct usr_avp** get_avp_list(void)
 /* search functions */
 
 inline static struct usr_avp *internal_search_ID_avp( struct usr_avp *avp,
-								unsigned short id, unsigned short flags)
+								int id, unsigned short flags)
 {
 	for( ; avp ; avp=avp->next ) {
-		if ( id==avp->id && (avp->flags&AVP_NAME_STR)==0 
-				&& (flags==0 || (flags&avp->flags))) {
+		if ( id==avp->id && (flags==0 || (flags&avp->flags))) {
 			return avp;
 		}
 	}
@@ -311,31 +262,20 @@ inline static struct usr_avp *internal_search_ID_avp( struct usr_avp *avp,
 
 
 
-inline static struct usr_avp *internal_search_name_avp( struct usr_avp *avp,
-						unsigned short id, str *name, unsigned short flags)
-{
-	str * avp_name;
-
-	for( ; avp ; avp=avp->next )
-		if ( id==avp->id && avp->flags&AVP_NAME_STR
-		&& (flags==0 || (flags&avp->flags))
-		&& (avp_name=get_avp_name(avp))!=0 && avp_name->len==name->len
-		&& !strncasecmp( avp_name->s, name->s, name->len) ) {
-			return avp;
-		}
-	return 0;
-}
-
-
 /**
  * search first avp begining with 'start->next'
  * if start==NULL, beging from head of avp list
  */
 struct usr_avp *search_first_avp( unsigned short flags,
-					int_str name, int_str *val,  struct usr_avp *start)
+					int id, int_str *val,  struct usr_avp *start)
 {
 	struct usr_avp *head;
 	struct usr_avp *avp;
+
+	if (id < 0) {
+		LM_ERR("invalid avp id %d\n", id);
+		return 0;
+	}
 
 	if(start==0)
 	{
@@ -350,23 +290,8 @@ struct usr_avp *search_first_avp( unsigned short flags,
 		head = start->next;
 	}
 
-	if ( name.n==0) {
-		LM_ERR("0 ID or NULL NAME AVP!\n");
-		return 0;
-	}
-
 	/* search for the AVP by ID (&name) */
-	if (flags&AVP_NAME_STR) {
-		if ( name.s.s==0 || name.s.len==0) {
-			LM_ERR("empty avp name!\n");
-			return 0;
-		}
-		avp = internal_search_name_avp(head,compute_ID(&name.s),&name.s,
-				flags&AVP_SCRIPT_MASK);
-	} else {
-		avp = internal_search_ID_avp(head, name.n,
-				flags&AVP_SCRIPT_MASK);
-	}
+	avp = internal_search_ID_avp(head, id, flags&AVP_SCRIPT_MASK);
 
 	/* get the value - if required */
 	if (avp && val)
@@ -382,12 +307,8 @@ struct usr_avp *search_next_avp( struct usr_avp *avp,  int_str *val )
 	if (avp==0 || avp->next==0)
 		return 0;
 
-	if (avp->flags&AVP_NAME_STR)
-		avp = internal_search_name_avp( avp->next, avp->id, get_avp_name(avp),
-				avp->flags&AVP_SCRIPT_MASK );
-	else
-		avp = internal_search_ID_avp( avp->next, avp->id,
-				avp->flags&AVP_SCRIPT_MASK );
+	avp = internal_search_ID_avp( avp->next, avp->id,
+			avp->flags&AVP_SCRIPT_MASK );
 
 	if (avp && val)
 		get_avp_val(avp, val);
@@ -416,7 +337,7 @@ void destroy_avp( struct usr_avp *avp_del)
 	}
 }
 
-int destroy_avps( unsigned short flags, int_str name, int all)
+int destroy_avps( unsigned short flags, int name, int all)
 {
 	struct usr_avp *avp;
 	int n;
@@ -431,7 +352,7 @@ int destroy_avps( unsigned short flags, int_str name, int all)
 	return n;
 }
 
-void destroy_index_avp( unsigned short flags, int_str name, int index)
+void destroy_index_avp( unsigned short flags, int name, int index)
 {
 	struct usr_avp *avp = NULL;
 
@@ -496,256 +417,115 @@ struct usr_avp** set_avp_list( struct usr_avp **list )
 	return foo;
 }
 
-
-
-
-/********* global aliases functions ********/
-
-static inline int check_avp_galias(str *alias, int type, int_str avp_name)
+static inline int __search_avp_alias(str *alias, struct avp_alias *head)
 {
-	struct avp_galias *ga;
-
-	type &= AVP_NAME_STR;
-
-	for( ga=galiases ; ga ; ga=ga->next ) {
-		/* check for duplicated alias names */
-		if ( alias->len==ga->alias.len &&
-		(strncasecmp( alias->s, ga->alias.s, alias->len)==0) )
-			return -1;
-		/*check for duplicated avp names */
-		if (type==ga->avp.type) {
-			if (type&AVP_NAME_STR){
-				if (avp_name.s.len==ga->avp.name.s.len &&
-				(strncasecmp(avp_name.s.s, ga->avp.name.s.s,
-							 					avp_name.s.len)==0) )
-					return -1;
-			} else {
-				if (avp_name.n==ga->avp.name.n)
-					return -1;
-			}
-		}
+	for ( ; head; head = head->next) {
+		if (head->alias.len == alias->len &&
+				memcmp(alias->s, head->alias.s, alias->len) == 0)
+			return head->id;
 	}
-	return 0;
-}
-
-
-int add_avp_galias(str *alias, int type, int_str avp_name)
-{
-	struct avp_galias *ga;
-
-	if ((type&AVP_NAME_STR && (!avp_name.s.s ||
-								!avp_name.s.len)) ||!alias || !alias->s ||
-		!alias->len ){
-		LM_ERR("null params received\n");
-		goto error;
-	}
-
-	if (check_avp_galias(alias,type,avp_name)!=0) {
-		LM_ERR("duplicate alias/avp entry\n");
-		goto error;
-	}
-
-	ga = (struct avp_galias*)pkg_malloc( sizeof(struct avp_galias) );
-	if (ga==0) {
-		LM_ERR("no more pkg memory\n");
-		goto error;
-	}
-
-	ga->alias.s = (char*)pkg_malloc( alias->len+1 );
-	if (ga->alias.s==0) {
-		LM_ERR("no more pkg memory\n");
-		goto error1;
-	}
-	memcpy( ga->alias.s, alias->s, alias->len);
-	ga->alias.len = alias->len;
-
-	ga->avp.type = type&AVP_NAME_STR;
-
-	if (type&AVP_NAME_STR) {
-		ga->avp.name.s.s = (char*)pkg_malloc(avp_name.s.len+1);
-		if (ga->avp.name.s.s==0) {
-			LM_ERR("no more pkg memory\n");
-			goto error2;
-		}
-		ga->avp.name.s.len = avp_name.s.len;
-		memcpy(ga->avp.name.s.s, avp_name.s.s, avp_name.s.len);
-		ga->avp.name.s.s[avp_name.s.len] = 0;
-		LM_DBG("registering <%s> for avp name <%s>\n",
-			ga->alias.s, ga->avp.name.s.s);
-	} else {
-		ga->avp.name.n = avp_name.n;
-		LM_DBG("registering <%s> for avp id <%d>\n",
-			ga->alias.s, ga->avp.name.n);
-	}
-
-	ga->next = galiases;
-	galiases = ga;
-
-	return 0;
-error2:
-	pkg_free(ga->alias.s);
-error1:
-	pkg_free(ga);
-error:
 	return -1;
 }
 
 
-int lookup_avp_galias(str *alias, int *type, int_str *avp_name)
+static int lookup_avp_alias_str(str *alias, int extra)
 {
-	struct avp_galias *ga;
+	int id;
+	if (!alias || !alias->len || !alias->s)
+		return -2;
 
-	for( ga=galiases ; ga ; ga=ga->next )
-		if (alias->len==ga->alias.len &&
-		(strncasecmp( alias->s, ga->alias.s, alias->len)==0) ) {
-			*type = ga->avp.type;
-			*avp_name = ga->avp.name;
-			return 0;
-		}
-
-	return -1;
+	id = __search_avp_alias(alias, galiases);
+	if (id < 0 && extra) {
+		/* search extra alias */
+		lock_get(extra_lock);
+		id = __search_avp_alias(alias, *extra_galiases);
+		lock_release(extra_lock);
+	}
+	return id;
 }
 
-
-/* parsing functions */
-
-int parse_avp_name( str *name, int *type, int_str *avp_name)
+static inline int new_avp_alias(str *alias)
 {
-	unsigned int id;
-	unsigned int flags;
-	char *p;
-	char c;
-	str s;
+	struct avp_alias * new_alias;
 
-	if (name==0 || name->s==0 || name->len==0)
-		goto error;
+	new_alias = pkg_malloc(sizeof(struct avp_alias) + alias->len);
+	if (!new_alias) {
+		LM_ERR("no more pkg mem to add avp\n");
+		return 0;
+	}
+	new_alias->id = galiases ? galiases->id + 1 : 0;
+	new_alias->next = galiases;
+	new_alias->alias.len = alias->len;
+	new_alias->alias.s = (char *)new_alias + sizeof(struct avp_alias);
+	memcpy(new_alias->alias.s, alias->s, alias->len);
+	galiases = new_alias;
 
-	p = (char*)memchr((void*)name->s, AVP_NAME_DELIM, name->len);
-	c = name->s[0];
-	if((c!='i' && c!='I' && c!='s' && c!='S') || p==NULL)
-	{
-		LM_ERR("- use type (s: or i:) in front of avp name\n");
-		goto error;
-	}
-	/* flags */
-	flags = 0;
-	if(p>name->s+1)
-	{
-		s.s = name->s+1;
-		s.len = p - s.s;
-		if(str2int(&s, &flags)!=0)
-		{
-			LM_ERR("bad avp flags\n");
-			goto error;
-		}
-	}
-	name->len -= p-name->s+1;
-	name->s    = p+1;
-	switch (c) {
-		case 's': case 'S':
-			*type = AVP_NAME_STR;
-			avp_name->s = *name;
-			break;
-		case 'i': case 'I':
-			*type = 0;
-			if (str2int( name, &id)!=0) {
-				LM_ERR("invalid ID <%.*s> not a number\n", name->len, name->s);
-				goto error;
-			}
-			avp_name->n = (int)id;
-			break;
-		default:
-			LM_ERR("unsupported type [%c]\n", c);
-			goto error;
-	}
+	LM_DBG("added alias %.*s with id %hu\n",alias->len,alias->s,new_alias->id);
 
-	*type |= avp_script_flags(flags);
-	return 0;
-error:
-	return -1;
+	return new_alias->id;
 }
 
-
-int parse_avp_spec( str *name, int *type, int_str *avp_name)
+static inline int new_avp_extra_alias(str *alias)
 {
-	char *p;
+	struct avp_alias * new_alias;
+
+	new_alias = shm_malloc(sizeof(struct avp_alias) + alias->len);
+	if (!new_alias) {
+		LM_ERR("no more shm mem to add avp\n");
+		return 0;
+	}
+
+	lock_get(extra_lock);
+	if (*extra_galiases)
+		new_alias->id = (*extra_galiases)->id + 1;
+	else 
+		new_alias->id = galiases ? galiases->id + 1 : 0;
+	new_alias->next = *extra_galiases;
+	new_alias->alias.len = alias->len;
+	new_alias->alias.s = (char *)new_alias + sizeof(struct avp_alias);
+	memcpy(new_alias->alias.s, alias->s, alias->len);
+	*extra_galiases = new_alias;
+	lock_release(extra_lock);
+
+	LM_DBG("added extra alias %.*s with id %d\n",
+			alias->len,alias->s,new_alias->id);
+
+	return new_alias->id;
+}
+
+static int parse_avp_spec_aux( str *name, int *avp_name, int extra)
+{
+	int id;
 
 	if (name==0 || name->s==0 || name->len==0)
 		return -1;
 
-	p = (char*)memchr((void*)name->s, AVP_NAME_DELIM, name->len);
-	if (p==NULL) {
-		/* it's an avp alias */
-		return lookup_avp_galias( name, type, avp_name);
-	} else {
-		return parse_avp_name( name, type, avp_name);
+	id = lookup_avp_alias_str(name, extra);
+	if (id < 0) {
+		if (name->len > 2 && name->s[1] == AVP_NAME_DELIM &&
+				(name->s[0] == 'i' || name->s[0] == 's'))
+			LM_WARN("Deprecated AVP name format \"%.*s\" - use \"%.*s\" instead\n",
+					name->len, name->s, name->len - 2, name->s + 2);
+		id = extra ? new_avp_extra_alias(name) : new_avp_alias(name);
+		if (id < 0)
+			return -1;
 	}
-}
-
-
-int add_avp_galias_str(char *alias_definition)
-{
-	int_str avp_name;
-	char *s;
-	str  name;
-	str  alias;
-	int  type;
-
-	s = alias_definition;
-	while(*s && isspace((int)*s))
-		s++;
-
-	while (*s) {
-		/* parse alias name */
-		alias.s = s;
-		while(*s && *s!=';' && !isspace((int)*s) && *s!='=')
-			s++;
-		if (alias.s==s || *s==0 || *s==';')
-			goto parse_error;
-		alias.len = s-alias.s;
-		while(*s && isspace((int)*s))
-			s++;
-		/* equal sign */
-		if (*s!='=')
-			goto parse_error;
-		s++;
-		while(*s && isspace((int)*s))
-			s++;
-		/* avp name */
-		name.s = s;
-		while(*s && *s!=';' && !isspace((int)*s))
-			s++;
-		if (name.s==s)
-			goto parse_error;
-		name.len = s-name.s;
-		while(*s && isspace((int)*s))
-			s++;
-		/* check end */
-		if (*s!=0 && *s!=';')
-			goto parse_error;
-		if (*s==';') {
-			for( s++ ; *s && isspace((int)*s) ; s++ );
-			if (*s==0)
-				goto parse_error;
-		}
-
-		if (parse_avp_name( &name, &type, &avp_name)!=0) {
-			LM_ERR("<%.*s> not a valid AVP name\n", name.len, name.s);
-			goto error;
-		}
-
-		if (add_avp_galias( &alias, type, avp_name)!=0) {
-			LM_ERR("add global alias failed\n");
-			goto error;
-		}
-	} /*end while*/
-
+	if (avp_name)
+		*avp_name = id;
 	return 0;
-parse_error:
-	LM_ERR("parse error in <%s> around pos %ld\n", 
-			alias_definition, (long)(s-alias_definition));
-error:
-	return -1;
 }
 
+int parse_avp_spec( str *name, int *avp_name)
+{
+	return parse_avp_spec_aux(name, avp_name, 0);
+}
 
+int get_avp_id(str *name)
+{
+	int id;
+	if (parse_avp_spec_aux(name, &id, 1)) {
+		LM_ERR("unable to get id\n");
+		return -1;
+	}
+	return id;
+}

@@ -598,9 +598,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| LOGNAME EQUAL STRING { log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
 		| AVP_ALIASES EQUAL STRING { 
-				if ($3!=0 && $3[0]!=0)
+/*				if ($3!=0 && $3[0]!=0)
 					if ( add_avp_galias_str($3)!=0 )
-						yyerror("invalid AVP aliases");;
+						yyerror("invalid AVP aliases");;*/
+				yyerror("AVP_ALIASES shouldn't be used anymore\n");
 			}
 		| AVP_ALIASES EQUAL error { yyerror("string value expected"); }
 		| DNS EQUAL NUMBER   { received_dns|= ($3)?DO_DNS:0; }
@@ -909,9 +910,13 @@ assign_stm: DEBUG EQUAL snumber {
 									#endif
 									}
 		| TLS_SEND_TIMEOUT EQUAL error { yyerror("number expected"); }
-		| TLS_CLIENT_DOMAIN_AVP EQUAL NUMBER {
+		| TLS_CLIENT_DOMAIN_AVP EQUAL STRING {
 									#ifdef USE_TLS
-										tls_client_domain_avp=$3;
+										tstr.s = $3;
+										tstr.len = strlen(tstr.s);
+										if (parse_avp_spec(&tstr, &tls_client_domain_avp)) {
+											yyerror("cannot parse tls_client_avp");
+										}
 									#else
 										warn("tls support not compiled in");
 									#endif

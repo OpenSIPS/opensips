@@ -266,8 +266,8 @@ rand_get_prob();
 ...
 sleep("1");
 ...
-$avp(s:secs)="10";
-sleep("$avp(s:secs)");
+$avp(secs)="10";
+sleep("$avp(secs)");
 ...
 			</programlisting>
 		</example>
@@ -389,7 +389,7 @@ shm_status();
 			<title><function>set_count</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$avp(i:11) = set_count("$avp(i:10)");
+$avp(11) = set_count("$avp(10)");
 ...
 			</programlisting>
 		</example>
@@ -413,7 +413,7 @@ $avp(i:11) = set_count("$avp(i:10)");
 			<title><function>set_count</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$avp(i:21) = set_select_weight("$avp(i:10)");
+$avp(21) = set_select_weight("$avp(10)");
 ...
 			</programlisting>
 		</example>
@@ -610,11 +610,11 @@ xlog("PATH environment variable is $env(PATH)\n");
 				<programlisting format="linespecific">
 ...
 if (get_random()) {
-  $avp(i:10) = ($RANDOM / 16777216); # 2^24
-  if ($avp(i:10) &lt; 10) {
-     $avp(i:10) = 10;
+  $avp(10) = ($RANDOM / 16777216); # 2^24
+  if ($avp(10) &lt; 10) {
+     $avp(10) = 10;
   }
-  append_to_reply("Retry-After: $avp(i:10)\n");
+  append_to_reply("Retry-After: $avp(10)\n");
   sl_send_reply("503", "Try later");
   exit;
 };

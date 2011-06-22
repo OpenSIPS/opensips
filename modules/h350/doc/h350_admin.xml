@@ -315,7 +315,7 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
 
                 <listitem>
                     <para>
-                        Specification for authentication username AVP, e.g. <varname>$avp(s:username)</varname>.
+                        Specification for authentication username AVP, e.g. <varname>$avp(username)</varname>.
                     </para>
                 </listitem>
             </varlistentry>
@@ -325,7 +325,7 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
 
                 <listitem>
                     <para>
-                        Specification for authentication password AVP, e.g. <varname>$avp(s:pwd)</varname>.
+                        Specification for authentication password AVP, e.g. <varname>$avp(pwd)</varname>.
                     </para>
                 </listitem>
             </varlistentry>
@@ -386,8 +386,8 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
 
             <programlisting>
 # -- auth params --
-modparam("auth", "username_spec", "$avp(s:auth_user)")
-modparam("auth", "password_spec", "$avp(s:auth_pwd)")
+modparam("auth", "username_spec", "$avp(auth_user)")
+modparam("auth", "password_spec", "$avp(auth_pwd)")
 modparam("auth", "calculate_ha1", 1)
 
 # -- h350 params --
@@ -417,7 +417,7 @@ route[1]
 
     # get digest password from H.350 using auth username ($au)
     if (!h350_auth_lookup("$au", 
-                          "$avp(s:auth_user)/$avp(s:auth_pwd)"))
+                          "$avp(auth_user)/$avp(auth_pwd)"))
     {
         switch ($retcode)
         {
@@ -537,15 +537,15 @@ AVP value = argument / 1000
         </blockquote>
         
         <para>
-            Example 1 from above would result in two AVPs: <literal>$avp("s:prefix_n") = "sip:voicemail@example.com"</literal> and <literal>$avp("s:prefix_n_t") = 15</literal>.
+            Example 1 from above would result in two AVPs: <literal>$avp("prefix_n") = "sip:voicemail@example.com"</literal> and <literal>$avp("prefix_n_t") = 15</literal>.
         </para>
         
         <para>
-            Example 2: <literal>$avp("s:prefix_u") = "sip:alice@example.com"</literal>.
+            Example 2: <literal>$avp("prefix_u") = "sip:alice@example.com"</literal>.
         </para>
         
         <para>
-            Example 3: <literal>$avp("s:prefix_f[1]") = "sip:bob@example.com"</literal> and <literal>$avp("s:prefix_f[2]]") = "sip:alice@example.com"</literal>.
+            Example 3: <literal>$avp("prefix_f[1]") = "sip:bob@example.com"</literal> and <literal>$avp("prefix_f[2]]") = "sip:alice@example.com"</literal>.
         </para>
         
         <para>
@@ -645,23 +645,23 @@ if (!h350_result_call_preferences("callee_pref_") &amp;&amp; ($retcode == -1))
     exit;
 }
 
-# $avp(s:callee_pref_u)   == CFU URI(s)
-# $avp(s:callee_pref_n)   == CFNR URI(s)
-# $avp(s:callee_pref_n_t) == CFNR timeout in seconds
-# $avp(s:callee_pref_b)   == CFB URI(s)
-# $avp(s:callee_pref_f)   == CFOFFLINE URI(s)
+# $avp(callee_pref_u)   == CFU URI(s)
+# $avp(callee_pref_n)   == CFNR URI(s)
+# $avp(callee_pref_n_t) == CFNR timeout in seconds
+# $avp(callee_pref_b)   == CFB URI(s)
+# $avp(callee_pref_f)   == CFOFFLINE URI(s)
 
 #
 # Example for forward-unconditionally (CFU)
 #
 
-if (is_avp_set("$avp(s:callee_pref_u)"))
+if (is_avp_set("$avp(callee_pref_u)"))
 {
     # replace R-URI with CFU URI, g will fetch all CFU URIs 
     # --> request can fork
-    if (avp_pushto("$ru", "$avp(s:callee_pref_u)/g"))
+    if (avp_pushto("$ru", "$avp(callee_pref_u)/g"))
     {
-            avp_delete("$avp(s:callee_pref_u)");
+            avp_delete("$avp(callee_pref_u)");
     } else
     {
             sl_send_reply("500", "Internal server error");
@@ -696,9 +696,9 @@ SIPIdentityServiceLevel: 900
 after calling h350_result_service_level("sl_"), the following AVPs 
 will be available in the routing script:
 
-$avp("s:sl_longdistance") = 1
-$avp("s:sl_international") = 1
-$avp("s:sl_900") = 1
+$avp("sl_longdistance") = 1
+$avp("sl_international") = 1
+$avp("sl_900") = 1
             </programlisting>
         </example>
         
@@ -799,7 +799,7 @@ if (!h350_result_service_level("caller_sl_") &amp;&amp; ($retcode == -1))
 # make routing decision based on service level AVPs
 #
 
-if (is_avp_set("$avp(s:caller_sl_international)"))
+if (is_avp_set("$avp(caller_sl_international)"))
 {
     t_relay();
 } 
