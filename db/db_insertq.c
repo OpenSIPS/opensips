@@ -472,6 +472,9 @@ inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 	if (!DB_CAPABILITY(*dbf,DB_CAP_MULTIPLE_INSERT))
 		return 0;
 
+	if (list == NULL)
+		return 0;
+
 	/* first time we are being called from this process */
 	if (*list == NULL)
 	{

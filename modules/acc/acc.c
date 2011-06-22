@@ -486,10 +486,10 @@ void acc_db_close(void)
 }
 
 
-int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
+int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
+		query_list_t **ins_list)
 {
 	static db_ps_t my_ps = NULL;
-	static query_list_t *ins_list = NULL;
 	int m;
 	int n;
 	int i;
@@ -513,7 +513,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 
 	/* multi-leg columns */
 	if ( !leg_info ) {
-		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,m) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m) < 0 )
 			CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, m) < 0) {
 			LM_ERR("failed to insert into database\n");
@@ -524,7 +524,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl)
 		do {
 			for ( i = m; i < m + n; i++)
 				VAL_STR(db_vals+i)=val_arr[i];
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,m+n) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n) < 0 )
 				CON_RESET_INSLIST(db_handle);
 			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n) < 0) {
 				LM_ERR("failed to insert into database\n");

@@ -33,6 +33,8 @@
 #ifndef _ACC_ACC_H_
 #define _ACC_ACC_H_
 
+#include "../../db/db_insertq.h"
+
 #define ACC_CORE_LEN 6
 #define ACC_DLG_LEN 3
 
@@ -88,7 +90,8 @@ int  store_log_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 int  acc_db_init(const str* db_url);
 int  acc_db_init_child(const str* db_url);
 void acc_db_close();
-int  acc_db_request( struct sip_msg *req, struct sip_msg *rpl);
+int  acc_db_request( struct sip_msg *req, struct sip_msg *rpl,
+		query_list_t **ins_list);
 int  acc_db_cdrs_request(struct dlg_cell *dlg);
 int  store_db_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 		struct sip_msg *reply);

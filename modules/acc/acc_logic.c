@@ -56,6 +56,8 @@ extern str flags_str;
 
 struct acc_enviroment acc_env;
 
+static query_list_t *acc_ins_list = NULL;
+static query_list_t *mc_ins_list = NULL;
 
 #define is_acc_flag_set(_rq,_flag)  (((_rq)->flags)&(_flag))
 #define reset_acc_flag(_rq,_flag)   (_rq)->flags &= ~(_flag)
@@ -199,7 +201,7 @@ int w_acc_db_request(struct sip_msg *rq, char *comment, char *table)
 	env_set_to( rq->to );
 	env_set_comment((struct acc_param*)comment);
 	env_set_text(table, strlen(table));
-	return acc_db_request( rq, NULL);
+	return acc_db_request( rq, NULL,NULL);
 }
 
 #ifdef DIAM_ACC
@@ -331,7 +333,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 	if (is_db_mc_on(req)) {
 		env_set_text(db_table_mc.s, db_table_mc.len);
-		acc_db_request( req, reply );
+		acc_db_request( req, reply,&mc_ins_list);
 		flags_to_reset |= db_missed_flag;
 	}
 /* DIAMETER */
@@ -465,7 +467,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	
 		if (is_db_acc_on(req)) {
 			env_set_text( db_table_acc.s, db_table_acc.len);
-			acc_db_request( req, reply );
+			acc_db_request( req, reply, &acc_ins_list);
 		}
 	}
 
@@ -530,7 +532,7 @@ static inline void acc_onack( struct cell* t, struct sip_msg *req,
 
 	if (is_db_acc_on(req)) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
-		acc_db_request( ack, NULL );
+		acc_db_request( ack, NULL ,&acc_ins_list);
 	}
 
 /* DIAMETER */
