@@ -74,7 +74,7 @@ int parse_call_info_header( struct sip_msg *msg )
 
     for( tmp=call_info->body.s; tmp<=end; tmp++) {
         if (*tmp == ',' || tmp==end) {
-	    LM_DBG("[%.*s]\n",tmp-start,start);
+	    LM_DBG("[%.*s]\n",(int)(tmp-start),start);
 
 	    callinfo_b = pkg_malloc(sizeof(struct call_info_body));
 	    if (callinfo_b == NULL) {
