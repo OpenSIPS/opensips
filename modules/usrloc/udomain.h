@@ -42,6 +42,7 @@
 #include "../../locking.h"
 #include "../../str.h"
 #include "../../db/db.h"
+#include "../../db/db_insertq.h"
 #include "urecord.h"
 #include "hslot.h"
 
@@ -55,6 +56,7 @@ struct urecord; /*!< Usrloc record */
  */
 typedef struct udomain {
 	str* name;                 /*!< Domain name (NULL terminated) */
+	query_list_t *ins_list;    /*!< insert buffering list for this domain */
 	int size;                  /*!< Hash table size */
 	struct hslot* table;       /*!< Hash table - array of collision slots */
 	/* statistics */
