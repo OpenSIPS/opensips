@@ -1420,12 +1420,12 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	struct hdr_field *hdr;
-	
-    if(msg==NULL)
+	str *s;
+
+	if(msg==NULL)
 		return -1;
-    
-	if ((msg->REQ_METHOD == METHOD_ACK) || 
-			(msg->REQ_METHOD == METHOD_CANCEL)) {
+
+	if ((msg->REQ_METHOD==METHOD_ACK) || (msg->REQ_METHOD==METHOD_CANCEL)) {
 		LM_DBG("no [Proxy-]Authorization header\n");
 		return pv_get_null(msg, param, res);
 	}
@@ -1438,41 +1438,55 @@ static int pv_get_authattr(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	hdr = (msg->proxy_auth==0)?msg->authorization:msg->proxy_auth;
-	
 	if(parse_credentials(hdr)!=0) {
-	        LM_ERR("failed to parse credentials\n");
+		LM_ERR("failed to parse credentials\n");
 		return pv_get_null(msg, param, res);
 	}
+
 	switch(param->pvn.u.isname.name.n)
 	{
+		case 11:
+			s = &((auth_body_t*)(hdr->parsed))->digest.nc;
+			break;
+		case 10:
+			s = &((auth_body_t*)(hdr->parsed))->digest.qop.qop_str;
+			break;
+		case 9:
+			s = &((auth_body_t*)(hdr->parsed))->digest.alg.alg_str;
+			break;
+		case 8:
+			s = &((auth_body_t*)(hdr->parsed))->digest.opaque;
+			break;
+		case 7:
+			s = &((auth_body_t*)(hdr->parsed))->digest.cnonce;
+			break;
 		case 6:
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.response);
+			s = &((auth_body_t*)(hdr->parsed))->digest.response;
+			break;
 		case 5:
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.nonce);
+			s = &((auth_body_t*)(hdr->parsed))->digest.nonce;
+			break;
 		case 4:
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.username.domain);
+			s = &((auth_body_t*)(hdr->parsed))->digest.username.domain;
+			break;
 		case 3:
-			if(((auth_body_t*)(hdr->parsed))->digest.uri.len==0)
-				return pv_get_null(msg, param, res);
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.uri);
-		break;
+			s = &((auth_body_t*)(hdr->parsed))->digest.uri;
+			break;
 		case 2:
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.realm);
-		break;
+			s = &((auth_body_t*)(hdr->parsed))->digest.realm;
+			break;
 		case 1:
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.username.user);
-		break;
+			s = &((auth_body_t*)(hdr->parsed))->digest.username.user;
+			break;
 		default:
-			return pv_get_strval(msg, param, res,
-					&((auth_body_t*)(hdr->parsed))->digest.username.whole);
-	}	    
+			s = &((auth_body_t*)(hdr->parsed))->digest.username.whole;
+	}
+
+	if (s->len==0)
+		return pv_get_null(msg, param, res);
+	return pv_get_strval(msg, param, res, s);
 }
+
 
 static inline str *cred_user(struct sip_msg *rq)
 {
@@ -2982,27 +2996,42 @@ static pv_export_t _pv_names_table[] = {
 	{{"ai", (sizeof("ai")-1)}, /* */
 		PVT_PAI_URI, pv_get_pai, 0,
 		0, 0, 0, 0},
-	{{"adu", (sizeof("adu")-1)}, /* auth digest uri */
-		PVT_AUTH_DURI, pv_get_authattr, 0,
-		0, 0, pv_init_iname, 3},
-	{{"ar", (sizeof("ar")-1)}, /* auth realm */
-		PVT_AUTH_REALM, pv_get_authattr, 0,
-		0, 0, pv_init_iname, 2},
 	{{"au", (sizeof("au")-1)}, /* */
 		PVT_AUTH_USERNAME, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 1},
+	{{"ar", (sizeof("ar")-1)}, /* auth realm */
+		PVT_AUTH_REALM, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 2},
+	{{"adu", (sizeof("adu")-1)}, /* auth digest uri */
+		PVT_AUTH_DURI, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 3},
 	{{"ad", (sizeof("ad")-1)}, /* */
 		PVT_AUTH_DOMAIN, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 4},
 	{{"an", (sizeof("an")-1)}, /* */
 		PVT_AUTH_NONCE, pv_get_authattr, 0,
-		0, 0, pv_init_iname, 6},
+		0, 0, pv_init_iname, 5},
 	{{"auth.resp", (sizeof("auth.resp")-1)}, /* */
 		PVT_AUTH_RESPONSE, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 6},
+	{{"auth.nonce", (sizeof("auth.nonce")-1)}, /* */
+		PVT_AUTH_CNONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 7},
+	{{"auth.opaque", (sizeof("auth.opaque")-1)}, /* */
+		PVT_AUTH_OPAQUE, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 8},
+	{{"auth.alg", (sizeof("auth.alg")-1)}, /* */
+		PVT_AUTH_ALGORITHM, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 9},
+	{{"auth.qop", (sizeof("auth.qop")-1)}, /* */
+		PVT_AUTH_QOP, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 10},
+	{{"auth.nc", (sizeof("auth.nc")-1)}, /* */
+		PVT_AUTH_NONCE_COUNT, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 11},
 	{{"aU", (sizeof("aU")-1)}, /* */
 		PVT_AUTH_USERNAME_WHOLE, pv_get_authattr, 0,
-		0, 0, pv_init_iname, 5},
+		0, 0, pv_init_iname, 99},
 	{{"Au", (sizeof("Au")-1)}, /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
