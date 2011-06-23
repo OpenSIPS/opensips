@@ -104,7 +104,10 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 		if (subs->reply_sock->flags & EVI_EXPIRE &&
 				subs->reply_sock->subscription_time +
 				subs->reply_sock->expire < now) {
-			shm_free(subs->reply_sock);
+			if (subs->trans_mod && subs->trans_mod->free)
+				subs->trans_mod->free(subs->reply_sock);
+			else
+				shm_free(subs->reply_sock);
 			if (!prev) {
 				events[id].subscribers = subs->next;
 				shm_free(subs);
@@ -185,7 +188,7 @@ struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
 	struct mi_node *node;
 	evi_subs_t *subscriber = NULL;
 	evi_event_p event;
-	evi_export_t *trans_mod;
+	evi_export_t *trans_mod = NULL;
 	evi_reply_sock *sock;
 	str sock_str;
 	unsigned int expire = 0;
@@ -238,22 +241,27 @@ struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
 		goto bad_param;
 
 	/* tries to match other socket */
-	lock_get(event->lock);
-	for (subscriber = event->subscribers; subscriber;
-			subscriber = subscriber->next) {
-		if (subscriber->trans_mod != trans_mod)
-			continue;
-		if (trans_mod->match(sock, subscriber->reply_sock)) {
-			/* update subscription time */
-			subscriber->reply_sock->subscription_time = time(0);
-			/* update expire if required */
-			if (EVI_EXPIRE & sock->flags)
-				subscriber->reply_sock->expire = expire;
-			shm_free(sock);
-			break;
+	if (trans_mod->match) {
+		lock_get(event->lock);
+		for (subscriber = event->subscribers; subscriber;
+				subscriber = subscriber->next) {
+			if (subscriber->trans_mod != trans_mod)
+				continue;
+			if (trans_mod->match(sock, subscriber->reply_sock)) {
+				/* update subscription time */
+				subscriber->reply_sock->subscription_time = time(0);
+				/* update expire if required */
+				if (EVI_EXPIRE & sock->flags)
+					subscriber->reply_sock->expire = expire;
+				if (trans_mod->free)
+					trans_mod->free(sock);
+				else 
+					shm_free(sock);
+				break;
+			}
 		}
+		lock_release(event->lock);
 	}
-	lock_release(event->lock);
 
 	/* if no socket matches - create a new one */
 	if (!subscriber) {
@@ -282,8 +290,13 @@ struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
 	return init_mi_tree(200, MI_SSTR(MI_OK));
 	
 internal_error:
-	if (sock)
-		shm_free(sock);
+	if (trans_mod && sock) {
+		/* if the module has it's own free function */
+		if (trans_mod->free)
+			trans_mod->free(sock);
+		else
+			shm_free(sock);
+	}
 	return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
 
 missing_param:

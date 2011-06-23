@@ -28,8 +28,8 @@
 #include "../mem/shm_mem.h"
 
 /* list with the transport modules */
-evi_trans_t *evi_trans_mods = NULL;
-int evi_trans_mods_size = 0;
+static evi_trans_t *evi_trans_mods = NULL;
+static int evi_trans_mods_size = 0;
 
 /* functions used by the transport modules */
 
@@ -37,28 +37,40 @@ int register_event_mod(evi_export_t *ev)
 {
 	evi_trans_t *trans_mod;
 
-	if (!ev) {
-		LM_ERR("no export specified\n");
-		return EVI_ERROR;
+	if (!ev || !ev->proto.len || !ev->proto.s) {
+		LM_ERR("no export or name specified\n");
+		goto error;
 	}
-	
+
+	if (!ev->raise) {
+		LM_ERR("raise function should be specified for protocol %.*s\n",
+				ev->proto.len, ev->proto.s);
+		goto error;
+	}
+
+	if (!ev->parse) {
+		LM_ERR("parse function should be specified for protocol %.*s\n",
+				ev->proto.len, ev->proto.s);
+		goto error;
+	}
+
 	if (ev->flags) {
 		if (ev->flags & EVI_FREE_LIST) {
 			LM_ERR("module cannot have the id %x\n", ev->flags);
-			return EVI_ERROR;
+			goto error;
 		}
 
 		/* check to see if there are two modules with the same id (or protocol) */
 		for (trans_mod = evi_trans_mods; trans_mod; trans_mod = trans_mod->next){
 			if (trans_mod->module->flags & ev->flags) {
 				LM_ERR("duplicate flag %x\n", ev->flags);
-				return EVI_ERROR;
+				goto error;
 			}
 			if (ev->proto.len == trans_mod->module->proto.len && 
 					!memcmp(ev->proto.s,trans_mod->module->proto.s,ev->proto.len)){
 				LM_ERR("duplicate transport module protocol <%.*s>\n", 
 						ev->proto.len, ev->proto.s);
-				return EVI_ERROR;
+				goto error;
 			}
 		}
 	}
@@ -66,7 +78,7 @@ int register_event_mod(evi_export_t *ev)
 	trans_mod = shm_malloc(sizeof(evi_trans_t));
 	if (!trans_mod) {
 		LM_ERR("no more shm memory\n");
-		return EVI_ERROR;
+		goto error;
 	}
 
 	trans_mod->module = ev;
@@ -76,6 +88,8 @@ int register_event_mod(evi_export_t *ev)
 	evi_trans_mods_size++;
 
 	return 0;
+error:
+	return EVI_ERROR;
 }
 
 /* checks if there are any modules loaded */

@@ -62,12 +62,15 @@ typedef int (raise_f)(str* ev_name, evi_reply_sock *sock, evi_params_t * params)
 typedef evi_reply_sock* (parse_f)(str);
 /* tries to match two sockets */
 typedef int (match_f)(evi_reply_sock *sock1, evi_reply_sock *sock2);
+/* free a socket */
+typedef void (free_f)(evi_reply_sock *sock);
 
 typedef struct evi_export_ {
 	str proto;			/* protocol name */
 	raise_f *raise;		/* raise function */
 	parse_f *parse;		/* parse function */
 	match_f *match;		/* sockets match function */
+	free_f *free;		/* free a socket */
 	unsigned int flags;
 } evi_export_t;
 
@@ -77,10 +80,6 @@ typedef struct evi_trans_ {
 	evi_export_t *module;
 	struct evi_trans_ *next;
 } evi_trans_t;
-
-
-/* list with the transport modules */
-extern evi_trans_t *evi_trans_mods;
 
 
 /* functions used by the transport modules */

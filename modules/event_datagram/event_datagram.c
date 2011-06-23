@@ -91,6 +91,7 @@ static evi_export_t trans_export_udp = {
 	datagram_raise,				/* raise function */
 	datagram_parse_udp,			/* parse function */
 	datagram_match,				/* sockets match function */
+	0,							/* no free function */
 	DGRAM_UDP_FLAG				/* flags */
 };
 
@@ -99,6 +100,7 @@ static evi_export_t trans_export_unix = {
 	datagram_raise,				/* raise function */
 	datagram_parse_unix,		/* parse function */
 	datagram_match,				/* sockets match function */
+	0,							/* no free function */
 	DGRAM_UNIX_FLAG				/* flags */
 };
 
