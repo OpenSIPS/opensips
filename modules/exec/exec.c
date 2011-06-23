@@ -118,7 +118,7 @@ void exec_async_proc(int rank)
 				exec_async_list->active_childs++;
 				cmd->pid = pid;
 			} else {
-				LM_DBG("running command %s\n", cmd->cmd);
+				LM_DBG("running command %s (%d)\n", cmd->cmd, getpid());
 				/* call command */
 				execv(cmd->cmd, (char * const *)argv);
 				LM_ERR("failed to run command\n");
@@ -153,7 +153,7 @@ void exec_async_proc(int rank)
 						LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
 									cmd->cmd, status, errno, strerror(errno));
 					} else {
-						LM_DBG("cmd %s successfully ended\n", cmd->cmd);
+						LM_DBG("cmd %s successfully ended (%d)\n", cmd->cmd, cmd->pid);
 					}
 					shm_free(cmd);
 					exec_async_list->active_childs--;
@@ -179,12 +179,13 @@ int exec_async(struct sip_msg *msg, char *cmd )
 	}
 	memset(elem, 0, sizeof(exec_cmd_t));
 	elem->cmd = (char *)(elem + 1);
-	memcpy(elem->cmd, cmd, strlen(cmd));
+	memcpy(elem->cmd, cmd, strlen(cmd) + 1);
 
 	/* add command in list at the end */
 	lock_get(exec_async_list->lock);
 	if (exec_async_list->last) {
 		exec_async_list->last->next = elem;
+		exec_async_list->last = elem;
 	} else {
 		exec_async_list->first = exec_async_list->last = elem;
 	}
