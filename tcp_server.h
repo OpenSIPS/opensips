@@ -28,6 +28,8 @@
 #ifndef tcp_server_h
 #define tcp_server_h
 
+extern int tcp_no_new_conn_bflag;
+extern int tcp_no_new_conn;
 
 
 /* "public" functions*/

@@ -156,6 +156,9 @@ static int tcp_proto_no=-1; /*!< tcp protocol number as returned by getprotobyna
 
 static io_wait_h io_h;
 
+int tcp_no_new_conn_bflag = 0; /*!< should a new TCP conn be open if needed? - branch flag to be set in the SIP messages - configuration option */
+int tcp_no_new_conn = 0; /*!< should a new TCP conn be open if needed? - variable used to used for signalizing between SIP layer (branch flag) and TCP layer (tcp_send function) */
+
 
 
 /*! \brief Set all socket/fd options:  disable nagle, tos lowdelay, non-blocking
@@ -713,6 +716,9 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	}
 no_id:
 		if (c==0){
+			if (tcp_no_new_conn) {
+				return -1;
+			}
 			LM_DBG("no open tcp connection found, opening new one\n");
 			/* create tcp connection */
 			if ((c=tcpconn_connect(send_sock, to, type))==0){

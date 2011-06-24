@@ -67,6 +67,7 @@
 #include "parser/msg_parser.h"
 #include "dprint.h"
 #include "ut.h"
+#include "dset.h"
 #include "mem/mem.h"
 #include "msg_translator.h"
 #include "sr_module.h"
@@ -397,6 +398,9 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	hostent2su( &to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 	last_sock = 0;
 
+	if (getb0flags() & tcp_no_new_conn_bflag)
+		tcp_no_new_conn = 1;
+
 	do {
 		send_sock=get_send_socket( msg, &to, p->proto);
 		if (send_sock==0){
@@ -414,6 +418,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			buf = build_req_buf_from_sip_req(msg, &len, send_sock, p->proto, 0);
 			if (!buf){
 				LM_ERR("building req buf failed\n");
+				tcp_no_new_conn = 0;
 				goto error;
 			}
 
@@ -442,6 +447,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		break;
 
 	}while( get_next_su( p, &to, (ser_error==E_IP_BLOCKED)?0:1)==0 );
+
+	tcp_no_new_conn = 0;
 
 	if (ser_error) {
 		update_stat( drp_reqs, 1);

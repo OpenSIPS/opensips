@@ -101,6 +101,7 @@
 #include "pvar.h"
 #include "blacklists.h"
 #include "xlog.h"
+#include "tcp_server.h"
 #include "db/db_insertq.h"
 
 
@@ -340,6 +341,7 @@ extern int line;
 %token TCP_POLL_METHOD
 %token TCP_MAX_CONNECTIONS
 %token TCP_OPT_CRLF_PINGPONG
+%token TCP_NO_NEW_CONN_BFLAG
 %token DISABLE_TLS
 %token TLSLOG
 %token TLS_PORT_NO
@@ -751,6 +753,17 @@ assign_stm: DEBUG EQUAL snumber {
 			#endif
 		}
 		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
+		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
+			#ifdef USE_TCP
+				tcp_no_new_conn_bflag=$3;
+				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
+					yyerror("invalid TCP no_new_conn Branch Flag");
+				flag_idx2mask( &tcp_no_new_conn_bflag );
+			#else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_NO_NEW_CONN_BFLAG EQUAL error { yyerror("number value expected"); }
 		| DISABLE_TLS EQUAL NUMBER {
 									#ifdef USE_TLS
 										tls_disable=$3;

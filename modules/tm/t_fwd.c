@@ -704,6 +704,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	success_branch=0;
 	for (i=t->first_branch; i<t->nr_of_outgoings; i++) {
 		if (added_branches & (1<<i)) {
+
+			if (t->uac[i].br_flags & tcp_no_new_conn_bflag)
+				tcp_no_new_conn = 1;
+
 			do {
 				if (check_blacklists( t->uac[i].request.dst.proto,
 				&t->uac[i].request.dst.to,
@@ -729,6 +733,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 				if ( update_uac_dst( p_msg, &t->uac[i] )!=0)
 					break;
 			}while(1);
+
+			tcp_no_new_conn = 0;
 
 			if (ser_error)
 				continue;
