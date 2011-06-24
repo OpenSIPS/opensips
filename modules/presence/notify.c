@@ -1751,11 +1751,6 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, body,
 				NULL, dialog_body,
 				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct);
-		if(notify_body == NULL)
-		{
-			LM_DBG("Could not get the notify_body\n");
-			/* goto error; */
-		}
 	}
 
 	s= subs_array;
@@ -1813,11 +1808,6 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	{
 		notify_body = get_p_notify_body(*pres_uri, event, 0, 0, 0, 0,
 				&notify_extra_hdrs, &free_fct);
-		if(notify_body == NULL)
-		{
-			LM_DBG("Could not get the notify_body\n");
-			/* goto error; */
-		}
 	}
 
 	s= subs_array;
@@ -1931,22 +1921,24 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 					LM_DBG("Could not get the notify_body\n");
 				}
 				else		/* apply authorization rules if exists */
-				if(subs->event->req_auth)
 				{
-					if(subs->auth_rules_doc && subs->event->apply_auth_nbody &&
-					subs->event->apply_auth_nbody(notify_body,subs,&final_body)<0)
+					if(subs->event->req_auth)
 					{
-						LM_ERR("in function apply_auth\n");
-						goto error;
+						if(subs->auth_rules_doc && subs->event->apply_auth_nbody &&
+						subs->event->apply_auth_nbody(notify_body,subs,&final_body)<0)
+						{
+							LM_ERR("in function apply_auth\n");
+							goto error;
+						}
+						if(final_body)
+						{
+							free_fct(notify_body->s);
+							pkg_free(notify_body);
+							notify_body= final_body;
+						}
 					}
-					if(final_body)
-					{
-						free_fct(notify_body->s);
-						pkg_free(notify_body);
-						notify_body= final_body;
-					}
+					LM_DBG("built notify_body %p\n", notify_body->s);
 				}
-				LM_DBG("built notify_body %p\n", notify_body->s);
 			}
 		}
 	}
