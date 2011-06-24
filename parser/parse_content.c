@@ -24,6 +24,7 @@
  * the mime type (bogdan)
  * 2003-08-04 CPL subtype added (bogdan)
  * 2003-08-05 parse_accept_hdr function added (bogdan)
+ * 2011-06-22 ISUP subtype added (roger)
  */
 
 
@@ -210,11 +211,15 @@ static type_node_t subtype_tree[] = {
 											{'o',SUBTYPE_UNKNOWN,1,-1},
 												{'d',SUBTYPE_UNKNOWN,1,-1},
 													{'y',SUBTYPE_EXTERNAL_BODY,0,-1},
-	{'m',SUBTYPE_UNKNOWN,1,-1}, /* 118 */
+	{'m',SUBTYPE_UNKNOWN,1,123}, /* 118 */
 	         {'i',SUBTYPE_UNKNOWN,1,-1},
 			{'x',SUBTYPE_UNKNOWN,1,-1},
 				{'e',SUBTYPE_UNKNOWN,1,-1},
 					{'d',SUBTYPE_MIXED,0,-1},
+	{'i',SUBTYPE_UNKNOWN,1,-1}, /* 123 */
+		{'s',SUBTYPE_UNKNOWN,1,-1},
+			{'u',SUBTYPE_UNKNOWN,1,-1},
+				{'p',SUBTYPE_ISUP,0,-1},
 
         };
 
