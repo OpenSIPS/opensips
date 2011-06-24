@@ -712,6 +712,23 @@ static int fix_actions(struct action* a)
 				}
 
 				break;
+			case GET_TIMESTAMP_T:
+				if (((pv_spec_p)t->elem[0].u.data)->type != PVT_AVP)
+				{
+					LM_ERR("Wrong type for the first argument - "
+						"must be an AVP\n");
+					ret=E_BUG;
+					goto error;
+				}
+
+				if (((pv_spec_p)t->elem[1].u.data)->type != PVT_AVP)
+				{
+					LM_ERR("Wrong type for the second argument - "
+						"must be an AVP\n");
+					ret=E_BUG;
+					goto error;
+				}
+
 		}
 	}
 	return 0;

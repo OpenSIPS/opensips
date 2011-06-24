@@ -696,6 +696,22 @@ error:
 	evi_free_params(list);
 }
 
+static inline int get_timestamp(int *sec,int *usec)
+{
+	struct timeval t;
+
+	if (gettimeofday(&t,NULL) != 0)
+	{
+		LM_ERR("failed to get time of day\n");
+		return -1;
+	}
+
+	*sec = t.tv_sec;
+	*usec = t.tv_usec;
+
+	return 0;
+}
+
 int user2uid(int* uid, int* gid, char* user);
 
 int group2gid(int* gid, char* group);

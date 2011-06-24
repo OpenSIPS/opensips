@@ -267,6 +267,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 {
 	int ret;
 	int v;
+	int sec,usec;
 	union sockaddr_union* to;
 	struct proxy_l* p;
 	char* tmp;
@@ -1162,7 +1163,42 @@ int do_action(struct action* a, struct sip_msg* msg)
 				}
 			}
 
+			break;
+		case GET_TIMESTAMP_T:
+			if (get_timestamp(&sec,&usec) == 0) {
+				int avp_name;
+				int_str res;
+				unsigned short avp_type;
 
+				spec = (pv_spec_t*)a->elem[0].u.data;
+				if (pv_get_avp_name(msg, &(spec->pvp), &avp_name,
+						&avp_type) != 0) {
+					LM_CRIT("BUG in getting AVP name\n");
+					return -1;
+				}
+
+				res.n = sec;
+				if (add_avp(avp_type, avp_name, res) < 0) {
+					LM_ERR("cannot add AVP\n");
+					return -1;
+				}
+
+				spec = (pv_spec_t*)a->elem[1].u.data;
+				if (pv_get_avp_name(msg, &(spec->pvp), &avp_name,
+						&avp_type) != 0) {
+					LM_CRIT("BUG in getting AVP name\n");
+					return -1;
+				}
+
+				res.n = usec;
+				if (add_avp(avp_type, avp_name, res) < 0) {
+					LM_ERR("cannot add AVP\n");
+					return -1;
+				}
+			} else {
+				LM_ERR("failed to get time\n");
+				return -1;
+			}
 			break;
 		case SWITCH_T:
 			if (a->elem[0].type!=SCRIPTVAR_ST){

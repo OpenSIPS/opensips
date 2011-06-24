@@ -172,6 +172,7 @@ XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG			"xlog"
 RAISE_EVENT		"raise_event"
 CONSTRUCT_URI	"construct_uri"
+GET_TIMESTAMP	"get_timestamp"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -475,6 +476,8 @@ WHITESPACE	[ \t\r\n]
 									return RAISE_EVENT;}
 <INITIAL>{CONSTRUCT_URI}	{	count(); yylval.strval=yytext;
 									return CONSTRUCT_URI;}
+<INITIAL>{GET_TIMESTAMP}	{	count(); yylval.strval=yytext;
+									return GET_TIMESTAMP;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }

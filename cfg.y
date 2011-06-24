@@ -284,6 +284,7 @@ extern int line;
 %token XLOG_FORCE_COLOR
 %token RAISE_EVENT
 %token CONSTRUCT_URI
+%token GET_TIMESTAMP
 
 /* config vars. */
 %token DEBUG
@@ -2509,6 +2510,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				elems[5].type = SCRIPTVAR_ST; 
 				elems[5].u.data = $13;
 				$$ = mk_action(CONSTRUCT_URI_T,6,elems,line); }
+		| GET_TIMESTAMP LPAREN script_var COMMA script_var RPAREN {
+				elems[0].type = SCRIPTVAR_ST;
+				elems[0].u.data = $3;
+				elems[1].type = SCRIPTVAR_ST;
+				elems[1].u.data = $5; 
+				$$ = mk_action(GET_TIMESTAMP_T,2,elems,line); }
+
 
 
 
