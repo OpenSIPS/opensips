@@ -165,7 +165,7 @@ void destroy_query_list(void)
  * and frees memory */
 void handle_ql_shutdown(void)
 {
-	if (query_buffer_size > 1 && *query_list)
+	if (query_buffer_size > 1 && query_list && *query_list)
 	{
 		flush_query_list();
 		destroy_query_list();
