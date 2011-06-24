@@ -1512,7 +1512,7 @@ FixContact(struct sip_msg *msg)
     after.s   = uri.port.s + uri.port.len;
     after.len = contact->uri.s + contact->uri.len - after.s;
 
-    len = before_host.len + newip.len + after.len + 20;
+    len = before_host.len + newip.len + after.len + 22;
 
     // first try to alloc mem. if we fail we don't want to have the lump
     // deleted and not replaced. at least this way we keep the original.
@@ -1530,8 +1530,13 @@ FixContact(struct sip_msg *msg)
         return -1;
     }
 
+    if(msg->rcv.src_ip.af == AF_INET6) {
+      len = sprintf(buf, "%.*s[%s]:%d%.*s", before_host.len, before_host.s,
+                    newip.s, newport, after.len, after.s);
+    } else {
     len = sprintf(buf, "%.*s%s:%d%.*s", before_host.len, before_host.s,
                   newip.s, newport, after.len, after.s);
+    }
 
     if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_F) == 0) {
         pkg_free(buf);
