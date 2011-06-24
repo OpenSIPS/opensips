@@ -109,16 +109,20 @@ int err2reason_phrase(
 			error_txt="Decimal part missing in q";
 			*sip_error=-E_BAD_REQ;
 			break;
+		case E_NO_DESTINATION:
+			error_txt="No destination available";
+			*sip_error=-E_BAD_SERVER;
+			break;
 		case E_OUT_OF_MEM:
 		/* dont disclose lack of mem in release mode */
 #ifdef DEBUG
 			error_txt="Excuse me I ran out of memory";
-			*sip_error=500;
+			*sip_error=E_BAD_SERVER;
 			break;
 #endif
 		default:
 			error_txt="Server error occurred";
-			*sip_error=500;
+			*sip_error=E_BAD_SERVER;
 			break;
 	}
 	return snprintf( phrase, etl, "%s (%d/%s)", error_txt, 

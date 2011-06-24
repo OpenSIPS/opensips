@@ -39,7 +39,7 @@
 #define E_BAD_VIA           -8		/*!< unresolvable topmost Via */
 #define E_BAD_TUPEL         -9		/*!< incomplete transaction tuple */
 #define E_SCRIPT            -10		/*!< script programming error */
-#define E_EXEC              -11		/*!< error in execution of external tools */
+#define E_EXEC              -11		/*!< error in execution of external tools*/
 #define E_TOO_MANY_BRANCHES -12		/*!< too many branches demanded */
 #define E_BAD_TO            -13
 #define E_INVALID_PARAMS    -14		/*!< invalid params */
@@ -47,7 +47,7 @@
 #define E_Q_EMPTY           -16		/*!< Empty q */
 #define E_Q_TOO_BIG         -17		/*!< q too big (> 1) */
 #define E_Q_DEC_MISSING     -18		/*!< Decimal part missing */
-#define E_NO_DESTINATION    -19		/*!< Decimal part missing */
+#define E_NO_DESTINATION    -19		/*!< No available destination */
 
 /* opensips specific error codes */
 #define E_IP_BLOCKED      -473		/*!< destination filtered */
