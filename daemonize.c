@@ -59,6 +59,118 @@
 #include "daemonize.h"
 #include "globals.h"
 #include "dprint.h"
+#include "pt.h"
+
+static int status_pipe[2];
+
+/* creates the status pipe which will be used for
+ * proper status code returning
+ *
+ * must be called before any forking */
+int create_status_pipe(void)
+{
+	int rc;
+	
+	status_pipe[0] = -1;
+	status_pipe[1] = -1;
+
+retry:
+	rc = pipe(status_pipe);
+	if (rc < 0 && errno == EINTR)
+		goto retry;
+
+	LM_DBG("pipe created ? rc = %d, errno = %s\n",rc,strerror(errno));
+	return rc;
+}
+
+/* attempts to send the val
+ * status code to the waiting end */
+int send_status_code(char val)
+{
+	int rc;
+
+retry:
+	rc = write(status_pipe[1], &val, 1);
+	if (rc < 0 && errno == EINTR)
+		goto retry;
+
+	LM_DBG("send %d ? rc = %d , errno=%s\n",val,rc,strerror(errno));
+
+	if (rc == 1)
+		return 0;
+	
+	return -1;
+}
+
+/* blockingly waits on the pipe
+ * until a child sends a status code */
+int wait_status_code(char *code)
+{
+	int rc;
+
+	/* close writing end */
+	if (status_pipe[1] != -1) {
+			close(status_pipe[1]);
+			status_pipe[1] = -1;
+	}
+
+	if (status_pipe[0] == -1) {
+		LM_DBG("invalid read pipe\n");
+		goto error;
+	}
+
+retry:
+	rc = read(status_pipe[0], code, 1);
+	if (rc < 0 && errno == EINTR)
+			goto retry;
+
+	LM_DBG("read code %d ? rc = %d, errno=%s\n",*code,rc,strerror(errno));
+
+	if (rc == 1)
+		return 0;
+
+error:
+	*code = -1;
+	return -1;
+}
+
+int wait_for_all_children(void)
+{
+	int children_no,i,ret;
+	char rc;
+
+	children_no = count_init_children();
+	for (i=0;i<children_no;i++) {
+		ret = wait_status_code(&rc);
+		if (ret < 0 || rc < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+/* cleans read pipe end 
+ * for processes done reading */
+void clean_read_pipeend(void)
+{
+	if (status_pipe[0] != -1) {
+		close(status_pipe[0]);
+		status_pipe[0] = -1;
+	}
+}
+
+/* cleans write pipe end
+ * for processes done writing the status code
+
+ * MUST be called to ensure that the original 
+ * parent process does not keep waiting forever */
+void clean_write_pipeend(void)
+{
+	if (status_pipe[1] != -1) {
+		close(status_pipe[1]);
+		status_pipe[1] = -1;
+	}
+}
 
 /*!
  * \brief daemon init
@@ -70,7 +182,7 @@ int daemonize(char* name, int * own_pgid)
 {
 	FILE *pid_stream;
 	pid_t pid;
-	int r, p;
+	int r, p,rc;
 	int pid_items;
 
 	p=-1;
@@ -91,14 +203,28 @@ int daemonize(char* name, int * own_pgid)
 		goto error;
 	}
 
+	if (create_status_pipe() < 0) {
+		LM_ERR("failed to create status pipe");
+		goto error;
+	}
+
 	/* fork to become!= group leader*/
 	if ((pid=fork())<0){
 		LM_CRIT("Cannot fork:%s\n", strerror(errno));
 		goto error;
 	}else if (pid!=0){
-		/* parent process => exit*/
-		exit(0);
+		/* parent process => wait for status codes from children*/
+		clean_write_pipeend();
+		LM_DBG("waiting for status code from children\n");
+		rc = wait_for_all_children();
+		LM_INFO("pre-daemon process exiting with %d\n",rc);
+		exit(rc);
 	}
+
+	/* cleanup read end - nobody should
+	 * need to read from status pipe from this point on */
+	clean_read_pipeend();
+
 	/* become session leader to drop the ctrl. terminal */
 	if (setsid()<0){
 		LM_WARN("setsid failed: %s\n",strerror(errno));
@@ -210,6 +336,9 @@ int daemonize(char* name, int * own_pgid)
 
 	/* 32 is the maximum number of inherited open file descriptors */
 	for (r=3; r < 32; r++){
+		/* future children must still inherit
+		 * and write to this pipe end */
+		if (r != status_pipe[1])
 			close(r);
 	}
 

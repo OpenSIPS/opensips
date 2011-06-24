@@ -192,4 +192,60 @@ pid_t internal_fork(char *proc_desc)
 	}
 }
 
+/* returns the number of child processes
+ * that are going to run child_init()
+ *
+ * used for proper status return code
+ */
+int count_init_children(void)
+{
+	int ret=0,i;
+	struct sr_module *m;
+	struct socket_info* si;
+	struct sr_timer_process *tpl;
 
+	if (dont_fork) 
+		goto skip_listeners;
+
+	/* UDP listening children */
+	for (si=udp_listen;si;si=si->next)
+		ret+=children_no;
+
+	#ifdef USE_SCTP
+	for (si=sctp_listen;si;si=si->next)
+		ret+=children_no;
+	#endif
+
+	#ifdef USE_TCP
+	ret += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
+	#endif
+
+	/* attendent */
+	ret++;
+
+skip_listeners:
+
+	/* count number of module procs going to be initialised */
+	for (m=modules;m;m=m->next) {
+		if (m->exports->procs==NULL)
+			continue;
+		for (i=0;m->exports->procs[i].name;i++) {
+			if (!m->exports->procs[i].no || !m->exports->procs[i].function)
+				continue;
+			
+			if (m->exports->procs[i].flags & PROC_FLAG_INITCHILD)
+				ret+=m->exports->procs[i].no;
+		}
+	}
+
+	/* count number of timer procs that need init */
+	for( tpl=timer_proc_list ; tpl ; tpl=tpl->next ) {
+		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
+			continue;
+
+		if (tpl->flags & TIMER_PROC_INIT_FLAG)
+			ret++;
+	}
+	
+	return ret;
+}

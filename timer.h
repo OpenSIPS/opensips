@@ -58,9 +58,16 @@ struct sr_timer{
 	struct sr_timer* next;
 };
 
+struct sr_timer_process {
+	unsigned int flags;
+	struct sr_timer *timer_list;
+	struct sr_timer *utimer_list;
+	struct sr_timer_process *next;
+};
+
 #define TIMER_PROC_INIT_FLAG  (1<<0)
 
-
+extern struct sr_timer_process *timer_proc_list;
 
 int init_timer(void);
 

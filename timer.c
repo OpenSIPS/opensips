@@ -45,6 +45,7 @@
 #include "pt.h"
 #include "config.h"
 #include "sr_module.h"
+#include "daemonize.h"
 #include "mem/mem.h"
 #ifdef SHM_MEM
 #include "mem/shm_mem.h"
@@ -52,15 +53,7 @@
 
 #include <stdlib.h>
 
-struct sr_timer_process {
-	unsigned int flags;
-	struct sr_timer *timer_list;
-	struct sr_timer *utimer_list;
-	struct sr_timer_process *next;
-};
-
-
-static struct sr_timer_process *timer_proc_list = 0;
+struct sr_timer_process *timer_proc_list = 0;
 
 static unsigned int *jiffies=0;
 static utime_t      *ujiffies=0;
@@ -454,6 +447,8 @@ int start_timer_processes(void)
 		goto error;
 	} else if (pid==0) {
 		/* new process */
+		clean_write_pipeend();
+
 		run_timer_process_jif();
 		exit(-1);
 	}
@@ -468,10 +463,23 @@ int start_timer_processes(void)
 		} else if (pid==0) {
 			/* new process */
 			/* run init if required */
-			if ( tpl->flags&TIMER_PROC_INIT_FLAG && init_child(PROC_TIMER)<0 ){
-				LM_ERR("init_child failed for timer proc\n");
-				exit(-1);
-			}
+			if ( tpl->flags&TIMER_PROC_INIT_FLAG ) {
+				if (init_child(PROC_TIMER)<0 ){
+					LM_ERR("init_child failed for timer proc\n");
+
+					if (send_status_code(-1) < 0)
+						LM_ERR("failed to send status code\n");
+					clean_write_pipeend();
+
+					exit(-1);
+				}
+
+				if (send_status_code(0) < 0)
+					LM_ERR("failed to send status code\n");
+				clean_write_pipeend();
+			} else
+				clean_write_pipeend();
+
 			run_timer_process( tpl );
 			exit(-1);
 		}

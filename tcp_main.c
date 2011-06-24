@@ -107,6 +107,7 @@
 #include "tcp_init.h"
 #include "tsend.h"
 #include "ut.h"
+#include "daemonize.h"
 #ifdef USE_TLS
 #include "tls/tls_server.h"
 #endif 
@@ -1747,9 +1748,18 @@ int tcp_init_children(int *chd_rank)
 							   bind address on tcp */
 			if (init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
+
+				if (send_status_code(-1) < 0)
+					LM_ERR("failed to send status code\n");
+				clean_write_pipeend();
+
 				exit(-1);
 			}
 	
+			if (send_status_code(0) < 0)
+				LM_ERR("failed to send status code\n");
+			clean_write_pipeend();
+
 			tcp_receive_loop(reader_fd[1]);
 			exit(-1);
 		}

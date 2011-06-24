@@ -442,7 +442,7 @@ static void sig_alarm_abort(int signo)
 void handle_sigs(void)
 {
 	pid_t  chld;
-	int    chld_status;
+	int    chld_status,overall_status=0;
 	int    i;
 	int    do_exit;
 	const unsigned int shutdown_time = 60; /* one minute close timeout */
@@ -510,6 +510,9 @@ void handle_sigs(void)
 				}
 				do_exit = 1;
 				/* process the signal */
+				overall_status |= chld_status;
+				LM_DBG("status = %d\n",overall_status);
+
 				if (WIFEXITED(chld_status)) 
 					LM_INFO("child process %d exited normally,"
 							" status=%d\n", chld, 
@@ -543,7 +546,7 @@ void handle_sigs(void)
 			alarm(0);
 			signal(SIGALRM, SIG_IGN);
 			LM_DBG("terminating due to SIGCHLD\n");
-			exit(0);
+			exit(overall_status ? -1 : 0);
 			break;
 		
 		case SIGHUP: /* ignoring it*/
@@ -664,7 +667,7 @@ error:
 static int main_loop(void)
 {
 	static int chd_rank;
-	int  i;
+	int  i,rc;
 	pid_t pid;
 	struct socket_info* si;
 	int* startup_done = NULL;
@@ -673,6 +676,12 @@ static int main_loop(void)
 	chd_rank=0;
 
 	if (dont_fork){
+
+		if (create_status_pipe() < 0) {
+			LM_ERR("failed to create status pipe");
+			goto error;
+		}
+
 		if (udp_listen==0){
 			LM_ERR("no fork mode requires at least one"
 					" udp listen address, exiting...\n");
@@ -728,6 +737,15 @@ static int main_loop(void)
 		pt[process_no].load = load_p;
 
 		register_udp_load_stat(&udp_listen->sock_str,load_p);
+
+		clean_write_pipeend();
+		LM_DBG("waiting for status code from children\n");
+		rc = wait_for_all_children();
+		if (rc < 0) {
+			LM_ERR("failed to succesfully init children\n");
+			return rc;
+		}
+
 		return udp_rcv_loop();
 	} else {  /* don't fork */
 
@@ -837,8 +855,15 @@ static int main_loop(void)
 						bind_address=si; /* shortcut */
 						if (init_child(chd_rank) < 0) {
 							LM_ERR("init_child failed for UDP listener\n");
+							if (send_status_code(-1) < 0)
+								LM_ERR("failed to send status code\n");
+							clean_write_pipeend();
 							exit(-1);
 						}
+
+						if (send_status_code(0) < 0)
+							LM_ERR("failed to send status code\n");
+						clean_write_pipeend();
 
 						if(chd_rank == 1 && startup_rlist.a) {
 							if(run_startup_route()< 0) {
@@ -886,8 +911,16 @@ static int main_loop(void)
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed\n");
+						if (send_status_code(-1) < 0)
+							LM_ERR("failed to send status code\n");
+						clean_write_pipeend();
 						exit(-1);
 					}
+
+					if (send_status_code(0) < 0)
+						LM_ERR("failed to send status code\n");
+					clean_write_pipeend();
+
 					sctp_server_rcv_loop();
 					exit(-1);
 				}
@@ -923,8 +956,17 @@ static int main_loop(void)
 			/* init modules */
 			if (init_child(PROC_TCP_MAIN) < 0) {
 				LM_ERR("error in init_child for tcp main\n");
+				if (send_status_code(-1) < 0)
+					LM_ERR("failed to send status code\n");
+				clean_write_pipeend();
+
 				exit(-1);
 			}
+
+			if (send_status_code(0) < 0)
+				LM_ERR("failed to send status code\n");
+			clean_write_pipeend();
+
 			tcp_main_loop();
 			exit(-1);
 		}
@@ -940,6 +982,10 @@ static int main_loop(void)
 		goto error;
 	}
 
+	if (send_status_code(0) < 0)
+		LM_ERR("failed to send status code\n");
+	clean_write_pipeend();
+
 	for(;;){
 			handle_sigs();
 			pause();
@@ -950,6 +996,10 @@ error:
 	is_main=1;  /* if we are here, we are the "main process",
 				  any forked children should exit with exit(-1) and not
 				  ever use return */
+	if (!dont_fork && send_status_code(-1) < 0)
+		LM_ERR("failed to send status code\n");
+	clean_write_pipeend();
+
 	return -1;
 
 }
@@ -1447,6 +1497,7 @@ try_again:
 	ret=main_loop();
 
 error:
+
 	/*kill everything*/
 	kill_all_children(SIGTERM);
 	/*clean-up*/

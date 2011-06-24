@@ -44,6 +44,7 @@
 #include "error.h"
 #include "mem/mem.h"
 #include "pt.h"
+#include "daemonize.h"
 
 #include <strings.h>
 #include <stdlib.h>
@@ -565,11 +566,21 @@ int start_module_procs(void)
 				} else if (x==0) {
 					/* new process */
 					/* initialize the process for the rest of the modules */
-					if ( (m->exports->procs[n].flags&PROC_FLAG_INITCHILD) &&
-					init_child(PROC_MODULE) < 0) {
-						LM_ERR("error in init_child for PROC_MODULE\n");
-						exit(-1);
-					}
+					if ( m->exports->procs[n].flags&PROC_FLAG_INITCHILD ) {
+						if (init_child(PROC_MODULE) < 0) {
+							LM_ERR("error in init_child for PROC_MODULE\n");
+							if (send_status_code(-1) < 0)
+								LM_ERR("failed to send status code\n");
+							clean_write_pipeend();
+							exit(-1);
+						}
+
+						if (send_status_code(0) < 0)
+							LM_ERR("failed to send status code\n");
+						clean_write_pipeend();
+					} else
+						clean_write_pipeend();
+
 					/* run the function */
 					m->exports->procs[n].function(l);
 					/* we shouldn't get here */
