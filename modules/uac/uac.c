@@ -50,7 +50,6 @@
 #include "../dialog/dlg_load.h"
 
 #include "replace.h"
-#include "auth.h"
 
 
 
@@ -128,7 +127,6 @@ static param_export_t params[] = {
 	{"rr_to_store_param",   STR_PARAM,                &rr_to_param.s         },
 	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
 	{"restore_passwd",      STR_PARAM,                &uac_passwd.s          },
-	{"credential",          STR_PARAM|USE_FUNC_PARAM, (void*)&add_credential },
 	{"auth_username_avp",   STR_PARAM,                &auth_username_avp     },
 	{"auth_realm_avp",      STR_PARAM,                &auth_realm_avp        },
 	{"auth_password_avp",   STR_PARAM,                &auth_password_avp     },
@@ -295,7 +293,7 @@ error:
 
 static void mod_destroy(void)
 {
-	destroy_credentials();
+	return;
 }
 
 
