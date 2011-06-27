@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
+ *  2011-06-27  added authentication support (Ovidiu Sas)
  */
 
 #ifndef _B2B_DLG_H_
@@ -66,6 +67,7 @@ typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
 typedef enum b2b_state {
 	B2B_UNDEFINED = 0, /* New dialog, no reply received yet */
 	B2B_NEW,        /* New dialog, no reply received yet */
+	B2B_NEW_AUTH,   /* New dialog with auth info, no reply received yet */
 	B2B_EARLY,      /* Early dialog, provisional response received */
 	B2B_CONFIRMED,  /* Confirmed dialog, 2xx received */
 	B2B_ESTABLISHED,/* Established dialog, sent or received ACK received */

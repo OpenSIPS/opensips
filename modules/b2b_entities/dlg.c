@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
+ *  2011-06-27  added authentication support (Ovidiu Sas)
  */
 
 #include <stdio.h>
@@ -33,7 +34,9 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
+#include "../../parser/parse_authenticate.h"
 #include "../../locking.h"
+#include "../uac_auth/uac_auth.h"
 #include "../presence/hash.h"
 #include "../../action.h"
 #include "../../trim.h"
@@ -425,8 +428,9 @@ void set_dlg_state(b2b_dlg_t* dlg, int meth)
 {
 	switch(meth)
 	{
-		case METHOD_INVITE: 
-			dlg->state= B2B_MODIFIED;
+		case METHOD_INVITE:
+			if (dlg->state != B2B_NEW_AUTH)
+				dlg->state= B2B_MODIFIED;
 			break;
 		case METHOD_CANCEL:
 		case METHOD_BYE:
@@ -1645,7 +1649,6 @@ int b2b_send_request(b2b_req_data_t* req_data)
 			return 0;
 		else
 			return -1;
-		
 	}
 
 	if(b2breq_complete_ehdr(req_data->extra_headers, &ehdr, req_data->body,
@@ -1663,10 +1666,10 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		}
 		else
 		if(method_value!=METHOD_UPDATE && method_value!=METHOD_PRACK &&
-				method_value!=METHOD_CANCEL)
+			method_value!=METHOD_CANCEL && (method_value!=METHOD_INVITE /**/))
 		{
-			LM_ERR("State not established, can not send request %.*s, [%.*s]\n",
-					method->len, method->s, b2b_key->len, b2b_key->s);
+			LM_ERR("State [%d] not established, can not send request %.*s, [%.*s]\n",
+				dlg->state, method->len, method->s, b2b_key->len, b2b_key->s);
 			lock_release(&table[hash_index].lock);
 			return -1;
 		}
@@ -1921,6 +1924,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	dlg_leg_t* leg;
 	struct to_body* pto, TO;
 	str to_tag, callid, from_tag;
+	str extra_headers = {NULL, 0};
 	struct hdr_field* hdr;
 	unsigned int method_id = 0;
 	struct sip_msg dummy_msg;
@@ -1931,6 +1935,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	struct hdr_field callid_hdr, from_hdr, to_hdr;
 	struct to_body to_hdr_parsed, from_hdr_parsed;
 	int dlg_state = 0;
+	struct uac_credential* crd;
+	struct authenticate_body *auth = NULL;
+	static struct authenticate_nc_cnonce auth_nc_cnonce;
+	HASHHEX response;
+	str *new_hdr;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -2167,7 +2176,88 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		else
 		{
 			b2b_delete_legs(&dlg->legs);
-			dlg->state = B2B_TERMINATED;
+			if(msg && msg!= FAKED_REPLY)
+			{
+				if (str2int( &(get_cseq(msg)->number), &dlg->cseq[CALLER_LEG])!=0 )
+				{
+					LM_ERR("failed to parse cseq number - not an integer\n");
+				}
+				else
+				{
+					dlg->last_invite_cseq = dlg->cseq[CALLER_LEG];
+				}
+			}
+			switch(statuscode)
+			{
+			case 401:
+				if (0 == parse_www_authenticate_header(msg))
+					auth = get_www_authenticate(msg);
+				break;
+			case 407:
+				if (0 == parse_www_authenticate_header(msg))
+					auth = get_www_authenticate(msg);
+				break;
+			}
+			if(auth)
+			{
+				if(dlg->state == B2B_NEW)
+				{
+					crd = uac_auth_api._lookup_realm( &auth->realm );
+					//crd.user.s = "osas"; crd.user.len = 4;
+					//crd.passwd.s = "cw0s4s", crd.passwd.len = 6;
+					//crd.realm.s=auth->realm.s;
+					//crd.realm.len=auth->realm.len;
+					memset(&auth_nc_cnonce, 0,
+							sizeof(struct authenticate_nc_cnonce));
+					uac_auth_api._do_uac_auth(&t->method, &t->uac[0].uri, crd,
+							auth, &auth_nc_cnonce, response);
+					new_hdr = uac_auth_api._build_authorization_hdr(statuscode,
+							&t->uac[0].uri, crd, auth,
+							&auth_nc_cnonce, response);
+					if (!new_hdr)
+					{
+						LM_ERR("failed to build auth hdr\n");
+						dlg->state = B2B_TERMINATED;
+						lock_release(&htable[hash_index].lock);
+						goto error;
+					}
+					LM_DBG("[%.*s]\n", new_hdr->len, new_hdr->s);
+					LM_DBG("uri [%.*s] with extra_hdrs [%.*s]\n",
+						t->uac[0].uri.len, t->uac[0].uri.s,
+						t->uac[0].extra_headers.len,
+						t->uac[0].extra_headers.s);
+					extra_headers.s = (char*)pkg_malloc(new_hdr->len +
+								t->uac[0].extra_headers.len);
+					if (extra_headers.s == NULL)
+					{
+						LM_ERR("No more private memory\n");	
+						dlg->state = B2B_TERMINATED;
+						lock_release(&htable[hash_index].lock);
+						goto error;
+					}
+					memcpy(extra_headers.s, new_hdr->s, new_hdr->len);
+					memcpy(extra_headers.s + new_hdr->len,
+						t->uac[0].extra_headers.s,
+						t->uac[0].extra_headers.len);
+					extra_headers.len = new_hdr->len +
+								t->uac[0].extra_headers.len;
+					LM_DBG("[%.*s]\n", extra_headers.len, extra_headers.s);
+
+					b2b_send_indlg_req(dlg, B2B_CLIENT, b2b_key, &t->method,
+							&extra_headers, &t->uac[0].body, 0);
+					pkg_free(extra_headers.s);
+
+					dlg->state = B2B_NEW_AUTH;
+					lock_release(&htable[hash_index].lock);
+					goto b2b_route;
+				}
+				else
+					dlg->state = B2B_TERMINATED;
+			}
+			else
+			{
+				dlg->state = B2B_TERMINATED;
+			}
 		}
 
 		current_dlg = dlg;
@@ -2260,8 +2350,9 @@ dummy_reply:
 			goto done;
 		}
 
-		if(dlg->legs == NULL && 
-				(dlg->state == B2B_NEW || dlg->state == B2B_EARLY))
+		if(dlg->legs == NULL && (dlg->state == B2B_NEW ||
+					dlg->state == B2B_NEW_AUTH ||
+					dlg->state == B2B_EARLY))
 		{
 			new_dlg = b2b_new_dlg(msg, &dlg->contact[CALLER_LEG],
 					1, &dlg->param);
@@ -2297,7 +2388,9 @@ dummy_reply:
 			UPDATE_DBFLAG(dlg);
 		}
 
-		if(dlg->state == B2B_NEW || dlg->state == B2B_EARLY)
+		if(dlg->state == B2B_NEW ||
+			dlg->state == B2B_NEW_AUTH ||
+			dlg->state == B2B_EARLY)
 		{
 			if(statuscode < 200)
 			{
@@ -2460,6 +2553,7 @@ done1:
 		param.s = NULL;
 	}
 
+b2b_route:
 	/* run the b2b route */
 //	if(reply_routeid > 0 && ps->rpl!=FAKED_REPLY)
 	if(reply_routeid > 0) {

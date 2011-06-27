@@ -24,6 +24,7 @@
  * History:
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
+ *  2011-06-27  added authentication support (Ovidiu Sas)
  */
 
 #ifndef  _B2B_H_
@@ -31,6 +32,7 @@
 
 #include "../../str.h"
 #include "../../parser/msg_parser.h"
+#include "../uac_auth/uac_auth.h"
 #include "../tm/tm_load.h"
 #include "../signaling/signaling.h"
 #include "dlg.h"
@@ -69,6 +71,7 @@ typedef struct b2b_api
 extern unsigned int server_hsize;
 extern unsigned int client_hsize;
 extern struct tm_binds tmb;
+extern uac_auth_api_t uac_auth_api;
 extern int req_routeid;
 extern int reply_routeid;
 extern int replication_mode;

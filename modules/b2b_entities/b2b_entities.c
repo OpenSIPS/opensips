@@ -25,6 +25,7 @@
  * --------
  *  2009-08-03  initial version (Anca Vamanu)
  *  2011-01-04  new mi function: mi_b2be_list (Ovidiu Sas)
+ *  2011-06-27  added authentication support (Ovidiu Sas)
  */
 
 #include <stdio.h>
@@ -39,6 +40,7 @@
 #include "../../script_cb.h"
 #include "../../parser/parse_from.h"
 #include "../dialog/dlg_load.h"
+#include "../uac_auth/uac_auth.h"
 #include "b2be_db.h"
 
 #include "b2b_entities.h"
@@ -74,6 +76,9 @@ int b2be_db_mode = WRITE_BACK;
 
 /* TM bind */
 struct tm_binds tmb;
+
+/* UAC_AUTH bind */
+uac_auth_api_t uac_auth_api;
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -154,6 +159,14 @@ static int mod_init(void)
 	if(load_tm_api(&tmb)==-1)
 	{
 		LM_ERR("can't load tm functions\n");
+		return -1;
+	}
+
+	/* load the UAC_AUTH API - FIXME it should be loaded only
+	 * if authentication is required */
+	if(load_uac_auth_api(&uac_auth_api)<0)
+	{
+		LM_ERR("can't load UAC_AUTH API\n");
 		return -1;
 	}
 
