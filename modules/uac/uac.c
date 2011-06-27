@@ -46,7 +46,7 @@
 #include "../tm/tm_load.h"
 #include "../tm/t_hooks.h"
 #include "../rr/api.h"
-
+#include "../uac_auth/uac_auth.h"
 #include "../dialog/dlg_load.h"
 
 #include "replace.h"
@@ -74,6 +74,7 @@ str uac_passwd = str_init("");
 int restore_mode = UAC_AUTO_RESTORE;
 struct tm_binds uac_tmb;
 struct rr_binds uac_rrb;
+uac_auth_api_t uac_auth_api;
 pv_spec_t auth_username_spec;
 pv_spec_t auth_realm_spec;
 pv_spec_t auth_password_spec;
@@ -234,6 +235,13 @@ static int mod_init(void)
 	 * if NO_RESTORE and AUTH */
 	if (load_tm_api(&uac_tmb)!=0) {
 		LM_ERR("can't load TM API\n");
+		goto error;
+	}
+
+	/* load the UAC_AUTH API - FIXME it should be loaded only
+	 * if uac_auth() is invoked from script */
+	if(load_uac_auth_api(&uac_auth_api)<0){
+		LM_ERR("can't load UAC_AUTH API\n");
 		goto error;
 	}
 

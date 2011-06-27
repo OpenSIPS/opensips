@@ -43,13 +43,18 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>TM - Transaction Module</emphasis>
+				<emphasis>TM - Transaction Module</emphasis>.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
 				<emphasis>RR - Record-Route Module</emphasis>, but only if
 				restore mode for FROM URI is set to <quote>auto</quote>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>UAC_AUTH - UAC Authentication Module</emphasis>.
 			</para>
 			</listitem>
 			<listitem>
