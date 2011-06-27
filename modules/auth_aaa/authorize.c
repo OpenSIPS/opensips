@@ -75,72 +75,73 @@ static inline int get_uri_user(struct sip_msg* _m, str** _uri_user)
 static inline int authorize(struct sip_msg* _msg, pv_elem_t* _realm,
 			    pv_spec_t * _uri_user, int _hftype)
 {
-    int res;
-    auth_result_t ret;
-    struct hdr_field* h;
-    auth_body_t* cred;
-    str *uri_user;
-    str user, domain;
-    pv_value_t pv_val;
+	int res;
+	auth_result_t ret;
+	struct hdr_field* h;
+	auth_body_t* cred;
+	str *uri_user;
+	str user, domain;
+	pv_value_t pv_val;
 
-    /* get pre_auth domain from _realm pvar (if exists) */
-    if (_realm) {
-	if (pv_printf_s(_msg, _realm, &domain)!=0) {
-	    LM_ERR("pv_printf_s failed\n");
-	    return AUTH_ERROR;
-	}
-    } else {
-	/* get pre_auth domain from To/From header */
-	domain.len = 0;
-	domain.s = 0;
-    }
-
-    ret = auth_api.pre_auth(_msg, &domain, _hftype, &h);
-
-    if (ret != DO_AUTHORIZATION)
-	return ret;
-
-    cred = (auth_body_t*)h->parsed;
-
-    /* get uri_user from _uri_user pvap (if exists) or
-       from To/From URI */
-    if (_uri_user) {
-	if (pv_get_spec_value(_msg, _uri_user, &pv_val) == 0) {
-	    if (pv_val.flags & PV_VAL_STR) {
-		res = aaa_authorize_sterman(_msg, &cred->digest, 
-					       &_msg->first_line.u.request.method,
-					       &pv_val.rs);
-	    } else {
-		LM_ERR("uri_user pvar value is not string\n");
-		return AUTH_ERROR;
-	    }
+	/* get pre_auth domain from _realm pvar (if exists) */
+	if (_realm) {
+		if (pv_printf_s(_msg, _realm, &domain)!=0) {
+			LM_ERR("pv_printf_s failed\n");
+			return AUTH_ERROR;
+		}
 	} else {
-	    LM_ERR("cannot get uri_user pvar value\n");
-	    return AUTH_ERROR;
+		/* get pre_auth domain from To/From header */
+		domain.len = 0;
+		domain.s = 0;
 	}
-    } else {
-	if (get_uri_user(_msg, &uri_user) < 0) {
-	    LM_ERR("To/From URI not found\n");
-	    return AUTH_ERROR;
-	}
-	user.s = (char *)pkg_malloc(uri_user->len);
-	if (user.s == NULL) {
-	    LM_ERR("no pkg memory left for user\n");
-	    return AUTH_ERROR;
-	}
-	un_escape(uri_user, &user);
-	res = aaa_authorize_sterman(_msg, &cred->digest, 
+
+	ret = auth_api.pre_auth(_msg, &domain, _hftype, &h);
+
+	if (ret != DO_AUTHORIZATION)
+		return ret;
+
+	cred = (auth_body_t*)h->parsed;
+
+	/* get uri_user from _uri_user pvap (if exists) or
+	   from To/From URI */
+	if (_uri_user) {
+		if (pv_get_spec_value(_msg, _uri_user, &pv_val) == 0) {
+			if (pv_val.flags & PV_VAL_STR) {
+				res = aaa_authorize_sterman(_msg, &cred->digest, 
+					&_msg->first_line.u.request.method,
+					&pv_val.rs);
+			} else {
+				LM_ERR("uri_user pvar value is not string\n");
+				return AUTH_ERROR;
+			}
+		} else {
+			LM_ERR("cannot get uri_user pvar value\n");
+			return AUTH_ERROR;
+		}
+	} else {
+		if (get_uri_user(_msg, &uri_user) < 0) {
+			LM_ERR("To/From URI not found\n");
+			return AUTH_ERROR;
+		}
+
+		user.s = (char *)pkg_malloc(uri_user->len);
+		if (user.s == NULL) {
+			LM_ERR("no pkg memory left for user\n");
+			return AUTH_ERROR;
+		}
+		un_escape(uri_user, &user);
+		res = aaa_authorize_sterman(_msg, &cred->digest, 
 				       &_msg->first_line.u.request.method,
 				       &user);
-	pkg_free(user.s);
-    }
+		pkg_free(user.s);
+	}
 
-    if (res == 1) {
-	ret = auth_api.post_auth(_msg, h);
-	return ret;
-    }
+	if (res == 1) {
+		ret = auth_api.post_auth(_msg, h);
+		return ret;
+	}
 
-    return AUTH_ERROR;
+	return AUTH_ERROR;
 }
 
 
