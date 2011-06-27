@@ -39,7 +39,7 @@
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/contact/parse_contact.h"
 #include "reg_records.h"
-#include "auth.h"
+#include "../uac_auth/uac_auth.h"
 
 
 #define UAC_REGISTRAR_URI_PARAM			1
@@ -76,6 +76,9 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 
 
 /** Global variables */
+
+uac_auth_api_t uac_auth_api;
+
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
 
@@ -160,6 +163,11 @@ static int mod_init(void)
 	LM_DBG("start\n");
 
 	regfree(&uac_params_regex);
+
+	if(load_uac_auth_api(&uac_auth_api)<0){
+		LM_ERR("Failed to load uac_auth api\n");
+		return -1;
+	}
 
 	if(default_expires<15){
 		LM_ERR("default_expires to short: [%d]<15\n", default_expires);
@@ -584,9 +592,9 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 		crd.passwd.s = rec->auth_password.s; crd.passwd.len = rec->auth_password.len;
 
 		memset(&auth_nc_cnonce, 0, sizeof(struct authenticate_nc_cnonce));
-		do_uac_auth(&register_method, &rec->td.rem_target, &crd,
+		uac_auth_api._do_uac_auth(&register_method, &rec->td.rem_target, &crd,
 					auth, &auth_nc_cnonce, response);
-		new_hdr = build_authorization_hdr(statuscode, &rec->td.rem_target,
+		new_hdr = uac_auth_api._build_authorization_hdr(statuscode, &rec->td.rem_target,
 					&crd, auth, &auth_nc_cnonce, response);
 		if (!new_hdr) {
 			LM_ERR("failed to build authorization hdr\n");
