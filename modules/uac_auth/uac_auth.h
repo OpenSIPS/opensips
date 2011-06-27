@@ -29,6 +29,7 @@
 #ifndef _UAC_AUTH_AUTH_H_
 #define _UAC_AUTH_AUTH_H_
 
+#include "../../sr_module.h"
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/msg_parser.h"
 
