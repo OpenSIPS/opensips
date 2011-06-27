@@ -67,6 +67,7 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
 		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response);
+struct uac_credential* lookup_realm(str *realm);
 
 
 typedef void (*do_uac_auth_t)(str *method, str *uri, struct uac_credential *crd,
@@ -75,11 +76,13 @@ typedef void (*do_uac_auth_t)(str *method, str *uri, struct uac_credential *crd,
 typedef str* (*build_authorization_hdr_t)(int code, str *uri,
 	struct uac_credential *crd, struct authenticate_body *auth,
 	struct authenticate_nc_cnonce *auth_nc_cnonce, char *response);
+typedef struct uac_credential* (*lookup_realm_t)(str *realm);
 
 typedef struct uac_auth_api
 {
 	do_uac_auth_t			_do_uac_auth;
 	build_authorization_hdr_t	_build_authorization_hdr;
+	lookup_realm_t			_lookup_realm;
 }uac_auth_api_t;
 
 int uac_auth_load_api(uac_auth_api_t *api);

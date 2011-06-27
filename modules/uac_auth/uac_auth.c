@@ -39,6 +39,8 @@ static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
 int uac_auth_bind(uac_auth_api_t* api);
+int add_credential( unsigned int type, void *val);
+void destroy_credentials(void);
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -49,6 +51,7 @@ static cmd_export_t cmds[]=
 
 /** Exported parameters */
 static param_export_t params[]= {
+	{"credential",	STR_PARAM|USE_FUNC_PARAM,	(void*)&add_credential	},
 	{0,0,0}
 };
 
@@ -84,6 +87,7 @@ static int mod_init(void)
 
 static void mod_destroy(void)
 {
+	destroy_credentials();
 	LM_DBG("done\n");
 	return;
 }
@@ -99,6 +103,7 @@ int uac_auth_bind(uac_auth_api_t *api)
 
 	api->_do_uac_auth = do_uac_auth;
 	api->_build_authorization_hdr = build_authorization_hdr;
+	api->_lookup_realm = lookup_realm;
 
 	return 0;
 }

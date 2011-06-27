@@ -45,6 +45,150 @@
 static str nc = {"00000001", 8};
 static str cnonce = {"o", 1};
 
+static struct uac_credential *crd_list = NULL;
+
+#define  duplicate_str(_strd, _strs, _error)		\
+	do {						\
+		_strd.s = (char*)pkg_malloc(_strs.len);	\
+		if (_strd.s==NULL) {			\
+			LM_ERR("no more pkg memory\n");	\
+			goto _error;			\
+		}					\
+		memcpy( _strd.s, _strs.s, _strs.len);	\
+		_strd.len = _strs.len;			\
+	}while(0)
+
+
+int has_credentials(void) {return (crd_list)?1:0;}
+
+void free_credential(struct uac_credential *crd)
+{
+	if (crd) {
+		if (crd->realm.s) pkg_free(crd->realm.s);
+		if (crd->user.s) pkg_free(crd->user.s);
+                if (crd->passwd.s) pkg_free(crd->passwd.s);
+                pkg_free(crd);
+        }
+}
+
+
+int add_credential( unsigned int type, void *val)
+{
+	struct uac_credential *crd;
+	char *p;
+	str foo;
+
+	p = (char*)val;
+	crd = 0;
+
+	if (p==NULL || *p==0)
+		goto error;
+
+	crd = (struct uac_credential*)pkg_malloc(sizeof(struct uac_credential));
+	if (crd==NULL)
+	{
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
+	memset( crd, 0, sizeof(struct uac_credential));
+
+	/*parse the user */
+	while (*p && isspace((int)*p)) p++;
+	foo.s = p;
+	while (*p && *p!=':' && !isspace((int)*p)) p++;
+	if (foo.s==p || *p==0)
+		/* missing or empty user */
+		goto parse_error;
+	foo.len = p - foo.s;
+	/* dulicate it */
+	duplicate_str( crd->user, foo, error);
+
+	/* parse the ':' separator */
+	while (*p && isspace((int)*p)) p++;
+	if (*p!=':')
+		goto parse_error;
+	p++;
+	while (*p && isspace((int)*p)) p++;
+	if (*p==0)
+		goto parse_error;
+
+	/*parse the realm */
+	while (*p && isspace((int)*p)) p++;
+	foo.s = p;
+	while (*p && *p!=':' && !isspace((int)*p)) p++;
+	if (foo.s==p || *p==0)
+		/* missing or empty realm */
+		goto parse_error;
+	foo.len = p - foo.s;
+	/* dulicate it */
+	duplicate_str( crd->realm, foo, error);
+
+	/* parse the ':' separator */
+	while (*p && isspace((int)*p)) p++;
+	if (*p!=':')
+		goto parse_error;
+	p++;
+	while (*p && isspace((int)*p)) p++;
+	if (*p==0)
+		goto parse_error;
+
+	/*parse the passwd */
+	while (*p && isspace((int)*p)) p++;
+	foo.s = p;
+	while (*p && !isspace((int)*p)) p++;
+	if (foo.s==p)
+		/* missing or empty passwd */
+		goto parse_error;
+	foo.len = p - foo.s;
+	/* dulicate it */
+	duplicate_str( crd->passwd, foo, error);
+
+	/* end of string */
+	while (*p && isspace((int)*p)) p++;
+	if (*p!=0)
+		goto parse_error;
+
+	/* link the new cred struct */
+	crd->next = crd_list;
+	crd_list = crd;
+
+	pkg_free(val);
+	return 0;
+parse_error:
+		LM_ERR("parse error in <%s> "
+		"around %ld\n", (char*)val, (long)(p-(char*)val));
+error:
+	if (crd)
+		free_credential(crd);
+	return -1;
+}
+
+
+void destroy_credentials(void)
+{
+	struct uac_credential *foo;
+
+	while (crd_list)
+	{
+		foo = crd_list;
+		crd_list = crd_list->next;
+		free_credential(foo);
+	}
+	crd_list = NULL;
+}
+
+
+struct uac_credential *lookup_realm( str *realm)
+{
+	struct uac_credential *crd;
+
+	for( crd=crd_list ; crd ; crd=crd->next )
+		if (realm->len==crd->realm.len &&
+		strncmp( realm->s, crd->realm.s, realm->len)==0 )
+			return crd;
+	return 0;
+}
+
 
 static inline void cvt_hex(HASH bin, HASHHEX hex)
 {
