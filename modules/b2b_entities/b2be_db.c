@@ -260,7 +260,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 		return;
 
 	qvals[0].val.int_val = type;
-	LM_DBG("storing b2b_entities type '%d' in db\n", type);
+	//LM_DBG("storing b2b_entities type '%d' in db\n", type);
 	if(b2be_dbf.use_table(b2be_db, &b2be_dbtable)< 0)
 	{
 		LM_ERR("sql use table failed\n");
