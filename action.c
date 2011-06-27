@@ -642,9 +642,21 @@ int do_action(struct action* a, struct sip_msg* msg)
 				/* params */
 				tmp=uri.params.s;
 				if (tmp){
-					len=uri.params.len; if(crt+len+1>end) goto error_uri;
-					*crt=';'; crt++;
-					memcpy(crt,tmp,len);crt+=len;
+					/* include in param string the starting ';' */
+					len=uri.params.len+1;
+					tmp--;
+					if(crt+len+1>end) goto error_uri;
+					/* if a maddr param is present, strip it out */
+					if (uri.maddr.len &&
+					(a->type==SET_HOSTPORT_T || a->type==SET_HOST_T)) {
+						memcpy(crt,tmp,uri.maddr.s-tmp-1);
+						crt+=uri.maddr.s-tmp-1;
+						memcpy(crt,uri.maddr_val.s+uri.maddr_val.len,
+							tmp+len-uri.maddr_val.s-uri.maddr_val.len);
+						crt+=tmp+len-uri.maddr_val.s-uri.maddr_val.len;
+					} else {
+						memcpy(crt,tmp,len);crt+=len;
+					}
 				}
 				/* headers */
 				tmp=uri.headers.s;
