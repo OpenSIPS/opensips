@@ -77,7 +77,16 @@
 	  <title>Dependencies</title>
 	  <section>
 	  <title>&osips; Modules</title>
-		<para>None.</para>
+		<para>
+		The following modules must be loaded before this module:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>uac_auth - UAC authentication module</emphasis>
+		</para>
+		</listitem>
+		</itemizedlist>
+		</para>
 	  </section>
 
 	  <section>
