@@ -546,7 +546,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 	struct hdr_field *hdr;
 	struct lump *anchor;
 	struct sip_uri uri;
-	str hostport, left;
+	str hostport, left, left2;
 	int is_enclosed;
 	str *params = (str*)str1;
 
@@ -560,6 +560,15 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 			hostport.len = uri.port.s + uri.port.len - uri.host.s;
 		left.s = hostport.s + hostport.len;
 		left.len = c->uri.s+c->uri.len - left.s;
+
+		if (uri.maddr.len) {
+			left2.s = uri.maddr_val.s + uri.maddr_val.len;
+			left2.len = left.s + left.len - left2.s;
+			left.len=uri.maddr.s-1-left.s;
+		} else {
+			left2.s = "";
+			left2.len = 0;
+		}
 
 		is_enclosed = 0;
 		p = hostport.s + hostport.len; /*start searching after ip:port */
@@ -576,7 +585,8 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 
 		cp = ip_addr2a(&msg->rcv.src_ip);
 		len = (hostport.s-c->uri.s) + strlen(cp) + 6 /* :port */
-			+ (params?params->len+(is_enclosed?0:2):0) + 1 + left.len;
+			+ (params?params->len+(is_enclosed?0:2):0)
+			+ 1 + left.len + left2.len;
 		buf = pkg_malloc(len);
 		if (buf == NULL) {
 			LM_ERR("out of pkg memory\n");
@@ -584,14 +594,15 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 		}
 		temp = hostport.s[0]; hostport.s[0] = '\0';
 		if (params==NULL) {
-			len1 = snprintf(buf, len, "%s%s:%d%.*s", c->uri.s, cp,
-				msg->rcv.src_port,left.len,left.s);
+			len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s", c->uri.s, cp,
+				msg->rcv.src_port,left.len,left.s,left2.len,left2.s);
 		} else if (!is_enclosed) {
 			len1 = snprintf(buf, len, "<%s%s:%d%.*s>", c->uri.s, cp,
 				msg->rcv.src_port,params->len,params->s);
 		} else {
-			len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s", c->uri.s, cp,
-				msg->rcv.src_port,params->len,params->s,left.len,left.s);
+			len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s", c->uri.s, cp,
+				msg->rcv.src_port,params->len,params->s,
+				left.len,left.s,left2.len,left2.s);
 		}
 		if (len1 < len)
 			len = len1;
