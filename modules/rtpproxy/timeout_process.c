@@ -56,6 +56,8 @@ int nr_events;
 int pfds_size = POLL_DEFAULT_SIZE;
 struct pollfd* pfds;
 
+#define IS_DIGIT(_c) ((_c) >= '0' && (_c) <= '9')
+
 void timeout_listener_process(int rank)
 {
 	struct sockaddr_un saddr_un;
@@ -321,32 +323,47 @@ void timeout_listener_process(int rank)
 				lock_release(rtpp_notify_h->lock);
 				continue;
 			}
+			LM_DBG("Timeout detected on call [%.*s]\n", len, buffer);
 			dlg_id.s = buffer;
 			dlg_id.len = len; /*strlen(buffer);*/
 			trim(&dlg_id);
-			LM_DBG("Timeout detected on call [%.*s]\n", len, buffer);
-			/* the message is: h_entry.h_id */
-			p = memchr(dlg_id.s, '.', dlg_id.len);
-			if(p == NULL) {
-				LM_ERR("Wrong formated message received from rtpproxy [%.*s]\n", len, buffer);
-				continue;
-			}
-			id.s = dlg_id.s;
-			id.len = p-dlg_id.s;
-			if(str2int(&id, &h_entry)< 0) {
-				LM_ERR("Wrong formated message received from rtpproxy [%.*s]\n", len, buffer);
-				continue;
-			}
-			id.s =  p+ 1;
-			id.len = dlg_id.len - id.len - 1;
-			if(str2int(&id, &h_id)< 0) {
-				LM_ERR("Wrong formated message received from rtpproxy [%.*s]\n", len, buffer);
-				continue;
-			}
-			LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
 
-			if(dlg_api.terminate_dlg(h_entry, h_id)< 0)
-				LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
+			do {
+				/* the message is: h_entry.h_id */
+				p = memchr(dlg_id.s, '.', dlg_id.len);
+				if(p == NULL) {
+					LM_ERR("Wrong formated message received from rtpproxy [%.*s]\n",
+							dlg_id.len, dlg_id.s);
+					continue;
+				}
+				id.s = dlg_id.s;
+				id.len = p-dlg_id.s;
+				if(str2int(&id, &h_entry)< 0) {
+					LM_ERR("Wrong formated message received from rtpproxy - invalid"
+							" dialog entry [%.*s]\n", id.len, id.s);
+					continue;
+				}
+				id.s = ++p;
+				/* go to end or to next non-digit */
+				for (; (p < buffer + len ) && IS_DIGIT(*p); ++p);
+				
+				id.len = p - id.s;
+				if(str2int(&id, &h_id)< 0) {
+					LM_ERR("Wrong formated message received from rtpproxy - invalid"
+							" dialog id [%.*s]\n", id.len, id.s);
+					continue;
+				}
+				LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
+
+				if(dlg_api.terminate_dlg(h_entry, h_id)< 0)
+					LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
+
+				/* go to end or to next digit */
+				for (; (p < buffer + len) && !IS_DIGIT(*p); ++p);
+				dlg_id.s = p;
+				dlg_id.len = buffer + len - p;
+				LM_DBG("left %d to parse\n", dlg_id.len);
+			} while (dlg_id.len > 0);
 		}
 	}
 }
