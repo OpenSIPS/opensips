@@ -380,7 +380,6 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 	int ret;
 	struct via_param *branch;
 	int match_status;
-	struct cell *e2e_ack_trans;
 
 	isACK = p_msg->REQ_METHOD==METHOD_ACK;
 
@@ -409,7 +408,6 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 
 	/* assume not found */
 	ret=-1;
-	e2e_ack_trans=0;
 
 	/* first of all, look if there is RFC3261 magic cookie in branch; if
 	 * so, we can do very quick matching and skip the old-RFC bizzar
@@ -473,8 +471,11 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 			LM_DBG("non-ACK matched\n");
 			goto found;
 		} else { /* it's an ACK request*/
-			/* ACK's relate only to INVITEs */
-			if (t_msg->REQ_METHOD!=METHOD_INVITE) continue;
+			/* ACK's relate only to INVITEs - and we look only for 2 types of
+			 * INVITEs : (a) negative INVITEs or (b) pozitive UAS INVITEs */
+			if ( t_msg->REQ_METHOD!=METHOD_INVITE || !(p_cell->uas.status>=300
+			|| (p_cell->nr_of_outgoings==0 && p_cell->uas.status>=200)) )
+				continue;
 
 			/* From|To URI , CallID, CSeq # must be always there */
 			/* compare lengths now */
@@ -493,19 +494,10 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 			if (memcmp(get_to(t_msg)->uri.s, get_to(p_msg)->uri.s,
 				get_to(t_msg)->uri.len)!=0) continue;
 
-			/* it is e2e ACK/200 */
 			if (p_cell->uas.status<300) {
-				if (e2e_ack_trans==0) {
-					/* all criteria for proxied ACK are ok */
-					if (p_cell->relaied_reply_branch!=-2) {
-						e2e_ack_trans=p_cell;
-						continue;
-					}
-					/* it's a local UAS transaction */
-					if (dlg_matching(p_cell, p_msg))
-						goto e2e_ack;
-					continue;
-				}
+				/* it's a 2xx local UAS transaction */
+				if (dlg_matching(p_cell, p_msg))
+					goto e2e_ack;
 				continue;
 			}
 
@@ -526,11 +518,6 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 	} /* synonym loop */
 
 notfound:
-	if (e2e_ack_trans) {
-		p_cell=e2e_ack_trans;
-		goto e2e_ack;
-	}
-
 	/* no transaction found */
 	set_t(0);
 	e2eack_T = NULL;
