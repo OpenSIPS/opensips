@@ -2528,7 +2528,6 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 		{
 			args.body = p->body;
-			trim_r(args.body);
 
 			if (args.body.len == 0)
 			{
@@ -3164,15 +3163,20 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 			LM_ERR("out of pkg memory\n");
 			return -1;
 		}
-		anchor = anchor_lump(msg, args->body.s + args->body.len - msg->buf, 0, 0);
+		/* find last CRLF and add after it */
+		cp1 = args->body.s + args->body.len;
+		while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
+		if (cp1==args->body.s) cp1=args->body.s + args->body.len;
+
+		anchor = anchor_lump(msg, cp1 - msg->buf, 0, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			pkg_free(cp);
 			return -1;
 		}
-		memcpy(cp, CRLF, CRLF_LEN);
-		memcpy(cp + CRLF_LEN, nortpproxy_str.s, nortpproxy_str.len);
-		if (insert_new_lump_after(anchor, cp, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
+		memcpy(cp, nortpproxy_str.s, nortpproxy_str.len);
+		memcpy(cp+nortpproxy_str.len , CRLF, CRLF_LEN);
+		if (insert_new_lump_before(anchor, cp, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
 			LM_ERR("insert_new_lump_after failed\n");
 			pkg_free(cp);
 			return -1;
