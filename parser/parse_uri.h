@@ -38,6 +38,11 @@
  * returns: fills uri & returns <0 on error or 0 if ok 
  */
 int parse_uri(char *buf, int len, struct sip_uri* uri);
+/* headers  : the list of headers to parse (taken from uri structure)
+ * h_name[] : array of header names
+ * h_val[]  : array of header values
+ * h_size   : size of header array */
+int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size);
 int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,

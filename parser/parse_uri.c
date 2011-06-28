@@ -44,6 +44,112 @@
 #include "../errinfo.h"
 #include "../core_stats.h"
 
+
+int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
+{
+	enum states {URI_H_HEADER, URI_H_VALUE};
+	register enum states state;
+	char* s;
+	char* h; /* header start */
+	char* v; /* header value start */
+	str* header;		/* current header */
+	str* header_val;	/* current header val */
+	register char* p;
+	char* end;
+	unsigned int i = 0;
+
+	/* init */
+	end = headers.s + headers.len;
+	s = p = h = headers.s;
+	v = NULL;
+	header = &h_name[0];
+	header_val = &h_val[0];
+	state = URI_H_HEADER;
+	memset(h_name, 0, h_size * sizeof(str));
+	memset(h_val, 0, h_size * sizeof(str));
+
+	for(;p<end; p++){
+		switch((unsigned char)state){
+		case URI_H_HEADER:
+			switch(*p){
+			case '=':
+				v = p+1;
+				header->s = h;
+				header->len = p-h;
+				state = URI_H_VALUE;
+				break;
+			case '?':
+				LM_ERR("Header without value\n");
+				h = p+1;
+				header->s = h;
+				header->len = p-h;
+				header_val->s = NULL;
+				header_val->len = 0;
+
+				/* advance header and header_val */
+				i++;
+				if(i<h_size){
+					header = &h_name[i];
+					header_val = &h_val[i];
+				} else {
+					LM_ERR("To many URI headers\n");
+					return -1;
+				}
+				break;
+			}
+			break;
+		case URI_H_VALUE:
+			switch(*p){
+			case '=':
+				LM_ERR("Ignoring unexpected '=' inside URI header value\n");
+				break;
+			case '?':
+				h = p+1;
+				header_val->s = v;
+				header_val->len = p-v;
+				state = URI_H_HEADER;
+
+				/* advance header and header_val */
+				i++;
+				if(i<h_size){
+					header = &h_name[i];
+					header_val = &h_val[i];
+				} else {
+					LM_ERR("To many URI headers\n");
+					return -1;
+				}
+				break;
+			}
+			break;
+		default:
+			LM_ERR("Unexpected state [%d]\n", state);
+			return -1;
+		}
+	}
+
+	switch(state){
+	case URI_H_HEADER:
+		LM_ERR("Header without value\n");
+		header->s = h;
+		header->len = p-h;
+		header_val->s = NULL;
+		header_val->len = 0;
+		break;
+	case URI_H_VALUE:
+		header_val->s = v;
+		header_val->len = p-v;
+		break;
+	}
+
+	for(i=0; i<h_size && h_name[i].s; i++)
+		LM_NOTICE("header=[%p]-><%.*s> val=[%p]-><%.*s>\n",
+			h_name[i].s, h_name[i].len, h_name[i].s,
+			h_val[i].s, h_val[i].len, h_val[i].s);
+
+	return 0;
+}
+
+
 /* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
  * returns: fills uri & returns <0 on error or 0 if ok 
