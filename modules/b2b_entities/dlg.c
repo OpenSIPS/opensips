@@ -2198,15 +2198,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					auth = get_www_authenticate(msg);
 				break;
 			}
-			if(auth)
+			if(auth && dlg->state == B2B_NEW)
 			{
-				if(dlg->state == B2B_NEW)
+				crd = uac_auth_api._lookup_realm( &auth->realm );
+				if(crd)
 				{
-					crd = uac_auth_api._lookup_realm( &auth->realm );
-					//crd.user.s = "osas"; crd.user.len = 4;
-					//crd.passwd.s = "cw0s4s", crd.passwd.len = 6;
-					//crd.realm.s=auth->realm.s;
-					//crd.realm.len=auth->realm.len;
 					memset(&auth_nc_cnonce, 0,
 							sizeof(struct authenticate_nc_cnonce));
 					uac_auth_api._do_uac_auth(&t->method, &t->uac[0].uri, crd,
