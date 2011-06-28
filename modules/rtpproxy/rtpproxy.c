@@ -3022,7 +3022,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 					if (err >= 7 && err <= 10) {
 						cp = NULL;
 						args->node->rn_disabled = 1; 
-						args->node->rn_disabled = get_ticks() +
+						args->node->rn_recheck_ticks = get_ticks() +
 							rtpproxy_disable_tout; 
 						raise_rtpproxy_event(args->node, 0);
 					} else {
