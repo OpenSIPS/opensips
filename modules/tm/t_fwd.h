@@ -52,6 +52,9 @@ void t_on_branch( unsigned int go_to );
 
 unsigned int get_on_branch();
 
+typedef int (*tgetbranch_f)(void);
+int get_branch_index(void);
+
 #endif
 
 

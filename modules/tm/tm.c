@@ -611,6 +611,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->free_dlg = free_dlg;
 	tmb->print_dlg = print_dlg;
 	tmb->setlocalTholder = setlocalTholder;
+	tmb->get_branch_index = get_branch_index;
 
 	return 1;
 }

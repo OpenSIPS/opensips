@@ -77,6 +77,7 @@ struct tm_binds {
 	tuaccancel_f       t_cancel_uac;
 	setkr_f            t_setkr;
 	set_localT_holder_f setlocalTholder;
+	tgetbranch_f       get_branch_index;
 };
 
 

@@ -804,3 +804,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 	}
 }
 
+int get_branch_index(void)
+{
+	return _tm_branch_index;
+}
