@@ -195,27 +195,6 @@ modparam("uac","rr_to_store_param","my_Tparam")
 			</example>
 		</section>
 
-		<section>
-			<title><varname>credential</varname> (string)</title>
-			<para>
-			Contains a multiple definition of credentials used to perform
-			authentication.
-			</para>
-			<para>
-				<emphasis>
-					This parameter is required if UAC authentication is used.
-				</emphasis>
-			</para>
-			<example>
-				<title>Set <varname>credential</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac","credential","username:domain:password")
-...
-				</programlisting>
-			</example>
-		</section>
-
 		<section id="auth-realm-avp-id">
 			<title><varname>auth_realm_avp</varname> (string)</title>
 			<para>
@@ -411,6 +390,9 @@ uac_restore_from();
 			This function can be called only from failure route and will 
 			build the authentication response header and insert it into the
 			request without sending anything.
+			Credentials for buiding the authentication response will be taken
+			from AVPs first (if AVPs are defined and populated) and then from
+			the list of credentials provided by the uac_auth module.
 			</para>
 			<para>
 			This function can be used from FAILURE_ROUTE.
