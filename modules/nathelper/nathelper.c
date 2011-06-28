@@ -3399,7 +3399,8 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 					if (err >= 6 && err <= 10) {
 						cp = NULL;
 						node->rn_disabled = 1;
-						node->rn_disabled = get_ticks() + rtpproxy_disable_tout;
+						node->rn_recheck_ticks = get_ticks() +
+							rtpproxy_disable_tout;
 					} else {
 						LM_ERR("unhandled rtpproxy error: %d\n", err);
 						goto error;
