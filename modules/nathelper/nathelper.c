@@ -2926,8 +2926,6 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	struct multi_body *m;
 	struct part * p;
 	str body;
-	int skip;
-	char c;
 
 	m = get_all_bodies(msg);
 
@@ -2945,22 +2943,6 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
 		{
 			body = p->body;
-
-			for (skip = 0; skip < body.len; skip++)
-			{
-				c = body.s[body.len - skip - 1];
-				if (c != '\r' && c != '\n')
-					break;
-			}
-
-			if (skip == body.len)
-			{
-				LM_ERR("empty body");
-				return -1;
-			}
-
-			body.len -= skip;
-
 
 			LM_DBG("Forcing body:\n[%.*s]\n", body.len, body.s);
 			ret = force_rtp_proxy_body(msg, str1, str2, offer, body);
@@ -3547,14 +3529,22 @@ force_rtp_proxy_body(struct sip_msg* msg, char* str1, char* str2, int offer, str
 			LM_ERR("out of pkg memory\n");
 			return -1;
 		}
-		anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0, 0);
+
+		/* find last CRLF and add after it */
+		cp1 = body.s + body.len;
+		while( cp1>body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
+		if (cp1==body.s) cp1=body.s + body.len;
+
+		anchor = anchor_lump(msg, cp1 - msg->buf, 0, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			pkg_free(cp);
 			return -1;
 		}
-		memcpy(cp, CRLF, CRLF_LEN);
-		memcpy(cp + CRLF_LEN, nortpproxy_str.s, nortpproxy_str.len);
+		
+		memcpy(cp, nortpproxy_str.s, nortpproxy_str.len);
+		memcpy(cp+nortpproxy_str.len , CRLF, CRLF_LEN);
+
 		if (insert_new_lump_after(anchor, cp, nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
 			LM_ERR("insert_new_lump_after failed\n");
 			pkg_free(cp);
