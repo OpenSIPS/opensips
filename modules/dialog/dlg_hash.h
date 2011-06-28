@@ -84,6 +84,8 @@ struct dlg_leg {
 	str r_cseq;		/* last cseq received targeting this leg */
 	str prev_cseq;	/* prev cseq received targeting this leg */
 	str inv_cseq;	/* last cseq of invite received from this leg */
+	str from_uri;	/* FROM URI for this leg, in case of FROM URI mangling*/
+	str to_uri;		/* TO URI for this leg, in case of TO URI mangling */
 	str route_set;
 	str contact;
 	str route_uris[64];
@@ -171,6 +173,33 @@ struct dlg_cell *get_current_dialog();
 #define dlg_unlock_dlg(_dlg) \
 	dlg_unlock( d_table, &(d_table->entries[_dlg->h_entry]))
 
+static inline str* dlg_leg_from_uri(struct dlg_cell *dlg,int leg_no)
+{
+	/* no mangling possible on caller leg */
+	if (leg_no == DLG_CALLER_LEG)
+		return &dlg->from_uri;
+
+	/* if we saved mangled from URI at leg creation, return that */
+	if (dlg->legs[leg_no].from_uri.s && dlg->legs[leg_no].from_uri.len)
+		return &dlg->legs[leg_no].from_uri;
+
+	/* if there was no mangling for this leg, return original from URI */
+	return &dlg->from_uri;
+}
+
+static inline str* dlg_leg_to_uri(struct dlg_cell *dlg,int leg_no)
+{
+	/* no mangling possible on caller leg */
+	if (leg_no == DLG_CALLER_LEG)
+		return &dlg->to_uri;
+
+	/* if we saved mangled to URI at leg creation, return that */
+	if (dlg->legs[leg_no].to_uri.s && dlg->legs[leg_no].to_uri.len)
+		return &dlg->legs[leg_no].to_uri;
+
+	/* if there was no mangling for this leg, return original to URI */
+	return &dlg->to_uri;
+}
 
 inline void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
 inline void destroy_dlg(struct dlg_cell *dlg);
@@ -213,8 +242,9 @@ void destroy_dlg_table();
 struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 		str *to_uri, str *from_tag);
 
-int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
-		str *cseq, struct socket_info *sock);
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, 
+		str *contact,str *cseq, struct socket_info *sock,
+		str *mangled_from,str *mangled_to);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
 						int field_type);

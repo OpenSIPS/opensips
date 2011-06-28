@@ -124,8 +124,10 @@ after_strcseq:
 	}
 	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? cell->from_uri: cell->to_uri;
-	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? cell->to_uri: cell->from_uri;
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg): 
+					 *dlg_leg_to_uri(cell,dst_leg);
+	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_to_uri(cell,dst_leg):
+					 *dlg_leg_from_uri(cell,dst_leg);
 	td->id.call_id = cell->callid;
 	td->id.rem_tag = cell->legs[dst_leg].tag;
 	td->id.loc_tag = cell->legs[src_leg].tag;
@@ -192,8 +194,10 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	}
 	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? cell->from_uri: cell->to_uri;
-	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? cell->to_uri: cell->from_uri;
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg): 
+					 *dlg_leg_to_uri(cell,dst_leg);
+	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_to_uri(cell,dst_leg):
+					 *dlg_leg_from_uri(cell,dst_leg);
 	td->id.call_id = cell->callid;
 	td->id.rem_tag = cell->legs[dst_leg].tag;
 	td->id.loc_tag = cell->legs[src_leg].tag;

@@ -836,6 +836,8 @@ int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq)
 	flag = 0;
 	fill = 0;
 
+	LM_DBG("flags = %d\n",flags);
+
 	while(p<end) {
 		switch (*p) {
 			case '\n':

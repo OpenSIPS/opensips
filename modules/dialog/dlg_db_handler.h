@@ -52,12 +52,14 @@
 #define FROM_CONTACT_COL		"caller_contact"
 #define FROM_SOCK_COL			"caller_sock"
 #define TO_SOCK_COL				"callee_sock"
+#define MANGLED_FU_COL			"mangled_from_uri"
+#define MANGLED_TU_COL			"mangled_to_uri"
 #define VARS_COL				"vars"
 #define PROFILES_COL			"profiles"
 #define SFLAGS_COL				"script_flags"
 #define DIALOG_TABLE_NAME		"dialog"
 
-#define DLG_TABLE_VERSION		5
+#define DLG_TABLE_VERSION		6
 
 /*every minute the dialogs' information will be refreshed*/
 #define DB_DEFAULT_UPDATE_PERIOD	60
@@ -66,8 +68,8 @@
 #define DB_MODE_DELAYED				2
 #define DB_MODE_SHUTDOWN			3
 
-#define DIALOG_TABLE_TOTAL_COL_NO	23
-#define DIALOG_TABLE_FIX_COL_NO		20
+#define DIALOG_TABLE_TOTAL_COL_NO	25
+#define DIALOG_TABLE_FIX_COL_NO		22
 
 extern str call_id_column; 
 extern str from_uri_column;

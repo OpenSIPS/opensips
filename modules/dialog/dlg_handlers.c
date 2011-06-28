@@ -201,7 +201,7 @@ static inline void get_routing_info(struct sip_msg *msg, int is_req,
  *				   the proxies' own 
  */
 static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
-													struct cell* t, str *tag)
+					struct cell* t, str *tag,str *mangled_from,str *mangled_to)
 {
 	unsigned int skip_recs;
 	str cseq;
@@ -239,7 +239,7 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.s);
 
 	if (dlg_add_leg_info( dlg, tag, &rr_set, &contact, &cseq,
-	msg->rcv.bind_address)!=0) {
+	msg->rcv.bind_address,mangled_from,mangled_to)!=0) {
 		LM_ERR("dlg_add_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
@@ -253,7 +253,7 @@ error0:
 }
 
 static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
-														struct dlg_cell *dlg)
+				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
 	str tag,contact,rr_set;
 	unsigned int leg, skip_rrs;
@@ -292,7 +292,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 
 	/* save callee's tag and cseq */
 	LM_DBG("new branch with tag <%.*s>\n",tag.len,tag.s);
-	if (init_leg_info( dlg, rpl, t, &tag) !=0) {
+	if (init_leg_info( dlg, rpl, t, &tag,mangled_from,mangled_to) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		return;
 	}
@@ -320,25 +320,41 @@ routing_info:
 
 static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 {
-	struct sip_msg *rpl;
+	struct sip_msg *rpl,*req;
 	struct dlg_cell *dlg;
 	int new_state;
 	int old_state;
 	int unref;
 	int event;
+	str mangled_from = {0,0};
+	str mangled_to = {0,0};
+	str *req_out_buff;
 
 	dlg = (struct dlg_cell *)(*param->param);
 	if (shutdown_done || dlg==0)
 		return;
 
 	rpl = param->rpl;
+	req = param->req;
 
 	if (type==TMCB_RESPONSE_FWDED) {
 		/* this callback is under transaction lock (by TM), so it is save
 		   to operate at write level, but we need to take care on write-read
 		   conflicts -bogdan */
 		if (rpl!=FAKED_REPLY) {
-			push_reply_in_dialog( rpl, t, dlg);
+			if (req->msg_flags & (FL_USE_UAC_FROM | FL_USE_UAC_TO ) ) {
+				req_out_buff = &t->uac[d_tmb.get_branch_index()].request.buffer;
+				if (extract_ftc_hdrs(req_out_buff->s,req_out_buff->len,
+				(req->msg_flags & FL_USE_UAC_FROM )?&mangled_from:0,
+				(req->msg_flags & FL_USE_UAC_TO )?&mangled_to:0,0) != 0) {
+					LM_ERR("failed to extract mangled FROM and TO hdrs\n");
+					mangled_from.len = 0;
+					mangled_from.s = NULL;
+					mangled_to.len = 0;
+					mangled_to.s = NULL;
+				}
+			}
+			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to);
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
 		}
@@ -776,7 +792,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	dlg->flags |= flags;
 
 	/* save caller's tag, cseq, contact and record route*/
-	if (init_leg_info(dlg, req, t, &(get_from(req)->tag_value) ) !=0) {
+	if (init_leg_info(dlg, req, t, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		shm_free(dlg);
 		return -1;

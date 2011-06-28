@@ -53,6 +53,7 @@
 #include "../../mi/mi.h"
 #include "../../route.h"
 #include "../../md5utils.h"
+#include "../../parser/parse_to.h"
 #include "../tm/tm_load.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
@@ -174,6 +175,10 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].prev_cseq.s);
 			if (dlg->legs[i].contact.s)
 				shm_free(dlg->legs[i].contact.s); /* + route_set */
+			if (dlg->legs[i].from_uri.s)
+				shm_free(dlg->legs[i].from_uri.s);
+			if (dlg->legs[i].to_uri.s)
+				shm_free(dlg->legs[i].to_uri.s);
 		}
 		shm_free(dlg->legs);
 	}
@@ -304,11 +309,13 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
-int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
-										str *cseq, struct socket_info *sock)
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, 
+		str *contact,str *cseq, struct socket_info *sock,
+		str *mangled_from,str *mangled_to)
 {
 	struct dlg_leg* leg;
 	rr_t *head = NULL, *rrp;
+	struct to_body to_b,from_b;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
 		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
@@ -377,6 +384,71 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		}
 	}
 
+	/* save mangled from URI, if any */
+	if (mangled_from && mangled_from->s && mangled_from->len) {
+		LM_DBG("parsing mangled from [%.*s]\n",mangled_from->len-5,mangled_from->s+5);
+
+		parse_to(mangled_from->s+5,mangled_from->s+mangled_from->len,&from_b);
+		if (from_b.error == PARSE_ERROR) {
+			LM_ERR("bad from header [%.*s]\n",mangled_from->len,mangled_from->s);
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			if (leg->contact.s) 
+				shm_free(leg->contact.s);
+			return -1;
+		}
+
+		LM_DBG("mangled FROM uri = [%.*s]\n",from_b.uri.len,from_b.uri.s);
+
+		leg->from_uri.s = shm_malloc(from_b.uri.len);
+		if (!leg->from_uri.s) {
+			LM_ERR("no more shm\n");
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			if (leg->contact.s)
+				shm_free(leg->contact.s);
+			return -1;
+		}
+
+		leg->from_uri.len = from_b.uri.len;
+		memcpy(leg->from_uri.s,from_b.uri.s,from_b.uri.len);
+
+		free_to_params(&from_b);
+	}
+
+	if (mangled_to && mangled_to->s && mangled_to->len) {
+		LM_DBG("parsing mangled to [%.*s]\n",mangled_to->len-3,mangled_to->s+3);
+
+		parse_to(mangled_to->s+3,mangled_to->s+mangled_to->len,&to_b);
+		if (to_b.error == PARSE_ERROR) {
+			LM_ERR("bad to header [%.*s]\n",mangled_to->len,mangled_to->s);
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			if (leg->contact.s)
+				shm_free(leg->contact.s);
+			shm_free(leg->from_uri.s);
+			return -1;
+		}
+
+		LM_DBG("mangled TO uri = [%.*s]\n",to_b.uri.len,to_b.uri.s);
+
+		leg->to_uri.s = shm_malloc(to_b.uri.len);
+		if (!leg->to_uri.s) {
+			LM_ERR("no more shm\n");
+			shm_free(leg->tag.s);
+			shm_free(leg->r_cseq.s);
+			if (leg->contact.s)
+				shm_free(leg->contact.s);	
+			shm_free(leg->from_uri.s);
+			return -1;
+		}
+
+		leg->to_uri.len = to_b.uri.len;
+		memcpy(leg->to_uri.s,to_b.uri.s,to_b.uri.len);
+
+		free_to_params(&to_b);
+	}
+
 	/* tag */
 	leg->tag.len = tag->len;
 	memcpy( leg->tag.s, tag->s, tag->len);
@@ -403,7 +475,6 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, str *contact,
 		leg->r_cseq.len = cseq->len;
 		memcpy( leg->r_cseq.s, cseq->s, cseq->len);
 	}
-
 
 	/* make leg visible for searchers */
 	dlg->legs_no[DLG_LEGS_USED]++;

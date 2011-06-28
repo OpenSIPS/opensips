@@ -9,7 +9,7 @@
 
 <table id="dialog" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dialog</name>
-	<version>5</version>
+	<version>6</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>Persistent dialog information for the dialog module. More 
@@ -82,6 +82,22 @@
 		<description>The tag parameter serves as a general mechanism to 
 		identify a dialog, which is the combination of the Call-ID along 
 		with two tags, one from participant in the dialog.</description>
+	</column>
+
+	<column>
+		<name>mangled_from_uri</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<description>The mangled from URI, in case uac_replace_from
+		was called for this dialog.</description>
+	</column>
+
+	<column>
+		<name>mangled_to_uri</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<description>The mangled to URI, in case uac_replace_to
+		was called for this dialog</description>
 	</column>
 
 	<column>
