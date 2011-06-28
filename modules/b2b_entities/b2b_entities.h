@@ -52,6 +52,7 @@ typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* key,
 		str* param);
 typedef void (*b2b_db_delete_t)(str param);
 
+extern int uac_auth_loaded;
 extern str b2b_key_prefix;
 #define B2B_MAX_PREFIX_LEN    5
 

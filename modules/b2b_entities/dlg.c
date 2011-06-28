@@ -2198,7 +2198,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					auth = get_www_authenticate(msg);
 				break;
 			}
-			if(auth && dlg->state == B2B_NEW)
+			if(uac_auth_loaded && auth && dlg->state == B2B_NEW)
 			{
 				crd = uac_auth_api._lookup_realm( &auth->realm );
 				if(crd)

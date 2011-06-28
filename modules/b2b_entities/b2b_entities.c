@@ -69,6 +69,7 @@ db_con_t *b2be_db = NULL;
 db_func_t b2be_dbf;
 str b2be_dbtable= str_init("b2b_entities");
 static int b2b_update_period = 100;
+int uac_auth_loaded;
 str b2b_key_prefix = str_init("B2B");
 int b2be_db_mode = WRITE_BACK;
 
@@ -166,8 +167,13 @@ static int mod_init(void)
 	 * if authentication is required */
 	if(load_uac_auth_api(&uac_auth_api)<0)
 	{
-		LM_ERR("can't load UAC_AUTH API\n");
-		return -1;
+		LM_NOTICE("authentication functionality disabled:"
+				" load uac_auth first to enable it\n");
+		uac_auth_loaded = 0;
+	}
+	else
+	{
+		uac_auth_loaded = 1;
 	}
 
 	/* initialize the hash tables; they will be allocated in shared memory 
