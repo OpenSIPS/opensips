@@ -399,7 +399,7 @@ void mi_fifo_server(FILE *fifo_stream)
 		/* commands must look this way ':<command>:[filename]' */
 		if (mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,fifo_stream, &line_len)) {
 			LM_ERR("failed to read command\n");
-			goto consume1;
+			continue;
 		}
 
 		/* trim from right */
@@ -413,11 +413,11 @@ void mi_fifo_server(FILE *fifo_stream)
 
 		if (line_len==0) {
 			LM_DBG("command empty\n");
-			goto consume1;
+			continue;
 		}
 		if (line_len<3) {
 			LM_ERR("command must have at least 3 chars\n");
-			goto consume1;
+			continue;
 		}
 		if (*mi_buf!=MI_CMD_SEPARATOR) {
 			LM_ERR("command must begin with %c: %.*s\n", MI_CMD_SEPARATOR, line_len, mi_buf );
