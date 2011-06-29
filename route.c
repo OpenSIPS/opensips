@@ -974,9 +974,9 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 					{
 						he=rev_resolvehost(ip);
 						if (he==0){
-							print_ip("comp_ip: could not rev_resolve ip"
-									" address: ", ip, "\n");
-						ret=0;
+							print_ip("could not rev_resolve ip address: ",
+								 ip, "\n");
+							ret=0;
 						}else{
 							/*  compare with primary host name */
 							ret=comp_str(he->h_name, opd->v.data, op,
@@ -991,7 +991,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 					}
 					break;
 				case DIFF_OP:
-					ret=comp_ip(msg, op, ip, opd);
+					ret=comp_ip(msg, MATCH_OP, ip, opd);
 					if (ret>=0) ret=!ret;
 					break;
 				default:
