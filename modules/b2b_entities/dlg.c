@@ -65,9 +65,9 @@ void print_b2b_dlg(b2b_dlg_t *dlg)
 {
 	dlg_leg_t *leg = dlg->legs;
 
-	LM_DBG("dlg[%p][%p][%p]: [%.*s] id=[%d] state=[%d] db_flag=[%d]\n",
+	LM_DBG("dlg[%p][%p][%p]: [%.*s] id=[%d] param=[%.*s] state=[%d] db_flag=[%d]\n",
 		dlg, dlg->prev, dlg->next, dlg->ruri.len, dlg->ruri.s,
-		dlg->id, dlg->state, dlg->db_flag);
+		dlg->id, dlg->param.len, dlg->param.s, dlg->state, dlg->db_flag);
 	LM_DBG("  from=[%.*s] [%.*s]\n",
 		dlg->from_dname.len, dlg->from_dname.s, dlg->from_uri.len, dlg->from_uri.s);
 	LM_DBG("    to=[%.*s] [%.*s]\n",
@@ -604,16 +604,42 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 			if(unescape_param(replaces,&param)==0)
 			{
 				LM_DBG("header [%.*s]\n", param.len, param.s);
-				if(parse_replaces_body(param.s, param.len, &replaces_b)==0)
+				if(parse_replaces_body(param.s, param.len, &replaces_b)==0 &&
+						replaces_b.callid_val.s &&
+						replaces_b.to_tag_val.s &&
+						replaces_b.from_tag_val.s)
 				{
-					LM_DBG("Need to replace callid=[%.*s]"
-						" to-tag=[%.*s] and from-tag=[%.*s]\n",
-						replaces_b.callid_val.len,
-						replaces_b.callid_val.s,
-						replaces_b.to_tag_val.len,
-						replaces_b.to_tag_val.s,
-						replaces_b.from_tag_val.len,
-						replaces_b.from_tag_val.s);
+					/* check if the to tag has the b2b key format
+					 * -> meaning that it is a server request */
+					if(b2b_parse_key(&replaces_b.to_tag_val,
+							&hash_index, &local_index)>=0)
+					{
+						LM_DBG("Received a b2b server request [%.*s]\n",
+							msg->first_line.u.request.method.len,
+							msg->first_line.u.request.method.s);
+						table = server_htable;
+						lock_get(&table[hash_index].lock);
+						dlg=b2b_search_htable_dlg(table,
+									hash_index,
+									local_index,
+									&replaces_b.to_tag_val,
+									&replaces_b.from_tag_val,
+									&replaces_b.callid_val);
+						if(dlg)
+							LM_DBG("Need to replace callid=[%.*s]"
+								" to-tag=[%.*s] and "
+								"from-tag=[%.*s] from "
+								"b2b_logic tuple=[%.*s]\n",
+								replaces_b.callid_val.len,
+								replaces_b.callid_val.s,
+								replaces_b.to_tag_val.len,
+								replaces_b.to_tag_val.s,
+								replaces_b.from_tag_val.len,
+								replaces_b.from_tag_val.s,
+								dlg->param.len, dlg->param.s);
+						dlg = NULL;
+						lock_release(&table[hash_index].lock);
+					}
 				}
 			}
 			else
