@@ -40,10 +40,23 @@ evi_event_t *events = NULL;
 
 event_id_t evi_publish_event(str event_name)
 {
+	int idx;
+
 	if (event_name.len > MAX_EVENT_NAME) {
 		LM_ERR("event name too long [%d>%d]\n", event_name.len, MAX_EVENT_NAME);
 		return EVI_ERROR;
 	}
+
+	for (idx = 0; idx < events_no; idx++) {
+		if (events[idx].name.len == event_name.len &&
+				!memcmp(events[idx].name.s, event_name.s, event_name.len)) {
+			LM_WARN("Event \"%.*s\" was previously published\n",
+					event_name.len, event_name.s);
+			return idx;
+		}
+	}
+
+	/* check if the event was already registered */
 	if (!events) {
 		/* first event */
 		events = shm_malloc(max_alloc_events * sizeof(evi_event_t));
