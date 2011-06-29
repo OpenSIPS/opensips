@@ -33,15 +33,15 @@
 #include "parse_replaces.h"
  
 /*
- * This method is used to parse Replace header body.
+ * This method is used to parse Replaces header body.
  *
- * params: buf : pointer to Replace body
- *         buf_len : Replace body length
- *         replace_b : pointer to parsing structure
+ * params: buf : pointer to Replaces body
+ *         buf_len : Replaces body length
+ *         replaces_b : pointer to parsing structure
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
+int parse_replaces_body(char* buf, int buf_len, struct replaces_body* replaces_b)
 {
 	enum states {CLID, PARAM, PARAM_P, PARAM_VAL_P, VAL_P,
 			/* param states */
@@ -151,15 +151,15 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 	p = buf;
 	end = buf + buf_len;
 	state = CLID;
-	memset(replace_b, 0, sizeof(struct replace_body));
+	memset(replaces_b, 0, sizeof(struct replaces_body));
 	for(;p<end; p++){
 		//LM_DBG("got[%c] in state[%d]\n",*p,state);
 		switch((unsigned char)state){
 		case CLID:
 			switch(*p){
 			case ';':
-				replace_b->callid_val.s=buf;
-				replace_b->callid_val.len=p-buf;
+				replaces_b->callid_val.s=buf;
+				replaces_b->callid_val.len=p-buf;
 				state = PARAM;
 				break;
 			}
@@ -225,8 +225,8 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 				state = EO_eq;
 				break;
 			semicolon_case;
-				replace_b->early_only.s=b;
-				replace_b->early_only.len=(p-b);
+				replaces_b->early_only.s=b;
+				replaces_b->early_only.len=(p-b);
 				break;
 			default:
 				state=PARAM_P;
@@ -234,8 +234,8 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 			break;
 			/* handle early-only=something case */
 		case EO_eq:
-			param = &replace_b->early_only;
-			param_val = &replace_b->early_only_val;
+			param = &replaces_b->early_only;
+			param_val = &replaces_b->early_only_val;
 			switch(*p){
 			param_common_cases;
 			default:
@@ -254,8 +254,8 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 		param_switch(FT_A, 'g', 'G', FT_G);
 		param_switch1(FT_G, '=', FT_eq);
 		case FT_eq:
-			param = &replace_b->from_tag;
-			param_val = &replace_b->from_tag_val;
+			param = &replaces_b->from_tag;
+			param_val = &replaces_b->from_tag_val;
 			switch(*p){
 			param_common_cases;
 			default:
@@ -272,8 +272,8 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 		param_switch(TT_A, 'g', 'G', TT_G);
 		param_switch1(TT_G, '=', TT_eq);
 		case TT_eq:
-			param = &replace_b->to_tag;
-			param_val = &replace_b->to_tag_val;
+			param = &replaces_b->to_tag;
+			param_val = &replaces_b->to_tag_val;
 			switch(*p){
 			param_common_cases;
 			default:
@@ -291,8 +291,8 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 
 	switch(state){
 	case CLID:
-		replace_b->callid_val.s=buf;
-		replace_b->callid_val.len=p-buf;
+		replaces_b->callid_val.s=buf;
+		replaces_b->callid_val.len=p-buf;
 		break;
 	case PARAM:
 	case PARAM_P:
@@ -328,8 +328,8 @@ int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b)
 	/* fin param states */
 	case EO_Y2_FIN:
 	case EO_eq:
-		replace_b->early_only.s=b;
-		replace_b->early_only.len=p-b;
+		replaces_b->early_only.s=b;
+		replaces_b->early_only.len=p-b;
 		break;
 	case VAL_P:
 		param_set(b, v);

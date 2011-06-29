@@ -31,7 +31,7 @@
 #include "msg_parser.h"
 
 /* rfc3891: The SIP "Replaces" Header */
-struct replace_body{
+struct replaces_body{
 	str to_tag;
 	str from_tag;
 	str early_only;
@@ -43,7 +43,7 @@ struct replace_body{
 
 
  
-int parse_replaces_body(char* buf, int buf_len, struct replace_body* replace_b);
+int parse_replaces_body(char* buf, int buf_len, struct replaces_body* replaces_b);
  
 ///* casting macro for accessing Replace body */
 //#define get_replaces(p_msg)  ((struct to_body*)(p_msg)->refer_to->parsed)
