@@ -2730,21 +2730,19 @@ int udh_to_uri(str user, str host, str port, str* uri)
 	size = user.len + host.len + port.len+7;
 	LM_DBG("user:host:port [%.*s][%.*s][%.*s]\n",
 		user.len, user.s, host.len, host.s, port.len, port.s);
-	uri->s = (char*)pkg_malloc(size + 2);
+	uri->s = (char*)pkg_malloc(size);
 	if(uri->s == NULL)
 	{
 		LM_ERR("No more memory [%d]\n", size);
 		return -1;
 	}
 
-	uri->len = sprintf(uri->s, "<sip:%.*s@%.*s", user.len, user.s,
+	uri->len = sprintf(uri->s, "sip:%.*s@%.*s", user.len, user.s,
 			host.len, host.s);
 	if(port.s)
 	{
 		uri->len += sprintf(uri->s+uri->len, ":%.*s", port.len, port.s);
 	}
-	uri->s[uri->len] = '>';
-	uri->len++;
 	return 0;
 }
 
