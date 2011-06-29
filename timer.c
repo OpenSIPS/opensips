@@ -464,6 +464,8 @@ int start_timer_processes(void)
 			/* new process */
 			/* run init if required */
 			if ( tpl->flags&TIMER_PROC_INIT_FLAG ) {
+				LM_DBG("initializing timer\n");
+				inc_init_timer();
 				if (init_child(PROC_TIMER)<0 ){
 					LM_ERR("init_child failed for timer proc\n");
 

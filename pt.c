@@ -202,7 +202,6 @@ int count_init_children(void)
 	int ret=0,i;
 	struct sr_module *m;
 	struct socket_info* si;
-	struct sr_timer_process *tpl;
 
 	if (dont_fork) 
 		goto skip_listeners;
@@ -238,14 +237,6 @@ skip_listeners:
 		}
 	}
 
-	/* count number of timer procs that need init */
-	for( tpl=timer_proc_list ; tpl ; tpl=tpl->next ) {
-		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
-			continue;
-
-		if (tpl->flags & TIMER_PROC_INIT_FLAG)
-			ret++;
-	}
-	
+	LM_DBG("%d children are going to be inited\n",ret);
 	return ret;
 }
