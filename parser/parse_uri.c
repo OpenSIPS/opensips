@@ -141,10 +141,12 @@ int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 		break;
 	}
 
+#ifdef EXTRA_DEBUG
 	for(i=0; i<h_size && h_name[i].s; i++)
-		LM_NOTICE("header=[%p]-><%.*s> val=[%p]-><%.*s>\n",
+		LM_DBG("header=[%p]-><%.*s> val=[%p]-><%.*s>\n",
 			h_name[i].s, h_name[i].len, h_name[i].s,
 			h_val[i].s, h_val[i].len, h_val[i].s);
+#endif
 
 	return 0;
 }
