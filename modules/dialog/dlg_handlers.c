@@ -944,6 +944,16 @@ static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
 	return 0;
 }
 
+static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
+{
+	if (last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) 
+		LM_CRIT("bogus dst leg %d in state %d for dlg %p [%u:%u] with "
+			"clid '%.*s' and tags '%.*s' '%.*s'. legs used %d\n",
+			last_dst_leg,dlg->state, dlg, dlg->h_entry, dlg->h_id,
+			dlg->callid.len, dlg->callid.s,
+			dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
+			dlg_leg_print_info( dlg, callee_idx(dlg), tag),dlg->legs_no[DLG_LEGS_USED]);
+}
 
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
@@ -1067,6 +1077,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	/* set current dialog - it will keep a ref! */
 	set_current_dialog(dlg);
 	last_dst_leg = dst_leg;
+	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
 
 	/* run actions for the transition */
@@ -1398,7 +1409,8 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 	int size;
 	rr_t *head = NULL;
 
-	if (last_dst_leg<0) {
+	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
+		log_bogus_dst_leg(dlg);
 		LM_ERR("Script error - validate function before having a dialog\n");
 		return -1;
 	}
@@ -1600,6 +1612,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	str *rr_uri,*route_uris;
 
 	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
+		log_bogus_dst_leg(dlg);
 		LM_ERR("Script error - validate function before having a dialog\n");
 		return -1;
 	}
