@@ -158,6 +158,7 @@
         <colref linkend="username"/>
         <colref linkend="domain"/>
         <colref linkend="contact"/>
+        <unique/>
     </index>
 
 </table>

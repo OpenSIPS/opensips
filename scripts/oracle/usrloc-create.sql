@@ -15,7 +15,8 @@ CREATE TABLE location (
     cflags NUMBER(10) DEFAULT 0 NOT NULL,
     user_agent VARCHAR2(255) DEFAULT '',
     socket VARCHAR2(64) DEFAULT NULL,
-    methods NUMBER(10) DEFAULT NULL
+    methods NUMBER(10) DEFAULT NULL,
+    CONSTRAINT location_account_contact_idx  UNIQUE (username, domain, contact)
 );
 
 CREATE OR REPLACE TRIGGER location_tr
@@ -26,5 +27,3 @@ END location_tr;
 /
 BEGIN map2users('location'); END;
 /
-CREATE INDEX location_account_contact_idx  ON location (username, domain, contact);
-
