@@ -49,16 +49,13 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../trim.h"
 #include "../../pvar.h"
 #include "../../timer.h"
 #include "../../statistics.h"
 #include "../../data_lump.h"
-#include "../../parser/parse_from.h"
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_cseq.h"
 #include "../../parser/contact/parse_contact.h"
-#include "../../parser/parse_from.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_cseq.h"
 #include "../tm/tm_load.h"
@@ -70,6 +67,7 @@
 #include "dlg_db_handler.h"
 #include "dlg_profile.h"
 #include "dlg_req_within.h"
+#include "dlg_tophiding.h"
 
 static str       rr_param;
 static pv_spec_t *timeout_avp;
@@ -86,11 +84,6 @@ extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
 
 int  last_dst_leg = -1;
-
-#define RR_DLG_PARAM_SIZE  (2*2*sizeof(int)+3+MAX_DLG_RR_PARAM_NAME)
-#define DLG_SEPARATOR      '.'
-
-
 
 void init_dlg_handlers(char *rr_param_p,
 		pv_spec_t *timeout_avp_p ,int default_timeout_p, 
@@ -307,16 +300,19 @@ routing_info:
 		if (!dlg->legs_no[DLG_LEG_200OK])
 			dlg->legs_no[DLG_LEG_200OK] = leg;
 		/* update routing info */
-		skip_rrs = dlg->from_rr_nb +
-				((t->relaied_reply_branch>=0)?
+		if(dlg->flags & DLG_FLAG_TOPHIDING)
+			skip_rrs = 0; /* changed here for contact - it was 1 */
+		else
+			skip_rrs = dlg->from_rr_nb +
+					((t->relaied_reply_branch>=0)?
 					(t->uac[t->relaied_reply_branch].added_rr):0);
+
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
 		dlg_update_routing( dlg, leg, &rr_set, &contact );
 		if( rr_set.s )
 			pkg_free( rr_set.s);
 	}
 }
-
 
 static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 {
@@ -358,7 +354,6 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
 		}
-
 		/* The state does not change, but the msg is mutable in this callback*/
 		run_dlg_callbacks(DLGCB_RESPONSE_FWDED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
 		return;
@@ -681,7 +676,7 @@ static void unreference_dialog_cseq(void *cseq_wrap)
 	shm_free(wrap);
 }
 
-static void unreference_dialog(void *dialog)
+void unreference_dialog(void *dialog)
 {
 	/* if the dialog table is gone, it means the system is shutting down.*/
 	if (!d_table)
@@ -805,7 +800,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
 
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID &&
-	add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
+		add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
 		LM_ERR("failed to add RR param\n");
 		goto error;
 	}
@@ -837,66 +832,6 @@ error:
 	dialog_cleanup( req, NULL);
 	if_update_stat(dlg_enable_stats, failed_dlgs, 1);
 	return -1;
-}
-
-
-
-static inline int parse_dlg_rr_param(char *p, char *end,
-													int *h_entry, int *h_id)
-{
-	char *s;
-
-	for ( s=p ; p<end && *p!=DLG_SEPARATOR ; p++ );
-	if (*p!=DLG_SEPARATOR) {
-		LM_ERR("malformed rr param '%.*s'\n", (int)(long)(end-s), s);
-		return -1;
-	}
-
-	if ( (*h_entry=reverse_hex2int( s, p-s))<0 ) {
-		LM_ERR("invalid hash entry '%.*s'\n", (int)(long)(p-s), s);
-		return -1;
-	}
-
-	if ( (*h_id=reverse_hex2int( p+1, end-(p+1)))<0 ) {
-		LM_ERR("invalid hash id '%.*s'\n", (int)(long)(end-(p+1)), p+1 );
-		return -1;
-	}
-
-	return 0;
-}
-
-
-static inline int pre_match_parse( struct sip_msg *req, str *callid,
-														str *ftag, str *ttag)
-{
-	if (parse_headers(req,HDR_CALLID_F|HDR_TO_F|HDR_FROM_F,0)<0 || !req->callid ||
-	!req->to || !req->from) {
-		LM_ERR("bad request or missing CALLID/TO hdr :-/\n");
-		return -1;
-	}
-
-	if (get_to(req)->tag_value.len==0) {
-		/* out of dialog request with preloaded Route headers; ignore. */
-		return -1;
-	}
-
-	if (parse_from_header(req)<0 || get_from(req)->tag_value.len==0) {
-		LM_ERR("failed to get From header(%.*s) (hdr=%p,parsed=%p,tag_len=%d) "
-			"callid=<%.*s>\n",req->from->body.len, req->from->body.s,
-			req->from, req->from?req->from->parsed:NULL,
-			req->from?(req->from->parsed?get_from(req)->tag_value.len:0):0,
-			req->callid->body.len, req->callid->body.s);
-		return -1;
-	}
-
-	/* callid */
-	*callid = req->callid->body;
-	trim(callid);
-	/* to tag */
-	*ttag = get_to(req)->tag_value;
-	/* from tag */
-	*ftag = get_from(req)->tag_value;
-	return 0;
 }
 
 /* update inv_cseq field if update_field=1
@@ -1079,6 +1014,10 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	last_dst_leg = dst_leg;
 	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
+
+	if(dlg->flags & DLG_FLAG_TOPHIDING) {
+		dlg_th_onroute(dlg, req, dir);
+	}
 
 	/* run actions for the transition */
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
@@ -1408,6 +1347,8 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 	struct lump* lmp = NULL;
 	int size;
 	rr_t *head = NULL;
+	struct sip_uri fru;
+	int next_strict = 0;
 
 	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
 		log_bogus_dst_leg(dlg);
@@ -1420,7 +1361,19 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;
 
-	if ((*(d_rrb.routing_type) ==  ROUTING_LL) || (*d_rrb.routing_type) == ROUTING_SL)
+	/* check in the stored routes */
+	if ( leg->route_set.len && leg->route_set.s) {
+		if(parse_uri(leg->route_uris[0].s, leg->route_uris[0].len, &fru) < 0) {
+			LM_ERR("Failed to parse SIP uri\n");
+			return -1;
+		}
+		LM_DBG("Next params [%.*s]\n", fru.params.len, fru.params.s);
+		if(is_strict(&fru.params))
+			next_strict = 1;
+	}
+
+	//if ((*(d_rrb.routing_type) ==  ROUTING_LL) || (*d_rrb.routing_type) == ROUTING_SL )
+	if (!next_strict)
 	{
 		LM_DBG("Fixing message. Next hop is Loose router\n");
 
@@ -1480,8 +1433,8 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 			LM_DBG("Setting route  header to <%s> \n",route);
 
 			if (parse_rr_body(leg->route_set.s,leg->route_set.len,&head) != 0) {
-				LM_ERR("failed parsing route set\n");
-				return -1;
+						LM_ERR("failed parsing route set\n");
+						return -1;
 			}
 
 			LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
@@ -1651,6 +1604,10 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 
 	LM_DBG("CSEQ validation passed\n");
+
+	/* because fix_routing was called on the request */
+	if(dlg->flags & DLG_FLAG_TOPHIDING)
+		return 0;
 
 	if (dlg->state <= DLG_STATE_EARLY)
 		return 0;

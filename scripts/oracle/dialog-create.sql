@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','6');
+INSERT INTO version (table_name, table_version) values ('dialog','7');
 CREATE TABLE dialog (
     id NUMBER(10) PRIMARY KEY,
     hash_entry NUMBER(10),
@@ -25,7 +25,8 @@ CREATE TABLE dialog (
     timeout NUMBER(10),
     vars CLOB(512) DEFAULT NULL,
     profiles CLOB(512) DEFAULT NULL,
-    script_flags NUMBER(10) DEFAULT 0 NOT NULL
+    script_flags NUMBER(10) DEFAULT 0 NOT NULL,
+    flags NUMBER(10) DEFAULT 0 NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER dialog_tr

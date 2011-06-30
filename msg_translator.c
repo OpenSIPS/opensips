@@ -424,7 +424,7 @@ static inline int lump_check_opt(	struct lump *l,
 /*! \brief computes the "unpacked" len of a lump list,
    code moved from build_req_from_req */
 int lumps_len(struct sip_msg* msg, struct lump* lumps,
-									struct socket_info* send_sock)
+											struct socket_info* send_sock)
 {
 	unsigned int s_offset, new_len;
 	struct lump *t, *r;
@@ -691,11 +691,11 @@ skip_after:
 	code moved form build_req_from_req  */
 
 void process_lumps(	struct sip_msg* msg,
-						struct lump* lumps,
-						char* new_buf, 
-						unsigned int* new_buf_offs, 
-						unsigned int* orig_offs,
-						struct socket_info* send_sock)
+					struct lump* lumps,
+					char* new_buf, 
+					unsigned int* new_buf_offs, 
+					unsigned int* orig_offs,
+					struct socket_info* send_sock)
 {
 	struct lump *t, *r;
 	char* orig;
@@ -931,8 +931,8 @@ void process_lumps(	struct sip_msg* msg,
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
-	
-	
+
+
 	orig=msg->buf;
 	offset=*new_buf_offs;
 	s_offset=*orig_offs;
@@ -1244,6 +1244,28 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 	return 0;
 }
 
+int is_del_via1_lump(struct sip_msg* msg)
+{
+	struct lump* lump;
+	int via1_off, via1_len;
+
+/*	for(lump= msg->add_rm; lump; lump= lump->next)
+		if(lump->type == HDR_VIA1_T && lump->op== LUMP_DEL)
+			return 1;
+*/
+	if(!msg->h_via1)
+		return 0;
+
+	via1_off = msg->h_via1->name.s - msg->buf;
+	via1_len = msg->h_via1->len;
+
+	for(lump= msg->add_rm; lump; lump= lump->next)
+	{
+		if(lump->type == 0 && lump->op== LUMP_DEL && lump->u.offset == via1_off && lump->len == via1_len)
+			return 1;
+	}
+	return 0;
+}
 
 char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								unsigned int *returned_len,
@@ -1271,6 +1293,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	received_buf=0;
 	rport_buf=0;
 	line_buf=0;
+	int via1_deleted = 0;
 
 	if (msg->path_vec.len) {
 		if (insert_path_as_route(msg, &msg->path_vec) < 0) {
@@ -1343,12 +1366,14 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		goto error00;
 	}
 
+	via1_deleted = is_del_via1_lump(msg);
 	/* check if received needs to be added:
 	 *  - if the VIA address and the received address are different 
 	 *  - if the rport was forced (rport requires received)
-	 *  - if the rport was received in the VIA hdr */
-	if ( msg->via1->rport || (msg->msg_flags&FL_FORCE_RPORT) ||
-	received_test(msg) ) {
+	 *  - if the rport was received in the VIA hdr 
+	 *  - and there is no lump that delets VIA1 hdr */
+	if ( (msg->via1->rport || (msg->msg_flags&FL_FORCE_RPORT) ||
+			received_test(msg) ) && !via1_deleted) {
 		if ((received_buf=received_builder(msg,&received_len))==0){
 			LM_ERR("received_builder failed\n");
 			goto error01;  /* free also line_buf */
@@ -1360,8 +1385,8 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	 *  - if via already contains an rport add it and overwrite the previous
 	 *  rport value if present (if you don't want to overwrite the previous
 	 *  version remove the comments) */
-	if ((msg->msg_flags&FL_FORCE_RPORT)||
-			(msg->via1->rport /*&& msg->via1->rport->value.s==0*/)){
+	if (((msg->msg_flags&FL_FORCE_RPORT)||
+			(msg->via1->rport /*&& msg->via1->rport->value.s==0*/)) && !via1_deleted){
 		if ((rport_buf=rport_builder(msg, &rport_len))==0){
 			LM_ERR("rport_builder failed\n");
 			goto error01; /* free everything */

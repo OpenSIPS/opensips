@@ -175,6 +175,8 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].prev_cseq.s);
 			if (dlg->legs[i].contact.s)
 				shm_free(dlg->legs[i].contact.s); /* + route_set */
+			if(dlg->legs[i].last_vias.s)
+				shm_free(dlg->legs[i].last_vias.s);
 			if (dlg->legs[i].from_uri.s)
 				shm_free(dlg->legs[i].from_uri.s);
 			if (dlg->legs[i].to_uri.s)

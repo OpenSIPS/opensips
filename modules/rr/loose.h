@@ -78,4 +78,88 @@ str* get_remote_target(struct sip_msg *msg);
 
 /* returns an array of the URIs in all Route Headers */
 str* get_route_set(struct sip_msg *msg,int *nr_routes);
+/*
+ * Check if the given uri contains lr parameter which marks loose routers
+ */
+static inline int is_strict(str* _params)
+{
+	str s;
+	int i, state = 0;
+
+	if (_params->len == 0) return 1;
+
+	s.s = _params->s;
+	s.len = _params->len;
+
+	for(i = 0; i < s.len; i++) {
+		switch(state) {
+		case 0:
+			switch(s.s[i]) {
+			case ' ':
+			case '\r':
+			case '\n':
+			case '\t':           break;
+			case 'l':
+			case 'L': state = 1; break;
+			default:  state = 4; break;
+			}
+			break;
+
+		case 1:
+			switch(s.s[i]) {
+			case 'r':
+			case 'R': state = 2; break;
+			default:  state = 4; break;
+			}
+			break;
+
+		case 2:
+			switch(s.s[i]) {
+			case ';':  return 0;
+			case '=':  return 0;
+			case ' ':
+			case '\r':
+			case '\n':
+			case '\t': state = 3; break;
+			default:   state = 4; break;
+			}
+			break;
+
+		case 3:
+			switch(s.s[i]) {
+			case ';':  return 0;
+			case '=':  return 0;
+			case ' ':
+			case '\r':
+			case '\n':
+			case '\t': break;
+			default:   state = 4; break;
+			}
+			break;
+
+		case 4:
+			switch(s.s[i]) {
+			case '\"': state = 5; break;
+			case ';':  state = 0; break;
+			default:              break;
+			}
+			break;
+			
+		case 5:
+			switch(s.s[i]) {
+			case '\\': state = 6; break;
+			case '\"': state = 4; break;
+			default:              break;
+			}
+			break;
+
+		case 6: state = 5; break;
+		}
+	}
+	
+	if ((state == 2) || (state == 3)) return 0;
+	else return 1;
+}
+
+
 #endif /* LOOSE_H */

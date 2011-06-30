@@ -57,9 +57,10 @@
 #define VARS_COL				"vars"
 #define PROFILES_COL			"profiles"
 #define SFLAGS_COL				"script_flags"
+#define FLAGS_COL				"flags"
 #define DIALOG_TABLE_NAME		"dialog"
 
-#define DLG_TABLE_VERSION		6
+#define DLG_TABLE_VERSION		7
 
 /*every minute the dialogs' information will be refreshed*/
 #define DB_DEFAULT_UPDATE_PERIOD	60
@@ -68,8 +69,8 @@
 #define DB_MODE_DELAYED				2
 #define DB_MODE_SHUTDOWN			3
 
-#define DIALOG_TABLE_TOTAL_COL_NO	25
-#define DIALOG_TABLE_FIX_COL_NO		22
+#define DIALOG_TABLE_TOTAL_COL_NO	26
+#define DIALOG_TABLE_FIX_COL_NO		23
 
 extern str call_id_column; 
 extern str from_uri_column;
@@ -94,6 +95,7 @@ extern str from_sock_column;
 extern str profiles_column;
 extern str vars_column;
 extern str sflags_column;
+extern str th_column;
 extern str dialog_table_name;
 extern int dlg_db_mode;
 

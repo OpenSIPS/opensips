@@ -69,6 +69,7 @@
 #define DLG_FLAG_ISINIT        (1<<4)
 #define DLG_FLAG_PING_CALLER   (1<<5)
 #define DLG_FLAG_PING_CALLEE   (1<<6)
+#define DLG_FLAG_TOPHIDING     (1<<7)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
@@ -93,6 +94,7 @@ struct dlg_leg {
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
 	char reply_received;
 	struct socket_info *bind_addr;
+	str last_vias;
 };
 
 
@@ -122,7 +124,7 @@ struct dlg_cell
 	unsigned char        legs_no[4];
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
-	struct dlg_val          *vals;
+	struct dlg_val       *vals;
 };
 
 
