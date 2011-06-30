@@ -146,6 +146,7 @@ struct usr_avp** get_bavp_list(void);
 
 /* module parameteres */
 int tm_enable_stats = 1;
+static int own_timer_proc = 0;
 
 /* statistic variables */
 stat_var *tm_rcv_rpls;
@@ -249,6 +250,8 @@ static param_export_t params[]={
 		&disable_6xx_block },
 	{ "minor_branch_flag",        INT_PARAM,
 		&minor_branch_flag },
+	{ "own_timer_proc",           INT_PARAM,
+		&own_timer_proc },
 	{0,0,0}
 };
 
@@ -657,6 +660,8 @@ static int script_init( struct sip_msg *foo, void *bar)
 
 static int mod_init(void)
 {
+	void *timer;
+
 	LM_INFO("TM - initializing...\n");
 
 	/* checking if we have sufficient bitmap capacity for given
@@ -705,13 +710,26 @@ static int mod_init(void)
 	}
 
 	/* register the timer functions */
-	if (register_timer( timer_routine , 0, 1 )<0) {
-		LM_ERR("failed to register timer\n");
-		return -1;
-	}
-	if (register_utimer( utimer_routine , 0, 100*1000 )<0) {
-		LM_ERR("failed to register utimer\n");
-		return -1;
+	if (own_timer_proc) {
+		timer = register_timer_process( timer_routine, NULL, 1,
+					TIMER_PROC_INIT_FLAG);
+		if (timer==NULL) {
+			LM_ERR("failed to register timer\n");
+			return -1;
+		}
+		if (append_utimer_to_process( utimer_routine, 0, 100*1000, timer)<0) {
+			LM_ERR("failed to register utimer\n");
+			return -1;
+		}
+	} else {
+		if (register_timer( timer_routine , 0, 1 )<0) {
+			LM_ERR("failed to register timer\n");
+			return -1;
+		}
+		if (register_utimer( utimer_routine , 0, 100*1000 )<0) {
+			LM_ERR("failed to register utimer\n");
+			return -1;
+		}
 	}
 
 	if (uac_init()==-1) {
