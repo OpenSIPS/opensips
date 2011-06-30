@@ -35,9 +35,6 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_authenticate.h"
-#include "../../parser/parse_refer_to.h"
-#include "../../parser/parse_replaces.h"
-#include "../../strcommon.h"
 #include "../../locking.h"
 #include "../uac_auth/uac_auth.h"
 #include "../presence/hash.h"
@@ -498,12 +495,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int port;
 	int etype= B2B_NONE;
 	int dlg_state = 0;
-#define H_SIZE 3
-	str h_name[H_SIZE];
-	str h_val[H_SIZE];
-	str* replaces = NULL;
-	struct replaces_body replaces_b;
-	int i;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -575,80 +566,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		if(tm_tran)
 			tmb.unref_cell(tm_tran);
 		goto done;
-	}
-	if(method_value == METHOD_REFER && parse_refer_to_header(msg)==0 &&
-		msg->refer_to!=NULL && get_refer_to(msg)!=NULL &&
-		parse_uri(get_refer_to(msg)->uri.s, get_refer_to(msg)->uri.len,
-						&(get_refer_to(msg)->parsed_uri))==0 &&
-		get_refer_to(msg)->parsed_uri.headers.s &&
-		parse_uri_headers(get_refer_to(msg)->parsed_uri.headers,h_name,h_val,H_SIZE)==0)
-	{
-		for(i=0; i<H_SIZE && h_name[i].s && h_name[i].len; i++)
-		{
-			if(strncmp("Replaces",h_name[i].s,h_name[i].len)==0)
-			{
-				replaces = &h_val[i];
-				break;
-			}
-		}
-		if(replaces)
-		{
-			LM_DBG("Replaces=[%.*s]\n",replaces->len,replaces->s);
-			param.s = (char*)pkg_malloc(replaces->len+1);
-			if(param.s == NULL)
-			{
-				LM_ERR("OOM\n");
-				return -1;
-			}
-			param.len = replaces->len+1;
-			if(unescape_param(replaces,&param)==0)
-			{
-				LM_DBG("header [%.*s]\n", param.len, param.s);
-				if(parse_replaces_body(param.s, param.len, &replaces_b)==0 &&
-						replaces_b.callid_val.s &&
-						replaces_b.to_tag_val.s &&
-						replaces_b.from_tag_val.s)
-				{
-					/* check if the to tag has the b2b key format
-					 * -> meaning that it is a server request */
-					if(b2b_parse_key(&replaces_b.to_tag_val,
-							&hash_index, &local_index)>=0)
-					{
-						LM_DBG("Received a b2b server request [%.*s]\n",
-							msg->first_line.u.request.method.len,
-							msg->first_line.u.request.method.s);
-						table = server_htable;
-						lock_get(&table[hash_index].lock);
-						dlg=b2b_search_htable_dlg(table,
-									hash_index,
-									local_index,
-									&replaces_b.to_tag_val,
-									&replaces_b.from_tag_val,
-									&replaces_b.callid_val);
-						if(dlg)
-							LM_DBG("Need to replace callid=[%.*s]"
-								" to-tag=[%.*s] and "
-								"from-tag=[%.*s] from "
-								"b2b_logic tuple=[%.*s]\n",
-								replaces_b.callid_val.len,
-								replaces_b.callid_val.s,
-								replaces_b.to_tag_val.len,
-								replaces_b.to_tag_val.s,
-								replaces_b.from_tag_val.len,
-								replaces_b.from_tag_val.s,
-								dlg->param.len, dlg->param.s);
-						dlg = NULL;
-						lock_release(&table[hash_index].lock);
-					}
-				}
-			}
-			else
-			{
-				LM_ERR("Unable to escape [%.*s]\n", replaces->len,replaces->s);
-			}
-			pkg_free(param.s);
-			param.s = NULL; param.len = 0;
-		}
 	}
 
 search_dialog:
