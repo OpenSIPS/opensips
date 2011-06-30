@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c 7785 2011-03-07 23:32:56Z osas $
+ * $Id$
  *
  * Copyright (C) 2011 VoIP Embedded Inc.
  *

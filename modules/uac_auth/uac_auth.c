@@ -1,5 +1,5 @@
 /*
- * $Id: uac_auth.c 7817 2011-03-16 17:54:03Z osas $
+ * $Id$
  *
  * uac_auth module
  *
