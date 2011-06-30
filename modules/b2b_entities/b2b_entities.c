@@ -421,6 +421,53 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	return 0;
 }
 
+int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, str* tuple_key)
+{
+	b2b_dlg_t* dlg;
+	unsigned int hash_index, local_index;
+	b2b_table table;
+	int ret;
+
+	if(!callid || !callid->s || !callid->len){
+		LM_ERR("Wrong callid param\n");
+		return -1;
+	}
+	if(!from_tag || !from_tag->s || !from_tag->len){
+		LM_ERR("Wrong from_tag param\n");
+		return -1;
+	}
+	if(!to_tag || !to_tag->s || !to_tag->len){
+		LM_ERR("Wrong to_tag param\n");
+		return -1;
+	}
+	if(!tuple_key || !tuple_key->s || tuple_key->len<B2BL_MAX_KEY_LEN) {
+		LM_ERR("Wrong tuple param\n");
+		return -1;
+	}
+	/* check if the to tag has the b2b key format
+	 * -> meaning that it is a server request */
+	if(b2b_parse_key(to_tag, &hash_index, &local_index)>=0) {
+		table = server_htable;
+		lock_get(&table[hash_index].lock);
+		dlg=b2b_search_htable_dlg(table, hash_index, local_index,
+						to_tag, from_tag, callid);
+		if(dlg){
+			memcpy(tuple_key->s, dlg->param.s, dlg->param.len);
+			tuple_key->len = dlg->param.len;
+			entity_key->s = to_tag->s;
+			entity_key->len = to_tag->len;
+			LM_DBG("got tuple [%.*s] for entity [%.*s]\n",
+				tuple_key->len, tuple_key->s, entity_key->len, entity_key->s);
+			ret = 0;
+		} else {
+			ret = -1;
+		}
+		lock_release(&table[hash_index].lock);
+		return ret;
+	}
+	return -1;
+}
+
 
 int b2b_entities_bind(b2b_api_t* api)
 {
@@ -437,6 +484,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->restore_logic_info = b2b_restore_logic_info;
 	api->update_b2bl_param  = b2b_update_b2bl_param;
 	api->entities_db_delete = b2b_db_delete;
+	api->get_b2bl_key       = b2b_get_b2bl_key;
 
 	return 0;
 }

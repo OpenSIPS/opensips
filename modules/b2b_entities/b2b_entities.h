@@ -51,6 +51,8 @@ typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
 typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* key,
 		str* param);
 typedef void (*b2b_db_delete_t)(str param);
+typedef int (*b2b_get_b2bl_key_t)(str* callid, str* from_tag, str* to_tag,
+		str* entity_key, str* tuple_key);
 
 extern int uac_auth_loaded;
 extern str b2b_key_prefix;
@@ -66,6 +68,7 @@ typedef struct b2b_api
 	b2b_db_delete_t           entities_db_delete;
 	b2b_restore_linfo_t       restore_logic_info;
 	b2b_update_b2bl_param_t   update_b2bl_param;
+	b2b_get_b2bl_key_t        get_b2bl_key;
 }b2b_api_t;
 
 

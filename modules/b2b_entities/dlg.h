@@ -238,4 +238,7 @@ void print_b2b_entities(void);
 int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 		str* contact);
 
+b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
+		unsigned int local_index, str* to_tag, str* from_tag, str* callid);
+
 #endif
