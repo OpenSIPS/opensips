@@ -411,7 +411,7 @@ int virtual_mod_init(void){
 
             if(db_reconnect_with_timer){
                 if (register_timer_process(reconnect_timer, NULL, db_probe_time,
-                        TIMER_PROC_INIT_FLAG) < 0) {
+                        TIMER_PROC_INIT_FLAG)==NULL) {
                     LM_ERR("failed to register keepalive timer process\n");
                 }
             }

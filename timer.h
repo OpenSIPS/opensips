@@ -84,8 +84,14 @@ int register_timer(timer_function f, void* param, unsigned int interval);
 
 int register_utimer(utimer_function f, void* param, unsigned int interval);
 
-int register_timer_process(timer_function f,void* param,unsigned int interval,
+void* register_timer_process(timer_function f,void* param,unsigned int interval,
 		unsigned int flags);
+
+int append_timer_to_process(timer_function f,void* param,unsigned int interval,
+		void *timer);
+
+int append_utimer_to_process(utimer_function f,void* param,unsigned int interval,
+		void *timer);
 
 unsigned int get_ticks(void);
 

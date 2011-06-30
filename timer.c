@@ -254,7 +254,7 @@ int register_route_timers(void)
 	return 1;
 }
 
-int register_timer_process(timer_function f,void* param,unsigned int interval,
+void* register_timer_process(timer_function f,void* param,unsigned int interval,
 															unsigned int flags)
 {
 	struct sr_timer* t;
@@ -263,17 +263,54 @@ int register_timer_process(timer_function f,void* param,unsigned int interval,
 	/* create new process list */
 	tpl = new_timer_process_list(flags);
 	if (tpl==NULL)
-		return E_OUT_OF_MEM;
+		return NULL;
 
 	t = new_sr_timer(f, param, interval);
 	if (t==NULL)
-		return E_OUT_OF_MEM;
+		return NULL;
 	/* insert it into the list*/
 	t->next = tpl->timer_list;
 	tpl->timer_list = t;
-	return t->id;
+	return (void*)tpl;
 }
 
+
+int append_timer_to_process(timer_function f,void* param,unsigned int interval,
+																void *timer)
+{
+	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
+	struct sr_timer* t;
+
+	if (tpl==NULL)
+		return -1;
+
+	t = new_sr_timer(f, param, interval);
+	if (t==NULL)
+		return -1;
+	/* insert it into the list*/
+	t->next = tpl->timer_list;
+	tpl->timer_list = t;
+	return 0;
+}
+
+
+int append_utimer_to_process(utimer_function f,void* param,unsigned int interval,
+																void *timer)
+{
+	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
+	struct sr_timer* t;
+
+	if (tpl==NULL)
+		return -1;
+
+	t = new_sr_timer((timer_function*)f, param, interval);
+	if (t==NULL)
+		return -1;
+	/* insert it into the list*/
+	t->next = tpl->utimer_list;
+	tpl->timer_list = t;
+	return 0;
+}
 
 
 unsigned int get_ticks(void)
