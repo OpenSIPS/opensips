@@ -410,7 +410,7 @@ $avp(11) = set_count("$avp(10)");
 			FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
-			<title><function>set_count</function> usage</title>
+			<title><function>set_select_weight</function> usage</title>
 			<programlisting format="linespecific">
 ...
 $avp(21) = set_select_weight("$avp(10)");
@@ -418,6 +418,29 @@ $avp(21) = set_select_weight("$avp(10)");
 			</programlisting>
 		</example>
 	</section>
+	<section>
+		<title>
+			<function moreinfo="none">ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, delta)</function>
+		</title>
+		<para>
+			This function returns the difference between two timestamps, specified
+			in seconds and microseconds. The result is returned in the last
+			parameter, expressed in microseconds.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+			FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+			<title><function>ts_usec_delta</function> usage</title>
+			<programlisting format="linespecific">
+...
+ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
+...
+			</programlisting>
+		</example>
+	</section>
+
 
 
 </section>

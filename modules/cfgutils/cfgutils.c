@@ -84,9 +84,13 @@ static struct mi_root* mi_check_hash(struct mi_root* cmd, void* param );
 static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
+static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
+		char *_t1u, char *_t2s, char *_t2u, char *_res);
+
 static int fixup_prob( void** param, int param_no);
 static int fixup_pv_set(void** param, int param_no);
 static int fixup_rand_event(void** param, int param_no);
+static int fixup_delta(void** param, int param_no);
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -136,6 +140,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"set_select_weight",(cmd_function)pv_sel_weight,1, fixup_pv_set, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"ts_usec_delta", (cmd_function)ts_usec_delta, 5, fixup_delta, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{0, 0, 0, 0, 0, 0}
@@ -213,6 +220,22 @@ static int fixup_prob( void** param, int param_no)
 	*param=(void *)(long)myint;
 	return 0;
 }
+
+static int fixup_delta( void **param, int param_no)
+{
+	if (param_no < 5) {
+		return fixup_igp(param);
+	} else if (param_no == 5) {
+		if (fixup_pvar(param) < 0 && ((pv_spec_p)*param)->setf == 0) {
+			LM_ERR("invalid pvar\n");
+			return E_SCRIPT;
+		}
+		return 0;
+	 } else {
+		 return E_UNSPEC;
+	 }
+}
+
 
 /************************** module functions **********************************/
 
@@ -662,4 +685,33 @@ error:
 	if(vals)
 		pkg_free(vals);
 	return -1;
+}
+
+#define GET_INT(_msg, _p, _v) \
+	do { \
+		if (!(_p) || fixup_get_ivalue((_msg), ((gparam_p)(_p)), &(_v))< 0) { \
+			LM_ERR("cannot retrieve int value\n"); \
+			return -1; \
+		} \
+	} while (0)
+
+static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
+		char *_t1u, char *_t2s, char *_t2u, char *_res)
+{
+	int t1s, t2s, t1u, t2u;
+	pv_value_t res;
+
+	GET_INT(msg, _t1s, t1s);
+	GET_INT(msg, _t1u, t1u);
+	GET_INT(msg, _t2s, t2s);
+	GET_INT(msg, _t2u, t2u);
+
+	res.ri = abs(1000000 * (t1s - t2s) + t1u - t2u);
+	res.flags = PV_TYPE_INT;
+
+	if (pv_set_value(msg, (pv_spec_p)_res, 0, &res)) {
+		LM_ERR("cannot store result value\n");
+		return -1;
+	}
+	return 1;
 }
