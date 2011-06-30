@@ -182,7 +182,7 @@ int st_flush_ucontact(ucontact_t* _c);
 /*! \brief
  * Insert contact into the database
  */
-int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list);
+int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update);
 
 
 /*! \brief

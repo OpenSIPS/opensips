@@ -324,7 +324,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 				break;
 
 			case 1: /* insert */
-				if (db_insert_ucontact(ptr,ins_list) < 0) {
+				if (db_insert_ucontact(ptr,ins_list,0) < 0) {
 					LM_ERR("inserting contact into database failed\n");
 					ptr->state = old_state;
 				}
@@ -436,7 +436,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 	}
 
 	if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
-		if (db_insert_ucontact(*_c,0) < 0) {
+		if (db_insert_ucontact(*_c,0,0) < 0) {
 			LM_ERR("failed to insert in database\n");
 		} else {
 			(*_c)->state = CS_SYNC;
@@ -547,6 +547,15 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 	}
 
 	return 1;
+}
+
+
+/* similar to get_ucontact, but does not use callid and cseq
+   to be used from MI functions where we have only contact */
+int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co)
+{
+	*_co = contact_match( _r->contacts, _c);
+	return (*_co)?0:1;
 }
 
 

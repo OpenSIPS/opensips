@@ -292,7 +292,7 @@ struct mi_root* mi_usrloc_rm_contact(struct mi_root *cmd, void *param)
 	}
 
 	contact = &node->next->next->value;
-	ret = get_ucontact( rec, contact, &mi_ul_cid, MI_UL_CSEQ+1, &con);
+	ret = get_simple_ucontact( rec, contact, &con);
 	if (ret < 0) {
 		unlock_udomain( dom, aor);
 		return 0;
@@ -503,23 +503,26 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 			goto lock_error;
 		c = 0;
 	} else {
-		if (get_ucontact( r, contact, &mi_ul_cid, MI_UL_CSEQ+1, &c) < 0)
+		if (get_simple_ucontact( r, contact, &c) < 0)
 			goto lock_error;
 	}
 
 	get_act_time();
 
-	ci.callid = &mi_ul_cid;
 	ci.user_agent = &mi_ul_ua;
-	ci.cseq = MI_UL_CSEQ;
 	/* 0 expires means permanent contact */
 	if (ci.expires!=0)
 		ci.expires += act_time;
 
 	if (c) {
+		/* update contact record */
+		ci.cseq = c->cseq;
 		if (update_ucontact( r, c, &ci) < 0)
 			goto release_error;
 	} else {
+		/* new contact record */
+		ci.callid = &mi_ul_cid;
+		ci.cseq = MI_UL_CSEQ;
 		if ( insert_ucontact( r, contact, &ci, &c) < 0 )
 			goto release_error;
 	}

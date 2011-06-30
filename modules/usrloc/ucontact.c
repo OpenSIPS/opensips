@@ -375,9 +375,10 @@ int st_flush_ucontact(ucontact_t* _c)
 /*! \brief
  * Insert contact into the database
  */
-int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list)
+int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 {
-	static db_ps_t my_ps = NULL;
+	static db_ps_t myI_ps = NULL;
+	static db_ps_t myR_ps = NULL;
 	char* dom;
 	db_key_t keys[15];
 	db_val_t vals[15];
@@ -502,16 +503,26 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list)
 	}
 
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
-	if (ins_list) {
-		if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys,
-					(use_domain) ? (15) : (14)) < 0 )
-			CON_RESET_INSLIST(ul_dbh);
-	}
+	if ( !update ) {
+		/* do simple insert */
+		CON_PS_REFERENCE(ul_dbh) = &myI_ps;
+		if (ins_list) {
+			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys,
+						(use_domain) ? (15) : (14)) < 0 )
+				CON_RESET_INSLIST(ul_dbh);
+		}
 
-	if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
-		LM_ERR("inserting contact in db failed\n");
-		return -1;
+		if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
+			LM_ERR("inserting contact in db failed\n");
+			return -1;
+		}
+	} else {
+		/* do insert-update / replace */
+		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
+		if (ul_dbf.insert_update(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
+			LM_ERR("inserting contact in db failed\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -783,6 +794,8 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci)
 {
+	int ret;
+
 	/* we have to update memory in any case, but database directly
 	 * only in db_mode 1 */
 	if (mem_update_ucontact( _c, _ci) < 0) {
@@ -803,7 +816,9 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci)
 	st_update_ucontact(_c);
 
 	if (db_mode == WRITE_THROUGH || db_mode==DB_ONLY) {
-		if (db_update_ucontact(_c) < 0) {
+		ret = (db_mode==DB_ONLY && DB_CAPABILITY(ul_dbf, DB_CAP_INSERT_UPDATE))?
+			db_insert_ucontact(_c,NULL,1) : db_update_ucontact(_c) ;
+		if (ret < 0) {
 			LM_ERR("failed to update database\n");
 		} else {
 			_c->state = CS_SYNC;
