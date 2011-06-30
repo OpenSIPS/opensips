@@ -447,7 +447,8 @@ static int mod_init(void)
 	}
 
 	/* register timer to reset counters */
-	if (register_timer_process(rl_timer, NULL, timer_interval, TIMER_PROC_INIT_FLAG) < 0) {
+	if (register_timer_process(rl_timer, NULL, timer_interval,
+	TIMER_PROC_INIT_FLAG) == NULL) {
 		LM_ERR("could not register timer function\n");
 		return -1;
 	}
