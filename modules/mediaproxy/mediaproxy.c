@@ -42,6 +42,7 @@
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_to.h"
@@ -276,36 +277,6 @@ strcasefind(const char *haystack, size_t len, const char *needle, size_t nlen)
     return NULL;
 }
 
-// returns string with whitespace trimmed from left end
-static INLINE void
-ltrim(str *string)
-{
-    while (string->len>0 && isspace((int)*(string->s))) {
-        string->len--;
-        string->s++;
-    }
-}
-
-// returns string with whitespace trimmed from right end
-static INLINE void
-rtrim(str *string)
-{
-    char *ptr;
-
-    ptr = string->s + string->len - 1;
-    while (string->len>0 && (*ptr==0 || isspace((int)*ptr))) {
-        string->len--;
-        ptr--;
-    }
-}
-
-// returns string with whitespace trimmed from both ends
-static INLINE void
-trim(str *string)
-{
-    ltrim(string);
-    rtrim(string);
-}
 
 // returns a pointer to first CR or LF char found or the end of string
 static char*

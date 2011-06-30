@@ -45,6 +45,7 @@
 #include "../../str.h"
 #include "../../pvar.h"
 #include "../../ut.h"
+#include "../../trim.h"
 #include "../../script_cb.h"
 #include "../../parser/digest/digest.h"
 #include "../../parser/parse_from.h"
@@ -326,40 +327,6 @@ parse_param_stop(unsigned int type, void *val) {
     return 0;
 }
 
-
-// Functions dealing with strings
-//
-
-// returns string with whitespace trimmed from left end
-static inline void
-ltrim(str *string)
-{
-    while (string->len>0 && isspace((int)*(string->s))) {
-        string->len--;
-        string->s++;
-    }
-}
-
-// returns string with whitespace trimmed from right end
-static inline void
-rtrim(str *string)
-{
-    char *ptr;
-
-    ptr = string->s + string->len - 1;
-    while (string->len>0 && (*ptr==0 || isspace((int)*ptr))) {
-        string->len--;
-        ptr--;
-    }
-}
-
-// returns string with whitespace trimmed from both ends
-static inline void
-trim(str *string)
-{
-    ltrim(string);
-    rtrim(string);
-}
 
 
 // Message checking and parsing
