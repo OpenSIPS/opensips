@@ -31,6 +31,9 @@
 		This module does not implement a B2BUA alone, but needs a B2B logic implementing module.
 	</para>
 	<para>
+		The module is able to respond to authentication challanges if the
+		uac_auth module is loaded first.  The list of credentials for
+		b2b authentication is also provided by the uac_auth module.
 	</para>
 	</section>
 
@@ -41,7 +44,18 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>tm, a db module</emphasis>
+				<emphasis>tm</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>a db module</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>uac_auth</emphasis>
+				(mandatory if authentication is required)
 			</para>
 			</listitem>
 			</itemizedlist>
