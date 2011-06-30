@@ -1,4 +1,4 @@
-Registrant Module
+UAC Registrant Module
 
 Ovidiu Sas
 
@@ -12,8 +12,8 @@ Ovidiu Sas
 
    Copyright © 2011 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision$ $Date: 2011-02-25 10:39:17 -0500 (Fri, 25
-                       Feb 2011) $
+   Revision $Revision$ $Date: 2011-06-30 10:15:48 -0400 (Thu, 30
+                       Jun 2011) $
      __________________________________________________________
 
    Table of Contents
@@ -63,7 +63,7 @@ Chapter 1. Admin Guide
    Each registrant has it's own state. Registranr's status can be
    inspected via "reg_list" MI comand.
 
-   Registrant states:
+   UAC registrant states:
      * 0 - NOT_REGISTERED_STATE - the initial state (no REGISTER
        has been sent out yet);
      * 1 - REGISTERING_STATE - waiting for a reply from the
@@ -106,7 +106,7 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set hash_size parameter
 ...
-modparam("registrant", "hash_size", 2)
+modparam("uac_registrant", "hash_size", 2)
 ...
 
 1.3.2. timer_interval (integer)
@@ -118,7 +118,7 @@ modparam("registrant", "hash_size", 2)
 
    Example 1.2. Set timer_interval parameter
 ...
-modparam("registrant", "timer_interval", 120)
+modparam("uac_registrant", "timer_interval", 120)
 ...
 
 1.3.3. uac (csv string)
@@ -151,7 +151,7 @@ modparam("registrant", "timer_interval", 120)
 
    Example 1.3. Set uac parameter
 ...
-modparam("registrant", "uac",
+modparam("uac_registrant", "uac",
 "sip:opensips.org,,sip:user@opensips.org,,user,password,sip:user@ip,,,")
 ...
 

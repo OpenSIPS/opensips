@@ -27,7 +27,7 @@
 		Registranr's status can be inspected via "reg_list" MI comand.
 	    </para>
 	    <para>
-		Registrant states:
+		UAC registrant states:
 		<itemizedlist>
 			<listitem>
 			<para><emphasis>0</emphasis>
@@ -113,7 +113,7 @@
 		<title>Set <varname>hash_size</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrant", "hash_size", 2)
+modparam("uac_registrant", "hash_size", 2)
 ...
 </programlisting>
 		</example>
@@ -132,7 +132,7 @@ modparam("registrant", "hash_size", 2)
 		<title>Set <varname>timer_interval</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrant", "timer_interval", 120)
+modparam("uac_registrant", "timer_interval", 120)
 ...
 </programlisting>
 		</example>
@@ -199,7 +199,7 @@ modparam("registrant", "timer_interval", 120)
 		<title>Set <varname>uac</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrant", "uac",
+modparam("uac_registrant", "uac",
 "sip:opensips.org,,sip:user@opensips.org,,user,password,sip:user@ip,,,")
 ...
 </programlisting>
