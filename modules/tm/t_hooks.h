@@ -40,19 +40,18 @@ struct cell;
 
 #define TMCB_REQUEST_IN         (1<<0)
 #define TMCB_RESPONSE_IN        (1<<1)
-#define TMCB_E2EACK_IN          (1<<2)
-#define TMCB_REQUEST_FWDED      (1<<3)
-#define TMCB_RESPONSE_FWDED     (1<<4)
-#define TMCB_ON_FAILURE_RO      (1<<5)
-#define TMCB_ON_FAILURE         (1<<6)
-#define TMCB_RESPONSE_PRE_OUT   (1<<7)
-#define TMCB_RESPONSE_OUT       (1<<8)
-#define TMCB_LOCAL_COMPLETED    (1<<9)
-#define TMCB_LOCAL_RESPONSE_OUT (1<<10)
-#define TMCB_REQUEST_BUILT      (1<<11)
-#define TMCB_TRANS_CANCELLED    (1<<12)
-#define TMCB_TRANS_DELETED      (1<<13)
-#define TMCB_MAX                ((1<<14)-1)
+#define TMCB_REQUEST_FWDED      (1<<2)
+#define TMCB_RESPONSE_FWDED     (1<<3)
+#define TMCB_ON_FAILURE_RO      (1<<4)
+#define TMCB_ON_FAILURE         (1<<5)
+#define TMCB_RESPONSE_PRE_OUT   (1<<6)
+#define TMCB_RESPONSE_OUT       (1<<7)
+#define TMCB_LOCAL_COMPLETED    (1<<8)
+#define TMCB_LOCAL_RESPONSE_OUT (1<<9)
+#define TMCB_REQUEST_BUILT      (1<<19)
+#define TMCB_TRANS_CANCELLED    (1<<11)
+#define TMCB_TRANS_DELETED      (1<<12)
+#define TMCB_MAX                ((1<<13)-1)
 
 /* 
  *  Caution: most of the callbacks work with shmem-ized messages
@@ -133,14 +132,6 @@ struct cell;
  *     complete statelessly. If you wish to disable this
  *     feature, either set the global option "noisy_ctimer"
  *     to 1, or set t->noisy_ctimer for selected transaction.
- *
- * TMCB_E2EACK_IN -- called when an ACK belonging to a proxied
- *  INVITE transaction completed with 200 arrived. Note that
- *  because it can be only dialog-wise matched, only the first
- *  transaction occurrence will be matched with spirals. If
- *  record-routing is not enabled, you will never receive the
- *  ACK and the callback will never be triggered.
- *
  *
  * TMCB_REQUEST_FWDED -- request is being forwarded out. It is 
  *  called before a message is forwarded and it is your last

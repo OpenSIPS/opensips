@@ -819,7 +819,7 @@ int t_reply_matching( struct sip_msg *p_msg , int *p_branch )
 		&& p_msg->REPLY_STATUS<300 
 		&& ( (!is_local(p_cell) &&
 				has_tran_tmcbs(p_cell,
-				TMCB_RESPONSE_OUT|TMCB_RESPONSE_PRE_OUT|TMCB_E2EACK_IN) )
+				TMCB_RESPONSE_OUT|TMCB_RESPONSE_PRE_OUT) )
 			|| (is_local(p_cell)&&has_tran_tmcbs(p_cell,TMCB_LOCAL_COMPLETED))
 		)) {
 			if (parse_headers(p_msg, HDR_TO_F, 0)==-1) {
@@ -1074,19 +1074,6 @@ int t_newtran( struct sip_msg* p_msg )
 			LM_ERR("ACK branch computation failed\n");
 		}
 
-		/* no callbacks? complete quickly */
-		if ( !has_tran_tmcbs(e2eack_T,TMCB_E2EACK_IN) )
-			return 1;
-
-		/* we don't call from within REPLY_LOCK -- that introduces
-		 * a race condition; however, it is so unlikely and the
-		 * impact is so small (callback called multiple times of
-		 * multiple ACK/200s received in parallel), that we do not
-		 * better waste time in locks  */
-		if (unmatched_totag(e2eack_T, p_msg)) {
-			run_trans_callbacks( TMCB_E2EACK_IN , e2eack_T, p_msg, 0,
-				-p_msg->REQ_METHOD );
-		}
 		return 1;
 	}
 
