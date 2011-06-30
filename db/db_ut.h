@@ -41,8 +41,10 @@
  * make strptime available
  * use 600 for 'Single UNIX Specification, Version 3'
  */
-#define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
-#define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
+#ifndef _XOPEN_SOURCE
+	#define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
+	#define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
+#endif
 
 /**
  * _XOPEN_SOURCE creates conflict in swab definition in Solaris
