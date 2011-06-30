@@ -418,24 +418,6 @@ modparam("acc", "failed_transaction_flag", 4)
 		</example>
 	</section>
 	<section>
-		<title><varname>report_ack</varname> (integer)</title>
-		<para>
-		Shall acc attempt to account e2e ACKs too ? Note that this is really 
-		only an attempt, as e2e ACKs may take a different path 
-		(unless RR enabled) and mismatch original INVITE (e2e ACKs are 
-		a separate transaction).
-		</para>
-		<para>
-		Default value is 0 (no).
-		</para>
-		<example>
-		<title>report_ack example</title>
-		<programlisting format="linespecific">
-modparam("acc", "report_ack", 1)
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>report_cancels</varname> (integer)</title>
 		<para>
 		By default, CANCEL reporting is disabled -- most accounting

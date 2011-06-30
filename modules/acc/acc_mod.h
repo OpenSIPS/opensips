@@ -37,7 +37,6 @@
 
 /* module parameter declaration */
 extern int report_cancels;
-extern int report_ack;
 extern int early_media;
 extern int failed_transaction_flag;
 extern int detect_direction;

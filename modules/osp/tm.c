@@ -84,8 +84,6 @@ static void ospOnReq(
 //        TMCB_LOCAL_COMPLETED |
         /* report on completed transactions */
         TMCB_RESPONSE_OUT |
-        /* account e2e acks if configured to do so */
-        TMCB_E2EACK_IN |
         /* report on missed calls */
         TMCB_ON_FAILURE_RO |
         /* get incoming replies ready for processing */
@@ -112,8 +110,6 @@ static void ospTmcbFunc(
 {
     if (type & TMCB_RESPONSE_OUT) {
         LM_DBG("RESPONSE_OUT\n");
-    } else if (type & TMCB_E2EACK_IN) {
-        LM_DBG("E2EACK_IN\n");
     } else if (type & TMCB_ON_FAILURE_RO) {
         LM_DBG("FAILURE_RO\n");
     } else if (type & TMCB_RESPONSE_IN) {

@@ -82,8 +82,6 @@ static int child_init(int rank);
 int early_media = 0;
 /* would you like us to report CANCELs from upstream too? */
 int report_cancels = 0;
-/* report e2e ACKs too */
-int report_ack = 0;
 /* detect and correct direction in the sequential requests */
 int detect_direction = 0;
 /* should failed replies (>=3xx) be logged ? default==no */
@@ -189,7 +187,6 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"early_media",             INT_PARAM, &early_media             },
 	{"failed_transaction_flag", INT_PARAM, &failed_transaction_flag },
-	{"report_ack",              INT_PARAM, &report_ack              },
 	{"report_cancels",          INT_PARAM, &report_cancels          },
 	{"multi_leg_info",          STR_PARAM, &leg_info_str            },
 	{"detect_direction",        INT_PARAM, &detect_direction        },

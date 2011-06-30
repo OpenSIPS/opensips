@@ -232,8 +232,6 @@ void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )
 		tmcb_types =
 			/* report on completed transactions */
 			TMCB_RESPONSE_OUT |
-			/* account e2e acks if configured to do so */
-			((report_ack && is_acc_on(ps->req))?TMCB_E2EACK_IN:0) |
 			/* get incoming replies ready for processing */
 			TMCB_RESPONSE_IN |
 			/* report on missed calls */
@@ -511,47 +509,11 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	}
 }
 
-static inline void acc_onack( struct cell* t, struct sip_msg *req,
-		struct sip_msg *ack, int code)
-{
-	if (acc_preparse_req(ack)<0)
-		return;
-
-	/* set env variables */
-	env_set_to( ack->to?ack->to:req->to );
-	env_set_code_status( t->uas.status, 0 );
-
-	if (is_log_acc_on(req)) {
-		env_set_text( ACC_ACKED, ACC_ACKED_LEN);
-		acc_log_request( ack, NULL );
-	}
-
-	if (is_aaa_acc_on(req)) {
-		acc_aaa_request( ack, NULL );
-	}
-
-	if (is_db_acc_on(req)) {
-		env_set_text( db_table_acc.s, db_table_acc.len);
-		acc_db_request( ack, NULL ,&acc_ins_list);
-	}
-
-/* DIAMETER */
-#ifdef DIAM_ACC
-	if (is_diam_acc_on(req)) {
-		acc_diam_request( ack, NULL);
-	}
-#endif
-	
-}
-
-
 
 static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps )
 {
 	if (type&TMCB_RESPONSE_OUT) {
 		acc_onreply( t, ps->req, ps->rpl, ps->code);
-	} else if (type&TMCB_E2EACK_IN) {
-		acc_onack( t, t->uas.request, ps->req, ps->code);
 	} else if (type&TMCB_ON_FAILURE) {
 		on_missed( t, ps->req, ps->rpl, ps->code);
 	} else if (type&TMCB_RESPONSE_IN) {
