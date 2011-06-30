@@ -1,0 +1,74 @@
+UAC AUTH Module
+
+Ovidiu Sas
+
+   <osas@voipembedded.com>
+
+Edited by
+
+Ovidiu Sas
+
+   <osas@voipembedded.com>
+
+   Copyright © 2011 VoIP Embedded, Inc.
+   Revision History
+   Revision $Revision$ $Date$
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. credential (string)
+
+   List of Examples
+
+   1.1. Set credential parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   UAC AUTH (User Agent Client Authentication) module provides a
+   common API for building authentication headers.
+
+   It also provides a common set of authentication credetials to
+   be used by other modules.
+
+   Known limitations in this version:
+     * authentication does not support qop auth-int, just qop
+       auth;
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+     * None.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None
+
+1.3. Exported Parameters
+
+1.3.1. credential (string)
+
+   Contains a multiple definition of credentials used to perform
+   authentication.
+
+   This parameter is required if UAC authentication is used.
+
+   Example 1.1. Set credential parameter
+...
+modparam("uac_auth","credential","username:domain:password")
+...

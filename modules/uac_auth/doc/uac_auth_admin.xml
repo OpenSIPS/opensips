@@ -1,0 +1,82 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+
+
+	<section>
+		<title>Overview</title>
+		<para>
+		UAC AUTH (User Agent Client Authentication) module provides a
+		common API for building authentication headers.
+		</para>
+		<para>
+		It also provides a common set of authentication credetials to
+		be used by other modules.
+		</para>
+		<para>
+		Known limitations in this version:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				authentication does not support qop auth-int, just qop auth;
+			</para>
+			</listitem>
+		</itemizedlist>
+	</section>
+
+	<section>
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<itemizedlist>
+			<listitem>
+			<para><emphasis>None.</emphasis></para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+				The following libraries or applications must be installed 
+				before running &osips; with this module loaded:
+				<itemizedlist>
+				<listitem>
+				<para>
+					<emphasis>None</emphasis>
+				</para>
+				</listitem>
+				</itemizedlist>
+			</para>
+		</section>
+	</section>
+
+	<section>
+		<title>Exported Parameters</title>
+	
+		<section>
+			<title><varname>credential</varname> (string)</title>
+			<para>
+			Contains a multiple definition of credentials used to perform
+			authentication.
+			</para>
+			<para>
+				<emphasis>
+					This parameter is required if UAC authentication is used.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>credential</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac_auth","credential","username:domain:password")
+...
+				</programlisting>
+			</example>
+		</section>
+	</section>
+
+</chapter>
+
