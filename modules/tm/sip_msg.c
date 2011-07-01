@@ -178,6 +178,8 @@ inline static struct via_body* via_body_cloner( char* new_buf,
 
 static void uri_trans(char *new_buf, char *org_buf, struct sip_uri *uri)
 {
+	int i;
+
 	uri->user.s=translate_pointer(new_buf,org_buf,uri->user.s);
 	uri->passwd.s=translate_pointer(new_buf,org_buf,uri->passwd.s);
 	uri->host.s=translate_pointer(new_buf,org_buf,uri->host.s);
@@ -192,7 +194,6 @@ static void uri_trans(char *new_buf, char *org_buf, struct sip_uri *uri)
 	uri->method.s=translate_pointer(new_buf,org_buf,uri->method.s);
 	uri->lr.s=translate_pointer(new_buf,org_buf,uri->lr.s);
 	uri->r2.s=translate_pointer(new_buf,org_buf,uri->r2.s);
-		/* ser specific rr parameter */
 	/* values */
 	uri->transport_val.s
 		=translate_pointer(new_buf,org_buf,uri->transport_val.s);
@@ -202,8 +203,12 @@ static void uri_trans(char *new_buf, char *org_buf, struct sip_uri *uri)
 	uri->maddr_val.s=translate_pointer(new_buf,org_buf,uri->maddr_val.s);
 	uri->method_val.s=translate_pointer(new_buf,org_buf,uri->method_val.s);
 	uri->lr_val.s=translate_pointer(new_buf,org_buf,uri->lr_val.s);
-		/* lr value placeholder for lr=on a.s.o*/
 	uri->r2_val.s=translate_pointer(new_buf,org_buf,uri->r2_val.s);
+	/* unknown params */
+	for( i=0; i<URI_MAX_U_PARAMS && uri->u_name[i].s ; i++ ) {
+		uri->u_name[i].s = translate_pointer(new_buf,org_buf,uri->u_name[i].s);
+		uri->u_val[i].s  = translate_pointer(new_buf,org_buf,uri->u_val[i].s);
+	}
 }
 
 
