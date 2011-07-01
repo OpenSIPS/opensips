@@ -715,6 +715,7 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 	char* p;
 	struct hdr_field* require_hdr;
 	struct hdr_field* rseq_hdr;
+	struct hdr_field* subscription_state_hdr;
 	struct hdr_field* hdr;
 	struct hdr_field* hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
 	int hdrs_no = 0;
@@ -736,6 +737,9 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 		hdrs[hdrs_no++] = msg->min_se;
 	if(msg->maxforwards)
 		hdrs[hdrs_no++] = msg->maxforwards;
+	if(msg->event)
+		hdrs[hdrs_no++] = msg->event;
+	
 
 	require_hdr = get_header_by_static_name( msg, "Require");
 	if(require_hdr)
@@ -745,6 +749,9 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 	if(rseq_hdr)
 		hdrs[hdrs_no++] = rseq_hdr;
 
+	subscription_state_hdr = get_header_by_static_name( msg, "Subscription-state");
+	if(subscription_state_hdr)
+		hdrs[hdrs_no++] = subscription_state_hdr;
 
 	/* add also the custom headers */
 	for(i = 0; i< custom_headers_lst_len; i++)
