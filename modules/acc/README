@@ -842,6 +842,17 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
+       What happened with old report_ack parameter
+
+       The parameter is considered obsolete. It was removed as acc
+       module is doing SIP transaction based accouting and according
+       to SIP RFC, end2end ACKs are a different transaction (still
+       part of the same dialog). ACKs can be individually accouted as
+       any other sequential (in-dialog) request.
+       $
+
+   2.2.
+
        What happened with old log_fmt parameter
 
        The parameter became obsolete with the restructure of the data
@@ -849,7 +860,7 @@ Chapter 2. Frequently Asked Questions
        similar behaviour you can use the extra accouting (see the
        corresponding chapter).
 
-   2.2.
+   2.3.
 
        What happened with old multi_leg_enabled parameter
 
@@ -857,7 +868,7 @@ Chapter 2. Frequently Asked Questions
        multi_leg_info parameter. The multi-leg accouting is
        automatically enabled when multi_leg_info is defined.
 
-   2.3.
+   2.4.
 
        What happened with old src_leg_avp_id and dst_leg_avp_id
        parameters
@@ -866,13 +877,13 @@ Chapter 2. Frequently Asked Questions
        multi_leg_info. This allows logging (per-leg) of more
        information than just dst and src.
 
-   2.4.
+   2.5.
 
        Where can I find more about OpenSIPS?
 
        Take a look at http://www.opensips.org/.
 
-   2.5.
+   2.6.
 
        Where can I post a question about this module?
 
@@ -890,7 +901,7 @@ Chapter 2. Frequently Asked Questions
        If you want to keep the mail private, send it to
        <users@lists.opensips.org>.
 
-   2.6.
+   2.7.
 
        How can I report a bug?
 

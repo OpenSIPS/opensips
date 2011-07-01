@@ -7,6 +7,21 @@
 
 	<qandaentry>
 		<question>
+		<para>What happened with old report_ack parameter</para>
+		</question>
+		<answer>
+		<para>
+			The parameter is considered obsolete. It was removed as acc
+			module is doing SIP transaction based accouting and according
+			to SIP RFC, end2end ACKs are a different transaction (still part
+			of the same dialog). ACKs can be individually accouted as any
+			other sequential (in-dialog) request.
+		</para>$
+		</answer>$
+	</qandaentry>$
+
+	<qandaentry>
+		<question>
 		<para>What happened with old log_fmt parameter</para>
 		</question>
 		<answer>
