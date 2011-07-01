@@ -711,7 +711,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		/* save only dialog's state and timeout */
 		VAL_TYPE(values) = VAL_TYPE(values+1) = 
 		VAL_TYPE(values+12) = VAL_TYPE(values+13) = VAL_TYPE(values+16) =
-		VAL_TYPE(values+17) = DB_INT;
+		VAL_TYPE(values+17) = VAL_TYPE(values+18) = DB_INT;
 
 		VAL_TYPE(values+14) = VAL_TYPE(values+15) =DB_STR;
 
