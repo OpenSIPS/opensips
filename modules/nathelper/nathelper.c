@@ -3663,7 +3663,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	if (rval > 0) {
 		if (buf != NULL)
 			pkg_free(buf);
-		cblen = rval * 2;
+		cblen += rval + 128 /*some extra*/;
 		buf = pkg_malloc(cblen);
 		if (buf == NULL) {
 			LM_ERR("out of pkg memory\n");
