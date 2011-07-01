@@ -617,6 +617,8 @@ static inline int run_failure_handlers(struct cell *t)
 				uac->reply, uac->last_received);
 	}
 	if (t->on_negative) {
+		/* update flags in transaction if changed by callbacks */
+		shmem_msg->flags = faked_req.flags;
 		/* avoid recursion -- if failure_route forwards, and does not 
 		 * set next failure route, failure_route will not be reentered
 		 * on failure */
