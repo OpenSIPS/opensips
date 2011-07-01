@@ -112,30 +112,6 @@ UAC                       OpenSIPS PROXY                          UAS
 
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>enable_full_lr</varname> (integer)</title>
-		<para>
-		If set to 1 then <quote>;lr=on</quote> instead of just 
-		<quote>;lr</quote> will be used. This is to overcome problems with 
-		broken &ua;s which strip <quote>;lr</quote> parameter when generating 
-		Route header fields from Record-Route (<quote>;lr=on</quote> seems 
-		to help).
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (no).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>enable_full_lr</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rr", "enable_full_lr", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section id="append-fromtag-id">
 		<title><varname>append_fromtag</varname> (integer)</title>
 		<para>
