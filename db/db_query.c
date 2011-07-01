@@ -158,8 +158,10 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 	/* insert buffering is enabled ? */
 	if (CON_HAS_INSLIST(_h) && !CON_HAS_PS(_h))
 	{
+		LM_DBG("inlist %p\n",CON_HAS_INSLIST(_h));
 		if (IS_INSTANT_FLUSH(_h))
 		{
+			LM_DBG("timer wishing to flush \n");
 			/* if caller signals it's flush time ( timer, etc ), 
 			 * detach rows in queue 
 			 * the caller is holding the lock at this point */
@@ -190,6 +192,8 @@ int db_do_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 			LM_ERR("failed to insert row to buffered list \n");
 			goto error;
 		}
+
+		LM_DBG("no rows = %d\n",no_rows);
 
 		if (no_rows == 0)
 		{

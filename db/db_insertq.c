@@ -213,6 +213,7 @@ int ql_detach_rows_unsafe(query_list_t *entry,db_val_t ***ins_rows)
 	memset(entry->rows,0,query_buffer_size * sizeof(db_val_t *));
 
 	no_rows = entry->no_rows;
+	LM_DBG("detached %d rows\n",no_rows);
 
 	entry->no_rows = 0;
 	entry->oldest_query = 0;
@@ -552,7 +553,7 @@ void ql_timer_routine(unsigned int ticks,void *param)
 		/* are there any old queries in queue ? */
 		if (it->oldest_query && (now - it->oldest_query > query_flush_time))
 		{
-			LM_DBG("insert timer kicking in for query %p\n",it);
+			LM_DBG("insert timer kicking in for query %p [%d]\n",it, it->no_rows);
 
 			if (it->conn == NULL)
 			{
