@@ -334,15 +334,15 @@ static int mod_init(void)
 	}
 
 	/* parse avps */
-	if (!parse_avp_spec(&grp_avp_name_s, &grp_avp_name)) {
+	if (parse_avp_spec(&grp_avp_name_s, &grp_avp_name)) {
 		LM_ERR("cannot parse group avp\n");
 		return -1;
 	}
-	if (!parse_avp_spec(&mask_avp_name_s, &mask_avp_name)) {
+	if (parse_avp_spec(&mask_avp_name_s, &mask_avp_name)) {
 		LM_ERR("cannot parse mask avp\n");
 		return -1;
 	}
-	if (!parse_avp_spec(&id_avp_name_s, &id_avp_name)) {
+	if (parse_avp_spec(&id_avp_name_s, &id_avp_name)) {
 		LM_ERR("cannot parse id avp\n");
 		return -1;
 	}
