@@ -36,6 +36,9 @@
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_hname2.h"
+#include "../../parser/parse_refer_to.h"
+#include "../../parser/parse_replaces.h"
+#include "../../strcommon.h"
 #include "../../ut.h"
 #include "../../trim.h"
 #include "../../mem/shm_mem.h"
@@ -1871,11 +1874,31 @@ error:
 int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
 {
 	unsigned int hash_index, local_index;
+	unsigned int hash_idx, local_idx;
+	str entity_key = {NULL, 0};
+	b2bl_tuple_t* tuple;
 	str* b2bl_key = (str*)param;
 	str body= {NULL, 0};
 	str extra_headers = {NULL, 0};
 	str new_body={NULL, 0};
 	int ret = -1;
+#define H_SIZE 2
+	str h_name[H_SIZE];
+	str h_val[H_SIZE];
+	str rt_header;
+	str* replaces = NULL;
+	char tuple_buf[B2BL_MAX_KEY_LEN];
+	str tuple_key;
+#define U_REPLACES_BUF_LEN 512
+	char u_replaces_buf[U_REPLACES_BUF_LEN];
+	str u_replaces;
+	//str u_replaces = {NULL, 0};
+#define RT_BUF_LEN 1024
+	char rt_buf[RT_BUF_LEN];
+	str rt;
+	struct replaces_body replaces_b;
+	struct b2bl_entity_id* r_peer = NULL;
+	int i;
 
 	if(b2bl_key == NULL)
 	{
@@ -1928,24 +1951,223 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		}
 	}
 
-	/* build extra headers */
-	if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
-	{
-		LM_ERR("Failed to construct extra headers\n");
-		goto done;
-	}
-
 	LM_DBG("b2b_entities notification cb for [%.*s] with entity [%.*s]\n",
 			b2bl_key->len, b2bl_key->s, key->len, key->s);
 
 	if(type == B2B_REPLY)
 	{
+		/* build extra headers */
+		if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
+		{
+			LM_ERR("Failed to construct extra headers\n");
+			goto done;
+		}
 		ret = b2b_logic_notify_reply(src, msg, key, &body, &extra_headers,
 						b2bl_key, hash_index, local_index);
 	}
 	else
 	if(type == B2B_REQUEST)
 	{
+		if(msg->first_line.u.request.method_value==METHOD_REFER &&
+			parse_refer_to_header(msg)==0 && msg->refer_to!=NULL &&
+			get_refer_to(msg)!=NULL && parse_uri(get_refer_to(msg)->uri.s,
+							get_refer_to(msg)->uri.len,
+							&(get_refer_to(msg)->parsed_uri))==0)
+		{
+			/* We have a Refer-To header */
+			if(get_refer_to(msg)->parsed_uri.headers.s &&
+				parse_uri_headers(get_refer_to(msg)->parsed_uri.headers,
+								h_name,h_val,H_SIZE)==0)
+			{
+				for(i=0; i<H_SIZE && h_name[i].s && h_name[i].len; i++)
+					if(strncmp("Replaces",h_name[i].s,h_name[i].len)==0)
+					{
+						replaces = &h_val[i];
+						break;
+					}
+			}
+			if(replaces)
+			{
+				//LM_DBG("Replaces=[%.*s]\n",replaces->len,replaces->s);
+				u_replaces.s = &u_replaces_buf[0];
+				u_replaces.len = U_REPLACES_BUF_LEN;
+				if(unescape_param(replaces,&u_replaces)!=0)
+				{
+					LM_ERR("unable to escape [%.*s]\n",
+						replaces->len, replaces->s);
+					goto done;
+				}
+				//LM_DBG("[%.*s]\n", u_replaces.len, u_replaces.s);
+				if(parse_replaces_body(u_replaces.s, u_replaces.len,
+						&replaces_b)<0 ||
+						!replaces_b.callid_val.s ||
+						!replaces_b.to_tag_val.s ||
+						!replaces_b.from_tag_val.s)
+				{
+					LM_ERR("unable to parse replaces header [%.*s]\n",
+						u_replaces.len, u_replaces.s);
+					goto done;
+				}
+				tuple_key.s = tuple_buf;
+				tuple_key.len = B2BL_MAX_KEY_LEN;
+				if(b2b_api.get_b2bl_key(&replaces_b.callid_val,
+						&replaces_b.from_tag_val,
+						&replaces_b.to_tag_val,
+						&entity_key,
+						&tuple_key)!=0)
+				{
+					LM_ERR("no b2bl key for [%.*s][%.*s][%.*s]\n",
+							replaces_b.callid_val.len,
+							replaces_b.callid_val.s,
+							replaces_b.to_tag_val.len,
+							replaces_b.to_tag_val.s,
+							replaces_b.from_tag_val.len,
+							replaces_b.from_tag_val.s);
+					goto done;
+				}
+				if(b2bl_parse_key(&tuple_key, &hash_idx,&local_idx)< 0)
+				{
+					LM_ERR("Failed to parse b2b logic key [%.*s]\n",
+						tuple_key.len, tuple_key.s);
+					goto done;
+				}
+				LM_DBG("Need to replace callid=[%.*s] to-tag=[%.*s] and "
+					"from-tag=[%.*s] from b2b_logic [%.*s]\n",
+					replaces_b.callid_val.len, replaces_b.callid_val.s,
+					replaces_b.to_tag_val.len, replaces_b.to_tag_val.s,
+					replaces_b.from_tag_val.len, replaces_b.from_tag_val.s,
+					tuple_key.len, tuple_key.s);
+				/* reset the replaces parsed structure */
+				memset(&replaces_b, 0, sizeof(struct replaces_body));
+
+				lock_get(&b2bl_htable[hash_idx].lock);
+				tuple=b2bl_search_tuple_safe(hash_idx, local_idx);
+				if(tuple == NULL)
+				{
+					LM_ERR("B2B logic record not found\n");
+					lock_release(&b2bl_htable[hash_idx].lock);
+					goto done;
+				}
+				b2bl_print_tuple(tuple, L_ERR);
+				for(i=0;i<MAX_B2BL_ENT;i++)
+				{
+					if(tuple->servers[i] &&
+						tuple->servers[i]->key.len==entity_key.len &&
+						strncmp(tuple->servers[i]->key.s,
+							entity_key.s, entity_key.len)==0)
+					{
+						r_peer = tuple->servers[i]->peer;
+						break;
+					}
+				}
+				lock_release(&b2bl_htable[hash_idx].lock);
+
+				if(!r_peer)
+				{
+					LM_ERR("no replaces peer\n");
+					goto done;
+				}
+				LM_DBG("got replacement callid=[%.*s] "
+					"to-tag=[%.*s] and from-tag=[%.*s]\n",
+					r_peer->dlginfo->callid.len, r_peer->dlginfo->callid.s,
+					r_peer->dlginfo->totag.len, r_peer->dlginfo->totag.s,
+					r_peer->dlginfo->fromtag.len, r_peer->dlginfo->fromtag.s);
+
+				/* build the escaped Replaces URI header
+				 * Note: dlginfo->totag becomes from-tag in Replaces URI header
+				 *       dlginfo->fromtag becomes to-tag in Replaces URI header
+				 */
+				u_replaces.s = &u_replaces_buf[0];
+				i = r_peer->dlginfo->callid.len + r_peer->dlginfo->fromtag.len +
+					r_peer->dlginfo->totag.len + 18 /* 2x'=' + 2x'=' + ft */;
+				if (U_REPLACES_BUF_LEN < i)
+				{
+					LM_ERR("not enough space in the buffer: "
+						"U_REPLACES_BUF_LEN < %d\n", i);
+				}
+				memcpy(u_replaces.s,
+					r_peer->dlginfo->callid.s, r_peer->dlginfo->callid.len);
+				i = r_peer->dlginfo->callid.len;
+				u_replaces_buf[i] = ';';
+				i++;
+				memcpy(u_replaces.s + i, "from-tag", strlen("from-tag"));
+				i += strlen("from-tag");
+				u_replaces_buf[i] = '=';
+				i++;
+				memcpy(u_replaces.s + i,
+					r_peer->dlginfo->totag.s, r_peer->dlginfo->totag.len);
+				i += r_peer->dlginfo->totag.len;
+				u_replaces_buf[i] = ';';
+				i++;
+				memcpy(u_replaces.s + i, "to-tag", strlen("to-tag"));
+				i += strlen("to-tag");
+				u_replaces_buf[i] = '=';
+				i++;
+				memcpy(u_replaces.s + i,
+					r_peer->dlginfo->fromtag.s, r_peer->dlginfo->fromtag.len);
+				i += r_peer->dlginfo->fromtag.len;
+				u_replaces.len = i;
+
+				/* build the new Refer-To header
+				 * Note: for now, we ignore the "early-only" parameter
+				 */
+				i = (int)(replaces->s - msg->refer_to->name.s);
+				if(i>=RT_BUF_LEN)
+				{
+					LM_ERR("Not enough space to build Refer-To: "
+								"%d>=RT_BUF_LEN\n", i);
+					goto done;
+				}
+				memcpy(&rt_buf[0], msg->refer_to->name.s, i);
+				rt.s = &rt_buf[i];
+				rt.len = RT_BUF_LEN - i;
+				if(escape_param(&u_replaces, &rt)!=0)
+				{
+					LM_ERR("Unable to escape [%.*s] with len [%d] in char[%d]\n",
+						u_replaces.len,u_replaces.s, u_replaces.len, rt.len);
+					goto done;
+				}
+				//LM_DBG("escaped replaces [%.*s]\n", rt.len, rt.s);
+				i = (int)(msg->refer_to->name.s + msg->refer_to->len -
+						replaces->s - replaces->len);
+				if(RT_BUF_LEN<=(int)(rt.s - &rt_buf[0] + rt.len + i))
+				{
+					LM_ERR("Not enough space to build Refer-To: "
+						"RT_BUF_LEN<=[%d]\n",
+						(int)(rt.s - &rt_buf[0] + rt.len + i));
+					goto done;
+				}
+				memcpy(rt.s + rt.len, replaces->s + replaces->len, i);
+				rt.len = (int)(rt.s + rt.len + i - &rt_buf[0]);
+				rt.s = &rt_buf[0];
+				LM_DBG("New Refer-To: [%.*s]\n", rt.len, rt.s);
+
+				/* build extra headers */
+				if(b2b_extra_headers(msg, NULL, &rt, &extra_headers)< 0)
+				{
+					LM_ERR("Failed to construct extra headers\n");
+					goto done;
+				}
+			}
+			else
+			{	/* build extra headers */
+				rt_header.s = msg->refer_to->name.s;
+				rt_header.len = msg->refer_to->len;
+				if(b2b_extra_headers(msg, NULL, &rt_header, &extra_headers)< 0)
+				{
+					LM_ERR("Failed to construct extra headers\n");
+					goto done;
+				}
+			}
+		}
+		else
+		{	/* build extra headers */
+			if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
+			{
+				LM_ERR("Failed to construct extra headers\n");
+				goto done;
+			}
+		}
 		ret = b2b_logic_notify_request(src, msg, key, &body, &extra_headers,
 		 				b2bl_key, hash_index, local_index);
 	}
