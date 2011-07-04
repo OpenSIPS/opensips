@@ -187,7 +187,10 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
 	}
 
 	if(entity->dlginfo)
+	{
 		shm_free(entity->dlginfo);
+		entity->dlginfo = NULL;
+	}
 	if(entity_add_dlginfo(entity, dlginfo) < 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
