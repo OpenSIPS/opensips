@@ -1004,7 +1004,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_INT_VALUE(values+21, cell->legs[callee_leg].last_gen_cseq);
 
 				set_final_update_cols(values+22, cell, on_shutdown);
-				SET_INT_VALUE(values+23, cell->flags);
+				SET_INT_VALUE(values+25, cell->flags);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
@@ -1041,7 +1041,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_INT_VALUE(values+21, cell->legs[callee_leg].last_gen_cseq);
 
 				set_final_update_cols(values+22, cell, on_shutdown);
-				SET_INT_VALUE(values+23, cell->flags);
+				SET_INT_VALUE(values+25, cell->flags);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
