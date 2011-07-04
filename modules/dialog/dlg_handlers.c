@@ -245,6 +245,39 @@ error0:
 	return -1;
 }
 
+static str extracted_to_uri;
+static inline str* extract_mangled_touri(str *mangled_to_hdr)
+{
+	struct to_body to_b;
+
+	parse_to(mangled_to_hdr->s+3,mangled_to_hdr->s+mangled_to_hdr->len,&to_b);
+	if (to_b.error == PARSE_ERROR) {
+		LM_ERR("bad to header [%.*s]\n",mangled_to_hdr->len,mangled_to_hdr->s);
+		return NULL;
+	}
+	
+	extracted_to_uri = to_b.uri;
+	free_to_params(&to_b);
+
+	return &extracted_to_uri;
+}
+
+static str extracted_from_uri;
+static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
+{
+	struct to_body from_b;
+
+	parse_to(mangled_from_hdr->s+5,mangled_from_hdr->s+mangled_from_hdr->len,&from_b);
+	if (from_b.error == PARSE_ERROR) {
+		LM_ERR("bad from header [%.*s]\n",mangled_from_hdr->len,mangled_from_hdr->s);
+		return NULL;
+	}
+
+	extracted_from_uri = from_b.uri;
+	free_to_params(&from_b);
+	return &extracted_from_uri;
+}
+
 static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
@@ -285,7 +318,8 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 
 	/* save callee's tag and cseq */
 	LM_DBG("new branch with tag <%.*s>\n",tag.len,tag.s);
-	if (init_leg_info( dlg, rpl, t, &tag,mangled_from,mangled_to) !=0) {
+	if (init_leg_info( dlg, rpl, t, &tag,extract_mangled_fromuri(mangled_from),
+				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		return;
 	}
@@ -1284,6 +1318,8 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	int unref;
 
 	dlg = get_dlg_tl_payload(tl);
+
+	LM_DBG("byeontimeout ? %d , state = %d\n",dlg->flags,dlg->state);
 
 	if ( (dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
 	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {

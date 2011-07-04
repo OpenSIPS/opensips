@@ -317,7 +317,6 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 {
 	struct dlg_leg* leg;
 	rr_t *head = NULL, *rrp;
-	struct to_body to_b,from_b;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
 		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
@@ -388,21 +387,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 
 	/* save mangled from URI, if any */
 	if (mangled_from && mangled_from->s && mangled_from->len) {
-		LM_DBG("parsing mangled from [%.*s]\n",mangled_from->len-5,mangled_from->s+5);
-
-		parse_to(mangled_from->s+5,mangled_from->s+mangled_from->len,&from_b);
-		if (from_b.error == PARSE_ERROR) {
-			LM_ERR("bad from header [%.*s]\n",mangled_from->len,mangled_from->s);
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			if (leg->contact.s) 
-				shm_free(leg->contact.s);
-			return -1;
-		}
-
-		LM_DBG("mangled FROM uri = [%.*s]\n",from_b.uri.len,from_b.uri.s);
-
-		leg->from_uri.s = shm_malloc(from_b.uri.len);
+		leg->from_uri.s = shm_malloc(mangled_from->len);
 		if (!leg->from_uri.s) {
 			LM_ERR("no more shm\n");
 			shm_free(leg->tag.s);
@@ -412,43 +397,25 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 			return -1;
 		}
 
-		leg->from_uri.len = from_b.uri.len;
-		memcpy(leg->from_uri.s,from_b.uri.s,from_b.uri.len);
-
-		free_to_params(&from_b);
+		leg->from_uri.len = mangled_from->len;
+		memcpy(leg->from_uri.s,mangled_from->s,mangled_from->len);
 	}
 
 	if (mangled_to && mangled_to->s && mangled_to->len) {
-		LM_DBG("parsing mangled to [%.*s]\n",mangled_to->len-3,mangled_to->s+3);
-
-		parse_to(mangled_to->s+3,mangled_to->s+mangled_to->len,&to_b);
-		if (to_b.error == PARSE_ERROR) {
-			LM_ERR("bad to header [%.*s]\n",mangled_to->len,mangled_to->s);
-			shm_free(leg->tag.s);
-			shm_free(leg->r_cseq.s);
-			if (leg->contact.s)
-				shm_free(leg->contact.s);
-			shm_free(leg->from_uri.s);
-			return -1;
-		}
-
-		LM_DBG("mangled TO uri = [%.*s]\n",to_b.uri.len,to_b.uri.s);
-
-		leg->to_uri.s = shm_malloc(to_b.uri.len);
+		leg->to_uri.s = shm_malloc(mangled_to->len);
 		if (!leg->to_uri.s) {
 			LM_ERR("no more shm\n");
 			shm_free(leg->tag.s);
 			shm_free(leg->r_cseq.s);
 			if (leg->contact.s)
-				shm_free(leg->contact.s);	
-			shm_free(leg->from_uri.s);
+				shm_free(leg->contact.s);
+			if (leg->from_uri.s)
+				shm_free(leg->from_uri.s);
 			return -1;
 		}
 
-		leg->to_uri.len = to_b.uri.len;
-		memcpy(leg->to_uri.s,to_b.uri.s,to_b.uri.len);
-
-		free_to_params(&to_b);
+		leg->to_uri.len = mangled_to->len;
+		memcpy(leg->to_uri.s,mangled_to->s,mangled_to->len);
 	}
 
 	/* tag */

@@ -385,7 +385,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	int i, nr_rows;
 	struct dlg_cell *dlg;
 	str callid, from_uri, to_uri, from_tag, to_tag;
-	str cseq1, cseq2, contact1, contact2, rroute1, rroute2;
+	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	unsigned int next_id;
 	int no_rows = 10;
 
@@ -472,11 +472,14 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			GET_STR_VALUE(contact1, values, 14, 0, 1);
 			GET_STR_VALUE(contact2, values, 15, 0, 1);
 
+			GET_STR_VALUE(mangled_fu, values, 24,0,1);
+			GET_STR_VALUE(mangled_tu, values, 25,0,1);
+
 			/* add the 2 legs */
 			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
 			&cseq1, create_socket_info(values, 16),0,0)!=0) ||
 			(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
-			&cseq2, create_socket_info(values, 17),0,0)!=0) ) {
+			&cseq2, create_socket_info(values, 17),&mangled_fu,&mangled_tu)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
@@ -499,8 +502,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			if (!VAL_NULL(values+20)) {
 				dlg->user_flags = VAL_INT(values+20);
 			}
+
 			/* top hiding */
 			dlg->flags = VAL_INT(values+23);
+			if (dlg_db_mode==DB_MODE_SHUTDOWN)
+				dlg->flags |= DLG_FLAG_NEW;
 
 			/* calculcate timeout */
 			dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
@@ -529,25 +535,19 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
 
 			dlg->lifetime = 0;
-			dlg->flags = (dlg_db_mode==DB_MODE_SHUTDOWN)?DLG_FLAG_NEW:0;
-			dlg->flags |= DLG_FLAG_ISINIT;
 
 			dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
 				(unsigned int)(VAL_INT(values+21));
 			dlg->legs[callee_idx(dlg)].last_gen_cseq = 
 				(unsigned int)(VAL_INT(values+22));
 
-			if (dlg->legs[DLG_CALLER_LEG].last_gen_cseq)
-				dlg->flags |= DLG_FLAG_PING_CALLER;
-
-			if (dlg->legs[callee_idx(dlg)].last_gen_cseq)
-				dlg->flags |= DLG_FLAG_PING_CALLEE;
-
-			if (0 != insert_ping_timer(dlg)) 
-				LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg); 
-			else {
-				/* reference dialog as kept in ping timer list */
-				ref_dlg(dlg,1);
+			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+				if (0 != insert_ping_timer(dlg)) 
+					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg); 
+				else {
+					/* reference dialog as kept in ping timer list */
+					ref_dlg(dlg,1);
+				}
 			}
 
 			next_dialog:
