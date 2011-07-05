@@ -187,6 +187,9 @@ void db_unixodbc_close(db_con_t* _h)
  */
 static int db_unixodbc_store_result(const db_con_t* _h, db_res_t** _r)
 {
+	SQLSMALLINT cols;
+	SQLLEN aff_cols;
+
 	if ((!_h) || (!_r))
 	{
 		LM_ERR("invalid parameter value\n");
@@ -199,6 +202,21 @@ static int db_unixodbc_store_result(const db_con_t* _h, db_res_t** _r)
 	{
 		LM_ERR("no memory left\n");
 		return -2;
+	}
+
+	SQLNumResultCols(CON_RESULT(_h), &cols);
+	if (!cols) {
+		SQLRowCount(CON_RESULT(_h), &aff_cols);
+		if (aff_cols > 0) {
+			(*_r)->col.n = 0;
+			(*_r)->n = 0;
+			return 0;
+		} else {
+			LM_ERR(" invalid SQL query\n");
+			db_free_result(*_r);
+			*_r = 0;
+			return -3;
+		}
 	}
 
 	if (db_unixodbc_convert_result(_h, *_r) < 0)
