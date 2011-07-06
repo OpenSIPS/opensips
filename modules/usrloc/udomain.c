@@ -677,7 +677,7 @@ int mem_timer_udomain(udomain_t* _d)
 {
 	struct urecord* ptr;
 	void ** dest;
-	int i,ret=0;
+	int i,ret=0,flush=0;
 	map_iterator_t it,prev;
 
 	for(i=0; i<_d->size; i++)
@@ -703,6 +703,9 @@ int mem_timer_udomain(udomain_t* _d)
 				unlock_ulslot(_d, i);
 				return -1;
 			}
+			
+			if (ret)
+				flush=1;
 
 			/* Remove the entire record if it is empty */
 			if (ptr->contacts == 0)
@@ -715,7 +718,7 @@ int mem_timer_udomain(udomain_t* _d)
 		unlock_ulslot(_d, i);
 	}
 
-	if (ret) {
+	if (flush) {
 		LM_DBG("usrloc timer attempting to flush rows to DB\n");
 		/* flush everything to DB
 		 * so that next-time timer fires
