@@ -388,6 +388,18 @@ static int pv_get_ruri(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_strval(msg, param, res, &msg->first_line.u.request.uri);
 }
 
+static int pv_get_ru_q(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if(msg->first_line.type == SIP_REPLY)
+		return pv_get_null(msg, param, res);
+
+	return pv_get_sintval(msg, param, res, get_ruri_q());
+}
+
 static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -2328,6 +2340,30 @@ error:
 	return -1;
 }
 
+int pv_set_ru_q(struct sip_msg* msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	if(msg==NULL || param==NULL || val==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(!(val->flags&PV_VAL_INT))
+	{
+		LM_ERR("int value required to set r-uri queue value\n");
+		return -1;
+	}
+
+	if (val->ri > 1000) {
+		LM_WARN("queue value too big %d - setting queue to "
+				"maximum value (1000)\n", val->ri);
+		set_ruri_q(1000);
+	} else
+		set_ruri_q(val->ri);
+
+	return 0;
+}
 int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
@@ -3233,6 +3269,9 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"ruri", (sizeof("ruri")-1)}, /* */
 		PVT_RURI, pv_get_ruri, pv_set_ruri,
+		0, 0, 0, 0},
+	{{"ru_q", (sizeof("ru_q")-1)}, /* */
+		PVT_RU_Q, pv_get_ru_q, pv_set_ru_q,
 		0, 0, 0, 0},
 	{{"rU", (sizeof("rU")-1)}, /* */
 		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
