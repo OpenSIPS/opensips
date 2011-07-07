@@ -280,7 +280,7 @@ modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 	</section>
 
 	<section>
-		<title><varname>b2bl_from_param_spec</varname> (string)</title>
+		<title><varname>b2bl_from_spec_param</varname> (string)</title>
 		<para>
 			The name of the pseudo variable for storing the new
 			<quote>From</quote> header.
@@ -290,10 +290,10 @@ modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 		<emphasis>Default value is <quote>NULL</quote> (disabled).</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>b2bl_from_param_spec</varname> parameter</title>
+		<title>Set <varname>b2bl_from_spec_param</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_logic", "b2bl_from_param_spec", "$var(b2bl_from)")
+modparam("b2b_logic", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
 route{
 	...

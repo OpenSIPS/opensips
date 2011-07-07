@@ -59,8 +59,8 @@
 	</copyright>
 	<revhistory>
 	    <revision>
-		<revnumber>$Revision: $</revnumber>
-		<date>$Date:  $</date>
+		<revnumber>$Revision$</revnumber>
+		<date>$Date$</date>
 	    </revision>
 	</revhistory>
   </bookinfo>
