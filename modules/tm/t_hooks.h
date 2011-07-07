@@ -48,7 +48,7 @@ struct cell;
 #define TMCB_RESPONSE_OUT       (1<<7)
 #define TMCB_LOCAL_COMPLETED    (1<<8)
 #define TMCB_LOCAL_RESPONSE_OUT (1<<9)
-#define TMCB_REQUEST_BUILT      (1<<19)
+#define TMCB_REQUEST_BUILT      (1<<10)
 #define TMCB_TRANS_CANCELLED    (1<<11)
 #define TMCB_TRANS_DELETED      (1<<12)
 #define TMCB_MAX                ((1<<13)-1)
