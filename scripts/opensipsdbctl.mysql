@@ -286,9 +286,9 @@ dst_db=$2
 src_db=$1
        
 migrate_table ${dst_db}.acc \
-	"id,method,from_tag,to_tag,callid,sip_code,sip_reason,time" \
+	"id,method,from_tag,to_tag,callid,sip_code,sip_reason,time,duration,setuptime,created" \
 	${src_db}.acc \
-	"?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time"
+	"?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time,?duration,?setuptime,?created"
 
 migrate_table ${dst_db}.missed_calls \
 	 "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time" \
@@ -296,9 +296,9 @@ migrate_table ${dst_db}.missed_calls \
 	 "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time"
 
 migrate_table ${dst_db}.aliases \
-	 "id,username,domain,contact,expires,q,callid,cseq,last_modified,flags,cflags,user_agent" \
+	 "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods" \
  	 ${src_db}.aliases \
-	 "?id,?username,?domain,?contact,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent"
+	 "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods"
 
 migrate_table ${dst_db}.dbaliases \
 	"id,alias_username,alias_domain,username,domain" \
@@ -335,27 +335,10 @@ migrate_table ${dst_db}.usr_preferences \
 	${src_db}.usr_preferences \
 	"?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified"
 
-echo -n "In version 1.6, tables 'trusted' and 'address' have been joined under a sigle table name 'address'. " \
-     "You have the option to migrate just one of them or both. " \
-     "Do you want to migrate trusted table? (y|n)"
-read INPUT
-if [ $INPUT == "y" ] || [ $INPUT == "Y" ]
-then
-	migrate_table ${dst_db}.address \
-		"id,ip,proto,pattern,context_info" \
-		${src_db}.trusted \
-		"?id,?src_ip,?proto,?from_pattern,?tag"
-fi
-
-echo -n "Do you want to migrate address table? (y|n)"
-read INPUT
-if [ $INPUT == y ] || [ $INPUT == "Y" ]
-then
-	migrate_table ${dst_db}.address \
-		"id,grp,ip,mask,port" \
-		${src_db}.address \
-		"?id,?grp,?ip_addr,?mask,?port"
-fi
+migrate_table ${dst_db}.address \
+	"id,grp,ip,mask,port,proto,pattern,context_info" \
+	${src_db}.address \
+	"?id,?grp,?ip,?mask,?port,?proto,?pattern,?context_info"
 
 migrate_table ${dst_db}.speed_dial \
 	"id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description" \
@@ -373,19 +356,14 @@ migrate_table ${dst_db}.subscriber \
 	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" 
 
 migrate_table ${dst_db}.load_balancer \
-	"id,group_id,dst_uri,resources,description" \
+	"id,group_id,dst_uri,resources,probe_mode,description" \
 	${src_db}.load_balancer \
-	"?id,?group_id,?dst_uri,?resources,?description" \
-
-migrate_table ${dst_db}.dialog \
-	"id,hash_entry,hash_id,callid,from_uri,from_tag,to_uri,to_tag,caller_cseq,callee_cseq,caller_route_set,callee_route_set,caller_contact,callee_contact,caller_sock,callee_sock,state,start_time,timeout" \
-	${src_db}.dialog \
-	"?id,?hash_entry,?hash_id,?callid,?from_uri,?from_tag,?to_uri,?to_tag,?caller_cseq,?callee_cseq,?caller_route_set,?callee_route_set,?caller_contact,?callee_contact,?caller_sock,?callee_sock,?state,?start_time,?timeout"
+	"?id,?group_id,?dst_uri,?resources,?probe_mode,?description" \
 
 migrate_table ${dst_db}.dispatcher \
-	"id,setid,destination,flags,description" \
+	"id,setid,destination,flags,weight,attrs,description" \
 	${src_db}.dispatcher \
-	"?id,?setid,?destination,?flags,?description"
+	"?id,?setid,?destination,?flags,?weight,?attrs,?description"
 
 migrate_table ${dst_db}.nh_sockets \
 	"id,rtpproxy_sock,set_id" \
@@ -398,14 +376,14 @@ migrate_table ${dst_db}.dialplan \
 	"?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" 
 
 migrate_table ${dst_db}.dr_gateways \
-	"gwid,type,address,strip,pri_prefix,attrs,description" \
+	"gwid,type,address,strip,pri_prefix,attrs,probe_mode,description" \
 	${src_db}.dr_gateways \
-	"?gwid,?type,?address,?strip,?pri_prefix,?attrs,?description"
+	"?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?description"
 
 migrate_table ${dst_db}.dr_rules \
-	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,description" \
+	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description" \
 	$src_db.dr_rules \
-	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?description"
+	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description"
 
 migrate_table ${dst_db}.dr_gw_lists \
 	"id,gwlist,description" \
