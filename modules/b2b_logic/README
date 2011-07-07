@@ -12,10 +12,10 @@ Edited by
 
 Ovidiu Sas
 
-   Copyright © 2009 Anca-Maria
+   Copyright � 2009 Anca-Maria
    Vamanu
 
-   Copyright © 2010 VoIP Embedded, Inc.
+   Copyright � 2010 VoIP Embedded, Inc.
    Revision History
    Revision $Revision: $ $Date: $
      __________________________________________________________
@@ -42,7 +42,7 @@ Ovidiu Sas
               1.3.8. update_period (int)
               1.3.9. max_duration (int)
               1.3.10. b2bl_key_avp (string)
-              1.3.11. b2bl_from_param_spec (string)
+              1.3.11. b2bl_from_spec_param (string)
               1.3.12. server_address (str)
               1.3.13. init_callid_hdr (str)
               1.3.14. db_mode (int)
@@ -81,7 +81,7 @@ Ovidiu Sas
    1.8. Set update_period parameter
    1.9. Set max_duration parameter
    1.10. Set b2bl_key_avp parameter
-   1.11. Set b2bl_from_param_spec parameter
+   1.11. Set b2bl_from_spec_param parameter
    1.12. Set server_address parameter
    1.13. Set init_callid_hdr parameter
    1.14. Set db_mode parameter
@@ -134,7 +134,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the scenario
    instatiation entities.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -177,7 +177,7 @@ b_marketing.xml")
    BYE is sent in all the dialogs from that context and the
    context is deleted.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.4. Set cleanup_period parameter
 ...
@@ -202,7 +202,7 @@ modparam("b2b_logic", "cleanup_period", 60)
    If you wish some other headers to be passed also you should
    define them by setting this parameter.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.5. Set parameter
 ...
@@ -223,7 +223,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    is enabled. You can also set use_init_sdp per scenario and
    overwrite this global value.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.6. Set parameter
 ...
@@ -244,7 +244,7 @@ pensips")
 
    The time interval at which to update the info in database.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.8. Set update_period parameter
 ...
@@ -255,7 +255,7 @@ modparam("b2b_logic", "update_period", 60)
 
    The maximum duration of a call.
 
-   Default value is “12 * 3600 (12 hours)”.
+   Default value is "12 * 3600 (12 hours)".
 
    If you set it to 0, there will be no limitation.
 
@@ -268,30 +268,30 @@ modparam("b2b_logic", "max_duration", 7200)
 
    The name of the Attribute-Value-Pair (AVP) used to store the
    b2b_logic entity key. The avp will be set after calling
-   “b2b_init_request”. The avp will be visible in b2b_entities
+   "b2b_init_request". The avp will be visible in b2b_entities
    request/reply routes
 
 Note
 
    The avp is not visible in local_route.
 
-   Default value is “NULL” (disabled).
+   Default value is "NULL" (disabled).
 
    Example 1.10. Set b2bl_key_avp parameter
 ...
-modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 ...
 
-1.3.11. b2bl_from_param_spec (string)
+1.3.11. b2bl_from_spec_param (string)
 
-   The name of the pseudo variable for storing the new “From”
-   header. The PV must be set before calling “b2b_init_request”.
+   The name of the pseudo variable for storing the new "From"
+   header. The PV must be set before calling "b2b_init_request".
 
-   Default value is “NULL” (disabled).
+   Default value is "NULL" (disabled).
 
-   Example 1.11. Set b2bl_from_param_spec parameter
+   Example 1.11. Set b2bl_from_spec_param parameter
 ...
-modparam("b2b_logic", "b2bl_from_param_spec", "$var(b2bl_from)")
+modparam("b2b_logic", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
 route{
         ...
@@ -338,7 +338,7 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
      * WRITE BACK (update in db from time to time) - set this
        parameter to 2
 
-   Default value is “2” (WRITE BACK).
+   Default value is "2" (WRITE BACK).
 
    Example 1.14. Set db_mode parameter
 ...
@@ -390,16 +390,16 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
 
    Example 1.16. b2b_bridge_request usage
 ...
-modparam("b2b_logic", "b2bl_key_avp", "$avp(i:99)")
+modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 ...
 route(X)
 {
    # handling b2b calls here
    ...
    b2b_init_request("top hiding");
-   xlog("L_INFO","[$mi] got b2bl_key='$avp(i:99)'\n");
+   xlog("L_INFO","[$mi] got b2bl_key='$avp(99)'\n");
    # saving the b2b key into the local cache
-   cache_store("local","some_b2bl_key_identifier","$avp(i:99)");
+   cache_store("local","some_b2bl_key_identifier","$avp(99)");
    ...
 }
 
@@ -408,9 +408,9 @@ route(Y)
    # handling calls to bridge to existing b2b calls
    ...
    # retrieving the key of a b2b call
-   cache_fetch("local","some_b2bl_key_identifier", $avp(i:98) );
+   cache_fetch("local","some_b2bl_key_identifier", $avp(98) );
    $var(entity) = 1;
-   b2b_bridge_request("$avp(i:98)","$var(entity)");
+   b2b_bridge_request("$avp(98)","$var(entity)");
    ...
 }
 ...
