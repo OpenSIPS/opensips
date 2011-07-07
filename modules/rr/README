@@ -229,11 +229,15 @@ modparam("rr", "enable_socket_mismatch_warning", 0)
    requests. If there is no Route: header, the function returns
    FALSE and routing should be done with normal lookup functions.
    If a Route: header is found, the function returns 1 and behaves
-   as described in section 16.12 of RFC 3261. There is only one
-   exception: If the request is out-of-dialog (no to-tag) and
-   there is only one Route: header indicating the local proxy,
-   then the Route: header is removed and the function returns
-   FALSE.
+   as described in section 16.12 of RFC 3261. The only exceptions
+   are : 1. If the request is out-of-dialog (no to-tag) and there
+   is only one Route: header indicating the local proxy, then the
+   Route: header is removed and the function returns FALSE. 2. If
+   the request in inside a dialog ( has a to-tag ), loose-routing
+   was used ($ru is end-point) and Route contains only the local
+   proxy, the function returns FALSE. 3. If there is a Route
+   Header but other parsing errors occur ( like parsing the TO
+   header to get the TAG ), the function also returns FALSE.
 
    Make sure your loose_routing function can't be used by
    attackers to bypass proxy authorization.
