@@ -1232,9 +1232,6 @@ after_unlock5:
 			}
 		}
 
-		/* within dialog request */
-		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
-
 		if ( event!=DLG_EVENT_REQACK) {
 			/* register callback for the replies of this request */
 
