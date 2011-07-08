@@ -250,6 +250,9 @@ static inline str* extract_mangled_touri(str *mangled_to_hdr)
 {
 	struct to_body to_b;
 
+	if (mangled_to_hdr->len == 0 || mangled_to_hdr->s == NULL)
+		return NULL;
+
 	parse_to(mangled_to_hdr->s+3,mangled_to_hdr->s+mangled_to_hdr->len,&to_b);
 	if (to_b.error == PARSE_ERROR) {
 		LM_ERR("bad to header [%.*s]\n",mangled_to_hdr->len,mangled_to_hdr->s);
@@ -266,6 +269,9 @@ static str extracted_from_uri;
 static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 {
 	struct to_body from_b;
+
+	if (mangled_from_hdr->len == 0 || mangled_from_hdr->s == NULL)
+		return NULL;
 
 	parse_to(mangled_from_hdr->s+5,mangled_from_hdr->s+mangled_from_hdr->len,&from_b);
 	if (from_b.error == PARSE_ERROR) {
@@ -382,6 +388,12 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 					mangled_from.s = NULL;
 					mangled_to.len = 0;
 					mangled_to.s = NULL;
+				} else {
+					if ((req->msg_flags & FL_USE_UAC_FROM) && (mangled_from.len == 0 || mangled_from.s == NULL))
+						LM_CRIT("extract_ftc_hdrs ok but no from extracted : [%.*s]\n",req_out_buff->len,req_out_buff->s);
+
+					if ((req->msg_flags & FL_USE_UAC_TO) && (mangled_to.len == 0 || mangled_to.s == NULL))
+						LM_CRIT("extract_ftc_hdrs ok but no to extracted : [%.*s]\n",req_out_buff->len,req_out_buff->s);
 				}
 			}
 			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to);
