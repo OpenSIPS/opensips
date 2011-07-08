@@ -174,6 +174,8 @@
 #include "../../rw_locking.h"
 #include "../../evi/evi_modules.h"
 
+#include "../dialog/dlg_load.h"
+#include "../tm/tm_load.h"
 #include "rtpproxy.h"
 #include "nhelpr_funcs.h"
 #include "rtpproxy_stream.h"
@@ -230,7 +232,12 @@
 
 /* param names to be stored in the dialog */
 static str param1_name = str_init("rtpproxy_1");
+str param1_bavp_name = str_init("$bavp(5589965)");
+pv_spec_t param1_spec;
 static str param2_name = str_init("rtpproxy_2");
+str param2_bavp_name = str_init("$bavp(5589966)");
+pv_spec_t param2_spec;
+static str late_name = str_init("late_negociation");
 
 /* parameters name for event signaling */
 static str event_name = str_init("E_RTPPROXY_STATUS");
@@ -269,6 +276,8 @@ static int child_init(int);
 static void mod_destroy(void);
 static int mi_child_init(void);
 
+static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg);
+
 /*mi commands*/
 static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 		void* param );
@@ -278,8 +287,11 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree,
                 void* param);
 
 void free_rtpp_sets();
+int msg_has_sdp(struct sip_msg *msg);
 
 struct dlg_binds dlg_api;
+/* TM support for saving parameters */
+struct tm_binds tm_api;
 
 struct rtpp_notify_head * rtpp_notify_h = 0;
 
@@ -931,6 +943,21 @@ error:
 }
 
 
+inline static int parse_bavp(str *s, pv_spec_t *bavp)
+{
+	s->len = strlen(s->s);
+	if (pv_parse_spec(s, bavp)==NULL) {
+		LM_ERR("malformed bavp definition %s\n", s->s);
+		return -1;
+	}
+	 /* check if there is a bavp type */
+	if (bavp->type != 903 + PVT_EXTRA) {
+		LM_ERR("store parameter must be an bavp\n");
+		return -1;
+	}
+	return 0;
+	
+}
 
 static int
 mod_init(void)
@@ -1064,6 +1091,13 @@ mod_init(void)
 	memset(&dlg_api, 0, sizeof(struct dlg_binds));
 	if (load_dlg_api(&dlg_api)!=0)
 		LM_DBG("dialog module not loaded.\n");
+	memset(&tm_api, 0, sizeof(struct tm_binds));
+	if (load_tm_api(&tm_api)!=0)
+		LM_DBG("can't load TM API - check if tm module was loaded\n");
+
+	if (parse_bavp(&param1_bavp_name, &param1_spec) < 0 ||
+			parse_bavp(&param2_bavp_name, &param2_spec) < 0)
+		LM_DBG("cannot parse bavp's\n");
 
     if(rtpp_notify_socket.s) {
         /* check if the notify socket parameter is set */
@@ -2139,6 +2173,9 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* str1, char* str2)
 	struct iovec v[1 + 4 + 3] = {{NULL, 0}, {"D", 1}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}};
 						/* 1 */   /* 2 */   /* 3 */    /* 4 */   /* 5 */    /* 6 */   /* 1 */
 
+	if (!msg || msg == FAKED_REPLY)
+		return 1;
+
 	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
 		return -1;
@@ -2170,6 +2207,7 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* str1, char* str2)
 		goto error;
 	}
 	send_rtpp_command(node, v, (to_tag.len > 0) ? 8 : 6);
+	LM_DBG("sent unforce command\n");
 
 	if(nh_lock)
 	{
@@ -2310,56 +2348,246 @@ rtpproxy_answer2_f(struct sip_msg *msg, char *param1, char *param2)
 static void engage_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
-	int offer = 0;
-	int method_id;
-	str param1_val,param2_val,value;
-
-	/* parse cseq header */
-	if(parse_headers(_params->msg,HDR_CSEQ_F,0) < 0) {
-		LM_ERR("cannot parse cseq header");
-		return;
-	}
-
-	if( _params->msg->cseq==NULL || _params->msg->cseq->body.s==NULL) {
-		LM_ERR("cseq header empty");
-		return;
-	}
-
-	method_id = get_cseq(_params->msg)->method_id;
-
-	if (!(method_id==METHOD_INVITE || method_id==METHOD_ACK))
-		return;
-	if (_params->msg->content_length==NULL ||
-			get_content_length (_params->msg)==0)
+	if (!dlg || !_params)
 		return;
 
-	if (type & DLGCB_REQ_WITHIN)
-		offer = 1;
-	else if (type & DLGCB_RESPONSE_WITHIN)
-		offer = 0;
-
-	if (dlg_api.fetch_dlg_value(dlg, &param1_name, &value, 0) < 0) {
-		LM_ERR("cannot fetch first parameter\n");
-		return ;
-	}
-	
-	param1_val.s = pkg_malloc(value.len);
-	memcpy(param1_val.s,value.s,value.len);
-
-	if (dlg_api.fetch_dlg_value(dlg, &param2_name, &value, 0) < 0) {
-		LM_ERR("cannot fetch second parameter\n");
-		return ;
-	}
-
-	param2_val.s = pkg_malloc(value.len);
-	memcpy(param2_val.s,value.s,value.len);
-	
-	force_rtp_proxy(_params->msg, param1_val.s, param2_val.s, offer);
-
-	pkg_free(param1_val.s);
-	pkg_free(param2_val.s);
+	/* engage */
+	engage_force_rtpproxy(dlg, _params->msg);
 }
 
+static void engage_close_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	if (!dlg || !_params)
+		return;
+	LM_DBG("engage close called\n");
+
+	if (unforce_rtp_proxy_f(_params->msg, NULL, NULL) < 0) {
+		LM_ERR("cannot unforce rtp proxy\n");
+	}
+}
+
+/* moves parameters from branch avps to dialog values
+ * returns the values moved
+ */
+static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, str *rval2)
+{
+	unsigned int code = 0;
+	pv_value_t val1, val2;
+
+	if (!msg || !dlg)
+		goto not_moved;
+
+	code = msg->first_line.u.reply.statuscode;
+	if (msg->first_line.type == SIP_REPLY && code >= 200 && code < 300) {
+		/* check to see if there are avps stored */
+		if (pv_get_spec_value(msg, &param1_spec, &val1) < 0) {
+			LM_DBG("bavp not found!\n");
+			goto not_moved;
+		}
+		if (!(val1.flags & PV_VAL_STR)) {
+			LM_DBG("bug - invalid bavp type [%x]\n", val1.flags);
+			goto not_moved;
+		}
+		if (pv_get_spec_value(msg, &param2_spec, &val2) < 0) {
+			LM_DBG("bavp not found!\n");
+			goto not_moved;
+		}
+		if (!(val2.flags & PV_VAL_STR)) {
+			LM_DBG("bug - invalid bavp type [%x]\n", val2.flags);
+			goto not_moved;
+		}
+		if (dlg_api.store_dlg_value(dlg, &param1_name, &val1.rs) < 0) {
+			LM_ERR("cannot store value\n");
+			goto error;
+		}
+		if (rval1) {
+			rval1->len = val1.rs.len;
+			rval1->s = val1.rs.s;
+		}
+		if (dlg_api.store_dlg_value(dlg, &param2_name, &val2.rs) < 0) {
+			LM_ERR("cannot store value\n");
+			goto error;
+		}
+		if (rval2) {
+			rval2->len = val2.rs.len;
+			rval2->s = val2.rs.s;
+		}
+
+		LM_DBG("moved <%s> and <%s> from branch avp list in dlg\n", 
+				param1_name.s,param2_name.s);
+		return 1;
+	}
+
+not_moved:
+	LM_DBG("nothing moved - message type %d code %u\n",
+		msg->first_line.type, code);
+	if (rval1) rval1->len = 0;
+	if (rval2) rval2->len = 0;
+	return 0;
+error:
+	return -1;
+}
+
+
+static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
+{
+	int offer = 1;
+	str param1_val,param2_val,value;
+	int method_id, has_sdp, ret;
+	LM_DBG("engage callback called\n");
+
+	if (!msg)
+		goto done;
+
+	if (dlg_api.get_dlg && !dlg) {
+		dlg = dlg_api.get_dlg();
+		if (!dlg) {
+			LM_DBG("dialog not found - cannot engage rtpproxy\n");
+			goto done;
+		}
+	}
+	
+	if (!dlg) {
+		LM_ERR("null dialog\n");
+		goto error;
+	}
+
+	/* parse cseq header */
+	if(parse_headers(msg,HDR_CSEQ_F,0) < 0) {
+		LM_ERR("cannot parse cseq header");
+		goto error;
+	}
+
+	if(msg->cseq==NULL || msg->cseq->body.s==NULL) {
+		LM_ERR("cseq header empty");
+		goto error;
+	}
+
+	/* check to see if this is a late negociation */
+	if (dlg_api.fetch_dlg_value(dlg, &late_name, &value, 0) < 0)
+		offer = 0;
+	has_sdp = msg_has_sdp(msg);
+
+	method_id = get_cseq(msg)->method_id;
+	LM_DBG("method id is %d SDP: %d\n", method_id, has_sdp);
+	if (method_id == METHOD_ACK) {
+		/* normal negociation - ACK cannot have SDP */
+		if (!offer && has_sdp) {
+			LM_ERR("not a late negociation - ACK cannot have SDP body\n");
+			goto error;
+		}
+		/* late negociation without SDP */
+		if (offer && !has_sdp) {
+			LM_ERR("ACK of a late negociation that doesn't have SDP body\n");
+			goto error;
+		}
+		/* valid normal negociation */
+		if (!offer && !has_sdp)
+			goto done;
+		/* late negociation */
+	} else {
+		/* sequential request without SDP */
+		if (!has_sdp) {
+			goto done;
+		}
+		/* if it is not an 200OK */
+		LM_DBG("handling 200 OK? - %d\n", msg->first_line.u.reply.statuscode);
+	}
+
+	param1_val.len = param2_val.len = 0;
+	param1_val.s = param2_val.s = 0;
+
+	/* try to move values */
+	ret = move_bavp2dlg(msg, dlg, &param1_val, &param2_val);
+	if (ret < 0) {
+		LM_ERR("error while moving branch avps\n");
+		goto error;
+	}
+
+	LM_DBG("has sdp? %d - offer %d\n", has_sdp, offer);
+	if (!ret) {
+		/* nothing moved - the values should be in dialog already */
+		if (dlg_api.fetch_dlg_value(dlg, &param1_name, &value, 0) < 0) {
+			LM_ERR("cannot fetch first parameter\n");
+			goto error;
+		}
+	
+		param1_val.s = pkg_malloc(value.len);
+		if (!param1_val.s) {
+			LM_ERR("no more pkg mem\n");
+			goto error;
+		}
+		memcpy(param1_val.s,value.s,value.len);
+		param1_val.len = value.len;
+
+		/* can hold the value in the buffer */
+		if (dlg_api.fetch_dlg_value(dlg, &param2_name, &param2_val, 0) < 0) {
+			LM_ERR("cannot fetch second parameter\n");
+			pkg_free(param1_val.s);
+			goto error;
+		}
+
+		LM_DBG("fetched: param1 <%s> param2 <%s> - offer? %s\n",
+				param1_val.s, param2_val.s, offer? "yes":"no");
+	}
+	/* else - already stored the values when moved */
+	if (!param1_val.len || !param2_val.len) {
+		LM_ERR("invalid parameters values [%d]%.*s - [%d]%.*s\n",
+				param1_val.len, param1_val.len, param1_val.s,
+				param2_val.len, param2_val.len, param2_val.s);
+		pkg_free(param1_val.s);
+		goto error;
+	}
+	
+	force_rtp_proxy(msg, param1_val.s, param2_val.s, offer);
+
+	if (!ret && param1_val.s)
+		pkg_free(param1_val.s);
+done:
+	return 0;
+error:
+	return -1;
+}
+
+void engage_tm_reply_callback(struct cell* t, int type, struct tmcb_params *p)
+{
+	if (!t || !p)
+		return;
+
+	/* engage */
+	engage_force_rtpproxy(NULL, p->rpl);
+}
+
+
+int msg_has_sdp(struct sip_msg *msg)
+{
+	str body;
+	struct part *p;
+	struct multi_body *m;
+
+	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
+		LM_ERR("cannot parse cseq header");
+		return 0;
+	}
+
+	body.len = get_content_length(msg);
+	if (!body.len)
+		return 0;
+
+	m = get_all_bodies(msg);
+	if (!m) {
+		LM_DBG("cannot parse body\n");
+		return 0;
+	}
+
+	for (p = m->first; p; p = p->next) {
+		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+			return 1;
+	}
+
+	return 0;
+}
 
 static int 
 engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
@@ -2367,8 +2595,9 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 	str param1_val,param2_val;
 	struct to_body *pto, TO;
 	struct dlg_cell *dlg;
+	pv_value_t val1, val2;
 
-	LM_DBG("engage called\n");
+	LM_DBG("engage called from script\n");
 	if (!(msg->first_line.type == SIP_REQUEST &&
 		msg->first_line.u.request.method_value == METHOD_INVITE)) {
 		LM_ERR("this function can only be called from invite\n");
@@ -2394,11 +2623,7 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 		return -1;
 	}
 
-	if(force_rtp_proxy(msg,param1,param2,1) < 0) {
-		LM_ERR("error forcing rtp proxy");
-		return -1;
-	}
-
+	/* create dialog */
 	if (dlg_api.create_dlg(msg) < 0) {
 		LM_ERR("error creating dialog");
 		return -1;
@@ -2410,24 +2635,82 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 		return -1;
 	}
 
+	/* is this a late negociation scenario? */
+	if (msg_has_sdp(msg)) {
+		LM_DBG("message has sdp body -> forcing rtp proxy\n");
+		if(force_rtp_proxy(msg,param1,param2,1) < 0) {
+			LM_ERR("error forcing rtp proxy");
+			return -1;
+		}
+	} else {
+		if ( dlg_api.store_dlg_value(dlg, &late_name, &late_name) < 0) {
+			LM_ERR("cannot store late_negociation param into dialog\n");
+			return -1;
+		}
+	}
+
 	param1_val.s = param1;
 	param1_val.len = strlen(param1)+1;
 
 	param2_val.s = param2;
 	param2_val.len = strlen(param2)+1;
 
-	if ( dlg_api.store_dlg_value(dlg, &param1_name, &param1_val) < 0) {
-		LM_ERR("cannot store first param into dialog\n");
-		return -1;
+	if (route_type & BRANCH_ROUTE) {
+		/* store the value into branch avps */
+		val1.flags = AVP_VAL_STR;
+		val1.rs = param1_val;
+		val2.flags = AVP_VAL_STR;
+		val2.rs = param2_val;
+
+		if (pv_set_value(msg, &param1_spec, EQ_T, &val1) < 0) {
+			LM_ERR("cannot store <%.*s> param", param1_name.len, param1_name.s);
+			return -1;
+		}
+		if (pv_set_value(msg, &param2_spec, EQ_T, &val2) < 0) {
+			LM_ERR("cannot store <%.*s> param", param2_name.len, param2_name.s);
+			return -1;
+		}
+		if (!val1.rs.len || !val2.rs.len) {
+			LM_ERR("cannot store parameters int branch avp\n");
+			return -1;
+		}
+		LM_DBG("stored values in bavp\n");
+	} else {
+		if ( dlg_api.store_dlg_value(dlg, &param1_name, &param1_val) < 0) {
+			LM_ERR("cannot store first param into dialog\n");
+			return -1;
+		}
+		if ( dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
+			LM_ERR("cannot store second param into dialog\n");
+			return -1;
+		}
+		LM_DBG("stored values in dialog\n");
 	}
-	if ( dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
-		LM_ERR("cannot store second param into dialog\n");
+	/* TODO callbacks setup - only once */
+	if (msg->msg_flags & FL_USE_RTPPROXY) {
+		LM_DBG("rtpproxy callbacks already registered\n");
+		return 1;
+	}
+	msg->msg_flags |= FL_USE_RTPPROXY;
+
+	/* handles the replies to the original INVITE */
+	if (tm_api.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
+			engage_tm_reply_callback,0,0)!=1) {
+		LM_ERR("failed to install TM callback\n");
 		return -1;
 	}
 
-	if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_WITHIN | DLGCB_REQ_WITHIN, 
-				engage_callback, msg, 0) != 0) {
+	if (dlg_api.register_dlgcb(dlg,
+			DLGCB_RESPONSE_WITHIN|DLGCB_REQ_WITHIN,
+			engage_callback, msg, 0) != 0) {
 		LM_ERR("cannot register callback\n");
+		return -1;
+	}
+	LM_DBG("registered engage_callback\n");
+
+	if (dlg_api.register_dlgcb(dlg, DLGCB_FAILED | DLGCB_TERMINATED,
+				engage_close_callback, msg, 0) != 0) {
+		LM_ERR("cannot register close callback\n");
 		return -1;
 	}
 

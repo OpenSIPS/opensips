@@ -99,6 +99,8 @@ enum request_method {
                                       * positive reply */
 #define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
                                       * a dialog */
+#define FL_USE_RTPPROXY      (1<<12) /* used by rtpproxy to remember if the msg
+										callback had already been registered */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 5
