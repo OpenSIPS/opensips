@@ -416,6 +416,8 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 		do_free_proxy = 1;
 	}
 
+	msg_callback_process(request, REQ_PRE_FORWARD, (void *)proxy);
+
 	if ( !(t->flags&T_NO_DNS_FAILOVER_FLAG) ) {
 		t->uac[branch].proxy = shm_clone_proxy( proxy , do_free_proxy );
 		if (t->uac[branch].proxy==NULL) {
@@ -625,20 +627,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		LM_ERR("discarding fwd for a cancelled/6xx transaction\n");
 		ser_error = E_NO_DESTINATION;
 		return -1;
-	}
-
-	if (proxy == NULL) {
-		proxy = uri2proxy( GET_NEXT_HOP(p_msg), PROTO_NONE );
-		if (proxy != NULL) {
-			/* FIXME - this is a bit ugly and need some fixing - do
-			 the uri2proxy only if some callbacks are present */
-			msg_callback_process(p_msg, REQ_PRE_FORWARD, (void *)proxy);
-			free_proxy( proxy );
-			pkg_free(proxy);
-			proxy = NULL;
-		}
-	} else {
-		msg_callback_process(p_msg, REQ_PRE_FORWARD, (void *)proxy);
 	}
 
 	/* backup current uri, sock and flags... add_uac changes it */
