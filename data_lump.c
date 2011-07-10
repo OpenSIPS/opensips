@@ -629,7 +629,7 @@ void del_notflaged_lumps( struct lump** lump_list, enum lump_flag not_flags )
 			/* entire before/after list must be removed */
 			free_lump_list( foo );
 		} else {
-			/* check on before and prev list for not_flaged lumps */
+			/* check on after and before list for not_flaged lumps */
 			r = crt->after;
 			prev_r = crt;
 			while(r){

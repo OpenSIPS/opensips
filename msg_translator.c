@@ -603,6 +603,11 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	
 	
 	for(t=lumps;t;t=t->next){
+		/* if a SKIP lump, go to the last in the list*/
+		if (t->op==LUMP_SKIP) {
+			if (!t->next) break;
+			for(;t->next;t=t->next);
+		}
 		/* skip if this is an OPT lump and the condition is not satisfied */
 		if ((t->op==LUMP_ADD_OPT) && !lump_check_opt(t, msg, send_sock))
 			continue;
@@ -619,6 +624,11 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 					 * not satisfied */
 					if (!lump_check_opt(r, msg, send_sock))
 						goto skip_before;
+					break;
+				case LUMP_SKIP:
+					/* if a SKIP lump, go to the last in the list*/
+					if (!r->before || !r->before->before) continue;
+					for(;r->before->before;r=r->before);
 					break;
 				default:
 					/* only ADD allowed for before/after */
@@ -673,6 +683,11 @@ skip_before:
 					 * not satisfied */
 					if (!lump_check_opt(r, msg, send_sock))
 						goto skip_after;
+					break;
+				case LUMP_SKIP:
+					/* if a SKIP lump, go to the last in the list*/
+					if (!r->after || !r->after->after) continue;
+					for(;r->after->after;r=r->after);
 					break;
 				default:
 					/* only ADD allowed for before/after */
@@ -939,6 +954,11 @@ void process_lumps(	struct sip_msg* msg,
 	
 	for (t=lumps;t;t=t->next){
 		switch(t->op){
+			case LUMP_SKIP:
+				/* if a SKIP lump, go to the last in the list*/
+				if (!t->next || !t->next->next) continue;
+				for(;t->next->next;t=t->next);
+				break;
 			case LUMP_ADD:
 			case LUMP_ADD_SUBST:
 			case LUMP_ADD_OPT:
@@ -964,6 +984,11 @@ void process_lumps(	struct sip_msg* msg,
 					 		* not satisfied */
 							if (!lump_check_opt(r, msg, send_sock))
 								goto skip_before;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->before || !r->before->before) continue;
+							for(;r->before->before;r=r->before);
 							break;
 						default:
 							/* only ADD allowed for before/after */
@@ -999,10 +1024,15 @@ skip_before:
 							SUBST_LUMP(r);
 							break;
 						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is 
+							/* skip if this is an OPT lump and the condition is
 					 		* not satisfied */
 							if (!lump_check_opt(r, msg, send_sock))
 								goto skip_after;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->after || !r->after->after) continue;
+							for(;r->after->after;r=r->after);
 							break;
 						default:
 							/* only ADD allowed for before/after */
@@ -1039,10 +1069,15 @@ skip_after:
 							SUBST_LUMP(r);
 							break;
 						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is 
+							/* skip if this is an OPT lump and the condition is
 					 		* not satisfied */
 							if (!lump_check_opt(r, msg, send_sock))
 								goto skip_nop_before;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->before || !r->before->before) continue;
+							for(;r->before->before;r=r->before);
 							break;
 						default:
 							/* only ADD allowed for before/after */
@@ -1067,10 +1102,15 @@ skip_nop_before:
 							SUBST_LUMP(r);
 							break;
 						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is 
+							/* skip if this is an OPT lump and the condition is
 					 		* not satisfied */
 							if (!lump_check_opt(r, msg, send_sock)) 
 								goto skip_nop_after;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->after || !r->after->after) continue;
+							for(;r->after->after;r=r->after);
 							break;
 						default:
 							/* only ADD allowed for before/after */

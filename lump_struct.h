@@ -34,7 +34,8 @@
 /*! \brief
  * Operations on lumps.
  */
-enum lump_op { LUMP_NOP=0, LUMP_DEL, LUMP_ADD, LUMP_ADD_SUBST, LUMP_ADD_OPT };
+enum lump_op { LUMP_NOP=0, LUMP_DEL, LUMP_ADD, LUMP_ADD_SUBST,
+			   LUMP_ADD_OPT , LUMP_SKIP };
 
 /*! \brief
  * Substitutions for lumps.
