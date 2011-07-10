@@ -66,7 +66,6 @@
 #include "serialize.h"
 #include "blacklists.h"
 #include "memcache.h"
-#include "script_cb.h"
 #include "msg_translator.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
@@ -180,15 +179,11 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 
 	resetsflag( (unsigned int)-1 );
 
-	exec_pre_route_cb( msg );
-
 	run_actions(a, msg);
 	ret = action_flags;
 
 	action_flags = bk_action_flags;
 	rec_lev = bk_rec_lev;
-
-	exec_post_route_cb( msg );
 
 	return ret;
 }

@@ -32,7 +32,6 @@
 #include "../../data_lump.h"
 #include "../../parser/sdp/sdp.h"
 #include "codecs.h"
-#include "../../script_cb.h"
 #include "../../route.h"
 #include "../../mod_fix.h"
 
@@ -196,8 +195,8 @@ int post_route_callback( struct sip_msg *msg, void *param )
 
 int codec_init(void)
 {
-	register_route_cb( pre_route_callback, PRE_SCRIPT_CB, NULL );
-	register_route_cb( post_route_callback, POST_SCRIPT_CB, NULL );
+	//register_route_cb( pre_route_callback, PRE_SCRIPT_CB, NULL );
+	//register_route_cb( post_route_callback, POST_SCRIPT_CB, NULL );
 
 	clear_global_data();
 

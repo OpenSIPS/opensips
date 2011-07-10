@@ -48,9 +48,6 @@ static struct script_cb *post_rpl_cb=0;
 
 static struct script_cb *parse_err_cb=0;
 
-static struct script_cb *pre_route_cb=0;
-static struct script_cb *post_route_cb=0;
-
 static unsigned int cb_id=0;
 
 
@@ -129,34 +126,6 @@ error:
 }
 
 
-
-int register_route_cb( cb_function f, int type, void *param )
-{
-	/* type checkings */
-	if ( ((type&(PRE_SCRIPT_CB|POST_SCRIPT_CB))==0) ||
-	(type&PRE_SCRIPT_CB && type&POST_SCRIPT_CB) ) {
-		LM_CRIT("callback POST or PRE type must be exactly one\n");
-		goto error;
-	}
-
-	/* callback for request script */
-	if (type&PRE_SCRIPT_CB) {
-		if (add_callback( &pre_route_cb, f, param)<0)
-			goto add_error;
-	} else if (type&POST_SCRIPT_CB) {
-		if (add_callback( &post_route_cb, f, param)<0)
-			goto add_error;
-	}
-
-	return 0;
-add_error:
-	LM_ERR("failed to add callback\n");
-error:
-	return -1;
-}
-
-
-
 static inline void destroy_cb_list(struct script_cb **list)
 {
 	struct script_cb *foo;
@@ -176,8 +145,6 @@ void destroy_script_cb(void)
 	destroy_cb_list( &pre_rpl_cb  );
 	destroy_cb_list( &post_req_cb );
 	destroy_cb_list( &parse_err_cb );
-	destroy_cb_list( &pre_route_cb  );
-	destroy_cb_list( &post_route_cb );
 }
 
 
@@ -226,13 +193,4 @@ int exec_parse_err_cb( struct sip_msg *msg)
 	return exec_post_cb( msg, parse_err_cb);
 }
 
-int exec_pre_route_cb( struct sip_msg *msg)
-{
-	return exec_post_cb( msg, pre_route_cb);
-}
-
-int exec_post_route_cb( struct sip_msg *msg)
-{
-	return exec_post_cb( msg, post_route_cb);
-}
 

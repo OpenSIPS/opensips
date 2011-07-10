@@ -52,7 +52,6 @@ struct script_cb{
 };
 
 int register_script_cb( cb_function f, int type, void *param );
-int register_route_cb( cb_function f, int type, void *param );
 void destroy_script_cb();
 
 int exec_pre_req_cb( struct sip_msg *msg);
@@ -62,9 +61,6 @@ int exec_pre_rpl_cb( struct sip_msg *msg);
 int exec_post_rpl_cb( struct sip_msg *msg);
 
 int exec_parse_err_cb( struct sip_msg *msg);
-
-int exec_pre_route_cb( struct sip_msg *msg);
-int exec_post_route_cb( struct sip_msg *msg);
 
 #endif
 
