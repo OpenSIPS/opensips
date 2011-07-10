@@ -263,7 +263,7 @@ static int get_codec_lumps( struct sip_msg *msg )
 	}
 
 	/* seams the lumps are already created */
-	if( route_type & (REQUEST_ROUTE | ONREPLY_ROUTE)  )
+	if( route_type & (REQUEST_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE)  )
 	{
 		/* save to use them directly */
 		return 0;
