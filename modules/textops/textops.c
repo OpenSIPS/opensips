@@ -298,8 +298,6 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
-	if(codec_init())
-		return 1;
 	return 0;
 }
 
