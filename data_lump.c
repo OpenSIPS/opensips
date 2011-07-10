@@ -268,6 +268,50 @@ struct lump* insert_cond_lump_before(	struct lump* before,
 
 
 
+/*! \brief inserts a skip lump immediately after hdr 
+ * \return returns pointer on success, 0 on error */
+struct lump* insert_skip_lump_after( struct lump* after)
+{
+	struct lump* tmp;
+	
+	tmp=pkg_malloc(sizeof(struct lump));
+	if (tmp==0){
+		ser_error=E_OUT_OF_MEM;
+		LM_ERR("out of pkg memory\n");
+		return 0;
+	}
+	memset(tmp,0,sizeof(struct lump));
+	tmp->after=after->after;
+	tmp->flags=init_lump_flags;
+	tmp->op=LUMP_SKIP;
+	after->after=tmp;
+	return tmp;
+}
+
+
+
+/*! \brief inserts a skip lump immediately before "before" 
+ * \return returns pointer on success, 0 on error */
+struct lump* insert_skip_lump_before( struct lump* before )
+{
+	struct lump* tmp;
+	
+	tmp=pkg_malloc(sizeof(struct lump));
+	if (tmp==0){
+		ser_error=E_OUT_OF_MEM;
+		LM_ERR("out of pkg memory\n");
+		return 0;
+	}
+	memset(tmp,0,sizeof(struct lump));
+	tmp->before=before->before;
+	tmp->flags=init_lump_flags;
+	tmp->op=LUMP_SKIP;
+	before->before=tmp;
+	return tmp;
+}
+
+
+
 /*! \brief removes an already existing header/data lump */
 /* WARNING: this function adds the lump either to the msg->add_rm or
  * msg->body_lumps list, depending on the offset being greater than msg->eoh,

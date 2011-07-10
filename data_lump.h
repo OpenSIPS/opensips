@@ -86,6 +86,11 @@ struct lump* insert_cond_lump_after(struct lump* after, enum lump_conditions c,
 struct lump* insert_cond_lump_before(struct lump* after,enum lump_conditions c,
 		enum _hdr_types_t type);
 
+/*! \brief skip lumps - after*/
+struct lump* insert_skip_lump_after( struct lump* after);
+/*! \brief skip lumps - before*/
+struct lump* insert_skip_lump_before( struct lump* before);
+
 /*! \brief removes an already existing header */
 struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
 	unsigned int len, enum _hdr_types_t type);
