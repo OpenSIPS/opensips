@@ -409,8 +409,6 @@ int send_acct_func(struct sip_msg* msg, str *s) {
 		}
 	}
 
-	//LM_DBG("*******************************************\n");
-
 	for (i = 0; i < set_size; i++) {
 		if (sets[i]->set_name.len == s->len &&
 				!strncmp(sets[i]->set_name.s, s->s, s->len))
@@ -428,16 +426,12 @@ int send_acct_func(struct sip_msg* msg, str *s) {
 	}
 
 	if (rc_acct(rh, SIP_PORT, send) != OK_RC){
-		if (send)
-			rc_avpair_free(send);
+		if (send) rc_avpair_free(send);
 		LM_ERR("radius accounting message failed to send\n");
-		//LM_DBG("*******************************************\n");
 		return -1;
 	}
 
-	LM_DBG("radius accounting message sent\n");
-//	LM_DBG("*******************************************\n");
-
+	if (send) rc_avpair_free(send);
 	return 1;
 }
 
