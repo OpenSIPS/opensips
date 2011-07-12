@@ -408,10 +408,16 @@ Maturity:   stable
 Depends on: database, signaling
 Purpose:    Handles PUBLISH and SUBSCRIBE messages (SIMPLE engine)
 
+Name:       presence_callinfo
+Use:        experimental
+Maturity:   alpha
+Depends on: presence
+Purpose:    Event CALLINFO implementation
+
 Name:       presence_dialoginfo
 Use:        experimental
 Maturity:   alpha
-Depends on: dialog
+Depends on: dialog, presence
 Purpose:    Event DIALOG implementation
 
 Name:       presence_mwi
@@ -468,6 +474,13 @@ Maturity:   stable
 Depends on: presence, pua, xmpp
 Purpose:    SIP 2 XMPP transaltion for presence
 
+Name:       python
+Use:        experimental
+Maturity:   alpha
+Depends on: dialog
+Purpose:    Track of per dialog SDP session(s)
+
+
 Name:       qos
 Use:        experimental
 Maturity:   alpha
@@ -503,6 +516,12 @@ Use:        regular
 Maturity:   stable
 Depends on: -
 Purpose:    Routing and Record-Routing
+
+Name:       rtpproxy
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    NAT Traversal using RTPProxy
 
 Name:       seas
 Use:        regular
@@ -588,11 +607,23 @@ Maturity:   stable
 Depends on: tm, rr
 Purpose:    User Agent Client functionalities
 
+Name:       uac_auth
+Use:        regular
+Maturity:   stable
+Depends on: -
+Purpose:    User Agent Client authentification functionalities
+
 Name:       uac_redirect
 Use:        regular
 Maturity:   stable
 Depends on: tm, acc
 Purpose:    Redirect reply processing on server
+
+Name:       uac_registrant
+Use:        regular
+Maturity:   alpha
+Depends on: uac_auth
+Purpose:    Registers OpenSIPS to a remote SIP registrar
 
 Name:       uri
 Use:        regular
@@ -617,12 +648,6 @@ Use:        regular
 Maturity:   beta
 Depends on: -
 Purpose:    XCAP client for fetching XCAP elements/docs via HTTP GET.
-
-Name:       xlog
-Use:        regular
-Maturity:   stable
-Depends on: -
-Purpose:    formatted logging (printf style)
 
 Name:       xmpp
 Use:        experimental
