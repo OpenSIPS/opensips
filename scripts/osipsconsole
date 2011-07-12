@@ -1119,7 +1119,7 @@ my $COMMAND=`basename $0`;
 	      "db create <db name or db_path, optional> ....(creates a new database)\n".
 	      "db presence .................................(adds the presence related tables)\n".
 	      "db extra ....................................(adds the extra tables)\n".
-	      "db migrate <old_db> <new_db> ................(migrates DB from 1.5 to 1.6)\n".
+	      "db migrate <old_db> <new_db> ................(migrates DB from 1.6.4 to 1.7)\n".
 	      "db drop <db name or db_path, optional> ......(!entirely deletes tables!)\n".
 	      "db reinit <db name or db_path, optional> ....(!entirely deletes and than re-creates tables!)\n".
 	      "db backup <file> ............................(dumps current database to file)\n".
