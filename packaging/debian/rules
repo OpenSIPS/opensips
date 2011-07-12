@@ -40,7 +40,7 @@ TLS=
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
-	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN
+	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -113,6 +113,12 @@ DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
 DIALPLAN_PKGNAME = opensips-dialplan-module
 DIALPLAN_MODULES = dialplan
 DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
+MEMCACHED_PKGNAME = opensips-memcached-module
+MEMCACHED_MODULES = memcached
+MEMCACHED_MOD_PATH=$(addprefix modules/, $(MEMCACHED_MODULES))
+JSON_PKGNAME = opensips-json-module
+JSON_MODULES = json
+JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
 
 
 # Need this per-package variables available in environment so accessible
