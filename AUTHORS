@@ -12,7 +12,7 @@
 
 N: Anca Vamanu
 C: anca_vamanu
-E: anca@voice-system.ro
+E: anca@opensips.org
 D: Main developer of OpenSIPS
 
 
@@ -24,14 +24,14 @@ D: Contributor to OpenSIPS
 
 N: Andrei Pisau
 C: apisau
-E: andrei.pisau@voice-system.ro
+E: andrei.pisau@opensips.org
 D: Contributor to OpenSIPS
 
 
 N: Bogdan Andrei Iancu
 C: bogdan_iancu
-E: bogdan@voice-system.ro
-W: http://www.voice-system.ro
+E: bogdan@opensips.org
+W: http://www.opensips.org
 D: Core developer of SER / OpenSER / OpenSIPS
 
 
@@ -79,7 +79,7 @@ D: Contributor to OpenSIPS
 
 N: Iulia Bublea
 C: iulia_bublea
-E: iulia@voice-system.ro
+E: iulia@opensips.org
 D: Contributor to OpenSIPS
 
 
@@ -132,6 +132,12 @@ E: peter@peternixon.net
 D: Packager for OpenSIPS
 
 
+N: Razvan Crainea
+C: razvancrainea
+E: razvancrainea@opensips.org
+D: Contributor to OpenSIPS
+
+
 N: Razvan Pistolea
 C: rpistolea
 E: razvy000@yahoo.com
@@ -148,6 +154,13 @@ N: Sergio Gutierrez
 C: saguti
 E: saguti@gmail.com
 D: Contributor to OpenSIPS
+
+
+N: Vladut Paiu
+C: vladut-paiu
+E: vladpaiu@opensips.org
+D: Contributor to OpenSIPS
+
 
 
      INACTIVE PEOPLE
@@ -173,8 +186,8 @@ D: Contributor to OpenSER
 
 N: Daniel-Constantin Mierla
 C: miconda
-E: daniel@voice-system.ro
-W: http://www.voice-system.ro
+E: daniel@opensips.org
+W: http://www.opensips.org
 D: Core developer of SER / OpenSER
 
 
@@ -223,7 +236,7 @@ D: Contributor to OpenSER
 
 N: Lavinia Andrei Spirea
 C: lavinia_andreea
-E: lavinia@voice-system.ro
+E: lavinia@opensips.org
 D: Contributor to OpenSER
 
 
@@ -245,8 +258,8 @@ D: Contributor to SER
 
 N: Ramona-Elena Modroiu
 C: ramona
-E: ramona@voice-system.ro
-W: http://www.voice-system.ro
+E: ramona@opensips.org
+W: http://www.opensips.org
 D: Main developer of SER / OpenSER
 
 
