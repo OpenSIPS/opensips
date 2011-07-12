@@ -6330,13 +6330,13 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	my $dst_db=$_[1];
 
 	### acc
-	&mysql_migrate_table($dst_db.".acc", "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time", $src_db . ".acc", "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time" );
+	&mysql_migrate_table($dst_db.".acc", "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time,duration,setuptime,created", $src_db . ".acc", "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time,?duration,?setuptime,?created" );
 
 	### missed_calls
 	&mysql_migrate_table($dst_db . ".missed_calls", "id,method,from_tag,to_tag,callid,sip_code,sip_reason,time", $src_db . ".missed_calls", "?id,?method,?from_tag,?to_tag,?callid,?sip_code,?sip_reason,?time" );
 
 	### aliases
-	&mysql_migrate_table($dst_db . ".aliases", "id,username,domain,contact,expires,q,callid,cseq,last_modified,flags,cflags,user_agent", $src_db . ".aliases", "?id,?username,?domain,?contact,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent" );
+	&mysql_migrate_table($dst_db . ".aliases", "id,username,domain,contact,received,path,expires,q,callid,cseq,last_modified,flags,cflags,user_agent,socket,methods", $src_db . ".aliases", "?id,?username,?domain,?contact,?received,?path,?expires,?q,?callid,?cseq,?last_modified,?flags,?cflags,?user_agent,?socket,?methods" );
 
 
 	### dbaliases
@@ -6360,22 +6360,9 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	### usr_preferences
 	&mysql_migrate_table($dst_db . ".usr_preferences", "id,uuid,username,domain,attribute,type,value,last_modified", $src_db . ".usr_preferences", "?id,?uuid,?username,?domain,?attribute,?type,?value,?last_modified" );
 
-	print "In version 1.6, tables \'trusted\' and \'address\' have been joined under the name \'address\'. \n ".
-	      "You have the option to migrate just one of them or both. \n".
-	      "Do you want to migrate \'trusted\' table? (y|n)";
-	if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
 		### address
-		&mysql_migrate_table( $dst_db . ".address", "id,ip,proto,pattern,context_info", $src_db . ".trusted", "?id,?src_ip,?proto,?from_pattern,?tag" );
-	} else {
-		print "Migration of table \'trusted\' to table \'address\' was skipped!"
-	}
+	&mysql_migrate_table( $dst_db . ".address", "id,grp,ip,mask,port,proto,pattern,context_info", $src_db . ".trusted", "?id,?grp,?ip,?mask,?port,?proto,?pattern,?context_info" );
 
-	print "Do you want to migrate \'address\' table? (y|n)";
-	if ( ( my $ans = <STDIN> ) =~ /[yY]$/ ) {
-		&mysql_migrate_table( $dst_db . ".address", "id,grp,ip,mask,port", $src_db . ".address", "?id,?grp,?ip_addr,?mask,?port" );
-	} else {
-		print "Migration of table \'address\' to table \'address\' was skipped!"
-	}
 	### speed_dial
 	&mysql_migrate_table( $dst_db . ".speed_dial", "id,username,domain,sd_username,sd_domain,new_uri,fname,lname,description", $src_db . ".speed_dial", "?id,?username,?domain,?sd_username,?sd_domain,?new_uri,?fname,?lname,?description" );
 
@@ -6389,13 +6376,10 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table( $dst_db . ".subscriber", "id,username,domain,password,email_address,ha1,ha1b,rpid", $src_db . ".subscriber", "?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" );
 
 	### load_balancer
-	&mysql_migrate_table( $dst_db . ".load_balancer", "id,group_id,dst_uri,resources,description", $src_db . ".load_balancer", "?id,?group_id,?dst_uri,?resources,?description" );
-
-	### dialog
-	&mysql_migrate_table( $dst_db . ".dialog", "id,hash_entry,hash_id,callid,from_uri,from_tag,to_uri,to_tag,caller_cseq,callee_cseq,caller_route_set,callee_route_set,caller_contact,callee_contact,caller_sock,callee_sock,state,start_time,timeout", $src_db . ".dialog", "?id,?hash_entry,?hash_id,?callid,?from_uri,?from_tag,?to_uri,?to_tag,?caller_cseq,?callee_cseq,?caller_route_set,?callee_route_set,?caller_contact,?callee_contact,?caller_sock,?callee_sock,?state,?start_time,?timeout" );
+	&mysql_migrate_table( $dst_db . ".load_balancer", "id,group_id,dst_uri,resources,probe_mode,description", $src_db . ".load_balancer", "?id,?group_id,?dst_uri,?resources,?probe_mode,?description" );
 
 	### dispatcher
-	&mysql_migrate_table( $dst_db . ".dispatcher", "id,setid,destination,flags,description", $src_db . ".dispatcher", "?id,?setid,?destination,?flags,?description" );
+	&mysql_migrate_table( $dst_db . ".dispatcher", "id,setid,destination,flags,weight,attrs,description", $src_db . ".dispatcher", "?id,?setid,?destination,?flags,?weight,?attrs,?description" );
 
 	### nathelper
 	&mysql_migrate_table( $dst_db . ".nh_sockets", "id,rtpproxy_sock,set_id", $src_db . ".nh_sockets", "?id,?rtpproxy_sock,?set_id" );
@@ -6404,10 +6388,10 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table( $dst_db . ".dialplan", "id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs", $src_db . ".dialplan", "?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" );
 
 	### dr_gateways
-	&mysql_migrate_table( $dst_db . ".dr_gateways", "gwid,type,address,strip,pri_prefix,attrs,description", $src_db . ".dr_gateways", "?gwid,?type,?address,?strip,?pri_prefix,?attrs,?description" );
+	&mysql_migrate_table( $dst_db . ".dr_gateways", "gwid,type,address,strip,pri_prefix,attrs,probe_mode,description", $src_db . ".dr_gateways", "?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?description" );
 
 	### dr_rules
-	&mysql_migrate_table( $dst_db . ".dr_rules", "ruleid,groupid,prefix,timerec,priority,routeid,gwlist,description", $src_db . ".dr_rules", "?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?description" );
+	&mysql_migrate_table( $dst_db . ".dr_rules", "ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description", $src_db . ".dr_rules", "?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description" );
 
 	### dr_gw_lists
 	&mysql_migrate_table( $dst_db . ".dr_gw_lists", "id,gwlist,description", $src_db . ".dr_gw_lists", "?id,?gwlist,?description" );
