@@ -1,320 +1,119 @@
-What is new in 1.6.0
+What is new in 1.7.0
 
 2.1  Core
 
-    * new 'statistic classes for network and pkg_mem information: NET class , to provide information about the network sockets and PKMEM class, to provide information about the private memory of each process - see http://lists.opensips.org/pipermail/users/2009-April/004868.html
-    * new mem_dump core parameter for a better control on logging memory info. Former "mem_log" was split in mem_log (only for debug log during mallog/free/realloc ops) and mem_dump (for dumping the mem status at runtime/shutdown). This will help in debugging memory leaks - you can request only the mem dumping without actually getting all the debugs during mem ops.
-      For backward compatibility, setting mem_log will automatically set to the same value the mem_dump.
-      To get distinct setting, do:
+	* Event Interface - a new interface that allows external applications to subscribe and receive notifications from OpenSIPS regarding various internal events full description
+	* SIP wise URI matching - SIP URI comparison as per RFC3261 (including URI parameters matching). This is used now in Record-Route, Dialog, UAC_Registrar module
+	* benchmarking and reporting for blocking I/O operations - SIP msg processing, DNS queries and DB mysql queries can be timed, and if any of these operations exceed a given threshold, warnings messages will be triggered to the logging facility. Also, new statistics are available, that show the load on the children of each UDP interfaces, as well as the tcp load
+	* auto increase of TCP send buffers at statup , in order to avoid blocking on TCP send operations because of buffering on socket
+	* extensive TCP debugging to troubleshoot the TCP blocking
+	* global configurable default DB URL - a default DB URL (to be used by all modules if not a per-module one given) can be configured as global parameter - see
+	* buffering for DB INSERT operations - Instead of flushing inserts row by row to DB, wait for query_buffer_size rows to pile up, and only then flush to DB. Also, a timer will run every query_flush_time seconds, ensuring that no rows will remain in memory for a long time. This feature is integrated with acc, siptrace and avpops, and also with the usrloc and dialog timer that do write-back synchronization with the DB.
+	* AVP auto-aliasing for names - there are no numerical or string names for AVPs - in script all are strings and, at startup, all AVP names are automatically aliased to numerical ID for speedup.
+	* control TCP over NAT via tcp_no_tcp_conn_bflag parameter - script can instruct TCP layer not to open a new TCP connection when trying to deliver the requests (but only to use an existing one) - useful in NAT situations. New core param "tcp_no_tcp_conn_bflag" - index of branch flag to mark the branch that should not attempt to open a new TCP conn.
+	* OpenSIPS return code covers also the children processes - at startup, OpenSIPS waits for all children processes to initialize before reporting a successful or failed startup.
+	* new {via.*} transformation for extracting information form a SIP VIA-like string.
+	* new {param.exist,name} transformation for testing the presence of a parameter (by name) in a list of SIP parameters. This is useful for testing params that don't have values (e.g., lr,ob).
+	* new remove_branch(n) function for removing an existing branch.
+	* new get_timestamp(sec_avp,usec_avp) function - to return the current timestamp, seconds and microseconds of the current second, from a single system call.
+	* new variable $hdrcnt(name) to count the instances of a SIP header in the current message.
+	* new variables $auth.nonce, $auth.opaque, $auth.alg, $auth.qop, $auth.nc - provides access to fields from the authentication headers.
 
-      mem_log = 6; # do not report mem logs (report them as debugs)
-      mem_dump = 0; # report mem dumps (report on ERR level)
 
-    * new '''db_version_table" core parameter to allow configuration of custom names for "version" table. There are cases when a single DB contains tables from 2 versions of OpenSIPS, so distinct version tables are needed.
+2.2  SIP Parser
 
-      db_version_table = "version_1_6";
+	* Call-Info header parsers
+	* WWW-Authenticate and Proxy-Authenticate header parser
+	* SIP URI parser extended to parse also the unknown URI parameters
+	* SIP URI parser extended - new helper function for splitting URI headers && support for parsing "Replaces" header body
 
-    * extendes the idea of the advertised_address and advertised_port parameters so that it is possible to bind such an address to each listen= statement. Syntax-wise, it works like this:
 
-      listen=[proto:]host[:port][ AS host[:port]]
+2.3  Tools
 
+	* OPENSIPSCTL and OSIPSCONSOLE uses a single database user (with read/write permissions) for DB access (the opensipsro access user - for Read-Only ops - was dropped)
 
-      See Patch #2706135 (see https://sourceforge.net/tracker/?func=detail&aid=2706135&group_id=232389&atid=1086412) 
 
-2.2  Script Routes
+2.4  New EVENT_DATAGRAM module
 
-    * The routes can have string names also, not only numerical IDs as it was until now. This way the routing flow will be more meaningful and easier to understand and follow. The backward compatibility was kept - and you can also use number IDs as route names.
-    * new startup_route type of script route - called only once when the server is started and before the listener processes are created. You can configure here some initialization actions to ease up the future processing. For example, you could take some values from database and store them in cache or in shared memory pseudovariables to have faster access to those values when needed.
-    * new timer_route type of script route - called on a timer basis at a given interval. This can be used to configure some periodical actions that do some data refresh actions for example. The time interval is given after the name of the route separated by comma and it represents a value in seconds. 
+	* This module is a connector module for the Event Interface - it provides datagram based (UDP and UNIX sockets) communication with the external applications.
+	* Full module description and documentation
 
-2.3  Pseudo variables
 
-    * $an - the nonce from Authorization or Proxy-Authorization header
-    * $ar - the authentication response from Authorization or Proxy-Authorization header
-    * $branch - replaces the $br variable (http://www.opensips.org/Resources/DocsCoreVar#toc13)
-    * $(branch()[n]) - this variable provides read/write access to all fields/attributes of an already existing branch (priorly created with append_branch()). The variable accepts also index $(branch(uri)[1]) for accessing a specific branch (multiple branches can be defined at a moment). The index starts from 0 (first branch). If the index is negative, it is considered the n-th branch from the end ( index -1 means the last branch).To get all branches, use the * index - $(branch(uri)[*]). - see http://www.opensips.org/Resources/DocsCoreVar#toc14. The fields of the branch are:
-          o uri - the RURI of the branch (string value)
-          o duri - destination URI of the branch (outbound proxy of the branch) (string value)
-          o q - q value of the branch (int value)
-          o path - the PATH string for this branch (string value)
-          o flags - the branch flags of this branch (int value)
-          o socket - the local socket to be used for relaying this branch (string value) 
-    * $TS - startup time stamp
-    * delete the value at a certain index; syntax: $pvar[index]= NULL;
-    * overwrite the value at a certain index; syntax: $pvar[index] = new_val
-    * new PV $time(format) to print time is dynamic formatted time string. Format: see "man strftime" ; Ex: $time(B %Y) -> Thursday September 2009
-    * added context meaning to pseudovariables - a new token added in front of the pv type name that specifies the context where the pv should be taken from; for now there are 2 pv contexts: reply and request, registered by the tm module
-          o $(<request>ru) from a reply route will get the Request-URI from the request
-          o $(<reply>hdr(Contact)) context can be used from failure route to access information from the reply 
+2.5  New RTPPROXY module
 
-2.4  Transformations
+	* This module was split from NATHELPER module and encapsulate all the rtpproxy-related functionalities.
+	* Also comes with a set of improvements
+	* rtproxy failover - modules properly handles the errors reported by rtpproxy and it is able now to failover to another rtpproxy in cases like rtpproxy cannot create new streams, internal errors, etc
+	* improved the algorithm for re-distributing calls assigned to a failed RTPProxy
+	* "auto-bridging" mode - force the module to detect and trigger the RTP bridging cases.
+	* Full module description and documentation
 
-    * added a new nameaddr transformation: param; it extract the value of a certain parameter
-          o example: avp(i:4) = $(hdr(From){nameaddr.param, tag}); 
 
-2.5  AAA API and enhancement of RADIUS support(NEW)
-AAA API
+2.6  New UAC_REGISTRANT module
 
-The AAA API represents a set of generic callbacks and structures needed for AAA operations.
+	* This module that allows OpenSIPS to register itself on a remote registrar, including the authentication part.
+	* Full module description and documentation
 
-The purpose of the API is to move all the AAA specific (Radius) implementations in a single module. The AAA API will hide the implementations details from the modules that want to use AAA support, making it easier to use.
 
-Currently, only one module implements the AAA API - aaa_radius, offering Radius support.
+2.7  New UAC_AUTH module
 
-Because both standardized AAA protocols, Radius and Diameter, use lists of attribute-value pairs, the API is designed based on attribute-value pairs, as well.
+	* This module provides a common API for UAC authentication functionality. This module is not to be used directly from script, but it is used by other modules which requires UAC uath, like UAC, B2BUA, UAC_REGISTRANT modules.
+	* Full module description and documentation
 
-One of the advantages of using the API is that any module that wishes to do AAA operations does not depend on a certain protocol implementation, therefore it is not linked with a certain AAA library.
 
-Hence, any module that was previously using Radius, for example, is not linked with the radiusclient library any more, which is obviously an advantage, especially when the module uses more than one API (DB, AAA, etc).
+2.8  B2BUA modules
 
-The AAA protocol to be used by a module is specified from the script using a so called "aaa_url" that encodes the protocol used and other useful information depending on the protocol.
+	* internal API that allows other module to bind, control and implement custom B2B2UA scenarios
+	* parallel forking support on the UAC side of B2BUA
+	* outbound proxy for B2BUA - setting $du before calling b2b_init_request will have effect now
+	* UAS side callid can propagate to UAS side as an extra custom header - you can enable this feature by setting the init_callid_hdr parameter with the name of the header
+	* extended the db storage modes - now all the 3 types are supported: WRITE BACK(the existing one), WRITE THROUGH(new - synchonous storage in db) and NO DB.
+	*apply body lumps before processing (for initial Invites on which b2b_init_request was called, and for sequential requests received by b2b with a body)
+	* support for UAC authentication - the list of credentials is provided by the uac_auth module which must be loaded before b2b_entities module
+	* REFER with REPLACE hdr handling - the information on the dialog referred by REPLACE header is properly updated when going through B2BUA
 
-The way the generic AAA API is used makes it very similar to the generic database API.
-The ability to make custom Radius requests directly from the script
 
-This feature is very useful because of its flexibility. Basically, any type of Radius queries can be yielded directly from the script, and also, Radius replies can be inspected for certain attributes.
-Radius implementation for the generic AAA API
+2.9  CFGUTILS module
 
-The handling of Radius AVP "SIP-AVP" (used for fetching variables from the Radius server) was integrated in this module. All SIP-AVPs are automatically and transparently handled by the module, so that this functionality is by default available for all the modules that use Radius.
-Module changes
+	* new ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, delta) function - returns the difference between two timestamps given as seconds and microseconds.
 
-Due to the fact that the modules that were previously using Radius were ported to the generic AAA API, the following changes have been made:
 
-    * auth_radius modules became auth_aaa module
-    * group_radius module was merged with group module
-    * uri_radius and uri_db were merged with uri module 
+2.10  DIALOG module
 
-2.6  B2BUA support (NEW)
+	* state machine accepts requests while in early ( if not BYE )
+	* in-dialog pinging - optionally,create_dialog() also receives a string parameter, which specifies whether the dialog end-points should be pinged via SIP options messages. The parameter can be "P" to specify to only ping the caller, "c" to only ping the callee or "Pp" to ping both dialog sides. If one end-point fails to respond to a options ping in ping_interval ( configurable parameter ) seconds, OpenSIPS will terminate the dialog from the middle.
+	* proper cseq handling at invite time & proper validation of ACK messages
+	* new match_dialog() script function for explicitly doing dialog matching or for coping with sequential requests with no Route hdr.
+	* FROM/TO URIs per leg - in case of uac_replace_* function usage, in-dialog requests generated by OpenSIPS from the middle will have correct FROM and/or TO uris
+	* topology hiding functionality based on dialog state. It is a lightweight topology hiding built as an extension of dialog module. It does not change the dialog elements (to tag, from tag, callid), but only strips and restores the headers that contain topology information (Via, Record-Route, Route and Contact headers).
 
-A signaling B2BUA implementation has been added in OpenSIPS. It can keep the state of the dialogs, create new dialogs and control dialogs to offer some PBX specific services.
 
-This feature is implemented in two modules: b2b_entities and b2b_logic.
+2.11  DISPATCHER module
 
-The services are defined in XML documents that are parsed and applied by the b2b_logic module. It uses the basic dialog management functions offered by the b2b_entities module to command the actions needed to implement the service.
+	*limit the number of destinations to be tried when dispatcher call. The default entry is not counted into the total. See the max_results param for ds_select_dst() and ds_select_domain() functions
 
-Find more on http://www.opensips.org/Main/News0036.
-2.7  MEMCACHED module (NEW)
 
-A new module that provides a new caching method using memcached servers was added. It provides a way to access memcached servers using the existing memcache API.
+2.12  EXEC module
 
-Advantages over the existing "localcache" module:
+	* asynchronous support for exec_cmd() function - if the external app you are triggering does not have to provide output back to OpenSIPS, you can instruct OpenSIPS not to wait for the command to finish, but the continue right after the external command was launched.
 
-    * memory costs are no longer on the server
-    * many servers may be used so the memory is virtually unlimited
-    * the cache is persistent so a restart of the server will not affect the cache
-    * memcached is an open-source project so it can be used to exchange data with various other applications
-    * servers may be grouped together (e.g. for security purposes : some can be inside a private network, some can be in a public one). 
 
-Find more on http://lists.opensips.org/pipermail/users/2009-July/007024.html or
-http://www.opensips.org/html/docs/modules/devel/memcached.html
-2.8  DB_HTTP module (NEW)
+2.13  PRESENCE module
 
-This module provides access to a database that is implemented as a HTTP server. It may be used in special cases where traversing firewalls is a problem, or where data encryption is required.
+	* performance improvements - use the info stored in memory to check if a Publish entry exists, instead of hitting the DB.
 
-In order to use this module you must have a server that can communicate via HTTP or HTTPS with this module that follows exactly the format decribed in the specifications section.
 
-The module can provide SSL, authentication, and all the functionalities of an opensips db as long as the server supports them ( except result_fetch).
+2.14  PUA_DIALOGINFO module
 
-There is a slight difference between the url of db_http and the urls of the other db modules. The url doesn't have to contain the database name. Instead, everything that is after the address is considered to be a path to the db resource, it may be missing.
+	* aggregation for multiple dialogs in the same line
 
-Find more on http://www.opensips.org/html/docs/modules/devel/db_http.html
-2.9  DB_VIRTUAL module (NEW)
 
-The DB_VIRTUAL module allows you to create virtual DB connection on top of real connections. A virtual connection may use multiple real connection (a set), acting as a mixer layer - based on different algorithms, the DB operation pushed on the virtual DB will be pushed further to one or more real DB connections.
+2.15  REGISTRAR module
 
-The DB_VIRTUAL provides failover mode (you have a master real connection and when this is down, the queries will be pushed via the next real connection from the set), parallel mode (the received query is pushed via all real connections) and round-robin mode ( the received queries are spread across the set of real connections).
+	* is_other_contact(domain , IPs) function - verifies if there are any other contacts besides the ones given in the IPs list
 
-The purpose of this module is to provide failover and load-balancing at DB connection level in a totally transparent way for the modules that needs DB support.
 
-Read more on http://www.opensips.org/Main/News0035.
-2.10  JSON module (NEW)
+2.16  TM module
 
-This module introduces a new type of variable that provides both serialization and de-serialization from JSON format. The Json format it is very useful as you can encode an unlimited number (and types) of info elements into a single string. For example a gateway description may contain several infos on the GW (if SST is accepted, RPID/PAI, etc), also a user profile (with all its date) can be condensed into a single string, so that DB ops are reduced to a maximum.
-
-The variable provides ways to access objects and arrays to add,replace or delete values from the script.
-
-The correct approach is to consider a json object as a hashtable ( you can put (key;value) pairs, and you can delete and get values by key) and a json array as an array ( you can append, delete and replace values).
-
-Since the JSON format can have objects inside other objects you can have multiple nested hashtables or arrays and you can access these using paths.
-
-See more on http://www.opensips.org/html/docs/modules/devel/json.html
-2.11  STUN server module (NEW)
-
-There is a new STUN server(rfc 3489) module integrated in OpenSIPS.
-
-Why an integrated STUN server module?
-
-    * A STUN server uses 2 ips and 2 ports to create 4 sockets on which to listen or respond.
-    * This integrated STUN module uses the SIPS sockets created by the OpenSIPS core:
-          o one (or two) of the sockets will overlap with the SIP signaling socket
-          o the rest will be created by this module for STUN only purposes. 
-
-In the case of a bad behaving NATs (such as symmetric NAT) only this integrated STUN server will increase the likelihood of STUN to solve the NAT traversal for a wider range of NAT implementations. This translates into less need of media relaying (for NAT traversal purposes).
-
-Note:
-
-    * It is important to set the primary_ip:primary_port to match the OpenSIPS signalling ip and ports.
-    * If OpenSIPS binds one more interface this module will use that too; so make sure you set the correct alternate_ip:primary_port.
-    * STUN requires 2 routable ip addresses; if in shortage create a virtual interface (i don't recommend because it destroys the purpose for some usages). 
-
-Example:
-
-    Opensips listening for signaling traffic:
-        89.89.89.12:5060
-    for stun module we configure :
-        primary_ip = 89.89.89.12; primary_port = 5060 - overlapping with signaling socket
-        primary_ip = 89.89.89.12; alternate_port = 3478 - dedicated stun socket
-        alternate_ip = 34.34.34.12; primary_port = 5060 - dedicated stun socket
-        alternate_ip = 34.34.34.12; alternate_port = 3478 - dedicated stun socket
-
-Documentation can be found here: http://www.opensips.org/html/docs/modules/devel/stun.html
-2.12  ALIAS_DB module
-
-    * new function alias_db_find("table","input_var","output_var") - similar to alias_db_lookup(), but instead of using fixed input (RURI) and output (RURI) is able to get the input SIP URI from a pseudo-variable and place the result back also in a pseudo-variable.
-      The function is usefull as the alias lookup does not affect the request it self (no RURI changes), can be used in a reply context (as it does not work with RURI only) and can be used for others URI than the RURI ( To URI, From URI, custom URI).
-      The function returns TRUE any alias mapping was found and returned.
-      ->See http://www.opensips.org/html/docs/modules/1.6.x/alias_db.html#id228302
-    * both alias_db_lookup() and alias_db_find() may take an optional param, a list of flags (char based flags):
-          o 'd' - do not use domain part in the lookup (by default domain is used)
-          o 'r' - do reverse lookup - the input is the ID URI and the result is alias URI (normally the input is the alias URI and the result is the ID URI) 
-    * use_domain module parameter was removed as replaced by the "d" per-lookup option. 
-
-2.13  AVPOPS module
-
-    * New function avp_insert(_pvar_name_, value, index) - inserts a value to an avp set at a certain position 
-
-2.14  AVP_RADIUS module
-
-important - Removed as its functionality is now part of the AAA_RADIUS module - see the AAA API and module changes.
-2.15  AUTH_RADIUS module
-
-important - Renamed as AUTH_AAA module - see the AAA API and module changes.
-2.16  BENACHMARK module
-
-    * allow granularity == 0 (disables automatic logging)
-    * add bm_poll_results MI command (poll current results and restart local counters)
-    * reject granularity < 0 
-
-2.17  CALL_CONTROL module
-
-    * new parameters init, start, stop added to support customized call_control messages directly from the script
-    * example: 
-
-modparam("call_control", "init", "call-id=$ci to=$tu from=$fu 
-			authruri=$du another_field = $avp(i:10)")
-
-    * the message sent if one of these parameter is set will be the string resulted after expanding the pvars 
-
-2.18  CFGUTILS module
-
-    * New function set_count(_pvar_name_) - returns the number of values of the pseudovariable
-    * New function set_select_weight(_pvar_name_) - selects an element from the set formed by the values of the pseudovariable; the selection algorithm is the genetic algorithm roulette-wheel selection; it return the index of the element 
-
-2.19  DIALOG module
-
-    * added support for early dialogs in order to properly support PRACK requests
-    * dialog script flags, dialog profiles and dialog variables have DB persistence - all these data will be kept over an OpenSIPS restart.
-    * new function validate_dialog() for verifying the in-dialog requests against the date stored in dialog internal structure (cseq, rr set, contact) - this is used to discover bogus or malicious sequential requests.
-    * new PV $DLG_dir to return (as string) the direction of an in-dialog request. 
-
-2.20  DISPATCHER module
-
-    * ds_is_from_list() replaced with a more generic function ds_is_in_list("ip","port"). The new function takes as parameters the IP and PORT to test against the dispatcher list, instead of using only the source IP and PORT (as ds_is_from_list()).
-      ds_is_from_list() == ds_is_in_list("$si","$sp")
-      The new function can be used also if the destination is part of a dispatching set :
-      ds_is_in_list("$rd","$rp") 
-
-2.21  DROUTING module
-
-    * goes_to_gw() takes a second optional parameter (flags) to control the strip, the prefix and attr when GW matches 
-
-2.22  GROUP module
-
-    * is_user_in() renamed as db_is_user_in()
-    * get_user_group() renamed as db_get_user_group() 
-
-2.23  GROUP_RADIUS module
-
-important - Removed as merged into GROUP module - see the AAA API and module changes.
-2.24  LOAD_BALANCER module
-
-    * more algorithm for computing the load are available - relative or absolute values. See:
-      http://www.opensips.org/html/docs/modules/1.6.x/load_balancer.html#id227286
-    * function load_balance() accepts the group parameter as pseudo-variable also
-    * support for destination probing (pinging) and enabling / disabling state. The module is now capable to monitor the status of the destinations by doing SIP probing (sending SIP requests like OPTIONS) and to automatically enables / disable destination based on the probing result. See:
-      http://lists.opensips.org/pipermail/users/2009-July/006818.html 
-
-2.25  MI_DATAGRAM
-
-    * the UDP communication is symmetric - the UDP reply packages are sent back from the RX socket - this helps when firewalls, nat , etc are in the middle; also from security point of view is a plus to know all the time the ports involved in the communication. 
-
-2.26  NAT_TRAVERSAL
-
-    * new UAC test "8" - tests if client has contacted OpenSIPS from an address that is different from the one in the Contact field. Only IP is compared by this test. 
-
-2.27  NATHELPER module
-
-    * MI command "nh_enable_ping", if triggered with no parameter, will return the internal status of natping (if enabled or disabled)
-    * new UAC test "32" - address in Contact is compared against source IP address of signaling 
-
-2.28  PERMISSIONS module
-
-    * this module was reorganized to use only one database table (so that no duplicate information is used) : trusted database table is no longer used and there is a new schema for the address database table
-    * the following script parameters are no longer used: peer_tag_avp, trusted_table, source_col
-    * ip_addr_col parameter was renamed as ip_col
-    * tag_col parameter was renamed as info_col
-    * from_col parameter was renamed as pattern_col
-    * the following functions were introduced: check_address(), check_source_address(), get_source_group() to replace allow_address(), allow_source_address(), allow_trusted()
-    * the new functions perform the same, but they are more flexible and use only one database table 
-
-2.29  PIKE module
-
-New extensions on the pike module for extending the flood detection : (1) from checking requests only, to checking all SIP traffic and (2) from checking the valid SIP packages to checking all received data (even if junk). New way of using the module -> automatic - the module will install internal hooks to catch all incoming requests and replies (even if not well formed from SIP point of view) - more or less the module will monitor all incoming packages (from the network) on the SIP sockets. Each time the source IP of a package needs to be analyse (to see if trusted or not), the module will run a script route - see "check_route" module parameter -, where, based on custom logic, you can decide if that IP needs to be monitored for flooding or not. As action, when flood is detected, the module will automatically drop the packages.
-2.30  REGISTRAR module
-
-    * former global parameters like method_filtering, max_contacts, append_branches, use_path, path_mode and path_use_received are now per AOR / function parameters ; also
-    * lookup() function takes char flags (see http://www.opensips.org/html/docs/modules/devel/registrar.html#id271073):
-          o if parallel forking should be done or not for this lookup (if branches should be appended or not)
-          o if method filtering should be performed or not for this lookup 
-    * save() function takes char flags (see http://www.opensips.org/html/docs/modules/devel/registrar.html#id228571):
-          o if contacts should not be saved in DB (cache update only)
-          o if no reply should be sent out
-          o the maximum number of contacts allowed for AOR
-          o path support control (what path mode should be used) - (former global params)
-          o path received (former global param) 
-    * registered() function takes a third optional parameter - a callid ; in this case, the function will check if a contact with that callid is already registered or not.
-    * sock_flag was moved as flag of the save() function 
-
-2.31  TEXTOPS module
-
-    * new functions were added for SDP codec manipulation (see http://lists.opensips.org/pipermail/users/2009-July/007196.html):
-          o codec_exists(name[,clock]); //test if a codec exists
-          o codec_delete(name[,clock]); //delete a codec
-          o codec_move_up(name[,clock]); //move a codec to the front of the list
-          o codec_move_down(name[,clock]);//move a codec to the back of the list
-          o codec_exists_re ( regexp ); //test if a codec exists based on a POSIX regular expression.
-          o codec_delete_re( regexp ); //delete a codec based on a POSIX regular expression.
-          o codec_move_up_re( regexp ); //move a codec to the front of the list, based on a POSIX regular expression.
-          o codec_move_down_re( regexp );//move a codec to the back of the list, based on a POSIX regular expression. 
-
-2.32  TM module
-
-    * RFC 3326 support (Call Completed Elsewhere) added: A proxy forks an INVITE request and one of the branches returns a 200 (OK). The forking proxy includes this status code in a Reason header field in the CANCEL request that it sends to the rest of the branches.
-    * t_reply() function does not requires any more a prior create Transaction (as in 1.5). If no transaction is found, it will be automatically created.
-    * t_cancel_branch() take flags ("a" - cancel all branches; "o" - cancel all other branches except current; "" - current branch); t_cancel_call() is obsoleted and removed (same as t_cancel_branch("a")).
-    * per branch onreply route - when calling "t_on_reply()" from branch route, the reply route will be set only for the current branch (and not for the whole transaction) - that's it, it will be called only for relies belonging to that particular branch. Of course, from branch route, you can set different reply routes for each branch.
-    * - removed the dependency to Retry-After in 503 in order to do DNS based failure. This was debated on the sip-implementers mailing list and as the RFC3261 is a bit ambigous in that area, we prefer to have the common sense taking over. 
-
-2.33  UAC module
-
-    * new functions uac_replace_to() and uac_restore_to() to perform TO header changing in a safe manner - similar to uac_replace_from() and uac_restore_from() 
-
-2.34  URI_DB module
-
-important - This module does not exists anymore as its was merged into URI module (see AAA API and module changes). All functions from this module are now in URI module and prefixed db_ string.
-
-    * New function get_auth_id() - Checks given uri-string username against URI table (if use_uri_table is set) or subscriber table database backend required). Returns true if the user exists in the database, and sets the given variables to the authentication id and realm corresponding to the given uri. 
-
-2.35  URI_RADIUS module
-
-important - This module does not exists anymore as its was merged into URI module (see AAA API and module changes). All functions from this module are now in URI module and prefixed radius_ prefix from the name of the functions was replaced with aaa_. 
+	* fixed race condition between CANCELing branches and creating new ones - on timeout, first CANCEL first the branch and only then generate a new branch (serial forking on timeout). Previous approach (first generate new branch and then CANCEL previous branch) was leading to unpredictable SIP behaviors, especially when the target of both branches is same SIP entity.
+	* accurate retransmissions and timeouts - enabling "own_timer_proc" parameter, TM may create its own timer process - Under heavy load, the presence cleanup routes and the register cleanup routines can take several minutes each. During this time, the tm timers, and in particular the retransmission timers don't run. Given that the first retransmission timer is 0.5sec, even very small delays caused by the cleanup routines can kill the retransmissions.
