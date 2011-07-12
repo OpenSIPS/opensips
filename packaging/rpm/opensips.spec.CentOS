@@ -1,5 +1,5 @@
 %define name    opensips
-%define ver     1.6.4
+%define ver     1.7.0
 %define rel     0
 %define _sharedir %{_prefix}/share
 
@@ -18,7 +18,7 @@ Summary:      OpenSIPS, very fast and flexible SIP Server
 Name:         %name
 Version:      %ver
 Release:      %rel
-Packager:     Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+Packager:     Bogdan-Andrei Iancu <bogdan@opensips.org>
 License:      GPL
 Group:        System Environment/Daemons
 Source0:      http://opensips.org/pub/opensips/%{ver}/src/%{name}-%{ver}-tls_src.tar.gz
@@ -544,7 +544,7 @@ fi
 - Add missing config lines for packaging b2b modules
 - Add missing config lines for packaging peering module
 
-* Mon Oct 12 2009 Bogdan Iancu <bogdan@voice-system.ro>
+* Mon Oct 12 2009 Bogdan Iancu <bogdan@opensips.org>
 - updated packages for 1.6.0 release
 - added b2bua package
 
@@ -568,5 +568,5 @@ fi
 - Minor build fixes.
 - Additional files and new modules.
 
-* Mon Jul 21 2008 Bogdan-Andrei Iancu <bogdan@voice-system.ro>
+* Mon Jul 21 2008 Bogdan-Andrei Iancu <bogdan@opensips.org>
 - First version of the spec file.

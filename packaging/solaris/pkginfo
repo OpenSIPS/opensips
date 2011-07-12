@@ -1,8 +1,8 @@
 PKG=OpenSIPS
 ARCH=sparc
-VERSION=1.6.0
+VERSION=1.7.0
 CATEGORY=application
-EMAIL=bogdan@voice-system.ro
+EMAIL=bogdan@opensips.org
 NAME= OpenSIPS is a very fast and flexible SIP (RFC3261) server
 SUNW_ISA=sparcv9
 BASEDIR=/usr/local
