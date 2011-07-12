@@ -8,7 +8,7 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright � 2007 voice-system.ro
+   Copyright © 2007 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -97,7 +97,7 @@ Chapter 1. Admin Guide
    The database url.
 
    Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -109,7 +109,7 @@ bname")
 
    The name of the db table where XCAP documents are stored.
 
-   Default value is "xcap".
+   Default value is “xcap”.
 
    Example 1.2. Set xcap_table parameter
 ...
@@ -126,7 +126,7 @@ modparam("xcap_client", "xcap_table", "xcaps")
 
    To disable it set this parameter to 0.
 
-   Default value is "1".
+   Default value is “1”.
 
    Example 1.3. Set periodical_query parameter
 ...
@@ -141,7 +141,7 @@ modparam("xcap_client", "periodical_query", 0)
 
    To disable it set this parameter to 0.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.4. Set query_period parameter
 ...

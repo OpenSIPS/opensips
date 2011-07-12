@@ -8,10 +8,10 @@ Edited by
 
 Irina-Maria Stanescu
 
-   Copyright � 2009 Irina-Maria
+   Copyright © 2009 Irina-Maria
    Stanescu
 
-   Copyright � 2009 voice-system.ro
+   Copyright © 2009 voice-system.ro
    Revision History
    Revision $Revision: 5908 $ $Date: 2009-07-21 16:56:23 +0300
                               (Tue, 21 Jul 2009) $
@@ -103,7 +103,7 @@ Chapter 1. Admin Guide
    Example 1.1. Set sets parameter
 
 ...
-modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(i:10)
+modparam("aaa_radius","sets","set4  =  (  Sip-User-ID  =   $avp(10)
                         ,   Sip-From-Tag=$si,Sip-To-Tag=$tt      )
 ")
 ...
@@ -143,14 +143,14 @@ nt.conf")
 
    The first parameter represents the name of the set that
    contains the list of attributes and pvars that will form the
-   authentication request (see the "sets" module parameter).
+   authentication request (see the “sets” module parameter).
 
    The second parameter represents the name of the set that
    contains the list of attributes and pvars that will be
-   extracted form the authentication reply (see the "sets" module
+   extracted form the authentication reply (see the “sets” module
    parameter).
 
-   The sets must be defined using the "sets" exported parameter.
+   The sets must be defined using the “sets” exported parameter.
 
    The function return TRUE (retcode 1) if authentication was
    successful, FALSE (retcode -1) if an error (any kind of error)

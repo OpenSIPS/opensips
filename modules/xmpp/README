@@ -10,7 +10,7 @@ Andreea Spirea
 
    <team@voice-system.ro>
 
-   Copyright © 2006-2008 voice-system.ro
+   Copyright Â© 2006-2008 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -302,12 +302,6 @@ modparam("xmpp", "backend", "component")
 # -- mi_fifo params --
 
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo_xmpp")
-
-# -- usrloc params --
-
-# -- rr params --
-# add value to ;lr param to make some broken UAs happy
-modparam("rr", "enable_full_lr", 1)
 
 # -------------------------  request routing logic -------------------
 

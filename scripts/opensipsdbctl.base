@@ -68,7 +68,7 @@ usage: $COMMAND create <db name or db_path, optional> .....(creates a new databa
        $COMMAND backup <file> .................................(dumps current database to file)
        $COMMAND restore <file> ................................(restores tables from a file)
        $COMMAND copy <new_db> .................................(creates a new db from an existing one)
-       $COMMAND migrate <old_db> <new_db> .....................(migrates DB from 1.5 to 1.6)
+       $COMMAND migrate <old_db> <new_db> .....................(migrates DB from 1.6.4 to 1.7)
        $COMMAND presence ......................................(adds the presence related tables)
        $COMMAND extra .........................................(adds the extra tables)
 

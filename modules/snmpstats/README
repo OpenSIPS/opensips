@@ -9,7 +9,7 @@ Edited by
 
 Jeffrey Magder
 
-   Copyright � 2006 SOMA Networks, Inc.
+   Copyright © 2006 SOMA Networks, Inc.
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -325,7 +325,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    snmpget query to the master agent. You can use this parameter
    to set the path to your instance of NetSNMP's snmpget program.
 
-   Default value is "/usr/local/bin/".
+   Default value is “/usr/local/bin/”.
 
    Example 1.6. Setting the snmpgetPath parameter
 ...
@@ -340,7 +340,7 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
    community string for the snmp daemon, you need to specify it
    with this parameter.
 
-   Default value is "public".
+   Default value is “public”.
 
    Example 1.7. Setting the snmpCommunity parameter
 ...

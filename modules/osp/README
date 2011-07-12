@@ -16,8 +16,8 @@ Di-Shi Sun
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 15:45:05 +0800
-   (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -189,8 +189,7 @@ modparam("osp","service_type",0)
        included.
 
    Example 1.3. Setting the OSP servers
-modparam("osp","sp1_uri","http://osptestserver.transnexus.com:5045/osp"
-)
+modparam("osp","sp1_uri","http://osptestserver.transnexus.com:5045/osp")
 modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
 
 1.3.4. sp1_weight, sp2_weight, ..., sp16_weight
@@ -278,8 +277,8 @@ modparam("osp","token_format",2)
    If the default CFG_DIR value was used at compile time, the
    files will be loaded from:
 modparam("osp","private_key","/usr/local/etc/opensips/pkey.pem")
-modparam("osp","local_certificate","/usr/local/etc/opensips/localcert.p
-em")
+modparam("osp","local_certificate","/usr/local/etc/opensips/localcert.pe
+m")
 modparam("osp","ca_certificates","/usr/local/etc/opensips/cacert.pem")
 
 1.3.9. enable_crypto_hardware_support
@@ -467,38 +466,38 @@ modparam("osp","networkid_param","networkid")
    The source_device_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source device IP
    value in the indirect work mode. The default value is
-   "$avp(s:_osp_source_device_)". Then the source device IP can be
-   set by "$avp(s:_osp_source_device_) = pseudo-variables". All
+   "$avp(osp_source_device_)". Then the source device IP can be
+   set by "$avp(osp_source_device_) = pseudo-variables". All
    pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
    Example 1.24. Setting the source device IP AVP
-modparam("osp","source_device_avp","$avp(s:srcdev)")
+modparam("osp","source_device_avp","$avp(srcdev)")
 
 1.3.25. source_networkid_avp
 
    The source_networkid_avp (string) parameter instructs the OSP
    module to use the defined AVP to pass the source network ID
-   value. The default value is "$avp(s:_osp_source_networkid_)".
-   Then the source network ID can be set by
-   "$avp(s:_osp_source_networkid_) = pseudo-variables". All pseudo
+   value. The default value is "$avp(osp_source_networkid_)". Then
+   the source network ID can be set by
+   "$avp(osp_source_networkid_) = pseudo-variables". All pseudo
    variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
    Example 1.25. Setting the source network ID AVP
-modparam("osp","source_networkid_avp","$avp(s:snid)")
+modparam("osp","source_networkid_avp","$avp(snid)")
 
 1.3.26. custom_info_avp
 
    The custom_info_avp (string) parameter instructs the OSP module
    to use the defined AVP to pass the custom information values.
-   The default value is "$avp(s:_osp_custom_info_)". Then the
-   custom information can be set by "$avp(s:_osp_custom_info_) =
+   The default value is "$avp(osp_custom_info_)". Then the custom
+   information can be set by "$avp(osp_custom_info_) =
    pseudo-variables". All pseudo variables are described in
    http://www.opensips.org/Resources/DocsCoreVar.
 
    Example 1.26. Setting the custom info AVP
-modparam("osp","custom_info_avp","$avp(s:cinfo)")
+modparam("osp","custom_info_avp","$avp(cinfo)")
 
 1.4. Exported Functions
 
@@ -643,8 +642,8 @@ if (checkcallingtranslation()) {
    Example 1.33. prepareallosproute usage
 ...
 if (prepareallosproute()) {
-  log(1,"Routes are prepared, now either forking or redirecting the cal
-l\n");
+  log(1,"Routes are prepared, now either forking or redirecting the call
+\n");
 } else {
   log(1,"Could not prepare the routes. No destination available\n");
 };

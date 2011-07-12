@@ -968,10 +968,6 @@ route{
   # no multiple registrations
   modparam("registrar", "append_branches", 0)
 
-  # -- rr params --
-  # add value to ;lr param to make some broken UAs happy
-  modparam("rr", "enable_full_lr", 1)
-
   # -------------------------  request routing logic -------------------
 
   # main routing logic

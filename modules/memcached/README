@@ -8,9 +8,9 @@ Edited by
 
 Andrei Dragus
 
-   Copyright © 2009 Voice System
+   Copyright Â© 2009 Voice System
 
-   Copyright © 2009 Andrei Dragus
+   Copyright Â© 2009 Andrei Dragus
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -111,7 +111,7 @@ modparam("memcached", "server","y = random_url:8888" );
    Example 1.2. Use memcached servers
 ...
 cache_store("memcached_group1","key","$ru value");
-cache_fetch("memcached_y","key",$avp(i:10));
+cache_fetch("memcached_y","key",$avp(10));
 cache_remove("memcached_group1","key");
 ...
 

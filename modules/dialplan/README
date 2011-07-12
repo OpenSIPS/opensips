@@ -325,7 +325,7 @@ modparam("dialplan", "attrs_col", "column_name")
 
    Example 1.11. Set attrs_pvar parameter
 ...
-modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
+modparam("dialplan", "attrs_pvar", "$avp(dest)")
 ...
 
 1.7. Exported Functions
@@ -353,14 +353,14 @@ modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
 
    Example 1.12. dp_translate usage
 ...
-dp_translate("240", "$ruri.user/$avp(s:dest)");
-xlog("translated to var $avp(s:dest) \n");
+dp_translate("240", "$ruri.user/$avp(dest)");
+xlog("translated to var $avp(dest) \n");
 ...
 
    Example 1.13. dp_translate usage
 ...
-$avp(s:src) = $ruri.user;
-dp_translate("$var(x)", "$avp(s:src)/$var(y)");
+$avp(src) = $ruri.user;
+dp_translate("$var(x)", "$avp(src)/$var(y)");
 xlog("translated to var $var(y) \n");
 ...
 

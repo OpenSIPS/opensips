@@ -303,10 +303,6 @@ modparam("auth_db", "password_column", "password")
 modparam("auth_db", "user_column", "username")
 modparam("auth_db", "domain_column", "domain")
 
-# -- rr params --
-# add value to ;lr param to make some broken UAs happy
-modparam("rr", "enable_full_lr", 1)
-
 # -------------------------  request routing logic -------------------
 
 # main routing logic

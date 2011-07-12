@@ -693,7 +693,6 @@ loadmodule "/usr/local/lib/opensips/modules/mi_fifo.so"
 
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 modparam("usrloc", "db_mode",   0)
-modparam("rr", "enable_full_lr", 1)
 modparam("seas", "listen_sockets", "127.0.0.1:5080");
 
 route{

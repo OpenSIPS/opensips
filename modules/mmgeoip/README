@@ -8,7 +8,7 @@ Edited by
 
 Kobi Eshun
 
-   Copyright � 2008 SightSpeed, Inc.
+   Copyright © 2008 SightSpeed, Inc.
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -36,7 +36,7 @@ Kobi Eshun
 
    List of Examples
 
-   1.1. Set "mmgeoip_city_db_path" parameter
+   1.1. Set “mmgeoip_city_db_path” parameter
    1.2. mmg_lookup usage
 
 Chapter 1. Admin Guide
@@ -74,7 +74,7 @@ Chapter 1. Admin Guide
 
    Mandatory parameter.
 
-   Example 1.1. Set "mmgeoip_city_db_path" parameter
+   Example 1.1. Set “mmgeoip_city_db_path” parameter
 ...
 modparam("mmgeoip", "mmgeoip_city_db_path",
   "/usr/share/GeoIP/GeoLiteCity.dat")
@@ -93,6 +93,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
    these elements:
      * lat Latitude
      * lon Longitude
+     * cont Continent
      * cc Country Code
      * reg Region
      * city City
@@ -106,7 +107,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 
    Example 1.2. mmg_lookup usage
 ...
-if(mmg_lookup("lon:lat",$si,$avp(lat_lon))) {
+if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
   xlog("L_INFO","Source IP longitude:$(avp(lat_lon)[1])\n");
 };

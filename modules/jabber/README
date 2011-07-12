@@ -10,7 +10,7 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -138,21 +138,21 @@ Note
    and how local Jabber server is setup.
 
    Next is presented a use case. Prologue:
-     * OpenSIPS is running on "server.org".
-     * Local Jabber server is running on "jabsrv.server.org".
-     * Jabber network alias (first part of "jdomain") is
-       "jabber.server.org"
+     * OpenSIPS is running on “server.org”.
+     * Local Jabber server is running on “jabsrv.server.org”.
+     * Jabber network alias (first part of “jdomain”) is
+       “jabber.server.org”
 
    The aliases for other IM networks must be the same as JID set
    in Jabber configuration file for each IM transport.
 
    The JIDs of Jabber transports must start with the name of the
-   network. For AIM, JID must start with "aim.", for ICQ with
-   "icq" (that because I use icqv7-t), for MSN with "msn." and for
-   Yahoo with "yahoo.". The gateway needs these to find out what
+   network. For AIM, JID must start with “aim.”, for ICQ with
+   “icq” (that because I use icqv7-t), for MSN with “msn.” and for
+   Yahoo with “yahoo.”. The gateway needs these to find out what
    transport is working and which not. For our use case these
-   could be like "aim.server.org", "icq.server.org",
-   "msn.server.org", "yahoo.server.org".
+   could be like “aim.server.org”, “icq.server.org”,
+   “msn.server.org”, “yahoo.server.org”.
 
    It is indicated to have these aliases in DNS, thus the client
    application can resolve the DNS name. Otherwise there must be
@@ -160,7 +160,7 @@ Note
 
    *** Routing rules for Jabber gateway First step is to configure
    OpenSIPS to recognize messages for Jabber gateway. Look at
-   "doc/xjab.cfg" to see a sample. The idea is to look in messages
+   “doc/xjab.cfg” to see a sample. The idea is to look in messages
    for destination address and if it contains Jabber alias or
    other IM alias, that means the message is for Jabber gateway.
 
@@ -168,32 +168,32 @@ Note
    gateway. It could be a special message what triggers the
    gateway to take an action or is a simple message which should
    be delivered to Jabber network (using the method
-   "jab_send_message").
+   “jab_send_message”).
 
    The special messages are for:
      * Registering to Jabber server (go online in Jabber
-       network)--here must be called "jab_go_online" method.
+       network)--here must be called “jab_go_online” method.
      * Leaving the Jabber network (go offline in Jabber
-       network)--here must be called "jab_go_offline" method.
+       network)--here must be called “jab_go_offline” method.
      * Joining a Jabber conference room--here must be called
-       "jab_join_jconf".
+       “jab_join_jconf”.
      * Leaving a Jabber conference room--here must be called
-       "jab_exit_jconf".
+       “jab_exit_jconf”.
 
    The destination address must follow the following patterns:
      * For Jabber network:
-       "username<delim>jabber_server@jabber_alias".
+       “username<delim>jabber_server@jabber_alias”.
      * For Jabber conference:
-       "nickname<delim>room<delim>conference_server@jabber_alias".
-     * For AIM network: "aim_username@aim_alias".
-     * For ICQ network: "icq_number@icq_alias".
-     * For MSN network: "msn_username<delim>msn_server@msn_alias".
-       msn_server can be "msn.com" or "hotmail.com".
-     * For YAHOO network: "yahoo_username@yahoo_alias".
+       “nickname<delim>room<delim>conference_server@jabber_alias”.
+     * For AIM network: “aim_username@aim_alias”.
+     * For ICQ network: “icq_number@icq_alias”.
+     * For MSN network: “msn_username<delim>msn_server@msn_alias”.
+       msn_server can be “msn.com” or “hotmail.com”.
+     * For YAHOO network: “yahoo_username@yahoo_alias”.
 
 Note
 
-   "jabber_alias" is the first part of "jdomain".
+   “jabber_alias” is the first part of “jdomain”.
 
 1.3. Admin Guide
 
@@ -206,7 +206,7 @@ Note
    When you want to send a message to someone in other IM network,
    you must set the destination of the message according with the
    pattern corresponding to that IM network (see last part of
-   "Admin guide" chapter).
+   “Admin guide” chapter).
 
    Sending a message to user@jabber.xxx.org which is in Jabber
    network, the destination must be:
@@ -247,7 +247,7 @@ Note
 
    SQL URL of database.
 
-   Default value is "mysql://root@127.0.0.1/sip_jab".
+   Default value is “mysql://root@127.0.0.1/sip_jab”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -259,7 +259,7 @@ modparam("jabber", "db_url", "mysql://username:password@host/sip_jab")
    IP or hostname of Jabber server -- it must be the same as the
    value from <host> tag of Jabber server config file.
 
-   Default value is "127.0.0.1".
+   Default value is “127.0.0.1”.
 
    Example 1.2. Set jaddress parameter
 ...
@@ -270,7 +270,7 @@ modparam("jabber", "jaddress", "1.2.3.4")
 
    Port number of Jabber server.
 
-   Default value is "5222".
+   Default value is “5222”.
 
    Example 1.3. Set jport parameter
 ...
@@ -300,7 +300,7 @@ modparam("jabber", "jdomain", "jabber.sipserver.com=*")
 
    Aliases for IM networks.
 
-   Format: "N;alias1=<delim1>;...;aliasN=<delimN>;" Destinations
+   Format: “N;alias1=<delim1>;...;aliasN=<delimN>;” Destinations
    like '*@aliasX' could have other format than those specified
    for Jabber network. All <delim> from user part of the
    destination address will be changed to <delimX> if the
@@ -343,7 +343,7 @@ modparam("jabber", "proxy", "10.0.0.1:5060 sipserver.com:5060")
    The address in whose behalf the INFO and ERROR messages are
    sent.
 
-   Default value is "jabber_gateway@127.0.0.1".
+   Default value is “jabber_gateway@127.0.0.1”.
 
    Example 1.7. Set registrar parameter
 ...
@@ -421,7 +421,7 @@ modparam("jabber", "check_time", 20)
 
    Presence priority for Jabber gateway.
 
-   Default value is "9".
+   Default value is “9”.
 
    Example 1.14. Set priority parameter
 ...
