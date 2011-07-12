@@ -236,7 +236,8 @@ int handle_openserSIPServiceStartTime(netsnmp_mib_handler *handler,
 		LM_ERR("failed to read sysUpTime file at %s\n",
 				SNMPGET_TEMP_FILE);
 	} else {
-		fgets(buffer, SNMPGET_MAX_BUFFER, theFile);
+		if (fgets(buffer, SNMPGET_MAX_BUFFER, theFile)==NULL)
+			return SNMP_ERR_GENERR;
 
 		/* Find the positions of '(' and ')' so we can extract out the
 		 * timeticks value. */
