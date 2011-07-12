@@ -66,7 +66,6 @@ char *ignore_user = NULL;
 
 int append_fromtag = 1;
 int enable_double_rr = 1; /* Enable using of 2 RR by default */
-int enable_full_lr = 0;   /* Disabled by default */
 int add_username = 0;     /* Do not add username by default */
 int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
 

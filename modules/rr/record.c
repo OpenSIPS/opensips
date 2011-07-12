@@ -152,13 +152,8 @@ static inline int build_rr(struct lump* _l, struct lump* _l2, str* user,
 	char *p;
 
 	prefix_len = RR_PREFIX_LEN + (user->len ? (user->len + 1) : 0);
-	if (enable_full_lr) {
-		suffix_len = RR_LR_FULL_LEN + (params?params->len:0) +
-				((tag && tag->len) ? (RR_FROMTAG_LEN + tag->len) : 0);
-	} else {
-		suffix_len = RR_LR_LEN + (params?params->len:0) +
-				((tag && tag->len) ? (RR_FROMTAG_LEN + tag->len) : 0);
-	}
+	suffix_len = RR_LR_LEN + (params?params->len:0) +
+			((tag && tag->len) ? (RR_FROMTAG_LEN + tag->len) : 0);
 
 	prefix = pkg_malloc(prefix_len);
 	suffix = pkg_malloc(suffix_len);
@@ -192,13 +187,9 @@ static inline int build_rr(struct lump* _l, struct lump* _l2, str* user,
 	}
 
 	p = suffix;
-	if (enable_full_lr) {
-		memcpy( p, RR_LR_FULL, RR_LR_FULL_LEN);
-		p += RR_LR_FULL_LEN;
-	} else {
-		memcpy( p, RR_LR, RR_LR_LEN);
-		p += RR_LR_LEN;
-	}
+	memcpy( p, RR_LR, RR_LR_LEN);
+	p += RR_LR_LEN;
+
 	if (tag && tag->len) {
 		memcpy(p, RR_FROMTAG, RR_FROMTAG_LEN);
 		p += RR_FROMTAG_LEN;
@@ -375,11 +366,7 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		suffix_len += RR_FROMTAG_LEN + from->tag_value.len;
 	}
 
-	if (enable_full_lr) {
-		suffix_len += RR_LR_FULL_LEN;
-	} else {
-		suffix_len += RR_LR_LEN;
-	}
+	suffix_len += RR_LR_LEN;
 
 	hdr = pkg_malloc(hdr_len);
 	term = pkg_malloc(RR_TERM_LEN);
@@ -413,13 +400,8 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		p += from->tag_value.len;
 	}
 
-	if (enable_full_lr) {
-		memcpy(p, RR_LR_FULL, RR_LR_FULL_LEN);
-		p += RR_LR_FULL_LEN;
-	} else {
-		memcpy(p, RR_LR, RR_LR_LEN);
-		p += RR_LR_LEN;
-	}
+	memcpy(p, RR_LR, RR_LR_LEN);
+	p += RR_LR_LEN;
 
 	memcpy(term, RR_TERM, RR_TERM_LEN);
 

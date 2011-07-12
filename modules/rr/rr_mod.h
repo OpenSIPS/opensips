@@ -42,7 +42,6 @@ extern str i_user;
 
 extern int append_fromtag;
 extern int enable_double_rr;
-extern int enable_full_lr;
 extern int add_username;
 extern int enable_socket_mismatch_warning;
 
