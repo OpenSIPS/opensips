@@ -10,7 +10,7 @@ PATH=$PATH:/usr/local/sbin/
 
 # for testing only, please don't enable this in production environments
 # as this introduce security risks
-TEST="true"
+TEST="false"
 ### include config files
 if [ -f /etc/opensips/opensipsctlrc ]; then
 	. /etc/opensips/opensipsctlrc
