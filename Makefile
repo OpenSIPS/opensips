@@ -399,20 +399,6 @@ deb:
 	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -f debian
 
-.PHONY: deb-sarge
-deb-sarge:
-	rm -f debian
-	ln -sf packaging/debian-sarge debian
-	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
-	rm -f debian
-
-.PHONY: deb-etch
-deb-etch:
-	rm -f debian
-	ln -sf packaging/debian-etch debian
-	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
-	rm -f debian
-
 .PHONY: sunpkg
 sunpkg:
 	mkdir -p tmp/$(NAME)
