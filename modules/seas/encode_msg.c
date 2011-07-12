@@ -367,7 +367,7 @@ int print_encoded_msg(int fd,char *code,char *prefix)
 int dump_msg_test(char *code,int fd,char header,char segregationLevel)
 {
    unsigned short int i,j,l,m,msglen;
-   int k;
+   int k,n;
    char r,*msg;
    unsigned char *payload;
    payload=(unsigned char*)code;
@@ -378,8 +378,8 @@ int dump_msg_test(char *code,int fd,char header,char segregationLevel)
    j=ntohs(j);
    msglen=ntohs(msglen);
    if(header==0){
-      write(fd,code,j+msglen);
-      write(fd,&theSignal,4);
+      n=write(fd,code,j+msglen);
+      n=write(fd,&theSignal,4);
       return 0;
    }
    msg=(char*)&payload[j];
@@ -389,12 +389,12 @@ int dump_msg_test(char *code,int fd,char header,char segregationLevel)
 	 if(!(segregationLevel & JUNIT)){ 
 	    
 	    k=htonl(payload[REQUEST_URI_IDX+1]+payload[REQUEST_URI_IDX+2]);
-	    write(fd,&k,4);
-	    write(fd,msg,ntohl(k));
+	    n=write(fd,&k,4);
+	    n=write(fd,msg,ntohl(k));
 	    k=htonl((long)payload[REQUEST_URI_IDX]);
-	    write(fd,&k,4);
-	    write(fd,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX]);
-	    write(fd,&theSignal,4);
+	    n=write(fd,&k,4);
+	    n=write(fd,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX]);
+	    n=write(fd,&theSignal,4);
 	 }else
 	    print_uri_junit_tests(msg,payload[REQUEST_URI_IDX+1]+payload[REQUEST_URI_IDX+2]
 		  ,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX],fd,1,"");
@@ -433,7 +433,7 @@ int dump_msg_test(char *code,int fd,char header,char segregationLevel)
 int print_msg_junit_test(char *code,int fd,char header,char segregationLevel)
 {
    unsigned short int i,j,l,m,msglen;
-   int k;
+   int k,n;
    char r,*msg;
    unsigned char *payload;
    payload=(unsigned char*)code;
@@ -444,8 +444,8 @@ int print_msg_junit_test(char *code,int fd,char header,char segregationLevel)
    j=ntohs(j);
    msglen=ntohs(msglen);
    if(header==0){
-      write(fd,code,j+msglen);
-      write(fd,&theSignal,4);
+      n=write(fd,code,j+msglen);
+      n=write(fd,&theSignal,4);
       return 0;
    }
    msg=(char*)&payload[j];
@@ -453,12 +453,12 @@ int print_msg_junit_test(char *code,int fd,char header,char segregationLevel)
    if(r){
       if(segregationLevel & ALSO_RURI){
 	 k=htonl(50);
-	 write(fd,&k,4);
-	 write(fd,msg,50);
+	 n=write(fd,&k,4);
+	 n=write(fd,msg,50);
 	 k=htonl((long)payload[REQUEST_URI_IDX]);
-	 write(fd,&k,4);
-	 write(fd,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX]);
-	 write(fd,&theSignal,4);
+	 n=write(fd,&k,4);
+	 n=write(fd,&payload[REQUEST_URI_IDX+1],payload[REQUEST_URI_IDX]);
+	 n=write(fd,&theSignal,4);
       }
       i=REQUEST_URI_IDX+1+payload[REQUEST_URI_IDX];
    }else{

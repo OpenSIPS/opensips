@@ -204,7 +204,7 @@ int dump_route_body_test(char *hdr,int hdrlen,unsigned char *payload,int paylen,
 
 int dump_route_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int fd,char segregationLevel,char *prefix)
 {
-   int i=2;/* flags + urilength */
+   int n,i=2;/* flags + urilength */
    unsigned char flags=0;
 
    if(!(segregationLevel & (ONLY_URIS|JUNIT))){
@@ -223,14 +223,14 @@ int dump_route_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int f
    }
    if(segregationLevel & JUNIT){
       i=2;
-      write(fd,prefix,strlen(prefix));
-      write(fd,"getAddress.getDisplayName=(S)",29);
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getAddress.getDisplayName=(S)",29);
       if(flags & HAS_NAME_F){
-         write(fd,&hdr[payload[i]],payload[i+1]);
-         write(fd,"\n",1);
+         n=write(fd,&hdr[payload[i]],payload[i+1]);
+         n=write(fd,"\n",1);
          i+=2;
       }else
-         write(fd,"(null)\n",7);
+         n=write(fd,"(null)\n",7);
       return print_uri_junit_tests(hdr,hdrlen,&payload[i],payload[1],fd,0,"getAddress.getURI.");
    }
    return 0;

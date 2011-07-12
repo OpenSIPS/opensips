@@ -262,6 +262,7 @@ int dump_contact_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int
 {
    int i=2;/* flags + urilength */
    unsigned char flags=0;
+   int n;
 
    flags=payload[0];
    if((segregationLevel & SEGREGATE)&& !(segregationLevel & ONLY_URIS))
@@ -283,43 +284,43 @@ int dump_contact_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int
       return print_uri_junit_tests(hdr,hdrlen,&payload[i],payload[1],fd,1,"");
    if((segregationLevel & JUNIT) && !(segregationLevel & ONLY_URIS)){
       i=2;
-      write(fd,prefix,strlen(prefix));
-      write(fd,"getAddress.getDisplayName=(S)",29);
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getAddress.getDisplayName=(S)",29);
       if(flags & HAS_NAME_F){
-         write(fd,&hdr[payload[i]],payload[i+1]);
-         write(fd,"\n",1);
+         n=write(fd,&hdr[payload[i]],payload[i+1]);
+         n=write(fd,"\n",1);
          i+=2;
       }else
-         write(fd,"(null)\n",7);
-         write(fd,prefix,strlen(prefix));
-         write(fd,"getQValue=(F)",13);
+         n=write(fd,"(null)\n",7);
+         n=write(fd,prefix,strlen(prefix));
+         n=write(fd,"getQValue=(F)",13);
       if(flags & HAS_Q_F){
-         write(fd,&hdr[payload[i]],payload[i+1]);
-         write(fd,"\n",1);
+         n=write(fd,&hdr[payload[i]],payload[i+1]);
+         n=write(fd,"\n",1);
          i+=2;
       }else
-         write(fd,"(null)\n",7);
-         write(fd,prefix,strlen(prefix));
-         write(fd,"getExpires=(I)",14);
+         n=write(fd,"(null)\n",7);
+         n=write(fd,prefix,strlen(prefix));
+         n=write(fd,"getExpires=(I)",14);
       if(flags & HAS_EXPIRES_F){
-         write(fd,&hdr[payload[i]],payload[i+1]);
-         write(fd,"\n",1);
+         n=write(fd,&hdr[payload[i]],payload[i+1]);
+         n=write(fd,"\n",1);
          i+=2;
       }else
-         write(fd,"(null)\n",7);
+         n=write(fd,"(null)\n",7);
       if(flags & HAS_RECEIVED_F){
          i+=2;
       }
       if(flags & HAS_METHOD_F){
          i+=2;
       }
-      write(fd,prefix,strlen(prefix));
-      write(fd,"getParameter=(SAVP)",19);
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getParameter=(SAVP)",19);
       for(i+=payload[1];i<paylen-1;i+=2){
 	 printf("%.*s=",payload[i+1]-payload[i]-1,&hdr[payload[i]]);
 	 printf("%.*s;",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
       }
-      write(fd,"\n",1);
+      n=write(fd,"\n",1);
    }
    return 0;
 }

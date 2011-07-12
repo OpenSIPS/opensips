@@ -505,13 +505,13 @@ int dump_headers_test(char *msg,int msglen,unsigned char *payload,int len,char t
 
 int dump_standard_hdr_test(char *hdr,int hdrlen,unsigned char *payload,int paylen,int fd)
 {
-   int i;
+   int i,n;
    i=htonl(hdrlen);
-   write(fd,&i,4);
-   write(fd,hdr,hdrlen);
+   n=write(fd,&i,4);
+   n=write(fd,hdr,hdrlen);
    i=htonl(paylen);
-   write(fd,&i,4);
-   write(fd,payload,paylen);
-   write(fd,&theSignal,4);
+   n=write(fd,&i,4);
+   n=write(fd,payload,paylen);
+   n=write(fd,&theSignal,4);
    return 0;
 }
