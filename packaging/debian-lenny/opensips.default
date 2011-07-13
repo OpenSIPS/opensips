@@ -1,0 +1,24 @@
+#
+# OpenSIPS startup options
+#
+
+# Set to yes to enable opensips, once configured properly.
+RUN_OPENSIPS=no
+
+# User to run as
+USER=opensips
+
+# Group to run as
+GROUP=opensips
+
+# Amount of memory to allocate for the running OpenSIPS server (in Mb)
+MEMORY=64
+
+# Enable the server to leave a core file when it crashes.
+# Set this to 'yes' to enable OpenSIPS to leave a core file when it crashes
+# or 'no' to disable this feature. This option is case sensitive and only
+# accepts 'yes' and 'no' and only in lowercase letters.
+# On some systems (e.g. Ubuntu 6.10, Debian 4.0) it is necessary to specify
+# a directory for the core files to get a dump. Look into the opensips
+# init file for an example configuration.
+DUMP_CORE=no
