@@ -87,7 +87,7 @@
         <description>Value used for preferential routing.</description>
     </column>
 
-    <column>
+    <column id="callid">
         <name>callid</name>
         <type>string</type>
         <size>&hf_len;</size>
@@ -158,6 +158,7 @@
         <colref linkend="username"/>
         <colref linkend="domain"/>
         <colref linkend="contact"/>
+        <colref linkend="callid"/>
         <unique/>
     </index>
 
