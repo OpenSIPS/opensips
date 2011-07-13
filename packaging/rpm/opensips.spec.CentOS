@@ -302,11 +302,11 @@ fi
 %doc %{_docdir}/opensips/README.domainpolicy
 %doc %{_docdir}/opensips/README.drouting
 %doc %{_docdir}/opensips/README.enum
+%doc %{_docdir}/opensips/README.event_datagram
 %doc %{_docdir}/opensips/README.exec
 %doc %{_docdir}/opensips/README.gflags
 %doc %{_docdir}/opensips/README.group
 %doc %{_docdir}/opensips/README.imc
-%doc %{_docdir}/opensips/README.lcr
 %doc %{_docdir}/opensips/README.load_balancer
 %doc %{_docdir}/opensips/README.localcache
 %doc %{_docdir}/opensips/README.mangler
@@ -326,6 +326,7 @@ fi
 %doc %{_docdir}/opensips/README.ratelimit
 %doc %{_docdir}/opensips/README.registrar
 %doc %{_docdir}/opensips/README.rr
+%doc %{_docdir}/opensips/README.rtpproxy
 %doc %{_docdir}/opensips/README.seas
 %doc %{_docdir}/opensips/README.signaling
 %doc %{_docdir}/opensips/README.siptrace
@@ -338,10 +339,13 @@ fi
 %doc %{_docdir}/opensips/README.textops
 %doc %{_docdir}/opensips/README.tm
 %doc %{_docdir}/opensips/README.uac
+%doc %{_docdir}/opensips/README.uac_auth
 %doc %{_docdir}/opensips/README.uac_redirect
+%doc %{_docdir}/opensips/README.uac_registrant
 %doc %{_docdir}/opensips/README.uri
 %doc %{_docdir}/opensips/README.userblacklist
 %doc %{_docdir}/opensips/README.usrloc
+
 
 %dir %{_sysconfdir}/opensips
 %config(noreplace) %{_sysconfdir}/opensips/*
@@ -371,11 +375,11 @@ fi
 %{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/drouting.so
 %{_libdir}/opensips/modules/enum.so
+%{_libdir}/opensips/modules/event_datagram.so
 %{_libdir}/opensips/modules/exec.so
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/imc.so
-%{_libdir}/opensips/modules/lcr.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/localcache.so
 %{_libdir}/opensips/modules/mangler.so
@@ -395,6 +399,7 @@ fi
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/seas.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/siptrace.so
@@ -407,7 +412,9 @@ fi
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/uac.so
+%{_libdir}/opensips/modules/uac_auth.so
 %{_libdir}/opensips/modules/uac_redirect.so
+%{_libdir}/opensips/modules/uac_registrant.so
 %{_libdir}/opensips/modules/uri.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
