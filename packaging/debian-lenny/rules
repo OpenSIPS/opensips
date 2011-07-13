@@ -1,0 +1,292 @@
+#!/usr/bin/make -f
+# Sample debian/rules that uses debhelper.
+# GNU copyright 1997 to 1999 by Joey Hess.
+# 2010/08/24: Allow building of individual modules (kennard)
+
+# To control which packages get built, set BUILD_MODPKG_LIST to list
+# of packages to build (see ALL_MODPKG_LIST for candiate names).  Set to
+# 'NONE' to not build any module packages (the primary package is always
+# built). By default all delcared packages (debian/control) will be built.
+
+
+# Supported DEB_BUILD_OPTIONS:
+#	noopt,nostrip,debug -- standard
+#	upstreamcflags -- don't set cflags, let upstream package Makefile do it
+
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
+DEBVERSION:=$(shell head -n 1 debian/changelog \
+                    | sed -e 's/^[^(]*(\([^)]*\)).*/\1/')
+UPVERSION:=$(shell echo $(DEBVERSION) | sed -e 's/^.*://' -e 's/-[0-9.]*$$//' -e 's/.dfsg$$//')
+
+FILENAME := opensips_$(UPVERSION).orig.tar.gz
+UPFILENAME := opensips-$(UPVERSION)-tls_src.tar.gz
+URL := http://opensips.org/pub/opensips/$(UPVERSION)/src/opensips-$(UPVERSION)-tls_src.tar.gz
+
+# Uncomment this to turn on verbose mode.
+# export DH_VERBOSE=1
+
+# Include dpatch rules
+include /usr/share/dpatch/dpatch.make
+
+
+# Do we want the TLS version ?
+# Disabled by default due to license issues, set to non-void to enable
+TLS=
+
+
+# List of all debian module packages we will build
+# Used to index the make variable below, which has details about each package
+ALL_MODPKG_LIST := \
+	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
+	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
+	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN
+
+ifeq ($(BUILD_MODPKG_LIST),NONE)
+override BUILD_MODPKG_LIST :=
+else
+ifeq ($(BUILD_MODPKG_LIST),)
+override BUILD_MODPKG_LIST := $(ALL_MODPKG_LIST)
+endif
+endif
+
+# FOO_MODULES is the directory name within modules/ that belongs to the package
+# FOO_MOD_PATH is same as FOO_MODULES, but with 'modules/' prepended
+
+MYSQL_PKGNAME = opensips-mysql-module 
+MYSQL_MODULES = db_mysql
+MYSQL_MOD_PATH=$(addprefix modules/, $(MYSQL_MODULES))
+POSTGRES_PKGNAME = opensips-postgres-module
+POSTGRES_MODULES = db_postgres
+POSTGRES_MOD_PATH=$(addprefix modules/, $(POSTGRES_MODULES))
+UNIXODBC_PKGNAME = opensips-unixodbc-module 
+UNIXODBC_MODULES=db_unixodbc
+UNIXODBC_MOD_PATH=$(addprefix modules/, $(UNIXODBC_MODULES))
+JABBER_PKGNAME = opensips-jabber-module 
+JABBER_MODULES = jabber
+JABBER_MOD_PATH=$(addprefix modules/, $(JABBER_MODULES))
+CPL_PKGNAME = opensips-cpl-module 
+CPL_MODULES = cpl-c
+CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
+RADIUS_PKGNAME = opensips-radius-modules
+RADIUS_MODULES = aaa_radius peering
+RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
+PRESENCE_PKGNAME = opensips-presence-modules 
+PRESENCE_MODULES = presence presence_dialoginfo presence_xml presence_mwi presence_xcapdiff pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap_client
+PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
+XMLRPC_PKGNAME = opensips-xmlrpc-module
+XMLRPC_MODULES = mi_xmlrpc
+XMLRPC_MOD_PATH=$(addprefix modules/, $(XMLRPC_MODULES))
+PERL_PKGNAME = opensips-perl-modules
+PERL_MODULES = perl perlvdb
+PERL_MOD_PATH=$(addprefix modules/, $(PERL_MODULES))
+SNMPSTATS_PKGNAME = opensips-snmpstats-module
+SNMPSTATS_MODULES = snmpstats
+SNMPSTATS_MOD_PATH=$(addprefix modules/, $(SNMPSTATS_MODULES))
+XMPP_PKGNAME = opensips-xmpp-module
+XMPP_MODULES = xmpp
+XMPP_MOD_PATH=$(addprefix modules/, $(XMPP_MODULES))
+CROUTE_PKGNAME = opensips-carrierroute-module 
+CROUTE_MODULES = carrierroute
+CROUTE_MOD_PATH=$(addprefix modules/, $(CROUTE_MODULES))
+BERKELEY_PKGNAME = opensips-berkeley-module
+BERKELEY_MODULES = db_berkeley
+BERKELEY_MOD_PATH=$(addprefix modules/, $(BERKELEY_MODULES))
+LDAP_PKGNAME = opensips-ldap-modules 
+LDAP_MODULES = ldap h350
+LDAP_MOD_PATH=$(addprefix modules/, $(LDAP_MODULES))
+GEOIP_PKGNAME = opensips-geoip-module 
+GEOIP_MODULES = mmgeoip
+GEOIP_MOD_PATH=$(addprefix modules/, $(GEOIP_MODULES))
+REGEX_PKGNAME = opensips-regex-module
+REGEX_MODULES = regex
+REGEX_MOD_PATH=$(addprefix modules/, $(REGEX_MODULES))
+IDENTITY_PKGNAME = opensips-identity-module 
+IDENTITY_MODULES = identity
+IDENTITY_MOD_PATH=$(addprefix modules/, $(IDENTITY_MODULES))
+B2BUA_PKGNAME = opensips-b2bua-module 
+B2BUA_MODULES = b2b_entities b2b_logic
+B2BUA_MOD_PATH=$(addprefix modules/, $(B2BUA_MODULES))
+DBHTTP_PKGNAME = opensips-dbhttp-module
+DBHTTP_MODULES = db_http
+DBHTTP_MOD_PATH=$(addprefix modules/, $(DBHTTP_MODULES))
+DIALPLAN_PKGNAME = opensips-dialplan-module
+DIALPLAN_MODULES = dialplan
+DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
+
+
+# Need this per-package variables available in environment so accessible
+# to shell. Since have underscore in them, need to explicitly export
+export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
+
+# not needed anymore
+#ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME)) \
+#	opensips-console
+ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
+BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
+
+## modules not in the "main" package or unstable modules that we never want to build
+## Everything we don't specifically exclude here will get built into the primary package
+NONCORE_MODULES = $(ALL_MODULES) osp
+
+
+ifeq (cc, $(CC))
+	CC = gcc
+endif
+
+ifneq (,$(findstring upstreamcflags,$(DEB_BUILD_OPTIONS)))
+CFLAGS=
+else
+CFLAGS = -Wall -g
+
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+        CFLAGS += -O0
+else
+	CFLAGS += -O2
+endif
+endif
+
+# force lib (versus lib64) and SMP support all the time
+VARS = LIBDIR=lib ISSMP=yes TLS=$(TLS)
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	# Add here commands to configure the package.
+
+	touch configure-stamp
+
+
+build: build-stamp
+build-stamp: patch-stamp configure-stamp 
+	dh_testdir
+
+	# Add here commands to compile the package.
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) app \
+	  modules skip_modules="$(NONCORE_MODULES)" cfg-target=/etc/opensips/
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) \
+	  modules modules="$(BUILD_MODULE_PATHS)" cfg-target=/etc/opensips/
+	# generate the utils db_berkeley
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) utils include_modules="db_berkeley"
+
+	touch build-stamp
+
+clean: real-clean unpatch
+real-clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	$(MAKE) $(VARS) include_modules="$(ALL_MODULES)" proper
+	rm -f cfg.tab.h
+	rm -f utils/opensipsunix/opensipsunix.o utils/opensipsunix/opensipsunix
+	rm -f utils/db_berkeley/bdb_recover.o utils/db_berkeley/bdb_recover
+
+	dh_clean
+
+show-env:
+	env
+
+show-mod-info:
+	set -e;\
+	for mod in $(ALL_MODPKG_LIST) ; do\
+	    eval mod_pkgname=\$$$${mod}_PKGNAME;\
+	    eval mod_modules=\$$$${mod}_MODULES;\
+	    eval mod_paths=\$$$${mod}_MOD_PATH;\
+	    echo "MODULE $${mod} AS $${mod_pkgname} FROM $${mod_modules} PATHS $${mod_paths}";\
+	done
+	@echo "ALL_MOD_PATHS: $(ALL_MODULE_PATHS)"
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+
+	# Add here commands to install the package into debian/opensips
+	# opensips base package
+	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-app \
+		install-modules-all skip_modules="$(NONCORE_MODULES)" \
+		basedir=$(CURDIR)/debian/opensips \
+		prefix=/usr \
+		cfg-prefix=$(CURDIR)/debian/opensips \
+		cfg-target=/etc/opensips/ \
+		doc-dir=share/doc/opensips
+
+	find $(CURDIR)/debian/opensips/etc/opensips -type f -exec chmod -x {} \;
+	sed -i -e "s/^PATH.*//" $(CURDIR)/debian/opensips/usr/sbin/opensipsctl
+	# not needed anymore with makefile restructring
+	#rm -f  $(CURDIR)/debian/opensips/usr/sbin/osipsconsole
+
+	set -e;\
+	for pkg in $(BUILD_MODPKG_LIST) ; do\
+	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
+	    eval pkg_modules=\$$$${pkg}_MODULES;\
+	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
+	    echo "rules: Installing $${pkg} as $${pkg_pkgname} from $${pkg_modules} ...";\
+	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) $(MAKE) install-modules-all \
+		modules="$${pkg_paths}"  \
+		basedir=$(CURDIR)/debian/$${pkg_pkgname} \
+		prefix=/usr \
+		cfg-prefix=$(CURDIR)/debian/$${pkg_pkgname} \
+		cfg-target=/etc/opensips/ \
+		doc-dir=share/doc/$${pkg_pkgname} \
+		;\
+	done
+
+	# install only the opensips console tool
+	$(MAKE) install-console \
+		basedir=$(CURDIR)/debian/opensips-console \
+		prefix=/usr
+
+	# the modules packages all ship an empty /usr/sbin directory. clean it up
+	# not needed anymore with makefile restructuring
+	#-rmdir $(patsubst %,$(CURDIR)/debian/%/usr/sbin,$(ALL_PACKAGES))
+
+# This single target is used to build all the packages, all at once, or
+# one at a time. So keep in mind: any options passed to commands here will
+# affect _all_ packages. Anything you want to only affect one package
+# should be put in another target, such as the install target.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installdocs
+	dh_installexamples --exclude=".svn"
+#	dh_installlogrotate
+	dh_installinit -popensips -- defaults 23
+	dh_installcron
+	dh_installman
+	dh_installinfo
+	dh_installchangelogs
+	dh_link
+	dh_strip --dbg-package=opensips-dbg
+	dh_compress 
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+# Build architecture-independent packages using the common target
+binary-indep: build install
+# We have nothing to do by default.
+
+binary: binary-indep binary-arch
+
+print-version:
+	@@echo "Debian version:          $(DEBVERSION)"
+	@@echo "Upstream version:        $(UPVERSION)"
+
+get-orig-source:
+	@@dh_testdir
+	@@[ -d ../tarballs/. ]||mkdir -p ../tarballs
+	@@echo Downloading $(FILENAME) from $(URL) ...
+	@@wget -N -nv -T10 -t3 -O ../tarballs/$(FILENAME) $(URL)
+
+.PHONY: build clean binary-indep binary-arch binary install configure patch unpatch real-clean

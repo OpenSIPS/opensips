@@ -1,0 +1,27 @@
+opensips (1.7.0-1) stable; urgency=low
+
+  * Major Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Thu, 12 Jul 2011 09:00:00 +0200
+
+
+opensips (1.6.0-1) unstable; urgency=low
+
+  * Major Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Thu, 15 Oct 2009 09:00:00 +0200
+
+
+opensips (1.5.0-1) unstable; urgency=low
+
+  * Major Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Mon, 21 Mar 2009 09:00:00 +0200
+
+
+opensips (1.4.0-1) unstable; urgency=low
+
+  * First Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Mon, 21 Jul 2008 09:00:00 +0200
+

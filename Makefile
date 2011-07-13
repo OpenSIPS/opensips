@@ -399,6 +399,14 @@ deb:
 	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
 	rm -f debian
 
+.PHONY: deb-lenny
+deb-lenny:
+	rm -f debian
+	ln -sf packaging/debian-lenny debian
+	dpkg-buildpackage -rfakeroot -tc $(DEBBUILD_EXTRA_OPTIONS)
+	rm -f debian
+
+
 .PHONY: sunpkg
 sunpkg:
 	mkdir -p tmp/$(NAME)
