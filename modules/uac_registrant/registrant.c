@@ -136,7 +136,7 @@ static mi_export_t mi_cmds[] = {
 
 /** Module interface */
 struct module_exports exports= {
-	"registrant",			/* module name */
+	"uac_registrant",		/* module name */
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	cmds,				/* exported functions */
