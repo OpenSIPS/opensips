@@ -783,10 +783,6 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	int flags=0;
 	char *p;
 
-	/* is the dialog already created? */
-	if (current_dlg_pointer!=NULL)
-		return 1;
-
 	if (fixup_get_svalue(req, (gparam_p)param, &res) !=0)
 	{
 		LM_ERR("no create dialog flags\n");
@@ -812,6 +808,13 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 			default:
 				LM_DBG("unknown create_dialog flag : [%c] . Skipping\n",*p);
 		}
+	}
+
+	/* is the dialog already created? */
+	if (current_dlg_pointer!=NULL)
+	{
+		current_dlg_pointer->flags |= flags;
+		return 1;
 	}
 
 	t = d_tmb.t_gett();
