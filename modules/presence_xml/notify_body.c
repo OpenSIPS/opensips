@@ -170,8 +170,6 @@ int presence_offline_body(str* body, str** offline_body)
 		LM_ERR("failed to copy root node: %s\n", err_msg);
 		goto done;
 	}
-	xmlNewProp(root_node, BAD_CAST "xmlns",
-			BAD_CAST "urn:ietf:params:xml:ns:pidf");
 	xmlDocSetRootElement(new_doc, root_node);
 
 	tuple_node= xmlCopyNode(tuple_node, 2);
