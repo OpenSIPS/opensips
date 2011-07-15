@@ -338,7 +338,8 @@ int ldap_get_attr_vals(str *_attr_name, struct berval ***_vals)
 			last_ldap_result,
 			ber))
 	{
-		if (strncmp(a, _attr_name->s, _attr_name->len) == 0) {
+		if (strlen(a) == _attr_name->len &&
+				strncmp(a, _attr_name->s, _attr_name->len) == 0) {
 			*_vals = ldap_get_values_len(
 				last_ldap_handle,
 				last_ldap_result,
