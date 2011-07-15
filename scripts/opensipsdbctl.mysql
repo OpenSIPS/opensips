@@ -263,7 +263,7 @@ if [ $? -ne 0 ] ; then
 	echo "ERROR: failed to migrate $3 to $1!!!"
 	echo -n "Skip it and continue (y/n)? "
 	read INPUT
-	if [ $INPUT == "y" ] || [ $INPUT == "Y" ]
+	if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
 	then
 		return 0
 	fi
