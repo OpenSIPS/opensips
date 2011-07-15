@@ -698,8 +698,6 @@ str* offline_nbody(str* body)
 		LM_ERR("while copying root node\n");
 		goto error;
 	}
-	xmlNewProp(root_node, BAD_CAST "xmlns",
-			BAD_CAST "urn:ietf:params:xml:ns:pidf");
 	xmlDocSetRootElement(new_doc, root_node);
 
 	tuple_node= xmlCopyNode(tuple_node, 2);
