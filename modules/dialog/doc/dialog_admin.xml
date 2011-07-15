@@ -1363,6 +1363,39 @@ set_dlg_flag("3");
 
 	<section>
 		<title>
+		<function moreinfo="none">test_and_set_dlg_flag(idx, value)</function>
+		</title>
+		<para>
+		Atomically checks if the dialog flag index <emphasis>idx</emphasis> is
+		equal to <emphasis>value</emphasis>. If true, changes the value with the
+		oppsosite one. This operation is done under the dialog lock.
+		</para>
+		<para>
+		The flag index can be between 0 and 31.
+		</para>
+		<para>
+		The value should be 0 (false) or 1 (true).
+		</para>
+		<para>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>test_and_set_dlg_flag</function> usage</title>
+		<programlisting format="linespecific">
+...
+test_and_set_dlg_flag("3", "0");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">reset_dlg_flag(idx)</function>
 		</title>
 		<para>
