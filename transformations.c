@@ -1073,8 +1073,13 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				return -1;
 			}
 
-			answer = tp->v.s.s;
-			for (i=0;i<=entryNo;i++)
+			answer = find_sdp_line(_tr_sdp_str.s, bodylimit, searchLine);
+			if (!answer) {
+				LM_DBG("No such line [%c=]\n", searchLine);
+				return pv_get_null(NULL, NULL, val);
+			}
+
+			for (i=1;i<=entryNo;i++)
 			{
 				answer = find_next_sdp_line(answer,bodylimit,searchLine,bodylimit);
 				if (!answer || answer == bodylimit)
