@@ -205,15 +205,15 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 			LM_ERR("cannot resolve host %s\n", host);
 			goto error;
 		}
-		if(hostent2su(&sock->s_addr.udp_addr, hentity, 0, port)){
+		if(hostent2su(&sock->src_addr.udp_addr, hentity, 0, port)){
 			LM_ERR("failed to resolve %s\n", host);
 			goto error;
 		}
 		sock->flags |= EVI_SOCKET | DGRAM_UDP_FLAG;
 	} else {
-		sock->s_addr.unix_addr.sun_family = AF_LOCAL;
-		memcpy(sock->s_addr.unix_addr.sun_path, host, len);
-		sock->s_addr.unix_addr.sun_path[len] = 0;
+		sock->src_addr.unix_addr.sun_family = AF_LOCAL;
+		memcpy(sock->src_addr.unix_addr.sun_path, host, len);
+		sock->src_addr.unix_addr.sun_path[len] = 0;
 		sock->flags |= EVI_SOCKET | DGRAM_UNIX_FLAG;
 	}
 
@@ -356,10 +356,10 @@ static int datagram_raise(str* ev_name, evi_reply_sock *sock,
 	/* send data */
 	if (sock->flags & DGRAM_UDP_FLAG) {
 		sendto(sockets.udp_sock, dgram_buffer, dgram_buffer_len, 0,
-			&sock->s_addr.udp_addr.s, sizeof(struct sockaddr_in));
+			&sock->src_addr.udp_addr.s, sizeof(struct sockaddr_in));
 	} else {
 		sendto(sockets.unix_sock, dgram_buffer, dgram_buffer_len, 0,
-			&sock->s_addr.udp_addr.s, sizeof(struct sockaddr_un));
+			&sock->src_addr.udp_addr.s, sizeof(struct sockaddr_un));
 	}
 	return 0;
 }
