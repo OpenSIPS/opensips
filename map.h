@@ -41,9 +41,9 @@
 /* Flags that can be passed on when creating a map */
 enum
 {
-	MAP_SHARED = 1,		/* determines if the map is to be allocated in
+	AVLMAP_SHARED = 1,		/* determines if the map is to be allocated in
 				shared or private memory */
-	MAP_NO_DUPLICATE = 2	/* determines if the map will duplicate added keys*/
+	AVLMAP_NO_DUPLICATE = 2	/* determines if the map will duplicate added keys*/
 
 };
 
@@ -98,8 +98,8 @@ typedef  int (* process_each_func )(void * param, str key, void * value);
  * Flags can be set to determine the map behaviour. Several flags can be OR-ed
  * together.
  *
- * MAP_SHARED -> flag for shared memory
- * MAP_NO_DUPLICATE -> flag for key duplication
+ * AVLMAP_SHARED -> flag for shared memory
+ * AVLMAP_NO_DUPLICATE -> flag for key duplication
  * 
  */
 

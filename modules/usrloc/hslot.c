@@ -106,7 +106,7 @@ void ul_release_idx(int idx)
  */
 int init_slot(struct udomain* _d, hslot_t* _s, int n)
 {
-	_s->records = map_create( MAP_SHARED | MAP_NO_DUPLICATE);
+	_s->records = map_create( AVLMAP_SHARED | AVLMAP_NO_DUPLICATE);
 
 	if( _s->records == NULL )
 		return -1;

@@ -37,7 +37,7 @@
 
 #define avl_malloc(dest,size,flags) do		\
 {						\
-	if(flags & MAP_SHARED)			\
+	if(flags & AVLMAP_SHARED)			\
 		(dest) = shm_malloc(size);	\
 	else					\
 		(dest) = pkg_malloc(size);	\
@@ -45,7 +45,7 @@
 
 #define avl_free(dest,flags)	do		\
 {						\
-	if(flags & MAP_SHARED)			\
+	if(flags & AVLMAP_SHARED)			\
 		shm_free(dest);			\
 	else					\
 		pkg_free(dest);			\
@@ -147,7 +147,7 @@ void ** map_get( map_t tree, str key)
 	n->avl_link[0] = n->avl_link[1] = NULL;
 	n->avl_parent = q;
 
-	if( !( tree->flags & MAP_NO_DUPLICATE ) )
+	if( !( tree->flags & AVLMAP_NO_DUPLICATE ) )
 	{
 		avl_malloc(key_copy.s, key.len, tree->flags );
 
@@ -329,7 +329,7 @@ void * delete_node(map_t tree, struct avl_node * p)
 		}
 	}
 
-	if(!( tree->flags & MAP_NO_DUPLICATE ) )
+	if(!( tree->flags & AVLMAP_NO_DUPLICATE ) )
 		avl_free(p->key.s,tree->flags);
 
 	avl_free(p,tree->flags);
@@ -483,7 +483,7 @@ void map_destroy( map_t tree, value_destroy_func destroy)
 			q = p->avl_link[1];
 			if (destroy != NULL && p->val != NULL)
 				destroy(p->val);
-			if( !(tree->flags & MAP_NO_DUPLICATE ) )
+			if( !(tree->flags & AVLMAP_NO_DUPLICATE ) )
 				avl_free( p->key.s,tree->flags);
 			avl_free( p, tree->flags );
 		} else {

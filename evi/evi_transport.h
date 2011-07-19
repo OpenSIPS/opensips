@@ -52,7 +52,7 @@ typedef struct ev_reply_sock_ {
 	str address;
 	unsigned int expire;
 	long subscription_time;
-	sockaddr_reply s_addr;
+	sockaddr_reply src_addr;
 	void *params;
 } evi_reply_sock;
 
