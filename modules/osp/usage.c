@@ -64,6 +64,7 @@
 #define OSP_COOKIEHAS_ORIGALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME | OSP_COOKIEHAS_DSTCOUNT)
 #define OSP_COOKIEHAS_TERMALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME)
 
+extern int _osp_origdest_avpid;
 extern char _osp_out_device[];
 extern OSPTPROVHANDLE _osp_provider;
 extern str OSP_ORIGDEST_NAME;
@@ -218,6 +219,11 @@ static int ospReportUsageFromCookie(
     unsigned releasecode;
     char firstvia[OSP_STRBUF_SIZE];
     char from[OSP_STRBUF_SIZE];
+    char rpid[OSP_STRBUF_SIZE];
+    char pai[OSP_STRBUF_SIZE];
+    char divuser[OSP_STRBUF_SIZE];
+    char divhost[OSP_STRBUF_SIZE];
+    char pci[OSP_STRBUF_SIZE];
     char to[OSP_STRBUF_SIZE];
     char nexthop[OSP_STRBUF_SIZE];
     char* calling;
@@ -299,6 +305,10 @@ static int ospReportUsageFromCookie(
 
     ospGetViaAddress(msg, firstvia, sizeof(firstvia));
     ospGetFromUserpart(msg, from, sizeof(from));
+    ospGetRpidUserpart(msg, rpid, sizeof(rpid));
+    ospGetPaiUserpart(msg, pai, sizeof(pai));
+    ospGetDiversion(msg, divuser, sizeof(divuser), divhost, sizeof(divhost));
+    ospGetPChargeInfoUserpart(msg, pci, sizeof(pci));
     ospGetToUserpart(msg, to, sizeof(to));
     ospGetNextHop(msg, nexthop, sizeof(nexthop));
 
@@ -311,8 +321,8 @@ static int ospReportUsageFromCookie(
     if (release == OSP_RELEASE_ORIG) {
         LM_DBG("orig '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
             firstvia,
-            callid->ospmCallIdLen,
-            callid->ospmCallIdVal,
+            callid->Length,
+            callid->Value,
             transid);
         if (originator == NULL) {
             originator = firstvia;
@@ -324,8 +334,8 @@ static int ospReportUsageFromCookie(
         release = OSP_RELEASE_TERM;
         LM_DBG("term '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
             firstvia,
-            callid->ospmCallIdLen,
-            callid->ospmCallIdVal,
+            callid->Length,
+            callid->Value,
             transid);
         if (originator == NULL) {
             originator = nexthop;
@@ -357,6 +367,9 @@ static int ospReportUsageFromCookie(
             break;
     }
 
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
+
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,
         transid,
@@ -369,8 +382,8 @@ static int ospReportUsageFromCookie(
         OSPC_NFORMAT_E164,
         called,
         OSPC_NFORMAT_E164,
-        callid->ospmCallIdLen,
-        callid->ospmCallIdVal,
+        callid->Length,
+        callid->Value,
         0,
         NULL,
         NULL);
@@ -383,7 +396,14 @@ static int ospReportUsageFromCookie(
             destcount);
     }
 
-    ospReportUsageWrapper(
+    OSPPTransactionSetRoleInfo(transaction, OSPC_RSTATE_STOP, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
+
+    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
+    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
+    OSPPTransactionSetDiversion(transaction, divuser, divhost);
+    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+
+  ospReportUsageWrapper(
         transaction,
         releasecode,
         duration,
@@ -433,14 +453,14 @@ int ospReportUsage(
             {
                 if (strncmp(token, OSP_ORIG_COOKIE, strlen(OSP_ORIG_COOKIE)) == 0) {
                     LM_INFO("report orig duration for call_id '%.*s'\n",
-                        callid->ospmCallIdLen,
-                        callid->ospmCallIdVal);
+                        callid->Length,
+                        callid->Value);
                     ospReportUsageFromCookie(msg, token + strlen(OSP_ORIG_COOKIE) + 1, callid, release, OSPC_ROLE_SOURCE);
                     result = MODULE_RETURNCODE_TRUE;
                 } else if (strncmp(token, OSP_TERM_COOKIE, strlen(OSP_TERM_COOKIE)) == 0) {
                     LM_INFO("report term duration for call_id '%.*s'\n",
-                        callid->ospmCallIdLen,
-                        callid->ospmCallIdVal);
+                        callid->Length,
+                        callid->Value);
                     ospReportUsageFromCookie(msg, token + strlen(OSP_TERM_COOKIE) + 1, callid, release, OSPC_ROLE_DESTINATION);
                     result = MODULE_RETURNCODE_TRUE;
                 } else {
@@ -452,8 +472,8 @@ int ospReportUsage(
         if (result == MODULE_RETURNCODE_FALSE) {
             LM_DBG("without orig or term OSP information\n");
             LM_INFO("report other duration for call_id '%.*s'\n",
-               callid->ospmCallIdLen,
-               callid->ospmCallIdVal);
+               callid->Length,
+               callid->Value);
             ospReportUsageFromCookie(msg, NULL, callid, release, OSPC_ROLE_SOURCE);
             result = MODULE_RETURNCODE_TRUE;
         }
@@ -491,6 +511,9 @@ static int ospBuildUsageFromDestination(
     ospConvertToOutAddress(dest->host, host, sizeof(host));
     ospConvertToOutAddress(dest->destdev, destdev, sizeof(destdev));
 
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, dest->protocol);
+
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,
         dest->transid,
@@ -522,6 +545,11 @@ static int ospReportUsageFromDestination(
     OSPTTRANHANDLE transaction,
     osp_dest* dest)
 {
+    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, dest->rpid);
+    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, dest->pai);
+    OSPPTransactionSetDiversion(transaction, dest->divuser, dest->divhost);
+    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, dest->pci);
+
     ospReportUsageWrapper(
         transaction,                                          /* In - Transaction handle */
         dest->lastcode,                                       /* In - Release Code */
@@ -532,7 +560,7 @@ static int ospReportUsageFromDestination(
         dest->time200,                                        /* In - Call connect time */
         dest->time180 ? 1 : 0,                                /* In - Is PDD Info present */
         dest->time180 ? dest->time180 - dest->authtime : 0,   /* In - Post Dial Delay */
-        0);
+        OSP_RELEASE_TERM);
 
     return 0;
 }
@@ -542,17 +570,21 @@ static int ospReportUsageFromDestination(
  */
 void ospReportOrigSetupUsage(void)
 {
-    osp_dest* dest = NULL;
-    osp_dest* lastused = NULL;
     struct usr_avp* destavp = NULL;
     int_str destval;
-    OSPTTRANHANDLE transaction = -1;
+    osp_dest* dest = NULL;
+    osp_dest* lastused = NULL;
+    OSPTTRANHANDLE trans = -1;
     int lastcode = 0;
-    int errorcode;
+    OSPE_ROLE_STATE rstate;
+    int errcode;
 
-    errorcode = OSPPTransactionNew(_osp_provider, &transaction);
+    errcode = OSPPTransactionNew(_osp_provider, &trans);
+    if (errcode != OSPC_ERR_NO_ERROR) {
+        return;
+    }
 
-    for (destavp = search_first_avp(AVP_NAME_STR | AVP_VAL_STR, (int_str)OSP_ORIGDEST_NAME, NULL, 0);
+    for (destavp = search_first_avp(AVP_VAL_STR, _osp_origdest_avpid, NULL, 0);
         destavp != NULL;
         destavp = search_next_avp(destavp, NULL))
     {
@@ -562,22 +594,26 @@ void ospReportOrigSetupUsage(void)
         dest = (osp_dest*)destval.s.s;
 
         if (dest->used == 1) {
+            LM_DBG("iterating through used destination\n");
+
             if (dest->reported == 1) {
                 LM_DBG("orig setup already reported\n");
                 break;
             } else {
                 dest->reported = 1;
+                ospDumpDestination(dest);
+                lastused = dest;
+                if (dest->lastcode == 200) {
+                    rstate = OSPC_RSTATE_START;
+                } else if (dest->lastcode == 300) {
+                    rstate = OSPC_RSTATE_REDIRECT;
+                } else {
+                    rstate = OSPC_RSTATE_STOP;
+                }
+                OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
+                ospBuildUsageFromDestination(trans, dest, lastcode);
+                lastcode = dest->lastcode;
             }
-
-            LM_DBG("iterating through used destination\n");
-
-            ospDumpDestination(dest);
-
-            lastused = dest;
-
-            errorcode = ospBuildUsageFromDestination(transaction, dest, lastcode);
-
-            lastcode = dest->lastcode;
         } else {
             LM_DBG("destination has not been used, breaking out\n");
             break;
@@ -589,13 +625,13 @@ void ospReportOrigSetupUsage(void)
             lastused->callidsize,
             lastused->callid,
             lastused->transid);
-        errorcode = ospReportUsageFromDestination(transaction, lastused);
+        ospReportUsageFromDestination(trans, lastused);
     } else {
         /* If a Toolkit transaction handle was created, but we did not find
          * any destinations to report, we need to release the handle. Otherwise,
          * the ospReportUsageFromDestination will release it.
          */
-        OSPPTransactionDelete(transaction);
+        OSPPTransactionDelete(trans);
     }
 }
 
@@ -605,7 +641,8 @@ void ospReportOrigSetupUsage(void)
 void ospReportTermSetupUsage(void)
 {
     osp_dest* dest = NULL;
-    OSPTTRANHANDLE transaction = -1;
+    OSPTTRANHANDLE trans = -1;
+    OSPE_ROLE_STATE rstate;
     int errorcode;
 
     if ((dest = ospGetTermDestination())) {
@@ -615,9 +652,19 @@ void ospReportTermSetupUsage(void)
                 dest->callidsize,
                 dest->callid,
                 dest->transid);
-            errorcode = OSPPTransactionNew(_osp_provider, &transaction);
-            errorcode = ospBuildUsageFromDestination(transaction, dest, 0);
-            errorcode = ospReportUsageFromDestination(transaction, dest);
+            errorcode = OSPPTransactionNew(_osp_provider, &trans);
+            if (errorcode == OSPC_ERR_NO_ERROR) {
+                ospBuildUsageFromDestination(trans, dest, 0);
+                if (dest->lastcode == 200) {
+                    rstate = OSPC_RSTATE_START;
+                } else if (dest->lastcode == 300) {
+                    rstate = OSPC_RSTATE_REDIRECT;
+                } else {
+                    rstate = OSPC_RSTATE_STOP;
+                }
+                OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
+                ospReportUsageFromDestination(trans, dest);
+            }
         } else {
             LM_DBG("term setup already reported\n");
         }

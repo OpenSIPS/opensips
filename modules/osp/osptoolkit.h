@@ -52,7 +52,7 @@ void ospReportUsageWrapper(
     time_t ospvAlertTime,               /* In - Call alert time */
     time_t ospvConnectTime,             /* In - Call connect time */
     unsigned ospvIsPDDInfoPresent,      /* In - Is PDD Info present */
-    unsigned ospvPostDialDelay,         /* In - Post Dial Delay */
+    unsigned ospvPostDialDelay,         /* In - Post Dial Delay, in seconds */
     unsigned ospvReleaseSource          /* In - EP that released the call */
 );
 

@@ -34,6 +34,7 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_diversion.h"
 #include "../../parser/parse_rpid.h"
+#include "../../parser/parse_pai.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../data_lump.h"
@@ -44,13 +45,11 @@
 
 extern int _osp_work_mode;
 extern char _osp_in_device[];
-extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_append_userphone;
-extern int _osp_append_dnid;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
-extern int_str _osp_srcdev_avpname;
+extern int _osp_srcdev_avpid;
 extern unsigned short _osp_srcdev_avptype;
 
 static void ospSkipPlus(char* e164);
@@ -100,7 +99,7 @@ static void ospSkipPlus(
 }
 
 /*
- * Get calling number from From header
+ * Get user part from From header
  * param msg SIP message
  * param fromuser User part of From header
  * param bufsize Size of fromuser buffer
@@ -134,60 +133,159 @@ int ospGetFromUserpart(
         } else {
             LM_ERR("failed to find From header\n");
         }
+    } else {
+        LM_ERR("bad parameters to parse user part from From header\n");
     }
 
     return result;
 }
 
 /*
- * Get calling number from Remote-Party-ID header
+ * Get user part from Remote-Party-ID header
  * param msg SIP message
  * param user User part of Remote-Party-ID header
  * param bufsize Size of fromuser buffer
- * return 0 success, 1 not use RPID or without RPID, -1 failure
+ * return 0 success, 1 without RPID, -1 failure
  */
 int ospGetRpidUserpart(
     struct sip_msg* msg,
-    char* user,
+    char* rpiduser,
     int bufsize)
 {
     struct to_body* rpid;
     struct sip_uri uri;
     int result = -1;
 
-    if ((user != NULL) && (bufsize > 0)) {
-        user[0] = '\0';
-        if (_osp_use_rpid != 0) {
-            if (msg->rpid != NULL) {
-                if (parse_rpid_header(msg) == 0) {
-                    rpid = get_rpid(msg);
-                    if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
-                        ospCopyStrToBuffer(&uri.user, user, bufsize);
-                        ospSkipPlus(user);
-                        result = 0;
-                    } else {
-                        LM_ERR("failed to parse RPID uri\n");
-                    }
+    if ((rpiduser != NULL) && (bufsize > 0)) {
+        rpiduser[0] = '\0';
+        if (msg->rpid != NULL) {
+            if (parse_rpid_header(msg) == 0) {
+                rpid = get_rpid(msg);
+                if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
+                    ospCopyStrToBuffer(&uri.user, rpiduser, bufsize);
+                    ospSkipPlus(rpiduser);
+                    result = 0;
                 } else {
                     LM_ERR("failed to parse RPID uri\n");
                 }
             } else {
-                LM_DBG("without RPID header\n");
-                result = 1;
+                LM_ERR("failed to parse RPID uri\n");
             }
         } else {
-            LM_DBG("do not use RPID header\n");
+            LM_DBG("without RPID header\n");
             result = 1;
         }
     } else {
-        LM_ERR("bad paraneters to parse calling number from RPID\n");
+        LM_ERR("bad parameters to parse user part from RPID\n");
     }
 
     return result;
 }
 
 /*
- * Get called number from To header
+ * Get user part from P-Asserted-Identity header
+ * param msg SIP message
+ * param user User part of P-Asserted-Identity header
+ * param bufsize Size of fromuser buffer
+ * return 0 success, 1 without PAI, -1 failure
+ */
+int ospGetPaiUserpart(
+    struct sip_msg* msg,
+    char* paiuser,
+    int bufsize)
+{
+    struct to_body* pai;
+    struct sip_uri uri;
+    int result = -1;
+
+    if ((paiuser != NULL) && (bufsize > 0)) {
+        paiuser[0] = '\0';
+        if (msg->pai != NULL) {
+            if (parse_pai_header(msg) == 0) {
+                pai = get_pai(msg);
+                if (parse_uri(pai->uri.s, pai->uri.len, &uri) == 0) {
+                    ospCopyStrToBuffer(&uri.user, paiuser, bufsize);
+                    ospSkipPlus(paiuser);
+                    result = 0;
+                } else {
+                    LM_ERR("failed to parse PAI uri\n");
+                }
+            } else {
+                LM_ERR("failed to parse PAI uri\n");
+            }
+        } else {
+            LM_DBG("without PAI header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse user part from PAI\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get user part from P-Charge-Info header
+ * param msg SIP message
+ * param user User part of P-Charge-Info header
+ * param bufsize Size of fromuser buffer
+ * return 0 success, 1 without P-Charge-Info, -1 failure
+ */
+int ospGetPChargeInfoUserpart(
+    struct sip_msg* msg,
+    char* pciuser,
+    int bufsize)
+{
+    static const char* header = "P-Charge-Info";
+    struct to_body body;
+    struct to_body* pci;
+    struct hdr_field *hf;
+    struct sip_uri uri;
+    char* delim = NULL;
+    int result = -1;
+
+    if ((pciuser != NULL) && (bufsize > 0)) {
+        pciuser[0] = '\0';
+        parse_headers(msg, HDR_EOH_F, 0);
+        for (hf = msg->headers; hf; hf = hf->next) {
+            if ((hf->type == HDR_OTHER_T) &&
+                (hf->name.len == strlen(header)) &&
+                (strncasecmp(hf->name.s, header, hf->name.len) == 0))
+            {
+                if (!(pci = hf->parsed)) {
+                    pci = &body;
+                    parse_to(hf->body.s, hf->body.s + hf->body.len + 1, pci);
+                }
+                if (pci->error != PARSE_ERROR) {
+                    if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
+                        ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
+                        if ((delim = strchr(pciuser, ';'))) {
+                            *delim = '\0';
+                        }
+                        ospSkipPlus(pciuser);
+                        result = 0;
+                    } else {
+                        LM_ERR("failed to parse P-Charge-Info uri\n");
+                    }
+                } else {
+                    LM_ERR("bad P-Charge-Info header\n");
+                }
+                break;
+            }
+        }
+        if (!hf) {
+            LM_DBG("without P-Charge-Info header\n");
+            result = 1;
+        }
+    } else {
+        LM_ERR("bad parameters to parse user part from PAI\n");
+    }
+
+    return result;
+}
+
+/*
+ * Get user part from To header
  * param msg SIP message
  * param touser User part of To header
  * param bufsize Size of touser buffer
@@ -221,6 +319,8 @@ int ospGetToUserpart(
         } else {
             LM_ERR("failed to find To header\n");
         }
+    } else {
+        LM_ERR("bad parameters to parse user part from To header\n");
     }
 
     return result;
@@ -265,15 +365,17 @@ int ospGetToHostpart(
         } else {
             LM_ERR("failed to find To header\n");
         }
+    } else {
+        LM_ERR("bad parameters to parse hsto info from To header\n");
     }
 
     return result;
 }
 
 /*
- * Get called number from Request-Line header
+ * Get user part from Request-Line header
  * param msg SIP message
- * param touser User part of To header
+ * param uriuser User part of To header
  * param bufsize Size of touser buffer
  * return 0 success, -1 failure
  */
@@ -298,6 +400,8 @@ int ospGetUriUserpart(
         } else {
             LM_ERR("failed to parse Request-Line URI\n");
         }
+    } else {
+        LM_ERR("bad parameters to parse user part from RURI\n");
     }
 
     return result;
@@ -495,8 +599,8 @@ int ospGetSourceDevice(
     if (bufsize > 0) {
         switch (_osp_work_mode) {
         case 1:
-            if ((_osp_srcdev_avpname.n != 0) &&
-                ((avp = search_first_avp(_osp_srcdev_avptype, _osp_srcdev_avpname, &value, 0)) != NULL) &&
+            if ((_osp_srcdev_avpid >= 0) &&
+                ((avp = search_first_avp(_osp_srcdev_avptype, _osp_srcdev_avpid, &value, 0)) != NULL) &&
                 (avp->flags & AVP_VAL_STR) && (value.s.s && value.s.len))
             {
                 snprintf(srcdev, bufsize, "%.*s", value.s.len, value.s.s);
@@ -672,7 +776,7 @@ int ospRebuildDestionationUri(
     /* ";user=phone" */
     uriparamsize = _osp_append_userphone ? USERPHONE.len : 0;
     /* destination network ID parameter */
-    dnidsize = (_osp_append_dnid && dest->networkid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->networkid) : 0;
+    dnidsize = (_osp_dnid_location && dest->networkid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->networkid) : 0;
 
     LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d) '%d'\n",
         dest->called,
@@ -755,7 +859,7 @@ int ospRebuildDestionationUri(
         buffer += count;
     }
 
-    if ((_osp_append_dnid != 0) && (_osp_dnid_location == 1) && (dest->networkid[0] != '\0')) {
+    if ((_osp_dnid_location == 1) && (dest->networkid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
         buffer += count;
     }
@@ -770,13 +874,18 @@ int ospRebuildDestionationUri(
         buffer += USERPHONE.len;
     }
 
-    if ((_osp_append_dnid != 0) && (_osp_dnid_location == 0) && (dest->networkid[0] != '\0')) {
+    if ((_osp_dnid_location == 2) && (dest->networkid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
         buffer += count;
     }
 
     if (format == 1) {
-      *buffer++ = '>';
+        *buffer++ = '>';
+
+        if ((_osp_dnid_location == 3) && (dest->networkid[0] != '\0')) {
+            count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->networkid);
+            buffer += count;
+        }
     }
 
 /*
@@ -827,10 +936,10 @@ int ospGetNextHop(
                 for (rt = (rr_t*)hf->parsed; rt; rt = rt->next) {
                     if (parse_uri(rt->nameaddr.uri.s, rt->nameaddr.uri.len, &uri) == 0) {
                         LM_DBG("host '%.*s' port '%d'\n", uri.host.len, uri.host.s, uri.port_no);
-    
+
                         if (check_self(&uri.host, uri.port_no ? uri.port_no : SIP_PORT, PROTO_NONE) != 1) {
                             LM_DBG("it is NOT me, FOUND!\n");
-    
+
                             if (uri.port_no != 0) {
                                 snprintf(nexthop, bufsize, "%.*s:%d", uri.host.len, uri.host.s, uri.port_no);
                                 nexthop[bufsize - 1] = '\0';

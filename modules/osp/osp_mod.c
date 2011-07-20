@@ -64,25 +64,24 @@ extern int _osp_persistence;
 extern int _osp_retry_delay;
 extern int _osp_retry_limit;
 extern int _osp_timeout;
+extern int _osp_non_sip;
 extern int _osp_max_dests;
-extern int _osp_use_rpid;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
 extern int _osp_append_userphone;
-extern int _osp_append_dnid;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
 extern char* _osp_srcdev_avp;
-extern int_str _osp_srcdev_avpname;
+extern int _osp_srcdev_avpid;
 extern unsigned short _osp_srcdev_avptype;
 extern char* _osp_snid_avp;
-extern int_str _osp_snid_avpname;
+extern int _osp_snid_avpid;
 extern unsigned short _osp_snid_avptype;
 extern char* _osp_cinfo_avp;
-extern int_str _osp_cinfo_avpname;
+extern int _osp_cinfo_avpid;
 extern unsigned short _osp_cinfo_avptype;
 extern OSPTPROVHANDLE _osp_provider;
 
@@ -97,14 +96,15 @@ static int  ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
 static cmd_export_t cmds[]={
-    { "checkospheader",          (cmd_function)ospCheckHeader,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
-    { "validateospheader",       (cmd_function)ospValidateHeader,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
-    { "requestosprouting",       (cmd_function)ospRequestRouting,   0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
-    { "checkosproute",           (cmd_function)ospCheckRoute,       0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
-    { "prepareosproute",         (cmd_function)ospPrepareRoute,     0, 0, 0, BRANCH_ROUTE },
-    { "prepareallosproutes",     (cmd_function)ospPrepareAllRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
-    { "checkcallingtranslation", (cmd_function)ospCheckCalling,     0, 0, 0, BRANCH_ROUTE },
-    { "reportospusage",          (cmd_function)ospReportUsage,      1, 0, 0, REQUEST_ROUTE },
+    { "checkospheader",           (cmd_function)ospCheckHeader,           0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "validateospheader",        (cmd_function)ospValidateHeader,        0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "requestosprouting",        (cmd_function)ospRequestRouting,        0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "checkosproute",            (cmd_function)ospCheckRoute,            0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "prepareosproute",          (cmd_function)ospPrepareRoute,          0, 0, 0, BRANCH_ROUTE },
+    { "prepareredirectosproutes", (cmd_function)ospPrepareRedirectRoutes, 0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "prepareallosproutes",      (cmd_function)ospPrepareAllRoutes,      0, 0, 0, REQUEST_ROUTE|FAILURE_ROUTE },
+    { "checkcallingtranslation",  (cmd_function)ospCheckCalling,          0, 0, 0, BRANCH_ROUTE },
+    { "reportospusage",           (cmd_function)ospReportUsage,           1, 0, 0, REQUEST_ROUTE },
     { 0, 0, 0, 0, 0, 0 }
 };
 
@@ -156,12 +156,11 @@ static param_export_t params[]={
     { "retry_delay",                      INT_PARAM, &_osp_retry_delay },
     { "retry_limit",                      INT_PARAM, &_osp_retry_limit },
     { "timeout",                          INT_PARAM, &_osp_timeout },
+    { "support_nonsip_protocol",          INT_PARAM, &_osp_non_sip },
     { "max_destinations",                 INT_PARAM, &_osp_max_dests },
-    { "use_rpid_for_calling_number",      INT_PARAM, &_osp_use_rpid },
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
-    { "append_networkid",                 INT_PARAM, &_osp_append_dnid},
     { "networkid_location",               INT_PARAM, &_osp_dnid_location},
     { "networkid_parameter",              STR_PARAM, &_osp_dnid_param },
     { "source_device_avp",                STR_PARAM, &_osp_srcdev_avp },
@@ -216,11 +215,16 @@ static int ospInitMod(void)
         memset(&osp_auth, 0, sizeof(osp_auth));
     }
 
-    if (ospInitTm() < 0) {
+    if (ospInitTm() != 0) {
         return -1;
     }
-    /* everything is fine till now */
-	return ospParseAvps();
+
+    if(ospParseAvps() != 0) {
+        return -1;
+    }
+
+    /* everything is fine, initialization done */
+    return 0;
 }
 
 /*
@@ -295,7 +299,7 @@ static int ospVerifyParameters(void)
         _osp_out_device[0] = '\0';
     }
 
-    if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
+    if (_osp_max_dests > OSP_MAX_DESTS || _osp_max_dests < 1) {
         _osp_max_dests = OSP_DEF_DESTS;
         LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS);
     }
@@ -324,7 +328,7 @@ static int ospVerifyParameters(void)
         result = -1;
     }
 
-    if ((_osp_dnid_location != 0) && (_osp_dnid_location != 1)) {
+    if ((_osp_dnid_location < 0) || (_osp_dnid_location > 3)) {
         _osp_dnid_location = OSP_DEF_DNIDLOC;
         LM_WARN("networkid_location is out of range, reset to %d\n", OSP_DEF_DNIDLOC);
     }
@@ -338,14 +342,14 @@ static int ospVerifyParameters(void)
         avp_str.len = strlen(_osp_srcdev_avp);
         if ((pv_parse_spec(&avp_str, &avp_spec) == NULL) ||
             avp_spec.type != PVT_AVP ||
-            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_srcdev_avpname, &_osp_srcdev_avptype) != 0)
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_srcdev_avpid, &_osp_srcdev_avptype) != 0)
         {
             LM_WARN("'%s' invalid AVP definition\n", _osp_srcdev_avp);
-            _osp_srcdev_avpname.n = 0;
+            _osp_srcdev_avpid = OSP_DEF_AVP;
             _osp_srcdev_avptype = 0;
         }
     } else {
-        _osp_srcdev_avpname.n = 0;
+        _osp_srcdev_avpid = OSP_DEF_AVP;
         _osp_srcdev_avptype = 0;
     }
 
@@ -354,14 +358,14 @@ static int ospVerifyParameters(void)
         avp_str.len = strlen(_osp_snid_avp);
         if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
             avp_spec.type != PVT_AVP ||
-            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_snid_avpname, &_osp_snid_avptype) != 0)
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_snid_avpid, &_osp_snid_avptype) != 0)
         {
             LM_WARN("'%s' invalid AVP definition\n", _osp_snid_avp);
-            _osp_snid_avpname.n = 0;
+            _osp_snid_avpid = OSP_DEF_AVP;
             _osp_snid_avptype = 0;
         }
     } else {
-        _osp_snid_avpname.n = 0;
+        _osp_snid_avpid = OSP_DEF_AVP;
         _osp_snid_avptype = 0;
     }
 
@@ -370,14 +374,14 @@ static int ospVerifyParameters(void)
         avp_str.len = strlen(_osp_cinfo_avp);
         if (pv_parse_spec(&avp_str, &avp_spec) == NULL ||
             avp_spec.type != PVT_AVP ||
-            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_cinfo_avpname, &_osp_cinfo_avptype) != 0)
+            pv_get_avp_name(0, &(avp_spec.pvp), &_osp_cinfo_avpid, &_osp_cinfo_avptype) != 0)
         {
             LM_WARN("'%s' invalid AVP definition\n", _osp_cinfo_avp);
-            _osp_cinfo_avpname.n = 0;
+            _osp_cinfo_avpid = OSP_DEF_AVP;
             _osp_cinfo_avptype = 0;
         }
     } else {
-        _osp_cinfo_avpname.n = 0;
+        _osp_cinfo_avpid = OSP_DEF_AVP;
         _osp_cinfo_avptype = 0;
     }
 
@@ -416,34 +420,15 @@ static void ospDumpParameters(void)
     LM_INFO("    retry_limit '%d' ", _osp_retry_limit);
     LM_INFO("    timeout '%d' ", _osp_timeout);
     LM_INFO("    validate_call_id '%d' ", _osp_validate_callid);
-    LM_INFO("    use_rpid_for_calling_number '%d' ", _osp_use_rpid);
     LM_INFO("    use_number_portability '%d' ", _osp_use_np);
     LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
-    LM_INFO("    append_networkid '%d' ", _osp_append_dnid);
     LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
     LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
-    if (_osp_srcdev_avpname.n == 0) {
-        LM_INFO("    source device IP disabled\n");
-    } else if (_osp_srcdev_avptype & AVP_NAME_STR) {
-        LM_INFO("    source device IP AVP name '%.*s'\n", _osp_srcdev_avpname.s.len, _osp_srcdev_avpname.s.s);
-    } else {
-        LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpname.n);
-    }
-    if (_osp_snid_avpname.n == 0) {
-        LM_INFO("    source network ID disabled\n");
-    } else if (_osp_snid_avptype & AVP_NAME_STR) {
-        LM_INFO("    source network ID AVP name '%.*s'\n", _osp_snid_avpname.s.len, _osp_snid_avpname.s.s);
-    } else {
-        LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpname.n);
-    }
-    if (_osp_cinfo_avpname.n == 0) {
-        LM_INFO("    custom info disabled\n");
-    } else if (_osp_cinfo_avptype & AVP_NAME_STR) {
-        LM_INFO("    custom info AVP name '%.*s'\n", _osp_cinfo_avpname.s.len, _osp_cinfo_avpname.s.s);
-    } else {
-        LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpname.n);
-    }
+    LM_INFO("    support_nonsip_protocol '%d'\n", _osp_non_sip);
+    LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpid);
+    LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpid);
+    LM_INFO("    custom info AVP ID '%d'\n", _osp_cinfo_avpid);
 }
 

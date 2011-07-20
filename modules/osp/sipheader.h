@@ -58,10 +58,12 @@
 
 void ospCopyStrToBuffer(str* source, char* buffer, int bufsize);
 int ospGetFromUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
-int ospGetRpidUserpart(struct sip_msg* msg, char* fromuser, int bufsize);
+int ospGetRpidUserpart(struct sip_msg* msg, char* rpiduser, int bufsize);
+int ospGetPaiUserpart(struct sip_msg* msg, char* paiuser, int bufsize);
+int ospGetPChargeInfoUserpart(struct sip_msg* msg, char* paiuser, int bufsize);
 int ospGetToUserpart(struct sip_msg* msg, char* touser, int bufsize);
 int ospGetToHostpart(struct sip_msg* msg, char* tohost, int bufsize);
-int ospGetUriUserpart(struct sip_msg* msg, char* touser, int bufsize);
+int ospGetUriUserpart(struct sip_msg* msg, char* uriuser, int bufsize);
 int ospAddOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int tokensize);
 int ospGetOspHeader(struct sip_msg* msg, unsigned char* token, unsigned int* tokensize);
 int ospGetViaAddress(struct sip_msg* msg, char* srcaddr, int bufsize);
