@@ -35,16 +35,16 @@
 static OSPTTHREADRETURN ospReportUsageWork(void* usagearg);
 
 typedef struct _osp_usage {
-    OSPTTRANHANDLE ospvTransaction;     /* Transaction handle */
-    unsigned ospvReleaseCode;           /* Release code */
-    unsigned ospvDuration;              /* Length of call */
-    time_t ospvStartTime;               /* Call start time */
-    time_t ospvEndTime;                 /* Call end time */
-    time_t ospvAlertTime;               /* Call alert time */
-    time_t ospvConnectTime;             /* Call connect time */
-    unsigned ospvIsPDDInfoPresent;      /* Is PDD Info present */
-    unsigned ospvPostDialDelay;         /* Post Dial Delay */
-    unsigned ospvReleaseSource;         /* EP that released the call */
+    OSPTTRANHANDLE transaction; /* Transaction handle */
+    unsigned cause;             /* Release code */
+    unsigned duration;          /* Length of call */
+    time_t start;               /* Call start time */
+    time_t end;                 /* Call end time */
+    time_t alert;               /* Call alert time */
+    time_t connect;             /* Call connect time */
+    unsigned haspdd;            /* Is PDD Info present */
+    unsigned pdd;               /* Post Dial Delay, in seconds */
+    unsigned release;           /* EP that released the call */
 } osp_usage;
 
 /*
@@ -82,7 +82,7 @@ unsigned long long ospGetTransactionId(
  * param ospvAlertTime Call alert time
  * param ospvConnectTime Call connected  time
  * param ospvIsPDDInfoPresent If post dial delay information avaliable
- * param ospvPostDialDelay Post dial delay information
+ * param ospvPostDialDelay Post dial delay information, in seconds
  * param ospvReleaseSource Which side release the call
  */
 void ospReportUsageWrapper(
@@ -106,16 +106,16 @@ void ospReportUsageWrapper(
 
     usage = (osp_usage*)malloc(sizeof(osp_usage));
 
-    usage->ospvTransaction = ospvTransaction;
-    usage->ospvReleaseCode = ospvReleaseCode;
-    usage->ospvDuration = ospvDuration;
-    usage->ospvStartTime = ospvStartTime;
-    usage->ospvEndTime = ospvEndTime;
-    usage->ospvAlertTime = ospvAlertTime;
-    usage->ospvConnectTime = ospvConnectTime;
-    usage->ospvIsPDDInfoPresent = ospvIsPDDInfoPresent;
-    usage->ospvPostDialDelay = ospvPostDialDelay;
-    usage->ospvReleaseSource = ospvReleaseSource;
+    usage->transaction = ospvTransaction;
+    usage->cause = ospvReleaseCode;
+    usage->duration = ospvDuration;
+    usage->start = ospvStartTime;
+    usage->end = ospvEndTime;
+    usage->alert = ospvAlertTime;
+    usage->connect = ospvConnectTime;
+    usage->haspdd = ospvIsPDDInfoPresent;
+    usage->pdd = ospvPostDialDelay;
+    usage->release = ospvReleaseSource;
 
     OSPM_THRATTR_INIT(threadattr, errorcode);
 
@@ -142,36 +142,44 @@ static OSPTTHREADRETURN ospReportUsageWork(
     usage = (osp_usage*)usagearg;
 
     OSPPTransactionRecordFailure(
-        usage->ospvTransaction,
-        usage->ospvReleaseCode);
+        usage->transaction,
+        usage->cause);
+
+#if 0
+    OSPPTransactionSetTermCause(
+        usage->transaction,
+        OSPC_TCAUSE_SIP,
+        usage->cause,
+        NULL);
+#endif
 
     for (i = 1; i <= MAX_RETRIES; i++) {
         errorcode = OSPPTransactionReportUsage(
-            usage->ospvTransaction,
-            usage->ospvDuration,
-            usage->ospvStartTime,
-            usage->ospvEndTime,
-            usage->ospvAlertTime,
-            usage->ospvConnectTime,
-            usage->ospvIsPDDInfoPresent,
-            usage->ospvPostDialDelay,
-            usage->ospvReleaseSource,
+            usage->transaction,
+            usage->duration,
+            usage->start,
+            usage->end,
+            usage->alert,
+            usage->connect,
+            usage->haspdd,
+            usage->pdd * 1000,
+            usage->release,
             NULL, -1, -1, -1, -1, NULL, NULL);
 
         if (errorcode == OSPC_ERR_NO_ERROR) {
             LM_DBG("reporte usage for '%llu'\n",
-                ospGetTransactionId(usage->ospvTransaction));
+                ospGetTransactionId(usage->transaction));
             break;
         } else {
             LM_ERR("failed to report usage for '%llu' (%d) attempt '%d' of '%d'\n",
-                ospGetTransactionId(usage->ospvTransaction),
+                ospGetTransactionId(usage->transaction),
                 errorcode,
                 i,
                 MAX_RETRIES);
         }
     }
 
-    OSPPTransactionDelete(usage->ospvTransaction);
+    OSPPTransactionDelete(usage->transaction);
 
     free(usage);
 

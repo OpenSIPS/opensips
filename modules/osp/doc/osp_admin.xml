@@ -297,7 +297,7 @@ modparam("osp","networkid_param","networkid")
     </section>
     <section>
       <title><varname>source_device_avp</varname></title>
-      <para>The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(osp_source_device_)".  Then the source device IP can be set by "$avp(osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <para>The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(_osp_source_device_)".  Then the source device IP can be set by "$avp(_osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
       <example>
         <title>Setting the source device IP AVP</title>
         <programlisting format="linespecific">
@@ -307,7 +307,7 @@ modparam("osp","source_device_avp","$avp(srcdev)")
     </section>
     <section>
       <title><varname>source_networkid_avp</varname></title>
-      <para>The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(osp_source_networkid_)".  Then the source network ID can be set by "$avp(osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <para>The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(_osp_source_networkid_)".  Then the source network ID can be set by "$avp(_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
       <example>
         <title>Setting the source network ID AVP</title>
         <programlisting format="linespecific">
@@ -317,7 +317,7 @@ modparam("osp","source_networkid_avp","$avp(snid)")
     </section>
     <section>
       <title><varname>custom_info_avp</varname></title>
-      <para>The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(osp_custom_info_)".  Then the custom information can be set by "$avp(osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
+      <para>The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(_osp_custom_info_)".  Then the custom information can be set by "$avp(_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
       <example>
         <title>Setting the custom info AVP</title>
         <programlisting format="linespecific">

@@ -33,6 +33,9 @@
 #include "../../usr_avp.h"
 #include "osp_mod.h"
 
+int _osp_origdest_avpid = OSP_DEF_AVP;
+int _osp_termdest_avpid = OSP_DEF_AVP;
+int _osp_calling_avpid = OSP_DEF_AVP;
 int _osp_work_mode = OSP_DEF_MODE;
 int _osp_service_type = OSP_DEF_SERVICE;
 unsigned int _osp_sp_number;
@@ -58,25 +61,24 @@ int _osp_persistence = OSP_DEF_PERSISTENCE;
 int _osp_retry_delay = OSP_DEF_DELAY;
 int _osp_retry_limit = OSP_DEF_RETRY;
 int _osp_timeout = OSP_DEF_TIMEOUT;
+int _osp_non_sip = OSP_DEF_NONSIP;
 int _osp_max_dests = OSP_DEF_DESTS;
-int _osp_use_rpid = OSP_DEF_USERPID;
 int _osp_use_np = OSP_DEF_USENP;
 int _osp_redir_uri = OSP_DEF_REDIRURI;
 int _osp_append_userphone = OSP_DEF_USERPHONE;
-int _osp_append_dnid = OSP_DEF_APPENDNID;
 int _osp_dnid_location = OSP_DEF_DNIDLOC;
 char* _osp_dnid_param = OSP_DEF_DNIDPARAM;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
 char _osp_LOCAL_CERTIFICATE[OSP_STRBUF_SIZE];
 char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
 char* _osp_srcdev_avp = OSP_DEF_SNIDAVP;
-int_str _osp_srcdev_avpname;
+int_str _osp_srcdev_avpid;
 unsigned short _osp_srcdev_avptype;
 char* _osp_snid_avp = OSP_DEF_SNIDAVP;
-int_str _osp_snid_avpname;
+int_str _osp_snid_avpid;
 unsigned short _osp_snid_avptype;
 char* _osp_cinfo_avp = OSP_DEF_CINFOAVP;
-int_str _osp_cinfo_avpname;
+int_str _osp_cinfo_avpid;
 unsigned short _osp_cinfo_avptype;
 
 OSPTPROVHANDLE _osp_provider = -1;

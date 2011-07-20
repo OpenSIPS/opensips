@@ -36,6 +36,7 @@
 #define MODULE_RETURNCODE_FALSE         -1
 #define MODULE_RETURNCODE_ERROR         -2
 
+#define OSP_DEF_AVP                     -1
 #define OSP_DEF_MODE                    0
 #define OSP_DEF_SERVICE                 0
 #define OSP_DEF_SPS                     16
@@ -45,22 +46,22 @@
 #define OSP_DEF_CALLID                  1   /* Validate call ids, set to 0 to disable */
 #define OSP_DEF_TOKEN                   2
 #define OSP_DEF_SSLLIFE                 300
-#define OSP_DEF_PERSISTENCE             (60 * 1000)
+#define OSP_DEF_PERSISTENCE             60
 #define OSP_DEF_DELAY                   0
 #define OSP_DEF_RETRY                   2
 #define OSP_DEF_TIMEOUT                 (60 * 1000)
 #define OSP_DEF_DESTS                   5
-#define OSP_DEF_USERPID                 1
+#define OSP_DEF_NONSIP                  0
+#define OSP_MAX_DESTS                   12
 #define OSP_DEF_USENP                   1
-#define OSP_DEF_REDIRURI                0   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
+#define OSP_DEF_REDIRURI                1   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0
-#define OSP_DEF_APPENDNID               1
-#define OSP_DEF_DNIDLOC                 0
+#define OSP_DEF_DNIDLOC                 2
 #define OSP_DEF_DNIDPARAM               "networkid"
-#define OSP_DEF_SRCIPAVP                "$avp(osp_source_device_)"
-#define OSP_DEF_SNIDAVP                 "$avp(osp_source_networkid_)"
+#define OSP_DEF_SRCIPAVP                "$avp(_osp_source_device_)"
+#define OSP_DEF_SNIDAVP                 "$avp(_osp_source_networkid_)"
 #define OSP_DEF_CINFOS                  8
-#define OSP_DEF_CINFOAVP                "$avp(osp_custom_info_)"
+#define OSP_DEF_CINFOAVP                "$avp(_osp_custom_info_)"
 
 #define OSP_STRBUF_SIZE                 256
 #define OSP_KEYBUF_SIZE                 1024
