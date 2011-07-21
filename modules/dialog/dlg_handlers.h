@@ -66,4 +66,6 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
 int terminate_dlg(unsigned int h_entry, unsigned int h_id);
 typedef int (*terminate_dlg_f)(unsigned int h_entry, unsigned int h_id);
 
+int test_and_set_dlg_flag(struct dlg_cell *dlg, unsigned long index,
+		unsigned long value);
 #endif
