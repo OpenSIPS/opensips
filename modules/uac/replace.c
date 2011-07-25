@@ -688,6 +688,9 @@ void move_bavp_callback(struct cell* t, int type, struct tmcb_params *p)
 
 	req = t->uas.request;
 	rpl = p->rpl;
+	if (req == FAKED_REPLY || rpl == FAKED_REPLY)
+		return;
+
 	if (req->msg_flags & FL_USE_UAC_FROM && 
 			(move_bavp_dlg(rpl, &rr_from_param, &from_bavp_spec) < 0))
 		LM_ERR("failed to move bavp list\n");
@@ -708,6 +711,8 @@ void restore_uris_reply(struct cell* t, int type, struct tmcb_params *p)
 
 	req = t->uas.request;
 	rpl = p->rpl;
+	if (req == FAKED_REPLY || rpl == FAKED_REPLY)
+		return;
 
 	if (req->msg_flags & FL_USE_UAC_FROM ) {
 		/* parse FROM in reply */
