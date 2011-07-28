@@ -906,6 +906,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 		 * a callback; save branch count to be able to determine
 		 * later if new branches were initiated */
 		branch_cnt=Trans->nr_of_outgoings;
+		reset_kr();
 
 		if ( !(Trans->flags&T_NO_DNS_FAILOVER_FLAG) &&
 		Trans->uac[picked_branch].proxy!=NULL ) {
@@ -949,7 +950,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 			return RPS_COMPLETED;
 		}
 		/* look if the callback/failure_route introduced new branches ... */
-		if (branch_cnt<Trans->nr_of_outgoings)  {
+		if (branch_cnt<Trans->nr_of_outgoings && get_kr()==REQ_FWDED)  {
 			/* await then result of new branches */
 			*should_store=1;
 			*should_relay=-1;
