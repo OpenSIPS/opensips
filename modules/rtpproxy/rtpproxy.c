@@ -2593,7 +2593,7 @@ static int
 engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 {
 	str param1_val,param2_val;
-	struct to_body *pto, TO;
+	struct to_body *pto;
 	struct dlg_cell *dlg;
 	pv_value_t val1, val2;
 
@@ -2609,13 +2609,11 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 		return -1;
 	}
 
-	parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-	if(TO.error != PARSE_OK)
-	{
-		LM_DBG("'To' header NOT parsed\n");
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
 		return -1;
 	}
-	pto = &TO;
 
 	/* totag field is empty*/
 	if (!( pto->tag_value.s==NULL || pto->tag_value.len==0) ) {
