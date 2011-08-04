@@ -127,7 +127,7 @@ error:
 
 int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 {
-	struct to_body *pto, TO, *pfrom= NULL;
+	struct to_body *pto, *pfrom= NULL;
 	str body= {0, 0};
 	ua_pres_t dialog;
 	str* res_id= NULL;
@@ -160,20 +160,13 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		LM_ERR("cannot parse TO header\n");
 		return -1;
 	}
-	if(msg->to->parsed != NULL)
-	{
-		pto = (struct to_body*)msg->to->parsed;
+
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
+		return -1;
 	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.uri.len <= 0) 
-		{
-			LM_ERR(" 'To' header NOT parsed\n");
-			return -1;
-		}
-		pto = &TO;
-	}
+
 	memset(&dialog, 0, sizeof(ua_pres_t));
 	dialog.watcher_uri= &pto->uri;
     if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
@@ -181,6 +174,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		LM_ERR("to tag value not parsed\n");
 		goto error;
 	}
+
 	dialog.from_tag= pto->tag_value;
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
