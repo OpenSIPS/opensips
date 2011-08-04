@@ -210,7 +210,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	int lexpire= 0;
 	unsigned int cseq;
 	ua_pres_t* presentity= NULL, *hentity= NULL;
-	struct to_body *pto= NULL, *pfrom = NULL, TO;
+	struct to_body *pto= NULL, *pfrom = NULL;
 	int size= 0;
 	int flag ;
 	str record_route= {0, 0};
@@ -305,22 +305,13 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			LM_ERR("cannot parse TO header\n");
 			goto done;
 		}			
-		if(msg->to->parsed != NULL)
-		{
-			pto = (struct to_body*)msg->to->parsed;
-			LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",pto->uri.len,pto->uri.s);
+
+		pto = get_to(msg);
+		if (pto == NULL || pto->error != PARSE_OK) {
+			LM_ERR("failed to parse TO header\n");
+			goto done;
 		}
-		else
-		{
-			parse_to(msg->to->body.s,msg->to->body.s +
-				msg->to->body.len + 1, &TO);
-			if(TO.uri.len <= 0) 
-			{
-				LM_DBG("'To' header NOT parsed\n");
-				goto done;
-			}
-			pto = &TO;
-		}			
+
 		if( pto->tag_value.s ==NULL || pto->tag_value.len == 0)
 		{
 			LM_ERR("no to tag value present\n");
