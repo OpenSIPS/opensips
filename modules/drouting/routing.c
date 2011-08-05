@@ -409,6 +409,7 @@ add_dst(
 	}
 
 	free_proxy(proxy);
+	pkg_free(proxy);
 
 done:
 	if(NULL==r->pgw_l)
