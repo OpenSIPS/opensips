@@ -439,7 +439,7 @@ int reply_489(struct sip_msg * msg)
 
 int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 {
-	struct to_body *pto, *pfrom = NULL, TO;
+	struct to_body *pto, *pfrom = NULL; 
 	subs_t subs;
 	pres_ev_t* event= NULL;
 	str* contact= NULL;
@@ -527,20 +527,11 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		ev_param= ev_param->next;
 	}
 
-	if(msg->to->parsed != NULL)
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK)
 	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",pto->uri.len,pto->uri.s);
-	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s+msg->to->body.len+1,&TO);
-		if(TO.error != PARSE_OK)
-		{
-			LM_ERR("parsing 'To' header failed\n");
-			goto error;
-		}
-		pto = &TO;
+		LM_ERR("parsing 'To' header failed\n");
+		goto error;
 	}
 
 	if(parse_from_uri(msg)<0)
