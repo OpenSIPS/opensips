@@ -36,6 +36,7 @@
 
 #include "../../str.h"
 #include "../../resolve.h"
+#include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../parser/parse_uri.h"
 #include "../../time_rec.h"
