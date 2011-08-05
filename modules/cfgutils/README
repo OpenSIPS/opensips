@@ -514,15 +514,13 @@ xlog("PATH environment variable is $env(PATH)\n");
 
    Example 1.25. RANDOM pseudo-variable usage
 ...
-if (get_random()) {
-  $avp(10) = ($RANDOM / 16777216); # 2^24
-  if ($avp(10) < 10) {
-     $avp(10) = 10;
-  }
-  append_to_reply("Retry-After: $avp(10)\n");
-  sl_send_reply("503", "Try later");
-  exit;
-};
+$avp(10) = ($RANDOM / 16777216); # 2^24
+if ($avp(10) < 10) {
+   $avp(10) = 10;
+}
+append_to_reply("Retry-After: $avp(10)\n");
+sl_send_reply("503", "Try later");
+exit;
 # normal message processing follows
 
 
