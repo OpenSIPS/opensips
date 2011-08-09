@@ -303,8 +303,14 @@ int next_branches( struct sip_msg *msg)
 	path.len = strlen(p);
 
 	/* Set Request-URI */
-	if (set_ruri(msg, &uri) == -1)
+	if ( set_ruri(msg, &uri) == -1
+	|| set_dst_uri(msg, &dst_uri) == -1
+	|| set_path_vector(msg, &path) == -1 )
 		goto error1;
+
+	msg->force_send_socket = sock_info;
+	set_ruri_q( q );
+	setb0flags( flags );
 
 	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u>\n",
 				uri.len, uri.s,
