@@ -76,7 +76,7 @@ int init_serialization(void)
 int serialize_branches(struct sip_msg *msg, int clean_before )
 {
 	static struct serial_contact contacts[MAX_BRANCHES];
-	int n, last, first, i;
+	int n, last, first, i, prev;
 	str branch, *ruri;
 	qvalue_t q, ruri_q;
 	char *p;
@@ -187,7 +187,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 		contacts[n].q = q;
 
 		/* insert based on q */
-		for (i = first; i != -1 && contacts[i].q < q; i = contacts[i].next);
+		for (i = first, prev=-1; i != -1 && contacts[i].q < q; prev=i,i = contacts[i].next);
 
 		if (i == -1) {
 			/* append */
@@ -199,9 +199,9 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 				contacts[n].next = first;
 				first = n;
 			} else {
-				/* after pos i */
-				contacts[n].next = contacts[i].next;
-				contacts[i].next = n;
+				/* before pos i */
+				contacts[n].next = contacts[prev].next;
+				contacts[prev].next = n;
 			}
 		}
 
@@ -312,11 +312,11 @@ int next_branches( struct sip_msg *msg)
 	set_ruri_q( q );
 	setb0flags( flags );
 
-	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u>\n",
+	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u> (avp flag=%u)\n",
 				uri.len, uri.s,
 				dst_uri.len, dst_uri.s,
 				path.len, path.s,
-				q, flags);
+				q, flags, avp->flags);
 
 
 	if (avp->flags & Q_FLAG) {
@@ -352,11 +352,11 @@ int next_branches( struct sip_msg *msg)
 		path.s = p;
 		path.len = strlen(p);
 
-		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u\n>",
+		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u> (avp flag=%u)\n",
 				uri.len, uri.s,
 				dst_uri.len, dst_uri.s,
 				path.len, path.s,
-				q, flags);
+				q, flags, avp->flags);
 
 
 		rval = append_branch(msg, &uri, &dst_uri, &path,
