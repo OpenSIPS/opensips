@@ -818,6 +818,7 @@ send_command(char *command)
 //   1 - Limited
 //  -1 - No credit
 //  -2 - Locked
+//  -3 - Duplicated callid
 //  -5 - Internal error (message parsing, communication, ...)
 static int
 call_control_initialize(struct sip_msg *msg)
@@ -853,6 +854,8 @@ call_control_initialize(struct sip_msg *msg)
         return -1;
     } else if (strcasecmp(result, "Locked\r\n")==0) {
         return -2;
+    } else if (strcasecmp(result, "Duplicated callid\r\n")==0) {
+        return -3;
     } else {
         return -5;
     }
@@ -1008,6 +1011,7 @@ __dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //   1 - Limited
 //  -1 - No credit
 //  -2 - Locked
+//  -3 - Duplicated callid
 //  -5 - Internal error (message parsing, communication, ...)
 static int
 CallControl(struct sip_msg *msg, char *str1, char *str2)

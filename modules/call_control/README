@@ -372,6 +372,7 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
      * +1 - call has limit and is traced by callcontrol
      * -1 - not enough credit to make the call
      * -2 - call is locked by another call in progress
+     * -3 - duplicated callid
      * -5 - internal error (message parsing, communication, ...)
 
    This function can be used from REQUEST_ROUTE.
@@ -403,6 +404,11 @@ if (method==INVITE && !has_totag() &&
     case -2:
         # Locked by another call in progress (prepaid call)
         sl_send_reply("403", "Call locked by another call in progress");
+        exit;
+        break;
+    case -3:
+        # Duplicated callid
+        sl_send_reply("400", "Duplicated callid");
         exit;
         break;
     default:
