@@ -345,11 +345,11 @@ int get_auth_id(struct sip_msg* _msg, char* _uri, char* _auth_user, char* _auth_
 
 	// check the datatypes of the results of the database query
 	if (ROW_VALUES(dbres_row)->type != DB_STRING) {
-		LM_ERR("Database '%s' column is not of type string.", ((str*) keys[0])->s);
+		LM_ERR("Database '%s' column is not of type string.", ((str*) cols[0])->s);
 		return ERR_DBUSE;
 	}
 	if ((ROW_VALUES(dbres_row)+1)->type != DB_STRING) {
-		LM_ERR("Database '%s' column is not of type string.", ((str*) keys[0])->s);
+		LM_ERR("Database '%s' column is not of type string.", ((str*) cols[1])->s);
 		return ERR_DBUSE;
 	}
 
