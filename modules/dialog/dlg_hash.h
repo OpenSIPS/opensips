@@ -314,8 +314,8 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 		return 0;
 	}
 
-	/* no to tag -> consider it a match*/
-	return 1;
+	/* no to tag in dialog */
+	return (tag->len==0)?1:0;
 
 /*
 	if (dlg->tag[DLG_CALLEE_LEG].len == 0) {
