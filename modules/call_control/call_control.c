@@ -978,7 +978,6 @@ __dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //   1 - Limited
 //  -1 - No credit
 //  -2 - Locked
-//  -3 - No provider
 //  -5 - Internal error (message parsing, communication, ...)
 static int
 CallControl(struct sip_msg *msg, char *str1, char *str2)
