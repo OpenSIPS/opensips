@@ -87,6 +87,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 	uint32_t service;
 	str method, user, user_name;
 	str *ruri;
+	str ip;
 
 	send = received = NULL;
 
@@ -225,6 +226,14 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 
 	/* Add SIP URI as a check item */
 	if (proto.avp_add(conn, send, &attrs[A_SIP_URI_USER], user.s,user.len,0)) {
+		LM_ERR("unable to add Sip-URI-User attribute\n");
+		goto err;
+	}
+
+	/* Add SIP source IP address as a check item */
+	ip.s = ip_addr2a(&_msg->rcv.src_ip);
+	ip.len = strlen(ip.s);
+	if (proto.avp_add(conn, send, &attrs[A_SIP_SOURCE_IP_ADDRESS], ip.s,ip.len,0)) {
 		LM_ERR("unable to add Sip-URI-User attribute\n");
 		goto err;
 	}
