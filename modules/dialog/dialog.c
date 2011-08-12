@@ -1188,7 +1188,7 @@ int pv_get_dlg_lifetime(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())==NULL )
 		return pv_get_null( msg, param, res);
 
-	res->ri = (unsigned int)((time(0))-dlg->start_ts);
+	res->ri = (unsigned int)(dlg->state>2?((time(0))-dlg->start_ts):0);
 	ch = int2str( (unsigned long)res->ri, &l);
 
 	res->rs.s = ch;
