@@ -482,7 +482,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str param= {NULL,0};
 	b2b_table table = NULL;
 	int method_value;
-	struct to_body TO;
 	static str reason = {"Trying", 6};
 	str from_tag;
 	str to_tag;
@@ -642,14 +641,10 @@ search_dialog:
 
 	/* we are interested only in request inside dialog */
 	/* examine the to header */
-	if(msg->to->parsed == NULL)
+	if(msg->to->parsed == NULL || ((struct to_body *)msg->to->parsed)->error != PARSE_OK)
 	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.error != PARSE_OK)
-		{
-			LM_DBG("'To' header NOT parsed\n");
-			return 0;
-		}
+		LM_DBG("'To' header COULD NOT parsed\n");
+		return 0;
 	}
 	to_tag = get_to(msg)->tag_value;
 	if(to_tag.s == NULL && to_tag.len == 0)
@@ -951,7 +946,7 @@ void destroy_b2b_htables(void)
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		int on_reply, str* param)
 {
-	struct to_body *pto, *pfrom = NULL, TO;
+	struct to_body *pto, *pfrom = NULL; 
 	b2b_dlg_t dlg;
 	contact_body_t*  b;
 	b2b_dlg_t* shm_dlg = NULL;
@@ -975,21 +970,13 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		dlg.ruri = msg->first_line.u.request.uri;
 	}
 
-	/* examine the to header */
-	if(msg->to->parsed != NULL)
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK)
 	{
-		pto = (struct to_body*)msg->to->parsed;
+		LM_DBG("'To' header COULD NOT parsed\n");
+		return 0;
 	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.error != PARSE_OK)
-		{
-			LM_DBG("'To' header NOT parsed\n");
-			return 0;
-		}
-		pto = &TO;
-	}
+
 	if(pto->tag_value.s!= 0 && pto->tag_value.len != 0)
 	{
 		LM_DBG("Not an initial request\n");
@@ -1139,7 +1126,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	str ehdr;
 	b2b_table table;
 	str totag, fromtag;
-	struct to_body *pto, TO;
+	struct to_body *pto;
 	unsigned int method_value = METHOD_UPDATE;
 	str local_contact;
 
@@ -1279,19 +1266,12 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		LM_ERR("Failed to parse headers\n");
 		return 0;
 	}
-	if(msg->to->parsed != NULL)
+
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK)
 	{
-		pto = (struct to_body*)msg->to->parsed;
-	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.error != PARSE_OK)
-		{
-			LM_ERR("'To' header NOT parsed\n");
-			return 0;
-		}
-		pto = &TO;
+		LM_ERR("'To' header COULD NOT parsed\n");
+		return 0;
 	}
 
 	/* only for the server replies to the initial INVITE */
@@ -1923,7 +1903,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	str param= {NULL, 0};
 	int statuscode = 0;
 	dlg_leg_t* leg;
-	struct to_body* pto, TO;
+	struct to_body* pto;
 	str to_tag, callid, from_tag;
 	str extra_headers = {NULL, 0};
 	struct hdr_field* hdr;
@@ -1941,6 +1921,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	HASHHEX response;
 	str *new_hdr;
+
+	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
 	if(ps == NULL || ps->rpl == NULL)
 	{
@@ -2009,20 +1991,14 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				return;
 			}
 		}
-		if(msg->to->parsed != NULL)
+
+		pto = get_to(msg);
+		if (pto == NULL || pto->error != PARSE_OK)
 		{
-			pto = (struct to_body*)msg->to->parsed;
+			LM_ERR("'To' header COULD NOT parsed\n");
+			return;
 		}
-		else
-		{
-			parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-			if(TO.error != PARSE_OK)
-			{
-				LM_ERR("'To' header NOT parsed\n");
-				return;
-			}
-			pto = &TO;
-		}
+
 		to_tag = pto->tag_value;
 		callid = msg->callid->body;
 		from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
@@ -2575,6 +2551,18 @@ b2b_route:
 
 		b2be_db_update(dlg, etype);
 		lock_release(&htable[hash_index].lock);
+	}
+
+	if (to_hdr_parsed.param_lst) {
+		/* message was built on the fly from T
+		 * free side effects of parsing to hdr */
+		free_to_params(&to_hdr_parsed);
+	}
+
+	if (from_hdr_parsed.param_lst) {
+		/* message was built on the fly from T
+		 * free side effects of parsing from hdr */
+		free_to_params(&from_hdr_parsed);
 	}
 
 	return;

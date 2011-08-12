@@ -865,6 +865,10 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 					b2bl_from.uri.len, b2bl_from.uri.s);
 				return NULL;
 			}
+			
+			/* side effect of parsing - nobody should need them later on,
+			 * so free them right now */
+			free_to_params(&b2bl_from);
 			return &b2bl_from;
 		}
 	}

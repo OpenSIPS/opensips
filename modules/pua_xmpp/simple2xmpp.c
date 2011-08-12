@@ -59,7 +59,7 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id, int is_te
 
 int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 {
-	struct to_body *pto, TO, *pfrom= NULL;
+	struct to_body *pto, *pfrom= NULL;
 	str to_uri;
 	str from_uri={0, 0};
 	struct hdr_field* hdr= NULL;
@@ -92,20 +92,10 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 		return -1;
 	}
 
-	if(msg->to->parsed != NULL)
-	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED:<%.*s>\n",pto->uri.len,pto->uri.s);
-	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.uri.len <= 0) 
-		{
-			LM_ERR("Failed to parse 'To' header\n");
-			return -1;
-		}
-		pto = &TO;
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
+		return -1;
 	}
 
 	dialog.watcher_uri= &pto->uri;

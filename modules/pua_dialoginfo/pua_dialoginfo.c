@@ -246,6 +246,8 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	flag_str.len = 1;
 
 	memset(&from, 0, sizeof(struct to_body));
+	memset(&peer_to_body, 0, sizeof(struct to_body));
+
 	from.uri = dlg->from_uri;
 
 	peer_uri.len = buf_len;
@@ -376,6 +378,10 @@ error:
 		pkg_free(peer_uri.s);
 	if(entity_uri.s)
 		pkg_free(entity_uri.s);
+	if (peer_to_body.param_lst)
+		free_to_params(&peer_to_body);
+	if (from.param_lst)
+		free_to_params(&from);
 }
 
 int dialoginfo_process_body(struct publ_info* publ, str** fin_body,
@@ -550,13 +556,15 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 	str peer_uri= {0, 0}; /* constructed from TO display name and RURI */
 	struct to_body* from, peer_to_body, FROM, *to;
 	str* ruri;
-	int len =0;
+	int len =0,ret=-1;
 	char flag= DLG_PUB_AB;
 	static char buf[256];
 	int buf_len= 255;
 	str flag_str;
 	char caller_buf[256], callee_buf[256];
 	pv_value_t tok;
+
+	peer_to_body.param_lst = FROM.param_lst = NULL;
 
 	if (msg->REQ_METHOD != METHOD_INVITE)
 		return 1;
@@ -603,7 +611,7 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 			if(FROM.error != PARSE_OK)
 			{
 				LM_ERR("Failed to parse caller specification - not a valid uri\n");
-				return -1;
+				goto end;
 			}
 			from = &FROM;
 			caller_str.s = caller_buf;
@@ -613,7 +621,7 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 			if(dlg_api.store_dlg_value(dlg, &entity_dlg_var, &caller_str)< 0)
 			{
 				LM_ERR("Failed to store dialog ruri\n");
-				return -1;
+				goto end;
 			}
 		}
 	}
@@ -625,14 +633,14 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 		if(pv_get_spec_value(msg, &callee_spec, &tok) < 0)
 		{
 			LM_ERR("Failed to get callee value\n");
-			return -1;
+			goto end;
 		}
 		if(tok.flags&PV_VAL_STR)
 		{
 			if(tok.rs.len + CRLF_LEN > buf_len)
 			{
 				LM_ERR("Buffer overflow");
-				return -1;
+				goto end;
 			}
 			trim(&tok.rs);
 			memcpy(peer_uri.s, tok.rs.s, tok.rs.len);
@@ -656,7 +664,7 @@ default_callee:
 		if(len > buf_len)
 		{
 			LM_ERR("Buffer overflow\n");
-			return -1;
+			goto end;
 		}
 		len = 0;
 		if(to->display.len && to->display.s)
@@ -681,14 +689,14 @@ default_callee:
 	if(peer_to_body.error != PARSE_OK)
 	{
 		LM_ERR("Failed to peer uri [%.*s]\n", peer_uri.len, peer_uri.s);
-		return -1;
+		goto end;
 	}
 
 	/* store peer uri in dialog structure */
 	if(dlg_api.store_dlg_value(dlg, &peer_dlg_var, &peer_uri)< 0)
 	{
 		LM_ERR("Failed to store dialog ruri\n");
-		return -1;
+		goto end;
 	}
 
 	/* store flag, if defined  */
@@ -697,13 +705,13 @@ default_callee:
 		if(pv_printf(msg, (pv_elem_t*)flag_pv, buf, &buf_len)<0)
 		{
 			LM_ERR("cannot print the format\n");
-			return -1;
+			goto end;
 		}
 
 		if(!check_flag(buf, buf_len))
 		{
 			LM_ERR("Wrong value for flag\n");
-			return -1;
+			goto end;
 		}
 		flag = buf[0];
 		flag_str.s = buf;
@@ -711,7 +719,7 @@ default_callee:
 		if(dlg_api.store_dlg_value(dlg, &flag_dlg_var, &flag_str)< 0)
 		{
 			LM_ERR("Failed to store dialog ruri\n");
-			return -1;
+			goto end;
 		}
 	}
 
@@ -721,7 +729,7 @@ default_callee:
 		DLGCB_REQ_WITHIN | DLGCB_EARLY,
 		__dialog_sendpublish, 0, 0) != 0) {
 		LM_ERR("cannot register callback for interesting dialog types\n");
-		return -1;
+		goto end;
 	}
 
 #ifdef PUA_DIALOGINFO_DEBUG
@@ -732,7 +740,7 @@ default_callee:
 		DLGCB_RESPONSE_WITHIN  | DLGCB_MI_CONTEXT | DLGCB_DESTROY,
 		__dialog_cbtest, NULL, NULL) != 0) {
 		LM_ERR("cannot register callback for all dialog types\n");
-		return -1;
+		goto end;
 	}
 #endif
 
@@ -742,7 +750,13 @@ default_callee:
 	if(flag == DLG_PUB_B || flag == DLG_PUB_AB)
 		dialog_publish("trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
 
-	return 1;
+	ret=1;
+end:
+	if (peer_to_body.param_lst)
+		free_to_params(&peer_to_body);
+	if (FROM.param_lst)
+		free_to_params(&FROM);
+	return ret;
 }
 
 static int fixup_dlginfo(void** param, int param_no)

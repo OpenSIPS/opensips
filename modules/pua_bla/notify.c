@@ -112,7 +112,7 @@ done:
 int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 {
 	publ_info_t publ;
-	struct to_body *pto= NULL, TO, *pfrom = NULL;
+	struct to_body *pto= NULL, *pfrom = NULL;
 	str body;
 	ua_pres_t dialog;
 	unsigned int expires= 0;
@@ -136,23 +136,13 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		LM_ERR("cannot parse TO header\n");
 		return -1;
 	}
-	/* examine the to header */
-	if(msg->to->parsed != NULL)
-	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",
-				pto->uri.len, pto->uri.s );
+
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
+		return -1;
 	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.uri.len <= 0)
-		{
-			LM_DBG("'To' header NOT parsed\n");
-			return -1;
-		}
-		pto = &TO;
-	}
+
 	publ.pres_uri= &pto->uri;
 	dialog.watcher_uri= publ.pres_uri;
 

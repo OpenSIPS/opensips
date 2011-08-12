@@ -715,7 +715,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	str rec_route= {0, 0};
 	int rt  = 0;
 	contact_body_t *b;
-	struct to_body *pto, *pfrom = NULL, TO;
+	struct to_body *pto, *pfrom = NULL;
 	int lexpire;
 	struct sip_uri uri;
 	int err_ret = -1;
@@ -742,26 +742,15 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 
 	subs->expires = lexpire;
 
-	if( msg->to==NULL || msg->to->body.s==NULL)
-	{
-		LM_ERR("cannot parse TO header\n");
+	if ( (!msg->to && parse_headers(msg, HDR_TO_F, 0)<0) || !msg->to ) {
+		LM_ERR("bad request or missing TO hdr\n");
 		goto error;
 	}
-	/* examine the to header */
-	if(msg->to->parsed != NULL)
-	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",pto->uri.len,pto->uri.s);
-	}
-	else
-	{
-		parse_to(msg->to->body.s,msg->to->body.s + msg->to->body.len + 1, &TO);
-		if(TO.error != PARSE_OK)
-		{
-			LM_DBG("'To' header NOT parsed\n");
-			goto error;
-		}
-		pto = &TO;
+
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
+		goto error;
 	}
 
 	if( pto->parsed_uri.user.s && pto->parsed_uri.host.s &&

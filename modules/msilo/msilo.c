@@ -455,7 +455,7 @@ static int child_init(int rank)
 static int m_store(struct sip_msg* msg, char* owner, char* s2)
 {
 	str body, str_hdr, ctaddr;
-	struct to_body to, *pto, *pfrom;
+	struct to_body *pto, *pfrom;
 	struct sip_uri puri;
 	str duri, owner_s;
 	db_key_t db_keys[NR_KEYS-1];
@@ -507,29 +507,13 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	    LM_ERR("cannot find 'to' header!\n");
 	    goto error;
 	}
-	
-	if(msg->to->parsed != NULL)
-	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("the 'To' header ALREADY PARSED: <%.*s>\n",
-			pto->uri.len, pto->uri.s );	
+
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
+		goto error;
 	}
-	else
-	{
-		LM_DBG("the 'To' header NOT PARSED ->parsing ...\n");
-		parse_to(msg->to->body.s, msg->to->body.s+msg->to->body.len+1, &to);
-		if(to.uri.len > 0) /* && to.error == PARSE_OK) */
-		{
-			LM_DBG("'To' parsed OK <%.*s>.\n", to.uri.len, to.uri.s);
-			pto = &to;
-		}
-		else
-		{
-			LM_ERR("'To' cannot be parsed\n");
-			goto error;
-		}
-	}
-	
+
 	/* get the owner */
 	memset(&puri, 0, sizeof(struct sip_uri));
 	if(owner)
@@ -833,7 +817,7 @@ error:
  */
 static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 {
-	struct to_body to, *pto = NULL;
+	struct to_body *pto = NULL;
 	db_key_t db_keys[3];
 	db_key_t ob_key;
 	db_op_t  db_ops[3];
@@ -881,23 +865,10 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 		goto error;
 	}
 
-	/* get TO header URI */
-	if(msg->to->parsed != NULL)
-	{
-		pto = (struct to_body*)msg->to->parsed;
-		LM_DBG("'To' header ALREADY PARSED: <%.*s>\n",
-			pto->uri.len, pto->uri.s );	
-	}
-	else
-	{
-		parse_to(msg->to->body.s,
-			msg->to->body.s + msg->to->body.len + 1, &to);
-		if(to.uri.len <= 0) /* || to.error != PARSE_OK) */
-		{
-			LM_ERR("'To' header NOT parsed\n");
-			goto error;
-		}
-		pto = &to;
+	pto = get_to(msg);
+	if (pto == NULL || pto->error != PARSE_OK) {
+		LM_ERR("failed to parse TO header\n");
+		goto error;
 	}
 
 	/**
