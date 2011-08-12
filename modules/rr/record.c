@@ -282,6 +282,18 @@ int record_route(struct sip_msg* _m, str *params)
 		rr_param_buf.len = 0;
 	}
 
+	l = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, HDR_RECORDROUTE_T);
+	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
+	if (!l || !l2) {
+		LM_ERR("failed to create an anchor\n");
+		return -3;
+	}
+	
+	if (build_rr(l, l2, &user, tag, params, OUTBOUND) < 0) {
+		LM_ERR("failed to insert inbound Record-Route\n");
+		return -4;
+	}
+
 	if (enable_double_rr) {
 		l = anchor_lump(_m, _m->headers->name.s - _m->buf,0,HDR_RECORDROUTE_T);
 		l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
@@ -295,24 +307,12 @@ int record_route(struct sip_msg* _m, str *params)
 			LM_ERR("failed to insert conditional lump\n");
 			return -6;
 		}
-		if (build_rr(l, l2, &user, tag, params, OUTBOUND) < 0) {
+		if (build_rr(l, l2, &user, tag, params, INBOUND) < 0) {
 			LM_ERR("failed to insert outbound Record-Route\n");
 			return -7;
 		}
 	}
 	
-	l = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, HDR_RECORDROUTE_T);
-	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
-	if (!l || !l2) {
-		LM_ERR("failed to create an anchor\n");
-		return -3;
-	}
-	
-	if (build_rr(l, l2, &user, tag, params, INBOUND) < 0) {
-		LM_ERR("failed to insert inbound Record-Route\n");
-		return -4;
-	}
-
 	/* reset the rr_param buffer */
 	rr_param_buf.len = 0;
 	return 0;
