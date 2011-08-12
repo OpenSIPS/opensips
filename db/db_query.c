@@ -99,14 +99,14 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	sql_str.len = off;
 
 	if (submit_query(_h, &sql_str) < 0) {
-		LM_ERR("error while submitting query\n");
+		LM_ERR("error while submitting query - [%.*s]\n",sql_str.len,sql_str.s);
 		return -2;
 	}
 
 	if(_r) {
 		int tmp = store_result(_h, _r);
 		if (tmp < 0) {
-			LM_ERR("error while storing result\n");
+			LM_ERR("error while storing result for query [%.*s]\n",sql_str.len,sql_str.s);
 			return tmp;
 		}
 	}
