@@ -438,13 +438,6 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		/* set start time */
 		dlg->start_ts = (unsigned int)(time(0));
 
-		/* save the settings to the database, 
-		 * if realtime saving mode configured- save dialog now
-		 * else: the next time the timer will fire the update*/
-		dlg->flags |= DLG_FLAG_NEW;
-		if ( dlg_db_mode==DB_MODE_REALTIME )
-			update_dialog_dbinfo(dlg);
-
 		if (0 != insert_dlg_timer( &dlg->tl, dlg->lifetime )) {
 			LM_CRIT("Unable to insert dlg %p [%u:%u] on event %d [%d->%d] "
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",
@@ -474,6 +467,13 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				ref_dlg(dlg,1);
 			}
 		}
+
+		/* save the settings to the database, 
+		 * if realtime saving mode configured- save dialog now
+		 * else: the next time the timer will fire the update*/
+		dlg->flags |= DLG_FLAG_NEW;
+		if ( dlg_db_mode==DB_MODE_REALTIME )
+			update_dialog_dbinfo(dlg);
 
 		/* dialog confirmed */
 		run_dlg_callbacks( DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
