@@ -59,8 +59,7 @@ typedef struct _dlg_cseq dlg_cseq_wrapper;
 typedef int (*create_dlg_f)(struct sip_msg *req);
 
 void init_dlg_handlers(char *rr_param,
-		pv_spec_t *timeout_avp, int default_timeout,
-		int seq_match_mode);
+		pv_spec_t *timeout_avp, int default_timeout);
 
 void destroy_dlg_handlers();
 

@@ -77,9 +77,10 @@ static char* rr_param = "did";
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
 static int ping_interval = 30; /* seconds */
-static int seq_match_mode = SEQ_MATCH_STRICT_ID;
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
+
+int seq_match_mode = SEQ_MATCH_STRICT_ID;
 str dlg_extra_hdrs = {NULL,0};
 
 /* statistic variables */
@@ -667,7 +668,7 @@ static int mod_init(void)
 
 	/* init handlers */
 	init_dlg_handlers( rr_param,
-		timeout_spec.s?&timeout_avp:0, default_timeout, seq_match_mode);
+		timeout_spec.s?&timeout_avp:0, default_timeout);
 
 	/* init timer */
 	if (init_dlg_timer(dlg_ontimeout)!=0) {
