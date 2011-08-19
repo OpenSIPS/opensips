@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1005');
+INSERT INTO version (table_name, table_version) values ('location','1006');
 CREATE TABLE location (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,

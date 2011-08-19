@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1005');
+INSERT INTO version (table_name, table_version) values ('location','1006');
 CREATE TABLE location (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
