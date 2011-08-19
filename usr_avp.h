@@ -80,7 +80,8 @@ struct usr_avp {
 
 #define GALIAS_CHAR_MARKER  '$'
 
-/* init function */
+/* init functions */
+int init_global_avps();
 int init_extra_avps();
 
 struct usr_avp* new_avp(unsigned short flags, int name, int_str val);

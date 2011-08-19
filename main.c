@@ -1251,6 +1251,13 @@ try_again:
 		goto error00;
 	}
 
+	/* init avps */
+	if (init_global_avps() != 0) {
+		LM_ERR("error while initializing avps\n");
+		goto error;
+	}
+
+
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin=cfg_stream;
@@ -1406,12 +1413,6 @@ try_again:
 #endif
 	LM_INFO("using %i Mb private memory per process\n", ((PKG_MEM_POOL_SIZE/1024)/1024));
 
-	/* init avps */
-	if (init_extra_avps() != 0) {
-		LM_ERR("error while initializing avps\n");
-		goto error;
-	}
-
 	/* init serial forking engine */
 	if (init_serialization()!=0) {
 		LM_ERR("failed to initialize serialization\n");
@@ -1487,6 +1488,12 @@ try_again:
 		goto error;
 	}
 	#endif
+
+	/* init avps */
+	if (init_extra_avps() != 0) {
+		LM_ERR("error while initializing avps\n");
+		goto error;
+	}
 
 	/* fix routing lists */
 	if ( (r=fix_rls())!=0){

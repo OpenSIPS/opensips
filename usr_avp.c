@@ -42,19 +42,29 @@
 #include "usr_avp.h"
 #include "locking.h"
 
+#include "map.h"
 
-/* usr_avp data bodies */
-struct avp_alias {
-	str alias;
-	int id;
-	struct avp_alias *next;
-};
 
-static struct avp_alias *galiases = 0;
-static struct avp_alias **extra_galiases = 0;
 static gen_lock_t *extra_lock;
 static struct usr_avp *global_avps = 0;
 static struct usr_avp **crt_avps  = &global_avps;
+
+static map_t avp_map = 0;
+static map_t avp_map_shm = 0;
+static int last_avp_index = 0;
+static int *last_avp_index_shm = 0;
+
+
+int init_global_avps(void)
+{
+	/* initialize map for static avps */
+	avp_map = map_create(AVLMAP_NO_DUPLICATE);
+	if (!avp_map) {
+		LM_ERR("cannot create avp_map\n");
+		return -1;
+	}
+	return 0;
+}
 
 
 int init_extra_avps(void)
@@ -68,12 +78,18 @@ int init_extra_avps(void)
 		LM_ERR("cannot init lock\n");
 		return -1;
 	}
-	extra_galiases = shm_malloc(sizeof(struct avp_alias *));
-	if (!extra_galiases) {
-		LM_ERR("no more shm memory for extra aliases\n");
+	last_avp_index_shm = shm_malloc(sizeof(int));
+	if (!last_avp_index_shm) {
+		LM_ERR("not enough shm mem\n");
 		return -1;
 	}
-	*extra_galiases = 0;
+	*last_avp_index_shm = last_avp_index;
+	/* initialize map for dynamic avps */
+	avp_map_shm = map_create(AVLMAP_SHARED|AVLMAP_NO_DUPLICATE);
+	if (!avp_map_shm) {
+		LM_ERR("cannot create shared avp_map\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -187,13 +203,30 @@ int replace_avp(unsigned short flags, int name, int_str val, int index)
 }
 
 /* get name functions */
-static inline str* __get_avp_name(int id, struct avp_alias *head)
+static inline str* __get_avp_name(int id, map_t m)
 {
-	for ( ; head; head = head->next) {
-		if (head->id == id)
-			return &head->alias;
+	map_iterator_t it;
+	int **idp;
+
+	if (map_first(m, &it) < 0) {
+		LM_ERR("map doesn't exist\n");
+		return NULL;
 	}
-	return NULL;
+	for (;;) {
+		if (!iterator_is_valid(&it))
+			return NULL;
+
+		idp = (int**)iterator_val(&it);
+		if (!idp || !*idp) {
+			LM_ERR("[BUG] while getting avp name\n");
+			return NULL;
+		}
+		if (**idp == id)
+			return iterator_key(&it);
+		if (iterator_next(&it) < 0)
+			return NULL;
+
+	}
 }
 
 
@@ -204,12 +237,12 @@ inline str* get_avp_name_id(int id)
 	if (id < 0)
 		return NULL;
 
-	name = __get_avp_name(id, galiases);
+	name = __get_avp_name(id, avp_map);
 	/* search extra galiases */
 	if (name)
 		return name;
 	lock_get(extra_lock);
-	name = __get_avp_name(id, *extra_galiases);
+	name = __get_avp_name(id, avp_map_shm);
 	lock_release(extra_lock);
 	return name;
 }
@@ -417,14 +450,15 @@ struct usr_avp** set_avp_list( struct usr_avp **list )
 	return foo;
 }
 
-static inline int __search_avp_alias(str *alias, struct avp_alias *head)
+#define p2int(_p) (int)(unsigned long)(_p)
+#define int2p(_i) (void *)(unsigned long)(_i)
+
+static inline int __search_avp_map(str *alias, map_t m)
 {
-	for ( ; head; head = head->next) {
-		if (head->alias.len == alias->len &&
-				memcmp(alias->s, head->alias.s, alias->len) == 0)
-			return head->id;
-	}
-	return -1;
+	int **id = (int **)map_find(m, *alias);
+	LM_DBG("looking for [%.*s] avp %s - found %d\n", alias->len, alias->s,
+			m == avp_map_shm ? "in shm" : "", id ? p2int(*id) : -1);
+	return id ? p2int(*id) : -1;
 }
 
 
@@ -434,11 +468,11 @@ static int lookup_avp_alias_str(str *alias, int extra)
 	if (!alias || !alias->len || !alias->s)
 		return -2;
 
-	id = __search_avp_alias(alias, galiases);
+	id = __search_avp_map(alias, avp_map);
 	if (id < 0 && extra) {
 		/* search extra alias */
 		lock_get(extra_lock);
-		id = __search_avp_alias(alias, *extra_galiases);
+		id = __search_avp_map(alias, avp_map_shm);
 		lock_release(extra_lock);
 	}
 	return id;
@@ -446,51 +480,44 @@ static int lookup_avp_alias_str(str *alias, int extra)
 
 static inline int new_avp_alias(str *alias)
 {
-	struct avp_alias * new_alias;
+	int id = last_avp_index + 1;
 
-	new_alias = pkg_malloc(sizeof(struct avp_alias) + alias->len);
-	if (!new_alias) {
-		LM_ERR("no more pkg mem to add avp\n");
-		return 0;
+	if (map_put(avp_map, *alias, int2p(id))) {
+		LM_WARN("[BUG] Value should have already be found [%.*s]\n",
+				alias->len, alias->s);
+		return -1;
 	}
-	new_alias->id = galiases ? galiases->id + 1 : 0;
-	new_alias->next = galiases;
-	new_alias->alias.len = alias->len;
-	new_alias->alias.s = (char *)new_alias + sizeof(struct avp_alias);
-	memcpy(new_alias->alias.s, alias->s, alias->len);
-	galiases = new_alias;
+	/* successfully added avp */
+	last_avp_index++;
 
-	LM_DBG("added alias %.*s with id %hu\n",alias->len,alias->s,new_alias->id);
+	LM_DBG("added alias %.*s with id %hu\n",alias->len,alias->s,id);
 
-	return new_alias->id;
+	return id;
 }
 
 static inline int new_avp_extra_alias(str *alias)
 {
-	struct avp_alias * new_alias;
+	int id;
 
-	new_alias = shm_malloc(sizeof(struct avp_alias) + alias->len);
-	if (!new_alias) {
-		LM_ERR("no more shm mem to add avp\n");
-		return 0;
+	if (!last_avp_index_shm) {
+		LM_ERR("extra AVPs are not initialized yet\n");
+		return -1;
 	}
 
+	/* check if last avp is valid */
 	lock_get(extra_lock);
-	if (*extra_galiases)
-		new_alias->id = (*extra_galiases)->id + 1;
-	else 
-		new_alias->id = galiases ? galiases->id + 1 : 0;
-	new_alias->next = *extra_galiases;
-	new_alias->alias.len = alias->len;
-	new_alias->alias.s = (char *)new_alias + sizeof(struct avp_alias);
-	memcpy(new_alias->alias.s, alias->s, alias->len);
-	*extra_galiases = new_alias;
+	id = (*last_avp_index_shm) + 1;
+	if (map_put(avp_map_shm, *alias, int2p(id))) {
+		LM_WARN("[BUG] Value should have already be found [%.*s]\n",
+				alias->len, alias->s);
+		return -1;
+	}
+	(*last_avp_index_shm)++;
 	lock_release(extra_lock);
 
-	LM_DBG("added extra alias %.*s with id %d\n",
-			alias->len,alias->s,new_alias->id);
+	LM_DBG("added extra alias %.*s with id %hu\n",alias->len,alias->s,id);
 
-	return new_alias->id;
+	return id;
 }
 
 static int parse_avp_spec_aux( str *name, int *avp_name, int extra)
@@ -500,15 +527,18 @@ static int parse_avp_spec_aux( str *name, int *avp_name, int extra)
 	if (name==0 || name->s==0 || name->len==0)
 		return -1;
 
+	if (name->len > 2 && name->s[1] == AVP_NAME_DELIM &&
+			(name->s[0] == 'i' || name->s[0] == 's'))
+		LM_WARN("Deprecated AVP name format \"%.*s\" - use \"%.*s\" instead\n",
+				name->len, name->s, name->len - 2, name->s + 2);
+
 	id = lookup_avp_alias_str(name, extra);
 	if (id < 0) {
-		if (name->len > 2 && name->s[1] == AVP_NAME_DELIM &&
-				(name->s[0] == 'i' || name->s[0] == 's'))
-			LM_WARN("Deprecated AVP name format \"%.*s\" - use \"%.*s\" instead\n",
-					name->len, name->s, name->len - 2, name->s + 2);
 		id = extra ? new_avp_extra_alias(name) : new_avp_alias(name);
-		if (id < 0)
+		if (id < 0) {
+			LM_ERR("cannot add new avp\n");
 			return -1;
+		}
 	}
 	if (avp_name)
 		*avp_name = id;
