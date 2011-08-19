@@ -369,7 +369,6 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			LM_ERR("cannot store new uri value\n");
 			goto error;
 		}
-		LM_DBG("REGISTER_DLGCB_REQ_WITHIN with %p\n", (void*)(unsigned long)to);
 		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
 					replace_callback, (void*)(unsigned long)to, 0) != 0) {
 			LM_ERR("cannot register callback\n");
@@ -596,7 +595,6 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 	msg = _params->msg;
 
 	to = *(_params->param) ? 1 : 0;
-	LM_DBG("replacing %s for %d\n", to ? "TO": "FROM", _params->direction);
 
 	if (_params->direction == DLG_DIR_DOWNSTREAM) {
 		/* not upstream */
@@ -613,7 +611,6 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 		LM_DBG("<%.*s> param not found\n", rr_param->len, rr_param->s);
 		return;
 	}
-	LM_INFO("the new uri should be %.*s\n", new_uri.len, new_uri.s);
 
 	/* check the request direction */
 	if ((to && _params->direction == DLG_DIR_DOWNSTREAM) ||
