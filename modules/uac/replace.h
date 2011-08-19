@@ -41,9 +41,9 @@
 void init_from_replacer();
 
 int replace_uri( struct sip_msg *msg, str *display, str *uri,
-		struct hdr_field *hdr, str *rr_param);
+		struct hdr_field *hdr, int to);
 
-int restore_uri( struct sip_msg *msg, str *rr_param, int check_from);
+int restore_uri( struct sip_msg *msg, int to, int check_from);
 
 /* RR callback functions */
 void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param);

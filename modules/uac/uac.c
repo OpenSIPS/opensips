@@ -63,8 +63,10 @@ static char* auth_password_avp = NULL;
 
 /* global param variables */
 str rr_from_param = str_init("vsf");
+str rr_from_param_new = str_init("739823");
 str store_from_bavp = str_init("$bavp(739825)");
 str rr_to_param = str_init("vst");
+str rr_to_param_new = str_init("739824");
 str store_to_bavp = str_init("$bavp(739826)");
 pv_spec_t from_bavp_spec;
 pv_spec_t to_bavp_spec;
@@ -371,7 +373,7 @@ static int w_restore_from(struct sip_msg *msg)
 		return -1;
 	}
 
-	return (restore_uri(msg,&rr_from_param,1)==0)?1:-1;
+	return (restore_uri(msg,0,1)==0)?1:-1;
 }
 
 
@@ -409,7 +411,7 @@ static int w_replace_from(struct sip_msg* msg, char* p1, char* p2)
 	LM_DBG("dsp=%p (len=%d) , uri=%p (len=%d)\n",
 		dsp,dsp?dsp->len:0,uri,uri?uri->len:0);
 
-	return (replace_uri(msg, dsp, uri, msg->from, &rr_from_param)==0)?1:-1;
+	return (replace_uri(msg, dsp, uri, msg->from, 0)==0)?1:-1;
 }
 
 
@@ -421,7 +423,7 @@ static int w_restore_to(struct sip_msg *msg)
 		return -1;
 	}
 
-	return (restore_uri(msg,&rr_to_param,0)==0)?1:-1;
+	return (restore_uri(msg,1,0)==0)?1:-1;
 }
 
 
@@ -457,7 +459,7 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
 		return -1;
 	}
 
-	return (replace_uri(msg, dsp, uri, msg->to, &rr_to_param)==0)?1:-1;
+	return (replace_uri(msg, dsp, uri, msg->to, 1)==0)?1:-1;
 }
 
 
