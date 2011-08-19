@@ -47,7 +47,7 @@ struct process_table {
 	int idx; /* tcp child index, -1 for other processes */
 #endif
 	char desc[MAX_PT_DESC];
-	atomic_t *load;
+	stat_var *load;
 };
 
 typedef void(*forked_proc_func)(int i);
