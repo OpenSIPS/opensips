@@ -69,9 +69,12 @@
 #define PKG_FREE_SIZE_IDX        4
 #define PKG_FRAGMENTS_SIZE_IDX   5
 typedef unsigned long pkg_status_holder[6];
+void set_pkg_stats(pkg_status_holder*);
+#else
+#define set_pkg_stats( _x )
+#define init_pkg_stats( _x )  0
 #endif
 
-void set_pkg_stats(pkg_status_holder*);
 
 
 #	ifdef DBG_QM_MALLOC
