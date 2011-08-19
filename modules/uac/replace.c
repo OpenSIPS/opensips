@@ -51,7 +51,9 @@
 extern str uac_passwd;
 extern int restore_mode;
 extern str rr_from_param;
+extern str rr_from_param_new;
 extern str rr_to_param;
+extern str rr_to_param_new;
 extern struct tm_binds uac_tmb;
 extern struct rr_binds uac_rrb;
 extern struct dlg_binds dlg_api;
@@ -70,6 +72,8 @@ static int dec_table64[256];
 
 static void restore_uris_reply(struct cell* c, int t, struct tmcb_params *p);
 void move_bavp_callback(struct cell* t, int type, struct tmcb_params *p);
+static void replace_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params);
 
 #define text3B64_len(_l)   ( ( ((_l)+2)/3 ) << 2 )
 
@@ -227,18 +231,19 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
  * relace uri and/or display name in FROM / TO header
  */
 int replace_uri( struct sip_msg *msg, str *display, str *uri,
-										struct hdr_field *hdr, str *rr_param)
+										struct hdr_field *hdr, int to)
 {
 	static char buf_s[MAX_URI_SIZE];
 	struct to_body *body;
 	struct lump* l;
 	struct cell *Trans;
+	str *rr_param;
 	str replace;
 	char *p;
 	str param;
 	str buf;
 	int uac_flag;
-	int i, tf = 0;
+	int i;
 	struct dlg_cell *dlg = NULL;
 	pv_value_t val;
 
@@ -325,28 +330,6 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	if (restore_mode==UAC_NO_RESTORE)
 		return 0;
 
-	/* build RR parameter */
-	buf.s = buf_s;
-	if ( body->uri.len>uri->len ) {
-		if (body->uri.len>MAX_URI_SIZE) {
-			LM_ERR("old %.*s uri too long\n",hdr->name.len,hdr->name.s);
-			goto error;
-		}
-		memcpy( buf.s, body->uri.s, body->uri.len);
-		for( i=0 ; i<uri->len ; i++ )
-			buf.s[i] ^=uri->s[i];
-		buf.len = body->uri.len;
-	} else {
-		if (uri->len>MAX_URI_SIZE) {
-			LM_ERR("new %.*s uri too long\n",hdr->name.len,hdr->name.s);
-			goto error;
-		}
-		memcpy( buf.s, uri->s, uri->len);
-		for( i=0 ; i<body->uri.len ; i++ )
-			buf.s[i] ^=body->uri.s[i];
-		buf.len = uri->len;
-	}
-
 	/* trying to create/get dialog */
 	if (dlg_api.get_dlg) {
 		dlg = dlg_api.get_dlg();
@@ -359,19 +342,15 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			dlg = dlg_api.get_dlg();
 		}
 	}
+	rr_param = to ? &rr_to_param : &rr_from_param;
 
 	/* if using dialog, store the result */
 	if (dlg) {
-		/* get the direction */
-		if (rr_from_param.len == rr_param->len &&
-				!memcmp(rr_from_param.s, rr_param->s, rr_param->len))
-			tf = 1;
-		val.rs = buf;
+		val.rs = body->uri;
 		val.flags = AVP_VAL_STR;
-		pv_set_value(msg,(tf?&from_bavp_spec:&to_bavp_spec),EQ_T,&val);
+		pv_set_value(msg,(to?&to_bavp_spec:&from_bavp_spec),EQ_T,&val);
 		/* if function call was in branch route - store in bavp */
 		if (val.rs.len && val.rs.s){
-			LM_DBG("stored <%.*s> param\n", rr_param->len, rr_param->s);
 			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
 					move_bavp_callback,0,0)!=1) {
 				LM_ERR("failed to install TM callback\n");
@@ -379,13 +358,45 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			}
 		} else {
 			/* if the call wasn't in branch route - store in dlg */
-			if (dlg_api.store_dlg_value(dlg, rr_param, &buf) < 0) {
+			if (dlg_api.store_dlg_value(dlg, rr_param, &body->uri) < 0) {
 				LM_ERR("cannot store value\n");
 				goto error;
 			}
 			LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
 		}
+		if (dlg_api.store_dlg_value(dlg, 
+					to ? &rr_to_param_new : &rr_from_param_new, uri) < 0) {
+			LM_ERR("cannot store new uri value\n");
+			goto error;
+		}
+		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+					replace_callback, (void*)(unsigned long)to, 0) != 0) {
+			LM_ERR("cannot register callback\n");
+			goto error;
+		}
 	} else {
+		/* build RR parameter */
+		buf.s = buf_s;
+		if ( body->uri.len>uri->len ) {
+			if (body->uri.len>MAX_URI_SIZE) {
+				LM_ERR("old %.*s uri too long\n",hdr->name.len,hdr->name.s);
+				goto error;
+			}
+			memcpy( buf.s, body->uri.s, body->uri.len);
+			for( i=0 ; i<uri->len ; i++ )
+				buf.s[i] ^=uri->s[i];
+			buf.len = body->uri.len;
+		} else {
+			if (uri->len>MAX_URI_SIZE) {
+				LM_ERR("new %.*s uri too long\n",hdr->name.len,hdr->name.s);
+				goto error;
+			}
+			memcpy( buf.s, uri->s, uri->len);
+			for( i=0 ; i<body->uri.len ; i++ )
+				buf.s[i] ^=body->uri.s[i];
+			buf.len = uri->len;
+		}
+
 		/* encrypt parameter ;) */
 		if (uac_passwd.len)
 			for( i=0 ; i<buf.len ; i++)
@@ -454,49 +465,43 @@ error:
  * return  0 - restored
  *        -1 - not restored or error
  */
-int restore_uri( struct sip_msg *msg, str *rr_param, int check_from)
+int restore_uri( struct sip_msg *msg, int to, int check_from)
 {
 	struct lump* l;
 	str param_val;
 	str old_uri;
 	str new_uri;
+	str *rr_param;
 	char *p;
 	int i;
 	int flag;
-	struct dlg_cell *dlg = NULL;
 
 	/* we should process only sequntial request, but since we are looking
 	 * for Route param, the test is not really required -bogdan */
 
-	if (dlg_api.get_dlg) {
-		dlg = dlg_api.get_dlg();
-		LM_DBG("Dialog found: %p\n", dlg);
-	}
+	rr_param = to ? &rr_to_param : &rr_from_param;
 
-	/* check if dialog was used */
-	if (!dlg || dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
-		LM_DBG("getting '%.*s' Route param\n",
+	LM_DBG("getting '%.*s' Route param\n",
+		rr_param->len,rr_param->s);
+	/* is there something to restore ? */
+	if (uac_rrb.get_route_param( msg, rr_param, &param_val)!=0) {
+		LM_DBG("route param '%.*s' not found\n",
 			rr_param->len,rr_param->s);
-		/* is there something to restore ? */
-		if (uac_rrb.get_route_param( msg, rr_param, &param_val)!=0) {
-			LM_DBG("route param '%.*s' not found\n",
-				rr_param->len,rr_param->s);
-			goto failed;
-		}
-		LM_DBG("route param is '%.*s' (len=%d)\n",
-			param_val.len,param_val.s,param_val.len);
-
-		/* decode the parameter val to a URI */
-		if (decode_uri( &param_val, &new_uri)<0 ) {
-			LM_ERR("failed to decode uri\n");
-			goto failed;
-		}
-
-		/* dencrypt parameter ;) */
-		if (uac_passwd.len)
-			for( i=0 ; i<new_uri.len ; i++)
-				new_uri.s[i] ^= uac_passwd.s[i%uac_passwd.len];
+		goto failed;
 	}
+	LM_DBG("route param is '%.*s' (len=%d)\n",
+		param_val.len,param_val.s,param_val.len);
+
+	/* decode the parameter val to a URI */
+	if (decode_uri( &param_val, &new_uri)<0 ) {
+		LM_ERR("failed to decode uri\n");
+		goto failed;
+	}
+
+	/* dencrypt parameter ;) */
+	if (uac_passwd.len)
+		for( i=0 ; i<new_uri.len ; i++)
+			new_uri.s[i] ^= uac_passwd.s[i%uac_passwd.len];
 
 	/* check the request direction */
 	if ( (check_from && uac_rrb.is_direction( msg, RR_FLOW_UPSTREAM)==0) ||
@@ -520,7 +525,12 @@ int restore_uri( struct sip_msg *msg, str *rr_param, int check_from)
 
 	/* get new uri */
 	if ( new_uri.len<old_uri.len ) {
-		LM_ERR("new URI shorter than old URI\n");
+		parse_headers(msg,HDR_CALLID_F,0);
+		if (msg->callid)
+			LM_ERR("new URI shorter than old URI (callid=%.*s)\n",
+				msg->callid->body.len,msg->callid->body.s);
+		else
+			LM_ERR("new URI shorter than old URI (callid=?)\n");
 		goto failed;
 	}
 	for( i=0 ; i<old_uri.len ; i++ )
@@ -566,6 +576,100 @@ failed:
 	return -1;
 }
 
+/************************** Dialog functions ******************************/
+
+static void replace_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *_params)
+{
+	struct lump* l;
+	struct sip_msg *msg;
+	str *rr_param;
+	str old_uri;
+	str new_uri;
+	int to, flag;
+	char *p;
+
+	if (!dlg || !_params || _params->direction == DLG_DIR_NONE || !_params->msg)
+		return;
+
+	msg = _params->msg;
+
+	to = *(_params->param) ? 1 : 0;
+
+	if (_params->direction == DLG_DIR_DOWNSTREAM) {
+		/* not upstream */
+		rr_param = to ? &rr_to_param_new : &rr_from_param_new;
+		LM_DBG("DOWNSTREAM direction detected - replacing %s header"
+				" with the uac_replace_%s() parameters\n",
+				to ? "TO" : "FROM", to ? "to": "from");
+	} else {
+		rr_param = to ? &rr_to_param : &rr_from_param;
+		LM_DBG("UPSTREAM direction detected - replacing %s header"
+				" with the original headers\n", to ? "TO" : "FROM");
+	}
+	if (dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
+		LM_DBG("<%.*s> param not found\n", rr_param->len, rr_param->s);
+		return;
+	}
+
+	/* check the request direction */
+	if ((to && _params->direction == DLG_DIR_DOWNSTREAM) ||
+		(!to && _params->direction == DLG_DIR_UPSTREAM)) {
+		/* replace the TO URI */
+		if ( msg->to==0 && (parse_headers(msg,HDR_TO_F,0)!=0 || msg->to==0) ) {
+			LM_ERR("failed to parse TO hdr\n");
+			return;
+		}
+		old_uri = ((struct to_body*)msg->to->parsed)->uri;
+		flag = FL_USE_UAC_TO;
+	} else {
+		/* replace the FROM URI */
+		if ( parse_from_header(msg)<0 ) {
+			LM_ERR("failed to find/parse FROM hdr\n");
+			return;
+		}
+		old_uri = ((struct to_body*)msg->from->parsed)->uri;
+		flag = FL_USE_UAC_FROM;
+	}
+
+	LM_DBG("decoded uris are: new=[%.*s] old=[%.*s]\n",
+		new_uri.len, new_uri.s, old_uri.len, old_uri.s);
+
+	/* duplicate the decoded value */
+	p = pkg_malloc( new_uri.len);
+	if (!p) {
+		LM_ERR("no more pkg mem\n");
+		return;
+	}
+	memcpy( p, new_uri.s, new_uri.len);
+	new_uri.s = p;
+
+	/* build del/add lumps */
+	l = del_lump( msg, old_uri.s-msg->buf, old_uri.len, 0);
+	if (l==0) {
+		LM_ERR("del lump failed\n");
+		goto free;
+	}
+
+	if (insert_new_lump_after( l, new_uri.s, new_uri.len, 0)==0) {
+		LM_ERR("insert new lump failed\n");
+		goto free;
+	}
+
+	/* change replies but only if not registered earlier */
+	if (!(msg->msg_flags & (FL_USE_UAC_FROM|FL_USE_UAC_TO)) &&
+			uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
+			restore_uris_reply, 0, 0) != 1 ) {
+		LM_ERR("failed to install TM callback\n");
+		return;
+	}
+
+	msg->msg_flags |= flag;
+	return;
+
+free:
+	pkg_free(new_uri.s);
+}
 
 
 /************************** RRCB functions ******************************/
@@ -573,8 +677,8 @@ failed:
 void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 {
 	/* check if the request contains the route param */
-	if ( (restore_uri( msg, &rr_from_param, 1/*from*/) +
-	restore_uri( msg, &rr_to_param, 0/*to*/) )!= -2 ) {
+	if ( (restore_uri( msg, 0, 1/*from*/) +
+	restore_uri( msg, 1, 0/*to*/) )!= -2 ) {
 		/* restore in req performed -> replace in reply */
 		/* in callback we need TO/FROM to be parsed- it's already done 
 		 * by restore_from_to() function */
