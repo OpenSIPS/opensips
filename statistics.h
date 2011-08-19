@@ -141,6 +141,8 @@ extern gen_lock_t *stat_lock;
 	#define get_stat( _name )  0
 	#define get_stat_val( _var ) 0
 	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
+	#define register_udp_load_stat( _a, _b) 0
+	#define register_tcp_load_stat( _a)     0
 #endif
 
 
