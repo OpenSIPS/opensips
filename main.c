@@ -736,7 +736,10 @@ static int main_loop(void)
 		memset(load_p,0,sizeof(atomic_t));
 		pt[process_no].load = load_p;
 
-		register_udp_load_stat(&udp_listen->sock_str,load_p);
+		if (register_udp_load_stat(&udp_listen->sock_str,load_p)!=0) {
+			LM_ERR("failed to init load statistics\n");
+			goto error;
+		}
 
 		clean_write_pipeend();
 		LM_DBG("waiting for status code from children\n");
@@ -839,7 +842,10 @@ static int main_loop(void)
 				goto error;
 			}
 			memset(load_p,0,sizeof(atomic_t));
-			register_udp_load_stat(&si->sock_str,load_p);
+			if (register_udp_load_stat(&si->sock_str,load_p)!=0) {
+				LM_ERR("failed to init load statistics\n");
+				goto error;
+			}
 
 			for(i=0;i<children_no;i++){
 				chd_rank++;

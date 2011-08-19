@@ -255,6 +255,7 @@ static pv_export_t pvars[] = {
     {{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
+#ifdef STATISTICS
 static stat_export_t statistics[] = {
     {"keepalive_endpoints",  STAT_NO_RESET, &keepalive_endpoints},
     {"registered_endpoints", STAT_NO_RESET, &registered_endpoints},
@@ -262,6 +263,7 @@ static stat_export_t statistics[] = {
     {"dialog_endpoints",     STAT_NO_RESET, &dialog_endpoints},
     {0, 0, 0}
 };
+#endif
 
 struct module_exports exports = {
     "nat_traversal", // module name

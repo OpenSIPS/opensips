@@ -1713,7 +1713,10 @@ int tcp_init_children(int *chd_rank)
 	if (!load_p)
 		goto error;
 	memset(load_p,0,sizeof(atomic_t));
-	register_tcp_load_stat(load_p);
+	if (register_tcp_load_stat(load_p)!=0) {
+		LM_ERR("failed to init tcp load statistics\n");
+		goto error;
+	}
 
 	/* fork children & create the socket pairs*/
 	for(r=0; r<tcp_children_no; r++){
