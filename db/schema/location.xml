@@ -9,7 +9,7 @@
 
 <table id="location" xmlns:db="http://docbook.org/ns/docbook">
     <name>location</name>
-    <version>1005</version>
+    <version>1006</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Persistent user location information for the usrloc module. More information can be found at: &OPENSIPS_MOD_DOC;usrloc.html
@@ -39,8 +39,7 @@
         <name>domain</name>
         <type>string</type>
         <size>&domain_len;</size>
-        <null/>
-        <default><null/></default>
+        <default>&DEFAULT_DOMAIN;</default>
         <description>Domain name</description>
         <natural/>
     </column>

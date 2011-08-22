@@ -48,7 +48,7 @@
 #define WRITE_BACK    2
 #define DB_ONLY       3
 
-#define UL_TABLE_VERSION 1005
+#define UL_TABLE_VERSION 1006
 
 extern str user_col;
 extern str domain_col;
