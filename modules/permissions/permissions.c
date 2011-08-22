@@ -598,9 +598,7 @@ static int mod_init(void)
 {
 	LM_DBG("initializing...\n");
 
-	if (db_url.s)
-		db_url.len = strlen(db_url.s);
-
+	init_db_url( db_url , 1 /*can be null*/);
 	address_table.len = strlen(address_table.s);
 	ip_col.len = strlen(ip_col.s);
 	proto_col.len = strlen(proto_col.s);

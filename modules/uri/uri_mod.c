@@ -224,9 +224,8 @@ static int mod_init(void)
 
 	LM_DBG("initializing\n");
 
-
+	init_db_url( db_url , 1 /*can be null*/);
 	if (db_url.s) {
-		db_url.len = strlen(db_url.s);
 		if (db_url.len == 0) {
 			if (use_uri_table != 0) {
 				LM_ERR("configuration error - no database URL, "
