@@ -44,7 +44,7 @@ fi
 if [ -z "$DBROOTUSER" ]; then
 	DBROOTUSER="postgres"
 	if [ ! -r ~/.pgpass ]; then
-		merr "~./pgpass does not exist, please create this file and support proper credentials for user postgres."
+		merr "~/.pgpass does not exist, please create this file and support proper credentials for user postgres."
 		merr "Note: you need at least postgresql>= 7.3"
 		exit 1
 	fi
@@ -138,15 +138,20 @@ fi
 for TABLE in $STANDARD_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
 	if [ $TABLE != "version" ] ; then
-		if [ $TABLE == "dr_gateways" ] 
+			mdbg "creating table: $TABLE"
+		if [ $TABLE = "dr_gateways" ] 
 		then
+			mdbg "creating table 1: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_gwid_seq TO $DBRWUSER;"
-		elif [ $TABLE == "dr_rules" ] 
+		elif [ $TABLE = "dr_rules" ] 
 		then
+			mdbg "creating table 2: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_ruleid_seq TO $DBRWUSER;"
 		else
+			mdbg "creating table 3: $TABLE"
 			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
 		fi
+		mdbg "created table: $TABLE"
 	fi
 
 	if [ $? -ne 0 ] ; then
@@ -168,12 +173,12 @@ fi
 minfo "Core OpenSIPS tables succesfully created."
 
 get_answer $INSTALL_PRESENCE_TABLES "Install presence related tables? (y/n): "
-if [ $ANSWER == "y" ]; then
+if [ $ANSWER = "y" ]; then
 	presence_create $1
 fi
 
 get_answer $INSTALL_EXTRA_TABLES "Install tables for $EXTRA_MODULES? (y/n): "
-if [ $ANSWER == "y" ]; then
+if [ $ANSWER = "y" ]; then
 	extra_create $1
 fi
 } # opensips_create
