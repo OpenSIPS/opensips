@@ -213,6 +213,13 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int 
 	struct dlg_leg* leg;
 
 	LM_DBG("start\n");
+
+	/* parse all headers to be sure that all RR and Contact hdrs are found */
+	if (parse_headers(rpl, HDR_EOH_T, 0)< 0) {
+		LM_ERR("Failed to parse reply\n");
+		return -1;
+	}
+
 	/* replace contact */
 	if(dlg_replace_contact(rpl, dlg) < 0) {
 		LM_ERR("Failed to replace contact\n");
@@ -226,6 +233,7 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int 
 	leg = &dlg->legs[peer_leg];
 
 	LM_DBG("peer_leg = %d\n", peer_leg);
+	LM_DBG("first RR hdr = %p\n", rpl->record_route);
 	/* delete record route */
 	for (it=rpl->record_route; it; it=it->sibling) { /* changed here for contact - it was & it->sibling */
 		/* skip the one added by this proxy */
@@ -459,6 +467,12 @@ int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir)
 
 	/* add route headers */
 	fix_route_dialog(req, dlg);
+
+	/* replace contact*/
+	if(dlg_replace_contact(req, dlg) < 0) {
+		LM_ERR("Failed to replace contact\n");
+		return -1;
+	}
 
 	/* register tm callback for response in  */
 	ref_dlg( dlg , 1);
