@@ -284,16 +284,34 @@ struct socket_info * create_socket_info(db_val_t * vals, int n){
 }
 
 
+static inline void strip_esc(str *s)
+{
+	char *c = s->s;
+	int len = s->len;
+
+	for ( ; len > 0; len--, c++) {
+		if (*c == '\\' && len > 0 &&
+				(*(c+1)=='\\' || *(c+1)=='#' || *(c+1)=='|')) {
+			memmove(c, c + 1, len - 1);
+			s->len--;
+			len--;
+		}
+	}
+}
+
 
 static inline char* read_pair(char *b, char *end, str *name, str *val)
 {
 	/* read name */
 	name->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') && *(b-1)!='\\') )  b++;
+	while( b<end && !( (*b=='|'|| *b=='#') &&
+				(*(b-1)!='\\' || *(b-2)=='\\')) )
+		b++;
 	if (b==end) return NULL;
 	if (*b=='|') goto skip;
 	name->len = b - name->s;
 	if (name->len==0) goto skip;
+	strip_esc(name);
 	/*LM_DBG("-----read name <%.*s>(%d)\n",name->len,name->s,name->len);*/
 
 	/* read # */
@@ -301,11 +319,14 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 
 	/* read value */
 	val->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') && *(b-1)!='\\') )  b++;
+	while( b<end && !( (*b=='|'|| *b=='#') &&
+				(*(b-1)!='\\' || *(b-2)=='\\')) )
+		b++;
 	if (b==end) return NULL;
 	if (*b=='#') goto skip;
 	val->len = b - val->s;
 	if (val->len==0) val->s = 0;
+	strip_esc(val);
 	/*LM_DBG("-----read value <%.*s>(%d)\n",val->len,val->s,val->len);*/
 
 	/* read | */
@@ -761,13 +782,13 @@ static inline unsigned int write_pair( char *b, str *name, str *val)
 	int i,j;
 
 	for( i=0,j=0 ; i<name->len ; i++) {
-		if (name->s[i]=='|' || name->s[i]=='#')
+		if (name->s[i]=='|' || name->s[i]=='#' || name->s[i]=='\\')
 			b[j++] = '\\';
 		b[j++] = name->s[i];
 	}
 	b[j++] = '#';
 	for( i=0 ; val && i<val->len ; i++) {
-		if (val->s[i]=='|' || val->s[i]=='#')
+		if (val->s[i]=='|' || val->s[i]=='#' || val->s[i]=='\\')
 			b[j++] = '\\';
 		b[j++] = val->s[i];
 	}
@@ -789,9 +810,9 @@ static str* write_dialog_vars( struct dlg_val *vars)
 	for ( v=vars,l=0 ; v ; v=v->next) {
 		l += v->name.len + 1 + v->val.len + 1;
 		for( i=0 ; i<v->name.len ; i++ )
-			if (v->name.s[i]=='|' || v->name.s[i]=='#') l++;
+			if (v->name.s[i]=='|' || v->name.s[i]=='#' || v->name.s[i]=='\\') l++;
 		for( i=0 ; i<v->val.len ; i++ )
-			if (v->val.s[i]=='|' || v->val.s[i]=='#') l++;
+			if (v->val.s[i]=='|' || v->val.s[i]=='#' || v->val.s[i]=='\\') l++;
 	}
 
 	/* allocate the string to be stored */
