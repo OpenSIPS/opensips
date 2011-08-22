@@ -184,7 +184,7 @@ static int mod_init(void)
 		return -1;
 	}
 	memset(&b2be_dbf, 0, sizeof(db_func_t));
-	if(db_url.s)
+	if(b2be_db_mode && db_url.s)
 	{
 		db_url.len = strlen(db_url.s);
 
@@ -307,7 +307,7 @@ void check_htables(void)
 static int child_init(int rank)
 {
 	/* if database is needed */
-	if (db_url.s)
+	if (b2be_db_mode && db_url.s)
 	{
 		if (b2be_dbf.init==0)
 		{
