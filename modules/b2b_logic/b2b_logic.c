@@ -235,7 +235,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(db_url.s)
+	if(b2bl_db_mode && db_url.s)
 	{
 		db_url.len = strlen(db_url.s);
 		/* binding to database module  */
@@ -714,6 +714,9 @@ static void mod_destroy(void)
 
 static int child_init(int rank)
 {
+	if (b2bl_db_mode==0)
+		return 0;
+
 	if (b2bl_dbf.init==0)
 	{
 		LM_CRIT("child_init: database not bound\n");
