@@ -58,6 +58,8 @@
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_cseq.h"
+#include "../../parser/parse_hname2.h"
+#include "../../parser/parser_f.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
 #include "dlg_hash.h"
@@ -247,11 +249,27 @@ static str extracted_to_uri;
 static inline str* extract_mangled_touri(str *mangled_to_hdr)
 {
 	struct to_body to_b;
+	struct hdr_field hdr;
+	char *tmp,*end;
 
 	if (mangled_to_hdr->len == 0 || mangled_to_hdr->s == NULL)
 		return NULL;
 
-	parse_to(mangled_to_hdr->s+3,mangled_to_hdr->s+mangled_to_hdr->len,&to_b);
+	end = mangled_to_hdr->s+mangled_to_hdr->len;
+
+	tmp=parse_hname2(mangled_to_hdr->s,end,&hdr);
+	if (hdr.type==HDR_ERROR_T) {
+		LM_ERR("bad to header\n");
+		return NULL;
+	}
+
+	tmp = eat_lws_end(tmp,end);
+	if (tmp >= end) {
+		LM_ERR("empty header\n");
+		return NULL;
+	}
+
+	parse_to(tmp,end,&to_b);
 	if (to_b.error == PARSE_ERROR) {
 		LM_ERR("bad to header [%.*s]\n",mangled_to_hdr->len,mangled_to_hdr->s);
 		return NULL;
@@ -260,6 +278,7 @@ static inline str* extract_mangled_touri(str *mangled_to_hdr)
 	extracted_to_uri = to_b.uri;
 	free_to_params(&to_b);
 
+	LM_DBG("extracted to uri [%.*s]\n",extracted_to_uri.len,extracted_to_uri.s);
 	return &extracted_to_uri;
 }
 
@@ -267,11 +286,27 @@ static str extracted_from_uri;
 static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 {
 	struct to_body from_b;
+	struct hdr_field hdr;
+	char *tmp,*end;
 
 	if (mangled_from_hdr->len == 0 || mangled_from_hdr->s == NULL)
 		return NULL;
 
-	parse_to(mangled_from_hdr->s+5,mangled_from_hdr->s+mangled_from_hdr->len,&from_b);
+	end = mangled_from_hdr->s+mangled_from_hdr->len;
+
+	tmp=parse_hname2(mangled_from_hdr->s,end,&hdr);
+	if (hdr.type==HDR_ERROR_T) {
+		LM_ERR("bad from header\n");
+		return NULL;
+	}
+
+	tmp=eat_lws_end(tmp, end);
+	if (tmp >= end) {
+		LM_ERR("empty header\n");
+		return NULL;
+	}
+
+	parse_to(tmp,end,&from_b);
 	if (from_b.error == PARSE_ERROR) {
 		LM_ERR("bad from header [%.*s]\n",mangled_from_hdr->len,mangled_from_hdr->s);
 		return NULL;
@@ -279,6 +314,8 @@ static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 
 	extracted_from_uri = from_b.uri;
 	free_to_params(&from_b);
+
+	LM_DBG("extracted from uri [%.*s]\n",extracted_from_uri.len,extracted_from_uri.s);
 	return &extracted_from_uri;
 }
 
