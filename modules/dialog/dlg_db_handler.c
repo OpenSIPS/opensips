@@ -846,7 +846,7 @@ static str* write_dialog_vars( struct dlg_val *vars)
 static str* write_dialog_profiles( struct dlg_profile_link *links)
 {
 	static str o = {NULL,0};
-	static int o_l;
+	static int o_l = 0;
 	struct dlg_profile_link *link;
 	unsigned int l,i;
 	char *p;
@@ -857,14 +857,13 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 		for( i=0 ; i<link->profile->name.len ; i++ )
 			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#') l++;
 		for( i=0 ; i<link->value.len ; i++ )
-			if (link->value.s[i]=='|' ||
-			link->value.s[i]=='#') l++;
+			if (link->value.s[i]=='|' || link->value.s[i]=='#') l++;
 	}
 
 	/* allocate the string to be stored */
-	if ( o.s==NULL && o_l<l) {
+	if ( o.s==NULL || o_l<l) {
 		if (o.s) pkg_free(o.s);
-		o.s = (char*)malloc(l);
+		o.s = (char*)pkg_malloc(l);
 		if (o.s==NULL) {
 			LM_ERR("not enough pkg mem (req=%d)\n",l);
 			return NULL;
