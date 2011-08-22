@@ -54,6 +54,8 @@ static map_t avp_map_shm = 0;
 static int last_avp_index = 0;
 static int *last_avp_index_shm = 0;
 
+#define p2int(_p) (int)(unsigned long)(_p)
+#define int2p(_i) (void *)(unsigned long)(_i)
 
 int init_global_avps(void)
 {
@@ -217,11 +219,11 @@ static inline str* __get_avp_name(int id, map_t m)
 			return NULL;
 
 		idp = (int**)iterator_val(&it);
-		if (!idp || !*idp) {
+		if (!idp) {
 			LM_ERR("[BUG] while getting avp name\n");
 			return NULL;
 		}
-		if (**idp == id)
+		if (p2int(*idp) == id)
 			return iterator_key(&it);
 		if (iterator_next(&it) < 0)
 			return NULL;
@@ -449,9 +451,6 @@ struct usr_avp** set_avp_list( struct usr_avp **list )
 	crt_avps = list;
 	return foo;
 }
-
-#define p2int(_p) (int)(unsigned long)(_p)
-#define int2p(_i) (void *)(unsigned long)(_i)
 
 static inline int __search_avp_map(str *alias, map_t m)
 {
