@@ -52,7 +52,7 @@ extern int dr_force_dns;
 rt_data_t*
 build_rt_data( void )
 {
-	rt_data_t *rdata;
+	rt_data_t *rdata=NULL;
 
 	if( NULL==(rdata=shm_malloc(sizeof(rt_data_t)))) {
 		LM_ERR("no more shm mem\n");
@@ -64,6 +64,8 @@ build_rt_data( void )
 
 	return rdata;
 err_exit:
+	if (rdata)
+		shm_free(rdata);
 	return 0;
 }
 
