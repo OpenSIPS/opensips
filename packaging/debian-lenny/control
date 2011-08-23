@@ -253,7 +253,7 @@ Description: HTTP database connectivity module for OpenSIPS
 
 Package: opensips-dialplan-module
 Architecture: any
-Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libpcre3-dev
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
 Description: Generic string translation module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -263,7 +263,7 @@ Description: Generic string translation module for OpenSIPS
 
 Package: opensips-console
 Architecture: any
-Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), python-mysqldb, libfrontier-rpc-perl, libnet-ip-perl, libberkeleydb-perl
+Depends: opensips (= ${binary:Version}), python-mysqldb, libfrontier-rpc-perl, libnet-ip-perl, libberkeleydb-perl
 Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-xmlrpc-module, opensips-berkeley-module 
 Description: Generic tool for OpenSIPS provisioning
  OpenSIPS is a very fast and flexible SIP (RFC3261)
