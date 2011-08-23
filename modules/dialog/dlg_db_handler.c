@@ -855,9 +855,11 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 	for ( link=links,l=0 ; link ; link=link->next) {
 		l += link->profile->name.len + 1 + link->value.len + 1;
 		for( i=0 ; i<link->profile->name.len ; i++ )
-			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#') l++;
+			if (link->profile->name.s[i]=='|' || link->profile->name.s[i]=='#'
+					|| link->profile->name.s[i]=='\\') l++;
 		for( i=0 ; i<link->value.len ; i++ )
-			if (link->value.s[i]=='|' || link->value.s[i]=='#') l++;
+			if (link->value.s[i]=='|' || link->value.s[i]=='#'
+					|| link->value.s[i]=='\\') l++;
 	}
 
 	/* allocate the string to be stored */
