@@ -801,7 +801,7 @@ static inline unsigned int write_pair( char *b, str *name, str *val)
 static str* write_dialog_vars( struct dlg_val *vars)
 {
 	static str o = {NULL,0};
-	static int o_l;
+	static int o_l=0;
 	struct dlg_val *v;
 	unsigned int l,i;
 	char *p;
@@ -816,9 +816,9 @@ static str* write_dialog_vars( struct dlg_val *vars)
 	}
 
 	/* allocate the string to be stored */
-	if ( o.s==NULL && o_l<l) {
+	if ( o.s==NULL || o_l<l) {
 		if (o.s) pkg_free(o.s);
-		o.s = (char*)malloc(l);
+		o.s = (char*)pkg_malloc(l);
 		if (o.s==NULL) {
 			LM_ERR("not enough pkg mem (req=%d)\n",l);
 			return NULL;
