@@ -1,5 +1,5 @@
 #
-# $Id: opensipsctl.unixsock 3954 2008-03-27 19:15:18Z osas $
+# $Id$
 #
 # sc: opensips control; tool for maintaining opensips
 #
@@ -73,7 +73,7 @@ CTLCMD=unixsock_cmd
 
 unixsock_opensips_monitor() {
 		attempt=0
-		if [ "$2" == "" ]; then
+		if [ "$2" = "" ]; then
 		    loops=-1;
 		else
 		    loops=$2;

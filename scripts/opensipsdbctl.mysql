@@ -395,7 +395,7 @@ migrate_table ${dst_db}.dr_groups \
 	${src_db}.dr_groups \
 	"?id,?username,?domain,?groupid,?description"
 
-if [ $HAS_EXTRA == "yes" ] ; then
+if [ $HAS_EXTRA = "yes" ] ; then
                 
 migrate_table ${dst_db}.cpl \
 	"id,username,domain,cpl_xml,cpl_bin" \

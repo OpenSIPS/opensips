@@ -432,10 +432,10 @@ alias_db() {
 $DA_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping aliases for user=<$2>"
 				echo
-				if [ $DBENGINE == "MYSQL" ] ; then
+				if [ $DBENGINE = "MYSQL" ] ; then
 					QUERY="SELECT CONCAT($DA_ALIAS_USER_COLUMN,\
 	'@',$DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
-				elif [ $DBENGINE == "PGSQL" ] ; then
+				elif [ $DBENGINE = "PGSQL" ] ; then
 					QUERY="SELECT ($DA_ALIAS_USER_COLUMN || \
 	'@' || $DA_ALIAS_DOMAIN_COLUMN) AS ALIAS FROM $DA_TABLE $CLAUSE;"
 				fi
@@ -492,10 +492,10 @@ $DA_USER_COLUMN, $DA_DOMAIN_COLUMN FROM $DA_TABLE;"
 			
 			CLAUSE="WHERE $DA_ALIAS_USER_COLUMN='$OSIPSUSER' AND \
 $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			if [ $DBENGINE == "MYSQL" ] ; then
+			if [ $DBENGINE = "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($DA_USER_COLUMN,'@',$DA_DOMAIN_COLUMN) \
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
-			elif [ $DBENGINE == "PGSQL" ] ; then
+			elif [ $DBENGINE = "PGSQL" ] ; then
 				QUERY="SELECT ($DA_USER_COLUMN || '@' || $DA_DOMAIN_COLUMN) \
 	AS 'SIP-ID' FROM $DA_TABLE $CLAUSE ; "
 			fi
@@ -540,12 +540,12 @@ $DA_ALIAS_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 			TMP_OSIPSDOMAIN=$OSIPSDOMAIN
 			set_user $2
 		
-			if [ $DBENGINE == "MYSQL" ] ; then
+			if [ $DBENGINE = "MYSQL" ] ; then
 				if is_value_in_db $DA_TABLE "concat($DA_ALIAS_USER_COLUMN,$DA_ALIAS_DOMAIN_COLUMN)" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
 					minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
 					exit 0
 				fi
-			elif [ $DBENGINE == "PGSQL" ] ; then
+			elif [ $DBENGINE = "PGSQL" ] ; then
 				if is_value_in_db $DA_TABLE "$DA_ALIAS_USER_COLUMN || $DA_ALIAS_DOMAIN_COLUMN" "$TMP_OSIPSUSER$TMP_OSIPSDOMAIN"; then
 					minfo "$TMP_OSIPSUSER alias already in $DA_TABLE table"
 					exit 0
@@ -661,7 +661,7 @@ AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 $AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							fi
 						else
-							if [ "$CLAUSE" == "" ] ; then
+							if [ "$CLAUSE" = "" ] ; then
 								CLAUSE=" WHERE $AVP_UUID_COLUMN='$1'"
 							else
 								CLAUSE="$CLAUSE AND $AVP_UUID_COLUMN='$1'"
@@ -673,7 +673,7 @@ $AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							merr "avp list - attribute name parameter missing"
 							exit 1
 						fi
-						if [ "$CLAUSE" == "" ] ; then
+						if [ "$CLAUSE" = "" ] ; then
 							CLAUSE=" WHERE $AVP_ATTRIBUTE_COLUMN='$1'"
 						else
 							CLAUSE="$CLAUSE AND $AVP_ATTRIBUTE_COLUMN='$1'"
@@ -799,7 +799,7 @@ VALUES ('$AVP_UUID','$OSIPSUSER','$OSIPSDOMAIN','$2',$3,'$4',NOW());"
 						is_aor "$1"
 						if [ $? -eq 0 ] ; then
 							set_user $1
-							if [ "$CLAUSE" == "" ] ; then
+							if [ "$CLAUSE" = "" ] ; then
 								CLAUSE="WHERE $AVP_USER_COLUMN='$OSIPSUSER' \
 AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							else
@@ -807,7 +807,7 @@ AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 $AVP_USER_COLUMN='$OSIPSUSER' AND $AVP_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 							fi
 						else
-							if [ "$CLAUSE" == "" ] ; then
+							if [ "$CLAUSE" = "" ] ; then
 								CLAUSE="WHERE $AVP_UUID_COLUMN='$1'"
 							else
 								CLAUSE="$CLAUSE AND $AVP_UUID_COLUMN='$1'"
@@ -1519,7 +1519,7 @@ opensips_stop() {
 	# In case stop was called in restart, it should not exit.
 
 	echo
-	if [ "$1" == "restart" ]
+	if [ "$1" = "restart" ]
 	then
 		minfo "Restarting OpenSIPS : "
 	else
@@ -1660,11 +1660,11 @@ speeddial() {
 $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				mecho "Dumping speed-dials for user=<$2>"
 				echo
-				if [ $DBENGINE == "MYSQL" ] ; then
+				if [ $DBENGINE = "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
 	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
-				elif [ $DBENGINE == "PGSQL" ] ; then
+				elif [ $DBENGINE = "PGSQL" ] ; then
 				QUERY="SELECT ($SD_SD_USER_COLUMN || '@' || \
 	$SD_SD_DOMAIN_COLUMN) AS 'Short number', $SD_NEW_URI_COLUMN AS 'New URI',\
 	$SD_DESC_COLUMN FROM $SD_TABLE $CLAUSE;"
@@ -1695,12 +1695,12 @@ $SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
 				else
 					exit 1
 				fi
-				if [ $DBENGINE == "MYSQL" ] ; then
+				if [ $DBENGINE = "MYSQL" ] ; then
 					QUERY="SELECT CONCAT($SD_SD_USER_COLUMN,'@',\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', CONCAT($SD_USER_COLUMN,'@',\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
 $SD_DESC_COLUMN FROM $SD_TABLE;"
-				elif [ $DBENGINE == "PGSQL" ] ; then
+				elif [ $DBENGINE = "PGSQL" ] ; then
 					QUERY="SELECT ($SD_SD_USER_COLUMN||'@'||\
 $SD_SD_DOMAIN_COLUMN) AS 'Short number', ($SD_USER_COLUMN||'@'||\
 $SD_DOMAIN_COLUMN) AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI',\
@@ -1745,11 +1745,11 @@ $SD_DESC_COLUMN FROM $SD_TABLE;"
 			
 			CLAUSE="WHERE $SD_SD_USER_COLUMN='$OSIPSUSER' AND \
 $SD_SD_DOMAIN_COLUMN='$OSIPSDOMAIN'"
-			if [ $DBENGINE == "MYSQL" ] ; then
+			if [ $DBENGINE = "MYSQL" ] ; then
 				QUERY="SELECT CONCAT($SD_USER_COLUMN,'@',$SD_DOMAIN_COLUMN) \
 	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 	$SD_TABLE $CLAUSE ; "
-			elif [ $DBENGINE == "PGSQL" ] ; then
+			elif [ $DBENGINE = "PGSQL" ] ; then
 				QUERY="SELECT ($SD_USER_COLUMN || '@' || $SD_DOMAIN_COLUMN) \
 	AS 'Owner', $SD_NEW_URI_COLUMN AS 'New URI', $SD_DESC_COLUMN FROM \
 	$SD_TABLE $CLAUSE ; "
@@ -1999,19 +1999,19 @@ usrloc() {
 
 	require_ctlengine
 
-	if [ $1 == "alias" ] ; then
+	if [ $1 = "alias" ] ; then
 		USRLOC_TABLE="$ALS_TABLE"
 		if [ -z "$USRLOC_TABLE" ] ; then
 			USRLOC_TABLE=aliases
 		fi
 		CHECK_SUB=1
-	elif [ $1 == "ul" ] ; then
+	elif [ $1 = "ul" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
 		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
 		fi
 		CHECK_SUB=0
-	elif [ $1 == "usrloc" ] ; then
+	elif [ $1 = "usrloc" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
 		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
@@ -2027,7 +2027,7 @@ usrloc() {
 	case $1 in 
 		show)
 			if [ $# -eq 2 ] ; then
-				if [ $2 == "--brief" ] ; then
+				if [ $2 = "--brief" ] ; then
 					$CTLCMD ul_dump brief
 				else
 					set_user $2
@@ -2180,7 +2180,7 @@ tls_ca() {
 		minfo "Private key can be found in $CA_PATH/private/cakey.pem"
 		minfo "Certificate can be found in $CA_PATH/cacert.pem"
 
-	elif [ $1 == "userCERT" ] ; then
+	elif [ $1 = "userCERT" ] ; then
 
 		if [ -z $2 ] ; then
 			merr "Missing user name parameter"
