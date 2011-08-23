@@ -122,6 +122,9 @@
 ## in the subscriber table - default '1'
 # STORE_PLAINTEXT_PW=0
 
+## do not display the output highlighted
+# NOHLPRINT=1
+
 ## OPENSIPS START Options
 ## PID file path - default is: /var/run/opensips.pid
 # PID_FILE=/var/run/opensips.pid

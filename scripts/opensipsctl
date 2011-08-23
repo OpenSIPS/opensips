@@ -28,6 +28,17 @@ if [ $TEST = "true" ]; then
 	fi
 fi
 
+if [ -z $SHELL_TESTED ] && [ -z $NOHLPRINT ] ; then
+	if [ -x /bin/bash ]; then
+		# bash is available
+		export SHELL_TESTED=yes
+		exec /bin/bash $0 $@
+	else
+		NOHLPRINT=yes
+	fi
+fi
+
+
 
 ### force values for variables in this section
 # you better set the variables in ~/.opensipsctlrc
