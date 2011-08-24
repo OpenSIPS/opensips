@@ -10,7 +10,7 @@ CREATE TABLE acc (
     time DATE,
     duration NUMBER(10) DEFAULT 0 NOT NULL,
     setuptime NUMBER(10) DEFAULT 0 NOT NULL,
-    created DATE
+    created DATE DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER acc_tr

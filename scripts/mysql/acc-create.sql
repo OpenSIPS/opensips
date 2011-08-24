@@ -10,7 +10,7 @@ CREATE TABLE acc (
     time DATETIME NOT NULL,
     duration INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     setuptime INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    created DATETIME NOT NULL
+    created DATETIME DEFAULT NULL
 ) ENGINE=MyISAM;
 
 CREATE INDEX callid_idx ON acc (callid);
