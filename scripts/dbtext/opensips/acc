@@ -1,1 +1,1 @@
-id(int,auto) method(string) from_tag(string) to_tag(string) callid(string) sip_code(string) sip_reason(string) time(int) duration(int) setuptime(int) created(int) 
+id(int,auto) method(string) from_tag(string) to_tag(string) callid(string) sip_code(string) sip_reason(string) time(int) duration(int) setuptime(int) created(int,null) 
