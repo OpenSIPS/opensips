@@ -58,7 +58,7 @@ static str pu_489_rpl  = str_init("Bad Event");
 int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 		str *rtag, str* local_contact)
 {
-	char * hdr_append;
+	char * hdr_append=NULL;
 	int lexpire_len;
 	char *lexpire_s;
 	int len;
@@ -122,8 +122,8 @@ int send_2XX_reply(struct sip_msg * msg, int reply_code, int lexpire,
 	return 0;
 
 error:
-
-	pkg_free(hdr_append);
+	if (hdr_append)
+		pkg_free(hdr_append);
 	return -1;
 }
 
