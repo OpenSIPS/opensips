@@ -51,6 +51,7 @@
 #include "../../parser/parse_from.h"
 #include "../dialog/dlg_load.h"
 #include "../dialog/dlg_hash.h"
+#include "../tm/tm_load.h"
 
 
 
@@ -145,6 +146,7 @@ static AVP_Param canonical_uri_avp = {str_init(CANONICAL_URI_AVP_SPEC), -1, 0};
 static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 
 
+struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
 
 AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
@@ -233,14 +235,14 @@ typedef struct CallInfo {
 
 void
 destroy_list(AVP_List *list) {
-	AVP_List *cur, *next;
+    AVP_List *cur, *next;
 
-	cur = list;
-	while (cur) {
-		next = cur->next;
-		pkg_free(cur);
-		cur = next;
-	}
+    cur = list;
+    while (cur) {
+        next = cur->next;
+	pkg_free(cur);
+	cur = next;
+    }
 }
 
 
@@ -404,8 +406,7 @@ get_diverter(struct sip_msg *msg)
     diverter.s   = "None";
     diverter.len = 4;
 
-    if (search_first_avp(diverter_avp_id.type|AVP_VAL_STR,
-				diverter_avp_id.name, &avpvalue, NULL)) {
+    if (search_first_avp(diverter_avp_id.type|AVP_VAL_STR, diverter_avp_id.name, &avpvalue, NULL)) {
         // have a diverted call
         diverter = avpvalue.s;
     } else {
@@ -544,20 +545,19 @@ make_custom_request(struct sip_msg *msg, CallInfo *call)
         pv_get_spec_value(msg, al->pv, &pt);
         if (pt.flags & PV_VAL_INT) {
             len += snprintf(request + len, sizeof(request),
-                      "%.*s = %d ", al->name.len, al->name.s,
-                   pt.ri);
-        } else    if (pt.flags & PV_VAL_STR) {
+                    "%.*s = %d ", al->name.len, al->name.s,
+                    pt.ri);
+        } else if (pt.flags & PV_VAL_STR) {
             len += snprintf(request + len, sizeof(request),
-                      "%.*s = %.*s ", al->name.len, al->name.s,
-                   pt.rs.len, pt.rs.s);
+                    "%.*s = %.*s ", al->name.len, al->name.s,
+                    pt.rs.len, pt.rs.s);
         }
 
-          if (len >= sizeof(request)) {
-               LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
+        if (len >= sizeof(request)) {
+            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
             return NULL;
-             }
+        }
     }
-
 
     return request;
 }
@@ -912,6 +912,18 @@ call_control_stop(struct sip_msg *msg, str callid)
 }
 
 
+// TM callbacks
+//
+
+static void
+__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
+{
+    if (dlg_api.create_dlg(param->req) < 0) {
+        LM_ERR("could not create new dialog\n");
+    }
+}
+
+
 // Dialog callbacks and helpers
 //
 
@@ -1000,10 +1012,10 @@ CallControl(struct sip_msg *msg, char *str1, char *str2)
     if (result == 1) {
         // A call with a time limit that will be traced by callcontrol
         msg->msg_flags |= FL_USE_CALL_CONTROL;
-		if ( dlg_api.create_dlg(msg) < 0) {
-			LM_ERR("error creating new dialog\n");
-			return -5;
-		}
+        if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <= 0) {
+            LM_ERR("cannot register TM callback for incoming INVITE request\n");
+            return -5;
+        }
     }
 
     return result;
@@ -1048,7 +1060,7 @@ mod_init(void)
         return -1;
     }
 
-	// initialize the diverter_avp_id structure
+    // initialize the diverter_avp_id structure
     if (diverter_avp_id.spec.s==NULL || *(diverter_avp_id.spec.s)==0) {
         LM_ERR("missing/empty diverter_avp parameter. using default.\n");
         signaling_ip_avp.spec.s = DIVERTER_AVP_SPEC;
@@ -1063,6 +1075,12 @@ mod_init(void)
         return -1;
     }
 
+
+    // bind to the TM API
+    if (load_tm_api(&tm_api)!=0) {
+        LM_CRIT("cannot load the TM module API\n");
+        return -1;
+    }
 
     // bind to the dialog API
     if (load_dlg_api(&dlg_api)!=0) {
@@ -1104,14 +1122,14 @@ child_init(int rank)
 
 static void
 destroy(void) {
-	if (init_avps)
-		destroy_list(init_avps);
+    if (init_avps)
+        destroy_list(init_avps);
 
-	if (start_avps)
-		destroy_list(start_avps);
+    if (start_avps)
+        destroy_list(start_avps);
 
-	if (stop_avps)
-		destroy_list(stop_avps);
+    if (stop_avps)
+        destroy_list(stop_avps);
 }
 
 
