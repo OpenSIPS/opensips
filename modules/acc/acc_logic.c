@@ -368,7 +368,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 		}
 
 		if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 0) < 0) {
-			LM_ERR("cannot fetch flags string value\n");
+			LM_DBG("flags were not saved in dialog\n");
 			return;
 		}
 		flags_l = (unsigned int)*flags_s.s;
