@@ -49,6 +49,7 @@
 #include "../../msg_translator.h"
 #include "../dialog/dlg_load.h"
 #include "../dialog/dlg_hash.h"
+#include "../tm/tm_load.h"
 
 
 
@@ -184,6 +185,7 @@ static MediaproxySocket mediaproxy_socket = {
 };
 
 
+struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
 Bool have_dlg_api = False;
 
@@ -452,9 +454,9 @@ get_cseq_number(struct sip_msg *msg, str *cseq)
             LM_ERR("missing CSeq header\n");
             return False;
         }
-	}
+    }
 
-	*cseq = get_cseq(msg)->number;
+    *cseq = get_cseq(msg)->number;
 
     if (cseq->s==NULL || cseq->len==0) {
         LM_ERR("missing CSeq number\n");
@@ -1756,6 +1758,18 @@ end_media_session(str callid, str from_tag, str to_tag)
 }
 
 
+// TM callbacks
+//
+
+static void
+__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
+{
+    if (dlg_api.create_dlg(param->req) < 0) {
+        LM_ERR("could not create new dialog\n");
+    }
+}
+
+
 // Dialog callbacks and helpers
 //
 
@@ -1854,19 +1868,42 @@ __dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 static int
 EngageMediaProxy(struct sip_msg *msg)
 {
+    str totag;
+
     if (mediaproxy_disabled)
         return -1;
 
     if (!have_dlg_api) {
-        LM_ERR("engage_media_proxy requires the dialog module to be loaded and configured\n");
+        LM_ERR("engage_media_proxy requires the TM and dialog modules to be loaded\n");
+        return -1;
+    }
+
+    if (msg->first_line.type!=SIP_REQUEST || msg->REQ_METHOD!=METHOD_INVITE) {
+        LM_ERR("engage_media_proxy should only be called for initial INVITE requests\n");
+        return -1;
+    }
+
+    if (parse_headers(msg, HDR_TO_F, 0) == -1) {
+        LM_ERR("failed to parse To header\n");
+        return -1;
+    }
+
+    if (!msg->to) {
+        LM_ERR("missing To header\n");
+        return -1;
+    }
+
+    totag = get_to(msg)->tag_value;
+    if (totag.s && totag.len>0) {
+        LM_ERR("engage_media_proxy should only be called for initial INVITE requests\n");
         return -1;
     }
 
     msg->msg_flags |= FL_USE_MEDIA_PROXY;
-	if ( dlg_api.create_dlg(msg) < 0) {
-		LM_ERR("error creating new dialog\n");
-		return -1;
-	}
+    if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <= 0) {
+        LM_ERR("cannot register TM callback for incoming INVITE request\n");
+        return -1;
+    }
 
     return 1;
 }
@@ -1964,8 +2001,8 @@ mod_init(void)
         return -1;
     }
 
-    // bind to the dialog API
-    if (load_dlg_api(&dlg_api)==0) {
+    // bind to the TM and dialog APIs
+    if (load_tm_api(&tm_api)==0 && load_dlg_api(&dlg_api)==0) {
         have_dlg_api = True;
 
         // register dialog creation callback
@@ -1974,7 +2011,7 @@ mod_init(void)
             return -1;
         }
     } else {
-        LM_NOTICE("engage_media_proxy() will not work because the dialog module is not loaded\n");
+        LM_NOTICE("engage_media_proxy() will not work because the TM/dialog modules are not loaded\n");
     }
 
     return 0;
