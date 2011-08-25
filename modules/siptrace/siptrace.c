@@ -458,6 +458,9 @@ static int trace_dialog(struct sip_msg *msg)
 		while(avp!=NULL) {
 			/* generate a name */
 			name = generate_val_name(n);
+			if (!is_avp_str_val(avp))
+				avp_value.s.s=int2str(avp_value.n,
+						&avp_value.s.len);
 			/* add the avp value as dialog var */
 			dlgb.store_dlg_value( dlg, name, &avp_value.s);
 			/* next avp */
@@ -666,6 +669,8 @@ static int sip_trace(struct sip_msg *msg)
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
+	if (!is_avp_str_val(avp))
+		avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -682,9 +687,11 @@ static int sip_trace(struct sip_msg *msg)
 	avp = search_next_avp( avp, &avp_value);
 	while(avp!=NULL)
 	{
+		if (!is_avp_str_val(avp))
+			avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
+
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
-
 		LM_DBG("storing info 3...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
@@ -964,6 +971,9 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
+	if (!is_avp_str_val(avp))
+		avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
+
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -979,7 +989,10 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	avp = search_next_avp(avp, &avp_value);
 	while(avp!=NULL)
-	{
+	{	
+		if (!is_avp_str_val(avp))
+			avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
+
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -1151,6 +1164,8 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
+	if (!is_avp_str_val(avp))
+		avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -1167,6 +1182,8 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	avp = search_next_avp( avp, &avp_value);
 	while(avp!=NULL)
 	{
+		if (!is_avp_str_val(avp))
+			avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -1374,6 +1391,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
+	if (!is_avp_str_val(avp))
+		avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -1390,6 +1409,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	avp = search_next_avp( avp, &avp_value);
 	while(avp!=NULL)
 	{
+		if (!is_avp_str_val(avp))
+			avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -1582,6 +1603,8 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
 	
+	if (!is_avp_str_val(avp))
+		avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -1598,6 +1621,8 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	avp = search_next_avp( avp, &avp_value);
 	while(avp!=NULL)
 	{
+		if (!is_avp_str_val(avp))
+			avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
