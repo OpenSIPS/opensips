@@ -135,6 +135,10 @@ void db_postgres_close(db_con_t* _h)
 
 static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 {
+	int i;
+	ExecStatusType result;
+	PGresult *res = NULL;
+
 	if(! _con || !_s || !_s->s)
 	{
 		LM_ERR("invalid parameter value\n");
@@ -165,21 +169,48 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 			return -1;
 	}
 
-	/* free any previous query that is laying about */
-	if(CON_RESULT(_con))
-	{
-		free_query(_con);
+	for (i=0;i<2;i++) {
+		/* free any previous query that is laying about */
+		if(CON_RESULT(_con)) {
+			free_query(_con);
+		}
+
+		/* exec the query */
+		if (PQsendQuery(CON_CONNECTION(_con), _s->s)) {
+			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
+
+			while (1) {
+				if ((res = PQgetResult(CON_CONNECTION(_con)))) {
+					CON_RESULT(_con) = res;
+				} else {
+					break;
+				}
+			}
+
+			result = PQresultStatus(CON_RESULT(_con));
+			if(result==PGRES_FATAL_ERROR)
+				goto reconnect;
+			else return 0;
+		} else {
+reconnect:
+			/*  reconnection attempt - if this is the case */
+			LM_DBG("%p PQsendQuery failed: %s Query: %.*s\n", _con,
+			PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+			if(PQstatus(CON_CONNECTION(_con))!=CONNECTION_OK) {
+				LM_DBG("connection reset\n");
+				PQreset(CON_CONNECTION(_con));
+			} else {
+				/* failure not due to connection loss - no point in retrying */
+				if(CON_RESULT(_con)) {
+					free_query(_con);
+				}
+				break;
+			}
+		}
 	}
 
-	/* exec the query */
-	if (PQsendQuery(CON_CONNECTION(_con), _s->s)) {
-		LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
-	} else {
-		LM_ERR("%p PQsendQuery Error: %s Query: %.*s\n", _con,
-		PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
-		return -1;
-	}
-
+	LM_ERR("%p PQsendQuery Error: %s Query: %.*s\n", _con,
+	PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
 	return 0;
 }
 
@@ -191,7 +222,6 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nrows)
 {
 	int rows;
-	PGresult *res = NULL;
 	ExecStatusType pqresult;
 
 	if (!_con || !_res || nrows < 0) {
@@ -212,14 +242,6 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 		/* Allocate a new result structure */
 		*_res = db_new_result();
 
-		/* Get the result of the previous query */
-		while (1) {
-			if ((res = PQgetResult(CON_CONNECTION(_con)))) {
-				CON_RESULT(_con) = res;
-			} else {
-				break;
-			}
-		}
 		pqresult = PQresultStatus(CON_RESULT(_con));
 		LM_DBG("%p PQresultStatus(%s) PQgetResult(%p)\n", _con,
 			PQresStatus(pqresult), CON_RESULT(_con));
@@ -411,7 +433,6 @@ int db_postgres_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 
 int db_postgres_store_result(const db_con_t* _con, db_res_t** _r)
 {
-	PGresult *res = NULL;
 	ExecStatusType pqresult;
 	int rc = 0;
 
@@ -420,14 +441,6 @@ int db_postgres_store_result(const db_con_t* _con, db_res_t** _r)
 		LM_ERR("failed to init new result\n");
 		rc = -1;
 		goto done;
-	}
-
-	while (1) {
-		if ((res = PQgetResult(CON_CONNECTION(_con)))) {
-			CON_RESULT(_con) = res;
-		} else {
-			break;
-		}
 	}
 
 	pqresult = PQresultStatus(CON_RESULT(_con));
@@ -515,7 +528,7 @@ int db_postgres_insert(const db_con_t* _h, const db_key_t* _k,
 		 * it may postpone calling the insert func until
 		 * enough rows have piled up */
 		if (db_postgres_store_result(_h, &_r) != 0)
-			LM_WARN("unexpected result returned");
+			LM_WARN("unexpected result returned\n");
 
 		submit_func_called = 0;
 	}
