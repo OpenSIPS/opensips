@@ -779,6 +779,24 @@ if (method=="REGISTER") {
       </example>
 
     </section>
+    <section>
+    <title><varname>$nat_traversal.track_dialog</varname></title>
+      <para>
+        Returns a boolean value (0 or 1) indicating if dialog tracking will
+        be enabled by the nat_traversal module. The nat_traversal module will
+        always track the dialog (by calling create_dialog internally) unless
+        told otherwise.
+      </para>
+      <para>
+        This is an advanced setting which is only meant to be used by multi-proxy
+        setups where a proxy doesn't want to keep track of a dialog, that is, if
+        it won't stay in the signaling path.
+      </para>
+      <para>
+        By setting this pv to 0 the nat_traversal module will not attempt to
+        create the dialog.
+      </para>
+    </section>
 
   </section>
 
