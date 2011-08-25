@@ -192,6 +192,8 @@ static int  reply_filter(struct sip_msg *reply);
 static int pv_parse_nat_contact_name(pv_spec_p sp, str *in);
 static int pv_get_keepalive_socket(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 static int pv_get_source_uri(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+static int pv_get_track_dialog(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+static int pv_set_track_dialog(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 
 
 // Module global variables and state
@@ -252,6 +254,7 @@ static param_export_t parameters[] = {
 static pv_export_t pvars[] = {
     {str_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
     {str_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
+    {str_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
     {{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -1397,6 +1400,20 @@ __tm_reply_out(struct cell *trans, int type, struct tmcb_params *param)
 }
 
 
+// callback to handle incoming requests
+//
+static void
+__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
+{
+    if ((param->req->msg_flags & FL_NAT_TRACK_DIALOG) == 0)
+        return;
+
+    if (dlg_api.create_dlg(param->req) < 0) {
+        LM_ERR("could not create new dialog\n");
+    }
+}
+
+
 // Keepalive NAT for an UA while it has registered contacts or active dialogs
 //
 static int
@@ -1437,11 +1454,7 @@ NAT_Keepalive(struct sip_msg *msg)
             return -1;
         }
         msg->msg_flags |= FL_DO_KEEPALIVE;
-		if ( dlg_api.create_dlg(msg) < 0) {
-			LM_ERR("error creating new dialog\n");
-			return -1;
-		}
-
+        msg->msg_flags |= FL_NAT_TRACK_DIALOG;
         return 1;
 
     default:
@@ -1771,7 +1784,7 @@ mod_init(void)
 
     // bind to the TM API
     if (load_tm_api(&tm_api)!=0) {
-        LM_ERR("cannot load the tm module API\n");
+        LM_ERR("cannot load the TM module API\n");
         return -1;
     }
 
@@ -1874,23 +1887,26 @@ preprocess_request(struct sip_msg *msg, void *_param)
 {
     str totag;
 
-    if (msg->first_line.u.request.method_value!=METHOD_INVITE)
+    if (msg->REQ_METHOD != METHOD_INVITE)
         return 1;
 
     if (parse_headers(msg, HDR_TO_F, 0) == -1) {
         LM_ERR("failed to parse To header\n");
         return -1;
     }
+
     if (!msg->to) {
         LM_ERR("missing To header\n");
         return -1;
     }
+
     totag = get_to(msg)->tag_value;
     if (totag.s==0 || totag.len==0) {
-		if ( dlg_api.create_dlg(msg) < 0) {
-			LM_ERR("error creating new dialog\n");
-			return -1;
-		}
+        msg->msg_flags |= FL_NAT_TRACK_DIALOG;
+        if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <=0) {
+            LM_ERR("cannot register TM callback for incoming INVITE request\n");
+            return -1;
+        }
     }
 
     return 1;
@@ -2049,6 +2065,46 @@ pv_get_source_uri(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
     res->rs.s = uri;
     res->rs.len = strlen(uri);
     res->flags = PV_VAL_STR;
+
+    return 0;
+}
+
+
+static int
+pv_get_track_dialog(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+    if (msg==NULL || res==NULL)
+        return -1;
+
+    if ((msg->msg_flags & FL_NAT_TRACK_DIALOG) == 0) {
+        res->ri = 0;
+    } else {
+        res->ri = 1;
+    }
+    res->flags = PV_VAL_INT;
+
+    return 0;
+}
+
+
+static int
+pv_set_track_dialog(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val)
+{
+    if (val==NULL) {
+        msg->msg_flags &= ~FL_NAT_TRACK_DIALOG;
+        return 0;
+    }
+
+    if (!(val->flags&PV_VAL_INT)){
+        LM_ERR("assigning non-int value to track_dialog flag\n");
+        return -1;
+    }
+
+    if (val->ri == 0) {
+        msg->msg_flags &= ~FL_NAT_TRACK_DIALOG;
+    } else {
+        msg->msg_flags |= FL_NAT_TRACK_DIALOG;
+    }
 
     return 0;
 }
