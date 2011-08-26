@@ -414,44 +414,43 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	env_set_to( get_rpl_to(t,reply) );
 	env_set_code_status( code, reply);
 
-	if (is_cdr_acc_on(req) && (dlg=dlg_api.get_dlg()) != NULL) {
+	if (is_invite(t) && is_cdr_acc_on(req) && code >= 200 && code < 300
+			&& (dlg=dlg_api.get_dlg()) != NULL) {
 		/* if dialog module loaded and INVITE and success reply */
-		if (is_invite(t) && code >= 200 && code < 300) {
-			if (store_core_leg_values(dlg, req) < 0) {
-				LM_ERR("cannot store core and leg values\n");
-				return;
-			}
+		if (store_core_leg_values(dlg, req) < 0) {
+			LM_ERR("cannot store core and leg values\n");
+			return;
+		}
 
-			if(is_log_acc_on(req) && store_log_extra_values(dlg,req,reply)<0){
-				LM_ERR("cannot store string values\n");
-				return;
-			}
+		if(is_log_acc_on(req) && store_log_extra_values(dlg,req,reply)<0){
+			LM_ERR("cannot store string values\n");
+			return;
+		}
 
-			if(is_aaa_acc_on(req) && store_aaa_extra_values(dlg, req, reply)<0){
-				LM_ERR("cannot store aaa extra values\n");
-				return;
-			}
+		if(is_aaa_acc_on(req) && store_aaa_extra_values(dlg, req, reply)<0){
+			LM_ERR("cannot store aaa extra values\n");
+			return;
+		}
 
-			if (is_db_acc_on(req) && store_db_extra_values(dlg,req,reply)<0) {
-				LM_ERR("cannot store database extra values\n");
-				return;
-			}
+		if (is_db_acc_on(req) && store_db_extra_values(dlg,req,reply)<0) {
+			LM_ERR("cannot store database extra values\n");
+			return;
+		}
 
-			flags_s.s = (char*)&req->flags;
-			flags_s.len = sizeof(unsigned int);
-			
-			/* store flags into dlg */ 
-			if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
-				LM_ERR("cannot store flag value into dialog\n");
-				return;
-			}
+		flags_s.s = (char*)&req->flags;
+		flags_s.len = sizeof(unsigned int);
+		
+		/* store flags into dlg */ 
+		if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
+			LM_ERR("cannot store flag value into dialog\n");
+			return;
+		}
 
-			/* register database callbacks */
-			if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
-					DLGCB_EXPIRED, acc_dlg_callback,(void *)(long)req->flags,0) != 0) {
-				LM_ERR("cannot register callback for database accounting\n");
-				return;
-			}
+		/* register database callbacks */
+		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
+				DLGCB_EXPIRED, acc_dlg_callback,(void *)(long)req->flags,0) != 0) {
+			LM_ERR("cannot register callback for database accounting\n");
+			return;
 		}
 	} else {
 		/* do old accounting */
