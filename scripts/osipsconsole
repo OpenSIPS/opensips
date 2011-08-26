@@ -5628,7 +5628,7 @@ sub mysql_opensips_create() {
 	# Users: opensips is the regular user, opensipsro only for reading
 	&mysql_query("create database $db;" . 
 	"GRANT ALL PRIVILEGES ON $db.\* TO \'$DBRWUSER\' IDENTIFIED  BY \'$DBRWPW\'; " .
-	"GRANT ALL PRIVILEGES ON $db.* TO \'${DBRWUSER}\'\@\'$DBHOST\' IDENTIFIED BY \'$DBRWPW\';" .
+	"GRANT ALL PRIVILEGES ON $db.* TO \'${DBRWUSER}\'\@\'$DBHOST\' IDENTIFIED BY \'$DBRWPW\';");
 	if ($? == 0 )	{
 		print "Database $db....created\n";
 	} else {
