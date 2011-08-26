@@ -100,7 +100,9 @@ enum request_method {
 #define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
                                       * a dialog */
 #define FL_USE_RTPPROXY      (1<<12) /* used by rtpproxy to remember if the msg
-										callback had already been registered */
+				      * callback had already been registered */
+#define FL_NAT_TRACK_DIALOG  (1<<13) /* trigger dialog tracking from the
+                                      * nat_traversal module */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 5
