@@ -531,6 +531,9 @@ error:
 void cancel_invite(struct sip_msg *cancel_msg,
 								struct cell *t_cancel, struct cell *t_invite )
 {
+#define CANCEL_REASON_SIP_487  \
+	"Reason: SIP;cause=487;text=ORIGINATOR_CANCEL" CRLF
+
 	branch_bm_t cancel_bitmap;
 	branch_bm_t dummy_bm;
 	str reason;
@@ -560,6 +563,12 @@ void cancel_invite(struct sip_msg *cancel_msg,
 				reason.len = hdr->len;
 			}
 		}
+	}
+
+	/* if no reason, use NORMAL CLEARING */
+	if (reason.s == NULL) {
+		reason.s = CANCEL_REASON_SIP_487;
+		reason.len = sizeof(CANCEL_REASON_SIP_487) - 1;
 	}
 
 	/* generate local cancels for all branches */
