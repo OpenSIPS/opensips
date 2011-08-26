@@ -1337,7 +1337,7 @@ int create_acc_dlg(struct sip_msg* req)
 	dlg = dlg_api.get_dlg();
 	if (!dlg) {
 		/* if the dialog doesn't exist we try to create it */
-		if ( dlg_api.create_dlg(req) < 0) {
+		if ( dlg_api.create_dlg(req,0) < 0) {
 			LM_ERR("error creating new dialog\n");
 			return -1;
 		}

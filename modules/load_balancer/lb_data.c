@@ -458,7 +458,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		used_dst_bitmap = dst_bitmap;
 
 		/* create dialog */
-		if (lb_dlg_binds.create_dlg( req )!=1 ) {
+		if (lb_dlg_binds.create_dlg( req , 0)!=1 ) {
 			LM_ERR("failed to create dialog\n");
 			return -1;
 		}

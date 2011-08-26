@@ -432,7 +432,7 @@ static int trace_dialog(struct sip_msg *msg)
 	static int_str avp_value;
 	str *name;
 
-	if (dlgb.create_dlg(msg)<1) {
+	if (dlgb.create_dlg(msg,0)<1) {
 		LM_ERR("failed to create dialog\n");
 		return -1;
 	}

@@ -918,7 +918,7 @@ call_control_stop(struct sip_msg *msg, str callid)
 static void
 __tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
 {
-    if (dlg_api.create_dlg(param->req) < 0) {
+    if (dlg_api.create_dlg(param->req,0) < 0) {
         LM_ERR("could not create new dialog\n");
     }
 }

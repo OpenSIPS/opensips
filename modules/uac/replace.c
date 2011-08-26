@@ -335,7 +335,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		dlg = dlg_api.get_dlg();
 		/* if the dialog doesn't already exist */
 		if (!dlg && force_dialog) {
-			if (dlg_api.create_dlg(msg) < 0) {
+			if (dlg_api.create_dlg(msg,0) < 0) {
 				LM_ERR("cannot create dialog\n");
 				goto error;
 			}

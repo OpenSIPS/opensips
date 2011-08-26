@@ -2317,7 +2317,7 @@ rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 
 		/* if an initial request - create a new dialog */
 		if(get_to(msg)->tag_value.s == NULL)
-			dlg_api.create_dlg(msg);
+			dlg_api.create_dlg(msg,0);
 	}
 
 	return force_rtp_proxy(msg, param1, param2, 1);
@@ -2622,7 +2622,7 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 	}
 
 	/* create dialog */
-	if (dlg_api.create_dlg(msg) < 0) {
+	if (dlg_api.create_dlg(msg,0) < 0) {
 		LM_ERR("error creating dialog");
 		return -1;
 	}

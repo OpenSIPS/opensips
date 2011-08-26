@@ -492,13 +492,28 @@ static int fixup_get_info(void** param, int param_no)
 	return 0;
 }
 
+static int create_dialog_wrapper(struct sip_msg *req,int flags)
+{
+	struct cell *t;
+	struct dlg_cell *dlg;
 
+	/* is the dialog already created? */
+	if ((dlg = get_current_dialog())!=NULL) {
+		dlg->flags |= flags;
+		return 1;
+	}
 
+	t = d_tmb.t_gett();
+	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req,flags)!=0)
+		return -1;
+
+	return 1;
+}
 
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
-	dlgb->create_dlg = w_create_dialog;
+	dlgb->create_dlg = create_dialog_wrapper;
 	dlgb->get_dlg = get_current_dialog;
 	dlgb->add_profiles = add_profile_definitions;
 	dlgb->search_profile = search_dlg_profile;

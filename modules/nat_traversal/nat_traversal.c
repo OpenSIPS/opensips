@@ -1408,7 +1408,7 @@ __tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
     if ((param->req->msg_flags & FL_NAT_TRACK_DIALOG) == 0)
         return;
 
-    if (dlg_api.create_dlg(param->req) < 0) {
+    if (dlg_api.create_dlg(param->req,0) < 0) {
         LM_ERR("could not create new dialog\n");
     }
 }
