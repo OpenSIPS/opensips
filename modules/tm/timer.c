@@ -311,6 +311,9 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 
 inline static void final_response_handler( struct timer_link *fr_tl )
 {
+#define CANCEL_REASON_SIP_480  \
+	"Reason: SIP;cause=480;text=NO_ANSWER" CRLF
+
 	struct retr_buf* r_buf;
 	struct cell *t;
 
@@ -356,8 +359,11 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	};
 
 	/* out-of-lock do the cancel I/O */
-	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) )
+	if (is_invite(t) && should_cancel_branch(t, r_buf->branch) ) {
+		set_cancel_extra_hdrs( CANCEL_REASON_SIP_480, sizeof(CANCEL_REASON_SIP_480)-1);
 		cancel_branch(t, r_buf->branch );
+		set_cancel_extra_hdrs( NULL, 0);
+	}
 	/* lock reply processing to determine how to proceed reliably */
 	LOCK_REPLIES( t );
 	LM_DBG("Cancel sent out, sending 408 (%p)\n", t);
