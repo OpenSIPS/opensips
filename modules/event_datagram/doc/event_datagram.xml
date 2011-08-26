@@ -14,7 +14,7 @@
 
 <book>
 	<bookinfo>
-	<title>mi_datagram Module</title>
+	<title>event_datagram Module</title>
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
