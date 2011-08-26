@@ -1,4 +1,395 @@
 
+2011-08-23 19:02:57  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8297] :
+
+	Backport from trunk r8296
+
+	Added presence_callinfo to presence modules Debian package
+
+
+
+2011-08-23 17:53:47  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8292] :
+
+	backport from trunk ( rev #8291 )
+	- fixed memory corruption when flushing dialog vars to database
+	  Shared credits to Bogdan Iancu on debugging this.
+
+
+
+2011-08-23 17:14:10  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8290] :
+
+	Backported from trunk (#8289):
+	* Execute scripts with /bin/bash in case it exists on the system.
+	Problem reported by Saul Ibarra Corretge
+
+
+2011-08-23 14:33:29  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8288] :
+
+	Backported from trunk (rev 8287):
+	Replaced bash-style (==) with dash-style (=) string comparation in shell scripts
+
+
+2011-08-23 14:24:28  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8286] :
+
+	Backported from trunk (rev 8285):
+	* Removed some unnecessary dependencies for debian packaging
+	* Updated the Debian standard to 3.9.1
+	Credits go to Saul Ibarra Corretge
+
+
+2011-08-23 13:11:16  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8283] :
+
+	backport from trunk ( rev #8282 )
+
+	fixed proper free in case of no more shm
+
+
+
+2011-08-22 19:42:57  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8281] :
+
+	backport from trunk (rev #8280):
+	-fixed 2 bugs in topo hiding
+	  1) mangle the contact in sequential requests too
+	    2) force parsing of all hdrs before trying to remove the RR header (what is not found, cannot be deleted ;) )
+
+
+
+2011-08-22 19:36:19  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8278] :
+
+	port from 1.6 (rev #8277)
+	- fixed memory corruption when flushing dialog profiles to database
+	  Shared credits to Vlad Paiu on debugging this.
+
+
+
+2011-08-22 14:13:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8275] :
+
+	backport from trunk (rev #8274)
+	- if db_mode is 0 (no db), do not ask for the db_url param to be set.
+
+
+2011-08-22 14:07:28  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8273] :
+
+	backport from trunk (rev #8242)
+
+	allow compact header names on From & To hdr mangling
+
+
+
+2011-08-22 13:38:10  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8272] :
+
+	Backported from trunk (rev 8212):
+	deleted the escape for '#' and '|' when the dlg vals are fetched from database
+
+
+2011-08-22 13:05:40  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8271] :
+
+	backport from trunk (rev #8263)
+
+	set default domain to '' to avoid unique key violations ( Mysql issue )
+
+
+
+2011-08-22 09:55:49  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8269] :
+
+	backport from trunk (rev #8268)
+	- fixed the setting of default db url
+	  Credits go to Saul Ibarra
+	  Closes bug report 3395639
+
+
+
+2011-08-19 19:34:21  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8265] :
+
+	- backport from trunk (rev #8264)
+	- fixed compiling when STATISTICS are not defined
+	  reported by Ovidiu Sas
+
+
+
+2011-08-19 13:39:28  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8259] :
+
+	Backported from trunk (rev 8258):
+	- fixed the uac_replace_to/from functions:
+	The real from/to URIs are stored in plain text in dialog variables
+
+
+2011-08-12 13:33:08  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8257] :
+
+	backport from trunk (8181)
+		
+	fixed module name
+
+
+
+2011-08-12 13:14:38  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8252] :
+
+	backport from trunk ( 8203 - 8215 )
+
+	fixed several problems with the TO header parsing
+
+
+
+2011-08-12 13:01:02  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8251] :
+
+	backport from trunk (8223)
+
+	fixed ugly bug in match_dialog() function
+
+
+
+2011-08-12 12:56:34  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8250] :
+
+	backport from trunk (8222)
+
+	use global advertised address when building Record-Route headers
+
+
+
+2011-08-12 12:55:09  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8249] :
+
+	backport from trunk (8221)
+
+	do not display bogus $DLG_lifetime if dlg not confirmed
+
+
+
+2011-08-12 12:53:42  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8248] :
+
+	backport from trunk ( 8202 )
+
+	- first update timeout and then insert to DB
+	- if timeout is not set yet, do not display bogus value in dlg_list
+
+
+
+2011-08-12 12:51:14  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8247] :
+
+	backport from trunk (8183)
+
+	fixed sh syntax
+
+
+
+2011-08-12 12:49:45  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8246] :
+
+	backport from trunk (8180)
+
+	if create_dialog() finds dialog already created, set dlg flags for pinging & timeout, if provided
+
+
+
+2011-08-12 12:47:38  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8245] :
+
+	backport from trunk (8177)
+
+	extra dbg info for failed db selects 
+
+
+
+2011-08-10 22:31:40  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8240] :
+
+	backport from trunk ( rev #8239):
+	  - fixed dialog matching based on SIP elements - if the request has no TO-tag, match it only against dialogs with no To-tag.
+
+
+
+
+2011-08-10 21:27:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8237] :
+
+	backport from trunk (rev #8236):
+	- fixed name of DB column in ERROR log
+	  Credits go to Kiss Karoly
+
+
+
+2011-08-10 21:16:20  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8234] :
+
+	backport from trunk (rev #8233):
+	- fixedc bug in properly ordering the contacts based on Q value
+	  Reported by Duane Larson
+
+
+
+2011-08-10 11:21:28  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8230] :
+
+	Backport from trunk r8228
+
+	Added return code for duplicated callid error in CallControl
+
+
+
+2011-08-10 11:20:17  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8229] :
+
+	Removed obsolete comment
+
+
+
+2011-08-09 19:50:47  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8225] :
+
+	backport from trunk (rev #8224):
+	- when pushing serialized data into RURI, also push the additional info like destination URI, socket, flags, path vector.
+	  Reported by Duane Larson.
+
+
+
+2011-08-05 22:33:23  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8219] :
+
+	backport from trunk (rev #8217):
+	- fixed mem leak in DNS resolve for GWs
+	  Closes bug report 3377861.
+	    Thanks to Dave May for debugging info.
+
+
+
+2011-07-28 13:09:01  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8201] :
+
+	Backported from trunk (#8199):
+	properly handle unsuccessful branches from failure route
+
+
+
+2011-07-25 16:46:44  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8198] :
+
+	Backported from trunk (#8197):
+	skip replacing URIs for FAKED_REPLYs
+
+
+2011-07-25 15:30:26  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8196] :
+
+	Backported from trunk(#8187):
+	fixed ldap_result attribute matching
+
+
+
+2011-07-20 11:11:59  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [8194] :
+
+	1. Merged changes from branch 1.6.
+	2. Fixed issues for AVP.
+
+2011-07-19 13:46:20  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8192] :
+
+	Backported from trunk (#8191)
+	Renamed some members in order to compile properly on Solaris
+
+
+
+2011-07-18 14:11:03  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8190] :
+
+	Fixed sdp.line transformation
+
+
+2011-07-15 12:55:45  Anca Vamanu, <anca at oepnsips dot org> 
+	* [8186] :
+
+	- fixed inserting xmlns attribute twice (reported by Steven Lam)
+
+
+2011-07-13 17:57:03  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8178] :
+
+	Added new packaging specs for debian-lenny distribution
+
+
+2011-07-13 11:53:17  Marc Leurent <lftsy at leurent dot eu> 
+	* [8174] :
+
+	Marc Leurent <marc.leurent@vtx-telecom.ch>
+	* Debian Packaging: Add missing libjson0-dev Build-Depends
+	* CentOS Packaging: Add missing files and remove old files into packaging
+
+
+
+2011-07-12 20:42:32  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8173] :
+
+	Updated news
+
+
+2011-07-12 20:37:22  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8172] :
+
+	- some version related updates
+
+
+2011-07-12 20:22:22  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8171] :
+
+	Updated authors list
+
+
+2011-07-12 20:18:00  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8169] :
+
+	- doc updated
+
+
+2011-07-12 20:16:02  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8167] :
+
+	Updated modules list
+
+
+2011-07-12 19:32:40  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8164] :
+
+	Creating new branch for major release 1.7.0
+
+2011-07-12 19:29:53  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8163] :
+
+	- memcached and json modules added a individual deb packages
+
+
+2011-07-12 19:10:22  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8162] :
+
+	- version, compile flags, switched prepared for release
+
+
+2011-07-12 19:05:23  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8161] :
+
+	update changelog
+
+
+
 2011-07-12 18:54:30  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
 	* [8160] :
 
