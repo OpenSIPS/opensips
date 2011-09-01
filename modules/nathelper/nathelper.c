@@ -51,6 +51,7 @@
 #ifndef __USE_BSD
 #define  __USE_BSD
 #endif
+#include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #ifndef __FAVOR_BSD
 #define __FAVOR_BSD
