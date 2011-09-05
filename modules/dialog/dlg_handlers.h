@@ -137,4 +137,6 @@ static inline int pre_match_parse( struct sip_msg *req, str *callid,
 	return 0;
 }
 
+int test_and_set_dlg_flag(struct dlg_cell *dlg, unsigned long index,
+		unsigned long value);
 #endif

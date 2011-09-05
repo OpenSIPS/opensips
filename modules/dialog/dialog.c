@@ -130,6 +130,7 @@ static int w_store_dlg_value(struct sip_msg*, char*, char*);
 static int w_fetch_dlg_value(struct sip_msg*, char*, char*);
 static int fixup_get_info(void** param, int param_no);
 static int w_get_dlg_info(struct sip_msg*, char*, char*, char*, char*);
+static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
 
 /* item/pseudo-variables functions */
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
@@ -167,6 +168,9 @@ static cmd_export_t cmds[]={
 	{"set_dlg_flag",(cmd_function)w_set_dlg_flag,         1,fixup_dlg_flag,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE},
+	{"test_and_set_dlg_flag",(cmd_function)w_tsl_dlg_flag,2,fixup_uint_uint,
+			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
+			BRANCH_ROUTE | LOCAL_ROUTE },
 	{"reset_dlg_flag",(cmd_function)w_reset_dlg_flag,     1,fixup_dlg_flag,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
@@ -1053,6 +1057,17 @@ static int w_is_dlg_flag_set(struct sip_msg *msg, char *mask)
 		return -1;
 
 	return (dlg->user_flags&((unsigned int)(unsigned long)mask))?1:-1;
+}
+
+static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val)
+{
+	struct dlg_cell *dlg;
+
+	if ( (dlg=get_current_dialog())==NULL )
+		return -2;
+
+	return test_and_set_dlg_flag(dlg, (unsigned long)(void *)_idx,
+			(unsigned long)(void *) _val);
 }
 
 

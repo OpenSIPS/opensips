@@ -77,11 +77,12 @@ Bogdan-Andrei Iancu
               1.6.8. is_in_profile(profile,[value])
               1.6.9. get_profile_size(profile,[value],size)
               1.6.10. set_dlg_flag(idx)
-              1.6.11. reset_dlg_flag(idx)
-              1.6.12. is_dlg_flag_set(idx)
-              1.6.13. store_dlg_value(name,val)
-              1.6.14. fetch_dlg_value(name,pvar)
-              1.6.15. topology_hiding()
+              1.6.11. test_and_set_dlg_flag(idx, value)
+              1.6.12. reset_dlg_flag(idx)
+              1.6.13. is_dlg_flag_set(idx)
+              1.6.14. store_dlg_value(name,val)
+              1.6.15. fetch_dlg_value(name,pvar)
+              1.6.16. topology_hiding()
 
         1.7. Exported statistics
 
@@ -166,12 +167,13 @@ Bogdan-Andrei Iancu
    1.44. is_in_profile usage
    1.45. get_profile_size usage
    1.46. set_dlg_flag usage
-   1.47. reset_dlg_flag usage
-   1.48. is_dlg_flag_set usage
-   1.49. store_dlg_value usage
-   1.50. fetch_dlg_value usage
-   1.51. topology_hiding usage
-   1.52. calling match_dialog() function for topology hiding
+   1.47. test_and_set_dlg_flag usage
+   1.48. reset_dlg_flag usage
+   1.49. is_dlg_flag_set usage
+   1.50. store_dlg_value usage
+   1.51. fetch_dlg_value usage
+   1.52. topology_hiding usage
+   1.53. calling match_dialog() function for topology hiding
           sequential requests
 
 Chapter 1. Admin Guide
@@ -991,7 +993,28 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
 set_dlg_flag("3");
 ...
 
-1.6.11.  reset_dlg_flag(idx)
+1.6.11.  test_and_set_dlg_flag(idx, value)
+
+   Atomically checks if the dialog flag index idx is equal to
+   value. If true, changes the value with the oppsosite one. This
+   operation is done under the dialog lock.
+
+   The flag index can be between 0 and 31.
+
+   The value should be 0 (false) or 1 (true).
+
+   NOTE: the dialog must be created before using this function
+   (use create_dialog() function before).
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.47. test_and_set_dlg_flag usage
+...
+test_and_set_dlg_flag("3", "0");
+...
+
+1.6.12.  reset_dlg_flag(idx)
 
    Resets the dialog flag index idx to false. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1005,12 +1028,12 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.47. reset_dlg_flag usage
+   Example 1.48. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
 
-1.6.12.  is_dlg_flag_set(idx)
+1.6.13.  is_dlg_flag_set(idx)
 
    Returns true if the dialog flag index idx is set. The dialog
    flags are dialog persistent and they can be accessed (set and
@@ -1024,14 +1047,14 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.48. is_dlg_flag_set usage
+   Example 1.49. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
 }
 ...
 
-1.6.13.  store_dlg_value(name,val)
+1.6.14.  store_dlg_value(name,val)
 
    Attaches to the dialog the value val under the name name. The
    values attached to dialogs are dialog persistent and they can
@@ -1049,7 +1072,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.49. store_dlg_value usage
+   Example 1.50. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1057,7 +1080,7 @@ store_dlg_value("account type","prepaid");
 $dlg_val("account_type") = "prepaid";
 ...
 
-1.6.14.  fetch_dlg_value(name,pvar)
+1.6.15.  fetch_dlg_value(name,pvar)
 
    Fetches from the dialog the value of attribute named name. The
    values attached to dialogs are dialog persistent and they can
@@ -1075,7 +1098,7 @@ $dlg_val("account_type") = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.50. fetch_dlg_value usage
+   Example 1.51. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
@@ -1083,7 +1106,7 @@ fetch_dlg_value("account type","$var(account)");
 $var(account) = $dlg_val("account_type");
 ...
 
-1.6.15.  topology_hiding()
+1.6.16.  topology_hiding()
 
    Dialog module can also do a small overhead topology hiding. By
    calling this function on an initial Invite, for the current
@@ -1113,14 +1136,14 @@ $var(account) = $dlg_val("account_type");
    modules functionalities: profiles, dialog variables, dialog
    timeouts, etc..
 
-   Example 1.51. topology_hiding usage
+   Example 1.52. topology_hiding usage
 ...
 if(!has_totag() && is_method("INVITE")) {
         topology_hiding();
 }
 ...
 
-   Example 1.52. calling match_dialog() function for topology
+   Example 1.53. calling match_dialog() function for topology
    hiding sequential requests
 ...
 if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE

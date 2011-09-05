@@ -1776,3 +1776,38 @@ int terminate_dlg(unsigned int h_entry, unsigned int h_id)
 	unref_dlg(dlg, 1);
 	return ret;
 }
+
+int test_and_set_dlg_flag(struct dlg_cell *dlg, unsigned long index,
+		unsigned long value)
+{
+	int ret = -1;
+	struct dlg_entry *d_entry = NULL;
+
+	if (index > 31) {
+		LM_ERR("invalid index %lu\n", index);
+		goto end;
+	}
+	if (value > 1) {
+		LM_ERR("Only binary values accepted - received %lu\n", value);
+		goto end;
+	}
+
+	value = value << index;
+	index = 1 << index;
+
+	d_entry = &(d_table->entries[dlg->h_entry]);
+	dlg_lock (d_table,d_entry);
+
+	if ((dlg->user_flags & index) == value) {
+		ret = 1;
+		if (value)
+			dlg->user_flags &= ~index;
+		else
+			dlg->user_flags |= index;
+	}
+
+	dlg_unlock (d_table,d_entry);
+
+end:
+	return ret;
+}
