@@ -792,12 +792,13 @@ send_it:
 		n=tls_blocking_write(c, fd, buf, len);
 	else
 #endif
+	{
 		/* n=tcp_blocking_write(c, fd, buf, len); */
 		start_expire_timer(snd,tcpthreshold);
 		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000); 
 		get_time_difference(snd,tcpthreshold,tcp_timeout_send);
-	
 		stop_expire_timer(get,tcpthreshold,0,buf,(int)len,1);
+	}
 	lock_release(&c->write_lock);
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
