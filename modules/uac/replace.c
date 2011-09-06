@@ -344,13 +344,15 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	}
 	rr_param = to ? &rr_to_param : &rr_from_param;
 
+	uac_flag = (hdr==msg->from)?FL_USE_UAC_FROM:FL_USE_UAC_TO;
+
 	/* if using dialog, store the result */
 	if (dlg) {
 		val.rs = body->uri;
 		val.flags = AVP_VAL_STR;
 		pv_set_value(msg,(to?&to_bavp_spec:&from_bavp_spec),EQ_T,&val);
 		/* if function call was in branch route - store in bavp */
-		if (val.rs.len && val.rs.s){
+		if (!(msg->msg_flags&uac_flag) && val.rs.len && val.rs.s){
 			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_OUT,
 					move_bavp_callback,0,0)!=1) {
 				LM_ERR("failed to install TM callback\n");
@@ -369,7 +371,8 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			LM_ERR("cannot store new uri value\n");
 			goto error;
 		}
-		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+		if (!(msg->msg_flags&uac_flag) &&
+				dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
 					replace_callback, (void*)(unsigned long)to, 0) != 0) {
 			LM_ERR("cannot register callback\n");
 			goto error;
@@ -433,8 +436,6 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		}
 		pkg_free(param.s);
 	}
-
-	uac_flag = (hdr==msg->from)?FL_USE_UAC_FROM:FL_USE_UAC_TO;
 
 	if ((msg->msg_flags&uac_flag)==0) {
 		/* first time here ? */
@@ -596,22 +597,6 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 
 	to = *(_params->param) ? 1 : 0;
 
-	if (_params->direction == DLG_DIR_DOWNSTREAM) {
-		/* not upstream */
-		rr_param = to ? &rr_to_param_new : &rr_from_param_new;
-		LM_DBG("DOWNSTREAM direction detected - replacing %s header"
-				" with the uac_replace_%s() parameters\n",
-				to ? "TO" : "FROM", to ? "to": "from");
-	} else {
-		rr_param = to ? &rr_to_param : &rr_from_param;
-		LM_DBG("UPSTREAM direction detected - replacing %s header"
-				" with the original headers\n", to ? "TO" : "FROM");
-	}
-	if (dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
-		LM_DBG("<%.*s> param not found\n", rr_param->len, rr_param->s);
-		return;
-	}
-
 	/* check the request direction */
 	if ((to && _params->direction == DLG_DIR_DOWNSTREAM) ||
 		(!to && _params->direction == DLG_DIR_UPSTREAM)) {
@@ -630,6 +615,26 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 		}
 		old_uri = ((struct to_body*)msg->from->parsed)->uri;
 		flag = FL_USE_UAC_FROM;
+	}
+
+	if (msg->msg_flags & FL_USE_UAC_FROM)
+		return;
+
+	if (_params->direction == DLG_DIR_DOWNSTREAM) {
+		/* not upstream */
+		rr_param = to ? &rr_to_param_new : &rr_from_param_new;
+		LM_DBG("DOWNSTREAM direction detected - replacing %s header"
+				" with the uac_replace_%s() parameters\n",
+				to ? "TO" : "FROM", to ? "to": "from");
+	} else {
+		rr_param = to ? &rr_to_param : &rr_from_param;
+		LM_DBG("UPSTREAM direction detected - replacing %s header"
+				" with the original headers\n", to ? "TO" : "FROM");
+	}
+
+	if (dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
+		LM_DBG("<%.*s> param not found\n", rr_param->len, rr_param->s);
+		return;
 	}
 
 	LM_DBG("decoded uris are: new=[%.*s] old=[%.*s]\n",
