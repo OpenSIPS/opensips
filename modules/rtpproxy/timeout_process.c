@@ -386,7 +386,7 @@ struct rtpp_notify_node *new_rtpp_notify_node(struct rtpp_node *crt_rtpp)
 	rtpp_lst->mode = crt_rtpp->rn_umode;
 	rtpp_lst->index = 0;
 	rtpp_lst->next = NULL;
-	memcpy(buffer,crt_rtpp->rn_address,strlen(crt_rtpp->rn_address));
+	memcpy(buffer,crt_rtpp->rn_address,strlen(crt_rtpp->rn_address) + 1);
 	p = strrchr(buffer, ':');
 	if (!p) {
 		LM_ERR("invalid address %s\n", crt_rtpp->rn_address);
