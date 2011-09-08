@@ -206,8 +206,18 @@ modparam("osp","timeout",10)
       </example>
     </section>
     <section>
+      <title><varname>support_nonsip_protocol</varname></title>
+      <para>The support_nonsip_protocol (integer) parameter is used to tell the OSP module if non-SIP signaling protocol destination devices are supported. The default value is 0.</para>
+      <example>
+        <title>Setting if support non-SIP destination devices</title>
+        <programlisting format="linespecific">
+modparam("osp","support_nonsip_protocol",0)
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>max_destinations</varname></title>
-      <para>The max_destinations (integer) parameter defines the maximum number of destinations that OpenSIPS requests the peering server to return in a peering response. The default value is 5.</para>
+      <para>The max_destinations (integer) parameter defines the maximum number of destinations that OpenSIPS requests the peering server to return in a peering response. The OSP module supports up to 12 destiantions.  The default value is 5.</para>
       <example>
         <title>Setting the number of destination</title>
         <programlisting format="linespecific">
@@ -226,16 +236,6 @@ modparam("osp","validate_call_id",1)
       </example>
     </section>
     <section>
-      <title><varname>use_rpid_for_calling_number</varname></title>
-      <para>The use_rpid_for_calling_number (integer) parameter instructs the OSP module how to use the calling number in the Remote-Party-ID of the SIP INVITE message. If this value is set to 1, the OSP module uses the calling number in the Reomte-Party-ID header of the INVITE message when a Remote-Party-ID exists. If this value is set to 0, the OSP module will use the calling number in the From header of the INVITE message. The default value is 1.</para>
-      <example>
-        <title>Instructing the module to use calling number in Remote-Party-ID</title>
-        <programlisting format="linespecific">
-modparam("osp","use_rpid_calling_number",1)
-        </programlisting>
-      </example>
-    </section>
-    <section>
       <title><varname>use_number_portability</varname></title>
       <para>The use_number_portability (integer) parameter instructs the OSP module how to use the number portability parameters in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP module uses the number portability parameters in the Request URI when these parameters exist. If this value is set to 0, the OSP module will not use the number portability parameters. The default value is 1.</para>
       <example>
@@ -247,7 +247,7 @@ modparam("osp","use_number_portablity",1)
     </section>
     <section>
       <title><varname>redirection_uri_format</varname></title>
-      <para>The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP module will use "&lt;xxxxxxxxxx@xxx.xxx.xxx.xxx&gt;" URI in the SIP redirection messages. The default value is 0</para>
+      <para>The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP module will use "&lt;xxxxxxxxxx@xxx.xxx.xxx.xxx&gt;" URI in the SIP redirection messages. The default value is 1</para>
       <example>
         <title>Setting the redirection URI format</title>
         <programlisting format="linespecific">
@@ -261,17 +261,21 @@ modparam("osp","redirection_uri_format",1)
       <example>
         <title>Append user=phone parameter</title>
         <programlisting format="linespecific">
-modparam("osp","append_userphone",1)
+modparam("osp","append_userphone",0)
         </programlisting>
       </example>
     </section>
     <section>
-      <title><varname>append_networkid</varname></title>
-      <para>The append_networkid (integer) parameter instructs the OSP module if to append destination network ID in outbound destination URIs. If this value is set to 0, the OSP module does not append destination network ID. If this value is set to 1, the OSP module will append destination network ID. The default value is 1</para>
+      <title><varname>networkid_location</varname></title>
+      <para>The networkid_location (integer) parameter instructs the OSP module where the destination network ID should be appended. The default value is 2</para>
+      <para>0 - network ID is not appended.</para>
+      <para>1 - network ID is appended as userinfo parameter.</para>
+      <para>2 - network ID is appended as URI parameter.</para>
+      <para>3 - network ID is appended as header parameter. Only works when redirection_uri_format is 1.</para>
       <example>
-        <title>Append networkid parameter</title>
+        <title>Append networkid location</title>
         <programlisting format="linespecific">
-modparam("osp","append_networkid",1)
+modparam("osp","networkid_location",2)
         </programlisting>
       </example>
     </section>
@@ -415,6 +419,40 @@ if (prepareosproute()) {
       </example>
     </section>
     <section>
+      <title><function moreinfo="none">prepareredirectosproutes()</function></title>
+      <para>This function tries to prepare all the routes in the list returned by the peering server into a SIP 300 Redirect message. The message is then replied to the source. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
+      <example>
+        <title>prepareredirectosproutes usage</title>
+        <programlisting format="linespecific">
+...
+if (prepareredirectosproutes()) {
+  log(1,"Routes are prepared, now redirecting the call\n");
+} else {
+  log(1,"Could not prepare the routes. No destination available\n");
+};
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><function moreinfo="none">prepareallosproutes()</function></title>
+      <para>This function tries to prepare all the routes in the list returned by the peering server. The message is then forked off to the destinations. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
+      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
+      <example>
+        <title>prepareallosproutes usage</title>
+        <programlisting format="linespecific">
+...
+if (prepareallosproutes()) {
+  log(1,"Routes are prepared, now forking the call\n");
+} else {
+  log(1,"Could not prepare the routes. No destination available\n");
+};
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><function moreinfo="none">checkcallingtranslation()</function></title>
       <para>This function is used to check if the calling number is translated. Before calling checkcallingtranslation, prepareosproute should be called. If the calling number does been translated, the original Remote-Party-ID, if it exists, should be removed from the INVITE message. And a new Remote-Party-ID header should be added (a RPID value for the RPID AVP has been set by prepareosproute). If the calling number is not translated, nothing should be done.</para>
       <para>This function can be used from BRANCH_ROUTE.</para>
@@ -430,23 +468,6 @@ if (checkcallingtranslation()) {
   # Append a new Remote_Party
   append_rpid_hf();
 }
-...
-        </programlisting>
-      </example>
-    </section>
-    <section>
-      <title><function moreinfo="none">prepareallosproute()</function></title>
-      <para>This function tries to prepare all the routes in the list returned by the peering server. The message is then either forked off or redirected to the destination. If unsuccessful in preparing the routes a SIP 500 is sent back and a trace message is logged.</para>
-      <para>This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.</para>
-      <example>
-        <title>prepareallosproute usage</title>
-        <programlisting format="linespecific">
-...
-if (prepareallosproute()) {
-  log(1,"Routes are prepared, now either forking or redirecting the call\n");
-} else {
-  log(1,"Could not prepare the routes. No destination available\n");
-};
 ...
         </programlisting>
       </example>
