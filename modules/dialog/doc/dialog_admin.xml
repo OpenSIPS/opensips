@@ -1939,6 +1939,20 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		</section>
 
 		<section>
+			<title><varname>$DLG_did</varname></title>
+			<para>
+			Returns the id of the dialog corresponding to 
+			the processed sequential request. The output format is 
+			entry ':' id (as returned by the dlg_list MI function). This PV will be 
+			available only for sequential requests, after doing loose_route().
+			</para>
+			<para>
+			NULL will be returned if there is no dialog for the request.
+			</para>
+		</section>
+
+
+		<section>
 			<title><varname>$dlg_val(name)</varname></title>
 			<para>
 			This is a read/write variable that allows access to the dialog 

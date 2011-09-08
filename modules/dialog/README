@@ -11,7 +11,7 @@ Bogdan-Andrei Iancu
    Copyright © 2006-2009 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-09-16 20:33:54 +0300
-                              (Wed, 16 Sep 2009) $
+                              (Mi, 16 sep 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -108,7 +108,8 @@ Bogdan-Andrei Iancu
               1.9.3. $DLG_lifetime
               1.9.4. $DLG_flags
               1.9.5. $DLG_dir
-              1.9.6. $dlg_val(name)
+              1.9.6. $DLG_did
+              1.9.7. $dlg_val(name)
 
    2. Developer Guide
 
@@ -1362,7 +1363,17 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
    NULL will be returned if there is no dialog for the request.
 
-1.9.6. $dlg_val(name)
+1.9.6. $DLG_did
+
+   Returns the id of the dialog corresponding to the processed
+   sequential request. The output format is entry ':' id (as
+   returned by the dlg_list MI function). This PV will be
+   available only for sequential requests, after doing
+   loose_route().
+
+   NULL will be returned if there is no dialog for the request.
+
+1.9.7. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
    attribute named name. This PV will be available only for

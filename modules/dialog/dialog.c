@@ -137,6 +137,7 @@ int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
 int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
@@ -273,6 +274,8 @@ static pv_export_t mod_items[] = {
 		pv_set_dlg_flags,  0, 0, 0, 0 },
 	{ {"dlg_val",     sizeof("dlg_val")-1},      1000, pv_get_dlg_val,
 		pv_set_dlg_val,    pv_parse_name, 0, 0, 0},
+	{ {"DLG_did",     sizeof("DLG_did")-1},      1000, pv_get_dlg_did,
+		0,                 0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1305,7 +1308,45 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+/* the maximum value we can have is 2 ints + ':' */
+static char buf_get_did[2 * INT2STR_MAX_LEN];
+int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct dlg_cell *dlg;
+	str aux;
 
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())==NULL )
+		return pv_get_null( msg, param, res);
+
+	res->rs.s = buf_get_did;
+
+	aux.s = int2str( (unsigned long)dlg->h_entry, &aux.len);
+	if (!aux.s || !aux.len) {
+		LM_ERR("invalid hash entry\n");
+		return -1;
+	}
+
+	memcpy(buf_get_did, aux.s, aux.len);
+	buf_get_did[aux.len] = ':';
+	res->rs.len = aux.len + 1;
+
+	aux.s = int2str( (unsigned long)dlg->h_id, &aux.len);
+	if (!aux.s || !aux.len) {
+		LM_ERR("invalid hash id\n");
+		return -1;
+	}
+
+	memcpy(buf_get_did + res->rs.len, aux.s, aux.len);
+	res->rs.len += aux.len;
+
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
 
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val)
