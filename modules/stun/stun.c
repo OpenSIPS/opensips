@@ -349,6 +349,12 @@ int receive(int sockfd, struct sockaddr_in * client, char * buffer, int nRecv,
 
 /* serialize */
     resp_buffer = serialize(resp_msg);
+	if (resp_buffer == NULL) {
+		freeStunMsg(&recv_msg);
+		freeStunMsg(&resp_msg);
+		LM_ERR("failed to get resp buffer\n");
+		return -1;
+	}
 
 /* send */
     if(ctl.sock_outbound == sockfd1)
