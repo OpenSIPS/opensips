@@ -360,6 +360,17 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
+			if (a->elem[1].u.data) {
+				if (a->elem[1].type != SCRIPTVAR_ELEM_ST){
+					LM_ALERT("BUG in send() header type %d\n",a->elem[1].type);
+					ret=E_BUG;
+					break;
+				} else {
+					pve = (pv_elem_t *)a->elem[1].u.data;
+				}
+			} else {
+				pve = NULL;
+			}
 			to=(union sockaddr_union*)
 					pkg_malloc(sizeof(union sockaddr_union));
 			if (to==0){
@@ -373,8 +384,36 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=hostent2su(to, &p->host, p->addr_idx,
 						(p->port)?p->port:SIP_PORT );
 			if (ret==0){
-				ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
-						msg->buf, msg->len);
+				if (pve) {
+					if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+							name_s.len == 0 || name_s.s == NULL) {
+						LM_WARN("cannot get string for value\n");
+						ret=E_UNSPEC;
+						break;
+					}
+					/* build new msg */
+					tmp = pkg_malloc(msg->len + name_s.len);
+					if (!tmp) {
+						LM_ERR("memory allocation failure\n");
+						ret = E_OUT_OF_MEM;
+						break;
+					}
+					LM_DBG("searching for first line %d\n",
+							msg->first_line.len);
+					/* search first line of previous msg */
+					/* copy headers */
+					len = msg->first_line.len;
+					memcpy(tmp, msg->buf, len);
+					memcpy(tmp + len, name_s.s, name_s.len);
+					memcpy(tmp + len + name_s.len,
+							msg->buf + len, msg->len - len);
+					ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
+							tmp, msg->len + name_s.len);
+					pkg_free(tmp);
+				} else {
+					ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
+							msg->buf, msg->len);
+				}
 				if (ret!=0 && p->host.h_addr_list[p->addr_idx+1])
 					p->addr_idx++;
 			}

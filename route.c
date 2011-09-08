@@ -317,6 +317,29 @@ static int fix_actions(struct action* a)
 				}
 				t->elem[0].type = PROXY_ST;
 				t->elem[0].u.data = (void*)p;
+
+				s.s = (char*)t->elem[1].u.data;
+				if (s.s && t->elem[1].type == STRING_ST)
+				{
+					/* commands have only one parameter */
+					s.s = (char *)t->elem[1].u.data;
+					s.len = strlen(s.s);
+					if(s.len==0)
+					{
+						LM_ERR("param is empty string!\n");
+						return E_CFG;
+					}
+
+					if(pv_parse_format(&s ,&model) || model==NULL)
+					{
+						LM_ERR("wrong format [%s] for value param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+					}
+					
+					t->elem[1].u.data = (void*)model;
+					t->elem[1].type = SCRIPTVAR_ELEM_ST;
+				}
 				break;
 			case IF_T:
 				if (t->elem[0].type!=EXPR_ST){

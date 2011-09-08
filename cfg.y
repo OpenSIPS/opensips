@@ -2067,6 +2067,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											$3,
 											0);
 										}
+		| SEND LPAREN STRING COMMA STRING RPAREN { mk_action2( $$, SEND_T,
+											STRING_ST,
+											STRING_ST,
+											$3,
+											$5);
+										}
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
 													"argument"); }
