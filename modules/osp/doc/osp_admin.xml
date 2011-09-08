@@ -209,7 +209,7 @@ modparam("osp","timeout",10)
       <title><varname>support_nonsip_protocol</varname></title>
       <para>The support_nonsip_protocol (integer) parameter is used to tell the OSP module if non-SIP signaling protocol destination devices are supported. The default value is 0.</para>
       <example>
-        <title>Setting if support non-SIP destination devices</title>
+        <title>Setting support non-SIP destination devices</title>
         <programlisting format="linespecific">
 modparam("osp","support_nonsip_protocol",0)
         </programlisting>
@@ -276,16 +276,6 @@ modparam("osp","append_userphone",0)
         <title>Append networkid location</title>
         <programlisting format="linespecific">
 modparam("osp","networkid_location",2)
-        </programlisting>
-      </example>
-    </section>
-    <section>
-      <title><varname>networkid_location</varname></title>
-      <para>The networkid_location (integer) parameter instructs the OSP module where to append destination network ID in outbound destination URIs. If this value is set to 0, the OSP module appends destination network ID as URI-parameter. If this value is set to 1, the OSP module appends destination network ID as user-parameter. The default value is 0</para>
-      <example>
-        <title>Networkid parameter location</title>
-        <programlisting format="linespecific">
-modparam("osp","networkid_location",0)
         </programlisting>
       </example>
     </section>
