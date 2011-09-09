@@ -148,6 +148,7 @@ static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 
 struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
+static int prepaid_account_flag = -1;
 
 AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
 
@@ -159,15 +160,16 @@ static cmd_export_t commands[] = {
 };
 
 static param_export_t parameters[] = {
-    {"init",              STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_init},
-    {"start",             STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_start},
-    {"stop",              STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_stop},
-    {"disable",           INT_PARAM, &disable},
-    {"socket_name",       STR_PARAM, &(callcontrol_socket.name)},
-    {"socket_timeout",    INT_PARAM, &(callcontrol_socket.timeout)},
-    {"diverter_avp_id",   STR_PARAM, &(diverter_avp_id.spec.s)},
-    {"canonical_uri_avp", STR_PARAM, &(canonical_uri_avp.spec.s)},
-    {"signaling_ip_avp",  STR_PARAM, &(signaling_ip_avp.spec.s)},
+    {"init",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_init},
+    {"start",                   STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_start},
+    {"stop",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_stop},
+    {"disable",                 INT_PARAM, &disable},
+    {"socket_name",             STR_PARAM, &(callcontrol_socket.name)},
+    {"socket_timeout",          INT_PARAM, &(callcontrol_socket.timeout)},
+    {"diverter_avp_id",         STR_PARAM, &(diverter_avp_id.spec.s)},
+    {"canonical_uri_avp",       STR_PARAM, &(canonical_uri_avp.spec.s)},
+    {"signaling_ip_avp",        STR_PARAM, &(signaling_ip_avp.spec.s)},
+    {"prepaid_account_flag",    INT_PARAM, &prepaid_account_flag},
     {0, 0, 0}
 };
 
@@ -216,6 +218,7 @@ typedef struct CallInfo {
     str callid;
     str from;
     str from_tag;
+    char* prepaid_account;
 } CallInfo;
 
 
@@ -510,6 +513,11 @@ get_call_info(struct sip_msg *msg, CallControlAction action)
         call_info.ruri = get_canonical_request_uri(msg);
         call_info.diverter = get_diverter(msg);
         call_info.source_ip = get_signaling_ip(msg);
+        if (prepaid_account_flag >= 0) {
+            call_info.prepaid_account = isflagset(msg, prepaid_account_flag)==1 ? "true" : "false";
+        } else {
+            call_info.prepaid_account = "unknown";
+        }
     }
 
     call_info.action = action;
@@ -579,13 +587,15 @@ make_default_request(CallInfo *call)
                        "callid: %.*s\r\n"
                        "from: %.*s\r\n"
                        "fromtag: %.*s\r\n"
+                       "prepaid: %s\r\n"
                        "\r\n",
                        call->ruri.len, call->ruri.s,
                        call->diverter.len, call->diverter.s,
                        call->source_ip.len, call->source_ip.s,
                        call->callid.len, call->callid.s,
                        call->from.len, call->from.s,
-                       call->from_tag.len, call->from_tag.s);
+                       call->from_tag.len, call->from_tag.s,
+                       call->prepaid_account);
 
         if (len >= sizeof(request)) {
             LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
