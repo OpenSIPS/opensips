@@ -43,9 +43,10 @@ Irina-Maria Stanescu
               1.5.5. canonical_uri_avp (string)
               1.5.6. diverter_avp_id (string)
               1.5.7. prepaid_account_flag (int)
-              1.5.8. init (string)
-              1.5.9. start (string)
-              1.5.10. stop (string)
+              1.5.8. call_limit_avp (string)
+              1.5.9. init (string)
+              1.5.10. start (string)
+              1.5.11. stop (string)
 
         1.6. Exported Functions
 
@@ -60,10 +61,11 @@ Irina-Maria Stanescu
    1.5. Setting the canonical_uri_avp parameter
    1.6. Setting the diverter_avp_id parameter
    1.7. Setting the prepaid_account_flag parameter
-   1.8. Setting the init parameter
-   1.9. Setting the start parameter
-   1.10. Setting the stop parameter
-   1.11. Using the call_control function
+   1.8. Setting the call_limit_avp parameter
+   1.9. Setting the init parameter
+   1.10. Setting the start parameter
+   1.11. Setting the stop parameter
+   1.12. Using the call_control function
 
 Chapter 1. Admin Guide
 
@@ -139,20 +141,26 @@ Features
        actually take place. For this mediaproxy has to be used and
        it has to be started by engage_media_proxy() to be able to
        keep track of the call's dialog and end it on timeout.
-       Even when mediaproxy is unable to end the dialog because it
+     * Even when mediaproxy is unable to end the dialog because it
        was not started with engage_media_proxy(), the callcantrol
        application is still able to detect calls that did timeout
        sending media, by looking in the radius accounting records
        for entries recorded by mediaproxy for calls that did
        timeout. These calls will also be ended gracefully by the
        callcontrol application itself.
-       If the prepaid_account_flag module parameter is defined,
+     * If the prepaid_account_flag module parameter is defined,
        the external application compares the OpenSIPS's and the
        rating engine's views on whether the account calling is
        prepaid or not and takes appropriate action if they
        conflict. This provides protection against frauds in case
        the rating engine malfunctions or there is an inconsistency
        in the database.
+     * If the call_limit_avp is defined to a value greater than 0
+       it will be passed to the CallControl application, which
+       will limit the number of concurrent calls the billing party
+       (From user or diverter) is able to make. If the limit is
+       reached the call_control function will return a specific
+       error value.
 
 Dependencies
 
@@ -305,6 +313,20 @@ prepaid_account_flag (int)
 modparam("call_control", "prepaid_account_flag", 8)
 ...
 
+call_limit_avp (string)
+
+   Specification of the AVP which holds an optional application
+   defined call limit. When this is set, it will be passed to the
+   CallControl application and if the limit is reached the
+   call_control function will return an error code of -4.
+
+   Default value is “$avp(cc_call_limit)”.
+
+   Example 1.8. Setting the call_limit_avp parameter
+...
+modparam("call_control", "call_limit_avp", "$avp(cc_call_limit)")
+...
+
 init (string)
 
    This parameter is used to describe custom call control
@@ -323,7 +345,7 @@ init (string)
 
    Default value is “NULL”.
 
-   Example 1.8. Setting the init parameter
+   Example 1.9. Setting the init parameter
 
 ...
 modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
@@ -347,7 +369,7 @@ start (string)
 
    Default value is “NULL”.
 
-   Example 1.9. Setting the start parameter
+   Example 1.10. Setting the start parameter
 
 ...
 modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
@@ -371,7 +393,7 @@ stop (string)
 
    Default value is “NULL”.
 
-   Example 1.10. Setting the stop parameter
+   Example 1.11. Setting the stop parameter
 
 ...
 modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
@@ -401,11 +423,12 @@ call_control()
      * -1 - not enough credit to make the call
      * -2 - call is locked by another call in progress
      * -3 - duplicated callid
+     * -4 - call limit has been reached
      * -5 - internal error (message parsing, communication, ...)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.11. Using the call_control function
+   Example 1.12. Using the call_control function
 
 ...
 if (is_avp_set("$avp(805)")) {
@@ -437,6 +460,11 @@ if (method==INVITE && !has_totag() &&
     case -3:
         # Duplicated callid
         sl_send_reply("400", "Duplicated callid");
+        exit;
+        break;
+    case -4:
+        # Call limit reached
+        sl_send_reply("503", "Too many concurrent calls");
         exit;
         break;
     default:
