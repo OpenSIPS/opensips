@@ -65,7 +65,8 @@
 
 #define CANONICAL_URI_AVP_SPEC "$avp(cc_can_uri)"
 #define SIGNALING_IP_AVP_SPEC  "$avp(cc_signaling_ip)"
-#define DIVERTER_AVP_SPEC  "$avp(805)"
+#define DIVERTER_AVP_SPEC      "$avp(805)"
+#define CALL_LIMIT_AVP_SPEC    "$avp(cc_call_limit)"
 
 // Although `AF_LOCAL' is mandated by POSIX.1g, `AF_UNIX' is portable to
 // more systems.  `AF_UNIX' was the traditional name stemming from BSD, so
@@ -145,6 +146,9 @@ static AVP_Param canonical_uri_avp = {str_init(CANONICAL_URI_AVP_SPEC), -1, 0};
 /* The AVP where the caller signaling IP is stored (if defined) */
 static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 
+/* The AVP where the call limit is stored (if defined) */
+static AVP_Param call_limit_avp = {str_init(CALL_LIMIT_AVP_SPEC), -1, 0};
+
 
 struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
@@ -169,6 +173,7 @@ static param_export_t parameters[] = {
     {"diverter_avp_id",         STR_PARAM, &(diverter_avp_id.spec.s)},
     {"canonical_uri_avp",       STR_PARAM, &(canonical_uri_avp.spec.s)},
     {"signaling_ip_avp",        STR_PARAM, &(signaling_ip_avp.spec.s)},
+    {"call_limit_avp",          STR_PARAM, &(call_limit_avp.spec.s)},
     {"prepaid_account_flag",    INT_PARAM, &prepaid_account_flag},
     {0, 0, 0}
 };
@@ -219,6 +224,7 @@ typedef struct CallInfo {
     str from;
     str from_tag;
     char* prepaid_account;
+    int call_limit;
 } CallInfo;
 
 
@@ -445,6 +451,23 @@ get_diverter(struct sip_msg *msg)
 }
 
 
+static int
+get_call_limit(struct sip_msg* msg)
+{
+    int_str value;
+    struct usr_avp *avp;
+
+    avp = search_first_avp(call_limit_avp.type, call_limit_avp.name, &value, NULL);
+    if (!avp)
+        return 0;
+    if (avp->flags & AVP_VAL_STR) {
+        return atoi(value.s.s);
+    } else {
+        return value.n;
+    }
+}
+
+
 static CallInfo*
 get_call_info(struct sip_msg *msg, CallControlAction action)
 {
@@ -513,6 +536,7 @@ get_call_info(struct sip_msg *msg, CallControlAction action)
         call_info.ruri = get_canonical_request_uri(msg);
         call_info.diverter = get_diverter(msg);
         call_info.source_ip = get_signaling_ip(msg);
+        call_info.call_limit = get_call_limit(msg);
         if (prepaid_account_flag >= 0) {
             call_info.prepaid_account = isflagset(msg, prepaid_account_flag)==1 ? "true" : "false";
         } else {
@@ -588,6 +612,7 @@ make_default_request(CallInfo *call)
                        "from: %.*s\r\n"
                        "fromtag: %.*s\r\n"
                        "prepaid: %s\r\n"
+                       "call_limit: %d\r\n"
                        "\r\n",
                        call->ruri.len, call->ruri.s,
                        call->diverter.len, call->diverter.s,
@@ -595,7 +620,8 @@ make_default_request(CallInfo *call)
                        call->callid.len, call->callid.s,
                        call->from.len, call->from.s,
                        call->from_tag.len, call->from_tag.s,
-                       call->prepaid_account);
+                       call->prepaid_account,
+                       call->call_limit);
 
         if (len >= sizeof(request)) {
             LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
@@ -799,6 +825,7 @@ send_command(char *command)
 //  -1 - No credit
 //  -2 - Locked
 //  -3 - Duplicated callid
+//  -4 - Call limit reached
 //  -5 - Internal error (message parsing, communication, ...)
 static int
 call_control_initialize(struct sip_msg *msg)
@@ -836,6 +863,8 @@ call_control_initialize(struct sip_msg *msg)
         return -2;
     } else if (strcasecmp(result, "Duplicated callid\r\n")==0) {
         return -3;
+    } else if (strcasecmp(result, "Call limit reached\r\n")==0) {
+        return -4;
     } else {
         return -5;
     }
@@ -1004,6 +1033,7 @@ __dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //  -1 - No credit
 //  -2 - Locked
 //  -3 - Duplicated callid
+//  -4 - Call limit reached
 //  -5 - Internal error (message parsing, communication, ...)
 static int
 CallControl(struct sip_msg *msg, char *str1, char *str2)
@@ -1067,6 +1097,21 @@ mod_init(void)
     }
     if (pv_get_avp_name(0, &(avp_spec.pvp), &(signaling_ip_avp.name), &(signaling_ip_avp.type))!=0) {
         LM_CRIT("invalid AVP specification for signaling_ip_avp: `%s'\n", signaling_ip_avp.spec.s);
+        return -1;
+    }
+
+    // initialize the call_limit_avp structure
+    if (call_limit_avp.spec.s==NULL || *(call_limit_avp.spec.s)==0) {
+        LM_ERR("missing/empty call_limit_avp parameter. using default.\n");
+        call_limit_avp.spec.s = CALL_LIMIT_AVP_SPEC;
+    }
+    call_limit_avp.spec.len = strlen(call_limit_avp.spec.s);
+    if (pv_parse_spec(&(call_limit_avp.spec), &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+        LM_CRIT("invalid AVP specification for call_limit_avp: `%s'\n", call_limit_avp.spec.s);
+        return -1;
+    }
+    if (pv_get_avp_name(0, &(avp_spec.pvp), &(call_limit_avp.name), &(call_limit_avp.type))!=0) {
+        LM_CRIT("invalid AVP specification for call_limit_avp: `%s'\n", call_limit_avp.spec.s);
         return -1;
     }
 
