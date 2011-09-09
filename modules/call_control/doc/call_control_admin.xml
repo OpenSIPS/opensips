@@ -140,6 +140,14 @@
             is reached the call_control function will return a specific error value.
           </para>
         </listitem>
+
+        <listitem>
+          <para>
+            The call_token_avp may be used to detect calls with a duplicated CallID that could
+            create potential problems in call rating engines.
+          </para>
+        </listitem>
+
       </itemizedlist>
     </para>
   </section>
@@ -411,6 +419,35 @@ modparam("call_control", "prepaid_account_flag", 8)
         <programlisting format="linespecific">
 ...
 modparam("call_control", "call_limit_avp", "$avp(cc_call_limit)")
+...
+        </programlisting>
+      </example>
+    </section>
+
+    <section>
+    <title><varname>call_token_avp</varname> (string)</title>
+      <para>
+        Specification of the AVP which holds an optional application defined
+        token. This token will be used to check if two calls with the same
+        CallID actually refer to the same call. If call_control() is called
+        multiple times for the same call (thus same CallID) the token needs
+        to be the same or call_control will return -3 error, indicating that
+        the CallID is duplicated.
+      </para>
+
+      <para>
+        <emphasis>
+          Default value is <quote>$avp(cc_call_token)</quote>.
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Setting the <varname>call_token_avp</varname> parameter</title>
+        <programlisting format="linespecific">
+...
+modparam("call_control", "call_token_avp", "$avp(cc_call_token)")
+...
+$avp(cc_call_token) := $RANDOM;
 ...
         </programlisting>
       </example>
