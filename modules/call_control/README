@@ -44,9 +44,10 @@ Irina-Maria Stanescu
               1.5.6. diverter_avp_id (string)
               1.5.7. prepaid_account_flag (int)
               1.5.8. call_limit_avp (string)
-              1.5.9. init (string)
-              1.5.10. start (string)
-              1.5.11. stop (string)
+              1.5.9. call_token_avp (string)
+              1.5.10. init (string)
+              1.5.11. start (string)
+              1.5.12. stop (string)
 
         1.6. Exported Functions
 
@@ -62,10 +63,11 @@ Irina-Maria Stanescu
    1.6. Setting the diverter_avp_id parameter
    1.7. Setting the prepaid_account_flag parameter
    1.8. Setting the call_limit_avp parameter
-   1.9. Setting the init parameter
-   1.10. Setting the start parameter
-   1.11. Setting the stop parameter
-   1.12. Using the call_control function
+   1.9. Setting the call_token_avp parameter
+   1.10. Setting the init parameter
+   1.11. Setting the start parameter
+   1.12. Setting the stop parameter
+   1.13. Using the call_control function
 
 Chapter 1. Admin Guide
 
@@ -161,6 +163,9 @@ Features
        (From user or diverter) is able to make. If the limit is
        reached the call_control function will return a specific
        error value.
+     * The call_token_avp may be used to detect calls with a
+       duplicated CallID that could create potential problems in
+       call rating engines.
 
 Dependencies
 
@@ -327,6 +332,24 @@ call_limit_avp (string)
 modparam("call_control", "call_limit_avp", "$avp(cc_call_limit)")
 ...
 
+call_token_avp (string)
+
+   Specification of the AVP which holds an optional application
+   defined token. This token will be used to check if two calls
+   with the same CallID actually refer to the same call. If
+   call_control() is called multiple times for the same call (thus
+   same CallID) the token needs to be the same or call_control
+   will return -3 error, indicating that the CallID is duplicated.
+
+   Default value is “$avp(cc_call_token)”.
+
+   Example 1.9. Setting the call_token_avp parameter
+...
+modparam("call_control", "call_token_avp", "$avp(cc_call_token)")
+...
+$avp(cc_call_token) := $RANDOM;
+...
+
 init (string)
 
    This parameter is used to describe custom call control
@@ -345,7 +368,7 @@ init (string)
 
    Default value is “NULL”.
 
-   Example 1.9. Setting the init parameter
+   Example 1.10. Setting the init parameter
 
 ...
 modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
@@ -369,7 +392,7 @@ start (string)
 
    Default value is “NULL”.
 
-   Example 1.10. Setting the start parameter
+   Example 1.11. Setting the start parameter
 
 ...
 modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
@@ -393,7 +416,7 @@ stop (string)
 
    Default value is “NULL”.
 
-   Example 1.11. Setting the stop parameter
+   Example 1.12. Setting the stop parameter
 
 ...
 modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
@@ -428,7 +451,7 @@ call_control()
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.12. Using the call_control function
+   Example 1.13. Using the call_control function
 
 ...
 if (is_avp_set("$avp(805)")) {

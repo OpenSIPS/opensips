@@ -67,6 +67,7 @@
 #define SIGNALING_IP_AVP_SPEC  "$avp(cc_signaling_ip)"
 #define DIVERTER_AVP_SPEC      "$avp(805)"
 #define CALL_LIMIT_AVP_SPEC    "$avp(cc_call_limit)"
+#define CALL_TOKEN_AVP_SPEC    "$avp(cc_call_token)"
 
 // Although `AF_LOCAL' is mandated by POSIX.1g, `AF_UNIX' is portable to
 // more systems.  `AF_UNIX' was the traditional name stemming from BSD, so
@@ -149,6 +150,9 @@ static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 /* The AVP where the call limit is stored (if defined) */
 static AVP_Param call_limit_avp = {str_init(CALL_LIMIT_AVP_SPEC), -1, 0};
 
+/* The AVP where the call token is stored (if defined) */
+static AVP_Param call_token_avp = {str_init(CALL_TOKEN_AVP_SPEC), -1, 0};
+
 
 struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
@@ -174,6 +178,7 @@ static param_export_t parameters[] = {
     {"canonical_uri_avp",       STR_PARAM, &(canonical_uri_avp.spec.s)},
     {"signaling_ip_avp",        STR_PARAM, &(signaling_ip_avp.spec.s)},
     {"call_limit_avp",          STR_PARAM, &(call_limit_avp.spec.s)},
+    {"call_token_avp",          STR_PARAM, &(call_token_avp.spec.s)},
     {"prepaid_account_flag",    INT_PARAM, &prepaid_account_flag},
     {0, 0, 0}
 };
@@ -223,6 +228,7 @@ typedef struct CallInfo {
     str callid;
     str from;
     str from_tag;
+    str call_token;
     char* prepaid_account;
     int call_limit;
 } CallInfo;
@@ -468,6 +474,28 @@ get_call_limit(struct sip_msg* msg)
 }
 
 
+static str
+get_call_token(struct sip_msg* msg)
+{
+    int_str value;
+    struct usr_avp *avp;
+    static str call_token;
+
+    call_token.s   = "None";
+    call_token.len = 4;
+
+    avp = search_first_avp(call_token_avp.type, call_token_avp.name, &value, NULL);
+    if (avp) {
+        if (avp->flags & AVP_VAL_STR) {
+            call_token = value.s;
+        } else {
+            call_token.s = int2str(value.n, &call_token.len);
+        }
+    }
+    return call_token;
+}
+
+
 static CallInfo*
 get_call_info(struct sip_msg *msg, CallControlAction action)
 {
@@ -537,6 +565,7 @@ get_call_info(struct sip_msg *msg, CallControlAction action)
         call_info.diverter = get_diverter(msg);
         call_info.source_ip = get_signaling_ip(msg);
         call_info.call_limit = get_call_limit(msg);
+        call_info.call_token = get_call_token(msg);
         if (prepaid_account_flag >= 0) {
             call_info.prepaid_account = isflagset(msg, prepaid_account_flag)==1 ? "true" : "false";
         } else {
@@ -613,6 +642,7 @@ make_default_request(CallInfo *call)
                        "fromtag: %.*s\r\n"
                        "prepaid: %s\r\n"
                        "call_limit: %d\r\n"
+                       "call_token: %.*s\r\n"
                        "\r\n",
                        call->ruri.len, call->ruri.s,
                        call->diverter.len, call->diverter.s,
@@ -621,7 +651,8 @@ make_default_request(CallInfo *call)
                        call->from.len, call->from.s,
                        call->from_tag.len, call->from_tag.s,
                        call->prepaid_account,
-                       call->call_limit);
+                       call->call_limit,
+                       call->call_token.len, call->call_token.s);
 
         if (len >= sizeof(request)) {
             LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
@@ -1112,6 +1143,21 @@ mod_init(void)
     }
     if (pv_get_avp_name(0, &(avp_spec.pvp), &(call_limit_avp.name), &(call_limit_avp.type))!=0) {
         LM_CRIT("invalid AVP specification for call_limit_avp: `%s'\n", call_limit_avp.spec.s);
+        return -1;
+    }
+
+    // initialize the call_token_avp structure
+    if (call_token_avp.spec.s==NULL || *(call_token_avp.spec.s)==0) {
+        LM_ERR("missing/empty call_token_avp parameter. using default.\n");
+        call_token_avp.spec.s = CALL_TOKEN_AVP_SPEC;
+    }
+    call_token_avp.spec.len = strlen(call_token_avp.spec.s);
+    if (pv_parse_spec(&(call_token_avp.spec), &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+        LM_CRIT("invalid AVP specification for call_token_avp: `%s'\n", call_token_avp.spec.s);
+        return -1;
+    }
+    if (pv_get_avp_name(0, &(avp_spec.pvp), &(call_token_avp.name), &(call_token_avp.type))!=0) {
+        LM_CRIT("invalid AVP specification for call_token_avp: `%s'\n", call_token_avp.spec.s);
         return -1;
     }
 
