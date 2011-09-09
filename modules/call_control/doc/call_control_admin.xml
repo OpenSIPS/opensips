@@ -116,6 +116,14 @@
             mediaproxy for calls that did timeout. These calls will also be
             ended gracefully by the callcontrol application itself.
           </para>
+          <para>
+            If the prepaid_account_flag module parameter is defined, the
+            external application compares the &osips;'s and the rating engine's
+            views on whether the account calling is prepaid or not and takes
+            appropriate action if they conflict. This provides protection
+            against frauds in case the rating engine malfunctions or there is an
+            inconsistency in the database.
+          </para>
         </listitem>
       </itemizedlist>
     </para>
@@ -338,7 +346,36 @@ route {
         </programlisting>
       </example>
     </section>
-    
+
+    <section>
+    <title><varname>prepaid_account_flag</varname> (int)</title>
+      <para>
+        The flag that is used to specify whether the account making the call is
+        prepaid or postpaid. Setting this to a non-negative value will determine
+        the module to pass the flag's value to the external application. This
+        will allow the external application to compare &osips;'s and the rating
+        engine's views on whether the account calling is prepaid or not and take
+        appropriate action if they conflict. The flag should be set from the
+        &osips; configuration for a prepaid account and reset for a postpaid
+        one.
+      </para>
+
+      <para>
+        <emphasis>
+          Default value is <quote>-1</quote> (undefined).
+        </emphasis>
+      </para>
+
+      <example>
+      <title>Setting the <varname>prepaid_account_flag</varname> parameter</title>
+        <programlisting format="linespecific">
+...
+modparam("call_control", "prepaid_account_flag", 8)
+...
+        </programlisting>
+      </example>
+    </section>
+
     <section>
     <title><varname>init</varname> (string)</title>
       <para>
