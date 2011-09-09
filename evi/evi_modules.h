@@ -66,6 +66,23 @@ int evi_raise_event(event_id_t id, evi_params_t* params);
 int evi_raise_script_event(event_id_t id, void * attrs, void * vals);
 
 
+/*
+ * Used to subscribe for an event
+ * Parameter:
+ *  + event name
+ *  + socket name
+ *  + expire
+ *  + unsubscription
+ *
+ * Returns:
+ *  - -1 on parameters error
+ *  - 0 on internal error
+ *  - 1 on success
+ */
+int evi_event_subscribe(str , str , unsigned , unsigned );
+
+
+
 
 /*
  * Used to check if there are subscribers

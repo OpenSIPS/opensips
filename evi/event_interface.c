@@ -190,68 +190,51 @@ event_id_t evi_get_id(str *name)
 
 
 /* returns an event id */
-evi_event_p evi_get_event(str *name) {
+evi_event_p evi_get_event(str *name)
+{
 	event_id_t id = evi_get_id(name);
 	return id == EVI_ERROR ? NULL : &events[id];
 }
 
-
-struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
+/*
+ * Subscribes an event
+ * Returns:
+ *  1 - success
+ *  0 - internal error
+ * -1 - param error
+ */
+int evi_event_subscribe(str event_name,
+		str sock_str, unsigned expire, unsigned unsubscribe)
 {
-	struct mi_node *node;
 	evi_subs_t *subscriber = NULL;
 	evi_event_p event;
 	evi_export_t *trans_mod = NULL;
 	evi_reply_sock *sock;
-	str sock_str;
-	unsigned int expire = 0;
 
-	/* event name */
-	node = root->node.kids;
-	if (!node) {
-		LM_ERR("no parameters received\n");
-		goto missing_param;
-	}
-
-	event = evi_get_event(&node->value);
+	event = evi_get_event(&event_name);
 	if (!event) {
 		LM_ERR("invalid event name <%.*s>\n",
-				node->value.len, node->value.s);
+				event_name.len, event_name.s);
 		goto bad_param;
 	}
 
 	/* transport module name */
-	node = node->next;
-	if (!node) {
-		LM_ERR("no transport type\n");
-		goto missing_param;
-	}
-
-	trans_mod = get_trans_mod(&node->value);
+	trans_mod = get_trans_mod(&sock_str);
 	if (!trans_mod) {
 		LM_ERR("couldn't find a protocol to support %.*s\n",
-				node->value.len,node->value.s);
+				sock_str.len, sock_str.s);
 		goto bad_param;
 	}
-	sock_str.s = node->value.s + trans_mod->proto.len + 1;
-	sock_str.len = node->value.len - trans_mod->proto.len - 1;
-
-	/* check expire */
-	node = node->next;
-	if (node) {
-		/* expiration period is set */
-		if (str2int(&node->value, &expire) < 0) {
-			LM_ERR("invalid expire value %.*s", node->value.len, node->value.s);
-			goto bad_param;
-		}
-	} else
-		expire = DEFAULT_EXPIRE;
-
+	sock_str.s += trans_mod->proto.len + 1;
+	sock_str.len -= (trans_mod->proto.len + 1);
 
 	/* parse reply socket */
 	sock = trans_mod->parse(sock_str);
 	if (!sock)
 		goto bad_param;
+	/* reset unrequired flags */
+	if (!expire && !unsubscribe)
+		sock->flags &= ~EVI_EXPIRE;
 
 	/* tries to match other socket */
 	if (trans_mod->match) {
@@ -264,8 +247,10 @@ struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
 				/* update subscription time */
 				subscriber->reply_sock->subscription_time = time(0);
 				/* update expire if required */
-				if (EVI_EXPIRE & sock->flags)
+				if (EVI_EXPIRE & sock->flags) {
 					subscriber->reply_sock->expire = expire;
+					subscriber->reply_sock->flags = sock->flags;
+				}
 				if (trans_mod->free)
 					trans_mod->free(sock);
 				else 
@@ -281,7 +266,14 @@ struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
 		subscriber = shm_malloc(sizeof(evi_subs_t));
 		if (!subscriber) {
 			LM_ERR("no more shm memory\n");
-			goto internal_error;
+			if (trans_mod && sock) {
+				/* if the module has it's own free function */
+				if (trans_mod->free)
+					trans_mod->free(sock);
+				else
+					shm_free(sock);
+			}
+			return 0;
 		}
 
 		sock->subscription_time = time(0);
@@ -300,18 +292,51 @@ struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
 		LM_DBG("added new subscriber for event %d\n", event->id);
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
-	
-internal_error:
-	if (trans_mod && sock) {
-		/* if the module has it's own free function */
-		if (trans_mod->free)
-			trans_mod->free(sock);
-		else
-			shm_free(sock);
-	}
-	return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
+	return 1;
+bad_param:
+	return -1;
+}
 
+
+struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
+{
+	struct mi_node *node;
+	int ret;
+	unsigned int expire = 0;
+	str event_name, transport_sock;
+
+	/* event name */
+	node = root->node.kids;
+	if (!node || !node->value.len || !node->value.s) {
+		LM_ERR("no parameters received\n");
+		goto missing_param;
+	}
+	event_name = node->value;
+
+	/* socket */
+	node = node->next;
+	if (!node || !node->value.len || !node->value.s) {
+		LM_ERR("no transport type\n");
+		goto missing_param;
+	}
+	transport_sock = node->value;
+
+	/* check expire */
+	node = node->next;
+	if (node) {
+		/* expiration period is set */
+		if (str2int(&node->value, &expire) < 0) {
+			LM_ERR("invalid expire value %.*s", node->value.len, node->value.s);
+			goto bad_param;
+		}
+	} else
+		expire = DEFAULT_EXPIRE;
+
+	ret = evi_event_subscribe(event_name, transport_sock, expire, 1);
+	if (ret < 0)
+		goto bad_param;
+	return ret ? init_mi_tree(200, MI_SSTR(MI_OK)) : 0;
+	
 missing_param:
 	return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
 

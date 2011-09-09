@@ -171,6 +171,7 @@ XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG			"xlog"
 RAISE_EVENT		"raise_event"
+SUBSCRIBE_EVENT	"subscribe_event"
 CONSTRUCT_URI	"construct_uri"
 GET_TIMESTAMP	"get_timestamp"
 
@@ -474,6 +475,8 @@ WHITESPACE	[ \t\r\n]
 									return XLOG_FORCE_COLOR;}
 <INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
 									return RAISE_EVENT;}
+<INITIAL>{SUBSCRIBE_EVENT}		{	count(); yylval.strval=yytext;
+									return SUBSCRIBE_EVENT;}
 <INITIAL>{CONSTRUCT_URI}	{	count(); yylval.strval=yytext;
 									return CONSTRUCT_URI;}
 <INITIAL>{GET_TIMESTAMP}	{	count(); yylval.strval=yytext;

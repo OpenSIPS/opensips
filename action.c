@@ -1167,6 +1167,31 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			break;
+		case SUBSCRIBE_EVENT_T:
+			if (a->elem[0].type != STR_ST || a->elem[1].type != STR_ST) {
+				LM_ERR("BUG in subscribe arguments\n");
+				ret=E_BUG;
+				break;
+			}
+			if (a->elem[2].u.data) {
+				if (a->elem[2].type != NUMBER_ST) {
+					LM_ERR("BUG in subscribe expiration time\n");
+					ret=E_BUG;
+					break;
+				} else {
+					i = a->elem[2].u.number;
+				}
+			} else {
+				i = 0;
+			}
+
+			name_s.s = a->elem[0].u.data;
+			name_s.len = strlen(name_s.s);
+			/* result should be the socket */
+			result.s = a->elem[1].u.data;
+			result.len = strlen(result.s);
+			ret = evi_event_subscribe(name_s, result, i, 0);
+			break;
 
 		case CONSTRUCT_URI_T:
 			for (i=0;i<5;i++)

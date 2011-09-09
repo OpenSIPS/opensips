@@ -209,6 +209,8 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 			LM_ERR("failed to resolve %s\n", host);
 			goto error;
 		}
+		/* restore colon */
+		*p = COLON_C;
 		sock->flags |= EVI_SOCKET | DGRAM_UDP_FLAG;
 	} else {
 		sock->src_addr.unix_addr.sun_family = AF_LOCAL;
@@ -327,7 +329,8 @@ end:
 
 	/* set buffer len */
 	dgram_buffer_len = buff - dgram_buffer;
-	ev_params->flags |= (DGRAM_UDP_FLAG | DGRAM_UNIX_FLAG);
+	if (ev_params)
+		ev_params->flags |= (DGRAM_UDP_FLAG | DGRAM_UNIX_FLAG);
 
 	return dgram_buffer_len;
 }
