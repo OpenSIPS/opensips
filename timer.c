@@ -275,8 +275,8 @@ void* register_timer_process(timer_function f,void* param,unsigned int interval,
 }
 
 
-int append_timer_to_process(timer_function f,void* param,unsigned int interval,
-																void *timer)
+int append_timer_to_process( timer_function f, void* param,
+										unsigned int interval, void *timer)
 {
 	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
 	struct sr_timer* t;
@@ -294,8 +294,8 @@ int append_timer_to_process(timer_function f,void* param,unsigned int interval,
 }
 
 
-int append_utimer_to_process(utimer_function f,void* param,unsigned int interval,
-																void *timer)
+int append_utimer_to_process( utimer_function f, void* param,
+										unsigned int interval, void *timer)
 {
 	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
 	struct sr_timer* t;
@@ -308,7 +308,7 @@ int append_utimer_to_process(utimer_function f,void* param,unsigned int interval
 		return -1;
 	/* insert it into the list*/
 	t->next = tpl->utimer_list;
-	tpl->timer_list = t;
+	tpl->utimer_list = t;
 	return 0;
 }
 
