@@ -188,8 +188,7 @@ static int generate_avps(db_res_t* result)
 				return -1;
 			}
 
-			LM_DBG("set string AVP %d = \"%.*s\"\n",
-					cred->avp_name, ivalue.s.len, ZSW(ivalue.s.s));
+			LM_DBG("set int AVP %d = %d\n",cred->avp_name, ivalue.n);
 			break;
 		default:
 			LM_ERR("subscriber table column %d `%.*s' has unsuported type. "
