@@ -1,5 +1,5 @@
 /*
- * $Id: records.c $
+ * $Id$
  *
  * back-to-back logic module
  *

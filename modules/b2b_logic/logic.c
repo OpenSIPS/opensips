@@ -1,5 +1,5 @@
 /*
- * $Id: logic.c $
+ * $Id$
  *
  * back-to-back logic module
  *
