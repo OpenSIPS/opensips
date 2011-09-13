@@ -1,5 +1,5 @@
 /*
- * $Id: b2bl_db.c $
+ * $Id$
  *
  * back-to-back logic module
  *

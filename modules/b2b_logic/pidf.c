@@ -1,5 +1,5 @@
 /*
- * $Id: pidf.c $
+ * $Id$
  *
  * back-to-back logic module
  *
