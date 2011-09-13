@@ -33,6 +33,7 @@
 #include "../../dset.h"
 #include "../../error.h"
 #include "../../parser/parse_from.h"
+#include "../../parser/parse_to.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_hname2.h"
@@ -1035,6 +1036,8 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	b2bl_cb_params_t cb_params;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
+	struct to_body to_hdr_parsed;
+	b2b_dlginfo_t dlginfo;
 
 	lock_get(&b2bl_htable[hash_index].lock);
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
@@ -1286,14 +1289,53 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 					}
 				}
 				else
-				{
-					/* Provisional replies end up here */
+				{	/* Provisional replies end up here */
+					if((entity->dlginfo) && !entity->dlginfo->fromtag.s)
+					{
+						if( msg->callid==NULL || msg->callid->body.s==NULL)
+						{
+							LM_ERR("failed to parse callid header\n");
+							goto error;
+						}
+						dlginfo.callid = msg->callid->body;
+
+						if (msg->from->parsed == NULL)
+						{
+							if ( parse_from_header( msg )<0 ) 
+							{
+								LM_ERR("cannot parse From header\n");
+								return -1;
+							}
+						}
+						dlginfo.totag =
+						((struct to_body*)msg->from->parsed)->tag_value;
+
+						if (msg->to->parsed == NULL)
+						{
+							parse_to(msg->to->body.s,
+								msg->to->body.s+msg->to->body.len+1,
+								&to_hdr_parsed);
+							if(to_hdr_parsed.error != PARSE_OK)
+							{
+								LM_ERR("cannot parse To header\n");
+								goto error;
+							}
+						}
+						dlginfo.fromtag = get_to(msg)->tag_value;
+	
+						shm_free(entity->dlginfo);
+						entity->dlginfo = NULL;
+						if(entity_add_dlginfo(entity, &dlginfo) < 0)
+						{
+							LM_ERR("Failed to add dialoginfo\n");
+							goto error;
+						}
+					}
 					SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 				}
 			}
 			else
-			{
-				/* if reINVITE and 481 or 408 reply */
+			{	/* if reINVITE and 481 or 408 reply */
 				SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 				if(statuscode==481 || statuscode==408)
 				{
