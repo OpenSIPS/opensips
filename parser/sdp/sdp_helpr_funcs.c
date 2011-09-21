@@ -429,7 +429,10 @@ int extract_mediaip(str *body, str *mediaip, int *pf, char *line)
 				break;
 			}
 		}
-		cp = eat_space_end(cp + len, mediaip->s + mediaip->len);
+		/* consume all spaces starting from the second char after the token 
+		   First char after the token is the char that stoped the token
+		   parsing, so it is space or \r / \n, so we simply skip it */
+		cp = eat_space_end(cp + len + 1, mediaip->s + mediaip->len);
 	}
 	if (nextisip != 2 || mediaip->len == 0) {
 		LM_ERR("no `IP[4|6]' in `%s' field\n",line);
