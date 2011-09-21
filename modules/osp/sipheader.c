@@ -238,7 +238,7 @@ int ospGetPChargeInfoUserpart(
 {
     static const char* header = "P-Charge-Info";
     struct to_body body;
-    struct to_body* pci;
+    struct to_body* pci=NULL;
     struct hdr_field *hf;
     struct sip_uri uri;
     char* delim = NULL;
@@ -246,7 +246,10 @@ int ospGetPChargeInfoUserpart(
 
     if ((pciuser != NULL) && (bufsize > 0)) {
         pciuser[0] = '\0';
-        parse_headers(msg, HDR_EOH_F, 0);
+        if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+			LM_ERR("failed to parse message\n");
+			return -1;
+		}
         for (hf = msg->headers; hf; hf = hf->next) {
             if ((hf->type == HDR_OTHER_T) &&
                 (hf->name.len == strlen(header)) &&
@@ -267,6 +270,8 @@ int ospGetPChargeInfoUserpart(
                     } else {
                         LM_ERR("failed to parse P-Charge-Info uri\n");
                     }
+					if (pci == &body)
+						free_to_params(pci);
                 } else {
                     LM_ERR("bad P-Charge-Info header\n");
                 }
