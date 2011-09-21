@@ -1036,8 +1036,13 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	b2bl_cb_params_t cb_params;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
-	struct to_body to_hdr_parsed;
 	b2b_dlginfo_t dlginfo;
+
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
+	{
+		LM_ERR("failed to parse message\n");
+		return -1;
+	}
 
 	lock_get(&b2bl_htable[hash_index].lock);
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
@@ -1310,17 +1315,6 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						dlginfo.totag =
 						((struct to_body*)msg->from->parsed)->tag_value;
 
-						if (msg->to->parsed == NULL)
-						{
-							parse_to(msg->to->body.s,
-								msg->to->body.s+msg->to->body.len+1,
-								&to_hdr_parsed);
-							if(to_hdr_parsed.error != PARSE_OK)
-							{
-								LM_ERR("cannot parse To header\n");
-								goto error;
-							}
-						}
 						dlginfo.fromtag = get_to(msg)->tag_value;
 	
 						shm_free(entity->dlginfo);

@@ -76,6 +76,8 @@ inline void free_to_params(struct to_body* tb)
 		pkg_free(tp);
 		tp=foo;
 	}
+
+	tb->param_lst = tb->last_param = NULL;
 }
 
 
