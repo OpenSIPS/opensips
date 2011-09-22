@@ -448,13 +448,17 @@ static inline char* parse_to_param(char *buffer, char *end,
 
 
 endofheader:
-	if (param && (saved_status==S_EQUAL||saved_status==S_PARA_VALUE) ) {
-		saved_status = E_PARA_VALUE;
-		param->value.s= 0;
-		param->value.len=0;
-		if (param->type==TAG_PARAM)
-			goto parse_error;
-		add_param(param, to_b);
+	if (param) {
+		if (saved_status==S_EQUAL||saved_status==S_PARA_VALUE) {
+			saved_status = E_PARA_VALUE;
+			param->value.s= 0;
+			param->value.len=0;
+			if (param->type==TAG_PARAM)
+				goto parse_error;
+			add_param(param, to_b);
+		} else {
+			pkg_free(param);
+		}
 	}
 	*returned_status=saved_status;
 	return tmp;
