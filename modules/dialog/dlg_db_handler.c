@@ -409,6 +409,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	unsigned int next_id;
 	int no_rows = 10;
+	struct socket_info *caller_sock,*callee_sock;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -442,6 +443,13 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			if ( VAL_INT(values+8) == DLG_STATE_DELETED ) {
 				LM_DBG("dialog already terminated -> skipping\n");
+				continue;
+			}
+
+			caller_sock = create_socket_info(values, 16);
+			callee_sock = create_socket_info(values, 17);
+			if (caller_sock == NULL || callee_sock == NULL) {
+				LM_ERR("Dialog in DB doesn't match any listening sockets");
 				continue;
 			}
 
@@ -498,9 +506,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/* add the 2 legs */
 			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
-			&cseq1, create_socket_info(values, 16),0,0)!=0) ||
+			&cseq1, caller_sock,0,0)!=0) ||
 			(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
-			&cseq2, create_socket_info(values, 17),&mangled_fu,&mangled_tu)!=0) ) {
+			&cseq2, callee_sock,&mangled_fu,&mangled_tu)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
