@@ -609,7 +609,6 @@ xlog("PATH environment variable is $env(PATH)\n");
 				<title><function moreinfo="none">RANDOM pseudo-variable</function> usage</title>
 				<programlisting format="linespecific">
 ...
-if (get_random()) {
   $avp(i:10) = ($RANDOM / 16777216); # 2^24
   if ($avp(i:10) &lt; 10) {
      $avp(i:10) = 10;
@@ -617,7 +616,6 @@ if (get_random()) {
   append_to_reply("Retry-After: $avp(i:10)\n");
   sl_send_reply("503", "Try later");
   exit;
-};
 # normal message processing follows
    
 				 </programlisting>
