@@ -68,7 +68,7 @@ Sergio Gutierrez
 
               1.6.1. $env(name)
               1.6.2. $RANDOM
-              1.6.3. $time(name)
+              1.6.3. $ctime(name)
               1.6.4. $shv(name)
 
    List of Examples
@@ -98,7 +98,7 @@ Sergio Gutierrez
    1.23. shv_get usage
    1.24. env(name) pseudo-variable usage
    1.25. RANDOM pseudo-variable usage
-   1.26. time(name) pseudo-variable usage
+   1.26. ctime(name) pseudo-variable usage
    1.27. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
@@ -524,7 +524,7 @@ exit;
 # normal message processing follows
 
 
-1.6.3. $time(name)
+1.6.3. $ctime(name)
 
    The PV provides access to broken-down time attributes.
 
@@ -540,9 +540,9 @@ exit;
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.26. time(name) pseudo-variable usage
+   Example 1.26. ctime(name) pseudo-variable usage
 ...
-if ($time(year) == 2008) {
+if ($ctime(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
 }
 ...

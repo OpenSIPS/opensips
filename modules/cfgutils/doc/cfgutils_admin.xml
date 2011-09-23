@@ -645,7 +645,7 @@ exit;
 			</example>
 	</section>
 	<section>
-			<title><varname>$time(name)</varname></title>
+			<title><varname>$ctime(name)</varname></title>
 			<para>
 			The PV provides access to broken-down time attributes.
 			</para>
@@ -682,10 +682,10 @@ exit;
 				</listitem>	  
 			</itemizedlist>
 			<example>
-				<title><function moreinfo="none">time(name) pseudo-variable</function> usage</title>
+				<title><function moreinfo="none">ctime(name) pseudo-variable</function> usage</title>
 				<programlisting format="linespecific">
 ...
-if ($time(year) == 2008) {
+if ($ctime(year) == 2008) {
 	xlog("request: $rm from $fu to $ru in year 2008\n");
 }
 ...
