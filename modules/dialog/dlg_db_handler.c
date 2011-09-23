@@ -769,7 +769,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_INT_VALUE(values+16,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
 		SET_INT_VALUE(values+17,cell->legs[callee_leg].last_gen_cseq);
 		SET_INT_VALUE(values+18, cell->flags);
-		set_final_update_cols(values+19, cell, 0);
+		set_final_update_cols(values+19, cell, 1);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
@@ -784,6 +784,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 	} else if (cell->flags & DLG_FLAG_VP_CHANGED) {
+		cell->flags |= DLG_FLAG_VP_CHANGED;
 		VAL_TYPE(values) = VAL_TYPE(values+1) = VAL_TYPE(values+21) = DB_INT;
 		VAL_TYPE(values+19) = VAL_TYPE(values+20) = DB_STR;
 
@@ -1097,7 +1098,6 @@ void dialog_update_db(unsigned int ticks, void * param)
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 
 			} else if ( (cell->flags & DLG_FLAG_CHANGED)!=0 || on_shutdown ){
-
 				LM_DBG("updating existing dialog %p\n",cell);
 
 				SET_INT_VALUE(values, cell->h_entry);
@@ -1111,7 +1111,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_INT_VALUE(values+20, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
 				SET_INT_VALUE(values+21, cell->legs[callee_leg].last_gen_cseq);
 
-				set_final_update_cols(values+22, cell, on_shutdown);
+				set_final_update_cols(values+22, cell, 1);
 				SET_INT_VALUE(values+25, cell->flags);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
