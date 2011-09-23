@@ -22,7 +22,7 @@ Sergio Gutierrez
    Elena-Ramona Modroiu
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+                              (Ma, 21 iul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -514,7 +514,6 @@ xlog("PATH environment variable is $env(PATH)\n");
 
    Example 1.25. RANDOM pseudo-variable usage
 ...
-if (get_random()) {
   $avp(10) = ($RANDOM / 16777216); # 2^24
   if ($avp(10) < 10) {
      $avp(10) = 10;
@@ -522,7 +521,6 @@ if (get_random()) {
   append_to_reply("Retry-After: $avp(10)\n");
   sl_send_reply("503", "Try later");
   exit;
-};
 # normal message processing follows
 
 
