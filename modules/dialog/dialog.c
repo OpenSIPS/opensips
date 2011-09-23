@@ -87,6 +87,7 @@ str dlg_extra_hdrs = {NULL,0};
 int dlg_enable_stats = 1;
 int active_dlgs_cnt = 0;
 int early_dlgs_cnt = 0;
+int db_flush_vp = 0;
 stat_var *active_dlgs = 0;
 stat_var *processed_dlgs = 0;
 stat_var *expired_dlgs = 0;
@@ -236,6 +237,7 @@ static param_export_t mod_params[]={
 	{ "db_update_period",      INT_PARAM, &db_update_period         },
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
+	{ "db_flush_vals_profiles",INT_PARAM, &db_flush_vp              },
 	{ 0,0,0 }
 };
 
@@ -1051,6 +1053,7 @@ static int w_set_dlg_flag(struct sip_msg *msg, char *mask)
 		return -1;
 
 	dlg->user_flags |= (unsigned int)(unsigned long)mask;
+	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	return 1;
 }
 

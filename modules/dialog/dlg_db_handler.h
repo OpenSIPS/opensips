@@ -70,7 +70,6 @@
 #define DB_MODE_SHUTDOWN			3
 
 #define DIALOG_TABLE_TOTAL_COL_NO	26
-#define DIALOG_TABLE_FIX_COL_NO		23
 
 extern str call_id_column; 
 extern str from_uri_column;
@@ -98,6 +97,8 @@ extern str sflags_column;
 extern str th_column;
 extern str dialog_table_name;
 extern int dlg_db_mode;
+extern int db_flush_vp;
+
 
 #define should_remove_dlg_db() (dlg_db_mode && (dlg_db_mode!=DB_MODE_SHUTDOWN))
 

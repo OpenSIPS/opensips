@@ -458,6 +458,7 @@ int set_dlg_profile(struct sip_msg *msg, str *value,
 
 	/* add linker to the dialog and profile */
 	link_dlg_profile( linker, dlg);
+	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
 	return 0;
 }
@@ -508,6 +509,7 @@ found:
 		linker_prev->next = linker->next;
 	}
 	linker->next = NULL;
+	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	dlg_unlock( d_table, d_entry);
 	/* remove linker from profile table and free it */
 	destroy_linkers(linker);

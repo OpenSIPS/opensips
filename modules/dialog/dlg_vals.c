@@ -106,6 +106,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 				if (it_prev) it_prev->next = dv;
 				else dlg->vals = dv;
 			}
+			dlg->flags |= DLG_FLAG_VP_CHANGED;
 
 			/* unlock dialog */
 			dlg_val_unlock( dlg );
@@ -121,6 +122,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 	dv->next = dlg->vals;
 	dlg->vals = dv;
 
+	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	/* unlock dialog */
 	dlg_val_unlock( dlg );
 

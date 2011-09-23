@@ -70,6 +70,9 @@
 #define DLG_FLAG_PING_CALLER   (1<<5)
 #define DLG_FLAG_PING_CALLEE   (1<<6)
 #define DLG_FLAG_TOPHIDING     (1<<7)
+/* XXX: this flag is used to detect if a dialog value or profile was changed
+ * or not so that it can be flushed into the database */
+#define DLG_FLAG_VP_CHANGED    (1<<8)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1

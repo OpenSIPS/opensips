@@ -924,6 +924,29 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>db_flush_vals_profiles</varname> (int)</title>
+		<para>
+			Pushes dialog values, profiles and flags into the database
+			along with other dialog state information (see db_mode 1 and 2).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_flush_vals_profiles</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "db_flush_vals_profiles", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	</section>
 
 
