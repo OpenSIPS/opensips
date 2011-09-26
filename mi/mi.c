@@ -90,7 +90,7 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 
 	for ( i=0 ; mis[i].name ; i++ ) {
 		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].param,
-			mis[i].init_f, mis[i].flags);
+			mis[i].init_f, mis[i].flags, mod_name);
 		if (ret!=0) {
 			LM_ERR("failed to register cmd <%s> for module %s\n",
 					mis[i].name,mod_name);
@@ -117,7 +117,7 @@ int init_mi_child(void)
 
 
 int register_mi_cmd( mi_cmd_f f, char *name, void *param,
-									mi_child_init_f in, unsigned int flags)
+									mi_child_init_f in, unsigned int flags, char* mod_name)
 {
 	struct mi_cmd *cmds;
 	int id;
@@ -158,6 +158,8 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param,
 	cmds->flags = flags;
 	cmds->name.s = name;
 	cmds->name.len = len;
+	cmds->module.s = mod_name;
+	cmds->module.len = strlen(mod_name);
 	cmds->id = id;
 	cmds->param = param;
 
