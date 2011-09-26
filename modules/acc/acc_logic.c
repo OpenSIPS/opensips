@@ -484,11 +484,16 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
-	unsigned int flags = (unsigned int)(long)(*_params->param);
+	unsigned int flags;
+	if (!_params || !_params->msg) {
+		LM_ERR("not enough info\n");
+		return;
+	}
+	flags = (unsigned int)(long)(*_params->param);
 
 	if (flags & log_flag) {
 		env_set_text( ACC_ENDED, ACC_ENDED_LEN);
-		if (acc_log_cdrs_request(dlg) < 0) {
+		if (acc_log_cdrs(dlg, _params->msg) < 0) {
 			LM_ERR("Cannot log values\n");
 			return;
 		}
@@ -496,13 +501,13 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 
 	if (flags & db_flag) {
 		env_set_text( db_table_acc.s, db_table_acc.len);
-		if (acc_db_cdrs_request(dlg) < 0) {
+		if (acc_db_cdrs(dlg, _params->msg) < 0) {
 			LM_ERR("Cannot insert into database\n");
 			return;
 		}
 	}
 
-	if ((flags & aaa_flag) && acc_aaa_cdrs_request(dlg) < 0) {
+	if ((flags & aaa_flag) && acc_aaa_cdrs(dlg, _params->msg) < 0) {
 		LM_ERR("Cannot create radius accounting\n");
 		return;
 	}

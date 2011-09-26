@@ -90,7 +90,7 @@ struct acc_extra *parse_acc_leg(char *extra_str)
 	struct acc_extra *it;
 	int n;
 
-	legs = parse_acc_extra(extra_str);
+	legs = parse_acc_extra(extra_str, 1);
 	if (legs==0) {
 		LM_ERR("failed to parse extra leg\n");
 		return 0;
@@ -115,7 +115,7 @@ struct acc_extra *parse_acc_leg(char *extra_str)
 }
 
 
-struct acc_extra *parse_acc_extra(char *extra_str)
+struct acc_extra *parse_acc_extra(char *extra_str, int allow_reply)
 {
 	struct acc_extra *head;
 	struct acc_extra *tail;
@@ -191,7 +191,7 @@ struct acc_extra *parse_acc_extra(char *extra_str)
 		while (*s && isspace((int)*s))  s++;
 
 		/* type of message - request or reply ? */
-		if (*s=='/') {
+		if (allow_reply && *s=='/') {
 			s++;
 			while (*s && isspace((int)*s))  s++;
 			if (*s==0)

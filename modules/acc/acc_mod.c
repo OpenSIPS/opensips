@@ -104,6 +104,8 @@ static char * log_facility_str = 0;
 /* log extra variables */
 static char *log_extra_str = 0;
 struct acc_extra *log_extra = 0;
+static char *log_extra_bye_str = 0;
+struct acc_extra *log_extra_bye = 0;
 
 
 /* ----- AAA PROTOCOL acc variables ----------- */
@@ -119,6 +121,8 @@ aaa_conn *conn;
 /*  aaa extra variables */
 static char *aaa_extra_str = 0;
 struct acc_extra *aaa_extra = 0;
+static char *aaa_extra_bye_str = 0;
+struct acc_extra *aaa_extra_bye = 0;
 
 /* ----- DIAMETER acc variables ----------- */
 
@@ -142,6 +146,8 @@ int db_missed_flag = -1;
 /* db extra variables */
 static char *db_extra_str = 0;
 struct acc_extra *db_extra = 0;
+static char *db_extra_bye_str = 0;
+struct acc_extra *db_extra_bye = 0;
 /* Database url */
 static str db_url = {NULL, 0};
 /* name of database tables */
@@ -197,12 +203,14 @@ static param_export_t params[] = {
 	{"log_level",            INT_PARAM, &log_level            },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
 	{"log_extra",            STR_PARAM, &log_extra_str        },
+	{"log_extra_bye",        STR_PARAM, &log_extra_bye_str    },
 	/* aaa specific */
 	{"aaa_url",   		     STR_PARAM, &aaa_proto_url        },
 	{"aaa_flag",        	 INT_PARAM, &aaa_flag    	      },
 	{"aaa_missed_flag",  	 INT_PARAM, &aaa_missed_flag 	  },
 	{"service_type",         INT_PARAM, &service_type         },
-	{"aaa_extra",         STR_PARAM, &aaa_extra_str        },
+	{"aaa_extra",            STR_PARAM, &aaa_extra_str        },
+	{"aaa_extra_bye",        STR_PARAM, &aaa_extra_bye_str    },
 	/* DIAMETER specific */
 #ifdef DIAM_ACC
 	{"diameter_flag",        INT_PARAM, &diameter_flag        },
@@ -215,6 +223,7 @@ static param_export_t params[] = {
 	{"db_flag",              INT_PARAM, &db_flag              },
 	{"db_missed_flag",       INT_PARAM, &db_missed_flag       },
 	{"db_extra",             STR_PARAM, &db_extra_str         },
+	{"db_extra_bye",         STR_PARAM, &db_extra_bye_str     },
 	{"db_url",               STR_PARAM, &db_url.s             },
 	{"db_table_acc",         STR_PARAM, &db_table_acc.s       },
 	{"db_table_missed_calls",STR_PARAM, &db_table_mc.s        },
@@ -391,8 +400,13 @@ static int mod_init( void )
 	/* ----------- SYSLOG INIT SECTION ----------- */
 
 	/* parse the extra string, if any */
-	if (log_extra_str && (log_extra=parse_acc_extra(log_extra_str))==0 ) {
+	if (log_extra_str && (log_extra=parse_acc_extra(log_extra_str, 1))==0 ) {
 		LM_ERR("failed to parse log_extra param\n");
+		return -1;
+	}
+	if (log_extra_bye_str &&
+			(log_extra_bye=parse_acc_extra(log_extra_bye_str, 0))==0 ) {
+		LM_ERR("failed to parse log_extra_bye param\n");
 		return -1;
 	}
 
@@ -408,8 +422,13 @@ static int mod_init( void )
 
 	if (db_url.s && db_url.len > 0) {
 		/* parse the extra string, if any */
-		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str))==0 ) {
+		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str, 1))==0 ) {
 			LM_ERR("failed to parse db_extra param\n");
+			return -1;
+		}
+		if (db_extra_bye_str &&
+				(db_extra_bye=parse_acc_extra(db_extra_bye_str, 0))==0 ) {
+			LM_ERR("failed to parse db_extra_bye param\n");
 			return -1;
 		}
 		if (acc_db_init(&db_url)<0){
@@ -430,8 +449,13 @@ static int mod_init( void )
 
 	if (aaa_proto_url && aaa_proto_url[0]) {
 		/* parse the extra string, if any */
-		if (aaa_extra_str && (aaa_extra = parse_acc_extra(aaa_extra_str))==0) {
+		if (aaa_extra_str && (aaa_extra = parse_acc_extra(aaa_extra_str, 1))==0) {
 			LM_ERR("failed to parse aaa_extra param\n");
+			return -1;
+		}
+		if (aaa_extra_bye_str &&
+				(aaa_extra_bye = parse_acc_extra(aaa_extra_bye_str, 0))==0) {
+			LM_ERR("failed to parse aaa_extra_bye param\n");
 			return -1;
 		}
 
@@ -514,12 +538,18 @@ static void destroy(void)
 {
 	if (log_extra)
 		destroy_extras( log_extra);
+	if (log_extra_bye)
+		destroy_extras( log_extra_bye);
 	acc_db_close();
 	if (db_extra)
 		destroy_extras( db_extra);
+	if (db_extra_bye)
+		destroy_extras( db_extra_bye);
 
 	if (aaa_extra)
 		destroy_extras( aaa_extra);
+	if (aaa_extra_bye)
+		destroy_extras( aaa_extra_bye);
 
 #ifdef DIAM_ACC
 	close_tcp_connection(sockfd);

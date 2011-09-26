@@ -567,6 +567,25 @@ modparam("acc", "log_extra",
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>log_extra_bye</varname> (string)</title>
+		<para>
+		Extra values to be logged to logfile. Note that this parameter makes
+		sense only when the cdr_flag is used.
+		</para>
+		<para>
+		Default value is NULL.
+		</para>
+		<example>
+		<title>log_extra_bye example</title>
+		<programlisting format="linespecific">
+modparam("acc", "log_extra_bye",
+	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
+</programlisting>
+		</example>
+	</section>
+
+
 	<!-- AAA specific ACC parameters -->
 	
 	<section>
@@ -651,6 +670,24 @@ modparam("acc", "service_type", 15)
 		<title>aaa_extra example</title>
 		<programlisting format="linespecific">
 modparam("acc", "aaa_extra",
+	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>aaa_extra_bye</varname> (string)</title>
+		<para>
+		Extra values to be logged via AAA when a BYE message is received -
+		AAA specific. Note that this parameter makes sense only when the
+		cdr_flag is used.
+		</para>
+		<para>
+		Default value is NULL.
+		</para>
+		<example>
+		<title>aaa_extra_bye example</title>
+		<programlisting format="linespecific">
+modparam("acc", "aaa_extra_bye",
 	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 </programlisting>
 		</example>
@@ -858,6 +895,24 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>db_extra_bye</varname> (string)</title>
+		<para>
+		Extra values to be logged into database when a BYE message is received
+		- DB specific. Note that this parameter makes sense only when the
+		cdr_flag is used.
+		</para>
+		<para>
+		Default value is NULL.
+		</para>
+		<example>
+		<title>db_extra_bye example</title>
+		<programlisting format="linespecific">
+modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email)")
+</programlisting>
+		</example>
+	</section>
+
 	<!-- DIAMETER specific ACC parameters -->
 	<section>
 		<title><varname>diameter_flag</varname> (integer)</title>

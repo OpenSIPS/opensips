@@ -53,7 +53,7 @@ struct acc_extra
 
 void init_acc_extra();
 
-struct acc_extra *parse_acc_extra(char *extra);
+struct acc_extra *parse_acc_extra(char *extra, int allow_reply);
 
 struct acc_extra *parse_acc_leg(char *extra);
 
