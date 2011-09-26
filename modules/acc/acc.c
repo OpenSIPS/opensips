@@ -757,7 +757,6 @@ static inline aaa_map *aaa_status( struct sip_msg *req, int code )
 
 #define ADD_AAA_AVPAIR(_attr,_val,_len) \
 	do { \
-		LM_DBG("adding %s : %.*s\n", rd_attrs[_attr].name, (_len), (_val)); \
 		if ( (_len)!=0 && \
 		proto.avp_add(conn, send, &rd_attrs[_attr], _val, _len, 0)) { \
 			LM_ERR("failed to add %s, %d\n", rd_attrs[_attr].name,_attr); \
