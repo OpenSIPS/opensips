@@ -88,6 +88,7 @@ struct usr_avp* new_avp(unsigned short flags, int name, int_str val);
 
 /* add functions */
 int add_avp( unsigned short flags, int id, int_str val);
+int add_avp_last( unsigned short flags, int id, int_str val);
 
 /* search functions */
 struct usr_avp *search_first_avp( unsigned short flags, int id,
