@@ -7,13 +7,14 @@
 
 ]>
 
-<table id="dr_gw_lists" xmlns:db="http://docbook.org/ns/docbook">
-	<name>dr_gw_lists</name>
+<table id="dr_carriers" xmlns:db="http://docbook.org/ns/docbook">
+	<name>dr_carriers</name>
 	<version>1</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Dynamic Routing module to define
-		lists of gateways to be used in rule definitions.
+		carriers (a carrier is defined by a list of gateways and an ordering
+		rule).
 		More information can be found at: &OPENSIPS_MOD_DOC;drouting.html.
 		</db:para>
 	</description>
@@ -26,7 +27,14 @@
 		<natural/>
 		<primary/>
 		<type db="dbtext">int,auto</type>
-		<description>Unique ID</description>
+		<description>Table key, not used by module</description>
+	</column>
+
+	<column id="carrierid">
+		<name>carrierid</name>
+		<type>string</type>
+		<size>64</size>
+		<description>Unique ID of the carrier</description>
 	</column>
 
 	<column id="gwlist">
@@ -37,10 +45,27 @@
 		</description>
 	</column>
 
+	<column id="flags">
+		<name>flags</name>
+		<type>unsigned int</type>
+		<size>&flag_len;</size>
+		<description>Flags (for different purposes) of the carriers
+		</description>
+	</column>
+
+	<column id="attrs">
+		<name>attrs</name>
+		<type>string</type>
+		<size>255</size>
+		<description>Attributes string for the carrier
+		</description>
+	</column>
+
 	<column id="description">
 		<name>description</name>
 		<type>string</type>
 		<size>128</size>
+		<null/>
 		<default></default>
 		<description>Text description of the GW list</description>
 	</column>
