@@ -260,26 +260,26 @@ static int check_options_rplcode(int code)
 
 static int dr_disable(struct sip_msg *req)
 {
-
-	struct usr_avp *id_avp_;
+	struct usr_avp *avp;
 	int_str id_val;
 	pgw_t *gw;
 
 	lock_start_read( ref_lock );
 
-	id_avp_ = search_first_avp( gw_id_avp.type, gw_id_avp.name, &id_val, 0);
-	if (id_avp_==NULL) {
+	avp = search_first_avp( AVP_VAL_STR|gw_id_avp.type, gw_id_avp.name,
+		&id_val,0);
+	if (avp==NULL) {
 		LM_DBG(" no AVP ID ->nothing to disable\n");
 		lock_stop_read( ref_lock );
 		return -1;
 	}
 
-	gw = get_gw_by_internal_id( (*rdata)->pgw_l, id_val.n );
+	gw = get_gw_by_id( (*rdata)->pgw_l, &id_val.s );
 	if (gw!=NULL)
 		gw->flags |= DR_DST_STAT_DSBL_FLAG;
 
 	lock_stop_read( ref_lock );
-	
+
 	return 1;
 }
 
@@ -977,9 +977,9 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 		goto error;
 	}
 	/* add GW id avp */
-	val.n = (int) gw->_id;
-	LM_DBG("setting GW id [%d] as avp\n",val.n);
-	if (add_avp( gw_id_avp.type,gw_id_avp.name, val)!=0 ) {
+	val.s = gw->id;
+	LM_DBG("setting GW id [%.*s] as avp\n",val.s.len, val.s.s);
+	if (add_avp( AVP_VAL_STR|(gw_id_avp.type),gw_id_avp.name, val)!=0 ) {
 		LM_ERR("failed to insert ids avp\n");
 		goto error;
 	}
