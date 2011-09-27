@@ -2140,16 +2140,14 @@ retry:
 	was_forced = 0;
 	for (node=selected_rtpp_set->rn_first; node!=NULL;) {
 		if (sumcut < (int)node->rn_weight) {
-			if (node->rn_disabled) {
-				if (was_forced == 0) {
-					/* appropriate proxy is disabled : redistribute on enabled ones */
-					sumcut = weight_sum ? sum %  weight_sum : -1;
-					node = selected_rtpp_set->rn_first;
-					was_forced = 1;
-				}
-				continue;
-			} else {
+			if (!node->rn_disabled)
 				goto found;
+			if (was_forced == 0) {
+				/* appropriate proxy is disabled : redistribute on enabled ones */
+				sumcut = weight_sum ? sum %  weight_sum : -1;
+				node = selected_rtpp_set->rn_first;
+				was_forced = 1;
+				continue;
 			}
 		}
 		sumcut -= node->rn_weight;
