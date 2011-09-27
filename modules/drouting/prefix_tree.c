@@ -118,7 +118,8 @@ rt_info_t*
 get_prefix(
 	ptree_t *ptree,
 	str* prefix,
-	unsigned int rgid
+	unsigned int rgid,
+	unsigned int *matched_len
 	)
 {
 	rt_info_t *rt = NULL;
@@ -168,6 +169,7 @@ get_prefix(
 		tmp--;
 		ptree = ptree->bp;
 	}
+	if (matched_len) *matched_len = tmp - prefix->s ;
 	return rt;
 
 err_exit:

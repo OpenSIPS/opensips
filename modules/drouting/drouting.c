@@ -106,21 +106,25 @@ struct _dr_avp{
 struct _dr_avp ruri_avp = { 0, -1 };
 static str ruri_avp_spec = str_init("$avp(0xad346b2f)");
 
+/* AVP used to store GW IDs */
+struct _dr_avp gw_id_avp = { 0, -1 };
+static str gw_id_avp_spec = str_init("$avp(0xad346b30)");
+
 /* AVP used to store GW ATTRs */
 struct _dr_avp gw_attrs_avp = { 0, -1 };
-static str gw_attrs_avp_spec = str_init("$avp(0xad346b30)");
+static str gw_attrs_avp_spec = str_init("$avp(0xad346b31)");
+
+/* AVP used to store RULE IDs */
+struct _dr_avp rule_id_avp = { 0, -1 };
+static str rule_id_avp_spec = str_init("$avp(0xad346b32)");
 
 /* AVP used to store RULE ATTRs */
 struct _dr_avp rule_attrs_avp = { 0, -1 };
-static str rule_attrs_avp_spec = str_init("$avp(0xad346b31)");
+static str rule_attrs_avp_spec = str_init("$avp(0xad346b33)");
 
-/* AVP used to store GW IDs */
-struct _dr_avp gw_id_avp = { 0, -1 };
-static str gw_id_avp_spec = str_init("$avp(0xad346b32)");
-
-/* AVP used to store rule IDs */
-struct _dr_avp rule_id_avp = { 0, -1 };
-static str rule_id_avp_spec = str_init("$avp(0xad346b33)");
+/* AVP used to store RULE prefix */
+struct _dr_avp rule_prefix_avp = { 0, -1 };
+static str rule_prefix_avp_spec = str_init("$avp(0xad346b34)");
 
 /* statistic data */
 int tree_size = 0;
@@ -201,10 +205,11 @@ static param_export_t params[] = {
 	{"drg_domain_col",  STR_PARAM, &drg_domain_col.s},
 	{"drg_grpid_col",   STR_PARAM, &drg_grpid_col.s },
 	{"ruri_avp",        STR_PARAM, &ruri_avp_spec.s },
-	{"gw_attrs_avp",    STR_PARAM, &gw_attrs_avp_spec.s  },
-	{"rule_attrs_avp",  STR_PARAM, &rule_attrs_avp_spec.s},
 	{"gw_id_avp",       STR_PARAM, &gw_id_avp_spec.s     },
+	{"gw_attrs_avp",    STR_PARAM, &gw_attrs_avp_spec.s  },
 	{"rule_id_avp",     STR_PARAM, &rule_id_avp_spec.s   },
+	{"rule_attrs_avp",  STR_PARAM, &rule_attrs_avp_spec.s},
+	{"rule_prefix_avp", STR_PARAM, &rule_prefix_avp_spec.s},
 	{"force_dns",       INT_PARAM, &dr_force_dns         },
 	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
 	{ "probing_interval",      INT_PARAM, &dr_prob_interval         },
@@ -483,6 +488,24 @@ static int dr_init(void)
 			return E_CFG;
 		}
 	}
+	if (rule_prefix_avp_spec.s) {
+		rule_prefix_avp_spec.len = strlen(rule_prefix_avp_spec.s);
+
+		if (pv_parse_spec( &rule_prefix_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP [%.*s] for PREFIX AVP definition\n",
+				rule_prefix_avp_spec.len, rule_prefix_avp_spec.s);
+			return E_CFG;
+		}
+
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(rule_prefix_avp.name),
+		&(rule_prefix_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for PREFIX AVP\n",
+				rule_prefix_avp_spec.len, rule_prefix_avp_spec.s);
+			return E_CFG;
+		}
+	}
+
 	if (gw_id_avp_spec.s) {
 		gw_id_avp_spec.len = strlen(gw_id_avp_spec.s);
 
@@ -1001,6 +1024,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	rt_info_t  *rt_info;
 	struct usr_avp *avp;
 	pgw_list_t *dst, *cdst;
+	unsigned int prefix_len;
 	int grp_id;
 	int i, j, n;
 	int_str val;
@@ -1016,10 +1040,11 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 
 	/* do some cleanup first */
 	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
-	destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
-	destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
 	destroy_avps( gw_id_avp.type, gw_id_avp.name, 1);
+	destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
 	destroy_avps( rule_id_avp.type, rule_id_avp.name, 1);
+	destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
+	destroy_avps( rule_prefix_avp.type, rule_prefix_avp.name, 1);
 
 	/* get the username from FROM_HDR */
 	if (parse_from_header(msg)!=0) {
@@ -1069,7 +1094,8 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	lock_start_read( ref_lock );
 
 	/* search a prefix */
-	rt_info = get_prefix( (*rdata)->pt, &uri.user , (unsigned int)grp_id);
+	rt_info = get_prefix( (*rdata)->pt, &uri.user , (unsigned int)grp_id,
+			&prefix_len);
 	if (rt_info==0) {
 		LM_DBG("no matching for prefix \"%.*s\"\n",
 			uri.user.len, uri.user.s);
@@ -1080,6 +1106,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 				"grp %d\n", grp_id);
 			goto error2;
 		}
+		prefix_len = 0;
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
@@ -1092,6 +1119,16 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 			goto error2;
 		}
 		ret = -1;
+	}
+
+	/* add RULE prefix avp - we do it now, as URI may change */
+	val.s.s = uri.user.s ;
+	val.s.len = prefix_len;
+	LM_DBG("setting RULE prefix [%.*s] \n",val.s.len,val.s.s);
+	if (add_avp( AVP_VAL_STR|(rule_attrs_avp.type),
+	rule_attrs_avp.name, val)!=0 ) {
+		LM_ERR("failed to insert rule attrs avp\n");
+		goto error2;
 	}
 
 	n = 0;

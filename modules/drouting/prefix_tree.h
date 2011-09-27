@@ -185,7 +185,8 @@ rt_info_t*
 get_prefix(
 	ptree_t *ptree,
 	str* prefix,
-	unsigned int rgid
+	unsigned int rgid,
+	unsigned int *matched_len
 	);
 
 int

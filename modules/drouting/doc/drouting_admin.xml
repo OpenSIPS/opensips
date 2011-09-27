@@ -1009,50 +1009,6 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 		</example>
 	</section>
 
-	<section>
-		<title><varname>gw_attrs_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing the attributes of the current selected
-		destination/gateway - once a new destination is selected (via the 
-		use_next_gw() function), the AVP will be updated with the attrs of the
-		new used destination.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
-modparam("drouting", "gw_attrs_avp", '$avp(67)')
-...
-	</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>rule_attrs_avp</varname> (str)</title>
-		<para>
-		The name of the avp for storing the attributes of the current matched
-		routing rule (see dr_rules table).
-		</para>
-		<para>
-		<emphasis>Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
-modparam("drouting", "rule_attrs_avp", '$avp(66)')
-...
-	</programlisting>
-		</example>
-	</section>
-
 
 	<section>
 		<title><varname>gw_id_avp</varname> (str)</title>
@@ -1079,6 +1035,30 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 
 
 	<section>
+		<title><varname>gw_attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing the attributes of the current selected
+		destination/gateway - once a new destination is selected (via the 
+		use_next_gw() function), the AVP will be updated with the attrs of the
+		new used destination.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
+modparam("drouting", "gw_attrs_avp", '$avp(67)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>rule_id_avp</varname> (str)</title>
 		<para>
 		The name of the avp for storing the id of the current matched
@@ -1094,6 +1074,49 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 ...
 modparam("drouting", "rule_id_avp", '$avp(rule_id)')
 modparam("drouting", "rule_id_avp", '$avp(335)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title><varname>rule_attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing the attributes of the current matched
+		routing rule (see dr_rules table).
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
+modparam("drouting", "rule_attrs_avp", '$avp(66)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
+		<title><varname>rule_prefix_avp</varname> (str)</title>
+		<para>
+		The actual prefix that matched the routing rule (the part from RURI 
+		username that matched the routing rule).
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rule_prefix_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 ...
 	</programlisting>
 		</example>

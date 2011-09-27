@@ -38,20 +38,21 @@ Anca-Maria Vamanu
               1.3.4. drg_table(str)
               1.3.5. drl_table(str)
               1.3.6. ruri_avp (str)
-              1.3.7. gw_attrs_avp (str)
-              1.3.8. rule_attrs_avp (str)
-              1.3.9. gw_id_avp (str)
-              1.3.10. rule_id_avp (str)
-              1.3.11. define_blacklist (str)
-              1.3.12. use_domain (int)
-              1.3.13. drg_user_col (str)
-              1.3.14. drg_domain_col (str)
-              1.3.15. drg_grpid_col (str)
-              1.3.16. force_dns (int)
-              1.3.17. probing_interval (integer)
-              1.3.18. probing_method (string)
-              1.3.19. probing_from (string)
-              1.3.20. probing_reply_codes (string)
+              1.3.7. gw_id_avp (str)
+              1.3.8. gw_attrs_avp (str)
+              1.3.9. rule_id_avp (str)
+              1.3.10. rule_attrs_avp (str)
+              1.3.11. rule_prefix_avp (str)
+              1.3.12. define_blacklist (str)
+              1.3.13. use_domain (int)
+              1.3.14. drg_user_col (str)
+              1.3.15. drg_domain_col (str)
+              1.3.16. drg_grpid_col (str)
+              1.3.17. force_dns (int)
+              1.3.18. probing_interval (integer)
+              1.3.19. probing_method (string)
+              1.3.20. probing_from (string)
+              1.3.21. probing_reply_codes (string)
 
         1.4. Exported Functions
 
@@ -86,26 +87,27 @@ Anca-Maria Vamanu
    1.4. Set drg_table parameter
    1.5. Set drl_table parameter
    1.6. Set ruri_avp parameter
-   1.7. Set gw_attrs_avp parameter
-   1.8. Set rule_attrs_avp parameter
-   1.9. Set gw_id_avp parameter
-   1.10. Set rule_id_avp parameter
-   1.11. Set define_blacklist parameter
-   1.12. Set use_domain parameter
-   1.13. Set drg_user_col parameter
-   1.14. Set drg_domain_col parameter
-   1.15. Set drg_grpid_col parameter
-   1.16. Set force_dns parameter
-   1.17. Set probing_interval parameter
-   1.18. Set probing_method parameter
-   1.19. Set probing_from parameter
-   1.20. Set probing_reply_codes parameter
-   1.21. do_routing usage
-   1.22. use_next_gw usage
-   1.23. goes_to_gw usage
-   1.24. is_from_gw usage
-   1.25. dr_disable() usage
-   1.26. dr_status usage
+   1.7. Set gw_id_avp parameter
+   1.8. Set gw_attrs_avp parameter
+   1.9. Set rule_id_avp parameter
+   1.10. Set rule_attrs_avp parameter
+   1.11. Set rule_prefix_avp parameter
+   1.12. Set define_blacklist parameter
+   1.13. Set use_domain parameter
+   1.14. Set drg_user_col parameter
+   1.15. Set drg_domain_col parameter
+   1.16. Set drg_grpid_col parameter
+   1.17. Set force_dns parameter
+   1.18. Set probing_interval parameter
+   1.19. Set probing_method parameter
+   1.20. Set probing_from parameter
+   1.21. Set probing_reply_codes parameter
+   1.22. do_routing usage
+   1.23. use_next_gw usage
+   1.24. goes_to_gw usage
+   1.25. is_from_gw usage
+   1.26. dr_disable() usage
+   1.27. dr_status usage
 
 Chapter 1. Admin Guide
 
@@ -558,35 +560,7 @@ modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
 modparam("drouting", "ruri_avp", '$avp(33)')
 ...
 
-1.3.7. gw_attrs_avp (str)
-
-   The name of the avp for storing the attributes of the current
-   selected destination/gateway - once a new destination is
-   selected (via the use_next_gw() function), the AVP will be
-   updated with the attrs of the new used destination.
-
-   Default value is “NULL”.
-
-   Example 1.7. Set gw_attrs_avp parameter
-...
-modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
-modparam("drouting", "gw_attrs_avp", '$avp(67)')
-...
-
-1.3.8. rule_attrs_avp (str)
-
-   The name of the avp for storing the attributes of the current
-   matched routing rule (see dr_rules table).
-
-   Default value is “NULL”.
-
-   Example 1.8. Set rule_attrs_avp parameter
-...
-modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
-modparam("drouting", "rule_attrs_avp", '$avp(66)')
-...
-
-1.3.9. gw_id_avp (str)
+1.3.7. gw_id_avp (str)
 
    The name of the avp for storing the id of the current selected
    gateway/destination - once a new destination is selected (via
@@ -595,26 +569,66 @@ modparam("drouting", "rule_attrs_avp", '$avp(66)')
 
    Default value is “NULL”.
 
-   Example 1.9. Set gw_id_avp parameter
+   Example 1.7. Set gw_id_avp parameter
 ...
 modparam("drouting", "gw_id_avp", '$avp(gw_id)')
 modparam("drouting", "gw_id_avp", '$avp(334)')
 ...
 
-1.3.10. rule_id_avp (str)
+1.3.8. gw_attrs_avp (str)
+
+   The name of the avp for storing the attributes of the current
+   selected destination/gateway - once a new destination is
+   selected (via the use_next_gw() function), the AVP will be
+   updated with the attrs of the new used destination.
+
+   Default value is “NULL”.
+
+   Example 1.8. Set gw_attrs_avp parameter
+...
+modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
+modparam("drouting", "gw_attrs_avp", '$avp(67)')
+...
+
+1.3.9. rule_id_avp (str)
 
    The name of the avp for storing the id of the current matched
    routing rule (see dr_rules table).
 
    Default value is “NULL”.
 
-   Example 1.10. Set rule_id_avp parameter
+   Example 1.9. Set rule_id_avp parameter
 ...
 modparam("drouting", "rule_id_avp", '$avp(rule_id)')
 modparam("drouting", "rule_id_avp", '$avp(335)')
 ...
 
-1.3.11. define_blacklist (str)
+1.3.10. rule_attrs_avp (str)
+
+   The name of the avp for storing the attributes of the current
+   matched routing rule (see dr_rules table).
+
+   Default value is “NULL”.
+
+   Example 1.10. Set rule_attrs_avp parameter
+...
+modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
+modparam("drouting", "rule_attrs_avp", '$avp(66)')
+...
+
+1.3.11. rule_prefix_avp (str)
+
+   The actual prefix that matched the routing rule (the part from
+   RURI username that matched the routing rule).
+
+   Default value is “NULL”.
+
+   Example 1.11. Set rule_prefix_avp parameter
+...
+modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
+...
+
+1.3.12. define_blacklist (str)
 
    Defines a backlist based on a list of GW types - the list will
    contain the IPs (no port, all protocols) of the GWs with the
@@ -624,61 +638,61 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
 
    Default value is “NULL”.
 
-   Example 1.11. Set define_blacklist parameter
+   Example 1.12. Set define_blacklist parameter
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
 ...
 
-1.3.12. use_domain (int)
+1.3.13. use_domain (int)
 
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
    Default value is “1”.
 
-   Example 1.12. Set use_domain parameter
+   Example 1.13. Set use_domain parameter
 ...
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.13. drg_user_col (str)
+1.3.14. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is “username”.
 
-   Example 1.13. Set drg_user_col parameter
+   Example 1.14. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.14. drg_domain_col (str)
+1.3.15. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is “domain”.
 
-   Example 1.14. Set drg_domain_col parameter
+   Example 1.15. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.15. drg_grpid_col (str)
+1.3.16. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is “groupid”.
 
-   Example 1.15. Set drg_grpid_col parameter
+   Example 1.16. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
-1.3.16. force_dns (int)
+1.3.17. force_dns (int)
 
    Force DNS resolving of GW/destination names (if not IPs) during
    startup. If not enabled, the GW name will be blindly used
@@ -686,12 +700,12 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
    Default value is “1 (enabled)”.
 
-   Example 1.16. Set force_dns parameter
+   Example 1.17. Set force_dns parameter
 ...
 modparam("drouting", "force_dns", 0)
 ...
 
-1.3.17. probing_interval (integer)
+1.3.18. probing_interval (integer)
 
    How often (in seconds) the probing of a destination should be
    done. If set to 0, the probing will be disabled as
@@ -699,34 +713,34 @@ modparam("drouting", "force_dns", 0)
 
    Default value is “30”.
 
-   Example 1.17. Set probing_interval parameter
+   Example 1.18. Set probing_interval parameter
 ...
 modparam("drouting", "probing_interval", 60)
 ...
 
-1.3.18. probing_method (string)
+1.3.19. probing_method (string)
 
    The SIP method to be used for the probing requests.
 
    Default value is “"OPTIONS"”.
 
-   Example 1.18. Set probing_method parameter
+   Example 1.19. Set probing_method parameter
 ...
 modparam("drouting", "probing_method", "INFO")
 ...
 
-1.3.19. probing_from (string)
+1.3.20. probing_from (string)
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
    Default value is “"sip:prober@localhost"”.
 
-   Example 1.19. Set probing_from parameter
+   Example 1.20. Set probing_from parameter
 ...
 modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 ...
 
-1.3.20. probing_reply_codes (string)
+1.3.21. probing_reply_codes (string)
 
    A comma separted list of SIP reply codes. The codes defined
    here will be considered as valid reply codes for probing
@@ -734,7 +748,7 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
    Default value is “NULL”.
 
-   Example 1.20. Set probing_reply_codes parameter
+   Example 1.21. Set probing_reply_codes parameter
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
@@ -771,7 +785,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
             their order (as given); Ex: 1,2;3,4,5;6 -> randomizer
             -> (A) 2;4;6 -> usage 2,4,6 (B) 1;5;6 -> usage 1,5,6
 
-   Example 1.21. do_routing usage
+   Example 1.22. do_routing usage
 ...
 # all groups, sort 0
 do_routing();
@@ -804,7 +818,7 @@ do_routing("2","2");
    returned is no other alternative destinations are found or in
    case of internal processing error.
 
-   Example 1.22. use_next_gw usage
+   Example 1.23. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -834,7 +848,7 @@ if (use_next_gw()) {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.23. goes_to_gw usage
+   Example 1.24. goes_to_gw usage
 ...
 if (goes_to_gw("1")) {
         sl_send_reply("403","Forbidden");
@@ -860,7 +874,7 @@ if (goes_to_gw("1")) {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.24. is_from_gw usage
+   Example 1.25. is_from_gw usage
 ...
 if (is_from_gw("3","1") {
 }
@@ -876,7 +890,7 @@ if (is_from_gw("3","1") {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.25. dr_disable() usage
+   Example 1.26. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -912,7 +926,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 status (optional)
                 _empty_line_
 
-   Example 1.26. dr_status usage
+   Example 1.27. dr_status usage
 $ ./opensipsctl fifo dr_status 2
 enable:: no
 $ ./opensipsctl fifo dr_status 2 1
