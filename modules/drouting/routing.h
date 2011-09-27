@@ -56,9 +56,11 @@ typedef struct hb_ {
 typedef struct rt_data_ {
 	/* list of PSTN gw */
 	pgw_t *pgw_l;
+	/* list of carriers */
+	pcr_t *carriers;
 	/* default routing list for prefixless rules */
 	ptree_node_t noprefix;
-	/* hash table with routing prefixes */
+	/* tree with routing prefixes */
 	ptree_t *pt;
 }rt_data_t;
 
@@ -79,12 +81,22 @@ rt_data_t*
 build_rt_data( void );
 
 
+int
+add_carrier(
+	int db_id,
+	char *id,
+	int flags,
+	char *gwlist,
+	char *attrs,
+	rt_data_t *rd
+	);
+
 /* add a PSTN gw in the list */
 int
 add_dst(
 	rt_data_t*,
 	/* id */
-	int ,
+	char *,
 	/* ip address */ 
 	char*,
 	/* strip len */
@@ -110,7 +122,7 @@ build_rt_info(
 	/* list of destinations indexes */
 	char* dstlst,
 	char* attr,
-	pgw_t* pgw_l
+	rt_data_t* rd
 );
 
 void

@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "../../str.h"
 #include "../../resolve.h"
@@ -45,7 +46,6 @@
 #include "prefix_tree.h"
 #include "parse.h"
 
-#define IDX_SIZE 32
 
 extern int dr_force_dns;
 
@@ -70,6 +70,193 @@ err_exit:
 }
 
 
+pgw_list_t* parse_destination_list(rt_data_t* rd, char *dstlist,
+														unsigned short *len)
+{
+#define PGWL_SIZE 32
+	pgw_list_t *pgwl=NULL, *p=NULL;
+	unsigned int size, pgwl_size;
+	long int t;
+	char *tmp, *ep;
+	str id;
+
+	/* temporary list of gw while parsing */
+	pgwl_size = PGWL_SIZE;
+	pgwl = (pgw_list_t*)shm_malloc(pgwl_size*sizeof(pgw_list_t));
+	if (pgwl==NULL) {
+		LM_ERR("no more shm mem\n");
+		return NULL;
+	}
+	memset(pgwl, 0, pgwl_size*sizeof(pgw_list_t));
+
+	/* parset the destination list */
+	tmp = dstlist;
+	size = 0;
+	/* parse the dstlst */
+	while(tmp && (*tmp!=0)) {
+
+		/* need a larger array ? */
+		if(size>=pgwl_size){
+			p=(pgw_list_t*)shm_malloc((pgwl_size*2)*sizeof(pgw_list_t));
+			if (p==NULL) {
+				LM_ERR("not enough shm mem to resize\n");
+				goto error;
+			}
+			memset( p+pgwl_size, 0, 2*pgwl_size*sizeof(pgw_list_t));
+			memcpy( p, pgwl, pgwl_size*sizeof(pgw_list_t));
+			shm_free(pgwl);
+			pgwl_size*=2;
+			pgwl=p;
+		}
+
+		/* go over spaces */
+		EAT_SPACE(tmp);
+
+		/* carrier id or GW id ? */
+		if (*tmp==CARRIER_MARKER) {
+			pgwl[size].is_carrier = 1;
+			tmp++;
+		}
+
+		/* eat the destination ID (alphanumerical) */
+		id.s = tmp;
+		while( *tmp && (isalpha(*tmp) || isdigit(*tmp) || (*tmp)=='_') )
+			tmp++;
+		if (id.s == tmp) {
+			LM_ERR("bad id '%c' (%d)[%s]\n",
+					*tmp, (int)(tmp-dstlist), dstlist);
+			goto error;
+		}
+		id.len = tmp - id.s ;
+		/* look for the destination */
+		if (pgwl[size].is_carrier) {
+			pgwl[size].dst.carrier = get_carrier_by_id(rd->carriers, &id);
+		} else {
+			pgwl[size].dst.gw = get_gw_by_id(rd->pgw_l, &id);
+		}
+		if (pgwl[size].dst.gw==NULL) {
+			LM_ERR("destination ID <%.*s> was not found\n",id.len,id.s);
+			goto error;
+		}
+
+		/* consume spaces */
+		EAT_SPACE(tmp);
+
+		/* any weight? */
+		if (*tmp=='=') {
+			tmp++;
+			/* expect the weight value (int) */
+			errno = 0;
+			t = strtol(tmp, &ep, 10);
+			if (ep == tmp) {
+				LM_ERR("bad weight value '%c' (%d)[%s]\n",
+					*ep, (int)(ep-dstlist), dstlist);
+				goto error;
+			}
+			if (errno == ERANGE && (t== LONG_MAX || t== LONG_MIN)) {
+				LM_ERR("weight value out of bounds\n");
+				goto error;
+			}
+			tmp = ep;
+			pgwl[size].weight = t;
+			/* consume spaces */
+			EAT_SPACE(tmp);
+		}
+		size++;
+
+		/* separator */
+		if ( (*tmp==SEP) || (*tmp==SEP1) ) {
+			tmp++;
+		} else if (*tmp!=0) {
+			LM_ERR("bad char %c (%d) [%s]\n",
+					*ep, (int)(ep-dstlist), dstlist);
+			goto error;
+		}
+	}
+
+	if (size==0) {
+		LM_ERR("empty destination list\n");
+		goto error;
+	}
+
+	/* done with parsing, build th final array and return */
+	p=(pgw_list_t*)shm_malloc(size*sizeof(pgw_list_t));
+	if (p==NULL) {
+		LM_ERR("not enough shm mem for final build\n");
+		goto error;
+	}
+	memcpy( p, pgwl, size*sizeof(pgw_list_t));
+	shm_free(pgwl);
+	*len = size;
+	return p;
+error:
+	if (pgwl)
+		shm_free(pgwl);
+	*len = 0;
+	return NULL;
+}
+
+
+int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
+															rt_data_t *rd)
+{
+	pcr_t *cr = NULL;
+	unsigned int i;
+
+	/* allocate a new carrier structure */
+	cr = (pcr_t*)shm_malloc(sizeof(pcr_t)+strlen(id)+(attrs?strlen(attrs):0));
+	if (cr==NULL) {
+		LM_ERR("no more shm mem for a new carrier\n");
+		goto error;
+	}
+	memset(cr, 0, sizeof(pcr_t));
+
+	/* parse the list of gateways */
+	cr->pgwl = parse_destination_list( rd, gwlist, &cr->pgwa_len);
+	if (cr->pgwl) {
+		LM_ERR("failed to parse the destinations\n");
+		goto error;
+	}
+	/* check that all dest to be GW! */
+	for( i=0 ; i<cr->pgwa_len ; i++ ) {
+		if (cr->pgwl[i].is_carrier) {
+			LM_ERR("invalid carrier <%s> defintion as points to other "
+				"carrier (%.*s) in destination list\n",id,
+				cr->pgwl[i].dst.carrier->id.len,cr->pgwl[i].dst.carrier->id.s);
+			goto error;
+		}
+	}
+
+	/* copy integer fields */
+	cr->db_id = db_id;
+	cr->flags = flags;
+
+	/* copy id */
+	cr->id.s = (char*)(cr+1);
+	cr->id.len = strlen(id);
+	memcpy(cr->id.s,id,cr->id.len);
+	/* copy attributes */
+	if (attrs && strlen(attrs)) {
+		cr->attrs.s = cr->id.s + cr->id.len;
+		cr->attrs.len = strlen(attrs);
+		memcpy(cr->attrs.s,attrs,cr->attrs.len);
+	}
+
+	/* link it */
+	cr->next = rd->carriers;
+	rd->carriers = cr;
+
+	return 0;
+error:
+	if (cr) {
+		shm_free(cr);
+		if (cr->pgwl)
+			shm_free(cr->pgwl);
+	}
+	return -1;
+}
+
+
 rt_info_t*
 build_rt_info(
 	int id,
@@ -80,16 +267,10 @@ build_rt_info(
 	/* list of destinations indexes */
 	char* dstlst,
 	char* attrs,
-	pgw_t* pgw_l
-	) 
+	rt_data_t* rd
+	)
 {
-	char *tmp=NULL;
-	char *ep=NULL;
-	rt_info_t* rt = NULL;
-	int *idx = NULL, *t_idx=NULL;
-	int n=0, idx_size=0,i, grp_idx=0;
-	long t=0;
-	pgw_t *pgw=NULL;
+	rt_info_t* rt = NULL;;
 
 	rt = (rt_info_t*)shm_malloc(sizeof(rt_info_t)+(attrs?strlen(attrs):0));
 	if (rt==NULL) {
@@ -97,13 +278,6 @@ build_rt_info(
 		goto err_exit;
 	}
 	memset(rt, 0, sizeof(rt_info_t));
-
-	idx_size = IDX_SIZE;
-	if( NULL == (idx = (int*)shm_malloc(2*idx_size*sizeof(int)))) {
-		LM_ERR("no more shm mem(2)\n");
-		goto err_exit;
-	}
-	memset(idx, 0, 2*idx_size*sizeof(int));
 
 	rt->id = id;
 	rt->priority = priority;
@@ -114,90 +288,26 @@ build_rt_info(
 		rt->attrs.len = strlen(attrs);
 		memcpy(rt->attrs.s,attrs,rt->attrs.len);
 	}
-	tmp=dstlst;
-	n=0;
-	/* parse the dstlst */
-	while(tmp && (*tmp!=0)) {
-		errno = 0;
-		t = strtol(tmp, &ep, 10);
-		if (ep == tmp) {
-			LM_ERR("bad id '%c' (%d)[%s]\n",
-					*ep, (int)(ep-dstlst), dstlst);
-			goto err_exit;
-		}
-		if ((!IS_SPACE(*ep)) && (*ep != SEP) && (*ep != SEP1)
-				&& (*ep != SEP_GRP) && (*ep!=0)) {
-			LM_ERR("bad char %c (%d) [%s]\n",
-					*ep, (int)(ep-dstlst), dstlst);
-			goto err_exit;
-		}
-		if (errno == ERANGE && (t== LONG_MAX || t== LONG_MIN)) {
-			LM_ERR("out of bounds\n");
-			goto err_exit;
-		}
-		idx[2*n]=t;
-		idx[2*n+1]=grp_idx;
-		if(*ep == SEP_GRP)
-			grp_idx++;
-		n++;
-		/* reallocate the array which keeps the parsed indexes */
-		if(n>=idx_size){
-			if(NULL==((t_idx)=(int*)shm_malloc((idx_size*2*2)*sizeof(int)))) {
-				LM_ERR("out of shm\n");
-				goto err_exit;
-			}
-			memset(t_idx+(2*idx_size), 0, 2*idx_size*sizeof(int));
-			memcpy(t_idx, idx, 2*idx_size*sizeof(int));
-			shm_free(idx);
-			idx_size*=2;
-			idx=t_idx;
-		}
-		if(IS_SPACE(*ep))
-			EAT_SPACE(ep);
-		if(ep && (*ep == SEP || *ep == SEP1 || *ep == SEP_GRP))
-			ep++;
-		tmp = ep;
-	}
-	if(n==0) {
-		LM_ERR("invalid n\n");
+
+	rt->pgwl = parse_destination_list( rd, dstlst, &rt->pgwa_len);
+	if (rt->pgwl) {
+		LM_ERR("failed to parse the destinations\n");
 		goto err_exit;
-	}
-	/* create the pgwl */
-	rt->pgwa_len = n;
-	if(NULL ==
-		(rt->pgwl=(pgw_list_t*)shm_malloc(rt->pgwa_len*sizeof(pgw_list_t)))) {
-		goto err_exit;
-	}
-	memset(rt->pgwl, 0, rt->pgwa_len*sizeof(pgw_list_t));
-	/* translate GW ids to GW pointers */
-	for(i=0;i<n; i++){
-		if ( NULL == (pgw = get_pgw(pgw_l, idx[2*i]))) {
-			LM_ERR("invalid GW id %d\n",
-				idx[2*i]);
-			goto err_exit;
-		}
-		rt->pgwl[i].pgw=pgw;
-		rt->pgwl[i].grpid=idx[2*i+1];
-		/* LM_DBG("added to gwlist [%d/%d/%p]\n",
-				idx[2*i], idx[2*i+1], pgw); */
 	}
 
-	shm_free(idx);
 	return rt;
 
 err_exit:
-	if(NULL!=idx)
-		shm_free(idx);
-	if((NULL != rt) && 
-		(NULL!=rt->pgwl))
-		shm_free(rt->pgwl); 
-	if(NULL!=rt)
+	if ((NULL != rt) ) {
+		if (NULL!=rt->pgwl)
+			shm_free(rt->pgwl);
 		shm_free(rt);
+	}
 	return NULL;
 }
 
-int
-add_rt_info(
+
+int add_rt_info(
 	ptree_node_t *pn,
 	rt_info_t* r,
 	unsigned int rgid
@@ -283,7 +393,7 @@ int
 add_dst(
 	rt_data_t *r,
 	/* id */
-	int id,
+	char *id,
 	/* ip address */ 
 	char* ip,
 	/* strip len */
@@ -299,9 +409,10 @@ add_dst(
 
 	)
 {
+	static unsigned id_counter = 0;
 	pgw_t *pgw=NULL, *tmp=NULL;
 	struct sip_uri uri;
-	int l_ip,l_pri,l_attrs;
+	int l_ip,l_pri,l_attrs,l_id;
 #define GWABUF_MAX_SIZE	512
 	char gwabuf[GWABUF_MAX_SIZE];
 	union sockaddr_union sau;
@@ -313,14 +424,15 @@ add_dst(
 		goto err_exit;
 	}
 
+	l_id = strlen(id);
 	l_ip = strlen(ip);
 	l_pri = pri?strlen(pri):0;
 	l_attrs = attrs?strlen(attrs):0;
 
-	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t) + l_ip + l_pri + l_attrs);
+	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t) + l_id + l_ip + l_pri + l_attrs);
 	if (NULL==pgw) {
 		LM_ERR("no more shm mem (%u)\n",
-			(unsigned int)(sizeof(pgw_t)+l_ip+l_pri +l_attrs));
+			(unsigned int)(sizeof(pgw_t)+l_id+l_ip+l_pri +l_attrs));
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
@@ -339,25 +451,28 @@ add_dst(
 		break;
 	default:
 		goto err_exit;
-	
 	}
-	
+
+	pgw->_id = ++id_counter;
+
+	pgw->id.len= l_id;
+	pgw->id.s = (char*)(pgw+1);
+	memcpy(pgw->id.s, id, l_id);
 
 	pgw->ip_str.len= l_ip;
-	pgw->ip_str.s = (char*)(pgw+1);
+	pgw->ip_str.s = (char*)(pgw+1)+l_id;
 	memcpy(pgw->ip_str.s, ip, l_ip);
 
 	if (pri) {
 		pgw->pri.len = l_pri;
-		pgw->pri.s = ((char*)(pgw+1))+l_ip;
+		pgw->pri.s = ((char*)(pgw+1))+l_id+l_ip;
 		memcpy(pgw->pri.s, pri, l_pri);
 	}
 	if (attrs) {
 		pgw->attrs.len = l_attrs;
-		pgw->attrs.s = ((char*)(pgw+1))+l_ip+l_pri;
+		pgw->attrs.s = ((char*)(pgw+1))+l_id+l_ip+l_pri;
 		memcpy(pgw->attrs.s, attrs, l_attrs);
 	}
-	pgw->id = id;
 	pgw->strip = strip;
 	pgw->type = type;
 

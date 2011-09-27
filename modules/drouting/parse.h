@@ -35,7 +35,7 @@
 
 #define SEP '|'
 #define SEP1 ','
-#define SEP_GRP ';'
+#define CARRIER_MARKER '#'
 
 #define IS_SPACE(s)\
 	((s)==' ' || (s)=='\t' || (s)=='\r' || (s)=='\n')

@@ -64,8 +64,11 @@ do {\
 
 /* list of PSTN gw */
 typedef struct pgw_ {
-	/* id matching the one in db */
-	unsigned int id;
+	/* internal numerical ID */
+	unsigned int _id;
+	/* GW ID*/
+	str id;
+	/* type of gateway */
 	int type;
 	str ip_str;
 	/* strip / pri and attrs */
@@ -80,27 +83,58 @@ typedef struct pgw_ {
 	int flags;
 }pgw_t;
 
-/**/
+typedef struct pcr_ pcr_t;
+
+/* GW/CARRIER linker as kept in arrays, by rules */
 typedef struct pgw_list_ {
-	pgw_t *pgw;
-	int    grpid;
+	unsigned int is_carrier;
+	union {
+		pgw_t *gw;
+		pcr_t *carrier;
+	}dst;
+	unsigned int weight;
 }pgw_list_t;
+
+#define DR_CR_FLAG_WEIGHT (1<<0)
+#define DR_CR_FLAG_IS_OFF (1<<1)
+
+/* list of carriers */
+struct pcr_ {
+	/* id matching the one in db */
+	unsigned int db_id;
+	/* carrier ID/name */
+	str id;
+	/* flags */
+	unsigned int flags;
+	/* array of pointers into the PSTN gw list */
+	pgw_list_t *pgwl;
+	/* length of the PSTN gw array */
+	unsigned short pgwa_len;
+	/* attributes string */
+	str attrs;
+	/* linker in list */
+	pcr_t *next;
+};
+
 
 /* element containing routing information */
 typedef struct rt_info_ {
 	/* id matching the one in db */
 	unsigned int id;
+	/* priority of the rule */
 	unsigned int priority;
+	/* timerec says when the rule is on */
 	tmrec_t *time_rec;
+	/* script route to be executed */
+	int route_idx;
+	/* opaque string with rule attributes */
+	str attrs;
 	/* array of pointers into the PSTN gw list */
 	pgw_list_t *pgwl;
 	/* length of the PSTN gw array */
 	unsigned short pgwa_len;
-	/* how many list link this element */
+	/* how many lists link this element */
 	unsigned short ref_cnt;
-	/* script route to be executed */
-	int route_idx;
-	str attrs;
 } rt_info_t;
 
 typedef struct rt_info_wrp_ {
@@ -162,18 +196,26 @@ add_rt_info(
 	);
 
 pgw_t*
-get_pgw(
-	pgw_t*,
-	long
+get_gw_by_id(
+	pgw_t *gw,
+	str *id
+	);
+
+pgw_t*
+get_gw_by_internal_id(
+	pgw_t *gw,
+	unsigned int id
+	);
+
+pcr_t*
+get_carrier_by_id(
+	pcr_t *carrier,
+	str *id;
 	);
 
 void
 del_rt_list(
 	rt_info_wrp_t *rl
-	);
-
-void print_rt(
-	rt_info_t*
 	);
 
 void

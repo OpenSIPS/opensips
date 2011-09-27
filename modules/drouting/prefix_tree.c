@@ -174,22 +174,51 @@ err_exit:
 	return NULL;
 }
 
-
 pgw_t* 
-get_pgw(
-		pgw_t* pgw_l,
-		long id
+get_gw_by_internal_id(
+		pgw_t* gw,
+		unsigned int id
 		)
 {
-	if(NULL==pgw_l)
-		goto err_exit;
-	while(NULL != pgw_l) {
-		if(id == pgw_l->id) {
-			return pgw_l;
-		}
-		pgw_l = pgw_l->next;
+	while(NULL != gw) {
+		if ( id == gw->_id)
+			return gw;
+		gw = gw->next;
 	}
-err_exit:
+	return NULL;
+}
+
+
+
+pgw_t* 
+get_gw_by_id(
+		pgw_t* gw,
+		str *id
+		)
+{
+	while(NULL != gw) {
+		if ( (id->len == gw->id.len) &&
+		strncmp(id->s, gw->id.s, id->len)==0 ) {
+			return gw;
+		}
+		gw = gw->next;
+	}
+	return NULL;
+}
+
+
+pcr_t* 
+get_carrier_by_id(
+		pcr_t* carrier,
+		str *id
+		)
+{
+	while(carrier) {
+		if ( (carrier->id.len==id->len) &&
+		strncmp(carrier->id.s,id->s,id->len)==0 )
+			return carrier;
+		carrier = carrier->next;
+	}
 	return NULL;
 }
 
@@ -200,7 +229,7 @@ add_prefix(
 	str* prefix,
 	rt_info_t *r,
 	unsigned int rg
-	) 
+) 
 {
 	char* tmp=NULL;
 	int res = 0;
@@ -306,19 +335,3 @@ free_rt_info(
 	return;
 }
 
-void
-print_rt(
-		rt_info_t*rt
-		)
-{
-	int i=0;
-	if(NULL==rt)
-		return;
-	printf("priority:%d list of gw:\n", rt->priority);
-	for(i=0;i<rt->pgwa_len;i++)
-		if(NULL!=rt->pgwl[i].pgw) 
-			printf("  id:%u pri:%.*s ip:%.*s \n",
-				rt->pgwl[i].pgw->id, 
-				rt->pgwl[i].pgw->pri.len, rt->pgwl[i].pgw->pri.s,
-				rt->pgwl[i].pgw->ip_str.len, rt->pgwl[i].pgw->ip_str.s);
-}

@@ -76,7 +76,7 @@ static str db_url = {NULL,0};
 static str drg_table = str_init("dr_groups");
 static str drd_table = str_init("dr_gateways");
 static str drr_table = str_init("dr_rules");
-static str drl_table = str_init("dr_gw_lists");
+static str drc_table = str_init("dr_cariers");
 /* DRG use domain */
 static int use_domain = 1;
 /**
@@ -195,7 +195,7 @@ static param_export_t params[] = {
 	{"drd_table",       STR_PARAM, &drd_table.s     },
 	{"drr_table",       STR_PARAM, &drr_table.s     },
 	{"drg_table",       STR_PARAM, &drg_table.s     },
-	{"drl_table",       STR_PARAM, &drl_table.s     },
+	{"drc_table",       STR_PARAM, &drc_table.s     },
 	{"use_domain",      INT_PARAM, &use_domain      },
 	{"drg_user_col",    STR_PARAM, &drg_user_col.s  },
 	{"drg_domain_col",  STR_PARAM, &drg_domain_col.s},
@@ -257,12 +257,13 @@ static int check_options_rplcode(int code)
 	return 0;
 }
 
+
 static int dr_disable(struct sip_msg *req)
 {
 
 	struct usr_avp *id_avp_;
 	int_str id_val;
-	pgw_t *dst;
+	pgw_t *gw;
 
 	lock_start_read( ref_lock );
 
@@ -273,46 +274,43 @@ static int dr_disable(struct sip_msg *req)
 		return -1;
 	}
 
-	for( dst=(*rdata)->pgw_l ; dst ; dst=dst->next) {
-		if (dst->id==id_val.n) {
-			dst->flags |= DR_DST_STAT_DSBL_FLAG;
-		}
-	}
+	gw = get_gw_by_internal_id( (*rdata)->pgw_l, id_val.n );
+	if (gw!=NULL)
+		gw->flags |= DR_DST_STAT_DSBL_FLAG;
 
 	lock_stop_read( ref_lock );
 	
 	return 1;
 }
 
+
 static void dr_probing_callback( struct cell *t, int type,
 		struct tmcb_params *ps )
 {
-	int id;
 	int code = ps->code;
-	pgw_t *dst;
+	pgw_t *gw;
 
 	if (!*ps->param) {
 		LM_CRIT("BUG - reply to a DR probe with no ID (code=%d)\n", ps->code);
 		return;
 	}
-	id = (int)(long)(*ps->param);
 
 	lock_start_read( ref_lock );
 
-	for( dst=(*rdata)->pgw_l ; dst && dst->id!=id ; dst=dst->next);
-	if (dst==NULL)
+	gw = get_gw_by_internal_id( (*rdata)->pgw_l, (int)(long)(*ps->param) );
+	if (gw==NULL)
 		goto end;
 
 	if ((code == 200) || check_options_rplcode(code)) {
 		/* re-enable to DST  (if allowed) */
-		if ( dst->flags&DR_DST_STAT_NOEN_FLAG )
+		if ( gw->flags&DR_DST_STAT_NOEN_FLAG )
 			goto end;
-		dst->flags &= ~DR_DST_STAT_DSBL_FLAG;
+		gw->flags &= ~DR_DST_STAT_DSBL_FLAG;
 		goto end;
 	}
 
 	if (code>=400) {
-		dst->flags |= DR_DST_STAT_DSBL_FLAG;
+		gw->flags |= DR_DST_STAT_DSBL_FLAG;
 	}
 
 
@@ -354,7 +352,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 		
 		if (dr_tmb.t_request( &dr_probe_method, &uri, &uri,
 		&dr_probe_from, NULL, NULL, NULL, dr_probing_callback,
-		(void*)(long)dst->id, NULL) < 0) {
+		(void*)(long)dst->_id, NULL) < 0) {
 			LM_ERR("probing failed\n");
 		}
 
@@ -370,7 +368,7 @@ static inline int dr_reload_data( void )
 	rt_data_t *old_data;
 
 	new_data = dr_load_routing_info( &dr_dbf, db_hdl,
-		&drd_table, &drl_table, &drr_table);
+		&drd_table, &drc_table, &drr_table);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
 		return -1;
@@ -423,9 +421,9 @@ static int dr_init(void)
 		goto error;
 	}
 
-	drl_table.len = strlen(drl_table.s);
-	if (drl_table.s[0]==0) {
-		LM_CRIT("mandatory parameter \"DRL_TABLE\"  found empty\n");
+	drc_table.len = strlen(drc_table.s);
+	if (drc_table.s[0]==0) {
+		LM_CRIT("mandatory parameter \"DRC_TABLE\"  found empty\n");
 		goto error;
 	}
 
@@ -689,7 +687,6 @@ static inline int get_group_id(struct sip_uri *uri)
 	db_res_t* res;
 	int n;
 
-
 	/* user */
 	keys_cmp[0] = &drg_user_col;
 	vals_cmp[0].type = DB_STR;
@@ -860,7 +857,7 @@ static int use_next_gw(struct sip_msg* msg)
 		lock_start_read( ref_lock );
 
 		for( ok=0,dst=(*rdata)->pgw_l; dst ;dst=dst->next) {
-			if ( dst->id == val.n) {
+			if ( dst->_id == val.n) {
 				/*GW found */
 				if ((dst->flags & DR_DST_STAT_DSBL_FLAG) == 0 )
 					ok = 1;
@@ -888,21 +885,126 @@ static int use_next_gw(struct sip_msg* msg)
 }
 
 
-static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
+#define DR_MAX_GWLIST	64
+
+static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
+											int weight, unsigned short *idx)
 {
+	unsigned short running_sum[DR_MAX_GWLIST];
+	unsigned int i, first, weight_sum, rand_no;
+
+	/* populate the index array */
+	for( i=0 ; i<size ; i++ ) idx[i] = i;
+	first = 0;
+
+	if (weight==0)
+		return 0;
+
+	while (size-first>1) {
+		/* calculate the running sum */
+		for( i=first,weight_sum=0 ; i<size ; i++ ) {
+			weight_sum += pgwl[ idx[i] ].weight ;
+			running_sum[i] = weight_sum;
+		}
+		if (weight_sum) {
+			/* randomly select number */
+			rand_no = (unsigned int)(weight_sum*((float)rand()/RAND_MAX));
+			/* select the element */
+			for( i=first ; i<size ; i++ )
+				if (running_sum[i]>=rand_no) break;
+			if (i==size) {
+				LM_CRIT("bug in weight sort\n");
+				return -1;
+			}
+		} else {
+			/* randomly select index */
+			i = (unsigned int)((size-first)*((float)rand()/RAND_MAX));
+		}
+		LM_DBG("selecting element %d with weight %d\n",
+			idx[i], pgwl[ idx[i] ].weight);
+		/* "i" is the selected element : swap it with first position and
+		   retake alg without first elem */
+		rand_no = idx[i];
+		idx[i] = idx[first];
+		idx[first] = rand_no;
+		first ++;
+	}
+
+	return 0;
+}
+
+
+inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
+														pgw_t *gw , int idx)
+{
+	str *ruri;
+	int_str val;
+
+	/* build uri*/
+	ruri = build_ruri( uri, gw->strip, &gw->pri, &gw->ip_str);
+	if (ruri==0) {
+		LM_ERR("failed to build new ruri\n");
+		return -1;
+	}
+
+	LM_DBG("adding gw [%.*s] as \"%.*s\" in order %d\n",
+			gw->id.len, gw->id.s, ruri->len, ruri->s, idx);
+
+	/* first GW to be added ? */
+	if (idx==0) {
+		/* add to RURI */
+		if (set_ruri( msg, ruri)!= 0 ) {
+			LM_ERR("failed to set new RURI\n");
+			goto error;
+		}
+
+	} else {
+
+		/* add ruri as AVP */
+		val.s = *ruri;
+		if (add_avp( AVP_VAL_STR|(ruri_avp.type),ruri_avp.name, val)!=0 ) {
+			LM_ERR("failed to insert ruri avp\n");
+			goto error;
+		}
+
+	}
+
+	/* add GW attrs avp */
+	val.s = gw->attrs;
+	LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
+	if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
+		LM_ERR("failed to insert attrs avp\n");
+		goto error;
+	}
+	/* add GW id avp */
+	val.n = (int) gw->_id;
+	LM_DBG("setting GW id [%d] as avp\n",val.n);
+	if (add_avp( gw_id_avp.type,gw_id_avp.name, val)!=0 ) {
+		LM_ERR("failed to insert ids avp\n");
+		goto error;
+	}
+
+	pkg_free(ruri->s);
+	return 0;
+error:
+	pkg_free(ruri->s);
+	return -1;
+}
+
+
+static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
+{
+	unsigned short dsts_idx[DR_MAX_GWLIST];
+	unsigned short carrier_idx[DR_MAX_GWLIST];
 	struct to_body  *from;
 	struct sip_uri  uri;
-	rt_info_t      *rt_info;
-	int    grp_id;
-	int    i, j, l, t;
-	str    *ruri;
-	int_str val;
+	rt_info_t  *rt_info;
 	struct usr_avp *avp;
-#define DR_MAX_GWLIST	32
-	static int local_gwlist[DR_MAX_GWLIST];
-	static pgw_list_t alive[DR_MAX_GWLIST];
-	int alive_size;
-	int gwlist_size;
+	pgw_list_t *dst, *cdst;
+	int grp_id;
+	int i, j, n;
+	int_str val;
+	str *ruri;
 	int ret;
 
 	ret = -1;
@@ -911,6 +1013,13 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 		LM_DBG("empty routing table\n");
 		goto error1;
 	}
+
+	/* do some cleanup first */
+	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
+	destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
+	destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
+	destroy_avps( gw_id_avp.type, gw_id_avp.name, 1);
+	destroy_avps( rule_id_avp.type, rule_id_avp.name, 1);
 
 	/* get the username from FROM_HDR */
 	if (parse_from_header(msg)!=0) {
@@ -985,148 +1094,76 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 		ret = -1;
 	}
 
-	gwlist_size
-		= (rt_info->pgwa_len>DR_MAX_GWLIST)?DR_MAX_GWLIST:rt_info->pgwa_len;
+	n = 0;
 
-	alive_size = 0;
-	for (i = 0; i < gwlist_size; i++)
-	{
-		if( (rt_info->pgwl[i].pgw->flags & DR_DST_STAT_DSBL_FLAG)  == 0 )
-		{
-			alive[alive_size++] = rt_info->pgwl[i];
-		}
+	/* sort the destination elements in the rule */
+	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len, use_weight, dsts_idx);
+	if (i!=0) {
+		LM_ERR("failed to sort destinations in rule\n");
+		goto error2;
 	}
 
-	gwlist_size = alive_size;
+	/* iterate through the list, skip the disabled destination */
+	for ( i=0 ; i<rt_info->pgwa_len ; i++ ) {
 
-	/* set gw order */
-	if(sort_order>=1&&gwlist_size>1)
-	{
-		j = 0;
-		t = 0;
-		while(j<gwlist_size)
-		{
-			/* identify the group: [j..i) */
-			for(i=j+1; i<gwlist_size; i++)
-				if(alive[j].grpid!=alive[i].grpid)
-					break;
-			if(i-j==1)
-			{
-				local_gwlist[t++] = j;
-				/*LM_DBG("selected gw[%d]=%d\n",
-					j, local_gwlist[j]);*/
-			} else {
-				if(i-j==2)
-				{
-					local_gwlist[t++]   = j + rand()%2;
-					if(sort_order==1)
-					{
-						local_gwlist[t++] = j + (local_gwlist[j]-j+1)%2;
-						/*LM_DBG("selected gw[%d]=%d"
-						 *  " gw[%d]=%d\n", j, local_gwlist[j], j+1,
-						 *  local_gwlist[j+1]);*/
-					}
+		dst = &rt_info->pgwl[dsts_idx[i]];
+
+		/* is the destination disabled ? */
+		if (dst->is_carrier) {
+
+			/* is carrier turned off ? */
+			if( dst->dst.carrier->flags & DR_CR_FLAG_IS_OFF )
+				continue;
+
+			/* sort the gws of the carrier */
+			j = sort_rt_dst(dst->dst.carrier->pgwl, dst->dst.carrier->pgwa_len,
+				dst->dst.carrier->flags&DR_CR_FLAG_WEIGHT, carrier_idx);
+			if (j!=0) {
+				LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
+					dst->dst.carrier->id.len, dst->dst.carrier->id.s);
+				continue;
+			}
+
+			/* iterate through the list of GWs provided by carrier */
+			for ( j=0 ; j<dst->dst.carrier->pgwa_len ; j++ ) {
+
+				cdst = &dst->dst.carrier->pgwl[carrier_idx[j]];
+
+				/* is gateway disabled ? */
+				if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
+					/*ignore it*/
 				} else {
-					local_gwlist[t++]   = j + rand()%(i-j);
-					if(sort_order==1)
-					{
-						do{
-							local_gwlist[t] = j + rand()%(i-j);
-						}while(local_gwlist[t]==local_gwlist[t-1]);
-						t++;
-
-						/*
-						LM_DBG("selected gw[%d]=%d"
-							" gw[%d]=%d.\n",
-							j, local_gwlist[j], j+1, local_gwlist[j+1]); */
-						/* add the rest in this group */
-						for(l=j; l<i; l++)
-						{
-							if(l==local_gwlist[j] || l==local_gwlist[j+1])
-								continue;
-							local_gwlist[t++] = l;
-							/* LM_DBG("selected gw[%d]=%d.\n",
-								j+k, local_gwlist[t]); */
-						}
+					/* add gateway to usage list */
+					if ( push_gw_for_usage(msg, &uri, cdst->dst.gw , n) ) {
+						LM_ERR("failed to use gw <%.*s>, skipping\n",
+							cdst->dst.gw->id.len, cdst->dst.gw->id.s);
+					} else {
+						n++;
 					}
 				}
+
 			}
-			/* next group starts from i */
-			j=i;
+
+		} else {
+
+			/* is gateway disabled ? */
+			if (dst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG )
+				continue;
+
+			/* add gateway to usage list */
+			if ( push_gw_for_usage(msg, &uri, dst->dst.gw , n) ) {
+				LM_ERR("failed to use gw <%.*s>, skipping\n",
+					dst->dst.gw->id.len, dst->dst.gw->id.s);
+			} else {
+				n++;
+			}
+
 		}
-	} else {
-		for(i=0; i<gwlist_size; i++)
-			local_gwlist[i] = i;
-		t = i;
+
 	}
 
-	if( t < 1)
-	{
+	if( n < 1) {
 		LM_ERR("All the gateways are disabled\n");
-		goto error2;
-	}
-
-	/* do some cleanup first */
-	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
-	destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
-	destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
-	destroy_avps( gw_id_avp.type, gw_id_avp.name, 1);
-	destroy_avps( rule_id_avp.type, rule_id_avp.name, 1);
-
-	/* push gwlist into avps in reverse order */
-	for( j=t-1 ; j>=1 ; j-- ) {
-		/* build uri*/
-		ruri = build_ruri(&uri, alive[local_gwlist[j]].pgw->strip,
-				&alive[local_gwlist[j]].pgw->pri,
-				&alive[local_gwlist[j]].pgw->ip_str);
-		if (ruri==0) {
-			LM_ERR("failed to build avp ruri\n");
-			goto error2;
-		}
-		LM_DBG("adding gw [%d] as avp \"%.*s\"\n",
-			local_gwlist[j], ruri->len, ruri->s);
-		/* add ruri avp */
-		val.s = *ruri;
-		if (add_avp( AVP_VAL_STR|(ruri_avp.type),ruri_avp.name, val)!=0 ) {
-			LM_ERR("failed to insert ruri avp\n");
-			pkg_free(ruri->s);
-			goto error2;
-		}
-		pkg_free(ruri->s);
-		/* add GW attrs avp */
-		val.s = alive[local_gwlist[j]].pgw->attrs;
-		LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
-			LM_ERR("failed to insert attrs avp\n");
-			goto error2;
-		}
-		/* add GW id avp */
-		val.n = (int) alive[local_gwlist[j]].pgw->id;
-		LM_DBG("setting GW id [%d] as avp\n",val.n);
-		if (add_avp( gw_id_avp.type,gw_id_avp.name, val)!=0 ) {
-			LM_ERR("failed to insert ids avp\n");
-			goto error2;
-		}
-	}
-
-	/* use first GW in RURI */
-	ruri = build_ruri(&uri, alive[local_gwlist[0]].pgw->strip,
-			&alive[local_gwlist[0]].pgw->pri,
-			&alive[local_gwlist[0]].pgw->ip_str);
-
-	/* add first GW attrs avp */
-	val.s = alive[local_gwlist[0]].pgw->attrs;
-	LM_DBG("setting GW attr [%.*s] as for ruri\n",val.s.len,val.s.s);
-	if (add_avp( AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name, val)!=0 ) {
-		LM_ERR("failed to insert attrs avp\n");
-		goto error2;
-	}
-
-	/* add first GW id avp */
-	val.n = (int) alive[local_gwlist[0]].pgw->id;
-	LM_DBG("setting GW id [%d] as avp\n",val.n);
-	if (add_avp( gw_id_avp.type,gw_id_avp.name, val)!=0 ) {
-		LM_ERR("failed to insert ids avp\n");
 		goto error2;
 	}
 
@@ -1151,18 +1188,6 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort_order)
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
-
-	/* what hev we get here?? */
-	if (ruri==0) {
-		LM_ERR("failed to build ruri\n");
-		goto error1;
-	}
-	LM_DBG("setting the gw [%d] as ruri \"%.*s\"\n",
-			local_gwlist[0], ruri->len, ruri->s);
-	if (msg->new_uri.s)
-		pkg_free(msg->new_uri.s);
-	msg->new_uri = *ruri;
-	msg->parsed_uri_ok = 0;
 
 	return 1;
 error2:
@@ -1463,15 +1488,15 @@ static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param)
 	struct mi_root *rpl_tree;
 	pgw_t *dst;
 	struct mi_node *node;
-	unsigned int  id, stat;
+	unsigned int stat;
+	str *id;
 
 	node = cmd->node.kids;
 	if (node==NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
 	/* id (param 1) */
-	if (str2int( &node->value, &id) < 0)
-		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+	id =  &node->value;
 
 	lock_start_read( ref_lock );
 
@@ -1479,7 +1504,7 @@ static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param)
 	node = node->next;
 	if (node == NULL) {
 		/* return the status -> find the destination */
-		for(dst=(*rdata)->pgw_l; dst && dst->id!=id ;dst=dst->next);
+		dst = get_gw_by_id( (*rdata)->pgw_l, id);
 		if (dst==NULL) {
 			rpl_tree = init_mi_tree( 404,
 				MI_SSTR("Destination ID not found"));
@@ -1505,7 +1530,7 @@ static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param)
 			rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
 		} else {
 			/* find the destination */
-			for( dst=(*rdata)->pgw_l ; dst && dst->id!=id ; dst=dst->next);
+			dst = get_gw_by_id( (*rdata)->pgw_l, id);
 			if (dst==NULL) {
 				rpl_tree =  init_mi_tree( 404,
 					MI_SSTR("Destination ID not found"));
