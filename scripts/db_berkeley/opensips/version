@@ -40,12 +40,14 @@ domain|
 domain|2
 domainpolicy|
 domainpolicy|3
+dr_carriers|
+dr_carriers|1
 dr_gateways|
 dr_gateways|4
 dr_groups|
 dr_groups|2
-dr_gw_lists|
-dr_gw_lists|1
+METADATA_DEFAULTS
+NIL|NIL|''
 dr_rules|
 dr_rules|3
 globalblacklist|

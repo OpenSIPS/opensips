@@ -1,6 +1,7 @@
 INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
 CREATE TABLE dr_gateways (
-    gwid NUMBER(10) PRIMARY KEY,
+    id NUMBER(10) PRIMARY KEY,
+    gwid VARCHAR2(64),
     type NUMBER(10) DEFAULT 0 NOT NULL,
     address VARCHAR2(128),
     strip NUMBER(10) DEFAULT 0 NOT NULL,
@@ -39,20 +40,23 @@ END dr_rules_tr;
 /
 BEGIN map2users('dr_rules'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_gw_lists','1');
-CREATE TABLE dr_gw_lists (
+INSERT INTO version (table_name, table_version) values ('dr_carriers','1');
+CREATE TABLE dr_carriers (
     id NUMBER(10) PRIMARY KEY,
+    carrierid VARCHAR2(64),
     gwlist VARCHAR2(255),
+    flags NUMBER(10),
+    attrs VARCHAR2(255),
     description VARCHAR2(128) DEFAULT ''
 );
 
-CREATE OR REPLACE TRIGGER dr_gw_lists_tr
-before insert on dr_gw_lists FOR EACH ROW
+CREATE OR REPLACE TRIGGER dr_carriers_tr
+before insert on dr_carriers FOR EACH ROW
 BEGIN
   auto_id(:NEW.id);
-END dr_gw_lists_tr;
+END dr_carriers_tr;
 /
-BEGIN map2users('dr_gw_lists'); END;
+BEGIN map2users('dr_carriers'); END;
 /
 INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (

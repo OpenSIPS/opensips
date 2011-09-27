@@ -1,6 +1,7 @@
 INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
 CREATE TABLE dr_gateways (
-    gwid INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    gwid CHAR(64) NOT NULL,
     type INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     address CHAR(128) NOT NULL,
     strip INT(11) UNSIGNED DEFAULT 0 NOT NULL,
@@ -23,11 +24,14 @@ CREATE TABLE dr_rules (
     description CHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 
-INSERT INTO version (table_name, table_version) values ('dr_gw_lists','1');
-CREATE TABLE dr_gw_lists (
+INSERT INTO version (table_name, table_version) values ('dr_carriers','1');
+CREATE TABLE dr_carriers (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    carrierid CHAR(64) NOT NULL,
     gwlist CHAR(255) NOT NULL,
-    description CHAR(128) DEFAULT '' NOT NULL
+    flags INT(11) UNSIGNED NOT NULL,
+    attrs CHAR(255) NOT NULL,
+    description CHAR(128) DEFAULT ''
 ) ENGINE=MyISAM;
 
 INSERT INTO version (table_name, table_version) values ('dr_groups','2');

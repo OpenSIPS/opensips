@@ -385,11 +385,6 @@ migrate_table ${dst_db}.dr_rules \
 	$src_db.dr_rules \
 	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description"
 
-migrate_table ${dst_db}.dr_gw_lists \
-	"id,gwlist,description" \
-	${src_db}.dr_gw_lists \
-	"?id,?gwlist,?description"
-
 migrate_table ${dst_db}.dr_groups \
 	"id,username,domain,groupid,description" \
 	${src_db}.dr_groups \

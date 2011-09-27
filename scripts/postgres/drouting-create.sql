@@ -1,6 +1,7 @@
 INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
 CREATE TABLE dr_gateways (
-    gwid SERIAL PRIMARY KEY NOT NULL,
+    id SERIAL PRIMARY KEY NOT NULL,
+    gwid VARCHAR(64) NOT NULL,
     type INTEGER DEFAULT 0 NOT NULL,
     address VARCHAR(128) NOT NULL,
     strip INTEGER DEFAULT 0 NOT NULL,
@@ -23,11 +24,14 @@ CREATE TABLE dr_rules (
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('dr_gw_lists','1');
-CREATE TABLE dr_gw_lists (
+INSERT INTO version (table_name, table_version) values ('dr_carriers','1');
+CREATE TABLE dr_carriers (
     id SERIAL PRIMARY KEY NOT NULL,
+    carrierid VARCHAR(64) NOT NULL,
     gwlist VARCHAR(255) NOT NULL,
-    description VARCHAR(128) DEFAULT '' NOT NULL
+    flags INTEGER NOT NULL,
+    attrs VARCHAR(255) NOT NULL,
+    description VARCHAR(128) DEFAULT ''
 );
 
 INSERT INTO version (table_name, table_version) values ('dr_groups','2');

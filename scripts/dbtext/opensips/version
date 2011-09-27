@@ -15,9 +15,10 @@ dialplan:2
 dispatcher:4
 domain:2
 domainpolicy:3
+dr_carriers:1
 dr_gateways:4
 dr_groups:2
-dr_gw_lists:1
+id(int,auto) gwlist(string) description(string) 
 dr_rules:3
 globalblacklist:2
 grp:3

@@ -126,7 +126,7 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 			're_grp', 'address', 'missed_calls', 
 			'usr_preferences', 'aliases', 'silo', 
 			'dialog', 'dispatcher', 'dialplan',
-			'dr_gateways','dr_rules','dr_gw_lists',
+			'dr_gateways','dr_rules','dr_carriers',
 			'dr_groups','nh_sockets','load_balancer');
 
 my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
@@ -6391,9 +6391,6 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 
 	### dr_rules
 	&mysql_migrate_table( $dst_db . ".dr_rules", "ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description", $src_db . ".dr_rules", "?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description" );
-
-	### dr_gw_lists
-	&mysql_migrate_table( $dst_db . ".dr_gw_lists", "id,gwlist,description", $src_db . ".dr_gw_lists", "?id,?gwlist,?description" );
 
 	### dr_groups
 	&mysql_migrate_table( $dst_db . ".dr_groups", "id,username,domain,groupid,description", $src_db . ".dr_groups", "?id,?username,?domain,?groupid,?description" );
