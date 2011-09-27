@@ -742,6 +742,7 @@ parse_error:
 		*tmp,status, (int)(tmp-buffer), buffer);
 error:
 	to_b->error=PARSE_ERROR;
+	free_to_params(to_b);
 	return tmp;
 
 }
