@@ -1173,6 +1173,9 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 
 	n = 0;
 
+	if (rt_info->pgwl==NULL)
+		goto no_gws;
+
 	/* sort the destination elements in the rule */
 	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len, use_weight, dsts_idx);
 	if (i!=0) {
@@ -1190,6 +1193,10 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 
 			/* is carrier turned off ? */
 			if( dst->dst.carrier->flags & DR_CR_FLAG_IS_OFF )
+				continue;
+
+			/* any gws for this carrier ? */
+			if( dst->dst.carrier->pgwl==NULL )
 				continue;
 
 			/* sort the gws of the carrier */
@@ -1245,6 +1252,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 		goto error2;
 	}
 
+no_gws:
 	/* add RULE attrs avp */
 	if (rule_attrs_avp.name!=-1) {
 		val.s = rt_info->attrs.s ? rt_info->attrs : attrs_empty;
@@ -1331,6 +1339,10 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 		goto error;
 	}
 
+	/* any GWs for the carrier? */
+	if (cr->pgwl==NULL)
+		goto no_gws;
+
 	/* sort the gws of the carrier */
 	j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
 		carrier_idx);
@@ -1365,6 +1377,7 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 		LM_ERR("All the gateways are disabled\n");
 		goto error;
 	}
+no_gws:
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );

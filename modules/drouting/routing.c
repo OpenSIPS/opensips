@@ -70,8 +70,8 @@ err_exit:
 }
 
 
-pgw_list_t* parse_destination_list(rt_data_t* rd, char *dstlist,
-														unsigned short *len)
+int parse_destination_list(rt_data_t* rd, char *dstlist,
+									pgw_list_t** pgwl_ret, unsigned short *len)
 {
 #define PGWL_SIZE 32
 	pgw_list_t *pgwl=NULL, *p=NULL;
@@ -85,7 +85,7 @@ pgw_list_t* parse_destination_list(rt_data_t* rd, char *dstlist,
 	pgwl = (pgw_list_t*)shm_malloc(pgwl_size*sizeof(pgw_list_t));
 	if (pgwl==NULL) {
 		LM_ERR("no more shm mem\n");
-		return NULL;
+		goto error;
 	}
 	memset(pgwl, 0, pgwl_size*sizeof(pgw_list_t));
 
@@ -175,8 +175,11 @@ pgw_list_t* parse_destination_list(rt_data_t* rd, char *dstlist,
 	}
 
 	if (size==0) {
-		LM_ERR("empty destination list\n");
-		goto error;
+		LM_DBG("empty destination list\n");
+		shm_free(pgwl);
+		*len = 0;
+		*pgwl_ret = NULL;
+		return 0;
 	}
 
 	/* done with parsing, build th final array and return */
@@ -188,12 +191,14 @@ pgw_list_t* parse_destination_list(rt_data_t* rd, char *dstlist,
 	memcpy( p, pgwl, size*sizeof(pgw_list_t));
 	shm_free(pgwl);
 	*len = size;
-	return p;
+	*pgwl_ret = p;
+	return 0;
 error:
 	if (pgwl)
 		shm_free(pgwl);
 	*len = 0;
-	return NULL;
+	*pgwl_ret = NULL;
+	return -1;
 }
 
 
@@ -211,19 +216,21 @@ int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
 	}
 	memset(cr, 0, sizeof(pcr_t));
 
-	/* parse the list of gateways */
-	cr->pgwl = parse_destination_list( rd, gwlist, &cr->pgwa_len);
-	if (cr->pgwl) {
-		LM_ERR("failed to parse the destinations\n");
-		goto error;
-	}
-	/* check that all dest to be GW! */
-	for( i=0 ; i<cr->pgwa_len ; i++ ) {
-		if (cr->pgwl[i].is_carrier) {
-			LM_ERR("invalid carrier <%s> defintion as points to other "
-				"carrier (%.*s) in destination list\n",id,
-				cr->pgwl[i].dst.carrier->id.len,cr->pgwl[i].dst.carrier->id.s);
+	if (gwlist && gwlist[0]!=0 ) {
+		/* parse the list of gateways */
+		if (parse_destination_list( rd, gwlist, &cr->pgwl, &cr->pgwa_len)!=0) {
+			LM_ERR("failed to parse the destinations\n");
 			goto error;
+		}
+		/* check that all dest to be GW! */
+		for( i=0 ; i<cr->pgwa_len ; i++ ) {
+			if (cr->pgwl[i].is_carrier) {
+				LM_ERR("invalid carrier <%s> defintion as points to other "
+					"carrier (%.*s) in destination list\n",id,
+					cr->pgwl[i].dst.carrier->id.len,
+					cr->pgwl[i].dst.carrier->id.s);
+				goto error;
+			}
 		}
 	}
 
@@ -289,10 +296,11 @@ build_rt_info(
 		memcpy(rt->attrs.s,attrs,rt->attrs.len);
 	}
 
-	rt->pgwl = parse_destination_list( rd, dstlst, &rt->pgwa_len);
-	if (rt->pgwl) {
-		LM_ERR("failed to parse the destinations\n");
-		goto err_exit;
+	if ( dstlst && dstlst[0]!=0 ) {
+		if (parse_destination_list(rd, dstlst, &rt->pgwl, &rt->pgwa_len)!=0 ) {
+			LM_ERR("failed to parse the destinations\n");
+			goto err_exit;
+		}
 	}
 
 	return rt;

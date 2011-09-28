@@ -301,11 +301,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		}
 	}
 
-	if (RES_ROW_N(res) == 0) {
-		LM_WARN("table \"%.*s\" empty\n", drd_table->len,drd_table->s );
-	}
 	LM_DBG("%d records found in %.*s\n",
 		RES_ROW_N(res), drd_table->len,drd_table->s);
+
 	n = 0;
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
@@ -356,13 +354,6 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
-
-	if (n==0) {
-		LM_WARN("no valid "
-			"destinations set -> ignoring the routing rules\n");
-		return rdata;
-	}
-
 
 	/* read the carriers, if any */
 	if (dr_dbf->use_table( db_hdl, drc_table) < 0) {
