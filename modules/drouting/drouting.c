@@ -76,7 +76,7 @@ static str db_url = {NULL,0};
 static str drg_table = str_init("dr_groups");
 static str drd_table = str_init("dr_gateways");
 static str drr_table = str_init("dr_rules");
-static str drc_table = str_init("dr_cariers");
+static str drc_table = str_init("dr_carriers");
 /* DRG use domain */
 static int use_domain = 1;
 int dr_default_grp = -1;
