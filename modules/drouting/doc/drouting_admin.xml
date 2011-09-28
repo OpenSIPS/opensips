@@ -132,7 +132,7 @@
 		be automatically re-enabled when the probing will succeed.
 	</listitem>
 	<listitem>
-		<emphasis>MI command</emphasis> - by calling the dr_status MI
+		<emphasis>MI command</emphasis> - by calling the dr_gw_status MI
 		command for disabling (on demand) the destination. If so, the probing
 		and re-enabling of this destination will be completly disabled until
 		you re-enable it again via MI command - this is designed to allow
@@ -1599,7 +1599,6 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 </section>
 
 
-
 <section>
 	<title>Exported MI Functions</title>
 	<section>
@@ -1623,43 +1622,77 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 	</section>
 
 	<section>
-		<title><varname>dr_status</varname></title>
+		<title><varname>dr_gw_status</varname></title>
 		<para>
-		Gets or sets the status (enabled or disabled) of a destination. The
-		function takes 2 parameters, first mandatory, the id of the destiantion
-		and second, optional, the new status. If no new status is given, the
-		function will return the current status. If a new status is given
-		(0 - disable, 1 - enable), this status will be forced for the
-		destination.
+		Gets or sets the status (enabled or disabled) of a gateway. The
+		function may take from 0 to 2 parameters. If none, it will list all
+		gateways along with their status. If one parameter is provided, that 
+		must be the id of a gateway and the function will return the status
+		of that gateway. If 2 parameters are provided, first must be the ID of
+		the ID of a GW and the second must be the new status to be forced for
+		that GW (0 - disable, 1 - enable).
 		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:dr_status:_reply_fifo_file_
-		id
+		:dr_gw_status:_reply_fifo_file_
+		GW_id
 		status (optional)
 		_empty_line_
 		</programlisting>
 		<example>
-		<title><function>dr_status</function> usage</title>
+		<title><function>dr_gw_status</function> usage</title>
 		<programlisting format="linespecific">
-$ ./opensipsctl fifo dr_status 2
-enable:: no
-$ ./opensipsctl fifo dr_status 2 1
-$ ./opensipsctl fifo dr_status 2
-enable:: yes
+$ ./opensipsctl fifo dr_gw_status 2
+Enabled:: no
+$ ./opensipsctl fifo dr_gw_status 2 1
+$ ./opensipsctl fifo dr_gw_status 2
+Enabled:: yes
 </programlisting>
 		</example>
 	</section>
-	
+
+	<section>
+		<title><varname>dr_carrier_status</varname></title>
+		<para>
+		Gets or sets the status (enabled or disabled) of a carrier. The
+		function may take from 0 to 2 parameters. If none, it will list all
+		carriers along with their status. If one parameter is provided, that 
+		must be the id of a carrier and the function will return the status
+		of that carrier. If 2 parameters are provided, first must be the ID of
+		the ID of a carrier and the second must be the new status to be 
+		forced for that carrier (0 - disable, 1 - enable).
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:dr_carrier_status:_reply_fifo_file_
+		carrier_id
+		status (optional)
+		_empty_line_
+		</programlisting>
+		<example>
+		<title><function>dr_carrier_status</function> usage</title>
+		<programlisting format="linespecific">
+$ ./opensipsctl fifo dr_carrier_status CR1
+Enabled:: no
+$ ./opensipsctl fifo dr_carrier_status CR1 1
+$ ./opensipsctl fifo dr_carrier_status CR1
+Enabled:: yes
+</programlisting>
+		</example>
+	</section>
+
+
 </section>
 
 <section>
 	<title>Installation</title>
 	<para>
-	The module requires 3 table in OpenSIPS database: dr_groups,
-	dr_gateways, dr_rules. The SQL syntax to create them can be
+	The module requires 4 table in OpenSIPS database: dr_groups,
+	dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
 	found in drouting-create.sql script in the database directories
 	in the opensips/scripts folder. You can also find the complete
 	database documentation on the project webpage, &osipsdbdocslink;.

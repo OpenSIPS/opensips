@@ -157,11 +157,8 @@ static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
 static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
-static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param);
-
-#define RELOAD_MI_CMD  "dr_reload"
-
-
+static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
+static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
 
 
 /*
@@ -229,9 +226,18 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
+#define HLP1 "Params: none ; Forces drouting module to reload data from DB "\
+	"into memory; A return string is returned only in case of error."
+#define HLP2 "Params: [ gw_id [ status ]] ; Sets/gets the status of a GW; "\
+	"If no gw_id is given, all gws will be listed; if a new status is give, "\
+	"it will be pushed to the given GW."
+#define HLP3 "Params: [ carrier_id [ status ]] ; Sets/gets the status of a " \
+	"carrier; If no carrier_id is given, all carrier will be listed; if a " \
+	"new status is give, it will be pushed to the given carrier."
 static mi_export_t mi_cmds[] = {
-	{ RELOAD_MI_CMD, 0, dr_reload_cmd, MI_NO_INPUT_FLAG, 0, 0 },
-	{ "dr_status",   0, mi_dr_status,   0,               0,  0},
+	{ "dr_reload",         HLP1, dr_reload_cmd,    MI_NO_INPUT_FLAG, 0,  0},
+	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
+	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -698,7 +704,7 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param)
 {
 	int n;
 
-	LM_INFO("\"%s\" MI command received!\n",RELOAD_MI_CMD);
+	LM_INFO("dr_reload MI command received!\n");
 
 	if ( (n=dr_reload_data())!=0 ) {
 		LM_CRIT("failed to load routing data\n");
@@ -1559,73 +1565,177 @@ static int goes_to_gw_0(struct sip_msg* msg, char* _type, char* _f2)
 	return goes_to_gw_1(msg, (char*)(long)-1, _f2);
 }
 
-static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param)
+static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 {
 	struct mi_root *rpl_tree;
-	pgw_t *dst;
 	struct mi_node *node;
+	struct mi_attr *attr;
 	unsigned int stat;
+	pgw_t *gw;
 	str *id;
 
 	node = cmd->node.kids;
-	if (node==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	/* id (param 1) */
-	id =  &node->value;
 
 	lock_start_read( ref_lock );
+
+	if (node==NULL) {
+		/* no GW specified, list all of them */
+		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		if (rpl_tree==NULL)
+			goto error;
+
+		for( gw=(*rdata)->pgw_l ; gw ; gw=gw->next ) {
+			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+				"ID", 2, gw->id.s, gw->id.len);
+			if (node==NULL) goto error;
+			attr = add_mi_attr( node, MI_DUP_VALUE, "IP" , 2,
+				gw->ip_str.s, gw->ip_str.len);
+			if (attr==NULL) goto error;
+			attr = add_mi_attr( &rpl_tree->node, 0, "Enabled", 7,
+				(gw->flags&DR_DST_STAT_DSBL_FLAG)?"no ":"yes", 3);
+			if (attr==NULL) goto error;
+		}
+
+		goto done;
+	}
+
+	/* GW ID (param 1) */
+	id =  &node->value;
+
+	/* search for the Gw */
+	gw = get_gw_by_id( (*rdata)->pgw_l, id);
+	if (gw==NULL) {
+		rpl_tree = init_mi_tree( 404, MI_SSTR("GW ID not found"));
+		goto done;
+	}
 
 	/* status (param 2) */
 	node = node->next;
 	if (node == NULL) {
-		/* return the status -> find the destination */
-		dst = get_gw_by_id( (*rdata)->pgw_l, id);
-		if (dst==NULL) {
-			rpl_tree = init_mi_tree( 404,
-				MI_SSTR("Destination ID not found"));
-		} else {
-			rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-			if (rpl_tree!=NULL) {
-				if (dst->flags&DR_DST_STAT_DSBL_FLAG) {
-					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
-							"no", 2);
-				} else {
-					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
-							"yes", 3);
-				}
-				if (node==NULL) {free_mi_tree(rpl_tree); rpl_tree=NULL;}
-			}
-		}
-	} else {
-		/* set the status */
-		if (node->next) {
-			rpl_tree = init_mi_tree( 400,
-				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-		} else if (str2int( &node->value, &stat) < 0) {
-			rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
-		} else {
-			/* find the destination */
-			dst = get_gw_by_id( (*rdata)->pgw_l, id);
-			if (dst==NULL) {
-				rpl_tree =  init_mi_tree( 404,
-					MI_SSTR("Destination ID not found"));
-			} else {
-				/* set the disable/enable */
-				if (stat) {
-					dst->flags &=
-						~ (DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG);
-				} else {
-					dst->flags |=
-						DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
-				}
-				lock_stop_read( ref_lock );
-				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-			}
-		}
+
+		/* no status provided -> return the internal one */
+		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		if (rpl_tree==NULL)
+			goto error;
+		node = add_mi_node_child( &rpl_tree->node, 0, "Enabled", 7,
+			(gw->flags&DR_DST_STAT_DSBL_FLAG)?"no ":"yes", 3);
+		if (node==NULL)
+			goto error;
+
+		goto done;
+
 	}
 
-	lock_stop_read( ref_lock );
+	/* set the status */
+	if (node->next) {
+		rpl_tree = init_mi_tree( 400,
+			MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		goto done;
+	}
+	if (str2int( &node->value, &stat) < 0) {
+		rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+		goto done;
+	}
+	/* set the disable/enable */
+	if (stat) {
+		gw->flags &= ~ (DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG);
+	} else {
+		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
+	}
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
+done:
+	lock_stop_read( ref_lock );
 	return rpl_tree;
+error:
+	lock_stop_read( ref_lock );
+	if(rpl_tree) free_mi_tree(rpl_tree);
+	return NULL;
 }
+
+
+static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *node;
+	struct mi_attr *attr;
+	unsigned int stat;
+	pcr_t *cr;
+	str *id;
+
+	node = cmd->node.kids;
+
+	lock_start_read( ref_lock );
+
+	if (node==NULL) {
+		/* no carrier specified, list all of them */
+		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		if (rpl_tree==NULL)
+			goto error;
+
+		for( cr=(*rdata)->carriers ; cr ; cr=cr->next ) {
+			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+				"ID", 2, cr->id.s, cr->id.len);
+			if (node==NULL) goto error;
+			attr = add_mi_attr( &rpl_tree->node, 0, "Enabled", 7,
+				(cr->flags&DR_CR_FLAG_IS_OFF)?"no ":"yes", 3);
+			if (attr==NULL) goto error;
+		}
+
+		goto done;
+	}
+
+	/* GW ID (param 1) */
+	id =  &node->value;
+
+	/* search for the Carrier */
+	cr = get_carrier_by_id( (*rdata)->carriers, id);
+	if (cr==NULL) {
+		rpl_tree = init_mi_tree( 404, MI_SSTR("Carrier ID not found"));
+		goto done;
+	}
+
+	/* status (param 2) */
+	node = node->next;
+	if (node == NULL) {
+
+		/* no status provided -> return the internal one */
+		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		if (rpl_tree==NULL)
+			goto error;
+		node = add_mi_node_child( &rpl_tree->node, 0, "Enabled", 7,
+			(cr->flags&DR_CR_FLAG_IS_OFF)?"no ":"yes", 3);
+		if (node==NULL)
+			goto error;
+
+		goto done;
+
+	}
+
+	/* set the status */
+	if (node->next) {
+		rpl_tree = init_mi_tree( 400,
+			MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		goto done;
+	}
+	if (str2int( &node->value, &stat) < 0) {
+		rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+		goto done;
+	}
+	/* set the disable/enable */
+	if (stat) {
+		cr->flags &= ~ (DR_CR_FLAG_IS_OFF);
+	} else {
+		cr->flags |= DR_CR_FLAG_IS_OFF;
+	}
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+
+done:
+	lock_stop_read( ref_lock );
+	return rpl_tree;
+error:
+	lock_stop_read( ref_lock );
+	if(rpl_tree) free_mi_tree(rpl_tree);
+	return NULL;
+}
+

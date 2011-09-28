@@ -66,7 +66,8 @@ Anca-Maria Vamanu
         1.5. Exported MI Functions
 
               1.5.1. dr_reload
-              1.5.2. dr_status
+              1.5.2. dr_gw_status
+              1.5.3. dr_carrier_status
 
         1.6. Installation
 
@@ -109,7 +110,8 @@ Anca-Maria Vamanu
    1.25. goes_to_gw usage
    1.26. is_from_gw usage
    1.27. dr_disable() usage
-   1.28. dr_status usage
+   1.28. dr_gw_status usage
+   1.29. dr_carrier_status usage
 
 Chapter 1. Admin Guide
 
@@ -185,7 +187,7 @@ Chapter 1. Admin Guide
        probing mode for the destination is (1) or (2), the
        destination will be automatically re-enabled when the
        probing will succeed.
-     * MI command - by calling the dr_status MI command for
+     * MI command - by calling the dr_gw_status MI command for
        disabling (on demand) the destination. If so, the probing
        and re-enabling of this destination will be completly
        disabled until you re-enable it again via MI command - this
@@ -925,35 +927,61 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 :dr_reload:fifo_reply
                 _empty_line_
 
-1.5.2. dr_status
+1.5.2. dr_gw_status
 
-   Gets or sets the status (enabled or disabled) of a destination.
-   The function takes 2 parameters, first mandatory, the id of the
-   destiantion and second, optional, the new status. If no new
-   status is given, the function will return the current status.
-   If a new status is given (0 - disable, 1 - enable), this status
-   will be forced for the destination.
+   Gets or sets the status (enabled or disabled) of a gateway. The
+   function may take from 0 to 2 parameters. If none, it will list
+   all gateways along with their status. If one parameter is
+   provided, that must be the id of a gateway and the function
+   will return the status of that gateway. If 2 parameters are
+   provided, first must be the ID of the ID of a GW and the second
+   must be the new status to be forced for that GW (0 - disable, 1
+   - enable).
 
    MI FIFO Command Format:
-                :dr_status:_reply_fifo_file_
-                id
+                :dr_gw_status:_reply_fifo_file_
+                GW_id
                 status (optional)
                 _empty_line_
 
-   Example 1.28. dr_status usage
-$ ./opensipsctl fifo dr_status 2
-enable:: no
-$ ./opensipsctl fifo dr_status 2 1
-$ ./opensipsctl fifo dr_status 2
-enable:: yes
+   Example 1.28. dr_gw_status usage
+$ ./opensipsctl fifo dr_gw_status 2
+Enabled:: no
+$ ./opensipsctl fifo dr_gw_status 2 1
+$ ./opensipsctl fifo dr_gw_status 2
+Enabled:: yes
+
+1.5.3. dr_carrier_status
+
+   Gets or sets the status (enabled or disabled) of a carrier. The
+   function may take from 0 to 2 parameters. If none, it will list
+   all carriers along with their status. If one parameter is
+   provided, that must be the id of a carrier and the function
+   will return the status of that carrier. If 2 parameters are
+   provided, first must be the ID of the ID of a carrier and the
+   second must be the new status to be forced for that carrier (0
+   - disable, 1 - enable).
+
+   MI FIFO Command Format:
+                :dr_carrier_status:_reply_fifo_file_
+                carrier_id
+                status (optional)
+                _empty_line_
+
+   Example 1.29. dr_carrier_status usage
+$ ./opensipsctl fifo dr_carrier_status CR1
+Enabled:: no
+$ ./opensipsctl fifo dr_carrier_status CR1 1
+$ ./opensipsctl fifo dr_carrier_status CR1
+Enabled:: yes
 
 1.6. Installation
 
-   The module requires 3 table in OpenSIPS database: dr_groups,
-   dr_gateways, dr_rules. The SQL syntax to create them can be
-   found in drouting-create.sql script in the database directories
-   in the opensips/scripts folder. You can also find the complete
-   database documentation on the project webpage,
+   The module requires 4 table in OpenSIPS database: dr_groups,
+   dr_gateways, dr_carriers, dr_rules. The SQL syntax to create
+   them can be found in drouting-create.sql script in the database
+   directories in the opensips/scripts folder. You can also find
+   the complete database documentation on the project webpage,
    http://www.opensips.org/html/docs/db/db-schema-devel.html.
 
 Chapter 2. Developer Guide
