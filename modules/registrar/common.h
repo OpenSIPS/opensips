@@ -38,7 +38,7 @@
 /*! \brief
  * Extract Address Of Record
  */
-int extract_aor(str* _uri, str* _a);
+int extract_aor(str* _uri, str* _a,str* sip_instance,str *call_id);
 
 
 #endif /* COMMON_H */

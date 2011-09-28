@@ -60,6 +60,49 @@
 		<quote>path_mode</quote>.
 		</para>
 	</section>
+
+	<section>
+		<title>GRUU support</title>
+		<para>
+		Register module includes GRUU support (according to RFC 5627) 
+		for usage in registrars and home-proxies.
+		</para>
+		<para>
+		A call to save(...) stores, if the phone supports GRUU,
+		the values of the SIP Instance along with the contact into usrloc. 
+		The registrar module will generate two types of GRUUs :
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>public</emphasis> - exposes the underlying AOR,
+				constructed just by attaching the SIP Instance as the ;gr
+				parameter value. These are persistent, valid as long as the
+				contact registration is valid.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>temporary</emphasis> - hides the underlying AOR
+				Each new Register request leads to the construction of a 
+				new temporary GRUU, while Register requests with a different
+				Call-Id lead to the invalidation of all the previous generated
+				temporary GRUUs.
+			</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		A call to lookup(...) will try to detect if the R-URI contains a
+		GRUU. If it does, it will route the request just for the Contact
+		that the specific AOR belongs to, without appending any other branches.
+		</para>
+		<para>
+		The whole process is transparent to the user, so no
+		config changes are required.
+		</para>
+	</section>
+
+
 	</section>
 
 
@@ -416,6 +459,26 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		<programlisting format="linespecific">
 ...
 modparam("registrar", "mcontact_avp", "$avp(register)")
+...
+		</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>gruu_secret</varname> (string)</title>
+		<para>
+		The string that will be used in XORing when generating
+		temporary GRUUs.
+		</para>
+		<para>
+		<emphasis>
+			If not set, 'OpenSIPS' is the default secret.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gruu_secret</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrar", "gruu_secret", "top_secret")
 ...
 		</programlisting>
 		</example>

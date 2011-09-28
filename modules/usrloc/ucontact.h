@@ -75,6 +75,7 @@ typedef struct ucontact {
 	str path;               /*!< Path header */
 	time_t expires;         /*!< Expires parameter */
 	qvalue_t q;             /*!< q parameter */
+	str instance;			/*!< instance parameter */
 	str callid;             /*!< Call-ID header field of registration */
 	int cseq;               /*!< CSeq value */
 	cstate_t state;         /*!< State of the contact (\ref cstate) */
@@ -93,6 +94,7 @@ typedef struct ucontact_info {
 	str* path;
 	time_t expires;
 	qvalue_t q;
+	str instance;
 	str* callid;
 	int cseq;
 	unsigned int flags;

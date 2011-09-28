@@ -314,6 +314,10 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 			ci.methods = allowed;
 		}
 
+		if (_c->instance) {
+			ci.instance = _c->instance->body;
+		}
+
 		/* get received */
 		if (ci.received.len==0) {
 			if (_c->received) {
@@ -781,8 +785,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 		uri = get_to(_m)->uri;
 	}
 
-
-	if (extract_aor( &uri, &sctx.aor) < 0) {
+	if (extract_aor( &uri, &sctx.aor,0,0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		goto error;
 	}
@@ -1021,7 +1024,8 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 	}
 
 	uri = get_to(msg)->uri;
-	if (extract_aor(&uri, &aor) < 0) {
+
+	if (extract_aor(&uri, &aor,0,0) < 0) {
 		LM_ERR("failed to extract AOR record\n");
 		return -2;
 	}

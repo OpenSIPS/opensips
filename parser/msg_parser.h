@@ -161,6 +161,7 @@ struct sip_uri {
 	str method;
 	str lr;
 	str r2; /* ser specific rr parameter */
+	str gr; /* GRUU */
 	/* values */
 	str transport_val;
 	str ttl_val;
@@ -169,6 +170,7 @@ struct sip_uri {
 	str method_val;
 	str lr_val; /* lr value placeholder for lr=on a.s.o*/
 	str r2_val;
+	str gr_val;
 	/* unknown params */
 	str u_name[URI_MAX_U_PARAMS]; /* Unknown param names */
 	str u_val[URI_MAX_U_PARAMS];  /* Unknown param valss */

@@ -246,6 +246,7 @@ int parse_contacts(str* _s, contact_t** _c)
 			c->expires = hooks.contact.expires;
 			c->received = hooks.contact.received;
 			c->methods = hooks.contact.methods;
+			c->instance = hooks.contact.instance;
 
 			if (_s->len == 0) goto ok;
 		}

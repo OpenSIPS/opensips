@@ -198,7 +198,7 @@ void print_udomain(FILE* _f, udomain_t* _d)
 static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 {
 	static ucontact_info_t ci;
-	static str callid, ua, received, host, path;
+	static str callid, ua, received, host, path,instance;
 	int port, proto;
 	char *p;
 
@@ -303,6 +303,15 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	if (!VAL_NULL(vals+12)) {
 		ci.last_modified = VAL_TIME(vals+12);
 	}
+
+	instance.s  = (char*)VAL_STRING(vals+13);
+	if (VAL_NULL(vals+13) || !instance.s || !instance.s[0]) {
+		instance.len = 0;
+		instance.s = 0;
+	} else {
+		instance.len = strlen(instance.s);
+	}
+	ci.instance = instance;
 
 	return &ci;
 }
@@ -473,7 +482,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 {
 	/*static db_ps_t my_ps = NULL;*/
 	ucontact_info_t *ci;
-	db_key_t columns[13];
+	db_key_t columns[14];
 	db_key_t keys[2];
 	db_val_t vals[2];
 	db_key_t order = &q_col;
@@ -501,6 +510,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	columns[10] = &sock_col;
 	columns[11] = &methods_col;
 	columns[12] = &last_mod_col;
+	columns[13] = &sip_instance_col;
 
 	if (desc_time_order)
 		order = &last_mod_col;
@@ -531,7 +541,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 
 	/* CON_PS_REFERENCE(_c) = &my_ps; - this is still dangerous with STMT */
 
-	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 13, order,
+	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 14, order,
 				&res) < 0) {
 		LM_ERR("db_query failed\n");
 		return 0;

@@ -9,7 +9,7 @@
 
 <table id="location" xmlns:db="http://docbook.org/ns/docbook">
     <name>location</name>
-    <version>1006</version>
+    <version>1007</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Persistent user location information for the usrloc module. More information can be found at: &OPENSIPS_MOD_DOC;usrloc.html
@@ -150,6 +150,15 @@
         <null/>
         <default><null/></default>
         <description>Flags that indicate the SIP Methods this contact will accept.</description>
+    </column>
+
+    <column>
+        <name>sip_instace</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <default><null/></default>
+        <description>SIP Instance for this particular contact</description>
     </column>
 
     <index>

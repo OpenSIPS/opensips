@@ -41,6 +41,7 @@
 typedef struct contact {
 	str name;               /* Name part */
 	str uri;                /* contact uri */
+	param_t* instance;      /* +sip.instance parameter hook */
 	param_t* q;             /* q parameter hook */
 	param_t* expires;       /* expires parameter hook */
 	param_t* methods;       /* methods parameter hook */

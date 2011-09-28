@@ -43,6 +43,7 @@ typedef enum ptype {
 	P_EXPIRES,   /* Contact: expires parameter */
 	P_METHODS,   /* Contact: methods parameter (RFC 3840) */
 	P_RECEIVED,  /* Contact: received parameter */
+	P_INSTANCE,  /* Contact: sip.instance parameter */
 	P_TRANSPORT, /* URI: transport parameter */
 	P_LR,        /* URI: lr parameter */
 	P_R2,        /* URI: r2 parameter (ser specific) */
@@ -84,6 +85,7 @@ struct contact_hooks {
 	struct param* q;        /* q parameter */
 	struct param* methods;  /* methods parameter (RFC 3840) */
 	struct param* received; /* received parameter */
+	struct param* instance; /* instance parameter */
 };
 
 

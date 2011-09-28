@@ -65,6 +65,14 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 				}
 				break;
 
+			/* "gruu" */
+			case _gruu_:
+				if(pos + 4 <= len && IS_DELIM(p+4)) {
+					*sup |= F_SUPPORTED_GRUU;
+					pos += 5; p += 5;
+				}
+				break;
+
 			/* "100rel" */
 			case _100r_:
 				if ( pos+6 <= len

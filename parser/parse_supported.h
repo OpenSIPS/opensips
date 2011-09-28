@@ -39,6 +39,7 @@
 #define F_SUPPORTED_100REL		(1 << 1)
 #define F_SUPPORTED_TIMER		(1 << 2)
 #define F_SUPPORTED_EVENTLIST	(1 << 3)
+#define F_SUPPORTED_GRUU		(1 << 4)
 
 #define SUPPORTED_PATH_STR		"path"
 #define SUPPORTED_PATH_LEN		(sizeof(SUPPORTED_PATH_STR)-1)

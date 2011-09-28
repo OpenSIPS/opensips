@@ -45,22 +45,111 @@
 
 #define MAX_AOR_LEN 256
 
+#define TEMP_GRUU		"tgruu."
+#define TEMP_GRUU_SIZE	(sizeof(TEMP_GRUU)-1)
+
+#define MAX_TGRUU_SIZE 255
+#define GR_MAGIC 73
+char tgruu_dec[MAX_TGRUU_SIZE];
+
+extern str gruu_secret;
+extern str default_gruu_secret;
+
 /*! \brief
  * Extract Address of Record
+ * In case of public GRUUs, also populates sip_instance
+ * In case of temp GRUUs, also populates call_id
  */
-int extract_aor(str* _uri, str* _a)
+int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 {
 	static char aor_buf[MAX_AOR_LEN];
 	memset(aor_buf, 0, MAX_AOR_LEN);
 
 	str tmp;
 	struct sip_uri puri;
-	int user_len;
+	int user_len,tgruu_len,dec_size,i;
+	str *magic;
 
 	if (parse_uri(_uri->s, _uri->len, &puri) < 0) {
 		rerrno = R_AOR_PARSE;
 		LM_ERR("failed to parse Address of Record\n");
 		return -1;
+	}
+
+	/* if have ;gr param and func caller is interested in 
+	 * potentially extracting the sip instance */
+	if ((puri.gr.s && puri.gr.len) && sip_instance)
+	{
+		LM_DBG("has gruu\n");
+
+		/* ;gr param detected */
+		if (memcmp(puri.user.s,TEMP_GRUU,TEMP_GRUU_SIZE) == 0)
+		{
+			LM_DBG("temp gruu\n");
+			/* temp GRUU, decode and extract aor, sip_instance
+			 * and call_id */
+			tgruu_len = puri.user.len - TEMP_GRUU_SIZE;
+			memcpy(tgruu_dec,puri.user.s+TEMP_GRUU_SIZE,tgruu_len);
+
+			if (gruu_secret.s != NULL)
+				magic = &gruu_secret;
+			else
+				magic = &default_gruu_secret;
+
+			dec_size = base64decode(tgruu_dec,tgruu_dec,tgruu_len);
+
+			for (i=0;i<tgruu_len;i++)
+				tgruu_dec[i] ^= magic->s[i%magic->len];
+
+			LM_DBG("decoded [%.*s]\n",dec_size,tgruu_dec);
+			/* extract aor - skip tgruu generation time at 
+			 * the beggining */
+			_a->s = (char *)memchr(tgruu_dec,' ',dec_size) + 1;
+			if (_a->s == NULL) {
+				rerrno = R_AOR_PARSE;
+				LM_ERR("failed to parse Address of Record\n");
+				return -1;
+			}
+			_a->len = (char *)memchr(_a->s,' ',dec_size - (_a->s-tgruu_dec)) - _a->s;
+			if (_a->len < 0) { 
+				rerrno = R_AOR_PARSE;
+				LM_ERR("failed to parse Address of Record\n");
+				return -1;
+			}
+
+			sip_instance->s = _a->s+_a->len+1; /* skip ' ' */
+			if (sip_instance->s >= tgruu_dec + dec_size) {
+				rerrno = R_AOR_PARSE;
+				LM_ERR("failed to parse Address of Record\n");
+				return -1;
+			}
+			sip_instance->len = (char *)memchr(sip_instance->s,' ',
+					dec_size-(sip_instance->s-tgruu_dec)) - sip_instance->s;
+			if (sip_instance->len < 0) { 
+				rerrno = R_AOR_PARSE;
+				LM_ERR("failed to parse Address of Record\n");
+				return -1;
+			}
+
+			call_id->s = sip_instance->s + sip_instance->len + 1;
+			if (call_id->s >= tgruu_dec + dec_size) {
+				rerrno = R_AOR_PARSE;
+				LM_ERR("failed to parse Address of Record\n");
+				return -1;
+			}
+			call_id->len = (tgruu_dec+dec_size) - call_id->s -1;
+
+			LM_DBG("extracted aor [%.*s] and instance [%.*s] and callid [%.*s]\n",_a->len,_a->s,
+					sip_instance->len,sip_instance->s,call_id->len,call_id->s);
+
+			/* skip checks - done at save() */
+			return 0;
+		}
+		else
+		{
+			LM_DBG("public gruu\n");
+			*sip_instance = puri.gr_val;
+		}
 	}
 	
 	if ( (puri.user.len + puri.host.len + 1) > MAX_AOR_LEN

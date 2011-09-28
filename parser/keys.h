@@ -38,6 +38,7 @@
  * 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76 77 78 79 7a 3a 20  2d
  */
 
+#define _gruu_ 0x75757267   /* "gruu" */
 #define _even_ 0x6e657665   /* "even" */
 #define _tlis_ 0x73696c74   /* "tlis" */
 #define _acce_ 0x65636361   /* "acce" */

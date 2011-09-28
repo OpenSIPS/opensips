@@ -84,6 +84,13 @@ static inline void parse_contact_class(param_hooks_t* _h, param_t* _p)
 			_h->contact.received = _p;
 		}
 		break;
+	case '+':
+		if ((_p->name.len == 13) &&
+		    (!strncasecmp(_p->name.s + 1, "sip.instance", 12))) {
+			_p->type = P_INSTANCE;
+			_h->contact.instance = _p;
+		}
+		break;
 	}
 }
 

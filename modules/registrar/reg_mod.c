@@ -115,6 +115,7 @@ char* realm_pref    = "";
 str realm_prefix;
 
 str sock_hdr_name = {0,0};
+str gruu_secret = {0,0};
 
 #define RCV_NAME "received"
 str rcv_param = str_init(RCV_NAME);
@@ -178,6 +179,7 @@ static param_export_t params[] = {
 	{"retry_after",        INT_PARAM, &retry_after         },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s     },
 	{"mcontact_avp",       STR_PARAM, &mct_avp_param       },
+	{"gruu_secret",        STR_PARAM, &gruu_secret.s       },
 	{0, 0, 0}
 };
 
@@ -304,6 +306,9 @@ static int mod_init(void)
 
 	if (sock_hdr_name.s)
 		sock_hdr_name.len = strlen(sock_hdr_name.s);
+
+	if (gruu_secret.s)
+		gruu_secret.len = strlen(gruu_secret.s);
 
 	/* fix the flags */
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;

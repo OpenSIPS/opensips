@@ -48,7 +48,7 @@
 #define WRITE_BACK    2
 #define DB_ONLY       3
 
-#define UL_TABLE_VERSION 1006
+#define UL_TABLE_VERSION 1007
 
 extern str user_col;
 extern str domain_col;
@@ -65,6 +65,7 @@ extern str path_col;
 extern str sock_col;
 extern str methods_col;
 extern str last_mod_col;
+extern str sip_instance_col;
 
 extern str db_url;
 extern int timer_interval;

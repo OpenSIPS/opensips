@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('location','1006');
+INSERT INTO version (table_name, table_version) values ('location','1007');
 CREATE TABLE location (
     id SERIAL PRIMARY KEY NOT NULL,
     username VARCHAR(64) DEFAULT '' NOT NULL,
@@ -16,6 +16,7 @@ CREATE TABLE location (
     user_agent VARCHAR(255) DEFAULT '' NOT NULL,
     socket VARCHAR(64) DEFAULT NULL,
     methods INTEGER DEFAULT NULL,
+    sip_instace VARCHAR(255) DEFAULT NULL,
     CONSTRAINT location_account_contact_idx UNIQUE (username, domain, contact, callid)
 );
 

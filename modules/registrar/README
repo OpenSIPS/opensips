@@ -25,6 +25,7 @@ Bogdan-Andrei Iancu
         1.1. Overview
 
               1.1.1. PATH support
+              1.1.2. GRUU support
 
         1.2. Dependencies
 
@@ -46,6 +47,7 @@ Bogdan-Andrei Iancu
               1.3.11. retry_after (integer)
               1.3.12. sock_hdr_name (string)
               1.3.13. mcontact_avp (string)
+              1.3.14. gruu_secret (string)
 
         1.4. Exported Functions
 
@@ -80,11 +82,12 @@ Bogdan-Andrei Iancu
    1.11. Set retry_after parameter
    1.12. Set sock_hdr_namer parameter
    1.13. Set mcontact_avp parameter
-   1.14. save usage
-   1.15. lookup usage
-   1.16. registered usage
-   1.17. is_other_contact usage
-   1.18. add_sock_hdr usage
+   1.14. Set gruu_secret parameter
+   1.15. save usage
+   1.16. lookup usage
+   1.17. registered usage
+   1.18. is_other_contact usage
+   1.19. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -121,6 +124,32 @@ Chapter 1. Admin Guide
    The whole process is transparent to the user, so no config
    changes are required beside setting the registrar-parameters
    “use_path” and “path_mode”.
+
+1.1.2. GRUU support
+
+   Register module includes GRUU support (according to RFC 5627)
+   for usage in registrars and home-proxies.
+
+   A call to save(...) stores, if the phone supports GRUU, the
+   values of the SIP Instance along with the contact into usrloc.
+   The registrar module will generate two types of GRUUs :
+     * public - exposes the underlying AOR, constructed just by
+       attaching the SIP Instance as the ;gr parameter value.
+       These are persistent, valid as long as the contact
+       registration is valid.
+     * temporary - hides the underlying AOR Each new Register
+       request leads to the construction of a new temporary GRUU,
+       while Register requests with a different Call-Id lead to
+       the invalidation of all the previous generated temporary
+       GRUUs.
+
+   A call to lookup(...) will try to detect if the R-URI contains
+   a GRUU. If it does, it will route the request just for the
+   Contact that the specific AOR belongs to, without appending any
+   other branches.
+
+   The whole process is transparent to the user, so no config
+   changes are required.
 
 1.2. Dependencies
 
@@ -342,6 +371,18 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 modparam("registrar", "mcontact_avp", "$avp(register)")
 ...
 
+1.3.14. gruu_secret (string)
+
+   The string that will be used in XORing when generating
+   temporary GRUUs.
+
+   If not set, 'OpenSIPS' is the default secret.
+
+   Example 1.14. Set gruu_secret parameter
+...
+modparam("registrar", "gruu_secret", "top_secret")
+...
+
 1.4. Exported Functions
 
 1.4.1.  save(domain [,flags ,[aor]])
@@ -405,7 +446,7 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.14. save usage
+   Example 1.15. save usage
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
@@ -460,7 +501,7 @@ save("location","mr", "$avp(i:1)");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.15. lookup usage
+   Example 1.16. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -500,7 +541,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.16. registered usage
+   Example 1.17. registered usage
 ...
 if (registered("location")) {
         sl_send_reply("100", "Trying");
@@ -524,7 +565,7 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.17. is_other_contact usage
+   Example 1.18. is_other_contact usage
 ...
 
 if (is_other_contact("location", "$avp(ips)")) {
@@ -546,7 +587,7 @@ if (is_other_contact("location", "$avp(ips)")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.18. add_sock_hdr usage
+   Example 1.19. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...

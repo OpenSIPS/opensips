@@ -76,6 +76,7 @@
 #define SOCK_COL       "socket"
 #define METHODS_COL    "methods"
 #define LAST_MOD_COL   "last_modified"
+#define SIP_INSTANCE_COL   "sip_instance"
 
 static int mod_init(void);                          /*!< Module initialization function */
 static void destroy(void);                          /*!< Module destroy function */
@@ -104,6 +105,7 @@ str path_col        = str_init(PATH_COL);		/*!< Name of column containing the Pa
 str sock_col        = str_init(SOCK_COL);		/*!< Name of column containing the received socket */
 str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the supported methods */
 str last_mod_col     = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
+str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
 int db_mode         = 0;				/*!< Database sync scheme: 0-no db, 1-write through, 2-write back, 3-only db */

@@ -61,9 +61,29 @@
 #define EXPIRES_PARAM ";expires="
 #define EXPIRES_PARAM_LEN (sizeof(EXPIRES_PARAM) - 1)
 
+#define SIP_PROTO "sip:"
+#define SIP_PROTO_SIZE (sizeof(SIP_PROTO) - 1)
+
+#define PUB_GRUU ";pub-gruu="
+#define PUB_GRUU_SIZE (sizeof(PUB_GRUU) - 1)
+
+#define TEMP_GRUU ";temp-gruu="
+#define TEMP_GRUU_SIZE (sizeof(TEMP_GRUU) - 1)
+
+#define TEMP_GRUU_HEADER "tgruu."
+#define TEMP_GRUU_HEADER_SIZE (sizeof(TEMP_GRUU_HEADER) - 1)
+
+#define GR_PARAM ";gr="
+#define GR_PARAM_SIZE (sizeof(GR_PARAM) - 1)
+
+#define GR_NO_VAL ";gr"
+#define GR_NO_VAL_SIZE (sizeof(GR_NO_VAL) - 1)
+
 #define CONTACT_SEP ", "
 #define CONTACT_SEP_LEN (sizeof(CONTACT_SEP) - 1)
 
+extern str gruu_secret;
+str default_gruu_secret=str_init("0p3nS1pS");
 
 /*! \brief
  * Buffer for Contact header field
@@ -74,6 +94,16 @@ static struct {
 	int data_len;
 } contact = {0, 0, 0};
 
+
+static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
+{
+	int time_len,temp_gr_len;
+
+	int2str((unsigned long)act_time,&time_len);
+	temp_gr_len = time_len + aor->len + instance->len - 2 + callid->len + 3; /* <instance> and blank spaces */
+	temp_gr_len = (temp_gr_len/3 + (temp_gr_len%3?1:0))*4; /* base64 encoding */
+	return temp_gr_len;
+}
 
 /*! \brief
  * Calculate the length of buffer needed to
@@ -101,6 +131,30 @@ static inline unsigned int calc_buf_len(ucontact_t* c)
 					+ 1 /* dquote */
 					;
 			}
+			if (c->instance.s) {
+				/* pub gruu */
+				len += PUB_GRUU_SIZE
+					+ 1 /* quote */
+					+ SIP_PROTO_SIZE
+					+ c->aor->len
+					+ 1 /* @ */
+					+ c->sock->name.len
+					+ GR_PARAM_SIZE
+					+ (c->instance.len - 2)
+					+ 1 /* quote */
+					;
+				/* temp gruu */
+				len += TEMP_GRUU_SIZE
+					+ 1 /* quote */
+					+ SIP_PROTO_SIZE
+					+ TEMP_GRUU_HEADER_SIZE
+					+ calc_temp_gruu_len(c->aor,&c->instance,&c->callid)
+					+ 1 /* @ */
+					+ c->sock->name.len
+					+ GR_NO_VAL_SIZE 
+					+ 1 /* quote */
+					;
+			}		
 		}
 		c = c->next;
 	}
@@ -109,6 +163,44 @@ static inline unsigned int calc_buf_len(ucontact_t* c)
 	return len;
 }
 
+#define MAX_TEMP_GRUU_SIZE	255
+static char temp_gruu_buf[MAX_TEMP_GRUU_SIZE];
+
+/* Returns memory from a statically allocated buffer */
+char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
+{
+	int time_len,i;
+	char *p;
+	char *time_str = int2str((unsigned long)act_time,&time_len);
+	str *magic;
+
+	*len = time_len + aor->len + instance->len + callid->len + 3; /* blank spaces */
+	p = temp_gruu_buf;
+
+	memcpy(p,time_str,time_len);
+	p+=time_len;
+	*p++=' ';
+
+	memcpy(p,aor->s,aor->len);
+	p+=aor->len;
+	*p++=' ';
+
+	memcpy(p,instance->s+1,instance->len-2);
+	p+=instance->len-2;
+	*p++=' ';
+
+	memcpy(p,callid->s,callid->len);
+
+	LM_DBG("build temp gruu [%.*s]\n",*len,temp_gruu_buf);
+	if (gruu_secret.s != NULL)
+		magic = &gruu_secret;
+	else
+		magic = &default_gruu_secret;
+
+	for (i=0;i<*len;i++)
+		temp_gruu_buf[i] ^= magic->s[i%magic->len];
+	return temp_gruu_buf;
+}
 
 /*! \brief
  * Allocate a memory buffer and print Contact
@@ -116,8 +208,8 @@ static inline unsigned int calc_buf_len(ucontact_t* c)
  */
 int build_contact(ucontact_t* c)
 {
-	char *p, *cp;
-	int fl, len;
+	char *p, *cp, *tmpgr;
+	int fl, len,grlen;
 
 	contact.data_len = calc_buf_len(c);
 	if (!contact.data_len) return 0;
@@ -177,6 +269,44 @@ int build_contact(ucontact_t* c)
 				*p++ = '\"';
 				memcpy(p, c->received.s, c->received.len);
 				p += c->received.len;
+				*p++ = '\"';
+			}
+
+			if (c->instance.s) {
+				/* build pub GRUU */
+				memcpy(p,PUB_GRUU,PUB_GRUU_SIZE);
+				p += PUB_GRUU_SIZE;
+				*p++ = '\"';
+				memcpy(p,SIP_PROTO,SIP_PROTO_SIZE);
+				p += SIP_PROTO_SIZE;
+				memcpy(p,c->aor->s,c->aor->len);
+				p += c->aor->len;
+				*p++ = '@';
+				memcpy(p,c->sock->name.s,c->sock->name.len);
+				p += c->sock->name.len;
+				memcpy(p,GR_PARAM,GR_PARAM_SIZE);
+				p += GR_PARAM_SIZE;
+				memcpy(p,c->instance.s+1,c->instance.len-2);
+				p += c->instance.len-2;
+				*p++ = '\"';
+
+				/* build temp GRUU */
+				memcpy(p,TEMP_GRUU,TEMP_GRUU_SIZE);
+				p += TEMP_GRUU_SIZE;
+				*p++ = '\"';
+				memcpy(p,SIP_PROTO,SIP_PROTO_SIZE);
+				p += SIP_PROTO_SIZE;
+				memcpy(p,TEMP_GRUU_HEADER,TEMP_GRUU_HEADER_SIZE);
+				p += TEMP_GRUU_HEADER_SIZE;
+				
+				tmpgr = build_temp_gruu(c->aor,&c->instance,&c->callid,&grlen);
+				base64encode(p,tmpgr,grlen);
+				p += calc_temp_gruu_len(c->aor,&c->instance,&c->callid);
+				*p++ = '@';
+				memcpy(p,c->sock->name.s,c->sock->name.len);
+				p += c->sock->name.len;
+				memcpy(p,GR_NO_VAL,GR_NO_VAL_SIZE);
+				p += GR_NO_VAL_SIZE;
 				*p++ = '\"';
 			}
 		}

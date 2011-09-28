@@ -725,4 +725,8 @@ void seed_child(unsigned int seed);
 int parse_reply_codes( str *options_reply_codes_str,
 		int **options_reply_codes, int *options_codes_no);
 
+void base64encode(char *out, char *in, int inlen);
+int base64decode(char *out,char *in,int len);
+
+
 #endif

@@ -69,6 +69,11 @@ ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _
 	if (_ci->received.s && _ci->received.len) {
 		if (shm_str_dup( &c->received, &_ci->received) < 0) goto error;
 	}
+
+	if (_ci->instance.s && _ci->instance.len) {
+		if (shm_str_dup( &c->instance, &_ci->instance) < 0) goto error;
+	}
+
 	if (_ci->path && _ci->path->len) {
 		if (shm_str_dup( &c->path, _ci->path) < 0) goto error;
 	}
@@ -93,6 +98,7 @@ error:
 	if (c->user_agent.s) shm_free(c->user_agent.s);
 	if (c->callid.s) shm_free(c->callid.s);
 	if (c->c.s) shm_free(c->c.s);
+	if (c->instance.s) shm_free(c->instance.s);
 	shm_free(c);
 	return 0;
 }
@@ -107,6 +113,7 @@ void free_ucontact(ucontact_t* _c)
 	if (!_c) return;
 	if (_c->path.s) shm_free(_c->path.s);
 	if (_c->received.s) shm_free(_c->received.s);
+	if (_c->instance.s) shm_free(_c->instance.s);
 	if (_c->user_agent.s) shm_free(_c->user_agent.s);
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
@@ -380,8 +387,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	static db_ps_t myI_ps = NULL;
 	static db_ps_t myR_ps = NULL;
 	char* dom;
-	db_key_t keys[15];
-	db_val_t vals[15];
+	db_key_t keys[16];
+	db_val_t vals[16];
 
 	if (_c->flags & FL_MEM) {
 		return 0;
@@ -401,7 +408,8 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[11] = &sock_col;
 	keys[12] = &methods_col;
 	keys[13] = &last_mod_col;
-	keys[14] = &domain_col;
+	keys[14] = &sip_instance_col;
+	keys[15] = &domain_col;
 
 	vals[0].type = DB_STR;
 	vals[0].nul = 0;
@@ -482,20 +490,31 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	vals[13].nul = 0;
 	vals[13].val.time_val = _c->last_modified;
 
-	if (use_domain) {
-		vals[14].type = DB_STR;
+	vals[14].type = DB_STR;
+	if (_c->instance.s == 0) {
+		vals[14].nul = 1;
+	} else {
 		vals[14].nul = 0;
+		vals[14].val.str_val.s = _c->instance.s;
+		vals[14].val.str_val.len = _c->instance.len;
+	}
+
+
+	if (use_domain) {
+		vals[15].type = DB_STR;
+		vals[15].nul = 0;
 
 		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
 		if (dom==0) {
 			vals[0].val.str_val.len = 0;
-			vals[14].val.str_val = *_c->aor;
+			vals[15].val.str_val = *_c->aor;
 		} else {
 			vals[0].val.str_val.len = dom - _c->aor->s;
-			vals[14].val.str_val.s = dom + 1;
-			vals[14].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
+			vals[15].val.str_val.s = dom + 1;
+			vals[15].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
 		}
 	}
+
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -512,14 +531,14 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 				CON_RESET_INSLIST(ul_dbh);
 		}
 
-		if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
+		if (ul_dbf.insert(ul_dbh, keys, vals, (use_domain) ? (16) : (15)) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			return -1;
 		}
 	} else {
 		/* do insert-update / replace */
 		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
-		if (ul_dbf.insert_update(ul_dbh, keys, vals, (use_domain) ? (15) : (14)) < 0) {
+		if (ul_dbf.insert_update(ul_dbh, keys, vals, (use_domain) ? (16) : (15)) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			return -1;
 		}

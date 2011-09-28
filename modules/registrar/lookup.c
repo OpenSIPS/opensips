@@ -47,6 +47,9 @@
 #include "lookup.h"
 
 
+#define GR_E_PART_SIZE	22
+#define GR_A_PART_SIZE	14
+
 #define allowed_method(_msg, _c, _f) \
 	( !((_f)&REG_LOOKUP_METHODFILTER_FLAG) || \
 		((_msg)->REQ_METHOD)&((_c)->methods) )
@@ -62,12 +65,14 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	unsigned int flags;
 	urecord_t* r;
 	str aor, uri;
-	ucontact_t* ptr;
+	ucontact_t* ptr,*it;
 	int res;
 	int ret;
 	str path_dst;
 	str flags_s;
 	pv_value_t val;
+	str sip_instance = {0,0},call_id = {0,0};
+	time_t last_mod;
 
 	flags = 0;
 	if (_f && _f[0]!=0) {
@@ -99,11 +104,11 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		else uri = _m->first_line.u.request.uri;
 	}
 
-	if (extract_aor(&uri, &aor) < 0) {
+	if (extract_aor(&uri, &aor,&sip_instance,&call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
 		return -3;
 	}
-	
+
 	get_act_time();
 
 	ul.lock_udomain((udomain_t*)_t, &aor);
@@ -117,13 +122,66 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	ptr = r->contacts;
 	ret = -1;
 	/* look first for an un-expired and suported contact */
+search_valid_contact:
 	while ( (ptr) &&
 	!(VALID_CONTACT(ptr,act_time) && (ret=-2) && allowed_method(_m,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
 		/* nothing found */
+		LM_DBG("nothing found !\n");
 		goto done;
 	}
+
+	if (sip_instance.len && sip_instance.s) {
+		LM_DBG("ruri has gruu in lookup\n");
+		/* uri has GRUU */
+		if (ptr->instance.len-2 != sip_instance.len || 
+				memcmp(ptr->instance.s+1,sip_instance.s,sip_instance.len)) {
+			LM_DBG("no match to sip instace - [%.*s] - [%.*s]\n",ptr->instance.len-2,ptr->instance.s+1,
+					sip_instance.len,sip_instance.s);
+			/* not the targeted instance, search some more */
+			ptr = ptr->next;
+			goto search_valid_contact;
+		}
+
+		LM_DBG("matched sip instace\n");
+	}
+
+	if (call_id.len && call_id.s) {
+		/* decide whether GRUU is expired or not
+		 *
+		 * first - match call-id */
+		if (ptr->callid.len != call_id.len ||
+				memcmp(ptr->callid.s,call_id.s,call_id.len)) {
+			LM_DBG("no match to call id - [%.*s] - [%.*s]\n",ptr->callid.len,ptr->callid.s,
+					call_id.len,call_id.s);
+			ptr = ptr->next;
+			goto search_valid_contact;
+		}
+
+		/* matched call-id, check if there are newer contacts with
+		 * same sip instace bup newer last_modified */
+
+		last_mod = ptr->last_modified;
+		it = ptr->next;
+		while ( it ) {
+			if (VALID_CONTACT(it,act_time)) {
+				if (it->instance.len-2 == sip_instance.len &&
+						memcmp(it->instance.s+1,sip_instance.s,sip_instance.len) == 0)
+					if (it->last_modified > ptr->last_modified) {
+						/* same instance id, but newer modified -> expired GRUU, no match at all */
+						break;
+					}
+			}
+		}
+
+		if (it != NULL) {
+			ret = -1;
+			goto done;
+		}
+	}
+
+	LM_DBG("found a complete match\n");
 
 	ret = 1;
 	if (ptr) {
@@ -171,7 +229,9 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	}
 
 	/* Append branches if enabled */
-	if ( flags&REG_LOOKUP_NOBRANCH_FLAG ) goto done;
+	/* If we got to this point and the URI had a ;gr parameter and it was matched
+	 * to a contact. No point in branching */
+	if ( flags&REG_LOOKUP_NOBRANCH_FLAG || (sip_instance.len && sip_instance.s) ) goto done;
 	LM_DBG("looking for branches\n");
 
 	for( ; ptr ; ptr = ptr->next ) {
@@ -236,7 +296,7 @@ int registered(struct sip_msg* _m, char* _t, char* _s, char *_c)
 		else uri = _m->first_line.u.request.uri;
 	}
 
-	if (extract_aor(&uri, &aor) < 0) {
+	if (extract_aor(&uri, &aor,0,0) < 0) {
 		LM_ERR("failed to extract address of record\n");
 		return -1;
 	}

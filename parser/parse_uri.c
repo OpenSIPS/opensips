@@ -176,6 +176,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					      PMA_A, PMA_D, PMA_D2, PMA_R, PMA_eq,
 					/* lr */
 					PLR_L, PLR_R_FIN, PLR_eq,
+					/* gr */
+					PG_G, PG_G_FIN, PG_eq,
 					/* r2 */
 					PR2_R, PR2_2_FIN, PR2_eq,
 					
@@ -714,6 +716,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						b=p;
 						state=PLR_L;
 						break;
+					case 'g':
+					case 'G':
+						b=p;
+						state=PG_G;
+						break;
 					case 'r':
 					case 'R':
 						b=p;
@@ -899,6 +906,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_VAL_P;
 				}
 				break;
+
 			/* r2 */
 			param_switch1(PR2_R,  '2', PR2_2_FIN);
 			case PR2_2_FIN:
@@ -935,6 +943,43 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 				}
 				break;
 				
+
+			/* gr */
+			param_switch(PG_G,  'r', 'R', PG_G_FIN);
+			case PG_G_FIN:
+				switch(*p){
+					case '@':
+						still_at_user; 
+						break;
+					case '=':
+						state=PG_eq;
+						break;
+					semicolon_case; 
+						uri->gr.s=b;
+						uri->gr.len=(p-b);
+						break;
+					question_case; 
+						uri->gr.s=b;
+						uri->gr.len=(p-b);
+						break;
+					colon_case;
+						break;
+					default:
+						state=URI_PARAM_P;
+				}
+				break;
+				/* handle gr=something case */
+			case PG_eq:
+				param=&uri->gr;
+				param_val=&uri->gr_val;
+				switch(*p){
+					param_common_cases;
+					default:
+						v=p;
+						state=URI_VAL_P;
+				}
+				break;
+
 				
 			case URI_HEADERS:
 				/* for now nobody needs them so we completely ignore the 
@@ -976,6 +1021,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 				goto error_bug;
 		}
 	}
+
 	/*end of uri */
 	switch (state){
 		case URI_INIT: /* error empty uri */
@@ -1045,6 +1091,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case PM_eq:
 		case PLR_L: /* lr */
 		case PR2_R:  /* r2 */
+		case PG_G: /* gr */
 			uri->params.s=s;
 			uri->params.len=p-s;
 			break;
@@ -1062,6 +1109,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->params.len=p-s;
 			uri->r2.s=b;
 			uri->r2.len=p-b;
+			break;
+		case PG_G_FIN:
+		case PG_eq:
+			uri->params.s=s;
+			uri->params.len=p-s;
+			uri->gr.s=b;
+			uri->gr.len=p-b;
 			break;
 		case URI_VAL_P:
 		/* intermediate value states */
