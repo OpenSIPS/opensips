@@ -79,11 +79,7 @@ static str drr_table = str_init("dr_rules");
 static str drc_table = str_init("dr_cariers");
 /* DRG use domain */
 static int use_domain = 1;
-/**
- * - 0 - normal order
- * - 1 - random order, full set
- * - 2 - random order, one per set
- */
+int dr_default_grp = -1;
 int dr_force_dns = 1;
 
 /* DRG table columns */
@@ -125,6 +121,10 @@ static str rule_attrs_avp_spec = {NULL, 0};
 /* AVP used to store RULE prefix */
 static struct _dr_avp rule_prefix_avp = { 0, -1 };
 static str rule_prefix_avp_spec = {NULL, 0};
+
+/* AVP used to store CARRIER ID */
+static struct _dr_avp carrier_id_avp = { 0, -1 };
+static str carrier_id_avp_spec = {NULL, 0};
 
 /* AVP used to store CARRIER ATTRs */
 static struct _dr_avp carrier_attrs_avp = { 0, -1 };
@@ -215,8 +215,10 @@ static param_export_t params[] = {
 	{"rule_id_avp",      STR_PARAM, &rule_id_avp_spec.s      },
 	{"rule_attrs_avp",   STR_PARAM, &rule_attrs_avp_spec.s   },
 	{"rule_prefix_avp",  STR_PARAM, &rule_prefix_avp_spec.s  },
+	{"carrier_id_avp",   STR_PARAM, &carrier_id_avp_spec.s   },
 	{"carrier_attrs_avp",STR_PARAM, &carrier_attrs_avp_spec.s},
 	{"force_dns",        INT_PARAM, &dr_force_dns            },
+	{"default_group",    INT_PARAM, &dr_default_grp          },
 	{"define_blacklist", STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
 	{ "probing_interval",      INT_PARAM, &dr_prob_interval         },
 	{ "probing_method",        STR_PARAM, &dr_probe_method.s        },
@@ -545,6 +547,22 @@ static int dr_init(void)
 		}
 	}
 
+	if (carrier_id_avp_spec.s) {
+		carrier_id_avp_spec.len = strlen(carrier_id_avp_spec.s);
+		if (pv_parse_spec( &carrier_id_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("bad or non AVP [%.*s] for carrier id AVP definition\n",
+				carrier_id_avp_spec.len, carrier_id_avp_spec.s);
+			return E_CFG;
+		}
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(carrier_id_avp.name),
+		&(carrier_id_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for carrier id AVP\n",
+				carrier_id_avp_spec.len, carrier_id_avp_spec.s);
+			return E_CFG;
+		}
+	}
+
 	if (carrier_attrs_avp_spec.s) {
 		carrier_attrs_avp_spec.len = strlen(carrier_attrs_avp_spec.s);
 		if (pv_parse_spec( &carrier_attrs_avp_spec, &avp_spec)==0
@@ -753,6 +771,8 @@ static inline int get_group_id(struct sip_uri *uri)
 	}
 
 	if (RES_ROW_N(res) == 0) {
+		if (dr_default_grp!=-1)
+			return dr_default_grp;
 		LM_ERR("no group for user "
 			"\"%.*s\"@\"%.*s\"\n", uri->user.len, uri->user.s,
 			uri->host.len, uri->host.s);
@@ -980,7 +1000,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 
 
 inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
-										pgw_t *gw , str *c_attrs, int idx)
+								pgw_t *gw , str *c_id, str *c_attrs, int idx)
 {
 	str *ruri;
 	int_str val;
@@ -1032,10 +1052,21 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 		}
 	}
 
+	if (carrier_id_avp.name!=-1) {
+		val.s = (c_id && c_id->s)? *c_id : attrs_empty ;
+		LM_DBG("setting CR Id [%.*s] as avp\n",val.s.len,val.s.s);
+		if (add_avp(AVP_VAL_STR|(carrier_id_avp.type),
+		carrier_id_avp.name,val)!=0){
+			LM_ERR("failed to insert attrs avp\n");
+			goto error;
+		}
+	}
+
 	if (carrier_attrs_avp.name!=-1) {
 		val.s = (c_attrs && c_attrs->s)? *c_attrs : attrs_empty ;
-		LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
+		LM_DBG("setting CR attr [%.*s] as avp\n",val.s.len,val.s.s);
+		if (add_avp(AVP_VAL_STR|(carrier_attrs_avp.type),
+		carrier_attrs_avp.name,val)!=0){
 			LM_ERR("failed to insert attrs avp\n");
 			goto error;
 		}
@@ -1219,7 +1250,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 				} else {
 					/* add gateway to usage list */
 					if ( push_gw_for_usage(msg, &uri, cdst->dst.gw ,
-					&dst->dst.carrier->attrs, n ) ) {
+					&dst->dst.carrier->id, &dst->dst.carrier->attrs, n ) ) {
 						LM_ERR("failed to use gw <%.*s>, skipping\n",
 							cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
@@ -1236,7 +1267,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 				continue;
 
 			/* add gateway to usage list */
-			if ( push_gw_for_usage(msg, &uri, dst->dst.gw, NULL, n) ) {
+			if ( push_gw_for_usage(msg, &uri, dst->dst.gw, NULL, NULL, n) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 					dst->dst.gw->id.len, dst->dst.gw->id.s);
 			} else {
@@ -1363,7 +1394,7 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 		} else {
 			/* add gateway to usage list */
 			if ( push_gw_for_usage(msg, &uri, cdst->dst.gw,
-			&cr->attrs, n ) ) {
+			&cr->id, &cr->attrs, n ) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 					cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 			} else {

@@ -190,10 +190,10 @@
 	</para>
 	</listitem>
 	<listitem>
-        <para>one for storing a list of gateways, so you don't have to enter all
+	<para>one for storing a list of gateways, so you don't have to enter all
 	the elements every time you need it
-        </para>
-        </listitem>
+	</para>
+	</listitem>
 	</itemizedlist>
 	<section>
 	<title>Gateway Addresses</title>
@@ -1124,6 +1124,27 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 
 
 	<section>
+		<title><varname>carrier_id_avp</varname> (str)</title>
+		<para>
+		AVP to be populate with the ID string for the carrier the 
+		current GW belongs to.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>carrier_id_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>carrier_attrs_avp</varname> (str)</title>
 		<para>
 		AVP to be populate with the attributes string for the carrier the 
@@ -1187,6 +1208,27 @@ modparam("drouting", "use_domain", 0)
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>default_group</varname> (int)</title>
+		<para>
+		Group to be used if the caller (FROM user) is not found in the GROUP
+		table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NONE</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>default_group</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "default_group", 4)
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	<section>
 		<title><varname>drg_user_col</varname> (str)</title>
