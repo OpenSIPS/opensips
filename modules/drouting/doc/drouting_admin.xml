@@ -1434,6 +1434,37 @@ do_routing("2","2");
 
 	<section>
 		<title>
+		<function moreinfo="none">route_to_carrier(carrier_id)</function>
+		</title>
+		<para>
+		Function to trigger the direct routing to a given carrier. In this case
+		the routing is not done prefix based, but carrier based (call will be
+		sent to the GWs of that carrier, based on carrier policy)
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<para>
+		Function takes a single mandatory parameter, the ID of the carrier
+		to be used (variables are accepted).
+		</para>
+
+		<example>
+		<title><function>route_to_carrier</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( route_2_routing("my_top_carrier") ) {
+	t_on_failure("next_gw");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">use_next_gw()/next_routing()</function>
 		</title>
 		<para>

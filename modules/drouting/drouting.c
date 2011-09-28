@@ -155,6 +155,7 @@ static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2);
 static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
 static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
+static int route2_carrier(struct sip_msg* msg, char* cr);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
@@ -187,8 +188,10 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
-	{"dr_disable", (cmd_function)dr_disable,          0,               0,
-			0, REQUEST_ROUTE|FAILURE_ROUTE},
+	{"dr_disable", (cmd_function)dr_disable,      0,  0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_pvar_null, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -1272,6 +1275,105 @@ error2:
 	lock_stop_read( ref_lock );
 error1:
 	return ret;
+}
+
+
+static int route2_carrier(struct sip_msg* msg, char *cr_str)
+{
+	unsigned short carrier_idx[DR_MAX_GWLIST];
+	struct sip_uri  uri;
+	pgw_list_t *cdst;
+	pv_value_t val;
+	pcr_t *cr;
+	str *ruri;
+	int j,n;
+
+	/* get the carrier ID */
+	if ( pv_get_spec_value(msg, (pv_spec_p)cr_str, &val)!=0 ||
+	(val.flags&PV_VAL_STR)==0 ) {
+		LM_ERR("failed to get string value for carrier ID\n");
+		return -1;
+	}
+
+	/* do some cleanup first */
+	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
+	destroy_avps( gw_id_avp.type, gw_id_avp.name, 1);
+	if (gw_attrs_avp.name!=-1)
+		destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
+	if (rule_id_avp.name!=-1)
+		destroy_avps( rule_id_avp.type, rule_id_avp.name, 1);
+	if (rule_attrs_avp.name!=-1)
+		destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
+	if (rule_prefix_avp.name!=-1)
+		destroy_avps( rule_prefix_avp.type, rule_prefix_avp.name, 1);
+
+	/* get the RURI */
+	ruri = GET_RURI(msg);
+	/* parse ruri */
+	if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
+		LM_ERR("unable to parse RURI\n");
+		return -1;
+	}
+
+	/* ref the data for reading */
+	lock_start_read( ref_lock );
+
+	cr = get_carrier_by_id( (*rdata)->carriers, &val.rs );
+	if (cr==NULL) {
+		LM_ERR("carrier <%.*s> was not found\n",val.rs.len, val.rs.s );
+		goto error;
+	}
+
+	/* is carrier turned off ? */
+	if( cr->flags & DR_CR_FLAG_IS_OFF ) {
+		LM_NOTICE("routing to disabled carrier <%.*s> failed\n",
+			cr->id.len, cr->id.s);
+		goto error;
+	}
+
+	/* sort the gws of the carrier */
+	j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
+		carrier_idx);
+	if (j!=0) {
+		LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
+			cr->id.len, cr->id.s);
+		goto error;
+	}
+
+	/* iterate through the list of GWs provided by carrier */
+	for ( j=0,n=0 ; j<cr->pgwa_len ; j++ ) {
+
+		cdst = &cr->pgwl[carrier_idx[j]];
+
+		/* is gateway disabled ? */
+		if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
+			/*ignore it*/
+		} else {
+			/* add gateway to usage list */
+			if ( push_gw_for_usage(msg, &uri, cdst->dst.gw,
+			&cr->attrs, n ) ) {
+				LM_ERR("failed to use gw <%.*s>, skipping\n",
+					cdst->dst.gw->id.len, cdst->dst.gw->id.s);
+			} else {
+				n++;
+			}
+		}
+
+	}
+
+	if( n < 1) {
+		LM_ERR("All the gateways are disabled\n");
+		goto error;
+	}
+
+	/* we are done reading -> unref the data */
+	lock_stop_read( ref_lock );
+
+	return 1;
+error:
+	/* we are done reading -> unref the data */
+	lock_stop_read( ref_lock );
+	return -1;
 }
 
 
