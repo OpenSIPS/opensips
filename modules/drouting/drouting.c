@@ -224,9 +224,9 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ RELOAD_MI_CMD, dr_reload_cmd, MI_NO_INPUT_FLAG, 0, 0 },
-	{ "dr_status",   mi_dr_status,   0,               0,  0},
-	{ 0, 0, 0, 0, 0}
+	{ RELOAD_MI_CMD, 0, dr_reload_cmd, MI_NO_INPUT_FLAG, 0, 0 },
+	{ "dr_status",   0, mi_dr_status,   0,               0,  0},
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

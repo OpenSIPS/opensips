@@ -129,8 +129,8 @@ static param_export_t params[]= {
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{"reg_list",	mi_reg_list,	0,	0,	0},
-	{0,		0,		0,	0,	0}
+	{"reg_list",	0, mi_reg_list,	0,	0,	0},
+	{0,		0,		0, 0,	0,	0}
 };
 
 

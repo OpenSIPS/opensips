@@ -160,10 +160,10 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ "LOAD_CPL",   mi_cpl_load,     0,  0,  0 },
-	{ "REMOVE_CPL", mi_cpl_remove,   0,  0,  0 },
-	{ "GET_CPL",    mi_cpl_get,      0,  0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ "LOAD_CPL",   0, mi_cpl_load,     0,  0,  0 },
+	{ "REMOVE_CPL", 0, mi_cpl_remove,   0,  0,  0 },
+	{ "GET_CPL",    0, mi_cpl_get,      0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

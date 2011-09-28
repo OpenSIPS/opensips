@@ -233,8 +233,8 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{MI_SET_NATPING_STATE,    mi_enable_natping,    0,                0, 0},
-	{ 0, 0, 0, 0, 0}
+	{MI_SET_NATPING_STATE, 0, mi_enable_natping,    0,                0, 0},
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 struct module_exports exports = {

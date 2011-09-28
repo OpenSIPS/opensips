@@ -199,10 +199,10 @@ static param_export_t params[]={
 
 
 static mi_export_t mi_cmds[] = {
-	{ "ds_set_state",   ds_mi_set,     0,                 0,  0            },
-	{ "ds_list",        ds_mi_list,    MI_NO_INPUT_FLAG,  0,  0            },
-	{ "ds_reload",      ds_mi_reload,  0,                 0,  mi_child_init},
-	{ 0, 0, 0, 0, 0}
+	{ "ds_set_state",   0, ds_mi_set,     0,                 0,  0            },
+	{ "ds_list",        0, ds_mi_list,    MI_NO_INPUT_FLAG,  0,  0            },
+	{ "ds_reload",      0, ds_mi_reload,  0,                 0,  mi_child_init},
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

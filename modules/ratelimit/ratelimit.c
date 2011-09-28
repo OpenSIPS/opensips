@@ -115,11 +115,11 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds [] = {
-	{"rl_list",       mi_stats,      0,                0, 0},
-	{"rl_reset_pipe", mi_reset_pipe, 0,                0, 0},
-	{"rl_set_pid",    mi_set_pid,    0,                0, 0},
-	{"rl_get_pid",    mi_get_pid,    MI_NO_INPUT_FLAG, 0, 0},
-	{0,0,0,0,0}
+	{"rl_list",       0, mi_stats,      0,                0, 0},
+	{"rl_reset_pipe", 0, mi_reset_pipe, 0,                0, 0},
+	{"rl_set_pid",    0, mi_set_pid,    0,                0, 0},
+	{"rl_get_pid",    0, mi_get_pid,    MI_NO_INPUT_FLAG, 0, 0},
+	{0,0,0,0,0,0}
 };
 
 struct module_exports exports= {

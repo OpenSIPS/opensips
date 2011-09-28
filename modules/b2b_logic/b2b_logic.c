@@ -156,11 +156,11 @@ static param_export_t params[]=
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{ "b2b_trigger_scenario", mi_trigger_scenario,   0,  0,  0},
-	{ "b2b_bridge",           mi_b2b_bridge,         0,  0,  0},
-	{ "b2b_list",             mi_b2b_list,           0,  0,  0},
-	{ "b2b_terminate_call",   mi_b2b_terminate_call, 0,  0,  0},
-	{  0,                  0,                        0,  0,  0}
+	{ "b2b_trigger_scenario", 0, mi_trigger_scenario,   0,  0,  0},
+	{ "b2b_bridge",           0, mi_b2b_bridge,         0,  0,  0},
+	{ "b2b_list",             0, mi_b2b_list,           0,  0,  0},
+	{ "b2b_terminate_call",   0, mi_b2b_terminate_call, 0,  0,  0},
+	{  0,                  0, 0,                        0,  0,  0}
 };
 
 /** Module interface */

@@ -89,8 +89,8 @@ int register_mi_mod( char *mod_name, mi_export_t *mis)
 		return 0;
 
 	for ( i=0 ; mis[i].name ; i++ ) {
-		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].param,
-			mis[i].init_f, mis[i].flags, mod_name);
+		ret = register_mi_cmd( mis[i].cmd, mis[i].name, mis[i].help,
+				mis[i].param, mis[i].init_f, mis[i].flags, mod_name);
 		if (ret!=0) {
 			LM_ERR("failed to register cmd <%s> for module %s\n",
 					mis[i].name,mod_name);
@@ -116,7 +116,7 @@ int init_mi_child(void)
 
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, void *param,
+int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
 									mi_child_init_f in, unsigned int flags, char* mod_name)
 {
 	struct mi_cmd *cmds;
@@ -160,6 +160,8 @@ int register_mi_cmd( mi_cmd_f f, char *name, void *param,
 	cmds->name.len = len;
 	cmds->module.s = mod_name;
 	cmds->module.len = strlen(mod_name);
+	cmds->help.s = help;
+	cmds->help.len = help ? strlen(help) : 0;
 	cmds->id = id;
 	cmds->param = param;
 
@@ -182,4 +184,63 @@ void get_mi_cmds( struct mi_cmd** cmds, int *size)
 	*size = mi_cmds_no;
 }
 
+#define MI_HELP_STR "help mi_cmd - " \
+	"returns information about 'mi_cmd'"
+#define MI_UNKNOWN_CMD "unknown MI command"
+#define MI_NO_HELP "not available for this command"
+#define MI_MODULE_STR "by \"%.*s\" module"
 
+struct mi_root *mi_help(struct mi_root *root, void *param)
+{
+	struct mi_root *rpl_tree = 0;
+	struct mi_node *node;
+	struct mi_node *rpl;
+	struct mi_cmd *cmd;
+
+	if (!root) {
+		LM_ERR("invalid MI command\n");
+		return 0;
+	}
+	node = root->node.kids;
+	if (!node || !node->value.len || !node->value.s) {
+		rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
+		if (!rpl_tree) {
+			LM_ERR("cannot init mi tree\n");
+			return 0;
+		}
+		rpl = &rpl_tree->node;
+		if (!add_mi_node_child(rpl, 0, "Usage", 5, MI_SSTR(MI_HELP_STR))) {
+			LM_ERR("cannot add new child\n");
+			goto error;
+		}
+	} else {
+		/* search the command */
+		cmd = lookup_mi_cmd(node->value.s, node->value.len);
+		if (!cmd)
+			return init_mi_tree(404, MI_SSTR(MI_UNKNOWN_CMD));
+		rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
+		if (!rpl_tree) {
+			LM_ERR("cannot init mi tree\n");
+			return 0;
+		}
+		rpl = &rpl_tree->node;
+		if (!addf_mi_node_child(rpl, 0, "Help", 4, "%s", cmd->help.s ?
+					cmd->help.s : MI_NO_HELP)) {
+			LM_ERR("cannot add new child\n");
+			goto error;
+		}
+		if (cmd->module.len && cmd->module.s && 
+				!add_mi_node_child(rpl, 0, "Exported by", 11,
+					cmd->module.s, cmd->module.len)) {
+			LM_ERR("cannot add new child\n");
+			goto error;
+		}
+	}
+
+	return rpl_tree;
+
+error:
+	if (rpl_tree)
+		free_mi_tree(rpl_tree);
+	return 0;
+}

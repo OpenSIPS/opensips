@@ -126,11 +126,11 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "pdt_add",     pdt_mi_add,     0,  0,  child_init },
-	{ "pdt_reload",  pdt_mi_reload,  0,  0,  0 },
-	{ "pdt_delete",  pdt_mi_delete,  0,  0,  0 },
-	{ "pdt_list",    pdt_mi_list,    0,  0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ "pdt_add",    0, pdt_mi_add,     0,  0,  child_init },
+	{ "pdt_reload", 0, pdt_mi_reload,  0,  0,  0 },
+	{ "pdt_delete", 0, pdt_mi_delete,  0,  0,  0 },
+	{ "pdt_list",   0, pdt_mi_list,    0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

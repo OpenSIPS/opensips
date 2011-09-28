@@ -96,8 +96,8 @@ static cmd_export_t  cmds[]=
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "refreshXcapDoc", refreshXcapDoc,      0,  0,  0},
-	{ 0,                 0,                  0,  0,  0}
+	{ "refreshXcapDoc", 0, refreshXcapDoc,      0,  0,  0},
+	{ 0,                0, 0,                  0,  0,  0}
 };
 
 /** module exports */

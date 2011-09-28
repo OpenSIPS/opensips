@@ -426,11 +426,11 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{MI_ENABLE_RTP_PROXY,     mi_enable_rtp_proxy,  0,                0, 0},
-	{MI_SHOW_RTP_PROXIES,     mi_show_rtpproxies,   MI_NO_INPUT_FLAG, 0, 0},
-	{MI_RELOAD_RTP_PROXIES,   mi_reload_rtpproxies, MI_NO_INPUT_FLAG, 0,
+	{MI_ENABLE_RTP_PROXY,   0, mi_enable_rtp_proxy,  0,                0, 0},
+	{MI_SHOW_RTP_PROXIES,   0, mi_show_rtpproxies,   MI_NO_INPUT_FLAG, 0, 0},
+	{MI_RELOAD_RTP_PROXIES, 0, mi_reload_rtpproxies, MI_NO_INPUT_FLAG, 0,
 		mi_child_init},
-	{ 0, 0, 0, 0, 0}
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 static proc_export_t procs[] = {

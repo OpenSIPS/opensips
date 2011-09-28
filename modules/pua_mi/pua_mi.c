@@ -62,9 +62,9 @@ str presence_server= {0, 0};
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ "pua_publish",     mi_pua_publish,     MI_ASYNC_RPL_FLAG,  0,  0},
-	{ "pua_subscribe",   mi_pua_subscribe,   0,				     0,  0},
-	{ 0,				 0,					 0,					 0,  0}
+	{ "pua_publish",	0, mi_pua_publish,     MI_ASYNC_RPL_FLAG,  0,  0},
+	{ "pua_subscribe",	0, mi_pua_subscribe,   0,				     0,  0},
+	{ 0,				0, 0,					 0,					 0,  0}
 };
 
 /*

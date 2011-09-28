@@ -149,8 +149,8 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ "regex_reload", mi_pcres_reload, MI_NO_INPUT_FLAG, 0, 0 },
-	{ 0, 0, 0, 0 ,0 }
+	{ "regex_reload", 0, mi_pcres_reload, MI_NO_INPUT_FLAG, 0, 0 },
+	{ 0, 0, 0, 0, 0 ,0 }
 };
 
 

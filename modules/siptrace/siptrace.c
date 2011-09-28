@@ -170,8 +170,8 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "sip_trace", sip_trace_mi,   0,  0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ "sip_trace", 0, sip_trace_mi,   0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

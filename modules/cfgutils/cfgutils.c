@@ -157,14 +157,14 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ FIFO_SET_PROB,   mi_set_prob,   0,                 0,  0 },
-	{ FIFO_RESET_PROB, mi_reset_prob, MI_NO_INPUT_FLAG,  0,  0 },
-	{ FIFO_GET_PROB,   mi_get_prob,   MI_NO_INPUT_FLAG,  0,  0 },
-	{ FIFO_GET_HASH,   mi_get_hash,   MI_NO_INPUT_FLAG,  0,  0 },
-	{ FIFO_CHECK_HASH, mi_check_hash, MI_NO_INPUT_FLAG,  0,  0 },
-	{ "shv_get",       mi_shvar_get,  0,                 0,  0 },
-	{ "shv_set" ,      mi_shvar_set,  0,                 0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ FIFO_SET_PROB,   0, mi_set_prob,   0,                 0,  0 },
+	{ FIFO_RESET_PROB, 0, mi_reset_prob, MI_NO_INPUT_FLAG,  0,  0 },
+	{ FIFO_GET_PROB,   0, mi_get_prob,   MI_NO_INPUT_FLAG,  0,  0 },
+	{ FIFO_GET_HASH,   0, mi_get_hash,   MI_NO_INPUT_FLAG,  0,  0 },
+	{ FIFO_CHECK_HASH, 0, mi_check_hash, MI_NO_INPUT_FLAG,  0,  0 },
+	{ "shv_get",       0, mi_shvar_get,  0,                 0,  0 },
+	{ "shv_set" ,      0, mi_shvar_set,  0,                 0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 static pv_export_t mod_items[] = {

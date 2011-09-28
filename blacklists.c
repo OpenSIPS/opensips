@@ -55,8 +55,9 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param);
 
 
 static mi_export_t mi_bl_cmds[] = {
-	{ "list_blacklists", mi_print_blacklists,  MI_NO_INPUT_FLAG  ,  0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ "list_blacklists", "lists all the defined (static or learned) blacklists",
+		mi_print_blacklists,  MI_NO_INPUT_FLAG  ,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

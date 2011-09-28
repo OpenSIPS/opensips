@@ -118,11 +118,11 @@ static param_export_t mod_params[]={
 
 
 static mi_export_t mi_cmds[] = {
-	{ "lb_reload",   mi_lb_reload,   MI_NO_INPUT_FLAG,   0,  mi_child_init},
-	{ "lb_resize",   mi_lb_resize,   0,                  0,  0},
-	{ "lb_list",     mi_lb_list,     MI_NO_INPUT_FLAG,   0,  0},
-	{ "lb_status",   mi_lb_status,   0,                  0,  0},
-	{ 0, 0, 0, 0, 0}
+	{ "lb_reload",   0, mi_lb_reload,   MI_NO_INPUT_FLAG,   0,  mi_child_init},
+	{ "lb_resize",   0, mi_lb_resize,   0,                  0,  0},
+	{ "lb_list",     0, mi_lb_list,     MI_NO_INPUT_FLAG,   0,  0},
+	{ "lb_status",   0, mi_lb_status,   0,                  0,  0},
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

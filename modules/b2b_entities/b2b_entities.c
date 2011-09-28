@@ -105,8 +105,8 @@ static param_export_t params[]={
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{ "b2be_list", mi_b2be_list, 0,  0,  0},
-	{  0,          0,            0,  0,  0}
+	{ "b2be_list", 0, mi_b2be_list, 0,  0,  0},
+	{  0,          0, 0,            0,  0,  0}
 };
 /** Module interface */
 struct module_exports exports= {

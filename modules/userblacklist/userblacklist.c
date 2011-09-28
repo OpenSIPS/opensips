@@ -98,8 +98,8 @@ static param_export_t params[] = {
 
 /* Exported MI functions */
 static mi_export_t mi_cmds[] = {
-	{ "reload_blacklist", mi_reload_blacklist, MI_NO_INPUT_FLAG, 0, 0 },
-	{ 0, 0, 0, 0, 0}
+	{ "reload_blacklist", 0, mi_reload_blacklist, MI_NO_INPUT_FLAG, 0, 0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

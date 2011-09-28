@@ -134,12 +134,12 @@ static struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param);
 static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param);
 
 static mi_export_t mi_cmds[] = {
-	{ "bm_enable_global", mi_bm_enable_global,  0,  0,  0  },
-	{ "bm_enable_timer",  mi_bm_enable_timer,   0,  0,  0  },
-	{ "bm_granularity",   mi_bm_granularity,    0,  0,  0  },
-	{ "bm_loglevel",      mi_bm_loglevel,       0,  0,  0  },
-	{ "bm_poll_results",  mi_bm_poll_results,   0,  0,  0  },
-	{ 0, 0, 0, 0, 0}
+	{ "bm_enable_global", 0, mi_bm_enable_global,  0,  0,  0  },
+	{ "bm_enable_timer",  0, mi_bm_enable_timer,   0,  0,  0  },
+	{ "bm_granularity",   0, mi_bm_granularity,    0,  0,  0  },
+	{ "bm_loglevel",      0, mi_bm_loglevel,       0,  0,  0  },
+	{ "bm_poll_results",  0, mi_bm_poll_results,   0,  0,  0  },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param, 

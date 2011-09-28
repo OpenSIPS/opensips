@@ -55,22 +55,17 @@ static param_export_t params[]= {
 	{0,0,0}
 };
 
-/** MI commands */
-static mi_export_t mi_cmds[] = {
-	{0,0,0,0,0}
-};
-
 /** Module interface */
 struct module_exports exports= {
         "uac_auth",			/* module name */
-        MODULE_VERSION,			/* module version */
-        DEFAULT_DLFLAGS,		/* dlopen flags */
+        MODULE_VERSION,		/* module version */
+        DEFAULT_DLFLAGS,	/* dlopen flags */
         cmds,				/* exported functions */
         params,				/* exported parameters */
         NULL,				/* exported statistics */
-        mi_cmds,			/* exported MI functions */
+        0,					/* exported MI functions */
         NULL,				/* exported pseudo-variables */
-        0,				/* extra processes */
+        0,					/* extra processes */
         mod_init,			/* module initialization function */
         (response_function) NULL,	/* response handling function */
         (destroy_function) mod_destroy,	/* destroy function */

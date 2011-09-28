@@ -101,10 +101,10 @@ static param_export_t params[] = {
  * MI
  */
 static mi_export_t mi_cmds[] = {
-        {"db_get",      db_get_info,       MI_NO_INPUT_FLAG,  0,  0 },
-        {"db_set",      db_set_info,       0,  0,  0 },
+        {"db_get",      0, db_get_info,       MI_NO_INPUT_FLAG,  0,  0 },
+        {"db_set",      0, db_set_info,       0,  0,  0 },
         //{"db_add",      db_add_url,        0,  0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 struct module_exports exports = {	

@@ -519,19 +519,34 @@ static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 
 
 static mi_export_t mi_core_cmds[] = {
-	{ "uptime",      mi_uptime,     MI_NO_INPUT_FLAG,  0,  init_mi_uptime },
-	{ "version",     mi_version,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ "pwd",         mi_pwd,        MI_NO_INPUT_FLAG,  0,  0 },
-	{ "arg",         mi_arg,        MI_NO_INPUT_FLAG,  0,  0 },
-	{ "which",       mi_which,      MI_NO_INPUT_FLAG,  0,  0 },
-	{ "ps",          mi_ps,         MI_NO_INPUT_FLAG,  0,  0 },
-	{ "kill",        mi_kill,       MI_NO_INPUT_FLAG,  0,  0 },
-	{ "debug",       mi_debug,                     0,  0,  0 },
-	{ "cache_store", mi_cachestore,                0,  0,  0 },
-	{ "cache_fetch", mi_cachefetch,                0,  0,  0 },
-	{ "cache_remove",mi_cacheremove,               0,  0,  0 },
-	{ "event_subscribe", mi_event_subscribe,       0,  0,  0 },
-	{ 0, 0, 0, 0, 0}
+	{ "uptime", "prints various time information about OpenSIPS - "
+		"when it started to run, for how long it runs",
+		mi_uptime,     MI_NO_INPUT_FLAG,  0,  init_mi_uptime },
+	{ "version", "prints the version string of a runningOpenSIPS",
+		mi_version,    MI_NO_INPUT_FLAG,  0,  0 },
+	{ "pwd", "prints the working directory of OpenSIPS",
+		mi_pwd,        MI_NO_INPUT_FLAG,  0,  0 },
+	{ "arg", "returns the full list of arguments used at startup",
+		mi_arg,        MI_NO_INPUT_FLAG,  0,  0 },
+	{ "which", "lists all avaialbe MI commands",
+		mi_which,      MI_NO_INPUT_FLAG,  0,  0 },
+	{ "ps", "lists all processes used by OpenSIPS",
+		mi_ps,         MI_NO_INPUT_FLAG,  0,  0 },
+	{ "kill", "terminates OpenSIPS",
+		mi_kill,       MI_NO_INPUT_FLAG,  0,  0 },
+	{ "debug", "gets/sets the value of the debug core variable",
+		mi_debug,                     0,  0,  0 },
+	{ "cache_store", "stores in a cache system a string value",
+		mi_cachestore,                0,  0,  0 },
+	{ "cache_fetch", "queries for a cache stored value",
+		mi_cachefetch,                0,  0,  0 },
+	{ "cache_remove", "removes a record from the cache system",
+		mi_cacheremove,               0,  0,  0 },
+	{ "event_subscribe", "subscribes an event to the Event Interface",
+		mi_event_subscribe,       0,  0,  0 },
+	{ "help", "prints information about MI commands usage",
+		mi_help,                  0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 

@@ -61,6 +61,7 @@ struct mi_cmd {
 	int id;
 	str module;
 	str name;
+	str help;
 	mi_child_init_f *init_f;
 	mi_cmd_f *f;
 	unsigned int flags;
@@ -70,6 +71,7 @@ struct mi_cmd {
 
 typedef struct mi_export_ {
 	char *name;
+	char *help;
 	mi_cmd_f *cmd;
 	unsigned int flags;
 	void *param;
@@ -78,7 +80,7 @@ typedef struct mi_export_ {
 
 
 
-int register_mi_cmd( mi_cmd_f f, char *name, void *param,
+int register_mi_cmd( mi_cmd_f f, char *name, char *help, void *param,
 		mi_child_init_f in, unsigned int flags, char* mod_name);
 
 int register_mi_mod( char *mod_name, mi_export_t *mis);
@@ -86,6 +88,8 @@ int register_mi_mod( char *mod_name, mi_export_t *mis);
 int init_mi_child();
 
 struct mi_cmd* lookup_mi_cmd( char *name, int len);
+
+struct mi_root *mi_help(struct mi_root *cmd, void *param);
 
 
 extern mi_flush_f *crt_flush_fnct;

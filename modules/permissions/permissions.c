@@ -179,12 +179,12 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_ADDRESS_RELOAD,  mi_address_reload,  MI_NO_INPUT_FLAG,  0,
+	{ MI_ADDRESS_RELOAD,  0, mi_address_reload,  MI_NO_INPUT_FLAG,  0,
 													mi_address_child_init },
-	{ MI_ADDRESS_DUMP,    mi_address_dump,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ MI_SUBNET_DUMP,     mi_subnet_dump,     MI_NO_INPUT_FLAG,  0,  0 },
-	{ MI_ALLOW_URI,       mi_allow_uri,       0,  0,  0 },
-	{ 0, 0, 0, 0, 0 }
+	{ MI_ADDRESS_DUMP,    0, mi_address_dump,    MI_NO_INPUT_FLAG,  0,  0 },
+	{ MI_SUBNET_DUMP,     0, mi_subnet_dump,     MI_NO_INPUT_FLAG,  0,  0 },
+	{ MI_ALLOW_URI,       0, mi_allow_uri,       0,  0,  0 },
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 /* Module interface */

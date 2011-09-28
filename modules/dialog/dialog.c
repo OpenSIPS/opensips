@@ -253,13 +253,13 @@ static stat_export_t mod_stats[] = {
 
 
 static mi_export_t mi_cmds[] = {
-	{ "dlg_list",           mi_print_dlgs,         0,  0,  0},
-	{ "dlg_list_ctx",       mi_print_dlgs_ctx,     0,  0,  0},
-	{ "dlg_end_dlg",        mi_terminate_dlg,      0,  0,  0},
-	{ "profile_get_size",   mi_get_profile,        0,  0,  0},
-	{ "profile_list_dlgs",  mi_profile_list,       0,  0,  0},
-	{ "profile_get_values", mi_get_profile_values, 0,  0,  0},
-	{ 0, 0, 0, 0, 0}
+	{ "dlg_list",           0, mi_print_dlgs,         0,  0,  0},
+	{ "dlg_list_ctx",       0, mi_print_dlgs_ctx,     0,  0,  0},
+	{ "dlg_end_dlg",        0, mi_terminate_dlg,      0,  0,  0},
+	{ "profile_get_size",   0, mi_get_profile,        0,  0,  0},
+	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
+	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
+	{ 0, 0, 0, 0, 0, 0}
 };
 
 
