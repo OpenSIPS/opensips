@@ -103,33 +103,38 @@ struct _dr_avp{
 };
 
 /* AVP used to store serial RURIs */
-struct _dr_avp ruri_avp = { 0, -1 };
+static struct _dr_avp ruri_avp = { 0, -1 };
 static str ruri_avp_spec = str_init("$avp(0xad346b2f)");
 
 /* AVP used to store GW IDs */
-struct _dr_avp gw_id_avp = { 0, -1 };
+static struct _dr_avp gw_id_avp = { 0, -1 };
 static str gw_id_avp_spec = str_init("$avp(0xad346b30)");
 
 /* AVP used to store GW ATTRs */
-struct _dr_avp gw_attrs_avp = { 0, -1 };
-static str gw_attrs_avp_spec = str_init("$avp(0xad346b31)");
+static struct _dr_avp gw_attrs_avp = { 0, -1 };
+static str gw_attrs_avp_spec = { NULL, 0};
 
 /* AVP used to store RULE IDs */
-struct _dr_avp rule_id_avp = { 0, -1 };
-static str rule_id_avp_spec = str_init("$avp(0xad346b32)");
+static struct _dr_avp rule_id_avp = { 0, -1 };
+static str rule_id_avp_spec = {NULL, 0};
 
 /* AVP used to store RULE ATTRs */
-struct _dr_avp rule_attrs_avp = { 0, -1 };
-static str rule_attrs_avp_spec = str_init("$avp(0xad346b33)");
+static struct _dr_avp rule_attrs_avp = { 0, -1 };
+static str rule_attrs_avp_spec = {NULL, 0};
 
 /* AVP used to store RULE prefix */
-struct _dr_avp rule_prefix_avp = { 0, -1 };
-static str rule_prefix_avp_spec = str_init("$avp(0xad346b34)");
+static struct _dr_avp rule_prefix_avp = { 0, -1 };
+static str rule_prefix_avp_spec = {NULL, 0};
+
+/* AVP used to store CARRIER ATTRs */
+static struct _dr_avp carrier_attrs_avp = { 0, -1 };
+static str carrier_attrs_avp_spec = {NULL, 0};
 
 /* statistic data */
 int tree_size = 0;
 int inode = 0;
 int unode = 0;
+static str attrs_empty = str_init("");
 
 /* reader-writers lock for reloading the data */
 static rw_lock_t *ref_lock = NULL; 
@@ -195,23 +200,24 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"db_url",          STR_PARAM, &db_url.s        },
-	{"drd_table",       STR_PARAM, &drd_table.s     },
-	{"drr_table",       STR_PARAM, &drr_table.s     },
-	{"drg_table",       STR_PARAM, &drg_table.s     },
-	{"drc_table",       STR_PARAM, &drc_table.s     },
-	{"use_domain",      INT_PARAM, &use_domain      },
-	{"drg_user_col",    STR_PARAM, &drg_user_col.s  },
-	{"drg_domain_col",  STR_PARAM, &drg_domain_col.s},
-	{"drg_grpid_col",   STR_PARAM, &drg_grpid_col.s },
-	{"ruri_avp",        STR_PARAM, &ruri_avp_spec.s },
-	{"gw_id_avp",       STR_PARAM, &gw_id_avp_spec.s     },
-	{"gw_attrs_avp",    STR_PARAM, &gw_attrs_avp_spec.s  },
-	{"rule_id_avp",     STR_PARAM, &rule_id_avp_spec.s   },
-	{"rule_attrs_avp",  STR_PARAM, &rule_attrs_avp_spec.s},
-	{"rule_prefix_avp", STR_PARAM, &rule_prefix_avp_spec.s},
-	{"force_dns",       INT_PARAM, &dr_force_dns         },
-	{"define_blacklist",STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
+	{"db_url",           STR_PARAM, &db_url.s        },
+	{"drd_table",        STR_PARAM, &drd_table.s     },
+	{"drr_table",        STR_PARAM, &drr_table.s     },
+	{"drg_table",        STR_PARAM, &drg_table.s     },
+	{"drc_table",        STR_PARAM, &drc_table.s     },
+	{"use_domain",       INT_PARAM, &use_domain      },
+	{"drg_user_col",     STR_PARAM, &drg_user_col.s  },
+	{"drg_domain_col",   STR_PARAM, &drg_domain_col.s},
+	{"drg_grpid_col",    STR_PARAM, &drg_grpid_col.s },
+	{"ruri_avp",         STR_PARAM, &ruri_avp_spec.s },
+	{"gw_id_avp",        STR_PARAM, &gw_id_avp_spec.s        },
+	{"gw_attrs_avp",     STR_PARAM, &gw_attrs_avp_spec.s     },
+	{"rule_id_avp",      STR_PARAM, &rule_id_avp_spec.s      },
+	{"rule_attrs_avp",   STR_PARAM, &rule_attrs_avp_spec.s   },
+	{"rule_prefix_avp",  STR_PARAM, &rule_prefix_avp_spec.s  },
+	{"carrier_attrs_avp",STR_PARAM, &carrier_attrs_avp_spec.s},
+	{"force_dns",        INT_PARAM, &dr_force_dns            },
+	{"define_blacklist", STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
 	{ "probing_interval",      INT_PARAM, &dr_prob_interval         },
 	{ "probing_method",        STR_PARAM, &dr_probe_method.s        },
 	{ "probing_from",          STR_PARAM, &dr_probe_from.s          },
@@ -436,34 +442,44 @@ static int dr_init(void)
 	drg_domain_col.len = strlen(drg_domain_col.s);
 	drg_grpid_col.len = strlen(drg_grpid_col.s);
 
-	/* fix AVP spec */
-	if (ruri_avp_spec.s) {
-		ruri_avp_spec.len = strlen(ruri_avp_spec.s);
+	/* fix AVP specs */
 
-		if (pv_parse_spec( &ruri_avp_spec, &avp_spec)==0
-		|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP [%.*s] for RURI AVP definition\n",
-				ruri_avp_spec.len, ruri_avp_spec.s);
-			return E_CFG;
-		}
-
-		if( pv_get_avp_name(0, &(avp_spec.pvp), &(ruri_avp.name),
-		&(ruri_avp.type) )!=0) {
-			LM_ERR("[%.*s]- invalid AVP definition for RURI AVP\n",
-				ruri_avp_spec.len, ruri_avp_spec.s);
-			return E_CFG;
-		}
+	ruri_avp_spec.len = strlen(ruri_avp_spec.s);
+	if (pv_parse_spec( &ruri_avp_spec, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP [%.*s] for RURI AVP definition\n",
+			ruri_avp_spec.len, ruri_avp_spec.s);
+		return E_CFG;
 	}
+	if( pv_get_avp_name(0, &(avp_spec.pvp), &(ruri_avp.name),
+	&(ruri_avp.type) )!=0) {
+		LM_ERR("[%.*s]- invalid AVP definition for RURI AVP\n",
+			ruri_avp_spec.len, ruri_avp_spec.s);
+		return E_CFG;
+	}
+
+	gw_id_avp_spec.len = strlen(gw_id_avp_spec.s);
+	if (pv_parse_spec( &gw_id_avp_spec, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP [%.*s] for ID AVP definition\n",
+			gw_id_avp_spec.len, gw_id_avp_spec.s);
+		return E_CFG;
+	}
+	if( pv_get_avp_name(0, &(avp_spec.pvp), &(gw_id_avp.name),
+	&(gw_id_avp.type) )!=0) {
+		LM_ERR("[%.*s]- invalid AVP definition for ID AVP\n",
+			gw_id_avp_spec.len, gw_id_avp_spec.s);
+		return E_CFG;
+	}
+
 	if (gw_attrs_avp_spec.s) {
 		gw_attrs_avp_spec.len = strlen(gw_attrs_avp_spec.s);
-
 		if (pv_parse_spec( &gw_attrs_avp_spec, &avp_spec)==0
 		|| avp_spec.type!=PVT_AVP) {
 			LM_ERR("malformed or non AVP [%.*s] for ATTRS AVP definition\n",
 				gw_attrs_avp_spec.len, gw_attrs_avp_spec.s);
 			return E_CFG;
 		}
-
 		if( pv_get_avp_name(0, &(avp_spec.pvp), &(gw_attrs_avp.name),
 		&(gw_attrs_avp.type) )!=0) {
 			LM_ERR("[%.*s]- invalid AVP definition for ATTRS AVP\n",
@@ -471,68 +487,15 @@ static int dr_init(void)
 			return E_CFG;
 		}
 	}
-	if (rule_attrs_avp_spec.s) {
-		rule_attrs_avp_spec.len = strlen(rule_attrs_avp_spec.s);
 
-		if (pv_parse_spec( &rule_attrs_avp_spec, &avp_spec)==0
-		|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP [%.*s] for ATTRS AVP definition\n",
-				rule_attrs_avp_spec.len, rule_attrs_avp_spec.s);
-			return E_CFG;
-		}
-
-		if( pv_get_avp_name(0, &(avp_spec.pvp), &(rule_attrs_avp.name),
-		&(rule_attrs_avp.type) )!=0) {
-			LM_ERR("[%.*s]- invalid AVP definition for ATTRS AVP\n",
-				rule_attrs_avp_spec.len, rule_attrs_avp_spec.s);
-			return E_CFG;
-		}
-	}
-	if (rule_prefix_avp_spec.s) {
-		rule_prefix_avp_spec.len = strlen(rule_prefix_avp_spec.s);
-
-		if (pv_parse_spec( &rule_prefix_avp_spec, &avp_spec)==0
-		|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP [%.*s] for PREFIX AVP definition\n",
-				rule_prefix_avp_spec.len, rule_prefix_avp_spec.s);
-			return E_CFG;
-		}
-
-		if( pv_get_avp_name(0, &(avp_spec.pvp), &(rule_prefix_avp.name),
-		&(rule_prefix_avp.type) )!=0) {
-			LM_ERR("[%.*s]- invalid AVP definition for PREFIX AVP\n",
-				rule_prefix_avp_spec.len, rule_prefix_avp_spec.s);
-			return E_CFG;
-		}
-	}
-
-	if (gw_id_avp_spec.s) {
-		gw_id_avp_spec.len = strlen(gw_id_avp_spec.s);
-
-		if (pv_parse_spec( &gw_id_avp_spec, &avp_spec)==0
-		|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP [%.*s] for ID AVP definition\n",
-				gw_id_avp_spec.len, gw_id_avp_spec.s);
-			return E_CFG;
-		}
-
-		if( pv_get_avp_name(0, &(avp_spec.pvp), &(gw_id_avp.name),
-		&(gw_id_avp.type) )!=0) {
-			LM_ERR("[%.*s]- invalid AVP definition for ID AVP\n",
-				gw_id_avp_spec.len, gw_id_avp_spec.s);
-			return E_CFG;
-		}
-	}
 	if (rule_id_avp_spec.s) {
 		rule_id_avp_spec.len = strlen(rule_id_avp_spec.s);
-
 		if (pv_parse_spec( &rule_id_avp_spec, &avp_spec)==0
 		|| avp_spec.type!=PVT_AVP) {
 			LM_ERR("malformed or non AVP [%.*s] for ID AVP definition\n",
 				rule_id_avp_spec.len, rule_id_avp_spec.s);
 			return E_CFG;
 		}
-
 		if( pv_get_avp_name(0, &(avp_spec.pvp), &(rule_id_avp.name),
 		&(rule_id_avp.type) )!=0) {
 			LM_ERR("[%.*s]- invalid AVP definition for ID AVP\n",
@@ -541,6 +504,53 @@ static int dr_init(void)
 		}
 	}
 
+	if (rule_attrs_avp_spec.s) {
+		rule_attrs_avp_spec.len = strlen(rule_attrs_avp_spec.s);
+		if (pv_parse_spec( &rule_attrs_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP [%.*s] for ATTRS AVP definition\n",
+				rule_attrs_avp_spec.len, rule_attrs_avp_spec.s);
+			return E_CFG;
+		}
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(rule_attrs_avp.name),
+		&(rule_attrs_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for ATTRS AVP\n",
+				rule_attrs_avp_spec.len, rule_attrs_avp_spec.s);
+			return E_CFG;
+		}
+	}
+
+	if (rule_prefix_avp_spec.s) {
+		rule_prefix_avp_spec.len = strlen(rule_prefix_avp_spec.s);
+		if (pv_parse_spec( &rule_prefix_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP [%.*s] for PREFIX AVP definition\n",
+				rule_prefix_avp_spec.len, rule_prefix_avp_spec.s);
+			return E_CFG;
+		}
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(rule_prefix_avp.name),
+		&(rule_prefix_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for PREFIX AVP\n",
+				rule_prefix_avp_spec.len, rule_prefix_avp_spec.s);
+			return E_CFG;
+		}
+	}
+
+	if (carrier_attrs_avp_spec.s) {
+		carrier_attrs_avp_spec.len = strlen(carrier_attrs_avp_spec.s);
+		if (pv_parse_spec( &carrier_attrs_avp_spec, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("bad or non AVP [%.*s] for carrier attrs AVP definition\n",
+				carrier_attrs_avp_spec.len, carrier_attrs_avp_spec.s);
+			return E_CFG;
+		}
+		if( pv_get_avp_name(0, &(avp_spec.pvp), &(carrier_attrs_avp.name),
+		&(carrier_attrs_avp.type) )!=0) {
+			LM_ERR("[%.*s]- invalid AVP definition for carrier attrs AVP\n",
+				carrier_attrs_avp_spec.len, carrier_attrs_avp_spec.s);
+			return E_CFG;
+		}
+	}
 
 	if (init_dr_bls()!=0) {
 		LM_ERR("failed to init DR blacklists\n");
@@ -851,12 +861,15 @@ static int use_next_gw(struct sip_msg* msg)
 		LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
 
 		/* remove the old attrs */
-		avp = NULL;
-		do {
+		if (gw_attrs_avp.name!=-1) {
+			avp = NULL;
+			do {
+				if (avp) destroy_avp(avp);
+				avp = search_first_avp( gw_attrs_avp.type,
+					gw_attrs_avp.name, NULL, 0);
+			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 			if (avp) destroy_avp(avp);
-			avp = search_first_avp(gw_attrs_avp.type,gw_attrs_avp.name,NULL,0);
-		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
-		if (avp) destroy_avp(avp);
+		}
 
 		/* search old ID */
 		avp = NULL;
@@ -958,7 +971,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 
 
 inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
-														pgw_t *gw , int idx)
+										pgw_t *gw , str *c_attrs, int idx)
 {
 	str *ruri;
 	int_str val;
@@ -992,19 +1005,31 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 
 	}
 
-	/* add GW attrs avp */
-	val.s = gw->attrs;
-	LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
-	if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
-		LM_ERR("failed to insert attrs avp\n");
-		goto error;
-	}
 	/* add GW id avp */
 	val.s = gw->id;
 	LM_DBG("setting GW id [%.*s] as avp\n",val.s.len, val.s.s);
 	if (add_avp( AVP_VAL_STR|(gw_id_avp.type),gw_id_avp.name, val)!=0 ) {
 		LM_ERR("failed to insert ids avp\n");
 		goto error;
+	}
+
+	/* add GW attrs avp */
+	if (gw_attrs_avp.name!=-1) {
+		val.s = gw->attrs.s? gw->attrs : attrs_empty;
+		LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
+		if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
+			LM_ERR("failed to insert attrs avp\n");
+			goto error;
+		}
+	}
+
+	if (carrier_attrs_avp.name!=-1) {
+		val.s = (c_attrs && c_attrs->s)? *c_attrs : attrs_empty ;
+		LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
+		if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
+			LM_ERR("failed to insert attrs avp\n");
+			goto error;
+		}
 	}
 
 	pkg_free(ruri->s);
@@ -1041,10 +1066,14 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	/* do some cleanup first */
 	destroy_avps( ruri_avp.type, ruri_avp.name, 1);
 	destroy_avps( gw_id_avp.type, gw_id_avp.name, 1);
-	destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
-	destroy_avps( rule_id_avp.type, rule_id_avp.name, 1);
-	destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
-	destroy_avps( rule_prefix_avp.type, rule_prefix_avp.name, 1);
+	if (gw_attrs_avp.name!=-1)
+		destroy_avps( gw_attrs_avp.type, gw_attrs_avp.name, 1);
+	if (rule_id_avp.name!=-1)
+		destroy_avps( rule_id_avp.type, rule_id_avp.name, 1);
+	if (rule_attrs_avp.name!=-1)
+		destroy_avps( rule_attrs_avp.type, rule_attrs_avp.name, 1);
+	if (rule_prefix_avp.name!=-1)
+		destroy_avps( rule_prefix_avp.type, rule_prefix_avp.name, 1);
 
 	/* get the username from FROM_HDR */
 	if (parse_from_header(msg)!=0) {
@@ -1122,13 +1151,15 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	}
 
 	/* add RULE prefix avp - we do it now, as URI may change */
-	val.s.s = uri.user.s ;
-	val.s.len = prefix_len;
-	LM_DBG("setting RULE prefix [%.*s] \n",val.s.len,val.s.s);
-	if (add_avp( AVP_VAL_STR|(rule_attrs_avp.type),
-	rule_attrs_avp.name, val)!=0 ) {
-		LM_ERR("failed to insert rule attrs avp\n");
-		goto error2;
+	if (rule_prefix_avp.name!=-1) {
+		val.s.s = uri.user.s ;
+		val.s.len = prefix_len;
+		LM_DBG("setting RULE prefix [%.*s] \n",val.s.len,val.s.s);
+		if (add_avp( AVP_VAL_STR|(rule_prefix_avp.type),
+		rule_prefix_avp.name, val)!=0 ) {
+			LM_ERR("failed to insert rule prefix avp\n");
+			goto error2;
+		}
 	}
 
 	n = 0;
@@ -1171,7 +1202,8 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 					/*ignore it*/
 				} else {
 					/* add gateway to usage list */
-					if ( push_gw_for_usage(msg, &uri, cdst->dst.gw , n) ) {
+					if ( push_gw_for_usage(msg, &uri, cdst->dst.gw ,
+					&dst->dst.carrier->attrs, n ) ) {
 						LM_ERR("failed to use gw <%.*s>, skipping\n",
 							cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
@@ -1188,7 +1220,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 				continue;
 
 			/* add gateway to usage list */
-			if ( push_gw_for_usage(msg, &uri, dst->dst.gw , n) ) {
+			if ( push_gw_for_usage(msg, &uri, dst->dst.gw, NULL, n) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 					dst->dst.gw->id.len, dst->dst.gw->id.s);
 			} else {
@@ -1205,8 +1237,8 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	}
 
 	/* add RULE attrs avp */
-	if (rt_info->attrs.len) {
-		val.s = rt_info->attrs;
+	if (rule_attrs_avp.name!=-1) {
+		val.s = rt_info->attrs.s ? rt_info->attrs : attrs_empty;
 		LM_DBG("setting RULE attr [%.*s] \n",val.s.len,val.s.s);
 		if (add_avp( AVP_VAL_STR|(rule_attrs_avp.type),
 		rule_attrs_avp.name, val)!=0 ) {
@@ -1216,11 +1248,13 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	}
 
 	/* add RULE id avp */
-	val.n = (int) rt_info->id;
-	LM_DBG("setting RULE id [%d] as avp\n",val.n);
-	if (add_avp( rule_id_avp.type,rule_id_avp.name, val)!=0 ) {
-		LM_ERR("failed to insert rule ids avp\n");
-		goto error2;
+	if (rule_id_avp.name!=-1) {
+		val.n = (int) rt_info->id;
+		LM_DBG("setting RULE id [%d] as avp\n",val.n);
+		if (add_avp( rule_id_avp.type,rule_id_avp.name, val)!=0 ) {
+			LM_ERR("failed to insert rule ids avp\n");
+			goto error2;
+		}
 	}
 
 	/* we are done reading -> unref the data */
@@ -1435,9 +1469,12 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 			if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
 				prefix_username(msg, &pgwa->pri);
 			/* attrs ? */
-			val.s = pgwa->attrs;
-			if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0)
-				LM_ERR("failed to insert GW attrs avp\n");
+			if (gw_attrs_avp.name!=-1) {
+				val.s = pgwa->attrs.s ? pgwa->attrs : attrs_empty ;
+				if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),
+				gw_attrs_avp.name,val)!=0)
+					LM_ERR("failed to insert GW attrs avp\n");
+			}
 			return 1;
 		}
 		pgwa = pgwa->next;
@@ -1501,10 +1538,12 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 				if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
 					prefix_username(msg, &pgwa->pri);
 				/* attrs ? */
-				val.s = pgwa->attrs;
-				if (add_avp( AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name, val))
-					LM_ERR("failed to insert attrs avp\n");
-
+				if (gw_attrs_avp.name!=-1) {
+					val.s = pgwa->attrs.s ? pgwa->attrs : attrs_empty ;
+					if (add_avp( AVP_VAL_STR|(gw_attrs_avp.type),
+					gw_attrs_avp.name, val))
+						LM_ERR("failed to insert attrs avp\n");
+				}
 				return 1;
 			}
 			pgwa = pgwa->next;

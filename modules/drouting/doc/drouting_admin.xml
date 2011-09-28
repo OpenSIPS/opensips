@@ -1124,6 +1124,27 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 
 
 	<section>
+		<title><varname>carrier_attrs_avp</varname> (str)</title>
+		<para>
+		AVP to be populate with the attributes string for the carrier the 
+		current GW belongs to.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>carrier_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "carrier_attrs_avp", '$avp(carrier_attrs)')
+...
+	</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
 		Defines a backlist based on a list of GW types - the list will contain
