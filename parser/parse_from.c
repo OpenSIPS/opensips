@@ -71,7 +71,7 @@ int parse_from_header( struct sip_msg *msg)
 	parse_to(msg->from->body.s,msg->from->body.s+msg->from->body.len+1,from_b);
 	if (from_b->error == PARSE_ERROR) {
 		LM_ERR("bad from header\n");
-		pkg_free(from_b);
+		free_to(from_b);
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 			"error parsing From header");
 		set_err_reply(400, "bad header");

@@ -270,6 +270,9 @@ int ospGetPChargeInfoUserpart(
                 } else {
                     LM_ERR("bad P-Charge-Info header\n");
                 }
+                if (pci == &body) {
+                    free_to_params(pci);
+                }
                 break;
             }
         }

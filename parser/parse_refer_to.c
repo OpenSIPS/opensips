@@ -64,7 +64,7 @@ int parse_refer_to_header( struct sip_msg *msg )
 		refer_to_b);
 	if (refer_to_b->error == PARSE_ERROR) {
 		LM_ERR("bad Refer-To header\n");
-		pkg_free(refer_to_b);
+		free_to(refer_to_b);
 		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 			"error parsing REFER-TO header");
 		set_err_reply(400, "bad headers");

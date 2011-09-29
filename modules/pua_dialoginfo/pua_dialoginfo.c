@@ -252,13 +252,13 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	if(peer_uri.s == NULL)
 	{
 		LM_ERR("No more memory\n");
-		goto error;
+		goto end;
 	}
 	/* extract the peer_uri */
 	if(dlg_api.fetch_dlg_value(dlg, &peer_dlg_var, &peer_uri, 1) < 0 || peer_uri.len==0)
 	{
 		LM_ERR("Failed to fetch peer uri dialog variable\n");
-		goto error;
+		goto end;
 	}
 
 	LM_DBG("peer_uri = %.*s\n", peer_uri.len, peer_uri.s);
@@ -267,7 +267,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	if(peer_to_body.error != PARSE_OK)
 	{
 		LM_ERR("Failed to peer uri [%.*s]\n", peer_uri.len, peer_uri.s);
-		goto error;
+		goto end;
 	}
 
 	/* try to extract the flag */
@@ -279,7 +279,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	if(entity_uri.s == NULL)
 	{
 		LM_ERR("No more memory\n");
-		goto error;
+		goto end;
 	}
 	/* check if entity is also custom */
 	if(dlg_api.fetch_dlg_value(dlg, &entity_dlg_var, &entity_uri, 1) == 0)
@@ -289,7 +289,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 		if(from.error != PARSE_OK)
 		{
 			LM_ERR("Wrong format for entity body\n");
-			goto error;
+			goto end;
 		}
 		LM_DBG("entity_uri = %.*s\n", entity_uri.len, entity_uri.s);
 		LM_DBG("from uri = %.*s\n", from.uri.len, from.uri.s);
@@ -370,7 +370,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
 			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
 	}
-error:
+end:
 	if(peer_uri.s)
 		pkg_free(peer_uri.s);
 	if(entity_uri.s)

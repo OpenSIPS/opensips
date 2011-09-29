@@ -67,7 +67,7 @@ int parse_pai_header( struct sip_msg *msg )
 	     pai_b);
     if (pai_b->error == PARSE_ERROR) {
 	LM_ERR("bad P-Asserted-Identity header\n");
-	pkg_free(pai_b);
+	free_to(pai_b);
 	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 		"error parsing PAI header");
 	set_err_reply(400, "bad header");

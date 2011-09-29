@@ -139,7 +139,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_cseq(tmp, end, cseq_b);
 			if (cseq_b->error==PARSE_ERROR){
 				LM_ERR("bad cseq\n");
-				pkg_free(cseq_b);
+				free_cseq(cseq_b);
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 					"error parsing CSeq`");
 				set_err_reply(400, "bad CSeq header");
@@ -163,7 +163,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			tmp=parse_to(tmp, end,to_b);
 			if (to_b->error==PARSE_ERROR){
 				LM_ERR("bad to header\n");
-				pkg_free(to_b);
+				free_to(to_b);
 				set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 					"error parsing To header");
 				set_err_reply(400, "bad header");
