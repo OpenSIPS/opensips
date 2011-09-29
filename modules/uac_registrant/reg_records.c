@@ -270,15 +270,18 @@ void destroy_reg_htable(void) {
 	int i;
 	reg_record_t *record;
 
-	for(i=0; i<reg_hsize; i++) {
-		lock_destroy(&reg_htable[i].lock);
-		record = reg_htable[i].first;
+	if (reg_htable) {
+		for(i=0; i<reg_hsize; i++) {
+			lock_destroy(&reg_htable[i].lock);
+			record = reg_htable[i].first;
 
-		while(record) {
-			//delete the record
-			record = record->next;
+			while(record) {
+				//delete the record
+				record = record->next;
+			}
 		}
+		shm_free(reg_htable);
+		reg_htable = NULL;
 	}
-	return;
 }
 

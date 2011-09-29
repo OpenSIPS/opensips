@@ -82,7 +82,7 @@ uac_auth_api_t uac_auth_api;
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
 
-reg_table_t reg_htable;
+reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
 unsigned int hash_index = 0;
 
