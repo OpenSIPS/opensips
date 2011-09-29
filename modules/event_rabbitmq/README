@@ -1,0 +1,223 @@
+event_rabbitmq Module
+
+Razvan Crainea
+
+   OpenSIPS Project
+
+Edited by
+
+Razvan Crainea
+
+   Copyright © 2011 voice-system.ro
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. RabbitMQ events syntax
+        1.3. RabbitMQ socket syntax
+        1.4. Dependencies
+
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
+
+        1.5. Exported Parameters
+
+              1.5.1.
+
+        1.6. Exported Functions
+        1.7. Example
+
+   2. Frequently Asked Questions
+
+   List of Examples
+
+   1.1. E_PIKE_BLOCKED event
+   1.2. RabbitMQ socket
+   2.1. Event subscription
+   2.2. Event subscription
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   RabbitMQ is an open source messaging server. It's purpose is to
+   manage received messages in queues, taking advantage of the
+   flexible AMQP protocol.
+
+   This module provides the implementation of a RabbitMQ client
+   for the Event Interface. It is used to send AMQP messages to a
+   RabbitMQ server each time the Event Interface triggers an event
+   subscribed for.
+
+   The AMQP protocol is only used as the transport layer for
+   notifications. The content of a message is presented in the
+   next section.
+
+1.2. RabbitMQ events syntax
+
+   The raised events will follow the following grammar:
+     * event = event_name (argument '\n')*
+     * event_name = non-quoted_string'\n'
+     * argument = ((arg_name '::')? arg_value)? | (arg_value)
+     * arg_name = not-quoted_string
+     * arg_value = not-quoted_string | '"' string '"'
+     * not-quoted_string = string - {',",\n,\r}
+
+   The event name can contain any non-quoted string character, but
+   it is recommended to follow the syntax:
+   E_MODULE_NAME_EXTRA_NAME
+
+1.3. RabbitMQ socket syntax
+
+   'rabbitmq:' [user[':'password] '@' host [':' port] '/' exchange
+
+   Meanings:
+     * 'rabbitmq:' - informs the Event Interface that the events
+       sent to this subscriber should be handled by the
+       event_rabbitmq module.
+     * user - username used for RabbitMQ server authentication.
+       The default value is 'guest'.
+     * password - password used for RabbitMQ server
+       authentication. The default value is 'guest'.
+     * host - host name of the RabbitMQ server.
+     * port - port of the RabbitMQ server. The default value is
+       '5672'.
+     * exchange - this is the exchange routing information used by
+       the AMQP protocol. It is also used to identify the queue
+       where the event should be sent.
+       NOTE: if the queue does not exist, this module will not try
+       to create it.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules.
+
+1.4.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * librabbitmq-dev
+
+1.5. Exported Parameters
+
+   No parameter exported by this module. This module doesn't
+   export any parameter
+
+1.6. Exported Functions
+
+   No function exported to be used from configuration file.
+
+1.7. Example
+
+   This is an example of an event raised by the pike module when
+   it decides an ip should be blocked:
+
+   Example 1.1. E_PIKE_BLOCKED event
+
+        E_PIKE_BLOCKED
+        ip::192.168.2.11
+
+
+   Example 1.2. RabbitMQ socket
+
+        rabbitmq:guest:guest@127.0.0.1:5672/pike
+
+        # same socket can be written as
+        rabbitmq:127.0.0.1/pike
+
+
+Chapter 2. Frequently Asked Questions
+
+2.1.
+
+    What is the maximum lenght of a AMQP message?
+
+    The maximum length of a datagram event is 16384 bytes.
+
+2.2.
+
+    Where can I find more about OpenSIPS?
+
+    Take a look at http://www.opensips.org/.
+
+2.3.
+
+    What is the vhost used by the AMQP server?
+
+    Currently, the only vhost supported is '/'.
+
+2.4.
+
+    How can I set a vhost in the socket?
+
+    This version doesn't support a different vhost.
+
+2.5.
+
+    How can I send an event to my RabbitMQ server?
+
+       This module acts as a transport module for the OpenSIPS Event
+       Interface. Therefore, this module should follow the Event
+       Interface behavior:
+
+       The first step is to subscribe the RabbitMQ server to the
+       OpenSIPS Event Interface. This can be done using the
+       subscribe_event core function:
+
+       Example 2.1. Event subscription
+    startup_route {
+            subscribe_event("E_RABBITMQ_EVENT", "rabbitmq:127.0.0.1/queue");
+    }
+
+       The next step is to raise the event from the script, using the
+       raise_event core function:
+
+       Example 2.2. Event subscription
+    route {
+            ...
+            /* decided that an event should be raised */
+            raise_event("E_RABBITMQ_EVENT");
+            ...
+    }
+
+       NOTE that the event used above is only to exemplify the usage
+       from the script. Any event published through the OpenSIPS Event
+       Interface can be raised using this module.
+
+2.6.
+
+    Where can I find more information about RabbitMQ?
+
+    You can find more information about RabbitMQ on their official
+    website ( http://www.rabbitmq.com/).
+
+2.7.
+
+    Where can I post a question about this module?
+
+    First at all check if your question was already answered on one
+    of our mailing lists:
+      * User Mailing List -
+        http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+      * Developer Mailing List -
+        http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+
+    E-mails regarding any stable OpenSIPS release should be sent to
+    <users@lists.opensips.org> and e-mails regarding development
+    versions should be sent to <devel@lists.opensips.org>.
+
+    If you want to keep the mail private, send it to
+    <users@lists.opensips.org>.
+
+2.8.
+
+    How can I report a bug?
+
+    Please follow the guidelines provided at:
+    http://sourceforge.net/tracker/?group_id=232389.
