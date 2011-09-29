@@ -49,19 +49,20 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	static char buf[255];
 	str contact;
 
+	TO.param_lst = NULL;
 	memset(&publ, 0, sizeof(publ_info_t));
 	memset(&dialog, 0, sizeof(ua_pres_t));
 
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("parsing headers\n");
-		return -1;
+		goto error;
 	}
 
 	if( msg->to==NULL || msg->to->body.s==NULL)
 	{
 		LM_ERR("cannot parse TO header\n");
-		return -1;
+		goto error;
 	}
 	/* examine the to header */
 	if(msg->to->parsed != NULL)
@@ -76,7 +77,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		if(TO.uri.len <= 0)
 		{
 			LM_DBG("'To' header NOT parsed\n");
-			return -1;
+			goto error;
 		}
 		pto = &TO;
 	}
@@ -86,21 +87,21 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
 	{
 		LM_ERR("NULL to_tag value\n");
-		return -1;
+		goto error;
 	}
 	dialog.from_tag= pto->tag_value;
 
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("cannot parse callid header\n");
-		return -1;
+		goto error;
 	}
 	dialog.call_id = msg->callid->body;
 
 	if (!msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
-		return -1;
+		goto error;
 	}
 	if (msg->from->parsed == NULL)
 	{
@@ -109,7 +110,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		if ( parse_from_header( msg )<0 )
 		{
 			LM_DBG(" ERROR cannot parse From header\n");
-			return -1;
+			goto error;
 		}
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
@@ -118,12 +119,12 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
-		return -1;
+		goto error;
 	}
 	if ( get_content_length(msg) == 0 )
 	{
 		LM_DBG("content length= 0\n");
-		return 1;
+		goto done;
 	}
 	else
 	{
@@ -131,7 +132,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		if (body.s== NULL)
 		{
 			LM_ERR("cannot extract body from msg\n");
-			return -1;
+			goto error;
 		}
 		body.len = get_content_length( msg );
 	}
@@ -139,18 +140,18 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
 		LM_ERR("no contact header found");
-		return -1;
+		goto error;
 	}
 	if( parse_contact(msg->contact) <0 )
 	{
 		LM_ERR(" cannot parse contact header\n");
-		return -1;
+		goto error;
 	}
 
 	if(msg->contact->parsed == NULL)
 	{
 		LM_ERR("cannot parse contact header\n");
-		return -1;
+		goto error;
 	}
 	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
 
@@ -160,7 +161,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(pua_is_dialog(&dialog)< 0)
 	{
 		LM_ERR("Notify in a non existing dialog\n");
-		return -1;
+		goto error;
 	}
 
 	/* parse Subscription-State and extract expires if existing */
@@ -168,7 +169,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if( hdr==NULL )
 	{
 		LM_ERR("No Subscription-State header found\n");
-		return -1;
+		goto error;
 	}
 	subs_state= hdr->body;
 	if(strncasecmp(subs_state.s, "terminated", 10)== 0)
@@ -196,7 +197,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 					if( str2int(&exp, &expires)< 0)
 					{
 						LM_ERR("while parsing int\n");
-						return -1;
+						goto error;
 					}
 				}
 			}
@@ -204,14 +205,14 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		else
 		{
 			LM_ERR("unknown Subscription-state token\n");
-			return -1;
+			goto error;
 		}
 	}
 
 	/* +2 for ": " between header name and value */
 	if ((header_name.len + 2 + contact.len + CRLF_LEN) >= sizeof(buf)) {
 		LM_ERR("Sender header too large");
-		return -1;
+		goto error;
 	}
 
 	/* build extra_headers with Sender*/
@@ -236,9 +237,15 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	if(pua_send_publish(&publ)< 0)
 	{
 		LM_ERR("failed to send Publish message\n");
-		return -1;
+		goto error;
 	}
 
+done:
+	free_to_params(&TO);
 	return 1;
+
+error:
+	free_to_params(&TO);
+	return -1;
 }
 

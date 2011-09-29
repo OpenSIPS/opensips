@@ -721,6 +721,8 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	struct sip_uri uri;
 	int err_ret = -1;
 
+	TO.param_lst = NULL;
+
 	/* examine the expire header field */
 	if(msg->expires && msg->expires->body.len > 0)
 	{
@@ -948,8 +950,12 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	}
 	else
 		subs->local_contact= local_address;
+
+	free_to_params(&TO);
 	return 0;
+
 error:
+	free_to_params(&TO);
 	return err_ret;
 	/*
 	 *  -1 - bad message

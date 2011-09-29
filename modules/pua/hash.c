@@ -582,30 +582,32 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	struct to_body *pto= NULL, TO, *pfrom = NULL;
 	unsigned int hash_code;
 
+	TO.param_lst = NULL;
+
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("when parsing headers\n");
-		return -1;
+		goto error;
 	}
 
 	/* find the record */
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("cannot parse callid header\n");
-		return -1;
+		goto error;
 	}		
 	
 	if (!msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
-		return -1;
+		goto error;
 	}
 	if (msg->from->parsed == NULL)
 	{
 		if ( parse_from_header( msg )<0 ) 
 		{
 			LM_ERR("cannot parse From header\n");
-			return -1;
+			goto error;
 		}
 	}
 	
@@ -620,7 +622,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	if( msg->to==NULL || msg->to->body.s==NULL)
 	{
 		LM_ERR("cannot parse TO header\n");
-		return -1;
+		goto error;
 	}			
 	
 	if(msg->to->parsed != NULL)
@@ -635,14 +637,14 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 		if(TO.uri.len <= 0) 
 		{
 			LM_DBG("'To' header NOT parsed\n");
-			return -1;
+			goto error;
 		}
 		pto = &TO;
 	}			
 	if( pto->tag_value.s ==NULL || pto->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
-		return -1;
+		goto error;
 	}
 	hentity.watcher_uri= &pto->uri;
 	hentity.to_uri= pfrom->uri; 
@@ -657,7 +659,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	if(msg->contact== NULL || msg->contact->body.s== NULL)
 	{
 		LM_ERR("no contact header found in 200 OK reply");
-		return -1;
+		goto error;
 	}
 	contact= msg->contact->body;
 
@@ -668,7 +670,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 	{
 		lock_release(&HashT->p_records[hash_code].lock);
 		LM_ERR("no record for the dialog found in hash table\n");
-		return -1;
+		goto error;
 	}
 
 	shm_free(p->remote_contact.s);
@@ -683,7 +685,7 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 		{
 			LM_ERR("no more shared memory\n");
 			lock_release(&HashT->p_records[hash_code].lock);
-			return -1;
+			goto error;
 		}
 		memcpy(p->remote_contact.s, contact.s, contact.len);
 		p->remote_contact.len= contact.len;
@@ -691,8 +693,12 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 
 	lock_release(&HashT->p_records[hash_code].lock);
 
+	free_to_params(&TO);
 	return 1;
 
+error:
+	free_to_params(&TO);
+	return -1;
 }
 
 void pua_db_delete(ua_pres_t* pres)

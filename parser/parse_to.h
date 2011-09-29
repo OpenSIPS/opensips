@@ -64,5 +64,7 @@ struct sip_uri *parse_to_uri(struct sip_msg *msg);
 
 void free_to(struct to_body* tb);
 
+inline void free_to_params(struct to_body* tb);
+
 
 #endif
