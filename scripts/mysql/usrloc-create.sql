@@ -16,7 +16,7 @@ CREATE TABLE location (
     user_agent CHAR(255) DEFAULT '' NOT NULL,
     socket CHAR(64) DEFAULT NULL,
     methods INT(11) DEFAULT NULL,
-    sip_instace CHAR(255) DEFAULT NULL,
+    sip_instance CHAR(255) DEFAULT NULL,
     CONSTRAINT account_contact_idx UNIQUE (username, domain, contact, callid)
 ) ENGINE=MyISAM;
 

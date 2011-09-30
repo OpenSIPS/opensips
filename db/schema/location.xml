@@ -153,7 +153,7 @@
     </column>
 
     <column>
-        <name>sip_instace</name>
+        <name>sip_instance</name>
         <type>string</type>
         <size>255</size>
         <null/>

@@ -16,7 +16,7 @@ CREATE TABLE location (
     user_agent VARCHAR2(255) DEFAULT '',
     socket VARCHAR2(64) DEFAULT NULL,
     methods NUMBER(10) DEFAULT NULL,
-    sip_instace VARCHAR2(255) DEFAULT NULL,
+    sip_instance VARCHAR2(255) DEFAULT NULL,
     CONSTRAINT location_account_contact_idx  UNIQUE (username, domain, contact, callid)
 );
 
