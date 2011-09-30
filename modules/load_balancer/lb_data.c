@@ -258,6 +258,30 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	dst->rmap_no = lb_rl->n;
 	dst->flags = flags;
 
+	/* add or update resource list */
+	for( i=0 ; i<lb_rl->n ; i++) {
+		r = lb_rl->resources + i;
+		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d\n",
+			uri, data->dst_no+1, r->name.len, r->name.s, r->val);
+		res = get_resource_by_name( data, &r->name);
+		if (res==NULL) {
+			/* add new resource */
+			res = add_lb_resource(data, &r->name);
+			if (res==NULL) {
+				LM_ERR("failed to create new resource\n");
+				goto error;
+			}
+		}
+		/* set the proper bit in the resource */
+		if (lb_set_resource_bitmask( res, data->dst_no)==-1 ) {
+			LM_ERR("failed to set destination bit\n");
+			goto error;
+		}
+		/* set the pointer and the max load */
+		dst->rmap[i].resource = res;
+		dst->rmap[i].max_load = r->val;
+	}
+
 	/* link at the end */
 	if (data->last_dst==NULL) {
 		data->dsts = data->last_dst = dst;
@@ -267,32 +291,10 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	}
 	data->dst_no++;
 
-	/* add or update resource list */
-	for( i=0 ; i<lb_rl->n ; i++) {
-		r = lb_rl->resources + i;
-		LM_DBG(" setting for uri=<%s> (%d) resource=<%.*s>, val=%d\n",
-			uri, data->dst_no, r->name.len, r->name.s, r->val);
-		res = get_resource_by_name( data, &r->name);
-		if (res==NULL) {
-			/* add new resource */
-			res = add_lb_resource(data, &r->name);
-			if (res==NULL) {
-				LM_ERR("failed to create new resource\n");
-				return -1;
-			}
-		}
-		/* set the proper bit in the resource */
-		if (lb_set_resource_bitmask( res, data->dst_no-1)==-1 ) {
-			LM_ERR("failed to set destination bit\n");
-			return -1;
-		}
-		/* set the pointer and the max load */
-		dst->rmap[i].resource = res;
-		dst->rmap[i].max_load = r->val;
-	}
-
+	pkg_free(lb_rl);
 	return 0;
 error:
+	shm_free(dst);
 	pkg_free(lb_rl);
 	return -1;
 }
@@ -325,6 +327,8 @@ void free_lb_data(struct lb_data *data)
 		lbd1 = lbd1->next;
 		shm_free(lbd2);
 	}
+
+	shm_free(data);
 
 	return;
 }
