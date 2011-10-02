@@ -216,6 +216,7 @@ static int mod_init(void)
 		LM_ERR("No more shared memory\n");
 		return -1;
 	}
+	*dialog_event_p = *pres_event_p = NULL;
 
 	if(library_mode== 1)
 	{
