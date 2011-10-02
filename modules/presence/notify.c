@@ -1268,6 +1268,7 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 		/* if the Publish with expires=0 has body -> use this one */
 		if(etag && publ_body && build_off_n>=0) 
 		{
+			pkg_free(body_array[build_off_n]);
 			body_array[build_off_n] = publ_body;
 			build_off_n = -1;
 		}
@@ -1284,7 +1285,7 @@ done:
 	{
 		for(i= init_i; i< init_i + n; i++)
 		{
-			if(body_array[i])
+			if( body_array[i] && body_array[i] != publ_body )
 				pkg_free(body_array[i]);
 		}
 		pkg_free(body_array);
@@ -1315,7 +1316,7 @@ error:
 	{
 		for(i= init_i; i< init_i + n; i++)
 		{
-			if(body_array[i])
+			if( body_array[i] && body_array[i] != publ_body )
 				pkg_free(body_array[i]);
 			else
 				break;
