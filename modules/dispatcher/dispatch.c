@@ -367,6 +367,7 @@ int ds_load_list(char *lfile)
 		weight = 1;
 		attrs.s = NULL;
 		attrs.len = 0;
+		flags = 0;
 
 		/* eat all white spaces */
 		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
@@ -377,7 +378,6 @@ int ds_load_list(char *lfile)
 		}
 
 		/* get flags */
-		flags = 0;
 		while(*p>='0' && *p<='9')
 		{
 			flags = flags*10+ (*p-'0');
