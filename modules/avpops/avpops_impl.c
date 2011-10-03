@@ -737,6 +737,7 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 									struct db_url *url, pvname_list_t* dest)
 {
 	int printbuf_len;
+	int ret;
 
 	if(msg==NULL || query==NULL)
 	{
@@ -752,9 +753,18 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 	}
 
 	LM_DBG("query [%s]\n", printbuf);
-	
-	if(db_query_avp(url, msg, printbuf, dest)!=0)
+
+	ret = db_query_avp(url, msg, printbuf, dest);
+
+	//Empty return set	
+	if(ret==1)
+		return -2;
+
+	//All other failures
+	if(ret!=0)
 		return -1;
+
+	//Have a return set
 	return 1;
 }
 
