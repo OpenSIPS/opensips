@@ -1781,8 +1781,8 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 						}
 					}else{
 						/* normal whole via copy */
-						append_str_trans( p, hdr->name.s , 
-								(hdr->body.s+hdr->body.len)-hdr->name.s, msg);
+						append_str_trans( p, hdr->name.s+i , 
+							(hdr->body.s+hdr->body.len)-hdr->name.s-i, msg);
 					}
 				}else{
 					/* normal whole via copy */
