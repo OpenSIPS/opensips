@@ -137,8 +137,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c)
 					+ 1 /* quote */
 					+ SIP_PROTO_SIZE
 					+ c->aor->len
-					+ 1 /* @ */
-					+ c->sock->name.len
+					+ (reg_use_domain ?0:(1 /* @ */ + c->sock->name.len + 1 /* : */ + c->sock->port_no_str.len))
 					+ GR_PARAM_SIZE
 					+ (c->instance.len - 2)
 					+ 1 /* quote */
@@ -281,9 +280,14 @@ int build_contact(ucontact_t* c)
 				p += SIP_PROTO_SIZE;
 				memcpy(p,c->aor->s,c->aor->len);
 				p += c->aor->len;
-				*p++ = '@';
-				memcpy(p,c->sock->name.s,c->sock->name.len);
-				p += c->sock->name.len;
+				if (!reg_use_domain) {
+					*p++ = '@';
+					memcpy(p,c->sock->name.s,c->sock->name.len);
+					p += c->sock->name.len;
+					*p++ = ':';
+					memcpy(p,c->sock->port_no_str.s,c->sock->port_no_str.len);
+					p += c->sock->port_no_str.len;
+				}
 				memcpy(p,GR_PARAM,GR_PARAM_SIZE);
 				p += GR_PARAM_SIZE;
 				memcpy(p,c->instance.s+1,c->instance.len-2);
