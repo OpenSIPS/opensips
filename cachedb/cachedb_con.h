@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * Copyright (C) 2009 Anca Vamanu
+ * Copyright (C) 2011 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,33 +18,26 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  *
- * History:
+ * history:
  * ---------
- *  2009-01-29  first version (Anca Vamanu)
+ *  2011-09-xx  created (vlad-paiu)
  */
-#ifndef _MEM_CACHE_H_
-#define _MEM_CACHE_H_
 
-#include "str.h"
 
-typedef int (memcache_store_f)(str* name, str* value, unsigned int expires,void *data);
-typedef void (memcache_remove_f)(str* name,void *data);
-typedef int (memcache_fetch_f)(str* name, str* val,void *data);
+#ifndef CACHEDB_CON_H
+#define CACHEDB_CON_H
 
-typedef struct memcache {
-	str name;
-	memcache_store_f* store;
-	memcache_remove_f* remove;
-	memcache_fetch_f* fetch;
+#include "../str.h"
+
+typedef struct {
+	str url;
 	void *data;
-}memcache_t;
+} cachedb_con;
 
+typedef struct cachedbcon_list {
+	str grp;
+	cachedb_con *connection;
+	struct cachedbcon_list *next;
+} cachedb_con_list;
 
-int register_memcache(memcache_t* cs);
-
-/* functions to be used from script */
-int cache_store(str* memcache, str* attr, str* val, unsigned int expires);
-int cache_remove(str* memcache, str* attr);
-int cache_fetch(str* memcache, str* attr, str* val);
-
-#endif
+#endif /* CACHEDB_CON_H */

@@ -65,7 +65,7 @@
 #include "errinfo.h"
 #include "serialize.h"
 #include "blacklists.h"
-#include "memcache.h"
+#include "cachedb/cachedb.h"
 #include "msg_translator.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
@@ -1015,7 +1015,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				expires = (int)a->elem[3].u.number;
 			}
 
-			ret = cache_store( &a->elem[0].u.s, &name_s, &val_s, expires);
+			ret = cachedb_store( &a->elem[0].u.s, &name_s, &val_s,expires);
+
 			break;
 		case CACHE_REMOVE_T:
 			if ((a->elem[0].type!=STR_ST)) {
@@ -1038,7 +1039,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			ret = cache_remove( &a->elem[0].u.s, &name_s);
+			ret = cachedb_remove( &a->elem[0].u.s, &name_s);
 			break;
 		case CACHE_FETCH_T:
 			if ((a->elem[0].type!=STR_ST)) {
@@ -1069,7 +1070,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 
-			ret = cache_fetch( &a->elem[0].u.s, &name_s, &aux);
+			ret = cachedb_fetch( &a->elem[0].u.s, &name_s, &aux);
 			if(ret > 0)
 			{
 				int_str res;

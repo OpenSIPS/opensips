@@ -1,0 +1,92 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of a local cache system designed as
+		a hash table. It uses the Key-Value interface exported by OpenSIPS core.
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		None.
+		</para>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	</section>
+	
+	<section>
+		<title>Exported Parameters</title>
+		<section>
+		<title><varname>cache_table_size</varname> (int)</title>
+		<para>
+			The size of the hash table. 
+			This parameter will be used as the power of 2 when computing table size.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>9 (512)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cache_table_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "cache_table_size", 10)
+...
+	</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cache_clean_period</varname> (int)</title>
+		<para>
+			The time interval in seconds at which to go through all the
+			records and delete the expired ones.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>600 (10 minutes)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cache_clean_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "cache_clean_period", 1200)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>Exported Functions</title>
+		<para>The module does not export functions to be used
+		in configuration script.</para>
+	</section>	
+
+</section>
+
+</chapter>
+

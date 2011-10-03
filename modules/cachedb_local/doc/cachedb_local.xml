@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "cachedb_local_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>LOCALCACHE</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Anca-Maria</firstname>
+		<surname>Vamanu</surname>
+		<affiliation><orgname>&osips;</orgname></affiliation>
+		<address>
+		<email>anca@opensips.org</email>
+		<otheraddr>
+		<ulink url="http://www.opensips.org">http://opensips.org</ulink>
+		</otheraddr>
+		</address>
+	    </author>
+	    <editor>
+		<firstname>Anca-Maria</firstname>
+		<surname>Vamanu</surname>
+		<address>
+		    <email>anca@opensips.org</email>
+		</address>
+	    </editor>
+	    <editor>
+		<firstname>Vladut-Stefan</firstname>
+		<surname>Paiu</surname>
+		<address>
+		    <email>vladpaiu@opensips.org</email>
+		</address>
+	    </editor>
+	  	</authorgroup>
+	<copyright>
+		<year>2009</year>
+		<holder>
+		<firstname>Anca-Maria</firstname>
+		<surname>Vamanu</surname>
+	    </holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Revision: 5901 $</revnumber>
+		<date>$Date: 2009-07-21 10:45:05 +0300 (Tue, 21 Jul 2009) $</date>
+	    </revision>
+	</revhistory>
+  </bookinfo>
+    <toc></toc>
+    
+    &admin;
+    &faq;
+    
+</book>
+
+

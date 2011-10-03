@@ -46,7 +46,7 @@
 #include "../ut.h"
 #include "../pt.h"
 #include "../mem/mem.h"
-#include "../memcache.h"
+#include "../cachedb/cachedb.h"
 #include "mi.h"
 #include "../evi/event_interface.h"
 
@@ -390,12 +390,12 @@ static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 			return init_mi_tree(404, "Too many parameters", 19);
 	}
 
-	if(cache_store(&mc_system, &attr, &value, expires)< 0)
+	if(cachedb_store(&mc_system, &attr, &value,expires)< 0)
 	{
-		LM_ERR("cache_store command failed\n");
+		LM_ERR("cachedb_store command failed\n");
 		return init_mi_tree(500, "Cache store command failed", 26);
 	}
-	
+
 	return init_mi_tree(200, "OK", 2);
 }
 	
@@ -440,10 +440,10 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 	if(node != NULL)
 		return init_mi_tree(404, "Too many arguments", 18);
 
-	ret = cache_fetch(&mc_system, &attr, &value);
+	ret = cachedb_fetch(&mc_system, &attr, &value);
 	if(ret== -1)
 	{
-		LM_ERR("cache_fetch command failed\n");
+		LM_ERR("cachedb_fetch command failed\n");
 		return init_mi_tree(500, "Cache fetch command failed", 26);
 	}
 
@@ -508,9 +508,9 @@ static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 	if(node != NULL)
 		return init_mi_tree(404, "Too many parameters", 19);
 
-	if(cache_remove(&mc_system, &attr)< 0)
+	if(cachedb_remove(&mc_system, &attr)< 0)
 	{
-		LM_ERR("cache_remove command failed\n");
+		LM_ERR("cachedb_remove command failed\n");
 		return init_mi_tree(500, "Cache remove command failed", 27);
 	}
 
