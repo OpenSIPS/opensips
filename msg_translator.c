@@ -1751,11 +1751,21 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 		{
 			case HDR_VIA_T:
 				if (hdr==msg->h_via1){
+					i = 0;
+					if (received_buf) {
+						i = msg->via1->host.s - msg->via1->hdr.s +
+							msg->via1->host.len + (msg->via1->port?
+							msg->via1->port_str.len + 1 : 0);
+						/* copy via1 up to params */
+						append_str( p, hdr->name.s, i);
+						/* copy received param */
+						append_str( p, received_buf, received_len);
+					}
 					if (rport_buf){
 						if (msg->via1->rport){ /* delete the old one */
 							/* copy until rport */
-							append_str_trans( p, hdr->name.s ,
-								msg->via1->rport->start-hdr->name.s-1,msg);
+							append_str_trans( p, hdr->name.s+i ,
+								msg->via1->rport->start-hdr->name.s-1-i,msg);
 							/* copy new rport */
 							append_str(p, rport_buf, rport_len);
 							/* copy the rest of the via */
@@ -1764,19 +1774,16 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 												hdr->body.s+hdr->body.len-
 												msg->via1->rport->start-
 												msg->via1->rport->size, msg);
-						}else{ /* just append the new one */
-							/* normal whole via copy */
-							append_str_trans( p, hdr->name.s , 
-								(hdr->body.s+hdr->body.len)-hdr->name.s, msg);
+						}else{ /* just copy rport and rest of hdr */
 							append_str(p, rport_buf, rport_len);
+							append_str_trans( p, hdr->name.s+i , 
+								(hdr->body.s+hdr->body.len)-hdr->name.s-i, msg);
 						}
 					}else{
 						/* normal whole via copy */
-						append_str_trans( p, hdr->name.s , 
-								(hdr->body.s+hdr->body.len)-hdr->name.s, msg);
+						append_str_trans( p, hdr->name.s+i , 
+							(hdr->body.s+hdr->body.len)-hdr->name.s-i, msg);
 					}
-					if (received_buf)
-						append_str( p, received_buf, received_len);
 				}else{
 					/* normal whole via copy */
 					append_str_trans( p, hdr->name.s,
