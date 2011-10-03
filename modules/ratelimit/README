@@ -70,7 +70,7 @@ Razvan Crainea
 
         1.8. Exported MI Functions
 
-              1.8.1. rl_stats
+              1.8.1. rl_list
               1.8.2. rl_reset_pipe
               1.8.3. rl_set_pid
               1.8.4. rl_get_pid
@@ -353,7 +353,7 @@ m
 
 1.8. Exported MI Functions
 
-1.8.1.  rl_stats
+1.8.1.  rl_list
 
    Lists the parameters and variabiles in the ratelimit module.
 
@@ -365,11 +365,11 @@ m
        listed. Otherwise only the one specified.
 
    MI FIFO Command Format:
-                :rl_stats:_reply_fifo_file_
+                :rl_list:_reply_fifo_file_
                 gw_10.0.0.1
                 _empty_line_
 
-                :rl_stats:_reply_fifo_file_
+                :rl_list:_reply_fifo_file_
                 _empty_line_
 
 1.8.2.  rl_reset_pipe

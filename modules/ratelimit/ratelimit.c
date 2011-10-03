@@ -114,11 +114,18 @@ static param_export_t params[] = {
 	{ 0,					0,						0}
 };
 
+#define RLH1 "Params: [pipe] ; Lists the parameters and variabiles in the " \
+	"ratelimit module; If no pipe is specified, all existing pipes are listed."
+#define RLH2 "Params: pipe ; Resets the counter of a specified pipe."
+#define RLH3 "Params: ki kp kd ; Sets the PID Controller parameters for the " \
+	"Feedback Algorithm."
+#define RLH4 "Params: none ; Gets the list of in use PID Controller parameters."
+
 static mi_export_t mi_cmds [] = {
-	{"rl_list",       0, mi_stats,      0,                0, 0},
-	{"rl_reset_pipe", 0, mi_reset_pipe, 0,                0, 0},
-	{"rl_set_pid",    0, mi_set_pid,    0,                0, 0},
-	{"rl_get_pid",    0, mi_get_pid,    MI_NO_INPUT_FLAG, 0, 0},
+	{"rl_list",       RLH1, mi_stats,      0,                0, 0},
+	{"rl_reset_pipe", RLH2, mi_reset_pipe, 0,                0, 0},
+	{"rl_set_pid",    RLH3, mi_set_pid,    0,                0, 0},
+	{"rl_get_pid",    RLH4, mi_get_pid,    MI_NO_INPUT_FLAG, 0, 0},
 	{0,0,0,0,0,0}
 };
 

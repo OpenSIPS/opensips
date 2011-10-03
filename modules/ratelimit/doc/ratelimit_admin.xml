@@ -398,7 +398,7 @@ modparam("ratelimit", "default_algorithm", "RED")
 	<title>Exported MI Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">rl_stats</function>
+		<function moreinfo="none">rl_list</function>
 		</title>
 		<para>
 		Lists the parameters and variabiles in the ratelimit module.
@@ -418,12 +418,12 @@ modparam("ratelimit", "default_algorithm", "RED")
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		:rl_stats:_reply_fifo_file_
+		:rl_list:_reply_fifo_file_
 		gw_10.0.0.1
 		_empty_line_
 		</programlisting>
 		<programlisting  format="linespecific">
-		:rl_stats:_reply_fifo_file_
+		:rl_list:_reply_fifo_file_
 		_empty_line_
 		</programlisting>
 	</section>
