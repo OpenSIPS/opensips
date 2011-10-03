@@ -503,7 +503,7 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param)
 
 	node = cmd->node.kids;
 	if(node == NULL)
-		return 0;
+		return init_mi_tree(404, "No parameters", 13);
 
 	/* Get presentity URI */
 	pres_uri = node->value;
