@@ -433,6 +433,113 @@ int cachedb_fetch(str* cachedb_name, str* attr, str* val)
 	return cde->cdb_func.get(con,attr,val)<0?-1:1;
 }
 
+int cachedb_add(str* cachedb_name, str* attr, int val)
+{
+	cachedb_engine* cde;
+	str cde_engine,grp_name;
+	char *p;
+	cachedb_con *con;
+
+	if(cachedb_name == NULL || attr == NULL)
+	{
+		LM_ERR("null arguments\n");
+		return -1;
+	}
+
+	p = memchr(cachedb_name->s,':',cachedb_name->len);
+	if (p == NULL) {
+		cde_engine = *cachedb_name;
+		grp_name.s = NULL;
+		grp_name.len = 0;
+		LM_DBG("from script [%.*s] - no grp\n",cde_engine.len,cde_engine.s);
+	} else {
+		cde_engine.s = cachedb_name->s;
+		cde_engine.len = p - cde_engine.s;
+		grp_name.s = p+1;
+		grp_name.len = cachedb_name->len - cde_engine.len -1;
+		LM_DBG("from script [%.*s] - with grp [%.*s]\n",cde_engine.len,
+				cde_engine.s,grp_name.len,grp_name.s);
+
+	}
+
+	cde = lookup_cachedb(&cde_engine);
+	if(cde == NULL)
+	{
+		LM_ERR("Wrong argument <%.*s> - no cachedb system with"
+				" this name registered\n",
+				cde_engine.len,cde_engine.s);
+		return -1;
+	}
+
+	if (!CACHEDB_CAPABILITY(cde,CACHEDB_CAP_ADD)) {
+		LM_ERR("Engine %.*s does not support add ops\n",
+				cde_engine.len,cde_engine.s);
+		return -1;
+	}
+
+	con = cachedb_get_connection(cde,&grp_name);
+	if (con == NULL) {
+		LM_ERR("failed to get connection for grp name [%.*s]\n",
+				grp_name.len,grp_name.s);
+		return -1;
+	}
+
+	return cde->cdb_func.add(con,attr,val)<0?-1:1;
+}
+
+int cachedb_sub(str* cachedb_name, str* attr, int val)
+{
+	cachedb_engine* cde;
+	str cde_engine,grp_name;
+	char *p;
+	cachedb_con *con;
+
+	if(cachedb_name == NULL || attr == NULL)
+	{
+		LM_ERR("null arguments\n");
+		return -1;
+	}
+
+	p = memchr(cachedb_name->s,':',cachedb_name->len);
+	if (p == NULL) {
+		cde_engine = *cachedb_name;
+		grp_name.s = NULL;
+		grp_name.len = 0;
+		LM_DBG("from script [%.*s] - no grp\n",cde_engine.len,cde_engine.s);
+	} else {
+		cde_engine.s = cachedb_name->s;
+		cde_engine.len = p - cde_engine.s;
+		grp_name.s = p+1;
+		grp_name.len = cachedb_name->len - cde_engine.len -1;
+		LM_DBG("from script [%.*s] - with grp [%.*s]\n",cde_engine.len,
+				cde_engine.s,grp_name.len,grp_name.s);
+
+	}
+
+	cde = lookup_cachedb(&cde_engine);
+	if(cde == NULL)
+	{
+		LM_ERR("Wrong argument <%.*s> - no cachedb system with"
+				" this name registered\n",
+				cde_engine.len,cde_engine.s);
+		return -1;
+	}
+
+	if (!CACHEDB_CAPABILITY(cde,CACHEDB_CAP_SUB)) {
+		LM_ERR("Engine %.*s does not support sub ops\n",
+				cde_engine.len,cde_engine.s);
+		return -1;
+	}
+
+	con = cachedb_get_connection(cde,&grp_name);
+	if (con == NULL) {
+		LM_ERR("failed to get connection for grp name [%.*s]\n",
+				grp_name.len,grp_name.s);
+		return -1;
+	}
+
+	return cde->cdb_func.sub(con,attr,val)<0?-1:1;
+}
 
 cachedb_con* cachedb_do_init(str *url,void* (*new_connection)())
 {

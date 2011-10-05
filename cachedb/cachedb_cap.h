@@ -39,7 +39,7 @@ typedef enum {
 	CACHEDB_CAP_SUB = 1<<4
 } cachedb_cap;
 
-#define CACHEDB_CAPABILITY(cde,cpv) (((cde)->capability & (cpv)) == (cpv))
+#define CACHEDB_CAPABILITY(cde,cpv) (((cde)->cdb_func.capability & (cpv)) == (cpv))
 
 static inline int check_cachedb_api(cachedb_engine *cde)
 {

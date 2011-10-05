@@ -556,6 +556,8 @@ static int fix_actions(struct action* a)
 			case CACHE_STORE_T:
 			case CACHE_FETCH_T:
 			case CACHE_REMOVE_T:
+			case CACHE_ADD_T:
+			case CACHE_SUB_T:
 				/* attr name */
 				s.s = (char*)t->elem[1].u.data;
 				s.len = strlen(s.s);
@@ -583,7 +585,7 @@ static int fix_actions(struct action* a)
 						ret=E_BUG;
 						goto error;
 					}
-				} else {
+				} else if (t->type==CACHE_STORE_T) {
 					s.s = (char*)t->elem[2].u.data;
 					s.len = strlen(s.s);
 					if(s.len==0) {
@@ -598,7 +600,6 @@ static int fix_actions(struct action* a)
 					}
 					t->elem[2].u.data = (void*)model;
 				}
-
 				break;
 			case XDBG_T:
 			case XLOG_T:

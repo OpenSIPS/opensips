@@ -278,6 +278,8 @@ extern int line;
 %token CACHE_STORE
 %token CACHE_FETCH
 %token CACHE_REMOVE
+%token CACHE_ADD
+%token CACHE_SUB
 %token XDBG
 %token XLOG
 %token XLOG_BUF_SIZE
@@ -2446,6 +2448,42 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 							}
 		| CACHE_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
 									mk_action3( $$, CACHE_FETCH_T,
+													STR_ST,
+													STR_ST,
+													SCRIPTVAR_ST,
+													$3,
+													$5,
+													$7);
+							}
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER RPAREN { 
+									mk_action3( $$, CACHE_ADD_T,
+													STR_ST,
+													STR_ST,
+													NUMBER_ST,
+													$3,
+													$5,
+													$7);
+							}
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
+									mk_action3( $$, CACHE_ADD_T,
+													STR_ST,
+													STR_ST,
+													SCRIPTVAR_ST,
+													$3,
+													$5,
+													$7);
+							}
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER RPAREN { 
+									mk_action3( $$, CACHE_SUB_T,
+													STR_ST,
+													STR_ST,
+													NUMBER_ST,
+													$3,
+													$5,
+													$7);
+							}
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
+									mk_action3( $$, CACHE_SUB_T,
 													STR_ST,
 													STR_ST,
 													SCRIPTVAR_ST,

@@ -77,8 +77,8 @@ int register_cachedb(cachedb_engine* cde_entry);
 int cachedb_store(str* cachedb_engine, str* attr, str* val,int expires);
 int cachedb_remove(str* cachedb_engine, str* attr);
 int cachedb_fetch(str* cachedb_engine, str* attr, str* val);
-int cache_add(str* cachedb_engine, str* attr, str* val);
-int cache_sub(str* cachedb_engine, str* attr, str* val);
+int cachedb_add(str* cachedb_engine, str* attr, int val);
+int cachedb_sub(str* cachedb_engine, str* attr, int val);
 
 
 int cachedb_bind_mod(str *url,cachedb_funcs *funcs);
