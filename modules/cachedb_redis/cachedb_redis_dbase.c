@@ -128,6 +128,7 @@ int redis_connect(redis_con *con)
 			return -1;
 		}
 
+		redisFree(ctx);
 		strcpy(con->nodes->ip,con->id->host);
 		con->nodes->port = con->id->port;
 		con->nodes->start_slot = 0;
