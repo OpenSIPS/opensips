@@ -76,6 +76,7 @@ str created_str = str_init("accX_created");
 str core_str = str_init("accX_core");
 str leg_str = str_init("accX_leg");
 str flags_str = str_init("accX_flags");
+str table_str = str_init("accX_table");
 str db_extra_str = str_init("accX_db");
 str log_extra_str = str_init("accX_log");
 str aaa_extra_str = str_init("accX_aaa");
@@ -569,7 +570,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	int total, nr_vals, i, j, ret, res = -1;
 	time_t created, start_time;
-	str core_s, leg_s, extra_s;
+	str core_s, leg_s, extra_s, table;
 	short nr_legs;
 	static db_ps_t my_ps = NULL;
 	static query_list_t *ins_list = NULL;
@@ -601,6 +602,11 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto end;
 	}
 
+	if (dlg_api.fetch_dlg_value(dlg, &table_str, &table, 0) < 0) {
+		LM_ERR("error getting table name\n");
+		return -1;
+	}
+
 	for (i=0;i<ACC_CORE_LEN;i++)
 		VAL_STR(db_vals+i) = val_arr[i];
 	for (i=ACC_CORE_LEN; i<ret; i++)
@@ -612,7 +618,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	VAL_TIME(db_vals+ret+nr_vals+3) = created;
 
 	total = ret + 4;
-	acc_dbf.use_table(db_handle, &acc_env.text);
+	acc_dbf.use_table(db_handle, &table);
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if (!leg_info) {

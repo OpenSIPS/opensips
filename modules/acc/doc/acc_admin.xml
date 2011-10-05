@@ -741,6 +741,35 @@ modparam("acc", "db_table_acc", "myacc_table")
 		</example>
 	</section>
 	<section>
+		<title><varname>db_table_avp</varname> (string)</title>
+		<para>
+		This parameter should contain a string with an AVP. This AVP should
+		be populated later in the script with the database table name where
+		the request accounting should be stored. This parameter is optional
+		and if it is not used or set in the script, all requests will be
+		stored in the table specified by <emphasis>db_table_acc</emphasis>
+		parameter or it's default value.
+		</para>
+		<para>
+			NOTE: when using auto CDR generation, the AVP with the table name
+			should be set in the initial INVITE.
+		</para>
+		<para>
+		Default value is <quote>acc</quote>
+		</para>
+		<example>
+		<title>db_table_avp example</title>
+		<programlisting format="linespecific">
+modparam("acc", "db_table_avp", "$avp(acc_table)")
+...
+route(OUTBOUND_ACC) {
+	setflag(1); # do accounting
+	$avp(acc_table) = "acc_outbound"; # store request in the "acc_outbound" table
+}
+</programlisting>
+		</example>
+	</section>
+	<section>
 		<title><varname>db_table_missed_calls</varname> (string)</title>
 		<para>
 		Table name for accounting missed calls -- database specific.

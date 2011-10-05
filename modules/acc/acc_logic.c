@@ -52,7 +52,8 @@
 
 extern struct tm_binds tmb;
 extern struct rr_binds rrb;
-extern str flags_str; 
+extern str flags_str;
+extern str table_str;
 
 struct acc_enviroment acc_env;
 
@@ -389,6 +390,8 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	str dst_uri_bk;
 	struct dlg_cell *dlg = NULL;
 	str flags_s;
+	int_str table;
+	struct usr_avp *avp;
 
 	/* acc_onreply is bound to TMCB_REPLY which may be called
 	   from _reply, like when FR hits; we should not miss this
@@ -413,6 +416,22 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	/* set env variables */
 	env_set_to( get_rpl_to(t,reply) );
 	env_set_code_status( code, reply);
+
+	/* search for table avp */
+	table.s = db_table_acc;
+	if (db_table_name != -1 && is_db_acc_on(req)) {
+		avp = search_first_avp(db_table_name_type, db_table_name, &table, 0);
+		if (!avp) {
+			LM_DBG("table not set: using default %.*s\n",
+					db_table_acc.len, db_table_acc.s);
+		} else {
+			if (!(avp->flags & AVP_VAL_STR)) {
+				LM_WARN("invalid integer table name: using default %.*s\n",
+					db_table_acc.len, db_table_acc.s);
+				table.s = db_table_acc;
+			}
+		}
+	}
 
 	if (is_invite(t) && is_cdr_acc_on(req) && code >= 200 && code < 300
 			&& (dlg=dlg_api.get_dlg()) != NULL) {
@@ -446,6 +465,11 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			return;
 		}
 
+		/* store flags into dlg */ 
+		if ( dlg_api.store_dlg_value(dlg, &table_str, &table.s) < 0) {
+			LM_ERR("cannot store the table name into dialog\n");
+			return;
+		}
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
 				DLGCB_EXPIRED, acc_dlg_callback,(void *)(long)req->flags,0) != 0) {
@@ -463,7 +487,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			acc_aaa_request( req, reply );
 	
 		if (is_db_acc_on(req)) {
-			env_set_text( db_table_acc.s, db_table_acc.len);
+			env_set_text( table.s.s, table.s.len);
 			acc_db_request( req, reply, &acc_ins_list);
 		}
 	}

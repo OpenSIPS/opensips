@@ -152,6 +152,9 @@ struct acc_extra *db_extra_bye = 0;
 static str db_url = {NULL, 0};
 /* name of database tables */
 str db_table_acc = str_init("acc");
+static str db_table_avp = {0,0};
+int db_table_name = -1;
+unsigned short db_table_name_type = -1;
 str db_table_mc = str_init("missed_calls");
 /* names of columns in tables acc/missed calls*/
 str acc_method_col     = str_init("method");
@@ -227,6 +230,7 @@ static param_export_t params[] = {
 	{"db_url",               STR_PARAM, &db_url.s             },
 	{"db_table_acc",         STR_PARAM, &db_table_acc.s       },
 	{"db_table_missed_calls",STR_PARAM, &db_table_mc.s        },
+	{"db_table_avp",         STR_PARAM, &db_table_avp.s       },
 	{"acc_method_column",    STR_PARAM, &acc_method_col.s     },
 	{"acc_from_tag_column",  STR_PARAM, &acc_fromtag_col.s    },
 	{"acc_to_tag_column",    STR_PARAM, &acc_totag_col.s      },
@@ -316,6 +320,8 @@ static int free_acc_fixup(void** param, int param_no)
 
 static int mod_init( void )
 {
+	pv_spec_t avp_spec;
+
 	LM_INFO("initializing...\n");
 
 	if (db_url.s)
@@ -440,6 +446,19 @@ static int mod_init( void )
 			return -1;
 		if (flag_idx2mask(&db_missed_flag)<0)
 			return -1;
+		if (db_table_avp.s) {
+			db_table_avp.len = strlen(db_table_avp.s);
+			if (pv_parse_spec(&db_table_avp, &avp_spec) == 0 ||
+					avp_spec.type != PVT_AVP) {
+				LM_ERR("malformed or non AVP %s\n", db_table_avp.s);
+				return -1;
+			}
+			if (pv_get_avp_name(0, &avp_spec.pvp, &db_table_name,
+						&db_table_name_type)) {
+				LM_ERR("invalid definition of AVP %s\n", db_table_avp.s);
+				return -1;
+			}
+		}
 	} else {
 		db_flag = 0;
 		db_missed_flag = 0;

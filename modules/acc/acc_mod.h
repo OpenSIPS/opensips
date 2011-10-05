@@ -80,4 +80,7 @@ extern str acc_duration_col;
 extern str acc_setuptime_col;
 extern str acc_created_col;
 
+extern int db_table_name;
+extern unsigned short db_table_name_type;
+
 #endif
