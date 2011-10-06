@@ -433,7 +433,7 @@ int cachedb_fetch(str* cachedb_name, str* attr, str* val)
 	return cde->cdb_func.get(con,attr,val)<0?-1:1;
 }
 
-int cachedb_add(str* cachedb_name, str* attr, int val)
+int cachedb_add(str* cachedb_name, str* attr, int val,int *new_val)
 {
 	cachedb_engine* cde;
 	str cde_engine,grp_name;
@@ -484,10 +484,10 @@ int cachedb_add(str* cachedb_name, str* attr, int val)
 		return -1;
 	}
 
-	return cde->cdb_func.add(con,attr,val)<0?-1:1;
+	return cde->cdb_func.add(con,attr,val,new_val)<0?-1:1;
 }
 
-int cachedb_sub(str* cachedb_name, str* attr, int val)
+int cachedb_sub(str* cachedb_name, str* attr, int val,int *new_val)
 {
 	cachedb_engine* cde;
 	str cde_engine,grp_name;
@@ -538,7 +538,7 @@ int cachedb_sub(str* cachedb_name, str* attr, int val)
 		return -1;
 	}
 
-	return cde->cdb_func.sub(con,attr,val)<0?-1:1;
+	return cde->cdb_func.sub(con,attr,val,new_val)<0?-1:1;
 }
 
 cachedb_con* cachedb_do_init(str *url,void* (*new_connection)())

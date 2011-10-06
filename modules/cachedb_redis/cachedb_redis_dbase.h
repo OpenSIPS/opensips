@@ -55,8 +55,8 @@ void redis_destroy(cachedb_con *con);
 int redis_get(cachedb_con *con,str *attr,str *val);
 int redis_set(cachedb_con *con,str *attr,str *val,int expires);
 int redis_remove(cachedb_con *con,str *attr);
-int redis_add(cachedb_con *con,str *attr,int val);
-int redis_sub(cachedb_con *con,str *attr,int val);
+int redis_add(cachedb_con *con,str *attr,int val,int *new_val);
+int redis_sub(cachedb_con *con,str *attr,int val,int *new_val);
 
 #endif /* CACHEDBREDIS_DBASE_H */
 

@@ -332,12 +332,12 @@ int redis_remove(cachedb_con *connection,str *attr)
 }
 
 /* returns the new value of the counter */
-int redis_add(cachedb_con *connection,str *attr,int val)
+int redis_add(cachedb_con *connection,str *attr,int val,int *new_val)
 {
 	redis_con *con;
 	cluster_node *node;
 	redisReply *reply;
-	int ret=0,i;
+	int i;
 
 	if (!attr || !connection) {
 		LM_ERR("null parameter\n");
@@ -346,17 +346,19 @@ int redis_add(cachedb_con *connection,str *attr,int val)
 
 	redis_run_command(con,attr,"INCRBY %b %d",attr->s,attr->len,val);
 
-	ret = reply->integer;
+	if (new_val)
+		*new_val = reply->integer;
+
 	freeReplyObject(reply);
-	return ret;
+	return 0;
 }
 
-int redis_sub(cachedb_con *connection,str *attr,int val)
+int redis_sub(cachedb_con *connection,str *attr,int val,int *new_val)
 {
 	redis_con *con;
 	cluster_node *node;
 	redisReply *reply;
-	int ret=0,i;
+	int i;
 
 	if (!attr || !connection) {
 		LM_ERR("null parameter\n");
@@ -365,7 +367,9 @@ int redis_sub(cachedb_con *connection,str *attr,int val)
 
 	redis_run_command(con,attr,"DECRBY %b %d",attr->s,attr->len,val);
 
-	ret = reply->integer;
+	if (new_val)
+		*new_val = reply->integer;
 	freeReplyObject(reply);
-	return ret;
+
+	return 0;
 }

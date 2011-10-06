@@ -166,6 +166,8 @@ UNUSE_BLACKLIST	"unuse_blacklist"
 CACHE_STORE		"cache_store"
 CACHE_FETCH		"cache_fetch"
 CACHE_REMOVE	"cache_remove"
+CACHE_ADD		"cache_add"
+CACHE_SUB		"cache_sub"
 XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
@@ -464,6 +466,10 @@ WHITESPACE	[ \t\r\n]
 									return CACHE_FETCH; }
 <INITIAL>{CACHE_REMOVE}		{	count(); yylval.strval=yytext;
 									return CACHE_REMOVE; }
+<INITIAL>{CACHE_ADD}		{	count(); yylval.strval=yytext;
+									return CACHE_ADD; }
+<INITIAL>{CACHE_SUB}		{	count(); yylval.strval=yytext;
+									return CACHE_SUB; }
 
 <INITIAL>{XDBG}				{	count(); yylval.strval=yytext;
 									return XDBG; }

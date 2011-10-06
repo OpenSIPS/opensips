@@ -1144,7 +1144,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				increment = (int)a->elem[2].u.number;
 			}
 
-			ret = cachedb_add(&a->elem[0].u.s, &name_s, increment);
+			/* TODO - return the new value to script ? */
+			ret = cachedb_add(&a->elem[0].u.s, &name_s, increment,NULL);
 			break;
 		case CACHE_SUB_T:
 			if ((a->elem[0].type!=STR_ST)) {
@@ -1196,7 +1197,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				decrement = (int)a->elem[2].u.number;
 			}
 
-			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement);
+			/* TODO - return new value to script ? */
+			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement,NULL);
 			break;
 		case XDBG_T:
 			if (a->elem[0].type == SCRIPTVAR_ELEM_ST)

@@ -49,8 +49,8 @@ typedef void (cachedb_destroy_f)(cachedb_con *con);
 typedef int (cachedb_get_f)(cachedb_con *con,str *attr,str *val);
 typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);
 typedef int (cachedb_remove_f)(cachedb_con *con,str *attr);
-typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val);
-typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val);
+typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int *new_val);
+typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int *new_val);
 
 typedef struct cachedb_funcs_t {
 	cachedb_init_f		*init;
@@ -77,8 +77,8 @@ int register_cachedb(cachedb_engine* cde_entry);
 int cachedb_store(str* cachedb_engine, str* attr, str* val,int expires);
 int cachedb_remove(str* cachedb_engine, str* attr);
 int cachedb_fetch(str* cachedb_engine, str* attr, str* val);
-int cachedb_add(str* cachedb_engine, str* attr, int val);
-int cachedb_sub(str* cachedb_engine, str* attr, int val);
+int cachedb_add(str* cachedb_engine, str* attr, int val,int *new_val);
+int cachedb_sub(str* cachedb_engine, str* attr, int val,int *new_val);
 
 
 int cachedb_bind_mod(str *url,cachedb_funcs *funcs);
