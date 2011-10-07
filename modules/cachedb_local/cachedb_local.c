@@ -147,8 +147,8 @@ static int mod_init(void)
 	cde.cdb_func.get = lcache_htable_fetch;
 	cde.cdb_func.set = lcache_htable_insert;
 	cde.cdb_func.remove = lcache_htable_remove;
-	cde.cdb_func.add = NULL;
-	cde.cdb_func.sub = NULL;
+	cde.cdb_func.add = lcache_htable_add;
+	cde.cdb_func.sub = lcache_htable_sub;
 
 	if(cache_clean_period <= 0 )
 	{

@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "../../dprint.h"
+#include "../../ut.h"
 #include "../../timer.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
@@ -174,6 +175,84 @@ int lcache_htable_remove(cachedb_con *con,str* attr)
 
 	return 0;
 }
+
+int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_val) 
+{
+	int hash_code;
+	lcache_entry_t *it=NULL,*it_prev=NULL;
+	unsigned int old_value;
+	char *new_value;
+	int new_len;
+
+	hash_code = core_hash(attr,0,cache_htable_size);
+	lock_get(&cache_htable[hash_code].lock);
+
+	it = cache_htable[hash_code].entries;
+	while (it) {
+		if (it->attr.len == attr->len && 
+				memcmp(it->attr.s,attr->s,attr->len) == 0) {
+			if (it->expires !=0 && it->expires < get_ticks()) {
+				/* found an expired entry  -> delete it */
+				if(it_prev)
+					it_prev->next = it->next;
+				else
+					cache_htable[hash_code].entries = it->next;
+				
+				shm_free(it);
+
+				lock_release(&cache_htable[hash_code].lock);
+				return -2;
+			}
+
+			/* found our valid entry */
+			if (str2int(&it->value,&old_value) < 0) {
+				LM_ERR("not an integer\n");
+				lock_release(&cache_htable[hash_code].lock);
+				return -1;
+			}
+
+			old_value+=val;
+			new_value = int2str(old_value,&new_len);
+			it = shm_realloc(it,sizeof(lcache_entry_t) + attr->len +new_len);
+			if (it == NULL) {
+				LM_ERR("failed to realloc struct\n");
+				lock_release(&cache_htable[hash_code].lock);
+				return -1;
+			}
+
+			if (it_prev)
+				it_prev->next = it;
+			else
+				cache_htable[hash_code].entries = it;
+			
+			it->attr.s = (char*)(it + 1);
+			it->value.s =(char *)(it + 1) + attr->len;
+			
+			memcpy(it->value.s,new_value,new_len);
+			it->value.len = new_len;
+			if( expires != 0) {
+				LM_DBG("key %.*s will expire in %d s\n",attr->len,attr->s,expires);
+				it->expires = get_ticks() + expires;
+			}
+			lock_release(&cache_htable[hash_code].lock);
+			if (new_val)
+				*new_val = old_value;
+			return 0;
+		}
+
+		it_prev = it;
+		it = it->next;
+	}
+
+	lock_release(&cache_htable[hash_code].lock);
+	return -2;
+}
+
+int lcache_htable_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val) 
+{
+	return lcache_htable_add(con,attr,-val,expires,new_val);
+}
+
 /*
  *	return :
  *		1  - if found
