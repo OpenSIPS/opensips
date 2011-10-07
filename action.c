@@ -1144,28 +1144,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				increment = (int)a->elem[2].u.number;
 			}
 
-			/* get the expires value */
-			if ( a->elem[3].type == SCRIPTVAR_ST )
-			{
-				spec = (pv_spec_t*)a->elem[3].u.data;
-				memset(&val, 0, sizeof(pv_value_t));
-				if(pv_get_spec_value(msg, spec, &val) < 0)
-				{
-					LM_DBG("Failed to get scriptvar value while executing cache_add\n");
-					ret=E_BUG;
-					break;
-				}
-				if (!(val.flags&PV_VAL_INT))
-				{
-					LM_ERR("Wrong value for cache_add, not an integer [%.*s]\n",
-							val.rs.len, val.rs.s);
-				}
-				expires = val.ri;
-			}
-			else if ( a->elem[3].type == NUMBER_ST )
-			{
-				expires = (int)a->elem[3].u.number;
-			}
+			expires = (int)a->elem[3].u.number;
 
 			/* TODO - return the new value to script ? */
 			ret = cachedb_add(&a->elem[0].u.s, &name_s, increment,expires,NULL);
@@ -1220,28 +1199,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				decrement = (int)a->elem[2].u.number;
 			}
 
-			/* get the expires value */
-			if ( a->elem[3].type == SCRIPTVAR_ST )
-			{
-				spec = (pv_spec_t*)a->elem[3].u.data;
-				memset(&val, 0, sizeof(pv_value_t));
-				if(pv_get_spec_value(msg, spec, &val) < 0)
-				{
-					LM_DBG("Failed to get scriptvar value while executing cache_sub\n");
-					ret=E_BUG;
-					break;
-				}
-				if (!(val.flags&PV_VAL_INT))
-				{
-					LM_ERR("Wrong value for cache_sub, not an integer [%.*s]\n",
-							val.rs.len, val.rs.s);
-				}
-				expires = val.ri;
-			}
-			else if ( a->elem[3].type == NUMBER_ST )
-			{
-				expires = (int)a->elem[3].u.number;
-			}
+			expires = (int)a->elem[3].u.number;
 
 			/* TODO - return new value to script ? */
 			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement,expires,NULL);
