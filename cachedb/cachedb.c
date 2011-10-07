@@ -471,7 +471,7 @@ int cachedb_add(str* cachedb_name, str* attr, int val,int *new_val)
 		return -1;
 	}
 
-	if (!CACHEDB_CAPABILITY(cde,CACHEDB_CAP_ADD)) {
+	if (!CACHEDB_CAPABILITY(&cde->cdb_func,CACHEDB_CAP_ADD)) {
 		LM_ERR("Engine %.*s does not support add ops\n",
 				cde_engine.len,cde_engine.s);
 		return -1;
@@ -525,7 +525,7 @@ int cachedb_sub(str* cachedb_name, str* attr, int val,int *new_val)
 		return -1;
 	}
 
-	if (!CACHEDB_CAPABILITY(cde,CACHEDB_CAP_SUB)) {
+	if (!CACHEDB_CAPABILITY(&cde->cdb_func,CACHEDB_CAP_SUB)) {
 		LM_ERR("Engine %.*s does not support sub ops\n",
 				cde_engine.len,cde_engine.s);
 		return -1;

@@ -2456,13 +2456,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													$7);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER RPAREN { 
-									mk_action3( $$, CACHE_ADD_T,
-													STR_ST,
-													STR_ST,
-													NUMBER_ST,
-													$3,
-													$5,
-													$7);
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = NUMBER_ST; 
+								elems[2].u.number = $7;
+								$$ = mk_action(CACHE_ADD_T, 3, elems, line); 
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
 									mk_action3( $$, CACHE_ADD_T,
@@ -2474,13 +2474,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													$7);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER RPAREN { 
-									mk_action3( $$, CACHE_SUB_T,
-													STR_ST,
-													STR_ST,
-													NUMBER_ST,
-													$3,
-													$5,
-													$7);
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = NUMBER_ST; 
+								elems[2].u.number = $7;
+								$$ = mk_action(CACHE_SUB_T, 3, elems, line); 
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
 									mk_action3( $$, CACHE_SUB_T,
