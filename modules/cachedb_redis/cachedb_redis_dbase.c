@@ -332,7 +332,7 @@ int redis_remove(cachedb_con *connection,str *attr)
 }
 
 /* returns the new value of the counter */
-int redis_add(cachedb_con *connection,str *attr,int val,int *new_val)
+int redis_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
 {
 	redis_con *con;
 	cluster_node *node;
@@ -348,12 +348,21 @@ int redis_add(cachedb_con *connection,str *attr,int val,int *new_val)
 
 	if (new_val)
 		*new_val = reply->integer;
-
 	freeReplyObject(reply);
+
+	if (expires) {
+		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
+
+		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
+				reply->len,reply->str);
+
+		freeReplyObject(reply);
+	}
+
 	return 0;
 }
 
-int redis_sub(cachedb_con *connection,str *attr,int val,int *new_val)
+int redis_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
 {
 	redis_con *con;
 	cluster_node *node;
@@ -370,6 +379,15 @@ int redis_sub(cachedb_con *connection,str *attr,int val,int *new_val)
 	if (new_val)
 		*new_val = reply->integer;
 	freeReplyObject(reply);
+
+	if (expires) {
+		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
+
+		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
+				reply->len,reply->str);
+
+		freeReplyObject(reply);
+	}
 
 	return 0;
 }

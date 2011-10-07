@@ -2455,41 +2455,49 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 													$5,
 													$7);
 							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER RPAREN { 
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
 								elems[0].u.data = $3; 
 								elems[1].type = STR_ST; 
 								elems[1].u.data = $5; 
 								elems[2].type = NUMBER_ST; 
 								elems[2].u.number = $7;
-								$$ = mk_action(CACHE_ADD_T, 3, elems, line); 
+								elems[3].type = NUMBER_ST;
+								elems[3].u.number = $9;
+								$$ = mk_action(CACHE_ADD_T, 4, elems, line); 
 							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
-									mk_action3( $$, CACHE_ADD_T,
-													STR_ST,
-													STR_ST,
-													SCRIPTVAR_ST,
-													$3,
-													$5,
-													$7);
+		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = SCRIPTVAR_ST; 
+								elems[2].u.data = $7;
+								elems[3].type = NUMBER_ST;
+								elems[3].u.number = $9;
+								$$ = mk_action(CACHE_ADD_T, 4, elems, line); 
 							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER RPAREN { 
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
 								elems[0].u.data = $3; 
 								elems[1].type = STR_ST; 
 								elems[1].u.data = $5; 
 								elems[2].type = NUMBER_ST; 
 								elems[2].u.number = $7;
-								$$ = mk_action(CACHE_SUB_T, 3, elems, line); 
+								elems[3].type = NUMBER_ST;
+								elems[3].u.number = $9;
+								$$ = mk_action(CACHE_SUB_T, 4, elems, line); 
 							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
-									mk_action3( $$, CACHE_SUB_T,
-													STR_ST,
-													STR_ST,
-													SCRIPTVAR_ST,
-													$3,
-													$5,
-													$7);
+		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = SCRIPTVAR_ST; 
+								elems[2].u.data = $7;
+								elems[3].type = NUMBER_ST;
+								elems[3].u.number = $9;
+								$$ = mk_action(CACHE_SUB_T, 4, elems, line); 
 							}
 		| ID LPAREN RPAREN		{
 						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
