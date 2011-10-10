@@ -379,7 +379,7 @@ int udp_rcv_loop(void)
 		}
 #endif
 
-		if(buf[0] == 0){    /* stun specific */
+		if( !isascii(buf[0]) ){    /* not-SIP related */
 			for(p = cb_list; p; p = p->next){
 				if(p->b == buf[1]){
 					if(p->func(bind_address->socket, (struct sockaddr_in*)
