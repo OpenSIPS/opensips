@@ -518,13 +518,32 @@ int get_rules_doc(str* user, str* domain, int type, str** rules_doc)
 	row = &result->rows[xcap_doc_col];
 	row_vals = ROW_VALUES(row);
 
-	body.s = (char*)row_vals[0].val.string_val;
+	switch (row_vals[0].type) {
+		case DB_STRING:
+			LM_DBG("extracted db_string\n");
+			body.s = (char*)row_vals[0].val.string_val;
+			if (body.s)
+				body.len = strlen(body.s);
+			break;
+		case DB_STR:
+			LM_DBG("extracted db_str\n");
+			body = row_vals[0].val.str_val;
+			break;
+		case DB_BLOB:
+			LM_DBG("extracted db_blob\n");
+			body = row_vals[0].val.blob_val;
+			break;
+		default:
+			LM_ERR("unexpected column type %d\n",row_vals[0].type);
+			goto error;
+	}
+
 	if(body.s== NULL)
 	{
 		LM_ERR("Xcap doc NULL\n");
 		goto error;
 	}	
-	body.len = strlen(body.s);
+
 	if(body.len== 0)
 	{
 		LM_ERR("Xcap doc empty\n");
