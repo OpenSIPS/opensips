@@ -183,6 +183,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 	int old_value;
 	char *new_value;
 	int new_len;
+	str ins_val;
 
 	hash_code = core_hash(attr,0,cache_htable_size);
 	lock_get(&cache_htable[hash_code].lock);
@@ -199,9 +200,17 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 					cache_htable[hash_code].entries = it->next;
 				
 				shm_free(it);
-
 				lock_release(&cache_htable[hash_code].lock);
-				return -2;
+
+				ins_val.s = sint2str(val,&ins_val.len);
+				if (lcache_htable_insert(con,attr,&ins_val,expires) < 0) {
+					LM_ERR("failed to insert value\n");
+					return -1;
+				}
+
+				if (new_val)
+					*new_val = val;
+				return 0;
 			}
 
 			/* found our valid entry */
@@ -212,7 +221,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 			}
 
 			old_value+=val;
-			new_value = int2str(old_value,&new_len);
+			new_value = sint2str(old_value,&new_len);
 			it = shm_realloc(it,sizeof(lcache_entry_t) + attr->len +new_len);
 			if (it == NULL) {
 				LM_ERR("failed to realloc struct\n");
@@ -245,7 +254,17 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 	}
 
 	lock_release(&cache_htable[hash_code].lock);
-	return -2;
+	
+	/* not found */
+	ins_val.s = sint2str(val,&ins_val.len);
+	if (lcache_htable_insert(con,attr,&ins_val,expires) < 0) {
+		LM_ERR("failed to insert value\n");
+		return -1;
+	}
+
+	if (new_val)
+		*new_val = val;
+	return 0;
 }
 
 int lcache_htable_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val) 
