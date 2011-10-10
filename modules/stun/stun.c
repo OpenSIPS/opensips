@@ -200,81 +200,73 @@ static int stun_mod_init(void){
 	return 0;
 }
 
-void stun_loop(int rank){
-    fd_set read_set, all_set;
-    int maxfd;
-    int nready;
 
+void stun_loop(int rank)
+{
+	fd_set read_set, all_set;
+	int maxfd;
+	int nready;
+	char buffer[65536];
+	str msg;
+	unsigned int clientAddrLen;
+	struct receive_info ri;
 
-    int			nRecv;
-    char		buffer[65536];
-    struct sockaddr_in	client;
-    unsigned int	clientAddrLen;
+	FD_ZERO(&all_set);
+	maxfd = MAX ( MAX(sockfd1, sockfd2), MAX(sockfd3, sockfd4));
 
-    FD_ZERO(&all_set);
-    /*FD_SET(sockfd1, &all_set); */
-    /*FD_SET(sockfd2, &all_set);
-    FD_SET(sockfd3, &all_set);
-    FD_SET(sockfd4, &all_set);
-    */
+	LM_DBG("created sockets fd = %i %i %i %i (max = %i)\n",
+		sockfd1, sockfd2, sockfd3, sockfd4, maxfd);
 
-    maxfd = MAX ( MAX(sockfd1, sockfd2), MAX(sockfd3, sockfd4));
+	sockfd1 = grep1->socket;
+	if(grep2)
+		sockfd2 = grep2->socket;
+	else
+		FD_SET(sockfd2, &all_set);
 
-    LM_DBG("created sockets fd = %i %i %i %i (max = %i)\n",
-	    sockfd1, sockfd2, sockfd3, sockfd4, maxfd);
+	if(grep3)
+		sockfd3 = grep3->socket;
+	else
+		FD_SET(sockfd3, &all_set);
 
+	if(grep4)
+		sockfd4 = grep4->socket;
+	else
+		FD_SET(sockfd4, &all_set);
 
-    sockfd1 = grep1->socket;
-    if(grep2)
-	sockfd2 = grep2->socket;
-    else
-	FD_SET(sockfd2, &all_set);
+	LM_DBG("created and gained sockets fd = %i %i %i %i\n",
+		sockfd1, sockfd2, sockfd3, sockfd4);
 
-    if(grep3)
-	sockfd3 = grep3->socket;
-    else
-	FD_SET(sockfd3, &all_set);
+	/* this will never change as buffer is fixed */
+	msg.s = buffer;
+	memset( &ri, 0, sizeof(ri) );
 
-    if(grep4)
-	sockfd4 = grep4->socket;
-    else
-	FD_SET(sockfd4, &all_set);
+	for(;;){
+		read_set = all_set;
 
-    //maxfd = MAX ( MAX(sockfd1, sockfd2), MAX(sockfd3, sockfd4));
-    
-    LM_DBG("created and gained sockets fd = %i %i %i %i\n",
-	    sockfd1, sockfd2, sockfd3, sockfd4);
+		nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
 
-    for(;;){
-	//clientAddrLen = sizeof(struct sockaddr);
-	read_set = all_set;
+		if(FD_ISSET(sockfd2, &read_set)){
+			clientAddrLen = sizeof(struct sockaddr);
+			msg.len = recvfrom(sockfd2, buffer, 65536, 0,
+				(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
+			receive(sockfd2, &ri, &msg, NULL);
+		}
 
-	nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
+		if(FD_ISSET(sockfd3, &read_set)){
+			clientAddrLen = sizeof(struct sockaddr);
+			msg.len = recvfrom(sockfd3, buffer, 65536, 0,
+				(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
+			receive(sockfd3, &ri, &msg, NULL);
+		}
 
-	if(FD_ISSET(sockfd2, &read_set)){
-	    clientAddrLen = sizeof(struct sockaddr);
-	    nRecv = recvfrom(sockfd2, buffer, 65536, 0,
-		    (struct sockaddr *) &client, &clientAddrLen);
-	    receive(sockfd2, &client, buffer, nRecv, NULL);
-	    //continue;
+		if(FD_ISSET(sockfd4, &read_set)){
+			clientAddrLen = sizeof(struct sockaddr);
+			msg.len = recvfrom(sockfd4, buffer, 65536, 0,
+				(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
+			receive(sockfd4, &ri, &msg, NULL);
+		}
+
 	}
-
-	if(FD_ISSET(sockfd3, &read_set)){
-	    clientAddrLen = sizeof(struct sockaddr);
-	    nRecv = recvfrom(sockfd3, buffer, 65536, 0,
-		    (struct sockaddr *) &client, &clientAddrLen);
-	    receive(sockfd3, &client, buffer, nRecv, NULL);
-	    //continue;
-	}
-
-	if(FD_ISSET(sockfd4, &read_set)){
-	    clientAddrLen = sizeof(struct sockaddr);
-	    nRecv = recvfrom(sockfd4, buffer, 65536, 0,
-		    (struct sockaddr *) &client, &clientAddrLen);
-	    receive(sockfd4, &client, buffer, nRecv, NULL);
-	    //continue;
-	}
-    }
 }
 
 static int child_init(int rank){
@@ -299,16 +291,19 @@ static int child_init(int rank){
 
 
 /* receive */
-int receive(int sockfd, struct sockaddr_in * client, char * buffer, int nRecv,
-	void* param){
-    Buffer	recv_buffer;
-    Buffer*	resp_buffer;
-    StunMsg*	recv_msg;
-    StunMsg*	resp_msg;
-    StunCtl	ctl;
-    char s[32];
+int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
+{
+	struct sockaddr_in * client;
+	Buffer recv_buffer;
+	Buffer* resp_buffer;
+	StunMsg* recv_msg;
+	StunMsg* resp_msg;
+	StunCtl ctl;
+	char s[32];
 
-/* info & checks*/
+	client = (struct sockaddr_in *) &(ri->src_su.sin);
+
+	/* info & checks*/
     if(sockfd == sockfd1)
 	sprintf(s, "%i %s %s", sockfd1, primary_ip, primary_port);
     else if(sockfd == sockfd2)
@@ -325,12 +320,12 @@ int receive(int sockfd, struct sockaddr_in * client, char * buffer, int nRecv,
     }
     LM_DBG("Received: on [%s] from [%s %i]\n", s, inet_ntoa(client->sin_addr),
 	    ntohs(client->sin_port));
-    LM_DBG("Message: size = %i, body = \n", nRecv);
-    /* print_hex(buffer, nRecv); */
+    LM_DBG("Message: size = %i, body = \n", msg->len);
+    /* print_hex(msg->s, msg->len); */
 
 /* deserialize */
-    recv_buffer.buffer = buffer;
-    recv_buffer.size = nRecv;
+    recv_buffer.buffer = msg->s;
+    recv_buffer.size = msg->len;
     recv_msg = deserialize(&recv_buffer);
     if(!recv_msg)   /* received junk or out of mem */
 	return -1;

@@ -61,30 +61,31 @@
 
 static callback_list* cb_list = NULL;
 
-int register_udprecv_cb(callback_f* func, void* param, char a, char b){
-    callback_list* new;
+int register_udprecv_cb(callback_f* func, void* param, char a, char b)
+{
+	callback_list* new;
 
-    new = (callback_list*) pkg_malloc(sizeof(callback_list));
-    if(!new){
-	LM_ERR("out of pkg memory\n");
-	return -1;
-    }
-    memset(new, 0, sizeof(callback_list));
+	new = (callback_list*) pkg_malloc(sizeof(callback_list));
+	if(!new){
+		LM_ERR("out of pkg memory\n");
+		return -1;
+	}
+	memset(new, 0, sizeof(callback_list));
 
-    new->func = func;
-    new->param = param;
-    new->a = a;
-    new->b = b;
-    new->next = NULL;
+	new->func = func;
+	new->param = param;
+	new->a = a;
+	new->b = b;
+	new->next = NULL;
 
-    if(!cb_list){	
-	cb_list = new;
-    }else{
-	new->next = cb_list;
-	cb_list = new;
-    }
+	if(!cb_list){
+		cb_list = new;
+	}else{
+		new->next = cb_list;
+		cb_list = new;
+	}
 
-    return 0;
+	return 0;
 }
 
 
@@ -338,6 +339,7 @@ int udp_rcv_loop(void)
 	unsigned int fromlen;
 	struct receive_info ri;
 	callback_list* p;
+	str msg;
 
 	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
 	if (from==0){
@@ -379,11 +381,21 @@ int udp_rcv_loop(void)
 		}
 #endif
 
-		if( !isascii(buf[0]) ){    /* not-SIP related */
+		/* we must 0-term the messages, receive_msg expects it */
+		buf[len]=0; /* no need to save the previous char */
+
+		ri.src_su=*from;
+		su2ip_addr(&ri.src_ip, from);
+		ri.src_port=su_getport(from);
+
+		msg.s = buf;
+		msg.len = len;
+
+		/* run callbacks if looks like non-SIP message*/
+		if( !isascii(msg.s[0]) ){    /* not-SIP related */
 			for(p = cb_list; p; p = p->next){
-				if(p->b == buf[1]){
-					if(p->func(bind_address->socket, (struct sockaddr_in*)
-					&from->sin, buf, len, p->param) == 0){
+				if(p->b == msg.s[1]){
+					if (p->func(bind_address->socket, &ri, &msg, p->param)==0){
 						/* buffer consumed by callback */
 						break;
 					}
@@ -392,20 +404,14 @@ int udp_rcv_loop(void)
 			if (p) continue;
 		}
 
-		/* we must 0-term the messages, receive_msg expects it */
-		buf[len]=0; /* no need to save the previous char */
-
-		ri.src_su=*from;
-		su2ip_addr(&ri.src_ip, from);
-		ri.src_port=su_getport(from);
-
 #ifdef DBG_MSG_QA
-		if (!dbg_msg_qa(buf, len)) {
+		if (!dbg_msg_qa(msg.s, msg.len)) {
 			LM_WARN("an incoming message didn't pass test,"
-						"  drop it: %.*s\n", len, buf );
+						"  drop it: %.*s\n", msg.len, msg.s );
 			continue;
 		}
 #endif
+
 		if (ri.src_port==0){
 			tmp=ip_addr2a(&ri.src_ip);
 			LM_INFO("dropping 0 port packet from %s\n", tmp);
@@ -415,12 +421,11 @@ int udp_rcv_loop(void)
 		update_stat( pt[process_no].load, +1 );
 
 		/* receive_msg must free buf too!*/
-		receive_msg(buf, len, &ri);
-		
+		receive_msg( msg.s, msg.len, &ri);
+
 		update_stat( pt[process_no].load, -1 );
-	/* skip: do other stuff */
 	}
-	
+
 error:
 	if (from) pkg_free(from);
 	return -1;

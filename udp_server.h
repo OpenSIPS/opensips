@@ -28,15 +28,15 @@
 #include <sys/socket.h>
 #include "ip_addr.h"
 
-typedef int (callback_f)(int sockfd, struct sockaddr_in* from,
-                            char* buffer, int size, void* param);
+typedef int (callback_f)(int sockfd, struct receive_info *ri,
+													str* msg, void* param);
 
 typedef struct cb_list{
-    callback_f* func;       /* function to be called */
-    void* param;            /* extra parameter */
-    char a;                 /* first byte of message */
-    char b;                 /* second byte of message */
-    struct cb_list* next;   /* linked list */
+	callback_f* func;       /* function to be called */
+	void* param;            /* extra parameter */
+	char a;                 /* first byte of message */
+	char b;                 /* second byte of message */
+	struct cb_list* next;   /* linked list */
 }callback_list;
 
 int udp_init(struct socket_info* si);

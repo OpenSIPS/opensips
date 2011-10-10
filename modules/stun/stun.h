@@ -198,8 +198,7 @@ static int child_init(int rank);
 
 
 /* receive */
-int receive(int sockfd, struct sockaddr_in * client, char * buffer, int nRecv,
-        void* param);
+int receive(int sockfd, struct receive_info *ri, str *msg, void* param);
 
 
 /* deserialize */
