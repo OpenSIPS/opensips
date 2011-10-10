@@ -183,15 +183,27 @@ int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 	memcached_return  rc;
 	memcached_con *con;
 	uint64_t res;
+	str ins_val;
 
 	con = (memcached_con *)connection->data;
 
 	rc = memcached_increment(con->memc,attr->s,attr->len,val,&res);
 
-	if( rc != MEMCACHED_SUCCESS )
-	{
-		LM_ERR("Failed to add: %s\n",memcached_strerror(con->memc,rc));
-		return -1;
+	if( rc != MEMCACHED_SUCCESS ) {
+		if (rc == MEMCACHED_NOTFOUND) {
+			ins_val.s = sint2str(val,&ins_val.len);
+			if (wrap_memcached_insert(connection,attr,&ins_val,expires) < 0) {
+				LM_ERR("failed to insert value\n");
+				return -1;
+			}
+			if (new_val)
+				*new_val = val;
+
+			return 0;
+		} else {
+			LM_ERR("Failed to add: %s\n",memcached_strerror(con->memc,rc));
+			return -1;
+		}
 	}
 
 	if (new_val)
@@ -207,15 +219,27 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 	memcached_return  rc;
 	memcached_con *con;
 	uint64_t res;
+	str ins_val;
 
 	con = (memcached_con *)connection->data;
 
 	rc = memcached_decrement(con->memc,attr->s,attr->len,val,&res);
 
-	if( rc != MEMCACHED_SUCCESS )
-	{
-		LM_ERR("Failed to sub: %s\n",memcached_strerror(con->memc,rc));
-		return -1;
+	if( rc != MEMCACHED_SUCCESS ) {
+		if (rc == MEMCACHED_NOTFOUND) {
+			ins_val.s = sint2str(val,&ins_val.len);
+			if (wrap_memcached_insert(connection,attr,&ins_val,expires) < 0) {
+				LM_ERR("failed to insert value\n");
+				return -1;
+			}
+			if (new_val)
+				*new_val = val;
+
+			return 0;
+		} else {
+			LM_ERR("Failed to sub: %s\n",memcached_strerror(con->memc,rc));
+			return -1;
+		}
 	}
 
 	if (new_val)
