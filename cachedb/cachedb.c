@@ -179,6 +179,10 @@ int register_cachedb(cachedb_engine* cde_entry)
 		pkg_free(cde_node);
 		return -1;
 	}
+
+	cde_node->cde.default_connection = NULL;
+	cde_node->cde.connections = NULL;
+
 	cde_node->next = cachedb_list;
 	cachedb_list = cde_node;
 
