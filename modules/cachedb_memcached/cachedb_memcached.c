@@ -176,6 +176,54 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 	return 0;
 }
 
+/* TODO - once memcached_touch gets into libmemcached, also take care of expires */
+int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
+		int expires,int *new_val)
+{
+	memcached_return  rc;
+	memcached_con *con;
+	uint64_t res;
+
+	con = (memcached_con *)connection->data;
+
+	rc = memcached_increment(con->memc,attr->s,attr->len,val,&res);
+
+	if( rc != MEMCACHED_SUCCESS && rc != MEMCACHED_NOTFOUND)
+	{
+		LM_ERR("Failed to remove: %s\n",memcached_strerror(con->memc,rc));
+		return -1;
+	}
+
+	if (new_val)
+		*new_val = (int)res;
+
+	return 0;
+}
+
+/* TODO - once memcached_touch gets into libmemcached, also take care of expires */
+int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
+		int expires,int *new_val)
+{
+	memcached_return  rc;
+	memcached_con *con;
+	uint64_t res;
+
+	con = (memcached_con *)connection->data;
+
+	rc = memcached_decrement(con->memc,attr->s,attr->len,val,&res);
+
+	if( rc != MEMCACHED_SUCCESS && rc != MEMCACHED_NOTFOUND)
+	{
+		LM_ERR("Failed to remove: %s\n",memcached_strerror(con->memc,rc));
+		return -1;
+	}
+
+	if (new_val)
+		*new_val = (int)res;
+
+	return 0;
+}
+
 #define MAX_HOSTPORT_SIZE 22
 static char host_buff[MAX_HOSTPORT_SIZE];
 
@@ -280,14 +328,15 @@ static int mod_init(void)
 	cde.cdb_func.get = wrap_memcached_get;
 	cde.cdb_func.set = wrap_memcached_insert;
 	cde.cdb_func.remove = wrap_memcached_remove;
-	cde.cdb_func.add = NULL;
-	cde.cdb_func.sub = NULL;
+	cde.cdb_func.add = wrap_memcached_add;
+	cde.cdb_func.sub = wrap_memcached_sub;
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_memcached\n");
 		return -1;
 	}
 
+	LM_DBG("succesfully inited cachedb_memcached\n");
 	return 0;
 }
 
