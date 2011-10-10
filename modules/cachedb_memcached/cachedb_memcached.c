@@ -188,9 +188,9 @@ int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 
 	rc = memcached_increment(con->memc,attr->s,attr->len,val,&res);
 
-	if( rc != MEMCACHED_SUCCESS && rc != MEMCACHED_NOTFOUND)
+	if( rc != MEMCACHED_SUCCESS )
 	{
-		LM_ERR("Failed to remove: %s\n",memcached_strerror(con->memc,rc));
+		LM_ERR("Failed to add: %s\n",memcached_strerror(con->memc,rc));
 		return -1;
 	}
 
@@ -212,9 +212,9 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 
 	rc = memcached_decrement(con->memc,attr->s,attr->len,val,&res);
 
-	if( rc != MEMCACHED_SUCCESS && rc != MEMCACHED_NOTFOUND)
+	if( rc != MEMCACHED_SUCCESS )
 	{
-		LM_ERR("Failed to remove: %s\n",memcached_strerror(con->memc,rc));
+		LM_ERR("Failed to sub: %s\n",memcached_strerror(con->memc,rc));
 		return -1;
 	}
 
