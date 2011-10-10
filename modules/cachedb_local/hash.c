@@ -180,7 +180,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 {
 	int hash_code;
 	lcache_entry_t *it=NULL,*it_prev=NULL;
-	unsigned int old_value;
+	int old_value;
 	char *new_value;
 	int new_len;
 
@@ -205,7 +205,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 			}
 
 			/* found our valid entry */
-			if (str2int(&it->value,&old_value) < 0) {
+			if (str2sint(&it->value,&old_value) < 0) {
 				LM_ERR("not an integer\n");
 				lock_release(&cache_htable[hash_code].lock);
 				return -1;
