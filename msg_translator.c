@@ -1643,22 +1643,23 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	/*computes the length of the new response buffer*/
 	len = 0;
 
-	/* check if received needs to be added */
-	if (received_test(msg)) {
-		if ((received_buf=received_builder(msg,&received_len))==0) {
-			LM_ERR("received_builder failed\n");
-			goto error00;
-		}
-	}
 	/* check if rport needs to be updated */
 	if ( (msg->msg_flags&FL_FORCE_RPORT)||
 		(msg->via1->rport /*&& msg->via1->rport->value.s==0*/)){
 		if ((rport_buf=rport_builder(msg, &rport_len))==0){
 			LM_ERR("rport_builder failed\n");
-			goto error01; /* free everything */
+			goto error00;
 		}
 		if (msg->via1->rport) 
 			len -= msg->via1->rport->size+1; /* include ';' */
+	}
+
+	/* check if received needs to be added or via rport has to be added */
+	if (rport_buf || received_test(msg)) {
+		if ((received_buf=received_builder(msg,&received_len))==0) {
+			LM_ERR("received_builder failed\n");
+			goto error01;
+		}
 	}
 
 	/* first line */
@@ -1777,7 +1778,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 						}else{ /* just copy rport and rest of hdr */
 							append_str(p, rport_buf, rport_len);
 							append_str_trans( p, hdr->name.s+i , 
-								(hdr->body.s+hdr->body.len)-hdr->name.s-i, msg);
+								(hdr->body.s+hdr->body.len)-hdr->name.s-i,msg);
 						}
 					}else{
 						/* normal whole via copy */
