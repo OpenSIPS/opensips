@@ -61,6 +61,36 @@
 		Path to the file with destination sets.
 		</para>
 		<para>
+		This file shall contain linefeed delimited destinations and space delimited columns:
+			<itemizedlist>
+			<listitem>
+			<para>
+				setid (an integer)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				destination (a sip uri)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				flags (0|DS_INACTIVE_DST=1|DS_PROBING_DST=2|DS_RESET_FAIL_DST=4, optional)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				weight (an integer, optional)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				data (opaque data, see attrs_avp, optional)
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>/etc/opensips/dispatcher.list</quote> or
 			<quote>/usr/local/etc/opensips/dispatcher.list</quote>.
@@ -405,7 +435,7 @@ modparam("dispatcher", "ds_ping_interval", 30)
 	</section> 	
 
 	<section>
-		<title><varname>ds_ping_sock</varname> (str)</title>
+		<title><varname>ds_probing_sock</varname> (str)</title>
 		<para>
 		A socket description [proto:]host[:port] of the local socket (which
 		is used by OpenSIPS for SIP traffic) to be used (if multiple) for 
@@ -417,10 +447,10 @@ modparam("dispatcher", "ds_ping_interval", 30)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set the <quote>ds_ping_sock</quote> parameter</title>
+		<title>Set the <quote>ds_probing_sock</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "ds_ping_sock", "udps:192.168.1.100:5077")
+modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
 </programlisting>
 		</example>
@@ -453,7 +483,7 @@ modparam("dispatcher", "ds_probing_threshhold", 10)
 		<para>
 		Controls what gateways are tested to see if they are reachable. If set
 		to 0, only the gateways with state PROBING are tested, if set to 1, all
-		gateways are tested. If set to 1 and the response is 407 (timeout),
+		gateways are tested. If set to 1 and the response is 408 (timeout),
 		an active gateway is set to PROBING state.
 		</para>
 		<para>
