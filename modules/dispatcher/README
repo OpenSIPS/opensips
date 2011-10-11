@@ -50,7 +50,7 @@ Carsten Bock
               1.3.12. ds_ping_method (string)
               1.3.13. ds_ping_from (string)
               1.3.14. ds_ping_interval (int)
-              1.3.15. ds_ping_sock (str)
+              1.3.15. ds_probing_sock (str)
               1.3.16. ds_probing_threshhold (int)
               1.3.17. ds_probing_mode (int)
               1.3.18. options_reply_codes (str)
@@ -102,7 +102,7 @@ Carsten Bock
    1.13. Set the “ds_ping_method” parameter
    1.14. Set the “ds_ping_from” parameter
    1.15. Set the “ds_ping_interval” parameter
-   1.16. Set the “ds_ping_sock” parameter
+   1.16. Set the “ds_probing_sock” parameter
    1.17. Set the “ds_probing_threshhold” parameter
    1.18. Set the “ds_probing_mode” parameter
    1.19. Set the “options_reply_codes” parameter
@@ -151,6 +151,16 @@ Chapter 1. Admin Guide
 1.3.1. list_file (string)
 
    Path to the file with destination sets.
+
+   This file shall contain linefeed delimited destinations and
+   space delimited columns:
+     * setid (an integer)
+     * destination (a sip uri)
+     * flags
+       (0|DS_INACTIVE_DST=1|DS_PROBING_DST=2|DS_RESET_FAIL_DST=4,
+       optional)
+     * weight (an integer, optional)
+     * data (opaque data, see attrs_avp, optional)
 
    Default value is “/etc/opensips/dispatcher.list” or
    “/usr/local/etc/opensips/dispatcher.list”.
@@ -369,7 +379,7 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 modparam("dispatcher", "ds_ping_interval", 30)
 ...
 
-1.3.15. ds_ping_sock (str)
+1.3.15. ds_probing_sock (str)
 
    A socket description [proto:]host[:port] of the local socket
    (which is used by OpenSIPS for SIP traffic) to be used (if
@@ -377,9 +387,9 @@ modparam("dispatcher", "ds_ping_interval", 30)
 
    Default value is “NULL(none)”.
 
-   Example 1.16. Set the “ds_ping_sock” parameter
+   Example 1.16. Set the “ds_probing_sock” parameter
 ...
-modparam("dispatcher", "ds_ping_sock", "udps:192.168.1.100:5077")
+modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
 
 1.3.16. ds_probing_threshhold (int)
@@ -401,7 +411,7 @@ modparam("dispatcher", "ds_probing_threshhold", 10)
    Controls what gateways are tested to see if they are reachable.
    If set to 0, only the gateways with state PROBING are tested,
    if set to 1, all gateways are tested. If set to 1 and the
-   response is 407 (timeout), an active gateway is set to PROBING
+   response is 408 (timeout), an active gateway is set to PROBING
    state.
 
    Default value is “0”.
