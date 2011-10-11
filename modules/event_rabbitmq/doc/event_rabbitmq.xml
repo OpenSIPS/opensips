@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "event_rabbitmq_admin.xml">
 <!ENTITY faq SYSTEM "event_rabbitmq_faq.xml">
+<!ENTITY rabbitmqcfg SYSTEM "event_rabbitmq.cfg">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

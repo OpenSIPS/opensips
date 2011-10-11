@@ -171,5 +171,26 @@
 		</example>
 
 	</section>
+	<section>
+		<title>Installation and Running</title>
+	<section>
+		<title>&osips; config file</title>
+		<para>
+			This configuration file presents the usage of the event_rabbitmq
+			module. In this scenario, a message is sent to a RabbitMQ server
+			everytime &osips; receives a MESSAGE request. The parameters 
+			passed to the server are the R-URI username and the message
+			body.
+		</para>
+		<example>
+			<title>&osips; config script - sample event_rabbitmq usage</title>
+			<programlisting format="linespecific">
+...
+&rabbitmqcfg;
+...
+</programlisting>
+		</example>
+		</section>
+	</section>
 </chapter>
 
