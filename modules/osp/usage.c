@@ -35,8 +35,8 @@
 #include <osp/osp.h>
 #include "../rr/api.h"
 #include "../../usr_avp.h"
-#include "usage.h"
 #include "destination.h"
+#include "usage.h"
 #include "osptoolkit.h"
 #include "sipheader.h"
 
@@ -49,12 +49,16 @@
 /* The up case tags for the destinations may corrupt OSP cookies */
 #define OSP_COOKIE_TRANSID      't'
 #define OSP_COOKIE_TRANSIDUP    'T'
-#define OSP_COOKIE_SRCIP        's'
-#define OSP_COOKIE_SRCIPUP      'S'
+#define OSP_COOKIE_SRCIP        'i'
+#define OSP_COOKIE_SRCIPUP      'I'
 #define OSP_COOKIE_AUTHTIME     'a'
 #define OSP_COOKIE_AUTHTIMEUP   'A'
-#define OSP_COOKIE_DSTCOUNT     'c'
-#define OSP_COOKIE_DSTCOUNTUP   'C'
+#define OSP_COOKIE_DCOUNT       'c'
+#define OSP_COOKIE_DCOUNTUP     'C'
+#define OSP_COOKIE_SNID         's'
+#define OSP_COOKIE_SNIDUP       'S'
+#define OSP_COOKIE_DNID         'd'
+#define OSP_COOKIE_DNIDUP       'D'
 
 /* Flags for OSP cookies */
 #define OSP_COOKIEHAS_TRANSID   (1 << 0)
@@ -64,13 +68,18 @@
 #define OSP_COOKIEHAS_ORIGALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME | OSP_COOKIEHAS_DSTCOUNT)
 #define OSP_COOKIEHAS_TERMALL   (OSP_COOKIEHAS_TRANSID | OSP_COOKIEHAS_SRCIP | OSP_COOKIEHAS_AUTHTIME)
 
+/* Flags for reporting network ID */
+#define OSP_REPORT_SNID         (1<<0)
+#define OSP_REPORT_DNID         (1<<1) 
+
+extern int _osp_report_nid;
 extern int _osp_origdest_avpid;
 extern char _osp_out_device[];
 extern OSPTPROVHANDLE _osp_provider;
 extern str OSP_ORIGDEST_NAME;
 extern struct rr_binds osp_rr;
 
-static void ospRecordTransaction(struct sip_msg* msg, unsigned long long transid, char* uac, char* from, char* to, time_t authtime, int isorig, unsigned destcount);
+static void ospRecordTransaction(struct sip_msg* msg, osp_dest* dest, int isorig);
 static int ospBuildUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest, int lastcode);
 static int ospReportUsageFromDestination(OSPTTRANHANDLE transaction, osp_dest* dest);
 static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_ID* callid, int release, OSPE_ROLE type);
@@ -79,59 +88,71 @@ static int ospReportUsageFromCookie(struct sip_msg* msg, char* cooky, OSPT_CALL_
  * Create OSP cookie and insert it into Record-Route header
  * param msg SIP message
  * param tansid Transaction ID
- * param uac Source IP
- * param from
- * param to
- * param authtime Request authorization time
+ * param dest Destination
  * param isorig Originate / Terminate
- * param destcount Destination count
  */
 static void ospRecordTransaction(
     struct sip_msg* msg,
-    unsigned long long transid,
-    char* uac,
-    char* from,
-    char* to,
-    time_t authtime,
-    int isorig,
-    unsigned destcount)
+    osp_dest* dest,
+    int isorig)
 {
     str cookie;
-    char buffer[OSP_STRBUF_SIZE];
+    char buffer1[OSP_STRBUF_SIZE];
+    char buffer2[OSP_STRBUF_SIZE];
 
     if (osp_rr.add_rr_param == 0) {
         LM_WARN("add_rr_param function is not found, cannot record information about the OSP transaction\n");
         return;
     }
 
-    cookie.s = buffer;
+    cookie.s = buffer1;
 
     if (isorig == 1) {
         cookie.len = snprintf(
-            buffer,
-            sizeof(buffer),
+            buffer1,
+            sizeof(buffer1),
             ";%s=%c%llu_%c%s_%c%d_%c%d",
             OSP_ORIG_COOKIE,
             OSP_COOKIE_TRANSID,
-            transid,
+            dest->transid,
             OSP_COOKIE_SRCIP,
-            uac,
+            dest->srcdev,
             OSP_COOKIE_AUTHTIME,
-            (unsigned int)authtime,
-            OSP_COOKIE_DSTCOUNT,
-            destcount);
+            (unsigned int)dest->authtime,
+            OSP_COOKIE_DCOUNT,
+            dest->destcount);
     } else {
         cookie.len = snprintf(
-            buffer,
-            sizeof(buffer),
+            buffer1,
+            sizeof(buffer1),
             ";%s=%c%llu_%c%s_%c%d",
             OSP_TERM_COOKIE,
             OSP_COOKIE_TRANSID,
-            transid,
+            dest->transid,
             OSP_COOKIE_SRCIP,
-            uac,
+            dest->source,
             OSP_COOKIE_AUTHTIME,
-            (unsigned int)authtime);
+            (unsigned int)dest->authtime);
+    }
+    if ((_osp_report_nid & OSP_REPORT_SNID) && dest->snid[0]) {
+        cookie.len = snprintf(
+            buffer2,
+            sizeof(buffer2),
+            "%s_%c%s",
+            buffer1,
+            OSP_COOKIE_SNID,
+            dest->snid);
+        strncpy(buffer1, buffer2, sizeof(buffer1));
+    }
+    if ((_osp_report_nid & OSP_REPORT_DNID) && dest->dnid[0]) {
+        cookie.len = snprintf(
+            buffer2,
+            sizeof(buffer2),
+            "%s_%c%s",
+            buffer1,
+            OSP_COOKIE_DNID,
+            dest->dnid);
+        strncpy(buffer1, buffer2, sizeof(buffer1));
     }
 
     if (cookie.len < 0) {
@@ -139,55 +160,36 @@ static void ospRecordTransaction(
         return;
     }
 
-    LM_DBG("adding RR parameter '%s'\n", buffer);
+    LM_DBG("adding RR parameter '%s'\n", buffer1);
     osp_rr.add_rr_param(msg, &cookie);
 }
 
 /*
  * Create OSP originate cookie and insert it into Record-Route header
  * param msg SIP message
- * param tansid Transaction ID
- * param uac Source IP
- * param from
- * param to
- * param authtime Request authorization time
- * param destcount Destination count
+ * param dest Destination
  */
 void ospRecordOrigTransaction(
     struct sip_msg* msg,
-    unsigned long long transid,
-    char* uac,
-    char* from,
-    char* to,
-    time_t authtime,
-    unsigned destcount)
+    osp_dest* dest)
 {
     int isorig = 1;
 
-    ospRecordTransaction(msg, transid, uac, from, to, authtime, isorig, destcount);
+    ospRecordTransaction(msg, dest, isorig);
 }
 
 /*
  * Create OSP terminate cookie and insert it into Record-Route header
  * param msg SIP message
- * param tansid Transaction ID
- * param uac Source IP
- * param from
- * param to
- * param authtime Request authorization time
+ * param dest Destination
  */
 void ospRecordTermTransaction(
     struct sip_msg* msg,
-    unsigned long long transid,
-    char* uac,
-    char* from,
-    char* to,
-    time_t authtime)
+    osp_dest* dest)
 {
     int isorig = 0;
-    unsigned destcount = 0; /* N/A */
 
-    ospRecordTransaction(msg, transid, uac, from, to, authtime, isorig, destcount);
+    ospRecordTransaction(msg, dest, isorig);
 }
 
 /*
@@ -226,6 +228,8 @@ static int ospReportUsageFromCookie(
     char pci[OSP_STRBUF_SIZE];
     char to[OSP_STRBUF_SIZE];
     char nexthop[OSP_STRBUF_SIZE];
+    char* snid = NULL;
+    char* dnid = NULL;
     char* calling;
     char* called;
     char* originator = NULL;
@@ -263,10 +267,18 @@ static int ospReportUsageFromCookie(
                     originator = value;
                     cookieflags |= OSP_COOKIEHAS_SRCIP;
                     break;
-                case OSP_COOKIE_DSTCOUNT:
-                case OSP_COOKIE_DSTCOUNTUP:
+                case OSP_COOKIE_DCOUNT:
+                case OSP_COOKIE_DCOUNTUP:
                     destcount = (unsigned)atoi(value);
                     cookieflags |= OSP_COOKIEHAS_DSTCOUNT;
+                    break;
+                case OSP_COOKIE_SNID:
+                case OSP_COOKIE_SNIDUP:
+                    snid = value;
+                    break;
+                case OSP_COOKIE_DNID:
+                case OSP_COOKIE_DNIDUP:
+                    dnid = value;
                     break;
                 default:
                     LM_ERR("unexpected tag '%c' / value '%s'\n", tag, value);
@@ -367,8 +379,8 @@ static int ospReportUsageFromCookie(
             break;
     }
 
-    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
-    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
+    /* RoleInfo must be set before BuildUsageFromScratch */
+    OSPPTransactionSetRoleInfo(transaction, OSPC_RSTATE_STOP, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
 
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,
@@ -396,24 +408,30 @@ static int ospReportUsageFromCookie(
             destcount);
     }
 
-    OSPPTransactionSetRoleInfo(transaction, OSPC_RSTATE_STOP, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
+    if (errorcode == OSPC_ERR_NO_ERROR) {
+        OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+        OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
 
-    OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
-    OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
-    OSPPTransactionSetDiversion(transaction, divuser, divhost);
-    OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+        OSPPTransactionSetSrcNetworkId(transaction, snid);
+        OSPPTransactionSetDestNetworkId(transaction, dnid);
 
-  ospReportUsageWrapper(
-        transaction,
-        releasecode,
-        duration,
-        authtime,
-        endtime,
-        0,
-        0,
-        0,
-        0,
-        release);
+        OSPPTransactionSetRemotePartyId(transaction, OSPC_NFORMAT_E164, rpid);
+        OSPPTransactionSetAssertedId(transaction, OSPC_NFORMAT_E164, pai);
+        OSPPTransactionSetDiversion(transaction, divuser, divhost);
+        OSPPTransactionSetChargeInfo(transaction, OSPC_NFORMAT_E164, pci);
+
+        ospReportUsageWrapper(
+            transaction,
+            releasecode,
+            duration,
+            authtime,
+            endtime,
+            0,
+            0,
+            0,
+            0,
+            release);
+    }
 
     return errorcode;
 }
@@ -511,9 +529,6 @@ static int ospBuildUsageFromDestination(
     ospConvertToOutAddress(dest->host, host, sizeof(host));
     ospConvertToOutAddress(dest->destdev, destdev, sizeof(destdev));
 
-    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
-    OSPPTransactionSetProtocol(transaction, OSPC_PROTTYPE_DESTINATION, dest->protocol);
-
     errorcode = OSPPTransactionBuildUsageFromScratch(
         transaction,
         dest->transid,
@@ -531,6 +546,9 @@ static int ospBuildUsageFromDestination(
         lastcode,
         NULL,
         NULL);
+
+    OSPPTransactionSetSrcNetworkId(transaction, dest->snid);
+    OSPPTransactionSetDestNetworkId(transaction, dest->dnid);
 
     return errorcode;
 }
@@ -610,8 +628,11 @@ void ospReportOrigSetupUsage(void)
                 } else {
                     rstate = OSPC_RSTATE_STOP;
                 }
+                /* RoleInfo must be set before BuildUsageFromScratch */
                 OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
                 ospBuildUsageFromDestination(trans, dest, lastcode);
+                OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_SOURCE, OSPC_PROTNAME_SIP);
+                OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_DESTINATION, dest->protocol);
                 lastcode = dest->lastcode;
             }
         } else {
@@ -654,7 +675,6 @@ void ospReportTermSetupUsage(void)
                 dest->transid);
             errorcode = OSPPTransactionNew(_osp_provider, &trans);
             if (errorcode == OSPC_ERR_NO_ERROR) {
-                ospBuildUsageFromDestination(trans, dest, 0);
                 if (dest->lastcode == 200) {
                     rstate = OSPC_RSTATE_START;
                 } else if (dest->lastcode == 300) {
@@ -662,7 +682,10 @@ void ospReportTermSetupUsage(void)
                 } else {
                     rstate = OSPC_RSTATE_STOP;
                 }
+                /* RoleInfo must be set before BuildUsageFromScratch */
                 OSPPTransactionSetRoleInfo(trans, rstate, OSPC_RFORMAT_OSP, OSPC_RVENDOR_OPENSIPS);
+                ospBuildUsageFromDestination(trans, dest, 0);
+                OSPPTransactionSetProtocol(trans, OSPC_PROTTYPE_DESTINATION, OSPC_PROTNAME_SIP);
                 ospReportUsageFromDestination(trans, dest);
             }
         } else {

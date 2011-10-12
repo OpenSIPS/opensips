@@ -226,6 +226,16 @@ modparam("osp","max_destinations",5)
       </example>
     </section>
     <section>
+      <title><varname>report_networkid</varname></title>
+      <para>The report_networkid (integer) parameter is used to tell the OSP module if to report network ID in completed call CDRs. If it is set to 0, ths OSP module does not report any network ID. If it is set to 1, the OSP module reports source network ID. If it is set to 2, the OSP module reports destination network ID. If it is set to 3, the OSP module report both source and destination network IDs.  The default value is 3.</para>
+      <example>
+        <title>Setting report network ID flag</title>
+        <programlisting format="linespecific">
+modparam("osp","report_networkid",3)
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>validate_call_id</varname></title>
       <para>The validate_call_id (integer) parameter instructs the OSP module to validate call id in the peering token. If this value is set to 1, the OSP module validates that the call id in the SIP INVITE message matches the call id in the peering token. If they do not match the INVITE is rejected. If this value is set to 0, the OSP module will not validate the call id in the peering token. The default value is 1.</para>
       <example>
