@@ -337,6 +337,11 @@ static int fixup_replace_disp_uri(void** param, int param_no)
 
 	model=NULL;
 	if (param_no==1 && s.len) {
+		/* check to see if it is already quoted */
+		if ((s.s[0] == '\"' && s.s[s.len - 1] == '\"') ||
+				str_check_token(&s))
+			goto unquoted;
+
 		/* put " around display name */
 		p = (char*)pkg_malloc(s.len+3);
 		if (p==0) {
@@ -351,6 +356,7 @@ static int fixup_replace_disp_uri(void** param, int param_no)
 		s.s = p;
 		s.len += 2;
 	}
+unquoted:
 	if(pv_parse_format(&s ,&model)<0) {
 		LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
 		pkg_free(s.s);

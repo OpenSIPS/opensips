@@ -712,6 +712,40 @@ static inline int get_timestamp(int *sec,int *usec)
 	return 0;
 }
 
+/*
+ * checks if the string is a token as defined in rfc3261
+ * returns:
+ *  -1 - if the string is invalid
+ *  1 - if the string is a token
+ *  0 - not a token
+ */
+static inline int str_check_token( str * in)
+{
+	char *p;
+
+	if (!in || !in->s || !in->len)
+		return -1;
+
+	p = in->s + in->len;
+	while (p > in->s) {
+		p--;
+		if (!(
+				/* alphanum */
+				(*p >= 'a' && *p <= 'z') ||
+				(*p >= 'A' && *p <= 'Z') ||
+				(*p >= '0' && *p <= '9') ||
+				/* other */
+				*p == '-' || *p == '.' ||
+				*p == '!' || *p == '%' ||
+				*p == '*' || *p == '_' ||
+				*p == '+' || *p == '`' ||
+				*p == '\'' || *p == '~'
+				))
+			return 0;
+	}
+	return 1;
+}
+
 int user2uid(int* uid, int* gid, char* user);
 
 int group2gid(int* gid, char* group);
@@ -727,6 +761,7 @@ int parse_reply_codes( str *options_reply_codes_str,
 
 void base64encode(char *out, char *in, int inlen);
 int base64decode(char *out,char *in,int len);
+
 
 
 #endif
