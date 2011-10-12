@@ -66,6 +66,7 @@ extern int _osp_retry_limit;
 extern int _osp_timeout;
 extern int _osp_non_sip;
 extern int _osp_max_dests;
+extern int _osp_report_nid;
 extern int _osp_use_np;
 extern int _osp_redir_uri;
 extern int _osp_append_userphone;
@@ -158,6 +159,7 @@ static param_export_t params[]={
     { "timeout",                          INT_PARAM, &_osp_timeout },
     { "support_nonsip_protocol",          INT_PARAM, &_osp_non_sip },
     { "max_destinations",                 INT_PARAM, &_osp_max_dests },
+    { "report_networkid",                 INT_PARAM, &_osp_report_nid },
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
     { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
@@ -304,6 +306,11 @@ static int ospVerifyParameters(void)
         LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS);
     }
 
+    if (_osp_report_nid < 0 || _osp_report_nid > 3) {
+        _osp_report_nid = OSP_DEF_REPORTNID;
+        LM_WARN("report_networkid is out of range, reset to %d\n", OSP_DEF_REPORTNID);
+    }
+
     if (_osp_token_format < 0 || _osp_token_format > 2) {
         _osp_token_format = OSP_DEF_TOKEN;
         LM_WARN("token_format is out of range, reset to %d\n", OSP_DEF_TOKEN);
@@ -426,6 +433,7 @@ static void ospDumpParameters(void)
     LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
     LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
+    LM_INFO("    report_networkid '%d'\n", _osp_report_nid);
     LM_INFO("    support_nonsip_protocol '%d'\n", _osp_non_sip);
     LM_INFO("    source device IP AVP ID '%d'\n", _osp_srcdev_avpid);
     LM_INFO("    source network ID AVP ID '%d'\n", _osp_snid_avpid);

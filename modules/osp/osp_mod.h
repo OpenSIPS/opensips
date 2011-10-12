@@ -51,6 +51,7 @@
 #define OSP_DEF_RETRY                   2
 #define OSP_DEF_TIMEOUT                 (60 * 1000)
 #define OSP_DEF_DESTS                   5
+#define OSP_DEF_REPORTNID               3
 #define OSP_DEF_NONSIP                  0
 #define OSP_MAX_DESTS                   12
 #define OSP_DEF_USENP                   1

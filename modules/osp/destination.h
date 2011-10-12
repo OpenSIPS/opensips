@@ -53,7 +53,8 @@ typedef struct _osp_dest {
     char source[OSP_STRBUF_SIZE];
     char host[OSP_STRBUF_SIZE];
     char destdev[OSP_STRBUF_SIZE];
-    char networkid[OSP_STRBUF_SIZE];
+    char snid[OSP_STRBUF_SIZE];
+    char dnid[OSP_STRBUF_SIZE];
     char nprn[OSP_STRBUF_SIZE];
     char npcic[OSP_STRBUF_SIZE];
     int npdi;

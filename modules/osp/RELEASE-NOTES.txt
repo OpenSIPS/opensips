@@ -149,3 +149,18 @@
    o Fixed NULL string issue on Solaris.
    o Added install_module_custom in Makefile.
 
+2011 October 12
+Increased max number of destinations.
+Sync with OSP Toolkit 4.0.0.
+Removed From/To header XML escape char check.
+Changed structure element names.
+Changed calling number implementation.
+Added support for network ID as Contact header parameter.
+Added reporting protocol.
+Fixed the last device is not a SIP device issue.
+Added role info types.
+Added support for non-SIP signaling protocol.
+Added support for called number digit filtering.
+Added support for calling number invalid.
+Fixed network ID reporting issue.
+Fixed t_relay check issue in sample configuration file.

@@ -164,7 +164,7 @@ int ospValidateHeader (
                     dest.callidsize,
                     dest.callid,
                     dest.transid);
-                ospRecordTermTransaction(msg, dest.transid, dest.source, dest.calling, dest.called, dest.authtime);
+                ospRecordTermTransaction(msg, &dest);
                 result = MODULE_RETURNCODE_TRUE;
             }
         } else {

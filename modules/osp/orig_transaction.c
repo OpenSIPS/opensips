@@ -59,7 +59,7 @@ const int OSP_NEXT_ROUTE = 0;
 const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 
-static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, char* source, char* srcdev, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
+static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, char* source, char* srcdev, char* snid, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
 static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format, int redirect);
 static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
@@ -69,8 +69,14 @@ static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
  * param destcount Expected destination count
  * param source Source IP
  * param srcdev Source device IP
+ * param snid Source network ID
  * param origcalled Original called number
  * param authtime Request authorization time
+ * param rpid Remote-Party-ID
+ * param pai P-Asserted_Identify
+ * param divuser User of Diversion
+ * param divhost Host of Diversion
+ * param pci P-Charge-Info
  * return 0 success, -1 failure
  */
 static int ospLoadRoutes(
@@ -78,6 +84,7 @@ static int ospLoadRoutes(
     int destcount,
     char* source,
     char* srcdev,
+    char* snid,
     char* origcalled,
     time_t authtime,
     char* rpid,
@@ -107,6 +114,7 @@ static int ospLoadRoutes(
 
         dest->destcount = count + 1;
         strncpy(dest->origcalled, origcalled, sizeof(dest->origcalled) - 1);
+        strncpy(dest->snid, snid, sizeof(dest->snid) - 1);
 
         if (count == 0) {
             errcode = OSPPTransactionGetFirstDestination(
@@ -223,11 +231,11 @@ static int ospLoadRoutes(
             dest->tokensize = 0;
         }
 
-        errcode = OSPPTransactionGetDestinationNetworkId(trans, sizeof(dest->networkid), dest->networkid);
+        errcode = OSPPTransactionGetDestinationNetworkId(trans, sizeof(dest->dnid), dest->dnid);
         if (errcode != OSPC_ERR_NO_ERROR) {
             /* This does not mean an ERROR. The OSP server may not support OSP 2.1.1 */
             LM_DBG("cannot get dest network ID (%d)\n", errcode);
-            dest->networkid[0] = '\0';
+            dest->dnid[0] = '\0';
         }
 
         strncpy(dest->source, source, sizeof(dest->source) - 1);
@@ -286,7 +294,7 @@ static int ospLoadRoutes(
             */
             dest->protocol,
             dest->supported,
-            dest->networkid,
+            dest->dnid,
             dest->tokensize);
     }
 
@@ -536,7 +544,7 @@ int ospRequestRouting(
             detaillog);        /* memory location for detaillog to be stored */
 
         if ((errcode == OSPC_ERR_NO_ERROR) &&
-            (ospLoadRoutes(trans, destcount, source, srcdev, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
+            (ospLoadRoutes(trans, destcount, source, srcdev, snid, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
         {
             LM_INFO("there are '%d' OSP routes, call_id '%.*s'\n",
                 destcount,
@@ -736,7 +744,7 @@ static int ospPrepareDestination(
             ospAddOspHeader(msg, dest->token, dest->tokensize);
 
             /* Add branch-specific OSP Cookie */
-            ospRecordOrigTransaction(msg, dest->transid, dest->srcdev, dest->calling, dest->called, dest->authtime, dest->destcount);
+            ospRecordOrigTransaction(msg, dest);
 
             /* Handle calling number translation */
             ospSetCalling(msg, dest);
