@@ -184,14 +184,16 @@ void redis_free_connection(cachedb_pool_con *con)
 {
 	redis_con * c;
 
+	LM_DBG("in redis_free_connection\n");
+
 	if (!con) return;
 	c = (redis_con *)con;
-	
-/*	TODO - free entire cluster 
- *	redisFree(c->context); */
+	destroy_cluster_nodes(c);
+	pkg_free(c);
 }
 
 void redis_destroy(cachedb_con *con) {
+	LM_DBG("in redis_destroy\n");
 	cachedb_do_close(con,redis_free_connection);
 }
 

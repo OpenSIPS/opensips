@@ -103,6 +103,8 @@ void destroy_cluster_nodes(redis_con *con)
 {
 	cluster_node *new,*foo;
 
+	LM_DBG("destroying cluster %p\n",con);
+
 	new = con->nodes;
 	while (new) {
 		foo = new->next;
