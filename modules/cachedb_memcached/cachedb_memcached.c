@@ -372,7 +372,8 @@ static int child_init(int rank)
 	struct cachedb_url *it;
 	cachedb_con *con;
 
-	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
+	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN || rank == PROC_MODULE
+			|| rank == PROC_TIMER) {
 		return 0;
 	}
 

@@ -107,7 +107,11 @@ static int child_init(int rank)
 {
 	struct cachedb_url *it;
 	cachedb_con *con;
-	/* TODO - maybe filter here only SIP working children */
+
+	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN || rank == PROC_MODULE
+			|| rank == PROC_TIMER) {
+		return 0;
+	}
 
 	for (it = redis_script_urls;it;it=it->next) {
 		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);
