@@ -198,7 +198,7 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg);
 int init_b2b_htables(void);
 void destroy_b2b_htables();
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
-		int flag, str* param);
+		b2b_dlg_t* init_dlg, str* param);
 
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 

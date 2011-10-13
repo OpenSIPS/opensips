@@ -944,7 +944,7 @@ void destroy_b2b_htables(void)
 
 
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
-		int on_reply, str* param)
+		b2b_dlg_t* init_dlg, str* param)
 {
 	struct to_body *pto, *pfrom = NULL; 
 	b2b_dlg_t dlg;
@@ -982,8 +982,6 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		LM_DBG("Not an initial request\n");
 		dlg.tag[CALLEE_LEG] = pto->tag_value;
 	}
-	dlg.to_uri= pto->uri;
-	dlg.to_dname= pto->display;
 
 	/* examine the from header */
 	if (!msg->from || !msg->from->body.s)
@@ -1000,14 +998,27 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		}
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
-	dlg.from_uri = pfrom->uri;
-	dlg.from_dname = pfrom->display;
 	if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
 		return 0;
 	}
 	dlg.tag[CALLER_LEG] = pfrom->tag_value;
+
+	/* for ACK TO & FROM headers must be the same as in Invite */
+	if(init_dlg) {
+		dlg.to_uri = init_dlg->to_uri;
+		dlg.to_dname = init_dlg->to_dname;
+		dlg.from_uri = init_dlg->from_uri;
+		dlg.from_dname = init_dlg->from_dname;
+	}
+	else
+	{
+		dlg.to_uri= pto->uri;
+		dlg.to_dname= pto->display;
+		dlg.from_uri = pfrom->uri;
+		dlg.from_dname = pfrom->display;
+	}
 
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
@@ -1042,7 +1053,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 			LM_ERR("contact header not parsed\n");
 			return 0;
 		}
-		if(on_reply)
+		if(init_dlg) /* called on reply */
 			dlg.contact[CALLEE_LEG] = b->contacts->uri;
 		else
 			dlg.contact[CALLER_LEG] = b->contacts->uri;
@@ -1050,14 +1061,14 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 
 	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
 	{
-		if( print_rr_body(msg->record_route, &dlg.route_set[CALLER_LEG], on_reply, 0)!= 0)
+		if( print_rr_body(msg->record_route, &dlg.route_set[CALLER_LEG], (init_dlg?1:0), 0)!= 0)
 		{
 			LM_ERR("failed to process record route\n");
 		}
 	}
 
 	dlg.send_sock = msg->rcv.bind_address;
-	if(on_reply)
+	if(init_dlg) /* called on reply */
 		dlg.contact[CALLER_LEG]=*local_contact;
 	else
 		dlg.contact[CALLEE_LEG]=*local_contact;
@@ -1068,7 +1079,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		return 0;
 	}
 
-	if(!on_reply)
+	if(!init_dlg) /* called from server_new on initial Invite */
 	{
 		if(!msg->via1->branch)
 		{
@@ -2328,7 +2339,7 @@ dummy_reply:
 					dlg->state == B2B_EARLY))
 		{
 			new_dlg = b2b_new_dlg(msg, &dlg->contact[CALLER_LEG],
-					1, &dlg->param);
+					dlg, &dlg->param);
 			if(new_dlg == NULL)
 			{
 				LM_ERR("Failed to create b2b dialog structure\n");
