@@ -101,21 +101,6 @@ int redis_connect(redis_con *con)
 		freeReplyObject(rpl);
 	}
 	
-	if (con->id->database) {
-		/* use specified database */
-		rpl = redisCommand(ctx,"SELECT %s",con->id->database);
-		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
-			LM_ERR("failed to select database %s - %.*s\n",con->id->database,
-				rpl?rpl->len:7,rpl?rpl->str:"FAILURE");
-			freeReplyObject(rpl);
-			redisFree(ctx);
-			return -1;
-		}
-
-		LM_DBG("SELECT [%s] - %.*s\n",con->id->database,rpl->len,rpl->str);
-		freeReplyObject(rpl);
-	}
-
 	rpl = redisCommand(ctx,"CLUSTER NODES");
 	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 		/* single instace mode */
