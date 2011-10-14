@@ -61,10 +61,11 @@ Anca-Maria Vamanu
 
               1.4.1. do_routing([[groupID],sort])
               1.4.2. route_to_carrier(carrier_id)
-              1.4.3. use_next_gw()/next_routing()
-              1.4.4. goes_to_gw([[type],flags])
-              1.4.5. is_from_gw( [type, [flag]])
-              1.4.6. dr_disable()
+              1.4.3. route_to_gw(gw_id)
+              1.4.4. use_next_gw()/next_routing()
+              1.4.5. goes_to_gw([[type],flags])
+              1.4.6. is_from_gw( [type, [flag]])
+              1.4.7. dr_disable()
 
         1.5. Exported MI Functions
 
@@ -112,12 +113,13 @@ Anca-Maria Vamanu
    1.24. Set probing_reply_codes parameter
    1.25. do_routing usage
    1.26. route_to_carrier usage
-   1.27. use_next_gw usage
-   1.28. goes_to_gw usage
-   1.29. is_from_gw usage
-   1.30. dr_disable() usage
-   1.31. dr_gw_status usage
-   1.32. dr_carrier_status usage
+   1.27. route_to_carrier usage
+   1.28. use_next_gw usage
+   1.29. goes_to_gw usage
+   1.30. is_from_gw usage
+   1.31. dr_disable() usage
+   1.32. dr_gw_status usage
+   1.33. dr_carrier_status usage
 
 Chapter 1. Admin Guide
 
@@ -870,7 +872,25 @@ if ( route_2_routing("my_top_carrier") ) {
 }
 ...
 
-1.4.3.  use_next_gw()/next_routing()
+1.4.3.  route_to_gw(gw_id)
+
+   Function to trigger the direct routing to a given gateway.
+   Attributes and per-gw preocessing will be available.
+
+   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+
+   Function takes a single mandatory parameter, the ID of the
+   gateway to be used (variables are accepted).
+
+   Example 1.27. route_to_carrier usage
+...
+if ( route_2_gw("gw_europe") ) {
+        t_relay();
+        exit;
+}
+...
+
+1.4.4.  use_next_gw()/next_routing()
 
    The function takes the next available destination (set by
    do_routing, as alternative destinations) and push it into RURI.
@@ -885,7 +905,7 @@ if ( route_2_routing("my_top_carrier") ) {
    returned is no other alternative destinations are found or in
    case of internal processing error.
 
-   Example 1.27. use_next_gw usage
+   Example 1.28. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -893,7 +913,7 @@ if (use_next_gw()) {
 }
 ...
 
-1.4.4.  goes_to_gw([[type],flags])
+1.4.5.  goes_to_gw([[type],flags])
 
    Function returns true if the destination of the current request
    (destination URI or Request URI) points (as IP) to one of the
@@ -915,7 +935,7 @@ if (use_next_gw()) {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.28. goes_to_gw usage
+   Example 1.29. goes_to_gw usage
 ...
 if (goes_to_gw("1")) {
         sl_send_reply("403","Forbidden");
@@ -923,7 +943,7 @@ if (goes_to_gw("1")) {
 }
 ...
 
-1.4.5.  is_from_gw( [type, [flag]])
+1.4.6.  is_from_gw( [type, [flag]])
 
    The function checks if the sender of the message is a gateway
    from a certain group.
@@ -941,13 +961,13 @@ if (goes_to_gw("1")) {
           + 'a' (Attributes) - return the attributes string
             defined by the GW
 
-   Example 1.29. is_from_gw usage
+   Example 1.30. is_from_gw usage
 ...
 if (is_from_gw("3","1") {
 }
 ...
 
-1.4.6.  dr_disable()
+1.4.7.  dr_disable()
 
    Marks as disabled the last destination that was used for the
    current call. The disabling done via this function will prevent
@@ -957,7 +977,7 @@ if (is_from_gw("3","1") {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.30. dr_disable() usage
+   Example 1.31. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -995,7 +1015,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 status (optional)
                 _empty_line_
 
-   Example 1.31. dr_gw_status usage
+   Example 1.32. dr_gw_status usage
 $ ./opensipsctl fifo dr_gw_status 2
 Enabled:: no
 $ ./opensipsctl fifo dr_gw_status 2 1
@@ -1019,7 +1039,7 @@ Enabled:: yes
                 status (optional)
                 _empty_line_
 
-   Example 1.32. dr_carrier_status usage
+   Example 1.33. dr_carrier_status usage
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1

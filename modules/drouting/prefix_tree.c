@@ -169,7 +169,7 @@ get_prefix(
 		tmp--;
 		ptree = ptree->bp;
 	}
-	if (matched_len) *matched_len = tmp - prefix->s ;
+	if (matched_len) *matched_len = tmp + 1 - prefix->s ;
 	return rt;
 
 err_exit:

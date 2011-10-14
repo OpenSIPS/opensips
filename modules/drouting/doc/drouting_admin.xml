@@ -1507,6 +1507,35 @@ if ( route_2_routing("my_top_carrier") ) {
 
 	<section>
 		<title>
+		<function moreinfo="none">route_to_gw(gw_id)</function>
+		</title>
+		<para>
+		Function to trigger the direct routing to a given gateway. Attributes 
+		and per-gw preocessing will be available.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		</para>
+		<para>
+		Function takes a single mandatory parameter, the ID of the gateway
+		to be used (variables are accepted).
+		</para>
+
+		<example>
+		<title><function>route_to_carrier</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( route_2_gw("gw_europe") ) {
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">use_next_gw()/next_routing()</function>
 		</title>
 		<para>

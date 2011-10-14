@@ -156,6 +156,7 @@ static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2);
 static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
 static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
 static int route2_carrier(struct sip_msg* msg, char* cr);
+static int route2_gw(struct sip_msg* msg, char* gw);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
@@ -191,6 +192,8 @@ static cmd_export_t cmds[] = {
 	{"dr_disable", (cmd_function)dr_disable,      0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_pvar_null, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"route_to_gw",     (cmd_function)route2_gw,     1,fixup_pvar_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -970,10 +973,13 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		for( i=first,weight_sum=0 ; i<size ; i++ ) {
 			weight_sum += pgwl[ idx[i] ].weight ;
 			running_sum[i] = weight_sum;
+			LM_DBG("elen %d, weight=%d, sum=%d\n",i,
+				pgwl[ idx[i] ].weight, running_sum[i]);
 		}
 		if (weight_sum) {
 			/* randomly select number */
 			rand_no = (unsigned int)(weight_sum*((float)rand()/RAND_MAX));
+			LM_DBG("random number is %d\n",rand_no);
 			/* select the element */
 			for( i=first ; i<size ; i++ )
 				if (running_sum[i]>=rand_no) break;
@@ -1421,6 +1427,54 @@ error:
 }
 
 
+static int route2_gw(struct sip_msg* msg, char *gw_str)
+{
+	struct sip_uri  uri;
+	pv_value_t val;
+	pgw_t *gw;
+	str *ruri;
+
+	/* get the gw ID */
+	if ( pv_get_spec_value(msg, (pv_spec_p)gw_str, &val)!=0 ||
+	(val.flags&PV_VAL_STR)==0 ) {
+		LM_ERR("failed to get string value for gw ID\n");
+		return -1;
+	}
+
+	/* get the RURI */
+	ruri = GET_RURI(msg);
+	/* parse ruri */
+	if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
+		LM_ERR("unable to parse RURI\n");
+		return -1;
+	}
+
+	/* ref the data for reading */
+	lock_start_read( ref_lock );
+
+	gw = get_gw_by_id( (*rdata)->pgw_l, &val.rs );
+	if (gw==NULL) {
+		LM_ERR("no GW found with ID <%.*s> \n",val.rs.len,val.rs.s);
+		goto error;
+	}
+
+	if ( push_gw_for_usage(msg, &uri, gw, NULL, NULL, 0 ) ) {
+		LM_ERR("failed to use gw <%.*s>, skipping\n",
+			gw->id.len, gw->id.s);
+		goto error;
+	}
+
+	/* we are done reading -> unref the data */
+	lock_stop_read( ref_lock );
+
+	return 1;
+error:
+	/* we are done reading -> unref the data */
+	lock_stop_read( ref_lock );
+	return -1;
+}
+
+
 static int fixup_do_routing(void** param, int param_no)
 {
 	char *s;
@@ -1737,7 +1791,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 			attr = add_mi_attr( node, MI_DUP_VALUE, "IP" , 2,
 				gw->ip_str.s, gw->ip_str.len);
 			if (attr==NULL) goto error;
-			attr = add_mi_attr( &rpl_tree->node, 0, "Enabled", 7,
+			attr = add_mi_attr( node, 0, "Enabled", 7,
 				(gw->flags&DR_DST_STAT_DSBL_FLAG)?"no ":"yes", 3);
 			if (attr==NULL) goto error;
 		}
@@ -1823,7 +1877,7 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
 				"ID", 2, cr->id.s, cr->id.len);
 			if (node==NULL) goto error;
-			attr = add_mi_attr( &rpl_tree->node, 0, "Enabled", 7,
+			attr = add_mi_attr( node, 0, "Enabled", 7,
 				(cr->flags&DR_CR_FLAG_IS_OFF)?"no ":"yes", 3);
 			if (attr==NULL) goto error;
 		}
