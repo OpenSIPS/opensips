@@ -315,6 +315,9 @@ time_t startup_time = 0;
 /* shared memory (in MB) */
 unsigned long shm_mem_size=SHM_MEM_SIZE * 1024 * 1024;
 
+/* shared memory (in MB) */
+unsigned long pkg_mem_size=PKG_MEM_SIZE * 1024 * 1024;
+
 /* export command-line to anywhere else */
 int my_argc;
 char **my_argv;
@@ -335,6 +338,7 @@ char* pgid_file = 0;
  */
 void cleanup(int show_status)
 {
+	LM_INFO("cleanup\n");
 	/*clean-up*/
 	if (mem_lock) 
 		shm_unlock(); /* hack: force-unlock the shared memory lock in case
@@ -1032,7 +1036,7 @@ int main(int argc, char** argv)
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
 	opterr=0;
-	options="f:cCm:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
+	options="f:cCmM:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
@@ -1051,6 +1055,14 @@ int main(int argc, char** argv)
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
 					if (tmp &&(*tmp)){
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
+						goto error00;
+					};
+
+					break;
+			case 'M':
+					pkg_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
+					if (tmp &&(*tmp)){
+						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
 						goto error00;
 					};
 
@@ -1389,7 +1401,7 @@ try_again:
 #endif
 
 	if (disable_core_dump) set_core_dump(0, 0);
-	else set_core_dump(1, shm_mem_size+PKG_MEM_POOL_SIZE+4*1024*1024);
+	else set_core_dump(1, shm_mem_size+pkg_mem_size+4*1024*1024);
 	if (open_files_limit>0){
 		if(increase_open_fds(open_files_limit)<0){ 
 			LM_ERR("ERROR: error could not increase file limits\n");
@@ -1404,7 +1416,7 @@ try_again:
 #ifdef SHM_MEM
 	LM_INFO("using %ld Mb shared memory\n", ((shm_mem_size/1024)/1024));
 #endif
-	LM_INFO("using %i Mb private memory per process\n", ((PKG_MEM_POOL_SIZE/1024)/1024));
+	LM_INFO("using %ld Mb private memory per process\n", ((pkg_mem_size/1024)/1024));
 
 	/* init serial forking engine */
 	if (init_serialization()!=0) {

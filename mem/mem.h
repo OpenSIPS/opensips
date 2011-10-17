@@ -58,7 +58,7 @@
 		extern struct qm_block* mem_block;
 #	endif
 
-	extern char mem_pool[PKG_MEM_POOL_SIZE];
+	extern char *mem_pool;
 
 
 #ifdef STATISTICS

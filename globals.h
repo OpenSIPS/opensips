@@ -115,6 +115,7 @@ extern int disable_dns_blacklist;
 extern int cfg_errors;
 
 extern unsigned long shm_mem_size;
+extern unsigned long pkg_mem_size;
 
 extern int reply_to_via;
 

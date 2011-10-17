@@ -114,7 +114,7 @@
 
 #define SRV_MAX_PREFIX_LEN SRV_TLS_PREFIX_LEN
 
-#define PKG_MEM_POOL_SIZE 1024*1024*2		/*!< Used only if PKG_MALLOC is defined*/
+#define PKG_MEM_SIZE 2				/*!< Used only if PKG_MALLOC is defined*/
 #define SHM_MEM_SIZE 32				/*!< Used if SH_MEM is defined*/
 
 #define TIMER_TICK   1  			/*!< one second */
