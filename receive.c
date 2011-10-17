@@ -209,7 +209,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	}
 
 end:
-	stop_expire_timer(start,execmsgthreshold,"msg processing",msg->buf,msg->len,0);
+	stop_expire_timer( start, execmsgthreshold, "msg processing",
+		msg->buf, msg->len, 0);
 	/* free possible loaded avps -bogdan */
 	reset_avps();
 	LM_DBG("cleaning up\n");
