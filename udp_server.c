@@ -392,7 +392,7 @@ int udp_rcv_loop(void)
 		msg.len = len;
 
 		/* run callbacks if looks like non-SIP message*/
-		if( !isascii(msg.s[0]) ){    /* not-SIP related */
+		if( !isalpha(msg.s[0]) ){    /* not-SIP related */
 			for(p = cb_list; p; p = p->next){
 				if(p->b == msg.s[1]){
 					if (p->func(bind_address->socket, &ri, &msg, p->param)==0){
