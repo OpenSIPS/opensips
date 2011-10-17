@@ -123,9 +123,13 @@ int db_postgres_get_columns(const db_con_t* _h, db_res_t* _r)
 		{
 			case INT2OID:
 			case INT4OID:
-			case INT8OID:
 				LM_DBG("use DB_INT result type\n");
 				RES_TYPES(_r)[col] = DB_INT;
+			break;
+
+			case INT8OID:
+				LM_DBG("use DB_BIGINT result type\n");
+				RES_TYPES(_r)[col] = DB_BIGINT;
 			break;
 
 			case FLOAT4OID:

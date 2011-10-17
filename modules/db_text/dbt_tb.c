@@ -328,6 +328,11 @@ int dbt_row_set_val(dbt_row_p _drp, dbt_val_p _vp, int _t, int _idx)
 				_drp->fields[_idx].val.int_val = _vp->val.int_val;
 			break;
 			
+			case DB_BIGINT:
+				_drp->fields[_idx].type = DB_BIGINT;
+				_drp->fields[_idx].val.bigint_val = _vp->val.bigint_val;
+			break;
+			
 			case DB_DATETIME:
 				_drp->fields[_idx].type = _t;
 				_drp->fields[_idx].val.int_val = (int)_vp->val.time_val;
@@ -415,6 +420,11 @@ int dbt_row_update_val(dbt_row_p _drp, dbt_val_p _vp, int _t, int _idx)
 			case DB_INT:
 				_drp->fields[_idx].type = _t;
 				_drp->fields[_idx].val.int_val = _vp->val.int_val;
+			break;
+			
+			case DB_BIGINT:
+				_drp->fields[_idx].type = _t;
+				_drp->fields[_idx].val.bigint_val = _vp->val.bigint_val;
 			break;
 			
 			case DB_DATETIME:

@@ -837,6 +837,9 @@ int load_metadata_columns(table_p _tp)
 		else if(strncmp(ct, "int", 3)==0)
 		{	col->type = DB_INT;
 		}
+		else if (strncmp(ct, "number", 6)==0)
+		{	col->type = DB_BIGINT;
+		}
 		else if(strncmp(ct, "double", 6)==0)
 		{	col->type = DB_DOUBLE;
 		}

@@ -263,6 +263,10 @@ int dbt_result_extract_fields(dbt_table_p _dtp, dbt_row_p _drp,
 				_rp->fields[i].type = _dres->colv[i].type;
 				_rp->fields[i].val.int_val = _drp->fields[n].val.int_val;
 			break;
+			case DB_BIGINT:
+				_rp->fields[i].type = _dres->colv[i].type;
+				_rp->fields[i].val.bigint_val = _drp->fields[n].val.bigint_val;
+			break;
 			case DB_DOUBLE:
 				_rp->fields[i].type = DB_DOUBLE;
 				_rp->fields[i].val.double_val=_drp->fields[n].val.double_val;
@@ -447,6 +451,9 @@ int dbt_cmp_val(dbt_val_p _vp, db_val_t* _v)
 		case DB_INT:
 			return (_vp->val.int_val<_v->val.int_val)?-1:
 					(_vp->val.int_val>_v->val.int_val)?1:0;
+		case DB_BIGINT:
+			return (_vp->val.bigint_val<_v->val.bigint_val)?-1:
+					(_vp->val.bigint_val>_v->val.bigint_val)?1:0;
 		case DB_DOUBLE:
 			return (_vp->val.double_val<_v->val.double_val)?-1:
 					(_vp->val.double_val>_v->val.double_val)?1:0;

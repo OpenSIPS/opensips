@@ -112,6 +112,17 @@ int bdb_str2val(db_type_t _t, db_val_t* _v, char* _s, int _l)
 		}
 		break;
 
+	case DB_BIGINT:
+		if (db_str2bigint(_s, &VAL_BIGINT(_v)) < 0) {
+			LM_ERR("Error while converting BIGINT value from string\n");
+			return -2;
+		} else {
+			VAL_TYPE(_v) = DB_BIGINT;
+			return 0;
+		}
+		break;
+
+
 	case DB_BITMAP:
 		if (db_str2int(_s, &VAL_INT(_v)) < 0) {
 			LM_ERR("Error while converting BITMAP value from string\n");
@@ -206,6 +217,16 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 			return -2;
 		} else {
 			LM_DBG("Converted int to string\n");
+			return 0;
+		}
+		break;
+
+	case DB_BIGINT:
+		if (db_bigint2str(VAL_BIGINT(_v), _s, _len) < 0) {
+			LM_ERR("Error while converting bigint to string\n");
+			return -2;
+		} else {
+			LM_DBG("Converted bigint to string\n");
 			return 0;
 		}
 		break;

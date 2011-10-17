@@ -69,6 +69,12 @@ int db_oracle_val2bind(bmap_t* _m, const db_val_t* _v, OCIDate* _o)
 		_m->type = SQLT_INT;
 		break;
 
+case DB_BIGINT:
+		_m->addr = (int*)&VAL_BIGINT(_v);
+		_m->size = sizeof(VAL_BIGINT(_v));
+		_m->type = SQLT_NUM;
+		break;
+
 	case DB_BITMAP:
 		_m->addr = (unsigned*)&VAL_BITMAP(_v);
 		_m->size = sizeof(VAL_BITMAP(_v));

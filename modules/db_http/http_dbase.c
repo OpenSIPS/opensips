@@ -346,6 +346,11 @@ int put_type_in_result( char * start, int len , db_res_t * res , int cur_col )
 		res->col.types[cur_col] = DB_INT;
 		ok = 1;
 	}
+	if( len == 6 && !strncmp (start,"bigint",len))
+	{
+		res->col.types[cur_col] = DB_BIGINT;
+		ok = 1;
+	}
 	if( len == 6 && !strncmp (start,"double",len))
 	{
 		res->col.types[cur_col] = DB_DOUBLE;
@@ -407,6 +412,10 @@ int put_value_in_result(  char * start, int len , db_res_t * res ,
 	{
 		case( DB_INT):
 			CHECK( sscanf(start,"%d",&row[cur_col].val.int_val), 1, error);
+			break;
+
+		case( DB_BIGINT):
+			CHECK( sscanf(start,"%lld",&row[cur_col].val.bigint_val), 1, error);
 			break;
 
 		case( DB_DOUBLE):
@@ -846,6 +855,11 @@ str value_to_string(const db_val_t * v)
 	{
 		case (DB_INT):
 			sprintf(buff,"%d",v->val.int_val);
+			rez.s = buff;
+			rez.len = strlen(rez.s);
+			break;
+		case (DB_BIGINT):
+			sprintf(buff,"%lld",v->val.bigint_val);
 			rez.s = buff;
 			rez.len = strlen(rez.s);
 			break;

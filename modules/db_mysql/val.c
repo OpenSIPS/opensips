@@ -70,6 +70,17 @@ int db_mysql_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int
 		}
 		break;
 
+	case DB_BIGINT:
+		LM_DBG("converting INT BIG[%s]\n", _s);
+		if (db_str2bigint(_s, &VAL_BIGINT(_v)) < 0) {
+			LM_ERR("error while converting big integer value from string\n");
+			return -2;
+		} else {
+			VAL_TYPE(_v) = DB_BIGINT;
+			return 0;
+		}
+		break;
+
 	case DB_BITMAP:
 		LM_DBG("converting BITMAP [%s]\n", _s);
 		if (db_str2int(_s, &VAL_INT(_v)) < 0) {
@@ -158,6 +169,16 @@ int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len
 			return 0;
 		}
 		break;
+
+	case DB_BIGINT:
+		if (db_bigint2str(VAL_BIGINT(_v), _s, _len) < 0) {
+			LM_ERR("error while converting bigint to string\n");
+			return -2;
+		} else {
+			return 0;
+		}
+		break;
+
 
 	case DB_BITMAP:
 		if (db_int2str(VAL_BITMAP(_v), _s, _len) < 0) {
@@ -253,6 +274,8 @@ int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 		switch(VAL_TYPE(v)) {
 			case DB_INT:
 				binds[i].buffer_type= MYSQL_TYPE_LONG; break;
+			case DB_BIGINT:
+				binds[i].buffer_type= MYSQL_TYPE_LONGLONG; break;
 			case DB_BITMAP:
 				binds[i].buffer_type= MYSQL_TYPE_LONG; break;
 			case DB_DOUBLE:
@@ -280,6 +303,13 @@ int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 			binds[i].buffer= (char*)&(VAL_INT(v));
 			*binds[i].length= sizeof(VAL_INT(v));
 			break;
+
+		case DB_BIGINT:
+			binds[i].buffer_type= MYSQL_TYPE_LONGLONG;
+			binds[i].buffer= (char*)&(VAL_BIGINT(v));
+			*binds[i].length= sizeof(VAL_BIGINT(v));
+			break;
+
 
 		case DB_BITMAP:
 			binds[i].buffer_type= MYSQL_TYPE_LONG;

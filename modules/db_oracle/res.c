@@ -138,7 +138,7 @@ set_int:
 			len = sizeof(VAL_INT((db_val_t*)NULL));
 			break;
 
-//		case SQLT_LNG:		/* long */
+		case SQLT_LNG:		/* long */
 		case SQLT_VNU:		/* NUM with preceding length byte */
 		case SQLT_NUM:		/* (ORANET TYPE) oracle numeric */
 			len = 0; /* PRECISION is ub1 */
@@ -159,6 +159,12 @@ set_int:
 					goto set_bitmap;
 				}
 			}
+			LM_DBG("use DB_BIGINT result type");
+			RES_TYPES(_r)[i] = DB_BIGINT;
+			len = sizeof(VAL_BIGINT((db_val_t*)NULL));
+			dtype = SQLT_NUM;
+			break;
+
 		case SQLT_FLT:		/* (ORANET TYPE) Floating point number */
 		case SQLT_BFLOAT:       /* Native Binary float*/
 		case SQLT_BDOUBLE:	/* NAtive binary double */
@@ -285,6 +291,10 @@ static int convert_row(db_res_t* _res, db_row_t* _r, dmap_t* _d)
 		switch (t) {
 		case DB_INT:
 			VAL_INT(v) = *_d->pv[i].i;
+			break;
+
+		case DB_BIGINT:
+			VAL_BIGINT(v) = *_d->pv[i].i;
 			break;
 
 		case DB_BITMAP:

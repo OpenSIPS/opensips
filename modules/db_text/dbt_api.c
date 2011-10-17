@@ -74,6 +74,7 @@ static int dbt_get_columns(db_con_t* _h, db_res_t* _r)
 			case DB_STRING:
 			case DB_BLOB:
 			case DB_INT:
+			case DB_BIGINT:
 			case DB_DATETIME:
 			case DB_DOUBLE:
 				RES_TYPES(_r)[col] = DBT_CON_RESULT(_h)->colv[col].type;
@@ -110,6 +111,12 @@ static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 				VAL_INT(&(ROW_VALUES(_r)[i])) = 
 						DBT_CON_ROW(_h)->fields[i].val.int_val;
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_INT;
+			break;
+
+			case DB_BIGINT:
+				VAL_BIGINT(&(ROW_VALUES(_r)[i])) = 
+						DBT_CON_ROW(_h)->fields[i].val.bigint_val;
+				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_BIGINT;
 			break;
 
 			case DB_DOUBLE:

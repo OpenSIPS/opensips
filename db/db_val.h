@@ -36,6 +36,7 @@
 #define DB_VAL_H
 
 #include <time.h>
+#include <stdint.h>
 #include "../str.h"
 
 
@@ -47,6 +48,7 @@
  */
 typedef enum {
 	DB_INT,        /**< represents an 32 bit integer number      */
+	DB_BIGINT,     /**< represents an 64 bit integer number      */
 	DB_DOUBLE,     /**< represents a floating point number       */
 	DB_STRING,     /**< represents a zero terminated const char* */
 	DB_STR,        /**< represents a string of 'str' type        */
@@ -77,6 +79,7 @@ typedef struct {
 	/** Column value structure that holds the actual data in a union.  */
 	union {
 		int           int_val;    /**< integer value              */
+		long long     bigint_val; /**< big integer value          */
 		double        double_val; /**< double value               */
 		time_t        time_val;   /**< unix time_t value          */
 		const char*   string_val; /**< zero terminated string     */
@@ -118,6 +121,12 @@ typedef struct {
  * Use this macro if you need to access the integer value in the db_val_t structure.
  */
 #define VAL_INT(dv)    ((dv)->val.int_val)
+
+
+/**
+ * Use this macro if you need to access the big integer value in the db_val_t structure.
+ */
+#define VAL_BIGINT(dv)    ((dv)->val.bigint_val)
 
 
 /**

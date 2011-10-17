@@ -74,6 +74,16 @@ int db_str2int(const char* _s, int* _v);
 
 
 /**
+ * Converts a char into an int64 value.
+ *
+ * \param _s source value
+ * \param _v target value
+ * \return zero on sucess, negative on conversion errors
+ */
+int db_str2bigint(const char* _s, long long* _v);
+
+
+/**
  * Converts a char into a double value.
  *
  * \param _s source value
@@ -92,6 +102,17 @@ int db_str2double(const char* _s, double* _v);
  * \return zero on sucess, negative on conversion errors
  */
 int db_int2str(int _v, char* _s, int* _l);
+
+
+/**
+ * Converts an int64 value in a char pointer.
+ *
+ * \param _v source value
+ * \param _s target value
+ * \param _l available length and target length
+ * \return zero on sucess, negative on conversion errors
+ */
+int db_bigint2str(long long _v, char* _s, int* _l);
 
 
 /**

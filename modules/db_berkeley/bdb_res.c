@@ -179,6 +179,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 
 		if( row->values[col].nul ||
 		    row->values[col].type == DB_INT ||
+		    row->values[col].type == DB_BIGINT ||
 		    row->values[col].type == DB_DOUBLE ||
 		    row->values[col].type == DB_DATETIME
 		 )
@@ -307,6 +308,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 
 		if( row->values[col].nul ||
 		    row->values[col].type == DB_INT ||
+		    row->values[col].type == DB_BIGINT ||
 		    row->values[col].type == DB_DOUBLE ||
 		    row->values[col].type == DB_DATETIME
 		 )
@@ -460,6 +462,9 @@ int bdb_cmp_val(db_val_t* _vp, db_val_t* _v)
 		case DB_INT:
 			return (_vp->val.int_val<_v->val.int_val)?-1:
 					(_vp->val.int_val>_v->val.int_val)?1:0;
+		case DB_BIGINT:
+			return (_vp->val.bigint_val<_v->val.bigint_val)?-1:
+					(_vp->val.bigint_val>_v->val.bigint_val)?1:0;
 		case DB_DOUBLE:
 			return (_vp->val.double_val<_v->val.double_val)?-1:
 					(_vp->val.double_val>_v->val.double_val)?1:0;

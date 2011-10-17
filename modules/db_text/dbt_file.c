@@ -195,6 +195,11 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 						colp->type = DB_INT;
 						LM_DBG("column[%d] is INT!\n", ccol+1);
 					break;
+					case 'l':
+					case 'L':
+						colp->type = DB_BIGINT;
+						LM_DBG("column[%d] is BIGINT!\n", ccol+1);
+					break;
 					case 'd':
 					case 'D':
 						colp->type = DB_DOUBLE;
@@ -311,6 +316,7 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 				switch(dtp->colv[ccol]->type)
 				{
 					case DB_INT:
+					case DB_BIGINT:
 					case DB_DATETIME:
 						//LM_DBG("INT value!\n");
 						dtval.val.int_val = 0;
@@ -526,6 +532,9 @@ int dbt_print_table(dbt_table_p _dtp, str *_dbn)
 			case DB_INT:
 				fprintf(fout, "%.*s(int", colp->name.len, colp->name.s);
 			break;
+			case DB_BIGINT:
+				fprintf(fout, "%.*s(bigint", colp->name.len, colp->name.s);
+			break;
 			case DB_DOUBLE:
 				fprintf(fout, "%.*s(double", colp->name.len, colp->name.s);
 			break;
@@ -570,6 +579,11 @@ int dbt_print_table(dbt_table_p _dtp, str *_dbn)
 					if(!rowp->fields[ccol].nul)
 						fprintf(fout,"%d",
 								rowp->fields[ccol].val.int_val);
+				break;
+				case DB_BIGINT:
+					if(!rowp->fields[ccol].nul)
+						fprintf(fout,"%lld",
+								rowp->fields[ccol].val.bigint_val);
 				break;
 				case DB_DOUBLE:
 					if(!rowp->fields[ccol].nul)

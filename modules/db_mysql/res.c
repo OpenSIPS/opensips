@@ -78,7 +78,6 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 			case MYSQL_TYPE_SHORT:
 			case MYSQL_TYPE_LONG:
 			case MYSQL_TYPE_INT24:
-			case MYSQL_TYPE_LONGLONG:
 			case MYSQL_TYPE_DECIMAL:
 			#if MYSQL_VERSION_ID > 49999
 			case MYSQL_TYPE_NEWDECIMAL:
@@ -114,6 +113,11 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 			case MYSQL_TYPE_VAR_STRING:
 				LM_DBG("use DB_STRING result type\n");
 				RES_TYPES(_r)[col] = DB_STRING;
+				break;
+
+			case MYSQL_TYPE_LONGLONG:
+				LM_DBG("use DB_BIGINT result type\n");
+				RES_TYPES(_r)[col] = DB_BIGINT;
 				break;
 
 			default:
