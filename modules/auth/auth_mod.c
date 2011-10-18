@@ -447,7 +447,7 @@ static inline int pv_authorize(struct sip_msg* msg, gparam_p realm,
 	{
 		return post_auth(msg, h);
 	}
-	return AUTH_ERROR;
+	return INVALID_PASSWORD;
 }
 
 
