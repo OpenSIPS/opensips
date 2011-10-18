@@ -669,7 +669,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	if( (idxf==0 || idxf==PV_IDX_INT) && idx==0) {
+	if( idxf!=PV_IDX_ALL && idx==0) {
 		/* no index specified -> return the first contact body */
 		return get_contact_body_field( res , ct_h, ct, &param->pvn);
 	}
@@ -1724,7 +1724,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	if ( (idxf==0 || idxf==PV_IDX_INT) && idx==0) {
+	if (idxf!=PV_IDX_ALL && idx==0) {
 		/* no index specified -> return the first branch */
 		return get_branch_field( 0, &param->pvn, res);
 	}
@@ -1806,11 +1806,12 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		LM_ERR("invalid index\n");
 		return -1;
 	}
-	
+
 	if ((avp=search_first_avp(name_type, avp_name, &avp_value, 0))==0)
 		return pv_get_null(msg, param, res);
 	res->flags = PV_VAL_STR;
-	if ( (idxf==0 || idxf==PV_IDX_INT) && idx==0)
+
+	if (idxf!=PV_IDX_ALL && idx==0)
 	{
 		if(avp->flags & AVP_VAL_STR)
 		{
@@ -2006,7 +2007,7 @@ static int pv_get_hdr(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 
 	/* get the value */
 	res->flags = PV_VAL_STR;
-	if( (idxf==0 || idxf==PV_IDX_INT) && idx==0)
+	if(idxf!=PV_IDX_ALL && idx==0)
 	{
 		res->rs  = hf->body;
 		return 0;
