@@ -76,10 +76,31 @@ typedef struct _pv_extra
 pv_extra_p  *_pv_extra_list=0;
 
 static str str_marker = { PV_MARKER_STR, 1 };
-static str str_null   = { "<null>", 6 };
-static str str_empty  = { "", 0 };
-static str str_udp    = { "UDP", 3 };
-static str str_5060   = { "5060", 4 };
+
+/* IMPORTANT : the "const" strings returned by the var functions must
+   be read-write (as they may be changed by the script interpreter), so
+   we need to allocated as array and not as pointing to RO data segment
+   */
+static char _str_null_hlp[7] = {'<','n','u','l','l','>',0};
+static str str_null   = { _str_null_hlp, 6 };
+
+static char _str_empty_hlp[1]  = { 0 };
+static str str_empty  = { _str_empty_hlp, 0 };
+
+static char _str_5060_hlp[5]   = {'5','0','6','0',0};
+static str str_5060   = { _str_5060_hlp, 4 };
+
+static char _str_udp_hlp[4]  = {'u','d','p',0};
+static str str_udp    = { _str_udp_hlp, 3 };
+
+static char _str_tcp_hlp[4]  = {'t','c','p',0};
+static str str_tcp    = { _str_tcp_hlp, 3 };
+
+static char _str_tls_hlp[4]  = {'t','l','s',0};
+static str str_tls    = { _str_tls_hlp, 3 };
+
+static char _str_sctp_hlp[5]  = {'s','c','t','p',0};
+static str str_sctp    = { _str_sctp_hlp, 4 };
 
 int _pv_pid = 0;
 
@@ -1275,24 +1296,19 @@ static int pv_get_proto(struct sip_msg *msg, pv_param_t *param,
 	switch(msg->rcv.proto)
 	{
 		case PROTO_UDP:
-			s.s = "udp";
-			s.len = 3;
+			s = str_udp;
 		break;
 		case PROTO_TCP:
-			s.s = "tcp";
-			s.len = 3;
+			s = str_tcp;
 		break;
 		case PROTO_TLS:
-			s.s = "tls";
-			s.len = 3;
+			s = str_tls;
 		break;
 		case PROTO_SCTP:
-			s.s = "sctp";
-			s.len = 4;
+			s = str_sctp;
 		break;
 		default:
-			s.s = "NONE";
-			s.len = 4;
+			s = str_null;
 	}
 
 	return pv_get_strintval(msg, param, res, &s, (int)msg->rcv.proto);
