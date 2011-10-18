@@ -1029,15 +1029,30 @@ int main(int argc, char** argv)
 	ret=-1;
 	my_argc=argc; my_argv=argv;
 
-	/*init pkg mallocs (before parsing cfg or cmd line !)*/
+	/* process pkg mem size from command line */
+	opterr=0;
+	options="f:cCmM:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
+
+	while((c=getopt(argc,argv,options))!=-1){
+		switch(c){
+			case 'M':
+					pkg_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
+					if (tmp &&(*tmp)){
+						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
+						goto error00;
+					};
+
+					break;
+		}
+	}
+	/*init pkg mallocs (before parsing cfg but after parsing cmd line !)*/
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
 	init_route_lists();
 	/* process command line (get port no, cfg. file path etc) */
-	opterr=0;
-	options="f:cCmM:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
-
+	/* first reset getopt */
+	optind = 1;
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'f':
@@ -1060,11 +1075,7 @@ int main(int argc, char** argv)
 
 					break;
 			case 'M':
-					pkg_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
-					if (tmp &&(*tmp)){
-						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
-						goto error00;
-					};
+					/* ignoring it, parsed previously */
 
 					break;
 			case 'b':
