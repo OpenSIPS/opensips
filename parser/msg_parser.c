@@ -545,8 +545,6 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 
 	char *tmp;
 	char* rest;
-	char* first_via;
-	char* second_via;
 	struct msg_start *fl;
 	int offset;
 	hdr_flags_t flags;
@@ -595,8 +593,6 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	}
 	msg->unparsed=tmp;
 	/*find first Via: */
-	first_via=0;
-	second_via=0;
 	if (parse_headers(msg, flags, 0)==-1) goto error;
 
 #ifdef EXTRA_DEBUG

@@ -508,10 +508,30 @@ int dump_standard_hdr_test(char *hdr,int hdrlen,unsigned char *payload,int payle
    int i,n;
    i=htonl(hdrlen);
    n=write(fd,&i,4);
+   if (n < 0) {
+	   LM_ERR("error while writing\n");
+	   return -1;
+   }
    n=write(fd,hdr,hdrlen);
+   if (n < 0) {
+	   LM_ERR("error while writing\n");
+	   return -1;
+   }
    i=htonl(paylen);
    n=write(fd,&i,4);
+   if (n < 0) {
+	   LM_ERR("error while writing\n");
+	   return -1;
+   }
    n=write(fd,payload,paylen);
+   if (n < 0) {
+	   LM_ERR("error while writing\n");
+	   return -1;
+   }
    n=write(fd,&theSignal,4);
+   if (n < 0) {
+	   LM_ERR("error while writing\n");
+	   return -1;
+   }
    return 0;
 }

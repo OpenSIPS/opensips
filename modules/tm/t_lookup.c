@@ -377,7 +377,6 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 	struct cell         *p_cell;
 	unsigned int       isACK;
 	struct sip_msg  *t_msg;
-	int ret;
 	struct via_param *branch;
 	int match_status;
 
@@ -405,9 +404,6 @@ int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked )
 	LM_DBG("start searching: hash=%d, isACK=%d\n",
 		p_msg->hash_index,isACK);
 
-
-	/* assume not found */
-	ret=-1;
 
 	/* first of all, look if there is RFC3261 magic cookie in branch; if
 	 * so, we can do very quick matching and skip the old-RFC bizzar

@@ -1220,7 +1220,6 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 {
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
-	int faked = 0;
 	struct sip_msg* msg;
 	int_str        avp_value;
 	struct usr_avp *avp;
@@ -1254,7 +1253,6 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 
 	msg = req;
-	faked = 1;
 
 	if(parse_from_header(msg)==-1 || msg->from==NULL || get_from(msg)==NULL)
 	{

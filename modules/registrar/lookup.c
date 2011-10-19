@@ -72,7 +72,6 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	str flags_s;
 	pv_value_t val;
 	str sip_instance = {0,0},call_id = {0,0};
-	time_t last_mod;
 
 	flags = 0;
 	if (_f && _f[0]!=0) {
@@ -162,7 +161,6 @@ search_valid_contact:
 		/* matched call-id, check if there are newer contacts with
 		 * same sip instace bup newer last_modified */
 
-		last_mod = ptr->last_modified;
 		it = ptr->next;
 		while ( it ) {
 			if (VALID_CONTACT(it,act_time)) {

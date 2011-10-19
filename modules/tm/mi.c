@@ -417,7 +417,7 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 	int sip_error;
 	int proto;
 	int port;
-	int cseq;
+	int cseq = 0;
 	int n;
 
 	for( n=0,node = cmd_tree->node.kids; n<6 && node ; n++,node=node->next );

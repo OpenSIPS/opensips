@@ -194,8 +194,8 @@ inline static void get_lock(fl_lock_t* lock)
 inline static void release_lock(fl_lock_t* lock)
 {
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
-	char val;
-	val=0;
+/*	char val;
+	val=0; */
 	asm volatile(
 		" movb $0, (%0)" : /*no output*/ : "r"(lock): "memory"
 		/*" xchg %b0, %1" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"*/

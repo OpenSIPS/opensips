@@ -487,7 +487,6 @@ int send_sms_as_sip( struct incame_sms *sms )
 	str  sip_body;
 	str  sip_from;
 	int  is_pattern;
-	int  in_address;
 	int  k;
 	char *p;
 
@@ -501,7 +500,6 @@ int send_sms_as_sip( struct incame_sms *sms )
 	      sip address inside; everything before it is ignored, only the
 	      part following the address being send as sip
 	*/
-	in_address = 0;
 	sip_addr.len = 0;
 	sip_body.len = 0;
 	p = sms->ascii;

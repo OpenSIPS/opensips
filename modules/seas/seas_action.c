@@ -787,20 +787,19 @@ error:
  */
 int ac_sl_msg(as_p the_as,char *action,int len)
 {
-   char processor_id;
    struct sip_msg *my_msg;
    str *uri;
    struct proxy_l *proxy;
    rr_t *my_route;
-   int i,k,retval;
+   int k,retval;
    unsigned int flags;
    enum sip_protos proto;
 
    my_msg=NULL;
-   i=k=0;
+   k=0;
 
    net2hostL(flags,action,k);
-   processor_id=action[k++];
+   k++;
    proxy=0;
 
    if(!(my_msg = parse_ac_msg(HDR_EOH_F,action+k,len-k))){
@@ -925,7 +924,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
    struct cseq_body *cseqb;
    struct as_uac_param *the_param;
    dlg_t *my_dlg;
-   int i,k,retval,uac_id,sip_error,ret,err_ret;
+   int k,retval,uac_id,sip_error,ret,err_ret;
    long clen;
    str headers,body,fake_uri;
 
@@ -933,7 +932,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
    my_dlg=NULL;
    my_msg=NULL;
    the_param=NULL;
-   i=k=clen=0;
+   k=clen=0;
 
    net2hostL(flags,action,k);
    net2hostL(uac_id,action,k);
@@ -1386,6 +1385,8 @@ int as_action_fail_resp(int uac_id,int sip_error,char *err_buf,int i)
    ev_len=htonl(k);
    memcpy(msg,&ev_len,4);
    n=write(my_as->u.as.action_fd,msg,k);
+   if (n < 0)
+	   LM_ERR("error while writing\n");
    return 0;
 }
 
@@ -1421,11 +1422,9 @@ void uac_cb(struct cell* t, int type,struct tmcb_params *rcvd_params)
    as_msg_p my_as_ev=0;
    int mylen,code,i;
    struct as_uac_param *ev_info;
-   struct sip_msg *msg;
    char *buffer;
 
    ev_info=(struct as_uac_param*)*rcvd_params->param;
-   msg=rcvd_params->rpl;
    code=rcvd_params->code;
    buffer=0;
    if(!ev_info || !ev_info->who){

@@ -269,7 +269,6 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 	struct fis_param *sp;
 	struct db_param  *dbp;
 	int flags;
-	int flags0;
 	str s;
 	char *p;
 
@@ -279,7 +278,6 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 	}
 
 	flags=0;
-	flags0=0;
 
 	s.s = (char*)*param;
 	if (param_no==1)

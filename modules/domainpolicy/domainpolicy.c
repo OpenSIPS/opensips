@@ -104,9 +104,6 @@ static void stack_to_avp(struct avp_stack *stack) {
 	int j;
 	int  avp_att;
 	int_str  avp_val;
-	unsigned int intval;
-
-	intval=2;
 
 	for(j=0; j< stack->i; j++) {
 		/* AVP names can be integer or string based */
@@ -129,7 +126,7 @@ static void stack_to_avp(struct avp_stack *stack) {
 		avp_val.s.s = stack->avp[j].val; 
 		avp_val.s.len = strlen(avp_val.s.s);
 
-		/* intval==0, string type explicitely forced with s: */
+		/* string type explicitely forced with s: */
 		if(add_avp(AVP_VAL_STR, avp_att, avp_val))
 			LM_ERR("cannot add avp\n");
 	}

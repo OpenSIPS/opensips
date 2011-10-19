@@ -529,12 +529,12 @@ struct rdata* get_record(char* name, int type)
 	int size;
 	int qno, answers_no;
 	int r;
-	int ans_len;
 	static union dns_query buff;
 	unsigned char* p;
-	unsigned char* t;
+/*	unsigned char* t;
+	int ans_len;
+	static unsigned char answer[ANS_SIZE]; */
 	unsigned char* end;
-	static unsigned char answer[ANS_SIZE];
 	unsigned short rtype, class, rdlength;
 	unsigned int ttl;
 	struct rdata* head;
@@ -578,8 +578,8 @@ struct rdata* get_record(char* name, int type)
 		}
 	};
 	answers_no=ntohs((unsigned short)buff.hdr.ancount);
-	ans_len=ANS_SIZE;
-	t=answer;
+	/*ans_len=ANS_SIZE;
+	t=answer;*/
 	for (r=0; (r<answers_no) && (p<end); r++){
 		/*  ignore it the default domain name */
 		if ((p=dns_skipname(p, end))==0) {
