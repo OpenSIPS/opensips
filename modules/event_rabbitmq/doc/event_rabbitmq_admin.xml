@@ -7,8 +7,10 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		<emphasis>RabbitMQ</emphasis> is an open source messaging server. It's
-		purpose is to manage received messages in queues, taking advantage of
+		<emphasis>RabbitMQ</emphasis>
+		(<ulink url='http://www.rabbitmq.com/'>http://www.rabbitmq.com/</ulink>) 
+		is an open source messaging server. It's purpose is to
+		manage received messages in queues, taking advantage of
 		the flexible AMQP protocol.
 	</para>
 

@@ -8,7 +8,7 @@ Edited by
 
 Razvan Crainea
 
-   Copyright © 2011 voice-system.ro
+   Copyright © 2011 OpenSIPS Project
      __________________________________________________________
 
    Table of Contents
@@ -47,9 +47,9 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   RabbitMQ is an open source messaging server. It's purpose is to
-   manage received messages in queues, taking advantage of the
-   flexible AMQP protocol.
+   RabbitMQ (http://www.rabbitmq.com/) is an open source messaging
+   server. It's purpose is to manage received messages in queues,
+   taking advantage of the flexible AMQP protocol.
 
    This module provides the implementation of a RabbitMQ client
    for the Event Interface. It is used to send AMQP messages to a
