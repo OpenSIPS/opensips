@@ -1031,7 +1031,7 @@ int main(int argc, char** argv)
 
 	/* process pkg mem size from command line */
 	opterr=0;
-	options="f:cCmM:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
+	options="f:cCm:M:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
