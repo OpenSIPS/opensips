@@ -1,0 +1,5 @@
+This is very simple example module that shows how to
+use Cache/DB interface.
+
+If you want to compile this module, move it to modules
+directory.
