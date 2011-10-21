@@ -11,7 +11,7 @@ Bogdan-Andrei Iancu
    Copyright © 2006-2009 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-09-16 20:33:54 +0300
-                              (Mi, 16 sep 2009) $
+                              (Wed, 16 Sep 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -806,7 +806,12 @@ create_dialog("B");
    routing information checking (contact and route set).
 
    The function returns true if a dialog exists for the request
-   and if the request is valid (according to dialog data).
+   and if the request is valid (according to dialog data). If the
+   request is invalid, the following return codes are returned :
+     * -1 - invalid cseq
+     * -2 - invalid remote target
+     * -3 - invalid route set
+     * -4 - other errors ( parsing, no dlg, etc )
 
    This function can be used from REQUEST_ROUTE.
 
