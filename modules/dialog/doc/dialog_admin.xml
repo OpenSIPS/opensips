@@ -1034,7 +1034,27 @@ create_dialog("B");
 		</para>
 		<para>
 		The function returns true if a dialog exists for the request and if 
-		the request is valid (according to dialog data).
+		the request is valid (according to dialog data). If the request is invalid,
+		the following return codes are returned :
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>-1</emphasis> - invalid cseq
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - invalid remote target
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - invalid route set
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-4</emphasis> - other errors ( parsing, no dlg, etc )
+			</para>
+		</listitem>
+		</itemizedlist>
+
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.

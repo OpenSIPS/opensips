@@ -1647,7 +1647,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
 		log_bogus_dst_leg(dlg);
 		LM_ERR("Script error - validate function before having a dialog\n");
-		return -1;
+		return -4;
 	}
 
 	leg = & dlg->legs[ last_dst_leg ];
@@ -1656,7 +1656,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
 	!req->cseq->parsed) {
 		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
-		return -1;
+		return -4;
 	}
 
 	n = m = 0;
@@ -1697,14 +1697,14 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 		if (rr_uri == NULL)
 		{
 			LM_ERR("failed fetching remote target from msg\n");
-			return -1;
+			return -4;
 		}
 
 		if (compare_uris(rr_uri,0,&leg->contact,0))
 		{
 			LM_ERR("failed to validate remote contact: dlg=[%.*s] , req=[%.*s]\n",
 					leg->contact.len,leg->contact.s,rr_uri->len,rr_uri->s);
-			return -1;
+			return -2;
 		}
 	}
 
@@ -1717,25 +1717,25 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	if( parse_headers( req, HDR_EOH_F, 0)<0 ) {
 		LM_ERR("failed to parse headers when looking after ROUTEs\n");
-		return -1;
+		return -4;
 	}
 
 	if ( req->route==NULL) {
 		if ( leg->route_set.len!=0) {
 			LM_DBG("route check failed (req has no route, but dialog has\n");
-			return -1;
+			return -3;
 		}
 	} else {
 		route_uris = d_rrb.get_route_set(req,&nr_routes);
 		if (route_uris == NULL) {
 			LM_ERR("failed fetching route URIs from the msg\n");
-			return -1;
+			return -4;
 		}
 
 		if (nr_routes != leg->nr_uris) {
 			LM_ERR("Different number of routes found in msg. req=%d, dlg=%d\n",
 					nr_routes,leg->nr_uris);
-			return -1;
+			return -3;
 		}
 
 		for (i=0;i<nr_routes;i++)
@@ -1748,7 +1748,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 				LM_ERR("Check failed for route number %d. req=[%.*s],dlg=[%.*s]\n",
 						i,route_uris[i].len,route_uris[i].s,leg->route_uris[i].len,
 						leg->route_uris[i].s);
-				return -1;
+				return -3;
 			}
 		}
 	}

@@ -853,18 +853,21 @@ static int w_match_dialog(struct sip_msg *msg)
 static int w_validate_dialog(struct sip_msg *req)
 {
 	struct dlg_cell *dlg;
+	int ret;
 
 	dlg = get_current_dialog();
 	if (dlg==NULL)
 	{
 		LM_ERR("null dialog\n");
-		return -1;
+		return -4;
 	}
 
-	if (dlg_validate_dialog( req, dlg )!=0)
-		return -1;
+	ret = dlg_validate_dialog(req,dlg);
 
-	return 1;
+	if (ret == 0)
+		ret = 1;
+
+	return ret;
 }
 
 
