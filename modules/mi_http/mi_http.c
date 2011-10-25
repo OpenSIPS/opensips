@@ -89,6 +89,8 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
+	int i;
+
 	if ( port <= 1024 ) {
 		LM_ERR("port<1024, using 8888...\n");
 		return -1;
@@ -99,7 +101,15 @@ static int mod_init(void)
 	LM_DBG("buf_size=[%d]\n", buf_size);
 
 	http_root.len = strlen(http_root.s);
-
+	trim_spaces_lr(http_root);
+	for(i=0;i<http_root.len;i++) {
+		if ( !isalnum(http_root.s[i]) && http_root.s[i]!='_') {
+			LM_ERR("bad mi_http_root param [%.*s], char [%c] "
+				"- use only alphanumerical characters\n",
+				http_root.len, http_root.s, http_root.s[i]);
+			return -1;
+		}
+	}
 	return 0;
 }
 
