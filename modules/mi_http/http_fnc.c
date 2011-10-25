@@ -231,7 +231,7 @@ static const str MI_HTTP_Response_Foot = str_init(\
 "</div></body></html>");
 
 #define MI_HTTP_ROWSPAN 5
-static const str MI_HTTP_CMD_ROWSPAN = str_init("MI_HTTP_ROWSPAN");
+static const str MI_HTTP_CMD_ROWSPAN = str_init("5");
 
 
 
