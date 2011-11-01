@@ -128,7 +128,8 @@ void b2bl_db_init(void)
 
 void b2bl_db_delete(b2bl_tuple_t* tuple)
 {
-	if(!tuple || !tuple->key|| (b2bl_db_mode==WRITE_BACK && tuple->db_flag==INSERTDB_FLAG))
+	if(!tuple || !tuple->key || b2bl_db_mode==NO_DB ||
+		(b2bl_db_mode==WRITE_BACK && tuple->db_flag==INSERTDB_FLAG))
 		return;
 
 	LM_DBG("Delete key = %.*s\n", tuple->key->len, tuple->key->s);
