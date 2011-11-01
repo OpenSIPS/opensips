@@ -29,6 +29,7 @@
 #define RL_DEFAULT_EXPIRE	3600
 #define RL_HASHSIZE			1024
 #define RL_TIMER_INTERVAL	10
+#define RL_PIPE_PENDING		(1<<0)
 
 #include "../../map.h"
 
@@ -44,10 +45,12 @@ typedef enum {
 typedef struct rl_pipe {
 	int limit;					/* limit used by algorithm */
 	int counter;				/* countes the accesses */
+	int my_counter;				/* contes the accesses of this instance */
 	int last_counter;			/* last counter */
 	int load;					/* countes the accesses */
 	rl_algo_t algo;				/* the algorithm used */
 	unsigned long last_used;	/* timestamp when the pipe was last accessed */
+	int pending;					/* pending refs */
 } rl_pipe_t;
 
 /* big hashtable */
@@ -67,6 +70,7 @@ extern int rl_hash_size;
 extern int *rl_network_count;
 extern int *rl_network_load;
 extern str rl_default_algo_s;
+extern str db_prefix;
 
 /* helper funcs */
 void mod_destroy(void);
@@ -83,8 +87,12 @@ int rl_pipe_check(rl_pipe_t *);
 /* update load */
 int get_cpuload(void);
 void do_update_load(void);
-void pid_setpoint_limit(int limit);
+void pid_setpoint_limit(int);
 
 /* timer */
 void rl_timer(unsigned int, void *);
+
+/* cachedb functions */
+int init_cachedb(str*);
+void destroy_cachedb(void);
 #endif /* _RATELIMIT_H_ */

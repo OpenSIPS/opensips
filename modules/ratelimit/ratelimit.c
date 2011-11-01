@@ -59,10 +59,14 @@ static int * drop_rate;         /* updated by PIPE_ALGO_FEEDBACK */
 static int *rl_feedback_limit;
 
 int * rl_network_load;	/* network load */
-int * rl_network_count;	/* flag for coungint network algo users */
+int * rl_network_count;	/* flag for counting network algo users */
 
 /* these only change in the mod_init() process -- no locking needed */
 int rl_timer_interval = RL_TIMER_INTERVAL;
+
+static str db_url = {0,0};
+str db_prefix = str_init("rl_pipe_");
+
 /* === */
 
 #ifndef RL_DEBUG_LOCKS
@@ -84,6 +88,7 @@ int rl_timer_interval = RL_TIMER_INTERVAL;
 
 /* module functions */
 static int mod_init(void);
+static int mod_child(int);
 
 /* fixup prototype */
 static int fixup_rl_check(void **param, int param_no);
@@ -111,6 +116,8 @@ static param_export_t params[] = {
 	{ "expire_time",		INT_PARAM,				 &rl_expire_time},
 	{ "hash_size",			INT_PARAM,				 &rl_hash_size},
 	{ "default_algorithm",	STR_PARAM,				 &rl_default_algo_s.s},
+	{ "cachedb_url",		STR_PARAM,				 &db_url.s},
+	{ "db_prefix",			STR_PARAM,				 &db_prefix.s},
 	{ 0,					0,						0}
 };
 
@@ -142,7 +149,7 @@ struct module_exports exports= {
 	mod_init,			/* module initialization function */
 	0,
 	mod_destroy,		/* module exit function */
-	0					/* per-child init function */
+	mod_child			/* per-child init function */
 };
 
 
@@ -268,6 +275,13 @@ static int mod_init(void)
 		LM_ERR("invalid expire time\n");
 		return -1;
 	}
+
+	if (db_url.s) {
+		db_url.len = strlen(db_url.s);
+		db_prefix.len = strlen(db_prefix.s);
+		LM_DBG("using CacheDB url: %s\n", db_url.s);
+	}
+
 	RL_SHM_MALLOC(rl_network_count, sizeof(int));
 	RL_SHM_MALLOC(rl_network_load, sizeof(int));
 	RL_SHM_MALLOC(rl_load_value, sizeof(double));
@@ -299,7 +313,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-
+	/* if db_url is not used */
 	for( n=0 ; n < 8 * sizeof(unsigned int) ; n++) {
 		if (rl_hash_size==(1<<n))
 			break;
@@ -316,6 +330,15 @@ static int mod_init(void)
 		return -1;
 	}
 
+	return 0;
+}
+
+static int mod_child(int rank)
+{
+	/* init the cachedb */
+	if (db_url.s && db_url.len)
+		return init_cachedb(&db_url);
+	LM_DBG("db_url not set - using standard behaviour\n");
 	return 0;
 }
 
@@ -348,6 +371,9 @@ void mod_destroy(void)
 	RL_SHM_FREE(pid_setpoint);
 	RL_SHM_FREE(drop_rate);
 	RL_SHM_FREE(rl_feedback_limit);
+
+	if (db_url.s && db_url.len)
+		destroy_cachedb();
 }
 
 
@@ -389,16 +415,6 @@ int rl_pipe_check(rl_pipe_t *pipe)
 	}
 	return 1;
 }
-
-/**
- * checks that all FEEDBACK pipes use the same setpoint 
- * cpu load. also sets (common) cfg_setpoint value
- * \param	modparam 1 to check modparam (static) fields, 0 to use shm ones
- *
- * \return	0 if ok, -1 on error
- */
-
-
 
 /*
  * MI functions

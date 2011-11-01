@@ -14,6 +14,11 @@
 		traffic based on them. The MI interface can be used to change 
 		tunables while running OpenSIPS.
 	</para>
+	<para>
+		This module is also integrated with the &osips; Key-Value Interface,
+		providing support for distributed rate limiting using Redis or Memcached
+		CacheDB backends.
+	</para>
 	</section>
 	<section>
 	<title>Use Cases</title>
@@ -22,6 +27,18 @@
 		influences the load. The ratelimit module can be used to protect a
 		single host or to protect an OpenSIPS cluster when run on the
 		dispatching box in front.
+	</para>
+	<para>
+		Distributed limiting is useful when the rate limit should be
+		performed not only on a specific node, but on the entire platform. 
+		The internal limiting data will no longer be kept on each &osips; 
+		instance. It will be stored in a distributed Key-Value database and
+		queried by each instance before deciding if a SIP message 
+		should be blocked or not.
+	</para>
+	<para>
+		NOTE: that this behavior only makes sense when the pipe algorithm
+		used is TAILDROP or RED.
 	</para>
 	<para>
 		A sample configuration snippet might look like this:
@@ -46,7 +63,7 @@
 	<section>
 	<title>Static Rate Limiting Algorithms</title>
 	<para>
-		The ratelimit module supports two different statc algorithms
+		The ratelimit module supports two different static algorithms
 		to be used by rl_check to determine whether a message should be
 		blocked or not.
 	</para>
@@ -248,6 +265,46 @@ modparam("ratelimit", "hash_size", 512)
 		<programlisting format="linespecific">
 ...
 modparam("ratelimit", "default_algorithm", "RED")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+		Enables distributed rate limiting and specifies the backend
+		that should be used by the CacheDB interface.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "disabled".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>db_prefix</varname> (string)</title>
+		<para>
+		Specifies what prefix should be added to the pipe name. This is
+		only used when distributed rate limiting is enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is "rl_pipe_".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("ratelimit", "db_prefix", "ratelimit_")
 ...
 </programlisting>
 		</example>

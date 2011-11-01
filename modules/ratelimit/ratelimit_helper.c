@@ -30,8 +30,12 @@
 #include "../../timer.h"
 #include "../../socket_info.h"
 
+#include "../../cachedb/cachedb.h"
+#include "../../cachedb/cachedb_cap.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ratelimit.h"
 
@@ -50,6 +54,171 @@ rl_big_htable rl_htable;
 
 /* feedback algorithm */
 static int *rl_feedback_limit;
+
+static cachedb_funcs cdbf;
+static cachedb_con *cdbc = 0;
+
+/* returnes the idex of the pipe in our hash */
+#define RL_GET_INDEX(_n)		core_hash(&(_n), NULL, rl_htable.size);
+
+/* gets the lock associated with the hash index */
+#define RL_GET_LOCK(_l) \
+	lock_set_get(rl_htable.locks, ((_l) % rl_htable.locks_no))
+
+/* releases the lock associated with the hash index */
+#define RL_RELEASE_LOCK(_l) \
+	lock_set_release(rl_htable.locks, ((_l) % rl_htable.locks_no))
+
+/* retrieves the structure associated with the index and key */
+#define RL_GET_PIPE(_i, _k) \
+	(rl_pipe_t **)map_get(rl_htable.maps[(_i)], _k)
+
+#define RL_FIND_PIPE(_i, _k) \
+	(rl_pipe_t **)map_find(rl_htable.maps[(_i)], _k)
+
+/* returns true if the pipe should use cachedb interface */
+#define RL_USE_CDB(_p) \
+	(cdbc && (_p)->algo!=PIPE_ALGO_NETWORK && (_p)->algo!=PIPE_ALGO_FEEDBACK)
+
+/* sets the pending flag for a pipe */
+#define RL_SET_PENDING(_p) ((_p)->pending++)
+/* resets the pending flag for a pipe */
+#define RL_RESET_PENDING(_p) ((_p)->pending--)
+/* returns true if the pipe has pending state */
+#define RL_IS_PENDING(_p) ((_p)->pending)
+
+
+
+static str rl_name_buffer = {0, 0};
+static inline int rl_set_name(str * name)
+{
+	if (name->len + db_prefix.len > rl_name_buffer.len) {
+		rl_name_buffer.len = name->len + db_prefix.len;
+		rl_name_buffer.s = pkg_realloc(rl_name_buffer.s,
+				rl_name_buffer.len);
+		if (!rl_name_buffer.s) {
+			LM_ERR("cannot realloc buffer\n");
+			rl_name_buffer.len = 0;
+			return -1;
+		}
+	}
+	memcpy(rl_name_buffer.s + db_prefix.len, name->s, name->len);
+	rl_name_buffer.len = name->len + db_prefix.len;
+	return 0;
+}
+
+
+/* NOTE: assumes that the pipe has been locked. If fails, releases the lock */
+static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
+{
+	unsigned int hid = RL_GET_INDEX(*name);
+	int new_counter;
+
+	RL_SET_PENDING(pipe);
+	RL_RELEASE_LOCK(hid);
+	if (rl_set_name(name) < 0)
+		return -1;
+
+	/* if the command should be reset */
+	/* XXX: This is not needed since add takes also negative numbers 
+	if (c > 0) {
+		if (cdbf.add(cdbc, &rl_name_buffer, c, rl_expire_time, &new_counter)<0){
+			LM_ERR("cannot increase buffer for pipe %.*s\n",
+					name->len, name->s);
+			return -1;
+		}
+	} else {
+		if (cdbf.sub(cdbc, &rl_name_buffer, c ? c : pipe->my_counter,
+					rl_expire_time, &new_counter) < 0){
+			LM_ERR("cannot change counter for pipe %.*s with %d\n",
+					name->len, name->s, c);
+			return -1;
+		}
+	}
+	*/
+	if (cdbf.add(cdbc, &rl_name_buffer, c ? c : -(pipe->my_counter),
+				rl_expire_time, &new_counter) < 0){
+		LM_ERR("cannot change counter for pipe %.*s with %d\n",
+				name->len, name->s, c);
+		return -1;
+	}
+
+	RL_GET_LOCK(hid);
+	RL_RESET_PENDING(pipe);
+	pipe->my_counter = c ? pipe->my_counter + c : 0;
+	pipe->counter = new_counter;
+	LM_DBG("changed with %d; my_counter: %d; counter: %d\n",
+			c, pipe->my_counter, new_counter);
+
+	return 0;
+}
+
+/* NOTE: assumes that the pipe has been locked. If fails, releases the lock */
+static int rl_get_counter(str *name, rl_pipe_t * pipe)
+{
+	str res;
+	unsigned int hid = RL_GET_INDEX(*name);
+	int new_counter;
+
+	RL_SET_PENDING(pipe);
+	RL_RELEASE_LOCK(hid);
+
+	if (rl_set_name(name) < 0)
+		return -1;
+	if (cdbf.get(cdbc, &rl_name_buffer, &res) < 0) {
+		LM_ERR("cannot retrieve key\n");
+		return -1;
+	}
+	if (str2sint(&res, &new_counter) < 0) {
+		LM_ERR("invalid value %.*s - should be integer\n", res.len, res.s);
+		return -1;
+	}
+	if (res.s)
+		pkg_free(res.s);
+	RL_GET_LOCK(hid);
+	RL_RESET_PENDING(pipe);
+	pipe->counter = new_counter;
+	return 0;
+}
+
+int init_cachedb(str * db_url)
+{
+	if (cachedb_bind_mod(db_url, &cdbf) < 0) {
+		LM_ERR("cannot bind functions for db_url %.*s\n",
+				db_url->len, db_url->s);
+		return -1;
+	}
+	if (!CACHEDB_CAPABILITY(&cdbf,
+				CACHEDB_CAP_GET|CACHEDB_CAP_ADD|CACHEDB_CAP_SUB)) {
+		LM_ERR("not enough capabilities\n");
+		return -1;
+	}
+	cdbc = cdbf.init(db_url);
+	if (!cdbc) {
+		LM_ERR("cannot connect to db_url %.*s\n", db_url->len, db_url->s);
+		return -1;
+	}
+	/* guessing that the name is not larger than 32 */
+	rl_name_buffer.len = db_prefix.len + 32;
+	rl_name_buffer.s = pkg_malloc(rl_name_buffer.len);
+	if (!rl_name_buffer.s) {
+		LM_ERR("no more pkg memory\n");
+		rl_name_buffer.len = 0;
+		return -1;
+	}
+	/* copy prefix - this is constant*/
+	memcpy(rl_name_buffer.s, db_prefix.s, db_prefix.len);
+
+	return 0;
+}
+
+void destroy_cachedb(void)
+{
+	if (cdbc)
+		cdbf.destroy(cdbc);
+	if (rl_name_buffer.s)
+		pkg_free(rl_name_buffer.s);
+}
 
 int init_rl_table(unsigned int size)
 {
@@ -157,25 +326,6 @@ int w_rl_check_2(struct sip_msg *_m, char *_n, char *_l)
 	return w_rl_check_3(_m, _n, _l, NULL);
 }
 
-/* returnes the idex of the pipe in our hash */
-#define RL_GET_INDEX(_n)		core_hash(&(_n), NULL, rl_htable.size);
-
-/* gets the lock associated with the hash index */
-#define RL_GET_LOCK(_l) \
-	lock_set_get(rl_htable.locks, ((_l) % rl_htable.locks_no))
-
-/* releases the lock associated with the hash index */
-#define RL_RELEASE_LOCK(_l) \
-	lock_set_release(rl_htable.locks, ((_l) % rl_htable.locks_no))
-
-/* retrieves the structure associated with the index and key */
-#define RL_GET_PIPE(_i, _k) \
-	(rl_pipe_t **)map_get(rl_htable.maps[(_i)], _k)
-
-#define RL_FIND_PIPE(_i, _k) \
-	(rl_pipe_t **)map_find(rl_htable.maps[(_i)], _k)
-
-
 int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 {
 	str name;
@@ -265,7 +415,15 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	/* set the last used time */
 	(*pipe)->last_used = time(0);
-	(*pipe)->counter++;
+	if (RL_USE_CDB(*pipe)) {
+		/* release the counter for a while */
+		if (rl_change_counter(&name, *pipe, 1) < 0) {
+			LM_ERR("cannot increase counter\n");
+			goto end;
+		}
+	} else {
+		(*pipe)->counter++;
+	}
 
 	ret = rl_pipe_check(*pipe);
 	LM_DBG("Pipe %.*s counter:%d load:%d limit:%d should %sbe blocked (%p)\n",
@@ -307,6 +465,7 @@ void rl_timer(unsigned int ticks, void *param)
 	/* update network if needed */
 	if (*rl_network_count)
 		*rl_network_load = get_total_bytes_waiting(PROTO_NONE);
+	lock_release(rl_lock);
 
 	/* iterate through each map */
 	for (i = 0; i < rl_htable.size; i++) {
@@ -314,28 +473,34 @@ void rl_timer(unsigned int ticks, void *param)
 		/* iterate through all the entries */
 		if (map_first(rl_htable.maps[i], &it) < 0) {
 			LM_ERR("map doesn't exist\n");
-			goto next;
+			goto next_map;
 		}
 		for (; iterator_is_valid(&it);) {
 			pipe = (rl_pipe_t **)iterator_val(&it);
 			if (!pipe || !*pipe) {
 				LM_ERR("[BUG] bogus map[%d] state\n", i);
-				goto next;
+				goto next_pipe;
+			}
+			key = iterator_key(&it);
+			if (!key) {
+				LM_ERR("cannot retrieve pipe key\n");
+				goto next_pipe;
 			}
 			/* check to see if it is expired */
 			if ((*pipe)->last_used + rl_expire_time < now) {
-				key = iterator_key(&it);
-				if (!key) {
-					LM_ERR("cannot retrieve pipe key\n");
-					goto next;
-				}
+				/* this pipe is engaged in a transaction */
+				if (RL_USE_CDB(*pipe) && RL_IS_PENDING(*pipe))
+					goto next_pipe;
 				del = it;
 				if (iterator_prev(&it) < 0) {
 					LM_DBG("cannot find previous iterator\n");
-					goto next;
+					goto next_pipe;
 				}
-				if ((*pipe)->algo == PIPE_ALGO_NETWORK)
+				if ((*pipe)->algo == PIPE_ALGO_NETWORK) {
+					lock_get(rl_lock);
 					(*rl_network_count)--;
+					lock_release(rl_lock);
+				}
 				LM_DBG("Deleting ratelimit pipe key \"%.*s\"\n",
 						key->len, key->s);
 				if (*pipe != iterator_delete(&del)) {
@@ -344,9 +509,17 @@ void rl_timer(unsigned int ticks, void *param)
 				/* free resources */
 				shm_free(*pipe);
 			} else {
+				/* leave the lock if a cachedb query should be done*/
+				if (RL_USE_CDB(*pipe)) {
+					if (rl_get_counter(key, *pipe) < 0) {
+						LM_ERR("cannot get pipe counter\n");
+						RL_GET_LOCK(i);
+						goto next_pipe;
+					}
+				}
 				switch ((*pipe)->algo) {
 					case PIPE_ALGO_NETWORK:
-						/* TODO handle network algo */
+						/* handle network algo */
 						(*pipe)->load =
 							(*rl_network_load > (*pipe)->limit) ? -1 : 1;
 						break;
@@ -360,20 +533,26 @@ void rl_timer(unsigned int ticks, void *param)
 						break;
 				}
 				(*pipe)->last_counter = (*pipe)->counter;
-				(*pipe)->counter = 0;
+				if (RL_USE_CDB(*pipe)) {
+					if (rl_change_counter(key, *pipe, 0) < 0) {
+						LM_ERR("cannot reset counter\n");
+						RL_GET_LOCK(i);
+					}
+				} else {
+					(*pipe)->counter = 0;
+				}
 				/* TODO delete this */
-				LM_DBG("Pipe \"%.*s\" load updated to %d and counter reseted\n",
-						iterator_key(&it)->len, iterator_key(&it)->s,
-						(*pipe)->load);
+				LM_DBG("Pipe \"%.*s\" load updated to %d\n",
+						key->len, key->s, (*pipe)->load);
 			}
+next_pipe:
 			if (iterator_next(&it) < 0)
 				break;
-		}
-next:
+			}
+next_map:
 		RL_RELEASE_LOCK(i);
 	}
 
-	lock_release(rl_lock);
 }
 
 struct rl_map_param {
@@ -475,7 +654,7 @@ error:
 }
 
 
-int w_rl_set_count(str key, int dec)
+int w_rl_set_count(str key, int val)
 {
 	unsigned int hash_idx;
 	int ret = -1;
@@ -491,11 +670,19 @@ int w_rl_set_count(str key, int dec)
 		goto release;
 	}
 
-	if (dec && dec < (*pipe)->counter) {
-		(*pipe)->counter -= dec;
+	if (RL_USE_CDB(*pipe)) {
+		if (rl_change_counter(&key, *pipe, val) < 0) {
+			LM_ERR("cannot decrease counter\n");
+			return -1;
+		}
 	} else {
-		(*pipe)->counter = 0;
+		if (val && val < (*pipe)->counter) {
+			(*pipe)->counter -= val;
+		} else {
+			(*pipe)->counter = 0;
+		}
 	}
+
 	LM_DBG("new counter for key %.*s is %d\n",
 			key.len, key.s, (*pipe)->counter);
 
@@ -506,7 +693,7 @@ release:
 	return ret;
 }
 
-static inline int w_rl_change_counter(struct sip_msg *_m, char *_n, int dec)
+static inline int w_rl_change_counter(struct sip_msg *_m, char *_n, int  dec)
 {
 	str name;
 
@@ -523,7 +710,7 @@ static inline int w_rl_change_counter(struct sip_msg *_m, char *_n, int dec)
 
 int w_rl_dec(struct sip_msg *_m, char *_n)
 {
-	return w_rl_change_counter(_m, _n, 1);
+	return w_rl_change_counter(_m, _n, -1);
 }
 
 int w_rl_reset(struct sip_msg *_m, char *_n)
