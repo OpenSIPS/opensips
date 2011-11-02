@@ -251,6 +251,9 @@ void stun_loop(int rank){
 
 	nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
 
+	if (nready <= 0)
+		continue;
+
 	if(FD_ISSET(sockfd2, &read_set)){
 	    clientAddrLen = sizeof(struct sockaddr);
 	    nRecv = recvfrom(sockfd2, buffer, 65536, 0,
