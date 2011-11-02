@@ -26,6 +26,7 @@
 #ifndef _EVI_TRANSPORT_H_
 #define _EVI_TRANSPORT_H_
 
+#include <sys/types.h>
 #include <sys/un.h>
 #include <sys/socket.h>
 #include "../mi/mi.h"
