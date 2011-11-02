@@ -244,8 +244,10 @@ void stun_loop(int rank)
 		read_set = all_set;
 
 		nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
-		if (nready < 0)
+		if (nready < 0) {
 			LM_ERR("error in select %d\n", errno);
+			continue;
+		}
 
 		if(FD_ISSET(sockfd2, &read_set)){
 			clientAddrLen = sizeof(struct sockaddr);
