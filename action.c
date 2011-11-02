@@ -268,7 +268,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	char* tmp;
 	char *new_uri, *end, *crt;
 	int len,i;
-	int user;
+	int user = 0;
 	int expires = 0;
 	str vals[5];
 	str result;

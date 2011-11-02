@@ -97,6 +97,11 @@
 	static char* addstr(struct str_buf *, char*, int);
 	static void count();
 
+	/* hack to solve the duplicate declaration of 'isatty' function */
+	#define YY_NO_UNISTD_H
+
+	/* hack to skip the declaration of lex unused function 'input' */
+	#define YY_NO_INPUT
 
 %}
 
