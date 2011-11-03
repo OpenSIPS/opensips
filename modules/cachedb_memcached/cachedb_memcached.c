@@ -276,7 +276,6 @@ memcached_con* memcached_new_connection(struct cachedb_id *id)
 	con->ref = 1;
 
 	con->memc = memcached_create(NULL);
-	memcached_servers_reset(con->memc);
 
 	memset(host_buff,0,MAX_HOSTPORT_SIZE);
 
