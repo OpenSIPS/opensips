@@ -97,7 +97,7 @@ static int mod_init(void)
 	}
 
 	if (buf_size == 0)
-		buf_size = pkg_mem_size/4;
+		buf_size = (pkg_mem_size/4)*3;
 	LM_DBG("buf_size=[%d]\n", buf_size);
 
 	http_root.len = strlen(http_root.s);
