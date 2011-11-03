@@ -655,17 +655,37 @@ error:
 static int mi_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
 					struct mi_node *tree, int level)
 {
-	for(;tree;tree=tree->next) {
-		if (!(tree->flags & MI_WRITTEN)) {
+	struct mi_node *kid, *tmp;
+	int ret;
+
+	for(kid = tree->kids ; kid ; ){
+		if (!(kid->flags & MI_WRITTEN)) {
 			if (mi_http_write_node(pointer, buf, max_page_len,
-							tree, level)!=0)
+							kid, level)!=0)
 				return -1;
-			tree->flags |= MI_WRITTEN;
+			kid->flags |= MI_WRITTEN;
 		}
-		if (tree->kids)
-			if (mi_http_recur_write_tree(pointer, buf, max_page_len,
-							tree->kids, level+1)!=0)
-				return -1;
+		if ((ret = mi_http_recur_write_tree(pointer, buf, max_page_len,
+							tree->kids, level+1))<0){
+			return -1;
+		} else if (ret > 0) {
+			return ret;
+		}
+		if (!(kid->flags & MI_NOT_COMPLETED)){
+			tmp = kid;
+			kid = kid->next;
+			tree->kids = kid;
+
+			if(!tmp->kids){
+				/* this node does not have any kids */
+				free_mi_node(tmp);
+			}
+		} else {
+			/* the node will have more kids =>
+			 * to keep the tree shape,
+			 * do not flush any other node for now */
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -751,7 +771,7 @@ int mi_http_build_header(str *page, int max_page_len,
 			tree->node.flags |= MI_WRITTEN;
 		}
 		if (mi_http_recur_write_tree(&p, buf, max_page_len,
-						tree->node.kids, 0)!=0)
+						&tree->node, 0)<0)
 			return -1;
 	} else if (mod>=0) { /* Building command menu */
 		/* Build the list of comands for the selected module */
@@ -854,7 +874,7 @@ int mi_http_build_content(str *page, int max_page_len,
 
 	if (tree) { /* Build mi reply */
 		if (mi_http_recur_write_tree(&p, buf, max_page_len,
-						tree->node.kids, 0)!=0)
+						&tree->node, 0)<0)
 			return -1;
 		page->len = p - page->s;
 	}
