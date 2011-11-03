@@ -167,7 +167,10 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 						page.s, page.len);
 					if(0!=mi_http_build_page(&page, buf_size,
 								mod, cmd, tree)){
-						LM_ERR("unable to build response\n");
+						LM_ERR("unable to build response "
+							"for cmd [%d] w/ args [%s]\n",
+							cmd,
+							query_cmd);
 						page = MI_HTTP_U_ERROR;
 					}
 				}
