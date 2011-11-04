@@ -129,8 +129,8 @@
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379");
-modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888");
+modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379/");
+modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/");
 ...
 	</programlisting>
 		</example>

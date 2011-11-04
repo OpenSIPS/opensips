@@ -141,8 +141,8 @@
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_memcached", "cachedb_url","memcached:group1://localhost:9999,127.0.0.1");
-modparam("cachedb_memcached", "cachedb_url","memcached:y://random_url:8888");
+modparam("cachedb_memcached", "cachedb_url","memcached:group1://localhost:9999,127.0.0.1/");
+modparam("cachedb_memcached", "cachedb_url","memcached:y://random_url:8888/");
 ...
 	</programlisting>
 		</example>
