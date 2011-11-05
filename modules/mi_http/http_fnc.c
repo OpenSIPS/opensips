@@ -276,11 +276,11 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	}
 	index++;
 	if (url_len - index < http_root.len) {
-		LM_ERR("root path 2 short [%s]\n", url);
+		LM_ERR("root path 2 short [%.*s]\n", url_len, url);
 		return -1;
 	}
 	if (strncmp(http_root.s, &url[index], http_root.len) != 0) {
-		LM_ERR("wrong root path [%s]\n", url);
+		LM_ERR("wrong root path [%.*s]\n", url_len, url);
 		return -1;
 	}
 	if (http_root.len) {
@@ -289,7 +289,7 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 			return 0;
 		}
 		if (url[index] != '/') {
-			LM_ERR("invalid root path [%s]\n", url);
+			LM_ERR("invalid root path [%.*s]\n", url_len, url);
 			return -1;
 		}
 		index++;
@@ -297,7 +297,7 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	if (index>=url_len)
 		return 0;
 
-	for(i=index;i<=url_len && url[i]!='/';i++);
+	for(i=index;i<url_len && url[i]!='/';i++);
 	mod_len = i - index;
 	LM_DBG("got mod [%.*s]\n", mod_len, &url[index]);
 	for(i=0; i<http_mi_cmds_size && strncmp(&url[index], http_mi_cmds[i].cmds[0].module.s,mod_len) != 0;i++);
@@ -319,7 +319,7 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	/* Looking for "cmd" */
 	if (index>=url_len)
 		return 0;
-	for(i=index;i<=url_len && url[i]!='/';i++);
+	for(i=index;i<url_len && url[i]!='/';i++);
 	cmd_len = i - index;
 	LM_DBG("got cmd [%.*s]\n", cmd_len, &url[index]);
 	for(i=0;i<http_mi_cmds[*mod].size && strncmp(&url[index], http_mi_cmds[*mod].cmds[i].name.s, cmd_len) != 0;i++);
