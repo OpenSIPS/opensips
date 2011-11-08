@@ -2334,16 +2334,9 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 					yyerror("bad argument, number expected");
 					}
 		| SET_ADV_ADDRESS LPAREN listen_id RPAREN {
-								$$=0;
-								if ((str_tmp=pkg_malloc(sizeof(str)))==0){
-									LM_CRIT("cfg. parser: out of memory.\n");
-								}else if ($3!=0){
-										str_tmp->s=$3;
-										str_tmp->len=strlen($3);
-										mk_action2( $$, SET_ADV_ADDR_T, STR_ST,
-											0, str_tmp, 0);
+								mk_action2( $$, SET_ADV_ADDR_T, STR_ST,
+											0, $3, 0);
 								}
-												  }
 		| SET_ADV_ADDRESS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
 														"string expected"); }
 		| SET_ADV_ADDRESS error {$$=0; yyerror("missing '(' or ')' ?"); }

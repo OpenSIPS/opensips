@@ -1474,7 +1474,17 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			msg->set_global_address=*((str*)a->elem[0].u.data);
+			str adv_addr;
+
+			pve = (pv_elem_t *)a->elem[0].u.data;
+			if ( pv_printf_s(msg, pve, &adv_addr)!=0 || 
+			adv_addr.len == 0 || adv_addr.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+			LM_DBG("adv address = [%.*s]\n",adv_addr.len,adv_addr.s);
+			msg->set_global_address=adv_addr;
 			ret=1; /* continue processing */
 			break;
 		case SET_ADV_PORT_T:
@@ -1484,6 +1494,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
+
 			msg->set_global_port=*((str*)a->elem[0].u.data);
 			ret=1; /* continue processing */
 			break;
