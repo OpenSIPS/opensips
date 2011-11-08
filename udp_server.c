@@ -56,7 +56,6 @@
 #include "receive.h"
 #include "mem/mem.h"
 #include "ip_addr.h"
-#include "atomic.h"
 #include "pt.h"
 
 
@@ -413,12 +412,12 @@ int udp_rcv_loop(void)
 			continue;
 		}
 		
-		atomic_inc(pt[process_no].load);
+		update_stat( pt[process_no].load, +1 );
 
 		/* receive_msg must free buf too!*/
 		receive_msg(buf, len, &ri);
 		
-		atomic_dec(pt[process_no].load);
+		update_stat( pt[process_no].load, -1 );
 	/* skip: do other stuff */
 	}
 	

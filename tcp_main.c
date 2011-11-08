@@ -1692,7 +1692,7 @@ int tcp_init_children(int *chd_rank)
 	int reader_fd[2]; /* for comm. with the tcp children read  */
 	pid_t pid;
 	struct socket_info *si;
-	atomic_t *load_p;
+	stat_var *load_p = NULL;
 	
 	/* estimate max fd. no:
 	 * 1 tcp send unix socket/all_proc, 
@@ -1710,11 +1710,7 @@ int tcp_init_children(int *chd_rank)
 	/* create the tcp sock_info structures */
 	/* copy the sockets --moved to main_loop*/
 	
-	load_p = shm_malloc(sizeof(atomic_t));
-	if (!load_p)
-		goto error;
-	memset(load_p,0,sizeof(atomic_t));
-	if (register_tcp_load_stat(load_p)!=0) {
+	if (register_tcp_load_stat( &load_p )!=0) {
 		LM_ERR("failed to init tcp load statistics\n");
 		goto error;
 	}

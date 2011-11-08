@@ -671,7 +671,7 @@ static int main_loop(void)
 	pid_t pid;
 	struct socket_info* si;
 	int* startup_done = NULL;
-	atomic_t *load_p;
+	stat_var *load_p = NULL;
 
 	chd_rank=0;
 
@@ -727,17 +727,10 @@ static int main_loop(void)
 			run_startup_route();
 
 		is_main=1;
-		load_p = shm_malloc(sizeof(atomic_t));
-		if (!load_p) {
-		/* highly improbable */
-			LM_ERR("no more shm\n");
-			goto error;
-		}
-		memset(load_p,0,sizeof(atomic_t));
-		pt[process_no].load = load_p;
 
-		if (register_udp_load_stat(&udp_listen->sock_str,load_p)!=0) {
-			LM_ERR("failed to init load statistics\n");
+		if (register_udp_load_stat(&udp_listen->sock_str,
+		&pt[process_no].load)!=0) {
+			LM_ERR("failed to init udp load statistics\n");
 			goto error;
 		}
 
@@ -771,7 +764,7 @@ static int main_loop(void)
 				/* same thing for tcp */
 				if (tcp_init(si)==-1)  goto error;
 				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&&
+				if ((si->address.af==AF_INET)&
 						((sendipv4_tcp==0)||(sendipv4_tcp->flags&SI_IS_LO)))
 					sendipv4_tcp=si;
 				#ifdef USE_IPV6
@@ -835,14 +828,8 @@ static int main_loop(void)
 
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
-			load_p = shm_malloc(sizeof(atomic_t));
-			if (!load_p) {
-			/* highly improbable */
-				LM_ERR("no more shm\n");
-				goto error;
-			}
-			memset(load_p,0,sizeof(atomic_t));
-			if (register_udp_load_stat(&si->sock_str,load_p)!=0) {
+
+			if (register_udp_load_stat(&si->sock_str, &load_p)!=0) {
 				LM_ERR("failed to init load statistics\n");
 				goto error;
 			}

@@ -123,24 +123,37 @@ char *build_stat_name( str* prefix, char *var_name)
 	return s;
 }
 
-unsigned int calc_udp_load(void *ctx)
+unsigned int calc_udp_load(void *val)
 {
-	atomic_t *load = (atomic_t *)ctx;
-	return (load->counter * 100)/children_no;
+	return ( get_stat_val((stat_var*)val) * 100)/children_no;
 }
 
-unsigned int calc_tcp_load(void *ctx)
+unsigned int calc_tcp_load(void *val)
 {
-	atomic_t *load = (atomic_t *)ctx;
-	return (load->counter * 100)/tcp_children_no;
+	return ( get_stat_val((stat_var*)val) * 100)/tcp_children_no;
 }
 
-int register_udp_load_stat(str *name,atomic_t *ctx)
+int register_udp_load_stat(str *name, stat_var **s)
 {
 	char *stat_name;
 
+	*s = shm_malloc(sizeof(stat_var));
+	if (!*s) {
+		LM_ERR("no more shm\n");
+		return -1;
+	}
+	memset(*s,0,sizeof(stat_var));
+
+	(*s)->u.val = shm_malloc(sizeof(stat_val));
+	if (!(*s)->u.val) {
+		LM_ERR("no more shm\n");
+		return -1;
+	}
+	memset((*s)->u.val,0,sizeof(stat_val));
+
 	if ( (stat_name = build_stat_name(name,"load")) == 0 || 
-			register_stat2("load",stat_name,(stat_var**)calc_udp_load,STAT_IS_FUNC,ctx) != 0) {
+	register_stat2("load",stat_name,(stat_var**)calc_udp_load,
+	STAT_IS_FUNC,*s) != 0) {
 		LM_ERR("failed to add load stat\n");
 		return -1;
 	}
@@ -148,9 +161,24 @@ int register_udp_load_stat(str *name,atomic_t *ctx)
 	return 0;
 }
 
-int register_tcp_load_stat(atomic_t *ctx)
+int register_tcp_load_stat(stat_var **s)
 {
-	if (register_stat2("load","tcp-load",(stat_var**)calc_tcp_load,STAT_IS_FUNC,ctx) != 0) {
+	*s = shm_malloc(sizeof(stat_var));
+	if (!*s) {
+		LM_ERR("no more shm\n");
+		return -1;
+	}
+	memset(*s,0,sizeof(stat_var));
+
+	(*s)->u.val = shm_malloc(sizeof(stat_val));
+	if (!(*s)->u.val) {
+		LM_ERR("no more shm\n");
+		return -1;
+	}
+	memset((*s)->u.val,0,sizeof(stat_val));
+
+	if (register_stat2("load","tcp-load",(stat_var**)calc_tcp_load,
+	STAT_IS_FUNC,*s) != 0) {
 		LM_ERR("failed to add load stat\n");
 		return -1;
 	}
