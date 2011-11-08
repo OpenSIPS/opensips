@@ -117,12 +117,12 @@ int err2reason_phrase(
 		/* dont disclose lack of mem in release mode */
 #ifdef DEBUG
 			error_txt="Excuse me I ran out of memory";
-			*sip_error=E_BAD_SERVER;
+			*sip_error=-E_BAD_SERVER;
 			break;
 #endif
 		default:
 			error_txt="Server error occurred";
-			*sip_error=E_BAD_SERVER;
+			*sip_error=-E_BAD_SERVER;
 			break;
 	}
 	return snprintf( phrase, etl, "%s (%d/%s)", error_txt, 

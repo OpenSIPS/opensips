@@ -268,7 +268,7 @@ static inline int should_acc_reply(struct sip_msg *req,struct sip_msg *rpl,
 		return 0;
 	if ( !is_acc_on(req) )
 		return 0;
-	if ( code<200 && !(early_media &&
+	if ( code<200 && !(early_media && rpl!=FAKED_REPLY &&
 	parse_headers(rpl,HDR_CONTENTLENGTH_F, 0)==0 && rpl->content_length &&
 	get_content_length(rpl)>0 ) )
 		return 0;
