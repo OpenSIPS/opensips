@@ -40,7 +40,6 @@
 int
 fixup_var_str_int(void **param, int param_no)
 {
-    unsigned long go_to;
     int ret;
     pv_elem_t *model;
     str s;
@@ -59,14 +58,14 @@ fixup_var_str_int(void **param, int param_no)
         }
         *param = (void *)model;
     } else if (param_no == 2) {
-        go_to = str2s(*param, strlen(*param), &ret);
-        if (ret == 0) {
-            pkg_free(*param);
-            *param = (void *)go_to;
-        } else {
+        s.s = (char *)(*param);
+        s.len = strlen(s.s);
+        if (str2sint(&s, &ret) < 0) {
             LM_ERR("bad number <%s>\n", (char *)(*param));
             return E_CFG;
-        }
+		}
+        pkg_free(*param);
+        *param = (void *)(long)ret;
     }
     return 0;
 }
