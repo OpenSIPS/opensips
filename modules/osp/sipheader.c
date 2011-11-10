@@ -53,6 +53,7 @@ extern int _osp_srcdev_avpid;
 extern unsigned short _osp_srcdev_avptype;
 
 static void ospSkipPlus(char* e164);
+static void ospSkipUserParam(char* userinfo);
 static int ospAppendHeader(struct sip_msg* msg, str* header);
 
 /*
@@ -99,6 +100,23 @@ static void ospSkipPlus(
 }
 
 /*
+ * Remove user parameters from userinfo
+ * param userinfo User info
+ */
+static void ospSkipUserParam(
+    char* userinfo)
+{
+    char* delim = NULL;
+
+    if ((delim = strchr(userinfo, ';')) != NULL) {
+        *delim = '\0';
+    }
+    if ((delim = strchr(userinfo, ':')) != NULL) {
+        *delim = '\0';
+    }
+}
+
+/*
  * Get user part from From header
  * param msg SIP message
  * param fromuser User part of From header
@@ -122,6 +140,7 @@ int ospGetFromUserpart(
                 from = get_from(msg);
                 if (parse_uri(from->uri.s, from->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, fromuser, bufsize);
+                    ospSkipUserParam(fromuser);
                     ospSkipPlus(fromuser);
                     result = 0;
                 } else {
@@ -163,6 +182,7 @@ int ospGetRpidUserpart(
                 rpid = get_rpid(msg);
                 if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, rpiduser, bufsize);
+                    ospSkipUserParam(rpiduser);
                     ospSkipPlus(rpiduser);
                     result = 0;
                 } else {
@@ -205,6 +225,7 @@ int ospGetPaiUserpart(
                 pai = get_pai(msg);
                 if (parse_uri(pai->uri.s, pai->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, paiuser, bufsize);
+                    ospSkipUserParam(paiuser);
                     ospSkipPlus(paiuser);
                     result = 0;
                 } else {
@@ -241,15 +262,14 @@ int ospGetPChargeInfoUserpart(
     struct to_body* pci=NULL;
     struct hdr_field *hf;
     struct sip_uri uri;
-    char* delim = NULL;
     int result = -1;
 
     if ((pciuser != NULL) && (bufsize > 0)) {
         pciuser[0] = '\0';
         if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-			LM_ERR("failed to parse message\n");
-			return -1;
-		}
+            LM_ERR("failed to parse message\n");
+            return -1;
+        }
         for (hf = msg->headers; hf; hf = hf->next) {
             if ((hf->type == HDR_OTHER_T) &&
                 (hf->name.len == strlen(header)) &&
@@ -262,16 +282,15 @@ int ospGetPChargeInfoUserpart(
                 if (pci->error != PARSE_ERROR) {
                     if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
                         ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
-                        if ((delim = strchr(pciuser, ';'))) {
-                            *delim = '\0';
-                        }
+                        ospSkipUserParam(pciuser);
                         ospSkipPlus(pciuser);
                         result = 0;
                     } else {
                         LM_ERR("failed to parse P-Charge-Info uri\n");
                     }
-					if (pci == &body)
-						free_to_params(pci);
+                    if (pci == &body) {
+                        free_to_params(pci);
+                    }
                 } else {
                     LM_ERR("bad P-Charge-Info header\n");
                 }
@@ -313,6 +332,7 @@ int ospGetToUserpart(
                 to = get_to(msg);
                 if (parse_uri(to->uri.s, to->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, touser, bufsize);
+                    ospSkipUserParam(touser);
                     ospSkipPlus(touser);
                     result = 0;
                 } else {
@@ -389,7 +409,6 @@ int ospGetUriUserpart(
     char* uriuser,
     int bufsize)
 {
-    char* delim = NULL;
     int result = -1;
 
     if (bufsize > 0) {
@@ -397,9 +416,7 @@ int ospGetUriUserpart(
 
         if (parse_sip_msg_uri(msg) >= 0) {
             ospCopyStrToBuffer(&msg->parsed_uri.user, uriuser, bufsize);
-            if ((delim = strchr(uriuser, ';')) != NULL) {
-                *delim = '\0';
-            }
+            ospSkipUserParam(uriuser);
             ospSkipPlus(uriuser);
             result = 0;
         } else {
@@ -1214,6 +1231,7 @@ int ospGetDiversion(
                 diversion = get_diversion(msg);
                 if (parse_uri(diversion->uri.s, diversion->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, user, userbufsize);
+                    ospSkipUserParam(user);
                     if (uri.port_no != 0) {
                         snprintf(host, hostbufsize, "%.*s:%d", uri.host.len, uri.host.s, uri.port_no);
                         host[hostbufsize - 1] = '\0';
