@@ -107,6 +107,7 @@ typedef struct rtpp_set_param{
 } nh_set_param_t;
 
 extern str rtpp_notify_socket;
+extern int rtpp_notify_socket_un;
 extern struct dlg_binds dlg_api;
 extern int detect_rtp_idle;
 extern struct rtpp_set_head ** rtpp_set_list;

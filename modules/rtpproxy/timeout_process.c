@@ -83,9 +83,7 @@ void timeout_listener_process(int rank)
 		return;
 	}
 
-	if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
-		rtpp_notify_socket.s += 4;
-		rtpp_notify_socket.len -= 4;
+	if (!rtpp_notify_socket_un) {
 		p = strrchr(rtpp_notify_socket.s, ':');
 		if (!p) {
 			LM_ERR("invalid udp address <%.*s>\n", rtpp_notify_socket.len, rtpp_notify_socket.s);
@@ -115,11 +113,6 @@ void timeout_listener_process(int rank)
 		len = sizeof(saddr_in);
 		LM_DBG("binding socket %d to %s:%d\n", socket_fd, rtpp_notify_socket.s, port);
 	} else {
-		if(strncmp("unix:", rtpp_notify_socket.s, 5) == 0) {
-			rtpp_notify_socket.s += 5;
-			rtpp_notify_socket.len -= 5;
-		}
-
 		/* create socket */
 		socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (socket_fd == -1) {
