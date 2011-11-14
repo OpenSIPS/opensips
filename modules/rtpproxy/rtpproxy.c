@@ -326,6 +326,7 @@ static pid_t mypid;
 static unsigned int myseqn = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
 str rtpp_notify_socket = {0, 0};
+int rtpp_notify_socket_un = 0;
 
 /* used in rtpproxy_set_store() */
 static int rtpp_sets=0; 
@@ -1101,6 +1102,13 @@ mod_init(void)
 		LM_DBG("cannot parse bavp's\n");
 
     if(rtpp_notify_socket.s) {
+		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
+			rtpp_notify_socket.s += 4;
+		} else {
+			if (strncmp("unix:", rtpp_notify_socket.s, 5) == 0)
+				rtpp_notify_socket.s += 5;
+			rtpp_notify_socket_un = 1;
+		}
         /* check if the notify socket parameter is set */
         rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
         if(dlg_api.get_dlg == 0) {
@@ -1403,6 +1411,13 @@ static void mod_destroy(void)
 	{
 		lock_destroy_rw( nh_lock );
 		nh_lock = NULL;
+	}
+
+	if (rtpp_notify_socket_un) {
+		if (unlink(rtpp_notify_socket.s)) {
+			LM_ERR("cannot remove the notification socket(%s:%d)\n",
+					strerror(errno), errno);
+		}
 	}
 }
 
@@ -2741,7 +2756,7 @@ append_opts_str(struct options *op, str *s)
 {
 	void *p;
 
-	if (op->s.len <= op->oidx + s->len) {
+	if (op->s.len < op->oidx + s->len) {
 		p = pkg_realloc(op->s.s, op->oidx + s->len + 32);
 		if (p == NULL) {
 			 return (-1);
