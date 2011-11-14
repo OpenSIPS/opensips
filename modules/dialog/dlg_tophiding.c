@@ -315,9 +315,11 @@ int w_topology_hiding(struct sip_msg *req)
 	struct cell* t;
 
 	t = d_tmb.t_gett();
+	if (t == T_UNDEFINED)
+		t=NULL;
 	dlg = get_current_dialog();
 	if(!dlg) {
-		if(dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req, 0) != 0) {
+		if(dlg_create_dialog( t, req, 0) != 0) {
 			LM_ERR("Failed to create dialog\n");
 			return -1;
 		}
