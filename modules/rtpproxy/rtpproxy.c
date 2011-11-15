@@ -3274,7 +3274,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 						v[2].iov_len = 0;
 					} else {
 						v[2].iov_base = rep_opts.s.s;
-						v[2].iov_len += rep_opts.oidx;
+						v[2].iov_len = rep_opts.oidx;
 					}
 				}
 				if (payload_types.len > 0 && args->node->rn_ptl_supported != 0) {
