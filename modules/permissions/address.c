@@ -153,7 +153,7 @@ int reload_address_table(void)
 			goto error;
 		}
 		if (VAL_TYPE(val + 2) != DB_INT || VAL_NULL(val + 2) ||
-					VAL_INT(val + 2) <= 0 || VAL_INT(val + 2) > 32) {
+					VAL_INT(val + 2) < 0 || VAL_INT(val + 2) > 32) {
 			LM_ERR("invalid mask column type on row %d\n", i);
 			goto error;
 		}
