@@ -1534,7 +1534,9 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 	}
 	
 	/* delete all body lumps from the list */
-	free_lump_list(msg->body_lumps);
+	/* NOTE: do not delete the SHM lumps (which are primarily stored in TM 
+	   Such lumps need to skipped and only detached  - bogdan */
+	del_notflaged_lumps( &msg->body_lumps, LUMPFLAG_SHMEM );
 	msg->body_lumps = NULL;
 
 	/* add delete body lump */
