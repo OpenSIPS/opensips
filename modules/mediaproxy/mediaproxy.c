@@ -1758,18 +1758,6 @@ end_media_session(str callid, str from_tag, str to_tag)
 }
 
 
-// TM callbacks
-//
-
-static void
-__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
-{
-    if (dlg_api.create_dlg(param->req) < 0) {
-        LM_ERR("could not create new dialog\n");
-    }
-}
-
-
 // Dialog callbacks and helpers
 //
 
@@ -1828,17 +1816,21 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 }
 
 
+// TM callbacks
+//
+
 static void
-__dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+__tm_request_fwded(struct cell *trans, int type, struct tmcb_params *param)
 {
-    struct sip_msg *request = _params->msg;
+    struct sip_msg *request = param->req;
+    struct dlg_cell *dlg;
     ice_candidate_data *ice_data;
 
-    if (request->REQ_METHOD != METHOD_INVITE)
+    dlg = dlg_api.get_dlg();
+    if (!dlg) {
+        LM_CRIT("error getting dialog\n");
         return;
-
-    if ((request->msg_flags & FL_USE_MEDIA_PROXY) == 0)
-        return;
+    }
 
     ice_data = (ice_candidate_data*)shm_malloc(sizeof(ice_candidate_data));
     if (!ice_data) {
@@ -1899,9 +1891,13 @@ EngageMediaProxy(struct sip_msg *msg)
         return -1;
     }
 
-    msg->msg_flags |= FL_USE_MEDIA_PROXY;
-    if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <= 0) {
-        LM_ERR("cannot register TM callback for incoming INVITE request\n");
+    if (dlg_api.create_dlg(msg) < 0) {
+        LM_ERR("could not create new dialog\n");
+        return -1;
+    }
+
+    if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_FWDED, __tm_request_fwded, 0, 0) <= 0) {
+        LM_ERR("cannot register TM callback for forwarded INVITE request\n");
         return -1;
     }
 
@@ -2004,12 +2000,6 @@ mod_init(void)
     // bind to the TM and dialog APIs
     if (load_tm_api(&tm_api)==0 && load_dlg_api(&dlg_api)==0) {
         have_dlg_api = True;
-
-        // register dialog creation callback
-        if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
-            LM_CRIT("cannot register callback for dialog creation\n");
-            return -1;
-        }
     } else {
         LM_NOTICE("engage_media_proxy() will not work because the TM/dialog modules are not loaded\n");
     }
