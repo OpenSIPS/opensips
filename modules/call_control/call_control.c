@@ -55,8 +55,6 @@
 
 
 
-#define FL_USE_CALL_CONTROL       (1<<30) // use call control for a dialog
-
 #if defined(__GNUC__) && !defined(__STRICT_ANSI__)
 # define INLINE inline
 #else
@@ -119,7 +117,6 @@ static int CallControl(struct sip_msg *msg, char *str1, char *str2);
 static int mod_init(void);
 static int child_init(int rank);
 static void destroy(void);
-static int postprocess_request(struct sip_msg *msg, void *_param);
 
 int parse_param_init(unsigned int type, void *val);
 int parse_param_start(unsigned int type, void *val);
@@ -154,7 +151,6 @@ static AVP_Param call_limit_avp = {str_init(CALL_LIMIT_AVP_SPEC), -1, 0};
 static AVP_Param call_token_avp = {str_init(CALL_TOKEN_AVP_SPEC), -1, 0};
 
 
-struct tm_binds  tm_api;
 struct dlg_binds dlg_api;
 static int prepaid_account_flag = -1;
 
@@ -982,18 +978,6 @@ call_control_stop(struct sip_msg *msg, str callid)
 }
 
 
-// TM callbacks
-//
-
-static void
-__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
-{
-    if (dlg_api.create_dlg(param->req) < 0) {
-        LM_ERR("could not create new dialog\n");
-    }
-}
-
-
 // Dialog callbacks and helpers
 //
 
@@ -1025,27 +1009,6 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 
 
 static void
-__dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
-{
-    struct sip_msg *request = _params->msg;
-
-    if (request->REQ_METHOD != METHOD_INVITE)
-        return;
-
-    if ((request->msg_flags & FL_USE_CALL_CONTROL) == 0)
-        return;
-
-    if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, __dialog_replies, NULL, NULL) != 0)
-        LM_ERR("cannot register callback for dialog confirmation\n");
-    if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_FAILED | DLGCB_EXPIRED | DLGCB_DESTROY, __dialog_ended, (void*)CCActive, NULL) != 0)
-        LM_ERR("cannot register callback for dialog termination\n");
-
-    // reset the flag to indicate that the dialog for callcontrol was created
-    request->msg_flags &= ~FL_USE_CALL_CONTROL;
-}
-
-
-static void
 __dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
     if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, __dialog_replies, NULL, NULL) != 0)
@@ -1070,6 +1033,8 @@ static int
 CallControl(struct sip_msg *msg, char *str1, char *str2)
 {
     int result;
+    struct dlg_cell *dlg;
+    CallInfo *call;
 
     if (disable)
         return 2;
@@ -1082,11 +1047,42 @@ CallControl(struct sip_msg *msg, char *str1, char *str2)
     result = call_control_initialize(msg);
     if (result == 1) {
         // A call with a time limit that will be traced by callcontrol
-        msg->msg_flags |= FL_USE_CALL_CONTROL;
-        if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <= 0) {
-            LM_ERR("cannot register TM callback for incoming INVITE request\n");
+
+        if (dlg_api.create_dlg(msg) < 0) {
+            LM_ERR("could not create new dialog\n");
+            call = get_call_info(msg, CAStop);
+            if (!call) {
+                LM_ERR("can't retrieve call info\n");
+                return -5;
+            }
+            call_control_stop(msg, call->callid);
             return -5;
         }
+
+        dlg = dlg_api.get_dlg();
+        if (!dlg) {
+            LM_CRIT("error getting dialog\n");
+            call = get_call_info(msg, CAStop);
+            if (!call) {
+                LM_ERR("can't retrieve call info\n");
+                return -5;
+            }
+            call_control_stop(msg, call->callid);
+            return -5;
+        }
+
+        if (dlg_api.register_dlgcb(dlg, DLGCB_RESPONSE_FWDED, __dialog_replies, NULL, NULL) != 0) {
+            LM_ERR("cannot register callback for dialog confirmation\n");
+            call_control_stop(msg, dlg->callid);
+            return -5;
+        }
+
+        if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED | DLGCB_FAILED | DLGCB_EXPIRED | DLGCB_DESTROY, __dialog_ended, (void*)CCActive, NULL) != 0) {
+            LM_ERR("cannot register callback for dialog termination\n");
+            call_control_stop(msg, dlg->callid);
+            return -5;
+        }
+
     }
 
     return result;
@@ -1176,34 +1172,15 @@ mod_init(void)
         return -1;
     }
 
-
-    // bind to the TM API
-    if (load_tm_api(&tm_api)!=0) {
-        LM_CRIT("cannot load the TM module API\n");
-        return -1;
-    }
-
     // bind to the dialog API
     if (load_dlg_api(&dlg_api)!=0) {
         LM_CRIT("cannot load the dialog module API\n");
         return -1;
     }
 
-    // register dialog creation callback
-    if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
-        LM_CRIT("cannot register callback for dialog creation\n");
-        return -1;
-    }
-
     // register dialog loading callback
     if (dlg_api.register_dlgcb(NULL, DLGCB_LOADED, __dialog_loaded, NULL, NULL) != 0) {
-        LM_ERR("cannot register callback for dialogs loaded from the database\n");
-    }
-
-    // register a pre-script callback to automatically enable dialog tracing
-    if (register_script_cb(postprocess_request, POST_SCRIPT_CB|REQ_TYPE_CB, 0) != 0) {
-        LM_CRIT("could not register request postprocessing callback\n");
-        return -1;
+        LM_CRIT("cannot register callback for dialogs loaded from the database\n");
     }
 
     return 0;
@@ -1231,38 +1208,6 @@ destroy(void) {
 
     if (stop_avps)
         destroy_list(stop_avps);
-}
-
-
-// Postprocess a request after the main script route is done.
-//
-// After all script processing is done, check if the dialog was actually
-// created to take care of call control. If the FL_USE_CALL_CONTROL flag
-// is still set, then the dialog creation callback was not called which
-// means that there was a failure relaying the message and we have to
-// tell the call control application to discard the call, otherwise it
-// would remain dangling until it expires.
-//
-static int
-postprocess_request(struct sip_msg *msg, void *_param)
-{
-    CallInfo *call;
-
-    if ((msg->msg_flags & FL_USE_CALL_CONTROL) == 0)
-        return 1;
-
-    // the FL_USE_CALL_CONTROL flag is still set => the dialog was not created
-
-    LM_WARN("dialog to trace controlled call was not created. discarding callcontrol.");
-
-    call = get_call_info(msg, CAStop);
-    if (!call) {
-        LM_ERR("can't retrieve call info\n");
-        return -1;
-    }
-    call_control_stop(msg, call->callid);
-
-    return 1;
 }
 
 
