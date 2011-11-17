@@ -398,6 +398,10 @@ static int add_uac_params(modparam_t type, void *val)
 		}
 		uac_param->send_sock = grep_sock_info(&host,
 					(unsigned short) port, (unsigned short) proto);
+		if (uac_param->send_sock==NULL) {
+			LM_ERR("invalid forced socket [%.*s]\n", _l, _s);
+			return -1;
+		}
 	}
 
 	if (uac_params)
