@@ -46,7 +46,7 @@ int xlog_force_color = 0;
 
 static int buf_init(void)
 {
-	LM_INFO("initializing...\n");
+	LM_DBG("initializing...\n");
 	log_buf = (char*)pkg_malloc((xlog_buf_size+1)*sizeof(char));
 	if(log_buf==NULL)
 	{
