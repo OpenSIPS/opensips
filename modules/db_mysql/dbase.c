@@ -296,7 +296,7 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 	int code;
 	int i;
 
-	LM_INFO(" query  is <%.*s>, ptr=%p\n",
+	LM_DBG(" query  is <%.*s>, ptr=%p\n",
 		ctx->query.len, ctx->query.s, ctx->stmt);
 	
 	for( i=0 ; i<2 ; i++ ) {
