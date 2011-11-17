@@ -1779,7 +1779,7 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		/* index from the end */
 		if (-idx > nr_branches)
 			return pv_get_null(msg, param, res);
-		idx = nr_branches - idx;
+		idx = nr_branches + idx;
 	}
 
 	/* return the request branch info */
@@ -2645,7 +2645,11 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (idx>=nr_branches) {
+	if (idx<0) {
+		idx = nr_branches + idx;
+	}
+
+	if (idx<0 || idx>=nr_branches) {
 		LM_ERR("SCRIPT BUG - inexisting branch assigment [%d/%d]\n",
 			nr_branches, idx);
 		return -1;
