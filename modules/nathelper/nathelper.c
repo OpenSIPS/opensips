@@ -556,6 +556,13 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 
 	for ( c=NULL,hdr=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; ) {
 
+		/* if uri string points outside the original msg buffer, it means 
+		   the URI was already changed, and we cannot do it again */
+		if( c->uri.s < msg->buf || c->uri.s > msg->buf+msg->len ) {
+			LM_ERR("SCRIPT BUG - second attempt to change URI Contact \n");
+			return -1;
+		}
+
 		hostport = uri.host;
 		if (uri.port.len > 0)
 			hostport.len = uri.port.s + uri.port.len - uri.host.s;
