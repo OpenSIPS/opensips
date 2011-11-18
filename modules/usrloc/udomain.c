@@ -654,6 +654,7 @@ int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 	{
 		LM_ERR("adding slot\n");
 		free_urecord(*_r);
+		*_r = 0;
 		return -1;
 	}
 
