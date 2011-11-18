@@ -45,6 +45,8 @@
 #include "../sl/sl_cb.h"
 #include "../../str.h"
 
+#include "../sipcapture/sipcapture.h"
+
 #define NR_KEYS 10
 
 /* trace is completly disabled */
@@ -90,6 +92,11 @@ static void trace_msg_out(struct sip_msg* req, str  *buffer,
 			struct socket_info* send_sock, int proto, union sockaddr_union *to);
 
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
+static struct mi_root* trace_to_database_mi(struct mi_root* cmd, void* param );
+
+static int trace_send_hep_duplicate(str *body, const char *fromip, const char *toip);
+static int pipport2su (char *pipport, union sockaddr_union *tmp_su, unsigned int *proto);
+
 
 static str db_url             = {NULL, 0};
 static str siptrace_table     = str_init("sip_trace");
@@ -106,11 +113,16 @@ static str direction_column   = str_init("direction");   /* 09 */
 
 int trace_flag = -1;
 int trace_on   = 0;
+int trace_to_database = 1;
+int hep_version = 1;
+int hep_capture_id = 1;
+int duplicate_with_hep = 0;
 
 str    dup_uri_str      = {0, 0};
 struct sip_uri *dup_uri = 0;
 
 int *trace_on_flag = NULL;
+int *trace_to_database_flag = NULL;
 
 static unsigned short traced_user_avp_type = 0;
 static int traced_user_avp;
@@ -127,6 +139,7 @@ static unsigned int enable_ack_trace = 0;
 /** database connection */
 db_con_t *db_con = NULL;
 db_func_t db_funcs;      /* Database functions */
+
 
 /* sl callback registration */
 register_slcb_t register_slcb_f=NULL;
@@ -166,11 +179,16 @@ static param_export_t params[] = {
 	{"duplicate_uri",      STR_PARAM, &dup_uri_str.s        },
 	{"trace_local_ip",     STR_PARAM, &trace_local_ip.s     },
 	{"enable_ack_trace",   INT_PARAM, &enable_ack_trace     },
+	{"trace_to_database",  INT_PARAM, &trace_to_database 	},	        
+	{"duplicate_with_hep", INT_PARAM, &duplicate_with_hep   },
+	{"hep_version",        INT_PARAM, &hep_version          },
+	{"hep_capture_id",     INT_PARAM, &hep_capture_id  	},
 	{0, 0, 0}
 };
 
 static mi_export_t mi_cmds[] = {
 	{ "sip_trace", 0, sip_trace_mi,   0,  0,  0 },
+	{ "trace_to_database", 0, trace_to_database_mi,   0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -253,16 +271,26 @@ static int mod_init(void)
 	if (flag_idx2mask(&trace_flag)<0)
 		return -1;
 
-	/* Find a database module */
-	if (db_bind_mod(&db_url, &db_funcs))
-	{
-		LM_ERR("unable to bind database module\n");
-		return -1;
-	}
-	if (!DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
-	{
-		LM_ERR("database modules does not provide all functions needed by module\n");
-		return -1;
+	trace_to_database_flag = (int*)shm_malloc(sizeof(int));
+        if(trace_to_database_flag==NULL) {
+                LM_ERR("no more shm memory left\n");
+                return -1;
+        }
+
+	*trace_to_database_flag = trace_to_database;
+
+        if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+		/* Find a database module */
+		if (db_bind_mod(&db_url, &db_funcs))
+		{
+			LM_ERR("unable to bind database module\n");
+			return -1;
+		}
+		if (trace_to_database_flag && !DB_CAPABILITY(db_funcs, DB_CAP_INSERT))
+		{
+			LM_ERR("database modules does not provide all functions needed by module\n");
+			return -1;
+		}
 	}
 
 	trace_on_flag = (int*)shm_malloc(sizeof(int));
@@ -273,6 +301,8 @@ static int mod_init(void)
 	}
 	
 	*trace_on_flag = trace_on;
+
+
 
 	/* register callbacks to TM */
 	if (load_tm_api(&tmb)!=0)
@@ -308,6 +338,12 @@ static int mod_init(void)
 	{
 		LM_ERR("can't register trace_sl_ack_in\n");
 		return -1;
+	}
+
+	if(hep_version != 1 && hep_version != 2) {
+	
+                LM_ERR("unsupported version of HEP");
+                return -1;
 	}
 
 	if(dup_uri_str.s!=0) {
@@ -411,7 +447,7 @@ static inline int insert_siptrace_flag(struct sip_msg *msg,
 			LM_ERR("error storing trace\n");
 			return -1;
 		}
-	}
+	}	
 
 	return 0;
 }
@@ -481,20 +517,24 @@ static inline str* siptrace_get_table(void)
 static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 		db_key_t *keys,db_val_t *vals) 
 {
-	LM_DBG("saving siptrace\n");
-	db_funcs.use_table(db_con, siptrace_get_table());
 
-	if (insert_siptrace_flag(msg,keys,vals) < 0)
-		return -1;
+	if(duplicate_with_hep) trace_send_hep_duplicate(&db_vals[0].val.blob_val, db_vals[4].val.string_val, db_vals[5].val.string_val);
+	else trace_send_duplicate(db_vals[0].val.blob_val.s, db_vals[0].val.blob_val.len);
 
-	if (avp==NULL)
-		return 0;
+
+	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+		LM_DBG("saving siptrace\n");
+		db_funcs.use_table(db_con, siptrace_get_table());
+
+		if (insert_siptrace_flag(msg,keys,vals) < 0)
+			return -1;	
+		
+		if (avp==NULL)
+			return 0;
 	
-	trace_send_duplicate(db_vals[0].val.blob_val.s,
-			db_vals[0].val.blob_val.len);
-	
-	if (insert_siptrace_avp(avp,keys,vals) < 0)
-		return -1;
+		if (insert_siptrace_avp(avp,keys,vals) < 0)
+			return -1;
+	}
 
 	return 0;
 }
@@ -502,11 +542,14 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 
 static int child_init(int rank)
 {
-	db_con = db_funcs.init(&db_url);
-	if (!db_con)
-	{
-		LM_ERR("unable to connect database\n");
-		return -1;
+
+	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+		db_con = db_funcs.init(&db_url);
+		if (!db_con)
+		{
+			LM_ERR("unable to connect database\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -515,10 +558,12 @@ static int child_init(int rank)
 
 static void destroy(void)
 {
-	if (db_con!=NULL)
-		db_funcs.close(db_con);
-	if (trace_on_flag)
-		shm_free(trace_on_flag);
+	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+		if (db_con!=NULL)
+			db_funcs.close(db_con);
+		if (trace_on_flag)
+			shm_free(trace_on_flag);
+	}
 }
 
 
@@ -1220,6 +1265,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 {
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
+	int faked = 0;
 	struct sip_msg* msg;
 	int_str        avp_value;
 	struct usr_avp *avp;
@@ -1253,6 +1299,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 
 	msg = req;
+	faked = 1;
 
 	if(parse_from_header(msg)==-1 || msg->from==NULL || get_from(msg)==NULL)
 	{
@@ -1380,6 +1427,59 @@ static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
 	}
 }
 
+/**
+ * MI command format:
+ * name: trace_to_database
+ * attribute: name=none, value=[on|off]
+ */
+static struct mi_root* trace_to_database_mi (struct mi_root* cmd_tree, void* param )
+{
+	struct mi_node* node;
+	
+	struct mi_node *rpl; 
+	struct mi_root *rpl_tree ; 
+
+	node = cmd_tree->node.kids;
+	if(node == NULL) {
+		rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+		if (rpl_tree == 0)
+			return 0;
+		rpl = &rpl_tree->node;
+
+		if (*trace_to_database_flag == 0 ) {
+			node = add_mi_node_child(rpl,0,0,0,MI_SSTR("off"));
+		} else if (*trace_to_database_flag == 1) {
+			node = add_mi_node_child(rpl,0,0,0,MI_SSTR("on"));
+		}
+		return rpl_tree ;
+	}
+	if(trace_to_database_flag==NULL)
+		return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
+
+	if ( node->value.len==2 &&
+	(node->value.s[0]=='o'|| node->value.s[0]=='O') &&
+	(node->value.s[1]=='n'|| node->value.s[1]=='N'))
+	{
+                if (db_con!=NULL) {
+        		*trace_to_database_flag = 1;
+	        	return init_mi_tree( 200, MI_SSTR(MI_OK));
+                }
+                else {
+                        return init_mi_tree( 501, MI_SSTR(MI_INTERNAL_ERR));
+                }
+                
+	} else if ( node->value.len==3 &&
+	(node->value.s[0]=='o'|| node->value.s[0]=='O') &&
+	(node->value.s[1]=='f'|| node->value.s[1]=='F') &&
+	(node->value.s[2]=='f'|| node->value.s[2]=='F'))
+	{
+		*trace_to_database_flag = 0;
+		return init_mi_tree( 200, MI_SSTR(MI_OK));
+	} else {
+		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+	}
+}
+
 
 static int trace_send_duplicate(char *buf, int len)
 {
@@ -1437,4 +1537,275 @@ static int trace_send_duplicate(char *buf, int len)
 	pkg_free(to);
 
 	return ret;
+}
+
+static int trace_send_hep_duplicate(str *body, const char *fromip, const char *toip)
+{
+	struct proxy_l * p=NULL /* make gcc happy */;
+	void* buffer = NULL;
+	int ret;
+	union sockaddr_union from_su;
+	union sockaddr_union to_su;
+	unsigned int len, buflen, proto;
+        struct socket_info* send_sock;
+        union sockaddr_union* to;	        
+	struct hep_hdr hdr;
+	struct hep_iphdr hep_ipheader;
+	struct hep_timehdr hep_time;
+	struct timeval tvb;
+	struct timezone tz;	                
+#if USE_IPV6
+	struct hep_ip6hdr hep_ip6header;
+#endif
+
+	if(body->s==NULL || body->len <= 0)
+		return -1;
+
+	if(dup_uri_str.s==0 || dup_uri==NULL)
+		return 0;
+
+        gettimeofday( &tvb, &tz );                
+
+	/* message length */
+	len = body->len 
+#if USE_IPV6
+		+ sizeof(struct hep_ip6hdr)
+#else
+		+ sizeof(struct hep_iphdr)          
+#endif
+		+ sizeof(struct hep_hdr) + sizeof(struct hep_timehdr);	
+
+
+	/* The packet is too big for us */
+	if (len>BUF_SIZE){
+		goto error;
+	}
+
+	/* Convert proto:ip:port to sockaddress union SRC IP */
+	if (pipport2su((char *)fromip, &from_su, &proto)==-1 || (pipport2su((char *)toip, &to_su, &proto)==-1))
+		goto error;
+
+	/* check if from and to are in the same family*/
+	if(from_su.s.sa_family != to_su.s.sa_family) {
+		LM_ERR("ERROR: trace_send_hep_duplicate: interworking detected ?\n");
+		goto error;
+	}
+
+
+        /* create a temporary proxy*/
+        proto = PROTO_UDP;
+        p=mk_proxy(&dup_uri->host, (dup_uri->port_no)?dup_uri->port_no:SIP_PORT,proto, 0);
+        if (p==0){
+                LM_ERR("bad host name in uri\n");
+                pkg_free(to);
+                return -1;
+        }
+
+        to=(union sockaddr_union*)pkg_malloc(sizeof(union sockaddr_union));
+        if (to==0){
+                LM_ERR("out of pkg memory\n");
+                return -1;
+        }
+
+        hostent2su(to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
+
+	/* Version && proto && length */
+	hdr.hp_l = sizeof(struct hep_hdr);
+	hdr.hp_v = hep_version;
+	hdr.hp_p = proto;
+
+	/* AND the last */
+	if (from_su.s.sa_family==AF_INET){
+		/* prepare the hep headers */
+
+		hdr.hp_f = AF_INET;
+		hdr.hp_sport = htons(from_su.sin.sin_port);
+		hdr.hp_dport = htons(to_su.sin.sin_port);
+
+		hep_ipheader.hp_src = from_su.sin.sin_addr;
+		hep_ipheader.hp_dst = to_su.sin.sin_addr;
+
+		len = sizeof(struct hep_iphdr);
+	}
+#ifdef USE_IPV6
+	else if (from_su.s.sa_family==AF_INET6){
+		/* prepare the hep6 headers */
+
+		hdr.hp_f = AF_INET6;
+
+		hdr.hp_sport = htons(from_su.sin6.sin6_port);
+		hdr.hp_dport = htons(to_su.sin6.sin6_port);
+
+		hep_ip6header.hp6_src = from_su.sin6.sin6_addr;
+		hep_ip6header.hp6_dst = to_su.sin6.sin6_addr;
+
+		len = sizeof(struct hep_ip6hdr);
+	}
+#endif /* USE_IPV6 */
+	else {
+		LM_ERR("ERROR: trace_send_hep_duplicate: Unsupported protocol family\n");
+		goto error;;
+	}
+
+	hdr.hp_l +=len;
+	len += (sizeof(struct hep_hdr)+sizeof(struct hep_timehdr)+body->len);	
+	buffer = (void *)pkg_malloc(len+1);
+	if (buffer==0){
+		LM_ERR("ERROR: trace_send_hep_duplicate: out of memory\n");
+		goto error;
+	}
+
+	/* Copy job */
+	memset(buffer, '\0', len+1);
+
+	/* copy hep_hdr */
+	memcpy((void*)buffer, &hdr, sizeof(struct hep_hdr));
+	buflen = sizeof(struct hep_hdr);
+
+	/* hep_ip_hdr */
+	if(from_su.s.sa_family==AF_INET) {
+		memcpy((void*)buffer + buflen, &hep_ipheader, sizeof(struct hep_iphdr));
+		buflen += sizeof(struct hep_iphdr);
+	}
+#if USE_IPV6
+	else {
+		memcpy((void*)buffer+buflen, &hep_ip6header, sizeof(struct hep_ip6hdr));
+		buflen += sizeof(struct hep_ip6hdr);
+	}
+#endif /* USE_IPV6 */
+
+        if(hep_version == 2) {
+        
+                hep_time.tv_sec = tvb.tv_sec;
+                hep_time.tv_usec = tvb.tv_usec;
+                hep_time.captid = hep_capture_id;                                                
+                        
+                memcpy((void*)buffer+buflen, &hep_time, sizeof(struct hep_timehdr));
+		buflen += sizeof(struct hep_timehdr);        
+        }
+
+	/* PAYLOAD */
+	memcpy((void*)(buffer + buflen) , (void*)body->s, body->len);
+	buflen +=body->len;
+
+	ret = -1;
+
+        do {
+                send_sock=get_send_socket(0, to, proto);
+                if (send_sock==0){
+                        LM_ERR("can't forward to af %d, proto %d no corresponding listening socket\n",
+                                        to->s.sa_family,proto);
+                        continue;
+                }
+
+                if (msg_send(send_sock, proto, to, 0, buffer, buflen)<0){
+                        LM_ERR("cannot send duplicate message\n");
+                        continue;
+                }
+                ret = 0;
+                break;
+        }while( get_next_su( p, to, 0)==0 );
+
+	free_proxy(p); /* frees only p content, not p itself */
+	pkg_free(p);
+	pkg_free(buffer);
+	pkg_free(to);
+
+	return ret;
+error:
+	if(p)
+	{
+		free_proxy(p); /* frees only p content, not p itself */
+		pkg_free(p);
+	}
+	if(buffer) pkg_free(buffer);
+	if(to) pkg_free(to);
+	return -1;
+}
+
+/*!
+ * \brief Convert a STR [proto:]ip[:port] into socket address.
+ * [proto:]ip[:port]
+ * \param pipport (udp:127.0.0.1:5060 or tcp:2001:0DB8:AC10:FE01:5060)
+ * \param tmp_su target structure
+ * \param proto uint protocol type
+ * \return success / unsuccess
+ */
+static int pipport2su (char *pipport, union sockaddr_union *tmp_su, unsigned int *proto)
+{
+	unsigned int port_no, cutlen = 4;
+	struct ip_addr *ip;
+	char *p, *host_s;
+	str port_str, host_uri;
+	unsigned len = 0;
+
+	/*parse protocol */
+	if(strncmp(pipport, "udp:",4) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(pipport, "tcp:",4) == 0) *proto = IPPROTO_TCP;
+	else if(strncmp(pipport, "tls:",4) == 0) *proto = IPPROTO_IDP; /* fake proto type */
+#ifdef USE_SCTP
+	else if(strncmp(pipport, "sctp:",5) == 0) cutlen = 5, *proto = IPPROTO_SCTP;
+#endif
+	else if(strncmp(pipport, "any:",4) == 0) *proto = IPPROTO_UDP;
+	else {
+		LM_ERR("bad protocol %s\n", pipport);
+		return -1;
+	}
+
+	/*separate proto and host */
+	p = pipport+cutlen;
+	if( (*(p)) == '\0') {
+		LM_ERR("malformed ip address\n");
+		return -1;
+	}
+	host_s=p;
+
+	if( (p = strrchr(p+1, ':')) == 0 ) {
+		LM_ERR("no port specified\n");
+		return -1;
+	}
+	/*the address contains a port number*/
+	*p = '\0';
+	p++;
+	port_str.s = p;
+	port_str.len = strlen(p);
+	LM_DBG("the port string is %s\n", p);
+	if(str2int(&port_str, &port_no) != 0 ) {
+		LM_ERR("there is not a valid number port\n");
+		return -1;
+	}
+	*p = '\0';
+	if (port_no<1024  || port_no>65536)
+	{
+		LM_ERR("invalid port number; must be in [1024,65536]\n");
+		return -1;
+	}
+
+	/* now IPv6 address has no brakets. It should be fixed! */
+	if (host_s[0] == '[') {
+		len = strlen(host_s + 1) - 1;
+		if(host_s[len+1] != ']') {
+			LM_ERR("bracket not closed\n");
+			return -1;
+		}
+		memmove(host_s, host_s + 1, len);
+		host_s[len] = '\0';
+	}
+
+	host_uri.s = host_s;
+	host_uri.len = strlen(host_s);
+
+
+	/* check if it's an ip address */
+	if (((ip=str2ip(&host_uri))!=0)
+#ifdef  USE_IPV6
+			|| ((ip=str2ip6(&host_uri))!=0)
+#endif
+	   ) {
+		ip_addr2su(tmp_su, ip, ntohs(port_no));
+		return 0;	
+
+	}
+
+	return -1;
 }

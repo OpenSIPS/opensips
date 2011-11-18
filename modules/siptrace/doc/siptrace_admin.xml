@@ -315,7 +315,95 @@ if(is_method("INVITE") &amp;&amp; !has_totag())
 </programlisting>
 		</example>
 	</section>
+	<section>
+                <title><varname>trace_to_database</varname> (integer)</title>
+                <para>
+                Parameter to enable/disable inserts to the Database from this
+                OpenSIPS.
+                </para>
+                <para>
+                In case we only want to send the SIP-Messages to the
+                duplicate_uri and not store the information to the local
+                database we can set this to "0".
+                </para>
+                <para>
+                <emphasis>
+                        Default value is "1".
+                </emphasis>
+                </para>
+                <example>
+                <title>Set <varname>trace_to_database</varname>parameter</title>
+                <programlisting format="linespecific">
+...
+modparam("siptrace", "trace_to_database", 0)
+...
+</programlisting>
+                </example>
+        </section>
 
+	<section>
+                <title><varname>duplicate_with_hep</varname> (integer)</title>
+                <para>
+                Parameter to enable/disable homer encapsulate mode
+                (on(1)/off(0))
+                </para>
+                <para>
+                <emphasis>
+                        Default value is "0".
+                </emphasis>
+                </para>
+                <example>
+                <title>Set <varname>duplicate_with_hep</varname> parameter</title>
+                <programlisting format="linespecific">
+...
+modparam("siptrace", "duplicate_with_hep", 1)
+...
+</programlisting>
+                </example>
+        </section>
+	<section>
+                <title><varname>hep_version</varname> (integer)</title>
+                <para>
+                The parameter indicate the version of HEP protocol. 
+                Can be 1 or 2. In HEPv2 the timestamp and capture agent ID will
+                be included to HEP header.
+                </para>
+                <para>
+                <emphasis>
+                        Default value is "1".
+                </emphasis>
+                </para>
+                <example>
+                <title>Set <varname>hep_version</varname> parameter</title>
+                <programlisting format="linespecific">
+...
+modparam("siptrace", "hep_version", 2)
+...
+</programlisting>
+                </example>
+        </section>        
+        <section>
+                <title><varname>hep_capture_id</varname> (integer)</title>
+                <para>
+                The parameter indicate the capture agent ID for HEPv2 protocol. 
+                Limitation: 16-bit integer.
+                </para>
+                <para>
+                <emphasis>
+                        Default value is "1".
+                </emphasis>
+                </para>
+                <example>
+                <title>Set <varname>hep_capture_id</varname> parameter</title>
+                <programlisting format="linespecific">
+...
+modparam("siptrace", "hep_capture_id", 234)
+...
+</programlisting>
+                </example>
+        </section>
+
+        
 	</section>
 
     <section>
@@ -354,6 +442,43 @@ if(is_method("INVITE") &amp;&amp; !has_totag())
 		_empty_line_
 		</programlisting>
 	</section>
+	<section>
+		<title>
+		<function moreinfo="none">trace_to_database</function>
+		</title>
+		<para>
+
+		</para>
+		<para>
+		Name: <emphasis>trace_to_database</emphasis>
+		</para>
+		<para>Parameters: </para>
+		<itemizedlist>
+			<listitem><para>trace_to_db_mode : turns on/off SIP message tracing into DB.
+			Possible values are:</para>
+			<itemizedlist>
+				<listitem><para> on </para></listitem> 
+				<listitem><para> off </para></listitem>
+			</itemizedlist>
+			<para>The parameter is optional - if missing, the command will
+			return the status of the SIP message tracing (as string 
+			<quote>on</quote> or <quote>off</quote> ) without changing
+			anything. The parameter can be switched from off to on, 
+			if db connection was before inizialized</para>
+			</listitem>
+		</itemizedlist>
+
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:trace_to_database:_reply_fifo_file_
+		trace_to_db_mode
+		_empty_line_
+		</programlisting>
+	</section>
+
+	
 	</section>
 	
 	<section>
