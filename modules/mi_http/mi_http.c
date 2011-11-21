@@ -43,6 +43,7 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
+#include "../../resolve.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "httpd_proc.h"
@@ -52,6 +53,7 @@ static int mod_init();
 static int destroy(void);
 
 int port = 8888;
+str ip = {NULL, 0};
 int buf_size = 0;
 str http_root = str_init("mi");
 
@@ -64,6 +66,7 @@ static proc_export_t mi_procs[] = {
 /* module parameters */
 static param_export_t mi_params[] = {
 	{"port",			INT_PARAM, &port},
+	{"ip",				STR_PARAM, &ip.s},
 	{"mi_http_root",		STR_PARAM, &http_root.s},
 	{"buf_size",			INT_PARAM, &buf_size},
 	{0,0,0}
@@ -90,10 +93,19 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	int i;
+	struct ip_addr *_ip;
 
 	if ( port <= 1024 ) {
 		LM_ERR("port<1024, using 8888...\n");
 		return -1;
+	}
+
+	if (ip.s) {
+		ip.len = strlen(ip.s);
+		if ( (_ip=str2ip(&ip)) == NULL ) {
+			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
+			return -1;
+		}
 	}
 
 	if (buf_size == 0)

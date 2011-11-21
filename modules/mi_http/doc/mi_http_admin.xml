@@ -23,7 +23,7 @@
 		</para>
 		<itemizedlist>
 			<listitem><para>
-			possibility to select the listening IP address
+			possibility to authenticate connections.
 			</para></listitem>
 		</itemizedlist>
 	</section>
@@ -62,6 +62,26 @@
 	
 	<section>
 	<title>Exported Parameters</title>
+	<section>
+		<title><varname>ip</varname>(string)</title>
+		<para>
+		The IP address used by the HTTP server to listen for incoming 
+		requests.
+		</para>
+		<para>
+		<emphasis>The default value is an empty string.</emphasis>
+		If no IP address is set, then the http server
+		will bind to all available IPs.
+		</para>
+		<example>
+		<title>Set <varname>ip</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_http", "ip", "127.0.0.1")
+...
+</programlisting>
+		</example>
+	</section>
 	<section>
 		<title><varname>port</varname>(integer)</title>
 		<para>

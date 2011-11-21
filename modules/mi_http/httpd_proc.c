@@ -52,6 +52,7 @@
 
 
 extern int port;
+extern str ip;
 extern int buf_size;
 
 
@@ -242,11 +243,12 @@ void httpd_proc(int rank)
 #ifdef LIBMICROHTTPD
 	struct timeval tv;
 	struct sockaddr_in saddr_in;
-	//str host = str_init("");
 
 	memset(&saddr_in, 0, sizeof(saddr_in));
-	//saddr_in.sin_addr.s_addr = inet_addr(host.s);
-	saddr_in.sin_addr.s_addr = INADDR_ANY;
+	if (ip.s)
+		saddr_in.sin_addr.s_addr = inet_addr(ip.s);
+	else
+		saddr_in.sin_addr.s_addr = INADDR_ANY;
 	saddr_in.sin_family = AF_INET;
 	saddr_in.sin_port = htons(port);
 
