@@ -548,6 +548,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		local_index = tuple->id;
 		stats.start_time =  entity->stats.start_time;
 		stats.setup_time = get_ticks() - entity->stats.start_time;
+		stats.key.s = NULL; stats.key.len = 0;
 		ekey.s = (char*)pkg_malloc(entity->key.len);
 		if(ekey.s == NULL)
 		{
@@ -3634,7 +3635,8 @@ int b2bl_get_stats(str* key, b2bl_dlg_stat_t* stat)
 	{
 		stat->start_time = tuple->bridge_entities[0]->stats.start_time;
 		stat->setup_time = tuple->bridge_entities[0]->stats.setup_time;
-		stat->call_time  = get_ticks() - stat->start_time;	
+		stat->call_time  = get_ticks() - stat->start_time;
+		stat->key.s = NULL; stat->key.len = 0;
 	}
 
 	lock_release(&b2bl_htable[hash_index].lock);
