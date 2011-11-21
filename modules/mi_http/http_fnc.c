@@ -905,7 +905,7 @@ int mi_http_build_page(str *page, int max_page_len,
 	return 0;
 error:
 	LM_ERR("buffer 2 small\n");
-	page->len = p - miHTTPResponse_Buf;
+	page->len = p - page->s;
 	return -1;
 }
 
