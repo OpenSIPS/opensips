@@ -327,14 +327,14 @@ void timeout_listener_process(int rank)
 				if(p == NULL) {
 					LM_ERR("Wrong formated message received from rtpproxy [%.*s]\n",
 							dlg_id.len, dlg_id.s);
-					continue;
+					break;
 				}
 				id.s = dlg_id.s;
 				id.len = p-dlg_id.s;
 				if(str2int(&id, &h_entry)< 0) {
 					LM_ERR("Wrong formated message received from rtpproxy - invalid"
 							" dialog entry [%.*s]\n", id.len, id.s);
-					continue;
+					break;
 				}
 				id.s = ++p;
 				/* go to end or to next non-digit */
@@ -344,7 +344,7 @@ void timeout_listener_process(int rank)
 				if(str2int(&id, &h_id)< 0) {
 					LM_ERR("Wrong formated message received from rtpproxy - invalid"
 							" dialog id [%.*s]\n", id.len, id.s);
-					continue;
+					break;
 				}
 				LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
 
