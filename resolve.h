@@ -170,23 +170,47 @@ extern int dns_try_ipv6;
    Warning: the result is a pointer to a statically allocated structure */
 static inline struct ip_addr* str2ip(str* st)
 {
-	int i;
+	int i, j;
 	unsigned char *limit;
 	static struct ip_addr ip;
-	unsigned char* s;
+	unsigned char *s;
 
 	s=(unsigned char*)st->s;
 
 	/*init*/
 	ip.u.addr32[0]=0;
-	i=0;
+	i=j=0;
 	limit=(unsigned char*)(st->s + st->len);
 
+	/* first char must be different then '0' */
+	if ((*s > '9' ) || (*s < '1')) goto error_char;
+	ip.u.addr[i]=ip.u.addr[i]*10+*s-'0';
+	s++;
+	j++;
 	for(;s<limit ;s++){
 		if (*s=='.'){
 				i++;
+				j=0;
 				if (i>3) goto error_dots;
-		}else if ( (*s <= '9' ) && (*s >= '0') ){
+				s++;
+				if (s==limit) break;
+				if ( (*s <= '9' ) && (*s >= '0') ){
+					j++;
+					ip.u.addr[i]=ip.u.addr[i]*10+*s-'0';
+				} else {
+					goto error_char;
+				}
+		}else if ( (j==1) && (*s <= '9' ) && (*s >= '0') ){
+				/* if first char is '0' then fail conversion */
+				if (ip.u.addr[i]==0) goto error_char;
+				j++;
+				ip.u.addr[i]=ip.u.addr[i]*10+*s-'0';
+		}else if ( (j==2) && (*s <= '9' ) && (*s >= '0') ){
+				/* if first two chars are bigger then '25' then fail conversion */
+				if (ip.u.addr[i]>25) goto error_char;
+				/* if first three chars are bigger then '255' then fail conversion */
+				if (ip.u.addr[i]==25 && *s > '5') goto error_char;
+				j++;
 				ip.u.addr[i]=ip.u.addr[i]*10+*s-'0';
 		}else{
 				//error unknown char
@@ -201,12 +225,13 @@ static inline struct ip_addr* str2ip(str* st)
 error_dots:
 	LM_DBG("too %s dots in [%.*s]\n", (i>3)?"many":"few", 
 			st->len, st->s);
-	return 0;
+	return NULL;
  error_char:
 	/*
-	DBG("str2ip: WARNING: unexpected char %c in [%.*s]\n", *s, st->len, st->s);
+	LM_ERR("unexpected char [%p]->[%c] in [%p]->[%.*s] while i=[%d] j=[%d]\n",
+		s, *s, st->s, st->len, st->s, i, j);
 	*/
-	return 0;
+	return NULL;
 }
 
 
