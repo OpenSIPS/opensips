@@ -1820,11 +1820,19 @@ __dialog_ended(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //
 
 static void
-__tm_request_fwded(struct cell *trans, int type, struct tmcb_params *param)
+__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
 {
     struct sip_msg *request = param->req;
     struct dlg_cell *dlg;
     ice_candidate_data *ice_data;
+
+    if ((request->msg_flags & FL_USE_MEDIA_PROXY) == 0)
+        return;
+
+    if (dlg_api.create_dlg(request) < 0) {
+        LM_ERR("could not create new dialog\n");
+        return;
+    }
 
     dlg = dlg_api.get_dlg();
     if (!dlg) {
@@ -1891,15 +1899,7 @@ EngageMediaProxy(struct sip_msg *msg)
         return -1;
     }
 
-    if (dlg_api.create_dlg(msg) < 0) {
-        LM_ERR("could not create new dialog\n");
-        return -1;
-    }
-
-    if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_FWDED, __tm_request_fwded, 0, 0) <= 0) {
-        LM_ERR("cannot register TM callback for forwarded INVITE request\n");
-        return -1;
-    }
+    msg->msg_flags |= FL_USE_MEDIA_PROXY;
 
     return 1;
 }
@@ -2000,6 +2000,11 @@ mod_init(void)
     // bind to the TM and dialog APIs
     if (load_tm_api(&tm_api)==0 && load_dlg_api(&dlg_api)==0) {
         have_dlg_api = True;
+        // register callback for incoming requests
+        if (tm_api.register_tmcb(0, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <= 0) {
+            LM_CRIT("cannot register TM callback for incoming INVITE request\n");
+            return -1;
+        }
     } else {
         LM_NOTICE("engage_media_proxy() will not work because the TM/dialog modules are not loaded\n");
     }
