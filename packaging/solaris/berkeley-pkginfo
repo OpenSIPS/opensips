@@ -1,6 +1,6 @@
 PKG="OpenSIPS-berkeley-dbg"
 NAME="Programmable SIP Server Berkeley Database Support - Debugging Symbols"
-VERSION="1.7.0dev0-notls"
+VERSION="1.7.1dev0-tls"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"

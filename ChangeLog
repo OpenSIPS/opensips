@@ -1,3 +1,551 @@
+# OpenSIPS 1.7.1
+
+2011-11-23 15:57:31  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8586] :
+
+	Backport from trunk ( rev #8585 )
+
+	fixed topology hiding & routing requests before the dialog is established
+
+
+
+2011-11-23 13:49:39  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8584] :
+
+	Backported from trunk (8503 and 8526):
+	Removed unused but declared variables
+	- fixes gcc 4.6.1 warning -Wunused-but-set-variable
+
+	Fixed some warnings:
+	 * 'isatty' redeclaration and 'input' 
+	* included stdlib in mem/mem.c for malloc function
+
+
+
+2011-11-22 13:59:07  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8583] :
+
+	Fixed engage_media_proxy on parallel forking scenarios
+
+2011-11-21 21:21:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8576] :
+
+	backport from trunk (rev #8575)
+	- fixed dangling pointers in "key" field of statistics
+
+
+
+2011-11-21 14:00:16  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8574] :
+
+	Backported from trunk (#8573):
+	Fixed parsing loop in rtpproxy module when a bogus message is receive
+	Reported by Kiss Karoly
+
+
+2011-11-18 18:02:41  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8571] :
+
+	backport from trunk ( rev #8570 )
+
+	reset pointer to NULL in order to not access invalid memory later
+	Fixes bug #3429715
+
+
+
+2011-11-18 17:30:43  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8568] :
+
+	backport from trunk (rev #8567)
+	fixed crash in double call of fix_nated_contact()
+	Reported by Kiss Karoly
+	Closes bug #3436582
+
+
+
+2011-11-17 18:03:04  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8562] :
+
+	backport from trunk (rev #8561):
+	- fixed handling the negative indexes for "branch" script variables
+
+
+
+2011-11-17 10:32:01  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8559] :
+
+	Changed severity of some log lines from INFO to DBG
+
+
+2011-11-16 22:40:31  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8557] :
+
+	Fixed using zero as netmask in permissions module
+
+
+2011-11-16 22:37:25  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8555] :
+
+	Fixed callcontrol interaction with dialog module
+	    - Dialog is immediately created when call_control is called
+	    - Removed no longer needed TM module callback and script postptrocess
+	      callback
+
+
+2011-11-16 21:58:42  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8553] :
+
+	Fixed mediaproxy interaction with dialog module
+	    - Create dialog on call to engage_media_proxy
+	    - Internally call user_media_proxy on transaction forwarded
+	      callback instead of doing it on dialog creaton
+
+
+2011-11-16 18:21:37  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8550] :
+
+	backport from trunk (rev #8549):
+	fixed body lumps deletion when message body is delete from failure route.
+	Reported by Ryan Bullock.
+	Closes bug #3432430.
+
+
+
+2011-11-15 11:55:43  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8548] :
+
+	Backported from trunk (#8543):
+	fixed memory corruption when rtpproxy autobridging is used.
+	* Reported by Sergey Lavrov
+	* Credits for patch go to Walter Doekes
+
+
+2011-11-14 18:30:35  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8547] :
+
+	Backport from trunk ( rev #8546 )
+
+	fixed callback registering with topology hiding
+
+
+
+2011-11-14 13:47:43  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8545] :
+
+	Backported from trunk (rev# 8544):
+	delete notification UNIX socket in mod_destroy
+	Reported by Kiss Karoly
+
+
+2011-11-10 10:15:58  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [8541] :
+
+	Fixed reporting called number with user parameters issue.
+
+2011-11-09 12:21:45  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8539] :
+
+	Backported from trunk (#8538):
+Fixed 'rtpproxy_stream2*' count parameter parsing - also accept negative values
+
+
+2011-11-08 19:02:11  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8537] :
+
+	backport from trunk (rev #8267)
+	- load statistics use the statistics interface instead of atomic ops
+	  Reported by Ovidiu Sas
+
+
+2011-11-08 13:18:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8535] :
+
+	backport from trunk (rev #8534):
+	fixed 2 bugs
+		- fixed the sign of the SIP reply code (500 instead of -500) in case on internal errors
+		- in acc, properly handle the FAKED_REPLY when checking for provisional replies with SDP.
+	Reported by Kiss Karoly (thanks for the help with troubleshooting)
+
+
+
+2011-11-02 12:42:31  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8523] :
+
+	Backport from trunk (rev #8522 )
+
+	In case of select error, do not move forward to checking the FDs
+
+
+
+2011-11-01 22:41:53  Anca Vamanu, <anca at oepnsips dot org> 
+	* [8520] :
+
+	- fixed possible crash - wrong size calculated at realloc
+
+
+2011-11-01 15:13:30  Ovidiu Sas <osas at voipembedded dot com> 
+	* [8518] :
+
+	b2b_logic: backport r8516
+	 fix crash on call termination when running b2b_logic without db
+ * reported by:
+	    Jock McKechnie (jock.mckchnie@gmail.com)
+	    Darren (ddgiants@gmail.com)
+
+
+
+2011-10-24 14:38:20  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8509] :
+
+	backport from trunk ( rev #8508 )
+
+	validate_dialog() different return codes for each type of check failure
+
+
+
+2011-10-18 13:30:29  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8500] :
+
+	backport from trunk (rev #8499):
+	- fixed return error code for pv_XXX_authorize() - report the case of "bad password".
+	  Credits go to Walter Doekes
+	  Closes bug #3422604
+
+
+
+2011-10-18 13:08:51  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8497] :
+
+	backport from trunk (rev #8496):
+	-fixed bug in evaluating regexp based conditions - as strings has to be null terminated, the script interpreter tries to put a '0' at the end of operators, but some of them may be static strings in the read-only data segment, so they cannot be written. The fix changed the way the "const" values are initialized, so that they would not end up in RO data segment.
+	 Closes bug #3424888
+
+
+
+2011-10-18 11:39:22  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8493] :
+
+	backport from trunk (rev #8492):
+	- fixed tests on index for several vars - when using another var as index, if value is 0, results in error
+	  Reported by Walter Doekes
+	  Closes bug #3423601
+
+
+2011-10-13 22:07:02  Anca Vamanu, <anca at oepnsips dot org> 
+	* [8481] :
+
+	- fix: To and From header not the same in send Invite and ACK when uri contained parameters (bug #3406294)
+
+
+2011-10-12 10:18:37  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [8476] :
+
+	Merged bug fix from trunk.
+	1. Fixed network ID reporting issue.
+	2. Fixed t_relay check issue in sample configuration file.
+
+
+2011-10-11 16:24:45  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8473] :
+
+	backport from trunk (rev #8472):
+	- fixed ugly bug in inserting the rport in via (in replies) when no rport or received exists. The correct fix in this case is to force both received and rport - RFC says that rport must come together with received.
+	  Reported by UnixDev and wdoekes on IRC channel #opensips.
+
+
+2011-10-11 11:26:03  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8470] :
+
+	backport from trunk (rev #8469):
+	-documentation fixes and updates
+	 Credits go to Walter Doekes
+	 Closes bug #3417793
+
+
+
+2011-10-10 15:59:16  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8460] :
+
+	backport from trunk ( #8459 )
+
+	fix importing rules doc from DB
+
+
+
+2011-10-03 15:25:13  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8444] :
+
+	backport from svn (rev #8424 + #8436):
+	  fix in properly inserting rport / received params in replies when VIA hdr has multiple bodies.
+	  Closes bug #3415264
+
+
+
+2011-10-03 14:52:51  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8442] :
+
+	Backported from trunk (rev 8441):
+	Reset flags when using dispatcher list_file
+	Fixes bug #3417791
+
+
+2011-10-03 14:14:34  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8440] :
+
+	backport from trunk ( rev #8439 )
+
+	Return code allows to differentiate between queries that return no result set and queries that produced errors
+
+
+
+2011-10-02 16:20:44  Anca Vamanu, <anca at oepnsips dot org> 
+	* [8431] :
+
+	- fix bug: initialize global pointers pres_event_p and dialog_event_p to NULL
+
+
+2011-10-02 15:59:54  Anca Vamanu, <anca at oepnsips dot org> 
+	* [8429] :
+
+	- applied patch from Walter Doekes(#3413995) : bug fix in memory management
+
+
+2011-09-30 13:58:16  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8425] :
+
+	backport from trunk (rev #8424)
+	- fixed the size of the list of resources (when doing LB). Original description: when calling load_balance() with "resource1" and sometimes with "resource1;resource2" the call_res static array in do_load_balance is resized, and call_res_no is updated to two. When calling get_dst_load, call_res_no is passed, instead of rl->n, so get_dst_load is always performed on 2 resources, even when only one is passed.
+	  Credits go to Walter Doekes
+	  Closes bug #3414860
+
+
+
+2011-09-30 13:45:56  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8422] :
+
+	backport from trunk (rev #8421):
+	- fixed several mem leaks when doing lb_reload
+	  Credits go to Walter Doekes
+	  Closes bug #3411398
+
+
+
+2011-09-29 13:53:34  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8418] :
+
+	backport from trunk (rev #8417 )
+
+	proper Via header memory free
+	fixes bug #3414001
+	Thanks to Walter Doekes
+
+
+
+2011-09-29 13:04:42  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8414] :
+
+	backport from trunk (rev #8413)
+
+	fixed wrong module_destroy in case uac_auth API is not available
+	fixes bug #3415272
+	Credits to Walter Doekes
+
+
+
+2011-09-27 16:03:35  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8398] :
+
+	Backported from trunk (8397):
+	Fixed bug in the rtpproxy module - when a disabled rtpproxy
+	is chosen to handle the request, it was entering in a loop that never stopped
+
+
+2011-09-27 12:36:02  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8395] :
+
+	backport from trunk (#8394)
+
+	fixed to param freeing
+
+
+
+2011-09-23 13:38:45  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8385] :
+
+	backport from trunk ( #8384 )
+
+	Fix crash in case the DB contains dialogs with sockets that OpenSIPS is not listening on anymore
+
+
+
+2011-09-23 11:17:55  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8382] :
+
+	Backported from trunk (r8216):
+	fixed cfgutils README - removed invalid function 'get_random'
+
+
+
+2011-09-22 13:56:16  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8381] :
+
+	backport from trunk :
+
+	complete commit #8375
+	Credits to Walter Doekes
+
+
+
+2011-09-21 20:43:56  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8378] :
+
+	backport from trunk (rev #8377)
+	- fixed bug leading into infit looping over the same character if the SDP 'c' line is malformed
+	  This is a dangerous bug as it can be used to attack and exploit opensips with malformed pacakges.
+	  Credits for reporting and fix go to Christophe Sollet
+
+
+
+2011-09-21 18:32:33  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8376] :
+
+	- set param list in TO header to NULL upon freeing params
+	- fixed unreachable code in b2b_logic
+	- fixed mem leak in osp
+
+	Thanks to Walter Doekes for reporting
+	Closes bug #3411434
+
+
+
+2011-09-14 01:41:14  Ovidiu Sas <osas at voipembedded dot com> 
+	* [8372] :
+
+	b2b_logic: backport revision 8369 from trunk:
+	           update dlginfo structure not updated for early dialogs
+	           closes bug id: 3353049
+
+
+
+2011-09-14 01:31:47  Ovidiu Sas <osas at voipembedded dot com> 
+	* [8371] :
+
+	b2b_logic: setting svn keywords
+
+
+
+2011-09-12 11:09:36  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8368] :
+
+	backport from trunk ( rev #8367)
+
+	fixed attempt of accesing bogus address
+	Fixes bug #3407299
+
+	Thanks to Richard Revels for reporting and patch
+
+
+
+2011-09-09 22:02:05  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [8366] :
+
+	backport from trunk (rev #8365):
+	- fixed bug when appending timer to a timer process.
+	  Reported and debugged by Ovidiu Sas
+
+
+
+2011-09-09 18:20:55  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8364] :
+
+	Backport from trunk r8361:
+
+	Added call token to callcontrol to help detect callid duplicates
+
+
+
+2011-09-09 18:17:08  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8363] :
+
+	Backport from trunk r8360:
+
+	Added ability to limit concurrent calls to CallControl
+
+
+
+2011-09-09 18:12:49  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [8362] :
+
+	Backport from trunk r8359:
+
+	Pass the prepaid account flag's value to the call-control application
+
+	Credits go to Luci Stanescu
+
+
+
+2011-09-08 14:17:02  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8355] :
+
+	backport from trunk (#8354)
+
+	fixed error checking
+
+
+
+2011-09-08 06:12:54  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [8352] :
+
+	Update README.
+
+
+2011-09-08 05:41:44  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [8351] :
+
+	Update documentation.
+
+2011-09-07 12:04:11  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8349] :
+
+	Backported from trunk (#8348):
+	fixed rtpproxy socket parsing error
+
+
+2011-09-06 12:18:18  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [8346] :
+
+	backport from trunk ( rev #8345 )
+
+	fixed ugly bug in case of TLS that would cause connection corruption
+	Fixes bug #3404595
+
+
+
+2011-09-05 13:42:09  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8344] :
+
+	Backported from trunk (# 8182):
+	Added a new function test_and_set_dlg_flag that can
+	atomically check and set a flag value
+
+
+
+2011-09-01 11:17:49  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8343] :
+
+	Backported from trunk (#8342):
+	Included <netinet/in_systm.h> header before <netinet/ip.h> for FreeBSD systems.
+	Closes bug #3401475
+
+
+2011-08-26 19:03:40  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [8341] :
+
+	Backported from trunk (#8340):
+	Fixed documentation title
+
+
+# OpenSIPS 1.7.0
 
 2011-08-26 17:14:15  Razvan Crainea <razvancrainea at opensips dot org> 
 	* [8338] :

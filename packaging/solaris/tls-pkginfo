@@ -1,6 +1,6 @@
 PKG="OpenSIPS-base-TLS"
 NAME="Programmable SIP Server Base Install with TLS"
-VERSION="1.7.0dev0-notls"
+VERSION="1.7.1dev0-tls"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
