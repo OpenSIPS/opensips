@@ -191,7 +191,6 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 {
 	int ret;
 	int new_tran;
-	str *uri;
 	int reply_ret;
 	struct cell *t;
 
@@ -216,7 +215,6 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 		LM_DBG("forwarding ACK\n");
 		/* send it out */
 		if (proxy==0) {
-			uri = GET_RURI(p_msg);
 			proxy=uri2proxy(GET_NEXT_HOP(p_msg), PROTO_NONE);
 			if (proxy==0) {
 					ret=E_BAD_ADDRESS;

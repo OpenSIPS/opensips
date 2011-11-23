@@ -416,7 +416,6 @@ int b2b_entities_restore(void)
 	str host;
 	int port, proto;
 	b2b_table htable;
-	unsigned int hsize;
 	int type;
 	int no_rows = 10;
 
@@ -478,7 +477,6 @@ int b2b_entities_restore(void)
 			if(type == B2B_SERVER)/* extract hash and local index */
 			{
 				htable = server_htable;
-				hsize  = server_hsize;
 				if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index) < 0)
 				{
 					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len,  dlg.tag[1].s);
@@ -488,7 +486,6 @@ int b2b_entities_restore(void)
 			else
 			{
 				htable = client_htable;
-				hsize  = client_hsize;
 
 				if(b2b_parse_key(&dlg.callid, &hash_index, &local_index) < 0)
 				{

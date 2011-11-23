@@ -321,6 +321,8 @@ int dump_contact_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int
 	 printf("%.*s;",(payload[i+2]-payload[i+1])==0?0:(payload[i+2]-payload[i+1]-1),&hdr[payload[i+1]]);
       }
       n=write(fd,"\n",1);
+	  if (n < 0)
+		  LM_ERR("error while writing the final eol\n");
    }
    return 0;
 }

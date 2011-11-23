@@ -417,8 +417,10 @@ void qm_free(struct qm_block* qm, void* p)
 #endif
 {
 	struct qm_frag* f;
+#ifdef QM_JOIN_FREE
 	struct qm_frag* prev;
 	struct qm_frag* next;
+#endif
 	unsigned long size;
 
 #ifdef DBG_QM_MALLOC
@@ -433,7 +435,6 @@ void qm_free(struct qm_block* qm, void* p)
 		LM_WARN("free(0) called\n");
 		return;
 	}
-	prev=next=0;
 	f=(struct qm_frag*) ((char*)p-sizeof(struct qm_frag));
 #ifdef DBG_QM_MALLOC
 	qm_debug_frag(qm, f);
@@ -452,6 +453,7 @@ void qm_free(struct qm_block* qm, void* p)
 
 #ifdef QM_JOIN_FREE
 	/* join packets if possible*/
+	prev=next=0;
 	next=FRAG_NEXT(f);
 	if (((char*)next < (char*)qm->last_frag_end) &&( next->u.is_free)){
 		/* join */

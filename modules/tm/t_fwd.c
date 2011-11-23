@@ -538,10 +538,8 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	branch_bm_t dummy_bm;
 	str reason;
 	unsigned int i;
-	int lowest_error;
 	struct hdr_field *hdr;
 
-	lowest_error=0;
 	cancel_bitmap=0;
 
 	/* send back 200 OK as per RFC3261 */
@@ -585,8 +583,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 			reset_timer(&t_invite->uac[i].request.retr_timer);
 			reset_timer(&t_invite->uac[i].request.fr_timer);
 			LOCK_REPLIES( t_invite );
-			if (RPS_ERROR==relay_reply(t_invite,FAKED_REPLY,i,487,&dummy_bm))
-				lowest_error = -1; /* force sending 500 error */
+			relay_reply(t_invite,FAKED_REPLY,i,487,&dummy_bm);
 		}
 	}
 }

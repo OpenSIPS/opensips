@@ -49,7 +49,6 @@ int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 {
 	enum states {URI_H_HEADER, URI_H_VALUE};
 	register enum states state;
-	char* s;
 	char* h; /* header start */
 	char* v; /* header value start */
 	str* header;		/* current header */
@@ -60,7 +59,7 @@ int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 
 	/* init */
 	end = headers.s + headers.len;
-	s = p = h = headers.s;
+	p = h = headers.s;
 	v = NULL;
 	header = &h_name[0];
 	header_val = &h_val[0];

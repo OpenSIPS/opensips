@@ -1449,7 +1449,6 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_val_t db_vals[NR_KEYS];
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
-	int faked = 0;
 	struct sip_msg* msg;
 	int_str        avp_value;
 	struct usr_avp *avp;
@@ -1482,7 +1481,6 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 
 	msg = req;
-	faked = 1;
 
 	if(parse_from_header(msg)==-1 || msg->from==NULL || get_from(msg)==NULL)
 	{
@@ -1626,7 +1624,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 		db_vals[9].val.str_val.s = avp_value.s.s;
 		db_vals[9].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("### - storing info 15 (%d) ...\n", faked);
+		LM_DBG("### - storing info 15 (faked) ...\n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if (con_set_inslist(&db_funcs,db_con,&ins_list,db_keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);

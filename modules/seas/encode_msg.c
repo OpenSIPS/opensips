@@ -380,7 +380,7 @@ int dump_msg_test(char *code,int fd,char header,char segregationLevel)
    if(header==0){
       n=write(fd,code,j+msglen);
       n=write(fd,&theSignal,4);
-      return 0;
+      return n < 0 ? -1 : 0;
    }
    msg=(char*)&payload[j];
    r=(i<100)?1:0;
@@ -446,7 +446,7 @@ int print_msg_junit_test(char *code,int fd,char header,char segregationLevel)
    if(header==0){
       n=write(fd,code,j+msglen);
       n=write(fd,&theSignal,4);
-      return 0;
+      return n < 0 ? -1 : 0;
    }
    msg=(char*)&payload[j];
    r=(i<100)?1:0;

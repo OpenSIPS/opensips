@@ -726,17 +726,19 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	struct mi_root* rpl_tree= NULL;
 	struct mi_node* rpl = NULL;
 	struct dlg_profile_table *profile;
-	str *value;
 	str *profile_name;
-	unsigned int combined;
 	int i, ret,n;
+/*
 	struct dlg_profile_value_name dpvn;
+	unsigned int combined;
+	str *value;
+*/
 	str tmp;
 
-	dpvn.values_string=NULL;
+	/* dpvn.values_string=NULL;
 	dpvn.values_count=NULL;
 	dpvn.size = 0;
-	combined = 0;
+	combined = 0; */
 	node = cmd_tree->node.kids;
 	if (node==NULL || !node->value.s || !node->value.len)
 		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
@@ -747,9 +749,11 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
 		if (node->next)
 			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+/* XXX not used anywhere
 		value = &node->value;
 	} else {
 		value = NULL;
+*/
 	}
 	profile = search_dlg_profile( profile_name );
 	if (profile==NULL)

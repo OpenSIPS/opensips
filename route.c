@@ -1303,8 +1303,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 
 	struct sip_uri uri;
 	int ret;
-	int retl;
-	int retr;
+/*	int retl;
+	int retr; */
 	int ival;
 	pv_value_t lval;
 	pv_value_t rval;
@@ -1405,11 +1405,13 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				else ret=1;
 				return ret;
 		case EXPR_O:
-				retl = retr = 0;
+				/* retl = retr = 0; */
 				memset(&lval, 0, sizeof(pv_value_t));
 				memset(&rval, 0, sizeof(pv_value_t));
 				if(e->left.v.data)
-					retl=eval_expr((struct expr*)e->left.v.data,msg,&lval);
+					eval_expr((struct expr*)e->left.v.data,msg,&lval);
+					/* XXX why is retl used here ?? */
+					/* retl=eval_expr((struct expr*)e->left.v.data,msg,&lval); */
 				if(lval.flags == PV_VAL_NONE)
 				{
 					pv_value_destroy(&lval);
@@ -1435,7 +1437,8 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					return 0;
 				}
 				if(e->right.v.data)
-					retr=eval_expr((struct expr*)e->right.v.data,msg,&rval);
+					eval_expr((struct expr*)e->right.v.data,msg,&rval);
+					/* retr=eval_expr((struct expr*)e->right.v.data,msg,&rval); */
 			
 				if(lval.flags&PV_TYPE_INT)
 				{
