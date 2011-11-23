@@ -221,8 +221,17 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 	} else {
 		/* use the same as in invite cseq in caller leg */
 		cseq = dlg->legs[DLG_CALLER_LEG].inv_cseq;
-		rr_set.len = contact.len = 0;
-		rr_set.s = contact.s = NULL;
+
+		if ((dlg->flags & DLG_FLAG_TOPHIDING) && (msg->REPLY_STATUS<200 &&
+					msg->REPLY_STATUS>100)) {
+			/* save contact && rr_set , may need need to route requests
+			 * before the INVITE transaction terminates */
+			get_routing_info(msg,is_req,0,&contact,&rr_set);
+		} else {
+			/* no need to save these here, wait for final response */
+			rr_set.len = contact.len = 0;
+			rr_set.s = contact.s = NULL;
+		}
 	}
 
 	LM_DBG("route_set %.*s, contact %.*s, cseq %.*s and bind_addr %.*s\n",
@@ -1438,7 +1447,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 
 	leg = & dlg->legs[ last_dst_leg ];
 
-	if (dlg->state <= DLG_STATE_EARLY)
+	if (dlg->state <= DLG_STATE_EARLY && !(dlg->flags & DLG_FLAG_TOPHIDING))
 		return 0;
 
 	/* check in the stored routes */
