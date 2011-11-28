@@ -1117,7 +1117,8 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val.len = t->method.len;
 
 	strcpy(statusbuf, int2str(ps->code, NULL));
-	db_vals[3].val.string_val = statusbuf;
+	db_vals[3].val.str_val.s = statusbuf;
+	db_vals[3].val.str_val.len = strlen(statusbuf);
 
 	siptrace_copy_proto(msg->rcv.proto, fromip_buff);
 	strcat(fromip_buff, ip_addr2a(&msg->rcv.src_ip));
@@ -1143,7 +1144,6 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
 
-	LM_DBG("XXX: saving\n");
 	if (save_siptrace(req,avp,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
 		goto error;
@@ -1260,7 +1260,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	strcpy(statusbuf, int2str(ps->code, NULL));
-	db_vals[3].val.string_val = statusbuf;
+	db_vals[3].val.str_val.s = statusbuf;
+	db_vals[3].val.str_val.len = strlen(statusbuf);
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 	dst = (struct dest_info*)ps->extra2;
@@ -1384,7 +1385,8 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	}
 
 	strcpy(statusbuf, int2str(sl_param->code, NULL));
-	db_vals[3].val.string_val = statusbuf;
+	db_vals[3].val.str_val.s = statusbuf;
+	db_vals[3].val.str_val.len = strlen(statusbuf);
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 	if(sl_param->dst==0)
