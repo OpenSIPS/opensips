@@ -32,7 +32,7 @@ if [ -z $SHELL_TESTED ] && [ -z $NOHLPRINT ] ; then
 	if [ -x /bin/bash ]; then
 		# bash is available
 		export SHELL_TESTED=yes
-		exec /bin/bash $0 $@
+		exec /bin/bash "$0" "$@"
 	else
 		NOHLPRINT=yes
 	fi
@@ -1080,7 +1080,7 @@ address() {
 				QUERY="insert into $ADDRESS_TABLE \
 					($ADDRESS_GRP_COLUMN, $ADDRESS_IP_COLUMN, $ADDRESS_MASK_COLUMN, \
 					$ADDRESS_PORT_COLUMN, $ADDRESS_PROTO_COLUMN, $ADDRESS_CONTEXT_INFO_COLUMN) \
-					VALUES ('$1', '$2', '$3', '$4', '$5', CONTEXT_INFO);"
+					VALUES ('$1', '$2', '$3', '$4', '$5', '$CONTEXT_INFO');"
 						
 				PATTERN=""
 				if [ ! -z "$7" ]; then
@@ -1089,7 +1089,7 @@ address() {
 					QUERY="insert into $ADDRESS_TABLE \
 						($ADDRESS_GRP_COLUMN, $ADDRESS_IP_COLUMN, $ADDRESS_MASK_COLUMN, \
 						$ADDRESS_PORT_COLUMN, $ADDRESS_PROTO_COLUMN, $ADDRESS_CONTEXT_INFO_COLUMN, $ADDRESS_PATTERN_COLUMN) \
-						VALUES ('$1', '$2', '$3', '$4', '$5', CONTEXT_INFO, PATTERN);"
+						VALUES ('$1', '$2', '$3', '$4', '$5', '$CONTEXT_INFO', '$PATTERN');"
 				fi
 			fi
 
