@@ -301,7 +301,7 @@ static int ospVerifyParameters(void)
         _osp_out_device[0] = '\0';
     }
 
-    if (_osp_max_dests > OSP_MAX_DESTS || _osp_max_dests < 1) {
+    if (_osp_max_dests > OSP_DEF_DESTS || _osp_max_dests < 1) {
         _osp_max_dests = OSP_DEF_DESTS;
         LM_WARN("max_destinations is out of range, reset to %d\n", OSP_DEF_DESTS);
     }
