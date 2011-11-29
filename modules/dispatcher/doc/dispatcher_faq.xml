@@ -52,6 +52,21 @@
 
 	<qandaentry>
 		<question>
+			<para>What happend with the <emphasis>list_file</emphasis> 
+			module parameter ?</para>
+		</question>
+		<answer>
+			<para>
+			The support for text file (for provisioning destinations) was dropped.
+			Only the DB support (provisioning via a DB table) is now available - if
+			you still want to use a text file for provisioning, use db_text DB driver
+			(DB emulated via text files)
+			</para>
+		</answer>
+	</qandaentry>
+
+	<qandaentry>
+		<question>
 		<para>Where can I find more about &osips;?</para>
 		</question>
 		<answer>

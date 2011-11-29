@@ -67,11 +67,9 @@
 
 #include "dispatch.h"
 
-#define DS_TABLE_VERSION_NEW	4
-#define DS_TABLE_VERSION_OLD	3
+#define DS_TABLE_VERSION	4
 
 extern struct socket_info *probing_sock;
-static int _ds_table_version = DS_TABLE_VERSION_NEW;
 extern event_id_t dispatch_evi_id;
 
 typedef struct _ds_dest
@@ -299,147 +297,6 @@ err1:
 	return -1;
 }
 
-/*load groups of destinations from file */
-int ds_load_list(char *lfile)
-{
-	char line[512], *p;
-	FILE *f = NULL;
-	int id, setn, flags, weight;
-	str uri;
-	str attrs;
-
-	if( (*crt_idx) != (*next_idx)) {
-		LM_WARN("load command already generated, aborting reload...\n");
-		return 0;
-	}
-
-	if(lfile==NULL || strlen(lfile)<=0)
-	{
-		LM_ERR("bad list file\n");
-		return -1;
-	}
-
-	f = fopen(lfile, "r");
-	if(f==NULL)
-	{
-		LM_ERR("can't open list file [%s]\n", lfile);
-		return -1;
-		
-	}
-
-	id = setn = flags = 0;
-
-	*next_idx = (*crt_idx + 1)%2;
-	destroy_list(*next_idx);
-
-	p = fgets(line, 512, f);
-	while(p)
-	{
-		/* eat all white spaces */
-		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
-			p++;
-		if(*p=='\0' || *p=='#')
-			goto next_line;
-
-		/* get set id */
-		id = 0;
-		while(*p>='0' && *p<='9')
-		{
-			id = id*10+ (*p-'0');
-			p++;
-		}
-
-		/* eat all white spaces */
-		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
-			p++;
-		if(*p=='\0' || *p=='#')
-		{
-			LM_ERR("bad line (missing uri) [%s]\n", line);
-			goto error;
-		}
-
-		/* get uri */
-		uri.s = p;
-		while(*p && *p!=' ' && *p!='\t' && *p!='\r' && *p!='\n' && *p!='#')
-			p++;
-		uri.len = p-uri.s;
-
-		weight = 1;
-		attrs.s = NULL;
-		attrs.len = 0;
-		flags = 0;
-
-		/* eat all white spaces */
-		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
-			p++;
-		if(*p=='\0' || *p=='#')
-		{
-			goto add_destination;
-		}
-
-		/* get flags */
-		while(*p>='0' && *p<='9')
-		{
-			flags = flags*10+ (*p-'0');
-			p++;
-		}
-
-		/* eat all white spaces */
-		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
-			p++;
-		if(*p=='\0' || *p=='#')
-		{
-			goto add_destination;
-		}
-
-		/* get weight */
-		weight = 0;
-		while(*p>='0' && *p<='9')
-		{
-			weight = weight*10+ (*p-'0');
-			p++;
-		}
-
-		/* eat all white spaces */
-		while(*p && (*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
-			p++;
-
-		/* get attrs */
-		attrs.s = p;
-		while (*p && !(*p==' ' || *p=='\t' || *p=='\r' || *p=='\n'))
-			p++;
-		attrs.len = p - attrs.s;
-		if (attrs.len==0)
-			attrs.s = NULL;
-
-add_destination:
-		if(add_dest2list(id, uri, flags, weight, attrs, *next_idx, &setn) != 0)
-			goto error;
-					
-		
-next_line:
-		p = fgets(line, 512, f);
-	}
-
-	if(reindex_dests(*next_idx, setn)!=0){
-		LM_ERR("error on reindex\n");
-		goto error;
-	}
-
-	fclose(f);
-	f = NULL;
-	/* Update list */
-	_ds_list_nr = setn;
-	*crt_idx = *next_idx;
-	return 0;
-
-error:
-	if(f!=NULL)
-		fclose(f);
-	destroy_list(*next_idx);
-	*next_idx = *crt_idx; 
-	return -1;
-}
 
 int ds_connect_db(void)
 {
@@ -471,6 +328,7 @@ void ds_disconnect_db(void)
 /*initialize and verify DB stuff*/
 int init_ds_db(void)
 {
+	int _ds_table_version;
 	int ret;
 
 	if(ds_table_name.s == 0)
@@ -497,11 +355,10 @@ int init_ds_db(void)
 	{
 		LM_ERR("failed to query table version\n");
 		return -1;
-	} else if (_ds_table_version != DS_TABLE_VERSION_NEW
-			&& _ds_table_version != DS_TABLE_VERSION_OLD) {
-		LM_ERR("invalid table version (found %d , required %d or %d)\n"
+	} else if (_ds_table_version != DS_TABLE_VERSION) {
+		LM_ERR("invalid table version (found %d , required %d)\n"
 			"(use opensipsdbctl reinit)\n",
-			_ds_table_version, DS_TABLE_VERSION_OLD, DS_TABLE_VERSION_NEW );
+			_ds_table_version, DS_TABLE_VERSION );
 		return -1;
 	}
 
@@ -518,7 +375,6 @@ int ds_load_db(void)
 	int i, id, nr_rows, setn;
 	int flags;
 	int weight;
-	int nrcols;
 	str uri;
 	str attrs;
 	db_res_t * res;
@@ -527,10 +383,6 @@ int ds_load_db(void)
 
 	db_key_t query_cols[5] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_flags_col, &ds_dest_weight_col, &ds_dest_attrs_col};
-
-	nrcols = 3;
-	if(_ds_table_version == DS_TABLE_VERSION_NEW)
-		nrcols = 5;
 
 	if( (*crt_idx) != (*next_idx))
 	{
@@ -550,7 +402,7 @@ int ds_load_db(void)
 	}
 
 	/*select the whole table and all the columns*/
-	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,nrcols,0,&res) < 0)
+	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,5,0,&res) < 0)
 	{
 		LM_ERR("error while querying database\n");
 		return -1;
@@ -595,26 +447,20 @@ int ds_load_db(void)
 			flags = VAL_INT(values+2);
 		}
 
-		if (nrcols==5) {
-			/* weight */
-			if (VAL_NULL(values+3)) {
-				weight = 1;
-			} else {
-				weight = VAL_INT(values+3);
-			}
-
-			/* attrs */
-			if (VAL_NULL(values+4) || VAL_STR(values+4).s==NULL) {
-				attrs.s = NULL;
-				attrs.len = 0;
-			} else {
-				attrs.s = VAL_STR(values+4).s;
-				attrs.len = strlen(attrs.s);
-			}
-		} else {
+		/* weight */
+		if (VAL_NULL(values+3)) {
 			weight = 1;
+		} else {
+			weight = VAL_INT(values+3);
+		}
+
+		/* attrs */
+		if (VAL_NULL(values+4) || VAL_STR(values+4).s==NULL) {
 			attrs.s = NULL;
 			attrs.len = 0;
+		} else {
+			attrs.s = VAL_STR(values+4).s;
+			attrs.len = strlen(attrs.s);
 		}
 
 		if(add_dest2list(id, uri, flags, weight, attrs, *next_idx, &setn) != 0)

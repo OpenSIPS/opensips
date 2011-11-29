@@ -51,6 +51,7 @@
 #include "../../route.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
+#include "../../db/db.h"
 
 #include "dispatch.h"
 
@@ -64,7 +65,6 @@
 #define DS_TABLE_NAME 		"dispatcher"
 
 /** parameters */
-char *dslistfile = CFG_DIR"dispatcher.list";
 int  ds_force_dst   = 0;
 int  ds_flags       = 0; 
 int  ds_use_default = 0; 
@@ -170,7 +170,6 @@ static cmd_export_t cmds[]={
 
 
 static param_export_t params[]={
-	{"list_file",       STR_PARAM, &dslistfile},
 	{"db_url",          STR_PARAM, &ds_db_url.s},
 	{"table_name",      STR_PARAM, &ds_table_name.s},
 	{"setid_col",       STR_PARAM, &ds_set_id_col.s},
@@ -233,61 +232,26 @@ static int mod_init(void)
 
 	LM_DBG("initializing ...\n");
 
-	if (dst_avp_param.s)
-		dst_avp_param.len = strlen(dst_avp_param.s);
-	if (grp_avp_param.s)
-		grp_avp_param.len = strlen(grp_avp_param.s);
-	if (cnt_avp_param.s)
-		cnt_avp_param.len = strlen(cnt_avp_param.s);
-	if (attrs_avp_param.s)
-		attrs_avp_param.len = strlen(attrs_avp_param.s);
-	if (hash_pvar_param.s)
-		hash_pvar_param.len = strlen(hash_pvar_param.s);
-	if (ds_setid_pvname.s)
-		ds_setid_pvname.len = strlen(ds_setid_pvname.s);
-	if (ds_ping_from.s) ds_ping_from.len = strlen(ds_ping_from.s);
-	if (ds_ping_method.s) ds_ping_method.len = strlen(ds_ping_method.s);
-
-	if(options_reply_codes_str.s)
-	{
-		options_reply_codes_str.len = strlen(options_reply_codes_str.s);
-		if(parse_reply_codes( &options_reply_codes_str, &options_reply_codes,
-		&options_codes_no )< 0)
-		{
-			LM_ERR("Bad format for options_reply_code parameter"
-					" - Need a code list separated by commas\n");
-			return -1;
-		}
-	}
-
+	/* Load stuff from DB */
+	init_db_url( ds_db_url , 0 /*cannot be null*/);
 	if(init_data()!= 0)
 		return -1;
 
-	if(ds_db_url.s)
-	{
-		ds_db_url.len     = strlen(ds_db_url.s);
-		ds_table_name.len = strlen(ds_table_name.s);
-		ds_set_id_col.len     = strlen(ds_set_id_col.s);
-		ds_dest_uri_col.len   = strlen(ds_dest_uri_col.s);
-		ds_dest_flags_col.len = strlen(ds_dest_flags_col.s);
-		ds_dest_weight_col.len= strlen(ds_dest_weight_col.s);
-		ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
+	ds_table_name.len = strlen(ds_table_name.s);
+	ds_set_id_col.len = strlen(ds_set_id_col.s);
+	ds_dest_uri_col.len = strlen(ds_dest_uri_col.s);
+	ds_dest_flags_col.len = strlen(ds_dest_flags_col.s);
+	ds_dest_weight_col.len = strlen(ds_dest_weight_col.s);
+	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
 
-		if(init_ds_db()!= 0)
-		{
-			LM_ERR("could not initiate a connect to the database\n");
-			return -1;
-		}
-	} else {
-		if(ds_load_list(dslistfile)!=0) {
-			LM_ERR("no dispatching list loaded from file\n");
-			return -1;
-		} else {
-			LM_DBG("loaded dispatching list\n");
-		}
+	if(init_ds_db()!= 0)
+	{
+		LM_ERR("failed to load data from database\n");
+		return -1;
 	}
 
-	if (dst_avp_param.s && dst_avp_param.len > 0)
+	/* handle AVPs spec */
+	if (dst_avp_param.s && (dst_avp_param.len=strlen(dst_avp_param.s)) > 0)
 	{
 		if (pv_parse_spec(&dst_avp_param, &avp_spec)==0
 				|| avp_spec.type!=PVT_AVP)
@@ -308,7 +272,7 @@ static int mod_init(void)
 		dst_avp_type = 0;
 	}
 
-	if (grp_avp_param.s && grp_avp_param.len > 0)
+	if (grp_avp_param.s && (grp_avp_param.len=strlen(grp_avp_param.s)) > 0)
 	{
 		if (pv_parse_spec(&grp_avp_param, &avp_spec)==0
 				|| avp_spec.type!=PVT_AVP)
@@ -329,7 +293,7 @@ static int mod_init(void)
 		grp_avp_type = 0;
 	}
 
-	if (cnt_avp_param.s && cnt_avp_param.len > 0)
+	if (cnt_avp_param.s && (cnt_avp_param.len=strlen(cnt_avp_param.s)) > 0)
 	{
 		if (pv_parse_spec(&cnt_avp_param, &avp_spec)==0
 				|| avp_spec.type!=PVT_AVP)
@@ -350,7 +314,7 @@ static int mod_init(void)
 		cnt_avp_type = 0;
 	}
 
-	if (attrs_avp_param.s && attrs_avp_param.len > 0) {
+	if (attrs_avp_param.s && (attrs_avp_param.len=strlen(attrs_avp_param.s)) > 0) {
 		if (pv_parse_spec(&attrs_avp_param, &avp_spec)==0
 		|| avp_spec.type!=PVT_AVP) {
 			LM_ERR("malformed or non AVP %.*s AVP definition\n",
@@ -369,7 +333,7 @@ static int mod_init(void)
 		attrs_avp_type = 0;
 	}
 
-	if (hash_pvar_param.s && *hash_pvar_param.s) {
+	if (hash_pvar_param.s && (hash_pvar_param.len=strlen(hash_pvar_param.s))>0 ) {
 		if(pv_parse_format(&hash_pvar_param, &hash_param_model) < 0
 				|| hash_param_model==NULL) {
 			LM_ERR("malformed PV string: %s\n", hash_pvar_param.s);
@@ -379,8 +343,7 @@ static int mod_init(void)
 		hash_param_model = NULL;
 	}
 
-	if(ds_setid_pvname.s!=0)
-	{
+	if (ds_setid_pvname.s && (ds_setid_pvname.len=strlen(ds_setid_pvname.s)>0 )) {
 		if(pv_parse_spec(&ds_setid_pvname, &ds_setid_pv)==NULL
 				|| !pv_is_w(&ds_setid_pv))
 		{
@@ -388,6 +351,7 @@ static int mod_init(void)
 			return -1;
 		}
 	}
+
 	/* Only, if the Probing-Timer is enabled the TM-API needs to be loaded: */
 	if (ds_ping_interval > 0)
 	{
@@ -395,6 +359,21 @@ static int mod_init(void)
 		str host;
 		int port,proto;
 
+		if (ds_ping_from.s)
+			ds_ping_from.len = strlen(ds_ping_from.s);
+		if (ds_ping_method.s)
+			ds_ping_method.len = strlen(ds_ping_method.s);
+		/* parse the list of reply codes to be counted as success */
+		if(options_reply_codes_str.s) {
+			options_reply_codes_str.len = strlen(options_reply_codes_str.s);
+			if(parse_reply_codes( &options_reply_codes_str, &options_reply_codes,
+			&options_codes_no )< 0) {
+				LM_ERR("Bad format for options_reply_code parameter"
+						" - Need a code list separated by commas\n");
+				return -1;
+			}
+		}
+		/* parse and look for the socket to ping from */
 		if (probing_sock_s && probing_sock_s[0]!=0 ) {
 			if (parse_phostport( probing_sock_s, strlen(probing_sock_s),
 			&host.s, &host.len, &port, &proto)!=0 ) {
@@ -432,6 +411,7 @@ static int mod_init(void)
 		LM_ERR("cannot register dispatcher event\n");
 	return 0;
 }
+
 
 /**
  * Initialize children
@@ -703,8 +683,6 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 }
 
 
-
-
 static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 {
 	struct mi_root* rpl_tree;
@@ -730,13 +708,9 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 
 static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 {
-	if(!ds_db_url.s) {
-		if (ds_load_list(dslistfile)!=0)
-			return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
-	} else {
-		if(ds_load_db()<0)
-			return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
-	}
+	if (ds_load_db()<0)
+		return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
+
 	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 }
 

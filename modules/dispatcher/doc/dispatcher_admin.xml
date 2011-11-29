@@ -56,65 +56,13 @@
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>list_file</varname> (string)</title>
-		<para>
-		Path to the file with destination sets.
-		</para>
-		<para>
-		This file shall contain linefeed delimited destinations and space delimited columns:
-			<itemizedlist>
-			<listitem>
-			<para>
-				setid (an integer)
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				destination (a sip uri)
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				flags (0|DS_INACTIVE_DST=1|DS_PROBING_DST=2|DS_RESET_FAIL_DST=4, optional)
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				weight (an integer, optional)
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				data (opaque data, see attrs_avp, optional)
-			</para>
-			</listitem>
-			</itemizedlist>
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>/etc/opensips/dispatcher.list</quote> or
-			<quote>/usr/local/etc/opensips/dispatcher.list</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>list_file</quote> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dispatcher", "list_file", "/var/run/opensips/dispatcher.list")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		If you want to load the sets of gateways from the database you must set
-		this parameter.
+		Database where to load the destinations from.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NULL</quote> (disable DB support).
+			Default value is <quote>NULL</quote> (use default DB URL from core).
 		</emphasis>
 		</para>
 		<example>
