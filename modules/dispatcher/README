@@ -40,25 +40,27 @@ Carsten Bock
               1.3.2. flags (int)
               1.3.3. force_dst (int)
               1.3.4. use_default (int)
-              1.3.5. dst_avp (str)
-              1.3.6. attrs_avp (str)
-              1.3.7. grp_avp (str)
-              1.3.8. cnt_avp (str)
-              1.3.9. hash_pvar (str)
-              1.3.10. setid_pvar (str)
-              1.3.11. ds_ping_method (string)
-              1.3.12. ds_ping_from (string)
-              1.3.13. ds_ping_interval (int)
-              1.3.14. ds_probing_sock (str)
-              1.3.15. ds_probing_threshhold (int)
-              1.3.16. ds_probing_mode (int)
-              1.3.17. options_reply_codes (str)
-              1.3.18. table_name (string)
-              1.3.19. setid_col (string)
-              1.3.20. destination_col (string)
-              1.3.21. flags_col (string)
-              1.3.22. weight_col (string)
-              1.3.23. attrs_col (string)
+              1.3.5. attrs_avp (str)
+              1.3.6. hash_pvar (str)
+              1.3.7. setid_pvar (str)
+              1.3.8. ds_ping_method (string)
+              1.3.9. ds_ping_from (string)
+              1.3.10. ds_ping_interval (int)
+              1.3.11. ds_probing_sock (str)
+              1.3.12. ds_probing_threshhold (int)
+              1.3.13. ds_probing_mode (int)
+              1.3.14. options_reply_codes (str)
+              1.3.15. dst_avp (str)
+              1.3.16. grp_avp (str)
+              1.3.17. cnt_avp (str)
+              1.3.18. sock_avp (str)
+              1.3.19. table_name (string)
+              1.3.20. setid_col (string)
+              1.3.21. destination_col (string)
+              1.3.22. flags_col (string)
+              1.3.23. weight_col (string)
+              1.3.24. attrs_col (string)
+              1.3.25. socket_col (string)
 
         1.4. Exported Functions
 
@@ -90,30 +92,32 @@ Carsten Bock
    1.2. Set the “flags” parameter
    1.3. Set the “force_dst” parameter
    1.4. Set the “use_default” parameter
-   1.5. Set the “dst_avp” parameter
-   1.6. Set the “attrs_avp” parameter
-   1.7. Set the “grp_avp” parameter
-   1.8. Set the “cnt_avp” parameter
-   1.9. Use $avp(273) for hashing:
-   1.10. Use combination of PVs for hashing:
-   1.11. Set the “setid_pvar” parameter
-   1.12. Set the “ds_ping_method” parameter
-   1.13. Set the “ds_ping_from” parameter
-   1.14. Set the “ds_ping_interval” parameter
-   1.15. Set the “ds_probing_sock” parameter
-   1.16. Set the “ds_probing_threshhold” parameter
-   1.17. Set the “ds_probing_mode” parameter
-   1.18. Set the “options_reply_codes” parameter
-   1.19. Set “table_name” parameter
-   1.20. Set “setid_col” parameter
-   1.21. Set “destination_col” parameter
-   1.22. Set “flags_col” parameter
-   1.23. Set “weight_col” parameter
-   1.24. Set “attrs_col” parameter
-   1.25. ds_select_dst usage
-   1.26. ds_is_in_list usage
-   1.27. dispatcher list file
-   1.28. OpenSIPS config script - sample dispatcher usage
+   1.5. Set the “attrs_avp” parameter
+   1.6. Use $avp(273) for hashing:
+   1.7. Use combination of PVs for hashing:
+   1.8. Set the “setid_pvar” parameter
+   1.9. Set the “ds_ping_method” parameter
+   1.10. Set the “ds_ping_from” parameter
+   1.11. Set the “ds_ping_interval” parameter
+   1.12. Set the “ds_probing_sock” parameter
+   1.13. Set the “ds_probing_threshhold” parameter
+   1.14. Set the “ds_probing_mode” parameter
+   1.15. Set the “options_reply_codes” parameter
+   1.16. Set the “dst_avp” parameter
+   1.17. Set the “grp_avp” parameter
+   1.18. Set the “cnt_avp” parameter
+   1.19. Set the “sock_avp” parameter
+   1.20. Set “table_name” parameter
+   1.21. Set “setid_col” parameter
+   1.22. Set “destination_col” parameter
+   1.23. Set “flags_col” parameter
+   1.24. Set “weight_col” parameter
+   1.25. Set “attrs_col” parameter
+   1.26. Set “socket_col” parameter
+   1.27. ds_select_dst usage
+   1.28. ds_is_in_list usage
+   1.29. dispatcher list file
+   1.30. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -205,29 +209,7 @@ modparam("dispatcher", "force_dst", 1)
  modparam("dispatcher", "use_default", 1)
  ...
 
-1.3.5. dst_avp (str)
-
-   The name of the avp which will hold the list with addresses, in
-   the order they have been selected by the chosen algorithm. If
-   use_default is 1, the value of last dst_avp_id is the last
-   address in destination set. The first dst_avp_id is the
-   selected destinations. All the other addresses from the
-   destination set will be added in the avp list to be able to
-   implement serial forking.
-
-Note
-
-   You must set this parameter if you want do do load balancing
-   fail over.
-
-   Default value is “null” - don't add AVPs.
-
-   Example 1.5. Set the “dst_avp” parameter
- ...
- modparam("dispatcher", "dst_avp", "$avp(271)")
- ...
-
-1.3.6. attrs_avp (str)
+1.3.5. attrs_avp (str)
 
    The name of the avp to contain the attributes string of the
    current destination. When a destination is selected,
@@ -240,46 +222,12 @@ Note
 
    Default value is “null” - don't provide ATTRIBUTEs.
 
-   Example 1.6. Set the “attrs_avp” parameter
+   Example 1.5. Set the “attrs_avp” parameter
  ...
  modparam("dispatcher", "attrs_avp", "$avp(272)")
  ...
 
-1.3.7. grp_avp (str)
-
-   The name of the avp storing the group id of the destination
-   set. Good to have it for later usage or checks.
-
-Note
-
-   You must set this parameter if you want do do load balancing
-   fail over.
-
-   Default value is “null” - don't add AVP.
-
-   Example 1.7. Set the “grp_avp” parameter
-...
-modparam("dispatcher", "grp_avp", "$avp(273)")
-...
-
-1.3.8. cnt_avp (str)
-
-   The name of the avp storing the number of destination addresses
-   kept in dst_avp avps.
-
-Note
-
-   You must set this parameter if you want do do load balancing
-   fail over.
-
-   Default value is “null” - don't add AVP.
-
-   Example 1.8. Set the “cnt_avp” parameter
-...
-modparam("dispatcher", "cnt_avp", "$avp(274)")
-...
-
-1.3.9. hash_pvar (str)
+1.3.6. hash_pvar (str)
 
    String with PVs used for the hashing algorithm 7.
 
@@ -290,17 +238,17 @@ Note
 
    Default value is “null” - disabled.
 
-   Example 1.9. Use $avp(273) for hashing:
+   Example 1.6. Use $avp(273) for hashing:
 ...
 modparam("dispatcher", "hash_pvar", "$avp(273)")
 ...
 
-   Example 1.10. Use combination of PVs for hashing:
+   Example 1.7. Use combination of PVs for hashing:
 ...
 modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 ...
 
-1.3.10. setid_pvar (str)
+1.3.7. setid_pvar (str)
 
    The name of the PV where to store the set ID (group ID) when
    calling ds_is_in_list() without group parameter (third
@@ -308,12 +256,12 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 
    Default value is “null” - don't set PV.
 
-   Example 1.11. Set the “setid_pvar” parameter
+   Example 1.8. Set the “setid_pvar” parameter
  ...
  modparam("dispatcher", "setid_pvar", "$var(setid)")
  ...
 
-1.3.11. ds_ping_method (string)
+1.3.8. ds_ping_method (string)
 
    With this Method you can define, with which method you want to
    probe the failed gateways. This method is only available, if
@@ -321,12 +269,12 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 
    Default value is “OPTIONS”.
 
-   Example 1.12. Set the “ds_ping_method” parameter
+   Example 1.9. Set the “ds_ping_method” parameter
 ...
 modparam("dispatcher", "ds_ping_method", "INFO")
 ...
 
-1.3.12. ds_ping_from (string)
+1.3.9. ds_ping_from (string)
 
    With this Method you can define the "From:"-Line for the
    request, sent to the failed gateways. This method is only
@@ -335,12 +283,12 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 
    Default value is “sip:dispatcher@localhost”.
 
-   Example 1.13. Set the “ds_ping_from” parameter
+   Example 1.10. Set the “ds_ping_from” parameter
 ...
 modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 ...
 
-1.3.13. ds_ping_interval (int)
+1.3.10. ds_ping_interval (int)
 
    With this Method you can define the interval for sending a
    request to a failed gateway. This parameter is only used, when
@@ -349,12 +297,12 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 
    Default value is “10”.
 
-   Example 1.14. Set the “ds_ping_interval” parameter
+   Example 1.11. Set the “ds_ping_interval” parameter
 ...
 modparam("dispatcher", "ds_ping_interval", 30)
 ...
 
-1.3.14. ds_probing_sock (str)
+1.3.11. ds_probing_sock (str)
 
    A socket description [proto:]host[:port] of the local socket
    (which is used by OpenSIPS for SIP traffic) to be used (if
@@ -362,12 +310,12 @@ modparam("dispatcher", "ds_ping_interval", 30)
 
    Default value is “NULL(none)”.
 
-   Example 1.15. Set the “ds_probing_sock” parameter
+   Example 1.12. Set the “ds_probing_sock” parameter
 ...
 modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
 
-1.3.15. ds_probing_threshhold (int)
+1.3.12. ds_probing_threshhold (int)
 
    If you want to set a gateway into probing mode, you will need a
    specific number of requests until it will change from "active"
@@ -376,12 +324,12 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 
    Default value is “3”.
 
-   Example 1.16. Set the “ds_probing_threshhold” parameter
+   Example 1.13. Set the “ds_probing_threshhold” parameter
 ...
 modparam("dispatcher", "ds_probing_threshhold", 10)
 ...
 
-1.3.16. ds_probing_mode (int)
+1.3.13. ds_probing_mode (int)
 
    Controls what gateways are tested to see if they are reachable.
    If set to 0, only the gateways with state PROBING are tested,
@@ -391,12 +339,12 @@ modparam("dispatcher", "ds_probing_threshhold", 10)
 
    Default value is “0”.
 
-   Example 1.17. Set the “ds_probing_mode” parameter
+   Example 1.14. Set the “ds_probing_mode” parameter
 ...
 modparam("dispatcher", "ds_probing_mode", 1)
 ...
 
-1.3.17. options_reply_codes (str)
+1.3.14. options_reply_codes (str)
 
    This parameter must contain a list of SIP reply codes separated
    by comma. The codes defined here will be considered as valid
@@ -405,81 +353,150 @@ modparam("dispatcher", "ds_probing_mode", 1)
 
    Default value is “NULL”.
 
-   Example 1.18. Set the “options_reply_codes” parameter
+   Example 1.15. Set the “options_reply_codes” parameter
 ...
 modparam("dispatcher", "options_reply_codes", "501, 403")
 ...
 
-1.3.18. table_name (string)
+1.3.15. dst_avp (str)
+
+   This is mainly for internal usage and represents the name of
+   the avp which will hold the list with addresses, in the order
+   they have been selected by the chosen algorithm. If use_default
+   is 1, the value of last dst_avp_id is the last address in
+   destination set. The first dst_avp_id is the selected
+   destinations. All the other addresses from the destination set
+   will be added in the avp list to be able to implement serial
+   forking.
+
+   Default value is “$avp(ds_dst_failover)”
+
+   Example 1.16. Set the “dst_avp” parameter
+ ...
+ modparam("dispatcher", "dst_avp", "$avp(271)")
+ ...
+
+1.3.16. grp_avp (str)
+
+   This is mainly for internal usage and represents the name of
+   the avp storing the group id of the destination set. Good to
+   have it for later usage or checks.
+
+   Default value is “$avp(ds_grp_failover)”.
+
+   Example 1.17. Set the “grp_avp” parameter
+...
+modparam("dispatcher", "grp_avp", "$avp(273)")
+...
+
+1.3.17. cnt_avp (str)
+
+   This is mainly for internal usage and represents the name of
+   the avp storing the number of destination addresses kept in
+   dst_avp avps.
+
+   Default value is “$avp(ds_cnt_failover)”.
+
+   Example 1.18. Set the “cnt_avp” parameter
+...
+modparam("dispatcher", "cnt_avp", "$avp(274)")
+...
+
+1.3.18. sock_avp (str)
+
+   This is mainly for internal usage and represents the name of
+   the avp storing the sockets to be used for the destination
+   addresses kept in dst_avp avps.
+
+   Default value is “$avp(ds_sock_failover)”.
+
+   Example 1.19. Set the “sock_avp” parameter
+...
+modparam("dispatcher", "sock_avp", "$avp(275)")
+...
+
+1.3.19. table_name (string)
 
    If you want to load the sets of gateways from the database you
    must set this parameter as the database name.
 
    Default value is “dispatcher”.
 
-   Example 1.19. Set “table_name” parameter
+   Example 1.20. Set “table_name” parameter
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
 ...
 
-1.3.19. setid_col (string)
+1.3.20. setid_col (string)
 
    The column's name in the database storing the gateway's group
    id.
 
    Default value is “setid”.
 
-   Example 1.20. Set “setid_col” parameter
+   Example 1.21. Set “setid_col” parameter
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
 
-1.3.20. destination_col (string)
+1.3.21. destination_col (string)
 
    The column's name in the database storing the destination's sip
    uri.
 
    Default value is “destination”.
 
-   Example 1.21. Set “destination_col” parameter
+   Example 1.22. Set “destination_col” parameter
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
 
-1.3.21. flags_col (string)
+1.3.22. flags_col (string)
 
    The column's name in the database storing the flags for
    destination uri.
 
    Default value is “flags”.
 
-   Example 1.22. Set “flags_col” parameter
+   Example 1.23. Set “flags_col” parameter
 ...
 modparam("dispatcher", "flags_col", "dstflags")
 ...
 
-1.3.22. weight_col (string)
+1.3.23. weight_col (string)
 
    The column's name in the database storing the weight for
    destination uri.
 
    Default value is “weight”.
 
-   Example 1.23. Set “weight_col” parameter
+   Example 1.24. Set “weight_col” parameter
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
 
-1.3.23. attrs_col (string)
+1.3.24. attrs_col (string)
 
    The column's name in the database storing the attributes
    (opaque string) for destination uri.
 
    Default value is “attrs”.
 
-   Example 1.24. Set “attrs_col” parameter
+   Example 1.25. Set “attrs_col” parameter
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
+...
+
+1.3.25. socket_col (string)
+
+   The column's name in the database storing the socket (as
+   string) for destination uri.
+
+   Default value is “socket”.
+
+   Example 1.26. Set “socket_col” parameter
+...
+modparam("dispatcher", "socket_col", "my_sock")
 ...
 
 1.4. Exported Functions
@@ -518,7 +535,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.25. ds_select_dst usage
+   Example 1.27. ds_select_dst usage
 ...
 ds_select_dst("1", "0");
 ...
@@ -605,7 +622,7 @@ ds_select_dst("1", "0", "5");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.26. ds_is_in_list usage
+   Example 1.28. ds_is_in_list usage
 ...
 if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
@@ -675,7 +692,7 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
    address must be a valid SIP URI. Empty lines or lines starting
    with “#” are ignored.
 
-   Example 1.27. dispatcher list file
+   Example 1.29. dispatcher list file
 ...
 # $Id$
 # dispatcher destination sets
@@ -699,7 +716,7 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.28. OpenSIPS config script - sample dispatcher usage
+   Example 1.30. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # $Id$

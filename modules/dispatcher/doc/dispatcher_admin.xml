@@ -152,37 +152,6 @@ modparam("dispatcher", "force_dst", 1)
 	</section>
 
 	<section>
-		<title><varname>dst_avp</varname> (str)</title>
-		<para>
-		The name of the avp which will hold the list with addresses, in the
-		order
-		they have been selected by the chosen algorithm. If use_default is 1,
-		the value of last dst_avp_id is the last address in destination set. The
-		first dst_avp_id is the selected destinations. All the other addresses
-		from the destination set will be added in the avp list to be able to
-		implement serial forking.
-		</para>
-		<note>
-		<para>
-		You must set this parameter if you want do do load balancing fail over.
-		</para>
-		</note>
-		<para>
-		<emphasis>
-			Default value is <quote>null</quote> - don't add AVPs.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>dst_avp</quote> parameter</title>
- <programlisting format="linespecific">
- ...
- modparam("dispatcher", "dst_avp", "$avp(271)")
- ...
- </programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>attrs_avp</varname> (str)</title>
 		<para>
 		The name of the avp to contain the attributes string of the current
@@ -208,57 +177,6 @@ modparam("dispatcher", "force_dst", 1)
 		</example>
 	</section>
 
-	<section>
-		<title><varname>grp_avp</varname> (str)</title>
-		<para>
-		The name of the avp storing the group id of the destination set. Good
-		to have it for later usage or checks.
-		</para>
-		<note>
-		<para>
-		You must set this parameter if you want do do load balancing fail over.
-		</para>
-		</note>
-		<para>
-		<emphasis>
-			Default value is <quote>null</quote> - don't add AVP.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>grp_avp</quote> parameter</title>
-<programlisting format="linespecific">
-...
-modparam("dispatcher", "grp_avp", "$avp(273)")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>cnt_avp</varname> (str)</title>
-		<para>
-		The name of the avp storing the number of destination addresses kept in
-		dst_avp avps.
-		</para>
-		<note>
-		<para>
-		You must set this parameter if you want do do load balancing fail over.
-		</para>
-		</note>
-		<para>
-		<emphasis>
-			Default value is <quote>null</quote> - don't add AVP.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>cnt_avp</quote> parameter</title>
-<programlisting format="linespecific">
-...
-modparam("dispatcher", "cnt_avp", "$avp(274)")
-...
-</programlisting>
-		</example>
-	</section>
 
 	<section>
 		<title><varname>hash_pvar</varname> (str)</title>
@@ -472,6 +390,97 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
 	</section>
 
 	<section>
+		<title><varname>dst_avp</varname> (str)</title>
+		<para>
+		This is mainly for internal usage and represents the name of the avp 
+		which will hold the list with addresses, in the order
+		they have been selected by the chosen algorithm. If use_default is 1,
+		the value of last dst_avp_id is the last address in destination set. The
+		first dst_avp_id is the selected destinations. All the other addresses
+		from the destination set will be added in the avp list to be able to
+		implement serial forking.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>$avp(ds_dst_failover)</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>dst_avp</quote> parameter</title>
+ <programlisting format="linespecific">
+ ...
+ modparam("dispatcher", "dst_avp", "$avp(271)")
+ ...
+ </programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>grp_avp</varname> (str)</title>
+		<para>
+		This is mainly for internal usage and represents the name of the avp 
+		storing the group id of the destination set. Good
+		to have it for later usage or checks.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>$avp(ds_grp_failover)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>grp_avp</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "grp_avp", "$avp(273)")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>cnt_avp</varname> (str)</title>
+		<para>
+		This is mainly for internal usage and represents the name of the avp 
+		storing the number of destination addresses kept in dst_avp avps.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>$avp(ds_cnt_failover)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>cnt_avp</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "cnt_avp", "$avp(274)")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>sock_avp</varname> (str)</title>
+		<para>
+		This is mainly for internal usage and represents the name of the avp 
+		storing the sockets to be used for the destination addresses kept in
+		dst_avp avps.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>$avp(ds_sock_failover)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>sock_avp</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "sock_avp", "$avp(275)")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		If you want to load the sets of gateways from the database you must set
@@ -591,6 +600,27 @@ modparam("dispatcher", "weight_col", "dstweight")
 		<programlisting format="linespecific">
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>socket_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the socket (as 
+			string) for destination uri.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>socket</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>socket_col</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dispatcher", "socket_col", "my_sock")
 ...
 </programlisting>
 		</example>
