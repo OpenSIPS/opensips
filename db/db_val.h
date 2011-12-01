@@ -165,4 +165,47 @@ typedef struct {
 #define VAL_BITMAP(dv) ((dv)->val.bitmap_val)
 
 
+
+#define get_str_from_dbval( _col_name, _val, _not_null, _not_empty, _str, _error_label) \
+	do{\
+		if ((_val)->nul) { \
+			if (_not_null) { \
+				LM_ERR("value in column %s cannot be null\n", _col_name); \
+				goto _error_label;\
+			} else { \
+				_str.s = NULL; _str.len = 0; \
+			} \
+		} \
+		if ((_val)->type==DB_STRING) { \
+			if ( VAL_STRING(_val)==NULL || *(VAL_STRING(_val))==0 ) { \
+				if (_not_empty) { \
+					LM_ERR("value in column %s cannot be empty\n", _col_name); \
+					goto _error_label;\
+				} else { \
+					_str.s = (char*)VAL_STRING(_val) ; _str.len = 0; \
+				} \
+			} else { \
+				_str.s = (char*)VAL_STRING(_val) ; _str.len = strlen(_str.s); \
+			} \
+		} else if ((_val)->type==DB_STR) { \
+			if ( VAL_STR(_val).s==NULL || VAL_STR(_val).len==0 ) { \
+				if (_not_empty) { \
+					LM_ERR("value in column %s cannot be empty\n", _col_name); \
+					goto _error_label;\
+				} else { \
+					_str = VAL_STR(_val) ;\
+				} \
+			} else { \
+				_str = VAL_STR(_val); \
+			} \
+		} else {\
+			LM_ERR("column %s does not have a string type (found %d)\n",\
+				_col_name,(_val)->type); \
+			goto _error_label;\
+		} \
+	}while(0)
+
+
+
+
 #endif /* DB_VAL_H */
