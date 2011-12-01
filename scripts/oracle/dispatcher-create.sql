@@ -1,8 +1,9 @@
-INSERT INTO version (table_name, table_version) values ('dispatcher','4');
+INSERT INTO version (table_name, table_version) values ('dispatcher','5');
 CREATE TABLE dispatcher (
     id NUMBER(10) PRIMARY KEY,
     setid NUMBER(10) DEFAULT 0 NOT NULL,
     destination VARCHAR2(192) DEFAULT '',
+    socket VARCHAR2(128) DEFAULT NULL,
     flags NUMBER(10) DEFAULT 0 NOT NULL,
     weight NUMBER(10) DEFAULT 1 NOT NULL,
     attrs VARCHAR2(128) DEFAULT '',
