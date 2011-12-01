@@ -59,6 +59,7 @@
 
 #define DS_SET_ID_COL		"setid"
 #define DS_DEST_URI_COL		"destination"
+#define DS_DEST_SOCK_COL	"socket"
 #define DS_DEST_FLAGS_COL	"flags"
 #define DS_DEST_WEIGHT_COL	"weight"
 #define DS_DEST_ATTRS_COL	"attrs"
@@ -68,9 +69,10 @@
 int  ds_force_dst   = 0;
 int  ds_flags       = 0; 
 int  ds_use_default = 0; 
-static str dst_avp_param = {NULL, 0};
-static str grp_avp_param = {NULL, 0};
-static str cnt_avp_param = {NULL, 0};
+static str dst_avp_param = str_init("$avp(ds_dst_failover)");
+static str grp_avp_param = str_init("$avp(ds_grp_failover)");;
+static str cnt_avp_param = str_init("$avp(ds_cnt_failover)");;
+static str sock_avp_param = str_init("$avp(ds_sock_failover)");;
 static str attrs_avp_param = {NULL, 0};
 str hash_pvar_param = {NULL, 0};
 
@@ -79,6 +81,8 @@ unsigned short dst_avp_type;
 int grp_avp_name;
 unsigned short grp_avp_type;
 int cnt_avp_name;
+unsigned short sock_avp_type;
+int sock_avp_name;
 unsigned short cnt_avp_type;
 int attrs_avp_name;
 unsigned short attrs_avp_type;
@@ -96,6 +100,7 @@ int ds_probing_mode = 0;
 str ds_db_url         = {NULL, 0};
 str ds_set_id_col     = str_init(DS_SET_ID_COL);
 str ds_dest_uri_col   = str_init(DS_DEST_URI_COL);
+str ds_dest_sock_col  = str_init(DS_DEST_SOCK_COL);
 str ds_dest_flags_col = str_init(DS_DEST_FLAGS_COL);
 str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
 str ds_dest_attrs_col = str_init(DS_DEST_ATTRS_COL);
@@ -116,7 +121,6 @@ event_id_t dispatch_evi_id;
 
 /** module functions */
 static int mod_init(void);
-static int child_init(int);
 
 static int w_ds_select_dst(struct sip_msg*, char*, char*);
 static int w_ds_select_dst_limited(struct sip_msg*, char*, char*, char*);
@@ -133,7 +137,6 @@ static int w_ds_is_in_list4(struct sip_msg*, char*, char*, char*, char*);
 
 static void destroy(void);
 
-static int ds_warn_fixup(void** param, int param_no);
 static int in_list_fixup(void** param, int param_no);
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd, void* param);
@@ -151,13 +154,13 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited, 3, fixup_igp_igp_igp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, ds_warn_fixup, 0,
+	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, NULL        , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0, ds_warn_fixup, 0,
+	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0, NULL         , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst0,     0, ds_warn_fixup, 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst0,     0, NULL         , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, ds_warn_fixup, 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, NULL         , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list2,   2, in_list_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
@@ -174,6 +177,7 @@ static param_export_t params[]={
 	{"table_name",      STR_PARAM, &ds_table_name.s},
 	{"setid_col",       STR_PARAM, &ds_set_id_col.s},
 	{"destination_col", STR_PARAM, &ds_dest_uri_col.s},
+	{"socket_col",      STR_PARAM, &ds_dest_sock_col.s},
 	{"flags_col",       STR_PARAM, &ds_dest_flags_col.s},
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
@@ -183,6 +187,7 @@ static param_export_t params[]={
 	{"dst_avp",         STR_PARAM, &dst_avp_param.s},
 	{"grp_avp",         STR_PARAM, &grp_avp_param.s},
 	{"cnt_avp",         STR_PARAM, &cnt_avp_param.s},
+	{"sock_avp",        STR_PARAM, &sock_avp_param.s},
 	{"attrs_avp",       STR_PARAM, &attrs_avp_param.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
@@ -219,7 +224,7 @@ struct module_exports exports= {
 	mod_init,   /* module initialization function */
 	(response_function) 0,
 	(destroy_function) destroy,
-	child_init  /* per-child init function */
+	0,          /* per-child init function */
 };
 
 
@@ -240,6 +245,7 @@ static int mod_init(void)
 	ds_table_name.len = strlen(ds_table_name.s);
 	ds_set_id_col.len = strlen(ds_set_id_col.s);
 	ds_dest_uri_col.len = strlen(ds_dest_uri_col.s);
+	ds_dest_sock_col.len = strlen(ds_dest_sock_col.s);
 	ds_dest_flags_col.len = strlen(ds_dest_flags_col.s);
 	ds_dest_weight_col.len = strlen(ds_dest_weight_col.s);
 	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
@@ -251,67 +257,56 @@ static int mod_init(void)
 	}
 
 	/* handle AVPs spec */
-	if (dst_avp_param.s && (dst_avp_param.len=strlen(dst_avp_param.s)) > 0)
-	{
-		if (pv_parse_spec(&dst_avp_param, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP)
-		{
-			LM_ERR("malformed or non AVP %.*s AVP definition\n",
-					dst_avp_param.len, dst_avp_param.s);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &(avp_spec.pvp), &dst_avp_name,&dst_avp_type)!=0)
-		{
-			LM_ERR("[%.*s]- invalid AVP definition\n", dst_avp_param.len,
-					dst_avp_param.s);
-			return -1;
-		}
-	} else {
-		dst_avp_name = -1;
-		dst_avp_type = 0;
+	dst_avp_param.len = strlen(dst_avp_param.s);
+	if (pv_parse_spec(&dst_avp_param, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP %.*s AVP definition\n",
+			dst_avp_param.len, dst_avp_param.s);
+		return -1;
+	}
+	if(pv_get_avp_name(0, &(avp_spec.pvp), &dst_avp_name,&dst_avp_type)!=0) {
+		LM_ERR("[%.*s]- invalid AVP definition\n", dst_avp_param.len,
+			dst_avp_param.s);
+		return -1;
 	}
 
-	if (grp_avp_param.s && (grp_avp_param.len=strlen(grp_avp_param.s)) > 0)
-	{
-		if (pv_parse_spec(&grp_avp_param, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP)
-		{
-			LM_ERR("malformed or non AVP %.*s AVP definition\n",
-					grp_avp_param.len, grp_avp_param.s);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &(avp_spec.pvp), &grp_avp_name,&grp_avp_type)!=0)
-		{
-			LM_ERR("[%.*s]- invalid AVP definition\n", grp_avp_param.len,
-					grp_avp_param.s);
-			return -1;
-		}
-	} else {
-		grp_avp_name = -1;
-		grp_avp_type = 0;
+	grp_avp_param.len=strlen(grp_avp_param.s);
+	if (pv_parse_spec(&grp_avp_param, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP %.*s AVP definition\n",
+			grp_avp_param.len, grp_avp_param.s);
+		return -1;
+	}
+	if(pv_get_avp_name(0, &(avp_spec.pvp), &grp_avp_name,&grp_avp_type)!=0) {
+		LM_ERR("[%.*s]- invalid AVP definition\n", grp_avp_param.len,
+			grp_avp_param.s);
+		return -1;
 	}
 
-	if (cnt_avp_param.s && (cnt_avp_param.len=strlen(cnt_avp_param.s)) > 0)
-	{
-		if (pv_parse_spec(&cnt_avp_param, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP)
-		{
-			LM_ERR("malformed or non AVP %.*s AVP definition\n",
-					cnt_avp_param.len, cnt_avp_param.s);
-			return -1;
-		}
+	cnt_avp_param.len=strlen(cnt_avp_param.s);
+	if (pv_parse_spec(&cnt_avp_param, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP %.*s AVP definition\n",
+			cnt_avp_param.len, cnt_avp_param.s);
+		return -1;
+	}
+	if(pv_get_avp_name(0, &(avp_spec.pvp), &cnt_avp_name,&cnt_avp_type)!=0) {
+		LM_ERR("[%.*s]- invalid AVP definition\n", cnt_avp_param.len,
+			cnt_avp_param.s);
+		return -1;
+	}
 
-		if(pv_get_avp_name(0, &(avp_spec.pvp), &cnt_avp_name,&cnt_avp_type)!=0)
-		{
-			LM_ERR("[%.*s]- invalid AVP definition\n", cnt_avp_param.len,
-					cnt_avp_param.s);
-			return -1;
-		}
-	} else {
-		cnt_avp_name = -1;
-		cnt_avp_type = 0;
+	sock_avp_param.len=strlen(sock_avp_param.s);
+	if (pv_parse_spec(&sock_avp_param, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP %.*s AVP definition\n",
+			sock_avp_param.len, sock_avp_param.s);
+		return -1;
+	}
+	if(pv_get_avp_name(0, &(avp_spec.pvp), &sock_avp_name,&sock_avp_type)!=0){
+		LM_ERR("[%.*s]- invalid AVP definition\n", sock_avp_param.len,
+			sock_avp_param.s);
+		return -1;
 	}
 
 	if (attrs_avp_param.s && (attrs_avp_param.len=strlen(attrs_avp_param.s)) > 0) {
@@ -413,27 +408,14 @@ static int mod_init(void)
 }
 
 
-/**
- * Initialize children
- */
-static int child_init(int rank)
-{
-	
-	LM_DBG(" #%d / pid <%d>\n", rank, getpid());
-
-	srand((11+rank)*getpid()*7);
-
-	return 0;
-}
-
 static int mi_child_init(void)
 {
-	
 	if(ds_db_url.s)
 		return ds_connect_db();
 	return 0;
 
 }
+
 
 /**
  * destroy function
@@ -442,9 +424,8 @@ static void destroy(void)
 {
 	LM_DBG("destroying module ...\n");
 	ds_destroy_list();
-	if(ds_db_url.s)
-		ds_disconnect_db();
 }
+
 
 /**
  *
@@ -585,15 +566,6 @@ static int w_ds_mark_dst1(struct sip_msg *msg, char *str1, char *str2)
 		return ds_mark_dst(msg, 1);
 }
 
-static int ds_warn_fixup(void** param, int param_no)
-{
-	if(!dst_avp_param.s || !grp_avp_param.s || !cnt_avp_param.s)
-	{
-		LM_ERR("failover functions used, but AVPs paraamters required"
-				" are NULL -- feature disabled\n");
-	}
-	return 0;
-}
 
 static int in_list_fixup(void** param, int param_no)
 {

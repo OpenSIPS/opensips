@@ -67,7 +67,7 @@
 
 #include "dispatch.h"
 
-#define DS_TABLE_VERSION	4
+#define DS_TABLE_VERSION	5
 
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
@@ -78,6 +78,7 @@ typedef struct _ds_dest
 	str attrs;
 	int flags;
 	int weight;
+	struct socket_info *sock;
 	struct ip_addr ip_address; /* IP-Address of the entry */
 	unsigned short int port; /* Port of the request URI */
 	int failure_count;
@@ -136,8 +137,8 @@ int init_data(void)
 	return 0;
 }
 
-int add_dest2list(int id, str uri, int flags, int weight, str attrs,
-													int list_idx, int * setn)
+int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
+							int weight, str attrs, int list_idx, int * setn)
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
@@ -205,9 +206,10 @@ int add_dest2list(int id, str uri, int flags, int weight, str attrs,
 		dp->attrs.len = attrs.len;
 	}
 
-	/* copy flags and weight */
+	/* copy flags, weight & socket */
 	dp->flags = flags;
 	dp->weight = weight;
+	dp->sock = sock;
 
 	/* The Hostname needs to be \0 terminated for resolvehost, so we
 	 * make a copy here. */
@@ -375,14 +377,18 @@ int ds_load_db(void)
 	int i, id, nr_rows, setn;
 	int flags;
 	int weight;
+	struct socket_info *sock;
 	str uri;
 	str attrs;
+	str host;
+	int port, proto;
 	db_res_t * res;
 	db_val_t * values;
 	db_row_t * rows;
 
-	db_key_t query_cols[5] = {&ds_set_id_col, &ds_dest_uri_col,
-			&ds_dest_flags_col, &ds_dest_weight_col, &ds_dest_attrs_col};
+	db_key_t query_cols[6] = {&ds_set_id_col, &ds_dest_uri_col,
+			&ds_dest_sock_col, &ds_dest_flags_col,
+			&ds_dest_weight_col, &ds_dest_attrs_col};
 
 	if( (*crt_idx) != (*next_idx))
 	{
@@ -402,7 +408,7 @@ int ds_load_db(void)
 	}
 
 	/*select the whole table and all the columns*/
-	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,5,0,&res) < 0)
+	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,6,0,&res) < 0)
 	{
 		LM_ERR("error while querying database\n");
 		return -1;
@@ -433,37 +439,49 @@ int ds_load_db(void)
 		id = VAL_INT(values);
 
 		/* uri */
-		if (VAL_NULL(values+1) || VAL_STR(values+1).s==NULL) {
-			LM_ERR("ds URI column cannot be NULL or empty\n");
-			goto err2;
+		get_str_from_dbval( "URI", values+1,
+			1/*not_null*/, 1/*not_empty*/, uri, err2);
+
+		/* sock */
+		get_str_from_dbval( "SOCKET", values+2,
+			0/*not_null*/, 0/*not_empty*/, attrs, err2);
+		if ( attrs.len ) {
+			if (parse_phostport( attrs.s, attrs.len, &host.s, &host.len,
+			&port, &proto)!=0){
+				LM_ERR("socket description <%.*s> is not valid -> ignoring\n",
+					attrs.len,attrs.s);
+				sock = NULL;
+			} else {
+				sock = grep_sock_info( &host, port, proto);
+				if (sock == NULL) {
+					LM_ERR("socket <%.*s> is not local to opensips (we must "
+						"listen on it) -> ignoring it\n", attrs.len, attrs.s);
+				}
+			}
+		} else {
+			sock = NULL;
 		}
-		uri.s = VAL_STR(values+1).s;
-		uri.len = strlen(uri.s);
 
 		/* flags */
-		if (VAL_NULL(values+2)) {
+		if (VAL_NULL(values+3)) {
 			flags = 0;
 		} else {
-			flags = VAL_INT(values+2);
+			flags = VAL_INT(values+3);
 		}
 
 		/* weight */
-		if (VAL_NULL(values+3)) {
+		if (VAL_NULL(values+4)) {
 			weight = 1;
 		} else {
-			weight = VAL_INT(values+3);
+			weight = VAL_INT(values+4);
 		}
 
 		/* attrs */
-		if (VAL_NULL(values+4) || VAL_STR(values+4).s==NULL) {
-			attrs.s = NULL;
-			attrs.len = 0;
-		} else {
-			attrs.s = VAL_STR(values+4).s;
-			attrs.len = strlen(attrs.s);
-		}
+		get_str_from_dbval( "ATTRIBUTES", values+5,
+			0/*not_null*/, 0/*not_empty*/, attrs, err2);
 
-		if(add_dest2list(id, uri, flags, weight, attrs, *next_idx, &setn) != 0)
+		if(add_dest2list(id, uri, sock, flags, weight, attrs, *next_idx,
+		&setn) != 0)
 			goto err2;
 
 	}
@@ -897,7 +915,8 @@ static inline int ds_get_index(int group, ds_set_p *index)
 	return 0;
 }
 
-static inline int ds_update_dst(struct sip_msg *msg, str *uri, int mode)
+static inline int ds_update_dst(struct sip_msg *msg, str *uri,
+										struct socket_info *sock, int mode)
 {
 	struct action act;
 	switch(mode)
@@ -924,6 +943,8 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri, int mode)
 			}
 		break;
 	}
+	if (sock)
+		msg->force_send_socket = sock;
 	return 0;
 }
 
@@ -943,6 +964,36 @@ static int count_inactive_destinations(ds_set_p idx) {
 	return count;
 }
 
+
+static inline int push_ds_2_avps( ds_dest_t *ds )
+{
+	char buf[2+16+1]; /* a hexa string */
+	int_str avp_val;
+
+	avp_val.s.len = 1 + sprintf( buf, "%p", ds->sock );
+	avp_val.s.s = buf;
+	if(add_avp(AVP_VAL_STR|sock_avp_type, sock_avp_name, avp_val)!=0) {
+		LM_ERR("failed to add SOCK avp\n");
+		return -1;
+	}
+
+	avp_val.s = ds->uri;
+	if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0) {
+		LM_ERR("failed to add DST avp\n");
+		return -1;
+	}
+
+	if (attrs_avp_name >= 0) {
+		avp_val.s = ds->attrs;
+		if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0) {
+			LM_ERR("failed to add ATTR avp\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
 /**
  *
  */
@@ -950,8 +1001,8 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 {
 	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
-	int ds_id;
 	int_str avp_val;
+	int ds_id;
 	ds_set_p idx = NULL;
 	int inactive_dst_count = 0;
 	int destination_entries_to_skip = 0;
@@ -1096,7 +1147,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	}
 	ds_id = i;
 
-	if(ds_update_dst(msg, &idx->dlist[ds_id].uri, mode)!=0)
+	if(ds_update_dst(msg, &idx->dlist[ds_id].uri, idx->dlist[ds_id].sock, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
@@ -1115,15 +1166,9 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	{
 		if(ds_use_default!=0 && ds_id!=idx->nr-1)
 		{
-			avp_val.s = idx->dlist[idx->nr-1].uri;
-			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
+			if (push_ds_2_avps( &idx->dlist[idx->nr-1] ) != 0 )
 				return -1;
 			cnt++;
-			if (attrs_avp_name >= 0) {
-				avp_val.s = idx->dlist[idx->nr-1].attrs;
-				if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
-					return -1;
-			}
 		}
 	
 		inactive_dst_count = count_inactive_destinations(idx);
@@ -1140,21 +1185,15 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 					|| (ds_use_default!=0 && i==(idx->nr-1)))
 				continue;
 			if(destination_entries_to_skip > 0) {
-				LM_DBG("skipped entry [%d/%d] (would crete more than %i results)\n", set, i, max_results);
+				LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n", set, i, max_results);
 				destination_entries_to_skip--;
 				continue;
 			}
 
 			LM_DBG("using entry [%d/%d]\n", set, i);
-			avp_val.s = idx->dlist[i].uri;
-			if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
+			if (push_ds_2_avps( &idx->dlist[i] ) != 0 )
 				return -1;
 			cnt++;
-			if (attrs_avp_name >= 0) {
-				avp_val.s = idx->dlist[i].attrs;
-				if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
-					return -1;
-			}
 		}
 
 		/* add to avp the first used dst */
@@ -1190,10 +1229,12 @@ done:
 
 int ds_next_dst(struct sip_msg *msg, int mode)
 {
+	struct socket_info *sock;
 	struct usr_avp *avp;
-	struct usr_avp *prev_avp;
+	struct usr_avp *tmp_avp;
 	struct usr_avp *attr_avp;
 	int_str avp_value;
+	int_str sock_avp_value;
 
 	if(!(ds_flags&DS_FAILOVER_ON) || dst_avp_name < 0)
 	{
@@ -1201,13 +1242,15 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 		return -1;
 	}
 
-	prev_avp = search_first_avp(dst_avp_type, dst_avp_name, NULL, 0);
-	if(prev_avp==NULL)
+	tmp_avp = search_first_avp(dst_avp_type, dst_avp_name, NULL, 0);
+	if(tmp_avp==NULL)
 		return -1; /* used avp deleted -- strange */
 
-	avp = search_next_avp(prev_avp, &avp_value);
-	destroy_avp(prev_avp);
+	/* get AVP with next destination URI */
+	avp = search_next_avp(tmp_avp, &avp_value);
+	destroy_avp(tmp_avp);
 
+	/* remove old attribute AVP (from prev destination) */
 	if (attrs_avp_name >= 0) {
 		attr_avp = search_first_avp(attrs_avp_type, attrs_avp_name, NULL, 0);
 		if (attr_avp)
@@ -1217,13 +1260,24 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 	if(avp==NULL || !(avp->flags&AVP_VAL_STR))
 		return -1; /* no more avps or value is int */
 
-	if(ds_update_dst(msg, &avp_value.s, mode)!=0)
+	/* get AVP with next destination socket */
+	tmp_avp = search_first_avp(sock_avp_type, sock_avp_name,
+	&sock_avp_value, 0);
+	if (tmp_avp) {
+		/* this shuold not happen, it is a bogus state */
+		sock = NULL;
+	} else {
+		if (sscanf( sock_avp_value.s.s, "%p", (void**)&sock ) != 1)
+			sock = NULL;
+	}
+
+	if(ds_update_dst(msg, &avp_value.s, sock, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
 	}
 	LM_DBG("using [%.*s]\n", avp_value.s.len, avp_value.s.s);
-	
+
 	return 1;
 }
 
@@ -1612,20 +1666,20 @@ void ds_check_timer(unsigned int ticks, void* param)
 				/* Execute the Dialog using the "request"-Method of the
 				 * TM-Module.*/
 				if (tmb.new_auto_dlg_uac(&ds_ping_from,
-							&list->dlist[j].uri,
-							probing_sock,
-							&dlg) != 0 ) {
+						&list->dlist[j].uri,
+						list->dlist[j].sock?list->dlist[j].sock:probing_sock,
+						&dlg) != 0 ) {
 					LM_ERR("failed to create new TM dlg\n");
 					continue;
 				}
 				dlg->state = DLG_CONFIRMED;
 				if (tmb.t_request_within(&ds_ping_method,
-							NULL,
-							NULL,
-							dlg,
-							ds_options_callback,
-							(void*)(long)list->id,
-							NULL) < 0) {
+						NULL,
+						NULL,
+						dlg,
+						ds_options_callback,
+						(void*)(long)list->id,
+						NULL) < 0) {
 					LM_ERR("unable to execute dialog\n");
 				}
 				tmb.free_dlg(dlg);

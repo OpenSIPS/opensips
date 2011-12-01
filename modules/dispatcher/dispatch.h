@@ -54,6 +54,7 @@ extern str ds_db_url;
 extern str ds_table_name;
 extern str ds_set_id_col;
 extern str ds_dest_uri_col;
+extern str ds_dest_sock_col;
 extern str ds_dest_flags_col;
 extern str ds_dest_weight_col;
 extern str ds_dest_attrs_col;
@@ -67,6 +68,8 @@ extern int grp_avp_name;
 extern unsigned short grp_avp_type;
 extern int cnt_avp_name;
 extern unsigned short cnt_avp_type;
+extern int sock_avp_name;
+extern unsigned short sock_avp_type;
 extern int attrs_avp_name;
 extern unsigned short attrs_avp_type;
 
