@@ -696,7 +696,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 {
 	struct save_ctx  sctx;
 	contact_t* c;
-	contact_t* forced_c;
+	contact_t* forced_c = NULL;
 	int st;
 	str uri;
 	str flags_s;
@@ -774,11 +774,11 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	if (_s) {
 		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
 			LM_ERR("failed to get PV value\n");
-			return -1;
+			goto return_minus_one;
 		}
 		if ( (val.flags&PV_VAL_STR)==0 ) {
 			LM_ERR("PV vals is not string\n");
-			return -1;
+			goto return_minus_one;
 		}
 		uri = val.rs;
 	} else {
@@ -803,7 +803,9 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	update_stat(accepted_registrations, 1);
 
 	if (!is_cflag_set(REG_SAVE_NOREPLY_FLAG) && (send_reply(_m,sctx.flags)<0))
-		return -1;
+		goto return_minus_one;
+
+	if (forced_c) free_contacts(&forced_c);
 
 	return 1;
 error:
@@ -812,7 +814,14 @@ error:
 	if ( !is_cflag_set(REG_SAVE_NOREPLY_FLAG) )
 		send_reply(_m,sctx.flags);
 
+	if (forced_c) free_contacts(&forced_c);
+
 	return 0;
+
+return_minus_one:
+	if (forced_c) free_contacts(&forced_c);
+
+	return -1;
 }
 
 #define MAX_FORCED_BINDING_LEN 256
