@@ -62,6 +62,8 @@
 }while(0)
 
 static str maxfwd_hdr={"Max-Forwards: 70\r\n", 18};
+static str cancel_reason_hdr=
+	{"Reason: SIP;cause=200;text=\"Call completed elsewhere\"\r\n", 55};
 extern b2b_scenario_t* script_scenarios;
 extern int b2bl_key_avp_name;
 extern unsigned short b2bl_key_avp_type;
@@ -1231,6 +1233,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 							memset(&req_data, 0, sizeof(b2b_req_data_t));
 							PREP_REQ_DATA(e);
 							req_data.method =&method_cancel;
+							req_data.extra_headers = &cancel_reason_hdr;
 							if(b2b_api.send_request(&req_data) < 0)
 							{
 								LM_ERR("Sending request"
