@@ -875,7 +875,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 		/* For now, we deal only with the first contact
 		 * FIXME: implement multiple contact handling - see check_contacts() */
 		if(!request_c->expires || !request_c->expires->body.len) {
-			if (((exp_body_t*)(msg->expires->parsed))->valid) {
+			if (msg->expires && ((exp_body_t*)(msg->expires->parsed))->valid) {
 				requested_exp = ((exp_body_t*)(msg->expires->parsed))->val;
 			} else {
 				LM_WARN("No expired defined\n");
