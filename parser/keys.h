@@ -142,7 +142,10 @@
 #define _res2_ 0x20736572   /* "res " */
 #define _res1_ 0x3a736572   /* "res:" */
 
-#define _min__ 0x2d6e696d   /* "min-" for "min-se" */
+#define _min__ 0x2d6e696d   /* "min-" for "min-se" or "min-expires" */
+#define _expi_ 0x69707865   /* "expi" */
+#define _res2_ 0x20736572   /* "res " */
+#define _res1_ 0x3a736572   /* "res:" */
 
 #define _p_pr_ 0x72702d70   /* "p-pr" for "p-preferred-identity" */
 #define _efer_ 0x72656665   /* "efer" */

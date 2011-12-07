@@ -191,6 +191,9 @@ void clean_hdr_field(struct hdr_field* hf)
 		case HDR_MIN_SE_T:
 			break;
 
+		case HDR_MIN_EXPIRES_T:
+			break;
+
 		case HDR_PPI_T:
 			free_to(hf->parsed);
 			hf->parsed = NULL;

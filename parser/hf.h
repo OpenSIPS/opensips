@@ -91,6 +91,7 @@ enum _hdr_types_t {
 	HDR_CALL_INFO_T				     /**< Call-Info header field */,
 	HDR_WWW_AUTHENTICATE_T				/**< WWW-Authenticate header field */,
 	HDR_PROXY_AUTHENTICATE_T			/**< Proxy-Authenticate header field */,
+	HDR_MIN_EXPIRES_T				/**> Min-Expires header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -154,6 +155,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_CALL_INFO_F				HDR_F_DEF(CALL_INFO)
 #define HDR_WWW_AUTHENTICATE_F			HDR_F_DEF(WWW_AUTHENTICATE)
 #define HDR_PROXY_AUTHENTICATE_F		HDR_F_DEF(PROXY_AUTHENTICATE)
+#define HDR_MIN_EXPIRES_F			HDR_F_DEF(MIN_EXPIRES)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;

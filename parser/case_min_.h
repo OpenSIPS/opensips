@@ -29,23 +29,47 @@
 #ifndef CASE_MIN__H
 #define CASE_MIN__H 1
 
-
-#ifndef SE_CASE
-#define SE_CASE	\
-	if ( LOWER_BYTE(*p) == 's' && LOWER_BYTE(*(p+1)) == 'e' ) {	\
-		hdr->type = HDR_MIN_SE_T;								\
-		p += 2;													\
-		goto dc_end;											\
+#ifndef res__CASE
+#define res__CASE				\
+	switch(LOWER_DWORD(val)) {		\
+	case _res1_ :				\
+		hdr->type = HDR_MIN_EXPIRES_T;	\
+		hdr->name.len = 11;		\
+		return (p + 4);			\
+						\
+	case _res2_ :				\
+		hdr->type = HDR_MIN_EXPIRES_T;	\
+		p += 4;				\
+		goto dc_end;			\
 	}
 #else
-#error existing #define of SE_CASE currently needed for parsing Min-SE header
+#error existing #define of res__CASE currently needed for parsing Min-Expires header
+#endif
+
+#ifndef SE_EXPI_CASE
+#define SE_EXPI_CASE	\
+	if ( LOWER_BYTE(*p) == 's' && LOWER_BYTE(*(p+1)) == 'e' ) {	\
+		hdr->type = HDR_MIN_SE_T;				\
+		p += 2;							\
+		goto dc_end;						\
+	}								\
+	val = READ(p);			\
+	switch(LOWER_DWORD(val)) {	\
+	case _expi_:			\
+		p += 4;			\
+		val = READ(p);		\
+		res__CASE;		\
+		goto other;		\
+	}
+#else
+#error existing #define of SE_EXPI_CASE currently needed for parsing Min-SE header
 #endif
 
 
 #ifndef min__CASE
 #define min__CASE	\
-	p += 4;			\
-	SE_CASE;		\
+	p += 4;		\
+	SE_EXPI_CASE;	\
 	goto other;
 #else
 #error existing #define of min__CASE currently needed for \
