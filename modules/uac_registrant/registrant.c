@@ -38,6 +38,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/contact/parse_contact.h"
+#include "../../parser/parse_min_expires.h"
 #include "reg_records.h"
 #include "../uac_auth/uac_auth.h"
 
@@ -608,6 +609,24 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 			rec->state = AUTHENTICATING_STATE;
 		} else {
 			rec->state = INTERNAL_ERROR_STATE;
+		}
+		break;
+
+	case 423: /* Interval Too Brief */
+		msg = ps->rpl;
+		if(msg==FAKED_REPLY) {
+			LM_ERR("FAKED_REPLY\n");
+			goto done;
+		}
+		if (0 == parse_min_expires(msg)) {
+			rec->expires = (unsigned int)(long)msg->min_expires->parsed;
+			if(send_register(cb_param->hash_index, rec, NULL)==1)
+				rec->state = REGISTERING_STATE;
+			else
+				rec->state = INTERNAL_ERROR_STATE;
+		} else {
+			rec->state = REGISTRAR_ERROR_STATE;
+			rec->registration_timeout = now + rec->expires - timer_interval;
 		}
 		break;
 
