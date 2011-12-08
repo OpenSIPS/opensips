@@ -118,5 +118,13 @@ parse_session_expires( struct sip_msg *msg, struct session_expires *se );
 enum parse_sst_result
 parse_min_se( struct sip_msg *msg, unsigned *min_se );
 
+/**
+ * Parses the given instance of "Min-SE" header.
+ *
+ * @param hf the header field structure to be parsed
+ * @return parse_sst_result
+ */
+enum parse_sst_result
+parse_min_se_body( struct hdr_field *hf );
 
 #endif /* ! PARSE_SST_H */
