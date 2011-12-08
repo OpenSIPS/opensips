@@ -564,6 +564,10 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		tm_tran = tmb.t_gett();
 		if(tm_tran)
 			tmb.unref_cell(tm_tran);
+
+		if(req_routeid > 0)
+			run_top_route(rlist[req_routeid].a, msg);
+
 		goto done;
 	}
 
@@ -837,15 +841,15 @@ logic_notify:
 	dlg_state = dlg->state;
 	lock_release(&table[hash_index].lock);
 
+	if(req_routeid > 0)
+		run_top_route(rlist[req_routeid].a, msg);
+
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0);
 
 	if(param.s)
 		pkg_free(param.s);
 
 done:
-	if(req_routeid > 0)
-		run_top_route(rlist[req_routeid].a, msg);
-
 	current_dlg = 0;
 	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
 	{
@@ -2233,6 +2237,12 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 					dlg->state = B2B_NEW_AUTH;
 					lock_release(&htable[hash_index].lock);
+
+					/* run the b2b route */
+					if(reply_routeid > 0) {
+						msg->flags = t->uac[0].br_flags;
+						run_top_route(rlist[reply_routeid].a, msg);
+					}
 					goto b2b_route;
 				}
 				else
@@ -2530,6 +2540,12 @@ done:
 	lock_release(&htable[hash_index].lock);
 	/* I have to inform the logic that a reply was received */
 done1:
+	/* run the b2b route */
+	if(reply_routeid > 0) {
+		msg->flags = t->uac[0].br_flags;
+		run_top_route(rlist[reply_routeid].a, msg);
+	}
+
 	b2b_cback(msg, b2b_key, B2B_REPLY, param.s?&param:0);
 	if(param.s)
 	{
@@ -2538,13 +2554,6 @@ done1:
 	}
 
 b2b_route:
-	/* run the b2b route */
-//	if(reply_routeid > 0 && ps->rpl!=FAKED_REPLY)
-	if(reply_routeid > 0) {
-		msg->flags = t->uac[0].br_flags;
-		run_top_route(rlist[reply_routeid].a, msg);
-	}
-
 	current_dlg = 0;
 	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
