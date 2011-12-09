@@ -271,7 +271,10 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	new_cell->flags |= T_IS_LOCAL_FLAG;
 
 	request = &new_cell->uac[0].request;
-	request->dst.to = to_su;
+	if (dialog->forced_to_su.s.sa_family == AF_UNSPEC)
+		request->dst.to = to_su;
+	else
+		request->dst.to = dialog->forced_to_su;
 	request->dst.send_sock = dialog->send_sock;
 	request->dst.proto = dialog->send_sock->proto;
 	request->dst.proto_reserved1 = 0;
