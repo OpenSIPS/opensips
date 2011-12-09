@@ -186,7 +186,11 @@ modparam("uac_registrant", "timer_interval", 120)
 			</listitem>
 			<listitem>
 			<para><emphasis>forced socket</emphasis>
-				- socket for sending the REGISTER (not mandatory).</para>
+				- socket for sending the REGISTER (not mandatory).
+				If a forced socket is provided, the socket MUST be
+				explicitely set as a global listening socket in the config
+				(see "listen" core parameter).
+			</para>
 			</listitem>
 		</itemizedlist>
 		<para>
