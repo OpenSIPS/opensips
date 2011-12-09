@@ -467,6 +467,11 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	}
 	reg_print_record(rec);
 
+	if (ps->rpl==FAKED_REPLY)
+		memset(&rec->td.forced_to_su, 0, sizeof(union sockaddr_union));
+	else if (rec->td.forced_to_su.s.sa_family == AF_UNSPEC)
+		rec->td.forced_to_su = t->uac[0].request.dst.to;
+
 	switch(statuscode) {
 	case 200:
 		msg = ps->rpl;
@@ -798,6 +803,7 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 	reg_record_t *rec;
 	int i, len;
 	char* p;
+	struct ip_addr addr;
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
@@ -842,6 +848,34 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 				node1 = add_mi_node_child(node, MI_DUP_VALUE,
 						"proxy", 5, rec->td.obp.s, rec->td.obp.len);
 				if(node1 == NULL) goto error;
+			}
+
+			switch(rec->td.forced_to_su.s.sa_family) {
+			case AF_UNSPEC:
+				break;
+			case AF_INET:
+			case AF_INET6:
+				node1 = add_mi_node_child(node, MI_DUP_VALUE,
+					"dst_IP", 6,
+					(rec->td.forced_to_su.s.sa_family==AF_INET)?
+						"IPv4":"IPv6", 4);
+				sockaddr2ip_addr(&addr, &rec->td.forced_to_su.s);
+				p = ip_addr2a(&addr);
+				if (p == NULL) goto error;
+				len = strlen(p);
+				attr = add_mi_attr(node1, MI_DUP_VALUE, "ip", 2,
+					p, len);
+				if(attr == NULL) goto error;
+				break;
+			default:
+				LM_ERR("unexpected sa_family [%d]\n",
+					rec->td.forced_to_su.s.sa_family);
+				node1 = add_mi_node_child(node, MI_DUP_VALUE,
+					"dst_IP", 6, "Error", 5);
+				p = int2str(rec->td.forced_to_su.s.sa_family, &len);
+				attr = add_mi_attr(node, MI_DUP_VALUE, "sa_family", 9,
+					p, len);
+				if(attr == NULL) goto error;
 			}
 
 			rec = rec->next;
