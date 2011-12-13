@@ -532,7 +532,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
 								struct cell *t_cancel, struct cell *t_invite )
 {
 #define CANCEL_REASON_SIP_487  \
-	"Reason: SIP;cause=487;text=ORIGINATOR_CANCEL" CRLF
+	"Reason: SIP;cause=487;text=\"ORIGINATOR_CANCEL\"" CRLF
 
 	branch_bm_t cancel_bitmap;
 	branch_bm_t dummy_bm;
