@@ -316,7 +316,7 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 inline static void final_response_handler( struct timer_link *fr_tl )
 {
 #define CANCEL_REASON_SIP_480  \
-	"Reason: SIP;cause=480;text=NO_ANSWER" CRLF
+	"Reason: SIP;cause=480;text=\"NO_ANSWER\"" CRLF
 
 
 	struct retr_buf* r_buf;
