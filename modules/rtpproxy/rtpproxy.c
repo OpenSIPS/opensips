@@ -3386,7 +3386,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 					newip.len = 7;
 				}
 			} else {
-				newip.s = (argc < 2) ? args->arg2 : argv[1];
+				newip.s = args->arg2 ? args->arg2 : argv[1];
 				newip.len = strlen(newip.s);
 			}
 			/* marker to double check : newport goes: str -> int -> str ?!?! */
