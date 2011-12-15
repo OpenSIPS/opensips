@@ -1,0 +1,159 @@
+<chapter>
+  <title>OpenSIPS Lua API</title>
+  <section>
+    <title>Available functions</title>
+    <para>
+    This module provides access to a limited number of OpenSIPS
+    core functions. 
+    </para>
+    <section>
+      <title>xdbg(message)</title>
+      <para>
+      An alias for xlog(DBG, message)
+      </para>
+    </section>
+    <section>
+      <title>xlog([level],message)</title>
+      <para>
+      Logs the message with OpenSIPS's logging facility. The logging
+      level is one of the following:
+        <itemizedlist>
+          <listitem><para>ALERT</para></listitem>
+          <listitem><para>CRIT</para></listitem>
+          <listitem><para>ERR</para></listitem>
+          <listitem><para>WARN</para></listitem>
+          <listitem><para>NOTICE</para></listitem>
+          <listitem><para>INFO</para></listitem>
+          <listitem><para>DBG</para></listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    <section>
+      <title>setUserDebug</title>
+      <para>
+      Enable or disable the xlog feature.
+      Disabled, the xlog function has no effect.
+      </para>
+    </section>
+    <section>
+      <title>WarnMissingFreeFixup</title>
+      <para>
+      Dynamically change the variable warn_missing_free_fixup.
+      </para>
+    </section>
+    <section>
+      <title>getpid</title>
+      <para>
+      Returns the current pid.
+      </para>
+    </section>
+    <section>
+      <title>getmem</title>
+      <para>
+      Returns a table with the size of allocated memory and the fragmentation.
+      </para>
+    </section>
+    <section>
+      <title>getmeminfo</title>
+      <para>
+      Returns a table with memory infos.
+      </para>
+    </section>
+    <section>
+      <title>gethostname</title>
+      <para>
+      Returns the value of the current hostname.
+      </para>
+    </section>
+    <section>
+      <title>getType(msg)</title>
+      <para>
+      Returns "SIP_REQUEST" or "SIP_REPLY".
+      </para>
+    </section>
+    <section>
+      <title>getURI_User(msg)</title>
+      <para>
+      Returns the user of the To URI.
+      </para>
+    </section>
+    <section>
+      <title>getExpires(msg)</title>
+      <para>
+      Returns the expires header of the current message.
+      </para>
+    </section>
+    <section>
+      <title>getHeader(header)</title>
+      <para>
+      Returns the value of the specified header.
+      </para>
+    </section>
+    <section>
+      <title>getContact(msg)</title>
+      <para>
+      Returns a table with the contact header.
+      </para>
+    </section>
+    <section>
+      <title>moduleFunc(msg, function, args1, args2)</title>
+      <para>
+      You can pass arguments to this function.
+      </para>
+    </section>
+    <section>
+      <title>getStatus(msg)</title>
+      <para>
+      Returns the current status if the SIP message is a SIP_REPLY.
+      </para>
+    </section>
+    <section>
+      <title>getMethod(msg)</title>
+      <para>
+      Returns the current method.
+      </para>
+    </section>
+    <section>
+      <title>getSrcIp(msg)</title>
+      <para>
+      Returns the IP address of the source.
+      </para>
+    </section>
+    <section>
+      <title>getDstIp(msg)</title>
+      <para>
+      Returns the IP address of the destination.
+      </para>
+    </section>
+    <section>
+      <title>AVP_get(msg, name)</title>
+      <para>
+      Returns an AVP variable.
+      </para>
+    </section>
+    <section>
+      <title>AVP_set(msg, name, value)</title>
+      <para>
+      Defines an AVP variable.
+      </para>
+    </section>
+    <section>
+      <title>AVP_destroy(msg, name)</title>
+      <para>
+      Destroys an AVP variable.
+      </para>
+    </section>
+    <section>
+      <title>pseudoVar(msg, variable)</title>
+      <para>
+      Returns a pseudoVar.
+      </para>
+    </section>
+    <section>
+      <title>add_lump_rpl</title>
+      <para>
+      Add header to the reply.
+      </para>
+    </section>
+  </section>
+</chapter>

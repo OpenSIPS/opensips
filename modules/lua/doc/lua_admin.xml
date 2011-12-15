@@ -1,0 +1,176 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+		<title>Overview</title>
+		<para>
+   The time needed when writing a new OpenSIPS module
+   unfortunately is quite high, while the options provided by the
+   configuration file are limited to the features implemented in
+   the modules.
+		</para>
+		<para>
+   With this Lua module, you can easily implement your own
+   OpenSIPS extensions in Lua.
+		</para>
+	</section>
+	<section>
+    <title>Installing the module</title>
+    <para>
+    This Lua module is loaded in opensips.cfg (just like all the
+    other modules) with loadmodule("/path/to/lua.so");.
+    </para>
+    <para>
+    For the Lua module to compile, you need a recent version of
+    Lua (tested with 5.1) linked dynamically. The default version
+    of your favorite Linux distribution should work fine.
+		</para>
+	</section>
+  <section>
+    <title>Using the module</title>
+    <para>
+    With the Lua module, you can access to lua function on the
+    OpenSIPS side. You need to define a file to load and call
+    a function from it. Write a function "mongo_alias" and then
+    write in your opensips.cfg <programlisting format="linespecific">
+...
+if (lua_exec("mongo_alias")) {
+	...
+}
+...</programlisting>
+    </para>
+    <para>
+    On the Lua side, you have access to opensips functions and
+    variables (AVP, pseudoVar, ...). Read the documentation below
+    for further informations.
+    </para>
+  </section>
+  <section>
+    <title>Dependencies</title>
+    <section>
+      <title>OpenSIPS Modules</title>
+      <para>
+      None ;-)
+      </para>
+    </section>
+    <section>
+      <title>External Libraries or Applications</title>
+      <para>
+      The following libraries or applications must be installed
+      before running OpenSIPS with this module loaded:
+        <itemizedlist>      
+          <listitem><para>Lua 5.1.x or later</para></listitem>
+          <listitem><para>memcache</para></listitem>
+        </itemizedlist>
+      </para>
+      <para>
+      This module has been developed and tested with Lua 5.1.?, but
+      should work with any 5.1.x release. Earlier versions do not work.
+      </para>
+      <para>
+      On current Debian systems, at least the following packages
+      should be installed:
+        <itemizedlist>
+          <listitem><para>lua5.1</para></listitem>
+          <listitem><para>liblua5.1-0-dev</para></listitem>
+          <listitem><para>libmemcache-dev</para></listitem>
+          <listitem><para>libmysqlclient-dev</para></listitem>
+        </itemizedlist>
+      </para>
+      <para>
+      It was reported that other Debian-style distributions (such as Ubuntu) need the same packages.
+      </para>
+      <para>
+      On OpenBSD systems, at least the following packages should be
+      installed:
+        <itemizedlist>
+          <listitem><para>Lua</para></listitem>
+        </itemizedlist>
+      </para>
+    </section>
+  </section>
+  <section>
+    <title>Exported Parameters</title>
+    <section>
+      <title>filename (string)</title>
+      <para> 
+      This is the file name of your script. This may be set once
+      only, but it may include an arbitary number of functions and
+      "use" as many Lua module as necessary.
+      </para>
+      <para>
+      The default value is "/etc/opensips/opensips.lua"
+      </para>
+      <example>
+        <title>Set filename parameter</title>
+        <programlisting format="linespecific">
+...
+modparam("lua", "filename", "/etc/opensips/opensips.lua")
+...
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title>lua_auto_reload (int)</title>
+      <para>
+      Define this value to 1 if you want to reload automatically
+      the lua script.
+      Disabled by default.
+      </para>
+    </section>
+    <section>
+      <title>warn_missing_free_fixup (int)</title>
+      <para>
+      When you call a function via moduleFunc() you could have a memleak.
+      Enable this warns you when you're doing it.
+      Enabled by default.
+      </para>
+    </section>
+    <section>
+      <title>lua_allocator (string)</title>
+      <para> 
+      Change the default memory allocator for the lua module.
+      Possible values are :
+        <itemizedlist>
+          <listitem><para>opensips (default)</para></listitem>
+          <listitem><para>malloc</para></listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    <section>
+      <title>lua_user_debug (int)</title>
+      <para>Disable by default</para>
+    </section>
+  </section>
+  <section>
+    <title>Exported Functions</title>
+    <section>
+      <title>lua_exec(func, [param])</title>
+      <para>
+      Calls a Lua function with passing it the current SIP message.
+      This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+      ONREPLY_ROUTE and BRANCH_ROUTE.
+        <example>
+          <title>lua_exec() usage</title>
+<programlisting format="linespecific">
+...
+if (lua_exec("mongo_alias")) {
+	...
+}
+...
+</programlisting>
+        </example>
+      </para>
+    </section>
+    <section>
+      <title>lua_meminfo()</title>
+      <para>
+      Logs informations about memory.
+      </para>
+    </section>
+  </section>
+</chapter>
+

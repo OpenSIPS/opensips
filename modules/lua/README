@@ -1,0 +1,307 @@
+lua Module
+
+Arnaud Chong
+
+Edited by
+
+Eric Gouyer
+
+Eric Gouyer
+
+Edited by
+
+Arnaud Chong
+
+   Copyright © 2006-2011
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Installing the module
+        1.3. Using the module
+        1.4. Dependencies
+
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
+
+        1.5. Exported Parameters
+
+              1.5.1. filename (string)
+              1.5.2. lua_auto_reload (int)
+              1.5.3. warn_missing_free_fixup (int)
+              1.5.4. lua_allocator (string)
+              1.5.5. lua_user_debug (int)
+
+        1.6. Exported Functions
+
+              1.6.1. lua_exec(func, [param])
+              1.6.2. lua_meminfo()
+
+   2. OpenSIPS Lua API
+
+        2.1. Available functions
+
+              2.1.1. xdbg(message)
+              2.1.2. xlog([level],message)
+              2.1.3. setUserDebug
+              2.1.4. WarnMissingFreeFixup
+              2.1.5. getpid
+              2.1.6. getmem
+              2.1.7. getmeminfo
+              2.1.8. gethostname
+              2.1.9. getType(msg)
+              2.1.10. getURI_User(msg)
+              2.1.11. getExpires(msg)
+              2.1.12. getHeader(header)
+              2.1.13. getContact(msg)
+              2.1.14. moduleFunc(msg, function, args1, args2)
+              2.1.15. getStatus(msg)
+              2.1.16. getMethod(msg)
+              2.1.17. getSrcIp(msg)
+              2.1.18. getDstIp(msg)
+              2.1.19. AVP_get(msg, name)
+              2.1.20. AVP_set(msg, name, value)
+              2.1.21. AVP_destroy(msg, name)
+              2.1.22. pseudoVar(msg, variable)
+              2.1.23. add_lump_rpl
+
+   List of Examples
+
+   1.1. Set filename parameter
+   1.2. lua_exec() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The time needed when writing a new OpenSIPS module
+   unfortunately is quite high, while the options provided by the
+   configuration file are limited to the features implemented in
+   the modules.
+
+   With this Lua module, you can easily implement your own
+   OpenSIPS extensions in Lua.
+
+1.2. Installing the module
+
+   This Lua module is loaded in opensips.cfg (just like all the
+   other modules) with loadmodule("/path/to/lua.so");.
+
+   For the Lua module to compile, you need a recent version of Lua
+   (tested with 5.1) linked dynamically. The default version of
+   your favorite Linux distribution should work fine.
+
+1.3. Using the module
+
+   With the Lua module, you can access to lua function on the
+   OpenSIPS side. You need to define a file to load and call a
+   function from it. Write a function "mongo_alias" and then write
+   in your opensips.cfg
+...
+if (lua_exec("mongo_alias")) {
+        ...
+}
+...
+
+   On the Lua side, you have access to opensips functions and
+   variables (AVP, pseudoVar, ...). Read the documentation below
+   for further informations.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
+
+   None ;-)
+
+1.4.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * Lua 5.1.x or later
+     * memcache
+
+   This module has been developed and tested with Lua 5.1.?, but
+   should work with any 5.1.x release. Earlier versions do not
+   work.
+
+   On current Debian systems, at least the following packages
+   should be installed:
+     * lua5.1
+     * liblua5.1-0-dev
+     * libmemcache-dev
+     * libmysqlclient-dev
+
+   It was reported that other Debian-style distributions (such as
+   Ubuntu) need the same packages.
+
+   On OpenBSD systems, at least the following packages should be
+   installed:
+     * Lua
+
+1.5. Exported Parameters
+
+1.5.1. filename (string)
+
+   This is the file name of your script. This may be set once
+   only, but it may include an arbitary number of functions and
+   "use" as many Lua module as necessary.
+
+   The default value is "/etc/opensips/opensips.lua"
+
+   Example 1.1. Set filename parameter
+...
+modparam("lua", "filename", "/etc/opensips/opensips.lua")
+...
+
+1.5.2. lua_auto_reload (int)
+
+   Define this value to 1 if you want to reload automatically the
+   lua script. Disabled by default.
+
+1.5.3. warn_missing_free_fixup (int)
+
+   When you call a function via moduleFunc() you could have a
+   memleak. Enable this warns you when you're doing it. Enabled by
+   default.
+
+1.5.4. lua_allocator (string)
+
+   Change the default memory allocator for the lua module.
+   Possible values are :
+     * opensips (default)
+     * malloc
+
+1.5.5. lua_user_debug (int)
+
+   Disable by default
+
+1.6. Exported Functions
+
+1.6.1. lua_exec(func, [param])
+
+   Calls a Lua function with passing it the current SIP message.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE and BRANCH_ROUTE.
+
+   Example 1.2. lua_exec() usage
+...
+if (lua_exec("mongo_alias")) {
+        ...
+}
+...
+
+1.6.2. lua_meminfo()
+
+   Logs informations about memory.
+
+Chapter 2. OpenSIPS Lua API
+
+2.1. Available functions
+
+   This module provides access to a limited number of OpenSIPS
+   core functions.
+
+2.1.1. xdbg(message)
+
+   An alias for xlog(DBG, message)
+
+2.1.2. xlog([level],message)
+
+   Logs the message with OpenSIPS's logging facility. The logging
+   level is one of the following:
+     * ALERT
+     * CRIT
+     * ERR
+     * WARN
+     * NOTICE
+     * INFO
+     * DBG
+
+2.1.3. setUserDebug
+
+   Enable or disable the xlog feature. Disabled, the xlog function
+   has no effect.
+
+2.1.4. WarnMissingFreeFixup
+
+   Dynamically change the variable warn_missing_free_fixup.
+
+2.1.5. getpid
+
+   Returns the current pid.
+
+2.1.6. getmem
+
+   Returns a table with the size of allocated memory and the
+   fragmentation.
+
+2.1.7. getmeminfo
+
+   Returns a table with memory infos.
+
+2.1.8. gethostname
+
+   Returns the value of the current hostname.
+
+2.1.9. getType(msg)
+
+   Returns "SIP_REQUEST" or "SIP_REPLY".
+
+2.1.10. getURI_User(msg)
+
+   Returns the user of the To URI.
+
+2.1.11. getExpires(msg)
+
+   Returns the expires header of the current message.
+
+2.1.12. getHeader(header)
+
+   Returns the value of the specified header.
+
+2.1.13. getContact(msg)
+
+   Returns a table with the contact header.
+
+2.1.14. moduleFunc(msg, function, args1, args2)
+
+   You can pass arguments to this function.
+
+2.1.15. getStatus(msg)
+
+   Returns the current status if the SIP message is a SIP_REPLY.
+
+2.1.16. getMethod(msg)
+
+   Returns the current method.
+
+2.1.17. getSrcIp(msg)
+
+   Returns the IP address of the source.
+
+2.1.18. getDstIp(msg)
+
+   Returns the IP address of the destination.
+
+2.1.19. AVP_get(msg, name)
+
+   Returns an AVP variable.
+
+2.1.20. AVP_set(msg, name, value)
+
+   Defines an AVP variable.
+
+2.1.21. AVP_destroy(msg, name)
+
+   Destroys an AVP variable.
+
+2.1.22. pseudoVar(msg, variable)
+
+   Returns a pseudoVar.
+
+2.1.23. add_lump_rpl
+
+   Add header to the reply.
