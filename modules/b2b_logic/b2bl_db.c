@@ -282,7 +282,8 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		return -1;
 	}
 	shm_tuple = b2bl_insert_new(NULL, hash_index, tuple->scenario, params,
-			(tuple->sdp.s?&tuple->sdp:NULL), NULL, -1, &b2bl_key);
+			(tuple->sdp.s?&tuple->sdp:NULL), NULL, -1,
+			&b2bl_key, UPDATEDB_FLAG);
 	if(shm_tuple == NULL)
 	{
 		LM_ERR("Failed to insert new tuple\n");
@@ -409,7 +410,7 @@ int b2b_logic_restore(void)
 	nr_rows = RES_ROW_N(result);
 
 	do {
-		LM_DBG("loading information from database %i records\n", nr_rows);
+		LM_DBG("loading [%i] records from db\n", nr_rows);
 
 		rows = RES_ROWS(result);
 

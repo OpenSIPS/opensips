@@ -92,9 +92,10 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level)
 /* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* body, str* custom_hdrs, int local_index, str** b2bl_key_s)
+		str* args[], str* body, str* custom_hdrs, int local_index,
+		str** b2bl_key_s, int db_flag)
 {
-	b2bl_tuple_t * it, *prev_it;
+	b2bl_tuple_t *it, *prev_it;
 	b2bl_tuple_t* tuple;
 	str* b2bl_key;
 	int i;
@@ -275,13 +276,11 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			tuple->id = prev_it->id +1;
 		}
 	}
-	LM_DBG("for hi[%d]:\n", hash_index);
+	LM_DBG("hash index [%d]:\n", hash_index);
 	for(it = b2bl_htable[hash_index].first; it; it=it->next)
 	{
-		LM_DBG("%d->", it->id);	
+		LM_DBG("id [%d]", it->id);	
 	}
-	LM_DBG("\n");
-	
 
 	b2bl_key = b2bl_generate_key(hash_index, tuple->id);
 	if(b2bl_key == NULL)
@@ -293,7 +292,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	tuple->key = b2bl_key;
 
 	*b2bl_key_s = b2bl_key;
-	tuple->db_flag = INSERTDB_FLAG;
+	tuple->db_flag = db_flag;
 
 	LM_DBG("new tuple [%p]->[%.*s]\n", tuple, b2bl_key->len, b2bl_key->s);
 

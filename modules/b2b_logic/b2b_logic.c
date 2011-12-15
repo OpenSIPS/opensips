@@ -918,7 +918,8 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 	}
 	
 	/* apply the init part of the scenario */
-	tuple = b2bl_insert_new(NULL, hash_index, scenario_struct, args, NULL, NULL, -1, &b2bl_key);
+	tuple = b2bl_insert_new(NULL, hash_index, scenario_struct, args,
+				NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");

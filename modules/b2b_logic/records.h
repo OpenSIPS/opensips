@@ -113,7 +113,8 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* body, str* custom_hdrs, int local_index, str** b2bl_key_s);
+		str* args[], str* body, str* custom_hdrs, int local_index,
+		str** b2bl_key_s, int db_flag);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);
 
