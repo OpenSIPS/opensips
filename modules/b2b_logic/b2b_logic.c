@@ -1457,8 +1457,8 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param, unsigned int cb
 
 	return 0;
 error:
-	return -1;
 	lock_release(&b2bl_htable[hash_index].lock);
+	return -1;
 }
 
 
