@@ -282,7 +282,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		return -1;
 	}
 	shm_tuple = b2bl_insert_new(NULL, hash_index, tuple->scenario, params,
-			(tuple->sdp.s?&tuple->sdp:NULL), NULL, -1,
+			(tuple->sdp.s?&tuple->sdp:NULL), NULL, local_index,
 			&b2bl_key, UPDATEDB_FLAG);
 	if(shm_tuple == NULL)
 	{
