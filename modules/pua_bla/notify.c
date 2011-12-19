@@ -190,13 +190,11 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	}
 	else
 	{
-		body.s=get_body(msg);
-		if (body.s== NULL)
+		if ( get_body(msg,&body)!=0 || body.len==0)
 		{
 			LM_ERR("cannot extract body from msg\n");
 			return -1;
 		}
-		body.len = get_content_length( msg );
 
 		if (!bla_body_is_valid( &body ))
 		{

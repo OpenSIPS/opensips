@@ -57,7 +57,7 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 	regex_t *re;
 	char *s, *pos,*begin,*key;
 	char buf[6];
-	
+	str body;
 	
 	
 	key = PORT_REGEX;
@@ -65,25 +65,18 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 	 * Checking if msg has a payload
 	 */
 	if (msg == NULL)
-		{
+	{
 		LM_ERR("received NULL msg\n");
 		return -1;
-		}
-                
-	if ((msg->content_length==0) &&
-			((parse_headers(msg,HDR_CONTENTLENGTH_F,0)==-1) ||
-			 (msg->content_length==0) )){
-		LM_ERR("bad or missing Content-Length \n");
+	}
+
+	if ( get_body(msg,&body)!=0 || body.len==0)
+	{
+		LM_ERR(" failed to get a body \n");
 		return -2;
 	}
 
-        oldContentLength = get_content_length(msg);
-        
-	if (oldContentLength <= 0)
-		{
-		LM_ERR("received <= 0 for Content-Length \n");
-		return -2;
-		}
+	oldContentLength = get_content_length(msg);
 	
 	if (offset == NULL)
 		return -14;
@@ -104,7 +97,8 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 		LM_ERR("invalid value %d for offset \n",offsetValue);
 		return -3;
 	}
-	begin = get_body(msg); //msg->buf + msg->first_line.len;	// inlocuiesc cu begin = getbody */
+
+	begin = body.s;
 	ret = -1;
 
 	/* try to use pre-compiled expressions */
@@ -291,6 +285,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 	regex_t *re;
 	char *s, *pos,*begin,*key;
 	char buffer[16];	/* 123.456.789.123\0 */
+	str body;
 
 #ifdef DEBUG
 	fprintf (stdout,"---START--------MANGLE IP-----------------\n");
@@ -303,23 +298,18 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 	 * Checking if msg has a payload
 	 */
 	if (msg == NULL)
-		{
+	{
 		LM_ERR("msg null\n");
 		return -1;
-		}
-	if ((msg->content_length==0) &&
-				((parse_headers(msg,HDR_CONTENTLENGTH_F,0)==-1) ||
-				 (msg->content_length==0) )){
-			LM_ERR("bad or missing Content-Length \n");
-			return -2;
-		}
-        oldContentLength = get_content_length(msg);
-        
-	if (oldContentLength <= 0)
-		{
-		LM_ERR("received <= for Content-Length\n");
+	}
+
+	if ( get_body(msg,&body)!=0 || body.len==0)
+	{
+		LM_ERR(" failed to get a body \n");
 		return -2;
-		}
+	}
+
+	oldContentLength = get_content_length(msg);
 
 	/* checking oldip */
 	if (oldip == NULL)
@@ -354,7 +344,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 
 	/* now we have in address/netmask binary values */
 
-	begin = get_body(msg);//msg->buf + msg->first_line.len;	// inlocuiesc cu begin = getbody */
+	begin = body.s;
 	ret = -1;
 	len = strlen (newip);
 

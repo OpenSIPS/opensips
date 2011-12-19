@@ -155,6 +155,7 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
    struct sip_uri miuri;
    char *myerror=NULL;
    ptrdiff_t diff;
+   str body = {NULL,0};
 
    if(len < MAX_ENCODED_MSG + MAX_MESSAGE_LEN)
       return -1;
@@ -191,7 +192,8 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
    /*then goes the message length (we hope it to be less than 65535 bytes...)*/
    memcpy(&payload[MSG_LEN_IDX],&h,2);
    /*then goes the content start index (starting from SIP MSG START)*/
-   if(0>(diff=(get_body(msg)-(msg->buf)))){
+   get_body(msg,&body);
+   if(0>(diff=(body.s-msg->buf))){
       myerror="body starts before the message (uh ?)";
       goto error;
    }else

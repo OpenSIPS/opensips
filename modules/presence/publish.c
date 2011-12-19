@@ -456,13 +456,11 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	{
 		if ( event->content_type.len )
 		{
-			body.s=get_body(msg);
-			if (body.s== NULL)
+			if (get_body(msg,&body)!=0 || body.len==0)
 			{
 				LM_ERR("cannot extract body\n");
 				goto error;
 			}
-			body.len= get_content_length( msg );
 
 			if(sphere_enable && event->evp->parsed == EVENT_PRESENCE &&
 				get_content_type(msg)== SUBTYPE_PIDFXML)

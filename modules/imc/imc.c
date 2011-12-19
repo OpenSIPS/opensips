@@ -442,22 +442,7 @@ static int imc_manager(struct sip_msg* msg, char *str1, char *str2)
 	struct sip_uri from_uri, *pto_uri=NULL, *pfrom_uri=NULL;
 	struct to_body *pfrom;
 
-	body.s = get_body( msg );
-	if (body.s==0) 
-	{
-		LM_ERR("cannot extract body from msg\n");
-		goto error;
-	}
-	
-	/* lungimea corpului mesajului */
-	if (!msg->content_length) 
-	{
-		LM_ERR("no Content-Length\n");
-		goto error;
-	}
-	body.len = get_content_length( msg );
-
-	if(body.len <= 0)
+	if ( get_body( msg, &body)!=0 || body.len==0)
 	{
 		LM_DBG("empty body!\n");
 		goto error;

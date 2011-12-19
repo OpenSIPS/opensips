@@ -479,25 +479,9 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	LM_DBG("------------ start ------------\n");
 
 	/* get message body - after that whole SIP MESSAGE is parsed */
-	body.s = get_body( msg );
-	if (body.s==0) 
+	if ( get_body( msg, &body)!=0 || body.len==0)
 	{
 		LM_ERR("cannot extract body from msg\n");
-		goto error;
-	}
-	
-	/* content-length (if present) must be already parsed */
-	if (!msg->content_length) 
-	{
-		LM_ERR("no Content-Length header found!\n");
-		goto error;
-	}
-	body.len = get_content_length( msg );
-
-	/* check if the body of message contains something */
-	if(body.len <= 0)
-	{
-		LM_ERR("body of the message is empty!\n");
 		goto error;
 	}
 	

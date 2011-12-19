@@ -680,14 +680,7 @@ int parse_sdp(struct sip_msg* _m)
 		return 0;  /* Already parsed */
 	}
 
-	body.s = get_body(_m);
-	if (body.s==NULL) {
-		LM_ERR("failed to get the message body\n");
-		return -1;
-	}
-
-	body.len = _m->len -(int)(body.s - _m->buf);
-	if (body.len==0) {
+	if (get_body(_m, &body)!=0 || body.len==0) {
 		LM_DBG("message body has length zero\n");
 		return 1;
 	}

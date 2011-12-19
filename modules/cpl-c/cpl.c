@@ -665,13 +665,10 @@ static inline int do_script_action(struct sip_msg *msg, int action)
 	str  username = {0,0};
 	str  domain   = {0,0};
 
-	/* content-length (if present) */
-	if ( !msg->content_length &&
-	((parse_headers(msg,HDR_CONTENTLENGTH_F,0)==-1)||!msg->content_length)) {
-		LM_ERR("no Content-Length hdr found!\n");
+	if ( get_body(msg, &body)!=0 ) {
+		LM_ERR("failed to look for body!\n");
 		goto error;
 	}
-	body.len = get_content_length( msg );
 
 	/* get the user name */
 	if (get_dest_user( msg, &username, &domain)==-1)
@@ -683,12 +680,6 @@ static inline int do_script_action(struct sip_msg *msg, int action)
 			/* check the len -> it must not be 0 */
 			if (body.len==0) {
 				LM_ERR("0 content-len found for store\n");
-				goto error_1;
-			}
-			/* get the message's body */
-			body.s = get_body( msg );
-			if (body.s==0) {
-				LM_ERR("cannot extract body from msg!\n");
 				goto error_1;
 			}
 			/* now compile the script and place it into database */

@@ -92,12 +92,13 @@ int b2b_apply_body_lumps(struct sip_msg* msg, str* new_body)
 	unsigned int offset=0, s_offset;
 	str body;
 
-	body.s=get_body(msg);
-
 	if(!msg->body_lumps)
 		return 0;
-	len = lumps_len(msg, msg->body_lumps, 0)
-		+ get_content_length(msg);
+
+	if (get_body(msg,&body)!=0 || body.len==0)
+		return 0;
+
+	len = body.len + lumps_len(msg, msg->body_lumps, 0);
 
 	LM_DBG("*** len = %d\n", len);
 
@@ -1981,15 +1982,10 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 		}
 		else
 		{
-			body.len = get_content_length(msg);
-			if(body.len != 0 )
+			if ( get_body(msg, &body)!=0 )
 			{
-				body.s=get_body(msg);
-				if (body.s== NULL) 
-				{
-					LM_ERR("cannot extract body\n");
-					return -1;
-				}
+				LM_ERR("cannot extract body\n");
+				return -1;
 			}
 		}
 	}
@@ -2666,15 +2662,10 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		}
 		else
 		{
-			body.len = get_content_length(msg);
-			if(body.len != 0 )
+			if ( get_body(msg, &body)!=0 )
 			{
-				body.s=get_body(msg);
-				if (body.s== NULL) 
-				{
-					LM_ERR("cannot extract body\n");
-					return NULL;
-				}
+				LM_ERR("cannot extract body\n");
+				return NULL;
 			}
 		}
 	}
@@ -3061,15 +3052,10 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			}
 			else
 			{
-				body.len = get_content_length(msg);
-				if(body.len != 0 )
+				if ( get_body(msg, &body)!=0 )
 				{
-					body.s=get_body(msg);
-					if (body.s== NULL) 
-					{
-						LM_ERR("cannot extract body\n");
-						goto error;
-					}
+					LM_ERR("cannot extract body\n");
+					goto error;
 				}
 			}
 		}
@@ -4050,15 +4036,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		}
 		else
 		{
-			body.len = get_content_length(msg);
-			if(body.len != 0 )
+			if ( get_body(msg, &body)!=0 )
 			{
-				body.s=get_body(msg);
-				if (body.s== NULL) 
-				{
-					LM_ERR("cannot extract body\n");
-					goto error;
-				}
+				LM_ERR("cannot extract body\n");
+				return -1;
 			}
 		}
 	}

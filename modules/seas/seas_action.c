@@ -399,6 +399,7 @@ int ac_cancel(as_p the_as,char *action,int len)
    struct cell* t_invite;
 	int k,retval,uac_id;
    str headers,body;
+   char *p;
 
    body.s=headers.s=NULL;
    my_msg=NULL;
@@ -460,19 +461,19 @@ int ac_cancel(as_p the_as,char *action,int len)
    headers.s[headers.len]=0;
 
    /*let's get the body*/
-   i=(unsigned int)get_content_length(my_msg);
-   if(i!=0){
-      if(!(body.s=pkg_malloc(i))){
-	 LM_ERR("Out of Memory!");
-	 goto error;
+   if (get_body(my_msg,&body)!=0) {
+      LM_ERR("failed to extract body\n");
+      goto error;
+   }
+   if(body.len!=0){
+      if(!(p=pkg_malloc(body.len))){
+          LM_ERR("Out of Memory!");
+          goto error;
       }
-      memcpy(body.s,get_body(my_msg),i);
-      body.len=i;
+      memcpy(p,body.s,body.len);
+      body.s = p;
       LM_DBG("Trying to construct a Sip Request with: body:%d[%s]"
 			  " headers:%d[%s]\n", body.len,body.s,headers.len,headers.s);
-   }else{
-      body.s=NULL;
-      body.len=0;
    }
 
    if(!(the_param=shm_malloc(sizeof(struct as_uac_param)))){
@@ -719,8 +720,7 @@ int ac_reply(as_p the_as,char *action,int len)
    if(is_invite(c) && my_msg->first_line.u.reply.statuscode>=200 && my_msg->first_line.u.reply.statuscode<300)
       c->flags |= T_IS_LOCAL_FLAG;
    /*WARNING casting unsigned int to int*/
-   body.len=contentlength;
-   body.s=get_body(my_msg);
+   get_body(my_msg, &body);
 
    LM_DBG("Trying to construct a SipReply with: ReasonPhrase:[%.*s] body:[%.*s] headers:[%.*s] totag:[%.*s]\n",\
 	 my_msg->first_line.u.reply.reason.len,my_msg->first_line.u.reply.reason.s,\
@@ -925,14 +925,14 @@ int ac_uac_req(as_p the_as,char *action,int len)
    struct as_uac_param *the_param;
    dlg_t *my_dlg;
    int k,retval,uac_id,sip_error,ret,err_ret;
-   long clen;
    str headers,body,fake_uri;
+   char *p;
 
    headers.s=body.s=fake_uri.s=NULL;
    my_dlg=NULL;
    my_msg=NULL;
    the_param=NULL;
-   k=clen=0;
+   k=0;
 
    net2hostL(flags,action,k);
    net2hostL(uac_id,action,k);
@@ -1012,22 +1012,21 @@ int ac_uac_req(as_p the_as,char *action,int len)
    }
    headers.s[headers.len]=0;
    /*let's get the body*/
-   if(my_msg->content_length)
-      clen=(long)get_content_length(my_msg);
-   if(clen!=0){
-      if(!(body.s=pkg_malloc(clen))){
-	 LM_ERR("Out of Memory!");
-	 goto error;
+   if (get_body(my_msg,&body)!=0) {
+      LM_ERR("failed to get body\n");
+      goto error;
+   }
+   if(body.len!=0){
+      if(!(p=pkg_malloc(body.len+1))){
+          LM_ERR("Out of Memory!");
+          goto error;
       }
-      memcpy(body.s,get_body(my_msg),clen);
-      body.len=clen;
-      body.s[clen]=0;
+      memcpy(p,body.s,body.len);
+      body.s=p;
+      body.s[body.len]=0;
       LM_DBG("Trying to construct a Sip Request with: body:%d[%.*s] headers:%d[%.*s]\n",\
 	    body.len,body.len,body.s,headers.len,headers.len,headers.s);
       /*t_reply_with_body un-ref-counts the transaction, so dont use it anymore*/
-   }else{
-      body.s=NULL;
-      body.len=0;
    }
    /*Now... create the UAC !!
     * it would be great to know the hash_index and the label that have been assigned

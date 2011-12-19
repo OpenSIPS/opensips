@@ -790,11 +790,11 @@ static int makeDigestString(char * digestString, char * dateHF,
 	*(digestString+(l++)) = '|';
 
 	/* ###body### */
-	tmp.s = get_body(msg);
-	if (tmp.s != 0) 
-	{
-		tmp.len = msg->len -(int)(tmp.s-msg->buf);
-
+	if ( get_body(msg,&tmp)!=0 ) {
+		LM_ERR("failed to inspect body\n");
+		return 0;
+	}
+	if (tmp.len != 0) {
 		if (l+tmp.len+1>MAX_DIGEST) {
 			LM_ERR("buffer to short 7\n");
 			return 0;

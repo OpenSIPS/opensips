@@ -52,6 +52,7 @@
 #include "../config.h"
 #include "parse_def.h"
 #include "parse_cseq.h"
+#include "parse_content.h"
 #include "parse_via.h"
 #include "parse_fline.h"
 #include "parse_multipart.h"
@@ -356,28 +357,50 @@ inline static int char_msg_val( struct sip_msg *msg, char *cv )
 }
 
 
-/* returns a pointer to the begining of the msg's body
+/* returns the body of the SIP message (if none, an empty body will be returned)
  */
-inline static char* get_body(struct sip_msg *msg)
+inline static int get_body(struct sip_msg *msg, str *body)
 {
-	int offset;
-	unsigned int len;
+	unsigned int hdrs_len;
+	int ct_len;
 
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
-		return 0;
+		return -1;
 
 	if (msg->unparsed){
-		len=(unsigned int)(msg->unparsed-msg->buf);
-	}else return 0;
-	if ((len+2<=msg->len) && (strncmp(CRLF,msg->unparsed,CRLF_LEN)==0) )
-		offset = CRLF_LEN;
-	else if ( (len+1<=msg->len) &&
-				(*(msg->unparsed)=='\n' || *(msg->unparsed)=='\r' ) )
-		offset = 1;
-	else
-		return 0;
+		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
+	} else {
+		return -1;
+	}
 
-	return msg->unparsed + offset;
+	if ((hdrs_len+2<=msg->len) && (strncmp(CRLF,msg->unparsed,CRLF_LEN)==0) )
+		body->s = msg->unparsed + CRLF_LEN;
+	else if ( (hdrs_len+1<=msg->len) &&
+	(*(msg->unparsed)=='\n' || *(msg->unparsed)=='\r' ) )
+		body->s = msg->unparsed + 1;
+	else {
+		/* no body */
+		body->s = NULL;
+		body->len = 0;
+		return 0;
+	}
+
+	/* determin the length of the body */
+	body->len = msg->buf + msg->len - body->s;
+
+	/* double check the len against content-length hdr
+	   (if present, it must be already parsed) */
+	if (msg->content_length) {
+		ct_len = get_content_length( msg );
+		if (ct_len<body->len)
+			body->len = ct_len;
+	} else {
+		/* no ct -> no body */
+		body->s = NULL;
+		body->len = 0;
+	}
+
+	return 0;
 }
 
 

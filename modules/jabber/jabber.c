@@ -441,20 +441,11 @@ int xjab_manage_sipmsg(struct sip_msg *msg, int type)
 	if (type==XJ_SEND_MESSAGE)
 	{
 		/* get the message's body */
-		body.s = get_body( msg );
-		if(body.s==0) 
+		if ( get_body( msg, &body)!=0 )
 		{
 			LM_ERR("cannot extract body from msg\n");
 			goto error;
 		}
-		
-		/* content-length (if present) must be already parsed */
-		if(!msg->content_length)
-		{
-			LM_ERR("no Content-Length header found!\n");
-			goto error;
-		}
-		body.len = get_content_length(msg);
 
 		/* parse the content-type header */
 		if((mime=parse_content_type_hdr(msg))<1)

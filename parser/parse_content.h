@@ -23,15 +23,12 @@
 #ifndef _PARSE_CONTENT_H
 #define _PARSE_CONTENT_H
 
-#include "msg_parser.h"
 #include "parse_param.h"
 
 typedef struct content {
 	int type;
-
-        str boundary;
-        str start;
-
+	str boundary;
+	str start;
 	param_t* params;
 } content_t;
 
@@ -93,6 +90,9 @@ struct mime_type {
  * of integer
  */
 #define get_accept(_msg_) ((int*)((_msg_)->accept->parsed))
+
+
+#include "msg_parser.h"
 
 /*
  * parse the body of the Content-Type header. It's value is also converted

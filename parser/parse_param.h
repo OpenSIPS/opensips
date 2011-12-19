@@ -32,6 +32,7 @@
 #define PARSE_PARAM_H
 
 #include <stdio.h>
+#include "../str.h"
 
 
 /*

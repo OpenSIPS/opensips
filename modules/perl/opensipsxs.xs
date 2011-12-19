@@ -732,14 +732,16 @@ getBody(self)
     SV *self
   PREINIT:
     struct sip_msg *msg = sv2msg(self);
+    str body;
   INIT:
   CODE:
 	if (!msg) {
 		LM_ERR("Invalid message reference\n");
 		ST(0) = &PL_sv_undef;
 	} else {
-		parse_headers(msg, ~0, 0);
-		ST(0) = sv_2mortal(newSVpv(get_body(msg), 0));
+		body.s = NULL;
+		get_body(msg,&body);
+		ST(0) = sv_2mortal(newSVpv(body.s, 0));
 	}
 
 

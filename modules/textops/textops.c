@@ -324,13 +324,7 @@ static int search_body_f(struct sip_msg* msg, char* key, char* str2)
 	/*we registered only 1 param, so we ignore str2*/
 	regmatch_t pmatch;
 
-	body.s = get_body(msg);
-	if (body.s==0) {
-		LM_ERR("failed to get the message body\n");
-		return -1;
-	}
-	body.len = msg->len -(int)(body.s-msg->buf);
-	if (body.len==0) {
+	if ( get_body(msg,&body)!=0 || body.len==0) {
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
@@ -382,13 +376,7 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 	int off;
 	str body;
 
-	body.s = get_body(msg);
-	if (body.s==0) {
-		LM_ERR("failed to get the message body\n");
-		return -1;
-	}
-	body.len = msg->len -(int)(body.s-msg->buf);
-	if (body.len==0) {
+	if ( get_body(msg,&body)!=0 || body.len==0) {
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
@@ -484,13 +472,7 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 	int eflags;
 	str body;
 
-	body.s = get_body(msg);
-	if (body.s==0) {
-		LM_ERR("failed to get the message body\n");
-		return -1;
-	}
-	body.len = msg->len -(int)(body.s-msg->buf);
-	if (body.len==0) {
+	if ( get_body(msg,&body)!=0 || body.len==0) {
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
@@ -595,13 +577,7 @@ static int replace_body_f(struct sip_msg* msg, char* key, char* str2)
 	int off;
 	str body;
 
-	body.s = get_body(msg);
-	if (body.s==0) {
-		LM_ERR("failed to get the message body\n");
-		return -1;
-	}
-	body.len = msg->len -(int)(body.s-msg->buf);
-	if (body.len==0) {
+	if ( get_body(msg,&body)!=0 || body.len==0) {
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
@@ -782,13 +758,7 @@ static int subst_body_f(struct sip_msg* msg, char*  subst, char* ignored)
 	int nmatches;
 	str body;
 
-	body.s = get_body(msg);
-	if (body.s==0) {
-		LM_ERR("failed to get the message body\n");
-		return -1;
-	}
-	body.len = msg->len -(int)(body.s-msg->buf);
-	if (body.len==0) {
+	if ( get_body(msg,&body)!=0 || body.len==0) {
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
@@ -869,14 +839,8 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 	unsigned int len;
 	str *content_type, body;
 
-	body.s = get_body(msg);
-	if (body.s == 0) {
-		LM_ERR("Failed to get the message body\n");
-		return -1;
-	}
-	body.len = msg->len - (int)(body.s - msg->buf);
-	if (body.len == 0) {
-		LM_DBG("Message body has zero length\n");
+	if ( get_body(msg,&body)!=0 || body.len==0) {
+		LM_DBG("message body has zero length\n");
 		return -1;
 	}
 	
@@ -1513,23 +1477,11 @@ static int is_privacy_f(struct sip_msg *msg, char *_privacy, char *str2 )
  * */
 static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 {
-	int body_len;
-	char* body;
+	str body;
 
 	/* get body pointer */
-	body= get_body(msg);
-	if (body ==0 )
-		return -1;
-
-	/* all headears are already parsed by "get_body" */
-	if (msg->content_length==0) {
-		LM_ERR("very bogus message with body, but no content length hdr\n");
-		return -1;
-	}
-
-	body_len= get_content_length (msg);
-	if (body_len==0) {
-		LM_DBG("content length is zero\n");
+	if ( get_body(msg,&body)!=0 || body.len==0) {
+		LM_DBG("message body has zero length\n");
 		return -1;
 	}
 	
@@ -1540,7 +1492,7 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 	msg->body_lumps = NULL;
 
 	/* add delete body lump */
-	if( del_lump(msg, body- msg->buf, body_len, HDR_EOH_T) == 0) {
+	if( del_lump(msg, body.s-msg->buf, body.len, HDR_EOH_T) == 0) {
 		LM_ERR("failed to add lump to delete body\n");
 		return -1;
 	}
@@ -1632,8 +1584,7 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
  * */
 static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 {
-	int body_len;
-	char* body;
+	str body;
 	struct lump* anchor;
 	unsigned int offset;
 	str new_body;
@@ -1651,22 +1602,20 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 		return -1;
 	}
 
+	/* get body pointer */
+	if ( get_body(msg,&body)!=0 ) {
+		LM_ERR("failed to get gody\n");
+		return -1;
+	}
+
 	/* must delete all body lumps from the list */
 	free_lump_list(msg->body_lumps);
 	msg->body_lumps = NULL;
 
-	/* get body pointer */
-	body= get_body(msg);
-	if(body== NULL ) {
-		LM_ERR("parsing failed\n");
-		return -1;
-	}
-	
-	offset = body - msg->buf;
-	body_len= get_content_length (msg);
-	if (body_len!=0) {
+	if (body.len!=0) {
 		/* delete old body */
-		if(del_lump(msg, offset, body_len, HDR_EOH_T) == 0) {
+		offset = body.s - msg->buf;
+		if(del_lump(msg, offset, body.len, HDR_EOH_T) == 0) {
 			LM_ERR("failed to add lump to delete body");
 			return -1;
 		}
@@ -1674,6 +1623,7 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 	else
 	{
 		LM_DBG("content length is zero\n");
+		offset = msg->len;
 		if(ctype== NULL)
 		{
 			LM_ERR("No body found and no content-type name given"

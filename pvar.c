@@ -1424,23 +1424,16 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	str s;
-    if(msg==NULL)
-		return -1;
-    
-	s.s = get_body( msg );
 
-	if (s.s == NULL)
+	if(msg==NULL)
+		return -1;
+
+	if (get_body( msg, &s)!=0 || s.len==0 ) 
 	{
 		LM_DBG("no message body\n");
 		return pv_get_null(msg, param, res);
-    }    
-
-	if (!msg->content_length) 
-	{
-		LM_ERR("no Content-Length header found\n");
-		return pv_get_null(msg, param, res);
 	}
-    s.len = get_content_length(msg);
+
 	return pv_get_strval(msg, param, res, &s);
 }
 

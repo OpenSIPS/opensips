@@ -673,15 +673,8 @@ check_content_type(struct sip_msg *msg)
 static int
 get_sdp_message(struct sip_msg *msg, str *sdp)
 {
-    sdp->s = get_body(msg);
-    if (sdp->s==NULL) {
-        LM_ERR("cannot get the SDP body\n");
+    if ( get_body(msg, sdp)!=0 || sdp->len==0)
         return -1;
-    }
-
-    sdp->len = msg->buf + msg->len - sdp->s;
-    if (sdp->len == 0)
-        return -2;
 
     if (!check_content_type(msg))
         return -1;

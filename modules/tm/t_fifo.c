@@ -612,11 +612,10 @@ static int assemble_msg(struct sip_msg* msg, struct tw_info *twi)
 	if ( REQ_LINE(msg).method_value==METHOD_INVITE || 
 	(twi->append && twi->append->add_body) ) {
 		/* get body */
-		if( (body.s = get_body(msg)) == 0 ){
+		if( get_body(msg,&body)!=0 ){
 			LM_ERR("get_body failed\n");
 			goto error;
 		}
-		body.len = msg->len - (body.s - msg->buf);
 	} else {
 		body = empty_param;
 	}

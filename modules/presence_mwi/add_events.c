@@ -58,17 +58,13 @@ int mwi_publ_handl(struct sip_msg* msg, int *sent_reply)
 	str body;
     char *at, *over;
 
-    if (get_content_length(msg) == 0)
-	return 1;
-	
-    body.s = get_body(msg);
-    if (body.s == NULL) {
-	LM_ERR("cannot extract body from msg\n");
-	return -1;
-    }
+	if ( get_body(msg,&body)!=0 ) {
+		LM_ERR("cannot extract body from msg\n");
+		return -1;
+	}
+	if (body.len == 0)
+		return 1;
 
-    /* content-length (if present) must be already parsed */
-    body.len = get_content_length(msg);
     at = body.s;
     over = body.s + body.len;
 

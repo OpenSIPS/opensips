@@ -265,13 +265,11 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 			LM_ERR("content length != 0 and no content type header found\n");
 			goto error;
 		}
-		body.s=get_body(msg);
-		if (body.s== NULL) 
+		if ( get_body(msg,&body)!=0 || body.len==0)
 		{
 			LM_ERR("cannot extract body from msg\n");
 			goto error;
 		}
-		body.len = get_content_length( msg );
 		LM_DBG("[body]= %.*s\n", body.len, body.s);
 	}
 	

@@ -323,16 +323,16 @@ char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 
 char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 {
-	char *buf, *body, * value_s;
+	char *buf, * value_s;
 	int len, value, value_len;
+	str body;
 	
-	body=get_body(msg);
-	if (body==0){
+	if ( (get_body(msg,&body)!=0) || body.len==0 ) {
 		ser_error=E_BAD_REQ;
 		LM_ERR("no message body found (missing crlf?)");
 		return 0;
 	}
-	value=msg->len-(int)(body-msg->buf)+diff;
+	value = body.len + diff;
 	value_s=int2str(value, &value_len);
 	LM_DBG("content-length: %d (%s)\n", value, value_s);
 		

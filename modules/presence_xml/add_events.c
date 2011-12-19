@@ -53,18 +53,14 @@ int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 	xmlDocPtr doc= NULL;
 
 	*sent_reply= 0;
-	if ( get_content_length(msg) == 0 )
-		return 1;
-	
-	body.s=get_body(msg);
-	if (body.s== NULL) 
-	{
-		LM_ERR("cannot extract body from msg\n");
-		goto error;
-	}
-	/* content-length (if present) must be already parsed */
 
-	body.len = get_content_length( msg );
+	if ( get_body(msg,&body)!=0 ) {
+		LM_ERR("cannot extract body from msg\n");
+		return -1;
+	}
+	if (body.len == 0)
+		return 1;
+
 	doc= xmlParseMemory( body.s, body.len );
 	if(doc== NULL)
 	{
