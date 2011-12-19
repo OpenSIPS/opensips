@@ -148,7 +148,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
 			cls, connection, url, method, version,
-			*upload_data_size, upload_data, con_cls);
+			(int)*upload_data_size, upload_data, con_cls);
 	if (strncmp(method, "GET", 3)==0) {
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
 			query_cmd = MHD_lookup_connection_value(connection,
