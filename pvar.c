@@ -3872,16 +3872,14 @@ int pv_get_avp_name(struct sip_msg* msg, pv_param_p ip, int *avp_name,
 		return -1;
 	}
 		
-	if((tv.flags&PV_TYPE_INT) && (tv.flags&PV_VAL_INT))
-	{
-		*avp_name = tv.ri;
-	} else {
-		/* search the name here */
-		*avp_name = get_avp_id(&tv.rs);
-		if (*avp_name == 0) {
-			LM_ERR("cannot find avp %.*s\n", tv.rs.len, tv.rs.s);
-			return -1;
-		}
+	if(!(tv.flags&PV_VAL_STR))
+		tv.rs.s = int2str(tv.ri, &tv.rs.len);
+
+	/* search the name here */
+	*avp_name = get_avp_id(&tv.rs);
+	if (*avp_name == 0) {
+		LM_ERR("cannot find avp %.*s\n", tv.rs.len, tv.rs.s);
+		return -1;
 	}
 	return 0;
 }
