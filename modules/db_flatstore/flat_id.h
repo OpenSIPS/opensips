@@ -37,7 +37,7 @@ struct flat_id {
 /*
  * Create a new connection identifier
  */
-struct flat_id* new_flat_id(char* dir, char* table);
+struct flat_id* new_flat_id(const str* dir, const str* table);
 
 
 /*

@@ -54,12 +54,25 @@ int flat_pid;
  */
 int flat_flush = 1;
 
+/*
+ * Should we store all accounting into a single file ?
+ */
+int flat_single_file = 0;
+
 
 /*
  * Delimiter delimiting columns
  */
 char* flat_delimiter = "|";
 
+/*
+ * suffix and prefix of the logging file
+ * can be a formatted string
+ */
+char * flat_suffix_s = FILE_SUFFIX;
+gparam_p flat_suffix;
+char * flat_prefix_s = NULL;
+gparam_p flat_prefix;
 
 /*
  * Timestamp of the last log rotation request from
@@ -82,15 +95,21 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
 	{"flush", INT_PARAM, &flat_flush},
+	{"delimiter", STR_PARAM, &flat_delimiter},
+	{"suffix", STR_PARAM, &flat_suffix_s},
+	{"prefix", STR_PARAM, &flat_prefix_s},
+	{"single_file", INT_PARAM, &flat_single_file},
 	{0, 0, 0}
 };
 
 
+#define MI_FLAT_HELP "Params: none ; Rotates the logging file."
 /*
  * Exported parameters
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_FLAT_ROTATE, 0, mi_flat_rotate_cmd,   MI_NO_INPUT_FLAG,  0,  0 },
+	{ MI_FLAT_ROTATE, MI_FLAT_HELP, mi_flat_rotate_cmd,
+		MI_NO_INPUT_FLAG, 0,  0 },
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -126,6 +145,26 @@ static int mod_init(void)
 
 	*flat_rotate = time(0);
 	local_timestamp = *flat_rotate;
+
+	/* parse prefix and suffix */
+	if (flat_suffix_s && strlen(flat_suffix_s)) {
+		if (fixup_spve((void **)&flat_suffix_s)) {
+			LM_ERR("cannot parse log suffix\n");
+			return -1;
+		}
+		flat_suffix = (gparam_p)flat_suffix_s;
+	} else {
+		flat_suffix = 0;
+	}
+	if (flat_prefix_s && strlen(flat_prefix_s)) {
+		if (fixup_spve((void **)&flat_prefix_s)) {
+			LM_ERR("cannot parse log prefix\n");
+			return -1;
+		}
+		flat_prefix = (gparam_p)flat_prefix_s;
+	} else {
+		flat_prefix = 0;
+	}
 
 	return 0;
 }

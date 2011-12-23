@@ -29,6 +29,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "flat_pool.h"
@@ -103,7 +104,8 @@ int flat_use_table(db_con_t* h, const str* t)
 		return -1;
 	}
 
-	if (CON_TABLE(h)->s != t->s) {
+	if (!CON_TAIL(h) || !(CON_FILENAME(h).len == t->len &&
+			!memcmp(CON_FILENAME(h).s, t->s, t->len))) {
 		if (CON_TAIL(h)) {
 			/* Decrement the reference count
 			 * of the connection but do not remove
@@ -114,7 +116,7 @@ int flat_use_table(db_con_t* h, const str* t)
 		}
 
 		CON_TAIL(h) = (unsigned long)
-			flat_get_connection((char*)CON_TABLE(h)->s, (char*)t->s);
+			flat_get_connection(CON_TABLE(h), t);
 		if (!CON_TAIL(h)) {
 			return -1;
 		}
@@ -141,6 +143,112 @@ void flat_db_close(db_con_t* h)
 	pkg_free(h);
 }
 
+#ifdef FLAT_USE_FILE_LOCK
+/* used for file locking */
+static struct flock flat_file_lock = { 0, SEEK_SET, 0, 0, 0 };
+
+	static inline void FLAT_LOCK(int f)
+	{
+		if (flat_single_file)
+			return;
+
+		flat_file_lock.l_type = F_WRLCK;
+		if (fcntl(f, F_SETLKW, &flat_file_lock) < 0)
+			LM_CRIT("cannot lock file (%s:%d)\n", strerror(errno), errno);
+	}
+
+	static inline void FLAT_UNLOCK(int f)
+	{
+		if (flat_single_file)
+			return;
+
+		flat_file_lock.l_type = F_UNLCK;
+		if (fcntl(f, F_SETLK, &flat_file_lock) < 0)
+			LM_CRIT("cannot unlock file (%s:%d)\n", strerror(errno), errno);
+	}
+#else
+	#define FLAT_LOCK(f)
+	#define FLAT_UNLOCK(f)
+#endif /* FLAT_USE_FILE_LOCK */
+
+
+static struct iovec *flat_iov = 0;
+static int flat_iov_len = 0;
+
+static str flat_iov_buf = { 0, 0 };
+static int flat_iov_buf_len = 0;
+
+static int flat_prepare_iovec(const int n)
+{
+	int i;
+
+	LM_DBG("Needing %d fields, got %d\n", 2 * n, flat_iov_len);
+	flat_iov_buf.len = 0;
+
+	/* resize the buffer */
+	flat_iov = pkg_realloc(flat_iov, 2 * n * sizeof(struct iovec));
+	if (!flat_iov) {
+		LM_ERR("not enough pkg mem for iov\n");
+		flat_iov_len = 0;
+		return -1;
+	}
+	for (i = !flat_iov_len ? flat_iov_len + 1: flat_iov_len - 1;
+			i < 2 * n - 1; i += 2) {
+		flat_iov[i].iov_base = flat_delimiter;
+		flat_iov[i].iov_len = 1;
+	}
+
+	flat_iov_len = 2*n;
+	flat_iov[flat_iov_len - 1].iov_base = "\n";
+	flat_iov[flat_iov_len - 1].iov_len = 1;
+	LM_DBG("Successfully allocated %d fields", flat_iov_len);
+	
+	return 0;
+}
+
+/* buffer operations */
+#define FLAT_BUF (flat_iov_buf.s + flat_iov_buf.len)
+#define FLAT_LEN (flat_iov_buf_len - flat_iov_buf.len)
+#define FLAT_INC(_l) (flat_iov_buf.len += (_l))
+#define FLAT_RESET() (flat_iov_buf.len = 0)
+#define FLAT_ALLOC(_l) \
+	do { \
+		if (!flat_iov_buf_len) { \
+			flat_iov_buf_len = (_l); \
+			flat_iov_buf.s = pkg_malloc((_l)); \
+		} else if (flat_iov_buf.len + (_l) > flat_iov_buf_len) { \
+			do { \
+				flat_iov_buf_len *= 2; \
+			} while (flat_iov_buf_len < (_l)); \
+			flat_iov_buf.s = pkg_realloc(flat_iov_buf.s, flat_iov_buf_len); \
+			LM_DBG("reallocated to %d, needed %d\n", flat_iov_buf_len, (_l)); \
+		} \
+	} while (0)
+
+/*
+#define FLAT_ALLOC(_l) \
+		flat_iov_buf.s = pkg_realloc(flat_iov_buf.s, (_l) + flat_iov_buf.len); \
+		flat_iov_buf_len = (_l) + flat_iov_buf.len;
+*/
+#define FLAT_SET_STR(_i, _s) flat_iov[2 * (_i)].iov_base = (_s)
+#define FLAT_SET_LEN(_i, _l) flat_iov[2 * (_i)].iov_len = (_l)
+#define FLAT_GET_LEN(_i) (flat_iov[2 * (_i)].iov_len)
+
+/* prints into buffer */
+#define FLAT_PRINTF(_f, _v, _i) \
+	do { \
+		aux.len = snprintf(FLAT_BUF, FLAT_LEN, _f, _v); \
+		if (aux.len < 0) { \
+			LM_ERR("cannot print " #_v "\n"); \
+			aux.len = 0; \
+		} else if (aux.len >= FLAT_LEN) { \
+			LM_ERR("not enough space to print " #_v " ... truncating\n"); \
+			aux.len = FLAT_LEN - 1 /* '\0' at the end */; \
+		}\
+		FLAT_SET_LEN((_i), aux.len); \
+		FLAT_INC(aux.len); \
+	} while(0)
+
 
 /*
  * Insert a row into specified table
@@ -154,8 +262,10 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 {
 	FILE* f;
 	int i;
-	int l;
+	int l, len;
+	str aux;
 	char *s, *p;
+	char * begin = flat_iov_buf.s;
 
 	if (local_timestamp < *flat_rotate) {
 		flat_rotate_logs();
@@ -167,61 +277,121 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 		return -1;
 	}
 
+	if (flat_prepare_iovec(n) < 0) {
+		LM_ERR("cannot insert row\n");
+		return -1;
+	}
+
+	FLAT_LOCK(f);
+
 	for(i = 0; i < n; i++) {
+		if (VAL_NULL(v + i)) {
+			FLAT_SET_STR(i, "");
+			FLAT_SET_LEN(i, 0);
+			continue;
+		}
+		FLAT_SET_STR(i, FLAT_BUF);
 		switch(VAL_TYPE(v + i)) {
 		case DB_INT:
-			fprintf(f, "%d", VAL_INT(v + i));
-			break;
-
-		case DB_BIGINT:
-			fprintf(f, "%lld", VAL_BIGINT(v + i));
+			/* guess this is 20 */
+			FLAT_ALLOC(20);
+			FLAT_PRINTF("%d", VAL_INT(v+i), i);
 			break;
 
 		case DB_DOUBLE:
-			fprintf(f, "%f", VAL_DOUBLE(v + i));
+			/* guess there are max 20 digits */
+			FLAT_ALLOC(40);
+			FLAT_PRINTF("%f", VAL_DOUBLE(v+i), i);
+			break;
+
+		case DB_BIGINT:
+			/* guess there are max 20 digits */
+			FLAT_ALLOC(40);
+			FLAT_PRINTF("%llu", VAL_BIGINT(v+i), i);
 			break;
 
 		case DB_STRING:
-			fprintf(f, "%s", VAL_STRING(v + i));
+			FLAT_SET_STR(i, (char *)VAL_STRING(v + i));
+			FLAT_SET_LEN(i, strlen(VAL_STRING(v + i)));
 			break;
 
 		case DB_STR:
-			fprintf(f, "%.*s", VAL_STR(v + i).len, VAL_STR(v + i).s);
+			FLAT_SET_STR(i, VAL_STR(v + i).s);
+			FLAT_SET_LEN(i, VAL_STR(v + i).len);
 			break;
 
 		case DB_DATETIME:
-			fprintf(f, "%u", (unsigned int)VAL_TIME(v + i));
+			/* guess this is 20 */
+			FLAT_ALLOC(20);
+			FLAT_PRINTF("%lu", VAL_TIME(v+i), i);
 			break;
 
 		case DB_BLOB:
 			l = VAL_BLOB(v+i).len;
 			s = p = VAL_BLOB(v+i).s;
+			/* the maximum size is 4l - if all chars were not printable */
+			FLAT_ALLOC(4 * l);
+			len = 0;
 			while (l--) {
 				if ( !(isprint((int)*s) && *s != '\\' && *s != '|')) {
-					fprintf(f,"%.*s\\x%02X",(int)(s-p),p,(*s & 0xff));
+					aux.len = snprintf(FLAT_BUF, FLAT_LEN,"%.*s\\x%02X",
+							(int)(s-p),p,(*s & 0xff));
 					p = s+1;
+					if (aux.len < 0) {
+						LM_ERR("error while writing blob %d\n", i);
+						aux.len = 0;
+					}
+					len += aux.len;
+					FLAT_INC(aux.len);
 				}
 				++s;
 			}
-			if (p!=s)
-				fprintf(f,"%.*s",(int)(s-p),p);
+			if (p!=s) {
+				aux.len = snprintf(FLAT_BUF, FLAT_LEN,"%.*s", (int)(s-p), p);
+				if (aux.len < 0) {
+					LM_ERR("error while writing blob %d\n", i);
+					aux.len = 0;
+				}
+				len += aux.len;
+				FLAT_INC(aux.len);
+			}
+			FLAT_SET_LEN(i, len);
 			break;
 
 		case DB_BITMAP:
-			fprintf(f, "%u", VAL_BITMAP(v + i));
+			/* guess this is 20 */
+			FLAT_ALLOC(20);
+			FLAT_PRINTF("%u", VAL_BITMAP(v+i), i);
 			break;
 		}
-
-		if (i < (n - 1)) {
-			fprintf(f, "%c", *flat_delimiter);
+	}
+	/* reorder pointers in case they were altered by (re)allocation */
+	if (flat_iov_buf.s != begin && flat_iov_buf.len) {
+		FLAT_RESET();
+		for (i = 0; i < n; i++) {
+			if (!VAL_NULL(v + i) && VAL_TYPE(v + i) != DB_STRING &&
+					VAL_TYPE(v + i) != DB_STR) {
+				FLAT_SET_STR(i, FLAT_BUF);
+				FLAT_INC(FLAT_GET_LEN(i));
+			}
 		}
 	}
 
-	fprintf(f, "\n");
+	do {
+		l = writev(fileno(f), flat_iov, 2 * n);
+	} while (l < 0 && errno == EINTR);
 
-	if (flat_flush) {
-		fflush(f);
+	if (l < 0) {
+		LM_ERR("unable to write to file: %s - %d\n", strerror(errno), errno);
+		return -1;
 	}
+
+	/* XXX does this make sense any more? */
+	if (flat_flush && fflush(f) < 0) {
+		LM_ERR("cannot flush buffer: %s - %d\n", strerror(errno), errno);
+	}
+	FLAT_UNLOCK(f);
+
 
 	return 0;
 }

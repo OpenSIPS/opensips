@@ -10,7 +10,7 @@ Jan Janak
 
    Copyright © 2004, 2005 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
+   Revision $Revision$ $Date: 2009-07-21 07:45:05 +0000
                               (Tue, 21 Jul 2009) $
      __________________________________________________________
 
@@ -30,6 +30,10 @@ Jan Janak
         1.3. Exported Parameters
 
               1.3.1. flush (integer)
+              1.3.2. delimiter (char)
+              1.3.3. suffix (string)
+              1.3.4. prefix (string)
+              1.3.5. single_file (integer)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -41,6 +45,10 @@ Jan Janak
    List of Examples
 
    1.1. Set “flush” parameter
+   1.2. Set “delimiter” parameter
+   1.3. Set “suffix” parameter
+   1.4. Set “prefix” parameter
+   1.5. Set “single_file” parameter
 
 Chapter 1. Admin Guide
 
@@ -61,10 +69,10 @@ Chapter 1. Admin Guide
    the only module that was tested with flastore.
 
    The format of the files produced by this module is plain text.
-   Each line consists of several fields, fields are separated by |
-   character. New information is always appended at the end of the
-   file, searching, deleting and updating of existing data is not
-   supported by the module.
+   Each line consists of several fields, fields are separated by
+   default by the | character. New information is always appended
+   at the end of the file, searching, deleting and updating of
+   existing data is not supported by the module.
 
    The acc module can be configured to use flatstore module as
    database backend using the db_url_parameter:
@@ -78,18 +86,21 @@ modparam("acc", "db_url", "flatstore:/var/log/acc")
 
    Name of files in that directory will follow the following
    pattern:
-<table_name>_<process_name>.log
+<prefix><table_name>[_<process_name>]<suffix>
 
-   For example, entries writen by OpenSIPS process 8 into acc
-   table would be written in file acc_8.log. For each table there
-   will be several files, one file for every OpenSIPS process that
-   wrote some data into that table. The main reason why there are
-   several files for each table is that it is much faster to have
-   one file per process, because it does not require any locking
-   and thus OpenSIPS processes will not block each other. To get
-   the complete data for a table you can simply concatenate the
-   contents of files with the same table name but different
-   process id.
+   For example, without setting any module parameter, the entries
+   writen by OpenSIPS process 8 into acc table would be written in
+   file acc_8.log. For each table there will be several files, one
+   file for every OpenSIPS process that wrote some data into that
+   table. The main reason why there are several files for each
+   table is that it is much faster to have one file per process,
+   because it does not require any locking and thus OpenSIPS
+   processes will not block each other. To get the complete data
+   for a table you can simply concatenate the contents of files
+   with the same table name but different process id.
+   Alternatively, you can use the single_file parameter, and all
+   processes will dump the data into the same file. Note that this
+   will induce some latency.
 
 1.1.1. Rotating Log Files
 
@@ -117,6 +128,10 @@ opensipsctl fifo flat_rotate
        files will be open at the point when OpenSIPS has some data
        to write. It is normal that the files will be not created
        immediately if there is no traffic on the proxy server.
+       Note that the suffix and prefix parameters are re-evaluated
+       each time the flat_rotate command is issued. Therefore,
+       after a rotate command, it is possible to open a different
+       file than previous one.
      * Move the renamed files somewhere else and process them.
 
 1.2. Dependencies
@@ -143,6 +158,52 @@ opensipsctl fifo flat_rotate
    Example 1.1. Set “flush” parameter
 ...
 modparam("db_flatstore", "flush", 0)
+...
+
+1.3.2. delimiter (char)
+
+   Delimiter used to separate the values.
+
+   Default value is '|'.
+
+   Example 1.2. Set “delimiter” parameter
+...
+modparam("db_flatstore", "delimiter", ";")
+...
+
+1.3.3. suffix (string)
+
+   The suffix appended to the table name. Can be a pseudo
+   variable.
+
+   Default value is ".log".
+
+   Example 1.3. Set “suffix” parameter
+...
+modparam("db_flatstore", "suffix", "$time(%H)")
+...
+
+1.3.4. prefix (string)
+
+   The table name prefix. Can be a pseudo variable.
+
+   Defaul value is none.
+
+   Example 1.4. Set “prefix” parameter
+...
+modparam("db_flatstore", "prefix", "$time(%H)")
+...
+
+1.3.5. single_file (integer)
+
+   Specifies if all the processes should dump the data into a
+   single file.
+
+   Default value is 0.
+
+   Example 1.5. Set “single_file” parameter
+...
+modparam("db_flatstore", "single_file", 1)
 ...
 
 1.4. Exported Functions

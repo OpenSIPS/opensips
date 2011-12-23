@@ -32,26 +32,29 @@
 /*
  * Create a new connection identifier
  */
-struct flat_id* new_flat_id(char* dir, char* table)
+struct flat_id* new_flat_id(const str* dir, const str* table)
 {
 	struct flat_id* ptr;
 
-	if (!dir || !table) {
+	if (!dir || !table || !dir->len || !table->len) {
 		LM_ERR("invalid parameter(s)\n");
 		return 0;
 	}
 
-	ptr = (struct flat_id*)pkg_malloc(sizeof(struct flat_id));
+	ptr = (struct flat_id*)pkg_malloc(sizeof(struct flat_id) +
+			dir->len + table->len);
 	if (!ptr) {
 		LM_ERR("no pkg memory left\n");
 		return 0;
 	}
 	memset(ptr, 0, sizeof(struct flat_id));
 
-	ptr->dir.s = dir;
-	ptr->dir.len = strlen(dir);
-	ptr->table.s = table;
-	ptr->table.len = strlen(table);
+	ptr->dir.s = (char *)(ptr + 1);
+	ptr->dir.len = dir->len;
+	memcpy(ptr->dir.s, dir->s, dir->len);
+	ptr->table.s = ptr->dir.s + dir->len;
+	ptr->table.len = table->len;
+	memcpy(ptr->table.s, table->s, table->len);
 
 	return ptr;
 }
