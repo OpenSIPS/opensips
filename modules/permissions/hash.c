@@ -141,7 +141,23 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 	str str_ip;
 	pv_spec_t *pvs;
 	pv_value_t pvt;
-	int match_res;
+	int i, match_res;
+
+	if (grp != GROUP_ANY) {
+		for (i = 0; i < PERM_HASH_SIZE; i++) {
+			for (node = table[i]; node; node = node->next) {
+				if (node->grp == grp) {
+					break;
+				}
+			}
+		}
+
+		/* gropu not found */
+		if (i == PERM_HASH_SIZE) {
+			LM_DBG("specified group does not exist in hash table\n");
+			return -2;
+		}
+	}
 
 	str_ip.len = ip->len;
 	str_ip.s = (char*)ip->u.addr;
@@ -364,16 +380,32 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 			struct ip_addr *ip, unsigned int port, int proto,
 			char *pattern, char *info)
 {
-   unsigned int count, i;
+        unsigned int count, i;
 	pv_value_t pvt;
 	pv_spec_t *pvs;
-	int match_res;
+	int match_res, found_group = 0;
 
-    count = table[PERM_MAX_SUBNETS].grp;
+	count = table[PERM_MAX_SUBNETS].grp;
 
 	if (count == 0) {
 		LM_DBG("subnet table is empty\n");
-		return -1;
+		return -2;
+	}
+
+	if (grp != GROUP_ANY) {
+		for (i = 0; i < count; i++) {
+			if (table[i].grp == grp) {
+				found_group = 1;
+				break;
+			} else if (table[i].grp > grp) {
+				break;
+			}
+		}
+
+		if (!found_group) {
+			LM_DBG("specified group does not exist in subnet table\n");
+			return -2;
+		}
 	}
 
 	i = 0;

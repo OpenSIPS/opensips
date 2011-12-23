@@ -423,7 +423,7 @@ int check_addr_6(struct sip_msg* msg,
 		char* info, char* pattern) {
 
 	unsigned int port;
-	int group, proto, ret = 1;
+	int group, proto, hash_ret, subnet_ret, ret = 1;
 	struct ip_addr *ip;
 	str str_ip, str_proto, str_port, pattern_s;
 
@@ -517,10 +517,14 @@ int check_addr_6(struct sip_msg* msg,
 	LM_DBG("Looking for : <%d, %.*s, %.*s, %d, %s>\n", group, str_ip.len,
 			str_ip.s, str_proto.len, str_proto.s, port, pattern);
 
-	if (hash_match(msg, *hash_table, group, ip, port,
-				proto, pattern, info) == -1)
-		ret = match_subnet_table(msg, *subnet_table, group,
+	hash_ret = hash_match(msg, *hash_table, group, ip, port,
+				proto, pattern, info);
+	if (hash_ret < 0) {
+	    subnet_ret = match_subnet_table(msg, *subnet_table, group,
 				ip, port, proto, pattern, info);
+	    ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
+	}
+
 	if (pattern)
 		pkg_free(pattern);
 	return ret;
@@ -541,7 +545,7 @@ int check_addr_5(struct sip_msg *msg,
 int check_src_addr_3(struct sip_msg *msg,
 		                char *grp, char *info, char* pattern) {
 
-	int group, ret = 1;
+	int group, hash_ret, subnet_ret, ret = 1;
 	struct in_addr in;
 	str str_ip;
 	struct ip_addr *ip;
@@ -589,18 +593,22 @@ int check_src_addr_3(struct sip_msg *msg,
 		pattern[pattern_s.len] = 0;
 	}
 
-	if (hash_match(msg, *hash_table, group,
-				ip,
-				msg->rcv.src_port,
-				msg->rcv.proto,
-				pattern,
-				info) == -1)
-		ret = match_subnet_table(msg, *subnet_table, group,
+	hash_ret = hash_match(msg, *hash_table, group,
 				ip,
 				msg->rcv.src_port,
 				msg->rcv.proto,
 				pattern,
 				info);
+	if (hash_ret < 0) {
+	    subnet_ret = match_subnet_table(msg, *subnet_table, group,
+				ip,
+				msg->rcv.src_port,
+				msg->rcv.proto,
+				pattern,
+				info);
+            ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
+        }
+
 	if (pattern)
 		pkg_free(pattern);
 	return ret;
