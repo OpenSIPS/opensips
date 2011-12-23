@@ -23,8 +23,8 @@
 	</para>
 	<para>
 		The format of the files produced by this module is plain text. Each
-		line consists of several fields, fields are separated by |
-		character. New information is always appended at the end of the
+		line consists of several fields, fields are separated by default by
+		the | character. New information is always appended at the end of the
 		file, searching, deleting and updating of existing data is not
 		supported by the module.
 	</para>
@@ -45,10 +45,11 @@ modparam("acc", "db_url", "flatstore:/var/log/acc")
 		Name of files in that directory will follow the following pattern:
 	</para>
 	<programlisting>
-&lt;table_name&gt;_&lt;process_name&gt;.log
+&lt;prefix&gt;&lt;table_name&gt;[_&lt;process_name&gt;]&lt;suffix&gt;
 </programlisting>
 	<para>
-		For example, entries writen by &osips; process 8 into acc table would
+		For example, without setting any module parameter, the
+		entries writen by &osips; process 8 into acc table would
 		be written in file acc_8.log. For each table there will be several
 		files, one file for every &osips; process that wrote some data into
 		that table. The main reason why there are several files for each
@@ -56,8 +57,11 @@ modparam("acc", "db_url", "flatstore:/var/log/acc")
 		because it does not require any locking and thus &osips; processes will
 		not block each other. To get the complete data for a table you can
 		simply concatenate the contents of files with the same table name
-		but different process id.
+		but different process id. Alternatively, you can use the single_file
+		parameter, and all processes will dump the data into the same file. Note
+		that this will induce some latency.
 	</para>
+
 	<section id="rotating">
 		<title>Rotating Log Files</title>
 		<para>
@@ -96,6 +100,12 @@ opensipsctl fifo flat_rotate
 			at the point when &osips; has some data to write. It is
 			normal that the files will be not created immediately
 			if there is no traffic on the proxy server.
+			</para>
+			<para>
+			Note that the suffix and prefix parameters are re-evaluated
+			each time the flat_rotate command is issued. Therefore, after
+			a rotate command, it is possible to open a different file than
+			previous one.
 			</para>
 		</listitem>
 		<listitem>
@@ -155,6 +165,84 @@ opensipsctl fifo flat_rotate
 		<programlisting format="linespecific">
 ...
 modparam("db_flatstore", "flush", 0)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>delimiter</varname> (char)</title>
+		<para>
+		Delimiter used to separate the values.
+		</para>
+		<para>
+		<emphasis>
+			Default value is '|'.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>delimiter</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_flatstore", "delimiter", ";")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>suffix</varname> (string)</title>
+		<para>
+		The suffix appended to the table name. Can be a pseudo
+		variable.
+		</para>
+		<para>
+		<emphasis>
+			Default value is ".log".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>suffix</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_flatstore", "suffix", "$time(%H)")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>prefix</varname> (string)</title>
+		<para>
+		The table name prefix. Can be a pseudo variable.
+		</para>
+		<para>
+		<emphasis>
+			Defaul value is none.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>prefix</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_flatstore", "prefix", "$time(%H)")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>single_file</varname> (integer)</title>
+		<para>
+		Specifies if all the processes should dump the data
+		into a single file.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>single_file</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_flatstore", "single_file", 1)
 ...
 </programlisting>
 		</example>
