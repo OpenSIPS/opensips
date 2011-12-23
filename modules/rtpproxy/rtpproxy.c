@@ -3050,8 +3050,11 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 			break;
 
 		default:
-			LM_ERR("unknown option `%c'\n", *cp);
-			FORCE_RTP_PROXY_RET (-1);
+			LM_WARN("unknown option `%c'\n", *cp);
+			if (append_opts(&opts, *cp) == -1) {
+				LM_ERR("out of pkg memory\n");
+				FORCE_RTP_PROXY_RET (-1);
+			}
 		}
 	}
 
