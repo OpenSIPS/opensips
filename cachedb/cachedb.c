@@ -545,7 +545,7 @@ int cachedb_sub(str* cachedb_name, str* attr, int val,int expires,int *new_val)
 	return cde->cdb_func.sub(con,attr,val,expires,new_val)<0?-1:1;
 }
 
-cachedb_con* cachedb_do_init(str *url,void* (*new_connection)())
+cachedb_con* cachedb_do_init(str *url,void* (*new_connection)(struct cachedb_id *))
 {
 	struct cachedb_id* id;
 	cachedb_con* res;
@@ -601,7 +601,7 @@ err:
 	return 0;
 }
 
-void cachedb_do_close(cachedb_con *con, void (*free_connection)())
+void cachedb_do_close(cachedb_con *con, void (*free_connection)(cachedb_pool_con *))
 {
 	cachedb_pool_con *tmp;
 

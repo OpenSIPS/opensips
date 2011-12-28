@@ -56,7 +56,7 @@ exclude_modules?= b2b_logic jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
 	presence presence_xml presence_mwi presence_dialoginfo \
 	pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo \
 	ldap h350 identity regex cachedb_memcached cachedb_redis event_rabbitmq \
-	db_http json python dialplan mi_http
+	db_http json python dialplan mi_http cachedb_cassandra
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif

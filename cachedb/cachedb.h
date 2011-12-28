@@ -41,8 +41,8 @@ struct cachedb_url
 int cachedb_store_url(struct cachedb_url **list,char *val);
 void cachedb_free_url(struct cachedb_url *list);
 
-cachedb_con* cachedb_do_init(str *url,void* (*new_connection)());
-void cachedb_do_close(cachedb_con *con, void (*free_connection)());
+cachedb_con* cachedb_do_init(str *url,void* (*new_connection)(struct cachedb_id *));
+void cachedb_do_close(cachedb_con *con, void (*free_connection)(cachedb_pool_con *));
 
 typedef cachedb_con* (cachedb_init_f)(str *url);
 typedef void (cachedb_destroy_f)(cachedb_con *con);

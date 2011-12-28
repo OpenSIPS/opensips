@@ -1,0 +1,297 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of a cache system designed to work with
+		Cassandra servers.
+		It uses the Key-Value interface exported from the core.
+	</para>
+	<para>
+	</para>
+	</section>
+
+
+	<section>
+	<title>Advantages</title>
+	<para>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>memory costs are no longer on the server
+				</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>many servers can be used inside a cluster, so the memory
+				is virtually unlimited</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>the cache is 100% persistent. A restart
+					of OpenSIPS server will not affect the DB. The Cassandra DB is also
+				persistent so it can also be restarted without loss of information.</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>Cassandra is an open-source project so
+				it can be used to exchange data
+				 with various other applicationsr</emphasis>
+			</para>
+			</listitem>
+
+			<listitem>
+			<para>
+				<emphasis>By creating a Cassandra Cluster, multiple OpenSIPS
+				instances can easily share key-value information</emphasis>
+			</para>
+			</listitem>
+
+		</itemizedlist>
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
+	<title>Limitations</title>
+	
+		
+		<para>
+			<itemizedlist>
+			<listitem>
+			<para>
+			<emphasis>
+		keys (in key:value pairs) may not contain spaces or control characters
+		</emphasis>
+			</para>
+			</listitem>
+
+		</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		None.
+		</para>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>thrift 0.6.1</emphasis>
+			</para>
+			
+			<para>
+				Thrift 0.6.1 can be downloaded from http://archive.apache.org/dist/thrift/
+				Download the archive, extract sources, run ./configure,make,sudo make install.
+			</para>
+			
+			</listitem>
+			</itemizedlist>
+	</section>
+	</section>
+	
+	<section>
+		<title>Exported Parameters</title>
+		<section>
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+			The urls of the server groups that OpenSIPS will connect to in order
+			to use the from script cache_store,cache_fetch, etc operations.
+			It can be set more than one time.
+			The prefix part of the URL will be the identifier that will be used
+			from the script.
+
+			The database part of the URL needs to be in the format Keyspace_ColumnFamily
+		</para>
+		
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "cachedb_url","cassandra:group1://localhost:9061/Keyspace1_Users");
+modparam("cachedb_cassandra", "cachedb_url","cassandra:cluster1://random_url:8888/Keyspace2_Keys");
+...
+	</programlisting>
+		</example>
+		
+		<example>
+		<title>Use Cassandra servers </title>
+		<programlisting format="linespecific">
+...
+cache_store("cassandra:group1","key","$ru value");
+cache_fetch("cassandra:cluster1","key",$avp(10));
+cache_remove("cassandra:cluster1","key");
+...
+	</programlisting>
+		</example>
+	</section>
+	
+		<section>
+		<title><varname>connection_timeout</varname> (int)</title>
+		<para>
+			The timeout in ms that will be triggered in case a connection attempt fails.
+		</para>
+		
+		<example>
+		<title>Set <varname>connection_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "connection_timeout",1000);
+...
+	</programlisting>
+		</example>
+		
+	</section>
+
+		<section>
+		<title><varname>send_timeout</varname> (int)</title>
+		<para>
+			The timeout in ms that will be triggered in case a Cassandra write takes too long
+		</para>
+		
+		<example>
+		<title>Set <varname>send_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "send_timeout",1000);
+...
+	</programlisting>
+		</example>
+		
+	</section>
+
+		<section>
+		<title><varname>receive_timeout</varname> (int)</title>
+		<para>
+			The timeout in ms that will be triggered in case a Cassandra read takes too long
+		</para>
+		
+		<example>
+		<title>Set <varname>receive_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "receive_timeout",1000);
+...
+	</programlisting>
+		</example>
+		
+	</section>
+
+		<section>
+		<title><varname>wr_consistency_level</varname> (int)</title>
+		<para>
+			The consistency level desired for write operations.
+			Options are :
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>1</emphasis> - Ensure that the write has been written to at least 1 replica's commit log and memory table before responding to the client.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>2</emphasis> - Ensure that the write has been written to N / 2 + 1 replicas before responding to the client.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>3</emphasis> - Ensure that the write has been written to ReplicationFactor / 2 + 1 nodes, within the local datacenter (requires NetworkTopologyStrategy)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>4</emphasis> - Ensure that the write has been written to ReplicationFactor / 2 + 1 nodes in each datacenter (requires NetworkTopologyStrategy)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>5</emphasis> - Ensure that the write is written to all N replicas before responding to the client. Any unresponsive replicas will fail the operation. 
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>6</emphasis> - Ensure that the write has been written to at least 1 node, including HintedHandoff recipients. 
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>7</emphasis> - Ensure that the write has been written to at least 2 replica's before responding to the client.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>8</emphasis> - Ensure that the write has been written to at least 3 replica's before responding to the client.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		Default is 1
+		</para>
+		
+		<example>
+		<title>Set <varname>wr_consistency_level</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "wr_consistency_level",7);
+...
+	</programlisting>
+		</example>
+		
+	</section>
+
+		<section>
+		<title><varname>rd_consistency_level</varname> (int)</title>
+		<para>
+			The consistency level desired for read operations.
+			Options are the same as for write consistency level.
+		</para>
+		
+		<example>
+		<title>Set <varname>rd_consistency_level</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_cassandra", "rd_consistency_level",7);
+...
+	</programlisting>
+		</example>
+		
+	</section>
+
+</section>
+
+	<section>
+		<title>Exported Functions</title>
+		<para>The module does not export functions to be used
+		in configuration script.</para>
+	</section>	
+
+
+	<section>
+	<title>Known issues</title>
+		<para>
+		Due to the fact that Cassandra cannot store counters and regular columns in the same ColumnFamily, add() and sub() methods are not exported through the Key-Value interface. 
+		</para>
+		<para>
+		Also, the module does not currently support Authentication.
+		</para>
+		<para>
+		Future realeases of this module will address this issue.
+		</para>
+	</section>
+
+</chapter>
+
