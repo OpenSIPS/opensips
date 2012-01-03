@@ -304,12 +304,6 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 			FLAT_PRINTF("%f", VAL_DOUBLE(v+i), i);
 			break;
 
-		case DB_BIGINT:
-			/* guess there are max 20 digits */
-			FLAT_ALLOC(40);
-			FLAT_PRINTF("%llu", VAL_BIGINT(v+i), i);
-			break;
-
 		case DB_STRING:
 			FLAT_SET_STR(i, (char *)VAL_STRING(v + i));
 			FLAT_SET_LEN(i, strlen(VAL_STRING(v + i)));
