@@ -2007,6 +2007,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			}
 		}
 
+		if (msg->to == NULL)
+		{
+			LM_ERR("cannot find 'to' header!\n");
+			return;
+		}
 		pto = get_to(msg);
 		if (pto == NULL || pto->error != PARSE_OK)
 		{
