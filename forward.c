@@ -398,8 +398,10 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	hostent2su( &to, &p->host, p->addr_idx, (p->port)?p->port:SIP_PORT);
 	last_sock = 0;
 
+#ifdef USE_TCP
 	if (getb0flags() & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
+#endif
 
 	do {
 		send_sock=get_send_socket( msg, &to, p->proto);
@@ -418,7 +420,9 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			buf = build_req_buf_from_sip_req(msg, &len, send_sock, p->proto, 0);
 			if (!buf){
 				LM_ERR("building req buf failed\n");
+#ifdef USE_TCP
 				tcp_no_new_conn = 0;
+#endif
 				goto error;
 			}
 
@@ -448,7 +452,9 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 
 	}while( get_next_su( p, &to, (ser_error==E_IP_BLOCKED)?0:1)==0 );
 
+#ifdef USE_TCP
 	tcp_no_new_conn = 0;
+#endif
 
 	if (ser_error) {
 		update_stat( drp_reqs, 1);

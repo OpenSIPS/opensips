@@ -131,10 +131,12 @@ unsigned int calc_udp_load(void *val)
 	return ( get_stat_val((stat_var*)val) * 100)/children_no;
 }
 
+#ifdef TCP
 unsigned int calc_tcp_load(void *val)
 {
 	return ( get_stat_val((stat_var*)val) * 100)/tcp_children_no;
 }
+#endif
 
 int register_udp_load_stat(str *name, stat_var **s)
 {
@@ -164,6 +166,7 @@ int register_udp_load_stat(str *name, stat_var **s)
 	return 0;
 }
 
+#ifdef TCP
 int register_tcp_load_stat(stat_var **s)
 {
 	*s = shm_malloc(sizeof(stat_var));
@@ -188,6 +191,7 @@ int register_tcp_load_stat(stat_var **s)
 
 	return 0;
 }
+#endif
 
 int init_stats_collector(void)
 {
