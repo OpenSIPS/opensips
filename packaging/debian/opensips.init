@@ -112,6 +112,11 @@ case "$1" in
 	    check_fork
 	fi
 
+	# dirs under /var/run can go away on reboots.
+	mkdir -p "$HOMEDIR"
+	chmod 775 "$HOMEDIR"
+	chown "$USER:$GROUP" "$HOMEDIR" >/dev/null 2>&1 || true
+
 	echo -n "Starting $DESC: $NAME"
 	start-stop-daemon --start --quiet --pidfile $PIDFILE \
 		--exec $DAEMON -- $OPTIONS || echo -n " already running"
