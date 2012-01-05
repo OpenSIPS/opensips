@@ -99,6 +99,9 @@ int db_mysql_get_columns(const db_con_t* _h, db_res_t* _r)
 				RES_TYPES(_r)[col] = DB_DATETIME;
 				break;
 
+			case MYSQL_TYPE_TINY_BLOB:
+			case MYSQL_TYPE_MEDIUM_BLOB:
+			case MYSQL_TYPE_LONG_BLOB:
 			case MYSQL_TYPE_BLOB:
 				LM_DBG("use DB_BLOB result type\n");
 				RES_TYPES(_r)[col] = DB_BLOB;
