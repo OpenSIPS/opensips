@@ -617,7 +617,7 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 		flag = FL_USE_UAC_FROM;
 	}
 
-	if (msg->msg_flags & FL_USE_UAC_FROM)
+	if (msg->msg_flags & flag)
 		return;
 
 	if (_params->direction == DLG_DIR_DOWNSTREAM) {
