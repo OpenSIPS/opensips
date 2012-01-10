@@ -322,8 +322,8 @@ tmrec_p tmrec_new(char alloc)
 		_trp = (tmrec_p)shm_malloc(sizeof(tmrec_t));
 	if(!_trp)
 		return NULL;
-	_trp->flags = alloc;
 	memset(_trp, 0, sizeof(tmrec_t));
+	_trp->flags = alloc;
 /*	localtime_r(&_trp->dtstart,&(_trp->ts)); */
 	return _trp;
 }
