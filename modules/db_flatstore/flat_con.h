@@ -42,9 +42,6 @@ struct flat_con {
  */
 #define CON_FILE(db_con) (((struct flat_con*)((db_con)->tail))->file)
 
-/* returns the filename of the table */
-#define CON_FILENAME(db_con) (((struct flat_con*)((db_con)->tail))->id->table)
-
 
 /*
  * Create a new connection structure,

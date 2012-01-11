@@ -44,7 +44,7 @@ static int pool_pid;
  * Get a connection from the pool, reuse existing
  * if possible, otherwise create a new one
  */
-struct flat_con* flat_get_connection(const str* dir, const str* table)
+struct flat_con* flat_get_connection(char* dir, char* table)
 {
 	struct flat_id* id;
 	struct flat_con* ptr;

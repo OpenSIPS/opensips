@@ -24,13 +24,14 @@
 
 #include <string.h>
 #include <errno.h>
-#include <fcntl.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "flatstore_mod.h"
 #include "flat_con.h"
 
+#define FILE_SUFFIX ".log"
+#define FILE_SUFFIX_LEN (sizeof(FILE_SUFFIX) - 1)
 
 /* returns a pkg_malloc'ed file name */
 static char* get_name(struct flat_id* id)
@@ -40,43 +41,14 @@ static char* get_name(struct flat_id* id)
 	char* num, *ptr;
 	int num_len;
 	int total_len;
-	str prefix, suffix;
-
-	static struct sip_msg flat_dummy_msg;
 
 	buf_len=pathmax();
 	if (!id) {
 		LM_ERR("invalid parameter value\n");
 		return 0;
 	}
-	if (flat_suffix) {
-		if (fixup_get_svalue(&flat_dummy_msg, flat_suffix, &suffix) < 0) {
-			LM_ERR("bad suffix - using default \"%s\"\n", FILE_SUFFIX);
-			suffix.s = FILE_SUFFIX;
-			suffix.len = FILE_SUFFIX_LEN;
-		}
-	} else {
-		suffix.s = 0;
-		suffix.len = 0;
-	}
-	if (flat_prefix) {
-		if (fixup_get_svalue(&flat_dummy_msg, flat_prefix, &prefix) < 0) {
-			LM_ERR("bad prefix - discarding\n");
-			prefix.s = 0;
-			prefix.len = 0;
-		}
-	} else {
-		prefix.s = 0;
-		prefix.len = 0;
-	}
-
-
-	total_len = id->dir.len + 1 /* / */ +
-		prefix.len /* table prefix */ +
-		id->table.len /* table name */ +
-		suffix.len /* table suffix */ +
-		flat_single_file ? 2 : 1 /* _ needed? + '\0' */;
-				/* without pid */
+	total_len=id->dir.len+1 /* / */+id->table.len+1 /* _ */+
+				FILE_SUFFIX_LEN+1 /* \0 */; /* without pid*/
 	if (buf_len<total_len){
 		LM_ERR("the path is too long (%d and PATHMAX is %d)\n",
 					total_len, buf_len);
@@ -95,28 +67,23 @@ static char* get_name(struct flat_id* id)
 	ptr += id->dir.len;
 	*ptr++ = '/';
 
-	memcpy(ptr, prefix.s, prefix.len);
-	ptr += prefix.len;
-
 	memcpy(ptr, id->table.s, id->table.len);
 	ptr += id->table.len;
 
-	if (!flat_single_file) {
-		*ptr++ = '_';
-
-		num = int2str(flat_pid, &num_len);
-		if (buf_len<(total_len+num_len)){
-			LM_ERR("the path is too long (%d and PATHMAX is"
-					" %d)\n", total_len+num_len, buf_len);
-			pkg_free(buf);
-			return 0;
-		}
-		memcpy(ptr, num, num_len);
-		ptr += num_len;
+	*ptr++ = '_';
+	
+	num = int2str(flat_pid, &num_len);
+	if (buf_len<(total_len+num_len)){
+		LM_ERR("the path is too long (%d and PATHMAX is"
+				" %d)\n", total_len+num_len, buf_len);
+		pkg_free(buf);
+		return 0;
 	}
+	memcpy(ptr, num, num_len);
+	ptr += num_len;
 
-	memcpy(ptr, suffix.s, suffix.len);
-	ptr += suffix.len;
+	memcpy(ptr, FILE_SUFFIX, FILE_SUFFIX_LEN);
+	ptr += FILE_SUFFIX_LEN;
 
 	*ptr = '\0';
 	return buf;

@@ -31,7 +31,6 @@
 #define FLATSTORE_MOD_H
 
 #include <time.h>
-#include "../../mod_fix.h"
 
 /*
  * Process number used in filenames
@@ -63,21 +62,6 @@ extern time_t* flat_rotate;
  * last log rotation in the process
  */
 extern time_t local_timestamp;
-
-
-/*
- * Default suffix for logs
- */
-#define FILE_SUFFIX ".log"
-#define FILE_SUFFIX_LEN (sizeof(FILE_SUFFIX)-1)
-
-/*
- * Suffix and prefix for logs
- */
-extern gparam_p flat_suffix;
-extern gparam_p flat_prefix;
-
-extern int flat_single_file;
 
 
 #endif /* FLATSTORE_MOD_H */
