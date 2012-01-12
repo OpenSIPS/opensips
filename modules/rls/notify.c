@@ -670,7 +670,7 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 		memcpy(p,"Content-Type: multipart/related;type=\"application/rlmi+xml\"", 59 );
 		p += 59;
 		memcpy(p, ";start=\"<", 9);
-		p += 10;
+		p += 9;
 		memcpy(p, start_cid->s, start_cid->len);
 		p += start_cid->len;
 		memcpy(p, ">\";boundary=\"", 13);
