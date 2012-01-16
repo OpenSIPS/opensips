@@ -41,7 +41,7 @@ Irina-Maria Stanescu
               1.5.3. socket_timeout (int)
               1.5.4. signaling_ip_avp (string)
               1.5.5. canonical_uri_avp (string)
-              1.5.6. diverter_avp_id (string)
+              1.5.6. diverter_avp (string)
               1.5.7. prepaid_account_flag (int)
               1.5.8. call_limit_avp (string)
               1.5.9. call_token_avp (string)
@@ -60,7 +60,7 @@ Irina-Maria Stanescu
    1.3. Setting the socket_timeout parameter
    1.4. Setting the signaling_ip_avp parameter
    1.5. Setting the canonical_uri_avp parameter
-   1.6. Setting the diverter_avp_id parameter
+   1.6. Setting the diverter_avp parameter
    1.7. Setting the prepaid_account_flag parameter
    1.8. Setting the call_limit_avp parameter
    1.9. Setting the call_token_avp parameter
@@ -267,9 +267,9 @@ canonical_uri_avp (string)
 modparam("call_control", "canonical_uri_avp", "$avp(cc_can_uri)")
 ...
 
-diverter_avp_id (string)
+diverter_avp (string)
 
-   Specification of the id of an AVP which holds an optional
+   Specification of the AVP which holds an optional
    application defined diverter SIP URI. When this is set, it will
    be used by the rating engine as the billing party when finding
    the rates to apply to a given call, otherwise, the caller's URI
@@ -285,16 +285,16 @@ diverter_avp_id (string)
    diverter AVP should the set to B's URI, because B is the
    billing party in the call not A after the call was diverted.
 
-   Default value is “$avp(805)”.
+   Default value is “$avp(cc_diverter)”.
 
-   Example 1.6. Setting the diverter_avp_id parameter
+   Example 1.6. Setting the diverter_avp parameter
 ...
-modparam("call_control", "diverter_avp_id", "$avp(805)")
+modparam("call_control", "diverter_avp", "$avp(diverter)")
 
 route {
   ...
   # alice@example.com is paying for this call
-  $avp(805) = "alice@example.com";
+  $avp(diverter) = "alice@example.com";
   ...
 }
 ...

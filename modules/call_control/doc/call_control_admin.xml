@@ -328,9 +328,9 @@ modparam("call_control", "canonical_uri_avp", "$avp(cc_can_uri)")
     </section>
 
     <section>
-    <title><varname>diverter_avp_id</varname> (string)</title>
+    <title><varname>diverter_avp</varname> (string)</title>
       <para>
-        Specification of the id of an AVP which holds an optional
+        Specification of the AVP which holds an optional
         application defined diverter SIP URI. When this is set, it will be
         used by the rating engine as the billing party when finding the rates
         to apply to a given call, otherwise, the caller's URI taken from the
@@ -349,20 +349,20 @@ modparam("call_control", "canonical_uri_avp", "$avp(cc_can_uri)")
 
       <para>
         <emphasis>
-          Default value is <quote>$avp(805)</quote>.
+          Default value is <quote>$avp(diverter)</quote>.
         </emphasis>
       </para>
 
       <example>
-      <title>Setting the <varname>diverter_avp_id</varname> parameter</title>
+      <title>Setting the <varname>diverter_avp</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("call_control", "diverter_avp_id", "$avp(805)")
+modparam("call_control", "diverter_avp", "$avp(diverter)")
 
 route {
   ...
   # alice@example.com is paying for this call
-  $avp(805) = "alice@example.com";
+  $avp(diverter) = "alice@example.com";
   ...
 }
 ...
