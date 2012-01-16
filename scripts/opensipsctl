@@ -1405,7 +1405,7 @@ dialplan() {
 				VALUES ( $DIALPLAN_DPID, $DIALPLAN_PR, $DIALPLAN_MATCH_OP, \
 					'$DIALPLAN_MATCH_EXP', $DIALPLAN_MATCH_LEN, '$DIALPLAN_SUBST_EXP', \
 					'$DIALPLAN_REPL_EXP', '$DIALPLAN_ATTRS')";
-			mecho "$QUERY"
+			#mecho "$QUERY"
 			$DBCMD "$QUERY"
 
 			if [ $? -ne 0 ] ; then
@@ -1479,6 +1479,107 @@ dialplan() {
 			usage_dialplan
 			exit 1
 
+	esac
+}
+
+#
+##### ------------------------------------------------ #####
+### REGISTRANT management
+#
+registrant() {
+	require_dbengine
+	require_ctlengine
+	case $1 in
+		show)
+			mecho "registrant table"
+			QUERY="select * FROM $REGISTRANT_TABLE ORDER BY $REGISTRANT_AOR_COLUMN; "
+			$DBCMD "$QUERY"
+			;;
+
+		dump)
+			$CTLCMD reg_list
+			;;
+
+		add)
+			shift
+			if [ $# -lt 9 ] ; then
+				merr "too few parameters"
+				usage_dialplan
+				exit 1
+			fi
+
+			REGISTRANT_REGISTRAR=$1
+			REGISTRANT_PROXY=$2
+			REGISTRANT_AOR=$3
+			REGISTRANT_THIRD_PARTY_REGISTRANT=$4
+			REGISTRANT_USERNAME=$5
+			REGISTRANT_BINDING_URI=$6
+			REGISTRANT_BINDING_PARAMS=$7
+			REGISTRANT_EXPIRY=$8
+			REGISTRANT_FORCED_SOCKET=$9
+
+			QUERY="insert into $REGISTRANT_TABLE\
+				( $REGISTRANT_REGISTRAR_COLUMN,\
+				$REGISTRANT_PROXY_COLUMN, $REGISTRANT_AOR_COLUMN,\
+				$REGISTRANT_THIRD_PARTY_REGISTRANT_COLUMN,\
+				$REGISTRANT_USERNAME_COLUMN,\
+				$REGISTRANT_PASSWORD_COLUMN,\
+				$REGISTRANT_BINDING_URI_COLUMN,\
+				$REGISTRANT_BINDING_PARAMS_COLUMN,\
+				$REGISTRANT_EXPIRY_COLUMN,\
+				$REGISTRANT_FORCED_SOCKET_COLUMN)\
+				VALUES ( '$REGISTRANT_REGISTRAR', '$REGISTRANT_PROXY',\
+				'$REGISTRANT_AOR',\
+				'$REGISTRANT_THIRD_PARTY_REGISTRANT',\
+				'$REGISTRANT_USERNAME', '$REGISTRANT_PASSWORD',\
+				'$REGISTRANT_BINDING_URI',\
+				'$REGISTRANT_BINDING_PARAMS',\
+				$REGISTRANT_EXPIRY, '$REGISTRANT_FORCED_SOCKET')";
+			#mecho "$QUERY"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "registrant - SQL Error"
+				exit 1
+			fi
+
+			#$CTLCMD reg_reload
+			;;
+		rm)
+			QUERY="delete from $REGISTRANT_TABLE; "
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "registrant - SQL Error"
+				exit 1
+			fi
+
+			#$CTLCMD reg_reload
+			;;
+
+		rmaor)
+			shift
+			if [ $# -lt 1 ] ; then
+				merr "too few parameters"
+				usage_registrant
+				exit 1
+			fi
+
+			REGISTRANT_ID=$1
+
+			QUERY="delete from $REGISTRANT_TABLE where $REGISTRANT_ID_COLUMN=$REGISTRANT_ID; "
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "registrant - SQL Error"
+				exit 1
+			fi
+
+			#$CTLCMD reg_reload
+			;;
+		*)
+			usage_registrant
+			exit 1
 	esac
 }
 
@@ -2355,6 +2456,11 @@ case $1 in
 	dialplan)
 		shift
 		dialplan "$@"
+		;;
+
+	registrant)
+		shift
+		registrant "$@"
 		;;
 
 	monitor|console|moni|con)

@@ -1,0 +1,1 @@
+id(int,auto) registrar(string) proxy(string,null) aor(string) third_party_registrant(string,null) username(string,null) password(string,null) binding_URI(string) binding_params(string,null) expiry(int,null) forced_socket(string,null) 

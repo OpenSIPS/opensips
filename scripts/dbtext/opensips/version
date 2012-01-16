@@ -18,7 +18,6 @@ domainpolicy:3
 dr_carriers:1
 dr_gateways:4
 dr_groups:2
-id(int,auto) gwlist(string) description(string) 
 dr_rules:3
 globalblacklist:2
 grp:3
@@ -31,6 +30,7 @@ nh_sockets:0
 pdt:2
 presentity:5
 pua:8
+registrant:1
 re_grp:2
 rls_presentity:1
 rls_watchers:2

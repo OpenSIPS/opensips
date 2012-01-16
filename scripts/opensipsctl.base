@@ -290,6 +290,22 @@ DIALPLAN_SUBST_EXP_COLUMN=subst_exp
 DIALPLAN_REPL_EXP_COLUMN=repl_exp
 DIALPLAN_ATTRS_COLUMN=attrs
 
+#registrant tables
+if [ -z "$REGISTRANT_TABLE" ] ; then
+	REGISTRANT_TABLE=registrant
+fi
+REGISTRANT_ID_COLUMN=id
+REGISTRANT_REGISTRAR_COLUMN=registrar
+REGISTRANT_PROXY_COLUMN=proxy
+REGISTRANT_AOR_COLUMN=aor
+REGISTRANT_THIRD_PARTY_REGISTRANT_COLUMN=third_party_registrant
+REGISTRANT_USERNAME_COLUMN=username
+REGISTRANT_PASSWORD_COLUMN=password
+REGISTRANT_BINDING_URI_COLUMN=binding_URI
+REGISTRANT_BINDING_PARAMS_COLUMN=binding_params
+REGISTRANT_EXPIRY_COLUMN=expiry
+REGISTRANT_FORCED_SOCKET_COLUMN=forced_socket
+
 #
 ##### ------------------------------------------------ #####
 ### usage functions
@@ -425,6 +441,23 @@ cat <<EOF
  dialplan rmrule <dpid> <prio> ..... removes all the gived dpid/prio entries
 EOF
 }
+
+usage_registrant() {
+	echo
+	mecho " -- command 'registrant' - manage registrants"
+	echo
+cat <<EOF
+   * Examples:  registrant add sip:opensips.org '' sip:user@opensips.org '' user password sip:user@localhost '' 3600 ''
+ registrant show ......................... show registrant table
+ registrant dump ......................... show registrant status
+ registrant add <registrar> <proxy> <aor> <third_party_registrant>
+                <username> <password> <binding_URI> <binding_params>
+                <expiry> <forced_socket> . add a registrant
+ registrant rm ........................... removes the entire registrant table
+ registrant rmaor <id> ................... removes the gived aor id
+EOF
+}
+USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_registrant"
 
 ##### ----------------------------------------------- #####
 #### Common functions
