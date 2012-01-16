@@ -59,7 +59,7 @@ typedef struct uac_reg_map {
 	str contact_params;		/* contact params */
 	str auth_user;			/* authentication user */
 	str auth_password;		/* authentication password */
-	str expires;			/* expiration interval */
+	unsigned int expires;		/* expiration interval */
 	struct socket_info *send_sock;	/* socket */
 	struct uac_reg_map *next;
 } uac_reg_map_t;

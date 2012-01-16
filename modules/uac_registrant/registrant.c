@@ -29,18 +29,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <regex.h>
-
-#include "utime.h"
 
 #include "../../sr_module.h"
 #include "../../timer.h"
+#include "../../db/db.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_authenticate.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_min_expires.h"
-#include "reg_records.h"
 #include "../uac_auth/uac_auth.h"
+#include "reg_records.h"
+#include "reg_db_handler.h"
 
 
 #define UAC_REGISTRAR_URI_PARAM			1
@@ -56,14 +55,6 @@
 #define UAC_MAX_PARAMS_NO			11
 
 
-#define RXLS(m, str, i) (int)((m)[i].rm_eo - (m)[i].rm_so),(str) + (m)[i].rm_so
-#define RXSL(m, str, i) (str) + (m)[i].rm_so,(int)((m)[i].rm_eo - (m)[i].rm_so)
-#define RXL(m, str, i) (m)[i].rm_eo - (m)[i].rm_so
-#define RXS(m, str, i) (str) + (m)[i].rm_so
-
-#define RX_L_S(m, str, i) _l=(int)((m)[i].rm_eo - (m)[i].rm_so);_s=(str) + (m)[i].rm_so
-
-
 /** Functions declarations */
 static int mod_init(void);
 static void mod_destroy(void);
@@ -71,7 +62,6 @@ static int child_init(int rank);
 
 void timer_check(unsigned int ticks, void* param);
 
-static int add_uac_params(modparam_t type, void * val);
 static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param);
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 
@@ -87,12 +77,8 @@ reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
 unsigned int hash_index = 0;
 
-static int params_inited = 0;
-static regex_t uac_params_regex;
+static str db_url = {NULL, 0};
 
-static uac_reg_map_t *uac_params = NULL;
-
-static struct sip_uri uri;
 static str register_method = str_init("REGISTER");
 static str contact_hdr = str_init("Contact: ");
 static str expires_hdr = str_init("Expires: ");
@@ -123,7 +109,18 @@ static param_export_t params[]= {
 	{"hash_size",		INT_PARAM,			&reg_hsize},
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
-	{"uac",			STR_PARAM|USE_FUNC_PARAM,	(void *)add_uac_params},
+	{"db_url",		STR_PARAM,			&db_url.s},
+	{"table_name",		STR_PARAM,			&reg_table_name},
+	{"registrar_column",	STR_PARAM,			&registrar_column.s},
+	{"proxy_column",	STR_PARAM,			&proxy_column.s},
+	{"aor_column",		STR_PARAM,			&aor_column.s},
+	{"third_party_registrant_column",STR_PARAM,&third_party_registrant_column.s},
+	{"username_column",	STR_PARAM,		&username_column.s},
+	{"password_column",	STR_PARAM,		&password_column.s},
+	{"binding_URI_column",	STR_PARAM,		&binding_URI_column.s},
+	{"binding_params_column",	STR_PARAM,	&binding_params_column.s},
+	{"expiry_column",	STR_PARAM,		&expiry_column.s},
+	{"forced_socket_column",	STR_PARAM,	&forced_socket_column.s},
 	{0,0,0}
 };
 
@@ -156,17 +153,14 @@ struct module_exports exports= {
 /** Module init function */
 static int mod_init(void)
 {
-	uac_reg_map_t *_uac_param, *uac_param = uac_params;
-	char *p = NULL;
-	int len = 0;
-	str now = {NULL, 0};
-
-	LM_DBG("start\n");
-
-	regfree(&uac_params_regex);
-
 	if(load_uac_auth_api(&uac_auth_api)<0){
 		LM_ERR("Failed to load uac_auth api\n");
+		return -1;
+	}
+
+	/* load all TM stuff */
+	if(load_tm_api(&tmb)==-1) {
+		LM_ERR("can't load tm functions\n");
 		return -1;
 	}
 
@@ -188,40 +182,23 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* load all TM stuff */
-	if(load_tm_api(&tmb)==-1) {
-		LM_ERR("can't load tm functions\n");
+	reg_table_name.len = strlen(reg_table_name.s);
+	registrar_column.len = strlen(registrar_column.s);
+	proxy_column.len = strlen(proxy_column.s);
+	aor_column.len = strlen(aor_column.s);
+	third_party_registrant_column.len =
+		strlen(third_party_registrant_column.s);
+	username_column.len = strlen(username_column.s);
+	password_column.len = strlen(password_column.s);
+	binding_URI_column.len = strlen(binding_URI_column.s);
+	binding_params_column.len = strlen(binding_params_column.s);
+	expiry_column.len = strlen(expiry_column.s);
+	forced_socket_column.len = strlen(forced_socket_column.s);
+	init_db_url(db_url , 0 /*cannot be null*/);
+	if (init_reg_db(&db_url) != 0) {
+		LM_ERR("failed to initialize the DB support\n");
 		return -1;
 	}
-
-	p = int2str((unsigned long)(time(0)), &len);
-	if (p && len>0) {
-		now.s = (char *)pkg_malloc(len);
-		if(now.s) {
-			memcpy(now.s, p, len);
-			now.len = len;
-		} else {
-			LM_ERR("oom\n");
-			return -1;
-		}
-	}
-	
-	while(uac_param) {
-		LM_DBG("let's register [%.*s] on [%.*s] from hash table [%d]\n",
-			uac_param->to_uri.len, uac_param->to_uri.s,
-			uac_param->registrar_uri.len, uac_param->registrar_uri.s,
-			uac_param->hash_code);
-		if(add_record(uac_param, &now)<0) {
-			LM_ERR("can't load registrant\n");
-			if (now.s) {pkg_free(now.s);}
-			return -1;
-		}
-		_uac_param = uac_param;
-		uac_param = uac_param->next;
-		pkg_free(_uac_param);
-	}
-	uac_params = NULL;
-	if (now.s) {pkg_free(now.s);}
 
 	register_timer(timer_check, 0, timer_interval/reg_hsize);
 
@@ -237,178 +214,12 @@ static void mod_destroy(void)
 	return;
 }
 
-static int child_init(int rank){return 0;}
-
-
-static int init_params(void)
+static int child_init(int rank)
 {
-	if (regcomp(&uac_params_regex,
-		"^([^, ]+),([^, ]*),([^, ]+),([^, ]*),([^, ]*),([^, ]*),([^, ]+),([^, ]*),([0-9]*),([^, ]*)$",
-		REG_EXTENDED|REG_ICASE)) {
-		LM_ERR("can't compile modparam regex\n");
+	if (db_url.s != NULL && connect_reg_db(&db_url)) {
+		LM_ERR("failed to connect to db (rank=%d)\n",rank);
 		return -1;
 	}
-
-	params_inited = 1;
-	return 0;
-}
-
-
-static int add_uac_params(modparam_t type, void *val)
-{
-	regmatch_t m[UAC_MAX_PARAMS_NO];
-	char *p, *line = (char *)val;
-	char *_s;
-	int _l;
-	unsigned int size;
-	uac_reg_map_t *uac_param;
-	str host;
-	int port, proto;
-
-	if (!params_inited && init_params())
-		return -1;
-
-	if (regexec(&uac_params_regex, line, UAC_MAX_PARAMS_NO, m, 0)) {
-		LM_ERR("invalid param: %s\n", (char *)val);
-		return -1;
-	}
-	LM_DBG("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] password=[%.*s]"
-		" expire=[%.*s] proxy=[%.*s] contact=[%.*s] third_party=[%.*s]\n",
-		RXLS(m, line, UAC_REGISTRAR_URI_PARAM), RXLS(m, line, UAC_AOR_URI_PARAM),
-		RXLS(m, line, UAC_AUTH_USER_PARAM), RXLS(m, line, UAC_AUTH_PASSWORD_PARAM),
-		RXLS(m, line, UAC_EXPIRES_PARAM), RXLS(m, line, UAC_PROXY_URI_PARAM),
-		RXLS(m, line, UAC_CONTACT_URI_PARAM),
-		RXLS(m, line, UAC_THIRD_PARTY_REGISTRANT_URI_PARAM));
-
-	size = sizeof(uac_reg_map_t) + RXL(m, line, 0);
-	uac_param = (uac_reg_map_t *)pkg_malloc(size);
-	if (!uac_param) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	memset(uac_param, 0, size);
-	p = (char*)(uac_param + 1);
-
-	RX_L_S(m, line, UAC_REGISTRAR_URI_PARAM);
-	if (parse_uri(_s, _l, &uri)<0) {
-		LM_ERR("cannot parse registrar uri [%.*s]\n", _l, _s);
-		return -1;
-	}
-	if (uri.user.s && uri.user.len) {
-		LM_ERR("registrant uri must not have user [%.*s]\n",
-			uri.user.len, uri.user.s);
-		return -1;
-	}
-	uac_param->registrar_uri.len = _l;
-	uac_param->registrar_uri.s = p;
-	memcpy(p, _s, _l);
-	p += _l;
-
-	RX_L_S(m, line, UAC_PROXY_URI_PARAM);
-	if (_l != 0) {
-		if (parse_uri(_s, _l, &uri)<0) {
-			LM_ERR("cannot parse proxy uri [%.*s]\n", _l, _s);
-			return -1;
-		}
-		if (uri.user.s && uri.user.len) {
-			LM_ERR("proxy uri must not have user [%.*s]\n",
-				uri.user.len, uri.user.s);
-			return -1;
-		}
-		uac_param->proxy_uri.len = _l;
-		uac_param->proxy_uri.s = p;
-		memcpy(p, _s, _l);
-		p += _l;
-	}
-
-	RX_L_S(m, line, UAC_AOR_URI_PARAM);
-	if (parse_uri(_s, _l, &uri)<0) {
-		LM_ERR("cannot parse aor uri [%.*s]\n", _l, _s);
-		return -1;
-	}
-	uac_param->to_uri.len = _l;
-	uac_param->to_uri.s = p;
-	memcpy(p, _s, _l);
-	p += _l;
-
-	uac_param->hash_code = core_hash(&uac_param->to_uri, NULL, reg_hsize);
-
-	RX_L_S(m, line, UAC_THIRD_PARTY_REGISTRANT_URI_PARAM);
-	if (_l != 0) {
-		if (parse_uri(_s, _l, &uri)<0) {
-			LM_ERR("cannot parse third party registrant uri [%.*s]\n", _l, _s);
-			return -1;
-		}
-		uac_param->from_uri.len = _l;
-		uac_param->from_uri.s = p;
-		memcpy(p, _s, _l);
-		p += _l;
-	}
-
-	RX_L_S(m, line, UAC_CONTACT_URI_PARAM);
-	if (parse_uri(_s, _l, &uri)<0) {
-		LM_ERR("cannot parse contact uri [%.*s]\n", _l, _s);
-		return -1;
-	}
-	uac_param->contact_uri.len = _l;
-	uac_param->contact_uri.s = p;
-	memcpy(p, _s, _l);
-	p += _l;
-
-	RX_L_S(m, line, UAC_AUTH_USER_PARAM);
-	if (_l) {
-		uac_param->auth_user.len = _l;
-		uac_param->auth_user.s = p;
-		memcpy(p, _s, _l);
-		p += _l;
-	}
-
-	RX_L_S(m, line, UAC_AUTH_PASSWORD_PARAM);
-	if (_l) {
-		uac_param->auth_password.len = _l;
-		uac_param->auth_password.s = p;
-		memcpy(p, _s, _l);
-		p += _l;
-	}
-
-	RX_L_S(m, line, UAC_CONTACT_PARAMS_PARAM);
-	if (_l) {
-		if (*p == ';') {
-			LM_ERR("contact params must start with ';'\n");
-			return -1;
-		}
-		uac_param->contact_params.len = _l;
-		uac_param->contact_params.s = p;
-		memcpy(p, _s, _l);
-		p += _l;
-	}
-
-	RX_L_S(m, line, UAC_EXPIRES_PARAM);
-	if (_l) {
-		uac_param->expires.len = _l;
-		uac_param->expires.s = p;
-		memcpy(p, _s, _l);
-		p += _l;
-	}
-
-	RX_L_S(m, line, UAC_FORCED_SOCKET_PARAM);
-	if (_l) {
-		if (parse_phostport(_s, _l, &host.s, &host.len, &port, &proto)<0) {
-			LM_ERR("cannot parse forced socket [%.*s]\n", _l, _s);
-			return -1;
-		}
-		uac_param->send_sock = grep_sock_info(&host,
-					(unsigned short) port, (unsigned short) proto);
-		if (uac_param->send_sock==NULL) {
-			LM_ERR("invalid forced socket [%.*s]\n", _l, _s);
-			return -1;
-		}
-	}
-
-	if (uac_params)
-		uac_param->next = uac_params;
-	uac_params = uac_param;
-
 	return 0;
 }
 
@@ -447,7 +258,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	statuscode = ps->code;
 	now = time(0);
 	LM_DBG("tm [%p] notification cb for %s [%d] reply at [%d]\n",
-			t, (ps->rpl==FAKED_REPLY)?"FAKED_REPLY":"", statuscode, (unsigned int)now);
+			t, (ps->rpl==FAKED_REPLY)?"FAKED_REPLY":"",
+			statuscode, (unsigned int)now);
 
 	if(statuscode<200) return;
 

@@ -10,7 +10,7 @@ Ovidiu Sas
 
    <osas@voipembedded.com>
 
-   Copyright Â© 2011 VoIP Embedded, Inc.
+   Copyright © 2011 VoIP Embedded, Inc.
    Revision History
    Revision $Revision$ $Date: 2011-06-30 10:23:37 -0400 (Thu, 30
                        Jun 2011) $
@@ -30,7 +30,18 @@ Ovidiu Sas
 
               1.3.1. hash_size (integer)
               1.3.2. timer_interval (integer)
-              1.3.3. uac (csv string)
+              1.3.3. db_url (string)
+              1.3.4. table_name (string)
+              1.3.5. registrar_column (string)
+              1.3.6. proxy_column (string)
+              1.3.7. aor_column (string)
+              1.3.8. third_party_registrant_column (string)
+              1.3.9. username_column (string)
+              1.3.10. password_column (string)
+              1.3.11. binding_URI_column (string)
+              1.3.12. binding_params_column (string)
+              1.3.13. expiry_column (string)
+              1.3.14. forced_socket_column (string)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -41,7 +52,18 @@ Ovidiu Sas
 
    1.1. Set hash_size parameter
    1.2. Set timer_interval parameter
-   1.3. Set uac parameter
+   1.3. Set "db_url" parameter
+   1.4. Set "table_name" parameter
+   1.5. Set "registrar_column" parameter
+   1.6. Set "proxy_column" parameter
+   1.7. Set "aor_column" parameter
+   1.8. Set "third_party_registrant_column" parameter
+   1.9. Set "username_column" parameter
+   1.10. Set "password_column" parameter
+   1.11. Set "binding_URI_column" parameter
+   1.12. Set "binding_params_column" parameter
+   1.13. Set "expiry_column" parameter
+   1.14. Set "forced_socket_column" parameter
 
 Chapter 1. Admin Guide
 
@@ -121,40 +143,164 @@ modparam("uac_registrant", "hash_size", 2)
 modparam("uac_registrant", "timer_interval", 120)
 ...
 
-1.3.3. uac (csv string)
+1.3.3. db_url (string)
 
-   Defines the field parameters of a registration. Each field is
-   separated by ','.
+   Database where to load the registrants from.
 
-   Meaning of the fields is as follows:
-     * registrar - URI pointing to the remote registrar (mandatory
-       field);
-     * outbound proxy - URI pointing to the outbond proxy. An
-       empty value means no putbound proxy (not mandatory);
-     * aor - URI defining the address of record (mandatory field);
-     * third party registrant - URI defining the third party
-       registrant (not mandatory);
-     * username - username for authentication (mandatory if the
-       registrar requires authentication);
-     * password - password for authentication (mandatory if the
-       registrar requires authntication);
-     * binding URI - contact URI in REGISTER (mandatory field);
-     * binding params - contact params in REGISTER (not
-       mandatory);
-     * expiry - expiration time (not mandatory). Default value:
-       3600;
-     * forced socket - socket for sending the REGISTER (not
-       mandatory). If a forced socket is provided, the socket MUST
-       be explicitely set as a global listening socket in the
-       config (see "listen" core parameter).
+   Default value is "NULL" (use default DB URL from core).
 
-   There is no default value. There can be several uac defined in
-   the config file.
-
-   Example 1.3. Set uac parameter
+   Example 1.3. Set "db_url" parameter
 ...
-modparam("uac_registrant", "uac",
-"sip:opensips.org,,sip:user@opensips.org,,user,password,sip:user@ip,,,")
+modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/datab
+ase")
+...
+
+1.3.4. table_name (string)
+
+   The database table that holds the registrant records.
+
+   Default value is "registrant".
+
+   Example 1.4. Set "table_name" parameter
+...
+modparam("uac_registrant", "table_name", "my_registrant")
+...
+
+1.3.5. registrar_column (string)
+
+   The column's name in the database storing the URI pointing to
+   the remote registrar (mandatory field). OpenSIPS expects a
+   valid URI.
+
+   Default value is "registrar".
+
+   Example 1.5. Set "registrar_column" parameter
+...
+modparam("uac_registrant", "registrar_column", "registranr_uri")
+...
+
+1.3.6. proxy_column (string)
+
+   The column's name in the database storing the URI pointing to
+   the outbond proxy (not mandatory field). An empty or NULL value
+   means no outbound proxy, otherwise OpenSIPS expects a valid
+   URI.
+
+   Default value is "proxy".
+
+   Example 1.6. Set "proxy_column" parameter
+...
+modparam("uac_registrant", "proxy_column", "proxy_uri")
+...
+
+1.3.7. aor_column (string)
+
+   The column's name in the database storing the URI defining the
+   address of record (mandatory field). The URI stored here will
+   be used in the To URI of the REGISTER. OpenSIPS expects a valid
+   URI.
+
+   Default value is "aor".
+
+   Example 1.7. Set "aor_column" parameter
+...
+modparam("uac_registrant", "aor_column", "to_uri")
+...
+
+1.3.8. third_party_registrant_column (string)
+
+   The column's name in the database storing the URI defining the
+   third party registrant (not mandatory field). The URI stored
+   here will be used in the From URI of the REGISTER. An empty or
+   NULL value means no third party registration (the From URI will
+   be identical to To URI), otherwise OpenSIPS expects a valid
+   URI.
+
+   Default value is "third_party_registrant".
+
+   Example 1.8. Set "third_party_registrant_column" parameter
+...
+modparam("uac_registrant", "third_party_registrant_column", "from_uri")
+...
+
+1.3.9. username_column (string)
+
+   The column's name in the database storing the username for
+   authentication (mandatory if the registrar requires
+   authentication).
+
+   Default value is "username".
+
+   Example 1.9. Set "username_column" parameter
+...
+modparam("uac_registrant", "username_column", "auth_username")
+...
+
+1.3.10. password_column (string)
+
+   The column's name in the database storing the password for
+   authentication (mandatory if the registrar requires
+   authntication).
+
+   Default value is "password".
+
+   Example 1.10. Set "password_column" parameter
+...
+modparam("uac_registrant", "password_column", "auth_passowrd")
+...
+
+1.3.11. binding_URI_column (string)
+
+   The column's name in the database storing the binding URI in
+   REGISTER (mandatory field). The URI stored here will be used in
+   the Contact URI of the REGISTER. OpenSIPS expects a valid URI.
+
+   Default value is "binding_URI".
+
+   Example 1.11. Set "binding_URI_column" parameter
+...
+modparam("uac_registrant", "binding_URI_column", "contact_uri")
+...
+
+1.3.12. binding_params_column (string)
+
+   The column's name in the database storing the binding params in
+   REGISTER (not mandatory field). If not NULL or not empty, the
+   string stored here will be added as paramns to the Contact URI
+   in REGISTER (it MUST start with ";". There is no validation on
+   the string stored here.
+
+   Default value is "binding_params".
+
+   Example 1.12. Set "binding_params_column" parameter
+...
+modparam("uac_registrant", "binding_params_column", "contact_params")
+...
+
+1.3.13. expiry_column (string)
+
+   The column's name in the database storing the expiration time
+   (not mandatory).
+
+   Default value is "expiry".
+
+   Example 1.13. Set "expiry_column" parameter
+...
+modparam("uac_registrant", "expiry_column", "registration_timeout")
+...
+
+1.3.14. forced_socket_column (string)
+
+   The column's name in the database storing the socket for
+   sending the REGISTER (not mandatory). If a forced socket is
+   provided, the socket MUST be explicitely set as a global
+   listening socket in the config (see "listen" core parameter).
+
+   Default value is "forced_socket".
+
+   Example 1.14. Set "forced_socket_column" parameter
+...
+modparam("uac_registrant", "forced_socket_column", "fs")
 ...
 
 1.4. Exported Functions

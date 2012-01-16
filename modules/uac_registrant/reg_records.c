@@ -107,20 +107,10 @@ void new_call_id_ftag_4_record(reg_record_t *rec, str *now)
 int add_record(uac_reg_map_t *uac, str *now)
 {
 	reg_record_t *rec, *prev_rec, *record;
-	unsigned int size, expires;
+	unsigned int size;
 	dlg_t *td;
 	str call_id_ftag;
 	char *p;
-
-	if (uac->expires.s && uac->expires.len) {
-		if (str2int(&uac->expires, &expires)<0) {
-			LM_ERR("unable to get expiry from [%.*s]\n",
-				uac->expires.len, uac->expires.s);
-			return -1;
-		}
-	} else {
-		expires = default_expires;
-	}
 
 	/* Reserve space for record */
 	size = sizeof(reg_record_t) + MD5_LEN +
@@ -134,7 +124,7 @@ int add_record(uac_reg_map_t *uac, str *now)
 	}
 	memset(record, 0, size);
 
-	record->expires = expires;
+	record->expires = uac->expires;
 
 	td = &(record->td);
 	p = (char *)(record + 1);

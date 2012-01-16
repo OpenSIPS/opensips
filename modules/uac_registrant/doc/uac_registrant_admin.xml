@@ -137,74 +137,261 @@ modparam("uac_registrant", "timer_interval", 120)
 </programlisting>
 		</example>
 	</section>
+
 	<section>
-		<title><varname>uac</varname> (csv string)</title>
+		<title><varname>db_url</varname> (string)</title>
 		<para>
-		Defines the field parameters of a registration.
-		Each field is separated by ','.
+		Database where to load the registrants from.
 		</para>
-		<para>Meaning of the fields is as follows:</para>
-		<itemizedlist>
-			<listitem>
-			<para><emphasis>registrar</emphasis>
-				- URI pointing to the remote registrar (mandatory field);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>outbound proxy</emphasis>
-				- URI pointing to the outbond proxy.
-				An empty value means no putbound proxy (not mandatory);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>aor</emphasis>
-				- URI defining the address of record (mandatory field);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>third party registrant</emphasis>
-				- URI defining the third party registrant (not mandatory);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>username</emphasis>
-				- username for authentication
-				(mandatory if the registrar requires authentication);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>password</emphasis>
-				- password for authentication
-				(mandatory if the registrar requires authntication);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>binding URI</emphasis>
-				- contact URI in REGISTER (mandatory field);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>binding params</emphasis>
-				- contact params in REGISTER (not mandatory);</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>expiry</emphasis>
-				- expiration time  (not mandatory).  Default value: 3600;</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>forced socket</emphasis>
-				- socket for sending the REGISTER (not mandatory).
-				If a forced socket is provided, the socket MUST be
-				explicitely set as a global listening socket in the config
-				(see "listen" core parameter).
-			</para>
-			</listitem>
-		</itemizedlist>
 		<para>
 		<emphasis>
-			There is no default value.
-			There can be several uac defined in the config file.
+			Default value is <quote>NULL</quote> (use default DB URL from core).
 		</emphasis>
-                </para>
+		</para>
 		<example>
-		<title>Set <varname>uac</varname> parameter</title>
+		<title>Set <quote>db_url</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("uac_registrant", "uac",
-"sip:opensips.org,,sip:user@opensips.org,,user,password,sip:user@ip,,,")
+modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/database")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>table_name</varname> (string)</title>
+		<para>
+		The database table that holds the registrant records.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>registrant</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>table_name</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "table_name", "my_registrant")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>registrar_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		URI pointing to the remote registrar (mandatory field).
+		&osips; expects a valid URI.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>registrar</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>registrar_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "registrar_column", "registranr_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>proxy_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		URI pointing to the outbond proxy (not mandatory field).
+		An empty or NULL value means no outbound proxy,
+		otherwise &osips; expects a valid URI.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>proxy</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>proxy_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "proxy_column", "proxy_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>aor_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		URI defining the address of record (mandatory field).
+		The URI stored here will be used in the To URI of the REGISTER.
+		&osips; expects a valid URI.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>aor</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>aor_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "aor_column", "to_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>third_party_registrant_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		URI defining the third party registrant (not mandatory field).
+		The URI stored here will be used in the From URI of the REGISTER.
+		An empty or NULL value means no third party registration
+		(the From URI will be identical to To URI),
+		otherwise &osips; expects a valid URI.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>third_party_registrant</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>third_party_registrant_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "third_party_registrant_column", "from_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>username_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		username for authentication (mandatory if the registrar requires authentication).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>username</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>username_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "username_column", "auth_username")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>password_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		password for authentication (mandatory if the registrar requires authntication).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>password</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>password_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "password_column", "auth_passowrd")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>binding_URI_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		binding URI in REGISTER (mandatory field).
+		The URI stored here will be used in the Contact URI of the REGISTER.
+		&osips; expects a valid URI.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>binding_URI</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>binding_URI_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "binding_URI_column", "contact_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>binding_params_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		binding params in REGISTER (not mandatory field).
+		If not NULL or not empty, the string stored here will be added
+		as paramns to the Contact URI in REGISTER (it MUST start with <quote>;</quote>.
+		There is no validation on the string stored here.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>binding_params</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>binding_params_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "binding_params_column", "contact_params")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>expiry_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		expiration time (not mandatory).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>expiry</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>expiry_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "expiry_column", "registration_timeout")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>forced_socket_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the
+		socket for sending the REGISTER (not mandatory).
+		If a forced socket is provided, the socket MUST be
+		explicitely set as a global listening socket in the config
+		(see <quote>listen</quote> core parameter).
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>forced_socket</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>forced_socket_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "forced_socket_column", "fs")
 ...
 </programlisting>
 		</example>
