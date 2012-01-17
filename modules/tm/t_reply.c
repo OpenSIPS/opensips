@@ -564,11 +564,24 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 		pkg_free(faked_req->new_uri.s);
 		faked_req->new_uri.s = 0;
 	}
+	if (faked_req->dst_uri.s) {
+		pkg_free(faked_req->dst_uri.s);
+		faked_req->dst_uri.s = 0;
+	}
+	if (faked_req->path_vec.s) {
+		pkg_free(faked_req->path_vec.s);
+		faked_req->path_vec.s = 0;
+	}
 
 	/* SDP in not cloned into SHM, so if we have one, it means the SDP
 	 * was parsed in the fake environment, so we have to free it */
 	if (faked_req->sdp)
 		free_sdp(&(faked_req->sdp));
+
+	if (faked_req->multi) {
+		free_multi_body(faked_req->multi);
+		faked_req->multi = 0;
+	}
 
 	/* free all types of lump that were added in failure handlers */
 	del_notflaged_lumps( &(faked_req->add_rm), LUMPFLAG_SHMEM );
