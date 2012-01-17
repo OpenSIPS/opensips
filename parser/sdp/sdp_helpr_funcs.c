@@ -199,28 +199,32 @@ int extract_rtpmap(str *body,
 	rtpmap_encoding->s = cp;
 	cp1 = (char*)ser_memmem(cp, "/", len, 1);
 	len -= cp1 - cp;
-	if (len <= 0 || cp == cp1) {
+	if (cp1==NULL || len <= 1 || cp == cp1) {
 		LM_ERR("invalid encoding in `a=rtpmap'\n");
 		return -1;
 	}
 	rtpmap_encoding->len = cp1 - cp;
 
-	cp = cp1;
-	cp1 = (char*)ser_memmem(cp, "/", len, 1);
-	len -= cp1 - cp;
-	if (len <= 0) {
-		LM_ERR("invalid encoding in `a=rtpmap:'\n");
-		return -1;
-	}
+	/* skip the '/' char */
+	cp = cp1+1;
+	len--;
 
-	rtpmap_clockrate->s = cp + 1; /* skip '/' */
-	rtpmap_clockrate->len = len -1; /* skip '/' */
-	if ( cp == cp1) {
+	cp1 = (char*)ser_memmem(cp, "/", len, 1);
+	if (cp1 == NULL) {
+		rtpmap_clockrate->s = cp;
+		rtpmap_clockrate->len = len;
 		rtpmap_parmas->s = NULL;
 		rtpmap_parmas->len = 0;
 	} else {
+		rtpmap_clockrate->s = cp;
+		rtpmap_clockrate->len = cp1-cp;
+		len -= cp1 - cp;
+		if (len <= 1) {
+			LM_ERR("invalid encoding in `a=rtpmap:'\n");
+			return -1;
+		}
 		rtpmap_parmas->s = cp1 + 1;
-		rtpmap_parmas->len = cp1 - cp;
+		rtpmap_parmas->len = len - 1;
 	}
 	return 0;
 }
