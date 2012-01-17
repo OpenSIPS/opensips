@@ -554,7 +554,7 @@ static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_
 			/*	LM_DBG("else: `%.*s'\n", tmpstr1.len, tmpstr1.s); */
 			}
 
-			a2p = find_next_sdp_line(a1p, m2p, 'a', m2p);
+			a2p = find_next_sdp_line(a1p-1, m2p, 'a', m2p);
 		}
 		/* Let's detect if the media is on hold by checking
 		 * the good old "0.0.0.0" connection address */
