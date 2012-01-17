@@ -50,6 +50,7 @@
 #include "../dialog/dlg_load.h"
 #include "../dialog/dlg_hash.h"
 #include "../tm/tm_load.h"
+#include "../tm/t_msgbuilder.h"
 
 
 
@@ -445,18 +446,24 @@ get_callid(struct sip_msg* msg, str *cid)
 static Bool
 get_cseq_number(struct sip_msg *msg, str *cseq)
 {
-    if (msg->cseq == NULL) {
-        if (parse_headers(msg, HDR_CSEQ_F, 0)==-1) {
-            LM_ERR("cannot parse CSeq header\n");
-            return False;
-        }
-        if (msg->cseq == NULL) {
-            LM_ERR("missing CSeq header\n");
-            return False;
-        }
-    }
+    struct cell *trans = tm_api.t_gett();
 
-    *cseq = get_cseq(msg)->number;
+    if (msg->first_line.type == SIP_REPLY && trans != NULL && trans != T_UNDEFINED) {
+        cseq->s = trans->cseq_n.s+CSEQ_LEN;
+        cseq->len = trans->cseq_n.len-CSEQ_LEN;
+    } else {
+        if (msg->cseq == NULL) {
+            if (parse_headers(msg, HDR_CSEQ_F, 0)==-1) {
+                LM_ERR("cannot parse CSeq header\n");
+                return False;
+            }
+            if (msg->cseq == NULL) {
+                LM_ERR("missing CSeq header\n");
+                return False;
+            }
+        }
+        *cseq = get_cseq(msg)->number;
+    }
 
     if (cseq->s==NULL || cseq->len==0) {
         LM_ERR("missing CSeq number\n");
