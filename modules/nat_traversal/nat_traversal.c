@@ -1070,10 +1070,10 @@ __dialog_confirmed(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params
 
     param->confirmed = True;
 
-    if(_params->msg == FAKED_REPLY)
-    {
+    if(_params->msg == FAKED_REPLY) {
         LM_ERR("FAKED reply - exit\n");
         lock_release(&param->lock);
+        return;
     }
     callee_uri = get_source_uri(_params->msg);
 
@@ -1217,78 +1217,6 @@ __dialog_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 }
 
 
-static void
-__dialog_created(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
-{
-    struct sip_msg *request = _params->msg;
-    NAT_Contact *contact;
-    SIP_Dialog *dialog;
-    Dialog_Param *param;
-    unsigned h;
-    char *uri;
-
-    if (request->REQ_METHOD != METHOD_INVITE)
-        return;
-
-    param = Dialog_Param_new();
-    if (!param) {
-        LM_ERR("cannot create dialog callback param\n");
-        return;
-    }
-
-    if (dlg_api.register_dlgcb(dlg, DLGCB_DESTROY, __dialog_destroy, param, NULL) != 0) {
-        LM_ERR("cannot register callback for dialog destruction\n");
-        Dialog_Param_del(param);
-        return;
-    }
-
-    if (dlg_api.register_dlgcb(dlg, DLGCB_EARLY, __dialog_early, param, NULL) != 0)
-        LM_ERR("cannot register callback for dialog early replies\n");
-    if (dlg_api.register_dlgcb(dlg, DLGCB_CONFIRMED, __dialog_confirmed, param, NULL) != 0)
-        LM_ERR("cannot register callback for dialog confirmation\n");
-
-    if ((request->msg_flags & FL_DO_KEEPALIVE) == 0)
-        return;
-
-    uri = get_source_uri(request);
-    param->caller_uri = shm_strdup(uri);
-    if (!param->caller_uri) {
-        LM_ERR("cannot allocate shared memory for caller_uri in dialog param\n");
-        return;
-    }
-
-    h = HASH(nat_table, uri);
-    lock_get(&nat_table->slots[h].lock);
-
-    contact = HashTable_search(nat_table, uri, h);
-    if (contact) {
-        dialog = SIP_Dialog_new(dlg, param->expire);
-        if (dialog) {
-            dialog->next = contact->dialogs;
-            contact->dialogs = dialog;
-        } else {
-            LM_ERR("cannot allocate shared memory for new SIP dialog\n");
-        }
-    } else {
-        contact = NAT_Contact_new(uri, request->rcv.bind_address);
-        if (contact) {
-            contact->dialogs = SIP_Dialog_new(dlg, param->expire);
-            if (contact->dialogs) {
-                contact->next = nat_table->slots[h].head;
-                nat_table->slots[h].head = contact;
-            } else {
-                LM_ERR("cannot allocate shared memory for new SIP dialog\n");
-                NAT_Contact_del(contact);
-            }
-        } else {
-            LM_ERR("cannot allocate shared memory for new NAT contact\n");
-        }
-    }
-
-    lock_release(&nat_table->slots[h].lock);
-}
-
-
 // callback to handle all SL generated replies
 //
 static void
@@ -1403,14 +1331,89 @@ __tm_reply_out(struct cell *trans, int type, struct tmcb_params *param)
 // callback to handle incoming requests
 //
 static void
-__tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
+__tm_request_in(struct cell *trans, int type, struct tmcb_params *t_param)
 {
-    if ((param->req->msg_flags & FL_NAT_TRACK_DIALOG) == 0)
+    struct sip_msg *request = t_param->req;
+    struct dlg_cell *dlg;
+    unsigned h;
+    char *uri;
+    Dialog_Param *param;
+    NAT_Contact *contact;
+    SIP_Dialog *dialog;
+
+    if (request->REQ_METHOD != METHOD_INVITE)
         return;
 
-    if (dlg_api.create_dlg(param->req,0) < 0) {
+    if ((request->msg_flags & FL_NAT_TRACK_DIALOG) == 0 && (request->msg_flags & FL_DO_KEEPALIVE) == 0)
+        return;
+
+    if (dlg_api.create_dlg(request, 0) < 0) {
         LM_ERR("could not create new dialog\n");
+        return;
     }
+
+    dlg = dlg_api.get_dlg();
+    if (!dlg) {
+        LM_CRIT("error getting dialog\n");
+        return;
+    }
+
+    param = Dialog_Param_new();
+    if (!param) {
+        LM_ERR("cannot create dialog callback param\n");
+        return;
+    }
+
+    if (dlg_api.register_dlgcb(dlg, DLGCB_DESTROY, __dialog_destroy, param, NULL) != 0) {
+        LM_ERR("cannot register callback for dialog destruction\n");
+        Dialog_Param_del(param);
+        return;
+    }
+
+    if (dlg_api.register_dlgcb(dlg, DLGCB_EARLY, __dialog_early, param, NULL) != 0)
+        LM_ERR("cannot register callback for dialog early replies\n");
+    if (dlg_api.register_dlgcb(dlg, DLGCB_CONFIRMED, __dialog_confirmed, param, NULL) != 0)
+        LM_ERR("cannot register callback for dialog confirmation\n");
+
+    if ((request->msg_flags & FL_DO_KEEPALIVE) == 0)
+        return;
+
+    uri = get_source_uri(request);
+    param->caller_uri = shm_strdup(uri);
+    if (!param->caller_uri) {
+        LM_ERR("cannot allocate shared memory for caller_uri in dialog param\n");
+        return;
+    }
+
+    h = HASH(nat_table, uri);
+    lock_get(&nat_table->slots[h].lock);
+
+    contact = HashTable_search(nat_table, uri, h);
+    if (contact) {
+        dialog = SIP_Dialog_new(dlg, param->expire);
+        if (dialog) {
+            dialog->next = contact->dialogs;
+            contact->dialogs = dialog;
+        } else {
+            LM_ERR("cannot allocate shared memory for new SIP dialog\n");
+        }
+    } else {
+        contact = NAT_Contact_new(uri, request->rcv.bind_address);
+        if (contact) {
+            contact->dialogs = SIP_Dialog_new(dlg, param->expire);
+            if (contact->dialogs) {
+                contact->next = nat_table->slots[h].head;
+                nat_table->slots[h].head = contact;
+            } else {
+                LM_ERR("cannot allocate shared memory for new SIP dialog\n");
+                NAT_Contact_del(contact);
+            }
+        } else {
+            LM_ERR("cannot allocate shared memory for new NAT contact\n");
+        }
+    }
+
+    lock_release(&nat_table->slots[h].lock);
 }
 
 
@@ -1419,6 +1422,7 @@ __tm_request_in(struct cell *trans, int type, struct tmcb_params *param)
 static int
 NAT_Keepalive(struct sip_msg *msg)
 {
+    str totag;
 
     if (keepalive_disabled)
         return -1;
@@ -1453,8 +1457,20 @@ NAT_Keepalive(struct sip_msg *msg)
             LM_ERR("cannot keep alive dialog without the dialog module being loaded\n");
             return -1;
         }
+        if (parse_headers(msg, HDR_TO_F, 0) == -1) {
+            LM_ERR("failed to parse To header\n");
+            return -1;
+        }
+        if (!msg->to) {
+            LM_ERR("missing To header\n");
+            return -1;
+        }
+        totag = get_to(msg)->tag_value;
+        if (totag.s && totag.len>0) {
+            LM_ERR("nat_keepalive should only be called for initial INVITE requests\n");
+            return -1;
+        }
         msg->msg_flags |= FL_DO_KEEPALIVE;
-        msg->msg_flags |= FL_NAT_TRACK_DIALOG;
         return 1;
 
     default:
@@ -1799,9 +1815,9 @@ mod_init(void)
         }
         dialog_default_timeout = *param;
 
-        // register dialog creation callback
-        if (dlg_api.register_dlgcb(NULL, DLGCB_CREATED, __dialog_created, NULL, NULL) != 0) {
-            LM_ERR("cannot register callback for dialog creation\n");
+        // register callback for incoming requests
+        if (tm_api.register_tmcb(0, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <=0) {
+            LM_ERR("cannot register TM callback for incoming INVITE request\n");
             return -1;
         }
 
@@ -1903,10 +1919,6 @@ preprocess_request(struct sip_msg *msg, void *_param)
     totag = get_to(msg)->tag_value;
     if (totag.s==0 || totag.len==0) {
         msg->msg_flags |= FL_NAT_TRACK_DIALOG;
-        if (tm_api.register_tmcb(msg, 0, TMCB_REQUEST_IN, __tm_request_in, 0, 0) <=0) {
-            LM_ERR("cannot register TM callback for incoming INVITE request\n");
-            return -1;
-        }
     }
 
     return 1;
