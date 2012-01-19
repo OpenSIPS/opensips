@@ -1,5 +1,5 @@
 /*
- * $Id:$
+ * $Id$
  *
  * Copyright (C) 2012 OpenSIPS Solutions
  *

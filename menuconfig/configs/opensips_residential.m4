@@ -1,8 +1,13 @@
 #
-# $Id:$
+# $Id$
 #
 # OpenSIPS residential configuration script
 #     by OpenSIPS Solutions <team@opensips-solutions.com>
+#
+# This script was generated via "make menuconfig", from
+#   the "Residential" scenario.
+# You can enable / disable more features / functionalities by
+#   re-generating the scenario with different options.#
 #
 # Please refer to the Core CookBook at:
 #      http://www.opensips.org/Resources/DocsCookbooks
