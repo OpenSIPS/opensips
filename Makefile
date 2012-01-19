@@ -49,14 +49,19 @@ skip_cfg_install?=
 #extra modules to exclude
 skip_modules?=
 
+makefile_defs=0
+DEFS:=
+include Makefile.conf
+include Makefile.defs
+
 # if not set on the cmd. line or the env, exclude this modules:
-exclude_modules?= b2b_logic jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
-	db_mysql db_postgres db_unixodbc db_oracle db_berkeley aaa_radius \
-	osp perl snmpstats perlvdb carrierroute mmgeoip lua\
-	presence presence_xml presence_mwi presence_dialoginfo \
-	pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo \
-	ldap h350 identity regex cachedb_memcached cachedb_redis event_rabbitmq \
-	db_http json python dialplan mi_http cachedb_cassandra
+#exclude_modules?= b2b_logic jabber cpl-c xmpp rls mi_xmlrpc xcap_client \
+#	db_mysql db_postgres db_unixodbc db_oracle db_berkeley aaa_radius \
+#	osp perl snmpstats perlvdb carrierroute mmgeoip \
+#	presence presence_xml presence_mwi presence_dialoginfo \
+#	pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo \
+#	ldap h350 identity regex cachedb_memcached cachedb_redis event_rabbitmq \
+#	db_http json python dialplan mi_http
 ifeq ($(TLS),)
 	exclude_modules+= tlsops
 endif
@@ -64,7 +69,7 @@ endif
 override exclude_modules+= .svn $(skip_modules)
 
 #always include this modules
-include_modules?=
+#include_modules?=
 
 # first 2 lines are excluded because of the experimental or incomplete
 # status of the modules
@@ -138,14 +143,13 @@ else
 	RADIUSDEPON=yes
 endif
 
-ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules
+ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf
 
 #include general defs (like CC, CFLAGS  a.s.o)
 # hack to force makefile.defs re-inclusion (needed when make calls itself with
 # other options -- e.g. make bin)
-makefile_defs=0
-DEFS:=
-include Makefile.defs
+#DEFS:=
+#include Makefile.defs
 
 NAME=$(MAIN_NAME)
 
@@ -859,3 +863,9 @@ doxygen:
 	echo "HAVE_DOT=no" ;\
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"
+
+make_menuconfig:
+	cd menuconfig; make; cd -	
+
+menuconfig: make_menuconfig
+	./menuconfig/configure
