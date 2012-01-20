@@ -29,6 +29,8 @@
  */
 
 #include <string.h>
+#include <sys/time.h>
+
 #include <osp/osp.h>
 #include "../../dset.h"
 #include "../../usr_avp.h"
@@ -367,6 +369,7 @@ int ospRequestRouting(
     unsigned int destcount;
     OSPTTRANHANDLE trans = -1;
     int result = MODULE_RETURNCODE_FALSE;
+    struct timeval ts, te, td;
 
     if ((errcode = OSPPTransactionNew(_osp_provider, &trans)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errcode);
@@ -526,6 +529,8 @@ int ospRequestRouting(
             destcount,
             cinfostr);
 
+        gettimeofday(&ts, NULL);
+
         /* try to request authorization */
         errcode = OSPPTransactionRequestAuthorisation(
             trans,             /* transaction handle */
@@ -542,6 +547,11 @@ int ospRequestRouting(
             &destcount,        /* max destinations, after call dest_count */
             &logsize,          /* size allocated for detaillog (next param) 0=no log */
             detaillog);        /* memory location for detaillog to be stored */
+
+        gettimeofday(&te, NULL);
+
+        timersub(&te, &ts, &td);
+        LM_INFO("authreq cost = %lu.%06lu for call-id '%.*s'\n", td.tv_sec, td.tv_usec, callids[0]->Length, callids[0]->Value);
 
         if ((errcode == OSPC_ERR_NO_ERROR) &&
             (ospLoadRoutes(trans, destcount, source, srcdev, snid, called, authtime, rpid, pai, divuser, divhostbuf, pci) == 0))
