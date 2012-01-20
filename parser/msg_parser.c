@@ -563,6 +563,10 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	switch(fl->type){
 		case SIP_INVALID:
 			LM_DBG("invalid message\n");
+			/* if failed to parse the first line, we simply consider that the whole 
+			   buffer was parsed, so that nothing is left to be parsed :) - this will
+			   do the trick and make "msg" struct acceptable for following parsing attempts */
+			msg->unparsed = msg->buf + msg->len;
 			goto error;
 			break;
 		case SIP_REQUEST:
