@@ -23,6 +23,8 @@ ifneq ($(makefile_defs), 1)
 $(error "the local makefile does not include Makefile.defs!")
 endif
 
+include ../../Makefile.conf
+
 else
 # called by the main Makefile
 
