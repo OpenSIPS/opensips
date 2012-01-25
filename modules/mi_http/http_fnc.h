@@ -35,6 +35,7 @@ typedef struct http_mi_cmd_ {
 
 typedef struct mi_http_html_page_data_ {
 	str page;
+	str buffer;
 	int mod;
 	int cmd;
 }mi_http_html_page_data_t;
@@ -47,16 +48,13 @@ typedef struct mi_http_async_resp_data_ {
 }mi_http_async_resp_data_t;
 
 
-extern char *miHTTPResponse_Buf;
-
-
 int mi_http_init_async_lock(void);
 void mi_http_destroy_async_lock(void);
 
 int mi_http_init_cmds(void);
 int mi_http_parse_url(const char* url, int* mod, int* cmd);
 struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
-				str *page, struct mi_handler **async_hdl);
+			str *page, str *buffer, struct mi_handler **async_hdl);
 int mi_http_build_page(str* page, int max_page_len,
 				int mod, int cmd, struct mi_root* tree);
 

@@ -35,16 +35,13 @@
 #include "../../locking.h"
 
 #include "http_fnc.h"
-#include "httpd_proc.h"
 
 
 extern str http_root;
-extern int buf_size;
 str upSinceCTime;
 
 http_mi_cmd_t* http_mi_cmds;
 int http_mi_cmds_size;
-char* miHTTPResponse_Buf;
 mi_http_html_page_data_t html_page_data;
 
 gen_lock_t* mi_http_lock;
@@ -266,40 +263,20 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	int i;
 	int mod_len, cmd_len;
 
-	if (url_len<=0) {
+	if (url_len<0) {
 		LM_ERR("Invalid url length [%d]\n", url_len);
 		return -1;
 	}
+	if (url_len==0) return 0;
 	if (url[0] != '/') {
 		LM_ERR("URL starting with [%c] instead of'/'\n", *url);
 		return -1;
 	}
 	index++;
-	if (url_len - index < http_root.len) {
-		LM_ERR("root path 2 short [%.*s]\n", url_len, url);
-		return -1;
-	}
-	if (strncmp(http_root.s, &url[index], http_root.len) != 0) {
-		LM_ERR("wrong root path [%.*s]\n", url_len, url);
-		return -1;
-	}
-	if (http_root.len) {
-		index += http_root.len;
-		if (url_len - index <= 0) {
-			return 0;
-		}
-		if (url[index] != '/') {
-			LM_ERR("invalid root path [%.*s]\n", url_len, url);
-			return -1;
-		}
-		index++;
-	}
-	if (index>=url_len)
-		return 0;
 
 	for(i=index;i<url_len && url[i]!='/';i++);
 	mod_len = i - index;
-	LM_DBG("got mod [%.*s]\n", mod_len, &url[index]);
+	LM_NOTICE("got mod [%.*s]\n", mod_len, &url[index]);
 	for(i=0; i<http_mi_cmds_size && strncmp(&url[index], http_mi_cmds[i].cmds[0].module.s,mod_len) != 0;i++);
 	if (i==http_mi_cmds_size) {
 		LM_ERR("Invalid mod [%.*s] in url [%s]\n",
@@ -309,7 +286,7 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	*mod = i;
 
 	index += mod_len;
-	LM_DBG("index=%d url_len=%d\n", index, url_len);
+	LM_NOTICE("index=%d url_len=%d\n", index, url_len);
 	if (index>=url_len)
 		return 0;
 
@@ -321,7 +298,7 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 		return 0;
 	for(i=index;i<url_len && url[i]!='/';i++);
 	cmd_len = i - index;
-	LM_DBG("got cmd [%.*s]\n", cmd_len, &url[index]);
+	LM_NOTICE("got cmd [%.*s]\n", cmd_len, &url[index]);
 	for(i=0;i<http_mi_cmds[*mod].size && strncmp(&url[index], http_mi_cmds[*mod].cmds[i].name.s, cmd_len) != 0;i++);
 	if (i==http_mi_cmds[*mod].size) {
 		LM_ERR("Invalid cmd [%.*s] in url [%s]\n",
@@ -335,7 +312,7 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	/* skip over '/' */
 	index++;
 	if (url_len - index>0) {
-		LM_DBG("got extra [%s]\n", &url[index]);
+		LM_NOTICE("got extra [%s]\n", &url[index]);
 	}
 
 	return 0;
@@ -353,7 +330,7 @@ int mi_http_flush_tree(void* param, struct mi_root *tree)
 	}
 	mi_http_html_page_data_t* html_p_data = (mi_http_html_page_data_t*)param;
 	mi_http_build_content(&html_p_data->page,
-				buf_size,
+				html_p_data->buffer.len,
 				html_p_data->mod,
 				html_p_data->cmd,
 				tree);
@@ -380,7 +357,7 @@ struct mi_root* mi_http_parse_tree(str* buf)
 	node = &root->node;
 	start = buf->s;
 	pmax = buf->s + buf->len;
-	LM_DBG("original: [%.*s]\n",(int)(pmax-start),start);
+	LM_NOTICE("original: [%.*s]\n",(int)(pmax-start),start);
 	while (start<=pmax) {
 		/* remove leading spaces */
 		//for(;start<pmax&&isspace((int)*start);start++);
@@ -392,7 +369,7 @@ struct mi_root* mi_http_parse_tree(str* buf)
 		//for(;start<pmax&&!isspace((int)*start);start++);
 		for(;start<pmax&&*start!=' ';start++);
 		value.len=(int)(start-value.s);
-		LM_DBG("[%.*s]\n",value.len,value.s);
+		LM_NOTICE("[%.*s]\n",value.len,value.s);
 		if(!add_mi_node_child(node,0,name.s,name.len,value.s,value.len)){
 			LM_ERR("cannot add the child node to the tree\n");
 			if (root) free_mi_tree(root);
@@ -416,7 +393,7 @@ static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, 
 		return;
 	}
 
-	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], "
+	LM_NOTICE("mi_root [%p], hdl [%p], hdl->param [%p], "
 		"*hdl->param [%p] and done [%u]\n",
 		mi_rpl, hdl, hdl->param, *(struct mi_root **)hdl->param, done);
 
@@ -437,7 +414,7 @@ static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, 
 		/* mark it as invalid */
 		hdl->param = NULL;
 	}
-	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
+	LM_NOTICE("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
 		shm_rpl, hdl, hdl->param,
 		(hdl->param)?*(struct mi_root **)hdl->param:NULL);
 	lock_release(lock);
@@ -471,7 +448,7 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 	async_resp_data->cmd = cmd;
 	async_resp_data->lock = mi_http_lock;
 
-	LM_DBG("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_http_lock=[%p]\n",
+	LM_NOTICE("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_http_lock=[%p]\n",
 		hdl, hdl->param, (hdl->param)?*(struct mi_root **)hdl->param:NULL,
 		async_resp_data->lock);
 
@@ -479,7 +456,7 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 }
 
 struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
-				str *page, struct mi_handler **async_hdl)
+			str *page, str *buffer, struct mi_handler **async_hdl)
 {
 	struct mi_cmd *f;
 	struct mi_root *mi_cmd;
@@ -517,7 +494,7 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
 		if (arg) {
 			buf.s = (char*)arg;
 			buf.len = strlen(arg);
-			LM_DBG("start parsing [%d][%s]\n", buf.len, buf.s);
+			LM_NOTICE("start parsing [%d][%s]\n", buf.len, buf.s);
 			mi_cmd = mi_http_parse_tree(&buf);
 			if (mi_cmd==NULL)
 				return NULL;
@@ -527,8 +504,10 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
 		}
 	}
 
-	html_page_data.page.s = miHTTPResponse_Buf;
+	html_page_data.page.s = buffer->s;
 	html_page_data.page.len = 0;
+	html_page_data.buffer.s = buffer->s;
+	html_page_data.buffer.len = buffer->len;
 	html_page_data.mod = mod;
 	html_page_data.cmd = cmd;
 
@@ -540,7 +519,7 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
 	} else if (mi_rpl != MI_ROOT_ASYNC_RPL) {
 		*page = html_page_data.page;
 	}
-	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
+	LM_NOTICE("got mi_rpl=[%p]\n",mi_rpl);
 
 	return mi_rpl;
 }
@@ -567,14 +546,7 @@ int mi_http_init_cmds(void)
 	int size, i;
 	struct mi_cmd* cmds;
 	http_mi_cmd_t *mi_cmd;
-	char* p;
 
-	miHTTPResponse_Buf = (char*)pkg_malloc(sizeof(char)*buf_size);
-	if (miHTTPResponse_Buf==NULL) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	p = miHTTPResponse_Buf;
 	/* Build a cache of all mi commands */
 	get_mi_cmds(&cmds, &size);
 	if (size<=0) {

@@ -46,29 +46,35 @@
 #include "../../resolve.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
-#include "httpd_proc.h"
+#include "../httpd/httpd_load.h"
+#include "http_fnc.h"
 
 /* module functions */
 static int mod_init();
 static int destroy(void);
+void mi_http_answer_to_connection (void *cls, void *connection,
+		const char *url, const char *url_args, const char *method,
+		const char *version, const char *upload_data,
+		size_t *upload_data_size, void **con_cls,
+		str *buffer, str *page);
+static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max);
 
-int port = 8888;
-str ip = {NULL, 0};
-int buf_size = 0;
 str http_root = str_init("mi");
 
-static proc_export_t mi_procs[] = {
-	{"MI HTTP",  0,  0, httpd_proc, 1, PROC_FLAG_INITCHILD },
-	{0,0,0,0,0,0}
-};
+httpd_api_t httpd_api;
+
+
+static const str MI_HTTP_U_ERROR = str_init("<html><body>"
+"Internal server error!</body></html>");
+static const str MI_HTTP_U_URL = str_init("<html><body>"
+"Unable to parse URL!</body></html>");
+static const str MI_HTTP_U_METHOD = str_init("<html><body>"
+"Unexpected method (only GET is accepted)!</body></html>");
 
 
 /* module parameters */
 static param_export_t mi_params[] = {
-	{"port",			INT_PARAM, &port},
-	{"ip",				STR_PARAM, &ip.s},
 	{"mi_http_root",		STR_PARAM, &http_root.s},
-	{"buf_size",			INT_PARAM, &buf_size},
 	{0,0,0}
 };
 
@@ -82,7 +88,7 @@ struct module_exports exports = {
 	0,                                  /* exported statistics */
 	0,                                  /* exported MI functions */
 	0,                                  /* exported PV */
-	mi_procs,                           /* extra processes */
+	0,                                  /* extra processes */
 	mod_init,                           /* module initialization function */
 	(response_function) 0,              /* response handling function */
 	(destroy_function) destroy,         /* destroy function */
@@ -90,44 +96,168 @@ struct module_exports exports = {
 };
 
 
+void proc_init(void)
+{
+	/* Build a cache of all mi commands */
+	if (0!=mi_http_init_cmds())
+		exit(-1);
+
+	/* Build async lock */
+	if (mi_http_init_async_lock() != 0)
+		exit(-1);
+
+	return;
+}
+
 static int mod_init(void)
 {
-	int i;
-	struct ip_addr *_ip;
+	http_root.len = strlen(http_root.s);
 
-	if ( port <= 1024 ) {
-		LM_ERR("port<1024, using 8888...\n");
+	/* Load httpd api */
+	if(load_httpd_api(&httpd_api)<0) {
+		LM_ERR("Failed to load httpd api\n");
 		return -1;
 	}
+	/* Load httpd hooks */
+	httpd_api.register_httpdcb(exports.name, &http_root,
+				&mi_http_answer_to_connection,
+				&mi_http_flush_data,
+				&proc_init);
 
-	if (ip.s) {
-		ip.len = strlen(ip.s);
-		if ( (_ip=str2ip(&ip)) == NULL ) {
-			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
-			return -1;
-		}
-	}
-
-	if (buf_size == 0)
-		buf_size = (pkg_mem_size/4)*3;
-	LM_DBG("buf_size=[%d]\n", buf_size);
-
-	http_root.len = strlen(http_root.s);
-	trim_spaces_lr(http_root);
-	for(i=0;i<http_root.len;i++) {
-		if ( !isalnum(http_root.s[i]) && http_root.s[i]!='_') {
-			LM_ERR("bad mi_http_root param [%.*s], char [%c] "
-				"- use only alphanumerical characters\n",
-				http_root.len, http_root.s, http_root.s[i]);
-			return -1;
-		}
-	}
 	return 0;
 }
 
 
 int destroy(void)
 {
-	httpd_proc_destroy();
+	mi_http_destroy_async_lock();
 	return 0;
 }
+
+
+
+static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
+{
+	struct mi_handler *hdl = (struct mi_handler*)cls;
+	gen_lock_t *lock;
+	mi_http_async_resp_data_t *async_resp_data;
+	str page = {NULL, 0};
+
+	if (hdl==NULL) {
+		LM_ERR("Unexpected NULL mi handler!\n");
+		return -1;
+	}
+	LM_NOTICE("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
+		 hdl, hdl->param, (int)pos, buf, max);
+
+	if (pos){
+		LM_NOTICE("freeing hdl=[%p]: hdl->param=[%p], "
+			" pos=[%d], buf=[%p], max=[%d]\n",
+			 hdl, hdl->param, (int)pos, buf, max);
+		shm_free(hdl);
+		return -1;
+	}
+	async_resp_data =
+		(mi_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
+	lock = async_resp_data->lock;
+	lock_get(lock);
+	if (hdl->param) {
+		if (*(struct mi_root**)hdl->param) {
+			page.s = buf;
+			LM_NOTICE("tree=[%p]\n", *(struct mi_root**)hdl->param);
+			if (mi_http_build_page(&page, max,
+						async_resp_data->mod,
+						async_resp_data->cmd,
+						*(struct mi_root**)hdl->param)!=0){
+				LM_ERR("Unable to build response\n");
+				shm_free(*(void**)hdl->param);
+				*(void**)hdl->param = NULL;
+				lock_release(lock);
+				memcpy(buf, MI_HTTP_U_ERROR.s, MI_HTTP_U_ERROR.len);
+				return MI_HTTP_U_ERROR.len;
+			} else {
+				shm_free(*(void**)hdl->param);
+				*(void**)hdl->param = NULL;
+				lock_release(lock);
+				return page.len;
+			}
+		} else {
+			LM_NOTICE("data not ready yet\n");
+			lock_release(lock);
+			return 0;
+		}
+	} else {
+		lock_release(lock);
+		LM_ERR("Invalid async reply\n");
+		memcpy(buf, MI_HTTP_U_ERROR.s, MI_HTTP_U_ERROR.len);
+		return MI_HTTP_U_ERROR.len;
+	}
+	lock_release(lock);
+	LM_CRIT("done?\n");
+	shm_free(hdl);
+	return -1;
+}
+
+void mi_http_answer_to_connection (void *cls, void *connection,
+		const char *url, const char *url_args, const char *method,
+		const char *version, const char *upload_data,
+		size_t *upload_data_size, void **con_cls,
+		str *buffer, str *page)
+{
+	int mod = -1;
+	int cmd = -1;
+	struct mi_root *tree = NULL;
+	struct mi_handler *async_hdl;
+
+	LM_NOTICE("START *** cls=%p, connection=%p, url=%s, method=%s, "
+		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
+			cls, connection, url, method, version,
+			(int)*upload_data_size, upload_data, con_cls);
+	if (strncmp(method, "GET", 3)==0) {
+		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
+			LM_NOTICE("url_args [%p]->[%s]\n", url_args, url_args);
+			if (mod>=0 && cmd>=0 && url_args) {
+				tree = mi_http_run_mi_cmd(mod, cmd, url_args,
+							page, buffer, &async_hdl);
+				if (tree == NULL) {
+					LM_ERR("no reply\n");
+					*page = MI_HTTP_U_ERROR;
+				} else if (tree == MI_ROOT_ASYNC_RPL) {
+					LM_NOTICE("got an async reply\n");
+					tree = NULL;
+				} else {
+					LM_NOTICE("building on page [%p:%d]\n",
+						page->s, page->len);
+					if(0!=mi_http_build_page(page, buffer->len,
+								mod, cmd, tree)){
+						LM_ERR("unable to build response "
+							"for cmd [%d] w/ args [%s]\n",
+							cmd,
+							url_args);
+						*page = MI_HTTP_U_ERROR;
+					}
+				}
+			} else {
+				page->s = buffer->s;
+				if(0 != mi_http_build_page(page, buffer->len,
+							mod, cmd, tree)) {
+					LM_ERR("unable to build response\n");
+					*page = MI_HTTP_U_ERROR;
+				}
+			}
+			if (tree) {
+				free_mi_tree(tree);
+				tree = NULL;
+			}
+		} else {
+			LM_ERR("unable to parse URL [%s]\n", url);
+			*page = MI_HTTP_U_URL;
+		}
+	} else {
+		LM_ERR("unexpected method [%s]\n", method);
+		*page = MI_HTTP_U_METHOD;
+	}
+
+	return;
+}
+
