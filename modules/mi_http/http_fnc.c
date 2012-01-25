@@ -274,6 +274,9 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	}
 	index++;
 
+	/* Looking for "mod" */
+	if (index>=url_len)
+		return 0;
 	for(i=index;i<url_len && url[i]!='/';i++);
 	mod_len = i - index;
 	LM_NOTICE("got mod [%.*s]\n", mod_len, &url[index]);
