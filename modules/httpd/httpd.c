@@ -124,7 +124,7 @@ static int mod_init(void)
 
 	if (buffer.len == 0)
 		buffer.len = (pkg_mem_size/4)*3;
-	LM_NOTICE("buf_size=[%d]\n", buffer.len);
+	LM_DBG("buf_size=[%d]\n", buffer.len);
 
 	return 0;
 }
@@ -193,7 +193,7 @@ int httpd_register_httpdcb(const char *module, str *http_root,
 	cb->next = httpd_cb_list;
 	httpd_cb_list = cb;
 
-	LM_NOTICE("got root_path [%s][%.*s]\n",
+	LM_DBG("got root_path [%s][%.*s]\n",
 		cb->module, cb->http_root->len, cb->http_root->s);
 	return 0;
 }

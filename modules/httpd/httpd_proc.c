@@ -117,7 +117,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	const char *normalised_url;
 	const char *url_args;
 
-	LM_NOTICE("START *** cls=%p, connection=%p, url=%s, method=%s, "
+	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
 			cls, connection, url, method, version,
 			(int)*upload_data_size, upload_data, con_cls);
@@ -125,7 +125,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	cb = get_httpd_cb(url);
 	if (cb) {
 		normalised_url = &url[cb->http_root->len+1];
-		LM_NOTICE("normalised_url=[%s]\n", normalised_url);
+		LM_DBG("normalised_url=[%s]\n", normalised_url);
 		url_args = MHD_lookup_connection_value(connection,
 				MHD_GET_ARGUMENT_KIND, "arg");
 		cb->callback(cls, (void*)connection,
@@ -138,13 +138,13 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	}
 
 	if (page.s) {
-		LM_NOTICE("MHD_create_response_from_data [%p:%d]\n",
+		LM_DBG("MHD_create_response_from_data [%p:%d]\n",
 			page.s, page.len);
 		response = MHD_create_response_from_data(page.len,
 							(void*)page.s,
 							0, 1);
 	} else {
-		LM_NOTICE("MHD_create_response_from_callback\n");
+		LM_DBG("MHD_create_response_from_callback\n");
 		response = MHD_create_response_from_callback (MHD_SIZE_UNKNOWN,
 							buffer.len,
 							cb->flush_data_callback,
@@ -200,7 +200,7 @@ void httpd_proc(int rank)
 	saddr_in.sin_family = AF_INET;
 	saddr_in.sin_port = htons(port);
 
-	LM_NOTICE("init_child [%d] - HTTP Server init [%d]\n", rank, getpid());
+	LM_DBG("init_child [%d] - HTTP Server init [%d]\n", rank, getpid());
 	dmn = MHD_start_daemon(MHD_NO_FLAG|MHD_USE_DEBUG, port, NULL, NULL,
 			&(answer_to_connection), NULL,
 			MHD_OPTION_SOCK_ADDR, &saddr_in,
@@ -222,7 +222,7 @@ void httpd_proc(int rank)
 		}
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
-		//LM_NOTICE("select(%d,%p,%p,%p,%p)\n",max+1, &rs, &ws, &es, &tv);
+		//LM_DBG("select(%d,%p,%p,%p,%p)\n",max+1, &rs, &ws, &es, &tv);
 		status = select(max+1, &rs, &ws, &es, &tv);
 		switch(status){
 		case EBADF:
@@ -253,7 +253,7 @@ void httpd_proc(int rank)
 				exit(-1);
 			}
 		}
-		//LM_NOTICE("select returned %d\n", status);
+		//LM_DBG("select returned %d\n", status);
 		status = MHD_run(dmn);
 		if (status == MHD_NO) {
 			LM_ERR("unable to run http daemon\n");
@@ -261,13 +261,13 @@ void httpd_proc(int rank)
 		}
 	}
 #endif
-	LM_NOTICE("HTTP Server stopped!\n");
+	LM_DBG("HTTP Server stopped!\n");
 }
 
 void httpd_proc_destroy(void)
 {
 #ifdef LIBMICROHTTPD
-	LM_NOTICE("destroying module ...\n");
+	LM_DBG("destroying module ...\n");
 	MHD_stop_daemon (dmn);
 #endif
 	return;

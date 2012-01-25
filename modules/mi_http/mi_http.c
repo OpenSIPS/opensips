@@ -147,11 +147,11 @@ static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
 		LM_ERR("Unexpected NULL mi handler!\n");
 		return -1;
 	}
-	LM_NOTICE("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
+	LM_DBG("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
 		 hdl, hdl->param, (int)pos, buf, max);
 
 	if (pos){
-		LM_NOTICE("freeing hdl=[%p]: hdl->param=[%p], "
+		LM_DBG("freeing hdl=[%p]: hdl->param=[%p], "
 			" pos=[%d], buf=[%p], max=[%d]\n",
 			 hdl, hdl->param, (int)pos, buf, max);
 		shm_free(hdl);
@@ -164,7 +164,7 @@ static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
 	if (hdl->param) {
 		if (*(struct mi_root**)hdl->param) {
 			page.s = buf;
-			LM_NOTICE("tree=[%p]\n", *(struct mi_root**)hdl->param);
+			LM_DBG("tree=[%p]\n", *(struct mi_root**)hdl->param);
 			if (mi_http_build_page(&page, max,
 						async_resp_data->mod,
 						async_resp_data->cmd,
@@ -182,7 +182,7 @@ static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
 				return page.len;
 			}
 		} else {
-			LM_NOTICE("data not ready yet\n");
+			LM_DBG("data not ready yet\n");
 			lock_release(lock);
 			return 0;
 		}
@@ -209,13 +209,13 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 
-	LM_NOTICE("START *** cls=%p, connection=%p, url=%s, method=%s, "
+	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
 			cls, connection, url, method, version,
 			(int)*upload_data_size, upload_data, con_cls);
 	if (strncmp(method, "GET", 3)==0) {
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
-			LM_NOTICE("url_args [%p]->[%s]\n", url_args, url_args);
+			LM_DBG("url_args [%p]->[%s]\n", url_args, url_args);
 			if (mod>=0 && cmd>=0 && url_args) {
 				tree = mi_http_run_mi_cmd(mod, cmd, url_args,
 							page, buffer, &async_hdl);
@@ -223,10 +223,10 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 					LM_ERR("no reply\n");
 					*page = MI_HTTP_U_ERROR;
 				} else if (tree == MI_ROOT_ASYNC_RPL) {
-					LM_NOTICE("got an async reply\n");
+					LM_DBG("got an async reply\n");
 					tree = NULL;
 				} else {
-					LM_NOTICE("building on page [%p:%d]\n",
+					LM_DBG("building on page [%p:%d]\n",
 						page->s, page->len);
 					if(0!=mi_http_build_page(page, buffer->len,
 								mod, cmd, tree)){
