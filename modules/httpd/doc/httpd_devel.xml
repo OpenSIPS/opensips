@@ -1,0 +1,49 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+
+	<title>&develguide;</title>
+	<section>
+		<title>Available Functions</title>
+
+	<section>
+		<title>
+		<function moreinfo="none">register_httpdcb (module, root_path, httpd_acces_handler_cb, httpd_flush_data_cb, httpd_init_proc_cb)</function>
+		</title>
+		<para>
+		Register a new http root with it's associated callbacks into the httpd module.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>const char *mod</emphasis>
+			- name of the module that register an http root path to be handled;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>str *root_path</emphasis>
+			- the registered root path;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>httpd_acces_handler_cb f1</emphasis>
+			- handler to the callback method to be called on root path match;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>httpd_flush_data_cb f2</emphasis>
+			- handler to the callback method to be called for sending extra data (at a later time);
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>httpd_init_proc_cb f3</emphasis>
+			- handler to the callback method to be called during httpd process init;
+			</para>
+		</listitem>
+		</itemizedlist>
+	</section>
+
+	</section>
+
+</chapter>
+

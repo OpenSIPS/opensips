@@ -1,0 +1,162 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module provides an HTTP transport layer for &osips;.
+	</para>
+	<para>
+		Implementation of httpd module's http server is based on 
+		libmicrohttpd library.
+	</para>
+	</section>
+	
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libmicrohttpd</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>ip</varname>(string)</title>
+		<para>
+		The IP address used by the HTTP server to listen for incoming 
+		requests.
+		</para>
+		<para>
+		<emphasis>The default value is an empty string.</emphasis>
+		If no IP address is set, then the http server
+		will bind to all available IPs.
+		</para>
+		<example>
+		<title>Set <varname>ip</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_http", "ip", "127.0.0.1")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>port</varname>(integer)</title>
+		<para>
+		The port number used by the HTTP server to listen for incoming 
+		requests.
+		</para>
+		<para>
+		<emphasis>The default value is 8888.</emphasis>
+		Ports lower than 1024 are not accepted.
+		</para>
+		<example>
+		<title>Set <varname>port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_http", "port", 8000)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>buf_size</varname> (integer)</title>
+		<para>
+		It specifies the maximum length of the buffer used to write
+		in the html response.
+		</para>
+		<para>
+		If the size of the buffer is set to zero, it will be automatically
+		set to a quarter of the size of the pkg memory.
+		</para>
+		<para>
+		<emphasis> The default value is 0.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>buf_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_http", "buf_size", 524288)
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported MI Functions</title>
+		<section>
+		<title><varname>httpd_list_root_path</varname></title>
+		<para>
+		Lists all the registered http root paths into the httpd module.
+		When a request comes in, if the root parth is in the list,
+		the request will be sent to the module that register it.
+		</para>
+		<para>
+		Name: <emphasis>httpd_list_root_path</emphasis>
+		</para>
+		<para>Parameters: none</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+:httpd_list_root_path:_reply_fifo_file_
+_empty_line_
+		</programlisting>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Known issues</title>
+		<para>
+		Due to the fact that &osips; is a multiprocess application,
+		the microhttpd library is used in "external select" mode.
+		This ensures that the library is not running in
+		multithread mode and the library is entirely controled
+		by &osips;.  Due to this particular mode of operations,
+		for now, the entire http response is built in a pre-allocated
+		buffer (see buf_size parameter).
+		</para>
+		<para>
+		Future realeases of this module will address this issue.
+		</para>
+	</section>
+
+</chapter>
+
