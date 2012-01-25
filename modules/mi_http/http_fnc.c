@@ -223,7 +223,7 @@ static const str MI_HTTP_Response_Foot = str_init(\
 "\n</center>\n<div align=\"center\" class=\"foot\" style=\"margin:20px auto\">"\
 	"<span style='margin-left:5px;'></span>"\
 	"<a href=\"http://opensips.org\">OpenSIPS web site</a><br/>"\
-	"Copyright &copy; 2011 <a href=\"http://www.voipembedded.com/\">VoIP Embedded</a>"\
+	"Copyright &copy; 2011-2012 <a href=\"http://www.voipembedded.com/\">VoIP Embedded</a>"\
 								". All rights reserved."\
 "</div></body></html>");
 
