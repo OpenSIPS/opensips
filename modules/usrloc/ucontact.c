@@ -508,7 +508,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		CON_PS_REFERENCE(ul_dbh) = &myI_ps;
 		if (ins_list) {
 			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys,
-						(use_domain) ? (15) : (14)) < 0 )
+						(use_domain) ? (16) : (15)) < 0 )
 				CON_RESET_INSLIST(ul_dbh);
 		}
 
