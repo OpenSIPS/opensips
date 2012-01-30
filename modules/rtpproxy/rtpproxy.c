@@ -258,9 +258,7 @@ static int engage_rtp_proxy2_f(struct sip_msg *, char *, char *);
 static int fixup_engage(void **param,int param_no);
 static int force_rtp_proxy(struct sip_msg *, char *, char *, int);
 static int start_recording_f(struct sip_msg *, char *, char *);
-static int rtpproxy_answer1_f(struct sip_msg *, char *, char *);
 static int rtpproxy_answer2_f(struct sip_msg *, char *, char *);
-static int rtpproxy_offer1_f(struct sip_msg *, char *, char *);
 static int rtpproxy_offer2_f(struct sip_msg *, char *, char *);
 
 static int add_rtpproxy_socks(struct rtpp_set * rtpp_list, char * rtpproxy);
@@ -376,19 +374,19 @@ static cmd_export_t cmds[] = {
 	{"start_recording",    (cmd_function)start_recording_f,      0,
 		0, 0,
 		REQUEST_ROUTE | ONREPLY_ROUTE },
-	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer1_f,     0,
+	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer2_f,     0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer1_f,     1,
+	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer2_f,     1,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer2_f,     2,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer1_f,    0,
+	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer2_f,    0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer1_f,    1,
+	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer2_f,    1,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer2_f,    2,
@@ -2293,17 +2291,6 @@ set_rtp_proxy_set_f(struct sip_msg * msg, char * str1, char * str2)
 }
 
 
-static int
-rtpproxy_offer1_f(struct sip_msg *msg, char *str1, char *str2)
-{
-        char *cp;
-        char newip[IP_ADDR_MAX_STR_SIZE];
-
-        cp = ip_addr2a(&msg->rcv.dst_ip);
-        strcpy(newip, cp);
-	return rtpproxy_offer2_f(msg, str1, newip);
-}
-
 static char *
 pkg_strdup(char *cp)
 {
@@ -2335,17 +2322,6 @@ rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 	}
 
 	return force_rtp_proxy(msg, param1, param2, 1);
-}
-
-static int
-rtpproxy_answer1_f(struct sip_msg *msg, char *str1, char *str2)
-{
-        char *cp;
-        char newip[IP_ADDR_MAX_STR_SIZE];
-
-        cp = ip_addr2a(&msg->rcv.dst_ip);
-        strcpy(newip, cp);
-        return rtpproxy_answer2_f(msg, str1, newip);
 }
 
 static int
