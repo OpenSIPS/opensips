@@ -192,8 +192,8 @@ void print_udomain(FILE* _f, udomain_t* _d)
 
 
 /*! \brief
- * expects 12 rows (contact, expirs, q, callid, cseq, flags, 
- *   ua, received, path, socket, methods, last_modified)
+ * expects 14 rows (contact, expires, q, callid, cseq, flags, cflags,
+ *   ua, received, path, socket, methods, last_modified, instance)
  */
 static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 {
@@ -324,7 +324,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	char uri[MAX_URI_SIZE];
 	ucontact_info_t *ci;
 	db_row_t *row;
-	db_key_t columns[15];
+	db_key_t columns[16];
 	db_res_t* res = NULL;
 	str user, contact;
 	char* domain;
@@ -349,7 +349,8 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	columns[11] = &sock_col;
 	columns[12] = &methods_col;
 	columns[13] = &last_mod_col;
-	columns[14] = &domain_col;
+	columns[14] = &sip_instance_col;
+	columns[15] = &domain_col;
 
 	if (ul_dbf.use_table(_c, _d->name) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -361,20 +362,20 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 #endif
 
 	if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(15):(14), 0,
+		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(16):(15), 0,
 		0) < 0) {
 			LM_ERR("db_query (1) failed\n");
 			return -1;
 		}
 		no_rows = estimate_available_rows( 32+64+4+8+128+8+4+4+64
-			+32+128+16+8+8+32, 15);
+			+32+128+16+8+8+255+32, 16);
 		if (no_rows==0) no_rows = 10;
 		if(ul_dbf.fetch_result(_c, &res, no_rows)<0) {
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
 	} else {
-		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(15):(14), 0,
+		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(16):(15), 0,
 		&res) < 0) {
 			LM_ERR("db_query failed\n");
 			return -1;
@@ -410,8 +411,8 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			}
 
 			if (use_domain) {
-				domain = (char*)VAL_STRING(ROW_VALUES(row) + 14);
-				if (VAL_NULL(ROW_VALUES(row)+13) || domain==0 || domain[0]==0){
+				domain = (char*)VAL_STRING(ROW_VALUES(row) + 15);
+				if (VAL_NULL(ROW_VALUES(row)+15) || domain==0 || domain[0]==0){
 					LM_CRIT("empty domain record for user %.*s...skipping\n",
 							user.len, user.s);
 					continue;
