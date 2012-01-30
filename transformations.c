@@ -638,7 +638,7 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			strncmp(_tr_via.s, val->rs.s, val->rs.len)!=0
 			|| _tr_parsed_via==0)
 	{
-		if(val->rs.len>_tr_via.len)
+		if(4+val->rs.len>_tr_via.len)
 		{
 			if(_tr_via.s) pkg_free(_tr_via.s);
 			_tr_via.s = (char*)pkg_malloc((val->rs.len+4)*sizeof(char));
