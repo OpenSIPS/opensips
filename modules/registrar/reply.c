@@ -306,7 +306,8 @@ int build_contact(ucontact_t* c)
 				p += TEMP_GRUU_HEADER_SIZE;
 				
 				tmpgr = build_temp_gruu(c->aor,&c->instance,&c->callid,&grlen);
-				base64encode(p,tmpgr,grlen);
+				base64encode((unsigned char *)p,
+						(unsigned char *)tmpgr,grlen);
 				p += calc_temp_gruu_len(c->aor,&c->instance,&c->callid);
 				*p++ = '@';
 				memcpy(p,c->sock->name.s,c->sock->name.len);

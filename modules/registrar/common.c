@@ -96,7 +96,8 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 			else
 				magic = &default_gruu_secret;
 
-			dec_size = base64decode(tgruu_dec,tgruu_dec,tgruu_len);
+			dec_size = base64decode((unsigned char *)tgruu_dec,
+					(unsigned char *)tgruu_dec,tgruu_len);
 
 			for (i=0;i<tgruu_len;i++)
 				tgruu_dec[i] ^= magic->s[i%magic->len];

@@ -213,7 +213,7 @@ BAD, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36,  37, 38, 39, 40,
 
 /* function that encodes to base64
  * output buffer is assumed to have the right length */
-void base64encode(char *out, char *in, int inlen)
+void base64encode(unsigned char *out, unsigned char *in, int inlen)
 {
 	for (; inlen >= 3; inlen -= 3)
 	{
@@ -237,12 +237,13 @@ void base64encode(char *out, char *in, int inlen)
 		*out++ = base64digits[fragment];
 		*out++ = (inlen < 2) ? '=' : base64digits[(in[1] << 2) & 0x3c];
 		*out++ = '=';
+		
 	}
 }
 
 /* function that decodes from base64
  * output buffer is assumed to have the right length */
-int base64decode(char *out,char *in,int len)
+int base64decode(unsigned char *out,unsigned char *in,int len)
 {
 	int i=0;
 	unsigned char c1,c2,c3,c4;
@@ -299,13 +300,13 @@ int base64decode(char *out,char *in,int len)
 	return out_len;
 }
 
+inline int calc_base64_encode_len(int len)
+{
+	return (len/3 + (len%3?1:0))*4;
+}
 
-
-
-
-
-
-
-
-
+inline int calc_max_base64_decode_len(int len)
+{
+	return len*3/4;	
+}
 
