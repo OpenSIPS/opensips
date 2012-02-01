@@ -110,6 +110,8 @@ static int mod_init(void)
 	cde.cdb_func.add = NULL;
 	cde.cdb_func.sub = NULL;
 
+	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
+
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_cassandra\n");
 		return -1;

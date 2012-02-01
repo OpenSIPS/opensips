@@ -57,6 +57,13 @@
 /*! \brief this is not official yet */
 #define T_EBL		65300
 
+typedef void* (fetch_dns_cache_f)(char *name,int r_type,int name_len);
+typedef int (put_dns_cache_f)(char *name,int r_type,void *record,int rdata_len,
+				int failure,int ttl);
+
+extern fetch_dns_cache_f *dnscache_fetch_func;
+extern put_dns_cache_f *dnscache_put_func;
+
 /*! \brief query union*/
 union dns_query{
 	HEADER hdr;
@@ -145,11 +152,6 @@ void free_rdata_list(struct rdata* head);
 
 
 extern int dns_try_ipv6;
-
-
-#define rev_resolvehost(ip)\
-					gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
-
 
 
 #define HEX2I(c) \
@@ -340,57 +342,9 @@ int  check_ip_address(struct ip_addr* ip, str *name,
 struct hostent* sip_resolvehost(str* name, unsigned short* port,
 		unsigned short *proto, int is_sips, struct dns_node **dn);
 
+inline struct hostent* resolvehost(char* name, int no_ip_test);
 
-
-/*! \brief gethostbyname wrappers
- * use this, someday they will use a local cache */
-
-static inline struct hostent* resolvehost(char* name, int no_ip_test)
-{
-	static struct hostent* he=0;
-#ifdef HAVE_GETIPNODEBYNAME 
-	int err;
-	static struct hostent* he2=0;
-#endif
-	struct ip_addr* ip;
-	str s;
-
-	if (!no_ip_test) {
-		s.s = (char*)name;
-		s.len = strlen(name);
-
-		/* check if it's an ip address */
-		if ( ((ip=str2ip(&s))!=0)
-#ifdef USE_IPV6
-			|| ((ip=str2ip6(&s))!=0)
-#endif
-		){
-			/* we are lucky, this is an ip address */
-			return ip_addr2he(&s, ip);
-		}
-	}
-
-	/* ipv4 */
-	he=gethostbyname(name);
-#ifdef USE_IPV6
-	if(he==0 && dns_try_ipv6){
-		/*try ipv6*/
-	#ifdef HAVE_GETHOSTBYNAME2
-		he=gethostbyname2(name, AF_INET6);
-	#elif defined HAVE_GETIPNODEBYNAME
-		/* on solaris 8 getipnodebyname has a memory leak,
-		 * after some time calls to it will fail with err=3
-		 * solution: patch your solaris 8 installation */
-		if (he2) freehostent(he2);
-		he=he2=getipnodebyname(name, AF_INET6, 0, &err);
-	#else
-		#error neither gethostbyname2 or getipnodebyname present
-	#endif
-	}
-#endif
-	return he;
-}
-
+inline struct hostent* rev_resolvehost(struct ip_addr *ip); 
 
 /*! \brief free the DNS resolver state machine */
 void free_dns_res( struct proxy_l *p );

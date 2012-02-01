@@ -43,6 +43,7 @@
 /* printing messages, dealing with strings and other utils */
 #include "../../dprint.h"
 #include "../../str.h"
+#include "../../resolve.h"
 
 /* headers defined by this module */
 #include "auth_diameter.h"
@@ -67,7 +68,7 @@ int init_mytcp(char* host, int port)
 		return -1;
 	}	
 	
-    server = gethostbyname(host);
+    server = resolvehost(host,0);
     if (server == NULL) 
 	{
 		LM_ERR("error finding the host\n");

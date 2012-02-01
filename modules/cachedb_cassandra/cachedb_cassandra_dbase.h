@@ -38,6 +38,7 @@ extern "C" {
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../cachedb/cachedb.h"
+#include "../../cachedb/cachedb_cap.h"
 #ifdef __cplusplus
 #undef inline
 #endif

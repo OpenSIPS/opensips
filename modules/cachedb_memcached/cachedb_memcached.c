@@ -354,6 +354,8 @@ static int mod_init(void)
 	cde.cdb_func.add = wrap_memcached_add;
 	cde.cdb_func.sub = wrap_memcached_sub;
 
+	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
+	
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_memcached\n");
 		return -1;

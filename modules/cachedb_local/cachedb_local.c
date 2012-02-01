@@ -149,6 +149,8 @@ static int mod_init(void)
 	cde.cdb_func.remove = lcache_htable_remove;
 	cde.cdb_func.add = lcache_htable_add;
 	cde.cdb_func.sub = lcache_htable_sub;
+	
+	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 
 	if(cache_clean_period <= 0 )
 	{

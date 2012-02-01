@@ -95,6 +95,8 @@ static int mod_init(void)
 	cde.cdb_func.add = redis_add;
 	cde.cdb_func.sub = redis_sub;
 
+	cde.cdb_func.capability = 0; 
+
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_redis\n");
 		return -1;

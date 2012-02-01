@@ -36,7 +36,8 @@ typedef enum {
 	CACHEDB_CAP_SET = 1<<1,
 	CACHEDB_CAP_REMOVE = 1<<2,
 	CACHEDB_CAP_ADD = 1<<3,
-	CACHEDB_CAP_SUB = 1<<4
+	CACHEDB_CAP_SUB = 1<<4,
+	CACHEDB_CAP_BINARY_VALUE = 1<<5
 } cachedb_cap;
 
 #define CACHEDB_CAPABILITY(cdbf,cpv) (((cdbf)->capability & (cpv)) == (cpv))

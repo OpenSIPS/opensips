@@ -37,6 +37,7 @@
 #include <netdb.h>
 
 #include "../../sr_module.h"
+#include "../../resolve.h"
 
 int net_listen(char *server, int port)
 {
@@ -53,7 +54,7 @@ int net_listen(char *server, int port)
 		
 		LM_DBG("resolving %s...\n", server);
 		
-		if (!(host = gethostbyname(server))) {
+		if (!(host = resolvehost(server,0))) {
 			LM_ERR("resolving %s failed (%s).\n", server,
 					hstrerror(h_errno));
 			return -1;
@@ -101,7 +102,7 @@ int net_connect(char *server, int port)
 		
 		LM_DBG("resolving %s...\n", server);
 		
-		if (!(host = gethostbyname(server))) {
+		if (!(host = resolvehost(server,0))) {
 			LM_ERR("resolving %s failed (%s).\n", server,
 					hstrerror(h_errno));
 			return -1;

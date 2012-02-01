@@ -1,0 +1,83 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of a cache system designed for DNS records.
+		For succesfull DNS queries of all types, the module will store in a cache/db
+		backend the mappings, for TTL number of seconds received in the DNS answer.
+		Failed DNS queries will also be stored in the back-end, with a TTL that can be
+		specified by the user.
+		The module uses the Key-Value interface exported from the core.
+	</para>
+	<para>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		A cachedb_* type module must be loaded before loading
+		the dns_cache module.
+		</para>
+	</section>
+	
+	</section>
+	
+	<section>
+		<title>Exported Parameters</title>
+		<section>
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+			The url of the key-value back-end that will be used
+			for storing the DNS records.
+		</para>
+		
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+#use internal cachedb_local module
+modparam("dns_cache", "cachedb_url","local://"); 
+#use cachedb_memcached module with memcached server at 192.168.2.130
+modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/"); 
+...
+		</programlisting>
+		</example>
+		
+		</section>
+
+		<section>
+		<title><varname>blacklist_timeout</varname> (int)</title>
+		<para>
+			The number of seconds that a failed DNS query will be kept in cache.
+			Default is 3600.
+		</para>
+		
+		<example>
+		<title>Set <varname>blacklist_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dns_cache", "blacklist_timeout","7200"); # 2 hours
+...
+		</programlisting>
+		</example>
+		
+		</section>
+	</section>
+	
+
+	<section>
+		<title>Exported Functions</title>
+		<para>The module does not export functions to be used
+		in configuration script.</para>
+	</section>	
+
+</chapter>
+

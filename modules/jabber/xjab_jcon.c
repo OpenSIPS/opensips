@@ -37,6 +37,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../dprint.h"
 #include "../../timer.h"
+#include "../../resolve.h"
 
 #include "xjab_jcon.h"
 #include "xjab_util.h"
@@ -109,7 +110,7 @@ int xj_jcon_connect(xj_jcon jbc)
 #ifdef XJ_EXTRA_DEBUG
 	LM_DBG("socket [%d]\n", sock);
 #endif
-    he=gethostbyname(jbc->hostname);
+    he=resolvehost(jbc->hostname,0);
     if(he == NULL)
     {
     	LM_DBG("failed to get info about Jabber server address\n");

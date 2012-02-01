@@ -30,6 +30,7 @@
 #define _MEMCACHE_
 
 #include "../../cachedb/cachedb.h"
+#include "../../cachedb/cachedb_cap.h"
 #include "hash.h"
 
 extern lcache_t* cache_htable;

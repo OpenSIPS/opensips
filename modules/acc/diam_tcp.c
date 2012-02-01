@@ -35,6 +35,7 @@
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_from.h"
 #include "../../mem/mem.h"
+#include "../../resolv.h"
 
 #include "diam_message.h"
 #include "diam_tcp.h"
@@ -57,7 +58,7 @@ int init_mytcp(char* host, int port)
 		return -1;
 	}	
 	
-    server = gethostbyname(host);
+    server = resolvehost(host,0);
     if (server == NULL) 
 	{
 		LM_ERR("failed to find the host\n");

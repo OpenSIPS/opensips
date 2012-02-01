@@ -3,6 +3,7 @@
 
 #include <libmemcached/memcached.h>
 #include "../../cachedb/cachedb.h"
+#include "../../cachedb/cachedb_cap.h"
 
 typedef struct {
 	struct cachedb_id *id;
