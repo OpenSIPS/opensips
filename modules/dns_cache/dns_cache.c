@@ -332,10 +332,10 @@ static unsigned char *rdata_buf=NULL;
 static int rdata_buf_len=0;
 static char* serialize_dns_rdata(struct rdata *head,int buf_len,int *len,int do_encoding)
 {
-	unsigned char *p;		
+	unsigned char *p;
 	struct rdata *it;
 	int needed_len;
-	int entry_len,base64_len;
+	int entry_len,base64_len=0;
 	struct cname_rdata *cname_rd;
 	struct srv_rdata *srv_rd;
 	struct naptr_rdata *naptr_rd;
