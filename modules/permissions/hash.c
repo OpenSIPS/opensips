@@ -147,17 +147,19 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
 		for (i = 0; i < PERM_HASH_SIZE; i++) {
 			for (node = table[i]; node; node = node->next) {
 				if (node->grp == grp) {
-					break;
+					goto grp_found;
 				}
 			}
 		}
 
-		/* gropu not found */
-		if (i == PERM_HASH_SIZE) {
-			LM_DBG("specified group does not exist in hash table\n");
+		/* group not found */
+		if (!node || i == PERM_HASH_SIZE) {
+			LM_DBG("specified group %u does not exist in hash table\n", grp);
 			return -2;
 		}
 	}
+
+grp_found:
 
 	str_ip.len = ip->len;
 	str_ip.s = (char*)ip->u.addr;
@@ -403,7 +405,7 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 		}
 
 		if (!found_group) {
-			LM_DBG("specified group does not exist in subnet table\n");
+			LM_DBG("specified group %u does not exist in hash table\n", grp);
 			return -2;
 		}
 	}
