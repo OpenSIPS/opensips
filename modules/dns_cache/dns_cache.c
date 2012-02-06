@@ -764,6 +764,7 @@ void* get_dnscache_value(char *name,int r_type,int name_len)
 
 	if (value.len == FAILURE_MARKER_LEN && value.s[0] == FAILURE_MARKER_CHAR) {
 		LM_DBG("blacklisted value %s for type %d\n",name,r_type);
+		pkg_free(value.s);
 		return (void *)-1;
 	}
 
@@ -772,6 +773,7 @@ void* get_dnscache_value(char *name,int r_type,int name_len)
 			CACHEDB_CAPABILITY(&cdbf,CACHEDB_CAP_BINARY_VALUE)?0:1);
 		if (he == NULL) {
 			LM_ERR("failed to deserialize he struct\n");
+			pkg_free(value.s);
 			return NULL;
 		}
 		pkg_free(value.s);
@@ -781,6 +783,7 @@ void* get_dnscache_value(char *name,int r_type,int name_len)
 			CACHEDB_CAPABILITY(&cdbf,CACHEDB_CAP_BINARY_VALUE)?0:1);
 		if (head == NULL) { 
 			LM_ERR("failed to deserialize rdata struct\n");
+			pkg_free(value.s);
 			return NULL;
 		}
 		pkg_free(value.s);
