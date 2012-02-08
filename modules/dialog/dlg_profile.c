@@ -27,6 +27,8 @@
  */
 
 #include <stdio.h>
+#include "../../cachedb/cachedb.h"
+#include "../../cachedb/cachedb_cap.h"
 #include "../../mem/shm_mem.h"
 #include "../../hash_func.h"
 #include "../../dprint.h"
@@ -44,8 +46,21 @@ static int finished_allocating_locks = 0;
 extern int log_profile_hash_size;
 
 static struct dlg_profile_table* new_dlg_profile( str *name,
-		unsigned int size, unsigned int has_value);
+		unsigned int size, unsigned int has_value, unsigned use_cached);
 
+/* used by cachedb interface */
+static cachedb_funcs cdbf;
+static cachedb_con *cdbc = 0;
+str cdb_val_prefix = str_init("dlg_val_");
+str cdb_noval_prefix = str_init("dlg_noval_");
+str cdb_size_prefix = str_init("dlg_size_");
+int profile_timeout = 60 * 60 * 24;      /* 24 hours */
+str dlg_prof_val_buf = {0, 0};
+str dlg_prof_noval_buf = {0, 0};
+str dlg_prof_size_buf = {0, 0};
+
+/* TODO if needed to change the separator */
+str dlg_prof_sep = str_init("_");
 
 /* method that tries to get a new lock_set, if one cannot be allocated
  * an older one is reused */
@@ -127,14 +142,16 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 {
 	char *p;
 	char *d;
+	char *e;
 	str name;
-	unsigned int i;
+	unsigned int i, use_cached = 0;
 
 	if (profiles==NULL || strlen(profiles)==0 )
 		return 0;
 
 	p = profiles;
 	do {
+		use_cached = 0;
 		/* locate name of profile */
 		name.s = p;
 		d = strchr( p, ';');
@@ -147,25 +164,47 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 
 		/* we have the name -> trim it for spaces */
 		trim_spaces_lr( name );
+		e = name.s + name.len;
 
 		/* check len name */
 		if (name.len==0)
 			/* ignore */
 			continue;
 
+		/* check if it should be shared with cachedb */
+		p = memchr(name.s, '/', name.len);
+		if (p) {
+			name.len = p - name.s;
+			trim_spaces_lr( name );
+			/* skip spaces after p */
+			for (++p; *p == ' ' && p < e; p++);
+			if ( p < e && *p == 's') {
+				if (cdb_url.len && cdb_url.s) {
+					use_cached = 1;
+				} else {
+					LM_WARN("profile %.*s configured to be stored in CacheDB, "
+							"but the cachedb_url was not defined\n",
+							name.len, name.s);
+					use_cached = 0;
+				}
+			}
+		}
+
 		/* check the name format */
 		for(i=0;i<name.len;i++) {
 			if ( !isalnum(name.s[i]) ) {
 				LM_ERR("bad profile name <%.*s>, char %c - use only "
-					"alphanumerical characters\n", name.len,name.s,name.s[i]);
+						"alphanumerical characters\n", name.len,name.s,name.s[i]);
 				return -1;
 			}
 		}
 
 		/* name ok -> create the profile */
-		LM_DBG("creating profile <%.*s>\n",name.len,name.s);
+		LM_DBG("creating profile <%.*s> %s\n", name.len, name.s,
+				use_cached ? "cached" : "");
 
-		if (new_dlg_profile( &name, 1 << log_profile_hash_size, has_value)==NULL) {
+		if (new_dlg_profile( &name, 1 << log_profile_hash_size,
+					has_value, use_cached)==NULL) {
 			LM_ERR("failed to create new profile <%.*s>\n",name.len,name.s);
 			return -1;
 		}
@@ -175,6 +214,172 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 	return 0;
 }
 
+#define DLG_COPY(_d, _s) \
+	do { \
+		memcpy((_d).s + (_d).len, (_s)->s, (_s)->len); \
+		(_d).len += (_s)->len; \
+	} while (0)
+
+
+static inline char * dlg_prof_realloc(char * ptr, int size)
+{
+	ptr = pkg_realloc(ptr, size);
+	if (!ptr) {
+		LM_ERR("not enough memory for cachedb buffer\n");
+		return NULL;
+	}
+	return ptr;
+}
+
+/* TODO delete me */
+#define DLG_DBG_BUF(_s) \
+	LM_DBG("Buffer Status: %s (%d) <%.*s>\n", #_s, (_s).len, (_s).len, (_s).s)
+
+static int dlg_fill_value(str *name, str *value)
+{
+	char * buf;
+
+	int val_len = calc_base64_encode_len(value->len);
+	int len = cdb_val_prefix.len /* prefix */ +
+			name->len /* profile name */ +
+			dlg_prof_sep.len /* value separator */ + 
+			val_len /* profile value, b64 encoded */;
+
+	/* reallocate the appropriate size */
+	if (!(buf = dlg_prof_realloc(dlg_prof_val_buf.s, len))) {
+		LM_ERR("cannot realloc profile with value buffer\n");
+		return -1;
+	}
+	dlg_prof_val_buf.s = buf;
+	dlg_prof_val_buf.len = cdb_val_prefix.len;
+
+	DLG_COPY(dlg_prof_val_buf, name);
+	DLG_COPY(dlg_prof_val_buf, &dlg_prof_sep);
+	base64encode((unsigned char*)dlg_prof_val_buf.s + dlg_prof_val_buf.len,
+			(unsigned char *)value->s, value->len);
+	dlg_prof_val_buf.len += val_len;
+/*	XXX: this copies the value as it is, without b64 encoding
+	DLG_COPY(dlg_prof_val_buf, value);
+	DLG_DBG_BUF(dlg_prof_val_buf); */
+
+	return 0;
+}
+
+static int dlg_fill_name(str *name)
+{
+	char * buf;
+
+	if (!(buf = dlg_prof_realloc(dlg_prof_noval_buf.s,
+			cdb_noval_prefix.len /* prefix */ +
+			name->len /* profile name */))) {
+		LM_ERR("cannot realloc buffer profile name writing\n");
+		return -1;
+	}
+
+	dlg_prof_noval_buf.s = buf;
+	dlg_prof_noval_buf.len = cdb_noval_prefix.len;
+	DLG_COPY(dlg_prof_noval_buf, name);
+/*	DLG_DBG_BUF(dlg_prof_noval_buf); */
+	return 0;
+}
+
+static int dlg_fill_size(str *name)
+{
+	char * buf;
+
+	if (!(buf = dlg_prof_realloc(dlg_prof_size_buf.s,
+			cdb_size_prefix.len + name->len))) {
+		LM_ERR("cannot realloc profile size buffer\n");
+		return -1;
+	}
+	dlg_prof_size_buf.s = buf;
+	dlg_prof_size_buf.len = cdb_size_prefix.len;
+
+	DLG_COPY(dlg_prof_size_buf, name);
+/*	DLG_DBG_BUF(dlg_prof_size_buf); */
+
+	return 0;
+}
+
+int init_cachedb(void)
+{
+	if (!cdbf.init) {
+		LM_ERR("cachedb function not initialized\n");
+		return -1;
+	}
+	
+	cdbc = cdbf.init(&cdb_url);
+	if (!cdbc) {
+		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		return -1;
+	}
+	dlg_prof_val_buf.s = pkg_malloc(cdb_val_prefix.len + 32);
+	if (!dlg_prof_val_buf.s) {
+		LM_ERR("no more memory to allocate buffer\n");
+		return -1;
+	}
+
+	dlg_prof_noval_buf.s = pkg_malloc(cdb_noval_prefix.len + 32);
+	if (!dlg_prof_noval_buf.s) {
+		LM_ERR("no more memory to allocate buffer\n");
+		return -1;
+	}
+
+	dlg_prof_size_buf.s = pkg_malloc(cdb_size_prefix.len + 32);
+	if (!dlg_prof_size_buf.s) {
+		LM_ERR("no more memory to allocate buffer\n");
+		return -1;
+	}
+
+	/* copy prefixes in buffer */
+	memcpy(dlg_prof_val_buf.s, cdb_val_prefix.s, cdb_val_prefix.len);
+	memcpy(dlg_prof_noval_buf.s, cdb_noval_prefix.s, cdb_noval_prefix.len);
+	memcpy(dlg_prof_size_buf.s, cdb_size_prefix.s, cdb_size_prefix.len);
+	return 0;
+}
+
+void destroy_cachedb(int final)
+{
+	if (cdbc)
+		cdbf.destroy(cdbc);
+	cdbc = NULL;
+	if (!final)
+		return;
+
+	/* TODO free buffers */
+	if (dlg_prof_val_buf.s)
+		pkg_free(dlg_prof_val_buf.s);
+	if (dlg_prof_noval_buf.s)
+		pkg_free(dlg_prof_noval_buf.s);
+	if (dlg_prof_size_buf.s)
+		pkg_free(dlg_prof_size_buf.s);
+}
+
+int init_cachedb_utils(void)
+{
+	if (profile_timeout<=0) {
+		LM_ERR("0 or negative profile_timeout not accepted!!\n");
+		return -1;
+	}
+	if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
+		LM_ERR("cannot bind functions for cachedb_url %.*s\n",
+				cdb_url.len, cdb_url.s);
+		return -1;
+	}
+	if (!CACHEDB_CAPABILITY(&cdbf,
+				CACHEDB_CAP_GET|CACHEDB_CAP_ADD|CACHEDB_CAP_SUB)) {
+		LM_ERR("not enough capabilities\n");
+		return -1;
+	}
+
+	cdbc = cdbf.init(&cdb_url);
+	if (!cdbc) {
+		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		return -1;
+	}
+
+	return 0;
+}
 
 struct dlg_profile_table* search_dlg_profile(str *name)
 {
@@ -191,7 +396,7 @@ struct dlg_profile_table* search_dlg_profile(str *name)
 
 
 static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
-													unsigned int has_value)
+		unsigned int has_value, unsigned use_cached)
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_table *ptmp;
@@ -218,10 +423,12 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		return NULL;
 	}
 
-	len = sizeof(struct dlg_profile_table) +
-		size  * ( (has_value == 0 ) ? sizeof( int ) : sizeof( map_t ) ) +
-		name->len + 1;
+	len = sizeof(struct dlg_profile_table) + name->len + 1 +
+		(!use_cached ? (size  * ( (has_value == 0 ) ?
+				sizeof( int ) : sizeof( map_t ) )) : 0);
+
 	profile = (struct dlg_profile_table *)shm_malloc(len);
+
 	if (profile==NULL) {
 		LM_ERR("no more shm mem\n");
 		return NULL;
@@ -230,23 +437,25 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 	memset( profile , 0 , len);
 	profile->size = size;
 	profile->has_value = (has_value==0)?0:1;
-
+	profile->use_cached = use_cached;
 
 	/* init locks */
-	profile->locks = get_a_lock_set(size) ;
+	if (!use_cached) {
+		profile->locks = get_a_lock_set(size) ;
 
-	
-
-	if( !profile->locks )
-	{
-		LM_ERR("failed to init lock\n");
-		shm_free(profile);
-		return NULL;
+		if( !profile->locks )
+		{
+			LM_ERR("failed to init lock\n");
+			shm_free(profile);
+			return NULL;
+		}
 	}
 
-	if( has_value )
-	{
-		
+	if( use_cached ) {
+
+		profile->name.s = (char *)(profile + 1);
+
+	} else if (has_value ) {
 
 		/* set inner pointers */
 		profile->entries = ( map_t *)(profile + 1);
@@ -265,9 +474,7 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 
 		profile->name.s = ((char*)profile->entries) +
 			size*sizeof( map_t );
-	}
-	else
-	{
+	} else {
 		
 		profile->counts = ( int *)(profile + 1);
 		profile->name.s = (char*) (profile->counts) + size*sizeof( int ) ;
@@ -337,26 +544,63 @@ void destroy_linkers(struct dlg_profile_link *linker)
 		/* unlink from profile table */
 
 		
-		lock_set_get( l->profile->locks, l->hash_idx);
+		if (!l->profile->use_cached) {
+			lock_set_get( l->profile->locks, l->hash_idx);
 
-		if( l->profile->has_value)
-		{
-			entry = l->profile->entries[l->hash_idx];
-			dest = map_find( entry, l->value );
-			if( dest )
+			if( l->profile->has_value)
 			{
-				(*dest) = (void*) ( (long)(*dest) - 1 );
-
-				if( *dest == 0 )
+				entry = l->profile->entries[l->hash_idx];
+				dest = map_find( entry, l->value );
+				if( dest )
 				{
-					map_remove( entry,l->value );
+					(*dest) = (void*) ( (long)(*dest) - 1 );
+
+					if( *dest == 0 )
+					{
+						map_remove( entry,l->value );
+					}
+				}
+			}
+			else
+				l->profile->counts[l->hash_idx]--;
+			
+			lock_set_release( l->profile->locks, l->hash_idx  );
+		} else {
+			if (!cdbc) {
+				LM_WARN("CacheDB not initialized - some information might"
+						" not be deleted from the cachedb engine\n");
+				return;
+			}
+
+			/* prepare buffers */
+			if( l->profile->has_value) {
+
+				if (dlg_fill_value(&l->profile->name, &l->value) < 0)
+					return;
+				if (dlg_fill_size(&l->profile->name) < 0)
+					return;
+				/* not really interested in the new val */
+				if (cdbf.sub(cdbc, &dlg_prof_val_buf, 1,
+							profile_timeout, NULL) < 0) {
+					LM_ERR("cannot remove profile from CacheDB\n");
+					return;
+				}
+				/* fill size into name */
+				if (cdbf.sub(cdbc, &dlg_prof_size_buf, 1,
+							profile_timeout, NULL) < 0) {
+					LM_ERR("cannot remove size profile from CacheDB\n");
+					return;
+				}
+			} else {
+				if (dlg_fill_name(&l->profile->name) < 0)
+					return;
+				if (cdbf.sub(cdbc, &dlg_prof_noval_buf, 1,
+							profile_timeout, NULL) < 0) {
+					LM_ERR("cannot remove profile from CacheDB\n");
+					return;
 				}
 			}
 		}
-		else
-			l->profile->counts[l->hash_idx]--;
-		
-		lock_set_release( l->profile->locks, l->hash_idx  );
 
 		/* free memory */
 		shm_free(l);
@@ -401,25 +645,65 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 		dlg->profile_links =linker;
 	}
 
-	/* calculate the hash position */
-	hash = calc_hash_profile(&linker->value, dlg, linker->profile);
-	linker->hash_idx = hash;
-
 	/* insert into profile hash table */
-	
-	lock_set_get( linker->profile->locks, hash );
+	/* but only if cachedb is not used */
+	if (!linker->profile->use_cached) {
+		/* calculate the hash position */
+		hash = calc_hash_profile(&linker->value, dlg, linker->profile);
+		linker->hash_idx = hash;
 
-	LM_DBG("Entered here with hash = %d \n",hash);
-	if( linker->profile->has_value)
-	{
-		p_entry = linker->profile->entries[hash];
-		dest = map_get( p_entry, linker->value );
-		(*dest) = (void*) ( (long)(*dest) + 1 );
+
+		lock_set_get( linker->profile->locks, hash );
+
+		LM_DBG("Entered here with hash = %d \n",hash);
+		if( linker->profile->has_value)
+		{
+			p_entry = linker->profile->entries[hash];
+			dest = map_get( p_entry, linker->value );
+			(*dest) = (void*) ( (long)(*dest) + 1 );
+		}
+		else
+			linker->profile->counts[hash]++;
+
+		lock_set_release( linker->profile->locks,hash );
+	} else {
+		if (!cdbc) {
+			LM_WARN("Cachedb not initialized yet - cannot update profile\n");
+			LM_WARN("Make sure that the dialog profile information is persistent\n");
+			LM_WARN(" in your cachedb storage, because otherwise you might loose profile data\n");
+			return;
+		}
+		/* prepare buffers */
+		if( linker->profile->has_value) {
+
+			if (dlg_fill_value(&linker->profile->name, &linker->value) < 0)
+				return;
+			if (dlg_fill_size(&linker->profile->name) < 0)
+				return;
+
+			/* not really interested in the new val */
+			if (cdbf.add(cdbc, &dlg_prof_val_buf, 1,
+						profile_timeout, NULL) < 0) {
+				LM_ERR("cannot insert profile into CacheDB\n");
+				return;
+			}
+			/* fill size into name */
+			if (cdbf.add(cdbc, &dlg_prof_size_buf, 1,
+						profile_timeout, NULL) < 0) {
+				LM_ERR("cannot insert size profile into CacheDB\n");
+				return;
+			}
+		} else {
+			if (dlg_fill_name(&linker->profile->name) < 0)
+				return;
+
+			if (cdbf.add(cdbc, &dlg_prof_noval_buf, 1,
+						profile_timeout, NULL) < 0) {
+				LM_ERR("cannot insert profile into CacheDB\n");
+				return;
+			}
+		}
 	}
-	else
-		linker->profile->counts[hash]++;
-
-	lock_set_release( linker->profile->locks,hash );
 }
 
 
@@ -555,70 +839,109 @@ int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
 
 unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 {
-	unsigned int n,i;
+	unsigned int n = 0, i;
+	str ret = {0, 0};
 	map_t entry ;
 	void ** dest;
-
 
 	if (profile->has_value==0)
 	{
 		/* iterate through the hash and count all records */
 
-		n=0;
+		if (cdbc && profile->use_cached) {
+			if (dlg_fill_name(&profile->name) < 0)
+				goto failed;
 
-		for( i=0; i<profile->size; i++ )
-		{
+			if (cdbf.get(cdbc, &dlg_prof_noval_buf, &ret) == -1) {
+				LM_ERR("cannot fetch profile from CacheDB\n");
+				goto failed;
+			}
 
-			lock_set_get( profile->locks, i);
-
-			n += profile->counts[i];
-
-			lock_set_release( profile->locks, i);
-			
-		}
-
-
-		return n;
-
-	} else {
-
-		n=0;
-
-		if(  value==NULL )
-		{
-			
+		} else {
 
 			for( i=0; i<profile->size; i++ )
 			{
 
 				lock_set_get( profile->locks, i);
 
-				n += map_size(profile->entries[i]);
+				n += profile->counts[i];
 
 				lock_set_release( profile->locks, i);
-
+				
 			}
+
+		}
+
+	} else {
+
+		if(  value==NULL )
+		{
+			if (cdbc && profile->use_cached) {
+				if (dlg_fill_size(&profile->name) < 0)
+					goto failed;
+
+				if (cdbf.get(cdbc, &dlg_prof_size_buf, &ret) == -1) {
+					LM_ERR("cannot fetch profile from CacheDB\n");
+					goto failed;
+				}
+
+			} else {
+
+				for( i=0; i<profile->size; i++ )
+				{
+
+					lock_set_get( profile->locks, i);
+
+					n += map_size(profile->entries[i]);
+
+					lock_set_release( profile->locks, i);
+
+				}
+			}
+
 
 		}
 		else
 		{
-			/* iterate through the hash entry and count only matching */
-			/* calculate the hash position */
-			i = calc_hash_profile( value, NULL, profile);
-			n = 0;
-			lock_set_get( profile->locks, i);
-			entry = profile->entries[i];
+			if (cdbc && profile->use_cached) {
+				if (dlg_fill_value(&profile->name, value) < 0)
+					goto failed;
 
-			dest = map_find(entry,*value);
-			if( dest )
-				n = (int)(long) *dest;
+				if (cdbf.get(cdbc, &dlg_prof_val_buf, &ret) == -1) {
+					LM_ERR("cannot fetch profile from CacheDB\n");
+					goto failed;
+				}
 
-			lock_set_release( profile->locks, i);
+			} else {
+				/* iterate through the hash entry and count only matching */
+				/* calculate the hash position */
+				i = calc_hash_profile( value, NULL, profile);
+				n = 0;
+				lock_set_get( profile->locks, i);
+				entry = profile->entries[i];
+
+				dest = map_find(entry,*value);
+				if( dest )
+					n = (int)(long) *dest;
+
+				lock_set_release( profile->locks, i);
+
+			}
 		}
-
-		
-		return n;
 	}
+
+	if (ret.s && ret.len) {
+		if (str2int(&ret, &n) < 0) {
+			LM_ERR("invalid int value in CacheDB <%.*s>\n",
+					ret.len, ret.s);
+			return -1;
+		}
+	}
+
+	return n;
+failed:
+	LM_ERR("error while fetching cachedb key\n");
+	return 0;
 }
 
 
@@ -692,6 +1015,15 @@ struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
 		goto error;
 	}
 
+	if (profile->use_cached) {
+		attr = add_mi_attr(node, MI_DUP_VALUE, "shared", 6, "yes", 3);
+	} else {
+		attr = add_mi_attr(node, MI_DUP_VALUE, "shared", 6, "no", 2);
+	}
+	if (attr == NULL) {
+		goto error;
+	}
+
 	return rpl_tree;
 error:
 	free_mi_tree(rpl_tree);
@@ -730,17 +1062,8 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	struct dlg_profile_table *profile;
 	str *profile_name;
 	int i, ret,n;
-/*
-	struct dlg_profile_value_name dpvn;
-	unsigned int combined;
-	str *value;
-*/
 	str tmp;
 
-	/* dpvn.values_string=NULL;
-	dpvn.values_count=NULL;
-	dpvn.size = 0;
-	combined = 0; */
 	node = cmd_tree->node.kids;
 	if (node==NULL || !node->value.s || !node->value.len)
 		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
@@ -751,15 +1074,13 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
 		if (node->next)
 			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-/* XXX not used anywhere
-		value = &node->value;
-	} else {
-		value = NULL;
-*/
 	}
 	profile = search_dlg_profile( profile_name );
 	if (profile==NULL)
 		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+	if (profile->use_cached)
+		return init_mi_tree( 405, MI_SSTR("Unsupported command for shared profiles"));
+		
 	/* gather dialog count for all values in this profile */
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)

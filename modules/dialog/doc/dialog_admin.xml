@@ -79,6 +79,16 @@
 	and sequential requests) and in the branch, failure and reply routes of 
 	the original request.
 	</para>
+	<para>
+	Dialog profiles can also be used in distributed systems, using the &osips;
+	CacheDB Interface. This feature allows you to share dialog profile
+	information with multiple &osips; instaces that use the same CacheDB
+	backend. In order to do that, the <emphasis>cachedb_url</emphasis> parameter
+	must be defined. Also, the profile must be marked as shared, by adding the
+	<emphasis>'/s'</emphasis> suffix to the name of the profile in the
+	<emphasis>profiles_with_value</emphasis> or
+	<emphasis>profiles_no_value</emphasis> parameters.
+	</para>
 	</section>
 
 	<section>
@@ -898,7 +908,7 @@ modparam("dialog", "sflags_column", "sflags_c_name")
 		<title>Set <varname>profiles_with_value</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "profiles_with_value", "caller ; my_profile")
+modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s")
 ...
 </programlisting>
 		</example>
@@ -918,7 +928,7 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile")
 		<title>Set <varname>profiles_no_value</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "profiles_no_value", "inbound ; outbound")
+modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s")
 ...
 </programlisting>
 		</example>
@@ -940,6 +950,115 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
 		<programlisting format="linespecific">
 ...
 modparam("dialog", "db_flush_vals_profiles", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+			Enables distributed dialog profiles and specifies the
+			backend that should be used by the CacheDB interface.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>profile_value_prefix</varname> (string)</title>
+		<para>
+			Specifies what prefix should be added to the profiles with 
+			value when they are inserted into CacheDB backed. This is
+			only used when distributed profiles are enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>dlg_val_</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>profile_value_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "profile_value_prefix", "dlgv_")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>profile_no_value_prefix</varname> (string)</title>
+		<para>
+			Specifies what prefix should be added to the profiles without
+			value when they are inserted into CacheDB backed. This is
+			only used when distributed profiles are enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>dlg_noval_</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>profile_no_value_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "profile_no_value_prefix", "dlgnv_")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>profile_size_prefix</varname> (string)</title>
+		<para>
+			Specifies what prefix should be added to the entity that holds
+			the profiles with value size in CacheDB backed. This is
+			only used when distributed profiles are enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>dlg_size_</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>profile_size_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "profile_size_prefix", "dlgs_")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>profile_timeout</varname> (int)</title>
+		<para>
+			Specifies ho long a dialog profile should be kept in the CacheDB
+			until it expires. This is only used when distributed profiles are
+			enabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>86400</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>profile_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "profile_timeout", "43200")
 ...
 </programlisting>
 		</example>
@@ -1836,7 +1955,9 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		specific value - list only the dialogs that were inserted into the 
 		profile with that specific value. If not value is passed, all dialogs 
 		belonging to the profile will be listed. Note that the profile does 
-		not supports values, this will be silently discarded.
+		not supports values, this will be silently discarded. Also, when using
+		shared profiles using the CacheDB interface, this command will only
+		display the local dialogs.
 		</para>
 		<para>
 		Name: <emphasis>profile_list_dlgs</emphasis>
@@ -1867,7 +1988,8 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		<para>
 		Lists all the values belonging to a profile along with their
 		count. If the profile does not support values a total count
-		will be returned.
+		will be returned. Note that this function does not work for shared
+		profiles over the CacheDB interface.
 		</para>
 		<para>
 		Name: <emphasis>profile_get_values</emphasis>

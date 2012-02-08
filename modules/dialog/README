@@ -11,7 +11,7 @@ Bogdan-Andrei Iancu
    Copyright © 2006-2009 voice-system.ro
    Revision History
    Revision $Revision$ $Date: 2009-09-16 20:33:54 +0300
-                              (Wed, 16 Sep 2009) $
+                              (Mi, 16 sep 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -65,6 +65,11 @@ Bogdan-Andrei Iancu
               1.5.35. profiles_with_value (string)
               1.5.36. profiles_no_value (string)
               1.5.37. db_flush_vals_profiles (int)
+              1.5.38. cachedb_url (string)
+              1.5.39. profile_value_prefix (string)
+              1.5.40. profile_no_value_prefix (string)
+              1.5.41. profile_size_prefix (string)
+              1.5.42. profile_timeout (int)
 
         1.6. Exported Functions
 
@@ -160,23 +165,28 @@ Bogdan-Andrei Iancu
    1.35. Set profiles_with_value parameter
    1.36. Set profiles_no_value parameter
    1.37. Set db_flush_vals_profiles parameter
-   1.38. create_dialog() usage
-   1.39. match_dialog() usage
-   1.40. validate_dialog() usage
-   1.41. fix_route_dialog() usage
-   1.42. get_dialog_info usage
-   1.43. set_dlg_profile usage
-   1.44. unset_dlg_profile usage
-   1.45. is_in_profile usage
-   1.46. get_profile_size usage
-   1.47. set_dlg_flag usage
-   1.48. test_and_set_dlg_flag usage
-   1.49. reset_dlg_flag usage
-   1.50. is_dlg_flag_set usage
-   1.51. store_dlg_value usage
-   1.52. fetch_dlg_value usage
-   1.53. topology_hiding usage
-   1.54. calling match_dialog() function for topology hiding
+   1.38. Set cachedb_url parameter
+   1.39. Set profile_value_prefix parameter
+   1.40. Set profile_no_value_prefix parameter
+   1.41. Set profile_size_prefix parameter
+   1.42. Set profile_timeout parameter
+   1.43. create_dialog() usage
+   1.44. match_dialog() usage
+   1.45. validate_dialog() usage
+   1.46. fix_route_dialog() usage
+   1.47. get_dialog_info usage
+   1.48. set_dlg_profile usage
+   1.49. unset_dlg_profile usage
+   1.50. is_in_profile usage
+   1.51. get_profile_size usage
+   1.52. set_dlg_flag usage
+   1.53. test_and_set_dlg_flag usage
+   1.54. reset_dlg_flag usage
+   1.55. is_dlg_flag_set usage
+   1.56. store_dlg_value usage
+   1.57. fetch_dlg_value usage
+   1.58. topology_hiding usage
+   1.59. calling match_dialog() function for topology hiding
           sequential requests
 
 Chapter 1. Admin Guide
@@ -235,6 +245,15 @@ Chapter 1. Admin Guide
    Profiles are visible (at the moment) in the request route (for
    initial and sequential requests) and in the branch, failure and
    reply routes of the original request.
+
+   Dialog profiles can also be used in distributed systems, using
+   the OpenSIPS CacheDB Interface. This feature allows you to
+   share dialog profile information with multiple OpenSIPS
+   instaces that use the same CacheDB backend. In order to do
+   that, the cachedb_url parameter must be defined. Also, the
+   profile must be marked as shared, by adding the '/s' suffix to
+   the name of the profile in the profiles_with_value or
+   profiles_no_value parameters.
 
 1.4. Dependencies
 
@@ -703,7 +722,8 @@ modparam("dialog", "sflags_column", "sflags_c_name")
 
    Example 1.35. Set profiles_with_value parameter
 ...
-modparam("dialog", "profiles_with_value", "caller ; my_profile")
+modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s"
+)
 ...
 
 1.5.36. profiles_no_value (string)
@@ -714,7 +734,7 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile")
 
    Example 1.36. Set profiles_no_value parameter
 ...
-modparam("dialog", "profiles_no_value", "inbound ; outbound")
+modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s")
 ...
 
 1.5.37. db_flush_vals_profiles (int)
@@ -728,6 +748,70 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound")
    Example 1.37. Set db_flush_vals_profiles parameter
 ...
 modparam("dialog", "db_flush_vals_profiles", 1)
+...
+
+1.5.38. cachedb_url (string)
+
+   Enables distributed dialog profiles and specifies the backend
+   that should be used by the CacheDB interface.
+
+   Default value is “empty”.
+
+   Example 1.38. Set cachedb_url parameter
+...
+modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
+...
+
+1.5.39. profile_value_prefix (string)
+
+   Specifies what prefix should be added to the profiles with
+   value when they are inserted into CacheDB backed. This is only
+   used when distributed profiles are enabled.
+
+   Default value is “dlg_val_”.
+
+   Example 1.39. Set profile_value_prefix parameter
+...
+modparam("dialog", "profile_value_prefix", "dlgv_")
+...
+
+1.5.40. profile_no_value_prefix (string)
+
+   Specifies what prefix should be added to the profiles without
+   value when they are inserted into CacheDB backed. This is only
+   used when distributed profiles are enabled.
+
+   Default value is “dlg_noval_”.
+
+   Example 1.40. Set profile_no_value_prefix parameter
+...
+modparam("dialog", "profile_no_value_prefix", "dlgnv_")
+...
+
+1.5.41. profile_size_prefix (string)
+
+   Specifies what prefix should be added to the entity that holds
+   the profiles with value size in CacheDB backed. This is only
+   used when distributed profiles are enabled.
+
+   Default value is “dlg_size_”.
+
+   Example 1.41. Set profile_size_prefix parameter
+...
+modparam("dialog", "profile_size_prefix", "dlgs_")
+...
+
+1.5.42. profile_timeout (int)
+
+   Specifies ho long a dialog profile should be kept in the
+   CacheDB until it expires. This is only used when distributed
+   profiles are enabled.
+
+   Default value is “86400”.
+
+   Example 1.42. Set profile_timeout parameter
+...
+modparam("dialog", "profile_timeout", "43200")
 ...
 
 1.6. Exported Functions
@@ -750,7 +834,7 @@ modparam("dialog", "db_flush_vals_profiles", 1)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.38. create_dialog() usage
+   Example 1.43. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -785,7 +869,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.39. match_dialog() usage
+   Example 1.44. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -815,7 +899,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.40. validate_dialog() usage
+   Example 1.45. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -837,7 +921,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.41. fix_route_dialog() usage
+   Example 1.46. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -873,7 +957,7 @@ create_dialog("B");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.42. get_dialog_info usage
+   Example 1.47. get_dialog_info usage
 ...
 if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
         xlog("caller $fU has another ongoing, talking to callee $var(x)\
@@ -906,7 +990,7 @@ $dlg_val(callee) = $ru;
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.43. set_dlg_profile usage
+   Example 1.48. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
@@ -928,7 +1012,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.44. unset_dlg_profile usage
+   Example 1.49. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
@@ -955,7 +1039,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.45. is_in_profile usage
+   Example 1.50. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -986,7 +1070,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.46. get_profile_size usage
+   Example 1.51. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
@@ -1009,7 +1093,7 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.47. set_dlg_flag usage
+   Example 1.52. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
@@ -1030,7 +1114,7 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.48. test_and_set_dlg_flag usage
+   Example 1.53. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
@@ -1049,7 +1133,7 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.49. reset_dlg_flag usage
+   Example 1.54. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
@@ -1068,7 +1152,7 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.50. is_dlg_flag_set usage
+   Example 1.55. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
@@ -1093,7 +1177,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.51. store_dlg_value usage
+   Example 1.56. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1119,7 +1203,7 @@ $dlg_val("account_type") = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.52. fetch_dlg_value usage
+   Example 1.57. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
@@ -1157,14 +1241,14 @@ $var(account) = $dlg_val("account_type");
    modules functionalities: profiles, dialog variables, dialog
    timeouts, etc..
 
-   Example 1.53. topology_hiding usage
+   Example 1.58. topology_hiding usage
 ...
 if(!has_totag() && is_method("INVITE")) {
         topology_hiding();
 }
 ...
 
-   Example 1.54. calling match_dialog() function for topology
+   Example 1.59. calling match_dialog() function for topology
    hiding sequential requests
 ...
 if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
@@ -1303,7 +1387,9 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
    inserted into the profile with that specific value. If not
    value is passed, all dialogs belonging to the profile will be
    listed. Note that the profile does not supports values, this
-   will be silently discarded.
+   will be silently discarded. Also, when using shared profiles
+   using the CacheDB interface, this command will only display the
+   local dialogs.
 
    Name: profile_list_dlgs
 
@@ -1320,7 +1406,8 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
    Lists all the values belonging to a profile along with their
    count. If the profile does not support values a total count
-   will be returned.
+   will be returned. Note that this function does not work for
+   shared profiles over the CacheDB interface.
 
    Name: profile_get_values
 

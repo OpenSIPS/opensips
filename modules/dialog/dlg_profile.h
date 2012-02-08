@@ -57,6 +57,7 @@ struct dlg_profile_link {
 struct dlg_profile_table {
 	str name;
 	unsigned int has_value;
+        unsigned int use_cached;
 
 
 	unsigned int size;
@@ -121,6 +122,17 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param );
 struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param );
 
 void get_value_names(struct dlg_profile_table *profile, struct dlg_profile_value_name *);
+
+/* cachedb interface */
+extern str cdb_val_prefix;
+extern str cdb_noval_prefix;
+extern str cdb_size_prefix;
+extern str cdb_url;
+extern int profile_timeout;
+
+int init_cachedb();
+void destroy_cachedb(int);
+int init_cachedb_utils(void);
 
 #endif
 

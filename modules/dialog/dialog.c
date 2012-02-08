@@ -104,6 +104,9 @@ static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 
 extern int last_dst_leg;
 
+/* cachedb stuff */
+str cdb_url = {0,0};
+
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
@@ -238,6 +241,12 @@ static param_export_t mod_params[]={
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
 	{ "db_flush_vals_profiles",INT_PARAM, &db_flush_vp              },
+	/* distributed profiles stuff */
+	{ "cachedb_url",           STR_PARAM, &cdb_url.s                },
+	{ "profile_value_prefix",    STR_PARAM, &cdb_val_prefix.s       },
+	{ "profile_no_value_prefix", STR_PARAM, &cdb_noval_prefix.s     },
+	{ "profile_size_prefix",     STR_PARAM, &cdb_size_prefix.s      },
+	{ "profile_timeout",         INT_PARAM, &profile_timeout        },
 	{ 0,0,0 }
 };
 
@@ -620,6 +629,7 @@ static int mod_init(void)
 		return -1;
 	}
 
+
 	if (ping_interval<=0) {
 		LM_ERR("Non-positive ping interval not accepted!!\n");
 		return -1;
@@ -640,6 +650,15 @@ static int mod_init(void)
 	if (dlg_enable_stats==0)
 		exports.stats = 0;
 
+	/* we are only interested in these parameters if the cachedb url was defined */
+	if (cdb_url.s) {
+		cdb_url.len = strlen(cdb_url.s);
+		if (init_cachedb_utils() <0) {
+			LM_ERR("cannot init cachedb utils\n");
+			return -1;
+		}
+	}
+
 	/* create profile hashes */
 	if (add_profile_definitions( profiles_nv_s, 0)!=0 ) {
 		LM_ERR("failed to add profiles without value\n");
@@ -649,6 +668,7 @@ static int mod_init(void)
 		LM_ERR("failed to add profiles with value\n");
 		return -1;
 	}
+
 
 	/* load the TM API */
 	if (load_tm_api(&d_tmb)!=0) {
@@ -742,10 +762,15 @@ static int mod_init(void)
 		run_load_callbacks();
 	}
 
+	/* if profiles should be kept in cachedb's */
+
 	destroy_dlg_callbacks( DLGCB_LOADED );
+	destroy_cachedb(0);
 
 	return 0;
 }
+
+
 
 
 static int child_init(int rank)
@@ -766,6 +791,11 @@ static int child_init(int rank)
 		}
 	}
 
+	if (cdb_url.s && cdb_url.len && init_cachedb() < 0) {
+		LM_ERR("cannot init cachedb feature\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -784,6 +814,8 @@ static void mod_destroy(void)
 	destroy_dlg_callbacks( DLGCB_CREATED|DLGCB_LOADED );
 	destroy_dlg_handlers();
 	destroy_dlg_profiles();
+
+	destroy_cachedb(1);
 }
 
 
