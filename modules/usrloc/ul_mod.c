@@ -182,6 +182,8 @@ static mi_export_t mi_cmds[] = {
 				mi_child_init },
 	{ MI_USRLOC_SHOW_CONTACT, 0, mi_usrloc_show_contact, 0,                 0,
 				mi_child_init },
+	{ MI_USRLOC_SYNC,         0, mi_usrloc_sync,         0,                 0,
+				mi_child_init },
 	{ 0, 0, 0, 0, 0, 0}
 };
 

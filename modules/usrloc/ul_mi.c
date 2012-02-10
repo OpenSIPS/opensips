@@ -639,4 +639,107 @@ error:
 	return 0;
 }
 
+static int mi_process_sync(void *param, str key, void *value)
+{
+	struct ucontact* c;
+	struct urecord* rec = (struct urecord *)value;
 
+	if (!rec) {
+		LM_ERR("invalid record value for key '%.*s'\n", key.len, key.s);
+		return -1;
+	}
+
+	for (c = rec->contacts; c; c = c->next) {
+		c->state = CS_NEW;
+	}
+	return 0;
+}
+
+static struct mi_root * mi_sync_domain(udomain_t *dom)
+{
+	int i;
+	static db_ps_t my_ps = NULL;
+
+	/* delete whole table */
+	if (ul_dbf.use_table(ul_dbh, dom->name) < 0) {
+		LM_ERR("use_table failed\n");
+		return 0;
+	}
+
+	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+
+	if (ul_dbf.delete(ul_dbh, 0, 0, 0, 0) < 0) {
+		LM_ERR("failed to delete from database\n");
+		return 0;
+	}
+
+	for(i=0; i < dom->size; i++) {
+		lock_ulslot(dom, i);
+
+		if (map_for_each(dom->table[i].records, mi_process_sync, 0)) {
+			LM_ERR("cannot process sync\n");
+			goto error;
+		}
+
+		unlock_ulslot(dom, i);
+	}
+	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+error:
+	unlock_ulslot(dom, i);
+	return 0;
+}
+
+static struct mi_root* mi_sync_aor(udomain_t *dom, str *aor)
+{
+	urecord_t *rec;
+
+	lock_udomain( dom, aor);
+	if (get_urecord( dom, aor, &rec) == 1) {
+		unlock_udomain( dom, aor);
+		return init_mi_tree( 404, "AOR not found", 13);
+	}
+
+	if (db_delete_urecord(rec) < 0) {
+		LM_ERR("DB delete failed\n");
+		goto error;
+	}
+
+	if (mi_process_sync(dom, *aor, rec))
+		goto error;
+
+	unlock_udomain( dom, aor);
+	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+error:
+	unlock_udomain( dom, aor);
+	return 0;
+}
+
+/*! \brief
+ * Expects the table name
+ */
+struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param)
+{
+	struct mi_node *node;
+	udomain_t *dom;
+
+	if (db_mode == DB_ONLY || db_mode == NO_DB)
+		return init_mi_tree( 200, MI_SSTR("Contacts already synced"));
+
+	node = cmd->node.kids;
+	if (!node)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	/* look for table */
+	dom = mi_find_domain( &node->value );
+	if (dom==NULL)
+		return init_mi_tree( 404, MI_SSTR("Table not found"));
+
+	node = node->next;
+	if (node) {
+		if (node->next)
+			return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+		return mi_sync_aor(dom, &node->value);
+	} else {
+		return mi_sync_domain(dom);
+	}
+}

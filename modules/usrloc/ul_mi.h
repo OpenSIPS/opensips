@@ -39,6 +39,7 @@
 #define MI_USRLOC_FLUSH        "ul_flush"
 #define MI_USRLOC_ADD          "ul_add"
 #define MI_USRLOC_SHOW_CONTACT "ul_show_contact"
+#define MI_USRLOC_SYNC         "ul_sync"
 
 
 
@@ -53,6 +54,7 @@ struct mi_root* mi_usrloc_flush(struct mi_root *cmd, void *param);
 struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param);
 
 struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param);
+struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param);
 
 
 #endif

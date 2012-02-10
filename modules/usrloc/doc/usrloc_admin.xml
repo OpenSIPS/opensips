@@ -792,6 +792,34 @@ modparam("usrloc", "hash_size", 10)
 		</itemizedlist>
 	</section>
 
+	<section>
+		<title>
+		<function moreinfo="none">ul_sync</function>
+		</title>
+		<para>
+		Synchronizes the contacts from memory with the ones from database.
+		Note that this can not be used when no database is specified or with the
+		DB-Only scheme.
+
+		Important: make sure that all your contacts are in memory
+		(<emphasis>ul_dump</emphasis> MI function) before executing this
+		command. If the AOR is not specified, the whole table will be
+		synchronized.
+		</para>
+		<para>Parameters: </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>table name</emphasis> - table where the AOR
+				resides (Ex: location).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>AOR (optional)</emphasis> - user AOR in username[@domain]
+				format (domain must be supplied only if use_domain option
+				is on).
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
 	</section>
 
 
