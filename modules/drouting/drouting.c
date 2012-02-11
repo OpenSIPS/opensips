@@ -146,9 +146,9 @@ static int dr_exit(void);
 static int fixup_do_routing(void** param, int param_no);
 static int fixup_from_gw(void** param, int param_no);
 
-static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort);
+static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort, gparam_t* wl);
 static int do_routing_0(struct sip_msg* msg);
-static int do_routing_12(struct sip_msg* msg, char* str1, char* str2);
+static int do_routing_123(struct sip_msg* msg, char* str1, char* str2, char *str3);
 static int use_next_gw(struct sip_msg* msg);
 static int is_from_gw_0(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
@@ -169,9 +169,9 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
 static cmd_export_t cmds[] = {
 	{"do_routing",  (cmd_function)do_routing_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_12,  1,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_123, 1,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_12,  2,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_123, 2,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"use_next_gw",  (cmd_function)use_next_gw,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
@@ -861,12 +861,14 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 
 static int do_routing_0(struct sip_msg* msg)
 {
-	return do_routing(msg, NULL,0);
+	return do_routing(msg, NULL, 0, NULL);
 }
 
-static int do_routing_12(struct sip_msg* msg, char* grp, char* order)
+static int do_routing_123(struct sip_msg* msg, char* grp, char* order,
+															char* white_list)
 {
-	return do_routing(msg, (dr_group_t*)grp, (int)(long)order);
+	return do_routing(msg, (dr_group_t*)grp, (int)(long)order,
+		(gparam_t*)white_list);
 }
 
 
@@ -1086,7 +1088,22 @@ error:
 }
 
 
-static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
+static inline int is_dst_in_list(void* dst, pgw_list_t *list, unsigned short len)
+{
+	unsigned short i;
+
+	if (list==NULL)
+		return 1;
+	for( i=0 ; i<len ; i++ ) {
+		if (dst==(void*)list[i].dst.gw)
+			return 1;
+	}
+	return 0;
+}
+
+
+static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
+														gparam_t* whitelist)
 {
 	unsigned short dsts_idx[DR_MAX_GWLIST];
 	unsigned short carrier_idx[DR_MAX_GWLIST];
@@ -1094,13 +1111,17 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 	struct sip_uri  uri;
 	rt_info_t  *rt_info;
 	struct usr_avp *avp;
+	str parsed_whitelist;
 	pgw_list_t *dst, *cdst;
+	pgw_list_t *wl_list;
 	unsigned int prefix_len;
+	unsigned short wl_len;
 	int grp_id;
 	int i, j, n;
 	int_str val;
 	str *ruri;
 	int ret;
+	char tmp;
 
 	ret = -1;
 
@@ -1220,16 +1241,36 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 		goto error2;
 	}
 
+	/* elvauate and parse the whitelist of GWs/CARRIERs, if provided */
+	if (whitelist) {
+		if (fixup_get_svalue(msg, whitelist, &parsed_whitelist)!=0) {
+			LM_ERR("failed to evaluate whitelist-> ignoring...\n");
+			wl_list = NULL;
+		} else {
+			tmp = parsed_whitelist.s[parsed_whitelist.len];
+			parsed_whitelist.s[parsed_whitelist.len] = 0;
+			if (parse_destination_list( *rdata, parsed_whitelist.s,
+			&wl_list, &wl_len, 1)!=0) {
+				LM_ERR("invalid format in whitelist-> ignoring...\n");
+				wl_list = NULL;
+			}
+			parsed_whitelist.s[parsed_whitelist.len] = tmp;
+		}
+	} else {
+		wl_list = NULL;
+	}
+
 	/* iterate through the list, skip the disabled destination */
 	for ( i=0 ; i<rt_info->pgwa_len ; i++ ) {
 
 		dst = &rt_info->pgwl[dsts_idx[i]];
 
-		/* is the destination disabled ? */
+		/* is the destination carrier or gateway ? */
 		if (dst->is_carrier) {
 
 			/* is carrier turned off ? */
-			if( dst->dst.carrier->flags & DR_CR_FLAG_IS_OFF )
+			if( dst->dst.carrier->flags & DR_CR_FLAG_IS_OFF
+			|| !is_dst_in_list( (void*)dst, wl_list, wl_len) )
 				continue;
 
 			/* any gws for this carrier ? */
@@ -1269,7 +1310,8 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight)
 		} else {
 
 			/* is gateway disabled ? */
-			if (dst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG )
+			if (dst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG
+			|| !is_dst_in_list( (void*)dst, wl_list, wl_len) )
 				continue;
 
 			/* add gateway to usage list */
@@ -1533,6 +1575,10 @@ static int fixup_do_routing(void** param, int param_no)
 	if (param_no==2) {
 		/* sorting algorithm */
 		return fixup_uint(param);
+	} else
+	if (param_no==3) {
+		/* white_list of GWs/Carriers */
+		return fixup_spve(param);
 	}
 
 	return 0;

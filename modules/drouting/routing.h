@@ -123,16 +123,25 @@ build_rt_info(
 	char* dstlst,
 	char* attr,
 	rt_data_t* rd
-);
+	);
+
+int
+parse_destination_list(
+	rt_data_t* rd,
+	char *dstlist,
+	pgw_list_t** pgwl_ret,
+	unsigned short *len,
+	int no_resize
+	);
 
 void
 del_pgw_list(
-		pgw_t *pgw_l
-		);
+	pgw_t *pgw_l
+	);
 
-void 
+void
 free_rt_data(
-		rt_data_t*,
-		int
-		);
+	rt_data_t*,
+	int
+	);
 #endif

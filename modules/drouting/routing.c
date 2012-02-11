@@ -71,7 +71,7 @@ err_exit:
 
 
 int parse_destination_list(rt_data_t* rd, char *dstlist,
-									pgw_list_t** pgwl_ret, unsigned short *len)
+					pgw_list_t** pgwl_ret, unsigned short *len, int no_resize)
 {
 #define PGWL_SIZE 32
 	pgw_list_t *pgwl=NULL, *p=NULL;
@@ -82,7 +82,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 
 	/* temporary list of gw while parsing */
 	pgwl_size = PGWL_SIZE;
-	pgwl = (pgw_list_t*)shm_malloc(pgwl_size*sizeof(pgw_list_t));
+	pgwl = (pgw_list_t*)pkg_malloc(pgwl_size*sizeof(pgw_list_t));
 	if (pgwl==NULL) {
 		LM_ERR("no more shm mem\n");
 		goto error;
@@ -97,14 +97,14 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 
 		/* need a larger array ? */
 		if(size>=pgwl_size){
-			p=(pgw_list_t*)shm_malloc((pgwl_size*2)*sizeof(pgw_list_t));
+			p=(pgw_list_t*)pkg_malloc((pgwl_size*2)*sizeof(pgw_list_t));
 			if (p==NULL) {
 				LM_ERR("not enough shm mem to resize\n");
 				goto error;
 			}
 			memset( p+pgwl_size, 0, 2*pgwl_size*sizeof(pgw_list_t));
 			memcpy( p, pgwl, pgwl_size*sizeof(pgw_list_t));
-			shm_free(pgwl);
+			pkg_free(pgwl);
 			pgwl_size*=2;
 			pgwl=p;
 		}
@@ -176,26 +176,32 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 
 	if (size==0) {
 		LM_DBG("empty destination list\n");
-		shm_free(pgwl);
+		pkg_free(pgwl);
 		*len = 0;
 		*pgwl_ret = NULL;
 		return 0;
 	}
 
-	/* done with parsing, build th final array and return */
+	/* done with parsing, build the final array and return */
+	if (no_resize) {
+		*len = size;
+		*pgwl_ret = pgwl;
+		return 0;
+	}
+
 	p=(pgw_list_t*)shm_malloc(size*sizeof(pgw_list_t));
 	if (p==NULL) {
 		LM_ERR("not enough shm mem for final build\n");
 		goto error;
 	}
 	memcpy( p, pgwl, size*sizeof(pgw_list_t));
-	shm_free(pgwl);
+	pkg_free(pgwl);
 	*len = size;
 	*pgwl_ret = p;
 	return 0;
 error:
 	if (pgwl)
-		shm_free(pgwl);
+		pkg_free(pgwl);
 	*len = 0;
 	*pgwl_ret = NULL;
 	return -1;
@@ -218,7 +224,7 @@ int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
 
 	if (gwlist && gwlist[0]!=0 ) {
 		/* parse the list of gateways */
-		if (parse_destination_list( rd, gwlist, &cr->pgwl, &cr->pgwa_len)!=0) {
+		if (parse_destination_list( rd, gwlist, &cr->pgwl,&cr->pgwa_len,0)!=0){
 			LM_ERR("failed to parse the destinations\n");
 			goto error;
 		}
@@ -297,7 +303,7 @@ build_rt_info(
 	}
 
 	if ( dstlst && dstlst[0]!=0 ) {
-		if (parse_destination_list(rd, dstlst, &rt->pgwl, &rt->pgwa_len)!=0 ) {
+		if (parse_destination_list(rd, dstlst, &rt->pgwl,&rt->pgwa_len,0)!=0){
 			LM_ERR("failed to parse the destinations\n");
 			goto err_exit;
 		}
