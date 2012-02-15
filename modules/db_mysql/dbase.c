@@ -72,7 +72,9 @@ static inline int wrapper_single_mysql_stmt_prepare(const db_con_t *conn,
 		default:
 			LM_CRIT("driver error (%i): %s\n",
 				error, mysql_stmt_error(ctx->stmt));
-			return code; /* oter mysql errors -> >0 */
+			/* do not rely on libmysqlclient implementation
+			 * specification says non-zero code on error, not positive code */
+			return 1;
 	}
 }
 
@@ -96,7 +98,9 @@ static inline int wrapper_single_mysql_stmt_execute(const db_con_t *conn,
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n", error, mysql_stmt_error(stmt));
-			return code; /* other mysql errors -> >0 */
+			/* do not rely on libmysqlclient implementation
+			 * specification says non-zero code on error, not positive code */
+			return 1;
 	}
 }
 
@@ -121,7 +125,9 @@ static inline int wrapper_single_mysql_real_query(const db_con_t *conn,
 		default:
 			LM_CRIT("driver error (%i): %s\n", error,
 				mysql_error(CON_CONNECTION(conn)));
-			return code; /* other mysql errors -> >0 */
+			/* do not rely on libmysqlclient implementation
+			 * specification says non-zero code on error, not positive code */
+			return 1;
 	}
 }
 
