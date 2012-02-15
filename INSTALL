@@ -28,6 +28,7 @@ TOC
    C) Quick Start
    D) opensips with Persistent Data Storage
    E) osipsconsole installation	
+   F) menuconfig installation
 4. Troubleshooting
 
 
@@ -80,6 +81,8 @@ Requirements:
 - libldap libs and devel headers v2.1 or greater - if you want LDAP support
 - libconfuse and devel headers - if you want to compile the carrierroute
   module
+- libncurses5-dev and m4 - if you want to use the menuconfig graphical user interface
+  for configuring OpenSIPS compilation & cfg file options
 
 OS Notes:
 
@@ -139,7 +142,6 @@ make CC=gcc-3.2 all
 or
 
 CC=gcc-3.2 make all
-
 
 
 Make targets:
@@ -213,6 +215,11 @@ make prefix=/ install
 
 That applies to other make parameters as well (for example parameters
 "modules" or "excluded_modules").
+
+
+Start graphical user interface:
+
+make menuconfig
 
 
 3. Quick-Start Installation Guide
@@ -488,6 +495,41 @@ BerkeleyDB         |libberkeleydb-perl      |Perl extension for     | mandatory
 	     - make
 	     - make test
 	     - make install
+
+F) menuconfig installation
+
+The Interface allows the user to do the following :
+
+1. Configure OpenSIPS compilation related options such as :
+    - Compilation Flags. For example, the user can now easily compile in TCP
+      support from within the GUI, or enable memory allocation debugging, etc.
+      Each compilation flag functionality is explained in short in the GUI.
+    - Module Compilation Selection. The user can now easily select to compile
+      modules that have external dependencies, and that are not compiled in
+      by default. For example, the user can choose to also enable the MySQL
+      support by enabling the db_mysql module. The interface will also notify
+      the user about the dependencies that must be installed based on the modules
+      that the user has selected.
+    - Installation Prefix. The user can use the GUI to configure the OpenSIPS
+      installation path to be used
+
+2. Install OpenSIPS and Cleanup OpenSIPS sources
+    - Upon configuring OpenSIPS related options from above,
+      the user can choose to install OpenSIPS directly from the GUI.
+
+3. Generate OpenSIPS config files
+    - The tool can also generate OpenSIPS configuration files based on the 
+      user's preferences. So far, we have defined three main classes of OpenSIPS
+      configuration files :
+        - Residential
+        - Trunking
+        - Load-balancer
+
+   For each type of configuration file, the user can choose to enable/disable 
+   certain options. For example, for the Residential script, the user can choose
+   to enable presence support, to handle NAT, and many more. After the user has
+   properly configured it's desired OpenSIPS script in the GUI, it will have the
+   option to generate and obtain the final OpenSIPS cfg.
 
 
 4. Troubleshooting
