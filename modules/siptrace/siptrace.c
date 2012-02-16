@@ -456,15 +456,20 @@ static inline int insert_siptrace_flag(struct sip_msg *msg,
 }
 
 static inline int insert_siptrace_avp(struct usr_avp *avp,
-		db_key_t *keys,db_val_t *vals)
+		int_str *first_val,db_key_t *keys,db_val_t *vals)
 {
 	int_str        avp_value;
 
 	if (avp == 0)
 		return 0;
 
-	if (!is_avp_str_val(avp))
-		avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
+	if (!is_avp_str_val(avp)) {
+		avp_value.s.s=int2str(first_val->n,&avp_value.s.len);
+		LM_DBG("int val [%.*s]\n",avp_value.s.len,avp_value.s.s);
+	} else {
+		avp_value = *first_val;
+		LM_INFO("str val [%.*s]\n",avp_value.s.len,avp_value.s.s);
+	}
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
 
@@ -518,7 +523,7 @@ static inline str* siptrace_get_table(void)
 }
 
 static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
-		db_key_t *keys,db_val_t *vals)
+		int_str *first_val,db_key_t *keys,db_val_t *vals)
 {
 
 	if(duplicate_with_hep) trace_send_hep_duplicate(&db_vals[0].val.blob_val, db_vals[4].val.string_val, db_vals[5].val.string_val);
@@ -535,7 +540,7 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 		if (avp==NULL)
 			return 0;
 
-		if (insert_siptrace_avp(avp,keys,vals) < 0)
+		if (insert_siptrace_avp(avp,first_val,keys,vals) < 0)
 			return -1;
 	}
 
@@ -799,7 +804,7 @@ static int sip_trace(struct sip_msg *msg)
 	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(msg,avp,db_keys,db_vals) < 0) {
+	if (save_siptrace(msg,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
 		goto error;
 	}
@@ -1038,7 +1043,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(msg,avp,db_keys,db_vals) < 0) {
+	if (save_siptrace(msg,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
 		goto error;
 	}
@@ -1144,7 +1149,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(req,avp,db_keys,db_vals) < 0) {
+	if (save_siptrace(req,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
 		goto error;
 	}
@@ -1286,7 +1291,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(req,avp,db_keys,db_vals) < 0) {
+	if (save_siptrace(req,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
 		goto error;
 	}
@@ -1411,7 +1416,7 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
 	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
 
-	if (save_siptrace(msg,avp,db_keys,db_vals) < 0) {
+	if (save_siptrace(msg,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
 		goto error;
 	}
