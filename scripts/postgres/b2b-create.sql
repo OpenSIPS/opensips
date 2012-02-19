@@ -30,6 +30,8 @@ CREATE TABLE b2b_entities (
     CONSTRAINT b2b_entities_b2b_entities_idx UNIQUE (type, tag0, tag1, callid)
 );
 
+CREATE INDEX b2b_entities_b2b_entities_param ON b2b_entities (param);
+
 INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
 CREATE TABLE b2b_logic (
     id SERIAL PRIMARY KEY NOT NULL,
