@@ -669,7 +669,13 @@ if (t_newtran()) {
      * 0x01 - do not generate an 100 trying provisional reply when
        building the transaction. By default one is generated.
        Useful if you already pushed an stateless 100 reply from
-       script.
+       script. Note: If the transaction was previously created 'by
+       hand' with t_newtran() , t_relay will not attempt to send a
+       100 Trying provisional reply. The 100 Trying reply is
+       generated as part of the transaction building, so if in
+       your script you manually take care of creating the
+       transaction, you must also take care of sending 100
+       provisional replies
      * 0x02 - do not internally send a negative reply in case of
        forward failure (due internal error, bad RURI, bad message,
        etc). When a forward failure occurs, no SIP request is

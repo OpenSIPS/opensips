@@ -799,6 +799,12 @@ if (t_newtran()) {
 				provisional reply when building the transaction. By default 
 				one is generated. Useful if you already pushed an 
 				stateless 100 reply from script.
+				Note: If the transaction was previously created 'by hand' with
+				t_newtran() , t_relay will not attempt to send a 100 Trying
+				provisional reply. The 100 Trying reply is generated as part of
+				the transaction building, so if in your script you manually take
+				care of creating the transaction, you must also take care of
+				sending 100 provisional replies
 				</para>
 			</listitem>
 			<listitem>
