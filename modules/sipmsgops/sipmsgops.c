@@ -1515,7 +1515,6 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 	body.len = 0;
 
 	flags = flags_s ? (unsigned long)(void*)flags_s : 0;
-	LM_DBG("XXX: flags checked are %lx\n", flags);
 
 	/* if not CANCEL, check if it has body */
 	if (msg->first_line.type!=SIP_REQUEST || msg->REQ_METHOD!=METHOD_CANCEL) {
@@ -1537,7 +1536,8 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		}
 
 		/* determine the length of the body */
-		body.len = msg->buf + msg->len - body.s;
+		if (body.s)
+			body.len = msg->buf + msg->len - body.s;
 
 		if (get_content_length(msg) != body.len) {
 			LM_DBG("invalid body - content length %ld different then actual body %d\n",
@@ -1546,7 +1546,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		}
 
 		/* if has body, check for SDP */
-		if (body.len && (flags & SIP_PARSE_SDP)) {
+		if (body.s && body.len && (flags & SIP_PARSE_SDP)) {
 			if (parse_sdp(msg) < 0) {
 				LM_DBG("failed to parse SDP message\n");
 				goto failed;
