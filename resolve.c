@@ -143,7 +143,7 @@ int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int 
 	register const unsigned char *cp;
 	const char* tname;
 	const unsigned char *eom,*erdata;
-	int type, class,ttl, buflen, ancount, qdcount;
+	int type, class,ttl, buflen, ancount;
 	int haveanswer, had_error;
 	char *bp,**ap,**hap;
 	char tbuf[DNS_MAX_NAME];
@@ -155,7 +155,6 @@ int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int 
 
 	hp = &answer->hdr;
 	ancount = ntohs(hp->ancount);
-	qdcount = ntohs(hp->qdcount);
 	bp = hostbuf;
 	buflen = sizeof hostbuf;
 
