@@ -102,6 +102,11 @@ free_session_expires( struct session_expires * );
  */
 enum parse_sst_result
 parse_session_expires( struct sip_msg *msg, struct session_expires *se );
+/**
+ * helper function for parse_session_expires
+ */
+enum parse_sst_result
+parse_session_expires_body( struct hdr_field *hf );
 
 
 /**

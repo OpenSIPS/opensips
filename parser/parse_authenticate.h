@@ -55,6 +55,7 @@ struct authenticate_body {
  */
 int parse_proxy_authenticate_header( struct sip_msg *msg );
 int parse_www_authenticate_header( struct sip_msg *msg );
+int parse_authenticate_header(struct hdr_field *authenticate);
 
 void free_authenticate(struct authenticate_body *authenticate_b);
 

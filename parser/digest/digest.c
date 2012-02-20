@@ -134,7 +134,7 @@ dig_err_t check_dig_cred(dig_cred_t* _c)
 	     /* If QOP parameter is present, some additional
 	      * requirements must be met
 	      */
-	if ((_c->qop.qop_parsed == QOP_AUTH) || (_c->qop.qop_parsed == QOP_AUTHINT)) {
+	if ((_c->qop.qop_parsed == QOP_AUTH_D) || (_c->qop.qop_parsed == QOP_AUTHINT_D)) {
 		     /* CNONCE must be specified */
 		if (_c->cnonce.s == 0) res |= E_DIG_CNONCE;
 		     /* and also nonce count must be specified */
@@ -177,10 +177,10 @@ void print_cred(dig_cred_t* _c)
 		printf("\\--parsed = ");
 
 		switch(_c->qop.qop_parsed) {
-		case QOP_UNSPEC:  printf("QOP_UNSPEC\n");  break;
-		case QOP_AUTH:    printf("QOP_AUTH\n");    break;
-		case QOP_AUTHINT: printf("QOP_AUTHINT\n"); break;
-		case QOP_OTHER:   printf("QOP_OTHER\n");   break;
+		case QOP_UNSPEC_D:  printf("QOP_UNSPEC_D\n");  break;
+		case QOP_AUTH_D:    printf("QOP_AUTH_D\n");    break;
+		case QOP_AUTHINT_D: printf("QOP_AUTHINT_D\n"); break;
+		case QOP_OTHER_D:   printf("QOP_OTHER_D\n");   break;
 		}
 		printf("NC        = \'%.*s\'\n", _c->nc.len, _c->nc.s);
 	}

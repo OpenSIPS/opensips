@@ -171,7 +171,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 	/*
 	 * Add the additional authentication fields according to the QOP.
 	 */
-	if (_cred->qop.qop_parsed == QOP_AUTH) {
+	if (_cred->qop.qop_parsed == QOP_AUTH_D) {
 		if (proto.avp_add(conn, send, &attrs[A_DIGEST_QOP], "auth", 4, 0)) {
 			LM_ERR("unable to add Digest-QOP attribute\n");
 			goto err;
@@ -186,7 +186,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 			LM_ERR("unable to add Digest-CNonce attribute\n");
 			goto err;
 		}
-	} else if (_cred->qop.qop_parsed == QOP_AUTHINT) {
+	} else if (_cred->qop.qop_parsed == QOP_AUTHINT_D) {
 		if (proto.avp_add(conn, send, &attrs[A_DIGEST_QOP],
 				"auth-int", 8, 0)) {
 			LM_ERR("unable to add Digest-QOP attribute\n");

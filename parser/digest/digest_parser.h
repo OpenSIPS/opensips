@@ -45,10 +45,10 @@ typedef enum alg {
 
 /* Quality Of Protection used */
 typedef enum qop_type { 
-	QOP_UNSPEC = 0,   /* QOP parameter not present in response */
-	QOP_AUTH = 1,     /* Authentication only */
-	QOP_AUTHINT = 2,  /* Authentication with integrity checks */
-	QOP_OTHER = 4     /* Unknown */
+	QOP_UNSPEC_D = 0,   /* QOP parameter not present in response */
+	QOP_AUTH_D = 1,     /* Authentication only */
+	QOP_AUTHINT_D = 2,  /* Authentication with integrity checks */
+	QOP_OTHER_D = 4     /* Unknown */
 } qop_type_t;
 
 

@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: codecs.c 8149 2011-07-10 18:11:05Z bogdan_iancu $
  *
  * Copyright (C) 2009 Voice Sistem SRL
  * Copyright (C) 2009 Andrei Dragus

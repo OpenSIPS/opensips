@@ -284,7 +284,7 @@ int check_response(dig_cred_t* _cred, str* _method, char* _ha1)
 	 */
 	calc_response(_ha1, &(_cred->nonce),
 		&(_cred->nc), &(_cred->cnonce),
-		&(_cred->qop.qop_str), _cred->qop.qop_parsed == QOP_AUTHINT,
+		&(_cred->qop.qop_str), _cred->qop.qop_parsed == QOP_AUTHINT_D,
 		_method, &(_cred->uri), hent, resp);
 	
 	LM_DBG("our result = \'%s\'\n", resp);
