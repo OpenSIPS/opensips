@@ -173,12 +173,9 @@ static int l_sipdatetime___gc(lua_State *L)
 
 static int l_sipdatetime___index(lua_State *L)
 {
-  struct sipdatetime *o;
-  const char *str;
-
-  o = luaL_checkudata(L, 1, "siplua.datetime");
+  luaL_checkudata(L, 1, "siplua.datetime");
   lua_getmetatable(L, 1);
-  str = luaL_checkstring(L, 2);
+  luaL_checkstring(L, 2);
   lua_pushvalue(L, 2);
   lua_rawget(L, -2);
   lua_remove(L, -2);

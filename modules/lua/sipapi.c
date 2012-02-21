@@ -625,7 +625,6 @@ static int l_siplua_pseudoVarSet(lua_State *L)
   struct sipapi_object *o;
   const char *name;
   str s;
-  pv_export_t *pte;
   pv_spec_t dspec;
   pv_value_t val;
   int retval;
@@ -636,11 +635,8 @@ static int l_siplua_pseudoVarSet(lua_State *L)
     ++name;
   s.s = (char *)name;
   s.len = strlen(name);
-  pte = pv_lookup_spec_name(&s, &dspec, 1);
-  if (!pte)
-    pte = pv_lookup_spec_name(&s, &dspec, 0);
-  if (!pte)
-    return luaL_error(L, "error searching pvar `%s'", name);
+  if (!pv_parse_spec(&s, &dspec))
+	  return luaL_error(L, "error in parsing pvar `%s'", name);
   if (!pv_is_w(&dspec))
     return luaL_error(L, "read only PV in left expression");
   luaL_checkany(L, 3);
@@ -660,7 +656,7 @@ static int l_siplua_pseudoVarSet(lua_State *L)
       val.flags = PV_VAL_STR;
     }
 /*   siplua_log(L_ALERT, "dspec.setf(, , EQ_T, %.*s)", val.rs.len, val.rs.s); */
-  retval = dspec.setf(o->msg, &dspec.pvp, EQ_T, &val);
+  retval = pv_set_value(o->msg, &dspec, EQ_T, &val);
   if (retval >= 0)
     lua_pushboolean(L, 1);
   else

@@ -860,12 +860,9 @@ int l_sipmysql_stmt___gc(lua_State *L)
 
 int l_sipmysql___index(lua_State *L)
 {
-  struct sipmysql *o;
-  const char *str;
-
-  o = luaL_checkudata(L, 1, "siplua.mysql");
+  luaL_checkudata(L, 1, "siplua.mysql");
   lua_getmetatable(L, 1);
-  str = luaL_checkstring(L, 2);
+  luaL_checkstring(L, 2);
   lua_pushvalue(L, 2);
   lua_rawget(L, -2);
   lua_remove(L, -2);
@@ -874,12 +871,9 @@ int l_sipmysql___index(lua_State *L)
 
 int l_sipmysql_stmt___index(lua_State *L)
 {
-  struct sipmysql *o;
-  const char *str;
-
-  o = luaL_checkudata(L, 1, "siplua.mysql_stmt");
+  luaL_checkudata(L, 1, "siplua.mysql_stmt");
   lua_getmetatable(L, 1);
-  str = luaL_checkstring(L, 2);
+  luaL_checkstring(L, 2);
   lua_pushvalue(L, 2);
   lua_rawget(L, -2);
   lua_remove(L, -2);

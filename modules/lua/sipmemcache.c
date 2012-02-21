@@ -258,12 +258,9 @@ int l_sipmemcache___gc(lua_State *L)
 
 int l_sipmemcache___index(lua_State *L)
 {
-  struct sipmemcache *o;
-  const char *str;
-
-  o = luaL_checkudata(L, 1, "siplua.memcache");
+  luaL_checkudata(L, 1, "siplua.memcache");
   lua_getmetatable(L, 1);
-  str = luaL_checkstring(L, 2);
+  luaL_checkstring(L, 2);
   lua_pushvalue(L, 2);
   lua_rawget(L, -2);
   lua_remove(L, -2);
