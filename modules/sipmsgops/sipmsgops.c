@@ -1237,8 +1237,6 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 	unsigned u_aux;
 	int i_aux;
 
-	#define IF_HDR_UNPARSED(_h) if (msg->_h && msg->_h->parsed)
-
 	#define CHECK_HDR_EMPTY() \
 		do { \
 			str_aux = hf->body; \
@@ -1493,7 +1491,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		return -1;
 
 	/* try to check the whole SIP msg */
-	if (parse_headers(msg, HDR_EOH_T, 0) < 0) {
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
 		LM_DBG("message parsing failed\n");
 		goto failed;
 	}

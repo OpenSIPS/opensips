@@ -172,7 +172,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 
 	if(!msg->contact)
 	{
-		if(parse_headers(msg, HDR_CONTACT_T, 0)< 0)
+		if(parse_headers(msg, HDR_CONTACT_F, 0)< 0)
 		{
 			LM_ERR("Failed to parse headers\n");
 			return -1;
@@ -215,7 +215,7 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int 
 	LM_DBG("start\n");
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
-	if (parse_headers(rpl, HDR_EOH_T, 0)< 0) {
+	if (parse_headers(rpl, HDR_EOH_F, 0)< 0) {
 		LM_ERR("Failed to parse reply\n");
 		return -1;
 	}
