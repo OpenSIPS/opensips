@@ -1210,7 +1210,8 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 
 		} else {
 			relayed_code=relayed_msg->REPLY_STATUS;
-			buf = build_res_buf_from_sip_res( relayed_msg, &res_len );
+			buf = build_res_buf_from_sip_res( relayed_msg, &res_len,
+							uas_rb->dst.send_sock);
 			/* if we build a message from shmem, we need to remove
 			   via delete lumps which are now stirred in the shmem-ed
 			   structure

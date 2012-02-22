@@ -594,12 +594,6 @@ int forward_reply(struct sip_msg* msg)
 		goto error;
 	}
 
-	new_buf = build_res_buf_from_sip_res( msg, &new_len);
-	if (!new_buf){
-		LM_ERR("failed to build rpl from req failed\n");
-		goto error;
-	}
-
 	proto=msg->via2->proto;
 	if (update_sock_struct_from_via( to, msg, msg->via2 )==-1) goto error;
 
@@ -619,6 +613,12 @@ int forward_reply(struct sip_msg* msg)
 #endif
 
 	send_sock = get_send_socket(msg, to, proto);
+
+	new_buf = build_res_buf_from_sip_res( msg, &new_len, send_sock);
+	if (!new_buf){
+		LM_ERR("failed to build rpl from req failed\n");
+		goto error;
+	}
 
 	if (msg_send(send_sock, proto, to, id, new_buf, new_len)<0) {
 		update_stat( drp_rpls, 1);
