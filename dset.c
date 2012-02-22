@@ -423,7 +423,8 @@ char* print_dset(struct sip_msg* msg, int* len)
 	qvalue_t q;
 	str uri;
 	char* p, *qbuf;
-	static char dset[MAX_REDIRECTION_LEN];
+	static char *dset = NULL;
+	static unsigned int dset_len = 0;
 
 	if (msg->new_uri.s) {
 		cnt = 1;
@@ -444,13 +445,21 @@ char* print_dset(struct sip_msg* msg, int* len)
 		}
 	}
 
-	if (cnt == 0) return 0;	
+	if (cnt == 0) return 0;
 
 	*len += CONTACT_LEN + CRLF_LEN + (cnt - 1) * CONTACT_DELIM_LEN;
 
-	if (*len + 1 > MAX_REDIRECTION_LEN) {
-		LM_ERR("redirection buffer length exceed\n");
-		return 0;
+	/* does the current buffer fit the new dset ? */
+	if (*len + 1 > dset_len) {
+		/* need to resize */
+		if (dset) pkg_free(dset);
+		dset = (char*)pkg_malloc( *len + 1 );
+		if (dset==NULL) {
+			dset_len = 0;
+			LM_ERR("failed to allocate redirect buffer for %d bytes\n", *len + 1 );
+			return NULL;
+		}
+		dset_len = *len + 1;
 	}
 
 	memcpy(dset, CONTACT, CONTACT_LEN);
