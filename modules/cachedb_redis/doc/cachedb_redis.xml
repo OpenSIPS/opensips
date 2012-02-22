@@ -19,7 +19,7 @@
 <author>
 <firstname>Vladut-Stefan</firstname>
 <surname>Paiu</surname>
-<affiliation><orgname>OpenSIPS Project</orgname></affiliation>
+<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
 <address>
 <email>vladpaiu@opensips.org</email>
 <otheraddr>
@@ -37,7 +37,7 @@
 </authorgroup>
 <copyright>
 <year>2011</year>
-<holder>&voicesystem;</holder>
+<holder>&osipssol;</holder>
 </copyright>
 </bookinfo>
 <toc></toc>

@@ -24,11 +24,6 @@
 		of TM module (note that in the default "onreply_route", the AVPs of
 		the transaction are not available).
 		</para>
-		<para>
-		An up-to-date tutorial providing more information (detailed
-		explanations and commented examples) can be found on Voice Sistem
-		documentation web page at http://voice-system.ro/docs/avpops .
-		</para>
 	</section>
 	<section>
 		<title>Dependencies</title>

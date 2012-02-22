@@ -19,11 +19,11 @@
 <author>
 <firstname>Vladut-Stefan</firstname>
 <surname>Paiu</surname>
-<affiliation><orgname>OpenSIPS Project</orgname></affiliation>
+<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
 <address>
 <email>vladpaiu@opensips.org</email>
 <otheraddr>
-<ulink url="http://www.opensips.org">http://www.opensips.org</ulink>
+	&osipssol;
 </otheraddr>
 </address>
 </author>

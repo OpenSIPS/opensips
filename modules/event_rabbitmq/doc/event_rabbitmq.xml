@@ -21,11 +21,11 @@
 		<author>
 		<firstname>Razvan</firstname>
 		<surname>Crainea</surname>
-		<affiliation><orgname>OpenSIPS Project</orgname></affiliation>
+		<affiliation><orgname>OpenSIPS Solutions</orgname></affiliation>
 		<address>
 		<email>razvancrainea@opensips.org</email>
 		<otheraddr>
-		<ulink url="http://www.opensips.org">http://www.opensips.org</ulink>
+			&osipssol;
 		</otheraddr>
 		</address>
 		</author>
@@ -39,7 +39,7 @@
 	</authorgroup>
 	<copyright>
 		<year>2011</year>
-		<holder>OpenSIPS Project</holder>
+		<holder>&osipssol;</holder>
 	</copyright>
 	</bookinfo>
 	<toc></toc>

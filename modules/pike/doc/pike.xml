@@ -21,16 +21,15 @@
 		<author>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<affiliation><orgname>&voicesystem;</orgname></affiliation>
 		<address>
-			<email>bogdan@voice-system.ro</email>
+			<email>bogdan@opensips.org</email>
 		</address>
 		</author>
 		<editor>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
 		<address>
-			<email>bogdan@voice-system.ro</email>
+			<email>bogdan@opensips.org</email>
 		</address>
 		</editor>
 	</authorgroup>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Project
+ * Copyright (C) 2011 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *

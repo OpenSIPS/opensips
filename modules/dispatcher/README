@@ -21,7 +21,7 @@ Carsten Bock
    Copyright © 2005-2010 Voice-System.RO
    Revision History
    Revision $Revision$ $Date: 2010-04-12 16:02:58 +0300
-                              (Mon, 12 Apr 2010) $
+                              (Lu, 12 apr 2010) $
      __________________________________________________________
 
    Table of Contents
@@ -733,33 +733,37 @@ dns=off           # (cmd. line: -r)
 rev_dns=off       # (cmd. line: -R)
 port=5060
 
-# for more info: sip_router -h
+# for more info: opensips -h
 
 # ------------------ module loading ----------------------------------
 mpath="/usr/local/lib/opensips/modules/"
 loadmodule "maxfwd.so"
+loadmodule "signaling.so"
 loadmodule "sl.so"
+loadmodule "tm.so"
+loadmodule "db_mysql.so"
 loadmodule "dispatcher.so"
 
-# loadmodule "modules/tm/tm.so"
 
 # ----------------- setting module-specific parameters ---------------
 # -- dispatcher params --
 
-modparam("dispatcher", "list_file", "../etc/dispatcher.list")
-# modparam("dispatcher", "force_dst", 1)
+modparam("dispatcher", "db_url", "mysql://opensips:opensipsrw@localhost/
+opensips")
 
 route{
         if ( !mf_process_maxfwd_header("10") )
         {
-                sl_send_reply("483","To Many Hops");
-                drop();
+                send_reply("483","To Many Hops");
+                exit;
         };
 
-        ds_select_dst("2", "0");
+        if ( !ds_select_dst("2", "0") ) {
+                send_reply("500","Unable to route");
+                exit;
+        }
 
-        forward();
-        # t_relay();
+        t_relay();
 }
 
 ...
