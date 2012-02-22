@@ -642,6 +642,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	bk_br_flags = getb0flags();
 	bk_path = p_msg->path_vec;
 
+	/* check if the UAS retranmission port needs to be updated */
+	if ( (p_msg->msg_flags ^ t->uas.request->msg_flags) & FL_FORCE_RPORT )
+		su_setport( &t->uas.response.dst.to, p_msg->rcv.src_port );
+
 	/* if no more specific error code is known, use this */
 	lowest_ret=E_BUG;
 	/* branches added */
