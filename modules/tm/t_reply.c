@@ -463,6 +463,10 @@ static int _reply( struct cell *trans, struct sip_msg* p_msg,
 		}
 	}
 
+	/* check if the UAS retranmission port needs to be updated */
+	if ( (p_msg->msg_flags ^ trans->uas.request->msg_flags) & FL_FORCE_RPORT )
+		su_setport( &trans->uas.response.dst.to, p_msg->rcv.src_port );
+
 	if (code>=180 && p_msg->to 
 				&& (get_to(p_msg)->tag_value.s==0 
 			    || get_to(p_msg)->tag_value.len==0)) {
