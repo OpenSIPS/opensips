@@ -142,8 +142,6 @@
 
 #define MAX_BRANCHES    12			/*!< maximum number of branches per transaction */
 
-#define MAX_REDIRECTION_LEN 512			/*!< maximum length of Contact header field in redirection replies */
-
 #define MCOOKIE "z9hG4bK"			/*!< magic cookie for transaction matching as defined in RFC3261 */
 #define MCOOKIE_LEN (sizeof(MCOOKIE)-1)
 
