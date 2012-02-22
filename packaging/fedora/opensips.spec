@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.7.1
+Version:  1.7.2
 Release:  4%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
