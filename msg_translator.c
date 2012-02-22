@@ -1546,7 +1546,7 @@ error:
 
 
 char * build_res_buf_from_sip_res( struct sip_msg* msg,
-				unsigned int *returned_len)
+				unsigned int *returned_len, struct socket_info *sock)
 {
 	unsigned int new_len, via_len, body_delta, len;
 	char *new_buf, *buf;
@@ -1580,8 +1580,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		goto error;
 	}
 
-	new_len=len+body_delta+lumps_len(msg, msg->add_rm, 0); /*FIXME: we don't
-														know the send sock */
+	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock);
 	
 	LM_DBG(" old size: %d, new size: %d\n", len, new_len);
 	new_buf=(char*)pkg_malloc(new_len+1); /* +1 is for debugging 
@@ -1592,9 +1591,9 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	}
 	new_buf[new_len]=0; /* debug: print the message */
 	offset=s_offset=0;
-	/*FIXME: no send sock*/
-	process_lumps(msg, msg->add_rm, new_buf, &offset, &s_offset, 0);/*FIXME:*/
-	process_lumps(msg, msg->body_lumps, new_buf, &offset, &s_offset, 0);
+
+	process_lumps(msg, msg->add_rm, new_buf, &offset, &s_offset, sock);
+	process_lumps(msg, msg->body_lumps, new_buf, &offset, &s_offset, sock);
 	/* copy the rest of the message */
 	memcpy(new_buf+offset,
 		buf+s_offset, 

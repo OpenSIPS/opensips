@@ -83,7 +83,7 @@ char * build_req_buf_from_sip_req (	struct sip_msg* msg,
 				int proto, unsigned int flags);
 
 char * build_res_buf_from_sip_res(	struct sip_msg* msg,
-				unsigned int *returned_len);
+				unsigned int *returned_len, struct socket_info *sock);
 
 
 char * build_res_buf_from_sip_req( unsigned int code,
