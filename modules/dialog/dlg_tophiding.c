@@ -87,88 +87,14 @@ int dlg_save_del_vias(struct sip_msg* req, struct dlg_leg* leg)
 	return 0;
 }
 
-static int dlg_get_local_contact(struct sip_msg* msg, str* contact, struct dlg_cell* dlg)
-{
-	str ip;
-	char* proto =0;
-	int len;
-	char* p, *p_init;
-	int n;
-
-	switch (msg->rcv.proto)
-	{
-		case PROTO_NONE:
-		case PROTO_UDP:
-			proto= 0; break;
-		case PROTO_TCP:
-			proto= "tcp"; break;
-		case PROTO_TLS:
-			proto= "tls"; break;
-		default:
-			LM_ERR("wrong proto\n");
-			return -1;
-	}
-
-	ip = msg->rcv.bind_address->address_str;
-	len = ip.len + 26 + 6+ 2*INT2STR_MAX_LEN; /* 4 + 6 + 14 +2 */
-
-	contact->s = (char*)pkg_malloc(len);
-	if(!contact->s) {
-		LM_ERR("No more pkg memory\n");
-		return -1;
-	}
-	
-	contact->s[0]='<';
-	contact->len= 1;
-	
-	if(strncasecmp(ip.s, "sip:", 4)!=0)
-	{
-		strncpy(contact->s+1, "sip:", 4);
-		contact->len+= 4;
-	}
-	memcpy(contact->s+contact->len, ip.s, ip.len);
-	contact->len += ip.len;
-
-	len= sprintf(contact->s+contact->len, ":%d", msg->rcv.dst_port);
-	if(len< 0)
-	{
-		LM_ERR("unsuccessful sprintf\n");
-		return -1;
-	}
-	contact->len+= len;
-	if(proto)
-	{
-		sprintf(contact->s+ contact->len, ";transport=%s", proto);
-		contact->len += 14;
-	}
-	p_init = p = contact->s + contact->len;
-	*(p++) = ';';
-	memcpy(p, "did", 3);
-	p += 3;
-	*(p++) = '=';
-
-	n = RR_DLG_PARAM_SIZE - (p-p_init);
-	if (int2reverse_hex( &p, &n, dlg->h_entry)==-1)
-		return -1;
-
-	*(p++) = DLG_SEPARATOR;
-
-	n = RR_DLG_PARAM_SIZE - (p-p_init);
-	if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
-		return -1;
-
-	contact->len += p - p_init;
-	contact->s[contact->len++]='>';
-	return 0;
-}
-
-
 int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 {
-	str local_contact;
-	struct lump* lmp;
-
-//	return 0;
+//	str local_contact;
+	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
+	int offset;
+	int len,n;
+	char *prefix=NULL,*suffix=NULL,*p,*p_init;
+	int prefix_len,suffix_len;
 
 	if(!msg->contact)
 	{
@@ -181,24 +107,113 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 			return 0;
 	}
 
-	if(dlg_get_local_contact(msg, &local_contact, dlg)< 0)
-	{
-		LM_ERR("Failed to get received address\n");
-		return -1;
+	prefix_len = 5; /* <sip: */
+	prefix = pkg_malloc(prefix_len);
+	if (!prefix) {
+		LM_ERR("no more pkg\n");
+		goto error;
 	}
-	if ((lmp = del_lump(msg, msg->contact->body.s - msg->buf, msg->contact->body.len,HDR_CONTACT_T)) == 0) {
+
+	suffix_len = RR_DLG_PARAM_SIZE+1; /* > */
+	suffix = pkg_malloc(suffix_len);
+	if (!suffix) {
+		LM_ERR("no more pkg\n");
+		goto error;
+	}
+
+	memcpy(prefix,"<sip:",prefix_len);
+	
+	p_init = p = suffix;
+	*p++ = ';';
+	memcpy(p,"did",3);
+	p+=3;
+	*p++ = '=';
+
+	n = RR_DLG_PARAM_SIZE - (p-p_init);
+	if (int2reverse_hex( &p, &n, dlg->h_entry)==-1)
+		return -1;
+
+	*(p++) = DLG_SEPARATOR;
+
+	n = RR_DLG_PARAM_SIZE - (p-p_init);
+	if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
+		return -1;
+
+	*p++ = '>';
+	suffix_len = p - p_init;
+
+	offset = msg->contact->body.s - msg->buf;
+	len = msg->contact->body.len;
+
+	for (crt = msg->add_rm;crt;) {
+		if (crt->type == HDR_CONTACT_T && crt->op == LUMP_DEL &&
+				crt->u.offset >= offset && crt->u.offset <= offset + len) {
+			lump = crt;
+			crt = crt->next;
+			a=lump->before;
+			while(a) {
+				LM_DBG("before [%p], op=%d\n", a, a->op);
+				if(a->op == LUMP_ADD)
+					LM_DBG("value= %.*s\n", a->len, a->u.value);
+				foo=a; a=a->before;
+				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+					free_lump(foo);
+				if (!(foo->flags&LUMPFLAG_SHMEM))
+					pkg_free(foo);
+			}
+
+			a=lump->after;
+			while(a) {
+				LM_DBG("after [%p], op=%d\n", a, a->op);
+				if(a->op == LUMP_ADD)
+					LM_DBG("value= %.*s\n", a->len, a->u.value);
+				foo=a; a=a->after;
+				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+					free_lump(foo);
+				if (!(foo->flags&LUMPFLAG_SHMEM))
+					pkg_free(foo);
+			}
+			if(lump == msg->add_rm)
+				msg->add_rm = lump->next;
+			else
+				prev_crt->next = lump->next;
+			if (!(lump->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				free_lump(lump);
+			if (!(lump->flags&LUMPFLAG_SHMEM))
+				pkg_free(lump);
+			continue;
+		}
+		prev_crt = crt;
+		crt= crt->next;
+	}
+
+	if ((lump = del_lump(msg, msg->contact->body.s - msg->buf, msg->contact->body.len,HDR_CONTACT_T)) == 0) {
 		LM_ERR("del_lump failed \n");
-		return -1;
+		goto error;
 	}
 
-	if ((lmp = insert_new_lump_after(lmp,local_contact.s,local_contact.len,HDR_CONTACT_T)) == 0) {
-		LM_ERR("failed inserting new route set\n");
-		return -1;
+	if ((lump = insert_new_lump_after(lump,prefix,prefix_len,HDR_CONTACT_T)) == 0) {
+		LM_ERR("failed inserting '<sip:'\n");
+		goto error;
 	}
 
-	LM_DBG("Replaced contact with [%.*s]\n", local_contact.len, local_contact.s);
+	if ((lump = insert_subst_lump_after(lump, SUBST_SND_ALL, HDR_CONTACT_T)) == 0) {
+		LM_ERR("failed inserting SUBST_SND buf\n");
+		goto error;
+	}
+
+	if ((lump = insert_new_lump_after(lump,suffix,suffix_len,HDR_CONTACT_T)) == 0) {
+		LM_ERR("failed inserting '<sip:'\n");
+		goto error;
+	}
+	
+//	LM_DBG("Replaced contact with [%.*s]\n", local_contact.len, local_contact.s);
 
 	return 0;
+error:
+	if (prefix) pkg_free(prefix);
+	if (suffix) pkg_free(suffix);
+	return -1;
 }
 
 int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int dir)

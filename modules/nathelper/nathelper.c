@@ -587,7 +587,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 		//LM_DBG("--removing %d |%.*s|\n",hostport.s+hostport.len-c->uri.s,
 		//	hostport.s+hostport.len-c->uri.s, c->uri.s);
 		anchor = del_lump(msg, c->uri.s-msg->buf /* offset */,
-			hostport.s+hostport.len-c->uri.s /* len */, 0);
+			hostport.s+hostport.len-c->uri.s /* len */, HDR_CONTACT_T);
 		if (anchor == 0)
 			return -1;
 
