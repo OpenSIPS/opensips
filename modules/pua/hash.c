@@ -736,6 +736,12 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 		LM_ERR("no to tag value present\n");
 		return -1;
 	}
+
+	memset( &hentity, 0, sizeof(ua_pres_t));
+	/* as we have a NOTIFY, we are looking for any SUBSCRIBER-like
+	   entity in the hash (we do not know the exact type) - bogdan */
+	hentity.flag = BLA_SUBSCRIBE | XMPP_SUBSCRIBE | XMPP_INITIAL_SUBS |
+		MI_SUBSCRIBE | RLS_SUBSCRIBE;
 	hentity.watcher_uri= &pto->uri;
 	hentity.to_uri= pfrom->uri; 
 	hentity.call_id=  msg->callid->body;
