@@ -71,7 +71,7 @@ Irina-Maria Stanescu
 
 Chapter 1. Admin Guide
 
-Overview
+1.1. Overview
 
    This module allows one to limit the duration of calls and
    automatically end them when they exceed the imposed limit. Its
@@ -79,7 +79,7 @@ Overview
    be used to impose a global limit on all calls processed by the
    proxy.
 
-Description
+1.2. Description
 
    Callcontrol consists of 3 components:
      * The OpenSIPS call_control module
@@ -124,7 +124,7 @@ Description
    function call and allows the script to make a decision based on
    the answer.
 
-Features
+1.3. Features
 
      * Very simple API consisting of a single function that needs
        to be called once for the first INVITE of every call. The
@@ -167,22 +167,22 @@ Features
        duplicated CallID that could create potential problems in
        call rating engines.
 
-Dependencies
+1.4. Dependencies
 
-OpenSIPS Modules
+1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * dialog module
 
-External Libraries or Applications
+1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-Exported parameters
+1.5. Exported parameters
 
-disable (int)
+1.5.1. disable (int)
 
    Boolean flag that specifies if callcontrol should be disabled.
    This is useful when you want to use the same OpenSIPS
@@ -199,7 +199,7 @@ disable (int)
 modparam("call_control", "disable", 1)
 ...
 
-socket_name (string)
+1.5.2. socket_name (string)
 
    It is the path to the filesystem socket where the callcontrol
    application listens for commands from the module.
@@ -211,7 +211,7 @@ socket_name (string)
 modparam("call_control", "socket_name", "/var/run/callcontrol/socket")
 ...
 
-socket_timeout (int)
+1.5.3. socket_timeout (int)
 
    How much time (in milliseconds) to wait for an answer from the
    callcontrol application.
@@ -223,7 +223,7 @@ socket_timeout (int)
 modparam("call_control", "socket_timeout", 500)
 ...
 
-signaling_ip_avp (string)
+1.5.4. signaling_ip_avp (string)
 
    Specification of the AVP which holds the IP address from where
    the SIP signaling originated. If this AVP is set it will be
@@ -251,7 +251,7 @@ signaling_ip_avp (string)
 modparam("call_control", "signaling_ip_avp", "$avp(cc_signaling_ip)")
 ...
 
-canonical_uri_avp (string)
+1.5.5. canonical_uri_avp (string)
 
    Specification of the AVP which holds an optional application
    defined canonical request URI. When this is set, it will be
@@ -267,7 +267,7 @@ canonical_uri_avp (string)
 modparam("call_control", "canonical_uri_avp", "$avp(cc_can_uri)")
 ...
 
-diverter_avp_id (string)
+1.5.6. diverter_avp_id (string)
 
    Specification of the id of an AVP which holds an optional
    application defined diverter SIP URI. When this is set, it will
@@ -299,7 +299,7 @@ route {
 }
 ...
 
-prepaid_account_flag (int)
+1.5.7. prepaid_account_flag (int)
 
    The flag that is used to specify whether the account making the
    call is prepaid or postpaid. Setting this to a non-negative
@@ -318,7 +318,7 @@ prepaid_account_flag (int)
 modparam("call_control", "prepaid_account_flag", 8)
 ...
 
-call_limit_avp (string)
+1.5.8. call_limit_avp (string)
 
    Specification of the AVP which holds an optional application
    defined call limit. When this is set, it will be passed to the
@@ -332,7 +332,7 @@ call_limit_avp (string)
 modparam("call_control", "call_limit_avp", "$avp(cc_call_limit)")
 ...
 
-call_token_avp (string)
+1.5.9. call_token_avp (string)
 
    Specification of the AVP which holds an optional application
    defined token. This token will be used to check if two calls
@@ -350,7 +350,7 @@ modparam("call_control", "call_token_avp", "$avp(cc_call_token)")
 $avp(cc_call_token) := $RANDOM;
 ...
 
-init (string)
+1.5.10. init (string)
 
    This parameter is used to describe custom call control
    initialize messages. It represents a list of key value pairs
@@ -375,7 +375,7 @@ modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
                         authruri=$du another_field = $avp(10)")
 ...
 
-start (string)
+1.5.11. start (string)
 
    This parameter is used to describe custom call control start
    messages. It represents a list of key value pairs and has the
@@ -399,7 +399,7 @@ modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
                         authruri=$du another_field = $avp(10)")
 ...
 
-stop (string)
+1.5.12. stop (string)
 
    This parameter is used to describe custom call control stop
    messages. It represents a list of key value pairs and has the
@@ -423,9 +423,9 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
                         authruri=$du another_field = $avp(10)")
 ...
 
-Exported Functions
+1.6. Exported Functions
 
-call_control()
+1.6.1. call_control()
 
    Trigger the use of callcontrol for the dialog started by the
    INVITE for which this function is called (the function should

@@ -22,10 +22,7 @@
 		<surname>Vamanu</surname>
 		<affiliation><orgname>&voicesystem;</orgname></affiliation>
 		<address>
-		<email>anca@voice-system.ro</email>
-		<otheraddr>
-		<ulink url="http://www.voice-system.ro">http://www.voice-system.ro</ulink>
-		</otheraddr>
+		<email>anca@opensips.org</email>
 		</address>
 	    </author>
 	    <author>
@@ -33,9 +30,6 @@
 		<surname>Popescu</surname>
 		<address>
 		<email>team@voice-system.ro</email>
-		<otheraddr>
-		<ulink url="http://www.voice-system.ro">http://www.voice-system.ro</ulink>
-		</otheraddr>
 		</address>
 	    </author>
 	    <author>
@@ -47,7 +41,7 @@
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
 		<address>
-		    <email>anca@voice-system.ro</email>
+		    <email>anca@opensips.org</email>
 		</address>
 	    </editor>
 	</authorgroup>

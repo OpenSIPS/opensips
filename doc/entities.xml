@@ -4,10 +4,13 @@
 
 <!ENTITY fhg "FhG FOKUS">
 <!ENTITY vsname "Voice Sistem SRL">
-<!ENTITY voicesystem "<ulink url='http://www.voice-system.ro'>voice-system.ro</ulink>">
+<!ENTITY voicesystem "Voice Sistem SRL">
 
 <!ENTITY osips "OpenSIPS">
 <!ENTITY osipsname "Open SIP Server">
+
+<!ENTITY osipssolname "OpenSIPS Solutions>">
+<!ENTITY osipssol "<ulink url='http://www.opensips-solutions.com/'>www.opensips-solutions.com</ulink>">
 
 <!ENTITY osipshome "http://www.opensips.org/">
 <!ENTITY osipsbugs "http://sourceforge.net/tracker/?group_id=232389">

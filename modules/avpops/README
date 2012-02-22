@@ -10,7 +10,7 @@ Ramona-Elena Modroiu
 
    <ramona@rosdev.ro>
 
-   Copyright © 2004-2008 voice-system.ro
+   Copyright © 2004-2008 Voice Sistem SRL
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
                               (Tue, 21 Jul 2009) $
@@ -106,11 +106,6 @@ Chapter 1. Admin Guide
    "onreply_avp_mode" parameter of TM module (note that in the
    default "onreply_route", the AVPs of the transaction are not
    available).
-
-   An up-to-date tutorial providing more information (detailed
-   explanations and commented examples) can be found on Voice
-   Sistem documentation web page at
-   http://voice-system.ro/docs/avpops .
 
 1.2. Dependencies
 
