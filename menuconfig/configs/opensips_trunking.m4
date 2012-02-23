@@ -218,7 +218,7 @@ route{
 
 	#### INITIAL REQUESTS
 
-	if ( !setflag(20) ) {
+	if ( !isflagset(20) ) {
 		## accept new calls only from trunks
 		send_reply("403","Not from trunk");
 		exit;
