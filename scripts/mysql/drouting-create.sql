@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','5');
 CREATE TABLE dr_gateways (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     gwid CHAR(64) NOT NULL,

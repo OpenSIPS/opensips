@@ -16,8 +16,9 @@ dispatcher:5
 domain:2
 domainpolicy:3
 dr_carriers:1
-dr_gateways:4
+dr_gateways:5
 dr_groups:2
+id(int,auto) gwlist(string) description(string) 
 dr_rules:3
 globalblacklist:2
 grp:3

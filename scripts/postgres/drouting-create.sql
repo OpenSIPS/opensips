@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','4');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','5');
 CREATE TABLE dr_gateways (
     id SERIAL PRIMARY KEY NOT NULL,
     gwid VARCHAR(64) NOT NULL,
