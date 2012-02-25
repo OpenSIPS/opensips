@@ -3362,7 +3362,13 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 					newip.len = 7;
 				}
 			} else {
-				newip.s = args->arg2 ? args->arg2 : argv[1];
+				/* handle all possible cases properly
+				 * 1) second argument w/ip passed to offer/answer (args->arg2)
+				 * 2) no second argument, rtpproxy response contains ip (argv[1])
+				 * 3) no ip in rtpproxy response (started using unix socket and no -l param)
+				 *    must revert to default of proxy ip
+				 */ 
+				newip.s = args->arg2 ? args->arg2 : argv[1] ? argv[1] : ip_addr2a(&msg->rcv.dst_ip);
 				newip.len = strlen(newip.s);
 			}
 			/* marker to double check : newport goes: str -> int -> str ?!?! */
