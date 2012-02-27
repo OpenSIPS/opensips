@@ -1181,18 +1181,26 @@ inline static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
 
 	if (flags&TM_CANCEL_BRANCH_ALL) {
 		/* lock and get the branches to cancel */
-		LOCK_REPLIES(t);
-		which_cancel( t, &cancel_bitmap );
-		UNLOCK_REPLIES(t);
+		if (!onreply_avp_mode) {
+			LOCK_REPLIES(t);
+			which_cancel( t, &cancel_bitmap );
+			UNLOCK_REPLIES(t);
+		} else {
+			which_cancel( t, &cancel_bitmap );
+		}
 		if (msg->first_line.u.reply.statuscode>=200)
 			/* do not cancel the current branch as we got
 			 * a final response here */
 			cancel_bitmap &= ~(1<<_tm_branch_index);
 	} else if (flags&TM_CANCEL_BRANCH_OTHERS) {
 		/* lock and get the branches to cancel */
-		LOCK_REPLIES(t);
-		which_cancel( t, &cancel_bitmap );
-		UNLOCK_REPLIES(t);
+		if (!onreply_avp_mode) {
+			LOCK_REPLIES(t);
+			which_cancel( t, &cancel_bitmap );
+			UNLOCK_REPLIES(t);
+		} else {
+			which_cancel( t, &cancel_bitmap );
+		}
 		/* ignore current branch */
 		cancel_bitmap &= ~(1<<_tm_branch_index);
 	} else {
