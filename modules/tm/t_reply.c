@@ -895,7 +895,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 				goto discard;
 			}
 			if (do_cancel) {
-				branch_bm_t cb;
+				branch_bm_t cb = 0;
 				which_cancel( Trans, &cb );
 				cleanup_uac_timers(Trans);
 				cancel_uacs( Trans, cb);
