@@ -87,8 +87,8 @@ modparam("rr", "append_fromtag", 0)
 #### MAX ForWarD module
 loadmodule "maxfwd.so"
 
-#### TEXT OPerations module
-loadmodule "textops.so"
+#### SIP MSG OPerationS module
+loadmodule "sipmsgops.so"
 
 #### FIFO Management Interface
 loadmodule "mi_fifo.so"

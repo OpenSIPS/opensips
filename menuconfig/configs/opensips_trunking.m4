@@ -87,8 +87,8 @@ modparam("rr", "append_fromtag", 0)
 #### MAX ForWarD module
 loadmodule "maxfwd.so"
 
-#### TEXT OPerations module
-loadmodule "textops.so"
+#### SIP MSG OPerations module
+loadmodule "sipmsgops.so"
 
 #### FIFO Management Interface
 loadmodule "mi_fifo.so"
@@ -318,6 +318,7 @@ failure_route[GW_FAILOVER] {
 	}
 }
 
+ifelse(USE_DIALOG,`yes',`
 local_route {
 	if (is_method("BYE") && $DLG_dir=="UPSTREAM") {
 		ifelse(USE_DBACC,`yes',`
@@ -326,5 +327,4 @@ local_route {
 		acc_log_request("200 Dialog Timeout");
 		')
 	}
-}
-
+}',`')
