@@ -644,10 +644,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	b2bl_entity_id_t* bentity0, *bentity1;
 	client_info_t ci;
 	int entity_no;
-	str to_uri;
 	b2b_req_data_t req_data;
-
-	to_uri = get_to(msg)->uri;
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
@@ -2945,10 +2942,9 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 				goto error;
 			}
 		}
-		*client_to = sip_hdr->body;
-		trim(client_to);
-		
-		check_uri = *client_to;
+		check_uri = sip_hdr->body;
+		trim(&check_uri);
+
 		if(check_uri.s[0] == '<')
 		{
 			check_uri.s++;
@@ -2959,6 +2955,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 			LM_ERR("Not a valid sip uri [%.*s]\n", check_uri.len, check_uri.s);
 			goto error;
 		}
+		*client_to = check_uri;
 	}
 	else
 	{
