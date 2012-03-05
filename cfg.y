@@ -2629,18 +2629,23 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 extern int column;
 extern int startcolumn;
+extern char *finame;
+
+#define get_cfg_file_name \
+	((finame) ? finame : cfg_file ? cfg_file : "default")
+
 #if !defined(USE_TLS) || !defined(USE_TCP) \
 		||  !defined(USE_MCAST)
 static void warn(char* s)
 {
-	LM_WARN("warning in config file, line %d, column %d-%d: %s\n", line, startcolumn, 
+	LM_WARN("warning in config file %s, line %d, column %d-%d: %s\n", get_cfg_file_name, line, startcolumn, 
 			column, s);
 }
 #endif
 
 static void yyerror(char* s)
 {
-	LM_CRIT("parse error in config file, line %d, column %d-%d: %s\n", line, startcolumn, 
+	LM_CRIT("parse error in config file %s, line %d, column %d-%d: %s\n", get_cfg_file_name, line, startcolumn, 
 			column, s);
 	cfg_errors++;
 }
