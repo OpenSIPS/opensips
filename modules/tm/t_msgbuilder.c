@@ -930,7 +930,7 @@ char *build_uac_cancel(str *headers,str *body,struct cell *cancelledT,
 	*len+=cancelledT->cseq_n.len+1+CANCEL_LEN+CRLF_LEN;
 	/* User Agent */
 	if (server_signature) {
-		*len += USER_AGENT_LEN + CRLF_LEN;
+		*len += user_agent_header.len + CRLF_LEN;
 	}
 	/* Content Length  */
 	if (print_content_length(&content_length, body) < 0) {
@@ -975,7 +975,8 @@ char *build_uac_cancel(str *headers,str *body,struct cell *cancelledT,
 
 	/* User Agent header */
 	if (server_signature) {
-		append_string(p,USER_AGENT CRLF, USER_AGENT_LEN+CRLF_LEN );
+		append_string(p, user_agent_header.s, user_agent_header.len );
+		append_string(p, CRLF, CRLF_LEN );
 	}
 	/* Content Length*/
 	if (body) {
