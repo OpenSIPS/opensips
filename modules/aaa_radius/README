@@ -81,6 +81,19 @@ Chapter 1. Admin Guide
    to freeradius, uncomment the USE_FREERADIUS=1 line in main
    Makefile.
 
+   * NOTE on dictionary file format for both radius clients
+	Vendor specific dictionary files available in freeradius server
+	do not work with radius clients. 
+
+        To make those available for radius client several changes are required:
+
+	a) Remove BEGIN-VENDOR and END-VENDOR declarations.
+	b) Make sure that "VENDOR vendor_name vendor_numeric_id" appears before
+	   any ATTRIBUTE that belongs to that vendor.
+	c) For each ATTRIBUTE line that belongs to a specific 
+	   vendor add vendor_name as the last value. 
+	d) Comment out all ATTRIBUTE lines containing the "octet" type.
+     
 1.3. Exported Parameters
 
 1.3.1. sets
@@ -116,6 +129,23 @@ var(grp),
 
 ...
 modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
+...
+
+Nested variables example:
+
+dictionary.cisco (should be included from /etc/radiusclient-ng/dictionary):
+
+VENDOR Cisco 9
+ATTRIBUTE Cisco-AVPair 1 string Cisco 
+#Note the additional vendor parameter
+...
+
+opensips.conf:
+...
+modparam("aaa_radius","sets","set5 = (Cisco-AVPair = $var(xpgktype)) ")
+...
+$var(xpgktype)="xpgk-request-type=route";
+radius_send_auth("set5", "reply_set");
 ...
 
 

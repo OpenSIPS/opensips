@@ -330,10 +330,9 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	if (res!=OK_RC && res!=BADRESP_RC) {
 		LM_ERR("radius authentication message failed with %s\n",
 			(res==TIMEOUT_RC)?"TIMEOUT":"ERROR");
-		goto error;
+	}else{
+		LM_DBG("radius authentication message sent\n");
 	}
-
-	LM_DBG("radius authentication message sent\n");
 
 	for ( mp=sets[index2]->parsed; mp ; mp = mp->next) {
 		if ((vp = rc_avpair_get(recv, ATTRID(mp->value), VENDOR(mp->value)))) {
@@ -360,6 +359,10 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 	if (attr)
 		for(; (vp = rc_avpair_get(vp, attr->value, 0)); vp = vp->next)
 			extract_avp(vp);
+
+	if ( res!=OK_RC && res!=BADRESP_RC)
+		goto error;
+	
 
 	if (send) rc_avpair_free(send);
 	if (recv) rc_avpair_free(recv);
