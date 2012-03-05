@@ -969,6 +969,42 @@ codec_move_up("speex");
 	</section>
 
 
+    <section id="change_reply_status">
+	<title>
+	    <function>change_reply_status(code, reason)</function>
+	</title>
+	<para>
+		Intercept a SIP reply (in any onreply_route) and change its status code 
+		and reason phrase prior to propogating it.
+	</para>
+	<para>Meaning of the parameters is as follows:</para>
+	<itemizedlist>
+	    <listitem>
+		<para><emphasis>code</emphasis> - Status code.
+		</para>
+	    </listitem>
+	    <listitem>
+		<para><emphasis>reason</emphasis> - Reason phrase.
+		</para>
+	    </listitem>
+	</itemizedlist>
+   		<para>
+		This function can be used from ONREPLY_ROUTE.
+		</para>
+	<example>
+	    <title><function>change_reply_status</function> usage</title>
+	    <programlisting>
+...
+onreply_route {
+    if ($rs == "603") {
+        change_reply_status("404", "Not Found");
+        exit;
+    }
+}
+...
+	    </programlisting>
+	</example>
+    </section>
 
 	</section>
 	<section>

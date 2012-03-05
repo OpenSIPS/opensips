@@ -45,6 +45,7 @@
  *  2006-03-17  applied patch from Marc Haisenko <haisenko@comdasys.com> 
  *              for adding has_body() function (bogdan)
  *  2009-07-23  added methods for sdp codec manipulation(andreidragus)
+ *  2012-02-21  add change_reply_status (idea from kamailio/textopsx) (rpedraza)
  *
  */
 
@@ -134,7 +135,8 @@ static int add_header_fixup(void** param, int param_no);
 static int fixup_body_type(void** param, int param_no);
 static int fixup_privacy(void** param, int param_no);
 static int fixup_sip_validate(void** param, int param_no);
-
+static int change_reply_status_f(struct sip_msg*, char*, char *);
+static int change_reply_status_fixup(void** param, int param_no);
 
 static int mod_init(void);
 
@@ -242,7 +244,8 @@ static cmd_export_t cmds[]={
 	{"sipmsg_validate",     (cmd_function)w_sip_validate,       1,
 		fixup_sip_validate, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
-
+	{"change_reply_status", (cmd_function)change_reply_status_f, 2,
+		change_reply_status_fixup, 0, ONREPLY_ROUTE },
 	{0,0,0,0,0,0}
 };
 
@@ -1667,3 +1670,79 @@ failed:
 	LM_DBG("message does not comply with SIP RFC3261\n");
 	return -1;
 }
+
+
+
+/* Change_reply_status config parsing function (supports AVPs) */
+static int change_reply_status_fixup(void** param, int param_no)
+{
+	if(param_no == 1)
+		return fixup_igp(param);
+
+	if(param_no == 2)
+		return fixup_spve(param);
+
+	return 0;
+}
+
+/* Function to change  the reply status in reply route */
+static int change_reply_status_f(struct sip_msg* msg, char* str1, char* str2)
+{
+	int code_i;
+	str code_s;
+	struct lump *l;
+	char *ch;
+
+	if(fixup_get_ivalue(msg, (gparam_p)str1, &code_i) < 0) {
+		LM_ERR("Wrong param 1, expected integer\n");
+		return -1;
+	}
+
+	if ( fixup_get_svalue(msg, (gparam_p) str2, &code_s) < 0) {
+		LM_ERR("Wrong param 2, expected string\n");
+		return -1;
+	}
+
+	if ((code_i < 100) || (code_i > 699)) {
+		LM_ERR("wrong status code: %d\n", code_i);
+		return -1;
+	}
+
+	if (((code_i < 300) || (msg->REPLY_STATUS < 300))
+		&& (code_i/100 != msg->REPLY_STATUS/100)) {
+		LM_ERR("the class of provisional or positive final replies"
+				" cannot be changed\n");
+		return -1;
+	}
+
+	/* rewrite the status code directly in the message buffer */
+	msg->first_line.u.reply.statuscode = code_i;
+	msg->first_line.u.reply.status.s[2] = code_i % 10 + '0'; code_i /= 10;
+	msg->first_line.u.reply.status.s[1] = code_i % 10 + '0'; code_i /= 10;
+	msg->first_line.u.reply.status.s[0] = code_i + '0';
+
+	l = del_lump(msg,
+			 msg->first_line.u.reply.reason.s - msg->buf,
+			 msg->first_line.u.reply.reason.len,
+			 0);
+	if (!l) {
+		LM_ERR("Failed to add del lump\n");
+		return -1;
+	}
+	/* clone the reason phrase, the lumps need to be pkg allocated */
+	ch = (char *)pkg_malloc(code_s.len);
+	if (!ch) {
+		LM_ERR("Not enough memory\n");
+		return -1;
+	}
+
+	memcpy(ch, code_s.s, code_s.len);
+	if (insert_new_lump_after(l, ch, code_s.len, 0)==0){
+		LM_ERR("failed to add new lump: %.*s\n", code_s.len, ch);
+		pkg_free(ch);
+		return -1;
+	}
+
+	return 1;
+}
+
