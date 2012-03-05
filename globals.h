@@ -76,6 +76,10 @@ extern enum poll_types tcp_poll_method;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
 extern int tcp_crlf_pingpong;
+extern int tcp_keepalive;
+extern int tcp_keepcount;
+extern int tcp_keepidle;
+extern int tcp_keepinterval;
 #endif
 #ifdef USE_TLS
 extern int tls_disable;

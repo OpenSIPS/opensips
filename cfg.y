@@ -69,6 +69,7 @@
  *  2006-12-22  functions for script and branch flags added (bogdan)
  *  2007-01-11  auto_aliases option added (bogdan)
  *  2007-01-25  disable_dns_failover option added (bogdan)
+ *  2012-01-19  added TCP keepalive support
  */
 
 
@@ -102,6 +103,7 @@
 #include "blacklists.h"
 #include "xlog.h"
 #include "tcp_server.h"
+#include "tcp_conn.h"
 #include "db/db_insertq.h"
 
 
@@ -346,6 +348,10 @@ extern int line;
 %token TCP_MAX_CONNECTIONS
 %token TCP_OPT_CRLF_PINGPONG
 %token TCP_NO_NEW_CONN_BFLAG
+%token TCP_KEEPALIVE
+%token TCP_KEEPCOUNT
+%token TCP_KEEPIDLE
+%token TCP_KEEPINTERVAL
 %token DISABLE_TLS
 %token TLSLOG
 %token TLS_PORT_NO
@@ -768,6 +774,50 @@ assign_stm: DEBUG EQUAL snumber {
 			#endif
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL error { yyerror("number value expected"); }
+		| TCP_KEEPALIVE EQUAL NUMBER {
+			#ifdef USE_TCP
+			        tcp_keepalive=$3;
+			#else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
+		| TCP_KEEPCOUNT EQUAL NUMBER 		{ 
+			#ifdef USE_TCP
+			    #ifndef HAVE_TCP_KEEPCNT
+				warn("cannot be enabled (no OS support)");
+			    #else
+			        tcp_keepcount=$3;
+			    #endif
+		        #else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_KEEPCOUNT EQUAL error { yyerror("int value expected"); }
+		| TCP_KEEPIDLE EQUAL NUMBER 		{ 
+			#ifdef USE_TCP
+			    #ifndef HAVE_TCP_KEEPIDLE
+				warn("cannot be enabled (no OS support)");
+			    #else
+			        tcp_keepidle=$3;
+			    #endif
+		        #else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_KEEPIDLE EQUAL error { yyerror("int value expected"); }
+		| TCP_KEEPINTERVAL EQUAL NUMBER 		{ 
+			#ifdef USE_TCP
+			    #ifndef HAVE_TCP_KEEPINTVL
+				warn("cannot be enabled (no OS support)");
+			    #else
+			        tcp_keepinterval=$3;
+			    #endif
+		        #else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_KEEPINTERVAL EQUAL error { yyerror("int value expected"); }
 		| DISABLE_TLS EQUAL NUMBER {
 									#ifdef USE_TLS
 										tls_disable=$3;

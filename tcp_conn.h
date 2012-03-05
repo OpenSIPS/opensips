@@ -25,6 +25,7 @@
  *  2003-01-29  tcp buffer size ++-ed to allow for 0-terminator
  *  2003-06-30  added tcp_connection flags & state (andrei) 
  *  2003-10-27  tcp port aliases support added (andrei)
+ *  2012-01-19  added TCP keepalive support
  */
 
 /*!
@@ -57,6 +58,33 @@
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING   1
 #define F_CONN_REMOVED        2 /*!< no longer in "main" listen fd list */
+
+
+/* keepalive */
+#ifndef NO_TCP_KEEPALIVE
+    #define HAVE_SO_KEEPALIVE
+#endif
+
+/* keepintvl */
+#ifndef NO_TCP_KEEPINTVL
+    #ifdef __OS_linux
+        #define HAVE_TCP_KEEPINTVL
+    #endif
+#endif
+
+/* keepidle */
+#ifndef NO_TCP_KEEPIDLE
+    #ifdef __OS_linux
+        #define HAVE_TCP_KEEPIDLE
+    #endif
+#endif
+
+/* keepcnt */
+#ifndef NO_TCP_KEEPCNT
+    #ifdef __OS_linux
+        #define HAVE_TCP_KEEPCNT
+    #endif
+#endif
 
 
 enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,

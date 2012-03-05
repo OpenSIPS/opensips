@@ -295,6 +295,10 @@ TCP_POLL_METHOD     "tcp_poll_method"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_OPT_CRLF_PINGPONG   "tcp_crlf_pingpong"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
+TCP_KEEPALIVE           "tcp_keepalive"
+TCP_KEEPCOUNT           "tcp_keepcount"
+TCP_KEEPIDLE            "tcp_keepidle"
+TCP_KEEPINTERVAL        "tcp_keepinterval"
 DISABLE_TLS		"disable_tls"
 TLSLOG			"tlslog"|"tls_log"
 TLS_PORT_NO		"tls_port_no"
@@ -562,6 +566,10 @@ WHITESPACE	[ \t\r\n]
 									return TCP_POLL_METHOD; }
 <INITIAL>{TCP_MAX_CONNECTIONS}  { count(); yylval.strval=yytext;
 									return TCP_MAX_CONNECTIONS; }
+<INITIAL>{TCP_KEEPALIVE}       { count(); yylval.strval=yytext; return TCP_KEEPALIVE; }
+<INITIAL>{TCP_KEEPCOUNT}       { count(); yylval.strval=yytext; return TCP_KEEPCOUNT; }
+<INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
+<INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }
 <INITIAL>{DISABLE_TLS}	{ count(); yylval.strval=yytext; return DISABLE_TLS; }
 <INITIAL>{TLSLOG}		{ count(); yylval.strval=yytext; return TLS_PORT_NO; }
 <INITIAL>{TLS_PORT_NO}	{ count(); yylval.strval=yytext; return TLS_PORT_NO; }

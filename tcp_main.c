@@ -55,6 +55,7 @@
  *               more connections if tcp_max_connections is exceeded (andrei)
  *  2005-10-21  cleanup all the open connections on exit
  *              decrement the no. of open connections on timeout too    (andrei)
+ *  2012-01-19  added TCP keepalive support
  */
 
 /*!
@@ -140,6 +141,15 @@ enum poll_types tcp_poll_method=0; 	/*!< by default choose the best method */
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
 int tcp_max_fd_no=0;
 
+#ifdef HAVE_SO_KEEPALIVE
+    int tcp_keepalive = 1;
+#else
+    int tcp_keepalive = 0;
+#endif
+int tcp_keepcount = 0;
+int tcp_keepidle = 0;
+int tcp_keepinterval = 0;
+
 static int tcp_connections_no=0;	/*!< current number of open connections */
 
 /*! \brief connection hash table (after ip&port) , includes also aliases */
@@ -159,6 +169,49 @@ static io_wait_h io_h;
 
 int tcp_no_new_conn_bflag = 0; /*!< should a new TCP conn be open if needed? - branch flag to be set in the SIP messages - configuration option */
 int tcp_no_new_conn = 0; /*!< should a new TCP conn be open if needed? - variable used to used for signalizing between SIP layer (branch flag) and TCP layer (tcp_send function) */
+
+
+
+static inline int init_sock_keepalive(int s)
+{
+	int optval;
+
+        if (tcp_keepinterval || tcp_keepidle || tcp_keepcount) {
+            tcp_keepalive = 1; /* force on */
+        }
+
+#ifdef HAVE_SO_KEEPALIVE
+	if ((optval = tcp_keepalive)) {
+	    if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
+	        LM_WARN("init_sock_keepalive: failed to enable SO_KEEPALIVE: %s\n", strerror(errno));
+		return -1;
+	    }
+	    LM_INFO("-- TCP keepalive enabled on socket");
+	}
+#endif
+#ifdef HAVE_TCP_KEEPINTVL
+	if ((optval = tcp_keepinterval)) {
+	    if (setsockopt(s, IPPROTO_TCP, TCP_KEEPINTVL, &optval, sizeof(optval)) < 0) {
+	        LM_WARN("init_sock_keepalive: failed to set keepalive probes interval: %s\n", strerror(errno));
+	    }
+	}
+#endif
+#ifdef HAVE_TCP_KEEPIDLE
+	if ((optval = tcp_keepidle)) {
+	    if (setsockopt(s, IPPROTO_TCP, TCP_KEEPIDLE, &optval, sizeof(optval)) < 0) {
+	        LM_WARN("init_sock_keepalive: failed to set keepalive idle interval: %s\n", strerror(errno));
+	    }
+	}
+#endif
+#ifdef HAVE_TCP_KEEPCNT
+	if ((optval = tcp_keepcount)) {
+	    if (setsockopt(s, IPPROTO_TCP, TCP_KEEPCNT, &optval, sizeof(optval)) < 0) {
+	        LM_WARN("init_sock_keepalive: failed to set maximum keepalive count: %s\n", strerror(errno));
+	    }
+	}
+#endif
+	return 0;
+}
 
 
 
@@ -188,6 +241,8 @@ static int init_sock_opt(int s)
 		LM_WARN("setsockopt tcp snd buff: %s\n",	strerror(errno));
 		/* continue since this is not critical */
 	}
+
+	init_sock_keepalive(s);
 
 	/* non-blocking */
 	flags=fcntl(s, F_GETFL);
@@ -900,6 +955,7 @@ int tcp_init(struct socket_info* sock_info)
 		/* continue since this is not critical */
 	}
 
+	init_sock_keepalive(sock_info->socket);
 	if (bind(sock_info->socket, &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s:%d : %s\n",
  				sock_info->socket, &addr->s, 
