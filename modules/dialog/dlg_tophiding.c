@@ -308,18 +308,6 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int 
 	return 0;
 }
 
-static void dlg_th_init_onreply(struct cell* t, int type, struct tmcb_params *param)
-{
-	struct dlg_cell *dlg;
-
-	dlg = (struct dlg_cell *)(*param->param);
-	if (dlg==0)
-		return;
-
-	if(dlg_th_onreply(dlg, param->rpl, 1, DLG_DIR_UPSTREAM) < 0)
-		LM_ERR("Failed to transform the reply for topology hiding\n");
-}
-
 /* hide via, route sets and contacts */
 int w_topology_hiding(struct sip_msg *req)
 {
@@ -342,12 +330,6 @@ int w_topology_hiding(struct sip_msg *req)
 	}
 
 	dlg->flags |= DLG_FLAG_TOPHIDING;
-
-	if ( d_tmb.register_tmcb( req, t, TMCB_RESPONSE_IN,
-				dlg_th_init_onreply, (void*)dlg, 0)<0 ) {
-		LM_ERR("failed to register TMCB\n");
-		return -1;
-	}
 
 	/* delete also the added record route and the did param */
 	for(crt=req->add_rm; crt;) {
@@ -493,7 +475,7 @@ int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir)
 
 	/* register tm callback for response in  */
 	ref_dlg( dlg , 1);
-	if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_IN,
+	if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
 			(dir==DLG_DIR_UPSTREAM)?dlg_th_down_onreply:dlg_th_up_onreply,
 			(void*)dlg, unreference_dialog)<0 ) {
 		LM_ERR("failed to register TMCB\n");
