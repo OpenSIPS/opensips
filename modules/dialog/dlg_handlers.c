@@ -441,6 +441,9 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				}
 			}
 			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to);
+			if((dlg->flags & DLG_FLAG_TOPHIDING) && 
+					dlg_th_onreply(dlg, rpl, 1, DLG_DIR_UPSTREAM) < 0)
+				LM_ERR("Failed to transform the reply for topology hiding\n");
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
 		}
