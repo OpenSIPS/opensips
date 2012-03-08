@@ -120,6 +120,7 @@ inline static int t_check_trans(struct sip_msg* msg, char* , char* );
 inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
 inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
 inline static int w_t_add_hdrs(struct sip_msg* msg, char* );
+int t_cancel_trans(struct cell *t);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -600,6 +601,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->ref_cell = t_ref_cell;
 	tmb->t_setkr = set_kr;
 
+	tmb->t_cancel_trans = t_cancel_trans;
 	/* tm uac functions */
 	tmb->t_addblind = add_blind_uac;
 	tmb->t_request_within = req_within;
@@ -1161,6 +1163,25 @@ route_err:
 	return 0;
 }
 
+int t_cancel_trans(struct cell *t)
+{
+	branch_bm_t cancel_bitmap = 0;
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		LM_ERR("cannot cancel with no transaction");
+		return -1;
+	}
+
+	LOCK_REPLIES(t);
+	which_cancel( t, &cancel_bitmap );
+	UNLOCK_REPLIES(t);
+
+	/* send cancels out */
+	cancel_uacs(t, cancel_bitmap);
+
+	return 0;
+}
 
 extern int _tm_branch_index;
 inline static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)

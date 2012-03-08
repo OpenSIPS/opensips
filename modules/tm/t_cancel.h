@@ -52,6 +52,7 @@ unsigned int t_uac_cancel(str *headers,str *body,
 typedef unsigned int (*tuaccancel_f)( str *headers,str *body,
 	unsigned int cancelledIdx,unsigned int cancelledLabel,
 	transaction_cb cb, void* cbp, release_tmcb_param release_func);
+typedef int (*tcanceltrans_f)(struct cell *t);
 
 char *build_cancel(struct cell *Trans,unsigned int branch,
 	unsigned int *len );

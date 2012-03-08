@@ -276,6 +276,11 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 		new_cell->user_avps = *old;
 		*old = 0;
 
+		/* set now the hash index & label, in case begin callbacks need them
+		 * we are now under hash lock, so it's safe - vlad */
+		new_cell->hash_index = p_msg->hash_index;
+		new_cell->label = tm_table->entrys[ new_cell->hash_index].next_label;
+
 		/* move the pending callbacks to transaction -bogdan */
 		if (p_msg->id==tmcb_pending_id) {
 			new_cell->tmcb_hl = tmcb_pending_hl;

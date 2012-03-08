@@ -824,6 +824,10 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		   -> just do the last settings */
 		run_create_callbacks( current_dlg_pointer, param->req);
 
+		LM_DBG("t hash_index = %u, t label = %u\n",t->hash_index,t->label);
+		current_dlg_pointer->initial_t_hash_index = t->hash_index;
+		current_dlg_pointer->initial_t_label = t->label;
+
 		current_dlg_pointer->lifetime = get_dlg_timeout(param->req);
 
 		t->dialog_ctx = (void*)current_dlg_pointer;
@@ -910,7 +914,9 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	if (t) {
 		/* first INVITE seen (dialog created, unconfirmed) */
 		run_create_callbacks( dlg, req);
-
+		LM_DBG("t hash_index = %u, t label = %u\n",t->hash_index,t->label);
+		dlg->initial_t_hash_index = t->hash_index;
+		dlg->initial_t_label = t->label;
 		dlg->lifetime = get_dlg_timeout(req);
 
 		t->dialog_ctx = (void*) dlg;

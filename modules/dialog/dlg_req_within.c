@@ -391,12 +391,28 @@ err:
 int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 {
 	str str_hdr = {NULL,0};
+	struct cell* t;
 	int i,res = 0;
 	int callee;
 
 	/* lookup_dlg has incremented the reference count !! */
 	if (dlg->state == DLG_STATE_UNCONFIRMED || dlg->state == DLG_STATE_EARLY) {
-		LM_DBG("cannot terminate a dialog in EARLY or UNCONFIRMED state\n");
+		/* locate initial transaction */
+		LM_DBG("trying to find transaction with hash_index = %u and label = %u\n",
+				dlg->initial_t_hash_index,dlg->initial_t_label);
+		if (d_tmb.t_lookup_ident(&t,dlg->initial_t_hash_index,dlg->initial_t_label) < 0) {
+			LM_ERR("Initial transaction does not exist any more\n");
+			return -1;
+		}
+
+		if (d_tmb.t_cancel_trans(t) < 0) {
+			LM_ERR("Failed to send cancels\n");
+			d_tmb.unref_cell(t);
+			return -1;
+		}
+
+		/* lookup_ident refs the transaction */
+		d_tmb.unref_cell(t);
 		return 0;
 	}
 
