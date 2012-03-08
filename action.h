@@ -38,6 +38,16 @@
 
 extern int action_flags;
 
+#define LONGEST_ACTION_SIZE		5
+
+typedef struct {
+	struct action* a;
+	int a_time;
+} action_time;
+
+extern action_time longest_action[LONGEST_ACTION_SIZE];
+extern int min_action_time;
+
 int do_action(struct action* a, struct sip_msg* msg);
 int run_top_route(struct action* a, struct sip_msg* msg);
 int run_action_list(struct action* a, struct sip_msg* msg);

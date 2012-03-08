@@ -95,6 +95,8 @@ static int rec_lev=0;
 
 extern err_info_t _oser_err_info;
 
+action_time longest_action[LONGEST_ACTION_SIZE];
+int min_action_time=0;
 
 /* run actions from a route */
 /* returns: 0, or 1 on success, <0 on error */
@@ -255,6 +257,24 @@ error:
 	return -1;
 }
 
+#define update_longest_action() do {	\
+		if (execmsgthreshold) {	\
+			end_time = get_time_diff(&start);	\
+			if (end_time > min_action_time) {	\
+				for (i=0;i<LONGEST_ACTION_SIZE;i++) {	\
+					if (longest_action[i].a_time < end_time) {	\
+						memmove(longest_action+i+1,longest_action+i,	\
+								(LONGEST_ACTION_SIZE-i-1)*sizeof(action_time));	\
+						longest_action[i].a_time=end_time;	\
+						longest_action[i].a = a;	\
+						min_action_time = longest_action[LONGEST_ACTION_SIZE-1].a_time;	\
+						break;	\
+					}	\
+				}	\
+			}	\
+		}	\
+	} while(0)
+
 /* ret= 0! if action -> end of list(e.g DROP), 
       > 0 to continue processing next actions
    and <0 on error */
@@ -283,6 +303,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 	pv_value_t val;
 	pv_elem_t *pve;
 	str name_s;
+	struct timeval start;
+	int end_time;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -290,6 +312,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 	   for functions which want to process it */
 	prev_ser_error=ser_error;
 	ser_error=E_UNSPEC;
+
+	start_expire_timer(start,execmsgthreshold);
 
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
@@ -1610,17 +1634,22 @@ int do_action(struct action* a, struct sip_msg* msg)
 	if((unsigned char)a->type!=IF_T && (unsigned char)a->type!=ROUTE_T)
 		return_code = ret;
 /*skip:*/
+
+	update_longest_action();
 	return ret;
 
 error:
 	LM_ERR("error at line: %d\n", a->line);
+	update_longest_action();
 	return ret;
 	
 error_uri:
 	LM_ERR("set*: uri too long\n");
 	if (new_uri) pkg_free(new_uri);
+	update_longest_action();
 	return E_UNSPEC;
 error_fwd_uri:
+	update_longest_action();
 	return ret;
 }
 

@@ -58,6 +58,7 @@
 #include <string.h>
 #ifdef HAVE_SIGIO_RT
 #define __USE_GNU /* or else F_SETSIG won't be included */
+#define _GNU_SOURCE /* define this as well */
 #include <sys/types.h> /* recv */
 #include <sys/socket.h> /* recv */
 #include <signal.h> /* sigprocmask, sigwait a.s.o */

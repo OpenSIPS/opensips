@@ -36,6 +36,8 @@
 
 #include "config.h"
 #include "dprint.h"
+#include "sr_module.h"
+#include "action.h"
 #include "str.h"
 #include "evi/evi_modules.h"
 #include "evi/evi_core.h"
@@ -640,7 +642,13 @@ static inline int get_time_diff(struct timeval *begin)
 	return mtime;
 }
 
-
+#define reset_longest_action_list(threshold) \
+	do { \
+		if ((threshold)) { \
+			min_action_time=0; \
+			memset(longest_action,0,LONGEST_ACTION_SIZE*sizeof(action_time)); \
+		} \
+	} while (0) 
 
 static inline void log_expiry(int time_diff,int expire,
 					const char *func_info,char *extra_dbg,int dbg_len,int tcp)
@@ -650,6 +658,7 @@ static inline void log_expiry(int time_diff,int expire,
 	static str func_str = str_init("source");
 	static str time_str = str_init("time");
 	static str extra_str = str_init("extra");
+	int i;
 
 	if (time_diff > expire)
 	{
@@ -663,6 +672,21 @@ static inline void log_expiry(int time_diff,int expire,
 		} else
 			LM_WARN("threshold exceeded : %s took too long - %d us."
 					"Source : %.*s\n",func_info,time_diff,dbg_len,extra_dbg);
+
+		if (memcmp(func_info,"msg",3) == 0) {
+			for (i=0;i<LONGEST_ACTION_SIZE;i++) {
+				if (longest_action[i].a) {
+					if ((unsigned char)longest_action[i].a->type == MODULE_T)
+					LM_WARN("#%i is a module action : %s - %dus - line %d\n",i+1,
+							((cmd_export_t*)(longest_action[i].a->elem[0].u.data))->name,
+							longest_action[i].a_time,longest_action[i].a->line);
+					else
+					LM_WARN("#%i is a core action : %d - %dus - line %d\n",i+1,
+							longest_action[i].a->type,
+							longest_action[i].a_time,longest_action[i].a->line);
+				}
+			}
+		}
 		if (evi_probe_event(EVI_THRESHOLD_ID)) {
 
 			param.s = (char *)func_info;
