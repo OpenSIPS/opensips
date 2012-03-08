@@ -1878,7 +1878,11 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		<section>
 			<title><varname>dlg_end_dlg</varname></title>
 			<para>
-			Terminates an ongoing dialog by sending BYE in both directions.
+				Terminates an ongoing dialog.
+				If dialog is established, BYEs are sent in both directions.
+				If dialog is in unconfirmed or early state, a CANCEL will be sent
+				to the callee side, that will trigger a 487 from the callee,
+				which, when relayed, will also end the dialog on the caller's side.
 			</para>
 		<para>
 		Name: <emphasis>dlg_end_dlg</emphasis>

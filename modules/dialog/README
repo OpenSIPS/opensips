@@ -6,10 +6,14 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
+Vladut-Stefan Paiu
+
    Copyright © 2006-2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-09-16 20:33:54 +0300
-                              (Mi, 16 sep 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -1336,7 +1340,11 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
 1.8.3. dlg_end_dlg
 
-   Terminates an ongoing dialog by sending BYE in both directions.
+   Terminates an ongoing dialog. If dialog is established, BYEs
+   are sent in both directions. If dialog is in unconfirmed or
+   early state, a CANCEL will be sent to the callee side, that
+   will trigger a 487 from the callee, which, when relayed, will
+   also end the dialog on the caller's side.
 
    Name: dlg_end_dlg
 
