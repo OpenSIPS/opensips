@@ -35,7 +35,8 @@
 #include "../../db/db_cap.h"
 #include "dbase.h"
 
-
+int db_postgres_exec_query_threshold = 0;   /* Warning in case DB query
+											takes too long disabled by default*/
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
@@ -50,22 +51,28 @@ static cmd_export_t cmds[]={
 	{0,0,0,0,0,0}
 };
 
-
+/*
+ * Exported parameters
+ */
+static param_export_t params[] = {
+	{"exec_query_threshold", INT_PARAM, &db_postgres_exec_query_threshold},
+	{0, 0, 0}
+};
 
 struct module_exports exports = {	
 	"db_postgres",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	cmds,
-	0,   /*  module parameters */
-	0,   /* exported statistics */
-	0,   /* exported MI functions */
-	0,        /* exported pseudo-variables */
-	0,        /* extra processes */
-	mod_init, /* module initialization function */
-	0,        /* response function*/
-	0,        /* destroy function */
-	0         /* per-child init function */
+	cmds,            /*  module parameters */
+	params,          /*  module parameters */
+	0,               /* exported statistics */
+	0,               /* exported MI functions */
+	0,               /* exported pseudo-variables */
+	0,               /* extra processes */
+	mod_init,        /* module initialization function */
+	0,               /* response function*/
+	0,               /* destroy function */
+	0                /* per-child init function */
 };
 
 

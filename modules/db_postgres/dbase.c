@@ -78,6 +78,8 @@
 #include "val.h"
 #include "res.h"
 
+extern int db_postgres_exec_query_threshold;
+
 static int submit_func_called;
 
 static int free_query(const db_con_t* _con);
@@ -135,9 +137,10 @@ void db_postgres_close(db_con_t* _h)
 
 static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 {
-	int i;
+	int i,ret=0;
 	ExecStatusType result;
 	PGresult *res = NULL;
+	struct timeval start;
 
 	if(! _con || !_s || !_s->s)
 	{
@@ -174,9 +177,11 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		if(CON_RESULT(_con)) {
 			free_query(_con);
 		}
-
+		start_expire_timer(start,db_postgres_exec_query_threshold);
+		ret = PQsendQuery(CON_CONNECTION(_con), _s->s);
+		stop_expire_timer(start,db_postgres_exec_query_threshold,"pgsql query",_s->s,_s->len,0);
 		/* exec the query */
-		if (PQsendQuery(CON_CONNECTION(_con), _s->s)) {
+		if (ret) {
 			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
 
 			while (1) {

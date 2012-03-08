@@ -47,9 +47,26 @@
 
 	<section>
 	<title>Exported Parameters</title>
+	<section>
+		<title><varname>exec_query_threshold</varname> (integer)</title>
 		<para>
-		NONE
+		If queries take longer than 'exec_query_threshold' microseconds, warning
+		messages will be written to logging facility.
 		</para>
+		<para>
+		<emphasis>
+			Default value is 0 - disabled.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>exec_query_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_postgres", "exec_query_threshold", 60000)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
