@@ -733,7 +733,7 @@ static int main_loop(void)
 		is_main=1;
 
 		if (register_udp_load_stat(&udp_listen->sock_str,
-		&pt[process_no].load)!=0) {
+		&pt[process_no].load, 1)!=0) {
 			LM_ERR("failed to init udp load statistics\n");
 			goto error;
 		}
@@ -833,12 +833,12 @@ static int main_loop(void)
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
 
-			if (register_udp_load_stat(&si->sock_str, &load_p)!=0) {
+			if(register_udp_load_stat(&si->sock_str,&load_p,si->children)!=0){
 				LM_ERR("failed to init load statistics\n");
 				goto error;
 			}
 
-			for(i=0;i<children_no;i++){
+			for(i=0;i<si->children;i++){
 				chd_rank++;
 				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
@@ -895,7 +895,7 @@ static int main_loop(void)
 	#ifdef USE_SCTP
 	if(!sctp_disable){
 		for(si=sctp_listen; si; si=si->next){
-			for(i=0;i<children_no;i++){
+			for(i=0;i<si->children;i++){
 				chd_rank++;
 				if ( (pid=internal_fork( "SCTP receiver"))<0 ) {
 					LM_CRIT("cannot fork SCTP process\n");
@@ -1093,7 +1093,7 @@ int main(int argc, char** argv)
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
-					if (add_listen_iface(tmp, port, proto, 0, 0, 0)!=0){
+					if (add_listen_iface(tmp, port, proto, 0, 0, 0,0 )!=0){
 						LM_ERR("failed to add new listen address\n");
 						goto error00;
 					}

@@ -156,11 +156,11 @@ error:
 
 int wait_for_all_children(void)
 {
-	int children_no,i,ret;
+	int procs_no,i,ret;
 	char rc;
 
-	children_no = count_init_children();
-	for (i=0;i<children_no;i++) {
+	procs_no = count_init_children();
+	for (i=0;i<procs_no;i++) {
 		ret = wait_status_code(&rc);
 		if (ret < 0 || rc < 0)
 			return -1;

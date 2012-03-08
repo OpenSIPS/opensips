@@ -105,7 +105,7 @@
 static inline struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,
 								char *adv_name, unsigned short adv_port,
-								enum si_flags flags)
+								unsigned short children,enum si_flags flags)
 {
 	struct socket_info* si;
 	
@@ -141,6 +141,9 @@ static inline struct socket_info* new_sock_info(	char* name,
 		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
 		si->adv_port = adv_port;
 	}
+	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && children)
+		LM_WARN("number of children per TCP/TLS listener not supported -> ignoring...\n");
+	si->children = children?children:children_no;
 	return si;
 error:
 	LM_ERR("pkg memory allocation error\n");
@@ -337,12 +340,12 @@ found:
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */
 int new_sock2list(char* name, unsigned short port, unsigned short proto,
-						char *adv_name, unsigned short adv_port,
-						enum si_flags flags, struct socket_info** list)
+		char *adv_name, unsigned short adv_port, unsigned short children,
+		enum si_flags flags, struct socket_info** list)
 {
 	struct socket_info* si;
 	
-	si=new_sock_info(name, port, proto, adv_name, adv_port, flags);
+	si=new_sock_info(name, port, proto, adv_name, adv_port, children, flags);
 	if (si==0){
 		LM_ERR("new_sock_info failed\n");
 		goto error;
@@ -358,8 +361,8 @@ error:
 /* adds a sock_info structure to the corresponding proto list
  * return  0 on success, -1 on error */
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
-						char *adv_name, unsigned short adv_port,
-						enum si_flags flags)
+			char *adv_name, unsigned short adv_port, unsigned short children,
+			enum si_flags flags)
 {
 	struct socket_info** list;
 	unsigned short c_proto;
@@ -384,7 +387,8 @@ int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 				port++;
 		}
 #endif
-		if (new_sock2list(name, port, c_proto, adv_name, adv_port, flags, list)<0){
+		if (new_sock2list(name, port, c_proto, adv_name, adv_port, children,
+		flags, list)<0){
 			LM_ERR("new_sock2list failed\n");
 			goto error;
 		}
@@ -499,7 +503,7 @@ int add_interfaces(char* if_name, int family, unsigned short port,
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK) 
 				flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list(tmp, port, proto, 0, 0, flags, list)!=0){
+			if (new_sock2list(tmp, port, proto, 0, 0, 0, flags, list)!=0){
 				LM_ERR("new_sock2list failed\n");
 				goto error;
 			}
@@ -826,7 +830,7 @@ int fix_all_socket_lists(void)
 				LM_ERR("cannot determine hostname, try -l address\n");
 				goto error;
 			}
-			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0)!=0){
+			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0, 0)!=0){
 				LM_ERR("add_listen_iface failed \n");
 				goto error;
 			}

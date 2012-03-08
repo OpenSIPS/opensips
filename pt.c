@@ -65,11 +65,11 @@ int init_multi_proc_support(void)
 		#ifdef USE_SCTP
 		/* SCTP listeners */
 		for (si=sctp_listen; si; si=si->next)
-			proc_no+=children_no;
+			proc_no+=si->children;
 		#endif
 		/* UDP listeners */
 		for (si=udp_listen; si; si=si->next)
-			proc_no+=children_no;
+			proc_no+=si->children;
 		#ifdef USE_TCP
 		proc_no += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
 		#endif
@@ -208,11 +208,11 @@ int count_init_children(void)
 
 	/* UDP listening children */
 	for (si=udp_listen;si;si=si->next)
-		ret+=children_no;
+		ret+=si->children;
 
 	#ifdef USE_SCTP
 	for (si=sctp_listen;si;si=si->next)
-		ret+=children_no;
+		ret+=si->children;
 	#endif
 
 	#ifdef USE_TCP

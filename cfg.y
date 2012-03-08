@@ -434,6 +434,7 @@ extern int line;
 %token RBRACK
 %token SLASH
 %token AS
+%token USE_CHILDREN
 %token DOT
 %token CR
 %token COLON
@@ -451,6 +452,8 @@ extern int line;
 %type <specval> script_var
 %type <strval> host
 %type <strval> listen_id
+%type <sockid> listen_lst
+%type <sockid> listen_def
 %type <sockid> id_lst
 %type <sockid> phostport
 %type <intval> proto port
@@ -555,13 +558,24 @@ phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
 			| listen_id COLON port	{ $$=mk_listen_id($1, 0, $3); }
 			| proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
-			| phostport AS listen_id { set_listen_id_adv((struct socket_id *)$1, $3, 5060); }
-			| phostport AS listen_id COLON port{ set_listen_id_adv((struct socket_id *)$1, $3, $5); }
 			| listen_id COLON error { $$=0; yyerror(" port number expected"); }
 			;
 
 id_lst:		phostport		{  $$=$1 ; }
 		| phostport id_lst	{ $$=$1; $$->next=$2; }
+		;
+
+
+listen_def:	phostport				{ $$=$1; }
+			| phostport USE_CHILDREN NUMBER { $$=$1; $$->children=$3; }
+			| phostport AS listen_id { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060); }
+			| phostport AS listen_id USE_CHILDREN NUMBER { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060); $1->children=$5; }
+			| phostport AS listen_id COLON port{ $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); }
+			| phostport AS listen_id COLON port USE_CHILDREN NUMBER { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); $1->children=$7; }
+			;
+
+listen_lst:		listen_def		{  $$=$1 ; }
+		| listen_def listen_lst	{ $$=$1; $$->next=$2; }
 		;
 
 
@@ -1006,13 +1020,14 @@ assign_stm: DEBUG EQUAL snumber {
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
 			
-		| LISTEN EQUAL id_lst {
+		| LISTEN EQUAL listen_lst {
 							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next){
 								if (add_listen_iface(	lst_tmp->name,
 														lst_tmp->port,
 														lst_tmp->proto,
 														lst_tmp->adv_name,
 														lst_tmp->adv_port,
+														lst_tmp->children,
 														0
 													)!=0){
 									LM_CRIT("cfg. parser: failed"

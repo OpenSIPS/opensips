@@ -128,7 +128,7 @@ char *build_stat_name( str* prefix, char *var_name)
 
 unsigned int calc_udp_load(void *val)
 {
-	return ( get_stat_val((stat_var*)val) * 100)/children_no;
+	return ( get_stat_val((stat_var*)val) * 100) / *((int*)(((stat_var*)val)+1));
 }
 
 #ifdef USE_TCP
@@ -138,16 +138,19 @@ unsigned int calc_tcp_load(void *val)
 }
 #endif
 
-int register_udp_load_stat(str *name, stat_var **s)
+int register_udp_load_stat(str *name, stat_var **s, int children)
 {
 	char *stat_name;
 
-	*s = shm_malloc(sizeof(stat_var));
+	/* in a single mem chunk, we put both the stat variable and the
+	   number of children for this UDP interface */
+	*s = shm_malloc(sizeof(stat_var) + sizeof(int));
 	if (!*s) {
 		LM_ERR("no more shm\n");
 		return -1;
 	}
 	memset(*s,0,sizeof(stat_var));
+	*((int*)((*s)+1)) = children;
 
 	(*s)->u.val = shm_malloc(sizeof(stat_val));
 	if (!(*s)->u.val) {

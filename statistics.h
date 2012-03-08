@@ -99,7 +99,7 @@ char *build_stat_name( str* prefix, char *var_name);
 
 int init_stats_collector();
 
-int register_udp_load_stat(str *name, stat_var **ctx);
+int register_udp_load_stat(str *name, stat_var **ctx, int children);
 int register_tcp_load_stat(stat_var **ctx);
 
 void destroy_stats_collector();
@@ -141,7 +141,7 @@ extern gen_lock_t *stat_lock;
 	#define get_stat( _name )  0
 	#define get_stat_val( _var ) 0
 	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
-	#define register_udp_load_stat( _a, _b) 0
+	#define register_udp_load_stat( _a, _b, _c) 0
 	#define register_tcp_load_stat( _a)     0
 #endif
 
