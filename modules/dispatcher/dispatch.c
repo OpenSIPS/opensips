@@ -1231,10 +1231,12 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	i=ds_id;
 	while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
 	{
-		if(ds_use_default!=0)
-			i = (i+1)%(idx->nr-1);
-		else
+		if(ds_use_default!=0) {
+			if (idx->nr>1)
+				i = (i+1)%(idx->nr-1);
+		} else {
 			i = (i+1)%idx->nr;
+		}
 		if(i==ds_id)
 		{
 			if(ds_use_default!=0)
