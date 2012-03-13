@@ -53,13 +53,13 @@ typedef struct var_str_t
 
 enum
 {
-	QUERY,
-	INSERT,
-	DELETE,
-	UPDATE,
-	REPLACE,
-	INSERT_UPDATE,
-	CUSTOM
+	HTTPDB_QUERY,
+	HTTPDB_INSERT,
+	HTTPDB_DELETE,
+	HTTPDB_UPDATE,
+	HTTPDB_REPLACE,
+	HTTPDB_INSERT_UPDATE,
+	HTTPDB_CUSTOM
 };
 
 enum
@@ -699,7 +699,7 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	CHECK( append_str(&q,*h->table), 0, error);
 
 	/* for operations other than querie use POST */
-	if( db_op == QUERY || db_op == CUSTOM )
+	if( db_op == HTTPDB_QUERY || db_op == HTTPDB_CUSTOM )
 	{
 		/* put the queries */
 		CHECK( append_const(&q,"/?"), 0, error);
@@ -744,7 +744,7 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	}
 
 
-	if( started && db_op != QUERY)
+	if( started && db_op != HTTPDB_QUERY)
 	{
 		CHECK( append_const(&q,"&"), 0, error);
 	}
@@ -752,24 +752,24 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	switch(db_op)
 	{
 
-		case(QUERY):
+		case(HTTPDB_QUERY):
 			break;
-		case(INSERT):
+		case(HTTPDB_INSERT):
 			CHECK( append_const(&q,"query_type=insert"), 0, error);
 			break;
-		case(DELETE):
+		case(HTTPDB_DELETE):
 			CHECK( append_const(&q,"query_type=delete"), 0, error);
 			break;
-		case(UPDATE):
+		case(HTTPDB_UPDATE):
 			CHECK( append_const(&q,"query_type=update"), 0, error);
 			break;
-		case(REPLACE):
+		case(HTTPDB_REPLACE):
 			CHECK( append_const(&q,"query_type=replace"), 0, error);
 			break;
-		case(INSERT_UPDATE):
+		case(HTTPDB_INSERT_UPDATE):
 			CHECK( append_const(&q,"query_type=insert_update"), 0, error);
 			break;
-		case(CUSTOM):
+		case(HTTPDB_CUSTOM):
 			CHECK( append_const(&q,"query_type=custom"), 0, error);
 			break;
 		default:
@@ -792,7 +792,7 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 	curl_easy_setopt(conn->handle, CURLOPT_WRITEFUNCTION, receive);
 	curl_easy_setopt(conn->handle, CURLOPT_WRITEDATA, &buff);
 
-	if( db_op != QUERY && db_op != CUSTOM)
+	if( db_op != HTTPDB_QUERY && db_op != HTTPDB_CUSTOM)
 	{
 		LM_DBG("Posted:%s \n",&q.s[middle_poz]);
 		curl_easy_setopt(conn->handle, CURLOPT_POSTFIELDS, &q.s[middle_poz]);
@@ -811,13 +811,13 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 		return -1;
 
 	}
-	if( db_op == QUERY || db_op == CUSTOM )
+	if( db_op == HTTPDB_QUERY || db_op == HTTPDB_CUSTOM )
 	{
 		if( form_result(buff,r) )
 			return -1;
 	}
 
-	if( db_op == INSERT )
+	if( db_op == HTTPDB_INSERT )
 	{
 		if( buff.len > 0)
 			sscanf(buff.s,"%d",&conn->last_id);
@@ -1130,7 +1130,7 @@ int db_http_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		NULL,
 		NULL,
 		_r,
-		QUERY
+		HTTPDB_QUERY
 		);
 	return 0;
 }
@@ -1151,7 +1151,7 @@ int db_http_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 		NULL,
 		_s,
 		_r,
-		CUSTOM
+		HTTPDB_CUSTOM
 		);
 
 
@@ -1173,7 +1173,7 @@ int db_http_insert(const db_con_t* _h, const db_key_t* _k,
 		NULL,
 		NULL,
 		NULL,
-		INSERT
+		HTTPDB_INSERT
 		);
 	
 }
@@ -1194,7 +1194,7 @@ int db_http_delete(const db_con_t* _h, const db_key_t* _k, const
 		NULL,
 		NULL,
 		NULL,
-		DELETE
+		HTTPDB_DELETE
 		);
 	     
 }
@@ -1215,7 +1215,7 @@ int db_http_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		NULL,
 		NULL,
 		NULL,
-		UPDATE
+		HTTPDB_UPDATE
 		);
 	
 }
@@ -1235,7 +1235,7 @@ int db_http_replace(const db_con_t* handle, const db_key_t* keys,
 		NULL,
 		NULL,
 		NULL,
-		REPLACE
+		HTTPDB_REPLACE
 		);
 }
 
@@ -1265,7 +1265,7 @@ int db_insert_update(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		NULL,
 		NULL,
 		NULL,
-		INSERT_UPDATE
+		HTTPDB_INSERT_UPDATE
 		);
 
 	
