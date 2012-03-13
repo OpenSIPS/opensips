@@ -482,5 +482,17 @@ int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir)
 		unref_dlg( dlg , 1);
 	}
 
+	if (dir == DLG_DIR_UPSTREAM) {
+		/* destination leg is the caller - force the send socket
+		 * as the one the caller was inited from */
+		req->force_send_socket = dlg->legs[DLG_CALLER_LEG].bind_addr;
+		LM_DBG("forcing send socket for req going to caller\n");
+	} else {
+		/* destination leg is the callee - force the send socket
+		 * as the one the callee was inited from */
+		req->force_send_socket = dlg->legs[callee_idx(dlg)].bind_addr;
+		LM_DBG("forcing send socket for req going to callee\n");
+	}
+
 	return 0;
 }
