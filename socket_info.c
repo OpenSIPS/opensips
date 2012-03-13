@@ -141,9 +141,11 @@ static inline struct socket_info* new_sock_info(	char* name,
 		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
 		si->adv_port = adv_port;
 	}
-	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && children)
+	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && children) {
 		LM_WARN("number of children per TCP/TLS listener not supported -> ignoring...\n");
-	si->children = children?children:children_no;
+	} else {
+		si->children = children;
+	}
 	return si;
 error:
 	LM_ERR("pkg memory allocation error\n");
@@ -557,6 +559,9 @@ static int fix_socket_list(struct socket_info **list)
 	LM_DBG("listening on \n");
 #endif
 	for (si=*list;si;si=si->next){
+		/* fix the number of processes per interface */
+		if (si->children==0 && (si->proto==PROTO_UDP || si->proto==PROTO_SCTP))
+			si->children = children_no;
 		/* fix port number, port_no should be !=0 here */
 		if (si->port_no==0){
 #ifdef USE_TLS
