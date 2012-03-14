@@ -1174,15 +1174,6 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 
 		t->relaied_reply_branch = relay;
 
-		/* only messages known to be relayed immediately will be
-		 * be called on; we do not evoke this callback on messages
-		 * stored in shmem -- they are fixed and one cannot change them
-		 * anyway */
-		if (msg_status<300 && branch==relay
-		&& has_tran_tmcbs(t,TMCB_RESPONSE_FWDED) ) {
-			run_trans_callbacks( TMCB_RESPONSE_FWDED, t, t->uas.request,
-				p_msg, msg_status );
-		}
 		/* try building the outbound reply from either the current
 		 * or a stored message */
 		relayed_msg = branch==relay ? p_msg :  t->uac[relay].reply;
@@ -1209,15 +1200,21 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			}
 
 		} else {
+			/* run callbacks for all types of responses -
+			 * even if they are shmem-ed or not */
+			if (has_tran_tmcbs(t,TMCB_RESPONSE_FWDED) ) {
+				run_trans_callbacks( TMCB_RESPONSE_FWDED, t, t->uas.request,
+					relayed_msg, msg_status );
+			}
 			relayed_code=relayed_msg->REPLY_STATUS;
 			buf = build_res_buf_from_sip_res( relayed_msg, &res_len,
 							uas_rb->dst.send_sock);
-			/* if we build a message from shmem, we need to remove
-			   via delete lumps which are now stirred in the shmem-ed
-			   structure
-			*/
+			/* remove all lumps which are not in shm 
+			 * added either by build_res_buf_from_sip_res, or by
+			 * the callbacks that have been called with shmem-ed messages - vlad */
 			if (branch!=relay) {
-				free_via_clen_lump(&relayed_msg->add_rm);
+				del_notflaged_lumps( &(relayed_msg->add_rm), LUMPFLAG_SHMEM|LUMPFLAG_DUPED ); 
+				del_notflaged_lumps( &(relayed_msg->body_lumps), LUMPFLAG_SHMEM|LUMPFLAG_DUPED ); 
 			}
 		}
 		if (!buf) {

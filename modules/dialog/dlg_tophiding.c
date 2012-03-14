@@ -41,38 +41,21 @@ extern struct tm_binds d_tmb;
 #define RECORD_ROUTE "Record-Route: "
 #define RECORD_ROUTE_LEN (sizeof(RECORD_ROUTE)-1)
 
-int dlg_save_del_vias(struct sip_msg* req, struct dlg_leg* leg)
+int dlg_del_vias(struct sip_msg* req)
 {
 	struct hdr_field *it;
-	int size=0;
-	char* p, *buf;
-
-	for (it=req->h_via1;it;it=it->sibling)
-		size+= it->len;
-
-	if(size > leg->last_vias.len) {
-		leg->last_vias.s = (char*)shm_realloc(leg->last_vias.s, size);
-		if(leg->last_vias.s == NULL) {
-			LM_ERR("no more shared memory\n");
-			return -1;
-		}
-	}
+	char *buf;
 
 	buf = req->buf;
-	p = leg->last_vias.s;
 	it = req->h_via1;
 	if(it) {
 		/* delete first via1 to set the type (the build_req_buf_from_sip_req will know not to add lump in via1)*/
-		memcpy(p, it->name.s, it->len);
-		p+= it->len;
 		if (del_lump(req,it->name.s - buf,it->len, 0) == 0) {
 			LM_ERR("del_lump failed \n");
 			return -1;
 		}
 		LM_DBG("Delete via [%.*s]\n", it->len, it->name.s);
 		for (it=it->sibling; it; it=it->sibling) {
-			memcpy(p, it->name.s, it->len);
-			p+= it->len;
 			if (del_lump(req,it->name.s - buf,it->len, 0) == 0) {
 				LM_ERR("del_lump failed \n");
 				return -1;
@@ -81,9 +64,6 @@ int dlg_save_del_vias(struct sip_msg* req, struct dlg_leg* leg)
 		}
 	}
 
-	leg->last_vias.len = size;
-
-	LM_DBG("[leg= %p] last_vias: %.*s\n", leg, size, leg->last_vias.s);
 	return 0;
 }
 
@@ -216,18 +196,17 @@ error:
 	return -1;
 }
 
-int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int dir)
+int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
+		int init_req, int dir)
 {
 	struct hdr_field *it;
 	char* buf = rpl->buf;
 	int peer_leg;
 	struct lump* lmp;
 	int size;
-	char* route;
-	str lv_str;
+	char* route,*p;
+	str via_str;
 	struct dlg_leg* leg;
-
-	LM_DBG("start\n");
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(rpl, HDR_EOH_F, 0)< 0) {
@@ -259,6 +238,7 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int 
 		LM_DBG("Delete record route: [%.*s]\n", it->len, it->name.s);
 	}
 
+	LM_DBG("deleted rr stuff\n");
 	/* add Via headers */
 	lmp = anchor_lump(rpl,rpl->headers->name.s - buf,0,0);
 	if (lmp == 0)
@@ -266,17 +246,44 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, int init_req, int 
 		LM_ERR("failed anchoring new lump\n");
 		return -1;
 	}
-	if(pkg_str_dup(&lv_str, &leg->last_vias) < 0) {
-		LM_ERR("Failed to duplicate memory\n");
-		return 1;
+
+	it = req->h_via1;
+	via_str.len = 0;
+	while (it) {
+		via_str.len += it->len;
+		it = it->sibling;
 	}
-	if ((lmp = insert_new_lump_after(lmp, lv_str.s, lv_str.len, HDR_VIA_T)) == 0) {
-		LM_ERR("failed inserting new vias\n");
-		pkg_free(lv_str.s);
+
+	LM_DBG("via len = %d\n",via_str.len);
+
+	if (via_str.len == 0)
+		goto restore_rr;
+
+	via_str.s = pkg_malloc(via_str.len);
+	if (!via_str.s) {
+		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
-	LM_DBG("Added Via headers [%.*s] leg=%p\n", lv_str.len, lv_str.s, leg);
 
+	LM_DBG("allocated via_str %p\n",via_str.s);
+
+	it = req->h_via1;
+	p = via_str.s;
+	while (it) {
+		memcpy(p,it->name.s,it->len);
+		p+=it->len;
+		it = it->sibling;
+	}
+
+	LM_DBG("inserting via headers - [%.*s]\n",via_str.len,via_str.s);
+
+	if ((lmp = insert_new_lump_after(lmp, via_str.s, via_str.len, 0)) == 0) {
+		LM_ERR("failed inserting new old vias\n");
+		pkg_free(via_str.s);
+		return -1;
+	}
+
+restore_rr:
 	/* if dialog not confirmed and 200OK for Invite */
 	/* pass the record route headers for this leg */
 	if(init_req && dir == DLG_DIR_UPSTREAM && rpl->first_line.u.reply.statuscode==200
@@ -399,9 +406,9 @@ int w_topology_hiding(struct sip_msg *req)
 		}
 	}
 
-	/* save also via headers */
-	if(dlg_save_del_vias(req, &dlg->legs[DLG_CALLER_LEG]) < 0) {
-		LM_ERR("Failed to save and remove via headers\n");
+	/* delete via headers */
+	if(dlg_del_vias(req) < 0) {
+		LM_ERR("Failed to remove via headers\n");
 		return -1;
 	}
 
@@ -422,7 +429,7 @@ void dlg_th_down_onreply(struct cell* t, int type,struct tmcb_params *param)
 	if (dlg==0)
 		return;
 
-	if(dlg_th_onreply(dlg, param->rpl, 0, DLG_DIR_DOWNSTREAM) < 0)
+	if(dlg_th_onreply(dlg, param->rpl, param->req,0, DLG_DIR_DOWNSTREAM) < 0)
 		LM_ERR("Failed to transform the reply for topology hiding\n");
 }
 
@@ -434,7 +441,7 @@ void dlg_th_up_onreply(struct cell* t, int type, struct tmcb_params *param)
 	if (dlg==0)
 		return;
 
-	if(dlg_th_onreply(dlg, param->rpl, 0, DLG_DIR_UPSTREAM) < 0)
+	if(dlg_th_onreply(dlg, param->rpl, param->req, 0, DLG_DIR_UPSTREAM) < 0)
 		LM_ERR("Failed to transform the reply for topology hiding\n");
 }
 
@@ -442,16 +449,10 @@ int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir)
 {
 	struct hdr_field *it;
 	char* buf = req->buf;
-	int leg_id;
-
-	if(dir == DLG_DIR_UPSTREAM)
-		leg_id = callee_idx(dlg);
-	else
-		leg_id = DLG_CALLER_LEG;
 
 	/* delete vias */
-	if(dlg_save_del_vias(req, &dlg->legs[leg_id]) < 0) {
-		LM_ERR("Failed to save and remove via headers\n");
+	if(dlg_del_vias(req) < 0) {
+		LM_ERR("Failed to remove via headers\n");
 		return -1;
 	}
 
