@@ -231,10 +231,6 @@ static inline char * dlg_prof_realloc(char * ptr, int size)
 	return ptr;
 }
 
-/* TODO delete me */
-#define DLG_DBG_BUF(_s) \
-	LM_DBG("Buffer Status: %s (%d) <%.*s>\n", #_s, (_s).len, (_s).len, (_s).s)
-
 static int dlg_fill_value(str *name, str *value)
 {
 	char * buf;
@@ -258,9 +254,6 @@ static int dlg_fill_value(str *name, str *value)
 	base64encode((unsigned char*)dlg_prof_val_buf.s + dlg_prof_val_buf.len,
 			(unsigned char *)value->s, value->len);
 	dlg_prof_val_buf.len += val_len;
-/*	XXX: this copies the value as it is, without b64 encoding
-	DLG_COPY(dlg_prof_val_buf, value);
-	DLG_DBG_BUF(dlg_prof_val_buf); */
 
 	return 0;
 }
@@ -279,7 +272,6 @@ static int dlg_fill_name(str *name)
 	dlg_prof_noval_buf.s = buf;
 	dlg_prof_noval_buf.len = cdb_noval_prefix.len;
 	DLG_COPY(dlg_prof_noval_buf, name);
-/*	DLG_DBG_BUF(dlg_prof_noval_buf); */
 	return 0;
 }
 
@@ -296,7 +288,6 @@ static int dlg_fill_size(str *name)
 	dlg_prof_size_buf.len = cdb_size_prefix.len;
 
 	DLG_COPY(dlg_prof_size_buf, name);
-/*	DLG_DBG_BUF(dlg_prof_size_buf); */
 
 	return 0;
 }
@@ -346,7 +337,6 @@ void destroy_cachedb(int final)
 	if (!final)
 		return;
 
-	/* TODO free buffers */
 	if (dlg_prof_val_buf.s)
 		pkg_free(dlg_prof_val_buf.s);
 	if (dlg_prof_noval_buf.s)
