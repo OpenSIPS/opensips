@@ -814,6 +814,8 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	*len += CSEQ_LEN + cseq.len + 1 + method->len + CRLF_LEN;
 	/* Route set */
 	*len += calculate_routeset_length(dialog);
+	/* Max-Forwards */
+	*len += LOCAL_MAXFWD_HEADER_LEN;
 	/* Content-Length */
 	*len += CONTENT_LENGTH_LEN + content_length.len + CRLF_LEN;
 	/* Signature */
@@ -840,6 +842,9 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	w = print_cseq(w, &cseq, method, t);                  /* CSeq */
 	w = print_callid(w, dialog, t);                       /* Call-ID */
 	w = print_routeset(w, dialog);                        /* Route set */
+
+	/* Max-Forwards */
+	append_string(w, LOCAL_MAXFWD_HEADER, LOCAL_MAXFWD_HEADER_LEN);
 
 	/* Content-Length */
 	append_string(w, CONTENT_LENGTH, CONTENT_LENGTH_LEN);
