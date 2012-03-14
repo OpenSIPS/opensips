@@ -12,8 +12,8 @@ Vladut-Stefan Paiu
 
    Copyright © 2006-2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2012-03-08 11:33:05 +0200
+                              (Thu, 08 Mar 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -108,6 +108,7 @@ Vladut-Stefan Paiu
               1.8.4. profile_get_size
               1.8.5. profile_list_dlgs
               1.8.6. profile_get_values
+              1.8.7. dlg_db_sync
 
         1.9. Exported pseudo-variables
 
@@ -1423,6 +1424,21 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
    MI FIFO Command Format:
                 :profile_get_values:_reply_fifo_file_
                 inbound_calls
+                _empty_line_
+
+1.8.7. dlg_db_sync
+
+   Will synchronize the information about the dialogs from the
+   database with the OpenSIPS internal memory. To be used mainly
+   for transfering OpenSIPS dialog information from one server to
+   another.
+
+   Name: dlg_db_sync
+
+   It takes no parameters
+
+   MI FIFO Command Format:
+                :dlg_db_sync:_reply_fifo_file_
                 _empty_line_
 
 1.9. Exported pseudo-variables

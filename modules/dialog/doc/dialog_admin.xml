@@ -2015,8 +2015,25 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		</programlisting>
 		</section>
 
-
-
+		<section>
+		<title><varname>dlg_db_sync</varname></title>
+		<para>
+		Will synchronize the information about the dialogs from the database
+		with the OpenSIPS internal memory. To be used mainly for transfering
+		OpenSIPS dialog information from one server to another.
+		</para>
+		<para>
+		Name: <emphasis>dlg_db_sync</emphasis>
+		</para>
+		<para>It takes no parameters</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:dlg_db_sync:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+		</section>
 	</section>
 
 

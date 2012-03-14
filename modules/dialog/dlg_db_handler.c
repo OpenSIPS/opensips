@@ -367,9 +367,10 @@ static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 }
 
 
-static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg)
+static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check)
 {
 	struct dlg_profile_table *profile;
+	struct dlg_profile_link *it;
 	str name, val;
 	char *end;
 	char *p;
@@ -384,6 +385,16 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg)
 		if (p==NULL) break;
 
 		LM_DBG("new profile found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
+
+		if (double_check) {
+			for (it=dlg->profile_links;it;it=it->next) {
+				if (it->profile->name.len == name.len &&
+						memcmp(it->profile->name.s,name.s,name.len) == 0) {
+					LM_DBG("Profile is already linked into the dlg\n");
+					continue;
+				}
+			}
+		}
 
 		/* add to the profile */
 		profile = search_dlg_profile( &name );
@@ -526,7 +537,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/* profiles */
 			if (!VAL_NULL(values+19))
 				read_dialog_profiles( VAL_STR(values+19).s,
-					strlen(VAL_STR(values+19).s), dlg);
+					strlen(VAL_STR(values+19).s), dlg,0);
 
 
 			/* script flags */
@@ -1163,5 +1174,417 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 error:
 	dlg_unlock( d_table, &entry);
+}
+
+static int sync_dlg_db_mem(void)
+{
+	db_res_t * res;
+	db_val_t * values;
+	db_row_t * rows;
+	struct dlg_entry *d_entry;
+	struct dlg_cell *it,*known_dlg,*dlg=NULL;
+	int i, nr_rows,callee_leg_idx,next_id,db_timeout;
+	int no_rows = 10;
+	unsigned int db_caller_cseq,db_callee_cseq,dlg_caller_cseq,dlg_callee_cseq;
+	struct socket_info *caller_sock,*callee_sock;
+	str callid, from_uri, to_uri, from_tag, to_tag;
+	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
+
+	res = 0;
+	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
+		goto error;
+
+	nr_rows = RES_ROW_N(res);
+
+	do {
+		LM_DBG("loading information from database for %i dialogs\n", nr_rows);
+
+		rows = RES_ROWS(res);
+
+		/* for every row---dialog */
+		for(i=0; i<nr_rows; i++){
+
+			values = ROW_VALUES(rows + i);
+
+			if (VAL_NULL(values) || VAL_NULL(values+1)) {
+				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
+					h_entry_column.len, h_entry_column.s,
+					h_id_column.len, h_id_column.s);
+				continue;
+			}
+
+			if (VAL_NULL(values+7) || VAL_NULL(values+8)) {
+				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
+					start_time_column.len, start_time_column.s,
+					state_column.len, state_column.s);
+				continue;
+			}
+
+			if ( VAL_INT(values+8) == DLG_STATE_DELETED ) {
+				LM_DBG("dialog already terminated -> skipping\n");
+				continue;
+			}
+
+			/*restore the dialog info*/
+			GET_STR_VALUE(callid, values, 2, 1, 0);
+			GET_STR_VALUE(from_tag, values, 4, 1, 0);
+			GET_STR_VALUE(to_tag, values, 6, 1, 1);
+
+			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
+			known_dlg = 0;
+			d_entry = &(d_table->entries[VAL_INT(values)]);
+
+			for (it=d_entry->first;it;it=it->next)
+				if (it->callid.len == callid.len && 
+					it->legs[DLG_CALLER_LEG].tag.len == from_tag.len &&
+					memcmp(it->callid.s,callid.s,callid.len)==0 &&
+					memcmp(it->legs[DLG_CALLER_LEG].tag.s,from_tag.s,from_tag.len)==0) {
+					/* callid & ftag match */
+					callee_leg_idx = callee_idx(it);
+					if (it->legs[callee_leg_idx].tag.len == to_tag.len &&
+						memcmp(it->legs[callee_leg_idx].tag.s,to_tag.s,to_tag.len)==0) {
+						/* full dlg match */
+						known_dlg = it;
+						break;
+					}
+				}
+
+			if (known_dlg == 0) {
+				LM_DBG("first seen dialog - load all stuff \n");
+				GET_STR_VALUE(from_uri, values, 3, 1, 0);
+				GET_STR_VALUE(to_uri, values, 5, 1, 0);
+
+				caller_sock = create_socket_info(values, 16);
+				callee_sock = create_socket_info(values, 17);
+				if (caller_sock == NULL || callee_sock == NULL) {
+					LM_ERR("Dialog in DB doesn't match any listening sockets");
+					continue;
+				}
+
+				/* first time we see this dialog - build it from scratch */
+				if((dlg=build_new_dlg(&callid, &from_uri, &to_uri, &from_tag))==0){
+					LM_ERR("failed to build new dialog\n");
+					goto error;
+				}
+
+				if(dlg->h_entry != VAL_INT(values)){
+					LM_ERR("inconsistent hash data in the dialog database: "
+						"you may have restarted opensips using a different "
+						"hash_size: please erase %.*s database and restart\n", 
+						dialog_table_name.len, dialog_table_name.s);
+					shm_free(dlg);
+					goto error;
+				}
+
+				/*link the dialog*/
+				link_dlg(dlg, 0);
+
+				dlg->h_id = VAL_INT(values+1);
+				next_id = d_table->entries[dlg->h_entry].next_id;
+
+				d_table->entries[dlg->h_entry].next_id =
+					(next_id < dlg->h_id) ? (dlg->h_id+1) : next_id;
+
+				dlg->start_ts	= VAL_INT(values+7);
+
+				dlg->state 		= VAL_INT(values+8);
+				if (dlg->state==DLG_STATE_CONFIRMED_NA ||
+				dlg->state==DLG_STATE_CONFIRMED) {
+					active_dlgs_cnt++;
+				} else if (dlg->state==DLG_STATE_EARLY) {
+					early_dlgs_cnt++;
+				}
+
+				GET_STR_VALUE(cseq1, values, 10 , 1, 1);
+				GET_STR_VALUE(cseq2, values, 11 , 1, 1);
+				GET_STR_VALUE(rroute1, values, 12, 0, 0);
+				GET_STR_VALUE(rroute2, values, 13, 0, 0);
+				GET_STR_VALUE(contact1, values, 14, 0, 1);
+				GET_STR_VALUE(contact2, values, 15, 0, 1);
+
+				GET_STR_VALUE(mangled_fu, values, 24,0,1);
+				GET_STR_VALUE(mangled_tu, values, 25,0,1);
+
+				/* add the 2 legs */
+				if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
+				&cseq1, caller_sock,0,0)!=0) ||
+				(dlg_add_leg_info( dlg, &to_tag, &rroute2, &contact2,
+				&cseq2, callee_sock,&mangled_fu,&mangled_tu)!=0) ) {
+					LM_ERR("dlg_set_leg_info failed\n");
+					/* destroy the dialog */
+					unref_dlg(dlg,1);
+					continue;
+				}
+				dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
+
+				/* script variables */
+				if (!VAL_NULL(values+18))
+					read_dialog_vars( VAL_STR(values+18).s,
+						VAL_STR(values+18).len, dlg);
+
+				/* profiles */
+				if (!VAL_NULL(values+19))
+					read_dialog_profiles( VAL_STR(values+19).s,
+						strlen(VAL_STR(values+19).s), dlg,0);
+
+
+				/* script flags */
+				if (!VAL_NULL(values+20)) {
+					dlg->user_flags = VAL_INT(values+20);
+				}
+
+				/* top hiding */
+				dlg->flags = VAL_INT(values+23);
+				if (dlg_db_mode==DB_MODE_SHUTDOWN)
+					dlg->flags |= DLG_FLAG_NEW;
+
+				/* calculcate timeout */
+				dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
+				if (dlg->tl.timeout<=(unsigned int)time(0))
+					dlg->tl.timeout = 0;
+				else
+					dlg->tl.timeout -= (unsigned int)time(0);
+
+				/* restore the timer values */
+				if (0 != insert_dlg_timer( &(dlg->tl), (int)dlg->tl.timeout )) {
+					LM_CRIT("Unable to insert dlg %p [%u:%u] "
+						"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+						dlg, dlg->h_entry, dlg->h_id,
+						dlg->callid.len, dlg->callid.s,
+						dlg->legs[DLG_CALLER_LEG].tag.len,
+						dlg->legs[DLG_CALLER_LEG].tag.s,
+						dlg->legs[callee_idx(dlg)].tag.len,
+						ZSW(dlg->legs[callee_idx(dlg)].tag.s));
+					/* destroy the dialog */
+					unref_dlg(dlg,1);
+					continue;
+				}
+
+				/* reference the dialog as kept in the timer list */
+				ref_dlg(dlg,1);
+				LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
+
+				dlg->lifetime = 0;
+
+				dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
+					(unsigned int)(VAL_INT(values+21));
+				dlg->legs[callee_idx(dlg)].last_gen_cseq = 
+					(unsigned int)(VAL_INT(values+22));
+
+				if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+					if (0 != insert_ping_timer(dlg)) 
+						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg); 
+					else {
+						/* reference dialog as kept in ping timer list */
+						ref_dlg(dlg,1);
+					}
+				}
+			} else {
+				/* we already saw this dialog before
+				 * check which is the newer version */
+
+				if (known_dlg->state > VAL_INT(values+8)) {
+					LM_DBG("mem has a newer state - ignore \n");
+					/* we know a newer version compared to the DB
+					 * ignore it */
+					goto next_dialog;
+				} else if (known_dlg->state == VAL_INT(values+8)) {
+					LM_DBG("mem has same state as DB \n");
+					/* same state :-( no way to tell which is newer */
+					
+					/* play nice and store longest timeout, although not always correct*/
+					db_timeout = (unsigned int)(VAL_INT(values+9)) + 
+						get_ticks();
+					if (db_timeout<=(unsigned int)time(0))
+						db_timeout = 0;
+					else
+						db_timeout -= (unsigned int)time(0);
+
+					if (known_dlg->tl.timeout < db_timeout)
+						known_dlg->tl.timeout = db_timeout;
+
+					/* check with is newer cseq for caller leg */
+					if (!VAL_NULL(values+10)) {
+						cseq1.s = VAL_STR(values+10).s;
+						cseq1.len = strlen(cseq1.s);
+						
+						str2int(&cseq1,&db_caller_cseq);
+						str2int(&known_dlg->legs[DLG_CALLER_LEG].r_cseq,&dlg_caller_cseq);
+
+						/* Is DB cseq newer ? */
+						if (db_caller_cseq > dlg_caller_cseq) {
+							if (known_dlg->legs[DLG_CALLER_LEG].r_cseq.len < cseq1.len) {
+								known_dlg->legs[DLG_CALLER_LEG].r_cseq.s = 
+									shm_realloc(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.len);
+								if (!known_dlg->legs[DLG_CALLER_LEG].r_cseq.s) {
+									LM_ERR("no more shm\n");
+									goto next_dialog;
+								}
+							}
+							memcpy(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.s,cseq1.len);
+							known_dlg->legs[DLG_CALLER_LEG].r_cseq.len = cseq1.len;
+						}
+					} else {
+						/* DB has a null cseq - just keep 
+						 * what we have so far */
+						;
+					}
+
+					/* check with is newer cseq for caller leg */
+					if (!VAL_NULL(values+11)) {
+						cseq2.s = VAL_STR(values+11).s;
+						cseq2.len = strlen(cseq2.s);
+
+						callee_leg_idx = callee_idx(known_dlg);
+						str2int(&cseq2,&db_callee_cseq);
+						str2int(&known_dlg->legs[callee_leg_idx].r_cseq,&dlg_callee_cseq);
+
+						/* Is DB cseq newer ? */
+						if (db_callee_cseq > dlg_callee_cseq) {
+							if (known_dlg->legs[callee_leg_idx].r_cseq.len < cseq2.len) {
+								known_dlg->legs[callee_leg_idx].r_cseq.s = 
+									shm_realloc(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.len);
+								if (!known_dlg->legs[callee_leg_idx].r_cseq.s) {
+									LM_ERR("no more shm\n");
+									goto next_dialog;
+								}
+							}
+							memcpy(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.s,cseq2.len);
+							known_dlg->legs[callee_leg_idx].r_cseq.len = cseq2.len;
+						}
+					} else {
+						/* DB has a null cseq - just keep 
+						 * what we have so far */
+						;
+					}
+
+					/* update ping cseqs, whichever is newer */
+					if (known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq <
+						(unsigned int)(VAL_INT(values+21)))
+						known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq =
+							(unsigned int)(VAL_INT(values+21));
+					if (known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq <
+						(unsigned int)(VAL_INT(values+22)))
+						known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq =
+							(unsigned int)(VAL_INT(values+22));
+
+					/* update script variables
+					 * if already found, delete the old ones
+					 * and replace with new one */
+					if (!VAL_NULL(values+18))
+						read_dialog_vars( VAL_STR(values+18).s,
+							VAL_STR(values+18).len, known_dlg);
+
+					/* skip flags - keep what we have - anyway can't tell which is new */
+
+					/* profiles - do not insert into a profile
+					 * is dlg is already in that profile*/
+					if (!VAL_NULL(values+19))
+						read_dialog_profiles( VAL_STR(values+19).s,
+							strlen(VAL_STR(values+19).s), dlg,1);
+				} else {
+					/* DB has newer state, just update fields from DB */
+					LM_DBG("DB has newer state \n");
+
+					/* set new state */
+					known_dlg->state = VAL_INT(values+8);
+
+					/* update timeout */
+					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + 
+						get_ticks();
+					if (known_dlg->tl.timeout<=(unsigned int)time(0))
+						known_dlg->tl.timeout = 0;
+					else
+						known_dlg->tl.timeout -= (unsigned int)time(0);
+
+					/* update cseqs */
+					if (!VAL_NULL(values+10)) {
+						cseq1.s = VAL_STR(values+10).s;
+						cseq1.len = strlen(cseq1.s);
+
+						if (known_dlg->legs[DLG_CALLER_LEG].r_cseq.len < cseq1.len) {
+							known_dlg->legs[DLG_CALLER_LEG].r_cseq.s = 
+								shm_realloc(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.len);
+							if (!known_dlg->legs[DLG_CALLER_LEG].r_cseq.s) {
+								LM_ERR("no more shm\n");
+								goto next_dialog;
+							}
+						}
+						memcpy(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.s,cseq1.len);
+						known_dlg->legs[DLG_CALLER_LEG].r_cseq.len = cseq1.len;
+					}
+
+					if (!VAL_NULL(values+11)) {
+						cseq2.s = VAL_STR(values+11).s;
+						cseq2.len = strlen(cseq1.s);
+						callee_leg_idx = callee_idx(known_dlg);
+
+						if (known_dlg->legs[callee_leg_idx].r_cseq.len < cseq2.len) {
+							known_dlg->legs[callee_leg_idx].r_cseq.s = 
+								shm_realloc(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.len);
+							if (!known_dlg->legs[callee_leg_idx].r_cseq.s) {
+								LM_ERR("no more shm\n");
+								goto next_dialog;
+							}
+						}
+
+						memcpy(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.s,cseq2.len);
+						known_dlg->legs[callee_leg_idx].r_cseq.len = cseq2.len;
+					}
+
+					/* update ping cseqs */
+					known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
+						(unsigned int)(VAL_INT(values+21));
+					known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq = 
+						(unsigned int)(VAL_INT(values+22));
+
+					/* update flags */
+					known_dlg->flags = VAL_INT(values+23);
+					if (dlg_db_mode==DB_MODE_SHUTDOWN)
+						known_dlg->flags |= DLG_FLAG_NEW;
+
+					/* update script variables
+					 * if already found, delete the old one
+					 * and replace with new one */
+					if (!VAL_NULL(values+18))
+						read_dialog_vars( VAL_STR(values+18).s,
+							VAL_STR(values+18).len, known_dlg);
+
+					/* profiles - do not insert into a profile
+					 * is dlg is already in that profile*/
+					if (!VAL_NULL(values+19))
+						read_dialog_profiles( VAL_STR(values+19).s,
+							strlen(VAL_STR(values+19).s), dlg,1);
+				}
+
+			}
+			next_dialog:
+			;
+		}
+
+		/* any more data to be fetched ?*/
+		if (DB_CAPABILITY(dialog_dbf, DB_CAP_FETCH)) {
+			if (dialog_dbf.fetch_result( dialog_db_handle, &res,no_rows) < 0) {
+				LM_ERR("fetching more rows failed\n");
+				goto error;
+			}
+			nr_rows = RES_ROW_N(res);
+		} else {
+			nr_rows = 0;
+		}
+
+	}while (nr_rows>0);
+
+	return 0;
+error:
+	return -1;
+}
+
+struct mi_root* mi_sync_db_dlg(struct mi_root *cmd, void *param)
+{
+	if (sync_dlg_db_mem() < 0)
+		return init_mi_tree( 400, MI_SSTR("Sync mem with DB failed"));
+	else
+		return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
 
