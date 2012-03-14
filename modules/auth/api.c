@@ -215,6 +215,12 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 		return ERROR;
 	}
 
+	if (is_nonce_stale(&c->digest.nonce)) {
+		LM_DBG("stale nonce value received\n");
+		c->stale = 1;
+		return STALE_NONCE;
+	}
+
 	if (check_nonce(&c->digest.nonce, &secret) != 0) {
 		LM_DBG("invalid nonce value received\n");
 		c->stale = 1;
@@ -240,27 +246,22 @@ auth_result_t post_auth(struct sip_msg* _m, struct hdr_field* _h)
 		(_m->REQ_METHOD == METHOD_CANCEL)) 
 		return AUTHORIZED;
 
-	if (is_nonce_stale(&c->digest.nonce)) {
-			LM_DBG("response is OK, but nonce is stale\n");
+	if(!disable_nonce_check) {
+		/* Verify if it is the first time this nonce is received */
+		index= get_nonce_index(&c->digest.nonce);
+		if(index== -1) {
+			LM_ERR("failed to extract nonce index\n");
+			return ERROR;
+		}
+		LM_DBG("nonce index= %d\n", index);
+
+		if(!is_nonce_index_valid(index)) {
+			LM_DBG("nonce index not valid\n");
 			c->stale = 1;
 			return STALE_NONCE;
-	} else {
-		if(!disable_nonce_check) {
-			/* Verify if it is the first time this nonce is received */
-			index= get_nonce_index(&c->digest.nonce);
-			if(index== -1) {
-				LM_ERR("failed to extract nonce index\n");
-				return ERROR;
-			}
-			LM_DBG("nonce index= %d\n", index);
-
-			if(!is_nonce_index_valid(index)) {
-				LM_DBG("nonce index not valid\n");
-				c->stale = 1;
-				return STALE_NONCE;
-			}
 		}
 	}
+
 	return AUTHORIZED;
 
 }
