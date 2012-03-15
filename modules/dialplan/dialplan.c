@@ -79,6 +79,7 @@ static param_export_t mod_params[]={
 	{ "subst_exp_col",	STR_PARAM,	&subst_exp_column.s },
 	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
+	{ "dsabled_col",	STR_PARAM,	&disabled_column.s},
 	{ "attrs_pvar",	    STR_PARAM,	&attr_pvar_s.s},
 	{ "attribute_pvar",	STR_PARAM,	&attr_pvar_s.s},
 	{0,0,0}
@@ -131,6 +132,7 @@ static int mod_init(void)
 	subst_exp_column.len= strlen(subst_exp_column.s);
 	repl_exp_column.len = strlen(repl_exp_column.s);
 	attrs_column.len    = strlen(attrs_column.s);
+	disabled_column.len = strlen(disabled_column.s);
 
 	if(attr_pvar_s.s) {
 		attr_pvar = (pv_spec_t *)shm_malloc(sizeof(pv_spec_t));

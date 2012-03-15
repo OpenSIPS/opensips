@@ -38,10 +38,11 @@
 #define MATCH_LEN_COL			"match_len"
 #define SUBST_EXP_COL			"subst_exp"
 #define REPL_EXP_COL			"repl_exp"
+#define DISABLED_COL			"disabled"
 #define ATTRS_COL				"attrs"
 
 
-#define DP_TABLE_VERSION		2
+#define DP_TABLE_VERSION		3
 #define DP_TABLE_COL_NO 		8
 
 extern str dp_db_url;
@@ -54,6 +55,7 @@ extern str match_len_column;
 extern str subst_exp_column; 
 extern str repl_exp_column; 
 extern str attrs_column; 
+extern str disabled_column; 
 
 int init_db_data();
 int dp_connect_db();

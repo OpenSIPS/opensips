@@ -479,6 +479,27 @@ modparam("dialplan", "attrs_col", "column_name")
 	</section>
 
 	<section>
+		<title><varname>disabled</varname> (integer)</title>
+		<para>
+		The column name that indicates if the dialplan rule is disabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>disabled</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>disabled_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "disabled_col", "disabled_column")
+...
+		</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>attrs_pvar</varname> (string)</title>
 		<para>
 		The pvar to store the rule's attributes, after translation (dp_translate() succeeds).

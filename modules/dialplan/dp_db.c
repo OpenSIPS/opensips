@@ -42,6 +42,7 @@ str match_exp_column=   str_init(MATCH_EXP_COL);
 str match_len_column=   str_init(MATCH_LEN_COL);
 str subst_exp_column=   str_init(SUBST_EXP_COL);
 str repl_exp_column =   str_init(REPL_EXP_COL);
+str disabled_column =   str_init(DISABLED_COL);
 str attrs_column    =   str_init(ATTRS_COL); 
 
 static db_con_t* dp_db_handle    = 0; /* database connection handle */
@@ -186,6 +187,10 @@ int dp_load_db(void)
 		&match_op_column,	&match_exp_column,	&match_len_column,
 		&subst_exp_column,	&repl_exp_column,	&attrs_column };
 	db_key_t order = &pr_column;
+	/* disabled condition */
+	db_key_t cond_cols[1] = { &disabled_column };
+	db_val_t cond_val[1];
+
 	dpl_node_t *rule;
 	int no_rows = 10;
 
@@ -199,8 +204,11 @@ int dp_load_db(void)
 		return -1;
 	}
 
+	VAL_TYPE(cond_val) = DB_INT;
+	VAL_INT(cond_val) = 0;
+
 	if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
-		if(dp_dbf.query(dp_db_handle,0,0,0,query_cols, 0, 
+		if(dp_dbf.query(dp_db_handle,cond_cols,0,cond_val,query_cols,1,
 				DP_TABLE_COL_NO, order, 0) < 0){
 			LM_ERR("failed to query database!\n");
 			return -1;
@@ -216,7 +224,7 @@ int dp_load_db(void)
 		}
 	} else {
 		/*select the whole table and all the columns*/
-		if(dp_dbf.query(dp_db_handle,0,0,0,query_cols, 0, 
+		if(dp_dbf.query(dp_db_handle,cond_cols,0,cond_val,query_cols,1,
 			DP_TABLE_COL_NO, order, &res) < 0){
 				LM_ERR("failed to query database\n");
 			return -1;

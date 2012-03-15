@@ -8,7 +8,7 @@ Edited by
 
 Andreea-Ancuta Onofrei
 
-   Copyright © 2007-2008 voice-system.ro
+   Copyright © 2007-2008 Voice Sistem SRL
    Revision History
    Revision $Revision$ $Date: 2009-07-20 17:11:05 +0300
                               (Mon, 20 Jul 2009) $
@@ -42,7 +42,8 @@ Andreea-Ancuta Onofrei
               1.6.8. subst_exp_col (string)
               1.6.9. repl_exp_col (string)
               1.6.10. attrs_col (string)
-              1.6.11. attrs_pvar (string)
+              1.6.11. disabled (integer)
+              1.6.12. attrs_pvar (string)
 
         1.7. Exported Functions
 
@@ -69,9 +70,10 @@ Andreea-Ancuta Onofrei
    1.8. Set pr_col parameter
    1.9. Set repl_exp_col parameter
    1.10. Set attrs_col parameter
-   1.11. Set attrs_pvar parameter
-   1.12. dp_translate usage
+   1.11. Set disabled_col parameter
+   1.12. Set attrs_pvar parameter
    1.13. dp_translate usage
+   1.14. dp_translate usage
 
 Chapter 1. Admin Guide
 
@@ -315,7 +317,19 @@ modparam("dialplan", "repl_exp_col", "column_name")
 modparam("dialplan", "attrs_col", "column_name")
 ...
 
-1.6.11. attrs_pvar (string)
+1.6.11. disabled (integer)
+
+   The column name that indicates if the dialplan rule is
+   disabled.
+
+   Default value is “disabled”.
+
+   Example 1.11. Set disabled_col parameter
+...
+modparam("dialplan", "disabled_col", "disabled_column")
+...
+
+1.6.12. attrs_pvar (string)
 
    The pvar to store the rule's attributes, after translation
    (dp_translate() succeeds). This parameter can be any PVAR that
@@ -323,7 +337,7 @@ modparam("dialplan", "attrs_col", "column_name")
 
    Default value is “NULL”.
 
-   Example 1.11. Set attrs_pvar parameter
+   Example 1.12. Set attrs_pvar parameter
 ...
 modparam("dialplan", "attrs_pvar", "$avp(dest)")
 ...
@@ -351,13 +365,13 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
-   Example 1.12. dp_translate usage
+   Example 1.13. dp_translate usage
 ...
 dp_translate("240", "$ruri.user/$avp(dest)");
 xlog("translated to var $avp(dest) \n");
 ...
 
-   Example 1.13. dp_translate usage
+   Example 1.14. dp_translate usage
 ...
 $avp(src) = $ruri.user;
 dp_translate("$var(x)", "$avp(src)/$var(y)");
