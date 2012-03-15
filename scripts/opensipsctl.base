@@ -477,8 +477,7 @@ cat <<EOF
     ................................. add rule
  dr rmrule .......................... delete rule
  dr relaod .......................... reload dr tables
- dr gw_status ....................... show gateway status
- dr carrier_status .................. show carrier status
+ dr status .......................... show dr status
 EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_dr"

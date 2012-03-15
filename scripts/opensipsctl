@@ -1569,12 +1569,8 @@ dr() {
 			$CTLCMD dr_reload
 			;;
 
-		gw_status)
-			$CTLCMD dr_gw_status
-			;;
-
-		carrier_status)
-			$CTLCMD dr_carrier_status
+		status)
+			$CTLCMD dr_status
 			;;
 
 		*)
