@@ -276,6 +276,45 @@ DISPATCHER_DESTINATION_COLUMN=destination
 DISPATCHER_FLAGS_COLUMN=flags
 DISPATCHER_DESCRIPTION_COLUMN=description
 
+# drouting tables
+if [ -z "$DR_GATEWAYS_TABLE" ] ; then
+	DR_GATEWAYS_TABLE=dr_gateways
+fi
+DR_GATEWAYS_GWID_COLUMN=gwid
+DR_GATEWAYS_TYPE_COLUMN=type
+DR_GATEWAYS_ADDRESS_COLUMN=address
+DR_GATEWAYS_STRIP_COLUMN=strip
+DR_GATEWAYS_PRI_PREFIX_COLUMN=pri_prefix
+DR_GATEWAYS_ATTRS_COLUMN=attrs
+DR_GATEWAYS_PROBE_MODE_COLUMN=probe_mode
+DR_GATEWAYS_DESCRIPTION_COLUMN=description
+if [ -z "$DR_GROUPS_TABLE" ] ; then
+	DR_GROUPS_TABLE=dr_groups
+fi
+DR_GROUPS_ID_COLUMN=id
+DR_GROUPS_USERNAME_COLUMN=username
+DR_GROUPS_DOMAIN_COLUMN=domain
+DR_GROUPS_GROUPID_COLUMN=groupid
+DR_GROUPS_DESCRIPTION_COLUMN=description
+if [ -z "$DR_GW_LISTS_TABLE" ] ; then
+	DR_GW_LISTS_TABLE=dr_gw_lists
+fi
+DR_GW_LISTS_ID_COLUMN=id
+DR_GW_LISTS_GWLIST_COLUMN=gwlist
+DR_GW_LISTS_DESCRIPTION_COLUMN=description
+if [ -z "$DR_RULES_TABLE" ] ; then
+	DR_RULES_TABLE=dr_rules
+fi
+DR_RULES_RULEID_COLUMN=ruleid
+DR_RULES_GROUPID_COLUMN=groupid
+DR_RULES_PREFIX_COLUMN=prefix
+DR_RULES_TIMEREC_COLUMN=timerec
+DR_RULES_PRIORITY_COLUMN=priority
+DR_RULES_ROUTEID_COLUMN=routeid
+DR_RULES_GWLIST_COLUMN=gwlist
+DR_RULES_ATTRS_COLUMN=attrs
+DR_RULES_DESCRIPTION_COLUMN=description
+
 # dialplan tables
 if [ -z "$DIALPLAN_TABLE" ] ; then
 	DIALPLAN_TABLE=dialplan
@@ -409,6 +448,40 @@ cat <<EOF
 EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_dispatcher"
+
+usage_dr() {
+	echo
+	mecho " -- command 'dr' - manage dynamic routing"
+	echo
+cat <<EOF
+   * Examples: dr addgw 10 192.168.2.2 0 '' 'GW001' 0 'first_gw'
+   *           dr addgw 20 192.168.2.3 0 '' 'GW002' 0 'second_gw'
+   *           dr rmgw 2
+   *           dr addgrp 'alice' 'example.com' 10 'first group'
+   *           dr rmgrp 1
+   *           dr addgwlist '10' 'first list'
+   *           dr rmgwlist 1
+   *           dr addrule '10,20' '+1' '20040101T083000' 0 0 '1,2' 'NA_RULE' 'NA routing'
+   *           dr rmgrule 1
+ dr show ............................ show dr tables
+ dr addgw <type> <address> <strip> <pri_prefix> <attrs> <probe_mode> <description>
+    ................................. add gateway
+ dr rmgw <gwid> ..................... delete gateway
+ dr addgrp <username> <domain> <groupid> <description>
+    ................................. add gateway group
+ dr rmgrp <grpid> ................... delete gateway group
+ dr addgwlist <gwlist> <description>  add gateway list
+ dr rmgwlist <gwlistid> ............. delete gateway list
+ dr addrule <groupid> <prefix> <timerec> <priority> <routeid>
+            <gwlist> <attrs> <description>
+    ................................. add rule
+ dr rmrule .......................... delete rule
+ dr relaod .......................... reload dr tables
+ dr gw_status ....................... show gateway status
+ dr carrier_status .................. show carrier status
+EOF
+}
+USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_dr"
 
 usage_dialplan() {
 	echo

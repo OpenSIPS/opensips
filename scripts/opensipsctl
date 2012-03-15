@@ -1349,6 +1349,241 @@ dispatcher() {
 	esac
 }
 
+dr() {
+	require_dbengine
+	require_ctlengine
+	case $1 in
+		show)
+			mecho "dr gateways"
+			QUERY="select * FROM $DR_GATEWAYS_TABLE ORDER BY $DR_GATEWAYS_GWID_COLUMN; "
+			$DBCMD "$QUERY"
+			mecho "dr groups"
+			QUERY="select * FROM $DR_GROUPS_TABLE ORDER BY $DR_GROUPS_GROUPID_COLUMN; "
+			$DBCMD "$QUERY"
+			mecho "dr gw_lists"
+			QUERY="select * FROM $DR_GW_LISTS_TABLE ORDER BY $DR_GW_LISTS_ID_COLUMN; "
+			$DBCMD "$QUERY"
+			mecho "dr rules"
+			QUERY="select * FROM $DR_RULES_TABLE ORDER BY $DR_RULES_GROUPID_COLUMN; "
+			$DBCMD "$QUERY"
+			;;
+
+		addgw)
+			shift
+			if [ $# -lt 6 ] ; then
+				merr "too few parameters"
+				usage_dr
+				exit 1
+			fi
+
+			if [ $# -gt 6 ] ; then
+				DR_GATEWAYS_DESCRIPTION=$7
+			else
+				DR_GATEWAYS_DESCRIPTION=""
+			fi 
+
+			DR_GATEWAYS_TYPE=$1
+			DR_GATEWAYS_ADDRESS=$2
+			DR_GATEWAYS_STRIP=$3
+			DR_GATEWAYS_PRI_PREFIX=$4
+			DR_GATEWAYS_ATTRS=$5
+			DR_GATEWAYS_PROBE_MODE=$6
+
+			QUERY="insert into $DR_GATEWAYS_TABLE \
+				( $DR_GATEWAYS_TYPE_COLUMN, $DR_GATEWAYS_ADDRESS_COLUMN, $DR_GATEWAYS_STRIP_COLUMN, $DR_GATEWAYS_PRI_PREFIX_COLUMN, $DR_GATEWAYS_ATTRS_COLUMN, $DR_GATEWAYS_PROBE_MODE_COLUMN, $DR_GATEWAYS_DESCRIPTION_COLUMN ) \
+				VALUES ($DR_GATEWAYS_TYPE, '$DR_GATEWAYS_ADDRESS', $DR_GATEWAYS_STRIP, '$DR_GATEWAYS_PRI_PREFIX', '$DR_GATEWAYS_ATTRS', $DR_GATEWAYS_PROBE_MODE, '$DR_GATEWAYS_DESCRIPTION' );"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD ds_reload
+			;;
+		rmgw)
+			shift
+			if [ $# -ne 1 ] ; then
+				merr "missing gateway id to be removed"
+				exit 1
+			fi
+
+			QUERY="delete from $DR_GATEWAYS_TABLE where $DR_GATEWAYS_GWID_COLUMN='$1';"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD dr_reload
+			;;
+
+		addgwlist)
+			shift
+			if [ $# -lt 1 ] ; then
+				merr "too few parameters"
+				usage_dr
+				exit 1
+			fi
+
+			if [ $# -gt 1 ] ; then
+				DR_GW_LISTS_DESCRIPTION=$2
+			else
+				DR_GW_LISTS_DESCRIPTION=""
+			fi 
+
+			DR_GW_LISTS_GWLIST=$1
+
+			QUERY="insert into $DR_GW_LISTS_TABLE \
+				( $DR_GW_LISTS_GWLIST_COLUMN, $DR_GW_LISTS_DESCRIPTION_COLUMN ) \
+				VALUES ('$DR_GW_LISTS_GWLIST', '$DR_GW_LISTS_DESCRIPTION' );"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD ds_reload
+			;;
+		rmgwlist)
+			shift
+			if [ $# -ne 1 ] ; then
+				merr "missing gateway id to be removed"
+				exit 1
+			fi
+
+			QUERY="delete from $DR_GW_LISTS_TABLE where $DR_GW_LISTS_ID_COLUMN='$1';"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD dr_reload
+			;;
+
+		addgrp)
+			shift
+			if [ $# -lt 3 ] ; then
+				merr "too few parameters"
+				usage_dr
+				exit 1
+			fi
+
+			if [ $# -gt 3 ] ; then
+				DR_GROUPS_DESCRIPTION=$4
+			else
+				DR_GROUPS_DESCRIPTION=""
+			fi 
+
+			DR_GROUPS_USERNAME=$1
+			DR_GROUPS_DOMAIN=$2
+			DR_GROUPS_GROUPID=$3
+
+			QUERY="insert into $DR_GROUPS_TABLE \
+				( $DR_GROUPS_USERNAME_COLUMN, $DR_GROUPS_DOMAIN_COLUMN, $DR_GROUPS_GROUPID_COLUMN, $DR_GROUPS_DESCRIPTION_COLUMN ) \
+				VALUES ('$DR_GROUPS_USERNAME', '$DR_GROUPS_DOMAIN', $DR_GROUPS_GROUPID, '$DR_GROUPS_DESCRIPTION' );"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD ds_reload
+			;;
+		rmgrp)
+			shift
+			if [ $# -ne 1 ] ; then
+				merr "missing gateway id to be removed"
+				exit 1
+			fi
+
+			QUERY="delete from $DR_GROUPS_TABLE where $DR_GROUPS_ID_COLUMN='$1';"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD dr_reload
+			;;
+
+		addrule)
+			shift
+			if [ $# -lt 7 ] ; then
+				merr "too few parameters"
+				usage_dr
+				exit 1
+			fi
+
+			if [ $# -gt 7 ] ; then
+				DR_RULES_DESCRIPTION=$8
+			else
+				DR_RULES_DESCRIPTION=""
+			fi 
+
+			DR_RULES_GROUPID=$1
+			DR_RULES_PREFIX=$2
+			DR_RULES_TIMEREC=$3
+			DR_RULES_PRIORITY=$4
+			DR_RULES_ROUTEID=$5
+			DR_RULES_GWLIST=$6
+			DR_RULES_ATTRS=$7
+
+			QUERY="insert into $DR_RULES_TABLE \
+				( $DR_RULES_GROUPID_COLUMN, $DR_RULES_PREFIX_COLUMN, $DR_RULES_TIMEREC_COLUMN, $DR_RULES_PRIORITY_COLUMN, $DR_RULES_ROUTEID_COLUMN, $DR_RULES_GWLIST_COLUMN, $DR_RULES_ATTRS_COLUMN, $DR_RULES_DESCRIPTION_COLUMN ) \
+				VALUES ('$DR_RULES_GROUPID', '$DR_RULES_PREFIX', '$DR_RULES_TIMEREC', $DR_RULES_PRIORITY, '$DR_RULES_ROUTEID', '$DR_RULES_GWLIST', '$DR_RULES_ATTRS', '$DR_RULES_DESCRIPTION' );"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD ds_reload
+			;;
+		rmgrule)
+			shift
+			if [ $# -ne 1 ] ; then
+				merr "missing gateway id to be removed"
+				exit 1
+			fi
+
+			QUERY="delete from $DR_RULES_TABLE where $DR_RULES_RULEID_COLUMN='$1';"
+			$DBCMD "$QUERY"
+
+			if [ $? -ne 0 ] ; then
+				merr "dr - SQL Error"
+				exit 1
+			fi
+
+			$CTLCMD dr_reload
+			;;
+
+		reload)
+			$CTLCMD dr_reload
+			;;
+
+		gw_status)
+			$CTLCMD dr_gw_status
+			;;
+
+		carrier_status)
+			$CTLCMD dr_carrier_status
+			;;
+
+		*)
+			usage_dr
+			exit 1
+
+	esac
+}
+
 #
 ##### ------------------------------------------------ #####
 ### DIALPLAN management
@@ -2350,6 +2585,11 @@ case $1 in
 	dispatcher)
 		shift
 		dispatcher "$@"
+		;;
+
+	dr)
+		shift
+		dr "$@"
 		;;
 
 	dialplan)
