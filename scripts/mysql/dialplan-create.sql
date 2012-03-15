@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialplan','2');
+INSERT INTO version (table_name, table_version) values ('dialplan','3');
 CREATE TABLE dialplan (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     dpid INT(11) NOT NULL,
@@ -8,6 +8,7 @@ CREATE TABLE dialplan (
     match_len INT(11) NOT NULL,
     subst_exp CHAR(64) NOT NULL,
     repl_exp CHAR(32) NOT NULL,
+    disabled INT(11) DEFAULT 0 NOT NULL,
     attrs CHAR(32) NOT NULL
 ) ENGINE=MyISAM;
 
