@@ -1595,7 +1595,7 @@ static void ds_options_callback( struct cell *t, int type,
 	str uri = {0, 0};
 	/* The Param does contain the group, in which the failed host
 	 * can be found.*/
-	if (!*ps->param)
+	if (!ps->param)
 	{
 		LM_DBG("No parameter provided, OPTIONS-Request was finished"
 				" with code %d\n", ps->code);
@@ -1626,7 +1626,10 @@ static void ds_options_callback( struct cell *t, int type,
 					uri.s, group);
 		}
 	}
-	if(ds_probing_mode==1 && ps->code == 408)
+	/* if we always probe, and we get a timeout 
+	 * or a reponse not is not withing the allowed
+	 * reply codes, then disable*/
+	if(ds_probing_mode==1 && (ps->code == 408 || !check_options_rplcode(ps->code)))
 	{
 		if (ds_set_state(group, &uri, DS_PROBING_DST, 1) != 0)
 		{
