@@ -1627,7 +1627,7 @@ static void ds_options_callback( struct cell *t, int type,
 		}
 	}
 	/* if we always probe, and we get a timeout 
-	 * or a reponse not is not withing the allowed
+	 * or a reponse that is not within the allowed
 	 * reply codes, then disable*/
 	if(ds_probing_mode==1 && (ps->code == 408 || !check_options_rplcode(ps->code)))
 	{
