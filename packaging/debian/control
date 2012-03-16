@@ -10,7 +10,7 @@ Homepage: http://www.opensips.org/
 Package: opensips
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
-Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-b2bua-module, opensips-dbhttp-module, opensips-dialplan-module, opensips-memcached-module, opensips-json-module, opensips-console
+Suggests: opensips-mysql-module, opensips-postgres-module, opensips-unixodbc-module, opensips-jabber-module, opensips-cpl-module, opensips-radius-modules, opensips-presence-modules, opensips-xmlrpc-module, opensips-perl-modules, opensips-snmpstats-module, opensips-xmpp-module, opensips-carrierroute-module, opensips-berkeley-module, opensips-ldap-modules, opensips-geoip-module, opensips-regex-module, opensips-identity-module, opensips-b2bua-module, opensips-dbhttp-module, opensips-dialplan-module, opensips-memcached-module, opensips-json-module, opensips-console, opensips-redis-module, opensips-rabbitmq-module, opensips-lua-module, opensips-http-modules
 Description: very fast and configurable SIP server
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -292,3 +292,49 @@ Description: Generic tool for OpenSIPS provisioning
  .
  This package provides an OpenSIPS Console written in Perl for OpenSIPS
  provisioning.
+
+Package: opensips-redis-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
+Description: Interface module to interact with a Redis server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an implementation of a cache system designed to
+ work with a Redis server. It uses hiredis client library to connect
+ to either a single Redis server instance, or to a Redis Server inside
+ a Redis Cluster. It uses the Key-Value interface exported from the core.
+
+Package: opensips-rabbitmq-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
+Description: Interface module to interact with a RabbitMQ server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the implementation of a RabbitMQ client for the Event
+ Interface. It is used to send AMQP messages to a RabbitMQ server each time
+ the Event Interface triggers an event subscribed for.
+
+Package: opensips-lua-module
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
+Description: LUA extensions for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an interface for OpenSIPS to utilize LUA extensions.
+
+Package: opensips-http-modules
+Architecture: any
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version})
+Description: HTTP transport layer and Management Interface for OpenSIPS.
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an HTTP transport layer and Management Interface for
+ OpenSIPS.

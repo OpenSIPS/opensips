@@ -40,7 +40,8 @@ TLS=
 ALL_MODPKG_LIST := \
 	MYSQL POSTGRES UNIXODBC JABBER CPL RADIUS \
 	PRESENCE XMLRPC PERL SNMPSTATS XMPP CROUTE BERKELEY LDAP \
-	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON
+	GEOIP REGEX IDENTITY B2BUA DBHTTP DIALPLAN MEMCACHED JSON \
+	REDIS RABBITMQ LUA HTTP
 
 ifeq ($(BUILD_MODPKG_LIST),NONE)
 override BUILD_MODPKG_LIST :=
@@ -116,6 +117,21 @@ DIALPLAN_MOD_PATH=$(addprefix modules/, $(DIALPLAN_MODULES))
 MEMCACHED_PKGNAME = opensips-memcached-module
 MEMCACHED_MODULES = cachedb_memcached
 MEMCACHED_MOD_PATH=$(addprefix modules/, $(MEMCACHED_MODULES))
+REDIS_PKGNAME = opensips-redis-module
+REDIS_MODULES = cachedb_redis
+REDIS_MOD_PATH=$(addprefix modules/, $(REDIS_MODULES))
+CASSANDRA_PKGNAME = opensips-cassandra-module
+CASSANDRA_MODULES = cachedb_cassandra
+CASSANDRA_MOD_PATH=$(addprefix modules/, $(CASSANDRA_MODULES))
+RABBITMQ_PKGNAME = opensips-rabbitmq-module
+RABBITMQ_MODULES = event_rabbitmq
+RABBITMQ_MOD_PATH=$(addprefix modules/, $(RABBITMQ_MODULES))
+LUA_PKGNAME = opensips-lua-module
+LUA_MODULES = lua
+LUA_MOD_PATH=$(addprefix modules/, $(LUA_MODULES))
+HTTP_PKGNAME = opensips-http-modules
+HTTP_MODULES = httpd mi_http
+HTTP_MOD_PATH=$(addprefix modules/, $(HTTP_MODULES))
 JSON_PKGNAME = opensips-json-module
 JSON_MODULES = json
 JSON_MOD_PATH=$(addprefix modules/, $(JSON_MODULES))
