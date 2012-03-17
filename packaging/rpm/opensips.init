@@ -76,10 +76,12 @@ if [ "$RUN_OPENSIPS" != "yes" ]; then
 fi
 
 
-MEMORY=$((`echo $MEMORY | sed -e 's/[^0-9]//g'`))
+S_MEMORY=$((`echo $S_MEMORY | sed -e 's/[^0-9]//g'`))
+P_MEMORY=$((`echo $P_MEMORY | sed -e 's/[^0-9]//g'`))
 [ -z "$USER" ]  && USER=opensips
 [ -z "$GROUP" ] && GROUP=opensips
-[ $MEMORY -le 0 ] && MEMORY=32
+[ $S_MEMORY -le 0 ] && S_MEMORY=32
+[ $P_MEMORY -le 0 ] && P_MEMORY=4
 
 if test "$DUMP_CORE" = "yes" ; then
     # set proper ulimit
@@ -92,7 +94,7 @@ if test "$DUMP_CORE" = "yes" ; then
     # echo "$COREDIR/core.%e.sig%s.%p" > /proc/sys/kernel/core_pattern
 fi
 
-OPTIONS="-P $PID_FILE -m $MEMORY -u $USER -g $GROUP"
+OPTIONS="-P $PID_FILE -m $S_MEMORY -M $P_MEMORY -u $USER -g $GROUP"
 
 
 # See how we were called.
