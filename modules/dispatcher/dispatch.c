@@ -1470,6 +1470,7 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 	pv_value_t val;
 	ds_set_p list;
 	struct ip_addr *ip;
+	int_str avp_val;
 	int port;
 	int j;
 
@@ -1523,6 +1524,11 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 							LM_ERR("setting PV failed\n");
 							return -2;
 						}
+					}
+					if (attrs_avp_name>= 0) {
+						avp_val.s = list->dlist->attrs;
+						if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
+							return -1;
 					}
 					return 1;
 				}
