@@ -88,7 +88,6 @@ extern int ds_probing_mode;
 
 int init_data();
 int init_ds_db();
-int ds_load_list(char *lfile);
 int ds_connect_db();
 void ds_disconnect_db();
 int ds_load_db();
