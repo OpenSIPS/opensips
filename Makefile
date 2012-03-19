@@ -430,7 +430,7 @@ sunpkg:
 
 .PHONY: install-app install-modules-all install
 # Install app only, excluding console, modules and module docs
-install-app: app mk-install-dirs install-cfg install-bin \
+install-app: app mk-install-dirs install-cfg opensipsmc install-bin \
 	install-app-doc install-man
 
 # Install all module stuff (except modules-docbook?)
@@ -439,6 +439,10 @@ install-modules-all: install-modules install-modules-doc
 # Install everything (except modules-docbook?)
 install: install-app install-console install-modules-all
 
+opensipsmc: $(cfg-prefix)/$(cfg-dir) $(data-prefix)/$(data-dir)
+	cd menuconfig;make proper;make MENUCONFIG_CFG_PATH=$(data-prefix)/$(data-dir)/menuconfig_templates/ MENUCONFIG_GEN_PATH=$(cfg-prefix)/$(cfg-dir) MENUCONFIG_HAVE_SOURCES=0 
+	mkdir -p $(data-prefix)/$(data-dir)/menuconfig_templates/
+	cp menuconfig/configs/* $(data-prefix)/$(data-dir)/menuconfig_templates/
 
 .PHONY: dbschema
 dbschema:
@@ -547,6 +551,9 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		# install opensips binary
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
+		# install opensips menuconfig
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsmc
+		$(INSTALL_BIN) menuconfig/configure $(bin-prefix)/$(bin-dir)/opensipsmc
 		# install opensipsctl (and family) tool
 		cat scripts/opensipsctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
@@ -864,8 +871,7 @@ doxygen:
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"
 
-make_menuconfig:
-	cd menuconfig; make; cd -	
-
-menuconfig: make_menuconfig
+comp_menuconfig:
+	cd menuconfig; make ; cd -
+menuconfig: comp_menuconfig
 	./menuconfig/configure

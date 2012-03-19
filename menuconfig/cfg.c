@@ -33,9 +33,9 @@
  * Add more CFG entries here
 */
 cfg_gen_t configs[] = {
-	{CONF_RESIDENTIAL_SCRIPT,"residential","menuconfig/configs/opensips_residential_def.m4","menuconfig/configs/opensips_residential.m4"},
-	{CONF_TRUNKING_SCRIPT,"trunking","menuconfig/configs/opensips_trunking_def.m4","menuconfig/configs/opensips_trunking.m4"},
-	{CONF_LB_SCRIPT,"loadbalancer","menuconfig/configs/opensips_loadbalancer_def.m4","menuconfig/configs/opensips_loadbalancer.m4"},
+	{CONF_RESIDENTIAL_SCRIPT,"residential","opensips_residential_def.m4","opensips_residential.m4"},
+	{CONF_TRUNKING_SCRIPT,"trunking","opensips_trunking_def.m4","opensips_trunking.m4"},
+	{CONF_LB_SCRIPT,"loadbalancer","opensips_loadbalancer_def.m4","opensips_loadbalancer.m4"},
 	{0,0,0,0}
 };
 

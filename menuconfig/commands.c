@@ -37,6 +37,8 @@
 
 #include "main.h"
 
+#define MENUCONFIG_CFG_PATH_LEN		strlen(MENUCONFIG_CFG_PATH)
+
 /* Will globally save everything the user has altered */
 int save_all_changes(select_menu *menu,void *arg)
 {
@@ -44,9 +46,11 @@ int save_all_changes(select_menu *menu,void *arg)
 	select_menu *current;
 	cfg_gen_t *it;
 	
+#if MENUCONFIG_HAVE_SOURCES > 0
 	/* Take care of compile related options */	
 	if (dump_make_conf(menu,arg) < 0)
 		fprintf(output,"Failed to save all compile related options\n");
+#endif
 
 	/* Save changes to all types of configs */
 	for (it=configs;it->name;it++) {
@@ -192,6 +196,8 @@ end:
 int generate_cfg(select_menu *menu,void *arg)
 {
 	static char generated_name[128];
+	static char defs_cfg_path[256];
+	static char cfg_path[256];
 	char *p;
 	cfg_gen_t *m4_cfg;
 	int n,ret,fd,status;
@@ -224,7 +230,7 @@ int generate_cfg(select_menu *menu,void *arg)
 	now=time(NULL);
 	now_tm = localtime(&now);
 	n = snprintf(generated_name,128,"%sopensips_%s_%d-%d-%d_%d:%d:%d.cfg",
-			"etc/",
+			MENUCONFIG_GEN_PATH,
 			m4_cfg->output_name,now_tm->tm_year+1900,now_tm->tm_mon+1,
 			now_tm->tm_mday,now_tm->tm_hour,now_tm->tm_min,now_tm->tm_sec);
 	if (n<0 || n>128) {
@@ -250,11 +256,15 @@ int generate_cfg(select_menu *menu,void *arg)
 			exit(-1);
 		}
 
+		memcpy(cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
+		memcpy(cfg_path+MENUCONFIG_CFG_PATH_LEN,m4_cfg->cfg_m4,strlen(m4_cfg->cfg_m4)+1);
+		memcpy(defs_cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
+		memcpy(defs_cfg_path+MENUCONFIG_CFG_PATH_LEN,m4_cfg->defs_m4,strlen(m4_cfg->defs_m4)+1);
 		/* child */
 		/* redirect child output to generated file name */
 		dup2(fd,STDOUT_FILENO);
 		close(fd);
-		execlp("m4","m4",m4_cfg->defs_m4,m4_cfg->cfg_m4,(char *)0);
+		execlp("m4","m4",defs_cfg_path,cfg_path,(char *)0);
 		fprintf(output,"Failed to execute\n");
 		exit(-1);
 	}
@@ -344,6 +354,7 @@ int save_m4_def(select_menu *menu,void *arg)
 	select_menu *items_menu = menu->prev_sibling;
 	select_item *it;
 	cfg_gen_t *m4_cfg;
+	static char cfg_path[256];
 	FILE *f;
 
 	/* A little bogus, maybe menu should have back-pointer to cfg entry */
@@ -361,7 +372,10 @@ int save_m4_def(select_menu *menu,void *arg)
 		return -1;
 	}
 
-	f = fopen(m4_cfg->defs_m4,"w");
+	memcpy(cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
+	memcpy(cfg_path+MENUCONFIG_CFG_PATH_LEN,m4_cfg->defs_m4,strlen(m4_cfg->defs_m4)+1);
+	
+	f = fopen(cfg_path,"w");
 	if (!f) {
 		fprintf(output,"Failed to open m4 defs\n");
 		return -1;
@@ -375,7 +389,7 @@ int save_m4_def(select_menu *menu,void *arg)
 	fprintf(f,"divert");
 
 	if (arg == NULL) {
-		print_notice(NOTICE_Y,NOTICE_X,1,"Script configurations saved. Press any key to continue !");
+		print_notice(NOTICE_Y,NOTICE_X,1,"Script configurations saved for %s. Press any key to continue !",m4_cfg->name);
 	}
 
 	fclose(f);

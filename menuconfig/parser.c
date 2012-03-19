@@ -32,6 +32,8 @@
 #include "main.h"
 
 #define MAX_MODULE_NAME_SIZE 20
+#define MENUCONFIG_CFG_PATH_LEN		strlen(MENUCONFIG_CFG_PATH)
+
 static char prev_module[MAX_MODULE_NAME_SIZE];
 static select_item *prev_item;
 
@@ -308,13 +310,17 @@ int parse_defs_m4(select_menu *curr_menu,cfg_gen_t *curr_cfg)
 {
 	FILE *f;
 	char *p;
+	static char cfg_path[256];
 
 	if (!curr_menu || !curr_cfg) {
 		fprintf(output,"Failed to locate menu with name [%s]\n",curr_menu->name);
 		return -1;
 	}
 
-	f=fopen(curr_cfg->defs_m4,"r");
+	memcpy(cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
+	memcpy(cfg_path+MENUCONFIG_CFG_PATH_LEN,curr_cfg->defs_m4,strlen(curr_cfg->defs_m4)+1);
+
+	f=fopen(cfg_path,"r");
 	if (!f) {
 		fprintf(output,"Failed to open [%s]",curr_cfg->defs_m4);
 		return -1;

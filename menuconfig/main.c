@@ -50,6 +50,7 @@ int init_main_menu()
 {
 	select_menu *aux;
 
+#if MENUCONFIG_HAVE_SOURCES > 0
 	main_menu = init_menu(CONF_COMPILE_OPT,0,0);
 	if (!main_menu) {
 		fprintf(output,"Failed to create main menu\n");
@@ -130,7 +131,25 @@ int init_main_menu()
 		fprintf(output,"Failed to parse Makefile.conf");
 		return -1;
 	}
+#else
+	main_menu = init_menu(CONF_SCRIPT,0,0);
+	if (!main_menu) {
+		fprintf(output,"Failed to create menu\n");
+		return -1;
+	}
 
+	if (gen_scripts_menu(main_menu) < 0) {
+		fprintf(output,"Failed to get all script options\n");
+		return -1;
+	}
+
+	aux = init_menu(EXIT_SAVE_EVERYTHING,INTERNAL_COMMAND|EXIT_MENUCONFIG,(run_action)save_all_changes);
+	if (!aux) {
+		fprintf(output,"Failed to create menu\n");
+		return -1;
+	}
+	link_sibling(main_menu,aux);
+#endif
 	return 0;
 }
 
