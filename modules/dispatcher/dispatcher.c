@@ -70,9 +70,9 @@ int  ds_force_dst   = 0;
 int  ds_flags       = 0; 
 int  ds_use_default = 0; 
 static str dst_avp_param = str_init("$avp(ds_dst_failover)");
-static str grp_avp_param = str_init("$avp(ds_grp_failover)");;
-static str cnt_avp_param = str_init("$avp(ds_cnt_failover)");;
-static str sock_avp_param = str_init("$avp(ds_sock_failover)");;
+static str grp_avp_param = str_init("$avp(ds_grp_failover)");
+static str cnt_avp_param = str_init("$avp(ds_cnt_failover)");
+static str sock_avp_param = str_init("$avp(ds_sock_failover)");
 static str attrs_avp_param = {NULL, 0};
 str hash_pvar_param = {NULL, 0};
 
