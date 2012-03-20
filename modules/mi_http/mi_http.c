@@ -24,19 +24,6 @@
  *  2011-09-20  first version (osas)
  */
 
-
-
-
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <errno.h>
-#include <signal.h>
-#include <sys/signal.h>
-#include <sys/wait.h>
-#include <grp.h>
 #include <stdlib.h>
 
 #include "../../globals.h"
