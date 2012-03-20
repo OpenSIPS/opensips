@@ -73,10 +73,11 @@ check_time(
 static inline rt_info_t*
 internal_check_rt(
 		ptree_node_t *ptn,
-		unsigned int rgid
+		unsigned int rgid,
+		unsigned int *rgidx
 		)
 {
-	int i;
+	int i,j;
 	int rg_pos=0;
 	rg_entry_t* rg=NULL;
 	rt_info_wrp_t* rtlw=NULL;
@@ -90,9 +91,12 @@ internal_check_rt(
 		LM_DBG("found rgid %d (rule list %p)\n", 
 				rgid, rg[i].rtlw);
 		rtlw=rg[i].rtlw;
+		j = 0;
 		while(rtlw!=NULL) {
-			if(check_time(rtlw->rtl->time_rec))
-				goto ok_exit;
+			if ( j++ >= *rgidx) {
+				if(check_time(rtlw->rtl->time_rec))
+					goto ok_exit;
+			}
 			rtlw=rtlw->next;
 		}
 	}
@@ -100,6 +104,8 @@ err_exit:
 	return NULL;
 
 ok_exit:
+	/* if rules are still in this node, point to the next index */
+	*rgidx = (rtlw->next) ? j : 0 ;
 	return rtlw?rtlw->rtl:0;
 }
 
@@ -110,7 +116,8 @@ check_rt(
 	unsigned int rgid
 	)
 {
-	return internal_check_rt( ptn, rgid);
+	unsigned int rgidx = 0;
+	return internal_check_rt( ptn, rgid, &rgidx);
 }
 
 
@@ -119,7 +126,8 @@ get_prefix(
 	ptree_t *ptree,
 	str* prefix,
 	unsigned int rgid,
-	unsigned int *matched_len
+	unsigned int *matched_len,
+	unsigned int *rgidx
 	)
 {
 	rt_info_t *rt = NULL;
@@ -163,7 +171,7 @@ get_prefix(
 		idx = *tmp-'0';
 		if(NULL != ptree->ptnode[idx].rg) {
 			/* real node; check the constraints on the routing info*/
-			if( NULL != (rt = internal_check_rt( &(ptree->ptnode[idx]), rgid)))
+			if( NULL != (rt = internal_check_rt( &(ptree->ptnode[idx]), rgid, rgidx)))
 				break;
 		}
 		tmp--;

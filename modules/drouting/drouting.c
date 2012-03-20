@@ -58,6 +58,12 @@
 #include "dr_bl.h"
 
 
+#define DR_PARAM_USE_WEIGTH         (1<<0)
+#define DR_PARAM_RULE_FALLBACK      (1<<1)
+#define DR_PARAM_STRICT_LEN         (1<<2)
+#define DR_PARAM_INTERNAL_TRIGGERED (1<<30)
+
+
 /* probing related stuff */
 static unsigned int dr_prob_interval = 30;
 static str dr_probe_replies = {NULL,0};
@@ -129,6 +135,14 @@ static str carrier_id_avp_spec = {NULL, 0};
 /* AVP used to store CARRIER ATTRs */
 static struct _dr_avp carrier_attrs_avp = { 0, -1 };
 static str carrier_attrs_avp_spec = {NULL, 0};
+
+/* internal AVPs used for fallback */
+static int avpID_store_ruri;
+static int avpID_store_prefix;
+static int avpID_store_index;
+static int avpID_store_whitelist;
+static int avpID_store_group;
+static int avpID_store_flags;
 
 /* statistic data */
 int tree_size = 0;
@@ -422,6 +436,7 @@ static inline int dr_reload_data( void )
 static int dr_init(void)
 {
 	pv_spec_t avp_spec;
+	str name;
 
 	LM_INFO("Dynamic-Routing - initializing\n");
 
@@ -456,7 +471,39 @@ static int dr_init(void)
 	drg_domain_col.len = strlen(drg_domain_col.s);
 	drg_grpid_col.len = strlen(drg_grpid_col.s);
 
-	/* fix AVP specs */
+	/* fix specs for internal AVP (used for fallback) */
+	name.s = "_dr_fb_ruri"; name.len=11;
+	if ( parse_avp_spec( &name, &avpID_store_ruri)!=0 ) {
+		LM_ERR("failed to init internal AVP for ruri\n");
+		return E_UNSPEC;
+	}
+	name.s = "_dr_fb_prefix"; name.len=13;
+	if ( parse_avp_spec( &name, &avpID_store_prefix)!=0 ) {
+		LM_ERR("failed to init internal AVP for prefix\n");
+		return E_UNSPEC;
+	}
+	name.s = "_dr_fb_index"; name.len=12;
+	if ( parse_avp_spec( &name, &avpID_store_index)!=0 ) {
+		LM_ERR("failed to init internal AVP for index\n");
+		return E_UNSPEC;
+	}
+	name.s = "_dr_fb_whitelist"; name.len=16;
+	if ( parse_avp_spec( &name, &avpID_store_whitelist)!=0 ) {
+		LM_ERR("failed to init internal AVP for whitelist\n");
+		return E_UNSPEC;
+	}
+	name.s = "_dr_fb_group"; name.len=12;
+	if ( parse_avp_spec( &name, &avpID_store_group)!=0 ) {
+		LM_ERR("failed to init internal AVP for group\n");
+		return E_UNSPEC;
+	}
+	name.s = "_dr_fb_flags"; name.len=12;
+	if ( parse_avp_spec( &name, &avpID_store_flags)!=0 ) {
+		LM_ERR("failed to init internal AVP for flags\n");
+		return E_UNSPEC;
+	}
+
+	/* fix AVP specs for parameters */
 
 	ruri_avp_spec.len = strlen(ruri_avp_spec.s);
 	if (pv_parse_spec( &ruri_avp_spec, &avp_spec)==0
@@ -864,17 +911,49 @@ static int do_routing_0(struct sip_msg* msg)
 	return do_routing(msg, NULL, 0, NULL);
 }
 
-static int do_routing_123(struct sip_msg* msg, char* grp, char* order,
+static int do_routing_123(struct sip_msg* msg, char* grp, char* param,
 															char* white_list)
 {
-	return do_routing(msg, (dr_group_t*)grp, (int)(long)order,
-		(gparam_t*)white_list);
+	str res = {0,0};
+	int flags=0;
+	char *p;
+
+	if (fixup_get_svalue(msg, (gparam_p)param, &res) !=0){
+		LM_ERR("falied to extract flags\n");
+		return -1;
+	}
+
+	for (p=res.s;p<res.s+res.len;p++)
+	{
+		switch (*p)
+		{
+			case 'W':
+				flags |= DR_PARAM_USE_WEIGTH;
+				LM_DBG("using weights in GW selection\n");
+				break;
+			case 'F':
+				flags |= DR_PARAM_RULE_FALLBACK;
+				LM_DBG("enabling rule fallback\n");
+				break;
+			case 'L':
+				flags |= DR_PARAM_STRICT_LEN;
+				LM_DBG("matching prefix with strict len\n");
+				break;
+			default:
+				LM_DBG("unknown flag : [%c] . Skipping\n",*p);
+		}
+	}
+
+	return do_routing(msg, (dr_group_t*)grp, flags, (gparam_t*)white_list);
 }
 
 
 static int use_next_gw(struct sip_msg* msg)
 {
 	struct usr_avp *avp, *avp_ru,*avp2;
+	unsigned int flags;
+	gparam_t wl_list;
+	dr_group_t grp;
 	int_str val;
 	str ruri;
 	int ok;
@@ -889,7 +968,8 @@ static int use_next_gw(struct sip_msg* msg)
 			avp_ru = search_first_avp( ruri_avp.type, ruri_avp.name, &val, 0);
 		}while (avp_ru && (avp_ru->flags&AVP_VAL_STR)==0 );
 
-		if (!avp_ru) return -1;
+		if (!avp_ru)
+			goto rule_fallback;
 
 		ruri = val.s;
 		LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
@@ -952,6 +1032,41 @@ static int use_next_gw(struct sip_msg* msg)
 	destroy_avp(avp_ru);
 
 	return 1;
+
+
+rule_fallback:
+
+	/* check if a "flags" AVP is there and if fallback allowed */
+	avp = search_first_avp( 0, avpID_store_flags, &val, 0);
+	if (avp==NULL || !(val.n & DR_PARAM_RULE_FALLBACK) )
+		return -1;
+
+	/* fallback allowed, fetch the rest of data from AVPs */
+	flags = val.n | DR_PARAM_INTERNAL_TRIGGERED;
+
+	if (search_first_avp( 0, avpID_store_group, &val, 0)==NULL) {
+		LM_ERR("Cannot find group AVP during a fallback\n");
+		goto fallback_failed;
+	}
+	grp.type = 0;
+	grp.u.grp_id = val.n;
+
+	if (search_first_avp( AVP_VAL_STR, avpID_store_whitelist, &val, 0)==NULL) {
+		wl_list.type = 0;
+	} else {
+		wl_list.type = GPARAM_TYPE_STR;
+		wl_list.v.sval = val.s;
+		wl_list.v.sval.s[--wl_list.v.sval.len] = 0;
+	}
+
+	if (do_routing( msg, &grp, flags, wl_list.type?&wl_list:NULL)==1) {
+		return 1;
+	}
+
+fallback_failed:
+	/* prevent any more fallback by removing the flags AVP */
+	destroy_avp(avp);
+	return -1;
 }
 
 
@@ -1102,7 +1217,7 @@ static inline int is_dst_in_list(void* dst, pgw_list_t *list, unsigned short len
 }
 
 
-static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
+static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 														gparam_t* whitelist)
 {
 	unsigned short dsts_idx[DR_MAX_GWLIST];
@@ -1110,12 +1225,14 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
 	struct to_body  *from;
 	struct sip_uri  uri;
 	rt_info_t  *rt_info;
-	struct usr_avp *avp;
+	struct usr_avp *avp, *avp_prefix=NULL, *avp_index=NULL;
 	str parsed_whitelist;
 	pgw_list_t *dst, *cdst;
 	pgw_list_t *wl_list;
 	unsigned int prefix_len;
+	unsigned int rule_idx;
 	unsigned short wl_len;
+	str username;
 	int grp_id;
 	int i, j, n;
 	int_str val;
@@ -1142,59 +1259,109 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
 	if (rule_prefix_avp.name!=-1)
 		destroy_avps( rule_prefix_avp.type, rule_prefix_avp.name, 1);
 
-	/* get the username from FROM_HDR */
-	if (parse_from_header(msg)!=0) {
-		LM_ERR("unable to parse from hdr\n");
-		goto error1;
-	}
-	from = (struct to_body*)msg->from->parsed;
-	/* parse uri */
-	if (parse_uri( from->uri.s, from->uri.len, &uri)!=0) {
-		LM_ERR("unable to parse from uri\n");
-		goto error1;
-	}
+	if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
+		/* not internally triggered, so get data from SIP msg */
 
-	/* get user's routing group */
-	if(drg==NULL)
-	{
-		grp_id = get_group_id( &uri );
-		if (grp_id<0) {
-			LM_ERR("failed to get group id\n");
+		/* get the username from FROM_HDR */
+		if (parse_from_header(msg)!=0) {
+			LM_ERR("unable to parse from hdr\n");
 			goto error1;
 		}
-	} else {
-		if(drg->type==0)
-			grp_id = (int)drg->u.grp_id;
-		else if(drg->type==1) {
-			grp_id = 0; /* call get avp here */
-			if((avp=search_first_avp( drg->u.avp_id.type,
-			drg->u.avp_id.name, &val, 0))==NULL||(avp->flags&AVP_VAL_STR)) {
-				LM_ERR( "failed to get group id\n");
+		from = (struct to_body*)msg->from->parsed;
+		/* parse uri */
+		if (parse_uri( from->uri.s, from->uri.len, &uri)!=0) {
+			LM_ERR("unable to parse from uri\n");
+			goto error1;
+		}
+
+		/* get user's routing group */
+		if(drg==NULL)
+		{
+			grp_id = get_group_id( &uri );
+			if (grp_id<0) {
+				LM_ERR("failed to get group id\n");
 				goto error1;
 			}
-			grp_id = val.n;
-		} else
-			grp_id = 0; 
-	}
-	LM_DBG("using dr group %d\n",grp_id);
+		} else {
+			if(drg->type==0)
+				grp_id = (int)drg->u.grp_id;
+			else if(drg->type==1) {
+				grp_id = 0; /* call get avp here */
+				if((avp=search_first_avp( drg->u.avp_id.type,
+				drg->u.avp_id.name, &val, 0))==NULL||(avp->flags&AVP_VAL_STR)) {
+					LM_ERR( "failed to get group id\n");
+					goto error1;
+				}
+				grp_id = val.n;
+			} else
+				grp_id = 0; 
+		}
 
-	/* get the number */
-	ruri = GET_RURI(msg);
-	/* parse ruri */
-	if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
-		LM_ERR("unable to parse RURI\n");
-		goto error1;
+		/* get the number */
+		ruri = GET_RURI(msg);
+		/* parse ruri */
+		if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
+			LM_ERR("unable to parse RURI\n");
+			goto error1;
+		}
+		username = uri.user;
+
+		/* search all rules on dr tree (start from beginning) */
+		rule_idx = 0;
+
+	} else {
+
+		/* resume index on the rule under same prefix */
+		avp_index = search_first_avp( 0, avpID_store_index, &val, 0);
+		if (avp_index==NULL) {
+			LM_ERR("Cannot find index AVP during a fallback\n");
+			return -1;
+		}
+		rule_idx = val.n;
+
+		/* prefix to resume with */
+		avp_prefix = search_first_avp( AVP_VAL_STR, avpID_store_prefix, &val, 0);
+		if (avp_prefix==NULL) {
+			LM_ERR("Cannot find prefix AVP during a fallback\n");
+			return -1;
+		}
+		username = val.s;
+		/* still something to look for ? */
+		if (username.len==0) return -1;
+
+		/* original RURI to be used when building RURIs for new attempts */
+		if (search_first_avp( AVP_VAL_STR, avpID_store_ruri, &val, 0)==NULL) {
+			LM_ERR("Cannot find ruri AVP during a fallback\n");
+			return -1;
+		}
+		if (parse_uri( val.s.s, val.s.len, &uri)!=0) {
+			LM_ERR("unable to parse RURI from AVP\n");
+			goto error1;
+		}
+
+		grp_id = (int)drg->u.grp_id;
+		ruri = NULL;
 	}
+
+
+	LM_DBG("using dr group %d, rule_idx %d, username %.*s\n",
+		grp_id,rule_idx,username.len,username.s);
 
 	/* ref the data for reading */
 	lock_start_read( ref_lock );
 
 	/* search a prefix */
-	rt_info = get_prefix( (*rdata)->pt, &uri.user , (unsigned int)grp_id,
-			&prefix_len);
+	rt_info = get_prefix( (*rdata)->pt, &username , (unsigned int)grp_id,
+			&prefix_len, &rule_idx);
+
+	if (flags & DR_PARAM_STRICT_LEN) {
+		if (rt_info==NULL || prefix_len!=username.len)
+			goto error2;
+	}
+
 	if (rt_info==0) {
 		LM_DBG("no matching for prefix \"%.*s\"\n",
-			uri.user.len, uri.user.s);
+			username.len, username.s);
 		/* try prefixless rules */
 		rt_info = check_rt( &(*rdata)->noprefix, (unsigned int)grp_id);
 		if (rt_info==0) {
@@ -1219,7 +1386,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
 
 	/* add RULE prefix avp - we do it now, as URI may change */
 	if (rule_prefix_avp.name!=-1) {
-		val.s.s = uri.user.s ;
+		val.s.s = username.s ;
 		val.s.len = prefix_len;
 		LM_DBG("setting RULE prefix [%.*s] \n",val.s.len,val.s.s);
 		if (add_avp( AVP_VAL_STR|(rule_prefix_avp.type),
@@ -1228,6 +1395,48 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
 			goto error2;
 		}
 	}
+	if ( flags & DR_PARAM_RULE_FALLBACK ) {
+		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
+			/* first time -? we need to save a some date, to be able to 
+			   do the rule fallback later in "next_gw" */
+			LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
+				prefix_len - (rule_idx?0:1), username.s);
+			val.n = rule_idx;
+			if (add_avp( 0 , avpID_store_index, val) ) {
+				LM_ERR("failed to insert index avp for fallback\n");
+				flags = flags & ~DR_PARAM_RULE_FALLBACK;
+			}
+			/* if no rules available on current prefix (index is 0), simply
+			   reduce the len of the prefix from start, to lookup another
+			   prefix in the DR tree */
+			val.s.s = username.s ;
+			val.s.len = prefix_len - (rule_idx?0:1);
+			if (add_avp( AVP_VAL_STR, avpID_store_prefix, val) ) {
+				LM_ERR("failed to insert prefix avp for fallback\n");
+				flags = flags & ~DR_PARAM_RULE_FALLBACK;
+			}
+			/* also store current ruri as we will need it */
+			val.s = *ruri;
+			if (add_avp( AVP_VAL_STR, avpID_store_ruri, val) ) {
+				LM_ERR("failed to insert ruri avp for fallback\n");
+				flags = flags & ~DR_PARAM_RULE_FALLBACK;
+			}
+		} else {
+			/* update the fallback coordonats for next resume */
+			/* using ugly hack by directly accessing the AVP data in order
+			   to perform changes - we want to avoid re-creating the AVP -bogdan */
+			avp_index->data = (void *)(long)rule_idx;
+			if (rule_idx==0) {
+				void *data;
+				/* all rules under current prefix used -> reduce the prefix */
+				data = (void*)&avp_prefix->data;
+				((str*)data)->len = prefix_len-1;
+			}
+			LM_DBG("updating to %d, prefix %.*s \n",rule_idx,
+				prefix_len-(rule_idx?1:0),username.s);
+		}
+	}
+
 
 	n = 0;
 
@@ -1235,13 +1444,14 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int use_weight,
 		goto no_gws;
 
 	/* sort the destination elements in the rule */
-	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len, use_weight, dsts_idx);
+	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len,
+		flags&DR_PARAM_USE_WEIGTH, dsts_idx);
 	if (i!=0) {
 		LM_ERR("failed to sort destinations in rule\n");
 		goto error2;
 	}
 
-	/* elvauate and parse the whitelist of GWs/CARRIERs, if provided */
+	/* evaluate and parse the whitelist of GWs/CARRIERs, if provided */
 	if (whitelist) {
 		if (fixup_get_svalue(msg, whitelist, &parsed_whitelist)!=0) {
 			LM_ERR("failed to evaluate whitelist-> ignoring...\n");
@@ -1355,6 +1565,28 @@ no_gws:
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
+
+	if ( (flags & DR_PARAM_RULE_FALLBACK) && !(flags & DR_PARAM_INTERNAL_TRIGGERED)) {
+		/* we need to save a some date, to be able to do the rule 
+		   fallback later in "next_gw" (prefix/index already added) */
+		if (wl_list) {
+			val.s = parsed_whitelist ;
+			val.s.len++; /* we need extra space to place \0 when using */
+			if (add_avp( AVP_VAL_STR, avpID_store_whitelist, val) ) {
+				LM_ERR("failed to insert whitelist avp for fallback\n");
+				flags = flags & ~DR_PARAM_RULE_FALLBACK;
+			}
+		}
+		val.n = grp_id ;
+		if (add_avp( 0, avpID_store_group, val) ) {
+			LM_ERR("failed to insert group avp for fallback\n");
+			flags = flags & ~DR_PARAM_RULE_FALLBACK;
+		}
+		val.n = flags ;
+		if (add_avp( 0, avpID_store_flags, val) ) {
+			LM_ERR("failed to insert flags avp for fallback\n");
+		}
+	}
 
 	return 1;
 error2:
@@ -1573,8 +1805,8 @@ static int fixup_do_routing(void** param, int param_no)
 		*param = (void*)drg;
 	} else
 	if (param_no==2) {
-		/* sorting algorithm */
-		return fixup_uint(param);
+		/* string of flags */
+		return fixup_sgp(param);
 	} else
 	if (param_no==3) {
 		/* white_list of GWs/Carriers */
