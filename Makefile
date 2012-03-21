@@ -554,8 +554,8 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/$(NAME) 
 		$(INSTALL_BIN) $(NAME) $(bin-prefix)/$(bin-dir)
 		# install opensips menuconfig
-		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/opensipsmc
-		$(INSTALL_BIN) menuconfig/configure $(bin-prefix)/$(bin-dir)/opensipsmc
+		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/osipsconfig
+		$(INSTALL_BIN) menuconfig/configure $(bin-prefix)/$(bin-dir)/osipsconfig
 		# install opensipsctl (and family) tool
 		cat scripts/opensipsctl | \
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
