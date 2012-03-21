@@ -541,6 +541,8 @@ install-console: $(bin-prefix)/$(bin-dir)
 		cat scripts/osipsconsole | \
 		sed -e "s#PATH_BIN[ \t]*=[ \t]*\"\./\"#PATH_BIN = \"$(bin-target)\"#g" | \
 		sed -e "s#PATH_CTLRC[ \t]*=[ \t]*\"\./scripts/\"#PATH_CTLRC = \"$(cfg-target)\"#g" | \
+		sed -e "s#PATH_LIBS[ \t]*=[ \t]*\"\./scripts/\"#PATH_LIBS = \"$(lib-target)/opensipsctl/\"#g" | \
+		sed -e "s#PATH_SHARE[ \t]*=[ \t]*\"\./scripts/\"#PATH_SHARE = \"$(data-target)\"#g" | \
 		sed -e "s#PATH_ETC[ \t]*=[ \t]*\"\./etc/\"#PATH_ETC = \"$(cfg-target)\"#g" \
 		> /tmp/osipsconsole
 		$(INSTALL_TOUCH) $(bin-prefix)/$(bin-dir)/osipsconsole
