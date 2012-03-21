@@ -1057,8 +1057,10 @@ modparam("acc", "cdr_flag", 1)
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment to be appended.
-			</para>
+			<para><emphasis>comment</emphasis> - Comment describing how the 
+			request completed - this string has to contain a reply code
+			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			are accepted in this string.</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -1068,7 +1070,7 @@ modparam("acc", "cdr_flag", 1)
 		<title>acc_log_request usage</title>
 		<programlisting format="linespecific">
 ...
-acc_log_request("Some comment");
+acc_log_request("403 Destination not allowed");
 ...
 </programlisting>
 		</example>
@@ -1088,7 +1090,10 @@ acc_log_request("Some comment");
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment to be appended.</para>
+			<para><emphasis>comment</emphasis> - Comment describing how the 
+			request completed - this string has to contain a reply code
+			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			are accepted in this string.</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>table</emphasis> - Database table to be used.</para>
@@ -1102,6 +1107,7 @@ acc_log_request("Some comment");
 		<programlisting format="linespecific">
 ...
 acc_log_request("Some comment", "Some table");
+acc_log_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
 ...
 </programlisting>
 		</example>
@@ -1120,8 +1126,10 @@ acc_log_request("Some comment", "Some table");
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment to be appended.
-			</para>
+			<para><emphasis>comment</emphasis> - Comment describing how the 
+			request completed - this string has to contain a reply code
+			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			are accepted in this string.</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -1131,7 +1139,7 @@ acc_log_request("Some comment", "Some table");
 		<title>acc_aaa_request usage</title>
 		<programlisting format="linespecific">
 ...
-acc_aaa_request("Some comment");
+acc_aaa_request("403 Destination not allowed");
 ...
 </programlisting>
 		</example>
@@ -1149,8 +1157,10 @@ acc_aaa_request("Some comment");
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment to be appended.
-			</para>
+			<para><emphasis>comment</emphasis> - Comment describing how the 
+			request completed - this string has to contain a reply code
+			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			are accepted in this string.</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -1160,7 +1170,7 @@ acc_aaa_request("Some comment");
 		<title>acc_diam_request usage</title>
 		<programlisting format="linespecific">
 ...
-acc_diam_request("Some comment");
+acc_diam_request("403 Destination not allowed");
 ...
 </programlisting>
 		</example>

@@ -31,8 +31,8 @@ Irina-Maria Stanescu
 
    Copyright © 2004, 2006, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-08-17 17:26:57 +0300
-                              (Lu, 17 aug 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -846,13 +846,16 @@ modparam("acc", "cdr_flag", 1)
    processing.
 
    Meaning of the parameters is as follows:
-     * comment - Comment to be appended.
+     * comment - Comment describing how the request completed -
+       this string has to contain a reply code followed by a reply
+       reason phrase (ex: "404 Nobody home"). Variables are
+       accepted in this string.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
    Example 1.39. acc_log_request usage
 ...
-acc_log_request("Some comment");
+acc_log_request("403 Destination not allowed");
 ...
 
 1.7.2.  acc_db_request(comment, table)
@@ -862,7 +865,10 @@ acc_log_request("Some comment");
    to in the second action parameter.
 
    Meaning of the parameters is as follows:
-     * comment - Comment to be appended.
+     * comment - Comment describing how the request completed -
+       this string has to contain a reply code followed by a reply
+       reason phrase (ex: "404 Nobody home"). Variables are
+       accepted in this string.
      * table - Database table to be used.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -870,6 +876,7 @@ acc_log_request("Some comment");
    Example 1.40. acc_db_request usage
 ...
 acc_log_request("Some comment", "Some table");
+acc_log_request("$T_reply_code $(<reply>rr)","acc");
 ...
 
 1.7.3.  acc_aaa_request(comment)
@@ -878,13 +885,16 @@ acc_log_request("Some comment", "Some table");
    reports to aaa server as configured in “aaa_url”.
 
    Meaning of the parameters is as follows:
-     * comment - Comment to be appended.
+     * comment - Comment describing how the request completed -
+       this string has to contain a reply code followed by a reply
+       reason phrase (ex: "404 Nobody home"). Variables are
+       accepted in this string.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
    Example 1.41. acc_aaa_request usage
 ...
-acc_aaa_request("Some comment");
+acc_aaa_request("403 Destination not allowed");
 ...
 
 1.7.4.  acc_diam_request(comment)
@@ -893,13 +903,16 @@ acc_aaa_request("Some comment");
    reports to the configured Diameter server.
 
    Meaning of the parameters is as follows:
-     * comment - Comment to be appended.
+     * comment - Comment describing how the request completed -
+       this string has to contain a reply code followed by a reply
+       reason phrase (ex: "404 Nobody home"). Variables are
+       accepted in this string.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
    Example 1.42. acc_diam_request usage
 ...
-acc_diam_request("Some comment");
+acc_diam_request("403 Destination not allowed");
 ...
 
 Chapter 2. Frequently Asked Questions

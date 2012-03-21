@@ -166,56 +166,107 @@ static inline int acc_preparse_req(struct sip_msg *req)
 
 
 
-int w_acc_log_request(struct sip_msg *rq, char *comment, char *foo)
+int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 {
+	struct acc_param accp;
+
 	if (acc_preparse_req(rq)<0)
 		return -1;
+
+	acc_pvel_to_acc_param(rq, comment, &accp);
+
 	env_set_to( rq->to );
-	env_set_comment((struct acc_param*)comment);
+	env_set_comment( &accp );
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
 	return acc_log_request( rq, NULL);
 }
 
 
-int w_acc_aaa_request(struct sip_msg *rq, char *comment, char* foo)
+int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 {
+	struct acc_param accp;
+
 	if (!aaa_proto_url) {
 		LM_ERR("aaa support not configured\n");
 		return -1;
 	}
+
 	if (acc_preparse_req(rq)<0)
 		return -1;
+
+	acc_pvel_to_acc_param(rq, comment, &accp);
+
 	env_set_to( rq->to );
-	env_set_comment((struct acc_param*)comment);
+	env_set_comment( &accp );
 	return acc_aaa_request( rq, NULL);
 }
 
 
-int w_acc_db_request(struct sip_msg *rq, char *comment, char *table)
+int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 {
+	struct acc_param accp;
+
 	if (!table) {
 		LM_ERR("db support not configured\n");
 		return -1;
 	}
+
 	if (acc_preparse_req(rq)<0)
 		return -1;
+
+	acc_pvel_to_acc_param(rq, comment, &accp);
+
 	env_set_to( rq->to );
-	env_set_comment((struct acc_param*)comment);
+	env_set_comment( &accp );
 	env_set_text(table, strlen(table));
 	return acc_db_request( rq, NULL,NULL);
 }
 
 #ifdef DIAM_ACC
-int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo)
+int w_acc_diam_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 {
+	struct acc_param accp;
+
 	if (acc_preparse_req(rq)<0)
 		return -1;
+
+	acc_pvel_to_acc_param(rq, comment, &accp);
+
 	env_set_to( rq->to );
-	env_set_comment((struct acc_param*)comment);
+	env_set_comment( &accp );
 	return acc_diam_request( rq, NULL);
 }
 #endif
 
+int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param* accp)
+{
+	str buf;
+	if(pv_printf_s(rq, pv_el, &buf) < 0) {
+		LM_ERR("Cannot parse comment\n");
+		return 1;
+	}
+
+	accp->reason.s = buf.s;
+	accp->reason.len = strlen(accp->reason.s);
+
+	if (accp->reason.len>=3 && isdigit((int)buf.s[0])
+                && isdigit((int)buf.s[1]) && isdigit((int)buf.s[2]) ) {
+		accp->code = (buf.s[0]-'0')*100 + (buf.s[1]-'0')*10 + (buf.s[2]-'0');
+		accp->code_s.s = buf.s;
+		accp->code_s.len = 3;
+		accp->reason.s += 3;
+		for( ; isspace((int)accp->reason.s[0]) ; accp->reason.s++ );
+		accp->reason.len = strlen(accp->reason.s);
+
+		/*Default comment if none supplied*/
+		if (accp->reason.len <= 0) {
+			accp->reason.s = error_text(accp->code);
+			accp->reason.len = strlen(accp->reason.s);
+		}
+	}
+
+	return 0;
+}
 
 /* prepare message and transaction context for later accounting */
 void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )

@@ -55,11 +55,13 @@ struct acc_param {
 
 void acc_onreq( struct cell* t, int type, struct tmcb_params *ps );
 
-int w_acc_log_request(struct sip_msg *rq, char *comment, char *foo);
+int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
 
-int w_acc_aaa_request(struct sip_msg *rq, char *comment, char *foo);
+int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
 
-int w_acc_db_request(struct sip_msg *rq, char *comment, char *table);
+int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table);
+
+int acc_pvel_to_acc_param(struct sip_msg *rq, pv_elem_t* pv_el, struct acc_param* accp);
 
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);

@@ -265,39 +265,36 @@ struct module_exports exports= {
 
 static int acc_fixup(void** param, int param_no)
 {
-	struct acc_param *accp;
-	char *p;
+	str s;
 
-	p = (char*)*param;
-	if (p==0 || p[0]==0) {
+	pv_elem_t *model = NULL;
+
+	s.s = (char*)(*param);
+
+	if (s.s==0 || s.s[0]==0) {
 		LM_ERR("first parameter is empty\n");
 		return E_SCRIPT;
 	}
 
 	if (param_no == 1) {
-		accp = (struct acc_param*)pkg_malloc(sizeof(struct acc_param));
-		if (!accp) {
-			LM_ERR("no more pkg mem\n");
-			return E_OUT_OF_MEM;
+		if (s.s==NULL) {
+			LM_ERR("null format in P%d\n",
+					param_no);
 		}
-		memset( accp, 0, sizeof(struct acc_param));
-		accp->reason.s = p;
-		accp->reason.len = strlen(p);
-		/* any code? */
-		if (accp->reason.len>=3 && isdigit((int)p[0])
-		&& isdigit((int)p[1]) && isdigit((int)p[2]) ) {
-			accp->code = (p[0]-'0')*100 + (p[1]-'0')*10 + (p[2]-'0');
-			accp->code_s.s = p;
-			accp->code_s.len = 3;
-			accp->reason.s += 3;
-			for( ; isspace((int)accp->reason.s[0]) ; accp->reason.s++ );
-			accp->reason.len = strlen(accp->reason.s);
+
+		s.len = strlen(s.s);
+	
+		if(pv_parse_format(&s, &model)<0) {
+			LM_ERR("wrong format[%s]\n", s.s);
+			return E_UNSPEC;
 		}
-		*param = (void*)accp;
+
+		*param = (void*)model;
+		return 0;
 	} else if (param_no == 2) {
 		/* only for db acc - the table name */
 		if (db_url.s==0) {
-			pkg_free(p);
+			pkg_free(s.s);
 			*param = 0;
 		}
 	}
