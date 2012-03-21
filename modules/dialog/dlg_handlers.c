@@ -1106,11 +1106,14 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			event = DLG_EVENT_REQ;
 	}
 
+	/* save last_dst_leg before running state machine
+	 * helpful for logging various bogus cases according to the RFC */
+	last_dst_leg = dst_leg;
+
 	next_state_dlg( dlg, event, &old_state, &new_state, &unref);
 
 	/* set current dialog - it will keep a ref! */
 	set_current_dialog(dlg);
-	last_dst_leg = dst_leg;
 	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
 

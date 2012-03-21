@@ -859,7 +859,14 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 				case DLG_STATE_DELETED:
 					break;
 				default:
-					log_next_state_dlg(event, dlg);
+					/* only case for BYEs in early or unconfirmed states
+					 * is for requests generate by caller or callee.
+					 * We never internally generate BYEs for early dialogs 
+					 *
+					 * RFC says caller may send BYEs for early dialogs,
+					 * while the callee side MUST not send such requests*/
+					if (last_dst_leg == 0)
+						log_next_state_dlg(event, dlg);
 			}
 			break;
 		case DLG_EVENT_REQPRACK:
