@@ -27,7 +27,7 @@ Description: very fast and configurable SIP server
  XMLRPC Interface.
  .
  This package contains the main OpenSIPS binary along with the principal modules
- and support binaries.
+ and support binaries including opensipsmc configuration tool.
 
 Package: opensips-dbg
 Priority: extra
