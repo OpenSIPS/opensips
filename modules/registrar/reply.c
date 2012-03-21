@@ -70,6 +70,9 @@
 #define TEMP_GRUU ";temp-gruu="
 #define TEMP_GRUU_SIZE (sizeof(TEMP_GRUU) - 1)
 
+#define SIP_INSTANCE ";+sip.instance="
+#define SIP_INSTANCE_SIZE (sizeof(SIP_INSTANCE) - 1)
+
 #define TEMP_GRUU_HEADER "tgruu."
 #define TEMP_GRUU_HEADER_SIZE (sizeof(TEMP_GRUU_HEADER) - 1)
 
@@ -153,6 +156,12 @@ static inline unsigned int calc_buf_len(ucontact_t* c)
 					+ 1 /* : */
 					+ c->sock->port_no_str.len
 					+ GR_NO_VAL_SIZE 
+					+ 1 /* quote */
+					;
+				/* sip.instance */
+				len += SIP_INSTANCE_SIZE
+					+ 1 /* quote */
+					+ (c->instance.len - 2)
 					+ 1 /* quote */
 					;
 			}		
@@ -317,6 +326,14 @@ int build_contact(ucontact_t* c)
 				p += c->sock->port_no_str.len;
 				memcpy(p,GR_NO_VAL,GR_NO_VAL_SIZE);
 				p += GR_NO_VAL_SIZE;
+				*p++ = '\"';
+
+				/* build +sip.instance */
+				memcpy(p,SIP_INSTANCE,SIP_INSTANCE_SIZE);
+				p += SIP_INSTANCE_SIZE;
+				*p++ = '\"';
+				memcpy(p,c->instance.s+1,c->instance.len-2);
+				p += c->instance.len-2;
 				*p++ = '\"';
 			}
 		}
