@@ -144,7 +144,7 @@ static param_export_t params[]=
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
 	{"db_url",          STR_PARAM,                &db_url.s                  },
-	{"dbtable",         STR_PARAM,                &b2bl_dbtable.s            },
+	{"db_table",        STR_PARAM,                &b2bl_dbtable.s            },
 	{"max_duration",    INT_PARAM,                &max_duration              },
 	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
 	{"b2bl_from_spec_param",STR_PARAM,            &b2bl_from_spec_param.s    },
@@ -238,6 +238,7 @@ static int mod_init(void)
 	if(b2bl_db_mode && db_url.s)
 	{
 		db_url.len = strlen(db_url.s);
+		b2bl_dbtable.len = strlen(b2bl_dbtable.s);
 		/* binding to database module  */
 		if (db_bind_mod(&db_url, &b2bl_dbf))
 		{

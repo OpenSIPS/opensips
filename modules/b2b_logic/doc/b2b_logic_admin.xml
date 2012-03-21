@@ -368,6 +368,24 @@ modparam("b2b_logic", "db_mode", 1)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>db_table</varname> (str)</title>
+		<para>
+			Name of the database table to be used
+		</para>
+		<para>
+		<emphasis>Default value is <quote>b2b_logic</quote> </emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "db_table", "some_table_name")
+...
+	</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
