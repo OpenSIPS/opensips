@@ -394,7 +394,13 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 		if (!is_hopbyhop_cancel(trans)) {
 			cleanup_uac_timers( trans );
 			if (is_invite(trans)) cancel_uacs( trans, cancel_bitmap );
-			set_final_timer(  trans );
+			/* for auth related replies, we do not do retransmission 
+			   (via set_final_timer()), but only wait for a final 
+			   reply (put_on_wait() ) - see RFC 3261 (26.3.2.4 DoS Protection) */
+			if ((code != 401) && (code != 407))
+				set_final_timer(  trans );
+			else
+				put_on_wait(trans);
 		}
 	}
 
@@ -1258,7 +1264,13 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	 * to avoid race conditions
 	 */
 	if (reply_status == RPS_COMPLETED) {
-		set_final_timer(t);
+		/* for auth related replies, we do not do retransmission 
+		   (via set_final_timer()), but only wait for a final 
+		   reply (put_on_wait() ) - see RFC 3261 (26.3.2.4 DoS Protection) */
+		if ((relayed_code != 401) && (relayed_code != 407))
+			set_final_timer(t);
+		else
+			put_on_wait(t);
 	}
 
 	/* send it now (from the private buffer) */
