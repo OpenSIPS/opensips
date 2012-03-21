@@ -245,7 +245,10 @@ modparam("uac","auth_username_avp","$avp(11)")
 			<title><varname>auth_password_avp</varname> (string)</title>
 			<para>
 			The definition of an AVP that might contain the password to be used
-			to perform authentication.
+			to perform authentication. The password can be provided as a plain
+			text password or as a precalculated HA1 as a hexa (lower case) string
+			(of 32 chars) prefixed with "0x" (so a total of 34 chars) (for example 
+			"0xc17ba8157756f263d07e158504204629")
 			</para>
 			<para><emphasis>
 				If you define it, you also need to define 

@@ -63,6 +63,11 @@
 			authentication.
 			</para>
 			<para>
+			NOTE that the password can be provided as a plain text password or
+			as a precalculated HA1 as a hexa (lower case) string
+			(of 32 chars) prefixed with "0x" (so a total of 34 chars).
+			</para>
+			<para>
 				<emphasis>
 					This parameter is required if UAC authentication is used.
 				</emphasis>
@@ -72,6 +77,7 @@
 				<programlisting format="linespecific">
 ...
 modparam("uac_auth","credential","username:domain:password")
+modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e158504204629")
 ...
 				</programlisting>
 			</example>

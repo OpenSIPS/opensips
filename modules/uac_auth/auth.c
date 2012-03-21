@@ -321,6 +321,27 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 {
 	HASHHEX ha1;
 	HASHHEX ha2;
+	int i, has_ha1;
+
+	/* before actually doing the authe, we check if the received password is
+	   a plain text password or a HA1 value ; we detect a HA1 (in the password
+	   field if: (1) starts with "0x"; (2) len is 32 + 2 (prefix) ; (3) the 32
+	   chars are HEXA values */
+	if (crd->passwd.len==34 && crd->passwd.s[0]=='0' && crd->passwd.s[1]=='x') {
+		/* it may be a HA1 - check the actual content */
+		for( has_ha1=1,i=2 ; i<crd->passwd.len ; i++ ) {
+			if ( !( (crd->passwd.s[i]>='0' && crd->passwd.s[i]<='9') ||
+			(crd->passwd.s[i]>='a' && crd->passwd.s[i]<='f') )) {
+				has_ha1 = 0;
+				break;
+			} else {
+				ha1[i-2] = crd->passwd.s[i];
+			}
+		}
+		ha1[HASHHEXLEN] = 0;
+	} else {
+		has_ha1 = 0;
+	}
 
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 	{
@@ -328,7 +349,8 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 		cnonce.s = int2str(core_hash(&auth->nonce, 0, 0),&cnonce.len);
 
 		/* do authentication */
-		uac_calc_HA1( crd, auth, &cnonce, ha1);
+		if (!has_ha1)
+			uac_calc_HA1( crd, auth, &cnonce, ha1);
 		uac_calc_HA2( method, uri, auth, 0/*hentity*/, ha2 );
 
 		uac_calc_response( ha1, ha2, auth, &nc, &cnonce, response);
@@ -336,7 +358,8 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 		auth_nc_cnonce->cnonce = &cnonce;
 	} else {
 		/* do authentication */
-		uac_calc_HA1( crd, auth, 0/*cnonce*/, ha1);
+		if (!has_ha1)
+			uac_calc_HA1( crd, auth, 0/*cnonce*/, ha1);
 		uac_calc_HA2( method, uri, auth, 0/*hentity*/, ha2 );
 
 		uac_calc_response( ha1, ha2, auth, 0/*nc*/, 0/*cnonce*/, response);
