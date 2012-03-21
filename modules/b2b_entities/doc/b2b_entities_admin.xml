@@ -234,6 +234,44 @@ modparam("b2b_entities", "db_mode", 1)
 		</example>
 	</section>
 
+	<section>
+		<title><varname>db_table</varname> (str)</title>
+		<para>
+			The name of the table that will be used for storing B2B entities
+		</para>
+		<para>
+		<emphasis>Default value is <quote>b2b_entities</quote></emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "db_table", "some table name")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>replication_mode</varname> (int)</title>
+		<para>
+			Controls if the callid should be the same in more instances running at the same time.
+			0 will lead to generating of different callid's per instance
+			1 will lead to generating of the same callid's in more instances
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote></emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replication_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "replication_mode", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
 </section>
 
 

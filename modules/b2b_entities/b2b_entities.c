@@ -96,7 +96,7 @@ static param_export_t params[]={
 	{ "script_reply_route",    STR_PARAM,    &script_reply_route },
 	{ "replication_mode",      INT_PARAM,    &replication_mode   },
 	{ "db_url",                STR_PARAM,    &db_url.s           },
-	{ "b2be_dbtable",          STR_PARAM,    &b2be_dbtable.s     },
+	{ "db_table",              STR_PARAM,    &b2be_dbtable.s     },
 	{ "db_mode",               INT_PARAM,    &b2be_db_mode       },
 	{ "update_period",         INT_PARAM,    &b2b_update_period  },
 	{ "b2b_key_prefix",        STR_PARAM,    &b2b_key_prefix.s   },
@@ -187,6 +187,7 @@ static int mod_init(void)
 	if(b2be_db_mode && db_url.s)
 	{
 		db_url.len = strlen(db_url.s);
+		b2be_dbtable.len = strlen(b2be_dbtable.s);
 
 		/* binding to database module  */
 		if (db_bind_mod(&db_url, &b2be_dbf))
