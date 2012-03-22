@@ -1,8 +1,8 @@
-opensips (1.8.0-1) unstable; urgency=low
+opensips (1.8.0-1) stable; urgency=low
 
-  * Development version
+  * Major Public Release.
 
- -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Wed, 15 Feb 2012 09:00:00 +0200
+ -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Thu, 22 Mar 2012 09:00:00 +0200
 
 
 opensips (1.7.0-1) stable; urgency=low
