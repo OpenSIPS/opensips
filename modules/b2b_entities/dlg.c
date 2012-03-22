@@ -489,7 +489,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	struct cell* tm_tran;
 	int ret;
 	struct socket_info* sock_list;
-	int found = 0;
 	str host;
 	int port;
 	int etype= B2B_NONE;
@@ -532,23 +531,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	if(method_value!= METHOD_CANCEL)
 	{
 		LM_DBG("<uri> host:port [%.*s][%d]\n", host.len, host.s, port);
-		while(sock_list)
-		{
-			LM_DBG("<socket> address:port [%.*s][%d]\n",
-				sock_list->address_str.len, sock_list->address_str.s,
-				sock_list->port_no);
-			if(host.len == sock_list->address_str.len &&
-			strncmp(host.s,sock_list->address_str.s,sock_list->address_str.len)==0
-			&&  ((port == sock_list->port_no) || (port==0 && sock_list->port_no==5060) ||
-				(port==5060 && sock_list->port_no==0) ))
-			{
-				found =1;
-				break;
-			}
-			sock_list = sock_list->next;
-		}
-
-		if(!found)
+		if (!check_self( &host, port ? port : SIP_PORT, msg->rcv.proto))
 		{
 			LM_DBG("RURI does not point to me\n");
 			return 1;
