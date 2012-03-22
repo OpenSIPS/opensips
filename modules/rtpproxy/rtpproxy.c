@@ -2365,28 +2365,26 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 	unsigned int code = 0;
 	pv_value_t val1, val2;
 
-	if (!msg || !dlg)
+	if (!msg || !dlg || msg->first_line.type != SIP_REPLY)
 		goto not_moved;
 
+	/* check to see if there are avps stored */
+	if (pv_get_spec_value(msg, &param1_spec, &val1) < 0) {
+		LM_DBG("bavp not found!\n");
+		goto not_moved;
+	}
+	if (!(val1.flags & PV_VAL_STR)) {
+		LM_DBG("bug - invalid bavp type [%x]\n", val1.flags);
+		goto not_moved;
+	}
+	if (pv_get_spec_value(msg, &param2_spec, &val2) < 0) {
+		LM_DBG("bavp not found!\n");
+		goto not_moved;
+	}
+
 	code = msg->first_line.u.reply.statuscode;
-	if (msg->first_line.type == SIP_REPLY && code >= 200 && code < 300) {
-		/* check to see if there are avps stored */
-		if (pv_get_spec_value(msg, &param1_spec, &val1) < 0) {
-			LM_DBG("bavp not found!\n");
-			goto not_moved;
-		}
-		if (!(val1.flags & PV_VAL_STR)) {
-			LM_DBG("bug - invalid bavp type [%x]\n", val1.flags);
-			goto not_moved;
-		}
-		if (pv_get_spec_value(msg, &param2_spec, &val2) < 0) {
-			LM_DBG("bavp not found!\n");
-			goto not_moved;
-		}
-		if (!(val2.flags & PV_VAL_STR)) {
-			LM_DBG("bug - invalid bavp type [%x]\n", val2.flags);
-			goto not_moved;
-		}
+	/* only move branch avps if a final response has come */
+	if (code >= 200 && code < 300) {
 		if (dlg_api.store_dlg_value(dlg, &param1_name, &val1.rs) < 0) {
 			LM_ERR("cannot store value\n");
 			goto error;
@@ -2394,6 +2392,10 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 		if (rval1) {
 			rval1->len = val1.rs.len;
 			rval1->s = val1.rs.s;
+		}
+		if (!(val2.flags & PV_VAL_STR)) {
+			LM_DBG("param2 not found\n");
+			return 1;
 		}
 		if (dlg_api.store_dlg_value(dlg, &param2_name, &val2.rs) < 0) {
 			LM_ERR("cannot store value\n");
@@ -2407,11 +2409,27 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 		LM_DBG("moved <%s> and <%s> from branch avp list in dlg\n", 
 				param1_name.s,param2_name.s);
 		return 1;
+	} else if (code < 200) {
+
+		if (rval1) {
+			rval1->len = val1.rs.len;
+			rval1->s = val1.rs.s;
+		}
+
+		if (rval2) {
+			if (val2.flags & PV_VAL_STR) {
+				rval2->len = val2.rs.len;
+				rval2->s = val2.rs.s;
+			} else {
+				rval2->len = 0;
+				rval2->s = 0;
+			}
+		}
+		return 1;
 	}
 
 not_moved:
-	LM_DBG("nothing moved - message type %d code %u\n",
-		msg->first_line.type, code);
+	LM_DBG("nothing moved - message type %d\n", msg->first_line.type);
 	if (rval1) rval1->len = 0;
 	if (rval2) rval2->len = 0;
 	return 0;
@@ -2424,7 +2442,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	int offer = 1;
 	str param1_val,param2_val,value;
-	int method_id, has_sdp, ret;
+	int method_id, has_sdp, alloc = 0;
 	LM_DBG("engage callback called\n");
 
 	if (!msg)
@@ -2489,20 +2507,20 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	param1_val.s = param2_val.s = 0;
 
 	/* try to move values */
-	ret = move_bavp2dlg(msg, dlg, &param1_val, &param2_val);
-	if (ret < 0) {
+	if (move_bavp2dlg(msg, dlg, &param1_val, &param2_val) < 0) {
 		LM_ERR("error while moving branch avps\n");
 		goto error;
 	}
 
-	LM_DBG("has sdp? %d - offer %d\n", has_sdp, offer);
-	if (!ret) {
+	/* don't have them, try to get them from the dialog */
+	if (!param1_val.len) {
 		/* nothing moved - the values should be in dialog already */
 		if (dlg_api.fetch_dlg_value(dlg, &param1_name, &value, 0) < 0) {
 			LM_ERR("cannot fetch first parameter\n");
 			goto error;
 		}
 	
+		alloc = 1;
 		param1_val.s = pkg_malloc(value.len);
 		if (!param1_val.s) {
 			LM_ERR("no more pkg mem\n");
@@ -2511,28 +2529,20 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 		memcpy(param1_val.s,value.s,value.len);
 		param1_val.len = value.len;
 
-		/* can hold the value in the buffer */
+		/* can hold the value in the buffer - might be not found */
 		if (dlg_api.fetch_dlg_value(dlg, &param2_name, &param2_val, 0) < 0) {
-			LM_ERR("cannot fetch second parameter\n");
-			pkg_free(param1_val.s);
-			goto error;
+			LM_DBG("second param not found\n");
+			param2_val.s = 0;
+			param2_val.len = 0;
 		}
 
 		LM_DBG("fetched: param1 <%s> param2 <%s> - offer? %s\n",
-				param1_val.s, param2_val.s, offer? "yes":"no");
-	}
-	/* else - already stored the values when moved */
-	if (!param1_val.len || !param2_val.len) {
-		LM_ERR("invalid parameters values [%d]%.*s - [%d]%.*s\n",
-				param1_val.len, param1_val.len, param1_val.s,
-				param2_val.len, param2_val.len, param2_val.s);
-		pkg_free(param1_val.s);
-		goto error;
+				param1_val.s, param2_val.s ? param2_val.s : "null", offer? "yes":"no");
 	}
 	
-	force_rtp_proxy(msg, param1_val.s, param2_val.s, offer);
+	force_rtp_proxy(msg, param1_val.s, param2_val.s ? param2_val.s : NULL, offer);
 
-	if (!ret && param1_val.s)
+	if (alloc && param1_val.s)
 		pkg_free(param1_val.s);
 done:
 	return 0;
@@ -2640,41 +2650,54 @@ engage_rtp_proxy2_f(struct sip_msg *msg, char *param1, char *param2)
 	param1_val.s = param1;
 	param1_val.len = strlen(param1)+1;
 
-	param2_val.s = param2;
-	param2_val.len = strlen(param2)+1;
+	if (param2) {
+		param2_val.s = param2;
+		param2_val.len = strlen(param2)+1;
+	}
 
 	if (route_type & BRANCH_ROUTE) {
 		/* store the value into branch avps */
 		val1.flags = AVP_VAL_STR;
 		val1.rs = param1_val;
-		val2.flags = AVP_VAL_STR;
-		val2.rs = param2_val;
 
 		if (pv_set_value(msg, &param1_spec, EQ_T, &val1) < 0) {
 			LM_ERR("cannot store <%.*s> param", param1_name.len, param1_name.s);
 			return -1;
 		}
-		if (pv_set_value(msg, &param2_spec, EQ_T, &val2) < 0) {
-			LM_ERR("cannot store <%.*s> param", param2_name.len, param2_name.s);
+
+		if (!val1.rs.len) {
+			LM_ERR("cannot store first parameter in branch avp\n");
 			return -1;
 		}
-		if (!val1.rs.len || !val2.rs.len) {
-			LM_ERR("cannot store parameters int branch avp\n");
-			return -1;
+
+		if (param2) {
+			val2.flags = AVP_VAL_STR;
+			val2.rs = param2_val;
+
+			if (pv_set_value(msg, &param2_spec, EQ_T, &val2) < 0) {
+				LM_ERR("cannot store <%.*s> param", param2_name.len, param2_name.s);
+				return -1;
+			}
+
+			if (!val2.rs.len) {
+				LM_ERR("cannot store second parameter in branch avp\n");
+				return -1;
+			}
 		}
+
 		LM_DBG("stored values in bavp\n");
 	} else {
 		if ( dlg_api.store_dlg_value(dlg, &param1_name, &param1_val) < 0) {
 			LM_ERR("cannot store first param into dialog\n");
 			return -1;
 		}
-		if ( dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
+		if ( param2 && dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
 			LM_ERR("cannot store second param into dialog\n");
 			return -1;
 		}
 		LM_DBG("stored values in dialog\n");
 	}
-	/* TODO callbacks setup - only once */
+	/* callbacks setup - only once */
 	if (msg->msg_flags & FL_USE_RTPPROXY) {
 		LM_DBG("rtpproxy callbacks already registered\n");
 		return 1;
@@ -2787,6 +2810,9 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 		LM_ERR("Unable to parse body\n");
 		return -1;
 	}
+
+	LM_DBG("force rtp proxy with param1 <%s> and param2 <%s>\n",
+			str1, str2 ? str2 : "none");
 
 	if (get_callid(msg, &args.callid) == -1 || args.callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
@@ -3488,20 +3514,14 @@ error:
 
 static int engage_rtp_proxy1_f(struct sip_msg* msg,char* str1,char* str2)
 {
-	char *cp;
-	char newip[IP_ADDR_MAX_STR_SIZE];
-
-	cp = ip_addr2a(&msg->rcv.dst_ip);
-	strcpy(newip, cp);
-	
-	return engage_rtp_proxy2_f(msg,str1,newip);
+	return engage_rtp_proxy2_f(msg,str1,str2);
 }
 
 static int engage_rtp_proxy0_f(struct sip_msg* msg,char *str1,char* str2)
 {
-	char arg[1] = {'\0'};
 
-	return engage_rtp_proxy1_f(msg,arg,NULL);
+	static const char * arg = "";
+	return engage_rtp_proxy1_f(msg,(char*)arg,NULL);
 }
 
 
