@@ -68,15 +68,15 @@ sql_query()
 		fi
 		shift
 		if [ -n "$PW" ]; then
-			$CMD "-p$PW" $DB -e "$@"
+			$CMD "-p$PW" $DB -Bse "$@"
 		else
-			$CMD $DB -e "$@"
+			$CMD $DB -Bse "$@"
 		fi
 	else
 		if [ -n "$PW" ]; then
-			$CMD "-p$PW" "$@"
+			$CMD "-p$PW" -Bs "$@"
 		else
-			$CMD "$@"
+			$CMD -Bs "$@"
 		fi
 	fi
 }
@@ -373,7 +373,7 @@ migrate_table ${dst_db}.nh_sockets \
 migrate_table ${dst_db}.dialplan \
 	"id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs" \
 	${src_db}.dialplan \
-	"?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" 
+	"?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs"
 
 migrate_table ${dst_db}.dr_gateways \
 	"gwid,type,address,strip,pri_prefix,attrs,probe_mode,description" \
@@ -382,15 +382,41 @@ migrate_table ${dst_db}.dr_gateways \
 
 migrate_table ${dst_db}.dr_rules \
 	"ruleid,groupid,prefix,timerec,priority,routeid,gwlist,attrs,description" \
-	$src_db.dr_rules \
+	${src_db}.dr_rules \
 	"?ruleid,?groupid,?prefix,?timerec,?priority,?routeid,?gwlist,?attrs,?description"
+
+drr_query=`sql_query "" "select count(*) from ${dst_db}.dr_rules where gwlist like '%;%';" 2>&1`
+
+if [ $? -ne 0 ] ; then
+	echo $drr_query | $GREP "ERROR 1146" > /dev/null
+	if [ $? -neq 0 ] ; then 
+		echo "ERROR: Failed to check dr_rules for unsupported gwlist types"
+		echo -n "Skip it and continue (y/n)? "
+		read INPUT
+		if [ "$INPUT" = "n" ] || [ "$INPUT" = "N" ]
+		then
+			exit 1
+		fi
+	fi
+fi
+
+drr_query=`echo $drr_query | head -n 2`
+if [ $drr_query -gt 0 ];
+then
+	mwarn "You currently have rules with gwlists that are not supported any more in OpenSIPS 1.8. See the updated DROUTING documentation"
+fi
 
 migrate_table ${dst_db}.dr_groups \
 	"id,username,domain,groupid,description" \
 	${src_db}.dr_groups \
 	"?id,?username,?domain,?groupid,?description"
 
-if [ $HAS_EXTRA = "yes" ] ; then
+migrate_table ${dst_db}.dr_carriers \
+	"carrierid,gwlist,description" \
+	${src_db}.dr_gw_lists \
+	"?id,?gwlist,?description"
+
+if [ "$HAS_EXTRA" = "yes" ] ; then
                 
 migrate_table ${dst_db}.cpl \
 	"id,username,domain,cpl_xml,cpl_bin" \
