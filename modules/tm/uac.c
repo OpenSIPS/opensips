@@ -198,7 +198,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 				transaction_cb cb, void* cbp,release_tmcb_param release_func)
 {
-	union sockaddr_union to_su;
+	union sockaddr_union to_su, new_to_su;
 	struct cell *new_cell;
 	struct retr_buf *request;
 	static struct sip_msg *req;
@@ -208,8 +208,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	int ret, flags, sflag_bk;
 	int backup_route_type;
 	unsigned int hi;
-	struct socket_info* send_sock;
-	struct lump* prev_add_rm, *prev_body_lumps;
+	struct socket_info *send_sock, *new_send_sock;
+	str h_to, h_from, h_cseq, h_callid;
 
 	ret=-1;
 	
@@ -316,45 +316,75 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			setsflagsval(sflag_bk);
 			set_avp_list( backup );
 
-			/* check for changes - if none, do not regenerate the buffer 
-			 * we ignore any change on RURI and DSTURI and they should not
-			 * be changed  -bogdan */
-			if (req->new_uri.s)
-				{ pkg_free(req->new_uri.s); req->new_uri.s=0; req->new_uri.len=0; }
-			if (req->dst_uri.s)
-				{ pkg_free(req->dst_uri.s); req->dst_uri.s=0; req->dst_uri.len=0; }
+			/* check for changes - if none, do not regenerate the buffer */
+			if (req->new_uri.s || req->dst_uri.s || req->add_rm || req->body_lumps) {
+				new_send_sock = NULL;
 
-			prev_add_rm = req->add_rm;
-			prev_body_lumps = req->body_lumps;
+				/* do we also need to change the destination? */
+				if (req->dst_uri.s || req->new_uri.s) {
+					/* calculate the socket corresponding to next hop */
+					new_send_sock = uri2sock(0, 
+						req->dst_uri.s ? &(req->dst_uri) : &req->new_uri,
+						&new_to_su, PROTO_NONE );
+					if (!new_send_sock) {
+						LM_ERR("no socket found for the new destination\n");
+						goto abort_update;
+					}
+				}
 
-			if (req->add_rm || req->body_lumps) {
-				LM_DBG("re-building the buffer (sip_msg changed) - lumps are"
-					"%p %p\n",req->add_rm, req->body_lumps);
 				/* build the shm buffer now */
 				buf1 = build_req_buf_from_sip_req(req,(unsigned int*)&buf_len1,
-					dialog->send_sock, dialog->send_sock->proto,
+					new_send_sock?new_send_sock:dialog->send_sock,
+					new_send_sock?new_send_sock->proto:dialog->send_sock->proto,
 					MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG );
 				if (!buf1) {
-					LM_ERR("no more shm mem\n"); 
+					LM_ERR("no more shm mem\n");
 					/* keep original buffer */
-				} else {
-					/* update shortcuts */
-					/* if we have only body lumps */
-					if(!prev_add_rm && prev_body_lumps)
-					{
-						new_cell->from.s = new_cell->from.s - buf + buf1;
-						new_cell->to.s = new_cell->to.s - buf + buf1;
-						new_cell->callid.s = new_cell->callid.s - buf + buf1;
-						new_cell->cseq_n.s = new_cell->cseq_n.s - buf + buf1;
-						new_cell->uac[0].uri.s = new_cell->uac[0].uri.s - buf + buf1;
-					}
-
-					shm_free(buf);
-					buf = buf1;
-					buf_len = buf_len1;
-					/* use new buffer */
+					goto abort_update;
 				}
+				/* update shortcuts */
+				if(!req->add_rm && !req->new_uri.s) {
+					/* headers are not affected, simply tranlate */
+					new_cell->from.s = new_cell->from.s - buf + buf1;
+					new_cell->to.s = new_cell->to.s - buf + buf1;
+					new_cell->callid.s = new_cell->callid.s - buf + buf1;
+					new_cell->cseq_n.s = new_cell->cseq_n.s - buf + buf1;
+				} else {
+					/* use heavy artilery :D */
+					if (extract_ftc_hdrs( buf1, buf_len1, &h_from, &h_to,
+					&h_cseq, &h_callid)!=0 ) {
+						LM_ERR("failed to update shortcut pointers\n");
+						shm_free(buf1);
+						goto abort_update;
+					}
+					new_cell->from = h_from;
+					new_cell->to = h_to;
+					new_cell->callid = h_callid;
+					new_cell->cseq_n = h_cseq;
+				}
+				/* here we rely on how build_uac_req() 
+				   builds the first line */
+				new_cell->uac[0].uri.s = buf1 +
+					req->first_line.u.request.method.len + 1;
+				new_cell->uac[0].uri.len = GET_RURI(req)->len;
+
+				/* update also info about new destination and send sock */
+				if (new_send_sock) {
+					if (new_send_sock != dialog->send_sock) {
+						dialog->send_sock = new_send_sock;
+						request->dst.send_sock = new_send_sock;
+						request->dst.proto = new_send_sock->proto;
+						request->dst.proto_reserved1 = 0;
+					}
+					request->dst.to = new_to_su;
+				}
+
+				shm_free(buf);
+				buf = buf1;
+				buf_len = buf_len1;
+				/* use new buffer */
 			}
+abort_update:
 			free_sip_msg(req);
 		}
 	}
