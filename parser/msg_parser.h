@@ -444,8 +444,8 @@ int set_path_vector(struct sip_msg* msg, str* path);
 
 /*
  * Parses a buffer containing a well formed SIP message and extracts the bodies
- * for FROM , TO and CSEQ headers.
+ * for FROM , TO , CSEQ and CALL-ID headers.
  */
-int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq);
+int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq,str *callid);
 
 #endif

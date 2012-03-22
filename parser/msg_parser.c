@@ -824,7 +824,7 @@ int set_path_vector(struct sip_msg* msg, str* path)
 		if ( (flags&=~(flag))==0) goto done;\
 		state=1;\
 	}while(0)
-int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq)
+int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq,str *callid)
 {
 	char *end, *p;
 	char *b;
@@ -837,7 +837,8 @@ int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq)
 	end = buf+len;
 	state = 1;
 	b = 0;
-	flags = ((from!=0)?0x1:0) | ((to!=0)?0x2:0) | ((cseq!=0)?0x4:0);
+	flags = ((from!=0)?0x1:0) | ((to!=0)?0x2:0) | ((cseq!=0)?0x4:0) 
+				| ((callid!=0)?0x8:0);
 	flag = 0;
 	fill = 0;
 
@@ -901,14 +902,33 @@ int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq)
 				if (state==6) SET_FOUND(2);/*found*/;
 				if (state!=2) {state = 1;break;}
 				/* hdr starting with 'c' */
-				if (cseq==0) break;
+				if (cseq==0 && callid == 0) break;
 				if (p+3<end && LC(p+1)=='s' && LC(p+2)=='e' && LC(p+3)=='q') {
 					b = p;
 					p+=3;
 					state = 4; /* "cseq" found */
 					fill = cseq;
 					flag = 0x4;
+				} else if (p+6<end && LC(p+1)=='a' && LC(p+2) == 'l' &&
+					LC(p+3) == 'l' && LC(p+4) == '-' && LC(p+5) == 'i' &&
+					LC(p+6) == 'd') {
+					b = p;
+					p+=6;
+					state = 4; /* callid found */
+					fill = callid;
+					flag = 0x8;
 				}
+				break;
+			case 'I':
+			case 'i':
+				if (state==5) break;
+				if (state==6) SET_FOUND(2);/*found*/;
+				if (state!=2) {state = 1;break;}
+				if (callid == 0) break;
+				b = p;
+				state=4; /* callid found */
+				fill = callid;
+				flag=0x8;
 				break;
 			default:
 				switch (state) {

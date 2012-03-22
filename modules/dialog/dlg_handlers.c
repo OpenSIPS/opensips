@@ -426,7 +426,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				req_out_buff = &t->uac[d_tmb.get_branch_index()].request.buffer;
 				if (extract_ftc_hdrs(req_out_buff->s,req_out_buff->len,
 				(req->msg_flags & FL_USE_UAC_FROM )?&mangled_from:0,
-				(req->msg_flags & FL_USE_UAC_TO )?&mangled_to:0,0) != 0) {
+				(req->msg_flags & FL_USE_UAC_TO )?&mangled_to:0,0,0) != 0) {
 					LM_ERR("failed to extract mangled FROM and TO hdrs\n");
 					mangled_from.len = 0;
 					mangled_from.s = NULL;
