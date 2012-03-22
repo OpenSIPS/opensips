@@ -18,24 +18,29 @@
 	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 		<author>
-		<firstname></firstname>
-		<surname></surname>
-		<affiliation><orgname>&vsname;</orgname></affiliation>
-		<address>
-			<email>team@voice-system.ro</email>
-		</address>
+		<firstname>Bogdan-Andrei</firstname>
+		<surname>Iancu</surname>
+		<affiliation><orgname>&osipssol;</orgname></affiliation>
 		</author>
+		<editor>
+		<firstname>Bogdan-Andrei</firstname>
+		<surname>Iancu</surname>
+		<address>
+			<email>bogdan@opensips.org</email>
+		</address>
+		</editor>
 		<editor>
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
-		<address>
-			<email>team@voice-system.ro</email>
-		</address>
 		</editor>
 	</authorgroup>
 	<copyright>
 		<year>2005-2008</year>
 		<holder>&voicesystem;</holder>
+	</copyright>
+	<copyright>
+		<year>2009-2012</year>
+		<holder>&osipssol;</holder>
 	</copyright>
 	<revhistory>
 		<revision>

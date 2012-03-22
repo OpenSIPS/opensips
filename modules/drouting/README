@@ -1,15 +1,23 @@
 Dynamic Routing Module
 
-   Voice Sistem SRL
+Bogdan-Andrei Iancu
+
+   www.opensips-solutions.com
+
+Edited by
+
+Bogdan-Andrei Iancu
 
 Edited by
 
 Anca-Maria Vamanu
 
    Copyright © 2005-2008 Voice Sistem SRL
+
+   Copyright © 2009-2012 www.opensips-solutions.com
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -20,10 +28,10 @@ Anca-Maria Vamanu
 
               1.1.1. Introduction
               1.1.2. Features
-              1.1.3. Probing and Disabling destinations
-              1.1.4. Performance
-              1.1.5. Routing Rule Definition
-              1.1.6. Routing Rule Processing
+              1.1.3. Performance
+              1.1.4. Dynamic Routing Concepts
+              1.1.5. Routing Rule Processing
+              1.1.6. Probing and Disabling destinations
 
         1.2. Dependencies
 
@@ -46,20 +54,20 @@ Anca-Maria Vamanu
               1.3.12. carrier_id_avp (str)
               1.3.13. carrier_attrs_avp (str)
               1.3.14. define_blacklist (str)
-              1.3.15. use_domain (int)
-              1.3.16. default_group (int)
-              1.3.17. drg_user_col (str)
-              1.3.18. drg_domain_col (str)
-              1.3.19. drg_grpid_col (str)
-              1.3.20. force_dns (int)
-              1.3.21. probing_interval (integer)
-              1.3.22. probing_method (string)
-              1.3.23. probing_from (string)
-              1.3.24. probing_reply_codes (string)
+              1.3.15. default_group (int)
+              1.3.16. force_dns (int)
+              1.3.17. probing_interval (integer)
+              1.3.18. probing_method (string)
+              1.3.19. probing_from (string)
+              1.3.20. probing_reply_codes (string)
+              1.3.21. use_domain (int)
+              1.3.22. drg_user_col (str)
+              1.3.23. drg_domain_col (str)
+              1.3.24. drg_grpid_col (str)
 
         1.4. Exported Functions
 
-              1.4.1. do_routing([[groupID],sort])
+              1.4.1. do_routing([[groupID],flags])
               1.4.2. route_to_carrier(carrier_id)
               1.4.3. route_to_gw(gw_id)
               1.4.4. use_next_gw()/next_routing()
@@ -77,14 +85,6 @@ Anca-Maria Vamanu
 
    2. Developer Guide
 
-   List of Tables
-
-   1.1. Definition of table dr_gateways
-   1.2. Sample dr_gateways records
-   1.3. Definition of dr_rules table
-   1.4. Time recurrence attributes
-   1.5. Sample dr_rules records
-
    List of Examples
 
    1.1. Set db_url parameter
@@ -101,19 +101,19 @@ Anca-Maria Vamanu
    1.12. Set carrier_id_avp parameter
    1.13. Set carrier_attrs_avp parameter
    1.14. Set define_blacklist parameter
-   1.15. Set use_domain parameter
-   1.16. Set default_group parameter
-   1.17. Set drg_user_col parameter
-   1.18. Set drg_domain_col parameter
-   1.19. Set drg_grpid_col parameter
-   1.20. Set force_dns parameter
-   1.21. Set probing_interval parameter
-   1.22. Set probing_method parameter
-   1.23. Set probing_from parameter
-   1.24. Set probing_reply_codes parameter
+   1.15. Set default_group parameter
+   1.16. Set force_dns parameter
+   1.17. Set probing_interval parameter
+   1.18. Set probing_method parameter
+   1.19. Set probing_from parameter
+   1.20. Set probing_reply_codes parameter
+   1.21. Set use_domain parameter
+   1.22. Set drg_user_col parameter
+   1.23. Set drg_domain_col parameter
+   1.24. Set drg_grpid_col parameter
    1.25. do_routing usage
    1.26. route_to_carrier usage
-   1.27. route_to_carrier usage
+   1.27. route_to_gw usage
    1.28. use_next_gw usage
    1.29. goes_to_gw usage
    1.30. is_from_gw usage
@@ -128,7 +128,7 @@ Chapter 1. Admin Guide
 1.1.1. Introduction
 
    Dynamic Routing is a module for selecting (based on multiple
-   criteria) the the best gateway/destination to be used for
+   criteria) the best gateway/destination to be used for
    delivering a certain call. Least Cost Routing (LCR) is a
    special case of dynamic routing - when the rules are ordered
    based on costs. Dynamic Routing comes with many features
@@ -154,12 +154,14 @@ Chapter 1. Admin Guide
 
    The dynamic routing implementation for OpenSIPS is designed
    with the following properties:
-     * routing info (destinations, rules, groups) are stored in a
-       database and loaded into memory at start up time; reload at
-       runtime via MI command
-     * load balancing or random selection of the destinations
-       (from a given set), crash detection of gateways
-     * able to handle large volume of routing info (300K of rules)
+     * routing info (destinations, carriers, rules, groups) are
+       stored in a database and loaded into memory at start up
+       time; reload at runtime via an Management Interface
+       command.
+     * weigth-based or random selection of the destinations (from
+       a rule or from a carrier), failure detection of gateways
+       (with switching to next available gateway).
+     * able to handle large volume of routing info (10M of rules)
        with minimal speed/time and memory consumption penalties
      * script integration - Pseudo variables support in functions;
        scripting route triggering when rules are matched
@@ -172,7 +174,164 @@ Chapter 1. Admin Guide
        lookups) when the script logic does none-GE forwarding
        (like foreign domains).
 
-1.1.3. Probing and Disabling destinations
+1.1.3. Performance
+
+   There were several tests performed regarding the performance of
+   the module when dealing with a large number of routing rules.
+
+   The tests were performed with a set of 383000 rules and to
+   values were measured:
+     * time to load from DB
+     * used shared memory
+
+   The time to load was varying between 4 seconds and 8 seconds,
+   depending of the caching of the DB client - the first load was
+   the slowest (as the DB query hits the disk drive); the
+   following are faster as data is already cached in the DB
+   client. So technically speaking, the time to load (without the
+   time to query which is DB type dependent) is ~4 seconds
+
+   After loading the data into shared memory ~ 96M of memory were
+   used exclusively for the DR data.
+
+1.1.4. Dynamic Routing Concepts
+
+   DR engine uses several concepts in order to define how the
+   routing should be done (describing all the dependecies between
+   destinations and routing rules).
+
+1.1.4.1. Destination/Gateways
+
+   These are the end SIP entities where actually the traffic needs
+   to be sent after routing. They are stored in a table called
+   “dr_gateways”. Gateway addresses are stored in a separate table
+   because of need to access them independent of Dynamic Routing
+   processing (e.g., adding/ removing gateway PRI prefix
+   before/after performing other operation -- receiving/relaying
+   to gateway).
+
+   In DR, a gateway is defined by:
+     * id (string)
+     * SIP address (SIP URI)
+     * type (number to allow to group GW based on purpose, like
+       inbound, outbound, etc)
+     * strip value (number of digits) from dialled number
+     * prefix (string) to be added to dialled number
+     * attributes (not used by DR engine, but only pushed to
+       script level when routing to this GW)
+     * probing mode (how the GW should be probed at SIP level -
+       see the probing chapter)
+
+   The Gateways are to be used from the routing rule or from the
+   carrier definition. They are all the time referred by their ID.
+
+1.1.4.2. Carriers
+
+   The carrier concept is used if you need to group gateways in
+   order to have a better control on how the GWs will be used by
+   DR rules; like in what order the GWs will be used.
+
+   Basically, a carrier is a set of gateways which have its own
+   sorting algorithm and its own attribute string. They are by
+   default defined in the “dr_carriers” table.
+
+   In DR, a carrier is defined by:
+     * id (string)
+     * list of gateways with/without weights (string)
+     * flags : 0x1 - use weight for sorting the list and not
+       definition order; 0x2 - disable the usage of this carrier
+     * attributes (not used by DR engine, but only pushed to
+       script level when routing to this carrier)
+
+   The Carriers are to be used only from the routing rule
+   definition. They are all the time referred by their ID.
+
+1.1.4.3. Routing Rules
+
+   These are the actual rule which control the routing - like
+   based on different criterias (prefix, time, priority, etc) they
+   will decide to which gateways the call will be sent.
+
+   Default name for the table storing rule definitions is
+   “dr_rules”.
+
+   In DR, a carrier is defined by:
+     * group (list of numbers) - rules can be grouped (a rule may
+       belong to multiple groups in the same time ) and you can
+       use only a certian group at a point; like having a
+       “premium” or “standard” or “interstate” or “intrastate”
+       groups of rules to be used in different cases
+     * prefix (string with digits only) - prefix to be used for
+       matching this rule (longest prefix matching)
+     * time validity (time recurrence string) - when this rule is
+       valid from time point of view (see RFC 2445)
+     * priority (number) - prority off the rule - higher value,
+       higher priority (see rule section alg)
+     * script route ID (string) - if defined, then execute the
+       route with the specified ID when this rule is matched.
+       That's it, a route which can be used to perform custom
+       operations on message. NOTE that no modification is
+       performed at signaling level and you must NOT do any
+       signalling operations in that script route
+     * list of GWs/carriers (string) - a comma separated list of
+       gateways or carriers (defined by IDs) to be used for this
+       rule; the carrier IDs are prefixed with “#” sign. For each
+       ID (GW or carrier) you may specify a weight. For how this
+       list will be interpreted (as order) see the rule selection
+       section. Example of list: “gw1,gw4,#cr3”
+     * attributes (not used by DR engine, but only pushed to
+       script level when this rule matched and been used)
+
+   More on time recurrence:
+     * A date-time expression that defines the time recurrence to
+       match for current rule. Time recurrences are based closely
+       on the specification of recurring intervals of time in the
+       Internet Calendaring and Scheduling Core Object
+       Specification (calendar COS), RFC 2445. The set of
+       attributes used in routing rule specification is subset of
+       time recurrence attributes.
+     * The value stored in database has the format of:
+       <dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bym
+       onthday>|<byyearday>|<byweekno>|<bymonth>
+     * When an attribute is not specified, the corresponding place
+       must be left empty, whenever another attribute that follows
+       in the list has to be specified.
+
+1.1.5. Routing Rule Processing
+
+   The module can be used to find out which is the best gateway to
+   use for new calls terminated to PSTN. The algorithm to select
+   the rule is as follows:
+     * the module discovers the routing group of the originating
+       user. This step is skipped if a routing group is passed
+       from the script as parameter.
+     * once the group is known, in the subset of the rules for
+       this group the module looks for the one that matches the
+       destination based on "prefix" column. The set of rules with
+       the longest prefix is chosen. If no digit from the prefix
+       matches, the default rules are used (rules with no prefix)
+     * within the set of rules is applied the time criteria, and
+       the rule which has the highest priority and matches the
+       time criteria is selected to drive the routing.
+     * Once found the rule, it may contain a route ID to execute.
+       If a certain flag is set, then the processing is stopped
+       after executing the route block.
+     * The rule must contain a chain of gateways and carriers. The
+       module will execute serial forking for each address in
+       chain (in which order the destinations will be tried,
+       depends on the defintion order or depends on the weights
+       (weights selection must be enabled). The next address in
+       chain is used only if the previously has failed.
+     * With the right gateway address found, the prefix (PRI) of
+       the gateway is added to the request URI and then the
+       request is forwarded.
+
+   If no rule is found to match the selection criteria an default
+   action must be taken (e.g., error response sent back). If the
+   gateway in the chain has no prefix the request is forwarded
+   without adding any prefix to the request URI.
+
+1.1.6. Probing and Disabling destinations
 
    The module has the capability to monitor the status of the
    destinations by doing SIP probing (sending SIP requests like
@@ -201,288 +360,6 @@ Chapter 1. Admin Guide
        disabled until you re-enable it again via MI command - this
        is designed to allow controlled and complete disabling of
        some destination during maintenance.
-
-1.1.4. Performance
-
-   There were several tests performed regarding the performance of
-   the module when dealing with a large number of routing rules.
-
-   The tests were performed with a set of 383000 rules and to
-   values were measured:
-     * time to load from DB
-     * used shared memory
-
-   The time to load was varying between 4 seconds and 8 seconds,
-   depending of the caching of the DB client - the first load was
-   the slowest (as the DB query hits the disk drive); the
-   following are faster as data is already cached in the DB
-   client. So technically speaking, the time to load (without the
-   time to query which is DB type dependent) is ~4 seconds
-
-   After loading the data into shared memory ~ 96M of memory were
-   used exclusively for the DR data.
-
-1.1.5. Routing Rule Definition
-
-   Dynamic routing rules are stored in a database, in four tables:
-     * one for storing the gateway definitions
-     * one for storing the routing rule definitions
-     * one for storing the users mappings over groups
-     * one for storing a list of gateways, so you don't have to
-       enter all the elements every time you need it
-
-1.1.5.1. Gateway Addresses
-
-   Default name for the table storing gateway addresses is
-   “dr_gateways”. Gateway addresses are stored in a separate table
-   because of need to access them independent of Dynamic Routing
-   processing (e.g., adding/ removing gateway PRI prefix
-   before/after performing other operation -- receiving/relaying
-   to gateway).
-
-   Table 1.1. Definition of table dr_gateways
-   Column name     Type     Default value         Description
-   gwid        integer      auto increment unique identifier for GW
-   type        unsigned int 0              type/class of GW
-   address     varchar(128)                address of the gateway
-   strip       unsigned int 0              no of digits to strip
-   pri_prefix  varchar(255)                PRI prefix of the gateway
-   probe_mode  unsigned int 0              Probing mode
-   description varchar(128)                description of the gateway
-
-   Once a rule is matched, the STRIP number of digits are removed
-   from the username part of the RURI and then the PRI prefix has
-   to be added to the request URI before forwarding the call to
-   the gateway.
-
-   Table 1.2. Sample dr_gateways records
-   gwid type     address      strip pri_prefix probe_mode description
-   1    10   10.10.10.10:5080 0     2222       0          Gateway 1
-   2    10   10.10.10.10      2     3333       2          Gateway 2
-   3    20   10.10.10.11      0                1          Gateway 3
-
-1.1.5.2. Destination/GW lists
-
-   For each rule, you can set a list of destinations to be used.
-   The list is comma or pipe separated enumeration of the
-   destinations. The module will use (one by one) each destination
-   from the list (in the given order).
-
-   Also the module allows the usage of groups in the destination
-   lists. A group of destinations is delimited by semi-colon char.
-   inside the whole destination list ( like: 2,4;5,78,23;4;7;2 ).
-   The destinations from within a group may be act differently
-   (like load-balancing, random selection, etc), depending of the
-   “sort_order” parameter - more about this is available under the
-   “do_routing()” function section.
-
-1.1.5.3. Routing Rules
-
-   Default name for the table storing rule definitions is
-   “dr_rules”.
-
-   Table 1.3. Definition of dr_rules table
-   Column name     Type     Default            Description
-   ruleid      integer      auto    UID of the rule
-   groupid     varchar(255)         list of routing group IDs
-   prefix      varchar(64)          destination prefix for this route
-   timerec     varchar(255)         time recurrence for this rule
-   priority    integer      0       priority of the rule
-   routeid     integer      0       route block to be execute
-   gwlist      varchar(255)         the list with GWs to be used
-   description varchar(128)         description of this rule
-
-    a. groupid column
-       Each user must be member of only one routing group. It must
-       be specified in user's profile.
-    b. prefix column
-       Destination URI must start with prefix value to match the
-       rule.
-    c. time rec column
-       A date-time expression that defines the time recurrence to
-       match for current rule. Time recurrences are based closely
-       on the specification of recurring intervals of time in the
-       Internet Calendaring and Scheduling Core Object
-       Specification (calendar COS), RFC 2445. The set of
-       attributes used in routing rule specification is subset of
-       time recurrence attributes used by Call Processing Language
-       (CPL). These attributes are (extracted from CPL draft 09):
-       Table 1.4. Time recurrence attributes
-
-       Attribute                     Description
-       dastard    Start of interval (RFC 2445 DATE-TIME)
-       duration   Length of interval (RFC 2445 DURATION)
-       freq       Frequency of recurrence (secondly,minutely,hourly,
-                  daily,weekly, monthly, or yearly).
-       until      bound of recurrence (RFC 2445 DATE-TIME)
-       interval   How often the recurrence repeats
-       byday      List of days of the week
-       bymonthday List of days of the month
-       byyearday  List of days of the year
-       byweekno   List of weeks of the year
-       bymonth    List of months of the year
-       The value stored in database has the format of:
-       <dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bym
-       onthday>|<byyearday>|<byweekno>|<bymonth>
-       When an attribute is not specified, the corresponding place
-       must be left empty, whenever another attribute that follows
-       in the list has to be specified.
-       Detailed description of time recurrence attributes:
-          + dtstart - specifies the beginning of the first period.
-          + duration - specifies the duration of the period. For a
-            recurring interval, the “duration” parameter MUST be
-            small enough such that subsequent intervals do not
-            overlap. For non-recurring intervals, durations of any
-            positive length are permitted, zero-length duration
-            means “forever”. Negative-length durations are not
-            allowed.
-          + freq - takes one of the following values: “daily”, to
-            specify repeating periods based on an interval of a
-            day or more; “weekly”, to specify repeating periods
-            based on an interval of a week or more; “monthly”, to
-            specify repeating periods based on an interval of a
-            month or more; and “yearly”, to specify repeating
-            periods based on an interval of a year or more. These
-            values are not case-sensitive.
-          + until - defines an iCalendar COS DATE or DATE-TIME
-            value which bounds the recurrence rule in an inclusive
-            manner. If the value specified by “until” is
-            synchronized with the specified recurrence, this date
-            or date-time becomes the last instance of the
-            recurrence. If not present, the recurrence is
-            considered to repeat forever.
-          + interval - contains a positive integer representing
-            how often the recurrence rule repeats. The default
-            value is “1”, meaning every day for a “daily” rule,
-            every week for a “weekly” rule, every month for a
-            “monthly” rule and every year for a “yearly” rule.
-          + interval - contains a positive integer representing
-            how often the recurrence rule repeats. The default
-            value is “1”, meaning every day for a “daily” rule,
-            every week for a “weekly” rule, every month for a
-            “monthly” rule and every year for a “yearly” rule.
-          + byday - specifies a comma-separated list of days of
-            the week. “MO” indicates Monday; “TU” indicates
-            Tuesday; “WE” indicates Wednesday; “TH” indicates
-            Thursday; “FR” indicates Friday; “SA” indicates
-            Saturday; “SU” indicates Sunday. These values are not
-            case-sensitive.
-            Each “byday” value can also be preceded by a positive
-            (+n) or negative (-n) integer. If present, this
-            indicates the nth occurrence of the specific day
-            within the “monthly” or “yearly” recurrence. For
-            example, within a “monthly” rule, +1MO (or simply 1MO)
-            represents the first Monday within the month, whereas
-            -1MO represents the last Monday of the month. If an
-            integer modifier is not present, it means all days of
-            this type within the specified frequency. For example,
-            within a “monthly” rule, MO represents all Mondays
-            within the month.
-          + bymonthday - parameter specifies a comma-separated
-            list of days of the month. Valid values are 1 to 31 or
-            -31 to -1. For example, -10 represents the tenth to
-            the last day of the month.
-          + byyearday - specifies a comma-separated list of days
-            of the year. Valid values are 1 to 366 or -366 to -1.
-            For example, -1 represents the last day of the year
-            (December 31st) and -306 represents the 306th to the
-            last day of the year (March 1st).
-          + byweekno - specifies a comma-separated list of
-            ordinals specifying weeks of the year. Valid values
-            are 1 to 53 or -53 to -1.
-          + bymonth - parameter specifies a comma-separated list
-            of months of the year. Valid values are 1 to 12.
-       A recurrence is specified by including the “freq”
-       parameter, which indicates the type of recurrence rule.
-       Parameters other than “dtstart” and “duration” SHOULD NOT
-       be specified unless “freq” is present.
-       If byxxx parameter values are found which are beyond the
-       available scope (ie, bymonthday=“30” in February), they are
-       simply ignored.
-       Byxxx parameters modify the recurrence in some manner.
-       Byxxx rule parts for a period of time which is the same or
-       greater than the frequency generally reduce or limit the
-       number of occurrences of the recurrence generated. For
-       example, freq=“daily” bymonth=“1” reduces the number of
-       recurrence instances from all days (if the “bymonth”
-       parameter is not present) to all days in January. Byxxx
-       parameters for a period of time less than the frequency
-       generally increase or expand the number of occurrences of
-       the recurrence. For example, freq=“yearly” bymonth=“1,2”
-       increases the number of days within the yearly recurrence
-       set from 1 (if “bymonth” parameter is not present) to 2.
-       If multiple Byxxx parameters are specified, then after
-       evaluating the specified “freq” and “interval” parameters,
-       the Byxxx parameters are applied to the current set of
-       evaluated occurrences in the following order: “bymonth”,
-       “byweekno”, “byyearday”, “bymonthday”, “byday”; then
-       “until” is evaluated.
-       Here is an example of evaluating multiple Byxxx parameters.
-       dtstart=“19970105T083000” duration=“10M” freq=“yearly”
-       interval=“2” bymonth=“1” byday=“SU”
-       First, the interval=“2” would be applied to freq=“yearly”
-       to arrive at “every other year” . Then, bymonth=“1” would
-       be applied to arrive at “every January, every other year”.
-       Then, byday=“SU” would be applied to arrive at “every
-       Sunday in January, every other year, from 8:30 to 8:40 ”.
-       The appropriate minutes and hours have been retrieved from
-       the “dtstart” and “duration” parameters.
-    d. priority column
-       If many rules are eligible, choose the one with highest
-       priority.
-    e. routeid column
-       If different than 0, then execute the route with the
-       specified ID. That is, a route which can be used to perform
-       custom operations on message. At this route, no
-       modification is performed at signaling level.
-    f. gwlist column
-       A comma separated list of gateway identifiers corresponding
-       to a row in table “dr_gateways”. The first gateway is tried
-       first and if failure the second one, and so on. If no
-       gateway is left a negative response is sent back to the
-       user. You can use a predefined list from the table
-       “dr_gw_lists” preceded by the character "#".
-    g. Routing Rules Examples
-       Table 1.5. Sample dr_rules records
-
-   ruleid group prefix timerec priority routeid gwlist description
-   1 6 0049 20040101T083000|10H|weekly|||MO,TU,WE,TH,FR 5 23 1,2
-   Rule 1
-   2 8 0049 20040101T083000 0 0 1,2 Rule 2
-   3 7,8,9 0049 20040101T083000 0 0 3 Rule 3
-       (The time recurrence for first rule is:
-       “20040101T083000|10H|weekly|||MO,TU,WE,TH,FR”)
-
-1.1.6. Routing Rule Processing
-
-   The module can be used to find out which is the best gateway to
-   use for new calls terminated to PSTN. The algorithm to select
-   the rule is as follows:
-     * the module discovers the routing group of the originating
-       user. This step is skipped if a routing group is passed
-       from the script as parameter.
-     * once the group is known, in the subset of the rules for
-       this group the module looks for the one that matches the
-       destination based on "prefix" column. The set of rules with
-       the longest prefix is chosen. If no digit from the prefix
-       matches, the default rules are used (rules with no prefix)
-     * within the set of rules is applied the time criteria, and
-       the rule which has the highest priority and matches the
-       time criteria is selected to drive the routing.
-     * Once found the rule, it may contain a route ID to execute.
-       If a certain flag is set, then the processing is stopped
-       after executing the route block.
-     * The rule must contain a gateway chain. The module will
-       execute serial forking for each address in chain. The next
-       address in chain is used only if the previously has failed.
-     * With the right gateway address found, the prefix (PRI) of
-       the gateway is added to the request URI and then the
-       request is forwarded.
-
-   If no rule is found to match the selection criteria an default
-   action must be taken (e.g., error response sent back). If the
-   gateway in the chain has no prefix the request is forwarded
-   without adding any prefix to the request URI.
 
 1.2. Dependencies
 
@@ -564,7 +441,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
    The name of the avp for storing Request URIs to be later used
    (alternative destiantions for the current one).
 
-   Default value is “NULL”.
+   Default value is “$avp(0xad346b2f)”.
 
    Example 1.6. Set ruri_avp parameter
 ...
@@ -579,7 +456,7 @@ modparam("drouting", "ruri_avp", '$avp(33)')
    the use_next_gw() function), the AVP will be updated with the
    ID of the new selected gateway/destination.
 
-   Default value is “NULL”.
+   Default value is “$avp(0xad346b30)”.
 
    Example 1.7. Set gw_id_avp parameter
 ...
@@ -680,67 +557,19 @@ modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
 ...
 
-1.3.15. use_domain (int)
-
-   Flag to configure whether to use domain match when querying
-   database for user's routing group.
-
-   Default value is “1”.
-
-   Example 1.15. Set use_domain parameter
-...
-modparam("drouting", "use_domain", 0)
-...
-
-1.3.16. default_group (int)
+1.3.15. default_group (int)
 
    Group to be used if the caller (FROM user) is not found in the
    GROUP table.
 
    Default value is “NONE”.
 
-   Example 1.16. Set default_group parameter
+   Example 1.15. Set default_group parameter
 ...
 modparam("drouting", "default_group", 4)
 ...
 
-1.3.17. drg_user_col (str)
-
-   The name of the column in group db table where the username is
-   stored.
-
-   Default value is “username”.
-
-   Example 1.17. Set drg_user_col parameter
-...
-modparam("drouting", "drg_user_col", "user")
-...
-
-1.3.18. drg_domain_col (str)
-
-   The name of the column in group db table where the domain is
-   stored.
-
-   Default value is “domain”.
-
-   Example 1.18. Set drg_domain_col parameter
-...
-modparam("drouting", "drg_domain_col", "host")
-...
-
-1.3.19. drg_grpid_col (str)
-
-   The name of the column in group db table where the group id is
-   stored.
-
-   Default value is “groupid”.
-
-   Example 1.19. Set drg_grpid_col parameter
-...
-modparam("drouting", "drg_grpid_col", "grpid")
-...
-
-1.3.20. force_dns (int)
+1.3.16. force_dns (int)
 
    Force DNS resolving of GW/destination names (if not IPs) during
    startup. If not enabled, the GW name will be blindly used
@@ -748,12 +577,12 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
    Default value is “1 (enabled)”.
 
-   Example 1.20. Set force_dns parameter
+   Example 1.16. Set force_dns parameter
 ...
 modparam("drouting", "force_dns", 0)
 ...
 
-1.3.21. probing_interval (integer)
+1.3.17. probing_interval (integer)
 
    How often (in seconds) the probing of a destination should be
    done. If set to 0, the probing will be disabled as
@@ -761,34 +590,34 @@ modparam("drouting", "force_dns", 0)
 
    Default value is “30”.
 
-   Example 1.21. Set probing_interval parameter
+   Example 1.17. Set probing_interval parameter
 ...
 modparam("drouting", "probing_interval", 60)
 ...
 
-1.3.22. probing_method (string)
+1.3.18. probing_method (string)
 
    The SIP method to be used for the probing requests.
 
    Default value is “"OPTIONS"”.
 
-   Example 1.22. Set probing_method parameter
+   Example 1.18. Set probing_method parameter
 ...
 modparam("drouting", "probing_method", "INFO")
 ...
 
-1.3.23. probing_from (string)
+1.3.19. probing_from (string)
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
    Default value is “"sip:prober@localhost"”.
 
-   Example 1.23. Set probing_from parameter
+   Example 1.19. Set probing_from parameter
 ...
 modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 ...
 
-1.3.24. probing_reply_codes (string)
+1.3.20. probing_reply_codes (string)
 
    A comma separted list of SIP reply codes. The codes defined
    here will be considered as valid reply codes for probing
@@ -796,14 +625,62 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
    Default value is “NULL”.
 
-   Example 1.24. Set probing_reply_codes parameter
+   Example 1.20. Set probing_reply_codes parameter
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
 
+1.3.21. use_domain (int)
+
+   Flag to configure whether to use domain match when querying
+   database for user's routing group.
+
+   Default value is “1”.
+
+   Example 1.21. Set use_domain parameter
+...
+modparam("drouting", "use_domain", 0)
+...
+
+1.3.22. drg_user_col (str)
+
+   The name of the column in group db table where the username is
+   stored.
+
+   Default value is “username”.
+
+   Example 1.22. Set drg_user_col parameter
+...
+modparam("drouting", "drg_user_col", "user")
+...
+
+1.3.23. drg_domain_col (str)
+
+   The name of the column in group db table where the domain is
+   stored.
+
+   Default value is “domain”.
+
+   Example 1.23. Set drg_domain_col parameter
+...
+modparam("drouting", "drg_domain_col", "host")
+...
+
+1.3.24. drg_grpid_col (str)
+
+   The name of the column in group db table where the group id is
+   stored.
+
+   Default value is “groupid”.
+
+   Example 1.24. Set drg_grpid_col parameter
+...
+modparam("drouting", "drg_grpid_col", "grpid")
+...
+
 1.4. Exported Functions
 
-1.4.1.  do_routing([[groupID],sort])
+1.4.1.  do_routing([[groupID],flags])
 
    Function to trigger routing of the message according to the
    rules in the database table and the configured parameters.
@@ -816,39 +693,36 @@ modparam("drouting", "probing_reply_codes", "501, 403")
        (value must be numerical type, string types are ignored!).
        If none specified, the function will automatically try to
        query the dr_group table to get this information;
-     * sort_order - defines how the destination list should be
-       processed (ordering of the elements). Possible modes are
-          + 0 - destination groups are ignored and all the
-            destinations are tried in the given order; Ex: list
-            1,2;3,4,5;6 will lead to usage as 1,2,3,4,5,6
-          + 1 - the destinations from each group are randomly
-            arranged (only the two elements are randomly
-            selected); groups do maintain their order (as given);
-            the resulting list is used (with all the defined
-            destinations). Ex: 1,2;3,4,5;6 -> randomizer -> (A)
-            2,1;4,3,5;6 -> usage 2,1,4,3,5,6 (B) 1,2;3,5,4;6 ->
-            usage 1,2,3,5,4,6
-          + 2 - from each destination group, only a single
-            destination is randomly selected; groups do maintain
-            their order (as given); Ex: 1,2;3,4,5;6 -> randomizer
-            -> (A) 2;4;6 -> usage 2,4,6 (B) 1;5;6 -> usage 1,5,6
+     * flags - Controlls the behavior of the function. Possible
+       flags are:
+          + W - Instead of using the destination (from the rule
+            definition) in the given order, sort them based on
+            their weight.
+          + F - Enable rule fallback; normally the engine is using
+            a single rule for routing a call; by setting this
+            flag, the enging will fallback and use rules with less
+            priority or shorter prefix when all the destination
+            from the current rules failed.
+          + L - Do strict lenght matching over the prefix -
+            actually DR engine will do full number maching and not
+            prefix matching anymore.
 
    Example 1.25. do_routing usage
 ...
-# all groups, sort 0
+# all groups, sort on order
 do_routing();
 ...
-# group id 0, sort 0
+# group id 0, sort on order
 do_routing("0");
 ...
-# group id from $avp(10), sort 0
+# group id from $avp(10), sort on order
 do_routing("$avp(10)");
 ...
-# all groups, sort 1
-do_routing("","1");
+# all groups, sort on weights
+do_routing("","W");
 ...
-# group id 2, sort 2
-do_routing("2","2");
+# group id 2, sort on order, fallback rule
+do_routing("2","F");
 ...
 
 1.4.2.  route_to_carrier(carrier_id)
@@ -865,7 +739,7 @@ do_routing("2","2");
 
    Example 1.26. route_to_carrier usage
 ...
-if ( route_2_routing("my_top_carrier") ) {
+if ( route_to_carrier("my_top_carrier") ) {
         t_on_failure("next_gw");
         t_relay();
         exit;
@@ -882,9 +756,9 @@ if ( route_2_routing("my_top_carrier") ) {
    Function takes a single mandatory parameter, the ID of the
    gateway to be used (variables are accepted).
 
-   Example 1.27. route_to_carrier usage
+   Example 1.27. route_to_gw usage
 ...
-if ( route_2_gw("gw_europe") ) {
+if ( route_to_gw("gw_europe") ) {
         t_relay();
         exit;
 }
