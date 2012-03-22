@@ -137,7 +137,7 @@ inline static void _set_fr_retr( struct retr_buf *rb, int retr )
 {
 	utime_t timer;
 
-	if (retr) {
+	if (retr && !rb->retr_timer.deleted) {
 		rb->retr_list=RT_T1_TO_1;
 		set_timer( &rb->retr_timer, RT_T1_TO_1, 0 );
 	}
