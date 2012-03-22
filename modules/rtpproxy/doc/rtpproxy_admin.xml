@@ -545,7 +545,7 @@ rtpproxy_offer();
 				connection information.
 				</para></listitem>
 				<listitem><para>
-				<emphasis>w</emphasis> - flags that for the UA from which 
+				<emphasis>s/w</emphasis> - flags that for the UA from which 
 				message is received, support symmetric RTP must be forced.
 				</para></listitem>
 				<listitem><para>

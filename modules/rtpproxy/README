@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision: 7796 $ $Date: 2011-03-10 00:23:25 +0200
-                              (Jo, 10 mar 2011) $
+   Revision $Revision: 8740 $ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -430,7 +430,7 @@ rtpproxy_offer();
           + c - flags to change the session-level SDP connection
             (c=) IP if media-description also includes connection
             information.
-          + w - flags that for the UA from which message is
+          + s/w - flags that for the UA from which message is
             received, support symmetric RTP must be forced.
           + zNN - requests the RTPproxy to perform
             re-packetization of RTP traffic coming from the UA
