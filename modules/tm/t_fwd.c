@@ -743,6 +743,9 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 			success_branch++;
 
+			start_retr( &t->uac[i].request );
+			set_kr(REQ_FWDED);
+
 			/* successfully sent out -> run callbacks */
 			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
 				set_extra_tmcb_params( &t->uac[i].request.buffer,
@@ -751,8 +754,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					-p_msg->REQ_METHOD);
 			}
 
-			start_retr( &t->uac[i].request );
-			set_kr(REQ_FWDED);
 		}
 	}
 
