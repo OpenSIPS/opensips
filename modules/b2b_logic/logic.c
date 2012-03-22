@@ -602,7 +602,7 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.extra_headers = tuple->extra_headers;
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
-	ci.send_sock     = msg?msg->rcv.bind_address:NULL;
+	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;;
 	ci.local_contact = tuple->local_contact;
 
 	if(msg)
@@ -700,7 +700,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.extra_headers = extra_headers;
 			ci.body          = body;
 			ci.from_tag      = NULL;
-			ci.send_sock     = msg->rcv.bind_address;
+			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;;
 			ci.local_contact = tuple->local_contact;
 
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
@@ -2511,7 +2511,7 @@ entity_search_done:
 		ci.extra_headers = tuple->extra_headers;
 		ci.body          = 0;
 		ci.from_tag      = 0;
-		ci.send_sock     = msg?msg->rcv.bind_address:0;
+		ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):0;
 		ci.local_contact = tuple->local_contact;
 
 		if(msg)
@@ -2726,7 +2726,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.dst_uri       = msg->dst_uri;
 	ci.extra_headers = &extra_headers;
 	ci.body          = (body.s?&body:NULL);
-	ci.send_sock     = msg->rcv.bind_address;
+	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 	ci.local_contact = tuple->local_contact;
 
 	dlginfo = tuple->servers[0]->dlginfo;
@@ -3227,7 +3227,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			ci.from_uri      = from_uri;
 			ci.extra_headers = tuple->extra_headers;
 			ci.body          = (body.s?&body:NULL);
-			ci.send_sock     = msg->rcv.bind_address;
+			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;;
 			ci.local_contact = tuple->local_contact;
 
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
