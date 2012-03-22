@@ -437,19 +437,17 @@ static int mod_init(void)
 static inline int insert_siptrace_flag(struct sip_msg *msg,
 		db_key_t *keys,db_val_t *vals)
 {
-	if( flag_trace_is_set(msg) ) {
-		db_vals[9].val.str_val.s   = "";
-		db_vals[9].val.str_val.len = 0;
+	db_vals[9].val.str_val.s   = "";
+	db_vals[9].val.str_val.len = 0;
 
-		LM_DBG("storing info 1...\n");
-		if (con_set_inslist(&db_funcs,db_con,&ins_list,keys,NR_KEYS) < 0 )
-			CON_RESET_INSLIST(db_con);
-		CON_PS_REFERENCE(db_con) = &siptrace_ps;
-		if(db_funcs.insert(db_con, keys, vals, NR_KEYS) < 0)
-		{
+	LM_DBG("storing info 1...\n");
+	if (con_set_inslist(&db_funcs,db_con,&ins_list,keys,NR_KEYS) < 0 )
+		CON_RESET_INSLIST(db_con);
+	CON_PS_REFERENCE(db_con) = &siptrace_ps;
+	if(db_funcs.insert(db_con, keys, vals, NR_KEYS) < 0)
+	{
 			LM_ERR("error storing trace\n");
-			return -1;
-		}
+		return -1;
 	}
 
 	return 0;
@@ -618,12 +616,29 @@ static void trace_transaction(struct dlg_cell* dlg, int type,
 
 	/* set the flag */
 	params->msg->flags |= trace_flag;
+	params->msg->msg_flags |= FL_USE_SIPTRACE;
 	/* trace current request */
 	sip_trace(params->msg);
 
 	if(tmb.register_tmcb( params->msg, 0, TMCB_REQUEST_BUILT, trace_onreq_out, 0, 0) <=0)
 	{
 		LM_ERR("can't register trace_onreq_out\n");
+		return;
+	}
+
+	/* doesn't make sense to register the reply callbacks for ACK */
+	if (params->msg->REQ_METHOD == METHOD_ACK)
+		return;
+
+	if(tmb.register_tmcb( params->msg, 0, TMCB_RESPONSE_IN, trace_onreply_in, 0, 0) <=0)
+	{
+		LM_ERR("can't register trace_onreply_in\n");
+		return;
+	}
+
+	if(tmb.register_tmcb( params->msg, 0, TMCB_RESPONSE_OUT, trace_onreply_out, 0, 0) <=0)
+	{
+		LM_ERR("can't register trace_onreply_out\n");
 		return;
 	}
 
@@ -846,6 +861,9 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
+	if (msg->msg_flags & FL_USE_SIPTRACE) {
+		return;
+	}
 	LM_DBG("trace on req in \n");
 
 	avp = NULL;
@@ -871,14 +889,12 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
-
 	if(tmb.register_tmcb( 0, t, TMCB_REQUEST_BUILT, trace_onreq_out, 0, 0) <=0)
 	{
 		LM_ERR("can't register trace_onreq_out\n");
 		return;
 	}
 
-/*
 	if(tmb.register_tmcb( 0, t, TMCB_RESPONSE_IN, trace_onreply_in, 0, 0) <=0)
 	{
 		LM_ERR("can't register trace_onreply_in\n");
@@ -890,7 +906,6 @@ static void trace_onreq_in(struct cell* t, int type, struct tmcb_params *ps)
 		LM_ERR("can't register trace_onreply_out\n");
 		return;
 	}
-*/
 }
 
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
@@ -915,17 +930,6 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		trace_msg_out( ps->req, (str*)ps->extra1,
 			NULL, PROTO_NONE, NULL);
 
-	if(tmb.register_tmcb( 0, t, TMCB_RESPONSE_IN, trace_onreply_in, 0, 0) <=0)
-	{
-		LM_ERR("can't register trace_onreply_in\n");
-		return;
-	}
-
-	if(tmb.register_tmcb( 0, t, TMCB_RESPONSE_OUT, trace_onreply_out, 0, 0) <=0)
-	{
-		LM_ERR("can't register trace_onreply_out\n");
-		return;
-	}
 }
 
 static void trace_msg_out_w(struct sip_msg* msg, str  *sbuf,

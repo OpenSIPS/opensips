@@ -104,6 +104,8 @@ enum request_method {
 				      * callback had already been registered */
 #define FL_NAT_TRACK_DIALOG  (1<<13) /* trigger dialog tracking from the
                                       * nat_traversal module */
+#define FL_USE_SIPTRACE      (1<<14) /* used by siptrace to check if the tm
+									  * callbacks were registered */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 5
