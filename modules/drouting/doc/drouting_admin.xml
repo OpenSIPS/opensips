@@ -924,7 +924,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">do_routing([[groupID],flags])</function>
+		<function moreinfo="none">do_routing([[[groupID],flags],gw_whitelist])</function>
 		</title>
 		<para>
 		Function to trigger routing of the message according to the 
@@ -966,6 +966,11 @@ modparam("drouting", "drg_grpid_col", "grpid")
 						not prefix matching anymore.
 						</listitem>
 					</itemizedlist>
+				</listitem>
+				<listitem>
+					<emphasis>gw_whitelist</emphasis> - a comma separated white
+					list of gateways. This will force routing over this list of 
+					carriers or gateways (a subset of what found in the prefix rules).
 				</listitem>
 			</itemizedlist>
 		</para>
