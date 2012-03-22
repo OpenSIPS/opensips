@@ -532,6 +532,12 @@ The Interface allows the user to do the following :
    option to generate and obtain the final OpenSIPS cfg.
 
 
+If you have installed OpenSIPS from packages ( debs, rpms, etc ) and not from sources,
+you will still be able to use the graphical interface for generating configuration files,
+by running
+	osipsconfig
+
+
 4. Troubleshooting
 ------------------
 
