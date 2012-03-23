@@ -158,7 +158,7 @@ modparam("dispatcher", "force_dst", 1)
 		destination. When a destination is selected, automatically, this AVP
 		will provide the attributes string - this is an opaque string (from 
 		OpenSIPS point of view) : it is loaded from destination definition (
-		DB or file) and blindly provided in the script.
+		via DB) and blindly provided in the script.
 		</para>
 		<note>
 		</note>
@@ -645,8 +645,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 		<listitem>
 			<para>
 			<emphasis>set</emphasis> - the id of the set from where to pick
-			up destination address. It is the first column in destination
-			list file.
+			up destination address.
 			</para>
 		</listitem>
 		<listitem>
