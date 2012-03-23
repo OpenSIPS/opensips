@@ -148,8 +148,7 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
 	}
 	status.len = strlen(status.s);
 
-	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
-		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
+	len = 7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
 		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
 		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
 		 15/*";transport=xxxx"*/:0) + CRLF_LEN + 20 /*Subscription-State: */ +
@@ -174,20 +173,6 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
 		memcpy(p, extra_hdrs->s, extra_len);
 		p+= extra_hdrs->len;
 	}
-
-	memcpy(p,"Max-Forwards: ", 14);
-	p+= 14;
-	len= sprintf(p, "%d", MAX_FORWARD);
-	if(len<= 0)
-	{
-		LM_ERR("while printing in string\n");
-		pkg_free(hdr->s);
-		return -1;
-	}
-	p+= len;
-
-	memcpy(p, CRLF, CRLF_LEN);
-	p += CRLF_LEN;
 
 	memcpy(p ,"Event: ", 7);
 	p+= 7;

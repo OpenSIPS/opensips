@@ -575,8 +575,7 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 
 	lexpire_s = int2str(subs->expires, &lexpire_len);
 	
-	len = 14 /*Max-Forwards: */ + 4 /* valoarea */ + CRLF_LEN + 
-		7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
+	len = 7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
 		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
 		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
 		 15/*";transport=xxxx"*/:0) + CRLF_LEN +/*Subscription-State:*/ 20 +
@@ -593,20 +592,6 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 	}
 
 	p = hdr->s;
-
-	memcpy(p,"Max-Forwards: ", 14);
-	p+= 14;
-	len= sprintf(p, "%d", MAX_FORWARD);
-	if(len<= 0)
-	{
-		LM_ERR("while printing in string\n");
-		pkg_free(hdr->s);
-		return -1;
-	}
-	p+= len;
-
-	memcpy(p, CRLF, CRLF_LEN);
-	p += CRLF_LEN;
 
 	memcpy(p ,"Event: ", 7);
 	p+= 7;

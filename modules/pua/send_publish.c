@@ -66,16 +66,8 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 		LM_ERR("no more memory\n");
 		return NULL;
 	}
-	memset(str_hdr, 0 , sizeof(str));
-	memset(buf, 0, 2999);
 	str_hdr->s = buf;
 	str_hdr->len= 0;
-
-	memcpy(str_hdr->s ,"Max-Forwards: ", 14);
-	str_hdr->len = 14;
-	str_hdr->len+= sprintf(str_hdr->s+ str_hdr->len,"%d", MAX_FORWARD);
-	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
-	str_hdr->len += CRLF_LEN;
 
 	memcpy(str_hdr->s+ str_hdr->len ,"Event: ", 7);
 	str_hdr->len+= 7;
