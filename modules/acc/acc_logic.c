@@ -246,23 +246,28 @@ int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param
 		return 1;
 	}
 
-	accp->reason.s = buf.s;
-	accp->reason.len = strlen(accp->reason.s);
+	accp->reason = buf;
 
 	if (accp->reason.len>=3 && isdigit((int)buf.s[0])
-                && isdigit((int)buf.s[1]) && isdigit((int)buf.s[2]) ) {
+	&& isdigit((int)buf.s[1]) && isdigit((int)buf.s[2]) ) {
+		/* reply code is in the comment string */
 		accp->code = (buf.s[0]-'0')*100 + (buf.s[1]-'0')*10 + (buf.s[2]-'0');
 		accp->code_s.s = buf.s;
 		accp->code_s.len = 3;
 		accp->reason.s += 3;
-		for( ; isspace((int)accp->reason.s[0]) ; accp->reason.s++ );
-		accp->reason.len = strlen(accp->reason.s);
+		accp->reason.len -= 3;
+		for( ; isspace((int)accp->reason.s[0]) ; accp->reason.s++,accp->reason.len-- );
+	} else {
+		/* no reply code */
+		accp->code = 0;
+		accp->code_s.s = NULL;
+		accp->code_s.len = 0;
+	}
 
-		/*Default comment if none supplied*/
-		if (accp->reason.len <= 0) {
-			accp->reason.s = error_text(accp->code);
-			accp->reason.len = strlen(accp->reason.s);
-		}
+	/*Default comment if none supplied*/
+	if (accp->reason.len <= 0) {
+		accp->reason.s = error_text(accp->code);
+		accp->reason.len = strlen(accp->reason.s);
 	}
 
 	return 0;
