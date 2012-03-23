@@ -213,7 +213,7 @@ modparam("dispatcher", "force_dst", 1)
    current destination. When a destination is selected,
    automatically, this AVP will provide the attributes string -
    this is an opaque string (from OpenSIPS point of view) : it is
-   loaded from destination definition ( DB or file) and blindly
+   loaded from destination definition ( via DB) and blindly
    provided in the script.
 
 Note
@@ -505,7 +505,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 
    Meaning of the parameters is as follows:
      * set - the id of the set from where to pick up destination
-       address. It is the first column in destination list file.
+       address.
      * alg - the algorithm used to select the destination address.
           + “0” - hash over callid
           + “1” - hash over from uri.
