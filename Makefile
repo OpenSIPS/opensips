@@ -440,7 +440,7 @@ install-modules-all: install-modules install-modules-doc
 install: install-app install-console install-modules-all
 
 opensipsmc: $(cfg-prefix)/$(cfg-dir) $(data-prefix)/$(data-dir)
-	cd menuconfig;make proper;make MENUCONFIG_CFG_PATH=$(data-prefix)/$(data-dir)/menuconfig_templates/ MENUCONFIG_GEN_PATH=/$(cfg-dir) MENUCONFIG_HAVE_SOURCES=0 
+	cd menuconfig;make proper;make MENUCONFIG_CFG_PATH=$(data-target)/menuconfig_templates/ MENUCONFIG_GEN_PATH=$(cfg-target) MENUCONFIG_HAVE_SOURCES=0 
 	mkdir -p $(data-prefix)/$(data-dir)/menuconfig_templates/
 	cp menuconfig/configs/* $(data-prefix)/$(data-dir)/menuconfig_templates/
 
