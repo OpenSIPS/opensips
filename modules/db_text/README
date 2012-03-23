@@ -13,7 +13,7 @@ Daniel-Constantin Mierla
    Copyright © 2003, 2004 FhG FOKUS
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -22,8 +22,8 @@ Daniel-Constantin Mierla
 
         1.1. Overview
 
-              1.1.1. Design of dbtext engine
-              1.1.2. Internal format of a dbtext table
+              1.1.1. Design of db_text engine
+              1.1.2. Internal format of a db_text table
               1.1.3. Existing limitations
 
         1.2. Dependencies
@@ -38,18 +38,18 @@ Daniel-Constantin Mierla
         1.4. Exported Functions
         1.5. Installation and Running
 
-              1.5.1. Using dbtext with basic OpenSIPS
+              1.5.1. Using db_text with basic OpenSIPS
                       configuration
 
    2. Developer Guide
 
    List of Examples
 
-   1.1. Sample of a dbtext table
-   1.2. Minimal OpenSIPS location dbtext table definition
-   1.3. Minimal OpenSIPS subscriber dbtext table example
+   1.1. Sample of a db_text table
+   1.2. Minimal OpenSIPS location db_text table definition
+   1.3. Minimal OpenSIPS subscriber db_text table example
    1.4. Set db_mode parameter
-   1.5. Load the dbtext module
+   1.5. Load the db_text module
    1.6. Definition of 'subscriber' table (one line)
    1.7. Definition of 'location' and 'aliases' tables (one line)
    1.8. Definition of 'version' table and sample records
@@ -68,7 +68,7 @@ Chapter 1. Admin Guide
    if you deal with large amount of data you may run quickly out
    of memory. Also, it has not implemented all standard database
    facilities (like order by), it includes minimal functionality
-   to work properly (who knows ?!?) with OpenSIPS.
+   to work properly with OpenSIPS
 
    NOTE: the timestamp is printed in an integer value from time_t
    structure. If you use it in a system that cannot do this
@@ -81,22 +81,22 @@ Chapter 1. Admin Guide
    and reloads it. The write on disk happens at OpenSIPS shut
    down.
 
-1.1.1. Design of dbtext engine
+1.1.1. Design of db_text engine
 
-   The dbtext database system architecture:
+   The db_text database system architecture:
      * a database is represented by a directory in the local file
-       system. NOTE: when you use dbtext in OpenSIPS, the database
-       URL for modules must be the path to the directory where the
-       table-files are located, prefixed by “dbtext://”, e.g.,
-       “dbtext:///var/dbtext/ser”. If there is no “/” after
-       “dbtext://” then “CFG_DIR/” is inserted at the beginning of
-       the database path. So, either you provide an absolute path
-       to database directory or a relative one to “CFG_DIR”
-       directory.
+       system. NOTE: when you use db_text in OpenSIPS, the
+       database URL for modules must be the path to the directory
+       where the table-files are located, prefixed by “text://”,
+       e.g., “text:///var/dbtext/opensips”. If there is no “/”
+       after “text://” then “CFG_DIR/” is inserted at the
+       beginning of the database path. So, either you provide an
+       absolute path to database directory or a relative one to
+       “CFG_DIR” directory.
      * a table is represented by a text file inside database
        directory.
 
-1.1.2. Internal format of a dbtext table
+1.1.2. Internal format of a db_text table
 
    First line is the definition of the columns. Each column must
    be declared as follows:
@@ -124,7 +124,7 @@ Chapter 1. Admin Guide
        “\t”, “:”.
      * 0 -- the zero value must be escaped too.
 
-   Example 1.1. Sample of a dbtext table
+   Example 1.1. Sample of a db_text table
 ...
 id(int,auto) name(str) flag(double) desc(str,null)
 1:nick:0.34:a\tgood\: friend
@@ -132,12 +132,12 @@ id(int,auto) name(str) flag(double) desc(str,null)
 3:bob:2.50:
 ...
 
-   Example 1.2. Minimal OpenSIPS location dbtext table definition
+   Example 1.2. Minimal OpenSIPS location db_text table definition
 ...
 username(str) contact(str) expires(int) q(double) callid(str) cseq(int)
 ...
 
-   Example 1.3. Minimal OpenSIPS subscriber dbtext table example
+   Example 1.3. Minimal OpenSIPS subscriber db_text table example
 ...
 username(str) password(str) ha1(str) domain(str) ha1b(str)
 suser:supasswd:xxx:alpha.org:xxx
@@ -191,15 +191,15 @@ modparam("db_text", "db_mode", 1)
    Compile the module and load it instead of mysql or other DB
    modules.
 
-   REMINDER: when you use dbtext in OpenSIPS, the database URL for
-   modules must be the path to the directory where the table-files
-   are located, prefixed by “dbtext://”, e.g.,
-   “dbtext:///var/dbtext/ser”. If there is no “/” after
-   “dbtext://” then “CFG_DIR/” is inserted at the beginning of the
+   REMINDER: when you use db_text in OpenSIPS, the database URL
+   for modules must be the path to the directory where the
+   table-files are located, prefixed by “text://”, e.g.,
+   “text:///var/dbtext/opensips”. If there is no “/” after
+   “text://” then “CFG_DIR/” is inserted at the beginning of the
    database path. So, either you provide an absolute path to
    database directory or a relative one to “CFG_DIR” directory.
 
-   Example 1.5. Load the dbtext module
+   Example 1.5. Load the db_text module
 ...
 loadmodule "/path/to/opensips/modules/db_text.so"
 ...
@@ -207,17 +207,17 @@ modparam("module_name", "database_URL", "text:///path/to/dbtext/database
 ")
 ...
 
-1.5.1. Using dbtext with basic OpenSIPS configuration
+1.5.1. Using db_text with basic OpenSIPS configuration
 
    Here are the definitions for most important table as well as a
-   basic configuration file to use dbtext with OpenSIPS. The table
-   structures may change in time and you will have to adjust next
-   examples. These are know to work with upcoming OpenSIPS v0.9.x
+   basic configuration file to use db_text with OpenSIPS. The
+   table structures may change in time and you will have to adjust
+   next examples.
 
    You have to populate the table 'subscriber' by hand with user
    profiles in order to have authentication. To use with the given
    configuration file, the table files must be placed in the
-   '/tmp/serdb' directory.
+   '/tmp/opensipsdb' directory.
 
    Example 1.6. Definition of 'subscriber' table (one line)
 ...
@@ -294,7 +294,7 @@ modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 
 # use dbtext database for persistent storage
 modparam("usrloc", "db_mode", 2)
-modparam("usrloc|auth_db", "db_url", "dbtext:///tmp/opensipsdb")
+modparam("usrloc|auth_db", "db_url", "text:///tmp/opensipsdb")
 
 # -- auth params --
 #
