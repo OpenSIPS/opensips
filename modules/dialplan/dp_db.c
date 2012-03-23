@@ -205,6 +205,7 @@ int dp_load_db(void)
 	}
 
 	VAL_TYPE(cond_val) = DB_INT;
+	VAL_NULL(cond_val) = 0;
 	VAL_INT(cond_val) = 0;
 
 	if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {

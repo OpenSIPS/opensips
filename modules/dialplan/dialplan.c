@@ -79,7 +79,7 @@ static param_export_t mod_params[]={
 	{ "subst_exp_col",	STR_PARAM,	&subst_exp_column.s },
 	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
-	{ "dsabled_col",	STR_PARAM,	&disabled_column.s},
+	{ "disabled_col",	STR_PARAM,	&disabled_column.s},
 	{ "attrs_pvar",	    STR_PARAM,	&attr_pvar_s.s},
 	{ "attribute_pvar",	STR_PARAM,	&attr_pvar_s.s},
 	{0,0,0}
