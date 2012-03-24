@@ -3210,6 +3210,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			ci.method        = method;
 			ci.to_uri        = client_to;
 			ci.from_uri      = from_uri;
+			ci.from_dname    = from_dname;
 			ci.extra_headers = tuple->extra_headers;
 			ci.body          = (body.s?&body:NULL);
 			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;;
