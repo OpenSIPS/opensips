@@ -734,8 +734,6 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 		hdrs[hdrs_no++] = msg->session_expires;
 	if(msg->min_se)
 		hdrs[hdrs_no++] = msg->min_se;
-	if(msg->maxforwards)
-		hdrs[hdrs_no++] = msg->maxforwards;
 	if(msg->event)
 		hdrs[hdrs_no++] = msg->event;
 	
