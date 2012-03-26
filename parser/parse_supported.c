@@ -62,7 +62,8 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 				if(pos + 4 <= len && IS_DELIM(p+4)) {
 					*sup |= F_SUPPORTED_PATH;
 					pos += 5; p += 5;
-				}
+				} else
+					goto default_label;
 				break;
 
 			/* "100rel" */
@@ -73,7 +74,8 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 					*sup |= F_SUPPORTED_100REL;
 					pos += SUPPORTED_100REL_LEN + 1;
 					p   += SUPPORTED_100REL_LEN + 1;
-				}
+				} else
+					goto default_label;
 				break;
 
 			/* "timer" */
@@ -83,7 +85,8 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 					*sup |= F_SUPPORTED_TIMER;
 					pos += SUPPORTED_TIMER_LEN + 1;
 					p   += SUPPORTED_TIMER_LEN + 1;
-				}
+				} else
+					goto default_label;
 				break;
 			
 			/* "eventlist" */
@@ -93,11 +96,13 @@ static inline int parse_supported_body(str *body, unsigned int *sup)
 					*sup |= F_SUPPORTED_EVENTLIST;
 					pos += SUPPORTED_EVENTLIST_LEN + 1;
 					p   += SUPPORTED_EVENTLIST_LEN + 1;
-				}
+				} else
+					goto default_label;
 				break;
 
 			/* unknown */
 			default:
+default_label:
 				/* skip element */
 				for (; pos < len && !IS_DELIM(p); ++pos, ++p);
 				break;
