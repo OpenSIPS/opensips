@@ -84,7 +84,8 @@ str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len =0;
 /* The list of the headers that are passed on the other side by default */
 static str default_headers[HDR_DEFAULT_LEN]=
-   {{"Content-Type",12},
+{
+   {"Content-Type",12},
    {"Supported", 9},
    {"Allow", 5},
    {"Proxy-Require", 13},
@@ -92,7 +93,6 @@ static str default_headers[HDR_DEFAULT_LEN]=
    {"Min-SE", 6},
    {"Require", 7},
    {"RSeq", 4},
-   {"Max-Forwards", 12}
 };
 int use_init_sdp = 0;
 enum b2bl_caller_type b2bl_caller;

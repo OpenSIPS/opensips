@@ -61,7 +61,6 @@
 		dlg->db_flag = UPDATEDB_FLAG; \
 }while(0)
 
-static str maxfwd_hdr={"Max-Forwards: 70\r\n", 18};
 extern b2b_scenario_t* script_scenarios;
 extern int b2bl_key_avp_name;
 extern unsigned short b2bl_key_avp_type;
@@ -2493,7 +2492,7 @@ entity_search_done:
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(old_entity);
 		req_data.method =&method_invite;
-		req_data.extra_headers = &maxfwd_hdr;
+		req_data.extra_headers = NULL;
 		b2b_api.send_request(&req_data);
 		old_entity->state = 0;
 	}
@@ -3854,7 +3853,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(e1);
 	req_data.method =&method_invite;
-	req_data.extra_headers =&maxfwd_hdr;
+	req_data.extra_headers = NULL;
 	if(b2b_api.send_request(&req_data) < 0)
 	{
 		LM_ERR("Failed to send reInvite\n");
