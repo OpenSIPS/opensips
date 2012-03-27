@@ -46,10 +46,6 @@
 #include "dlg_profile.h"
 
 
-
-#define MAX_FWD_HDR        "Max-Forwards: " MAX_FWD CRLF
-#define MAX_FWD_HDR_LEN    (sizeof(MAX_FWD_HDR) - 1)
-
 extern str dlg_extra_hdrs;
 
 int free_tm_dlg(dlg_t *td)
@@ -300,7 +296,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 {
 	char *p;
 
-	str_hdr->len = MAX_FWD_HDR_LEN + dlg_extra_hdrs.len + 
+	str_hdr->len = dlg_extra_hdrs.len + 
 		(extra_hdrs?extra_hdrs->len:0);
 
 	str_hdr->s = (char*)pkg_malloc( str_hdr->len * sizeof(char) );
@@ -309,8 +305,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 		goto error;
 	}
 
-	memcpy(str_hdr->s , MAX_FWD_HDR, MAX_FWD_HDR_LEN );
-	p = str_hdr->s + MAX_FWD_HDR_LEN;
+	p = str_hdr->s;
 	if (dlg_extra_hdrs.len) {
 		memcpy( p, dlg_extra_hdrs.s, dlg_extra_hdrs.len);
 		p += dlg_extra_hdrs.len;

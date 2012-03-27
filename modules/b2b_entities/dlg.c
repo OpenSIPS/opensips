@@ -2413,7 +2413,7 @@ dummy_reply:
 					cseq = msg->cseq->body;
 					trim_trailing(&rseq);
 					trim_trailing(&cseq);
-					sprintf(buf, "Max-Forwards: 70\r\nRAck: %.*s %.*s\r\n",
+					sprintf(buf, "RAck: %.*s %.*s\r\n",
 							rseq.len, rseq.s, cseq.len, cseq.s);
 					extra_headers.s = buf;
 					extra_headers.len = strlen(buf);
