@@ -107,7 +107,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	if(msg)
 	{
-		if(get_local_contact(msg, &local_contact)< 0)
+		if(get_local_contact(msg->rcv.bind_address, &local_contact)< 0)
 		{
 			LM_ERR("Failed to get received address\n");
 			local_contact= server_address;
