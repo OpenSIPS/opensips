@@ -402,7 +402,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	/* for reply processing, set as new_uri the winning branch */
 	if (t->relaied_reply_branch>=0) {
 		new_uri_bk = req->new_uri;
-		new_uri_bk = req->dst_uri;
+		dst_uri_bk = req->dst_uri;
 		req->new_uri = t->uac[t->relaied_reply_branch].uri;
 		req->dst_uri = t->uac[t->relaied_reply_branch].duri;
 		req->parsed_uri_ok = 0;
