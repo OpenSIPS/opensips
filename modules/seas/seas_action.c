@@ -394,16 +394,20 @@ int ac_cancel(as_p the_as,char *action,int len)
 {
    unsigned int flags,ret,cancelled_hashIdx,cancelled_label,i;
    char processor_id;
+   struct cell* t_invite;
+	/* Disabled after CANCEL changes
    struct sip_msg *my_msg;
    struct as_uac_param *the_param;
-   struct cell* t_invite;
-	int k,retval,uac_id;
    str headers,body;
    char *p;
+   */
+	int k,retval,uac_id;
 
+	/* Disabled after CANCEL changes
    body.s=headers.s=NULL;
    my_msg=NULL;
    the_param=NULL;
+   */
    i=k=0;
 
    net2hostL(flags,action,k);
@@ -414,6 +418,7 @@ int ac_cancel(as_p the_as,char *action,int len)
    net2hostL(cancelled_hashIdx,action,k);
    net2hostL(cancelled_label,action,k);
 
+	/* Disabled after CANCEL changes
    if(!(headers.s=pkg_malloc(MAX_HEADER))){
       LM_ERR("Out of Memory!!");
       goto error;
@@ -447,20 +452,20 @@ int ac_cancel(as_p the_as,char *action,int len)
    if(flags & SPIRAL_FLAG){
       memcpy(headers.s+headers.len,SPIRAL_HDR CRLF,SPIRAL_HDR_LEN + CRLF_LEN);
       headers.len+=SPIRAL_HDR_LEN+CRLF_LEN;
-      /*headers.s[headers.len]=0;
-      fake_uri.s=pkg_malloc(200);
-      fake_uri.len=print_local_uri(the_as,processor_id,fake_uri.s,200);
+      //headers.s[headers.len]=0;
+      //fake_uri.s=pkg_malloc(200);
+      //fake_uri.len=print_local_uri(the_as,processor_id,fake_uri.s,200);
 
-      if(fake_uri.len<0){
-	 SLM_ERR("printing local uri\n");
-	 goto error;
-      }
-      my_dlg->hooks.next_hop=&fake_uri;*/
+      //if(fake_uri.len<0){
+	 //SLM_ERR("printing local uri\n");
+	 //goto error;
+      //}
+      //my_dlg->hooks.next_hop=&fake_uri;
    }
 
    headers.s[headers.len]=0;
 
-   /*let's get the body*/
+   // let's get the body
    if (get_body(my_msg,&body)!=0) {
       LM_ERR("failed to extract body\n");
       goto error;
@@ -480,37 +485,47 @@ int ac_cancel(as_p the_as,char *action,int len)
       LM_ERR("no more share memory\n");
       goto error;
    }
+	*/
 
 	if(seas_f.tmb.t_lookup_ident(&t_invite,cancelled_hashIdx,cancelled_label)<0){
 		LM_ERR("failed to t_lookup_ident hash_idx=%d,"
 			"label=%d\n", cancelled_hashIdx,cancelled_label);
 		goto error;
 	}
-	seas_f.tmb.unref_cell(t_invite);
 
+	/* Disabled after CANCEL changes
    the_param->who=my_as;
    the_param->uac_id=uac_id;
    the_param->processor_id=processor_id;
    the_param->destroy_cb_set=0;
-   
-   ret=seas_f.tmb.t_cancel_uac(&headers,&body,cancelled_hashIdx,
-			cancelled_label,uac_cb,(void*)the_param, 0);
+	*/
+
+	ret=seas_f.tmb.t_cancel_trans( t_invite );
+	//ret=seas_f.tmb.t_cancel_uac(&headers,&body,cancelled_hashIdx,
+	//		cancelled_label,uac_cb,(void*)the_param, 0);
+
+	seas_f.tmb.unref_cell(t_invite);
+
    if (ret == 0) {
       LM_ERR( "t_cancel_uac failed\n");
       as_action_fail_resp(uac_id,SE_CANCEL,SE_CANCEL_MSG,SE_CANCEL_MSG_LEN);
       goto error;
    }else{
+	/* Disabled after CANCEL changes
       the_param->label=ret;
+	  */
    }
 
-	seas_f.tmb.unref_cell(t_invite);
    retval=0;
    goto exit;
 error:
    retval = -1;
+	/* Disabled after CANCEL changes
    if(the_param)
       shm_free(the_param);
+	*/
 exit:
+	/* Disabled after CANCEL changes
    if(headers.s)
       pkg_free(headers.s);
    if(body.s)
@@ -520,6 +535,7 @@ exit:
 	 free_hdr_field_lst(my_msg->headers);
       pkg_free(my_msg);
    }
+   */
    return retval;
 }
 

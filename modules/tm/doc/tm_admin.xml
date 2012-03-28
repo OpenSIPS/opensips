@@ -1567,7 +1567,7 @@ branch_route[1] {
 		<function moreinfo="none">t_uac_cancel</function>
 		</title>
 		<para>
-		Generates and sends a CANCEL for an existing local SIP request.
+		Generates and sends a CANCEL for an existing SIP request.
 		</para>
 		<para>Parameters: </para>
 		<itemizedlist>
