@@ -39,7 +39,7 @@
 #include "prefix_tree.h"
 
 #define RG_HASH_SIZE
-#define RG_INIT_LEN 4;
+#define RG_INIT_LEN 4
 
 /* the buckets for the rt_data rg_hash */
 typedef struct hb_ {

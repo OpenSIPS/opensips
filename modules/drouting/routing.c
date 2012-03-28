@@ -355,18 +355,18 @@ int add_rt_info(
 	}
 	/* search for the rgid up to the rg_pos */
 	for(i=0; (i<pn->rg_pos) && (pn->rg[i].rgid!=rgid); i++);
-	if((i==pn->rg_len-1)&&(pn->rg[i].rgid!=rgid)) {
+	if(i==pn->rg_len) {
 		/* realloc & copy the old rg */
 		trg = pn->rg;
 		if(NULL == (pn->rg = (rg_entry_t*)shm_malloc(
-						2*pn->rg_len*sizeof(rg_entry_t)))) {
+				(pn->rg_len + RG_INIT_LEN)*sizeof(rg_entry_t)))) {
 			/* recover the old pointer to be able to shm_free mem */
 			pn->rg = trg;
 			goto err_exit;
 		}
-		memset(pn->rg+pn->rg_len, 0, pn->rg_len*sizeof(rg_entry_t));
+		memset(pn->rg+pn->rg_len, 0, RG_INIT_LEN*sizeof(rg_entry_t));
 		memcpy(pn->rg, trg, pn->rg_len*sizeof(rg_entry_t));
-		pn->rg_len*=2;
+		pn->rg_len+=RG_INIT_LEN;
 		shm_free( trg );
 	}
 	/* insert into list */
