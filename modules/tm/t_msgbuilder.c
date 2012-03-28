@@ -933,6 +933,8 @@ char *build_uac_cancel(str *headers,str *body,struct cell *cancelledT,
 	*len+=cancelledT->callid.len;
 	/*CSeq*/
 	*len+=cancelledT->cseq_n.len+1+CANCEL_LEN+CRLF_LEN;
+	/*MaxFWD*/
+	*len+=LOCAL_MAXFWD_HEADER_LEN;
 	/* User Agent */
 	if (server_signature) {
 		*len += user_agent_header.len + CRLF_LEN;
@@ -975,8 +977,8 @@ char *build_uac_cancel(str *headers,str *body,struct cell *cancelledT,
 
 	append_string( p, cancelledT->cseq_n.s, cancelledT->cseq_n.len );
 	*(p++) = ' ';
-	append_string( p, CANCEL, CANCEL_LEN );
-	append_string( p, CRLF, CRLF_LEN );
+	append_string( p, CANCEL CRLF LOCAL_MAXFWD_HEADER,
+		CANCEL_LEN+CRLF_LEN+LOCAL_MAXFWD_HEADER_LEN );
 
 	/* User Agent header */
 	if (server_signature) {
