@@ -163,11 +163,11 @@ static cmd_export_t cmds[]={
 	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, NULL         , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list2,   2, in_list_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list3,   3, in_list_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list4,   4, in_list_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 };
 
