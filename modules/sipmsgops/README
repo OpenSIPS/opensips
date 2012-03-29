@@ -490,6 +490,15 @@ add_body("Hello World!", "text/plain");
      * 's' - checks the integrity of the SDB body, if it exists
      * 'h' - checks the format and integrity of each header body.
 
+   This function can return the following codes:
+     * 1 - the message is RFC3261 compliant and has been
+       successfully validated.
+     * -1 - the message is not RFC3261 compliant.
+     * -2 - signals a parsing error.
+     * -3 - invalid SDP body.
+     * -4 - invalid headers body.
+     * -5 - undefined errors.
+
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
@@ -506,7 +515,7 @@ if(!sipmsg_validate())
 # checks also the SDP and headers body
 if(!sipmsg_validate("sh"))
 {
-send_reply("400", "Bad Request/Body");
+        send_reply("400", "Bad Request/Body");
         exit;
 }
 ...

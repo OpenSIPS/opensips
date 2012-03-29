@@ -666,6 +666,26 @@ add_body("Hello World!", "text/plain");
 				</para></listitem>
 			</itemizedlist>
 		</para>
+		<para>This function can return the following codes:
+			<itemizedlist>
+				<listitem><para><emphasis>1</emphasis> - the message is
+						RFC3261 compliant and has been successfully validated.
+				</para></listitem>
+				<listitem><para><emphasis>-1</emphasis> - the message is not
+						RFC3261 compliant.
+				</para></listitem>
+				<listitem><para><emphasis>-2</emphasis> - signals a parsing
+						error.
+				</para></listitem>
+				<listitem><para><emphasis>-3</emphasis> - invalid SDP body.
+				</para></listitem>
+				<listitem><para><emphasis>-4</emphasis> - invalid headers
+						body.
+				</para></listitem>
+				<listitem><para><emphasis>-5</emphasis> - undefined errors.
+				</para></listitem>
+			</itemizedlist>
+		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
 		FAILURE_ROUTE and BRANCH_ROUTE.
@@ -685,7 +705,7 @@ if(!sipmsg_validate())
 # checks also the SDP and headers body
 if(!sipmsg_validate("sh"))
 {
-send_reply("400", "Bad Request/Body");
+	send_reply("400", "Bad Request/Body");
 	exit;
 }
 ...

@@ -1485,7 +1485,7 @@ failed:
 static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 {
 	unsigned int hdrs_len;
-	int ret = 1, method;
+	int method;
 	str body;
 	struct cseq_body * cbody;
 	unsigned long flags;
@@ -1496,7 +1496,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 	/* try to check the whole SIP msg */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
 		LM_DBG("message parsing failed\n");
-		goto failed;
+		return -2;
 	}
 
 	/* any message has to have a call-id */
@@ -1521,7 +1521,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 	if (msg->first_line.type!=SIP_REQUEST || msg->REQ_METHOD!=METHOD_CANCEL) {
 		if (!msg->unparsed) {
 			LM_DBG("Invalid parsing \n");
-			goto failed;
+			return -2;
 		}
 		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
 
@@ -1550,7 +1550,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		if (body.s && body.len && (flags & SIP_PARSE_SDP)) {
 			if (parse_sdp(msg) < 0) {
 				LM_DBG("failed to parse SDP message\n");
-				goto failed;
+				return -3;
 			}
 		}
 	}
@@ -1624,13 +1624,13 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 
 		default:
 			LM_DBG("invalid message type\n");
-			goto failed;
+			return -5;
 	}
 	/* check for body */
 	if (method != METHOD_CANCEL) {
 		if (!msg->unparsed) {
 			LM_DBG("Invalid parsing \n");
-			goto failed;
+			return -2;
 		}
 		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
 
@@ -1662,10 +1662,10 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 
 	if ((flags & SIP_PARSE_HDR) && sip_validate_hdrs(msg) < 0) {
 		LM_DBG("failed to parse headers\n");
-		goto failed;
+		return -4;
 	}
 
-	return ret;
+	return 1;
 failed:
 	LM_DBG("message does not comply with SIP RFC3261\n");
 	return -1;
