@@ -927,7 +927,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp, int* init_r
 	
 	if(!local_address.s || !local_address.len)
 	{
-		if(get_local_contact(msg, &subs->local_contact) < 0)
+		if(get_local_contact(msg->rcv.bind_address, &subs->local_contact) < 0)
 		{
 			LM_ERR("in function get_local_contact\n");
 			err_ret = -2;
