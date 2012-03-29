@@ -596,7 +596,6 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_get_picked = t_get_picked_branch;
 
 	tmb->t_lookup_original_t = t_lookupOriginalT;
-	tmb->t_cancel_uac = t_uac_cancel;
 	tmb->unref_cell = t_unref_cell;
 	tmb->ref_cell = t_ref_cell;
 	tmb->t_setkr = set_kr;
