@@ -94,7 +94,6 @@ struct dlg_leg {
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
 	char reply_received;
 	struct socket_info *bind_addr;
-	str last_vias;
 };
 
 
