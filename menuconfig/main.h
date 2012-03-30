@@ -33,6 +33,7 @@
 #include "curses.h"
 
 extern FILE*output;
+extern int run_locally;
 extern select_menu *main_menu;
 extern char *install_prefix;
 extern char *prev_prefix;

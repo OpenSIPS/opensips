@@ -317,8 +317,10 @@ int parse_defs_m4(select_menu *curr_menu,cfg_gen_t *curr_cfg)
 		return -1;
 	}
 
-	memcpy(cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
-	memcpy(cfg_path+MENUCONFIG_CFG_PATH_LEN,curr_cfg->defs_m4,strlen(curr_cfg->defs_m4)+1);
+	memcpy(cfg_path,run_locally?"menuconfig/configs/":MENUCONFIG_CFG_PATH,
+			run_locally?19:MENUCONFIG_CFG_PATH_LEN);
+	memcpy(cfg_path+(run_locally?19:MENUCONFIG_CFG_PATH_LEN),
+			curr_cfg->defs_m4,strlen(curr_cfg->defs_m4)+1);
 
 	f=fopen(cfg_path,"r");
 	if (!f) {
