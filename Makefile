@@ -876,4 +876,4 @@ doxygen:
 comp_menuconfig:
 	cd menuconfig; make ; cd -
 menuconfig: comp_menuconfig
-	./menuconfig/configure
+	./menuconfig/configure --local

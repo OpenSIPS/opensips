@@ -44,8 +44,9 @@ select_menu *main_menu;
 WINDOW *menu_window;
 char *install_prefix=NULL;
 char *prev_prefix=NULL;
+int run_locally=0;
 
-/* Init all the menus. Logis is mostly hardcoded */
+/* Init all the menus. Logic is hardcoded */
 int init_main_menu()
 {
 	select_menu *aux;
@@ -132,29 +133,112 @@ int init_main_menu()
 		return -1;
 	}
 #else
-	main_menu = init_menu(CONF_SCRIPT,0,0);
-	if (!main_menu) {
-		fprintf(output,"Failed to create menu\n");
-		return -1;
-	}
+	if (run_locally) {
+		main_menu = init_menu(CONF_COMPILE_OPT,0,0);
+		if (!main_menu) {
+			fprintf(output,"Failed to create main menu\n");
+			return -1;
+		}
 
-	if (gen_scripts_menu(main_menu) < 0) {
-		fprintf(output,"Failed to get all script options\n");
-		return -1;
-	}
+		aux = init_menu(MAKE_INSTALL,INTERNAL_COMMAND,(run_action)run_make_install);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_sibling(main_menu,aux);
 
-	aux = init_menu(EXIT_SAVE_EVERYTHING,INTERNAL_COMMAND|EXIT_MENUCONFIG,(run_action)save_all_changes);
-	if (!aux) {
-		fprintf(output,"Failed to create menu\n");
-		return -1;
+		aux = init_menu(MAKE_PROPER,INTERNAL_COMMAND,(run_action)run_make_proper);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_sibling(main_menu,aux);
+
+		aux = init_menu(CONF_SCRIPT,0,0);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_sibling(main_menu,aux);
+
+		if (gen_scripts_menu(aux) < 0) {
+			fprintf(output,"Failed to get all script options\n");
+			return -1;
+		}
+
+		aux = init_menu(EXIT_SAVE_EVERYTHING,INTERNAL_COMMAND|EXIT_MENUCONFIG,(run_action)save_all_changes);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_sibling(main_menu,aux);
+
+		aux = init_menu(CONF_COMPILE_FLAGS,0,0);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_child(main_menu,aux);
+
+		aux = init_menu(CONF_EXCLUDED_MODS,0,0);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_child(main_menu,aux);
+
+		aux = init_menu(CONF_INSTALL_PREFIX,INTERNAL_COMMAND,(run_action)read_install_prefix);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_child(main_menu,aux);
+
+		aux = init_menu(CONF_RESET_CHANGES,INTERNAL_COMMAND,
+				(run_action)reset_unsaved_compile);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_child(main_menu,aux);
+
+		aux = init_menu(CONF_SAVE_CHANGES,INTERNAL_COMMAND,
+				(run_action)dump_make_conf);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_child(main_menu,aux);
+
+		if (parse_make_conf() < 0) {
+			fprintf(output,"Failed to parse Makefile.conf");
+			return -1;
+		}
+	} else {
+		main_menu = init_menu(CONF_SCRIPT,0,0);
+		if (!main_menu) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+
+		if (gen_scripts_menu(main_menu) < 0) {
+			fprintf(output,"Failed to get all script options\n");
+			return -1;
+		}
+
+		aux = init_menu(EXIT_SAVE_EVERYTHING,INTERNAL_COMMAND|EXIT_MENUCONFIG,(run_action)save_all_changes);
+		if (!aux) {
+			fprintf(output,"Failed to create menu\n");
+			return -1;
+		}
+		link_sibling(main_menu,aux);
 	}
-	link_sibling(main_menu,aux);
 #endif
 	return 0;
 }
 
 
-int main(void) 
+int main(int argc,char **argv)
 {
 	int ret=0;
 
@@ -163,6 +247,11 @@ int main(void)
 	if (output == NULL) {
 		fprintf(stderr,"Error opening output file\n");
 		return -1;
+	}
+
+	if (argc > 1 && memcmp(argv[1],"--local",7) == 0) {
+		run_locally=1;
+		fprintf(output,"Running in local mode\n");
 	}
 
 	/*  Initialize ncurses  */

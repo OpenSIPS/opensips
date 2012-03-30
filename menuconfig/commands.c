@@ -50,6 +50,9 @@ int save_all_changes(select_menu *menu,void *arg)
 	/* Take care of compile related options */	
 	if (dump_make_conf(menu,arg) < 0)
 		fprintf(output,"Failed to save all compile related options\n");
+#else
+	if (run_locally && dump_make_conf(menu,arg) < 0)
+		fprintf(output,"Failed to save all compile related options\n");
 #endif
 
 	/* Save changes to all types of configs */
@@ -230,7 +233,7 @@ int generate_cfg(select_menu *menu,void *arg)
 	now=time(NULL);
 	now_tm = localtime(&now);
 	n = snprintf(generated_name,128,"%sopensips_%s_%d-%d-%d_%d:%d:%d.cfg",
-			MENUCONFIG_GEN_PATH,
+			run_locally?"etc/":MENUCONFIG_GEN_PATH,
 			m4_cfg->output_name,now_tm->tm_year+1900,now_tm->tm_mon+1,
 			now_tm->tm_mday,now_tm->tm_hour,now_tm->tm_min,now_tm->tm_sec);
 	if (n<0 || n>128) {
@@ -256,10 +259,14 @@ int generate_cfg(select_menu *menu,void *arg)
 			exit(-1);
 		}
 
-		memcpy(cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
-		memcpy(cfg_path+MENUCONFIG_CFG_PATH_LEN,m4_cfg->cfg_m4,strlen(m4_cfg->cfg_m4)+1);
-		memcpy(defs_cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
-		memcpy(defs_cfg_path+MENUCONFIG_CFG_PATH_LEN,m4_cfg->defs_m4,strlen(m4_cfg->defs_m4)+1);
+		memcpy(cfg_path,run_locally?"menuconfig/configs/":MENUCONFIG_CFG_PATH,
+				run_locally?19:MENUCONFIG_CFG_PATH_LEN);
+		memcpy(cfg_path+(run_locally?19:MENUCONFIG_CFG_PATH_LEN),
+				m4_cfg->cfg_m4,strlen(m4_cfg->cfg_m4)+1);
+		memcpy(defs_cfg_path,run_locally?"menuconfig/configs/":MENUCONFIG_CFG_PATH,
+				run_locally?19:MENUCONFIG_CFG_PATH_LEN);
+		memcpy(defs_cfg_path+(run_locally?19:MENUCONFIG_CFG_PATH_LEN),
+				m4_cfg->defs_m4,strlen(m4_cfg->defs_m4)+1);
 		/* child */
 		/* redirect child output to generated file name */
 		dup2(fd,STDOUT_FILENO);
@@ -358,8 +365,10 @@ int save_m4_def(select_menu *menu,void *arg)
 		return -1;
 	}
 
-	memcpy(cfg_path,MENUCONFIG_CFG_PATH,MENUCONFIG_CFG_PATH_LEN);
-	memcpy(cfg_path+MENUCONFIG_CFG_PATH_LEN,m4_cfg->defs_m4,strlen(m4_cfg->defs_m4)+1);
+	memcpy(cfg_path,run_locally?"menuconfig/configs/":MENUCONFIG_CFG_PATH,
+			run_locally?19:MENUCONFIG_CFG_PATH_LEN);
+	memcpy(cfg_path+(run_locally?19:MENUCONFIG_CFG_PATH_LEN),
+			m4_cfg->defs_m4,strlen(m4_cfg->defs_m4)+1);
 	
 	f = fopen(cfg_path,"w");
 	if (!f) {
