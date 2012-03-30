@@ -276,11 +276,9 @@ int generate_cfg(select_menu *menu,void *arg)
 int read_install_prefix(select_menu *menu,void *arg)
 {
 	#define query_msg		"Enter install prefix "
-	#define folder_not_found	"Invalid install directory "
 	#define folder_ok		"Folder exists and is accesible "
 	char str[256];
 	int ret,len;
-	struct stat stat_buf;
 
 	print_notice(NOTICE_Y,NOTICE_X,0,"%s (Current = '%s') :",query_msg,
 			install_prefix?install_prefix:DEFAULT_INSTALL_PREFIX);
@@ -299,18 +297,6 @@ int read_install_prefix(select_menu *menu,void *arg)
 
 	/* Empty directory = default directory */
 	if (strlen(str) != 0) {
-		/* does directory exit ? avoid bogus user typos.
-		 * maybe should also check for W permissions ? */
-		ret=stat(str,&stat_buf);
-		if (ret != 0) {
-			print_notice(NOTICE_Y,NOTICE_X,0,"%s. Install prefix is currently [%s]",folder_not_found,
-				install_prefix?install_prefix:DEFAULT_INSTALL_PREFIX);
-			clrtoeol();
-			print_notice(NOTICE_Y+1,NOTICE_X,1,"Press any key to continue !");
-			clrtoeol();
-			return -1;
-		} 
-
 		prev_prefix=install_prefix;
 
 		len = strlen(str);
