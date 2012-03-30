@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
  *
@@ -115,7 +115,6 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	void *async_data = NULL;
 	struct httpd_cb *cb;
 	const char *normalised_url;
-	const char *url_args;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
@@ -126,10 +125,8 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	if (cb) {
 		normalised_url = &url[cb->http_root->len+1];
 		LM_DBG("normalised_url=[%s]\n", normalised_url);
-		url_args = MHD_lookup_connection_value(connection,
-				MHD_GET_ARGUMENT_KIND, "arg");
 		cb->callback(cls, (void*)connection,
-				normalised_url, url_args,
+				normalised_url,
 				method, version,
 				upload_data, upload_data_size, con_cls,
 				&buffer, &page);

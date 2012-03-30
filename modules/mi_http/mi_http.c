@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
  *
@@ -40,7 +40,7 @@
 static int mod_init();
 static int destroy(void);
 void mi_http_answer_to_connection (void *cls, void *connection,
-		const char *url, const char *url_args, const char *method,
+		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
 		str *buffer, str *page);
@@ -186,13 +186,14 @@ static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
 }
 
 void mi_http_answer_to_connection (void *cls, void *connection,
-		const char *url, const char *url_args, const char *method,
+		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
 		str *buffer, str *page)
 {
 	int mod = -1;
 	int cmd = -1;
+	const char *url_args;
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 
@@ -202,6 +203,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 			(int)*upload_data_size, upload_data, con_cls);
 	if (strncmp(method, "GET", 3)==0) {
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
+			url_args = httpd_api.lookup_arg(connection, "arg");
 			LM_DBG("url_args [%p]->[%s]\n", url_args, url_args);
 			if (mod>=0 && cmd>=0 && url_args) {
 				tree = mi_http_run_mi_cmd(mod, cmd, url_args,
