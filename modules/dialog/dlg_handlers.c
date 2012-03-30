@@ -1473,6 +1473,17 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 			next_strict = 1;
 	}
 
+	if (req->dst_uri.s && req->dst_uri.len) {
+		/* reset dst_uri if previously set
+		 * either by loose route or manually */
+		pkg_free(req->dst_uri.s);
+		req->dst_uri.s = NULL;
+		req->dst_uri.len = 0;
+	}
+
+	/* r-uri is taken care of in all below cases,
+	 * no need for manual resetting */
+
 	//if ((*(d_rrb.routing_type) ==  ROUTING_LL) || (*d_rrb.routing_type) == ROUTING_SL )
 	if (!next_strict)
 	{
