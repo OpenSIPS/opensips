@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../../data_lump_rpl.h"
+#include "../../parser/parse_rr.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_methods.h"
@@ -497,6 +498,9 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int port;
 	int etype= B2B_NONE;
 	int dlg_state = 0;
+	struct sip_uri puri;
+	struct hdr_field *route_hdr;
+	rr_t *rt;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -510,8 +514,56 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	if(msg->route)
 	{
 		LM_DBG("Found route headers\n");
-		return 1;
+		route_hdr = msg->route;
+		/* we accept Route hdrs only if preloaded route with out IPs */
+		if (parse_rr(route_hdr) < 0) {
+			LM_ERR("failed to parse Route HF\n");
+			return -1;
+		}
+		rt = (rr_t*)route_hdr->parsed;
+		/* check if first route is local*/
+		if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
+			LM_ERR("Route uri is not valid <%.*s>\n",
+				rt->nameaddr.uri.len,rt->nameaddr.uri.s);
+			return -1;
+		}
+		if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
+		puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
+			LM_DBG("First Route uri is not mine\n");
+			return 1;  /* not for b2b */
+		}
+		/* check if second route is local*/
+		rt = rt->next;
+		if (rt==NULL) {
+			if (msg->route->sibling) {
+				route_hdr = msg->route->sibling;
+				if (parse_rr(route_hdr) < 0) {
+					LM_ERR("failed to parse second Route HF\n");
+					return -1;
+				}
+				rt = (rr_t*)route_hdr->parsed;
+			}
+		}
+		if (rt) {
+			if ( parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)!=0 ) {
+				LM_ERR("Second route uri is not valid <%.*s>\n",
+					rt->nameaddr.uri.len,rt->nameaddr.uri.s);
+				return -1;
+			}
+			if (check_self( &puri.host, puri.port_no?puri.port_no:SIP_PORT,
+			puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
+				LM_DBG("Second Route uri is not mine\n");
+				return 1;  /* not for b2b */
+			}
+			/* check the presence of the third route */
+			if (rt->next || route_hdr->sibling) {
+				LM_DBG("More than 2 route hdr -> not for me\n");
+				return 1;  /* not for b2b */
+			}
+		}
+		/* "route" hdr checking is ok, continue */
 	}
+
 	method_value = msg->first_line.u.request.method_value;
 
 	if(method_value == METHOD_ACK)
