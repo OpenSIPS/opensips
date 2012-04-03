@@ -437,7 +437,7 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
 		return 0;
 	rpl = &rpl_tree->node;
 
-	if (rl_stats(rpl, &node->value)) {
+	if (rl_stats(rpl_tree, &node->value)) {
 		LM_ERR("cannoti mi print values\n");
 		goto free;
 	}
