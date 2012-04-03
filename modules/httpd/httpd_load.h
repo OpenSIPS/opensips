@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
  *
@@ -39,7 +39,6 @@
  *            with the httpd module
  * @param connection abstract connection handler
  * @param url the requested url after http_root was skipped
- * @param url_args the args of the requested url
  * @param method the HTTP method used ("GET", "PUT", etc.)
  * @param version the HTTP version string (i.e. "HTTP/1.1")
  * @param upload_data the data being uploaded
@@ -57,7 +56,6 @@
  *             callback (see httpd_flush_data_cb)
  */
 typedef void (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
-				const char *url_args,
 				const char *method, const char *version,
 				const char *upload_data, size_t *upload_data_size,
 				void **con_cls,
@@ -112,6 +110,9 @@ struct httpd_cb {
 
 
 
+const char *lookup_arg(void *connection, const char *key);
+typedef const char *(*lookup_arg_f)(void *connection, const char *key);
+
 int register_httpdcb(const char *mod, str *root_path,
 			httpd_acces_handler_cb f1,
 			httpd_flush_data_cb f2,
@@ -122,6 +123,7 @@ typedef int (*register_httpdcb_f)(const char *mod, str *root_path,
 			httpd_init_proc_cb f3);
 
 typedef struct httpd_api {
+	lookup_arg_f		lookup_arg;
 	register_httpdcb_f	register_httpdcb;
 }httpd_api_t;
 

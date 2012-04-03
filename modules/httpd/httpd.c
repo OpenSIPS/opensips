@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2011-2012 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
  *
@@ -145,6 +145,12 @@ int destroy(void)
 }
 
 
+const char *httpd_lookup_arg(void *connection, const char *key)
+{
+	return MHD_lookup_connection_value((struct MHD_Connection *)connection,
+			MHD_GET_ARGUMENT_KIND, key);
+}
+
 int httpd_register_httpdcb(const char *module, str *http_root,
 			httpd_acces_handler_cb f1,
 			httpd_flush_data_cb f2,
@@ -205,6 +211,7 @@ int httpd_bind(httpd_api_t *api)
 		return -1;
 	}
 
+	api->lookup_arg = httpd_lookup_arg;
 	api->register_httpdcb = httpd_register_httpdcb;
 	return 0;
 }
