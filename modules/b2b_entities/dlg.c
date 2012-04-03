@@ -1982,6 +1982,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	HASHHEX response;
 	str *new_hdr;
+	char status_buf[INT2STR_MAX_LEN];
 
 	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
@@ -2316,6 +2317,9 @@ dummy_reply:
 			dummy_msg.id = 1;
 			dummy_msg.first_line.type = SIP_REPLY;
 			dummy_msg.first_line.u.reply.statuscode = statuscode;
+			dummy_msg.first_line.u.reply.status.s =
+				int2bstr( statuscode, status_buf,
+				&dummy_msg.first_line.u.reply.status.len);
 			dummy_msg.first_line.u.reply.reason.s = "Timeout";
 			dummy_msg.first_line.u.reply.reason.len = 7;
 			memset(&cb, 0, sizeof(struct cseq_body));
@@ -2336,10 +2340,12 @@ dummy_reply:
 
 			from_hdr.body       = t->from;
 			to_hdr.body         = t->to;
+
 			callid_hdr.name.s   = t->callid.s;
 			callid_hdr.name.len = 7;
 			callid_hdr.body.s   = t->callid.s + 9;
 			callid_hdr.body.len = t->callid.len - 9;
+			trim_r(callid_hdr.body); /* callid in T contains also the CRLF */
 			callid_hdr.len      = t->callid.len;
 
 			dummy_msg.callid = &callid_hdr;
