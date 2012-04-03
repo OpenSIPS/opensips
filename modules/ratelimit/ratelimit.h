@@ -82,7 +82,7 @@ int w_rl_check_3(struct sip_msg*, char *, char *, char *);
 int w_rl_dec(struct sip_msg*, char *);
 int w_rl_reset(struct sip_msg*, char *);
 int w_rl_set_count(str, int);
-int rl_stats(struct mi_node *, str *);
+int rl_stats(struct mi_root *, str *);
 int rl_pipe_check(rl_pipe_t *);
 /* update load */
 int get_cpuload(void);

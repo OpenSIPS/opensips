@@ -119,23 +119,6 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 	if (rl_set_name(name) < 0)
 		return -1;
 
-	/* if the command should be reset */
-	/* XXX: This is not needed since add takes also negative numbers 
-	if (c > 0) {
-		if (cdbf.add(cdbc, &rl_name_buffer, c, rl_expire_time, &new_counter)<0){
-			LM_ERR("cannot increase buffer for pipe %.*s\n",
-					name->len, name->s);
-			return -1;
-		}
-	} else {
-		if (cdbf.sub(cdbc, &rl_name_buffer, c ? c : pipe->my_counter,
-					rl_expire_time, &new_counter) < 0){
-			LM_ERR("cannot change counter for pipe %.*s with %d\n",
-					name->len, name->s, c);
-			return -1;
-		}
-	}
-	*/
 	if (cdbf.add(cdbc, &rl_name_buffer, c ? c : -(pipe->my_counter),
 				rl_expire_time, &new_counter) < 0){
 		LM_ERR("cannot change counter for pipe %.*s with %d\n",
@@ -429,6 +412,7 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 	LM_DBG("Pipe %.*s counter:%d load:%d limit:%d should %sbe blocked (%p)\n",
 			name.len, name.s, (*pipe)->counter, (*pipe)->load,
 			(*pipe)->limit, ret == 1? "NOT " : "", *pipe);
+	
 
 release:
 	RL_RELEASE_LOCK(hash_idx);
@@ -552,12 +536,12 @@ next_pipe:
 next_map:
 		RL_RELEASE_LOCK(i);
 	}
-
 }
 
-struct rl_map_param {
-	int limit;
-	rl_algo_t algo;
+struct rl_param_t {
+	int counter;
+	struct mi_node * node;
+	struct mi_root * root;
 };
 
 static int rl_map_print(void *param, str key, void *value)
@@ -565,8 +549,9 @@ static int rl_map_print(void *param, str key, void *value)
 	struct mi_attr* attr;
 	char* p;
 	int len;
+	struct rl_param_t * rl_param = (struct rl_param_t *)param;
+	struct mi_node * rpl;
 	rl_pipe_t *pipe = (rl_pipe_t *)value;
-	struct mi_node * rpl = (struct mi_node *)param;
 	struct mi_node * node;
 	str *alg;
 
@@ -575,16 +560,16 @@ static int rl_map_print(void *param, str key, void *value)
 		return -1;
 	}
 
-	if (!rpl) {
+	if (!rl_param || !rl_param->node || !rl_param->root) {
 		LM_ERR("no reply node\n");
 		return -1;
 	}
+	rpl = rl_param->node;
 
 	if (!key.len || !key.s) {
 		LM_ERR("no key found\n");
 		return -1;
 	}
-	LM_DBG("Algorithm is %d (%p)\n", pipe->algo, pipe);
 
 	/* skip if no algo */
 	if (pipe->algo == PIPE_ALGO_NOP)
@@ -614,13 +599,23 @@ static int rl_map_print(void *param, str key, void *value)
 	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "counter", 7, p, len)))
 		return -1;
 
+	if ((++rl_param->counter % 50) == 0) {
+		LM_DBG("flush mi tree - number %d\n", rl_param->counter);
+		flush_mi_tree(rl_param->root);
+	}
+
 	return 0;
 }
 
-int rl_stats(struct mi_node *rpl, str * value)
+int rl_stats(struct mi_root *rpl_tree, str * value)
 {
 	rl_pipe_t **pipe;
+	struct rl_param_t param;
 	int i;
+
+	memset(&param, 0, sizeof(struct rl_param_t));
+	param.node = &rpl_tree->node;
+	param.root = rpl_tree;
 
 	if (value && value->s && value->len) {
 		i = RL_GET_INDEX(*value);
@@ -630,7 +625,7 @@ int rl_stats(struct mi_node *rpl, str * value)
 			LM_DBG("pipe %.*s not found\n", value->len, value->s);
 			goto error;
 		}
-		if (rl_map_print(rpl, *value, *pipe)) {
+		if (rl_map_print(&param, *value, *pipe)) {
 			LM_ERR("cannot print value for key %.*s\n",
 					value->len, value->s);
 			goto error;
@@ -640,7 +635,7 @@ int rl_stats(struct mi_node *rpl, str * value)
 		/* iterate through each map */
 		for (i = 0; i < rl_htable.size; i++) {
 			RL_GET_LOCK(i);
-			if (map_for_each(rl_htable.maps[i], rl_map_print, rpl)) {
+			if (map_for_each(rl_htable.maps[i], rl_map_print, &param)) {
 				LM_ERR("cannot print values\n");
 				goto error;
 			}
