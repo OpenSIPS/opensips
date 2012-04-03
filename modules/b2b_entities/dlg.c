@@ -2324,6 +2324,13 @@ dummy_reply:
 			memset(&cseq, 0, sizeof(struct hdr_field));
 			cb.method = t->method;
 
+			dummy_msg.rcv.bind_address = t->uac[0].request.dst.send_sock;
+			dummy_msg.rcv.proto = dummy_msg.rcv.bind_address->proto;
+			dummy_msg.rcv.src_port = dummy_msg.rcv.dst_port
+				= dummy_msg.rcv.bind_address->port_no;
+			dummy_msg.rcv.src_ip = dummy_msg.rcv.dst_ip
+				= dummy_msg.rcv.bind_address->address;
+
 			parse_to(t->to.s+4, t->to.s+t->to.len, &to_hdr_parsed);
 			parse_to(t->from.s+6, t->from.s+t->from.len, &from_hdr_parsed);
 			from_hdr.parsed   = (struct hdr_field*)(void*)&from_hdr_parsed;
