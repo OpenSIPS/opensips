@@ -52,6 +52,12 @@ typedef struct evi_event {
 /* function used to subscribe for an event */
 struct mi_root * mi_event_subscribe(struct mi_root *cmd_tree, void *param);
 
+/* used to list all the registered events */
+struct mi_root * mi_events_list(struct mi_root *cmd_tree, void *param);
+
+/* used to listt all subscribers */
+struct mi_root * mi_subscribers_list(struct mi_root *cmd_tree, void *param);
+
 /* returns the transport export */
 evi_export_t* get_trans_mod(str* tran);
 

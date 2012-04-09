@@ -54,6 +54,12 @@ int register_event_mod(evi_export_t *ev)
 		goto error;
 	}
 
+	if (!ev->print) {
+		LM_ERR("print function should be specified for protocol %.*s\n",
+				ev->proto.len, ev->proto.s);
+		goto error;
+	}
+
 	if (ev->flags) {
 		if (ev->flags & EVI_FREE_LIST) {
 			LM_ERR("module cannot have the id %x\n", ev->flags);

@@ -72,7 +72,7 @@ event_id_t evi_publish_event(str event_name)
 			return EVI_ERROR;
 		}
 	}
-	
+
 	events[events_no].lock = lock_alloc();
 	if (!events[events_no].lock) {
 		LM_ERR("Failed to allocate subscribers lock\n");
@@ -132,12 +132,12 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 			}
 			continue;
 		}
-	
+
 		if (!subs->trans_mod) {
 			LM_ERR("unknown transfer protocol\n");
 			goto next;
 		}
-		
+
 		LM_DBG("found subscriber %.*s\n",
 				subs->reply_sock->address.len, subs->reply_sock->address.s);
 		if (!subs->trans_mod->raise) {
@@ -253,7 +253,7 @@ int evi_event_subscribe(str event_name,
 				}
 				if (trans_mod->free)
 					trans_mod->free(sock);
-				else 
+				else
 					shm_free(sock);
 				break;
 			}
@@ -283,7 +283,7 @@ int evi_event_subscribe(str event_name,
 		if (EVI_EXPIRE & sock->flags)
 			subscriber->reply_sock->expire = expire;
 		subscriber->reply_sock->flags |= trans_mod->flags;
-		
+
 		/* guard subscribers list */
 		lock_get(event->lock);
 		subscriber->next = event->subscribers;
@@ -295,53 +295,6 @@ int evi_event_subscribe(str event_name,
 	return 1;
 bad_param:
 	return -1;
-}
-
-
-struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
-{
-	struct mi_node *node;
-	int ret;
-	unsigned int expire = 0;
-	str event_name, transport_sock;
-
-	/* event name */
-	node = root->node.kids;
-	if (!node || !node->value.len || !node->value.s) {
-		LM_ERR("no parameters received\n");
-		goto missing_param;
-	}
-	event_name = node->value;
-
-	/* socket */
-	node = node->next;
-	if (!node || !node->value.len || !node->value.s) {
-		LM_ERR("no transport type\n");
-		goto missing_param;
-	}
-	transport_sock = node->value;
-
-	/* check expire */
-	node = node->next;
-	if (node) {
-		/* expiration period is set */
-		if (str2int(&node->value, &expire) < 0) {
-			LM_ERR("invalid expire value %.*s", node->value.len, node->value.s);
-			goto bad_param;
-		}
-	} else
-		expire = DEFAULT_EXPIRE;
-
-	ret = evi_event_subscribe(event_name, transport_sock, expire, 1);
-	if (ret < 0)
-		goto bad_param;
-	return ret ? init_mi_tree(200, MI_SSTR(MI_OK)) : 0;
-	
-missing_param:
-	return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-
-bad_param:
-	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
 }
 
 int evi_raise_script_event(event_id_t id, void * _a, void * _v)
@@ -410,4 +363,268 @@ raise:
 error:
 	evi_free_params(params);
 	return -1;
+}
+
+struct mi_root * mi_event_subscribe(struct mi_root *root, void *param )
+{
+	struct mi_node *node;
+	int ret;
+	unsigned int expire = 0;
+	str event_name, transport_sock;
+
+	/* event name */
+	node = root->node.kids;
+	if (!node || !node->value.len || !node->value.s) {
+		LM_ERR("no parameters received\n");
+		goto missing_param;
+	}
+	event_name = node->value;
+
+	/* socket */
+	node = node->next;
+	if (!node || !node->value.len || !node->value.s) {
+		LM_ERR("no transport type\n");
+		goto missing_param;
+	}
+	transport_sock = node->value;
+
+	/* check expire */
+	node = node->next;
+	if (node) {
+		/* expiration period is set */
+		if (str2int(&node->value, &expire) < 0) {
+			LM_ERR("invalid expire value %.*s", node->value.len, node->value.s);
+			goto bad_param;
+		}
+	} else
+		expire = DEFAULT_EXPIRE;
+
+	ret = evi_event_subscribe(event_name, transport_sock, expire, 1);
+	if (ret < 0)
+		goto bad_param;
+	return ret ? init_mi_tree(200, MI_SSTR(MI_OK)) : 0;
+
+missing_param:
+	return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
+
+bad_param:
+	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+}
+
+
+
+/* used to list all the registered events */
+struct mi_root * mi_events_list(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node *node=NULL, *rpl=NULL;
+	unsigned i;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		return 0;
+	rpl = &rpl_tree->node;
+	for (i = 0; i < events_no; i++) {
+		node = add_mi_node_child(rpl, 0, "Event", 5,
+				events[i].name.s, events[i].name.len);
+		if(node == NULL)
+			goto error;
+
+		if (!addf_mi_attr(node, 0, "id", 2, "%d", events[i].id))
+			goto error;
+
+		if (i % 50 == 0) {
+			flush_mi_tree(rpl_tree);
+		}
+	}
+	return rpl_tree;
+error:
+	free_mi_tree(rpl_tree);
+	return 0;
+}
+
+static int evi_print_subscriber(struct mi_node *rpl, evi_subs_p subs)
+{
+	evi_reply_sock *sock = subs->reply_sock;
+	struct mi_node *node = NULL;
+	str socket;
+
+	if (!subs || !subs->trans_mod || !subs->trans_mod->print) {
+		LM_ERR("subscriber does not have a print method exported\n");
+		return -1;
+	}
+	node = add_mi_node_child(rpl, 0, "Subscriber", 10, 0, 0);
+	if(node == NULL)
+		return -1;
+
+	if (!sock) {
+		LM_DBG("no socket specified\n");
+		if (!add_mi_attr(node, 0, "protocol", 8,
+				subs->trans_mod->proto.s, subs->trans_mod->proto.len))
+			return -1;
+		return 0;
+	}
+
+	socket = subs->trans_mod->print(sock);
+	LM_DBG("print subscriber socket <%.*s> %d\n",
+			socket.len, socket.s, socket.len);
+	if (!add_mi_attr(node, MI_DUP_VALUE, "socket", 6, socket.s, socket.len))
+		return -1;
+
+	if (sock->flags & EVI_EXPIRE) {
+		if (!addf_mi_attr(node, 0, "expire", 6, "%d", sock->expire))
+			return -1;
+	} else {
+		if (!add_mi_attr(node, 0, "expire", 6, "never", 5))
+			return -1;
+	}
+	/* XXX - does subscription time make sense? */
+
+	return 0;
+}
+
+struct evi_mi_param {
+	struct mi_node * node;
+	struct mi_root * root;
+	int nr;
+};
+
+
+static int evi_print_event(struct evi_mi_param *param,
+								evi_event_t *ev, evi_subs_p subs)
+{
+	struct mi_node *node=NULL;
+	struct mi_node *rpl = param->node;
+	node = add_mi_node_child(rpl, 0, "Event", 5, ev->name.s, ev->name.len);
+	if(node == NULL)
+		goto error;
+
+	if (!addf_mi_attr(node, 0, "id", 2, "%d", ev->id))
+		goto error;
+
+	if (subs) {
+		if (evi_print_subscriber(node, subs) < 0) {
+			LM_ERR("cannot print subscriber info\n");
+			goto error;
+		}
+	} else {
+		for (subs = ev->subscribers; subs; subs = subs->next) {
+			if (evi_print_subscriber(node, subs) < 0) {
+				LM_ERR("cannot print subscriber info\n");
+				goto error;
+			}
+			if (++param->nr % 50 == 0)
+				flush_mi_tree(param->root);
+		}
+	}
+	return 0;
+
+error:
+	return -1;
+}
+
+static evi_subs_p evi_get_subscriber(evi_event_p event, str sock_str)
+{
+	evi_export_t * trans_mod;
+	evi_subs_p subscriber = NULL;
+	evi_reply_sock * sock;
+
+	/* transport module name */
+	trans_mod = get_trans_mod(&sock_str);
+	if (!trans_mod) {
+		LM_DBG("couldn't find a protocol to support %.*s\n",
+				sock_str.len, sock_str.s);
+		return NULL;
+	}
+	sock_str.s += trans_mod->proto.len + 1;
+	sock_str.len -= (trans_mod->proto.len + 1);
+
+	/* parse reply socket */
+	sock = trans_mod->parse(sock_str);
+	if (!sock)
+		return NULL;
+
+	/* tries to match other socket */
+	if (trans_mod->match) {
+		lock_get(event->lock);
+		for (subscriber = event->subscribers; subscriber;
+				subscriber = subscriber->next) {
+			if (subscriber->trans_mod != trans_mod)
+				continue;
+			if (trans_mod->match(sock, subscriber->reply_sock)) {
+				if (trans_mod->free)
+					trans_mod->free(sock);
+				else
+					shm_free(sock);
+				break;
+			}
+		}
+		lock_release(event->lock);
+	}
+	return subscriber;
+}
+
+
+/* used to list all subscribers */
+struct mi_root * mi_subscribers_list(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_root *rpl_tree, *err=NULL;
+	struct mi_node *node=NULL, *rpl=NULL;
+	struct evi_mi_param prm;
+	evi_subs_p subs = NULL;
+	evi_event_p event;
+	unsigned i;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==0)
+		return 0;
+
+	memset(&prm, 0, sizeof(struct evi_mi_param));
+
+	rpl = &rpl_tree->node;
+	node = cmd_tree->node.kids;
+	prm.node = rpl;
+	prm.root = rpl_tree;
+	/* dump all info */
+	if (!node) {
+		for (i = 0; i < events_no; i++) {
+			if (evi_print_event(&prm, &events[i], NULL) < 0) {
+				LM_ERR("cannot print event %.*s info\n",
+						events[i].name.len, events[i].name.s);
+				goto error;
+			}
+		}
+		return rpl_tree;
+	}
+	/* get the event name */
+	event = evi_get_event(&node->value);
+	if (!event) {
+		err = init_mi_tree(404, MI_SSTR("Event not published"));
+		goto error;
+	}
+	node = node->next;
+	/* if a subscriber was specified */
+	if (node) {
+		if (node->next) {
+			err = init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+			goto error;
+		}
+		/* search for subscriber */
+		subs = evi_get_subscriber(event, node->value);
+		if (!subs) {
+			err = init_mi_tree(404, MI_SSTR("Subscriber does not exist"));
+			goto error;
+		}
+	}
+
+	if (evi_print_event(&prm, event, subs) < 0) {
+		LM_ERR("cannot print event %.*s info\n", event->name.len, event->name.s);
+		goto error;
+	}
+
+	return rpl_tree;
+
+error:
+	free_mi_tree(rpl_tree);
+	return err;
 }

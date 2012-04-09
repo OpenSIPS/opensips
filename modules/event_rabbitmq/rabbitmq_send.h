@@ -44,7 +44,4 @@ int rmq_send(rmq_send_t * rmqs);
 void rmq_free_param(rmq_params_t *rmqp);
 void rmq_destroy(evi_reply_sock *sock);
 
-/* helper func */
-void rmq_print(evi_reply_sock *sock);
-
 #endif

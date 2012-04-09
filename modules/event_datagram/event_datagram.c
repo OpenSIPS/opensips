@@ -62,6 +62,7 @@ static evi_reply_sock* datagram_parse_unix(str socket);
 static int datagram_raise(str* ev_name, evi_reply_sock *sock,
 		evi_params_t * params);
 static int datagram_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
+static str datagram_print(evi_reply_sock *sock);
 
 /**
  * module exports
@@ -92,6 +93,7 @@ static evi_export_t trans_export_udp = {
 	datagram_parse_udp,			/* parse function */
 	datagram_match,				/* sockets match function */
 	0,							/* no free function */
+	datagram_print,				/* socket print function */
 	DGRAM_UDP_FLAG				/* flags */
 };
 
@@ -101,6 +103,7 @@ static evi_export_t trans_export_unix = {
 	datagram_parse_unix,		/* parse function */
 	datagram_match,				/* sockets match function */
 	0,							/* no free function */
+	datagram_print,				/* socket print function */
 	DGRAM_UNIX_FLAG				/* flags */
 };
 
@@ -245,6 +248,55 @@ static evi_reply_sock* datagram_parse_unix(str socket)
 	return datagram_parse(socket, 1);
 }
 
+#define DO_PRINT(_s, _l) \
+	do { \
+		if (datagram_print_s.len + (_l) > datagram_print_len) { \
+			int new_len = (datagram_print_s.len + (_l)) * 2; \
+			char *new_s = pkg_realloc(datagram_print_s.s, new_len); \
+			if (!new_s) { \
+				LM_ERR("no more pkg mem to realloc\n"); \
+				goto end; \
+			} \
+			datagram_print_s.s = new_s; \
+			datagram_print_len = new_len; \
+		} \
+		memcpy(datagram_print_s.s + datagram_print_s.len, (_s), (_l)); \
+		datagram_print_s.len += (_l); \
+	} while (0)
+
+static int datagram_print_len = 0;
+static str datagram_print_s = { 0, 0 };
+
+static str datagram_print(evi_reply_sock *sock)
+{
+	str aux;
+	datagram_print_s.len = 0;
+
+	if (!sock) {
+		LM_DBG("Nothing to print");
+		goto end;
+	}
+
+	if (sock->flags & DGRAM_UDP_FLAG) {
+		DO_PRINT("udp:", 4);
+	} else {
+		DO_PRINT("unix:", 5);
+	}
+
+	if (sock->flags & EVI_ADDRESS)
+		DO_PRINT(sock->address.s, sock->address.len);
+
+	if (sock->flags & EVI_PORT) {
+		DO_PRINT(":", 1);
+		aux.s = int2str(sock->port, &aux.len);
+		DO_PRINT(aux.s, aux.len);
+	}
+		
+end:
+	return datagram_print_s;
+}
+#undef DO_PRINT
+
 #define DO_COPY(buff, str, len) \
 	do { \
 		if ((buff) - dgram_buffer + 1 > DGRAM_BUFFER_SIZE) { \
@@ -331,10 +383,10 @@ end:
 	dgram_buffer_len = buff - dgram_buffer;
 	if (ev_params)
 		ev_params->flags |= (DGRAM_UDP_FLAG | DGRAM_UNIX_FLAG);
-
 	return dgram_buffer_len;
 }
 
+#undef DO_COPY
 
 static int datagram_raise(str* ev_name, evi_reply_sock *sock,
 		evi_params_t *params)

@@ -544,6 +544,11 @@ static mi_export_t mi_core_cmds[] = {
 		mi_cacheremove,               0,  0,  0 },
 	{ "event_subscribe", "subscribes an event to the Event Interface",
 		mi_event_subscribe,       0,  0,  0 },
+	{ "events_list", "lists all the events advertised through the Event Interface",
+		mi_events_list, MI_NO_INPUT_FLAG,  0,  0 },
+	{ "subscribers_list", "lists all the Event Interface subscribers; "
+		"Params: [ event [ subscriber ]]",
+		mi_subscribers_list,      0,  0,  0 },
 	{ "help", "prints information about MI commands usage",
 		mi_help,                  0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}

@@ -182,46 +182,6 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 }
 
 
-void rmq_print(evi_reply_sock *sock)
-{
-	rmq_params_t *rmqp;
-	if (!sock) {
-		LM_DBG("null sock\n");
-		return;
-	}
-	if (sock->flags & EVI_ADDRESS && sock->address.s)
-		LM_DBG("XXX Address: %s\n", sock->address.s);
-	else
-		LM_DBG("XXX Address not found\n");
-	if (sock->flags & EVI_PORT && sock->port)
-		LM_DBG("XXX Port: %d\n", sock->port);
-	else
-		LM_DBG("XXX Port not found\n");
-	if (!(sock->flags & EVI_PARAMS)) {
-		LM_DBG("XXX Params not found\n");
-		return;
-	}
-	rmqp = (rmq_params_t *)sock->params;
-	LM_DBG("XXX Flags %X : %X\n", sock->flags, rmqp->flags);
-	if (rmqp->flags & RMQ_PARAM_EXCH && rmqp->exchange.s)
-		LM_DBG("XXX Exchange: %s\n", rmqp->exchange.s);
-	else
-		LM_DBG("XXX Exchange not found\n");
-	if (rmqp->flags & RMQ_PARAM_USER && rmqp->user.s)
-		LM_DBG("XXX User: %s\n", rmqp->user.s);
-	else
-		LM_DBG("XXX User not found\n");
-	if (rmqp->flags & RMQ_PARAM_PASS && rmqp->pass.s)
-		LM_DBG("XXX Pass: %s\n", rmqp->pass.s);
-	else
-		LM_DBG("XXX Pass not found\n");
-	if (rmqp->flags & RMQ_PARAM_CONN && rmqp->conn)
-		LM_DBG("XXX Conn: %p\n", rmqp->conn);
-	else
-		LM_DBG("XXX Conn not found\n");
-	LM_DBG("XXX Sock: %d\n", rmqp->sock);
-}
-
 void rmq_free_param(rmq_params_t *rmqp)
 {
 	if ((rmqp->flags & RMQ_PARAM_USER) && rmqp->user.s &&

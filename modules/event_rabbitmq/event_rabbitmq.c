@@ -51,6 +51,7 @@ static int rmq_raise(str* ev_name, evi_reply_sock *sock,
 		evi_params_t * params);
 static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void rmq_free(evi_reply_sock *sock);
+static str rmq_print(evi_reply_sock *sock);
 
 /* sending process */
 static proc_export_t procs[] = {
@@ -86,6 +87,7 @@ static evi_export_t trans_export_rmq = {
 	rmq_parse,					/* parse function */
 	rmq_match,					/* sockets match function */
 	rmq_free,					/* free function */
+	rmq_print,					/* print socket */
 	RMQ_FLAG					/* flags */
 };
 
@@ -170,7 +172,7 @@ static inline int dupl_string(str* dst, const char* begin, const char* end)
 /*
  * This is the parsing function
  * The socket grammar should be:
- * 		 [user [':' password '@']] ip [':' port] '/' exchange
+ * 		 [user [':' password] '@'] ip [':' port] '/' exchange
  */
 static evi_reply_sock* rmq_parse(str socket)
 {
@@ -344,6 +346,59 @@ err:
 	return NULL;
 }
 
+#define DO_PRINT(_s, _l) \
+	do { \
+		if (rmq_print_s.len + (_l) > rmq_print_len) { \
+			int new_len = (rmq_print_s.len + (_l)) * 2; \
+			char *new_s = pkg_realloc(rmq_print_s.s, new_len); \
+			if (!new_s) { \
+				LM_ERR("no more pkg mem to realloc\n"); \
+				goto end; \
+			} \
+			rmq_print_s.s = new_s; \
+			rmq_print_len = new_len; \
+		} \
+		memcpy(rmq_print_s.s + rmq_print_s.len, (_s), (_l)); \
+		rmq_print_s.len += (_l); \
+	} while (0)
+
+static int rmq_print_len = 0;
+static str rmq_print_s = { 0, 0 };
+
+static str rmq_print(evi_reply_sock *sock)
+{
+	rmq_params_t * param;
+	rmq_print_s.len = 0;
+
+	if (!sock) {
+		LM_DBG("Nothing to print");
+		goto end;
+	}
+
+	DO_PRINT(RMQ_NAME":", sizeof(RMQ_NAME));
+
+	if (!(sock->flags & EVI_PARAMS))
+		goto end;
+
+	param = sock->params;
+	if (param->flags & RMQ_PARAM_USER) {
+		DO_PRINT(param->user.s, param->user.len - 1 /* skip 0 */);
+		DO_PRINT("@", 1);
+	}
+	if (sock->flags & EVI_ADDRESS)
+		DO_PRINT(sock->address.s, sock->address.len - 1);
+
+	if (param->flags & RMQ_PARAM_EXCH) {
+		DO_PRINT("/", 1);
+		DO_PRINT(param->exchange.s, param->exchange.len - 1);
+	}
+end:
+	return rmq_print_s;
+}
+#undef DO_PRINT
+
+
+
 #define DO_COPY(buff, str, len) \
 	do { \
 		if ((buff) - rmq_buffer + (len) > RMQ_BUFFER_SIZE) { \
@@ -431,6 +486,8 @@ end:
 
 	return rmq_buffer_len;
 }
+
+#undef DO_COPY
 
 
 static int rmq_raise(str* ev_name, evi_reply_sock *sock,
