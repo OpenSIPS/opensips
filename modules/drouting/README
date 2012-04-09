@@ -44,7 +44,7 @@ Anca-Maria Vamanu
               1.3.2. drd_table(str)
               1.3.3. drr_table(str)
               1.3.4. drg_table(str)
-              1.3.5. drl_table(str)
+              1.3.5. drc_table(str)
               1.3.6. ruri_avp (str)
               1.3.7. gw_id_avp (str)
               1.3.8. gw_attrs_avp (str)
@@ -91,7 +91,7 @@ Anca-Maria Vamanu
    1.2. Set drd_table parameter
    1.3. Set drr_table parameter
    1.4. Set drg_table parameter
-   1.5. Set drl_table parameter
+   1.5. Set drc_table parameter
    1.6. Set ruri_avp parameter
    1.7. Set gw_id_avp parameter
    1.8. Set gw_attrs_avp parameter
@@ -421,19 +421,16 @@ modparam("drouting", "drr_table", "rules")
 modparam("drouting", "drg_table", "groups")
 ...
 
-1.3.5. drl_table(str)
+1.3.5. drc_table(str)
 
-   The name of the db table storing definitions of destination
-   lists (to be used directly by the routing rules). You will have
-   a identifier to a group of gateways instead of having all the
-   members of the group as a individual elements. Very useful to
-   reuse a list of gateways in different places.
+   The name of the db table storing definitions of the carriers
+   that will be used directly by the routing rules.
 
    Default value is “dr_gw_lists”.
 
-   Example 1.5. Set drl_table parameter
+   Example 1.5. Set drc_table parameter
 ...
-modparam("drouting", "drl_table", "my_gw_lists")
+modparam("drouting", "drc_table", "my_dr_carriers")
 ...
 
 1.3.6. ruri_avp (str)

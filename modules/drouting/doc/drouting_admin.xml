@@ -492,23 +492,20 @@ modparam("drouting", "drg_table", "groups")
 	</section>
 
 	<section>
-		<title><varname>drl_table</varname>(str)</title>
+		<title><varname>drc_table</varname>(str)</title>
 		<para>
-		The name of the db table storing definitions of destination lists (to 
-		be used directly by the routing rules).
-		You will have a identifier to a group of gateways instead of having all the
-		members of the group as a individual elements.
-		Very useful to reuse a list of gateways in different places.
+		The name of the db table storing definitions of the carriers that will 
+		be used directly by the routing rules.
 		</para>
 		<para>
 		<emphasis>	Default value is <quote>dr_gw_lists</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>drl_table</varname> parameter</title>
+		<title>Set <varname>drc_table</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("drouting", "drl_table", "my_gw_lists")
+modparam("drouting", "drc_table", "my_dr_carriers")
 ...
 </programlisting>
 		</example>
