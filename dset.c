@@ -44,7 +44,7 @@
 #define CONTACT_DELIM ", "
 #define CONTACT_DELIM_LEN (sizeof(CONTACT_DELIM) - 1)
 
-#define Q_PARAM ">;q="
+#define Q_PARAM ";q="
 #define Q_PARAM_LEN (sizeof(Q_PARAM) - 1)
 
 struct branch
@@ -428,9 +428,9 @@ char* print_dset(struct sip_msg* msg, int* len)
 
 	if (msg->new_uri.s) {
 		cnt = 1;
-		*len = msg->new_uri.len;
+		*len = msg->new_uri.len+2 /*for <>*/;
 		if (ruri_q != Q_UNSPECIFIED) {
-			*len += 1 + Q_PARAM_LEN + len_q(ruri_q);
+			*len += Q_PARAM_LEN + len_q(ruri_q);
 		}
 	} else {
 		cnt = 0;
@@ -439,9 +439,9 @@ char* print_dset(struct sip_msg* msg, int* len)
 
 	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ ) {
 		cnt++;
-		*len += uri.len;
+		*len += uri.len+2 /*for <>*/ ;
 		if (q != Q_UNSPECIFIED) {
-			*len += 1 + Q_PARAM_LEN + len_q(q);
+			*len += Q_PARAM_LEN + len_q(q);
 		}
 	}
 
@@ -465,12 +465,10 @@ char* print_dset(struct sip_msg* msg, int* len)
 	memcpy(dset, CONTACT, CONTACT_LEN);
 	p = dset + CONTACT_LEN;
 	if (msg->new_uri.s) {
-		if (ruri_q != Q_UNSPECIFIED) {
-			*p++ = '<';
-		}
-
+		*p++ = '<';
 		memcpy(p, msg->new_uri.s, msg->new_uri.len);
 		p += msg->new_uri.len;
+		*p++ = '>';
 
 		if (ruri_q != Q_UNSPECIFIED) {
 			memcpy(p, Q_PARAM, Q_PARAM_LEN);
@@ -491,12 +489,11 @@ char* print_dset(struct sip_msg* msg, int* len)
 			p += CONTACT_DELIM_LEN;
 		}
 
-		if (q != Q_UNSPECIFIED) {
-			*p++ = '<';
-		}
-
+		*p++ = '<';
 		memcpy(p, uri.s, uri.len);
 		p += uri.len;
+		*p++ = '>';
+
 		if (q != Q_UNSPECIFIED) {
 			memcpy(p, Q_PARAM, Q_PARAM_LEN);
 			p += Q_PARAM_LEN;
