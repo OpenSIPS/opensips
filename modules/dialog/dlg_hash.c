@@ -1186,7 +1186,7 @@ static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
 	}
 	dlg_unlock( d_table, d_entry);
 
-	return init_mi_tree( 404, MI_SSTR("Nu such dialog"));
+	return init_mi_tree( 404, MI_SSTR("No such dialog"));
 }
 
 
