@@ -38,6 +38,9 @@
 /* size of buffer used for building SIP PING req */
 #define MAX_SIPPING_SIZE 65536
 
+/* maximum number of hops */
+#define MAX_FORWARD "70"
+
 /* helping macros for building SIP PING ping request */
 #define append_str( _p, _s) \
 	do {\
@@ -139,6 +142,7 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 		s_len(CRLF"Call-ID: ") + sipping_callid.len + 1 + 8 + 1 + 8 + 1 +
 		s->address_str.len +
 		s_len(CRLF"CSeq: 1 ") + sipping_method.len +
+		s_len(CRLF"Max-Forwards: "MAX_FORWARD) +
 		s_len(CRLF"Content-Length: 0" CRLF CRLF)
 		> MAX_SIPPING_SIZE )
 	{
@@ -179,6 +183,7 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 	append_str( p, s->address_str);
 	append_fix( p, CRLF"CSeq: 1 ");
 	append_str( p, sipping_method);
+	append_fix( p, CRLF"Max-Forwards: "MAX_FORWARD);
 	append_fix( p, CRLF"Content-Length: 0" CRLF CRLF);
 
 	*len_p = p - buf;
