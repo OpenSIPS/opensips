@@ -335,14 +335,18 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 	return -1;
     LM_DBG("Received Message:\n"); printStunMsg(recv_msg);
 
+	memset(&ctl,0,sizeof(StunCtl));
+
 /* process */
     ctl.srs = client;
     ctl.srs_size = sizeof(struct sockaddr);;
     ctl.sock_inbound = sockfd;
     resp_msg = process(recv_msg, &ctl);
     if(!resp_msg){   /* process junk or out of mem */
-	freeStunMsg(&recv_msg);
-	return -1;
+		freeStunMsg(&recv_msg);
+		if (ctl.dst && ctl.dst != client)
+			pkg_free(ctl.dst);
+		return -1;
     }
     LM_DBG("Send Message:\n"); printStunMsg(resp_msg);
 
@@ -351,6 +355,8 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 	if (resp_buffer == NULL) {
 		freeStunMsg(&recv_msg);
 		freeStunMsg(&resp_msg);
+		if (ctl.dst && ctl.dst != client)
+			pkg_free(ctl.dst);
 		LM_ERR("failed to get resp buffer\n");
 		return -1;
 	}
@@ -375,6 +381,8 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
     LM_DBG("\n\n\n");
 
 /* free */
+	if (ctl.dst && ctl.dst != client)
+		pkg_free(ctl.dst);
     freeStunMsg(&recv_msg);
     freeStunMsg(&resp_msg);
     freeStunBuf(&resp_buffer);
@@ -598,14 +606,15 @@ StunMsg* deserialize(IN Buffer* buffer){
     /* allocate returned structure */
     msg = (StunMsg*) pkg_malloc(sizeof(StunMsg));
     if(!msg){
-	LM_DBG("out of mem\n");
-	goto error;
+		LM_ERR("out of mem\n");
+		goto error;
     }
     memset(msg, 0, sizeof(StunMsg));
 
     /* check if message has at least the 20 bits header */
     if(buffer->size < 20){
-	return NULL;
+		LM_ERR("Buff size < 20\n");
+		goto error;
     }
 
     /* message type */
@@ -619,8 +628,8 @@ StunMsg* deserialize(IN Buffer* buffer){
     /* message unique id */
     msg->id = (char*) pkg_malloc(16*sizeof(char));
     if(!msg){
-	LM_DBG("out of mem\n");
-	goto error;
+		LM_DBG("out of mem\n");
+		goto error;
     }
     memcpy(msg->id, b, 16);
     b+=16;
