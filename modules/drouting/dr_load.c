@@ -498,7 +498,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			check_val(PRIORITY_DRR_COL, ROW_VALUES(row)+4, DB_INT, 1, 0);
 			int_vals[2] = VAL_INT   (ROW_VALUES(row)+4);
 			/* ROUTE_ID column */
-			check_val(ROUTEID_DRR_COL, ROW_VALUES(row)+5, DB_STRING, 1, 0);
+			check_val(ROUTEID_DRR_COL, ROW_VALUES(row)+5, DB_STRING, 0, 0);
 			str_vals[3] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 			/* DSTLIST column */
 			check_val(DSTLIST_DRR_COL, ROW_VALUES(row)+6, DB_STRING, 1, 1);
@@ -513,7 +513,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				continue;
 			}
 			/* lookup for the script route ID */
-			if (str_vals[3][0]) {
+			if (str_vals[3] && str_vals[3][0]) {
 				int_vals[3] =  get_script_route_ID_by_name( str_vals[3],
 						rlist, RT_NO);
 				if (int_vals[3]==-1) {

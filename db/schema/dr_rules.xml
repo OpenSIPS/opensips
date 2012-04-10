@@ -66,6 +66,8 @@
 		<name>routeid</name>
 		<type>string</type>
 		<size>255</size>
+		<null/>
+		<default><null/></default>
 		<description>Route block (from cfg script) to be called when rule 
 		matches.</description>
 	</column>
