@@ -7,7 +7,7 @@
 MOD_NAME=$(NAME:.so=)
 
 ALLDEP=Makefile ../../Makefile.sources ../../Makefile.rules \
- ../../Makefile.modules
+ ../../Makefile.modules ../../Makefile.conf
 
 #override modules value, a module cannot have submodules
 override modules=
