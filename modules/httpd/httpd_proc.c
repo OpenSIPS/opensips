@@ -230,7 +230,6 @@ void httpd_proc(int rank)
 		case EINTR:
 			LM_WARN("error returned by select: EINTR [%d] "
 				"(Non blocked signal caught)\n", status);
-			//exit(-1);
 			break;
 		case EINVAL:
 			LM_ERR("error returned by select: EINVAL [%d] "
@@ -245,9 +244,18 @@ void httpd_proc(int rank)
 			break;
 		default:
 			if(status<0){
-				LM_ERR("error returned by select: [%d] "
-					"[%d][%s]\n", status, errno, strerror(errno));
-				exit(-1);
+				switch(errno){
+				case EINTR:
+					LM_WARN("error returned by select:"
+						" [%d] [%d][%s]\n",
+						status, errno, strerror(errno));
+					break;
+				default:
+					LM_WARN("error returned by select:"
+						" [%d] [%d][%s]\n",
+						status, errno, strerror(errno));
+					exit(-1);
+				}
 			}
 		}
 		//LM_DBG("select returned %d\n", status);
