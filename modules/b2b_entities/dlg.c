@@ -2340,8 +2340,17 @@ dummy_reply:
 			from_hdr.parsed   = (struct hdr_field*)(void*)&from_hdr_parsed;
 			to_hdr.parsed     = (struct hdr_field*)(void*)&to_hdr_parsed;
 
-			from_hdr.body       = t->from;
-			to_hdr.body         = t->to;
+			from_hdr.body  = t->from;
+			from_hdr.body.len -=6; from_hdr.body.s += 6;
+			to_hdr.body    = t->to;
+			to_hdr.body.len -=4; to_hdr.body.s += 4;
+
+			from_hdr.len        = t->from.len;
+			to_hdr.len          = t->to.len;
+			from_hdr.name.s     = t->from.s;
+			from_hdr.name.len   = 4;
+			to_hdr.name.s       = t->to.s;
+			to_hdr.name.len     = 2;
 
 			callid_hdr.name.s   = t->callid.s;
 			callid_hdr.name.len = 7;
@@ -2356,6 +2365,14 @@ dummy_reply:
 			dummy_msg.parsed_flag = HDR_EOH_F;
 			cseq.parsed = &cb;
 			dummy_msg.cseq = &cseq;
+
+			/* simulate some "body" and "headers" - we fake
+			   the body with the "from" buffer */
+			dummy_msg.buf = t->from.s;
+			dummy_msg.len = t->from.len;
+			dummy_msg.eoh = dummy_msg.unparsed = t->from.s+t->from.len;
+			dummy_msg.headers = dummy_msg.last_header = &from_hdr;
+
 			msg = &dummy_msg;
 		}
 		goto done1;
@@ -2618,6 +2635,10 @@ done1:
 		pkg_free(param.s);
 		param.s = NULL;
 	}
+	if (msg == &dummy_msg) {
+		free_lump_list(msg->add_rm);
+		free_lump_list(msg->body_lumps);
+	}
 
 b2b_route:
 	current_dlg = 0;
@@ -2657,6 +2678,10 @@ error:
 error1:
 	if(param.s)
 		pkg_free(param.s);
+	if (msg == &dummy_msg) {
+		free_lump_list(msg->add_rm);
+		free_lump_list(msg->body_lumps);
+	}
 }
 
 
