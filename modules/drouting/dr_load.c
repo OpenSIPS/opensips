@@ -399,7 +399,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				/* CARRIER_ID column */
 				check_val(CID_DRC_COL, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 				str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
-				/* ID column */
+				/* flags column */
 				check_val(ID_DRC_COL, ROW_VALUES(row)+2, DB_INT, 1, 0);
 				int_vals[1] = VAL_INT(ROW_VALUES(row)+2);
 				/* GWLIST column */

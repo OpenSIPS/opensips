@@ -96,7 +96,8 @@ typedef struct pgw_list_ {
 }pgw_list_t;
 
 #define DR_CR_FLAG_WEIGHT (1<<0)
-#define DR_CR_FLAG_IS_OFF (1<<1)
+#define DR_CR_FLAG_FIRST  (1<<1)
+#define DR_CR_FLAG_IS_OFF (1<<2)
 
 /* list of carriers */
 struct pcr_ {

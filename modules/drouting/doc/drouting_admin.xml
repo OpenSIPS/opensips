@@ -186,7 +186,8 @@
 	<listitem><para>list of gateways with/without weights
 	(string)</para></listitem>
 	<listitem><para>flags : 0x1 - use weight for sorting the list and
-	not definition order; 0x2 - disable the usage of this 
+	not definition order; 0x2 - use only the first gateway from the carrier
+	(depending on the sorting); 0x4 - disable the usage of this 
 	carrier</para></listitem>
 	<listitem><para>attributes (not used by DR engine, but only pushed
 	to script level when routing to this carrier)</para></listitem>
