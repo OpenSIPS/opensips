@@ -187,6 +187,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"do_routing",  (cmd_function)do_routing_123, 2,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"do_routing",  (cmd_function)do_routing_123, 3,  fixup_do_routing, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"use_next_gw",  (cmd_function)use_next_gw,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"next_routing",  (cmd_function)use_next_gw,  0,  0, 0,
@@ -918,29 +920,31 @@ static int do_routing_123(struct sip_msg* msg, char* grp, char* param,
 	int flags=0;
 	char *p;
 
-	if (fixup_get_svalue(msg, (gparam_p)param, &res) !=0){
-		LM_ERR("falied to extract flags\n");
-		return -1;
-	}
+	if (param) {
+		if (fixup_get_svalue(msg, (gparam_p)param, &res) !=0){
+			LM_ERR("falied to extract flags\n");
+			return -1;
+		}
 
-	for (p=res.s;p<res.s+res.len;p++)
-	{
-		switch (*p)
+		for (p=res.s;p<res.s+res.len;p++)
 		{
-			case 'W':
-				flags |= DR_PARAM_USE_WEIGTH;
-				LM_DBG("using weights in GW selection\n");
-				break;
-			case 'F':
-				flags |= DR_PARAM_RULE_FALLBACK;
-				LM_DBG("enabling rule fallback\n");
-				break;
-			case 'L':
-				flags |= DR_PARAM_STRICT_LEN;
-				LM_DBG("matching prefix with strict len\n");
-				break;
-			default:
-				LM_DBG("unknown flag : [%c] . Skipping\n",*p);
+			switch (*p)
+			{
+				case 'W':
+					flags |= DR_PARAM_USE_WEIGTH;
+					LM_DBG("using weights in GW selection\n");
+					break;
+				case 'F':
+					flags |= DR_PARAM_RULE_FALLBACK;
+					LM_DBG("enabling rule fallback\n");
+					break;
+				case 'L':
+					flags |= DR_PARAM_STRICT_LEN;
+					LM_DBG("matching prefix with strict len\n");
+					break;
+				default:
+					LM_DBG("unknown flag : [%c] . Skipping\n",*p);
+			}
 		}
 	}
 
