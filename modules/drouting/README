@@ -239,7 +239,9 @@ Chapter 1. Admin Guide
      * id (string)
      * list of gateways with/without weights (string)
      * flags : 0x1 - use weight for sorting the list and not
-       definition order; 0x2 - disable the usage of this carrier
+       definition order; 0x2 - use only the first gateway from the
+       carrier (depending on the sorting); 0x4 - disable the usage
+       of this carrier
      * attributes (not used by DR engine, but only pushed to
        script level when routing to this carrier)
 

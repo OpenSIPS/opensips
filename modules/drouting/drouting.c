@@ -1516,6 +1516,9 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 							cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
 						n++;
+						if (dst->dst.carrier->flags&DR_CR_FLAG_FIRST)
+							/* use only first valid GW */
+							break;
 					}
 				}
 
@@ -1683,6 +1686,9 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 					cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 			} else {
 				n++;
+				if (cr->flags&DR_CR_FLAG_FIRST)
+					/* use only first valid GW */
+					break;
 			}
 		}
 
