@@ -573,6 +573,20 @@ del_pgw_list(
 	}
 }
 
+void del_carriers_list(
+		pcr_t *carriers
+		)
+{
+	pcr_t *it;
+
+	while (NULL!=carriers) {
+		it = carriers;
+		carriers=carriers->next;
+		shm_free(it->pgwl);
+		shm_free(it);
+	}
+}
+
 void 
 free_rt_data(
 		rt_data_t* rt_data,
@@ -598,6 +612,8 @@ free_rt_data(
 			shm_free(rt_data->noprefix.rg);
 			rt_data->noprefix.rg = 0;
 		}
+		/* del carriers */
+		del_carriers_list(rt_data->carriers);
 		/* del top level */
 		if (all) shm_free(rt_data);
 	}
