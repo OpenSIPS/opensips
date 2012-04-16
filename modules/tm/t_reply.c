@@ -1219,8 +1219,8 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			 * added either by build_res_buf_from_sip_res, or by
 			 * the callbacks that have been called with shmem-ed messages - vlad */
 			if (branch!=relay) {
-				del_notflaged_lumps( &(relayed_msg->add_rm), LUMPFLAG_SHMEM|LUMPFLAG_DUPED ); 
-				del_notflaged_lumps( &(relayed_msg->body_lumps), LUMPFLAG_SHMEM|LUMPFLAG_DUPED ); 
+				del_notflaged_lumps( &(relayed_msg->add_rm), LUMPFLAG_SHMEM);
+				del_notflaged_lumps( &(relayed_msg->body_lumps), LUMPFLAG_SHMEM);
 			}
 		}
 		if (!buf) {
