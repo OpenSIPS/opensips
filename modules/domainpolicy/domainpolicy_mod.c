@@ -187,18 +187,15 @@ static int mod_init(void)
 
 	/* Assign AVP parameter names */
 	LM_INFO("AVP\n");
-	port_override_name = get_avp_id(&port_override_avp);
-	if (port_override_name < 0) {
+	if (parse_avp_spec(&port_override_avp, &port_override_name) < 0) {
 		LM_ERR("invalid port_override_avp!\n");
 		return -1;
 	}
-	transport_override_name = get_avp_id(&transport_override_avp);
-	if (transport_override_name < 0) {
+	if (parse_avp_spec(&transport_override_avp, &transport_override_name) < 0) {
 		LM_ERR("invalid transport_override_avp!\n");
 		return -1;
 	}
-	domain_prefix_name = get_avp_id(&domain_prefix_avp);
-	if (domain_prefix_name < 0) {
+	if (parse_avp_spec(&domain_prefix_avp, &domain_prefix_name) < 0) {
 		LM_ERR("invalid domain_prefix_avp!\n");
 		return -1;
 	}
@@ -207,13 +204,11 @@ static int mod_init(void)
 		LM_ERR("invalid domain_suffix_avp!\n");
 		return -1;
 	}
-	domain_replacement_name = get_avp_id(&domain_replacement_avp);
-	if (domain_replacement_name < 0) {
+	if (parse_avp_spec(&domain_replacement_avp, &domain_replacement_name) < 0) {
 		LM_ERR("invalid domain_replacement_avp!\n");
 		return -1;
 	}
-	send_socket_name = get_avp_id(&send_socket_avp);
-	if (send_socket_name < 0) {
+	if (parse_avp_spec(&send_socket_avp, &send_socket_name) < 0) {
 		LM_ERR("invalid send_socket_avp!\n");
 		return -1;
 	}
