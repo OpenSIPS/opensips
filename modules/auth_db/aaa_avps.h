@@ -142,8 +142,7 @@ static inline int parse_aaa_avps(char *definition,
 		avp->attr_name.s[foo.len] = 0;
 		/* was an avp name specified? */
 		if (avp_name < 0) {
-			avp->avp_name = get_avp_id(&avp->attr_name);
-			if (avp->avp_name < 0) {
+			if (parse_avp_spec(&avp->attr_name, &avp->avp_name) < 0) {
 				LM_ERR("cannot get avp ip\n");
 				goto error;
 			}
