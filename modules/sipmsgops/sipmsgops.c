@@ -1547,7 +1547,8 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		}
 
 		/* if has body, check for SDP */
-		if (body.s && body.len && (flags & SIP_PARSE_SDP)) {
+		if (body.s && body.len && (flags & SIP_PARSE_SDP) &&
+		get_content_type(msg)==(TYPE_APPLICATION<<16 | SUBTYPE_SDP) ) {
 			if (parse_sdp(msg) < 0) {
 				LM_DBG("failed to parse SDP message\n");
 				return -3;
