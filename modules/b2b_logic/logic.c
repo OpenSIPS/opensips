@@ -1911,8 +1911,69 @@ error:
 }
 
 
+static inline int get_b2b_dialog_by_replace(str *replaces, str *u_replaces,
+			str *entity_key, unsigned int *hash_idx, unsigned int *local_idx )
+{
+	struct replaces_body replaces_b;
+	char tuple_buf[B2BL_MAX_KEY_LEN];
+	str tuple_key;
+
+	//LM_DBG("Replaces=[%.*s]\n",replaces->len,replaces->s);
+	if(unescape_param(replaces,u_replaces)!=0)
+	{
+		LM_ERR("unable to escape [%.*s]\n",
+			replaces->len, replaces->s);
+		return -1;
+	}
+	//LM_DBG("[%.*s]\n", u_replaces->len, u_replaces->s);
+	if(parse_replaces_body(u_replaces->s, u_replaces->len,
+		&replaces_b)<0 ||
+		!replaces_b.callid_val.s ||
+		!replaces_b.to_tag_val.s ||
+		!replaces_b.from_tag_val.s)
+	{
+		LM_ERR("unable to parse replaces header [%.*s]\n",
+			u_replaces->len, u_replaces->s);
+		return -1;
+	}
+	tuple_key.s = tuple_buf;
+	tuple_key.len = B2BL_MAX_KEY_LEN;
+	if(b2b_api.get_b2bl_key(&replaces_b.callid_val,
+		&replaces_b.from_tag_val,
+		&replaces_b.to_tag_val,
+		entity_key,
+		&tuple_key)!=0)
+	{
+		LM_ERR("no b2bl key for [%.*s][%.*s][%.*s]\n",
+			replaces_b.callid_val.len,
+			replaces_b.callid_val.s,
+			replaces_b.to_tag_val.len,
+			replaces_b.to_tag_val.s,
+			replaces_b.from_tag_val.len,
+			replaces_b.from_tag_val.s);
+		return -1;
+	}
+	if(b2bl_parse_key(&tuple_key, hash_idx, local_idx)< 0)
+	{
+		LM_ERR("Failed to parse b2b logic key [%.*s]\n",
+			tuple_key.len, tuple_key.s);
+		return -1;
+	}
+	LM_DBG("Need to replace callid=[%.*s] to-tag=[%.*s] and "
+		"from-tag=[%.*s] from b2b_logic [%.*s]\n",
+		replaces_b.callid_val.len, replaces_b.callid_val.s,
+		replaces_b.to_tag_val.len, replaces_b.to_tag_val.s,
+		replaces_b.from_tag_val.len, replaces_b.from_tag_val.s,
+		tuple_key.len, tuple_key.s);
+
+	return 0;
+}
+
 int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
 {
+	#define U_REPLACES_BUF_LEN 512
+	char u_replaces_buf[U_REPLACES_BUF_LEN];
+	str u_replaces = { u_replaces_buf, U_REPLACES_BUF_LEN};
 	unsigned int hash_index, local_index;
 	unsigned int hash_idx, local_idx;
 	str entity_key = {NULL, 0};
@@ -1922,21 +1983,14 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	str extra_headers = {NULL, 0};
 	str new_body={NULL, 0};
 	int ret = -1;
-#define H_SIZE 2
+	#define H_SIZE 2
 	str h_name[H_SIZE];
 	str h_val[H_SIZE];
 	str rt_header;
 	str* replaces = NULL;
-	char tuple_buf[B2BL_MAX_KEY_LEN];
-	str tuple_key;
-#define U_REPLACES_BUF_LEN 512
-	char u_replaces_buf[U_REPLACES_BUF_LEN];
-	str u_replaces;
-	//str u_replaces = {NULL, 0};
-#define RT_BUF_LEN 1024
+	#define RT_BUF_LEN 1024
 	char rt_buf[RT_BUF_LEN];
 	str rt;
-	struct replaces_body replaces_b;
 	struct b2bl_entity_id* r_peer = NULL;
 	int i;
 
@@ -2021,60 +2075,10 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 						break;
 					}
 			}
-			if(replaces)
+			if ( replaces && get_b2b_dialog_by_replace(replaces, &u_replaces,
+			&entity_key, &hash_idx, &local_idx)==0 )
 			{
-				//LM_DBG("Replaces=[%.*s]\n",replaces->len,replaces->s);
-				u_replaces.s = &u_replaces_buf[0];
-				u_replaces.len = U_REPLACES_BUF_LEN;
-				if(unescape_param(replaces,&u_replaces)!=0)
-				{
-					LM_ERR("unable to escape [%.*s]\n",
-						replaces->len, replaces->s);
-					goto done;
-				}
-				//LM_DBG("[%.*s]\n", u_replaces.len, u_replaces.s);
-				if(parse_replaces_body(u_replaces.s, u_replaces.len,
-						&replaces_b)<0 ||
-						!replaces_b.callid_val.s ||
-						!replaces_b.to_tag_val.s ||
-						!replaces_b.from_tag_val.s)
-				{
-					LM_ERR("unable to parse replaces header [%.*s]\n",
-						u_replaces.len, u_replaces.s);
-					goto done;
-				}
-				tuple_key.s = tuple_buf;
-				tuple_key.len = B2BL_MAX_KEY_LEN;
-				if(b2b_api.get_b2bl_key(&replaces_b.callid_val,
-						&replaces_b.from_tag_val,
-						&replaces_b.to_tag_val,
-						&entity_key,
-						&tuple_key)!=0)
-				{
-					LM_ERR("no b2bl key for [%.*s][%.*s][%.*s]\n",
-							replaces_b.callid_val.len,
-							replaces_b.callid_val.s,
-							replaces_b.to_tag_val.len,
-							replaces_b.to_tag_val.s,
-							replaces_b.from_tag_val.len,
-							replaces_b.from_tag_val.s);
-					goto done;
-				}
-				if(b2bl_parse_key(&tuple_key, &hash_idx,&local_idx)< 0)
-				{
-					LM_ERR("Failed to parse b2b logic key [%.*s]\n",
-						tuple_key.len, tuple_key.s);
-					goto done;
-				}
-				LM_DBG("Need to replace callid=[%.*s] to-tag=[%.*s] and "
-					"from-tag=[%.*s] from b2b_logic [%.*s]\n",
-					replaces_b.callid_val.len, replaces_b.callid_val.s,
-					replaces_b.to_tag_val.len, replaces_b.to_tag_val.s,
-					replaces_b.from_tag_val.len, replaces_b.from_tag_val.s,
-					tuple_key.len, tuple_key.s);
-				/* reset the replaces parsed structure */
-				memset(&replaces_b, 0, sizeof(struct replaces_body));
-
+				/* There is a "replaces" info and it matches a local dialog */
 				lock_get(&b2bl_htable[hash_idx].lock);
 				tuple=b2bl_search_tuple_safe(hash_idx, local_idx);
 				if(tuple == NULL)
@@ -2112,7 +2116,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 				 * Note: dlginfo->totag becomes from-tag in Replaces URI header
 				 *       dlginfo->fromtag becomes to-tag in Replaces URI header
 				 */
-				u_replaces.s = &u_replaces_buf[0];
 				i = r_peer->dlginfo->callid.len + r_peer->dlginfo->fromtag.len +
 					r_peer->dlginfo->totag.len + 18 /* 2x'=' + 2x'=' + ft */;
 				if (U_REPLACES_BUF_LEN < i)
