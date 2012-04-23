@@ -349,6 +349,8 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 				<emphasis>limit</emphasis> - this specifies the threshold
 				limit of the pipe. It is strongly related to the algorithm
 				used. This parameter accepts an integer or a pseudovariable.
+				Note that the limit should be specified as per-second, not
+				per-timer_interval.
 				</para>
 			</listitem>
 			<listitem>
