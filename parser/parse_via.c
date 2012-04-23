@@ -1787,6 +1787,7 @@ parse_again:
 							case L_PARAM:
 							case F_LF:
 							case F_CR:
+								vb->params.len=tmp - vb->params.s;
 								break;
 							case F_VIA:
 								vb->params.len=param->start+param->size
