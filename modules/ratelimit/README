@@ -328,7 +328,8 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
        pseudovariables.
      * limit - this specifies the threshold limit of the pipe. It
        is strongly related to the algorithm used. This parameter
-       accepts an integer or a pseudovariable.
+       accepts an integer or a pseudovariable. Note that the limit
+       should be specified as per-second, not per-timer_interval.
      * algorithm - this is parameter is optional and reffers to
        the algorithm used to check the pipe. If it is not set, the
        default value is used. It accepts a string or a
