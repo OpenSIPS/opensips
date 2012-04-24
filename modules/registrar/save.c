@@ -52,6 +52,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_expires.h"
+#include "../../parser/parse_supported.h"
 #include "../../dprint.h"
 #include "../../trim.h"
 #include "../../ut.h"
@@ -85,7 +86,8 @@ struct save_ctx {
  * we will remove all bindings with the given username 
  * from the usrloc and return 200 OK response
  */
-static inline int star(udomain_t* _d, struct save_ctx *_sctx)
+static inline int star(udomain_t* _d, struct save_ctx *_sctx,
+		int build_gruu)
 {
 	urecord_t* r;
 	ucontact_t* c;
@@ -113,7 +115,7 @@ static inline int star(udomain_t* _d, struct save_ctx *_sctx)
 		      */
 		rerrno = R_UL_DEL_R;
 		if (!ul.get_urecord(_d, &_sctx->aor, &r)) {
-			build_contact(r->contacts);
+			build_contact(r->contacts,build_gruu);
 		}
 		ul.unlock_udomain(_d, &_sctx->aor);
 		return -1;
@@ -173,7 +175,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
  * containing a list of all existing bindings for the
  * given username (in To HF)
  */
-static inline int no_contacts(udomain_t* _d, str* _a)
+static inline int no_contacts(udomain_t* _d, str* _a,int build_gruu)
 {
 	urecord_t* r;
 	int res;
@@ -188,7 +190,7 @@ static inline int no_contacts(udomain_t* _d, str* _a)
 	}
 	
 	if (res == 0) {  /* Contacts found */
-		build_contact(r->contacts);
+		build_contact(r->contacts,build_gruu);
 	}
 	ul.unlock_udomain(_d, _a);
 	return 0;
@@ -367,7 +369,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	ucontact_t* c;
 	unsigned int cflags;
 	int num;
-	int e;
+	int e,build_gruu=0;
 #ifdef USE_TCP
 	int e_max;
 	int tcp_check;
@@ -462,8 +464,12 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	}
 
 	if (r) {
-		if (r->contacts)
-			build_contact(r->contacts);
+		if (r->contacts) {
+			if (_m->supported && parse_supported(_m) == 0 &&
+			(get_supported(_m) & F_SUPPORTED_GRUU))
+				build_gruu=1;
+			build_contact(r->contacts,build_gruu);
+		}
 		ul.release_urecord(r);
 	}
 
@@ -656,7 +662,7 @@ error:
 static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 							udomain_t* _d, struct save_ctx *_sctx)
 {
-	int res;
+	int res,build_gruu=0;
 	urecord_t* r;
 
 	ul.lock_udomain(_d, &_sctx->aor);
@@ -669,13 +675,16 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 	}
 
 	if (res == 0) { /* Contacts found */
+		if (_m->supported && parse_supported(_m) == 0 &&
+		(get_supported(_m) & F_SUPPORTED_GRUU))
+			build_gruu=1;
 		if (update_contacts(_m, r, _c, _sctx) < 0) {
-			build_contact(r->contacts);
+			build_contact(r->contacts,build_gruu);
 			ul.release_urecord(r);
 			ul.unlock_udomain(_d, &_sctx->aor);
 			return -3;
 		}
-		build_contact(r->contacts);
+		build_contact(r->contacts,build_gruu);
 		ul.release_urecord(r);
 	} else {
 		if (insert_contacts(_m, _c, _d, &_sctx->aor, _sctx) < 0) {
@@ -697,7 +706,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	struct save_ctx  sctx;
 	contact_t* c;
 	contact_t* forced_c = NULL;
-	int st;
+	int st,build_gruu=0;
 	str uri;
 	str flags_s;
 	pv_value_t val;
@@ -791,10 +800,13 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	}
 
 	if (c == 0) {
+		if (_m->supported && parse_supported(_m) == 0 &&
+		(get_supported(_m) & F_SUPPORTED_GRUU))
+			build_gruu=1;
 		if (st) {
-			if (star((udomain_t*)_d, &sctx) < 0) goto error;
+			if (star((udomain_t*)_d, &sctx,build_gruu) < 0) goto error;
 		} else {
-			if (no_contacts((udomain_t*)_d, &sctx.aor) < 0) goto error;
+			if (no_contacts((udomain_t*)_d, &sctx.aor,build_gruu) < 0) goto error;
 		}
 	} else {
 		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0) goto error;
