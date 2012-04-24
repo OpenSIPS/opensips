@@ -112,7 +112,7 @@ static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
  * Calculate the length of buffer needed to
  * print contacts
  */
-static inline unsigned int calc_buf_len(ucontact_t* c)
+static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu)
 {
 	unsigned int len;
 	int qlen;
@@ -134,7 +134,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c)
 					+ 1 /* dquote */
 					;
 			}
-			if (c->instance.s) {
+			if (build_gruu && c->instance.s) {
 				/* pub gruu */
 				len += PUB_GRUU_SIZE
 					+ 1 /* quote */
@@ -221,7 +221,7 @@ int build_contact(ucontact_t* c,int build_gruu)
 	char *p, *cp, *tmpgr;
 	int fl, len,grlen;
 
-	contact.data_len = calc_buf_len(c);
+	contact.data_len = calc_buf_len(c,build_gruu);
 	if (!contact.data_len) return 0;
 
 	if (!contact.buf || (contact.buf_len < contact.data_len)) {
@@ -282,7 +282,7 @@ int build_contact(ucontact_t* c,int build_gruu)
 				*p++ = '\"';
 			}
 
-			if (c->instance.s) {
+			if (build_gruu && c->instance.s) {
 				/* build pub GRUU */
 				memcpy(p,PUB_GRUU,PUB_GRUU_SIZE);
 				p += PUB_GRUU_SIZE;

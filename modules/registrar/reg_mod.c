@@ -116,6 +116,7 @@ str realm_prefix;
 
 str sock_hdr_name = {0,0};
 str gruu_secret = {0,0};
+int disable_gruu = 0;
 
 #define RCV_NAME "received"
 str rcv_param = str_init(RCV_NAME);
@@ -180,6 +181,7 @@ static param_export_t params[] = {
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s     },
 	{"mcontact_avp",       STR_PARAM, &mct_avp_param       },
 	{"gruu_secret",        STR_PARAM, &gruu_secret.s       },
+	{"disable_gruu",       INT_PARAM, &disable_gruu        },
 	{0, 0, 0}
 };
 

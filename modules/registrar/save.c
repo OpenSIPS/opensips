@@ -73,6 +73,7 @@
 #include "path.h"
 #include "save.h"
 
+extern int disable_gruu;
 
 struct save_ctx {
 	unsigned int flags;
@@ -465,7 +466,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 	if (r) {
 		if (r->contacts) {
-			if (_m->supported && parse_supported(_m) == 0 &&
+			if (!disable_gruu && _m->supported && parse_supported(_m) == 0 &&
 			(get_supported(_m) & F_SUPPORTED_GRUU))
 				build_gruu=1;
 			build_contact(r->contacts,build_gruu);
@@ -675,7 +676,7 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 	}
 
 	if (res == 0) { /* Contacts found */
-		if (_m->supported && parse_supported(_m) == 0 &&
+		if (!disable_gruu && _m->supported && parse_supported(_m) == 0 &&
 		(get_supported(_m) & F_SUPPORTED_GRUU))
 			build_gruu=1;
 		if (update_contacts(_m, r, _c, _sctx) < 0) {
@@ -800,7 +801,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	}
 
 	if (c == 0) {
-		if (_m->supported && parse_supported(_m) == 0 &&
+		if (!disable_gruu && _m->supported && parse_supported(_m) == 0 &&
 		(get_supported(_m) & F_SUPPORTED_GRUU))
 			build_gruu=1;
 		if (st) {
