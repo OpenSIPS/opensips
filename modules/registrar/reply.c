@@ -216,7 +216,7 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
  * Allocate a memory buffer and print Contact
  * header fields into it
  */
-int build_contact(ucontact_t* c)
+int build_contact(ucontact_t* c,int build_gruu)
 {
 	char *p, *cp, *tmpgr;
 	int fl, len,grlen;
