@@ -134,10 +134,8 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 		} else {
 			pgwl[size].dst.gw = get_gw_by_id(rd->pgw_l, &id);
 		}
-		if (pgwl[size].dst.gw==NULL) {
-			LM_ERR("destination ID <%.*s> was not found\n",id.len,id.s);
-			goto error;
-		}
+		if (pgwl[size].dst.gw==NULL)
+			LM_WARN("destination ID <%.*s> was not found\n",id.len,id.s);
 
 		/* consume spaces */
 		EAT_SPACE(tmp);
@@ -162,7 +160,15 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 			/* consume spaces */
 			EAT_SPACE(tmp);
 		}
-		size++;
+
+		/* valid record ? */
+		if (pgwl[size].dst.gw==NULL) {
+			/* reset current record and do not count */
+			memset( pgwl+size, 0, sizeof(pgw_list_t));
+		} else {
+			/* count record */
+			size++;
+		}
 
 		/* separator */
 		if ( (*tmp==SEP) || (*tmp==SEP1) ) {
