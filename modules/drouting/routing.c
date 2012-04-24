@@ -306,6 +306,7 @@ add_dst(
 	char gwabuf[GWABUF_MAX_SIZE];
 	union sockaddr_union sau;
 	struct proxy_l *proxy;
+	unsigned int sip_prefix;
 	str gwas;
 
 	if (NULL==r || NULL==ip) {
@@ -317,14 +318,21 @@ add_dst(
 	l_pri = pri?strlen(pri):0;
 	l_attrs = attrs?strlen(attrs):0;
 
-	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t) + l_ip + l_pri + l_attrs);
+	if (l_ip>5) {
+		if ( strncasecmp("sip:", ip, 4)==0)
+			sip_prefix = 4;
+		else if ( strncasecmp("sips:", ip, 5)==0)
+			sip_prefix = 5;
+		else sip_prefix = 0;
+	} else sip_prefix = 0;
+
+	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t)+l_ip-sip_prefix+l_pri+l_attrs);
 	if (NULL==pgw) {
 		LM_ERR("no more shm mem (%u)\n",
-			(unsigned int)(sizeof(pgw_t)+l_ip+l_pri +l_attrs));
+			(unsigned int)(sizeof(pgw_t)+l_ip-sip_prefix+l_pri+l_attrs));
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
-
 
 	switch(probing)
 	{
@@ -341,20 +349,19 @@ add_dst(
 		goto err_exit;
 	
 	}
-	
 
-	pgw->ip_str.len= l_ip;
+	pgw->ip_str.len= l_ip-sip_prefix;
 	pgw->ip_str.s = (char*)(pgw+1);
-	memcpy(pgw->ip_str.s, ip, l_ip);
+	memcpy(pgw->ip_str.s, ip+sip_prefix, l_ip-sip_prefix);
 
 	if (pri) {
 		pgw->pri.len = l_pri;
-		pgw->pri.s = ((char*)(pgw+1))+l_ip;
+		pgw->pri.s = ((char*)(pgw+1))+l_ip-sip_prefix;
 		memcpy(pgw->pri.s, pri, l_pri);
 	}
 	if (attrs) {
 		pgw->attrs.len = l_attrs;
-		pgw->attrs.s = ((char*)(pgw+1))+l_ip+l_pri;
+		pgw->attrs.s = ((char*)(pgw+1))+l_ip-sip_prefix+l_pri;
 		memcpy(pgw->attrs.s, attrs, l_attrs);
 	}
 	pgw->id = id;
@@ -362,9 +369,7 @@ add_dst(
 	pgw->type = type;
 
 	/* add address in the list */
-	if(pgw->ip_str.len<5 || (strncasecmp("sip:", ip, 4)
-			&& strncasecmp("sips:", ip, 5)))
-	{
+	if( sip_prefix==0 ) {
 		if(pgw->ip_str.len+4>=GWABUF_MAX_SIZE) {
 			LM_ERR("GW address (%d) longer "
 				"than %d\n",pgw->ip_str.len+4,GWABUF_MAX_SIZE);
