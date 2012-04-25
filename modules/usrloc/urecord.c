@@ -310,6 +310,10 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			if (st_expired_ucontact(t) == 1) {
 				if (db_delete_ucontact(t) < 0) {
 					LM_ERR("failed to delete contact from the database\n");
+					/* do not delete from memory now - if we do, we'll get
+					 * a stuck record in DB. Future registrations will not be
+					 * able to get inserted due to index collision */
+					continue;
 				}
 			}
 
