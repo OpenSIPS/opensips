@@ -594,7 +594,7 @@ void del_carriers_list(
 	while (NULL!=carriers) {
 		it = carriers;
 		carriers=carriers->next;
-		shm_free(it->pgwl);
+		if(it->pgwl) shm_free(it->pgwl);
 		shm_free(it);
 	}
 }
