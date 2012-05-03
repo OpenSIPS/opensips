@@ -610,7 +610,7 @@ assign_stm: DEBUG EQUAL snumber {
 #endif
 			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
-		| FORK  EQUAL NUMBER { dont_fork= ! $3; }
+		| FORK  EQUAL NUMBER { dont_fork= !dont_fork ? ! $3:1; }
 		| FORK  EQUAL error  { yyerror("boolean value expected"); }
 		| LOGSTDERROR EQUAL NUMBER { if (!config_check) log_stderr=$3; }
 		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
