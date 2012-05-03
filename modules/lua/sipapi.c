@@ -631,8 +631,6 @@ static int l_siplua_pseudoVarSet(lua_State *L)
 
   o = luaL_checkudata(L, 1, "siplua.api");
   name = luaL_checkstring(L, 2);
-  if (*name == '$')
-    ++name;
   s.s = (char *)name;
   s.len = strlen(name);
   if (!pv_parse_spec(&s, &dspec))
