@@ -410,9 +410,10 @@ modparam("b2b_logic", "db_table", "some_table_name")
 			in the root node of the XML scenario.
 		</para>
 	<note><para>
-		Do not call t_newtran() from the script on this request. It will be called internally
-		by the function. Calling t_newtran() from the script will result in the transaction remaining
-		in memory for ever.
+		If you have a multi interface setup and want to chance the outbound interface,
+		it is mandatory to use the "force_send_socket()" core function before passing
+		control to b2b function. If you do not do it, the requests may be correctly routed,
+		but the SIP pacakge may be invalid (as Contact, Via, etc).
 	</para></note>
 		<example>
 			<title><function>b2b_init_request</function> usage</title>
