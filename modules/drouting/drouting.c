@@ -61,6 +61,7 @@
 #define DR_PARAM_USE_WEIGTH         (1<<0)
 #define DR_PARAM_RULE_FALLBACK      (1<<1)
 #define DR_PARAM_STRICT_LEN         (1<<2)
+#define DR_PARAM_ONLY_CHECK         (1<<3)
 #define DR_PARAM_INTERNAL_TRIGGERED (1<<30)
 
 
@@ -942,6 +943,10 @@ static int do_routing_123(struct sip_msg* msg, char* grp, char* param,
 					flags |= DR_PARAM_STRICT_LEN;
 					LM_DBG("matching prefix with strict len\n");
 					break;
+				case 'C':
+					flags |= DR_PARAM_ONLY_CHECK;
+					LM_DBG("only check the prefix\n");
+					break;
 				default:
 					LM_DBG("unknown flag : [%c] . Skipping\n",*p);
 			}
@@ -1444,8 +1449,15 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 
 	n = 0;
 
-	if (rt_info->pgwl==NULL)
+	/* if only checking the prefix, we are done here */
+	if (flags & DR_PARAM_ONLY_CHECK) 
 		goto no_gws;
+
+	if (rt_info->pgwl==NULL) {
+		LM_WARN("no destination for dr group %d, rule_idx %d, username %.*s\n",
+			grp_id,rule_idx,username.len,username.s);
+		goto error2;
+	}
 
 	/* sort the destination elements in the rule */
 	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len,

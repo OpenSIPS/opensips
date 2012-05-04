@@ -705,6 +705,9 @@ modparam("drouting", "drg_grpid_col", "grpid")
           + L - Do strict lenght matching over the prefix -
             actually DR engine will do full number maching and not
             prefix matching anymore.
+          + C - Only check if the dialed number matches any
+            routing rule, without loading / applying any routing
+            info (no GW is set, the RURI is not altered)
      * gw_whitelist - a comma separated white list of gateways.
        This will force routing over this list of carriers or
        gateways (a subset of what found in the prefix rules).
