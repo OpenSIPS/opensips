@@ -449,14 +449,43 @@ add_dst(
 	l_ip = strlen(ip);
 	l_pri = pri?strlen(pri):0;
 	l_attrs = attrs?strlen(attrs):0;
+
+	/* check if GW address starts with 'sip' or 'sips' */
 	if (l_ip>5) {
 		if ( strncasecmp("sip:", ip, 4)==0)
 			sip_prefix = 4;
 		else if ( strncasecmp("sips:", ip, 5)==0)
 			sip_prefix = 5;
 		else sip_prefix = 0;
-	} else sip_prefix = 0;
+	} else
+		sip_prefix = 0;
 
+	if( sip_prefix==0 ) {
+		if(l_ip+4>=GWABUF_MAX_SIZE) {
+			LM_ERR("GW address (%d) longer "
+				"than %d\n",l_ip+4,GWABUF_MAX_SIZE);
+			goto err_exit;
+		}
+		memcpy(gwabuf, "sip:", 4);
+		memcpy(gwabuf+4, ip, l_ip);
+		gwas.s = gwabuf;
+		gwas.len = 4+l_ip;
+	} else {
+		gwas.s = ip;
+		gwas.len = l_ip;
+	}
+	/* parse the normalized address as a SIP URI */
+	memset(&uri, 0, sizeof(struct sip_uri));
+	if(parse_uri(gwas.s, gwas.len, &uri)!=0) {
+		LM_ERR("invalid uri <%.*s>\n",
+			gwas.len, gwas.s);
+		goto err_exit;
+	}
+	/* update the sip_prefix to skip to domain part */
+	if (uri.user.len)
+		sip_prefix += uri.host.s - uri.user.s;
+
+	/* allocate new structure */
 	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t) + l_id + (l_ip-sip_prefix) +
 		l_pri + l_attrs);
 	if (NULL==pgw) {
@@ -504,29 +533,7 @@ add_dst(
 	pgw->strip = strip;
 	pgw->type = type;
 
-	/* add address in the list */
-	if( sip_prefix==0 ) {
-		if(pgw->ip_str.len+4>=GWABUF_MAX_SIZE) {
-			LM_ERR("GW address (%d) longer "
-				"than %d\n",pgw->ip_str.len+4,GWABUF_MAX_SIZE);
-			goto err_exit;
-		}
-		memcpy(gwabuf, "sip:", 4);
-		memcpy(gwabuf+4, ip, l_ip);
-		gwas.s = gwabuf;
-		gwas.len = 4+l_ip;
-	} else {
-		gwas.s = ip;
-		gwas.len = l_ip;
-	}
-
-	memset(&uri, 0, sizeof(struct sip_uri));
-	if(parse_uri(gwas.s, gwas.len, &uri)!=0) {
-		LM_ERR("invalid uri <%.*s>\n",
-			gwas.len, gwas.s);
-		goto err_exit;
-	}
-
+	/* add address in the global list of destinations/GWs */
 	proxy = mk_proxy(&uri.host,uri.port_no,uri.proto,(uri.type==SIPS_URI_T));
 	if (proxy==NULL) {
 		if(dr_force_dns) {
