@@ -957,12 +957,17 @@ modparam("drouting", "drg_grpid_col", "grpid")
 						setting this flag, the enging will fallback and use
 						rules with less priority or shorter prefix when all the 
 						destination from the current rules failed.
-						</listitem>
+					</listitem>
 					<listitem>
 						<emphasis>L</emphasis> - Do strict lenght matching over the
 						prefix - actually DR engine will do full number maching and 
 						not prefix matching anymore.
-						</listitem>
+					</listitem>
+					<listitem>
+						<emphasis>C</emphasis> - Only check if the dialed number 
+						matches any routing rule, without loading / applying any
+						routing info (no GW is set, the RURI is not altered)
+					</listitem>
 					</itemizedlist>
 				</listitem>
 				<listitem>
