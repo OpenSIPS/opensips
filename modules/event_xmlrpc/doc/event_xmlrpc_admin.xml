@@ -1,0 +1,152 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module is an implementation of an XMLRPC client used to notify
+		XMLRPC servers whenever certain notifications are raised by OpenSIPS. It
+		acts as a transport layer for the Event Notification Interface.
+	</para>
+
+	<para>
+		Basicly, the module executes a remote procedure call when an event is
+		raised from OpenSIPS's script, core or modules using the Event
+		Interface.
+	</para>
+
+	<para>
+		In order to be notified, an XMLRPC server has to subscribe for a certain
+		event provided by OpenSIPS. This can be done using the generic MI
+		Interface (<emphasis>event_subscribe</emphasis> function) or from
+		OpenSIPS script (<emphasis>subscribe_event</emphasis> core function).
+	</para>
+	</section>
+
+	<section>
+	<title>XMLRPC socket syntax</title>
+	<para>
+		<para><emphasis>'xmlrpc:' host ':' port ':' method</emphasis></para>
+	</para>
+	<para>
+		Meanings:
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>'xmlrpc:'</emphasis> - informs the Event Interface
+					that the events sent to this subscriber should be handled
+					by the <emphasis>event_xmlrpc</emphasis> module.
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>host</emphasis> - host name of the XMLRPC server.
+			</para>	</listitem>
+			<listitem><para>
+					<emphasis>port</emphasis> - port of the XMLRPC server.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>method</emphasis> - method called remotely by the
+					XMLRPC client.
+					<para>NOTE: the client does not wait for a response from the
+						XMLRPC server.</para>
+			</para>	</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<para>
+		No parameter exported by this module.
+			This module doesn't export any parameter
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Example</title>
+		<para>
+			This is an example of an event raised by the pike module
+			when it decides an ip should be blocked:
+		</para>
+		<example>
+		<title>E_PIKE_BLOCKED event</title>
+		<programlisting format="linespecific">
+<![CDATA[
+
+POST /RPC2 HTTP/1.1.
+Host: 127.0.0.1:8081.
+Connection: close.
+User-Agent: OpenSIPS XMLRPC Notifier.
+Content-type: text/xml.
+Content-length: 240.
+		.
+<?xml version="1.0"?>
+<methodCall>
+	<methodName>e_dummy_h</methodName>
+	<params>
+		<param>
+			<value><string>E_MY_EVENT</string></value>
+		</param>
+		<param>
+			<name>ip</name>
+			<value><string>192.168.2.11</string></value>
+		</param>
+	</params>
+</methodCall>
+]]>
+</programlisting>
+		</example>
+
+		<example>
+		<title>XMLRPC socket</title>
+		<programlisting format="linespecific">
+
+	# calls the 'block_ip' function
+	xmlrpc:127.0.0.1:8080:block_ip
+
+</programlisting>
+		</example>
+
+	</section>
+</chapter>
