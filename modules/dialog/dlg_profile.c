@@ -493,13 +493,12 @@ static void destroy_dlg_profile(struct dlg_profile_table *profile)
 	
 	if (profile==NULL)
 		return;
-	if( profile -> has_value)
+	if( profile -> has_value && !profile -> use_cached )
 	{
 		for( i= 0; i < profile->size; i++)
 			map_destroy( profile->entries[i], NULL );
 	}
 	
-
 	shm_free( profile );
 	return;
 }
