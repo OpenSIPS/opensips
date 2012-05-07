@@ -279,14 +279,17 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 		return 0;
 	for(i=index;i<url_len && url[i]!='/';i++);
 	mod_len = i - index;
-	LM_DBG("got mod [%.*s]\n", mod_len, &url[index]);
-	for(i=0; i<http_mi_cmds_size && strncmp(&url[index], http_mi_cmds[i].cmds[0].module.s,mod_len) != 0;i++);
+	for(i=0;i<http_mi_cmds_size &&
+		(mod_len!=http_mi_cmds[i].cmds[0].module.len ||
+		strncmp(&url[index],http_mi_cmds[i].cmds[0].module.s,mod_len)!=0);
+		i++);
 	if (i==http_mi_cmds_size) {
 		LM_ERR("Invalid mod [%.*s] in url [%s]\n",
 			mod_len, &url[index], url);
 		return -1;
 	}
 	*mod = i;
+	LM_DBG("got mod [%d][%.*s]\n", *mod, mod_len, &url[index]);
 
 	index += mod_len;
 	LM_DBG("index=%d url_len=%d\n", index, url_len);
@@ -301,14 +304,17 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 		return 0;
 	for(i=index;i<url_len && url[i]!='/';i++);
 	cmd_len = i - index;
-	LM_DBG("got cmd [%.*s]\n", cmd_len, &url[index]);
-	for(i=0;i<http_mi_cmds[*mod].size && strncmp(&url[index], http_mi_cmds[*mod].cmds[i].name.s, cmd_len) != 0;i++);
+	for(i=0;i<http_mi_cmds[*mod].size &&
+		(cmd_len != http_mi_cmds[*mod].cmds[i].name.len ||
+		strncmp(&url[index],http_mi_cmds[*mod].cmds[i].name.s,cmd_len)!=0);
+		i++);
 	if (i==http_mi_cmds[*mod].size) {
 		LM_ERR("Invalid cmd [%.*s] in url [%s]\n",
 			cmd_len, &url[index], url);
 		return -1;
 	}
 	*cmd = i;
+	LM_DBG("got cmd [%d][%.*s]\n", *cmd, cmd_len, &url[index]);
 	index += cmd_len;
 	if (index>=url_len)
 		return 0;
