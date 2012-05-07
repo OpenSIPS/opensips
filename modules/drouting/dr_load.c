@@ -468,7 +468,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		LM_WARN("table \"%.*s\" is empty\n", drr_table->len, drr_table->s);
 	}
 
-	LM_DBG("%d records found in %.*s\n", RES_ROW_N(res),
+	LM_DBG("initial %d records found in %.*s\n", RES_ROW_N(res),
 		drr_table->len, drr_table->s);
 
 	n = 0;
@@ -544,6 +544,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				LM_ERR( "fetching rows (1)\n");
 				goto error;
 			}
+			LM_DBG("additional %d records found in %.*s\n", RES_ROW_N(res),
+				drr_table->len, drr_table->s);
 		} else {
 			break;
 		}
@@ -552,6 +554,8 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
 
+	LM_DBG("%d total records loaded from table %.*s\n", n,
+		drr_table->len, drr_table->s);
 	if (n==0) {
 		LM_WARN("no valid routing rules -> discarding all destinations\n");
 		free_rt_data( rdata, 0 );
