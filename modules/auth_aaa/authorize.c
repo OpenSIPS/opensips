@@ -169,8 +169,8 @@ int aaa_proxy_authorize_2(struct sip_msg* _msg, char* _realm,
 /*
  * Authorize using WWW-Authorize header field
  */
-int aaa_www_authorize(struct sip_msg* _msg, char* _realm, char* _s2)
+int aaa_www_authorize(struct sip_msg* _msg, char* _realm, char* _uri_user)
 {
-	return authorize(_msg, (pv_elem_t*)_realm, (pv_spec_t *)0,
-			 HDR_AUTHORIZATION_T);
+	return authorize(_msg, (pv_elem_t*)_realm, (pv_spec_t *)_uri_user,
+		HDR_AUTHORIZATION_T);
 }
