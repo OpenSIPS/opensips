@@ -66,6 +66,8 @@ int use_ruri_flag = -1;
 static cmd_export_t cmds[] = {
 	{"aaa_www_authorize", (cmd_function)aaa_www_authorize,   1, auth_fixup,
 			0, REQUEST_ROUTE},
+	{"aaa_www_authorize", (cmd_function)aaa_www_authorize,   2, auth_fixup,
+			0, REQUEST_ROUTE},
 	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_1, 1, auth_fixup,
 			0, REQUEST_ROUTE},
 	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_2, 2, auth_fixup,
