@@ -8,7 +8,8 @@ CREATE TABLE dr_gateways (
     pri_prefix VARCHAR(16) DEFAULT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
     probe_mode INTEGER DEFAULT 0 NOT NULL,
-    description VARCHAR(128) DEFAULT '' NOT NULL
+    description VARCHAR(128) DEFAULT '' NOT NULL,
+    CONSTRAINT dr_gateways_dr_gw_idx UNIQUE (gwid)
 );
 
 INSERT INTO version (table_name, table_version) values ('dr_rules','3');
@@ -29,9 +30,10 @@ CREATE TABLE dr_carriers (
     id SERIAL PRIMARY KEY NOT NULL,
     carrierid VARCHAR(64) NOT NULL,
     gwlist VARCHAR(255) NOT NULL,
-    flags INTEGER NOT NULL,
-    attrs VARCHAR(255) NOT NULL,
-    description VARCHAR(128) DEFAULT ''
+    flags INTEGER DEFAULT 0 NOT NULL,
+    attrs VARCHAR(255) DEFAULT '',
+    description VARCHAR(128) DEFAULT '' NOT NULL,
+    CONSTRAINT dr_carriers_dr_carrier_idx UNIQUE (carrierid)
 );
 
 INSERT INTO version (table_name, table_version) values ('dr_groups','2');
