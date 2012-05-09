@@ -620,7 +620,11 @@ done:
 }
 
 
+/* last via string */
 static str _tr_via = {0, 0};
+/* the actual len of the allocated buffer (to hold the via) */
+static int _tr_via_buf_len = 0;
+/* holder for the parsed via */
 static struct via_body *_tr_parsed_via = 0;
 
 int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
@@ -634,29 +638,31 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=2)
 		return -1;
 
-	if(_tr_via.len==0 || _tr_via.len!=val->rs.len ||
+	if(_tr_via_buf_len==0 || _tr_via.len!=val->rs.len ||
 			strncmp(_tr_via.s, val->rs.s, val->rs.len)!=0
 			|| _tr_parsed_via==0)
 	{
-		if(4+val->rs.len>_tr_via.len)
+		if (val->rs.len+4 > _tr_via_buf_len)
 		{
 			if(_tr_via.s) pkg_free(_tr_via.s);
 			_tr_via.s = (char*)pkg_malloc((val->rs.len+4)*sizeof(char));
 			if(_tr_via.s==NULL)
 			{
+				_tr_via_buf_len = 0;
 				LM_ERR("no more private memory\n");
 				goto error;
 			}
+			_tr_via_buf_len = val->rs.len+4;
 		}
 		_tr_via.len = val->rs.len;
 		memcpy(_tr_via.s, val->rs.s, val->rs.len);
 		// $hdr PV strips off the terminating CRLR
 		// parse_via wants to parse a full message (including
 		// multiple vias), not just a header line.  Fake this
-		_tr_via.s[_tr_via.len++] = '\r';
-		_tr_via.s[_tr_via.len++] = '\n';
-		_tr_via.s[_tr_via.len++] = 'A';	// anything other than V
-		_tr_via.s[_tr_via.len] = '\0';
+		_tr_via.s[_tr_via.len+0] = '\r';
+		_tr_via.s[_tr_via.len+1] = '\n';
+		_tr_via.s[_tr_via.len+2] = 'A';	// anything other than V
+		_tr_via.s[_tr_via.len+3] = '\0';
 		/* reset old values */
 		free_via_list(_tr_parsed_via);
 		if ( (_tr_parsed_via=pkg_malloc(sizeof(struct via_body))) == NULL ) {
@@ -664,7 +670,7 @@ int tr_eval_via(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			goto error;
 		}
 		memset(_tr_parsed_via, 0, sizeof(struct via_body));
-		parse_via(_tr_via.s, _tr_via.s+_tr_via.len, _tr_parsed_via);
+		parse_via(_tr_via.s, _tr_via.s+_tr_via.len+4, _tr_parsed_via);
 		if(_tr_parsed_via->error != PARSE_OK) {
 			LM_ERR("invalid via [%.*s]\n", val->rs.len,
 					val->rs.s);
