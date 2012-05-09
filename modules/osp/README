@@ -366,10 +366,10 @@ modparam("osp","support_nonsip_protocol",0)
    The max_destinations (integer) parameter defines the maximum
    number of destinations that OpenSIPS requests the peering
    server to return in a peering response. The OSP module supports
-   up to 12 destiantions. The default value is 5.
+   up to 12 destiantions. The default value is 12.
 
    Example 1.16. Setting the number of destination
-modparam("osp","max_destinations",5)
+modparam("osp","max_destinations",12)
 
 1.3.17. report_networkid
 
