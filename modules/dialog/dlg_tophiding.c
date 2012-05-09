@@ -286,8 +286,7 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *re
 restore_rr:
 	/* if dialog not confirmed and 200OK for Invite */
 	/* pass the record route headers for this leg */
-	if(init_req && dir == DLG_DIR_UPSTREAM && rpl->first_line.u.reply.statuscode==200
-			&& leg->route_set.s) {
+	if(init_req && dir == DLG_DIR_UPSTREAM && leg->route_set.s) {
 
 		/* changed here for contact ( take care to insert the routes after own) */
 
