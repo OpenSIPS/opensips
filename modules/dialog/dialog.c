@@ -69,7 +69,6 @@
 static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy(void);
-static int mi_dlg_child_init(void);
 
 /* module parameter */
 static int dlg_hash_size = 4096;
@@ -266,7 +265,7 @@ static mi_export_t mi_cmds[] = {
 	{ "dlg_list",           0, mi_print_dlgs,         0,  0,  0},
 	{ "dlg_list_ctx",       0, mi_print_dlgs_ctx,     0,  0,  0},
 	{ "dlg_end_dlg",        0, mi_terminate_dlg,      0,  0,  0},
-	{ "dlg_db_sync",        0, mi_sync_db_dlg,        0,  0,  mi_dlg_child_init},
+	{ "dlg_db_sync",        0, mi_sync_db_dlg,        0,  0,  0},
 	{ "profile_get_size",   0, mi_get_profile,        0,  0,  0},
 	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
 	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
@@ -784,9 +783,10 @@ static int child_init(int rank)
 
 	if ( (dlg_db_mode==DB_MODE_REALTIME &&
 		(rank>=0 || rank==PROC_TIMER || rank==PROC_MODULE)) ||
-	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==(dont_fork?1:PROC_MAIN)) ) ||
-	(dlg_db_mode==DB_MODE_DELAYED && (rank==PROC_MAIN || rank==PROC_TIMER ||
-	rank>0) )){
+	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==(dont_fork?1:PROC_MAIN) ||
+		rank==PROC_MODULE) ) ||
+	(dlg_db_mode==DB_MODE_DELAYED && (rank==PROC_MAIN || rank==PROC_MODULE ||
+		rank==PROC_TIMER || rank>0) )){
 		if ( dlg_connect_db(&db_url) ) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;
@@ -799,11 +799,6 @@ static int child_init(int rank)
 	}
 
 	return 0;
-}
-
-static int mi_dlg_child_init(void)
-{
-	return child_init(2);
 }
 
 static void mod_destroy(void)
