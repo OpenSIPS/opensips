@@ -14,7 +14,6 @@
  */
 static int mod_init(void);
 static void destroy(void);
-static int child_init(int);
 
 /**
  * exported functions
