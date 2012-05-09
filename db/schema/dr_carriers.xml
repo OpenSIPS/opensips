@@ -49,6 +49,7 @@
 		<name>flags</name>
 		<type>unsigned int</type>
 		<size>&flag_len;</size>
+		<default>0</default>
 		<description>Flags (for different purposes) of the carriers
 		</description>
 	</column>
@@ -57,6 +58,8 @@
 		<name>attrs</name>
 		<type>string</type>
 		<size>255</size>
+		<null/>
+		<default></default>
 		<description>Attributes string for the carrier
 		</description>
 	</column>
@@ -65,9 +68,15 @@
 		<name>description</name>
 		<type>string</type>
 		<size>128</size>
-		<null/>
 		<default></default>
 		<description>Text description of the GW list</description>
 	</column>
+
+	<index>
+		<name>dr_carrier_idx</name>
+		<colref linkend="carrierid"/>
+		<unique/>
+	</index>
+
 
 </table>

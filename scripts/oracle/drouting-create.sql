@@ -8,7 +8,8 @@ CREATE TABLE dr_gateways (
     pri_prefix VARCHAR2(16) DEFAULT NULL,
     attrs VARCHAR2(255) DEFAULT NULL,
     probe_mode NUMBER(10) DEFAULT 0 NOT NULL,
-    description VARCHAR2(128) DEFAULT ''
+    description VARCHAR2(128) DEFAULT '',
+    CONSTRAINT dr_gateways_dr_gw_idx  UNIQUE (gwid)
 );
 
 CREATE OR REPLACE TRIGGER dr_gateways_tr
@@ -45,9 +46,10 @@ CREATE TABLE dr_carriers (
     id NUMBER(10) PRIMARY KEY,
     carrierid VARCHAR2(64),
     gwlist VARCHAR2(255),
-    flags NUMBER(10),
-    attrs VARCHAR2(255),
-    description VARCHAR2(128) DEFAULT ''
+    flags NUMBER(10) DEFAULT 0 NOT NULL,
+    attrs VARCHAR2(255) DEFAULT '',
+    description VARCHAR2(128) DEFAULT '',
+    CONSTRAINT dr_carriers_dr_carrier_idx  UNIQUE (carrierid)
 );
 
 CREATE OR REPLACE TRIGGER dr_carriers_tr

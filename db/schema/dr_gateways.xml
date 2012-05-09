@@ -98,4 +98,11 @@
 		<default></default>
 		<description>Text description of the GW/destination</description>
 	</column>
+
+	<index>
+		<name>dr_gw_idx</name>
+		<colref linkend="gwid"/>
+		<unique/>
+	</index>
+
 </table>
