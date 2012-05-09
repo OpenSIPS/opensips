@@ -32,8 +32,8 @@ Irina-Maria Stanescu
 
    Copyright © 2005, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-09-02 15:53:09 +0300
-                              (Mi, 02 sep 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -55,7 +55,7 @@ Irina-Maria Stanescu
 
         1.5. Exported Functions
 
-              1.5.1. aaa_www_authorize(realm)
+              1.5.1. aaa_www_authorize(realm[, uri_user])
               1.5.2. aaa_proxy_authorize(realm [, uri_user])
 
    List of Examples
@@ -172,7 +172,7 @@ modparam("auth_aaa", "use_ruri_flag", 22)
 
 1.5. Exported Functions
 
-1.5.1. aaa_www_authorize(realm)
+1.5.1. aaa_www_authorize(realm[, uri_user])
 
    The function verifies credentials according to RFC2617. If the
    credentials are verified successfully then the function will
@@ -205,6 +205,12 @@ modparam("auth_aaa", "use_ruri_flag", 22)
        represents a user being registered), for all other messages
        From header field domain will be used.
        The string may contain pseudo variables.
+     * uri_user - Uri_user is an optional pseudo variable
+       parameter whose value, if present, will be given to Radius
+       server as value of SIP-URI-User check item. If uri_user
+       pseudo variable parameter is not present, the server will
+       generate SIP-URI-User check item value from user part of To
+       URI.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -246,7 +252,7 @@ if (!aaa_www_authorize("siphub.net")) {
        server as value of SIP-URI-User check item. If uri_user
        pseudo variable parameter is not present, the server will
        generate SIP-URI-User check item value from user part of
-       To/From URI.
+       From URI.
 
    This function can be used from REQUEST_ROUTE.
 
