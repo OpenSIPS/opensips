@@ -633,6 +633,7 @@ free_rt_data(
 		}
 		/* del carriers */
 		del_carriers_list(rt_data->carriers);
+		rt_data->carriers=0;
 		/* del top level */
 		if (all) shm_free(rt_data);
 	}
