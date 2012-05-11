@@ -1352,6 +1352,9 @@ regular_indlg_req:
 
 prack_check:
 	if ( event==DLG_EVENT_REQPRACK && new_state==DLG_STATE_EARLY) {
+		/* within dialog request */
+		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
+
 		LM_DBG("PRACK successfully processed (dst_leg=%d)\n",dst_leg);
 			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
 				update_cseqs(dlg,req,dst_leg,0))
