@@ -1404,9 +1404,15 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 			goto error2;
 		}
 	}
+
+	/* do we have anything left to failover to ? */
+	if (prefix_len==0 && rule_idx==0)
+		/* disable failover as nothing left */
+		flags = flags & ~DR_PARAM_RULE_FALLBACK;
+
 	if ( flags & DR_PARAM_RULE_FALLBACK ) {
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
-			/* first time -? we need to save a some date, to be able to 
+			/* first time -? we need to save some date, to be able to 
 			   do the rule fallback later in "next_gw" */
 			LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
 				prefix_len - (rule_idx?0:1), username.s);
