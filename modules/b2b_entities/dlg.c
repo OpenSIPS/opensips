@@ -2333,6 +2333,13 @@ dummy_reply:
 			dummy_msg.rcv.src_ip = dummy_msg.rcv.dst_ip
 				= dummy_msg.rcv.bind_address->address;
 
+			from_hdr.next = from_hdr.sibling = NULL;
+			to_hdr.next = to_hdr.sibling = NULL;
+			callid_hdr.next = callid_hdr.sibling = NULL;
+			from_hdr.type = HDR_FROM_T;
+			to_hdr.type = HDR_TO_T;
+			callid_hdr.type = HDR_CALLID_T;
+
 			parse_to(t->to.s+4, t->to.s+t->to.len, &to_hdr_parsed);
 			parse_to(t->from.s+6, t->from.s+t->from.len, &from_hdr_parsed);
 			from_hdr.parsed   = (struct hdr_field*)(void*)&from_hdr_parsed;
@@ -2378,8 +2385,6 @@ dummy_reply:
 	else
 	{
 		/* if provisional or 200OK reply */
-		LM_DBG("status la inceput = %d\n", dlg->state);
-
 		if(msg == FAKED_REPLY)
 		{
 			goto error;
