@@ -1125,14 +1125,12 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 
 	if(!init_dlg) /* called from server_new on initial Invite */
 	{
-		if(!msg->via1->branch)
+		if(msg->via1->branch)
 		{
-			LM_ERR("No via branch found\n");
-			if(dlg.route_set[CALLER_LEG].s)
-				pkg_free(dlg.route_set[CALLER_LEG].s);
-			return 0;
+			dlg.id = core_hash(&dlg.ruri, &msg->via1->branch->value, server_hsize);
+		} else {
+			dlg.id = core_hash(&dlg.ruri, &msg->callid->body, server_hsize);
 		}
-		dlg.id = core_hash(&dlg.ruri, &msg->via1->branch->value, server_hsize);
 	}
 
 	if(param)
