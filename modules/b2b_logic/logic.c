@@ -2615,7 +2615,15 @@ static void gen_fromtag(str* callid, str* fromtag, str* uri, struct sip_msg* msg
 	src[i++] = *fromtag;
 	src[i++] = *uri;
 	if(msg)
-		src[i++] = msg->via1->branch->value;
+	{
+		if (msg->via1->branch) {
+			src[i++] = msg->via1->branch->value;
+		}
+		else
+		{
+			src[i++] = msg->callid->body;
+		}
+	}
 	MD5StringArray(from_tag_uac->s, src, i);
 	LM_DBG("Gen from_tag= %s\n", fromtag_buf);
 }
