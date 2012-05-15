@@ -500,7 +500,7 @@ int ac_cancel(as_p the_as,char *action,int len)
    the_param->destroy_cb_set=0;
 	*/
 
-	ret=seas_f.tmb.t_cancel_trans( t_invite );
+	ret=seas_f.tmb.t_cancel_trans( t_invite , NULL);
 	//ret=seas_f.tmb.t_cancel_uac(&headers,&body,cancelled_hashIdx,
 	//		cancelled_label,uac_cb,(void*)the_param, 0);
 

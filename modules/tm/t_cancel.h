@@ -46,7 +46,7 @@ void cancel_branch( struct cell *t, int branch );
 
 int unixsock_uac_cancel(str* msg);
 
-typedef int (*tcanceltrans_f)(struct cell *t);
+typedef int (*tcanceltrans_f)(struct cell *t, str *hdrs);
 
 char *build_cancel(struct cell *Trans,unsigned int branch,
 	unsigned int *len );
