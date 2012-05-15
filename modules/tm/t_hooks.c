@@ -210,10 +210,6 @@ void run_trans_callbacks( int type , struct cell *trans,
 				trans, type, cbp->id );
 			params.param = &(cbp->param);
 			cbp->callback( trans, type, &params );
-			if (req && req->dst_uri.len==-1) {
-				LM_CRIT("callback type %d, id %d entered\n", type, cbp->id );
-				req->dst_uri.len = 0;
-			}
 		}
 	}
 	/* env cleanup */
