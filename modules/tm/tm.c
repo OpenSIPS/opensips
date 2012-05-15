@@ -120,7 +120,7 @@ inline static int t_check_trans(struct sip_msg* msg, char* , char* );
 inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
 inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
 inline static int w_t_add_hdrs(struct sip_msg* msg, char* );
-int t_cancel_trans(struct cell *t);
+int t_cancel_trans(struct cell *t, str *hdrs);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -1162,7 +1162,7 @@ route_err:
 	return 0;
 }
 
-int t_cancel_trans(struct cell *t)
+int t_cancel_trans(struct cell *t, str *extra_hdrs)
 {
 	branch_bm_t cancel_bitmap = 0;
 
@@ -1177,7 +1177,10 @@ int t_cancel_trans(struct cell *t)
 	UNLOCK_REPLIES(t);
 
 	/* send cancels out */
+	if (extra_hdrs)
+		set_cancel_extra_hdrs( extra_hdrs->s, extra_hdrs->len);
 	cancel_uacs(t, cancel_bitmap);
+	set_cancel_extra_hdrs( NULL, 0);
 
 	return 0;
 }

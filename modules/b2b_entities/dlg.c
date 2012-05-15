@@ -1739,7 +1739,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 					LM_ERR("Invite trasaction not found\n");
 					goto error;
 				}
-				ret = tmb.t_cancel_trans( inv_t );
+				ret = tmb.t_cancel_trans( inv_t, &ehdr);
 				tmb.unref_cell(inv_t);
 			}
 			else
