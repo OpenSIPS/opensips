@@ -959,7 +959,7 @@ static int do_routing_123(struct sip_msg* msg, char* grp, char* param,
 
 static int use_next_gw(struct sip_msg* msg)
 {
-	struct usr_avp *avp, *avp_ru,*avp2;
+	struct usr_avp *avp, *avp_ru;
 	unsigned int flags;
 	gparam_t wl_list;
 	dr_group_t grp;
@@ -970,6 +970,47 @@ static int use_next_gw(struct sip_msg* msg)
 
 	while(1)
 	{
+		/* remove the old attrs */
+		if (gw_attrs_avp.name!=-1) {
+			avp = NULL;
+			do {
+				if (avp) destroy_avp(avp);
+				avp = search_first_avp( gw_attrs_avp.type,
+					gw_attrs_avp.name, NULL, 0);
+			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+			if (avp) destroy_avp(avp);
+		}
+
+		/* remove the old carrier ID */
+		if (carrier_id_avp.name!=-1) {
+			avp = NULL;
+			do {
+				if (avp) destroy_avp(avp);
+				avp = search_first_avp( carrier_id_avp.type,
+					carrier_id_avp.name, NULL, 0);
+			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+			if (avp) destroy_avp(avp);
+		}
+
+		/* remove the old carrier attrs */
+		if (carrier_attrs_avp.name!=-1) {
+			avp = NULL;
+			do {
+				if (avp) destroy_avp(avp);
+				avp = search_first_avp( carrier_attrs_avp.type,
+					carrier_attrs_avp.name, NULL, 0);
+			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+			if (avp) destroy_avp(avp);
+		}
+
+		/* remove old gw ID */
+		avp = NULL;
+		do {
+			if (avp) destroy_avp(avp);
+			avp = search_first_avp(gw_id_avp.type, gw_id_avp.name, NULL, 0);
+		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+		if (avp) destroy_avp(avp);
+
 		/* search for the first RURI AVP containing a string */
 		avp_ru = NULL;
 		do {
@@ -983,46 +1024,19 @@ static int use_next_gw(struct sip_msg* msg)
 		ruri = val.s;
 		LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
 
-		/* remove the old attrs */
-		if (gw_attrs_avp.name!=-1) {
-			avp = NULL;
-			do {
-				if (avp) destroy_avp(avp);
-				avp = search_first_avp( gw_attrs_avp.type,
-					gw_attrs_avp.name, NULL, 0);
-			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
-			if (avp) destroy_avp(avp);
-		}
-
-		/* search old ID */
-		avp = NULL;
-		do {
-			if (avp) destroy_avp(avp);
-			avp = search_first_avp(gw_id_avp.type, gw_id_avp.name, NULL, 0);
-		}while (avp && (avp->flags&AVP_VAL_STR)!=0 );
-
-		/* get value for next gw ID from avp, remove old gw ID */
-		avp2 = NULL;
+		/* get value for next gw ID from avp */
 		if (avp) {
-			avp2 = search_next_avp(avp,&val);
-			destroy_avp(avp);
-		}
-
-		/* if no other ID found, simply use the GW as good */
-		if( avp2==NULL)
+			get_avp_val(avp, &val);
+		} else {
+			/* if no other ID found, simply use the GW as good */
 			break;
+		}
 
 		/* we have an ID, so we can check the GW state */
 		lock_start_read( ref_lock );
-
-		for( ok=0,dst=(*rdata)->pgw_l; dst ;dst=dst->next) {
-			if ( dst->_id == val.n) {
-				/*GW found */
-				if ((dst->flags & DR_DST_STAT_DSBL_FLAG) == 0 )
-					ok = 1;
-				break;
-			}
-		}
+		dst = get_gw_by_id( (*rdata)->pgw_l, &val.s);
+		if (dst && (dst->flags & DR_DST_STAT_DSBL_FLAG) == 0)
+			ok = 1;
 
 		lock_stop_read( ref_lock );
 
@@ -1159,7 +1173,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 
 		/* add ruri as AVP */
 		val.s = *ruri;
-		if (add_avp( AVP_VAL_STR|(ruri_avp.type),ruri_avp.name, val)!=0 ) {
+		if (add_avp_last( AVP_VAL_STR|(ruri_avp.type),ruri_avp.name, val)!=0 ) {
 			LM_ERR("failed to insert ruri avp\n");
 			goto error;
 		}
@@ -1169,7 +1183,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 	/* add GW id avp */
 	val.s = gw->id;
 	LM_DBG("setting GW id [%.*s] as avp\n",val.s.len, val.s.s);
-	if (add_avp( AVP_VAL_STR|(gw_id_avp.type),gw_id_avp.name, val)!=0 ) {
+	if (add_avp_last( AVP_VAL_STR|(gw_id_avp.type),gw_id_avp.name, val)!=0 ) {
 		LM_ERR("failed to insert ids avp\n");
 		goto error;
 	}
@@ -1178,7 +1192,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 	if (gw_attrs_avp.name!=-1) {
 		val.s = gw->attrs.s? gw->attrs : attrs_empty;
 		LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
+		if (add_avp_last(AVP_VAL_STR|(gw_attrs_avp.type),gw_attrs_avp.name,val)!=0){
 			LM_ERR("failed to insert attrs avp\n");
 			goto error;
 		}
@@ -1187,7 +1201,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 	if (carrier_id_avp.name!=-1) {
 		val.s = (c_id && c_id->s)? *c_id : attrs_empty ;
 		LM_DBG("setting CR Id [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp(AVP_VAL_STR|(carrier_id_avp.type),
+		if (add_avp_last(AVP_VAL_STR|(carrier_id_avp.type),
 		carrier_id_avp.name,val)!=0){
 			LM_ERR("failed to insert attrs avp\n");
 			goto error;
@@ -1197,7 +1211,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 	if (carrier_attrs_avp.name!=-1) {
 		val.s = (c_attrs && c_attrs->s)? *c_attrs : attrs_empty ;
 		LM_DBG("setting CR attr [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp(AVP_VAL_STR|(carrier_attrs_avp.type),
+		if (add_avp_last(AVP_VAL_STR|(carrier_attrs_avp.type),
 		carrier_attrs_avp.name,val)!=0){
 			LM_ERR("failed to insert attrs avp\n");
 			goto error;
