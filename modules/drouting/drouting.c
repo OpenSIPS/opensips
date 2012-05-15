@@ -1053,7 +1053,6 @@ static int use_next_gw(struct sip_msg* msg)
 	}
 
 	destroy_avp(avp_ru);
-	LM_DBG("-----bla 4\n");
 
 	return 1;
 
