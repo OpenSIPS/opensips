@@ -146,7 +146,9 @@ static param_export_t params[]=
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"db_table",        STR_PARAM,                &b2bl_dbtable.s            },
 	{"max_duration",    INT_PARAM,                &max_duration              },
+	/*
 	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
+	*/
 	{"b2bl_from_spec_param",STR_PARAM,            &b2bl_from_spec_param.s    },
 	{"server_address",  STR_PARAM,                &server_address.s          },
 	{"init_callid_hdr", STR_PARAM,                &init_callid_hdr.s         },
