@@ -2,191 +2,62 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS core team in alphabetical order as of 12 October 2009:
+Current OpenSIPS core team in alphabetical order as of 1 March 2012:
 
-Anca Vamanu
 Bogdan Andrei Iancu
 Dan Pascu
+Vladut-Stefan Paiu
+Razvan Crainea
 
 
 Contributors:
 
-Andrei Dragus
-Andrei Pisau
+Alexandr Dubovikov
+Anca Vamanu
 Di-Shi Sun
-Denis Bilenko
-Dmitry Isakbayev
-Elias Baixas
-Glenn Marmon
-Iñaki Baz Castillo
-Irina-Maria Stanescu
-Jeffrey Magder
-Jesus Rodrigues
-Kobi Eshun
-Luci Stanescu
-Norman Brandinger
-Maxim Sobolev
+Marc Leurent
 Ovidiu Sas
-Razvan Pistolea
-Ron Winacott
-Sergio Gutierrez
-William Quan
+Saúl Ibarra Corretgé
+Dynamic Packet
+
 
 Credits - patches, bug reporting and documentation improvements
 
-Alex Boeger
 Adrian Georgescu
-Alex Gradinari
-Alex Hermann
-Alex (ukr.net)
-Alfred E. Heggestad
-Anand Kumria
-Anatoly Pidruchny
-Ancuta Onofrei
-Anders Brownworth
-Andrea Giordana
-Andreas Heise
-Andrei Pelinescu-Onciul
-Andrew Newton
-Andrew T Gin
-Andy Pyles
-Antonio Higuera
-Aron Rosenberg
-Aron Rosenbergs
-Arve Rasmussen
-Atle Samuelsen
-Axel Hunger
-Aymeric Moizard
-Babon Frederic
-Bastian Schern
-Bayan William Towfiq
-Begeragus Lmerov
-Benny Prijono
-Ben Smithurst
-Bob Atkins
-Boris Bliznioukov
-Borislav Ivandic
-Carsten Bock
-Cesar Troncoso
-Cheng Zhang
-Chris Robson
-Christophe Irles
-Cristian Caprar
-Dan Cristian Bogos
-Daniel Flinkmann
-Daniel Hsueh
-Dan Pascu
-Daryl Sanders
-Daryl G. Jurbala
-DarylVoip
-Dave Waiting
-Dmitry Semyonov
-Douglas Garstang
-Doug Meredith
-Dragos Oancea
-Edson
-Eliot Gable
-Eliott Spencer
-Elton Machado
-Essobi
-Evan Borgstrom
-Federico Cabiddu
-Federico Giannici
-Florian Overkamp
-Francesco Castellano
-Francisco Ivandic
-Francisco Olarte Sanz
-Frank Garcia
-Franz Edler
-Franz Wu
-Gaurav Kulshreshtha
-Gerd Steen
-Glenn Dalgliesh
-Gordon Smith
-Greg Fausak
-Gustavo Garcia
-Hans Hoppe
-Helge Waastad
-Helmut Kuper
-Hendrik Scholz
-Henri Keski-Sikkila
-Herman Sheremetyev
-H Quintana
-Ingo Flaschberger
-Jeremie Le Hen
-Jerome Martin
-JFKavaka
-John Riordan
-Jon Hood
-Jose Maria Gonzalez
-Juan Carlos Castro y Castro
-Julien Blache
-Kanakatti Mahesh Subramanya
-Khalukhin Alexander
-Lars Sundqvist
-Laurent Schweizer
-Lenir Santiago
-lilichun
-Mahesh Paolini-Subramanya
-Marc Haisenko
-Marcos Hack
-Marcus Hunger
-Mark Baker
-Mark Kent
-Martin (campus-merseburg)
-Martin Koenig
-Matthew M. Boedicker
-Matt Schulte
-Michael Samuel
-Michael Ulitskiy
-Michel Bensoussan
-Michel de Boer
-Mikael Magnusson
-Mika Saari
-Mik Cheez
-Mircea Amarascu
-Morgan Gilroy
-Nicolas Palix
-Ohad Levy
-Olaf Bergmann
-Otmar Lendl
+Arnaud Chong
+Bratner
+Brett Nemeroff
+Christophe Sollet
+Damien Sandras
+Dave May
+David
+Denis
+Duane Larson
+Eric Gouyer
+James Lamanna
+Jim Logan
+Kiss Karoly
+Luci Stanescu
+Mark Dalby
+MartinB
+Morten Tryfoss
+Nick Altmann
 Ovidiu Sas
-Papadopoulos Georgios
-Patrick Jordan-Smith
-Paulo Angonese
+Pete Kelly
 Peter Lemenkov
-Peter Nixon
-Philippe Sultan
-Quang Minh Phan
-Radu State
-Rafael J. Risco
-Ranveer Kunal
-Raymond Chen
-Reinhold Buchinger
-Richard Z
-Ruchir Brahmbhatt
-Ryan (matty91)
-Samuel (samu60)
-Samwise
-Sebastian Schumann
-Simon Morvan
-Stefan Catruna
-Stefan Popescu
-sukerry
-Sumeet Gupta
-Tais M. Hansen
-Tavis P
-Tavis Paquette
-tele (plexia.com)
-Thomas Gelf
-Tobias Lindgren
-Toni Barata
-Tony Jago
-Unplug
-Urtho
-Vallimamod Abdullah
-Victor Gamov
-Walter Schober
-Wolfgang Hottgenroth
-Wouter Schoot
-
+Ramaseshi
+Richard Bullock
+Ronald Cepres
+Ruslan Bukin
+Ryan Bullock
+Ryan Revels
+Samuel Muller
+Sebastien CRUAUX
+Sergey Lavrov
+Stefan Tobe
+Steven Lam
+Trevor Francis
+Walter Doekes
+a719719
+diego.plan9
+shimaore
