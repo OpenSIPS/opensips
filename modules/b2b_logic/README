@@ -17,7 +17,7 @@ Ovidiu Sas
 
    Copyright © 2010 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision: 8137 $ $Date: 2011-07-07 15:02:20 +0300
+   Revision $Revision: 8137 $ $Date: 2011-07-07 08:02:20 -0400
                               (Thu, 07 Jul 2011) $
      __________________________________________________________
 
@@ -42,12 +42,11 @@ Ovidiu Sas
               1.3.7. db_url (str)
               1.3.8. update_period (int)
               1.3.9. max_duration (int)
-              1.3.10. b2bl_key_avp (string)
-              1.3.11. b2bl_from_spec_param (string)
-              1.3.12. server_address (str)
-              1.3.13. init_callid_hdr (str)
-              1.3.14. db_mode (int)
-              1.3.15. db_table (str)
+              1.3.10. b2bl_from_spec_param (string)
+              1.3.11. server_address (str)
+              1.3.12. init_callid_hdr (str)
+              1.3.13. db_mode (int)
+              1.3.14. db_table (str)
 
         1.4. Exported Functions
 
@@ -82,14 +81,13 @@ Ovidiu Sas
    1.7. Set db_url parameter
    1.8. Set update_period parameter
    1.9. Set max_duration parameter
-   1.10. Set b2bl_key_avp parameter
-   1.11. Set b2bl_from_spec_param parameter
-   1.12. Set server_address parameter
-   1.13. Set init_callid_hdr parameter
-   1.14. Set db_mode parameter
-   1.15. Set db_table parameter
-   1.16. b2b_init_request usage
-   1.17. b2b_bridge_request usage
+   1.10. Set b2bl_from_spec_param parameter
+   1.11. Set server_address parameter
+   1.12. Set init_callid_hdr parameter
+   1.13. Set db_mode parameter
+   1.14. Set db_table parameter
+   1.15. b2b_init_request usage
+   1.16. b2b_bridge_request usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -267,32 +265,14 @@ modparam("b2b_logic", "update_period", 60)
 modparam("b2b_logic", "max_duration", 7200)
 ...
 
-1.3.10. b2bl_key_avp (string)
-
-   The name of the Attribute-Value-Pair (AVP) used to store the
-   b2b_logic entity key. The avp will be set after calling
-   “b2b_init_request”. The avp will be visible in b2b_entities
-   request/reply routes
-
-Note
-
-   The avp is not visible in local_route.
-
-   Default value is “NULL” (disabled).
-
-   Example 1.10. Set b2bl_key_avp parameter
-...
-modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
-...
-
-1.3.11. b2bl_from_spec_param (string)
+1.3.10. b2bl_from_spec_param (string)
 
    The name of the pseudo variable for storing the new “From”
    header. The PV must be set before calling “b2b_init_request”.
 
    Default value is “NULL” (disabled).
 
-   Example 1.11. Set b2bl_from_spec_param parameter
+   Example 1.10. Set b2bl_from_spec_param parameter
 ...
 modparam("b2b_logic", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
@@ -305,7 +285,7 @@ route{
         ...
 }
 
-1.3.12. server_address (str)
+1.3.11. server_address (str)
 
    The IP address of the machine that will be used as Contact in
    the generated messages. This is compulsory only when using
@@ -314,24 +294,24 @@ route{
    initiating request was received. This socket will be used to
    send all the requests, replies for that scenario instantiation.
 
-   Example 1.12. Set server_address parameter
+   Example 1.11. Set server_address parameter
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 
-1.3.13. init_callid_hdr (str)
+1.3.12. init_callid_hdr (str)
 
    The module offers the possibility to insert the original callid
    in a header in the generated Invites. If you want this, set
    this parameter to the name of the header in which to insert the
    original callid.
 
-   Example 1.13. Set init_callid_hdr parameter
+   Example 1.12. Set init_callid_hdr parameter
 ...
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
-1.3.14. db_mode (int)
+1.3.13. db_mode (int)
 
    The B2B modules have support for the 3 type of database storage
 
@@ -343,18 +323,18 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 
    Default value is “2” (WRITE BACK).
 
-   Example 1.14. Set db_mode parameter
+   Example 1.13. Set db_mode parameter
 ...
 modparam("b2b_logic", "db_mode", 1)
 ...
 
-1.3.15. db_table (str)
+1.3.14. db_table (str)
 
    Name of the database table to be used
 
    Default value is “b2b_logic”
 
-   Example 1.15. Set db_table parameter
+   Example 1.14. Set db_table parameter
 ...
 modparam("b2b_logic", "db_table", "some_table_name")
 ...
@@ -386,7 +366,7 @@ Note
    correctly routed, but the SIP pacakge may be invalid (as
    Contact, Via, etc).
 
-   Example 1.16. b2b_init_request usage
+   Example 1.15. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
@@ -404,7 +384,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
      * entity_no - a pseudo-variable that holds the entity of the
        particapnt to bridge.
 
-   Example 1.17. b2b_bridge_request usage
+   Example 1.16. b2b_bridge_request usage
 ...
 modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 ...
