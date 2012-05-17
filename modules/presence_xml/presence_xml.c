@@ -74,6 +74,7 @@ int integrated_xcap_server= 0;
 xcap_serv_t* xs_list= NULL;
 str pres_rules_auid = {0, 0};
 str pres_rules_filename = {0, 0};
+int generate_offline_body = 1;
 
 /* SIGNALING bind */
 struct sig_binds xml_sigb;
@@ -95,6 +96,7 @@ static param_export_t params[]={
 	{ "xcap_server",     STR_PARAM|USE_FUNC_PARAM,(void*)pxml_add_xcap_server},
 	{ "pres_rules_auid",        STR_PARAM,                 &pres_rules_auid.s},
 	{ "pres_rules_filename",    STR_PARAM,             &pres_rules_filename.s},
+	{ "generate_offline_body",  INT_PARAM,             &generate_offline_body},
 	{  0,                       0,                                          0}
 };
 

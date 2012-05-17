@@ -238,6 +238,22 @@ modparam("presence_xml", "pres_rules_filename", "pres-rules")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>generate_offline_body</varname> (str)</title>
+		<para>
+                This parameter should be set to 0 if you want to prevent OpenSIPS from automatically
+                generating a PIDF body when a publication expires or is explicitly terminated
+                (a PUBLISH request is received with Expires: 0).
+		</para>
+		<example>
+		<title>Set <varname>generate_offline_body</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_xml", "generate_offline_body", 0)
+...
+</programlisting>
+		</example>
+	</section>
 
 
 
