@@ -56,5 +56,6 @@ extern pres_get_sphere_t pres_get_sphere;
 extern struct sig_binds xml_sigb;
 extern str pres_rules_auid;
 extern str pres_rules_filename;
+extern int generate_offline_body;
 
 #endif
