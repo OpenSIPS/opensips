@@ -93,6 +93,7 @@ loadmodule "sipmsgops.so"
 #### FIFO Management Interface
 loadmodule "mi_fifo.so"
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
+modparam("mi_fifo", "fifo_mode", 0666)
 
 
 #### URI module
