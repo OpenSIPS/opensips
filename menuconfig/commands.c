@@ -34,6 +34,7 @@
 #include<fcntl.h>
 #include<time.h>
 #include<curses.h>
+#include<signal.h>
 
 #include "main.h"
 
