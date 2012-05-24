@@ -88,7 +88,7 @@
 #                   dispatcher dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
-# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist b2b"
+# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist b2b registrant"
 
 
 ## type of aliases used: DB - database aliases; UL - usrloc aliases
