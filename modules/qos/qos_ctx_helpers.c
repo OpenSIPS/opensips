@@ -522,8 +522,8 @@ void remove_sdp(qos_ctx_t *qos_ctx, unsigned int dir, struct sip_msg *_m, unsign
 			case METHOD_UPDATE:
 					/* searching into the pending_sdp list only */
 					qos_sdp = qos_ctx->pending_sdp;
+					if (qos_sdp) qos_sdp = qos_sdp->next;
 					while (qos_sdp) {
-						qos_sdp = qos_sdp->next;
 						if (cseq_method_id == qos_sdp->method_id && dir != qos_sdp->method_dir &&
 							qos_sdp->negotiation == N_INVITE_200OK && cseq_number->len == qos_sdp->cseq.len &&
 							0 == strncmp(cseq_number->s, qos_sdp->cseq.s, cseq_number->len)) {
@@ -542,6 +542,7 @@ void remove_sdp(qos_ctx_t *qos_ctx, unsigned int dir, struct sip_msg *_m, unsign
 								LM_ERR("skipping search for null sdp for %s\n", (other_role==QOS_CALLER)?"QOS_CALLER":"QOS_CALLEE");
 							}
 						}
+						qos_sdp = qos_sdp->next;
 					} /* end while (qos_sdp) */
 				break;
 			default:
