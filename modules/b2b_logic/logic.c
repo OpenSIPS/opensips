@@ -2269,7 +2269,8 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 	for(client_node= bridge_node->children; client_node;
 			client_node=client_node->next)
 	{
-		if(xmlStrcasecmp(client_node->name, (unsigned char*)"client") !=0)
+		if(xmlStrcasecmp(client_node->name, (unsigned char*)"client")!=0 &&
+			xmlStrcasecmp(client_node->name, (unsigned char*)"server") !=0)
 			continue;
 
 		if(count == 2)
