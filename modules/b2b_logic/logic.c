@@ -2363,8 +2363,8 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 			}
 		}
 		/* if I have the 'new' child -> alter the scenario id for the old entity */
-		node = xmlNodeGetChildByName(client_node, "new");
-		if(node && entity)
+		if ((xmlNodeGetChildByName(client_node, "destination")
+					|| xmlNodeGetChildByName(client_node, "new")) && entity)
 		{
 			/* write '<' everywhere - it's safe since it's not accepted in xml */
 			memset(entity->scenario_id.s, '<', entity->scenario_id.len);
