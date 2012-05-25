@@ -392,7 +392,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 			break;
 		case AUTHENTICATING_STATE:
 			/* We already sent an authenticated REGISTER and we are still challanged! */
-			LM_ERR("Wrong credentials for \n");
+			LM_WARN("Wrong credentials for [%.*s]\n",
+				rec->td.rem_uri.len, rec->td.rem_uri.s);
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
 			lock_release(&reg_htable[cb_param->hash_index].lock);
@@ -563,8 +564,8 @@ void timer_check(unsigned int ticks, void* param)
 		switch(rec->state){
 		case REGISTERING_STATE:
 		case AUTHENTICATING_STATE:
-		case WRONG_CREDENTIALS_STATE:
 			break;
+		case WRONG_CREDENTIALS_STATE:
 		case REGISTER_TIMEOUT_STATE:
 		case INTERNAL_ERROR_STATE:
 		case REGISTRAR_ERROR_STATE:

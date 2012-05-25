@@ -145,7 +145,7 @@ static int load_reg_info_from_db(void)
 	nr_rows = RES_ROW_N(res);
 
 	do {
-		LM_NOTICE("loading [%i] records from db\n", nr_rows);
+		LM_INFO("loading [%i] records from db\n", nr_rows);
 		rows = RES_ROWS(res);
 		/* for every row/record */
 		for(i=0; i<nr_rows; i++){
@@ -271,26 +271,28 @@ static int load_reg_info_from_db(void)
 			uac_param.expires = values[expiry_col].val.int_val;
 
 			/* Get the socket */
-			if (values[forced_socket_col].val.string_val) {
-				forced_socket.s =
-					(char*)values[forced_socket_col].val.string_val;
-				forced_socket.len = strlen(forced_socket.s);
-				if (parse_phostport(forced_socket.s, forced_socket.len,
-						&host.s, &host.len, &port, &proto)<0) {
-					LM_ERR("cannot parse forced socket [%.*s]\n",
-						forced_socket.len, forced_socket.s);
-					continue;
-				}
-				uac_param.send_sock = grep_sock_info(&host,
-							(unsigned short) port,
-							(unsigned short) proto);
-				if (uac_param.send_sock==NULL) {
-					LM_ERR("invalid forced socket [%.*s]\n",
-						forced_socket.len, forced_socket.s);
-					continue;
+			if (values[forced_socket_col].val.string_val &&
+				(forced_socket.s = (char*)values[forced_socket_col].val.string_val)) {
+				if((forced_socket.len = strlen(forced_socket.s))){
+					if (parse_phostport(forced_socket.s,
+							forced_socket.len,
+							&host.s, &host.len,
+							&port, &proto)<0) {
+						LM_ERR("cannot parse forced socket [%.*s]\n",
+							forced_socket.len, forced_socket.s);
+						continue;
+					}
+					uac_param.send_sock = grep_sock_info(&host,
+								(unsigned short) port,
+								(unsigned short) proto);
+					if (uac_param.send_sock==NULL) {
+						LM_ERR("invalid forced socket [%.*s]\n",
+							forced_socket.len, forced_socket.s);
+						continue;
+					}
 				}
 			}
-			LM_NOTICE("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] "
+			LM_DBG("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] "
 				"password=[%.*s] expire=[%d] proxy=[%.*s] "
 				"contact=[%.*s] third_party=[%.*s]\n",
 				uac_param.registrar_uri.len, uac_param.registrar_uri.s,
