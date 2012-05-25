@@ -640,10 +640,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	b2bl_entity_id_t* bentity0, *bentity1;
 	client_info_t ci;
 	int entity_no;
-	str to_uri;
 	b2b_req_data_t req_data;
-
-	to_uri = get_to(msg)->uri;
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
@@ -2270,7 +2267,8 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 	for(client_node= bridge_node->children; client_node;
 			client_node=client_node->next)
 	{
-		if(xmlStrcasecmp(client_node->name, (unsigned char*)"client") !=0)
+		if(xmlStrcasecmp(client_node->name, (unsigned char*)"client")!=0 &&
+			xmlStrcasecmp(client_node->name, (unsigned char*)"server")!=0)
 			continue;
 
 		if(count == 2)
@@ -2364,8 +2362,8 @@ int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
 			}
 		}
 		/* if I have the 'new' child -> alter the scenario id for the old entity */
-		node = xmlNodeGetChildByName(client_node, "new");
-		if(node && entity)
+		if ((xmlNodeGetChildByName(client_node, "destination")
+			|| xmlNodeGetChildByName(client_node, "new")) && entity)
 		{
 			/* write '<' everywhere - it's safe since it's not accepted in xml */
 			memset(entity->scenario_id.s, '<', entity->scenario_id.len);
