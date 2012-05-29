@@ -58,6 +58,18 @@ if [ $ret -eq 0 ] ; then
 	DUMP_CMD="db4.6_dump"
 fi ;
 
+which db4.7_dump > /dev/null
+ret=$?
+if [ $ret -eq 0 ] ; then
+	DUMP_CMD="db4.7_dump"
+fi ;
+
+which db4.8_dump > /dev/null
+ret=$?
+if [ $ret -eq 0 ] ; then
+	DUMP_CMD="db4.8_dump"
+fi ;
+
 
 #berkeley db utility program that imports data from plain text file
 #small hack to autodetect the db load command, debian prefix the version..
@@ -84,6 +96,18 @@ which db4.6_load > /dev/null
 ret=$?
 if [ $ret -eq 0 ] ; then
 	LOAD_CMD="db4.6_load"
+fi ;
+
+which db4.7_load > /dev/null
+ret=$?
+if [ $ret -eq 0 ] ; then
+	LOAD_CMD="db4.7_load"
+fi ;
+
+which db4.8_load > /dev/null
+ret=$?
+if [ $ret -eq 0 ] ; then
+	LOAD_CMD="db4.8_load"
 fi ;
 
 # path to the database schemas
