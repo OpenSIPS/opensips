@@ -63,7 +63,8 @@ enum _tr_param_subtype {
 	TR_PL_EXIST
 };
 enum _tr_nameaddr_subtype {
-	TR_NA_NONE=0, TR_NA_NAME, TR_NA_URI, TR_NA_LEN, TR_NA_PARAM
+	TR_NA_NONE=0, TR_NA_NAME, TR_NA_URI, TR_NA_LEN, TR_NA_PARAM,
+	TR_NA_PARAMS
 };
 enum _tr_param_type { TR_PARAM_NONE=0, TR_PARAM_STRING, TR_PARAM_NUMBER,
 	TR_PARAM_SPEC };

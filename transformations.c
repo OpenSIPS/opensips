@@ -1592,6 +1592,19 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			}
 			val->rs = (topar)?topar->value:_tr_empty;
 			break;
+		case TR_NA_PARAMS:
+			topar = nameaddr_to_body->param_lst;
+			if (!topar) {
+				LM_DBG("no params\n");
+				val->rs = _tr_empty;
+			}
+			else {
+				LM_DBG("We have params\n");
+				val->rs.s = topar->name.s;
+				val->rs.len = nameaddr_to_body->last_param->value.s + 
+					nameaddr_to_body->last_param->value.len - val->rs.s;
+			}
+			break;
 
 		default:
 			LM_ERR("unknown subtype %d\n", subtype);
@@ -2390,6 +2403,9 @@ char* tr_parse_nameaddr(str* in, trans_t *t)
 					in->len, in->s);
 			goto error;
 		}
+		return p;
+	} else if(name.len==6 && strncasecmp(name.s, "params", 6)==0) {
+		t->subtype = TR_NA_PARAMS;
 		return p;
 	}
 
