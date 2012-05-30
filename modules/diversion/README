@@ -8,10 +8,14 @@ Edited by
 
 Jan Janak
 
+Edited by
+
+Saul Ibarra Corretge
+
    Copyright © 2004 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date: 2009-07-21 09:45:05 +0200
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -30,7 +34,7 @@ Jan Janak
 
         1.4. Exported Functions
 
-              1.4.1. add_diversion(reason)
+              1.4.1. add_diversion(reason [[,uri], counter])
 
         1.5. Diversion Example
 
@@ -84,7 +88,7 @@ modparam("diversion", "suffix", ";privacy=full")
 
 1.4. Exported Functions
 
-1.4.1. add_diversion(reason)
+1.4.1. add_diversion(reason [[,uri], counter])
 
    The function adds a new diversion header field before any other
    existing Diversion header field in the message (the newly added
@@ -95,6 +99,10 @@ modparam("diversion", "suffix", ";privacy=full")
    Meaning of the parameters is as follows:
      * reason - The reason string to be added as the reason
        parameter
+     * uri - The URI to be added in the header. If missing the
+       unchanged RURI from the original message will be used.
+     * counter - Diversion counter to be added to the header, as
+       defined by the standard.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
