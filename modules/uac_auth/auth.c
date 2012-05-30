@@ -306,7 +306,10 @@ void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
 		MD5Update(&Md5Ctx, ":", 1);
 		MD5Update(&Md5Ctx, cnonce->s, cnonce->len);
 		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, auth->qop.s, auth->qop.len);
+		/* FIXME: We should parse auth->qop and
+			  make sure that auth token is present.
+		 */
+		MD5Update(&Md5Ctx, "auth", 4);
 		MD5Update(&Md5Ctx, ":", 1);
 	};
 	MD5Update(&Md5Ctx, ha2, HASHHEXLEN);
