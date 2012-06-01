@@ -342,7 +342,7 @@ modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 			socket(s) used to connect to (a set) RTPProxy. The record from
 			the database table will be read at start up (added to the ones
 			defined with the rtpproxy_sock module parameter) and when the MI command
-			nh_reload_rtpp is issued(the definitions will be replaced with the
+			rtpproxy_reload is issued(the definitions will be replaced with the
 			ones from the database table).
 		</para>
 		<para>
@@ -371,7 +371,7 @@ modparam("rtpproxy", "db_url",
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>nh_sockets</quote>.
+			Default value is <quote>rtpproxy_sockets</quote>.
 		</emphasis>
 		</para>
 
@@ -379,7 +379,7 @@ modparam("rtpproxy", "db_url",
 		<title>Set <varname>db_table</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("rtpproxy", "db_table", "nh_rtpp") 
+modparam("rtpproxy", "db_table", "nh_sockets") 
 ...
 
 </programlisting>
@@ -786,7 +786,7 @@ start_recording();
 		<title><acronym>MI</acronym> Commands</title>
 
 		<section>
-			<title><function moreinfo="none">nh_enable_rtpp</function></title>
+			<title><function moreinfo="none">rtpproxy_enable</function></title>
 			<para>
 			Enables a rtp proxy if parameter value is greater than 0.
 			Disables it if a zero value is given.
@@ -804,17 +804,17 @@ start_recording();
 			</para>
 			<example>
 			<title>
-			<function moreinfo="none">nh_enable_rtpp</function> usage</title>
+				<function moreinfo="none">rtpproxy_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 ...
 			</programlisting>
 			</example>
 		</section>
 				
 			<section>
-			<title><function moreinfo="none">nh_show_rtpp</function></title>
+			<title><function moreinfo="none">rtpproxy_show</function></title>
 			<para>
 			Displays all the rtp proxies and their information: set and 
 			status (disabled or not, weight and recheck_ticks).
@@ -824,17 +824,17 @@ $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">nh_show_rtpp</function> usage</title>
+				<function moreinfo="none">rtpproxy_show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo nh_show_rtpp 
+$ opensipsctl fifo rtpproxy_show
 ...
 			</programlisting>
 			</example>
 		</section>
 
 		<section>
-			<title><function moreinfo="none">nh_reload_rtpp</function></title>
+			<title><function moreinfo="none">rtpproxy_reload</function></title>
 			<para>
 			Reload rtp proxies sets from database. The function will delete all
 			previous records and populate the list with the entries from the
@@ -846,10 +846,10 @@ $ opensipsctl fifo nh_show_rtpp
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">nh_reload_rtpp</function> usage</title>
+				<function moreinfo="none">rtpproxy_reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo nh_reload_rtpp 
+$ opensipsctl fifo rtpproxy_reload
 ...
 			</programlisting>
 			</example>

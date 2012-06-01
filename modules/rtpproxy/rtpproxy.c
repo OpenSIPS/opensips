@@ -194,13 +194,13 @@
 
 #define DEFAULT_RTPP_SET_ID		0
 
-#define MI_ENABLE_RTP_PROXY			"nh_enable_rtpp"
+#define MI_ENABLE_RTP_PROXY			"rtpproxy_enable"
 #define MI_MIN_RECHECK_TICKS		0
 #define MI_MAX_RECHECK_TICKS		(unsigned int)-1
 
 
-#define MI_SHOW_RTP_PROXIES			"nh_show_rtpp"
-#define MI_RELOAD_RTP_PROXIES       "nh_reload_rtpp"
+#define MI_SHOW_RTP_PROXIES			"rtpproxy_show"
+#define MI_RELOAD_RTP_PROXIES       "rtpproxy_reload"
 
 #define MI_RTP_PROXY_NOT_FOUND		"RTP proxy not found"
 #define MI_RTP_PROXY_NOT_FOUND_LEN	(sizeof(MI_RTP_PROXY_NOT_FOUND)-1)
@@ -345,7 +345,7 @@ static unsigned int rtpp_number = 0;
 
 /* DB support for loading proxies */
 static str db_url = {NULL, 0};
-static str table = str_init("nh_sockets");
+static str table = str_init("rtpproxy_sockets");
 static str rtpp_sock_col = str_init("rtpproxy_sock");
 static str set_id_col = str_init("set_id");
 static db_con_t *db_connection = NULL;
@@ -1180,7 +1180,7 @@ static int mi_child_init(void)
 
 static int _add_proxies_from_database(void) {
 
-	/* select * from nh_sockets */
+	/* select * from rtpproxy_sockets */
 	db_key_t colsToReturn[2];
 	db_res_t *result = NULL;
 	int rowCount = 0;

@@ -7,6 +7,6 @@
 ]>
 
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
-    <name>NAT Helper</name>
-    <xi:include href="nh_sockets.xml"/>
+    <name>RTPProxy</name>
+    <xi:include href="rtpproxy_sockets.xml"/>
 </database>
