@@ -64,9 +64,9 @@ Bogdan-Andrei Iancu
 
         1.7. MI Commands
 
-              1.7.1. nh_enable_rtpp
-              1.7.2. nh_show_rtpp
-              1.7.3. nh_reload_rtpp
+              1.7.1. rtpproxy_enable
+              1.7.2. rtpproxy_show
+              1.7.3. rtpproxy_reload
 
    2. Frequently Asked Questions
 
@@ -90,9 +90,9 @@ Bogdan-Andrei Iancu
    1.16. unforce_rtp_proxy usage
    1.17. rtpproxy_stream2xxx usage
    1.18. start_recording usage
-   1.19. nh_enable_rtpp usage
-   1.20. nh_show_rtpp usage
-   1.21. nh_reload_rtpp usage
+   1.19. rtpproxy_enable usage
+   1.20. rtpproxy_show usage
+   1.21. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -314,8 +314,8 @@ modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
    of socket(s) used to connect to (a set) RTPProxy. The record
    from the database table will be read at start up (added to the
    ones defined with the rtpproxy_sock module parameter) and when
-   the MI command nh_reload_rtpp is issued(the definitions will be
-   replaced with the ones from the database table).
+   the MI command rtpproxy_reload is issued(the definitions will
+   be replaced with the ones from the database table).
 
    Default value is “NULL”.
 
@@ -331,11 +331,11 @@ modparam("rtpproxy", "db_url",
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
 
-   Default value is “nh_sockets”.
+   Default value is “rtpproxy_sockets”.
 
    Example 1.8. Set db_table parameter
 ...
-modparam("rtpproxy", "db_table", "nh_rtpp")
+modparam("rtpproxy", "db_table", "nh_sockets")
 ...
 
 
@@ -600,7 +600,7 @@ start_recording();
 
 1.7. MI Commands
 
-1.7.1. nh_enable_rtpp
+1.7.1. rtpproxy_enable
 
    Enables a rtp proxy if parameter value is greater than 0.
    Disables it if a zero value is given.
@@ -613,24 +613,24 @@ start_recording();
    NOTE: if a rtpproxy is defined multiple times (in the same or
    diferente sete), all its instances will be enables/disabled.
 
-   Example 1.19.  nh_enable_rtpp usage
+   Example 1.19.  rtpproxy_enable usage
 ...
-$ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 ...
 
-1.7.2. nh_show_rtpp
+1.7.2. rtpproxy_show
 
    Displays all the rtp proxies and their information: set and
    status (disabled or not, weight and recheck_ticks).
 
    No parameter.
 
-   Example 1.20.  nh_show_rtpp usage
+   Example 1.20.  rtpproxy_show usage
 ...
-$ opensipsctl fifo nh_show_rtpp
+$ opensipsctl fifo rtpproxy_show
 ...
 
-1.7.3. nh_reload_rtpp
+1.7.3. rtpproxy_reload
 
    Reload rtp proxies sets from database. The function will delete
    all previous records and populate the list with the entries
@@ -639,9 +639,9 @@ $ opensipsctl fifo nh_show_rtpp
 
    No parameter.
 
-   Example 1.21.  nh_reload_rtpp usage
+   Example 1.21.  rtpproxy_reload usage
 ...
-$ opensipsctl fifo nh_reload_rtpp
+$ opensipsctl fifo rtpproxy_reload
 ...
 
 Chapter 2. Frequently Asked Questions
