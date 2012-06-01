@@ -82,6 +82,7 @@
 #define	NAT_UAC_TEST_S_1918	0x08
 #define	NAT_UAC_TEST_RPORT	0x10
 #define	NAT_UAC_TEST_C_RCVD	0x20
+#define	NAT_UAC_TEST_C_RPORT	0x40
 
 #define MI_SET_NATPING_STATE		"nh_enable_ping"
 #define MI_DEFAULT_NATPING_STATE	1
@@ -759,6 +760,27 @@ contact_rcv(struct sip_msg* msg)
 }
 
 
+/*
+ * test for Contact port against received port
+ */
+static int
+contact_rport(struct sip_msg* msg)
+{
+	struct sip_uri uri;
+	contact_t* c;
+	struct hdr_field *hdr;
+	int ct_port;
+
+	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; ) {
+		ct_port=uri.port_no?uri.port_no:((uri.type==SIPS_URI_T)?SIPS_PORT:SIP_PORT);
+		if ( msg->rcv.src_port != ct_port ) return 1;
+	}
+
+	return 0;
+
+}
+
+
 
 
 static int
@@ -803,10 +825,15 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 	 */
 	if ((tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
 		return 1;
+	/*
+	 * test if source port of signaling is different from
+	 * port advertised in Contact
+	 */
+	if ((tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
+		return 1;
 
 	/* no test succeeded */
 	return -1;
-
 }
 
 #define	ADD_ADIRECTION	0x01

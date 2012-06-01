@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -381,6 +381,8 @@ fix_nated_register();
        Via
      * 32 - address in Contact is compared against source IP
        address of signaling
+     * 64 - Port in Contact is compared against source port of
+       signaling
 
    All flags can be bitwise combined, the test returns true if any
    of the tests identified a NAT.
