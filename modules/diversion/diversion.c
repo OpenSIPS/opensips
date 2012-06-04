@@ -190,7 +190,7 @@ int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3)
 	    counter_len = -1;
 	}
 
-	div_hf.len = DIVERSION_PREFIX_LEN + uri.len + DIVERSION_SUFFIX_LEN + reason->len + CRLF_LEN;
+	div_hf.len = DIVERSION_PREFIX_LEN + uri.len + DIVERSION_SUFFIX_LEN + reason->len;
 	if (counter_len != -1) {
 	    div_hf.len += DIVERSION_COUNTER_LEN + counter_len;
 	}
