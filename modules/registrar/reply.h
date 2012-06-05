@@ -44,7 +44,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags);
 /*! \brief
  * Build Contact HF for reply
  */
-int build_contact(ucontact_t* c,int build_gruu);
+int build_contact(ucontact_t* c,struct sip_msg *_m);
 
 
 /*! \brief
