@@ -499,7 +499,6 @@ static void destroy_dlg_profile(struct dlg_profile_table *profile)
 			map_destroy( profile->entries[i], NULL );
 	}
 	
-
 	shm_free( profile );
 	return;
 }
@@ -924,8 +923,11 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 		if (str2int(&ret, &n) < 0) {
 			LM_ERR("invalid int value in CacheDB <%.*s>\n",
 					ret.len, ret.s);
+			pkg_free(ret.s);
 			return -1;
 		}
+		/* free memory allocated by cachedb get */
+		pkg_free(ret.s);
 	}
 
 	return n;
