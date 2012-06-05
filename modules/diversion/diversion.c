@@ -182,12 +182,13 @@ int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3)
 	reason = (str*)_s1;
 
 	if (_s2 == NULL || fixup_get_svalue(msg, (gparam_p)_s2, &uri) != 0)
-    	    uri = msg->first_line.u.request.uri;
+		uri = msg->first_line.u.request.uri;
 
 	if (_s3) {
-	    counter_s = int2str((unsigned long)(void *)_s3, &counter_len);
+		counter_s = int2str((unsigned long)(void *)_s3, &counter_len);
 	} else {
-	    counter_len = -1;
+		counter_len = -1;
+		counter_s = NULL;
 	}
 
 	div_hf.len = DIVERSION_PREFIX_LEN + uri.len + DIVERSION_SUFFIX_LEN + reason->len;
@@ -215,12 +216,12 @@ int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3)
 	at += reason->len;
 
 	if (counter_len != -1) {
-            memcpy(at, DIVERSION_COUNTER, DIVERSION_COUNTER_LEN);
-            at += DIVERSION_COUNTER_LEN;
+		memcpy(at, DIVERSION_COUNTER, DIVERSION_COUNTER_LEN);
+		at += DIVERSION_COUNTER_LEN;
 
-            memcpy(at, counter_s, counter_len);
-            at += counter_len;
-        }
+		memcpy(at, counter_s, counter_len);
+		at += counter_len;
+	}
 
 	memcpy(at, CRLF, CRLF_LEN);
 
