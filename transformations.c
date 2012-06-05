@@ -49,6 +49,7 @@
 
 #include "strcommon.h"
 #include "transformations.h"
+#include "re.h"
 
 #define TR_BUFFER_SIZE 65536
 
@@ -1241,7 +1242,82 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	}
 
 	return 0;
+}
+
+#define RE_MAX_SIZE 1024
+static char reg_input_buf[RE_MAX_SIZE];
+static struct subst_expr *subst_re = NULL;
+static char reg_buf[RE_MAX_SIZE];
+static int reg_buf_len = -1;
+int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	int match_no=0;
+	pv_value_t v;
+	str *result;
+	str sv;
+
+	if(val==NULL || (!(val->flags&PV_VAL_STR)) || val->rs.len<=0)
+		return -1;
+
+	switch (subtype) {
+		case TR_RE_SUBST:
+				if (tp->type == TR_PARAM_STRING) {
+					sv = tp->v.s;
+				} else {
+					if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+							|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0) {
+						LM_ERR("cannot get value from spec\n");
+						return -1;
+					}
+					sv = v.rs;
+				}
+				LM_DBG("Trying to apply regexp [%.*s] on : [%.*s]\n", 
+						sv.len,sv.s,val->rs.len, val->rs.s);
+				if (reg_buf_len != sv.len || memcmp(reg_buf,sv.s,sv.len) != 0) {
+					LM_DBG("we must compile the regexp\n");
+					if (subst_re != NULL) {
+						LM_DBG("freeing prev regexp\n");
+						subst_expr_free(subst_re);
+					}
+					subst_re=subst_parser(&sv);
+					if (subst_re==0) {
+						LM_ERR("Can't compile regexp\n");
+						return -1;
+					}
+					reg_buf_len = sv.len;
+					memcpy(reg_buf,sv.s,sv.len);
+				} else
+					LM_DBG("yay, we can use the pre-compile regexp\n");
+
+				memcpy(reg_input_buf,val->rs.s,val->rs.len);
+				reg_input_buf[val->rs.len]=0;
+
+				result=subst_str(reg_input_buf, msg, subst_re, &match_no);
+				if (result == NULL) {
+					if (match_no == 0) {
+						LM_DBG("no match for subst expression\n");
+						break;
+					} else if (match_no < 0) {
+						LM_ERR("subst failed\n");
+						return -1;
+					}
+				}
+
+				memcpy(reg_input_buf,result->s,result->len);
+				reg_input_buf[result->len]=0;
+				val->flags = PV_VAL_STR;
+				val->rs.s = reg_input_buf;
+				val->rs.len = result->len;
+				pkg_free(result->s);
+				pkg_free(result);
+				return 0;
+		default:
+			LM_ERR("Unexpected subtype for RE : %d\n",subtype);
+			return -1;
 	}
+	return 0;
+}
 
 static str _tr_params_str = {0, 0};
 static param_t* _tr_params_list = NULL;
@@ -1725,6 +1801,14 @@ char* parse_transformation(str *in, trans_t **tr)
 			t->trf = tr_eval_ip;
 			s.s = p; s.len = in->s + in->len - p;
 			p0 = tr_parse_ip(&s,t);
+			if (p0==NULL)
+				goto error;
+			p = p0;
+		} else if (tclass.len==2 && strncasecmp(tclass.s,"re",2) == 0) {
+			t->type = TR_RE;
+			t->trf = tr_eval_re;
+			s.s = p; s.len = in->s + in->len - p;
+			p0 = tr_parse_re(&s,t);
 			if (p0==NULL)
 				goto error;
 			p = p0;
@@ -2618,6 +2702,61 @@ error:
 	return NULL;
 	
 }
+
+char* tr_parse_re(str *in,trans_t *t)
+{
+	char *p,*p0,*ps;
+	str name,s;
+	pv_spec_t *spec = NULL;
+	tr_param_t *tp = NULL;
+
+	if (in == NULL || t == NULL)
+		return NULL;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* find next token */
+	while (is_in_str(p,in) && *p!=TR_PARAM_MARKER && *p!=TR_RBRACKET) p++;
+	if (*p == '\0')
+	{
+		LM_ERR("invalid transformation: %.*s\n",in->len,in->s);
+		goto error;
+	}
+
+	name.len = p - name.s;
+	trim(&name);
+
+	if (name.len==5 && strncasecmp(name.s,"subst",5)==0)
+	{
+		t->subtype = TR_RE_SUBST;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid value transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		LM_INFO("preparing to parse param\n");
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid value transformation: %.*s!\n",
+					in->len, in->s);
+			goto error;
+		}
+		return p;
+	}
+
+	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
+			name.len, name.s, name.len);
+error:
+	return NULL;
+}
+
 void destroy_transformation(trans_t *t)
 {
 	tr_param_t *tp;
