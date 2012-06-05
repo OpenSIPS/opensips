@@ -100,7 +100,8 @@ dbtext:
 	# small hack to create the version table entries, this is here easier as with XSL
 	for FILE in  $(wildcard $(ROOT)/scripts/dbtext/opensips/*) ; do \
 		if [ -f "$$FILE" ]; then \
-			if [  "$$FILE" != "$(ROOT)/scripts/dbtext/opensips/version" ]; then \
+			if [  "$$FILE" != "$(ROOT)/scripts/dbtext/opensips/version" -a \
+					`wc -l "$$FILE" | cut -f 1 -d ' '` -gt 1 ]; then \
 				tail -1 "$$FILE" >> "$(ROOT)/scripts/dbtext/opensips/version" ; \
  				head -n 1 "$$FILE" > $TMPFILE ; \
 				cp $TMPFILE "$$FILE" ; \
