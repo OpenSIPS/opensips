@@ -1259,11 +1259,13 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	int grp_id;
 	int i, j, n;
 	int_str val;
-	str *ruri;
+	str ruri;
 	int ret;
 	char tmp;
+	char *ruri_buf;
 
 	ret = -1;
+	ruri_buf = NULL;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
 		LM_DBG("empty routing table\n");
@@ -1320,10 +1322,17 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 				grp_id = 0; 
 		}
 
-		/* get the number */
-		ruri = GET_RURI(msg);
+		/* get the number/RURI and make a copy of it */
+		ruri = *GET_RURI(msg);
+		ruri_buf = (char*)pkg_malloc(ruri.len);
+		if (ruri_buf==NULL) {
+			LM_ERR("no more pkg mem (needed %d)\n",ruri.len);
+			goto error1;
+		}
+		memcpy(ruri_buf, ruri.s, ruri.len);
+		ruri.s = ruri_buf;
 		/* parse ruri */
-		if (parse_uri( ruri->s, ruri->len, &uri)!=0) {
+		if (parse_uri( ruri.s, ruri.len, &uri)!=0) {
 			LM_ERR("unable to parse RURI\n");
 			goto error1;
 		}
@@ -1338,7 +1347,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 		avp_index = search_first_avp( 0, avpID_store_index, &val, 0);
 		if (avp_index==NULL) {
 			LM_ERR("Cannot find index AVP during a fallback\n");
-			return -1;
+			goto error1;
 		}
 		rule_idx = val.n;
 
@@ -1346,7 +1355,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 		avp_prefix = search_first_avp( AVP_VAL_STR, avpID_store_prefix, &val, 0);
 		if (avp_prefix==NULL) {
 			LM_ERR("Cannot find prefix AVP during a fallback\n");
-			return -1;
+			goto error1;
 		}
 		username = val.s;
 		/* still something to look for ? */
@@ -1355,7 +1364,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 		/* original RURI to be used when building RURIs for new attempts */
 		if (search_first_avp( AVP_VAL_STR, avpID_store_ruri, &val, 0)==NULL) {
 			LM_ERR("Cannot find ruri AVP during a fallback\n");
-			return -1;
+			goto error1;
 		}
 		if (parse_uri( val.s.s, val.s.len, &uri)!=0) {
 			LM_ERR("unable to parse RURI from AVP\n");
@@ -1363,7 +1372,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 		}
 
 		grp_id = (int)drg->u.grp_id;
-		ruri = NULL;
+		ruri.s = NULL; ruri.len = 0;
 	}
 
 
@@ -1445,7 +1454,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 				flags = flags & ~DR_PARAM_RULE_FALLBACK;
 			}
 			/* also store current ruri as we will need it */
-			val.s = *ruri;
+			val.s = ruri;
 			if (add_avp( AVP_VAL_STR, avpID_store_ruri, val) ) {
 				LM_ERR("failed to insert ruri avp for fallback\n");
 				flags = flags & ~DR_PARAM_RULE_FALLBACK;
@@ -1627,11 +1636,13 @@ no_gws:
 		}
 	}
 
+	if (ruri_buf) pkg_free(ruri_buf);
 	return 1;
 error2:
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
 error1:
+	if (ruri_buf) pkg_free(ruri_buf);
 	return ret;
 }
 
