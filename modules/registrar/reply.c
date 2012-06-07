@@ -112,10 +112,12 @@ static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
  * Calculate the length of buffer needed to
  * print contacts
  */
-static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu)
+static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
+		struct sip_msg *_m)
 {
 	unsigned int len;
 	int qlen;
+	struct socket_info *sock;
 
 	len = 0;
 	while(c) {
@@ -135,12 +137,13 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu)
 					;
 			}
 			if (build_gruu && c->instance.s) {
+				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
 				/* pub gruu */
 				len += PUB_GRUU_SIZE
 					+ 1 /* quote */
 					+ SIP_PROTO_SIZE
 					+ c->aor->len
-					+ (reg_use_domain ?0:(1 /* @ */ + c->sock->name.len + 1 /* : */ + c->sock->port_no_str.len))
+					+ (reg_use_domain ?0:(1 /* @ */ + sock->name.len + 1 /* : */ + sock->port_no_str.len))
 					+ GR_PARAM_SIZE
 					+ (c->instance.len - 2)
 					+ 1 /* quote */
@@ -152,9 +155,9 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu)
 					+ TEMP_GRUU_HEADER_SIZE
 					+ calc_temp_gruu_len(c->aor,&c->instance,&c->callid)
 					+ 1 /* @ */
-					+ c->sock->name.len
+					+ sock->name.len
 					+ 1 /* : */
-					+ c->sock->port_no_str.len
+					+ sock->port_no_str.len
 					+ GR_NO_VAL_SIZE 
 					+ 1 /* quote */
 					;
@@ -216,12 +219,18 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
  * Allocate a memory buffer and print Contact
  * header fields into it
  */
-int build_contact(ucontact_t* c,int build_gruu)
+int build_contact(ucontact_t* c,struct sip_msg *_m)
 {
 	char *p, *cp, *tmpgr;
 	int fl, len,grlen;
+	int build_gruu = 0;
+	struct socket_info *sock;
 
-	contact.data_len = calc_buf_len(c,build_gruu);
+	if (_m->supported && parse_supported(_m) == 0 &&
+		(get_supported(_m) & F_SUPPORTED_GRUU))
+		build_gruu=1;
+
+	contact.data_len = calc_buf_len(c,build_gruu,_m);
 	if (!contact.data_len) return 0;
 
 	if (!contact.buf || (contact.buf_len < contact.data_len)) {
@@ -283,6 +292,7 @@ int build_contact(ucontact_t* c,int build_gruu)
 			}
 
 			if (build_gruu && c->instance.s) {
+				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
 				/* build pub GRUU */
 				memcpy(p,PUB_GRUU,PUB_GRUU_SIZE);
 				p += PUB_GRUU_SIZE;
@@ -293,11 +303,11 @@ int build_contact(ucontact_t* c,int build_gruu)
 				p += c->aor->len;
 				if (!reg_use_domain) {
 					*p++ = '@';
-					memcpy(p,c->sock->name.s,c->sock->name.len);
-					p += c->sock->name.len;
+					memcpy(p,sock->name.s,sock->name.len);
+					p += sock->name.len;
 					*p++ = ':';
-					memcpy(p,c->sock->port_no_str.s,c->sock->port_no_str.len);
-					p += c->sock->port_no_str.len;
+					memcpy(p,sock->port_no_str.s,sock->port_no_str.len);
+					p += sock->port_no_str.len;
 				}
 				memcpy(p,GR_PARAM,GR_PARAM_SIZE);
 				p += GR_PARAM_SIZE;
@@ -319,11 +329,11 @@ int build_contact(ucontact_t* c,int build_gruu)
 						(unsigned char *)tmpgr,grlen);
 				p += calc_temp_gruu_len(c->aor,&c->instance,&c->callid);
 				*p++ = '@';
-				memcpy(p,c->sock->name.s,c->sock->name.len);
-				p += c->sock->name.len;
+				memcpy(p,sock->name.s,sock->name.len);
+				p += sock->name.len;
 				*p++ = ':';
-				memcpy(p,c->sock->port_no_str.s,c->sock->port_no_str.len);
-				p += c->sock->port_no_str.len;
+				memcpy(p,sock->port_no_str.s,sock->port_no_str.len);
+				p += sock->port_no_str.len;
 				memcpy(p,GR_NO_VAL,GR_NO_VAL_SIZE);
 				p += GR_NO_VAL_SIZE;
 				*p++ = '\"';
