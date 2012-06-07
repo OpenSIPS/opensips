@@ -1481,7 +1481,7 @@ static int sync_dlg_db_mem(void)
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+19))
 						read_dialog_profiles( VAL_STR(values+19).s,
-							strlen(VAL_STR(values+19).s), dlg,1);
+							strlen(VAL_STR(values+19).s), known_dlg,1);
 				} else {
 					/* DB has newer state, just update fields from DB */
 					LM_DBG("DB has newer state \n");
@@ -1554,7 +1554,7 @@ static int sync_dlg_db_mem(void)
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+19))
 						read_dialog_profiles( VAL_STR(values+19).s,
-							strlen(VAL_STR(values+19).s), dlg,1);
+							strlen(VAL_STR(values+19).s), known_dlg,1);
 				}
 
 			}
