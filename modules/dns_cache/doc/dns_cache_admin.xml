@@ -64,7 +64,7 @@ modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/");
 		<title>Set <varname>blacklist_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dns_cache", "blacklist_timeout","7200"); # 2 hours
+modparam("dns_cache", "blacklist_timeout",7200); # 2 hours
 ...
 		</programlisting>
 		</example>
