@@ -365,11 +365,6 @@ migrate_table ${dst_db}.dispatcher \
 	${src_db}.dispatcher \
 	"?id,?setid,?destination,?flags,?weight,?attrs,?description"
 
-migrate_table ${dst_db}.nh_sockets \
-	"id,rtpproxy_sock,set_id" \
-	${src_db}.nh_sockets \
-	"?id,?rtpproxy_sock,?set_id"
-
 migrate_table ${dst_db}.dialplan \
 	"id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs" \
 	${src_db}.dialplan \

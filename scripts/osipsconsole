@@ -127,12 +127,12 @@ my @STANDARD_TABLES = ('version', 'acc', 'dbaliases',
 			'usr_preferences', 'aliases', 'silo', 
 			'dialog', 'dispatcher', 'dialplan',
 			'dr_gateways','dr_rules','dr_carriers',
-			'dr_groups','nh_sockets','load_balancer');
+			'dr_groups','rtpproxy_sockets','load_balancer');
 
 my @STANDARD_MODULES = ('standard', 'acc', 'domain', 'group', 
 	'permissions', 'registrar', 'usrloc', 'msilo', 'alias_db', 'uri_db',
 	'speeddial', 'avpops', 'auth_db', 'pdt', 'dialog', 'dispatcher', 
-	'dialplan','drouting','nathelper','load_balancer' );
+	'dialplan','drouting','rtpproxy','load_balancer' );
 
 my @EXTRA_TABLES = ('imc_members', 'imc_rooms', 'cpl', 'sip_trace', 
 	'domainpolicy', 'carrierroute', 'route_tree', 'carrierfailureroute', 
@@ -5739,7 +5739,7 @@ sub pgsql_opensips_create() {	# pars: <database name>
 		#print $TABLE;
 		&pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;");
                 if ( $TABLE !~ /version/ ) {
-                        if ( ($TABLE !~ /dr_gateways/) && ($TABLE !~ /nh_sockets/) && ($TABLE !~ /dr_rules/) ) {
+                        if ( ($TABLE !~ /dr_gateways/) && ($TABLE !~ /rtpproxy_sockets/) && ($TABLE !~ /dr_rules/) ) {
                                 &pgsql_query ( $db, "GRANT ALL PRIVILEGES ON TABLE " . $TABLE . "_id_seq TO $DBRWUSER;");
                                 if ( $? != 0 ) {
                                         print "Grant privileges to standard tables failed!\n";
@@ -6374,9 +6374,6 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 
 	### dispatcher
 	&mysql_migrate_table( $dst_db . ".dispatcher", "id,setid,destination,flags,weight,attrs,description", $src_db . ".dispatcher", "?id,?setid,?destination,?flags,?weight,?attrs,?description" );
-
-	### nathelper
-	&mysql_migrate_table( $dst_db . ".nh_sockets", "id,rtpproxy_sock,set_id", $src_db . ".nh_sockets", "?id,?rtpproxy_sock,?set_id" );
 
 	### dialplan
 	&mysql_migrate_table( $dst_db . ".dialplan", "id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs", $src_db . ".dialplan", "?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" );
