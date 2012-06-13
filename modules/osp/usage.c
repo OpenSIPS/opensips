@@ -469,13 +469,17 @@ int ospReportUsage(
                  token;
                  token = strtok_r(NULL, ";", &tmp))
             {
-                if (strncmp(token, OSP_ORIG_COOKIE, strlen(OSP_ORIG_COOKIE)) == 0) {
+                if ((strncmp(token, OSP_ORIG_COOKIE, strlen(OSP_ORIG_COOKIE)) == 0) &&
+                    (token[strlen(OSP_ORIG_COOKIE)] == '='))
+                {
                     LM_INFO("report orig duration for call_id '%.*s'\n",
                         callid->Length,
                         callid->Value);
                     ospReportUsageFromCookie(msg, token + strlen(OSP_ORIG_COOKIE) + 1, callid, release, OSPC_ROLE_SOURCE);
                     result = MODULE_RETURNCODE_TRUE;
-                } else if (strncmp(token, OSP_TERM_COOKIE, strlen(OSP_TERM_COOKIE)) == 0) {
+                } else if ((strncmp(token, OSP_TERM_COOKIE, strlen(OSP_TERM_COOKIE)) == 0) &&
+                    (token[strlen(OSP_TERM_COOKIE)] == '='))
+                {
                     LM_INFO("report term duration for call_id '%.*s'\n",
                         callid->Length,
                         callid->Value);
