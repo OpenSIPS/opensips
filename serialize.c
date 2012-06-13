@@ -260,7 +260,7 @@ int next_branches( struct sip_msg *msg)
 	int_str val;
 	struct socket_info *sock_info;
 	qvalue_t q;
-	str uri, dst_uri, path;
+	str uri, dst_uri, path, path_dst;
 	char *p;
 	unsigned int flags;
 	int rval;
@@ -302,10 +302,28 @@ int next_branches( struct sip_msg *msg)
 	path.s = p;
 	path.len = strlen(p);
 
+	/* set PATH and DURI */
+	if (path.s && path.len) {
+		if (get_path_dst_uri(&path, &path_dst) < 0) {
+			LM_ERR("failed to get first hop from Path\n");
+			goto error1;
+		}
+		if (set_path_vector( msg, &path) < 0) {
+			LM_ERR("failed to set path vector\n");
+			goto error1;
+		}
+		if (set_dst_uri( msg, &path_dst) < 0) {
+			LM_ERR("failed to set dst_uri of Path\n");
+			goto error1;
+		}
+	} else {
+		if (set_dst_uri( msg, &dst_uri) < 0) {
+			goto error1;
+		}
+	}
+
 	/* Set Request-URI */
-	if ( set_ruri(msg, &uri) == -1
-	|| set_dst_uri(msg, &dst_uri) == -1
-	|| set_path_vector(msg, &path) == -1 )
+	if ( set_ruri(msg, &uri) == -1 )
 		goto error1;
 
 	msg->force_send_socket = sock_info;
