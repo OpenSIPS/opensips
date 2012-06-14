@@ -205,7 +205,7 @@ int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int 
 		if (ttl<*min_ttl)
 			*min_ttl=ttl;
 		cp +=4;
-		n = ns_get16(cp);
+		n = dns_get16(cp);
 		cp += 2;	/* len */
 		BOUNDS_CHECK(cp, n);
 		erdata = cp + n;
