@@ -95,7 +95,7 @@ if (lua_exec("mongo_alias")) {
   <section>
     <title>Exported Parameters</title>
     <section>
-      <title>filename (string)</title>
+      <title>luafilename (string)</title>
       <para> 
       This is the file name of your script. This may be set once
       only, but it may include an arbitary number of functions and
@@ -105,10 +105,10 @@ if (lua_exec("mongo_alias")) {
       The default value is "/etc/opensips/opensips.lua"
       </para>
       <example>
-        <title>Set filename parameter</title>
+        <title>Set luafilename parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("lua", "filename", "/etc/opensips/opensips.lua")
+modparam("lua", "luafilename", "/etc/opensips/opensips.lua")
 ...
         </programlisting>
       </example>
