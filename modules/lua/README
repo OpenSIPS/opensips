@@ -29,7 +29,7 @@ Arnaud Chong
 
         1.5. Exported Parameters
 
-              1.5.1. filename (string)
+              1.5.1. luafilename (string)
               1.5.2. lua_auto_reload (int)
               1.5.3. warn_missing_free_fixup (int)
               1.5.4. lua_allocator (string)
@@ -70,7 +70,7 @@ Arnaud Chong
 
    List of Examples
 
-   1.1. Set filename parameter
+   1.1. Set luafilename parameter
    1.2. lua_exec() usage
 
 Chapter 1. Admin Guide
@@ -143,7 +143,7 @@ if (lua_exec("mongo_alias")) {
 
 1.5. Exported Parameters
 
-1.5.1. filename (string)
+1.5.1. luafilename (string)
 
    This is the file name of your script. This may be set once
    only, but it may include an arbitary number of functions and
@@ -151,9 +151,9 @@ if (lua_exec("mongo_alias")) {
 
    The default value is "/etc/opensips/opensips.lua"
 
-   Example 1.1. Set filename parameter
+   Example 1.1. Set luafilename parameter
 ...
-modparam("lua", "filename", "/etc/opensips/opensips.lua")
+modparam("lua", "luafilename", "/etc/opensips/opensips.lua")
 ...
 
 1.5.2. lua_auto_reload (int)
