@@ -199,8 +199,7 @@ static int mod_init(void)
 		LM_ERR("invalid domain_prefix_avp!\n");
 		return -1;
 	}
-	domain_suffix_name = get_avp_id(&domain_suffix_avp);
-	if (domain_suffix_name < 0) {
+	if (parse_avp_spec(&domain_suffix_avp, &domain_suffix_name) < 0) {
 		LM_ERR("invalid domain_suffix_avp!\n");
 		return -1;
 	}
