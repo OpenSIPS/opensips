@@ -140,6 +140,7 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 	struct re_grp *rg;
 	regmatch_t pmatch;
 	char *c;
+	unsigned int aux;
 	int n;
 
 	if(user ==  NULL || fixup_get_svalue(req, (gparam_p)user, &user_str) != 0){
@@ -162,7 +163,8 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 		goto error;
 	}
 
-	*(int*)uri_buf = htonl(('s'<<24) + ('i'<<16) + ('p'<<8) + ':');
+	aux = htonl(('s'<<24) + ('i'<<16) + ('p'<<8) + ':');
+	memcpy(uri_buf, &aux, 4);
 	c = uri_buf + 4;
 	memcpy( c, username.s, username.len);
 	c += username.len;

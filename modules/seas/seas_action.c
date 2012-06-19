@@ -392,8 +392,7 @@ int process_pong(struct ha *the_table,unsigned int seqno)
 
 int ac_cancel(as_p the_as,char *action,int len)
 {
-   unsigned int flags,ret,cancelled_hashIdx,cancelled_label,i;
-   char processor_id;
+   unsigned int flags,ret,cancelled_hashIdx,cancelled_label;
    struct cell* t_invite;
 	/* Disabled after CANCEL changes
    struct sip_msg *my_msg;
@@ -408,12 +407,12 @@ int ac_cancel(as_p the_as,char *action,int len)
    my_msg=NULL;
    the_param=NULL;
    */
-   i=k=0;
+   k=0;
 
    net2hostL(flags,action,k);
    net2hostL(uac_id,action,k);
 
-   processor_id=action[k++];
+   k++;
 
    net2hostL(cancelled_hashIdx,action,k);
    net2hostL(cancelled_label,action,k);
@@ -664,7 +663,7 @@ error:
  */
 int ac_reply(as_p the_as,char *action,int len)
 {
-   unsigned int flags,hash_index,label,contentlength;
+   unsigned int flags,hash_index,label;
    struct cell *c;
    struct sip_msg *my_msg;
    struct to_body *tb;
@@ -673,7 +672,6 @@ int ac_reply(as_p the_as,char *action,int len)
    int i,k,retval;
    static char headers[MAX_HEADER];
 
-   contentlength=0;
    ttag=NULL;
    my_msg=NULL;
    i=k=0;
@@ -714,8 +712,6 @@ int ac_reply(as_p the_as,char *action,int len)
       totag.len=TOTAG_VALUE_LEN;*/
    }
    LM_DBG("Using totag=[%.*s]\n",totag.len,totag.s);
-   if(my_msg->content_length)
-      contentlength=(unsigned int)(long)my_msg->content_length->parsed;
    if(0>(i=recordroute_diff(c->uas.request,my_msg))){/*not likely..*/
       LM_DBG("Seems that request had more RecordRoutes than response...\n");
       goto error;

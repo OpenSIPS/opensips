@@ -493,7 +493,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	str callid;
 	struct cell* tm_tran;
 	int ret;
-	struct socket_info* sock_list;
 	str host;
 	int port;
 	int etype= B2B_NONE;
@@ -577,11 +576,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	}
 	host = msg->parsed_uri.host;
 	port = msg->parsed_uri.port_no;
-
-	if (msg->rcv.proto==PROTO_NONE)
-		sock_list=udp_listen;
-	else
-		sock_list=*get_sock_info_list(msg->rcv.proto);
 
 	/* check if RURI points to me */
 	if(method_value!= METHOD_CANCEL)

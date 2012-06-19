@@ -57,7 +57,6 @@ struct network networks[MAX_NETWORKS];
 int net_pipes_in[MAX_NETWORKS];
 int nr_of_networks;
 int nr_of_modems;
-int max_sms_parts;
 int *queued_msgs;
 int use_contact;
 int sms_report_type;
