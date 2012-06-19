@@ -57,7 +57,7 @@ struct dlg_profile_link {
 struct dlg_profile_table {
 	str name;
 	unsigned int has_value;
-        unsigned int use_cached;
+	unsigned int use_cached;
 
 
 	unsigned int size;
