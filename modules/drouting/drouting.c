@@ -1967,6 +1967,7 @@ static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 #define DR_IFG_STRIP_FLAG      (1<<0)
 #define DR_IFG_PREFIX_FLAG     (1<<1)
 #define DR_IFG_ATTRS_FLAG      (1<<2)
+#define DR_IFG_IDS_FLAG        (1<<3)
 static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 {
 	pgw_t *pgwa = NULL;
@@ -1989,6 +1990,7 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 				case 's': flags |= DR_IFG_STRIP_FLAG; break;
 				case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
 				case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
+				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
 			}
 		}
@@ -2006,16 +2008,24 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 			if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
 				prefix_username(msg, &pgwa->pri);
 			/* attrs ? */
-			if (gw_attrs_avp.name!=-1) {
+			if (flags & DR_IFG_ATTRS_FLAG && gw_attrs_avp.name!=-1) {
 				val.s = pgwa->attrs.s ? pgwa->attrs : attrs_empty ;
 				if (add_avp(AVP_VAL_STR|(gw_attrs_avp.type),
 				gw_attrs_avp.name,val)!=0)
+					LM_ERR("failed to insert GW attrs avp\n");
+			}
+
+			if ( flags & DR_IFG_IDS_FLAG ) {
+				val.s = pgwa->id;
+				if (add_avp(AVP_VAL_STR|(gw_id_avp.type),
+				gw_id_avp.name,val)!=0)
 					LM_ERR("failed to insert GW attrs avp\n");
 			}
 			return 1;
 		}
 		pgwa = pgwa->next;
 	}
+
 	return -1;
 }
 
@@ -2059,6 +2069,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 					case 's': flags |= DR_IFG_STRIP_FLAG; break;
 					case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
 					case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
+					case 'i': flags |= DR_IFG_IDS_FLAG; break;
 					default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
 				}
 			}
@@ -2075,11 +2086,17 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 				if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
 					prefix_username(msg, &pgwa->pri);
 				/* attrs ? */
-				if (gw_attrs_avp.name!=-1) {
+				if (DR_IFG_ATTRS_FLAG && gw_attrs_avp.name!=-1) {
 					val.s = pgwa->attrs.s ? pgwa->attrs : attrs_empty ;
 					if (add_avp( AVP_VAL_STR|(gw_attrs_avp.type),
 					gw_attrs_avp.name, val))
 						LM_ERR("failed to insert attrs avp\n");
+				}
+				if ( flags & DR_IFG_IDS_FLAG ) {
+					val.s = pgwa->id;
+					if (add_avp(AVP_VAL_STR|(gw_id_avp.type),
+					gw_id_avp.name,val)!=0)
+						LM_ERR("failed to insert GW attrs avp\n");
 				}
 				return 1;
 			}
