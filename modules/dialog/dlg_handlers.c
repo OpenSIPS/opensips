@@ -1302,7 +1302,7 @@ after_unlock5:
 					if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
 						LM_ERR("failed to parse cseq header \n");
 						unref_dlg(dlg,1);
-						goto prack_check;
+						goto early_check;
 					}
 
 					msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
@@ -1312,7 +1312,7 @@ after_unlock5:
 					if (wrap == 0){
 						LM_ERR("No more shm mem\n");
 						unref_dlg(dlg, 1);
-						goto prack_check;
+						goto early_check;
 					}
 
 					wrap->dlg = dlg;
@@ -1350,12 +1350,13 @@ regular_indlg_req:
 		}
 	}
 
-prack_check:
-	if ( event==DLG_EVENT_REQPRACK && new_state==DLG_STATE_EARLY) {
+early_check:
+	if ( (event==DLG_EVENT_REQPRACK || event == DLG_EVENT_REQ)
+			&& new_state==DLG_STATE_EARLY) {
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
-		LM_DBG("PRACK successfully processed (dst_leg=%d)\n",dst_leg);
+		LM_DBG("EARLY event %d successfully processed (dst_leg=%d)\n",event,dst_leg);
 			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||
 				update_cseqs(dlg,req,dst_leg,0))
 				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
