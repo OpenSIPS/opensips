@@ -626,8 +626,8 @@ static void trace_transaction(struct dlg_cell* dlg, int type,
 		return;
 	}
 
-	/* doesn't make sense to register the reply callbacks for ACK */
-	if (params->msg->REQ_METHOD == METHOD_ACK)
+	/* doesn't make sense to register the reply callbacks for ACK or PRACK */
+	if (params->msg->REQ_METHOD & (METHOD_ACK | METHOD_PRACK))
 		return;
 
 	if(tmb.register_tmcb( params->msg, 0, TMCB_RESPONSE_IN, trace_onreply_in, 0, 0) <=0)
