@@ -499,8 +499,12 @@ int b2b_entities_restore(void)
 			dlg.ruri.len         = strlen(dlg.ruri.s);
 			dlg.from_uri.s       = (char*)row_vals[5].val.string_val;
 			dlg.from_uri.len     = strlen(dlg.from_uri.s);
+			dlg.from_dname.s     = (char*)row_vals[6].val.string_val;
+			dlg.from_dname.len   = strlen(dlg.from_dname.s);
 			dlg.to_uri.s         = (char*)row_vals[7].val.string_val;
 			dlg.to_uri.len       = strlen(dlg.to_uri.s);
+			dlg.to_dname.s       = (char*)row_vals[8].val.string_val;
+			dlg.to_dname.len     = strlen(dlg.to_dname.s);
 			dlg.tag[0].s         = (char*)row_vals[1].val.string_val;
 			dlg.tag[0].len       = dlg.tag[0].s?strlen(dlg.tag[0].s):0;
 			dlg.cseq[0]          = row_vals[14].val.int_val;
