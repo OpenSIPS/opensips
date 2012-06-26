@@ -60,7 +60,7 @@ static param_export_t params[] = {
 
 
 struct module_exports exports = {
-	"oracle",
+	"db_oracle",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
