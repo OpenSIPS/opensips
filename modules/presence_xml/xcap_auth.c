@@ -49,7 +49,8 @@ int pres_watcher_allowed(subs_t* subs)
 	xmlNodePtr node= NULL,  actions_node = NULL;
 	xmlNodePtr sub_handling_node = NULL;
 	char* sub_handling = NULL;
-	
+	int ret = 0;
+
 	/* if force_active set status to active*/
 	if(force_active)
 	{
@@ -86,7 +87,7 @@ int pres_watcher_allowed(subs_t* subs)
 			subs->reason.s= "deactivated";
 			subs->reason.len = 11;
 		}
-		return 0;
+		goto done;
 	}
 
 	subs->status= PENDING_STATUS;
@@ -96,18 +97,18 @@ int pres_watcher_allowed(subs_t* subs)
 	/* process actions */
 	actions_node = xmlNodeGetChildByName(node, "actions");
 	if(actions_node == NULL)
-	{	
+	{
 		LM_DBG("actions_node NULL\n");
-		return 0;
+		goto done;
 	}
 	LM_DBG("actions_node->name= %s\n",
 			actions_node->name);
 			
 	sub_handling_node = xmlNodeGetChildByName(actions_node, "sub-handling");
 	if(sub_handling_node== NULL)
-	{	
+	{
 		LM_DBG("sub_handling_node NULL\n");
-		return 0;
+		goto done;
 	}
 	sub_handling = (char*)xmlNodeGetContent(sub_handling_node);
 		LM_DBG("sub_handling_node->name= %s\n",
@@ -118,7 +119,8 @@ int pres_watcher_allowed(subs_t* subs)
 	if(sub_handling== NULL)
 	{
 		LM_ERR("Couldn't get sub-handling content\n");
-		return -1;
+		ret = -1;
+		goto done;
 	}
 	if( strncmp((char*)sub_handling, "block",5 )==0)
 	{	
@@ -147,14 +149,16 @@ int pres_watcher_allowed(subs_t* subs)
 	else
 	{
 		LM_ERR("unknown subscription handling action\n");
-		xmlFree(sub_handling);
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
-	xmlFree(sub_handling);
+done:
+	if (sub_handling)
+		xmlFree(sub_handling);
+	xmlFreeDoc(xcap_tree);
 
-	return 0;
-
+	return ret;
 }
 
 xmlNodePtr get_rule_node(subs_t* subs, xmlDocPtr xcap_tree )
