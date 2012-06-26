@@ -34,11 +34,11 @@ start() {
 	echo -n $"Starting $prog: "
 
 	# check whether OpenSIPs was already started
-	if status $prog > /dev/null 2>&1 ; then
+	if status -p $pidfile $prog > /dev/null 2>&1 ; then
 		echo -n "already running" && warning && echo
 		return 0
 	fi
-	
+
 	# there is something at end of this output which is needed to
 	# report proper [ OK ] status in Fedora scripts
 	daemon $oser -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
@@ -51,7 +51,7 @@ start() {
 stop() {
 	echo -n $"Stopping $prog: "
 	# check whether OpenSIPs is running
-	if ! status $prog > /dev/null 2>&1 ; then
+	if ! status -p $pidfile $prog > /dev/null 2>&1 ; then
 		echo -n "not running" && warning && echo
 		return 0
 	fi
@@ -72,7 +72,7 @@ case "$1" in
 		stop
 		;;
 	status)
-		status $prog
+		status -p $pidfile $prog
 		RETVAL=$?
 		;;
 	restart|reload)
