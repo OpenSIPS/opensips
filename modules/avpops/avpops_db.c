@@ -502,6 +502,8 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 				case DB_BITMAP:
 					avp_val.n
 						= (int)RES_ROWS(db_res)[i].values[j].val.bitmap_val;
+				case DB_BIGINT:
+					avp_val.n = (int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
 				break;
 				default:
 					goto next_avp;
