@@ -140,7 +140,7 @@ endif
 # nicer compilation?
 Q=
 NICER ?= 
-ifneq ($(NICER),)
+ifeq ($(NICER),1)
 	export Q=@
 endif
 
