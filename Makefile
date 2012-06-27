@@ -35,7 +35,7 @@
 #TLS=1
 #SCTP=1
 #FREERADIUS=1
-NICER=1
+NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
 #include  source related defs
