@@ -391,7 +391,7 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 				if (it->profile->name.len == name.len &&
 						memcmp(it->profile->name.s,name.s,name.len) == 0) {
 					LM_DBG("Profile is already linked into the dlg\n");
-					continue;
+					goto next;
 				}
 			}
 		}
@@ -404,7 +404,8 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 		}
 		if (set_dlg_profile( NULL, profile->has_value?&val:NULL, profile) < 0 )
 			LM_ERR("failed to add to profile, skipping....\n");
-
+		next:
+			;
 	} while(p!=end);
 
 	current_dlg_pointer = NULL;
@@ -1250,7 +1251,7 @@ static int sync_dlg_db_mem(void)
 				}
 
 			if (known_dlg == 0) {
-				LM_DBG("first seen dialog - load all stuff \n");
+				LM_DBG("First seen dialog - load all stuff - callid = [%.*s]\n",callid.len,callid.s);
 				GET_STR_VALUE(from_uri, values, 3, 1, 0);
 				GET_STR_VALUE(to_uri, values, 5, 1, 0);
 
