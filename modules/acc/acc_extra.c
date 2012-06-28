@@ -54,7 +54,7 @@
 	#define MAX_ACC_INT_BUF MAX_ACC_EXTRA
 #endif
 /* here we copy the strings returned by int2str (which uses a static buffer) */
-static char int_buf[INT2STR_MAX_LEN*MAX_ACC_INT_BUF];
+static char int_buf[MAX_ACC_BUFS][INT2STR_MAX_LEN*MAX_ACC_INT_BUF];
 
 static char* static_detector[2] = {NULL,NULL};
 
@@ -276,11 +276,16 @@ int extra2int( struct acc_extra *extra, int *attrs )
 
 
 int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
-											struct sip_msg *rpl, str *val_arr)
+											struct sip_msg *rpl, str *val_arr, int idx)
 {
 	pv_value_t value;
 	int n;
 	int r;
+
+	if (idx < 0 || idx > MAX_ACC_BUFS-2 /* last one is for legs */) {
+		LM_ERR("Invalid buffer index %d - maximum %d\n", idx, MAX_ACC_BUFS-2);
+		return 0;
+	}
 
 	for( n=0,r=0 ; extra ; extra=extra->next,n++) {
 		/* get the value */
@@ -315,7 +320,7 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 			/* set the value into the acc buffer */
 			if (value.rs.s+value.rs.len==static_detector[0] ||
 			value.rs.s==static_detector[1]) {
-				val_arr[n].s = int_buf + r*INT2STR_MAX_LEN;
+				val_arr[n].s = int_buf[idx] + r*INT2STR_MAX_LEN;
 				val_arr[n].len = value.rs.len;
 				memcpy(val_arr[n].s, value.rs.s, value.rs.len);
 				r++;
@@ -361,7 +366,7 @@ int legs2strar( struct acc_extra *legs, struct sip_msg *rq, str *val_arr,
 			if(avp[n]->flags & AVP_VAL_STR) {
 				val_arr[n] = value.s;
 			} else {
-				val_arr[n].s = int2bstr( value.n, int_buf+r*INT2STR_MAX_LEN,
+				val_arr[n].s = int2bstr( value.n, int_buf[MAX_ACC_BUFS-1]+r*INT2STR_MAX_LEN,
 					&val_arr[n].len);
 				r++;
 			}
