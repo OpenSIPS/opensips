@@ -49,6 +49,7 @@ struct acc_extra
 
 #define MAX_ACC_EXTRA 64
 #define MAX_ACC_LEG   16
+#define MAX_ACC_BUFS  3
 
 
 void init_acc_extra();
@@ -60,7 +61,7 @@ struct acc_extra *parse_acc_leg(char *extra);
 void destroy_extras( struct acc_extra *extra);
 
 int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
-		struct sip_msg *rpl,str *val_arr);
+		struct sip_msg *rpl,str *val_arr, int idx);
 
 int legs2strar( struct acc_extra *legs, struct sip_msg *rq,
 		str *val_arr, int start);

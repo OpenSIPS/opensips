@@ -346,7 +346,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 	m = core2strar( rq, val_arr);
 
 	/* get extra values */
-	m += extra2strar( log_extra, rq, rpl, val_arr+m);
+	m += extra2strar( log_extra, rq, rpl, val_arr+m, 0);
 
 	for ( i = 0,p = log_msg ; i<m ; i++ ) {
 		if (p + 1 + log_attrs[i].len + 1 + val_arr[i].len >= log_msg_end) {
@@ -533,7 +533,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	VAL_TIME(db_vals+(m++)) = acc_env.ts;
 
 	/* extra columns */
-	m += extra2strar( db_extra, rq, rpl, val_arr+m);
+	m += extra2strar( db_extra, rq, rpl, val_arr+m, 0);
 
 	for( i++; i < m; i++)
 		VAL_STR(db_vals+i) = val_arr[i];
@@ -803,7 +803,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 	ADD_AAA_AVPAIR( RA_TIME_STAMP, &av_type, -1);
 
 	/* add extra also */
-	attr_cnt += extra2strar( aaa_extra, req, rpl, val_arr+attr_cnt);
+	attr_cnt += extra2strar( aaa_extra, req, rpl, val_arr+attr_cnt, 0);
 
 	/* add the values for the vector - start from 1 instead of
 	 * 0 to skip the first value which is the METHOD as string */
@@ -1158,7 +1158,7 @@ int acc_diam_request( struct sip_msg *req, struct sip_msg *rpl)
 	}
 
 	/* also the extra attributes */
-	attr_cnt += extra2strar( dia_extra, rpl, req, val_arr);
+	attr_cnt += extra2strar( dia_extra, rpl, req, val_arr, 0);
 
 	/* add attributes */
 	for(i=0; i<attr_cnt; i++) {
@@ -1390,7 +1390,7 @@ static int build_extra_dlg_values(struct acc_extra *extra,
 	int nr, i;
 
 	cdr_buf.len = 2;
-	nr = extra2strar(extra, req, reply, val_arr);
+	nr = extra2strar(extra, req, reply, val_arr, 0);
 
 	for (i=0; i<nr; i++)
 		if (set_dlg_value(&val_arr[i]) < 0)
@@ -1562,7 +1562,7 @@ static int prebuild_extra_arr(struct dlg_cell *dlg, struct sip_msg *msg,
 	start += extra_len;
 
 	/* populate the extra from bye */
-	return  start + extra2strar(extra, msg, NULL, val_arr + start);
+	return  start + extra2strar(extra, msg, NULL, val_arr + start, 1);
 }
 
 
