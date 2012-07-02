@@ -159,7 +159,7 @@ int wait_for_all_children(void)
 	int procs_no,i,ret;
 	char rc;
 
-	procs_no = count_init_children();
+	procs_no = count_init_children(PROC_FLAG_INITCHILD);
 	for (i=0;i<procs_no;i++) {
 		ret = wait_status_code(&rc);
 		if (ret < 0 || rc < 0)

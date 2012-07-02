@@ -193,11 +193,11 @@ pid_t internal_fork(char *proc_desc)
 }
 
 /* returns the number of child processes
- * that are going to run child_init()
+ * filter all processes that have set the flags set
  *
  * used for proper status return code
  */
-int count_init_children(void)
+int count_init_children(int flags)
 {
 	int ret=0,i;
 	struct sr_module *m;
@@ -232,7 +232,7 @@ skip_listeners:
 			if (!m->exports->procs[i].no || !m->exports->procs[i].function)
 				continue;
 			
-			if (m->exports->procs[i].flags & PROC_FLAG_INITCHILD)
+			if (!flags || (m->exports->procs[i].flags & flags))
 				ret+=m->exports->procs[i].no;
 		}
 	}
