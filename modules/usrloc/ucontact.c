@@ -605,11 +605,11 @@ int db_update_ucontact(ucontact_t* _c)
 	vals2[2].nul = 0;
 	vals2[2].val.int_val = _c->cseq;
 
-	vals2[3].type = DB_INT;
+	vals2[3].type = DB_BITMAP;
 	vals2[3].nul = 0;
 	vals2[3].val.bitmap_val = _c->flags;
 
-	vals2[4].type = DB_INT;
+	vals2[4].type = DB_BITMAP;
 	vals2[4].nul = 0;
 	vals2[4].val.bitmap_val = _c->cflags;
 
