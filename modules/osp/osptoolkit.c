@@ -44,7 +44,7 @@ typedef struct _osp_usage {
     time_t connect;             /* Call connect time */
     unsigned haspdd;            /* Is PDD Info present */
     unsigned pdd;               /* Post Dial Delay, in seconds */
-    unsigned release;           /* EP that released the call */
+    OSPE_RELEASE release;       /* EP that released the call */
 } osp_usage;
 
 /*
@@ -95,7 +95,7 @@ void ospReportUsageWrapper(
     time_t ospvConnectTime,
     unsigned ospvIsPDDInfoPresent,
     unsigned ospvPostDialDelay,
-    unsigned ospvReleaseSource)
+    OSPE_RELEASE ospvReleaseSource)
 {
     osp_usage* usage;
     OSPTTHREADID threadid;

@@ -205,7 +205,7 @@ static int ospReportUsageFromCookie(
     struct sip_msg* msg,
     char* cookie,
     OSPT_CALL_ID* callid,
-    int release,
+    OSPE_RELEASE release,
     OSPE_ROLE type)
 {
     char* tmp;
@@ -330,20 +330,7 @@ static int ospReportUsageFromCookie(
         to,
         nexthop);
 
-    if (release == OSP_RELEASE_ORIG) {
-        LM_DBG("orig '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
-            firstvia,
-            callid->Length,
-            callid->Value,
-            transid);
-        if (originator == NULL) {
-            originator = firstvia;
-        }
-        calling = from;
-        called = to;
-        terminator = nexthop;
-    } else {
-        release = OSP_RELEASE_TERM;
+    if (release == OSPC_RELEASE_DESTINATION) {
         LM_DBG("term '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
             firstvia,
             callid->Length,
@@ -355,6 +342,26 @@ static int ospReportUsageFromCookie(
         calling = to;
         called = from;
         terminator = firstvia;
+    } else {
+        if (release == OSPC_RELEASE_SOURCE) {
+            LM_DBG("orig '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
+                firstvia,
+                callid->Length,
+                callid->Value,
+                transid);
+        } else {
+            LM_DBG("unknown '%s' released the call, call_id '%.*s' transaction_id '%llu'\n",
+                firstvia,
+                callid->Length,
+                callid->Value,
+                transid);
+        }
+        if (originator == NULL) {
+            originator = firstvia;
+        }
+        calling = from;
+        called = to;
+        terminator = nexthop;
     }
 
     errorcode = OSPPTransactionNew(_osp_provider, &transaction);
@@ -448,7 +455,7 @@ int ospReportUsage(
     char* whorelease,
     char* ignore2)
 {
-    int release;
+    OSPE_RELEASE release;
     char* tmp;
     char* token;
     char parameters[OSP_HEADERBUF_SIZE];
@@ -459,8 +466,8 @@ int ospReportUsage(
 
     if (callid != NULL) {
         /* Who releases the call first, 0 orig, 1 term */
-        if (sscanf(whorelease, "%d", &release) != 1 || (release != OSP_RELEASE_ORIG && release != OSP_RELEASE_TERM)) {
-            release = OSP_RELEASE_ORIG;
+        if (sscanf(whorelease, "%d", &release) != 1 || ((release != OSPC_RELEASE_SOURCE) && (release != OSPC_RELEASE_DESTINATION))) {
+            release = OSPC_RELEASE_UNKNOWN;
         }
         LM_DBG("who releases the call first '%d'\n", release);
 
@@ -582,7 +589,7 @@ static int ospReportUsageFromDestination(
         dest->time200,                                        /* In - Call connect time */
         dest->time180 ? 1 : 0,                                /* In - Is PDD Info present */
         dest->time180 ? dest->time180 - dest->authtime : 0,   /* In - Post Dial Delay */
-        OSP_RELEASE_TERM);
+        ((dest->lastcode == 200) || (dest->lastcode == 300)) ? OSPC_RELEASE_UNKNOWN : OSPC_RELEASE_INTERNAL);
 
     return 0;
 }
