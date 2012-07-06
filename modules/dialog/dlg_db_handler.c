@@ -717,7 +717,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+15, cell->legs[callee_leg].r_cseq);
 		SET_INT_VALUE(values+16,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
 		SET_INT_VALUE(values+17,cell->legs[callee_leg].last_gen_cseq);
-		SET_INT_VALUE(values+18, cell->flags);
+		SET_INT_VALUE(values+18, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED));
 		SET_STR_VALUE(values+19, cell->legs[DLG_CALLER_LEG].route_set);
 		SET_STR_VALUE(values+20, cell->legs[callee_leg].route_set);
 		SET_STR_VALUE(values+21, cell->legs[DLG_CALLER_LEG].contact);
@@ -1034,7 +1034,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_INT_VALUE(values+21, cell->legs[callee_leg].last_gen_cseq);
 
 				set_final_update_cols(values+22, cell, on_shutdown);
-				SET_INT_VALUE(values+25, cell->flags);
+				SET_INT_VALUE(values+25, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED));
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
