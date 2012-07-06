@@ -735,6 +735,7 @@ static int mod_init(void)
 				"of 2 as it should be -> rounding from %d to %d\n",
 				dlg_hash_size, 1<<(n-1));
 			dlg_hash_size = 1<<(n-1);
+			break;
 		}
 	}
 
