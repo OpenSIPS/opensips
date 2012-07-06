@@ -240,6 +240,7 @@ static int h350_auth_lookup_fixup(void** param, int param_no)
     if (param_no == 1) 
 	{
 		s.s = (char*)*param;
+		s.len = strlen(s.s);
 		if (s.s==0 || s.s[0]==0) {
             model = 0;
 		} else {
