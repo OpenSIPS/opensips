@@ -48,7 +48,6 @@ extern char _osp_in_device[];
 extern char _osp_out_device[];
 extern int _osp_non_sip;
 extern int _osp_max_dests;
-extern int _osp_redir_uri;
 extern int _osp_snid_avpid;
 extern unsigned short _osp_snid_avptype;
 extern int _osp_cinfo_avpid;
@@ -62,7 +61,7 @@ const int OSP_MAIN_ROUTE = 1;
 const int OSP_BRANCH_ROUTE = 0;
 
 static int ospLoadRoutes(OSPTTRANHANDLE trans, int destcount, char* source, char* srcdev, char* snid, char* origcalled, time_t authtime, char* rpid, char* pai, char* divuser, char* divhost, char* pci);
-static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int format, int redirect);
+static int ospPrepareDestination(struct sip_msg* msg, int isfirst, int type, int redirect);
 static int ospSetCalling(struct sip_msg* msg, osp_dest* dest);
 
 /*
@@ -706,7 +705,6 @@ int ospCheckCalling(
  * param msg SIP message
  * param isfirst Is first destination
  * param type Main or branch route block
- * param format URI format
  * param redirect Is for redirect
  * return MODULE_RETURNCODE_TRUE success MODULE_RETURNCODE_FALSE failure
  */
@@ -714,7 +712,6 @@ static int ospPrepareDestination(
     struct sip_msg* msg,
     int isfirst,
     int type,
-    int format,
     int redirect)
 {
     char buffer[OSP_HEADERBUF_SIZE];
@@ -723,7 +720,7 @@ static int ospPrepareDestination(
     int result = MODULE_RETURNCODE_FALSE;
 
     if (dest != NULL) {
-        ospRebuildDestionationUri(&newuri, dest, format);
+        ospRebuildDestinationUri(&newuri, dest);
 
         LM_INFO("prepare route to URI '%.*s' for call_id '%.*s' transaction_id '%llu'\n",
             newuri.len,
@@ -788,7 +785,7 @@ int ospPrepareRoute(
     int result = MODULE_RETURNCODE_TRUE;
 
     /* The first parameter will be ignored */
-    result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_BRANCH_ROUTE, 0, 0);
+    result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_BRANCH_ROUTE, 0);
 
     return result;
 }
@@ -808,9 +805,9 @@ int ospPrepareRedirectRoutes(
 {
     int result = MODULE_RETURNCODE_TRUE;
 
-    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 1);
+    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, 1);
         result == MODULE_RETURNCODE_TRUE;
-        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 1))
+        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, 1))
     {
     }
 
@@ -832,9 +829,9 @@ int ospPrepareAllRoutes(
 {
     int result = MODULE_RETURNCODE_TRUE;
 
-    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 0);
+    for(result = ospPrepareDestination(msg, OSP_FIRST_ROUTE, OSP_MAIN_ROUTE, 0);
         result == MODULE_RETURNCODE_TRUE;
-        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, _osp_redir_uri, 0))
+        result = ospPrepareDestination(msg, OSP_NEXT_ROUTE, OSP_MAIN_ROUTE, 0))
     {
     }
 

@@ -71,7 +71,7 @@ int ospGetSourceDevice(struct sip_msg* msg, char* srcaddr, int bufsize);
 int ospGetSource(struct sip_msg* msg, char* srcaddr, int bufsize);
 int ospGetCallId(struct sip_msg* msg, OSPT_CALL_ID** callid);
 int ospGetRouteParameters(struct sip_msg* msg, char* routeparams, int bufsize);
-int ospRebuildDestionationUri(str* newuri, osp_dest* dest, int format);
+int ospRebuildDestinationUri(str* newuri, osp_dest* dest);
 int ospGetNextHop(struct sip_msg* msg, char* nexthop, int bufsize);
 int ospGetNpParameters(struct sip_msg* msg, char* rn, int rnbufsize, char* cic, int cicbufsize, int* npdi);
 int ospGetOperatorName(struct sip_msg* msg, OSPE_OPERATOR_NAME type, char* name, int namebufsize);

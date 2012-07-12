@@ -217,7 +217,7 @@ modparam("osp","support_nonsip_protocol",0)
     </section>
     <section>
       <title><varname>max_destinations</varname></title>
-      <para>The max_destinations (integer) parameter defines the maximum number of destinations that OpenSIPS requests the peering server to return in a peering response. The OSP module supports up to 12 destiantions.  The default value is 12.</para>
+      <para>The max_destinations (integer) parameter defines the maximum number of destinations that OpenSIPS requests the peering server to return in a peering response. The OSP module supports up to 12 destinations.  The default value is 12.</para>
       <example>
         <title>Setting the number of destination</title>
         <programlisting format="linespecific">
@@ -256,16 +256,6 @@ modparam("osp","use_number_portablity",1)
       </example>
     </section>
     <section>
-      <title><varname>redirection_uri_format</varname></title>
-      <para>The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP module will use "&lt;xxxxxxxxxx@xxx.xxx.xxx.xxx&gt;" URI in the SIP redirection messages. The default value is 1</para>
-      <example>
-        <title>Setting the redirection URI format</title>
-        <programlisting format="linespecific">
-modparam("osp","redirection_uri_format",1)
-        </programlisting>
-      </example>
-    </section>
-    <section>
       <title><varname>append_userphone</varname></title>
       <para>The append_userphone (integer) parameter instructs the OSP module if to append "user=phone" parameter in URI. If this value is set to 0, the OSP module does not append "user=phone" parameter. If this value is set to 1, the OSP module will append "user=phone" parameter. The default value is 0</para>
       <example>
@@ -281,7 +271,6 @@ modparam("osp","append_userphone",0)
       <para>0 - network ID is not appended.</para>
       <para>1 - network ID is appended as userinfo parameter.</para>
       <para>2 - network ID is appended as URI parameter.</para>
-      <para>3 - network ID is appended as header parameter. Only works when redirection_uri_format is 1.</para>
       <example>
         <title>Append networkid location</title>
         <programlisting format="linespecific">

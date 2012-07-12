@@ -68,7 +68,6 @@ extern int _osp_non_sip;
 extern int _osp_max_dests;
 extern int _osp_report_nid;
 extern int _osp_use_np;
-extern int _osp_redir_uri;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
@@ -161,7 +160,6 @@ static param_export_t params[]={
     { "max_destinations",                 INT_PARAM, &_osp_max_dests },
     { "report_networkid",                 INT_PARAM, &_osp_report_nid },
     { "use_number_portability",           INT_PARAM, &_osp_use_np },
-    { "redirection_uri_format",           INT_PARAM, &_osp_redir_uri },
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
     { "networkid_location",               INT_PARAM, &_osp_dnid_location},
     { "networkid_parameter",              STR_PARAM, &_osp_dnid_param },
@@ -335,7 +333,7 @@ static int ospVerifyParameters(void)
         result = -1;
     }
 
-    if ((_osp_dnid_location < 0) || (_osp_dnid_location > 3)) {
+    if ((_osp_dnid_location < 0) || (_osp_dnid_location > 2)) {
         _osp_dnid_location = OSP_DEF_DNIDLOC;
         LM_WARN("networkid_location is out of range, reset to %d\n", OSP_DEF_DNIDLOC);
     }
@@ -428,7 +426,6 @@ static void ospDumpParameters(void)
     LM_INFO("    timeout '%d' ", _osp_timeout);
     LM_INFO("    validate_call_id '%d' ", _osp_validate_callid);
     LM_INFO("    use_number_portability '%d' ", _osp_use_np);
-    LM_INFO("    redirection_uri_format '%d' ", _osp_redir_uri);
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
     LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
     LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
