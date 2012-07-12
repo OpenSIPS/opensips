@@ -54,7 +54,6 @@
 #define OSP_DEF_REPORTNID               3
 #define OSP_DEF_NONSIP                  0
 #define OSP_DEF_USENP                   1
-#define OSP_DEF_REDIRURI                1   /* 0 for "xxxxxxxxxx@xxx.xxx.xxx.xxx", 1 for "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" format */
 #define OSP_DEF_USERPHONE               0
 #define OSP_DEF_DNIDLOC                 2
 #define OSP_DEF_DNIDPARAM               "networkid"

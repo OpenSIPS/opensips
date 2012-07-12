@@ -757,13 +757,11 @@ int ospGetRouteParameters(
  * Rebuild URI
  * param newuri URI to be built, newuri.len includes buffer size
  * param dest Destination data structure
- * param format URI format
  * return 0 success, -1 failure
  */
-int ospRebuildDestionationUri(
+int ospRebuildDestinationUri(
     str* newuri,
-    osp_dest* dest,
-    int format)
+    osp_dest* dest)
 {
     static const str TRANS = { ";transport=tcp", 14 };
     static const str USERPHONE = { ";user=phone", 11 };
@@ -800,7 +798,7 @@ int ospRebuildDestionationUri(
     /* destination network ID parameter */
     dnidsize = (_osp_dnid_location && dest->dnid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->dnid) : 0;
 
-    LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d) '%d'\n",
+    LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d)\n",
         dest->called,
         calledsize,
         dest->host,
@@ -816,16 +814,12 @@ int ospRebuildDestionationUri(
         dest->opname[OSPC_OPNAME_MNC],
         userparamsize,
         dest->dnid,
-        uriparamsize,
-        format);
+        uriparamsize);
 
-    /* "sip:" + called + NP + "@" + host + " SIP/2.0" for URI format 0 */
-    /* "sip:" + called + NP + "@" + host + ";user=phone SIP/2.0" for URI format 0 with user=phone */
-    /* "<sip:" + called + NP + "@" + host + "> SIP/2.0" for URI format 1 */
-    /* "<sip:" + called + NP + "@" + host + ";user=phone> SIP/2.0" for URI format 1 with user=phone */
-    /* "<sip:" + called + NP + "@" + host + ";user=phone" + ";_osp_dnid_param=" + dnid + "> SIP/2.0" or
-       "<sip:" + called + NP + ";_osp_dnid_param=" + dnid + "@" + host + ";user=phone"> SIP/2.0" */
-    if (newuri->len < (1 + 4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + 1 + 1 + 7 + TRANS.len)) {
+    /* "sip:" + called + NP + "@" + host + ";user=phone" + ";_osp_dnid_param=" + dnid + " SIP/2.0" or
+       "sip:" + called + NP + ";_osp_dnid_param=" + dnid + "@" + host + ";user=phone" SIP/2.0" */
+    /* OpenSIPS will add "<>" for the Contact headers of SIP 3xx messages */
+    if (newuri->len < (4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + 1 + 7 + TRANS.len)) {
         LM_ERR("new uri buffer is too small\n");
         newuri->len = 0;
         return -1;
@@ -833,9 +827,6 @@ int ospRebuildDestionationUri(
 
     buffer = newuri->s;
 
-    if (format == 1) {
-      *buffer++ = '<';
-    }
     *buffer++ = 's';
     *buffer++ = 'i';
     *buffer++ = 'p';
@@ -899,15 +890,6 @@ int ospRebuildDestionationUri(
     if ((_osp_dnid_location == 2) && (dest->dnid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
         buffer += count;
-    }
-
-    if (format == 1) {
-        *buffer++ = '>';
-
-        if ((_osp_dnid_location == 3) && (dest->dnid[0] != '\0')) {
-            count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
-            buffer += count;
-        }
     }
 
 /*
