@@ -64,10 +64,6 @@ pv_spec_t * attr_pvar = NULL;
 str default_param_s = str_init(DEFAULT_PARAM);
 dp_param_p default_par2 = NULL;
 
-/* reader-writers lock */
-rw_lock_t *ref_lock = NULL; 
-
-
 static param_export_t mod_params[]={
 	{ "db_url",			STR_PARAM,	&dp_db_url.s },
 	{ "table_name",		STR_PARAM,	&dp_table_name.s },
@@ -176,12 +172,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* create & init lock */
-	if ((ref_lock = lock_init_rw()) == NULL) {
-		LM_CRIT("failed to init lock\n");
-		return -1;
-	}
-
 	if(init_data() != 0) {
 		LM_ERR("could not initialize data\n");
 		return -1;
@@ -209,11 +199,6 @@ static void mod_destroy(void)
 		attr_pvar = NULL;
 	}
 	destroy_data();
-
-	if (ref_lock) {
-		lock_destroy_rw( ref_lock );
-		ref_lock = 0;
-	}
 }
 
 
@@ -228,7 +213,6 @@ static int dp_get_ivalue(struct sip_msg* msg, dp_param_p dp, int *val)
 	pv_value_t value;
 
 	if(dp->type==DP_VAL_INT) {
-		LM_DBG("integer value\n");
 		*val = dp->v.id;
 		return 0;
 	}
@@ -297,6 +281,7 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	dpl_id_p idp;
 	dp_param_p id_par, repl_par;
 	str attrs, * attrs_par;
+	dp_table_list_p table;
 
 	if(!msg)
 		return -1;
@@ -316,11 +301,12 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	}
 
 	LM_DBG("input is %.*s\n", input.len, input.s);
+	table = id_par->hash ? id_par->hash : dp_get_default_table();
 
 	/* ref the data for reading */
-	lock_start_read( ref_lock );
+	lock_start_read( table->ref_lock );
 
-	if ((idp = select_dpid(dpid)) ==0 ){
+	if ((idp = select_dpid(table, dpid)) ==0 ){
 		LM_DBG("no information available for dpid %i\n", dpid);
 		goto error;
 	}
@@ -342,13 +328,13 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	}
 
 	/* we are done reading -> unref the data */
-	lock_stop_read( ref_lock );
+	lock_stop_read( table->ref_lock );
 
 	return 1;
 
 error:
 	/* we are done reading -> unref the data */
-	lock_stop_read( ref_lock );
+	lock_stop_read( table->ref_lock );
 
 	return -1;
 }
@@ -362,6 +348,48 @@ error:
 		}\
 	}while(0);
 
+/**
+ * Parses a dp command of the type "table_name/dpid". Skips all whitespaces.
+ */
+static char *parse_dp_command(char * p, int len, str * table_name)
+{
+	char *s, *q;
+	
+	while (*p == ' ') {
+		p++;
+		len--;
+	}
+
+	if (len <= 0) {
+		s = strchr(p, '/');
+	} else {
+		s = memchr(p, '/', len);
+	}
+
+	if (s != 0) {
+		q = s+1;
+
+		while (s > p && *(s-1) == ' ')
+			s--;
+
+		if (s == p || (*q == '\0'))
+			return NULL;
+
+		table_name->s = p;
+		table_name->len = s-p;
+
+		p = q;
+
+		while (*p == ' ')
+			p++;
+
+	} else {
+		table_name->s = 0;
+		table_name->len = 0;
+	}
+
+	return p;
+}
 
 /* first param: DPID: type: INT, AVP, SVAR
  * second param: SRC/DST type: RURI, RURI_USERNAME, AVP, SVAR
@@ -371,8 +399,9 @@ static int dp_trans_fixup(void ** param, int param_no){
 
 	int dpid;
 	dp_param_p dp_par= NULL;
-	char *p, *s=NULL;
-	str lstr;
+	char *p, *s = NULL;
+	str lstr, table_name;
+	dp_table_list_t *list = NULL;
 
 	if(param_no!=1 && param_no!=2) 
 		return 0;
@@ -383,8 +412,6 @@ static int dp_trans_fixup(void ** param, int param_no){
 		return E_CFG;
 	}
 
-	LM_DBG("param_no is %i\n", param_no);
-
 	dp_par = (dp_param_p)pkg_malloc(sizeof(dp_param_t));
 	if(dp_par == NULL){
 		LM_ERR("no more pkg memory\n");
@@ -393,9 +420,26 @@ static int dp_trans_fixup(void ** param, int param_no){
 	memset(dp_par, 0, sizeof(dp_param_t));
 
 	if(param_no == 1) {
+
+		p = parse_dp_command(p, -1, &table_name);
+		
+		if (p == NULL) {
+			LM_ERR("Invalid dp command\n");
+			return E_CFG;
+		}
+			
+		if (table_name.s && table_name.len) {
+			list = dp_add_table(&table_name);
+
+			if (list == NULL) {
+				LM_ERR("Unable to alloc table entry\n");
+				return E_OUT_OF_MEM;
+			}
+		}
+		
 		if(*p != '$') {
 			dp_par->type = DP_VAL_INT;
-			lstr.s = *param; lstr.len = strlen(*param);
+			lstr.s = p; lstr.len = strlen(p);
 			if(str2sint(&lstr, &dpid) != 0) {
 				LM_ERR("bad number <%s>\n",(char *)(*param));
 				pkg_free(dp_par);
@@ -404,7 +448,8 @@ static int dp_trans_fixup(void ** param, int param_no){
 
 			dp_par->type = DP_VAL_INT;
 			dp_par->v.id = dpid;
-		}else{
+
+		} else {
 			lstr.s = p; lstr.len = strlen(p);
 			if (pv_parse_spec( &lstr, &dp_par->v.sp[0])==NULL)
 				goto error;
@@ -412,6 +457,8 @@ static int dp_trans_fixup(void ** param, int param_no){
 			verify_par_type(dp_par->v.sp[0]);
 			dp_par->type = DP_VAL_SPEC;
 		}
+
+		dp_par->hash = list;
 	} else {
 		if( ((s = strchr(p, '/')) == 0) ||( *(s+1)=='\0'))
 				goto error;
@@ -448,11 +495,32 @@ error:
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 {
-	struct mi_root* rpl_tree= NULL;
+	struct mi_node *node = NULL;
+	struct mi_root *rpl_tree = NULL;
+	dp_table_list_t *el;
 
-	if(dp_load_db() != 0){
-		LM_ERR("failed to reload database data\n");
-		return 0;
+
+	if (cmd_tree)
+		node = cmd_tree->node.kids;
+
+	if (node == NULL) {
+			/* Reload rules from all tables */
+			if(dp_load_all_db() != 0){
+					LM_ERR("failed to reload database\n");
+					return 0;
+			}
+	} else if (node->value.s == NULL || node->value.len == 0) {
+			return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	} else {
+			el = dp_get_table(&node->value);	
+			if (!el)
+					return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+			/* Reload rules from specified table */
+			LM_DBG("Reloading rules from table %.*s\n", node->value.len, node->value.s);
+			if(dp_load_db(el) != 0){
+					LM_ERR("failed to reload database data\n");
+					return 0;
+			}
 	}
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
@@ -473,12 +541,14 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 
 	struct mi_root* rpl= NULL;
 	struct mi_node* root, *node;
+	char *p;
 	dpl_id_p idp;
-	str dpid_str;
+	str dpid_str, table_str;
 	str input;
 	int dpid;
 	str attrs;
 	str output= {0, 0};
+	dp_table_list_p table = NULL;
 
 	node = cmd->node.kids;
 	if(node == NULL)
@@ -490,6 +560,28 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		LM_ERR( "empty idp parameter\n");
 		return init_mi_tree(404, "Empty id parameter", 18);
 	}
+	
+	p = parse_dp_command(dpid_str.s, dpid_str.len, &table_str);
+
+	if (p == NULL) {
+		LM_ERR("Invalid dp command\n");
+		return init_mi_tree(404, "Invalid dp command", 18);
+	}
+
+	if (table_str.s == NULL || table_str.len == 0) {
+		table = dp_get_default_table();
+	} else {
+		table = dp_get_table(&table_str);
+	}
+
+	dpid_str.len -= (p - dpid_str.s);
+	dpid_str.s = p;
+	
+	if (!table) {
+		LM_ERR("Unable to get table\n");
+		return init_mi_tree(400, "Wrong db table parameter", 24);
+	}
+
 	if(str2sint(&dpid_str, &dpid) != 0)	{
 		LM_ERR("Wrong id parameter - should be an integer\n");
 		return init_mi_tree(404, "Wrong id parameter", 18);
@@ -501,19 +593,18 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	if(node->next!= NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	input=  node->value;
+	input = node->value;
 	if(input.s == NULL || input.len== 0)	{
 		LM_ERR( "empty input parameter\n");
 		return init_mi_tree(404, "Empty input parameter", 21);
 	}
-	LM_DBG("input is %.*s\n", input.len, input.s);
 
 	/* ref the data for reading */
-	lock_start_read( ref_lock );
+	lock_start_read( table->ref_lock );
 
-	if ((idp = select_dpid(dpid)) ==0 ){
+	if ((idp = select_dpid(table, dpid)) ==0 ){
 		LM_ERR("no information available for dpid %i\n", dpid);
-		lock_stop_read( ref_lock );
+		lock_stop_read( table->ref_lock );
 		return init_mi_tree(404, "No information available for dpid", 33);
 	}
 
@@ -523,7 +614,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		goto error1;
 	}
 	/* we are done reading -> unref the data */
-	lock_stop_read( ref_lock );
+	lock_stop_read( table->ref_lock );
 
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
@@ -545,7 +636,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	return rpl;
 error1:
 	/* we are done reading -> unref the data */
-	lock_stop_read( ref_lock );
+	lock_stop_read( table->ref_lock );
 
 error:
 	if(rpl)

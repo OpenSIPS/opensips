@@ -47,7 +47,7 @@ Andreea-Ancuta Onofrei
 
         1.7. Exported Functions
 
-              1.7.1. dp_translate(id, src/dest)
+              1.7.1. dp_translate(table/id, src/dest)
 
         1.8. Exported MI Functions
 
@@ -74,6 +74,7 @@ Andreea-Ancuta Onofrei
    1.12. Set attrs_pvar parameter
    1.13. dp_translate usage
    1.14. dp_translate usage
+   1.15. dp_translate usage
 
 Chapter 1. Admin Guide
 
@@ -344,14 +345,16 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 
 1.7. Exported Functions
 
-1.7.1.  dp_translate(id, src/dest)
+1.7.1.  dp_translate(table/id, src/dest)
 
    Will try to translate the src string into dest string according
    to the translation rules with dialplan ID equal to id.
 
    Meaning of the parameters is as follows:
-     * id -the dialplan id of the possible matching rules. This
-       parameter can have the following types:
+     * table/id - the dialplan id of the possible matching rules
+       from the given table. The table parameter can be ommited.
+       The default table is dialplan. The id parameter can have
+       the following types:
           + integer- the dialplan id is statically assigned
           + pvar -the dialplan id is the value of an existing
             pseudo-variable (as interger value)
@@ -378,6 +381,13 @@ dp_translate("$var(x)", "$avp(src)/$var(y)");
 xlog("translated to var $var(y) \n");
 ...
 
+   Example 1.15. dp_translate usage
+...
+$avp(src) = $uri.user;
+dp_translate("example_table/$var(x)", "$avp(src)/$var(y)");
+xlog("translated to var $var(y) \n");
+...
+
 1.8. Exported MI Functions
 
 1.8.1. dp_reload
@@ -387,7 +397,9 @@ xlog("translated to var $var(y) \n");
 
    Name: dp_reload
 
-   Parameters: none
+   Parameters: 1
+     * table_name - Table to be realoaded. If no table is
+       specified, the dialplan table will be reloaded.
 
    MI DATAGRAM Command Format:
                 :dp_reload:
@@ -401,14 +413,16 @@ xlog("translated to var $var(y) \n");
    Name: dp_translate
 
    Parameters: 2
-     * Dial plan ID
+     * Table Name/Dialplan ID - The table where the dpid rules
+       will be searched. Table Name can be ommited. Default table
+       is dialplan.
      * Input String
 
    MI DATAGRAM Command Format:
-            :dp_translate:
-            dpid
-            input
-                _empty_line_
+        :dp_translate:
+        dpid
+        input
+        _empty_line_
 
 1.9. Installation
 

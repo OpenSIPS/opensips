@@ -57,8 +57,13 @@ extern str repl_exp_column;
 extern str attrs_column; 
 extern str disabled_column; 
 
+struct dp_param_list;
+
 int init_db_data();
 int dp_connect_db();
+struct dp_table_list * dp_add_table(str * table);
+struct dp_table_list * dp_get_table(str * table);
+struct dp_table_list * dp_get_default_table();
 void dp_disconnect_db();
 
 #endif

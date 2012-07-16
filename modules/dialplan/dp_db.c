@@ -59,19 +59,24 @@ static db_func_t dp_dbf;
 	}while(0);
 
 void destroy_rule(dpl_node_t * rule);
-void destroy_hash(int);
+void destroy_hash(dpl_id_t **rules_hash);
 
 dpl_node_t * build_rule(db_val_t * values);
-int add_rule2hash(dpl_node_t *, int);
+int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table);
 
 void list_rule(dpl_node_t * );
-void list_hash(int h_index);
+void list_hash(dpl_id_t * , rw_lock_t *);
 
 
-dpl_id_p* rules_hash = NULL;
-int * crt_idx, *next_idx;
+dp_table_list_p dp_tables = NULL;
+dp_table_list_p dp_default_table = NULL;
 
-int init_db_data(void)
+dp_table_list_p dp_get_default_table(void)
+{
+	return dp_default_table;
+}
+
+int init_db_data(dp_table_list_p dp_table)
 {
 	if(dp_table_name.s == 0){
 		LM_ERR("invalid database table name\n");
@@ -83,17 +88,17 @@ int init_db_data(void)
 		LM_ERR("unable to bind to a database driver\n");
 		return -1;
 	}
-
+	
 	if(dp_connect_db() !=0)
 		return -1;
 
-	if(db_check_table_version(&dp_dbf, dp_db_handle, &dp_table_name,
+	if(db_check_table_version(&dp_dbf, dp_db_handle, &dp_table->table_name,
 	DP_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
 		goto error;
 	}
 
-	if(dp_load_db() != 0){
+	if(dp_load_db(dp_table) != 0){
 		LM_ERR("failed to load database data\n");
 		goto error;
 	}
@@ -135,27 +140,11 @@ void dp_disconnect_db(void)
 
 int init_data(void)
 {
-	int *p;
-
-	rules_hash = (dpl_id_p *)shm_malloc(2*sizeof(dpl_id_p));
-	if(!rules_hash) {
-		LM_ERR("out of shm memory\n");
+	dp_default_table = dp_add_table(&dp_table_name);
+	if (!dp_default_table) {
+		LM_ERR("couldn't add the default table\n");
 		return -1;
 	}
-	rules_hash[0] = rules_hash[1] = 0;
-
-	p = (int *)shm_malloc(2*sizeof(int));
-	if(!p){
-		LM_ERR("out of shm memory\n");
-		return -1;
-	}
-	crt_idx = p;
-	next_idx = p+1;
-	*crt_idx = *next_idx = 0;
-
-	LM_DBG("trying to initialize data from db\n");
-	if(init_db_data() != 0)
-		return -1;
 
 	return 0;
 }
@@ -163,20 +152,33 @@ int init_data(void)
 
 void destroy_data(void)
 {
-	if(rules_hash){
-		destroy_hash(0);
-		destroy_hash(1);
-		shm_free(rules_hash);
-		rules_hash = 0;
-	}
+	dp_table_list_t *el, *next;
 
-	if(crt_idx)
-		shm_free(crt_idx);
+	for (el = dp_tables; el && (next = el->next, 1); el = next) {
+		destroy_hash(&el->hash[0]);
+		destroy_hash(&el->hash[1]);
+		lock_destroy_rw(el->ref_lock);
+		shm_free(el);
+		el = 0;
+	}
+}
+
+int dp_load_all_db(void)
+{
+	dp_table_list_t *el;
+
+	for (el = dp_tables; el; el = el->next) {
+			if (dp_load_db(el) < 0) {
+					LM_ERR("unable to load %.*s table\n", el->table_name.len, el->table_name.s);
+					return -1;
+			}
+	}
+	return 0;
 }
 
 
 /*load rules from DB*/
-int dp_load_db(void)
+int dp_load_db(dp_table_list_p dp_table)
 {
 	int i, nr_rows;
 	db_res_t * res = 0;
@@ -193,13 +195,13 @@ int dp_load_db(void)
 
 	dpl_node_t *rule;
 	int no_rows = 10;
-
-	if( (*crt_idx) != (*next_idx)){
+	
+	if( dp_table->crt_index != dp_table->next_index){
 		LM_WARN("a load command already generated, aborting reload...\n");
 		return 0;
 	}
 
-	if (dp_dbf.use_table(dp_db_handle, &dp_table_name) < 0){
+	if (dp_dbf.use_table(dp_db_handle, &dp_table->table_name) < 0){
 		LM_ERR("error in use_table\n");
 		return -1;
 	}
@@ -234,9 +236,9 @@ int dp_load_db(void)
 
 	nr_rows = RES_ROW_N(res);
 
-	lock_start_write( ref_lock );
+	lock_start_write( dp_table->ref_lock );
 
-	*next_idx = ((*crt_idx) == 0)? 1:0;
+	dp_table->next_index = dp_table->crt_index == 0 ? 1 : 0;
 
 	if(nr_rows == 0){
 		LM_WARN("no data in the db\n");
@@ -253,7 +255,7 @@ int dp_load_db(void)
 				continue;
 			}
 
-			if(add_rule2hash(rule , *next_idx) != 0) {
+			if(add_rule2hash(rule , dp_table) != 0) {
 				LM_ERR("add_rule2hash failed\n");
 				goto err2;
 			}
@@ -264,7 +266,7 @@ int dp_load_db(void)
 				LM_ERR("failure while fetching!\n");
 				if (res)
 					dp_dbf.free_result(dp_db_handle, res);
-				lock_stop_write( ref_lock );
+				lock_stop_write( dp_table->ref_lock );
 				return -1;
 			}
 		} else {
@@ -274,27 +276,27 @@ int dp_load_db(void)
 	
 
 end:
-	destroy_hash(*crt_idx);
+	destroy_hash(&dp_table->hash[dp_table->crt_index]);
 	/*update data*/
-	*crt_idx = *next_idx;
+	dp_table->crt_index = dp_table->next_index;
 
 	/* release the exclusive writing access */
-	lock_stop_write( ref_lock );
+	lock_stop_write( dp_table->ref_lock );
 
-	list_hash(*crt_idx);
+	list_hash(dp_table->hash[dp_table->crt_index], dp_table->ref_lock);
 
 	dp_dbf.free_result(dp_db_handle, res);
 	return 0;
 
 err2:
 	if(rule)	destroy_rule(rule);
-	destroy_hash(*next_idx);
+	destroy_hash(&dp_table->hash[dp_table->next_index]);
 	dp_dbf.free_result(dp_db_handle, res);
-	*next_idx = *crt_idx; 
+	dp_table->next_index = dp_table->crt_index;
 	/* if lock defined - release the exclusive writing access */
-	if(ref_lock)
+	if(dp_table->ref_lock)
 		/* release the readers */
-		lock_stop_write( ref_lock );
+		lock_stop_write( dp_table->ref_lock );
 	return -1;
 }
 
@@ -436,24 +438,20 @@ err:
 }
 
 
-int add_rule2hash(dpl_node_t * rule, int h_index)
+int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table)
 {
-	dpl_id_p crt_idp, last_idp;
+	dpl_id_p crt_idp;
 	dpl_index_p indexp, last_indexp, new_indexp;
 	int new_id;
 
-	if(!rules_hash){
+	if(!table){
 		LM_ERR("data not allocated\n");
 		return -1;
 	}
 
 	new_id = 0;
 
-	/*search for the corresponding dpl_id*/
-	for(crt_idp = last_idp =rules_hash[h_index]; crt_idp!= NULL; 
-		last_idp = crt_idp, crt_idp = crt_idp->next)
-		if(crt_idp->dp_id == rule->dpid)
-			break;
+	crt_idp = select_dpid(table, rule->dpid);
 
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
@@ -509,8 +507,8 @@ add_rule:
 	indexp->last_rule = rule;
 
 	if(new_id){
-			crt_idp->next = rules_hash[h_index];
-			rules_hash[h_index] = crt_idp;
+			crt_idp->next = table->hash[table->next_index];
+			table->hash[table->next_index] = crt_idp;
 	}
 	LM_DBG("added the rule id %i index %i pr %i next %p to the "
 		"index with %i len\n", rule->dpid, rule->matchlen,
@@ -525,16 +523,16 @@ err:
 }
 
 
-void destroy_hash(int index)
+void destroy_hash(dpl_id_t **rules_hash)
 {
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
 	dpl_node_p rulep;
 
-	if(!rules_hash[index])
+	if(!rules_hash || !*rules_hash)
 		return;
 
-	for(crt_idp = rules_hash[index]; crt_idp != NULL;){
+	for(crt_idp = *rules_hash; crt_idp != NULL;){
 
 		for(indexp = crt_idp->first_index; indexp != NULL;){
 
@@ -554,13 +552,13 @@ void destroy_hash(int index)
 			
 		}
 
-		rules_hash[index] = crt_idp->next;
+		*rules_hash = crt_idp->next;
 		shm_free(crt_idp);
 		crt_idp = 0;
-		crt_idp = rules_hash[index];
+		crt_idp = *rules_hash;
 	}
 
-	rules_hash[index] = 0;
+	*rules_hash = 0;
 }
 
 
@@ -596,14 +594,14 @@ void destroy_rule(dpl_node_t * rule){
 }
 
 
-dpl_id_p select_dpid(int id)
+dpl_id_p select_dpid(dp_table_list_p table, int id)
 {
 	dpl_id_p idp;
 
-	if(!rules_hash || !crt_idx)
+	if(!table || !table->crt_index || !table->hash[table->crt_index])
 		return NULL;
 
-	for(idp = rules_hash[*crt_idx]; idp!=NULL; idp = idp->next)
+	for(idp = table->hash[table->crt_index]; idp!=NULL; idp = idp->next)
 		if(idp->dp_id == id)
 			return idp;
 	
@@ -611,20 +609,20 @@ dpl_id_p select_dpid(int id)
 }
 
 
-/*FOR DEBUG PURPOSE*/
-void list_hash(int h_index)
+/* FOR DEBUG PURPOSES */
+void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 {
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
 	dpl_node_p rulep;
+	
+	if(!hash)
+		return;
 
 	/* lock the data for reading */
 	lock_start_read( ref_lock );
 
-	if(!rules_hash[h_index])
-		goto done;
-
-	for(crt_idp=rules_hash[h_index]; crt_idp!=NULL; crt_idp = crt_idp->next){
+	for(crt_idp=hash; crt_idp!=NULL; crt_idp = crt_idp->next){
 		LM_DBG("DPID: %i, pointer %p\n", crt_idp->dp_id, crt_idp);
 		for(indexp=crt_idp->first_index; indexp!=NULL;indexp= indexp->next){
 			LM_DBG("INDEX LEN: %i\n", indexp->len);
@@ -634,7 +632,6 @@ void list_hash(int h_index)
 		}
 	}
 
-done:
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
 }
@@ -650,4 +647,57 @@ void list_rule(dpl_node_t * rule)
 		rule->repl_exp.len, rule->repl_exp.s,
 		rule->attrs.len,	rule->attrs.s);
 	
+}
+
+dp_table_list_p dp_get_table(str * table)
+{
+	dp_table_list_t *el;
+
+	el = dp_tables;
+	while (el && str_strcmp(table, &el->table_name)) {
+		el = el->next;
+	}
+
+	return el;
+}
+
+dp_table_list_p dp_add_table(str * table)
+{
+	dp_table_list_t *el;
+
+	if ((el = dp_get_table(table)) != NULL)
+		return el;
+
+	el = shm_malloc(sizeof(*el) + table->len);
+
+	if (el == NULL) {
+		LM_ERR("No more shm mem\n");
+		return NULL;
+	}
+
+	memset(el, 0, sizeof(*el));
+
+	/* create & init lock */
+	if((el->ref_lock = lock_init_rw()) == NULL) {
+		LM_ERR("Failed to init lock\n");
+		shm_free(el);
+		return NULL;
+	}
+
+	el->table_name.s = (char *)(el + 1);
+	el->table_name.len = table->len;
+	memcpy(el->table_name.s, table->s, table->len);
+
+	if (init_db_data(el) != 0) {
+		LM_ERR("Unable to init db data\n");
+		shm_free(el);
+		return NULL;
+	}
+
+	el->next = dp_tables;
+	dp_tables = el;
+
+	LM_DBG("Added dialplan table [%.*s].\n", table->len, table->s);
+
+	return el;
 }

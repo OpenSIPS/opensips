@@ -66,6 +66,15 @@ typedef struct dpl_id{
 	struct dpl_id * next;
 }dpl_id_t,*dpl_id_p;
 
+typedef struct dp_table_list {
+	dpl_id_t *hash[2];
+	str table_name;
+	int crt_index, next_index;
+
+	rw_lock_t *ref_lock;
+
+	struct dp_table_list * next;
+} dp_table_list_t, *dp_table_list_p;
 
 #define DP_VAL_INT		0
 #define DP_VAL_SPEC		1
@@ -76,13 +85,15 @@ typedef struct dp_param{
 		int id;
 		pv_spec_t sp[2];
 	} v;
+	dp_table_list_p hash;
 }dp_param_t, *dp_param_p;
 
 int init_data();
 void destroy_data();
-int dp_load_db();
+int dp_load_db(dp_table_list_p dp_table);
+int dp_load_all_db(void);
 
-dpl_id_p select_dpid(int id);
+dpl_id_p select_dpid(dp_table_list_p table, int id);
 
 struct subst_expr* repl_exp_parse(str subst);
 void repl_expr_free(struct subst_expr *se);

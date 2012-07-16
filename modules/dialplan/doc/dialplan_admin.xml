@@ -528,7 +528,7 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 	
 	<section>
 	<title>
-		<function moreinfo="none">dp_translate(id, src/dest)</function>
+		<function moreinfo="none">dp_translate(table/id, src/dest)</function>
 	</title>
 	<para>
 	Will try to translate the src string into dest string according to 
@@ -538,8 +538,9 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 	<itemizedlist>
 	<listitem>
 		<para>
-		<emphasis>id</emphasis> -the dialplan id of the possible matching rules.
-		This parameter can have the following types:
+		<emphasis>table/id</emphasis> - the dialplan id of the possible matching rules from the given table.
+		The table parameter can be ommited. The default table is dialplan.
+		The id parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
@@ -594,6 +595,16 @@ xlog("translated to var $var(y) \n");
 ...
 	</programlisting>
 	</example>
+	<example>
+	<title><function>dp_translate</function> usage</title>
+	<programlisting format="linespecific">
+...
+$avp(src) = $uri.user;
+dp_translate("example_table/$var(x)", "$avp(src)/$var(y)");
+xlog("translated to var $var(y) \n");
+...
+	</programlisting>
+	</example>
 
 	</section>
 
@@ -611,7 +622,13 @@ xlog("translated to var $var(y) \n");
 		<para>
 		Name: <emphasis>dp_reload</emphasis>
 		</para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters: <emphasis>1</emphasis></para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>table_name</emphasis> - Table to be realoaded.
+				If no table is specified, the dialplan table will be reloaded.</para>
+				</listitem>
+			</itemizedlist>
  		<para>
 		MI DATAGRAM Command Format:
 		</para>
@@ -633,7 +650,8 @@ xlog("translated to var $var(y) \n");
         <para>Parameters: <emphasis>2</emphasis></para>
         	<itemizedlist>
                 <listitem>
-                <para><emphasis>Dial plan ID</emphasis></para>
+                <para><emphasis>Table Name/Dialplan ID</emphasis> - The table where the dpid rules will
+				be searched. Table Name can be ommited. Default table is dialplan.</para>
                 </listitem>
                 <listitem>
                 <para><emphasis>Input String</emphasis></para>
@@ -643,10 +661,10 @@ xlog("translated to var $var(y) \n");
 		MI DATAGRAM Command Format:
 		</para>
         <programlisting  format="linespecific">
-            :dp_translate:
-            dpid
-            input
-		_empty_line_
+        :dp_translate:
+        dpid
+        input
+        _empty_line_
 		</programlisting>
 		</section>
 	</section>
@@ -655,7 +673,7 @@ xlog("translated to var $var(y) \n");
 		<title>Installation</title>
 		<para>
 		The modules requires one table in OpenSIPS database: dialplan.The SQL 
-		syntax to create them can be found in dialplan-create.sql     
+		syntax to create them can be found in dialplan-create.sql
 		script in the database directories in the opensips/scripts folder.
 		You can also find the complete database documentation on the
 		project webpage, &osipsdbdocslink;.
