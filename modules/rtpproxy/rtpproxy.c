@@ -965,6 +965,10 @@ mod_init(void)
 	int i;
 	float timeout;
 
+	if (rtpproxy_autobridge != 0) {
+		LM_WARN("Auto bridging does not properly function when doing serial/parallel forking\n");
+	}
+
 	if (nortpproxy_str.s==NULL || nortpproxy_str.s[0]==0) {
 		nortpproxy_str.len = 0;
 		nortpproxy_str.s = NULL;

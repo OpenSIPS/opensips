@@ -263,7 +263,8 @@ modparam("rtpproxy", "rtpproxy_timeout", "0.2")
 
 1.5.4. rtpproxy_autobridge (integer)
 
-   Enable auto-bridging feature
+   Enable auto-bridging feature. Does not properly function when
+   doing serial/parallel forking!
 
    Default value is “0”.
 
