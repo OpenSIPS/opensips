@@ -470,15 +470,25 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl)
 {
     unsigned int count, i;
-
+	char *ip, *mask;
+	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
     count = table[PERM_MAX_SUBNETS].grp;
 
     for (i = 0; i < count; i++) {
+		ip = ip_addr2a(&table[i].subnet->ip);
+		if (!ip) {
+			LM_ERR("cannot print ip address\n");
+			continue;
+		}
+		strcpy(ip_buff, ip);
+		mask = ip_addr2a(&table[i].subnet->mask);
+		if (!mask) {
+			LM_ERR("cannot print mask address\n");
+			continue;
+		}
 		if (addf_mi_node_child(rpl, 0, 0, 0,
 			       "%4d <%u, %s, %s, %u>",
-			       i, table[i].grp, 
-				   ip_addr2a(&table[i].subnet->ip),
-			       ip_addr2a(&table[i].subnet->mask),
+			       i, table[i].grp, ip_buff, mask,
 				   table[i].port) == 0)
 	    	return -1;
     }
