@@ -48,7 +48,6 @@
 static gen_lock_t *extra_lock;
 static struct usr_avp *global_avps = 0;
 static struct usr_avp **crt_avps  = &global_avps;
-static struct usr_avp *last_avp = NULL ;
 
 static map_t avp_map = 0;
 static map_t avp_map_shm = 0;
@@ -158,6 +157,7 @@ int add_avp(unsigned short flags, int name, int_str val)
 int add_avp_last(unsigned short flags, int name, int_str val)
 {
 	struct usr_avp* avp;
+	struct usr_avp* last_avp;
 
 	avp = new_avp(flags, name, val);
 	if(avp == NULL) {
@@ -165,13 +165,8 @@ int add_avp_last(unsigned short flags, int name, int_str val)
 		return -1;
 	}
 
-	/* check and update for end of list */
-	if (last_avp==NULL)
-		/* never got a end of list */
-		last_avp=*crt_avps;
-	if (last_avp && last_avp->next)
-		/* end of list not updated */
-		for( ; last_avp && last_avp->next ; last_avp=last_avp->next);
+	/* get end of the list */
+	for( last_avp=*crt_avps ; last_avp && last_avp->next ; last_avp=last_avp->next);
 
 	if (last_avp==NULL) {
 		avp->next = *crt_avps;
@@ -466,7 +461,6 @@ void reset_avps(void)
 	
 	if ( crt_avps!=&global_avps) {
 		crt_avps = &global_avps;
-		last_avp = NULL;
 	}
 	destroy_avp_list( crt_avps );
 }
@@ -480,7 +474,6 @@ struct usr_avp** set_avp_list( struct usr_avp **list )
 
 	foo = crt_avps;
 	crt_avps = list;
-	last_avp = NULL;
 	return foo;
 }
 
