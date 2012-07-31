@@ -376,10 +376,7 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 		detached = 0;
 
 		if (current->flags & DLG_FLAG_PING_CALLER) {
-			dlg_lock_dlg(current);
 			if (current->legs[DLG_CALLER_LEG].reply_received == 0) {
-				dlg_unlock_dlg(current);
-
 				detach_node_unsafe(it);
 				detached=1;
 
@@ -391,16 +388,11 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 					ret = it;
 				}
 			}
-			else
-				dlg_unlock_dlg(current);
 		}
 
 		if (detached == 0) {
 			if (current->flags & DLG_FLAG_PING_CALLEE) {
-				dlg_lock_dlg(current);
 				if (current->legs[callee_idx(current)].reply_received == 0) {
-					dlg_unlock_dlg(current);
-
 					detach_node_unsafe(it);
 					if (ret == NULL)
 						ret = it;
@@ -410,8 +402,6 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 						ret = it;
 					}
 				}
-				else
-					dlg_unlock_dlg(current);
 			}
 		}
 	}
@@ -463,9 +453,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 		return;
 	}
 
-	dlg_lock_dlg(dlg);
 	dlg->legs[DLG_CALLER_LEG].reply_received = 1;
-	dlg_unlock_dlg(dlg);
 }
 
 /* Duplicate code for the sake of quickly knowing where the reply came from,
@@ -511,9 +499,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 		return;
 	}
 
-	dlg_lock_dlg(dlg);
 	dlg->legs[callee_idx(dlg)].reply_received = 1;
-	dlg_unlock_dlg(dlg);
 }
 
 void unref_dlg_cb(void *dlg)
