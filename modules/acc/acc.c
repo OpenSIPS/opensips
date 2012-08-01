@@ -1543,7 +1543,7 @@ static int prebuild_extra_arr(struct dlg_cell *dlg, struct sip_msg *msg,
 {
 	short extra_len;
 
-	if (!start || !type_str || !msg || !buffer) {
+	if (!start || !type_str || !buffer) {
 		LM_ERR("invalid parameters\n");
 		return -1;
 	}
@@ -1562,7 +1562,7 @@ static int prebuild_extra_arr(struct dlg_cell *dlg, struct sip_msg *msg,
 	start += extra_len;
 
 	/* populate the extra from bye */
-	return  start + extra2strar(extra, msg, NULL, val_arr + start, 1);
+	return  start + (msg?extra2strar(extra, msg, NULL, val_arr + start, 1):0);
 }
 
 

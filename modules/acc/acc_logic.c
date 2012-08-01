@@ -565,7 +565,8 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	unsigned int flags;
-	if (!_params || !_params->msg) {
+
+	if (!_params) {
 		LM_ERR("not enough info\n");
 		return;
 	}
