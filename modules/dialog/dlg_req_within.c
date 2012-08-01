@@ -47,6 +47,7 @@
 
 
 extern str dlg_extra_hdrs;
+extern int last_dst_leg;
 
 int free_tm_dlg(dlg_t *td)
 {
@@ -401,9 +402,11 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	}
 
 	callee = callee_idx(dlg);
+	last_dst_leg = DLG_CALLER_LEG;
 	if ( send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
 		res--;
 	}
+	last_dst_leg = callee;
 	if (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
 		res--;
 	}
