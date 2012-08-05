@@ -100,7 +100,14 @@ static inline int get_local_contact(struct socket_info *sock, str* contact)
 	/* write "sip:ip" */
 	memcpy(contact->s+contact->len, "sip:", 4);
 	contact->len+= 4;
-	memcpy(contact->s+contact->len, sock->address_str.s, sock->address_str.len);
+
+	/* if advertised address is set for this interface, use this one */
+	if (sock->adv_name_str.s) {
+		memcpy(contact->s+contact->len, sock->adv_name_str.s, sock->adv_name_str.len);
+	}
+	else {
+		memcpy(contact->s+contact->len, sock->address_str.s, sock->address_str.len);
+	}
 	contact->len += sock->address_str.len;
 	if(contact->len> LCONTACT_BUF_SIZE - 21)
 	{
@@ -109,6 +116,14 @@ static inline int get_local_contact(struct socket_info *sock, str* contact)
 	}
 
 	/* write ":port" if port defined */
+	if (sock->adv_name_str.s) {
+		if(sock->adv_port_str.s) {
+			*(contact->s+(contact->len++)) = ':';
+			memcpy(contact->s+contact->len, sock->adv_port_str.s, sock->adv_port_str.len);
+			contact->len += sock->adv_port_str.len;
+		}
+	}
+	else
 	if (sock->port_no_str.len) {
 		*(contact->s+(contact->len++)) = ':';
 		memcpy(contact->s+contact->len, sock->port_no_str.s, sock->port_no_str.len);
