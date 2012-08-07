@@ -371,6 +371,7 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg)
 	str name, val;
 	char *end;
 	char *p;
+	char bk;
 
 	end = b + l;
 	p = b;
@@ -386,8 +387,22 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg)
 		/* add to the profile */
 		profile = search_dlg_profile( &name );
 		if (profile==NULL) {
-			LM_ERR("profile <%.*s> does not exist anymore\n",name.len,name.s);
-			continue;
+			LM_DBG("profile <%.*s> does not exist now, creating it\n",name.len,name.s);
+			/* create a new one */
+			bk = name.s[name.len];
+			name.s[name.len] = 0;
+			if (add_profile_definitions(name.s, (val.len && val.s)?1:0 ) != 0) {
+				LM_ERR("failed to add dialog profile <%.*s>\n", name.len, name.s);
+				name.s[name.len] = bk;
+				continue;
+			}
+			name.s[name.len] = bk;
+			/* double check the created profile */
+			profile = search_dlg_profile(&name);
+			if (profile == NULL) {
+				LM_CRIT("BUG - cannot find just added dialog profile <%.*s>\n", name.len, name.s);
+				continue;
+			}
 		}
 		if (set_dlg_profile( NULL, profile->has_value?&val:NULL, profile) < 0 )
 			LM_ERR("failed to add to profile, skipping....\n");
