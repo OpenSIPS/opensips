@@ -36,6 +36,7 @@
 #include "action.h"
 #include "route.h"
 #include "parser/msg_parser.h"
+#include "parser/parse_rr.h"
 #include "mem/mem.h"
 
 
