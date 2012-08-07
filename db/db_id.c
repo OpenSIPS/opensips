@@ -84,21 +84,20 @@ static int parse_db_url(struct db_id* id, const str* url)
 	const char* begin;
 	char* prev_token;
 
-	prev_token = 0;
-
 	if (!id || !url || !url->s) {
-		goto err;
+		return -1;
 	}
-	
+
 	len = url->len;
 	if (len < SHORTEST_DB_URL_LEN) {
-		goto err;
+		return -1;
 	}
-	
+
 	/* Initialize all attributes to 0 */
 	memset(id, 0, sizeof(struct db_id));
 	st = ST_SCHEME;
 	begin = url->s;
+	prev_token = 0;
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
