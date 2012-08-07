@@ -872,6 +872,8 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	/* is the dialog already created? */
 	if (current_dlg_pointer!=NULL)
 	{
+		/*Clear current flags before setting new ones*/
+		current_dlg_pointer->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | DLG_FLAG_BYEONTIMEOUT);
 		current_dlg_pointer->flags |= flags;
 		return 1;
 	}
