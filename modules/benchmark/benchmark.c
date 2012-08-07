@@ -417,6 +417,13 @@ static int _bm_register_timer(char *tname, int mode, unsigned int *id)
 		return -1;
 	}
 
+	if (!lock_init(bmt->lock)) {
+		lock_dealloc(bmt->lock);
+		shm_free(bmt);
+		LM_ERR("failed to init lock\n");
+		return -1;
+	}
+
 	/* private memory, otherwise we have races */
 	bmt->start = (bm_timeval_t*)pkg_malloc(sizeof(bm_timeval_t)); 
 	if(bmt->start == NULL)
