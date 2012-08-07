@@ -847,18 +847,6 @@ error:
 
 
 
-static unsigned int c_tcp_con_lifetime = 0;
-static int c_tcp_con_id = -1;
-
-
-void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
-{
-	c_tcp_con_lifetime = get_ticks() + timeout;
-	c_tcp_con_id = rcv->proto_reserved1;
-}
-
-
-
 /*! \brief  releases expired connections and cleans up bad ones (state<0) */
 static inline void tcp_receive_timeout(void)
 {
@@ -880,9 +868,6 @@ static inline void tcp_receive_timeout(void)
 		}
 		if (con->timeout<=ticks){
 			/* expired, return to "tcp main" */
-			if (c_tcp_con_id==con->id) {
-				con->lifetime = c_tcp_con_lifetime;
-			}
 			LM_DBG("%p expired (%d, %d) lt=%d\n",
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */

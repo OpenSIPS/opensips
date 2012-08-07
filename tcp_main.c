@@ -1174,16 +1174,27 @@ error:
 
 
 
+void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
+{
+	struct tcp_connection* con;
+	unsigned int lifetime = get_ticks() + timeout;
+
+	con = tcpconn_id_hash[rcv->proto_reserved1];
+	con->lifetime = lifetime;
+}
+
+
+
 static inline void set_tcp_timeout(struct tcp_connection *c)
 {
 	unsigned int timeout = get_ticks() + tcp_con_lifetime;
 
 	if (c->lifetime) {
-		if ( c->lifetime < timeout )
+		if ( c->lifetime < timeout ) {
 			c->timeout = timeout;
-		else
+			c->lifetime = 0;
+		} else
 			c->timeout = c->lifetime;
-		c->lifetime = 0;
 	} else {
 		c->timeout = timeout;
 	}
