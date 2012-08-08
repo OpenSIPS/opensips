@@ -1562,7 +1562,7 @@ static int prebuild_extra_arr(struct dlg_cell *dlg, struct sip_msg *msg,
 	start += extra_len;
 
 	/* populate the extra from bye */
-	return  start + (msg?extra2strar(extra, msg, NULL, val_arr + start, 1):0);
+	return  start + extra2strar(extra, msg, NULL, val_arr + start, 1);
 }
 
 
