@@ -104,11 +104,12 @@ static inline int get_local_contact(struct socket_info *sock, str* contact)
 	/* if advertised address is set for this interface, use this one */
 	if (sock->adv_name_str.s) {
 		memcpy(contact->s+contact->len, sock->adv_name_str.s, sock->adv_name_str.len);
+		contact->len += sock->adv_name_str.len;
 	}
 	else {
 		memcpy(contact->s+contact->len, sock->address_str.s, sock->address_str.len);
+		contact->len += sock->address_str.len;
 	}
-	contact->len += sock->address_str.len;
 	if(contact->len> LCONTACT_BUF_SIZE - 21)
 	{
 		LM_ERR("buffer overflow\n");
