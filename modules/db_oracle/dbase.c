@@ -182,10 +182,17 @@ void db_oracle_close(db_con_t* _h)
  */
 int db_oracle_free_result(db_con_t* _h, db_res_t* _r)
 {
+	ub4 i;
+
 	if (!_h || !_r) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
+
+	if (RES_NAMES(_r))
+		for (i=0; i < RES_COL_N(_r); ++i)
+			if (RES_NAMES(_r)[i]->s)
+				pkg_free(RES_NAMES(_r)[i]->s);
 
 	if (db_free_result(_r) < 0)
 	{
