@@ -87,7 +87,8 @@ static int get_columns(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 		LM_ERR("could not allocate columns\n");
 		return -4;
 	}
-	memset(RES_NAMES(_r), 0, sizeof(db_key_t) * n);
+	for (i = 0; i < n; ++i)
+		memset(RES_NAMES(_r)[i], 0, sizeof(db_key_t));
 
 	RES_COL_N(_r) = n;
 
