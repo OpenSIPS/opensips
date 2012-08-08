@@ -58,7 +58,35 @@ int db_oracle_val2bind(bmap_t* _m, const db_val_t* _v, OCIDate* _o)
 	if (VAL_NULL(_v)) {
 		_m->addr = NULL;
 		_m->size = 0;
-		_m->type = SQLT_NON;
+		switch(VAL_TYPE(_v)) {
+			case DB_INT:
+				_m->type = SQLT_INT;
+				break;
+			case DB_BIGINT:
+				_m->type = SQLT_NUM;
+				break;
+			case DB_BITMAP:
+				_m->type = SQLT_UIN;
+				break;
+			case DB_DOUBLE:
+				_m->type = SQLT_FLT;
+				break;
+			case DB_STRING:
+				_m->type = SQLT_STR;
+				break;
+			case DB_STR:
+				_m->type = SQLT_CHR;
+				break;
+			case DB_DATETIME:
+				_m->type = SQLT_ODT;
+				break;
+			case DB_BLOB:
+				_m->type = SQLT_CLOB;
+				break;
+			default:
+				LM_ERR("unknown data type\n");
+				return -1;
+		}
 		return 0;
 	}
 
