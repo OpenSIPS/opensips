@@ -286,6 +286,16 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 		LM_ERR("Invalid buffer index %d - maximum %d\n", idx, MAX_ACC_BUFS-2);
 		return 0;
 	}
+	
+	if (!rq) {
+		/* no SIP message - probably internally terminated dialog
+			just nullify everything and skip them */
+		for (n=0; extra ; extra=extra->next,n++) {
+			val_arr[n].s = 0;
+			val_arr[n].len = 0;
+		}
+		return n;
+	}
 
 	for( n=0,r=0 ; extra ; extra=extra->next,n++) {
 		/* get the value */
