@@ -374,16 +374,30 @@ int init_cachedb_utils(void)
 struct dlg_profile_table* search_dlg_profile(str *name)
 {
 	struct dlg_profile_table *profile;
+	char *p,*e;
+	int use_cached=0;
+	str profile_name = *name;
+
+	/* check if this is a shared profile, and remove /s for lookup */
+	p = memchr(profile_name.s, '/', profile_name.len);
+
+	if (p) {
+		e = profile_name.s + profile_name.len;
+		profile_name.len = p - profile_name.s;
+		trim_spaces_lr( profile_name );
+		/* skip spaces after p */
+		for (++p; *p == ' ' && p < e; p++);
+		if ( p < e && *p == 's')
+		use_cached=1;
+	}
 
 	for( profile=profiles ; profile ; profile=profile->next ) {
-		if (name->len==profile->name.len &&
-		memcmp(name->s,profile->name.s,name->len)==0 )
+		if (profile->use_cached == use_cached && profile_name.len ==profile->name.len &&
+		memcmp(profile_name.s,profile->name.s,profile_name.len)==0 )
 			return profile;
 	}
 	return NULL;
 }
-
-
 
 static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		unsigned int has_value, unsigned use_cached)
