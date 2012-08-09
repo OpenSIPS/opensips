@@ -67,8 +67,10 @@ struct lb_resource *get_resource_by_name(struct lb_data *data, str *name)
 
 	for( res=data->resources ; res ; res=res->next ) {
 		if (name->len==res->name.len && 
-		memcmp( name->s, res->name.s, name->len)==0)
+		memcmp( name->s, res->name.s, name->len)==0) {
+			LM_DBG("found resource [%.*s]\n",name->len,name->s);
 			return res;
+		}
 	}
 
 	return NULL;

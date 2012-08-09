@@ -160,9 +160,9 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 				goto error1;
 			}
 			val.len = ( end?end:(r_list+strlen(r_list)) ) - val.s;
-			for( ; isspace(val.s[val.len]) ; val.len--);
+			for( ; isspace(val.s[val.len-1]) ; val.len--);
 			if (str2int( &val , &lb_rl->resources[n].val)!=0) {
-				LM_ERR("invalid value %.*s\n",val.len,val.s);
+				LM_ERR("invalid value [%.*s]\n",val.len,val.s);
 				goto error1;
 			}
 		} else {
