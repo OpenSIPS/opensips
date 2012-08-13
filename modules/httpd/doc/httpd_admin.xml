@@ -64,7 +64,7 @@
 		<title>Set <varname>ip</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_http", "ip", "127.0.0.1")
+modparam("httpd", "ip", "127.0.0.1")
 ...
 </programlisting>
 		</example>
@@ -83,7 +83,7 @@ modparam("mi_http", "ip", "127.0.0.1")
 		<title>Set <varname>port</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_http", "port", 8000)
+modparam("httpd", "port", 8000)
 ...
 </programlisting>
 		</example>
@@ -105,7 +105,7 @@ modparam("mi_http", "port", 8000)
 		<title>Set <varname>buf_size</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_http", "buf_size", 524288)
+modparam("httpd", "buf_size", 524288)
 ...
 </programlisting>
 		</example>
