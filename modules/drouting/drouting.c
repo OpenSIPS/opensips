@@ -1477,9 +1477,10 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 
 
 	n = 0;
+	wl_list = NULL;
 
 	/* if only checking the prefix, we are done here */
-	if (flags & DR_PARAM_ONLY_CHECK) 
+	if (flags & DR_PARAM_ONLY_CHECK)
 		goto no_gws;
 
 	if (rt_info->pgwl==NULL) {
@@ -1500,7 +1501,6 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	if (whitelist) {
 		if (fixup_get_svalue(msg, whitelist, &parsed_whitelist)!=0) {
 			LM_ERR("failed to evaluate whitelist-> ignoring...\n");
-			wl_list = NULL;
 		} else {
 			tmp = parsed_whitelist.s[parsed_whitelist.len];
 			parsed_whitelist.s[parsed_whitelist.len] = 0;
@@ -1511,8 +1511,6 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 			}
 			parsed_whitelist.s[parsed_whitelist.len] = tmp;
 		}
-	} else {
-		wl_list = NULL;
 	}
 
 	/* iterate through the list, skip the disabled destination */
