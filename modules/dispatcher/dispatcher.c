@@ -338,7 +338,7 @@ static int mod_init(void)
 		hash_param_model = NULL;
 	}
 
-	if (ds_setid_pvname.s && (ds_setid_pvname.len=strlen(ds_setid_pvname.s)>0 )) {
+	if (ds_setid_pvname.s && (ds_setid_pvname.len=strlen(ds_setid_pvname.s))>0 ) {
 		if(pv_parse_spec(&ds_setid_pvname, &ds_setid_pv)==NULL
 				|| !pv_is_w(&ds_setid_pv))
 		{
