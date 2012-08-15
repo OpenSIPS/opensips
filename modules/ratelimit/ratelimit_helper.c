@@ -80,13 +80,6 @@ static cachedb_con *cdbc = 0;
 #define RL_USE_CDB(_p) \
 	(cdbc && (_p)->algo!=PIPE_ALGO_NETWORK && (_p)->algo!=PIPE_ALGO_FEEDBACK)
 
-/* sets the pending flag for a pipe */
-#define RL_SET_PENDING(_p) ((_p)->pending++)
-/* resets the pending flag for a pipe */
-#define RL_RESET_PENDING(_p) ((_p)->pending--)
-/* returns true if the pipe has pending state */
-#define RL_IS_PENDING(_p) ((_p)->pending)
-
 
 
 static str rl_name_buffer = {0, 0};
@@ -111,11 +104,8 @@ static inline int rl_set_name(str * name)
 /* NOTE: assumes that the pipe has been locked. If fails, releases the lock */
 static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 {
-	unsigned int hid = RL_GET_INDEX(*name);
 	int new_counter;
 
-	RL_SET_PENDING(pipe);
-	RL_RELEASE_LOCK(hid);
 	if (rl_set_name(name) < 0)
 		return -1;
 
@@ -126,8 +116,6 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 		return -1;
 	}
 
-	RL_GET_LOCK(hid);
-	RL_RESET_PENDING(pipe);
 	pipe->my_counter = c ? pipe->my_counter + c : 0;
 	pipe->counter = new_counter;
 	LM_DBG("changed with %d; my_counter: %d; counter: %d\n",
@@ -136,15 +124,11 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 	return 0;
 }
 
-/* NOTE: assumes that the pipe has been locked. If fails, releases the lock */
+/* NOTE: assumes that the pipe has been locked */
 static int rl_get_counter(str *name, rl_pipe_t * pipe)
 {
 	str res;
-	unsigned int hid = RL_GET_INDEX(*name);
 	int new_counter;
-
-	RL_SET_PENDING(pipe);
-	RL_RELEASE_LOCK(hid);
 
 	if (rl_set_name(name) < 0)
 		return -1;
@@ -158,8 +142,7 @@ static int rl_get_counter(str *name, rl_pipe_t * pipe)
 	}
 	if (res.s)
 		pkg_free(res.s);
-	RL_GET_LOCK(hid);
-	RL_RESET_PENDING(pipe);
+
 	pipe->counter = new_counter;
 	return 0;
 }
@@ -473,8 +456,6 @@ void rl_timer(unsigned int ticks, void *param)
 			/* check to see if it is expired */
 			if ((*pipe)->last_used + rl_expire_time < now) {
 				/* this pipe is engaged in a transaction */
-				if (RL_USE_CDB(*pipe) && RL_IS_PENDING(*pipe))
-					goto next_pipe;
 				del = it;
 				if (iterator_prev(&it) < 0) {
 					LM_DBG("cannot find previous iterator\n");
@@ -668,7 +649,7 @@ int w_rl_set_count(str key, int val)
 	if (RL_USE_CDB(*pipe)) {
 		if (rl_change_counter(&key, *pipe, val) < 0) {
 			LM_ERR("cannot decrease counter\n");
-			return -1;
+			goto release;
 		}
 	} else {
 		if (val && val < (*pipe)->counter) {
