@@ -1164,67 +1164,67 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
 
-	if(dst_avp_name >= 0)
+	/* do some AVP cleanup before start populating new ones */
+	destroy_avps( 0 /*all types*/, dst_avp_name, 1 /*all*/);
+	destroy_avps( 0 /*all types*/, grp_avp_name, 1 /*all*/);
+	destroy_avps( 0 /*all types*/, cnt_avp_name, 1 /*all*/);
+	destroy_avps( 0 /*all types*/,sock_avp_name, 1 /*all*/);
+	if (attrs_avp_name>0)
+		destroy_avps( 0 /*all types*/,attrs_avp_name, 1 /*all*/);
+
+
+	if(ds_use_default!=0 && ds_id!=idx->nr-1)
 	{
-		if(ds_use_default!=0 && ds_id!=idx->nr-1)
-		{
-			if (push_ds_2_avps( &idx->dlist[idx->nr-1] ) != 0 )
-				return -1;
-			cnt++;
-		}
-	
-		inactive_dst_count = count_inactive_destinations(idx);
-		/* don't count inactive and default entries into total */
-		destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_use_default!=0);
-		destination_entries_to_skip -= max_results;
-
-		/* add to avp */
-
-		for(i_unwrapped = ds_id-1+idx->nr; i_unwrapped>ds_id; i_unwrapped--) {
-			i = i_unwrapped % idx->nr;
-
-			if((idx->dlist[i].flags & DS_INACTIVE_DST)
-					|| (ds_use_default!=0 && i==(idx->nr-1)))
-				continue;
-			if(destination_entries_to_skip > 0) {
-				LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n", set, i, max_results);
-				destination_entries_to_skip--;
-				continue;
-			}
-
-			LM_DBG("using entry [%d/%d]\n", set, i);
-			if (push_ds_2_avps( &idx->dlist[i] ) != 0 )
-				return -1;
-			cnt++;
-		}
-
-		/* add to avp the first used dst */
-		avp_val.s = idx->dlist[ds_id].uri;
-		if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
+		if (push_ds_2_avps( &idx->dlist[idx->nr-1] ) != 0 )
 			return -1;
 		cnt++;
 	}
 
+	inactive_dst_count = count_inactive_destinations(idx);
+	/* don't count inactive and default entries into total */
+	destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_use_default!=0);
+	destination_entries_to_skip -= max_results;
+
+	/* add to avp */
+
+	for(i_unwrapped = ds_id-1+idx->nr; i_unwrapped>ds_id; i_unwrapped--) {
+		i = i_unwrapped % idx->nr;
+
+		if((idx->dlist[i].flags & DS_INACTIVE_DST)
+				|| (ds_use_default!=0 && i==(idx->nr-1)))
+			continue;
+		if(destination_entries_to_skip > 0) {
+			LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n", set, i, max_results);
+			destination_entries_to_skip--;
+			continue;
+		}
+
+		LM_DBG("using entry [%d/%d]\n", set, i);
+		if (push_ds_2_avps( &idx->dlist[i] ) != 0 )
+			return -1;
+		cnt++;
+	}
+
+	/* add to avp the first used dst */
+	avp_val.s = idx->dlist[ds_id].uri;
+	if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
+		return -1;
+	cnt++;
+
 done:
-	if (attrs_avp_name>= 0) {
-		avp_val.s = idx->dlist[ds_id].attrs;
-		if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
-			return -1;
-	}
+	avp_val.s = idx->dlist[ds_id].attrs;
+	if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
+		return -1;
 
-	if(grp_avp_name>=0) {
-		/* add to avp the group id */
-		avp_val.n = set;
-		if(add_avp(grp_avp_type, grp_avp_name, avp_val)!=0)
-			return -1;
-	}
+	/* add to avp the group id */
+	avp_val.n = set;
+	if(add_avp(grp_avp_type, grp_avp_name, avp_val)!=0)
+		return -1;
 
-	if(cnt_avp_name>=0) {
-		/* add to avp the number of dst */
-		avp_val.n = cnt;
-		if(add_avp(cnt_avp_type, cnt_avp_name, avp_val)!=0)
-			return -1;
-	}
+	/* add to avp the number of dst */
+	avp_val.n = cnt;
+	if(add_avp(cnt_avp_type, cnt_avp_name, avp_val)!=0)
+		return -1;
 
 	return 1;
 }
