@@ -50,7 +50,6 @@ typedef struct rl_pipe {
 	int load;					/* countes the accesses */
 	rl_algo_t algo;				/* the algorithm used */
 	unsigned long last_used;	/* timestamp when the pipe was last accessed */
-	int pending;					/* pending refs */
 } rl_pipe_t;
 
 /* big hashtable */
