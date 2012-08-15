@@ -81,9 +81,9 @@ unsigned short dst_avp_type;
 int grp_avp_name;
 unsigned short grp_avp_type;
 int cnt_avp_name;
-unsigned short sock_avp_type;
-int sock_avp_name;
 unsigned short cnt_avp_type;
+int sock_avp_name;
+unsigned short sock_avp_type;
 int attrs_avp_name;
 unsigned short attrs_avp_type;
 
