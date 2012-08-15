@@ -90,6 +90,7 @@ static int mod_init(void)
 	cde.cdb_func.init = redis_init;
 	cde.cdb_func.destroy = redis_destroy;
 	cde.cdb_func.get = redis_get;
+	cde.cdb_func.get_counter = redis_get_counter;
 	cde.cdb_func.set = redis_set;
 	cde.cdb_func.remove = redis_remove;
 	cde.cdb_func.add = redis_add;

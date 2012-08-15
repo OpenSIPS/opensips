@@ -55,6 +55,7 @@ private:
 
 string keyspace;
 string column_family;
+string counter_family;
 string host;
 int port;
 
@@ -81,9 +82,10 @@ long int make_cassandra_timestamp() const
 
 public:
 
-CassandraConnection(const string& keyspace, const string& column_family) : 
+CassandraConnection(const string& keyspace, const string& column_family,const string& counter_family) : 
 keyspace(keyspace),
 column_family(column_family),
+counter_family(counter_family),
 host(""),
 port(0), 
 client(NULL) 
@@ -190,7 +192,7 @@ char* cassandra_simple_get(const string& attr)
 		try {
 			ColumnPath cp;
 			/* TODO - hard code this ? */
-			string key = "1";
+			string key = "opensips";
     			cp.__isset.column = true;
 			cp.column = attr.c_str();
 			cp.column_family = column_family.c_str();
@@ -202,6 +204,10 @@ char* cassandra_simple_get(const string& attr)
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR1: %s\n", ire.why.c_str());
       		}
+		catch (NotFoundException &nfx) {
+			/* signal that it was a success, but not found in back-end */
+			return (char*)-1;
+		}
 		catch (TException &tx) {
 			LM_ERR("ERROR2: %s\n", tx.what());
 		}
@@ -214,19 +220,62 @@ char* cassandra_simple_get(const string& attr)
 	return NULL;
 }
 
+int cassandra_simple_get_counter(const string& attr,int *value)
+{
+	int retry=2;
+
+	if (client == NULL && cassandra_reopen() != 0) {
+		LM_ERR("No cassandra connection\n");
+		return -1;
+	}
+
+	do {
+		try {
+			ColumnPath cp;
+			/* TODO - hard code this ? */
+			string key = "opensips";
+    			cp.__isset.column = true;
+			cp.column = attr.c_str();
+			cp.column_family = counter_family.c_str();
+			cp.super_column = "";
+			ColumnOrSuperColumn sc;
+
+    			client->get(sc, key, cp, rd_level);
+			if (value)
+				*value = (int)(sc.counter_column.value);
+			return 0;
+		} catch (InvalidRequestException &ire) {
+       			LM_ERR("ERROR1: %s\n", ire.why.c_str());
+      		}
+		catch (NotFoundException &nfx) {
+			/* signal that it was a success, but not found in back-end */
+			return 1;
+		}
+		catch (TException &tx) {
+			LM_ERR("ERROR2: %s\n", tx.what());
+		}
+		catch (std::exception &e) {
+ 			LM_ERR("ERROR3: %s\n", e.what());
+		}
+	} while (retry-- && cassandra_reopen() == 0);
+		
+	LM_ERR("giving up on query\n");
+	return -1;
+}
+
 int cassandra_simple_insert(const string& name,const string& val, int expires)
 {
 	int retry=2;
 
 	if (client == NULL && cassandra_reopen() != 0) {
 		LM_ERR("No cassandra connection\n");
-		return NULL;
+		return -1;
 	}
 
 	do {
 		try {
 			/* TODO - hard code this ? */
-			string key = "1";
+			string key = "opensips";
     			ColumnParent cp;
 			cp.column_family = column_family.c_str();
 			Column c;
@@ -264,13 +313,13 @@ int cassandra_simple_remove(const string& name)
 
 	if (client == NULL && cassandra_reopen() != 0) {
 		LM_ERR("No cassandra connection\n");
-		return NULL;
+		return -1;
 	}
 
 	do {
 		try {
 			/* TODO - hard code this ? */
-			string key = "1";
+			string key = "opensips";
     			ColumnPath cp;
 			cp.column_family = column_family.c_str();
 			cp.column=name.c_str();
@@ -282,11 +331,91 @@ int cassandra_simple_remove(const string& name)
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR: %s\n", ire.why.c_str());
       		}
+		catch (NotFoundException &nfx) {
+			/* success */
+			return 0;
+		}
 		catch (TException &tx) {
 			LM_ERR("ERROR: %s\n", tx.what());
 		}
 		catch (std::exception &e) {
  			LM_ERR("ERROR: %s\n", e.what());
+		}
+	} while (retry-- && cassandra_reopen() == 0);
+		
+	LM_ERR("giving up on query\n");
+	return -1;
+}
+
+int cassandra_simple_add(const string& name,int val)
+{
+	int retry=2;
+
+	if (client == NULL && cassandra_reopen() != 0) {
+		LM_ERR("No cassandra connection\n");
+		return -1;
+	}
+
+	do {
+		try {
+			/* TODO - hard code this ? */
+			string key = "opensips";
+    			ColumnParent cp;
+			cp.column_family = counter_family.c_str();
+			//cp.__isset.column = true;
+
+			CounterColumn cc;
+			cc.name = name.c_str();
+			cc.value = val; 
+
+    			client->add(key, cp,cc,wr_level);
+			return 0;
+		} catch (InvalidRequestException &ire) {
+       			LM_ERR("ERROR1: %s\n", ire.why.c_str());
+      		}
+		catch (TException &tx) {
+			LM_ERR("ERROR2: %s\n", tx.what());
+		}
+		catch (std::exception &e) {
+ 			LM_ERR("ERROR3: %s\n", e.what());
+		}
+	} while (retry-- && cassandra_reopen() == 0);
+		
+	LM_ERR("giving up on query\n");
+	return -1;
+}
+
+int cassandra_simple_sub(const string& name,int val)
+{
+	int retry=2;
+
+	if (client == NULL && cassandra_reopen() != 0) {
+		LM_ERR("No cassandra connection\n");
+		return -1;
+	}
+
+	do {
+		try {
+			/* TODO - hard code this ? */
+			string key = "opensips";
+    			ColumnParent cp;
+			cp.column_family = counter_family.c_str();
+			//cp.__isset.column = true;
+
+			CounterColumn cc;
+			cc.name = name.c_str();
+			cc.value = -val; 
+
+    			client->add(key, cp,cc,wr_level);
+			return 0;
+		} catch (InvalidRequestException &ire) {
+       			LM_ERR("ERROR1: %s\n", ire.why.c_str());
+      		}
+		catch (TException &tx) {
+			LM_ERR("ERROR2: %s\n", tx.what());
+		}
+		catch (std::exception &e) {
+ 			LM_ERR("ERROR3: %s\n", e.what());
 		}
 	} while (retry-- && cassandra_reopen() == 0);
 		

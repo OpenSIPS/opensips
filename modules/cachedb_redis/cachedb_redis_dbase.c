@@ -378,3 +378,42 @@ int redis_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val
 
 	return 0;
 }
+
+int redis_get_counter(cachedb_con *connection,str *attr,int *val)
+{
+	redis_con *con;
+	cluster_node *node;
+	redisReply *reply;
+	int i,ret;
+	str response;
+
+	if (!attr || !val || !connection) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	redis_run_command(con,attr,"GET %b",attr->s,attr->len);
+
+	if (reply->type == REDIS_REPLY_NIL || reply->str == NULL
+			|| reply->len == 0) {
+		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		return -2;
+	}
+
+	LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,reply->len,reply->str);
+
+	response.s=reply->str;
+	response.len=reply->len;
+
+	if (str2sint(&response,&ret) != 0) {
+		LM_ERR("Not a counter \n");
+		freeReplyObject(reply);
+		return -3;
+	}
+
+	if (val)
+		*val = ret;
+
+	freeReplyObject(reply);
+	return 0;
+}

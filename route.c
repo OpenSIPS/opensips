@@ -555,6 +555,7 @@ static int fix_actions(struct action* a)
 				break;
 			case CACHE_STORE_T:
 			case CACHE_FETCH_T:
+			case CACHE_COUNTER_FETCH_T:
 			case CACHE_REMOVE_T:
 			case CACHE_ADD_T:
 			case CACHE_SUB_T:
@@ -577,7 +578,8 @@ static int fix_actions(struct action* a)
 					break;
 
 				/* value */
-				if (t->type==CACHE_FETCH_T) {
+				if (t->type==CACHE_FETCH_T || 
+					t->type==CACHE_COUNTER_FETCH_T) {
 					if(((pv_spec_p)t->elem[2].u.data)->type!= PVT_AVP)
 					{
 						LM_ERR("Wrong type for the third argument - "

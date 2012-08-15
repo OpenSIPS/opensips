@@ -1123,6 +1123,55 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			
 			break;
+		case CACHE_COUNTER_FETCH_T:
+			if ((a->elem[0].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_fetch() %d\n",
+					a->elem[0].type );
+				ret=E_BUG;
+				break;
+			}
+			if ((a->elem[1].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_fetch() %d\n",
+					a->elem[1].type );
+				ret=E_BUG;
+				break;
+			}
+			if (a->elem[2].type!=SCRIPTVAR_ST){
+				LM_ALERT("BUG in cache_fetch() type %d\n",
+						a->elem[2].type);
+				ret=E_BUG;
+				break;
+			}
+			int aux_counter;
+			/* parse the name argument */
+			pve = (pv_elem_t *)a->elem[1].u.data;
+			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			name_s.len == 0 || name_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+
+			ret = cachedb_counter_fetch( &a->elem[0].u.s, &name_s, &aux_counter);
+			if(ret > 0)
+			{
+				int_str res;
+				int avp_name;
+				unsigned short avp_type;
+
+				spec = (pv_spec_t*)a->elem[2].u.data;
+				if (pv_get_avp_name( msg, &(spec->pvp), &avp_name,
+						&avp_type)!=0){
+					LM_CRIT("BUG in getting AVP name\n");
+					return -1;
+				}
+				res.n = aux_counter;
+				if (add_avp(avp_type, avp_name, res)<0){
+					LM_ERR("cannot add AVP\n");
+					return -1;
+				}
+			}
+			break;
 		case CACHE_ADD_T:
 			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in cache_store() - first argument not of"

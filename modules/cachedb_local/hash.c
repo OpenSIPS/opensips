@@ -328,3 +328,51 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 	lock_release(&cache_htable[hash_code].lock);
 	return -2;
 }
+
+int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
+{
+	int hash_code;
+	lcache_entry_t* it = NULL, *it_aux = NULL;
+	int ret;
+
+	hash_code= core_hash( attr, 0, cache_htable_size);
+	lock_get(&cache_htable[hash_code].lock);
+
+	it = cache_htable[hash_code].entries;
+
+	while(it)
+	{
+		if(it->attr.len == attr->len && 
+				(strncmp(it->attr.s, attr->s, attr->len) == 0))
+		{
+			if( it->expires != 0 && it->expires < get_ticks())
+			{
+				/* found an expired entry  -> delete it */
+				if(it_aux)
+					it_aux->next = it->next;
+				else
+					cache_htable[hash_code].entries = it->next;
+				
+				shm_free(it);
+
+				lock_release(&cache_htable[hash_code].lock);
+				return -2;
+			}
+			if (str2sint(&it->value,&ret) != 0) {
+				LM_ERR("Not a counter key\n");
+				lock_release(&cache_htable[hash_code].lock);
+				return -3;
+			}
+			if (val)
+				*val = ret;
+			lock_release(&cache_htable[hash_code].lock);
+			return 1;
+		}
+
+		it_aux = it;
+		it = it->next;
+	}
+	
+	lock_release(&cache_htable[hash_code].lock);
+	return -2;
+}

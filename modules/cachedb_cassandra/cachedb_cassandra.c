@@ -104,11 +104,11 @@ static int mod_init(void)
 	cde.cdb_func.init = cassandra_init;
 	cde.cdb_func.destroy = cassandra_destroy;
 	cde.cdb_func.get = cassandra_get;
+	cde.cdb_func.get_counter = cassandra_get_counter;
 	cde.cdb_func.set = cassandra_set;
 	cde.cdb_func.remove = cassandra_remove;
-	/* TODO */
-	cde.cdb_func.add = NULL;
-	cde.cdb_func.sub = NULL;
+	cde.cdb_func.add = cassandra_add;
+	cde.cdb_func.sub = cassandra_sub;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 

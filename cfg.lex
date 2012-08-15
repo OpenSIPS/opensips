@@ -194,6 +194,7 @@ USE_BLACKLIST	"use_blacklist"
 UNUSE_BLACKLIST	"unuse_blacklist"
 CACHE_STORE		"cache_store"
 CACHE_FETCH		"cache_fetch"
+CACHE_COUNTER_FETCH	"cache_counter_fetch"
 CACHE_REMOVE	"cache_remove"
 CACHE_ADD		"cache_add"
 CACHE_SUB		"cache_sub"
@@ -505,6 +506,8 @@ IMPORTFILE      "import_file"
 									return CACHE_STORE; }
 <INITIAL>{CACHE_FETCH}		{	count(); yylval.strval=yytext;
 									return CACHE_FETCH; }
+<INITIAL>{CACHE_COUNTER_FETCH}	{	count(); yylval.strval=yytext;
+									return CACHE_COUNTER_FETCH; }
 <INITIAL>{CACHE_REMOVE}		{	count(); yylval.strval=yytext;
 									return CACHE_REMOVE; }
 <INITIAL>{CACHE_ADD}		{	count(); yylval.strval=yytext;

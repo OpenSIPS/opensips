@@ -844,7 +844,6 @@ int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
 unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 {
 	unsigned int n = 0, i;
-	str ret = {0, 0};
 	map_t entry ;
 	void ** dest;
 
@@ -856,7 +855,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 			if (dlg_fill_name(&profile->name) < 0)
 				goto failed;
 
-			if (cdbf.get(cdbc, &dlg_prof_noval_buf, &ret) == -1) {
+			if (cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n) == -1) {
 				LM_ERR("cannot fetch profile from CacheDB\n");
 				goto failed;
 			}
@@ -884,7 +883,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_size(&profile->name) < 0)
 					goto failed;
 
-				if (cdbf.get(cdbc, &dlg_prof_size_buf, &ret) == -1) {
+				if (cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n) == -1) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
@@ -911,7 +910,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_value(&profile->name, value) < 0)
 					goto failed;
 
-				if (cdbf.get(cdbc, &dlg_prof_val_buf, &ret) == -1) {
+				if (cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n) == -1) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
@@ -932,17 +931,6 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 
 			}
 		}
-	}
-
-	if (ret.s && ret.len) {
-		if (str2int(&ret, &n) < 0) {
-			LM_ERR("invalid int value in CacheDB <%.*s>\n",
-					ret.len, ret.s);
-			pkg_free(ret.s);
-			return -1;
-		}
-		/* free memory allocated by cachedb get */
-		pkg_free(ret.s);
 	}
 
 	return n;

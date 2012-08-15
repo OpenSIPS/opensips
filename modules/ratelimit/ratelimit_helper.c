@@ -127,21 +127,14 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 /* NOTE: assumes that the pipe has been locked */
 static int rl_get_counter(str *name, rl_pipe_t * pipe)
 {
-	str res;
 	int new_counter;
 
 	if (rl_set_name(name) < 0)
 		return -1;
-	if (cdbf.get(cdbc, &rl_name_buffer, &res) < 0) {
+	if (cdbf.get_counter(cdbc, &rl_name_buffer, &new_counter) < 0) {
 		LM_ERR("cannot retrieve key\n");
 		return -1;
 	}
-	if (str2sint(&res, &new_counter) < 0) {
-		LM_ERR("invalid value %.*s - should be integer\n", res.len, res.s);
-		return -1;
-	}
-	if (res.s)
-		pkg_free(res.s);
 
 	pipe->counter = new_counter;
 	return 0;

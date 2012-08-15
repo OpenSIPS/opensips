@@ -279,6 +279,7 @@ extern int line;
 %token NULLV
 %token CACHE_STORE
 %token CACHE_FETCH
+%token CACHE_COUNTER_FETCH
 %token CACHE_REMOVE
 %token CACHE_ADD
 %token CACHE_SUB
@@ -2506,6 +2507,15 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 							}
 		| CACHE_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
 									mk_action3( $$, CACHE_FETCH_T,
+													STR_ST,
+													STR_ST,
+													SCRIPTVAR_ST,
+													$3,
+													$5,
+													$7);
+							}
+		| CACHE_COUNTER_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN { 
+									mk_action3( $$, CACHE_COUNTER_FETCH_T,
 													STR_ST,
 													STR_ST,
 													SCRIPTVAR_ST,

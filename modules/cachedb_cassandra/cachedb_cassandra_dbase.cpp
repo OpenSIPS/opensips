@@ -28,13 +28,15 @@
 #include "cachedb_cassandra_lib.h"
 #include <string.h>
 
-void* cassandra_new_connection(char *_host,int port,str *_keyspace,str* _cf)
+void* cassandra_new_connection(char *_host,int port,str *_keyspace,str* _cf,
+	str* _counterf)
 {
 	string host(_host,strlen(_host));
 	string keyspace(_keyspace->s,_keyspace->len);
 	string cf(_cf->s,_cf->len);
+	string counterf(_counterf->s,_counterf->len);
 
-	CassandraConnection *con = new CassandraConnection(keyspace,cf);
+	CassandraConnection *con = new CassandraConnection(keyspace,cf,counterf);
 	if (!con) {
 		LM_ERR("failed to init CassandraConnection\n");
 		return NULL;
@@ -55,6 +57,8 @@ void* cassandra_init_connection(struct cachedb_id *id)
 	cassandra_con *con;
 	str keyspace;
 	str column_family;
+	str counter_family;
+	int db_len;
 	char *p;
 	
 	if (id == NULL) {
@@ -72,17 +76,34 @@ void* cassandra_init_connection(struct cachedb_id *id)
 		return 0;
 	}
 
-	p=(char *)memchr(id->database,'_',strlen(id->database));
+	db_len = strlen(id->database);
+
+	p=(char *)memchr(id->database,'_',db_len);
 	if (!p) {
-		LM_ERR("invalid database. Should be 'keyspace_columnfamily'\n");
+		LM_ERR("invalid database. Should be 'keyspace_columnfamily_counterfamily'\n");
 		return 0;
 	}
+
 
 	keyspace.s=id->database;
 	keyspace.len=p-keyspace.s;
 
 	column_family.s=p+1;
-	column_family.len=id->database+strlen(id->database)-column_family.s;
+
+	p = (char *)memchr(column_family.s,'_',id->database+db_len-p-1);
+	if (!p) {
+		LM_ERR("invalid database. Should be 'keyspace_columnfamily_counterfamily'\n");
+		return 0;
+	}
+
+	column_family.len=p-column_family.s;
+
+	counter_family.s=p+1;
+	counter_family.len=id->database+db_len-counter_family.s;
+
+	LM_INFO("Keyspace = [%.*s]. ColumnFamily = [%.*s]. CounterFamily = [%.*s]\n",
+		keyspace.len,keyspace.s,column_family.len,column_family.s,
+		counter_family.len,counter_family.s);
 	
 	con = (cassandra_con *)pkg_malloc(sizeof(cassandra_con));
 	if (con == NULL) {
@@ -95,7 +116,7 @@ void* cassandra_init_connection(struct cachedb_id *id)
 	con->ref = 1;
 
 	con->cass_con = cassandra_new_connection(id->host,id->port,
-		&keyspace,&column_family);
+		&keyspace,&column_family,&counter_family);
 
 	if (con->cass_con == NULL) {
 		LM_ERR("failed to connect to cassandra\n");
@@ -149,6 +170,13 @@ int cassandra_get(cachedb_con *connection,str *attr,str *val)
 		return -1;
 	}
 
+	if (col_val == (char *)-1) {
+		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		val->s = NULL;
+		val->len = 0;
+		return -2;
+	}
+
 	len=strlen(col_val);
 	val->s = (char *)pkg_malloc(len);
 	if (val->s == NULL) {
@@ -158,6 +186,35 @@ int cassandra_get(cachedb_con *connection,str *attr,str *val)
 
 	val->len=len;
 	memcpy(val->s,col_val,len);
+	return 0;
+}
+
+int cassandra_get_counter(cachedb_con *connection,str *attr,int *val)
+{
+	cassandra_con *con;
+	CassandraConnection *c_con;
+	int ret;
+	string col_name(attr->s,attr->len);
+
+	if (!attr || !val || !connection) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	con = (cassandra_con *)connection->data;
+	c_con = (CassandraConnection *)con->cass_con;
+
+	ret=c_con->cassandra_simple_get_counter(col_name,val);
+	if (ret < 0) {
+		LM_ERR("failed to fetch Cassandra value\n");
+		return -1;
+	}
+
+	if (ret > 0) {
+		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		return -2;
+	}
+
 	return 0;
 }
 
@@ -209,5 +266,81 @@ int cassandra_remove(cachedb_con *connection,str *attr)
 	}
 
 	LM_DBG("Succesful cassandra remove\n");
+	return 0;
+}
+
+int cassandra_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
+{
+	cassandra_con *con;
+	CassandraConnection *c_con;
+	string col_name(attr->s,attr->len);
+	int ret;
+
+	if (!attr || !connection) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	con = (cassandra_con *)connection->data;
+	c_con = (CassandraConnection *)con->cass_con;
+
+	/* TODO - so far no support for expiring counters */
+	ret = c_con->cassandra_simple_add(col_name,val);
+	if (ret<0) {
+		LM_ERR("Failed to add Cassandra key\n");
+		return -1;
+	}
+
+	LM_DBG("Succesful cassandra add\n");
+
+	ret=c_con->cassandra_simple_get_counter(col_name,new_val);
+	if (ret < 0) {
+		LM_ERR("failed to fetch Cassandra value\n");
+		return -1;
+	}
+
+	if (ret > 0) {
+		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		return -2;
+	}
+
+	return 0;
+}
+
+int cassandra_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
+{
+	cassandra_con *con;
+	CassandraConnection *c_con;
+	string col_name(attr->s,attr->len);
+	int ret;
+
+	if (!attr || !connection) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	con = (cassandra_con *)connection->data;
+	c_con = (CassandraConnection *)con->cass_con;
+
+	/* TODO - so far no support for expiring counters */
+	ret = c_con->cassandra_simple_sub(col_name,val);
+	if (ret<0) {
+		LM_ERR("Failed to add Cassandra key\n");
+		return -1;
+	}
+
+	LM_DBG("Succesful cassandra sub\n");
+
+	ret=c_con->cassandra_simple_get_counter(col_name,new_val);
+	if (ret < 0) {
+		LM_ERR("failed to fetch Cassandra value\n");
+		return -1;
+	}
+
+	if (ret > 0) {
+		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		return -2;
+	}
+
 	return 0;
 }

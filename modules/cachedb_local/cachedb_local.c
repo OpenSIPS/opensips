@@ -145,6 +145,7 @@ static int mod_init(void)
 	cde.cdb_func.init = lcache_init;
 	cde.cdb_func.destroy = lcache_destroy;
 	cde.cdb_func.get = lcache_htable_fetch;
+	cde.cdb_func.get_counter = lcache_htable_fetch_counter;
 	cde.cdb_func.set = lcache_htable_insert;
 	cde.cdb_func.remove = lcache_htable_remove;
 	cde.cdb_func.add = lcache_htable_add;
