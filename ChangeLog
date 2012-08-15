@@ -1,4 +1,541 @@
 
+2012-08-15 18:03:40  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9215] :
+
+	updated version number to 1.8.1
+
+
+2012-08-15 14:08:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9212] :
+
+	-fixed compatibility with Solaris (on data types)
+	 Credits go to Nathaniel L Keeling
+
+
+2012-08-15 13:34:55  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9211] :
+
+	backport from trunk (rev 9210):
+	- before a new ds_select_xx(), purge all avps used for failover (avoid inheriting avps from a prev ds_select()) 
+	- remove some useless conditions as now all AVP are defined
+	Reproted by Ovidiu Sas
+
+
+
+2012-08-15 12:05:54  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9209] :
+
+	Backported from trunk (rev #9207):
+	ratelimit: removed concurrency issues between pending pipes
+
+
+2012-08-15 11:56:46  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9206] :
+
+	Added SIP 401 Unauthorized support.
+
+2012-08-14 16:17:36  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9205] :
+
+	backport from trunk (rev #9204)
+	fixed crash on using both C and F flags in do_routing.
+	Reported by Parantido Julius De Rica
+	Closes bug report #3557317
+
+
+
+2012-08-14 13:47:59  Liviu Chircu <liviu at opensips dot org> 
+	* [9203] :
+
+	Backport from trunk (rev #9202).
+	Fixed setid_pvar parsing.
+
+
+2012-08-13 19:54:16  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9201] :
+
+	httpd: fix documentation
+	 - thanks to Duane Larson <duane.larson@gmail.com> for pointing this out
+	 - backport from trunk: rev 9200
+
+
+
+2012-08-09 19:28:43  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9198] :
+
+	fixed the trimming of whitespaces while parsing lb resources
+
+
+
+2012-08-09 19:27:33  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9197] :
+
+	backport from trunk (rev #9196)
+
+	search_dlg_profile() is properly aware of cached profiles
+	needed for distributing load balancer resources
+
+
+
+2012-08-09 00:28:32  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9194] :
+
+	fixed bogus CDRs in case of combining internally terminated dialogs and db_extra_bye
+
+
+
+2012-08-08 19:33:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9193] :
+
+	backport from trunk (rev #9165 + #9192)
+	- For URI inserted in Contact header consider the advertised address set in the listen directive.
+
+
+2012-08-08 18:30:47  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9191] :
+
+	backport from trunk (rev #9189)
+	fix for properly frees resources allocated to the columns in the db_oracle module (prevents memory leakage)
+	Credits go to Peter Lemenkov
+	Closes patch 3540105
+
+
+
+2012-08-08 18:22:51  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9187] :
+
+	backport from trunk (rev #9186):
+	fix in setting the data type for empty values -> you still have the type before returning
+	Credits go to Peter Lemenkov
+	Closes patch 3538362
+
+
+
+2012-08-08 18:13:07  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9184] :
+
+	backport from trunk (rev #9183)
+	fixed copy past error resulting in bogus jump to last row.
+	Credits go to Peter Lemenkov.
+	Closes patch #3538358
+
+
+
+2012-08-08 18:06:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9181] :
+
+	backport from trunk (rev #9180)
+	- fixed improper zeroing of a memory within db_res_t (in db_oracle module)
+	  Credits go to Peter Lemenkov
+	  Closes patch 3538355
+
+
+
+2012-08-08 01:33:38  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9178] :
+
+	backport from trunk (rev #9177):
+	- fix LB restore issue - dialog profiles are not properly restored in LB
+	  Credits go to Marcel Barbulescu
+	  Closes bug 3554899
+
+
+2012-08-08 00:51:52  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9175] :
+
+	backport from trunk (rev #9174)
+	- fixed segfault in case of an empty db connection string
+	  Credits go to Peter Lemenkov
+	  Closes patch 3545893
+
+
+
+2012-08-08 00:40:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9172] :
+
+	backport from trunk (rev #9171)
+	- fixed missing init of lock
+	  Reported by David Sanders
+	  Closes patch 3554950
+
+
+
+2012-08-08 00:30:24  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9170] :
+
+	backport from trunk (rev 9169)
+	- fixed reseting dialog flags (from script) when calling create_dialog() multiple times
+	  Credits go to Ryan Bullock
+	  Closes patch 3553765
+
+
+
+2012-08-07 23:33:43  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9168] :
+
+	backport from trunk (rev #9166)
+	- fixed forcing of lifetime for TCP connections 
+	  Credits go to Yaroslav M Strilchuk
+	  Closes bug #3546167
+
+
+
+2012-08-01 19:30:11  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9164] :
+
+	backport from trunk (rev #9163)
+
+	CDR ACC works even if DLG is internally terminated
+
+
+
+2012-08-01 18:50:54  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9161] :
+
+	backport from trunk (rev #9160)
+
+	propagate direction(downstream/upstream) info to local_route when internally terminating the dialog
+
+
+
+2012-07-31 18:06:29  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9158] :
+
+	backport from trunk (rev #9157)
+
+	fixed ugly bug - reset blacklists only when processing a new SIP message
+
+
+
+2012-07-31 16:20:15  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9156] :
+
+	backport from trunk (rev #9155)
+
+	fixed deadlock due to bad ordering of lock acquiring 
+	Thanks to Ryan Bullock for reporting & helping with debugging
+
+
+
+2012-07-30 19:59:43  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9154] :
+
+	backport from trunk (rev #9153)
+	fixed the avp_add_last() function - the kept shortcut (last_avp) was not properly updated during delete ops, and may have bogus value (pointed to freed AVPs). As code is complex, simply removed that shortcut
+
+
+
+2012-07-30 19:55:00  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9152] :
+
+	- missing include file (get rid of some warning, nothing critical)
+
+
+2012-07-26 14:57:44  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9150] :
+
+	Backported from trunk (rev 9149):
+	fixed 'subnet_dump' mi command to output the correct netmask
+
+
+2012-07-17 14:59:43  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9147] :
+
+	backport from trunk (rev #9146)
+
+	added missing break for BITMAP values
+
+
+
+2012-07-12 06:22:52  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9143] :
+
+	Fixed SIP 3xx Contact header format issue caused by revision 8921.
+
+2012-07-06 19:52:19  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9141] :
+
+	backport from trunk (rev 9140):
+	fix init of "model" in fixup function of h350_auth_lookup()
+
+
+
+
+2012-07-06 17:34:12  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9139] :
+
+	backport from trunk (rev #9138)
+
+	properly increment the active dialogs statistic when calling the dlg_db_sync MI command
+
+
+
+2012-07-06 14:08:10  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9137] :
+
+	Backported from trunk (rev #9136):
+	fixed dialog hash_size normalization
+
+
+2012-07-06 13:05:15  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9134] :
+
+	backport from trunk (rev #9133)
+
+	when saving dialog flags in DB for the first time, do not save the DLG_FLAG_NEW
+
+
+
+2012-07-04 12:29:24  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9131] :
+
+	Fixed release source reporting issue.
+
+2012-06-28 13:34:50  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9126] :
+
+	Backport from trunk (rev# 9125):
+	Fixed the case when leg integers could overwrite the extra integers buffer
+
+
+2012-06-27 15:59:06  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9124] :
+
+	Backported from trunk (rev# 9121):
+	Fixed NICER variable
+
+
+2012-06-27 15:56:36  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9123] :
+
+	backport from trunk (rev #9122)
+
+	fixed double profile linking when sync-ing memory with DB
+
+
+
+2012-06-27 13:13:27  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9120] :
+
+	backport from trunk (rev #9119)
+
+	added support for DB_BIGINT when populating AVPs 
+
+
+
+2012-06-26 17:53:42  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9118] :
+
+	packaging/fedora: Improve packaging for Fedora/RHEL and derivatives
+	 - closes bug id: 3535148
+	 - backport from trunk rev 9114
+	 - backport from trunk rev 9115
+
+
+
+2012-06-26 17:41:27  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9117] :
+
+	db_oracle: typo fixes
+	 - closes bug id: 3535168
+	 - backport from trunk rev 9116
+
+
+
+2012-06-26 13:17:40  Anca Vamanu, <anca at oepnsips dot org> 
+	* [9112] :
+
+	Fixed memory leak in xcap auth doc processing
+
+
+2012-06-25 18:42:47  Anca Vamanu, <anca at oepnsips dot org> 
+	* [9110] :
+
+	Restore display names from DB. ( reported in #3535379 )
+
+
+2012-06-19 18:16:47  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9106] :
+
+	backport from trunk (rev #9104):
+	- fixed the setting of domain_suffix_avp module paramter
+	  Credits go to Yaroslav M Strilchuk
+	  Closes bug 3535422
+
+
+
+2012-06-14 12:56:13  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9099] :
+
+	backport from trunk (rev #9099)
+
+	removed call to ns_get16 glibc private function
+	Credits to Peter Lemenkov
+
+
+
+2012-06-14 11:28:24  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9096] :
+
+	backport from trunk (rev #9095 )
+
+	fixed documentation
+	Thanks to James Gledhill for reporting
+
+
+
+2012-06-13 14:13:18  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9093] :
+
+	backport from trunk (rev #9092)
+	fixed setting the destination of request after next_branch() used a branch with PATH
+	Reported by Gomtesh Jain
+
+
+2012-06-13 10:48:20  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9090] :
+
+	Updated to handle device erases '=' from BYE route header case.
+
+2012-06-12 18:45:13  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9089] :
+
+	b2b_logic: fix extra headers passing to the other side of the call
+	 - backport from trunk: rev 9088
+
+
+
+2012-06-11 22:17:38  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9086] :
+
+	backport from trunk (rev #9085)
+	- fixed example in documentation
+	  Closes bug 3534375
+
+
+
+2012-06-07 12:16:40  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9084] :
+
+	backport from trunk (rev #9077)
+
+	in case contact has no sock, use the SIP msg rcv address for generating GRUUs
+
+
+
+2012-06-07 12:13:48  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9083] :
+
+	backport from trunk (rev #9082)
+
+	fixed typo when restoring dialog info
+
+
+
+2012-06-06 14:37:30  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9081] :
+
+	backport from trunk (rev #9080):
+	- fixed bug in computing the RURIs for the next GWs to be tried (if more than one)
+	  Reported by Ovidiu Sas
+
+
+
+2012-06-05 17:28:13  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9079] :
+
+	Backported from trunk (rev #9078):
+	fixed memory leak when getting shared profiles size
+
+
+2012-06-05 14:59:16  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9074] :
+
+	Fixed previously incomplete commit
+
+
+
+2012-06-05 11:19:20  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9072] :
+
+	Backported from trunk (rev #9069):
+	fixed dbtext schema generation for tables without version
+
+
+2012-05-30 18:46:05  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9062] :
+
+	uac_auth: fix authentication for multiple qop tokens
+	 - closes bug ID: 3530076
+	 - backport from trunk: Rev 9061
+
+
+
+2012-05-29 12:38:27  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9059] :
+
+	backport from trunk (rev #9058):
+	- patch to use the 4.8 version when installed, which ought to be the case when your opensips-berkeley-module package is used.  It also takes 4.7 into consideration.
+	  Credits go to Rick van Rein @ OpenFortress
+
+
+
+2012-05-25 23:26:54  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9057] :
+
+	uac_registrant: several fixes
+	 - allow empty sockets
+	 - keep sending REGISTER requests while in WRONG_CREDENTIALS_STATE
+	 - backport from trung: rev 9055
+
+	opensipsctl: fix registrant command
+	 - backport from trunk: rev 9056
+
+
+
+2012-05-25 21:49:07  Anca Vamanu, <anca at oepnsips dot org> 
+	* [9054] :
+
+	Backport:
+		Fix in scenario interpretation: if a client node has a destination subnode, consider it a new client.
+		Fix bug #3529746: allow both <client> and <server> subnodes under <bridge> node.
+
+
+2012-05-24 18:48:58  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9050] :
+
+	qos: fix crash when the qos list is empty
+	 - backport from trunk: Rev 9047
+
+
+
+2012-05-24 17:03:31  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9049] :
+
+	scripts: adding registrant to the list of EXTRA_MODULES
+	 - backport from trunk: Rev 9048
+
+
+
+2012-05-22 19:38:37  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9046] :
+
+	backport from trunk:
+	 - Makefile: make should be called through $(MAKE)
+	 - rev 9044
+	 - menuconfig: fix FreeBSD include headers
+	 - rev 9045
+
+
+
+2012-05-17 20:15:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9043] :
+
+	- updated Changelog
+	- remove the beta suffix
+
+
+
 2012-05-17 16:57:10  Vlad Paiu <vladpaiu at opensips dot org> 
 	* [9042] :
 
