@@ -8,7 +8,7 @@
 COMMENT= "OpenSIPS"
 
 PORTNAME= opensips
-PORTVERSION= 1.8.0-notls
+PORTVERSION= 1.8.1-notls
 CATEGORIES= net
 MASTER_SITES= http://opensips.org/pub/opensips/1.6.0/src/
 
