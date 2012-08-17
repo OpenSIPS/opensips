@@ -756,7 +756,7 @@ error:
 static void db_update(unsigned int ticks,void *param)
 {
 	ua_pres_t* p= NULL;
-	db_key_t q_cols[20], result_cols[1];
+	db_key_t q_cols[20];
 	db_key_t db_cols[5];
 	db_val_t q_vals[21], db_vals[5];
 	db_op_t  db_ops[1] ;
@@ -884,8 +884,6 @@ static void db_update(unsigned int ticks,void *param)
 	db_cols[3]= &str_desired_expires_col;
 	db_vals[3].type = DB_INT;
 	db_vals[3].nul = 0;
-
-	result_cols[0]= &str_expires_col;
 
 	if(pua_db== NULL)
 	{
