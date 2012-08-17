@@ -385,7 +385,6 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 	int ver= 0;
 	str* body= NULL;
 	str* str_hdr = NULL;
-	int result;
 	str met = {"PUBLISH", 7};
 
 	LM_DBG("start\n");
@@ -476,7 +475,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 
 	LM_DBG("cback param = %ld\n", pres_id);
 
-	result= tmb.t_request(&met,						/* Type of the message */
+	tmb.t_request(&met,						/* Type of the message */
 			publ->pres_uri,							/* Request-URI */
 			publ->pres_uri,							/* To */
 			publ->pres_uri,							/* From */

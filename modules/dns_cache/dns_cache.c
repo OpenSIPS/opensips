@@ -252,7 +252,7 @@ static struct hostent* deserialize_he_rdata(char *buff,int buf_len,int do_decodi
 {
 	char **ap,**hap;
 	unsigned char *p;
-	int max_len=0,actual_len=0;
+	int max_len=0;
 	int i,alias_no=0,addr_no=0,len=0;
 	
 	/* max estimation of needed buffer */
@@ -282,7 +282,7 @@ static struct hostent* deserialize_he_rdata(char *buff,int buf_len,int do_decodi
 	
 	if (do_decoding) {
 		/* decode base64 buf */
-		actual_len = base64decode(dec_he_buf,(unsigned char *)buff,buf_len);	
+		base64decode(dec_he_buf,(unsigned char *)buff,buf_len);
 		p = dec_he_buf;
 	} else {
 		memcpy(dec_he_buf,buff,buf_len);
