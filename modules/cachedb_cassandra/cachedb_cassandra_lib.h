@@ -194,12 +194,12 @@ char* cassandra_simple_get(const string& attr)
 			/* TODO - hard code this ? */
 			string key = "opensips";
     			cp.__isset.column = true;
-			cp.column = attr.c_str();
+			cp.column = key;
 			cp.column_family = column_family.c_str();
 			cp.super_column = "";
 			ColumnOrSuperColumn sc;
 
-    			client->get(sc, key, cp, rd_level);
+    			client->get(sc, attr, cp, rd_level);
 			return (char *)sc.column.value.c_str();
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR1: %s\n", ire.why.c_str());
@@ -235,12 +235,12 @@ int cassandra_simple_get_counter(const string& attr,int *value)
 			/* TODO - hard code this ? */
 			string key = "opensips";
     			cp.__isset.column = true;
-			cp.column = attr.c_str();
+			cp.column = key;
 			cp.column_family = counter_family.c_str();
 			cp.super_column = "";
 			ColumnOrSuperColumn sc;
 
-    			client->get(sc, key, cp, rd_level);
+    			client->get(sc, attr, cp, rd_level);
 			if (value)
 				*value = (int)(sc.counter_column.value);
 			return 0;
@@ -279,7 +279,7 @@ int cassandra_simple_insert(const string& name,const string& val, int expires)
     			ColumnParent cp;
 			cp.column_family = column_family.c_str();
 			Column c;
-			c.name=name.c_str();
+			c.name=key;
 			c.value=val.c_str();
 			c.__isset.value = true;
 			c.timestamp=make_cassandra_timestamp();
@@ -290,7 +290,7 @@ int cassandra_simple_insert(const string& name,const string& val, int expires)
 			}
 
 			LM_DBG("inserting [%s] - [%s]\n",name.c_str(),val.c_str());
-    			client->insert(key, cp,c,wr_level);
+    			client->insert(name, cp,c,wr_level);
 			return 0;
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR: %s\n", ire.why.c_str());
@@ -322,11 +322,11 @@ int cassandra_simple_remove(const string& name)
 			string key = "opensips";
     			ColumnPath cp;
 			cp.column_family = column_family.c_str();
-			cp.column=name.c_str();
+			cp.column=key;
 			cp.__isset.column = true;
 
 			LM_DBG("removing [%s]\n",name.c_str());
-    			client->remove(key, cp,make_cassandra_timestamp(),wr_level);
+    			client->remove(name, cp,make_cassandra_timestamp(),wr_level);
 			return 0;
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR: %s\n", ire.why.c_str());
@@ -365,10 +365,10 @@ int cassandra_simple_add(const string& name,int val)
 			//cp.__isset.column = true;
 
 			CounterColumn cc;
-			cc.name = name.c_str();
+			cc.name = key;
 			cc.value = val; 
 
-    			client->add(key, cp,cc,wr_level);
+    			client->add(name, cp,cc,wr_level);
 			return 0;
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR1: %s\n", ire.why.c_str());
@@ -403,10 +403,10 @@ int cassandra_simple_sub(const string& name,int val)
 			//cp.__isset.column = true;
 
 			CounterColumn cc;
-			cc.name = name.c_str();
+			cc.name = key;
 			cc.value = -val; 
 
-    			client->add(key, cp,cc,wr_level);
+    			client->add(name, cp,cc,wr_level);
 			return 0;
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR1: %s\n", ire.why.c_str());
