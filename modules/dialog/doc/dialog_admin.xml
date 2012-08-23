@@ -2034,6 +2034,26 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		_empty_line_
 		</programlisting>
 		</section>
+
+		<section>
+		<title><varname>list_all_profiles</varname></title>
+		<para>
+		Lists all the dialog profiles, along with 1 or 0 if
+		the given profile has/does not have an associated value.
+		</para>
+		<para>
+		Name: <emphasis>list_all_profiles</emphasis>
+		</para>
+		<para>Parameters: <emphasis>It takes no parameters</emphasis>
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:list_all_profiles:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+		</section>
 	</section>
 
 

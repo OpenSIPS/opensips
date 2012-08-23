@@ -1214,3 +1214,36 @@ error:
 	return NULL;
 }
 
+
+struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
+{
+	struct mi_node* node;
+	struct mi_root* rpl_tree= NULL;
+	struct mi_node* rpl = NULL;
+	struct dlg_profile_table *profile;
+
+	node = cmd_tree->node.kids;
+	if (node!=NULL)
+		return init_mi_tree( 401, MI_SSTR(MI_MISSING_PARM));
+
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree==0)
+		return 0;
+
+	rpl = &rpl_tree->node;
+	
+	profile = profiles;
+	while (profile) {
+	
+		if (add_mi_node_child(rpl, 0, profile->name.s, profile->name.len,
+							 (profile->has_value? "1" : "0"), 1) == NULL) {
+			LM_ERR("Out of mem\n");
+			free_mi_tree(rpl_tree);
+			return init_mi_tree( 401, MI_SSTR(MI_INTERNAL_ERR));
+		}
+
+		profile = profile->next;
+	}
+
+	return rpl_tree;
+}
