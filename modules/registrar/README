@@ -425,6 +425,16 @@ modparam("registrar", "gruu_secret", 1)
             Record) in the user location database. Value 0
             disables the check. This parameter overrides the
             global "max_contacts" module parameter.
+          + 'e(int)' (minimum expires) - this flag can be used to
+            set minimum register expiration time.
+            Values lower than this minimum will be automatically set
+            to the minimum. Value 0 disables the checking.
+            This parameter overrides the global "min_expires" module parameter.
+          + 'E(int)' (maximum expires) - this flag can be used to
+            set maximum register expiration time.
+            Values higher than this maximum will be automatically set
+            to the maximum. Value 0 disables the checking.
+            This parameter overrides the global "max_expires" module parameter.
           + 'f' (force registration) - this flag can be used to
             force the registration of NEW contacts even if the
             maximum number of contacts is reached. In such a case,

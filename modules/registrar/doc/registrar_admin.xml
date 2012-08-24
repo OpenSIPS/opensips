@@ -558,6 +558,22 @@ modparam("registrar", "gruu_secret", 1)
 					</para>
 				</listitem>
 				<listitem>
+					<para><emphasis>'e(int)' (minimum expires)</emphasis> -  this
+					flag can be used to set minimum register expiration time.
+					Values lower than this minimum will be automatically set
+					to the minimum. Value 0 disables the checking.
+					This parameter overrides the global "min_expires" module parameter.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'E(int)' (maximum expires)</emphasis> -  this
+					flag can be used to set maximum register expiration time.
+					Values higher than this maximum will be automatically set
+					to the maximum. Value 0 disables the checking.
+					This parameter overrides the global "max_expires" module parameter.
+					</para>
+				</listitem>
+				<listitem>
 					<para><emphasis>'f' (force registration)</emphasis> - this 
 					flag can be used to force the registration of NEW contacts
 					even if the maximum number of contacts is reached. In such
