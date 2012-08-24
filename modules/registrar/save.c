@@ -73,13 +73,6 @@
 #include "path.h"
 #include "save.h"
 
-struct save_ctx {
-	unsigned int flags;
-	str aor;
-	unsigned int max_contacts;
-};
-
-
 /*! \brief
  * Process request that contained a star, in that case, 
  * we will remove all bindings with the given username 
@@ -388,7 +381,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 	for( num=0,r=0,ci=0 ; _c ; _c = get_next_contact(_c) ) {
 		/* calculate expires */
-		calc_contact_expires(_m, _c->expires, &e);
+		calc_contact_expires(_m, _c->expires, &e, _sctx);
 		/* Skip contacts with zero expires */
 		if (e == 0)
 			continue;
@@ -542,7 +535,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 	for( ; _c ; _c = get_next_contact(_c) ) {
 		/* calculate expires */
-		calc_contact_expires(_m, _c->expires, &e);
+		calc_contact_expires(_m, _c->expires, &e, _sctx);
 
 		/* search for the contact*/
 		ret = ul.get_ucontact( _r, &_c->uri, ci->callid, ci->cseq, &c);
@@ -725,6 +718,22 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 					sctx.max_contacts = 0;
 					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
 						sctx.max_contacts = sctx.max_contacts*10 + 
+							flags_s.s[st+1] - '0';
+						st++;
+					}
+					break;
+				case 'e':
+					sctx.min_expires = 0;
+					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
+						sctx.min_expires = sctx.min_expires*10 + 
+							flags_s.s[st+1] - '0';
+						st++;
+					}
+					break;
+				case 'E':
+					sctx.max_expires = 0;
+					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
+						sctx.max_expires = sctx.max_expires*10 + 
 							flags_s.s[st+1] - '0';
 						st++;
 					}
@@ -1023,7 +1032,7 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 
 	while (ct) {
 		/* if expires is 0 */
-		calc_contact_expires(msg, ct->expires, &exp);
+		calc_contact_expires(msg, ct->expires, &exp, NULL);
 		if (exp)
 			break;
 		ct = ct->next;

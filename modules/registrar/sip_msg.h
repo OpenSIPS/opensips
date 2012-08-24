@@ -35,6 +35,14 @@
 #include "../../parser/msg_parser.h"
 #include "../../parser/contact/parse_contact.h"
 
+struct save_ctx {
+	unsigned int flags;
+	str aor;
+	unsigned int max_contacts;
+	unsigned int min_expires;
+	unsigned int max_expires;
+};
+
 
 /*! \brief
  * Parse the whole message and bodies of all header fields
@@ -78,7 +86,7 @@ contact_t* get_next_contact(contact_t* _c);
  * 3) If the message contained no expires header field, use
  *    the default value
  */
-void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e);
+void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx);
 
 
 /*! \brief
