@@ -246,10 +246,12 @@ int cassandra_simple_get_counter(const string& attr,int *value)
 			return 0;
 		} catch (InvalidRequestException &ire) {
        			LM_ERR("ERROR1: %s\n", ire.why.c_str());
-      		}
+      	}
 		catch (NotFoundException &nfx) {
-			/* signal that it was a success, but not found in back-end */
-			return 1;
+			/* if counter not found as set, return a 0 value */
+			if (value)
+				*value=0;	
+			return 0;
 		}
 		catch (TException &tx) {
 			LM_ERR("ERROR2: %s\n", tx.what());

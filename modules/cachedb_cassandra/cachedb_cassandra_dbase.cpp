@@ -210,11 +210,6 @@ int cassandra_get_counter(cachedb_con *connection,str *attr,int *val)
 		return -1;
 	}
 
-	if (ret > 0) {
-		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
-		return -2;
-	}
-
 	return 0;
 }
 
