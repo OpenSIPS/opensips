@@ -1526,7 +1526,7 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 						}
 					}
 					if (attrs_avp_name>= 0) {
-						avp_val.s = list->dlist->attrs;
+						avp_val.s = list->dlist[j].attrs;
 						if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
 							return -1;
 					}
