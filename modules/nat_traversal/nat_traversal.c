@@ -1324,6 +1324,8 @@ __tm_reply_out(struct cell *trans, int type, struct tmcb_params *param)
                 keepalive_registration(param->req, expire);
             break;
         }
+
+        free_sip_msg(&reply);
     }
 }
 
