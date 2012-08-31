@@ -1095,8 +1095,9 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	str key;
 	b2bl_tuple_t* tuple;
 	str new_dest;
+	str prov_media;
 	unsigned int entity_no = 0;
-	b2bl_entity_id_t* entity, *old_entity, *bridging_entity;
+	b2bl_entity_id_t* entity, *old_entity, *bridging_entity, *prov_entity = 0;
 	struct sip_uri uri;
 	str meth_inv = {INVITE, INVITE_LEN};
 	str meth_bye = {BYE, BYE_LEN};
@@ -1154,23 +1155,39 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 		{
 			return init_mi_tree(404, "Invalid entity no parameter", 27);
 		}
-	}
-	else
-	{
-		return init_mi_tree(404, "Invalid entity no parameter", 27);
+		node = node->next;
+		if (node)
+		{
+			/* parse new uri */
+			prov_media = node->value;
+			if(parse_uri(node->value.s, node->value.len, &uri)< 0)
+			{
+				LM_ERR("Bad argument. Not a valid provisional media uri [%.*s]\n",
+					   new_dest.len, new_dest.s);
+				return init_mi_tree(404, "Bad parameter", 13);
+			}
+			prov_entity = b2bl_create_new_entity(B2B_CLIENT,
+							0, &prov_media, 0, 0, 0, 0);
+			if (!prov_entity) {
+				LM_ERR("Failed to create new b2b entity\n");
+				goto free;
+			}
+			if (node->next)
+				return init_mi_tree(404, MI_SSTR(MI_MISSING_PARM));
+		}
 	}
 
 	if(b2bl_parse_key(&key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Failed to parse key '%.*s'\n", key.len, key.s);
-		return 0;
+		goto free;
 	}
 
 	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create new b2b entity\n");
-		return 0;
+		goto free;
 	}
 
 	lock_get(&b2bl_htable[hash_index].lock);
@@ -1235,12 +1252,19 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	old_entity->peer = NULL;
 
 	tuple->bridge_entities[0]= bridging_entity;
-	tuple->bridge_entities[1]= entity;
-
-	bridging_entity->peer = entity;
-	entity->peer = bridging_entity;
+	if (prov_entity) {
+		tuple->bridge_entities[1]= prov_entity;
+		tuple->bridge_entities[2]= entity;
+		/* we don't have to free it anymore */
+		prov_entity = 0;
+	} else {
+		tuple->bridge_entities[1]= entity;
+		bridging_entity->peer = entity;
+		entity->peer = bridging_entity;
+	}
 
 	tuple->scenario_state = B2B_BRIDGING_STATE;
+	bridging_entity->state = 0;
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(bridging_entity);
@@ -1255,6 +1279,9 @@ error:
 	if(tuple)
 		b2b_mark_todel(tuple);
 	lock_release(&b2bl_htable[hash_index].lock);
+free:
+	if (prov_entity)
+		shm_free(prov_entity);
 	return 0;
 }
 

@@ -96,7 +96,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		str** b2bl_key_s, int db_flag)
 {
 	b2bl_tuple_t *it, *prev_it;
-	b2bl_tuple_t* tuple;
+	b2bl_tuple_t* tuple = NULL;
 	str* b2bl_key;
 	int i;
 	static char buf[256];
@@ -115,11 +115,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 
 	size = sizeof(b2bl_tuple_t) + local_contact.len;
-	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
-	{
-		size+= body->len;
-	}
-
 	tuple = (b2bl_tuple_t*)shm_malloc(size);
 	if(tuple == NULL)
 	{
@@ -128,20 +123,23 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	}
 	memset(tuple, 0, size);
 
-	size = sizeof(b2bl_tuple_t);
-	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
-	{
-		tuple->sdp.s = (char*)tuple + sizeof(b2bl_tuple_t);
-		memcpy(tuple->sdp.s, body->s, body->len);
-		tuple->sdp.len =  body->len;
-		size += body->len;
-	}
-
-	tuple->local_contact.s = (char*)tuple + size;
+	tuple->local_contact.s = (char*)(tuple + 1);
 	memcpy(tuple->local_contact.s, local_contact.s, local_contact.len);
 	tuple->local_contact.len = local_contact.len;
 
 	tuple->scenario = scenario;
+
+	if(body && (use_init_sdp || (scenario && scenario->use_init_sdp)))
+	{
+		/* alloc sepparate memory for sdp */
+		tuple->sdp.s = shm_malloc(body->len);
+		if (!tuple->sdp.s) {
+			LM_ERR("no more shm memory for sdp body\n");
+			goto error;
+		}
+		memcpy(tuple->sdp.s, body->s, body->len);
+		tuple->sdp.len = body->len;
+	}
 
 	if(msg)
 	{
@@ -286,8 +284,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	if(b2bl_key == NULL)
 	{
 		LM_ERR("failed to generate b2b logic key\n");
-		lock_release(&b2bl_htable[hash_index].lock);
-		return NULL;
+		goto error;
 	}
 	tuple->key = b2bl_key;
 
@@ -298,6 +295,11 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	return tuple;
 error:
+	if (tuple) {
+		if (tuple->sdp.s)
+			shm_free(tuple->sdp.s);
+		shm_free(tuple);
+	}
 	lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
 }
@@ -328,6 +330,7 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	b2bl_entity_id_t* e;
 	unsigned int index;
 	int found = 0;
+	int i;
 
 	for (index = 0; index < MAX_B2BL_ENT; index++)
 	{
@@ -339,13 +342,15 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 			{
 				case 0:
 					tuple->servers[0] = tuple->servers[1];
-					tuple->servers[1] = NULL;
-					break;
 				case 1:
-					tuple->servers[1] = NULL;
-					if (tuple->servers[0] == NULL)
-						LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
+					tuple->servers[1] = tuple->servers[2];
+				case 2:
+					tuple->servers[2] = NULL;
+					for ( i=0 ; i<index ; i++ ) {
+						if (tuple->servers[index] == NULL)
+							LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
 							tuple, tuple->key->len, tuple->key->s);
+					}
 					break;
 				default:
 					LM_CRIT("we should never end up here\n");
@@ -360,14 +365,15 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 			{
 				case 0:
 					tuple->clients[0] = tuple->clients[1];
-					tuple->clients[1] = NULL;
-					break;
 				case 1:
-					tuple->clients[1] = NULL;
-					if (tuple->clients[0] == NULL)
-						LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
+					tuple->clients[1] = tuple->clients[2];
+				case 2:
+					tuple->clients[2] = NULL;
+					for ( i=0 ; i<index ; i++ ) {
+						if (tuple->clients[index] == NULL)
+							LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
 							tuple, tuple->key->len, tuple->key->s);
-					break;
+					}
 				default:
 					LM_CRIT("we should never end up here\n");
 			}
@@ -445,30 +451,30 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 
 int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 {
+	int i, pos;
 	LM_INFO("adding entity [%p]->[%.*s] to tuple [%p]->[%.*s]\n",
 		entity, entity->key.len, entity->key.s,
 		tuple, tuple->key->len, tuple->key->s);
 
-	if (tuple->clients[0] == NULL)
-	{
-		if (tuple->clients[1])
-		{
-			LM_ERR("inconsistent clients state for tuple [%p]->[%.*s]\n",
-				tuple, tuple->key->len, tuple->key->s);
+	for (pos = 0; pos < MAX_B2BL_ENT && tuple->clients[pos]; pos++);
+
+	if (pos == MAX_B2BL_ENT) {
+ 		LM_ERR("unable to add entity [%p]->[%.*s] to tuple [%p]->[%.*s], all spots taken\n",
+ 			entity, entity->key.len, entity->key.s,
+ 			tuple, tuple->key->len, tuple->key->s);
+ 		return -1;
+ 	}
+		
+
+	/* check for inconsistencies */
+	for (i = pos + 1; i < MAX_B2BL_ENT; i++)
+		if (tuple->clients[i]) {
+			LM_ERR("inconsistent clients state for tuple [%p]->[%.*s] pos %d\n",
+				tuple, tuple->key->len, tuple->key->s, i);
 			return -1;
 		}
-		tuple->clients[0] = entity;
-	}
-	else if (tuple->clients[1] == NULL)
-		tuple->clients[1] = entity;
-	else
-	{
-		LM_ERR("unable to add entity [%p]->[%.*s] to tuple [%p]->[%.*s], all spots taken\n",
-			entity, entity->key.len, entity->key.s,
-			tuple, tuple->key->len, tuple->key->s);
-		return -1;
-	}
-		
+	tuple->clients[pos] = entity;
+
 	b2bl_print_tuple(tuple, L_DBG);
 	return 0;
 }
@@ -584,6 +590,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 
 	if(tuple->b1_sdp.s)
 		shm_free(tuple->b1_sdp.s);
+
+	if (tuple->sdp.s && tuple->sdp.s != tuple->b1_sdp.s)
+		shm_free(tuple->sdp.s);
 
 	shm_free(tuple);
 }

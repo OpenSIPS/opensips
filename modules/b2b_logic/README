@@ -17,8 +17,8 @@ Ovidiu Sas
 
    Copyright © 2010 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision: 8137 $ $Date: 2011-07-07 08:02:20 -0400
-                              (Thu, 07 Jul 2011) $
+   Revision $Revision: 8137 $ $Date: 2011-07-07 15:02:20 +0300
+                              (Jo, 07 iul 2011) $
      __________________________________________________________
 
    Table of Contents
@@ -438,7 +438,8 @@ route(Y)
    B2BUA to bridge a call party from an on going dialog to another
    destination. By default the caller is bridged to the new uri
    and BYE is set to the callee. You can instead bridge the callee
-   if you send 1 as the third parameter.
+   if you send 1 as the third parameter. Also, if a fourth
+   parameter is
 
    Name: b2b_bridge
 
@@ -451,6 +452,11 @@ route(Y)
      * flag to specify that the callee must be bridged to the new
        destination. It is optional. If not present the caller will
        be bridged.
+     * provisional media uri - the uri of a media server able to
+       play provisional media starting from the beginning of the
+       bridging scenario to the end of it. It is optional. If not
+       present, no other entity will be envolved in the bridging
+       scenario
 
    MI FIFO Command Format:
         :b2b_bridge:fifo_reply

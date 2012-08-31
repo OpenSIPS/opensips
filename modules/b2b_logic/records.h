@@ -46,7 +46,8 @@ typedef struct b2bl_entity_id
 	b2b_dlginfo_t* dlginfo;
 	int disconnected;
 	int state;
-	int no;
+	unsigned short no;
+	unsigned short late_sdp;
 	enum b2b_entity_type type;
 	b2bl_dlg_stat_t stats;
 	struct b2bl_entity_id* peer;
@@ -58,7 +59,7 @@ typedef struct b2bl_entity_id
 #define UPDATEDB_FLAG       1
 #define INSERTDB_FLAG       2
 
-#define MAX_B2BL_ENT		2
+#define MAX_B2BL_ENT		3
 #define MAX_BRIDGE_ENT		3
 #define MAX_SCENARIO_PARAMS	5
 

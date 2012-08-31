@@ -750,6 +750,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
 				return -1;
 			}
+			bentity1->late_sdp = body ? 0 : 1;
 			bentity1->state = B2BL_ENT_NEW;
 		}
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
@@ -768,12 +769,16 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			}
 			memcpy(tuple->b1_sdp.s, body->s, body->len);
 			tuple->b1_sdp.len = body->len;
+
+			/* XXX: make sure this is safe */
+			if (tuple->sdp.s && tuple->b1_sdp.s != tuple->sdp.s)
+				shm_free(tuple->sdp.s);
+			tuple->sdp = tuple->b1_sdp;
 		}
 	}
 	else
 	if(entity_no == 1) /* from provisional media server or from final destination */
 	{
-		str* ack_body= 0;
 		/* the second -> send ACK with body to the first entity
 		and ACK without a body to the second entity*/
 
@@ -784,21 +789,12 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		bentity0->stats.setup_time = get_ticks() - bentity0->stats.start_time;
 		bentity0->stats.start_time = get_ticks();
 
-		/* a complicated combination of conditions that tell us if we need 
-		 * to send body in ACK */
-		if(!(tuple->sdp.s && bentity0->type == B2B_CLIENT))
-		{
-			ack_body = body;
-		}
-		else
-			LM_DBG("Don't send body because the tuple already has a body - so it was used in invite\n");
-
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		req_data.et =bentity0->type;
 		req_data.b2b_key =&bentity0->key;
 		req_data.method =&method_ack;
 		req_data.extra_headers =extra_headers;
-		req_data.body =ack_body;
+		req_data.body = bentity0->late_sdp ? body : 0;
 		req_data.dlginfo =bentity0->dlginfo;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
@@ -859,6 +855,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* send reinvite to the initial server*/
 		bentity0->stats.setup_time = get_ticks() - bentity0->stats.start_time;
 		bentity0->stats.start_time = get_ticks();
+		bentity0->late_sdp = 0;
+
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		req_data.et =bentity0->type;
 		req_data.b2b_key =&bentity0->key;
@@ -1663,6 +1661,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				}
 				rule = rule->next;
 			}
+			peer->late_sdp = body->len ? 0 : 1;
 		}
 		if(!rule)
 		{
@@ -2495,6 +2494,7 @@ entity_search_done:
 		req_data.extra_headers = NULL;
 		b2b_api.send_request(&req_data);
 		old_entity->state = 0;
+		old_entity->late_sdp = 1;
 	}
 	else
 	{
@@ -3553,6 +3553,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 			LM_ERR("Failed to send INVITE request\n");
 			goto error;
 		}
+		tuple->servers[0]->late_sdp = 1;
 		tuple->servers[0]->state = 0; /* mark it not as CONFIRMED */
 	}
 
@@ -3858,6 +3859,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
+	e1->late_sdp = 1;
 	e1->state = 0;
 	tuple->scenario_state = B2B_BRIDGING_STATE;
 	if(max_duration)
@@ -4062,6 +4064,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
+	bridging_entity->late_sdp = 0;
 	bridging_entity->state = 0;
 	if(max_duration)
 		tuple->lifetime = get_ticks() + max_duration;
