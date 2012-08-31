@@ -30,6 +30,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "flat_pool.h"
@@ -40,12 +43,24 @@
 
 static int parse_flat_url(const str* url, str* path)
 {
+	struct stat st_buf;
+	
 	if (!url || !url->s || !path) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 	path->s = strchr(url->s, ':') + 1;
 	path->len = strlen(path->s);
+
+	/* check if the directory exists */
+	if (stat(path->s, &st_buf) < 0) {
+		LM_ERR("cannot stat %s: %s [%d]\n", path->s, strerror(errno), errno);
+		return -1;
+	}
+	if (!S_ISDIR (st_buf.st_mode)) {
+		LM_ERR("%s is not a directory\n", path->s);
+		return -1;
+	}
 	return 0;
 }
 
