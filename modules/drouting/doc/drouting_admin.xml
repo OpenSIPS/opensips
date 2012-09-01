@@ -1108,14 +1108,16 @@ if (use_next_gw()) {
 		This function does not change anything in the message.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE
+		and LOCAL_ROUTE.
 		</para>
 		<para>
 			The function can take two optional parameters:
 			<itemizedlist>
 				<listitem>
 					<emphasis>type</emphasis> (optional) - GW/destination 
-					type to be checked
+					type to be checked; a negative value (ex: -1) means
+					match any group;
 				</listitem>
 				<listitem>
 					<emphasis>flags</emphasis> (optional) - what operations
@@ -1131,7 +1133,16 @@ if (use_next_gw()) {
 						</listitem>
 						<listitem>
 							<emphasis>'a'</emphasis> (Attributes) - return
-							the attributes string defined by the GW
+							the attributes string defined by the GW into gw_attrs_avp
+							AVP
+						</listitem>
+						<listitem>
+							<emphasis>'i'</emphasis> (Gateway ID) - return the 
+							gateway id into gw_id_avp AVP
+						</listitem>
+						<listitem>
+							<emphasis>'n'</emphasis> (Ignore port) - ignores port
+							number during matching
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1159,14 +1170,16 @@ if (goes_to_gw("1")) {
 		from a certain group.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
+		and ONREPLY_ROUTE.
 		</para>
 		<para>
 			The function can take two optional parameters:
 			<itemizedlist>
 				<listitem>
-					<emphasis>type</emphasis> (mandatory) - GW/destination
-					type to be checked
+					<emphasis>type</emphasis> (optional) - GW/destination
+					type to be checked; a negative value (ex: -1) means
+					match any group;
 				</listitem>
 				<listitem>
 					<emphasis>flags</emphasis> (optional) - what operations
@@ -1182,7 +1195,16 @@ if (goes_to_gw("1")) {
 						</listitem>
 						<listitem>
 							<emphasis>'a'</emphasis> (Attributes) - return
-							the attributes string defined by the GW
+							the attributes string defined by the GW into gw_attrs_avp
+							AVP
+						</listitem>
+						<listitem>
+							<emphasis>'i'</emphasis> (Gateway ID) - return the 
+							gateway id into gw_id_avp AVP
+						</listitem>
+						<listitem>
+							<emphasis>'n'</emphasis> (Ignore port) - ignores port
+							number during matching
 						</listitem>
 					</itemizedlist>
 				</listitem>
@@ -1193,6 +1215,67 @@ if (goes_to_gw("1")) {
 		<programlisting format="linespecific">
 ...
 if (is_from_gw("3","1") {
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">dr_is_gw(src_pv, [type, [flag]])</function>
+		</title>
+		<para>
+		The function checks if the ip address in pvar src_pv is a gateway
+		from a certain group.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE,
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE and TIMER_ROUTE.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:
+			<itemizedlist>
+				<listitem>
+					<emphasis>src_pv</emphasis> (mandatory) - pvar containing SIP URI.
+					May be a script var or avp.
+				</listitem>
+				<listitem>
+					<emphasis>type</emphasis> (optional) - GW/destination
+					type to be checked; a negative value (ex: -1) means
+					match any group;
+				</listitem>
+				<listitem>
+					<emphasis>flags</emphasis> (optional) - what operations
+					should be performed when a GW matches:
+					<itemizedlist>
+						<listitem>
+							<emphasis>'s'</emphasis> (Strip) - apply to the 
+							username of RURI the strip defined by the GW
+						</listitem>
+						<listitem>
+							<emphasis>'p'</emphasis> (Prefix) - apply to the 
+							username of RURI the prefix defined by the GW
+						</listitem>
+						<listitem>
+							<emphasis>'a'</emphasis> (Attributes) - return the attributes string
+							defined by the GW into gw_attrs_avp pvar
+						</listitem>
+						<listitem>
+							<emphasis>'i'</emphasis> (Gateway ID) - return the gateway id into gw_id_avp pvar
+						</listitem>
+						<listitem>
+							<emphasis>'n'</emphasis> (Ignore port) - ignores port number
+						</listitem>
+					</itemizedlist>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title><function>dr_is_gw</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (dr_is_gw("$avp(uac)","3") {
 }
 ...
 </programlisting>

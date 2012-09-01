@@ -73,7 +73,8 @@ Anca-Maria Vamanu
               1.4.4. use_next_gw()/next_routing()
               1.4.5. goes_to_gw([[type],flags])
               1.4.6. is_from_gw( [type, [flag]])
-              1.4.7. dr_disable()
+              1.4.7. dr_is_gw(src_pv, [type, [flag]])
+              1.4.8. dr_disable()
 
         1.5. Exported MI Functions
 
@@ -117,9 +118,10 @@ Anca-Maria Vamanu
    1.28. use_next_gw usage
    1.29. goes_to_gw usage
    1.30. is_from_gw usage
-   1.31. dr_disable() usage
-   1.32. dr_gw_status usage
-   1.33. dr_carrier_status usage
+   1.31. dr_is_gw usage
+   1.32. dr_disable() usage
+   1.33. dr_gw_status usage
+   1.34. dr_carrier_status usage
 
 Chapter 1. Admin Guide
 
@@ -801,10 +803,12 @@ if (use_next_gw()) {
 
    This function does not change anything in the message.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
 
    The function can take two optional parameters:
-     * type (optional) - GW/destination type to be checked
+     * type (optional) - GW/destination type to be checked; a
+       negative value (ex: -1) means match any group;
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -812,7 +816,11 @@ if (use_next_gw()) {
           + 'p' (Prefix) - apply to the username of RURI the
             prefix defined by the GW
           + 'a' (Attributes) - return the attributes string
-            defined by the GW
+            defined by the GW into gw_attrs_avp AVP
+          + 'i' (Gateway ID) - return the gateway id into
+            gw_id_avp AVP
+          + 'n' (Ignore port) - ignores port number during
+            matching
 
    Example 1.29. goes_to_gw usage
 ...
@@ -827,10 +835,12 @@ if (goes_to_gw("1")) {
    The function checks if the sender of the message is a gateway
    from a certain group.
 
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
+   ONREPLY_ROUTE.
 
    The function can take two optional parameters:
-     * type (mandatory) - GW/destination type to be checked
+     * type (optional) - GW/destination type to be checked; a
+       negative value (ex: -1) means match any group;
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -838,7 +848,11 @@ if (goes_to_gw("1")) {
           + 'p' (Prefix) - apply to the username of RURI the
             prefix defined by the GW
           + 'a' (Attributes) - return the attributes string
-            defined by the GW
+            defined by the GW into gw_attrs_avp AVP
+          + 'i' (Gateway ID) - return the gateway id into
+            gw_id_avp AVP
+          + 'n' (Ignore port) - ignores port number during
+            matching
 
    Example 1.30. is_from_gw usage
 ...
@@ -846,7 +860,39 @@ if (is_from_gw("3","1") {
 }
 ...
 
-1.4.7.  dr_disable()
+1.4.7.  dr_is_gw(src_pv, [type, [flag]])
+
+   The function checks if the ip address in pvar src_pv is a
+   gateway from a certain group.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE and
+   TIMER_ROUTE.
+
+   Meaning of the parameters is as follows:
+     * src_pv (mandatory) - pvar containing SIP URI. May be a
+       script var or avp.
+     * type (optional) - GW/destination type to be checked; a
+       negative value (ex: -1) means match any group;
+     * flags (optional) - what operations should be performed when
+       a GW matches:
+          + 's' (Strip) - apply to the username of RURI the strip
+            defined by the GW
+          + 'p' (Prefix) - apply to the username of RURI the
+            prefix defined by the GW
+          + 'a' (Attributes) - return the attributes string
+            defined by the GW into gw_attrs_avp pvar
+          + 'i' (Gateway ID) - return the gateway id into
+            gw_id_avp pvar
+          + 'n' (Ignore port) - ignores port number
+
+   Example 1.31. dr_is_gw usage
+...
+if (dr_is_gw("$avp(uac)","3") {
+}
+...
+
+1.4.8.  dr_disable()
 
    Marks as disabled the last destination that was used for the
    current call. The disabling done via this function will prevent
@@ -856,7 +902,7 @@ if (is_from_gw("3","1") {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. dr_disable() usage
+   Example 1.32. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -894,7 +940,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 status (optional)
                 _empty_line_
 
-   Example 1.32. dr_gw_status usage
+   Example 1.33. dr_gw_status usage
 $ ./opensipsctl fifo dr_gw_status 2
 Enabled:: no
 $ ./opensipsctl fifo dr_gw_status 2 1
@@ -918,7 +964,7 @@ Enabled:: yes
                 status (optional)
                 _empty_line_
 
-   Example 1.33. dr_carrier_status usage
+   Example 1.34. dr_carrier_status usage
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1

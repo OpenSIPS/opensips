@@ -160,6 +160,7 @@ static int dr_exit(void);
 
 static int fixup_do_routing(void** param, int param_no);
 static int fixup_from_gw(void** param, int param_no);
+static int fixup_is_gw(void** param, int param_no);
 
 static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort, gparam_t* wl);
 static int do_routing_0(struct sip_msg* msg);
@@ -170,6 +171,7 @@ static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
 static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2);
 static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
 static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
+static int dr_is_gw(struct sip_msg* msg, char* str1, char* str2, char* str3);
 static int route2_carrier(struct sip_msg* msg, char* cr);
 static int route2_gw(struct sip_msg* msg, char* gw);
 
@@ -193,7 +195,7 @@ static cmd_export_t cmds[] = {
 	{"use_next_gw",  (cmd_function)use_next_gw,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"next_routing",  (cmd_function)use_next_gw,  0,  0, 0,
-		FAILURE_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_1,   1,  fixup_from_gw, 0,
@@ -201,13 +203,19 @@ static cmd_export_t cmds[] = {
 	{"is_from_gw",  (cmd_function)is_from_gw_2,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_0,   0,  0, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   1,  fixup_from_gw, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRNACH_ROUTE|LOCAL_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   2,  fixup_from_gw, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"dr_is_gw",  (cmd_function)dr_is_gw,         1,  fixup_is_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
+	{"dr_is_gw",  (cmd_function)dr_is_gw,         2,  fixup_is_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
+	{"dr_is_gw",  (cmd_function)dr_is_gw,         3,  fixup_is_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
 	{"dr_disable", (cmd_function)dr_disable,      0,  0, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_pvar_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"route_to_gw",     (cmd_function)route2_gw,     1,fixup_pvar_null, 0,
@@ -1881,6 +1889,21 @@ static int fixup_from_gw( void** param, int param_no)
 }
 
 
+static int fixup_is_gw( void** param, int param_no)
+{
+	if (param_no == 1) {
+		return fixup_pvar(param);
+	} else if (param_no == 2) {
+		/* GW type*/
+		return fixup_uint(param);
+	} else if (param_no == 3) {
+		/* GW ops */
+		return fixup_spve(param);
+	}
+	return 0;
+}
+
+
 static int strip_username(struct sip_msg* msg, int strip)
 {
 	struct action act;
@@ -1924,52 +1947,21 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip)
 }
 
 
-static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
-{
-	pgw_t *pgwa = NULL;
-
-	if(rdata==NULL || *rdata==NULL || msg==NULL)
-		return -1;
-	
-	pgwa = (*rdata)->pgw_l;
-	while(pgwa) {
-		if( (pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		gw_matches_ip( pgwa, &msg->rcv.src_ip))
-			return 1;
-		pgwa = pgwa->next;
-	}
-	return -1;
-}
-
-
-static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
-{
-	pgw_t *pgwa = NULL;
-	int type = (int)(long)str;
-
-	if(rdata==NULL || *rdata==NULL || msg==NULL)
-		return -1;
-	
-	pgwa = (*rdata)->pgw_l;
-	while(pgwa) {
-		if( type==pgwa->type && 
-		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		gw_matches_ip( pgwa, &msg->rcv.src_ip))
-			return 1;
-		pgwa = pgwa->next;
-	}
-	return -1;
-}
-
-
 #define DR_IFG_STRIP_FLAG      (1<<0)
 #define DR_IFG_PREFIX_FLAG     (1<<1)
 #define DR_IFG_ATTRS_FLAG      (1<<2)
 #define DR_IFG_IDS_FLAG        (1<<3)
-static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
+#define DR_IFG_IGNOREPORT_FLAG (1<<4)
+
+
+/*
+ * Checks if a given IP + PORT is a GW; tests the TYPE too
+ * INTERNAL FUNCTION
+ */
+static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
+							int type, struct ip_addr *ip, unsigned int port)
 {
 	pgw_t *pgwa = NULL;
-	int type = (int)(long)type_s;
 	int flags = 0;
 	str flags_s;
 	int_str val;
@@ -1989,6 +1981,7 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 				case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
 				case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
+				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
 				default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
 			}
 		}
@@ -1996,9 +1989,9 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
-		if( type==pgwa->type &&
-		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		gw_matches_ip( pgwa, &msg->rcv.src_ip) ) {
+		if( (type<0 || type==pgwa->type) &&
+		(pgwa->port==0 || flags&DR_IFG_IGNOREPORT_FLAG || pgwa->port==port) &&
+		gw_matches_ip( pgwa, ip) ) {
 			/* strip ? */
 			if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 				strip_username(msg, pgwa->strip);
@@ -2028,88 +2021,98 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 }
 
 
-static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
+/*
+ * Checks if a given src IP and PORT is a GW; no TYPE, no FLAGS
+ */
+static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 {
-	pgw_t *pgwa = NULL;
-	struct sip_uri puri;
-	struct ip_addr *ip;
-	str *uri;
-	int type;
-	int flags = 0;
-	str flags_s;
-	int_str val;
-	int i;
-
-	if(rdata==NULL || *rdata==NULL || msg==NULL)
-		return -1;
-
-	uri = GET_NEXT_HOP(msg);
-	type = (int)(long)_type;
-
-	if (parse_uri(uri->s, uri->len, &puri)<0){
-		LM_ERR("bad uri <%.*s>\n", uri->len, uri->s);
-		return -1;
-	}
-
-	if ( ((ip=str2ip(&puri.host))!=0)
-#ifdef USE_IPV6
-	|| ((ip=str2ip6(&puri.host))!=0)
-#endif
-	){
-		/* prepare flags */
-		if (flags_pv && flags_pv[0]) {
-			if (fixup_get_svalue( msg, (gparam_p)flags_pv, &flags_s)!=0) {
-				LM_ERR("invalid flags parameter");
-				return -1;
-			}
-			for( i=0 ; i < flags_s.len ; i++ ) {
-				switch (flags_s.s[i]) {
-					case 's': flags |= DR_IFG_STRIP_FLAG; break;
-					case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
-					case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
-					case 'i': flags |= DR_IFG_IDS_FLAG; break;
-					default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
-				}
-			}
-		}
-
-		pgwa = (*rdata)->pgw_l;
-		while(pgwa) {
-			if( (type<0 || type==pgwa->type) && gw_matches_ip( pgwa, ip) ) {
-
-				/* strip ? */
-				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
-					strip_username(msg, pgwa->strip);
-				/* prefix ? */
-				if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0)
-					prefix_username(msg, &pgwa->pri);
-				/* attrs ? */
-				if (DR_IFG_ATTRS_FLAG && gw_attrs_avp.name!=-1) {
-					val.s = pgwa->attrs.s ? pgwa->attrs : attrs_empty ;
-					if (add_avp( AVP_VAL_STR|(gw_attrs_avp.type),
-					gw_attrs_avp.name, val))
-						LM_ERR("failed to insert attrs avp\n");
-				}
-				if ( flags & DR_IFG_IDS_FLAG ) {
-					val.s = pgwa->id;
-					if (add_avp(AVP_VAL_STR|(gw_id_avp.type),
-					gw_id_avp.name,val)!=0)
-						LM_ERR("failed to insert GW attrs avp\n");
-				}
-				return 1;
-			}
-			pgwa = pgwa->next;
-		}
-	}
-
-	return -1;
+	return _is_dr_gw( msg, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port);
 }
 
 
+/*
+ * Checks if a given src IP and PORT is a GW; tests the TYPE too, no FLAGS
+ */
+static int is_from_gw_1(struct sip_msg* msg, char* type_s, char* str2)
+{
+	return _is_dr_gw( msg, NULL, (int)(long)type_s, &msg->rcv.src_ip , msg->rcv.src_port);
+}
+
+
+/*
+ * Checks if a given src IP and PORT is a GW; tests the TYPE too
+ */
+static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
+{
+	return _is_dr_gw( msg, flags_pv,
+			(int)(long)type_s, &msg->rcv.src_ip , msg->rcv.src_port);
+}
+
+
+/*
+ * Checks if a given SIP URI is a GW; tests the TYPE too
+ * INTERNAL FUNCTION
+ */
+static int _is_dr_uri_gw(struct sip_msg* msg, char* flags_pv, int type, str *uri)
+{
+	struct sip_uri puri;
+	struct hostent* he;
+	struct ip_addr ip;
+
+	memset( &puri, 0, sizeof(struct sip_uri));
+	if (parse_uri(uri->s, uri->len, &puri)!=0) {
+		LM_ERR("invalid sip uri <%.*s>\n", uri->len, uri->s);
+		return -1;
+	}
+
+	he = sip_resolvehost(&puri.host, &puri.port_no, &puri.proto,
+		(puri.type==SIPS_URI_T), 0);
+	if (he==0) {
+		LM_DBG("resolve_host(%.*s) failure\n", puri.host.len, puri.host.s);
+		return -1;
+	}
+
+	/* extract the first ip */
+	memset(&ip,0,sizeof(struct ip_addr));
+	hostent2ip_addr( &ip, he, 0);
+
+	return _is_dr_gw( msg, flags_pv, type, &ip , puri.port_no);
+}
+
+
+/*
+ * Checks if RURI is a GW ; tests the TYPE too
+ */
+static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
+{
+	return _is_dr_uri_gw( msg, flags_pv, (int)(long)_type, GET_NEXT_HOP(msg));
+}
+
+
+/*
+ * Checks if RURI is a GW; not TYPE check
+ */
 static int goes_to_gw_0(struct sip_msg* msg, char* _type, char* _f2)
 {
 	return goes_to_gw_1(msg, (char*)(long)-1, _f2);
 }
+
+
+/*
+ * Checks if a variable (containing a SIP URI) is a GW; tests the TYPE too
+ */
+static int dr_is_gw(struct sip_msg* msg, char* src_pv, char* type_s, char* flags_pv)
+{
+	pv_value_t src;
+
+	if ( pv_get_spec_value(msg, (pv_spec_p)src_pv, &src)!=0 || (src.flags&PV_VAL_STR)==0 || src.rs.len<=0) {
+		LM_ERR("failed to get string value for src\n");
+		return -1;
+	}
+
+	return _is_dr_uri_gw( msg, flags_pv, (int)(long)type_s, &src.rs );
+}
+
 
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 {
