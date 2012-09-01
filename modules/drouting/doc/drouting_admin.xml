@@ -929,7 +929,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 		rules in the database table and the configured parameters.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 			The function can take two optional parameters:
@@ -1011,7 +1011,7 @@ do_routing("2","F");
 		sent to the GWs of that carrier, based on carrier policy)
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE..
 		</para>
 		<para>
 		Function takes a single mandatory parameter, the ID of the carrier
@@ -1041,7 +1041,7 @@ if ( route_to_carrier("my_top_carrier") ) {
 		and per-gw preocessing will be available.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 		Function takes a single mandatory parameter, the ID of the gateway
@@ -1075,7 +1075,7 @@ if ( route_to_gw("gw_europe") ) {
 		pending set of alternative destinations.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 		The function returns true only if a new RURI was set. False
