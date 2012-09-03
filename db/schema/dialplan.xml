@@ -9,7 +9,7 @@
 
 <table id="dialplan" xmlns:db="http://docbook.org/ns/docbook">
     <name>dialplan</name>
-    <version>3</version>
+    <version>4</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used by the dialplan module for the translation rules. More information is available at: &OPENSIPS_MOD_DOC;dialplan.html
@@ -55,11 +55,11 @@
         <description>Matching expresion (regexp or string).</description>
     </column>
 
-    <column id="match_len">
-        <name>match_len</name>
+     <column id="match_flags">
+        <name>match_flags</name>
         <type>int</type>
         <size>11</size>
-        <description>Length of the matching expresion (used only for equal operator).</description>
+        <description>Matching flags (0-case sensitive, 1-case insensitive).</description>
     </column>
 
      <column id="subst_exp">
@@ -80,8 +80,8 @@
         <name>disabled</name>
         <type>int</type>
         <size>11</size>
-		<default>0</default>
-		<description>Specifies if the command can be used, or is disabled.</description>
+    <default>0</default>
+        <description>Specifies if the command can be used, or is disabled.</description>
     </column>
 
     <column id="attrs">

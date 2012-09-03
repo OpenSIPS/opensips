@@ -29,7 +29,6 @@
 
 #define MAX_REPLACE_WITH	10
 
-
 void repl_expr_free(struct subst_expr *se)
 {
 	if(!se)
@@ -63,7 +62,7 @@ struct subst_expr* repl_exp_parse(str subst)
 	repl = p;
 	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITHOUT_SEP))< 0)
 		goto error;
-	
+
 	repl_end=p;
 
 	/* construct the subst_expr structure */
@@ -283,38 +282,43 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 {
 	dpl_node_p rulep;
 	dpl_index_p indexp;
-	int user_len, rez;
-	
+	int rez;
+
 	if(!input.s || !input.len) {
 		LM_ERR("invalid input string\n");
 		return -1;
 	}
 
-	user_len = input.len;
-	for(indexp = idp->first_index; indexp!=NULL; indexp = indexp->next)		
-		if(!indexp->len || (indexp->len!=0 && indexp->len == user_len) )
+	for(indexp = idp->first_index; indexp!=NULL; indexp = indexp->next) {
+		if(!indexp->len || (indexp->len == input.len)) {
 			break;
+		}
+  	}
 
-	if(!indexp || (indexp!= NULL && !indexp->first_rule)){
+	if(!indexp || !indexp->first_rule) {
 		LM_DBG("no rule for len %i\n", input.len);
 		return -1;
 	}
 
 search_rule:
-	for(rulep=indexp->first_rule; rulep!=NULL; rulep= rulep->next){
+	for(rulep=indexp->first_rule; rulep!=NULL; rulep= rulep->next) {
 		switch(rulep->matchop){
 
 			case REGEX_OP:
 				LM_DBG("regex operator testing\n");
-				rez = ( test_match(input, rulep->match_comp, matches, MAX_MATCHES) > 0 ) ? 0 : -1;
+				rez = ( test_match(input, rulep->match_comp, matches, MAX_MATCHES)
+						> 0 ) ? 0 : -1;
 				break;
 
 			case EQUAL_OP:
 				LM_DBG("equal operator testing\n");
 				if(rulep->match_exp.len != input.len)
 					rez = -1;
-				else 
+				else if (rulep->matchflags & DP_CASE_INSENSITIVE) {
+					rez = strncasecmp(rulep->match_exp.s,input.s,input.len);
+				} else {
 					rez = strncmp(rulep->match_exp.s,input.s,input.len);
+				}
 				break;
 
 			default:

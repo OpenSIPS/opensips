@@ -35,14 +35,13 @@
 #define PR_COL					"pr"
 #define MATCH_OP_COL			"match_op"
 #define MATCH_EXP_COL			"match_exp"
-#define MATCH_LEN_COL			"match_len"
+#define MATCH_FLAGS_COL			"match_flags"
 #define SUBST_EXP_COL			"subst_exp"
 #define REPL_EXP_COL			"repl_exp"
 #define DISABLED_COL			"disabled"
 #define ATTRS_COL				"attrs"
 
-
-#define DP_TABLE_VERSION		3
+#define DP_TABLE_VERSION		4
 #define DP_TABLE_COL_NO 		8
 
 extern str dp_db_url;
@@ -51,7 +50,7 @@ extern str dpid_column;
 extern str pr_column; 
 extern str match_op_column; 
 extern str match_exp_column; 
-extern str match_len_column; 
+extern str match_flags_column; 
 extern str subst_exp_column; 
 extern str repl_exp_column; 
 extern str attrs_column; 

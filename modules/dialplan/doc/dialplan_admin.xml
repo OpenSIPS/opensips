@@ -90,7 +90,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>match_len</emphasis> = 0 (not used for regexp op)
+				<emphasis>match_flags</emphasis> = 0 (0 - case sensitive,
+				1 - case insensitive matching)
 			</para>
 			</listitem>
 			<listitem>
@@ -131,7 +132,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>match_len</emphasis> = 0 (not used for regexp op)
+				<emphasis>match_flags</emphasis> = 0 (0 - case sensitive,
+				1 - case insensitive matching)
 			</para>
 			</listitem>
 			<listitem>
@@ -172,7 +174,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>match_len</emphasis> = 0 (not used for regexp op)
+				<emphasis>match_flags</emphasis> = 0 (0 - case sensitive,
+				1 - case insensitive matching)
 			</para>
 			</listitem>
 			<listitem>
@@ -216,7 +219,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>match_len</emphasis> = 10
+				<emphasis>match_flags</emphasis> = 0 (0 - case sensitive,
+				1 - case insensitive matching)
 			</para>
 			</listitem>
 			<listitem>
@@ -398,21 +402,21 @@ modparam("dialplan", "match_exp_col", "column_name")
 	</section>
 
 	<section>
-		<title><varname>match_len_col</varname> (string)</title>
+		<title><varname>match_flags_col</varname> (string)</title>
 		<para>
-		The column name to store the length of a string matching the 
-		match expression.
+		The column name to store various matching flags. Currently
+		0 - case sensitive matching, 1 - case insensitive matching.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>match_len</quote>.
+			Default value is <quote>match_flags</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>pr_col</varname> parameter</title>
+		<title>Set <varname>match_flags_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "match_len_col", "column_name")
+modparam("dialplan", "match_flags_col", "column_name")
 ...
 		</programlisting>
 		</example>
@@ -429,7 +433,7 @@ modparam("dialplan", "match_len_col", "column_name")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>pr_col</varname> parameter</title>
+		<title>Set <varname>subs_exp_col</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("dialplan", "subst_exp_col", "column_name")
@@ -479,7 +483,7 @@ modparam("dialplan", "attrs_col", "column_name")
 	</section>
 
 	<section>
-		<title><varname>disabled</varname> (integer)</title>
+		<title><varname>disabled_col</varname> (integer)</title>
 		<para>
 		The column name that indicates if the dialplan rule is disabled.
 		</para>

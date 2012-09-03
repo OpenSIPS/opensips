@@ -71,7 +71,7 @@ static param_export_t mod_params[]={
 	{ "pr_col",			STR_PARAM,	&pr_column.s },
 	{ "match_op_col",	STR_PARAM,	&match_op_column.s },
 	{ "match_exp_col",	STR_PARAM,	&match_exp_column.s },
-	{ "match_len_col",	STR_PARAM,	&match_len_column.s },
+	{ "match_flags_col",STR_PARAM,	&match_flags_column.s },
 	{ "subst_exp_col",	STR_PARAM,	&subst_exp_column.s },
 	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
@@ -119,16 +119,16 @@ static int mod_init(void)
 	LM_INFO("initializing module...\n");
 
 	init_db_url( dp_db_url , 0 /*cannot be null*/);
-	dp_table_name.len   = strlen(dp_table_name.s);
-	dpid_column.len     = strlen( dpid_column.s);
-	pr_column.len       = strlen(pr_column.s);
-	match_op_column.len = strlen(match_op_column.s);
-	match_exp_column.len= strlen(match_exp_column.s);
-	match_len_column.len= strlen(match_len_column.s);
-	subst_exp_column.len= strlen(subst_exp_column.s);
-	repl_exp_column.len = strlen(repl_exp_column.s);
-	attrs_column.len    = strlen(attrs_column.s);
-	disabled_column.len = strlen(disabled_column.s);
+	dp_table_name.len   	= strlen(dp_table_name.s);
+	dpid_column.len     	= strlen( dpid_column.s);
+	pr_column.len       	= strlen(pr_column.s);
+	match_op_column.len 	= strlen(match_op_column.s);
+	match_exp_column.len	= strlen(match_exp_column.s);
+	match_flags_column.len	= strlen(match_flags_column.s);
+	subst_exp_column.len	= strlen(subst_exp_column.s);
+	repl_exp_column.len 	= strlen(repl_exp_column.s);
+	attrs_column.len    	= strlen(attrs_column.s);
+	disabled_column.len 	= strlen(disabled_column.s);
 
 	if(attr_pvar_s.s) {
 		attr_pvar = (pv_spec_t *)shm_malloc(sizeof(pv_spec_t));
@@ -306,7 +306,7 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	/* ref the data for reading */
 	lock_start_read( table->ref_lock );
 
-	if ((idp = select_dpid(table, dpid)) ==0 ){
+	if ((idp = select_dpid(table, dpid, table->crt_index)) ==0 ){
 		LM_DBG("no information available for dpid %i\n", dpid);
 		goto error;
 	}
@@ -354,7 +354,7 @@ error:
 static char *parse_dp_command(char * p, int len, str * table_name)
 {
 	char *s, *q;
-	
+
 	while (*p == ' ') {
 		p++;
 		len--;
@@ -422,12 +422,12 @@ static int dp_trans_fixup(void ** param, int param_no){
 	if(param_no == 1) {
 
 		p = parse_dp_command(p, -1, &table_name);
-		
+
 		if (p == NULL) {
 			LM_ERR("Invalid dp command\n");
 			return E_CFG;
 		}
-			
+
 		if (table_name.s && table_name.len) {
 			list = dp_add_table(&table_name);
 
@@ -436,7 +436,7 @@ static int dp_trans_fixup(void ** param, int param_no){
 				return E_OUT_OF_MEM;
 			}
 		}
-		
+
 		if(*p != '$') {
 			dp_par->type = DP_VAL_INT;
 			lstr.s = p; lstr.len = strlen(p);
@@ -538,7 +538,6 @@ static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 
 static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 {
-
 	struct mi_root* rpl= NULL;
 	struct mi_node* root, *node;
 	char *p;
@@ -560,7 +559,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		LM_ERR( "empty idp parameter\n");
 		return init_mi_tree(404, "Empty id parameter", 18);
 	}
-	
+
 	p = parse_dp_command(dpid_str.s, dpid_str.len, &table_str);
 
 	if (p == NULL) {
@@ -576,7 +575,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 
 	dpid_str.len -= (p - dpid_str.s);
 	dpid_str.s = p;
-	
+
 	if (!table) {
 		LM_ERR("Unable to get table\n");
 		return init_mi_tree(400, "Wrong db table parameter", 24);
@@ -602,7 +601,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	/* ref the data for reading */
 	lock_start_read( table->ref_lock );
 
-	if ((idp = select_dpid(table, dpid)) ==0 ){
+	if ((idp = select_dpid(table, dpid, table->crt_index)) ==0 ){
 		LM_ERR("no information available for dpid %i\n", dpid);
 		lock_stop_read( table->ref_lock );
 		return init_mi_tree(404, "No information available for dpid", 33);
@@ -657,13 +656,14 @@ void  wrap_shm_free(void * p )
 }
 
 
-pcre * wrap_pcre_compile(char *  pattern)
+pcre * wrap_pcre_compile(char *  pattern, int flags)
 {
 		pcre * ret ;
 		func_malloc old_malloc ;
 		func_free old_free;
 		const char * error;
 		int erroffset;
+		int pcre_flags = 0;
 
 
 		old_malloc = pcre_malloc;
@@ -672,11 +672,14 @@ pcre * wrap_pcre_compile(char *  pattern)
 		pcre_malloc = wrap_shm_malloc;
 		pcre_free = wrap_shm_free;
 
+		if (flags & DP_CASE_INSENSITIVE)
+			pcre_flags |= (1 << PCRE_CASELESS);
+
 		ret = pcre_compile(
-				pattern ,              /* the pattern */
-				0,                    /* default options */
-				&error,               /* for error message */
-				&erroffset,           /* for error offset */
+				pattern,			/* the pattern */
+				pcre_flags,			/* default options */
+				&error,				/* for error message */
+				&erroffset,			/* for error offset */
 				NULL);
 
 		pcre_malloc = old_malloc;

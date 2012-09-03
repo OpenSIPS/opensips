@@ -33,17 +33,17 @@
 #include "dp_db.h"
 #include "dialplan.h"
 
-str dp_db_url       =   {NULL, 0};
-str dp_table_name   =   str_init(DP_TABLE_NAME);
-str dpid_column     =   str_init(DPID_COL);
-str pr_column       =   str_init(PR_COL);
-str match_op_column =   str_init(MATCH_OP_COL);
-str match_exp_column=   str_init(MATCH_EXP_COL);
-str match_len_column=   str_init(MATCH_LEN_COL);
-str subst_exp_column=   str_init(SUBST_EXP_COL);
-str repl_exp_column =   str_init(REPL_EXP_COL);
-str disabled_column =   str_init(DISABLED_COL);
-str attrs_column    =   str_init(ATTRS_COL); 
+str dp_db_url           =   {NULL, 0};
+str dp_table_name       =   str_init(DP_TABLE_NAME);
+str dpid_column         =   str_init(DPID_COL);
+str pr_column           =   str_init(PR_COL);
+str match_op_column     =   str_init(MATCH_OP_COL);
+str match_exp_column    =   str_init(MATCH_EXP_COL);
+str match_flags_column  =   str_init(MATCH_FLAGS_COL);
+str subst_exp_column    =   str_init(SUBST_EXP_COL);
+str repl_exp_column     =   str_init(REPL_EXP_COL);
+str disabled_column     =   str_init(DISABLED_COL);
+str attrs_column        =   str_init(ATTRS_COL); 
 
 static db_con_t* dp_db_handle    = 0; /* database connection handle */
 static db_func_t dp_dbf;
@@ -62,7 +62,7 @@ void destroy_rule(dpl_node_t * rule);
 void destroy_hash(dpl_id_t **rules_hash);
 
 dpl_node_t * build_rule(db_val_t * values);
-int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table);
+int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index);
 
 void list_rule(dpl_node_t * );
 void list_hash(dpl_id_t * , rw_lock_t *);
@@ -88,7 +88,7 @@ int init_db_data(dp_table_list_p dp_table)
 		LM_ERR("unable to bind to a database driver\n");
 		return -1;
 	}
-	
+
 	if(dp_connect_db() !=0)
 		return -1;
 
@@ -107,7 +107,7 @@ int init_db_data(dp_table_list_p dp_table)
 
 	return 0;
 error:
-	
+
 	dp_disconnect_db();
 	return -1;
 }
@@ -169,7 +169,8 @@ int dp_load_all_db(void)
 
 	for (el = dp_tables; el; el = el->next) {
 			if (dp_load_db(el) < 0) {
-					LM_ERR("unable to load %.*s table\n", el->table_name.len, el->table_name.s);
+					LM_ERR("unable to load %.*s table\n",
+							el->table_name.len, el->table_name.s);
 					return -1;
 			}
 	}
@@ -185,8 +186,8 @@ int dp_load_db(dp_table_list_p dp_table)
 	db_val_t * values;
 	db_row_t * rows;
 	db_key_t query_cols[DP_TABLE_COL_NO] = {
-		&dpid_column,	&pr_column,
-		&match_op_column,	&match_exp_column,	&match_len_column,
+		&dpid_column,		&pr_column,
+		&match_op_column,	&match_exp_column,	&match_flags_column,
 		&subst_exp_column,	&repl_exp_column,	&attrs_column };
 	db_key_t order = &pr_column;
 	/* disabled condition */
@@ -255,7 +256,7 @@ int dp_load_db(dp_table_list_p dp_table)
 				continue;
 			}
 
-			if(add_rule2hash(rule , dp_table) != 0) {
+			if(add_rule2hash(rule , dp_table, dp_table->next_index) != 0) {
 				LM_ERR("add_rule2hash failed\n");
 				goto err2;
 			}
@@ -273,7 +274,6 @@ int dp_load_db(dp_table_list_p dp_table)
 			break;
 		}
 	}  while(RES_ROW_N(res)>0);
-	
 
 end:
 	destroy_hash(&dp_table->hash[dp_table->crt_index]);
@@ -344,7 +344,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	GET_STR_VALUE(match_exp, values, 3);
 	if(matchop == REGEX_OP){
 
-		match_comp = wrap_pcre_compile(match_exp.s);
+		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+4));
 
 		if(!match_comp){
 			LM_ERR("failed to compile match expression %.*s\n",
@@ -357,7 +357,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	GET_STR_VALUE(subst_exp, values, 5);
 	if(subst_exp.s && subst_exp.len){
 		/* subst regexp */
-		subst_comp = wrap_pcre_compile(subst_exp.s);
+		subst_comp = wrap_pcre_compile(subst_exp.s, VAL_INT(values+4));
 		if(subst_comp == NULL){
 			LM_ERR("failed to compile subst expression\n");
 			goto err;
@@ -408,10 +408,10 @@ dpl_node_t * build_rule(db_val_t * values)
 			goto err;
 
 	/*set the rest of the rule fields*/
-	new_rule->dpid		=	VAL_INT(values);
-	new_rule->pr		=	VAL_INT(values+1);
-	new_rule->matchlen	= 	VAL_INT(values+4);
-	new_rule->matchop	=	matchop;
+	new_rule->dpid          =	VAL_INT(values);
+	new_rule->pr            =	VAL_INT(values+1);
+	new_rule->matchflags    =	VAL_INT(values+4);
+	new_rule->matchop       =	matchop;
 	GET_STR_VALUE(attrs, values, 7);
 	if(str_to_shm(attrs, &new_rule->attrs)!=0)
 		goto err;
@@ -438,7 +438,7 @@ err:
 }
 
 
-int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table)
+int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 {
 	dpl_id_p crt_idp;
 	dpl_index_p indexp, last_indexp, new_indexp;
@@ -451,7 +451,7 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table)
 
 	new_id = 0;
 
-	crt_idp = select_dpid(table, rule->dpid);
+	crt_idp = select_dpid(table, rule->dpid, index);
 
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
@@ -469,14 +469,15 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table)
 	/*search for the corresponding dpl_index*/
 	for(indexp = last_indexp =crt_idp->first_index; indexp!=NULL; 
 		last_indexp = indexp, indexp = indexp->next){
-		if(indexp->len == rule->matchlen)
+		if(indexp->len == rule->match_exp.len)
 			goto add_rule;
-		if((rule->matchlen!=0)&&((indexp->len)?(indexp->len>rule->matchlen):1))
+		if((rule->match_exp.len!=0) &&
+		   ((indexp->len) ? (indexp->len>rule->match_exp.len):1))
 			goto add_index;
 	}
 
 add_index:
-	LM_DBG("new index , len %i\n", rule->matchlen);
+	LM_DBG("new index , len %i\n", rule->match_exp.len);
 
 	new_indexp = (dpl_index_t *)shm_malloc(sizeof(dpl_index_t));
 	if(!new_indexp){
@@ -485,8 +486,17 @@ add_index:
 	}
 	memset(new_indexp , 0, sizeof(dpl_index_t));
 	new_indexp->next = indexp;
-	new_indexp->len = rule->matchlen;
-		
+
+	switch (rule->matchop) {
+		case REGEX_OP:
+			new_indexp->len = 0;
+			break;
+
+		case EQUAL_OP:
+			new_indexp->len = rule->match_exp.len;
+			break;
+	}
+
 	/*add as first index*/
 	if(last_indexp == indexp){
 		crt_idp->first_index = new_indexp;
@@ -503,7 +513,7 @@ add_rule:
 
 	if(indexp->last_rule)
 		indexp->last_rule->next = rule;
-	
+
 	indexp->last_rule = rule;
 
 	if(new_id){
@@ -511,7 +521,7 @@ add_rule:
 			table->hash[table->next_index] = crt_idp;
 	}
 	LM_DBG("added the rule id %i index %i pr %i next %p to the "
-		"index with %i len\n", rule->dpid, rule->matchlen,
+		"index with %i len\n", rule->dpid, rule->match_exp.len,
 		rule->pr, rule->next, indexp->len);
 
 	return 0;
@@ -594,14 +604,14 @@ void destroy_rule(dpl_node_t * rule){
 }
 
 
-dpl_id_p select_dpid(dp_table_list_p table, int id)
+dpl_id_p select_dpid(dp_table_list_p table, int id, int index)
 {
 	dpl_id_p idp;
 
-	if(!table || !table->crt_index || !table->hash[table->crt_index])
+	if(!table || !table->hash[index])
 		return NULL;
 
-	for(idp = table->hash[table->crt_index]; idp!=NULL; idp = idp->next)
+	for(idp = table->hash[index]; idp!=NULL; idp = idp->next)
 		if(idp->dp_id == id)
 			return idp;
 	
@@ -615,7 +625,7 @@ void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
 	dpl_node_p rulep;
-	
+
 	if(!hash)
 		return;
 

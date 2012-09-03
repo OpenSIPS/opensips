@@ -37,11 +37,13 @@
 #define REGEX_OP	1
 #define EQUAL_OP	0
 
+#define DP_CASE_INSENSITIVE		1
+
 typedef struct dpl_node{
 	int dpid;
 	int pr;
 	int matchop;
-	int matchlen;
+	int matchflags;
 	str match_exp, subst_exp, repl_exp; /*keeping the original strings*/
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp; 
@@ -93,7 +95,7 @@ void destroy_data();
 int dp_load_db(dp_table_list_p dp_table);
 int dp_load_all_db(void);
 
-dpl_id_p select_dpid(dp_table_list_p table, int id);
+dpl_id_p select_dpid(dp_table_list_p table, int id, int index);
 
 struct subst_expr* repl_exp_parse(str subst);
 void repl_expr_free(struct subst_expr *se);
@@ -109,7 +111,7 @@ void * wrap_shm_malloc(size_t size);
 void  wrap_shm_free(void *);
 
 
-pcre * wrap_pcre_compile(char *  pattern);
+pcre * wrap_pcre_compile(char *  pattern, int flags);
 void wrap_pcre_free( pcre*);
 
 

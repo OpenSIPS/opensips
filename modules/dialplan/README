@@ -38,11 +38,11 @@ Andreea-Ancuta Onofrei
               1.6.4. pr_col (string)
               1.6.5. match_op_col (string)
               1.6.6. match_exp_col (string)
-              1.6.7. match_len_col (string)
+              1.6.7. match_flags_col (string)
               1.6.8. subst_exp_col (string)
               1.6.9. repl_exp_col (string)
               1.6.10. attrs_col (string)
-              1.6.11. disabled (integer)
+              1.6.11. disabled_col (integer)
               1.6.12. attrs_pvar (string)
 
         1.7. Exported Functions
@@ -66,8 +66,8 @@ Andreea-Ancuta Onofrei
    1.4. Set pr_col parameter
    1.5. Set match_op_col parameter
    1.6. Set match_exp_col parameter
-   1.7. Set pr_col parameter
-   1.8. Set pr_col parameter
+   1.7. Set match_flags_col parameter
+   1.8. Set subs_exp_col parameter
    1.9. Set repl_exp_col parameter
    1.10. Set attrs_col parameter
    1.11. Set disabled_col parameter
@@ -141,7 +141,8 @@ Chapter 1. Admin Guide
      * match_exp = "^(0040|\+40|0|40)21[0-9]+" ; regular expresion
        that will be used to match with this rule (if the rule
        should be applied for the input string)
-     * match_len = 0 (not used for regexp op)
+     * match_flags = 0 (0 - case sensitive, 1 - case insensitive
+       matching)
      * subst_exp = "^(0040|\+40|0|40)(.+)" ; regular expresion
        used to do the transformation (first part of the subst
        operation)
@@ -157,7 +158,8 @@ Chapter 1. Admin Guide
      * match_exp = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
        regular expresion that will be used to match with this rule
        (if the rule should be applied for the input string)
-     * match_len = 0 (not used for regexp op)
+     * match_flags = 0 (0 - case sensitive, 1 - case insensitive
+       matching)
      * subst_exp = NULL ; when translation is actually a
        replacement, this field must be NULL.
      * repl_exp = "DE" ; static string to replace the input -
@@ -172,7 +174,8 @@ Chapter 1. Admin Guide
      * match_exp = "^021456[0-9]{5}" ; regular expresion that will
        be used to match with this rule (if the rule should be
        applied for the input string)
-     * match_len = 0 (not used for regexp op)
+     * match_flags = 0 (0 - case sensitive, 1 - case insensitive
+       matching)
      * subst_exp = NULL ; no translation
      * repl_exp = NULL ; no translation
      * attrs = "serviceX" ; whatever string you will get into
@@ -185,7 +188,8 @@ Chapter 1. Admin Guide
    fix.
      * match-op = 0 (equal)
      * match_exp = "SIP server" ; string to be matched
-     * match_len = 10
+     * match_flags = 0 (0 - case sensitive, 1 - case insensitive
+       matching)
      * subst_exp = NULL ; no subst translation
      * repl_exp = "OpenSIPS" ; output string
 
@@ -272,16 +276,16 @@ modparam("dialplan", "match_op_col", "column_name")
 modparam("dialplan", "match_exp_col", "column_name")
 ...
 
-1.6.7. match_len_col (string)
+1.6.7. match_flags_col (string)
 
-   The column name to store the length of a string matching the
-   match expression.
+   The column name to store various matching flags. Currently 0 -
+   case sensitive matching, 1 - case insensitive matching.
 
-   Default value is “match_len”.
+   Default value is “match_flags”.
 
-   Example 1.7. Set pr_col parameter
+   Example 1.7. Set match_flags_col parameter
 ...
-modparam("dialplan", "match_len_col", "column_name")
+modparam("dialplan", "match_flags_col", "column_name")
 ...
 
 1.6.8. subst_exp_col (string)
@@ -290,7 +294,7 @@ modparam("dialplan", "match_len_col", "column_name")
 
    Default value is “subst_exp”.
 
-   Example 1.8. Set pr_col parameter
+   Example 1.8. Set subs_exp_col parameter
 ...
 modparam("dialplan", "subst_exp_col", "column_name")
 ...
@@ -318,7 +322,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
 modparam("dialplan", "attrs_col", "column_name")
 ...
 
-1.6.11. disabled (integer)
+1.6.11. disabled_col (integer)
 
    The column name that indicates if the dialplan rule is
    disabled.

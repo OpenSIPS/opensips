@@ -1,11 +1,11 @@
-INSERT INTO version (table_name, table_version) values ('dialplan','3');
+INSERT INTO version (table_name, table_version) values ('dialplan','4');
 CREATE TABLE dialplan (
     id NUMBER(10) PRIMARY KEY,
     dpid NUMBER(10),
     pr NUMBER(10),
     match_op NUMBER(10),
     match_exp VARCHAR2(64),
-    match_len NUMBER(10),
+    match_flags NUMBER(10),
     subst_exp VARCHAR2(64),
     repl_exp VARCHAR2(32),
     disabled NUMBER(10) DEFAULT 0 NOT NULL,
