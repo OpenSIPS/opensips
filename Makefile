@@ -874,6 +874,6 @@ doxygen:
 	-@echo "Doxygen documentation created"
 
 comp_menuconfig:
-	cd menuconfig; $(MAKE) ; cd -
+	cd menuconfig; $(MAKE) ; cd ..
 menuconfig: comp_menuconfig
 	./menuconfig/configure --local

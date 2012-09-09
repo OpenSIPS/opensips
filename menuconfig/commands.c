@@ -311,7 +311,7 @@ int read_install_prefix(select_menu *menu,void *arg)
 	/* print directory that user is typing */
 	echo();
 
-	ret=getnstr(str,256);
+	ret=getstr(str);
 	if (ret != 0) {
 		fprintf(output,"Failed to read new install prefix\n");
 		return -1;
