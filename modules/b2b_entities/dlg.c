@@ -740,9 +740,7 @@ search_dialog:
 	{
 		lock_get(&table[hash_index].lock);
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-			&to_tag,
-			((method_value == METHOD_UPDATE && table == client_htable)?NULL:&from_tag),
-			&callid);
+			&to_tag, &from_tag, &callid);
 		if(dlg== NULL)
 		{
 			LM_DBG("No dialog found\n");
