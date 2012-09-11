@@ -148,7 +148,7 @@ modparam("exec", "time_to_kill", 20)
 	<section>
 		<title><varname>async</varname> (integer)</title>
 		<para>
-		Turns on the asynchronous mode for 'exec_cmd' function. All commands
+		Turns on the asynchronous mode for 'exec_msg' function. All commands
 		will be executed by a different process and the caller will continue
 		it's flow, without waiting for a response.
 		</para>
