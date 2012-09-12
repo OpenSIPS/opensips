@@ -1212,9 +1212,11 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	cnt++;
 
 done:
-	avp_val.s = idx->dlist[ds_id].attrs;
-	if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
-		return -1;
+	if (attrs_avp_name>0) {
+		avp_val.s = idx->dlist[ds_id].attrs;
+		if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
+			return -1;
+	}
 
 	/* add to avp the group id */
 	avp_val.n = set;
