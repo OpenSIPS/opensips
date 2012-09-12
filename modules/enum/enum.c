@@ -36,6 +36,7 @@
 #include "enum_mod.h"
 #include "../../regexp.h"
 #include "../../pvar.h"
+#include "../../mod_fix.h"
 
 /*
  * Input: E.164 number w/o leading +
@@ -229,7 +230,7 @@ static inline int is_e164(str* _user)
 {
 	int i;
 	char c;
-	
+
 	if ((_user->len > 2) && (_user->len < 17) && ((_user->s)[0] == '+')) {
 		for (i = 1; i < _user->len; i++) {
 			c = (_user->s)[i];
@@ -240,7 +241,7 @@ static inline int is_e164(str* _user)
 	    return -1;
 	}
 }
-				
+
 
 /*
  * Call is_from_user_enum_2 with module parameter suffix and default service.
@@ -517,12 +518,12 @@ static inline int naptr_greater(struct rdata* a, struct rdata* b)
 
 	nb = (struct naptr_rdata*)b->rdata;
 	if (nb == 0) return 0;
-	
+
 	return (((na->order) << 16) + na->pref) >
 		(((nb->order) << 16) + nb->pref);
 }
-	
-	
+
+
 /*
  * Bubble sorts result record list according to naptr (order,preference).
  */
@@ -562,8 +563,8 @@ static inline void naptr_sort(struct rdata** head)
 		}
 	}
 	*head = start;
-}	
-	
+}
+
 
 /*
  * Makes enum query on name.  On success, rewrites user part and 
@@ -631,7 +632,7 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 	LM_DBG("Resulted in replacement: '%.*s'\n", result.len, ZSW(result.s));
 	pattern.s[pattern.len] = '!';
 	replacement.s[replacement.len] = '!';
-	
+
 	if (param.len > 0) {
 	    if (result.len + param.len > MAX_URI_SIZE - 1) {
 		LM_ERR("URI is too long\n");
@@ -648,7 +649,7 @@ int do_query(struct sip_msg* _msg, char *user, char *name, str *service) {
 		result = new_result;
 	    }
 	}
-	
+
 	if (first) {
 	    if (set_ruri(_msg, &result) == -1) {
 		goto done;
@@ -673,13 +674,13 @@ done:
     return first ? -1 : 1;
 }
 
-	
+
 /*
  * Call enum_query_2 with module parameter suffix and default service.
  */
 int enum_query_0(struct sip_msg* _msg, char* _str1, char* _str2)
 {
-	return enum_query_2(_msg, (char *)(&suffix), (char *)(&service));
+	return enum_query_2(_msg, NULL, NULL);
 }
 
 
@@ -688,7 +689,7 @@ int enum_query_0(struct sip_msg* _msg, char* _str1, char* _str2)
  */
 int enum_query_1(struct sip_msg* _msg, char* _suffix, char* _str2)
 {
-	return enum_query_2(_msg, _suffix, (char *)(&service));
+	return enum_query_2(_msg, _suffix, NULL);
 }
 
 
@@ -701,11 +702,64 @@ int enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 	int user_len, i, j;
 	char name[MAX_DOMAIN_SIZE];
 	char string[17];
+	gparam_p gp = NULL;
+	pv_value_t value;
 
-	str *suffix, *service;
+	str __suffix = {0, 0}, __service = {0, 0};
 
-	suffix = (str*)_suffix;
-	service = (str*)_service;
+	/* Use the suffix module parameter */
+	if (_suffix == NULL) {
+		__suffix.s = suffix.s;
+		__suffix.len = suffix.len;
+	} else {
+		gp = (gparam_p) _suffix;
+
+		if (gp->type == GPARAM_TYPE_PVS) {
+			if (pv_get_spec_value(_msg, gp->v.pvs, &value) != 0 ||
+				value.flags & PV_VAL_NULL || value.flags & PV_VAL_EMPTY) {
+				LM_ERR("No PV or NULL value specified for suffix\n");
+				return E_CFG;
+			}
+
+			if (value.flags & PV_VAL_STR) {
+				__suffix.s = value.rs.s;
+				__suffix.len = value.rs.len;
+			} else {
+				LM_ERR("Unsupported PV value type\n");
+				return E_CFG;
+			}
+		} else if (gp->type == GPARAM_TYPE_STR) {
+			__suffix.s = gp->v.sval.s;
+			__suffix.len = gp->v.sval.len;
+		}
+	}
+
+	/* Use the internal service */
+	if (_service == NULL) {
+		__service.s = service.s;
+		__service.len = service.len;
+	} else {
+		gp = (gparam_p) _service;
+
+		if (gp->type == GPARAM_TYPE_PVS) {
+			if (pv_get_spec_value(_msg, gp->v.pvs, &value) != 0 ||
+				value.flags & PV_VAL_NULL || value.flags & PV_VAL_EMPTY) {
+				LM_ERR("No PV or NULL value specified for suffix\n");
+				return E_CFG;
+			}
+
+			if (value.flags & PV_VAL_STR) {
+				__service.s = value.rs.s;
+				__service.len = value.rs.len;
+			} else {
+				LM_ERR("Unsupported PV value type\n");
+				return E_CFG;
+			}
+		} else if (gp->type == GPARAM_TYPE_STR) {
+			__service.s = gp->v.sval.s;
+			__service.len = gp->v.sval.len;
+		}
+	}
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("Parsing of R-URI failed\n");
@@ -730,9 +784,9 @@ int enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 		j = j + 2;
 	}
 
-	memcpy(name + j, suffix->s, suffix->len + 1);
+	memcpy(name + j, __suffix.s, __suffix.len + 1);
 
-	return do_query(_msg, string, name, service);
+	return do_query(_msg, string, name, &__service);
 }
 
 
