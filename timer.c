@@ -210,8 +210,8 @@ void route_timer_f(unsigned int ticks, void* param)
 		req->first_line.type = SIP_REQUEST;
 		req->first_line.u.request.method.s= "DUMMY";
 		req->first_line.u.request.method.len= 5;
-		req->first_line.u.request.uri.s= "user";
-		req->first_line.u.request.uri.len= 4;
+		req->first_line.u.request.uri.s= "sip:user@domain.com";
+		req->first_line.u.request.uri.len= 19;
 	}
 
 	if(a == NULL) {
@@ -220,6 +220,11 @@ void route_timer_f(unsigned int ticks, void* param)
 	}
 
 	run_top_route(a, req);
+
+	/* clean whatever extra structures were added by script functions */
+	free_sip_msg(req);
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
 }
 
 int register_route_timers(void)
