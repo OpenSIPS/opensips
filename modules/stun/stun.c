@@ -245,7 +245,8 @@ void stun_loop(int rank)
 
 		nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
 		if (nready < 0) {
-			LM_ERR("error in select %d\n", errno);
+			if (errno != EINTR)
+				LM_ERR("error in select %d(%s)\n", errno, strerror(errno));
 			continue;
 		}
 
