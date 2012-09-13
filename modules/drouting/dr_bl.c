@@ -198,7 +198,7 @@ int populate_dr_bls(pgw_t *pgwa)
 			}
 		}
 		/* the new content for the BL */
-		if (add_list_to_head( drbl->bl, drbl_first, drbl_last, 1, 0)!=0) {
+		if (drbl->bl && add_list_to_head( drbl->bl, drbl_first, drbl_last, 1, 0)!=0) {
 			LM_ERR("failed to update bl\n");
 			return -1;
 		}
