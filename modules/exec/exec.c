@@ -96,11 +96,61 @@ error01:
 	return ret;
 }
 
+#define MAX_EXEC_PARAMETERS 32
+static const char *exec_argv[MAX_EXEC_PARAMETERS];
+
+/* modifies the string in order to execute the command using exec */
+void exec_build_params(char *cmd)
+{
+	char q, *p = cmd, *end = cmd + strlen(cmd);
+	int i = 1;
+
+	exec_argv[0] = (const char *)cmd;
+	/* extract command */
+	while (p < end && (*p != ' '  || *(p-1) == '\''))
+		p++;
+
+	/* check if no parameters were specified */
+	if (p == end)
+		goto end;
+
+	do {
+		/* terminate previous cmd/param */
+		*p++ = '\0';
+		/* skip spaces */
+		while (p < end && *p == ' ')
+			p++;
+		if (p == end)
+			goto end;
+
+		/* quoted? */
+		if (*p == '\'') {
+			p++;
+			q = '\'';
+		} else {
+			q = ' ';
+		}
+
+		exec_argv[i] = (const char *)p;
+		if (i == MAX_EXEC_PARAMETERS) {
+			LM_WARN("Too may parameters: %d - ignoring ...\n", i);
+			goto end;
+		}
+		i++;
+		/* skip parameter */
+		while (p < end && (*p != q || *(p-1) == '\''))
+			p++;
+	} while (p < end);
+
+end:
+	LM_DBG("XXX: reseting parameter %d\n", i);
+	exec_argv[i] = NULL;
+}
+
 void exec_async_proc(int rank)
 {
 	int pid, status;
 	exec_cmd_t *cmd, *prev;
-	const char *argv[] = { NULL };
 
 	LM_DBG("started asyncronous process with rank %d\n", rank);
 
@@ -119,8 +169,10 @@ void exec_async_proc(int rank)
 				cmd->pid = pid;
 			} else {
 				LM_DBG("running command %s (%d)\n", cmd->cmd, getpid());
+				/* build the argv vector */
+				exec_build_params(cmd->cmd);
 				/* call command */
-				execv(cmd->cmd, (char * const *)argv);
+				execv(cmd->cmd, (char * const *)exec_argv);
 				LM_ERR("failed to run command\n");
 				exit(0);
 			}
