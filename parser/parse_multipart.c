@@ -216,6 +216,11 @@ inline struct multi_body * get_all_bodies(struct sip_msg * msg)
 		LM_DBG("Starting parsing with boundary = [%.*s]\n", delimiter.len, delimiter.s);
 
 		start = find_sdp_line_delimiter( body.s, body.s + body.len, delimiter);
+		if (start == NULL) {
+			LM_ERR("Unable to parse multipart type: malformed - missing delimiters\n");
+			return 0;
+		}
+
 		while (1)
 		{
 			end = find_sdp_line_delimiter(start + 1, body.s + body.len, delimiter);
