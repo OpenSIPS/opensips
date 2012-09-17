@@ -216,7 +216,7 @@ reconnect:
 
 	LM_ERR("%p PQsendQuery Error: %s Query: %.*s\n", _con,
 	PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
-	return 0;
+	return -1;
 }
 
 /*
