@@ -374,7 +374,7 @@ int init_ds_db(void)
 /*load groups of destinations from DB*/
 int ds_load_db(void)
 {
-	int i, id, nr_rows, setn;
+	int i, id, nr_rows, setn, cnt;
 	int flags;
 	int weight;
 	struct socket_info *sock;
@@ -414,18 +414,19 @@ int ds_load_db(void)
 		return -1;
 	}
 
+	*next_idx = (*crt_idx + 1)%2;
+	destroy_list(*next_idx);
+
 	nr_rows = RES_ROW_N(res);
 	rows = RES_ROWS(res);
 	if(nr_rows == 0)
 	{
 		LM_WARN("no dispatching data in the db -- empty destination set\n");
-		ds_dbf.free_result(ds_db_handle, res);
-		return 0;
+		goto load_done;
 	}
 
 	setn = 0;
-	*next_idx = (*crt_idx + 1)%2;
-	destroy_list(*next_idx);
+	cnt = 0;
 
 	for(i=0; i<nr_rows; i++)
 	{
@@ -433,8 +434,8 @@ int ds_load_db(void)
 
 		/* id */
 		if (VAL_NULL(values)) {
-			LM_ERR("ds ID column cannot be NULL\n");
-			goto err2;
+			LM_ERR("ds ID column cannot be NULL -> skipping\n");
+			continue;
 		}
 		id = VAL_INT(values);
 
@@ -481,17 +482,26 @@ int ds_load_db(void)
 			0/*not_null*/, 0/*not_empty*/, attrs, err2);
 
 		if(add_dest2list(id, uri, sock, flags, weight, attrs, *next_idx,
-		&setn) != 0)
+		&setn) != 0) {
+			LM_WARN("failed to add destination <%.*s> in group %d\n",uri.len,uri.s,id);
+			continue;
+		} else {
+			cnt ++;
+		}
+
+	}
+
+	if (cnt==0) {
+		LM_WARN("No record loaded from db, running on empty set\n");
+	} else {
+		if(reindex_dests(*next_idx, setn)!=0)
+		{
+			LM_ERR("error on reindex\n");
 			goto err2;
-
+		}
 	}
 
-	if(reindex_dests(*next_idx, setn)!=0)
-	{
-		LM_ERR("error on reindex\n");
-		goto err2;
-	}
-
+load_done:
 	/*update data*/
 	_ds_list_nr = setn;
 	*crt_idx = *next_idx;
@@ -1015,7 +1025,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
-		LM_ERR("no destination sets\n");
+		LM_DBG("empty destination set\n");
 		return -1;
 	}
 
@@ -1342,7 +1352,7 @@ int ds_set_state(int group, str *address, int state, int type)
 
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
-		LM_ERR("the list is null\n");
+		LM_DBG("empty destination set\n");
 		return -1;
 	}
 	
@@ -1427,7 +1437,7 @@ int ds_print_list(FILE *fout)
 		
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
-		LM_ERR("no destination sets\n");
+		LM_DBG("empty destination sets\n");
 		return -1;
 	}
 	
@@ -1553,7 +1563,7 @@ int ds_print_mi_list(struct mi_node* rpl)
 	
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
-		LM_ERR("no destination sets\n");
+		LM_DBG("empty destination sets\n");
 		return  0;
 	}
 
