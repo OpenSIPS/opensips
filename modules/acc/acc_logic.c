@@ -205,6 +205,7 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 {
 	struct acc_param accp;
+	int table_len = strlen(table);
 
 	if (!table) {
 		LM_ERR("db support not configured\n");
@@ -219,6 +220,15 @@ int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 	env_set_text(table, strlen(table));
+
+	if (table_len == db_table_mc.len && (strncmp(table, db_table_mc.s, table_len) == 0)) {
+		return acc_db_request(rq, NULL, &mc_ins_list);
+	}
+
+	if (table_len == db_table_acc.len && (strncmp(table, db_table_acc.s, table_len) == 0)) {
+		return acc_db_request(rq, NULL, &acc_ins_list);
+	}
+
 	return acc_db_request( rq, NULL,NULL);
 }
 
