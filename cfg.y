@@ -142,9 +142,7 @@ static struct stat statf;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 
-#if !defined(USE_TLS) || !defined(USE_TCP) ||  !defined(USE_MCAST)
-static void warn(char* s);
-#endif
+static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, int, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 
@@ -2649,19 +2647,16 @@ extern char *finame;
 #define get_cfg_file_name \
 	((finame) ? finame : cfg_file ? cfg_file : "default")
 
-#if !defined(USE_TLS) || !defined(USE_TCP) \
-		||  !defined(USE_MCAST)
-static void warn(char* s)
+static inline void warn(char* s)
 {
-	LM_WARN("warning in config file %s, line %d, column %d-%d: %s\n", get_cfg_file_name, line, startcolumn, 
-			column, s);
+	LM_WARN("warning in config file %s, line %d, column %d-%d: %s\n",
+			get_cfg_file_name, line, startcolumn, column, s);
 }
-#endif
 
 static void yyerror(char* s)
 {
-	LM_CRIT("parse error in config file %s, line %d, column %d-%d: %s\n", get_cfg_file_name, line, startcolumn, 
-			column, s);
+	LM_CRIT("parse error in config file %s, line %d, column %d-%d: %s\n",
+			get_cfg_file_name, line, startcolumn, column, s);
 	cfg_errors++;
 }
 
