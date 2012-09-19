@@ -112,6 +112,8 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 
 int register_module_stats(char *module, stat_export_t *stats);
 
+int clone_pv_stat_name(str *name, str *clone);
+
 stat_var* get_stat( str *name );
 
 unsigned int get_stat_val( stat_var *var );

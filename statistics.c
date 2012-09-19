@@ -48,7 +48,7 @@
 
 #ifdef STATISTICS
 
-static stats_collector *collector;
+static stats_collector *collector = NULL;
 
 static struct mi_root *mi_get_stats(struct mi_root *cmd, void *param);
 static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param);
@@ -72,6 +72,43 @@ gen_lock_t *stat_lock = 0;
 
 #define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
 
+
+struct pending_stat_name {
+	str* name;
+	struct pending_stat_name *next;
+};
+struct pending_stat_name *pending_name_list = NULL;
+
+int clone_pv_stat_name(str *name, str *clone)
+{
+	struct pending_stat_name *psn;
+
+	if (collector) {
+		/* if collector init'ed, simply clone it in shm */
+		clone->s = (char*)shm_malloc(name->len);
+		if (clone->s==NULL) {
+			LM_ERR("failed to allocated more shm mem (%d)\n",name->len);
+			return -1;
+		}
+		clone->len = name->len;
+		memcpy(clone->s,name->s,name->len);
+	} else {
+		/* just link it, we will move it to shm when callector available */
+		*clone = *name;
+		/* add to pending list */
+		psn = (struct pending_stat_name *)pkg_malloc( sizeof(struct pending_stat_name) );
+		if (psn==NULL) {
+			LM_ERR("failed to allocated more shm mem (%ld)\n",
+				sizeof(struct pending_stat_name*));
+			return -1;
+		}
+		psn->name = clone;
+		psn->next = pending_name_list;
+		pending_name_list = psn;
+	}
+
+	return 0;
+}
 
 
 /*! \brief
@@ -198,6 +235,9 @@ int register_tcp_load_stat(stat_var **s)
 
 int init_stats_collector(void)
 {
+	struct pending_stat_name *psn, *next;
+	char *s;
+
 	/* init the collector */
 	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
 	if (collector==0) {
@@ -205,6 +245,21 @@ int init_stats_collector(void)
 		goto error;
 	}
 	memset( collector, 0 , sizeof(stats_collector));
+
+	/* move pending stat names in shm */
+	for ( psn=pending_name_list ; psn ; psn=next ) {
+		next = psn->next;
+
+		s = (char*)shm_malloc( psn->name->len );
+		if (s==NULL) {
+			LM_ERR("no more shm mem (%d)\n", psn->name->len);
+			goto error;
+		}
+		memcpy( s, psn->name->s, psn->name->len);
+		psn->name->s = s;
+
+		pkg_free(psn);
+	}
 
 #ifdef NO_ATOMIC_OPS
 	/* init BIG (really BIG) lock */
@@ -452,7 +507,7 @@ stat_var* get_stat( str *name )
 	stat_var *stat;
 	int hash;
 
-	if (name==0 || name->s==0 || name->len==0)
+	if (collector==NULL || name==0 || name->s==0 || name->len==0)
 		return 0;
 
 	/* compute the hash by name */
