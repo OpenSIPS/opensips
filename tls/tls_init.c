@@ -30,6 +30,7 @@
 #include "../mem/shm_mem.h"
 #include "../tcp_init.h"
 #include "../ut.h"
+#include "../pt.h"
 #include "tls_domain.h"
 
 #include <openssl/ui.h>
@@ -58,6 +59,13 @@
 SSL_METHOD     *ssl_methods[TLS_USE_SSLv23 + 1];
 
 #define VERIFY_DEPTH_S 3
+
+static int tls_static_locks_no=0;
+static gen_lock_set_t* tls_static_locks=NULL;
+
+struct CRYPTO_dynlock_value {
+	gen_lock_t lock;
+};
 
 /* This callback is called during each verification process, 
 at each step during the chain of certificates (this function
@@ -484,6 +492,92 @@ static int check_for_krb(void)
 	return 0;
 }
 
+static void tls_static_locks_ops(int mode, int n, const char* file, int line)
+{
+	if (n<0 || n>tls_static_locks_no) {
+		LM_ERR("BUG - SSL Lib attempting to acquire bogus lock\n");
+		abort();
+	}
+
+	if (mode & CRYPTO_LOCK) {
+		lock_set_get(tls_static_locks,n);
+	} else {
+		lock_set_release(tls_static_locks,n);
+	}
+
+}
+
+static unsigned long tls_get_id(void)
+{
+	return my_pid();
+}
+
+static struct CRYPTO_dynlock_value* tls_dyn_lock_create(const char* file,
+		int line)
+{
+	struct CRYPTO_dynlock_value* new_lock;
+
+	new_lock=shm_malloc(sizeof(struct CRYPTO_dynlock_value));
+	if (new_lock==0){
+		LM_ERR("Failed to allocated new dynamic lock\n");
+		return 0;
+	}
+	if (lock_init(&new_lock->lock)==0) {
+		LM_ERR("Failed to init new dynamic lock\n");
+		shm_free(new_lock);
+		return 0;
+	}
+
+	return new_lock;
+}
+
+static void tls_dyn_lock_ops(int mode, struct CRYPTO_dynlock_value* dyn_lock,
+		const char* file, int line)
+{
+	if (mode & CRYPTO_LOCK) {
+		lock_get(&dyn_lock->lock);
+	} else {
+		lock_release(&dyn_lock->lock);
+	}
+}
+
+static void tls_dyn_lock_destroy(struct CRYPTO_dynlock_value *dyn_lock,
+		const char* file, int line)
+{
+	lock_destroy(&dyn_lock->lock);
+	shm_free(dyn_lock);
+}
+
+
+int tls_init_multithread(void)
+{
+	/* init static locks support */
+	tls_static_locks_no = CRYPTO_num_locks();
+
+	if (tls_static_locks_no>0) {
+		/* init a lock set & pass locking function to SSL */
+		tls_static_locks = lock_set_alloc(tls_static_locks_no); 
+		if (tls_static_locks == NULL) {
+			LM_ERR("Failed to alloc static locks\n");
+			return -1;
+		}
+		if (lock_set_init(tls_static_locks)==0) {
+				LM_ERR("Failed to init static locks\n");
+				lock_set_dealloc(tls_static_locks);
+				return -1;
+		}
+		CRYPTO_set_locking_callback(tls_static_locks_ops);
+	}
+
+	CRYPTO_set_id_callback(tls_get_id);
+
+	/* dynamic locks support*/
+	CRYPTO_set_dynlock_create_callback(tls_dyn_lock_create);
+	CRYPTO_set_dynlock_lock_callback(tls_dyn_lock_ops);
+	CRYPTO_set_dynlock_destroy_callback(tls_dyn_lock_destroy);
+
+	return 0;
+}
 
 /*
  * called once from main.c (main process) 
@@ -521,6 +615,11 @@ init_tls(void)
 		sk_SSL_COMP_zero(comp_methods);
 	}
 #endif
+
+	if (tls_init_multithread() < 0) {
+		LM_ERR("failed to init multi-threading support\n");
+		return -1;
+	}
 
 	SSL_library_init();
 	SSL_load_error_strings();
@@ -678,6 +777,8 @@ destroy_tls(void)
 		SSL_CTX_free(tls_default_client_domain->ctx);
 	}
 	tls_free_domains();
+
+	/* TODO - destroy static locks */
 
 	/* library destroy */
 	ERR_free_strings();
