@@ -78,7 +78,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>match-op</emphasis> = 1 (regexp)
+				<emphasis>match_op</emphasis> = 1 (regexp)
 			</para>
 			</listitem>
 			<listitem>
@@ -120,7 +120,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>match-op</emphasis> = 1 (regexp)
+				<emphasis>match_op</emphasis> = 1 (regexp)
 			</para>
 			</listitem>
 			<listitem>
@@ -162,7 +162,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>match-op</emphasis> = 1 (regexp)
+				<emphasis>match_op</emphasis> = 1 (regexp)
 			</para>
 			</listitem>
 			<listitem>
@@ -208,7 +208,7 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>match-op</emphasis> = 0 (equal)
+				<emphasis>match_op</emphasis> = 0 (equal)
 			</para>
 			</listitem>
 			<listitem>
@@ -532,7 +532,7 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 	
 	<section>
 	<title>
-		<function moreinfo="none">dp_translate(table/id, src/dest)</function>
+		<function moreinfo="none">dp_translate([table/]id, src/dest)</function>
 	</title>
 	<para>
 	Will try to translate the src string into dest string according to 
@@ -542,21 +542,34 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 	<itemizedlist>
 	<listitem>
 		<para>
-		<emphasis>table/id</emphasis> - the dialplan id of the possible matching rules from the given table.
+		<emphasis>id</emphasis> - the dialplan id of the possible matching rules from the given table.
 		The table parameter can be ommited. The default table is dialplan.
 		The id parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
-			<para><emphasis>integer</emphasis>- the dialplan id is statically 
+			<para><emphasis>integer</emphasis> - the dialplan id is statically 
 			assigned </para>
 			</listitem>
 			
 			<listitem>
-			<para><emphasis>pvar</emphasis> 
-			-the dialplan id is the value of an existing pseudo-variable
-			(as interger value)
+			<para><emphasis>pvar</emphasis> - the dialplan id is the value of an
+			existing pseudo-variable (as integer value)
 			</para>
+			</listitem>
+		</itemizedlist>
+	</listitem>
+
+	<listitem>
+		<para>
+		<emphasis>table</emphasis> - Specifies the table where the search will
+		take place. This parameter can be ommited. The default table is dialplan.
+		The id parameter can have the following types:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>string</emphasis> - the table name is statically 
+			assigned </para>
 			</listitem>
 		</itemizedlist>
 	</listitem>
@@ -630,7 +643,8 @@ xlog("translated to var $var(y) \n");
 			<itemizedlist>
 				<listitem>
 				<para><emphasis>table_name</emphasis> - Table to be realoaded.
-				If no table is specified, the dialplan table will be reloaded.</para>
+				If no table is specified, the table specified in the "table_name"
+				parameter (default dialplan) will be reloaded.</para>
 				</listitem>
 			</itemizedlist>
  		<para>
@@ -654,8 +668,7 @@ xlog("translated to var $var(y) \n");
         <para>Parameters: <emphasis>2</emphasis></para>
         	<itemizedlist>
                 <listitem>
-                <para><emphasis>Table Name/Dialplan ID</emphasis> - The table where the dpid rules will
-				be searched. Table Name can be ommited. Default table is dialplan.</para>
+                <para><emphasis>[Table Name/]Dialplan ID</emphasis> - The dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
                 </listitem>
                 <listitem>
                 <para><emphasis>Input String</emphasis></para>

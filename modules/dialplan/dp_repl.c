@@ -280,68 +280,69 @@ static char dp_attrs_buf[DP_MAX_ATTRS_LEN+1];
 int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 																 str * attrs)
 {
-	dpl_node_p rulep;
-	dpl_index_p indexp;
-	int rez;
+	dpl_node_p rulep, rrulep;
+	int string_res = -1, regexp_res = -1, bucket;
 
 	if(!input.s || !input.len) {
 		LM_ERR("invalid input string\n");
 		return -1;
 	}
 
-	for(indexp = idp->first_index; indexp!=NULL; indexp = indexp->next) {
-		if(!indexp->len || (indexp->len == input.len)) {
+	bucket = core_case_hash(&input, NULL, DP_INDEX_HASH_SIZE);
+
+	/* try to match the input in the corresponding string bucket */
+	for (rulep = idp->rule_hash[bucket].first_rule; rulep; rulep=rulep->next) {
+
+		LM_DBG("Equal operator testing\n");
+
+		if(rulep->match_exp.len != input.len)
+			continue;
+
+		LM_DBG("Comparing (input %.*s) with (rule %.*s) [%d]\n",
+				input.len, input.s, rulep->match_exp.len, rulep->match_exp.s,
+				rulep->match_flags);
+
+		if (rulep->match_flags & DP_CASE_INSENSITIVE) {
+			string_res = strncasecmp(rulep->match_exp.s,input.s,input.len);
+		} else {
+			string_res = strncmp(rulep->match_exp.s,input.s,input.len);
+		}
+
+		if (string_res == 0) {
 			break;
 		}
-  	}
+	}
 
-	if(!indexp || !indexp->first_rule) {
-		LM_DBG("no rule for len %i\n", input.len);
+	/* try to match the input in the regexp bucket */
+	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule;
+		 rrulep; rrulep=rrulep->next) {
+	
+		regexp_res = (test_match(input, rrulep->match_comp, matches, MAX_MATCHES)
+					>= 0 ? 0 : -1);
+
+		LM_DBG("Regex operator testing. Got result: %d\n", regexp_res);
+
+		if (regexp_res == 0) {
+			break;
+		}
+	}
+
+	if (string_res != 0 && regexp_res != 0) {
+		LM_DBG("No matching rule for input %.*s\n", input.len, input.s);
 		return -1;
 	}
 
-search_rule:
-	for(rulep=indexp->first_rule; rulep!=NULL; rulep= rulep->next) {
-		switch(rulep->matchop){
-
-			case REGEX_OP:
-				LM_DBG("regex operator testing\n");
-				rez = ( test_match(input, rulep->match_comp, matches, MAX_MATCHES)
-						> 0 ) ? 0 : -1;
-				break;
-
-			case EQUAL_OP:
-				LM_DBG("equal operator testing\n");
-				if(rulep->match_exp.len != input.len)
-					rez = -1;
-				else if (rulep->matchflags & DP_CASE_INSENSITIVE) {
-					rez = strncasecmp(rulep->match_exp.s,input.s,input.len);
-				} else {
-					rez = strncmp(rulep->match_exp.s,input.s,input.len);
-				}
-				break;
-
-			default:
-				LM_ERR("bogus match operator code %i\n", rulep->matchop);
-				return -1;
+	/* pick the rule with lowest table index if both match and prio are equal */
+	if ((string_res | regexp_res) == 0) {
+		if (rrulep->table_id < rulep->table_id) {
+			rulep = rrulep;
 		}
-		if(rez==0)
-			goto repl;
 	}
-	/*test the rules with len 0*/
-	if(indexp->len){
-		for(indexp = indexp->next; indexp!=NULL; indexp = indexp->next)
-			if(!indexp->len)
-				break;
-		if(indexp)
-			goto search_rule;
-	}
-	
-	LM_DBG("no matching rule\n");
-	return -1;
 
-repl:
-	LM_DBG("found a matching rule %p: pr %i, match_exp %.*s\n",
+	if (!rulep)
+		rulep = rrulep;
+
+	LM_DBG("Found a matching rule %p: pr %i, match_exp %.*s\n",
 		rulep, rulep->pr, rulep->match_exp.len, rulep->match_exp.s);
 
 	if(attrs){
@@ -351,7 +352,7 @@ repl:
 			LM_DBG("the rule's attrs are %.*s\n",
 				rulep->attrs.len, rulep->attrs.s);
 			if(rulep->attrs.len >= DP_MAX_ATTRS_LEN) {
-				LM_ERR("out of memory for attributes\n");
+				LM_ERR("EXCEEDED Max attribute length.\n");
 				return -1;
 			}
 			attrs->s = dp_attrs_buf;

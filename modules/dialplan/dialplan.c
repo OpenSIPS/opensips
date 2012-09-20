@@ -420,7 +420,6 @@ static int dp_trans_fixup(void ** param, int param_no){
 	memset(dp_par, 0, sizeof(dp_param_t));
 
 	if(param_no == 1) {
-
 		p = parse_dp_command(p, -1, &table_name);
 
 		if (p == NULL) {
@@ -673,7 +672,7 @@ pcre * wrap_pcre_compile(char *  pattern, int flags)
 		pcre_free = wrap_shm_free;
 
 		if (flags & DP_CASE_INSENSITIVE)
-			pcre_flags |= (1 << PCRE_CASELESS);
+			pcre_flags |= PCRE_CASELESS;
 
 		ret = pcre_compile(
 				pattern,			/* the pattern */

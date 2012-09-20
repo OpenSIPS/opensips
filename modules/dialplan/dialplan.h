@@ -1,4 +1,3 @@
-
 /*
  * $Id$
  *
@@ -38,12 +37,14 @@
 #define EQUAL_OP	0
 
 #define DP_CASE_INSENSITIVE		1
+#define DP_INDEX_HASH_SIZE		16
 
 typedef struct dpl_node{
 	int dpid;
+	int table_id; /*choose between matching regexp/strings with same priority*/
 	int pr;
 	int matchop;
-	int matchflags;
+	int match_flags;
 	str match_exp, subst_exp, repl_exp; /*keeping the original strings*/
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp; 
@@ -52,19 +53,18 @@ typedef struct dpl_node{
 	struct dpl_node * next; /*next rule*/
 }dpl_node_t, *dpl_node_p;
 
-/*For every distinct length of a matching string*/
+/* HASH_SIZE	buckets of matching strings (lowercase hashing)
+   1			bucket of regexps (index: HASH_SIZE) */
 typedef struct dpl_index{
-	int len;
 	dpl_node_t * first_rule;
 	dpl_node_t * last_rule;
 
-	struct dpl_index * next; 
 }dpl_index_t, *dpl_index_p;
 
 /*For every DPID*/
 typedef struct dpl_id{
 	int dp_id;
-	dpl_index_t* first_index;/*fast access :rules with specific length*/
+	dpl_index_t* rule_hash;/*fast access :string rules are hashed*/
 	struct dpl_id * next;
 }dpl_id_t,*dpl_id_p;
 

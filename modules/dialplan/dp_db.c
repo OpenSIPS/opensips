@@ -177,7 +177,6 @@ int dp_load_all_db(void)
 	return 0;
 }
 
-
 /*load rules from DB*/
 int dp_load_db(dp_table_list_p dp_table)
 {
@@ -255,6 +254,8 @@ int dp_load_db(dp_table_list_p dp_table)
 				LM_WARN(" failed to build rule -> skipping\n");
 				continue;
 			}
+
+			rule->table_id = i;
 
 			if(add_rule2hash(rule , dp_table, dp_table->next_index) != 0) {
 				LM_ERR("add_rule2hash failed\n");
@@ -344,6 +345,9 @@ dpl_node_t * build_rule(db_val_t * values)
 	GET_STR_VALUE(match_exp, values, 3);
 	if(matchop == REGEX_OP){
 
+		LM_DBG("Compiling %.*s expression with flag: %d\n",
+				match_exp.len, match_exp.s, VAL_INT(values+4));
+
 		match_comp = wrap_pcre_compile(match_exp.s, VAL_INT(values+4));
 
 		if(!match_comp){
@@ -410,7 +414,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	/*set the rest of the rule fields*/
 	new_rule->dpid          =	VAL_INT(values);
 	new_rule->pr            =	VAL_INT(values+1);
-	new_rule->matchflags    =	VAL_INT(values+4);
+	new_rule->match_flags   =	VAL_INT(values+4);
 	new_rule->matchop       =	matchop;
 	GET_STR_VALUE(attrs, values, 7);
 	if(str_to_shm(attrs, &new_rule->attrs)!=0)
@@ -441,8 +445,8 @@ err:
 int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 {
 	dpl_id_p crt_idp;
-	dpl_index_p indexp, last_indexp, new_indexp;
-	int new_id;
+	dpl_index_p indexp;
+	int new_id, bucket = 0;
 
 	if(!table){
 		LM_ERR("data not allocated\n");
@@ -455,58 +459,39 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
-		crt_idp = (dpl_id_t*)shm_malloc(sizeof(dpl_id_t));
+		crt_idp = shm_malloc(sizeof(dpl_id_t)	+
+							(DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		if(!crt_idp){
 			LM_ERR("out of shm memory (crt_idp)\n");
 			return -1;
 		}
-		memset(crt_idp, 0, sizeof(dpl_id_t));
+		memset(crt_idp, 0, sizeof(dpl_id_t)	+
+							(DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		crt_idp->dp_id = rule->dpid;
+		crt_idp->rule_hash = (dpl_index_t*)(crt_idp + 1);
 		new_id = 1;
 		LM_DBG("new dpl_id %i\n", rule->dpid);
 	}
 
-	/*search for the corresponding dpl_index*/
-	for(indexp = last_indexp =crt_idp->first_index; indexp!=NULL; 
-		last_indexp = indexp, indexp = indexp->next){
-		if(indexp->len == rule->match_exp.len)
-			goto add_rule;
-		if((rule->match_exp.len!=0) &&
-		   ((indexp->len) ? (indexp->len>rule->match_exp.len):1))
-			goto add_index;
-	}
-
-add_index:
-	LM_DBG("new index , len %i\n", rule->match_exp.len);
-
-	new_indexp = (dpl_index_t *)shm_malloc(sizeof(dpl_index_t));
-	if(!new_indexp){
-		LM_ERR("out of shm memory\n");
-		goto err;
-	}
-	memset(new_indexp , 0, sizeof(dpl_index_t));
-	new_indexp->next = indexp;
-
 	switch (rule->matchop) {
 		case REGEX_OP:
-			new_indexp->len = 0;
+			indexp = &crt_idp->rule_hash[DP_INDEX_HASH_SIZE];
 			break;
 
 		case EQUAL_OP:
-			new_indexp->len = rule->match_exp.len;
+			bucket = core_case_hash(&rule->match_exp, NULL, DP_INDEX_HASH_SIZE);
+
+			indexp = &crt_idp->rule_hash[bucket];
 			break;
+
+		default:
+			LM_ERR("SKIPPED RULE. Unsupported match operator (%d).\n",
+					rule->matchop);
+			goto err;
 	}
 
-	/*add as first index*/
-	if(last_indexp == indexp){
-		crt_idp->first_index = new_indexp;
-	}else{
-		last_indexp->next = new_indexp;
-	}
+/* Add the new rule to the corresponding bucket */
 
-	indexp = new_indexp;
-
-add_rule:
 	rule->next = 0;
 	if(!indexp->first_rule)
 		indexp->first_rule = rule;
@@ -520,9 +505,10 @@ add_rule:
 			crt_idp->next = table->hash[table->next_index];
 			table->hash[table->next_index] = crt_idp;
 	}
-	LM_DBG("added the rule id %i index %i pr %i next %p to the "
-		"index with %i len\n", rule->dpid, rule->match_exp.len,
-		rule->pr, rule->next, indexp->len);
+	LM_DBG("added the rule id %i pr %i next %p to the "
+		" %i bucket\n", rule->dpid,
+		rule->pr, rule->next, rule->matchop == REGEX_OP?
+								DP_INDEX_HASH_SIZE : bucket);
 
 	return 0;
 
@@ -538,37 +524,33 @@ void destroy_hash(dpl_id_t **rules_hash)
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
 	dpl_node_p rulep;
+	int i;
 
 	if(!rules_hash || !*rules_hash)
 		return;
 
-	for(crt_idp = *rules_hash; crt_idp != NULL;){
+	for(crt_idp = *rules_hash; crt_idp; crt_idp = *rules_hash) {
 
-		for(indexp = crt_idp->first_index; indexp != NULL;){
+		for (i = 0, indexp = &crt_idp->rule_hash[i];
+			 i <= DP_INDEX_HASH_SIZE;
+			 i++, indexp = &crt_idp->rule_hash[i]) {
 
-			for(rulep = indexp->first_rule; rulep!= NULL;){
-
-				destroy_rule(rulep);
-
-				indexp->first_rule = rulep->next;
-				shm_free(rulep);
-				rulep=0;
-				rulep= indexp->first_rule;
-			}
-			crt_idp->first_index= indexp->next;
-			shm_free(indexp);
-			indexp=0;
-			indexp = crt_idp->first_index;
+			for (rulep = indexp->first_rule; rulep; rulep=indexp->first_rule) {
 			
-		}
+				destroy_rule(rulep);
+				indexp->first_rule = rulep->next;
 
+				shm_free(rulep);
+				rulep = NULL;
+			}
+		}
 		*rules_hash = crt_idp->next;
+
 		shm_free(crt_idp);
-		crt_idp = 0;
-		crt_idp = *rules_hash;
+		crt_idp = NULL;
 	}
 
-	*rules_hash = 0;
+	*rules_hash = NULL;
 }
 
 
@@ -623,8 +605,8 @@ dpl_id_p select_dpid(dp_table_list_p table, int id, int index)
 void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 {
 	dpl_id_p crt_idp;
-	dpl_index_p indexp;
 	dpl_node_p rulep;
+	int i;
 
 	if(!hash)
 		return;
@@ -632,11 +614,15 @@ void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 	/* lock the data for reading */
 	lock_start_read( ref_lock );
 
-	for(crt_idp=hash; crt_idp!=NULL; crt_idp = crt_idp->next){
+	for(crt_idp = hash; crt_idp; crt_idp = crt_idp->next) {
 		LM_DBG("DPID: %i, pointer %p\n", crt_idp->dp_id, crt_idp);
-		for(indexp=crt_idp->first_index; indexp!=NULL;indexp= indexp->next){
-			LM_DBG("INDEX LEN: %i\n", indexp->len);
-			for(rulep = indexp->first_rule; rulep!= NULL;rulep = rulep->next){
+
+		for (i = 0; i <= DP_INDEX_HASH_SIZE; i++) {
+			LM_DBG("BUCKET %d rules:\n", i);
+
+			for(rulep = crt_idp->rule_hash[i].first_rule; rulep;
+				rulep = rulep->next) {
+
 				list_rule(rulep);
 			}
 		}
@@ -649,16 +635,17 @@ void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 
 void list_rule(dpl_node_t * rule)
 {
-	LM_DBG("RULE %p: pr %i next %p match_exp %.*s, "
+	LM_DBG("RULE %p: pr %i next %p match_exp %.*s match_flags %d, "
 		"subst_exp %.*s, repl_exp %.*s and attrs %.*s\n", rule,
 		rule->pr, rule->next,
 		rule->match_exp.len, rule->match_exp.s, 
+		rule->match_flags, 
 		rule->subst_exp.len, rule->subst_exp.s,
 		rule->repl_exp.len, rule->repl_exp.s,
 		rule->attrs.len,	rule->attrs.s);
-	
 }
 
+/* Retrieves the corresponding entry of the given table name */
 dp_table_list_p dp_get_table(str * table)
 {
 	dp_table_list_t *el;
@@ -671,6 +658,7 @@ dp_table_list_p dp_get_table(str * table)
 	return el;
 }
 
+/* Adds a new separate table and loads all its rules in shm */
 dp_table_list_p dp_add_table(str * table)
 {
 	dp_table_list_t *el;

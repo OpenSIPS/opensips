@@ -47,7 +47,7 @@ Andreea-Ancuta Onofrei
 
         1.7. Exported Functions
 
-              1.7.1. dp_translate(table/id, src/dest)
+              1.7.1. dp_translate([table/]id, src/dest)
 
         1.8. Exported MI Functions
 
@@ -137,7 +137,7 @@ Chapter 1. Admin Guide
 
    Recognize a number block in all forms (international, national)
    and convert it to a canonical format (e.164)
-     * match-op = 1 (regexp)
+     * match_op = 1 (regexp)
      * match_exp = "^(0040|\+40|0|40)21[0-9]+" ; regular expresion
        that will be used to match with this rule (if the rule
        should be applied for the input string)
@@ -154,7 +154,7 @@ Chapter 1. Admin Guide
 
    Recognize the name of a country (multiple languages) and
    convert it to a single fix value
-     * match-op = 1 (regexp)
+     * match_op = 1 (regexp)
      * match_exp = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
        regular expresion that will be used to match with this rule
        (if the rule should be applied for the input string)
@@ -170,7 +170,7 @@ Chapter 1. Admin Guide
 
    Recognize a block of numbers as belong to a single service and
    signalize this via an attribute.
-     * match-op = 1 (regexp)
+     * match_op = 1 (regexp)
      * match_exp = "^021456[0-9]{5}" ; regular expresion that will
        be used to match with this rule (if the rule should be
        applied for the input string)
@@ -186,7 +186,7 @@ Chapter 1. Admin Guide
 
    Recognize a fix string/number and replace it with something
    fix.
-     * match-op = 0 (equal)
+     * match_op = 0 (equal)
      * match_exp = "SIP server" ; string to be matched
      * match_flags = 0 (0 - case sensitive, 1 - case insensitive
        matching)
@@ -349,19 +349,23 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 
 1.7. Exported Functions
 
-1.7.1.  dp_translate(table/id, src/dest)
+1.7.1.  dp_translate([table/]id, src/dest)
 
    Will try to translate the src string into dest string according
    to the translation rules with dialplan ID equal to id.
 
    Meaning of the parameters is as follows:
-     * table/id - the dialplan id of the possible matching rules
-       from the given table. The table parameter can be ommited.
-       The default table is dialplan. The id parameter can have
-       the following types:
-          + integer- the dialplan id is statically assigned
-          + pvar -the dialplan id is the value of an existing
-            pseudo-variable (as interger value)
+     * id - the dialplan id of the possible matching rules from
+       the given table. The table parameter can be ommited. The
+       default table is dialplan. The id parameter can have the
+       following types:
+          + integer - the dialplan id is statically assigned
+          + pvar - the dialplan id is the value of an existing
+            pseudo-variable (as integer value)
+     * table - Specifies the table where the search will take
+       place. This parameter can be ommited. The default table is
+       dialplan. The id parameter can have the following types:
+          + string - the table name is statically assigned
      * src/dest - input and output of the function. If this
        parameter is missing the default parameter
        “ruri.user/ruri.user” will be used, thus translating the
@@ -403,7 +407,8 @@ xlog("translated to var $var(y) \n");
 
    Parameters: 1
      * table_name - Table to be realoaded. If no table is
-       specified, the dialplan table will be reloaded.
+       specified, the table specified in the "table_name"
+       parameter (default dialplan) will be reloaded.
 
    MI DATAGRAM Command Format:
                 :dp_reload:
@@ -417,9 +422,9 @@ xlog("translated to var $var(y) \n");
    Name: dp_translate
 
    Parameters: 2
-     * Table Name/Dialplan ID - The table where the dpid rules
-       will be searched. Table Name can be ommited. Default table
-       is dialplan.
+     * [Table Name/]Dialplan ID - The dpid of the rules used to
+       match the input string. The table name can be ommited. The
+       default table is dialplan.
      * Input String
 
    MI DATAGRAM Command Format:
