@@ -134,7 +134,7 @@ int unescape_user(str *sin, str *sout)
 	p  = sin->s;
 	while(p < sin->s+sin->len)
 	{
-	    if (*p == '%')
+		if (*p == '%')
 		{
 			p++;
 			switch (*p)
@@ -149,27 +149,27 @@ int unescape_user(str *sin, str *sout)
 				case '7':
 				case '8':
 				case '9':
-				    c = (*p - '0') << 4;
-			    break;
+					c = (*p - '0') << 4;
+				break;
 				case 'a':
 				case 'b':
 				case 'c':
 				case 'd':
 				case 'e':
 				case 'f':
-				    c = (*p - 'a' + 10) << 4;
-			    break;
+					c = (*p - 'a' + 10) << 4;
+				break;
 				case 'A':
 				case 'B':
 				case 'C':
 				case 'D':
 				case 'E':
 				case 'F':
-				    c = (*p - 'A' + 10) << 4;
-			    break;
+					c = (*p - 'A' + 10) << 4;
+				break;
 				default:
-				    LM_ERR("invalid hex digit <%u>\n", (unsigned int)*p);
-				    return -1;
+					LM_ERR("invalid hex digit <%u>\n", (unsigned int)*p);
+					return -1;
 			}
 			p++;
 			switch (*p)
@@ -184,37 +184,37 @@ int unescape_user(str *sin, str *sout)
 				case '7':
 				case '8':
 				case '9':
-				    c =  c + (*p - '0');
-			    break;
+					c =  c + (*p - '0');
+				break;
 				case 'a':
 				case 'b':
 				case 'c':
 				case 'd':
 				case 'e':
 				case 'f':
-				    c = c + (*p - 'a' + 10);
-			    break;
+					c = c + (*p - 'a' + 10);
+				break;
 				case 'A':
 				case 'B':
 				case 'C':
 				case 'D':
 				case 'E':
 				case 'F':
-				    c = c + (*p - 'A' + 10);
-			    break;
+					c = c + (*p - 'A' + 10);
+				break;
 				default:
-				    LM_ERR("invalid hex digit <%u>\n", (unsigned int)*p);
-				    return -1;
+					LM_ERR("invalid hex digit <%u>\n", (unsigned int)*p);
+					return -1;
 			}
 			if ((c < 32) || (c > 126))
 			{
-			    LM_ERR("invalid escaped character <%u>\n", (unsigned int)c);
-			    return -1;
+				LM_ERR("invalid escaped character <%u>\n", (unsigned int)c);
+				return -1;
 			}
 			*at++ = c;
-	    } else {
+		} else {
 			*at++ = *p;
-	    }
+		}
 		p++;
 	}
 
@@ -243,22 +243,22 @@ int escape_user(str *sin, str *sout)
 			|| sin->len<0 || sout->len < 3*sin->len+1)
 		return -1;
 
-
 	at = sout->s;
 	p  = sin->s;
 	while (p < sin->s+sin->len)
 	{
-	    if (*p < 32 || *p > 126)
+	 	if (*p < 32 || *p > 126)
 		{
 			LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
 			return -1;
-	    }
-	    if (isdigit((int)*p) || ((*p >= 'A') && (*p <= 'Z')) ||
+		}
+		if (isdigit((int)*p) || ((*p >= 'A') && (*p <= 'Z')) ||
 				((*p >= 'a') && (*p <= 'z')))
 		{
 			*at = *p;
-	    } else {
+		} else {
 			switch (*p) {
+				/* unreserved chars */
 				case '-':
 				case '_':
 				case '.':
@@ -268,6 +268,7 @@ int escape_user(str *sin, str *sout)
 				case '\'':
 				case '(':
 				case ')':
+				/* user unreserved chars */
 				case '&':
 				case '=':
 				case '+':
@@ -275,27 +276,28 @@ int escape_user(str *sin, str *sout)
 				case ',':
 				case ';':
 				case '?':
-				    *at = *p;
-				break;
+				case '/':
+					*at = *p;
+					break;
 				default:
-				    *at++ = '%';
-				    x = (*p) >> 4;
-				    if (x < 10)
+					*at++ = '%';
+					x = (*p) >> 4;
+					if (x < 10)
 					{
 						*at++ = x + '0';
-				    } else {
+					} else {
 						*at++ = x - 10 + 'a';
-				    }
-				    x = (*p) & 0x0f;
-				    if (x < 10) {
+					}
+					x = (*p) & 0x0f;
+					if (x < 10) {
 						*at = x + '0';
-				    } else {
+					} else {
 						*at = x - 10 + 'a';
-				    }
+					}
 			}
-	    }
-	    at++;
-	    p++;
+		}
+		at++;
+		p++;
 	}
 	*at = 0;
 	sout->len = at - sout->s;
@@ -306,63 +308,78 @@ int escape_user(str *sin, str *sout)
 
 int unescape_param(str *sin, str *sout)
 {
-    return unescape_user(sin, sout);
+	return unescape_user(sin, sout);
 }
 
 
 /*! \brief
  * Escape all printable characters that are not valid in
- * a param part of request uri: = | ; | , |   | " | ? | &
+ * a param part of request uri:
+ * no_need_to_escape = unreserved | param-unreserved
+ * unreserved = aplhanum | mark
+ * mark = - | _ | . | ! | ~ | * | ' | ( | )
+ * param-unreserved = [ | ] | / | : | & | + | $
  */
 int escape_param(str *sin, str *sout)
 {
-    char *at, *p;
-    unsigned char x;
+	char *at, *p;
+	unsigned char x;
 
-    if (sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL ||
-        sin->len<0 || sout->len < 3*sin->len+1)
-        return -1;
+	if (sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL ||
+		sin->len<0 || sout->len < 3*sin->len+1)
+		return -1;
 
-    at = sout->s;
-    p  = sin->s;
-    while (p < sin->s+sin->len) {
-        if (*p < 32 || *p > 126) {
-            LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
-            return -1;
-        }
-        switch (*p) {
-        case ' ':
-        case '?':
-        case '&':
-        case '=':
-        case ',':
-        case ';':
-        case '"':
-            *at++ = '%';
-            x = (*p) >> 4;
-            if (x < 10)
-            {
-                *at++ = x + '0';
-            } else {
-                *at++ = x - 10 + 'a';
-            }
-            x = (*p) & 0x0f;
-            if (x < 10) {
-                *at = x + '0';
-            } else {
-                *at = x - 10 + 'a';
-            }
-            break;
-        default:
-            *at = *p;
-        }
-        at++;
-        p++;
-    }
-    *at = 0;
-    sout->len = at - sout->s;
-    LM_DBG("escaped string is <%s>\n", sout->s);
+	at = sout->s;
+	p  = sin->s;
+	while (p < sin->s+sin->len) {
+		if (*p < 32 || *p > 126) {
+			LM_ERR("invalid escaped character <%u>\n", (unsigned int)*p);
+			return -1;
+		}
+		switch (*p) {
+			/* unreserved chars */
+			case '-':
+			case '_':
+			case '.':
+			case '!':
+			case '~':
+			case '*':
+			case '\'':
+			case '(':
+			case ')':
+			/* param unreserved chars */
+			case '[':
+			case ']':
+			case '/':
+			case ':':
+			case '&':
+			case '+':
+			case '$':
+				*at = *p;
+				break;
+			default:
+				*at++ = '%';
+				x = (*p) >> 4;
+				if (x < 10)
+				{
+					*at++ = x + '0';
+				} else {
+					*at++ = x - 10 + 'a';
+				}
+				x = (*p) & 0x0f;
+				if (x < 10) {
+					*at = x + '0';
+				} else {
+					*at = x - 10 + 'a';
+				}
+		}
+		at++;
+		p++;
+	}
+	*at = 0;
+	sout->len = at - sout->s;
+	LM_DBG("escaped string is <%s>\n", sout->s);
 
-    return 0;
+	return 0;
 }
 
