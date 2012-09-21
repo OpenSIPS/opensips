@@ -3032,71 +3032,6 @@ int pv_init_iname(pv_spec_p sp, int param)
 	return 0;
 }
 
-#ifdef STATISTICS
-/********** STATistics related functions */
-int pv_parse_stat_name(pv_spec_p sp, str *in)
-{
-	stat_var *stat;
-
-	if(in==NULL || in->s==NULL || sp==NULL)
-		return -1;
-
-	sp->pvp.pvn.type = PV_NAME_PVAR;
-
-	/* search for the statistic */
-	stat = get_stat( in );
-
-	if (stat==NULL) {
-		/* statistic does not exist (yet) -> fill in the string name */
-		sp->pvp.pvn.type = PV_NAME_INTSTR;
-		if (clone_pv_stat_name( in, &sp->pvp.pvn.u.isname.name.s )!=0) {
-			LM_ERR("failed to clone name of statistic \n");
-			return -1;
-		}
-	} else {
-		/* link the stat pointer directly as dynamic name */
-		sp->pvp.pvn.type = PV_NAME_PVAR;
-		sp->pvp.pvn.u.dname = (void*)stat;
-	}
-
-	return 0;
-}
-
-static int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
-{
-	stat_var *stat;
-
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	/* is the statistic found ? */
-	if (param->pvn.type==PV_NAME_INTSTR) {
-		/* not yet :( */
-		stat = get_stat( &param->pvn.u.isname.name.s );
-		if (stat==NULL) {
-			return pv_get_null(msg, param, res);
-		} else {
-			shm_free(param->pvn.u.isname.name.s.s);
-			param->pvn.u.isname.name.s.s = NULL;
-			param->pvn.u.isname.name.s.len = 0;
-			param->pvn.type = PV_NAME_PVAR;
-			param->pvn.u.dname = (void*)stat;
-		}
-	}
-
-	stat = (stat_var*)param->pvn.u.dname;
-
-	res->ri = (int)get_stat_val( stat );
-	res->rs.s = sint2str(res->ri, &res->rs.len);
-	res->flags = PV_VAL_INT|PV_VAL_STR|PV_TYPE_INT;
-
-	LM_DBG("returning %d, flags %d\n",res->ri,res->flags);
-
-	return 0;
-}
-
-#endif
-
 
 
 /**
@@ -3378,11 +3313,6 @@ static pv_export_t _pv_names_table[] = {
 	{{"si", (sizeof("si")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
-#ifdef STATISTICS
-	{{"stat", (sizeof("stat")-1)}, /* */
-		PVT_STAT, pv_get_stat, 0,
-		pv_parse_stat_name, 0, 0, 0},
-#endif
 	{{"sp", (sizeof("sp")-1)}, /* */
 		PVT_SRCPORT, pv_get_srcport, 0,
 		0, 0, 0, 0},
