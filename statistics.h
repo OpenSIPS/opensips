@@ -42,6 +42,7 @@
 #define STATS_HASH_POWER   8
 #define STATS_HASH_SIZE    (1<<(STATS_HASH_POWER))
 
+#define DYNAMIC_MODULE_NAME  "dynamic"
 
 #define STAT_NO_RESET  (1<<0)
 #define STAT_NO_SYNC   (1<<1)
@@ -73,7 +74,8 @@ typedef struct stat_var_{
 
 typedef struct module_stats_ {
 	str name;
-	int no;
+	unsigned short no;
+	unsigned short is_dyn;
 	stat_var *head;
 	stat_var *tail;
 } module_stats;
@@ -81,7 +83,9 @@ typedef struct module_stats_ {
 typedef struct stats_collector_ {
 	int stats_no;
 	int mod_no;
-	stat_var* hstats[STATS_HASH_SIZE];
+	stat_var* hstats[STATS_HASH_SIZE];      /* hash with static statistics */
+	stat_var* dy_hstats[STATS_HASH_SIZE];   /* hash with dynamic statistics */
+	void *rwl;      /* lock for protecting dynamic stats/modules */
 	module_stats *amodules;
 }stats_collector;
 
@@ -109,6 +113,8 @@ void destroy_stats_collector();
 
 int register_stat2( char *module, char *name, stat_var **pvar, 
 		unsigned  short flags, void* context);
+
+int register_dynamic_stat( str *name, stat_var **pvar);
 
 int register_module_stats(char *module, stat_export_t *stats);
 
@@ -140,11 +146,13 @@ extern gen_lock_t *stat_lock;
 	#define destroy_stats_collector()
 	#define register_module_stats(_mod,_stats) 0
 	#define register_stat( _mod, _name, _pvar, _flags) 0
+	#define register_dynamic_stat( _name, _pvar) 0
 	#define get_stat( _name )  0
 	#define get_stat_val( _var ) 0
 	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
 	#define register_udp_load_stat( _a, _b, _c) 0
 	#define register_tcp_load_stat( _a)     0
+	#define clone_pv_stat_name( _name, _clone) 0
 #endif
 
 

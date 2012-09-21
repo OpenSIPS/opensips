@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2006 Voice Sistem SRL
+ * Copyright (C) 2010-2012 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -26,6 +27,8 @@
  *  2006-11-28  added get_stat_var_from_num_code() (Jeffrey Magder -
  *              SOMA Networks)
  *  2009-04-23  function var accepts a context parameter (bogdan)
+ *  2012-09-21  support for dynamic statistics (created of demand at runtime)
+ *              (bogdan)
  */
 
 /*!
@@ -45,6 +48,7 @@
 #include "statistics.h"
 #include "pt.h"
 #include "atomic.h"
+#include "rw_locking.h"
 
 #ifdef STATISTICS
 
@@ -71,44 +75,6 @@ gen_lock_t *stat_lock = 0;
 #endif
 
 #define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
-
-
-struct pending_stat_name {
-	str* name;
-	struct pending_stat_name *next;
-};
-struct pending_stat_name *pending_name_list = NULL;
-
-int clone_pv_stat_name(str *name, str *clone)
-{
-	struct pending_stat_name *psn;
-
-	if (collector) {
-		/* if collector init'ed, simply clone it in shm */
-		clone->s = (char*)shm_malloc(name->len);
-		if (clone->s==NULL) {
-			LM_ERR("failed to allocated more shm mem (%d)\n",name->len);
-			return -1;
-		}
-		clone->len = name->len;
-		memcpy(clone->s,name->s,name->len);
-	} else {
-		/* just link it, we will move it to shm when callector available */
-		*clone = *name;
-		/* add to pending list */
-		psn = (struct pending_stat_name *)pkg_malloc( sizeof(struct pending_stat_name) );
-		if (psn==NULL) {
-			LM_ERR("failed to allocated more shm mem (%ld)\n",
-				sizeof(struct pending_stat_name*));
-			return -1;
-		}
-		psn->name = clone;
-		psn->next = pending_name_list;
-		pending_name_list = psn;
-	}
-
-	return 0;
-}
 
 
 /*! \brief
@@ -233,110 +199,8 @@ int register_tcp_load_stat(stat_var **s)
 }
 #endif
 
-int init_stats_collector(void)
-{
-	struct pending_stat_name *psn, *next;
-	char *s;
 
-	/* init the collector */
-	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
-	if (collector==0) {
-		LM_ERR("no more shm mem\n");
-		goto error;
-	}
-	memset( collector, 0 , sizeof(stats_collector));
-
-	/* move pending stat names in shm */
-	for ( psn=pending_name_list ; psn ; psn=next ) {
-		next = psn->next;
-
-		s = (char*)shm_malloc( psn->name->len );
-		if (s==NULL) {
-			LM_ERR("no more shm mem (%d)\n", psn->name->len);
-			goto error;
-		}
-		memcpy( s, psn->name->s, psn->name->len);
-		psn->name->s = s;
-
-		pkg_free(psn);
-	}
-
-#ifdef NO_ATOMIC_OPS
-	/* init BIG (really BIG) lock */
-	stat_lock = lock_alloc();
-	if (stat_lock==0 || lock_init( stat_lock )==0 ) {
-		LM_ERR("failed to init the really BIG lock\n");
-		goto error;
-	}
-#endif
-
-	/* register MI commands */
-	if (register_mi_mod( "statistics", mi_stat_cmds)<0) {
-		LM_ERR("unable to register MI cmds\n");
-		goto error;
-	}
-
-	/* register core statistics */
-	if (register_module_stats( "core", core_stats)!=0 ) {
-		LM_ERR("failed to register core statistics\n");
-		goto error;
-	}
-	/* register sh_mem statistics */
-	if (register_module_stats( "shmem", shm_stats)!=0 ) {
-		LM_ERR("failed to register sh_mem statistics\n");
-		goto error;
-	}
-	/* register sh_mem statistics */
-	if (register_module_stats( "net", net_stats)!=0 ) {
-		LM_ERR("failed to register network statistics\n");
-		goto error;
-	}
-
-	LM_DBG("statistics manager successfully initialized\n");
-
-	return 0;
-error:
-	return -1;
-}
-
-
-void destroy_stats_collector(void)
-{
-	stat_var *stat;
-	stat_var *tmp_stat;
-	int i;
-
-#ifdef NO_ATOMIC_OPS
-	/* destroy big lock */
-	if (stat_lock)
-		lock_destroy( stat_lock );
-#endif
-
-	if (collector) {
-		/* destroy hash table */
-		for( i=0 ; i<STATS_HASH_SIZE ; i++ ) {
-			for( stat=collector->hstats[i] ; stat ; ) {
-				tmp_stat = stat;
-				stat = stat->hnext;
-				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val)
-					shm_free(tmp_stat->u.val);
-				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
-					shm_free(tmp_stat->name.s);
-				shm_free(tmp_stat);
-			}
-		}
-
-		/* destroy sts_module array */
-		if (collector->amodules)
-			shm_free(collector->amodules);
-
-		/* destroy the collector */
-		shm_free(collector);
-	}
-
-	return;
-}
-
+/************* Functions for handling MODULEs(groups) of stats ***************/
 
 static inline module_stats* get_stat_module( str *module)
 {
@@ -384,10 +248,189 @@ static inline module_stats* add_stat_module( char *module)
 }
 
 
+/***************** Init / Destroy STATS support functions *******************/
+
+struct pending_stat_name {
+	str* name;
+	struct pending_stat_name *next;
+};
+struct pending_stat_name *pending_name_list = NULL;
+
+int clone_pv_stat_name(str *name, str *clone)
+{
+	struct pending_stat_name *psn;
+
+	if (collector) {
+		/* if collector init'ed, simply clone it in shm */
+		clone->s = (char*)shm_malloc(name->len);
+		if (clone->s==NULL) {
+			LM_ERR("failed to allocated more shm mem (%d)\n",name->len);
+			return -1;
+		}
+		clone->len = name->len;
+		memcpy(clone->s,name->s,name->len);
+	} else {
+		/* just link it, we will move it to shm when callector available */
+		*clone = *name;
+		/* add to pending list */
+		psn = (struct pending_stat_name *)pkg_malloc( sizeof(struct pending_stat_name) );
+		if (psn==NULL) {
+			LM_ERR("failed to allocated more shm mem (%ld)\n",
+				sizeof(struct pending_stat_name*));
+			return -1;
+		}
+		psn->name = clone;
+		psn->next = pending_name_list;
+		pending_name_list = psn;
+	}
+
+	return 0;
+}
+
+
+int init_stats_collector(void)
+{
+	struct pending_stat_name *psn, *next;
+	module_stats *dy_mod;
+	char *s;
+
+	/* init the collector */
+	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
+	if (collector==0) {
+		LM_ERR("no more shm mem\n");
+		goto error;
+	}
+	memset( collector, 0 , sizeof(stats_collector));
+
+	/* move pending stat names in shm */
+	for ( psn=pending_name_list ; psn ; psn=next ) {
+		next = psn->next;
+
+		s = (char*)shm_malloc( psn->name->len );
+		if (s==NULL) {
+			LM_ERR("no more shm mem (%d)\n", psn->name->len);
+			goto error;
+		}
+		memcpy( s, psn->name->s, psn->name->len);
+		psn->name->s = s;
+
+		pkg_free(psn);
+	}
+
+#ifdef NO_ATOMIC_OPS
+	/* init BIG (really BIG) lock */
+	stat_lock = lock_alloc();
+	if (stat_lock==0 || lock_init( stat_lock )==0 ) {
+		LM_ERR("failed to init the really BIG lock\n");
+		goto error;
+	}
+#endif
+
+	collector->rwl = (void*)lock_init_rw();
+	if (collector->rwl==NULL) {
+		LM_ERR("failed to create RW lock dynamic stats\n");
+		goto error;
+	}
+
+	/* register MI commands */
+	if (register_mi_mod( "statistics", mi_stat_cmds)<0) {
+		LM_ERR("unable to register MI cmds\n");
+		goto error;
+	}
+
+	/* register core statistics */
+	if (register_module_stats( "core", core_stats)!=0 ) {
+		LM_ERR("failed to register core statistics\n");
+		goto error;
+	}
+	/* register sh_mem statistics */
+	if (register_module_stats( "shmem", shm_stats)!=0 ) {
+		LM_ERR("failed to register sh_mem statistics\n");
+		goto error;
+	}
+	/* register sh_mem statistics */
+	if (register_module_stats( "net", net_stats)!=0 ) {
+		LM_ERR("failed to register network statistics\n");
+		goto error;
+	}
+
+	/* create the module for "dynamic" statistics */
+	dy_mod = add_stat_module( DYNAMIC_MODULE_NAME );
+	if (dy_mod==NULL) {
+		LM_ERR("failed to create <%s> module\n",DYNAMIC_MODULE_NAME);
+		goto error;
+	}
+	/* mark it as dynamic, so it will require locking */
+	dy_mod->is_dyn = 1 ;
+
+	LM_DBG("statistics manager successfully initialized\n");
+
+	return 0;
+error:
+	return -1;
+}
+
+
+void destroy_stats_collector(void)
+{
+	stat_var *stat;
+	stat_var *tmp_stat;
+	int i;
+
+#ifdef NO_ATOMIC_OPS
+	/* destroy big lock */
+	if (stat_lock)
+		lock_destroy( stat_lock );
+#endif
+
+	if (collector) {
+		/* destroy hash tables */
+		for( i=0 ; i<STATS_HASH_SIZE ; i++ ) {
+			/* static stats */
+			for( stat=collector->hstats[i] ; stat ; ) {
+				tmp_stat = stat;
+				stat = stat->hnext;
+				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val)
+					shm_free(tmp_stat->u.val);
+				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
+					shm_free(tmp_stat->name.s);
+				shm_free(tmp_stat);
+			}
+			/* dynamic stats*/
+			for( stat=collector->dy_hstats[i] ; stat ; ) {
+				tmp_stat = stat;
+				stat = stat->hnext;
+				if ((tmp_stat->flags&STAT_IS_FUNC)==0 && tmp_stat->u.val)
+					shm_free(tmp_stat->u.val);
+				if ( (tmp_stat->flags&STAT_SHM_NAME) && tmp_stat->name.s)
+					shm_free(tmp_stat->name.s);
+				shm_free(tmp_stat);
+			}
+		}
+
+		/* destroy sts_module array */
+		if (collector->amodules)
+			shm_free(collector->amodules);
+
+		/* destroy the RW lock */
+		if (collector->rwl)
+			lock_destroy_rw( (rw_lock_t *)collector->rwl);
+
+		/* destroy the collector */
+		shm_free(collector);
+	}
+
+	return;
+}
+
+
+/********************* Create/Register STATS functions ***********************/
+
 int register_stat2( char *module, char *name, stat_var **pvar,
 											unsigned short flags, void *ctx)
 {
 	module_stats* mods;
+	stat_var **shash;
 	stat_var *stat;
 	stat_var *it;
 	str smodule;
@@ -446,11 +489,18 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	/* compute the hash by name */
 	hash = stat_hash( &stat->name );
 
-	/* link it */
-	if (collector->hstats[hash]==0) {
-		collector->hstats[hash] = stat;
+	/* link it into appropriate hash table , with or without locking */
+	if (mods->is_dyn) {
+		lock_start_write((rw_lock_t *)collector->rwl);
+		shash = collector->dy_hstats;
 	} else {
-		it = collector->hstats[hash];
+		shash = collector->hstats;
+	}
+
+	if (shash[hash]==0) {
+		shash[hash] = stat;
+	} else {
+		it = shash[hash];
 		while(it->hnext)
 			it = it->hnext;
 		it->hnext = stat;
@@ -466,6 +516,9 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	mods->tail = stat;
 	mods->no++;
 
+	if (mods->is_dyn)
+		lock_stop_write((rw_lock_t *)collector->rwl);
+
 	return 0;
 error2:
 	if ( (flags&STAT_IS_FUNC)==0 ) {
@@ -479,6 +532,30 @@ error:
 	return -1;
 }
 
+
+int register_dynamic_stat( str *name, stat_var **pvar)
+{
+	char *p;
+	int ret;
+
+	/*FIXME - what we do here is reallt stupid - convert from str to
+	 * char and next function does the other way around - from char to
+	 * str - this is temporary, before fixing the register_stat2 function
+	 * prototype to accept str rather than char */
+	if ( (p=pkg_malloc( name->len + 1))==NULL ) {
+		LM_ERR("no more pkg mem (%d)\n",name->len + 1);
+		return -1;
+	}
+	memcpy( p, name->s, name->len);
+	p[name->len] = 0;
+
+	ret = register_stat2( DYNAMIC_MODULE_NAME, p, pvar,
+		0/*flags*/, NULL/*ctx*/);
+
+	pkg_free(p);
+
+	return ret;
+}
 
 
 int register_module_stats(char *module, stat_export_t *stats)
@@ -513,12 +590,22 @@ stat_var* get_stat( str *name )
 	/* compute the hash by name */
 	hash = stat_hash( name );
 
-	/* and look for it */
+	/* and look for it , first in the hash for static stats */
 	for( stat=collector->hstats[hash] ; stat ; stat=stat->hnext ) {
 		if ( (stat->name.len==name->len) &&
 		(strncasecmp( stat->name.s, name->s, name->len)==0) )
 			return stat;
 	}
+	/* and then in the hash for dynamic stats */
+	lock_start_read((rw_lock_t *)collector->rwl);
+	for( stat=collector->dy_hstats[hash] ; stat ; stat=stat->hnext ) {
+		if ( (stat->name.len==name->len) &&
+		(strncasecmp( stat->name.s, name->s, name->len)==0) ) {
+			lock_stop_read((rw_lock_t *)collector->rwl);
+			return stat;
+		}
+	}
+	lock_stop_read((rw_lock_t *)collector->rwl);
 
 	return 0;
 }
@@ -547,16 +634,26 @@ inline static int mi_add_module_stats(struct mi_node *rpl,
 {
 	struct mi_node *node;
 	stat_var *stat;
+	int ret = 0;
+
+	if (mods->is_dyn)
+		lock_start_read((rw_lock_t *)collector->rwl);
 
 	for( stat=mods->head ; stat ; stat=stat->lnext) {
 		node = addf_mi_node_child(rpl, 0, 0, 0, "%.*s:%.*s = %lu",
 			mods->name.len, mods->name.s,
 			stat->name.len, stat->name.s,
 			get_stat_val(stat) );
-		if (node==0)
-			return -1;
+		if (node==0) {
+			ret = -1;
+			break;
+		}
 	}
-	return 0;
+
+	if (mods->is_dyn)
+		lock_stop_read((rw_lock_t *)collector->rwl);
+
+	return ret;
 }
 
 

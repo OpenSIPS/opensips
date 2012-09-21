@@ -157,7 +157,7 @@ static int fixup_stat(void** param, int param_no)
 		/* is it only one token ? */
 		if (sp->u.format->next==NULL) {
 			format = sp->u.format;
-			if (format->text.s) {
+			if (format->text.s && format->text.len) {
 				/* text token */
 				sp->u.stat = get_stat( &format->text );
 				if (sp->u.stat) {
@@ -237,20 +237,27 @@ static int w_update_stat(struct sip_msg *msg, char *stat_p, char *n)
 		pv_val.rs = *sp->u.name;
 	}
 
+	LM_DBG("needed statistic is <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
+
 	/* name is in pv_val.rs -> look for it */
 	stat = get_stat( &(pv_val.rs) );
-	if ( stat ) {
-		/* statistic exists ! */
-		update_stat( stat, (long)n);
-		return 1;
+	if ( stat==NULL ) {
+		/* stats not found -> create it */
+		LM_DBG("creating dynamic statistic <%.*s>\n",
+			pv_val.rs.len, pv_val.rs.s);
+		if (register_dynamic_stat( &(pv_val.rs), &stat )!=0) {
+			LM_ERR("failed to create dynamic statistic <%.*s>\n",
+				pv_val.rs.len, pv_val.rs.s);
+			return -1;
+		}
+		if (sp->type==STAT_PARAM_TYPE_NAME) {
+			sp->u.stat = stat;
+			sp->type=STAT_PARAM_TYPE_STAT;
+		}
 	}
 
-	/* stats not found -> create it */
-	LM_ERR("variable <%.*s> not defined\n",
-		pv_val.rs.len, pv_val.rs.s);
-	return -1;
-
-	// TODO create dynamic statistic here
+	/* statistic exists ! */
+	update_stat( stat, (long)n);
 	return 1;
 }
 
@@ -287,18 +294,23 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 
 	/* name is in pv_val.rs -> look for it */
 	stat = get_stat( &(pv_val.rs) );
-	if ( stat ) {
-		/* statistic exists ! */
-		reset_stat( stat );
-		return 1;
+	if ( stat==NULL ) {
+		/* stats not found -> create it */
+		LM_DBG("creating dynamic statistic <%.*s>\n",
+			pv_val.rs.len, pv_val.rs.s);
+		if (register_dynamic_stat( &(pv_val.rs), &stat )!=0) {
+			LM_ERR("failed to create dynamic statistic <%.*s>\n",
+				pv_val.rs.len, pv_val.rs.s);
+			return -1;
+		}
+		if (sp->type==STAT_PARAM_TYPE_NAME) {
+			sp->u.stat = stat;
+			sp->type=STAT_PARAM_TYPE_STAT;
+		}
 	}
 
-	/* stats not found -> create it */
-	LM_ERR("variable <%.*s> not defined\n",
-		pv_val.rs.len, pv_val.rs.s);
-	return -1;
-
-	// TODO create dynamic statistic here
+	/* statistic exists ! */
+	reset_stat( stat );
 	return 1;
 }
 
@@ -342,15 +354,20 @@ int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
 		/* not yet :( */
 		stat = get_stat( &param->pvn.u.isname.name.s );
 		if (stat==NULL) {
-			// TODO create dynamic statistic here
-			return -1;
-		} else {
-			shm_free(param->pvn.u.isname.name.s.s);
-			param->pvn.u.isname.name.s.s = NULL;
-			param->pvn.u.isname.name.s.len = 0;
-			param->pvn.type = PV_NAME_PVAR;
-			param->pvn.u.dname = (void*)stat;
+			LM_DBG("creating dynamic statistic <%.*s>\n",
+				param->pvn.u.isname.name.s.len, param->pvn.u.isname.name.s.s);
+			/* stats not found -> create it */
+			if (register_dynamic_stat( &param->pvn.u.isname.name.s, &stat )!=0) {
+				LM_ERR("failed to create dynamic statistic <%.*s>\n",
+					param->pvn.u.isname.name.s.len, param->pvn.u.isname.name.s.s);
+				return -1;
+			}
 		}
+		shm_free(param->pvn.u.isname.name.s.s);
+		param->pvn.u.isname.name.s.s = NULL;
+		param->pvn.u.isname.name.s.len = 0;
+		param->pvn.type = PV_NAME_PVAR;
+		param->pvn.u.dname = (void*)stat;
 	}
 
 	stat = (stat_var*)param->pvn.u.dname;
