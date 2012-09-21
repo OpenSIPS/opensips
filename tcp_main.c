@@ -1123,8 +1123,14 @@ void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
 	struct tcp_connection* con;
 	unsigned int lifetime = get_ticks() + timeout;
 
-	con = tcpconn_id_hash[rcv->proto_reserved1];
-	con->lifetime = lifetime;
+	TCPCONN_LOCK;
+	con =_tcpconn_find(rcv->proto_reserved1, 0, 0);
+	if (!con) {
+		LM_ERR("Strange, tcp conn not found (id=%d)\n",rcv->proto_reserved1);
+	} else {
+		con->lifetime = lifetime;
+	}
+	TCPCONN_UNLOCK;
 }
 
 
