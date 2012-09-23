@@ -435,6 +435,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	stat_var *it;
 	str smodule;
 	int hash;
+	int name_len;
 
 	if (module==0 || name==0 || pvar==0) {
 		LM_ERR("invalid parameters module=%p, name=%p, pvar=%p \n", 
@@ -442,12 +443,13 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 		goto error;
 	}
 
-	stat = (stat_var*)shm_malloc(sizeof(stat_var));
+	name_len = strlen(name);
+	stat = (stat_var*)shm_malloc(sizeof(stat_var) + ((flags&STAT_SHM_NAME)==0)*name_len);
 	if (stat==0) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
-	memset( stat, 0, sizeof(stat_var));
+	memset( stat, 0, sizeof(stat_var) );
 
 	if ( (flags&STAT_IS_FUNC)==0 ) {
 		stat->u.val = (stat_val*)shm_malloc(sizeof(stat_val));
@@ -480,11 +482,15 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	/* fill the stat record */
 	stat->mod_idx = collector->mod_no-1;
 
-	stat->name.s = name;
-	stat->name.len = strlen(name);
+	stat->name.len = name_len;
+	if ( (flags&STAT_SHM_NAME)==0 ) {
+		stat->name.s = (char*)(stat+1);
+		memcpy(stat->name.s, name, name_len);
+	} else {
+		stat->name.s = name;
+	}
 	stat->flags = flags;
 	stat->context = ctx;
-
 
 	/* compute the hash by name */
 	hash = stat_hash( &stat->name );
