@@ -368,6 +368,32 @@ modparam("dispatcher", "ds_probing_mode", 1)
 	</section>
 
 	<section>
+		<title><varname>ds_define_blacklist</varname> (str)</title>
+		<para>
+		Defines a blacklist based on a dispatching setid.
+		This list will contain the IPs (no port, all protocols) of the
+		destinations matching the given setid.
+		</para>
+		<para>
+		Multiple instances of this param are allowed.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>ds_define_blacklist</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "ds_define_blacklist", "list= 1,4,3")
+modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>options_reply_codes</varname> (str)</title>
 		<para>
 		This parameter must contain a list of SIP reply codes separated by 

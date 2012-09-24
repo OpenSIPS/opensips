@@ -56,7 +56,6 @@
 #include "dispatch.h"
 
 
-
 #define DS_SET_ID_COL		"setid"
 #define DS_DEST_URI_COL		"destination"
 #define DS_DEST_SOCK_COL	"socket"
@@ -198,6 +197,7 @@ static param_export_t params[]={
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
 	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},
+	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{0,0,0}
 };
 
@@ -328,6 +328,16 @@ static int mod_init(void)
 		attrs_avp_type = 0;
 	}
 
+	if (init_ds_bls()!=0) {
+		LM_ERR("failed to init DS blacklists\n");
+		return E_CFG;
+	}
+
+	if (populate_ds_bls()) {
+		LM_ERR("Failed to populate DS blacklist\n");
+		return E_CFG;
+	}
+
 	if (hash_pvar_param.s && (hash_pvar_param.len=strlen(hash_pvar_param.s))>0 ) {
 		if(pv_parse_format(&hash_pvar_param, &hash_param_model) < 0
 				|| hash_param_model==NULL) {
@@ -424,6 +434,9 @@ static void destroy(void)
 {
 	LM_DBG("destroying module ...\n");
 	ds_destroy_list();
+
+	/* destroy blacklists */
+	destroy_ds_bls();
 }
 
 
@@ -682,6 +695,10 @@ static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 {
 	if (ds_load_db()<0)
 		return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
+
+	if (populate_ds_bls()<0) {
+		return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
+	}
 
 	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 }

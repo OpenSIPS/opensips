@@ -8,8 +8,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -32,6 +32,7 @@ Bogdan-Andrei Iancu
               1.5.4. probing_method (string)
               1.5.5. probing_from (string)
               1.5.6. probing_reply_codes (string)
+              1.5.7. lb_define_blacklist (string)
 
         1.6. Exported Functions
 
@@ -62,10 +63,11 @@ Bogdan-Andrei Iancu
    1.4. Set probing_method parameter
    1.5. Set probing_from parameter
    1.6. Set probing_reply_codes parameter
-   1.7. load_balance usage
-   1.8. lb_disable() usage
-   1.9. lb_list usage
-   1.10. lb_status usage
+   1.7. Set the lb_define_blacklist parameter
+   1.8. load_balance usage
+   1.9. lb_disable() usage
+   1.10. lb_list usage
+   1.11. lb_status usage
 
 Chapter 1. Admin Guide
 
@@ -217,6 +219,22 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 modparam("load_balancer", "probing_reply_codes", "501, 403")
 ...
 
+1.5.7. lb_define_blacklist (string)
+
+   Defines a blacklist based on a lb group. This list will contain
+   the IPs (no port, all protocols) of the destinations matching
+   the given group.
+
+   Multiple instances of this param are allowed.
+
+   Default value is “NULL”.
+
+   Example 1.7. Set the lb_define_blacklist parameter
+...
+modparam("load_balancer", "lb_define_blacklist", "list= 1,4,3")
+modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
+...
+
 1.6. Exported Functions
 
 1.6.1.  load_balance(grp,resources[,alg])
@@ -250,7 +268,7 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.7. load_balance usage
+   Example 1.8. load_balance usage
 ...
 if (load_balance("1","trascoding;conference")) {
         # dst URI points to the new destination
@@ -270,7 +288,7 @@ if (load_balance("1","trascoding;conference")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.8. lb_disable() usage
+   Example 1.9. lb_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         lb_disable();
@@ -322,7 +340,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 :lb_list:_reply_fifo_file_
                 _empty_line_
 
-   Example 1.9. lb_list usage
+   Example 1.10. lb_list usage
 $ ./opensipsctl fifo lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
@@ -348,7 +366,7 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
                 status (optional)
                 _empty_line_
 
-   Example 1.10. lb_status usage
+   Example 1.11. lb_status usage
 $ ./opensipsctl fifo lb_status 2
 enable:: no
 $ ./opensipsctl fifo lb_status 2 1

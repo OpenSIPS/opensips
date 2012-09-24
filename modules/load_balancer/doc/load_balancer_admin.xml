@@ -254,6 +254,31 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>lb_define_blacklist</varname> (string)</title>
+		<para>
+		Defines a blacklist based on a lb group. This list will contain the IPs
+		(no port, all protocols) of the destinations matching the given group.
+		</para>
+		<para>
+		Multiple instances of this param are allowed.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>lb_define_blacklist</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("load_balancer", "lb_define_blacklist", "list= 1,4,3")
+modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 

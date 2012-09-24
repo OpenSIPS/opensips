@@ -42,6 +42,7 @@
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
 
+#include "ds_bl.h"
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
@@ -49,6 +50,33 @@
 #define DS_INACTIVE_DST		1  /* inactive destination */
 #define DS_PROBING_DST		2  /* checking destination */
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
+
+typedef struct _ds_dest
+{
+	str uri;
+	str attrs;
+	int flags;
+	int weight;
+	struct socket_info *sock;
+	struct ip_addr ip_address; /* IP-Address of the entry */
+	unsigned short int port; /* Port of the request URI */
+	int failure_count;
+	struct _ds_dest *next;
+} ds_dest_t, *ds_dest_p;
+
+typedef struct _ds_set
+{
+	int id;				/* id of dst set */
+	int nr;				/* number of items in dst set */
+	int last;			/* last used item in dst set */
+	int weight_sum;		/* sum of the weights from dst set */
+	ds_dest_p dlist;
+	struct _ds_set *next;
+} ds_set_t, *ds_set_p;
+
+extern ds_set_p *ds_lists;
+extern int *crt_idx;
+extern int *next_idx;
 
 extern str ds_db_url;
 extern str ds_table_name;

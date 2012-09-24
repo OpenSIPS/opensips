@@ -37,11 +37,12 @@
 #include "../../usr_avp.h"
 #include "../dialog/dlg_load.h"
 #include "../tm/tm_load.h"
+
 #include "lb_parser.h"
 #include "lb_db.h"
 #include "lb_data.h"
 #include "lb_prober.h"
-
+#include "lb_bl.h"
 
 
 
@@ -54,7 +55,7 @@ struct dlg_binds lb_dlg_binds;
 
 /* reader-writers lock for data reloading */
 static rw_lock_t *ref_lock = NULL; 
-static struct lb_data **curr_data = NULL;
+struct lb_data **curr_data = NULL;
 
 /* probing related stuff */
 static unsigned int lb_prob_interval = 30;
@@ -113,6 +114,7 @@ static param_export_t mod_params[]={
 	{ "probing_method",        STR_PARAM, &lb_probe_method.s        },
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
+	{ "lb_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_lb_bl},
 	{ 0,0,0 }
 };
 
@@ -254,6 +256,9 @@ static inline int lb_reload_data( void )
 	if (old_data)
 		free_lb_data( old_data );
 
+	/* generate new blacklist from the routing info */
+	populate_lb_bls((*curr_data)->dsts);
+
 	return 0;
 }
 
@@ -283,6 +288,11 @@ static int mod_init(void)
 	/* create & init lock */
 	if ((ref_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init lock\n");
+		return -1;
+	}
+
+	if (init_lb_bls()) {
+		LM_ERR("BL INIT failed\n");
 		return -1;
 	}
 
@@ -384,6 +394,9 @@ static void mod_destroy(void)
 		lock_destroy_rw( ref_lock );
 		ref_lock = 0;
 	}
+
+	/* destroy blacklist structures */
+	destroy_lb_bls();
 }
 
 

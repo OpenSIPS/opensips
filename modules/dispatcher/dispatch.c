@@ -72,29 +72,6 @@
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 
-typedef struct _ds_dest
-{
-	str uri;
-	str attrs;
-	int flags;
-	int weight;
-	struct socket_info *sock;
-	struct ip_addr ip_address; /* IP-Address of the entry */
-	unsigned short int port; /* Port of the request URI */
-	int failure_count;
-	struct _ds_dest *next;
-} ds_dest_t, *ds_dest_p;
-
-typedef struct _ds_set
-{
-	int id;				/* id of dst set */
-	int nr;				/* number of items in dst set */
-	int last;			/* last used item in dst set */
-	int weight_sum;		/* sum of the weights from dst set */
-	ds_dest_p dlist;
-	struct _ds_set *next;
-} ds_set_t, *ds_set_p;
-
 extern int ds_force_dst;
 
 static db_func_t ds_dbf;
@@ -121,7 +98,7 @@ int init_data(void)
 	}
 	ds_lists[0] = ds_lists[1] = 0;
 
-	
+
 	p = (int*)shm_malloc(3*sizeof(int));
 	if(!p)
 	{
@@ -225,7 +202,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
 	}
 	/* Free the hostname */
 	hostent2ip_addr(&dp->ip_address, he, 0);
-		
+
 	/* Copy the Port out of the URI: */
 	dp->port = puri.port_no;
 
@@ -233,7 +210,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
 	sp->dlist = dp;
 
 	LM_DBG("dest [%d/%d] <%.*s>\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
-	
+
 	return 0;
 err:
 	/* free allocated memory */
