@@ -542,9 +542,8 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 	<itemizedlist>
 	<listitem>
 		<para>
-		<emphasis>id</emphasis> - the dialplan id of the possible matching rules from the given table.
-		The table parameter can be ommited. The default table is dialplan.
-		The id parameter can have the following types:
+		<emphasis>id</emphasis> - the dialplan id of possible matching rules.
+		The <emphasis>id</emphasis> parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
@@ -564,7 +563,7 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 		<para>
 		<emphasis>table</emphasis> - Specifies the table where the search will
 		take place. This parameter can be ommited. The default table is dialplan.
-		The id parameter can have the following types:
+		The <emphasis>table</emphasis> parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>

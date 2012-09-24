@@ -272,13 +272,38 @@ modparam("enum", "bl_algorithm", "txt")
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>suffix</emphasis> - Suffix to be appended to the 
-			domain name.
+			domain name. The <emphasis>suffix</emphasis> parameter can have the
+			following types:
 			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - the suffix is statically 
+				assigned </para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - the suffix is the value of an
+				existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+			</itemizedlist>
 		</listitem>
 		<listitem>
 			<para><emphasis>service</emphasis> - Service string to be used in 
 			the service field.
 			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - the service is statically 
+				assigned </para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - the service is the value of an
+				existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+			</itemizedlist>
 		</listitem>
 		</itemizedlist>
 		<para>

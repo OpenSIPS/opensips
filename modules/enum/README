@@ -11,7 +11,7 @@ Otmar Lendl
    Copyright © 2002, 2003 Juha Heinanen
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -250,8 +250,15 @@ modparam("enum", "bl_algorithm", "txt")
    “Overview” for more information.
 
    Meaning of the parameters is as follows:
-     * suffix - Suffix to be appended to the domain name.
+     * suffix - Suffix to be appended to the domain name. The
+       suffix parameter can have the following types:
+          + string - the suffix is statically assigned
+          + pvar - the suffix is the value of an existing
+            pseudo-variable (as string value)
      * service - Service string to be used in the service field.
+          + string - the service is statically assigned
+          + pvar - the service is the value of an existing
+            pseudo-variable (as string value)
 
    This function can be used from REQUEST_ROUTE.
 
