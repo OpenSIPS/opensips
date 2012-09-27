@@ -3789,7 +3789,7 @@ int pv_parse_format(str *in, pv_elem_p *el)
 			p++;
 		e->text.len = p - e->text.s;
 		
-		if(*p == '\0')
+		if(!is_in_str(p,in))
 			break;
 		s.s = p;
 		s.len = in->s+in->len-p;
@@ -3797,7 +3797,7 @@ int pv_parse_format(str *in, pv_elem_p *el)
 		
 		if(p0==NULL)
 			goto error;
-		if(*p0 == '\0')
+		if(!is_in_str(p0,in))
 			break;
 		p = p0;
 	}
