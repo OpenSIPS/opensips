@@ -136,7 +136,7 @@ static cmd_export_t cmds[]={
 	{"shm_status", (cmd_function)dbg_shm_status,   0, 0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
-	{"set_count",  (cmd_function)pv_set_count,       1, fixup_pv_set, 0,
+	{"set_count",  (cmd_function)pv_set_count,       2, fixup_pv_set, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"set_select_weight",(cmd_function)pv_sel_weight,1, fixup_pv_set, 0,
@@ -549,31 +549,32 @@ static int fixup_pv_set(void** param, int param_no)
 	pv_elem_t *model;
 	str s;
 
-	if(param_no== 0)
-		return 0;
-
-	if(*param)
+	if((*param == 0) || (param_no!=1 && param_no!=2))
 	{
-		s.s = (char*)(*param); s.len = strlen(s.s);
-		if(pv_parse_format(&s, &model)<0)
-		{
-			LM_ERR( "wrong format[%s]\n",(char*)(*param));
-			return E_UNSPEC;
-		}
-		*param = (void*)model;
-		return 0;
+		LM_ERR( "NULL format\n");
+		return E_UNSPEC;
 	}
-	LM_ERR( "null format\n");
-	return E_UNSPEC;
+
+	s.s = (char*)(*param); s.len = strlen(s.s);
+	if(pv_parse_format(&s, &model)<0)
+	{
+		LM_ERR( "wrong format[%s]\n",(char*)(*param));
+		return E_UNSPEC;
+	}
+
+	*param = (void*)model;
+
+	return 0;
 }
 
 
-static int pv_set_count(struct sip_msg* msg, char* pv_name, char* str2)
+static int pv_set_count(struct sip_msg* msg, char* pv_name, char* pv_result)
 {
 	pv_elem_t* pv_elem = (pv_elem_t*)pv_name;
+	pv_elem_t* pv_res = (pv_elem_t*)pv_result;
 	pv_value_t pv_val;
 
-	if(pv_elem == NULL)
+	if(pv_elem == NULL || pv_res == NULL)
 	{
 		LM_ERR("NULL parameter\n");
 		return -1;
@@ -593,8 +594,17 @@ static int pv_set_count(struct sip_msg* msg, char* pv_name, char* str2)
 		pv_elem->spec.pvp.pvi.u.ival++;
 	}
 
-	LM_DBG("Set count = %d\n", pv_elem->spec.pvp.pvi.u.ival -1);
-	return pv_elem->spec.pvp.pvi.u.ival-1;
+	pv_val.flags = PV_TYPE_INT;
+	pv_val.ri = pv_elem->spec.pvp.pvi.u.ival-1;
+	
+	if (pv_set_value( msg, &pv_res->spec, 0, &pv_val) != 0)
+	{
+		LM_ERR("SET output value failed.\n");
+		return -1;
+	}
+
+	LM_DBG("Set count = %d\n", pv_val.ri);
+	return 1;
 }
 
 /* This function does selection based on the
