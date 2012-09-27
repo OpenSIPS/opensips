@@ -154,9 +154,9 @@ static int fixup_stat(void** param, int param_no)
 			LM_ERR("failed to parse statistic name format <%s> \n",s.s);
 			return E_CFG;
 		}
+		format = sp->u.format;
 		/* is it only one token ? */
-		if (sp->u.format->next==NULL) {
-			format = sp->u.format;
+		if (format->next==NULL && (format->text.len==0 || format->spec.type==PVT_NONE)) {
 			if (format->text.s && format->text.len) {
 				/* text token */
 				sp->u.stat = get_stat( &format->text );
