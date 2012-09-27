@@ -318,26 +318,95 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 int pv_parse_name(pv_spec_p sp, str *in)
 {
 	stat_var *stat;
+	pv_elem_t *format;
 
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;
 
-	sp->pvp.pvn.type = PV_NAME_PVAR;
+	if (pv_parse_format( in, &format)!=0) {
+		LM_ERR("failed to parse statistic name format <%.*s> \n",
+			in->len,in->s);
+		return -1;
+	}
 
-	/* search for the statistic */
-	stat = get_stat( in );
+	/* text only ? */
+	if (format->next==NULL && format->spec.type==PVT_NONE) {
 
-	if (stat==NULL) {
-		/* statistic does not exist (yet) -> fill in the string name */
-		sp->pvp.pvn.type = PV_NAME_INTSTR;
-		if (clone_pv_stat_name( in, &sp->pvp.pvn.u.isname.name.s )!=0) {
-			LM_ERR("failed to clone name of statistic \n");
-			return -1;
+		/* search for the statistic */
+		stat = get_stat( &format->text );
+
+		if (stat==NULL) {
+			/* statistic does not exist (yet) -> fill in the string name */
+			sp->pvp.pvn.type = PV_NAME_INTSTR;
+			sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
+			if (clone_pv_stat_name( in, &sp->pvp.pvn.u.isname.name.s )!=0) {
+				LM_ERR("failed to clone name of statistic \n");
+				return -1;
+			}
+		} else {
+			/* link the stat pointer directly as dynamic name */
+			sp->pvp.pvn.type = PV_NAME_PVAR;
+			sp->pvp.pvn.u.dname = (void*)stat;
+		}
+
+	} else {
+
+			sp->pvp.pvn.type = PV_NAME_INTSTR;
+			sp->pvp.pvn.u.isname.type = 0; /* not string */
+			sp->pvp.pvn.u.isname.name.s.s = (char*)(void*)format;
+			sp->pvp.pvn.u.isname.name.s.len = 0;
+
+	}
+
+	return 0;
+}
+
+
+static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
+												int create, stat_var **stat)
+{
+	pv_value_t pv_val;
+
+	/* is the statistic found ? */
+	if (name->type==PV_NAME_INTSTR) {
+		/* not yet :( */
+		/* do we have at least the name ?? */
+		if (name->u.isname.type==0) {
+			/* name is FMT */
+			if (pv_printf_s( msg, (pv_elem_t *)name->u.isname.name.s.s,
+			&(pv_val.rs) )!=0 || (pv_val.type&PV_VAL_NULL) ) {
+				LM_ERR("failed to get format string value\n");
+				return -1;
+			}
+		} else {
+			/* name is string */
+			pv_val.rs = name->u.isname.name.s;
+		}
+		/* lookup for the statistic */
+		*stat = get_stat( &pv_val.rs );
+		if (*stat==NULL) {
+			if (!create)
+				return 0;
+			LM_DBG("creating dynamic statistic <%.*s>\n",
+				pv_val.rs.len, pv_val.rs.s);
+			/* stats not found -> create it */
+			if (register_dynamic_stat( &pv_val.rs, stat )!=0) {
+				LM_ERR("failed to create dynamic statistic <%.*s>\n",
+					pv_val.rs.len, pv_val.rs.s);
+				return -1;
+			}
+		}
+		/* if name is static string, better link the stat directly and discard name */
+		if (name->u.isname.type==AVP_NAME_STR) {
+			shm_free(name->u.isname.name.s.s);
+			name->u.isname.name.s.s = NULL;
+			name->u.isname.name.s.len = 0;
+			name->type = PV_NAME_PVAR;
+			name->u.dname = (void*)*stat;
 		}
 	} else {
-		/* link the stat pointer directly as dynamic name */
-		sp->pvp.pvn.type = PV_NAME_PVAR;
-		sp->pvp.pvn.u.dname = (void*)stat;
+		/* stat already found ! */
+		*stat = (stat_var*)name->u.dname;
 	}
 
 	return 0;
@@ -349,28 +418,10 @@ int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
 {
 	stat_var *stat;
 
-	/* is the statistic found ? */
-	if (param->pvn.type==PV_NAME_INTSTR) {
-		/* not yet :( */
-		stat = get_stat( &param->pvn.u.isname.name.s );
-		if (stat==NULL) {
-			LM_DBG("creating dynamic statistic <%.*s>\n",
-				param->pvn.u.isname.name.s.len, param->pvn.u.isname.name.s.s);
-			/* stats not found -> create it */
-			if (register_dynamic_stat( &param->pvn.u.isname.name.s, &stat )!=0) {
-				LM_ERR("failed to create dynamic statistic <%.*s>\n",
-					param->pvn.u.isname.name.s.len, param->pvn.u.isname.name.s.s);
-				return -1;
-			}
-		}
-		shm_free(param->pvn.u.isname.name.s.s);
-		param->pvn.u.isname.name.s.s = NULL;
-		param->pvn.u.isname.name.s.len = 0;
-		param->pvn.type = PV_NAME_PVAR;
-		param->pvn.u.dname = (void*)stat;
+	if (get_stat_name( msg, &(param->pvn), 1, &stat)!=0) {
+		LM_ERR("failed to generate/get statistic name\n");
+		return -1;
 	}
-
-	stat = (stat_var*)param->pvn.u.dname;
 
 	if (val != 0)
 		LM_WARN("non-zero value - setting value to 0\n");
@@ -388,22 +439,13 @@ int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	if(msg==NULL || res==NULL)
 		return -1;
 
-	/* is the statistic found ? */
-	if (param->pvn.type==PV_NAME_INTSTR) {
-		/* not yet :( */
-		stat = get_stat( &param->pvn.u.isname.name.s );
-		if (stat==NULL) {
-			return pv_get_null(msg, param, res);
-		} else {
-			shm_free(param->pvn.u.isname.name.s.s);
-			param->pvn.u.isname.name.s.s = NULL;
-			param->pvn.u.isname.name.s.len = 0;
-			param->pvn.type = PV_NAME_PVAR;
-			param->pvn.u.dname = (void*)stat;
-		}
+	if (get_stat_name( msg, &(param->pvn), 0, &stat)!=0) {
+		LM_ERR("failed to generate/get statistic name\n");
+		return -1;
 	}
 
-	stat = (stat_var*)param->pvn.u.dname;
+	if (stat==NULL)
+		return pv_get_null(msg, param, res);
 
 	res->ri = (int)get_stat_val( stat );
 	res->rs.s = sint2str(res->ri, &res->rs.len);
