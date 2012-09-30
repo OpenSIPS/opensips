@@ -499,6 +499,20 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	if (mods->is_dyn) {
 		lock_start_write((rw_lock_t *)collector->rwl);
 		shash = collector->dy_hstats;
+		/* double check for duplicates (due race conditions) */
+		for( it=shash[hash] ; it ; it=stat->hnext ) {
+			if ( (it->name.len==stat->name.len) &&
+			(strncasecmp( it->name.s, stat->name.s, stat->name.len)==0) ) {
+				/* duplicate found -> drop current stat and return the 
+				 * found one */
+				lock_stop_write((rw_lock_t *)collector->rwl);
+				if (flags&STAT_SHM_NAME) shm_free(stat->name.s);
+				if ((flags&STAT_IS_FUNC)==0) shm_free(stat->u.val);
+				shm_free(stat);
+				return 0;
+			}
+		}
+		/* new genuin stat-> continue */
 	} else {
 		shash = collector->hstats;
 	}
