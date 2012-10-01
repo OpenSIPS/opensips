@@ -243,6 +243,7 @@ static inline module_stats* add_stat_module( char *module)
 
 	mods->name.s = module;
 	mods->name.len = len;
+	mods->idx = collector->mod_no-1;
 
 	return mods;
 }
@@ -480,7 +481,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	}
 
 	/* fill the stat record */
-	stat->mod_idx = collector->mod_no-1;
+	stat->mod_idx = mods->idx;
 
 	stat->name.len = name_len;
 	if ( (flags&STAT_SHM_NAME)==0 ) {
