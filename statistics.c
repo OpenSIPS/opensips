@@ -509,6 +509,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 				if (flags&STAT_SHM_NAME) shm_free(stat->name.s);
 				if ((flags&STAT_IS_FUNC)==0) shm_free(stat->u.val);
 				shm_free(stat);
+				*pvar = it;
 				return 0;
 			}
 		}
