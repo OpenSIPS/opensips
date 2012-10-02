@@ -74,8 +74,9 @@ typedef struct stat_var_{
 
 typedef struct module_stats_ {
 	str name;
-	unsigned short no;
+	unsigned int no;
 	unsigned short is_dyn;
+	unsigned short idx;
 	stat_var *head;
 	stat_var *tail;
 } module_stats;
