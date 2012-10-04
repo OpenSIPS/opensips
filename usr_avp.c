@@ -60,7 +60,7 @@ static int *last_avp_index_shm = 0;
 int init_global_avps(void)
 {
 	/* initialize map for static avps */
-	avp_map = map_create(AVLMAP_NO_DUPLICATE);
+	avp_map = map_create(0);
 	if (!avp_map) {
 		LM_ERR("cannot create avp_map\n");
 		return -1;
@@ -87,7 +87,7 @@ int init_extra_avps(void)
 	}
 	*last_avp_index_shm = last_avp_index;
 	/* initialize map for dynamic avps */
-	avp_map_shm = map_create(AVLMAP_SHARED|AVLMAP_NO_DUPLICATE);
+	avp_map_shm = map_create(AVLMAP_SHARED);
 	if (!avp_map_shm) {
 		LM_ERR("cannot create shared avp_map\n");
 		return -1;
