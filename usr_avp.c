@@ -52,6 +52,8 @@ static struct usr_avp **crt_avps  = &global_avps;
 static map_t avp_map = 0;
 static map_t avp_map_shm = 0;
 static int last_avp_index = 0;
+/* it is also used to indicate that the extra AVPs that are stored in the
+ * shared memory have been initialized */
 static int *last_avp_index_shm = 0;
 
 #define p2int(_p) (int)(unsigned long)(_p)
@@ -544,12 +546,14 @@ static inline int new_avp_extra_alias(str *alias)
 	return id;
 }
 
-static int parse_avp_spec_aux( str *name, int *avp_name, int extra)
+int parse_avp_spec( str *name, int *avp_name)
 {
-	int id;
+	int id, extra;
 
 	if (name==0 || name->s==0 || name->len==0)
 		return -1;
+
+	extra = last_avp_index_shm ? 1 : 0;
 
 	if (name->len > 2 && name->s[1] == AVP_NAME_DELIM &&
 			(name->s[0] == 'i' || name->s[0] == 's'))
@@ -569,15 +573,10 @@ static int parse_avp_spec_aux( str *name, int *avp_name, int extra)
 	return 0;
 }
 
-int parse_avp_spec( str *name, int *avp_name)
-{
-	return parse_avp_spec_aux(name, avp_name, 0);
-}
-
 int get_avp_id(str *name)
 {
 	int id;
-	if (parse_avp_spec_aux(name, &id, 1)) {
+	if (parse_avp_spec(name, &id)) {
 		LM_ERR("unable to get id\n");
 		return -1;
 	}

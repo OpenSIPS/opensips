@@ -623,9 +623,6 @@ assign_stm: DEBUG EQUAL snumber {
 		| LOGNAME EQUAL STRING { log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
 		| AVP_ALIASES EQUAL STRING { 
-/*				if ($3!=0 && $3[0]!=0)
-					if ( add_avp_galias_str($3)!=0 )
-						yyerror("invalid AVP aliases");;*/
 				yyerror("AVP_ALIASES shouldn't be used anymore\n");
 			}
 		| AVP_ALIASES EQUAL error { yyerror("string value expected"); }
