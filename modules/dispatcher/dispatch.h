@@ -51,6 +51,10 @@
 #define DS_PROBING_DST		2  /* checking destination */
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
 
+#define DS_PV_ALGO_MARKER	"%u"	/* Marker to indicate where the URI should
+									   be inserted in the pvar */
+#define DS_PV_ALGO_MARKER_LEN (sizeof(DS_PV_ALGO_MARKER) - 1)
+
 typedef struct _ds_dest
 {
 	str uri;
@@ -61,6 +65,7 @@ typedef struct _ds_dest
 	struct ip_addr ip_address; /* IP-Address of the entry */
 	unsigned short int port; /* Port of the request URI */
 	int failure_count;
+	void *param;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;
 
@@ -73,6 +78,13 @@ typedef struct _ds_set
 	ds_dest_p dlist;
 	struct _ds_set *next;
 } ds_set_t, *ds_set_p;
+
+typedef struct _ds_pvar_param
+{
+	pv_spec_t pvar;
+	int value;
+} ds_pvar_param_t, *ds_pvar_param_p;
+
 
 extern ds_set_p *ds_lists;
 extern int *crt_idx;
@@ -135,6 +147,9 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *addr, pv_spec_t *port,
 void ds_check_timer(unsigned int ticks, void* param);
 
 int check_options_rplcode(int code);
+
+/* pvar algorithm pattern parser */
+void ds_pvar_parse_pattern(str);
 
 #endif
 

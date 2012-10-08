@@ -277,6 +277,144 @@ err1:
 }
 
 
+/* variables used to generate the pvar name */
+static int ds_has_pattern = 0;
+static str ds_pattern_suffix = str_init("");
+static str ds_pattern_prefix = str_init("");
+
+void ds_pvar_parse_pattern(str pattern)
+{
+	char *p, *end;
+
+	ds_pattern_suffix = pattern;
+	end = pattern.s + pattern.len - DS_PV_ALGO_MARKER_LEN + 1;
+
+	/* first try to see if we have the marker */
+	for (p = pattern.s; p < end &&
+			memcmp(p, DS_PV_ALGO_MARKER, DS_PV_ALGO_MARKER_LEN); p++);
+
+	/* if reached end - pattern not present => pure pvar */
+	if (p == end) {
+		LM_DBG("Pattern not found\n");
+		return;
+	}
+
+	ds_has_pattern = 1;
+	ds_pattern_suffix.len = p - pattern.s;
+
+	/* skip marker */
+	ds_pattern_prefix.s = p + DS_PV_ALGO_MARKER_LEN;
+	ds_pattern_prefix.len = pattern.s + pattern.len - ds_pattern_prefix.s;
+}
+
+ds_pvar_param_p ds_get_pvar_param(str uri)
+{
+	str name;
+	int len = ds_pattern_suffix.len + uri.len + ds_pattern_prefix.len;
+	char buf[len]; /* XXX: check if this works for all compilers */
+	ds_pvar_param_p param;
+
+	if (ds_has_pattern) {
+		name.len = 0;
+		name.s = buf;
+		memcpy(buf, ds_pattern_suffix.s, ds_pattern_suffix.len);
+		name.len = ds_pattern_suffix.len;
+		memcpy(name.s + name.len, uri.s, uri.len);
+		name.len += uri.len;
+		memcpy(name.s + name.len, ds_pattern_prefix.s, ds_pattern_prefix.len);
+		name.len += ds_pattern_prefix.len;
+	}
+
+	param = shm_malloc(sizeof(ds_pvar_param_t));
+	if (!param) {
+		LM_ERR("no more shm memory\n");
+		return NULL;
+	}
+
+	if (!pv_parse_spec(ds_has_pattern ? &name : &ds_pattern_suffix, &param->pvar)) {
+		LM_ERR("cannot parse pattern spec\n");
+		shm_free(param);
+		return NULL;
+	}
+	
+	return param;
+}
+
+int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set)
+{
+	pv_value_t val;
+	int i, j, k, end_idx, cnt;
+	ds_dest_p *sset;
+	ds_pvar_param_p param;
+
+	if (!set) {
+		LM_ERR("invalid set\n");
+		return -1;
+	}
+	sset = shm_realloc(*sorted_set, set->nr * sizeof(ds_dest_p));
+	if (!sset) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	*sorted_set = sset;
+
+	end_idx = set->nr - 1;
+	if (ds_use_default) {
+		sset[end_idx] = &set->dlist[end_idx];
+		end_idx--;
+	}
+
+	for (i = 0, cnt = 0; i < set->nr - (ds_use_default?1:0); i++) {
+		if (set->dlist[i].flags & (DS_INACTIVE_DST|DS_PROBING_DST)) {
+			/* move to the end of the list */
+			sset[end_idx--] = &set->dlist[i];
+			continue;
+		}
+
+		/* if pvar not set - try to evaluate it */
+		if (set->dlist[i].param == NULL) {
+			param = ds_get_pvar_param(set->dlist[i].uri);
+			if (param == NULL) {
+				LM_ERR("cannot parse pvar for uri %.*s\n",
+					   set->dlist[i].uri.len, set->dlist[i].uri.s);
+				continue;
+			}
+			set->dlist[i].param = (void *)param;
+		} else {
+			param = (ds_pvar_param_p)set->dlist[i].param;
+		}
+		if (pv_get_spec_value(msg, &param->pvar, &val) < 0) {
+			LM_ERR("cannot get spec value for spec %.*s\n",
+				   set->dlist[i].uri.len, set->dlist[i].uri.s);
+			continue;
+		}
+		if (!(val.flags & PV_VAL_NULL)) {
+			if (!(val.flags & PV_VAL_INT)) {
+				/* last attempt to retrieve value */
+				if (!str2sint(&val.rs, &param->value)) {
+					LM_ERR("invalid pvar value type - not int\n");
+					continue;
+				}
+			} else {
+				param->value = val.ri;
+			}
+		} else {
+			param->value = 0;
+		}
+		/* search the proper position */
+		j = 0;
+		for (; j < cnt && ((ds_pvar_param_p)sset[j]->param)->value <= param->value; j++);
+		/* make space for the new entry */
+		for (k = cnt; k > j; k--)
+			sset[k] = sset[k - 1];
+		sset[j] = &set->dlist[i];
+		cnt++;
+	}
+
+	return cnt;
+}
+
+
 int ds_connect_db(void)
 {
 	if(!ds_db_url.s)
@@ -526,6 +664,8 @@ void destroy_list(int list_id)
 			do {
 				if(dest->uri.s!=NULL)
 					shm_free(dest->uri.s);
+				if(dest->param)
+					shm_free(dest->param);
 				dest = dest->next;
 			}while(dest);
 			shm_free(sp_curr->dlist);
@@ -993,6 +1133,10 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	ds_set_p idx = NULL;
 	int inactive_dst_count = 0;
 	int destination_entries_to_skip = 0;
+	/* used to sort the destinations for LB algo */
+	ds_dest_p dest = NULL;
+	ds_dest_p selected = NULL;
+	static ds_dest_p *sorted_set = NULL;
 
 	if(msg==NULL)
 	{
@@ -1091,6 +1235,19 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		case 8:
 			ds_id = 0;
 		break;
+		case 9:
+			if (!ds_has_pattern && ds_pattern_suffix.len == 0 ) {
+				LM_WARN("no pattern specified - using first entry...\n");
+				alg = 8;
+				break;
+			}
+			if ((ds_id = ds_pvar_algo(msg, idx, &sorted_set)) <= 0)
+			{
+				LM_ERR("can't get destination index\n");
+				return -1;
+			}
+			ds_id = 0;
+		break;
 		default:
 			LM_WARN("algo %d not implemented - using first entry...\n", alg);
 			ds_id = 0;
@@ -1112,31 +1269,36 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
-	i=ds_id;
-	while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
-	{
-		if(ds_use_default!=0) {
-			if (idx->nr>1)
-				i = (i+1)%(idx->nr-1);
-		} else {
-			i = (i+1)%idx->nr;
-		}
-		if(i==ds_id)
+	if (alg != 9) {
+		i=ds_id;
+		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
 		{
-			if(ds_use_default!=0)
-			{
-				i = idx->nr-1;
-				if (idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST))
-					return -1;
-				break;
+			if(ds_use_default!=0) {
+				if (idx->nr>1)
+					i = (i+1)%(idx->nr-1);
 			} else {
-				return -1;
+				i = (i+1)%idx->nr;
+			}
+			if(i==ds_id)
+			{
+				if(ds_use_default!=0)
+				{
+					i = idx->nr-1;
+					if (idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST))
+						return -1;
+					break;
+				} else {
+					return -1;
+				}
 			}
 		}
+		ds_id = i;
+		selected = &idx->dlist[ds_id];
+	} else {
+		selected = sorted_set[0];
 	}
-	ds_id = i;
 
-	if(ds_update_dst(msg, &idx->dlist[ds_id].uri, idx->dlist[ds_id].sock, mode)!=0)
+	if(ds_update_dst(msg, &selected->uri, selected->sock, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
@@ -1146,7 +1308,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		idx->last = (ds_id+1) % idx->nr;
 	
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n", alg, set, ds_id,
-			idx->dlist[ds_id].uri.len, idx->dlist[ds_id].uri.s);
+			selected->uri.len, selected->uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
@@ -1176,8 +1338,9 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 
 	for(i_unwrapped = ds_id-1+idx->nr; i_unwrapped>ds_id; i_unwrapped--) {
 		i = i_unwrapped % idx->nr;
+		dest = (alg == 9 ? sorted_set[i] : &idx->dlist[i]);
 
-		if((idx->dlist[i].flags & DS_INACTIVE_DST)
+		if((dest->flags & DS_INACTIVE_DST)
 				|| (ds_use_default!=0 && i==(idx->nr-1)))
 			continue;
 		if(destination_entries_to_skip > 0) {
@@ -1187,20 +1350,20 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		}
 
 		LM_DBG("using entry [%d/%d]\n", set, i);
-		if (push_ds_2_avps( &idx->dlist[i] ) != 0 )
+		if (push_ds_2_avps( dest ) != 0 )
 			return -1;
 		cnt++;
 	}
 
 	/* add to avp the first used dst */
-	avp_val.s = idx->dlist[ds_id].uri;
+	avp_val.s = selected->uri;
 	if(add_avp(AVP_VAL_STR|dst_avp_type, dst_avp_name, avp_val)!=0)
 		return -1;
 	cnt++;
 
 done:
 	if (attrs_avp_name>0) {
-		avp_val.s = idx->dlist[ds_id].attrs;
+		avp_val.s = selected->attrs;
 		if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
 			return -1;
 	}

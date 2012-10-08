@@ -73,6 +73,7 @@ static str grp_avp_param = str_init("$avp(ds_grp_failover)");
 static str cnt_avp_param = str_init("$avp(ds_cnt_failover)");
 static str sock_avp_param = str_init("$avp(ds_sock_failover)");
 static str attrs_avp_param = {NULL, 0};
+static str pvar_algo_param = str_init("");
 str hash_pvar_param = {NULL, 0};
 
 int dst_avp_name;
@@ -190,6 +191,7 @@ static param_export_t params[]={
 	{"attrs_avp",       STR_PARAM, &attrs_avp_param.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
+	{"pvar_algo_pattern",     STR_PARAM, &pvar_algo_param.s},
 	{"ds_probing_threshhold", INT_PARAM, &probing_threshhold},
 	{"ds_ping_method",        STR_PARAM, &ds_ping_method.s},
 	{"ds_ping_from",          STR_PARAM, &ds_ping_from.s},
@@ -356,6 +358,10 @@ static int mod_init(void)
 			return -1;
 		}
 	}
+
+	pvar_algo_param.len = strlen(pvar_algo_param.s);
+	if (pvar_algo_param.len)
+		ds_pvar_parse_pattern(pvar_algo_param);
 
 	/* Only, if the Probing-Timer is enabled the TM-API needs to be loaded: */
 	if (ds_ping_interval > 0)

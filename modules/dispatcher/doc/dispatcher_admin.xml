@@ -507,6 +507,33 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 	</section>
 
 	<section>
+		<title><varname>pvar_algo_pattern</varname> (str)</title>
+		<para>
+		This parameter is used by the PVAR(9) algorithm to specify the
+		pseudovariable pattern used to detect the load of each destination. The
+		name of the pseudovariable should contain the string <quote>%u</quote>,
+		which will be internally replaced by the module with the uri of the
+		destination.
+		</para>
+		<para>
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>none</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <quote>pvar_algo_pattern</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "sock_avp", "$stat(load_%u)")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section>
 		<title><varname>table_name</varname> (string)</title>
 		<para>
 		If you want to load the sets of gateways from the database you must set
@@ -726,6 +753,15 @@ modparam("dispatcher", "socket_col", "my_sock")
 				<quote>8</quote> - the first entry in set is chosen.
 				</para>
 			</listitem>
+			<listitem>
+				<para>
+				<quote>9</quote> - The <emphasis>pvar_algo_pattern</emphasis>
+				parameter is used to determine the load on each server. If the 
+				parameter is not specified, then the first entry in the set is
+				chosen.
+				</para>
+			</listitem>
+			
 			<listitem>
 				<para>
 				<quote>X</quote> - if the algorithm is not implemented, the
