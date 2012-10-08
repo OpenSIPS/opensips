@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include "../../sr_module.h"
 #include "ul_mod.h"
+#include "../../rw_locking.h"
 #include "../../dprint.h"
 #include "../../timer.h"     /* register_timer */
 #include "../../globals.h"   /* is_main */
@@ -86,6 +87,7 @@ static int mi_child_init(void);
 
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
+extern rw_lock_t *sync_lock;
 /*
  * Module parameters and their default values
  */
@@ -275,6 +277,10 @@ static int mod_init(void)
 					" needed by the module\n");
 			return -1;
 		}
+		if (db_mode != DB_ONLY && (sync_lock = lock_init_rw()) == NULL) {
+			LM_ERR("cannot init rw lock\n");
+			return -1;
+		}
 	}
 
 	if (nat_bflag==(unsigned int)-1) {
@@ -365,8 +371,15 @@ static void destroy(void)
 	/* we need to sync DB in order to flush the cache */
 	if (ul_dbh) {
 		ul_unlock_locks();
+		if (sync_lock)
+			lock_start_read(sync_lock);
 		if (synchronize_all_udomains() != 0) {
 			LM_ERR("flushing cache failed\n");
+		}
+		if (sync_lock) {
+			lock_stop_read(sync_lock);
+			lock_destroy_rw(sync_lock);
+			sync_lock = 0;
 		}
 		ul_dbf.close(ul_dbh);
 	}
@@ -384,8 +397,12 @@ static void destroy(void)
  */
 static void timer(unsigned int ticks, void* param)
 {
+	if (sync_lock)
+		lock_start_read(sync_lock);
 	if (synchronize_all_udomains() != 0) {
 		LM_ERR("synchronizing cache failed\n");
 	}
+	if (sync_lock)
+		lock_stop_read(sync_lock);
 }
 
