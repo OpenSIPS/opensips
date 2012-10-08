@@ -39,6 +39,7 @@
 #include "../../ut.h"
 #include "../../qvalue.h"
 #include "../../ip_addr.h"
+#include "../../rw_locking.h"
 #include "ul_mi.h"
 #include "dlist.h"
 #include "udomain.h"
@@ -50,6 +51,7 @@
 #define MI_UL_CSEQ 1
 static str mi_ul_cid = str_init("dfjrewr12386fd6-343@opensips.mi");
 static str mi_ul_ua  = str_init("OpenSIPS MI Server");
+rw_lock_t *sync_lock = 0;
 
 
 
@@ -740,6 +742,12 @@ struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param)
 			return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 		return mi_sync_aor(dom, &node->value);
 	} else {
-		return mi_sync_domain(dom);
+		struct mi_root *ret;
+		if (sync_lock)
+			lock_start_write(sync_lock);
+		ret = mi_sync_domain(dom);
+		if (sync_lock)
+			lock_stop_write(sync_lock);
+		return ret;
 	}
 }
