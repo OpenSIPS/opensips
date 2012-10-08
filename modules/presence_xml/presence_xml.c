@@ -404,7 +404,7 @@ static void free_xs_list(xcap_serv_t* xsl, int mem_type)
 	{
 		prev_xs= xs;
 		xs= xs->next;
-		if(mem_type & SHM_MEM_TYPE)
+		if(mem_type == SHM_MEM_TYPE)
 			shm_free(prev_xs);
 		else
 			pkg_free(prev_xs);
