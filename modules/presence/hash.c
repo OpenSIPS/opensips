@@ -131,7 +131,7 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 		+ s->local_contact.len+ s->contact.len+ s->record_route.len+
 		+ s->reason.len+ 1;
 
-	if(mem_type & PKG_MEM_TYPE)
+	if(mem_type == PKG_MEM_TYPE)
 		dest= (subs_t*)pkg_malloc(size);
 	else
 		dest= (subs_t*)shm_malloc(size);
@@ -173,7 +173,7 @@ subs_t* mem_copy_subs(subs_t* s, int mem_type)
 error:
 	if(dest)
 	{
-		if(mem_type & PKG_MEM_TYPE)
+		if(mem_type == PKG_MEM_TYPE)
 			pkg_free(dest);
 		else
 			shm_free(dest);
@@ -316,7 +316,7 @@ void free_subs_list(subs_t* s_array, int mem_type, int ic)
 	{
 		s= s_array;
 		s_array= s_array->next;
-		if(mem_type & PKG_MEM_TYPE)
+		if(mem_type == PKG_MEM_TYPE)
 		{
 			if(ic)
 				pkg_free(s->contact.s);
