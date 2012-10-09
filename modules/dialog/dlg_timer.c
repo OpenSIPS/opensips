@@ -539,14 +539,12 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		dlg->pl = 0;
 		it = curr;
 
-		/* no longer reffed in list */
-		unref_dlg(dlg,1);
-		/* dlg is still reffed in TM callback. deletion from memory
-		 * will happen only on 408 timeout */
-
 		/* FIXME - maybe better not to send BYE both ways as we know for sure one
 		 * end in down . */
 		dlg_end_dlg(dlg,0);
+
+		/* no longer reffed in list */
+		unref_dlg(dlg,1);
 	}
 
 	/* ping_timer->first now contains all active dialogs */
