@@ -456,13 +456,12 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
     static char* person_name = "person";
     static char* device_name = "device";
 
-    int i, j = 0;
+    int i, j = 0, len;
     char* id = NULL;
-    char *entity;
     char buf[MAX_URI_SIZE+1];
     str *body= NULL;
     str* pidf_doc= NULL;
-    str *pres_uri = NULL;
+    str pres_uri = {0,0};
 
     xmlDocPtr* xml_array;
     xmlDocPtr new_doc = NULL;
@@ -499,22 +498,19 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
         return NULL;
     }
     memcpy(buf, "sip:", 4);
-    memcpy(buf+4, pres_user->s, pres_user->len);
-    buf[pres_user->len+4] = '@';
-    memcpy(buf + pres_user->len + 5, pres_domain->s, pres_domain->len);
-    buf[pres_user->len + 5 + pres_domain->len]= '\0';
+    len = 4;
+    memcpy(buf+len, pres_user->s, pres_user->len);
+    len += pres_user->len;
+    buf[len] = '@';
+    len += 1;
+    memcpy(buf+len, pres_domain->s, pres_domain->len);
+    len += pres_domain->len;
+    buf[len]= '\0';
 
-    pres_uri = (str *)pkg_malloc(sizeof(str));
-    if(pres_uri == NULL)
-    {
-        LM_ERR("while allocating memory\n");
-        return NULL;
-    }
-    memset(pres_uri, 0, sizeof(str));
-    pres_uri->s = buf;
-    pres_uri->len = pres_user->len + 5 + pres_domain->len;
+    pres_uri.s = buf;
+    pres_uri.len = len;
 
-    LM_DBG("[pres_uri] %.*s\n", pres_uri->len, pres_uri->s);
+    LM_DBG("[pres_uri] %.*s\n", pres_uri.len, pres_uri.s);
 
     /* if pidf_manipulation usage is configured */
     if(pidf_manipulation)
@@ -691,16 +687,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
     }
     xmlNewProp(new_doc_root, BAD_CAST "xmlns", BAD_CAST "urn:ietf:params:xml:ns:pidf");
     xmlDocSetRootElement(new_doc, new_doc_root);
-
-    entity = (char*)pkg_malloc(pres_uri->len + 1);
-    if(entity == NULL)
-    {
-        ERR_MEM(PKG_MEM_STR);
-    }
-    memcpy(entity, pres_uri->s, pres_uri->len);
-    entity[pres_uri->len] = '\0';
-    xmlNewProp(new_doc_root, BAD_CAST "entity", BAD_CAST entity);
-    pkg_free(entity);
+    xmlNewProp(new_doc_root, BAD_CAST "entity", BAD_CAST pres_uri.s);
 
     /* Add tuple elements */
     tmp_node = tuples_head;
