@@ -492,7 +492,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
     }
     memset(xml_array, 0, (n+2)*sizeof(xmlDocPtr)) ;
 
-    if ((pres_user->len + pres_domain->len + 1) > MAX_URI_SIZE)
+    if ((4 + pres_user->len + 1 + pres_domain->len + 1) > MAX_URI_SIZE)
     {
         LM_ERR("entity URI too long, maximum=%d\n", MAX_URI_SIZE);
         return NULL;
