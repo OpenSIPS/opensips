@@ -110,7 +110,7 @@ static int mod_init(void)
 	struct ip_addr *_ip;
 
 	if ( port <= 1024 ) {
-		LM_ERR("port<1024, using 8888...\n");
+		LM_ERR("invalid port %d<1024\n", port);
 		return -1;
 	}
 

@@ -197,7 +197,8 @@ void httpd_proc(int rank)
 	saddr_in.sin_family = AF_INET;
 	saddr_in.sin_port = htons(port);
 
-	LM_DBG("init_child [%d] - HTTP Server init [%d]\n", rank, getpid());
+	LM_DBG("init_child [%d] - [%d] HTTP Server init [%s:%d]\n",
+		rank, getpid(), (ip.s?ip.s:"INADDR_ANY"), port);
 	dmn = MHD_start_daemon(MHD_NO_FLAG|MHD_USE_DEBUG, port, NULL, NULL,
 			&(answer_to_connection), NULL,
 			MHD_OPTION_SOCK_ADDR, &saddr_in,
