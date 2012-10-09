@@ -44,7 +44,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls,
 		str *buffer, str *page);
-static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max);
+static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
 str http_root = str_init("mi");
 
@@ -123,7 +123,7 @@ int destroy(void)
 
 
 
-static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
+static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max)
 {
 	struct mi_handler *hdl = (struct mi_handler*)cls;
 	gen_lock_t *lock;
@@ -135,12 +135,12 @@ static int mi_http_flush_data(void *cls, uint64_t pos, char *buf, int max)
 		return -1;
 	}
 	LM_DBG("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
-		 hdl, hdl->param, (int)pos, buf, max);
+		 hdl, hdl->param, (int)pos, buf, (int)max);
 
 	if (pos){
 		LM_DBG("freeing hdl=[%p]: hdl->param=[%p], "
 			" pos=[%d], buf=[%p], max=[%d]\n",
-			 hdl, hdl->param, (int)pos, buf, max);
+			 hdl, hdl->param, (int)pos, buf, (int)max);
 		shm_free(hdl);
 		return -1;
 	}

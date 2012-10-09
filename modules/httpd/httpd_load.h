@@ -91,7 +91,7 @@ typedef void (httpd_acces_handler_cb) (void *cls, void *connection, const char *
  *  (possibly allowing the client to perform additional
  *  requests using the same TCP connection).
  */
-typedef int (httpd_flush_data_cb) (void *cls, uint64_t pos, char *buf, int max);
+typedef ssize_t (httpd_flush_data_cb) (void *cls, uint64_t pos, char *buf, size_t max);
 
 /**
  * Callback to be run in order to initialize process specific data
