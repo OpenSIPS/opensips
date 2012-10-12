@@ -327,7 +327,9 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	print_publ(&publ);
 	if(pua_send_publish(&publ)< 0)
 	{
-		LM_ERR("sending publish failed\n");
+		LM_ERR("sending publish failed for pres_uri [%.*s] to server [%.*s]\n",
+			publ.pres_uri->len, publ.pres_uri->s,
+			publ.outbound_proxy.len, publ.outbound_proxy.s);
 	}	
 
 error:
