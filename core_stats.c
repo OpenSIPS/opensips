@@ -187,6 +187,7 @@ int init_pkg_stats(int no_procs)
 		return -1;
 	}
 	memset( pkg_status, 0, no_procs*sizeof(pkg_status_holder));
+	memset( marker_t, 0, no_procs*sizeof(time_t));
 	no_pkg_status = no_procs;
 
 	/* build the stats and register them */
