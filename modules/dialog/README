@@ -1287,7 +1287,9 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
 1.7.5. failed_dialogs
 
-   Returns the number of failed dialogs.
+   Returns the number of failed dialogs ( dialogs were never
+   established due to whatever reasons - internal error, negative
+   reply, cancelled, etc )
 
 1.8. Exported MI Functions
 

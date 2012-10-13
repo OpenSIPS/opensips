@@ -1788,7 +1788,9 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		<section>
 			<title><varname>failed_dialogs</varname></title>
 			<para>
-			Returns the number of failed dialogs.
+			Returns the number of failed dialogs ( dialogs were
+			never established due to whatever reasons - internal error,
+			negative reply, cancelled, etc )
 			</para>
 		</section>
 	</section>
