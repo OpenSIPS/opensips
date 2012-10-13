@@ -534,7 +534,6 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 	if ( old_state!=DLG_STATE_DELETED && new_state==DLG_STATE_DELETED ) {
 		LM_DBG("dialog %p failed (negative reply)\n", dlg);
-		
 
 		/*destroy linkers */
 		destroy_linkers(dlg->profile_links);
@@ -547,6 +546,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			unref_dlg(dlg,unref);
 		if (old_state==DLG_STATE_EARLY)
 			if_update_stat(dlg_enable_stats, early_dlgs, -1);
+		if_update_stat(dlg_enable_stats, failed_dlgs, 1);
 		return;
 	}
 

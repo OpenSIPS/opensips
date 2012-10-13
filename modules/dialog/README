@@ -12,7 +12,7 @@ Vladut-Stefan Paiu
 
    Copyright © 2006-2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-03-08 11:33:05 +0200
+   Revision $Revision$ $Date: 2012-03-08 13:33:05 +0400
                               (Thu, 08 Mar 2012) $
      __________________________________________________________
 
@@ -1288,7 +1288,9 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
 1.7.5. failed_dialogs
 
-   Returns the number of failed dialogs.
+   Returns the number of failed dialogs ( dialogs were never
+   established due to whatever reasons - internal error, negative
+   reply, cancelled, etc )
 
 1.8. Exported MI Functions
 
