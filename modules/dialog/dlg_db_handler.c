@@ -428,6 +428,29 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 	current_dlg_pointer = NULL;
 }
 
+int remove_ended_dlgs_from_db(void)
+{
+	static db_ps_t my_ps = NULL;
+	db_val_t values[1];
+	db_key_t match_keys[1] = { &state_column};
+
+	if (use_dialog_table()!=0)
+		return -1;
+
+	VAL_TYPE(values) = DB_INT;
+	VAL_NULL(values) = 0;
+
+	VAL_INT(values) = DLG_STATE_DELETED ;
+
+	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
+
+	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 1) < 0) {
+		LM_ERR("failed to delete database information\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 static int load_dialog_info_from_db(int dlg_hash_size)
 {
@@ -441,6 +464,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	unsigned int next_id;
 	int no_rows = 10;
 	struct socket_info *caller_sock,*callee_sock;
+	int found_ended_dlgs=0;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -473,7 +497,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 			if ( VAL_INT(values+8) == DLG_STATE_DELETED ) {
-				LM_DBG("dialog already terminated -> skipping\n");
+				LM_INFO("dialog already terminated -> skipping\n");
+				found_ended_dlgs=1;
 				continue;
 			}
 
@@ -629,9 +654,13 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 end:
 	dialog_dbf.free_result(dialog_db_handle, res);
+	if (found_ended_dlgs)
+		remove_ended_dlgs_from_db();
 	return 0;
 error:
 	dialog_dbf.free_result(dialog_db_handle, res);
+	if (found_ended_dlgs)
+		remove_ended_dlgs_from_db();
 	return -1;
 }
 
@@ -674,8 +703,6 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 
 	return 0;
 }
-
-
 
 int update_dialog_dbinfo(struct dlg_cell * cell)
 {
