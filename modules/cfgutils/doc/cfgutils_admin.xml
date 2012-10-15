@@ -374,12 +374,15 @@ shm_status();
 	</section>
 	<section>
 		<title>
-			<function moreinfo="none">set_count(pseudovarible_name)</function>
+			<function moreinfo="none">set_count(pvar name, result pvar name)</function>
 		</title>
 		<para>
-			Function that counts the values of a pseudovariable. It makes sence to 
+			Function that counts the values of a pseudovariable. It makes sense to 
 			call this function only for pseudovariables that can take more values
 			(avp, headers).
+		</para>
+		<para>
+			The result is returned in the second parameter.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
@@ -389,7 +392,7 @@ shm_status();
 			<title><function>set_count</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$avp(11) = set_count("$avp(10)");
+set_count("$avp(10)", "$avp(result)");
 ...
 			</programlisting>
 		</example>
