@@ -22,7 +22,7 @@ Sergio Gutierrez
    Elena-Ramona Modroiu
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -49,7 +49,7 @@ Sergio Gutierrez
               1.4.7. abort()
               1.4.8. pkg_status()
               1.4.9. shm_status()
-              1.4.10. set_count(pseudovarible_name)
+              1.4.10. set_count(pvar name, result pvar name)
               1.4.11. set_select_weight(pseudovarible_name)
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
@@ -344,18 +344,20 @@ pkg_status();
 shm_status();
 ...
 
-1.4.10.  set_count(pseudovarible_name)
+1.4.10.  set_count(pvar name, result pvar name)
 
    Function that counts the values of a pseudovariable. It makes
-   sence to call this function only for pseudovariables that can
+   sense to call this function only for pseudovariables that can
    take more values (avp, headers).
+
+   The result is returned in the second parameter.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.14. set_count usage
 ...
-$avp(11) = set_count("$avp(10)");
+set_count("$avp(10)", "$avp(result)");
 ...
 
 1.4.11.  set_select_weight(pseudovarible_name)
