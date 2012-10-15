@@ -209,10 +209,17 @@ void fm_split_frag(struct fm_block* qm, struct fm_frag* frag,
 		n=FRAG_NEXT(frag);
 		n->size=rest-FRAG_OVERHEAD;
 
+		/*
+		 * The real used memory does not increase, as the frag memory is not
+		 * freed from real_used. On the other hand, the used size should
+		 * decrease, because the new fragment is not "useful data" - razvanc
+
 		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 		qm->real_used+=FRAG_OVERHEAD;
 		#endif
 
+		 */
+		qm->used-=FRAG_OVERHEAD;
 
 		#ifdef DBG_F_MALLOC
 		/* frag created by malloc, mark it*/
@@ -251,7 +258,7 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	if (size <(MIN_FRAG_SIZE+FRAG_OVERHEAD)) return 0;
 	size=ROUNDDOWN(size);
 
-	init_overhead=(ROUNDUP(sizeof(struct fm_block))+sizeof(struct fm_frag));
+	init_overhead=(ROUNDUP(sizeof(struct fm_block))+ 2 * FRAG_OVERHEAD);
 	
 	
 	if (size < init_overhead)
@@ -266,17 +273,15 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 
 	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 
-	qm->used = size;
-	qm->real_used= size + init_overhead;
-	qm->max_real_used= init_overhead;
+	qm->used=size-init_overhead;
+	qm->real_used=size;
+	qm->max_real_used=init_overhead;
 	#endif
-
-	size-=init_overhead;
 	
 	qm->first_frag=(struct fm_frag*)(start+ROUNDUP(sizeof(struct fm_block)));
 	qm->last_frag=(struct fm_frag*)(end-sizeof(struct fm_frag));
 	/* init initial fragment*/
-	qm->first_frag->size=size;
+	qm->first_frag->size=qm->used;
 	qm->last_frag->size=0;
 
 	qm->last_frag->prev=NULL;
