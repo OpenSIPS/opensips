@@ -363,6 +363,7 @@ int b2b_logic_restore(void)
 {
 	int i;
 	int nr_rows;
+	int _time;
 	db_res_t *result= NULL;
 	db_row_t *rows = NULL;
 	db_val_t *row_vals= NULL;
@@ -469,7 +470,11 @@ int b2b_logic_restore(void)
 			}
 			tuple.scenario_state     =row_vals[8].val.int_val;
 			tuple.next_scenario_state=row_vals[9].val.int_val;
-			tuple.lifetime=row_vals[10].val.int_val-(int)time(NULL) + get_ticks();
+			_time = (int)time(NULL);
+			if (row_vals[10].val.int_val <= _time)
+				tuple.lifetime = 1;
+			else
+				tuple.lifetime=row_vals[10].val.int_val - _time + get_ticks();
 
 			bridge_entities[0].type  = row_vals[11].val.int_val;
 			bridge_entities[0].scenario_id.s =(char*)row_vals[12].val.string_val;
