@@ -183,8 +183,9 @@
 	</para>
 	<itemizedlist>
 	<listitem><para>id (string)</para></listitem>
-	<listitem><para>list of gateways with/without weights
-	(string)</para></listitem>
+	<listitem><para>list of gateways with/without weights (string)
+	(Ex:<quote>gw1=10,gw4=10</quote> or <quote>gw1,gw2</quote>
+	</para></listitem>
 	<listitem><para>flags : 0x1 - use weight for sorting the list and
 	not definition order; 0x2 - use only the first gateway from the carrier
 	(depending on the sorting); 0x4 - disable the usage of this 
@@ -235,7 +236,8 @@
 	carrier IDs are prefixed with <quote>#</quote> sign. For each ID (GW or
 	carrier) you may specify a weight. For how this list will be interpreted 
 	(as order) see the rule selection section. Example of list: 
-	<quote>gw1,gw4,#cr3</quote> </para></listitem>
+	<quote>gw1,gw4,#cr3</quote> or <quote>gw1=10,gw4=10,#cr3=80</quote>
+	</para></listitem>
 	<listitem><para>attributes (not used by DR engine, but only pushed
 	to script level when this rule matched and been used)</para></listitem>
 	</itemizedlist>

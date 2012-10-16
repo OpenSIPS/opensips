@@ -238,6 +238,7 @@ Chapter 1. Admin Guide
    In DR, a carrier is defined by:
      * id (string)
      * list of gateways with/without weights (string)
+       (Ex:“gw1=10,gw4=10” or “gw1,gw2”
      * flags : 0x1 - use weight for sorting the list and not
        definition order; 0x2 - use only the first gateway from the
        carrier (depending on the sorting); 0x4 - disable the usage
@@ -280,7 +281,8 @@ Chapter 1. Admin Guide
        rule; the carrier IDs are prefixed with “#” sign. For each
        ID (GW or carrier) you may specify a weight. For how this
        list will be interpreted (as order) see the rule selection
-       section. Example of list: “gw1,gw4,#cr3”
+       section. Example of list: “gw1,gw4,#cr3” or
+       “gw1=10,gw4=10,#cr3=80”
      * attributes (not used by DR engine, but only pushed to
        script level when this rule matched and been used)
 
