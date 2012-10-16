@@ -1758,7 +1758,7 @@ error:
 
 
 /*! \brief starts the tcp processes */
-int tcp_init_children(int *chd_rank)
+int tcp_init_children(int *chd_rank, int *startup_done)
 {
 	int r;
 	//int sockfd[2];
@@ -1829,6 +1829,16 @@ int tcp_init_children(int *chd_rank)
 				exit(-1);
 			}
 	
+			/* was startup route executed so far ? */
+			if (startup_done!=NULL && *startup_done==0 && r==0) {
+				LM_DBG("runing startup for first TCP\n");
+				if(run_startup_route()< 0) {
+					LM_ERR("Startup route processing failed\n");
+					exit(-1);
+				}
+				*startup_done = 1;
+			}
+
 			if (send_status_code(0) < 0)
 				LM_ERR("failed to send status code\n");
 			clean_write_pipeend();
