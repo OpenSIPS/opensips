@@ -30,10 +30,6 @@
 #include "dlg_vals.h"
 #include "dlg_hash.h"
 
-#define dlg_val_lock(_dlg) \
-	dlg_lock( d_table, &(d_table->entries[_dlg->h_entry]))
-#define dlg_val_unlock(_dlg) \
-	dlg_unlock( d_table, &(d_table->entries[_dlg->h_entry]))
 
 
 static inline unsigned int _get_name_id(str *name)
@@ -88,7 +84,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 	id = _get_name_id(name);
 
 	/* lock dialog */
-	dlg_val_lock( dlg );
+	dlg_lock_dlg( dlg );
 
 	/* iterate the list */
 	for( it_prev=NULL, it=dlg->vals ; it ; it_prev=it,it=it->next) {
@@ -109,7 +105,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 			dlg->flags |= DLG_FLAG_VP_CHANGED;
 
 			/* unlock dialog */
-			dlg_val_unlock( dlg );
+			dlg_unlock_dlg( dlg );
 
 			shm_free(it);
 			return 0;
@@ -124,7 +120,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	/* unlock dialog */
-	dlg_val_unlock( dlg );
+	dlg_unlock_dlg( dlg );
 
 	return 0;
 }
@@ -146,7 +142,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 	val = val_has_buf ? ival : &val_buf;
 
 	/* lock dialog */
-	dlg_val_lock( dlg );
+	dlg_lock_dlg( dlg );
 
 	/* iterate the list */
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
@@ -157,7 +153,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 			if (dv->val.len > val->len) {
 				val->s = (char*)pkg_realloc(val->s,dv->val.len);
 				if (val->s==NULL) {
-					dlg_val_unlock( dlg );
+					dlg_unlock_dlg( dlg );
 					LM_ERR("failed to do realloc for %d\n",dv->val.len);
 					return -1;
 				}
@@ -167,13 +163,13 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 			*ival = *val;
 
 			/* unlock dialog */
-			dlg_val_unlock( dlg );
+			dlg_unlock_dlg( dlg );
 			return 0;
 		}
 	}
 
 	/* unlock dialog */
-	dlg_val_unlock( dlg );
+	dlg_unlock_dlg( dlg );
 	LM_DBG("var NOT found!\n");
 
 	return -1;
