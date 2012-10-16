@@ -818,8 +818,7 @@ static int main_loop(void)
 
 		if(startup_rlist.a) {/* if a startup route was defined */
 			startup_done = (int*)shm_malloc(sizeof(int));
-			if(startup_done == NULL)
-			{
+			if(startup_done == NULL) {
 				LM_ERR("No more shared memory\n");
 				goto error;
 			}
@@ -858,7 +857,9 @@ static int main_loop(void)
 							LM_ERR("failed to send status code\n");
 						clean_write_pipeend();
 
-						if(chd_rank == 1 && startup_rlist.a) {
+						/* first UDP proc runs statup_route (if defined) */
+						if(chd_rank == 1 && startup_done!=NULL) {
+							LM_DBG("runing startup for first UDP\n");
 							if(run_startup_route()< 0) {
 								LM_ERR("Startup route processing failed\n");
 								exit(-1);
@@ -873,13 +874,9 @@ static int main_loop(void)
 						exit(-1);
 					}
 					else {
-						/* if the first process that runs startup_route*/
-						if(chd_rank == 1 && startup_rlist.a) {
-							while(!startup_done) {
-								usleep(5);
-							}
-							shm_free(startup_done);
-						}
+						/* wait for first proc to finish the startup route */
+						if(chd_rank == 1 && startup_done!=NULL)
+							while( !(*startup_done) ) usleep(5);
 					}
 				}
 			}
@@ -910,12 +907,27 @@ static int main_loop(void)
 						exit(-1);
 					}
 
+					/* was startup route executed so far ? if not, run it only by the 
+					 * first SCTP proc (first proc from first interface) */
+					if( (si==sctp_listen && i==0) && startup_done!=NULL && *startup_done==0) {
+						LM_DBG("runing startup for first SCTP\n");
+						if(run_startup_route()< 0) {
+							LM_ERR("Startup route processing failed\n");
+							exit(-1);
+						}
+						*startup_done = 1;
+					}
+
 					if (send_status_code(0) < 0)
 						LM_ERR("failed to send status code\n");
 					clean_write_pipeend();
 
 					sctp_server_rcv_loop();
 					exit(-1);
+				} else {
+					/* wait for first proc to finish the startup route */
+					if( (si==sctp_listen && i==0) && startup_done!=NULL)
+						while( !(*startup_done) ) usleep(5);
 				}
 			}
 		}
@@ -934,7 +946,10 @@ static int main_loop(void)
 	#ifdef USE_TCP
 	if (!tcp_disable){
 		/* start tcp  & tls receivers */
-		if (tcp_init_children(&chd_rank)<0) goto error;
+		if (tcp_init_children(&chd_rank, startup_done)<0) goto error;
+		/* wait for the startup route to be executed */
+		if( startup_done!=NULL)
+			while( !(*startup_done) ) usleep(5);
 		/* start tcp+tls master proc */
 		if ( (pid=internal_fork( "TCP main"))<0 ) {
 			LM_CRIT("cannot fork tcp main process\n");
@@ -965,6 +980,12 @@ static int main_loop(void)
 		}
 	}
 	#endif
+
+	if (startup_done) {
+		if (*startup_done!=1)
+			LM_CRIT("BUG: startup route defined, but not run :( \n");
+		shm_free(startup_done);
+	}
 
 	/* main process left */
 	is_main=1;

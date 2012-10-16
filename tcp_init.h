@@ -32,7 +32,7 @@
 int init_tcp();
 void destroy_tcp();
 int tcp_init(struct socket_info* sock_info);
-int tcp_init_children(int *chd_rank);
+int tcp_init_children(int *chd_rank, int *startup_done);
 void tcp_main_loop();
 void tcp_receive_loop(int unix_sock);
 
