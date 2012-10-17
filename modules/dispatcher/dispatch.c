@@ -1850,3 +1850,94 @@ void ds_check_timer(unsigned int ticks, void* param)
 		}
 	}
 }
+
+int ds_count(struct sip_msg *msg, int set_id, char *cmp, pv_spec_p ret)
+{
+	pv_value_t pv_val;
+	ds_set_p set;
+	ds_dest_p dst;
+	int count = 0;
+
+	set = ds_lists[*crt_idx];
+
+	LM_DBG("Searching for set: %d, filtering: %d\n", set_id, *cmp);
+
+	while (set && set->id != set_id)
+	{
+		set = set->next;
+	}
+
+	if (!set)
+	{
+		LM_ERR("INVALID SET!\n");
+		return -1;
+	}
+
+	dst = set->dlist;
+	switch (*cmp)
+	{
+		case 0:
+		case 7:
+			count = set->nr;
+			break;
+
+		/* count only active destinations */
+		case 1:
+			while (dst)
+			{
+				if (!(dst->flags & (DS_INACTIVE_DST|DS_PROBING_DST)))
+					count++;
+				
+				dst = dst->next;
+			}
+			break;
+		case 3:
+		case 5:
+			*cmp = (*cmp == 3 ? DS_INACTIVE_DST : DS_PROBING_DST);
+
+			while (dst)
+			{
+				if (!(dst->flags & (DS_INACTIVE_DST|DS_PROBING_DST)) ||
+					  dst->flags & (*cmp))
+					count++;
+
+				dst = dst->next;
+			}
+			break;
+
+		/* count only inactive / probing / or i&p destinations */
+		case 2:
+			*cmp = DS_INACTIVE_DST;
+			break;
+		case 4:
+			*cmp = DS_PROBING_DST;
+			break;
+		case 6:
+			*cmp = DS_INACTIVE_DST|DS_PROBING_DST;
+			break;
+
+		default:
+			LM_ERR("BAD FIXUP!\n");
+			return -1;
+	}
+
+	while (dst)
+	{
+		if (dst->flags & (*cmp))
+			count++;
+
+		dst = dst->next;
+	}
+
+	pv_val.flags = PV_TYPE_INT;
+	pv_val.ri = count;
+
+	if (pv_set_value(msg, ret, 0, &pv_val) != 0)
+	{
+		LM_ERR("SET OUTPUT value failed!\n");
+		return -1;
+	}
+
+	return 1;
+}
+

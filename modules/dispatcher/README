@@ -72,8 +72,8 @@ Carsten Bock
               1.4.4. ds_next_domain()
               1.4.5. ds_mark_dst()
               1.4.6. ds_mark_dst("s")
-              1.4.7. ds_is_in_list( ip, port [,set
-                      [,active_only]])
+              1.4.7. ds_count(set, filter, result)
+              1.4.8. ds_is_in_list(ip, port [,set [,active_only]])
 
         1.5. Exported MI Functions
 
@@ -118,8 +118,9 @@ Carsten Bock
    1.27. Set “attrs_col” parameter
    1.28. Set “socket_col” parameter
    1.29. ds_select_dst usage
-   1.30. ds_is_in_list usage
-   1.31. OpenSIPS config script - sample dispatcher usage
+   1.30. ds_count usage
+   1.31. ds_is_in_list usage
+   1.32. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -637,7 +638,42 @@ ds_select_dst("1", "0", "5");
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-1.4.7.  ds_is_in_list( ip, port [,set [,active_only]])
+1.4.7.  ds_count(set, filter, result)
+
+   Returns the number of active, inactive or probing destinations
+   in a set, or combinations between these properties.
+
+   Meaning of the parameters:
+     * set - a set of dispatching destinations. The set parameter
+       can have the following types:
+          + integer - the dispatching set is passed in a static
+            manner
+          + pvar - the dispatching set is the value of an existing
+            pseudo-variable (as integer value)
+     * filter - which destinations should be counted. Either
+       active destinations("a", "A" or "1"), inactive
+       destinations("i", "I" or "0") or probing ones("p", "P" or
+       "2") or different combinations between these flags, such as
+       "pI", "1i", "ipA"... The filter parameter can have the
+       following types:
+          + string - the filtering flags are statically assigned
+     * result - A pseudovariable for storing the result.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE
+
+   Example 1.30. ds_count usage
+...
+if (ds_count("1", "a", "$avp(result)")) {
+        ...
+}
+...
+if (ds_count("$avp(set)", "ip", "$avp(result)")) {
+        ...
+}
+...
+
+1.4.8.  ds_is_in_list(ip, port [,set [,active_only]])
 
    This function returns true, if the parameters ip and port point
    to a host from the dispatcher-list; otherwise false.
@@ -659,7 +695,7 @@ ds_select_dst("1", "0", "5");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.30. ds_is_in_list usage
+   Example 1.31. ds_is_in_list usage
 ...
 if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
@@ -723,7 +759,7 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.31. OpenSIPS config script - sample dispatcher usage
+   Example 1.32. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # $Id$

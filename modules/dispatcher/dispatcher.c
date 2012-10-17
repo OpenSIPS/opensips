@@ -130,14 +130,17 @@ static int w_ds_next_dst(struct sip_msg*, char*, char*);
 static int w_ds_next_domain(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst0(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst1(struct sip_msg*, char*, char*);
+static int w_ds_count(struct sip_msg*, char*, char *, char*);
 
 static int w_ds_is_in_list2(struct sip_msg*, char*, char*);
 static int w_ds_is_in_list3(struct sip_msg*, char*, char*, char*);
 static int w_ds_is_in_list4(struct sip_msg*, char*, char*, char*, char*);
 
+
 static void destroy(void);
 
 static int in_list_fixup(void** param, int param_no);
+static int ds_count_fixup(void** param, int param_no);
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd, void* param);
 static struct mi_root* ds_mi_list(struct mi_root* cmd, void* param);
@@ -168,6 +171,8 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list4,   4, in_list_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"ds_count",    (cmd_function)w_ds_count,   3, ds_count_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -613,6 +618,61 @@ static int in_list_fixup(void** param, int param_no)
 	}
 }
 
+static int ds_count_fixup(void** param, int param_no)
+{
+	char *s;
+	int i, code = 0;
+
+	if (param_no > 3)
+		return 0;
+
+	s = (char *)*param;
+	i = strlen(s);
+
+	switch (param_no)
+	{
+		case 1:
+			return fixup_igp(param);
+		case 2:
+
+		while (i--)
+		{
+			switch (s[i])
+			{
+				/* active */
+				case 'a':
+				case 'A':
+				case '1':
+					code |= 1;
+					break;
+
+				/* inactive */
+				case 'i':
+				case 'I':
+				case '0':
+					code |= 2;
+					break;
+
+				/* probing */
+				case 'p':
+				case 'P':
+				case '2':
+					code |= 4;
+					break;
+			}
+		}
+		break;
+
+		case 3:
+			return fixup_igp(param);
+	}
+
+	s[0] = (char)code;
+	s[1] = '\0';
+
+	return 0;
+}
+
 /************************** MI STUFF ************************/
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
@@ -727,6 +787,27 @@ static int w_ds_is_in_list4(struct sip_msg *msg,char *ip,char *port,char *set,
 {
 	return ds_is_in_list(msg,(pv_spec_t*)ip,(pv_spec_t*)port,
 		(int)(long)set, (int)(long)active_only);
+}
+
+
+static int w_ds_count(struct sip_msg* msg, char *set, char *cmp, char *res)
+{
+	int s = 0;
+	gparam_p ret = (gparam_p) res;
+
+	if (fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+	{
+		LM_ERR("No dst set value\n");
+		return -1;
+	}
+
+	if (ret->type != GPARAM_TYPE_PVS && ret->type != GPARAM_TYPE_PVE)
+	{
+		LM_ERR("Result must be a pvar!\n");
+		return -1;
+	}
+
+	return ds_count(msg, s, cmp, ret->v.pvs);
 }
 
 

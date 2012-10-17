@@ -881,10 +881,76 @@ ds_select_dst("1", "0", "5");
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 	</section>
+	<section>
+		<title>
+		<function moreinfo="none">ds_count(set, filter, result)</function>
+		</title>
+		<para>
+		Returns the number of active, inactive or probing destinations in a set,
+		or combinations between these properties.
+		</para>
+		<para>Meaning of the parameters:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>set</emphasis> - a set of dispatching destinations.
+			The <emphasis>set</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>integer</emphasis> - the dispatching set is passed
+				in a static manner</para>
+				</listitem>
+				
+				<listitem>
+				<para><emphasis>pvar</emphasis> - the dispatching set is the value
+				of an existing pseudo-variable (as integer value)</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>filter</emphasis> - which destinations should be
+			counted. Either active destinations("a", "A" or "1"), inactive
+			destinations("i", "I" or "0") or probing ones("p", "P" or "2") or
+			different combinations between these flags, such as
+			"pI", "1i", "ipA"... The <emphasis>filter</emphasis> parameter can have
+			the following types:</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - the filtering flags are
+				statically assigned</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>result</emphasis> - A pseudovariable for storing
+			the result. </para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
+		LOCAL_ROUTE, TIMER_ROUTE
+		</para>
+		<example>
+		<title><function>ds_count</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (ds_count("1", "a", "$avp(result)")) {
+	...
+}
+...
+if (ds_count("$avp(set)", "ip", "$avp(result)")) {
+	...
+}
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section>
 		<title>
-		<function moreinfo="none">ds_is_in_list( ip, port [,set [,active_only]])</function>
+		<function moreinfo="none">ds_is_in_list(ip, port [,set [,active_only]])</function>
 		</title>
 		<para>
 		This function returns true, if the parameters ip and port point to a 
