@@ -1155,7 +1155,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
 
 				cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
-			} else if (cell->flags & DLG_FLAG_VP_CHANGED) {
+			} else if (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) {
 
 				SET_INT_VALUE(values, cell->h_entry);
 				SET_INT_VALUE(values+1, cell->h_id);
