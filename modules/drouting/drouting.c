@@ -1938,11 +1938,12 @@ static int prefix_username(struct sip_msg* msg, str *pri)
 }
 
 
-static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip)
+static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 {
 	unsigned short j;
 	for ( j=0 ; j<pgwa->ips_no ; j++)
-		if (ip_addr_cmp( &pgwa->ips[j], ip)) return 1;
+		if ( (pgwa->ports[j]==0 || pgwa->ports[j]==port) &&
+		ip_addr_cmp( &pgwa->ips[j], ip) ) return 1;
 	return 0;
 }
 
@@ -1990,8 +1991,7 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( (type<0 || type==pgwa->type) &&
-		(pgwa->port==0 || flags&DR_IFG_IGNOREPORT_FLAG || pgwa->port==port) &&
-		gw_matches_ip( pgwa, ip) ) {
+		gw_matches_ip( pgwa, ip, (flags&DR_IFG_IGNOREPORT_FLAG)?0:port ) ) {
 			/* strip ? */
 			if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 				strip_username(msg, pgwa->strip);

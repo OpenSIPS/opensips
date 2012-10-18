@@ -547,13 +547,14 @@ add_dst(
 		}
 	}
 	hostent2ip_addr( &pgw->ips[0], &proxy->host, proxy->addr_idx);
-	pgw->port = uri.port_no;
+	pgw->ports[0] = proxy->port;
 	LM_DBG("first gw ip addr [%s]\n", ip_addr2a(&pgw->ips[0]));
 
 	pgw->ips_no = 1;
 
 	while (pgw->ips_no<DR_MAX_IPS && (get_next_su( proxy, &sau, 0)==0) ) {
 		su2ip_addr( &pgw->ips[pgw->ips_no], &sau);
+		pgw->ports[pgw->ips_no] = proxy->port;
 		LM_DBG("additional gw ip addr [%s]\n",
 			ip_addr2a( &pgw->ips[pgw->ips_no] ) );
 		pgw->ips_no++;

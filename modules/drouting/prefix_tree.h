@@ -77,8 +77,8 @@ typedef struct pgw_ {
 	str attrs;
 	/* addres and port */
 	struct ip_addr ips[DR_MAX_IPS];
+	unsigned short ports[DR_MAX_IPS];
 	unsigned short ips_no;
-	unsigned short port;
 	struct pgw_ *next;
 	int flags;
 }pgw_t;
