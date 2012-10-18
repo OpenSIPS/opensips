@@ -1915,11 +1915,12 @@ static int prefix_username(struct sip_msg* msg, str *pri)
 }
 
 
-static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip)
+static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 {
 	unsigned short j;
 	for ( j=0 ; j<pgwa->ips_no ; j++)
-		if (ip_addr_cmp( &pgwa->ips[j], ip)) return 1;
+		if ( (pgwa->ports[j]==0 || pgwa->ports[j]==port) &&
+		ip_addr_cmp( &pgwa->ips[j], ip) ) return 1;
 	return 0;
 }
 
@@ -1933,8 +1934,7 @@ static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 	
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
-		if( (pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		gw_matches_ip( pgwa, &msg->rcv.src_ip))
+		if( gw_matches_ip( pgwa, &msg->rcv.src_ip, msg->rcv.src_port) )
 			return 1;
 		pgwa = pgwa->next;
 	}
@@ -1953,8 +1953,7 @@ static int is_from_gw_1(struct sip_msg* msg, char* str, char* str2)
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( type==pgwa->type && 
-		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		gw_matches_ip( pgwa, &msg->rcv.src_ip))
+		gw_matches_ip( pgwa, &msg->rcv.src_ip, msg->rcv.src_port) )
 			return 1;
 		pgwa = pgwa->next;
 	}
@@ -1995,8 +1994,7 @@ static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
 	pgwa = (*rdata)->pgw_l;
 	while(pgwa) {
 		if( type==pgwa->type &&
-		(pgwa->port==0 || pgwa->port==msg->rcv.src_port) &&
-		gw_matches_ip( pgwa, &msg->rcv.src_ip) ) {
+		gw_matches_ip( pgwa, &msg->rcv.src_ip, msg->rcv.src_port) ) {
 			/* strip ? */
 			if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 				strip_username(msg, pgwa->strip);
@@ -2064,7 +2062,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 
 		pgwa = (*rdata)->pgw_l;
 		while(pgwa) {
-			if( (type<0 || type==pgwa->type) && gw_matches_ip( pgwa, ip) ) {
+			if( (type<0 || type==pgwa->type) && gw_matches_ip( pgwa, ip, 0) ) {
 
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
