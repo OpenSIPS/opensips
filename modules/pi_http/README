@@ -1,0 +1,221 @@
+pi_http Module
+
+Ovidiu Sas
+
+   <osas@voipembedded.com>
+
+Edited by
+
+Ovidiu Sas
+
+   Copyright © 2012 VoIP Embedded, Inc.
+   Revision History
+   Revision $Rev: 8688 $ $Date: 2012-01-25 13:52:05 -0500 (Wed, 25
+   Jan 2012) $
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Usage
+
+              1.2.1. Database connection definition block
+              1.2.2. Table definition block
+              1.2.3. Command definition block
+
+        1.3. To-do
+        1.4. Dependencies
+
+              1.4.1. OpenSIPS Modules
+
+        1.5. Exported Parameters
+
+              1.5.1. pi_root(string)
+              1.5.2. framework(string)
+
+        1.6. Exported MI Functions
+
+              1.6.1. pi_reload_tbls_and_cmds
+
+   List of Examples
+
+   1.1. Set pi_root parameter
+   1.2. Set framework parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides an HTTP provisioning interface for
+   OpenSIPS. It is using the OpenSIPS's internal database API to
+   provide a simple way of manipulating records inside OpenSIPS's
+   tables.
+
+   The module offers:
+     * ability to connect to multiple/different databases through
+       OpenSIPS's db API; (all OpenSIPS's databases are
+       supported);
+     * ability to perform data input validation through OpenSIPS
+       API;
+     * ability to reconfigure the interface layout on the fly by
+       reloading the config from the xml framework via mi command
+       interface.
+
+1.2. Usage
+
+   The layout of the provisionning interface is controlled via an
+   external xml file (see the framework parameter). An example of
+   a framework xml file is provided inside the examples directory
+   of the pi_http module. The xml framework file is organized in
+   three distinctive blocks:
+     * database connection definition block
+     * table definition block
+     * command definition block
+
+1.2.1. Database connection definition block
+
+   Each connection to a particular database must be defined here
+   with a unique database connection id. The connection parameters
+   are defined following the db_url param pattern for all OpenSIPS
+   modules that are using a database.
+
+   Supported databases:
+     * berkeley
+     * flatstore
+     * http
+     * mysql
+     * oracle
+     * postgres
+     * text
+     * unixodbc
+     * virtual
+
+1.2.2. Table definition block
+
+   Each table managed through the OpenSIPS provisioning interface
+   must be defined here with a unique table id. For each table,
+   the database connection id must be specified. Each table must
+   list all columns that will be managed by the OpenSIPS
+   provisioning interface. Each column must have a unique field
+   name and a type. Each column may have a validation tag for
+   validating input data.
+
+   Supported column types:
+     * DB_INT
+     * DB_BIGINT
+     * DB_DOUBLE
+     * DB_STRING
+     * DB_STR
+     * DB_DATETIME
+     * DB_BLOB
+     * DB_BITMAP
+
+   Supported validation methods:
+     * IPV4 - represents an IPv4 address
+     * URI - represents a SIP URI
+     * URI_IPV4HOST - represents a SIP URI with an IPV4 as a host
+     * P_HOST_PORT - represents [proto:]host[:port]
+     * P_IPV4_PORT - represents [proto:]IPv4[:port]
+
+1.2.3. Command definition block
+
+   Multiple provisioning commands can be grouped together. Each
+   group can have multiple commands. Each command definition in a
+   group must have the table id of the table that is operating on
+   along with the command type to be performed.
+
+   The command type can have up to three type of column
+   parameters:
+     * clause columns
+     * query columns
+     * order by columns
+
+   Each column parameter must define the name(s) of the column(s)
+   (must match a field name in the description table identified by
+   the table id). A column can accept a list of imposed values.
+   Each imposed value will have an id that will be displayed on
+   the web interface and the actual value that will be used for db
+   operations. Clause columns must define operators. Here's the
+   list of supported operators: '<', '>', '=', '<=', '>=', '!='.
+
+   Supported database command types:
+     * DB_QUERY - performs an SQL query and supports three type of
+       columns:
+          + clause: 0 or more columns
+          + query: 1 column
+          + order: 0 or 1 column
+     * DB_INSERT - performs an SQL insert and supports one type of
+       column:
+          + query: 1 or more columns
+     * DB_DELETE - performs an SQL delete and supports one type of
+       column:
+          + clause: 1 or more columns
+     * DB_UPDATE - performs an SQL update and supports two type of
+       columns:
+          + clause: 0 or more columns
+          + query: 1 or more columns
+     * DB_REPLACE - performs an SQL replace and supports one type
+       of column:
+          + query: 1 or more columns
+
+   Please note that some databases have a restricted set of
+   database command types.
+
+1.3. To-do
+
+   Features to be added in the future:
+     * full subscriber provisionning with automatic ha1/ha1b
+       fields;
+     * accept empty values as NULL;
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * httpd module.
+
+1.5. Exported Parameters
+
+1.5.1. pi_root(string)
+
+   It specifies the root path for pi http requests. The link to
+   the OpenSIPS provisioning web interface must be constructed
+   using the following patern:
+   http://[opensips_IP]:[opensips_mi_port]/[pi_root]
+
+   The default value is "pi".
+
+   Example 1.1. Set pi_root parameter
+...
+modparam("pi_http", "pi_root", "opensips_pi")
+...
+
+1.5.2. framework(string)
+
+   It specifies the full path for xml framework descriptor.
+
+   There's no default value. This parameter is mandatory.
+
+   Example 1.2. Set framework parameter
+...
+modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.
+xml")
+...
+
+1.6. Exported MI Functions
+
+1.6.1. pi_reload_tbls_and_cmds
+
+   Reloads the layout of the provisioning interface from the
+   framework file.
+
+   Name: pi_reload_tbls_and_cmds
+
+   Parameters: none
+
+   MI FIFO Command Format:
+:pi_reload_tbls_and_cmds:_reply_fifo_file_
+_empty_line_

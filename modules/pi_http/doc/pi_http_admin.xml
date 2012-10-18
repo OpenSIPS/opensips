@@ -1,0 +1,286 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+		This module provides an HTTP provisioning interface
+		for &osips;.  It is using the &osips;'s internal
+		database API to provide a simple way of manipulating
+		records inside &osips;'s tables.
+	<para>
+		The module offers:
+		<itemizedlist>
+			<listitem><para>
+			ability to connect to multiple/different databases through &osips;'s db API;
+			(all &osips;'s databases are supported);
+			</para></listitem>
+			<listitem><para>
+			ability to perform data input validation through &osips; API;
+			</para></listitem>
+			<listitem><para>
+			ability to reconfigure the interface layout on the fly by
+			reloading the config from the xml framework via mi command interface.
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	</para>
+	</section>
+
+	<section>
+	<title>Usage</title>
+	<para>
+		The layout of the provisionning interface is controlled via an external
+		xml file (see the framework parameter).
+		An example of a framework xml file is provided inside the examples
+		directory of the pi_http module.
+		The xml framework file is organized in three distinctive blocks:
+		<itemizedlist>
+			<listitem><para>
+			database connection definition block
+			</para></listitem>
+			<listitem><para>
+			table definition block
+			</para></listitem>
+			<listitem><para>
+			command definition block
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<section>
+	<title>Database connection definition block</title>
+	<para>
+		Each connection to a particular database must be defined here
+		with a unique database connection id.
+		The connection parameters are defined following the db_url param pattern
+		for all &osips; modules that are using a database.
+	</para>
+	<para>
+		Supported databases:
+		<itemizedlist>
+			<listitem><para>berkeley</para></listitem>
+			<listitem><para>flatstore</para></listitem>
+			<listitem><para>http</para></listitem>
+			<listitem><para>mysql</para></listitem>
+			<listitem><para>oracle</para></listitem>
+			<listitem><para>postgres</para></listitem>
+			<listitem><para>text</para></listitem>
+			<listitem><para>unixodbc</para></listitem>
+			<listitem><para>virtual</para></listitem>
+		</itemizedlist>
+	</para>
+	</section>
+	<section>
+	<title>Table definition block</title>
+	<para>
+		Each table managed through the  &osips; provisioning interface
+		must be defined here with a unique table id.
+		For each table, the database connection id must be specified.
+		Each table must list all columns that will be managed by the
+		&osips; provisioning interface.
+		Each column must have a unique field name and a type.
+		Each column may have a validation tag for validating input data.
+	</para>
+	<para>
+		Supported column types:
+		<itemizedlist>
+			<listitem><para>DB_INT</para></listitem>
+			<listitem><para>DB_BIGINT</para></listitem>
+			<listitem><para>DB_DOUBLE</para></listitem>
+			<listitem><para>DB_STRING</para></listitem>
+			<listitem><para>DB_STR</para></listitem>
+			<listitem><para>DB_DATETIME</para></listitem>
+			<listitem><para>DB_BLOB</para></listitem>
+			<listitem><para>DB_BITMAP</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		Supported validation methods:
+		<itemizedlist>
+			<listitem><para>
+			IPV4 - represents an IPv4 address
+			</para></listitem>
+			<listitem><para>
+			URI - represents a SIP URI
+			</para></listitem>
+			<listitem><para>
+			URI_IPV4HOST - represents a SIP URI with an IPV4 as a host
+			</para></listitem>
+			<listitem><para>
+			P_HOST_PORT - represents [proto:]host[:port]
+			</para></listitem>
+			<listitem><para>
+			P_IPV4_PORT - represents [proto:]IPv4[:port]
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	</section>
+	<section>
+	<title>Command definition block</title>
+	<para>
+		Multiple provisioning commands can be grouped together.
+		Each group can have multiple commands.
+		Each command definition in a group must have the table id
+		of the table that is operating on along with the command
+		type to be performed.
+	</para>
+	<para>
+		The command type can have up to three type of column parameters:
+		<itemizedlist>
+			<listitem><para>clause columns</para></listitem>
+			<listitem><para>query columns</para></listitem>
+			<listitem><para>order by columns</para></listitem>
+		</itemizedlist>
+		Each column parameter must define the name(s) of the column(s)
+		(must match a field name in the description table identified
+		by the table id).
+		A column can accept a list of imposed values.
+		Each imposed value will have an id that will be displayed
+		on the web interface and the actual value that will be
+		used for db operations.
+		Clause columns must define operators.
+		Here's the list of supported operators:
+		'&lt;', '&gt;', '=', '&lt;=', '&gt;=', '!='.
+	</para>
+	<para>
+		Supported database command types:
+		<itemizedlist>
+			<listitem><para>DB_QUERY - performs an SQL query
+			and supports three type of columns:</para>
+			<itemizedlist>
+				<listitem><para>clause: 0 or more columns</para></listitem>
+				<listitem><para>query: 1 column</para></listitem>
+				<listitem><para>order: 0 or 1 column</para></listitem>
+			</itemizedlist>
+			</listitem>
+			<listitem><para>DB_INSERT - performs an SQL insert
+			and supports one type of column:</para>
+			<itemizedlist>
+				<listitem><para>query: 1 or more columns</para></listitem>
+			</itemizedlist>
+			</listitem>
+			<listitem><para>DB_DELETE - performs an SQL delete
+			and supports one type of column:</para>
+			<itemizedlist>
+				<listitem><para>clause: 1 or more columns</para></listitem>
+			</itemizedlist>
+			</listitem>
+			<listitem><para>DB_UPDATE - performs an SQL update
+			and supports two type of columns:</para>
+			<itemizedlist>
+				<listitem><para>clause: 0 or more columns</para></listitem>
+				<listitem><para>query: 1 or more columns</para></listitem>
+			</itemizedlist>
+			</listitem>
+			<listitem><para>DB_REPLACE - performs an SQL replace
+			and supports one type of column:</para>
+			<itemizedlist>
+				<listitem><para>query: 1 or more columns</para></listitem>
+			</itemizedlist>
+			</listitem>
+		</itemizedlist>
+		Please note that some databases have a restricted
+		set of database command types.
+	</para>
+	</section>
+	</section>
+	
+	<section>
+	<title>To-do</title>
+		<para>
+		Features to be added in the future:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			full subscriber provisionning with automatic ha1/ha1b fields;
+			</para></listitem>
+			<listitem><para>
+			accept empty values as NULL;
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>httpd</emphasis> module.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>pi_root</varname>(string)</title>
+		<para>
+		It specifies the root path for pi http requests.
+		The link to the &osips; provisioning web interface must be constructed
+		using the following patern:
+		http://[opensips_IP]:[opensips_mi_port]/[pi_root]
+		</para>
+		<para>
+		<emphasis>The default value is "pi".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>pi_root</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pi_http", "pi_root", "opensips_pi")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>framework</varname>(string)</title>
+		<para>
+		It specifies the full path for xml framework descriptor.
+		</para>
+		<para>
+		<emphasis>There's no default value. This parameter is mandatory.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>framework</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.xml")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title><varname>pi_reload_tbls_and_cmds</varname></title>
+		<para>
+		Reloads the layout of the provisioning interface from the framework file.
+		</para>
+		<para>
+		Name: <emphasis>pi_reload_tbls_and_cmds</emphasis>
+		</para>
+		<para>Parameters: none</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+:pi_reload_tbls_and_cmds:_reply_fifo_file_
+_empty_line_
+		</programlisting>
+	</section>
+	</section>
+
+</chapter>
+
