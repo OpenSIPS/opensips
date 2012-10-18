@@ -55,6 +55,8 @@
 									   be inserted in the pvar */
 #define DS_PV_ALGO_MARKER_LEN (sizeof(DS_PV_ALGO_MARKER) - 1)
 
+#define DS_MAX_IPS  32
+
 typedef struct _ds_dest
 {
 	str uri;
@@ -62,9 +64,10 @@ typedef struct _ds_dest
 	int flags;
 	int weight;
 	struct socket_info *sock;
-	struct ip_addr ip_address; /* IP-Address of the entry */
-	unsigned short int port; /* Port of the request URI */
-	int failure_count;
+	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
+	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
+	unsigned short ips_cnt;
+	unsigned short failure_count;
 	void *param;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;

@@ -160,7 +160,7 @@ void destroy_ds_bls(void)
 
 int populate_ds_bls(void)
 {
-	unsigned int i;
+	unsigned int i,k;
 	struct ds_bl *dsbl;
 	ds_set_p set;
 	ds_dest_p dst;
@@ -178,23 +178,26 @@ int populate_ds_bls(void)
 			/* search if any set matches the one above */
 			for(set = ds_lists[*crt_idx]; set ;set = set->next) {
 				if (set->id == dsbl->sets[i]) {
-					LM_DBG("Set [%d] matches. Adding all IPs:\n", set->id);
+					LM_DBG("Set [%d] matches. Adding all destinations:\n", set->id);
 					for (dst = set->dlist; dst; dst = dst->next) {
-						print_ip(NULL, &dst->ip_address, "\n");
-						set_net = mk_net_bitlen( &dst->ip_address,
-												 dst->ip_address.len*8);
-						if (set_net == NULL) {
-							LM_ERR("BUILD netmask failed.\n");
-							continue;
+						/* and add all IPs for each destination */
+						for( k=0 ; k<dst->ips_cnt ; k++ ) {
+							//print_ip(NULL, &dst->ips[k], "\n");
+							set_net = mk_net_bitlen( &dst->ips[k],
+												 dst->ips[k].len*8);
+							if (set_net == NULL) {
+								LM_ERR("BUILD netmask failed.\n");
+								continue;
+							}
+							/* add this destination to the BL */
+							add_rule_to_list( &dsbl_first, &dsbl_last,
+								set_net,
+								NULL/*body*/,
+								0/*port*/,
+								PROTO_NONE/*proto*/,
+								0/*flags*/);
+							pkg_free(set_net);
 						}
-						/* add this destination to the BL */
-						add_rule_to_list( &dsbl_first, &dsbl_last,
-							set_net,
-							NULL/*body*/,
-							0/*port*/,
-							PROTO_NONE/*proto*/,
-							0/*flags*/);
-						pkg_free(set_net);
 					}
 				}
 			}
