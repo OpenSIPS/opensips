@@ -70,9 +70,8 @@
 #define DLG_FLAG_PING_CALLER   (1<<5)
 #define DLG_FLAG_PING_CALLEE   (1<<6)
 #define DLG_FLAG_TOPHIDING     (1<<7)
-/* XXX: this flag is used to detect if a dialog value or profile was changed
- * or not so that it can be flushed into the database */
 #define DLG_FLAG_VP_CHANGED    (1<<8)
+#define DLG_FLAG_DB_DELETED    (1<<9)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
@@ -117,8 +116,8 @@ struct dlg_cell
 	unsigned int         flags;
 	unsigned int         from_rr_nb;
 	unsigned int         user_flags;
-	unsigned int		 initial_t_hash_index;
-	unsigned int		 initial_t_label;
+	unsigned int         initial_t_hash_index;
+	unsigned int         initial_t_label;
 	struct dlg_tl        tl;
 	struct dlg_ping_list *pl;
 	str                  callid;
@@ -220,8 +219,8 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 #define unref_dlg_unsafe(_dlg,_cnt,_d_entry)   \
 	do { \
 		(_dlg)->ref -= (_cnt); \
-		LM_DBG("unref dlg %p with %d -> %d\n",\
-			(_dlg),(_cnt),(_dlg)->ref);\
+		LM_DBG("unref dlg %p with %d -> %d in entry %p\n",\
+			(_dlg),(_cnt),(_dlg)->ref,(_d_entry));\
 		if ((_dlg)->ref<0) {\
 			LM_CRIT("bogus ref %d with cnt %d for dlg %p [%u:%u] "\
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",\

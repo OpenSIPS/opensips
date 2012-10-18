@@ -80,6 +80,10 @@ static int ping_interval = 30; /* seconds */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
+int dlg_have_own_timer_proc=0;	/* by default use the global timer proc */
+void *dlg_own_timer_proc=NULL;	/* point to the own timer proc, if used*/
+
+int dlg_bulk_del_no = 1; /* delete one by one */
 int seq_match_mode = SEQ_MATCH_STRICT_ID;
 str dlg_extra_hdrs = {NULL,0};
 
@@ -216,13 +220,12 @@ static param_export_t mod_params[]={
 	{ "db_url",                STR_PARAM, &db_url.s                 },
 	{ "db_mode",               INT_PARAM, &dlg_db_mode              },
 	{ "table_name",            STR_PARAM, &dialog_table_name        },
+	{ "dlg_id_column",         STR_PARAM, &dlg_id_column.s          },
 	{ "call_id_column",        STR_PARAM, &call_id_column.s         },
 	{ "from_uri_column",       STR_PARAM, &from_uri_column.s        },
 	{ "from_tag_column",       STR_PARAM, &from_tag_column.s        },
 	{ "to_uri_column",         STR_PARAM, &to_uri_column.s          },
 	{ "to_tag_column",         STR_PARAM, &to_tag_column.s          },
-	{ "h_id_column",           STR_PARAM, &h_id_column.s            },
-	{ "h_entry_column",        STR_PARAM, &h_entry_column.s         },
 	{ "state_column",          STR_PARAM, &state_column.s           },
 	{ "start_time_column",     STR_PARAM, &start_time_column.s      },
 	{ "timeout_column",        STR_PARAM, &timeout_column.s         },
@@ -241,6 +244,8 @@ static param_export_t mod_params[]={
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
 	{ "db_flush_vals_profiles",INT_PARAM, &db_flush_vp              },
+	{ "own_timer_proc",        INT_PARAM, &dlg_have_own_timer_proc  },
+	{ "timer_bulk_del_no",     INT_PARAM, &dlg_bulk_del_no          },
 	/* distributed profiles stuff */
 	{ "cachedb_url",           STR_PARAM, &cdb_url.s                },
 	{ "profile_value_prefix",    STR_PARAM, &cdb_val_prefix.s       },
@@ -577,13 +582,12 @@ static int mod_init(void)
 		timeout_spec.len = strlen(timeout_spec.s);
 
 	init_db_url( db_url , 1 /*can be null*/);
+	dlg_id_column.len = strlen(dlg_id_column.s);
 	call_id_column.len = strlen(call_id_column.s);
 	from_uri_column.len = strlen(from_uri_column.s);
 	from_tag_column.len = strlen(from_tag_column.s);
 	to_uri_column.len = strlen(to_uri_column.s);
 	to_tag_column.len = strlen(to_tag_column.s);
-	h_id_column.len = strlen(h_id_column.s);
-	h_entry_column.len = strlen(h_entry_column.s);
 	state_column.len = strlen(state_column.s);
 	start_time_column.len = strlen(start_time_column.s);
 	timeout_column.len = strlen(timeout_column.s);
@@ -702,14 +706,30 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ( register_timer( dlg_timer_routine, 0, 1)<0 ) {
-		LM_ERR("failed to register timer \n");
-		return -1;
+	if (dlg_have_own_timer_proc) {
+		LM_INFO("Running with dedicated dialog timer process\n");
+		dlg_own_timer_proc = register_timer_process( dlg_timer_routine,
+							NULL,1,TIMER_PROC_INIT_FLAG );
+		if (dlg_own_timer_proc == NULL) {
+			LM_ERR("Failed to init dialog own timer proc\n");
+			return -1;
+		}
+		if (append_timer_to_process(dlg_ping_routine, NULL,
+							ping_interval,dlg_own_timer_proc) < 0) {
+				LM_ERR("Failed to append ping timer \n");
+				return -1;
+		}
 	}
+	else {
+		if ( register_timer( dlg_timer_routine, NULL, 1)<0 ) {
+			LM_ERR("failed to register timer \n");
+			return -1;
+		}
 
-	if ( register_timer( dlg_ping_routine, 0, ping_interval)<0) {
-		LM_ERR("failed to register timer 2 \n");
-		return -1;
+		if ( register_timer( dlg_ping_routine, NULL, ping_interval)<0) {
+			LM_ERR("failed to register timer 2 \n");
+			return -1;
+		}
 	}
 
 	/* init handlers */

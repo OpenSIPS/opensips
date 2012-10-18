@@ -50,5 +50,18 @@ typedef struct {
 /** Return the tail of the connection handle */
 #define CON_TAIL(cn)       ((cn)->tail)
 
+#define CON_INSTANT_FLUSH			(1<<0)
+#define CON_OR_OPERATOR				(1<<1)
+
+#define CON_USE_OR_OP(con)	\
+	do { \
+		*((int *)&(con)->flags) |= CON_OR_OPERATOR; \
+	} while (0)
+
+#define CON_OR_RESET(con) \
+	do { \
+		*((int *)&(con)->flags) &= ~CON_OR_OPERATOR; \
+	} while (0)
+
 
 #endif /* DB_CON_H */

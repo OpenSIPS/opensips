@@ -9,7 +9,7 @@
 
 <table id="dialog" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dialog</name>
-	<version>7</version>
+	<version>8</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>Persistent dialog information for the dialog module. More 
@@ -17,31 +17,13 @@
 		</db:para>
 	</description>
 
-	<column id="id">
-		<name>id</name>
-		<type>unsigned int</type>
+	<column id="dlg_id">
+		<name>dlg_id</name>
+		<type>unsigned long</type>
 		<size>&table_id_len;</size>
-		<autoincrement/>
 		<primary/>
-		<type db="dbtext">int,auto</type>
-		<description>unique ID</description>
-	</column>
-
-	<column id="hash_entry">
-		<name>hash_entry</name>
-		<type>unsigned int</type>
-		<size>10</size>
-		<description>Number of the hash entry in the dialog hash table
-		</description>
-		<natural/>
-	</column>
-
-	<column id="hash_id">
-		<name>hash_id</name>
-		<type>unsigned int</type>
-		<size>10</size>
-		<description>The ID on the hash entry</description>
-		<natural/>
+		<type db="dbtext">long,auto</type>
+		<description>h_entry | h_id</description>
 	</column>
 
 	<column>
@@ -234,9 +216,4 @@
 		<description>Internal flags used by the module.</description>
 	</column>
 
-	<index>
-		<name>hash_idx</name>
-		<colref linkend="hash_entry"/>
-		<colref linkend="hash_id"/>
-	</index>
 </table>

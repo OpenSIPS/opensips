@@ -73,7 +73,6 @@ inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry);
 		*((query_list_t **)&con->ins_list) = NULL; \
 	} while (0)
 
-#define CON_INSTANT_FLUSH			(1<<0)
 #define IS_INSTANT_FLUSH(con)		((con)->flags & CON_INSTANT_FLUSH)
 
 #define CON_FLUSH_UNSAFE(con) \

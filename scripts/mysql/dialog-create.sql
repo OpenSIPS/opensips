@@ -1,8 +1,6 @@
-INSERT INTO version (table_name, table_version) values ('dialog','7');
+INSERT INTO version (table_name, table_version) values ('dialog','8');
 CREATE TABLE dialog (
-    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
-    hash_entry INT(10) UNSIGNED NOT NULL,
-    hash_id INT(10) UNSIGNED NOT NULL,
+    dlg_id BIGINT(10) UNSIGNED PRIMARY KEY NOT NULL,
     callid CHAR(255) NOT NULL,
     from_uri CHAR(128) NOT NULL,
     from_tag CHAR(64) NOT NULL,
@@ -28,6 +26,4 @@ CREATE TABLE dialog (
     script_flags INT(10) UNSIGNED DEFAULT 0 NOT NULL,
     flags INT(10) UNSIGNED DEFAULT 0 NOT NULL
 ) ENGINE=MyISAM;
-
-CREATE INDEX hash_idx ON dialog (hash_entry, hash_id);
 

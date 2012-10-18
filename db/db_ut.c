@@ -343,7 +343,10 @@ int db_print_where(const db_con_t* _c, char* _b, const int _l, const db_key_t* _
 			len += l;
 		}
 		if (i != (_n - 1)) {
-			ret = snprintf(_b + len, _l - len, " AND ");
+			if (_c->flags & CON_OR_OPERATOR)
+				ret = snprintf(_b + len, _l - len, " OR ");
+			else
+				ret = snprintf(_b + len, _l - len, " AND ");
 			if (ret < 0 || ret >= (_l - len)) goto error;
 			len += ret;
 		}

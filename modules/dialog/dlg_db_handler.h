@@ -31,6 +31,7 @@
 #include "../../str.h"
 #include "../../db/db.h"
 
+#define DLG_ID_COL				"dlg_id"
 #define CALL_ID_COL				"callid"
 #define FROM_URI_COL			"from_uri"
 #define FROM_TAG_COL			"from_tag"
@@ -60,7 +61,7 @@
 #define FLAGS_COL				"flags"
 #define DIALOG_TABLE_NAME		"dialog"
 
-#define DLG_TABLE_VERSION		7
+#define DLG_TABLE_VERSION		8
 
 /*every minute the dialogs' information will be refreshed*/
 #define DB_DEFAULT_UPDATE_PERIOD	60
@@ -69,15 +70,14 @@
 #define DB_MODE_DELAYED				2
 #define DB_MODE_SHUTDOWN			3
 
-#define DIALOG_TABLE_TOTAL_COL_NO	26
+#define DIALOG_TABLE_TOTAL_COL_NO	25
 
-extern str call_id_column; 
+extern str dlg_id_column;
+extern str call_id_column;
 extern str from_uri_column;
 extern str from_tag_column;
 extern str to_uri_column;
 extern str to_tag_column;
-extern str h_id_column;
-extern str h_entry_column;
 extern str state_column;
 extern str start_time_column;
 extern str timeout_column;
@@ -100,8 +100,7 @@ extern int dlg_db_mode;
 extern int db_flush_vp;
 
 
-#define should_remove_dlg_db() (dlg_db_mode && (dlg_db_mode!=DB_MODE_SHUTDOWN))
-
+#define should_remove_dlg_db() (dlg_db_mode==DB_MODE_REALTIME)
 
 int init_dlg_db(const str *db_url, int dlg_hash_size, int db_update_period);
 int dlg_connect_db(const str *db_url);

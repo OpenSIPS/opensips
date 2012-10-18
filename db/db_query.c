@@ -51,7 +51,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 
 	if (!_h || !val2str || !submit_query || (_r && !store_result)) {
 		LM_ERR("invalid parameter value\n");
-		return -1;
+		goto err_exit;
 	}
 
 	if (!_c) {
@@ -64,7 +64,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		off = ret;
 
 		ret = db_print_columns(sql_buf + off, SQL_BUF_LEN - off, _c, _nc);
-		if (ret < 0) return -1;
+		if (ret < 0) goto err_exit;
 		off += ret;
 
 		ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, "from %.*s ", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
@@ -78,7 +78,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 
 		ret = db_print_where(_h, sql_buf + off,
 				SQL_BUF_LEN - off, _k, _op, _v, _n, val2str);
-		if (ret < 0) return -1;;
+		if (ret < 0) goto err_exit;
 		off += ret;
 	}
 	if (_o) {
@@ -100,20 +100,25 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 
 	if (submit_query(_h, &sql_str) < 0) {
 		LM_ERR("error while submitting query - [%.*s]\n",sql_str.len,sql_str.s);
-		return -2;
+		goto err_exit;
 	}
 
 	if(_r) {
 		int tmp = store_result(_h, _r);
 		if (tmp < 0) {
 			LM_ERR("error while storing result for query [%.*s]\n",sql_str.len,sql_str.s);
+			CON_OR_RESET(_h);
 			return tmp;
 		}
 	}
+
+	CON_OR_RESET(_h);
 	return 0;
 
 error:
 	LM_ERR("error while preparing query\n");
+err_exit:
+	CON_OR_RESET(_h);
 	return -1;
 }
 
@@ -300,7 +305,7 @@ int db_do_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 	if (!_h || !val2str || !submit_query) {
 		LM_ERR("invalid parameter value\n");
-		return -1;
+		goto err_exit;
 	}
 
 	ret = snprintf(sql_buf, SQL_BUF_LEN, "delete from %.*s", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
@@ -314,7 +319,7 @@ int db_do_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 		ret = db_print_where(_h, sql_buf + off,
 				SQL_BUF_LEN - off, _k, _o, _v, _n, val2str);
-		if (ret < 0) return -1;
+		if (ret < 0) goto err_exit;
 		off += ret;
 	}
 	if (off + 1 > SQL_BUF_LEN) goto error;
@@ -324,12 +329,17 @@ int db_do_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 	if (submit_query(_h, &sql_str) < 0) {
 		LM_ERR("error while submitting query\n");
+		CON_OR_RESET(_h);
 		return -2;
 	}
+
+	CON_OR_RESET(_h);
 	return 0;
 
 error:
 	LM_ERR("error while preparing delete operation\n");
+err_exit:
+	CON_OR_RESET(_h);
 	return -1;
 }
 
@@ -343,7 +353,7 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 	if (!_h || !_uk || !_uv || !_un || !val2str || !submit_query) {
 		LM_ERR("invalid parameter value\n");
-		return -1;
+		goto err_exit;
 	}
 
 	ret = snprintf(sql_buf, SQL_BUF_LEN, "update %.*s set ", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
@@ -351,7 +361,7 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 	off = ret;
 
 	ret = db_print_set(_h, sql_buf + off, SQL_BUF_LEN - off, _uk, _uv, _un, val2str);
-	if (ret < 0) return -1;
+	if (ret < 0) goto err_exit;
 	off += ret;
 
 	if (_n) {
@@ -360,7 +370,7 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		off += ret;
 
 		ret = db_print_where(_h, sql_buf + off, SQL_BUF_LEN - off, _k, _o, _v, _n, val2str);
-		if (ret < 0) return -1;
+		if (ret < 0) goto err_exit;
 		off += ret;
 	}
 	if (off + 1 > SQL_BUF_LEN) goto error;
@@ -370,12 +380,17 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 	if (submit_query(_h, &sql_str) < 0) {
 		LM_ERR("error while submitting query\n");
+		CON_OR_RESET(_h);
 		return -2;
-	}
+	}	
+
+	CON_OR_RESET(_h);
 	return 0;
 
 error:
 	LM_ERR("error while preparing update operation\n");
+err_exit:
+	CON_OR_RESET(_h);
 	return -1;
 }
 

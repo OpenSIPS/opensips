@@ -45,15 +45,13 @@
 #include "dlg_profile.h"
 
 
+str dlg_id_column			=	str_init(DLG_ID_COL);
 str call_id_column			=	str_init(CALL_ID_COL);
 str from_uri_column			=	str_init(FROM_URI_COL);
 str from_tag_column			=	str_init(FROM_TAG_COL);
 str to_uri_column			=	str_init(TO_URI_COL);
 str to_tag_column			=	str_init(TO_TAG_COL);
-str h_id_column				=	str_init(HASH_ID_COL);
-str h_entry_column			=	str_init(HASH_ENTRY_COL);
 str state_column			=	str_init(STATE_COL);
-str user_flags_column		=	str_init(USER_FLAGS_COL); /* FIXME - is this used anywhere ? no reference to it */
 str start_time_column		=	str_init(START_TIME_COL);
 str timeout_column			=	str_init(TIMEOUT_COL);
 str to_cseq_column			=	str_init(TO_CSEQ_COL);
@@ -83,8 +81,17 @@ extern int active_dlgs_cnt;
 extern int early_dlgs_cnt;
 extern stat_var *active_dlgs;
 extern stat_var *early_dlgs;
+extern int dlg_have_own_timer_proc;
+extern void *dlg_own_timer_proc;
+extern int dlg_bulk_del_no;
 
 static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
+
+#define SET_BIGINT_VALUE(_val, _bigint)\
+	do{\
+		VAL_BIGINT(_val)   = _bigint;\
+		VAL_NULL(_val) = 0;\
+	}while(0);
 
 #define SET_INT_VALUE(_val, _int)\
 	do{\
@@ -183,10 +190,19 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 		return -1;
 	}
 
-	if( (dlg_db_mode==DB_MODE_DELAYED) &&
-	(register_timer( dialog_update_db, 0, db_update_period)<0 )) {
-		LM_ERR("failed to register update db\n");
-		return -1;
+	if (dlg_db_mode == DB_MODE_DELAYED) {
+		if (dlg_have_own_timer_proc) {
+			if (append_timer_to_process(dialog_update_db,0,
+					db_update_period,dlg_own_timer_proc) < 0) {
+				LM_ERR("Failed to append update timer\n");
+				return -1;
+			}
+		} else {
+			if (register_timer(dialog_update_db, 0, db_update_period)<0 ) {
+				LM_ERR("failed to register update db\n");
+				return -1;
+			}
+		}
 	}
 
 	if( (load_dialog_info_from_db(dlg_hash_size) ) !=0 ){
@@ -219,8 +235,8 @@ void destroy_dlg_db(void)
 
 static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 {
-	db_key_t query_cols[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
-			&h_id_column,		&call_id_column,	&from_uri_column,
+	db_key_t query_cols[DIALOG_TABLE_TOTAL_COL_NO] = {
+			&dlg_id_column,		&call_id_column,	&from_uri_column,
 			&from_tag_column,	&to_uri_column,		&to_tag_column,
 			&start_time_column,	&state_column,		&timeout_column,
 			&from_cseq_column,	&to_cseq_column,	&from_route_column,
@@ -465,6 +481,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	int no_rows = 10;
 	struct socket_info *caller_sock,*callee_sock;
 	int found_ended_dlgs=0;
+	unsigned int hash_entry,hash_id;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -482,49 +499,53 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			values = ROW_VALUES(rows + i);
 
-			if (VAL_NULL(values) || VAL_NULL(values+1)) {
-				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
-					h_entry_column.len, h_entry_column.s,
-					h_id_column.len, h_id_column.s);
+			if (VAL_NULL(values) || VAL_TYPE(values) != DB_BIGINT) {
+				LM_ERR("column %.*s cannot be null/has wrong type %d -> skipping\n",
+					dlg_id_column.len,dlg_id_column.s,VAL_TYPE(values));
 				continue;
 			}
 
-			if (VAL_NULL(values+7) || VAL_NULL(values+8)) {
+			hash_entry = (unsigned int )(VAL_BIGINT(values) >> 32);
+			hash_id = (unsigned int)(VAL_BIGINT(values) & 0x00000000ffffffff);
+
+			if (VAL_NULL(values+6) || VAL_NULL(values+7)) {
 				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
 					start_time_column.len, start_time_column.s,
 					state_column.len, state_column.s);
 				continue;
 			}
 
-			if ( VAL_INT(values+8) == DLG_STATE_DELETED ) {
+			if ( VAL_INT(values+7) == DLG_STATE_DELETED ) {
 				LM_INFO("dialog already terminated -> skipping\n");
 				found_ended_dlgs=1;
 				continue;
 			}
 
-			caller_sock = create_socket_info(values, 16);
-			callee_sock = create_socket_info(values, 17);
+			caller_sock = create_socket_info(values, 15);
+			callee_sock = create_socket_info(values, 16);
 			if (caller_sock == NULL || callee_sock == NULL) {
 				LM_ERR("Dialog in DB doesn't match any listening sockets");
 				continue;
 			}
 
 			/*restore the dialog info*/
-			GET_STR_VALUE(callid, values, 2, 1, 0);
-			GET_STR_VALUE(from_uri, values, 3, 1, 0);
-			GET_STR_VALUE(from_tag, values, 4, 1, 0);
-			GET_STR_VALUE(to_uri, values, 5, 1, 0);
+			GET_STR_VALUE(callid, values, 1, 1, 0);
+			GET_STR_VALUE(from_uri, values, 2, 1, 0);
+			GET_STR_VALUE(from_tag, values, 3, 1, 0);
+			GET_STR_VALUE(to_uri, values, 4, 1, 0);
 
 			if((dlg=build_new_dlg(&callid, &from_uri, &to_uri, &from_tag))==0){
 				LM_ERR("failed to build new dialog\n");
 				goto error;
 			}
 
-			if(dlg->h_entry != VAL_INT(values)){
+			if(dlg->h_entry != hash_entry){
 				LM_ERR("inconsistent hash data in the dialog database: "
 					"you may have restarted opensips using a different "
-					"hash_size: please erase %.*s database and restart\n", 
-					dialog_table_name.len, dialog_table_name.s);
+					"hash_size: please erase %.*s database and restart\n"
+					"db : %u, dlg : %u\n",
+					dialog_table_name.len, dialog_table_name.s,
+					dlg->h_entry,hash_entry);
 				shm_free(dlg);
 				goto error;
 			}
@@ -532,17 +553,17 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/*link the dialog*/
 			link_dlg(dlg, 0);
 
-			dlg->h_id = VAL_INT(values+1);
+			dlg->h_id = hash_id;
 			next_id = d_table->entries[dlg->h_entry].next_id;
 
 			d_table->entries[dlg->h_entry].next_id =
 				(next_id < dlg->h_id) ? (dlg->h_id+1) : next_id;
 
-			GET_STR_VALUE(to_tag, values, 6, 1, 1);
+			GET_STR_VALUE(to_tag, values, 5, 1, 1);
 
-			dlg->start_ts	= VAL_INT(values+7);
+			dlg->start_ts	= VAL_INT(values+6);
 
-			dlg->state 		= VAL_INT(values+8);
+			dlg->state 		= VAL_INT(values+7);
 			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
 			dlg->state==DLG_STATE_CONFIRMED) {
 				active_dlgs_cnt++;
@@ -550,15 +571,15 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				early_dlgs_cnt++;
 			}
 
-			GET_STR_VALUE(cseq1, values, 10 , 1, 1);
-			GET_STR_VALUE(cseq2, values, 11 , 1, 1);
-			GET_STR_VALUE(rroute1, values, 12, 0, 0);
-			GET_STR_VALUE(rroute2, values, 13, 0, 0);
-			GET_STR_VALUE(contact1, values, 14, 0, 1);
-			GET_STR_VALUE(contact2, values, 15, 0, 1);
+			GET_STR_VALUE(cseq1, values, 9 , 1, 1);
+			GET_STR_VALUE(cseq2, values, 10 , 1, 1);
+			GET_STR_VALUE(rroute1, values, 11, 0, 0);
+			GET_STR_VALUE(rroute2, values, 12, 0, 0);
+			GET_STR_VALUE(contact1, values, 13, 0, 1);
+			GET_STR_VALUE(contact2, values, 14, 0, 1);
 
-			GET_STR_VALUE(mangled_fu, values, 24,0,1);
-			GET_STR_VALUE(mangled_tu, values, 25,0,1);
+			GET_STR_VALUE(mangled_fu, values, 23,0,1);
+			GET_STR_VALUE(mangled_tu, values, 24,0,1);
 
 			/* add the 2 legs */
 			if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
@@ -573,28 +594,28 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 			/* script variables */
-			if (!VAL_NULL(values+18))
-				read_dialog_vars( VAL_STR(values+18).s,
-					VAL_STR(values+18).len, dlg);
+			if (!VAL_NULL(values+17))
+				read_dialog_vars( VAL_STR(values+17).s,
+					VAL_STR(values+17).len, dlg);
 
 			/* profiles */
-			if (!VAL_NULL(values+19))
-				read_dialog_profiles( VAL_STR(values+19).s,
-					strlen(VAL_STR(values+19).s), dlg,0);
+			if (!VAL_NULL(values+18))
+				read_dialog_profiles( VAL_STR(values+18).s,
+					strlen(VAL_STR(values+18).s), dlg,0);
 
 
 			/* script flags */
-			if (!VAL_NULL(values+20)) {
-				dlg->user_flags = VAL_INT(values+20);
+			if (!VAL_NULL(values+19)) {
+				dlg->user_flags = VAL_INT(values+19);
 			}
 
 			/* top hiding */
-			dlg->flags = VAL_INT(values+23);
+			dlg->flags = VAL_INT(values+22);
 			if (dlg_db_mode==DB_MODE_SHUTDOWN)
 				dlg->flags |= DLG_FLAG_NEW;
 
 			/* calculcate timeout */
-			dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
+			dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + get_ticks();
 			if (dlg->tl.timeout<=(unsigned int)time(0))
 				dlg->tl.timeout = 0;
 			else
@@ -622,9 +643,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->lifetime = 0;
 
 			dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
-				(unsigned int)(VAL_INT(values+21));
+				(unsigned int)(VAL_INT(values+20));
 			dlg->legs[callee_idx(dlg)].last_gen_cseq = 
-				(unsigned int)(VAL_INT(values+22));
+				(unsigned int)(VAL_INT(values+21));
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 				if (0 != insert_ping_timer(dlg)) 
@@ -633,6 +654,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					/* reference dialog as kept in ping timer list */
 					ref_dlg(dlg,1);
 				}
+			}
+
+			if (dlg_db_mode == DB_MODE_DELAYED) {
+				/* to be later removed by timer */
+				ref_dlg(dlg,1);
 			}
 
 			next_dialog:
@@ -664,16 +690,121 @@ error:
 	return -1;
 }
 
+static struct dlg_cell **dlg_del_holder=NULL;
+static int dlg_del_curr_no=0;
+static db_val_t *dlg_del_values=NULL;
+static db_key_t *dlg_del_keys=NULL;
 
+int dlg_timer_remove_from_db(struct dlg_cell *cell)
+{
+	static db_ps_t my_ps = NULL;
+	int i;
 
-/* this is only called from destroy_dlg, where the cell's entry 
- * lock is acquired
- */
+	/* here we are in the context of the dlg timer
+	 * dialog d_entry is locked and we also have an extra ref
+	 * that must be released when we attempt the delete */
+
+	if (dlg_del_holder == NULL) {
+		LM_DBG("First time dialog del is attempted\n");
+
+		/* allocate all needed structures */
+		dlg_del_holder = pkg_malloc(dlg_bulk_del_no *
+						sizeof(struct dlg_cell *));
+		if (!dlg_del_holder) {
+			LM_ERR("No more pkg for dlg delete holders\n");
+			return -1;
+		}
+		memset(dlg_del_holder,0,dlg_bulk_del_no*sizeof(struct dlg_cell *));
+
+		dlg_del_values = pkg_malloc(dlg_bulk_del_no *
+						sizeof(db_val_t));
+		if (!dlg_del_values) {
+			LM_ERR("No more pkg for dlg delete values\n");
+			pkg_free(dlg_del_holder);
+			return -1;
+		}
+
+		for (i=0;i<dlg_bulk_del_no;i++) {
+			VAL_TYPE(dlg_del_values+i) = DB_BIGINT;
+			VAL_NULL(dlg_del_values+i) = 0;
+		}
+
+		dlg_del_keys = pkg_malloc(dlg_bulk_del_no *
+						sizeof(db_key_t));
+		if (!dlg_del_keys) {
+			LM_ERR("No more pkg for dlg_delete keys\n");
+			pkg_free(dlg_del_holder);
+			pkg_free(dlg_del_values);
+			return -1;
+		}
+
+		for (i=0;i<dlg_bulk_del_no;i++)
+			dlg_del_keys[i] = &dlg_id_column;
+	}
+
+	/* store info in del holders */
+	VAL_BIGINT(dlg_del_values+dlg_del_curr_no) = 
+			((long long)cell->h_entry << 32) | (cell->h_id);
+	dlg_del_holder[dlg_del_curr_no]=cell;
+	/* mark is as deleted so we don't care about it later
+	 * in the timer */
+	cell->flags |= DLG_FLAG_DB_DELETED;
+	dlg_del_curr_no++;
+
+	if (dlg_del_curr_no == dlg_bulk_del_no) {
+		LM_DBG("triggering delete for %d dialogs\n",dlg_del_curr_no);
+
+		CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
+		CON_USE_OR_OP(dialog_db_handle);
+		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys, 
+					0, dlg_del_values, dlg_bulk_del_no) < 0)
+			LM_ERR("failed to delete bulk database information !!!\n");
+
+		/* from timer point of view, we are done with the dialogs */
+		for (i=0;i<dlg_bulk_del_no;i++) {
+			cell = dlg_del_holder[i];
+			unref_dlg_unsafe(cell,1,&(d_table->entries[cell->h_entry]));
+		}
+
+		dlg_del_curr_no = 0;
+	}
+
+	/* still not enough piled up dialogs - wait for more */
+	return 0;
+}
+
+int dlg_timer_flush_del(void)
+{
+	struct dlg_cell *cell;
+	int i;
+
+	/* here we are in the context of the dlg timer
+	 * we also have an extra ref
+	 * that must be released when we attempt the delete */
+
+	if (dlg_del_curr_no > 0) {
+		CON_USE_OR_OP(dialog_db_handle);
+		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys, 
+					0, dlg_del_values, dlg_del_curr_no) < 0)
+			LM_ERR("failed to delete bulk database information !!!\n");
+
+		/* from timer point of view, we are done with the dialogs */
+		for (i=0;i<dlg_del_curr_no;i++) {
+			cell = dlg_del_holder[i];
+			unref_dlg(cell,1);
+		}
+
+		dlg_del_curr_no = 0;
+	}
+
+	return 0;
+}
+
 int remove_dialog_from_db(struct dlg_cell * cell)
 {
 	static db_ps_t my_ps = NULL;
-	db_val_t values[2];
-	db_key_t match_keys[2] = { &h_entry_column, &h_id_column};
+	db_val_t values[1];
+	db_key_t match_keys[1] = { &dlg_id_column };
 
 	/*if the dialog hasn 't been yet inserted in the database*/
 	LM_DBG("trying to remove a dialog, update_flag is %i\n", cell->flags);
@@ -683,15 +814,14 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	if (use_dialog_table()!=0)
 		return -1;
 
-	VAL_TYPE(values) = VAL_TYPE(values+1) = DB_INT;
-	VAL_NULL(values) = VAL_NULL(values+1) = 0;
+	VAL_TYPE(values) = DB_BIGINT;
+	VAL_NULL(values) = 0;
 
-	VAL_INT(values) 	= cell->h_entry;
-	VAL_INT(values+1) 	= cell->h_id;
+	VAL_BIGINT(values) = ((long long)cell->h_entry << 32) | (cell->h_id);
 
 	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
 
-	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 2) < 0) {
+	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 1) < 0) {
 		LM_ERR("failed to delete database information\n");
 		return -1;
 	}
@@ -713,8 +843,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 	db_val_t values[DIALOG_TABLE_TOTAL_COL_NO];
 	int callee_leg;
 
-	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = { &h_entry_column,
-			&h_id_column,        &call_id_column,     &from_uri_column,
+	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = { 
+			&dlg_id_column,      &call_id_column,     &from_uri_column,
 			&from_tag_column,    &to_uri_column,      &to_tag_column,
 			&from_sock_column,   &to_sock_column,
 			&start_time_column,  &mangled_fu_column,  &mangled_tu_column,
@@ -733,59 +863,60 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 	if((cell->flags & DLG_FLAG_NEW) != 0){
 		/* save all the current dialogs information*/
-		VAL_TYPE(values) = VAL_TYPE(values+1) = VAL_TYPE(values+9) = 
-		VAL_TYPE(values+12) = VAL_TYPE(values+13) = VAL_TYPE(values+16) =
-		VAL_TYPE(values+17) = VAL_TYPE(values+18) = 
-		VAL_TYPE(values+21) = DB_INT;
+		VAL_TYPE(values) = DB_BIGINT;
 
-		VAL_TYPE(values+2) = VAL_TYPE(values+3) = VAL_TYPE(values+4) = 
-		VAL_TYPE(values+5) = VAL_TYPE(values+6) = VAL_TYPE(values+7) = 
-		VAL_TYPE(values+8) = VAL_TYPE(values+10) = VAL_TYPE(values+11) =
-		VAL_TYPE(values+14) = VAL_TYPE(values+15) = 
-		VAL_TYPE(values+19) = VAL_TYPE(values+20) = VAL_TYPE(values+22) =
-		VAL_TYPE(values+23) = VAL_TYPE(values+24) =
-		VAL_TYPE(values+25) = DB_STR;
+		VAL_TYPE(values+8) = VAL_TYPE(values+11) = VAL_TYPE(values+12) = 
+		VAL_TYPE(values+15) =VAL_TYPE(values+16) = VAL_TYPE(values+17) = 
+		VAL_TYPE(values+20) = DB_INT;
+
+		VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) = 
+		VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) = 
+		VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
+		VAL_TYPE(values+13) = VAL_TYPE(values+14) = 
+		VAL_TYPE(values+18) = VAL_TYPE(values+19) = VAL_TYPE(values+21) =
+		VAL_TYPE(values+22) = VAL_TYPE(values+23) =
+		VAL_TYPE(values+24) = DB_STR;
 
 		/* lock the entry */
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
-		SET_INT_VALUE(values, cell->h_entry);
-		SET_INT_VALUE(values+1, cell->h_id);
-		SET_STR_VALUE(values+2, cell->callid);
+		SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+					 cell->h_id));
+		/* to be later removed by timer */SET_STR_VALUE(values+1, cell->callid);
 
-		SET_STR_VALUE(values+3, cell->from_uri);
-		SET_STR_VALUE(values+4, cell->legs[DLG_CALLER_LEG].tag);
-		SET_STR_VALUE(values+5, cell->to_uri);
-		SET_STR_VALUE(values+6, cell->legs[callee_leg].tag);
+		SET_STR_VALUE(values+2, cell->from_uri);
+		SET_STR_VALUE(values+3, cell->legs[DLG_CALLER_LEG].tag);
+		SET_STR_VALUE(values+4, cell->to_uri);
+		SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-		SET_STR_VALUE(values+7, cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+		SET_STR_VALUE(values+6, cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
 		if (cell->legs[callee_leg].bind_addr) {
-			SET_STR_VALUE(values+8, 
+			SET_STR_VALUE(values+7, 
 				cell->legs[callee_leg].bind_addr->sock_str);
 		} else {
-			VAL_NULL(values+8) = 1;
+			VAL_NULL(values+7) = 1;
 		}
 
-		SET_INT_VALUE(values+9, cell->start_ts);
+		SET_INT_VALUE(values+8, cell->start_ts);
 
-		SET_STR_VALUE(values+10,cell->legs[callee_leg].from_uri);
-		SET_STR_VALUE(values+11,cell->legs[callee_leg].to_uri);
+		SET_STR_VALUE(values+9,cell->legs[callee_leg].from_uri);
+		SET_STR_VALUE(values+10,cell->legs[callee_leg].to_uri);
 
-		SET_INT_VALUE(values+12, cell->state);
-		SET_INT_VALUE(values+13, (unsigned int)( (unsigned int)time(0) +
+		SET_INT_VALUE(values+11, cell->state);
+		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
-		SET_STR_VALUE(values+14, cell->legs[DLG_CALLER_LEG].r_cseq);
-		SET_STR_VALUE(values+15, cell->legs[callee_leg].r_cseq);
-		SET_INT_VALUE(values+16,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
-		SET_INT_VALUE(values+17,cell->legs[callee_leg].last_gen_cseq);
-		SET_INT_VALUE(values+18, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
-		set_final_update_cols(values+19, cell, 0);
-		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].route_set);
-		SET_STR_VALUE(values+23, cell->legs[callee_leg].route_set);
-		SET_STR_VALUE(values+24, cell->legs[DLG_CALLER_LEG].contact);
-		SET_STR_VALUE(values+25, cell->legs[callee_leg].contact);
+		SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].r_cseq);
+		SET_STR_VALUE(values+14, cell->legs[callee_leg].r_cseq);
+		SET_INT_VALUE(values+15,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
+		SET_INT_VALUE(values+16,cell->legs[callee_leg].last_gen_cseq);
+		SET_INT_VALUE(values+17, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
+		set_final_update_cols(values+18, cell, 0);
+		SET_STR_VALUE(values+21, cell->legs[DLG_CALLER_LEG].route_set);
+		SET_STR_VALUE(values+22, cell->legs[callee_leg].route_set);
+		SET_STR_VALUE(values+23, cell->legs[DLG_CALLER_LEG].contact);
+		SET_STR_VALUE(values+24, cell->legs[callee_leg].contact);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
@@ -802,35 +933,35 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 	} else if((cell->flags & DLG_FLAG_CHANGED) != 0) {
 		/* save only dialog's state and timeout */
-		VAL_TYPE(values) = VAL_TYPE(values+1) = 
-		VAL_TYPE(values+12) = VAL_TYPE(values+13) = VAL_TYPE(values+16) =
-		VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-		VAL_TYPE(values+21) =DB_INT;
+		VAL_TYPE(values) = DB_BIGINT;
+		VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+15) =
+		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+20) =
+		DB_INT;
 
-		VAL_TYPE(values+14) = VAL_TYPE(values+15) =
-		VAL_TYPE(values+19) = VAL_TYPE(values+20) = DB_STR;
+		VAL_TYPE(values+13) = VAL_TYPE(values+14) =
+		VAL_TYPE(values+18) = VAL_TYPE(values+19) = DB_STR;
 
 		/* lock the entry */
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
-		SET_INT_VALUE(values, cell->h_entry);
-		SET_INT_VALUE(values+1, cell->h_id);
-		SET_INT_VALUE(values+12, cell->state);
-		SET_INT_VALUE(values+13, (unsigned int)( (unsigned int)time(0) +
+		SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+					 cell->h_id));
+		SET_INT_VALUE(values+11, cell->state);
+		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)time(0) +
 				 cell->tl.timeout - get_ticks()) );
 
-		SET_STR_VALUE(values+14, cell->legs[DLG_CALLER_LEG].r_cseq);
-		SET_STR_VALUE(values+15, cell->legs[callee_leg].r_cseq);
-		SET_INT_VALUE(values+16,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
-		SET_INT_VALUE(values+17,cell->legs[callee_leg].last_gen_cseq);
-		SET_INT_VALUE(values+18, cell->flags);
-		set_final_update_cols(values+19, cell, 1);
+		SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].r_cseq);
+		SET_STR_VALUE(values+14, cell->legs[callee_leg].r_cseq);
+		SET_INT_VALUE(values+15,cell->legs[DLG_CALLER_LEG].last_gen_cseq);
+		SET_INT_VALUE(values+16,cell->legs[callee_leg].last_gen_cseq);
+		SET_INT_VALUE(values+17, cell->flags);
+		set_final_update_cols(values+18, cell, 1);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
-						(values), (insert_keys+12), (values+12), 2, 10)) !=0){
+						(values), (insert_keys+11), (values+11), 1, 10)) !=0){
 			LM_ERR("could not update database info\n");
 			goto error;
 		}
@@ -840,23 +971,20 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 	} else if (cell->flags & DLG_FLAG_VP_CHANGED) {
-		cell->flags |= DLG_FLAG_VP_CHANGED;
-		VAL_TYPE(values) = VAL_TYPE(values+1) = VAL_TYPE(values+21) = DB_INT;
-		VAL_TYPE(values+19) = VAL_TYPE(values+20) = DB_STR;
+		VAL_TYPE(values) = DB_BIGINT;
+		VAL_TYPE(values+20) = DB_INT;
+		VAL_TYPE(values+18) = VAL_TYPE(values+19) = DB_STR;
 
 		/* lock the entry */
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
-		SET_INT_VALUE(values, cell->h_entry);
-		SET_INT_VALUE(values+1, cell->h_id);
-
-		set_final_update_cols(values+19, cell, 0);
+		set_final_update_cols(values+18, cell, 0);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
 
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
-						(values), (insert_keys+19), (values+19), 2, 3)) !=0){
+						(values), (insert_keys+18), (values+18), 1, 3)) !=0){
 			LM_ERR("could not update database info\n");
 			goto error;
 		}
@@ -1038,14 +1166,14 @@ void dialog_update_db(unsigned int ticks, void * param)
 	static db_ps_t my_ps_update_vp = NULL;
 	int index;
 	db_val_t values[DIALOG_TABLE_TOTAL_COL_NO];
-	struct dlg_entry entry;
-	struct dlg_cell  * cell; 
+	struct dlg_entry *entry;
+	struct dlg_cell  * cell,*next_cell; 
 	unsigned char on_shutdown;
 	int callee_leg,ins_done=0;
 	static query_list_t *ins_list = NULL;
 
-	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {	&h_entry_column,
-			&h_id_column,		&call_id_column,		&from_uri_column,
+	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {
+			&dlg_id_column,		&call_id_column,		&from_uri_column,
 			&from_tag_column,	&to_uri_column,			&to_tag_column,
 			&from_sock_column,	&to_sock_column,		&start_time_column,
 			&from_route_column,	&to_route_column, 	&from_contact_column,
@@ -1060,79 +1188,93 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 	on_shutdown = (ticks==0);
 
-	/*save the current dialogs information*/
-	VAL_TYPE(values) = VAL_TYPE(values+1) = VAL_TYPE(values+9) = 
-	VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+20) =
-	VAL_TYPE(values+21) = VAL_TYPE(values+24) = VAL_TYPE(values+25)= DB_INT;
+	LM_DBG("dialog timer called. On shutdown ? %d\n",on_shutdown);
 
-	VAL_TYPE(values+2) = VAL_TYPE(values+3) = VAL_TYPE(values+4) = 
-	VAL_TYPE(values+5) = VAL_TYPE(values+6) = VAL_TYPE(values+7) = 
-	VAL_TYPE(values+8) = VAL_TYPE(values+10) = VAL_TYPE(values+11) = 
-	VAL_TYPE(values+12) = VAL_TYPE(values+13) = VAL_TYPE(values+14) =
-	VAL_TYPE(values+15) = VAL_TYPE(values+18) = VAL_TYPE(values+19) = 
-	VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
+	/*save the current dialogs information*/
+	VAL_TYPE(values) = DB_BIGINT;
+	VAL_TYPE(values+8) = 
+	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
+	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)= DB_INT;
+
+	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) = 
+	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) = 
+	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) = 
+	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
+	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) = 
+	VAL_TYPE(values+21) = VAL_TYPE(values+22) = DB_STR;
 
 	for(index = 0; index< d_table->size; index++){
 
 		/* lock the whole entry */
-		entry = (d_table->entries)[index];
-		dlg_lock( d_table, &entry);
+		entry = &((d_table->entries)[index]);
+		dlg_lock( d_table, entry);
 
-		for(cell = entry.first; cell != NULL; cell = cell->next){
-
+		for(cell = entry->first; cell != NULL;){
 			callee_leg = callee_idx(cell);
 
 			if( (cell->flags & DLG_FLAG_NEW) != 0 ) {
-
 				if ( cell->state == DLG_STATE_DELETED ) {
-					/* don't need to insert dialogs already terminated */
+					if (!(cell->flags & DLG_FLAG_DB_DELETED)) {
+						/* first time we see this dialog */
+						/* save pointer to next dialog */
+						next_cell=cell->next;
+						/* mark it as deleted so as we don't deal with it later */
+						cell->flags |= DLG_FLAG_DB_DELETED;
+						/* timer is done with this dialog */
+						unref_dlg_unsafe(cell,1,entry);
+						cell=next_cell;
+						continue;
+					}
+					/* timer was done with the dialog but somebody else
+					 * is still holding the ref, just skip over it */
+					cell=cell->next;
 					continue;
 				}
 				LM_DBG("inserting new dialog %p\n",cell);
 
-				SET_INT_VALUE(values, cell->h_entry);
-				SET_INT_VALUE(values+1, cell->h_id);
-				SET_STR_VALUE(values+2, cell->callid);
-				SET_STR_VALUE(values+3, cell->from_uri);
+				SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+								 cell->h_id));
+				SET_STR_VALUE(values+1, cell->callid);
+				SET_STR_VALUE(values+2, cell->from_uri);
 
-				SET_STR_VALUE(values+4, cell->legs[DLG_CALLER_LEG].tag);
-				SET_STR_VALUE(values+5, cell->to_uri);
-				SET_STR_VALUE(values+6, cell->legs[callee_leg].tag);
+				SET_STR_VALUE(values+3, cell->legs[DLG_CALLER_LEG].tag);
+				SET_STR_VALUE(values+4, cell->to_uri);
+				SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-				SET_STR_VALUE(values+7,
+				SET_STR_VALUE(values+6,
 					cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
 				if (cell->legs[callee_leg].bind_addr) {
-					SET_STR_VALUE(values+8, 
+					SET_STR_VALUE(values+7, 
 						cell->legs[callee_leg].bind_addr->sock_str);
 				} else {
-					VAL_NULL(values+8) = 1;
+					VAL_NULL(values+7) = 1;
 				}
 
-				SET_INT_VALUE(values+9,  cell->start_ts);
+				SET_INT_VALUE(values+8,  cell->start_ts);
 
-				SET_STR_VALUE(values+10, cell->legs[DLG_CALLER_LEG].route_set);
-				SET_STR_VALUE(values+11,
+				SET_STR_VALUE(values+9, cell->legs[DLG_CALLER_LEG].route_set);
+				SET_STR_VALUE(values+10,
 					cell->legs[callee_leg].route_set);
-				SET_STR_VALUE(values+12, cell->legs[DLG_CALLER_LEG].contact);
-				SET_STR_VALUE(values+13,
+				SET_STR_VALUE(values+11, cell->legs[DLG_CALLER_LEG].contact);
+				SET_STR_VALUE(values+12,
 					cell->legs[callee_leg].contact);
 
 
-				SET_STR_VALUE(values+14,cell->legs[callee_leg].from_uri);
-				SET_STR_VALUE(values+15,cell->legs[callee_leg].to_uri);
+				SET_STR_VALUE(values+13,cell->legs[callee_leg].from_uri);
+				SET_STR_VALUE(values+14,cell->legs[callee_leg].to_uri);
 
-				SET_INT_VALUE(values+16, cell->state);
-				SET_INT_VALUE(values+17, (unsigned int)((unsigned int)time(0)
+				SET_INT_VALUE(values+15, cell->state);
+				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
 					+ cell->tl.timeout - get_ticks()) );
 
-				SET_STR_VALUE(values+18, cell->legs[DLG_CALLER_LEG].r_cseq);
-				SET_STR_VALUE(values+19, cell->legs[callee_leg].r_cseq);
+				SET_STR_VALUE(values+17, cell->legs[DLG_CALLER_LEG].r_cseq);
+				SET_STR_VALUE(values+18, cell->legs[callee_leg].r_cseq);
 
-				SET_INT_VALUE(values+20, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
-				SET_INT_VALUE(values+21, cell->legs[callee_leg].last_gen_cseq);
+				SET_INT_VALUE(values+19, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
+				SET_INT_VALUE(values+20, cell->legs[callee_leg].last_gen_cseq);
 
-				set_final_update_cols(values+22, cell, on_shutdown);
-				SET_INT_VALUE(values+25, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
+				set_final_update_cols(values+21, cell, on_shutdown);
+				SET_INT_VALUE(values+24, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
@@ -1153,27 +1295,35 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 
+			} else if (cell->state == DLG_STATE_DELETED &&
+					   !(cell->flags & DLG_FLAG_DB_DELETED)) {
+				/* save pointer to next dialog
+				 * delete might swipe cell from under our feet */
+				next_cell=cell->next;
+				dlg_timer_remove_from_db(cell);
+				cell=next_cell;
+				continue;
 			} else if ( (cell->flags & DLG_FLAG_CHANGED)!=0 || on_shutdown ){
 				LM_DBG("updating existing dialog %p\n",cell);
 
-				SET_INT_VALUE(values, cell->h_entry);
-				SET_INT_VALUE(values+1, cell->h_id);
+				SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+								 cell->h_id));
 
-				SET_INT_VALUE(values+16, cell->state);
-				SET_INT_VALUE(values+17, (unsigned int)((unsigned int)time(0)
+				SET_INT_VALUE(values+15, cell->state);
+				SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
 					 + cell->tl.timeout - get_ticks()) );
-				SET_STR_VALUE(values+18, cell->legs[DLG_CALLER_LEG].r_cseq);
-				SET_STR_VALUE(values+19, cell->legs[callee_leg].r_cseq);
-				SET_INT_VALUE(values+20, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
-				SET_INT_VALUE(values+21, cell->legs[callee_leg].last_gen_cseq);
+				SET_STR_VALUE(values+17, cell->legs[DLG_CALLER_LEG].r_cseq);
+				SET_STR_VALUE(values+18, cell->legs[callee_leg].r_cseq);
+				SET_INT_VALUE(values+19, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
+				SET_INT_VALUE(values+20, cell->legs[callee_leg].last_gen_cseq);
 
-				set_final_update_cols(values+22, cell, 1);
-				SET_INT_VALUE(values+25, cell->flags);
+				set_final_update_cols(values+21, cell, 1);
+				SET_INT_VALUE(values+24, cell->flags);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
-				(values), (insert_keys+16), (values+16), 2, 10)) !=0) {
+				(values), (insert_keys+15), (values+15), 1, 10)) !=0) {
 					LM_ERR("could not update database info\n");
 					goto error;
 				}
@@ -1184,15 +1334,15 @@ void dialog_update_db(unsigned int ticks, void * param)
 				cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 			} else if (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) {
 
-				SET_INT_VALUE(values, cell->h_entry);
-				SET_INT_VALUE(values+1, cell->h_id);
+				SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+								 cell->h_id));
 
-				set_final_update_cols(values+22, cell, 0);
+				set_final_update_cols(values+21, cell, 0);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
-				(values), (insert_keys+22), (values+22), 2, 3)) !=0) {
+				(values), (insert_keys+21), (values+21), 1, 3)) !=0) {
 					LM_ERR("could not update database info\n");
 					goto error;
 				}
@@ -1201,8 +1351,9 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				cell->flags &= ~DLG_FLAG_VP_CHANGED;
 			}
+			cell = cell->next;
 		}
-		dlg_unlock( d_table, &entry);
+		dlg_unlock( d_table, entry);
 
 	}
 
@@ -1215,10 +1366,14 @@ void dialog_update_db(unsigned int ticks, void * param)
 			LM_ERR("failed to flush rows to DB\n");
 	}
 
+
+
+	dlg_timer_flush_del();
 	return;
 
 error:
-	dlg_unlock( d_table, &entry);
+	dlg_unlock( d_table, entry);
+	dlg_timer_flush_del();
 }
 
 static int sync_dlg_db_mem(void)
@@ -1234,6 +1389,7 @@ static int sync_dlg_db_mem(void)
 	struct socket_info *caller_sock,*callee_sock;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
+	int hash_entry,hash_id;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -1251,29 +1407,31 @@ static int sync_dlg_db_mem(void)
 
 			values = ROW_VALUES(rows + i);
 
-			if (VAL_NULL(values) || VAL_NULL(values+1)) {
-				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
-					h_entry_column.len, h_entry_column.s,
-					h_id_column.len, h_id_column.s);
+			if (VAL_NULL(values)) {
+				LM_ERR("column %.*s cannot be null -> skipping\n",
+					dlg_id_column.len, dlg_id_column.s);
 				continue;
 			}
 
-			if (VAL_NULL(values+7) || VAL_NULL(values+8)) {
+			hash_entry = (int)(VAL_BIGINT(values) & 0xffffffff00000000);
+			hash_id = (int)(VAL_BIGINT(values) & 0x00000000ffffffff);
+
+			if (VAL_NULL(values+6) || VAL_NULL(values+7)) {
 				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
 					start_time_column.len, start_time_column.s,
 					state_column.len, state_column.s);
 				continue;
 			}
 
-			if ( VAL_INT(values+8) == DLG_STATE_DELETED ) {
+			if ( VAL_INT(values+7) == DLG_STATE_DELETED ) {
 				LM_DBG("dialog already terminated -> skipping\n");
 				continue;
 			}
 
 			/*restore the dialog info*/
-			GET_STR_VALUE(callid, values, 2, 1, 0);
-			GET_STR_VALUE(from_tag, values, 4, 1, 0);
-			GET_STR_VALUE(to_tag, values, 6, 1, 1);
+			GET_STR_VALUE(callid, values, 1, 1, 0);
+			GET_STR_VALUE(from_tag, values, 3, 1, 0);
+			GET_STR_VALUE(to_tag, values, 5, 1, 1);
 
 			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
 			known_dlg = 0;
@@ -1296,11 +1454,11 @@ static int sync_dlg_db_mem(void)
 
 			if (known_dlg == 0) {
 				LM_DBG("First seen dialog - load all stuff - callid = [%.*s]\n",callid.len,callid.s);
-				GET_STR_VALUE(from_uri, values, 3, 1, 0);
-				GET_STR_VALUE(to_uri, values, 5, 1, 0);
+				GET_STR_VALUE(from_uri, values, 2, 1, 0);
+				GET_STR_VALUE(to_uri, values, 4, 1, 0);
 
-				caller_sock = create_socket_info(values, 16);
-				callee_sock = create_socket_info(values, 17);
+				caller_sock = create_socket_info(values, 15);
+				callee_sock = create_socket_info(values, 16);
 				if (caller_sock == NULL || callee_sock == NULL) {
 					LM_ERR("Dialog in DB doesn't match any listening sockets");
 					continue;
@@ -1312,7 +1470,7 @@ static int sync_dlg_db_mem(void)
 					goto error;
 				}
 
-				if(dlg->h_entry != VAL_INT(values)){
+				if(dlg->h_entry != hash_entry){
 					LM_ERR("inconsistent hash data in the dialog database: "
 						"you may have restarted opensips using a different "
 						"hash_size: please erase %.*s database and restart\n", 
@@ -1324,15 +1482,15 @@ static int sync_dlg_db_mem(void)
 				/*link the dialog*/
 				link_dlg(dlg, 0);
 
-				dlg->h_id = VAL_INT(values+1);
+				dlg->h_id = hash_id;
 				next_id = d_table->entries[dlg->h_entry].next_id;
 
 				d_table->entries[dlg->h_entry].next_id =
 					(next_id < dlg->h_id) ? (dlg->h_id+1) : next_id;
 
-				dlg->start_ts	= VAL_INT(values+7);
+				dlg->start_ts	= VAL_INT(values+6);
 
-				dlg->state 		= VAL_INT(values+8);
+				dlg->state 		= VAL_INT(values+7);
 				if (dlg->state==DLG_STATE_CONFIRMED_NA ||
 				dlg->state==DLG_STATE_CONFIRMED) {
 					if_update_stat(dlg_enable_stats, active_dlgs, 1);
@@ -1340,15 +1498,15 @@ static int sync_dlg_db_mem(void)
 					if_update_stat(dlg_enable_stats, early_dlgs, 1);
 				}
 
-				GET_STR_VALUE(cseq1, values, 10 , 1, 1);
-				GET_STR_VALUE(cseq2, values, 11 , 1, 1);
-				GET_STR_VALUE(rroute1, values, 12, 0, 0);
-				GET_STR_VALUE(rroute2, values, 13, 0, 0);
-				GET_STR_VALUE(contact1, values, 14, 0, 1);
-				GET_STR_VALUE(contact2, values, 15, 0, 1);
+				GET_STR_VALUE(cseq1, values, 9 , 1, 1);
+				GET_STR_VALUE(cseq2, values, 10 , 1, 1);
+				GET_STR_VALUE(rroute1, values, 11, 0, 0);
+				GET_STR_VALUE(rroute2, values, 12, 0, 0);
+				GET_STR_VALUE(contact1, values, 13, 0, 1);
+				GET_STR_VALUE(contact2, values, 14, 0, 1);
 
-				GET_STR_VALUE(mangled_fu, values, 24,0,1);
-				GET_STR_VALUE(mangled_tu, values, 25,0,1);
+				GET_STR_VALUE(mangled_fu, values, 23,0,1);
+				GET_STR_VALUE(mangled_tu, values, 24,0,1);
 
 				/* add the 2 legs */
 				if ( (dlg_add_leg_info( dlg, &from_tag, &rroute1, &contact1,
@@ -1363,28 +1521,28 @@ static int sync_dlg_db_mem(void)
 				dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 				/* script variables */
-				if (!VAL_NULL(values+18))
-					read_dialog_vars( VAL_STR(values+18).s,
-						VAL_STR(values+18).len, dlg);
+				if (!VAL_NULL(values+17))
+					read_dialog_vars( VAL_STR(values+17).s,
+						VAL_STR(values+17).len, dlg);
 
 				/* profiles */
-				if (!VAL_NULL(values+19))
-					read_dialog_profiles( VAL_STR(values+19).s,
-						strlen(VAL_STR(values+19).s), dlg,0);
+				if (!VAL_NULL(values+18))
+					read_dialog_profiles( VAL_STR(values+18).s,
+						strlen(VAL_STR(values+18).s), dlg,0);
 
 
 				/* script flags */
-				if (!VAL_NULL(values+20)) {
-					dlg->user_flags = VAL_INT(values+20);
+				if (!VAL_NULL(values+19)) {
+					dlg->user_flags = VAL_INT(values+19);
 				}
 
 				/* top hiding */
-				dlg->flags = VAL_INT(values+23);
+				dlg->flags = VAL_INT(values+22);
 				if (dlg_db_mode==DB_MODE_SHUTDOWN)
 					dlg->flags |= DLG_FLAG_NEW;
 
 				/* calculcate timeout */
-				dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + get_ticks();
+				dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + get_ticks();
 				if (dlg->tl.timeout<=(unsigned int)time(0))
 					dlg->tl.timeout = 0;
 				else
@@ -1412,9 +1570,9 @@ static int sync_dlg_db_mem(void)
 				dlg->lifetime = 0;
 
 				dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
-					(unsigned int)(VAL_INT(values+21));
+					(unsigned int)(VAL_INT(values+20));
 				dlg->legs[callee_idx(dlg)].last_gen_cseq = 
-					(unsigned int)(VAL_INT(values+22));
+					(unsigned int)(VAL_INT(values+21));
 
 				if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 					if (0 != insert_ping_timer(dlg)) 
@@ -1424,21 +1582,26 @@ static int sync_dlg_db_mem(void)
 						ref_dlg(dlg,1);
 					}
 				}
+
+				if (dlg_db_mode == DB_MODE_DELAYED) {
+					/* to be later removed by timer */
+					ref_dlg(dlg,1);
+				}
 			} else {
 				/* we already saw this dialog before
 				 * check which is the newer version */
 
-				if (known_dlg->state > VAL_INT(values+8)) {
+				if (known_dlg->state > VAL_INT(values+7)) {
 					LM_DBG("mem has a newer state - ignore \n");
 					/* we know a newer version compared to the DB
 					 * ignore it */
 					goto next_dialog;
-				} else if (known_dlg->state == VAL_INT(values+8)) {
+				} else if (known_dlg->state == VAL_INT(values+7)) {
 					LM_DBG("mem has same state as DB \n");
 					/* same state :-( no way to tell which is newer */
 					
 					/* play nice and store longest timeout, although not always correct*/
-					db_timeout = (unsigned int)(VAL_INT(values+9)) + 
+					db_timeout = (unsigned int)(VAL_INT(values+8)) + 
 						get_ticks();
 					if (db_timeout<=(unsigned int)time(0))
 						db_timeout = 0;
@@ -1449,8 +1612,8 @@ static int sync_dlg_db_mem(void)
 						known_dlg->tl.timeout = db_timeout;
 
 					/* check with is newer cseq for caller leg */
-					if (!VAL_NULL(values+10)) {
-						cseq1.s = VAL_STR(values+10).s;
+					if (!VAL_NULL(values+9)) {
+						cseq1.s = VAL_STR(values+9).s;
 						cseq1.len = strlen(cseq1.s);
 						
 						str2int(&cseq1,&db_caller_cseq);
@@ -1476,8 +1639,8 @@ static int sync_dlg_db_mem(void)
 					}
 
 					/* check with is newer cseq for caller leg */
-					if (!VAL_NULL(values+11)) {
-						cseq2.s = VAL_STR(values+11).s;
+					if (!VAL_NULL(values+10)) {
+						cseq2.s = VAL_STR(values+10).s;
 						cseq2.len = strlen(cseq2.s);
 
 						callee_leg_idx = callee_idx(known_dlg);
@@ -1505,37 +1668,37 @@ static int sync_dlg_db_mem(void)
 
 					/* update ping cseqs, whichever is newer */
 					if (known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq <
-						(unsigned int)(VAL_INT(values+21)))
+						(unsigned int)(VAL_INT(values+20)))
 						known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq =
-							(unsigned int)(VAL_INT(values+21));
+							(unsigned int)(VAL_INT(values+20));
 					if (known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq <
-						(unsigned int)(VAL_INT(values+22)))
+						(unsigned int)(VAL_INT(values+21)))
 						known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq =
-							(unsigned int)(VAL_INT(values+22));
+							(unsigned int)(VAL_INT(values+21));
 
 					/* update script variables
 					 * if already found, delete the old ones
 					 * and replace with new one */
-					if (!VAL_NULL(values+18))
-						read_dialog_vars( VAL_STR(values+18).s,
-							VAL_STR(values+18).len, known_dlg);
+					if (!VAL_NULL(values+17))
+						read_dialog_vars( VAL_STR(values+17).s,
+							VAL_STR(values+17).len, known_dlg);
 
 					/* skip flags - keep what we have - anyway can't tell which is new */
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
-					if (!VAL_NULL(values+19))
-						read_dialog_profiles( VAL_STR(values+19).s,
-							strlen(VAL_STR(values+19).s), known_dlg,1);
+					if (!VAL_NULL(values+18))
+						read_dialog_profiles( VAL_STR(values+18).s,
+							strlen(VAL_STR(values+18).s), known_dlg,1);
 				} else {
 					/* DB has newer state, just update fields from DB */
 					LM_DBG("DB has newer state \n");
 
 					/* set new state */
-					known_dlg->state = VAL_INT(values+8);
+					known_dlg->state = VAL_INT(values+7);
 
 					/* update timeout */
-					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+9)) + 
+					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + 
 						get_ticks();
 					if (known_dlg->tl.timeout<=(unsigned int)time(0))
 						known_dlg->tl.timeout = 0;
@@ -1543,8 +1706,8 @@ static int sync_dlg_db_mem(void)
 						known_dlg->tl.timeout -= (unsigned int)time(0);
 
 					/* update cseqs */
-					if (!VAL_NULL(values+10)) {
-						cseq1.s = VAL_STR(values+10).s;
+					if (!VAL_NULL(values+9)) {
+						cseq1.s = VAL_STR(values+9).s;
 						cseq1.len = strlen(cseq1.s);
 
 						if (known_dlg->legs[DLG_CALLER_LEG].r_cseq.len < cseq1.len) {
@@ -1559,8 +1722,8 @@ static int sync_dlg_db_mem(void)
 						known_dlg->legs[DLG_CALLER_LEG].r_cseq.len = cseq1.len;
 					}
 
-					if (!VAL_NULL(values+11)) {
-						cseq2.s = VAL_STR(values+11).s;
+					if (!VAL_NULL(values+10)) {
+						cseq2.s = VAL_STR(values+10).s;
 						cseq2.len = strlen(cseq1.s);
 						callee_leg_idx = callee_idx(known_dlg);
 
@@ -1579,27 +1742,27 @@ static int sync_dlg_db_mem(void)
 
 					/* update ping cseqs */
 					known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
-						(unsigned int)(VAL_INT(values+21));
+						(unsigned int)(VAL_INT(values+20));
 					known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq = 
-						(unsigned int)(VAL_INT(values+22));
+						(unsigned int)(VAL_INT(values+21));
 
 					/* update flags */
-					known_dlg->flags = VAL_INT(values+23);
+					known_dlg->flags = VAL_INT(values+22);
 					if (dlg_db_mode==DB_MODE_SHUTDOWN)
 						known_dlg->flags |= DLG_FLAG_NEW;
 
 					/* update script variables
 					 * if already found, delete the old one
 					 * and replace with new one */
-					if (!VAL_NULL(values+18))
-						read_dialog_vars( VAL_STR(values+18).s,
-							VAL_STR(values+18).len, known_dlg);
+					if (!VAL_NULL(values+17))
+						read_dialog_vars( VAL_STR(values+17).s,
+							VAL_STR(values+17).len, known_dlg);
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
-					if (!VAL_NULL(values+19))
-						read_dialog_profiles( VAL_STR(values+19).s,
-							strlen(VAL_STR(values+19).s), known_dlg,1);
+					if (!VAL_NULL(values+18))
+						read_dialog_profiles( VAL_STR(values+18).s,
+							strlen(VAL_STR(values+18).s), known_dlg,1);
 				}
 
 			}

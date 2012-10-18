@@ -1,8 +1,6 @@
-INSERT INTO version (table_name, table_version) values ('dialog','7');
+INSERT INTO version (table_name, table_version) values ('dialog','8');
 CREATE TABLE dialog (
-    id SERIAL PRIMARY KEY NOT NULL,
-    hash_entry INTEGER NOT NULL,
-    hash_id INTEGER NOT NULL,
+    dlg_id BIGINT PRIMARY KEY NOT NULL,
     callid VARCHAR(255) NOT NULL,
     from_uri VARCHAR(128) NOT NULL,
     from_tag VARCHAR(64) NOT NULL,
@@ -28,6 +26,4 @@ CREATE TABLE dialog (
     script_flags INTEGER DEFAULT 0 NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL
 );
-
-CREATE INDEX dialog_hash_idx ON dialog (hash_entry, hash_id);
 

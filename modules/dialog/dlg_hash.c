@@ -691,7 +691,8 @@ void link_dlg(struct dlg_cell *dlg, int n)
 	dlg->ref += 1 + n;
 	d_entry->cnt++;
 
-	LM_DBG("ref dlg %p with %d -> %d\n", dlg, n+1, dlg->ref);
+	LM_DBG("ref dlg %p with %d -> %d in h_entry %p - %d \n", dlg, n+1, dlg->ref,
+								d_entry,dlg->h_entry);
 
 	dlg_unlock( d_table, d_entry);
 	return;

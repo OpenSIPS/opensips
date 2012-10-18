@@ -805,6 +805,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		if ( current_dlg_pointer->flags & DLG_FLAG_ISINIT ) {
 			/* fully init dialog -> check if attached to the transaction */
 			if (t->dialog_ctx==NULL) {
+
 				/* set a callback to remove the ref when transaction 
 				 * is destroied */
 				if ( d_tmb.register_tmcb( NULL, t, TMCB_TRANS_DELETED,
@@ -842,6 +843,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 {
 	struct dlg_cell *dlg;
 	str s;
+	int extra_ref;
 
 	/* module is stricly designed for dialog calls */
 	if (req->first_line.u.request.method_value!=METHOD_INVITE)
@@ -894,7 +896,10 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	set_current_dialog(dlg);
 	last_dst_leg = DLG_FIRST_CALLEE_LEG;
 
-	link_dlg( dlg , 2/* extra ref for the callback and current dlg hook */);
+	extra_ref=2; /* extra ref for the callback and current dlg hook */
+	if (dlg_db_mode == DB_MODE_DELAYED)
+		extra_ref++; /* extra ref for the timer to delete the dialog */
+	link_dlg( dlg , extra_ref);
 
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID &&
 		add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
