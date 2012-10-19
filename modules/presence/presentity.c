@@ -603,13 +603,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 			*sent_reply= 1;
 
-			if( publ_notify(presentity, pres_uri, body.s?&body:0, &presentity->etag,
-					rules_doc, NULL)< 0 )
-			{
-				LM_ERR("while sending notify\n");
-				goto error;
-			}
-
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 			{
 				LM_ERR("unsuccessful sql use table\n");
@@ -623,6 +616,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 			LM_DBG("Expires=0, deleted from db %.*s\n",
 					presentity->user.len,presentity->user.s);
+
+			if(publ_notify(presentity, pres_uri, body.s ? &body : 0, &presentity->etag,
+			   rules_doc, NULL) < 0)
+			{
+				LM_ERR("while sending notify\n");
+				goto error;
+			}
 
 			goto send_mxd_notify;
 		}
