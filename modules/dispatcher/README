@@ -293,7 +293,7 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
    the TM-Module is loaded. If set to “0”, the pinging of failed
    requests is disabled.
 
-   Default value is “10”.
+   Default value is “0” (disabled).
 
    Example 1.11. Set the “ds_ping_interval” parameter
 ...
