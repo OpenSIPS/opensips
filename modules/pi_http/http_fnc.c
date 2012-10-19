@@ -2767,7 +2767,7 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 		if((db_url->http_dbf.update(db_url->http_db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->q_keys, q_vals,
-			command->c_keys_size, command->c_keys_size))!=0){
+			command->c_keys_size, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to update record.");
 		}else{
