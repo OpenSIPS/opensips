@@ -276,8 +276,8 @@ int clone_pv_stat_name(str *name, str *clone)
 		/* add to pending list */
 		psn = (struct pending_stat_name *)pkg_malloc( sizeof(struct pending_stat_name) );
 		if (psn==NULL) {
-			LM_ERR("failed to allocated more shm mem (%ld)\n",
-				sizeof(struct pending_stat_name*));
+			LM_ERR("failed to allocated more shm mem (%uB)\n",
+				sizeof(struct pending_stat_name));
 			return -1;
 		}
 		psn->name = clone;
