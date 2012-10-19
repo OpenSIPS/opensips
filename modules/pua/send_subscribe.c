@@ -405,19 +405,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	{
 		/* do not delete the dialog - allow Notifies to be recognized as
 		 * inside a known dialog */
-		if(lexpire== 0 )
-		{
-			LM_DBG("lexpire= 0 Delete from hash table");
-			lock_get(&HashT->p_records[hentity->hash_index].lock);
-			presentity = get_htable_safe(hentity->hash_index, hentity->local_index);
-			if(presentity)
-			{
-				delete_htable_safe(presentity, hentity->hash_index);
-				lock_release(&HashT->p_records[hentity->hash_index].lock);
-			}
-			lock_release(&HashT->p_records[hentity->hash_index].lock);
-			goto done;
-		}
+	        if (lexpire == 0)
+	                lexpire = 5;
 
 		LM_DBG("*** Update expires\n");
 		update_htable(hentity->hash_index, hentity->local_index, lexpire, NULL, &contact);

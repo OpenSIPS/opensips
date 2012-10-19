@@ -358,24 +358,12 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	else
 	{
-		if(expires!= 0)
-		{
-			if(rls_dbf.update(rls_db, query_cols, 0, query_vals, query_cols+2,
-						query_vals+2, 2, n_query_cols-2)< 0)
-			{
-				LM_ERR("in sql update\n");
-				goto error;
-			}
-		}
-		else  /* if terminated - delete from rls_presentity table */
-		{
-			if(rls_dbf.delete(rls_db, query_cols, 0, query_vals, 2)< 0)
-			{
-				LM_ERR("sql delete failed\n");
-				goto error;
-			}
-
-		}
+                if(rls_dbf.update(rls_db, query_cols, 0, query_vals, query_cols+2,
+                                  query_vals+2, 2, n_query_cols-2) < 0)
+                {
+                        LM_ERR("in sql update\n");
+                        goto error;
+                }
 	}
 	
 done:
@@ -694,7 +682,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 			if(auth_state_flag & TERMINATED_STATE)
 			{
 				xmlNewProp(instance_node, BAD_CAST "reason",
-					BAD_CAST row_vals[resource_uri_col].val.string_val);
+					   BAD_CAST row_vals[reason_col].val.string_val);
 			}
 		
 			/* add in the multipart buffer */
@@ -783,15 +771,21 @@ void rls_presentity_clean(unsigned int ticks,void *param)
 	query_ops[0]= OP_LT;
 	query_vals[0].nul= 0;
 	query_vals[0].type= DB_INT;
-	query_vals[0].val.int_val= (int)time(NULL)-10;
+	query_vals[0].val.int_val = (int)time(NULL)-10;
 
-	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
+	query_cols[1]= &str_updated_col;
+	query_ops[1]= OP_EQ;
+	query_vals[1].type = DB_INT;
+	query_vals[1].nul = 0;
+	query_vals[1].val.int_val= NO_UPDATE_TYPE;
+
+	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		return ;
 	}
 
-	if(rls_dbf.delete(rls_db, query_cols, query_ops, query_vals, 1)< 0)
+	if(rls_dbf.delete(rls_db, query_cols, query_ops, query_vals, 2) < 0)
 	{
 		LM_ERR("in sql delete\n");
 		return ;
