@@ -1252,6 +1252,9 @@ static int sync_dlg_db_mem(void)
 			known_dlg = 0;
 			d_entry = &(d_table->entries[VAL_INT(values)]);
 
+			/* lock the whole entry */
+			dlg_lock( d_table, d_entry);
+
 			for (it=d_entry->first;it;it=it->next)
 				if (it->callid.len == callid.len && 
 					it->legs[DLG_CALLER_LEG].tag.len == from_tag.len &&
@@ -1268,6 +1271,8 @@ static int sync_dlg_db_mem(void)
 				}
 
 			if (known_dlg == 0) {
+				/* we can safely unlock here */
+				dlg_unlock( d_table, d_entry);
 				LM_DBG("First seen dialog - load all stuff - callid = [%.*s]\n",callid.len,callid.s);
 				GET_STR_VALUE(from_uri, values, 3, 1, 0);
 				GET_STR_VALUE(to_uri, values, 5, 1, 0);
@@ -1405,6 +1410,7 @@ static int sync_dlg_db_mem(void)
 					LM_DBG("mem has a newer state - ignore \n");
 					/* we know a newer version compared to the DB
 					 * ignore it */
+					dlg_unlock( d_table, d_entry);
 					goto next_dialog;
 				} else if (known_dlg->state == VAL_INT(values+8)) {
 					LM_DBG("mem has same state as DB \n");
@@ -1436,6 +1442,7 @@ static int sync_dlg_db_mem(void)
 									shm_realloc(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.len);
 								if (!known_dlg->legs[DLG_CALLER_LEG].r_cseq.s) {
 									LM_ERR("no more shm\n");
+									dlg_unlock( d_table, d_entry);
 									goto next_dialog;
 								}
 							}
@@ -1464,6 +1471,7 @@ static int sync_dlg_db_mem(void)
 									shm_realloc(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.len);
 								if (!known_dlg->legs[callee_leg_idx].r_cseq.s) {
 									LM_ERR("no more shm\n");
+									dlg_unlock( d_table, d_entry);
 									goto next_dialog;
 								}
 							}
@@ -1500,6 +1508,8 @@ static int sync_dlg_db_mem(void)
 					if (!VAL_NULL(values+19))
 						read_dialog_profiles( VAL_STR(values+19).s,
 							strlen(VAL_STR(values+19).s), known_dlg,1);
+
+					dlg_unlock( d_table, d_entry);
 				} else {
 					/* DB has newer state, just update fields from DB */
 					LM_DBG("DB has newer state \n");
@@ -1525,6 +1535,7 @@ static int sync_dlg_db_mem(void)
 								shm_realloc(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.len);
 							if (!known_dlg->legs[DLG_CALLER_LEG].r_cseq.s) {
 								LM_ERR("no more shm\n");
+								dlg_unlock( d_table, d_entry);
 								goto next_dialog;
 							}
 						}
@@ -1542,6 +1553,7 @@ static int sync_dlg_db_mem(void)
 								shm_realloc(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.len);
 							if (!known_dlg->legs[callee_leg_idx].r_cseq.s) {
 								LM_ERR("no more shm\n");
+								dlg_unlock( d_table, d_entry);
 								goto next_dialog;
 							}
 						}
@@ -1573,6 +1585,8 @@ static int sync_dlg_db_mem(void)
 					if (!VAL_NULL(values+19))
 						read_dialog_profiles( VAL_STR(values+19).s,
 							strlen(VAL_STR(values+19).s), known_dlg,1);
+
+					dlg_unlock( d_table, d_entry);
 				}
 
 			}
@@ -1593,8 +1607,10 @@ static int sync_dlg_db_mem(void)
 
 	}while (nr_rows>0);
 
+	dialog_dbf.free_result(dialog_db_handle, res);
 	return 0;
 error:
+	dialog_dbf.free_result(dialog_db_handle, res);
 	return -1;
 }
 
