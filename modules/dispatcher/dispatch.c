@@ -1863,12 +1863,12 @@ void ds_check_timer(unsigned int ticks, void* param)
 	}
 }
 
-int ds_count(struct sip_msg *msg, int set_id, char *cmp, pv_spec_p ret)
+int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret)
 {
 	pv_value_t pv_val;
 	ds_set_p set;
 	ds_dest_p dst;
-	int count = 0;
+	int count, active = 0, inactive = 0, probing = 0;
 
 	set = ds_lists[*crt_idx];
 
@@ -1885,60 +1885,45 @@ int ds_count(struct sip_msg *msg, int set_id, char *cmp, pv_spec_p ret)
 		return -1;
 	}
 
-	dst = set->dlist;
+	for (dst = set->dlist; dst; dst = dst->next)
+	{
+		if (!(dst->flags & (DS_INACTIVE_DST|DS_PROBING_DST)))
+		{
+			active++;
+
+		} else if (dst->flags & DS_INACTIVE_DST)
+		{
+			inactive++;
+
+		} else if (dst->flags & DS_PROBING_DST)
+		{
+			probing++;
+		}
+	}
+
 	switch (*cmp)
 	{
-		case 0:
-		case 7:
-			count = set->nr;
+		case DS_COUNT_ACTIVE:
+			count = active;
 			break;
 
-		/* count only active destinations */
-		case 1:
-			while (dst)
-			{
-				if (!(dst->flags & (DS_INACTIVE_DST|DS_PROBING_DST)))
-					count++;
-				
-				dst = dst->next;
-			}
-			break;
-		case 3:
-		case 5:
-			*cmp = (*cmp == 3 ? DS_INACTIVE_DST : DS_PROBING_DST);
-
-			while (dst)
-			{
-				if (!(dst->flags & (DS_INACTIVE_DST|DS_PROBING_DST)) ||
-					  dst->flags & (*cmp))
-					count++;
-
-				dst = dst->next;
-			}
+		case DS_COUNT_ACTIVE|DS_COUNT_INACTIVE:
+		case DS_COUNT_ACTIVE|DS_COUNT_PROBING:
+			count = (*cmp & DS_COUNT_INACTIVE ? active + inactive :
+												active + probing);
 			break;
 
-		/* count only inactive / probing / or i&p destinations */
-		case 2:
-			*cmp = DS_INACTIVE_DST;
+		case DS_COUNT_INACTIVE:
+		case DS_COUNT_PROBING:
+			count = (*cmp == DS_COUNT_INACTIVE ? inactive : probing);
 			break;
-		case 4:
-			*cmp = DS_PROBING_DST;
-			break;
-		case 6:
-			*cmp = DS_INACTIVE_DST|DS_PROBING_DST;
+
+		case DS_COUNT_INACTIVE|DS_COUNT_PROBING:
+			count = inactive + probing;
 			break;
 
 		default:
-			LM_ERR("BAD FIXUP!\n");
-			return -1;
-	}
-
-	while (dst)
-	{
-		if (dst->flags & (*cmp))
-			count++;
-
-		dst = dst->next;
+			count = active + inactive + probing;
 	}
 
 	pv_val.flags = PV_TYPE_INT;

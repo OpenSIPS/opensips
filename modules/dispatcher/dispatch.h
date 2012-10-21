@@ -57,6 +57,10 @@
 
 #define DS_MAX_IPS  32
 
+#define DS_COUNT_ACTIVE     1
+#define DS_COUNT_INACTIVE   2
+#define DS_COUNT_PROBING    4
+
 typedef struct _ds_dest
 {
 	str uri;
@@ -141,7 +145,7 @@ int ds_set_state(int group, str *address, int state, int type);
 int ds_mark_dst(struct sip_msg *msg, int mode);
 int ds_print_list(FILE *fout);
 int ds_print_mi_list(struct mi_node* rpl);
-int ds_count(struct sip_msg *msg, int set_id, char *cmp, pv_spec_p ret);
+int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret);
 
 int ds_is_in_list(struct sip_msg *_m, pv_spec_t *addr, pv_spec_t *port,
 		int set, int active_only);

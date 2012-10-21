@@ -130,7 +130,7 @@ static int w_ds_next_dst(struct sip_msg*, char*, char*);
 static int w_ds_next_domain(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst0(struct sip_msg*, char*, char*);
 static int w_ds_mark_dst1(struct sip_msg*, char*, char*);
-static int w_ds_count(struct sip_msg*, char*, char *, char*);
+static int w_ds_count(struct sip_msg*, char*, const char *, char*);
 
 static int w_ds_is_in_list2(struct sip_msg*, char*, char*);
 static int w_ds_is_in_list3(struct sip_msg*, char*, char*, char*);
@@ -643,21 +643,21 @@ static int ds_count_fixup(void** param, int param_no)
 				case 'a':
 				case 'A':
 				case '1':
-					code |= 1;
+					code |= DS_COUNT_ACTIVE;
 					break;
 
 				/* inactive */
 				case 'i':
 				case 'I':
 				case '0':
-					code |= 2;
+					code |= DS_COUNT_INACTIVE;
 					break;
 
 				/* probing */
 				case 'p':
 				case 'P':
 				case '2':
-					code |= 4;
+					code |= DS_COUNT_PROBING;
 					break;
 			}
 		}
@@ -790,7 +790,7 @@ static int w_ds_is_in_list4(struct sip_msg *msg,char *ip,char *port,char *set,
 }
 
 
-static int w_ds_count(struct sip_msg* msg, char *set, char *cmp, char *res)
+static int w_ds_count(struct sip_msg* msg, char *set, const char *cmp, char *res)
 {
 	int s = 0;
 	gparam_p ret = (gparam_p) res;
