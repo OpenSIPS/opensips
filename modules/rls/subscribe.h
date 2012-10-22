@@ -31,7 +31,11 @@
 
 #include <libxml/parser.h>
 #include "../../parser/msg_parser.h"
+#include "../pua/uri_list.h"
 
 int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2);
+int get_resource_list(str* service_uri, str owner_user, str owner_domain,
+		      xmlNodePtr* service_node, xmlDocPtr* rl_doc);
+int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node);
 
 #endif

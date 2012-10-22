@@ -67,6 +67,7 @@ struct subscription
 	int version;
 	int db_flag;
 	str* auth_rules_doc;
+	int internal_update_flag;
 	struct subscription* next;
 
 };

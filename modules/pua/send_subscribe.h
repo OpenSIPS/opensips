@@ -45,6 +45,7 @@ typedef struct subs_info
 	str* extra_headers;
 	int expires;
 	int source_flag;
+	int internal_update_flag;
 	int flag;         /*  it can be : INSERT_TYPE or UPDATE_TYPE; not compulsory */
 	void* cb_param;  /* the parameter for the function to be called on the callback 
 						 for the received reply; it must be allocated in share memory;

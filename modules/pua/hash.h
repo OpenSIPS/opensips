@@ -34,6 +34,7 @@
 #include "../../dprint.h"
 #include "../../parser/msg_parser.h"
 #include "event_list.h"
+#include "uri_list.h"
 
 #define PRESENCE_EVENT      1<<0
 #define PWINFO_EVENT        1<<1
@@ -188,5 +189,8 @@ static inline int get_event_flag(str* event)
 
 int update_contact(struct sip_msg* msg, char* str1, char* str2);
 void delete_htable_safe(ua_pres_t* p, unsigned int hash_index);
+
+list_entry_t *get_subs_list(str *did);
+typedef list_entry_t * (*get_subs_list_t)(str *did);
 
 #endif

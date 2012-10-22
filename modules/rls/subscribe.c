@@ -64,10 +64,10 @@ static str pu_404_rpl     = str_init("Not Found");
 
 subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto, 
 		pres_ev_t* event);
-int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node);
 
 int update_rlsubs( subs_t* subs,unsigned int hash_code,
 		int* reply_code, str* reply_str);
+
 
 xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 {
@@ -833,14 +833,43 @@ error:
 
 int send_resource_subs(char* uri, void* param)
 {
+        int duplicate = 0;
 	str pres_uri;
+	str *tmp_str;
+	subs_info_t *s = (subs_info_t *) ((void**)param)[0];
+	list_entry_t **rls_contact_list = (list_entry_t **) ((void**)param)[1];
 
 	pres_uri.s= uri;
 	pres_uri.len= strlen(uri);
 
-	((subs_info_t*)param)->pres_uri= &pres_uri;
+	s->pres_uri= &pres_uri;
 
-	return pua_send_subscribe((subs_info_t*)param);
+        /* Build a list of uris checking each uri exists only once */
+        if ((tmp_str = (str *)pkg_malloc(sizeof(str))) == NULL)
+        {
+                LM_ERR("out of private memory\n");
+                return -1;
+        }
+
+        if ((tmp_str->s = (char *)pkg_malloc(sizeof(char) * pres_uri.len)) == NULL)
+        {
+                pkg_free(tmp_str);
+                LM_ERR("out of private memory\n");
+                return -1;
+        }
+
+        memcpy(tmp_str->s, pres_uri.s, pres_uri.len);
+        tmp_str->len = pres_uri.len;
+        *rls_contact_list = list_insert(tmp_str, *rls_contact_list, &duplicate);
+        if (duplicate != 0)
+        {
+                LM_WARN("%.*s has %.*s multiple times in the same resource list\n",
+                        s->watcher_uri->len, s->watcher_uri->s,
+                        s->pres_uri->len, s->pres_uri->s);
+                return 1;
+        }
+
+	return pua_send_subscribe(s);
 }
 
 int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
@@ -849,8 +878,12 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	subs_info_t s;
 	str wuri= {0, 0};
 	str did_str= {0, 0};
+	str *tmp_str;
 	int cont_no= 0;
 	static str ehdr= {SUBS_EXTRA_HDRS, SUBS_EXTRA_HDRS_LEN};
+	list_entry_t *rls_contact_list = NULL;
+	list_entry_t *rls_subs_list = NULL;
+	void* params[2] = {&s, &rls_contact_list};
 
 	/* if is initial send an initial Subscribe 
 	 * else search in hash table for a previous subscription */
@@ -883,9 +916,10 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	s.expires= subs->expires;
 	s.source_flag= RLS_SUBSCRIBE;
 	s.extra_headers= &ehdr;
+	s.internal_update_flag = subs->internal_update_flag;
 
 	if(process_list_and_exec(rl_node, subs->from_user, subs->from_domain,
-	                        send_resource_subs, (void*)(&s), &cont_no) < 0)
+	                        send_resource_subs, params, &cont_no) < 0)
 	{
 		LM_ERR("while processing list\n");
 		goto error;
@@ -894,6 +928,34 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	LM_INFO("Subscription from %.*s for resource list uri %.*s expanded to"
 			" %d contacts\n", wuri.len, wuri.s, subs->pres_uri.len,
 			subs->pres_uri.s, cont_no);
+
+	if (s.internal_update_flag)
+	{
+		s.internal_update_flag = 0;
+
+		rls_subs_list = pua_get_subs_list(&did_str);
+
+		while ((tmp_str = list_pop(&rls_contact_list)) != NULL)
+		{
+			rls_subs_list = list_remove(*tmp_str, rls_subs_list);
+			pkg_free(tmp_str->s);
+			pkg_free(tmp_str);
+		}
+
+		while ((tmp_str = list_pop(&rls_subs_list)) != NULL)
+		{
+			LM_DBG("Removing subscription for %.*s\n", tmp_str->len, tmp_str->s);
+			s.expires = 0;
+			send_resource_subs(tmp_str->s, params);
+			pkg_free(tmp_str->s);
+			pkg_free(tmp_str);
+		}
+	}
+
+	if (rls_contact_list != NULL)
+        {
+                list_free(&rls_contact_list);
+        }
 
 	pkg_free(wuri.s);
 	pkg_free(did_str.s);

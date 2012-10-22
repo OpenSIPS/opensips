@@ -917,6 +917,21 @@ int send_subscribe(subs_info_t* subs)
         */
 
 		dlg_t* td= NULL;
+
+		if (subs->internal_update_flag)
+		{
+			LM_DBG("attempting to re-SUBSCRIBE on internal dialog update - skipping\n");
+			lock_release(&HashT->p_records[hash_index].lock);
+			goto done;
+		}
+
+		if (presentity->to_tag.len == 0)
+		{
+			LM_WARN("attempting to re-SUBSCRIBE to temporary (non-established) dialog - skipping\n");
+			lock_release(&HashT->p_records[hash_index].lock);
+			goto done;
+		}
+
 		td= pua_build_dlg_t(presentity);
 		if(td== NULL)
 		{

@@ -43,6 +43,7 @@
 #include "../../ut.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
+#include "../../mi/mi.h"
 #include "../tm/tm_load.h"
 #include "../signaling/signaling.h"
 #include "../presence/bind_presence.h"
@@ -51,6 +52,7 @@
 #include "../pua/pidf.h"
 #include "../xcap_client/xcap_functions.h"
 #include "rls.h"
+#include "subscribe.h"
 #include "notify.h"
 #include "resource_notify.h"
 
@@ -110,6 +112,7 @@ xcapGetNewDoc_t xcap_GetNewDoc= 0;
 /* functions imported from pua module*/
 send_subscribe_t pua_send_subscribe;
 get_record_id_t pua_get_record_id;
+get_subs_list_t pua_get_subs_list;
 
 /* TM bind */
 struct tm_binds tmb;
@@ -154,19 +157,17 @@ str str_doc_uri_col = str_init("doc_uri");
 
 static int mod_init(void);
 static int child_init(int);
-int rls_handle_subscribe(struct sip_msg*, char*, char*);
 void destroy(void);
 int rlsubs_table_restore();
 void rlsubs_table_update(unsigned int ticks,void *param);
 int add_rls_event(modparam_t type, void* val);
 int parse_xcap_root(void);
+static struct mi_root* mi_update_subscriptions(struct mi_root* cmd, void* param);
 
 static cmd_export_t cmds[]=
 {
-	{"rls_handle_subscribe",  (cmd_function)rls_handle_subscribe,   0,
-			0, 0, REQUEST_ROUTE},
-	{"rls_handle_notify",     (cmd_function)rls_handle_notify,      0,
-			0, 0, REQUEST_ROUTE},
+	{"rls_handle_subscribe",     (cmd_function)rls_handle_subscribe, 0, 0,               0, REQUEST_ROUTE},
+	{"rls_handle_notify",        (cmd_function)rls_handle_notify,    0, 0,               0, REQUEST_ROUTE},
 	{0, 0, 0, 0, 0, 0 }
 };
 
@@ -189,6 +190,11 @@ static param_export_t params[]={
 	{  0,                       0,              0                       }
 };
 
+static mi_export_t mi_cmds[] = {
+	{ "rls_update_subscriptions", 0, mi_update_subscriptions, 0,  0,  0},
+	{  0, 0, 0, 0,  0, 0}
+};
+
 /** module exports */
 struct module_exports exports= {
 	"rls",                      /* module name */
@@ -197,7 +203,7 @@ struct module_exports exports= {
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
-	0,                          /* exported MI functions */
+	mi_cmds,                    /* exported MI functions */
 	0,                          /* exported pseudo-variables */
 	0,                          /* extra processes */
 	mod_init,                   /* module initialization function */
@@ -399,6 +405,13 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_get_record_id= pua.get_record_id;
+
+	if(pua.get_subs_list == NULL)
+	{
+		LM_ERR("Could not import get_subs_list\n");
+		return -1;
+	}
+	pua_get_subs_list= pua.get_subs_list;
 
 	if(!rls_integrated_xcap_server)
 	{
@@ -762,3 +775,127 @@ int add_rls_event(modparam_t type, void* val)
 	return 0;
 
 }
+
+
+static void update_subs(subs_t *subs)
+{
+        xmlDocPtr doc = NULL;
+        xmlNodePtr service_node = NULL;
+
+        if ((subs->expires -= (int)time(NULL)) <= 0)
+        {
+                LM_WARN("found expired subscription for: %.*s\n",
+                        subs->pres_uri.len, subs->pres_uri.s);
+                goto done;
+        }
+
+        if(get_resource_list(&subs->pres_uri, subs->from_user,
+                                subs->from_domain, &service_node, &doc) < 0)
+        {
+                LM_ERR("failed getting resource list for: %.*s\n",
+                        subs->pres_uri.len, subs->pres_uri.s);
+                goto done;
+        }
+        if(doc==NULL)
+        {
+                LM_WARN("no document returned for: %.*s\n",
+                        subs->pres_uri.len, subs->pres_uri.s);
+                goto done;
+        }
+
+        subs->internal_update_flag = 1;
+
+        if(resource_subscriptions(subs, service_node) < 0)
+        {
+                LM_ERR("failed sending subscribe requests to resources in list\n");
+                goto done;
+        }
+
+done:
+        if (doc != NULL)
+                xmlFreeDoc(doc);
+}
+
+
+static struct mi_root* mi_update_subscriptions(struct mi_root* cmd, void* param)
+{
+	struct mi_node* node = NULL;
+	struct sip_uri parsed_uri;
+	str uri;
+	int i;
+        subs_t *subs, *subs_copy;
+
+	LM_DBG("start\n");
+
+	node = cmd->node.kids;
+	if(node == NULL)
+		return init_mi_tree(404, "No parameters", 13);
+
+	/* Get presentity URI */
+	uri = node->value;
+	if(uri.s == NULL || uri.len== 0)
+	{
+		LM_ERR( "empty uri\n");
+		return init_mi_tree(404, "Empty presentity URI", 20);
+	}
+
+	if(node->next!= NULL)
+	{
+		LM_ERR( "Too many parameters\n");
+		return init_mi_tree(400, "Too many parameters", 19);
+	}
+
+	if (parse_uri(uri.s, uri.len, &parsed_uri) < 0)
+	{
+		LM_ERR("bad uri: %.*s\n", uri.len, uri.s);
+		return 0;
+	}
+
+	LM_DBG("watcher username: %.*s, watcher domain: %.*s\n",
+		parsed_uri.user.len, parsed_uri.user.s,
+		parsed_uri.host.len, parsed_uri.host.s);
+
+	if (rls_table == NULL)
+	{
+		LM_ERR("rls_table is NULL\n");
+		return 0;
+	}
+
+	/* Search through the entire subscription table for matches... */
+	for (i = 0; i < hash_size; i++)
+	{
+		lock_get(&rls_table[i].lock);
+
+		subs = rls_table[i].entries->next;
+
+		while (subs != NULL)
+		{
+			if (subs->from_user.len == parsed_uri.user.len &&
+			    strncmp(subs->from_user.s, parsed_uri.user.s, parsed_uri.user.len) == 0 &&
+			    subs->from_domain.len == parsed_uri.host.len &&
+			    strncmp(subs->from_domain.s, parsed_uri.host.s, parsed_uri.host.len) == 0)
+			{
+				subs_copy = NULL;
+
+				LM_DBG("found matching RLS subscription for: %.*s\n",
+					subs->pres_uri.len, subs->pres_uri.s);
+
+				if ((subs_copy = pres_copy_subs(subs, PKG_MEM_TYPE)) == NULL)
+				{
+					LM_ERR("subs_t copy failed\n");
+					lock_release(&rls_table[i].lock);
+					return 0;
+				}
+
+				update_subs(subs_copy);
+				pkg_free(subs_copy);
+			}
+			subs = subs->next;
+		}
+		lock_release(&rls_table[i].lock);
+	}
+
+	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+}
+
+
