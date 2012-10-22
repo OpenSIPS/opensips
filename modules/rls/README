@@ -2,16 +2,20 @@ Resource List Server
 
 Anca-Maria Vamanu
 
-   voice-system.ro
+   Voice Sistem SRL
 
 Edited by
 
 Anca-Maria Vamanu
 
-   Copyright © 2007 voice-system.ro
+Edited by
+
+Saul Ibarra Corretge
+
+   Copyright © 2007 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2012-10-22 13:41:25 +0200
+                              (Mon, 22 Oct 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -46,7 +50,11 @@ Anca-Maria Vamanu
               1.4.1. rls_handle_subscribe()
               1.4.2. rls_handle_notify()
 
-        1.5. Installation
+        1.5. Exported MI Functions
+
+              1.5.1. rls_update_subscriptions
+
+        1.6. Installation
 
    2. Developer Guide
 
@@ -348,7 +356,25 @@ if(method=="NOTIFY")
     rls_handle_notify();
 ...
 
-1.5. Installation
+1.5. Exported MI Functions
+
+1.5.1.  rls_update_subscriptions
+
+   Triggers updating backend subscriptions after a resources-list
+   or rls-services document has been updated.
+
+   Name: rls_update_subscriptions
+
+   Parameters:
+     * presentity_uri : the uri of the user who made the change
+       and whose subscriptions should be updated
+
+   MI FIFO Command Format:
+:rls_update_subscriptions:fifo_reply
+sip:alice@atlanta.com
+_empty_line_
+
+1.6. Installation
 
    The module requires 2 table in OpenSIPS database:
    rls_presentity and rls_watchers.The SQL syntax to create them
