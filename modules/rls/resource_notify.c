@@ -50,7 +50,7 @@ int parse_subs_state(str auth_state, str* reason, int* expires)
 {
         static str unknown = str_init("unknown");
 	str str_exp;
-	char* smc= NULL;
+	char* smc= NULL, *ptr;
 	int len, flag= -1, unknown_reason = 0;
 
 
@@ -108,29 +108,28 @@ set_reason:
 		return TERMINATED_STATE;
 	}
 
-	if(flag> 0)
+	if(flag > 0)
 	{
-		smc= strchr(auth_state.s, ';');
-		if(smc== NULL)
-		{
-			LM_ERR("active or pending state and no expires parameter found");
-			return -1;
-		}
-		if(strncasecmp(smc+1, "expires=", 8))
-		{
-			LM_ERR("active or pending state and no expires parameter found");
-			return -1;
-		}
-		str_exp.s= smc+ 9;
-		str_exp.len= auth_state.s+ auth_state.len- smc- 9;
+	        *expires = -1;
+	        ptr = auth_state.s;
+		while ((smc = strchr(ptr, ';')))
+                {
+                        if(strncasecmp(smc+1, "expires=", 8) == 0)
+                        {
+                                str_exp.s = smc + 9;
+                                str_exp.len = auth_state.s + auth_state.len - smc - 9;
 
-		if( str2int(&str_exp, (unsigned int*)expires)< 0)
-		{
-			LM_ERR("while getting int from str\n");
-			return -1;
-		}
+                                if(str2int(&str_exp, (unsigned int*)expires) < 0)
+                                {
+                                        LM_ERR("while extracting expires value\n");
+                                        return -1;
+                                }
+                                break;
+                        }
+                        ptr = smc;
+                }
 		return flag;
-	
+
 	}
 	return -1;
 
@@ -155,7 +154,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	str reason = {0, 0};
 	int auth_flag;
 	struct hdr_field* hdr= NULL;
-	int n, expires= -1;
+	int n, expires = -1;
 	str ctype= {0, 0};
 	int err_ret = -1;
 
@@ -336,12 +335,15 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	query_vals[n_query_cols].nul = 0;
 	query_vals[n_query_cols].val.str_val= body;
 	n_query_cols++;
-	
-	query_cols[n_query_cols]= &str_expires_col;
-	query_vals[n_query_cols].type = DB_INT;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val= expires+ (int)time(NULL);
-	n_query_cols++;
+
+        if (expires > -1)
+        {
+                query_cols[n_query_cols]= &str_expires_col;
+                query_vals[n_query_cols].type = DB_INT;
+                query_vals[n_query_cols].nul = 0;
+                query_vals[n_query_cols].val.int_val = expires + (int)time(NULL);
+                n_query_cols++;
+        }
 
 	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0) 
 	{
