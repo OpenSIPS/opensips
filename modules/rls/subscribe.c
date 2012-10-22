@@ -851,7 +851,7 @@ int send_resource_subs(char* uri, void* param)
                 return -1;
         }
 
-        if ((tmp_str->s = (char *)pkg_malloc(sizeof(char) * pres_uri.len)) == NULL)
+        if ((tmp_str->s = (char *)pkg_malloc(sizeof(char) * pres_uri.len + 1)) == NULL)
         {
                 pkg_free(tmp_str);
                 LM_ERR("out of private memory\n");
@@ -860,6 +860,7 @@ int send_resource_subs(char* uri, void* param)
 
         memcpy(tmp_str->s, pres_uri.s, pres_uri.len);
         tmp_str->len = pres_uri.len;
+	tmp_str->s[tmp_str->len] = '\0';
         *rls_contact_list = list_insert(tmp_str, *rls_contact_list, &duplicate);
         if (duplicate != 0)
         {
