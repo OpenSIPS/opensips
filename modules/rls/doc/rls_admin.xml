@@ -461,6 +461,39 @@ if(method=="NOTIFY")
 </section>
 
 <section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">rls_update_subscriptions</function>
+		</title>
+		<para>
+		Triggers updating backend subscriptions after a resources-list or rls-services document
+		has been updated.
+		</para>
+		<para>
+		Name: <emphasis>rls_update_subscriptions</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para>presentity_uri : the uri of the user who made the change
+				and whose subscriptions should be updated</para>
+			</listitem>
+                </itemizedlist>
+
+        <para>
+		MI FIFO Command Format:
+		</para>
+        <programlisting  format="linespecific">
+:rls_update_subscriptions:fifo_reply
+sip:alice@atlanta.com
+_empty_line_
+	</programlisting>
+	</section>
+
+<section>
+
+<section>
 	<title>Installation</title>
 	<para>
 	The module requires 2 table in OpenSIPS database: rls_presentity
