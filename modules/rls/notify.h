@@ -38,41 +38,47 @@
 #define BUF_REALLOC_SIZE       2048
 #define MAX_FORWARD 70
 
-#define REALLOC_BUF\
-		do{ \
-		size+= BUF_REALLOC_SIZE;\
-		buf= (char*)pkg_realloc(buf, size);\
-		if(buf== NULL) \
-		{	ERR_MEM("constr_multipart_body");} \
-		}while(0)
 
-#define APPEND_MULTIPART_BODY() do {\
-		add_len = bstr.len+cid.len+ctype.len+body.len +79;\
-		if(buf_len+ add_len > size)\
-			REALLOC_BUF;\
-		buf_len+= sprintf(buf+ buf_len, "--%.*s\r\n", bstr.len, bstr.s);\
-		buf_len+= sprintf(buf+ buf_len, "Content-Transfer-Encoding: binary\r\n");\
-		buf_len+= sprintf(buf+ buf_len, "Content-ID: <%.*s>\r\n",cid.len, cid.s);\
-		buf_len+= sprintf(buf+ buf_len, "Content-Type: %s\r\n\r\n",ctype.s);\
-		LM_DBG("last char is %d\n", body.s[body.len-1]);\
-		if(body.s[body.len -1] == '\n')\
-			body.len--;\
-		if(body.s[body.len -1] == '\r')\
-			body.len--;\
-		buf_len+= sprintf(buf+ buf_len,"%.*s\r\n\r\n", body.len, body.s);\
-}while(0)
+static inline int append_multipart_body(char **buf, int *buf_len, int *size, str *bstr, str *cid, str *ctype, str *body)
+{
+        int add_body, len;
+        add_body = !!body->len;
+        len = 4+bstr->len + 35 + 2;
+        if (add_body)
+            len += 16+cid->len + 18+ctype->len +2+body->len;
+        while(*buf_len + len > *size)
+        {
+		*size += BUF_REALLOC_SIZE;
+		*buf = (char*)pkg_realloc(*buf, *size);
+		if(*buf == NULL)
+		    return -1;
+        }
+        *buf_len += sprintf(*buf + *buf_len, "--%.*s\r\n", bstr->len, bstr->s);
+        *buf_len += sprintf(*buf + *buf_len, "Content-Transfer-Encoding: binary\r\n");
+        if (add_body)
+        {
+                *buf_len += sprintf(*buf + *buf_len, "Content-ID: <%.*s>\r\n",cid->len, cid->s);
+                *buf_len += sprintf(*buf + *buf_len, "Content-Type: %.*s\r\n\r\n",ctype->len, ctype->s);
+                *buf_len += sprintf(*buf + *buf_len,"%.*s\r\n", body->len, body->s);
+        }
+        *buf_len += sprintf(*buf + *buf_len,"\r\n");
+        return 0;
+}
+
 
 int send_full_notify(subs_t* subs, xmlNodePtr rl_node, 
 		int version, str* rl_uri, unsigned int hash_code);
 
 typedef int (*list_func_t)(char* uri, void* param); 
 
-int process_list_and_exec(xmlNodePtr list, list_func_t f, void* p, int* c);
+int process_list_and_exec(xmlNodePtr list, str username, str domain, list_func_t f, void* p, int* c);
 char* generate_string(int seed, int length);
 char* generate_cid(char* uri, int uri_len);
 char* get_auth_string(int flag);
 int agg_body_sendn_update(str* rl_uri, str boundary_string, str* rlmi_body,
 		str* multipart_body, subs_t* subs, unsigned int hash_code);
 int rls_send_notify(subs_t* subs,str* body, str* start_cid, str* boundary_string);
+
+extern char* global_instance_id;
 
 #endif

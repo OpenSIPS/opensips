@@ -72,9 +72,8 @@ int update_rlsubs( subs_t* subs,unsigned int hash_code,
 xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 {
 	xmlNodePtr rl_node, node;
-	char* uri;
 	struct sip_uri sip_uri;
-	str uri_str;
+	str uri, uri_str, unescaped_uri;
 
 	rl_node= XMLDocGetNodeByName(doc, "rls-services", NULL);
 	if(rl_node== NULL)
@@ -86,20 +85,33 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 	{
 		if(xmlStrcasecmp(node->name,(unsigned char*)"service")== 0)
 		{
-			uri= XMLNodeGetAttrContentByName(node, "uri");
-			if(parse_uri(uri, strlen(uri), &sip_uri)< 0)
+			uri.s = XMLNodeGetAttrContentByName(node, "uri");
+			uri.len = strlen(uri.s);
+			unescaped_uri.s = (char *)pkg_malloc(uri.len);
+			if (unescaped_uri.s == NULL)
+                        {
+				LM_ERR("failed to allocate pkg mem\n");
+				xmlFree(uri.s);
+				return NULL;
+                        }
+			un_escape(&uri, &unescaped_uri);
+                        LM_DBG("uri after un-escaping: %.*s\n", unescaped_uri.len, unescaped_uri.s);
+			if(parse_uri(unescaped_uri.s, unescaped_uri.len, &sip_uri)< 0)
 			{
 				LM_ERR("failed to parse uri\n");
-				xmlFree(uri);
+				xmlFree(uri.s);
+				pkg_free(unescaped_uri.s);
 				return NULL;
 			}
 			if(uandd_to_uri(sip_uri.user, sip_uri.host, &uri_str)< 0)
 			{
 				LM_ERR("failed to construct uri from user and domain\n");
-				xmlFree(uri);
+				xmlFree(uri.s);
+				pkg_free(unescaped_uri.s);
 				return NULL;
 			}
-			xmlFree(uri);
+			xmlFree(uri.s);
+			pkg_free(unescaped_uri.s);
 			if(uri_str.len== service_uri->len && 
 					strncmp(uri_str.s, service_uri->s, uri_str.len) == 0)
 			{
@@ -872,12 +884,13 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	s.source_flag= RLS_SUBSCRIBE;
 	s.extra_headers= &ehdr;
 
-	if(process_list_and_exec(rl_node, send_resource_subs,(void*)(&s), 
-				&cont_no)< 0)
+	if(process_list_and_exec(rl_node, subs->from_user, subs->from_domain,
+	                        send_resource_subs, (void*)(&s), &cont_no) < 0)
 	{
 		LM_ERR("while processing list\n");
 		goto error;
 	}
+
 	LM_INFO("Subscription from %.*s for resource list uri %.*s expanded to"
 			" %d contacts\n", wuri.len, wuri.s, subs->pres_uri.len,
 			subs->pres_uri.s, cont_no);

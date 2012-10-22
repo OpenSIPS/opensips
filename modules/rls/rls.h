@@ -167,6 +167,7 @@ extern str str_domain_col;
 extern str str_doc_type_col;
 extern str str_etag_col;
 extern str str_doc_col;
+extern str str_doc_uri_col;
 
 #define DID_SEP_LEN   strlen(DID_SEP)
 #define DID_SEP       ";"

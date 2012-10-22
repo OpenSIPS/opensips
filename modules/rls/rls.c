@@ -66,7 +66,7 @@ db_func_t rls_dbf;
 /** modules variables */
 str server_address= {0, 0};
 str presence_server= {0, 0};
-int waitn_time= 10;
+int waitn_time = 50;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
 str rls_xcap_table= str_init("xcap");
@@ -147,6 +147,7 @@ str str_domain_col = str_init("domain");
 str str_doc_type_col = str_init("doc_type");
 str str_etag_col = str_init("etag");
 str str_doc_col = str_init("doc");
+str str_doc_uri_col = str_init("doc_uri");
 
 
 /** module functions */
@@ -346,10 +347,7 @@ static int mod_init(void)
 	rls_db = NULL;
 
 	if(waitn_time<= 0)
-		waitn_time= 5;
-	
-	if(waitn_time<= 0)
-		waitn_time= 100;
+		waitn_time= 50;
 
 	/* bind libxml wrapper functions */
 
@@ -424,7 +422,7 @@ static int mod_init(void)
 			return -1;
 		}
 	}
-	register_timer(timer_send_notify,0, waitn_time);
+        register_timer(timer_send_notify, 0, waitn_time);
 	
 	register_timer(rls_presentity_clean, 0, clean_period);
 	
