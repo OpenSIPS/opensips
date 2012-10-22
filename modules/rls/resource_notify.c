@@ -231,17 +231,6 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		LM_ERR("unrecognized event package\n");
 		goto error;
 	}
-	if(pua_get_record_id(&dialog, &res_id)< 0) // verify if within a stored dialog
-	{
-		LM_ERR("error occured while trying to get dialog record id\n");
-		goto error;
-	}
-	if(res_id== 0)
-	{
-		LM_DBG("no dialog match found in hash table\n");
-		err_ret = 2;
-		goto error;
-	}
 
 	/* extract the subscription state */
 	hdr = get_header_by_static_name( msg, "Subscription-State");
@@ -259,6 +248,24 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 		LM_ERR("while parsing 'Subscription-State' header\n");
 		goto error;
 	}
+
+	if(pua_get_record_id(&dialog, &res_id)< 0) // verify if within a stored dialog
+	{
+		LM_ERR("error occured while trying to get dialog record id\n");
+		goto error;
+	}
+	if(res_id== 0)
+	{
+		LM_DBG("no dialog match found in hash table\n");
+		/* The PUA module removes the subscriptions shortly after a 200 OK with Expires: 0 is received,
+		 * so if we can't find the subscription for this NOTIFY and it's in the terminated
+		 * state just reply a 200 OK, nobody should get hurt. */
+		if (auth_flag == TERMINATED_STATE)
+		        goto done;
+		err_ret = 2;
+		goto error;
+	}
+
 	if(msg->content_type== NULL || msg->content_type->body.s== NULL)
 	{
 		LM_DBG("cannot find content type header\n");
@@ -375,6 +382,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
                 }
 	}
 
+done:
 	if( rls_sigb.reply(msg, 200, &su_200_rpl, 0) < 0)
 	{
 		LM_ERR("failed to send SIP reply\n");
@@ -382,8 +390,11 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	if(reason.s)
 	        pkg_free(reason.s);
-	pkg_free(res_id->s);
-	pkg_free(res_id);
+	if (res_id)
+        {
+	        pkg_free(res_id->s);
+	        pkg_free(res_id);
+        }
 
 	return 1;
 
