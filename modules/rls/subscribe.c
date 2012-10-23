@@ -86,6 +86,11 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 		if(xmlStrcasecmp(node->name,(unsigned char*)"service")== 0)
 		{
 			uri.s = XMLNodeGetAttrContentByName(node, "uri");
+			if (uri.s == NULL)
+			{
+			        LM_DBG("failed to fetch 'uri' in service [invalid XML from XCAP]\n");
+			        continue;
+			}
 			uri.len = strlen(uri.s);
 			unescaped_uri.s = (char *)pkg_malloc(uri.len);
 			if (unescaped_uri.s == NULL)
