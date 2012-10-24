@@ -138,11 +138,11 @@ fi
 for TABLE in $STANDARD_TABLES; do
 	sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE $TABLE TO $DBRWUSER;"
 	if [ $TABLE != "version" ] ; then
-			mdbg "creating table: $TABLE"
+		mdbg "creating table: $TABLE"
 		if [ $TABLE = "dr_gateways" ] 
 		then
 			mdbg "creating table 1: $TABLE"
-			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_gwid_seq TO $DBRWUSER;"
+			sql_query "$1" "GRANT ALL PRIVILEGES ON TABLE "$TABLE"_id_seq TO $DBRWUSER;"
 		elif [ $TABLE = "dr_rules" ] 
 		then
 			mdbg "creating table 2: $TABLE"
