@@ -522,8 +522,8 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 			if(cols==NULL) {LM_ERR("oom\n");return -1;}
 			db_tables->cols = cols;
 			cols = &db_tables->cols[db_tables->cols_size];
-			cols->type=-1;
 			memset(cols, 0, sizeof(ph_table_col_t));
+			cols->type=-1;
 			/* Populate the field */
 			field.s =
 				ph_xmlNodeGetNodeContentByName(node->children,
@@ -625,7 +625,7 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 					cols->type=DB_STRING;
 				else if(strncmp("DB_BITMAP",val,9)==0)
 					cols->type=DB_BITMAP;
-			}else if(val_len==10){
+			}else if(val_len==11){
 				if(strncmp("DB_DATETIME",val,10)==0)
 					cols->type=DB_DATETIME;
 			}
@@ -1927,37 +1927,6 @@ int ph_parse_url(const char* url, int* mod, int* cmd)
 }
 
 
-int ph_parse_tree(str* buf)
-{
-	str name = {NULL, 0};
-	str value = {NULL, 0};
-	char *start, *pmax;
-
-	if (buf->len == 0)
-		return 0;
-
-	start = buf->s;
-	pmax = buf->s + buf->len;
-	LM_DBG("original: [%.*s]\n",(int)(pmax-start),start);
-	while (start<=pmax) {
-		/* remove leading spaces */
-		//for(;start<pmax&&isspace((int)*start);start++);
-		for(;start<pmax&&*start==' ';start++);
-		if (start==pmax)
-			return 0;
-		value.s=start;
-		/* skip to the next space */
-		//for(;start<pmax&&!isspace((int)*start);start++);
-		for(;start<pmax&&*start!=' ';start++);
-		value.len=(int)(start-value.s);
-		LM_DBG("[%.*s][%.*s]\n",name.len,name.s,value.len,value.s);
-	}
-
-	LM_ERR("Parse error!\n");
-	return -1;
-}
-
-
 int ph_build_form_imput(char **p, char *buf, int max_page_len, int mod, int cmd)
 {
 	unsigned long i, j;
@@ -2285,24 +2254,6 @@ error:
 }
 
 
-int ph_build_page(str *page, int max_page_len, int mod, int cmd)
-{
-	char *p, *buf;
-
-	if (0!=ph_build_content(page, max_page_len, mod, cmd))
-		return -1;
-
-	buf = page->s;
-	p = page->s + page->len;
-
-	return 0;
-//error:
-	LM_ERR("buffer 2 small\n");
-	page->len = p - page->s;
-	return -1;
-}
-
-
 int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table,
 	str *arg, str *page, str *buffer, int mod, int cmd)
 {
@@ -2558,7 +2509,7 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 			s_arg.len = strlen(arg);
 			if(s_arg.len==0){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-					"No argument for clause field #%d: %.*s.",
+					"Empty argument for clause field #%d: %.*s.",
 					i,command->c_keys[i]->len,
 					command->c_keys[i]->s);
 				goto done;
@@ -2796,14 +2747,6 @@ error:
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
 	return -1;
-/*
-build_page:
-	if(c_vals) pkg_free(c_vals);
-	if(q_vals) pkg_free(q_vals);
-	page->len = p - page->s;
-	LM_DBG("building on page [%p:%d]\n", page->s, page->len);
-	return ph_build_page(page, buffer->len, mod, cmd);
-*/
 
 finish_page:
 	if(c_vals) pkg_free(c_vals);
