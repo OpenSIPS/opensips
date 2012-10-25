@@ -452,12 +452,14 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 	}
 	if (type==TMCB_TRANS_CANCELLED) {
-		/* simply attache the dialog to the script
-		   and put one more ref */
-		/* reference and attached to script */
-		ref_dlg(dlg,1);
-		current_dlg_pointer = t->dialog_ctx;
-		return;
+		/* only if we did force match the Cancel to the
+		 * dialog before ( from the script ) */
+		if (current_dlg_pointer == NULL) {
+			/* reference and attached to script */
+			ref_dlg(dlg,1);
+			current_dlg_pointer = t->dialog_ctx;
+			return;
+		}
 	}
 
 	if (type==TMCB_TRANS_DELETED)
