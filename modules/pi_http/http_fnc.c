@@ -2369,6 +2369,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 	}
 	switch(val_type){
 	case DB_STR:
+	case DB_STRING:
 		if(arg->len){
 			val->val.str_val.s = arg->s;
 			val->val.str_val.len = arg->len;
@@ -2391,12 +2392,6 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 		goto done;
 		break;
 	case DB_DOUBLE:
-		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-			"Unexpected type [%d] for field [%.*s]\n",
-			val_type, key->len, key->s);
-		goto done;
-		break;
-	case DB_STRING:
 		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 			"Unexpected type [%d] for field [%.*s]\n",
 			val_type, key->len, key->s);
@@ -2637,6 +2632,7 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 					PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_1d);
 					switch(command->q_types[j]){
 					case DB_STR:
+					case DB_STRING:
 						if(values[j].val.str_val.s==NULL){
 							LM_ERR("NULL\n");
 							goto error;
