@@ -43,6 +43,9 @@
 #define PATH_RC_PARAM		";received="
 #define PATH_RC_PARAM_LEN	(sizeof(PATH_RC_PARAM)-1)
 
+#define PATH_TRANS_PARAM	";transport="
+#define PATH_TRANS_PARAM_LEN	(sizeof(PATH_TRANS_PARAM)-1)
+
 #define	PATH_CRLF		">\r\n"
 #define PATH_CRLF_LEN		(sizeof(PATH_CRLF)-1)
 
@@ -117,12 +120,27 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 	if (recv) {
 		/* TODO: agranig: optimize this one! */
 		src_ip = ip_addr2a(&_m->rcv.src_ip);
-		rcv_addr.s = pkg_malloc(4 + IP_ADDR_MAX_STR_SIZE + 7); /* sip:<ip>:<port>\0 */
+		rcv_addr.s = pkg_malloc(4 + IP_ADDR_MAX_STR_SIZE + 7 +
+			PATH_TRANS_PARAM_LEN + 4); /* sip:<ip>:<port>[;transport=xxxx]\0 */
 		if(!rcv_addr.s) {
 			LM_ERR("no pkg memory left for receive-address\n");
 			goto out4;
 		}
 		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6, "sip:%s:%u", src_ip, _m->rcv.src_port);
+		switch (_m->rcv.proto) {
+			case PROTO_TCP:
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "tcp",PATH_TRANS_PARAM_LEN+3);
+				rcv_addr.len += PATH_TRANS_PARAM_LEN + 3;
+				break;
+			case PROTO_TLS:
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "tls",PATH_TRANS_PARAM_LEN+3);
+				rcv_addr.len += PATH_TRANS_PARAM_LEN + 3;
+				break;
+			case PROTO_SCTP:
+				memcpy(rcv_addr.s+rcv_addr.len, PATH_TRANS_PARAM "sctp",PATH_TRANS_PARAM_LEN+4);
+				rcv_addr.len += PATH_TRANS_PARAM_LEN + 4;
+				break;
+		}
 		l2 = insert_new_lump_before(l2, rcv_addr.s, rcv_addr.len, 0);
 		if (!l2) goto out4;
 	}
@@ -259,18 +277,55 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 {
 	param_hooks_t hooks;
 	param_t *params;
-			
-	if (parse_params(r_param, CLASS_CONTACT, &hooks, &params) != 0) {
+	str r_param_uri;
+	str received = {0, 0};
+	str transport = {0, 0};
+	str dst_uri = {0, 0};
+
+	r_param_uri.s = strdup(r_param->s);
+	r_param_uri.len = r_param->len;
+
+	if (parse_params(r_param, CLASS_ANY, &hooks, &params) != 0) {
 		LM_ERR("failed to parse route parametes\n");
 		return;
 	}
 
-	if (hooks.contact.received) {
-		if (set_dst_uri(_m, &hooks.contact.received->body) != 0) {
+	while(params)
+	{
+		if ( params->name.len == 9 && !strncasecmp(params->name.s, "transport", params->name.len) )
+			transport = params->body;
+
+		if ( params->name.len == 8 && !strncasecmp(params->name.s,"received", params->name.len) )
+			received = params->body;
+
+		params = params->next;
+	}
+
+
+	if (received.len > 0) {
+		if (transport.len > 0) {
+			dst_uri.len = received.len + transport.len;
+			dst_uri.s = pkg_malloc(dst_uri.len);
+			if(!dst_uri.s) {
+				LM_ERR("no pkg memory left for receive-address\n");
+				goto out1;
+			}
+			dst_uri.len = snprintf(dst_uri.s, received.len + PATH_TRANS_PARAM_LEN + 1 + transport.len,
+					"%.*s" PATH_TRANS_PARAM "%.*s", received.len, received.s, transport.len, transport.s);
+		}
+		else
+		{
+			dst_uri.s = received.s;
+			dst_uri.len = received.len;
+		}
+		if (set_dst_uri(_m, &dst_uri) != 0) {
 			LM_ERR("failed to set dst-uri\n");
-			free_params(params);
-			return;
+			goto out1;
 		}
 	}
+
+out1:
+	if (dst_uri.s) pkg_free(dst_uri.s);
 	free_params(params);
+	return;
 }
