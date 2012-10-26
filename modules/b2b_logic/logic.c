@@ -2746,7 +2746,9 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
-		goto errparams.
+		goto error;
+	}
+
 	client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
 			0, 0, 0);
 	if(client_entity == NULL)
