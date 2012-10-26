@@ -95,6 +95,19 @@ typedef struct b2b_scenario
 	struct b2b_scenario* next;
 }b2b_scenario_t;
 
+
+struct b2b_params
+{
+	unsigned int flags; /* for future use */
+	unsigned int init_timeout;
+};
+
+struct b2b_scen_fl {
+	b2b_scenario_t* scenario;
+	struct b2b_params params;
+};
+
+
 extern b2b_scenario_t* script_scenaries;
 extern b2b_scenario_t* extern_scenaries;
 
@@ -110,6 +123,7 @@ extern db_func_t b2bl_dbf;
 extern str b2bl_dbtable;
 extern char* b2bl_db_buf;
 extern int b2bl_db_mode;
+extern unsigned int b2bl_th_init_timeout;
 
 static inline int b2b_get_request_id(str* request)
 {
@@ -148,5 +162,22 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
 b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list);
 b2b_scenario_t* get_scenario_id(str* sid);
 void b2bl_db_init(void);
+
+
+static inline struct b2b_scen_fl* prepare_b2b_scen_fl_struct(void) {
+	struct b2b_scen_fl *scf;
+
+	scf = (struct b2b_scen_fl*)pkg_malloc( sizeof(struct b2b_scen_fl) );
+	if (scf==0)
+	{
+		LM_ERR("no more pkg memory\n");
+		return NULL;
+	}
+	memset(scf, 0, sizeof(struct b2b_scen_fl));
+
+	return scf;
+}
+
+
 
 #endif

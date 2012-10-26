@@ -2631,7 +2631,7 @@ static void gen_fromtag(str* callid, str* fromtag, str* uri, struct sip_msg* msg
 
 
 str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
-		void* cb_param, unsigned int cb_mask, str* custom_hdrs)
+		void* cb_param, unsigned int cb_mask, str* custom_hdrs, struct b2b_params *params)
 {
 	str* server_id = NULL;
 	str* client_id = NULL;
@@ -2691,7 +2691,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->cb_param = cb_param;
 
 	/* if it will not be confirmed -> delete */
-	tuple->lifetime = 60 + get_ticks();
+	tuple->lifetime = params->init_timeout + get_ticks();
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
@@ -2746,9 +2746,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
-		goto error;
-	}
-
+		goto errparams.
 	client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri, &from_uri,
 			0, 0, 0);
 	if(client_entity == NULL)
@@ -3327,7 +3325,7 @@ error:
 	return NULL;
 }
 
-str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
+str* init_request(struct sip_msg* msg, struct b2b_scen_fl *scf,
 	str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	str* key;
@@ -3340,10 +3338,10 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 		return NULL;
 	}
 
-	if(scenario_struct == NULL)
-		key = create_top_hiding_entities(msg, cbf, cb_param, cb_mask, custom_hdrs);
+	if(scf->scenario == NULL)
+		key = create_top_hiding_entities(msg, cbf, cb_param, cb_mask, custom_hdrs, &scf->params);
 	else
-		key = b2b_process_scenario_init(scenario_struct, msg, args,
+		key = b2b_process_scenario_init(scf->scenario, msg, args,
 					cbf, cb_param, cb_mask, custom_hdrs);
 
 	if(key)
@@ -3364,41 +3362,49 @@ str* init_request(struct sip_msg* msg, b2b_scenario_t* scenario_struct,
 str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
 		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
-	b2b_scenario_t* scenario_struct;
+	struct b2b_scen_fl *scf;
 
 	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
+	scf = prepare_b2b_scen_fl_struct();
+	if (scf == NULL)
+	{
+		LM_ERR("no more pkg memory\n");
+		return NULL;
+	}
+	scf->params.init_timeout = b2bl_th_init_timeout;
+
 	if(name->len == B2B_TOP_HIDING_SCENARY_LEN &&
 		strncmp(name->s,B2B_TOP_HIDING_SCENARY,B2B_TOP_HIDING_SCENARY_LEN)==0)
 	{
-		scenario_struct = NULL;
+		scf->scenario = NULL;
 	}
 	else
 	{
-		scenario_struct = get_scenario_id_list(name, script_scenarios);
-		if(!scenario_struct)
+		scf->scenario = get_scenario_id_list(name, script_scenarios);
+		if(!scf->scenario)
 		{
 			LM_ERR("No scenario found with id [%s]\n", name->s);
 			return NULL;
 		}
 	}
 	b2bl_caller = CALLER_MODULE;
-	return init_request(msg, scenario_struct, args, cbf, cb_param, cb_mask, custom_hdrs);
+	return init_request(msg, scf, args, cbf, cb_param, cb_mask, custom_hdrs);
 }
 
 int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6)
 {
 	str* args[MAX_SCENARIO_PARAMS];
-	b2b_scenario_t* scenario_struct;
+	struct b2b_scen_fl *scf;
 	str* key;
 
 	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	/* find the scenario with the corresponding id */
-	scenario_struct = (b2b_scenario_t*)arg1;
+	scf = (struct b2b_scen_fl*)arg1;
 	b2bl_caller = CALLER_SCRIPT;
 
 	/* process the arguments */
@@ -3409,7 +3415,7 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	args[4] = arg6;
 
 	/* call the scenario init processing function */
-	key = init_request(msg, scenario_struct, args, 0, NULL, 0, NULL);
+	key = init_request(msg, scf, args, 0, NULL, 0, NULL);
 	if(key)
 		return 1;
 

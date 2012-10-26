@@ -364,6 +364,24 @@ modparam("b2b_logic", "db_table", "some_table_name")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>b2bl_th_init_timeout</varname> (int)</title>
+		<para>
+			Call setup timeout for topology hiding scenario.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote> </emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_th_init_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_th_init_timeout", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
@@ -379,9 +397,18 @@ modparam("b2b_logic", "db_table", "some_table_name")
 			for which messages certain scenarios must be instantiated.
 		</para>
 		<para>
-			The first parameter is the identifier for the scenario. This is defined
-			in the XML document as an attribute of the root node.
+			The first parameter is the identifier for the scenario and possible flags.
+			This is defined in the XML document as an attribute of the root node
+			or "top hiding" for internal topology hiding scenario.
+			It can be passed as "scenario" or "scenario_name/flags".
 		</para>
+		<para>Meaning of the flags is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>t[nn]</emphasis> -  Call setup timeout for topology hiding scenario.
+			Example: t300.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 			Then it can take at most 4 other parameters that represent the parameters for
 			the xml scenario. The expected number of parameters is also specified as an attribute

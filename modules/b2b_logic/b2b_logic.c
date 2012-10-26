@@ -118,6 +118,7 @@ str init_callid_hdr={0, 0};
 
 str server_address = {0, 0};
 int b2bl_db_mode = WRITE_BACK;
+int unsigned b2bl_th_init_timeout = 60;
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -153,6 +154,7 @@ static param_export_t params[]=
 	{"server_address",  STR_PARAM,                &server_address.s          },
 	{"init_callid_hdr", STR_PARAM,                &init_callid_hdr.s         },
 	{"db_mode",         INT_PARAM,                &b2bl_db_mode              },
+	{"b2bl_th_init_timeout",INT_PARAM,            &b2bl_th_init_timeout      },
 	{0,                    0,                          0                     }
 };
 
@@ -756,6 +758,7 @@ b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list)
 	return 0;
 }
 
+
 b2b_scenario_t* get_scenario_id(str* sid)
 {
 	b2b_scenario_t* scenario;
@@ -775,17 +778,21 @@ b2b_scenario_t* get_scenario_id(str* sid)
 	return get_scenario_id_list(sid, extern_scenarios);
 }
 
+
 static int fixup_b2b_logic(void** param, int param_no)
 {
 	pv_elem_t *model;
 	str s;
+	str flags_s;
+	int st;
+	struct b2b_scen_fl *scf;
 
 	if(param_no== 0)
 		return 0;
 
 	if(*param)
 	{
-		s.s = (char*)(*param); 
+		s.s = (char*)(*param);
 		s.len = strlen(s.s);
 
 		if(pv_parse_format(&s, &model)<0)
@@ -794,7 +801,7 @@ static int fixup_b2b_logic(void** param, int param_no)
 			return E_UNSPEC;
 		}
 
-		/* the first parameter must be the scenario id and must be a string */
+		/* the first parameter must be the scenario id and possible flags, must be a string */
 		if(param_no == 1)
 		{
 			if(model->spec.type != PVT_NONE )
@@ -802,17 +809,55 @@ static int fixup_b2b_logic(void** param, int param_no)
 				LM_ERR("The first parameter is not a string\n");
 				return -1;
 			}
+
+			scf = prepare_b2b_scen_fl_struct();
+			if (scf == NULL)
+			{
+				LM_ERR("no more pkg memory\n");
+				return -1;
+			}
+			scf->params.init_timeout = b2bl_th_init_timeout;
+
+			if ( (flags_s.s = strchr(s.s,'/')) != NULL)
+			{
+				s.len = flags_s.s - s.s;
+				flags_s.s++;
+				flags_s.len = strlen(flags_s.s);
+
+				/* parse flags */
+				for( st=0 ; st< flags_s.len ; st++ ) {
+					switch (flags_s.s[st])
+					{
+						case 't':
+							scf->params.init_timeout = 0;
+							while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
+								scf->params.init_timeout =
+									scf->params.init_timeout*10 + flags_s.s[st+1] - '0';
+								st++;
+							}
+							break;
+						default:
+							LM_WARN("unknown option `%c'\n", *flags_s.s);
+					}
+				}
+			}
+
 			if(s.len == B2B_TOP_HIDING_SCENARY_LEN &&
 				strncmp(s.s,B2B_TOP_HIDING_SCENARY,B2B_TOP_HIDING_SCENARY_LEN)==0)
 			{
-				*param = NULL;
-				return 0;
+				scf->scenario = NULL;
 			}
-			*param = get_scenario_id_list(&s, script_scenarios);
-			if(*param)
-				return 0;
-			LM_ERR("Wrong Scenary ID. No scenario with this ID [%.*s]\n", s.len, s.s);
-			return E_UNSPEC;
+			else
+			{
+				scf->scenario = get_scenario_id_list(&s, script_scenarios);
+				if (!scf->scenario)
+				{
+					LM_ERR("Wrong Scenary ID. No scenario with this ID [%.*s]\n", s.len, s.s);
+					return E_UNSPEC;
+				}
+			}
+			*param=(void*)scf;
+			return 0;
 		}
 
 		*param = (void*)model;
