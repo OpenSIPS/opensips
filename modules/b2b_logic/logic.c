@@ -2691,7 +2691,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->cb_param = cb_param;
 
 	/* if it will not be confirmed -> delete */
-	tuple->lifetime = 60 + get_ticks();
+	tuple->lifetime = b2bl_th_init_timeout + get_ticks();
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,

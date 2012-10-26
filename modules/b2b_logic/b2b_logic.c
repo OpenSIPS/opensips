@@ -118,6 +118,7 @@ str init_callid_hdr={0, 0};
 
 str server_address = {0, 0};
 int b2bl_db_mode = WRITE_BACK;
+int b2bl_th_init_timeout = 60;
 
 /** Exported functions */
 static cmd_export_t cmds[]=
@@ -153,6 +154,7 @@ static param_export_t params[]=
 	{"server_address",  STR_PARAM,                &server_address.s          },
 	{"init_callid_hdr", STR_PARAM,                &init_callid_hdr.s         },
 	{"db_mode",         INT_PARAM,                &b2bl_db_mode              },
+	{"b2bl_th_init_timeout",INT_PARAM,            &b2bl_th_init_timeout      },
 	{0,                    0,                          0                     }
 };
 
