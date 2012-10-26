@@ -28,6 +28,7 @@
 
 #include "../../str.h"
 #include "../../ut.h"
+#include "../../db/db_ut.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../config.h"
@@ -626,7 +627,7 @@ int ph_getDbTableCols(ph_db_url_t *ph_db_urls, ph_db_table_t *db_tables,
 				else if(strncmp("DB_BITMAP",val,9)==0)
 					cols->type=DB_BITMAP;
 			}else if(val_len==11){
-				if(strncmp("DB_DATETIME",val,10)==0)
+				if(strncmp("DB_DATETIME",val,11)==0)
 					cols->type=DB_DATETIME;
 			}
 			if(cols->type==-1){
@@ -2266,6 +2267,7 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 	str host;
 	int port, proto;
 	struct sip_uri uri;
+	char c;
 
 	for(i=0;i<=table->cols_size;i++){
 		if(table->cols[i].type==val_type &&
@@ -2375,40 +2377,66 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			val->val.str_val.s = arg->s;
 			val->val.str_val.len = arg->len;
 		}
-		//LM_DBG("[%s]\n", val->val.str_val.s);
 		break;
 	case DB_INT:
-		if(str2sint(arg,&val->val.int_val)<0){
+		c = arg->s[arg->len];
+		arg->s[arg->len] = '\0';
+		if(db_str2int(arg->s,&val->val.int_val)<0){
+			arg->s[arg->len] = c;
 			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 				"Bogus field %.*s [%.*s].",
 				key->len, key->s, arg->len, arg->s);
 			goto done;
 		}
-		//LM_DBG("[%s]=>[%d]\n", s_arg.s, val->val.int_val);
-		break;
-	case DB_BIGINT:
-		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-			"Unexpected type [%d] for field [%.*s]\n",
-			val_type, key->len, key->s);
-		goto done;
-		break;
-	case DB_DOUBLE:
-		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-			"Unexpected type [%d] for field [%.*s]\n",
-			val_type, key->len, key->s);
-		goto done;
-		break;
-	case DB_DATETIME:
-		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-			"Unexpected type [%d] for field [%.*s]\n",
-			val_type, key->len, key->s);
-		goto done;
+		arg->s[arg->len] = c;
 		break;
 	case DB_BITMAP:
-		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
-			"Unexpected type [%d] for field [%.*s]\n",
-			val_type, key->len, key->s);
-		goto done;
+		c = arg->s[arg->len];
+		arg->s[arg->len] = '\0';
+		if(db_str2int(arg->s,(int*)&val->val.bitmap_val)<0){
+			arg->s[arg->len] = c;
+			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+				"Bogus field %.*s [%.*s].",
+				key->len, key->s, arg->len, arg->s);
+			goto done;
+		}
+		arg->s[arg->len] = c;
+		break;
+	case DB_BIGINT:
+		c = arg->s[arg->len];
+		arg->s[arg->len] = '\0';
+		if(db_str2bigint(arg->s,&val->val.bigint_val)<0){
+			arg->s[arg->len] = c;
+			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+				"Bogus field %.*s [%.*s].",
+				key->len, key->s, arg->len, arg->s);
+			goto done;
+		}
+		arg->s[arg->len] = c;
+		break;
+	case DB_DOUBLE:
+		c = arg->s[arg->len];
+		arg->s[arg->len] = '\0';
+		if(db_str2double(arg->s,&val->val.double_val)<0){
+			arg->s[arg->len] = c;
+			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+				"Bogus field %.*s [%.*s].",
+				key->len, key->s, arg->len, arg->s);
+			goto done;
+		}
+		arg->s[arg->len] = c;
+		break;
+	case DB_DATETIME:
+		c = arg->s[arg->len];
+		arg->s[arg->len] = '\0';
+		if(db_str2time(arg->s,&val->val.time_val)<0){
+			arg->s[arg->len] = c;
+			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
+				"Bogus field %.*s [%.*s].",
+				key->len, key->s, arg->len, arg->s);
+			goto done;
+		}
+		arg->s[arg->len] = c;
 		break;
 	default:
 		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
@@ -2449,7 +2477,7 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 	db_val_t *c_vals = NULL;
 	db_val_t *q_vals = NULL;
 	db_val_t *val;
-	str val_str;
+	str val_str = {NULL, 0};
 	int nr_rows;
 	ph_db_url_t *db_url;
 	db_res_t *res = NULL;
@@ -2642,20 +2670,98 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 							values[j].val.str_val.len,
 							values[j].val.str_val.s,
 							val_str.len, val_str.s);
-					PI_HTTP_COPY(p,
-						val_str.len?val_str:PI_HTTP_NBSP);
+						PI_HTTP_COPY(p,
+							val_str.len?val_str:PI_HTTP_NBSP);
 						break;
 					case DB_INT:
-						val_str.s =
-							int2str(values[j].val.int_val,
-									&val_str.len);
+						val_str.s = p;
+						val_str.len = max_page_len - page->len;
+						if(db_int2str(values[j].val.int_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert int [%d]\n",
+								values[j].val.int_val);
+							goto error;
+						}
+						p += val_str.len;
+						page->len += val_str.len;
 						LM_DBG("   got %.*s[%d]=>"
 							"[%d][%.*s]\n",
 							command->q_keys[j]->len,
 							command->q_keys[j]->s, i,
 							values[j].val.int_val,
 							val_str.len, val_str.s);
-					PI_HTTP_COPY(p,val_str);
+						break;
+					case DB_BITMAP:
+						val_str.s = p;
+						val_str.len = max_page_len - page->len;
+						if(db_int2str(values[j].val.bitmap_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert bitmap [%d]\n",
+								values[j].val.bitmap_val);
+							goto error;
+						}
+						p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[%d]=>"
+							"[%d][%.*s]\n",
+							command->q_keys[j]->len,
+							command->q_keys[j]->s, i,
+							values[j].val.bitmap_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_BIGINT:
+						val_str.s = p;
+						val_str.len = max_page_len - page->len;
+						if(db_bigint2str(values[j].val.bigint_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert bigint [%-lld]\n",
+								values[j].val.bigint_val);
+							goto error;
+						}
+						p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[%d]=>"
+							"[%-lld][%.*s]\n",
+							command->q_keys[j]->len,
+							command->q_keys[j]->s, i,
+							values[j].val.bigint_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_DOUBLE:
+						val_str.s = p;
+						val_str.len = max_page_len - page->len;
+						if(db_double2str(values[j].val.double_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert double [%-10.2f]\n",
+								values[j].val.double_val);
+							goto error;
+						}
+						p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[%d]=>"
+							"[%-10.2f][%.*s]\n",
+							command->q_keys[j]->len,
+							command->q_keys[j]->s, i,
+							values[j].val.double_val,
+							val_str.len, val_str.s);
+						break;
+					case DB_DATETIME:
+						val_str.s = p;
+						val_str.len = max_page_len - page->len;
+						if (db_time2str_nq(values[j].val.time_val,
+									val_str.s, &val_str.len)!=0){
+							LM_ERR("Unable to convert time [%ld]\n",
+								(unsigned long int)values[j].val.time_val);
+							goto error;
+						}
+						p += val_str.len;
+						page->len += val_str.len;
+						LM_DBG("   got %.*s[%d]=>"
+							"[%ld][%.*s]\n",
+							command->q_keys[j]->len,
+							command->q_keys[j]->s, i,
+							(unsigned long int)values[j].val.time_val,
+							val_str.len, val_str.s);
 						break;
 					default:
 						LM_ERR("unexpected type [%d] "
