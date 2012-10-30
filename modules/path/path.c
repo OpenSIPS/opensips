@@ -304,28 +304,29 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 
 	if (received.len > 0) {
 		if (transport.len > 0) {
-			dst_uri.len = received.len + transport.len;
+			dst_uri.len = received.len + PATH_TRANS_PARAM_LEN + 1 + transport.len;
 			dst_uri.s = pkg_malloc(dst_uri.len);
 			if(!dst_uri.s) {
 				LM_ERR("no pkg memory left for receive-address\n");
 				goto out1;
 			}
 			dst_uri.len = snprintf(dst_uri.s, received.len + PATH_TRANS_PARAM_LEN + 1 + transport.len,
-					"%.*s" PATH_TRANS_PARAM "%.*s", received.len, received.s, transport.len, transport.s);
+				"%.*s" PATH_TRANS_PARAM "%.*s", received.len, received.s, transport.len, transport.s);
 		}
 		else
 		{
 			dst_uri.s = received.s;
 			dst_uri.len = received.len;
 		}
-		if (set_dst_uri(_m, &dst_uri) != 0) {
+
+		if (set_dst_uri(_m, &dst_uri) != 0)
 			LM_ERR("failed to set dst-uri\n");
-			goto out1;
-		}
+
+		if (transport.len>0)
+			pkg_free(dst_uri.s);
 	}
 
 out1:
-	if (dst_uri.s) pkg_free(dst_uri.s);
 	free_params(params);
 	return;
 }
