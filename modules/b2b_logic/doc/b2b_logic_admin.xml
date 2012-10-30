@@ -364,6 +364,24 @@ modparam("b2b_logic", "db_table", "some_table_name")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>b2bl_th_init_timeout</varname> (int)</title>
+		<para>
+			Call setup timeout for topology hiding scenario.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote> </emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_th_init_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_th_init_timeout", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
