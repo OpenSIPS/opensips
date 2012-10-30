@@ -304,7 +304,7 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 
 	if (received.len > 0) {
 		if (transport.len > 0) {
-			dst_uri.len = received.len + PATH_TRANS_PARAM_LEN + 1 transport.len;
+			dst_uri.len = received.len + PATH_TRANS_PARAM_LEN + 1 + transport.len;
 			dst_uri.s = pkg_malloc(dst_uri.len);
 			if(!dst_uri.s) {
 				LM_ERR("no pkg memory left for receive-address\n");
