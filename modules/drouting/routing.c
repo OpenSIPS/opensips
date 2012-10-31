@@ -175,7 +175,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 			tmp++;
 		} else if (*tmp!=0) {
 			LM_ERR("bad char %c (%d) [%s]\n",
-					*ep, (int)(ep-dstlist), dstlist);
+					*tmp, (int)(ep-dstlist), dstlist);
 			goto error;
 		}
 	}
