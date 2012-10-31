@@ -132,6 +132,20 @@ error:
 	return ret;
 }
 
+
+/* run the error route with correct handling - simpler wrapper to 
+   allow the usage from other parts of the code */
+void run_error_route(struct sip_msg* msg, int force_reset)
+{
+	LM_DBG("triggering\n");
+	set_route_type( ERROR_ROUTE );
+	run_actions(error_rlist.a, msg);
+	/* if continue, then reset error info */
+	if( force_reset || !( action_flags&(ACT_FL_EXIT|ACT_FL_RETURN) ) )
+		init_err_info();
+}
+
+
 /* run a list of actions */
 int run_action_list(struct action* a, struct sip_msg* msg)
 {
@@ -142,20 +156,14 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 		/* if action returns 0, then stop processing the script */
 		if(ret==0)
 			action_flags |= ACT_FL_EXIT;
-		if(error_rlist.a!=NULL &&
-				(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0
-				&& _oser_err_info.eclass!=0)
 
-		{
-			LM_DBG("jumping to error route\n");
-			set_route_type( ERROR_ROUTE );
-			run_actions(error_rlist.a, msg);
-			/* if don't exit, then reset error info */
-			if(!(action_flags&ACT_FL_EXIT))
-				init_err_info();
-		}
-		
-		if((action_flags&ACT_FL_RETURN) || (action_flags&ACT_FL_EXIT))
+		/* check for errors */
+		if (_oser_err_info.eclass!=0 && error_rlist.a!=NULL &&
+		(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0 )
+			run_error_route(msg,0);
+
+		/* continue or not ? */
+		if( action_flags&(ACT_FL_RETURN|ACT_FL_EXIT) )
 			break;
 	}
 	return ret;

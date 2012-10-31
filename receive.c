@@ -109,6 +109,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	
 	if (parse_msg(buf,len, msg)!=0){
 		LM_ERR("parse_msg failed\n");
+		/* if a REQUEST msg was detected (first line was succesfully parsed) we
+		   should trigger the error route */
+		if ( msg->first_line.type==SIP_REQUEST && error_rlist.a!=NULL )
+			run_error_route(msg, 1);
 		goto parse_error;
 	}
 	LM_DBG("After parse_msg...\n");
