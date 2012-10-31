@@ -541,9 +541,6 @@ error:
 }
 
 
-
-
-
 /* returns 0 if ok, -1 for errors */
 int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 {
@@ -560,9 +557,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	offset=tmp-buf;
 	fl=&(msg->first_line);
 	rest=parse_first_line(tmp, len-offset, fl);
-#if 0
-	rest=parse_fline(tmp, buf+len, fl);
-#endif
+
 	offset+=rest-tmp;
 	tmp=rest;
 	switch(fl->type){
@@ -570,7 +565,8 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 			LM_DBG("invalid message\n");
 			/* if failed to parse the first line, we simply consider that the whole 
 			   buffer was parsed, so that nothing is left to be parsed :) - this will
-			   do the trick and make "msg" struct acceptable for following parsing attempts */
+			   do the trick and make "msg" struct acceptable for following parsing
+			   attempts */
 			msg->unparsed = msg->buf + msg->len;
 			goto error;
 			break;
@@ -592,8 +588,6 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 					ZSW(fl->u.reply.status.s));
 			LM_DBG(" reason:  <%.*s>\n", fl->u.reply.reason.len,
 					ZSW(fl->u.reply.reason.s));
-			/* flags=HDR_VIA | HDR_VIA2; */
-			/* we don't try to parse VIA2 for local messages; -Jiri */
 			flags=HDR_VIA_F;
 			break;
 		default:

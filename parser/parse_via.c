@@ -81,7 +81,7 @@ enum {
 	VER1, VER2, FIN_VER,
 	UDP1, UDP2, FIN_UDP,
 	TCP_TLS1, TCP2, FIN_TCP,
-	          TLS2, FIN_TLS,
+	TLS2, FIN_TLS,
 	SCTP1, SCTP2, SCTP3, FIN_SCTP,
 	L_PROTO, F_PROTO
 };
@@ -1758,15 +1758,21 @@ parse_again:
 					case F_HOST:
 						state=P_HOST;
 						vb->host.s=tmp;
-						break;
+						//break;
 					case P_HOST:
+						/*check if host allowed char*/
+						if ( (*tmp<'a' || *tmp>'z') && (*tmp<'A' || *tmp>'Z')
+						&& (*tmp<'0' || *tmp>'9') && *tmp!='-' && *tmp!='.')
+							goto parse_error;
 						break;
 					case F_PORT:
 						state=P_PORT;
 						vb->port_str.s=tmp;
-						break;
+						//break;
 					case P_PORT:
-						/*check if number?*/
+						/*check if number*/
+						if ( *tmp<'0' || *tmp>'9' )
+							goto parse_error;
 						break;
 					case F_PARAM:
 						/*state=P_PARAM*/;
@@ -1855,8 +1861,12 @@ parse_again:
 						break;
 					case F_IP6HOST:
 						state=P_IP6HOST;
-						break;
+						//break;
 					case P_IP6HOST:
+						/*check if host allowed char*/
+						if ( (*tmp<'a' || *tmp>'f') && (*tmp<'A' || *tmp>'F')
+						&& (*tmp<'0' || *tmp>'9') && *tmp!=':')
+							goto parse_error;
 						break;
 					case F_CRLF:
 					case F_LF:
