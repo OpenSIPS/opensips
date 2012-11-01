@@ -72,6 +72,8 @@
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 
+#define DS_MAX_IPS  32
+
 typedef struct _ds_dest
 {
 	str uri;
@@ -79,9 +81,10 @@ typedef struct _ds_dest
 	int flags;
 	int weight;
 	struct socket_info *sock;
-	struct ip_addr ip_address; /* IP-Address of the entry */
-	unsigned short int port; /* Port of the request URI */
-	int failure_count;
+	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
+	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
+	unsigned short ips_cnt;
+	unsigned short failure_count;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;
 
@@ -142,11 +145,11 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
+	struct sip_uri puri;
 
 	/* For DNS-Lookups */
-	static char hn[256];
-	struct hostent* he;
-	struct sip_uri puri;
+	struct proxy_l *proxy;
+	union sockaddr_union sau;
 
 	/* check uri */
 	if(parse_uri(uri.s, uri.len, &puri)!=0 || puri.host.len>254)
@@ -211,23 +214,31 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
 	dp->weight = weight;
 	dp->sock = sock;
 
-	/* The Hostname needs to be \0 terminated for resolvehost, so we
-	 * make a copy here. */
-	strncpy(hn, puri.host.s, puri.host.len);
-	hn[puri.host.len]='\0';
-
 	/* Do a DNS-Lookup for the Host-Name: */
-	he=resolvehost(hn, 0);
-	if (he==0)
-	{
-		LM_ERR("could not resolve %s\n", hn);
+	proxy = mk_proxy( &puri.host, puri.port_no, puri.proto,
+		(puri.type==SIPS_URI_T));
+	if (proxy==NULL) {
+		LM_ERR("could not resolve %.*s, skipping it\n",
+			puri.host.len, puri.host.s);
 		goto err;
 	}
-	/* Free the hostname */
-	hostent2ip_addr(&dp->ip_address, he, 0);
-		
-	/* Copy the Port out of the URI: */
-	dp->port = puri.port_no;
+	hostent2ip_addr( &dp->ips[0], &proxy->host, proxy->addr_idx);
+	dp->ports[0] = proxy->port;
+	dp->ips_cnt = 1;
+	LM_DBG("first gw ip addr [%s]:%d\n",
+		ip_addr2a(&dp->ips[0]), dp->ports[0]);
+	/* get the next available IPs from DNS */
+	while (dp->ips_cnt<DS_MAX_IPS && (get_next_su( proxy, &sau, 0)==0) ) {
+		su2ip_addr( &dp->ips[dp->ips_cnt], &sau);
+		dp->ports[dp->ips_cnt] = proxy->port;
+		LM_DBG("additional gw ip addr [%s]:%d\n",
+			ip_addr2a(&dp->ips[dp->ips_cnt]), dp->ports[dp->ips_cnt]);
+		/* one more IP found */
+		dp->ips_cnt++;
+	}
+	/* free al the helper structures */
+	free_proxy(proxy);
+	pkg_free(proxy);
 
 	dp->next = sp->dlist;
 	sp->dlist = dp;
@@ -1484,7 +1495,7 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 	struct ip_addr *ip;
 	int_str avp_val;
 	int port;
-	int j;
+	int j,k;
 
 	/* get the address to test */
 	if (pv_get_spec_value( _m, pv_ip, &val)!=0) {
@@ -1520,29 +1531,33 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 
 	for(list = _ds_list; list!= NULL; list= list->next) {
 		if ((set == -1) || (set == list->id)) {
+			/* interate through all elements/destinations in the list */
 			for(j=0; j<list->nr; j++) {
-				if ( (list->dlist[j].port==0 || port==0
-				|| port==list->dlist[j].port) &&
-				ip_addr_cmp( ip, &list->dlist[j].ip_address) ) {
-					/* matching destination */
-					if (active_only &&
-					(list->dlist[j].flags&(DS_INACTIVE_DST|DS_PROBING_DST)) )
-						continue;
-					if(set==-1 && ds_setid_pvname.s!=0) {
-						val.ri = list->id;
-						if(pv_set_value(_m, &ds_setid_pv,
-								(int)EQ_T, &val)<0)
-						{
-							LM_ERR("setting PV failed\n");
-							return -2;
+				/* interate through all IPs of each destination */
+				for(k=0 ; k<list->dlist[j].ips_cnt ; k++ ) {
+					if ( (list->dlist[j].ports[k]==0 || port==0
+					|| port==list->dlist[j].ports[k]) &&
+					ip_addr_cmp( ip, &list->dlist[j].ips[k]) ) {
+						/* matching destination */
+						if (active_only &&
+						(list->dlist[j].flags&(DS_INACTIVE_DST|DS_PROBING_DST)) )
+							continue;
+						if(set==-1 && ds_setid_pvname.s!=0) {
+							val.ri = list->id;
+							if(pv_set_value(_m, &ds_setid_pv,
+									(int)EQ_T, &val)<0)
+							{
+								LM_ERR("setting PV failed\n");
+								return -2;
+							}
 						}
-					}
-					if (attrs_avp_name>= 0) {
-						avp_val.s = list->dlist[j].attrs;
+						if (attrs_avp_name>= 0) {
+							avp_val.s = list->dlist[j].attrs;
 						if(add_avp(AVP_VAL_STR|attrs_avp_type,attrs_avp_name,avp_val)!=0)
-							return -1;
+								return -1;
+						}
+						return 1;
 					}
-					return 1;
 				}
 			}
 		}
