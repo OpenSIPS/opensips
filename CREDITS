@@ -2,7 +2,7 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS core team in alphabetical order as of 1 March 2012:
+Current OpenSIPS core team in alphabetical order as of 1 November 2012:
 
 Bogdan Andrei Iancu
 Dan Pascu
@@ -17,28 +17,50 @@ Anca Vamanu
 Di-Shi Sun
 Marc Leurent
 Ovidiu Sas
-Saúl Ibarra Corretgé
+SaÃºl Ibarra CorretgÃ©
 Dynamic Packet
 
 
-Credits - patches, bug reporting and documentation improvements
-
-Adrian Georgescu
-Arnaud Chong
-Bratner
-Brett Nemeroff
-Christophe Sollet
-Damien Sandras
-Dave May
-David
+============== Release 1.8.2 =================
 David Sanders
-Denis
 Diego Barberio
 Dragos Oancea
 Duane Larson
-Eric Gouyer
+Nathaniel L Keeling III
+Nick Altmann
+Rick van Rein
+Ryan Bullock
+Ryan Revels
+Samuel Muller
+Toine (SourceForge)
+shimaore (SourceForge)
+
+============== Release 1.8.1 =================
+Arnaud Chong
+Brett Nemeroff
+David Sanders
+Duane Larson
 Gomtesh Jain
 James Gledhill
+Marcel Barbulescu
+Nathaniel L Keeling
+Nick Altmann
+Parantido Julius De Rica
+Peter Lemenkov
+Rick van Rein
+Rudy (DynamicPacket)
+Ryan Bullock
+Stefan Tobe
+Trevor Francis
+Walter Doekes
+Yaroslav M Strilchuk
+
+============== Release 1.8.0 =================
+Adrian Georgescu
+Christophe Sollet
+Bratner
+Dave May
+Eric Gouyer
 James Lamanna
 Jim Logan
 Kiss Karoly
@@ -47,27 +69,13 @@ Marcel Barbulescu
 Mark Dalby
 MartinB
 Morten Tryfoss
-Nathaniel L Keeling
-Nick Altmann
-Parantido Julius De Rica
 Pete Kelly
-Peter Lemenkov
 Ramaseshi
 Richard Bullock
-Rick van Rein
 Ronald Cepres
 Ruslan Bukin
-Ryan Bullock
-Ryan Revels
-Samuel Muller
 Sebastien CRUAUX
 Sergey Lavrov
-Stefan Tobe
 Steven Lam
-Trevor Francis
-Walter Doekes
-Yaroslav M Strilchuk
 a719719 (SourceForge)
 diego.plan9 (SourceForge)
-shimaore (SourceForge)
-Toine (SourceForge)
