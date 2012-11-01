@@ -277,6 +277,7 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 {
 	param_hooks_t hooks;
 	param_t *params;
+	param_t *first_param;
 	str received = {0, 0};
 	str transport = {0, 0};
 	str dst_uri = {0, 0};
@@ -285,6 +286,8 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 		LM_ERR("failed to parse route parametes\n");
 		return;
 	}
+
+	first_param = params;
 
 	while(params)
 	{
@@ -297,7 +300,6 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 		params = params->next;
 	}
 
-
 	if (received.len > 0) {
 		if (transport.len > 0) {
 			dst_uri.len = received.len + PATH_TRANS_PARAM_LEN + 1 + transport.len;
@@ -306,23 +308,22 @@ void path_rr_callback(struct sip_msg *_m, str *r_param, void *cb_param)
 				LM_ERR("no pkg memory left for receive-address\n");
 				goto out1;
 			}
-			dst_uri.len = snprintf(dst_uri.s, received.len + PATH_TRANS_PARAM_LEN + 1 + transport.len,
+			dst_uri.len = snprintf(dst_uri.s, dst_uri.len,
 				"%.*s" PATH_TRANS_PARAM "%.*s", received.len, received.s, transport.len, transport.s);
 		}
 		else
 		{
-			dst_uri.s = received.s;
-			dst_uri.len = received.len;
+			dst_uri = received;
 		}
 
 		if (set_dst_uri(_m, &dst_uri) != 0)
 			LM_ERR("failed to set dst-uri\n");
 
-		if (transport.len>0)
+		if (transport.len > 0)
 			pkg_free(dst_uri.s);
 	}
 
 out1:
-	free_params(params);
+	free_params(first_param);
 	return;
 }
