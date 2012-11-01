@@ -888,7 +888,10 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 
 static int w_match_dialog(struct sip_msg *msg)
 {
-	int backup;
+	int backup,i,rr_param_len;
+	void *match_param = NULL;
+	struct sip_uri *r_uri;
+
 
 	/* dialog already found ? */
 	if (get_current_dialog()!=NULL)
@@ -898,7 +901,37 @@ static int w_match_dialog(struct sip_msg *msg)
 	backup = seq_match_mode;
 	seq_match_mode = SEQ_MATCH_FALLBACK;
 
-	dlg_onroute( msg, NULL, NULL);
+	/* See if we can force DID matching, for the case of topo 
+	 * hiding, where we have the DID as param of the contact */
+	if (parse_sip_msg_uri(msg)<0) {
+		LM_ERR("Failed to parse request URI\n");
+		goto sipwise;
+	}
+
+	if (parse_headers(msg, HDR_ROUTE_F, 0) == -1) {
+		LM_ERR("failed to parse route headers\n");
+		goto sipwise;
+	}
+
+	r_uri = &msg->parsed_uri;
+	rr_param_len = strlen(rr_param);
+
+	if (check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1 &&
+		msg->route == NULL) {
+		/* Seems we are in the topo hiding case :
+		 * we are in the R-URI and there are no other route headers */
+		for (i=0;i<r_uri->u_params_no;i++)
+			if (r_uri->u_name[i].len == rr_param_len &&
+				memcmp(rr_param,r_uri->u_name[i].s,rr_param_len)==0) {
+				LM_DBG("We found DID param in R-URI with value of %.*s \n",
+					r_uri->u_val[i].len,r_uri->u_val[i].s);
+				/* pass the param value to the matching funcs */
+				match_param = (void *)(&r_uri->u_val[i]);
+			}
+	}
+
+sipwise:
+	dlg_onroute( msg, NULL, match_param);
 
 	seq_match_mode = backup;
 
