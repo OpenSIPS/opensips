@@ -999,7 +999,7 @@ static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
 	struct dlg_cell *dlg;
-	str *val;
+	str val = {0,0};
 	str callid;
 	str ftag;
 	str ttag;
@@ -1040,17 +1040,18 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	 * From match_dialog, param might have a value, if we
 	 * are in the topology hiding case & we were able to extract the
 	 * DID from the R-URI */
-	val = (str *)param;
+	if (param)
+		val = *((str *)param);
 
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID ) {
-		if( val == NULL && d_rrb.get_route_param( req, &rr_param, val)!=0) {
+		if( val.s == NULL && d_rrb.get_route_param( req, &rr_param, &val)!=0) {
 			LM_DBG("Route param '%.*s' not found\n", rr_param.len,rr_param.s);
 			if (seq_match_mode==SEQ_MATCH_STRICT_ID )
 				return;
 		} else {
-			LM_DBG("route param is '%.*s' (len=%d)\n",val->len,val->s,val->len);
+			LM_DBG("route param is '%.*s' (len=%d)\n",val.len,val.s,val.len);
 
-			if ( parse_dlg_rr_param( val->s, val->s+val->len, &h_entry, &h_id)<0 )
+			if ( parse_dlg_rr_param( val.s, val.s+val.len, &h_entry, &h_id)<0 )
 				return;
 
 			dlg = lookup_dlg( h_entry, h_id);
@@ -1059,7 +1060,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 					"with route param '%.*s'\n",
 					req->first_line.u.request.method.len,
 					req->first_line.u.request.method.s,
-					val->len,val->s);
+					val.len,val.s);
 			} else {
 				/* lookup_dlg has incremented the ref count by 1 */
 				if (pre_match_parse( req, &callid, &ftag, &ttag)<0) {
