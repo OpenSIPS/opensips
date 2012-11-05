@@ -2,13 +2,13 @@ event_rabbitmq Module
 
 Razvan Crainea
 
-   OpenSIPS Project
+   OpenSIPS Solutions
 
 Edited by
 
 Razvan Crainea
 
-   Copyright © 2011 OpenSIPS Project
+   Copyright © 2011 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -24,9 +24,6 @@ Razvan Crainea
               1.4.2. External Libraries or Applications
 
         1.5. Exported Parameters
-
-              1.5.1.
-
         1.6. Exported Functions
         1.7. Example
         1.8. Installation and Running
@@ -110,8 +107,7 @@ Chapter 1. Admin Guide
 
 1.5. Exported Parameters
 
-   No parameter exported by this module. This module doesn't
-   export any parameter
+   No parameter exported by this module.
 
 1.6. Exported Functions
 
