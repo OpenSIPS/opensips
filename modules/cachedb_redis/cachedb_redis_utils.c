@@ -197,6 +197,8 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 			goto error;
 		}
 		
+		memset(new,0,sizeof(cluster_node));
+
 		strcpy(new->ip,ip);
 		new->port = port;
 		new->start_slot = start_slot;

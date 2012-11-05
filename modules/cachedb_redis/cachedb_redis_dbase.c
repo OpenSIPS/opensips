@@ -113,7 +113,6 @@ int redis_connect(redis_con *con)
 			return -1;
 		}
 
-		redisFree(ctx);
 		strcpy(con->nodes->ip,con->id->host);
 		con->nodes->port = con->id->port;
 		con->nodes->start_slot = 0;
@@ -124,7 +123,6 @@ int redis_connect(redis_con *con)
 	} else {
 		/* cluster instance mode */
 		con->type |= REDIS_CLUSTER_INSTANCE;
-		redisFree(ctx);
 		LM_DBG("cluster instance mode\n");
 		if (build_cluster_nodes(con,rpl->str,rpl->len) < 0) {
 			LM_ERR("failed to parse Redis cluster info\n");
@@ -133,6 +131,7 @@ int redis_connect(redis_con *con)
 	}
 
 	freeReplyObject(rpl);
+	redisFree(ctx);
 	for (it=con->nodes;it;it=it->next)
 		if (redis_connect_node(con,it) < 0) {
 			LM_ERR("failed to init connection \n");
