@@ -9,7 +9,7 @@
 
 <table id="aliases" xmlns:db="http://docbook.org/ns/docbook">
     <name>aliases</name>
-    <version>1005</version>
+    <version>1007</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table for the registrar module is similar to the "location" table, (the aliases index makes lookup of missed calls much faster). Thus, the function lookup("alias") can be used to map aliases to AORs. More information is available at: &OPENSIPS_MOD_DOC;registrar.html. Most people uses the dbaliases table with the alias_db module now.
@@ -87,7 +87,7 @@
         <description>Value used for preferential routing.</description>
     </column>
 
-    <column>
+    <column id="callid">
         <name>callid</name>
         <type>string</type>
         <size>&hf_len;</size>
@@ -153,11 +153,22 @@
         <description>Flags that indicate the SIP Methods this contact will accept.</description>
     </column>
 
+    <column>
+        <name>sip_instance</name>
+        <type>string</type>
+        <size>255</size>
+        <null/>
+        <default><null/></default>
+        <description>SIP Instance for this particular contact</description>
+    </column>
+
     <index>
         <name>alias_idx</name>
         <colref linkend="username"/>
         <colref linkend="domain"/>
         <colref linkend="contact"/>
+        <colref linkend="callid"/>
+        <unique/>
     </index>
 
 </table>
