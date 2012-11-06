@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('aliases','1005');
+INSERT INTO version (table_name, table_version) values ('aliases','1007');
 CREATE TABLE aliases (
     id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
@@ -15,7 +15,9 @@ CREATE TABLE aliases (
     cflags NUMBER(10) DEFAULT 0 NOT NULL,
     user_agent VARCHAR2(255) DEFAULT '',
     socket VARCHAR2(64) DEFAULT NULL,
-    methods NUMBER(10) DEFAULT NULL
+    methods NUMBER(10) DEFAULT NULL,
+    sip_instance VARCHAR2(255) DEFAULT NULL,
+    CONSTRAINT aliases_alias_idx  UNIQUE (username, domain, contact, callid)
 );
 
 CREATE OR REPLACE TRIGGER aliases_tr
@@ -26,5 +28,3 @@ END aliases_tr;
 /
 BEGIN map2users('aliases'); END;
 /
-CREATE INDEX aliases_alias_idx  ON aliases (username, domain, contact);
-

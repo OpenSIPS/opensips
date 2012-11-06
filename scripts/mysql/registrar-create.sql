@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('aliases','1005');
+INSERT INTO version (table_name, table_version) values ('aliases','1007');
 CREATE TABLE aliases (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
@@ -15,8 +15,8 @@ CREATE TABLE aliases (
     cflags INT(11) DEFAULT 0 NOT NULL,
     user_agent CHAR(255) DEFAULT '' NOT NULL,
     socket CHAR(64) DEFAULT NULL,
-    methods INT(11) DEFAULT NULL
+    methods INT(11) DEFAULT NULL,
+    sip_instance CHAR(255) DEFAULT NULL,
+    CONSTRAINT alias_idx UNIQUE (username, domain, contact, callid)
 ) ENGINE=MyISAM;
-
-CREATE INDEX alias_idx ON aliases (username, domain, contact);
 
