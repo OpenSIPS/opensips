@@ -986,7 +986,7 @@ static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
 	struct dlg_cell *dlg;
-	str val;
+	str val = {0,0};
 	str callid;
 	str ftag;
 	str ttag;
@@ -1023,8 +1023,15 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	dir = DLG_DIR_NONE;
 	dst_leg = -1;
 
+	/* From RR callback, param will be NULL
+	 * From match_dialog, param might have a value, if we
+	 * are in the topology hiding case & we were able to extract the
+	 * DID from the R-URI */
+	if (param)
+		val = *((str *)param);
+
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID ) {
-		if( d_rrb.get_route_param( req, &rr_param, &val)!=0) {
+		if( val.s == NULL && d_rrb.get_route_param( req, &rr_param, &val)!=0) {
 			LM_DBG("Route param '%.*s' not found\n", rr_param.len,rr_param.s);
 			if (seq_match_mode==SEQ_MATCH_STRICT_ID )
 				return;
