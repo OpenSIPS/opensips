@@ -1188,8 +1188,6 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 	on_shutdown = (ticks==0);
 
-	LM_DBG("dialog timer called. On shutdown ? %d\n",on_shutdown);
-
 	/*save the current dialogs information*/
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_TYPE(values+8) = 
