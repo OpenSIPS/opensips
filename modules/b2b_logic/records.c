@@ -726,10 +726,15 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 	struct hdr_field* subscription_state_hdr;
 	struct hdr_field* hdr;
 	struct hdr_field* hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
+	struct hdr_field ins_hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
 	int hdrs_no = 0;
+	int ins_hdrs_no = 0;
 	int len = 0;
 	int i;
 	int custom_hdrs_len = 0;
+	struct lump* crt;
+	struct lump* a;
+	int after_last_hdr_offset, before_first_hdr_offset;
 
 	if(msg->content_type)
 		hdrs[hdrs_no++] = msg->content_type;
@@ -770,9 +775,33 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 		}
 	}
 
+	if (msg->headers) {
+		/* add insert_hf/apply_hf headers */
+		after_last_hdr_offset = msg->unparsed - msg->buf;
+		before_first_hdr_offset = msg->headers->name.s - msg->buf;
+
+		for (crt = msg->add_rm; crt;) {
+			if (crt->type == HDR_OTHER_T && crt->u.offset > before_first_hdr_offset && crt->u.offset <= after_last_hdr_offset) {
+				if ((a=crt->before))
+				{
+					if(a->op == LUMP_ADD)
+					{
+						LM_DBG("Lump found len=%d value= %.*s\n", a->len, a->len, a->u.value);
+						get_hdr_field(a->u.value, a->u.value+a->len, &ins_hdrs[ins_hdrs_no]);
+						ins_hdrs_no++;
+					}
+				}
+			}
+			crt = crt->next;
+		}
+	}
+
 	/* calculate the length*/
 	for(i = 0; i< hdrs_no; i++)
 		len += hdrs[i]->len;
+
+	for(i = 0; i< ins_hdrs_no; i++)
+		len += ins_hdrs[i].len;
 
 	if(init_callid_hdr.len && msg && msg->callid)
 		len+= init_callid_hdr.len + msg->callid->len;
@@ -800,6 +829,13 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str*
 		memcpy(p, hdrs[i]->name.s, hdrs[i]->len);
 		p += hdrs[i]->len;
 	}
+
+	for(i = 0; i< ins_hdrs_no; i++)
+	{
+		memcpy(p, ins_hdrs[i].name.s, ins_hdrs[i].len);
+		p += ins_hdrs[i].len;
+	}
+
 	if(custom_hdrs_len)
 	{
 		memcpy(p, custom_hdrs->s, custom_hdrs_len);
