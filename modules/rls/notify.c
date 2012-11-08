@@ -999,6 +999,7 @@ int process_list_and_exec(xmlNodePtr list_node, str username, str domain,
                         {
                                 memmove(unescaped_uri.s+SIP_PREFIX_LEN, unescaped_uri.s, unescaped_uri.len+1);
                                 memcpy(unescaped_uri.s, SIP_PREFIX, SIP_PREFIX_LEN);
+                                unescaped_uri.len += SIP_PREFIX_LEN;
                         }
 			if(cont_no)
 			        *cont_no = *cont_no+1;
