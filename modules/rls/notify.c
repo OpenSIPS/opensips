@@ -1163,6 +1163,8 @@ int parse_xcap_uri(const str *uri, xcap_uri_t *xcap_uri)
 int rls_get_resource_list(str *filename, str *selector, str *username, str *domain,
 		xmlNodePtr *rl_node, xmlDocPtr *xmldoc)
 {
+        static char path_buf[MAX_PATH_LEN+1];
+
 	db_key_t query_cols[5];
 	db_val_t query_vals[5];
 	int n_query_cols = 0;
@@ -1172,10 +1174,8 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 	db_row_t *row;
 	db_val_t *row_vals;
 	int xcap_col;
-	str body;
+	str body, path;
 	int checked = 0;
-	str path = {0, 0};
-	char path_str[MAX_PATH_LEN + 1];
 	xmlXPathContextPtr xpathCtx = NULL;
 	xmlXPathObjectPtr xpathObj = NULL;
 
@@ -1185,24 +1185,23 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 		return -1;
 	}
 
-	memset (path_str, '\0', MAX_PATH_LEN + 1);
-	path.s = path_str;
+	path.s = path_buf;
 	path.len = 0;
 	if (selector->s) {
             while (checked < selector->len && path.len <= MAX_PATH_LEN)
             {
                     if (selector->s[checked] == '/')
                     {
-                            strcat(path.s, "/xmlns:");
+                            memcpy(path.s+path.len, "/xmlns:", 7);
                             path.len += 7;
-                            checked++;
                     }
                     else
                     {
                             path.s[path.len++] = selector->s[checked];
-                            checked++;
                     }
+                    checked++;
             }
+            path.s[path.len] = '\0';
             LM_DBG("path: %.*s", path.len, path.s);
         }
 
@@ -1289,7 +1288,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 			goto error;
 		}
 	}
-	else if (path.s != NULL)
+	else
 	{
 		xpathCtx = xmlXPathNewContext(*xmldoc);
 		if (xpathCtx == NULL)
@@ -1341,7 +1340,6 @@ error:
 		xmlXPathFreeContext(xpathCtx);
 	if(xmldoc!=NULL)
 		xmlFreeDoc(*xmldoc);
-
 	return -1;
 }
 
