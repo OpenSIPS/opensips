@@ -213,7 +213,7 @@ get_gw_by_internal_id(
 pcr_t*
 get_carrier_by_id(
 	pcr_t *carrier,
-	str *id;
+	str *id
 	);
 
 void
