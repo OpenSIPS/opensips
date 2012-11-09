@@ -372,6 +372,7 @@ int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
 {
 	pv_value_t pval;
 	struct hdr_field hdr;
+	int hdr_len;
 	
 	if (pv_get_spec_value(msg, gp->v.pvs, &pval) != 0 || pval.flags & PV_VAL_NULL)
 	{
@@ -379,23 +380,25 @@ int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
 		return -1;
 	}
 
-	if (!header_body.s || header_body.len < pval.rs.len + 1)
+	hdr_len = pval.rs.len + 1;
+	if (header_body.len < hdr_len)
 	{
-		header_body.s = pkg_realloc(header_body.s, pval.rs.len + 1);
+		header_body.s = pkg_realloc(header_body.s, hdr_len);
 		if (!header_body.s)
 		{
 			LM_ERR("PKG MEMORY depleted!\n");
 			return E_OUT_OF_MEM;
 		}
+
+		header_body.len = hdr_len;
 	}
 
 	memcpy(header_body.s, pval.rs.s, pval.rs.len);
-	header_body.len = pval.rs.len + 1;
 	header_body.s[pval.rs.len] = ':';
 
-	LM_DBG("Parsing %.*s\n", header_body.len, header_body.s);
+	LM_DBG("Parsing %.*s\n", hdr_len, header_body.s);
 	if (parse_hname2(header_body.s, header_body.s + 
-					(header_body.len < 4 ? 4 : header_body.len), &hdr) == 0)
+					(hdr_len < 4 ? 4 : hdr_len), &hdr) == 0)
 	{
 		LM_ERR("error parsing header name\n");
 		pkg_free(gp);
@@ -405,15 +408,13 @@ int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
 	if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T)
 	{
 		LM_INFO("using hdr type (%d) instead of <%.*s>\n",
-				hdr.type, gp->v.sval.len, gp->v.sval.s);
-		pkg_free(gp->v.sval.s);
-		gp->v.sval.s = NULL;
+				hdr.type, pval.rs.len, header_body.s);
 		gp->v.ival = hdr.type;
 		gp->type = GPARAM_TYPE_INT;
 	} else {
 		gp->type = GPARAM_TYPE_STR;
 		gp->v.sval.s = header_body.s;
-		gp->v.sval.len = header_body.len - 1;
+		gp->v.sval.len = pval.rs.len;
 
 		LM_INFO("using hdr type name <%.*s>\n", gp->v.sval.len, gp->v.sval.s);
 	}
