@@ -94,7 +94,7 @@
 #include <sys/time.h>
 
 
-
+static str header_body = {0, 0};
 
 /* RFC822-conforming dates format:
 
@@ -368,6 +368,58 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 	return -1;
 }
 
+int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
+{
+	pv_value_t pval;
+	struct hdr_field hdr;
+	
+	if (pv_get_spec_value(msg, gp->v.pvs, &pval) != 0 || pval.flags & PV_VAL_NULL)
+	{
+		LM_ERR("no valid PV value found!\n");
+		return -1;
+	}
+
+	if (!header_body.s || header_body.len < pval.rs.len + 1)
+	{
+		header_body.s = pkg_realloc(header_body.s, pval.rs.len + 1);
+		if (!header_body.s)
+		{
+			LM_ERR("PKG MEMORY depleted!\n");
+			return E_OUT_OF_MEM;
+		}
+	}
+
+	memcpy(header_body.s, pval.rs.s, pval.rs.len);
+	header_body.len = pval.rs.len + 1;
+	header_body.s[pval.rs.len] = ':';
+
+	LM_DBG("Parsing %.*s\n", header_body.len, header_body.s);
+	if (parse_hname2(header_body.s, header_body.s + 
+					(header_body.len < 4 ? 4 : header_body.len), &hdr) == 0)
+	{
+		LM_ERR("error parsing header name\n");
+		pkg_free(gp);
+		return E_UNSPEC;
+	}
+
+	if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T)
+	{
+		LM_INFO("using hdr type (%d) instead of <%.*s>\n",
+				hdr.type, gp->v.sval.len, gp->v.sval.s);
+		pkg_free(gp->v.sval.s);
+		gp->v.sval.s = NULL;
+		gp->v.ival = hdr.type;
+		gp->type = GPARAM_TYPE_INT;
+	} else {
+		gp->type = GPARAM_TYPE_STR;
+		gp->v.sval.s = header_body.s;
+		gp->v.sval.len = header_body.len - 1;
+
+		LM_INFO("using hdr type name <%.*s>\n", gp->v.sval.len, gp->v.sval.s);
+	}
+
+	return 0;
+}
 
 static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 {
@@ -378,6 +430,13 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 
 	gp = (gparam_p)str_hf;
 	cnt=0;
+
+	if (gp->type == GPARAM_TYPE_PVS &&
+		parse_pvs_header(msg, gp) != 0)
+	{
+		LM_ERR("Parse pvs header failed!\n");
+		return -1;
+	}
 
 	/* we need to be sure we have seen all HFs */
 	parse_headers(msg, HDR_EOH_F, 0);
@@ -413,6 +472,13 @@ static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 	gparam_p gp;
 
 	gp = (gparam_p)str_hf;
+
+	if (gp->type == GPARAM_TYPE_PVS &&
+		parse_pvs_header(msg, gp) != 0)
+	{
+		LM_ERR("Parse pvs header failed!\n");
+		return -1;
+	}
 
 	/* we need to be sure we have seen all HFs */
 	parse_headers(msg, HDR_EOH_F, 0);
@@ -655,53 +721,46 @@ static int hname_fixup(void** param, int param_no)
 	char c;
 	struct hdr_field hdr;
 	gparam_p gp = NULL;
-	
-	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
-	if(gp == NULL)
-	{
-		LM_ERR("no more memory\n");
-		return E_UNSPEC;
-	}
-	memset(gp, 0, sizeof(gparam_t));
 
-	gp->v.sval.s = (char*)*param;
-	gp->v.sval.len = strlen(gp->v.sval.s);
-	if(gp->v.sval.len==0)
+	if (fixup_sgp(param) != 0)
 	{
-		LM_ERR("empty header name parameter\n");
-		pkg_free(gp);
+		LM_ERR("Fixup failed!\n");
 		return E_UNSPEC;
 	}
-	
-	c = gp->v.sval.s[gp->v.sval.len];
-	gp->v.sval.s[gp->v.sval.len] = ':';
-	gp->v.sval.len++;
-	
-	if (parse_hname2(gp->v.sval.s, gp->v.sval.s
-				+ ((gp->v.sval.len<4)?4:gp->v.sval.len), &hdr)==0)
-	{
-		LM_ERR("error parsing header name\n");
-		pkg_free(gp);
-		return E_UNSPEC;
-	}
-	
-	gp->v.sval.len--;
-	gp->v.sval.s[gp->v.sval.len] = c;
 
-	if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T)
+	gp = (gparam_p)*param;
+
+	if (gp->type == GPARAM_TYPE_STR)
 	{
-		LM_INFO("using hdr type (%d) instead of <%.*s>\n",
-				hdr.type, gp->v.sval.len, gp->v.sval.s);
-		pkg_free(gp->v.sval.s);
-		gp->v.sval.s = NULL;
-		gp->v.ival = hdr.type;
-		gp->type = GPARAM_TYPE_INT;
-	} else {
-		gp->type = GPARAM_TYPE_STR;
-		LM_INFO("using hdr type name <%.*s>\n", gp->v.sval.len, gp->v.sval.s);
-	}
+		c = gp->v.sval.s[gp->v.sval.len];
+		gp->v.sval.s[gp->v.sval.len] = ':';
+		gp->v.sval.len++;
+		
+		if (parse_hname2(gp->v.sval.s, gp->v.sval.s
+		             + ((gp->v.sval.len<4)?4:gp->v.sval.len), &hdr)==0)
+		{
+			LM_ERR("error parsing header name\n");
+			pkg_free(gp);
+			return E_UNSPEC;
+		}
+		
+		gp->v.sval.len--;
+		gp->v.sval.s[gp->v.sval.len] = c;
 	
-	*param = (void*)gp;
+		if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T)
+		{
+			LM_INFO("using hdr type (%d) instead of <%.*s>\n",
+					hdr.type, gp->v.sval.len, gp->v.sval.s);
+			pkg_free(gp->v.sval.s);
+			gp->v.sval.s = NULL;
+			gp->v.ival = hdr.type;
+			gp->type = GPARAM_TYPE_INT;
+		} else {
+			gp->type = GPARAM_TYPE_STR;
+			LM_INFO("using hdr type name <%.*s>\n", gp->v.sval.len, gp->v.sval.s);
+		}
+	}
+
 	return 0;
 }
 

@@ -276,7 +276,11 @@ Note
    exmaple “From” will match with “f”
 
    Meaning of the parameters is as follows:
-     * hf_name - Header field name.(long or compact form)
+     * hf_name - Header field name.(long or compact form). The
+       hf_name parameter can have the following types:
+          + string - Static header field name
+          + pvar - Header field name is given as a pseudo-variable
+            (as string value)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -354,7 +358,11 @@ if(is_method("OPTION|UPDATE"))
    Returns true if at least one header is found and removed.
 
    Meaning of the parameters is as follows:
-     * hname - header name to be removed.
+     * hname - header name to be removed. The hname parameter can
+       have the following types:
+          + string - Header name to be removed
+          + pvar - Header name to be removed is the value of an
+            existing pseudo-variable (as string value)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.

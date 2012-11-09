@@ -310,8 +310,21 @@ append_urihf("CC-Diversion: ", "\r\n");
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>hf_name</emphasis> - Header field name.(long or 
-			compact form)
+			compact form). The <emphasis>hf_name</emphasis> parameter can have
+			the following types:
 			</para>
+				<itemizedlist>
+					<listitem>
+					<para><emphasis>string</emphasis> - Static header field name
+					</para>
+					</listitem>
+					
+					<listitem>
+					<para><emphasis>pvar</emphasis> - Header field name is given
+					as a pseudo-variable (as string value)
+					</para>
+					</listitem>
+				</itemizedlist>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -452,7 +465,20 @@ if(is_method("OPTION|UPDATE"))
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>hname</emphasis> - header name to be removed.
+			The <emphasis>hname</emphasis> parameter can have the following types:
 			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - Header name to be removed
+				</para>
+				</listitem>
+				
+				<listitem>
+				<para><emphasis>pvar</emphasis> - Header name to be removed is
+				the value of an existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+			</itemizedlist>
 		</listitem>
 		</itemizedlist>
 		<para>
