@@ -112,12 +112,13 @@ set_reason:
 	{
 	        *expires = -1;
 	        ptr = auth_state.s;
-		while ((smc = strchr(ptr, ';')))
+		while ((smc = memchr(ptr, ';', auth_state.len-(ptr-auth_state.s))) && smc+1-auth_state.s < auth_state.len)
                 {
-                        if(strncasecmp(smc+1, "expires=", 8) == 0)
+                        smc += 1;
+                        if(strncasecmp(smc, "expires=", 8) == 0)
                         {
-                                str_exp.s = smc + 9;
-                                str_exp.len = auth_state.s + auth_state.len - smc - 9;
+                                str_exp.s = smc + 8;
+                                str_exp.len = auth_state.s + auth_state.len - smc - 8;
 
                                 if(str2int(&str_exp, (unsigned int*)expires) < 0)
                                 {
