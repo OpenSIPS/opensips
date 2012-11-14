@@ -36,7 +36,6 @@ typedef struct xcap_api {
 		<para>
 			This function parses the given XCAP URI.
 		</para>
-	</section>
 		<para>
 		The parameters signification:
 		</para>
