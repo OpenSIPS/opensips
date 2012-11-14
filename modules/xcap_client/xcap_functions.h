@@ -122,7 +122,7 @@ typedef void (*xcap_nodeSel_free_t)(xcap_node_sel_t* node);
 typedef int (*xcapGetNewDoc_t)(xcap_get_req_t req, str user, str domain,
 		str* xcap_doc);
 
-typedef struct xcap_api {
+typedef struct xcap_client_api {
 	xcap_get_elem_t get_elem;
 	xcap_nodeSel_init_t int_node_sel;
 	xcap_nodeSel_add_step_t add_step;
@@ -130,11 +130,11 @@ typedef struct xcap_api {
 	xcap_nodeSel_free_t free_node_sel;
 	xcapGetNewDoc_t getNewDoc;
 	register_xcapcb_t register_xcb;
-}xcap_api_t;
+}xcap_client_api_t;
 
-int bind_xcap(xcap_api_t* api);
+int bind_xcap_client(xcap_client_api_t* api);
 
-typedef int (*bind_xcap_t)(xcap_api_t* api);
+typedef int (*bind_xcap_client_t)(xcap_client_api_t* api);
 
 char* send_http_get(char* path, unsigned int xcap_port, char* match_etag,
 		int match_type, char** etag, int* doc_len);

@@ -30,6 +30,7 @@
 #define _RLS_H_
 
 #include "../../str.h"
+#include "../xcap/api.h"
 #include "../xcap_client/xcap_functions.h"
 #include "../pua/send_subscribe.h"
 #include "../pua/send_publish.h"
@@ -87,13 +88,10 @@ extern str presence_server;
 extern int waitn_time; 
 extern str rlsubs_table;
 extern str rlpres_table;
-extern str rls_xcap_table;
-extern str db_url;
 extern int hash_size;
 extern shtable_t rls_table;
 extern int pid;
 extern int rls_max_expires;
-extern int rls_integrated_xcap_server;
 extern int rls_events;
 extern int to_presence_code;
 
@@ -103,6 +101,12 @@ extern db_func_t rls_dbf;
 
 extern struct tm_binds tmb;
 extern struct sig_binds rls_sigb;
+
+/* xcap API */
+extern str db_url;
+extern str rls_xcap_table;
+extern int rls_integrated_xcap_server;
+extern parse_xcap_uri_t xcapParseUri;
 
 /** libxml api */
 extern xmlDocGetNodeByName_t XMLDocGetNodeByName;

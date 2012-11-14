@@ -320,6 +320,7 @@ Summary:  SIMPLE Presence extension
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-presence
+Requires: %{name}-xcap
 Requires: %{name}-xcap_client
 
 %description  presence_xml
@@ -478,6 +479,14 @@ Requires: %{name} = %{version}-%{release}
 %description  unixodbc
 The %{name}-unixodbc package contains the unixODBC plugin for %{name}, which
 allows a unixODBC to be used for persistent storage
+
+%package  xcap
+Summary:  XCAP utilities
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  xcap
+The modules contains XCAP related utilities for OpenSIPS
 
 %package  xcap_client
 Summary:  XCAP client
@@ -976,6 +985,11 @@ fi
 %defattr(-,root,root,-)
 %{_libdir}/opensips/modules/db_unixodbc.so
 %doc docdir/README.db_unixodbc
+
+%files xcap
+%defattr(-,root,root,-)
+%{_libdir}/opensips/modules/xcap.so
+%doc docdir/README.xcap
 
 %files xcap_client
 %defattr(-,root,root,-)

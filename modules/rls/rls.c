@@ -50,6 +50,7 @@
 #include "../presence/hash.h"
 #include "../pua/pua_bind.h"
 #include "../pua/pidf.h"
+#include "../xcap/api.h"
 #include "../xcap_client/xcap_functions.h"
 #include "rls.h"
 #include "subscribe.h"
@@ -71,9 +72,7 @@ str presence_server= {0, 0};
 int waitn_time = 50;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
-str rls_xcap_table= str_init("xcap");
 
-str db_url= {NULL, 0};
 int hash_size= 512;
 shtable_t rls_table;
 int pid;
@@ -84,7 +83,12 @@ int clean_period= 100;
 char* xcap_root;
 unsigned int xcap_port= 8000;
 int rls_restore_db_subs(void);
-int rls_integrated_xcap_server= 0;
+
+/* xcap API */
+str db_url = {NULL, 0};
+str rls_xcap_table = {NULL, 0};
+int rls_integrated_xcap_server = 0;
+parse_xcap_uri_t xcapParseUri;
 
 /** libxml api */
 xmlDocGetNodeByName_t XMLDocGetNodeByName;
@@ -174,15 +178,12 @@ static cmd_export_t cmds[]=
 static param_export_t params[]={
 	{ "server_address",         STR_PARAM, &server_address.s           },
 	{ "presence_server",        STR_PARAM, &presence_server.s          },
-	{ "db_url",                 STR_PARAM, &db_url.s                   },
 	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
 	{ "rlpres_table",           STR_PARAM, &rlpres_table.s             },
-	{ "xcap_table",             STR_PARAM, &rls_xcap_table.s           },
 	{ "waitn_time",             INT_PARAM, &waitn_time                 },
 	{ "clean_period",           INT_PARAM, &clean_period               },
 	{ "max_expires",            INT_PARAM, &rls_max_expires            },
 	{ "hash_size",              INT_PARAM, &hash_size                  },
-	{ "integrated_xcap_server", INT_PARAM, &rls_integrated_xcap_server },
 	{ "to_presence_code",       INT_PARAM, &to_presence_code           },
 	{ "xcap_root",              STR_PARAM, &xcap_root                  },
 	/*address and port(default: 80):"http://192.168.2.132:8000/xcap-root"*/
@@ -225,6 +226,8 @@ static int mod_init(void)
 	libxml_api_t libxml_api;
 	bind_xcap_t bind_xcap;
 	xcap_api_t xcap_api;
+	bind_xcap_client_t bind_xcap_client;
+	xcap_client_api_t xcap_client_api;
 
 	LM_DBG("start\n");
 
@@ -237,7 +240,25 @@ static int mod_init(void)
 	
 	if(presence_server.s)
 		presence_server.len= strlen(presence_server.s);
-	
+
+        /* load XCAP API */
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        if (!bind_xcap)
+        {
+                LM_ERR("Can't bind xcap\n");
+                return -1;
+        }
+
+        if (bind_xcap(&xcap_api) < 0)
+        {
+                LM_ERR("Can't bind xcap\n");
+                return -1;
+        }
+        rls_integrated_xcap_server = xcap_api.integrated_server;
+        db_url = xcap_api.db_url;
+        rls_xcap_table = xcap_api.xcap_table;
+        xcapParseUri = xcap_api.parse_xcap_uri;
+
 	if(!rls_integrated_xcap_server)
 	{
 		if(xcap_root== NULL)
@@ -301,7 +322,6 @@ static int mod_init(void)
 	rlsubs_table.len= strlen(rlsubs_table.s);
 	rlpres_table.len= strlen(rlpres_table.s);
 	rls_xcap_table.len= strlen(rls_xcap_table.s);
-	init_db_url( db_url , 0 /*cannot be null*/);
 
 	/* binding to mysql module  */
 	if (db_bind_mod(&db_url, &rls_dbf))
@@ -309,7 +329,7 @@ static int mod_init(void)
 		LM_ERR("Database module not found\n");
 		return -1;
 	}
-	
+
 	if (!DB_CAPABILITY(rls_dbf, DB_CAP_ALL)) {
 		LM_ERR("Database module does not implement all functions"
 				" needed by the module\n");
@@ -416,19 +436,19 @@ static int mod_init(void)
 	if(!rls_integrated_xcap_server)
 	{
 		/* bind xcap */
-		bind_xcap= (bind_xcap_t)find_export("bind_xcap", 1, 0);
-		if (!bind_xcap)
+		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 1, 0);
+		if (!bind_xcap_client)
 		{
 			LM_ERR("Can't bind xcap_client\n");
 			return -1;
 		}
 	
-		if (bind_xcap(&xcap_api) < 0)
+		if (bind_xcap_client(&xcap_client_api) < 0)
 		{
 			LM_ERR("Can't bind xcap\n");
 			return -1;
 		}
-		xcap_GetNewDoc= xcap_api.getNewDoc;
+		xcap_GetNewDoc = xcap_client_api.getNewDoc;
 		if(xcap_GetNewDoc== NULL)
 		{
 			LM_ERR("Can't import xcap_client functions\n");

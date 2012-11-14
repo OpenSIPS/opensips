@@ -48,7 +48,7 @@
 size_t write_function( void *ptr, size_t size, size_t nmemb, void *buff);
 char* get_xcap_path(xcap_get_req_t req);
 
-int bind_xcap(xcap_api_t* api)
+int bind_xcap_client(xcap_client_api_t* api)
 {
 	if (!api) 
 	{

@@ -59,20 +59,6 @@ typedef struct res_param
 	str* cid_array;
 }res_param_t;
 
-#define MAX_XCAP_URI_LEN 512
-
-typedef struct {
-    char buf[MAX_XCAP_URI_LEN];
-    str uri;
-    str root;
-    str auid;
-    str tree;
-    str xui;
-    str filename;
-    str selector;
-} xcap_uri_t;
-/* TODO: move this to a better place */
-
 
 int resource_uri_col=0, ctype_col, pres_state_col= 0,
 	auth_state_col= 0, reason_col= 0;
@@ -85,8 +71,6 @@ str* constr_multipart_body(db_res_t* result, str* cid_array, str bstr);
 dlg_t* rls_notify_dlg(subs_t* subs);
 
 void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps);
-
-int parse_xcap_uri(const str *uri, xcap_uri_t *xcap_uri);
 
 #define MAX_PATH_LEN	127
 int rls_get_resource_list(str *filename, str *selector, str *username, str *domain,
@@ -939,7 +923,7 @@ int process_list_and_exec(xmlNodePtr list_node, str username, str domain,
 			}
                         uri.len = strlen(uri.s);
 
-			if(parse_xcap_uri(&uri, &xcap_uri) == 0)
+			if(xcapParseUri(&uri, &xcap_uri) == 0)
 			{
 			        /* TODO: Check if the xcap-root is 'local' */
 				if (rls_integrated_xcap_server)
@@ -1075,89 +1059,6 @@ char* get_auth_string(int flag)
 		case TERMINATED_STATE: return "terminated";
 	}
 	return NULL;
-}
-
-
-int parse_xcap_uri(const str *uri, xcap_uri_t *xcap_uri)
-{
-    char *ns_ptr, *tree_ptr, *tmp;
-    str unescaped_uri;
-
-    if (uri == NULL || uri->s == NULL ||xcap_uri == NULL) {
-        return -1;
-    }
-
-    if (uri->len > MAX_XCAP_URI_LEN-1) {
-        LM_ERR("XCAP URI is too long\n");
-        return -1;
-    }
-
-    memset(xcap_uri, 0, sizeof(xcap_uri_t));
-
-    unescaped_uri.s = xcap_uri->buf;
-    if (un_escape((str *)uri, &unescaped_uri) < 0) {
-        LM_ERR("Error un-escaping XCAP URI\n");
-        return -1;
-    }
-    xcap_uri->buf[uri->len] = '\0';
-
-    xcap_uri->uri.s = xcap_uri->buf;
-    xcap_uri->uri.len = uri->len;
-
-    /* selector */
-    if ((ns_ptr = strstr(xcap_uri->uri.s, "/~~/"))) {
-        xcap_uri->selector.s = ns_ptr+3;
-        xcap_uri->selector.len = xcap_uri->uri.s+xcap_uri->uri.len - xcap_uri->selector.s;
-    }
-
-    /* tree */
-    if ((tree_ptr = strstr(xcap_uri->uri.s, "/global/"))) {
-        xcap_uri->tree.s = tree_ptr+1;
-        xcap_uri->tree.len = 6;
-    } else if ((tree_ptr = strstr(xcap_uri->uri.s, "/users/"))) {
-        xcap_uri->tree.s = tree_ptr+1;
-        xcap_uri->tree.len = 5;
-    } else {
-        LM_ERR("Unknown XCAP URI tree\n");
-        return -1;
-    }
-
-    /* AUID */
-    tmp = tree_ptr-1;
-    while (tmp > xcap_uri->uri.s) {
-        if (tmp[0] == '/')
-            break;
-        tmp--;
-    }
-    if (tmp < xcap_uri->uri.s) {
-        LM_ERR("Error parsing AUID\n");
-        return -1;
-    }
-    xcap_uri->auid.s = tmp+1;
-    xcap_uri->auid.len = tree_ptr-1 - tmp;
-
-    /* XCAP root */
-    xcap_uri->root.s = xcap_uri->uri.s;
-    xcap_uri->root.len = xcap_uri->auid.s - xcap_uri->root.s;
-
-    /* XUI */
-    xcap_uri->xui.s = xcap_uri->tree.s+xcap_uri->tree.len+1;
-    tmp = xcap_uri->xui.s;
-    while (*tmp) {
-        if (tmp[0] == '/')
-            break;
-        tmp++;
-    }
-    if (tmp >= xcap_uri->uri.s+xcap_uri->uri.len) {
-        LM_ERR("Error parsing XUI\n");
-        return -1;
-    }
-    xcap_uri->xui.len = tmp-xcap_uri->xui.s;
-
-    /* filename */
-    xcap_uri->filename.s = xcap_uri->xui.s+xcap_uri->xui.len+1;
-    xcap_uri->filename.len = (ns_ptr ? ns_ptr : xcap_uri->uri.s+xcap_uri->uri.len) -xcap_uri->filename.s;
-    return 0;
 }
 
 

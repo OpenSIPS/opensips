@@ -42,14 +42,13 @@
 #include "../presence/bind_presence.h"
 #include "../presence/hash.h"
 #include "../presence/notify.h"
+#include "../xcap/api.h"
 #include "../xcap_client/xcap_functions.h"
 #include "../signaling/signaling.h"
 #include "pidf.h"
 #include "add_events.h"
 #include "presence_xml.h"
 
-
-#define S_TABLE_VERSION 4
 
 /** module functions */
 
@@ -66,15 +65,17 @@ add_event_t pres_add_event;
 update_watchers_t pres_update_watchers;
 pres_get_sphere_t pres_get_sphere;
 
-str xcap_table= str_init("xcap");
-str db_url = {NULL, 0};
 int force_active= 0;
 int pidf_manipulation= 0;
-int integrated_xcap_server= 0;
 xcap_serv_t* xs_list= NULL;
 str pres_rules_auid = {0, 0};
 str pres_rules_filename = {0, 0};
 int generate_offline_body = 1;
+
+/* xcap API */
+str db_url = {NULL, 0};
+str xcap_table = {NULL, 0};
+int integrated_xcap_server = 0;
 
 /* SIGNALING bind */
 struct sig_binds xml_sigb;
@@ -88,11 +89,8 @@ db_func_t pxml_dbf;
 xcapGetNewDoc_t xcap_GetNewDoc;
 
 static param_export_t params[]={
-	{ "db_url",                 STR_PARAM,                          &db_url.s},
-	{ "xcap_table",             STR_PARAM,                      &xcap_table.s},
 	{ "force_active",           INT_PARAM,                     &force_active },
 	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation}, 
-	{ "integrated_xcap_server", INT_PARAM,            &integrated_xcap_server}, 
 	{ "xcap_server",     STR_PARAM|USE_FUNC_PARAM,(void*)pxml_add_xcap_server},
 	{ "pres_rules_auid",        STR_PARAM,                 &pres_rules_auid.s},
 	{ "pres_rules_filename",    STR_PARAM,             &pres_rules_filename.s},
@@ -140,10 +138,6 @@ static int verify_db(void)
 		return -1;
 	}
 
-	if(db_check_table_version(&pxml_dbf, pxml_db, &xcap_table, S_TABLE_VERSION) < 0) {
-		LM_ERR("error during table version check.\n");
-		return -1;
-	}
 	/* pxml_db is free'd by caller later, not sure if safe to do now */
 	return 0;
 }
@@ -155,9 +149,25 @@ static int mod_init(void)
 {
 	bind_presence_t bind_presence;
 	presence_api_t pres;
+	bind_xcap_t bind_xcap;
+	xcap_api_t xcap_api;
 
-	init_db_url( db_url , 1 /*can be null*/);
-	xcap_table.len = xcap_table.s ? strlen(xcap_table.s) : 0;
+        /* load XCAP API */
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        if (!bind_xcap)
+        {
+                LM_ERR("Can't bind xcap\n");
+                return -1;
+        }
+
+        if (bind_xcap(&xcap_api) < 0)
+        {
+                LM_ERR("Can't bind xcap\n");
+                return -1;
+        }
+        integrated_xcap_server = xcap_api.integrated_server;
+        db_url = xcap_api.db_url;
+        xcap_table = xcap_api.xcap_table;
 
 	if(force_active==0)
 	{
@@ -201,30 +211,30 @@ static int mod_init(void)
 	
 	if(force_active== 0 && !integrated_xcap_server )
 	{
-		xcap_api_t xcap_api;
-		bind_xcap_t bind_xcap;
+		xcap_client_api_t xcap_client_api;
+		bind_xcap_client_t bind_xcap_client;
 
 		/* bind xcap */
-		bind_xcap= (bind_xcap_t)find_export("bind_xcap", 1, 0);
-		if (!bind_xcap)
+		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 1, 0);
+		if (!bind_xcap_client)
 		{
 			LM_ERR("Can't bind xcap_client\n");
 			return -1;
 		}
 	
-		if (bind_xcap(&xcap_api) < 0)
+		if (bind_xcap_client(&xcap_client_api) < 0)
 		{
-			LM_ERR("Can't bind xcap_api\n");
+			LM_ERR("Can't bind xcap_client_api\n");
 			return -1;
 		}
-		xcap_GetNewDoc= xcap_api.getNewDoc;
+		xcap_GetNewDoc= xcap_client_api.getNewDoc;
 		if(xcap_GetNewDoc== NULL)
 		{
-			LM_ERR("can't import get_elem from xcap_client module\n");
+			LM_ERR("can't import getNewDoc from xcap_client module\n");
 			return -1;
 		}
 	
-		if(xcap_api.register_xcb(PRES_RULES, xcap_doc_updated)< 0)
+		if(xcap_client_api.register_xcb(PRES_RULES, xcap_doc_updated)< 0)
 		{
 			LM_ERR("registering xcap callback function\n");
 			return -1;

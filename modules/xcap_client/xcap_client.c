@@ -44,21 +44,18 @@
 #include "../../ut.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
+#include "../xcap/api.h"
 #include "../presence/utils_func.h"
 #include "xcap_functions.h"
 #include "xcap_client.h"
 
 
 
-#define XCAP_TABLE_VERSION   4
-
 static int mod_init(void);
 static int child_init(int);
 void destroy(void);
 struct mi_root* refreshXcapDoc(struct mi_root* cmd, void* param);
 int get_auid_flag(str auid);
-str xcap_db_table = str_init("xcap");
-str xcap_db_url = {NULL, 0};
 xcap_callback_t* xcapcb_list= NULL;
 int periodical_query= 1;
 unsigned int query_period= 100;
@@ -78,11 +75,14 @@ str str_port_col = str_init("port");
 db_con_t *xcap_db = NULL;
 db_func_t xcap_dbf;
 
+/* xcap API */
+str xcap_db_url = {NULL, 0};
+str xcap_db_table = {NULL, 0};
+
+
 void query_xcap_update(unsigned int ticks, void* param);
 
 static param_export_t params[]={
-	{ "db_url",                 STR_PARAM,         &xcap_db_url.s    },
-	{ "xcap_table",             STR_PARAM,         &xcap_db_table.s  },
 	{ "periodical_query",       INT_PARAM,         &periodical_query },
 	{ "query_period",           INT_PARAM,         &query_period     },
 	{    0,                     0,                      0            }
@@ -91,7 +91,7 @@ static param_export_t params[]={
 
 static cmd_export_t  cmds[]=
 {
-	{"bind_xcap",  (cmd_function)bind_xcap,  1,    0, 0,        0},
+	{"bind_xcap_client",  (cmd_function)bind_xcap_client,  1,    0, 0,        0},
 	{    0,                     0,           0,    0, 0,        0}
 };
 
@@ -122,9 +122,25 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
-	init_db_url( xcap_db_url , 0 /*cannot be null*/);
-	xcap_db_table.len = strlen(xcap_db_table.s);
-	
+	bind_xcap_t bind_xcap;
+	xcap_api_t xcap_api;
+
+        /* load XCAP API */
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        if (!bind_xcap)
+        {
+                LM_ERR("Can't bind xcap\n");
+                return -1;
+        }
+
+        if (bind_xcap(&xcap_api) < 0)
+        {
+                LM_ERR("Can't bind xcap\n");
+                return -1;
+        }
+        xcap_db_url = xcap_api.db_url;
+        xcap_db_table = xcap_api.xcap_table;
+
 	/* binding to mysql module  */
 	if (db_bind_mod(&xcap_db_url, &xcap_dbf))
 	{
@@ -142,11 +158,6 @@ static int mod_init(void)
 	if (!xcap_db)
 	{
 		LM_ERR("while connecting to database\n");
-		return -1;
-	}
-
-	if(db_check_table_version(&xcap_dbf, xcap_db, &xcap_db_table, XCAP_TABLE_VERSION) < 0) {
-		LM_ERR("error during table version check.\n");
 		return -1;
 	}
 

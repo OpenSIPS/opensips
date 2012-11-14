@@ -1,0 +1,103 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+
+    <title>&develguide;</title>
+	<para>
+            The module exports a number of parameters and functions that are used
+            in several other modules.
+   </para>
+   <section>
+      <title>
+	     <function moreinfo="none">bind_xcap_api(xcap_api_t* api)</function>
+     </title>
+		<para>
+		This function allows binding the needed functions.
+		</para>
+			<example>
+			<title><function>xcap_api</function> structure</title>
+			<programlisting format="linespecific">
+...
+typedef struct xcap_api {
+        int integrated_server;
+        str db_url;
+        str xcap_table;
+        parse_xcap_uri_t parse_xcap_uri;
+} xcap_api_t;
+...
+			</programlisting>
+			</example>
+	</section>
+
+	<section>
+		<title>
+			<function moreinfo="none">parse_xcap_uri</function>
+		</title>
+		<para>
+			This function parses the given XCAP URI.
+		</para>
+	</section>
+		<para>
+		The parameters signification:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>uri</emphasis>-
+				the URI that needs to be parsed in string format
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>xcap_uri</emphasis>-
+				xcap_uri_t structure that will be filled with the parsed information
+			</para>
+			<programlisting format="linespecific">
+Parameter type:
+...
+typedef struct {
+    char buf[MAX_URI_SIZE];
+    str uri;
+    str root;
+    str auid;
+    str tree;
+    str xui;
+    str filename;
+    str selector;
+} xcap_uri_t;
+...
+                        </programlisting>
+                        </listitem>
+		        </itemizedlist>
+	</section>
+
+        <section>
+		<title>
+			<parameter moreinfo="none">db_url</parameter>
+		</title>
+                <para>
+                URL of the database to which the XCAP mdoules witll connect.
+                </para>
+	</section>
+
+        <section>
+		<title>
+			<parameter moreinfo="none">xcap_table</parameter>
+		</title>
+                <para>
+                Name of the table used to store XCAP documents. Defaults to 'xcap'.
+                </para>
+	</section>
+
+        <section>
+		<title>
+			<parameter moreinfo="none">integrated_server</parameter>
+		</title>
+                <para>
+                Boolean flag indicating if the XCAP server has access to the local database or
+                xcap_client will be used to fetch documents.
+                </para>
+	</section>
+
+</chapter>
+

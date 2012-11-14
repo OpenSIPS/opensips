@@ -1,0 +1,121 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para> 
+        The module contains several parameters and functions common to all
+        modules using XCAP capabilities.
+	</para>
+	<para>
+	The module is currently used by the following modules: presence_xml, rls and xcap_client.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		        The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>a database module</emphasis>.
+			</para>
+			</listitem>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libxml-dev</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>db_url</varname>(str)</title>
+		<para>
+		The database url.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>&defaultdb;</quote>.	
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("xcap", "db_url", "&exampledb;")
+...
+                </programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>xcap_table</varname>(str)</title>
+		<para>
+		The name of the db table where XCAP documents are stored.
+		</para>
+		<para>
+		<emphasis>	Default value is <quote>xcap</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>xcap_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("xcap", "xcap_table", "xcap")
+...
+                </programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>integrated_xcap_server</varname> (int)</title>
+		<para>
+		This parameter is a flag for the type of XCAP server or servers 
+		used. If integrated ones, like OpenXCAP from AG Projects, 
+		with direct access to database table, the parameter should be
+		set to a positive value. Apart from updating in xcap table,
+		the integrated server must send an MI command refershWatchers 
+		[pres_uri] [event] when a user modifies a rules document. 
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>integrated_xcap_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("xcap", "integrated_xcap_server", 1)
+...
+                </programlisting>
+		</example>
+	</section>
+        </section>
+
+        <section>
+	<title>Exported Functions</title>
+	<para>
+	None to be used in configuration file.
+	</para>
+        </section>
+
+</chapter>
+

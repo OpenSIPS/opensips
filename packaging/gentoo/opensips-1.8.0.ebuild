@@ -48,7 +48,7 @@ pkg_setup() {
 		inc_mod="${inc_mod} b2b_entities b2bua_logic"
 
 	use presence && \
-		inc_mod="${inc_mod} presence presence_dialoginfo presence_mwi presence_xcapdiff presence_xml pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap_client"
+		inc_mod="${inc_mod} presence presence_dialoginfo presence_mwi presence_xcapdiff presence_xml pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client"
 
 	use unixodbc && \
 		inc_mod="${inc_mod} db_unixodbc"
