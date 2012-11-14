@@ -43,6 +43,11 @@
 			</listitem>
 			<listitem>
 			<para>
+				<emphasis>xcap</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
 				<emphasis>xcap_client</emphasis>.
 			</para>
 			<para>
@@ -73,43 +78,6 @@
 	
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>db_url</varname>(str)</title>
-		<para>
-		The database url.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>&defaultdb;</quote>.	
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>db_url</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence_xml", "db_url", "&exampledb;")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>xcap_table</varname>(str)</title>
-		<para>
-		The name of the db table where XCAP documents are stored.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>xcap</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>xcap_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence_xml", "xcap_table", "xcaps")
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title><varname>force_active</varname> (int)</title>
 		<para>
@@ -159,32 +127,6 @@ modparam("presence_xml", "force_active", 1)
 		<programlisting format="linespecific">
 ...
 modparam("presence_xml", "pidf_manipulation", 1)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>integrated_xcap_server</varname> (int)</title>
-		<para>
-		This parameter is a flag for the type of XCAP server or servers 
-		used. If integrated ones, like XCAP-lite from AG Projects, 
-		with direct access to database table, the parameter should be
-		set to a positive value. Apart from updating in xcap table,
-		the integrated server must send an MI command refershWatchers 
-		[pres_uri] [event] when a user modifies a rules document. 
-		</para>
-		<para>
-		Otherwise, it uses xcap_client module to fetch documents 
-		from the XCAP servers with HTTP requests.</para>
-		<para>
-		<emphasis>Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>integrated_xcap_server</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("presence_xml", "integrated_xcap_server", 1)
 ...
 </programlisting>
 		</example>

@@ -11,16 +11,16 @@
    </para>
    <section>
       <title>
-	     <function moreinfo="none">bind_xcap_api(xcap_api_t* api)</function>
+	     <function moreinfo="none">bind_xcap_client_api(xcap_client_api_t* api)</function>
      </title>
 		<para>
 		This function allows binding the needed functions. 
 		</para>
 			<example>
-			<title><function>xcap_api</function> structure</title>
+			<title><function>xcap_client_api</function> structure</title>
 			<programlisting format="linespecific">
 ...
-typedef struct xcap_api {
+typedef struct xcap_client_api {
 	
 	/* xcap node selection and retrieving functions*/
 	xcap_get_elem_t get_elem;
@@ -34,7 +34,7 @@ typedef struct xcap_api {
 
 	/* function to register a callback to document changes*/
 	register_xcapcb_t register_xcb;
-}xcap_api_t;
+}xcap_client_api_t;
 ...
 			</programlisting>
 			</example>

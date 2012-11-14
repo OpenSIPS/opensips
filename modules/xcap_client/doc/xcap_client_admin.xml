@@ -39,7 +39,14 @@
 	<section>
 		<title>&osips; Modules</title>
 		<para>
-			The modules is not dependent of any &osips; module.
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>xcap</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
 		</para>
 	</section>
 
@@ -66,42 +73,6 @@
 
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>db_url</varname>(str)</title>
-		<para>
-		The database url.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>&defaultdb;</quote>.	
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>db_url</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("xcap_client", "db_url", "&exampledb;")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>xcap_table</varname>(str)</title>
-		<para>
-		The name of the db table where XCAP documents are stored.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>xcap</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>xcap_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("xcap_client", "xcap_table", "xcaps")
-...
-</programlisting>
-		</example>
-	</section>
 	<section>
 		<title><varname>periodical_query</varname>(int)</title>
 		<para>

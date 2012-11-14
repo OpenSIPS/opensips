@@ -70,7 +70,11 @@
 			<para>
 				<emphasis>pua</emphasis>.
 			</para>
-
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>xcap</emphasis>.
+			</para>
 			</listitem>
 			</itemizedlist>
 		</para>
@@ -91,45 +95,6 @@
 	
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>db_url</varname>(str)</title>
-		<para>
-		The database url.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>&defaultdb;</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>db_url</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rls", "db_url", "&exampledb;")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>xcap_table</varname>(str)</title>
-		<para>
-		The name of the xcap table in which the integrated server
-		or the xcap_client module writes. If integrated_xcap_server
-		parameter not set, the name of the table must be the same as
-		the one set for the xcap_client module.
-		</para>
-		<para>
-		<emphasis>	Default value is <quote>xcap</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>xcap_table</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rls", "xcap_table", "xcaps");
-...
-</programlisting>
-		</example>
-	</section>
 	<section>
 		<title><varname>rlsubs_table</varname>(str)</title>
 		<para>
@@ -268,26 +233,6 @@ modparam("rls", "xcap_root", "http://192.168.2.132/xcap-root:800")
 		</example>
 	</section>
 
-	<section>
-		<title><varname>integrated_xcap_server</varname> (int)</title>
-		<para>
-		This parameter should be set if only integrated xcap servers
-		are used to store resource lists.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>integrated_xcap_server</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rls", "integrated_xcap_server", 1)
-...
-		</programlisting>
-		</example>
-	</section>
-	
 	<section>
 		<title><varname>to_presence_code</varname> (int)</title>
 		<para>
