@@ -28,6 +28,7 @@
  *  2007-04-20  rename to cfgutils, use pseudovariable for get_random_val
  *              add "rand_" prefix, add sleep and usleep functions
  *  2008-12-26  pseudovar argument for sleep and usleep functions (saguti).
+ *  2012-11-21  added script locks (Liviu)
  *
  * cfgutils module: random probability functions for opensips;
  * it provide functions to make a decision in the script
@@ -61,6 +62,7 @@
 #include <stdlib.h>
 #include "shvar.h"
 #include "env_var.h"
+#include "script_locks.h"
 
 
 static int set_prob(struct sip_msg*, char *, char *);
@@ -100,6 +102,8 @@ static int *probability;
 
 static char config_hash[MD5_LEN];
 static char* hash_file = NULL;
+
+int lock_pool_size = 32;
 
 static cmd_export_t cmds[]={
 	{"rand_set_prob", /* action name as in scripts */
@@ -145,6 +149,21 @@ static cmd_export_t cmds[]={
 	{"ts_usec_delta", (cmd_function)ts_usec_delta, 5, fixup_delta, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
+	{"get_static_lock",(cmd_function)get_static_lock, 1, fixup_static_lock, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"release_static_lock",(cmd_function)release_static_lock, 1,
+		fixup_static_lock, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
+	{"get_dynamic_lock",(cmd_function)get_dynamic_lock, 1, fixup_sgp_null, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"release_dynamic_lock",(cmd_function)release_dynamic_lock, 1,
+		fixup_sgp_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
+	{"strings_share_lock",(cmd_function)strings_share_lock, 2,
+		fixup_sgp_sgp, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -153,6 +172,7 @@ static param_export_t params[]={
 	{"hash_file",           STR_PARAM, &hash_file        },
 	{"shvset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_shvar },
 	{"varset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_var },
+	{"lock_pool_size",      INT_PARAM, &lock_pool_size},
 	{0,0,0}
 };
 
@@ -524,6 +544,16 @@ static int mod_init(void)
 	}
 	*probability = initial;
 
+	if (lock_pool_size < 1) {
+		LM_ERR("Invalid lock size parameter (%d)!\n", lock_pool_size);
+		return -1;
+	}
+
+	if (create_dynamic_locks() != 0) {
+		LM_ERR("Failed to create dynamic locks\n");
+		return -1;
+	}
+
 	if(init_shvars()<0)
 	{
 		LM_ERR("init shvars failed\n");
@@ -542,6 +572,8 @@ static void mod_destroy(void)
 		shm_free(probability);
 	shvar_destroy_locks();
 	destroy_shvars();
+
+	destroy_script_locks();
 }
 
 static int fixup_pv_set(void** param, int param_no)
@@ -725,3 +757,4 @@ static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 	}
 	return 1;
 }
+

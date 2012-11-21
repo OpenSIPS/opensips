@@ -167,6 +167,28 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 </programlisting>
 	    </example>
 	</section>
+	<section>
+		<title><varname>lock_pool_size</varname> (integer)</title>
+		<para>
+		The number of dynamic script locks to be allocated at &osips; startup. This
+		number must be a power of 2. (i.e. 1, 2, 4, 8, 16, 32, 64 ...)
+		</para>
+		<para>
+		Note that the <emphasis>lock_pool_size</emphasis> parameter only affects
+		the number of dynamic locks created at startup. The pool of static locks
+		only depends on the number of unique static strings supplied throughout
+		the script to the set of static lock functions.
+		</para>
+		<para>
+		Default value is <quote>32</quote>.
+		</para>
+		<example>
+		<title>Setting lock_pool_size module parameter</title>
+		<programlisting format="linespecific">
+modparam("script_locks", "lock_pool_size", "64")
+</programlisting>
+		</example>
+	</section>
 </section>
 
     <section>
@@ -443,7 +465,266 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 			</programlisting>
 		</example>
 	</section>
+	<section>
+		<title>
+		<function moreinfo="none">get_static_lock(string)</function>
+		</title>
+		<para>
+		The function obtains the index of a specific lock (predetermined in the fixup
+		phase of the OpenSIPS script) and attempts to acquire it. In case the
+		lock is taken by another process, script execution will halt until the lock is
+		released. Attempting to acquire the lock a second time by the same process,
+		without releasing it first, will result in a deadlock.
+		</para>
+		<para>
+		The static lock functions guarantee that two different strings will never
+		point to the same lock, thus avoiding introducing unnecessary
+		(and transparent!) synchronization between processes. Their disadvantage is
+		the nature of their parameters (static strings), making them inappropriate in
+		certain scenarios.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string</emphasis> - String to be used in order to
+			obtain the index of a static lock. The
+			<emphasis>string</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - the string is statically
+				assigned</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">get_static_lock</function> usage</title>
+		<programlisting format="linespecific">
+# acquire and release a static lock 
+...
+get_static_lock("Zone_1");
+...
+release_static_lock("Zone_1");
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">release_static_lock(string)</function>
+		</title>
+		<para>
+		The function obtains the index of a specific lock (predetermined in the fixup
+		phase of the OpenSIPS script) and releases it. Nothing will happen if the lock
+		is not acquired. 
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string</emphasis> - String to be used in order to
+			obtain the index of a static lock. The
+			<emphasis>string</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - the string is statically
+				assigned</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">release_static_lock</function> usage</title>
+		<programlisting format="linespecific">
+# acquire and release a static lock 
+...
+get_static_lock("Zone_1");
+...
+release_static_lock("Zone_1");
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">get_dynamic_lock(string)</function>
+		</title>
+		<para>
+		The function obtains the index of a lock from the pool by performing a hash
+		function on the given variable string and attempts to acquire it.
+		In case the lock is taken by another process, script execution will halt
+		until the lock is released. Attempting to acquire the lock a second time by
+		the same process, without releasing it first, will result in a deadlock.
+		</para>
+		<para>
+		The dynamic lock functions have the advantage of allowing string
+		pseudo-variables to be given as parameters, but the drawback to this is that
+		two strings may have the same hashed value, thus pointing to the same lock.
+		As a consequence, either two totally separate regions of the script will be
+		synchronized (they will not execute in parallel), or a process could end up
+		in a deadlock by acquiring two locks in a row on two different (but equally
+		hashed) strings. To address the latter issue, use the strings_share_lock()
+		function to test if two strings generate equal hash values.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string</emphasis> - String to be hashed in order to
+			obtain the index of a lock from the pool. The
+			<emphasis>string</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>pvar</emphasis> - the string is the value of an
+				existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">get_dynamic_lock</function> usage</title>
+		<programlisting format="linespecific">
+...
+# acquire and release a dynamic lock on the "Call-ID" Header of a SIP message
+if (!get_dynamic_lock("$ci")) {
+	xlog("Error while getting dynamic lock!\n");
+}
+...
+if (!release_dynamic_lock("$ci") {
+	xlog("Error while releasing dynamic lock!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">release_dynamic_lock(string)</function>
+		</title>
+		<para>
+		The function obtains the index of a lock from the pool by performing a hash
+		function on the given variable string and releases it. Nothing will happen
+		if the lock is not acquired. 
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string</emphasis> - String to be hashed in order to
+			obtain the index of a lock from the pool. The
+			<emphasis>string</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>pvar</emphasis> - the string is the value of an
+				existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">release_dynamic_lock</function> usage</title>
+		<programlisting format="linespecific">
+...
+# acquire and release a dynamic lock on the "Call-ID" Header of a SIP message
+if (!get_dynamic_lock("$ci")) {
+	xlog("Error while getting dynamic lock!\n");
+}
+...
+if (!release_dynamic_lock("$ci") {
+	xlog("Error while releasing dynamic lock!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">strings_share_lock(string1, string2)</function>
+		</title>
+		<para>
+		A function used to test if two strings will generate the same hash value.
+		Its purpose is to prevent deadlocks resulted when a process successively
+		acquires two dynamic locks on two strings which happen to point to the same
+		lock.
+		</para>
+		<para>
+		Theoretically, the chance of two strings generating the same hash value 
+		decreases proportionally to the increase of the lock_pool_size parameter. In
+		other words, the more dynamic locks you configure the module with, the higher
+		the chance that all individual protected regions of your script will run in
+		parallel, without waiting for each other.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>string1, string2</emphasis> - Strings which will have
+			their hash values compared. The
+			<emphasis>string</emphasis> parameters can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - statically assigned</para>
+				</listitem>
 
+				<listitem>
+				<para><emphasis>pvar</emphasis> - values of existing pseudo-variables
+				(as string values)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">strings_share_lock</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Proper way of acquiring two dynamic locks successively
+if (!get_dynamic_lock("$avp(1)")) {
+	xlog("Error while getting dynamic lock!\n");
+}
+
+if (!strings_share_lock("$avp(1)", "$avp(2)") {
+	if (!get_dynamic_lock("$avp(2)")) {
+		xlog("Error while getting dynamic lock!\n");
+	}
+}
+...
+if (!strings_share_lock("$avp(1)", "$avp(2)") {
+	if (!release_dynamic_lock("$avp(2)") {
+		xlog("Error while releasing dynamic lock!\n");
+	}
+}
+
+if (!release_dynamic_lock("$avp(1)") {
+	xlog("Error while releasing dynamic lock!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
 
 
 </section>

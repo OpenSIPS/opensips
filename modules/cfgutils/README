@@ -37,6 +37,7 @@ Sergio Gutierrez
               1.3.2. hash_file (string)
               1.3.3. shvset (string)
               1.3.4. varset (string)
+              1.3.5. lock_pool_size (integer)
 
         1.4. Exported Functions
 
@@ -53,6 +54,12 @@ Sergio Gutierrez
               1.4.11. set_select_weight(pseudovarible_name)
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
+
+              1.4.13. get_static_lock(string)
+              1.4.14. release_static_lock(string)
+              1.4.15. get_dynamic_lock(string)
+              1.4.16. release_dynamic_lock(string)
+              1.4.17. strings_share_lock(string1, string2)
 
         1.5. MI Commands
 
@@ -77,29 +84,35 @@ Sergio Gutierrez
    1.2. hash_file parameter usage
    1.3. shvset parameter usage
    1.4. varset parameter usage
-   1.5. rand_event() usage
-   1.6. rand_set_prob() usage
-   1.7. rand_reset_prob() usage
-   1.8. rand_get_prob() usage
-   1.9. sleep usage
-   1.10. usleep usage
-   1.11. abort usage
-   1.12. pkg_status usage
-   1.13. shm_status usage
-   1.14. set_count usage
-   1.15. set_select_weight usage
-   1.16. ts_usec_delta usage
-   1.17. rand_set_prob usage
-   1.18. rand_reset_prob usage
-   1.19. rand_get_prob usage
-   1.20. check_config_hash usage
-   1.21. get_config_hash usage
-   1.22. shv_set usage
-   1.23. shv_get usage
-   1.24. env(name) pseudo-variable usage
-   1.25. RANDOM pseudo-variable usage
-   1.26. ctime(name) pseudo-variable usage
-   1.27. shv(name) pseudo-variable usage
+   1.5. Setting lock_pool_size module parameter
+   1.6. rand_event() usage
+   1.7. rand_set_prob() usage
+   1.8. rand_reset_prob() usage
+   1.9. rand_get_prob() usage
+   1.10. sleep usage
+   1.11. usleep usage
+   1.12. abort usage
+   1.13. pkg_status usage
+   1.14. shm_status usage
+   1.15. set_count usage
+   1.16. set_select_weight usage
+   1.17. ts_usec_delta usage
+   1.18. get_static_lock usage
+   1.19. release_static_lock usage
+   1.20. get_dynamic_lock usage
+   1.21. release_dynamic_lock usage
+   1.22. strings_share_lock usage
+   1.23. rand_set_prob usage
+   1.24. rand_reset_prob usage
+   1.25. rand_get_prob usage
+   1.26. check_config_hash usage
+   1.27. get_config_hash usage
+   1.28. shv_set usage
+   1.29. shv_get usage
+   1.30. env(name) pseudo-variable usage
+   1.31. RANDOM pseudo-variable usage
+   1.32. ctime(name) pseudo-variable usage
+   1.33. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
 
@@ -214,6 +227,22 @@ modparam("cfgutils", "varset", "init=i:1")
 modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 ...
 
+1.3.5. lock_pool_size (integer)
+
+   The number of dynamic script locks to be allocated at OpenSIPS
+   startup. This number must be a power of 2. (i.e. 1, 2, 4, 8,
+   16, 32, 64 ...)
+
+   Note that the lock_pool_size parameter only affects the number
+   of dynamic locks created at startup. The pool of static locks
+   only depends on the number of unique static strings supplied
+   throughout the script to the set of static lock functions.
+
+   Default value is “32”.
+
+   Example 1.5. Setting lock_pool_size module parameter
+modparam("script_locks", "lock_pool_size", "64")
+
 1.4. Exported Functions
 
 1.4.1. rand_event([probability])
@@ -222,7 +251,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
    probability value. If probability parameter is given, it will
    override the global parameter set by rand_set_prob() function.
 
-   Example 1.5. rand_event() usage
+   Example 1.6. rand_event() usage
 ...
 if (rand_event()) {
   append_to_reply("Retry-After: 120\n");
@@ -238,7 +267,7 @@ if (rand_event()) {
 
    “probability” can have a value from the range 0..99.
 
-   Example 1.6. rand_set_prob() usage
+   Example 1.7. rand_set_prob() usage
 ...
 rand_set_prob("4");
 ...
@@ -247,7 +276,7 @@ rand_set_prob("4");
 
    Reset the probability back to the inital value.
 
-   Example 1.7. rand_reset_prob() usage
+   Example 1.8. rand_reset_prob() usage
 ...
 rand_reset_prob();
 ...
@@ -257,7 +286,7 @@ rand_reset_prob();
    Return the current probability setting, e.g. for logging
    purposes.
 
-   Example 1.8. rand_get_prob() usage
+   Example 1.9. rand_get_prob() usage
 ...
 rand_get_prob();
 
@@ -274,7 +303,7 @@ rand_get_prob();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.9. sleep usage
+   Example 1.10. sleep usage
 ...
 sleep("1");
 ...
@@ -294,7 +323,7 @@ sleep("$avp(secs)");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.10. usleep usage
+   Example 1.11. usleep usage
 ...
 usleep("500000"); # sleep half of sec
 ...
@@ -307,7 +336,7 @@ usleep("500000"); # sleep half of sec
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.11. abort usage
+   Example 1.12. abort usage
 ...
 abort();
 ...
@@ -323,7 +352,7 @@ abort();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.12. pkg_status usage
+   Example 1.13. pkg_status usage
 ...
 pkg_status();
 ...
@@ -339,7 +368,7 @@ pkg_status();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.13. shm_status usage
+   Example 1.14. shm_status usage
 ...
 shm_status();
 ...
@@ -355,7 +384,7 @@ shm_status();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. set_count usage
+   Example 1.15. set_count usage
 ...
 set_count("$avp(10)", "$avp(result)");
 ...
@@ -372,7 +401,7 @@ set_count("$avp(10)", "$avp(result)");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. set_select_weight usage
+   Example 1.16. set_select_weight usage
 ...
 $avp(21) = set_select_weight("$avp(10)");
 ...
@@ -386,9 +415,191 @@ $avp(21) = set_select_weight("$avp(10)");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.16. ts_usec_delta usage
+   Example 1.17. ts_usec_delta usage
 ...
 ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
+...
+
+1.4.13.  get_static_lock(string)
+
+   The function obtains the index of a specific lock
+   (predetermined in the fixup phase of the OpenSIPS script) and
+   attempts to acquire it. In case the lock is taken by another
+   process, script execution will halt until the lock is released.
+   Attempting to acquire the lock a second time by the same
+   process, without releasing it first, will result in a deadlock.
+
+   The static lock functions guarantee that two different strings
+   will never point to the same lock, thus avoiding introducing
+   unnecessary (and transparent!) synchronization between
+   processes. Their disadvantage is the nature of their parameters
+   (static strings), making them inappropriate in certain
+   scenarios.
+
+   Meaning of the parameters is as follows:
+     * string - String to be used in order to obtain the index of
+       a static lock. The string parameter can have the following
+       types:
+          + string - the string is statically assigned
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE.
+
+   Example 1.18. get_static_lock usage
+# acquire and release a static lock
+...
+get_static_lock("Zone_1");
+...
+release_static_lock("Zone_1");
+...
+
+1.4.14.  release_static_lock(string)
+
+   The function obtains the index of a specific lock
+   (predetermined in the fixup phase of the OpenSIPS script) and
+   releases it. Nothing will happen if the lock is not acquired.
+
+   Meaning of the parameters is as follows:
+     * string - String to be used in order to obtain the index of
+       a static lock. The string parameter can have the following
+       types:
+          + string - the string is statically assigned
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE.
+
+   Example 1.19. release_static_lock usage
+# acquire and release a static lock
+...
+get_static_lock("Zone_1");
+...
+release_static_lock("Zone_1");
+...
+
+1.4.15.  get_dynamic_lock(string)
+
+   The function obtains the index of a lock from the pool by
+   performing a hash function on the given variable string and
+   attempts to acquire it. In case the lock is taken by another
+   process, script execution will halt until the lock is released.
+   Attempting to acquire the lock a second time by the same
+   process, without releasing it first, will result in a deadlock.
+
+   The dynamic lock functions have the advantage of allowing
+   string pseudo-variables to be given as parameters, but the
+   drawback to this is that two strings may have the same hashed
+   value, thus pointing to the same lock. As a consequence, either
+   two totally separate regions of the script will be synchronized
+   (they will not execute in parallel), or a process could end up
+   in a deadlock by acquiring two locks in a row on two different
+   (but equally hashed) strings. To address the latter issue, use
+   the strings_share_lock() function to test if two strings
+   generate equal hash values.
+
+   Meaning of the parameters is as follows:
+     * string - String to be hashed in order to obtain the index
+       of a lock from the pool. The string parameter can have the
+       following types:
+          + pvar - the string is the value of an existing
+            pseudo-variable (as string value)
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE.
+
+   Example 1.20. get_dynamic_lock usage
+...
+# acquire and release a dynamic lock on the "Call-ID" Header of a SIP me
+ssage
+if (!get_dynamic_lock("$ci")) {
+        xlog("Error while getting dynamic lock!\n");
+}
+...
+if (!release_dynamic_lock("$ci") {
+        xlog("Error while releasing dynamic lock!\n");
+}
+...
+
+1.4.16.  release_dynamic_lock(string)
+
+   The function obtains the index of a lock from the pool by
+   performing a hash function on the given variable string and
+   releases it. Nothing will happen if the lock is not acquired.
+
+   Meaning of the parameters is as follows:
+     * string - String to be hashed in order to obtain the index
+       of a lock from the pool. The string parameter can have the
+       following types:
+          + pvar - the string is the value of an existing
+            pseudo-variable (as string value)
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE.
+
+   Example 1.21. release_dynamic_lock usage
+...
+# acquire and release a dynamic lock on the "Call-ID" Header of a SIP me
+ssage
+if (!get_dynamic_lock("$ci")) {
+        xlog("Error while getting dynamic lock!\n");
+}
+...
+if (!release_dynamic_lock("$ci") {
+        xlog("Error while releasing dynamic lock!\n");
+}
+...
+
+1.4.17.  strings_share_lock(string1, string2)
+
+   A function used to test if two strings will generate the same
+   hash value. Its purpose is to prevent deadlocks resulted when a
+   process successively acquires two dynamic locks on two strings
+   which happen to point to the same lock.
+
+   Theoretically, the chance of two strings generating the same
+   hash value decreases proportionally to the increase of the
+   lock_pool_size parameter. In other words, the more dynamic
+   locks you configure the module with, the higher the chance that
+   all individual protected regions of your script will run in
+   parallel, without waiting for each other.
+
+   Meaning of the parameters is as follows:
+     * string1, string2 - Strings which will have their hash
+       values compared. The string parameters can have the
+       following types:
+          + string - statically assigned
+          + pvar - values of existing pseudo-variables (as string
+            values)
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE.
+
+   Example 1.22. strings_share_lock usage
+...
+# Proper way of acquiring two dynamic locks successively
+if (!get_dynamic_lock("$avp(1)")) {
+        xlog("Error while getting dynamic lock!\n");
+}
+
+if (!strings_share_lock("$avp(1)", "$avp(2)") {
+        if (!get_dynamic_lock("$avp(2)")) {
+                xlog("Error while getting dynamic lock!\n");
+        }
+}
+...
+if (!strings_share_lock("$avp(1)", "$avp(2)") {
+        if (!release_dynamic_lock("$avp(2)") {
+                xlog("Error while releasing dynamic lock!\n");
+        }
+}
+
+if (!release_dynamic_lock("$avp(1)") {
+        xlog("Error while releasing dynamic lock!\n");
+}
 ...
 
 1.5. MI Commands
@@ -400,7 +611,7 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 
    The parameter value must be a number from 0 to 99.
 
-   Example 1.17. rand_set_prob usage
+   Example 1.23. rand_set_prob usage
 ...
 $ opensipsctl fifo rand_set_prob 10
 ...
@@ -411,7 +622,7 @@ $ opensipsctl fifo rand_set_prob 10
 
    This command don't need a parameter.
 
-   Example 1.18.  rand_reset_prob usage
+   Example 1.24.  rand_reset_prob usage
 ...
 $ opensipsctl fifo rand_reset_prob
 ...
@@ -422,7 +633,7 @@ $ opensipsctl fifo rand_reset_prob
 
    The function return the actual probability value.
 
-   Example 1.19. rand_get_prob usage
+   Example 1.25. rand_get_prob usage
 ...
 $ opensipsctl fifo get_prob
 The actual probability is 50 percent.
@@ -438,7 +649,7 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.20. check_config_hash usage
+   Example 1.26. check_config_hash usage
 ...
 $ opensipsctl fifo check_config_hash
 The actual config file hash is identical to the stored one.
@@ -451,7 +662,7 @@ The actual config file hash is identical to the stored one.
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.21. get_config_hash usage
+   Example 1.27. get_config_hash usage
 ...
 $ opensipsctl fifo get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -475,7 +686,7 @@ $ opensipsctl fifo get_config_hash
                 _value_
                 _empty_line_
 
-   Example 1.22. shv_set usage
+   Example 1.28. shv_set usage
 ...
 $ opensipsctl fifo shv_set debug int 0
 ...
@@ -493,7 +704,7 @@ $ opensipsctl fifo shv_set debug int 0
                 _name_
                 _empty_line_
 
-   Example 1.23. shv_get usage
+   Example 1.29. shv_get usage
 ...
 $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get
@@ -505,7 +716,7 @@ $ opensipsctl fifo shv_get
 
    This PV provides access to the environment variable 'name'.
 
-   Example 1.24. env(name) pseudo-variable usage
+   Example 1.30. env(name) pseudo-variable usage
 ...
 xlog("PATH environment variable is $env(PATH)\n");
 ...
@@ -514,7 +725,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 
    Returns a random value from the [0 - 2^31) range.
 
-   Example 1.25. RANDOM pseudo-variable usage
+   Example 1.31. RANDOM pseudo-variable usage
 ...
 $avp(10) = ($RANDOM / 16777216); # 2^24
 if ($avp(10) < 10) {
@@ -542,7 +753,7 @@ exit;
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.26. ctime(name) pseudo-variable usage
+   Example 1.32. ctime(name) pseudo-variable usage
 ...
 if ($ctime(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -558,7 +769,7 @@ if ($ctime(year) == 2008) {
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 
-   Example 1.27. shv(name) pseudo-variable usage
+   Example 1.33. shv(name) pseudo-variable usage
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...
