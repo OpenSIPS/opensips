@@ -71,11 +71,11 @@ struct hostport {
 		if ((msg) && ((struct sip_msg*)(msg))->set_global_address.len) \
 			(hp)->host=&(((struct sip_msg*)(msg))->set_global_address); \
 		else \
-			(hp)->host=&default_global_address; \
+			(hp)->host=NULL; \
 		if ((msg) && ((struct sip_msg*)(msg))->set_global_port.len) \
 			(hp)->port=&(((struct sip_msg*)(msg))->set_global_port); \
 		else \
-			(hp)->port=&default_global_port; \
+			(hp)->port=NULL; \
 	}while(0)
 
 char * build_req_buf_from_sip_req (	struct sip_msg* msg,

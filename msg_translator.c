@@ -1957,16 +1957,21 @@ char* via_builder( unsigned int *len,
 	str* port_str; /* port no displayed in via */
 	
 	/* use pre-set address in via or the outbound socket one */
-	if(send_sock->adv_name_str.len)
-		address_str=&(send_sock->adv_name_str);
-	else if ( hp && hp->host->len)
+	if (hp && hp->host && hp->host->len)
 		address_str=hp->host;
+	else if(send_sock->adv_name_str.len)
+		address_str=&(send_sock->adv_name_str);
+	else if (default_global_address.len)
+		address_str=&default_global_address;
 	else
 		address_str=&(send_sock->address_str);
-	if(send_sock->adv_port_str.len)
-		port_str=&(send_sock->adv_port_str);
-	else if (hp && hp->port->len)
+
+	if (hp && hp->port && hp->port->len)
 		port_str=hp->port;
+	else if(send_sock->adv_port_str.len)
+		port_str=&(send_sock->adv_port_str);
+	else if (default_global_port.len)
+		port_str=&default_global_port;
 	else
 		port_str=&(send_sock->port_no_str);
 
@@ -2003,11 +2008,10 @@ char* via_builder( unsigned int *len,
 	via_len=local_via_len+address_str->len; /*space included in MY_VIA*/
 	
 	memcpy(line_buf+local_via_len+extra_len, address_str->s, address_str->len);
-	if ((send_sock->port_no!=SIP_PORT) || (port_str!=&send_sock->port_no_str)){
-		line_buf[via_len]=':'; via_len++;
-		memcpy(line_buf+via_len, port_str->s, port_str->len);
-		via_len+=port_str->len;
-	}
+	line_buf[via_len]=':'; via_len++;
+	memcpy(line_buf+via_len, port_str->s, port_str->len);
+	via_len+=port_str->len;
+
 	/* branch parameter */
 	if (branch){
 		memcpy(line_buf+via_len, MY_BRANCH, MY_BRANCH_LEN );

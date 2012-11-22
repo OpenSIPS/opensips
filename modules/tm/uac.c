@@ -57,6 +57,7 @@
 #include "../../route.h"
 #include "../../action.h"
 #include "../../dset.h"
+#include "../../data_lump.h"
 
 #include "ut.h"
 #include "h_table.h"
@@ -317,13 +318,15 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			set_avp_list( backup );
 
 			/* check for changes - if none, do not regenerate the buffer */
-			if (req->new_uri.s || req->dst_uri.s || req->add_rm || req->body_lumps) {
+			if (req->new_uri.s || req->add_rm || req->body_lumps || 
+					req->dst_uri.len != dialog->hooks.next_hop->len ||
+					memcmp(req->dst_uri.s,dialog->hooks.next_hop->s,req->dst_uri.len) != 0) {
 				new_send_sock = NULL;
 
 				/* do we also need to change the destination? */
 				if (req->dst_uri.s || req->new_uri.s) {
 					/* calculate the socket corresponding to next hop */
-					new_send_sock = uri2sock(0, 
+					new_send_sock = uri2sock(req,
 						req->dst_uri.s ? &(req->dst_uri) : &req->new_uri,
 						&new_to_su, PROTO_NONE );
 					if (!new_send_sock) {
@@ -332,11 +335,30 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					}
 				}
 
-				/* build the shm buffer now */
-				buf1 = build_req_buf_from_sip_req(req,(unsigned int*)&buf_len1,
-					new_send_sock?new_send_sock:dialog->send_sock,
-					new_send_sock?new_send_sock->proto:dialog->send_sock->proto,
-					MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG );
+				/* if interface change, we need to re-build the via */
+				if (new_send_sock && new_send_sock != dialog->send_sock) {
+					LM_DBG("Interface change in local route. rebuilding via\n");
+					if (!del_lump(req,req->h_via1->name.s - req->buf,req->h_via1->len,0)) {
+						LM_ERR("Failed to remove initial via \n");
+						goto abort_update;
+					}
+
+					memcpy(req->add_to_branch_s,req->via1->branch->value.s,req->via1->branch->value.len);
+					req->add_to_branch_len = req->via1->branch->value.len;
+
+					/* build the shm buffer now */
+					buf1 = build_req_buf_from_sip_req(req,(unsigned int*)&buf_len1,
+						new_send_sock?new_send_sock:dialog->send_sock,
+						new_send_sock?new_send_sock->proto:dialog->send_sock->proto,
+						MSG_TRANS_SHM_FLAG);
+				} else {
+					/* build the shm buffer now */
+					buf1 = build_req_buf_from_sip_req(req,(unsigned int*)&buf_len1,
+						new_send_sock?new_send_sock:dialog->send_sock,
+						new_send_sock?new_send_sock->proto:dialog->send_sock->proto,
+						MSG_TRANS_SHM_FLAG|MSG_TRANS_NOVIA_FLAG);
+				}
+
 				if (!buf1) {
 					LM_ERR("no more shm mem\n");
 					/* keep original buffer */
