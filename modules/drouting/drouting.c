@@ -2060,9 +2060,11 @@ static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
 			}
 		}
 
+		if (puri.port_no==0)
+			puri.port_no = (puri.proto==PROTO_TLS?SIPS_PORT:SIP_PORT);
 		pgwa = (*rdata)->pgw_l;
 		while(pgwa) {
-			if( (type<0 || type==pgwa->type) && gw_matches_ip( pgwa, ip, 0) ) {
+			if( (type<0 || type==pgwa->type) && gw_matches_ip( pgwa, ip, puri.port_no) ) {
 
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
