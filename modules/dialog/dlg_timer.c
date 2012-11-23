@@ -379,6 +379,7 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 			if (current->legs[DLG_CALLER_LEG].reply_received == 0) {
 				detach_node_unsafe(it);
 				detached=1;
+				it->dlg->pl = 0;
 
 				if (ret == NULL)
 					ret = it;
@@ -394,6 +395,8 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 			if (current->flags & DLG_FLAG_PING_CALLEE) {
 				if (current->legs[callee_idx(current)].reply_received == 0) {
 					detach_node_unsafe(it);
+					it->dlg->pl = 0;
+
 					if (ret == NULL)
 						ret = it;
 					else
@@ -522,7 +525,6 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		LM_DBG("dialog %p has expired\n",dlg);
 		curr = it->next;
 		shm_free(it);
-		dlg->pl = 0;
 		it = curr;
 
 		/* FIXME - maybe better not to send BYE both ways as we know for sure one
