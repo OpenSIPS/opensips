@@ -71,6 +71,30 @@
 
 #define is_leap_year(yyyy) ((((yyyy)%400))?(((yyyy)%100)?(((yyyy)%4)?0:1):0):1)
 
+#define TR_SEPARATOR '|'
+
+#define load_TR_value( _p,_s, _tr, _func, _err, _done) \
+	do{ \
+		_s = strchr(_p, (int)TR_SEPARATOR); \
+		if (_s) \
+			*_s = 0; \
+		/* LM_DBG("----parsing tr param <%s>\n",_p); \ */\
+		if(_s != _p) {\
+			if( _func( _tr, _p)) {\
+				LM_DBG("func error\n"); \
+				if (_s) *_s = TR_SEPARATOR; \
+				goto _err; \
+			} \
+		} \
+		if (_s) { \
+			*_s = TR_SEPARATOR; \
+			_p = _s+1;\
+			if ( *(_p)==0 ) \
+				goto _done; \
+		} else {\
+			goto _done; \
+		}\
+	} while(0)
 
 typedef struct _ac_maxval
 {

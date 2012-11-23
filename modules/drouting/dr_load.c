@@ -109,31 +109,6 @@ static str attrs_drc_col = str_init(ATTRS_DRC_COL);
 	}while(0)
 
 
-#define TR_SEPARATOR '|'
-
-#define load_TR_value( _p,_s, _tr, _func, _err, _done) \
-	do{ \
-		_s = strchr(_p, (int)TR_SEPARATOR); \
-		if (_s) \
-			*_s = 0; \
-		/*DBG("----parsing tr param <%s>\n",_p);*/\
-		if(_s != _p) {\
-			if( _func( _tr, _p)) {\
-				if (_s) *_s = TR_SEPARATOR; \
-				goto _err; \
-			} \
-		} \
-		if (_s) { \
-			*_s = TR_SEPARATOR; \
-			_p = _s+1;\
-			if ( *(_p)==0 ) \
-				goto _done; \
-		} else {\
-			goto _done; \
-		}\
-	} while(0)
-
-
 
 static inline tmrec_t* parse_time_def(char *time_str)
 {

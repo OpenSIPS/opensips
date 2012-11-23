@@ -59,6 +59,7 @@
 #include "../../mod_fix.h"
 #include "../../md5utils.h"
 #include "../../globals.h"
+#include "../../time_rec.h"
 #include <stdlib.h>
 #include "shvar.h"
 #include "env_var.h"
@@ -88,6 +89,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 		char *_t1u, char *_t2s, char *_t2u, char *_res);
+static int check_time_rec(struct sip_msg*, char *);
 
 static int fixup_prob( void** param, int param_no);
 static int fixup_pv_set(void** param, int param_no);
@@ -150,6 +152,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"get_static_lock",(cmd_function)get_static_lock, 1, fixup_static_lock, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"check_time_rec", (cmd_function)check_time_rec, 1, fixup_sgp_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"release_static_lock",(cmd_function)release_static_lock, 1,
@@ -758,3 +763,76 @@ static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 	return 1;
 }
 
+/**
+ *
+ * return values:
+			1 - match
+			-1 - otherwise
+ */
+int check_time_rec(struct sip_msg *msg, char *time_str)
+{
+	tmrec_p time_rec = 0;
+	char *p, *s;
+	str ret;
+	ac_tm_t att;
+
+	if (fixup_get_svalue(msg, (gparam_p)time_str, &ret) != 0) {
+		LM_ERR("Get fixup value failed!\n");
+		return E_CFG;
+	}
+
+	p = ret.s;
+
+	LM_INFO("Parsing : %.*s\n", ret.len, ret.s);
+
+	time_rec = tmrec_new(SHM_ALLOC);
+	if (time_rec==0) {
+		LM_ERR("no more shm mem\n");
+		goto error;
+	}
+
+	/* empty definition? */
+	if ( time_str==0 || *time_str==0 )
+		return -1;
+
+	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_dtend, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
+
+	/* success */
+
+	LM_DBG("Time rec created\n");
+
+done:
+	/* shortcut: if there is no dstart, timerec is valid */
+	if (time_rec->dtstart==0)
+		return 1;
+
+	memset( &att, 0, sizeof(att));
+
+	/* set current time */
+	if ( ac_tm_set_time( &att, time(0) ) )
+		return -1;
+
+	/* does the recv_time match the specified interval?  */
+	if (check_tmrec( time_rec, &att, 0)!=0)
+		return -1;
+
+	return 1;
+
+parse_error:
+	LM_ERR("parse error in <%s> around position %i\n",
+		time_str, (int)(long)(p-time_str));
+error:
+	if (time_rec)
+		tmrec_free( time_rec );
+	return -1;
+}

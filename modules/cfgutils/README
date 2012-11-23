@@ -55,11 +55,12 @@ Sergio Gutierrez
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
 
-              1.4.13. get_static_lock(string)
-              1.4.14. release_static_lock(string)
-              1.4.15. get_dynamic_lock(string)
-              1.4.16. release_dynamic_lock(string)
-              1.4.17. strings_share_lock(string1, string2)
+              1.4.13. check_time_rec(time_string)
+              1.4.14. get_static_lock(string)
+              1.4.15. release_static_lock(string)
+              1.4.16. get_dynamic_lock(string)
+              1.4.17. release_dynamic_lock(string)
+              1.4.18. strings_share_lock(string1, string2)
 
         1.5. MI Commands
 
@@ -97,22 +98,23 @@ Sergio Gutierrez
    1.15. set_count usage
    1.16. set_select_weight usage
    1.17. ts_usec_delta usage
-   1.18. get_static_lock usage
-   1.19. release_static_lock usage
-   1.20. get_dynamic_lock usage
-   1.21. release_dynamic_lock usage
-   1.22. strings_share_lock usage
-   1.23. rand_set_prob usage
-   1.24. rand_reset_prob usage
-   1.25. rand_get_prob usage
-   1.26. check_config_hash usage
-   1.27. get_config_hash usage
-   1.28. shv_set usage
-   1.29. shv_get usage
-   1.30. env(name) pseudo-variable usage
-   1.31. RANDOM pseudo-variable usage
-   1.32. ctime(name) pseudo-variable usage
-   1.33. shv(name) pseudo-variable usage
+   1.18. check_time_rec usage
+   1.19. get_static_lock usage
+   1.20. release_static_lock usage
+   1.21. get_dynamic_lock usage
+   1.22. release_dynamic_lock usage
+   1.23. strings_share_lock usage
+   1.24. rand_set_prob usage
+   1.25. rand_reset_prob usage
+   1.26. rand_get_prob usage
+   1.27. check_config_hash usage
+   1.28. get_config_hash usage
+   1.29. shv_set usage
+   1.30. shv_get usage
+   1.31. env(name) pseudo-variable usage
+   1.32. RANDOM pseudo-variable usage
+   1.33. ctime(name) pseudo-variable usage
+   1.34. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
 
@@ -241,7 +243,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
    Default value is “32”.
 
    Example 1.5. Setting lock_pool_size module parameter
-modparam("script_locks", "lock_pool_size", "64")
+modparam("cfgutils", "lock_pool_size", "64")
 
 1.4. Exported Functions
 
@@ -420,7 +422,44 @@ $avp(21) = set_select_weight("$avp(10)");
 ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 ...
 
-1.4.13.  get_static_lock(string)
+1.4.13.  check_time_rec(time_string)
+
+   The function returns a positive value if the specified time
+   reccurence string matches the current time, or a negative value
+   otherwise.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE.
+
+   Meaning of the parameters is as follows:
+     * time_string - Time recurrence string which will be matched
+       against the current time. Its fields are separated by "|"
+       and the order in which they are given is: "dtstart | dtend
+       | duration | freq | until | interval | byday | bymday |
+       byyday | byweekno | bymonth". None of the fields following
+       "freq" is used unless "freq" is defined. If the string ends
+       in multiple null fields, they can all be ommited.
+       The string parameter can have the following types:
+          + string - the time recurrence string is statically
+            assigned
+          + pvar - the string is the value of an existing
+            pseudo-variable (as string value)
+
+   Example 1.18. check_time_rec usage
+...
+# Only passing if still in 2012
+if (check_time_rec("20120101T000000|20121231T235959")) {
+        xlog("Current time matches the given interval\n");
+}
+...
+# Only passing if less than 30 days have passed from "dtstart"
+if (check_time_rec("20121101T000000||p30d")) {
+        xlog("Current time matches the given interval\n");
+}
+...
+
+1.4.14.  get_static_lock(string)
 
    The function obtains the index of a specific lock
    (predetermined in the fixup phase of the OpenSIPS script) and
@@ -446,7 +485,7 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
    TIMER_ROUTE.
 
-   Example 1.18. get_static_lock usage
+   Example 1.19. get_static_lock usage
 # acquire and release a static lock
 ...
 get_static_lock("Zone_1");
@@ -454,7 +493,7 @@ get_static_lock("Zone_1");
 release_static_lock("Zone_1");
 ...
 
-1.4.14.  release_static_lock(string)
+1.4.15.  release_static_lock(string)
 
    The function obtains the index of a specific lock
    (predetermined in the fixup phase of the OpenSIPS script) and
@@ -470,7 +509,7 @@ release_static_lock("Zone_1");
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
    TIMER_ROUTE.
 
-   Example 1.19. release_static_lock usage
+   Example 1.20. release_static_lock usage
 # acquire and release a static lock
 ...
 get_static_lock("Zone_1");
@@ -478,7 +517,7 @@ get_static_lock("Zone_1");
 release_static_lock("Zone_1");
 ...
 
-1.4.15.  get_dynamic_lock(string)
+1.4.16.  get_dynamic_lock(string)
 
    The function obtains the index of a lock from the pool by
    performing a hash function on the given variable string and
@@ -509,7 +548,7 @@ release_static_lock("Zone_1");
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
    TIMER_ROUTE.
 
-   Example 1.20. get_dynamic_lock usage
+   Example 1.21. get_dynamic_lock usage
 ...
 # acquire and release a dynamic lock on the "Call-ID" Header of a SIP me
 ssage
@@ -522,7 +561,7 @@ if (!release_dynamic_lock("$ci") {
 }
 ...
 
-1.4.16.  release_dynamic_lock(string)
+1.4.17.  release_dynamic_lock(string)
 
    The function obtains the index of a lock from the pool by
    performing a hash function on the given variable string and
@@ -539,7 +578,7 @@ if (!release_dynamic_lock("$ci") {
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
    TIMER_ROUTE.
 
-   Example 1.21. release_dynamic_lock usage
+   Example 1.22. release_dynamic_lock usage
 ...
 # acquire and release a dynamic lock on the "Call-ID" Header of a SIP me
 ssage
@@ -552,7 +591,7 @@ if (!release_dynamic_lock("$ci") {
 }
 ...
 
-1.4.17.  strings_share_lock(string1, string2)
+1.4.18.  strings_share_lock(string1, string2)
 
    A function used to test if two strings will generate the same
    hash value. Its purpose is to prevent deadlocks resulted when a
@@ -578,7 +617,7 @@ if (!release_dynamic_lock("$ci") {
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
    TIMER_ROUTE.
 
-   Example 1.22. strings_share_lock usage
+   Example 1.23. strings_share_lock usage
 ...
 # Proper way of acquiring two dynamic locks successively
 if (!get_dynamic_lock("$avp(1)")) {
@@ -611,7 +650,7 @@ if (!release_dynamic_lock("$avp(1)") {
 
    The parameter value must be a number from 0 to 99.
 
-   Example 1.23. rand_set_prob usage
+   Example 1.24. rand_set_prob usage
 ...
 $ opensipsctl fifo rand_set_prob 10
 ...
@@ -622,7 +661,7 @@ $ opensipsctl fifo rand_set_prob 10
 
    This command don't need a parameter.
 
-   Example 1.24.  rand_reset_prob usage
+   Example 1.25.  rand_reset_prob usage
 ...
 $ opensipsctl fifo rand_reset_prob
 ...
@@ -633,7 +672,7 @@ $ opensipsctl fifo rand_reset_prob
 
    The function return the actual probability value.
 
-   Example 1.25. rand_get_prob usage
+   Example 1.26. rand_get_prob usage
 ...
 $ opensipsctl fifo get_prob
 The actual probability is 50 percent.
@@ -649,7 +688,7 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.26. check_config_hash usage
+   Example 1.27. check_config_hash usage
 ...
 $ opensipsctl fifo check_config_hash
 The actual config file hash is identical to the stored one.
@@ -662,7 +701,7 @@ The actual config file hash is identical to the stored one.
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.27. get_config_hash usage
+   Example 1.28. get_config_hash usage
 ...
 $ opensipsctl fifo get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -686,7 +725,7 @@ $ opensipsctl fifo get_config_hash
                 _value_
                 _empty_line_
 
-   Example 1.28. shv_set usage
+   Example 1.29. shv_set usage
 ...
 $ opensipsctl fifo shv_set debug int 0
 ...
@@ -704,7 +743,7 @@ $ opensipsctl fifo shv_set debug int 0
                 _name_
                 _empty_line_
 
-   Example 1.29. shv_get usage
+   Example 1.30. shv_get usage
 ...
 $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get
@@ -716,7 +755,7 @@ $ opensipsctl fifo shv_get
 
    This PV provides access to the environment variable 'name'.
 
-   Example 1.30. env(name) pseudo-variable usage
+   Example 1.31. env(name) pseudo-variable usage
 ...
 xlog("PATH environment variable is $env(PATH)\n");
 ...
@@ -725,7 +764,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 
    Returns a random value from the [0 - 2^31) range.
 
-   Example 1.31. RANDOM pseudo-variable usage
+   Example 1.32. RANDOM pseudo-variable usage
 ...
 $avp(10) = ($RANDOM / 16777216); # 2^24
 if ($avp(10) < 10) {
@@ -753,7 +792,7 @@ exit;
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.32. ctime(name) pseudo-variable usage
+   Example 1.33. ctime(name) pseudo-variable usage
 ...
 if ($ctime(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -769,7 +808,7 @@ if ($ctime(year) == 2008) {
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 
-   Example 1.33. shv(name) pseudo-variable usage
+   Example 1.34. shv(name) pseudo-variable usage
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...

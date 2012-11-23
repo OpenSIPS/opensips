@@ -185,7 +185,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 		<example>
 		<title>Setting lock_pool_size module parameter</title>
 		<programlisting format="linespecific">
-modparam("script_locks", "lock_pool_size", "64")
+modparam("cfgutils", "lock_pool_size", "64")
 </programlisting>
 		</example>
 	</section>
@@ -461,6 +461,61 @@ $avp(21) = set_select_weight("$avp(10)");
 			<programlisting format="linespecific">
 ...
 ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
+...
+			</programlisting>
+		</example>
+	</section>
+	<section>
+		<title>
+			<function moreinfo="none">check_time_rec(time_string)</function>
+		</title>
+		<para>
+		The function returns a positive value if the specified time reccurence string
+		matches the current time, or a negative value otherwise.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+			FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>time_string</emphasis> - Time recurrence string which
+			will be matched against the current time. Its fields are separated by "|" and
+			the order in which they are given is: "dtstart | dtend | duration | freq
+			| until | interval | byday | bymday | byyday | byweekno | bymonth". None
+			of the fields following "freq" is used unless "freq" is defined. If the
+			string ends in multiple null fields, they can all be ommited.
+			</para>
+			<para>
+			The <emphasis>time_string</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - the time recurrence string is
+				statically assigned</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>pvar</emphasis> - the string is the value of an
+				existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</itemizedlist>
+		<example>
+			<title><function>check_time_rec</function> usage</title>
+			<programlisting format="linespecific">
+...
+# Only passing if still in 2012
+if (check_time_rec("20120101T000000|20121231T235959")) {
+	xlog("Current time matches the given interval\n");
+}
+...
+# Only passing if less than 30 days have passed from "dtstart"
+if (check_time_rec("20121101T000000||p30d")) {
+	xlog("Current time matches the given interval\n");
+}
 ...
 			</programlisting>
 		</example>
