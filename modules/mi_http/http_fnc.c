@@ -387,6 +387,7 @@ struct mi_root* mi_http_parse_tree(str* buf)
 	}
 
 	LM_ERR("Parse error!\n");
+	if (root) free_mi_tree(root);
 	return NULL;
 }
 
@@ -524,12 +525,14 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
 				(mi_flush_f *)mi_http_flush_tree, &html_page_data);
 	if (mi_rpl == NULL) {
 		LM_ERR("failed to process the command\n");
+		if (mi_cmd) free_mi_tree(mi_cmd);
 		return NULL;
 	} else if (mi_rpl != MI_ROOT_ASYNC_RPL) {
 		*page = html_page_data.page;
 	}
 	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
+	if (mi_cmd) free_mi_tree(mi_cmd);
 	return mi_rpl;
 }
 
