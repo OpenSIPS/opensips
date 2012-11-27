@@ -251,7 +251,7 @@ static cmd_export_t cmds[]={
 
 
 struct module_exports exports= {
-	"textops",  /* module name*/
+	"sipmsgops",  /* module name*/
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* exported functions */
