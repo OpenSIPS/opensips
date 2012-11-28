@@ -223,7 +223,7 @@ modparam("dialog", "rr_param", "xyz")
 		<para>
 		The specification of an AVP to contain a custom timeout (in seconds)
 		for the dialog. It may be used only in a request 
-		(initial or sequential) context 
+		(initial or sequential) context.
 		</para>
 		<para>
 		<emphasis>
@@ -238,6 +238,11 @@ modparam("dialog", "timeout_avp", "$avp(10)")
 ...
 </programlisting>
 		</example>
+		<para>
+		<emphasis>
+			Make sure you call this before <function>loose_route()</function>.
+		</emphasis>
+		</para>
 	</section>
 
 	<section id="default-timeout-id">
@@ -990,9 +995,9 @@ create_dialog("B");
 		from Route header and also falls back to SIP-wise matching.
 		</para>
 		<para>
-		As sequential requests are automaically matched to the dialog when 
-		doing "loose_route()" form script, this function is intended to:
-		(A) controll the place in your script where the dialog matching is done
+		As sequential requests are automatically matched to the dialog when 
+		doing "loose_route()" from script, this function is intended to:
+		(A) control the place in your script where the dialog matching is done
 		and (B) to cope with bogus sequential requests that do not have Route 
 		headers, so they are not handled by loose_route().
 		</para>
