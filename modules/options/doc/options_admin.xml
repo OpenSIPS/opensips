@@ -33,6 +33,11 @@
 				<emphasis>sl</emphasis> -- Stateless replies.
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>signaling</emphasis> -- Stateless replies.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 	</section>
@@ -57,7 +62,8 @@
 	<section>
 		<title><varname>accept</varname> (string)</title>
 		<para>
-			This parameter is the content of the Accept header field.
+			This parameter is the content of the Accept header field. If
+			<quote></quote>, the header is not added in the reply.
 			Note: it is not clearly written in RFC3261 if a proxy should
 			accept any content (the default <quote>*/*</quote>) because 
 			it does not care about content. Or if it does not accept 
@@ -81,6 +87,7 @@ modparam("options", "accept", "application/*")
 		<title><varname>accept_encoding</varname> (string)</title>
 		<para>
 			This parameter is the content of the Accept-Encoding header field.
+			If <quote></quote>, the header is not added in the reply.
 			Please do not change the default value because &osips; 
 			does not support any encodings yet.
 		</para>
@@ -102,6 +109,7 @@ modparam("options", "accept_encoding", "gzip")
 		<title><varname>accept_language</varname> (string)</title>
 		<para>
 			This parameter is the content of the Accept-Language header field.
+			If <quote></quote>, the header is not added in the reply.
 			You can set any language code which you prefer for error 
 			descriptions from other devices, but presumably there are not
 			much devices around which support other languages then the 
@@ -125,6 +133,7 @@ modparam("options", "accept_language", "de")
 		<title><varname>support</varname> (string)</title>
 		<para>
 			This parameter is the content of the Support header field.
+			If <quote></quote>, the header is not added in the reply.
 			Please do not change the default value, because &osips; currently 
 			does not support any of the SIP extensions registered at the IANA.
 		</para>

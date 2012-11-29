@@ -41,8 +41,11 @@
 
 
 
-char *acpt_c, *acpt_enc_c, *acpt_lan_c, *supt_c;
-str acpt_s, acpt_enc_s, acpt_lan_s, supt_s;
+static str options_reply_hdrs;
+static str acpt_s = str_init(ACPT_DEF);
+static str acpt_enc_s = str_init(ACPT_ENC_DEF);
+static str acpt_lan_s = str_init(ACPT_LAN_DEF);
+static str supt_s = str_init(SUPT_DEF);
 
 /** SIGNALING binds */
 struct sig_binds sigb;
@@ -65,10 +68,10 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"accept",     STR_PARAM, &acpt_c},
-	{"accept_encoding", STR_PARAM, &acpt_enc_c},
-	{"accept_language", STR_PARAM, &acpt_lan_c},
-	{"support",     STR_PARAM, &supt_c},
+	{"accept",     STR_PARAM, &acpt_s.s},
+	{"accept_encoding", STR_PARAM, &acpt_enc_s.s},
+	{"accept_language", STR_PARAM, &acpt_lan_s.s},
+	{"support",     STR_PARAM, &supt_s.s},
 	{0, 0, 0}
 };
 
@@ -96,6 +99,8 @@ struct module_exports exports = {
  */
 static int mod_init(void) {
 
+	int len, offset;
+
 	LM_INFO("initializing...\n");
 
 	/* load SIGNALING API */
@@ -104,46 +109,72 @@ static int mod_init(void) {
 		return -1;
 	}
 
-	if (acpt_c) {
-		acpt_s.len = strlen(acpt_c);
-		acpt_s.s = acpt_c;
+	acpt_s.len = strlen(acpt_s.s);
+	acpt_enc_s.len = strlen(acpt_enc_s.s);
+	acpt_lan_s.len = strlen(acpt_lan_s.s);
+	supt_s.len = strlen(supt_s.s);
+
+	len = (acpt_s.len>0 ? ACPT_STR_LEN+acpt_s.len+HF_SEP_STR_LEN : 0)+
+		(acpt_enc_s.len>0 ? ACPT_ENC_STR_LEN+acpt_enc_s.len+HF_SEP_STR_LEN : 0)+
+		(acpt_lan_s.len>0 ? ACPT_LAN_STR_LEN+acpt_lan_s.len+HF_SEP_STR_LEN : 0)+
+		(supt_s.len>0 ? SUPT_STR_LEN+supt_s.len+HF_SEP_STR_LEN : 0);
+
+	options_reply_hdrs.s = pkg_malloc(len);
+	if (!options_reply_hdrs.s) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
 	}
-	else {
-		acpt_s.len = ACPT_DEF_LEN;
-		acpt_s.s = ACPT_DEF;
+
+	offset = 0;
+
+	/* create the header fields */
+	if (acpt_s.len > 0) {
+		memcpy(options_reply_hdrs.s, ACPT_STR, ACPT_STR_LEN);
+		offset = ACPT_STR_LEN;
+		memcpy(options_reply_hdrs.s + offset, acpt_s.s, acpt_s.len);
+		offset += acpt_s.len;
+		memcpy(options_reply_hdrs.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
+		offset += HF_SEP_STR_LEN;
 	}
-	if (acpt_enc_c) {
-		acpt_enc_s.len = strlen(acpt_enc_c);
-		acpt_enc_s.s = acpt_enc_c;
+	if (acpt_enc_s.len > 0) {
+		memcpy(options_reply_hdrs.s + offset, ACPT_ENC_STR, ACPT_ENC_STR_LEN);
+		offset += ACPT_ENC_STR_LEN;
+		memcpy(options_reply_hdrs.s + offset, acpt_enc_s.s, acpt_enc_s.len);
+		offset += acpt_enc_s.len;
+		memcpy(options_reply_hdrs.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
+		offset += HF_SEP_STR_LEN;
 	}
-	else {
-		acpt_enc_s.len = ACPT_ENC_DEF_LEN;
-		acpt_enc_s.s = ACPT_ENC_DEF;
+	if (acpt_lan_s.len > 0) {
+		memcpy(options_reply_hdrs.s + offset, ACPT_LAN_STR, ACPT_LAN_STR_LEN);
+		offset += ACPT_LAN_STR_LEN;
+		memcpy(options_reply_hdrs.s + offset, acpt_lan_s.s, acpt_lan_s.len);
+		offset += acpt_lan_s.len;
+		memcpy(options_reply_hdrs.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
+		offset += HF_SEP_STR_LEN;
 	}
-	if (acpt_lan_c) {
-		acpt_lan_s.len = strlen(acpt_lan_c);
-		acpt_lan_s.s = acpt_lan_c;
+	if (supt_s.len > 0) {
+		memcpy(options_reply_hdrs.s + offset, SUPT_STR, SUPT_STR_LEN);
+		offset += SUPT_STR_LEN;
+		memcpy(options_reply_hdrs.s + offset, supt_s.s, supt_s.len);
+		offset += supt_s.len;
+		memcpy(options_reply_hdrs.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
+		offset += HF_SEP_STR_LEN;
 	}
-	else {
-		acpt_lan_s.len = ACPT_LAN_DEF_LEN;
-		acpt_lan_s.s = ACPT_LAN_DEF;
+
+#ifdef EXTRA_DEBUG
+	if (offset != len) {
+		LM_CRIT("headerlength (%i) != offset (%i)\n", len, offset);
+		abort();
 	}
-	if (supt_c) {
-		supt_s.len = strlen(supt_c);
-		supt_s.s = supt_c;
-	}
-	else {
-		supt_s.len = SUPT_DEF_LEN;
-		supt_s.s = SUPT_DEF;
-	}
+#endif
+
+	options_reply_hdrs.len = len;
 
 	return 0;
 }
 
 
 static int opt_reply(struct sip_msg* _msg, char* _foo, char* _bar) {
-	str rpl_hf;
-	int offset = 0;
 
 	/* check if it is called for an OPTIONS request */
 	if (_msg->REQ_METHOD!=METHOD_OPTIONS) {
@@ -161,62 +192,21 @@ static int opt_reply(struct sip_msg* _msg, char* _foo, char* _bar) {
 		return -1;
 	}
 
-	/* calculate the length and allocated the mem */
-	rpl_hf.len = ACPT_STR_LEN + ACPT_ENC_STR_LEN + ACPT_LAN_STR_LEN + 
-			SUPT_STR_LEN + 4*HF_SEP_STR_LEN + acpt_s.len + acpt_enc_s.len + 
-			acpt_lan_s.len + supt_s.len;
-	rpl_hf.s = (char*)pkg_malloc(rpl_hf.len);
-	if (!rpl_hf.s) {
-		LM_CRIT("out of pkg memory\n");
+	if (!options_reply_hdrs.s || options_reply_hdrs.len < 0) {
+		LM_CRIT("headers not yet initialized\n");
 		goto error;
 	}
 
-	/* create the header fields */
-	memcpy(rpl_hf.s, ACPT_STR, ACPT_STR_LEN);
-	offset = ACPT_STR_LEN;
-	memcpy(rpl_hf.s + offset, acpt_s.s, acpt_s.len);
-	offset += acpt_s.len;
-	memcpy(rpl_hf.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
-	offset += HF_SEP_STR_LEN;
-	memcpy(rpl_hf.s + offset, ACPT_ENC_STR, ACPT_ENC_STR_LEN);
-	offset += ACPT_ENC_STR_LEN;
-	memcpy(rpl_hf.s + offset, acpt_enc_s.s, acpt_enc_s.len);
-	offset += acpt_enc_s.len;
-	memcpy(rpl_hf.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
-	offset += HF_SEP_STR_LEN;
-	memcpy(rpl_hf.s + offset, ACPT_LAN_STR, ACPT_LAN_STR_LEN);
-	offset += ACPT_LAN_STR_LEN;
-	memcpy(rpl_hf.s + offset, acpt_lan_s.s, acpt_lan_s.len);
-	offset += acpt_lan_s.len;
-	memcpy(rpl_hf.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
-	offset += HF_SEP_STR_LEN;
-	memcpy(rpl_hf.s + offset, SUPT_STR, SUPT_STR_LEN);
-	offset += SUPT_STR_LEN;
-	memcpy(rpl_hf.s + offset, supt_s.s, supt_s.len);
-	offset += supt_s.len;
-	memcpy(rpl_hf.s + offset, HF_SEP_STR, HF_SEP_STR_LEN);
-
-#ifdef EXTRA_DEBUG
-	offset += HF_SEP_STR_LEN;
-	if (offset != rpl_hf.len) {
-		LM_CRIT("headerlength (%i) != offset (%i)\n", rpl_hf.len, offset);
-		abort();
-	}
-#endif
-
-
-	if (add_lump_rpl( _msg, rpl_hf.s, rpl_hf.len,
-	LUMP_RPL_HDR|LUMP_RPL_NODUP)!=0) {
+	if (add_lump_rpl( _msg, options_reply_hdrs.s, options_reply_hdrs.len,
+			LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE)!=0) {
 		if (sigb.reply(_msg, 200, &opt_200_rpl, NULL) == -1) {
 			LM_ERR("failed to send 200 via send_reply\n");
 			return -1;
 		}
 		else
 			return 0;
-	} else {
-		pkg_free(rpl_hf.s);
-		LM_ERR("add_lump_rpl failed\n");
 	}
+	LM_ERR("add_lump_rpl failed\n");
 
 error:
 	if (sigb.reply(_msg, 500, &opt_500_rpl, NULL) == -1) {
