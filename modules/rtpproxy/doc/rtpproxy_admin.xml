@@ -549,6 +549,10 @@ rtpproxy_offer();
 				message is received, support symmetric RTP must be forced.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>n</emphasis> - flags that enables the notification
+				timeout for the session.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>zNN</emphasis> - requests the RTPproxy to perform
 				re-packetization of RTP traffic coming from the UA which
 				has sent the current message to increase or decrease payload
