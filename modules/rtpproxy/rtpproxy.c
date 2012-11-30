@@ -1957,17 +1957,47 @@ error:
 
 
 
+#define RTPPROXY_BUF_SIZE 256
+
 char *
 send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 {
 	struct sockaddr_un addr;
 	int fd, len, i;
 	char *cp;
-	static char buf[256];
+	static char buf[RTPPROXY_BUF_SIZE];
 	struct pollfd fds[1];
+
+
+#ifdef IOV_MAX
+	/* normalize vcntl to IOV_MAX, as on some systems this limit is very low (16 on Solaris) */
+	if (vcnt > IOV_MAX) {
+		int i, vec_len = 0;
+		/* use buf if possible :) */
+		for (i = IOV_MAX - 1; i < vcnt; i++)
+			vec_len += v[i].iov_len;
+		/* use buf, error otherwise */
+		if (vec_len > RTPPROXY_BUF_SIZE) {
+			LM_ERR("Command too big %d - max %d\n", vec_len, RTPPROXY_BUF_SIZE);
+			return NULL;
+		}
+		cp = buf;
+		for (i = IOV_MAX - 1; i < vcnt; i++) {
+			memcpy(cp, v[i].iov_base, v[i].iov_len);
+			cp += v[i].iov_len;
+		}
+		i = IOV_MAX - 1;
+		v[i].iov_len = vec_len;
+		v[i].iov_base = buf;
+		/* finally solve the problem */
+		vcnt = IOV_MAX;
+			
+	}
+#endif
 
 	len = 0;
 	cp = buf;
+
 	if (node->rn_umode == 0) {
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_LOCAL;
