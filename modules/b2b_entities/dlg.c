@@ -625,6 +625,10 @@ search_dialog:
 
 	callid = msg->callid->body;
 	from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
+	if (from_tag.len==0 || from_tag.s==NULL) {
+		LM_ERR("From header has no TAG parameter\n");
+		return -1;
+	}
 
 	/* if a CANCEL request - search iteratively in the server_htable*/
 	if(method_value == METHOD_CANCEL)
@@ -676,13 +680,14 @@ search_dialog:
 
 	/* we are interested only in request inside dialog */
 	/* examine the to header */
-	if(msg->to->parsed == NULL || ((struct to_body *)msg->to->parsed)->error != PARSE_OK)
+	if (msg->to==NULL || msg->to->parsed == NULL ||
+	((struct to_body *)msg->to->parsed)->error != PARSE_OK )
 	{
 		LM_DBG("'To' header COULD NOT parsed\n");
 		return 0;
 	}
 	to_tag = get_to(msg)->tag_value;
-	if(to_tag.s == NULL && to_tag.len == 0)
+	if(to_tag.s == NULL || to_tag.len == 0)
 	{
 		LM_DBG("Not an inside dialog request- not interested.\n");
 		return 1;
