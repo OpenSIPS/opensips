@@ -74,6 +74,17 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 	return 0;
 }
 
+int redis_reconnect_node(redis_con *con,cluster_node *node)
+{
+	LM_DBG("reconnecting node %s:%d \n",node->ip,node->port);
+
+	/* close the old connection */
+	redisFree(node->context);
+
+	return redis_connect_node(con,node);
+}
+
+
 int redis_connect(redis_con *con)
 {
 	redisContext *ctx;
@@ -211,7 +222,7 @@ void redis_destroy(cachedb_con *con) {
 					reply?reply->len:7,reply?reply->str:"FAILURE"); \
 				if (reply) \
 					freeReplyObject(reply); \
-				if (node->context->err == REDIS_OK || redis_connect_node(con,node) < 0) { \
+				if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) { \
 					i = 0; break; \
 				}\
 			} else break; \
