@@ -466,7 +466,7 @@ static inline int insert_siptrace_avp(struct usr_avp *avp,
 		LM_DBG("int val [%.*s]\n",avp_value.s.len,avp_value.s.s);
 	} else {
 		avp_value = *first_val;
-		LM_INFO("str val [%.*s]\n",avp_value.s.len,avp_value.s.s);
+		LM_DBG("str val [%.*s]\n",avp_value.s.len,avp_value.s.s);
 	}
 	db_vals[9].val.str_val.s = avp_value.s.s;
 	db_vals[9].val.str_val.len = avp_value.s.len;
@@ -532,7 +532,7 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 		LM_DBG("saving siptrace\n");
 		db_funcs.use_table(db_con, siptrace_get_table());
 
-		if (insert_siptrace_flag(msg,keys,vals) < 0)
+		if (flag_trace_is_set(msg) && insert_siptrace_flag(msg,keys,vals) < 0)
 			return -1;
 
 		if (avp==NULL)
