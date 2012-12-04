@@ -1473,6 +1473,9 @@ static struct mi_root* mi_dr_status(struct mi_root *cmd, void *param)
 	if (str2int( &node->value, &id) < 0)
 		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
 
+	if (rdata==NULL || *rdata==NULL)
+		return init_mi_tree( 404, MI_SSTR("No Data available yet"));
+
 	lock_start_read( ref_lock );
 
 	/* status (param 2) */
