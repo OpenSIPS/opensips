@@ -1655,6 +1655,11 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 	str *ruri;
 	int j,n;
 
+	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
+		LM_DBG("empty routing table\n");
+		return -1;
+	}
+
 	/* get the carrier ID */
 	if ( pv_get_spec_value(msg, (pv_spec_p)cr_str, &val)!=0 ||
 	(val.flags&PV_VAL_STR)==0 ) {
@@ -1758,6 +1763,11 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	pv_value_t val;
 	pgw_t *gw;
 	str *ruri;
+
+	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
+		LM_DBG("empty routing table\n");
+		return -1;
+	}
 
 	/* get the gw ID */
 	if ( pv_get_spec_value(msg, (pv_spec_p)gw_str, &val)!=0 ||
@@ -2107,6 +2117,11 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 
 	lock_start_read( ref_lock );
 
+	if (rdata==NULL || *rdata==NULL) {
+		rpl_tree = init_mi_tree( 404, MI_SSTR("No Data available yet"));
+		goto done;
+	}
+
 	if (node==NULL) {
 		/* no GW specified, list all of them */
 		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
@@ -2195,6 +2210,11 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	node = cmd->node.kids;
 
 	lock_start_read( ref_lock );
+
+	if (rdata==NULL || *rdata==NULL) {
+		rpl_tree = init_mi_tree( 404, MI_SSTR("No Data available yet"));
+		goto done;
+	}
 
 	if (node==NULL) {
 		/* no carrier specified, list all of them */
