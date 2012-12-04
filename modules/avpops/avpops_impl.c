@@ -1327,13 +1327,9 @@ int ops_print_avp(void)
 	for ( ; avp ; avp=avp->next)
 	{
 		LM_INFO("p=%p, flags=0x%04X\n",avp, avp->flags);
-		if (avp->flags&AVP_NAME_STR)
-		{
-			name = get_avp_name(avp);
-			LM_INFO("\t\t\tname=<%.*s>\n",name->len,name->s);
-		} else {
-			LM_INFO("\t\t\tid=<%d>\n",avp->id);
-		}
+		name = get_avp_name(avp);
+		LM_INFO("\t\t\tname=<%.*s>\n",name->len,name->s);
+		LM_INFO("\t\t\tid=<%d>\n",avp->id);
 		get_avp_val( avp, &val);
 		if (avp->flags&AVP_VAL_STR)
 		{
