@@ -2147,8 +2147,11 @@ static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 
 	if(param==NULL || param->pvn.u.dname==0)
 		return pv_get_null(msg, param, res);
-	
+
 	sv= (script_var_t*)param->pvn.u.dname;
+
+	if (sv->v.flags&VAR_VAL_NULL)
+		return pv_get_null(msg, param, res);
 
 	if(sv->v.flags&VAR_VAL_STR)
 	{
@@ -2265,17 +2268,16 @@ int pv_set_scriptvar(struct sip_msg* msg, pv_param_t *param,
 	}
 	if(val == NULL)
 	{
-		avp_val.n = 0;
-		set_var_value((script_var_t*)param->pvn.u.dname, &avp_val, 0);
+		set_var_value((script_var_t*)param->pvn.u.dname, NULL, VAR_VAL_NULL);
 		return 0;
 	}
-	flags = 0;
 	if(val->flags&PV_TYPE_INT)
 	{
 		avp_val.n = val->ri;
+		flags = 0;
 	} else {
 		avp_val.s = val->rs;
-		flags |= VAR_VAL_STR;
+		flags = VAR_VAL_STR;
 	}
 	if(set_var_value((script_var_t*)param->pvn.u.dname, &avp_val, flags)==NULL)
 	{
