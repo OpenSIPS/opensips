@@ -59,6 +59,7 @@ script_var_t* add_var(str *name)
 	}
 	memset(it, 0, sizeof(script_var_t));
 	it->name.s = (char*)pkg_malloc((name->len+1)*sizeof(char));
+	it->v.flags = VAR_VAL_NULL;
 
 	if(it->name.s==0)
 	{
@@ -80,22 +81,20 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 {
 	if(var==0)
 		return 0;
-	if(value==NULL)
+
+	if(value==NULL || flags&VAR_VAL_NULL)
 	{
 		if(var->v.flags&VAR_VAL_STR)
-		{
 			pkg_free(var->v.value.s.s);
-			var->v.flags &= ~VAR_VAL_STR;
-		}
 		memset(&var->v.value, 0, sizeof(int_str));
-
+		var->v.flags = VAR_VAL_NULL;
 		return var;
 	}
 
 	if(flags&VAR_VAL_STR)
 	{
 		if(var->v.flags&VAR_VAL_STR)
-		{ /* old and new value is str */
+		{ /* old and new values are str */
 			if(value->s.len>var->v.value.s.len)
 			{ /* not enough space to copy */
 				pkg_free(var->v.value.s.s);
@@ -109,6 +108,7 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 				}
 			}
 		} else {
+			/* old value was INT or NULL */
 			memset(&var->v.value, 0, sizeof(int_str));
 			var->v.value.s.s =
 					(char*)pkg_malloc((value->s.len+1)*sizeof(char));
@@ -117,18 +117,19 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 				LM_ERR("out of pkg mem!\n");
 				goto error;
 			}
-			var->v.flags |= VAR_VAL_STR;
+			var->v.flags = VAR_VAL_STR;
 		}
 		strncpy(var->v.value.s.s, value->s.s, value->s.len);
 		var->v.value.s.len = value->s.len;
 		var->v.value.s.s[value->s.len] = '\0';
 	} else {
+		/* new value is INT */
 		if(var->v.flags&VAR_VAL_STR)
 		{
 			pkg_free(var->v.value.s.s);
-			var->v.flags &= ~VAR_VAL_STR;
 			memset(&var->v.value, 0, sizeof(int_str));
 		}
+		var->v.flags = 0; /* no STR, no NULL */
 		var->v.value.n = value->n;
 	}
 
@@ -136,7 +137,7 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 error:
 	/* set the var to init value */
 	memset(&var->v.value, 0, sizeof(int_str));
-	var->v.flags &= ~VAR_VAL_STR;
+	var->v.flags = VAR_VAL_NULL;
 	return NULL;
 }
 
@@ -162,10 +163,8 @@ void reset_vars(void)
 	for(it=script_vars; it; it=it->next)
 	{
 		if(it->v.flags&VAR_VAL_STR)
-		{
 			pkg_free(it->v.value.s.s);
-			it->v.flags &= ~VAR_VAL_STR;
-		}
+		it->v.flags = VAR_VAL_NULL ;
 		memset(&it->v.value, 0, sizeof(int_str));
 	}
 }
