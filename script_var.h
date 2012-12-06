@@ -31,7 +31,8 @@
 
 #include "usr_avp.h"
 
-#define VAR_VAL_STR	(1<<0)
+#define VAR_VAL_STR     (1<<0)
+#define VAR_VAL_NULL    (1<<1)
 
 typedef struct script_val {
 	int flags;
