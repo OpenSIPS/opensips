@@ -2180,7 +2180,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LOG_TOK error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| LOG_TOK LPAREN error RPAREN { $$=0; yyerror("bad log"
 									"argument"); }
-		| SETDEBUG LPAREN NUMBER RPAREN {mk_action2($$, SET_DEBUG_T, NUMBER_ST,
+		| SETDEBUG LPAREN snumber RPAREN {mk_action2($$, SET_DEBUG_T, NUMBER_ST,
 									0, (void *)$3, 0 ); }
 		| SETDEBUG LPAREN RPAREN {mk_action2( $$, SET_DEBUG_T, 0, 0, 0, 0 ); }
 		| SETDEBUG error { $$=0; yyerror("missing '(' or ')'?"); }
