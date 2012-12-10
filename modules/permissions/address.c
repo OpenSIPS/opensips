@@ -144,34 +144,34 @@ int reload_address_table(void)
 		val = ROW_VALUES(row + i);
 		if ((VAL_TYPE(val)!=DB_STRING && VAL_TYPE(val)!=DB_STR) ||
 				VAL_NULL(val)) {
-			LM_ERR("invalid IP column type on row %d\n", i);
-			goto error;
+			LM_ERR("invalid IP column type on row %d, skipping..\n", i);
+			continue;
 		}
 		if (VAL_TYPE(val + 1) != DB_INT || VAL_NULL(val + 1) ||
 					VAL_INT(val + 1) < 0) {
-			LM_ERR("invalid group column type on row %d\n", i);
-			goto error;
+			LM_ERR("invalid group column type on row %d, skipping..\n", i);
+			continue;
 		}
 		if (VAL_TYPE(val + 2) != DB_INT || VAL_NULL(val + 2) ||
 					VAL_INT(val + 2) < 0 || VAL_INT(val + 2) > 32) {
-			LM_ERR("invalid mask column type on row %d\n", i);
-			goto error;
+			LM_ERR("invalid mask column type on row %d, skipping..\n", i);
+			continue;
 		}
 		if (VAL_TYPE(val + 3) != DB_INT || VAL_NULL(val + 3)) {
-			LM_ERR("invalid port column type on row %d\n", i);
-			goto error;
+			LM_ERR("invalid port column type on row %d, skipping..\n", i);
+			continue;
 		}
 		if ((VAL_TYPE(val + 4) != DB_STRING && VAL_TYPE(val + 4) != DB_STR) ||
 			VAL_NULL(val + 4)) {
-			LM_ERR("invalid protocol column type on row %d\n", i);
-			goto error;
+			LM_ERR("invalid protocol column type on row %d, skipping..\n", i);
+			continue;
 		}
 		if (VAL_TYPE(val + 5) != DB_STRING && VAL_TYPE(val + 5) != DB_STR) {
-			LM_ERR("invalid pattern column type on row %d\n", i);
-			goto error;
+			LM_ERR("invalid pattern column type on row %d, skipping..\n", i);
+			continue;
 		}
 		if (VAL_TYPE(val + 6) != DB_STRING && VAL_TYPE(val + 6) != DB_STR) {
-			LM_ERR("invalid info column type on row %d\n", i);
+			LM_ERR("invalid info column type on row %d, skipping..\n", i);
 			goto error;
 		}
 		id = (unsigned int) VAL_INT(val + 7);
