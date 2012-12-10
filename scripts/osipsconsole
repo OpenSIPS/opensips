@@ -155,8 +155,8 @@ my $DB_SCHEMA = "";
 my $DATA_DIR = $PATH_SHARE;
 my $DBTEXT_PATH = $PATH_SHARE."/dbtext/opensips";
 # path to the db_berkeley database
-my $DB_PATH;
-if ( $DB_PATH eq "" ) {
+my $DB_PATH = $ENV{'DB_PATH'};
+if ( not defined $DB_PATH) {
 	$DB_PATH = $PATH_ETC."/opensips/db_berkeley";
 }
 
@@ -170,8 +170,6 @@ my $PASS = "";
 my $result = 0;
 
 ####CLI control variables
-my $term = Term::ReadLine->new("OpenSIPS");
-my $OUT = $term->OUT() ||\*STDOUT;
 my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'add'=>'add',
 		    'avp'=>('list','add','rm'),
@@ -215,9 +213,6 @@ my @command_list = ('acl'=> ('show','grant','revoke'),
 		    'rules'=>('add','rm','list'),
 		    'help'=>'help'					
 		    );
-   
- 
-my $attribs = $term->Attribs;
 
 #
 ##### ------------------------------------------------ #####
@@ -225,8 +220,8 @@ my $attribs = $term->Attribs;
 sub include_osipsconsolerc() {
 	open (FILE,"< $OSIPSCONSOLERC") || die "Can't Open File: osipsconsolerc\n";
 
-	while ($line=<FILE>){		
-		if ( $line !~ m/^(\s*\w+)/g ) {				
+	while ($line=<FILE>){
+		if ( $line !~ m/^(\s*\w+)/g ) {
 			next;
 		} else {
 			#print $line;
@@ -237,166 +232,111 @@ sub include_osipsconsolerc() {
 
 	close(FILE);
 }
+
 while ( $#content gt -1 ){
 	my $res = shift(@content);
-	my @arr = split("=",$res); 	
+	my @arr = split("=",$res);
 	chomp($arr[1]);
 
-		#initializing global vars
+	#initializing global vars
 
-		if ( -z $PID_FILE){
-			if ( $arr[0] =~ /^\s*PID_FILE/ ){
-				$PID_FILE = $arr[1];
-			}
+	if ( $arr[0] eq "PID_FILE" ){
+		$PID_FILE = $arr[1];
+	}
+	elsif ( $arr[0] eq "SYSLOG" ) {
+		$SYSLOG = $arr[1];
+	}
+	elsif ( $arr[0] eq "STARTOPTIONS" ) {
+		$STARTOPTIONS = $arr[1];
+	}
+	elsif ( $arr[0] eq "ALIASES_TYPE" ) {
+		$ALIASES_TYPE = $arr[1];
+		if ( $ALIASES_TYPE =~ /^UL/ ) {
+			$ENABLE_ALIASES = 1;
+		} elsif ( $ALIASES_TYPE =~ /DB/ ) {
+				$ENABLE_ALIASES = 2;
 		}
+	}
+	elsif ( $arr[0] eq "MI_CONNECTOR" ) {
+		print "bla";
+		$MI_CONNECTOR = $arr[1];
+		@list = split(":",$arr[1]);
+	 	$CTLENGINE = $list[0]; 
+		$CTLENGINELOADED = 1;
+		if ($CTLENGINE =~ /^FIFO$/) {
+			$OSIPS_FIFO = $list[1];
+		}
+		elsif ($CTLENGINE =~ /^UNIXSOCK$/){
+			$OSIPS_UNIXSOCK = $list[1];
+			$OSIPSUNIX = "opensipsunix";
+		}
+		elsif ($CTLENGINE =~ /^UDP$/){
+			$OSIPSIP = $list[1];
+			$OSIPS_PORT = $list[2];
+		}
+		elsif ($CTLENGINE =~ /^XMLRPC$/){
+			$OSIPSIP = $list[1];
+			$OSIPS_PORT = $list[2];
+		}
+	}
 
-		if ( $SYSLOG eq "" ) {
-			if ( $arr[0] =~ /^\s*SYSLOG/ ) {
-			 	$SYSLOG = $arr[1]; 
-			}
-		}
+	##### ------------------------------------------------ #####
+	### ACL name verification
+	elsif ( $arr[0] eq "VERIFY_ACL" ) {
+		$VERIFY_ACL = $arr[1]; 
+	}
+	elsif ( $arr[0] eq "ACL_GROUPS" ) {
+		@ACL_GROUPS = split(" ",$arr[1]); 
+	}
 
-		if ( $STARTOPTIONS eq "" ) {
-			if ( $arr[0] =~ /^\s*STARTOPTIONS/ ) {
-			 	$STARTOPTIONS = $arr[1]; 
-			}
+	##### ----------------------------------------------- #####
+	### common variables and functions for SQL engines
+	if ( $arr[0] eq "DBENGINE" ) {
+		if ( $arr[1] =~ /^\s*MYSQL/ ) {
+			$DBENGINE = "mysql";
+		} elsif  ( $arr[1] =~ /^\s*PGSQL/ ) {
+			$DBENGINE = "Pg";
+		} else {
+			$DBENGINE = $arr[1];
 		}
-
-		if ( $ALIASES_TYPE eq "" ) {
-			if (  $arr[0] =~ /^\s*ALIASES_TYPE/ ) {
-			 	$ALIASES_TYPE = $arr[1]; 
-			}
-			if ( $ALIASES_TYPE =~ /^UL/ ) {
-				$ENABLE_ALIASES = 1;
-			} elsif ( $ALIASES_TYPE =~ /DB/ ) {
-					$ENABLE_ALIASES = 2;
-			}
-		}
-
-		if ( $MI_CONNECTOR eq "" ) {
-			if (   $arr[0] =~ /^\s*MI_CONNECTOR$/ ) {
-				$MI_CONNECTOR = $arr[1];
-				@list = split(":",$arr[1]);
-			 	$CTLENGINE = $list[0]; 
-				$CTLENGINELOADED = 1;
-				if ($CTLENGINE =~ /^FIFO$/) {
-					$OSIPS_FIFO = $list[1];
-				}
-				elsif ($CTLENGINE =~ /^UNIXSOCK$/){
-					$OSIPS_UNIXSOCK = $list[1];
-					$OSIPSUNIX = "opensipsunix";
-				}			
-				if ($CTLENGINE =~ /^UDP$/){
-					$OSIPSIP = $list[1];
-					$OSIPS_PORT = $list[2];
-				}
-				if ($CTLENGINE =~ /^XMLRPC$/){
-					$OSIPSIP = $list[1];
-					$OSIPS_PORT = $list[2];
-				}
-			}
-		}
-
-		##### ------------------------------------------------ #####
-		### ACL name verification
-		if ( !$VERIFY_ACL ) {
-			if ( $arr[0] =~ /^\s*VERIFY_ACL/ ) {
-			 	$VERIFY_ACL = $arr[1]; 
-			}
-		}
-
-		if ( $#ACL_GROUPS lt 0 ) {
-			if ( $arr[0] =~ /^\s*ACL_GROUPS/ ) {
-			 	@ACL_GROUPS = split(" ",$arr[1]); 
-			}
-		}
-
-		##### ----------------------------------------------- #####
-		### common variables and functions for SQL engines
-		
-		if ( $DBENGINE eq "" ) {
-			if ( $arr[0] =~ /^\s*DBENGINE/ ) {
-				if ( $arr[1] =~ /^\s*MYSQL/ ) {
-					$DBENGINE = "mysql";
-				} elsif  ( $arr[1] =~ /^\s*PGSQL/ ) {
-					$DBENGINE = "Pg";
-				} else {	
-				 	$DBENGINE = $arr[1]; 					
-				}
-			}			
-		}
-
-		if ( $DBNAME eq "" ) {
-			if ( $arr[0] =~ /^\s*DBNAME/ ) {
-				$DBNAME = $arr[1];
-			}
-		}
-
-
-		if ( $DBHOST eq "" ) {
-			if ( $arr[0] =~ /^\s*DBHOST/ ) {
-				$DBHOST = $arr[1];	
-			}
-		}
-
-		if ( $DBPORT eq "" ) {
-			if ( $arr[0] =~ /^\s*DBPORT/ ) {
-				$DBPORT = $arr[1];	
-			}
-		}
-
-		if ( $DBRWUSER eq "" ) {
-			if ( $arr[0] =~ /^\s*DBRWUSER/ ) {
-				$DBRWUSER = $arr[1]
-			}
-		}
-
-		# full privileges SQL user
-		if ( $DBROOTUSER eq "" ) {
-			if ( $arr[0] =~ /^\s*DBROOTUSER/ ) {
-				$DBROOTUSER = $arr[1];
-			}			
-		}
-
-		if ( $DBRWPW eq "" ) {
-			if ( $arr[0] =~ /^\s*DBRWPW/ ) {
-				$DBRWPW = $arr[1];
-			}			
-		}
-		
-		if ( $SIP_DOMAIN eq "" ) {
-			if ( $arr[0] =~ /^\s*SIP_DOMAIN/ ) {
-			 	$SIP_DOMAIN = $arr[1]; 
-			}			
-		}
-
-		if ( ! $STORE_PLAINTEXT_PW ) {
-			if ( $arr[0] =~ /^\s*STORE_PLAINTEXT_PW/ ) {
-			 	$STORE_PLAINTEXT_PW = $arr[1]; 
-			}		
-		}
-
-		if ( $AWK eq "" ) {
-			if ( $arr[0] =~ /^\s*AWK/ ) {
-			 	$AWK = $arr[1]; 
-			}		
-		}
-
-		if ( $EGREP eq "") {
-			if ( $arr[0] =~ /^\s*GREP/ ) {
-			 	$EGREP = $arr[1]; 
-			}		
-		}
-
-		if ( $SED eq "" ) {
-			if ( $arr[0] =~ /^\s*SED/ ) {
-			 	$SED = $arr[1]; 
-			}		
-		}
+	}
+	elsif ( $arr[0] eq "DBNAME" ) {
+		$DBNAME = $arr[1];
+	}
+	elsif ( $arr[0] eq "DBHOST" ) {
+		$DBHOST = $arr[1];
+	}
+	elsif ( $arr[0] eq "DBPORT" ) {
+		$DBPORT = $arr[1];
+	}
+	elsif ( $arr[0] eq "DBRWUSER" ) {
+		$DBRWUSER = $arr[1]
+	}
+	elsif ( $arr[0] eq "DBROOTUSER" ) {
+		$DBROOTUSER = $arr[1];
+	}
+	elsif ( $arr[0] eq "DBRWPW" ) {
+		$DBRWPW = $arr[1];
+	}
+	elsif ( $arr[0] eq "SIP_DOMAIN" ) {
+		$SIP_DOMAIN = $arr[1];
+	}
+	elsif ( $arr[0] eq "STORE_PLAINTEXT_PW" ) {
+		$STORE_PLAINTEXT_PW = $arr[1]; 
+	}
+	elsif ( $arr[0] eq "AWK" ) {
+		$AWK = $arr[1];
+	}
+	elsif ( $arr[0] eq "GREP" ) {
+		$EGREP = $arr[1];
+	}
+	elsif ( $arr[0] eq "SED" ) {
+		$SED = $arr[1];
+	}
 
 }
 
-if ( -z $PID_FILE){
+if ( $PID_FILE eq ""){
 	$PID_FILE = "/var/run/opensips.pid";
 }
 
@@ -422,13 +362,13 @@ if ( $ALIASES_TYPE =~ /^UL/ ) {
 ### CTLENGINE
 #		
 
-if ( $MI_CONNECTOR eq "" ) {				
+if ( $MI_CONNECTOR eq "" ) {
 	$CTLENGINE = "FIFO";
 	$OSIPS_FIFO = "/tmp/opensips_fifo";
 	$CTLENGINELOADED = 1;	
 }
 
-if ( -z $OSIPSUNIX ) {
+if ( $OSIPSUNIX  eq "" ) {
 	$OSIPSUNIX = "opensipsunix";
 }
 
@@ -517,16 +457,6 @@ if ( $EXPR eq "" ) {
 	}
 }
 
-#if ( $LAST_LINE eq " "  ) {
-#	&locate_tool('tail');
-#	if ( !-e $TOOLPATH ){
-#		# now error, but we can look for alternative names if it is the case
-#		print "error: 'TAIL' tool not found: set TAIL variable to correct tool path\n"
-#	} else {
-#		$LAST_LINE = `$TOOLPATH -n 1`;
-#	}
-#}
-
 
 ##### ----------------------------------------------- #####
 ### binaries
@@ -558,7 +488,7 @@ if ( ($DBENGINE eq "Pg") && ($PGSQL eq "" ) ) {
 
 system("which db_dump > /dev/null");
 if ( $? == 0 ) {
-	$DUMP_CMD = "db_dump";					
+	$DUMP_CMD = "db_dump";
 }
 
 system("which db4.4_dump > /dev/null");
@@ -600,7 +530,7 @@ if ( $? == 0 ) {
 }
 
 # period in which stats are reprinted
-if ( -z $WATCH_PERIOD ) {
+if ( $WATCH_PERIOD eq "" ) {
 	$WATCH_PERIOD = 2;
 }
 
@@ -608,19 +538,18 @@ if ( -z $WATCH_PERIOD ) {
 #### database tables for SQL databases 
 
 # UsrLoc Table
-my $UL_TABLE = " ";
-if ( -z $UL_TABLE ) {
+my $UL_TABLE = $ENV{'UL_TABLE'};
+if ( not defined $UL_TABLE) {
 	$UL_TABLE="location";
 }
 my %ul_table = ('USER_COLUMN' => 'username',
-	     'DOMAIN_COLUMN' => 'domain',
-             'CALLID_COLUMN'=> 'callid'
-	      );
-
+		'DOMAIN_COLUMN' => 'domain',
+		'CALLID_COLUMN'=> 'callid'
+		);
 
 # subscriber table
-my $SUB_TABLE = " ";
-if ( -z $SUB_TABLE ) {
+my $SUB_TABLE = $ENV{'SUB_TABLE'};
+if ( not defined $SUB_TABLE ) {
 	$SUB_TABLE='subscriber';
 }
 my %sub_table = ('REALM_COLUMN' => 'domain',
@@ -633,10 +562,9 @@ my %sub_table = ('REALM_COLUMN' => 'domain',
 		 'EMAIL_ADDRESS' => 'email_address'
 		  );
 
-
-# acl table
-my $ACL_TABLE = " ";
-if ( -z $ACL_TABLE ) {
+# groups table
+my $ACL_TABLE = $ENV{'ACL_TABLE'};
+if ( not defined $ACL_TABLE ) {
 	$ACL_TABLE = 'grp';
 }
 my %acl_table = ( 'ACL_USER_COLUMN' => 'username',
@@ -645,11 +573,9 @@ my %acl_table = ( 'ACL_USER_COLUMN' => 'username',
 		  'ACL_MODIFIED_COLUMN' => 'last_modified',
 		);
 
-
-
 # aliases table
-my $ALS_TABLE = " ";
-if ( -z $ALS_TABLE ) {
+my $ALS_TABLE = $ENV{'ALS_TABLE'};
+if ( not defined $ALS_TABLE ) {
 	$ALS_TABLE = 'aliases';
 }
 my %als_table = ('A_USER_COLUMN' => 'username',
@@ -662,30 +588,28 @@ my %als_table = ('A_USER_COLUMN' => 'username',
 		);
 
 # domain table
-my $DOMAIN_TABLE = " ";
-if ( -z $DOMAIN_TABLE ) {
+my $DOMAIN_TABLE = $ENV{'DOMAIN_TABLE'};
+if ( not defined $DOMAIN_TABLE ) {
 	$DOMAIN_TABLE = 'domain';
 }
 my %domain_table = ('DO_DOMAIN_COLUMN' => 'domain',
-		    'DO_LAST_MODIFIED_COLUMN' => 'last_modified',
-		    );
+		'DO_LAST_MODIFIED_COLUMN' => 'last_modified',
+		);
 
 # route_tree table
-my $ROUTE_TREE_TABLE = " ";
-if ( -z $ROUTE_TREE_TABLE ) {
+my $ROUTE_TREE_TABLE = $ENV{'ROUTE_TREE_TABLE'};
+if ( not defined $ROUTE_TREE_TABLE ) {
 	$ROUTE_TREE_TABLE = 'route_tree';
 }
 my %route_tree_table = ('CARRIERROUTE_ROUTE_TREE_PREFIX_COLUMN' =>'id',
-			'CARRIERROUTE_ROUTE_TREE_CARRIER_COLUMN' => 'carrier'
-			);
-
+		'CARRIERROUTE_ROUTE_TREE_CARRIER_COLUMN' => 'carrier'
+		);
 
 # carrierroute table
-my $CARRIERROUTE_TABLE = " ";
-if ( -z $CARRIERROUTE_TABLE ) {
+my $CARRIERROUTE_TABLE = $ENV{'CARRIERROUTE_TABLE'};
+if ( not defined $CARRIERROUTE_TABLE ) {
 	$CARRIERROUTE_TABLE = 'carrierroute';
 }
-
 my %carrierroute_table = ('CARRIERROUTE_CARRIERROUTE_PREFIX_COLUMN' => 'id',
  			  'CARRIERROUTE_CARRIERROUTE_CARRIER_COLUMN' => 'carrier',
 			  'CARRIERROUTE_CARRIERROUTE_SCAN_PREFIX_COLUMN' => 'scan_prefix',
@@ -701,8 +625,8 @@ my %carrierroute_table = ('CARRIERROUTE_CARRIERROUTE_PREFIX_COLUMN' => 'id',
 			);
 
 # URI table
-my $URI_TABLE = " ";
-if ( -z $URI_TABLE ) {
+my $URI_TABLE = $ENV{'URI_TABLE'};
+if ( not defined $URI_TABLE ) {
 	$URI_TABLE = 'uri'
 }
 my %uri_table = ('URIUSER_COLUMN' => 'uri_user',
@@ -710,8 +634,8 @@ my %uri_table = ('URIUSER_COLUMN' => 'uri_user',
 		);
 
 # dbaliases table
-my $DA_TABLE = " ";
-if ( -z $DA_TABLE ) {
+my $DA_TABLE = $ENV{'DA_TABLE'};
+if ( not defined $DA_TABLE ) {
 	$DA_TABLE = 'dbaliases';
 }
 my %da_table = ('DA_USER_COLUMN' => 'username',
@@ -721,8 +645,8 @@ my %da_table = ('DA_USER_COLUMN' => 'username',
 		);
 
 # speeddial table
-my $SD_TABLE = " ";
-if ( -z $SD_TABLE ) {
+my $SD_TABLE = $ENV{'SD_TABLE'};
+if ( not defined $SD_TABLE ) {
 	$SD_TABLE = 'speed_dial'
 }
 my %sd_table = ('SD_USER_COLUMN' => 'username',
@@ -734,8 +658,8 @@ my %sd_table = ('SD_USER_COLUMN' => 'username',
 		);
 
 # avp table
-my $AVP_TABLE = " ";
-if ( -z $AVP_TABLE ) {
+my $AVP_TABLE = $ENV{'AVP_TABLE'};
+if ( not defined $AVP_TABLE ) {
 	$AVP_TABLE = 'usr_preferences';
 }
 my %avp_table = ('AVP_UUID_COLUMN' => 'uuid',
@@ -747,26 +671,24 @@ my %avp_table = ('AVP_UUID_COLUMN' => 'uuid',
 		 'AVP_MODIFIED_COLUMN' => 'last_modified'
 		);
 
-
 # address table
-my $ADDRESS_TABLE = " ";
-if ( -z $ADDRESS_TABLE ) {
+my $ADDRESS_TABLE = $ENV{'ADDRESS_TABLE'};
+if ( not defined $ADDRESS_TABLE ) {
 	$ADDRESS_TABLE = 'address';
 }
 my %address_table = ('ADDRESS_ID_COLUMN' => 'ip',
-		     'ADDRESS_GRP_COLUMN' => 'grp',
-		     'ADDRESS_IP_COLUMN' => 'ip',
-		     'ADDRESS_MASK_COLUMN' => 'mask',
-		     'ADDRESS_PORT_COLUMN' => 'port',
-		     'ADDRESS_PROTO_COLUMN' => 'proto',
-		     'ADDRESS_PATTERN_COLUMN' => 'pattern',
-		     'ADDRESS_CONTEXT_INFO_COLUMN' => 'context_info'
-		    );
-
+		 'ADDRESS_GRP_COLUMN' => 'grp',
+		 'ADDRESS_IP_COLUMN' => 'ip',
+		 'ADDRESS_MASK_COLUMN' => 'mask',
+		 'ADDRESS_PORT_COLUMN' => 'port',
+		 'ADDRESS_PROTO_COLUMN' => 'proto',
+		 'ADDRESS_PATTERN_COLUMN' => 'pattern',
+		 'ADDRESS_CONTEXT_INFO_COLUMN' => 'context_info'
+		);
 
 # dispatcher tables  
-my $DISPATCHER_TABLE = " ";
-if ( -z $DISPATCHER_TABLE ){
+my $DISPATCHER_TABLE = $ENV{'DISPATCHER_TABLE'};
+if ( not defined $DISPATCHER_TABLE ){
 	$DISPATCHER_TABLE = 'dispatcher';
 }
 my %dispatcher_table = ('DISPATCHER_ID_COLUMN' => 'id',
@@ -776,11 +698,9 @@ my %dispatcher_table = ('DISPATCHER_ID_COLUMN' => 'id',
 			'DISPATCHER_DESCRIPTION_COLUMN' => 'description'
 			);
 
-
-
 # dialplan tables
-my $DIALPLAN_TABLE = " ";
-if ( -z $DIALPLAN_TABLE ) {
+my $DIALPLAN_TABLE = $ENV{'DIALPLAN_TABLE'};
+if ( not defined $DIALPLAN_TABLE ) {
 	$DIALPLAN_TABLE = 'dialplan';
 }
 my %dialplan_table = ('DIALPLAN_ID_COLUMN' => 'id',
@@ -795,64 +715,62 @@ my %dialplan_table = ('DIALPLAN_ID_COLUMN' => 'id',
 		);
 
 #drouting tables
-my $DR_GW_TABLE = " ";
-if ( -z $DR_GW_TABLE ) {
+my $DR_GW_TABLE = $ENV{'DR_GW_TABLE'};
+if ( not defined $DR_GW_TABLE ) {
 	$DR_GW_TABLE = 'dr_gateways';
 }
 my %dr_gw_table = ('DR_GW_GWID_COLUMN' => 'gwid',
-		   'DR_GW_ADDRESS_COLUMN' => 'address',	
-		   'DR_GW_TYPE_COLUMN' => 'type',
-		   'DR_GW_STRIP_COLUMN' => 'strip',
-		   'DR_GW_PRI_PREFIX_COLUMN' => 'pri_prefix',
-		   'DR_GW_DESCRIPTION_COLUMN' => 'description'
-		);	
-
+		 'DR_GW_ADDRESS_COLUMN' => 'address',
+		 'DR_GW_TYPE_COLUMN' => 'type',
+		 'DR_GW_STRIP_COLUMN' => 'strip',
+		 'DR_GW_PRI_PREFIX_COLUMN' => 'pri_prefix',
+		 'DR_GW_DESCRIPTION_COLUMN' => 'description'
+		);
 
 # dr_rules table
-my $DR_RULES_TABLE = " ";
-if ( -z $DR_RULES_TABLE ) {
+my $DR_RULES_TABLE = $ENV{'DR_RULES_TABLE'};
+if ( not defined $DR_RULES_TABLE ) {
 	$DR_RULES_TABLE = 'dr_rules';
 }
 my %dr_rules_table = (  'DR_RULES_RULEID_COLUMN' => 'ruleid',
-			'DR_RULES_GROUPID_COLUMN' => 'groupid',
-			'DR_RULES_PREFIX_COLUMN' => 'prefix', 
-			'DR_RULES_TIMEREC_COLUMN' => 'timerec',
-			'DR_RULES_PRIORITY_COLUMN' => 'priority',
-			'DR_RULES_ROUTEID_COLUMN' => 'routeid',
-			'DR_RULES_GWLIST_COLUMN' => 'gwlist',
-			'DR_RULES_DESCRIPTION_COLUMN' => 'description'
-			);
+		'DR_RULES_GROUPID_COLUMN' => 'groupid',
+		'DR_RULES_PREFIX_COLUMN' => 'prefix', 
+		'DR_RULES_TIMEREC_COLUMN' => 'timerec',
+		'DR_RULES_PRIORITY_COLUMN' => 'priority',
+		'DR_RULES_ROUTEID_COLUMN' => 'routeid',
+		'DR_RULES_GWLIST_COLUMN' => 'gwlist',
+		'DR_RULES_DESCRIPTION_COLUMN' => 'description'
+		);
 
 ##### ----------------------------------------------- #####
 ### path to useful tools
 
 sub locate_tool() {
-        while ( 1 ){
-               if ( -x "/usr/bin/which" ) {
-                        $TOOLPATH = `which @_`;
-			chomp($TOOLPATH);
-                        #if ( $TOOLPATH ) {
-                        #       return $TOOLPATH;
-                        #}
-			return;
-                }
-
-                # look in common locations
-                if ( -x "/usr/bin/".@_ ){
-                        $TOOLPATH = "/usr/bin/".@_;
-                        return;
-                }
-
-                if ( -x "/bin/".$_[0] ) {
-                        $TOOLPATH = "/bin/".$_[0];
-                        return;
-                }
-                if ( -x "/usr/local/bin/".$_[0] ) {
-                        $TOOLPATH = "/usr/local/bin/$_[0]";
-                        return;
-                }
-	      	last;
+	if ( -x "/usr/bin/which" ) {
+		$TOOLPATH = `which @_`;
+		chomp($TOOLPATH);
+		#if ( $TOOLPATH ) {
+		#	return $TOOLPATH;
+		#}
+		return;
 	}
+
+	# look in common locations
+	if ( -x "/usr/bin/".@_ ){
+		$TOOLPATH = "/usr/bin/".@_;
+		return;
+	}
+
+	if ( -x "/bin/".$_[0] ) {
+		$TOOLPATH = "/bin/".$_[0];
+		return;
+	}
+	if ( -x "/usr/local/bin/".$_[0] ) {
+		$TOOLPATH = "/usr/local/bin/$_[0]";
+		return;
+	}
+
+	$TOOLPATH = "";
 	return;
 }
 
@@ -965,9 +883,9 @@ sub usage_address() {
 	      "address dump ...................... show cache content\n" .
 	      "address reload .................... reload db table into cache\n" .
 	      "address add <grp> <ip> <mask> <port> <proto> [<context_info>] [<pattern>]\n" .
-		           "\t\t\t....................... add a new entry\n" .
-		           "\t\t\t....................... (from_pattern and tag are optional arguments)\n" .
-	      "address rm <grp> <ip> <mask> <port>............... remove all entries for the given grp ip mask and port\n";
+	      "            ....................... add a new entry\n" .
+	      "            ....................... (from_pattern and tag are optional arguments)\n" .
+	      "address rm <grp> <ip> <mask> <port>..remove all entries for the given grp ip mask and port\n";
 }
 
 
@@ -1048,27 +966,6 @@ sub usage_alias_db() {
 		    "\t\t- <alias> must be an AoR (username\@domain)\n" .
 		    "\t\t- <sip-id> must be an AoR (username\@domain)\n";
 }
-
-sub usage_avp() {
-        print " -- command 'avp' - manage AVPs\n" .
-                 "avp list [-T table] [-u <sip-id|uuid>]\n" .
-                    "\t[-a attribute] [-v value] [-t type] ... list AVPs\n" .
-                 "avp add [-T table] <sip-id|uuid>\n" .
-                     "\t<attribute> <type> <value> ............ add AVP (*)\n" .
-                 "avp rm [-T table]  [-u <sip-id|uuid>]\n" .
-                     "\t[-a attribute] [-v value] [-t type] ... remove AVP (*)\n" .
-                 "avp help .................................. help message\n" .
-                    "\t- -T - table name\n" .
-                    "\t- -u - SIP id or unique id\n" .
-                    "\t- -a - AVP name\n" .
-                    "\t- -v - AVP value\n" .
-                    "\t- -t - AVP name and type (0 (str:str), 1 (str:int),\n" .
-                                              "\t\t\t\t2 (int:str), 3 (int:int))\n" .
-                    "\t\t- <sip-id> must be an AoR (username\@domain)\n" .
-                    "\t\t- <uuid> must be a string but not AoR\n";
-
-}
-
 
 
 #domain
@@ -1384,20 +1281,19 @@ sub is_value_in_db() {
 		$sth->execute( );
 		warn "Retrieving data from table failed", $sth->errstr( ), "\n" if $sth->err( );	
 		while ( @row = $sth->fetchrow_array( ) )  {
-			    $result = "@row";
-	 		     print "@row\n";
-		}	
-
+			$result = "@row";
+	 		#print "@row\n";
+		}
 		$sth->finish();
 	}
 
-        if ($result == 0) {
+	if ($result == 0) {
 		$response = 0;
 	} else {
 		$response = 1;
-	}		
+	}
 
-#print $response;
+	#print $response;
 }
  
 sub prompt_pw() {
@@ -1435,22 +1331,14 @@ sub prompt_pw() {
 
 sub validate_dbdata() {
 
- if( -d $DATA_DIR."/$_[0]" ) {
-
-     $DB_SCHEMA = $DATA_DIR."/$_[0]";
-
-     return $DB_SCHEMA;	
-
- } else {
-
-     $DB_SCHEMA = "./$_[0]";	
-
-     print "Warn fallback to local workdir ./$_[0]\n";
-
-     return $DB_SCHEMA;
-
- }
-
+	if( -d $DATA_DIR."/$_[0]" ) {
+		$DB_SCHEMA = $DATA_DIR."/$_[0]";
+		return $DB_SCHEMA;
+	} else {
+		$DB_SCHEMA = "./$_[0]";
+		print "Warn fallback to local workdir ./$_[0]\n";
+		return $DB_SCHEMA;
+	}
 }
 
 
@@ -1574,58 +1462,58 @@ if ( $argnum  == 0 ) {
 
 sub interactively(){
 	my @history_list;
+	my $term = Term::ReadLine->new("OpenSIPS");
+	my $OUT = $term->OUT() ||\*STDOUT;
+	my $attribs = $term->Attribs;
+
+	# load history
 	open(HIST,"<$HISTORY_FILE");
 	@history_list=<HIST>;
-	while ( $#history_list gt 0 ){	
+	while ( @history_list gt 0 ){
 		$result = shift(@history_list);
 		chomp($result);	
 		$term->addhistory($result);
-
 	}
 	close(HIST);
-	ET: while (1) {
 
-		$attribs->{completion_entry_function} = $attribs->{list_completion_function};
-		$attribs->{completion_word} = [@command_list];
+	$attribs->{completion_entry_function} = $attribs->{list_completion_function};
+	$attribs->{completion_word} = [@command_list];
+
+	# read commands
+	while (1) {
+
 		$command = $term->readline('OpenSIPS$:');
 
+		if ( $command eq  ""){
+			next;
+		}
 
+		@cmd = split(" ",$command);
+		my $found=0;
 
-			if ( $command eq  "") {
-				next ET;			
-			} 
-
-	  	        @cmd = split(" ",$command);
-			my $found=0;
-
-		
-			foreach my $i (@command_list){
-
-				if ($cmd[0] eq $i) {
-					$found=1;
-				}
-
+		foreach my $i (@command_list){
+			if ($cmd[0] eq $i) {
+				$found=1;
 			}
-				
-			if ($found == 1 ) {
+		}
+		if ($found == 1 ) {
 
-				system(&cmd());
+			system(&cmd());
 
-			} elsif ( ($found == 0) & ($cmd[0] =~ /^quit/) ) {
-					#$dbh->disconnect();
-					open(HIST,"+>/tmp/osipsconsole_history");
-					print HIST @history_list; 
-					close(HIST);
-					print "Thank you for flying Opensips!!\n";
-					exit;
-		     	} elsif ( $found == 0 ) {
-				 	system(&not_command());
-			}		
-			
+		} elsif ( ($found == 0) & ($cmd[0] eq "quit" || $cmd[0] eq "exit") ) {
+			#$dbh->disconnect();
+			open(HIST,"+>>$HISTORY_FILE");
+			print HIST @history_list;
+			close(HIST);
+			print "Thank you for flying Opensips!!\n";
+			exit;
+		} elsif ( $found == 0 ) {
+			system(&not_command());
+		}
 
 
-			$term->addhistory($cmd[0]);
-			unshift(@history_list,"$command\n");
+		$term->addhistory($command);
+		unshift(@history_list,"$command\n");
 
 	}
 }
@@ -2750,33 +2638,31 @@ sub address() {
 
 		elsif ($cmd[1] =~ /^show$/) {
 		
-			&require_dbengine();
+			require_dbengine();
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				&bdb_select($ADDRESS_TABLE);								
+				&bdb_select($ADDRESS_TABLE);
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD","SELECT * FROM $ADDRESS_TABLE");
 			} else {
-				$sth = $dbh->prepare ( "SELECT * FROM $ADDRESS_TABLE");	
+				$sth = $dbh->prepare ( "SELECT * FROM $ADDRESS_TABLE");
 				
 				##execute the query
 				$sth->execute( );
 
-				## Retrieve the results of a row of data and print						 
+				## Retrieve the results of a row of data and print
 				print "\tQuery results:\n================================================\n";
 
 				while (@row = $sth->fetchrow_array( ) )  {
 					print "@row\n";
-	    	                 }		 
+				}
 				warn "Could not retrieve data! Data was not inserted in database!", $sth->errstr( ), "\n" if $sth->err( );
-				$sth->finish(); 
-			}			
-					
-	
-		}	
+				$sth->finish();
+			}
+
+		}
 
 		elsif ($cmd[1] =~ /^add$/) {
-			
 
 			&require_dbengine();
 
@@ -2793,8 +2679,13 @@ sub address() {
 			$IP = $cmd[3];
 			$MASK = $cmd[4];
 
-			$columns .= "$address_table{'ADDRESS_IP_COLUMN'}, $address_table{'ADDRESS_MASK_COLUMN'}, "; 
-                        $query .= "\'$IP\', \'$MASK\', ";
+			if ( $cmd[4] !~ /^[0-9]+$/ || $cmd[4] < 0 || $cmd[4] > 32 ) {
+				print "mask '$cmd[4]' is not valid - it must be between 0 and 32 (biti)\n";
+				return;
+			}
+
+			$columns .= "$address_table{'ADDRESS_IP_COLUMN'}, $address_table{'ADDRESS_MASK_COLUMN'}, ";
+			$query .= "\'$IP\', \'$MASK\', ";
 
 			if ( $cmd[6] !~ /^any$|^ANY$|^UDP$|^udp$|^tcp$|^TCP$|^tls$|^TLS$|^sctp$|^SCTP$|^NONE$|^none$/ ) {
 				print "unknown protocol\n";
@@ -2810,9 +2701,9 @@ sub address() {
 			$PORT = $cmd[5];
 			$PROTO = $cmd[6];
 
-                        $columns .= "$address_table{'ADDRESS_PORT_COLUMN'}, $address_table{'ADDRESS_PROTO_COLUMN'} "; 
-                        $query .= "$PORT, \'$PROTO\' ";
-			my $value = join(" ", $MASK,$PORT,$PROTO);	
+			$columns .= "$address_table{'ADDRESS_PORT_COLUMN'}, $address_table{'ADDRESS_PROTO_COLUMN'} ";
+			$query .= "$PORT, \'$PROTO\' ";
+			my $value = join(" ", $MASK,$PORT,$PROTO);
 
 			if ( $cmd[6] ) {
 				$CONTEXT_INFO = $cmd[7];
@@ -2821,15 +2712,15 @@ sub address() {
 				$value = join(" ",$CONTEXT_INFO);
 				if ( $cmd[7] ) {
 					$PATTERN = $cmd[8];
-	                                $columns .= ", " . "$address_table{'ADDRESS_PATTERN_COLUMN'}";
-        	                        $query .= ", " . "\'$PATTERN\'";
+					$columns .= ", " . "$address_table{'ADDRESS_PATTERN_COLUMN'}";
+					$query .= ", " . "\'$PATTERN\'";
 					$value = join(" ",$PATTERN);
-				}						
+				}
 			}
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
 				my $key = join(" ", $GRP, $IP);
-				&bdb_insert($ADDRESS_TABLE, $key, $value);								
+				&bdb_insert($ADDRESS_TABLE, $key, $value);
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD", " INSERT INTO $ADDRESS_TABLE ( $columns ) VALUES ( $query ) " ) ;
 			} else {	
@@ -2856,21 +2747,21 @@ sub address() {
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
 				my $key = join(" ", $cmd[2], $IP);
-				&bdb_delete($ADDRESS_TABLE,$key);								
+				&bdb_delete($ADDRESS_TABLE,$key);
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD", "DELETE FROM $ADDRESS_TABLE 
-					      WHERE $address_table{'ADDRESS_GRP_COLUMN'} = $GRP AND 
-	                             	            $address_table{'ADDRESS_IP_COLUMN'} = \'$IP\' AND 
-						    $address_table{'ADDRESS_MASK_COLUMN'} = \'$MASK\' AND 
-						    $address_table{'ADDRESS_PORT_COLUMN'} = $PORT" );
-			} else {			
+					WHERE $address_table{'ADDRESS_GRP_COLUMN'} = $GRP AND 
+					$address_table{'ADDRESS_IP_COLUMN'} = \'$IP\' AND 
+						$address_table{'ADDRESS_MASK_COLUMN'} = \'$MASK\' AND 
+						$address_table{'ADDRESS_PORT_COLUMN'} = $PORT" );
+			} else {
 				$sth = $dbh->prepare("DELETE FROM $ADDRESS_TABLE 
-						      WHERE $address_table{'ADDRESS_GRP_COLUMN'} = $GRP AND 
-                                                            $address_table{'ADDRESS_IP_COLUMN'} = \'$IP\' AND 
-                                                            $address_table{'ADDRESS_MASK_COLUMN'} = \'$MASK\' AND 
-                                                            $address_table{'ADDRESS_PORT_COLUMN'} = $PORT" );
+						WHERE $address_table{'ADDRESS_GRP_COLUMN'} = $GRP AND 
+						$address_table{'ADDRESS_IP_COLUMN'} = \'$IP\' AND 
+						$address_table{'ADDRESS_MASK_COLUMN'} = \'$MASK\' AND 
+						$address_table{'ADDRESS_PORT_COLUMN'} = $PORT" );
 				#execute the query
-				$sth->execute( );			
+				$sth->execute( );
 				warn "Deleting address rule: $GRP $IP $MASK $PORT  in table $DOMAIN_TABLE failed \n", $sth->errstr( ), "\n" if $sth->err( );
 				$sth->finish();
 			}
@@ -3883,13 +3774,10 @@ sub write_read_fifo() {
 	$OSIPS_FIFO = $_[0];
 	$fifo_reply_path = $_[1];
 	$cmd_fifo = $_[2];
-	
+
 	if (!-e $OSIPS_FIFO){
-
-		print "File $OSIPS_FIFO does not exist!";
-
+		print "File $OSIPS_FIFO does not exist!\n";
 		return;
-
 	}
 
 	if ( !-w $OSIPS_FIFO ) {
