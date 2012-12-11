@@ -26,42 +26,41 @@
 #define CASE_REMO_H
 
 
-#define _ID_CASE                         \
-        switch(LOWER_DWORD(val)) {       \
-        case __id1_:                     \
-	        hdr->type = HDR_RPID_T;    \
-	        hdr->name.len = 15;      \
-	        return (p + 4);          \
-                                         \
-        case __id2_:                     \
-                hdr->type = HDR_RPID_T;    \
-                p += 4;                  \
-	        goto dc_end;             \
-        }
+#define _ID_CASE                     \
+	switch(LOWER_DWORD(val)) {       \
+		case __id1_:                 \
+			hdr->type = HDR_RPID_T;  \
+			hdr->name.len = 15;      \
+			return (p + 4);          \
+		case __id2_:                 \
+			hdr->type = HDR_RPID_T;  \
+			hdr->name.len = 15;      \
+			p += 4;                  \
+			goto dc_cont;            \
+		}
 
-#define ARTY_CASE                         \
-        if (LOWER_DWORD(val) == _arty_) { \
-	        p += 4;                   \
-                val = READ(p);            \
-                _ID_CASE;                 \
+#define ARTY_CASE                 \
+	if (LOWER_DWORD(val) == _arty_) { \
+		p += 4;                   \
+		val = READ(p);            \
+		_ID_CASE;                 \
 		goto other;               \
 	}
-	             
 
-#define TE_P_CASE                          \
-        if (LOWER_DWORD(val) == _te_p_) {  \
-                p += 4;                    \
-	        val = READ(p);             \
-	        ARTY_CASE;                 \
-                goto other;                \
-        }
+#define TE_P_CASE                      \
+		if (LOWER_DWORD(val) == _te_p_) {  \
+			p += 4;                    \
+			val = READ(p);             \
+			ARTY_CASE;                 \
+			goto other;                \
+		}
 
 
 #define remo_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     TE_P_CASE;        \
-     goto other;
+	p += 4;           \
+	val = READ(p);    \
+	TE_P_CASE;        \
+	goto other;
 
 
 #endif /* CASE_REMO_H */

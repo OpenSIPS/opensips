@@ -25,50 +25,51 @@
 #define CASE_P_AS_H
 
 
-#define ITY_CASE                                \
-	switch( LOWER_DWORD(val) ) {	        \
-	case _ity1_:				\
-		hdr->type = HDR_PAI_T;	        \
-		hdr->name.len = 19;		\
-		return p + 4;			\
-	case _ity2_:				\
-		hdr->type = HDR_PAI_T;	        \
-		p += 4;				\
-		goto dc_end;			\
+#define ITY_CASE                    \
+	switch( LOWER_DWORD(val) ) {    \
+		case _ity1_:                \
+			hdr->type = HDR_PAI_T;  \
+			hdr->name.len = 19;     \
+			return p + 4;           \
+		case _ity2_:                \
+			hdr->type = HDR_PAI_T;  \
+			hdr->name.len = 19;     \
+			p += 4;                 \
+			goto dc_cont;           \
 	}
 
-#define DENT_CASE                         \
-        if (LOWER_DWORD(val) == _dent_) { \
-	        p += 4;                   \
-                val = READ(p);            \
-                ITY_CASE;                 \
+#define DENT_CASE                 \
+	if (LOWER_DWORD(val) == _dent_) { \
+		p += 4;                   \
+		val = READ(p);            \
+		ITY_CASE;                 \
 		goto other;               \
 	}
 
 
-#define ED_I_CASE                         \
-        if (LOWER_DWORD(val) == _ed_i_) { \
-	        p += 4;                   \
-                val = READ(p);            \
-                DENT_CASE;                 \
+#define ED_I_CASE                 \
+	if (LOWER_DWORD(val) == _ed_i_) { \
+		p += 4;                   \
+		val = READ(p);            \
+		DENT_CASE;                \
 		goto other;               \
 	}
-	             
-
-#define SERT_CASE                          \
-        if (LOWER_DWORD(val) == _sert_) {  \
-                p += 4;                    \
-	        val = READ(p);             \
-	        ED_I_CASE;                 \
-                goto other;                \
-        }
 
 
-#define p_as_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     SERT_CASE;        \
-     goto other;
+#define SERT_CASE                  \
+	if (LOWER_DWORD(val) == _sert_) {  \
+		p += 4;                    \
+		val = READ(p);             \
+		ED_I_CASE;                 \
+		goto other;                \
+	}
+
+
+#define p_as_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	SERT_CASE;        \
+	goto other;
 
 
 #endif /* CASE_P_AS_H */

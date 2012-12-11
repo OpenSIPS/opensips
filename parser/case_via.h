@@ -31,15 +31,16 @@
 #define CASE_VIA_H
 
 
-#define via1_CASE            \
-        hdr->type = HDR_VIA_T; \
-        hdr->name.len = 3;   \
-        return (p + 4)        
+#define via1_CASE          \
+	hdr->type = HDR_VIA_T; \
+	hdr->name.len = 3;     \
+	return (p + 4)
 
-#define via2_CASE            \
-        hdr->type = HDR_VIA_T; \
-        p += 4;              \
-        goto dc_end
+#define via2_CASE          \
+	hdr->type = HDR_VIA_T; \
+	hdr->name.len = 3;     \
+	p += 4;                \
+	goto dc_end
 
 
 #endif /* CASE_VIA_H */

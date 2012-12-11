@@ -27,19 +27,20 @@
 #define CASE_PRIO_H
 
 
-#define rity_CASE                             \
-        if (LOWER_DWORD(val) == _rity_) {     \
-	        hdr->type = HDR_PRIORITY_T;     \
+#define rity_CASE                     \
+	if (LOWER_DWORD(val) == _rity_) { \
+		hdr->type = HDR_PRIORITY_T;   \
+		hdr->name.len = 8;            \
 		p += 4;                       \
-		goto dc_end;                  \
-	}                                     \
+		goto dc_cont;                 \
+	}                                 \
 
 
 #define prio_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        rity_CASE;        \
-        goto other;
+		p += 4;           \
+		val = READ(p);    \
+		rity_CASE;        \
+		goto other;
 
 
 #endif /* CASE_PRIO_H */

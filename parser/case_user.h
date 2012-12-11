@@ -26,27 +26,28 @@
 #define CASE_USER_H
 
 
-#define nt_CASE                                \
-    if (LOWER_BYTE(*p) == 'n') {               \
-            p++;                               \
-            if (LOWER_BYTE(*p) == 't') {       \
-                    hdr->type = HDR_USERAGENT_T; \
-                    p++;                       \
-                    goto dc_end;               \
-            }                                  \
-    }                                          \
-    goto other;
+#define nt_CASE                          \
+	if (LOWER_BYTE(*p) == 'n') {         \
+		p++;                             \
+		if (LOWER_BYTE(*p) == 't') {     \
+			hdr->type = HDR_USERAGENT_T; \
+			hdr->name.len = 10;          \
+			p++;                         \
+			goto dc_cont;                \
+		}                                \
+	}                                    \
+	goto other;
 
 
 #define user_CASE              \
-    p += 4;                    \
-    val = READ(p);             \
-    switch(LOWER_DWORD(val)) { \
-    case __age_:               \
-	p += 4;                \
-	nt_CASE;               \
-    }                          \
-    goto other;
+	p += 4;                    \
+	val = READ(p);             \
+	switch(LOWER_DWORD(val)) { \
+		case __age_:           \
+			p += 4;            \
+			nt_CASE;           \
+	}                          \
+	goto other;
 
 
 #endif /* CASE_USER_H */

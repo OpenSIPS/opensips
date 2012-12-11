@@ -27,29 +27,30 @@
 #define CASE_ORGA_H
 
 
-#define tion_CASE                             \
-        if (LOWER_DWORD(val) == _tion_) {     \
-	        hdr->type = HDR_ORGANIZATION_T; \
-		p += 4;                       \
-		goto dc_end;                  \
+#define tion_CASE                         \
+	if (LOWER_DWORD(val) == _tion_) {     \
+		hdr->type = HDR_ORGANIZATION_T;   \
+		hdr->name.len = 12;               \
+		p += 4;                           \
+		goto dc_cont;                     \
 	}                                     \
 
 
-#define niza_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _niza_:               \
-	        p += 4;            \
-	        val = READ(p);     \
-		tion_CASE;         \
-	        goto other;        \
-        }
+#define niza_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _niza_:           \
+			p += 4;            \
+			val = READ(p);     \
+			tion_CASE;         \
+			goto other;        \
+		}
 
 
 #define orga_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        niza_CASE;        \
-        goto other;
+		p += 4;           \
+		val = READ(p);    \
+		niza_CASE;        \
+		goto other;
 
 
 #endif /* CASE_ORGA_H */

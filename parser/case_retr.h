@@ -33,8 +33,9 @@
 			return p + 4;                   \
 		case _ter2_:                        \
 			hdr->type = HDR_RETRY_AFTER_T;  \
+			hdr->name.len = 11;             \
 			p += 4;                         \
-			goto dc_end;                    \
+			goto dc_cont;                   \
 	}
 
 

@@ -27,24 +27,25 @@
 #define CASE_SUPP_H
 
 
-#define ORTE_CASE                                  \
-        switch(LOWER_DWORD(val)) {                 \
-        case _orte_:                               \
-	        p += 4;                            \
-	        if (LOWER_BYTE(*p) == 'd') {       \
-		        hdr->type = HDR_SUPPORTED_T; \
-                        p++;                       \
-                        goto dc_end;               \
-                }                                  \
-                goto other;                        \
-        }
+#define ORTE_CASE                            \
+	switch(LOWER_DWORD(val)) {               \
+		case _orte_:                         \
+			p += 4;                          \
+			if (LOWER_BYTE(*p) == 'd') {     \
+				hdr->type = HDR_SUPPORTED_T; \
+				hdr->name.len = 9;           \
+				p++;                         \
+				goto dc_cont;                \
+			}                                \
+		goto other;                          \
+	}
 
 
-#define supp_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        ORTE_CASE;        \
-        goto other;
+#define supp_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	ORTE_CASE;        \
+	goto other;
 
 
 #endif /* CASE_SUPP_H */

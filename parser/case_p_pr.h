@@ -25,46 +25,47 @@
 #define CASE_P_PR_H
 
 
-#define TITY_CASE                         \
-        if (LOWER_DWORD(val) == _tity_) { \
-	        hdr->type = HDR_PPI_T;     \
+#define TITY_CASE                     \
+	if (LOWER_DWORD(val) == _tity_) { \
+		hdr->type = HDR_PPI_T;        \
+		hdr->name.len = 20;           \
 		p += 4;                       \
-		goto dc_end;                  \
-	}                                     \
+		goto dc_cont;                 \
+	}                                 \
 
 
-#define IDEN_CASE                         \
-        if (LOWER_DWORD(val) == _iden_) { \
-	        p += 4;                   \
-                val = READ(p);            \
-                TITY_CASE;                 \
-		goto other;               \
+#define IDEN_CASE                     \
+	if (LOWER_DWORD(val) == _iden_) { \
+		p += 4;                       \
+		val = READ(p);                \
+		TITY_CASE;                    \
+		goto other;                   \
 	}
 
 
-#define RED__CASE                         \
-        if (LOWER_DWORD(val) == _red__) { \
-	        p += 4;                   \
-                val = READ(p);            \
-                IDEN_CASE;                 \
-		goto other;               \
+#define RED__CASE                     \
+	if (LOWER_DWORD(val) == _red__) { \
+		p += 4;                       \
+		val = READ(p);                \
+		IDEN_CASE;                    \
+		goto other;                   \
 	}
-	             
-
-#define EFER_CASE                          \
-        if (LOWER_DWORD(val) == _efer_) {  \
-                p += 4;                    \
-	        val = READ(p);             \
-	        RED__CASE;                 \
-                goto other;                \
-        }
 
 
-#define p_pr_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     EFER_CASE;        \
-     goto other;
+#define EFER_CASE                      \
+	if (LOWER_DWORD(val) == _efer_) {  \
+		p += 4;                        \
+		val = READ(p);                 \
+		RED__CASE;                     \
+		goto other;                    \
+	}
+
+
+#define p_pr_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	EFER_CASE;        \
+	goto other;
 
 
 #endif /* CASE_P_PR_H */

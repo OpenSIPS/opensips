@@ -33,93 +33,94 @@
 
 
 #define ION_CASE                           \
-        switch(LOWER_DWORD(val)) {         \
-        case _ion1_:                       \
-	        hdr->type = HDR_PROXYAUTH_T; \
-	        hdr->name.len = 19;        \
-	        return (p + 4);            \
-                                           \
-        case _ion2_:                       \
-                hdr->type = HDR_PROXYAUTH_T; \
-                p += 4;                    \
-	        goto dc_end;               \
-        }
+	switch(LOWER_DWORD(val)) {             \
+		case _ion1_:                       \
+			hdr->type = HDR_PROXYAUTH_T;   \
+			hdr->name.len = 19;            \
+			return (p + 4);                \
+		case _ion2_:                       \
+			hdr->type = HDR_PROXYAUTH_T;   \
+			hdr->name.len = 19;            \
+			p += 4;                        \
+		goto dc_cont;                      \
+	}
 
 
 #define IZAT_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _izat_:               \
-                p += 4;            \
-                val = READ(p);     \
-                ION_CASE;          \
-                goto other;        \
-        }
+	switch(LOWER_DWORD(val)) {     \
+		case _izat_:               \
+				p += 4;            \
+				val = READ(p);     \
+				ION_CASE;          \
+				goto other;        \
+	}
 
-#define TE_CASE                                                      \
+#define TE_CASE                                                  \
 	if ( LOWER_BYTE(*p) == 't'  && LOWER_BYTE(*(p+1)) == 'e' ) { \
-		hdr->type = HDR_PROXY_AUTHENTICATE_T;                \
-		p += 2;                                              \
-		goto dc_end;                                         \
+		hdr->type = HDR_PROXY_AUTHENTICATE_T;                    \
+		hdr->name.len = 18;                                      \
+		p += 2;                                                  \
+		goto dc_cont;                                            \
 	}
 
 #define TICA_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _tica_:               \
-                p += 4;            \
-                val = READ(p);     \
-                TE_CASE;           \
-                goto other;        \
-        }
-
-#define TH2_CASE                   \
-	switch(LOWER_DWORD(val)) { \
-	case _thor_:               \
-		p += 4;            \
-		val = READ(p);     \
-		IZAT_CASE;         \
-		goto other;        \
-	case _then_:               \
-		p += 4;            \
-		val = READ(p);     \
-		TICA_CASE;         \
-		goto other;        \
+	switch(LOWER_DWORD(val)) {     \
+		case _tica_:               \
+				p += 4;            \
+				val = READ(p);     \
+				TE_CASE;           \
+				goto other;        \
 	}
 
-#define QUIR_CASE                                     \
-        switch(LOWER_DWORD(val)) {                    \
-        case _quir_:                                  \
-	        p += 4;                               \
-                switch(LOWER_BYTE(*p)) {              \
-                case 'e':                             \
-                        hdr->type = HDR_PROXYREQUIRE_T; \
-	                p++;                          \
-                        goto dc_end;                  \
-                }                                     \
-                goto other;                           \
-        }
+#define TH2_CASE               \
+	switch(LOWER_DWORD(val)) { \
+		case _thor_:           \
+			p += 4;            \
+			val = READ(p);     \
+			IZAT_CASE;         \
+			goto other;        \
+		case _then_:           \
+			p += 4;            \
+			val = READ(p);     \
+			TICA_CASE;         \
+			goto other;        \
+	}
+
+#define QUIR_CASE                                   \
+	switch(LOWER_DWORD(val)) {                      \
+		case _quir_:                                \
+			p += 4;                                 \
+			switch(LOWER_BYTE(*p)) {                \
+				case 'e':                           \
+					hdr->type = HDR_PROXYREQUIRE_T; \
+					hdr->name.len = 13;             \
+					p++;                            \
+					goto dc_cont;                   \
+			}                                       \
+			goto other;                             \
+	}
 
 
 #define PROX2_CASE                 \
-        switch(LOWER_DWORD(val)) { \
-        case _y_au_:               \
-                p += 4;            \
-                val = READ(p);     \
-                TH2_CASE;          \
-                goto other;        \
-                                   \
-        case _y_re_:               \
-                p += 4;            \
-                val = READ(p);     \
-                QUIR_CASE;         \
-                goto other;        \
-        }
+	switch(LOWER_DWORD(val)) {     \
+		case _y_au_:               \
+				p += 4;            \
+				val = READ(p);     \
+				TH2_CASE;          \
+				goto other;        \
+		case _y_re_:               \
+				p += 4;            \
+				val = READ(p);     \
+				QUIR_CASE;         \
+				goto other;        \
+	}
 
 
 #define prox_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        PROX2_CASE;       \
-         goto other;
+		p += 4;           \
+		val = READ(p);    \
+		PROX2_CASE;       \
+		goto other;
 
 
 #endif /* CASE_PROX_H */
