@@ -1,0 +1,29 @@
+	<!-- Declaration of acc table-->
+	<db_table id="acc">
+		<table_name>acc</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>method</field><type>DB_STR</type></column>
+		<column><field>from_tag</field><type>DB_STR</type></column>
+		<column><field>to_tag</field><type>DB_STR</type></column>
+		<column><field>callid</field><type>DB_STR</type></column>
+		<column><field>sip_code</field><type>DB_STR</type></column>
+		<column><field>sip_reason</field><type>DB_STR</type></column>
+		<column><field>time</field><type>DB_DATETIME</type></column>
+		<column><field>duration</field><type>DB_INT</type></column>
+		<column><field>setuptime</field><type>DB_INT</type></column>
+		<column><field>created</field><type>DB_DATETIME</type></column>
+	</db_table>
+	<!-- Declaration of missed_calls table-->
+	<db_table id="missed_calls">
+		<table_name>missed_calls</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>method</field><type>DB_STR</type></column>
+		<column><field>from_tag</field><type>DB_STR</type></column>
+		<column><field>to_tag</field><type>DB_STR</type></column>
+		<column><field>callid</field><type>DB_STR</type></column>
+		<column><field>sip_code</field><type>DB_STR</type></column>
+		<column><field>sip_reason</field><type>DB_STR</type></column>
+		<column><field>time</field><type>DB_DATETIME</type></column>
+	</db_table>

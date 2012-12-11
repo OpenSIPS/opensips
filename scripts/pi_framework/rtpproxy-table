@@ -1,0 +1,8 @@
+	<!-- Declaration of rtpproxy_sockets table-->
+	<db_table id="rtpproxy_sockets">
+		<table_name>rtpproxy_sockets</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>rtpproxy_sock</field><type>DB_BLOB</type></column>
+		<column><field>set_id</field><type>DB_INT</type></column>
+	</db_table>

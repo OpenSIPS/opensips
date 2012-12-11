@@ -1,0 +1,12 @@
+	<!-- Declaration of closeddial table-->
+	<db_table id="closeddial">
+		<table_name>closeddial</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>username</field><type>DB_STR</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
+		<column><field>cd_username</field><type>DB_STR</type></column>
+		<column><field>cd_domain</field><type>DB_STR</type></column>
+		<column><field>group_id</field><type>DB_STR</type></column>
+		<column><field>new_uri</field><type>DB_STR</type></column>
+	</db_table>

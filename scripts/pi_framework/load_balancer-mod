@@ -1,0 +1,15 @@
+	<!-- load_balancer provisionning -->
+	<mod><mod_name>load_balancer</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>load_balancer</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>group_id</field></col>
+				<col><field>dst_uri</field></col>
+				<col><field>resources</field></col>
+				<col><field>probe_mode</field></col>
+				<col><field>description</field></col>
+			</query_cols>
+		</cmd>
+	</mod>

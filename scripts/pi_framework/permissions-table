@@ -1,0 +1,13 @@
+	<!-- Declaration of address table-->
+	<db_table id="address">
+		<table_name>address</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>grp</field><type>DB_INT</type></column>
+		<column><field>ip</field><type>DB_STR</type></column>
+		<column><field>mask</field><type>DB_INT</type></column>
+		<column><field>port</field><type>DB_INT</type></column>
+		<column><field>proto</field><type>DB_STR</type></column>
+		<column><field>pattern</field><type>DB_STR</type></column>
+		<column><field>context_info</field><type>DB_STR</type></column>
+	</db_table>

@@ -1,0 +1,20 @@
+	<!-- registrant provisionning -->
+	<mod><mod_name>registrant</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>registrant</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>registrar</field></col>
+				<col><field>proxy</field></col>
+				<col><field>aor</field></col>
+				<col><field>third_party_registrant</field></col>
+				<col><field>username</field></col>
+				<col><field>password</field></col>
+				<col><field>binding_URI</field></col>
+				<col><field>binding_params</field></col>
+				<col><field>expiry</field></col>
+				<col><field>forced_socket</field></col>
+			</query_cols>
+		</cmd>
+	</mod>

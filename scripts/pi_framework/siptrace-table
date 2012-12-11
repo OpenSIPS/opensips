@@ -1,0 +1,16 @@
+	<!-- Declaration of sip_trace table-->
+	<db_table id="sip_trace">
+		<table_name>sip_trace</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>time_stamp</field><type>DB_DATETIME</type></column>
+		<column><field>callid</field><type>DB_STR</type></column>
+		<column><field>traced_user</field><type>DB_STR</type></column>
+		<column><field>msg</field><type>DB_BLOB</type></column>
+		<column><field>method</field><type>DB_STR</type></column>
+		<column><field>status</field><type>DB_STR</type></column>
+		<column><field>fromip</field><type>DB_STR</type></column>
+		<column><field>toip</field><type>DB_STR</type></column>
+		<column><field>fromtag</field><type>DB_STR</type></column>
+		<column><field>direction</field><type>DB_STR</type></column>
+	</db_table>
