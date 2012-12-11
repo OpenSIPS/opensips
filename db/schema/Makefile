@@ -8,6 +8,12 @@ TABLES := $(patsubst opensips-%.xml,%,$(wildcard opensips-*.xml))
 ROOT=../..
 STYLESHEETS=$(ROOT)/doc/dbschema/xsl
 
+# Stylesheet used to generate db_table nodes for pi_framework XML schema
+PI_FRAMEWORK_TABLE_XSL = $(STYLESHEETS)/pi_framework_table.xsl
+
+# Stylesheet used to generate mod nodes for pi_framework XML schema
+PI_FRAMEWORK_MOD_XSL = $(STYLESHEETS)/pi_framework_mod.xsl
+
 # Stylesheet used to generate MySQL database schema
 MYSQL_XSL = $(STYLESHEETS)/mysql.xsl
 
@@ -46,7 +52,32 @@ ifeq ($(VERBOSE), 1)
 	override XSLTPROC := $(XSLTPROC) --verbose
 endif
 
-all: mysql postgres dbtext db_berkeley docbook oracle
+all: mysql postgres dbtext db_berkeley docbook oracle pi_framework
+
+.PHONY: pi_framework pi_framework_clean
+pi_framework:
+	for FILE in $(TABLES); do \
+		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
+		--stringparam dir "$(ROOT)/scripts/pi_framework" \
+		--stringparam prefix "$$FILE-" \
+		$(PI_FRAMEWORK_TABLE_XSL) opensips-"$$FILE".xml ; \
+	done
+	for FILE in $(TABLES); do \
+		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
+		--stringparam dir "$(ROOT)/scripts/pi_framework" \
+		--stringparam prefix "$$FILE-" \
+		$(PI_FRAMEWORK_MOD_XSL) opensips-"$$FILE".xml ; \
+	done
+	cat $(ROOT)/scripts/pi_framework/pi_framework-00 \
+		$(ROOT)/scripts/pi_framework/*-table \
+		$(ROOT)/scripts/pi_framework/pi_framework-01 \
+		$(ROOT)/scripts/pi_framework/*-mod \
+		$(ROOT)/scripts/pi_framework/pi_framework-02 > \
+		$(ROOT)/scripts/pi_framework/pi_framework.xml
+
+pi_framework_clean:
+	-@rm -f $(ROOT)/scripts/pi_framework/*-table
+	-@rm -f $(ROOT)/scripts/pi_framework/*-mod
 
 .PHONY: mysql mysql_clean
 mysql:
@@ -173,4 +204,4 @@ docbook_clean:
 
 
 .PHONY: clean
-clean: mysql_clean postgres_clean oracle_clean dbtext_clean db_berkeley_clean docbook_clean
+clean: mysql_clean postgres_clean oracle_clean dbtext_clean db_berkeley_clean docbook_clean pi_framework_clean
