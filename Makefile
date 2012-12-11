@@ -142,6 +142,12 @@ ifeq (,$(MODULE_RADIUSDEP_INCLUDED))
 else
 	RADIUSDEPON=yes
 endif
+MODULE_PI_HTTP_INCLUDED=$(shell echo $(modules)| grep pi_http )
+ifeq (,$(MODULE_PI_HTTP_INCLUDED))
+	PIHTTPON=no
+else
+	PIHTTPON=yes
+endif
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf
 
@@ -776,6 +782,18 @@ install-modules-tools: $(bin-prefix)/$(bin-dir)
 						$(data-prefix)/$(data-dir)/dbtext/opensips/`basename "$$FILE"` ; \
 					$(INSTALL_CFG) $$FILE \
 						$(data-prefix)/$(data-dir)/dbtext/opensips/`basename "$$FILE"` ; \
+				fi ;\
+			done ;\
+		fi
+		# install pi_http stuff
+		if [ "$(PIHTTPON)" = "yes" ]; then \
+			mkdir -p $(data-prefix)/$(data-dir)/pi_http ; \
+			for FILE in $(wildcard scripts/pi_framework/*) ; do \
+				if [ -f $$FILE ] ; then \
+					$(INSTALL_TOUCH) $$FILE \
+						$(data-prefix)/$(data-dir)/pi_http/`basename "$$FILE"` ; \
+					$(INSTALL_CFG) $$FILE \
+						$(data-prefix)/$(data-dir)/pi_http/`basename "$$FILE"` ; \
 				fi ;\
 			done ;\
 		fi
