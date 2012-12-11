@@ -92,7 +92,7 @@
 		Random Early Detection tries to circumvent the synchronization problem
 		imposed by the tail drop algorithm by measuring the average load and
 		adapting the drop rate dynamically. When running with the RED
-		algorithm (enabled by default) OpenSIPS will return errors to the OpenSIPS
+		algorithm OpenSIPS will return errors to the OpenSIPS
 		routing engine every n'th packet trying to evenly spread the measured
 		load of the last timer interval onto the current interval. As a
 		negative side effect OpenSIPS might drop messages although the limit might
