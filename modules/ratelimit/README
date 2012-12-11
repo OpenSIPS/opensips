@@ -24,14 +24,14 @@ Edited by
 
 Razvan Crainea
 
-   Copyright Â© 2006 Freenet Cityline GmbH
+   Copyright © 2006 Freenet Cityline GmbH
 
-   Copyright Â© 2008 VoIP Embedded Inc.
+   Copyright © 2008 VoIP Embedded Inc.
 
-   Copyright Â© 2011 OpenSIPS Foundation
+   Copyright © 2011 OpenSIPS Foundation
    Revision History
    Revision $Revision: 5901 $ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -164,13 +164,12 @@ Chapter 1. Admin Guide
    Random Early Detection tries to circumvent the synchronization
    problem imposed by the tail drop algorithm by measuring the
    average load and adapting the drop rate dynamically. When
-   running with the RED algorithm (enabled by default) OpenSIPS
-   will return errors to the OpenSIPS routing engine every n'th
-   packet trying to evenly spread the measured load of the last
-   timer interval onto the current interval. As a negative side
-   effect OpenSIPS might drop messages although the limit might
-   not be reached within the interval. Decrease the timer interval
-   if you encounter this.
+   running with the RED algorithm OpenSIPS will return errors to
+   the OpenSIPS routing engine every n'th packet trying to evenly
+   spread the measured load of the last timer interval onto the
+   current interval. As a negative side effect OpenSIPS might drop
+   messages although the limit might not be reached within the
+   interval. Decrease the timer interval if you encounter this.
 
 1.3.3. Network Algorithm (NETWORK)
 
