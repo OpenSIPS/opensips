@@ -219,7 +219,20 @@
 		</para>
 	</section>
 	</section>
-	
+
+	<section>
+	<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>libxml2</emphasis></para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+
 	<section>
 	<title>Exported Parameters</title>
 	<section>

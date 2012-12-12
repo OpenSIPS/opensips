@@ -30,14 +30,15 @@ Ovidiu Sas
 
               1.4.1. OpenSIPS Modules
 
-        1.5. Exported Parameters
+        1.5. External Libraries or Applications
+        1.6. Exported Parameters
 
-              1.5.1. pi_root(string)
-              1.5.2. framework(string)
+              1.6.1. pi_root(string)
+              1.6.2. framework(string)
 
-        1.6. Exported MI Functions
+        1.7. Exported MI Functions
 
-              1.6.1. pi_reload_tbls_and_cmds
+              1.7.1. pi_reload_tbls_and_cmds
 
    List of Examples
 
@@ -177,9 +178,15 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * httpd module.
 
-1.5. Exported Parameters
+1.5. External Libraries or Applications
 
-1.5.1. pi_root(string)
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * libxml2
+
+1.6. Exported Parameters
+
+1.6.1. pi_root(string)
 
    It specifies the root path for pi http requests. The link to
    the OpenSIPS provisioning web interface must be constructed
@@ -193,7 +200,7 @@ Chapter 1. Admin Guide
 modparam("pi_http", "pi_root", "opensips_pi")
 ...
 
-1.5.2. framework(string)
+1.6.2. framework(string)
 
    It specifies the full path for xml framework descriptor.
 
@@ -205,9 +212,9 @@ modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.
 xml")
 ...
 
-1.6. Exported MI Functions
+1.7. Exported MI Functions
 
-1.6.1. pi_reload_tbls_and_cmds
+1.7.1. pi_reload_tbls_and_cmds
 
    Reloads the layout of the provisioning interface from the
    framework file.
