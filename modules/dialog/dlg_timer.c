@@ -39,6 +39,13 @@ dlg_timer_handler timer_hdl = 0;
 struct dlg_ping_timer *ping_timer=0;
 str options_str=str_init("OPTIONS");
 
+/* for the dlg timer, there are 3 possible states :
+ * prev=next=0 -> dialog not in timer list
+ * prev=0 -> dialog expired
+ * otherwise - dialog still in timer list
+ */
+#define FAKE_DIALOG_TL ((struct dlg_tl*)-1)
+
 int init_dlg_timer( dlg_timer_handler hdl )
 {
 	d_timer = (struct dlg_timer*)shm_malloc(sizeof(struct dlg_timer));
@@ -70,6 +77,74 @@ error0:
 	d_timer = 0;
 	return -1;
 }
+
+#ifdef EXTRA_DEBUG
+#define tl_get_dlg(_tl_)  ((struct dlg_cell*)((char *)(_tl_)- \
+		(unsigned long)(&((struct dlg_cell*)0)->tl)))
+void debug_detached_timer_list(struct dlg_tl *detached)
+{
+	struct dlg_cell *dlg;
+
+	LM_DBG("Debugging detached timer list\n");
+
+	/* check the detached list is not circular */
+	while (detached != FAKE_DIALOG_TL) {
+		if (detached->prev != NULL || detached->visited==1) {
+			dlg = tl_get_dlg(detached);
+			LM_ERR("Detected something wrong with dialog %p [%.*s]. Aborting. Visited = %d \n",
+					dlg,dlg->callid.len,dlg->callid.s,detached->visited);
+			abort();
+		}
+		detached->visited = 1;
+		detached = detached->next;
+	}
+
+}
+
+/* assumed to be always called under timer lock */
+void debug_main_timer_list(void)
+{
+	struct dlg_tl *start,*finish;
+	int visited=1;
+
+	start = finish = &(d_timer->first);
+	LM_DBG("testing forward loop with visited = %d\n",visited);
+
+	/* check the main list is circular in both directions from start to end,
+	 * with no loops in the middle */
+	while (start) {
+		start->visited=visited;
+		start = start->next;
+
+		if (start == finish)
+			break;
+
+		if (start == NULL || start->visited == visited) {
+			LM_ERR("Detected something wrong with main timer list on forward linking for entry %p \n",start);
+			abort();
+		}
+	}
+
+	visited++;
+	start = &(d_timer->first);
+
+	LM_DBG("testing backward loop with visited = %d\n",visited);
+
+	while (start) {
+		start->visited=visited;
+		start = start->prev;
+
+		if (start == finish)
+			break;
+
+		if (start == NULL || start->visited == visited) {
+			LM_ERR("Detected something wrong with main timer list on backward linking for entry %p \n",start);
+			abort();
+		}
+	}
+}
+
+#endif
 
 int init_dlg_ping_timer(void)
 {
@@ -132,6 +207,10 @@ static inline void insert_dlg_timer_unsafe(struct dlg_tl *tl)
 {
 	struct dlg_tl* ptr;
 
+#ifdef EXTRA_DEBUG
+	debug_main_timer_list();
+#endif
+
 	for(ptr = d_timer->first.prev; ptr != &d_timer->first ; ptr = ptr->prev) {
 		if ( ptr->timeout <= tl->timeout )
 			break;
@@ -142,6 +221,10 @@ static inline void insert_dlg_timer_unsafe(struct dlg_tl *tl)
 	tl->next = ptr->next;
 	tl->prev->next = tl;
 	tl->next->prev = tl;
+
+#ifdef EXTRA_DEBUG
+	debug_main_timer_list();
+#endif
 }
 
 int insert_dlg_timer(struct dlg_tl *tl, int interval)
@@ -201,8 +284,16 @@ int insert_ping_timer(struct dlg_cell* dlg)
 
 static inline void remove_dlg_timer_unsafe(struct dlg_tl *tl)
 {
+#ifdef EXTRA_DEBUG
+	debug_main_timer_list();
+#endif
+
 	tl->prev->next = tl->next;
 	tl->next->prev = tl->prev;
+
+#ifdef EXTRA_DEBUG
+	debug_main_timer_list();
+#endif
 }
 
 
@@ -310,8 +401,12 @@ static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
 	if (d_timer->first.next==&(d_timer->first)
 	|| d_timer->first.next->timeout > time ) {
 		lock_release( d_timer->lock);
-		return 0;
+		return FAKE_DIALOG_TL;
 	}
+
+#ifdef EXTRA_DEBUG
+	debug_main_timer_list();
+#endif
 
 	end = &d_timer->first;
 	tl = d_timer->first.next;
@@ -331,16 +426,24 @@ static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
 		tl,tl->prev,tl->next,d_timer->first.next->prev);
 
 	if (tl==end && d_timer->first.next->prev) {
-		ret = 0;
+		LM_DBG("no dialog to return\n");
+		ret = FAKE_DIALOG_TL;
 	} else {
 		ret = d_timer->first.next;
-		tl->prev->next = 0;
+		tl->prev->next = FAKE_DIALOG_TL;
 		d_timer->first.next = tl;
 		tl->prev = &d_timer->first;
 	}
 
+#ifdef EXTRA_DEBUG
+	debug_main_timer_list();
+#endif
+
 	lock_release( d_timer->lock);
 
+#ifdef EXTRA_DEBUG
+	debug_detached_timer_list(ret);
+#endif
 	return ret;
 }
 
@@ -350,11 +453,11 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 
 	tl = get_expired_dlgs( ticks );
 
-	while (tl) {
+	while (tl != FAKE_DIALOG_TL) {
 		ctl = tl;
 		tl = tl->next;
 		/* keep dialog as expired (next is still set) */
-		ctl->next = (struct dlg_tl*)(-1);
+		ctl->next = FAKE_DIALOG_TL;
 		LM_DBG("tl=%p next=%p\n", ctl, tl);
 		timer_hdl( ctl );
 	}

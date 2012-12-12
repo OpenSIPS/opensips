@@ -36,6 +36,9 @@ struct dlg_tl
 {
 	struct dlg_tl     *next;
 	struct dlg_tl     *prev;
+#ifdef EXTRA_DEBUG
+	int visited;
+#endif
 	volatile unsigned int  timeout;
 };
 
