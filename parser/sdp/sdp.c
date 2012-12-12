@@ -654,8 +654,7 @@ static int parse_mixed_content(str *mixed_body, str delimiter, sdp_info_t* _sdp)
 			/* LM_DBG("we need to check session %d: <%.*s>\n", session_num, sdp_body.len, sdp_body.s); */
 			res = parse_sdp_session(&sdp_body, session_num, &cnt_disp, _sdp);
 			if (res != 0) {
-				LM_DBG("free_sdp\n");
-				free_sdp((sdp_info_t**)(void*)&(_sdp));
+				/* _sdp is freed by the calling function */
 				return -1;
 			}
 			session_num++;
@@ -724,6 +723,7 @@ int parse_sdp(struct sip_msg* _m)
 				}
 				res = parse_mixed_content(&body, mp_delimiter, _m->sdp);
 				if (res != 0) {
+					LM_DBG("free_sdp\n");
 					free_sdp((sdp_info_t**)(void*)&(_m->sdp));
 				}
 				return res;
