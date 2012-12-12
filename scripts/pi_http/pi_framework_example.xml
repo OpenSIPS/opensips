@@ -1,0 +1,385 @@
+<?xml version="1.0"?>
+<framework>
+	<!-- Declare all db connections
+		Each db connection MUST have:
+		- an "id" to be identified by a tabe
+		- a URL pointing to the actual database
+	-->
+	<db_url id="mysql">mysql://opensips:opensipsrw@localhost/opensips</db_url>
+	<!-- Declare all tables
+		Each table MUST have:
+		 - an 'id' to be identified by a command
+		 - a 'table_name' pointing to the actual table name in the database
+		 - a 'db_url_id' to identify the db connection
+		 - multiple 'column' nodes with 'field', 'type' and 'validation':
+			/* type */
+		DB_INT,      /**< represents an 32 bit integer number      */
+		DB_BIGINT,   /**< represents an 64 bit integer number      */
+		DB_DOUBLE,   /**< represents a floating point number       */
+		DB_STRING,   /**< represents a zero terminated const char* */
+		DB_STR,      /**< represents a string of 'str' type        */
+		DB_DATETIME, /**< represents date and time                 */
+		DB_BLOB,     /**< represents a large binary object         */
+		DB_BITMAP    /**< an one-dimensional array of 32 flags     */
+			/* validation */
+		P_HOST_PORT  /**< represents [proto:]host[:port]       */
+		P_IPV4_PORT  /**< represents [proto:]IPv4[:port]       */
+		IPV4         /**< represents an IPv4                   */
+		URI          /**< represents a SIP URI                 */
+		URI_IPV4HOST /**< represents a SIP URI w/ IPv4 as host */
+	-->
+
+	<!-- Declaration of dispatcher table-->
+	<db_table id="dispatcher"><table_name>dispatcher</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>setid</field><type>DB_INT</type></column>
+		<column><field>destination</field><type>DB_STR</type>
+			<validate>URI_IPV4HOST</validate></column>
+		<column><field>socket</field><type>DB_STR</type>
+			<validate>P_IPV4_PORT</validate></column>
+		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>weight</field><type>DB_INT</type></column>
+		<column><field>attrs</field><type>DB_STR</type></column>
+		<column><field>description</field><type>DB_STR</type></column>
+	</db_table>
+
+	<!-- Declaration of dialplan table-->
+	<db_table id="dialplan"><table_name>dialplan</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>dpid</field><type>DB_INT</type></column>
+		<column><field>pr</field><type>DB_INT</type></column>
+		<column><field>match_op</field><type>DB_INT</type></column>
+		<column><field>match_exp</field><type>DB_STR</type></column>
+		<column><field>match_flags</field><type>DB_INT</type></column>
+		<column><field>subst_exp</field><type>DB_STR</type></column>
+		<column><field>repl_exp</field><type>DB_STR</type></column>
+		<column><field>disabled</field><type>DB_INT</type></column>
+		<column><field>attrs</field><type>DB_STR</type></column>
+	</db_table>
+
+	<!-- Declare all mods
+		Each mod must have:
+		- a 'mod_name'
+		- at least one 'cmd'
+		Each cmd must have:
+		- a 'cmd_name'
+		- a 'db_table_id'
+		- a 'cmd_type': c  q  o
+		Each cmd_type can have:
+		- 'clause_cols' used to specify one or multiple clauses
+		- 'query_cols' used for perfoming the actual query
+		- 'order_by_cols' used to specify sorting output
+		Each clause_cols will have 'col' elemnts.
+		Each col will have:
+		- a mandatory 'field' identifying the name of the field
+		- an optional 'value' identifing the given value
+		- a mandatory 'operator' only for 'clause_cols'
+		The [clause|query|order_by]_cols can be:
+		- ov : optional with multiple 'col' with optional 'value'
+		- mv : mandatory with at least one 'col' with optional 'value'
+		- o  : optional with at most one 'col' with no 'value'
+		- m  : mandatory with at least one 'col' with no 'value'
+			/* col in cmd_type */
+		|command   |clause_cols|query_cols|order_by_cols|
+		|DB_QUERY  |    ov     |    m     |    o        |
+		|DB_INSERT |    -      |    mv    |    -        |
+		|DB_DELETE |    mv     |    -     |    -        |
+		|DB_UPDATE |    ov     |    mv    |    -        |
+		|DB_REPLACE|    -      |    mv    |    -        |
+			/* clause_cols operator */
+		- '<'  '&lt;'
+		- '>'  '&gt;'
+		- '='  '='
+		- '<=' '&lt;='
+		- '>=' '&gt;='
+		- '!=' '!='
+	-->
+
+	<!-- dispatcher provisioning -->
+	<mod><mod_name>dispatcher</mod_name>
+		<cmd><cmd_name>show_destinations_with_small_setid</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<clause_cols>
+				<col><field>setid</field><operator>&lt;</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>setid</field></col>
+				<col><field>destination</field></col>
+				<col><field>description</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>show_all</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>setid</field></col>
+				<col><field>destination</field></col>
+				<col><field>socket</field></col>
+				<col><field>flags</field></col>
+				<col><field>weight</field></col>
+				<col><field>attrs</field></col>
+				<col><field>description</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update_setid</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>setid</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update_destination</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>destination</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update_attr</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>attrs</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update_description</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>description</field></col>
+			</query_cols>
+		</cmd>
+		<cmd>   <cmd_name>update_socket</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>socket</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add_gw</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>setid</field></col>
+				<col><field>destination</field></col>
+				<col><field>socket</field></col>
+				<!--<col><field>flags</field></col>-->
+				<!--<col><field>weight</field></col>-->
+				<col><field>attrs</field></col>
+				<col><field>description</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add_server_with_setid_100</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>setid</field>
+					<value id="100">100</value>
+				</col>
+				<col><field>destination</field></col>
+				<col><field>socket</field></col>
+				<!--<col><field>flags</field></col>-->
+				<!--<col><field>weight</field></col>-->
+				<col><field>attrs</field></col>
+				<col><field>description</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete_by_id</cmd_name>
+			<db_table_id>dispatcher</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	
+	<!-- dialplan provisioning -->
+	<mod><mod_name>dialplan</mod_name>
+		<cmd>	<cmd_name>show_all</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>dpid</field></col>
+				<col><field>pr</field></col>
+				<col><field>match_op</field></col>
+				<col><field>match_exp</field></col>
+				<col><field>match_flags</field></col>
+				<col><field>subst_exp</field></col>
+				<col><field>repl_exp</field></col>
+				<col><field>disabled</field></col>
+				<col><field>attrs</field></col>
+			</query_cols>
+			<order_by_cols><col><field>id</field></col></order_by_cols>
+		</cmd>
+		<cmd><cmd_name>show_dpid</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<clause_cols>
+				<col><field>dpid</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>dpid</field></col>
+				<col><field>pr</field></col>
+				<col><field>match_op</field></col>
+				<col><field>match_exp</field></col>
+				<col><field>match_flags</field></col>
+				<col><field>subst_exp</field></col>
+				<col><field>repl_exp</field></col>
+				<col><field>disabled</field></col>
+				<col><field>attrs</field></col>
+			</query_cols>
+			<order_by_cols><col><field>id</field></col></order_by_cols>
+		</cmd>
+		<cmd><cmd_name>show_exact_matching</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<clause_cols>
+				<col><field>match_op</field><operator>=</operator>
+					<value id="equal">0</value></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>dpid</field></col>
+				<col><field>pr</field></col>
+				<col><field>match_op</field></col>
+				<col><field>match_exp</field></col>
+				<col><field>match_flags</field></col>
+				<col><field>subst_exp</field></col>
+				<col><field>repl_exp</field></col>
+				<col><field>disabled</field></col>
+				<col><field>attrs</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>show_regex_matching</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<clause_cols>
+				<col><field>match_op</field><operator>=</operator>
+					<value id="regex">1</value></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>id</field></col>
+				<col><field>dpid</field></col>
+				<col><field>pr</field></col>
+				<col><field>match_op</field></col>
+				<col><field>match_exp</field></col>
+				<col><field>match_flags</field></col>
+				<col><field>subst_exp</field></col>
+				<col><field>repl_exp</field></col>
+				<col><field>disabled</field></col>
+				<col><field>attrs</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>dpid</field></col>
+				<col><field>pr</field></col>
+				<col><field>match_op</field>
+					<value id="equal">0</value>
+					<value id="regexp">1</value>
+				</col>
+				<col><field>match_exp</field></col>
+				<col><field>match_flags</field>
+					<value id="case insensitive">0</value>
+					<value id="case sensitive">1</value>
+				</col>
+				<col><field>disabled</field>
+					<value id="enabled">0</value>
+					<value id="disabled">1</value>
+				</col>
+				<col><field>attrs</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+		<cmd><cmd_name>update_attr</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>attrs</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update_repl_exp</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>repl_exp</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>enable_rule</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>disabled</field>
+					<value id="enabled">0</value>
+				</col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>disable_rule</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>disabled</field>
+					<value id="disabled">1</value>
+				</col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>replace</cmd_name>
+			<db_table_id>dialplan</db_table_id>
+			<cmd_type>DB_REPLACE</cmd_type>
+			<query_cols>
+				<col><field>dpid</field></col>
+				<col><field>pr</field></col>
+				<col><field>match_op</field></col>
+				<col><field>match_exp</field></col>
+				<col><field>match_flags</field></col>
+				<col><field>subst_exp</field></col>
+				<col><field>repl_exp</field></col>
+				<col><field>disabled</field></col>
+				<col><field>attrs</field></col>
+			</query_cols>
+		</cmd>
+	</mod>
+
+</framework>
