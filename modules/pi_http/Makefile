@@ -22,9 +22,9 @@ endif
 include ../../Makefile.modules
 
 install_module_custom:
-	echo "installing pi_framework samples ..."
+	echo "installing pi_http framework samples ..."
 	mkdir -p $(data-prefix)/$(data-dir)/pi_http
-	for FILE in $(wildcard ../../scripts/pi_framework/*) ; do \
+	for FILE in $(wildcard ../../scripts/pi_http/*) ; do \
 		if [ -f $$FILE ] ; then \
 			$(INSTALL_TOUCH) $$FILE \
 				$(data-prefix)/$(data-dir)/pi_http/`basename "$$FILE"` ; \
