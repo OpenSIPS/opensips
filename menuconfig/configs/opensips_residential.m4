@@ -103,8 +103,15 @@ modparam("uri", "use_uri_table", 0)
 ifelse(USE_DR_PSTN,`yes',` ifelse(HAVE_INBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',HAVE_OUTBOUND_PSTN,`yes',`define(`USE_DR_MODULE',`yes')',) ', `')
 
 ifelse(USE_AUTH,`yes',`define(`DB_NEEDED',`yes')',USE_MULTIDOMAIN,`yes',`define(`DB_NEEDED',`yes')',USE_PRESENCE,`yes',`define(`DB_NEEDED',`yes')',USE_DBACC,`yes',`define(`DB_NEEDED',`yes')',USE_DBUSRLOC,`yes',`define(`DB_NEEDED',`yes')',USE_DIALOG,`yes',`define(`DB_NEEDED',`yes')',USE_DIALPLAN,`yes',`define(`DB_NEEDED',`yes')',USE_DR_MODULE,`yes',`define(`DB_NEEDED',`yes')',)
+
+ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
+
 ifdef(`DB_NEEDED',`#### MYSQL module
 loadmodule "db_mysql.so"')
+
+ifdef(`HTTPD_NEEDED',`#### HTTPD module
+loadmodule "httpd.so"
+modparam("httpd", "port", 8888)')
 
 #### USeR LOCation module
 loadmodule "usrloc.so"
@@ -204,7 +211,9 @@ modparam("drouting", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 ',`')
 
-
+ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
+loadmodule "mi_http.so"
+',`')
 
 ####### Routing Logic ########
 

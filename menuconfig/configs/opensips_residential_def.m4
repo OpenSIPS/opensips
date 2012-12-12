@@ -14,4 +14,5 @@ define(`VM_DIVERSION', `no') # OpenSIPS will redirect to VM calls not reaching t
 define(`HAVE_INBOUND_PSTN', `no') # OpenSIPS will accept calls from PSTN gateways (with static IP authentication)
 define(`HAVE_OUTBOUND_PSTN', `no') # OpenSIPS will send numerical dials to PSTN gateways (with static IP definition)
 define(`USE_DR_PSTN', `no') # OpenSIPS will use Dynamic Routing Support for PSTN interconnection
+define(`USE_HTTP_MANAGEMENT_INTERFACE', `no') # OpenSIPS will provide a WEB Management Interface on port 8888
 divert

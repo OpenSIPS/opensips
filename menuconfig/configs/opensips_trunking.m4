@@ -61,10 +61,16 @@ tls_ca_list = "/usr/local/etc/opensips/tls/user/user-calist.pem"
 ', `disable_tls=yes
 ')
 
+ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
+
 ####### Modules Section ########
 
 #set module path
 mpath="/usr/local/lib/opensips/modules/"
+
+ifdef(`HTTPD_NEEDED',`#### HTTPD module
+loadmodule "httpd.so"
+modparam("httpd", "port", 8888)')
 
 #### SIGNALING module
 loadmodule "signaling.so"
@@ -152,7 +158,9 @@ modparam("dialplan", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 ',`')
 
-
+ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
+loadmodule "mi_http.so"
+',`')
 
 ####### Routing Logic ########
 
