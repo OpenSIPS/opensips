@@ -466,7 +466,7 @@ mod_init(void)
 				" set in usrloc module\n");
 			return -1;
 		}
-		if (natping_processes>=8) {
+		if (natping_processes>8) {
 			LM_ERR("too many natping processes (%d) max=8\n",
 				natping_processes);
 			return -1;
