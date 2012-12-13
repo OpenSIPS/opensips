@@ -491,8 +491,8 @@ mod_init(void)
 		}
 
 		for( i=0 ; i<natping_processes ; i++ ) {
-			if (register_timer_process( nh_timer, (void*)(unsigned long)i, 1,
-			TIMER_PROC_INIT_FLAG)==NULL) {
+			if (register_timer_process( "nh-timer", nh_timer,
+			(void*)(unsigned long)i, 1, TIMER_PROC_INIT_FLAG)==NULL) {
 				LM_ERR("failed to register timer routine as process\n");
 				return -1;
 			}

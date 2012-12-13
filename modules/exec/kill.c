@@ -136,11 +136,11 @@ int initialize_kill(void)
 {
 	/* if disabled ... */
 	if (time_to_kill==0) return 1;
-    if ((register_timer( timer_routine,
-            0 /* param */, 1 /* period */)<0)) {
-        LM_ERR("no exec timer registered\n");
-        return -1;
-    }
+	if ((register_timer( "exec_kill", timer_routine,
+	0 /* param */, 1 /* period */)<0)) {
+		LM_ERR("no exec timer registered\n");
+		return -1;
+	}
 	kill_list.first_tl.next_tl=&kill_list.last_tl;
 	kill_list.last_tl.prev_tl=&kill_list.first_tl;
 	kill_list.first_tl.prev_tl=

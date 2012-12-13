@@ -688,7 +688,8 @@ static int dr_init(void)
 			dr_probe_replies.len = strlen(dr_probe_replies.s);
 
 		/* register pinger function */
-		if (register_timer( dr_prob_handler , NULL, dr_prob_interval)<0) {
+		if (register_timer( "dr-pinger", dr_prob_handler, NULL,
+		dr_prob_interval)<0) {
 			LM_ERR("failed to register probing handler\n");
 			return -1;
 		}

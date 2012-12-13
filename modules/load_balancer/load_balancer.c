@@ -326,7 +326,8 @@ static int mod_init(void)
 			lb_probe_replies.len = strlen(lb_probe_replies.s);
 
 		/* register pinger function */
-		if (register_timer( lb_prob_handler , NULL, lb_prob_interval)<0) {
+		if (register_timer( "lb-pinger", lb_prob_handler , NULL,
+		lb_prob_interval)<0) {
 			LM_ERR("failed to register probing handler\n");
 			return -1;
 		}

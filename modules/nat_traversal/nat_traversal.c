@@ -1864,7 +1864,8 @@ mod_init(void)
         LM_NOTICE("using 10 seconds for keepalive_interval\n");
         keepalive_interval = 10;
     }
-    if (register_timer_process(keepalive_timer, NULL, 1, TIMER_PROC_INIT_FLAG)==NULL) {
+    if (register_timer_process( "nt-pinger", keepalive_timer, NULL, 1,
+    TIMER_PROC_INIT_FLAG)==NULL) {
         LM_ERR("failed to register keepalive timer process\n");
         return -1;
     }

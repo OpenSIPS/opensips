@@ -200,7 +200,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	register_timer(timer_check, 0, timer_interval/reg_hsize);
+	register_timer("registrat-check",timer_check, 0, timer_interval/reg_hsize);
 
 	return 0;
 }

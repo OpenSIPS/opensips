@@ -87,28 +87,18 @@ int start_timer_processes(void);
 
 /*! \brief register a periodic timer;
  * ret: <0 on error*/
-int register_timer2(char *label, timer_function f, void* param, unsigned int interval);
-#define register_timer( _f, _param, _interval) \
-	register_timer2( "n/a", _f, _param, _interval)
+int register_timer(char *label, timer_function f, void* param, unsigned int interval);
 
-int register_utimer2(char *label, utimer_function f, void* param, unsigned int interval);
-#define register_utimer( _f, _param, _interval) \
-	register_utimer2( "n/a", _f, _param, _interval)
+int register_utimer(char *label, utimer_function f, void* param, unsigned int interval);
 
-void* register_timer_process2(char *label, timer_function f, void* param,
+void* register_timer_process(char *label, timer_function f, void* param,
 	unsigned int interval, unsigned int flags);
-#define register_timer_process( _f, _param, _interval, _flags) \
-	register_timer_process2( "n/a", _f, _param, _interval, _flags)
 
-int append_timer_to_process2(char *label, timer_function f, void* param,
+int append_timer_to_process(char *label, timer_function f, void* param,
 	unsigned int interval, void *timer);
-#define append_timer_to_process( _f, _param, _interval, _timer) \
-	append_timer_to_process2( "n/a", _f, _param, _interval, _timer)
 
-int append_utimer_to_process2(char *label, utimer_function f, void* param,
+int append_utimer_to_process(char *label, utimer_function f, void* param,
 	unsigned int interval, void *timer);
-#define append_utimer_to_process( _f, _param, _interval, _timer) \
-	append_utimer_to_process2( "n/a", _f, _param, _interval, _timer)
 
 unsigned int get_ticks(void);
 

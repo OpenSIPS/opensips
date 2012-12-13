@@ -251,7 +251,8 @@ static int mod_init(void)
 
 	
 	/* Register the alarm checking function to run periodically */
-	register_timer(run_alarm_check, 0, ALARM_AGENT_FREQUENCY_IN_SECONDS);
+	register_timer( "snmp-alarm", run_alarm_check, 0,
+		ALARM_AGENT_FREQUENCY_IN_SECONDS);
 
 	return 0;
 }
@@ -277,12 +278,11 @@ static int mod_child_init(int rank)
  * log a useful message and kill the AgentX Sub-Agent child process */
 static void mod_destroy(void) 
 {
-	LM_INFO("The SNMPStats module got the kill "
-			"signal\n");
-	
+	LM_INFO("The SNMPStats module got the kill signal\n");
+
     freeInterprocessBuffer();
 
-    LM_INFO("                 Shutting down the AgentX Sub-Agent!\n");
+    LM_INFO("Shutting down the AgentX Sub-Agent!\n");
 }
 
 
@@ -344,7 +344,7 @@ static int spawn_sysUpTime_child(void)
 {
 	struct sigaction new_sigchld_handler;
 
-	char *local_path_to_snmpget = "/usr/local/bin/";
+	char *local_path_to_snmpget = "/usr/bin/";
 	char *snmpget_binary_name   = "/snmpget";
 	char *full_path_to_snmpget  = NULL;
 
@@ -404,7 +404,7 @@ static int spawn_sysUpTime_child(void)
 	 * sysUpTime. */
 	if (snmpget_path == NULL) 
 	{
-		LM_INFO("An snmpgetPath parameter was not specified."
+		LM_DBG("An snmpgetPath parameter was not specified."
 				"  Defaulting to %s\n", local_path_to_snmpget);
 	}
 	else 

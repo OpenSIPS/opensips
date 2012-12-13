@@ -174,7 +174,7 @@ static inline struct sr_timer* new_sr_timer(char *label, timer_function f,
  * ret: <0 on error
  * Hint: if you need it in a module, register it from mod_init or it 
  * won't work otherwise*/
-int register_timer2(char *label, timer_function f, void* param,
+int register_timer(char *label, timer_function f, void* param,
 													unsigned int interval)
 {
 	struct sr_timer* t;
@@ -190,7 +190,7 @@ int register_timer2(char *label, timer_function f, void* param,
 
 
 
-int register_utimer2(char *label, utimer_function f, void* param,
+int register_utimer(char *label, utimer_function f, void* param,
 													unsigned int interval)
 {
 	struct sr_timer* t;
@@ -238,6 +238,8 @@ void route_timer_f(unsigned int ticks, void* param)
 	reset_avps( );
 }
 
+
+
 int register_route_timers(void)
 {
 	struct sr_timer* t;
@@ -270,7 +272,7 @@ int register_route_timers(void)
 	return 1;
 }
 
-void* register_timer_process2(char *label, timer_function f, void* param,
+void* register_timer_process(char *label, timer_function f, void* param,
 									unsigned int interval, unsigned int flags)
 {
 	struct sr_timer* t;
@@ -291,7 +293,7 @@ void* register_timer_process2(char *label, timer_function f, void* param,
 }
 
 
-int append_timer_to_process2( char *label, timer_function f, void* param,
+int append_timer_to_process( char *label, timer_function f, void* param,
 										unsigned int interval, void *timer)
 {
 	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
@@ -310,7 +312,7 @@ int append_timer_to_process2( char *label, timer_function f, void* param,
 }
 
 
-int append_utimer_to_process2( char *label, utimer_function f, void* param,
+int append_utimer_to_process( char *label, utimer_function f, void* param,
 										unsigned int interval, void *timer)
 {
 	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;

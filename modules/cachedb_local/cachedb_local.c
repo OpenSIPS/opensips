@@ -178,7 +178,8 @@ static int mod_init(void)
 	}
 
 	/* register timer to delete the expired entries */
-	register_timer(localcache_clean, 0, cache_clean_period);
+	register_timer("localcache-expire",localcache_clean, 0,
+		cache_clean_period);
 
 	return 0;
 }

@@ -192,13 +192,14 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		if (dlg_have_own_timer_proc) {
-			if (append_timer_to_process(dialog_update_db,0,
+			if (append_timer_to_process("dlg-dbupdate", dialog_update_db, 0,
 					db_update_period,dlg_own_timer_proc) < 0) {
 				LM_ERR("Failed to append update timer\n");
 				return -1;
 			}
 		} else {
-			if (register_timer(dialog_update_db, 0, db_update_period)<0 ) {
+			if (register_timer("dlg-dbupdate",dialog_update_db, 0,
+			db_update_period)<0 ) {
 				LM_ERR("failed to register update db\n");
 				return -1;
 			}

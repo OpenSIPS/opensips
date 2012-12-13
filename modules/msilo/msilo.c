@@ -404,9 +404,9 @@ static int mod_init(void)
 		LM_ERR("bad check time value\n");
 		return -1;
 	}
-	register_timer(m_clean_silo, 0, ms_check_time);
+	register_timer( "msilo-clean", m_clean_silo, 0, ms_check_time);
 	if(ms_send_time>0 && ms_reminder.s!=NULL)
-		register_timer(m_send_ontimer, 0, ms_send_time);
+		register_timer( "msilo-reminder", m_send_ontimer, 0, ms_send_time);
 
 	if(ms_reminder.s!=NULL)
 		ms_reminder.len = strlen(ms_reminder.s);

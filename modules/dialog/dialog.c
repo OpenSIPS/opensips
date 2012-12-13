@@ -708,25 +708,26 @@ static int mod_init(void)
 
 	if (dlg_have_own_timer_proc) {
 		LM_INFO("Running with dedicated dialog timer process\n");
-		dlg_own_timer_proc = register_timer_process( dlg_timer_routine,
-							NULL,1,TIMER_PROC_INIT_FLAG );
+		dlg_own_timer_proc = register_timer_process( "dlg-timer",
+			dlg_timer_routine, NULL,1,TIMER_PROC_INIT_FLAG );
 		if (dlg_own_timer_proc == NULL) {
 			LM_ERR("Failed to init dialog own timer proc\n");
 			return -1;
 		}
-		if (append_timer_to_process(dlg_ping_routine, NULL,
+		if (append_timer_to_process("dlg-pinger", dlg_ping_routine, NULL,
 							ping_interval,dlg_own_timer_proc) < 0) {
 				LM_ERR("Failed to append ping timer \n");
 				return -1;
 		}
 	}
 	else {
-		if ( register_timer( dlg_timer_routine, NULL, 1)<0 ) {
+		if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1)<0 ) {
 			LM_ERR("failed to register timer \n");
 			return -1;
 		}
 
-		if ( register_timer( dlg_ping_routine, NULL, ping_interval)<0) {
+		if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
+		ping_interval)<0) {
 			LM_ERR("failed to register timer 2 \n");
 			return -1;
 		}

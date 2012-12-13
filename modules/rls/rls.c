@@ -455,11 +455,11 @@ static int mod_init(void)
 			return -1;
 		}
 	}
-        register_timer(timer_send_notify, 0, waitn_time);
+	register_timer( "rls-notify", timer_send_notify, 0, waitn_time);
 	
-	register_timer(rls_presentity_clean, 0, clean_period);
+	register_timer( "rls-pclean", rls_presentity_clean, 0, clean_period);
 	
-	register_timer(rlsubs_table_update, 0, clean_period);
+	register_timer( "rls-dbupdate", rlsubs_table_update, 0, clean_period);
 	
 	return 0;
 }

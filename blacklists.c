@@ -136,7 +136,7 @@ int init_black_lists(void)
 	pkg_free(old_blst_heads);
 
 	/* register timer routine  */
-	if (register_timer( delete_expired_routine, 0, 1)<0) {
+	if (register_timer( "blcore-expire", delete_expired_routine, 0, 1)<0) {
 		LM_ERR("failed to register timer\n");
 		return -1;
 	}

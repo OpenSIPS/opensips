@@ -84,7 +84,7 @@ int init_ql_support(void)
 	if (query_buffer_size > 1) 
 	{
 		if  (init_query_list() != 0 ||
-			register_timer_process(ql_timer_routine,NULL,
+			register_timer_process("querydb-flush", ql_timer_routine,NULL,
 				query_flush_time>0?query_flush_time:DEF_FLUSH_TIME,
 				TIMER_PROC_INIT_FLAG) < 0 ) 
 		{

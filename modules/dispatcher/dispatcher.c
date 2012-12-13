@@ -416,7 +416,7 @@ static int mod_init(void)
 			return -1;
 		}
 		/* Register the PING-Timer */
-		if (register_timer(ds_check_timer, NULL, ds_ping_interval)<0) {
+		if (register_timer("ds-pinger",ds_check_timer,NULL,ds_ping_interval)<0){
 			LM_ERR("failed to register timer for probing!\n");
 			return -1;
 		}

@@ -165,7 +165,7 @@ static int mod_init(void)
 
 	if(periodical_query)
 	{
-		register_timer(query_xcap_update, 0, query_period);
+		register_timer("xcapc-update", query_xcap_update, 0, query_period);
 	}
 	
 	if(xcap_db)

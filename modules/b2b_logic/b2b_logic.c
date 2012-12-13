@@ -382,9 +382,10 @@ next_hdr:
 	if(init_callid_hdr.s)
 		init_callid_hdr.len = strlen(init_callid_hdr.s);
 
-	register_timer(b2bl_clean, 0, b2b_clean_period);
+	register_timer("b2bl-clean", b2bl_clean, 0, b2b_clean_period);
 	if(b2bl_db_mode == WRITE_BACK)
-		register_timer(b2bl_db_timer_update, 0, b2b_update_period);
+		register_timer("b2bl-dbupdate", b2bl_db_timer_update, 0,
+			b2b_update_period);
 
 	return 0;
 }

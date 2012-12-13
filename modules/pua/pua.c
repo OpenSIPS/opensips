@@ -234,9 +234,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	register_timer(hashT_clean, 0, update_period- 5);
+	register_timer("pua_clean", hashT_clean, 0, update_period- 5);
 
-	register_timer(db_update, 0, update_period);
+	register_timer("pua_dbupdate", db_update, 0, update_period);
 
 
 	if(pua_db)

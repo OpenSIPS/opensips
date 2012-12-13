@@ -264,8 +264,9 @@ static int mod_init(void)
 		return -1;
 	}
 	if(b2be_db_mode == WRITE_BACK)
-		register_timer(b2be_db_timer_update, 0, b2b_update_period);
-	//register_timer(b2be_clean,  0, b2b_update_period);
+		register_timer("b2be-dbupdate", b2be_db_timer_update, 0,
+			b2b_update_period);
+	//register_timer("b2b2-clean", b2be_clean,  0, b2b_update_period);
 
 	return 0;
 }
