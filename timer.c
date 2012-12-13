@@ -57,6 +57,7 @@ struct sr_timer_process *timer_proc_list = 0;
 
 static unsigned int *jiffies=0;
 static utime_t      *ujiffies=0;
+static utime_t      *ijiffies=0;
 static unsigned int  timer_id=0;
 
 
@@ -92,13 +93,15 @@ int init_timer(void)
 #ifdef SHM_MEM
 	jiffies  = shm_malloc(sizeof(unsigned int));
 	ujiffies = shm_malloc(sizeof(utime_t));
+	ijiffies = shm_malloc(sizeof(utime_t));
 #else
 	/* in this case get_ticks won't work! */
 	LM_WARN("no shared memory support compiled-> get_ticks won't work\n");
 	jiffies = pkg_malloc(sizeof(int));
 	ujiffies = pkg_malloc(sizeof(utime_t));
+	ijiffies = pkg_malloc(sizeof(utime_t));
 #endif
-	if (jiffies==0 || ujiffies==0){
+	if (jiffies==0 || ujiffies==0 || ijiffies==0 ){
 		LM_CRIT("could not init jiffies\n");
 		return E_OUT_OF_MEM;
 	}
@@ -115,6 +118,7 @@ int init_timer(void)
 
 	*jiffies=0;
 	*ujiffies=0;
+	*ijiffies=0;
 
 	/* create the default time process list */
 	if (new_timer_process_list(TIMER_PROC_INIT_FLAG)==NULL) {
@@ -142,17 +146,22 @@ void destroy_timer(void)
 
 
 
-static inline struct sr_timer* new_sr_timer(timer_function f, 
+static inline struct sr_timer* new_sr_timer(char *label, timer_function f,
 										void* param, unsigned int interval)
 {
 	struct sr_timer* t;
 
-	t=pkg_malloc(sizeof(struct sr_timer));
+	if (label==NULL)
+		label = "n/a";
+
+	t=pkg_malloc( sizeof(struct sr_timer) + strlen(label)+1 );
 	if (t==0){
 		LM_ERR("out of pkg memory\n");
 		return NULL;
 	}
 	t->id=timer_id++;
+	t->label = (char*)(t+1);
+	strcpy( t->label, label);
 	t->u.timer_f=f;
 	t->t_param=param;
 	t->interval=interval;
@@ -165,11 +174,12 @@ static inline struct sr_timer* new_sr_timer(timer_function f,
  * ret: <0 on error
  * Hint: if you need it in a module, register it from mod_init or it 
  * won't work otherwise*/
-int register_timer(timer_function f, void* param, unsigned int interval)
+int register_timer2(char *label, timer_function f, void* param,
+													unsigned int interval)
 {
 	struct sr_timer* t;
 
-	t = new_sr_timer( f, param, interval);
+	t = new_sr_timer( label, f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the default timer process list*/
@@ -180,11 +190,12 @@ int register_timer(timer_function f, void* param, unsigned int interval)
 
 
 
-int register_utimer(utimer_function f, void* param, unsigned int interval)
+int register_utimer2(char *label, utimer_function f, void* param,
+													unsigned int interval)
 {
 	struct sr_timer* t;
 
-	t = new_sr_timer((timer_function*)f, param, interval);
+	t = new_sr_timer( label, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the list*/
@@ -246,7 +257,7 @@ int register_route_timers(void)
 	{
 		if(timer_rlist[i].a == NULL)
 			return 0;
-		t = new_sr_timer(route_timer_f, timer_rlist[i].a,
+		t = new_sr_timer( "timer_route", route_timer_f, timer_rlist[i].a,
 				timer_rlist[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;
@@ -259,8 +270,8 @@ int register_route_timers(void)
 	return 1;
 }
 
-void* register_timer_process(timer_function f,void* param,unsigned int interval,
-															unsigned int flags)
+void* register_timer_process2(char *label, timer_function f, void* param,
+									unsigned int interval, unsigned int flags)
 {
 	struct sr_timer* t;
 	struct sr_timer_process* tpl;
@@ -270,7 +281,7 @@ void* register_timer_process(timer_function f,void* param,unsigned int interval,
 	if (tpl==NULL)
 		return NULL;
 
-	t = new_sr_timer(f, param, interval);
+	t = new_sr_timer(label, f, param, interval);
 	if (t==NULL)
 		return NULL;
 	/* insert it into the list*/
@@ -280,7 +291,7 @@ void* register_timer_process(timer_function f,void* param,unsigned int interval,
 }
 
 
-int append_timer_to_process( timer_function f, void* param,
+int append_timer_to_process2( char *label, timer_function f, void* param,
 										unsigned int interval, void *timer)
 {
 	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
@@ -289,7 +300,7 @@ int append_timer_to_process( timer_function f, void* param,
 	if (tpl==NULL)
 		return -1;
 
-	t = new_sr_timer(f, param, interval);
+	t = new_sr_timer( label, f, param, interval);
 	if (t==NULL)
 		return -1;
 	/* insert it into the list*/
@@ -299,7 +310,7 @@ int append_timer_to_process( timer_function f, void* param,
 }
 
 
-int append_utimer_to_process( utimer_function f, void* param,
+int append_utimer_to_process2( char *label, utimer_function f, void* param,
 										unsigned int interval, void *timer)
 {
 	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
@@ -308,7 +319,7 @@ int append_utimer_to_process( utimer_function f, void* param,
 	if (tpl==NULL)
 		return -1;
 
-	t = new_sr_timer((timer_function*)f, param, interval);
+	t = new_sr_timer( label, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return -1;
 	/* insert it into the list*/
@@ -350,30 +361,63 @@ utime_t get_uticks(void)
 
 
 
-static inline void timer_ticker(struct sr_timer *timer_list)
+static inline void timer_ticker(struct sr_timer *timer_list, utime_t *drift)
 {
 	struct sr_timer* t;
+	unsigned int j;
+	utime_t ij;
+	utime_t ij_marker;
+
+	/* we need to store the original time as while executing the 
+	   the handlers, the time may progress, affecting the way we
+	   calculate the new expire (expire will include the time
+	   taken to run handlers) -bogdan */
+	j = *jiffies;
+	ij = *ijiffies;
 
 	for (t=timer_list;t; t=t->next){
-		if (*jiffies>=t->expires){
-			t->expires=*jiffies+t->interval;
-			t->u.timer_f(*jiffies, t->t_param);
+		if (j>=t->expires){
+			t->expires = j + t->interval;
+			ij_marker = *ijiffies;
+			t->u.timer_f( j, t->t_param);
+			if ( (*ijiffies - ij_marker) / 1000000 > TIMER_TICK )
+				LM_CRIT("timer handler <%s> lasted (%d us) for more than "
+					"timer tick (%d us) -> potential timer shifting\n",
+					t->label, (int)(*ijiffies-ij_marker), TIMER_TICK*1000000);
 		}
 	}
+
+	/* update time drifting due handlers execution */
+	*drift += *ijiffies - ij;
 }
 
 
 
-static inline void utimer_ticker(struct sr_timer *utimer_list)
+static inline void utimer_ticker(struct sr_timer *utimer_list, utime_t *drift)
 {
 	struct sr_timer* t;
+	utime_t uj;
+	utime_t ij;
+	utime_t ij_marker;
+
+	/* see comment on timer_ticket */
+	uj = *ujiffies;
+	ij = *ijiffies;
 
 	for ( t=utimer_list ; t ; t=t->next){
-		if (*ujiffies>=t->expires){
-			t->expires=*ujiffies+t->interval;
-			t->u.utimer_f(*ujiffies, t->t_param);
+		if (uj>=t->expires){
+			t->expires = uj + t->interval;
+			ij_marker = *ijiffies;
+			t->u.utimer_f( uj, t->t_param);
+			if ( (*ijiffies - ij_marker) > UTIMER_TICK )
+				LM_CRIT("utimer handler <%s> lasted (%d us) for more than "
+					"timer tick (%d us) -> potential timer shifting\n",
+					t->label, (int)(*ijiffies-ij_marker), UTIMER_TICK);
 		}
 	}
+
+	/* update time drifting due handlers execution */
+	*drift += *ijiffies - ij;
 }
 
 
@@ -383,6 +427,23 @@ static void run_timer_process(struct sr_timer_process *tpl)
 	unsigned int cnt;
 	struct timeval o_tv;
 	struct timeval tv;
+	utime_t  drift;
+	utime_t  uinterval;
+	utime_t  wait;
+
+/* timer re-calibration to compensate drifting */
+#define compute_wait_with_drift(_tv,_type) \
+	do {                                                         \
+		if ( drift > ITIMER_TICK ) {                             \
+			wait = (drift >= uinterval) ? 0 : uinterval-drift;   \
+			_tv.tv_sec = wait / 1000000;                         \
+			_tv.tv_usec = wait % 1000000;                        \
+			drift -= uinterval-wait;                             \
+		} else {                                                 \
+			_tv = o_tv;                                          \
+		}                                                        \
+	}while(0)
+
 
 	if ( (tpl->utimer_list==NULL) || ((TIMER_TICK*1000000) == UTIMER_TICK) ) {
 		o_tv.tv_sec = TIMER_TICK;
@@ -397,37 +458,44 @@ static void run_timer_process(struct sr_timer_process *tpl)
 	LM_DBG("tv = %ld, %ld , m=%d\n",
 		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
 
+	drift = 0;
+	uinterval = o_tv.tv_sec * 1000000 + o_tv.tv_usec;
+
 	if (tpl->utimer_list==NULL) {
+		/* only TIMERs, ticking at TIMER_TICK */
 		for( ; ; ) {
-			tv = o_tv;
+			compute_wait_with_drift( tv, 0);
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker(tpl->timer_list);
+			timer_ticker( tpl->timer_list, &drift);
 		}
 
 	} else
 	if (tpl->timer_list==NULL) {
+		/* only UTIMERs, ticking at UTIMER_TICK */
 		for( ; ; ) {
-			tv = o_tv;
+			compute_wait_with_drift( tv, 1);
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker(tpl->utimer_list);
+			utimer_ticker( tpl->utimer_list, &drift);
 		}
 
 	} else
 	if (multiple==1) {
+		/* TIMERs and UTIMERs, ticking together TIMER_TICK (synced) */
 		for( ; ; ) {
-			tv = o_tv;
+			compute_wait_with_drift( tv, 2);
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker(tpl->timer_list);
-			utimer_ticker(tpl->utimer_list);
+			timer_ticker( tpl->timer_list, &drift);
+			utimer_ticker( tpl->utimer_list, &drift);
 		}
 
 	} else {
+		/* TIMERs and UTIMERs, TIMER_TICK is multiple of UTIMER_TICK */
 		for( cnt=1 ; ; cnt++ ) {
-			tv = o_tv;
+			compute_wait_with_drift( tv, 3);
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker(tpl->utimer_list);
+			utimer_ticker(tpl->utimer_list, &drift);
 			if (cnt==multiple) {
-				timer_ticker(tpl->timer_list);
+				timer_ticker(tpl->timer_list, &drift);
 				cnt = 0;
 			}
 		}
@@ -439,28 +507,41 @@ static void run_timer_process(struct sr_timer_process *tpl)
 static void run_timer_process_jif(void)
 {
 	unsigned int multiple;
+	unsigned int umultiple;
 	unsigned int cnt;
+	unsigned int ucnt;
 	struct timeval o_tv;
 	struct timeval tv;
 
 	o_tv.tv_sec = 0;
-	o_tv.tv_usec = UTIMER_TICK;
-	multiple = ((TIMER_TICK*1000000)) / (UTIMER_TICK);
+	o_tv.tv_usec = ITIMER_TICK; /* internal timer */
+	multiple  = ((TIMER_TICK*1000000)) / (UTIMER_TICK);
+	umultiple = (UTIMER_TICK) / (ITIMER_TICK);
 
-	LM_DBG("tv = %ld, %ld , m=%d\n",
-		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
+	LM_DBG("tv = %ld, %ld , m=%d, mu=%d\n",
+		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple,umultiple);
 
-	for( cnt=1 ; ; cnt++ ) {
+	for( cnt=1,ucnt=1 ; ; ucnt++ ) {
 		tv = o_tv;
 		select( 0, 0, 0, 0, &tv);
-		*(ujiffies)+=UTIMER_TICK;
-		/* no overflow test as even if we go for 1 microsecond tick, this will
-		 * happen in 14038618 years :P */
 
-		if (cnt==multiple) {
-			*(jiffies)+=TIMER_TICK;
-			/* test for overflow (if tick= 1s =>overflow in 136 years)*/
-			cnt = 0;
+		/* update internal timer */
+		*(ijiffies)+=ITIMER_TICK;
+
+		/* update public utimer */
+		if (ucnt==umultiple) {
+			*(ujiffies)+=UTIMER_TICK;
+			/* no overflow test as even if we go for 1 microsecond tick, this will
+			 * happen in 14038618 years :P */
+			ucnt = 0;
+
+			cnt++;
+			/* update public timer */
+			if (cnt==multiple) {
+				*(jiffies)+=TIMER_TICK;
+				/* test for overflow (if tick= 1s =>overflow in 136 years)*/
+				cnt = 0;
+			}
 		}
 	}
 }
