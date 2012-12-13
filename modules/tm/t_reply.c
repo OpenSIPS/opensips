@@ -79,6 +79,7 @@
 #include "../../data_lump_rpl.h"
 #include "../../usr_avp.h"
 #include "../../receive.h"
+#include "../../msg_callbacks.h"
 
 #include "h_table.h"
 #include "t_hooks.h"
@@ -585,6 +586,10 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 	if (faked_req->multi) {
 		free_multi_body(faked_req->multi);
 		faked_req->multi = 0;
+	}
+
+	if (faked_req->msg_cb) {
+		msg_callback_process(faked_req, MSG_DESTROY, NULL);
 	}
 
 	/* free all types of lump that were added in failure handlers */
