@@ -2658,11 +2658,11 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 					case DB_STRING:
 					case DB_BLOB:
 						if(values[j].val.str_val.s==NULL){
-							LM_ERR("NULL\n");
-							goto error;
+							val_str.s = NULL; val_str.len = 0;
+						} else {
+							val_str.s = values[j].val.str_val.s;
+							val_str.len = strlen(val_str.s);
 						}
-						val_str.s = values[j].val.str_val.s;
-						val_str.len = strlen(val_str.s);
 						LM_DBG("...got %.*s[%d]=>"
 							"[%.*s][%.*s]\n",
 							command->q_keys[j]->len,
