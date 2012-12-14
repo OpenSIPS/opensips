@@ -46,6 +46,12 @@ int dlg_del_vias(struct sip_msg* req)
 	struct hdr_field *it;
 	char *buf;
 
+	/* parse all headers to be sure that all VIAs are found */
+	if (parse_headers(req, HDR_EOH_F, 0)< 0) {
+		LM_ERR("Failed to parse reply\n");
+		return -1;
+	}
+
 	buf = req->buf;
 	it = req->h_via1;
 	if(it) {
