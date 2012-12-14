@@ -2638,7 +2638,7 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 				command->q_keys,
 				command->c_keys_size,
 				command->q_keys_size,
-				command->o_keys?*command->o_keys:0, 0) < 0){
+				command->o_keys?*command->o_keys:0, &res) < 0){
 				PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Error while querying database.");
 				goto done;
