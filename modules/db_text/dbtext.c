@@ -43,6 +43,8 @@
 static int mod_init(void);
 static void destroy(void);
 
+static struct mi_root* mi_dbt_dump(struct mi_root* cmd, void* param);
+
 /*
  * Module parameter variables
  */
@@ -68,20 +70,26 @@ static param_export_t params[] = {
 };
 
 
+/** MI commands */
+static mi_export_t mi_cmds[] = {
+	{"dbt_dump", 0, mi_dbt_dump, 0, 0, 0},
+	{0,          0,           0, 0, 0, 0}
+};
+
 struct module_exports exports = {	
 	"db_text",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */
-	0,        /* exported statistics */
-	0,        /* exported MI functions */
-	0,        /* exported pseudo-variables */
+	NULL,     /* exported statistics */
+	mi_cmds,  /* exported MI functions */
+	NULL,     /* exported pseudo-variables */
 	0,        /* extra processes */
 	mod_init, /* module initialization function */
-	0,        /* response function*/
+	NULL,     /* response function*/
 	destroy,  /* destroy function */
-	0         /* per-child init function */
+	NULL      /* per-child init function */
 };
 
 
@@ -122,3 +130,13 @@ int dbt_bind_api(const str* mod, db_func_t *dbb)
 	return 0;
 }
 
+static struct mi_root* mi_dbt_dump(struct mi_root* cmd, void* param)
+{
+	struct mi_root *rpl_tree;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+	if (dbt_cache_print(0)!=0)
+		return NULL;
+	return rpl_tree;
+}
