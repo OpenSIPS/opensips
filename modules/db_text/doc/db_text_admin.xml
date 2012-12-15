@@ -263,6 +263,26 @@ modparam("db_text", "db_mode", 1)
 	   	</para>
 	</section>
 	<section>
+	<title>Exported MI Functions</title>
+	<section>
+		<title><varname>dbt_dump</varname></title>
+		<para>
+			Write back to hard drive modified tables.
+	   	</para>
+		<para>
+		Name: <emphasis>dbt_dump</emphasis>.
+	   	</para>
+	   	<para>Parameters: none</para>
+	   	<para>
+	   	MI FIFO Command Format:
+	   	</para>
+	   	<programlisting  format="linespecific">
+:dbt_dump:_reply_fifo_file_
+_empty_line_
+		</programlisting>
+	</section>
+	</section>
+	<section>
 		<title>Installation and Running</title>
 		<para>
 		Compile the module and load it instead of mysql or other DB modules.

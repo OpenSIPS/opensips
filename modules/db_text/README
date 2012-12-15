@@ -6,14 +6,20 @@ Daniel-Constantin Mierla
 
 Edited by
 
+Ovidiu Sas
+
+   <osas@voipembedded.com>
+
+Edited by
+
 Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
    Copyright © 2003, 2004 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2009-07-21 03:45:05 -0400
+   (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -36,9 +42,13 @@ Daniel-Constantin Mierla
               1.3.1. db_mode (integer)
 
         1.4. Exported Functions
-        1.5. Installation and Running
+        1.5. Exported MI Functions
 
-              1.5.1. Using db_text with basic OpenSIPS
+              1.5.1. dbt_dump
+
+        1.6. Installation and Running
+
+              1.6.1. Using db_text with basic OpenSIPS
                       configuration
 
    2. Developer Guide
@@ -186,7 +196,21 @@ modparam("db_text", "db_mode", 1)
 
    None.
 
-1.5. Installation and Running
+1.5. Exported MI Functions
+
+1.5.1. dbt_dump
+
+   Write back to hard drive modified tables.
+
+   Name: dbt_dump.
+
+   Parameters: none
+
+   MI FIFO Command Format:
+:dbt_dump:_reply_fifo_file_
+_empty_line_
+
+1.6. Installation and Running
 
    Compile the module and load it instead of mysql or other DB
    modules.
@@ -203,11 +227,11 @@ modparam("db_text", "db_mode", 1)
 ...
 loadmodule "/path/to/opensips/modules/db_text.so"
 ...
-modparam("module_name", "database_URL", "text:///path/to/dbtext/database
-")
+modparam("module_name", "database_URL", "text:///path/to/dbtext/databas
+e")
 ...
 
-1.5.1. Using db_text with basic OpenSIPS configuration
+1.6.1. Using db_text with basic OpenSIPS configuration
 
    Here are the definitions for most important table as well as a
    basic configuration file to use db_text with OpenSIPS. The
@@ -221,19 +245,19 @@ modparam("module_name", "database_URL", "text:///path/to/dbtext/database
 
    Example 1.6. Definition of 'subscriber' table (one line)
 ...
-username(str) domain(str) password(str) first_name(str) last_name(str) p
-hone(str) email_address(str) datetime_created(int) datetime_modified(int
-) confirmation(str) flag(str) sendnotification(str) greeting(str) ha1(st
-r) ha1b(str) perms(str) allow_find(str) timezone(str,null) rpid(str,null
-)
+username(str) domain(str) password(str) first_name(str) last_name(str)
+phone(str) email_address(str) datetime_created(int) datetime_modified(i
+nt) confirmation(str) flag(str) sendnotification(str) greeting(str) ha1
+(str) ha1b(str) perms(str) allow_find(str) timezone(str,null) rpid(str,
+null)
 ...
 
    Example 1.7. Definition of 'location' and 'aliases' tables (one
    line)
 ...
-username(str) domain(str,null) contact(str,null) received(str) expires(i
-nt,null) q(double,null) callid(str,null) cseq(int,null) last_modified(st
-r) flags(int) user_agent(str) socket(str)
+username(str) domain(str,null) contact(str,null) received(str) expires(
+int,null) q(double,null) callid(str,null) cseq(int,null) last_modified(
+str) flags(int) user_agent(str) socket(str)
 ...
 
    Example 1.8. Definition of 'version' table and sample records
