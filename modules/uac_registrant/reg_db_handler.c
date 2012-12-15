@@ -166,8 +166,13 @@ static int load_reg_info_from_db(void)
 			/* Get the registrar (mandatory parameter) */
 			uac_param.registrar_uri.s =
 				(char*)values[registrar_col].val.string_val;
-			uac_param.registrar_uri.len =
-				strlen(uac_param.registrar_uri.s);
+			if (uac_param.registrar_uri.s)
+				uac_param.registrar_uri.len =
+					strlen(uac_param.registrar_uri.s);
+			else {
+				LM_ERR("ignoring empty registrar\n");
+				continue;
+			}
 			if (parse_uri(uac_param.registrar_uri.s,
 					uac_param.registrar_uri.len, &uri)<0) {
 				LM_ERR("cannot parse registrar uri [%.*s]\n",
@@ -184,8 +189,9 @@ static int load_reg_info_from_db(void)
 			/* Get the proxy */
 			uac_param.proxy_uri.s =
 				(char*)values[proxy_col].val.string_val;
-			uac_param.proxy_uri.len =
-				strlen(uac_param.proxy_uri.s);
+			if (uac_param.proxy_uri.s)
+				uac_param.proxy_uri.len =
+					strlen(uac_param.proxy_uri.s);
 			if (uac_param.proxy_uri.len) {
 				if (parse_uri(uac_param.proxy_uri.s,
 						uac_param.proxy_uri.len, &uri)<0) {
@@ -206,8 +212,12 @@ static int load_reg_info_from_db(void)
 			/* Get the AOR (mandatory parameter) */
 			uac_param.to_uri.s =
 				(char*)values[aor_col].val.string_val;
-			uac_param.to_uri.len =
-				strlen(uac_param.to_uri.s);
+			if (uac_param.to_uri.s)
+				uac_param.to_uri.len = strlen(uac_param.to_uri.s);
+			else {
+				LM_ERR("ignoring empty AOR\n");
+				continue;
+			}
 			if (parse_uri(uac_param.to_uri.s,uac_param.to_uri.len,&uri)<0) {
 				LM_ERR("cannot parse aor uri [%.*s]\n",
 					uac_param.to_uri.len, uac_param.to_uri.s);
@@ -219,7 +229,8 @@ static int load_reg_info_from_db(void)
 			/* Get the third party registrant */
 			uac_param.from_uri.s =
 				(char*)values[third_party_registrant_col].val.string_val;
-			uac_param.from_uri.len = strlen(uac_param.from_uri.s);
+			if (uac_param.from_uri.s)
+				uac_param.from_uri.len = strlen(uac_param.from_uri.s);
 			if (uac_param.from_uri.len) {
 				if (parse_uri(uac_param.from_uri.s,
 						uac_param.from_uri.len, &uri)<0) {
@@ -236,8 +247,13 @@ static int load_reg_info_from_db(void)
 			/* Get the binding (manadatory parameter) */
 			uac_param.contact_uri.s =
 				(char*)values[binding_URI_col].val.string_val;
-			uac_param.contact_uri.len =
-				strlen(uac_param.contact_uri.s);
+			if (uac_param.contact_uri.s)
+				uac_param.contact_uri.len =
+					strlen(uac_param.contact_uri.s);
+			else {
+				LM_ERR("ignoring empty binding\n");
+				continue;
+			}
 			if (parse_uri(uac_param.contact_uri.s,
 					uac_param.contact_uri.len, &uri)<0) {
 				LM_ERR("cannot parse contact uri [%.*s]\n",
@@ -249,21 +265,25 @@ static int load_reg_info_from_db(void)
 			/* Get the authentication user */
 			uac_param.auth_user.s =
 				(char*)values[username_col].val.string_val;
-			uac_param.auth_user.len = strlen(uac_param.auth_user.s);
+			if (uac_param.auth_user.s)
+				uac_param.auth_user.len = strlen(uac_param.auth_user.s);
 			if (uac_param.auth_user.len == 0) uac_param.auth_user.s = NULL;
 
 			/* Get the authentication password */
 			uac_param.auth_password.s =
 				(char*)values[password_col].val.string_val;
-			uac_param.auth_password.len = strlen(uac_param.auth_password.s);
+			if (uac_param.auth_password.s)
+				uac_param.auth_password.len =
+					strlen(uac_param.auth_password.s);
 			if (uac_param.auth_password.len == 0)
 				uac_param.auth_password.s = NULL;
 
 			/* Get the binding params */
 			uac_param.contact_params.s =
 				(char*)values[binding_params_col].val.string_val;
-			uac_param.contact_params.len =
-				strlen(uac_param.contact_params.s);
+			if (uac_param.contact_params.s)
+				uac_param.contact_params.len =
+					strlen(uac_param.contact_params.s);
 			if (uac_param.contact_params.len == 0)
 				uac_param.contact_params.s = NULL;
 
@@ -348,7 +368,7 @@ int init_reg_db(const str *db_url)
 		return -1;
 	}
 	if(load_reg_info_from_db() !=0){
-		LM_ERR("unable to load the sca data\n");
+		LM_ERR("unable to load the registrant data\n");
 		return -1;
 	}
 
