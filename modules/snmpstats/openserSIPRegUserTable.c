@@ -109,12 +109,12 @@ int registerForUSRLOCCallbacks(void)
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 	if (!bind_usrloc)
 	{
-		LM_ERR("Can't find ul_bind_usrloc\n");
+		LM_INFO("Can't find ul_bind_usrloc\n");
 		goto error;
 	}
 	if (bind_usrloc(&ul) < 0 || ul.register_ulcb == NULL)
 	{
-		LM_ERR("Can't bind usrloc\n");
+		LM_INFO("Can't bind usrloc\n");
 		goto error;
 	}
 
@@ -127,9 +127,9 @@ int registerForUSRLOCCallbacks(void)
 	return 1;
 
 error:
-	LM_INFO("failed to register for callbacks with the USRLOC module.");
+	LM_INFO("failed to register for callbacks with the USRLOC module.\n");
 	LM_INFO("openserSIPContactTable and openserSIPUserTable will be"
-			" unavailable");
+			" unavailable\n");
 	return 0;
 }
 
