@@ -263,8 +263,9 @@ static int mod_init(void)
  * process, and register a handler for any state changes of our child. */
 static int mod_child_init(int rank) 
 {
-	/* We only want to setup a single process, under the main attendant. */
-	if (rank != PROC_MAIN) {
+	/* We only want to setup a single process, under the first SIP worker,
+	   which will exist all the time */
+	if (rank != 1) {
 		return 0;
 	}
 
