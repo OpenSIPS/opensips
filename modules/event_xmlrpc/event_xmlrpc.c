@@ -19,8 +19,8 @@ static void destroy(void);
  * exported functions
  */
 static evi_reply_sock* xmlrpc_parse(str socket);
-static int xmlrpc_raise(str* ev_name, evi_reply_sock *sock,
-		evi_params_t * params);
+static int xmlrpc_raise(struct sip_msg *msg, str* ev_name,
+						evi_reply_sock *sock, evi_params_t * params);
 static int xmlrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void xmlrpc_free(evi_reply_sock *sock);
 static str xmlrpc_print(evi_reply_sock *sock);
@@ -285,8 +285,8 @@ end:
 #undef DO_PRINT
 
 
-static int xmlrpc_raise(str* ev_name, evi_reply_sock *sock,
-		evi_params_t *params)
+static int xmlrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
+						evi_reply_sock *sock, evi_params_t * params)
 {
 	xmlrpc_send_t * msg = NULL;
 

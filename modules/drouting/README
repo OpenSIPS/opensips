@@ -12,12 +12,12 @@ Edited by
 
 Anca-Maria Vamanu
 
-   Copyright © 2005-2008 Voice Sistem SRL
+   Copyright � 2005-2008 Voice Sistem SRL
 
-   Copyright © 2009-2012 www.opensips-solutions.com
+   Copyright � 2009-2012 www.opensips-solutions.com
    Revision History
    Revision $Revision$ $Date: 2012-03-22 20:43:49 +0200
-                              (Thu, 22 Mar 2012) $
+   (Thu, 22 Mar 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -206,7 +206,7 @@ Chapter 1. Admin Guide
 
    These are the end SIP entities where actually the traffic needs
    to be sent after routing. They are stored in a table called
-   “dr_gateways”. Gateway addresses are stored in a separate table
+   "dr_gateways". Gateway addresses are stored in a separate table
    because of need to access them independent of Dynamic Routing
    processing (e.g., adding/ removing gateway PRI prefix
    before/after performing other operation -- receiving/relaying
@@ -235,12 +235,12 @@ Chapter 1. Admin Guide
 
    Basically, a carrier is a set of gateways which have its own
    sorting algorithm and its own attribute string. They are by
-   default defined in the “dr_carriers” table.
+   default defined in the "dr_carriers" table.
 
    In DR, a carrier is defined by:
      * id (string)
      * list of gateways with/without weights (string)
-       (Ex:“gw1=10,gw4=10” or “gw1,gw2”
+       (Ex:"gw1=10,gw4=10" or "gw1,gw2"
      * flags : 0x1 - use weight for sorting the list and not
        definition order; 0x2 - use only the first gateway from the
        carrier (depending on the sorting); 0x4 - disable the usage
@@ -258,13 +258,13 @@ Chapter 1. Admin Guide
    will decide to which gateways the call will be sent.
 
    Default name for the table storing rule definitions is
-   “dr_rules”.
+   "dr_rules".
 
    In DR, a carrier is defined by:
      * group (list of numbers) - rules can be grouped (a rule may
        belong to multiple groups in the same time ) and you can
        use only a certian group at a point; like having a
-       “premium” or “standard” or “interstate” or “intrastate”
+       "premium" or "standard" or "interstate" or "intrastate"
        groups of rules to be used in different cases
      * prefix (string with digits only) - prefix to be used for
        matching this rule (longest prefix matching)
@@ -280,11 +280,11 @@ Chapter 1. Admin Guide
        signalling operations in that script route
      * list of GWs/carriers (string) - a comma separated list of
        gateways or carriers (defined by IDs) to be used for this
-       rule; the carrier IDs are prefixed with “#” sign. For each
+       rule; the carrier IDs are prefixed with "#" sign. For each
        ID (GW or carrier) you may specify a weight. For how this
        list will be interpreted (as order) see the rule selection
-       section. Example of list: “gw1,gw4,#cr3” or
-       “gw1=10,gw4=10,#cr3=80”
+       section. Example of list: "gw1,gw4,#cr3" or
+       "gw1=10,gw4=10,#cr3=80"
      * attributes (not used by DR engine, but only pushed to
        script level when this rule matched and been used)
 
@@ -386,7 +386,7 @@ Chapter 1. Admin Guide
 
    The database url.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.1. Set db_url parameter
 ...
@@ -398,7 +398,7 @@ modparam("drouting", "db_url",
 
    The name of the db table storing gateway addresses.
 
-   Default value is “dr_gateways”.
+   Default value is "dr_gateways".
 
    Example 1.2. Set drd_table parameter
 ...
@@ -409,7 +409,7 @@ modparam("drouting", "drd_table", "dr_gateways")
 
    The name of the db table storing routing rules.
 
-   Default value is “dr_rules”.
+   Default value is "dr_rules".
 
    Example 1.3. Set drr_table parameter
 ...
@@ -420,7 +420,7 @@ modparam("drouting", "drr_table", "rules")
 
    The name of the db table storing groups.
 
-   Default value is “dr_groups”.
+   Default value is "dr_groups".
 
    Example 1.4. Set drg_table parameter
 ...
@@ -432,7 +432,7 @@ modparam("drouting", "drg_table", "groups")
    The name of the db table storing definitions of the carriers
    that will be used directly by the routing rules.
 
-   Default value is “dr_gw_lists”.
+   Default value is "dr_gw_lists".
 
    Example 1.5. Set drc_table parameter
 ...
@@ -444,7 +444,7 @@ modparam("drouting", "drc_table", "my_dr_carriers")
    The name of the avp for storing Request URIs to be later used
    (alternative destiantions for the current one).
 
-   Default value is “$avp(0xad346b2f)”.
+   Default value is "$avp(0xad346b2f)".
 
    Example 1.6. Set ruri_avp parameter
 ...
@@ -459,7 +459,7 @@ modparam("drouting", "ruri_avp", '$avp(33)')
    the use_next_gw() function), the AVP will be updated with the
    ID of the new selected gateway/destination.
 
-   Default value is “$avp(0xad346b30)”.
+   Default value is "$avp(0xad346b30)".
 
    Example 1.7. Set gw_id_avp parameter
 ...
@@ -474,7 +474,7 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
    selected (via the use_next_gw() function), the AVP will be
    updated with the attrs of the new used destination.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.8. Set gw_attrs_avp parameter
 ...
@@ -487,7 +487,7 @@ modparam("drouting", "gw_attrs_avp", '$avp(67)')
    The name of the avp for storing the id of the current matched
    routing rule (see dr_rules table).
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.9. Set rule_id_avp parameter
 ...
@@ -500,7 +500,7 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
    The name of the avp for storing the attributes of the current
    matched routing rule (see dr_rules table).
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.10. Set rule_attrs_avp parameter
 ...
@@ -513,7 +513,7 @@ modparam("drouting", "rule_attrs_avp", '$avp(66)')
    The actual prefix that matched the routing rule (the part from
    RURI username that matched the routing rule).
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.11. Set rule_prefix_avp parameter
 ...
@@ -525,7 +525,7 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
    AVP to be populate with the ID string for the carrier the
    current GW belongs to.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.12. Set carrier_id_avp parameter
 ...
@@ -537,7 +537,7 @@ modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
    AVP to be populate with the attributes string for the carrier
    the current GW belongs to.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.13. Set carrier_attrs_avp parameter
 ...
@@ -552,7 +552,7 @@ modparam("drouting", "carrier_attrs_avp", '$avp(carrier_attrs)')
 
    Multiple instances of this param are allowed.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.14. Set define_blacklist parameter
 ...
@@ -565,7 +565,7 @@ modparam("drouting", "define_blacklist", 'list= 4,2')
    Group to be used if the caller (FROM user) is not found in the
    GROUP table.
 
-   Default value is “NONE”.
+   Default value is "NONE".
 
    Example 1.15. Set default_group parameter
 ...
@@ -578,7 +578,7 @@ modparam("drouting", "default_group", 4)
    startup. If not enabled, the GW name will be blindly used
    during routing.
 
-   Default value is “1 (enabled)”.
+   Default value is "1 (enabled)".
 
    Example 1.16. Set force_dns parameter
 ...
@@ -591,7 +591,7 @@ modparam("drouting", "force_dns", 0)
    done. If set to 0, the probing will be disabled as
    functionality (for all destinations)
 
-   Default value is “30”.
+   Default value is "30".
 
    Example 1.17. Set probing_interval parameter
 ...
@@ -602,7 +602,7 @@ modparam("drouting", "probing_interval", 60)
 
    The SIP method to be used for the probing requests.
 
-   Default value is “"OPTIONS"”.
+   Default value is ""OPTIONS"".
 
    Example 1.18. Set probing_method parameter
 ...
@@ -613,7 +613,7 @@ modparam("drouting", "probing_method", "INFO")
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
-   Default value is “"sip:prober@localhost"”.
+   Default value is ""sip:prober@localhost"".
 
    Example 1.19. Set probing_from parameter
 ...
@@ -626,7 +626,7 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
    here will be considered as valid reply codes for probing
    messages, apart for 200.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.20. Set probing_reply_codes parameter
 ...
@@ -638,7 +638,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
-   Default value is “1”.
+   Default value is "1".
 
    Example 1.21. Set use_domain parameter
 ...
@@ -650,7 +650,7 @@ modparam("drouting", "use_domain", 0)
    The name of the column in group db table where the username is
    stored.
 
-   Default value is “username”.
+   Default value is "username".
 
    Example 1.22. Set drg_user_col parameter
 ...
@@ -662,7 +662,7 @@ modparam("drouting", "drg_user_col", "user")
    The name of the column in group db table where the domain is
    stored.
 
-   Default value is “domain”.
+   Default value is "domain".
 
    Example 1.23. Set drg_domain_col parameter
 ...
@@ -674,7 +674,7 @@ modparam("drouting", "drg_domain_col", "host")
    The name of the column in group db table where the group id is
    stored.
 
-   Default value is “groupid”.
+   Default value is "groupid".
 
    Example 1.24. Set drg_grpid_col parameter
 ...
@@ -872,8 +872,8 @@ if (is_from_gw("3","1") {
    gateway from a certain group.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE and
-   TIMER_ROUTE.
+   FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE and EVENT_ROUTE.
 
    Meaning of the parameters is as follows:
      * src_pv (mandatory) - pvar containing SIP URI. May be a

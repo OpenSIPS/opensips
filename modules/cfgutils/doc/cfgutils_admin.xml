@@ -475,7 +475,8 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+			FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE,
+			EVENT_ROUTE.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -555,7 +556,7 @@ if (check_time_rec("20121101T000000||p30d")) {
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">get_static_lock</function> usage</title>
@@ -595,7 +596,7 @@ release_static_lock("Zone_1");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">release_static_lock</function> usage</title>
@@ -648,7 +649,7 @@ release_static_lock("Zone_1");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">get_dynamic_lock</function> usage</title>
@@ -693,7 +694,7 @@ if (!release_dynamic_lock("$ci") {
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">release_dynamic_lock</function> usage</title>
@@ -750,7 +751,7 @@ if (!release_dynamic_lock("$ci") {
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE.
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">strings_share_lock</function> usage</title>

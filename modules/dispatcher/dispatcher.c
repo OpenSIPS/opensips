@@ -172,7 +172,7 @@ static cmd_export_t cmds[]={
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list4,   4, in_list_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"ds_count",    (cmd_function)w_ds_count,   3, ds_count_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
 

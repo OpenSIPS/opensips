@@ -241,10 +241,10 @@ static param_export_t mod_params[]={
 static cmd_export_t cmds[] = {
 	{"mmg_lookup",  (cmd_function)w_lookup_cmd2, 2, fixup_lookup2, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"mmg_lookup",  (cmd_function)mmg_lookup_cmd, 3, fixup_lookup3, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 

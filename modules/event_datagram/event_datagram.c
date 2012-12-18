@@ -59,8 +59,8 @@ static int child_init(int);
  */
 static evi_reply_sock* datagram_parse_udp(str socket);
 static evi_reply_sock* datagram_parse_unix(str socket);
-static int datagram_raise(str* ev_name, evi_reply_sock *sock,
-		evi_params_t * params);
+static int datagram_raise(struct sip_msg *msg, str* ev_name,
+						  evi_reply_sock *sock, evi_params_t * params);
 static int datagram_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str datagram_print(evi_reply_sock *sock);
 
@@ -388,8 +388,8 @@ end:
 
 #undef DO_COPY
 
-static int datagram_raise(str* ev_name, evi_reply_sock *sock,
-		evi_params_t *params)
+static int datagram_raise(struct sip_msg *msg, str* ev_name,
+						  evi_reply_sock *sock, evi_params_t *params)
 {
 	if (!sock || !(sock->flags & EVI_SOCKET)) {
 		LM_ERR("no socket found\n");

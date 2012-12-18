@@ -102,16 +102,16 @@ struct mi_root* mi_get_pid(struct mi_root* cmd_tree, void* param);
 static cmd_export_t cmds[] = {
 	{"rl_check", (cmd_function)w_rl_check_2, 2,
 		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
+			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_check", (cmd_function)w_rl_check_3, 3,
 		fixup_rl_check, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
+			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_dec_count", (cmd_function)w_rl_dec, 1,
 		fixup_spve_null, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
+			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_reset_count", (cmd_function)w_rl_reset, 1,
 		fixup_spve_null, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
+			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
 

@@ -47,8 +47,8 @@ static void destroy(void);
  * exported functions
  */
 static evi_reply_sock* rmq_parse(str socket);
-static int rmq_raise(str* ev_name, evi_reply_sock *sock,
-		evi_params_t * params);
+static int rmq_raise(struct sip_msg *msg, str* ev_name,
+					 evi_reply_sock *sock, evi_params_t * params);
 static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void rmq_free(evi_reply_sock *sock);
 static str rmq_print(evi_reply_sock *sock);
@@ -490,8 +490,8 @@ end:
 #undef DO_COPY
 
 
-static int rmq_raise(str* ev_name, evi_reply_sock *sock,
-		evi_params_t * params)
+static int rmq_raise(struct sip_msg *msg, str* ev_name,
+					 evi_reply_sock *sock, evi_params_t * params)
 {
 	rmq_send_t *rmqs;
 	int len;

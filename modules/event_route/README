@@ -1,0 +1,185 @@
+event_route Module
+
+Razvan Crainea
+
+   OpenSIPS Solutions
+
+Edited by
+
+Razvan Crainea
+
+   Copyright © 2012 www.opensips-solutions.com
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. ROUTE events parameters
+        1.3. EVENT_ROUTE usage
+        1.4. EVENT_ROUTE socket syntax
+        1.5. Dependencies
+
+              1.5.1. OpenSIPS Modules
+              1.5.2. External Libraries or Applications
+
+        1.6. Exported Parameters
+
+              1.6.1.
+
+        1.7. Exported Functions
+
+              1.7.1. fetch_event_params(pvar_list)
+
+   2. Frequently Asked Questions
+
+   List of Examples
+
+   1.1. EVENT_ROUTE usage
+   1.2. fetch_event_params usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides a simple way for handling different
+   events, triggered through the OpenSIPS Event Interface,
+   directly from the OpenSIPS script. For a specific event, a
+   special route (event_route) has to be declared in the script,
+   and should contain the code that handles the event. The route
+   is executed by the module when the corresponding event is
+   raised by the OpenSIPS Event Interface.
+
+1.2. ROUTE events parameters
+
+   In order to retrieve the parameters of an event, the
+   fetch_event_params(pvar_list) function is used. It receives a
+   single parameter, that consists of a list of parameters names
+   (optional) and the pseudo-variable where the values will be
+   stored. The grammar is:
+
+   [ param_name= ] pvar [; [ param_name= ] pvar ]*
+
+   Example:
+
+   fetch_even_params("$avp(first_param)");
+   fetch_even_params("ip=$avp(pike_ip)");
+   fetch_even_params("source=$avp(src);destination=$avp(dst)");
+
+   If the name of the parameter is not specified, the avp will be
+   populated according to the order of the parameters, as exported
+   by the event. The following code will populate the $avp(first)
+   avp with the first parameter of the event, $avp(second) with
+   the second one and so on.
+
+   fetch_event_params("$avp(first);$avp(second);$avp(third)");
+
+   NOTE: An event may be triggered within a different event,
+   leading to nested processing. This function will retrieve the
+   parameters of the currently processed event.
+
+   The event name can contain any non-quoted string character, but
+   it is recommended to follow the syntax:
+   E_MODULE_NAME_EXTRA_NAME
+
+1.3. EVENT_ROUTE usage
+
+   In order to handle the E_PIKE_BLOCKED event, the following
+   snippet can be used:
+
+   Example 1.1. EVENT_ROUTE usage
+        event_route[E_PIKE_BLOCKED] {
+                fetch_event_params("ip=$avp(pike-ip)");
+                xlog("IP $avp(pike-ip) have been blocked\n");
+        }
+
+1.4. EVENT_ROUTE socket syntax
+
+   As the OpenSIPS Event Interface requires, the event_route
+   module uses a specific socket syntax:
+
+   'route:' event_name
+
+   Example:
+
+   route:E_PIKE_BLOCKED
+
+1.5. Dependencies
+
+1.5.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules.
+
+1.5.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * none
+
+1.6. Exported Parameters
+
+   No parameter exported by this module. This module doesn't
+   export any parameter
+
+1.7. Exported Functions
+
+1.7.1.  fetch_event_params(pvar_list)
+
+   Retrieves the parameters of the event. For more information,
+   please read Section 1.2, "ROUTE events parameters".
+
+   The the pseudo variables list as described in Section 1.2,
+   "ROUTE events parameters".
+
+   This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
+
+   Example 1.2. fetch_event_params usage
+...
+fetch_even_params("$avp(first_param)"); # fetch the first parameter of a
+n event
+fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
+fetch_even_params("source=$avp(src);destination=$avp(dst)"); # fetch the
+ source and destination parameters
+...
+
+Chapter 2. Frequently Asked Questions
+
+   2.1.
+
+   Can I declare more routes for handling the same event?
+
+   No, only a single event_route can be used for a particular
+   event.
+
+   2.2.
+
+   Where can I find more about OpenSIPS?
+
+   Take a look at http://www.opensips.org/.
+
+   2.3.
+
+   Where can I post a question about this module?
+
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
+
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
+
+   2.4.
+
+   How can I report a bug?
+
+   Please follow the guidelines provided at:
+   http://sourceforge.net/tracker/?group_id=232389.

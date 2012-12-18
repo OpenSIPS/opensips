@@ -122,7 +122,7 @@ static cmd_export_t cmds[]={
 	{"json_link",    (cmd_function)json_bind,   2,
 		fixup_json_bind, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE},
+		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
 

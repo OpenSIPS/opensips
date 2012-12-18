@@ -29,6 +29,8 @@
 #include "../str.h"
 #include "event_interface.h"
 
+struct sip_msg;
+
 /* functions used by modules */
 
 /* 
@@ -54,8 +56,22 @@ event_id_t evi_publish_event(str event_name);
 int evi_raise_event(event_id_t id, evi_params_t* params);
 
 /*
+ * Used to raise an event that uses the message attached
+ * Parameters:
+ *  + message
+ *  + event id
+ *  + parameters
+ *
+ * Returns:
+ *  - 0 on success or negative on error
+ */
+int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params);
+
+
+/*
  * Used to raise an event from script
  * Parameters:
+ *  + message
  *  + event id
  *  + params attributes
  *  + params values
@@ -63,7 +79,7 @@ int evi_raise_event(event_id_t id, evi_params_t* params);
  * Returns:
  *  - 0 on success or negative on error
  */
-int evi_raise_script_event(event_id_t id, void * attrs, void * vals);
+int evi_raise_script_event(struct sip_msg *msg, event_id_t id, void * attrs, void * vals);
 
 
 /*

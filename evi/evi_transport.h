@@ -32,13 +32,15 @@
 #include "../mi/mi.h"
 #include "../str.h"
 #include "../ip_addr.h"
+#include "../parser/msg_parser.h"
 #include "evi_params.h"
 
 #define		EVI_ADDRESS		(1 << 1)
 #define		EVI_PORT		(1 << 2)
 #define		EVI_SOCKET		(1 << 3)
 #define		EVI_PARAMS		(1 << 4)
-#define		EVI_EXPIRE		(1 << 8)
+#define		EVI_EXPIRE		(1 << 8) // indicates that the socket may expire
+#define		EVI_PENDING		(1 << 9) // indicates that the socket is in use
 
 /* sockets */
 typedef union {
@@ -58,7 +60,8 @@ typedef struct ev_reply_sock_ {
 } evi_reply_sock;
 
 /* event raise function */
-typedef int (raise_f)(str* ev_name, evi_reply_sock *sock, evi_params_t * params);
+typedef int (raise_f)(struct sip_msg *msg, str *ev_name,
+					  evi_reply_sock *sock, evi_params_t * params);
 /* socket parse function */
 typedef evi_reply_sock* (parse_f)(str);
 /* tries to match two sockets */

@@ -930,7 +930,7 @@ ds_select_dst("1", "0", "5");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
-		LOCAL_ROUTE, TIMER_ROUTE
+		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 		</para>
 		<example>
 		<title><function>ds_count</function> usage</title>

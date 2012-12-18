@@ -70,6 +70,7 @@
  *  2007-01-11  auto_aliases option added (bogdan)
  *  2007-01-25  disable_dns_failover option added (bogdan)
  *  2012-01-19  added TCP keepalive support
+ *  2012-12-06  added event_route (razvanc)
  */
 
 
@@ -214,6 +215,7 @@ extern int line;
 %token ROUTE_LOCAL
 %token ROUTE_STARTUP
 %token ROUTE_TIMER
+%token ROUTE_EVENT
 %token SET_HOST
 %token SET_HOSTPORT
 %token PREFIX
@@ -486,6 +488,7 @@ statement:	assign_stm
 		| {rt=LOCAL_ROUTE;} local_route_stm
 		| {rt=STARTUP_ROUTE;} startup_route_stm
 		| {rt=TIMER_ROUTE;} timer_route_stm
+		| {rt=EVENT_ROUTE;} event_route_stm
 
 		| CR	/* null statement*/
 	;
@@ -1601,6 +1604,17 @@ timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actio
 					}
 		| ROUTE_TIMER error { yyerror("invalid timer_route statement"); }
 	;
+
+event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
+						i_tmp = get_script_route_idx($3,event_rlist,
+								EVENT_RT_NO,1);
+						if (i_tmp==-1) YYABORT;
+						push($6, &event_rlist[i_tmp].a);
+					}
+		| ROUTE_EVENT error { yyerror("invalid timer_route statement"); }
+	;
+
+
 
 exp:	exp AND exp 	{ $$=mk_exp(AND_OP, $1, $3); }
 	| exp OR  exp		{ $$=mk_exp(OR_OP, $1, $3);  }

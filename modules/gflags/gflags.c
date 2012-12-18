@@ -83,13 +83,13 @@ static unsigned int *gflags=0;
 static cmd_export_t cmds[]={
 	{"set_gflag",    (cmd_function)set_gflag,   1,   fixup_gflags, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"reset_gflag",  (cmd_function)reset_gflag, 1,   fixup_gflags, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"is_gflag",     (cmd_function)is_gflag,    1,   fixup_gflags, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 

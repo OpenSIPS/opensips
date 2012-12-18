@@ -149,6 +149,7 @@ ROUTE_ERROR error_route
 ROUTE_LOCAL local_route
 ROUTE_STARTUP startup_route
 ROUTE_TIMER timer_route
+ROUTE_EVENT event_route
 FORCE_RPORT		"force_rport"|"add_rport"
 FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
 FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
@@ -452,6 +453,8 @@ IMPORTFILE      "import_file"
 								return ROUTE_STARTUP; }
 <INITIAL>{ROUTE_TIMER}	{ count(); yylval.strval=yytext;
 								return ROUTE_TIMER; }
+<INITIAL>{ROUTE_EVENT}	{ count(); yylval.strval=yytext;
+								return ROUTE_EVENT; }
 <INITIAL>{SET_HOST}	{ count(); yylval.strval=yytext; return SET_HOST; }
 <INITIAL>{SET_HOSTPORT}	{ count(); yylval.strval=yytext; return SET_HOSTPORT; }
 <INITIAL>{SET_USER}	{ count(); yylval.strval=yytext; return SET_USER; }

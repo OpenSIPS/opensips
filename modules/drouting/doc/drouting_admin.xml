@@ -1233,7 +1233,7 @@ if (is_from_gw("3","1") {
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE and TIMER_ROUTE.
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 		</para>
 		<para>
 			Meaning of the parameters is as follows:

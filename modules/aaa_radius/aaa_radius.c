@@ -83,11 +83,11 @@ int parse_sets_func(unsigned int type, void *val);
 static cmd_export_t cmds[]= {
 	{"aaa_bind_api",  (cmd_function) aaa_radius_bind_api,  0, 0, 0, 0},
 	{"radius_send_auth", (cmd_function) send_auth_func, 2, send_auth_fixup, 0,
-			REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE |
-			ERROR_ROUTE | LOCAL_ROUTE | STARTUP_ROUTE | TIMER_ROUTE },
+			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|
+			ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"radius_send_acct", (cmd_function) send_acct_func, 1, send_acct_fixup, 0,
-			REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE |
-			ERROR_ROUTE | LOCAL_ROUTE | STARTUP_ROUTE | TIMER_ROUTE },
+			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|
+			ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{ 0,      0,                 0,     0,         0,  0}
 };
 

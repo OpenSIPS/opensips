@@ -18,11 +18,11 @@ Sergio Gutierrez
 
    <saguti@gmail.com>
 
-   Copyright © 2007, 2008 1und1 Internet AG, BASIS AudioNet GmbH,
+   Copyright � 2007, 2008 1und1 Internet AG, BASIS AudioNet GmbH,
    Elena-Ramona Modroiu
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -124,11 +124,11 @@ Chapter 1. Admin Guide
 
    The cfgutils module can be used to introduce randomness to the
    behaviour of the server. It provides setup functions and the
-   “rand_event” function. This function return either true or
+   "rand_event" function. This function return either true or
    false, depending on a random value and a specified probability.
    E.g. if you set via fifo or script a probability value of 5%,
    then 5% of all calls to rand_event will return false. The
-   pseudovariable “$RANDOM” could be used to introduce random
+   pseudovariable "$RANDOM" could be used to introduce random
    values e.g. into a SIP reply.
 
    The benefit of this module is the probability of the decision
@@ -138,14 +138,14 @@ Chapter 1. Admin Guide
 
    The module exports commands to FIFO server that can be used to
    change the global settings via FIFO interface. The FIFO
-   commands are: “set_prob”, “reset_prob” and “get_prob”.
+   commands are: "set_prob", "reset_prob" and "get_prob".
 
    This module can be used for simple load-shedding, e.g. reply 5%
    of the Invites with a 503 error and a adequate random
    Retry-After value.
 
    The module provides as well functions to delay the execution of
-   the server. The functions “sleep” and “usleep” could be used to
+   the server. The functions "sleep" and "usleep" could be used to
    let the server wait a specific time interval.
 
    It can also hash the config file used from the server with a
@@ -153,7 +153,7 @@ Chapter 1. Admin Guide
    saved and can be later compared to the actual hash, to detect
    modifications of this file after the server start. This
    functions are available as the FIFO commands
-   “check_config_hash” and “get_config_hash”.
+   "check_config_hash" and "get_config_hash".
 
 1.2. Dependencies
 
@@ -167,7 +167,7 @@ Chapter 1. Admin Guide
 
    The initial value of the probability.
 
-   Default value is “10”.
+   Default value is "10".
 
    Example 1.1. initial_probability parameter usage
 
@@ -196,11 +196,11 @@ modparam("cfgutils", "hash_file", "/etc/opensips/opensips.cfg")
    ':' _value_
      * _name_: shared variable name
      * _type_: type of the value
-          + “i”: integer value
-          + “s”: string value
+          + "i": integer value
+          + "s": string value
      * _value_: value to be set
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.3. shvset parameter usage
 ...
@@ -217,11 +217,11 @@ modparam("cfgutils", "shvset", "pstngw=s:sip:10.10.10.10")
    ':' _value_
      * _name_: shared variable name
      * _type_: type of the value
-          + “i”: integer value
-          + “s”: string value
+          + "i": integer value
+          + "s": string value
      * _value_: value to be set
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.4. varset parameter usage
 ...
@@ -240,7 +240,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
    only depends on the number of unique static strings supplied
    throughout the script to the set of static lock functions.
 
-   Default value is “32”.
+   Default value is "32".
 
    Example 1.5. Setting lock_pool_size module parameter
 modparam("cfgutils", "lock_pool_size", "64")
@@ -265,9 +265,9 @@ if (rand_event()) {
 
 1.4.2. rand_set_prob(probabiltiy)
 
-   Set the “probability” of the decision.
+   Set the "probability" of the decision.
 
-   “probability” can have a value from the range 0..99.
+   "probability" can have a value from the range 0..99.
 
    Example 1.7. rand_set_prob() usage
 ...
@@ -430,7 +430,7 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE.
+   TIMER_ROUTE, EVENT_ROUTE.
 
    Meaning of the parameters is as follows:
      * time_string - Time recurrence string which will be matched
@@ -440,7 +440,7 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
        byyday | byweekno | bymonth". None of the fields following
        "freq" is used unless "freq" is defined. If the string ends
        in multiple null fields, they can all be ommited.
-       The string parameter can have the following types:
+       The time_string parameter can have the following types:
           + string - the time recurrence string is statically
             assigned
           + pvar - the string is the value of an existing
@@ -483,7 +483,7 @@ if (check_time_rec("20121101T000000||p30d")) {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE.
+   TIMER_ROUTE, EVENT_ROUTE.
 
    Example 1.19. get_static_lock usage
 # acquire and release a static lock
@@ -507,7 +507,7 @@ release_static_lock("Zone_1");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE.
+   TIMER_ROUTE|EVENT_ROUTE.
 
    Example 1.20. release_static_lock usage
 # acquire and release a static lock
@@ -546,7 +546,7 @@ release_static_lock("Zone_1");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE.
+   TIMER_ROUTE|EVENT_ROUTE.
 
    Example 1.21. get_dynamic_lock usage
 ...
@@ -576,7 +576,7 @@ if (!release_dynamic_lock("$ci") {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE.
+   TIMER_ROUTE|EVENT_ROUTE.
 
    Example 1.22. release_dynamic_lock usage
 ...
@@ -615,7 +615,7 @@ if (!release_dynamic_lock("$ci") {
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE.
+   TIMER_ROUTE|EVENT_ROUTE.
 
    Example 1.23. strings_share_lock usage
 ...
@@ -714,8 +714,8 @@ $ opensipsctl fifo get_config_hash
    Parameters:
      * _name_: shared variable name
      * _type_: type of the value
-          + “int”: integer value
-          + “str”: string value
+          + "int": integer value
+          + "str": string value
      * _value_: value to be set
 
    MI FIFO Command Format:
@@ -780,7 +780,7 @@ exit;
 
    The PV provides access to broken-down time attributes.
 
-   The “name” can be:
+   The "name" can be:
      * sec - return seconds (int 0-59)
      * min - return minutes (int 0-59)
      * hour - return hours (int 0-23)
@@ -803,8 +803,8 @@ if ($ctime(year) == 2008) {
 
    It is a class of pseudo-variables stored in shared memory. The
    value of $shv(name) is visible across all opensips processes.
-   Each “shv” has single value and it is initialized to integer 0.
-   You can use “shvset” parameter to initialize the shared
+   Each "shv" has single value and it is initialized to integer 0.
+   You can use "shvset" parameter to initialize the shared
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 

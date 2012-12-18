@@ -1350,11 +1350,11 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			if (a->elem[2].u.data) {
 				/* three parameters specified */
-				ret = evi_raise_script_event((event_id_t)a->elem[0].u.number,
+				ret = evi_raise_script_event(msg, (event_id_t)a->elem[0].u.number,
 						a->elem[1].u.data, a->elem[2].u.data);
 			} else {
 				/* two parameters specified */
-				ret = evi_raise_script_event((event_id_t)a->elem[0].u.number,
+				ret = evi_raise_script_event(msg, (event_id_t)a->elem[0].u.number,
 						NULL, a->elem[1].u.data);
 			}
 			if (ret <= 0) {

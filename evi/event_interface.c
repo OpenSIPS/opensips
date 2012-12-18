@@ -34,6 +34,7 @@
 
 int events_no = 0;
 int max_alloc_events = 10;
+static int events_rec_level = MAX_REC_LEV;
 
 /* holds all exported events */
 evi_event_t *events = NULL;
@@ -95,14 +96,52 @@ event_id_t evi_publish_event(str event_name)
 
 int evi_raise_event(event_id_t id, evi_params_t* params)
 {
+	int status;
+	static struct sip_msg* req= NULL;
+
+	if(req == NULL)
+	{
+		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+		if(req == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return -1;
+		}
+		memset(req, 0, sizeof(struct sip_msg));
+		req->first_line.type = SIP_REQUEST;
+		req->first_line.u.request.method.s= "DUMMY";
+		req->first_line.u.request.method.len= 5;
+		req->first_line.u.request.uri.s= "sip:user@domain.com";
+		req->first_line.u.request.uri.len= 19;
+	}
+
+	status = evi_raise_event_msg(req, id, params);
+
+	/* clean whatever extra structures were added by script functions */
+	free_sip_msg(req);
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
+
+	return status;
+}
+
+int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params)
+{
 	evi_subs_p subs, prev;
 	long now;
+	int flags;
 	int ret = 0;
 
 	if (id < 0 || id >= events_no) {
 		LM_ERR("invalid event %d\n", id);
 		return -1;
 	}
+
+	if (events_rec_level == 0) {
+		LM_ERR("Too many nested events %d\n", MAX_REC_LEV);
+		return -1;
+	}
+	events_rec_level--;
 
 	lock_get(events[id].lock);
 	now = time(0);
@@ -114,7 +153,8 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 			continue;
 		}
 		/* check expire */
-		if (subs->reply_sock->flags & EVI_EXPIRE &&
+		if (!(subs->reply_sock->flags & EVI_PENDING) &&
+				subs->reply_sock->flags & EVI_EXPIRE &&
 				subs->reply_sock->subscription_time +
 				subs->reply_sock->expire < now) {
 			if (subs->trans_mod && subs->trans_mod->free)
@@ -145,9 +185,17 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 					subs->trans_mod->proto.len, subs->trans_mod->proto.s);
 			goto next;
 		}
+		/* we use this var to make sure nested calls don't reset the flag */
+		flags = subs->reply_sock->flags;
+		subs->reply_sock->flags |= EVI_PENDING;
+		/* make sure nested events don't deadlock */
+		lock_release(events[id].lock);
 
-		ret += (subs->trans_mod->raise)(&events[id].name,
+		ret += (subs->trans_mod->raise)(msg, &events[id].name,
 					subs->reply_sock, params);
+
+		lock_get(events[id].lock);
+		subs->reply_sock->flags = flags;
 next:
 		prev = subs;
 		subs = subs->next;
@@ -157,6 +205,7 @@ next:
 	/* done sending events - free parameters */
 	if (params)
 		evi_free_params(params);
+	events_rec_level++;
 	return ret;
 
 }
@@ -297,7 +346,7 @@ bad_param:
 	return -1;
 }
 
-int evi_raise_script_event(event_id_t id, void * _a, void * _v)
+int evi_raise_script_event(struct sip_msg *msg, event_id_t id, void * _a, void * _v)
 {
 	pv_spec_p vals = (pv_spec_p)_v;
 	pv_spec_p attrs = (pv_spec_p)_a;
@@ -358,7 +407,7 @@ int evi_raise_script_event(event_id_t id, void * _a, void * _v)
 	}
 
 raise:
-	err = evi_raise_event(id, params);
+	err = evi_raise_event_msg(msg, id, params);
 	return err ? err : 1;
 error:
 	evi_free_params(params);
@@ -468,7 +517,9 @@ static int evi_print_subscriber(struct mi_node *rpl, evi_subs_p subs)
 	socket = subs->trans_mod->print(sock);
 	LM_DBG("print subscriber socket <%.*s> %d\n",
 			socket.len, socket.s, socket.len);
-	if (!add_mi_attr(node, MI_DUP_VALUE, "socket", 6, socket.s, socket.len))
+	if (!addf_mi_attr(node, MI_DUP_VALUE, "socket", 6, "%.*s:%.*s",
+			subs->trans_mod->proto.len, subs->trans_mod->proto.s,
+			socket.len, socket.s))
 		return -1;
 
 	if (sock->flags & EVI_EXPIRE) {

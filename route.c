@@ -91,8 +91,10 @@ struct script_route local_rlist;
 struct script_route error_rlist;
 /* startup route */
 struct script_route startup_rlist;
-/* startup route */
+/* timer route */
 struct script_timer_route timer_rlist[TIMER_RT_NO];
+/* event route */
+struct script_route event_rlist[EVENT_RT_NO];
 
 int route_type = REQUEST_ROUTE;
 
@@ -114,6 +116,7 @@ void init_route_lists(void)
 	memset(&error_rlist, 0, sizeof(error_rlist));
 	memset(&startup_rlist, 0, sizeof(startup_rlist));
 	memset(timer_rlist, 0, sizeof(timer_rlist));
+	memset(event_rlist, 0, sizeof(event_rlist));
 	rlist[DEFAULT_RT].name = "0";
 	onreply_rlist[DEFAULT_RT].name = "0";
 }
@@ -1908,6 +1911,16 @@ int fix_rls(void)
 		}
 	}
 
+	for(i = 0; i< EVENT_RT_NO; i++) {
+		if(event_rlist[i].a == NULL)
+			break;
+
+		if ((ret=fix_actions(event_rlist[i].a))!=0){
+			return ret;
+		}
+	}
+
+
 return 0;
 }
 
@@ -2047,11 +2060,24 @@ int check_rls(void)
 			break;
 
 		if ((ret=check_actions(timer_rlist[i].a,TIMER_ROUTE))!=0){
-			LM_ERR("check failed for startup_route\n");
+			LM_ERR("check failed for timer_route\n");
 			return ret;
 		}
 		
 	}
+
+	for(i = 0; i< EVENT_RT_NO; i++) {
+		if(event_rlist[i].a == NULL)
+			break;
+
+		if ((ret=check_actions(event_rlist[i].a,EVENT_ROUTE))!=0){
+			LM_ERR("check failed for event_route\n");
+			return ret;
+		}
+		
+	}
+
+
 
 	return rcheck_status;
 }
