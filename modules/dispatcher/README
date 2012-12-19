@@ -81,9 +81,13 @@ Carsten Bock
               1.5.2. ds_list
               1.5.3. ds_reload
 
-        1.6. Installation and Running
+        1.6. Exported Events
 
-              1.6.1. OpenSIPS config file
+              1.6.1. E_DISPATCHER_STATUS
+
+        1.7. Installation and Running
+
+              1.7.1. OpenSIPS config file
 
    2. Frequently Asked Questions
 
@@ -753,9 +757,22 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
    MI DATAGRAM Command Format:
                 ":ds_reload:\n."
 
-1.6. Installation and Running
+1.6. Exported Events
 
-1.6.1. OpenSIPS config file
+1.6.1.  E_DISPATCHER_STATUS
+
+   This event is raised when the dispatcher module marks a
+   destination as activated or deactivated.
+
+   Parameters:
+     * group - the group of the destination.
+     * address - the address of the destination.
+     * status - active if the destination gets activated or
+       inactive if the destination is detected unresponsive.
+
+1.7. Installation and Running
+
+1.7.1. OpenSIPS config file
 
    Next picture displays a sample usage of dispatcher.
 

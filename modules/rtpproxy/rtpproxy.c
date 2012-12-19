@@ -244,8 +244,8 @@ static str late_name = str_init("late_negociation");
 static str event_name = str_init("E_RTPPROXY_STATUS");
 static str socket_name = str_init("socket");
 static str status_name = str_init("status");
-static str status_connected = str_init("connected");
-static str status_disconnected = str_init("disconnected");
+static str status_connected = str_init("active");
+static str status_disconnected = str_init("inactive");
 
 static int extract_mediainfo(str *, str *, str *);
 static int alter_mediaip(struct sip_msg *, str *, str *, int, str *, int, int);

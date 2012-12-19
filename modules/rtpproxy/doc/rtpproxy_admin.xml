@@ -862,5 +862,30 @@ $ opensipsctl fifo rtpproxy_reload
 
 	</section>
 
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_RTPPROXY_STATUS</function>
+		</title>
+		<para>
+			This event is raised when a RTPProxy server changes it's status to
+			enabled/disabled.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>socket</emphasis> - the socket that identifies the 
+				RTPProxy instance.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
+				the RTPProxy instance responds to probing or
+				<emphasis>inactive</emphasis> if the instance was deactivated.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
 </chapter>
 
