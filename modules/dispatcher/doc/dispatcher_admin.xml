@@ -955,6 +955,34 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
     </section>
 	
 	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_DISPATCHER_STATUS</function>
+		</title>
+		<para>
+			This event is raised when the dispatcher module marks a destination as 
+			activated or deactivated.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>group</emphasis> - the group of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - the address of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
+				the destination gets activated or <emphasis>inactive</emphasis> if the
+				destination is detected unresponsive.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
+
+	<section>
 	<title>Installation and Running</title>
 		<section>
 		<title>&osips; config file</title>

@@ -286,6 +286,24 @@ if (!pike_check_req()) { exit; };
 	</section>
 	</section>
 
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_PIKE_BLOCKED</function>
+		</title>
+		<para>
+			This event is raised when the <emphasis>pike</emphasis> module
+			decides that an IP should be blocked.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>ip</emphasis> - the IP address that has been blocked.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
 
 </chapter>
 
