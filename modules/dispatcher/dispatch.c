@@ -1427,6 +1427,7 @@ int ds_mark_dst(struct sip_msg *msg, int mode)
 }
 
 /* event parameters */
+static str group_str = str_init("group");
 static str address_str = str_init("address");
 static str status_str = str_init("status");
 static str inactive_str = str_init("inactive");
@@ -1492,6 +1493,11 @@ int ds_set_state(int group, str *address, int state, int type)
 			} else if (evi_probe_event(dispatch_evi_id)) {
 				if (!(list = evi_get_params()))
 					return 0;
+				if (evi_param_add_int(list, &group_str, &group)) {
+					LM_ERR("unable to add group parameter\n");
+					evi_free_params(list);
+					return 0;
+				}
 				if (evi_param_add_str(list, &address_str, address)) {
 					LM_ERR("unable to add address parameter\n");
 					evi_free_params(list);
