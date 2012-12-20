@@ -84,6 +84,7 @@ str aaa_extra_str = str_init("accX_aaa");
 extern struct acc_extra *log_extra;
 extern struct acc_extra *log_extra_bye;
 extern struct acc_extra *leg_info;
+extern struct acc_extra *leg_bye_info;
 extern struct acc_enviroment acc_env;
 
 extern struct acc_extra *aaa_extra;
@@ -229,6 +230,8 @@ void acc_log_init(void)
 	/* multi leg call columns */
 	for( extra=leg_info ; extra ; extra=extra->next)
 		log_attrs[n++] = extra->name;
+	for( extra=leg_bye_info ; extra ; extra=extra->next)
+		log_attrs[n++] = extra->name;
 
 	/* cdrs columns */
 	SET_LOG_ATTR(n,DURATION);
@@ -241,7 +244,7 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
 	char *p;
-	int nr_vals, i, j, ret, res = -1;
+	int nr_vals, i, j, ret, res = -1, n;
 	time_t created, start_time;
 	str core_s, leg_s, extra_s;
 	short nr_legs;
@@ -290,11 +293,12 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	LM_DBG("core+extra = %d - nr_legs = %d - nr_vals = %d\n",
 			ret, nr_legs, nr_vals);
 
-	if ( leg_info ) {
+	if (leg_info || leg_bye_info) {
 		leg_s.len = 4;
+		n = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals,1);
 		for (j=0; j<nr_legs; j++) {
 			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
-			for (i=ret; i<ret+nr_vals; i++) {
+			for (i=ret; i<ret+nr_vals+n; i++) {
 				if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
 					LM_WARN("acc message too long, truncating..\n");
 					p = log_msg_end;
@@ -307,8 +311,26 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 				memcpy(p, val_arr[i].s, val_arr[i].len);
 				p += val_arr[i].len;
 			}
+			n = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals,0);
 		}
-	}
+		while (n) {
+			for (i=ret; i<ret+nr_vals+n; i++) {
+				if (p+1+log_attrs[i].len+1+val_arr[i].len >= log_msg_end) {
+					LM_WARN("acc message too long, truncating..\n");
+					p = log_msg_end;
+					break;
+				}
+				*(p++) = A_SEPARATOR_CHR;
+				memcpy(p, log_attrs[i].s, log_attrs[i].len);
+				p += log_attrs[i].len;
+				*(p++) = A_EQ_CHR;
+				memcpy(p, val_arr[i].s, val_arr[i].len);
+				p += val_arr[i].len;
+			}
+			n = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals,0);
+		}
+	} else
+		LM_DBG("not entering\n");
 
 	/* terminating line */
 	*(p++) = '\n';
@@ -435,6 +457,8 @@ static void acc_db_init_keys(void)
 
 	/* multi leg call columns */
 	for( extra=leg_info ; extra ; extra=extra->next)
+		db_keys[n++] = &extra->name;
+	for( extra=leg_bye_info ; extra ; extra=extra->next)
 		db_keys[n++] = &extra->name;
 
 	/* init the values */
@@ -568,7 +592,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 
 int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 {
-	int total, nr_vals, i, j, ret, res = -1;
+	int total, nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
 	time_t created, start_time;
 	str core_s, leg_s, extra_s, table;
 	short nr_legs;
@@ -612,16 +636,20 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	for (i=ACC_CORE_LEN; i<ret; i++)
 		VAL_STR(db_vals+i+1) = val_arr[i];
 
+	if (leg_bye_info) {
+		nr_bye_vals = legs2strar(leg_bye_info, msg, val_arr+ret+nr_vals, 1);
+	}
+
 	VAL_TIME(db_vals+ACC_CORE_LEN) = start_time;
-	VAL_INT(db_vals+ret+nr_vals+1) = time(NULL) - start_time;
-	VAL_INT(db_vals+ret+nr_vals+2) = start_time - created;
-	VAL_TIME(db_vals+ret+nr_vals+3) = created;
+	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+1) = time(NULL) - start_time;
+	VAL_INT(db_vals+ret+nr_vals+nr_bye_vals+2) = start_time - created;
+	VAL_TIME(db_vals+ret+nr_vals+nr_bye_vals+3) = created;
 
 	total = ret + 4;
 	acc_dbf.use_table(db_handle, &table);
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
-	if (!leg_info) {
+	if (!leg_info && !leg_bye_info) {
 		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
 			CON_RESET_INSLIST(db_handle);
 		if (acc_dbf.insert(db_handle, db_keys, db_vals, total) < 0) {
@@ -633,14 +661,28 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		leg_s.len = 4;
 		for (i=0;i<nr_legs;i++) {
 			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
-			for (j = 0; j<nr_vals; j++)
+			 for (j = 0; j<nr_vals+nr_bye_vals; j++)
 				VAL_STR(db_vals+ret+j+1) = val_arr[ret+j];
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total+nr_bye_vals) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle,db_keys,db_vals,total) < 0) {
+			if (acc_dbf.insert(db_handle,db_keys,db_vals,total+nr_bye_vals) < 0) {
 				LM_ERR("failed inserting into database\n");
 				goto end;
 			}
+			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+		}
+		/* there were no Invite legs */
+		while (nr_bye_vals) {
+			/* drain all the values */
+			for (j = ret+nr_vals; j<ret+nr_bye_vals+nr_vals; j++)
+				VAL_STR(db_vals+j+1) = val_arr[j];
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total+nr_bye_vals) < 0 )
+				CON_RESET_INSLIST(db_handle);
+			if (acc_dbf.insert(db_handle,db_keys,db_vals,total+nr_bye_vals) < 0) {
+				LM_ERR("failed inserting into database\n");
+				goto end;
+			}
+			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
 	}
 
@@ -719,6 +761,7 @@ int init_acc_aaa(char* aaa_proto_url, int srv_type)
 	n += extra2attrs( aaa_extra_bye, rd_attrs, n);
 	/* add and count the legs as attributes */
 	n += extra2attrs( leg_info, rd_attrs, n);
+	n += extra2attrs( leg_bye_info, rd_attrs, n);
 
 	if (dlg_api.get_dlg) {
 		rd_attrs[n++].name = "Sip-Call-Duration";
@@ -997,13 +1040,18 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 	ADD_AAA_AVPAIR( offset + nr_vals + 1, &av_type, -1);
 
 	/* call-legs attributes also get inserted */
-	if (leg_info) {
+	if (leg_info || leg_bye_info) {
 		leg_s.len = 4;
+		ret = legs2strar(leg_bye_info,msg,val_arr + nr_vals,1);
 		for (i=0; i<nr_legs; i++) {
 			complete_dlg_values(&leg_s, val_arr, nr_vals);
-			for (j=0; j<nr_vals; j++)
-				ADD_AAA_AVPAIR( offset+j, val_arr[j].s,
-						val_arr[j].len );
+			for (j=0; j<nr_vals + ret; j++)
+				ADD_AAA_AVPAIR( offset+j, val_arr[j].s, val_arr[j].len );
+			ret = legs2strar(leg_bye_info,msg,val_arr + nr_vals,0);
+		}
+		while (ret) {
+			for (j = nr_vals; j < nr_vals + ret; j++)
+				ADD_AAA_AVPAIR( offset+j, val_arr[j].s, val_arr[j].len );
 		}
 	}
 

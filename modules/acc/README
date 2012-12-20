@@ -27,12 +27,12 @@ Irina-Maria Stanescu
    Voice Sistem SRL
    <ironmissy@gmail.com>
 
-   Copyright © 2002, 2003 FhG FOKUS
+   Copyright � 2002, 2003 FhG FOKUS
 
-   Copyright © 2004, 2006, 2009 Voice Sistem SRL
+   Copyright � 2004, 2006, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2012-02-22 18:29:43 +0100
+   (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -73,39 +73,40 @@ Irina-Maria Stanescu
               1.6.3. report_cancels (integer)
               1.6.4. detect_direction (integer)
               1.6.5. multi_leg_info (string)
-              1.6.6. log_flag (integer)
-              1.6.7. log_missed_flag (integer)
-              1.6.8. log_level (integer)
-              1.6.9. log_facility (string)
-              1.6.10. log_extra (string)
-              1.6.11. log_extra_bye (string)
-              1.6.12. aaa_url (string)
-              1.6.13. aaa_flag (integer)
-              1.6.14. aaa_missed_flag (integer)
-              1.6.15. service_type (integer)
-              1.6.16. aaa_extra (string)
-              1.6.17. aaa_extra_bye (string)
-              1.6.18. db_flag (integer)
-              1.6.19. db_missed_flag (integer)
-              1.6.20. db_table_acc (string)
-              1.6.21. db_table_avp (string)
-              1.6.22. db_table_missed_calls (string)
-              1.6.23. db_url (string)
-              1.6.24. acc_method_column (string)
-              1.6.25. acc_from_tag_column (string)
-              1.6.26. acc_to_tag_column (string)
-              1.6.27. acc_callid_column (string)
-              1.6.28. acc_sip_code_column (string)
-              1.6.29. acc_sip_reason_column (string)
-              1.6.30. acc_time_column (string)
-              1.6.31. db_extra (string)
-              1.6.32. db_extra_bye (string)
-              1.6.33. diameter_flag (integer)
-              1.6.34. diameter_missed_flag (integer)
-              1.6.35. diameter_client_host (string)
-              1.6.36. diameter_client_port (int)
-              1.6.37. diameter_extra (string)
-              1.6.38. cdr_flag (integer)
+              1.6.6. multi_leg_bye_info (string)
+              1.6.7. log_flag (integer)
+              1.6.8. log_missed_flag (integer)
+              1.6.9. log_level (integer)
+              1.6.10. log_facility (string)
+              1.6.11. log_extra (string)
+              1.6.12. log_extra_bye (string)
+              1.6.13. aaa_url (string)
+              1.6.14. aaa_flag (integer)
+              1.6.15. aaa_missed_flag (integer)
+              1.6.16. service_type (integer)
+              1.6.17. aaa_extra (string)
+              1.6.18. aaa_extra_bye (string)
+              1.6.19. db_flag (integer)
+              1.6.20. db_missed_flag (integer)
+              1.6.21. db_table_acc (string)
+              1.6.22. db_table_avp (string)
+              1.6.23. db_table_missed_calls (string)
+              1.6.24. db_url (string)
+              1.6.25. acc_method_column (string)
+              1.6.26. acc_from_tag_column (string)
+              1.6.27. acc_to_tag_column (string)
+              1.6.28. acc_callid_column (string)
+              1.6.29. acc_sip_code_column (string)
+              1.6.30. acc_sip_reason_column (string)
+              1.6.31. acc_time_column (string)
+              1.6.32. db_extra (string)
+              1.6.33. db_extra_bye (string)
+              1.6.34. diameter_flag (integer)
+              1.6.35. diameter_missed_flag (integer)
+              1.6.36. diameter_client_host (string)
+              1.6.37. diameter_client_port (int)
+              1.6.38. diameter_extra (string)
+              1.6.39. cdr_flag (integer)
 
         1.7. Exported Functions
 
@@ -123,43 +124,44 @@ Irina-Maria Stanescu
    1.3. report_cancels example
    1.4. detect_direction example
    1.5. multi_leg_info example
-   1.6. log_flag example
-   1.7. log_missed_flag example
-   1.8. log_level example
-   1.9. log_facility example
-   1.10. log_extra example
-   1.11. log_extra_bye example
-   1.12. Set aaa_url parameter
-   1.13. aaa_flag example
-   1.14. aaa_missed_flag example
-   1.15. service_type example
-   1.16. aaa_extra example
-   1.17. aaa_extra_bye example
-   1.18. db_flag example
-   1.19. db_missed_flag example
-   1.20. db_table_acc example
-   1.21. db_table_avp example
-   1.22. db_table_missed_calls example
-   1.23. db_url example
-   1.24. acc_method_column example
-   1.25. acc_from_tag_column example
-   1.26. acc_to_tag_column example
-   1.27. acc_callid_column example
-   1.28. acc_sip_code_column example
-   1.29. acc_sip_reason_column example
-   1.30. acc_time_column example
-   1.31. db_extra example
-   1.32. db_extra_bye example
-   1.33. diameter_flag example
-   1.34. diameter_missed_flag example
-   1.35. diameter_client_host example
+   1.6. multi_leg_bye_info example
+   1.7. log_flag example
+   1.8. log_missed_flag example
+   1.9. log_level example
+   1.10. log_facility example
+   1.11. log_extra example
+   1.12. log_extra_bye example
+   1.13. Set aaa_url parameter
+   1.14. aaa_flag example
+   1.15. aaa_missed_flag example
+   1.16. service_type example
+   1.17. aaa_extra example
+   1.18. aaa_extra_bye example
+   1.19. db_flag example
+   1.20. db_missed_flag example
+   1.21. db_table_acc example
+   1.22. db_table_avp example
+   1.23. db_table_missed_calls example
+   1.24. db_url example
+   1.25. acc_method_column example
+   1.26. acc_from_tag_column example
+   1.27. acc_to_tag_column example
+   1.28. acc_callid_column example
+   1.29. acc_sip_code_column example
+   1.30. acc_sip_reason_column example
+   1.31. acc_time_column example
+   1.32. db_extra example
+   1.33. db_extra_bye example
+   1.34. diameter_flag example
+   1.35. diameter_missed_flag example
    1.36. diameter_client_host example
-   1.37. diameter_extra example
-   1.38. cdr_flag example
-   1.39. acc_log_request usage
-   1.40. acc_db_request usage
-   1.41. acc_aaa_request usage
-   1.42. acc_diam_request usage
+   1.37. diameter_client_host example
+   1.38. diameter_extra example
+   1.39. cdr_flag example
+   1.40. acc_log_request usage
+   1.41. acc_db_request usage
+   1.42. acc_aaa_request usage
+   1.43. acc_diam_request usage
 
 Chapter 1. Admin Guide
 
@@ -172,7 +174,7 @@ Chapter 1. Admin Guide
    To account a transaction and to choose which set of backends to
    be used, the script writer just has to set some flags (see the
    module parameters section for flag definitions Section 1.6,
-   “Exported Parameters”). If the accounting flag for a specific
+   "Exported Parameters"). If the accounting flag for a specific
    backend is set, the acc module will then report on completed
    transaction. A typical usage of the module takes no
    acc-specific script command -- the functionality binds
@@ -184,8 +186,8 @@ Chapter 1. Admin Guide
    The accounting module will log by default a fixed set of
    attributes for the transaction - if you customize your
    accounting by adding more information to be logged, please see
-   the next chapter about extra accounting - Section 1.2, “Extra
-   accounting”.
+   the next chapter about extra accounting - Section 1.2, "Extra
+   accounting".
 
    The fixed minimal accounting information is:
      * Request Method name
@@ -273,7 +275,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
    the request message (to access info from it) or in the context
    of the reply message (final reply for the request).
 
-   Using “/reply” marker, the PV will be evaluated in the context
+   Using "/reply" marker, the PV will be evaluated in the context
    of the reply; by default (without the marker), the evaluation
    is done in the contect of the request. This will allow you to
    automatically account information (message or network related)
@@ -338,8 +340,16 @@ if (uri=~"sip:+40") /* calls to Romania */ {
    the found AVP sets).
 
    By default, the multiple call-leg support is disabled - it can
-   be enabled just be setting the per-leg set of AVPs via the
-   multi_leg_info module parameter.
+   be enabled just by setting the per-leg set of AVPs via the
+   multi_leg_info and/or multi_leg_bye_info module parameters.
+   Note that the last one only makes sense only for CDRs that are
+   generated automatically by OpenSIPS.
+
+   Important: when both multi-leg accounting is done (for INVITE
+   and BYE), you have to make sure that the AVPs are populated
+   with the same number of legs, otherwise the multi-leg
+   accounting will have an unexpected behavior (values may no
+   longer match the leg number).
 
 1.3.3. Logged data
 
@@ -399,10 +409,10 @@ Note
    the listed modules must be loaded before this module):
      * tm -- Transaction Manager
      * a database module -- If SQL support is used.
-     * rr -- Record Route, if “detect_direction” module parameter
+     * rr -- Record Route, if "detect_direction" module parameter
        is enabled.
      * an aaa module
-     * dialog -- Dialog, if “cdr_flag” is set.
+     * dialog -- Dialog, if "cdr_flag" is set.
 
 1.5.2. External Libraries or Applications
 
@@ -462,7 +472,7 @@ modparam("acc", "detect_direction", 1)
 1.6.5. multi_leg_info (string)
 
    Defines the AVP set to be used in per-call-leg accounting. See
-   Section 1.3, “Multi Call-Legs accounting” for a detailed
+   Section 1.3, "Multi Call-Legs accounting" for a detailed
    description of the Multi Call-Legs accounting.
 
    If empty, the multi-leg accounting support will be disabled.
@@ -483,36 +493,60 @@ modparam("acc", "multi_leg_info",
 modparam("acc", "multi_leg_info",
     "2345=$avp(src);2346=$avp(dst)")
 
-1.6.6. log_flag (integer)
+1.6.6. multi_leg_bye_info (string)
+
+   Defines the AVP set to be used in per-call-leg accounting. See
+   Section 1.3, "Multi Call-Legs accounting" for a detailed
+   description of the Multi Call-Legs accounting. This parameter
+   evaluates the AVPs set for BYE requests. It makes sense only
+   when the CDRs are automatically generated, using the dialog
+   support.
+
+   If empty, the multi-leg support for BYE requests is disabled.
+
+   Default value is 0 (disabled).
+
+   Example 1.6. multi_leg_bye_info example
+# for syslog-based accounting, use any text you want to be printed
+modparam("acc", "multi_leg_bye_info",
+    "text1=$avp(src);text2=$avp(dst)")
+# for mysql-based accounting, use the names of the columns
+modparam("acc", "multi_leg_bye_info",
+    "leg_src=$avp(src);leg_dst=$avp(dst)")
+# for AAA-based accounting, use the names of the AAA AVPs
+modparam("acc", "multi_leg_bye_info",
+    "AAA_LEG_SRC=$avp(src);AAA_LEG_SRC=$avp(dst)")
+
+1.6.7. log_flag (integer)
 
    Request flag which needs to be set to account a transaction via
    syslog.
 
    Default value is not-set (no flag).
 
-   Example 1.6. log_flag example
+   Example 1.7. log_flag example
 modparam("acc", "log_flag", 2)
 
-1.6.7. log_missed_flag (integer)
+1.6.8. log_missed_flag (integer)
 
    Request flag which needs to be set to account missed calls via
    syslog.
 
    Default value is not-set (no flag).
 
-   Example 1.7. log_missed_flag example
+   Example 1.8. log_missed_flag example
 modparam("acc", "log_missed_flag", 3)
 
-1.6.8. log_level (integer)
+1.6.9. log_level (integer)
 
    Log level at which accounting messages are issued to syslog.
 
    Default value is L_NOTICE.
 
-   Example 1.8. log_level example
+   Example 1.9. log_level example
 modparam("acc", "log_level", 2)   # Set log_level to 2
 
-1.6.9. log_facility (string)
+1.6.10. log_facility (string)
 
    Log facility to which accounting messages are issued to syslog.
    This allows to easily seperate the accounting specific logging
@@ -520,31 +554,31 @@ modparam("acc", "log_level", 2)   # Set log_level to 2
 
    Default value is LOG_DAEMON.
 
-   Example 1.9. log_facility example
+   Example 1.10. log_facility example
 modparam("acc", "log_facility", "LOG_DAEMON")
 
-1.6.10. log_extra (string)
+1.6.11. log_extra (string)
 
    Extra values to be logged.
 
    Default value is NULL.
 
-   Example 1.10. log_extra example
+   Example 1.11. log_extra example
 modparam("acc", "log_extra",
         "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 
-1.6.11. log_extra_bye (string)
+1.6.12. log_extra_bye (string)
 
    Extra values to be logged to logfile. Note that this parameter
    makes sense only when the cdr_flag is used.
 
    Default value is NULL.
 
-   Example 1.11. log_extra_bye example
+   Example 1.12. log_extra_bye example
 modparam("acc", "log_extra_bye",
         "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 
-1.6.12. aaa_url (string)
+1.6.13. aaa_url (string)
 
    This is the url representing the AAA protocol used and the
    location of the configuration file of this protocol.
@@ -552,55 +586,55 @@ modparam("acc", "log_extra_bye",
    If the parameter is set to empty string, the AAA accounting
    support will be disabled.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
-   Example 1.12. Set aaa_url parameter
+   Example 1.13. Set aaa_url parameter
 ...
 modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.con
 f")
 ...
 
-1.6.13. aaa_flag (integer)
+1.6.14. aaa_flag (integer)
 
    Request flag which needs to be set to account a transaction --
    AAA specific.
 
    Default value is not-set (no flag).
 
-   Example 1.13. aaa_flag example
+   Example 1.14. aaa_flag example
 modparam("acc", "aaa_flag", 2)
 
-1.6.14. aaa_missed_flag (integer)
+1.6.15. aaa_missed_flag (integer)
 
    Request flag which needs to be set to account missed calls --
    AAA specific.
 
    Default value is not-set (no flag).
 
-   Example 1.14. aaa_missed_flag example
+   Example 1.15. aaa_missed_flag example
 modparam("acc", "aaa_missed_flag", 3)
 
-1.6.15. service_type (integer)
+1.6.16. service_type (integer)
 
    AAA service type used for accounting.
 
    Default value is not-set.
 
-   Example 1.15. service_type example
+   Example 1.16. service_type example
 # Default value of service type for SIP is 15
 modparam("acc", "service_type", 15)
 
-1.6.16. aaa_extra (string)
+1.6.17. aaa_extra (string)
 
    Extra values to be logged via AAA - AAA specific.
 
    Default value is NULL.
 
-   Example 1.16. aaa_extra example
+   Example 1.17. aaa_extra example
 modparam("acc", "aaa_extra",
         "via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 
-1.6.17. aaa_extra_bye (string)
+1.6.18. aaa_extra_bye (string)
 
    Extra values to be logged via AAA when a BYE message is
    received - AAA specific. Note that this parameter makes sense
@@ -608,41 +642,41 @@ modparam("acc", "aaa_extra",
 
    Default value is NULL.
 
-   Example 1.17. aaa_extra_bye example
+   Example 1.18. aaa_extra_bye example
 modparam("acc", "aaa_extra_bye",
         "via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 
-1.6.18. db_flag (integer)
+1.6.19. db_flag (integer)
 
    Request flag which needs to be set to account a transaction --
    database specific.
 
    Default value is not-set (no flag).
 
-   Example 1.18. db_flag example
+   Example 1.19. db_flag example
 modparam("acc", "db_flag", 2)
 
-1.6.19. db_missed_flag (integer)
+1.6.20. db_missed_flag (integer)
 
    Request flag which needs to be set to account missed calls --
    database specific.
 
    Default value is not-set (no flag).
 
-   Example 1.19. db_missed_flag example
+   Example 1.20. db_missed_flag example
 modparam("acc", "db_missed_flag", 3)
 
-1.6.20. db_table_acc (string)
+1.6.21. db_table_acc (string)
 
    Table name of accounting successfull calls -- database
    specific.
 
-   Default value is “acc”
+   Default value is "acc"
 
-   Example 1.20. db_table_acc example
+   Example 1.21. db_table_acc example
 modparam("acc", "db_table_acc", "myacc_table")
 
-1.6.21. db_table_avp (string)
+1.6.22. db_table_avp (string)
 
    This parameter should contain a string with an AVP. This AVP
    should be populated later in the script with the database table
@@ -654,9 +688,9 @@ modparam("acc", "db_table_acc", "myacc_table")
    NOTE: when using auto CDR generation, the AVP with the table
    name should be set in the initial INVITE.
 
-   Default value is “acc”
+   Default value is "acc"
 
-   Example 1.21. db_table_avp example
+   Example 1.22. db_table_avp example
 modparam("acc", "db_table_avp", "$avp(acc_table)")
 ...
 route(OUTBOUND_ACC) {
@@ -665,105 +699,105 @@ route(OUTBOUND_ACC) {
 tbound" table
 }
 
-1.6.22. db_table_missed_calls (string)
+1.6.23. db_table_missed_calls (string)
 
    Table name for accounting missed calls -- database specific.
 
-   Default value is “missed_calls”
+   Default value is "missed_calls"
 
-   Example 1.22. db_table_missed_calls example
+   Example 1.23. db_table_missed_calls example
 modparam("acc", "db_table_missed_calls", "myMC_table")
 
-1.6.23. db_url (string)
+1.6.24. db_url (string)
 
    SQL address -- database specific. If is set to NULL or empty
    string, the SQL support is disabled.
 
-   Default value is “NULL” (SQL disabled).
+   Default value is "NULL" (SQL disabled).
 
-   Example 1.23. db_url example
+   Example 1.24. db_url example
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 
-1.6.24. acc_method_column (string)
+1.6.25. acc_method_column (string)
 
    Column name in accounting table to store the request's method
    name as string.
 
-   Default value is “method”.
+   Default value is "method".
 
-   Example 1.24. acc_method_column example
+   Example 1.25. acc_method_column example
 modparam("acc", "acc_method_column", "method")
 
-1.6.25. acc_from_tag_column (string)
+1.6.26. acc_from_tag_column (string)
 
    Column name in accounting table to store the From header TAG
    parameter.
 
-   Default value is “from_tag”.
+   Default value is "from_tag".
 
-   Example 1.25. acc_from_tag_column example
+   Example 1.26. acc_from_tag_column example
 modparam("acc", "acc_from_tag_column", "from_tag")
 
-1.6.26. acc_to_tag_column (string)
+1.6.27. acc_to_tag_column (string)
 
    Column name in accounting table to store the To header TAG
    parameter.
 
-   Default value is “to_tag”.
+   Default value is "to_tag".
 
-   Example 1.26. acc_to_tag_column example
+   Example 1.27. acc_to_tag_column example
 modparam("acc", "acc_to_tag_column", "to_tag")
 
-1.6.27. acc_callid_column (string)
+1.6.28. acc_callid_column (string)
 
    Column name in accounting table to store the request's Callid
    value.
 
-   Default value is “callid”.
+   Default value is "callid".
 
-   Example 1.27. acc_callid_column example
+   Example 1.28. acc_callid_column example
 modparam("acc", "acc_callid_column", "callid")
 
-1.6.28. acc_sip_code_column (string)
+1.6.29. acc_sip_code_column (string)
 
    Column name in accounting table to store the final reply's
    numeric code value in string format.
 
-   Default value is “sip_code”.
+   Default value is "sip_code".
 
-   Example 1.28. acc_sip_code_column example
+   Example 1.29. acc_sip_code_column example
 modparam("acc", "acc_sip_code_column", "sip_code")
 
-1.6.29. acc_sip_reason_column (string)
+1.6.30. acc_sip_reason_column (string)
 
    Column name in accounting table to store the final reply's
    reason phrase value.
 
-   Default value is “sip_reason”.
+   Default value is "sip_reason".
 
-   Example 1.29. acc_sip_reason_column example
+   Example 1.30. acc_sip_reason_column example
 modparam("acc", "acc_sip_reason_column", "sip_reason")
 
-1.6.30. acc_time_column (string)
+1.6.31. acc_time_column (string)
 
    Column name in accounting table to store the time stamp of the
    transaction completion in date-time format.
 
-   Default value is “time”.
+   Default value is "time".
 
-   Example 1.30. acc_time_column example
+   Example 1.31. acc_time_column example
 modparam("acc", "acc_time_column", "time")
 
-1.6.31. db_extra (string)
+1.6.32. db_extra (string)
 
    Extra values to be logged into database - DB specific.
 
    Default value is NULL.
 
-   Example 1.31. db_extra example
+   Example 1.32. db_extra example
 modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 
-1.6.32. db_extra_bye (string)
+1.6.33. db_extra_bye (string)
 
    Extra values to be logged into database when a BYE message is
    received - DB specific. Note that this parameter makes sense
@@ -771,68 +805,68 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 
    Default value is NULL.
 
-   Example 1.32. db_extra_bye example
+   Example 1.33. db_extra_bye example
 modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email
 )")
 
-1.6.33. diameter_flag (integer)
+1.6.34. diameter_flag (integer)
 
    Request flag which needs to be set to account a transaction --
    DIAMETER specific.
 
    Default value is not-set (no flag).
 
-   Example 1.33. diameter_flag example
+   Example 1.34. diameter_flag example
 modparam("acc", "diameter_flag", 2)
 
-1.6.34. diameter_missed_flag (integer)
+1.6.35. diameter_missed_flag (integer)
 
    Request flag which needs to be set to account missed calls --
    DIAMETER specific.
 
    Default value is not-set (no flag).
 
-   Example 1.34. diameter_missed_flag example
+   Example 1.35. diameter_missed_flag example
 modparam("acc", "diameter_missed_flag", 3)
 
-1.6.35. diameter_client_host (string)
+1.6.36. diameter_client_host (string)
 
    Hostname of the machine where the DIAMETER Client is running --
    DIAMETER specific.
 
-   Default value is “localhost”.
+   Default value is "localhost".
 
-   Example 1.35. diameter_client_host example
+   Example 1.36. diameter_client_host example
 modparam("acc", "diameter_client_host", "3a_server.net")
 
-1.6.36. diameter_client_port (int)
+1.6.37. diameter_client_port (int)
 
    Port number where the Diameter Client is listening -- DIAMETER
    specific.
 
-   Default value is “3000”.
+   Default value is "3000".
 
-   Example 1.36. diameter_client_host example
+   Example 1.37. diameter_client_host example
 modparam("acc", "diameter_client_port", 3000)
 
-1.6.37. diameter_extra (string)
+1.6.38. diameter_extra (string)
 
    Extra values to be logged via DIAMETER - DIAMETER specific.
 
    Default value is NULL.
 
-   Example 1.37. diameter_extra example
+   Example 1.38. diameter_extra example
 modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(ema
 il)")
 
-1.6.38. cdr_flag (integer)
+1.6.39. cdr_flag (integer)
 
    Request flag which needs to be set to account a transaction,
    including CDR details.
 
    Default value is not-set (no flag).
 
-   Example 1.38. cdr_flag example
+   Example 1.39. cdr_flag example
 modparam("acc", "cdr_flag", 1)
 
 1.7. Exported Functions
@@ -853,7 +887,7 @@ modparam("acc", "cdr_flag", 1)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.39. acc_log_request usage
+   Example 1.40. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
@@ -861,7 +895,7 @@ acc_log_request("403 Destination not allowed");
 1.7.2.  acc_db_request(comment, table)
 
    Like acc_db_request, acc_db_request reports on a request. The
-   report is sent to database at “db_url”, in the table referred
+   report is sent to database at "db_url", in the table referred
    to in the second action parameter.
 
    Meaning of the parameters is as follows:
@@ -873,7 +907,7 @@ acc_log_request("403 Destination not allowed");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.40. acc_db_request usage
+   Example 1.41. acc_db_request usage
 ...
 acc_log_request("Some comment", "Some table");
 acc_log_request("$T_reply_code $(<reply>rr)","acc");
@@ -882,7 +916,7 @@ acc_log_request("$T_reply_code $(<reply>rr)","acc");
 1.7.3.  acc_aaa_request(comment)
 
    Like acc_log_request, acc_aaa_request reports on a request. It
-   reports to aaa server as configured in “aaa_url”.
+   reports to aaa server as configured in "aaa_url".
 
    Meaning of the parameters is as follows:
      * comment - Comment describing how the request completed -
@@ -892,7 +926,7 @@ acc_log_request("$T_reply_code $(<reply>rr)","acc");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.41. acc_aaa_request usage
+   Example 1.42. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -910,7 +944,7 @@ acc_aaa_request("403 Destination not allowed");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.42. acc_diam_request usage
+   Example 1.43. acc_diam_request usage
 ...
 acc_diam_request("403 Destination not allowed");
 ...
@@ -919,68 +953,68 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with old report_ack parameter
+   What happened with old report_ack parameter
 
-       The parameter is considered obsolete. It was removed as acc
-       module is doing SIP transaction based accouting and according
-       to SIP RFC, end2end ACKs are a different transaction (still
-       part of the same dialog). ACKs can be individually accouted as
-       any other sequential (in-dialog) request.
-       $
+   The parameter is considered obsolete. It was removed as acc
+   module is doing SIP transaction based accouting and according
+   to SIP RFC, end2end ACKs are a different transaction (still
+   part of the same dialog). ACKs can be individually accouted as
+   any other sequential (in-dialog) request.
+   $
 
    2.2.
 
-       What happened with old log_fmt parameter
+   What happened with old log_fmt parameter
 
-       The parameter became obsolete with the restructure of the data
-       logged by ACC module (refer to the Overview chapter). For
-       similar behaviour you can use the extra accouting (see the
-       corresponding chapter).
+   The parameter became obsolete with the restructure of the data
+   logged by ACC module (refer to the Overview chapter). For
+   similar behaviour you can use the extra accouting (see the
+   corresponding chapter).
 
    2.3.
 
-       What happened with old multi_leg_enabled parameter
+   What happened with old multi_leg_enabled parameter
 
-       The parameter became obsolete by the addition of the new
-       multi_leg_info parameter. The multi-leg accouting is
-       automatically enabled when multi_leg_info is defined.
+   The parameter became obsolete by the addition of the new
+   multi_leg_info parameter. The multi-leg accouting is
+   automatically enabled when multi_leg_info is defined.
 
    2.4.
 
-       What happened with old src_leg_avp_id and dst_leg_avp_id
-       parameters
+   What happened with old src_leg_avp_id and dst_leg_avp_id
+   parameters
 
-       The parameter was replaced by the more generic new parameter
-       multi_leg_info. This allows logging (per-leg) of more
-       information than just dst and src.
+   The parameter was replaced by the more generic new parameter
+   multi_leg_info. This allows logging (per-leg) of more
+   information than just dst and src.
 
    2.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+   Please follow the guidelines provided at:
+   http://sourceforge.net/tracker/?group_id=232389.

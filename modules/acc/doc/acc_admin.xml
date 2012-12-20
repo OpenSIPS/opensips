@@ -255,8 +255,18 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 			</para>
 			<para>
 			By default, the multiple call-leg support is disabled - it can be
-			enabled just be setting the per-leg set of AVPs via the 
-			<varname>multi_leg_info</varname> module parameter.
+			enabled just by setting the per-leg set of AVPs via the 
+			<varname>multi_leg_info</varname> and/or
+			<varname>multi_leg_bye_info</varname> module parameters. Note that
+			the last one only makes sense only for CDRs that are generated
+			automatically by &osips;.
+			</para>
+			<para>
+				<emphasis>Important:</emphasis> when both multi-leg accounting
+				is done (for INVITE and BYE), you have to make sure that the AVPs
+				are populated with the same number of legs, otherwise the multi-leg
+				accounting will have an unexpected behavior (values may no longer
+				match the leg number).
 			</para>
 		</section>
 		<section>
@@ -487,6 +497,37 @@ modparam("acc", "multi_leg_info",
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>multi_leg_bye_info</varname> (string)</title>
+		<para>
+		Defines the AVP set to be used in per-call-leg accounting.
+		See <xref linkend="multi-call-legs"/> for a 
+		detailed description of the Multi Call-Legs accounting. This parameter
+		evaluates the AVPs set for BYE requests. It makes sense only when the
+		CDRs are automatically generated, using the dialog support.
+		</para>
+		<para>
+		If empty, the multi-leg support for BYE requests is disabled.
+		</para>
+		<para>
+		Default value is 0 (disabled).
+		</para>
+		<example>
+		<title>multi_leg_bye_info example</title>
+		<programlisting format="linespecific">
+# for syslog-based accounting, use any text you want to be printed
+modparam("acc", "multi_leg_bye_info",
+    "text1=$avp(src);text2=$avp(dst)")
+# for mysql-based accounting, use the names of the columns
+modparam("acc", "multi_leg_bye_info",
+    "leg_src=$avp(src);leg_dst=$avp(dst)")
+# for AAA-based accounting, use the names of the AAA AVPs
+modparam("acc", "multi_leg_bye_info",
+    "AAA_LEG_SRC=$avp(src);AAA_LEG_SRC=$avp(dst)")
+</programlisting>
+		</example>
+	</section>
+	
 	<!-- SYSLOG specific ACC parameters -->
 	<section>
 		<title><varname>log_flag</varname> (integer)</title>

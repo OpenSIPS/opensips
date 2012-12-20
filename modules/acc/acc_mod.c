@@ -88,7 +88,9 @@ int detect_direction = 0;
 int failed_transaction_flag = -1;
 /* multi call-leg support */
 static char* leg_info_str = 0;
+static char* leg_bye_info_str = 0;
 struct acc_extra *leg_info = 0;
+struct acc_extra *leg_bye_info = 0;
 int cdr_flag = -1;
 
 
@@ -198,6 +200,7 @@ static param_export_t params[] = {
 	{"failed_transaction_flag", INT_PARAM, &failed_transaction_flag },
 	{"report_cancels",          INT_PARAM, &report_cancels          },
 	{"multi_leg_info",          STR_PARAM, &leg_info_str            },
+	{"multi_leg_bye_info",      STR_PARAM, &leg_bye_info_str        },
 	{"detect_direction",        INT_PARAM, &detect_direction        },
 	{"cdr_flag",                INT_PARAM, &cdr_flag                },
 	/* syslog specific */
@@ -396,7 +399,11 @@ static int mod_init( void )
 
 	/* configure multi-leg accounting */
 	if (leg_info_str && (leg_info=parse_acc_leg(leg_info_str))==0 ) {
-		LM_ERR("failed to parse multileg_info param\n");
+		LM_ERR("failed to parse multi_leg_info param\n");
+		return -1;
+	}
+	if (leg_bye_info_str && (leg_bye_info=parse_acc_leg(leg_bye_info_str))==0 ) {
+		LM_ERR("failed to parse multi_leg_bye_info param\n");
 		return -1;
 	}
 
