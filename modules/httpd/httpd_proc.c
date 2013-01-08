@@ -46,8 +46,6 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
-//#include "../../mem/mem.h"
-//#include "../../mem/shm_mem.h"
 #include "httpd_load.h"
 
 
@@ -56,13 +54,8 @@ extern str ip;
 extern str buffer;
 extern struct httpd_cb *httpd_cb_list;
 
-
-static const str MI_HTTP_U_ERROR = str_init("<html><body>"
-"Internal server error!</body></html>");
 static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
-static const str MI_HTTP_U_METHOD = str_init("<html><body>"
-"Unexpected method (only GET is accepted)!</body></html>");
 
 #ifdef LIBMICROHTTPD
 struct MHD_Daemon *dmn;

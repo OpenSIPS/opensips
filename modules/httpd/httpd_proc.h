@@ -33,8 +33,6 @@
 extern struct MHD_Daemon *dmn;
 #endif
 
-extern str upSinceCTime;
-
 void httpd_proc(int rank);
 void httpd_proc_destroy(void);
 

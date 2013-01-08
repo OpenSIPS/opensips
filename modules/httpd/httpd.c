@@ -25,8 +25,6 @@
  */
 
 
-
-
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/select.h>
@@ -45,7 +43,6 @@
 #include "../../ut.h"
 #include "../../resolve.h"
 #include "../../mem/mem.h"
-//#include "../../mem/shm_mem.h"
 #include "httpd_load.h"
 #include "httpd_proc.h"
 
@@ -62,57 +59,52 @@ struct httpd_cb *httpd_cb_list = NULL;
 
 static proc_export_t mi_procs[] = {
 	{"HTTPD",  0,  0, httpd_proc, 1, PROC_FLAG_INITCHILD },
-	{0,0,0,0,0,0}
+	{NULL, 0, 0, NULL, 0, 0}
 };
 
 
 /** Module parameters */
 static param_export_t params[] = {
-	{"port",			INT_PARAM, &port},
-	{"ip",				STR_PARAM, &ip.s},
-	{"buf_size",			INT_PARAM, &buffer.len},
-	{0,0,0}
+	{"port",     INT_PARAM, &port},
+	{"ip",       STR_PARAM, &ip.s},
+	{"buf_size", INT_PARAM, &buffer.len},
+	{NULL, 0, NULL}
 };
 
 /** Exported functions */
 static cmd_export_t cmds[]=
 {
 	{"httpd_bind",	(cmd_function)httpd_bind,	1, 0, 0, 0},
-	{0,		0,				0, 0, 0, 0}
+	{NULL, NULL, 0, 0, 0, 0}
 };
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
 	{ "httpd_list_root_path", 0, mi_list_root_path, 0,  0,  0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ NULL, 0, NULL, 0, 0, 0}
 };
 
 /** Module exports */
 struct module_exports exports = {
-	"httpd",                            /* module name */
+	"httpd",                    /* module name */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,                    /* dlopen flags */
-	cmds,                               /* exported functions */
-	params,                             /* exported parameters */
-	0,                                  /* exported statistics */
-	mi_cmds,                            /* exported MI functions */
-	0,                                  /* exported PV */
-	mi_procs,                           /* extra processes */
-	mod_init,                           /* module initialization function */
-	(response_function) 0,              /* response handling function */
-	(destroy_function) destroy,         /* destroy function */
-	NULL                                /* per-child init function */
+	DEFAULT_DLFLAGS,            /* dlopen flags */
+	cmds,                       /* exported functions */
+	params,                     /* exported parameters */
+	NULL,                       /* exported statistics */
+	mi_cmds,                    /* exported MI functions */
+	NULL,                       /* exported PV */
+	mi_procs,                   /* extra processes */
+	mod_init,                   /* module initialization function */
+	(response_function) NULL,   /* response handling function */
+	(destroy_function) destroy, /* destroy function */
+	NULL                        /* per-child init function */
 };
 
 
 static int mod_init(void)
 {
 	struct ip_addr *_ip;
-
-	if ( port <= 1024 ) {
-		LM_ERR("invalid port %d<1024\n", port);
-		return -1;
-	}
 
 	if (ip.s) {
 		ip.len = strlen(ip.s);
