@@ -22,11 +22,35 @@ typedef struct xcap_api {
         int integrated_server;
         str db_url;
         str xcap_table;
+        normalize_sip_uri_t normalize_sip_uri;
         parse_xcap_uri_t parse_xcap_uri;
+        get_xcap_doc_t get_xcap_doc;
 } xcap_api_t;
 ...
 			</programlisting>
 			</example>
+	</section>
+
+	<section>
+		<title>
+			<function moreinfo="none">normalize_xcap_uri</function>
+		</title>
+		<para>
+                    This function normalizes a SIP URI found in a XCAP document. It un-escapes it and
+                    adds the SIP scheme in case it was missing. Returns a statically allocated string
+                    buffer containing the normalized form.
+		</para>
+		<para>
+		Parameters:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>uri</emphasis>-
+				the URI that needs to be normalized
+			</para>
+			</listitem>
+		        </itemizedlist>
 	</section>
 
 	<section>
@@ -37,7 +61,7 @@ typedef struct xcap_api {
 			This function parses the given XCAP URI.
 		</para>
 		<para>
-		The parameters signification:
+		Parameters:
 		</para>
 			<itemizedlist>
 			<listitem>
@@ -67,6 +91,65 @@ typedef struct {
 ...
                         </programlisting>
                         </listitem>
+		        </itemizedlist>
+	</section>
+
+	<section>
+		<title>
+			<function moreinfo="none">get_xcap_doc</function>
+		</title>
+		<para>
+                    This function queries the local DB for the required XCAP document. It will return the document and its
+                    corresponding etag.
+		</para>
+		<para>
+		Parameters:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>user</emphasis>-
+				user part od the URI of the document owner
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>domain</emphasis>-
+				domain part od the URI of the document owner
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>type</emphasis>-
+                                type of the requested document, represents the AUID, can be one of PRES_RULES, RESOURCE_LISTS,
+                                RLS_SERVICES, PIDF_MANIPULATION, OMA_PRES_RULES
+
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>filename</emphasis>-
+				if specified it will be used to match the document filename, it defaults to 'index'
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>match_etag</emphasis>-
+				if specified the document is only returned its etag matches this one
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>doc</emphasis>-
+				reference to the storage for the returned document
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>etag</emphasis>-
+				reference to the storage for the returned document's etag
+			</para>
+			</listitem>
 		        </itemizedlist>
 	</section>
 

@@ -23,30 +23,39 @@
  *
  */
 
-#ifndef XCAP_URI_H
-#define XCAP_URI_H
+#ifndef XCAP_UTIL_H
+#define XCAP_UTIL_H
 
-#include "../../config.h"
 #include "../../str.h"
+#include "../../ut.h"
+#include "doc.h"
 
 
-typedef struct {
-    char buf[MAX_URI_SIZE];
-    str uri;
-    str root;
-    str auid;
-    str tree;
-    str xui;
-    str filename;
-    str selector;
-} xcap_uri_t;
+#define STR_MATCH(s1, s2)   ((s1)->len==(s2)->len && memcmp((s1)->s, (s2)->s, (s1)->len)==0)
 
+static inline int xcap_doc_type(const str *auid)
+{
+	static str pres_rules = str_init("pres-rules");
+	static str oma_pres_rules = str_init("org.openmobilealliance.pres-rules");
+	static str rls_services = str_init("rls-services");
+	static str pidf_manipulation = str_init("pidf-manipulation");
+	static str resource_list = str_init("resource-list");
 
-/* Returns a statically allocated buffer, so the caller is responsible for copying it
- * if necessary */
-str* normalize_sip_uri(const str *uri);
+	if (STR_MATCH(auid, &pres_rules))
+		return PRES_RULES;
+	else if (STR_MATCH(auid, &rls_services))
+		return RLS_SERVICES;
+	else if (STR_MATCH(auid, &resource_list))
+		return RESOURCE_LISTS;
+	else if (STR_MATCH(auid, &pidf_manipulation))
+		return PIDF_MANIPULATION;
+	else if (STR_MATCH(auid, &oma_pres_rules))
+		return OMA_PRES_RULES;
+	return -1;
+}
 
-int parse_xcap_uri(const str *uri, xcap_uri_t *xcap_uri);
+#undef STR_MATCH
+
 
 #endif
 

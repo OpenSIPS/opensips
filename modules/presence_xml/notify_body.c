@@ -515,7 +515,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
     /* if pidf_manipulation usage is configured */
     if(pidf_manipulation)
     {
-        if(get_rules_doc(pres_user, pres_domain, PIDF_MANIPULATION, &pidf_doc) < 0)
+        if(p_get_xcap_doc(pres_user, pres_domain, PIDF_MANIPULATION, &pidf_doc) < 0)
         {
             LM_ERR("while getting xcap tree for doc_type PIDF_MANIPULATION\n");
             goto error;

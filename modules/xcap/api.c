@@ -37,7 +37,9 @@ int bind_xcap(xcap_api_t* api)
 	api->integrated_server = integrated_xcap_server;
 	api->db_url = xcap_db_url;
 	api->xcap_table = xcap_table;
+	api->normalize_sip_uri = normalize_sip_uri;
 	api->parse_xcap_uri = parse_xcap_uri;
+	api->get_xcap_doc = get_xcap_doc;
 	return 0;
 }
 

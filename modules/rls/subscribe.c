@@ -30,7 +30,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../ut.h"
 #include "../../dprint.h"
 #include "../../data_lump_rpl.h"
 #include "../../parser/msg_parser.h"
@@ -73,7 +72,8 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 {
 	xmlNodePtr rl_node, node;
 	struct sip_uri sip_uri;
-	str uri, uri_str, unescaped_uri;
+	str uri, uri_str;
+	str *normalized_uri;
 
 	rl_node= XMLDocGetNodeByName(doc, "rls-services", NULL);
 	if(rl_node== NULL)
@@ -92,31 +92,26 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 			        continue;
 			}
 			uri.len = strlen(uri.s);
-			unescaped_uri.s = (char *)pkg_malloc(uri.len);
-			if (unescaped_uri.s == NULL)
-                        {
-				LM_ERR("failed to allocate pkg mem\n");
+
+			normalized_uri = normalizeSipUri(&uri);
+			if (normalized_uri->s == NULL || normalized_uri->len == 0)
+			{
+				LM_ERR("failed to normalize service URI\n");
 				xmlFree(uri.s);
 				return NULL;
-                        }
-			un_escape(&uri, &unescaped_uri);
-                        LM_DBG("uri after un-escaping: %.*s\n", unescaped_uri.len, unescaped_uri.s);
-			if(parse_uri(unescaped_uri.s, unescaped_uri.len, &sip_uri)< 0)
+			}
+			xmlFree(uri.s);
+
+			if(parse_uri(normalized_uri->s, normalized_uri->len, &sip_uri)< 0)
 			{
 				LM_ERR("failed to parse uri\n");
-				xmlFree(uri.s);
-				pkg_free(unescaped_uri.s);
 				return NULL;
 			}
 			if(uandd_to_uri(sip_uri.user, sip_uri.host, &uri_str)< 0)
 			{
 				LM_ERR("failed to construct uri from user and domain\n");
-				xmlFree(uri.s);
-				pkg_free(unescaped_uri.s);
 				return NULL;
 			}
-			xmlFree(uri.s);
-			pkg_free(unescaped_uri.s);
 			if(uri_str.len== service_uri->len && 
 					strncmp(uri_str.s, service_uri->s, uri_str.len) == 0)
 			{
@@ -130,6 +125,66 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 	return NULL;
 }
 
+static int http_get_resource_list(str* owner_user, str* owner_domain, str** doc)
+{
+        str body = {0, 0};
+        str *doc_tmp;
+	xcap_get_req_t req;
+	xcap_doc_sel_t doc_sel;
+
+        memset(&doc_sel, 0, sizeof(xcap_doc_sel_t));
+        doc_sel.auid.s = "rls-services";
+        doc_sel.auid.len = strlen(doc_sel.auid.s);
+        doc_sel.doc_type = RLS_SERVICES;
+        doc_sel.type = USERS_TYPE;
+        if(uandd_to_uri(*owner_user, *owner_domain, &doc_sel.xid) < 0)
+        {
+                LM_ERR("failed to create uri from user and domain\n");
+                goto error;
+        }
+
+        memset(&req, 0, sizeof(xcap_get_req_t));
+        req.xcap_root = xcap_root;
+        req.port = xcap_port;
+        req.doc_sel = doc_sel;
+
+        if(xcap_GetNewDoc(req, *owner_user, *owner_domain, &body) < 0)
+        {
+                LM_ERR("while fetching data from xcap server\n");
+                pkg_free(doc_sel.xid.s);
+                goto error;
+        }
+        pkg_free(doc_sel.xid.s);
+
+        if (body.s == NULL)
+                goto error;
+
+	doc_tmp = pkg_malloc(sizeof(*doc_tmp));
+	if(doc_tmp == NULL)
+	{
+		LM_ERR("No more pkg memory\n");
+		goto error;
+	}
+	doc_tmp->s = pkg_malloc(body.len);
+	if(doc_tmp->s == NULL)
+	{
+		pkg_free(doc_tmp);
+		LM_ERR("No more pkg memory\n");
+		goto error;
+	}
+	memcpy(doc_tmp->s, body.s, body.len);
+	doc_tmp->len = body.len;
+        pkg_free(body.s);
+
+        *doc = doc_tmp;
+	return 0;
+
+error:
+        if (body.s)
+                pkg_free(body.s);
+        return -1;
+}
+
 /*
  * Function that searches a resource list document for the user and then
  * looks in the document for the service uri
@@ -141,166 +196,86 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
  *	    pointer to xmlDocPtr structure if service uri found
  * */
 int get_resource_list(str* service_uri, str owner_user, str owner_domain,
-		xmlNodePtr* service_node, xmlDocPtr* rl_doc)
+		      xmlNodePtr* service_node, xmlDocPtr* rl_doc)
 {
-	db_key_t query_cols[5];
-	db_val_t query_vals[5];
-	db_key_t result_cols[3];
-	int n_query_cols = 0;
-	db_res_t *result = 0;
-	db_row_t *row ;
-	db_val_t *row_vals ;
-	str body= {0, 0}, new_doc={0,0};
-	int n_result_cols= 0;
-	int etag_col, xcap_col;
-	char* etag= NULL;
-	xcap_get_req_t req;
-	xmlDocPtr doc = NULL;
-	xmlNodePtr snode;
-	xcap_doc_sel_t doc_sel;
+        str *doc = NULL;
+        str *etag = NULL;
+	xmlDocPtr xml_doc = NULL;
+	xmlNodePtr snode = NULL;
 
 	*rl_doc = NULL;
+	*service_node = NULL;
 
-	/* first search in database */
-	query_cols[n_query_cols] = &str_username_col;
-	query_vals[n_query_cols].type = DB_STR;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = owner_user;
-	n_query_cols++;
-
-	query_cols[n_query_cols] = &str_domain_col;
-	query_vals[n_query_cols].type = DB_STR;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = owner_domain;
-	n_query_cols++;
-	
-	query_cols[n_query_cols] = &str_doc_type_col;
-	query_vals[n_query_cols].type = DB_INT;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val= RLS_SERVICES;
-	n_query_cols++;
-
-	LM_DBG("Searched RL document for user sip:%.*s@%.*s\n",
-		owner_user.len, owner_user.s, owner_domain.len, owner_domain.s);
-
-	if (rls_dbf.use_table(rls_db, &rls_xcap_table) < 0)
-	{
-		LM_ERR("in use_table-[table]= %.*s\n", rls_xcap_table.len, rls_xcap_table.s);
-		return -1;
+        if (xcapDbGetDoc(&owner_user, &owner_domain, RLS_SERVICES, NULL, NULL, &doc, &etag) < 0)
+        {
+		LM_ERR("while getting RLS document from DB\n");
+		goto error;
 	}
 
-	result_cols[xcap_col= n_result_cols++] = &str_doc_col;
-	result_cols[etag_col= n_result_cols++]= &str_etag_col;
-
-	if(rls_dbf.query(rls_db, query_cols, 0 , query_vals, result_cols,
-				n_query_cols, n_result_cols, 0, &result)<0)
-	{
-		LM_ERR("while querying table xcap for RL document [service_uri]=%.*s\n",
-				service_uri->len, service_uri->s);
-		if(result)
-			rls_dbf.free_result(rls_db, result);
-		return -1;
-	}
-
-	if(result->n<= 0)
-	{
+	if (doc == NULL)
+        {
 		LM_DBG("No rl document found in database\n");
-		
-		if(rls_integrated_xcap_server)
-		{
+		if (rls_integrated_xcap_server)
 			goto done;
-		}
-		
-		/* make an initial request to xcap_client module */
-		memset(&doc_sel, 0, sizeof(xcap_doc_sel_t));
-		doc_sel.auid.s= "rls-services";
-		doc_sel.auid.len= strlen("rls-services");
-		doc_sel.doc_type= RLS_SERVICES;
-		doc_sel.type= USERS_TYPE;
-		if(uandd_to_uri(owner_user, owner_domain, &doc_sel.xid)< 0)
-		{
-			LM_ERR("failed to create uri from user and domain\n");
-			goto error;
-		}
+                /* Use xcap_client to try to fetch the document */
+                if (http_get_resource_list(&owner_user, &owner_domain, &doc) < 0)
+                        goto done;
+        }
 
-		memset(&req, 0, sizeof(xcap_get_req_t));
-		req.xcap_root= xcap_root;
-		req.port= xcap_port;
-		req.doc_sel= doc_sel;
-		req.etag= etag;
-		req.match_type= IF_NONE_MATCH;
-
-		if(xcap_GetNewDoc(req, owner_user, owner_domain, &new_doc)< 0)
-		{
-			LM_ERR("while fetching data from xcap server\n");
-			pkg_free(doc_sel.xid.s);
-			goto error;
-		}
-		pkg_free(doc_sel.xid.s);
-		if(new_doc.s== NULL)  /* if the document was not found */
-		{
-			goto done;
-		}
-		body = new_doc;
-	}
-	else
-	{
-		row = &result->rows[0];
-		row_vals = ROW_VALUES(row);
-
-		body.s = (char*)row_vals[xcap_col].val.string_val;
-		if(body.s== NULL)
-		{
-			LM_ERR("null xcap_doc column result\n");
-			goto error;
-		}	
-		body.len = strlen(body.s);
-		if(body.len== 0)
-		{
-			LM_ERR("length 0 for xcap_doc column result\n");
-			goto error;
-		}
-	}
-	
-	LM_DBG("rls_services document:\n%.*s", body.len,body.s);
-	doc= xmlParseMemory(body.s, body.len);
-	if(doc== NULL)
+        /* Document is loaded in doc either via DB or HTTP */
+	LM_DBG("rls_services document:\n%.*s\n", doc->len, doc->s);
+	xml_doc = xmlParseMemory(doc->s, doc->len);
+	if(xml_doc == NULL)
 	{
 		LM_ERR("while parsing XML memory\n");
 		goto error;
 	}
-	
-	snode = search_service_uri(doc, service_uri);
-	if(snode== NULL)
+
+	snode = search_service_uri(xml_doc, service_uri);
+	if (snode == NULL)
 	{
 		LM_DBG("service uri %.*s not found in rl document for user"
-			" sip:%.*s@%.*s\n", service_uri->len, service_uri->s,
-			owner_user.len, owner_user.s, owner_domain.len, owner_domain.s);
-		xmlFreeDoc(doc);
+		       " sip:%.*s@%.*s\n", service_uri->len, service_uri->s,
+		       owner_user.len, owner_user.s, owner_domain.len, owner_domain.s);
+		xmlFreeDoc(xml_doc);
 		goto done;
 	}
 
-	*rl_doc = doc;
+	*rl_doc = xml_doc;
 	*service_node = snode;
 
 done:
-	if(result)
-		rls_dbf.free_result(rls_db, result);
-	if(new_doc.s)
-		pkg_free(new_doc.s);
-	
-	return 0;
-
+        if (doc != NULL)
+        {
+                if (doc->s != NULL)
+                        pkg_free(doc->s);
+                pkg_free(doc);
+        }
+        if (etag != NULL)
+        {
+                if (etag->s != NULL)
+                        pkg_free(etag->s);
+                pkg_free(etag);
+        }
+        return 0;
 error:
-	if(result)
-		rls_dbf.free_result(rls_db, result);
-	if(doc)
-		xmlFreeDoc(doc);
-	if(new_doc.s)
-		pkg_free(new_doc.s);
-
-	return -1;
+        if (doc != NULL)
+        {
+                if (doc->s != NULL)
+                        pkg_free(doc->s);
+                pkg_free(doc);
+        }
+        if (etag != NULL)
+        {
+                if (etag->s != NULL)
+                        pkg_free(etag->s);
+                pkg_free(etag);
+        }
+	if(xml_doc)
+		xmlFreeDoc(xml_doc);
+        return -1;
 }
+
 
 /*
  * Not used anymore

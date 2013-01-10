@@ -30,6 +30,7 @@
 #define XCAP_CL_H
 
 #include "../../db/db.h"
+#include "../xcap/api.h"
 #include "xcap_callbacks.h"
 
 extern xcap_callback_t* xcapcb_list;

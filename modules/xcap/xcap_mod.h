@@ -44,6 +44,7 @@ extern str xcap_domain_col;
 extern str xcap_doc_col;
 extern str xcap_doc_type_col;
 extern str xcap_doc_uri_col;
+extern str xcap_doc_etag_col;
 
 #endif
 

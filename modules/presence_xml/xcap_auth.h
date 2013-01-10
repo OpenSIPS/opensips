@@ -31,12 +31,35 @@
 #include <libxml/parser.h>
 #include "../../str.h"
 #include "../presence/subscribe.h"
-#include "../xcap_client/xcap_callbacks.h"
+
+/* sub-handling priorities */
+enum
+{
+    SH_ACTION_BLOCK = 0,
+    SH_ACTION_CONFIRM = 10,
+    SH_ACTION_POLITE_BLOCK = 20,
+    SH_ACTION_ALLOW = 30
+};
+
+/* OMA rule types*/
+enum {
+    IDENTITY_RULE = 0,
+    EXTERNAL_LIST_RULE,
+    ANONYMOUS_REQUEST_RULE,
+    OTHER_IDENTITY_RULE,
+};
+
+typedef struct xcap_rule_s
+{
+        xmlNodePtr node;
+        struct xcap_rule_s *next;
+
+} xcap_rule_t;
+
 
 int pres_watcher_allowed(subs_t* subs);
-
 xmlNodePtr get_rule_node(subs_t* subs, xmlDocPtr xcap_tree );
-int get_rules_doc(str* user, str* domain, int type, str** rules_doc);
 int pres_get_rules_doc(str* user, str* domain, str** rules_doc);
+int p_get_xcap_doc(str* user, str* domain, int type, str** doc);
 
 #endif

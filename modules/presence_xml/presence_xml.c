@@ -42,12 +42,16 @@
 #include "../presence/bind_presence.h"
 #include "../presence/hash.h"
 #include "../presence/notify.h"
-#include "../xcap/api.h"
-#include "../xcap_client/xcap_functions.h"
 #include "../signaling/signaling.h"
 #include "pidf.h"
 #include "add_events.h"
 #include "presence_xml.h"
+
+
+#define IETF_PRES_RULES_AUID       "pres-rules"
+#define IETF_PRES_RULES_AUID_LEN   sizeof(IETF_PRES_RULES_AUID)-1
+#define OMA_PRES_RULES_AUID        "org.openmobilealliance.pres-rules"
+#define OMA_PRES_RULES_AUID_LEN    sizeof(OMA_PRES_RULES_AUID)-1
 
 
 /** module functions */
@@ -71,11 +75,16 @@ xcap_serv_t* xs_list= NULL;
 str pres_rules_auid = {0, 0};
 str pres_rules_filename = {0, 0};
 int generate_offline_body = 1;
+int pres_rules_doc_id = PRES_RULES;
 
 /* xcap API */
 str db_url = {NULL, 0};
 str xcap_table = {NULL, 0};
 int integrated_xcap_server = 0;
+parse_xcap_uri_t xcapParseUri;
+normalize_sip_uri_t normalizeSipUri;
+get_xcap_doc_t xcapDbGetDoc;
+
 
 /* SIGNALING bind */
 struct sig_binds xml_sigb;
@@ -168,6 +177,9 @@ static int mod_init(void)
         integrated_xcap_server = xcap_api.integrated_server;
         db_url = xcap_api.db_url;
         xcap_table = xcap_api.xcap_table;
+        normalizeSipUri = xcap_api.normalize_sip_uri;
+        xcapParseUri = xcap_api.parse_xcap_uri;
+        xcapDbGetDoc = xcap_api.get_xcap_doc;
 
 	if(force_active==0)
 	{
@@ -208,7 +220,29 @@ static int mod_init(void)
 		LM_ERR("adding xml events\n");
 		return -1;		
 	}
-	
+
+ 	if(pres_rules_auid.s)
+        {
+                pres_rules_auid.len = strlen(pres_rules_auid.s);
+ 	        if (pres_rules_auid.len == IETF_PRES_RULES_AUID_LEN &&
+ 	            strncmp(pres_rules_auid.s, IETF_PRES_RULES_AUID, IETF_PRES_RULES_AUID_LEN) == 0)
+                {
+                         LM_INFO("using IETF mode for pres-rules\n");
+                         pres_rules_doc_id = PRES_RULES;
+                }
+ 	        if (pres_rules_auid.len == OMA_PRES_RULES_AUID_LEN &&
+ 	            strncmp(pres_rules_auid.s, OMA_PRES_RULES_AUID, OMA_PRES_RULES_AUID_LEN) == 0)
+ 	        {
+                         LM_INFO("using OMA mode for pres-rules\n");
+                         pres_rules_doc_id = OMA_PRES_RULES;
+ 	        }
+                else
+                {
+                         LM_ERR("unrecognized AUID for pres-rules: %.*s\n", pres_rules_auid.len, pres_rules_auid.s);
+                         return -1;
+                }
+        }
+
 	if(force_active== 0 && !integrated_xcap_server )
 	{
 		xcap_client_api_t xcap_client_api;
@@ -233,15 +267,12 @@ static int mod_init(void)
 			LM_ERR("can't import getNewDoc from xcap_client module\n");
 			return -1;
 		}
-	
-		if(xcap_client_api.register_xcb(PRES_RULES, xcap_doc_updated)< 0)
+
+		if(xcap_client_api.register_xcb(pres_rules_doc_id, xcap_doc_updated) < 0)
 		{
 			LM_ERR("registering xcap callback function\n");
 			return -1;
 		}
-
-		if(pres_rules_auid.s)
-			pres_rules_auid.len = strlen(pres_rules_auid.s);
 
 		if(pres_rules_filename.s)
 			pres_rules_filename.len = strlen(pres_rules_filename.s);

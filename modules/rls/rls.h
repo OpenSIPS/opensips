@@ -106,7 +106,9 @@ extern struct sig_binds rls_sigb;
 extern str db_url;
 extern str rls_xcap_table;
 extern int rls_integrated_xcap_server;
+extern normalize_sip_uri_t normalizeSipUri;
 extern parse_xcap_uri_t xcapParseUri;
+extern get_xcap_doc_t xcapDbGetDoc;
 
 /** libxml api */
 extern xmlDocGetNodeByName_t XMLDocGetNodeByName;
@@ -136,10 +138,6 @@ extern get_event_list_t pres_get_ev_list;
 
 /* xcap client functions */
 extern xcapGetNewDoc_t xcap_GetNewDoc;
-extern xcap_nodeSel_init_t xcap_IntNodeSel;
-extern xcap_nodeSel_add_step_t xcap_AddStep;
-extern xcap_nodeSel_add_terminal_t xcap_AddTerminal;
-extern xcap_nodeSel_free_t xcap_FreeNodeSel;
 
 extern str str_rlsubs_did_col;
 extern str str_resource_uri_col;

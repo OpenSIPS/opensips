@@ -31,7 +31,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../ut.h"
 #include "../../str.h"
 #include "../../dprint.h"
 #include "../../data_lump_rpl.h"
@@ -72,7 +71,6 @@ dlg_t* rls_notify_dlg(subs_t* subs);
 
 void rls_notify_callback( struct cell *t, int type, struct tmcb_params *ps);
 
-#define MAX_PATH_LEN	127
 int rls_get_resource_list(str *filename, str *selector, str *username, str *domain,
 		          xmlNodePtr *rl_node, xmlDocPtr *xmldoc);
 
@@ -896,15 +894,13 @@ done:
 }
 
 
-#define SIP_PREFIX        "sip:"
-#define SIP_PREFIX_LEN    4
-
 int process_list_and_exec(xmlNodePtr list_node, str username, str domain,
                          list_func_t function, void* param, int* cont_no)
 {
 	xmlNodePtr node;
 	int res = 0;
-	str uri, unescaped_uri;
+	str uri;
+	str *normalized_uri;
 	xcap_uri_t xcap_uri;
 
 	LM_DBG("start\n");
@@ -930,7 +926,7 @@ int process_list_and_exec(xmlNodePtr list_node, str username, str domain,
 				{
 				        /* TODO: validate AUID and XUI? */
 					LM_DBG("fetching local <resource-list/>\n");
-					if (rls_get_resource_list(&xcap_uri.filename, &xcap_uri.selector, &username, &domain, &rl_node, &rl_doc) > 0)
+					if (rls_get_resource_list(&xcap_uri.filename, &xcap_uri.selector, &username, &domain, &rl_node, &rl_doc) == 0)
 					{
 						LM_DBG("calling myself for rl_node\n");
 						res = process_list_and_exec(rl_node, username, domain, function, param, cont_no);
@@ -968,34 +964,23 @@ int process_list_and_exec(xmlNodePtr list_node, str username, str domain,
 			}
                         uri.len = strlen(uri.s);
 			LM_DBG("uri= %.*s\n", uri.len, uri.s);
-			unescaped_uri.s = (char *)pkg_malloc(SIP_PREFIX_LEN+uri.len+1);
-			if (unescaped_uri.s == NULL)
+
+			normalized_uri = normalizeSipUri(&uri);
+			if (normalized_uri->s == NULL || normalized_uri->len == 0)
                         {
-				LM_ERR("failed to allocate pkg mem\n");
+				LM_ERR("failed to normalize entry URI\n");
 				xmlFree(uri.s);
 				return -1;
                         }
-			un_escape(&uri, &unescaped_uri);
-			unescaped_uri.s[unescaped_uri.len] = '\0';
-                        LM_DBG("uri after un-escaping: %.*s\n", unescaped_uri.len, unescaped_uri.s);
-                        /* Add sip: prefix if needed */
-                        if (strncasecmp(unescaped_uri.s, SIP_PREFIX, SIP_PREFIX_LEN) != 0 && strchr(unescaped_uri.s, '@') != NULL)
-                        {
-                                memmove(unescaped_uri.s+SIP_PREFIX_LEN, unescaped_uri.s, unescaped_uri.len+1);
-                                memcpy(unescaped_uri.s, SIP_PREFIX, SIP_PREFIX_LEN);
-                                unescaped_uri.len += SIP_PREFIX_LEN;
-                        }
+			xmlFree(uri.s);
+
 			if(cont_no)
 			        *cont_no = *cont_no+1;
-			if(function(unescaped_uri.s, param)< 0)
+			if(function(normalized_uri->s, param)< 0)
 			{
 				LM_ERR("in function given as a parameter\n");
-				xmlFree(uri.s);
-				pkg_free(unescaped_uri.s);
 				return -1;
 			}
-			xmlFree(uri.s);
-			pkg_free(unescaped_uri.s);
 		}
 		else
 		if(xmlStrcasecmp(node->name,(unsigned char*)"list")== 0)
@@ -1062,22 +1047,17 @@ char* get_auth_string(int flag)
 }
 
 
+#define MAX_PATH_LEN	127
+
 int rls_get_resource_list(str *filename, str *selector, str *username, str *domain,
-		xmlNodePtr *rl_node, xmlDocPtr *xmldoc)
+		          xmlNodePtr *rl_node, xmlDocPtr *xmldoc)
 {
         static char path_buf[MAX_PATH_LEN+1];
 
-	db_key_t query_cols[5];
-	db_val_t query_vals[5];
-	int n_query_cols = 0;
-	db_key_t result_cols[3];
-	int n_result_cols = 0;
-	db_res_t *result = 0;
-	db_row_t *row;
-	db_val_t *row_vals;
-	int xcap_col;
-	str body, path;
-	int checked = 0;
+        int checked = 0;
+        str path;
+        str *doc = NULL;
+        str *etag = NULL;
 	xmlXPathContextPtr xpathCtx = NULL;
 	xmlXPathObjectPtr xpathObj = NULL;
 
@@ -1086,6 +1066,20 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 		LM_ERR("invalid parameters\n");
 		return -1;
 	}
+
+        if (xcapDbGetDoc(username, domain, RESOURCE_LISTS, filename, NULL, &doc, &etag) < 0)
+        {
+		LM_ERR("while getting resource-lists document from DB\n");
+                return -1;
+        }
+
+        if (doc == NULL)
+        {
+		LM_DBG("No rl document found\n");
+                return -1;
+        }
+
+	LM_DBG("rl document:\n%.*s\n", doc->len, doc->s);
 
 	path.s = path_buf;
 	path.len = 0;
@@ -1107,74 +1101,8 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
             LM_DBG("path: %.*s", path.len, path.s);
         }
 
-	query_cols[n_query_cols] = &str_username_col;
-	query_vals[n_query_cols].type = DB_STR;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = *username;
-	n_query_cols++;
-
-	query_cols[n_query_cols] = &str_domain_col;
-	query_vals[n_query_cols].type = DB_STR;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = *domain;
-	n_query_cols++;
-
-	query_cols[n_query_cols] = &str_doc_type_col;
-	query_vals[n_query_cols].type = DB_INT;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.int_val = RESOURCE_LIST;
-	n_query_cols++;
-
-	query_cols[n_query_cols] = &str_doc_uri_col;
-	query_vals[n_query_cols].type = DB_STR;
-	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = *filename;
-	n_query_cols++;
-
-	if(rls_dbf.use_table(rls_db, &rls_xcap_table) < 0)
-	{
-		LM_ERR("in use_table-[table]=%.*s\n",
-			rls_xcap_table.len, rls_xcap_table.s);
-		return -1;
-	}
-
-	result_cols[xcap_col= n_result_cols++] = &str_doc_col;
-
-	if(rls_dbf.query(rls_db, query_cols, 0, query_vals, result_cols,
-			 n_query_cols, n_result_cols, 0, &result) < 0)
-	{
-		LM_ERR("failed querying table xcap for document: %.*s\n", filename->len, filename->s);
-		if(result)
-			rls_dbf.free_result(rls_db, result);
-		return -1;
-	}
-
-	if(result->n<=0)
-	{
-		LM_DBG("No rl document found\n");
-		rls_dbf.free_result(rls_db, result);
-		return -1;
-	}
-
-	row = &result->rows[0];
-	row_vals = ROW_VALUES(row);
-
-	body.s = (char*)row_vals[xcap_col].val.string_val;
-	if(body.s==NULL)
-	{
-		LM_ERR("xcap doc is null\n");
-		goto error;
-	}
-	body.len = strlen(body.s);
-	if(body.len==0)
-	{
-		LM_ERR("xcap doc is empty\n");
-		goto error;
-	}
-
-	LM_DBG("rl document:\n%.*s", body.len, body.s);
-	*xmldoc = xmlParseMemory(body.s, body.len);
-	if(*xmldoc==NULL)
+	*xmldoc = xmlParseMemory(doc->s, doc->len);
+	if (*xmldoc == NULL)
 	{
 		LM_ERR("while parsing XML memory\n");
 		goto error;
@@ -1184,7 +1112,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 	{
 		/* No path specified - use all resource-lists. */
 		*rl_node = XMLDocGetNodeByName(*xmldoc,"resource-lists", NULL);
-		if(rl_node==NULL)
+		if (*rl_node == NULL)
 		{
 			LM_ERR("no resource-lists node in XML document\n");
 			goto error;
@@ -1192,6 +1120,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 	}
 	else
 	{
+	        /* TODO: move this to xcap module? */
 		xpathCtx = xmlXPathNewContext(*xmldoc);
 		if (xpathCtx == NULL)
 		{
@@ -1217,6 +1146,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 			LM_ERR("no nodes found\n");
 			goto error;
 		}
+
 		if (xpathObj->nodesetval->nodeTab[0] != NULL && xpathObj->nodesetval->nodeTab[0]->type != XML_ELEMENT_NODE)
 		{
 			LM_ERR("no nodes of the correct type found\n");
@@ -1230,17 +1160,31 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 		xmlXPathFreeContext(xpathCtx);
 	}
 
-	rls_dbf.free_result(rls_db, result);
-	return 1;
+        pkg_free(doc->s);
+        pkg_free(doc);
+        pkg_free(etag->s);
+        pkg_free(etag);
+
+        return 0;
 
 error:
-	if(result!=NULL)
-		rls_dbf.free_result(rls_db, result);
-	if(xpathObj!=NULL)
+        if (doc != NULL)
+        {
+                if (doc->s != NULL)
+                        pkg_free(doc->s);
+                pkg_free(doc);
+        }
+        if (etag != NULL)
+        {
+                if (etag->s != NULL)
+                        pkg_free(etag->s);
+                pkg_free(etag);
+        }
+	if (xpathObj)
 		xmlXPathFreeObject(xpathObj);
-	if(xpathCtx!=NULL)
+	if (xpathCtx)
 		xmlXPathFreeContext(xpathCtx);
-	if(xmldoc!=NULL)
+	if (*xmldoc)
 		xmlFreeDoc(*xmldoc);
 	return -1;
 }

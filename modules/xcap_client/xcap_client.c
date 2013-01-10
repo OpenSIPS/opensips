@@ -45,6 +45,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../xcap/api.h"
+#include "../xcap/util.h"
 #include "../presence/utils_func.h"
 #include "xcap_functions.h"
 #include "xcap_client.h"
@@ -417,8 +418,8 @@ struct mi_root* refreshXcapDoc(struct mi_root* cmd, void* param)
 		return 0;
 	}
 
-	type= get_auid_flag(doc_sel.auid);
-	if(type< 0)
+	type = xcap_doc_type(&doc_sel.auid);
+	if (type < 0)
 	{
 		LM_ERR("incorect auid: %.*s\n",
 				doc_sel.auid.len, doc_sel.auid.s);
@@ -436,23 +437,3 @@ error:
 	return 0;
 }
 
-#define STR_MATCH(s1, s2)   ((s1).len==(s2).len && memcmp((s1).s, (s2).s, (s1).len)==0)
-
-int get_auid_flag(str auid)
-{
-	static str pres_rules = str_init("pres-rules");
-	static str rls_services = str_init("rls-services");
-	static str pidf_manipulation = str_init("pidf-manipulation");
-	static str resource_list = str_init("resource-list");
-
-	if (STR_MATCH(auid, pres_rules))
-		return PRES_RULES;
-	else if (STR_MATCH(auid, rls_services))
-		return RLS_SERVICES;
-	else if (STR_MATCH(auid, resource_list))
-		return RESOURCE_LIST;
-	else if (STR_MATCH(auid, pidf_manipulation))
-		return PIDF_MANIPULATION;
-
-	return -1;
-}

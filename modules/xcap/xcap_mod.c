@@ -45,6 +45,7 @@ str xcap_domain_col = str_init("domain");
 str xcap_doc_col = str_init("doc");
 str xcap_doc_type_col = str_init("doc_type");
 str xcap_doc_uri_col = str_init("doc_uri");
+str xcap_doc_etag_col = str_init("etag");
 
 
 /* module functions */

@@ -27,21 +27,26 @@
 #define XCAP_API_H
 
 #include "../../str.h"
+#include "doc.h"
 #include "uri.h"
 
 
+typedef str* (*normalize_sip_uri_t)(const str *uri);
 typedef int (*parse_xcap_uri_t)(const str *uri, xcap_uri_t *xcap_uri);
+typedef int (*get_xcap_doc_t)(str* user, str* domain, int type, str* filename, str* match_etag, str** doc, str** etag);
 
 typedef struct xcap_api {
         int integrated_server;
         str db_url;
         str xcap_table;
+        normalize_sip_uri_t normalize_sip_uri;
         parse_xcap_uri_t parse_xcap_uri;
+        get_xcap_doc_t get_xcap_doc;
 } xcap_api_t;
 
-int bind_xcap(xcap_api_t* api);
-
 typedef int (*bind_xcap_t)(xcap_api_t* api);
+
+int bind_xcap(xcap_api_t* api);
 
 #endif
 

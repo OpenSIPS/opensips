@@ -34,6 +34,7 @@
 #include "../presence/event_list.h"
 #include "../presence/presence.h"
 #include "../presence/presentity.h"
+#include "../xcap/api.h"
 #include "../xcap_client/xcap_functions.h"
 
 typedef struct xcap_serv
@@ -43,13 +44,11 @@ typedef struct xcap_serv
 	struct xcap_serv* next;
 }xcap_serv_t;
 
-extern str xcap_table;
 extern add_event_t pres_add_event;
 extern db_con_t *pxml_db;
 extern db_func_t pxml_dbf;
 extern int force_active;
 extern int pidf_manipulation;
-extern int integrated_xcap_server;
 extern xcap_serv_t* xs_list;
 extern xcapGetNewDoc_t xcap_GetNewDoc;
 extern pres_get_sphere_t pres_get_sphere;
@@ -57,5 +56,12 @@ extern struct sig_binds xml_sigb;
 extern str pres_rules_auid;
 extern str pres_rules_filename;
 extern int generate_offline_body;
+extern int pres_rules_doc_id;
+
+extern str xcap_table;
+extern int integrated_xcap_server;
+extern normalize_sip_uri_t normalizeSipUri;
+extern parse_xcap_uri_t xcapParseUri;
+extern get_xcap_doc_t xcapDbGetDoc;
 
 #endif

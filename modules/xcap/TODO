@@ -1,0 +1,7 @@
+
+- Merge xcap_client into this module?
+- Add a list of xcap servers to the xcap module
+    - Use these to validate if a xcap URI is local or not
+    - Use these for outgoing (HTTP) XCAP requests
+- Add API function for helping with xpath?
+

@@ -51,7 +51,6 @@
 #include "../pua/pua_bind.h"
 #include "../pua/pidf.h"
 #include "../xcap/api.h"
-#include "../xcap_client/xcap_functions.h"
 #include "rls.h"
 #include "subscribe.h"
 #include "notify.h"
@@ -88,7 +87,9 @@ int rls_restore_db_subs(void);
 str db_url = {NULL, 0};
 str rls_xcap_table = {NULL, 0};
 int rls_integrated_xcap_server = 0;
+normalize_sip_uri_t normalizeSipUri;
 parse_xcap_uri_t xcapParseUri;
+get_xcap_doc_t xcapDbGetDoc;
 
 /** libxml api */
 xmlDocGetNodeByName_t XMLDocGetNodeByName;
@@ -257,7 +258,9 @@ static int mod_init(void)
         rls_integrated_xcap_server = xcap_api.integrated_server;
         db_url = xcap_api.db_url;
         rls_xcap_table = xcap_api.xcap_table;
+        normalizeSipUri = xcap_api.normalize_sip_uri;
         xcapParseUri = xcap_api.parse_xcap_uri;
+        xcapDbGetDoc = xcap_api.get_xcap_doc;
 
 	if(!rls_integrated_xcap_server)
 	{

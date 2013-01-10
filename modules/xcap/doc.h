@@ -23,30 +23,20 @@
  *
  */
 
-#ifndef XCAP_URI_H
-#define XCAP_URI_H
+#ifndef XCAP_DOC_H
+#define XCAP_DOC_H
 
-#include "../../config.h"
 #include "../../str.h"
 
-
-typedef struct {
-    char buf[MAX_URI_SIZE];
-    str uri;
-    str root;
-    str auid;
-    str tree;
-    str xui;
-    str filename;
-    str selector;
-} xcap_uri_t;
+/* XCAP document types */
+#define PRES_RULES         1<<1
+#define RESOURCE_LISTS     1<<2
+#define RLS_SERVICES       1<<3
+#define PIDF_MANIPULATION  1<<4
+#define OMA_PRES_RULES     1<<5
 
 
-/* Returns a statically allocated buffer, so the caller is responsible for copying it
- * if necessary */
-str* normalize_sip_uri(const str *uri);
-
-int parse_xcap_uri(const str *uri, xcap_uri_t *xcap_uri);
+int get_xcap_doc(str* user, str* domain, int type, str* filename, str* match_etag, str** doc, str** etag);
 
 #endif
 
