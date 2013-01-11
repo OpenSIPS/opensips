@@ -91,7 +91,7 @@ Chapter 1. Admin Guide
    Example 1.1. EVENT_ROUTE usage
         event_route[E_PIKE_BLOCKED] {
                 fetch_event_params("ip=$avp(pike-ip)");
-                xlog("IP $avp(pike-ip) have been blocked\n");
+                xlog("IP $avp(pike-ip) has been blocked\n");
         }
 
 1.4. EVENT_ROUTE socket syntax

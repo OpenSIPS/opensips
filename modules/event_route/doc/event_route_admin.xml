@@ -33,7 +33,9 @@
 
 		<para>
 			<emphasis>fetch_even_params("$avp(first_param)");</emphasis>
+
 			<emphasis>fetch_even_params("ip=$avp(pike_ip)");</emphasis>
+
 			<emphasis>fetch_even_params("source=$avp(src);destination=$avp(dst)");</emphasis>
 		</para>
 		
@@ -69,7 +71,7 @@
 					<programlisting format="linespecific">
 	event_route[E_PIKE_BLOCKED] {
 		fetch_event_params("ip=$avp(pike-ip)");
-		xlog("IP $avp(pike-ip) have been blocked\n");
+		xlog("IP $avp(pike-ip) has been blocked\n");
 	}
 					</programlisting>
 				</example>
