@@ -98,6 +98,9 @@ extern err_info_t _oser_err_info;
 action_time longest_action[LONGEST_ACTION_SIZE];
 int min_action_time=0;
 
+action_elem_t *route_params = NULL;
+int route_params_number = 0;
+
 /* run actions from a route */
 /* returns: 0, or 1 on success, <0 on error */
 /* (0 if drop or break encountered, 1 if not ) */
@@ -318,6 +321,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 	str name_s;
 	struct timeval start;
 	int end_time;
+	action_elem_t *route_params_bak;
+	int route_params_number_bak;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -578,7 +583,25 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_CFG;
 				break;
 			}
-			return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
+			/* check if the route has parameters */
+			if (a->elem[1].type != 0) {
+				if (a->elem[1].type != NUMBER_ST || a->elem[2].type != SCRIPTVAR_ELEM_ST) {
+					LM_ALERT("BUG in route() type %d/%d\n",
+							a->elem[1].type, a->elem[2].type);
+					ret=E_BUG;
+					break;
+				}
+				route_params_bak = route_params;
+				route_params = (action_elem_t *)a->elem[2].u.data;
+				route_params_number_bak = route_params_number;
+				route_params_number = a->elem[1].u.number;
+
+				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
+				route_params = route_params_bak;
+				route_params_number = route_params_number_bak;
+			} else {
+				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
+			}
 			ret=return_code;
 			break;
 		case REVERT_URI_T:

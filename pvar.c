@@ -117,6 +117,14 @@ pv_context_t* pv_get_context(str* name);
 pv_context_t* add_pv_context(str* name, pv_contextf_t get_context);
 static int pvc_before_check = 1;
 
+
+
+/* route param variable */
+extern action_elem_t *route_params;
+extern int route_params_number;
+static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
+static int pv_parse_param_name(pv_spec_p sp, str *in);
+
 /********** helper functions ********/
 /**
  * convert unsigned int to pv_value_t
@@ -3364,6 +3372,8 @@ static pv_export_t _pv_names_table[] = {
 		pv_parse_color_name, 0, 0, 0 },
 	{{"argv", sizeof("argv")-1}, PVT_ARGV, pv_get_argv, 0,
 		pv_parse_argv_name, 0, 0, 0 },
+	{{"param", sizeof("param")-1}, PVT_ROUTE_PARAM, pv_get_param, 0,
+		pv_parse_param_name, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -4640,6 +4650,128 @@ int pv_get_argv(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 
 	return pv_get_strval(msg, param, res, &param->pvv);
 }
+
+static int pv_parse_param_name(pv_spec_p sp, str *in)
+{
+	char *p;
+	char *s;
+	pv_spec_p nsp = 0;
+
+	if(in==NULL || in->s==NULL || sp==NULL)
+		return -1;
+	p = in->s;
+	if(*p==PV_MARKER)
+	{
+		nsp = (pv_spec_p)pkg_malloc(sizeof(pv_spec_t));
+		if(nsp==NULL)
+		{
+			LM_ERR("no more memory\n");
+			return -1;
+		}
+		s = pv_parse_spec(in, nsp);
+		if(s==NULL)
+		{
+			LM_ERR("invalid name [%.*s]\n", in->len, in->s);
+			pv_spec_free(nsp);
+			return -1;
+		}
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.dname = (void*)nsp;
+		return 0;
+	}
+	/*LM_DBG("static name [%.*s]\n", in->len, in->s);*/
+	/* always an int type from now */
+	sp->pvp.pvn.u.isname.type = 0;
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	if (str2int(in, (unsigned int *)&sp->pvp.pvn.u.isname.name.n) < 0)
+	{
+		LM_ERR("bad param index [%.*s]\n", in->len, in->s);
+		return -1;
+	}
+	return 0;
+
+}
+
+static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
+{
+	int index;
+	pv_value_t tv;
+
+	if (!ip)
+	{
+		LM_ERR("null parameter received\n");
+		return -1;
+	}
+
+	if (!route_params || !route_params_number)
+	{
+		LM_DBG("no parameter specified for this route\n");
+		return pv_get_null(msg, ip, res);
+	}
+
+	if(ip->pvn.type==PV_NAME_INTSTR)
+	{
+		index = ip->pvn.u.isname.name.n;
+	} else
+	{
+		/* pvar */
+		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0)
+		{
+			LM_ERR("cannot get spec value\n");
+			return -1;
+		}
+		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY)
+		{
+			LM_ERR("null or empty name\n");
+			return -1;
+		}
+		if (!(tv.flags&PV_VAL_INT) || str2int(&tv.rs,(unsigned int*)&index) < 0)
+		{
+			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
+			return -1;
+		}
+	}
+	
+	if (index < 1 || index > route_params_number)
+	{
+		LM_DBG("no such parameter index %d\n", index);
+		return pv_get_null(msg, ip, res);
+	}
+
+	/* the parameters start at 0, whereas the index starts from 1 */
+	index--;
+	switch (route_params[index].type)
+	{
+
+	case STRING_ST:
+		res->rs.s = route_params[index].u.string;
+		res->rs.len = strlen(res->rs.s);
+		res->flags = PV_VAL_STR;
+		break;
+
+	case NUMBER_ST:
+		res->rs.s = int2str(route_params[index].u.number, &res->rs.len);
+		res->ri = route_params[index].u.number;
+		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		break;
+
+	case SCRIPTVAR_ST:
+		if(pv_get_spec_value(msg, (pv_spec_p)route_params[index].u.data, res)!=0)
+		{
+			LM_ERR("cannot get spec value\n");
+			return -1;
+		}
+		break;
+
+		default:
+			LM_ALERT("BUG: invalid parameter type %d\n",
+					 route_params[index].type);
+			return -1;
+	}
+
+	return 0;
+}
+
 
 void destroy_argv_list(void)
 {

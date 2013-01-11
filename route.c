@@ -286,6 +286,22 @@ static int fix_actions(struct action* a)
 					ret = E_CFG;
 					goto error;
 				}
+				if (t->elem[1].type != 0) {
+					if (t->elem[1].type != NUMBER_ST ||
+							t->elem[2].type != SCRIPTVAR_ELEM_ST) {
+						LM_ALERT("BUG in route() type %d/%d\n",
+								 t->elem[1].type, t->elem[2].type);
+						ret=E_BUG;
+						break;
+					}
+					if (t->elem[1].u.number >= MAX_ACTION_ELEMS ||
+							t->elem[1].u.number <= 0) {
+						LM_ALERT("BUG in number of route parameters %d\n",
+								 (int)t->elem[1].u.number);
+						ret=E_BUG;
+						break;
+					}
+				}
 				break;
 			case FORWARD_T:
 				if (sl_fwd_disabled>0) {

@@ -142,6 +142,8 @@ static struct bl_rule *bl_tail = 0;
 static struct stat statf;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
+static action_elem_t route_elems[MAX_ACTION_ELEMS];
+action_elem_t *a_tmp;
 
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, int, int);
@@ -464,6 +466,7 @@ extern int line;
 %type <intval> assignop
 %type <intval> snumber
 %type <strval> route_name
+%type <intval> route_param
 
 
 
@@ -2121,6 +2124,52 @@ module_func_param: STRING {
 										}
 	;
 
+route_param: STRING {
+						route_elems[0].type = STRING_ST;
+						route_elems[0].u.data = $1;
+						$$=1;
+			}
+		| NUMBER {
+						route_elems[0].type = NUMBER_ST;
+						route_elems[0].u.data = (void*)(long)$1;
+						$$=1;
+			}
+		| script_var {
+						route_elems[0].type = SCRIPTVAR_ST;
+						route_elems[0].u.data = $1;
+						$$=1;
+			}
+		| route_param COMMA STRING {
+						if ($1>=MAX_ACTION_ELEMS) {
+							yyerror("too many arguments in function\n");
+							$$=-1;
+						} else {
+							route_elems[$1].type = STRING_ST;
+							route_elems[$1].u.data = $3;
+							$$=$1+1;
+						}
+			}
+		| route_param COMMA NUMBER {
+						if ($1>=MAX_ACTION_ELEMS) {
+							yyerror("too many arguments in function\n");
+							$$=-1;
+						} else {
+							route_elems[$1].type = NUMBER_ST;
+							route_elems[$1].u.data = (void*)(long)$3;
+							$$=$1+1;
+						}
+			}
+		| route_param COMMA script_var {
+						if ($1+1>=MAX_ACTION_ELEMS) {
+							yyerror("too many arguments in function\n");
+							$$=-1;
+						} else {
+							route_elems[$1].type = SCRIPTVAR_ST;
+							route_elems[$1].u.data = $3;
+							$$=$1+1;
+						}
+			}
+	;
 
 cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 											STRING_ST,
@@ -2257,6 +2306,25 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 						mk_action2( $$, ROUTE_T, NUMBER_ST,
 							0, (void*)(long)i_tmp, 0);
 					}
+
+		| ROUTE LPAREN route_name COMMA route_param RPAREN	{ 
+						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
+						if (i_tmp==-1) yyerror("too many script routes");
+						if ($5 <= 0) yyerror("too many route parameters");
+
+						/* duplicate the list */
+						a_tmp = pkg_malloc($5 * sizeof(action_elem_t));
+						if (!a_tmp) yyerror("no more pkg memory");
+						memcpy(a_tmp, route_elems, $5*sizeof(action_elem_t));
+
+						mk_action3( $$, ROUTE_T, NUMBER_ST,	/* route idx */
+							NUMBER_ST,						/* number of params */
+							SCRIPTVAR_ELEM_ST,				/* parameters */
+							(void*)(long)i_tmp,
+							(void*)(long)$5,
+							(void*)a_tmp);
+					}
+	
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
