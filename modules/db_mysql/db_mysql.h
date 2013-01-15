@@ -35,4 +35,6 @@ extern unsigned int db_mysql_ping_interval;
 extern unsigned int db_mysql_timeout_interval;
 extern unsigned int db_mysql_exec_query_threshold;
 
+int mysql_register_event(void);
+
 #endif /* DB_MOD_H */

@@ -10,10 +10,10 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright © 2006 voice-system.ro
+   Copyright � 2006 Voice Sistem SRL
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -34,6 +34,9 @@ Daniel-Constantin Mierla
 
         1.4. Exported Functions
         1.5. Installation
+        1.6. Exported Events
+
+              1.6.1. E_MYSQL_CONNECTION
 
    List of Examples
 
@@ -96,8 +99,8 @@ modparam("db_mysql", "exec_query_threshold", 60000)
    retries are done from the driver before it gives up.
 
    The read timeout parameter is ignored on driver versions prior
-   to “5.1.12”, “5.0.25” and “4.1.22”. The write timeout parameter
-   is ignored on version prior to “5.1.12” and “5.0.25”, the “4.1”
+   to "5.1.12", "5.0.25" and "4.1.22". The write timeout parameter
+   is ignored on version prior to "5.1.12" and "5.0.25", the "4.1"
    release don't support it at all.
 
    Default value is 2 (6 sec).
@@ -122,3 +125,16 @@ modparam("db_mysql", "timeout_interval", 2)
      * - from command line use: 'make all
        include_modules="db_mysql"; make install
        include_modules="db_mysql"'.
+
+1.6. Exported Events
+
+1.6.1.  E_MYSQL_CONNECTION
+
+   This event is raised when a MySQL connection is lost or
+   recovered.
+
+   Parameters:
+     * url - the URL of the connection as specified by the db_url
+       parameter.
+     * status - connected if the connection recovered, or
+       disconnected if the connection was lost.

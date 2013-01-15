@@ -140,5 +140,28 @@ modparam("db_mysql", "timeout_interval", 2)
 			</listitem>
 		</itemizedlist>
 	</section>
+
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_MYSQL_CONNECTION</function>
+		</title>
+		<para>
+			This event is raised when a MySQL connection is lost or recovered.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>url</emphasis> - the URL of the connection as specified by the <emphasis>db_url</emphasis> parameter.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>connected</emphasis> if the connection recovered, or 
+				<emphasis>disconnected</emphasis> if the connection was lost.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
 </chapter>
 

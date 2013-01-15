@@ -88,6 +88,11 @@ struct module_exports exports = {
 static int mysql_mod_init(void)
 {
 	LM_DBG("mysql: MySQL client version is %s\n", mysql_get_client_info());
+	/* also register the event */
+	if (mysql_register_event() < 0) {
+		LM_ERR("Cannot register mysql event\n");
+		return -1;
+	}
 	return 0;
 }
 

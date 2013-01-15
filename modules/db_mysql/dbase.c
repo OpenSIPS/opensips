@@ -50,7 +50,68 @@
 #include "db_mysql.h"
 #include "dbase.h"
 
+static str mysql_event_name = str_init("E_MYSQL_CONNECTION");
+static str mysql_url_str = str_init("url");
+static str mysql_stat_str = str_init("status");
+static str mysql_stat_connected_str = str_init("connected");
+static str mysql_stat_disconnected_str = str_init("disconnected");
+static event_id_t mysql_evi_id = EVI_ERROR;
+static int mysql_last_event = 0; /* ensures an event is
+									raised only when status changes */
 
+int mysql_register_event(void)
+{
+	mysql_evi_id = evi_publish_event(mysql_event_name);
+	if (mysql_evi_id == EVI_ERROR) {
+		LM_ERR("cannot register event\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static inline void mysql_raise_event(const db_con_t *conn)
+{
+	evi_params_p list = NULL;
+	if (mysql_evi_id == EVI_ERROR) {
+		LM_ERR("event not registered %d\n", mysql_evi_id);
+		return;
+	}
+
+	if (!conn) {
+		LM_ERR("no connection specified\n");
+		return;
+	}
+
+	if (mysql_last_event == CON_DISCON(conn)) {
+		LM_DBG("MySQL status has not changed: %s\n",
+			   mysql_last_event ? "disconnected" : "connected");
+		return;
+	}
+	mysql_last_event = CON_DISCON(conn);
+
+	if (evi_probe_event(mysql_evi_id)) {
+		if (!(list = evi_get_params()))
+			return;
+		if (evi_param_add_str(list, &mysql_url_str, (void*)&conn->url)) {
+			LM_ERR("unable to add url parameter\n");
+			goto free;
+		}
+		if (evi_param_add_str(list, &mysql_stat_str, CON_DISCON(conn) ?
+					&mysql_stat_disconnected_str : &mysql_stat_connected_str)) {
+			LM_ERR("unable to add status parameter\n");
+			goto free;
+		}
+		if (evi_raise_event(mysql_evi_id, list)) {
+			LM_ERR("unable to send event\n");
+		}
+	} else {
+		LM_DBG("no event sent\n");
+	}
+	return;
+free:
+	evi_free_params(list);
+}
 
 static inline int wrapper_single_mysql_stmt_prepare(const db_con_t *conn,
 												const struct my_stmt_ctx *ctx)
@@ -221,9 +282,12 @@ static int db_mysql_submit_query(const db_con_t* _h, const str* _s)
 		} else if (code > 0) {
 			/* other problems - error already logged by the wrapper */
 			return -2;
-		} else
+		} else {
+			mysql_raise_event(_h);
 			return 0; /* success */
+		}
 	}
+	mysql_raise_event(_h);
 	LM_CRIT("too many mysql server reconnection failures\n");
 
 	return -2;
@@ -326,9 +390,12 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 		} else if (code > 0) {
 			/* other problems */
 			goto error;
-		} else
+		} else {
+			mysql_raise_event(conn);
 			return 0; /* success */
+		}
 	}
+	mysql_raise_event(conn);
 
 	/* destroy the statement only, but keep the context */
 	if (ctx->stmt)
@@ -647,6 +714,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 	} while (code!=0 && i<2 );
 
+	mysql_raise_event(conn);
 	if (code != 0) {
 		LM_CRIT("too many mysql server reconnection failures\n");
 		cleanup_rows(buffered_rows);
