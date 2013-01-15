@@ -234,6 +234,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		LM_ERR("no socket found\n");
 		goto error2;
 	}
+
 	/* if a send socket defined verify if the same protocol */
 	if(dialog->send_sock) {
 		if(send_sock->proto != dialog->send_sock->proto)
@@ -245,6 +246,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	{
 		dialog->send_sock = send_sock;
 	}
+
+	LM_DBG("sending socket is %.*s \n",dialog->send_sock->name.len,dialog->send_sock->name.s);
 
 	new_cell = build_cell(0);
 	if (!new_cell) {
