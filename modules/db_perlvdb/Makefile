@@ -4,7 +4,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=perlvdb.so
+NAME=db_perlvdb.so
 
 ifeq ($(CC_NAME), gcc)
 	DEFS+=-Wno-unused -Wno-redundant-decls
