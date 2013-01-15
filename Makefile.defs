@@ -314,9 +314,15 @@ ifneq ($(DBXML2HTML),)
 ifeq ($(DBHTMLCSS),)
 DBHTMLCSS = ../../../doc/module-docbook.css
 endif
-DBHTMLXSL = /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
+#DBHTMLXSL = /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
 # On CentOS, this is the right path:
 #DBHTMLXSL = /usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl
+DBHTMLXSL=$(shell \
+	if [ -e /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl ]; then \
+		echo "/usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl"; \
+	elif [ -e /usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl ]; then \
+		echo "/usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl"; \
+	fi)
 DBXML2HTMLPARAMS = --stringparam section.autolabel 1
 DBXML2HTMLPARAMS += --stringparam section.label.includes.component.label 1
 DBXML2HTMLPARAMS += --stringparam generate.toc "book toc,title,figure,table,example" 
