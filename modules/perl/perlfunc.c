@@ -127,19 +127,21 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 		return -1;
 	}
 
-	m = sv_newmortal();
-	sv_setref_pv(m, "OpenSIPS::Message", (void *)_msg);
-	SvREADONLY_on(SvRV(m));
 
 
 	ENTER;				/* everything created after here */
 	SAVETMPS;			/* ...is a temporary variable.   */
 	PUSHMARK(SP);			/* remember the stack pointer    */
+
+	m = sv_newmortal();		/* create a mortal SV to be killed on FREETMPS */
+	sv_setref_pv(m, "OpenSIPS::Message", (void *)_msg); /* bless the message with a class */
+	SvREADONLY_on(SvRV(m));		/* set the content of m to be readonly  */
+
 	XPUSHs(m);			/* Our reference to the stack... */
 
 	if (mystr)
 		XPUSHs(sv_2mortal(newSVpv(mystr, strlen(mystr))));
-					/* Our string to the stack... */
+		/* Our string to the stack... */
 
 	PUTBACK;			/* make local stack pointer global */
 
@@ -151,6 +153,5 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 	PUTBACK;
 	FREETMPS;			/* free that return value        */
 	LEAVE;				/* ...and the XPUSHed "mortal" args.*/
-
 	return retval;
 }
