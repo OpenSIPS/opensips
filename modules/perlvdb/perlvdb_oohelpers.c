@@ -73,8 +73,10 @@ SV *perlvdb_perlmethod(SV *class,
 	SPAGAIN;
 
 	if (res == 0) {
+		/* should never happend - G_EVAL and G_SCALAR specified */
 		retval = &PL_sv_undef;
 	} else if (res == 1) {
+		/* This is the only return from call_method with G_SCALAR | G_EVAL */
 		retval = POPs;
 	} else {
 		/* More than one result in Scalar context??? */
@@ -85,11 +87,9 @@ SV *perlvdb_perlmethod(SV *class,
 		}
 	}
 
-	SPAGAIN;
+	SvREFCNT_inc(retval);
 
-//	if (sv_isobject(retval))
-		SvREFCNT_inc(retval);
-
+	PUTBACK;
 	FREETMPS;
 	LEAVE;
 

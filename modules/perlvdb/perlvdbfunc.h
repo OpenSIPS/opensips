@@ -38,7 +38,7 @@
  * Initialize/close database module
  * No function should be called before/after this
  */
-db_con_t* perlvdb_db_init(const char* _url);
+db_con_t* perlvdb_db_init(const str* _url);
 void perlvdb_db_close(db_con_t* h);
 
 /*

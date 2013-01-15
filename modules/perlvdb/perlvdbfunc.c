@@ -32,6 +32,7 @@
 #include "perlvdbfunc.h"
 #include "../../str.h"
 
+
 /*
  * Simple conversion IV -> int
  * including decreasing ref cnt
@@ -105,31 +106,19 @@ int checkobj(SV* obj) {
  * Initialize database module
  * No function should be called before this
  */
-db_con_t* perlvdb_db_init(const char* url) {
+db_con_t* perlvdb_db_init(const str* url) {
 	db_con_t* res;
-
 	char *cn;
+	char *curl;
 	SV *obj = NULL;
-	
 	int consize = sizeof(db_con_t) + sizeof(SV);
-	
-	if (!url) {
+
+	if (!url || !url->s | !url->len) {
 		LM_ERR("invalid parameter value\n");
 		return NULL;
 	}
 
-	cn = parseurl(url);
-	if (!cn) {
-		LM_ERR("invalid perl vdb url.\n");
-		return NULL;
-	}
-
-	obj = newvdbobj(cn);
-	if (!checkobj(obj)) {
-		LM_ERR("could not initialize module. Not inheriting from %s?\n",
-				PERL_VDB_BASECLASS);
-		return NULL;
-	}
+	consize += url->len + 1;
 
 	res = pkg_malloc(consize);
 	if (!res) {
@@ -138,6 +127,26 @@ db_con_t* perlvdb_db_init(const char* url) {
 	}
 	memset(res, 0, consize);
 	CON_TAIL(res) = (unsigned int)(unsigned long)obj;
+
+	/* make the url null terminated, by copying and adding 0 */
+	curl = ((char*)res) + consize - (url->len + 1);
+	memcpy( curl, url->s, url->len);
+	curl[url->len] = 0;
+
+	cn = parseurl(curl);
+	if (!cn) {
+		LM_ERR("invalid perl vdb url.\n");
+		pkg_free(res);
+		return NULL;
+	}
+
+	obj = newvdbobj(cn);
+	if (!checkobj(obj)) {
+		LM_ERR("could not initialize module. Not inheriting from %s?\n",
+				PERL_VDB_BASECLASS);
+		pkg_free(res);
+		return NULL;
+	}
 
 	return res;
 }
@@ -149,16 +158,18 @@ db_con_t* perlvdb_db_init(const char* url) {
  */
 int perlvdb_use_table(db_con_t* h, const str* t) {
 	SV *ret;
-	
+	SV *table;
+	int res = -1;
 	if (!h || !t || !t->s) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
-
+	table = newSVpv(t->s, t->len);
 	ret = perlvdb_perlmethod(getobj(h), PERL_VDB_USETABLEMETHOD,
-			sv_2mortal(newSVpv(t->s, t->len)), NULL, NULL, NULL);
-
-	return IV2int(ret);
+			table, NULL, NULL, NULL);
+	SvREFCNT_dec(table);
+	res = IV2int(ret);
+	return res;
 }
 
 
@@ -268,7 +279,6 @@ int perlvdb_db_update(db_con_t* h, db_key_t* k, db_op_t* o, db_val_t* v,
 	return IV2int(ret);
 }
 
-
 /*
  * Query table for specified rows
  * h: structure representing database connection
@@ -295,41 +305,41 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
 	SV *resultset;
 
 	int retval = 0;
-
+        int i;
 	/* Create parameter set */
 	condarr = conds2perlarray(k, op, v, n);
-	retkeysarr = keys2perlarray(c, nc);
 
+	retkeysarr = keys2perlarray(c, nc);
+	
 	if (o) order = newSVpv(o->s, o->len);
 	else order = &PL_sv_undef;
-
-
+	
 	condarrref = newRV_noinc((SV*)condarr);
 	retkeysref = newRV_noinc((SV*)retkeysarr);
 
 	/* Call perl method */
 	resultset = perlvdb_perlmethod(getobj(h), PERL_VDB_QUERYMETHOD,
 			condarrref, retkeysref, order, NULL);
-
-	av_undef(condarr);
-	av_undef(retkeysarr);
-
+	
+	SvREFCNT_dec(condarrref);
+	SvREFCNT_dec(retkeysref);
+	if(SvOK(order))
+		SvREFCNT_dec(order);
+	
 	/* Transform perl result set to OpenSIPS result set */
 	if (!resultset) {
 		/* No results. */
-		LM_ERR("no perl result set.\n");
 		retval = -1;
 	} else {
 		if (sv_isa(resultset, "OpenSIPS::VDB::Result")) {
 			retval = perlresult2dbres(resultset, r);
 		/* Nested refs are decreased/deleted inside the routine */
-			SvREFCNT_dec(resultset);
-		} else {
+			SvREFCNT_dec(resultset); 
+		} else {			
 			LM_ERR("invalid result set retrieved from perl call.\n");
 			retval = -1;
 		}
 	}
-
 	return retval;
 }
 
@@ -338,21 +348,39 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
  * Release a result set from memory
  */
 int perlvdb_db_free_result(db_con_t* _h, db_res_t* _r) {
-	int i;
+	int i,j;
+	SV* temp;
+	/* free result set 
+	 * use the order of allocation
+	 * first free values
+	*/
+	if(_r){
+		/* for each row */
+		for(i=0; i < RES_ROW_N(_r); i++){
+			/* for each column in row i */
+			for(j=0; j < RES_ROWS(_r)[i].n; j++){
+                                switch ( (RES_ROWS(_r)[i].values)[j].type ) { /* the type of a value j in row i */
+                                        case DB_STRING:
+                                        case DB_STR:
+						pkg_free((RES_ROWS(_r)[i].values)[j].val.str_val.s);
+                                                break;
+                                        case DB_BLOB:
+                                                pkg_free((RES_ROWS(_r)[i].values)[j].val.blob_val.s) ;
+                                                break;
+					case DB_INT:
+					case DB_BIGINT:
+					case DB_DOUBLE:
+					case DB_BITMAP:
+					case DB_DATETIME:
+						break;				
+                                }
+			} /* for each column in row i*/
+		} /* for each row */
 
-	if (_r) {
-		for (i = 0; i < _r->n; i++) {
-			if (_r->rows[i].values)
-				pkg_free(_r->rows[i].values);
+		for(i=0; i< RES_COL_N(_r); i++){
+			pkg_free(RES_NAMES(_r)[i]->s);
 		}
-
-		if (_r->col.types)
-			pkg_free(_r->col.types);
-		if (_r->col.names)
-			pkg_free(_r->col.names);
-		if (_r->rows)
-			pkg_free(_r->rows);
-		pkg_free(_r);
+		db_free_result(_r);		
 	}
 	return 0;
 }

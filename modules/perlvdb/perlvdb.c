@@ -42,7 +42,7 @@ SV* vdbmod;
  */
 static cmd_export_t cmds[] = {
 	{"db_use_table",	(cmd_function)perlvdb_use_table, 2, 0, 0, 0},
-	{"db_init",		(cmd_function)perlvdb_db_init,   1, 0, 0, 0},
+	{"db_init",			(cmd_function)perlvdb_db_init,   1, 0, 0, 0},
 	{"db_close",		(cmd_function)perlvdb_db_close,  2, 0, 0, 0},
 	{"db_insert",		(cmd_function)perlvdb_db_insert, 2, 0, 0, 0},
 	{"db_update",		(cmd_function)perlvdb_db_update, 2, 0, 0, 0},
@@ -63,7 +63,7 @@ static param_export_t params[] = {
 
 
 struct module_exports exports = {
-	"perlvdb",
+	"db_perlvdb",
 	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL, /* dlopen flags */
 	cmds,
