@@ -1927,7 +1927,7 @@ int fix_rls(void)
 		}
 	}
 
-	for(i = 0; i< EVENT_RT_NO; i++) {
+	for(i = 1; i< EVENT_RT_NO; i++) {
 		if(event_rlist[i].a == NULL)
 			break;
 
