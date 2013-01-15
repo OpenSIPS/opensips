@@ -92,6 +92,7 @@
 #include <regex.h>
 #include <time.h>
 #include <sys/time.h>
+#include <fnmatch.h>
 
 
 static str header_body = {0, 0};
@@ -110,6 +111,7 @@ static str header_body = {0, 0};
 
 static int filter_body_f(struct sip_msg*, char*, char*);
 static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
+static int remove_hf_wc_f(struct sip_msg* msg, char* pattern, char* foo);
 static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
 static int append_to_reply_f(struct sip_msg* msg, char* key, char* str);
 static int append_hf_1(struct sip_msg* msg, char* str1, char* str2);
@@ -162,6 +164,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"remove_hf",        (cmd_function)remove_hf_f,       1,
 		hname_fixup, free_hname_fixup,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"remove_hf_wildcard",(cmd_function)remove_hf_wc_f,   1,
+		fixup_str_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_present_hf",    (cmd_function)is_present_hf_f,   1,
 		hname_fixup, free_hname_fixup,
@@ -463,6 +468,39 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 			return -1;
 		}
 		cnt++;
+	}
+	return cnt==0 ? -1 : 1;
+}
+
+static int remove_hf_wc_f(struct sip_msg* msg, char* pattern, char* foo)
+{
+	struct hdr_field *hf;
+	struct lump* l;
+	int cnt;
+	str *pat = (str *)pattern;
+	char tmp;
+
+	cnt=0;
+
+	/* we need to be sure we have seen all HFs */
+	parse_headers(msg, HDR_EOH_F, 0);
+	for (hf=msg->headers; hf; hf=hf->next) {
+				
+			if (hf->type!=HDR_OTHER_T)
+				continue;
+			tmp = *(hf->name.s+hf->name.len);
+			*(hf->name.s+hf->name.len) = 0;
+			if(fnmatch(pat->s, hf->name.s, 0) !=0 ){
+				*(hf->name.s+hf->name.len) = tmp;
+				continue;
+			}
+			*(hf->name.s+hf->name.len) = tmp;
+			l=del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
+			if (l==0) {
+				LM_ERR("no memory\n");
+				return -1;
+			}
+			cnt++;
 	}
 	return cnt==0 ? -1 : 1;
 }
