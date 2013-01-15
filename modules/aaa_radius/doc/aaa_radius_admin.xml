@@ -117,8 +117,8 @@ modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 
 </programlisting>
 		</example>
-		
 		</section>
+
 		<section>
 		<title><varname>radius_config</varname></title>
 		<para>
@@ -139,6 +139,31 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 </programlisting>
 		</example>
 		</section>
+
+		<section>
+		<title><varname>syslog_name</varname></title>
+		<para>
+		Enable logging of the client library to syslog, using the given log name.
+		</para>
+		<para>
+		This parameter is optional. Radius client libraries will try to use syslog
+		to report errors (such as problems with dictionaries) with the given ident
+		string .If this parameter is set, then these errors are visible in syslog.
+		Otherwise errors are hidden.
+		</para>
+		<para>
+		By default this parameter is not set (no logging).
+		</para>
+		<example>
+		<title>Set <varname>syslog_name</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("aaa_radius", "syslog_name", "aaa-radius")
+...
+</programlisting>
+		</example>
+		</section>
+
 	</section>
 
 	<section>

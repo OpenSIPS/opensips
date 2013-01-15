@@ -11,7 +11,7 @@ Irina-Maria Stanescu
    Copyright © 2009 Irina-Maria
    Stanescu
 
-   Copyright © 2009 voice-system.ro
+   Copyright © 2009 Voice Sistem SRL
    Revision History
    Revision $Revision: 5908 $ $Date: 2009-07-21 16:56:23 +0300
                               (Tue, 21 Jul 2009) $
@@ -31,6 +31,7 @@ Irina-Maria Stanescu
 
               1.3.1. sets
               1.3.2. radius_config
+              1.3.3. syslog_name
 
         1.4. Exported Functions
 
@@ -44,8 +45,9 @@ Irina-Maria Stanescu
 
    1.1. Set sets parameter
    1.2. Set radius_config parameter
-   1.3. radius_send_auth usage
-   1.4. radius_send_acct usage
+   1.3. Set syslog_name parameter
+   1.4. radius_send_auth usage
+   1.5. radius_send_acct usage
 
 Chapter 1. Admin Guide
 
@@ -81,19 +83,6 @@ Chapter 1. Admin Guide
    to freeradius, uncomment the USE_FREERADIUS=1 line in main
    Makefile.
 
-   * NOTE on dictionary file format for both radius clients
-	Vendor specific dictionary files available in freeradius server
-	do not work with radius clients. 
-
-        To make those available for radius client several changes are required:
-
-	a) Remove BEGIN-VENDOR and END-VENDOR declarations.
-	b) Make sure that "VENDOR vendor_name vendor_numeric_id" appears before
-	   any ATTRIBUTE that belongs to that vendor.
-	c) For each ATTRIBUTE line that belongs to a specific 
-	   vendor add vendor_name as the last value. 
-	d) Comment out all ATTRIBUTE lines containing the "octet" type.
-     
 1.3. Exported Parameters
 
 1.3.1. sets
@@ -131,23 +120,6 @@ var(grp),
 modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 ...
 
-Nested variables example:
-
-dictionary.cisco (should be included from /etc/radiusclient-ng/dictionary):
-
-VENDOR Cisco 9
-ATTRIBUTE Cisco-AVPair 1 string Cisco 
-#Note the additional vendor parameter
-...
-
-opensips.conf:
-...
-modparam("aaa_radius","sets","set5 = (Cisco-AVPair = $var(xpgktype)) ")
-...
-$var(xpgktype)="xpgk-request-type=route";
-radius_send_auth("set5", "reply_set");
-...
-
 
 1.3.2. radius_config
 
@@ -163,6 +135,24 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclie
 nt.conf")
 ...
 
+
+1.3.3. syslog_name
+
+   Enable logging of the client library to syslog, using the given
+   log name.
+
+   This parameter is optional. Radius client libraries will try to
+   use syslog to report errors (such as problems with
+   dictionaries) with the given ident string .If this parameter is
+   set, then these errors are visible in syslog. Otherwise errors
+   are hidden.
+
+   By default this parameter is not set (no logging).
+
+   Example 1.3. Set syslog_name parameter
+...
+modparam("aaa_radius", "syslog_name", "aaa-radius")
+...
 
 1.4. Exported Functions
 
@@ -190,7 +180,7 @@ nt.conf")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
 
-   Example 1.3. radius_send_auth usage
+   Example 1.4. radius_send_auth usage
 
 ...
 radius_send_auth("set1","set2");
@@ -223,7 +213,7 @@ switch ($rc) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
 
-   Example 1.4. radius_send_acct usage
+   Example 1.5. radius_send_acct usage
 
 ...
 radius_send_acct("set1");

@@ -63,6 +63,7 @@ typedef struct _rad_set_elem {
 rad_set_elem **sets = NULL;
 int set_size = 0;
 char* config_file = NULL;
+char* syslog_name = NULL;
 rc_handle *rh = NULL;
 DICT_ATTR *attr;
 
@@ -94,8 +95,9 @@ static cmd_export_t cmds[]= {
 
 
 static param_export_t params[] = {
-	{"sets", STR_PARAM | USE_FUNC_PARAM, parse_sets_func},
-	{"radius_config", STR_PARAM, &config_file},
+	{"sets",          STR_PARAM|USE_FUNC_PARAM, parse_sets_func},
+	{"radius_config", STR_PARAM,                &config_file},
+	{"syslog_name",   STR_PARAM,                &syslog_name},
 	{0, 0, 0}
 };
 
@@ -473,6 +475,9 @@ int init_radius_handle(void) {
 		LM_ERR("radius configuration file not set\n");
 		return -1;
 	}
+
+	if ( syslog_name!=NULL && syslog_name[0]!=0 )
+		rc_openlog(syslog_name);
 
 	if (!(rh = rc_read_config(config_file))) {
 		LM_ERR("failed to open radius config file: %s\n", config_file);
