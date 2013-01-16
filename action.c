@@ -1133,20 +1133,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = cachedb_fetch( &a->elem[0].u.s, &name_s, &aux);
 			if(ret > 0)
 			{
-				int_str res;
-				int avp_name;
-				unsigned short avp_type;
+				val.rs = aux;
+				val.flags = PV_VAL_STR;
 
 				spec = (pv_spec_t*)a->elem[2].u.data;
-				if (pv_get_avp_name( msg, &(spec->pvp), &avp_name,
-						&avp_type)!=0){
-					LM_CRIT("BUG in getting AVP name\n");
-					pkg_free(aux.s);
-					return -1;
-				}
-				res.s = aux;
-				if (add_avp(AVP_VAL_STR|avp_type, avp_name, res)<0){
-					LM_ERR("cannot add AVP\n");
+				if (pv_set_value(msg, spec, 0, &val) < 0) {
+					LM_ERR("cannot set the variable value\n");
 					pkg_free(aux.s);
 					return -1;
 				}
@@ -1186,19 +1178,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = cachedb_counter_fetch( &a->elem[0].u.s, &name_s, &aux_counter);
 			if(ret > 0)
 			{
-				int_str res;
-				int avp_name;
-				unsigned short avp_type;
+				val.ri = aux_counter;
+				val.flags = PV_TYPE_INT|PV_VAL_INT;
 
 				spec = (pv_spec_t*)a->elem[2].u.data;
-				if (pv_get_avp_name( msg, &(spec->pvp), &avp_name,
-						&avp_type)!=0){
-					LM_CRIT("BUG in getting AVP name\n");
-					return -1;
-				}
-				res.n = aux_counter;
-				if (add_avp(avp_type, avp_name, res)<0){
-					LM_ERR("cannot add AVP\n");
+				if (pv_set_value(msg, spec, 0, &val) < 0) {
+					LM_ERR("cannot set the variable value\n");
+					pkg_free(aux.s);
 					return -1;
 				}
 			}

@@ -599,11 +599,10 @@ static int fix_actions(struct action* a)
 				/* value */
 				if (t->type==CACHE_FETCH_T || 
 					t->type==CACHE_COUNTER_FETCH_T) {
-					if(((pv_spec_p)t->elem[2].u.data)->type!= PVT_AVP)
+					if(((pv_spec_p)t->elem[2].u.data)->setf == NULL)
 					{
-						LM_ERR("Wrong type for the third argument - "
-							"must be an AVP\n");
-						ret=E_BUG;
+						LM_ERR("Third argument cannot be a read-only pvar\n");
+						ret=E_CFG;
 						goto error;
 					}
 				} else if (t->type==CACHE_STORE_T) {
