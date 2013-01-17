@@ -523,6 +523,7 @@ add_body("Hello World!", "text/plain");
    with the following values:
      * 's' - checks the integrity of the SDB body, if it exists
      * 'h' - checks the format and integrity of each header body.
+     * 'm' - don't check the Max-Forwards header.
 
    This function can return the following codes:
      * 1 - the message is RFC3261 compliant and has been

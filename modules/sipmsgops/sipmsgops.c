@@ -1286,6 +1286,7 @@ static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 
 #define SIP_PARSE_SDP	0x1
 #define SIP_PARSE_HDR	0x2
+#define SIP_PARSE_NOMF	0x4
 
 static int fixup_sip_validate(void** param, int param_no)
 {
@@ -1313,6 +1314,11 @@ static int fixup_sip_validate(void** param, int param_no)
 			case 'h':
 			case 'H':
 				flags |= SIP_PARSE_HDR;
+				break;
+
+			case 'm':
+			case 'M':
+				flags |= SIP_PARSE_NOMF;
 				break;
 
 			default:
@@ -1671,7 +1677,8 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		case SIP_REQUEST:
 
 			/* Max-Forwards */
-			CHECK_HEADER("", maxforwards);
+			if (!(flags & SIP_PARSE_NOMF))
+				CHECK_HEADER("", maxforwards);
 
 			if (msg->REQ_METHOD == METHOD_INVITE) {
 				CHECK_HEADER("INVITE", contact);

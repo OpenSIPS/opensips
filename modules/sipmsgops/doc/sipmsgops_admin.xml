@@ -727,6 +727,9 @@ add_body("Hello World!", "text/plain");
 				<listitem><para><emphasis>'h'</emphasis> - checks the format
 						and integrity of each header body.
 				</para></listitem>
+				<listitem><para><emphasis>'m'</emphasis> - don't check the
+						Max-Forwards header.
+				</para></listitem>
 			</itemizedlist>
 		</para>
 		<para>This function can return the following codes:
