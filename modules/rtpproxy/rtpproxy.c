@@ -161,6 +161,7 @@
 #include "../../error.h"
 #include "../../forward.h"
 #include "../../mem/mem.h"
+#include "../../mod_fix.h"
 #include "../../timer.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_to.h"
@@ -359,43 +360,43 @@ static cmd_export_t cmds[] = {
 	{"set_rtp_proxy_set",  (cmd_function)set_rtp_proxy_set_f,    1,
 		fixup_set_id, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"unforce_rtp_proxy",  (cmd_function)unforce_rtp_proxy_f,    0,
+	{"unforce_rtp_proxy",  (cmd_function)unforce_rtp_proxy_f,       0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy0_f,     0,
+	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy0_f,      0,
 		fixup_engage, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy1_f,     1,
+	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy1_f,      1,
 		fixup_engage, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy2_f,     2,
+	{"engage_rtp_proxy",    (cmd_function)engage_rtp_proxy2_f,      2,
 		fixup_engage, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"start_recording",    (cmd_function)start_recording_f,      0,
+	{"start_recording",       (cmd_function)start_recording_f,      0,
 		0, 0,
 		REQUEST_ROUTE | ONREPLY_ROUTE },
-	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer2_f,     0,
+	{"rtpproxy_offer",        (cmd_function)rtpproxy_offer2_f,      0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer2_f,     1,
+	{"rtpproxy_offer",        (cmd_function)rtpproxy_offer2_f,      1,
+		fixup_spve_null, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_offer",        (cmd_function)rtpproxy_offer2_f,      2,
+		fixup_spve_spve, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"rtpproxy_answer",      (cmd_function)rtpproxy_answer2_f,      0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_offer",	(cmd_function)rtpproxy_offer2_f,     2,
-		0, 0,
+	{"rtpproxy_answer",      (cmd_function)rtpproxy_answer2_f,      1,
+		fixup_spve_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer2_f,    0,
-		0, 0,
+	{"rtpproxy_answer",      (cmd_function)rtpproxy_answer2_f,      2,
+		fixup_spve_spve, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer2_f,    1,
-		0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_answer",	(cmd_function)rtpproxy_answer2_f,    2,
-		0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"rtpproxy_stream2uac",(cmd_function)rtpproxy_stream2uac2_f, 2,
+	{"rtpproxy_stream2uac",(cmd_function)rtpproxy_stream2uac2_f,    2,
 		fixup_var_str_int, 0,
 		REQUEST_ROUTE | ONREPLY_ROUTE },
-	{"rtpproxy_stream2uas",(cmd_function)rtpproxy_stream2uas2_f, 2,
+	{"rtpproxy_stream2uas",(cmd_function)rtpproxy_stream2uas2_f,    2,
 		fixup_var_str_int, 0,
 		REQUEST_ROUTE | ONREPLY_ROUTE },
 	{"rtpproxy_stop_stream2uac",(cmd_function)rtpproxy_stop_stream2uac2_f,0,
@@ -2339,9 +2340,33 @@ pkg_strdup(char *cp)
 	return (rval);
 }
 
+
+static int rtpp_get_var_svalue(struct sip_msg *msg, gparam_p gp, str *val, int n)
+{
+	#define MAX_BUF  64
+	static char buf[2][MAX_BUF];
+	str tmp;
+
+	if (gp->type==GPARAM_TYPE_STR) {
+		*val = gp->v.sval;
+		return 0;
+	}
+
+	if ( fixup_get_svalue(msg, gp, &tmp)!=0 )
+		return -1;
+	val->s = buf[n];
+	val->len = (tmp.len>MAX_BUF-1) ? MAX_BUF-1 : tmp.len ;
+	memcpy(val->s,tmp.s, val->len);
+	val->s[val->len] = 0;
+	return 0;
+}
+
 static int
 rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 {
+	str flag_str;
+	str ip_str;
+
 	if(rtpp_notify_socket.s)
 	{
 		if ( (!msg->to && parse_headers(msg, HDR_TO_F,0)<0) || !msg->to ) {
@@ -2349,24 +2374,47 @@ rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 			return -1;
 		}
 
-
 		/* if an initial request - create a new dialog */
 		if(get_to(msg)->tag_value.s == NULL)
 			dlg_api.create_dlg(msg,0);
 	}
 
-	return force_rtp_proxy(msg, param1, param2, 1);
+	if (rtpp_get_var_svalue(msg, (gparam_p)param1, &flag_str, 0)<0) {
+		LM_ERR("bogus flags parameter\n");
+		return -1;
+	}
+	if (param2!=NULL) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
+			LM_ERR("bogus IP addr parameter\n");
+			return -1;
+		}
+		return force_rtp_proxy(msg, flag_str.s, ip_str.s, 1);
+	}
+	return force_rtp_proxy(msg, flag_str.s, NULL, 1);
 }
 
 static int
 rtpproxy_answer2_f(struct sip_msg *msg, char *param1, char *param2)
 {
+	str flag_str;
+	str ip_str;
 
 	if (msg->first_line.type == SIP_REQUEST)
 		if (msg->first_line.u.request.method_value != METHOD_ACK)
 			return -1;
 
-	return force_rtp_proxy(msg, param1, param2, 0);
+	if (rtpp_get_var_svalue(msg, (gparam_p)param1, &flag_str, 0)<0) {
+		LM_ERR("bogus flags parameter\n");
+		return -1;
+	}
+	if (param2!=NULL) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
+			LM_ERR("bogus IP addr parameter\n");
+			return -1;
+		}
+		return force_rtp_proxy(msg, flag_str.s, ip_str.s, 0);
+	}
+	return force_rtp_proxy(msg, flag_str.s, param2, 0);
 }
 
 static void engage_callback(struct dlg_cell *dlg, int type,
