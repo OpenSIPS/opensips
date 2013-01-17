@@ -57,24 +57,23 @@ Razvan Crainea
               1.3.8. is_present_hf(hf_name)
               1.3.9. append_time()
               1.3.10. is_method(name)
-              1.3.11. remove_hf(hname)
-              1.3.12. remove_hf_wildcard(wildcard_hname)
-              1.3.13. has_body(), has_body(mime)
-              1.3.14. is_audio_on_hold()
-              1.3.15. is_privacy(privacy_type)
-              1.3.16. strip_body(), strip_body(mime)
-              1.3.17. add_body(body_text, new_content_type)
-              1.3.18. sipmsg_validate([flags])
-              1.3.19. codec_exists (name [,clock] )
-              1.3.20. codec_delete (name [,clock] )
-              1.3.21. codec_move_up (name [,clock] )
-              1.3.22. codec_move_down (name [,clock] )
-              1.3.23. codec_exists_re ( regexp )
-              1.3.24. codec_delete_re ( regexp )
-              1.3.25. codec_delete_except_re ( regexp )
-              1.3.26. codec_move_up_re ( regexp )
-              1.3.27. codec_move_down_re ( regexp )
-              1.3.28. change_reply_status(code, reason)
+              1.3.11. remove_hf(hname [,flags])
+              1.3.12. has_body(), has_body(mime)
+              1.3.13. is_audio_on_hold()
+              1.3.14. is_privacy(privacy_type)
+              1.3.15. strip_body(), strip_body(mime)
+              1.3.16. add_body(body_text, new_content_type)
+              1.3.17. sipmsg_validate([flags])
+              1.3.18. codec_exists (name [,clock] )
+              1.3.19. codec_delete (name [,clock] )
+              1.3.20. codec_move_up (name [,clock] )
+              1.3.21. codec_move_down (name [,clock] )
+              1.3.22. codec_exists_re ( regexp )
+              1.3.23. codec_delete_re ( regexp )
+              1.3.24. codec_delete_except_re ( regexp )
+              1.3.25. codec_move_up_re ( regexp )
+              1.3.26. codec_move_down_re ( regexp )
+              1.3.27. change_reply_status(code, reason)
 
         1.4. Known Limitations
 
@@ -91,25 +90,24 @@ Razvan Crainea
    1.9. append_time usage
    1.10. is_method usage
    1.11. remove_hf usage
-   1.12. remove_hf_wildcard usage
-   1.13. has_body usage
-   1.14. is_audio_on_hold usage
-   1.15. is_privacy usage
-   1.16. strip_body usage
-   1.17. add_body usage
-   1.18. sipmsg_validate usage
-   1.19. codec_exists usage
-   1.20. codec_delete usage
-   1.21. codec_move_up usage
+   1.12. has_body usage
+   1.13. is_audio_on_hold usage
+   1.14. is_privacy usage
+   1.15. strip_body usage
+   1.16. add_body usage
+   1.17. sipmsg_validate usage
+   1.18. codec_exists usage
+   1.19. codec_delete usage
+   1.20. codec_move_up usage
+   1.21. codec_move_down usage
    1.22. codec_move_down usage
-   1.23. codec_move_down usage
-   1.24. codec_exists_re usage
-   1.25. codec_delete_re usage
-   1.26. codec_delete_except_re usage
-   1.27. codec_move_up_re usage
-   1.28. codec_move_down_re usage
-   1.29. codec_move_down usage
-   1.30. change_reply_status usage
+   1.23. codec_exists_re usage
+   1.24. codec_delete_re usage
+   1.25. codec_delete_except_re usage
+   1.26. codec_move_up_re usage
+   1.27. codec_move_down_re usage
+   1.28. codec_move_down usage
+   1.29. change_reply_status usage
 
 Chapter 1. Admin Guide
 
@@ -353,7 +351,7 @@ if(is_method("OPTION|UPDATE"))
 }
 ...
 
-1.3.11.  remove_hf(hname)
+1.3.11.  remove_hf(hname [,flags])
 
    Remove from message all headers with name “hname”
 
@@ -365,6 +363,13 @@ if(is_method("OPTION|UPDATE"))
           + string - Header name to be removed
           + pvar - Header name to be removed is the value of an
             existing pseudo-variable (as string value)
+          + pattern - pattern to match the names of the headers to
+            be removed; can be a simple wildcard or a regexp (see
+            the second param too)
+     * flags - how to interpret the pattern from the first
+       parameted.
+          + r - pattern is a regexp
+          + g - pattern is glob (shell wildcard pattern)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
@@ -376,32 +381,14 @@ if(remove_hf("User-Agent"))
     # User Agent header removed
 }
 ...
-
-1.3.12.  remove_hf_wildcard(wildcard_hname)
-
-   Remove from message all headers with name matching the wildcard
-   “wildcard_hname” (which is a shell wildcard pattern)
-
-   Returns true if at least one header is found and removed.
-
-   Meaning of the parameters is as follows:
-     * wildcard_hname - a shell wildcard pattern to match the name
-       of the headers to be removed. This pattern does not accept
-       any kind of variables, it must be a static string.
-
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE and BRANCH_ROUTE.
-
-   Example 1.12. remove_hf_wildcard usage
+# removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, etc
+remove_hf("X-Billing*", "g");
 ...
-if(remove_hf_wildcard("X-Billing-%"))
-{
-    # removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, et
-c
-}
+#removes headers by regex
+remove_hf("^X-g.+[0-9]", "r");
 ...
 
-1.3.13.  has_body(), has_body(mime)
+1.3.12.  has_body(), has_body(mime)
 
    The function returns true if the SIP message has a body
    attached. The checked includes also the “Content-Lenght” header
@@ -423,7 +410,7 @@ c
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.13. has_body usage
+   Example 1.12. has_body usage
 ...
 if(has_body("application/sdp"))
 {
@@ -431,7 +418,7 @@ if(has_body("application/sdp"))
 }
 ...
 
-1.3.14.  is_audio_on_hold()
+1.3.13.  is_audio_on_hold()
 
    The function returns true if the SIP message has an SDP body
    attached and at least one audio stream in on hold.
@@ -439,7 +426,7 @@ if(has_body("application/sdp"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.14. is_audio_on_hold usage
+   Example 1.13. is_audio_on_hold usage
 ...
 if(is_audio_on_hold())
 {
@@ -447,7 +434,7 @@ if(is_audio_on_hold())
 }
 ...
 
-1.3.15.  is_privacy(privacy_type)
+1.3.14.  is_privacy(privacy_type)
 
    The function returns true if the SIP message has a Privacy
    header field that includes the given privacy_type among its
@@ -458,7 +445,7 @@ if(is_audio_on_hold())
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.15. is_privacy usage
+   Example 1.14. is_privacy usage
 ...
 if(is_privacy("id"))
 {
@@ -466,7 +453,7 @@ if(is_privacy("id"))
 }
 ...
 
-1.3.16.  strip_body(), strip_body(mime)
+1.3.15.  strip_body(), strip_body(mime)
 
    If the message has a body, this function deletes it, correcting
    Content-Length. This function also deletes the Content-Type
@@ -486,7 +473,7 @@ if(is_privacy("id"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.16. strip_body usage
+   Example 1.15. strip_body usage
 ...
 strip_body();   #delete any body
 strip_body("multipart/related") # delete a multipart/related body
@@ -494,7 +481,7 @@ strip_body("application/sdp") # delete all sdp bodies, even ones enclose
 d in multipart
 ...
 
-1.3.17.  add_body(body_text, new_content_type)
+1.3.16.  add_body(body_text, new_content_type)
 
    This function can be used to add a body to a message. If a body
    already exists, it will be replaced with the new one. The
@@ -507,12 +494,12 @@ d in multipart
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.17. add_body usage
+   Example 1.16. add_body usage
 ...
 add_body("Hello World!", "text/plain");
 ...
 
-1.3.18.  sipmsg_validate([flags])
+1.3.17.  sipmsg_validate([flags])
 
    The function returns true if the SIP message is properly built
    according to SIP RFC3261. It verifies if the mandatory headers
@@ -537,7 +524,7 @@ add_body("Hello World!", "text/plain");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.18. sipmsg_validate usage
+   Example 1.17. sipmsg_validate usage
 ...
 if(!sipmsg_validate())
 {
@@ -555,7 +542,7 @@ if(!sipmsg_validate("sh"))
 }
 ...
 
-1.3.19.  codec_exists (name [,clock] )
+1.3.18.  codec_exists (name [,clock] )
 
    This function can be used to verify if a codec exists inside an
    sdp payload. It will search for the codec inside all streams
@@ -567,14 +554,14 @@ if(!sipmsg_validate("sh"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.19. codec_exists usage
+   Example 1.18. codec_exists usage
 ...
 codec_exists("speex");
 or
 codec_exists("GSM","8000");
 ...
 
-1.3.20.  codec_delete (name [,clock] )
+1.3.19.  codec_delete (name [,clock] )
 
    This function can be used to delete a codec from inside an sdp
    payload. It will search for the codec inside all streams from
@@ -588,14 +575,14 @@ codec_exists("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.20. codec_delete usage
+   Example 1.19. codec_delete usage
 ...
 codec_delete("speex");
 or
 codec_delete("GSM","8000");
 ...
 
-1.3.21.  codec_move_up (name [,clock] )
+1.3.20.  codec_move_up (name [,clock] )
 
    This function can be used to move a codec up in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -610,14 +597,14 @@ codec_delete("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.21. codec_move_up usage
+   Example 1.20. codec_move_up usage
 ...
 codec_move_up("speex");
 or
 codec_move_up("GSM","8000");
 ...
 
-1.3.22.  codec_move_down (name [,clock] )
+1.3.21.  codec_move_down (name [,clock] )
 
    This function can be used to move a codec down in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -631,14 +618,14 @@ codec_move_up("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.22. codec_move_down usage
+   Example 1.21. codec_move_down usage
 ...
 codec_move_down("speex");
 or
 codec_move_down("GSM","8000");
 ...
 
-   Example 1.23. codec_move_down usage
+   Example 1.22. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -651,7 +638,7 @@ codec_delete("GSM","8000");
 codec_move_up("speex");
 ...
 
-1.3.23.  codec_exists_re ( regexp )
+1.3.22.  codec_exists_re ( regexp )
 
    This function has the same effect as codec_exists ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -660,12 +647,12 @@ codec_move_up("speex");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.24. codec_exists_re usage
+   Example 1.23. codec_exists_re usage
 ...
 codec_exists_re("sp[a-z]*");
 ...
 
-1.3.24.  codec_delete_re ( regexp )
+1.3.23.  codec_delete_re ( regexp )
 
    This function has the same effect as codec_delete ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -674,13 +661,13 @@ codec_exists_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.25. codec_delete_re usage
+   Example 1.24. codec_delete_re usage
 ...
 codec_delete_re("PCMA|PCMU");
 ...
 
 
-1.3.25.  codec_delete_except_re ( regexp )
+1.3.24.  codec_delete_except_re ( regexp )
 
    This function deletes all the codecs except those specified by
    the regular expression.
@@ -688,14 +675,14 @@ codec_delete_re("PCMA|PCMU");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.26. codec_delete_except_re usage
+   Example 1.25. codec_delete_except_re usage
 ...
 codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA
 and PCMU
 ...
 
 
-1.3.26.  codec_move_up_re ( regexp )
+1.3.25.  codec_move_up_re ( regexp )
 
    This function has the same effect as codec_move_up ( without
    the clock parameter ) the only difference is that it takes a
@@ -704,12 +691,12 @@ and PCMU
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.27. codec_move_up_re usage
+   Example 1.26. codec_move_up_re usage
 ...
 codec_move_up_re("sp[a-z]*");
 ...
 
-1.3.27.  codec_move_down_re ( regexp )
+1.3.26.  codec_move_down_re ( regexp )
 
    This function has the same effect as codec_move_down ( without
    the clock parameter ) the only difference is that it takes a
@@ -718,12 +705,12 @@ codec_move_up_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.28. codec_move_down_re usage
+   Example 1.27. codec_move_down_re usage
 ...
 codec_move_down_re("sp[a-z]*");
 ...
 
-   Example 1.29. codec_move_down usage
+   Example 1.28. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -736,7 +723,7 @@ codec_delete("GSM","8000");
 codec_move_up("speex");
 ...
 
-1.3.28.  change_reply_status(code, reason)
+1.3.27.  change_reply_status(code, reason)
 
    Intercept a SIP reply (in any onreply_route) and change its
    status code and reason phrase prior to propogating it.
@@ -747,7 +734,7 @@ codec_move_up("speex");
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.30. change_reply_status usage
+   Example 1.29. change_reply_status usage
 ...
 onreply_route {
     if ($rs == "603") {

@@ -111,7 +111,7 @@ static str header_body = {0, 0};
 
 static int filter_body_f(struct sip_msg*, char*, char*);
 static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
-static int remove_hf_wc_f(struct sip_msg* msg, char* pattern, char* foo);
+static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* foo);
 static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo);
 static int append_to_reply_f(struct sip_msg* msg, char* key, char* str);
 static int append_hf_1(struct sip_msg* msg, char* str1, char* str2);
@@ -132,11 +132,15 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s);
 
 static int hname_fixup(void** param, int param_no);
 static int free_hname_fixup(void** param, int param_no);
+static int hname_match_fixup(void** param, int param_no);
+static int free_hname_match_fixup(void** param, int param_no);
+
 static int fixup_method(void** param, int param_no);
 static int add_header_fixup(void** param, int param_no);
 static int fixup_body_type(void** param, int param_no);
 static int fixup_privacy(void** param, int param_no);
 static int fixup_sip_validate(void** param, int param_no);
+
 static int change_reply_status_f(struct sip_msg*, char*, char *);
 static int change_reply_status_fixup(void** param, int param_no);
 
@@ -165,8 +169,8 @@ static cmd_export_t cmds[]={
 	{"remove_hf",        (cmd_function)remove_hf_f,       1,
 		hname_fixup, free_hname_fixup,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"remove_hf_wildcard",(cmd_function)remove_hf_wc_f,   1,
-		fixup_str_null, 0,
+	{"remove_hf",        (cmd_function)remove_hf_match_f,  2,
+		hname_match_fixup, free_hname_match_fixup,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_present_hf",    (cmd_function)is_present_hf_f,   1,
 		hname_fixup, free_hname_fixup,
@@ -472,27 +476,41 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 	return cnt==0 ? -1 : 1;
 }
 
-static int remove_hf_wc_f(struct sip_msg* msg, char* pattern, char* foo)
+
+static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* regex_or_glob)
 {
 	struct hdr_field *hf;
 	struct lump* l;
 	int cnt;
-	str *pat = (str *)pattern;
+	str* pat = (str*)pattern;
+	regex_t* re = (regex_t*)pattern;
+	char matchtype = *regex_or_glob;
+	regmatch_t pmatch;
 	char tmp;
 
 	cnt=0;
 
 	/* we need to be sure we have seen all HFs */
-	parse_headers(msg, HDR_EOH_F, 0);
+	if (parse_headers(msg, HDR_EOH_F, 0)!=0) {
+		LM_ERR("failed to parse SIP message\n");
+		return -1;
+	}
 	for (hf=msg->headers; hf; hf=hf->next) {
-				
-			if (hf->type!=HDR_OTHER_T)
-				continue;
 			tmp = *(hf->name.s+hf->name.len);
 			*(hf->name.s+hf->name.len) = 0;
-			if(fnmatch(pat->s, hf->name.s, 0) !=0 ){
-				*(hf->name.s+hf->name.len) = tmp;
-				continue;
+			if( matchtype == 'g' ) { /* GLOB */
+				if(fnmatch(pat->s, hf->name.s, 0) !=0 ){
+					*(hf->name.s+hf->name.len) = tmp;
+					continue;
+				}
+			} else if( matchtype == 'r' ){ /* REGEX */
+				if(regexec(re, hf->name.s, 1, &pmatch, 0)!=0){
+					*(hf->name.s+hf->name.len) = tmp;
+					continue;
+				}
+			} else {
+				LM_ERR("Unknow match type. Supported types are r (regex) and g (glob)");
+				return -1;
 			}
 			*(hf->name.s+hf->name.len) = tmp;
 			l=del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
@@ -504,6 +522,7 @@ static int remove_hf_wc_f(struct sip_msg* msg, char* pattern, char* foo)
 	}
 	return cnt==0 ? -1 : 1;
 }
+
 
 static int is_present_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 {
@@ -812,6 +831,81 @@ static int free_hname_fixup(void** param, int param_no)
 		pkg_free(*param);
 		*param = 0;
 	}
+	return 0;
+}
+
+static int hname_match_fixup(void** param, int param_no)
+{
+	char * type_param = NULL;
+	char * type_str = NULL;
+	char type = 0;
+	char * matchstr = *(char**)param;
+
+	if(param_no == 1){
+		if(strlen(matchstr)==0){
+			LM_ERR("Empty match string parameter.\n");
+			return E_UNSPEC;
+		}
+		type_param = ((char*)param)+sizeof(action_elem_t);
+		if(!type_param){
+			LM_ERR("Unable to fetch the 2nd parameter\n");
+			return E_UNSPEC;
+		}
+
+		type_str = *((char**)type_param);
+		if(!type_str){
+			LM_ERR("Unable to access 2nd parameter value\n");
+			return E_UNSPEC;
+		}
+		type = *type_str;
+		if(type == 'r'){
+			/* regex fixup code here */
+			LM_DBG("processing param1: %s as regex\n", *(char**)param);
+			fixup_regexp_null(param, param_no);
+	 	}else if(type == 'g'){
+			/* glob fixup code here */
+			LM_DBG("processing param1: %s as glob\n", *(char**)param);
+			fixup_str(param);
+		}else{
+			LM_ERR("Unknown match type '%c'\n", type);
+			return E_UNSPEC;
+		}
+	}
+	return 0;
+}
+
+
+static int free_hname_match_fixup(void** param, int param_no)
+{
+	char * type_param = NULL;
+	char * type_str = NULL;
+	char type = 0;
+
+	if(param_no == 1){
+		type_param = ((char*)param)+sizeof(action_elem_t);
+		if(!type_param){
+			LM_ERR("Unable to fetch the 2nd parameter\n");
+			return E_UNSPEC;
+		}
+		type_str = *((char**)type_param);
+		if(!type_str){
+			LM_ERR("Unable to access 2nd parameter value\n");
+			return E_UNSPEC;
+		}
+		type = *type_str;
+		if(type == 'r'){
+			/* regex fixup code here */
+			LM_DBG("Freeing regexp\n");
+			fixup_free_regexp_null(param, param_no);
+		}else if(type == 'g'){
+			/* glob fixup code here */
+			LM_DBG("Freeing glob\n");
+			fixup_free_str_str(param, param_no);
+		}else{
+			LM_ERR("Unknown match type in free_hname_match_fixup. Please notify a developer.\n");
+		}
+	}
+
 	return 0;
 }
 

@@ -453,7 +453,7 @@ if(is_method("OPTION|UPDATE"))
 
 	<section>
 		<title>
-		<function moreinfo="none">remove_hf(hname)</function>
+		<function moreinfo="none">remove_hf(hname [,flags])</function>
 		</title>
 		<para>
 		Remove from message all headers with name <quote>hname</quote>
@@ -472,10 +472,30 @@ if(is_method("OPTION|UPDATE"))
 				<para><emphasis>string</emphasis> - Header name to be removed
 				</para>
 				</listitem>
-				
 				<listitem>
 				<para><emphasis>pvar</emphasis> - Header name to be removed is
 				the value of an existing pseudo-variable (as string value)
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>pattern</emphasis> - pattern to match the 
+				names of the headers to be removed; can be a simple wildcard
+				or a regexp (see the second param too)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>flags</emphasis> - how to interpret the pattern from
+			the first parameted.
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>r</emphasis> - pattern is a regexp
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>g</emphasis> - pattern is glob (shell wildcard pattern)
 				</para>
 				</listitem>
 			</itemizedlist>
@@ -494,42 +514,11 @@ if(remove_hf("User-Agent"))
     # User Agent header removed
 }
 ...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">remove_hf_wildcard(wildcard_hname)</function>
-		</title>
-		<para>
-		Remove from message all headers with name matching the wildcard <quote>wildcard_hname</quote> 
-		(which is a shell wildcard pattern) 
-		</para>
-		<para>
-		Returns true if at least one header is found and removed.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>wildcard_hname</emphasis> - a shell wildcard pattern to match the name of
-			the headers to be removed. This pattern does not accept any kind of variables, it must be 
-			a static string.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE and BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>remove_hf_wildcard</function> usage</title>
-		<programlisting format="linespecific">
+# removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, etc
+remove_hf("X-Billing*", "g");
 ...
-if(remove_hf_wildcard("X-Billing-%"))
-{
-    # removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, etc
-}
+#removes headers by regex
+remove_hf("^X-g.+[0-9]", "r");
 ...
 </programlisting>
 		</example>
