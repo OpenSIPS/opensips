@@ -364,7 +364,7 @@ static int _bm_log_timer(unsigned int id)
 			timer->sum,
 			timer->global_min,
 			timer->global_max,
-			((double)timer->sum)/timer->calls);
+			((double)timer->sum)/timer->global_calls);
 
 		soft_reset_timer(timer);
 	}
