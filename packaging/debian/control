@@ -135,7 +135,7 @@ Description: Perl extensions and database driver for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides an interface for OpenSIPS to write Perl extensions and
- the perlvdb database driver for OpenSIPS.
+ the db_perlvdb database driver for OpenSIPS.
 
 Package: opensips-snmpstats-module
 Architecture: any

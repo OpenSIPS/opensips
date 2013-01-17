@@ -3,7 +3,7 @@
 %define rel     0
 %define _sharedir %{_prefix}/share
 
-%define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap xcap_client ldap h350 identity regex
+%define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl-c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats db_perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap xcap_client ldap h350 identity regex
 %define MYSQL_MODULES		modules/db_mysql
 %define UNIXODBC_MODULES	modules/db_unixodbc
 %define POSTGRES_MODULES	modules/db_postgres

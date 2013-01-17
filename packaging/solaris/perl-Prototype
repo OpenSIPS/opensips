@@ -5,6 +5,6 @@ d none /opt/opensips/lib64 0755 root root
 d none /opt/opensips/lib64/opensips 0755 root root
 d none /opt/opensips/lib64/opensips/modules 0755 root root
 f none /opt/opensips/lib64/opensips/modules/perl.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/perlvdb.so 0755 root root
+f none /opt/opensips/lib64/opensips/modules/db_perlvdb.so 0755 root root
 f none /opt/opensips/README.perl 0644 root root
-f none /opt/opensips/README.perlvdb 0644 root root
+f none /opt/opensips/README.db_perlvdb 0644 root root

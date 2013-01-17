@@ -859,7 +859,7 @@ fi
 %defattr(-,root,root,-)
 %dir %{perl_vendorlib}/OpenSIPS/VDB
 %dir %{perl_vendorlib}/OpenSIPS/VDB/Adapter
-%{_libdir}/opensips/modules/perlvdb.so
+%{_libdir}/opensips/modules/db_perlvdb.so
 %{perl_vendorlib}/OpenSIPS/VDB.pm
 %{perl_vendorlib}/OpenSIPS/VDB/Adapter/AccountingSIPtrace.pm
 %{perl_vendorlib}/OpenSIPS/VDB/Adapter/Alias.pm
