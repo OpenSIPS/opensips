@@ -804,7 +804,6 @@ static int sip_trace(struct sip_msg *msg)
 	strcat(fromip_buff,":");
 	strcat(fromip_buff, int2str(msg->rcv.src_port, NULL));
 	db_vals[4].val.string_val = fromip_buff;
-	LM_CRIT("xXx from ip is [%s] \n",fromip_buff);
 
 	// db_vals[5].val.string_val = ip_addr2a(&msg->rcv.dst_ip);;
 	siptrace_copy_proto(msg->rcv.proto, toip_buff);
@@ -812,7 +811,6 @@ static int sip_trace(struct sip_msg *msg)
 	strcat(toip_buff,":");
 	strcat(toip_buff, int2str(msg->rcv.dst_port, NULL));
 	db_vals[5].val.string_val = toip_buff;
-	LM_CRIT("xXx to ip is [%s] \n",toip_buff);
 
 	db_vals[6].val.time_val = time(NULL);
 
