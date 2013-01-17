@@ -9,7 +9,19 @@ include ../../Makefile.defs
 auto_gen=
 NAME= pua_xmpp.so
 
-DEFS+=-I/usr/include/libxml2 -I$(LOCALBASE)/include/libxml2 -I$(LOCALBASE)/include
-LIBS=-L/usr/include/lib  -L$(LOCALBASE)/lib -lxml2
+ifeq ($(CROSS_COMPILE),)
+XML2CFG=$(shell which xml2-config)
+endif
+
+ifneq ($(XML2CFG),)
+	DEFS += $(shell $(XML2CFG) --cflags)
+	LIBS += $(shell $(XML2CFG) --libs)
+else
+	DEFS += -I$(SYSBASE)/include/libxml2 \
+			-I$(LOCALBASE)/include/libxml2 \
+			-I$(LOCALBASE)/include
+	LIBS += -L$(SYSBASE)/include/lib \
+			-L$(LOCALBASE)/lib -lxml2
+endif
 
 include ../../Makefile.modules
