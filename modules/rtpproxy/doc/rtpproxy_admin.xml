@@ -484,18 +484,18 @@ rtpproxy_offer();
 </programlisting>
 		</example>
 	</section>
-		<section>
-				<title>
-				<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
-				</title>
+	<section>
+		<title>
+			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
+		</title>
 
-				<para>
-                Rewrites &sdp; body to ensure that media is passed through
-				an &rtp; proxy. It uses the dialog module facilities to keep track
-				when the rtpproxy session must be updated. Function must only be
-				called for the initial INVITE
-				and internally takes care of rewriting the body of 200 OKs and ACKs.
-				</para>
+		<para>
+		Rewrites &sdp; body to ensure that media is passed through
+		an &rtp; proxy. It uses the dialog module facilities to keep track
+		when the rtpproxy session must be updated. Function must only be
+		called for the initial INVITE
+		and internally takes care of rewriting the body of 200 OKs and ACKs.
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
@@ -571,19 +571,22 @@ rtpproxy_offer();
 		<emphasis>ip_address</emphasis> - new SDP IP address.
 		</para></listitem>
 		</itemizedlist>
-				<para>
-				This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
-				</para>
-				<example>
-				<title><function>engage_rtp_proxy</function> usage</title>
-				<programlisting format="linespecific">
+		<para>
+		Both parmeters do accept variables in any combination.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>engage_rtp_proxy</function> usage</title>
+		<programlisting format="linespecific">
 		...
 		if (is_method("INVITE") &amp;&amp;
 		has_totag()) {engage_rtp_proxy();};
 		...
 		</programlisting>
-				</example>
-			</section>
+		</example>
+		</section>
 
         <section>
                 <title>
