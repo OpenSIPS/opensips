@@ -9,20 +9,22 @@ NAME=regex.so
 # CROSS_COMPILE=true
 
 ifeq ($(CROSS_COMPILE),)
-HAS_PCRECFG=$(shell if which pcre-config >/dev/null 2>/dev/null;then echo YES; fi)
+PCRE_BUILDER = $(shell \
+	if which pcre-config >/dev/null 2>/dev/null; then \
+		echo 'pcre-config'; \
+	elif pkg-config --exists libcre; then \
+		echo 'pkg-config libpcre'; \
+	fi)
 endif
 
-ifeq ($(HAS_PCRECFG),YES)
-
-	# use autodetection
-	DEFS += $(shell pcre-config --cflags)
-	LIBS = $(shell pcre-config --libs)
-
+ifeq ($(PCRE_BUILDER),)
+	DEFS += -I$(SYSBASE)/include \
+			-I$(LOCALBASE)/include
+	LIBS += -L$(SYSBASE)/lib \
+			-L$(LOCALBASE)/lib -lpcre
 else
-
-	DEFS+=-I/usr/include -I/usr/sfw/include -I/usr/local/include -I/opt/csw/include -I$(LOCALBASE)/include
-	LIBS=-I/usr/lib -I/usr/sfw/lib -I/usr/local/lib -I/opt/csw/lib -I$(LOCALBASE)/lib -lpcre
-
+	DEFS += $(shell $(PCRE_BUILDER) --cflags)
+	LIBS += $(shell $(PCRE_BUILDER) --libs)
 endif
 
 include ../../Makefile.modules
