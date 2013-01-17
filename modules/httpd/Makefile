@@ -3,16 +3,26 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=httpd.so
-LIBS=
 
 # set CROSS_COMPILE to true if you want to skip
 # the autodetection
 # CROSS_COMPILE=true
+ifeq ($(CROSS_COMPILE),)
+LIBMICROHTTPD_BUILDER=$(shell \
+	if pkg-config --exists libmicrohttpd; then \
+		echo 'pkg-config libmicrohttpd'; \
+	fi)
+endif
 
-        # use standard know paths
-	DEFS +=-DLIBMICROHTTPD
-        DEFS +=-I$(LOCALBASE)/include
-        LIBS +=-L$(LOCALBASE)/lib -L/usr/lib -lmicrohttpd
+ifneq ($(LIBMICROHTTPD_BUILDER),)
+	DEFS += $(shell $(LIBMICROHTTPD_BUILDER) --cflags)
+	LIBS += $(shell $(LIBMICROHTTPD_BUILDER) --libs)
+else
+	DEFS +=-I$(LOCALBASE)/include
+	LIBS +=-L$(LOCALBASE)/lib -lmicrohttpd
+endif
+
+DEFS +=-DLIBMICROHTTPD
 
 include ../../Makefile.modules
 
