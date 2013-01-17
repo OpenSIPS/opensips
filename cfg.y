@@ -347,6 +347,7 @@ extern int line;
 %token TCP_CONNECT_TIMEOUT
 %token TCP_SEND_TIMEOUT
 %token TCP_CON_LIFETIME
+%token TCP_LISTEN_BACKLOG
 %token TCP_POLL_METHOD
 %token TCP_MAX_CONNECTIONS
 %token TCP_OPT_CRLF_PINGPONG
@@ -734,6 +735,14 @@ assign_stm: DEBUG EQUAL snumber {
 									#endif
 									}
 		| TCP_CON_LIFETIME EQUAL error { yyerror("number expected"); }
+		| TCP_LISTEN_BACKLOG EQUAL NUMBER {
+									#ifdef USE_TCP
+										tcp_listen_backlog=$3;
+									#else
+										warn("tcp support not compiled in");
+									#endif
+									}
+		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_POLL_METHOD EQUAL ID {
 									#ifdef USE_TCP
 										tcp_poll_method=get_poll_type($3);

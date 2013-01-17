@@ -137,6 +137,7 @@ int tcp_accept_aliases=0;		/*!< by default don't accept aliases */
 int tcp_connect_timeout=DEFAULT_TCP_CONNECT_TIMEOUT;
 int tcp_send_timeout=DEFAULT_TCP_SEND_TIMEOUT;
 int tcp_con_lifetime=DEFAULT_TCP_CONNECTION_LIFETIME;
+int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 enum poll_types tcp_poll_method=0; 	/*!< by default choose the best method */
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
 int tcp_max_fd_no=0;
@@ -965,7 +966,7 @@ int tcp_init(struct socket_info* sock_info)
  				strerror(errno));
 		goto error;
 	}
-	if (listen(sock_info->socket, 10)==-1){
+	if (listen(sock_info->socket, tcp_listen_backlog)==-1){
 		LM_ERR("listen(%x, %p, %d) on %s: %s\n",
 				sock_info->socket, &addr->s, 
 				(unsigned)sockaddru_len(*addr),
