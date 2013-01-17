@@ -6,9 +6,23 @@ include ../../Makefile.defs
 auto_gen=
 NAME=tlsops.so
 
-DEFS+= -I$(LOCALBASE)/ssl/include -I$(LOCALBASE)/include -I/usr/sfw/include -I/usr/local/ssl/include
-LIBS= -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib -L/usr/sfw/lib -L/usr/local/ssl/lib -lssl  -lcrypto
+ifeq ($(CROSS_COMPILE),)
+SSL_BUILDER=$(shell \
+	if pkg-config --exists libssl; then \
+		echo 'pkg-config libssl'; \
+	fi)
+endif
+
+ifneq ($(SSL_BUILDER),)
+	DEFS += $(shell $(SSL_BUILDER) --cflags)
+	LIBS += $(shell $(SSL_BUILDER) --libs)
+else
+	DEFS += -I$(LOCALBASE)/ssl/include \
+			-I$(LOCALBASE)/include
+	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib \
+			-L$(LOCALBASE)/lib64 -L$(LOCALBASE)/ssl/lib64 \
+			-lssl -lcrypto
+endif
 
 include ../../Makefile.modules
-
 
