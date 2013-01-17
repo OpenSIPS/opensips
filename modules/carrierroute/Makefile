@@ -5,25 +5,24 @@
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
-
 auto_gen=
 NAME=carrierroute.so
 
-HAS_BUILDER = $(shell if which confuse-config >/dev/null 2>/dev/null;then echo YES; fi)
-
-ifeq ($(HAS_BUILDER),YES)
-	# use autodetection
-	CONFUSEDEFS = $(shell confuse-config --cflags)
-	CONFUSELIBS = $(shell confuse-config --libs)
-else
-	# use standard know paths
-	CONFUSEDEFS=-I$(LOCALBASE)/include -I/usr/local/include -I/opt/include \
-		-I/usr/sfw/include
-	CONFUSELIBS=-L$(LOCALBASE)/lib -L/usr/local/lib -L/usr/sfw/lib \
-		-L/opt/lib -lconfuse
+ifeq ($(CROSS_COMPILE),)
+CONFUSE_BUILDER = $(shell \
+    if which confuse-config &>/dev/null;then \
+		echo 'confuse-config'; \
+	elif pkg-config --exists libconfuse; then \
+        echo 'pkg-config libconfuse'; \
+	fi)
 endif
 
-DEFS+=$(CONFUSEDEFS)
-LIBS=$(CONFUSELIBS)
+ifeq ($(CONFUSE_BUILDER),)
+	DEFS += -I$(LOCALBASE)/include
+	LIBS += -L$(LOCALBASE)/lib -lconfuse
+else
+	DEFS += $(shell $(CONFUSE_BUILDER) --cflags)
+	LIBS += $(shell $(CONFUSE_BUILDER) --libs)
+endif
 
 include ../../Makefile.modules
