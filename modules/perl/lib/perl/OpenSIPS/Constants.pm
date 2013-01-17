@@ -193,12 +193,13 @@ BEGIN {
 # From db/db_val.h:
 # Value types for virtual database classes
 	const( DB_INT		=> 0 );
-	const( DB_DOUBLE	=> 1 );
-	const( DB_STRING	=> 2 );
-	const( DB_STR		=> 3 );
-	const( DB_DATETIME	=> 4 );
-	const( DB_BLOB		=> 5 );
-	const( DB_BITMAP	=> 6 );
+	const( DB_BIGINT	=> 1 );
+	const( DB_DOUBLE	=> 2 );
+	const( DB_STRING	=> 3 );
+	const( DB_STR		=> 4 );
+	const( DB_DATETIME	=> 5 );
+	const( DB_BLOB		=> 6 );
+	const( DB_BITMAP	=> 7 );
 
 
 #####################

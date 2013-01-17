@@ -54,22 +54,24 @@ inline long IV2int(SV *in) {
 /*
  * Returns the class part of the URI
  */
-char *parseurl(const char* url) {
-	char *cn;
+str *parseurl(const str* url) {
+	static str cn;
 
-	cn = strchr(url, ':') + 1;
-	if (strlen(cn) > 0)
-		return cn;
-	else
-		return NULL;
+	cn.s = q_memchr(url->s,':',url->len);
+	if (cn.s && ((cn.s+1)<(url->s+url->len)) ) {
+		cn.s++;
+		cn.len = url->len - (cn.s-url->s);
+		return &cn;
+	}
+	return NULL;
 }
 
 
-SV *newvdbobj(const char* cn) {
+SV *newvdbobj(const str* cn) {
 	SV* obj;
 	SV *class;
 
-	class = newSVpv(cn, 0);
+	class = newSVpvn(cn->s, cn->len);
 
 	obj = perlvdb_perlmethod(class, PERL_CONSTRUCTOR_NAME,
 			NULL, NULL, NULL, NULL);
@@ -108,8 +110,7 @@ int checkobj(SV* obj) {
  */
 db_con_t* perlvdb_db_init(const str* url) {
 	db_con_t* res;
-	char *cn;
-	char *curl;
+	str *cn;
 	SV *obj = NULL;
 	int consize = sizeof(db_con_t) + sizeof(SV);
 
@@ -118,25 +119,9 @@ db_con_t* perlvdb_db_init(const str* url) {
 		return NULL;
 	}
 
-	consize += url->len + 1;
-
-	res = pkg_malloc(consize);
-	if (!res) {
-		LM_ERR("no pkg memory left\n");
-		return NULL;
-	}
-	memset(res, 0, consize);
-	CON_TAIL(res) = (unsigned int)(unsigned long)obj;
-
-	/* make the url null terminated, by copying and adding 0 */
-	curl = ((char*)res) + consize - (url->len + 1);
-	memcpy( curl, url->s, url->len);
-	curl[url->len] = 0;
-
-	cn = parseurl(curl);
+	cn = parseurl(url);
 	if (!cn) {
 		LM_ERR("invalid perl vdb url.\n");
-		pkg_free(res);
 		return NULL;
 	}
 
@@ -144,9 +129,16 @@ db_con_t* perlvdb_db_init(const str* url) {
 	if (!checkobj(obj)) {
 		LM_ERR("could not initialize module. Not inheriting from %s?\n",
 				PERL_VDB_BASECLASS);
-		pkg_free(res);
 		return NULL;
 	}
+	
+	res = pkg_malloc(consize);
+	if (!res) {
+		LM_ERR("no pkg memory left\n");
+		return NULL;
+	}
+	memset(res, 0, consize);
+	CON_TAIL(res) = (unsigned int)(unsigned long)obj;
 
 	return res;
 }
