@@ -8,7 +8,7 @@ Edited by
 
 Ovidiu Sas
 
-   Copyright © 2012 VoIP Embedded, Inc.
+   Copyright © 2012-2013 VoIP Embedded, Inc.
    Revision History
    Revision $Rev: 8688 $ $Date: 2012-01-25 13:52:05 -0500 (Wed, 25
    Jan 2012) $
@@ -20,25 +20,26 @@ Ovidiu Sas
 
         1.1. Overview
         1.2. Usage
+        1.3. Framework
 
-              1.2.1. Database connection definition block
-              1.2.2. Table definition block
-              1.2.3. Command definition block
+              1.3.1. Database connection definition block
+              1.3.2. Table definition block
+              1.3.3. Command definition block
 
-        1.3. To-do
-        1.4. Dependencies
+        1.4. To-do
+        1.5. Dependencies
 
-              1.4.1. OpenSIPS Modules
+              1.5.1. OpenSIPS Modules
 
-        1.5. External Libraries or Applications
-        1.6. Exported Parameters
+        1.6. External Libraries or Applications
+        1.7. Exported Parameters
 
-              1.6.1. pi_root(string)
-              1.6.2. framework(string)
+              1.7.1. pi_root(string)
+              1.7.2. framework(string)
 
-        1.7. Exported MI Functions
+        1.8. Exported MI Functions
 
-              1.7.1. pi_reload_tbls_and_cmds
+              1.8.1. pi_reload_tbls_and_cmds
 
    List of Examples
 
@@ -64,18 +65,34 @@ Chapter 1. Admin Guide
        reloading the config from the xml framework via mi command
        interface.
 
+   Note: when provisioning tables using db_text, any change made
+   to a db_text table will not be reflected on the actual text
+   file. In order to force a write out to the disk of the cached
+   tables, the db_text mi command dbt_dump must be used.
+
 1.2. Usage
 
    The layout of the provisionning interface is controlled via an
    external xml file (see the framework parameter). An example of
    a framework xml file is provided inside the examples directory
-   of the pi_http module. The xml framework file is organized in
-   three distinctive blocks:
+   of the pi_http module. A simple framework file can be generated
+   by the opensipsdbctl command:
+opensipsdbctl pframework creata
+
+   The generated framework will be saved inside OpenSIPS's config
+   directory as pi_framework_sample. The list of configurable
+   tables will be based on the STANDARD_MODULES and EXTRA_MODULES
+   vars from opensipsctlrc file.
+
+1.3. Framework
+
+   The xml framework file is organized in three distinctive
+   blocks:
      * database connection definition block
      * table definition block
      * command definition block
 
-1.2.1. Database connection definition block
+1.3.1. Database connection definition block
 
    Each connection to a particular database must be defined here
    with a unique database connection id. The connection parameters
@@ -93,7 +110,7 @@ Chapter 1. Admin Guide
      * unixodbc
      * virtual
 
-1.2.2. Table definition block
+1.3.2. Table definition block
 
    Each table managed through the OpenSIPS provisioning interface
    must be defined here with a unique table id. For each table,
@@ -120,7 +137,7 @@ Chapter 1. Admin Guide
      * P_HOST_PORT - represents [proto:]host[:port]
      * P_IPV4_PORT - represents [proto:]IPv4[:port]
 
-1.2.3. Command definition block
+1.3.3. Command definition block
 
    Multiple provisioning commands can be grouped together. Each
    group can have multiple commands. Each command definition in a
@@ -164,29 +181,29 @@ Chapter 1. Admin Guide
    Please note that some databases have a restricted set of
    database command types.
 
-1.3. To-do
+1.4. To-do
 
    Features to be added in the future:
      * full subscriber provisionning with automatic ha1/ha1b
        fields;
      * accept empty values as NULL;
 
-1.4. Dependencies
+1.5. Dependencies
 
-1.4.1. OpenSIPS Modules
+1.5.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * httpd module.
 
-1.5. External Libraries or Applications
+1.6. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libxml2
 
-1.6. Exported Parameters
+1.7. Exported Parameters
 
-1.6.1. pi_root(string)
+1.7.1. pi_root(string)
 
    It specifies the root path for pi http requests. The link to
    the OpenSIPS provisioning web interface must be constructed
@@ -200,7 +217,7 @@ Chapter 1. Admin Guide
 modparam("pi_http", "pi_root", "opensips_pi")
 ...
 
-1.6.2. framework(string)
+1.7.2. framework(string)
 
    It specifies the full path for xml framework descriptor.
 
@@ -212,9 +229,9 @@ modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.
 xml")
 ...
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. pi_reload_tbls_and_cmds
+1.8.1. pi_reload_tbls_and_cmds
 
    Reloads the layout of the provisioning interface from the
    framework file.
