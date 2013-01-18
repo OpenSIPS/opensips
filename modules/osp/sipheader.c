@@ -94,7 +94,7 @@ static void ospSkipPlus(
 
     if (*e164 == '+') {
         size = strlen(e164);
-        strncpy(e164, e164 + 1, size);
+        memmove(e164, e164 + 1, size - 1);
         e164[size - 1] = '\0';
     }
 }
