@@ -600,6 +600,7 @@ install-bin: $(bin-prefix)/$(bin-dir) utils
 		# install db setup base script
 		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
 			-e "s#/usr/local/etc/opensips#$(cfg-target)#g" \
+			-e "s#/usr/local/share/opensips#$(data-target)#g" \
 			< scripts/opensipsdbctl.base > /tmp/opensipsdbctl.base
 		$(INSTALL_CFG) /tmp/opensipsdbctl.base \
 			$(modules-prefix)/$(lib-dir)/opensipsctl/opensipsdbctl.base

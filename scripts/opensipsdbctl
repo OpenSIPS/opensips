@@ -169,6 +169,97 @@ opensips_restore() #pars: <database name> <filename>
 }
 
 
+opensips_pframework_create() #pars: none
+{
+	if [ -e $DEFAULT_CFG_DIR/pi_framework_sample ] ; then
+		get_answer ask "Sample already exists. overwrite? (y/n): "
+		if [ "$ANSWER" != "y" ]; then
+			exit 1
+		fi
+	fi
+	touch $DEFAULT_CFG_DIR/pi_framework_sample
+	if [ $? -ne 0 ] ; then
+		merr "Unable to create $DEFAULT_CFG_DIR/pi_framework_sample"
+		exit 1
+	fi
+
+	if [ -d "$DATA_DIR/pi_http" ] ; then
+		PI_MODULES="$STANDARD_MODULES"
+	else
+		merr "Please install first the pi_http module"
+		exit 1
+	fi
+
+
+	get_answer $INSTALL_EXTRA_TABLES "Add provisionning framework for extra tables? (y/n): "
+	if [ "$ANSWER" = "y" ]; then
+		PI_MODULES="$PI_MODULES $EXTRA_MODULES"
+	fi
+
+	get_answer $INSTALL_PRESENCE_TABLES "Add provisionning framework for presence tables? (y/n): "
+	if [ "$ANSWER" = "y" ]; then
+		PI_PRESENCE_MODULES="TRUE"
+	fi
+
+	cat $DATA_DIR/pi_http/pi_framework-00 > $DEFAULT_CFG_DIR/pi_framework_sample
+	for TABLE in $PI_MODULES; do
+		if [ -e $DATA_DIR/pi_http/$TABLE-table ]; then
+			cat $DATA_DIR/pi_http/$TABLE-table >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: $TABLE - missing table descriptor"
+		fi
+	done
+	if [ "$PI_PRESENCE_MODULES" = "TRUE" ]; then
+		if [ -e $DATA_DIR/pi_http/presence-table ]; then
+			cat $DATA_DIR/pi_http/presence-table >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: presence-table - missing table descriptor"
+		fi
+	fi
+	cat $DATA_DIR/pi_http/pi_framework-01 >> $DEFAULT_CFG_DIR/pi_framework_sample
+	for TABLE in $PI_MODULES; do
+		if [ -e $DATA_DIR/pi_http/$TABLE-mod ]; then
+			cat $DATA_DIR/pi_http/$TABLE-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: $TABLE - missing mod descriptor"
+		fi
+	done
+	if [ "$PI_PRESENCE_MODULES" = "TRUE" ]; then
+		if [ -e $DATA_DIR/pi_http/presence-mod ]; then
+			cat $DATA_DIR/pi_http/presence-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: presence-mod - missing table descriptor"
+		fi
+	fi
+	cat $DATA_DIR/pi_http/pi_framework-02 >> $DEFAULT_CFG_DIR/pi_framework_sample
+
+	minfo "Sample provisionning framework saved as: $DEFAULT_CFG_DIR/pi_framework_sample"
+
+}
+
+
+opensips_pframework() #pars: <action>
+{
+	if [ $# -ne 1 ] ; then
+		merr "opensips_pframework function takes one parameter"
+		exit 1
+	fi
+
+	case $1 in
+		create)
+			shift
+			opensips_pframework_create "$@"
+			exit $?
+			;;
+		*)
+			merr "Unexpected pframework action: $1"
+			usage
+			exit 1
+			;;
+	esac
+}
+
+
 case $1 in
 	migrate)
 		if [ "$USED_DBENGINE" != "mysql" ] ; then
@@ -298,6 +389,11 @@ case $1 in
 	bdb|db_berkeley)
 		shift
 		opensips_berkeley "$@"
+		exit $?
+		;;
+	pframework)
+		shift
+		opensips_pframework "$@"
 		exit $?
 		;;
 	version)
