@@ -39,7 +39,7 @@ Bogdan-Andrei Iancu
               1.4.4. natping_socket (string)
               1.4.5. received_avp (str)
               1.4.6. force_socket (string)
-              1.4.7. sipping_bflag (integer)
+              1.4.7. sipping_bflag (string/integer)
               1.4.8. sipping_from (string)
               1.4.9. sipping_method (string)
               1.4.10. nortpproxy_str (string)
@@ -214,17 +214,20 @@ modparam("nathelper", "received_avp", "$avp(i:42)")
 modparam("nathelper", "force_socket", "localhost:33333")
 ...
 
-1.4.7. sipping_bflag (integer)
+1.4.7. sipping_bflag (string/integer)
 
    What branch flag should be used by the module to identify NATed
    contacts for which it should perform NAT ping via a SIP request
    instead if dummy UDP package.
 
-   Default value is -1 (disabled).
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
+   Default value is "NULL" (disabled).
 
    Example 1.7. Set sipping_bflag parameter
 ...
-modparam("nathelper", "sipping_bflag", 7)
+modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
 ...
 
 1.4.8. sipping_from (string)

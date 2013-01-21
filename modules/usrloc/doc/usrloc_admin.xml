@@ -87,22 +87,26 @@
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>nat_bflag</varname> (integer)</title>
+		<title><varname>nat_bflag</varname> (string/integer)</title>
 		<para>
-		The index of the branch flag to be used as NAT marker (if the contact 
+		The name of the branch flag to be used as NAT marker (if the contact 
 		is or not natted). This is a branch flag and it will be imported and 
 		used by all other modules depending of usrloc module.
 		</para>
 		<para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+		</para>
 		<emphasis>
-			Default value is <quote>not set</quote>.
+			Default value is <quote>NULL</quote> (not set).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>nat_bflag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "nat_bflag", 3)
+modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 ...
 </programlisting>
 		</example>

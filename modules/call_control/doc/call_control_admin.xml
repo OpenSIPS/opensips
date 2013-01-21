@@ -371,10 +371,10 @@ route {
     </section>
 
     <section>
-    <title><varname>prepaid_account_flag</varname> (int)</title>
+    <title><varname>prepaid_account_flag</varname> (string/integer)</title>
       <para>
         The flag that is used to specify whether the account making the call is
-        prepaid or postpaid. Setting this to a non-negative value will determine
+        prepaid or postpaid. Setting this to a non-null value will determine
         the module to pass the flag's value to the external application. This
         will allow the external application to compare &osips;'s and the rating
         engine's views on whether the account calling is prepaid or not and take
@@ -384,8 +384,13 @@ route {
       </para>
 
       <para>
+      <emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+      </para>
+
+      <para>
         <emphasis>
-          Default value is <quote>-1</quote> (undefined).
+          Default value is <quote>NULL</quote> (undefined).
         </emphasis>
       </para>
 
@@ -393,7 +398,7 @@ route {
       <title>Setting the <varname>prepaid_account_flag</varname> parameter</title>
         <programlisting format="linespecific">
 ...
-modparam("call_control", "prepaid_account_flag", 8)
+modparam("call_control", "prepaid_account_flag", "PP_ACC_FLAG")
 ...
         </programlisting>
       </example>

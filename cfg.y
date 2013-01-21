@@ -2259,46 +2259,81 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SETDEBUG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| SETFLAG LPAREN NUMBER RPAREN {mk_action2($$, SETFLAG_T, NUMBER_ST, 0,
 													(void *)$3, 0 ); }
+		| SETFLAG LPAREN ID RPAREN {mk_action2($$, SETFLAG_T, STR_ST, 0,
+													(void *)$3, 0 ); }
 		| SETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| RESETFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETFLAG_T,
 										NUMBER_ST, 0, (void *)$3, 0 ); }
+		| RESETFLAG LPAREN ID RPAREN {mk_action2( $$, RESETFLAG_T,
+										STR_ST, 0, (void *)$3, 0 ); }
 		| RESETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| ISFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, ISFLAGSET_T,
 										NUMBER_ST, 0, (void *)$3, 0 ); }
+		| ISFLAGSET LPAREN ID RPAREN {mk_action2( $$, ISFLAGSET_T,
+										STR_ST, 0, (void *)$3, 0 ); }
 		| ISFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
 		| SETSFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETSFLAG_T, NUMBER_ST,
+										0, (void *)$3, 0 ); }
+		| SETSFLAG LPAREN ID RPAREN {mk_action2( $$, SETSFLAG_T, STR_ST,
 										0, (void *)$3, 0 ); }
 		| SETSFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| RESETSFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETSFLAG_T,
 										NUMBER_ST, 0, (void *)$3, 0 ); }
+		| RESETSFLAG LPAREN ID RPAREN {mk_action2( $$, RESETSFLAG_T,
+										STR_ST, 0, (void *)$3, 0 ); }
 		| RESETSFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| ISSFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, ISSFLAGSET_T,
 										NUMBER_ST, 0, (void *)$3, 0 ); }
+		| ISSFLAGSET LPAREN ID RPAREN {mk_action2( $$, ISSFLAGSET_T,
+										STR_ST, 0, (void *)$3, 0 ); }
 		| ISSFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
 		| SETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
 													SETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
+		| SETBFLAG LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$,
+													SETBFLAG_T,
+													NUMBER_ST, STR_ST,
+													(void *)$3, (void *)$5 ); }
 		| SETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
+													0, (void *)$3 ); }
+		| SETBFLAG LPAREN ID RPAREN {mk_action2( $$, SETBFLAG_T,
+													NUMBER_ST, STR_ST,
 													0, (void *)$3 ); }
 		| SETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| RESETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$, 
 													RESETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
+		| RESETBFLAG LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$, 
+													RESETBFLAG_T,
+													NUMBER_ST, STR_ST,
+													(void *)$3, (void *)$5 ); }
 		| RESETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$, 
 													RESETBFLAG_T,
 													NUMBER_ST, NUMBER_ST,
+													0, (void *)$3 ); }
+		| RESETBFLAG LPAREN ID RPAREN {mk_action2( $$, 
+													RESETBFLAG_T,
+													NUMBER_ST, STR_ST,
 													0, (void *)$3 ); }
 		| RESETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
 		| ISBFLAGSET LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$, 
 													ISBFLAGSET_T,
 													NUMBER_ST, NUMBER_ST,
 													(void *)$3, (void *)$5 ); }
+		| ISBFLAGSET LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$, 
+													ISBFLAGSET_T,
+													NUMBER_ST, STR_ST,
+													(void *)$3, (void *)$5 ); }
 		| ISBFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, 
 													ISBFLAGSET_T,
 													NUMBER_ST, NUMBER_ST,
+													0, (void *)$3 ); }
+		| ISBFLAGSET LPAREN ID RPAREN {mk_action2( $$, 
+													ISBFLAGSET_T,
+													NUMBER_ST, STR_ST,
 													0, (void *)$3 ); }
 		| ISBFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
 		| ERROR LPAREN STRING COMMA STRING RPAREN {mk_action2( $$, ERROR_T,

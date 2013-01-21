@@ -176,6 +176,7 @@ static int ping_nated_only = 0;
 static const char sbuf[4] = {0, 0, 0, 0};
 static char *force_socket_str = 0;
 static int sipping_flag = -1;
+static char *sipping_flag_str = 0;
 static int natping_processes = 1;
 
 static char* rcv_avp_param = NULL;
@@ -471,6 +472,9 @@ mod_init(void)
 				natping_processes);
 			return -1;
 		}
+
+		fix_flag_name(&sipping_flag_str, sipping_flag);
+		sipping_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH, sipping_flag_str);
 
 		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);
 

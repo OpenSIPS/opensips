@@ -51,7 +51,7 @@ Irina-Maria Stanescu
 
               1.4.1. aaa_url (string)
               1.4.2. service_type (integer)
-              1.4.3. use_ruri_flag (integer)
+              1.4.3. use_ruri_flag (string/integer)
 
         1.5. Exported Functions
 
@@ -152,11 +152,11 @@ t.conf")
 
 modparam("auth_aaa", "service_type", 15)
 
-1.4.3. use_ruri_flag (integer)
+1.4.3. use_ruri_flag (string/integer)
 
-   When this parameter is set to the value other than "-1" and the
-   request being authenticated has flag with matching number set
-   via setflag() function, use Request URI instead of uri
+   When this parameter is set to the value other than "NULL" and
+   the request being authenticated has flag with matching number
+   set via setflag() function, use Request URI instead of uri
    parameter value from the Authorization / Proxy-Authorization
    header field to perform AAA authentication. This is intended to
    provide workaround for misbehaving NAT / routers / ALGs that
@@ -164,11 +164,11 @@ modparam("auth_aaa", "service_type", 15)
    time of this writing, certain versions of Linksys WRT54GL are
    known to do that.
 
-   Default value is “-1”.
+   Default value is “NULL” (not set).
 
    Example 1.4. use_ruri_flag parameter usage
 
-modparam("auth_aaa", "use_ruri_flag", 22)
+modparam("auth_aaa", "use_ruri_flag", "USE_RURI_FLAG")
 
 1.5. Exported Functions
 

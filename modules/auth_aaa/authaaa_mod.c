@@ -37,6 +37,7 @@
 #include "../../pvar.h"
 #include "../../aaa/aaa.h"
 #include "../../mem/mem.h"
+#include "../../ut.h"
 #include "authaaa_mod.h"
 #include "authorize.h"
 
@@ -59,6 +60,7 @@ static char* aaa_proto_url = NULL;
 static int service_type = -1;
 
 int use_ruri_flag = -1;
+char *use_ruri_flag_str = 0;
 
 /*
  * Exported functions
@@ -81,8 +83,9 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
 	{"aaa_url",  	 STR_PARAM, &aaa_proto_url   },
-	{"service_type",     INT_PARAM, &service_type    },
-	{"use_ruri_flag",    INT_PARAM, &use_ruri_flag   },
+	{"service_type",     INT_PARAM, &service_type        },
+	{"use_ruri_flag",    STR_PARAM, &use_ruri_flag_str   },
+	{"use_ruri_flag",    INT_PARAM, &use_ruri_flag       },
 	{0, 0, 0}
 };
 
@@ -139,6 +142,9 @@ static int mod_init(void)
 	attrs[A_SIP_AVP].name				= "SIP-AVP";
 	attrs[A_ACCT_SESSION_ID].name		= "Acct-Session-Id";
 	vals[V_SIP_SESSION].name			= "Sip-Session";
+
+	fix_flag_name(&use_ruri_flag_str, use_ruri_flag);
+	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str);
 
 	if (!aaa_proto_url) {
 		LM_ERR("aaa_url is empty\n");

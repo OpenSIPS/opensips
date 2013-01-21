@@ -152,6 +152,7 @@ static AVP_Param call_token_avp = {str_init(CALL_TOKEN_AVP_SPEC), -1, 0};
 
 struct dlg_binds dlg_api;
 static int prepaid_account_flag = -1;
+static char *prepaid_account_str = 0;
 
 AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
 
@@ -174,6 +175,7 @@ static param_export_t parameters[] = {
     {"signaling_ip_avp",        STR_PARAM, &(signaling_ip_avp.spec.s)},
     {"call_limit_avp",          STR_PARAM, &(call_limit_avp.spec.s)},
     {"call_token_avp",          STR_PARAM, &(call_token_avp.spec.s)},
+    {"prepaid_account_flag",    STR_PARAM, &prepaid_account_str},
     {"prepaid_account_flag",    INT_PARAM, &prepaid_account_flag},
     {0, 0, 0}
 };
@@ -1181,6 +1183,10 @@ mod_init(void)
     if (dlg_api.register_dlgcb(NULL, DLGCB_LOADED, __dialog_loaded, NULL, NULL) != 0) {
         LM_CRIT("cannot register callback for dialogs loaded from the database\n");
     }
+
+	fix_flag_name(&prepaid_account_str, prepaid_account_flag);
+
+	prepaid_account_flag = get_flag_id_by_name(FLAG_TYPE_MSG, prepaid_account_str);
 
     return 0;
 }

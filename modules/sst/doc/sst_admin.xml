@@ -268,7 +268,7 @@ modparam("sst", "reject_to_small", 0)
 		</example>
 	</section>
 <section>
-		<title><varname>sst_flag</varname> (integer)</title>
+		<title><varname>sst_flag</varname> (string/integer)</title>
 		
 		<para>Keeping with OpenSIPS, the module will not do
 		anything to any message unless instructed to do so via
@@ -286,6 +286,9 @@ modparam("sst", "reject_to_small", 0)
 		<para>This parameter must be set of the module will
 		not load.</para>
 
+		<para><emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!</para>
+
 		<para>
 		<emphasis>
 			Default value is <quote>Not set!</quote>.
@@ -295,12 +298,12 @@ modparam("sst", "reject_to_small", 0)
 		<title>Set <varname>sst_flag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("sst", "sst_flag", 6)
+modparam("sst", "sst_flag", "SST_FLAG")
 ...
 route {
   ...
   if (method=="INVITE") {
-    setflag(6); # Set the sst flag
+    setflag(SST_FLAG); # Set the sst flag
     create_dialog(); # and then create the dialog
   }
   ...

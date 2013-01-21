@@ -240,22 +240,26 @@ modparam("nathelper", "force_socket", "localhost:33333")
 		</example>
 	</section>
 	<section>
-		<title><varname>sipping_bflag</varname> (integer)</title>
+		<title><varname>sipping_bflag</varname> (string/integer)</title>
 		<para>
 		What branch flag should be used by the module to identify NATed 
 		contacts for which it should perform NAT ping via a SIP request 
 		instead if dummy UDP package.
 		</para>
 		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+		</para>
+		<para>
 		<emphasis>
-			Default value is -1 (disabled).
+			Default value is "NULL" (disabled).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>sipping_bflag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "sipping_bflag", 7)
+modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
 ...
 </programlisting>
 		</example>

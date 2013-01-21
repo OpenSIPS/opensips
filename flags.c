@@ -35,7 +35,12 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "parser/msg_parser.h"
+#include "mem/mem.h"
+#include "ut.h"
 #include "flags.h"
+
+/* several lists of maximum MAX_FLAG flags */
+struct flag_entry *flag_lists[FLAG_LIST_COUNT];
 
 /*********************** msg flags ****************************/
 
@@ -75,20 +80,80 @@ int flag_idx2mask(int *flag)
 	return 0;
 }
 
+/**
+ * The function MUST be called only in the pre-forking phases of OpenSIPS
+ * (mod_init() or in function fixups)
+ */
+int get_flag_id_by_name(int flag_type, char *flag_name)
+{
+	struct flag_entry *it, **flag_list;
+	str fn;
+
+	if (!flag_name) {
+		LM_DBG("Flag name is null!\n");
+		return -1;
+	}
+
+	if (flag_type < 0 || flag_type > FLAG_LIST_COUNT) {
+		LM_ERR("Invalid flag list: %d\n", flag_type);
+		return -2;
+	}
+
+	fn.s = flag_name;
+	fn.len = strlen(flag_name);
+
+	flag_list = flag_lists + flag_type;
+
+	if (*flag_list && (*flag_list)->bit == MAX_FLAG) {
+		LM_CRIT("Maximum number of message flags reached! (32 flags)\n");
+		return E_CFG;
+	}
+
+	/* Check if flag has been already defined */
+	for (it = *flag_list; it; it = it->next) {
+		if (str_strcmp(&it->name, &fn) == 0) {
+
+			return it->bit;
+		}
+	}
+
+	if (!(it = pkg_malloc(sizeof(*it) + fn.len))) {
+		LM_CRIT("Out of memory!\n");
+		return E_OUT_OF_MEM;
+	}
+
+	it->name.s = (char *)(it + 1);
+	it->name.len = fn.len;
+	memcpy(it->name.s, fn.s, fn.len);
+
+	it->bit = (*flag_list ? (*flag_list)->bit + 1 : 0);
+
+	it->next = *flag_list;
+	*flag_list = it;
+
+	return it->bit;
+}
 
 
 /*********************** script flags ****************************/
 
 static unsigned int sflags = 0;
 
-unsigned int fixup_flag(unsigned int idx)
+unsigned int fixup_flag(int flag_type, str *flag_name)
 {
-	if (idx>MAX_FLAG) {
-		LM_ERR("flag (%d) out of range %d..%d\n",
-			idx, 0, MAX_FLAG );
-		return 0;
+	int ret;
+
+	ret = get_flag_id_by_name(flag_type, flag_name->s);
+
+	if (ret < 0) {
+		LM_CRIT("Failed to get a flag id!\n");
+		return NAMED_FLAG_ERROR;
 	}
-	return (1<<idx);
+
+	if (flag_type != FLAG_TYPE_MSG)
+		return 1 << ret;
+
+	return ret;
 }
 
 int setsflagsval( unsigned int val )

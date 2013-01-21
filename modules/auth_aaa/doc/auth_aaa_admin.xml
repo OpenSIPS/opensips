@@ -129,9 +129,9 @@ modparam("auth_aaa", "service_type", 15)
 		</example>
 	</section>
         <section>
-                <title><varname>use_ruri_flag</varname> (integer)</title>
+                <title><varname>use_ruri_flag</varname> (string/integer)</title>
                 <para>
-                When this parameter is set to the value other than "-1" and the
+                When this parameter is set to the value other than "NULL" and the
                 request being authenticated has flag with matching number set
                 via setflag() function, use Request URI instead of uri parameter
                 value from the Authorization / Proxy-Authorization header field
@@ -141,13 +141,13 @@ modparam("auth_aaa", "service_type", 15)
                 writing, certain versions of Linksys WRT54GL are known to do that.
                 </para>
                 <para>
-                Default value is <quote>-1</quote>.
+                Default value is <quote>NULL</quote> (not set).
                 </para>
                 <example>
                 <title><varname>use_ruri_flag</varname> parameter usage</title>
                 <programlisting format="linespecific">
 		
-modparam("auth_aaa", "use_ruri_flag", 22)
+modparam("auth_aaa", "use_ruri_flag", "USE_RURI_FLAG")
                 </programlisting>
                 </example>
         </section>

@@ -254,7 +254,7 @@ static int fix_actions(struct action* a)
 	int proto=PROTO_NONE, port;
 	struct proxy_l *p;
 	struct bl_head *blh;
-	int i;
+	int i = 0;
 	str s;
 	pv_elem_t *model=NULL;
 	pv_elem_t *models[5]; 
@@ -495,26 +495,32 @@ static int fix_actions(struct action* a)
 			case SETFLAG_T:
 			case RESETFLAG_T:
 			case ISFLAGSET_T:
-				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("bad xxxflag() type %d\n", t->elem[0].type );
-					ret=E_BUG;
-					goto error;
-				}
-				if (!flag_in_range( t->elem[0].u.number )) {
-					ret=E_CFG;
-					goto error;
-				}
-				break;
+				i = FLAG_TYPE_MSG;
 			case SETSFLAG_T:
 			case RESETSFLAG_T:
 			case ISSFLAGSET_T:
-				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("bad xxxsflag() type %d\n", t->elem[0].type );
-					ret=E_BUG;
+
+				if (t->type == SETSFLAG_T || t->type == RESETSFLAG_T ||
+				    t->type == ISSFLAGSET_T) {
+
+					i = FLAG_TYPE_SCRIPT;
+				}
+
+				if (t->elem[0].type == NUMBER_ST) {
+					s.s = int2str((unsigned long)t->elem[0].u.number, &s.len);
+				    t->elem[0].u.number = fixup_flag(i, &s);
+
+				} else if (t->elem[0].type == STR_ST) {
+					t->elem[0].u.number = fixup_flag(i, &t->elem[0].u.s);
+
+				} else {
+					LM_CRIT("bad xxxflag() type %d\n", t->elem[0].type);
+					ret = E_BUG;
 					goto error;
 				}
-				t->elem[0].u.number = fixup_flag( t->elem[0].u.number );
-				if (t->elem[0].u.data==0) {
+
+				if (t->elem[0].u.number == NAMED_FLAG_ERROR) {
+					LM_CRIT("Fixup flag failed!\n");
 					ret=E_CFG;
 					goto error;
 				}
@@ -522,13 +528,33 @@ static int fix_actions(struct action* a)
 			case SETBFLAG_T:
 			case RESETBFLAG_T:
 			case ISBFLAGSET_T:
-				if (t->elem[0].type!=NUMBER_ST || t->elem[1].type!=NUMBER_ST) {
+				if (t->elem[0].type!=NUMBER_ST) {
 					LM_CRIT("bad xxxbflag() type "
 						"%d,%d\n", t->elem[0].type, t->elem[0].type);
 					ret=E_BUG;
 					goto error;
 				}
-				t->elem[1].u.number = fixup_flag( t->elem[1].u.number );
+
+				if (t->elem[1].type == NUMBER_ST) {
+					s.s = int2str((unsigned long)t->elem[1].u.number, &s.len);
+				    t->elem[1].u.number = fixup_flag(FLAG_TYPE_BRANCH, &s);
+
+				} else if (t->elem[1].type == STR_ST) {
+					t->elem[1].u.number = fixup_flag(FLAG_TYPE_BRANCH,
+					                                 &t->elem[1].u.s);
+				} else {
+					LM_CRIT("bad xxxbflag() type "
+						"%d,%d\n", t->elem[1].type, t->elem[1].type);
+					ret=E_BUG;
+					goto error;
+				}
+
+				if (t->elem[1].u.number == NAMED_FLAG_ERROR) {
+					LM_CRIT("Fixup flag failed!\n");
+					ret=E_CFG;
+					goto error;
+				}
+
 				if (t->elem[1].u.data==0) {
 					ret=E_CFG;
 					goto error;

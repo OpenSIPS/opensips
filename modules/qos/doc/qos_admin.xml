@@ -100,7 +100,7 @@
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>qos_flag</varname> (integer)</title>
+		<title><varname>qos_flag</varname> (string/integer)</title>
 		
 		<para>Keeping with &osips;, the module will not do
 		anything to any message unless instructed to do so via
@@ -118,6 +118,9 @@
 		<para>This parameter must be set of the module will
 		not load.</para>
 
+		<para><emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!</para>
+
 		<para>
 		<emphasis>
 			Default value is <quote>Not set!</quote>.
@@ -127,12 +130,12 @@
 		<title>Set <varname>qos_flag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("qos", "qos_flag", 7)
+modparam("qos", "qos_flag", "QOS_FLAG")
 ...
 route {
   ...
   if (method=="INVITE") {
-    setflag(7); # Set the qos flag
+    setflag(QOS_FLAG); # Set the qos flag
 	create_dialog(); # create the dialog
   }
   ...

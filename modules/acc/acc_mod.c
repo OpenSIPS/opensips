@@ -85,18 +85,22 @@ int report_cancels = 0;
 /* detect and correct direction in the sequential requests */
 int detect_direction = 0;
 /* should failed replies (>=3xx) be logged ? default==no */
+static char *failed_transaction_string = 0;
 int failed_transaction_flag = -1;
 /* multi call-leg support */
 static char* leg_info_str = 0;
 static char* leg_bye_info_str = 0;
 struct acc_extra *leg_info = 0;
 struct acc_extra *leg_bye_info = 0;
+static char *cdr_string = 0;
 int cdr_flag = -1;
 
 
 /* ----- SYSLOG acc variables ----------- */
 
+static char *log_string = 0;
 int log_flag = -1;
+static char *log_missed_string = 0;
 int log_missed_flag = -1;
 /* noisiness level logging facilities are used */
 int log_level = L_NOTICE;
@@ -112,7 +116,9 @@ struct acc_extra *log_extra_bye = 0;
 
 /* ----- AAA PROTOCOL acc variables ----------- */
 
+static char *aaa_string = 0;
 int aaa_flag = -1;
+static char *aaa_missed_string = 0;
 int aaa_missed_flag = -1;
 static int service_type = -1;
 char *aaa_proto_url = NULL;
@@ -129,7 +135,9 @@ struct acc_extra *aaa_extra_bye = 0;
 /* ----- DIAMETER acc variables ----------- */
 
 #ifdef DIAM_ACC
+static char *diameter_string = 0;
 int diameter_flag = -1;
+static char *diameter_missed_string = 0;
 int diameter_missed_flag = -1;
 /* diameter extra variables */
 static char *dia_extra_str = 0;
@@ -143,7 +151,9 @@ int diameter_client_port=3000;
 
 /* ----- SQL acc variables ----------- */
 
+static char *db_string = 0;
 int db_flag = -1;
+static char *db_missed_string = 0;
 int db_missed_flag = -1;
 /* db extra variables */
 static char *db_extra_str = 0;
@@ -196,15 +206,19 @@ static cmd_export_t cmds[] = {
 
 
 static param_export_t params[] = {
-	{"early_media",             INT_PARAM, &early_media             },
-	{"failed_transaction_flag", INT_PARAM, &failed_transaction_flag },
-	{"report_cancels",          INT_PARAM, &report_cancels          },
-	{"multi_leg_info",          STR_PARAM, &leg_info_str            },
-	{"multi_leg_bye_info",      STR_PARAM, &leg_bye_info_str        },
-	{"detect_direction",        INT_PARAM, &detect_direction        },
-	{"cdr_flag",                INT_PARAM, &cdr_flag                },
+	{"early_media",             INT_PARAM, &early_media               },
+	{"failed_transaction_flag", STR_PARAM, &failed_transaction_string },
+	{"failed_transaction_flag", INT_PARAM, &failed_transaction_flag   },
+	{"report_cancels",          INT_PARAM, &report_cancels            },
+	{"multi_leg_info",          STR_PARAM, &leg_info_str              },
+	{"multi_leg_bye_info",      STR_PARAM, &leg_bye_info_str          },
+	{"detect_direction",        INT_PARAM, &detect_direction          },
+	{"cdr_flag",                STR_PARAM, &cdr_string                },
+	{"cdr_flag",                INT_PARAM, &cdr_flag                  },
 	/* syslog specific */
+	{"log_flag",             STR_PARAM, &log_string           },
 	{"log_flag",             INT_PARAM, &log_flag             },
+	{"log_missed_flag",      STR_PARAM, &log_missed_string    },
 	{"log_missed_flag",      INT_PARAM, &log_missed_flag      },
 	{"log_level",            INT_PARAM, &log_level            },
 	{"log_facility",         STR_PARAM, &log_facility_str     },
@@ -212,21 +226,27 @@ static param_export_t params[] = {
 	{"log_extra_bye",        STR_PARAM, &log_extra_bye_str    },
 	/* aaa specific */
 	{"aaa_url",   		     STR_PARAM, &aaa_proto_url        },
+	{"aaa_flag",        	 STR_PARAM, &aaa_string           },
 	{"aaa_flag",        	 INT_PARAM, &aaa_flag    	      },
+	{"aaa_missed_flag",  	 STR_PARAM, &aaa_missed_string    },
 	{"aaa_missed_flag",  	 INT_PARAM, &aaa_missed_flag 	  },
 	{"service_type",         INT_PARAM, &service_type         },
 	{"aaa_extra",            STR_PARAM, &aaa_extra_str        },
 	{"aaa_extra_bye",        STR_PARAM, &aaa_extra_bye_str    },
 	/* DIAMETER specific */
 #ifdef DIAM_ACC
-	{"diameter_flag",        INT_PARAM, &diameter_flag        },
-	{"diameter_missed_flag", INT_PARAM, &diameter_missed_flag },
-	{"diameter_client_host", STR_PARAM, &diameter_client_host },
-	{"diameter_client_port", INT_PARAM, &diameter_client_port },
-	{"diameter_extra",       STR_PARAM, &dia_extra_str        },
+	{"diameter_flag",        STR_PARAM, &diameter_string        },
+	{"diameter_flag",        INT_PARAM, &diameter_flag          },
+	{"diameter_missed_flag", STR_PARAM, &diameter_missed_string },
+	{"diameter_missed_flag", INT_PARAM, &diameter_missed_flag   },
+	{"diameter_client_host", STR_PARAM, &diameter_client_host   },
+	{"diameter_client_port", INT_PARAM, &diameter_client_port   },
+	{"diameter_extra",       STR_PARAM, &dia_extra_str          },
 #endif
 	/* db-specific */
+	{"db_flag",              STR_PARAM, &db_string            },
 	{"db_flag",              INT_PARAM, &db_flag              },
+	{"db_missed_flag",       STR_PARAM, &db_missed_string     },
 	{"db_missed_flag",       INT_PARAM, &db_missed_flag       },
 	{"db_extra",             STR_PARAM, &db_extra_str         },
 	{"db_extra_bye",         STR_PARAM, &db_extra_bye_str     },
@@ -348,8 +368,17 @@ static int mod_init( void )
 
 	/* ----------- GENERIC INIT SECTION  ----------- */
 
+	fix_flag_name(&failed_transaction_string, failed_transaction_flag);
+
+	failed_transaction_flag =
+	    get_flag_id_by_name(FLAG_TYPE_MSG, failed_transaction_string);
+
 	if (flag_idx2mask(&failed_transaction_flag)<0)
 		return -1;
+
+	fix_flag_name(&cdr_string, cdr_flag);
+
+	cdr_flag = get_flag_id_by_name(FLAG_TYPE_MSG, cdr_string);
 
 	if (flag_idx2mask(&cdr_flag)<0)
 		return -1;
@@ -420,8 +449,16 @@ static int mod_init( void )
 		return -1;
 	}
 
+	fix_flag_name(&log_string, log_flag);
+
+	log_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_string);
+
 	if (flag_idx2mask(&log_flag)<0)
 		return -1;
+
+	fix_flag_name(&log_missed_string, log_missed_flag);
+
+	log_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_missed_string);
 
 	if (flag_idx2mask(&log_missed_flag)<0)
 		return -1;
@@ -446,8 +483,17 @@ static int mod_init( void )
 			return -1;
 		}
 		/* fix the flags */
+		fix_flag_name(&db_string, db_flag);
+	
+		db_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_string);
+
 		if (flag_idx2mask(&db_flag)<0)
 			return -1;
+
+		fix_flag_name(&db_missed_string, db_missed_flag);
+	
+		db_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_missed_string);
+
 		if (flag_idx2mask(&db_missed_flag)<0)
 			return -1;
 		if (db_table_avp.s) {
@@ -483,10 +529,20 @@ static int mod_init( void )
 		}
 
 		/* fix the flags */
+		fix_flag_name(&aaa_string, aaa_flag);
+	
+		aaa_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_string);
+
 		if (flag_idx2mask(&aaa_flag)<0)
 			return -1;
+
+		fix_flag_name(&aaa_missed_string, aaa_missed_flag);
+	
+		aaa_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_missed_string);
+
 		if (flag_idx2mask(&aaa_missed_flag)<0)
 			return -1;
+
 		if (init_acc_aaa(aaa_proto_url, service_type)!=0 ) {
 			LM_ERR("failed to init radius\n");
 			return -1;
@@ -501,8 +557,17 @@ static int mod_init( void )
 
 #ifdef DIAM_ACC
 	/* fix the flags */
+	fix_flag_name(&diameter_string, diameter_flag);
+	
+	diameter_flag = get_flag_id_by_name(FLAG_TYPE_MSG, diameter_string);
+
 	if (flag_idx2mask(&diameter_flag)<0)
 		return -1;
+
+	fix_flag_name(&diameter_missed_string, diameter_missed_flag);
+	
+	diameter_missed_flag=get_flag_id_by_name(FLAG_TYPE_MSG, diameter_missed_string);
+
 	if (flag_idx2mask(&diameter_missed_flag)<0)
 		return -1;
 

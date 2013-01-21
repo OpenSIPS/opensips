@@ -12,8 +12,8 @@ Daniel-Constantin Mierla
 
    Copyright © 2006 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -29,7 +29,7 @@ Daniel-Constantin Mierla
         1.3. Exported Parameters
 
               1.3.1. db_url (str)
-              1.3.2. trace_flag (integer)
+              1.3.2. trace_flag (string/integer)
               1.3.3. trace_on (integer)
               1.3.4. enable_ack_trace (integer)
               1.3.5. traced_user_avp (str)
@@ -85,7 +85,7 @@ Chapter 1. Admin Guide
        configuration file. In this case the original message is
        processed.
      * by setting the flag equal with the value of 'trace_flag'
-       (e.g., setflag(__trace_flag__)) parameter of the module. In
+       (e.g., setflag(TRACE_FLAG)) parameter of the module. In
        this case, the\ message sent forward is processed. The
        logging mechanism is based on TM/SL callbacks, so only
        messages processed with TM/SL are logged.
@@ -124,15 +124,18 @@ Chapter 1. Admin Guide
 modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
 ...
 
-1.3.2. trace_flag (integer)
+1.3.2. trace_flag (string/integer)
 
    Which flag is used to mark messages to trace
 
-   Default value is "0".
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
+   Default value is "NULL" (not set).
 
    Example 1.2. Set trace_flag parameter
 ...
-modparam("siptrace", "trace_flag", 22)
+modparam("siptrace", "trace_flag", "TRACE_FLAG")
 ...
 
 1.3.3. trace_on (integer)

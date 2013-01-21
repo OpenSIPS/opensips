@@ -114,6 +114,7 @@ static str toip_column        = str_init("toip");        /* 07 */
 static str fromtag_column     = str_init("fromtag");     /* 08 */
 static str direction_column   = str_init("direction");   /* 09 */
 
+static char *trace_flag_str = 0;
 int trace_flag = -1;
 int trace_on   = 0;
 int trace_to_database = 1;
@@ -175,6 +176,7 @@ static param_export_t params[] = {
 	{"toip_column",        STR_PARAM, &toip_column.s        },
 	{"fromtag_column",     STR_PARAM, &fromtag_column.s     },
 	{"direction_column",   STR_PARAM, &direction_column.s   },
+	{"trace_flag",         STR_PARAM, &trace_flag_str       },
 	{"trace_flag",         INT_PARAM, &trace_flag           },
 	{"trace_on",           INT_PARAM, &trace_on             },
 	{"traced_user_avp",    STR_PARAM, &traced_user_avp_str.s},
@@ -270,6 +272,10 @@ static int mod_init(void)
 		trace_local_ip.len = strlen(trace_local_ip.s);
 
 	LM_INFO("initializing...\n");
+
+	fix_flag_name(&trace_flag_str, trace_flag);
+
+	trace_flag = get_flag_id_by_name(FLAG_TYPE_MSG, trace_flag_str);
 
 	if (flag_idx2mask(&trace_flag)<0)
 		return -1;

@@ -118,6 +118,7 @@ int ul_hash_size = 9;
 
 /* flag */
 unsigned int nat_bflag = (unsigned int)-1;
+static char *nat_bflag_str = 0;
 unsigned int init_flag = 0;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
@@ -160,6 +161,7 @@ static param_export_t params[] = {
 	{"matching_mode",     INT_PARAM, &matching_mode   },
 	{"cseq_delay",        INT_PARAM, &cseq_delay      },
 	{"hash_size",         INT_PARAM, &ul_hash_size    },
+	{"nat_bflag",         STR_PARAM, &nat_bflag_str   },
 	{"nat_bflag",         INT_PARAM, &nat_bflag       },
 	{0, 0, 0}
 };
@@ -282,6 +284,10 @@ static int mod_init(void)
 			return -1;
 		}
 	}
+
+	fix_flag_name(&nat_bflag_str, nat_bflag);
+	
+	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
 
 	if (nat_bflag==(unsigned int)-1) {
 		nat_bflag = 0;

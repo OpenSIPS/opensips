@@ -110,7 +110,7 @@
 		<programlisting format="linespecific">
 loadmodule "modules/acc/acc.so"
 modparam("acc", "log_level", 1)
-modparam("acc", "log_flag", 1)
+modparam("acc", "log_flag", "LOG_FLAG")
 
 if (uri=~"sip:+40") /* calls to Romania */ {
     if (!proxy_authorize("sip_domain.net" /* realm */,
@@ -124,7 +124,7 @@ if (uri=~"sip:+40") /* calls to Romania */ {
         sl_send_reply("403","Forbidden");
     }
 
-    setflag(1); /* set for accounting (the same value as in log_flag!)
+    setflag(LOG_FLAG); /* set for accounting (the same value as in log_flag!)
     t_relay(); 	/* enter stateful mode now */
 };
 </programlisting>
@@ -412,10 +412,14 @@ modparam("acc", "early_media", 1)
 		</example>
 	</section>
 	<section>
-		<title><varname>failed_transaction_flag</varname> (integer)</title>
+		<title><varname>failed_transaction_flag</varname> (string/integer)</title>
 		<para>
 		Per transaction flag which says if the transaction should be 
 		accounted also in case of failure (status>=300).
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -423,7 +427,7 @@ modparam("acc", "early_media", 1)
 		<example>
 		<title>failed_transaction_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "failed_transaction_flag", 4)
+modparam("acc", "failed_transaction_flag", "FAIL_TRANS_FLAG")
 </programlisting>
 		</example>
 	</section>
@@ -530,9 +534,13 @@ modparam("acc", "multi_leg_bye_info",
 	
 	<!-- SYSLOG specific ACC parameters -->
 	<section>
-		<title><varname>log_flag</varname> (integer)</title>
+		<title><varname>log_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account a transaction via syslog.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -540,14 +548,18 @@ modparam("acc", "multi_leg_bye_info",
 		<example>
 		<title>log_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "log_flag", 2)
+modparam("acc", "log_flag", "LOG_FLAG")
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>log_missed_flag</varname> (integer)</title>
+		<title><varname>log_missed_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account missed calls via syslog.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -555,7 +567,7 @@ modparam("acc", "log_flag", 2)
 		<example>
 		<title>log_missed_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "log_missed_flag", 3)
+modparam("acc", "log_missed_flag", "LOG_MISSED_FLAG")
 </programlisting>
 		</example>
 	</section>
@@ -652,10 +664,14 @@ modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 	</section>	
 	
 	<section>
-		<title><varname>aaa_flag</varname> (integer)</title>
+		<title><varname>aaa_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account a 
 		transaction -- AAA specific.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -663,15 +679,19 @@ modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		<example>
 		<title>aaa_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "aaa_flag", 2)
+modparam("acc", "aaa_flag", "AAA_FLAG")
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>aaa_missed_flag</varname> (integer)</title>
+		<title><varname>aaa_missed_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account missed 
 		calls -- AAA specific.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -679,7 +699,7 @@ modparam("acc", "aaa_flag", 2)
 		<example>
 		<title>aaa_missed_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "aaa_missed_flag", 3)
+modparam("acc", "aaa_missed_flag", "AAA_MISSED_FLAG")
 </programlisting>
 		</example>
 	</section>
@@ -735,10 +755,14 @@ modparam("acc", "aaa_extra_bye",
 	</section>
 	<!-- SQL specific ACC parameters -->
 	<section>
-		<title><varname>db_flag</varname> (integer)</title>
+		<title><varname>db_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account a 
 		transaction -- database specific.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -746,15 +770,19 @@ modparam("acc", "aaa_extra_bye",
 		<example>
 		<title>db_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "db_flag", 2)
+modparam("acc", "db_flag", "DB_FLAG")
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>db_missed_flag</varname> (integer)</title>
+		<title><varname>db_missed_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account missed 
 		calls -- database specific.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -762,7 +790,7 @@ modparam("acc", "db_flag", 2)
 		<example>
 		<title>db_missed_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "db_missed_flag", 3)
+modparam("acc", "db_missed_flag", "DB_MISSED_FLAG")
 </programlisting>
 		</example>
 	</section>
@@ -804,7 +832,7 @@ modparam("acc", "db_table_acc", "myacc_table")
 modparam("acc", "db_table_avp", "$avp(acc_table)")
 ...
 route(OUTBOUND_ACC) {
-	setflag(1); # do accounting
+	setflag(CDR_FLAG); # do accounting
 	$avp(acc_table) = "acc_outbound"; # store request in the "acc_outbound" table
 }
 </programlisting>
@@ -985,10 +1013,14 @@ modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email)")
 
 	<!-- DIAMETER specific ACC parameters -->
 	<section>
-		<title><varname>diameter_flag</varname> (integer)</title>
+		<title><varname>diameter_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account a 
 		transaction -- DIAMETER specific.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -996,15 +1028,19 @@ modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email)")
 		<example>
 		<title>diameter_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "diameter_flag", 2)
+modparam("acc", "diameter_flag", "DIAMETER_FLAG")
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>diameter_missed_flag</varname> (integer)</title>
+		<title><varname>diameter_missed_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account missed 
 		calls -- DIAMETER specific.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -1012,7 +1048,7 @@ modparam("acc", "diameter_flag", 2)
 		<example>
 		<title>diameter_missed_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "diameter_missed_flag", 3)
+modparam("acc", "diameter_missed_flag", "DIAMETER_MISSED_FLAG")
 </programlisting>
 		</example>
 	</section>
@@ -1064,10 +1100,14 @@ modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
 		</example>
 	</section>
 	<section>
-		<title><varname>cdr_flag</varname> (integer)</title>
+		<title><varname>cdr_flag</varname> (string/integer)</title>
 		<para>
 		Request flag which needs to be set to account a 
 		transaction, including CDR details.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
 		</para>
 		<para>
 		Default value is not-set (no flag).
@@ -1075,7 +1115,7 @@ modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
 		<example>
 		<title>cdr_flag example</title>
 		<programlisting format="linespecific">
-modparam("acc", "cdr_flag", 1)
+modparam("acc", "cdr_flag", "CDR_FLAG")
 </programlisting>
 		</example>
 	</section>

@@ -11,7 +11,7 @@ Ron Winacott
    Copyright © 2006 SOMA Networks, Inc.
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -32,7 +32,7 @@ Ron Winacott
               1.4.3. sst_interval (integer)
               1.4.4. timeout_avp (string)
               1.4.5. reject_to_small (integer)
-              1.4.6. sst_flag (integer)
+              1.4.6. sst_flag (string/integer)
 
         1.5. Exported Functions
 
@@ -236,7 +236,7 @@ modparam("sst", "timeout_avp", "$avp(10)")
 modparam("sst", "reject_to_small", 0)
 ...
 
-1.4.6. sst_flag (integer)
+1.4.6. sst_flag (string/integer)
 
    Keeping with OpenSIPS, the module will not do anything to any
    message unless instructed to do so via the opensips.cfg script.
@@ -252,16 +252,19 @@ modparam("sst", "reject_to_small", 0)
 
    This parameter must be set of the module will not load.
 
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
    Default value is “Not set!”.
 
    Example 1.7. Set sst_flag parameter
 ...
-modparam("sst", "sst_flag", 6)
+modparam("sst", "sst_flag", "SST_FLAG")
 ...
 route {
   ...
   if (method=="INVITE") {
-    setflag(6); # Set the sst flag
+    setflag(SST_FLAG); # Set the sst flag
     create_dialog(); # and then create the dialog
   }
   ...

@@ -11,7 +11,7 @@ Ovidiu Sas
    Copyright © 2008 SOMA Networks, Inc.
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -27,7 +27,7 @@ Ovidiu Sas
 
         1.4. Exported Parameters
 
-              1.4.1. qos_flag (integer)
+              1.4.1. qos_flag (string/integer)
 
         1.5. Exported Functions
         1.6. Exported Statistics
@@ -95,7 +95,7 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-1.4.1. qos_flag (integer)
+1.4.1. qos_flag (string/integer)
 
    Keeping with OpenSIPS, the module will not do anything to any
    message unless instructed to do so via the config script. You
@@ -111,16 +111,19 @@ Chapter 1. Admin Guide
 
    This parameter must be set of the module will not load.
 
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
    Default value is “Not set!”.
 
    Example 1.1. Set qos_flag parameter
 ...
-modparam("qos", "qos_flag", 7)
+modparam("qos", "qos_flag", "QOS_FLAG")
 ...
 route {
   ...
   if (method=="INVITE") {
-    setflag(7); # Set the qos flag
+    setflag(QOS_FLAG); # Set the qos flag
         create_dialog(); # create the dialog
   }
   ...

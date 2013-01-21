@@ -78,6 +78,7 @@ unsigned int sst_reject = 1;
 
 /* The sst message flag value */
 static int sst_flag = -1;
+static char *sst_flag_str = 0;
 
 /* 
  * The sst minimum interval in Session-Expires header if OpenSIPS
@@ -104,12 +105,13 @@ static cmd_export_t cmds[]={
  * Script parameters
  */
 static param_export_t mod_params[]={
-	{ "enable_stats", INT_PARAM, &sst_enable_stats		},
-	{ "min_se", INT_PARAM, &sst_minSE					},
-	{ "timeout_avp", STR_PARAM, &timeout_spec			},
-	{ "reject_to_small",		INT_PARAM, &sst_reject 	},
-	{ "sst_flag",				INT_PARAM, &sst_flag	},
-	{ "sst_interval",		INT_PARAM, &sst_interval	},
+	{ "enable_stats", INT_PARAM, &sst_enable_stats			},
+	{ "min_se", INT_PARAM, &sst_minSE						},
+	{ "timeout_avp", STR_PARAM, &timeout_spec				},
+	{ "reject_to_small",		INT_PARAM, &sst_reject 		},
+	{ "sst_flag",				STR_PARAM, &sst_flag_str	},
+	{ "sst_flag",				INT_PARAM, &sst_flag		},
+	{ "sst_interval",		INT_PARAM, &sst_interval		},
 	{ 0,0,0 }
 };
 
@@ -157,6 +159,10 @@ static int mod_init(void)
 	if (sst_enable_stats==0) {
 		exports.stats = 0;
 	}
+
+	fix_flag_name(&sst_flag_str, sst_flag);
+
+	sst_flag = get_flag_id_by_name(FLAG_TYPE_MSG, sst_flag_str);
 
 	if (sst_flag == -1) {
 		LM_ERR("no sst flag set!!\n");

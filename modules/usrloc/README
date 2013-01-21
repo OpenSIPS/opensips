@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005-2008 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -35,7 +35,7 @@ Bogdan-Andrei Iancu
 
         1.3. Exported Parameters
 
-              1.3.1. nat_bflag (integer)
+              1.3.1. nat_bflag (string/integer)
               1.3.2. user_column (string)
               1.3.3. domain_column (string)
               1.3.4. contact_column (string)
@@ -179,18 +179,21 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. nat_bflag (integer)
+1.3.1. nat_bflag (string/integer)
 
-   The index of the branch flag to be used as NAT marker (if the
+   The name of the branch flag to be used as NAT marker (if the
    contact is or not natted). This is a branch flag and it will be
    imported and used by all other modules depending of usrloc
    module.
 
-   Default value is “not set”.
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
+   Default value is “NULL” (not set).
 
    Example 1.1. Set nat_bflag parameter
 ...
-modparam("usrloc", "nat_bflag", 3)
+modparam("usrloc", "nat_bflag", "NAT_BFLAG")
 ...
 
 1.3.2. user_column (string)

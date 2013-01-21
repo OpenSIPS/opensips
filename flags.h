@@ -34,8 +34,27 @@
 typedef unsigned int flag_t;
 
 #define MAX_FLAG  ((unsigned int)( sizeof(flag_t) * CHAR_BIT - 1 ))
+#define NAMED_FLAG_ERROR          33
+
+#define fix_flag_name(_s, _flag)                         \
+     do {                                                \
+		if (!*_s && _flag > 0) {                         \
+			LM_WARN("Integer flags are now deprecated! " \
+			        "Use unique quoted strings!\n");     \
+			*_s = int2str(_flag, NULL);                  \
+		}                                                \
+	 } while (0)
+
+enum { FLAG_TYPE_MSG=0, FLAG_TYPE_SCRIPT, FLAG_TYPE_BRANCH, FLAG_LIST_COUNT };
 
 struct sip_msg;
+
+struct flag_entry {
+	str name;
+	int bit;      /* 0 .. 31 */
+
+	struct flag_entry *next;
+};
 
 int flag_in_range( flag_t flag );
 
@@ -45,7 +64,8 @@ int isflagset( struct sip_msg* msg, flag_t flag );
 int flag_idx2mask(int *flag);
 
 
-unsigned int fixup_flag(unsigned int idx);
+unsigned int fixup_flag(int flag_type, str *flag_name);
+int get_flag_id_by_name(int flag_type, char *flag_name);
 
 int setsflagsval( unsigned int val );
 int setsflag( unsigned int mask );

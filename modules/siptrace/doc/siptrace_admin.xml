@@ -21,7 +21,7 @@
 		<listitem>
 		<para>
 		by setting the flag equal with the value of 'trace_flag' (e.g.,
-		setflag(__trace_flag__)) parameter of the module. In this case, the\
+		setflag(TRACE_FLAG)) parameter of the module. In this case, the\
 		message sent forward is processed. The logging mechanism is based on
 		TM/SL callbacks, so only messages processed with TM/SL are logged.
 		</para>
@@ -98,20 +98,24 @@ modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
 		</example>
 	</section>
 	<section>
-		<title><varname>trace_flag</varname> (integer)</title>
+		<title><varname>trace_flag</varname> (string/integer)</title>
 		<para>
 		Which flag is used to mark messages to trace
 		</para>
 		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+		</para>
+		<para>
 		<emphasis>
-			Default value is "0".
+			Default value is "NULL" (not set).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>trace_flag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("siptrace", "trace_flag", 22)
+modparam("siptrace", "trace_flag", "TRACE_FLAG")
 ...
 </programlisting>
 		</example>
