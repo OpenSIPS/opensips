@@ -172,7 +172,7 @@ opensips_restore() #pars: <database name> <filename>
 opensips_pframework_create() #pars: none
 {
 	if [ -e $DEFAULT_CFG_DIR/pi_framework_sample ] ; then
-		get_answer ask "Sample already exists. overwrite? (y/n): "
+		get_answer ask "Sample already exists. Overwrite? (y/n): "
 		if [ "$ANSWER" != "y" ]; then
 			exit 1
 		fi
@@ -213,7 +213,12 @@ opensips_pframework_create() #pars: none
 		if [ -e $DATA_DIR/pi_http/presence-table ]; then
 			cat $DATA_DIR/pi_http/presence-table >> $DEFAULT_CFG_DIR/pi_framework_sample
 		else
-			merr "Unable to configure: presence-table - missing table descriptor"
+			merr "Unable to configure: presence - missing table descriptor"
+		fi
+		if [ -e $DATA_DIR/pi_http/rls-table ]; then
+			cat $DATA_DIR/pi_http/rls-table >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: rls - missing table descriptor"
 		fi
 	fi
 	cat $DATA_DIR/pi_http/pi_framework-01 >> $DEFAULT_CFG_DIR/pi_framework_sample
@@ -228,7 +233,12 @@ opensips_pframework_create() #pars: none
 		if [ -e $DATA_DIR/pi_http/presence-mod ]; then
 			cat $DATA_DIR/pi_http/presence-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
 		else
-			merr "Unable to configure: presence-mod - missing table descriptor"
+			merr "Unable to configure: presence - missing mod descriptor"
+		fi
+		if [ -e $DATA_DIR/pi_http/rls-mod ]; then
+			cat $DATA_DIR/pi_http/rls-mod >> $DEFAULT_CFG_DIR/pi_framework_sample
+		else
+			merr "Unable to configure: rls - missing mod descriptor"
 		fi
 	fi
 	cat $DATA_DIR/pi_http/pi_framework-02 >> $DEFAULT_CFG_DIR/pi_framework_sample
