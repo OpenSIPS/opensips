@@ -207,6 +207,7 @@ RAISE_EVENT		"raise_event"
 SUBSCRIBE_EVENT	"subscribe_event"
 CONSTRUCT_URI	"construct_uri"
 GET_TIMESTAMP	"get_timestamp"
+SCRIPT_TRACE    "script_trace"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -535,6 +536,8 @@ IMPORTFILE      "import_file"
 									return CONSTRUCT_URI;}
 <INITIAL>{GET_TIMESTAMP}	{	count(); yylval.strval=yytext;
 									return GET_TIMESTAMP;}
+<INITIAL>{SCRIPT_TRACE}	{	count(); yylval.strval=yytext;
+									return SCRIPT_TRACE;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }

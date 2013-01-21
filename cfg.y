@@ -293,6 +293,7 @@ extern int line;
 %token SUBSCRIBE_EVENT
 %token CONSTRUCT_URI
 %token GET_TIMESTAMP
+%token SCRIPT_TRACE
 
 /* config vars. */
 %token DEBUG
@@ -2727,11 +2728,24 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				elems[1].type = SCRIPTVAR_ST;
 				elems[1].u.data = $5; 
 				$$ = mk_action(GET_TIMESTAMP_T,2,elems,line); }
-
-
-
-
-
+		| SCRIPT_TRACE LPAREN RPAREN {
+				mk_action2($$, SCRIPT_TRACE_T, 0, 0, 0, 0); }
+		| SCRIPT_TRACE LPAREN NUMBER COMMA STRING RPAREN {
+				pvmodel = 0;
+				tstr.s = $5;
+				tstr.len = strlen(tstr.s);
+				if(pv_parse_format(&tstr, &pvmodel)<0)
+					yyerror("error in second parameter");
+				mk_action2($$, SCRIPT_TRACE_T, NUMBER_ST,
+						   SCRIPTVAR_ELEM_ST, (void *)$3, pvmodel); }
+		| SCRIPT_TRACE LPAREN NUMBER COMMA STRING COMMA STRING RPAREN {
+				pvmodel = 0;
+				tstr.s = $5;
+				tstr.len = strlen(tstr.s);
+				if(pv_parse_format(&tstr, &pvmodel)<0)
+					yyerror("error in second parameter");
+				mk_action3($$, SCRIPT_TRACE_T, NUMBER_ST,
+						   SCRIPTVAR_ELEM_ST, STR_ST, (void *)$3, pvmodel, $7); }
 
 	;
 

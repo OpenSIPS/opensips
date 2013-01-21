@@ -67,6 +67,7 @@
 #include "blacklists.h"
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
+#include "mod_fix.h"
 #ifdef USE_TCP
 #include "tcp_server.h"
 #endif
@@ -91,6 +92,12 @@ int action_flags = 0;
 int return_code  = 0;
 int max_while_loops = 100;
 
+/* script tracing options  */
+int use_script_trace = 0;
+int script_trace_log_level = L_ALERT;
+char *script_trace_info = NULL;
+pv_elem_t script_trace_elem;
+
 static int rec_lev=0;
 
 extern err_info_t _oser_err_info;
@@ -100,6 +107,9 @@ int min_action_time=0;
 
 action_elem_t *route_params = NULL;
 int route_params_number = 0;
+
+
+void script_trace(char *class, char *action, struct sip_msg *msg, int line) ;
 
 /* run actions from a route */
 /* returns: 0, or 1 on success, <0 on error */
@@ -202,6 +212,8 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 
 	action_flags = bk_action_flags;
 	rec_lev = bk_rec_lev;
+	/* reset script tracing */
+	use_script_trace = 0;
 
 	return ret;
 }
@@ -243,6 +255,18 @@ int do_assign(struct sip_msg* msg, struct action* a)
 		case BANDEQ_T:
 		case BOREQ_T:
 		case BXOREQ_T:
+			script_trace("assign",
+				(unsigned char)a->type == EQ_T      ? "equal" :
+				(unsigned char)a->type == COLONEQ_T ? "colon-eq" :
+				(unsigned char)a->type == PLUSEQ_T  ? "plus-eq" :
+				(unsigned char)a->type == MINUSEQ_T ? "minus-eq" :
+				(unsigned char)a->type == DIVEQ_T   ? "div-eq" :
+				(unsigned char)a->type == MULTEQ_T  ? "mult-eq" :
+				(unsigned char)a->type == MODULOEQ_T? "modulo-eq" :
+				(unsigned char)a->type == BANDEQ_T  ? "b-and-eq" :
+				(unsigned char)a->type == BOREQ_T   ? "b-or-eq":"b-xor-eq",
+				msg, a->line);
+
 			if(a->elem[1].type == NULLV_ST)
 			{
 				if(pv_set_value(msg, dspec, (int)a->type, 0)<0)
@@ -336,12 +360,15 @@ int do_action(struct action* a, struct sip_msg* msg)
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
 		case DROP_T:
+				script_trace("core", "drop", msg, a->line) ;
 				action_flags |= ACT_FL_DROP;
 		case EXIT_T:
+				script_trace("core", "exit", msg, a->line) ;
 				ret=0;
 				action_flags |= ACT_FL_EXIT;
 			break;
 		case RETURN_T:
+				script_trace("core", "return", msg, a->line) ;
 				if (a->elem[0].type == SCRIPTVAR_ST)
 				{
 					spec = (pv_spec_t*)a->elem[0].u.data;
@@ -362,6 +389,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				action_flags |= ACT_FL_RETURN;
 			break;
 		case FORWARD_T:
+			script_trace("core", "forward", msg, a->line) ;
 			if (a->elem[0].type==NOSUBTYPE){
 				/* parse uri and build a proxy */
 				if (msg->dst_uri.len) {
@@ -398,6 +426,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case SEND_T:
+			script_trace("core", "send", msg, a->line) ;
 			if (a->elem[0].type!= PROXY_ST){
 				LM_ALERT("BUG in send() type %d\n", a->elem[0].type);
 				ret=E_BUG;
@@ -465,6 +494,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=1;
 			break;
 		case LOG_T:
+			script_trace("core", "log", msg, a->line) ;
 			if ((a->elem[0].type!=NUMBER_ST)|(a->elem[1].type!=STRING_ST)){
 				LM_ALERT("BUG in log() types %d, %d\n",
 						a->elem[0].type, a->elem[1].type);
@@ -475,6 +505,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case APPEND_BRANCH_T:
+			script_trace("core", "append_branch", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in append_branch %d\n",
 					a->elem[0].type );
@@ -503,6 +534,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case REMOVE_BRANCH_T:
+			script_trace("core", "remove_branch", msg, a->line) ;
 			if (a->elem[0].type == SCRIPTVAR_ST) {
 				spec = (pv_spec_t*)a->elem[0].u.data;
 				if( pv_get_spec_value(msg, spec, &val)!=0
@@ -517,6 +549,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = (remove_branch((unsigned int)i)==0)?1:-1;
 			break;
 		case LEN_GT_T:
+			script_trace("core", "len_gt", msg, a->line) ;
 			if (a->elem[0].type!=NUMBER_ST) {
 				LM_ALERT("BUG in len_gt type %d\n",
 					a->elem[0].type );
@@ -526,6 +559,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = (msg->len >= (unsigned int)a->elem[0].u.number) ? 1 : -1;
 			break;
 		case SET_DEBUG_T:
+			script_trace("core", "set_debug", msg, a->line) ;
 			if (a->elem[0].type==NUMBER_ST)
 				set_proc_debug_level(a->elem[0].u.number);
 			else
@@ -533,33 +567,43 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = 1;
 			break;
 		case SETFLAG_T:
+			script_trace("core", "setflag", msg, a->line) ;
 			ret = setflag( msg, a->elem[0].u.number );
 			break;
 		case RESETFLAG_T:
+			script_trace("core", "resetflag", msg, a->line) ;
 			ret = resetflag( msg, a->elem[0].u.number );
 			break;
 		case ISFLAGSET_T:
+			script_trace("core", "isflagset", msg, a->line) ;
 			ret = isflagset( msg, a->elem[0].u.number );
 			break;
 		case SETSFLAG_T:
+			script_trace("core", "setsflag", msg, a->line) ;
 			ret = setsflag( a->elem[0].u.number );
 			break;
 		case RESETSFLAG_T:
+			script_trace("core", "resetsflag", msg, a->line) ;
 			ret = resetsflag( a->elem[0].u.number );
 			break;
 		case ISSFLAGSET_T:
+			script_trace("core", "issflagset", msg, a->line) ;
 			ret = issflagset( a->elem[0].u.number );
 			break;
 		case SETBFLAG_T:
+			script_trace("core", "setbflag", msg, a->line) ;
 			ret = setbflag( a->elem[0].u.number, a->elem[1].u.number );
 			break;
 		case RESETBFLAG_T:
+			script_trace("core", "resetbflag", msg, a->line) ;
 			ret = resetbflag( a->elem[0].u.number, a->elem[1].u.number  );
 			break;
 		case ISBFLAGSET_T:
+			script_trace("core", "isbflagset", msg, a->line) ;
 			ret = isbflagset( a->elem[0].u.number, a->elem[1].u.number  );
 			break;
 		case ERROR_T:
+			script_trace("core", "error", msg, a->line) ;
 			if ((a->elem[0].type!=STRING_ST)|(a->elem[1].type!=STRING_ST)){
 				LM_ALERT("BUG in error() types %d, %d\n",
 						a->elem[0].type, a->elem[1].type);
@@ -571,6 +615,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case ROUTE_T:
+			script_trace("route", rlist[a->elem[0].u.number].name, msg, a->line) ;
 			if (a->elem[0].type!=NUMBER_ST){
 				LM_ALERT("BUG in route() type %d\n",
 						a->elem[0].type);
@@ -605,6 +650,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=return_code;
 			break;
 		case REVERT_URI_T:
+			script_trace("core", "revert_uri", msg, a->line) ;
 			if (msg->new_uri.s) {
 				pkg_free(msg->new_uri.s);
 				msg->new_uri.len=0;
@@ -622,6 +668,16 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case PREFIX_T:
 		case STRIP_T:
 		case STRIP_TAIL_T:
+				script_trace("core", 
+					(unsigned char)a->type == SET_HOST_T     ? "set_host" :
+					(unsigned char)a->type == SET_HOSTPORT_T ? "set_hostport" : 
+					(unsigned char)a->type == SET_USER_T     ? "set_user" :
+					(unsigned char)a->type == SET_USERPASS_T ? "set_userpass" : 
+					(unsigned char)a->type == SET_PORT_T     ? "set_port" :
+					(unsigned char)a->type == SET_URI_T      ? "set_uri" : 
+					(unsigned char)a->type == PREFIX_T       ? "prefix" :
+					(unsigned char)a->type == STRIP_T  ? "strip" : "strip_tail",
+					msg, a->line);
 				user=0;
 				if (a->type==STRIP_T || a->type==STRIP_TAIL_T) {
 					if (a->elem[0].type!=NUMBER_ST) {
@@ -790,6 +846,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=1;
 				break;
 		case SET_DSTURI_T:
+			script_trace("core", "set_dsturi", msg, a->line) ;
 			if (a->elem[0].type!=STR_ST){
 				LM_ALERT("BUG in setdsturi() type %d\n",
 							a->elem[0].type);
@@ -803,6 +860,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case SET_DSTHOST_T:
 		case SET_DSTPORT_T:
+			script_trace("core", (unsigned char) a->type == SET_DSTHOST_T ?
+						 "set_dsturi" : "set_dstport", msg, a->line);
 			if (a->elem[0].type!=STR_ST){
 				LM_ALERT("BUG in domain setting type %d\n",
 							a->elem[0].type);
@@ -912,6 +971,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = 1;
 			break;
 		case RESET_DSTURI_T:
+			script_trace("core", "reset_dsturi", msg, a->line) ;
 			if(msg->dst_uri.s!=0)
 				pkg_free(msg->dst_uri.s);
 			msg->dst_uri.s = 0;
@@ -919,12 +979,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = 1;
 			break;
 		case ISDSTURISET_T:
+			script_trace("core", "isdsturiset", msg, a->line) ;
 			if(msg->dst_uri.s==0 || msg->dst_uri.len<=0)
 				ret = -1;
 			else
 				ret = 1;
 			break;
 		case IF_T:
+			script_trace("core", "if", msg, a->line) ;
 				/* if null expr => ignore if? */
 				if ((a->elem[0].type==EXPR_ST)&&a->elem[0].u.data){
 					v=eval_expr((struct expr*)a->elem[0].u.data, msg, 0);
@@ -958,6 +1020,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				}
 			break;
 		case WHILE_T:
+			script_trace("core", "while", msg, a->line) ;
 				/* if null expr => ignore if? */
 				if ((a->elem[0].type==EXPR_ST)&&a->elem[0].u.data){
 					len = 0;
@@ -1009,6 +1072,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				}
 			break;
 		case CACHE_STORE_T:
+			script_trace("core", "cache_store", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in cache_store() - first argument not of"
 						" type string [%d]\n",
@@ -1079,6 +1143,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			break;
 		case CACHE_REMOVE_T:
+			script_trace("core", "cache_remove", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in cache_remove() %d\n",
 					a->elem[0].type );
@@ -1102,6 +1167,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = cachedb_remove( &a->elem[0].u.s, &name_s);
 			break;
 		case CACHE_FETCH_T:
+			script_trace("core", "cache_fetch", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in cache_fetch() %d\n",
 					a->elem[0].type );
@@ -1147,6 +1213,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			
 			break;
 		case CACHE_COUNTER_FETCH_T:
+			script_trace("core", "cache_counter_fetch", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
 				LM_ALERT("BUG in cache_fetch() %d\n",
 					a->elem[0].type );
@@ -1190,8 +1257,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case CACHE_ADD_T:
+			script_trace("core", "cache_add", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
-				LM_ALERT("BUG in cache_store() - first argument not of"
+				LM_ALERT("BUG in cache_add() - first argument not of"
 						" type string [%d]\n",
 					a->elem[0].type );
 				ret=E_BUG;
@@ -1199,7 +1267,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 
 			if ((a->elem[1].type!=STR_ST)) {
-				LM_ALERT("BUG in cache_store()  - second argument not of "
+				LM_ALERT("BUG in cache_add()  - second argument not of "
 						"type string [%d]\n", a->elem[1].type );
 				ret=E_BUG;
 				break;
@@ -1245,8 +1313,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = cachedb_add(&a->elem[0].u.s, &name_s, increment,expires,NULL);
 			break;
 		case CACHE_SUB_T:
+			script_trace("core", "cache_sub", msg, a->line) ;
 			if ((a->elem[0].type!=STR_ST)) {
-				LM_ALERT("BUG in cache_store() - first argument not of"
+				LM_ALERT("BUG in cache_sub() - first argument not of"
 						" type string [%d]\n",
 					a->elem[0].type );
 				ret=E_BUG;
@@ -1254,7 +1323,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 
 			if ((a->elem[1].type!=STR_ST)) {
-				LM_ALERT("BUG in cache_store()  - second argument not of "
+				LM_ALERT("BUG in cache_sub()  - second argument not of "
 						"type string [%d]\n", a->elem[1].type );
 				ret=E_BUG;
 				break;
@@ -1300,6 +1369,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement,expires,NULL);
 			break;
 		case XDBG_T:
+			script_trace("core", "xdbg", msg, a->line) ;
 			if (a->elem[0].type == SCRIPTVAR_ELEM_ST)
 			{
 				if (xdbg(msg, a->elem[0].u.data, val.rs.s) < 0)
@@ -1315,6 +1385,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case XLOG_T:
+			script_trace("core", "xlog", msg, a->line) ;
 			if (a->elem[1].u.data != NULL)
 			{
 				if (a->elem[1].type != SCRIPTVAR_ELEM_ST)
@@ -1352,6 +1423,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			break;
 		case RAISE_EVENT_T:
+			script_trace("core", "raise_event", msg, a->line) ;
 			if (a->elem[0].type != NUMBER_ST) {
 				LM_ERR("invalid event id\n");
 				ret=E_BUG;
@@ -1373,6 +1445,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case SUBSCRIBE_EVENT_T:
+			script_trace("core", "subscribe_event", msg, a->line) ;
 			if (a->elem[0].type != STR_ST || a->elem[1].type != STR_ST) {
 				LM_ERR("BUG in subscribe arguments\n");
 				ret=E_BUG;
@@ -1399,6 +1472,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 
 		case CONSTRUCT_URI_T:
+			script_trace("core", "construct_uri", msg, a->line) ;
 			for (i=0;i<5;i++)
 			{
 				pve = (pv_elem_t *)a->elem[i].u.data;
@@ -1441,6 +1515,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			break;
 		case GET_TIMESTAMP_T:
+			script_trace("core", "get_timestamp", msg, a->line) ;
 			if (get_timestamp(&sec,&usec) == 0) {
 				int avp_name;
 				int_str res;
@@ -1477,6 +1552,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case SWITCH_T:
+			script_trace("core", "switch", msg, a->line) ;
 			if (a->elem[0].type!=SCRIPTVAR_ST){
 				LM_ALERT("BUG in switch() type %d\n",
 						a->elem[0].type);
@@ -1545,6 +1621,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=return_code;
 			break;
 		case MODULE_T:
+			script_trace("module", ((cmd_export_t*)(a->elem[0].u.data))->name,
+				msg, a->line) ;
 			if ( (a->elem[0].type==CMD_ST) && a->elem[0].u.data ) {
 				ret=((cmd_export_t*)(a->elem[0].u.data))->function(msg,
 						 (char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
@@ -1555,14 +1633,17 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			break;
 		case FORCE_RPORT_T:
+			script_trace("core", "force_rport", msg, a->line) ;
 			msg->msg_flags|=FL_FORCE_RPORT;
 			ret=1; /* continue processing */
 			break;
 		case FORCE_LOCAL_RPORT_T:
+			script_trace("core", "force_local_rport", msg, a->line) ;
 			msg->msg_flags|=FL_FORCE_LOCAL_RPORT;
 			ret=1; /* continue processing */
 			break;
 		case SET_ADV_ADDR_T:
+			script_trace("core", "set_adv_addr", msg, a->line) ;
 			if (a->elem[0].type!=STR_ST){
 				LM_ALERT("BUG in set_advertised_address() "
 						"type %d\n", a->elem[0].type);
@@ -1570,7 +1651,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 				break;
 			}
 			str adv_addr;
-
 			pve = (pv_elem_t *)a->elem[0].u.data;
 			if ( pv_printf_s(msg, pve, &adv_addr)!=0 || 
 			adv_addr.len == 0 || adv_addr.s == NULL) {
@@ -1583,6 +1663,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1; /* continue processing */
 			break;
 		case SET_ADV_PORT_T:
+			script_trace("core", "set_adv_port", msg, a->line) ;
 			if (a->elem[0].type!=STR_ST){
 				LM_ALERT("BUG in set_advertised_port() "
 						"type %d\n", a->elem[0].type);
@@ -1595,6 +1676,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 #ifdef USE_TCP
 		case FORCE_TCP_ALIAS_T:
+			script_trace("core", "force_tcp_alias", msg, a->line) ;
 			if ( msg->rcv.proto==PROTO_TCP
 #ifdef USE_TLS
 					|| msg->rcv.proto==PROTO_TLS
@@ -1622,6 +1704,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1; /* continue processing */
 			break;
 		case FORCE_SEND_SOCKET_T:
+			script_trace("core", "force_send_socket", msg, a->line) ;
 			if (a->elem[0].type!=SOCKETINFO_ST){
 				LM_ALERT("BUG in force_send_socket argument"
 						" type: %d\n", a->elem[0].type);
@@ -1632,6 +1715,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1; /* continue processing */
 			break;
 		case SERIALIZE_BRANCHES_T:
+			script_trace("core", "serialize_branches", msg, a->line) ;
 			if (a->elem[0].type!=NUMBER_ST){
 				LM_ALERT("BUG in serialize_branches argument"
 						" type: %d\n", a->elem[0].type);
@@ -1646,6 +1730,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1; /* continue processing */
 			break;
 		case NEXT_BRANCHES_T:
+			script_trace("core", "next_branches", msg, a->line) ;
 			if ((ret=next_branches(msg))<0) {
 				LM_ERR("next_branches failed\n");
 				ret=E_UNSPEC;
@@ -1666,12 +1751,15 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret = do_assign(msg, a);
 			break;
 		case USE_BLACKLIST_T:
+			script_trace("core", "use_blacklist", msg, a->line) ;
 			mark_for_search((struct bl_head*)a->elem[0].u.data, 1);
 			break;
 		case UNUSE_BLACKLIST_T:
+			script_trace("core", "unuse_blacklist", msg, a->line);
 			mark_for_search((struct bl_head*)a->elem[0].u.data, 0);
 			break;
 		case PV_PRINTF_T:
+			script_trace("core", "pv_printf", msg, a->line);
 			ret = -1;
 			spec = (pv_spec_p)a->elem[0].u.data;
 			if(!pv_is_w(spec))
@@ -1696,7 +1784,34 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			
 			ret = 1;
-		break;
+			break;
+		case SCRIPT_TRACE_T:
+			script_trace("core", "script_trace", msg, a->line);
+			if (a->elem[0].type==NOSUBTYPE) {
+				use_script_trace = 0;
+			} else {
+				
+				use_script_trace = 1;
+				
+				if (a->elem[0].type != NUMBER_ST ||
+					a->elem[1].type != SCRIPTVAR_ELEM_ST) {
+
+					LM_ERR("BUG in use_script_trace() arguments\n");
+					ret=E_BUG;
+					break;
+				}
+
+				if (a->elem[2].type!=NOSUBTYPE) {
+					script_trace_info = (char *)a->elem[2].u.data;
+				} else {
+					script_trace_info = NULL;
+				}
+
+				script_trace_log_level = (int)a->elem[0].u.number;
+				script_trace_elem = *(pv_elem_p)a->elem[1].u.data;
+			}
+
+			break;
 		default:
 			LM_ALERT("BUG - unknown type %d\n", a->type);
 			goto error;
@@ -1724,5 +1839,42 @@ error_fwd_uri:
 	return ret;
 }
 
+/**
+ * If enabled, prints the current point of execution in the OpenSIPS script
+ * Params:
+ *    - class - optional, string to be printed meaning the class of action (if any)
+ *    - action - mandatory, string with the name of action
+ *    - msg - mandatory, sip message
+ *    - line - line in script
+ */
+void script_trace(char *class, char *action, struct sip_msg *msg, int line)
+{
+	gparam_t param;
+	str val;
+
+	if (use_script_trace == 0)
+		return;
+	
+	param.type = GPARAM_TYPE_PVE;
+	param.v.pve = &script_trace_elem;
+
+	val.s = NULL;
+	val.len = 0;
+	if (fixup_get_svalue(msg, &param, &val) != 0) {
+		LM_ERR("Failed to get pv elem value!\n");
+		return;
+	}
+
+	/* Also print extra info */
+	if (script_trace_info) {
+		LM_GEN1(script_trace_log_level, "[Script Trace][line %d][%s][%s %s]"\
+			" -> (%.*s)\n", line, script_trace_info,
+			class?class:"", action, val.len, val.s);
+	} else {
+		LM_GEN1(script_trace_log_level, "[Script Trace][line %d][%s %s]"\
+			" -> (%.*s)\n", line,
+			class?class:"", action, val.len, val.s);
+	}
+}
 
 
