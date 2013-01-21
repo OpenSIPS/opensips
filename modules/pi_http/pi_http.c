@@ -68,8 +68,8 @@ static const str PI_HTTP_U_METHOD = str_init("<html><body>"
 
 /* module parameters */
 static param_export_t params[] = {
-	{"pi_root",	STR_PARAM,	&http_root.s},
-	{"framework",	STR_PARAM,	&filename.s},
+	{"pi_http_root", STR_PARAM,	&http_root.s},
+	{"framework",    STR_PARAM,	&filename.s},
 	{0,0,0}
 };
 

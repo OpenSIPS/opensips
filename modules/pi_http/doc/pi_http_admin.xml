@@ -256,21 +256,21 @@ opensipsdbctl pframework creata
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>pi_root</varname>(string)</title>
+		<title><varname>pi_http_root</varname>(string)</title>
 		<para>
 		It specifies the root path for pi http requests.
 		The link to the &osips; provisioning web interface must be constructed
 		using the following patern:
-		http://[opensips_IP]:[opensips_mi_port]/[pi_root]
+		http://[opensips_IP]:[opensips_mi_port]/[pi_http_root]
 		</para>
 		<para>
 		<emphasis>The default value is "pi".</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>pi_root</varname> parameter</title>
+		<title>Set <varname>pi_http_root</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("pi_http", "pi_root", "opensips_pi")
+modparam("pi_http", "pi_http_root", "opensips_pi")
 ...
 </programlisting>
 		</example>

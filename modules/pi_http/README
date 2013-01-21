@@ -34,7 +34,7 @@ Ovidiu Sas
         1.6. External Libraries or Applications
         1.7. Exported Parameters
 
-              1.7.1. pi_root(string)
+              1.7.1. pi_http_root(string)
               1.7.2. framework(string)
 
         1.8. Exported MI Functions
@@ -43,7 +43,7 @@ Ovidiu Sas
 
    List of Examples
 
-   1.1. Set pi_root parameter
+   1.1. Set pi_http_root parameter
    1.2. Set framework parameter
 
 Chapter 1. Admin Guide
@@ -203,18 +203,18 @@ opensipsdbctl pframework creata
 
 1.7. Exported Parameters
 
-1.7.1. pi_root(string)
+1.7.1. pi_http_root(string)
 
    It specifies the root path for pi http requests. The link to
    the OpenSIPS provisioning web interface must be constructed
    using the following patern:
-   http://[opensips_IP]:[opensips_mi_port]/[pi_root]
+   http://[opensips_IP]:[opensips_mi_port]/[pi_http_root]
 
    The default value is "pi".
 
-   Example 1.1. Set pi_root parameter
+   Example 1.1. Set pi_http_root parameter
 ...
-modparam("pi_http", "pi_root", "opensips_pi")
+modparam("pi_http", "pi_http_root", "opensips_pi")
 ...
 
 1.7.2. framework(string)
