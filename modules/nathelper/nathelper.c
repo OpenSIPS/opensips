@@ -228,6 +228,7 @@ static param_export_t params[] = {
 	{"force_socket",          STR_PARAM, &force_socket_str      },
 	{"sipping_from",          STR_PARAM, &sipping_from.s        },
 	{"sipping_method",        STR_PARAM, &sipping_method.s      },
+	{"sipping_bflag",         STR_PARAM, &sipping_flag_str      },
 	{"sipping_bflag",         INT_PARAM, &sipping_flag          },
 	{"natping_processes",     INT_PARAM, &natping_processes     },
 	{"natping_socket",        STR_PARAM, &natping_socket        },
