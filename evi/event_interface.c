@@ -97,30 +97,39 @@ event_id_t evi_publish_event(str event_name)
 int evi_raise_event(event_id_t id, evi_params_t* params)
 {
 	int status;
-	static struct sip_msg* req= NULL;
+	struct sip_msg* req= NULL;
+	struct usr_avp *event_avps = 0;
+	struct usr_avp **bak_avps = 0;
 
+	/*
+	 * because these might be nested, a different message has
+	 * to be generated each time
+	 */
+	req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
 	if(req == NULL)
 	{
-		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-		if(req == NULL)
-		{
-			LM_ERR("No more memory\n");
-			return -1;
-		}
-		memset(req, 0, sizeof(struct sip_msg));
-		req->first_line.type = SIP_REQUEST;
-		req->first_line.u.request.method.s= "DUMMY";
-		req->first_line.u.request.method.len= 5;
-		req->first_line.u.request.uri.s= "sip:user@domain.com";
-		req->first_line.u.request.uri.len= 19;
+		LM_ERR("No more memory\n");
+		return -1;
 	}
+	memset(req, 0, sizeof(struct sip_msg));
+	
+	req->first_line.type = SIP_REQUEST;
+	req->first_line.u.request.method.s= "DUMMY";
+	req->first_line.u.request.method.len= 5;
+	req->first_line.u.request.uri.s= "sip:user@domain.com";
+	req->first_line.u.request.uri.len= 19;
+	
+	bak_avps = set_avp_list(&event_avps);
 
 	status = evi_raise_event_msg(req, id, params);
 
 	/* clean whatever extra structures were added by script functions */
 	free_sip_msg(req);
-	/* remove all added AVP - here we use all the time the default AVP list */
-	reset_avps( );
+	pkg_free(req);
+
+	/* remove all avps added */
+	destroy_avp_list(&event_avps);
+	set_avp_list(bak_avps);
 
 	return status;
 }

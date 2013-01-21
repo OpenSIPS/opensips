@@ -308,7 +308,7 @@ static int scriptroute_add_param(struct sip_msg *msg,
 	/* parameter found - populate it */
 	if (it->flags & EVI_INT_VAL) {
 		val.ri = it->val.n;
-		val.flags = PV_VAL_INT;
+		val.flags = PV_VAL_INT|PV_TYPE_INT;
 	} else {
 		val.rs.len = it->val.s.len;
 		val.rs.s = it->val.s.s;
