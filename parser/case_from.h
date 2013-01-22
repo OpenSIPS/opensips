@@ -29,8 +29,9 @@
 
 #define from_CASE             \
         hdr->type = HDR_FROM_T; \
+        hdr->name.len = 4;    \
         p += 4;               \
-        goto dc_end
+        goto dc_cont
 
 
 #endif /* CASE_FROM_H */

@@ -30,27 +30,24 @@
 #define CASE_MIN__H 1
 
 
-#ifndef SE_CASE
 #define SE_CASE	\
-	if ( LOWER_BYTE(*p) == 's' && LOWER_BYTE(*(p+1)) == 'e' ) {	\
-		hdr->type = HDR_MIN_SE_T;								\
-		p += 2;													\
-		goto dc_end;											\
+	if ( LOWER_BYTE(*p) == 's' ) {          \
+		p++;                                \
+		switch ( LOWER_BYTE(*(p+1)) ) {     \
+			case 'e':                       \
+				hdr->type = HDR_MIN_SE_T;   \
+				hdr->name.len = 6;          \
+				p++;                        \
+				goto dc_cont;               \
+		}                                   \
+		goto other;                         \
 	}
-#else
-#error existing #define of SE_CASE currently needed for parsing Min-SE header
-#endif
 
 
-#ifndef min__CASE
-#define min__CASE	\
-	p += 4;			\
-	SE_CASE;		\
+#define min__CASE \
+	p += 4;  \
+	SE_CASE; \
 	goto other;
-#else
-#error existing #define of min__CASE currently needed for \
-	parsing "Min-"-prefixed headers
-#endif
 
 
 #endif /* ! CASE_MIN__H */

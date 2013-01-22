@@ -28,13 +28,14 @@
 
 
 #define even_CASE                     \
-    p += 4;                           \
-    if (LOWER_BYTE(*p) == 't') {      \
-            hdr->type = HDR_EVENT_T;    \
-            p++;                      \
-	    goto dc_end;              \
-    }                                 \
-    goto other;
+	p += 4;                           \
+	if (LOWER_BYTE(*p) == 't') {      \
+		hdr->type = HDR_EVENT_T;      \
+		hdr->name.len = 5;            \
+		p++;                          \
+		goto dc_cont;                 \
+	}                                 \
+	goto other;
 
 
 #endif /* CASE_EVEN_H */

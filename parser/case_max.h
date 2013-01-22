@@ -27,29 +27,30 @@
 #define CASE_MAX_H
 
 
-#define ARDS_CASE                            \
-        if (LOWER_DWORD(val) == _ards_) {    \
-	        hdr->type = HDR_MAXFORWARDS_T; \
-	        p += 4;                      \
-		goto dc_end;                 \
+#define ARDS_CASE                      \
+	if (LOWER_DWORD(val) == _ards_) {  \
+		hdr->type = HDR_MAXFORWARDS_T; \
+		hdr->name.len = 12;            \
+		p += 4;                        \
+		goto dc_cont;                  \
 	}
 
 
-#define FORW_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _forw_:               \
-	        p += 4;            \
-	        val = READ(p);     \
-                ARDS_CASE;         \
-	        goto other;        \
-        }                                             
+#define FORW_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _forw_:           \
+			p += 4;            \
+			val = READ(p);     \
+			ARDS_CASE;         \
+		goto other;            \
+	}
 
 
-#define max_CASE       \
-     p += 4;           \
-     val = READ(p);    \
-     FORW_CASE;        \
-     goto other;       \
+#define max_CASE      \
+	p += 4;           \
+	val = READ(p);    \
+	FORW_CASE;        \
+	goto other;       \
 
 
 #endif /* CASE_MAX_H */

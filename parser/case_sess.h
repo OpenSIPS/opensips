@@ -25,64 +25,45 @@
  * --------
  * 2006-02-17 Initial revision (dhsueh@somanetworks.com)
  */
-
 #ifndef CASE_SESS_H
-#define CASE_SESS_H 1
+#define CASE_SESS_H
 
-
-#ifndef RES_CASE
-#define RES_CASE	 						\
-	switch( LOWER_DWORD(val) ) {			\
-	case _res1_:							\
-		hdr->type = HDR_SESSION_EXPIRES_T;	\
-		hdr->name.len = 15;					\
-		return p + 4;						\
-	case _res2_:							\
-		hdr->type = HDR_SESSION_EXPIRES_T;	\
-		p += 4;								\
-		goto dc_end;						\
+#define RES_CASE                                \
+	switch( LOWER_DWORD(val) ) {                \
+		case _res1_:                            \
+			hdr->type = HDR_SESSION_EXPIRES_T;  \
+			hdr->name.len = 15;                 \
+			return p + 4;                       \
+		case _res2_:                            \
+			hdr->type = HDR_SESSION_EXPIRES_T;  \
+			hdr->name.len = 15;                 \
+			p += 4;                             \
+			goto dc_cont;                       \
 	}
-#else
-#error existing #define of RES_CASE currently needed for \
-	parsing Session-Expires
-#endif
 
-#ifndef EXPI_CASE
-#define EXPI_CASE	 					\
-	if ( LOWER_DWORD(val) == _expi_ ) {	\
-		p += 4;							\
-		val = READ(p);					\
-		RES_CASE;						\
-		goto other;						\
+
+#define EXPI_CASE                        \
+	if ( LOWER_DWORD(val) == _expi_ ) {  \
+		p += 4;                          \
+		val = READ(p);                   \
+		RES_CASE;                        \
+		goto other;                      \
 	}
-#else
-#error existing #define of EXPI_CASE currently needed for \
-	parsing Session-Expires
-#endif
 
-#ifndef ION__CASE
-#define ION__CASE						\
-	if ( LOWER_DWORD(val) == _ion__ ) {	\
-		p += 4;							\
-		val = READ(p);					\
-		EXPI_CASE;						\
-		goto other;						\
+
+#define ION__CASE                        \
+	if ( LOWER_DWORD(val) == _ion__ ) {  \
+		p += 4;                          \
+		val = READ(p);                   \
+		EXPI_CASE;                       \
+		goto other;                      \
 	}
-#else
-#error existing #define of ION__CASE currently needed for \
-	parsing Session-Expires
-#endif
 
-#ifndef sess_CASE
-#define sess_CASE	\
-	p += 4;			\
-	val = READ(p);	\
-	ION__CASE;		\
+#define sess_CASE    \
+	p += 4;          \
+	val = READ(p);   \
+	ION__CASE;       \
 	goto other;
-#else
-#error existing #define of sess_CASE currently needed for \
-	parsing Session-Expires
+
 #endif
 
-
-#endif /* ! CASE_SESS_H */

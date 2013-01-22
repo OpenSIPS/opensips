@@ -32,25 +32,25 @@
 #define CASE_EXPI_H
 
 
-#define EXPI_RES_CASE                    \
-        switch(LOWER_DWORD(val)) {       \
-        case _res1_:                     \
-		hdr->type = HDR_EXPIRES_T; \
-		hdr->name.len = 7;       \
-		return (p + 4);          \
-                                         \
-        case _res2_:                     \
-		hdr->type = HDR_EXPIRES_T; \
-		p += 4;                  \
-		goto dc_end;             \
-        }
+#define EXPI_RES_CASE                  \
+	switch(LOWER_DWORD(val)) {         \
+		case _res1_:                   \
+			hdr->type = HDR_EXPIRES_T; \
+			hdr->name.len = 7;         \
+			return (p + 4);            \
+		case _res2_:                   \
+			hdr->type = HDR_EXPIRES_T; \
+			hdr->name.len = 7;         \
+			p += 4;                    \
+			goto dc_cont;              \
+	}
 
 
-#define expi_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        EXPI_RES_CASE;    \
-        goto other;
+#define expi_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	EXPI_RES_CASE;    \
+	goto other;
 
 
 #endif /* CASE_EXPI_H */

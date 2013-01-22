@@ -26,19 +26,20 @@
 #ifndef CASE_REFE_H
 #define CASE_REFE_H
 
-#define r_to_CASE                          \
-        if (LOWER_DWORD(val) == _r_to_) {  \
-                hdr->type = HDR_REFER_TO_T;  \
-                p += 4;                    \
-                goto dc_end;               \
-        }
+#define r_to_CASE                    \
+	if (LOWER_DWORD(val) == _r_to_) {\
+		hdr->type = HDR_REFER_TO_T;  \
+		hdr->name.len = 8;           \
+		p += 4;                      \
+		goto dc_cont;                \
+	}
 
 
-#define refe_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     r_to_CASE;         \
-     goto other;
+#define refe_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	r_to_CASE;        \
+	goto other;
 
 
 #endif /* CASE_REFE_H */

@@ -33,34 +33,34 @@
 
 
 #define TED_CASE                             \
-        switch(LOWER_DWORD(val)) {           \
-        case _ted1_:                         \
-                hdr->type = HDR_UNSUPPORTED_T; \
-                hdr->name.len = 11;          \
-	        return (p + 4);              \
-                                             \
-        case _ted2_:                         \
-                hdr->type = HDR_UNSUPPORTED_T; \
-                p += 4;                      \
-	        goto dc_end;                 \
-        }
+	switch(LOWER_DWORD(val)) {               \
+		case _ted1_:                         \
+			hdr->type = HDR_UNSUPPORTED_T;   \
+			hdr->name.len = 11;              \
+			return (p + 4);                  \
+		case _ted2_:                         \
+			hdr->type = HDR_UNSUPPORTED_T;   \
+			hdr->name.len = 11;              \
+			p += 4;                          \
+			goto dc_cont;                    \
+		}
 
 
 #define PPOR_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _ppor_:               \
-                p += 4;            \
-                val = READ(p);     \
-                TED_CASE;          \
-                goto other;        \
-        }
+	switch(LOWER_DWORD(val)) {     \
+		case _ppor_:               \
+			p += 4;                \
+			val = READ(p);         \
+			TED_CASE;              \
+			goto other;            \
+	}
 
 
 #define unsu_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        PPOR_CASE;        \
-        goto other;       \
+		p += 4;           \
+		val = READ(p);    \
+		PPOR_CASE;        \
+		goto other;       \
 
 
 #endif /* CASE_UNSU_H */

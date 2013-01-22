@@ -33,33 +33,35 @@
 
 
 #define ID_INF_CASE                      \
-     switch(LOWER_DWORD(val)) {      \
-     case __id1_:                    \
-	     hdr->type = HDR_CALLID_T; \
-	     hdr->name.len = 7;      \
-	     return (p + 4);         \
-	                             \
-     case __id2_:                    \
-	     hdr->type = HDR_CALLID_T; \
-	     p += 4;                 \
-	     goto dc_end;            \
-	                             \
-     case __inf_:                    \
-	     p += 4;                 \
-	     if ( LOWER_BYTE(*p) == 'o') { \
-	           hdr->type = HDR_CALL_INFO_T; \
-		p += 1;              \
-		goto dc_end;         \
-             }                       \
-	     goto other;             \
-     }
+	switch(LOWER_DWORD(val)) {           \
+		case __id1_:                     \
+			hdr->type = HDR_CALLID_T;    \
+			hdr->name.len = 7;           \
+			return (p + 4);              \
+		                                 \
+		case __id2_:                     \
+			hdr->type = HDR_CALLID_T;    \
+			hdr->name.len = 7;           \
+			p += 4;                      \
+			goto dc_end;                 \
+		                                 \
+		case __inf_:                     \
+			p += 4;                      \
+			if ( LOWER_BYTE(*p) == 'o') {\
+				hdr->type = HDR_CALL_INFO_T; \
+				hdr->name.len = 9;       \
+				p += 1;                  \
+				goto dc_cont;            \
+			}                            \
+		goto other;                      \
+		}
 
 
 #define call_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     ID_INF_CASE;          \
-     goto other;
+	p += 4;            \
+	val = READ(p);     \
+	ID_INF_CASE;       \
+	goto other;
 
 
 #endif /* CASE_CALL_H */

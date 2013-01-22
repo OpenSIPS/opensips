@@ -27,15 +27,10 @@
 #ifndef CASE_PATH_H
 #define CASE_PATH_H
 
-#define path_CASE				\
-	p += 4;						\
-	switch(LOWER_BYTE(*p)) {	\
-	case ':':					\
-		hdr->type = HDR_PATH_T;	\
-		goto dc_end;			\
-								\
-	default:					\
-		goto other;				\
-	}
+#define path_CASE           \
+	p += 4;                 \
+	hdr->type = HDR_PATH_T; \
+	hdr->name.len = 4;      \
+	goto dc_cont;
 
 #endif /* CASE_PATH_H */
