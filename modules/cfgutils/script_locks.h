@@ -28,6 +28,7 @@
 #ifndef __SCRIPT_LOCKS_H__
 #define __SCRIPT_LOCKS_H__
 
+#include "../../locking.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
 
