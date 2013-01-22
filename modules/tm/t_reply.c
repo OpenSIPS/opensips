@@ -1524,7 +1524,11 @@ int reply_received( struct sip_msg  *p_msg )
 	/* mark that the UAC received replies */
 	uac->flags |= T_UAC_HAS_RECV_REPLY;
 
-	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG) {
+	/* we fire a cancel on spot if (a) branch is marked "to be canceled" or (b)
+	 * the whole transaction was canceled (received cancel) and no cancel sent
+	 * yet on this branch; and of course, only if a provisional reply :) */
+	if (t->uac[branch].flags&T_UAC_TO_CANCEL_FLAG ||
+	((t->flags&T_WAS_CANCELLED_FLAG) && !t->uac[branch].local_cancel.buffer.s)) {
 		if ( msg_status < 200 )
 			/* reply for an UAC with a pending cancel -> do cancel now */
 			cancel_branch(t, branch);
