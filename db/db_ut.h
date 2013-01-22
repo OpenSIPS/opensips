@@ -53,6 +53,17 @@
 	#undef _XOPEN_SOURCE
 #endif
 
+/**
+ * Compatabilty for older compilers where we get stuck with the #defines for the first
+ * include of features.h
+ * Ensures 'syscall' is exported which is required by some locking.
+ * Should not cause any conflicts?
+ */
+
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
+
 #include <time.h>
 
 #undef _XOPEN_SOURCE

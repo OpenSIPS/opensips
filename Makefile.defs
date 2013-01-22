@@ -438,6 +438,8 @@ export CC_NAME
 #		issues additional debugging information if lock/unlock is called
 # -DFAST_LOCK
 #		uses fast architecture specific locking (see the arch. specific section)
+# -DUSE_FUTEX
+#		uses linux futexs with fast architecture specific locking (FAST_LOCK)
 # -DUSE_SYSV_SEM
 #		uses SYSV sems for locking (this is slower and supports only a
 #		limited number of locks)
@@ -450,13 +452,13 @@ export CC_NAME
 #		uses busy waiting on the lock (FAST_LOCK)
 # -DADAPTIVE_WAIT
 #		try busy waiting for a while and if the lock is still held go to
-#		force reschedule (FAST_LOCK)
+#		force reschedule (FAST_LOCK, USE_FUTEX)
 # -DADAPTIVE_WAIT_LOOPS=number
 #		number of loops we busy wait, after "number" loops have elapsed we 
-#		force a reschedule (FAST_LOCK)
+#		force a reschedule (FAST_LOCK, USE_FUTEX)
 # -DNOSMP
 #		don't use smp compliant locking (faster but won't work on SMP machines)
-#		(not yet enabled) (FAST_LOCK)
+#		(not yet enabled) (FAST_LOCK, USE_FUTEX)
 # -DUSE_TCP
 #		compiles in tcp support
 # -DDISABLE_NAGLE

@@ -67,10 +67,18 @@
 
 
 #ifdef FAST_LOCK
+
+#ifdef USE_FUTEX
+#include "futex_lock.h"
+
+typedef fx_lock_t gen_lock_t;
+
+#elif defined FAST_LOCK
 #include "fastlock.h"
 
 typedef fl_lock_t gen_lock_t;
 
+#endif
 
 #define lock_destroy(lock) /* do nothing */ 
 

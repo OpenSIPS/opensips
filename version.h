@@ -150,7 +150,13 @@
 #endif
 
 #ifdef FAST_LOCK
-#ifdef BUSY_WAIT
+#ifdef USE_FUTEX
+#ifdef ADAPTIVE_WAIT
+#define FAST_LOCK_STR ", FAST_LOCK-FUTEX-ADAPTIVE_WAIT"
+#else
+#define FAST_LOCK_STR ", FAST_LOCK-FUTEX"
+#endif
+#elif defined (BUSY_WAIT)
 #define FAST_LOCK_STR ", FAST_LOCK-BUSY_WAIT"
 #elif defined (ADAPTIVE_WAIT)
 #define FAST_LOCK_STR ", FAST_LOCK-ADAPTIVE_WAIT"
