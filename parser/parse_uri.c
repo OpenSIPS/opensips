@@ -761,6 +761,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			case PT_eq:
 				param=&uri->transport;
 				param_val=&uri->transport_val;
+				uri->proto = PROTO_OTHER;
 				switch (*p){
 					param_common_cases;
 					case 'u':

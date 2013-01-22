@@ -83,6 +83,7 @@ enum {
 	TCP_TLS1, TCP2, FIN_TCP,
 	TLS2, FIN_TLS,
 	SCTP1, SCTP2, SCTP3, FIN_SCTP,
+	OTHER_PROTO,
 	L_PROTO, F_PROTO
 };
 
@@ -1031,6 +1032,12 @@ parse_again:
 						vb->proto=PROTO_SCTP;
 						state=F_HOST; /* start looking for host*/
 						goto main_via;
+					case OTHER_PROTO:
+						/* finished proto parsing */
+						vb->transport.len=tmp-vb->transport.s;
+						vb->proto=PROTO_OTHER;
+						state=F_HOST; /* start looking for host*/
+						goto main_via;
 					case FIN_SIP:
 						vb->name.len=tmp-vb->name.s;
 						state=L_VER;
@@ -1074,6 +1081,13 @@ parse_again:
 					case FIN_TLS:
 						vb->transport.len=tmp-vb->transport.s;
 						vb->proto=PROTO_TLS;
+						state=F_LF;
+						saved_state=F_HOST; /* start looking for host*/
+						goto main_via;
+					case OTHER_PROTO:
+						/* finished proto parsing */
+						vb->transport.len=tmp-vb->transport.s;
+						vb->proto=PROTO_OTHER;
 						state=F_LF;
 						saved_state=F_HOST; /* start looking for host*/
 						goto main_via;
@@ -1124,6 +1138,12 @@ parse_again:
 					case FIN_TLS:
 						vb->transport.len=tmp-vb->transport.s;
 						vb->proto=PROTO_TLS;
+						state=F_CR;
+						saved_state=F_HOST;
+						goto main_via;
+					case OTHER_PROTO:
+						vb->transport.len=tmp-vb->transport.s;
+						vb->proto=PROTO_OTHER;
 						state=F_CR;
 						saved_state=F_HOST;
 						goto main_via;
@@ -1184,6 +1204,21 @@ parse_again:
 						state=SCTP1;
 						vb->transport.s=tmp;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1194,6 +1229,22 @@ parse_again:
 				switch(state){
 					case SIP1:
 						state=SIP2;
+						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
@@ -1216,6 +1267,19 @@ parse_again:
 					case SCTP3:
 						state=FIN_SCTP;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1228,6 +1292,22 @@ parse_again:
 						state=UDP1;
 						vb->transport.s=tmp;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1238,6 +1318,21 @@ parse_again:
 				switch(state){
 					case UDP1:
 						state=UDP2;
+						break;
+					case OTHER_PROTO:
+						break;
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
@@ -1254,6 +1349,21 @@ parse_again:
 					case SCTP2:
 						state=SCTP3;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1268,6 +1378,20 @@ parse_again:
 					case SCTP1:
 						state=SCTP2;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1278,6 +1402,21 @@ parse_again:
 				switch(state){
 					case TCP_TLS1:
 						state=TLS2;
+						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
@@ -1291,6 +1430,22 @@ parse_again:
 						state=VER1;
 						vb->version.s=tmp;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1300,6 +1455,22 @@ parse_again:
 				switch(state){
 					case VER1:
 						state=VER2;
+						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
 						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
@@ -1311,6 +1482,22 @@ parse_again:
 					case VER2:
 						state=FIN_VER;
 						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
 					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
@@ -1318,8 +1505,31 @@ parse_again:
 				break;
 			
 			default:
+				switch(state){
+					case F_PROTO:
+						state=OTHER_PROTO;
+						vb->transport.s=tmp;
+						break;
+					case OTHER_PROTO:
+						break;
+					case UDP1:
+					case UDP2:
+					case FIN_UDP:
+					case TCP_TLS1:
+					case TCP2:
+					case FIN_TCP:
+					case TLS2:
+					case FIN_TLS:
+					case SCTP1:
+					case SCTP2:
+					case SCTP3:
+					case FIN_SCTP:
+						state=OTHER_PROTO;
+						break;
+					default:
 						LM_ERR("bad char <%c> on state %d\n", *tmp, state);
 						goto parse_error;
+				}
 				break;
 		}
 	} /* for tmp*/
