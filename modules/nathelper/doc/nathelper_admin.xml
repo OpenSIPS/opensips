@@ -332,6 +332,26 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>natping_tcp</varname> (integer)</title>
+		<para>
+		If the flag is set, TCP/TLS clients will also be pinged with
+		SIP OPTIONS messages.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (not set).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>natping_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("nathelper", "natping_tcp", 1)
+...
+</programlisting>
+		</example>
+	</section>
 
 </section>
 

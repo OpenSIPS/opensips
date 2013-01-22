@@ -43,6 +43,7 @@ Bogdan-Andrei Iancu
               1.4.8. sipping_from (string)
               1.4.9. sipping_method (string)
               1.4.10. nortpproxy_str (string)
+              1.4.11. natping_tcp (integer)
 
         1.5. Exported Functions
 
@@ -67,11 +68,12 @@ Bogdan-Andrei Iancu
    1.8. Set sipping_from parameter
    1.9. Set sipping_method parameter
    1.10. Set nortpproxy_str parameter
-   1.11. fix_nated_contact usage
-   1.12. fix_nated_sdp usage
-   1.13. add_rcv_paramer usage
-   1.14. fix_nated_register usage
-   1.15. nh_enable_ping usage
+   1.11. Set natping_interval parameter
+   1.12. fix_nated_contact usage
+   1.13. fix_nated_sdp usage
+   1.14. add_rcv_paramer usage
+   1.15. fix_nated_register usage
+   1.16. nh_enable_ping usage
 
 Chapter 1. Admin Guide
 
@@ -275,6 +277,18 @@ Note
 modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
+1.4.11. natping_tcp (integer)
+
+   If the flag is set, TCP/TLS clients will also be pinged with
+   SIP OPTIONS messages.
+
+   Default value is 0 (not set).
+
+   Example 1.11. Set natping_interval parameter
+...
+modparam("nathelper", "natping_tcp", 1)
+...
+
 1.5. Exported Functions
 
 1.5.1.  fix_nated_contact([uri_params])
@@ -286,7 +300,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.11. fix_nated_contact usage
+   Example 1.12. fix_nated_contact usage
 ...
 if (search("User-Agent: Cisco ATA.*") {
     fix_nated_contact(";ata=cisco");
@@ -323,7 +337,7 @@ if (search("User-Agent: Cisco ATA.*") {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.12. fix_nated_sdp usage
+   Example 1.13. fix_nated_sdp usage
 ...
 if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 ...
@@ -346,7 +360,7 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.13. add_rcv_paramer usage
+   Example 1.14. add_rcv_paramer usage
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
@@ -362,7 +376,7 @@ add_rcv_param("1"); # add the paramter to the Contact URI
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.14. fix_nated_register usage
+   Example 1.15. fix_nated_register usage
 ...
 fix_nated_register();
 ...
@@ -404,7 +418,7 @@ fix_nated_register();
    The function may takean optional parameter (for set operations)
    - a number in decimal format.
 
-   Example 1.15. nh_enable_ping usage
+   Example 1.16. nh_enable_ping usage
 ...
 $ opensipsctl fifo nh_enable_ping
 Status:: 1

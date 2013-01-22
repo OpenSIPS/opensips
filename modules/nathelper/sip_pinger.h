@@ -130,11 +130,20 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
-	char *p;
+	char *p, proto_str[4];
+	str st;
 	int len;
 
+	p = proto2str(s->proto, proto_str);
+	*(p++) = ' ';
+	st.s = proto_str;
+	st.len = p - proto_str;
+
+	/* quick proto uppercase */
+	*((int *)st.s) &= ~((1 << 21) | (1 << 13) | (1 << 5));
+
 	if ( sipping_method.len + 1 + curi->len + s_len(" SIP/2.0"CRLF) +
-		s_len("Via: SIP/2.0/UDP ") + s->address_str.len +
+		s_len("Via: SIP/2.0/") + st.len + s->address_str.len +
 		1 + s->port_no_str.len + s_len(";branch=0") +
 		(path->len ? (s_len(CRLF"Route: ") + path->len) : 0) +
 		s_len(CRLF"From: ") +  sipping_from.len + s_len(";tag=") + 8 +
@@ -154,7 +163,8 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 	append_str( p, sipping_method);
 	*(p++) = ' ';
 	append_str( p, *curi);
-	append_fix( p, " SIP/2.0"CRLF"Via: SIP/2.0/UDP ");
+	append_fix( p, " SIP/2.0"CRLF"Via: SIP/2.0/");
+	append_str( p, st);
 	append_str( p, s->address_str);
 	*(p++) = ':';
 	append_str( p, s->port_no_str);

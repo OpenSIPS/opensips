@@ -177,6 +177,7 @@ static const char sbuf[4] = {0, 0, 0, 0};
 static char *force_socket_str = 0;
 static int sipping_flag = -1;
 static char *sipping_flag_str = 0;
+static int natping_tcp = 0;
 static int natping_processes = 1;
 
 static char* rcv_avp_param = NULL;
@@ -230,6 +231,7 @@ static param_export_t params[] = {
 	{"sipping_method",        STR_PARAM, &sipping_method.s      },
 	{"sipping_bflag",         STR_PARAM, &sipping_flag_str      },
 	{"sipping_bflag",         INT_PARAM, &sipping_flag          },
+	{"natping_tcp",           INT_PARAM, &natping_tcp           },
 	{"natping_processes",     INT_PARAM, &natping_processes     },
 	{"natping_socket",        STR_PARAM, &natping_socket        },
 	{0, 0, 0}
@@ -1199,6 +1201,10 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	if (buf == NULL)
 		goto done;
 
+#ifdef USE_TCP
+		tcp_no_new_conn = 1;
+#endif
+
 	cp = buf;
 	while (1) {
 		memcpy(&(c.len), cp, sizeof(c.len));
@@ -1214,7 +1220,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL ;
 		cp =  (char*)cp + sizeof(path.len) + path.len;
 
-		/* determin the destination */
+		/* determine the destination */
 		if ( path.len && (flags&sipping_flag)!=0 ) {
 			/* send to first URI in path */
 			if (get_path_dst_uri( &path, &opt) < 0) {
@@ -1233,12 +1239,17 @@ nh_timer(unsigned int ticks, void *timer_idx)
 				continue;
 			}
 		}
-		if (curi.proto != PROTO_UDP && curi.proto != PROTO_NONE)
+		if (curi.proto != PROTO_NONE && curi.proto != PROTO_UDP &&
+		     (natping_tcp == 0 || (curi.proto != PROTO_TCP &&
+			                       curi.proto != PROTO_TLS)))
 			continue;
-		if (curi.port_no == 0)
+
+		if (curi.port_no == 0 && curi.proto == PROTO_UDP)
 			curi.port_no = SIP_PORT;
+		else
+			curi.port_no = SIPS_PORT;
 		proto = curi.proto;
-		/* we sholud get rid of this resolve (to ofen and to slow); for the
+		/* we should get rid of this resolve (too often and too slow); for the
 		 * moment we are lucky since the curi is an IP -bogdan */
 		he = sip_resolvehost(&curi.host, &curi.port_no, &proto, 0, 0);
 		if (he == NULL){
@@ -1249,28 +1260,36 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 		if (send_sock==0) {
 			send_sock=force_socket ? force_socket : 
-					get_send_socket(0, &to, PROTO_UDP);
+					get_send_socket(0, &to, curi.proto);
 			if (send_sock == NULL) {
 				LM_ERR("can't get sending socket\n");
 				continue;
 			}
 		}
 
+
 		if ( (flags&sipping_flag)!=0 &&
 		(opt.s=build_sipping( &c, send_sock, &path, &opt.len))!=0 ) {
-			if (udp_send(send_sock, opt.s, opt.len, &to)<0){
-				LM_ERR("sip udp_send failed\n");
+			if (msg_send(send_sock, curi.proto, &to, 0, opt.s, opt.len) < 0) {
+				LM_ERR("sip msg_send failed\n");
 			}
-		} else if (raw_ip) {
+		} else if (raw_ip && curi.proto != PROTO_TCP && curi.proto != PROTO_TLS) {
 			if (send_raw((char*)sbuf, sizeof(sbuf), &to, raw_ip, raw_port)<0) {
 				LM_ERR("send_raw failed\n");
 			}
 		} else {
-			if (udp_send(send_sock, (char *)sbuf, sizeof(sbuf), &to)<0 ) {
-				LM_ERR("udp_send failed\n");
-}
+			if (msg_send(send_sock, curi.proto, &to, 0,
+			             (char *)sbuf, sizeof(sbuf)) < 0) {
+				LM_ERR("sip msg_send failed!\n");
+			}
 		}
+
 	}
+
+#ifdef USE_TCP
+		tcp_no_new_conn = 0;
+#endif
+
 	pkg_free(buf);
 done:
 	iteration++;
