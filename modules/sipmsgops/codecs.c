@@ -414,6 +414,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0} },   /*32 -  MPV/90000 */
 	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0} },   /*33 - MP2T/90000 */
 	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0} },   /*34 - H263/90000 */
+	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0} },   /*T38- fax        */
 	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0} }
 	};
 	sdp_payload_attr_t *payload;
@@ -445,16 +446,13 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 	is_static = 0;
 	payload = cell->payload_attr;
 
-
 	while(payload)
 	{
-
 		if( payload->rtp_enc.s == NULL
 		 || (payload->rtp_clock.s == NULL && ss != NULL)
 		 || payload->rtp_payload.s == NULL)
 		{
-			payload = payload->next;
-			continue;
+			goto next_payload;
 		}
 
 		match = 0;
@@ -587,6 +585,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 		}
 
 		/* next payload */
+	next_payload:
 		if (!is_static) {
 			payload = payload->next;
 			if (payload==NULL) {
