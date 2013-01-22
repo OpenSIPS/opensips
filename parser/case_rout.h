@@ -27,17 +27,17 @@
 #define CASE_ROUT_H
 
 
-#define rout_CASE                   \
-     p += 4;                        \
-     switch(LOWER_BYTE(*p)) {       \
-     case 'e':                      \
-	     hdr->type = HDR_ROUTE_T; \
-	     p++;                   \
-	     goto dc_end;           \
-                                    \
-     default:                       \
-	     goto other;            \
-     }
+#define rout_CASE                    \
+	p += 4;                          \
+	switch(LOWER_BYTE(*p)) {         \
+		case 'e':                    \
+			hdr->type = HDR_ROUTE_T; \
+			hdr->name.len = 5;       \
+			p++;                     \
+			goto dc_cont;            \
+		default:                     \
+			goto other;              \
+	}
 
 
 #endif /* CASE_ROUT_H */

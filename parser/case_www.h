@@ -27,40 +27,41 @@
 #define CASE_WWW_H
 
 
-#define CATE_CASE                        \
-        switch(LOWER_DWORD(val)) {       \
-        case _cate_:                     \
-                hdr->type = HDR_WWW_AUTHENTICATE_T; \
-                p += 4;                  \
-	        goto dc_end;             \
-        }
+#define CATE_CASE                    \
+	switch(LOWER_DWORD(val)) {       \
+		case _cate_:                 \
+			hdr->type = HDR_WWW_AUTHENTICATE_T; \
+			hdr->name.len = 16;      \
+			p += 4;                  \
+			goto dc_cont;            \
+		}
 
 
-#define ENTI_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _enti_:               \
-                p += 4;            \
-                val = READ(p);     \
-                CATE_CASE;         \
-                goto other;        \
+#define ENTI_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _enti_:           \
+			p += 4;            \
+			val = READ(p);     \
+			CATE_CASE;         \
+			goto other;        \
 } 
 
 
-#define WWW_AUTH_CASE              \
-        switch(LOWER_DWORD(val)) { \
-        case _auth_:               \
-	        p += 4;            \
-                val = READ(p);     \
-                ENTI_CASE;         \
-	        goto other;        \
-        }
+#define WWW_AUTH_CASE          \
+	switch(LOWER_DWORD(val)) { \
+		case _auth_:           \
+			p += 4;            \
+			val = READ(p);     \
+			ENTI_CASE;         \
+			goto other;        \
+		}
 
 
 #define www_CASE          \
-        p += 4;           \
-        val = READ(p);    \
-        WWW_AUTH_CASE;    \
-        goto other;
+		p += 4;           \
+		val = READ(p);    \
+		WWW_AUTH_CASE;    \
+		goto other;
 
 
 #endif /* CASE_WWW_H */

@@ -41,11 +41,8 @@
  * Skip all white-chars and return position of the first
  * non-white char
  */
-static inline char* skip_ws(char* p, unsigned int size)
+static inline char* skip_ws(char* p, char *end)
 {
-	char* end;
-	
-	end = p + size;
 	for(; p < end; p++) {
 		if ((*p != ' ') && (*p != '\t')) return p;
 	}
@@ -131,18 +128,19 @@ static inline char* skip_ws(char* p, unsigned int size)
 	case _www__: www_CASE;  \
 
 
-#define PARSE_COMPACT(id)          \
-        switch(*(p + 1)) {         \
-        case ' ':                  \
-	        hdr->type = id;    \
-	        p += 2;            \
-	        goto dc_end;       \
-	                           \
-        case ':':                  \
-	        hdr->type = id;    \
-	        hdr->name.len = 1; \
-	        return (p + 2);    \
-        }                            
+#define PARSE_COMPACT(id)      \
+	switch(*(p + 1)) {         \
+		case ' ':              \
+		case '\t':             \
+			hdr->type = id;    \
+			hdr->name.len = 1; \
+			p += 2;            \
+			goto dc_end;       \
+		case ':':              \
+			hdr->type = id;    \
+			hdr->name.len = 1; \
+	 		return (p + 2);    \
+	}
 
 
 char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
@@ -161,59 +159,103 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 	hdr->name.s = begin;
 
 	switch(val) {
-	FIRST_QUATERNIONS;
 
-	default:
-		switch(LOWER_BYTE(*p)) {
-		case 't':                           
-			switch(LOWER_BYTE(*(p + 1))) {          
-			case 'o':                   
-			case ' ':                   
-				hdr->type = HDR_TO_T; 
-				p += 2;             
-				goto dc_end;        
-				
-			case ':':                   
-				hdr->type = HDR_TO_T; 
-				hdr->name.len = 1;  
-				return (p + 2);     
-			}                           
-			break;
+		FIRST_QUATERNIONS;
 
-		case 'v': PARSE_COMPACT(HDR_VIA_T);           break;
-		case 'f': PARSE_COMPACT(HDR_FROM_T);          break;
-		case 'i': PARSE_COMPACT(HDR_CALLID_T);        break;
-		case 'm': PARSE_COMPACT(HDR_CONTACT_T);       break;
-		case 'l': PARSE_COMPACT(HDR_CONTENTLENGTH_T); break;
-		case 'k': PARSE_COMPACT(HDR_SUPPORTED_T);     break;
-		case 'c': PARSE_COMPACT(HDR_CONTENTTYPE_T);   break;
-		case 'o': PARSE_COMPACT(HDR_EVENT_T);         break;
-		case 'x': PARSE_COMPACT(HDR_SESSION_EXPIRES_T); break;
-		}
-		goto other;
-        }
+		default:
+			switch(LOWER_BYTE(*p)) {
+				case 't':
+					switch(LOWER_BYTE(*(p + 1))) {
+						case 'o':
+							p += 2;
+							hdr->type = HDR_TO_T; 
+							hdr->name.len = 2;
+							goto dc_cont;
+						case ' ':
+						case '\t':
+							p += 2;
+							hdr->type = HDR_TO_T; 
+							hdr->name.len = 1;
+							goto dc_end;
+						case ':':
+							hdr->type = HDR_TO_T;
+							hdr->name.len = 1;
+							return (p + 2);
+					}
+					break;
+				case 'v': PARSE_COMPACT(HDR_VIA_T);           break;
+				case 'f': PARSE_COMPACT(HDR_FROM_T);          break;
+				case 'i': PARSE_COMPACT(HDR_CALLID_T);        break;
+				case 'm': PARSE_COMPACT(HDR_CONTACT_T);       break;
+				case 'l': PARSE_COMPACT(HDR_CONTENTLENGTH_T); break;
+				case 'k': PARSE_COMPACT(HDR_SUPPORTED_T);     break;
+				case 'c': PARSE_COMPACT(HDR_CONTENTTYPE_T);   break;
+				case 'o': PARSE_COMPACT(HDR_EVENT_T);         break;
+				case 'x': PARSE_COMPACT(HDR_SESSION_EXPIRES_T); break;
+			}
+			goto other;
+	}
+	/* the above swtich will never continue here */
 
-	/* Double colon hasn't been found yet */
+
  dc_end:
-	p = skip_ws(p, end - p);
-	if (*p != ':') {   
-	        goto other;
-	} else {
-		hdr->name.len = p - hdr->name.s;
-		return (p + 1);
+	/* HDR name entirely found, consume WS till colon */
+	/* overflow during the "switch-case" parsing ? */
+	if (p>=end)
+		goto error;
+	p = skip_ws(p, end);
+	if (*p != ':')
+		goto error;
+	/* hdr type, name should be already set at this point */
+	return (p+1);
+	/*done*/
+
+
+ dc_cont:
+	/* HDR name partially found, see what's next */
+	/* overflow during the "switch-case" parsing ? */
+	if (p>=end)
+		goto error;
+	/* hdr type, name should be already set at this point (for partial finding) */
+	switch (*p) {
+		case ':' :
+			return (p+1);
+		case ' ':
+		case '\t':
+			/* consume spaces to the end of name */
+			p = skip_ws( p+1, end);
+			if (*p != ':')
+				goto error;
+			return (p+1);
+		/* default: it seems the hdr name continues, fall to "other" */
 	}
 
+
+ other:
 	/* Unknown header type */
- other:    
-	p = q_memchr(p, ':', end - p);
-	if (!p) {        /* No double colon found, error.. */
-		hdr->type = HDR_ERROR_T;
-		hdr->name.s = 0;
-		hdr->name.len = 0;
-		return 0;
-	} else {
-		hdr->type = HDR_OTHER_T;
-		hdr->name.len = p - hdr->name.s;
-		return (p + 1);
+	hdr->type = HDR_OTHER_T;
+	/* if overflow during the "switch-case" parsing, the "while" will
+	 * exit and we will fall in the "error" section */
+	while ( p < end ) {
+		switch (*p) {
+			case ':' :
+				hdr->name.len = p - hdr->name.s;
+				return (p + 1);
+			case ' ' :
+			case '\t':
+				hdr->name.len = p - hdr->name.s;
+				p = skip_ws(p+1, end);
+				if (*p != ':')
+					goto error;
+				return (p+1);
+		}
+		p++;
 	}
+
+ error:
+	/* No double colon found, error.. */
+	hdr->type = HDR_ERROR_T;
+	hdr->name.s = 0;
+	hdr->name.len = 0;
+	return 0;
 }

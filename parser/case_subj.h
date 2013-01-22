@@ -27,25 +27,25 @@
 #define CASE_SUBJ_H
 
 
-#define ect_CASE                         \
-        switch(LOWER_DWORD(val)) {       \
-        case _ect1_:                     \
-	        hdr->type = HDR_SUBJECT_T; \
-	        hdr->name.len = 7;       \
-	        return (p + 4);          \
-                                         \
-        case _ect2_:                     \
-                hdr->type = HDR_SUBJECT_T; \
-                p += 4;                  \
-	        goto dc_end;             \
-        }
+#define ect_CASE                       \
+	switch(LOWER_DWORD(val)) {         \
+		case _ect1_:                   \
+			hdr->type = HDR_SUBJECT_T; \
+			hdr->name.len = 7;         \
+			return (p + 4);            \
+		case _ect2_:                   \
+			hdr->type = HDR_SUBJECT_T; \
+			hdr->name.len = 7;         \
+			p += 4;                    \
+			goto dc_cont;              \
+		}
 
 
 #define subj_CASE        \
-        p += 4;          \
-        val = READ(p);   \
-        ect_CASE;        \
-        goto other;
+		p += 4;          \
+		val = READ(p);   \
+		ect_CASE;        \
+		goto other;
 
 
 #endif /* CASE_SUBJ_H */

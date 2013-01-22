@@ -27,29 +27,30 @@
 #define CASE_RECO_H
 
 
-#define OUTE_CASE                            \
-        if (LOWER_DWORD(val) == _oute_) {    \
-	        hdr->type = HDR_RECORDROUTE_T; \
-		p += 4;                      \
-		goto dc_end;                 \
+#define OUTE_CASE                        \
+	if (LOWER_DWORD(val) == _oute_) {    \
+		hdr->type = HDR_RECORDROUTE_T;   \
+		hdr->name.len = 12;              \
+		p += 4;                          \
+		goto dc_cont;                    \
 	}                                    \
 
 
-#define RD_R_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _rd_r_:               \
-	        p += 4;            \
-	        val = READ(p);     \
-		OUTE_CASE;         \
-	        goto other;        \
-        }
+#define RD_R_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _rd_r_:           \
+			p += 4;            \
+			val = READ(p);     \
+			OUTE_CASE;         \
+			goto other;        \
+	}
 
 
-#define reco_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        RD_R_CASE;        \
-        goto other;
+#define reco_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	RD_R_CASE;        \
+	goto other;
 
 
 #endif /* CASE_RECO_H */

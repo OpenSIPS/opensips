@@ -26,34 +26,35 @@
 #define CASE_AUTH_H
 
 
-#define AUTH_ATIO_CASE                                 \
-        if (LOWER_DWORD(val) == _atio_) {              \
-	        p += 4;                                \
-		switch(LOWER_BYTE(*p)) {               \
-		case 'n':                              \
-		        hdr->type = HDR_AUTHORIZATION_T; \
-			p++;                           \
-			goto dc_end;                   \
-                                                       \
-		default: goto other;                   \
-		}                                      \
+#define AUTH_ATIO_CASE                           \
+	if (LOWER_DWORD(val) == _atio_) {            \
+		p += 4;                                  \
+		switch(LOWER_BYTE(*p)) {                 \
+			case 'n':                            \
+				hdr->type = HDR_AUTHORIZATION_T; \
+				hdr->name.len = 13;              \
+				p++;                             \
+				goto dc_cont;                    \
+			default:                             \
+				goto other;                      \
+		}                                        \
 	}
-	             
-
-#define AUTH_ORIZ_CASE                     \
-        if (LOWER_DWORD(val) == _oriz_) {  \
-                p += 4;                    \
-	        val = READ(p);             \
-	        AUTH_ATIO_CASE;            \
-                goto other;                \
-        }
 
 
-#define auth_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     AUTH_ORIZ_CASE;   \
-     goto other;
+#define AUTH_ORIZ_CASE             \
+	if (LOWER_DWORD(val) == _oriz_) {  \
+		p += 4;                    \
+		val = READ(p);             \
+		AUTH_ATIO_CASE;            \
+		goto other;                \
+	}
+
+
+#define auth_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	AUTH_ORIZ_CASE;   \
+	goto other;
 
 
 #endif /* CASE_AUTH_H */

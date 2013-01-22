@@ -29,8 +29,9 @@
 
 #define cseq_CASE          \
      hdr->type = HDR_CSEQ_T; \
+     hdr->name.len = 4;    \
      p += 4;               \
-     goto dc_end
+     goto dc_cont
 
 
 #endif /* CASE_CSEQ_H */

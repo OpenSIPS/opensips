@@ -26,14 +26,15 @@
 #define CASE_ALLO_H
 
 
-#define allo_CASE                  \
-    p += 4;                        \
-    if (LOWER_BYTE(*p) == 'w') {   \
-            hdr->type = HDR_ALLOW_T; \
-            p++;                   \
-	    goto dc_end;           \
-    }                              \
-    goto other;
+#define allo_CASE                    \
+	p += 4;                          \
+	if (LOWER_BYTE(*p) == 'w') {     \
+		hdr->type = HDR_ALLOW_T;     \
+		hdr->name.len = 5;           \
+		p++;                         \
+		goto dc_cont;                \
+	}                                \
+	goto other;
 
 
 #endif /* CASE_ALLO_H */

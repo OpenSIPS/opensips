@@ -25,23 +25,24 @@
 #define CASE_PRIV_H
 
 
-#define ACY_CASE                                \
-	switch( LOWER_DWORD(val) ) {	        \
-	case _acy1_:				\
-		hdr->type = HDR_PRIVACY_T;	\
-		hdr->name.len = 7;		\
-		return p + 4;			\
-	case _acy2_:				\
-		hdr->type = HDR_PRIVACY_T;      \
-		p += 4;				\
-		goto dc_end;			\
+#define ACY_CASE                        \
+	switch( LOWER_DWORD(val) ) {        \
+		case _acy1_:                    \
+			hdr->type = HDR_PRIVACY_T;  \
+			hdr->name.len = 7;          \
+			return p + 4;               \
+		case _acy2_:                    \
+			hdr->type = HDR_PRIVACY_T;  \
+			hdr->name.len = 7;          \
+			p += 4;                     \
+			goto dc_cont;               \
 	}
 
-#define priv_CASE      \
-     p += 4;           \
-     val = READ(p);    \
-     ACY_CASE;        \
-     goto other;
+#define priv_CASE     \
+	p += 4;           \
+	val = READ(p);    \
+	ACY_CASE;         \
+	goto other;
 
 
 #endif /* CASE_PRIV_H */

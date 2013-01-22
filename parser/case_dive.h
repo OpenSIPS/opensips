@@ -27,24 +27,25 @@
 #define CASE_DIVE_H
 
 
-#define RSIO_CASE                                  \
-        switch(LOWER_DWORD(val)) {                 \
-        case _rsio_:                               \
-	        p += 4;                            \
-	        if (LOWER_BYTE(*p) == 'n') {       \
-		        hdr->type = HDR_DIVERSION_T; \
-                        p++;                       \
-                        goto dc_end;               \
-                }                                  \
-                goto other;                        \
-        }
+#define RSIO_CASE                            \
+	switch(LOWER_DWORD(val)) {               \
+		case _rsio_:                         \
+			p += 4;                          \
+			if (LOWER_BYTE(*p) == 'n') {     \
+				hdr->type = HDR_DIVERSION_T; \
+				hdr->name.len = 9;           \
+				p++;                         \
+				goto dc_cont;                \
+			}                                \
+			goto other;                      \
+	}
 
 
 #define dive_CASE         \
-        p += 4;           \
-        val = READ(p);    \
-        RSIO_CASE;        \
-        goto other;
+		p += 4;           \
+		val = READ(p);    \
+		RSIO_CASE;        \
+		goto other;
 
 
 #endif /* CASE_DIVE_H */

@@ -26,91 +26,91 @@
 #define CASE_ACCE_H
 
 
-#define age_CASE                                \
-        switch(LOWER_DWORD(val)) {              \
-        case _age1_:                            \
-	        hdr->type = HDR_ACCEPTLANGUAGE_T; \
-	        hdr->name.len = 15;             \
-	        return (p + 4);                 \
-                                                \
-        case _age2_:                            \
-                hdr->type = HDR_ACCEPTLANGUAGE_T; \
-                p += 4;                         \
-	        goto dc_end;                    \
-        }
+#define age_CASE                              \
+	switch(LOWER_DWORD(val)) {                \
+		case _age1_:                          \
+			hdr->type = HDR_ACCEPTLANGUAGE_T; \
+			hdr->name.len = 15;               \
+			return (p + 4);                   \
+		case _age2_:                          \
+			hdr->type = HDR_ACCEPTLANGUAGE_T; \
+			hdr->name.len = 15;               \
+			p += 4;                           \
+			goto dc_cont;                     \
+		}
 
 
-#define angu_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _angu_:               \
-		p += 4;            \
-		val = READ(p);     \
-		age_CASE;          \
-		goto other;        \
+#define angu_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _angu_:           \
+			p += 4;            \
+			val = READ(p);     \
+			age_CASE;          \
+			goto other;        \
 	}
 
 
-#define on_CASE                                            \
-        if (LOWER_BYTE(*p) == 'o') {                       \
-                p++;                                       \
-                if (LOWER_BYTE(*p) == 'n') {               \
-                        hdr->type = HDR_ACCEPTDISPOSITION_T; \
-                        p++;                               \
-                        goto dc_end;                       \
-                }                                          \
-        }
+#define on_CASE                                  \
+	if (LOWER_BYTE(*p) == 'o') {                 \
+		p++;                                     \
+		if (LOWER_BYTE(*p) == 'n') {             \
+			hdr->type = HDR_ACCEPTDISPOSITION_T; \
+			hdr->name.len = 18;                  \
+			p++;                                 \
+			goto dc_cont;                        \
+		}                                        \
+	}
 
 
-#define siti_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _siti_:               \
-                p += 4;            \
-                val = READ(p);     \
-                on_CASE;           \
-                goto other;        \
-        }
+#define siti_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _siti_:           \
+			p += 4;            \
+			val = READ(p);     \
+			on_CASE;           \
+			goto other;        \
+	}
 
 
-#define ispo_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _ispo_:               \
-                p += 4;            \
-                val = READ(p);     \
-                siti_CASE;         \
-                goto other;        \
-        }
+#define ispo_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _ispo_:           \
+			p += 4;            \
+			val = READ(p);     \
+			siti_CASE;         \
+			goto other;        \
+	}
 
 
-#define ptld_CASE                  \
-        switch(LOWER_DWORD(val)) { \
-        case _pt_l_:               \
-		p += 4;            \
-		val = READ(p);     \
-		angu_CASE;         \
-		goto other;        \
-                                   \
-        case _pt_d_:               \
-                p += 4;            \
-                val = READ(p);     \
-                ispo_CASE;         \
-                goto other;        \
+#define ptld_CASE              \
+	switch(LOWER_DWORD(val)) { \
+		case _pt_l_:           \
+			p += 4;            \
+			val = READ(p);     \
+			angu_CASE;         \
+			goto other;        \
+		case _pt_d_:           \
+			p += 4;            \
+			val = READ(p);     \
+			ispo_CASE;         \
+			goto other;        \
 	}
 
 
 #define acce_CASE                           \
-    p += 4;                                 \
-    val = READ(p);                          \
-    ptld_CASE;                              \
-                                            \
-    if (LOWER_BYTE(*p) == 'p') {            \
-            p++;                            \
-            if (LOWER_BYTE(*p) == 't') {    \
-                    hdr->type = HDR_ACCEPT_T; \
-                    p++;                    \
-                    goto dc_end;            \
-            }                               \
-    }                                       \
-    goto other;
+	p += 4;                                 \
+	val = READ(p);                          \
+	ptld_CASE;                              \
+	if (LOWER_BYTE(*p) == 'p') {            \
+		p++;                                \
+		if (LOWER_BYTE(*p) == 't') {        \
+			hdr->type = HDR_ACCEPT_T;       \
+			hdr->name.len = 6;              \
+			p++;                            \
+			goto dc_cont;                   \
+		}                                   \
+	}                                       \
+	goto other;
 
 
 #endif /* CASE_ACCE_H */
