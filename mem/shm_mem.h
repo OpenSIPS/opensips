@@ -175,11 +175,7 @@ inline static void shm_threshold_check(void)
 		#define __FUNCTION__ ""  /* gcc specific */
 #endif
 
-
-#define shm_malloc_unsafe(_size ) \
-	MY_MALLOC(shm_block, (_size), __FILE__, __FUNCTION__, __LINE__ )
-
-inline static void* shm_malloc_unsafe(unsigned int size, 
+inline static void* _shm_malloc_unsafe(unsigned int size,
 	const char *file, const char *function, int line )
 {
 	void *p = MY_MALLOC(shm_block, size, file, function, line);
@@ -187,14 +183,13 @@ inline static void* shm_malloc_unsafe(unsigned int size,
 	return p;
 }
 
-
 inline static void* _shm_malloc(unsigned int size, 
 	const char *file, const char *function, int line )
 {
 	void *p;
 	
 	shm_lock();
-	p=shm_malloc_unsafe(size, file, function, line );
+	p=_shm_malloc_unsafe(size, file, function, line );
 	shm_unlock();
 	return p; 
 }
@@ -212,6 +207,9 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 }
 
 #define shm_malloc( _size ) _shm_malloc((_size), \
+	__FILE__, __FUNCTION__, __LINE__ )
+
+#define shm_malloc_unsafe(_size ) _shm_malloc_unsafe((_size), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
 #define shm_realloc( _ptr, _size ) _shm_realloc( (_ptr), (_size), \
