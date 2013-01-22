@@ -24,7 +24,7 @@
 #define VQ_MALLOC_H
 
 #include "../config.h"
-
+#include "meminfo.h"
 
 /* indicates this fragment is not in use (must not be offset of valid
    aligned fragment beginning

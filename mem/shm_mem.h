@@ -123,6 +123,47 @@ int shm_mem_init_mallocs(void* mempool, unsigned long size); /* initialize
 void shm_mem_destroy();
 
 
+#ifdef STATISTICS
+
+// threshold percentage checked
+extern long event_shm_threshold;
+
+// determines the last percentage triggered
+extern long *event_shm_last;
+
+// determines if there is a pending event
+extern int *event_shm_pending;
+
+// events are used only if SHM and STATISTICS are used
+void shm_event_raise(long used, long size, long perc);
+
+inline static void shm_threshold_check(void)
+{
+	long shm_perc, used, size;
+
+	if (event_shm_threshold == 0 ||	// threshold not used)
+			!shm_block || !event_shm_last || !event_shm_pending || // shm not init
+			*event_shm_pending ) {	// somebody else is raising the event
+		// do not do anything
+		return;
+	}
+
+	// compute the percentage here to avoid a function call
+	used = MY_SHM_GET_RUSED(shm_block);
+	size = MY_SHM_GET_SIZE(shm_block);
+	shm_perc = used * 100 / size;
+
+	/* check if the event has to be raised or if it was already notified */
+	if ((shm_perc < event_shm_threshold && *event_shm_last <= event_shm_threshold) ||
+		(shm_perc >= event_shm_threshold && *event_shm_last == shm_perc))
+		return;
+
+	shm_event_raise(used, size, shm_perc);
+}
+#else
+ #define shm_threshold_check()
+#endif
+
 
 #define shm_lock()    lock_get(mem_lock)
 #define shm_unlock()  lock_release(mem_lock)
@@ -138,6 +179,14 @@ void shm_mem_destroy();
 #define shm_malloc_unsafe(_size ) \
 	MY_MALLOC(shm_block, (_size), __FILE__, __FUNCTION__, __LINE__ )
 
+inline static void* shm_malloc_unsafe(unsigned int size, 
+	const char *file, const char *function, int line )
+{
+	void *p = MY_MALLOC(shm_block, size, file, function, line);
+	shm_threshold_check();
+	return p;
+}
+
 
 inline static void* _shm_malloc(unsigned int size, 
 	const char *file, const char *function, int line )
@@ -145,7 +194,7 @@ inline static void* _shm_malloc(unsigned int size,
 	void *p;
 	
 	shm_lock();
-	p=MY_MALLOC(shm_block, size, file, function, line );
+	p=shm_malloc_unsafe(size, file, function, line );
 	shm_unlock();
 	return p; 
 }
@@ -157,6 +206,7 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 	void *p;
 	shm_lock();
 	p=MY_REALLOC(shm_block, ptr, size, file, function, line);
+	shm_threshold_check();
 	shm_unlock();
 	return p;
 }
@@ -170,7 +220,10 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 
 
 #define shm_free_unsafe( _p  ) \
-	MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ )
+do {\
+	MY_FREE( shm_block, (_p), __FILE__, __FUNCTION__, __LINE__ ); \
+	shm_threshold_check(); \
+} while(0)
 
 #define shm_free(_p) \
 do { \
@@ -192,7 +245,12 @@ void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 #else /*DBQ_QM_MALLOC*/
 
 
-#define shm_malloc_unsafe(_size) MY_MALLOC(shm_block, (_size))
+inline static void *shm_malloc_unsafe(unsigned int size)
+{
+	void *p = MY_MALLOC(shm_block, size);
+	shm_threshold_check();
+	return p;
+}
 
 inline static void* shm_malloc(unsigned int size)
 {
@@ -201,7 +259,7 @@ inline static void* shm_malloc(unsigned int size)
 	shm_lock();
 	p=shm_malloc_unsafe(size);
 	shm_unlock();
-	 return p; 
+	return p; 
 }
 
 
@@ -210,18 +268,23 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 	void *p;
 	shm_lock();
 	p=MY_REALLOC(shm_block, ptr, size);
+	shm_threshold_check();
 	shm_unlock();
 	return p;
 }
 
 
 
-#define shm_free_unsafe( _p ) MY_FREE(shm_block, (_p))
+#define shm_free_unsafe( _p ) \
+do { \
+	MY_FREE(shm_block, (_p)); \
+	shm_threshold_check(); \
+} while(0)
 
 #define shm_free(_p) \
 do { \
 		shm_lock(); \
-		shm_free_unsafe( _p ); \
+		shm_free_unsafe(_p); \
 		shm_unlock(); \
 }while(0)
 

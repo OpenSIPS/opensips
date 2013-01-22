@@ -301,6 +301,8 @@ MEMDUMP		"memdump"|"mem_dump"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
 EXECDNSTHRESHOLD		"execdnsthreshold"|"exec_dns_threshold"
 TCPTHRESHOLD			"tcpthreshold"|"tcp_threshold"
+EVENT_SHM_THRESHOLD		"event_shm_threshold"
+EVENT_PKG_THRESHOLD		"event_pkg_threshold"
 QUERYBUFFERSIZE			query_buffer_size
 QUERYFLUSHTIME			query_flush_time
 SIP_WARNING sip_warning
@@ -584,6 +586,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
 <INITIAL>{EXECDNSTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECDNSTHRESHOLD; }
 <INITIAL>{TCPTHRESHOLD}	{ count(); yylval.strval=yytext; return TCPTHRESHOLD; }
+<INITIAL>{EVENT_SHM_THRESHOLD}	{ count(); yylval.strval=yytext; return EVENT_SHM_THRESHOLD; }
+<INITIAL>{EVENT_PKG_THRESHOLD}	{ count(); yylval.strval=yytext; return EVENT_PKG_THRESHOLD; }
 <INITIAL>{QUERYBUFFERSIZE}	{ count(); yylval.strval=yytext; return QUERYBUFFERSIZE; }
 <INITIAL>{QUERYFLUSHTIME}	{ count(); yylval.strval=yytext; return QUERYFLUSHTIME; }
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }

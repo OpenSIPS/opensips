@@ -97,6 +97,97 @@ void set_pkg_stats(pkg_status_holder *status)
 	status[0][PKG_FREE_SIZE_IDX] = MY_PKG_GET_FREE();
 	status[0][PKG_FRAGMENTS_SIZE_IDX] = MY_PKG_GET_FRAGS();
 }
+
+/* event interface information */
+#include <unistd.h>
+#include "../evi/evi_core.h"
+#include "../evi/evi_modules.h"
+
+/* events information */
+long event_pkg_threshold = 0;
+
+// determines the last percentage triggered
+long event_pkg_last = 0;
+
+// determines if there is a pending event
+int event_pkg_pending = 0;
+
+static str pkg_usage_str = { "usage", 5 };
+static str pkg_threshold_str = { "threshold", 9 };
+static str pkg_used_str = { "used", 4 };
+static str pkg_size_str = { "size", 4 };
+static str pkg_pid_str = { "pid", 3 };
+
+
+void pkg_event_raise(long used, long size, long perc)
+{
+	evi_params_p list = 0;
+	int pid;
+
+	event_pkg_pending = 1;
+	event_pkg_last = perc;
+
+	// event has to be triggered - check for subscribers
+	if (!evi_probe_event(EVI_PKG_THRESHOLD_ID)) {
+		goto end;
+	}
+
+	if (!(list = evi_get_params()))
+		goto end;
+	if (evi_param_add_int(list, &pkg_usage_str, (int *)&perc)) {
+		LM_ERR("unable to add usage parameter\n");
+		goto end;
+	}
+	if (evi_param_add_int(list, &pkg_threshold_str, (int *)&event_pkg_threshold)) {
+		LM_ERR("unable to add threshold parameter\n");
+		goto end;
+	}
+	if (evi_param_add_int(list, &pkg_used_str, (int *)&used)) {
+		LM_ERR("unable to add used parameter\n");
+		goto end;
+	}
+	if (evi_param_add_int(list, &pkg_size_str, (int *)&size)) {
+		LM_ERR("unable to add size parameter\n");
+		goto end;
+	}
+	pid = getpid();
+	if (evi_param_add_int(list, &pkg_pid_str, (int *)&pid)) {
+		LM_ERR("unable to add size parameter\n");
+		goto end;
+	}
+
+	if (evi_raise_event(EVI_PKG_THRESHOLD_ID, list)) {
+		LM_ERR("unable to send pkg threshold event\n");
+	}
+	list = 0;
+end:
+	if (list)
+		evi_free_params(list);
+	event_pkg_pending = 0;
+}
+
+inline void pkg_threshold_check(void)
+{
+	long pkg_perc, used, size;
+
+	if (event_pkg_threshold == 0 ||	// threshold not used
+			event_pkg_pending ) {	// somebody else is raising the event
+		// do not do anything
+		return;
+	}
+
+	// compute the percentage
+	used = MY_PKG_GET_RUSED();
+	size = MY_PKG_GET_SIZE();
+	pkg_perc = used * 100 / size;
+
+	/* check if the event has to be raised or if it was already notified */
+	if ((pkg_perc < event_pkg_threshold && event_pkg_last <= event_pkg_threshold) ||
+		(pkg_perc >= event_pkg_threshold && event_pkg_last == pkg_perc))
+		return;
+
+	pkg_event_raise(used, size, pkg_perc);
+}
 #endif
 
 

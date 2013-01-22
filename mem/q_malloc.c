@@ -364,7 +364,10 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 #endif
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
-	if (size>(qm->size-qm->real_used)) return 0;
+	if (size>(qm->size-qm->real_used)) {
+		pkg_threshold_check();
+		return 0;
+	}
 
 	/*search for a suitable free frag*/
 #ifdef DBG_QM_MALLOC
@@ -402,8 +405,10 @@ void* qm_malloc(struct qm_block* qm, unsigned long size)
 			"(size=%lu) on %d -th hit\n",
 			 qm, size, (char*)f+sizeof(struct qm_frag), f, f->size, list_cntr );
 #endif
+		pkg_threshold_check();
 		return (char*)f+sizeof(struct qm_frag);
 	}
+	pkg_threshold_check();
 	return 0;
 }
 
@@ -491,6 +496,7 @@ void qm_free(struct qm_block* qm, void* p)
 	f->line=line;
 #endif
 	qm_insert_free(qm, f);
+	pkg_threshold_check();
 }
 
 
@@ -525,6 +531,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 #else
 			qm_free(qm, p);
 #endif
+		pkg_threshold_check();
 		return 0;
 	}
 	if (p==0)
@@ -616,6 +623,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 #ifdef DBG_QM_MALLOC
 	LM_GEN1(memlog,"returning %p\n", p);
 #endif
+	pkg_threshold_check();
 	return p;
 }
 

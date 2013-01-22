@@ -320,6 +320,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 			LM_DBG("params (%p, %d) called from %s: %s(%d)\n", 
 				qm, size);
 #endif
+			pkg_threshold_check();
 			return 0;
 		}
 	}
@@ -341,6 +342,7 @@ void* vqm_malloc(struct vqm_block* qm, unsigned int size)
 	memcpy(  new_chunk->end_check, END_CHECK_PATTERN, END_CHECK_PATTERN_LEN );
 	new_chunk->check=ST_CHECK_PATTERN;
 #endif
+	pkg_threshold_check();
 	return (char*)new_chunk+sizeof(struct vqm_frag);
 }
 
@@ -413,6 +415,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 			LM_DBG("big chunk released\n");
 			qm->free_core+=f->size;
 			qm->big_chunks+=f->size;
+			pkg_threshold_check();
 			return;
 		}		
 		first_big = qm->next_free[b];
@@ -422,6 +425,7 @@ void vqm_free(struct vqm_block* qm, void* p)
 	} else first_big = qm->next_free[b];
 	f->u.nxt_free = first_big; /* also clobbers magic */
 	qm->next_free[b] = f;
+	pkg_threshold_check();
 }
 
 void dump_frag( struct vqm_frag* f, int i )

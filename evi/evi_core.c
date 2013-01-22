@@ -29,7 +29,11 @@
 
 /* static events exported by the core */
 static str evi_core_table[] = {
-	CORE_EVENT_STR(THRESHOLD)
+	CORE_EVENT_STR(THRESHOLD),
+#ifdef STATISTICS
+	CORE_EVENT_STR(SHM_THRESHOLD),
+#endif
+	CORE_EVENT_STR(PKG_THRESHOLD),
 };
 
 int evi_register_core(void)

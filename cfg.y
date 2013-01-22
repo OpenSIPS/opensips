@@ -321,6 +321,8 @@ extern int line;
 %token EXECMSGTHRESHOLD
 %token EXECDNSTHRESHOLD
 %token TCPTHRESHOLD
+%token EVENT_SHM_THRESHOLD
+%token EVENT_PKG_THRESHOLD
 %token QUERYBUFFERSIZE
 %token QUERYFLUSHTIME
 %token SIP_WARNING
@@ -668,6 +670,30 @@ assign_stm: DEBUG EQUAL snumber {
 		| EXECDNSTHRESHOLD EQUAL error { yyerror("int value expected"); }
 		| TCPTHRESHOLD EQUAL NUMBER { tcpthreshold=$3; }
 		| TCPTHRESHOLD EQUAL error { yyerror("int value expected"); }
+		| EVENT_SHM_THRESHOLD EQUAL NUMBER {
+			#ifdef SHM_MEM
+				#ifdef STATISTICS
+					if ($3 < 0 || $3 > 100)
+						yyerror("SHM threshold has to be a percentage between 0 and 100");
+					event_shm_threshold=$3;
+				#else
+					yyerror("statistics support not compiled in");
+				#endif /* STATISTICS */
+			#else /* SHM_MEM */
+				yyerror("shm support not compiled in");
+			#endif
+			}
+		| EVENT_SHM_THRESHOLD EQUAL error { yyerror("int value expected"); }
+		| EVENT_PKG_THRESHOLD EQUAL NUMBER {
+			#ifdef STATISTICS
+				if ($3 < 0 || $3 > 100)
+					yyerror("PKG threshold has to be a percentage between 0 and 100");
+				event_pkg_threshold=$3;
+			#else
+				yyerror("statistics support not compiled in");
+			#endif
+			}
+		| EVENT_PKG_THRESHOLD EQUAL error { yyerror("int value expected"); }
 		| QUERYBUFFERSIZE EQUAL NUMBER { query_buffer_size=$3; }
 		| QUERYBUFFERSIZE EQUAL error { yyerror("int value expected"); }
 		| QUERYFLUSHTIME EQUAL NUMBER { query_flush_time=$3; }

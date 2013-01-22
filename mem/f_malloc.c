@@ -371,7 +371,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 		frag = n;
 	}
 
-
+	pkg_threshold_check();
 	return 0;
 
 
@@ -404,6 +404,7 @@ solved:
 		qm->max_real_used=qm->real_used;
 	#endif
 
+	pkg_threshold_check();
 	return (char*)frag+sizeof(struct fm_frag);
 }
 
@@ -463,6 +464,7 @@ join:
 no_join:
 
 	fm_insert_free(qm, f);
+	pkg_threshold_check();
 }
 
 
@@ -495,6 +497,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 	#else
 			fm_free(qm, p);
 	#endif
+		pkg_threshold_check();
 		return 0;
 	}
 	if (p==0)
@@ -582,6 +585,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 		qm->max_real_used=qm->real_used;
 	#endif
 
+	pkg_threshold_check();
 	return p;
 }
 

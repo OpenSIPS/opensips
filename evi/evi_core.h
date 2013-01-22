@@ -27,7 +27,9 @@
 #define EVI_CORE_H
 
 /* events id declared - these must be always incremented by one */
-#define EVI_THRESHOLD_ID	0
+#define EVI_THRESHOLD_ID		0
+#define EVI_SHM_THRESHOLD_ID	1
+#define EVI_PKG_THRESHOLD_ID	2
 
 
 #define EVI_CORE_PREFIX		"E_CORE_"
