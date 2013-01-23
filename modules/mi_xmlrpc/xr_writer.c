@@ -119,6 +119,7 @@ static int recur_build_response_array( xmlrpc_env * env, struct mi_node * tree,
 		}
 
 		reply_buffer[reply_buffer_len-buf->len] = 0;
+		xmlrpc_force_to_xml_chars(reply_buffer);
 		reply_item = xmlrpc_build_value(env, "s", reply_buffer);
 		xmlrpc_array_append_item(env, xr_response, reply_item);
 		
@@ -183,6 +184,7 @@ static int recur_flush_response_array(xmlrpc_env * env, struct mi_node *tree,
 		}
 			
 		reply_buffer[reply_buffer_len-buf->len] = 0;
+		xmlrpc_force_to_xml_chars(reply_buffer);
 		reply_item = xmlrpc_build_value(env, "s", reply_buffer);
 		xmlrpc_array_append_item(env, xr_response, reply_item);
 		
@@ -308,6 +310,7 @@ char* xr_build_response( xmlrpc_env * env, struct mi_root * tree )
 	}
 	
 	reply_buffer[reply_buffer_len-buf.len] = 0;
+	xmlrpc_force_to_xml_chars(reply_buffer);
 
 	return reply_buffer;
 }
