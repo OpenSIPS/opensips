@@ -92,6 +92,7 @@ typedef struct b2bl_entry
 {
 	b2bl_tuple_t* first;
 	gen_lock_t lock;
+	int flags;
 }b2bl_entry_t;
 
 typedef b2bl_entry_t* b2bl_table_t;

@@ -51,6 +51,9 @@
 #define HDR_LST_LEN       32
 #define HDR_DEFAULT_LEN   8
 
+/* B2BL_FLAGS constants */
+#define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
+
 extern b2b_api_t b2b_api;
 
 enum b2bl_caller_type {
@@ -98,7 +101,7 @@ typedef struct b2b_scenario
 
 struct b2b_params
 {
-	unsigned int flags; /* for future use */
+	unsigned int flags;
 	unsigned int init_timeout;
 };
 

@@ -1986,6 +1986,8 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	str h_name[H_SIZE];
 	str h_val[H_SIZE];
 	str rt_header;
+	str auth_header;
+	str* cust_headers;
 	str* replaces = NULL;
 	#define RT_BUF_LEN 1024
 	char rt_buf[RT_BUF_LEN];
@@ -2044,8 +2046,25 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 
 	if(type == B2B_REPLY)
 	{
+		cust_headers = NULL;
+		if (b2bl_htable[hash_index].flags & B2BL_FLAG_TRANSPARENT_AUTH)
+		{
+			if (msg->first_line.u.reply.statuscode == 401 && msg->www_authenticate)
+			{
+				auth_header.s = msg->www_authenticate->name.s;
+				auth_header.len = msg->www_authenticate->len;
+				cust_headers = &auth_header;
+			}
+			if (msg->first_line.u.reply.statuscode == 407 && msg->proxy_authenticate)
+			{
+				auth_header.s = msg->proxy_authenticate->name.s;
+				auth_header.len = msg->proxy_authenticate->len;
+				cust_headers = &auth_header;
+			}
+		}
+
 		/* build extra headers */
-		if(b2b_extra_headers(msg, NULL, NULL, &extra_headers)< 0)
+		if(b2b_extra_headers(msg, NULL, cust_headers, &extra_headers)< 0)
 		{
 			LM_ERR("Failed to construct extra headers\n");
 			goto done;
@@ -2218,6 +2237,8 @@ done:
 		pkg_free(new_body.s);
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
+	if(auth_header.s)
+		pkg_free(auth_header.s);
 	return ret;
 }
 
@@ -2679,6 +2700,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
+	b2bl_htable[hash_index].flags = params->flags;
 	tuple = b2bl_insert_new(msg, hash_index, NULL, NULL, NULL,
 				custom_hdrs, -1, &b2bl_key, INSERTDB_FLAG);
 	if(tuple== NULL)
@@ -3012,7 +3034,7 @@ int udh_to_uri(str user, str host, str port, str* uri)
 }
 
 str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* msg,
-	str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
+	str* args[], b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs, struct b2b_params *params)
 {
 	str* server_id= NULL, *client_id= NULL;
 	str body= {NULL, 0};
@@ -3303,6 +3325,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	if(b2bl_db_mode == WRITE_THROUGH)
 		b2bl_db_insert(tuple);
 
+	b2bl_htable[hash_index].flags = params->flags;
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	if(new_body.s)
@@ -3344,7 +3367,7 @@ str* init_request(struct sip_msg* msg, struct b2b_scen_fl *scf,
 		key = create_top_hiding_entities(msg, cbf, cb_param, cb_mask, custom_hdrs, &scf->params);
 	else
 		key = b2b_process_scenario_init(scf->scenario, msg, args,
-					cbf, cb_param, cb_mask, custom_hdrs);
+					cbf, cb_param, cb_mask, custom_hdrs, &scf->params);
 
 	if(key)
 	{
@@ -3401,6 +3424,9 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	str* args[MAX_SCENARIO_PARAMS];
 	struct b2b_scen_fl *scf;
 	str* key;
+	str auth_header;
+	str* cust_headers;
+	int ret = -1;
 
 	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
@@ -3416,12 +3442,31 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	args[3] = arg5;
 	args[4] = arg6;
 
-	/* call the scenario init processing function */
-	key = init_request(msg, scf, args, 0, NULL, 0, NULL);
-	if(key)
-		return 1;
+	cust_headers = NULL;
+	if (scf->params.flags & B2BL_FLAG_TRANSPARENT_AUTH)
+	{
+		if (msg->authorization)
+		{
+			auth_header.s = msg->authorization->name.s;
+			auth_header.len = msg->authorization->len;
+			cust_headers = &auth_header;
+		}
+		if (msg->proxy_auth)
+		{
+			auth_header.s = msg->proxy_auth->name.s;
+			auth_header.len = msg->proxy_auth->len;
+			cust_headers = &auth_header;
+		}
+	}
 
-	return -1;
+	/* call the scenario init processing function */
+	key = init_request(msg, scf, args, 0, NULL, 0, cust_headers);
+	if(key) ret = 1;
+
+	if(auth_header.s)
+		pkg_free(auth_header.s);
+
+	return ret;
 }
 
 
