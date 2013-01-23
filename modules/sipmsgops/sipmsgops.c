@@ -1381,6 +1381,7 @@ static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 #define SIP_PARSE_SDP	0x1
 #define SIP_PARSE_HDR	0x2
 #define SIP_PARSE_NOMF	0x4
+#define SIP_PARSE_RURI	0x8
 
 static int fixup_sip_validate(void** param, int param_no)
 {
@@ -1413,6 +1414,11 @@ static int fixup_sip_validate(void** param, int param_no)
 			case 'm':
 			case 'M':
 				flags |= SIP_PARSE_NOMF;
+				break;
+
+			case 'r':
+			case 'R':
+				flags |= SIP_PARSE_RURI;
 				break;
 
 			default:
@@ -1670,6 +1676,52 @@ failed:
 	return -1;
 }
 
+#define IS_ALPHANUM(_c) ( \
+	((_c) >= 'a' && (_c) <= 'z') || \
+	((_c) >= 'A' && (_c) <= 'Z') || \
+	((_c) >= '0' && (_c) <= '9') )
+
+static int check_hostname(str *domain)
+{
+	char *p, *end;
+
+	if (!domain || domain->len < 0) {
+		LM_DBG("inexistent domain\n");
+		return -1;
+	}
+
+	/* always starts with a ALPHANUM */
+	if (!IS_ALPHANUM(domain->s[0])) {
+		LM_DBG("invalid starting character in domain: %c[%d]\n", domain->s[0], domain->s[0]);
+		return -1;
+	}
+
+	/* check the last character separately, as it cannot contain '-' */
+	end = domain->s + domain->len - 1;
+
+	for (p = domain->s + 1; p < end; p++) {
+		if (!IS_ALPHANUM(*p) && (*p != '-')) {
+			if (*p != '.') {
+				LM_DBG("invalid character in hostname: %c[%d]\n", *p, *p);
+				return -1;
+			} else if (*(p - 1) == '.') {
+				LM_DBG("two consecutive '.' are not allowed in hostname\n");
+				return -1;
+			}
+		}
+	}
+
+	/* check if the last character is a '-' */
+	if (!IS_ALPHANUM(*end) && (*end != '.')) {
+		LM_DBG("invalid character at the end of the domain: %c[%d]\n", *end, *end);
+		return -1;
+	}
+	return 0;
+
+}
+
+#undef IS_ALPHANUM
+
 #define CHECK_HEADER(_m, _h) \
 	do { \
 		if (!msg->_h) { \
@@ -1770,6 +1822,17 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 	switch (msg->first_line.type) {
 		case SIP_REQUEST:
 
+			/* check R-URI */
+			if (flags & SIP_PARSE_RURI) {
+				if(msg->parsed_uri_ok==0 && parse_sip_msg_uri(msg) < 0) {
+					LM_DBG("failed to parse R-URI\n");
+					return -5;
+				}
+				if (check_hostname(&msg->parsed_uri.host) < 0) {
+					LM_DBG("invalid domain\n");
+					return -6;
+				}
+			}
 			/* Max-Forwards */
 			if (!(flags & SIP_PARSE_NOMF))
 				CHECK_HEADER("", maxforwards);
@@ -1824,7 +1887,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 
 		default:
 			LM_DBG("invalid message type\n");
-			return -5;
+			return -255;
 	}
 	/* check for body */
 	if (method != METHOD_CANCEL) {
@@ -1870,6 +1933,8 @@ failed:
 	LM_DBG("message does not comply with SIP RFC3261\n");
 	return -1;
 }
+
+#undef CHECK_HEADER
 
 
 

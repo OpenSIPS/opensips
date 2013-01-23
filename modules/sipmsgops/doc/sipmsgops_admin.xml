@@ -711,13 +711,16 @@ add_body("Hello World!", "text/plain");
 			with the following values:
 			<itemizedlist>
 				<listitem><para><emphasis>'s'</emphasis> - checks the
-						integrity of the SDB body, if it exists
+						integrity of the SDP body, if it exists
 				</para></listitem>
 				<listitem><para><emphasis>'h'</emphasis> - checks the format
 						and integrity of each header body.
 				</para></listitem>
 				<listitem><para><emphasis>'m'</emphasis> - don't check the
 						Max-Forwards header.
+				</para></listitem>
+				<listitem><para><emphasis>'r'</emphasis> - checks the R-URI
+						and whether the domain contains valid characters.
 				</para></listitem>
 			</itemizedlist>
 		</para>
@@ -737,7 +740,11 @@ add_body("Hello World!", "text/plain");
 				<listitem><para><emphasis>-4</emphasis> - invalid headers
 						body.
 				</para></listitem>
-				<listitem><para><emphasis>-5</emphasis> - undefined errors.
+				<listitem><para><emphasis>-5</emphasis> - invalid R-URI.
+				</para></listitem>
+				<listitem><para><emphasis>-6</emphasis> - invalid R-URI domain.
+				</para></listitem>
+				<listitem><para><emphasis>-255</emphasis> - undefined errors.
 				</para></listitem>
 			</itemizedlist>
 		</para>

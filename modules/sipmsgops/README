@@ -508,9 +508,11 @@ add_body("Hello World!", "text/plain");
 
    The flags parameter received is optional and can be composed
    with the following values:
-     * 's' - checks the integrity of the SDB body, if it exists
+     * 's' - checks the integrity of the SDP body, if it exists
      * 'h' - checks the format and integrity of each header body.
      * 'm' - don't check the Max-Forwards header.
+     * 'r' - checks the R-URI and whether the domain contains
+       valid characters.
 
    This function can return the following codes:
      * 1 - the message is RFC3261 compliant and has been
@@ -519,7 +521,9 @@ add_body("Hello World!", "text/plain");
      * -2 - signals a parsing error.
      * -3 - invalid SDP body.
      * -4 - invalid headers body.
-     * -5 - undefined errors.
+     * -5 - invalid R-URI.
+     * -6 - invalid R-URI domain.
+     * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
