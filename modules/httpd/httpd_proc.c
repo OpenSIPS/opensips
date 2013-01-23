@@ -160,17 +160,17 @@ void httpd_proc(int rank)
 #endif
 	struct httpd_cb *cb = httpd_cb_list;
 
-        /*child's initial settings*/
-        if (init_mi_child()!=0) {
-                LM_ERR("failed to init the mi process\n");
-                exit(-1);
-        }
+	/*child's initial settings*/
+	if (init_mi_child()!=0) {
+		LM_ERR("failed to init the mi process\n");
+		return;
+	}
 
 	/* Allocating http response buffer */
 	buffer.s = (char*)pkg_malloc(sizeof(char)*buffer.len);
 	if (buffer.s==NULL) {
 		LM_ERR("oom\n");
-		exit(-1);
+		return;
 	}
 
 	while(cb) {
@@ -201,7 +201,7 @@ void httpd_proc(int rank)
 
 	if (NULL == dmn) {
 		LM_ERR("unable to start http daemon\n");
-		exit(-1);
+		return;
 	}
 
 	while(1) {
@@ -211,7 +211,7 @@ void httpd_proc(int rank)
 		FD_ZERO (&es);
 		if (MHD_YES != MHD_get_fdset (dmn, &rs, &ws, &es, &max)) {
 			LM_ERR("unable to get file descriptors\n");
-			exit(-1);
+			return;
 		}
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
@@ -221,7 +221,7 @@ void httpd_proc(int rank)
 		case EBADF:
 			LM_ERR("error returned by select: EBADF [%d] "
 				"(Bad file descriptor)\n", status);
-			exit(-1);
+			return;
 			break;
 		case EINTR:
 			LM_WARN("error returned by select: EINTR [%d] "
@@ -231,12 +231,12 @@ void httpd_proc(int rank)
 			LM_ERR("error returned by select: EINVAL [%d] "
 				"(Invalid # of fd [%d] or timeout)\n",
 				status, max+1);
-			exit(-1);
+			return;
 			break;
 		case ENOMEM:
 			LM_ERR("error returned by select: ENOMEM [%d] "
 				"(No more memory)\n", status);
-			exit(-1);
+			return;
 			break;
 		default:
 			if(status<0){
@@ -250,7 +250,7 @@ void httpd_proc(int rank)
 					LM_WARN("error returned by select:"
 						" [%d] [%d][%s]\n",
 						status, errno, strerror(errno));
-					exit(-1);
+					return;
 				}
 			}
 		}
@@ -258,7 +258,7 @@ void httpd_proc(int rank)
 		status = MHD_run(dmn);
 		if (status == MHD_NO) {
 			LM_ERR("unable to run http daemon\n");
-			exit(-1);
+			return;
 		}
 	}
 #endif
