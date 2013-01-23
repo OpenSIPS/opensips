@@ -43,6 +43,7 @@
 #include <microhttpd.h>
 #endif
 
+#include "../../pt.h"
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
@@ -192,6 +193,7 @@ void httpd_proc(int rank)
 
 	LM_DBG("init_child [%d] - [%d] HTTP Server init [%s:%d]\n",
 		rank, getpid(), (ip.s?ip.s:"INADDR_ANY"), port);
+	set_proc_attrs("HTTPD %s:%d", (ip.s?ip.s:"INADDR_ANY"), port);
 	dmn = MHD_start_daemon(MHD_NO_FLAG|MHD_USE_DEBUG, port, NULL, NULL,
 			&(answer_to_connection), NULL,
 			MHD_OPTION_SOCK_ADDR, &saddr_in,
