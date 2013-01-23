@@ -49,6 +49,21 @@ int xr_writer_init( unsigned int size )
 	return 0;
 }
 
+#ifndef XMLRPC_HAS_FORCE_CHARS
+
+#define XMLRPC_NONXML_CHAR 0x7F
+/* This version of XMLRPC does not have xmlrpc_force_to_xml_chars() */
+void xmlrpc_force_to_xml_chars(char * const buffer)
+{
+	char *p = buffer;
+	while (*p != '\0') {
+		if (*p < 0x20 && *p != 0x9 && *p != 0xA && *p != 0xD)
+			*p = XMLRPC_NONXML_CHAR;
+		p++;
+	}
+}
+#endif
+
 static int xr_write_node(str * buf, struct mi_node * node)
 {
 	char *end;
