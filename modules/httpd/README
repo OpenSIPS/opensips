@@ -11,7 +11,7 @@ Ovidiu Sas
    Copyright © 2012 VoIP Embedded, Inc.
    Revision History
    Revision $Rev: 8580 $ $Date: 2011-11-21 14:51:00 -0500 (Mon, 21
-                         Nov 2011) $
+   Nov 2011) $
      __________________________________________________________
 
    Table of Contents
@@ -147,6 +147,12 @@ _empty_line_
    parameter).
 
    Future realeases of this module will address this issue.
+
+   Running the http daemon as non root on ports below 1024 is
+   forbidden by default in linux (kernel>=2.6.24). To allow the
+   port binding, one can use setcap to give extra privilleges to
+   opensips binary:
+setcap 'cap_net_bind_service=+ep' /usr/local/sbin/opensips
 
 Chapter 2. Developer Guide
 

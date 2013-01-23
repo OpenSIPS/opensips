@@ -156,6 +156,16 @@ _empty_line_
 		<para>
 		Future realeases of this module will address this issue.
 		</para>
+		<para>
+		Running the http daemon as non root on ports below 1024 is
+		forbidden by default in linux (kernel>=2.6.24).
+		To allow the port binding, one can use
+		<emphasis>setcap</emphasis> to give
+		extra privilleges to opensips binary:
+		<programlisting  format="linespecific">
+setcap 'cap_net_bind_service=+ep' /usr/local/sbin/opensips
+		</programlisting>
+		</para>
 	</section>
 
 </chapter>
