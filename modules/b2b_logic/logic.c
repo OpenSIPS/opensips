@@ -2237,8 +2237,6 @@ done:
 		pkg_free(new_body.s);
 	if(extra_headers.s)
 		pkg_free(extra_headers.s);
-	if(auth_header.s)
-		pkg_free(auth_header.s);
 	return ret;
 }
 
@@ -3462,9 +3460,6 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	/* call the scenario init processing function */
 	key = init_request(msg, scf, args, 0, NULL, 0, cust_headers);
 	if(key) ret = 1;
-
-	if(auth_header.s)
-		pkg_free(auth_header.s);
 
 	return ret;
 }
