@@ -93,7 +93,7 @@ static int mod_init(void)
 	cde.cdb_func.init = couchbase_init;
 	cde.cdb_func.destroy = couchbase_destroy;
 	cde.cdb_func.get = couchbase_get;
-	cde.cdb_func.get_counter = NULL;
+	cde.cdb_func.get_counter = couchbase_get_counter;
 	cde.cdb_func.set = couchbase_set;
 	cde.cdb_func.remove = couchbase_remove;
 	cde.cdb_func.add = couchbase_add;

@@ -53,6 +53,7 @@ int couchbase_get(cachedb_con *con,str *attr,str *val);
 int couchbase_remove(cachedb_con *con,str *attr);
 int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val);
 int couchbase_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val);
+int couchbase_get_counter(cachedb_con *connection,str *attr,int *val);
 
 #endif /* CACHEDBCOUCHBASE_DBASE_H */
 

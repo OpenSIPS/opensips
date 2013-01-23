@@ -331,3 +331,8 @@ int couchbase_sub(cachedb_con *connection,str *attr,int val,int expires,int *new
 {
 	return couchbase_add(connection,attr,-val,expires,new_val);
 }
+
+int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
+{
+	return couchbase_add(connection,attr,0,0,val);
+}
