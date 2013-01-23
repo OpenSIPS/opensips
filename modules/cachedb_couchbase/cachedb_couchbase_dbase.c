@@ -110,7 +110,6 @@ static void couchbase_arithmetic_cb(libcouchbase_t instance,
 	}
 
 	arithmetic_res = value;
-	LM_INFO("XXX new value = %d \n",arithmetic_res);
 }
 
 couchbase_con* couchbase_new_connection(struct cachedb_id* id)
