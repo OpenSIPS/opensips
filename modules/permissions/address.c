@@ -515,7 +515,7 @@ int check_addr_6(struct sip_msg* msg,
 	}
 
 	LM_DBG("Looking for : <%d, %.*s, %.*s, %d, %s>\n", group, str_ip.len,
-			str_ip.s, str_proto.len, str_proto.s, port, pattern);
+			str_ip.s, str_proto.len, str_proto.s, port, ZSW(pattern) );
 
 	if (hash_match(msg, *hash_table, group, ip, port,
 				proto, pattern, info) == -1)
