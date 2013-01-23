@@ -1160,7 +1160,6 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	struct hostent* he;
 	struct socket_info* send_sock;
 	unsigned int flags;
-	unsigned short proto;
 
 	if((*natping_state) == 0)
 		goto done;
@@ -1244,14 +1243,9 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			                       curi.proto != PROTO_TLS)))
 			continue;
 
-		if (curi.port_no == 0 && curi.proto == PROTO_UDP)
-			curi.port_no = SIP_PORT;
-		else
-			curi.port_no = SIPS_PORT;
-		proto = curi.proto;
 		/* we should get rid of this resolve (too often and too slow); for the
 		 * moment we are lucky since the curi is an IP -bogdan */
-		he = sip_resolvehost(&curi.host, &curi.port_no, &proto, 0, 0);
+		he = sip_resolvehost(&curi.host, &curi.port_no, &curi.proto, 0, 0);
 		if (he == NULL){
 			LM_ERR("can't resolve_host\n");
 			continue;
@@ -1259,7 +1253,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		hostent2su(&to, he, 0, curi.port_no);
 
 		if (send_sock==0) {
-			send_sock=force_socket ? force_socket : 
+			send_sock=force_socket ? force_socket :
 					get_send_socket(0, &to, curi.proto);
 			if (send_sock == NULL) {
 				LM_ERR("can't get sending socket\n");
@@ -1267,13 +1261,12 @@ nh_timer(unsigned int ticks, void *timer_idx)
 			}
 		}
 
-
 		if ( (flags&sipping_flag)!=0 &&
 		(opt.s=build_sipping( &c, send_sock, &path, &opt.len))!=0 ) {
 			if (msg_send(send_sock, curi.proto, &to, 0, opt.s, opt.len) < 0) {
 				LM_ERR("sip msg_send failed\n");
 			}
-		} else if (raw_ip && curi.proto != PROTO_TCP && curi.proto != PROTO_TLS) {
+		} else if (raw_ip && curi.proto == PROTO_UDP) {
 			if (send_raw((char*)sbuf, sizeof(sbuf), &to, raw_ip, raw_port)<0) {
 				LM_ERR("send_raw failed\n");
 			}
