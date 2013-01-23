@@ -50,8 +50,8 @@
 #define MAX_SEND_BUFFER_SIZE	512*1024
 #define BUFFER_INCREMENT	2048
 
-enum sip_protos { PROTO_NONE, PROTO_UDP, PROTO_TCP, PROTO_TLS, PROTO_SCTP };
-
+enum sip_protos { PROTO_NONE, PROTO_UDP, PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO_OTHER };
+#define PROTO_LAST PROTO_OTHER
 
 struct ip_addr{
 	unsigned int af; /*!< address family: AF_INET6 or AF_INET */
