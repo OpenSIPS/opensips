@@ -5,6 +5,7 @@ address:5
 aliases:1007
 b2b_entities:1
 b2b_logic:2
+cachedb:1
 carrierfailureroute:2
 carrierroute:3
 closeddial:1
