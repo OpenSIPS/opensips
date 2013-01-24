@@ -87,9 +87,15 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_lb_status(struct mi_root *cmd_tree, void *param);
 
 static int fixup_resources(void** param, int param_no);
+static int fixup_is_dst(void** param, int param_no);
 
 static int w_load_balance(struct sip_msg *req, char *grp,  char *rl, char* al);
 static int w_lb_disable(struct sip_msg *req);
+static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port);
+static int w_lb_is_dst3(struct sip_msg *msg, char *ip, char *port, char *grp);
+static int w_lb_is_dst4(struct sip_msg *msg, char *ip, char *port, char *grp,
+		char *active);
+
 
 static void lb_prob_handler(unsigned int ticks, void* param);
 
@@ -97,12 +103,21 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 
 static cmd_export_t cmds[]={
-	{"load_balance", (cmd_function)w_load_balance,      2, fixup_resources,
+	{"load_balance",     (cmd_function)w_load_balance,   2, fixup_resources,
 			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"load_balance", (cmd_function)w_load_balance,      3, fixup_resources,
+	{"load_balance",     (cmd_function)w_load_balance,   3, fixup_resources,
 			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_disable", (cmd_function)w_lb_disable,          0,               0,
+	{"lb_disable",       (cmd_function)w_lb_disable,     0,               0,
 			0, REQUEST_ROUTE|FAILURE_ROUTE},
+	{"lb_is_destination",(cmd_function)w_lb_is_dst2,     2,    fixup_is_dst,
+			0, REQUEST_ROUTE|FAILURE_ROUTE|FAILURE_ROUTE|
+			ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"lb_is_destination",(cmd_function)w_lb_is_dst3,     3,    fixup_is_dst,
+			0, REQUEST_ROUTE|FAILURE_ROUTE|FAILURE_ROUTE|
+			ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"lb_is_destination",(cmd_function)w_lb_is_dst4,     4,    fixup_is_dst,
+			0, REQUEST_ROUTE|FAILURE_ROUTE|FAILURE_ROUTE|
+			ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 	};
 
@@ -230,6 +245,34 @@ static int fixup_resources(void** param, int param_no)
 	}
 
 	return 0;
+}
+
+
+static int fixup_is_dst(void** param, int param_no)
+{
+	if (param_no==1) {
+		/* the ip to test */
+		return fixup_pvar(param);
+	} else if (param_no==2) {
+		/* the port to test */
+		if (*param==NULL) {
+			return 0;
+		} else if ( *((char*)*param)==0 ) {
+			pkg_free(*param);
+			*param = NULL;
+			return 0;
+		}
+		return fixup_pvar(param);
+	} else if (param_no==3) {
+		/* the group to check in */
+		return fixup_uint(param);
+	} else if (param_no==4) {
+		/*  active only check ? */
+		return fixup_uint(param);
+	} else {
+		LM_CRIT("bug - too many params (%d) in lb_is_dst()\n",param_no);
+		return -1;
+	}
 }
 
 
@@ -472,6 +515,58 @@ static int w_lb_disable(struct sip_msg *req)
 		return ret;
 	return 1;
 }
+
+
+static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port)
+{
+	int ret;
+
+	lock_start_read( ref_lock );
+
+	ret = lb_is_dst(*curr_data, msg, (pv_spec_t*)ip, (pv_spec_t*)port, -1, 0);
+
+	lock_stop_read( ref_lock );
+
+	if (ret<0)
+		return ret;
+	return 1;
+}
+
+
+static int w_lb_is_dst3(struct sip_msg *msg,char *ip,char *port,char *grp)
+{
+	int ret;
+
+	lock_start_read( ref_lock );
+
+	ret = lb_is_dst(*curr_data, msg,(pv_spec_t*)ip, (pv_spec_t*)port,
+		(int)(long)grp,0);
+
+	lock_stop_read( ref_lock );
+
+	if (ret<0)
+		return ret;
+	return 1;
+}
+
+
+static int w_lb_is_dst4(struct sip_msg *msg,char *ip,char *port,char *grp,
+															char *active)
+{
+	int ret;
+
+	lock_start_read( ref_lock );
+
+	ret = lb_is_dst(*curr_data, msg, (pv_spec_t*)ip, (pv_spec_t*)port,
+		(int)(long)grp, (int)(long)active);
+
+	lock_stop_read( ref_lock );
+
+	if (ret<0)
+		return ret;
+	return 1;
+}
+
 
 /******************** PROBING Stuff ***********************/
 

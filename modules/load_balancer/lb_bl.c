@@ -159,15 +159,11 @@ void destroy_lb_bls(void)
 
 int populate_lb_bls(struct lb_dst *dest_list)
 {
-	unsigned int i;
+	unsigned int i,j;
 	struct lb_bl *lbbl;
 	struct bl_rule *lbbl_first;
 	struct bl_rule *lbbl_last;
 	struct net *group_net;
-	struct sip_uri puri;
-	char host[256];
-	struct hostent* he;
-	struct ip_addr ip_addr;
 	struct lb_dst *dst;
 
 	LM_DBG("Updating lb blacklists...\n");
@@ -182,47 +178,29 @@ int populate_lb_bls(struct lb_dst *dest_list)
 			for(dst = dest_list; dst; dst = dst->next) {
 				LM_DBG("Checking dest group %d\n", dst->group);
 				if (dst->group == lbbl->groups[i]) {
-					LM_DBG("Group [%d] matches. Adding all IPs:\n", dst->group);
-
-					/* URI must be parsed */
-
-					if (parse_uri(dst->uri.s, dst->uri.len, &puri) < 0) {
-						LM_ERR("INVALID uri\n");
-						continue;
+					LM_DBG("Group [%d] matches. Adding all IPs\n", dst->group);
+					for ( j=0 ; j<dst->ips_cnt ; j++ ) {
+						group_net = mk_net_bitlen( &dst->ips[j],
+							dst->ips[j].len*8);
+						if (group_net == NULL) {
+							LM_ERR("BUILD netmask failed.\n");
+							continue;
+						}
+						/* add this destination to the BL */
+						add_rule_to_list( &lbbl_first, &lbbl_last,
+							group_net,
+							NULL/*body*/,
+							0/*port*/,
+							PROTO_NONE/*proto*/,
+							0/*flags*/);
+						pkg_free(group_net);
 					}
-
-					strncpy(host, puri.host.s, puri.host.len);
-					host[puri.host.len] = '\0';
-
-					if ((he = resolvehost(host, 0)) == 0) {
-						LM_ERR("RESOLVE %s failed.\n", host);
-						continue;
-					}
-					hostent2ip_addr(&ip_addr, he, 0);
-
-					print_ip(NULL, &ip_addr, "\n");
-					group_net = mk_net_bitlen( &ip_addr,
-												 ip_addr.len*8);
-					if (group_net == NULL) {
-						LM_ERR("BUILD netmask failed.\n");
-						continue;
-					}
-
-					/* add this destination to the BL */
-					add_rule_to_list( &lbbl_first, &lbbl_last,
-						group_net,
-						NULL/*body*/,
-						0/*port*/,
-						PROTO_NONE/*proto*/,
-						0/*flags*/);
-					pkg_free(group_net);
 				}
 			}
 		}
 
 		/* the new content for the BL */
-		if (lbbl->bl && add_list_to_head( lbbl->bl, lbbl_first, lbbl_last, 1, 0)
-						!= 0) {
+		if(lbbl->bl && add_list_to_head(lbbl->bl,lbbl_first,lbbl_last,1,0)!=0){
 			LM_ERR("UPDATE blacklist failed.\n");
 			return -1;
 		}

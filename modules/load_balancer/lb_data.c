@@ -30,6 +30,8 @@
 
 #include <stdio.h>
 
+#include "../../proxy.h"
+#include "../../parser/parse_uri.h"
 #include "../../mem/shm_mem.h"
 #include "lb_parser.h"
 #include "lb_data.h"
@@ -219,10 +221,20 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	struct lb_res_str *r;
 	struct lb_dst *dst;
 	struct lb_resource *res;
+	struct sip_uri puri;
+	struct proxy_l *proxy;
+	union sockaddr_union sau;
 	int len;
 	int i;
 
 	LM_DBG("uri=<%s>, grp=%d, res=<%s>\n",uri, group, resource);
+
+	/* check uri */
+	len = strlen(uri);
+	if(parse_uri(uri, len, &puri)!=0 ) {
+		LM_ERR("bad uri [%.*s] for destination\n", len, uri);
+		return -1;
+	}
 
 	/* parse the resources string */
 	lb_rl = parse_resources_list( resource, 1);
@@ -230,8 +242,6 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 		LM_ERR("failed to parse resourse string <%s>\n",resource);
 		return -1;
 	}
-
-	len = strlen(uri);
 
 	/*add new destination */
 	dst = (struct lb_dst*)shm_malloc( sizeof(struct lb_dst)
@@ -283,6 +293,31 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 		dst->rmap[i].resource = res;
 		dst->rmap[i].max_load = r->val;
 	}
+
+	/* Do a SIP wise DNS-Lookup for the domain part */
+	proxy = mk_proxy( &puri.host, puri.port_no, puri.proto,
+		(puri.type==SIPS_URI_T));
+	if (proxy==NULL) {
+		LM_ERR("could not resolve %.*s\n", puri.host.len, puri.host.s);
+		goto error;
+	}
+	hostent2ip_addr( &dst->ips[0], &proxy->host, proxy->addr_idx);
+	dst->ports[0] = proxy->port;
+	dst->ips_cnt = 1;
+	LM_DBG("first dst ip addr [%s]:%d\n",
+		ip_addr2a(&dst->ips[0]), dst->ports[0]);
+	/* get the next available IPs from DNS */
+	while (dst->ips_cnt<LB_MAX_IPS && (get_next_su( proxy, &sau, 0)==0) ) {
+		su2ip_addr( &dst->ips[dst->ips_cnt], &sau);
+		dst->ports[dst->ips_cnt] = proxy->port;
+		LM_DBG("additional dst ip addr [%s]:%d\n",
+			ip_addr2a(&dst->ips[dst->ips_cnt]), dst->ports[dst->ips_cnt]);
+		/* one more IP found */
+		dst->ips_cnt++;
+	}
+	/* free al the helper structures */
+	free_proxy(proxy);
+	pkg_free(proxy);
 
 	/* link at the end */
 	if (data->last_dst==NULL) {
@@ -571,4 +606,67 @@ int do_lb_disable(struct sip_msg *req, struct lb_data *data)
 
 	return -1;
 }
+
+
+/* Checks, if the IP PORT is a LB destination
+ */
+int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
+					pv_spec_t *pv_ip, pv_spec_t *pv_port, int grp, int active)
+{
+	pv_value_t val;
+	struct ip_addr *ip;
+	int port;
+	struct lb_dst *dst;
+	int k;
+
+	/* get the address to test */
+	if (pv_get_spec_value( _m, pv_ip, &val)!=0) {
+		LM_ERR("failed to get IP value from PV\n");
+		return -1;
+	}
+	if ( (val.flags&PV_VAL_STR)==0 ) {
+		LM_ERR("IP PV val is not string\n");
+		return -1;
+	}
+	if ( (ip=str2ip( &val.rs ))==NULL ) {
+		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
+		return -1;
+	}
+
+	/* get the port to test */
+	if (pv_port) {
+		if (pv_get_spec_value( _m, pv_port, &val)!=0) {
+			LM_ERR("failed to get PORT value from PV\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_INT)==0 ) {
+			LM_ERR("PORT PV val is not integer\n");
+			return -1;
+		}
+		port = val.ri;
+	} else {
+		port = 0;
+	}
+
+	/* and now search !*/
+	for( dst=data->dsts ; dst ; dst=dst->next) {
+		if ( ((grp==-1) || (dst->group==grp)) &&  /*group matches*/
+		( !active || (active && (dst->flags&LB_DST_STAT_DSBL_FLAG)==0 ) )
+		) {
+			/* check the IPs */
+			for(k=0 ; k<dst->ips_cnt ; k++ ) {
+				if ( (dst->ports[k]==0 || port==0 || port==dst->ports[k]) &&
+				ip_addr_cmp( ip, &dst->ips[k]) ) {
+					/* found */
+					return 1;
+				}
+			}
+		}
+	}
+
+
+	return -1;
+}
+
+
 

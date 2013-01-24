@@ -45,6 +45,9 @@
 #define LB_DST_STAT_DSBL_FLAG   (1<<2)
 #define LB_DST_STAT_NOEN_FLAG   (1<<3)
 
+/* max number of IPs for a destination (DNS loookup) */
+#define LB_MAX_IPS  32
+
 struct lb_resource {
 	str name;
 	gen_lock_t *lock;
@@ -67,6 +70,9 @@ struct lb_dst {
 	unsigned int rmap_no;
 	unsigned int flags;
 	struct lb_resource_map *rmap;
+	struct ip_addr ips[LB_MAX_IPS]; /* IP-Address of the entry */
+	unsigned short int ports[LB_MAX_IPS]; /* Port of the request URI */
+	unsigned short ips_cnt;
 	struct lb_dst *next;
 };
 
@@ -90,6 +96,8 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 
 int do_lb_disable(struct sip_msg *req, struct lb_data *data);
 
+int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
+		pv_spec_t *pv_ip, pv_spec_t *pv_port, int grp, int active);
 
 /* failover stuff */
 extern int grp_avp_name;
