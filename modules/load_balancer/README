@@ -39,20 +39,17 @@ Bogdan-Andrei Iancu
               1.6.1. load_balance(grp,resources[,alg])
               1.6.2. lb_disable()
               1.6.3. lb_is_destination(ip,port[,group[,active]])
+              1.6.4. lb_count_call(ip,port,grp,resources)
 
-        1.7. Exported Functions
+        1.7. Exported statistics
+        1.8. Exported MI Functions
 
-              1.7.1. lb_count_call(ip,port,grp,resources)
+              1.8.1. lb_reload
+              1.8.2. lb_resize
+              1.8.3. lb_list
+              1.8.4. lb_status
 
-        1.8. Exported statistics
-        1.9. Exported MI Functions
-
-              1.9.1. lb_reload
-              1.9.2. lb_resize
-              1.9.3. lb_list
-              1.9.4. lb_status
-
-        1.10. Exported pseudo-variables
+        1.9. Exported pseudo-variables
 
    2. Developer Guide
 
@@ -337,9 +334,7 @@ if (is_destination("$si","$sp") ) {
 }
 ...
 
-1.7. Exported Functions
-
-1.7.1.  lb_count_call(ip,port,grp,resources)
+1.6.4.  lb_count_call(ip,port,grp,resources)
 
    The function counts the current call as load for a given
    destination with some given resources. Note that this call is
@@ -380,13 +375,13 @@ if (lb_is_destination("$si","$sp") ) {
 }
 ...
 
-1.8. Exported statistics
+1.7. Exported statistics
 
    NONE
 
-1.9. Exported MI Functions
+1.8. Exported MI Functions
 
-1.9.1. lb_reload
+1.8.1. lb_reload
 
    Trigers the reload of the load balancing data from the DB.
 
@@ -394,7 +389,7 @@ if (lb_is_destination("$si","$sp") ) {
                 :lb_reload:_reply_fifo_file_
                 _empty_line_
 
-1.9.2. lb_resize
+1.8.2. lb_resize
 
    Changes the capacity for a resource of a destination. The
    function receives as parameters the ID (as per DB) of the
@@ -408,7 +403,7 @@ if (lb_is_destination("$si","$sp") ) {
                 56   /* new resource capacity*/
                 _empty_line_
 
-1.9.3. lb_list
+1.8.3. lb_list
 
    Lists all the destinations and the maximum and current load for
    each resource of the destination.
@@ -428,7 +423,7 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
         Resource:: trans max=57 load=0
         Resource:: vm max=5 load=0
 
-1.9.4. lb_status
+1.8.4. lb_status
 
    Gets or sets the status (enabled or disabled) of a destination.
    The function takes 2 parameters, first mandatory, the id of the
@@ -450,7 +445,7 @@ $ ./opensipsctl fifo lb_status 2 1
 $ ./opensipsctl fifo lb_status 2
 enable:: yes
 
-1.10. Exported pseudo-variables
+1.9. Exported pseudo-variables
 
    NONE
 

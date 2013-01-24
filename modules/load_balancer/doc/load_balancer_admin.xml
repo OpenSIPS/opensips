@@ -436,10 +436,6 @@ if (is_destination("$si","$sp") ) {
 		</example>
 	</section>
 
-	</section>
-
-	<section>
-	<title>Exported Functions</title>
 	<section>
 		<title>
 		<function moreinfo="none">lb_count_call(ip,port,grp,resources)</function>
