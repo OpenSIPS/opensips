@@ -664,8 +664,82 @@ int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
 		}
 	}
 
-
 	return -1;
+}
+
+
+int lb_count_call(struct lb_data *data, struct sip_msg *req,
+			struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl)
+{
+	static struct lb_resource **call_res = NULL;
+	static unsigned int call_res_no = 0;
+	struct lb_resource *res;
+	struct lb_dst *dst;
+	int i,k;
+
+	/* search for the destination we need to count for */
+	for( dst=data->dsts ; dst ; dst=dst->next) {
+		if ( (grp==-1) || (dst->group==grp) ) {
+			/* check the IPs */
+			for(k=0 ; k<dst->ips_cnt ; k++ ) {
+				if ( (dst->ports[k]==0 || port==0 || port==dst->ports[k]) &&
+				ip_addr_cmp( ip, &dst->ips[k]) ) {
+					/* found */
+					break;
+				}
+			}
+		}
+	}
+	if (dst==NULL) {
+		LM_ERR("no destination to match the given IP and port (%s:%d)\n",
+			ip_addr2a(ip), port);
+		return -1;
+	}
+
+	/* get references to the resources */
+	if (rl->n>call_res_no) {
+		call_res = (struct lb_resource**)pkg_realloc
+			(call_res, rl->n*sizeof(struct lb_resorce*));
+		if (call_res==NULL) {
+			LM_ERR("no more pkg mem - res ptr realloc\n");
+			return -1;
+		}
+		call_res_no = rl->n;
+	}
+	for( i=0,res=data->resources ; (i<rl->n)&&res ; res=res->next) {
+		if (search_resource_str( rl, &res->name)) {
+			call_res[i++] = res;
+			LM_DBG("found requested (%d) resource %.*s\n",
+				i-1, res->name.len,res->name.s);
+		}
+	}
+	if (i!=rl->n) {
+		LM_ERR("unknown resource in input string\n");
+		return -1;
+	}
+
+	/* create dialog */
+	if (lb_dlg_binds.create_dlg( req , 0)!=1 ) {
+		LM_ERR("failed to create dialog\n");
+		return -1;
+	}
+
+	/* lock the resources */
+	for( i=0 ; i<rl->n ; i++)
+		get_lock( call_res[i]->lock );
+
+	/* add to the profiles */
+	for( i=0 ; i<rl->n ; i++) {
+		if (lb_dlg_binds.set_profile( req, &dst->profile_id,
+		call_res[i]->profile)!=0)
+			LM_ERR("failed to add to profile\n");
+	}
+
+	/* unlock the resources*/
+	for( i=0 ; i<rl->n ; i++)
+		release_lock( call_res[i]->lock );
+
+	return 0;
 }
 
 

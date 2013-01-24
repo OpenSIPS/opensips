@@ -386,6 +386,122 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		</example>
 	</section>
 
+
+	<section>
+		<title>
+		<function moreinfo="none">lb_is_destination(ip,port[,group[,active]])</function>
+		</title>
+		<para>
+		Checks if the given IP and PORT belongs to a destination configured in
+		the load-balancer's list. Returns true if found and active (see the
+		"active" parameter).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ip</emphasis> and <emphasis>port</emphasis> - IP 
+			and PORT to be checked (any kind of variables are allowed, but
+			take care as the PORT variables should have an interger value); 
+			A value 0 for the port means "any" - will match any port.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>group</emphasis> - in what LB group the destination
+			should be looked for; If not specified, the search will be in
+			all groups.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>active</emphasis> - if "1", the search will be
+			performed only over "active" (not disabled) destinations. If 
+			missing, the search will consider any kind of destinations.
+			</para>
+		</listitem>
+
+		</itemizedlist>
+
+		<example>
+		<title><function>lb_is_destination</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_destination("$si","$sp") ) {
+	# request from a LB destination
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">lb_count_call(ip,port,grp,resources)</function>
+		</title>
+		<para>
+		The function counts the current call as load for a given destination 
+		with some given resources. Note that this call is not going through
+		the load-balancing logic (there are not routing decision taken for the
+		call); it is simply counted by LB as ongoing call for a destination;
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ip</emphasis> and <emphasis>port</emphasis> - IP 
+			and PORT to identify the destination the call has to be counted
+			for.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>grp</emphasis> - group id for the destinations; if
+			no knows, "-1" will mean all groups.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>resources</emphasis> - string containing a 
+			semi-colon list of resources required by the current call.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		Function returns true if the call was properly taken into consideration
+		for estimating the load on the destination.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
+		FAILURE_ROUTE.
+		</para>
+		<example>
+		<title><function>lb_count_count</function> usage</title>
+		<programlisting format="linespecific">
+...
+# count as load also the calls orgininated by lb destinations
+if (lb_is_destination("$si","$sp") ) {
+	# inbound call from destination
+	lb_count_count("$si","$sp","-1","conference");
+} else {
+	# outbound call to destinations
+	if ( !load_balance("1","conference") ) {
+		send_reply("503","unavailable");
+		exit();
+	}
+	# dst URI points to the new destination
+	xlog("sending call to $du\n");
+	t_relay();
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 

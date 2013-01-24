@@ -88,6 +88,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd_tree, void *param);
 
 static int fixup_resources(void** param, int param_no);
 static int fixup_is_dst(void** param, int param_no);
+static int fixup_cnt_call(void** param, int param_no);
 
 static int w_load_balance(struct sip_msg *req, char *grp,  char *rl, char* al);
 static int w_lb_disable(struct sip_msg *req);
@@ -95,6 +96,8 @@ static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port);
 static int w_lb_is_dst3(struct sip_msg *msg, char *ip, char *port, char *grp);
 static int w_lb_is_dst4(struct sip_msg *msg, char *ip, char *port, char *grp,
 		char *active);
+static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
+		char *rl);
 
 
 static void lb_prob_handler(unsigned int ticks, void* param);
@@ -104,20 +107,19 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 static cmd_export_t cmds[]={
 	{"load_balance",     (cmd_function)w_load_balance,   2, fixup_resources,
-			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"load_balance",     (cmd_function)w_load_balance,   3, fixup_resources,
-			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_disable",       (cmd_function)w_lb_disable,     0,               0,
-			0, REQUEST_ROUTE|FAILURE_ROUTE},
+		0, REQUEST_ROUTE|FAILURE_ROUTE},
 	{"lb_is_destination",(cmd_function)w_lb_is_dst2,     2,    fixup_is_dst,
-			0, REQUEST_ROUTE|FAILURE_ROUTE|FAILURE_ROUTE|
-			ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"lb_is_destination",(cmd_function)w_lb_is_dst3,     3,    fixup_is_dst,
-			0, REQUEST_ROUTE|FAILURE_ROUTE|FAILURE_ROUTE|
-			ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"lb_is_destination",(cmd_function)w_lb_is_dst4,     4,    fixup_is_dst,
-			0, REQUEST_ROUTE|FAILURE_ROUTE|FAILURE_ROUTE|
-			ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"lb_count_call",    (cmd_function)w_count_call,     4,  fixup_cnt_call,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 	};
 
@@ -276,6 +278,24 @@ static int fixup_is_dst(void** param, int param_no)
 }
 
 
+static int fixup_cnt_call(void** param, int param_no)
+{
+	if (param_no==1)
+		/* IP */
+		return fixup_is_dst(param, 1);
+	if (param_no==2)
+		/* port */
+		return fixup_is_dst(param, 2);
+	if (param_no==3)
+		/* group id */
+		return fixup_resources(param, 1);
+	if (param_no==4)
+		/* resources */
+		return fixup_resources(param, 2);
+	return -1;
+}
+
+
 static inline int lb_reload_data( void )
 {
 	struct lb_data *new_data;
@@ -304,7 +324,6 @@ static inline int lb_reload_data( void )
 
 	return 0;
 }
-
 
 
 
@@ -455,8 +474,6 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 	pv_elem_t *model;
 	str dest;
 
-	lock_start_read( ref_lock );
-
 	if (lbgp->grp_pv) {
 		if (pv_get_spec_value( req, (pv_spec_p)lbgp->grp_pv, &val)!=0) {
 			LM_ERR("failed to get PV value\n");
@@ -486,11 +503,14 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 	} else
 		lb_rl = (struct lb_res_str_list *)lbp->param;
 
+	lock_start_read( ref_lock );
+
 	/* do lb */
 	ret = do_load_balance(req, grp_no, lb_rl,
 			(unsigned int)(long)al, *curr_data);
 
 	lock_stop_read( ref_lock );
+
 	if (lbp->type & RES_ELEM)
 		pkg_free(lb_rl);
 
@@ -561,6 +581,95 @@ static int w_lb_is_dst4(struct sip_msg *msg,char *ip,char *port,char *grp,
 		(int)(long)grp, (int)(long)active);
 
 	lock_stop_read( ref_lock );
+
+	if (ret<0)
+		return ret;
+	return 1;
+}
+
+
+static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
+																	char *rl)
+{
+	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
+	struct lb_res_str_list *lb_rl;
+	struct lb_res_parse *lbp;
+	struct ip_addr *ipa;
+	pv_value_t val;
+	pv_elem_t *model;
+	int grp_no;
+	int port_no;
+	str dest;
+	int ret;
+
+	/* get the ip address */
+	if (pv_get_spec_value( req, (pv_spec_t*)ip, &val)!=0) {
+		LM_ERR("failed to get IP value from PV\n");
+		return -1;
+	}
+	if ( (val.flags&PV_VAL_STR)==0 ) {
+		LM_ERR("IP PV val is not string\n");
+		return -1;
+	}
+	if ( (ipa=str2ip( &val.rs ))==NULL ) {
+		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
+		return -1;
+	}
+
+	/* get the port */
+	if (port) {
+		if (pv_get_spec_value( req, (pv_spec_t*)port, &val)!=0) {
+			LM_ERR("failed to get PORT value from PV\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_INT)==0 ) {
+			LM_ERR("PORT PV val is not integer\n");
+			return -1;
+		}
+		port_no = val.ri;
+	} else {
+		port_no = 0;
+	}
+
+	/* get the group */
+	if (lbgp->grp_pv) {
+		if (pv_get_spec_value( req, (pv_spec_p)lbgp->grp_pv, &val)!=0) {
+			LM_ERR("failed to get PV value\n");
+			return -1;
+		}
+		if ( (val.flags&PV_VAL_INT)==0 ) {
+			LM_ERR("PV vals is not integer\n");
+			return -1;
+		}
+		grp_no = val.ri;
+	} else {
+		grp_no = lbgp->grp_no;
+	}
+
+	/* get the resources list */
+	lbp = (struct lb_res_parse *)rl;
+	if (lbp->type & RES_ELEM) {
+		model = (pv_elem_p)lbp->param;
+		if (pv_printf_s(req, model, &dest) || dest.len <= 0) {
+			LM_ERR("cannot create resource string\n");
+			return -1;
+		}
+		lb_rl = parse_resources_list(dest.s, 0);
+		if (!lb_rl) {
+			LM_ERR("cannot create resource list\n");
+			return -1;
+		}
+	} else
+		lb_rl = (struct lb_res_str_list *)lbp->param;
+
+	lock_start_read( ref_lock );
+
+	ret = lb_count_call( *curr_data, req, ipa, port_no, grp_no, lb_rl);
+
+	lock_stop_read( ref_lock );
+
+	if (lbp->type & RES_ELEM)
+		pkg_free(lb_rl);
 
 	if (ret<0)
 		return ret;
