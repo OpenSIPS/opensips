@@ -25,19 +25,19 @@
  *  2009-09-03 initial version (razvan)
  */
 
-#include "../../sr_module.h"	/* param_export_t, proc_export_t */
-#include "../../udp_server.h"	/* register_udprecv_cb() */
-#include "../../socket_info.h"	/* grep_sock_info() */
-#include "../../ip_addr.h"	/* struct socket_info */
-#include "../../str.h"		/* str */
+#include "../../sr_module.h"    /* param_export_t, proc_export_t */
+#include "../../udp_server.h"   /* register_udprecv_cb() */
+#include "../../socket_info.h"  /* grep_sock_info() */
+#include "../../ip_addr.h"      /* struct socket_info */
+#include "../../str.h"          /* str */
 
 #include "stun.h"
 
 /* Exported parameters */
-char* primary_ip    = "192.168.2.134";
+char* primary_ip    = NULL;
 char* primary_port  = "5060";
 
-char* alternate_ip  = "192.168.2.143";
+char* alternate_ip  = NULL;
 char* alternate_port= "3478";
 
 
@@ -60,10 +60,10 @@ int port1, port2;
  * Exported parameters ip, port
  */
 static param_export_t params[] = {
-	{"primary_ip",	    STR_PARAM,	(void*) &primary_ip},
-	{"primary_port",    STR_PARAM,	(void*) &primary_port},
-	{"alternate_ip",    STR_PARAM,	(void*) &alternate_ip},
-	{"alternate_port",  STR_PARAM,	(void*) &alternate_port},
+	{"primary_ip",      STR_PARAM,  (void*) &primary_ip},
+	{"primary_port",    STR_PARAM,  (void*) &primary_port},
+	{"alternate_ip",    STR_PARAM,  (void*) &alternate_ip},
+	{"alternate_port",  STR_PARAM,  (void*) &alternate_port},
 	{0, 0, 0}
 };
 
@@ -74,19 +74,19 @@ static proc_export_t mod_procs[] = {
 };
 
 struct module_exports exports = {
-	"stun",			    /* module's name */
-	MODULE_VERSION,		    /* module version */
-	DEFAULT_DLFLAGS,            /* dlopen flags */
-	0,			    /* exported functions */
-	params,			    /* module parameters */
-	0,                          /* exported statistics */
-	0,			    /* exported MI functions */
-	0,                          /* exported pseudo-variables */
-	mod_procs,		    /* extra processes */
-	stun_mod_init,		    /* module initialization function */
-	0,                          /* response function*/
-	0,			    /* destroy function */
-	child_init                  /* per-child init function */
+	"stun",             /* module's name */
+	MODULE_VERSION,     /* module version */
+	DEFAULT_DLFLAGS,    /* dlopen flags */
+	0,                  /* exported functions */
+	params,             /* module parameters */
+	0,                  /* exported statistics */
+	0,                  /* exported MI functions */
+	0,                  /* exported pseudo-variables */
+	mod_procs,          /* extra processes */
+	stun_mod_init,      /* module initialization function */
+	0,                  /* response function*/
+	0,                  /* destroy function */
+	child_init          /* per-child init function */
 };
 
 
@@ -119,14 +119,24 @@ int bind_ip_port(int ip, int port, int* sockfd){
 	return 0;
 }
 
-static int stun_mod_init(void){
+
+static int stun_mod_init(void)
+{
 	str s;
 
+	if (primary_ip==NULL || primary_ip[0]==0) {
+		LM_ERR("Primary IP was not configured!\n");
+		return -1;
+	}
 	if (inet_pton(AF_INET, primary_ip, &ip1) < 1) {
 		LM_ERR("Invalid ip1 %s : %s\n",primary_ip, strerror(errno));
 		return -1;
 	}
 
+	if (alternate_ip==NULL || alternate_ip[0]==0) {
+		LM_ERR("Primary IP was not configured!\n");
+		return -1;
+	}
 	if (inet_pton(AF_INET, alternate_ip, &ip2) < 1) {
 		LM_ERR("Invalid ip2 %s : %s\n",alternate_ip, strerror(errno));
 		return -1;
