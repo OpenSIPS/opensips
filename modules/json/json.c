@@ -379,7 +379,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
 	{
 		LM_ERR("Cannot expand variables in path\n");
-		return -1;
+		return pv_get_null( msg, pvp, val);
 	}
 
 
@@ -387,20 +387,18 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 
 	if( var == NULL )
 	{
-		LM_ERR("Variable named:%.*s not found\n",id->name.len,id->name.s);
-		return -1;
+		/* this is not an error - we simply came across a json spec 
+		 * pointing a json var which was never set/init */
+		LM_DBG("Variable named:%.*s not found\n",id->name.len,id->name.s);
+		return pv_get_null( msg, pvp, val);
 	}
 
 	obj = get_object(var, pvp, NULL, 0);
 	memset(val, 0, sizeof(pv_value_t));
 
 	if( obj == NULL )
-	{
-		val->flags = PV_VAL_NULL;
-		return 0;
-	}
+		return pv_get_null( msg, pvp, val);
 
-	
 	if( json_object_is_type(obj, json_type_int) )
 	{
 		val->rs.s = int2str(json_object_get_int(obj), &val->rs.len);
@@ -414,7 +412,6 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 		val->rs.s = (char*)json_object_get_string( obj );
 		val->rs.len = strlen(val->rs.s);
 	}
-
 
 	return 0;
 }
