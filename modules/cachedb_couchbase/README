@@ -72,11 +72,9 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * libcouchbase 1.1:
+     * libcouchbase >= 2.0:
        libcoucbase can be downloaded from
-       http://packages.couchbase.com/clients/c/libcouchbase-1.1.0d
-       p4.tar.gz Download the archive, extract sources, run
-       make,sudo make install.
+       http://www.couchbase.com/develop/c/current
 
 1.5. Exported Parameters
 

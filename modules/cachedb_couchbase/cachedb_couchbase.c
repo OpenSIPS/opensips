@@ -99,7 +99,7 @@ static int mod_init(void)
 	cde.cdb_func.add = couchbase_add;
 	cde.cdb_func.sub = couchbase_sub;
 
-	cde.cdb_func.capability = 0; 
+	cde.cdb_func.capability = 0;
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_couchbase\n");

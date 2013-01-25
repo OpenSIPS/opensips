@@ -100,12 +100,11 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>libcouchbase 1.1:</emphasis>
+				<emphasis>libcouchbase >= 2.0:</emphasis>
 			</para>
 			
 			<para>
-				libcoucbase can be downloaded from http://packages.couchbase.com/clients/c/libcouchbase-1.1.0dp4.tar.gz
-				Download the archive, extract sources, run make,sudo make install.
+				libcoucbase can be downloaded from http://www.couchbase.com/develop/c/current
 			</para>
 			
 			</listitem>
