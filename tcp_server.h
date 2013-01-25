@@ -31,6 +31,7 @@
 extern int tcp_no_new_conn_bflag;
 extern int tcp_no_new_conn;
 
+#include "mi/mi.h"
 
 /* "public" functions*/
 
@@ -44,6 +45,6 @@ int tcpconn_add_alias(int id, int port, int proto);
 
 void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout);
 
-
+struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param);
 
 #endif

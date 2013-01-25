@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2006 Voice Sistem SRL
+ * Copyright (C) 2011-2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -45,10 +46,11 @@
 #include "../globals.h"
 #include "../ut.h"
 #include "../pt.h"
+#include "../tcp_server.h"
 #include "../mem/mem.h"
 #include "../cachedb/cachedb.h"
-#include "mi.h"
 #include "../evi/event_interface.h"
+#include "mi.h"
 
 
 static str    up_since_ctime;
@@ -321,6 +323,7 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 	return rpl_tree;
 }
 
+
 static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 {
 	str mc_system;
@@ -333,40 +336,40 @@ static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 	if(cmd == NULL)
 	{
 		LM_ERR("NULL command\n");
-		return init_mi_tree(404, "NULL command", 12);
+		return init_mi_tree(404, MI_SSTR("NULL command"));
 	}
 
 	node = cmd->node.kids;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	mc_system = node->value;
 	if(mc_system.s == NULL || mc_system.len== 0)
 	{
 		LM_ERR( "empty memory cache system parameter\n");
-		return init_mi_tree(404, "Empty memory cache id", 21);
+		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
 	}
 	
 	node = node->next;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	attr = node->value;
 	if(attr.s == NULL || attr.len== 0)
 	{
 		LM_ERR( "empty attribute name parameter\n");
-		return init_mi_tree(404, "Empty attribute name", 20);
+		return init_mi_tree(404, MI_SSTR("Empty attribute name"));
 	}
 	
 	node = node->next;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	value = node->value;
 	if(value.s == NULL || value.len== 0)
 	{
 		LM_ERR( "empty value parameter\n");
-		return init_mi_tree(404, "Empty value argument", 20);
+		return init_mi_tree(404, MI_SSTR("Empty value argument"));
 	}
 
 	/* expires parameter is not compulsory */
@@ -377,28 +380,30 @@ static struct mi_root *mi_cachestore(struct mi_root *cmd, void *param)
 		if(expires_str.s == NULL || expires_str.len == 0)
 		{
 			LM_ERR( "empty expires parameter\n");
-			return init_mi_tree(404, "Empty expires argument", 22);
+			return init_mi_tree(404, MI_SSTR("Empty expires argument"));
 		}
 		if(str2int(&expires_str, &expires)< 0)
 		{
 			LM_ERR("wrong format for expires argument- needed int\n");
-			return init_mi_tree(404, "Bad format for expires argument", 31);
+			return init_mi_tree(404,
+				MI_SSTR("Bad format for expires argument"));
 		}
 	
 		node = node->next;
 		if(node!= NULL)
-			return init_mi_tree(404, "Too many parameters", 19);
+			return init_mi_tree(404, MI_SSTR("Too many parameters"));
 	}
 
 	if(cachedb_store(&mc_system, &attr, &value,expires)< 0)
 	{
 		LM_ERR("cachedb_store command failed\n");
-		return init_mi_tree(500, "Cache store command failed", 26);
+		return init_mi_tree(500, MI_SSTR("Cache store command failed"));
 	}
 
-	return init_mi_tree(200, "OK", 2);
+	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
-	
+
+
 static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 {
 	str mc_system;
@@ -411,43 +416,43 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 	if(cmd == NULL)
 	{
 		LM_ERR("NULL command\n");
-		return init_mi_tree(404, "NULL command", 12);
+		return init_mi_tree(404, MI_SSTR("NULL command"));
 	}
 
 	node = cmd->node.kids;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	mc_system = node->value;
 	if(mc_system.s == NULL || mc_system.len== 0)
 	{
 		LM_ERR( "empty memory cache system parameter\n");
-		return init_mi_tree(404, "Empty memory cache id", 21);
+		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
 	}
 	
 	node = node->next;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	attr = node->value;
 	if(attr.s == NULL || attr.len== 0)
 	{
 		LM_ERR( "empty attribute name parameter\n");
-		return init_mi_tree(404, "Empty attribute name", 20);
+		return init_mi_tree(404,MI_SSTR( "Empty attribute name"));
 	}
 	
 	node = node->next;
 	if(node != NULL)
-		return init_mi_tree(404, "Too many arguments", 18);
+		return init_mi_tree(404, MI_SSTR("Too many arguments"));
 
 	ret = cachedb_fetch(&mc_system, &attr, &value);
 	if(ret== -1)
 	{
 		LM_ERR("cachedb_fetch command failed\n");
-		return init_mi_tree(500, "Cache fetch command failed", 26);
+		return init_mi_tree(500, MI_SSTR("Cache fetch command failed"));
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 	{
 		if(value.s)
@@ -457,7 +462,8 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 
 	if(ret == -2 || value.s == 0 || value.len == 0)
 	{
-		addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "Value not found");
+		add_mi_node_child( &rpl_tree->node, 0, 0, 0,
+			MI_SSTR("Value not found") );
 		goto done;
 	}
 
@@ -468,8 +474,9 @@ static struct mi_root *mi_cachefetch(struct mi_root *cmd, void *param)
 
 done:
 	return rpl_tree;
-
 }
+
+
 static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 {
 	str mc_system;
@@ -479,43 +486,44 @@ static struct mi_root *mi_cacheremove(struct mi_root *cmd, void *param)
 	if(cmd == NULL)
 	{
 		LM_ERR("NULL command\n");
-		return init_mi_tree(404, "NULL command", 12);
+		return init_mi_tree(404, MI_SSTR("NULL command"));
 	}
 
 	node = cmd->node.kids;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	mc_system = node->value;
 	if(mc_system.s == NULL || mc_system.len== 0)
 	{
 		LM_ERR( "empty memory cache system parameter\n");
-		return init_mi_tree(404, "Empty memory cache id", 21);
+		return init_mi_tree(404, MI_SSTR("Empty memory cache id"));
 	}
 	
 	node = node->next;
 	if(node == NULL)
-		return init_mi_tree(404, "Too few arguments", 17);
+		return init_mi_tree(404, MI_SSTR("Too few arguments"));
 
 	attr = node->value;
 	if(attr.s == NULL || attr.len== 0)
 	{
 		LM_ERR( "empty attribute name parameter\n");
-		return init_mi_tree(404, "Empty attribute name", 20);
+		return init_mi_tree(404, MI_SSTR("Empty attribute name"));
 	}
 	
 	node = node->next;
 	if(node != NULL)
-		return init_mi_tree(404, "Too many parameters", 19);
+		return init_mi_tree(404, MI_SSTR("Too many parameters"));
 
 	if(cachedb_remove(&mc_system, &attr)< 0)
 	{
 		LM_ERR("cachedb_remove command failed\n");
-		return init_mi_tree(500, "Cache remove command failed", 27);
+		return init_mi_tree(500, MI_SSTR("Cache remove command failed"));
 	}
 
-	return init_mi_tree(200, "OK", 2);
+	return init_mi_tree(200, MI_SSTR(MI_OK));
 }
+
 
 
 static mi_export_t mi_core_cmds[] = {
@@ -543,14 +551,19 @@ static mi_export_t mi_core_cmds[] = {
 	{ "cache_remove", "removes a record from the cache system",
 		mi_cacheremove,               0,  0,  0 },
 	{ "event_subscribe", "subscribes an event to the Event Interface",
-		mi_event_subscribe,       0,  0,  0 },
-	{ "events_list", "lists all the events advertised through the Event Interface",
-		mi_events_list, MI_NO_INPUT_FLAG,  0,  0 },
+		mi_event_subscribe,           0,  0,  0 },
+	{ "events_list", "lists all the events advertised through the "
+		"Event Interface",
+		mi_events_list,MI_NO_INPUT_FLAG,  0,  0 },
 	{ "subscribers_list", "lists all the Event Interface subscribers; "
 		"Params: [ event [ subscriber ]]",
-		mi_subscribers_list,      0,  0,  0 },
+		mi_subscribers_list,          0,  0,  0 },
+#if USE_TCP
+	{ "list_tcp_conns", "list all ongoing TCP/TLS connections",
+		mi_list_tcp_conns,MI_NO_INPUT_FLAG,0, 0 },
+#endif
 	{ "help", "prints information about MI commands usage",
-		mi_help,                  0,  0,  0 },
+		mi_help,                      0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}
 };
 

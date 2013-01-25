@@ -82,6 +82,7 @@
 #include <sys/uio.h>  /* writev*/
 #include <netdb.h>
 #include <stdlib.h> /*exit() */
+#include <time.h>   /*time() */
 
 #include <unistd.h>
 
@@ -1525,7 +1526,7 @@ static inline void tcpconn_timeout(int force)
 /*! \brief tcp main loop */
 void tcp_main_loop(void)
 {
-
+	int flags;
 	struct socket_info* si;
 	int r;
 
@@ -1576,13 +1577,27 @@ void tcp_main_loop(void)
 	}
 	/* add all the unix sokets used for communication with the tcp childs */
 	for (r=0; r<tcp_children_no; r++){
-		if (tcp_children[r].unix_sock>0)/*we can't have 0, we never close it!*/
+		/*we can't have 0, we never close it!*/
+		if (tcp_children[r].unix_sock>0) {
+			/* make socket non-blocking */
+			flags=fcntl(tcp_children[r].unix_sock, F_GETFL);
+			if (flags==-1){
+				LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+				goto error;
+			}
+			if (fcntl(tcp_children[r].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){
+				LM_ERR("set non-blocking failed: (%d) %s\n",
+					errno, strerror(errno));
+				goto error;
+			}
+			/* add socket for listening */
 			if (io_watch_add(&io_h, tcp_children[r].unix_sock, F_TCPCHILD,
 							&tcp_children[r]) <0){
 				LM_CRIT("failed to add tcp child %d unix socket to "
 						"the fd list\n", r);
 				goto error;
 			}
+		}
 	}
 	
 	/* main loop */
@@ -1852,5 +1867,92 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 error:
 	return -1;
 }
+
+
+struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
+{
+	struct mi_root *rpl_tree;
+	struct mi_node* node;
+	struct mi_attr *attr;
+	struct tcp_connection *conn;
+	unsigned long ctime;
+	unsigned int i;
+	char proto[4];
+	char *p;
+	int len;
+
+	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
+	if (rpl_tree==NULL)
+		return 0;
+
+	ctime = (long)time(NULL);
+
+	TCPCONN_LOCK;
+
+	for( i=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
+		for( conn=tcpconn_id_hash[i] ; conn ; conn=conn->id_next ) {
+			/* add one node for each conn */
+			node = add_mi_node_child(&rpl_tree->node, 0,
+				MI_SSTR("Connection"), 0, 0 );
+			if (node==0)
+				goto error;
+
+			/* add ID */
+			p = int2str((unsigned long)conn->id, &len);
+			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("ID"), p, len);
+			if (attr==0)
+				goto error;
+
+			/* add type/proto */
+			p = proto2str(conn->type, proto);
+			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Type"),
+				proto, (int)(long)(p-proto));
+			if (attr==0)
+				goto error;
+
+			/* add state */
+			p = int2str((unsigned long)conn->state, &len);
+			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("State"), p, len);
+			if (attr==0)
+				goto error;
+
+			/* add Source */
+			attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Source"),
+				"%s:%d",ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
+			if (attr==0)
+				goto error;
+
+			/* add Destination */
+			attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Destination"),
+				"%s:%d",ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
+			if (attr==0)
+				goto error;
+
+			/* add timeout */
+			p = int2str((unsigned long)conn->timeout+ctime, &len);
+			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"), p,len);
+			if (attr==0)
+				goto error;
+
+			/* add lifetime */
+			p = int2str((unsigned long)conn->lifetime, &len);
+			attr = add_mi_attr( node, MI_DUP_VALUE,
+				MI_SSTR("Pending lifetime"), p, len);
+			if (attr==0)
+				goto error;
+
+		}
+	}
+
+	TCPCONN_UNLOCK;
+
+	return rpl_tree;
+error:
+	TCPCONN_UNLOCK;
+	LM_ERR("failed to add node\n");
+	free_mi_tree(rpl_tree);
+	return 0;
+}
+
 
 #endif
