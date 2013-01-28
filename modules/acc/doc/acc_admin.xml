@@ -93,7 +93,8 @@
 		</itemizedlist>
 	</para>
 	<para>
-		The SQL and AAA backend support are compiled in the module. For DIAMETER 
+		The SQL, Event Interface and AAA backend support are compiled in the
+		module. For DIAMETER 
 		you need to enable it by recompiling the module with properly
 		set defines: uncomment DIAM_ACC line in modules/acc/Makefile.
 		The AAA client needs to be configured properly. 
@@ -205,6 +206,9 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				<emphasis>IMPORTANT</emphasis>:	<emphasis>log_name</emphasis>
 				must be a number.
 				</para></listitem>
+				<listitem><para><emphasis>Events accounting</emphasis> - 
+				log_name will be the name of the parameter in the event raised.
+				</para></listitem>
 			</itemizedlist>
 			</para>
 		</section>
@@ -307,6 +311,14 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 				<para><emphasis>Diameter</emphasis> same as for AAA.
 				</para>
 				</listitem>
+				<listitem>
+				<para><emphasis>events</emphasis> -- each pair will appear as a
+				different parameter-value pair in the event. Similar to the
+				database behavior, multiple events will be raised, and the only
+				difference between them is the leg information.
+				</para>
+				</listitem>
+
 			</itemizedlist>
 		</section>
 	</section>
@@ -1099,6 +1111,86 @@ modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
 </programlisting>
 		</example>
 	</section>
+
+
+	<!-- Event Interface specific ACC parameters -->
+	<section>
+		<title><varname>evi_flag</varname> (string/integer)</title>
+		<para>
+			Request flag which needs to be set to account a transaction through
+			the Event Interface.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+		</para>
+		<para>
+		Default value is not-set (no flag).
+		</para>
+		<example>
+		<title>evi_flag example</title>
+		<programlisting format="linespecific">
+modparam("acc", "evi_flag", "EVI_FLAG")
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>evi_missed_flag</varname> (string/integer)</title>
+		<para>
+			Request flag which needs to be set to account missed calls throught
+			the Event Interface.
+		</para>
+		<para>
+		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
+		Use quoted strings instead!
+		</para>
+		<para>
+		Default value is not-set (no flag).
+		</para>
+		<example>
+		<title>evi_missed_flag example</title>
+		<programlisting format="linespecific">
+modparam("acc", "evi_missed_flag", "EVI_MISSED_FLAG")
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>evi_extra</varname> (string)</title>
+		<para>
+		Extra values to be attached as event's parameters.
+		</para>
+		<para>
+		Default value is NULL.
+		</para>
+		<example>
+		<title>evi_extra example</title>
+		<programlisting format="linespecific">
+modparam("acc", "evi_extra",
+	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>evi_extra_bye</varname> (string)</title>
+		<para>
+			Extra values to be attached as event's parameters for BYE messages.
+			Note that this parameter makes sense only when the cdr_flag is used.
+		</para>
+		<para>
+		Default value is NULL.
+		</para>
+		<example>
+		<title>evi_extra_bye example</title>
+		<programlisting format="linespecific">
+modparam("acc", "evi_extra_bye",
+	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
+</programlisting>
+		</example>
+	</section>
+
+
+	<!-- CDR specific ACC parameters -->
 	<section>
 		<title><varname>cdr_flag</varname> (string/integer)</title>
 		<para>
@@ -1145,7 +1237,8 @@ modparam("acc", "cdr_flag", "CDR_FLAG")
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title>acc_log_request usage</title>
@@ -1161,7 +1254,7 @@ acc_log_request("403 Destination not allowed");
 			<function moreinfo="none">acc_db_request(comment, table)</function>
 		</title>
 		<para>
-		Like <function moreinfo="none">acc_db_request</function>, 
+		Like <function moreinfo="none">acc_log_request</function>, 
 		<function moreinfo="none">acc_db_request</function> reports on a 
 		request. The report is sent to database at <quote>db_url</quote>, in 
 		the table referred to in the second action parameter.
@@ -1181,14 +1274,15 @@ acc_log_request("403 Destination not allowed");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title>acc_db_request usage</title>
 		<programlisting format="linespecific">
 ...
-acc_log_request("Some comment", "Some table");
-acc_log_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
+acc_db_request("Some comment", "Some table");
+acc_db_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
 ...
 </programlisting>
 		</example>
@@ -1214,7 +1308,8 @@ acc_log_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title>acc_aaa_request usage</title>
@@ -1245,7 +1340,8 @@ acc_aaa_request("403 Destination not allowed");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title>acc_diam_request usage</title>
@@ -1256,6 +1352,194 @@ acc_diam_request("403 Destination not allowed");
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title>
+			<function moreinfo="none">acc_evi_request(comment)</function>
+		</title>
+		<para>
+		Like <function moreinfo="none">acc_log_request</function>, 
+		<function moreinfo="none">acc_evi_request</function> reports on a 
+		request. The report is packed as an event sent through the &osips; Event
+		Interface as <emphasis>E_ACC_EVENT</emphasis> if the reply code is a
+		positive one (lower than 300), or <emphasis>E_ACC_MISSED_EVENT</emphasis>
+		for negative or no codes. More information on this in
+		<xref linkend="ACC-events-id"/>.
+		</para>
+		<para>
+		Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>comment</emphasis> - Comment describing how the 
+			request completed - this string has to contain a reply code
+			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			are accepted in this string.</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title>acc_evi_request usage</title>
+		<programlisting format="linespecific">
+...
+acc_evi_request("403 Destination not allowed");
+...
+</programlisting>
+		</example>
 	</section>
-</chapter>
+	</section>
 
+	<section id="ACC-events-id">
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_ACC_CDR</function>
+		</title>
+		<para>
+			The event raised when a CDR is generated. Note that this event will
+			only be triggered if the auto CDR accounting is used.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>method</emphasis> - Request method name
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from_tag</emphasis> - From header tag parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_tag</emphasis> - To header tag parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - Message Call-id
+			</para></listitem>
+			<listitem><para>
+				<emphasis>sip_code</emphasis> - The status code from the final reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>sip_reason</emphasis> - The status reason from the final reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>time</emphasis> - The timestamp when the call was established
+			</para></listitem>
+			<listitem><para>
+				<emphasis>evi_extra*</emphasis> - Extra parameters added by
+				the <emphasis>evi_extra</emphasis> parameter.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>evi_extra_bye*</emphasis> - Extra parameters added by
+				the <emphasis>evi_extra_bye</emphasis> parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>multi_leg_info*</emphasis> - Extra parameters added by
+				the <emphasis>multi_leg_info</emphasis> parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>multi_leg_bye_info*</emphasis> - Extra parameters added by
+				the <emphasis>multi_leg_bye_info</emphasis> parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>duration</emphasis> - The call duration in seconds
+			</para></listitem>
+			<listitem><para>
+				<emphasis>setuptime</emphasis> - The call setup time in seconds
+			</para></listitem>
+			<listitem><para>
+				<emphasis>created</emphasis> - The timestamp when the call was
+				created (the initial Invite was received)
+			</para></listitem>
+
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_ACC_EVENT</function>
+		</title>
+		<para>
+			This event is triggered when old-style accounting is used. It is
+			generated when the requests (INVITE and BYE) transaction have
+			positive final replies, or by the <function>acc_evi_request()</function>
+			function that has a positive reply code in comment.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>method</emphasis> - Request method name
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from_tag</emphasis> - From header tag parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_tag</emphasis> - To header tag parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - Message Call-id
+			</para></listitem>
+			<listitem><para>
+				<emphasis>sip_code</emphasis> - The status code from the final reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>sip_reason</emphasis> - The status reason from the final reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>time</emphasis> - The timestamp when the transaction was created
+			</para></listitem>
+			<listitem><para>
+				<emphasis>evi_extra*</emphasis> - Extra parameters added by
+				the <emphasis>evi_extra</emphasis> parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>multi_leg_info*</emphasis> - Extra parameters added by
+				the <emphasis>multi_leg_info</emphasis> parameter
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_ACC_MISSED_EVENT</function>
+		</title>
+		<para>
+			This event is triggered when old-style accounting is used. It is
+			generated when the requests (INVITE and BYE) transaction have
+			negative final replies, or by the <function>acc_evi_request()</function>
+			function that has a negative reply code in comment.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>method</emphasis> - Request method name
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from_tag</emphasis> - From header tag parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_tag</emphasis> - To header tag parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - Message Call-id
+			</para></listitem>
+			<listitem><para>
+				<emphasis>sip_code</emphasis> - The status code from the final reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>sip_reason</emphasis> - The status reason from the final reply
+			</para></listitem>
+			<listitem><para>
+				<emphasis>time</emphasis> - The timestamp when the transaction was created
+			</para></listitem>
+			<listitem><para>
+				<emphasis>evi_extra*</emphasis> - Extra parameters added by
+				the <emphasis>evi_extra</emphasis> parameter
+			</para></listitem>
+			<listitem><para>
+				<emphasis>multi_leg_info*</emphasis> - Extra parameters added by
+				the <emphasis>multi_leg_info</emphasis> parameter
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	</section>
+
+</chapter>

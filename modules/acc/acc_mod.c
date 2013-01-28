@@ -180,6 +180,20 @@ str acc_duration_col   = str_init("duration");
 str acc_setuptime_col  = str_init("setuptime");
 str acc_created_col    = str_init("created");
 
+/* ----- Event Interface acc variables ----------- */
+
+int evi_flag = -1;
+static char *evi_string = 0;
+int evi_missed_flag = -1;
+static char *evi_missed_string = 0;
+/* event extra variables */
+static char *evi_extra_str = 0;
+struct acc_extra *evi_extra = 0;
+static char *evi_extra_bye_str = 0;
+struct acc_extra *evi_extra_bye = 0;
+
+
+
 /* ------------- fixup function --------------- */
 static int acc_fixup(void** param, int param_no);
 static int free_acc_fixup(void** param, int param_no);
@@ -200,6 +214,9 @@ static cmd_export_t cmds[] = {
 		acc_fixup, free_acc_fixup,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 #endif
+	{"acc_evi_request", (cmd_function)w_acc_evi_request, 1,
+		acc_fixup, free_acc_fixup,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -233,6 +250,14 @@ static param_export_t params[] = {
 	{"service_type",         INT_PARAM, &service_type         },
 	{"aaa_extra",            STR_PARAM, &aaa_extra_str        },
 	{"aaa_extra_bye",        STR_PARAM, &aaa_extra_bye_str    },
+	/* event interface specific */
+	{"evi_flag",             STR_PARAM, &evi_string           },
+	{"evi_flag",             INT_PARAM, &evi_flag             },
+	{"evi_missed_flag",      STR_PARAM, &evi_missed_string    },
+	{"evi_missed_flag",      INT_PARAM, &evi_missed_flag      },
+	{"evi_extra",            STR_PARAM, &evi_extra_str        },
+	{"evi_extra_bye",        STR_PARAM, &evi_extra_bye_str    },
+	
 	/* DIAMETER specific */
 #ifdef DIAM_ACC
 	{"diameter_flag",        STR_PARAM, &diameter_string        },
@@ -375,7 +400,6 @@ static int mod_init( void )
 
 	if (flag_idx2mask(&failed_transaction_flag)<0)
 		return -1;
-
 	fix_flag_name(&cdr_string, cdr_flag);
 
 	cdr_flag = get_flag_id_by_name(FLAG_TYPE_MSG, cdr_string);
@@ -583,6 +607,38 @@ static int mod_init( void )
 	}
 
 #endif
+
+	/* ------------ EVENTS INIT SECTION ----------- */
+
+	if (evi_extra_str && (evi_extra = parse_acc_extra(evi_extra_str, 1))==0) {
+		LM_ERR("failed to parse evi_extra param\n");
+		return -1;
+	}
+	if (evi_extra_bye_str &&
+			(evi_extra_bye = parse_acc_extra(evi_extra_bye_str, 0))==0) {
+		LM_ERR("failed to parse evi_extra_bye param\n");
+		return -1;
+	}
+
+	/* fix the flags */
+	fix_flag_name(&evi_string, evi_flag);
+	
+	evi_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_string);
+
+	if (flag_idx2mask(&evi_flag)<0)
+		return -1;
+
+	fix_flag_name(&evi_missed_string, evi_missed_flag);
+	
+	evi_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_missed_string);
+
+	if (flag_idx2mask(&evi_missed_flag)<0)
+		return -1;
+
+	if (init_acc_evi() < 0) {
+		LM_ERR("cannot init acc events\n");
+		return -1;
+	}
 	return 0;
 }
 

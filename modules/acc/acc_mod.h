@@ -83,4 +83,9 @@ extern str acc_created_col;
 extern int db_table_name;
 extern unsigned short db_table_name_type;
 
+
+extern int evi_flag;
+extern int evi_missed_flag;
+
+
 #endif

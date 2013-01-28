@@ -74,6 +74,9 @@ static query_list_t *mc_ins_list = NULL;
 #define is_db_acc_on(_rq)     is_acc_flag_set(_rq,db_flag)
 #define is_db_mc_on(_rq)      is_acc_flag_set(_rq,db_missed_flag)
 
+#define is_evi_acc_on(_rq)     is_acc_flag_set(_rq,evi_flag)
+#define is_evi_mc_on(_rq)      is_acc_flag_set(_rq,evi_missed_flag)
+
 #define is_cdr_acc_on(_rq)     is_acc_flag_set(_rq,cdr_flag)
 
 #ifdef DIAM_ACC
@@ -87,11 +90,13 @@ static query_list_t *mc_ins_list = NULL;
 
 #define is_acc_on(_rq) \
 	( (is_log_acc_on(_rq)) || (is_db_acc_on(_rq)) \
-	|| (is_aaa_acc_on(_rq)) || (is_diam_acc_on(_rq)) )
+	|| (is_aaa_acc_on(_rq)) || (is_diam_acc_on(_rq)) \
+	|| (is_evi_acc_on(_rq)) )
 
 #define is_mc_on(_rq) \
 	( (is_log_mc_on(_rq)) || (is_db_mc_on(_rq)) \
-	|| (is_aaa_mc_on(_rq)) || (is_diam_mc_on(_rq)) )
+	|| (is_aaa_mc_on(_rq)) || (is_diam_mc_on(_rq)) \
+	|| (is_evi_mc_on(_rq)) )
 
 #define skip_cancel(_rq) \
 	(((_rq)->REQ_METHOD==METHOD_CANCEL) && report_cancels==0)
@@ -248,6 +253,21 @@ int w_acc_diam_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 }
 #endif
 
+int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
+{
+	struct acc_param accp;
+
+	if (acc_preparse_req(rq)<0)
+		return -1;
+
+	acc_pvel_to_acc_param(rq, comment, &accp);
+
+	env_set_to( rq->to );
+	env_set_comment( &accp );
+
+	return acc_evi_request( rq, NULL);
+}
+
 int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param* accp)
 {
 	str buf;
@@ -384,6 +404,11 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	 * forwarding attempt fails; we do not wish to
 	 * report on every attempt; so we clear the flags; 
 	 */
+
+	if (is_evi_mc_on(req)) {
+		acc_evi_request( req, reply );
+		flags_to_reset |= evi_missed_flag;
+	}
 
 	if (is_log_mc_on(req)) {
 		env_set_text( ACC_MISSED, ACC_MISSED_LEN);
@@ -522,6 +547,11 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			return;
 		}
 
+		if (is_evi_acc_on(req) && store_evi_extra_values(dlg,req,reply)<0) {
+			LM_ERR("cannot store database extra values\n");
+			return;
+		}
+
 		flags_s.s = (char*)&req->flags;
 		flags_s.len = sizeof(unsigned int);
 		
@@ -544,6 +574,9 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		}
 	} else {
 		/* do old accounting */
+		if ( is_evi_acc_on(req) )
+			acc_evi_request( req, reply );
+
 		if ( is_log_acc_on(req) ) {
 			env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
 			acc_log_request( req, reply );
@@ -581,6 +614,14 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 		return;
 	}
 	flags = (unsigned int)(long)(*_params->param);
+
+	if (flags & evi_flag) {
+
+		if (acc_evi_cdrs(dlg, _params->msg) < 0) {
+			LM_ERR("cannot send accounting events\n");
+			return;
+		}
+	}
 
 	if (flags & log_flag) {
 		env_set_text( ACC_ENDED, ACC_ENDED_LEN);

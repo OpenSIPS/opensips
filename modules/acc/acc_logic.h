@@ -70,5 +70,6 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 int w_acc_diam_request(struct sip_msg *rq, char *comment, char *foo);
 #endif
 
+int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
 
 #endif

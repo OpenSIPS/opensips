@@ -31,7 +31,7 @@ Irina-Maria Stanescu
 
    Copyright © 2004, 2006, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+   Revision $Revision$ $Date: 2012-02-22 18:29:43 +0100
                               (Wed, 22 Feb 2012) $
      __________________________________________________________
 
@@ -106,7 +106,11 @@ Irina-Maria Stanescu
               1.6.36. diameter_client_host (string)
               1.6.37. diameter_client_port (int)
               1.6.38. diameter_extra (string)
-              1.6.39. cdr_flag (string/integer)
+              1.6.39. evi_flag (string/integer)
+              1.6.40. evi_missed_flag (string/integer)
+              1.6.41. evi_extra (string)
+              1.6.42. evi_extra_bye (string)
+              1.6.43. cdr_flag (string/integer)
 
         1.7. Exported Functions
 
@@ -114,6 +118,13 @@ Irina-Maria Stanescu
               1.7.2. acc_db_request(comment, table)
               1.7.3. acc_aaa_request(comment)
               1.7.4. acc_diam_request(comment)
+              1.7.5. acc_evi_request(comment)
+
+        1.8. Exported Events
+
+              1.8.1. E_ACC_CDR
+              1.8.2. E_ACC_EVENT
+              1.8.3. E_ACC_MISSED_EVENT
 
    2. Frequently Asked Questions
 
@@ -157,11 +168,16 @@ Irina-Maria Stanescu
    1.36. diameter_client_host example
    1.37. diameter_client_host example
    1.38. diameter_extra example
-   1.39. cdr_flag example
-   1.40. acc_log_request usage
-   1.41. acc_db_request usage
-   1.42. acc_aaa_request usage
-   1.43. acc_diam_request usage
+   1.39. evi_flag example
+   1.40. evi_missed_flag example
+   1.41. evi_extra example
+   1.42. evi_extra_bye example
+   1.43. cdr_flag example
+   1.44. acc_log_request usage
+   1.45. acc_db_request usage
+   1.46. acc_aaa_request usage
+   1.47. acc_diam_request usage
+   1.48. acc_evi_request usage
 
 Chapter 1. Admin Guide
 
@@ -216,11 +232,11 @@ Chapter 1. Admin Guide
        best knows about call status (including media status and
        PSTN status in case of the gateway).
 
-   The SQL and AAA backend support are compiled in the module. For
-   DIAMETER you need to enable it by recompiling the module with
-   properly set defines: uncomment DIAM_ACC line in
-   modules/acc/Makefile. The AAA client needs to be configured
-   properly.
+   The SQL, Event Interface and AAA backend support are compiled
+   in the module. For DIAMETER you need to enable it by
+   recompiling the module with properly set defines: uncomment
+   DIAM_ACC line in modules/acc/Makefile. The AAA client needs to
+   be configured properly.
 
    NOTE: diameter support was developed for DISC (DIameter Server
    Client project at http://developer.berlios.de/projects/disc/).
@@ -301,6 +317,8 @@ lag!)
        for packing the data into DIAMETER message. The AVP code is
        given directly as integer, since DIAMETER has no dictionary
        support yet. IMPORTANT: log_name must be a number.
+     * Events accounting - log_name will be the name of the
+       parameter in the event raised.
 
 1.2.3. How it works
 
@@ -376,6 +394,10 @@ Note
        You will need to add in your dictionary the AAA AVPs used
        in call-leg AVP set definition.
      * Diameter same as for AAA.
+     * events -- each pair will appear as a different
+       parameter-value pair in the event. Similar to the database
+       behavior, multiple events will be raised, and the only
+       difference between them is the leg information.
 
 1.4. CDRs accounting
 
@@ -887,7 +909,55 @@ modparam("acc", "diameter_client_port", 3000)
 modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(ema
 il)")
 
-1.6.39. cdr_flag (string/integer)
+1.6.39. evi_flag (string/integer)
+
+   Request flag which needs to be set to account a transaction
+   through the Event Interface.
+
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
+   Default value is not-set (no flag).
+
+   Example 1.39. evi_flag example
+modparam("acc", "evi_flag", "EVI_FLAG")
+
+1.6.40. evi_missed_flag (string/integer)
+
+   Request flag which needs to be set to account missed calls
+   throught the Event Interface.
+
+   WARNING: Setting INT flags is deprecated! Use quoted strings
+   instead!
+
+   Default value is not-set (no flag).
+
+   Example 1.40. evi_missed_flag example
+modparam("acc", "evi_missed_flag", "EVI_MISSED_FLAG")
+
+1.6.41. evi_extra (string)
+
+   Extra values to be attached as event's parameters.
+
+   Default value is NULL.
+
+   Example 1.41. evi_extra example
+modparam("acc", "evi_extra",
+        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
+
+1.6.42. evi_extra_bye (string)
+
+   Extra values to be attached as event's parameters for BYE
+   messages. Note that this parameter makes sense only when the
+   cdr_flag is used.
+
+   Default value is NULL.
+
+   Example 1.42. evi_extra_bye example
+modparam("acc", "evi_extra_bye",
+        "uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
+
+1.6.43. cdr_flag (string/integer)
 
    Request flag which needs to be set to account a transaction,
    including CDR details.
@@ -897,7 +967,7 @@ il)")
 
    Default value is not-set (no flag).
 
-   Example 1.39. cdr_flag example
+   Example 1.43. cdr_flag example
 modparam("acc", "cdr_flag", "CDR_FLAG")
 
 1.7. Exported Functions
@@ -916,16 +986,17 @@ modparam("acc", "cdr_flag", "CDR_FLAG")
        reason phrase (ex: "404 Nobody home"). Variables are
        accepted in this string.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.40. acc_log_request usage
+   Example 1.44. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
 
 1.7.2.  acc_db_request(comment, table)
 
-   Like acc_db_request, acc_db_request reports on a request. The
+   Like acc_log_request, acc_db_request reports on a request. The
    report is sent to database at “db_url”, in the table referred
    to in the second action parameter.
 
@@ -936,12 +1007,13 @@ acc_log_request("403 Destination not allowed");
        accepted in this string.
      * table - Database table to be used.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.41. acc_db_request usage
+   Example 1.45. acc_db_request usage
 ...
-acc_log_request("Some comment", "Some table");
-acc_log_request("$T_reply_code $(<reply>rr)","acc");
+acc_db_request("Some comment", "Some table");
+acc_db_request("$T_reply_code $(<reply>rr)","acc");
 ...
 
 1.7.3.  acc_aaa_request(comment)
@@ -955,9 +1027,10 @@ acc_log_request("$T_reply_code $(<reply>rr)","acc");
        reason phrase (ex: "404 Nobody home"). Variables are
        accepted in this string.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.42. acc_aaa_request usage
+   Example 1.46. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -973,12 +1046,104 @@ acc_aaa_request("403 Destination not allowed");
        reason phrase (ex: "404 Nobody home"). Variables are
        accepted in this string.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.43. acc_diam_request usage
+   Example 1.47. acc_diam_request usage
 ...
 acc_diam_request("403 Destination not allowed");
 ...
+
+1.7.5.  acc_evi_request(comment)
+
+   Like acc_log_request, acc_evi_request reports on a request. The
+   report is packed as an event sent through the OpenSIPS Event
+   Interface as E_ACC_EVENT if the reply code is a positive one
+   (lower than 300), or E_ACC_MISSED_EVENT for negative or no
+   codes. More information on this in Section 1.8, “Exported
+   Events”.
+
+   Meaning of the parameters is as follows:
+     * comment - Comment describing how the request completed -
+       this string has to contain a reply code followed by a reply
+       reason phrase (ex: "404 Nobody home"). Variables are
+       accepted in this string.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.48. acc_evi_request usage
+...
+acc_evi_request("403 Destination not allowed");
+...
+
+1.8. Exported Events
+
+1.8.1.  E_ACC_CDR
+
+   The event raised when a CDR is generated. Note that this event
+   will only be triggered if the auto CDR accounting is used.
+
+   Parameters:
+     * method - Request method name
+     * from_tag - From header tag parameter
+     * to_tag - To header tag parameter
+     * callid - Message Call-id
+     * sip_code - The status code from the final reply
+     * sip_reason - The status reason from the final reply
+     * time - The timestamp when the call was established
+     * evi_extra* - Extra parameters added by the evi_extra
+       parameter.
+     * evi_extra_bye* - Extra parameters added by the
+       evi_extra_bye parameter
+     * multi_leg_info* - Extra parameters added by the
+       multi_leg_info parameter
+     * multi_leg_bye_info* - Extra parameters added by the
+       multi_leg_bye_info parameter
+     * duration - The call duration in seconds
+     * setuptime - The call setup time in seconds
+     * created - The timestamp when the call was created (the
+       initial Invite was received)
+
+1.8.2.  E_ACC_EVENT
+
+   This event is triggered when old-style accounting is used. It
+   is generated when the requests (INVITE and BYE) transaction
+   have positive final replies, or by the acc_evi_request()
+   function that has a positive reply code in comment.
+
+   Parameters:
+     * method - Request method name
+     * from_tag - From header tag parameter
+     * to_tag - To header tag parameter
+     * callid - Message Call-id
+     * sip_code - The status code from the final reply
+     * sip_reason - The status reason from the final reply
+     * time - The timestamp when the transaction was created
+     * evi_extra* - Extra parameters added by the evi_extra
+       parameter
+     * multi_leg_info* - Extra parameters added by the
+       multi_leg_info parameter
+
+1.8.3.  E_ACC_MISSED_EVENT
+
+   This event is triggered when old-style accounting is used. It
+   is generated when the requests (INVITE and BYE) transaction
+   have negative final replies, or by the acc_evi_request()
+   function that has a negative reply code in comment.
+
+   Parameters:
+     * method - Request method name
+     * from_tag - From header tag parameter
+     * to_tag - To header tag parameter
+     * callid - Message Call-id
+     * sip_code - The status code from the final reply
+     * sip_reason - The status reason from the final reply
+     * time - The timestamp when the transaction was created
+     * evi_extra* - Extra parameters added by the evi_extra
+       parameter
+     * multi_leg_info* - Extra parameters added by the
+       multi_leg_info parameter
 
 Chapter 2. Frequently Asked Questions
 

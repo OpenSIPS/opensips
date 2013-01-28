@@ -107,6 +107,12 @@ int  store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req);
 int  store_created_dlg_time(struct dlg_cell *dlg);
 int  create_acc_dlg(struct sip_msg* req);
 
+int  init_acc_evi(void);
+int  acc_evi_request( struct sip_msg *req, struct sip_msg *rpl);
+int  acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg);
+int  store_evi_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
+		struct sip_msg *reply);
+
 
 
 #ifdef DIAM_ACC

@@ -80,6 +80,7 @@ str table_str = str_init("accX_table");
 str db_extra_str = str_init("accX_db");
 str log_extra_str = str_init("accX_log");
 str aaa_extra_str = str_init("accX_aaa");
+str evi_extra_str = str_init("accX_evi");
 
 extern struct acc_extra *log_extra;
 extern struct acc_extra *log_extra_bye;
@@ -95,6 +96,12 @@ extern char *diameter_client_host;
 extern int diameter_client_port;
 extern struct acc_extra *dia_extra;
 #endif
+
+extern struct acc_extra *evi_extra;
+extern struct acc_extra *evi_extra_bye;
+event_id_t acc_cdr_event = EVI_ERROR;
+event_id_t acc_event = EVI_ERROR;
+event_id_t acc_missed_event = EVI_ERROR;
 
 static db_func_t acc_dbf;
 static db_con_t* db_handle=0;
@@ -1304,6 +1311,328 @@ error:
 }
 
 #endif
+
+
+/********************************************
+ *        EVENT INTERFACE  ACCOUNTING
+ ********************************************/
+/* names of the parameters of the event */
+static str acc_method_evi     = str_init("method");
+static str acc_fromtag_evi    = str_init("from_tag");
+static str acc_totag_evi      = str_init("to_tag");
+static str acc_callid_evi     = str_init("callid");
+static str acc_sipcode_evi    = str_init("sip_code");
+static str acc_sipreason_evi  = str_init("sip_reason");
+static str acc_time_evi       = str_init("time");
+static str acc_duration_evi   = str_init("duration");
+static str acc_setuptime_evi  = str_init("setuptime");
+static str acc_created_evi    = str_init("created");
+
+static str evi_acc_name = str_init("E_ACC_CDR");
+static str evi_acc_event_name = str_init("E_ACC_EVENT");
+static str evi_acc_missed_name = str_init("E_ACC_MISSED_EVENT");
+
+/* static event's list */
+static evi_params_p acc_event_params;
+static evi_param_p evi_params[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+
+#define EVI_CREATE_PARAM(_name) \
+	do { \
+		if (!(evi_params[n++] = \
+				evi_param_create(acc_event_params, &(_name)))) \
+			goto error; \
+	} while (0)
+
+
+int  init_acc_evi(void)
+{
+	struct acc_extra *extra;
+	int n;
+
+	acc_event = evi_publish_event(evi_acc_event_name);
+	if (acc_event == EVI_ERROR) {
+		LM_ERR("cannot register ACC event\n");
+		return -1;
+	}
+
+	acc_cdr_event = evi_publish_event(evi_acc_name);
+	if (acc_cdr_event == EVI_ERROR) {
+		LM_ERR("cannot register ACC CDR event\n");
+		return -1;
+	}
+
+	acc_missed_event = evi_publish_event(evi_acc_missed_name);
+	if (acc_missed_event == EVI_ERROR) {
+		LM_ERR("cannot register missed CDR event\n");
+		return -1;
+	}
+
+	/* we handle the parameters list by ourselves */
+	acc_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (!acc_event_params) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+
+	n = 0;
+	EVI_CREATE_PARAM(acc_method_evi);
+	EVI_CREATE_PARAM(acc_fromtag_evi);
+	EVI_CREATE_PARAM(acc_totag_evi);
+	EVI_CREATE_PARAM(acc_callid_evi);
+	EVI_CREATE_PARAM(acc_sipcode_evi);
+	EVI_CREATE_PARAM(acc_sipreason_evi);
+	EVI_CREATE_PARAM(acc_time_evi);
+
+	/* init the extra db keys */
+	for(extra=evi_extra; extra ; extra=extra->next)
+		EVI_CREATE_PARAM(extra->name);
+	for(extra=evi_extra_bye; extra ; extra=extra->next)
+		EVI_CREATE_PARAM(extra->name);
+
+	/* multi leg call columns */
+	for( extra=leg_info ; extra ; extra=extra->next)
+		EVI_CREATE_PARAM(extra->name);
+	for( extra=leg_bye_info ; extra ; extra=extra->next)
+		EVI_CREATE_PARAM(extra->name);
+
+	if (dlg_api.get_dlg) {
+		EVI_CREATE_PARAM(acc_duration_evi);
+		EVI_CREATE_PARAM(acc_setuptime_evi);
+		EVI_CREATE_PARAM(acc_created_evi);
+	}
+
+	return 0;
+
+error:
+	LM_ERR("error while creating parameter %d\n", n-1);
+	return -1;
+}
+#undef EVI_CREATE_PARAM
+
+
+int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
+{
+	int m;
+	int n;
+	int i;
+	int backup_idx = -1, ret = -1;
+	event_id_t event = EVI_ERROR;
+
+	/*
+	 * if the code is not set, choose the missed calls event
+	 * otherwise, check if the code is negative
+	 */
+	event = (!acc_env.code || acc_env.code > 300) ?
+		acc_missed_event : acc_event;
+
+	if (event == EVI_ERROR) {
+		LM_ERR("event not registered %d\n", acc_event);
+		return -1;
+	}
+
+	/* check if someone is interested in this event */
+	if (!evi_probe_event(event))
+		return 1;
+
+	m = core2strar( rq, val_arr );
+
+	for(i = 0; i < m; i++)
+		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
+			LM_ERR("cannot set acc parameter\n");
+			return -1;
+		}
+	/* time value */
+	if (evi_param_set_int(evi_params[m++], &acc_env.ts) < 0) {
+		LM_ERR("cannot set timestamp parameter\n");
+		return -1;
+	}
+
+	/* extra columns */
+	m += extra2strar( evi_extra, rq, rpl, val_arr+m, 0);
+
+	for( i++; i < m; i++)
+		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
+			LM_ERR("cannot set acc extra parameter\n");
+			return -1;
+		}
+
+	/* multi-leg columns */
+	if ( !leg_info ) {
+		/*
+		 * XXX: hack to skip adding the information that doesn't exist
+		 * for these requests - leg info, duration, setuptime, etc.
+		 */
+		backup_idx = m - 1;
+		evi_params[backup_idx]->next = NULL;
+
+		if (evi_raise_event(event, acc_event_params) < 0) {
+			LM_ERR("cannot raise ACC event\n");
+			goto end;
+		}
+	} else {
+		n = legs2strar(leg_info,rq,val_arr+m,1);
+		do {
+			for ( i = m; i < m + n; i++)
+				if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
+					LM_ERR("cannot set acc extra parameter\n");
+					goto end;
+				}
+			/* XXX: same hack for above, but at least now we have legs */
+			backup_idx = i - 1;
+			evi_params[backup_idx]->next = NULL;
+
+			if (evi_raise_event(event, acc_event_params) < 0) {
+				LM_ERR("cannot raise ACC event\n");
+				goto end;
+			}
+			evi_params[backup_idx]->next = evi_params[backup_idx + 1];
+		}while ( (n = legs2strar(leg_info,rq,val_arr+m,0))!=0 );
+	}
+	ret = 1;
+end:
+	evi_params[backup_idx]->next = evi_params[backup_idx + 1];
+
+	return ret;
+}
+
+int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
+{
+	int nr_vals, i, ret, res = -1, nr_bye_vals = 0, j;
+	int aux_time;
+	time_t created, start_time;
+	str core_s, leg_s, extra_s;
+	short nr_legs;
+
+	if (acc_cdr_event == EVI_ERROR) {
+		LM_ERR("event not registered %d\n", acc_cdr_event);
+		return -1;
+	}
+
+	/* check if someone is interested in this event */
+	if (!evi_probe_event(acc_cdr_event))
+		return 1;
+
+
+	core_s.s = extra_s.s = leg_s.s = 0;
+
+	ret = prebuild_core_arr(dlg, &core_s, &start_time);
+	if (ret < 0) {
+		LM_ERR("cannot copy core arguments\n");
+		goto end;
+	}
+
+	
+	LM_DBG("XXX: nr before extra is: %d\n", ret);
+	ret = prebuild_extra_arr(dlg, msg, &extra_s,
+			&evi_extra_str, evi_extra_bye, ret);
+	if (ret < 0) {
+		LM_ERR("cannot copy extra arguments\n");
+		goto end;
+	}
+	LM_DBG("XXX: nr after extra is: %d\n", ret);
+
+	/* here starts the extra leg */
+	nr_vals = prebuild_leg_arr(dlg, &leg_s, &nr_legs);
+	if (nr_vals < 0) {
+		LM_ERR("cannot compute leg values\n");
+		goto end;
+	}
+
+	if (!(created = acc_get_created(dlg))) {
+		LM_ERR("cannot get created\n");
+		goto end;
+	}
+
+	for (i=0;i<ACC_CORE_LEN;i++)
+		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
+			LM_ERR("cannot set acc parameter\n");
+			goto end;
+		}
+	for (i=ACC_CORE_LEN+1; i<=ret; i++)
+		if(evi_param_set_str(evi_params[i], &val_arr[i-1]) < 0) {
+			LM_ERR("cannot set acc parameter\n");
+			goto end;
+		}
+
+	if (leg_bye_info) {
+		nr_bye_vals = legs2strar(leg_bye_info, msg, val_arr+ret+nr_vals, 1);
+	}
+
+	if (evi_param_set_int(evi_params[ACC_CORE_LEN], &start_time) < 0) {
+		LM_ERR("cannot set start_time parameter\n");
+		goto end;
+	}
+	aux_time = time(NULL) - start_time;
+	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+1], &aux_time) < 0) {
+		LM_ERR("cannot set duration parameter\n");
+		goto end;
+	}
+	aux_time = start_time - created;
+	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+2], &aux_time) < 0) {
+		LM_ERR("cannot set setuptime parameter\n");
+		goto end;
+	}
+	if (evi_param_set_int(evi_params[ret+nr_vals+nr_bye_vals+3], &created) < 0) {
+		LM_ERR("cannot set created parameter\n");
+		goto end;
+	}
+
+	if (!leg_info && !leg_bye_info) {
+		/* make sure the parameters list is built */
+		if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
+			LM_ERR("cannot raise acc CDR event\n");
+			goto end;
+		}
+	} else {
+		leg_s.len = 4;
+		for (i=0;i<nr_legs;i++) {
+			complete_dlg_values(&leg_s,val_arr+ret,nr_vals);
+			for (j = 0; j<nr_vals+nr_bye_vals; j++) {
+				if(evi_param_set_str(evi_params[ret+j+1], &val_arr[ret+j]) < 0) {
+					LM_ERR("cannot set acc parameter\n");
+					goto end;
+				}
+			}
+			if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
+				LM_ERR("cannot raise acc CDR event\n");
+				goto end;
+			}
+			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+		}
+		/* there were no Invite legs */
+		while (nr_bye_vals) {
+			/* drain all the values */
+			for (j = 0; j<nr_vals+nr_bye_vals; j++) {
+				if(evi_param_set_str(evi_params[j+1], &val_arr[j]) < 0) {
+					LM_ERR("cannot set acc parameter\n");
+					goto end;
+				}
+			}
+			if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
+				LM_ERR("cannot raise acc CDR event\n");
+				goto end;
+			}
+			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
+		}
+	}
+
+	res = 1;
+end:
+	if (core_s.s)
+		pkg_free(core_s.s);
+	if (extra_s.s)
+		pkg_free(extra_s.s);
+	if (leg_s.s)
+		pkg_free(leg_s.s);
+	return res;
+}
+
+int store_evi_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
+		struct sip_msg *reply)
+{
+	return store_extra_values(evi_extra, &evi_extra_str, dlg, req, reply);
+}
+
 
 
 /* Functions used to store values into dlg */
