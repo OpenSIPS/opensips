@@ -1468,7 +1468,7 @@ static inline void tcpconn_timeout(int force)
 /*! \brief tcp main loop */
 void tcp_main_loop(void)
 {
-
+	int flags;
 	struct socket_info* si;
 	int r;
 
@@ -1519,13 +1519,27 @@ void tcp_main_loop(void)
 	}
 	/* add all the unix sokets used for communication with the tcp childs */
 	for (r=0; r<tcp_children_no; r++){
-		if (tcp_children[r].unix_sock>0)/*we can't have 0, we never close it!*/
+		/*we can't have 0, we never close it!*/
+		if (tcp_children[r].unix_sock>0) {
+			/* make socket non-blocking */
+			flags=fcntl(tcp_children[r].unix_sock, F_GETFL);
+			if (flags==-1){
+				LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+				goto error;
+			}
+			if (fcntl(tcp_children[r].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){
+				LM_ERR("set non-blocking failed: (%d) %s\n",
+					errno, strerror(errno));
+				goto error;
+			}
+			/* add socket for listening */
 			if (io_watch_add(&io_h, tcp_children[r].unix_sock, F_TCPCHILD,
 							&tcp_children[r]) <0){
 				LM_CRIT("failed to add tcp child %d unix socket to "
 						"the fd list\n", r);
 				goto error;
 			}
+		}
 	}
 	
 	/* main loop */
