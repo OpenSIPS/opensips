@@ -241,4 +241,7 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid);
 
+int b2b_apply_lumps(struct sip_msg* msg);
+typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
+
 #endif

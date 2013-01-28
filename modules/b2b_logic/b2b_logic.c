@@ -1502,7 +1502,8 @@ error:
 }
 
 
-int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
+int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
+														unsigned int cb_mask)
 {
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index, local_index;
@@ -1566,6 +1567,7 @@ int b2b_logic_bind(b2bl_api_t* api)
 	return 0;
 }
 
+
 int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
 {
 	b2bl_tuple_t* tuple;
@@ -1578,7 +1580,8 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
 	}
 	if(b2bl_parse_key(b2bl_key, &hash_index, &local_index)< 0)
 	{
-		LM_ERR("Failed to parse b2b logic key [%.*s]\n", b2bl_key->len, b2bl_key->s);
+		LM_ERR("Failed to parse b2b logic key [%.*s]\n",
+			b2bl_key->len, b2bl_key->s);
 		return -1;
 	}
 	LM_DBG("hi= %d, li=%d\n", hash_index, local_index);

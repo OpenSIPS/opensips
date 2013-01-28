@@ -487,6 +487,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->update_b2bl_param  = b2b_update_b2bl_param;
 	api->entities_db_delete = b2b_db_delete;
 	api->get_b2bl_key       = b2b_get_b2bl_key;
+	api->apply_lumps        = b2b_apply_lumps;
 
 	return 0;
 }

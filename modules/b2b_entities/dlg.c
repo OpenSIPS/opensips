@@ -598,6 +598,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		if(tm_tran)
 			tmb.unref_cell(tm_tran);
 
+		/* No need to apply lumps */
 		if(req_routeid > 0)
 			run_top_route(rlist[req_routeid].a, msg);
 
@@ -788,6 +789,34 @@ search_dialog:
 
 logic_notify:
 	etype = (table==server_htable?B2B_SERVER:B2B_CLIENT);
+
+	if(req_routeid)
+	{
+		lock_release(&table[hash_index].lock);
+		run_top_route(rlist[req_routeid].a, msg);
+		if (b2b_apply_lumps(msg))
+		{
+			if (parse_from_header(msg) < 0)
+			{
+				LM_ERR("cannot parse From header\n");
+				return 0;
+			}
+			callid = msg->callid->body;
+			from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
+			to_tag = get_to(msg)->tag_value;
+			if (table == server_htable)
+			{
+				if (method_value != METHOD_CANCEL)
+					b2b_key = to_tag;
+			}
+			else
+			{
+				b2b_key = msg->callid->body;
+			}
+		}
+		lock_get(&table[hash_index].lock);
+	}
+
 	if(method_value != METHOD_CANCEL)
 	{
 		ret = tmb.t_newtran(msg);
@@ -820,16 +849,21 @@ logic_notify:
 
 				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
 				{
-					if(dlg->uas_tran->uas.request) /* there is another transaction for which no reply was sent out */
+					if(dlg->uas_tran->uas.request)
+					/* there is another transaction for which no reply
+					 * was sent out */
 					{
 						/* send reply */
-						LM_DBG("Received another request when the previous one was in process\n");
+						LM_DBG("Received another request when the previous "
+							"one was in process\n");
 						str text = str_init("Request Pending");
-						if(tmb.t_reply_with_body(dlg->uas_tran, 491, &text, 0, 0, &to_tag) < 0)
+						if(tmb.t_reply_with_body(dlg->uas_tran, 491,
+						&text, 0, 0, &to_tag) < 0)
 						{
 							LM_ERR("failed to send reply with tm\n");
 						}
-						LM_DBG("Sent reply [491] and unreffed the cell %p\n", dlg->uas_tran);
+						LM_DBG("Sent reply [491] and unreffed the cell %p\n",
+							dlg->uas_tran);
 					}
 					tmb.unref_cell(dlg->uas_tran);
 				}
@@ -846,7 +880,8 @@ logic_notify:
 				tmb.unref_cell(tm_tran);
 		}
 
-		if(method_value == METHOD_INVITE) /* send provisional reply 100 Trying */
+		/* send provisional reply 100 Trying */
+		if(method_value == METHOD_INVITE)
 		{
 			tmb.t_reply(msg, 100, &reason);
 		}
@@ -879,9 +914,6 @@ logic_notify:
 	current_dlg = dlg;
 	dlg_state = dlg->state;
 	lock_release(&table[hash_index].lock);
-
-	if(req_routeid > 0)
-		run_top_route(rlist[req_routeid].a, msg);
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0);
 
@@ -2101,21 +2133,25 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		     * - this is the cancelled branch of a paralel call fork
 		     *   and the entity was deleted already.
 		     */
-		    /* FIXME: we may revisit the logic of paralel forking and properly ignore
-		     *        this kind of callbacks.
+		    /* FIXME: we may revisit the logic of paralel forking and 
+		     * properly ignore this kind of callbacks.
 		     */
-		    if (method_id==METHOD_INVITE && statuscode==487)
-			LM_DBG("No dialog found reply %d for method %.*s, [%.*s]\n",
-			 statuscode,
-			 msg==FAKED_REPLY?get_cseq(ps->req)->method.len:get_cseq(msg)->method.len,
-			 msg==FAKED_REPLY?get_cseq(ps->req)->method.s:get_cseq(msg)->method.s,
-			callid.len, callid.s);
-		    else
-			LM_ERR("No dialog found reply %d for method %.*s, [%.*s]\n",
-			 statuscode,
-			 msg==FAKED_REPLY?get_cseq(ps->req)->method.len:get_cseq(msg)->method.len,
-			 msg==FAKED_REPLY?get_cseq(ps->req)->method.s:get_cseq(msg)->method.s,
-			callid.len, callid.s);
+			if (method_id==METHOD_INVITE && statuscode==487)
+				LM_DBG("No dialog found reply %d for method %.*s, [%.*s]\n",
+					statuscode,
+					msg==FAKED_REPLY?get_cseq(ps->req)->method.len:
+						get_cseq(msg)->method.len,
+					msg==FAKED_REPLY?get_cseq(ps->req)->method.s:
+						get_cseq(msg)->method.s,
+					callid.len, callid.s);
+			else
+				LM_ERR("No dialog found reply %d for method %.*s, [%.*s]\n",
+					statuscode,
+					msg==FAKED_REPLY?get_cseq(ps->req)->method.len:
+						get_cseq(msg)->method.len,
+					msg==FAKED_REPLY?get_cseq(ps->req)->method.s:
+						get_cseq(msg)->method.s,
+				callid.len, callid.s);
 		}
 		lock_release(&htable[hash_index].lock);
 		return;
@@ -2123,27 +2159,29 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 	previous_dlg = dlg;
 	while (dlg && method_id==METHOD_INVITE && dlg->uac_tran != t) {
-		LM_DBG("Got unmatching dlg [%p] dlg->uac_tran=[%p] for transaction [%p]\n",
-				dlg, dlg->uac_tran, t);
+		LM_DBG("Got unmatching dlg [%p] dlg->uac_tran=[%p] for "
+			"transaction [%p]\n", dlg, dlg->uac_tran, t);
 		if(dlg_based_search)
-			dlg = b2b_search_htable_next_dlg(previous_dlg,htable,hash_index,local_index,
-				&from_tag, (method_id==METHOD_CANCEL)?NULL:&to_tag, &callid);
+			dlg = b2b_search_htable_next_dlg( previous_dlg, htable, hash_index,
+				local_index, &from_tag,
+				(method_id==METHOD_CANCEL)?NULL:&to_tag, &callid);
 		else
-			dlg = b2b_search_htable_next(previous_dlg, htable, hash_index, local_index);
+			dlg = b2b_search_htable_next( previous_dlg, htable, hash_index,
+				local_index);
 
 		if (dlg) {
 			previous_dlg = dlg;
 		}
 		else {
 			dlg = previous_dlg;
-			/* if the transaction is no longer saved or is not the same as the one
-			 * that the reply belongs to => exit*/
+			/* if the transaction is no longer saved or is not the same as 
+			 * the one that the reply belongs to => exit*/
 			LM_DBG("I don't care anymore about this transaction for dlg [%p]"
 				" last_method=%d method_id=%d t=[%p] dlg->uac_tran=[%p]\n",
 					dlg, dlg->last_method, method_id, t, dlg->uac_tran);
 			/* if confirmed - send ACK */
 			if(statuscode>=200 && statuscode<300 &&
-					(dlg->state==B2B_ESTABLISHED || dlg->state==B2B_TERMINATED))
+			(dlg->state==B2B_ESTABLISHED || dlg->state==B2B_TERMINATED))
 			{
 				leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
 				if(leg == NULL)
@@ -2219,7 +2257,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			b2b_delete_legs(&dlg->legs);
 			if(msg && msg!= FAKED_REPLY)
 			{
-				if (str2int( &(get_cseq(msg)->number), &dlg->cseq[CALLER_LEG])!=0 )
+				if (str2int( &(get_cseq(msg)->number),
+				&dlg->cseq[CALLER_LEG])!=0 )
 				{
 					LM_ERR("failed to parse cseq number - not an integer\n");
 				}
@@ -2291,6 +2330,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					if(reply_routeid > 0) {
 						msg->flags = t->uac[0].br_flags;
 						run_top_route(rlist[reply_routeid].a, msg);
+						b2b_apply_lumps(msg);
 					}
 					goto b2b_route;
 				}
@@ -2488,13 +2528,16 @@ dummy_reply:
 				}
 				UPDATE_DBFLAG(dlg);
 				/* PRACK handling */
-				/* if the provisional reply contains a Require: 100rel header -> send PRACK */
+				/* if the provisional reply contains a 
+				 * Require: 100rel header -> send PRACK */
 				hdr = get_header_by_static_name( msg, "Require");
 				while(hdr)
 				{
 					LM_DBG("Found require hdr\n");
-					if((hdr->body.len == 6 && strncmp(hdr->body.s, "100rel", 6)==0) ||
-						(hdr->body.len == 8 && strncmp(hdr->body.s, "100rel\r\n", 8)==0))
+					if ( (hdr->body.len == 6 &&
+						strncmp(hdr->body.s, "100rel", 6)==0) ||
+					(hdr->body.len == 8 &&
+						strncmp(hdr->body.s, "100rel\r\n", 8)==0) )
 					{
 						LM_DBG("Found 100rel header\n");
 						break;
@@ -2535,7 +2578,8 @@ dummy_reply:
 			else /* a final success response */
 			{
 				LM_DBG("A final response\n");
-				if(dlg->state == B2B_CONFIRMED) /* if the dialog was already confirmed */
+				/* if the dialog was already confirmed */
+				if(dlg->state == B2B_CONFIRMED)
 				{
 					LM_DBG("The state is already confirmed\n");
 					leg = b2b_new_leg(msg, &to_tag, PKG_MEM_TYPE);
@@ -2627,6 +2671,7 @@ done1:
 	if(reply_routeid > 0) {
 		msg->flags = t->uac[0].br_flags;
 		run_top_route(rlist[reply_routeid].a, msg);
+		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}
 
 	b2b_cback(msg, b2b_key, B2B_REPLY, param.s?&param:0);
@@ -2722,4 +2767,85 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 	*ehdr_out = ehdr;
 
 	return 0;
+}
+
+
+int b2b_apply_lumps(struct sip_msg* msg)
+{
+	str obuf;
+	struct sip_msg tmp;
+	str body;
+
+	/* faked reply */
+	if (msg==NULL || msg == FAKED_REPLY)
+		return 0;
+
+	if(!msg->body_lumps && !msg->add_rm)
+		return 0;
+
+	if (msg->first_line.type==SIP_REQUEST)
+		obuf.s = build_req_buf_from_sip_req(msg, (unsigned int*)&obuf.len,
+			NULL, 0, MSG_TRANS_NOVIA_FLAG );
+	else
+		obuf.s = build_res_buf_from_sip_res(msg, (unsigned int*)&obuf.len,
+			NULL);
+
+	if (!obuf.s) {
+		LM_ERR("no more shm mem\n");
+		return -1;
+	}
+
+	/* temporary copy */
+	memcpy(&tmp, msg, sizeof(struct sip_msg));
+
+	/* reset dst uri and path vector to avoid freeing - restored later */
+	if(msg->dst_uri.s != NULL)
+	{
+		msg->dst_uri.s = NULL;
+		msg->dst_uri.len = 0;
+	}
+	if(msg->path_vec.s != NULL)
+	{
+		msg->path_vec.s = NULL;
+		msg->path_vec.len = 0;
+	}
+
+	/* free old msg structure */
+	free_sip_msg(msg);
+	memset(msg, 0, sizeof(struct sip_msg));
+
+	/* restore msg fields */
+	msg->buf                = tmp.buf;
+	msg->id                 = tmp.id;
+	msg->rcv                = tmp.rcv;
+	msg->set_global_address = tmp.set_global_address;
+	msg->set_global_port    = tmp.set_global_port;
+	msg->flags              = tmp.flags;
+	msg->msg_flags          = tmp.msg_flags;
+	msg->hash_index         = tmp.hash_index;
+	msg->force_send_socket  = tmp.force_send_socket;
+	msg->dst_uri            = tmp.dst_uri;
+	msg->path_vec           = tmp.path_vec;
+
+	memcpy(msg->buf, obuf.s, obuf.len);
+	msg->len = obuf.len;
+	msg->buf[msg->len] = '\0';
+
+	/* free new buffer - copied in the static buffer from old struct sip_msg */
+	pkg_free(obuf.s);
+
+	/* reparse the message */
+	if (parse_msg(msg->buf, msg->len, msg) != 0)
+		LM_ERR("parse_msg failed\n");
+
+	/* if has body, check for SDP */
+	if (get_body(msg,&body) != 0 || body.len == 0)
+		return 1;
+
+	if (parse_sdp(msg) < 0) {
+		LM_DBG("failed to parse SDP message\n");
+		return -1;
+	}
+
+	return 1;
 }
