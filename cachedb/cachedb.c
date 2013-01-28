@@ -704,6 +704,11 @@ int cachedb_raw_query(str* cachedb_name, str* attr, cdb_raw_entry*** reply,int e
 		return -1;
 	}
 
+	if (!CACHEDB_CAPABILITY(&cde->cdb_func,CACHEDB_CAP_RAW)) {
+		LM_ERR("The backend does not support raw queries\n");
+		return -1;
+	}
+
 	con = cachedb_get_connection(cde,&grp_name);
 	if (con == NULL) {
 		LM_ERR("failed to get connection for grp name [%.*s]\n",

@@ -37,7 +37,8 @@ typedef enum {
 	CACHEDB_CAP_REMOVE = 1<<2,
 	CACHEDB_CAP_ADD = 1<<3,
 	CACHEDB_CAP_SUB = 1<<4,
-	CACHEDB_CAP_BINARY_VALUE = 1<<5
+	CACHEDB_CAP_BINARY_VALUE = 1<<5,
+	CACHEDB_CAP_RAW = 1<<6
 } cachedb_cap;
 
 #define CACHEDB_CAPABILITY(cdbf,cpv) (((cdbf)->capability & (cpv)) == (cpv))
@@ -69,6 +70,8 @@ static inline int check_cachedb_api(cachedb_engine *cde)
 		cde->cdb_func.capability |= CACHEDB_CAP_ADD;
 	if (cde->cdb_func.sub)
 		cde->cdb_func.capability |= CACHEDB_CAP_SUB;
+	if (cde->cdb_func.raw_query)
+		cde->cdb_func.capability |= CACHEDB_CAP_RAW;
 
 	return 0;
 }
