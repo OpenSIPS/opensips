@@ -1876,7 +1876,7 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	struct mi_attr *attr;
 	struct tcp_connection *conn;
 	unsigned long ctime;
-	unsigned int i;
+	unsigned int i,n;
 	char proto[4];
 	char *p;
 	int len;
@@ -1889,7 +1889,7 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 
 	TCPCONN_LOCK;
 
-	for( i=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
+	for( i=0,n=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
 		for( conn=tcpconn_id_hash[i] ; conn ; conn=conn->id_next ) {
 			/* add one node for each conn */
 			node = add_mi_node_child(&rpl_tree->node, 0,
@@ -1940,6 +1940,11 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 				MI_SSTR("Pending lifetime"), p, len);
 			if (attr==0)
 				goto error;
+
+			n++;
+			/* at each 50 conns, flush the tree */
+			if ( (n % 50) == 0 )
+				flush_mi_tree(rpl_tree);
 
 		}
 	}
