@@ -761,11 +761,14 @@ static int fix_actions(struct action* a)
 			case RAISE_EVENT_T:
 				s.s = t->elem[0].u.data;
 				s.len = strlen(s.s);
-				ev_id = evi_publish_event(s);
+				ev_id = evi_get_id(&s);
 				if (ev_id == EVI_ERROR) {
-					LM_ERR("cannot subscribe event\n");
-					ret=E_UNSPEC;
-					goto error;
+					ev_id = evi_publish_event(s);
+					if (ev_id == EVI_ERROR) {
+						LM_ERR("cannot subscribe event\n");
+						ret=E_UNSPEC;
+						goto error;
+					}
 				}
 				t->elem[0].u.number = ev_id;
 				t->elem[0].type = NUMBER_ST;

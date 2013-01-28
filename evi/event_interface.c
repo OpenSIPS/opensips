@@ -48,13 +48,11 @@ event_id_t evi_publish_event(str event_name)
 		return EVI_ERROR;
 	}
 
-	for (idx = 0; idx < events_no; idx++) {
-		if (events[idx].name.len == event_name.len &&
-				!memcmp(events[idx].name.s, event_name.s, event_name.len)) {
-			LM_WARN("Event \"%.*s\" was previously published\n",
-					event_name.len, event_name.s);
-			return idx;
-		}
+	idx = evi_get_id(&event_name);
+	if (idx != EVI_ERROR) {
+		LM_WARN("Event \"%.*s\" was previously published\n",
+				event_name.len, event_name.s);
+		return idx;
 	}
 
 	/* check if the event was already registered */
@@ -89,7 +87,7 @@ event_id_t evi_publish_event(str event_name)
 	events[events_no].name.s = event_name.s;
 	events[events_no].name.len = event_name.len;
 	events[events_no].subscribers = NULL;
-	LM_DBG("Registered event <%.*s(%d)>\n", event_name.len, event_name.s, events_no);
+	LM_INFO("Registered event <%.*s(%d)>\n", event_name.len, event_name.s, events_no);
 
 	return events_no++;
 }
@@ -138,7 +136,7 @@ int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params
 {
 	evi_subs_p subs, prev;
 	long now;
-	int flags;
+	int flags, pflags = 0;
 	int ret = 0;
 
 	if (id < 0 || id >= events_no) {
@@ -151,6 +149,8 @@ int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params
 		return -1;
 	}
 	events_rec_level--;
+	if (params)
+		pflags = params->flags;
 
 	lock_get(events[id].lock);
 	now = time(0);
@@ -212,8 +212,12 @@ next:
 	lock_release(events[id].lock);
 
 	/* done sending events - free parameters */
-	if (params)
-		evi_free_params(params);
+	if (params) {
+		/* make sure no one is messing with our flags */
+		params->flags = pflags;
+		if (params->flags & EVI_FREE_LIST)
+			evi_free_params(params);
+	}
 	events_rec_level++;
 	return ret;
 

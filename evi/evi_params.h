@@ -31,7 +31,7 @@
 #define EVI_INT_VAL		0x01	/* val is int */
 #define EVI_STR_VAL		0x02	/* val is str */
 
-#define EVI_FREE_LIST	(1<<31)	/* should free params list */
+#define EVI_FREE_LIST		(1<<31)	/* should free params list */
 
 typedef struct evi_param_ {
 	int flags;
@@ -68,5 +68,21 @@ int evi_param_add(evi_params_p list, str *name, void *param, int flags);
 /* adds a string to the list */
 #define evi_param_add_str(p_list, p_name, p_str) \
 		evi_param_add(p_list, p_name, p_str, EVI_STR_VAL)
+
+/* creates a new parameter */
+evi_param_p evi_param_create(evi_params_p list, str *name);
+
+/* sets the value of a parameter */
+int evi_param_set(evi_param_p element, void *param, int flags);
+
+/* sets an integer value to a parameter */
+#define evi_param_set_int(p_el, p_int) \
+		evi_param_set(p_el, p_int, EVI_INT_VAL)
+
+/* sets a string value to a parameter */
+#define evi_param_set_str(p_el, p_str) \
+		evi_param_set(p_el, p_str, EVI_STR_VAL)
+
+
 
 #endif

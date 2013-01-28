@@ -27,26 +27,22 @@
 #include "../mem/mem.h"
 #include <string.h>
 
-/* adds a new parameter to the list */
-int evi_param_add(evi_params_p list, str *name, void *param, int flags)
+
+/* creates an element and links it to the parameters list
+ * but without populating the parameter value */
+evi_param_p evi_param_create(evi_params_p list, str *name)
 {
 	evi_param_p new_p;
 
 	if (!list) {
 		LM_ERR("invalid param list\n");
-		return -1;
+		return 0;
 	}
-
-	if (!(EVI_INT_VAL & flags) && !(EVI_STR_VAL & flags)) {
-		LM_ERR("params should be int or str [%x]\n", flags);
-		return -1;
-	}
-	LM_DBG("added %s param\n", EVI_INT_VAL & flags ? "int" : "string");
 
 	new_p = pkg_malloc(sizeof(evi_param_t));
 	if (!new_p) {
 		LM_ERR("no more pkg mem for new parameter\n");
-		return -1;
+		return 0;
 	}
 	memset(new_p, 0, sizeof(evi_param_t));
 
@@ -54,12 +50,6 @@ int evi_param_add(evi_params_p list, str *name, void *param, int flags)
 		new_p->name.s = name->s;
 		new_p->name.len = name->len;
 	}
-	new_p->flags = flags;
-
-	if (flags & EVI_INT_VAL)
-		new_p->val.n = *((int*)param);
-	else
-		memcpy(&new_p->val, param, sizeof(str));
 
 	new_p->next = NULL;
 	if (list->last) {
@@ -68,7 +58,52 @@ int evi_param_add(evi_params_p list, str *name, void *param, int flags)
 	} else {
 		list->last = list->first = new_p;
 	}
+	return new_p;
+}
 
+int evi_param_set(evi_param_p el, void *param, int flags)
+{
+	if (!el) {
+		LM_ERR("no parameter specified\n");
+		return 1;
+	}
+	if (!(EVI_INT_VAL & flags) && !(EVI_STR_VAL & flags)) {
+		LM_ERR("params should be int or str [%x]\n", flags);
+		return -1;
+	}
+
+	LM_DBG("adding %s param\n", EVI_INT_VAL & flags ? "int" : "string");
+
+	el->flags = flags;
+
+	if (flags & EVI_INT_VAL)
+		el->val.n = *((int*)param);
+	else
+		memcpy(&el->val, param, sizeof(str));
+
+	return 0;
+}
+
+
+
+/* adds a new parameter to the list */
+int evi_param_add(evi_params_p list, str *name, void *param, int flags)
+{
+	evi_param_p new_p;
+
+	if (!(EVI_INT_VAL & flags) && !(EVI_STR_VAL & flags)) {
+		LM_ERR("params should be int or str [%x]\n", flags);
+		return -1;
+	}
+	new_p = evi_param_create(list, name);
+	if (!new_p) {
+		LM_ERR("cannot create parameter\n");
+		return -1;
+	}
+	if (evi_param_set(new_p, param, flags) < 0) {
+		LM_ERR("cannot set the parameter value\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -83,7 +118,7 @@ evi_params_p evi_get_params(void)
 	memset(new_list, 0, sizeof(evi_params_t));
 
 	/* used to remember to free it */
-	new_list->flags = EVI_FREE_LIST; 
+	new_list->flags = EVI_FREE_LIST;
 
 	return new_list;
 }
@@ -103,8 +138,6 @@ void evi_free_params(evi_params_p list)
 
 	list->first = list->last = NULL;
 
-	if (list->flags & EVI_FREE_LIST) {
-		/* list should be freed */
-		pkg_free(list);
-	}
+	/* list should be freed */
+	pkg_free(list);
 }
