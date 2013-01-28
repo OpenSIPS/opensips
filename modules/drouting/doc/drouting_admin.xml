@@ -583,6 +583,28 @@ modparam("drouting", "gw_attrs_avp", '$avp(67)')
 		</example>
 	</section>
 
+	<section>
+		<title><varname>gw_priprefix_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing the PRI prefix of the current selected
+		destination/gateway - once a new destination is selected (via the 
+		use_next_gw() function), the AVP will be updated with the PRI prefix of the
+		new used destination.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_priprefix_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "gw_priprefix_avp", '$avp(gw_priprefix)')
+...
+	</programlisting>
+		</example>
+	</section>
+
 
 	<section>
 		<title><varname>rule_id_avp</varname> (str)</title>
