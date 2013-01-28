@@ -173,6 +173,14 @@ int tcp_no_new_conn_bflag = 0; /*!< should a new TCP conn be open if needed? - b
 int tcp_no_new_conn = 0; /*!< should a new TCP conn be open if needed? - variable used to used for signalizing between SIP layer (branch flag) and TCP layer (tcp_send function) */
 
 
+#define get_su_info(_su, _ip_char, _port_no) \
+	do { \
+		struct ip_addr __ip; \
+		sockaddr2ip_addr( &__ip, (struct sockaddr*)_su ); \
+		_ip_char = ip_addr2a(&__ip); \
+		_port_no = su_getport( (union sockaddr_union*)_su); \
+	} while(0)
+
 
 static inline int init_sock_keepalive(int s)
 {
@@ -284,6 +292,8 @@ static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr, socklen
 	int err;
 	unsigned int err_len;
 	int poll_err;
+	char *ip;
+	unsigned short port;
 	
 	poll_err=0;
 	to=tcp_connect_timeout;
@@ -297,7 +307,8 @@ again:
 			else goto error_timeout;
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
-			LM_ERR("(%d) %s\n", errno, strerror(errno));
+			get_su_info( servaddr, ip, port);
+			LM_ERR("[sever=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
 			goto error;
 		}
 	}else goto end;
@@ -326,7 +337,9 @@ again:
 #endif
 		if (n<0){
 			if (errno==EINTR) continue;
-			LM_ERR("poll/select failed: (%d) %s\n", errno, strerror(errno));
+			get_su_info( servaddr, ip, port);
+			LM_ERR("poll/select failed:[sever=%s:%d] (%d) %s\n",
+				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
@@ -342,8 +355,9 @@ again:
 			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
 			if ((err==0) && (poll_err==0)) goto end;
 			if (err!=EINPROGRESS && err!=EALREADY){
-				LM_ERR("failed to retrieve SO_ERROR (%d) %s\n", err,
-						strerror(err));
+				get_su_info( servaddr, ip, port);
+				LM_ERR("failed to retrieve SO_ERROR [sever=%s:%d] (%d) %s\n",
+					ip, port, err, strerror(err));
 				goto error;
 			}
 		}
