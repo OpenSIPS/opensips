@@ -465,9 +465,10 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 
 /* removes expired dlgs from main ping_timer list
  * and links them back into a new list */
-struct dlg_ping_list* get_timeout_dlgs(void)
+void get_timeout_dlgs(struct dlg_ping_list **expired,
+					struct dlg_ping_list **to_be_deleted)
 {
-	struct dlg_ping_list *ret = NULL,*it=NULL,*next=NULL;
+	struct dlg_ping_list *exp = NULL,*del=NULL,*it=NULL,*next=NULL;
 	struct dlg_cell *current;
 	int detached;
 
@@ -478,18 +479,33 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 		next = it->next;
 		detached = 0;
 
+		if (current->state == DLG_STATE_DELETED) {
+			/* the dialog has terminated - we remove it as well
+			 * since we also have a ref */
+			detach_node_unsafe(it);
+			it->dlg->pl = 0;
+
+			if (del == NULL)
+				del = it;
+			else {
+				it->next = del;
+				del = it;
+			}
+
+			continue;
+		}
+
 		if (current->flags & DLG_FLAG_PING_CALLER) {
 			if (current->legs[DLG_CALLER_LEG].reply_received == 0) {
 				detach_node_unsafe(it);
 				detached=1;
 				it->dlg->pl = 0;
 
-				if (ret == NULL)
-					ret = it;
-				else
-				{
-					it->next = ret;
-					ret = it;
+				if (exp == NULL)
+					exp = it;
+				else {
+					it->next = exp;
+					exp = it;
 				}
 			}
 		}
@@ -500,12 +516,11 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 					detach_node_unsafe(it);
 					it->dlg->pl = 0;
 
-					if (ret == NULL)
-						ret = it;
-					else
-					{
-						it->next = ret;
-						ret = it;
+					if (exp == NULL)
+						exp = it;
+					else {
+						it->next = exp;
+						exp = it;
 					}
 				}
 			}
@@ -514,7 +529,8 @@ struct dlg_ping_list* get_timeout_dlgs(void)
 
 	lock_release(ping_timer->lock);
 
-	return ret;
+	*to_be_deleted = del;
+	*expired = exp;
 }
 
 void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
@@ -617,15 +633,15 @@ void unref_dlg_cb(void *dlg)
 
 void dlg_ping_routine(unsigned int ticks , void * attr)
 {
-	struct dlg_ping_list *expired,*it,*curr;
+	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr;
 	struct dlg_cell *dlg;
 
-	expired = get_timeout_dlgs();
+	get_timeout_dlgs(&expired,&to_be_deleted);
 
 	it = expired;
 	while (it) {
 		dlg = it->dlg;
-		LM_DBG("dialog %p has expired\n",dlg);
+		LM_DBG("dialog %p-%.*s has expired\n",dlg,dlg->callid.len,dlg->callid.s);
 		curr = it->next;
 		shm_free(it);
 		it = curr;
@@ -638,6 +654,18 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		unref_dlg(dlg,1);
 	}
 
+	it = to_be_deleted;
+	while (it) {
+		dlg = it->dlg;
+		LM_DBG("dialog %p-%.*s has terminated\n",dlg,dlg->callid.len,dlg->callid.s);
+		curr = it->next;
+		/* if marked as to be deleted, we let it go 
+		 * for the ping timer list as well */
+		unref_dlg(dlg,1);
+		shm_free(it);
+		it = curr;
+	}
+
 #ifdef USE_TCP
 		tcp_no_new_conn = 1;
 #endif
@@ -647,7 +675,9 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 	while (it) {
 		dlg = it->dlg;
 
-		/* do not ping ended dialogs */
+		/* do not ping ended dialogs - we might have missed them earlier or
+		 * might have terminated in the mean time - we'll clean them up on
+		 * our next iteration */
 		if (dlg->state != DLG_STATE_DELETED) {
 			if (dlg->flags & DLG_FLAG_PING_CALLER) {
 				ref_dlg(dlg,1);

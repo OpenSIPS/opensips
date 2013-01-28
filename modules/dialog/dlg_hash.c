@@ -216,8 +216,6 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 
-	remove_ping_timer(dlg);
-
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
 
 	free_dlg_dlg(dlg);
