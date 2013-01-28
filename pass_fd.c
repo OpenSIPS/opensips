@@ -148,7 +148,13 @@ again:
 	ret=sendmsg(unix_socket, &msg, 0);
 	if (ret<0){
 		if (errno==EINTR) goto again;
-		LM_CRIT("sendmsg failed on %d: %s\n", unix_socket, strerror(errno));
+		if (errno==EAGAIN || errno==EWOULDBLOCK) {
+			LM_ERR("sendmsg would block on %d: %s\n",
+				unix_socket, strerror(errno));
+		} else {
+			LM_CRIT("sendmsg failed on %d: %s\n",
+				unix_socket, strerror(errno));
+		}
 	}
 	
 	return ret;
