@@ -840,6 +840,9 @@ static int fixup_b2b_logic(void** param, int param_no)
 						case 'a':
 							scf->params.flags |= B2BL_FLAG_TRANSPARENT_AUTH;
 							break;
+						case 'p':
+							scf->params.flags |= B2BL_FLAG_TRANSPARENT_TO;
+							break;
 						default:
 							LM_WARN("unknown option `%c'\n", *flags_s.s);
 					}

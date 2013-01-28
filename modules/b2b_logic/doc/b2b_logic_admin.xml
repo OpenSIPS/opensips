@@ -412,6 +412,9 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 			<emphasis>a</emphasis> -  Transparent authentication. In this mode b2b passes your 401
 			or 407 authentication request to destination server.
 			</para></listitem>
+			<listitem><para>
+			<emphasis>p</emphasis> -  Preserve To: header.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 			Then it can take at most 4 other parameters that represent the parameters for

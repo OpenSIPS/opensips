@@ -53,6 +53,7 @@
 
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
+#define		B2BL_FLAG_TRANSPARENT_TO	0x02
 
 extern b2b_api_t b2b_api;
 

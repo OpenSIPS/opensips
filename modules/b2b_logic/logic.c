@@ -249,19 +249,40 @@ int msg_add_dlginfo(b2bl_entity_id_t* entity, struct sip_msg* msg, str* totag)
 	return 0;
 }
 
-int b2b_msg_get_to(struct sip_msg* msg, str* to_uri)
+int b2b_msg_get_to(struct sip_msg* msg, str* to_uri, int flags)
 {
-	if( parse_sip_msg_uri(msg)< 0)
-	{
-		LM_ERR("failed to parse R-URI\n");
-		return -1;
-	}
+	struct to_body *pto;
 
-	if(udh_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
-				msg->parsed_uri.port, to_uri)< 0)
+	if (flags & B2BL_FLAG_TRANSPARENT_TO)
 	{
-		LM_ERR("failed to construct uri from user and domain\n");
-		return -1;
+		if (!msg->to || !msg->to->body.s)
+		{
+			LM_ERR("cannot find 'to' header!\n");
+			return -1;
+		}
+		if (msg->to->parsed == NULL)
+		{
+			if ( parse_to_uri( msg )<0 )
+			{
+				LM_ERR("cannot parse To header\n");
+				return -1;
+			}
+		}
+		pto = (struct to_body*)msg->to->parsed;
+		pkg_str_dup(to_uri, &pto->uri);
+	} else {
+		if( parse_sip_msg_uri(msg)< 0)
+		{
+			LM_ERR("failed to parse R-URI\n");
+			return -1;
+		}
+
+		if(udh_to_uri(msg->parsed_uri.user, msg->parsed_uri.host,
+			msg->parsed_uri.port, to_uri)< 0)
+		{
+			LM_ERR("failed to construct uri from user and domain\n");
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -2669,7 +2690,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	str from_tag_gen= {0, 0};
 	str new_body={0, 0};
 
-	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri)< 0)
+	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		return NULL;
@@ -3054,7 +3075,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 	int eno = 0;
 	str new_body={0, 0};
 
-	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
+	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		return NULL;
@@ -4045,7 +4066,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	/* create server entity from Invite */
-	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri)< 0)
+	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 || b2b_msg_get_to(msg, &to_uri, b2bl_htable[hash_index].flags)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
 		goto error;
