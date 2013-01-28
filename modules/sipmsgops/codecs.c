@@ -432,6 +432,11 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 		return -1;
 	}
 
+	/* is stream deleted ?? */
+	if (lmp->len == 0)
+		return -1;
+
+
 	buff_len = 0;
 	ret = 0;
 
@@ -888,5 +893,114 @@ int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
 		return -1;
 	return 1;
 }
+
+
+static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
+{
+	struct sdp_session_cell *session;
+	struct sdp_stream_cell *stream;
+	struct sdp_stream_cell *prev_stream;
+	regmatch_t pmatch;
+	struct lump *lmp, *l;
+	char *begin, *end;
+	char temp;
+	str body;
+	int match;
+
+	if (msg==NULL || msg==FAKED_REPLY)
+		return -1;
+
+	if(parse_sdp(msg))
+	{
+		LM_DBG("Message has no SDP\n");
+		return -1;
+	}
+
+	/* search for the stream */
+	match = 0;
+	for(session=msg->sdp->sessions; session && !match ;session=session->next){
+		prev_stream = NULL;
+		for( stream=session->streams ; stream ;
+		prev_stream=stream,stream=stream->next){
+			/* check the media in stream, re based */
+			temp = stream->media.s[stream->media.len];
+			stream->media.s[stream->media.len] = 0;
+			match = regexec( re, stream->media.s, 1, &pmatch, 0) == 0;
+			stream->media.s[stream->media.len] = temp;
+			if (match) break;
+		}
+	}
+
+	if (!match)
+		return -1;
+
+	LM_DBG(" found stream [%.*s]\n",stream->media.len,stream->media.s);
+
+	/* stream found */
+	if (!delete)
+		return 1;
+
+
+	/* have to delete the stream*/
+	if (get_codec_lumps(msg)<0) {
+		LM_ERR("failed to get lumps for streams\n");
+		return -1;
+	}
+	lmp = get_associated_lump(msg, stream);
+	if( lmp == NULL) {
+		LM_ERR("There is no lump for this sdp cell\n");
+		return -1;
+	}
+
+	/* is stream deleted ?? */
+	if (lmp->len == 0)
+		return -1;
+
+	/* search the boundries of the stream */
+
+	/* look for the beginning of the "m" line */
+	begin = stream->media.s ;
+	while( *(begin-1)!='\n' && *(begin-1)!='\r') begin--;
+
+	/* the end is where the next stream starts */
+	if (prev_stream) {
+		/* there is a stream after */
+		end = prev_stream->media.s ;
+		while( *(end-1)!='\n' && *(end-1)!='\r') end--;
+	} else {
+		/* last stream */
+		body.s = NULL; body.len = 0;
+		get_body(msg, &body);
+		end = body.s + body.len;
+	}
+
+	//LM_DBG(" full stream is [%.*s]\n",end-begin, begin);
+
+	l = del_lump( msg, (unsigned int)(begin-msg->buf),
+		(unsigned int)(end-begin), 0);
+	if (l==NULL) {
+		LM_ERR("failed to create delete lump\n");
+		return -1;
+	}
+
+	/* mark stream as deleted */
+	lmp->len = 0;
+
+
+	return 1;
+}
+
+
+int stream_find (struct sip_msg* msg, char* re )
+{
+	return handle_streams(msg, (regex_t*)re, 0);
+}
+
+
+int stream_delete (struct sip_msg* msg, char* re )
+{
+	return handle_streams(msg, (regex_t*)re, 1);
+}
+
 
 

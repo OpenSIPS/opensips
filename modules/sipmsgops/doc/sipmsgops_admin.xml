@@ -1088,6 +1088,75 @@ onreply_route {
 	</example>
     </section>
 
+	<section>
+		<title>
+		<function moreinfo="none">stream_exists(regexp)</function>
+		</title>
+		<para>
+		This function can be used to verify if a stream exists inside an 
+		sdp payload. It will search for the stream inside all sdp sessions.
+		If it is found anywhere it will return TRUE otherwise
+		it will return FALSE.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>regexp</emphasis> - a POSIX regular expression
+		to match the stream media name.
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>stream_exists</function> usage</title>
+		<programlisting format="linespecific">
+...
+# check for FAX
+stream_exists("image");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">stream_delete(regexp)</function>
+		</title>
+		<para>
+		This function can be used to delete a whole stream from inside an
+		sdp payload. It will search for the stream inside all sdp sessions.
+		If it is found anywhere it will be deleted along with all attributes 
+		Returns TRUE if any deletion occured otherwise
+		it will return FALSE. 
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>regexp</emphasis> - a POSIX regular expression
+		to match the stream media name.
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>stream_delete</function> usage</title>
+		<programlisting format="linespecific">
+...
+# prevent usage of video
+stream_delete("video");
+...
+</programlisting>
+		</example>
+	</section>
+
+
+
 	</section>
 	<section>
 		<title>Known Limitations</title>
@@ -1097,7 +1166,6 @@ onreply_route {
 			to the codec_exists functions( e.g. after
 			calling codec_delete("speex") , codec_exists("speex")
 			will return false ).
-
 		</para>
 	</section>
 </chapter>

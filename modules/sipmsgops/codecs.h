@@ -52,6 +52,8 @@ int codec_delete_clock (struct sip_msg* msg, char* str1,char * str2 );
 int codec_move_up_clock (struct sip_msg* msg, char* str1,char * str2 );
 int codec_move_down_clock (struct sip_msg* msg, char* str1,char * str2 );
 
+int stream_find (struct sip_msg* msg, char* re );
+int stream_delete (struct sip_msg* msg, char* re );
 
 
 

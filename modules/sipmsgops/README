@@ -74,6 +74,8 @@ Razvan Crainea
               1.3.25. codec_move_up_re ( regexp )
               1.3.26. codec_move_down_re ( regexp )
               1.3.27. change_reply_status(code, reason)
+              1.3.28. stream_exists(regexp)
+              1.3.29. stream_delete(regexp)
 
         1.4. Known Limitations
 
@@ -108,6 +110,8 @@ Razvan Crainea
    1.27. codec_move_down_re usage
    1.28. codec_move_down usage
    1.29. change_reply_status usage
+   1.30. stream_exists usage
+   1.31. stream_delete usage
 
 Chapter 1. Admin Guide
 
@@ -746,6 +750,47 @@ onreply_route {
         exit;
     }
 }
+...
+
+1.3.28.  stream_exists(regexp)
+
+   This function can be used to verify if a stream exists inside
+   an sdp payload. It will search for the stream inside all sdp
+   sessions. If it is found anywhere it will return TRUE otherwise
+   it will return FALSE.
+
+   Meaning of the parameters is as follows:
+     * regexp - a POSIX regular expression to match the stream
+       media name.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.30. stream_exists usage
+...
+# check for FAX
+stream_exists("image");
+...
+
+1.3.29.  stream_delete(regexp)
+
+   This function can be used to delete a whole stream from inside
+   an sdp payload. It will search for the stream inside all sdp
+   sessions. If it is found anywhere it will be deleted along with
+   all attributes Returns TRUE if any deletion occured otherwise
+   it will return FALSE.
+
+   Meaning of the parameters is as follows:
+     * regexp - a POSIX regular expression to match the stream
+       media name.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.31. stream_delete usage
+...
+# prevent usage of video
+stream_delete("video");
 ...
 
 1.4. Known Limitations

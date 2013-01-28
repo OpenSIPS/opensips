@@ -255,6 +255,12 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"change_reply_status", (cmd_function)change_reply_status_f, 2,
 		change_reply_status_fixup, 0, ONREPLY_ROUTE },
+	{"stream_exists",	(cmd_function)stream_find,               1,
+		fixup_regexp_null,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"stream_delete",	(cmd_function)stream_delete,             1,
+		fixup_regexp_null,0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,0,0,0,0}
 };
 
