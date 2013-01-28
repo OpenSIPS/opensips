@@ -65,7 +65,7 @@ typedef  volatile int fx_lock_t;
 #define futex_wait(lock, val) syscall(SYS_futex, lock, FUTEX_WAIT, val, 0, 0, 0)
 
 /*
- * Wait on a futex
+ * Wake up waiters
  * param lock - futex to wake up
  * param val - number of processes to wakeup
  */
@@ -90,14 +90,6 @@ typedef  volatile int fx_lock_t;
  * param val is the value to write to the lock
  * returns previous value of lock
  */
-
-/*
- * Use gcc atomic builtin on supported platforms, fail back to assembly
- * might want to also check for compiler support
- */
-#if !defined(NOSMP) && (defined(__CPU_i386) || defined(__CPU_x86_64))
-#define atomic_xchg(lock, val) __sync_lock_test_and_set(lock, val)
-#else
 inline static int _atomic_xchg(fx_lock_t* lock, int val)
 {
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
@@ -186,7 +178,6 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 #endif
 	return val;
 }
-#endif
 
 /*
  * Atomic xchg
@@ -196,7 +187,7 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 #if !defined(NOSMP) && (defined(__CPU_i386) || defined(__CPU_x86_64))
 #define atomic_xchg(lock, val) __sync_lock_test_and_set(lock, val)
 #else
-#define atmoic_xchg(lock, val) _atomic_xchg(lock, val)
+#define atomic_xchg(lock, val) _atomic_xchg(lock, val)
 #endif
 
 
