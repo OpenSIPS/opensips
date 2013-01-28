@@ -638,6 +638,10 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		unref_dlg(dlg,1);
 	}
 
+#ifdef USE_TCP
+		tcp_no_new_conn = 1;
+#endif
+
 	/* ping_timer->first now contains all active dialogs */
 	it = ping_timer->first;
 	while (it) {
@@ -665,4 +669,9 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		}
 		it = it->next;
 	}
+
+#ifdef USE_TCP
+		tcp_no_new_conn = 0;
+#endif
+
 }
