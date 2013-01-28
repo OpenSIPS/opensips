@@ -1368,6 +1368,93 @@ int do_action(struct action* a, struct sip_msg* msg)
 			/* TODO - return new value to script ? */
 			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement,expires,NULL);
 			break;
+		case CACHE_RAW_QUERY_T:
+			if ((a->elem[0].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_fetch() %d\n",
+					a->elem[0].type );
+				ret=E_BUG;
+				break;
+			}
+			if ((a->elem[1].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_fetch() %d\n",
+					a->elem[1].type );
+				ret=E_BUG;
+				break;
+			}
+			if (a->elem[2].u.data != NULL && 
+				a->elem[2].type!=STR_ST){
+				LM_ALERT("BUG in cache_raw_query() type %d\n",
+						a->elem[2].type);
+				ret=E_BUG;
+				break;
+			}
+			/* parse the name argument */
+			pve = (pv_elem_t *)a->elem[1].u.data;
+			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			name_s.len == 0 || name_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+
+			cdb_raw_entry **cdb_reply;
+			int val_number=0,i,j;
+			int key_number=0;
+			pvname_list_t *cdb_res,*it;
+			int_str avp_val;
+			int_str avp_name;
+			unsigned short avp_type;
+
+			if (a->elem[2].u.data) {
+				cdb_res = (pvname_list_t*)a->elem[2].u.data;
+				for (it=cdb_res;it;it=it->next)
+					val_number++;
+
+				LM_DBG("The query expects %d results back\n",val_number);
+
+				ret = cachedb_raw_query( &a->elem[0].u.s, &name_s, &cdb_reply,val_number,&key_number);
+				if (ret >= 0 && val_number > 0) {
+					for (i=key_number-1; i>=0;i--) {
+						it=cdb_res;
+						for (j=0;j < val_number;j++) {
+							avp_type = 0;
+							if (pv_get_avp_name(msg,&it->sname.pvp,&avp_name.n,
+								&avp_type) != 0) {
+								LM_ERR("cannot get avp name [%d/%d]\n",i,j);
+								goto next_avp;
+							}
+							
+							switch (cdb_reply[i][j].type) {
+								case CDB_INT:
+									avp_val.n = cdb_reply[i][j].val.n; 
+									break;
+								case CDB_STR:
+									avp_type |= AVP_VAL_STR;
+									avp_val.s = cdb_reply[i][j].val.s;
+									break;
+								default:
+									LM_WARN("Unknown type %d\n",cdb_reply[i][j].type);
+									goto next_avp;
+							}
+							if (add_avp(avp_type,avp_name.n,avp_val) != 0) {
+								LM_ERR("Unable to add AVP\n");
+								free_raw_fetch(cdb_reply,val_number,key_number);
+								return -1;
+							}
+next_avp:
+							if (it) {
+								it = it->next;
+								if (it==NULL);
+									break;
+							}
+						}
+					}
+					free_raw_fetch(cdb_reply,val_number,key_number);
+				}
+			}
+			else
+				ret = cachedb_raw_query( &a->elem[0].u.s, &name_s, NULL,0,NULL);
+			break;
 		case XDBG_T:
 			script_trace("core", "xdbg", msg, a->line) ;
 			if (a->elem[0].type == SCRIPTVAR_ELEM_ST)

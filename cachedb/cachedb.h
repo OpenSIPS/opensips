@@ -38,6 +38,19 @@ struct cachedb_url
 	struct cachedb_url *next;
 };
 
+typedef enum {
+	CDB_INT,
+	CDB_STR,
+} cdb_raw_type_t;
+
+typedef struct {
+	int type;
+	union {
+		int n;
+		str s;
+	} val;
+} cdb_raw_entry;
+
 int cachedb_store_url(struct cachedb_url **list,char *val);
 void cachedb_free_url(struct cachedb_url *list);
 
@@ -52,6 +65,8 @@ typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);
 typedef int (cachedb_remove_f)(cachedb_con *con,str *attr);
 typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
+/* bi-dimensional array will be returned */
+typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
 
 typedef struct cachedb_funcs_t {
 	cachedb_init_f		*init;
@@ -62,6 +77,7 @@ typedef struct cachedb_funcs_t {
 	cachedb_remove_f	*remove;
 	cachedb_add_f		*add;
 	cachedb_sub_f		*sub;
+	cachedb_raw_f		*raw_query;
 	int capability;
 } cachedb_funcs;
 
@@ -82,10 +98,12 @@ int cachedb_fetch(str* cachedb_engine, str* attr, str* val);
 int cachedb_counter_fetch(str* cachedb_engine, str* attr, int* val);
 int cachedb_add(str* cachedb_engine, str* attr, int val,int expires,int *new_val);
 int cachedb_sub(str* cachedb_engine, str* attr, int val,int expires,int *new_val);
-
+int cachedb_raw_query(str* cachedb_engine, str* attr, cdb_raw_entry ***reply,
+			int expected_key_no,int *val_no);
 
 int cachedb_bind_mod(str *url,cachedb_funcs *funcs);
 int cachedb_put_connection(str *cachedb_name,cachedb_con *con);
 
 void cachedb_end_connections(str *cachedb_name);
+void free_raw_fetch(cdb_raw_entry **reply,int no_key,int no_val);
 #endif

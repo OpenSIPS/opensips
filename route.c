@@ -604,6 +604,7 @@ static int fix_actions(struct action* a)
 			case CACHE_REMOVE_T:
 			case CACHE_ADD_T:
 			case CACHE_SUB_T:
+			case CACHE_RAW_QUERY_T:
 				/* attr name */
 				s.s = (char*)t->elem[1].u.data;
 				s.len = strlen(s.s);
@@ -645,6 +646,17 @@ static int fix_actions(struct action* a)
 						goto error;
 					}
 					t->elem[2].u.data = (void*)model;
+				} else if (t->type==CACHE_RAW_QUERY_T) {
+					if(t->elem[2].u.data != NULL) {
+						s.s = (char*)t->elem[2].u.data;
+						s.len = strlen(s.s);
+
+						t->elem[2].u.data = (void*)parse_pvname_list(&s, PVT_AVP);
+						if (t->elem[2].u.data == NULL) {
+							ret=E_BUG;
+							goto error;
+						}
+					}
 				}
 				break;
 			case SET_ADV_ADDR_T:

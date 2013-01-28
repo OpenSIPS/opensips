@@ -666,3 +666,65 @@ void cachedb_do_close(cachedb_con *con, void (*free_connection)(cachedb_pool_con
 	pkg_free(con);
 }
 
+int cachedb_raw_query(str* cachedb_name, str* attr, cdb_raw_entry*** reply,int expected_kv_no,int *rpl_no)
+{
+	cachedb_engine* cde;
+	str cde_engine,grp_name;
+	char *p;
+	cachedb_con *con;
+
+	if(cachedb_name == NULL || attr == NULL)
+	{
+		LM_ERR("null arguments\n");
+		return -1;
+	}
+
+	p = memchr(cachedb_name->s,':',cachedb_name->len);
+	if (p == NULL) {
+		cde_engine = *cachedb_name;
+		grp_name.s = NULL;
+		grp_name.len = 0;
+		LM_DBG("from script [%.*s] - no grp\n",cde_engine.len,cde_engine.s);
+	} else {
+		cde_engine.s = cachedb_name->s;
+		cde_engine.len = p - cde_engine.s;
+		grp_name.s = p+1;
+		grp_name.len = cachedb_name->len - cde_engine.len -1;
+		LM_DBG("from script [%.*s] - with grp [%.*s]\n",cde_engine.len,
+				cde_engine.s,grp_name.len,grp_name.s);
+
+	}
+
+	cde = lookup_cachedb(&cde_engine);
+	if(cde == NULL)
+	{
+		LM_ERR("Wrong argument <%.*s> - no cachedb system with"
+				" this name registered\n",
+				cde_engine.len,cde_engine.s);
+		return -1;
+	}
+
+	con = cachedb_get_connection(cde,&grp_name);
+	if (con == NULL) {
+		LM_ERR("failed to get connection for grp name [%.*s]\n",
+				grp_name.len,grp_name.s);
+		return -1;
+	}
+
+	return cde->cdb_func.raw_query(con,attr,reply,expected_kv_no,rpl_no)<0?-1:1;
+}
+
+void free_raw_fetch(cdb_raw_entry **reply,int no_key,int no_val)
+{
+	int i,j;
+
+	for (i=0;i<no_key;i++) {
+		for (j=0;j<no_val;j++) {
+			if (reply[i][j].type == CDB_STR)
+				pkg_free(reply[i][j].val.s.s);
+		}
+		pkg_free(reply[i]);
+	}
+
+	pkg_free(reply);
+}

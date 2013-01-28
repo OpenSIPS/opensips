@@ -199,6 +199,7 @@ CACHE_COUNTER_FETCH	"cache_counter_fetch"
 CACHE_REMOVE	"cache_remove"
 CACHE_ADD		"cache_add"
 CACHE_SUB		"cache_sub"
+CACHE_RAW_QUERY		"cache_raw_query"
 XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
@@ -521,6 +522,8 @@ IMPORTFILE      "import_file"
 									return CACHE_ADD; }
 <INITIAL>{CACHE_SUB}		{	count(); yylval.strval=yytext;
 									return CACHE_SUB; }
+<INITIAL>{CACHE_RAW_QUERY}		{	count(); yylval.strval=yytext;
+									return CACHE_RAW_QUERY; }
 
 <INITIAL>{XDBG}				{	count(); yylval.strval=yytext;
 									return XDBG; }
