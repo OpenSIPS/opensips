@@ -11,6 +11,7 @@ NEW_VERSION_THRESHOLD_DOWN=10310       # 1.03.10
 OLD_VERSION_THRESHOLD_UP=910           # 0.09.10
 OLD_VERSION_THRESHOLD_DOWN=901         # 0.09.10
 
+XMLRPC_FORCE_CHARS_VERSION=11200
 
 # set CROSS_COMPILE to true if you want to skip
 # the autodetection
@@ -35,6 +36,8 @@ XMLRPC_VERSION=$(shell echo $(XMLRPC_VER) | sed  "s/\.\([0-9]\)\./.0\1./g" | sed
 # check the versions
 OLD=$(shell echo $(XMLRPC_VERSION) $(OLD_VERSION_THRESHOLD_UP) $(OLD_VERSION_THRESHOLD_DOWN) | awk '{ if (($$1 <= $$2) && ($$1 >= $$3)) print "yes"}' )
 NEW=$(shell echo $(XMLRPC_VERSION) $(NEW_VERSION_THRESHOLD_UP) $(NEW_VERSION_THRESHOLD_DOWN) | awk '{ if (($$1 <= $$2) && ($$1 >= $$3)) print "yes"}' )
+
+FORCE=$(shell echo $(XMLRPC_VERSION) $(XMLRPC_FORCE_CHARS_VERSION) | awk '{ if (($$1 >= $$2)) print "yes"}' ) 
 
 
 # supported version ?
@@ -79,6 +82,11 @@ else
 	# module for abyss server
 	exclude_files=$(wildcard abyss_*.c)
 endif
+
+ifeq ($(FORCE),yes)
+	MY_DEFS+=-DXMLRPC_HAS_FORCE_CHARS
+endif
+
 
 
 DEFS+=$(MY_DEFS)
