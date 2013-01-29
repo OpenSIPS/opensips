@@ -42,6 +42,18 @@
 #include "sipheader.h"
 #include "usage.h"
 
+#ifndef timersub 
+#define timersub(a, b, result)							\
+{														\
+	(result)->tv_sec = (a)->tv_sec - (b)->tv_sec;		\
+	(result)->tv_usec = (a)->tv_usec - (b)->tv_usec;	\
+	if ((result)->tv_usec < 0) {						\
+		--(result)->tv_sec;								\
+		(result)->tv_usec += 1000000;					\
+	}													\
+}
+#endif 
+
 extern int _osp_calling_avpid;
 extern int _osp_service_type;
 extern char _osp_in_device[];
