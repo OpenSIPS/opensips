@@ -94,7 +94,7 @@ internal_check_rt(
 		j = 0;
 		while(rtlw!=NULL) {
 			if ( j++ >= *rgidx) {
-				if(check_time(rtlw->rtl->time_rec))
+				if(rtlw->rtl->time_rec == NULL || check_time(rtlw->rtl->time_rec))
 					goto ok_exit;
 			}
 			rtlw=rtlw->next;
