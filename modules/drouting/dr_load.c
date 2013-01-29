@@ -507,7 +507,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			check_val(ATTRS_DRD_COL, ROW_VALUES(row)+7, DB_STRING, 0, 0);
 			str_vals[5] = (char*)VAL_STRING(ROW_VALUES(row)+7);
 			/* parse the time definition */
-			if ((time_rec=parse_time_def(str_vals[2]))==0) {
+			if (str_vals[2] == NULL || *(str_vals[2]) == 0)
+				time_rec = NULL;
+			else if ((time_rec=parse_time_def(str_vals[2]))==0) {
 				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
 					str_vals[2], int_vals[0]);
 				continue;
