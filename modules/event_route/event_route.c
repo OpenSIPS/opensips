@@ -146,8 +146,8 @@ static int child_init(int rank)
 		LM_DBG("Registering event %s\n", event_rlist[idx].name);
 
 		if (sizeof(SCRIPTROUTE_NAME)+event_name.len > EV_SCRIPTROUTE_MAX_SOCK) {
-			LM_ERR("socket name too big %ld (max: %d)\n",
-				   sizeof(SCRIPTROUTE_NAME) + event_name.len,
+			LM_ERR("socket name too big %d (max: %d)\n",
+				   (int)(sizeof(SCRIPTROUTE_NAME) + event_name.len),
 				   EV_SCRIPTROUTE_MAX_SOCK);
 			return -1;
 		}
