@@ -6264,7 +6264,10 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	&mysql_migrate_table( $dst_db . ".dispatcher", "id,setid,destination,flags,weight,attrs,description", $src_db . ".dispatcher", "?id,?setid,?destination,?flags,?weight,?attrs,?description" );
 
 	### dialplan
-	&mysql_migrate_table( $dst_db . ".dialplan", "id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs", $src_db . ".dialplan", "?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs" );
+	&mysql_migrate_table( $dst_db . ".dialplan", "id,dpid,pr,match_op,match_exp,subst_exp,repl_exp,attrs", $src_db . ".dialplan", "?id,?dpid,?pr,?match_op,?match_exp,?subst_exp,?repl_exp,?attrs" );
+
+	### rtpproxy
+	&mysql_migrate_table( $dst_db . ".rtpproxy_sockets", "id,rtpproxy_socket,set_id", $src_db . ".nh_sockets", "?id,?rtpproxy_socket,?set_id" );
 
 	### dr_gateways
 	&mysql_migrate_table( $dst_db . ".dr_gateways", "gwid,type,address,strip,pri_prefix,attrs,probe_mode,description", $src_db . ".dr_gateways", "?gwid,?type,?address,?strip,?pri_prefix,?attrs,?probe_mode,?description" );
@@ -6275,7 +6278,8 @@ sub mysql_migrate_db() { # 2 parameters (src_db, dst_db)
 	### dr_groups
 	&mysql_migrate_table( $dst_db . ".dr_groups", "id,username,domain,groupid,description", $src_db . ".dr_groups", "?id,?username,?domain,?groupid,?description" );
 
-
+	### dr_carriers
+	&mysql_migrate_table( $dst_db . ".dr_carriers", "id,gwlist,description", $src_db . ".dr_carriers", "?id,?gwlist,?description" );
 
 	if ( $HAS_EXTRA eq "yes" ) {
 		### cpl

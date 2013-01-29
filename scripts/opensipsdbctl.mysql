@@ -366,9 +366,14 @@ migrate_table ${dst_db}.dispatcher \
 	"?id,?setid,?destination,?flags,?weight,?attrs,?description"
 
 migrate_table ${dst_db}.dialplan \
-	"id,dpid,pr,match_op,match_exp,match_len,subst_exp,repl_exp,attrs" \
+	"id,dpid,pr,match_op,match_exp,subst_exp,repl_exp,attrs" \
 	${src_db}.dialplan \
-	"?id,?dpid,?pr,?match_op,?match_exp,?match_len,?subst_exp,?repl_exp,?attrs"
+	"?id,?dpid,?pr,?match_op,?match_exp,?subst_exp,?repl_exp,?attrs"
+
+migrate_table ${dst_db}.rtpproxy_sockets \
+	"id,rtpproxy_sock,set_id" \
+	${src_db}.nh_sockets \
+	"?id,?rtpproxy_sock,?set_id"
 
 migrate_table ${dst_db}.dr_gateways \
 	"gwid,type,address,strip,pri_prefix,attrs,probe_mode,description" \
@@ -398,7 +403,7 @@ fi
 drr_query=`echo $drr_query | head -n 2`
 if [ $drr_query -gt 0 ];
 then
-	mwarn "You currently have rules with gwlists that are not supported any more in OpenSIPS 1.8. See the updated DROUTING documentation"
+	mwarn "You currently have rules with gwlists that are not supported any more starting from OpenSIPS 1.8. See the updated DROUTING documentation"
 fi
 
 migrate_table ${dst_db}.dr_groups \
@@ -407,8 +412,8 @@ migrate_table ${dst_db}.dr_groups \
 	"?id,?username,?domain,?groupid,?description"
 
 migrate_table ${dst_db}.dr_carriers \
-	"carrierid,gwlist,description" \
-	${src_db}.dr_gw_lists \
+	"id,gwlist,description" \
+	${src_db}.dr_carriers \
 	"?id,?gwlist,?description"
 
 if [ "$HAS_EXTRA" = "yes" ] ; then
