@@ -8,7 +8,7 @@ Edited by
 
 Razvan Crainea
 
-   Copyright � 2012 www.opensips-solutions.com
+   Copyright © 2012 www.opensips-solutions.com
      __________________________________________________________
 
    Table of Contents
@@ -128,10 +128,10 @@ Chapter 1. Admin Guide
 1.7.1.  fetch_event_params(pvar_list)
 
    Retrieves the parameters of the event. For more information,
-   please read Section 1.2, "ROUTE events parameters".
+   please read Section 1.2, “ROUTE events parameters”.
 
    The the pseudo variables list as described in Section 1.2,
-   "ROUTE events parameters".
+   “ROUTE events parameters”.
 
    This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
 
@@ -148,38 +148,38 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-   Can I declare more routes for handling the same event?
+       Can I declare more routes for handling the same event?
 
-   No, only a single event_route can be used for a particular
-   event.
+       No, only a single event_route can be used for a particular
+       event.
 
    2.2.
 
-   Where can I find more about OpenSIPS?
+       Where can I find more about OpenSIPS?
 
-   Take a look at http://www.opensips.org/.
+       Take a look at http://www.opensips.org/.
 
    2.3.
 
-   Where can I post a question about this module?
+       Where can I post a question about this module?
 
-   First at all check if your question was already answered on one
-   of our mailing lists:
-     * User Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-     * Developer Mailing List -
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+       First at all check if your question was already answered on one
+       of our mailing lists:
+         * User Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+         * Developer Mailing List -
+           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable OpenSIPS release should be sent to
-   <users@lists.opensips.org> and e-mails regarding development
-   versions should be sent to <devel@lists.opensips.org>.
+       E-mails regarding any stable OpenSIPS release should be sent to
+       <users@lists.opensips.org> and e-mails regarding development
+       versions should be sent to <devel@lists.opensips.org>.
 
-   If you want to keep the mail private, send it to
-   <users@lists.opensips.org>.
+       If you want to keep the mail private, send it to
+       <users@lists.opensips.org>.
 
    2.4.
 
-   How can I report a bug?
+       How can I report a bug?
 
-   Please follow the guidelines provided at:
-   http://sourceforge.net/tracker/?group_id=232389.
+       Please follow the guidelines provided at:
+       http://sourceforge.net/tracker/?group_id=232389.

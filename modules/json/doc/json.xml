@@ -20,17 +20,11 @@
 	    <author>
 		<firstname>Andrei</firstname>
 		<surname>Dragus</surname>
-		<affiliation><orgname>&voicesystem;</orgname></affiliation>
-		<address>
-		<email>andreidragus@yahoo.com</email>
-		</address>
+		<affiliation><orgname>&osipssolname;</orgname></affiliation>
 	    </author>
 	    <editor>
 		<firstname>Andrei</firstname>
 		<surname>Dragus</surname>
-		<address>
-		    <email>andreidragus@yahoo.com</email>
-		</address>
 	    </editor>
 	</authorgroup>
 	<copyright>
@@ -39,7 +33,7 @@
 	</copyright>
 	<revhistory>
 	    <revision>
-		<revnumber>$Revision$</revnumber>
+		<revnumber>$Revision: 8740 $</revnumber>
 		<date>$Date$</date>
 	    </revision>
 	</revhistory>

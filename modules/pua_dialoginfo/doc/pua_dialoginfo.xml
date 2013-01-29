@@ -20,27 +20,18 @@
 	    <author>
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
-		<affiliation><orgname>&voicesystem;</orgname></affiliation>
-		<address>
-		<email>anca@opensips.org</email>
-		</address>
 	    </author>
 	    <editor>
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
-		<address>
-		    <email>anca@opensips.org</email>
-		</address>
 	    </editor>
 	    <author>
 		<firstname>Klaus </firstname>
 		<surname>Darilion</surname>
-		<affiliation><orgname>IPCom (Module implementation was partly sponsored by Silver Server (www.sil.at))</orgname></affiliation>
 	    </author>
 	    <editor>
 		<firstname>Klaus </firstname>
 		<surname>Darilion</surname>
-		<affiliation><orgname>IPCom</orgname></affiliation>
 	    </editor>
 	</authorgroup>
 	<copyright>
@@ -53,7 +44,7 @@
 	</copyright>
 	<revhistory>
 	    <revision>
-		<revnumber>$Revision$</revnumber>
+		<revnumber>$Revision: 8740 $</revnumber>
 		<date>$Date$</date>
 	    </revision>
 	</revhistory>

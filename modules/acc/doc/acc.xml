@@ -19,46 +19,40 @@
 		<author>
 		<firstname>Jiri</firstname>
 		<surname>Kuthan</surname>
-		<affiliation><orgname>iptel.org</orgname></affiliation>
-		<email>jiri@iptel.org</email>
 		</author>
 		<author>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<email>bogdan@opensips.org</email>
 		</author>
 		<author>
 		<firstname>Ramona-Elena</firstname>
 		<surname>Modroiu</surname>
-		<affiliation><orgname>rosdev.ro</orgname></affiliation>
-		<email>ramona@rosdev.ro</email>
 		</author>
 		<editor>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<email>bogdan@opensips.org</email>
 		</editor>
 		<editor>
 		<firstname>Irina-Maria</firstname>
 		<surname>Stanescu</surname>
-		<affiliation><orgname>&voicesystem;</orgname></affiliation>
-		<email>ironmissy@gmail.com</email>
 		</editor>
 	</authorgroup>
 	<copyright>
-		<year>2002</year>
+		<year>2002-2003</year>
 		<year>2003</year>
 		<holder>FhG FOKUS</holder>
 	</copyright>
 	<copyright>
-		<year>2004</year>
-		<year>2006</year>
-		<year>2009</year>
+		<year>2004-2009</year>
 		<holder>&voicesystem;</holder>
+	</copyright>
+	<copyright>
+		<year>2009-2013</year>
+		<holder>&osipssolname;</holder>
 	</copyright>
 	<revhistory>
 		<revision>
-		<revnumber>$Revision$</revnumber>
+		<revnumber>$Revision: 8740 $</revnumber>
 		<date>$Date$</date>
 		</revision>
 	</revhistory>

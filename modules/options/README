@@ -11,7 +11,7 @@ Nils Ohlmeier
    Copyright © 2003 FhG Fokus
    Revision History
    Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+                              (Tue, 21 Jul 2009) $
      __________________________________________________________
 
    Table of Contents
@@ -64,6 +64,7 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * sl -- Stateless replies.
+     * signaling -- Stateless replies.
 
 1.2.2. External Libraries or Applications
 
@@ -75,10 +76,11 @@ Chapter 1. Admin Guide
 
 1.3.1. accept (string)
 
-   This parameter is the content of the Accept header field. Note:
-   it is not clearly written in RFC3261 if a proxy should accept
-   any content (the default “*/*”) because it does not care about
-   content. Or if it does not accept any content, which is “”.
+   This parameter is the content of the Accept header field. If
+   “”, the header is not added in the reply. Note: it is not
+   clearly written in RFC3261 if a proxy should accept any content
+   (the default “*/*”) because it does not care about content. Or
+   if it does not accept any content, which is “”.
 
    Default value is “*/*”.
 
@@ -90,8 +92,9 @@ modparam("options", "accept", "application/*")
 1.3.2. accept_encoding (string)
 
    This parameter is the content of the Accept-Encoding header
-   field. Please do not change the default value because OpenSIPS
-   does not support any encodings yet.
+   field. If “”, the header is not added in the reply. Please do
+   not change the default value because OpenSIPS does not support
+   any encodings yet.
 
    Default value is “”.
 
@@ -103,10 +106,10 @@ modparam("options", "accept_encoding", "gzip")
 1.3.3. accept_language (string)
 
    This parameter is the content of the Accept-Language header
-   field. You can set any language code which you prefer for error
-   descriptions from other devices, but presumably there are not
-   much devices around which support other languages then the
-   default English.
+   field. If “”, the header is not added in the reply. You can set
+   any language code which you prefer for error descriptions from
+   other devices, but presumably there are not much devices around
+   which support other languages then the default English.
 
    Default value is “en”.
 
@@ -117,10 +120,10 @@ modparam("options", "accept_language", "de")
 
 1.3.4. support (string)
 
-   This parameter is the content of the Support header field.
-   Please do not change the default value, because OpenSIPS
-   currently does not support any of the SIP extensions registered
-   at the IANA.
+   This parameter is the content of the Support header field. If
+   “”, the header is not added in the reply. Please do not change
+   the default value, because OpenSIPS currently does not support
+   any of the SIP extensions registered at the IANA.
 
    Default value is “”.
 

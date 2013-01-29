@@ -20,17 +20,11 @@
 		<author>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<affiliation><orgname>&voicesystem;</orgname></affiliation>
-		<address>
-		<email>bogdan@opensips.org</email>
-		</address>
+		<affiliation><orgname>&osipssolname;</orgname></affiliation>
 		</author>
 		<editor>
 		<firstname>Bogdan-Andrei</firstname>
 		<surname>Iancu</surname>
-		<address>
-			<email>bogdan@opensips.org</email>
-		</address>
 		</editor>
 	</authorgroup>
 	<copyright>
@@ -39,7 +33,7 @@
 	</copyright>
 	<revhistory>
 		<revision>
-		<revnumber>$Revision$</revnumber>
+		<revnumber>$Revision: 8740 $</revnumber>
 		<date>$Date$</date>
 		</revision>
 	</revhistory>

@@ -20,17 +20,10 @@
 	    <author>
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
-		<affiliation><orgname>&voicesystem;</orgname></affiliation>
-		<address>
-		    <email>anca@voice-system.ro</email>
-		</address>
 	    </author>
 	    <editor>
 		<firstname>Anca-Maria</firstname>
 		<surname>Vamanu</surname>
-		<address>
-		    <email>anca@voice-system.ro</email>
-		</address>
 	    </editor>
 	</authorgroup>
 	<copyright>
@@ -39,7 +32,7 @@
 	</copyright>
 	<revhistory>
 	    <revision>
-		<revnumber>$Revision$</revnumber>
+		<revnumber>$Revision: 5901 $</revnumber>
 		<date>$Date$</date>
 	    </revision>
 	</revhistory>

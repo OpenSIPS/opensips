@@ -35,7 +35,7 @@
 	<revhistory>
 	    <revision>
 		<revnumber>$Revision:$</revnumber>
-		<date>$Date:$</date>
+		<date>$Date$</date>
 	    </revision>
 	</revhistory>
     </bookinfo>

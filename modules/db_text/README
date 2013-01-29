@@ -18,8 +18,8 @@ Daniel-Constantin Mierla
 
    Copyright © 2003, 2004 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 03:45:05 -0400
-   (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2012-12-15 09:11:44 +0400
+                              (Sat, 15 Dec 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -227,8 +227,8 @@ _empty_line_
 ...
 loadmodule "/path/to/opensips/modules/db_text.so"
 ...
-modparam("module_name", "database_URL", "text:///path/to/dbtext/databas
-e")
+modparam("module_name", "database_URL", "text:///path/to/dbtext/database
+")
 ...
 
 1.6.1. Using db_text with basic OpenSIPS configuration
@@ -245,19 +245,19 @@ e")
 
    Example 1.6. Definition of 'subscriber' table (one line)
 ...
-username(str) domain(str) password(str) first_name(str) last_name(str)
-phone(str) email_address(str) datetime_created(int) datetime_modified(i
-nt) confirmation(str) flag(str) sendnotification(str) greeting(str) ha1
-(str) ha1b(str) perms(str) allow_find(str) timezone(str,null) rpid(str,
-null)
+username(str) domain(str) password(str) first_name(str) last_name(str) p
+hone(str) email_address(str) datetime_created(int) datetime_modified(int
+) confirmation(str) flag(str) sendnotification(str) greeting(str) ha1(st
+r) ha1b(str) perms(str) allow_find(str) timezone(str,null) rpid(str,null
+)
 ...
 
    Example 1.7. Definition of 'location' and 'aliases' tables (one
    line)
 ...
-username(str) domain(str,null) contact(str,null) received(str) expires(
-int,null) q(double,null) callid(str,null) cseq(int,null) last_modified(
-str) flags(int) user_agent(str) socket(str)
+username(str) domain(str,null) contact(str,null) received(str) expires(i
+nt,null) q(double,null) callid(str,null) cseq(int,null) last_modified(st
+r) flags(int) user_agent(str) socket(str)
 ...
 
    Example 1.8. Definition of 'version' table and sample records
