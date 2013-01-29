@@ -384,6 +384,8 @@ static int fixup_scriptroute_fetch(void **param, int param_no)
 
 		// check if equal is found
 		for (e = s.s; e < p && *e != '='; e++);
+		// avoid old gcc versions warning
+		name.len = 0;
 		if (e == p) {
 			s.len = e - s.s;
 			trim_spaces_lr(s);
