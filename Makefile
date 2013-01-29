@@ -446,7 +446,7 @@ opensipsmc: $(cfg-prefix)/$(cfg-dir) $(data-prefix)/$(data-dir)
 	mkdir -p $(data-prefix)/$(data-dir)/menuconfig_templates/
 	$(INSTALL_TOUCH) menuconfig/configs/* $(data-prefix)/$(data-dir)/menuconfig_templates/
 	$(INSTALL_CFG) menuconfig/configs/* $(data-prefix)/$(data-dir)/menuconfig_templates/
-	sed -i -e "s#/usr/local/lib/opensips#$(modules-prefix)/$(lib-dir)#" \
+	sed -i -e "s#/usr/local/lib/opensips#$(lib-dir)#" \
 		$(data-prefix)/$(data-dir)/menuconfig_templates/*
 
 .PHONY: dbschema
