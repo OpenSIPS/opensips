@@ -10,7 +10,7 @@ NAME=carrierroute.so
 
 ifeq ($(CROSS_COMPILE),)
 CONFUSE_BUILDER = $(shell \
-    if which confuse-config &>/dev/null;then \
+    if which confuse-config >/dev/null;then \
 		echo 'confuse-config'; \
 	elif pkg-config --exists libconfuse; then \
         echo 'pkg-config libconfuse'; \
