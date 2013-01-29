@@ -444,11 +444,18 @@ modparam("cpl-c","use_domain",1)
 				script ended also (for the same INVITE ;-)) - this can happen 
 				when the CPL script does a PROXY and the script interpretation 
 				pause after proxying and it will be resume when some reply is
-				received (this can happen in a different process of SER). 
-				If the function returns to script, the SIP server should 
-				continue with the normal behavior as if no script existed.
-				When some error is returned, the function itself haven't sent 
-				any SIP error reply (this can be done from script).
+				received (this can happen in a different process of OpenSIPS).
+			</para>
+			<para>
+				If the function returns true to script, if value "1" is 
+				returned, the SIP server should continue with the normal 
+				behavior as if no script existed; if value (2) is returned, it
+				means no script was found, so nothing was done.
+			</para>
+			<para>
+				When some error is reported (a false return code), the 
+				function itself haven't sent any SIP error reply (this can
+				be done from script).
 			</para>
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>

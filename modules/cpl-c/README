@@ -2,16 +2,14 @@ cpl-c Module
 
 Bogdan-Andrei Iancu
 
-   voice-system.ro
-
 Edited by
 
 Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
+                              (Wed, 22 Feb 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -344,11 +342,16 @@ modparam("cpl-c","use_domain",1)
    also (for the same INVITE ;-)) - this can happen when the CPL
    script does a PROXY and the script interpretation pause after
    proxying and it will be resume when some reply is received
-   (this can happen in a different process of SER). If the
-   function returns to script, the SIP server should continue with
-   the normal behavior as if no script existed. When some error is
-   returned, the function itself haven't sent any SIP error reply
-   (this can be done from script).
+   (this can happen in a different process of OpenSIPS).
+
+   If the function returns true to script, if value "1" is
+   returned, the SIP server should continue with the normal
+   behavior as if no script existed; if value (2) is returned, it
+   means no script was found, so nothing was done.
+
+   When some error is reported (a false return code), the function
+   itself haven't sent any SIP error reply (this can be done from
+   script).
 
    Meaning of the parameters is as follows:
      * type - which part of the script should be run; set it to
