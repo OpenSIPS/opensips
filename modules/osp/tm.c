@@ -85,7 +85,7 @@ static void ospOnReq(
         /* report on completed transactions */
         TMCB_RESPONSE_OUT |
         /* report on missed calls */
-        TMCB_ON_FAILURE_RO |
+        TMCB_ON_FAILURE |
         /* get incoming replies ready for processing */
 //        TMCB_RESPONSE_IN |
         0;
@@ -110,7 +110,7 @@ static void ospTmcbFunc(
 {
     if (type & TMCB_RESPONSE_OUT) {
         LM_DBG("RESPONSE_OUT\n");
-    } else if (type & TMCB_ON_FAILURE_RO) {
+    } else if (type & TMCB_ON_FAILURE) {
         LM_DBG("FAILURE_RO\n");
     } else if (type & TMCB_RESPONSE_IN) {
         LM_DBG("RESPONSE_IN\n");
