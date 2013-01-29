@@ -718,6 +718,7 @@ void destroy_b2bl_htable(void)
  *	Session-Expires
  *	Min-SE
 */
+#define HDR_BUF_SIZE  256
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 															str* extra_headers)
 {
@@ -727,10 +728,12 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 	struct hdr_field* subscription_state_hdr;
 	struct hdr_field* hdr;
 	struct hdr_field* hdrs[HDR_LST_LEN + HDR_DEFAULT_LEN];
+	regmatch_t pmatch;
 	int hdrs_no = 0;
 	int len = 0;
 	int i;
 	int custom_hdrs_len = 0;
+	char tmp;
 
 	if(msg->content_type)
 		hdrs[hdrs_no++] = msg->content_type;
@@ -769,6 +772,29 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 		if(hdr)
 		{
 			hdrs[hdrs_no++] = hdr;
+		}
+	}
+
+	if (custom_headers_re)
+	{
+		for (hdr=msg->headers; hdr; hdr=hdr->next) {
+			tmp = hdr->name.s[hdr->name.len];
+			hdr->name.s[hdr->name.len] = '\0';
+			i = regexec(custom_headers_re, hdr->name.s, 1, &pmatch, 0);
+			hdr->name.s[hdr->name.len] = tmp;
+
+			if (i == 0)
+			{
+				/* check if added twice */
+				for(i = 0; i < hdrs_no; i++)
+				{
+					if ( hdrs[i]->name.len == hdr->name.len &&
+					strncmp(hdrs[i]->name.s, hdr->name.s, hdr->name.len)==0 )
+						break;
+				}
+				if (i == hdrs_no) /* Doubles not found -> add it */
+					hdrs[hdrs_no++] = hdr;
+			}
 		}
 	}
 

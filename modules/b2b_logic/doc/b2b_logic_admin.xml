@@ -150,6 +150,51 @@ modparam("b2b_logic", "cleanup_period", 60)
 	</section>
 
 	<section>
+		<title><varname>custom_headers_regexp</varname> (str)</title>
+		<para>
+		Regexp to search SIP header by names that should be passed
+		from the dialog of one side to the other side. There are a number
+		of headers that are passed by default. They are: 
+		<itemizedlist>
+			<listitem>Max-Forwards (it is decreased by 1)</listitem>
+			<listitem>Content-Type</listitem>
+			<listitem>Supported</listitem>
+			<listitem>Allow</listitem>
+			<listitem>Proxy-Require</listitem>
+			<listitem>Session-Expires</listitem>
+			<listitem>Min-SE</listitem>
+			<listitem>Require</listitem>
+			<listitem>RSeq</listitem>
+		</itemizedlist>
+		If you wish some other headers to be passed also you should define them
+		by setting this parameter.
+		</para>
+		<para>
+		It can be in forms like "regexp", "/regexp/" and "/regexp/flags".
+		</para>
+		<para>Meaning of the flags is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>i</emphasis> - Case insensitive search.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>e</emphasis> - Use extended regexp.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname></varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>custom_headers</varname> (str)</title>
 		<para>
 		A list of SIP header names delimited by ';' that should be passed

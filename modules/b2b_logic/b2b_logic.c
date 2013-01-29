@@ -82,6 +82,8 @@ unsigned int b2b_update_period = 100;
 str custom_headers = {0, 0};
 str custom_headers_lst[HDR_LST_LEN];
 int custom_headers_lst_len =0;
+str custom_headers_regexp = {0, 0};
+regex_t* custom_headers_re;
 /* The list of the headers that are passed on the other side by default */
 static str default_headers[HDR_DEFAULT_LEN]=
 {
@@ -143,6 +145,7 @@ static param_export_t params[]=
 	{"script_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_script_scenario},
 	{"extern_scenario", STR_PARAM|USE_FUNC_PARAM, (void*)load_extern_scenario},
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
+	{"custom_headers_regexp", STR_PARAM,          &custom_headers_regexp.s   },
 	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"db_table",        STR_PARAM,                &b2bl_dbtable.s            },
@@ -188,6 +191,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	char* p = NULL;
+	char* flags = NULL;
+	int regexp_flags = 0;
 	int i = 0, j;
 	pv_spec_t avp_spec;
 
@@ -378,6 +383,51 @@ next_hdr:
 			i--;
 	}
 	custom_headers_lst_len = i +1;
+
+	if(custom_headers_regexp.s)
+	{
+		custom_headers_regexp.len = strlen(custom_headers_regexp.s);
+		if ((custom_headers_re=pkg_malloc(sizeof(regex_t)))==0) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+		if (*custom_headers_regexp.s == '/')
+		{
+			flags = (char *)memchr(custom_headers_regexp.s+1, '/',
+				custom_headers_regexp.len-1);
+			if (flags)
+			{
+				custom_headers_regexp.s++;
+				custom_headers_regexp.len = flags - custom_headers_regexp.s;
+				custom_headers_regexp.s[custom_headers_regexp.len] = '\0';
+				flags++;
+				while(*flags != '\0')
+				{
+					switch (*flags) {
+						case 'i':
+							regexp_flags |= REG_ICASE;
+							break;
+						case 'e':
+							regexp_flags |= REG_EXTENDED;
+							break;
+						default:
+							LM_ERR("Unknown option '%c'\n", *flags);
+					}
+					flags++;
+				}
+			} else {
+				LM_ERR("Second '/' missing from regexp\n");
+				return -1;
+			}
+		}
+		if (regcomp(custom_headers_re, custom_headers_regexp.s,
+		regexp_flags) != 0) {
+			pkg_free(custom_headers_re);
+			LM_ERR("bad regexp '%.*s'\n",
+				custom_headers_regexp.len, custom_headers_regexp.s);
+			return -1;
+		}
+	}
 
 	if(init_callid_hdr.s)
 		init_callid_hdr.len = strlen(init_callid_hdr.s);
