@@ -42,7 +42,6 @@ struct cell;
 #define TMCB_RESPONSE_IN        (1<<1)
 #define TMCB_REQUEST_FWDED      (1<<2)
 #define TMCB_RESPONSE_FWDED     (1<<3)
-#define TMCB_ON_FAILURE_RO      (1<<4)
 #define TMCB_ON_FAILURE         (1<<5)
 #define TMCB_RESPONSE_PRE_OUT   (1<<6)
 #define TMCB_RESPONSE_OUT       (1<<7)
@@ -102,7 +101,7 @@ struct cell;
  *    otherwise. Check for t->uas.request validity too if you
  *    need it ... locally initiated UAC transactions set it to 0.
  *
- * TMCB_ON_FAILURE_RO -- called on receipt of a reply or timer;
+ * (obsolete) TMCB_ON_FAILURE_RO -- called on receipt of a reply or timer;
  *  it means all branches completed with a failure; the callback 
  *  function MUST not change anything in the transaction (READONLY)
  *  that's a chance for doing ACC or stuff like this
