@@ -162,6 +162,7 @@ static int xmlrpc_sendmsg(xmlrpc_send_t *sock)
 {
 	unsigned long i, len = 0;
 	int fd, ret = -1;
+	int aux;
 
 	/* host */
 	xmlrpc_iov[xmlrpc_host_index].iov_base = sock->host.s;
@@ -183,8 +184,8 @@ static int xmlrpc_sendmsg(xmlrpc_send_t *sock)
 	for (i = xmlrpc_xmlbody_index; i < xmlrpc_iov_len; i++)
 		len += xmlrpc_iov[i].iov_len;	
 
-	xmlrpc_iov[xmlrpc_ct_len_index].iov_base =
-		int2str(len, (int *)(&xmlrpc_iov[xmlrpc_ct_len_index].iov_len));
+	aux = (int)xmlrpc_iov[xmlrpc_ct_len_index].iov_len;
+	xmlrpc_iov[xmlrpc_ct_len_index].iov_base = int2str(len, &aux);
 
 	/* writing the iov on the network */
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
