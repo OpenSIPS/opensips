@@ -37,7 +37,8 @@
 
 typedef struct sdp_payload_attr {
 	struct sdp_payload_attr *next;
-	int payload_num; /**< payload index inside stream */
+	/**< payload index inside stream */
+	int payload_num;
 	str rtp_payload;
 	str rtp_enc;
 	str rtp_clock;
@@ -48,11 +49,16 @@ typedef struct sdp_payload_attr {
 typedef struct sdp_stream_cell {
 	struct sdp_stream_cell *next;
 	/* c=<network type> <address type> <connection address> */
-	int pf;         /**< connection address family: AF_INET/AF_INET6 */
-	str ip_addr;    /**< connection address */
-	int stream_num; /**< stream index inside a session */
-	int is_rtp;	/**< flag indicating if this is an RTP stream */
-	int is_on_hold;	/**< flag indicating if this stream is on hold */
+	/**< connection address family: AF_INET/AF_INET6 */
+	int pf;
+	/**< connection address */
+	str ip_addr;
+	/**< stream index inside a session */
+	int stream_num;
+	/**< flag indicating if this is an RTP stream */
+	int is_rtp;
+	/**< flag indicating if this stream is on hold */
+	int is_on_hold;
 	/* m=<media> <port> <transport> <payloads> */
 	str media;
 	str port;
@@ -60,39 +66,58 @@ typedef struct sdp_stream_cell {
 	str sendrecv_mode;
 	str ptime;
 	str payloads;
-	int payloads_num;                         /**< number of payloads inside a stream */
+	/**< number of payloads inside a stream */
+	int payloads_num;
 	/* b=<bwtype>:<bandwidth> */
-	str bw_type;                              /**< alphanumeric modifier giving the meaning of the <bandwidth> figure:
-							CT - conference total;
-							AS - application specific */
-	str bw_width;                            /**< The <bandwidth> is interpreted as kilobits per second by default */
-	/* RFC3605: Real Time Control Protocol (RTCP) attribute in Session Description Protocol (SDP) */
+	/**< alphanumeric modifier giving the meaning of the <bandwidth> figure:
+		CT - conference total;
+		AS - application specific */
+	str bw_type;
+	/**< The <bandwidth> is interpreted as kilobits per second by default */
+	str bw_width;
+	/* RFC3605: Real Time Control Protocol (RTCP) attribute in
+	 * Session Description Protocol (SDP) */
 	/* a=rtcp: port  [nettype space addrtype space connection-address] CRLF */
-	str rtcp_port;				  /**< RFC3605: rtcp attribute */
-	str path;                                 /**< RFC4975: path attribute */
-	str max_size;                             /**< RFC4975: max-size attribute */
-	str accept_types;                         /**< RFC4975: accept-types attribute */
-	str accept_wrapped_types;                 /**< RFC4975: accept-wrapped-types attribute */
-	struct sdp_payload_attr **p_payload_attr; /**< fast access pointers to payloads */
+	/**< RFC3605: rtcp attribute */
+	str rtcp_port;
+	/**< RFC4975: path attribute */
+	str path;
+	/**< RFC4975: max-size attribute */
+	str max_size;
+	/**< RFC4975: accept-types attribute */
+	str accept_types;
+	/**< RFC4975: accept-wrapped-types attribute */
+	str accept_wrapped_types;
+	/**< fast access pointers to payloads */
+	struct sdp_payload_attr **p_payload_attr;
 	struct sdp_payload_attr *payload_attr;
 } sdp_stream_cell_t;
 
 typedef struct sdp_session_cell {
 	struct sdp_session_cell *next;
-	int session_num;  /**< session index inside sdp */
-	str cnt_disp;     /**< the Content-Disposition header (for Content-Type:multipart/mixed) */
+	/**< session index inside sdp */
+	int session_num;
+	/**< the Content-Disposition header (for Content-Type:multipart/mixed) */
+	str cnt_disp;
 	/* c=<network type> <address type> <connection address> */
-	int pf;		/**< connection address family: AF_INET/AF_INET6 */
-	str ip_addr;	/**< connection address */
-	/* o=<username> <session id> <version> <network type> <address type> <address> */
-	int o_pf;	/**< origin address family: AF_INET/AF_INET6 */
-	str o_ip_addr;	/**< origin address */
+	/**< connection address family: AF_INET/AF_INET6 */
+	int pf;
+	/**< connection address */
+	str ip_addr;
+	/* o=<username> <session id> <version> <network type> <addr type> <addr> */
+	/**< origin address family: AF_INET/AF_INET6 */
+	int o_pf;
+	/**< origin address */
+	str o_ip_addr;
 	/* b=<bwtype>:<bandwidth> */
-	str bw_type;      /**< alphanumeric modifier giving the meaning of the <bandwidth> figure:
-				CT - conference total;
-				AS - application specific */
-	str bw_width;   /**< The <bandwidth> is interpreted as kilobits per second by default */
-	int streams_num;  /**< number of streams inside a session */
+	/**< alphanumeric modifier giving the meaning of the <bandwidth> figure:
+		CT - conference total;
+		AS - application specific */
+	str bw_type;
+	/**< The <bandwidth> is interpreted as kilobits per second by default */
+	str bw_width;
+	/**< number of streams inside a session */
+	int streams_num;
 	struct sdp_stream_cell*  streams;
 } sdp_session_cell_t;
 
