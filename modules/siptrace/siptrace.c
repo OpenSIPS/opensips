@@ -421,8 +421,8 @@ static int mod_init(void)
 	db_vals[1].type = DB_STR;
 	db_vals[2].type = DB_STR;
 	db_vals[3].type = DB_STR;
-	db_vals[4].type = DB_STRING;
-	db_vals[5].type = DB_STRING;
+	db_vals[4].type = DB_STR;
+	db_vals[5].type = DB_STR;
 	db_vals[6].type = DB_DATETIME;
 	db_vals[7].type = DB_STRING;
 	db_vals[8].type = DB_STR;
@@ -736,6 +736,19 @@ static int sip_trace_w(struct sip_msg *msg)
 	return sip_trace(msg);
 }
 
+#define set_sock_column( _col,_buff, _ip, _port, _proto) \
+	do { \
+		char *p, *q; \
+		int len; \
+		p = proto2str( _proto, _buff); *(p++) = ':' ; \
+		q = ip_addr2a( _ip ); len = strlen(q); \
+		memcpy( p, q, len); p += len; *(p++) = ':' ; \
+		q = int2str(_port, &len ); \
+		memcpy( p, q, len); p += len; \
+		_col.val.str_val.s = _buff; \
+		_col.val.str_val.len = (int)(p - _buff); \
+	} while (0)
+
 
 static int sip_trace(struct sip_msg *msg)
 {
@@ -799,18 +812,11 @@ static int sip_trace(struct sip_msg *msg)
 		db_vals[3].val.str_val.len = 0;
 	}
 
-	siptrace_copy_proto(msg->rcv.proto, fromip_buff);
-	strcat(fromip_buff, ip_addr2a(&msg->rcv.src_ip));
-	strcat(fromip_buff,":");
-	strcat(fromip_buff, int2str(msg->rcv.src_port, NULL));
-	db_vals[4].val.string_val = fromip_buff;
+	set_sock_column( db_vals[4], fromip_buff, &msg->rcv.src_ip,
+		 msg->rcv.src_port, msg->rcv.proto);
 
-	// db_vals[5].val.string_val = ip_addr2a(&msg->rcv.dst_ip);;
-	siptrace_copy_proto(msg->rcv.proto, toip_buff);
-	strcat(toip_buff, ip_addr2a(&msg->rcv.dst_ip));
-	strcat(toip_buff,":");
-	strcat(toip_buff, int2str(msg->rcv.dst_port, NULL));
-	db_vals[5].val.string_val = toip_buff;
+	set_sock_column( db_vals[5], toip_buff, &msg->rcv.dst_ip,
+		 msg->rcv.dst_port, msg->rcv.proto);
 
 	db_vals[6].val.time_val = time(NULL);
 
@@ -951,7 +957,6 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	int_str        avp_value;
 	struct usr_avp *avp;
 	struct ip_addr to_ip;
-	int len;
 
 	avp = NULL;
 	if(traced_user_avp>=0)
@@ -1011,33 +1016,25 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 
 	if (trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[4].val.string_val = trace_local_ip.s;
+		db_vals[4].val.str_val = trace_local_ip;
 	else {
 		if(send_sock==0 || send_sock->sock_str.s==0)
 		{
-			siptrace_copy_proto(msg->rcv.proto, fromip_buff);
-			strcat(fromip_buff, ip_addr2a(&msg->rcv.dst_ip));
-			strcat(fromip_buff,":");
-			strcat(fromip_buff, int2str(msg->rcv.dst_port, NULL));
-			db_vals[4].val.string_val = fromip_buff;
+			set_sock_column( db_vals[4], fromip_buff, &msg->rcv.dst_ip,
+		 		msg->rcv.dst_port, msg->rcv.proto);
 		} else {
-			db_vals[4].type = DB_STR;
 			db_vals[4].val.str_val = send_sock->sock_str;
 		}
 	}
 
 	if(to==0)
 	{
-		db_vals[5].val.string_val = "any:255.255.255.255";
+		db_vals[5].val.str_val.s = "any:255.255.255.255";
+		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255")-1;
 	} else {
 		su2ip_addr(&to_ip, to);
-		siptrace_copy_proto(proto, toip_buff);
-		strcat(toip_buff, ip_addr2a(&to_ip));
-		strcat(toip_buff, ":");
-		strcat(toip_buff,
-				int2str((unsigned long)su_getport(to), &len));
-		LM_DBG("dest [%s]\n", toip_buff);
-		db_vals[5].val.string_val = toip_buff;
+		set_sock_column( db_vals[5], toip_buff, &to_ip,
+			(unsigned long)su_getport(to), proto);
 	}
 
 	db_vals[6].val.time_val = time(NULL);
@@ -1070,6 +1067,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	int_str        avp_value;
 	struct usr_avp *avp;
 	char statusbuf[8];
+	int len;
 
 	if(t==NULL || t->uas.request==0 || ps==NULL)
 	{
@@ -1125,25 +1123,18 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val.s = t->method.s;
 	db_vals[2].val.str_val.len = t->method.len;
 
-	strcpy(statusbuf, int2str(ps->code, NULL));
+	strcpy(statusbuf, int2str(ps->code, &len));
 	db_vals[3].val.str_val.s = statusbuf;
-	db_vals[3].val.str_val.len = strlen(statusbuf);
+	db_vals[3].val.str_val.len = len;
 
-	siptrace_copy_proto(msg->rcv.proto, fromip_buff);
-	strcat(fromip_buff, ip_addr2a(&msg->rcv.src_ip));
-	strcat(fromip_buff,":");
-	strcat(fromip_buff, int2str(msg->rcv.src_port, NULL));
-	db_vals[4].val.string_val = fromip_buff;
+	set_sock_column( db_vals[4], fromip_buff, &msg->rcv.src_ip,
+		 msg->rcv.src_port, msg->rcv.proto);
 
-	// db_vals[5].val.string_val = ip_addr2a(&msg->rcv.dst_ip);;
 	if(trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[5].val.string_val = trace_local_ip.s;
+		db_vals[5].val.str_val = trace_local_ip;
 	else {
-		siptrace_copy_proto(msg->rcv.proto, toip_buff);
-		strcat(toip_buff, ip_addr2a(&msg->rcv.dst_ip));
-		strcat(toip_buff,":");
-		strcat(toip_buff, int2str(msg->rcv.dst_port, NULL));
-		db_vals[5].val.string_val = toip_buff;
+		set_sock_column( db_vals[5], toip_buff, &msg->rcv.dst_ip,
+			msg->rcv.dst_port, msg->rcv.proto);
 	}
 
 	db_vals[6].val.time_val = time(NULL);
@@ -1258,34 +1249,26 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 
 
 	if(trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[4].val.string_val = trace_local_ip.s;
+		db_vals[4].val.str_val = trace_local_ip;
 	else {
-		siptrace_copy_proto(msg->rcv.proto, fromip_buff);
-
-		strcat(fromip_buff, ip_addr2a(&req->rcv.dst_ip));
-		strcat(fromip_buff,":");
-		strcat(fromip_buff, int2str(req->rcv.dst_port, NULL));
-		db_vals[4].val.string_val = fromip_buff;
+		set_sock_column( db_vals[4], fromip_buff, &msg->rcv.dst_ip,
+			msg->rcv.dst_port, msg->rcv.proto);
 	}
 
-	strcpy(statusbuf, int2str(ps->code, NULL));
+	strcpy(statusbuf, int2str(ps->code, &len));
 	db_vals[3].val.str_val.s = statusbuf;
-	db_vals[3].val.str_val.len = strlen(statusbuf);
+	db_vals[3].val.str_val.len = len;
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 	dst = (struct dest_info*)ps->extra2;
 	if(dst==0)
 	{
-		db_vals[5].val.string_val = "any:255.255.255.255";
+		db_vals[5].val.str_val.s = "any:255.255.255.255";
+		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255")-1;
 	} else {
 		su2ip_addr(&to_ip, &dst->to);
-		siptrace_copy_proto(dst->proto, toip_buff);
-		strcat(toip_buff, ip_addr2a(&to_ip));
-		strcat(toip_buff, ":");
-		strcat(toip_buff,
-				int2str((unsigned long)su_getport(&dst->to), &len));
-		LM_DBG("dest [%s]\n", toip_buff);
-		db_vals[5].val.string_val = toip_buff;
+		set_sock_column( db_vals[5], toip_buff, &to_ip,
+			(unsigned long)su_getport(&dst->to), dst->proto);
 	}
 
 	db_vals[6].val.time_val = time(NULL);
@@ -1383,34 +1366,25 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[2].val.str_val.len = msg->first_line.u.request.method.len;
 
 	if(trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[4].val.string_val = trace_local_ip.s;
+		db_vals[4].val.str_val = trace_local_ip;
 	else {
-		siptrace_copy_proto(msg->rcv.proto, fromip_buff);
-
-		strcat(fromip_buff, ip_addr2a(&req->rcv.dst_ip));
-		strcat(fromip_buff,":");
-		strcat(fromip_buff, int2str(req->rcv.dst_port, NULL));
-		db_vals[4].val.string_val = fromip_buff;
+		set_sock_column( db_vals[4], fromip_buff, &msg->rcv.dst_ip,
+			msg->rcv.dst_port, msg->rcv.proto);
 	}
 
-	strcpy(statusbuf, int2str(sl_param->code, NULL));
+	strcpy(statusbuf, int2str(sl_param->code, &len));
 	db_vals[3].val.str_val.s = statusbuf;
-	db_vals[3].val.str_val.len = strlen(statusbuf);
+	db_vals[3].val.str_val.len = len;
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 	if(sl_param->dst==0)
 	{
-		db_vals[5].val.string_val = "any:255.255.255.255";
+		db_vals[5].val.str_val.s = "any:255.255.255.255";
+		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255")-1;
 	} else {
 		su2ip_addr(&to_ip, sl_param->dst);
-		siptrace_copy_proto(req->rcv.proto, toip_buff);
-
-		strcat(toip_buff, ip_addr2a(&to_ip));
-		strcat(toip_buff, ":");
-		strcat(toip_buff,
-				int2str((unsigned long)su_getport(sl_param->dst), &len));
-		LM_DBG("dest [%s]\n", toip_buff);
-		db_vals[5].val.string_val = toip_buff;
+		set_sock_column( db_vals[5], toip_buff, &to_ip,
+			(unsigned long)su_getport(sl_param->dst), req->rcv.proto);
 	}
 
 	db_vals[6].val.time_val = time(NULL);
