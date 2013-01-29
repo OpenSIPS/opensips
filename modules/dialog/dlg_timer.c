@@ -646,8 +646,8 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		shm_free(it);
 		it = curr;
 
-		/* FIXME - maybe better not to send BYE both ways as we know for sure one
-		 * end in down . */
+		/* FIXME - maybe better not to send BYE both ways as we know for
+		 * sure one end in down . */
 		dlg_end_dlg(dlg,0);
 
 		/* no longer reffed in list */
