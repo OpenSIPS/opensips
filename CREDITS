@@ -2,19 +2,24 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS core team in alphabetical order as of 1 November 2012:
+Current OpenSIPS team in alphabetical order as of 29 January 2013:
+
+Core Team:
 
 Bogdan Andrei Iancu
 Dan Pascu
 Razvan Crainea
+Liviu Chircu
 Vladut-Stefan Paiu
 
 
-Contributors:
+Module Maintainers:
 
 Alexandr Dubovikov
 Anca Vamanu
+Arnaud Chong
 Di-Shi Sun
+Iñaki Baz Castillo
 Marc Leurent
 Ovidiu Sas
 Saúl Ibarra Corretgé
@@ -46,7 +51,6 @@ Rick van Rein
 Rudy from DynamicPacket
 Ryan Bullock
 Samuel Muller
-Saúl Ibarra Corretgé
 Sergey Avseyev
 Stefan Tobe
 Trevor Francis
