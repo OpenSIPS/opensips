@@ -158,6 +158,15 @@
 		<column><field>e3_to</field><type>DB_STR</type></column>
 		<column><field>e3_key</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of cachedb table-->
+	<db_table id="cachedb">
+		<table_name>cachedb</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>keyname</field><type>DB_STR</type></column>
+		<column><field>value</field><type>DB_BLOB</type></column>
+		<column><field>counter</field><type>DB_INT</type></column>
+		<column><field>expires</field><type>DB_INT</type></column>
+	</db_table>
 	<!-- Declaration of carrierroute table-->
 	<db_table id="carrierroute">
 		<table_name>carrierroute</table_name>
@@ -277,6 +286,14 @@
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of domain table-->
+	<db_table id="domain">
+		<table_name>domain</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
+		<column><field>last_modified</field><type>DB_DATETIME</type></column>
+	</db_table>
 	<!-- Declaration of domainpolicy table-->
 	<db_table id="domainpolicy">
 		<table_name>domainpolicy</table_name>
@@ -287,14 +304,6 @@
 		<column><field>att</field><type>DB_STR</type></column>
 		<column><field>val</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
-	</db_table>
-	<!-- Declaration of domain table-->
-	<db_table id="domain">
-		<table_name>domain</table_name>
-		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>domain</field><type>DB_STR</type></column>
-		<column><field>last_modified</field><type>DB_DATETIME</type></column>
 	</db_table>
 	<!-- Declaration of dr_gateways table-->
 	<db_table id="dr_gateways">
@@ -889,6 +898,19 @@
 				<col><field>e3_from</field></col>
 				<col><field>e3_to</field></col>
 				<col><field>e3_key</field></col>
+			</query_cols>
+		</cmd>
+	</mod>
+	<!-- cachedb provisionning -->
+	<mod><mod_name>cachedb</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>cachedb</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>keyname</field></col>
+				<col><field>value</field></col>
+				<col><field>counter</field></col>
+				<col><field>expires</field></col>
 			</query_cols>
 		</cmd>
 	</mod>
