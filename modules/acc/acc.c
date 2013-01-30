@@ -1373,6 +1373,7 @@ int  init_acc_evi(void)
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
+	memset(acc_event_params, 0, sizeof(evi_params_t));
 
 	n = 0;
 	EVI_CREATE_PARAM(acc_method_evi);
