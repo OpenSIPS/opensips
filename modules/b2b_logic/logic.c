@@ -3401,6 +3401,8 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 	args[3] = arg5;
 	args[4] = arg6;
 
+	b2b_api.apply_lumps(msg);
+
 	cust_headers = NULL;
 	if (scf->params.flags & B2BL_FLAG_TRANSPARENT_AUTH)
 	{
@@ -3417,8 +3419,6 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 			cust_headers = &auth_header;
 		}
 	}
-
-	b2b_api.apply_lumps(msg);
 
 	/* call the scenario init processing function */
 	key = init_request(msg, scf, args, 0, NULL, 0, cust_headers);
