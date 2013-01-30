@@ -62,9 +62,9 @@ MAIN_NAME=opensips
 
 #version number
 VERSION = 1
-PATCHLEVEL = 9
+PATCHLEVEL = 10
 SUBLEVEL = 0
-EXTRAVERSION = -rc
+EXTRAVERSION = dev
 
 RELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 ifneq ($(OPENSIPS_RELEASE),)	# allow override thru environment
