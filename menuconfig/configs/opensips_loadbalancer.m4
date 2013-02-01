@@ -120,14 +120,14 @@ modparam("acc", "report_cancels", 0)
    if you enable this parameter, be sure the enable "append_fromtag"
    in "rr" module */
 modparam("acc", "detect_direction", 0)
-modparam("acc", "failed_transaction_flag", 3)
+modparam("acc", "failed_transaction_flag", "ACC_FAILED")
 /* account triggers (flags) */
-ifelse(USE_DBACC,`yes',`modparam("acc", "db_flag", 1)
-modparam("acc", "db_missed_flag", 2)
+ifelse(USE_DBACC,`yes',`modparam("acc", "db_flag", "ACC_DO")
+modparam("acc", "db_missed_flag", "ACC_MISSED")
 modparam("acc", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-', `modparam("acc", "log_flag", 1)
-modparam("acc", "log_missed_flag", 2)
+', `modparam("acc", "log_flag", "ACC_DO")
+modparam("acc", "log_missed_flag", "ACC_MISSED")
 ')
 
 ifelse(USE_DISPATCHER,`no',`#### DIALOG module
@@ -191,8 +191,8 @@ route{
 			}
 			',`')
 			if (is_method("BYE")) {
-				setflag(1); # do accounting ...
-				setflag(3); # ... even if the transaction fails
+				setflag(ACC_DO); # do accounting ...
+				setflag(ACC_FAILED); # ... even if the transaction fails
 			} else if (is_method("INVITE")) {
 				# even if in most of the cases is useless, do RR for
 				# re-INVITEs alos, as some buggy clients do change route set
@@ -253,7 +253,7 @@ route{
 	# record routing
 	record_route();
 
-	setflag(1); # do accounting
+	setflag(ACC_DO); # do accounting
 
 	ifelse(USE_DISPATCHER,`yes',`
 	if ( !ds_select_dst("1","4") ) {
