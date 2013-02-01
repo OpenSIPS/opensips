@@ -46,7 +46,7 @@
 #define SE_EXPI_CASE    \
 	if ( LOWER_BYTE(*p) == 's' ) {          \
 		p++;                                \
-		switch ( LOWER_BYTE(*(p+1)) ) {     \
+		switch ( LOWER_BYTE(*p) ) {     \
 			case 'e':                       \
 				hdr->type = HDR_MIN_SE_T;   \
 				hdr->name.len = 6;          \
