@@ -17,4 +17,46 @@
 				<col><field>forced_socket</field></col>
 			</query_cols>
 		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>registrant</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>registrar</field></col>
+				<col><field>proxy</field></col>
+				<col><field>aor</field></col>
+				<col><field>third_party_registrant</field></col>
+				<col><field>username</field></col>
+				<col><field>password</field></col>
+				<col><field>binding_URI</field></col>
+				<col><field>binding_params</field></col>
+				<col><field>expiry</field></col>
+				<col><field>forced_socket</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>registrant</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>registrar</field></col>
+				<col><field>proxy</field></col>
+				<col><field>aor</field></col>
+				<col><field>third_party_registrant</field></col>
+				<col><field>username</field></col>
+				<col><field>password</field></col>
+				<col><field>binding_URI</field></col>
+				<col><field>binding_params</field></col>
+				<col><field>expiry</field></col>
+				<col><field>forced_socket</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>registrant</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
 	</mod>

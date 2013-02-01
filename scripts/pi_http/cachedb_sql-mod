@@ -1,0 +1,23 @@
+	<!-- cachedb provisionning -->
+	<mod><mod_name>cachedb</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>cachedb</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>keyname</field></col>
+				<col><field>value</field></col>
+				<col><field>counter</field></col>
+				<col><field>expires</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>cachedb</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>keyname</field></col>
+				<col><field>value</field></col>
+				<col><field>counter</field></col>
+				<col><field>expires</field></col>
+			</query_cols>
+		</cmd>
+	</mod>

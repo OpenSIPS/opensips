@@ -1,0 +1,9 @@
+	<!-- Declaration of cachedb table-->
+	<db_table id="cachedb">
+		<table_name>cachedb</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>keyname</field><type>DB_STR</type></column>
+		<column><field>value</field><type>DB_BLOB</type></column>
+		<column><field>counter</field><type>DB_INT</type></column>
+		<column><field>expires</field><type>DB_INT</type></column>
+	</db_table>
