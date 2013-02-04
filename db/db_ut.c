@@ -43,17 +43,22 @@
 inline int db_str2int(const char* _s, int* _v)
 {
 	long tmp;
+	char* p = NULL;
 
 	if (!_s || !_v) {
 	       LM_ERR("Invalid parameter value\n");
 	       return -1;
 	}
 
-	tmp = strtol(_s, 0, 10);
+	tmp = strtol(_s, &p, 10);
 	if (((tmp == LONG_MAX || tmp == LONG_MIN) && errno == ERANGE) ||
 	    (tmp < INT_MIN) || (tmp > INT_MAX)) {
 		LM_ERR("Value out of range\n");
 		return -1;
+	}
+	if (p && *p != '\0') {
+		LM_ERR("Unexpected characters: [%s]\n", p);
+		return -2;
 	}
 
 	*_v = (int)tmp;
@@ -63,6 +68,7 @@ inline int db_str2int(const char* _s, int* _v)
 inline int db_str2bigint(const char* _s, long long* _v)
 {
 	long long tmp;
+	char* p = NULL;
 
 	if (!_s || !_v) {
 	       LM_ERR("Invalid parameter value\n");
@@ -73,6 +79,10 @@ inline int db_str2bigint(const char* _s, long long* _v)
 	if ((tmp == LLONG_MIN || tmp == LLONG_MAX) && errno == ERANGE) {
 		LM_ERR("Value out of range\n");
 		return -1;
+	}
+	if (p && *p != '\0') {
+		LM_ERR("Unexpected characters: [%s]\n", p);
+		return -2;
 	}
 
 	*_v = tmp;
