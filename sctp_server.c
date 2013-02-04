@@ -69,7 +69,8 @@ int sctp_server_init(struct socket_info* sock_info)
 		goto error;
 	}
 	
-	sock_info->socket = socket(AF2PF(addr->s.sa_family), SOCK_SEQPACKET, 0);
+	sock_info->socket = socket(AF2PF(addr->s.sa_family), SOCK_SEQPACKET,
+		IPPROTO_SCTP);
 	if (sock_info->socket==-1){
 		LM_ERR("socket: %s [%d]\n", strerror(errno), errno);
 		goto error;
