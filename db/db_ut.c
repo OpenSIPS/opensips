@@ -75,7 +75,7 @@ inline int db_str2bigint(const char* _s, long long* _v)
 	       return -1;
 	}
 
-	tmp = strtoll(_s, 0, 10);
+	tmp = strtoll(_s, &p, 10);
 	if ((tmp == LLONG_MIN || tmp == LLONG_MAX) && errno == ERANGE) {
 		LM_ERR("Value out of range\n");
 		return -1;
