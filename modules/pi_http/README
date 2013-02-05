@@ -10,8 +10,8 @@ Ovidiu Sas
 
    Copyright © 2012-2013 VoIP Embedded, Inc.
    Revision History
-   Revision $Rev: 8688 $ $Date: 2012-01-25 13:52:05 -0500 (Wed, 25
-   Jan 2012) $
+   Revision $Rev: 8688 $ $Date: 2013-01-29 07:35:11 -0500 (Tue, 29
+   Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -77,7 +77,7 @@ Chapter 1. Admin Guide
    a framework xml file is provided inside the examples directory
    of the pi_http module. A simple framework file can be generated
    by the opensipsdbctl command:
-opensipsdbctl pframework creata
+opensipsdbctl pframework create
 
    The generated framework will be saved inside OpenSIPS's config
    directory as pi_framework_sample. The list of configurable
@@ -127,6 +127,8 @@ opensipsdbctl pframework creata
      * DB_STRING
      * DB_STR
      * DB_DATETIME
+          + Note: input field must be provided in 'YEAR-MM-DD
+            HH:MM:SS' format.
      * DB_BLOB
      * DB_BITMAP
 
@@ -185,8 +187,7 @@ opensipsdbctl pframework creata
 
    Features to be added in the future:
      * full subscriber provisionning with automatic ha1/ha1b
-       fields;
-     * accept empty values as NULL;
+       fields.
 
 1.5. Dependencies
 
