@@ -843,7 +843,7 @@ int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
 unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 {
 	unsigned int n = 0, i;
-	str ret = {0, 0};
+	str ret = {0, 0},aux_ret = {0, 0};
 	map_t entry ;
 	void ** dest;
 
@@ -934,7 +934,8 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 	}
 
 	if (ret.s && ret.len) {
-		if (str2int(&ret, &n) < 0) {
+		trim_len(aux_ret.len,aux_ret.s,ret);
+		if (str2int(&aux_ret, &n) < 0) {
 			LM_ERR("invalid int value in CacheDB <%.*s>\n",
 					ret.len, ret.s);
 			pkg_free(ret.s);
