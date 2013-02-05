@@ -658,6 +658,10 @@ static int mod_init(void)
 			LM_ERR("cannot init cachedb utils\n");
 			return -1;
 		}
+
+		cdb_val_prefix.len = strlen(cdb_val_prefix.s);
+		cdb_noval_prefix.len = strlen(cdb_noval_prefix.s);
+		cdb_size_prefix.len = strlen(cdb_size_prefix.s);
 	}
 
 	/* create profile hashes */
