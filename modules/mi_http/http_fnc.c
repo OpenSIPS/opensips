@@ -213,12 +213,6 @@ static const str MI_HTTP_Post_1 = str_init("\n"\
 "			<input type=\"submit\" value=\"Submit\"/>\n"\
 "		</form>\n");
 
-static const str MI_HTTP_Post_1a = str_init("\n"\
-"		<form name=\"input\" method=\"get\">\n"\
-"			<textarea name=\"arg\" rows=\"2\" cols=\"60\"></textarea>\n"\
-"			<input type=\"submit\" value=\"Submit\"/>\n"\
-"		</form>\n");
-
 static const str MI_HTTP_Response_Foot = str_init(\
 "\n</center>\n<div align=\"center\" class=\"foot\" style=\"margin:20px auto\">"\
 	"<span style='margin-left:5px;'></span>"\
@@ -328,8 +322,13 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 }
 
 
-int mi_http_build_content(str *page, int max_page_len,
+static int mi_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level);
+
+int mi_http_flush_content(str *page, int max_page_len,
 				int mod, int cmd, struct mi_root* tree);
+
+
 
 int mi_http_flush_tree(void* param, struct mi_root *tree)
 {
@@ -338,7 +337,7 @@ int mi_http_flush_tree(void* param, struct mi_root *tree)
 		return 0;
 	}
 	mi_http_html_page_data_t* html_p_data = (mi_http_html_page_data_t*)param;
-	mi_http_build_content(&html_p_data->page,
+	mi_http_flush_content(&html_p_data->page,
 				html_p_data->buffer.len,
 				html_p_data->mod,
 				html_p_data->cmd,
@@ -636,7 +635,7 @@ error:
 }
 
 
-static int mi_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
+static int mi_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
 					struct mi_node *tree, int level)
 {
 	struct mi_node *kid, *tmp;
@@ -649,7 +648,7 @@ static int mi_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
 				return -1;
 			kid->flags |= MI_WRITTEN;
 		}
-		if ((ret = mi_http_recur_write_tree(pointer, buf, max_page_len,
+		if ((ret = mi_http_recur_flush_tree(pointer, buf, max_page_len,
 							tree->kids, level+1))<0){
 			return -1;
 		} else if (ret > 0) {
@@ -675,8 +674,29 @@ static int mi_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
 }
 
 
+static int mi_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
+					struct mi_node *tree, int level)
+{
+	for( ; tree ; tree=tree->next ) {
+		if (!(tree->flags & MI_WRITTEN)) {
+			if (mi_http_write_node(pointer, buf, max_page_len,
+									tree, level)!=0){
+				return -1;
+			}
+		}
+		if (tree->kids) {
+			if (mi_http_recur_write_tree(pointer, buf, max_page_len,
+						tree->kids, level+1)<0){
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
+
+
 int mi_http_build_header(str *page, int max_page_len,
-				int mod, int cmd, struct mi_root *tree)
+				int mod, int cmd, struct mi_root *tree, int flush)
 {
 	int i, j;
 	char *p, *buf;
@@ -754,9 +774,15 @@ int mi_http_build_header(str *page, int max_page_len,
 					MI_HTTP_CODE_1);
 			tree->node.flags |= MI_WRITTEN;
 		}
-		if (mi_http_recur_write_tree(&p, buf, max_page_len,
-						&tree->node, 0)<0)
-			return -1;
+		if (flush) {
+			if (mi_http_recur_flush_tree(&p, buf, max_page_len,
+							&tree->node, 0)<0)
+				return -1;
+		} else {
+			if (mi_http_recur_write_tree(&p, buf, max_page_len,
+							tree->node.kids, 0)<0)
+				return -1;
+		}
 	} else if (mod>=0) { /* Building command menu */
 		/* Build the list of comands for the selected module */
 		MI_HTTP_COPY_4(p,MI_HTTP_Response_Menu_Cmd_Table_1,
@@ -850,17 +876,19 @@ int mi_http_build_content(str *page, int max_page_len,
 {
 	char *p, *buf;
 
-	if (page->len==0)
-		if (0!=mi_http_build_header(page, max_page_len, mod, cmd, tree))
+	if (page->len==0) {
+		if (0!=mi_http_build_header(page, max_page_len, mod, cmd, tree, 0))
 			return -1;
-	buf = page->s;
-	p = page->s + page->len;
+	} else {
+		buf = page->s;
+		p = page->s + page->len;
 
-	if (tree) { /* Build mi reply */
-		if (mi_http_recur_write_tree(&p, buf, max_page_len,
-						&tree->node, 0)<0)
-			return -1;
-		page->len = p - page->s;
+		if (tree) { /* Build mi reply */
+			if (mi_http_recur_write_tree(&p, buf, max_page_len,
+							tree->node.kids, 0)<0)
+				return -1;
+			page->len = p - page->s;
+		}
 	}
 	return 0;
 }
@@ -871,13 +899,12 @@ int mi_http_build_page(str *page, int max_page_len,
 {
 	char *p, *buf;
 
-	if (page->len==0)
-		if (0!=mi_http_build_content(page, max_page_len, mod, cmd, tree))
-			return -1;
+	if (0!=mi_http_build_content(page, max_page_len, mod, cmd, tree))
+		return -1;
 	buf = page->s;
 	p = page->s + page->len;
 
-	if (tree) { /* Build mi reply */
+	if (tree) { /* Build foot reply */
 		MI_HTTP_COPY_5(p,MI_HTTP_CODE_2,
 				MI_HTTP_Response_Menu_Cmd_td_4d,
 				MI_HTTP_Response_Menu_Cmd_tr_2,
@@ -893,3 +920,23 @@ error:
 	return -1;
 }
 
+
+int mi_http_flush_content(str *page, int max_page_len,
+				int mod, int cmd, struct mi_root* tree)
+{
+	char *p, *buf;
+
+	if (page->len==0)
+		if (0!=mi_http_build_header(page, max_page_len, mod, cmd, tree, 1))
+			return -1;
+	buf = page->s;
+	p = page->s + page->len;
+
+	if (tree) { /* Build mi reply */
+		if (mi_http_recur_flush_tree(&p, buf, max_page_len,
+						&tree->node, 0)<0)
+			return -1;
+		page->len = p - page->s;
+	}
+	return 0;
+}
