@@ -1856,6 +1856,7 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 					LM_ERR("failed to send status code\n");
 				clean_write_pipeend();
 
+				*startup_done = -1;
 				exit(-1);
 			}
 	
@@ -1863,6 +1864,10 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 			if (startup_done!=NULL && *startup_done==0 && r==0) {
 				LM_DBG("runing startup for first TCP\n");
 				if(run_startup_route()< 0) {
+					*startup_done = -1;
+					if (send_status_code(-1) < 0)
+						LM_ERR("failed to send status code\n");
+					clean_write_pipeend();
 					LM_ERR("Startup route processing failed\n");
 					exit(-1);
 				}

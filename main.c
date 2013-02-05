@@ -854,22 +854,30 @@ static int main_loop(void)
 							if (send_status_code(-1) < 0)
 								LM_ERR("failed to send status code\n");
 							clean_write_pipeend();
+							if (chd_rank == 1 && startup_done)
+								*startup_done = -1;
 							exit(-1);
+						}
+
+						LM_DBG("XXX: entering startup route: %d\n", getpid());
+						/* first UDP proc runs statup_route (if defined) */
+						if(chd_rank == 1 && startup_done!=NULL) {
+							LM_DBG("runing startup for first UDP\n");
+							if(run_startup_route()< 0) {
+								if (send_status_code(-1) < 0)
+									LM_ERR("failed to send status code\n");
+								clean_write_pipeend();
+								*startup_done = -1;
+								LM_ERR("Startup route processing failed\n");
+								exit(-1);
+							}
+							*startup_done = 1;
 						}
 
 						if (send_status_code(0) < 0)
 							LM_ERR("failed to send status code\n");
 						clean_write_pipeend();
 
-						/* first UDP proc runs statup_route (if defined) */
-						if(chd_rank == 1 && startup_done!=NULL) {
-							LM_DBG("runing startup for first UDP\n");
-							if(run_startup_route()< 0) {
-								LM_ERR("Startup route processing failed\n");
-								exit(-1);
-							}
-							*startup_done = 1;
-						}
 
 						/* all UDP listeners on same interface
 						 * have same SHM load pointer */
@@ -908,6 +916,8 @@ static int main_loop(void)
 						if (send_status_code(-1) < 0)
 							LM_ERR("failed to send status code\n");
 						clean_write_pipeend();
+						if( (si==sctp_listen && i==0) && startup_done) {
+							*startup_done = -1;
 						exit(-1);
 					}
 
@@ -917,6 +927,10 @@ static int main_loop(void)
 						LM_DBG("runing startup for first SCTP\n");
 						if(run_startup_route()< 0) {
 							LM_ERR("Startup route processing failed\n");
+							if (send_status_code(-1) < 0)
+								LM_ERR("failed to send status code\n");
+							clean_write_pipeend();
+							*startup_done = -1;
 							exit(-1);
 						}
 						*startup_done = 1;
@@ -986,7 +1000,7 @@ static int main_loop(void)
 	#endif
 
 	if (startup_done) {
-		if (*startup_done!=1)
+		if (*startup_done==0)
 			LM_CRIT("BUG: startup route defined, but not run :( \n");
 		shm_free(startup_done);
 	}
@@ -996,6 +1010,9 @@ static int main_loop(void)
 	set_proc_attrs("attendant");
 
 	if (init_child(PROC_MAIN) < 0) {
+		if (send_status_code(-1) < 0)
+			LM_ERR("failed to send status code\n");
+		clean_write_pipeend();
 		LM_ERR("error in init_child for PROC_MAIN\n");
 		goto error;
 	}
