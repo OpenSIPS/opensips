@@ -469,7 +469,7 @@ route[relay] {
 			rtpproxy_offer("ro");
 		}',`')
 
-		t_on_branch("log");
+		t_on_branch("per_branch_ops");
 		t_on_reply("handle_nat");
 		t_on_failure("missed_call");
 	}
@@ -508,7 +508,7 @@ route[handle_presence]
 }',`')
 
 
-branch_route[log] {
+branch_route[per_branch_ops] {
 	xlog("new branch at $ru\n");
 }
 
