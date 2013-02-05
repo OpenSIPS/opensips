@@ -176,52 +176,6 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 	return 0;
 }
 
-int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
-{
-	memcached_return  rc;
-	char * ret;
-	size_t ret_len;
-	uint32_t fl;
-	char * err;
-	memcached_con *con;
-	str counter;
-	int int_counter;
-    
-	con = (memcached_con *)connection->data;
-    
-	ret = memcached_get(con->memc,attr->s, attr->len,
-				&ret_len,&fl,&rc);
-
-	if(ret == NULL)
-	{
-		if(rc == MEMCACHED_NOTFOUND)
-		{
-			return -2;
-		}
-		else
-		{
-			err = (char*)memcached_strerror(con->memc,rc);
-			LM_ERR("Failed to get: %s\n",err );
-			return -1;
-		}
-	}
-
-	counter.s = ret;
-	counter.len = ret_len;
-
-	if (str2sint(&counter,&int_counter) < 0) {
-		LM_ERR("Not a counter\n");
-		free(ret);
-		return -3;
-	}	
-
-	if (res)
-		*res = int_counter;
-
-	free(ret);
-	return 0;
-}
-
 /* TODO - once memcached_touch gets into libmemcached, also take care of expires */
 int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 		int expires,int *new_val)
@@ -292,6 +246,11 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 		*new_val = (int)res;
 
 	return 0;
+}
+
+int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
+{
+	return wrap_memcached_add(connection,attr,0,0,res);
 }
 
 #define MAX_HOSTPORT_SIZE 22
