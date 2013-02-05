@@ -92,6 +92,7 @@ int default_expires = 3600; 			/*!< Default expires value in seconds */
 qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
 int case_sensitive  = 1;			/*!< If set to 0, username in aor will be case insensitive */
 int tcp_persistent_flag = -1;			/*!< if the TCP connection should be kept open */
+char *tcp_persistent_flag_s = 0;
 int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use in seconds
  						 * use 0 to switch expires checking off */
 int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in seconds,
@@ -167,21 +168,22 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"default_expires",    INT_PARAM, &default_expires     },
-	{"default_q",          INT_PARAM, &default_q           },
-	{"case_sensitive",     INT_PARAM, &case_sensitive      },
-	{"tcp_persistent_flag",INT_PARAM, &tcp_persistent_flag },
-	{"realm_prefix",       STR_PARAM, &realm_pref          },
-	{"min_expires",        INT_PARAM, &min_expires         },
-	{"max_expires",        INT_PARAM, &max_expires         },
-	{"received_param",     STR_PARAM, &rcv_param           },
-	{"received_avp",       STR_PARAM, &rcv_avp_param       },
-	{"max_contacts",       INT_PARAM, &max_contacts        },
-	{"retry_after",        INT_PARAM, &retry_after         },
-	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s     },
-	{"mcontact_avp",       STR_PARAM, &mct_avp_param       },
-	{"gruu_secret",        STR_PARAM, &gruu_secret.s       },
-	{"disable_gruu",       INT_PARAM, &disable_gruu        },
+	{"default_expires",    INT_PARAM, &default_expires       },
+	{"default_q",          INT_PARAM, &default_q             },
+	{"case_sensitive",     INT_PARAM, &case_sensitive        },
+	{"tcp_persistent_flag",INT_PARAM, &tcp_persistent_flag   },
+	{"tcp_persistent_flag",STR_PARAM, &tcp_persistent_flag_s },
+	{"realm_prefix",       STR_PARAM, &realm_pref            },
+	{"min_expires",        INT_PARAM, &min_expires           },
+	{"max_expires",        INT_PARAM, &max_expires           },
+	{"received_param",     STR_PARAM, &rcv_param             },
+	{"received_avp",       STR_PARAM, &rcv_avp_param         },
+	{"max_contacts",       INT_PARAM, &max_contacts          },
+	{"retry_after",        INT_PARAM, &retry_after           },
+	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s       },
+	{"mcontact_avp",       STR_PARAM, &mct_avp_param         },
+	{"gruu_secret",        STR_PARAM, &gruu_secret.s         },
+	{"disable_gruu",       INT_PARAM, &disable_gruu          },
 	{0, 0, 0}
 };
 
@@ -313,6 +315,8 @@ static int mod_init(void)
 		gruu_secret.len = strlen(gruu_secret.s);
 
 	/* fix the flags */
+	fix_flag_name(&tcp_persistent_flag_s, tcp_persistent_flag);
+	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
 
 	return 0;
