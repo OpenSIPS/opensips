@@ -262,8 +262,6 @@ static str xmlrpc_print(evi_reply_sock *sock)
 		goto end;
 	}
 
-	DO_PRINT("xmlrpc:", 7);
-
 	if (sock->flags & EVI_ADDRESS)
 		DO_PRINT(sock->address.s, sock->address.len);
 

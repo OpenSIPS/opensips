@@ -375,8 +375,6 @@ static str rmq_print(evi_reply_sock *sock)
 		goto end;
 	}
 
-	DO_PRINT(RMQ_NAME":", sizeof(RMQ_NAME));
-
 	if (!(sock->flags & EVI_PARAMS))
 		goto end;
 
