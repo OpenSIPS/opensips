@@ -1200,9 +1200,6 @@ after_unlock5:
 			unref++;
 		}
 
-		if (remove_ping_timer(dlg) == 0)
-			unref++;
-
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, dir, 0);
 

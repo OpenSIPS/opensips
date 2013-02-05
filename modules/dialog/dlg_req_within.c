@@ -146,7 +146,6 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	dlg_t* td = NULL;
 	str cseq;
 	unsigned int loc_seq;
-	struct dlg_entry *d_entry = &(d_table->entries[cell->h_entry]);
 
 	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
 	if(!td){
@@ -162,8 +161,6 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 		goto error;
 	}
 
-	dlg_lock( d_table, d_entry);
-
 	if (cell->legs[dst_leg].last_gen_cseq == 0)
 		cell->legs[dst_leg].last_gen_cseq = loc_seq+1;
 	else
@@ -172,7 +169,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	cell->legs[dst_leg].reply_received = 0;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
-	dlg_unlock( d_table, d_entry);
+
 	td->loc_seq.is_set = 1;
 
 	/*route set*/
@@ -247,9 +244,6 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 			/* successfully removed from timer list */
 			unref++;
 		}
-
-		if (remove_ping_timer(dlg) == 0)
-			unref++;
 
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
