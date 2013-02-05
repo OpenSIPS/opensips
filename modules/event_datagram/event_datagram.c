@@ -277,12 +277,6 @@ static str datagram_print(evi_reply_sock *sock)
 		goto end;
 	}
 
-	if (sock->flags & DGRAM_UDP_FLAG) {
-		DO_PRINT("udp:", 4);
-	} else {
-		DO_PRINT("unix:", 5);
-	}
-
 	if (sock->flags & EVI_ADDRESS)
 		DO_PRINT(sock->address.s, sock->address.len);
 

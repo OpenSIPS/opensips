@@ -495,7 +495,7 @@ struct mi_root * mi_events_list(struct mi_root *cmd_tree, void *param)
 		if (!addf_mi_attr(node, 0, "id", 2, "%d", events[i].id))
 			goto error;
 
-		if (i % 50 == 0) {
+		if ((i + 1) % 50 == 0) {
 			flush_mi_tree(rpl_tree);
 		}
 	}
@@ -559,6 +559,11 @@ static int evi_print_event(struct evi_mi_param *param,
 {
 	struct mi_node *node=NULL;
 	struct mi_node *rpl = param->node;
+
+	/* add event only if there are subscribers */
+	if (!subs && !ev->subscribers)
+		return 0;
+
 	node = add_mi_node_child(rpl, 0, "Event", 5, ev->name.s, ev->name.len);
 	if(node == NULL)
 		goto error;
