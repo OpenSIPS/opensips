@@ -859,7 +859,6 @@ static int main_loop(void)
 							exit(-1);
 						}
 
-						LM_DBG("XXX: entering startup route: %d\n", getpid());
 						/* first UDP proc runs statup_route (if defined) */
 						if(chd_rank == 1 && startup_done!=NULL) {
 							LM_DBG("runing startup for first UDP\n");
