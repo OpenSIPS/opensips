@@ -314,18 +314,19 @@ static void ietf_get_rules(subs_t* subs, xmlDocPtr xcap_tree, xcap_rule_t **rule
 	if( !apply_rule || !node1)
 		return;
 
-        rule = (xcap_rule_t *)pkg_malloc(sizeof(*rule));
-        if (rule == NULL)
-        {
-                LM_ERR("cannot allocate pkg_mem\n");
-                return;
-        }
+	rule = (xcap_rule_t *)pkg_malloc(sizeof(*rule));
+	if (rule == NULL)
+	{
+		LM_ERR("cannot allocate pkg_mem\n");
+		return;
+	}
 
-        /* TODO: in IETF mode only the first matching rule is returned */
-        rule->node = node1;
-        rule->next = NULL;
-        *rules = rule;
+	/* TODO: in IETF mode only the first matching rule is returned */
+	rule->node = node1;
+	rule->next = NULL;
+	*rules = rule;
 
+	return;
 error:
 	if(w_uri.s)
 		pkg_free(w_uri.s);
