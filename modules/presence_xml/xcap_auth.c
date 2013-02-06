@@ -1185,7 +1185,6 @@ error:
 
 int p_get_xcap_doc(str* user, str* domain, int type, str** doc)
 {
-        int r;
         str *etag = NULL;
 
         if (xcapDbGetDoc(user, domain, type, NULL, NULL, doc, &etag) < 0)
