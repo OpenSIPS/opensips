@@ -747,13 +747,13 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 	struct mi_root *rpl_tree;
 	struct mi_node* rpl;
 	subs_t *s;
-	unsigned int i;
+	unsigned int i,j;
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
 
-	for(i= 0; i< shtable_size; i++)
+	for(i=0,j=0; i< shtable_size; i++)
 	{
 		lock_get(&subs_htable[i].lock);
 		s = subs_htable[i].entries->next;
@@ -761,8 +761,12 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 		{
 			if(mi_print_shtable_record(rpl, s)<0) goto error;
 			s= s->next;
+			j++;
 		}
 		lock_release(&subs_htable[i].lock);
+
+		if ((j % 50) == 0)
+			flush_mi_tree(rpl_tree);
 	}
 	return rpl_tree;
 error:
