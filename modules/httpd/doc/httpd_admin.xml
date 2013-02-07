@@ -91,8 +91,8 @@ modparam("httpd", "port", 8000)
 	<section>
 		<title><varname>buf_size</varname> (integer)</title>
 		<para>
-		It specifies the maximum length of the buffer used to write
-		in the html response.
+		It specifies the maximum length (in bytes) of the buffer
+		used to write in the html response.
 		</para>
 		<para>
 		If the size of the buffer is set to zero, it will be automatically
