@@ -1035,8 +1035,8 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	if(to==0)
 	{
-		db_vals[5].val.str_val.s = "any:255.255.255.255";
-		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255")-1;
+		db_vals[5].val.str_val.s = "any:255.255.255.255:9";
+		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255:9")-1;
 	} else {
 		su2ip_addr(&to_ip, to);
 		set_sock_column( db_vals[5], toip_buff, &to_ip,
@@ -1269,8 +1269,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	dst = (struct dest_info*)ps->extra2;
 	if(dst==0)
 	{
-		db_vals[5].val.str_val.s = "any:255.255.255.255";
-		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255")-1;
+		db_vals[5].val.str_val.s = "any:255.255.255.255:9";
+		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255:9")-1;
 	} else {
 		su2ip_addr(&to_ip, &dst->to);
 		set_sock_column( db_vals[5], toip_buff, &to_ip,
@@ -1764,13 +1764,13 @@ error:
  * \param proto uint protocol type
  * \return success / unsuccess
  */
-static int pipport2su (char *pipport, union sockaddr_union *tmp_su, unsigned int *proto)
+static int pipport2su (char *pipport, union sockaddr_union *tmp_su,
+														unsigned int *proto)
 {
 	unsigned int port_no, cutlen = 4;
 	struct ip_addr *ip;
-	char *p, *host_s;
+	char *p;
 	str port_str, host_uri;
-	unsigned len = 0;
 
 	/*parse protocol */
 	if(strncmp(pipport, "udp:",4) == 0) *proto = IPPROTO_UDP;
@@ -1791,54 +1791,47 @@ static int pipport2su (char *pipport, union sockaddr_union *tmp_su, unsigned int
 		LM_ERR("malformed ip address\n");
 		return -1;
 	}
-	host_s=p;
+	host_uri.s = p;
 
 	if( (p = strrchr(p+1, ':')) == 0 ) {
 		LM_ERR("no port specified\n");
 		return -1;
 	}
 	/*the address contains a port number*/
-	*p = '\0';
-	p++;
-	port_str.s = p;
-	port_str.len = strlen(p);
-	LM_DBG("the port string is %s\n", p);
+	port_str.s = p + 1;
+	port_str.len = strlen(port_str.s);
+	LM_DBG("the port string is %.*s\n", port_str.len, port_str.s);
 	if(str2int(&port_str, &port_no) != 0 ) {
 		LM_ERR("there is not a valid number port\n");
 		return -1;
 	}
-	*p = '\0';
 	if (port_no<1024  || port_no>65536)
 	{
 		LM_ERR("invalid port number; must be in [1024,65536]\n");
 		return -1;
 	}
+	host_uri.len = p - host_uri.s;
 
 	/* now IPv6 address has no brakets. It should be fixed! */
-	if (host_s[0] == '[') {
-		len = strlen(host_s + 1) - 1;
-		if(host_s[len+1] != ']') {
+	if (host_uri.s[0] == '[') {
+		if(host_uri.s[host_uri.len-1] != ']') {
 			LM_ERR("bracket not closed\n");
 			return -1;
 		}
-		memmove(host_s, host_s + 1, len);
-		host_s[len] = '\0';
+		host_uri.s++;
+		host_uri.len -= 2;
 	}
-
-	host_uri.s = host_s;
-	host_uri.len = strlen(host_s);
-
 
 	/* check if it's an ip address */
 	if (((ip=str2ip(&host_uri))!=0)
 #ifdef  USE_IPV6
 			|| ((ip=str2ip6(&host_uri))!=0)
 #endif
-	   ) {
+	) {
 		ip_addr2su(tmp_su, ip, ntohs(port_no));
 		return 0;
-
 	}
 
+	LM_ERR("host <%.*s> is not an IP\n",host_uri.len,host_uri.s);
 	return -1;
 }
