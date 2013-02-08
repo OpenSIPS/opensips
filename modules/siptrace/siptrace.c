@@ -97,8 +97,8 @@ static void trace_msg_out_w(struct sip_msg* req, str  *buffer,
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static struct mi_root* trace_to_database_mi(struct mi_root* cmd, void* param );
 
-static int trace_send_hep_duplicate(str *body, const char *fromip, const char *toip);
-static int pipport2su (char *pipport, union sockaddr_union *tmp_su, unsigned int *proto);
+static int trace_send_hep_duplicate(str *body, str *fromip, str *toip);
+static int pipport2su (str *pipport, union sockaddr_union *tmp_su, unsigned int *proto);
 
 
 static str db_url             = {NULL, 0};
@@ -530,8 +530,12 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 		int_str *first_val,db_key_t *keys,db_val_t *vals)
 {
 
-	if(duplicate_with_hep) trace_send_hep_duplicate(&db_vals[0].val.blob_val, db_vals[4].val.string_val, db_vals[5].val.string_val);
-	else trace_send_duplicate(db_vals[0].val.blob_val.s, db_vals[0].val.blob_val.len);
+	if (duplicate_with_hep)
+		trace_send_hep_duplicate(&db_vals[0].val.blob_val,
+			&db_vals[4].val.str_val, &db_vals[5].val.str_val);
+	else
+		trace_send_duplicate(db_vals[0].val.blob_val.s,
+			db_vals[0].val.blob_val.len);
 
 
 	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
@@ -1573,7 +1577,7 @@ static int trace_send_duplicate(char *buf, int len)
 	return ret;
 }
 
-static int trace_send_hep_duplicate(str *body, const char *fromip, const char *toip)
+static int trace_send_hep_duplicate(str *body, str *fromip, str *toip)
 {
 	struct proxy_l * p=NULL /* make gcc happy */;
 	void* buffer = NULL;
@@ -1616,7 +1620,8 @@ static int trace_send_hep_duplicate(str *body, const char *fromip, const char *t
 	}
 
 	/* Convert proto:ip:port to sockaddress union SRC IP */
-	if (pipport2su((char *)fromip, &from_su, &proto)==-1 || (pipport2su((char *)toip, &to_su, &proto)==-1))
+	if (pipport2su(fromip, &from_su, &proto)==-1 ||
+	(pipport2su(toip, &to_su, &proto)==-1))
 		goto error;
 
 	/* check if from and to are in the same family*/
@@ -1764,7 +1769,7 @@ error:
  * \param proto uint protocol type
  * \return success / unsuccess
  */
-static int pipport2su (char *pipport, union sockaddr_union *tmp_su,
+static int pipport2su (str *pipport, union sockaddr_union *tmp_su,
 														unsigned int *proto)
 {
 	unsigned int port_no, cutlen = 4;
@@ -1773,33 +1778,34 @@ static int pipport2su (char *pipport, union sockaddr_union *tmp_su,
 	str port_str, host_uri;
 
 	/*parse protocol */
-	if(strncmp(pipport, "udp:",4) == 0) *proto = IPPROTO_UDP;
-	else if(strncmp(pipport, "tcp:",4) == 0) *proto = IPPROTO_TCP;
-	else if(strncmp(pipport, "tls:",4) == 0) *proto = IPPROTO_IDP; /* fake proto type */
+	if(strncmp(pipport->s, "udp:",4) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(pipport->s, "tcp:",4) == 0) *proto = IPPROTO_TCP;
+	else if(strncmp(pipport->s, "tls:",4) == 0) *proto = IPPROTO_IDP; /* fake proto type */
 #ifdef USE_SCTP
-	else if(strncmp(pipport, "sctp:",5) == 0) cutlen = 5, *proto = IPPROTO_SCTP;
+	else if(strncmp(pipport->s, "sctp:",5) == 0) cutlen = 5, *proto = IPPROTO_SCTP;
 #endif
-	else if(strncmp(pipport, "any:",4) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(pipport->s, "any:",4) == 0) *proto = IPPROTO_UDP;
 	else {
-		LM_ERR("bad protocol %s\n", pipport);
+		LM_ERR("bad protocol %.*s\n", pipport->len,pipport->s);
 		return -1;
 	}
 
 	/*separate proto and host */
-	p = pipport+cutlen;
+	p = pipport->s + cutlen;
 	if( (*(p)) == '\0') {
 		LM_ERR("malformed ip address\n");
 		return -1;
 	}
 	host_uri.s = p;
 
-	if( (p = strrchr(p+1, ':')) == 0 ) {
+	for (p=pipport->s+pipport->len ; p>=host_uri.s && *p!=':' ; p--);
+	if (*p!=':') {
 		LM_ERR("no port specified\n");
 		return -1;
 	}
 	/*the address contains a port number*/
 	port_str.s = p + 1;
-	port_str.len = strlen(port_str.s);
+	port_str.len = pipport->len+pipport->s - port_str.s;
 	LM_DBG("the port string is %.*s\n", port_str.len, port_str.s);
 	if(str2int(&port_str, &port_no) != 0 ) {
 		LM_ERR("there is not a valid number port\n");
@@ -1811,6 +1817,7 @@ static int pipport2su (char *pipport, union sockaddr_union *tmp_su,
 		return -1;
 	}
 	host_uri.len = p - host_uri.s;
+	LM_DBG("proto %d, host %.*s , port %d \n",*proto,host_uri.len,host_uri.s,port_no );
 
 	/* now IPv6 address has no brakets. It should be fixed! */
 	if (host_uri.s[0] == '[') {
