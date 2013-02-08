@@ -2379,18 +2379,22 @@ rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 			dlg_api.create_dlg(msg,0);
 	}
 
+	if (param1==NULL)
+		return force_rtp_proxy(msg, NULL, NULL, 1);
+
 	if (rtpp_get_var_svalue(msg, (gparam_p)param1, &flag_str, 0)<0) {
 		LM_ERR("bogus flags parameter\n");
 		return -1;
 	}
-	if (param2!=NULL) {
-		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
-			LM_ERR("bogus IP addr parameter\n");
-			return -1;
-		}
-		return force_rtp_proxy(msg, flag_str.s, ip_str.s, 1);
+
+	if (param2==NULL)
+		return force_rtp_proxy(msg, flag_str.s, NULL, 1);
+
+	if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
+		LM_ERR("bogus IP addr parameter\n");
+		return -1;
 	}
-	return force_rtp_proxy(msg, flag_str.s, NULL, 1);
+	return force_rtp_proxy(msg, flag_str.s, ip_str.s, 1);
 }
 
 static int
@@ -2403,18 +2407,22 @@ rtpproxy_answer2_f(struct sip_msg *msg, char *param1, char *param2)
 		if (msg->first_line.u.request.method_value != METHOD_ACK)
 			return -1;
 
+	if (param1==NULL)
+		return force_rtp_proxy(msg, NULL, NULL, 0);
+
 	if (rtpp_get_var_svalue(msg, (gparam_p)param1, &flag_str, 0)<0) {
 		LM_ERR("bogus flags parameter\n");
 		return -1;
 	}
-	if (param2!=NULL) {
-		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
-			LM_ERR("bogus IP addr parameter\n");
-			return -1;
-		}
-		return force_rtp_proxy(msg, flag_str.s, ip_str.s, 0);
+
+	if (param2==NULL)
+		return force_rtp_proxy(msg, flag_str.s, NULL, 0);
+
+	if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
+		LM_ERR("bogus IP addr parameter\n");
+		return -1;
 	}
-	return force_rtp_proxy(msg, flag_str.s, param2, 0);
+	return force_rtp_proxy(msg, flag_str.s, ip_str.s, 0);
 }
 
 static void engage_callback(struct dlg_cell *dlg, int type,
