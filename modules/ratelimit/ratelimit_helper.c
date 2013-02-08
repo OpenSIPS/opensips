@@ -653,7 +653,7 @@ int w_rl_set_count(str key, int val)
 		}
 	} else {
 		if (val && val < (*pipe)->counter) {
-			(*pipe)->counter -= val;
+			(*pipe)->counter += val;
 		} else {
 			(*pipe)->counter = 0;
 		}
