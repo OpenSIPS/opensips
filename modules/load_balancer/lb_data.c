@@ -685,11 +685,13 @@ int lb_count_call(struct lb_data *data, struct sip_msg *req,
 				if ( (dst->ports[k]==0 || port==0 || port==dst->ports[k]) &&
 				ip_addr_cmp( ip, &dst->ips[k]) ) {
 					/* found */
-					break;
+					goto end_search;
 				}
 			}
 		}
 	}
+
+end_search:
 	if (dst==NULL) {
 		LM_ERR("no destination to match the given IP and port (%s:%d)\n",
 			ip_addr2a(ip), port);
