@@ -1982,6 +1982,8 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 	return result;
 }
 
+static struct sip_msg dummy_msg;
+
 void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 {
 	struct sip_msg * msg;
@@ -1998,7 +2000,6 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	str extra_headers = {NULL, 0};
 	struct hdr_field* hdr;
 	unsigned int method_id = 0;
-	struct sip_msg dummy_msg;
 	struct cseq_body cb;
 	struct hdr_field cseq;
 	enum b2b_entity_type etype=(htable==server_htable?B2B_SERVER:B2B_CLIENT);
@@ -2777,7 +2778,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	str body;
 
 	/* faked reply */
-	if (msg==NULL || msg == FAKED_REPLY)
+	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
 		return 0;
 
 	if(!msg->body_lumps && !msg->add_rm)
