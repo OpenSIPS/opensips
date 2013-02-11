@@ -267,7 +267,7 @@ static int fixup_is_dst(void** param, int param_no)
 		return fixup_pvar(param);
 	} else if (param_no==3) {
 		/* the group to check in */
-		return fixup_uint(param);
+		return fixup_igp(param);
 	} else if (param_no==4) {
 		/*  active only check ? */
 		return fixup_uint(param);
@@ -555,30 +555,24 @@ static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port)
 
 static int w_lb_is_dst3(struct sip_msg *msg,char *ip,char *port,char *grp)
 {
-	int ret;
-
-	lock_start_read( ref_lock );
-
-	ret = lb_is_dst(*curr_data, msg,(pv_spec_t*)ip, (pv_spec_t*)port,
-		(int)(long)grp,0);
-
-	lock_stop_read( ref_lock );
-
-	if (ret<0)
-		return ret;
-	return 1;
+	return w_lb_is_dst4(msg, ip, port, grp, 0);
 }
 
 
 static int w_lb_is_dst4(struct sip_msg *msg,char *ip,char *port,char *grp,
 															char *active)
 {
-	int ret;
+	int ret, group;
+
+	if (fixup_get_ivalue(msg, (gparam_p)grp, &group) != 0) {
+		LM_ERR("Invalid lb group pseudo variable!\n");
+		return -1;
+	}
 
 	lock_start_read( ref_lock );
 
 	ret = lb_is_dst(*curr_data, msg, (pv_spec_t*)ip, (pv_spec_t*)port,
-		(int)(long)grp, (int)(long)active);
+	                group, (int)(long)active);
 
 	lock_stop_read( ref_lock );
 
