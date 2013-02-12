@@ -2460,7 +2460,7 @@ error:
 int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 {
 	char *p;
-	char *_p, *buf;
+	char *buf;
 	int ret;
 
 	const char *arg = NULL;
@@ -2602,7 +2602,6 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 			command->db_table->name.s);
 		goto done;
 	}
-	_p = p;
 	if(ph_build_reply(page, buffer->len, mod, cmd)<0)
 		goto error;
 	p = page->s + page->len;
