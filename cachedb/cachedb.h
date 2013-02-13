@@ -28,6 +28,7 @@
 #define _CACHEDB_H
 
 #include "../str.h"
+#include "../db/db_query.h"
 #include "cachedb_con.h"
 #include "cachedb_pool.h"
 #include "cachedb_id.h"
@@ -68,16 +69,27 @@ typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *
 /* bi-dimensional array will be returned */
 typedef int (cachedb_raw_f)(cachedb_con *con,str *query,cdb_raw_entry ***reply,int expected_key_no,int *reply_no);
 
+typedef int(cachedb_query_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r);
+typedef int(cachedb_free_trans_f)(cachedb_con* con, db_res_t* _r);
+typedef int(cachedb_insert_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n);
+typedef int(cachedb_delete_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n);
+typedef int (cachedb_update_trans_f)(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un);
+
 typedef struct cachedb_funcs_t {
-	cachedb_init_f		*init;
-	cachedb_destroy_f	*destroy;
-	cachedb_get_f		*get;
+	cachedb_init_f			*init;
+	cachedb_destroy_f		*destroy;
+	cachedb_get_f			*get;
 	cachedb_getcounter_f	*get_counter;
-	cachedb_set_f		*set;
-	cachedb_remove_f	*remove;
-	cachedb_add_f		*add;
-	cachedb_sub_f		*sub;
-	cachedb_raw_f		*raw_query;
+	cachedb_set_f			*set;
+	cachedb_remove_f		*remove;
+	cachedb_add_f			*add;
+	cachedb_sub_f			*sub;
+	cachedb_raw_f			*raw_query;
+	cachedb_query_trans_f	*db_query_trans;
+	cachedb_free_trans_f	*db_free_trans;
+	cachedb_insert_trans_f	*db_insert_trans;
+	cachedb_delete_trans_f	*db_delete_trans;
+	cachedb_update_trans_f	*db_update_trans;
 	int capability;
 } cachedb_funcs;
 

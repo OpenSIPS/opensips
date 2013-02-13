@@ -1,0 +1,149 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+    <title>&adminguide;</title>
+	
+    <section>
+        <title>Overview</title>
+
+        <section>
+            <title> The idea</title>
+            <para>
+				The db_cachedb module will expose the same front db api, however it will run on top
+				of a NoSQL back-end, emulating the SQL calls to the back-end specific queries.
+
+				Thus, any OpenSIPS module that would regularily need a regular SQL-based database,
+				will now be able to run over a NoSQL back-end, allowing for a much easier distribution
+				and integration of the currently existing OpenSIPS modules in a distributed environment.
+            </para>
+        </section>
+
+        <title>Dependencies</title>
+        <section>
+            <title>&osips; Modules</title>
+            <para>
+				The following modules must be loaded before this module:
+                <itemizedlist>
+                    <listitem>
+                        <para>
+				<!--<emphasis>No dependencies on other &osips; modules</emphasis>.-->
+                            <emphasis>At least one NoSQL cachedb_* module</emphasis>.
+                        </para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+        </section>
+        <section>
+            <title>External Libraries or Applications</title>
+            <para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+                <itemizedlist>
+                    <listitem>
+                        <para>
+				<!--<emphasis>libmysqlclient-dev</emphasis> - the development libraries of mysql-client.-->
+                            <emphasis>None</emphasis>.
+                        </para>
+                    </listitem>
+                </itemizedlist>
+            </para>
+        </section>
+    </section>
+    <section>
+        <title>Exported Parameters</title>
+        <section>
+            <title>
+                <varname>cachedb_url</varname> (str)
+            </title>
+            <para>
+			The URL for the CacheDB back-end to be used. It can be set more than one time. 
+            </para>
+            <example>
+                <title>Set
+                    <varname>cachedb_url</varname> parameter
+                </title>
+                <programlisting format="linespecific">
+...
+modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017/db.col")
+...
+                </programlisting>
+            </example>
+
+        </section>
+    </section>
+
+    <section>
+        <title>Examples of Usage</title>
+        <section>
+            <title>
+                <varname>Distributed User Location</varname>
+            </title>
+            <para>
+				In order to achieve such a setup, one would have to set the usrloc module to run in DB_ONLY mode ( so it will always go to the DB for user location information ), and then you should set the DB_URL parameter of the location module to point to the DB_CACHEDB URL.
+            </para>
+            <example>
+                <title>OpenSIPS CFG Snippet for using DB_CACHEDB
+                </title>
+                <programlisting format="linespecific">
+loadmodule "usrloc.so"
+modparam("usrloc", "db_mode",3)
+
+loadmodule "db_cachedb.so"
+loadmodule "cachedb_mongodb.so"
+...
+modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017/my_db.col")
+modparam("usrloc","db_url","cachedb://mongodb:mycluster")
+...
+                </programlisting>
+            </example>
+
+            <para>
+				With such a setup, the usrloc module will store the contacts in the MongoDB cluster, in the 'my_db' database, in the 'location' collection.
+            </para>
+            <para>
+				The same mechanism/setup can be used to run other modules ( like dialog, permissions, drouting, etc ) on top of a cachedb cluster.
+            </para>
+        </section>
+    </section>
+
+    <section>
+        <title>Current Limitations</title>
+        <section>
+            <title>
+                <varname>CacheDB modules integration</varname>
+            </title>
+            <para>
+				Currently the only cachedb_* module that implements this functionality is the cachedb_mongodb module, so currently you can only emulate SQL queries to a MongoDB instance/cluster.
+
+				There are plans to also extend this functionality to other cachedb_* backends, like Cassandra and CouchBase.
+            </para>
+        </section>
+
+        <section>
+            <title>
+                <varname>Extensive Testing Needed</varname>
+            </title>
+            <para>
+				Since there are many OpenSIPS modules that currently use the DB interface, it wasn't feasible to test all scenarios with all modules, and there still might be some incompatibilities.  
+
+				The module was tested with some regularily used modules ( like usrloc, dialog, permissions, drouting ), but more testing is very much welcome, and feedback is appreciated.
+            </para>
+        </section>
+
+        <section>
+            <title>
+                <varname>CacheDB Specific 'schema' and other incompatibilities</varname>
+            </title>
+            <para>
+				Since the NoSQL backends do not usually have a strict schema involved,
+				we do not provide scripts for creating such schemas, since the insertion ops will trigger the dinamically creation of the schema and info.
+
+				Still, a specific data collection needs to be present, and that is the equivalent of the 'version' table from the SQL. Since most modules check the version table at the module setup, it's the user's responsability to setup such a 'version' collection in the respective NoSQL back-end.
+
+				For example, for the MongoDB cluster, 'version' is a reserved keyword, so one would have to change the default version table that OpenSIPS uses ( via the 'db_version_table' global parameter ) and then manually insert the version number with something like db.my_version_table.insert({table_version : NumberInt(5), table_name : "address"})
+            </para>
+        </section>
+    </section>
+</chapter>
+

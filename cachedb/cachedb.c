@@ -133,7 +133,7 @@ int cachedb_bind_mod(str *url,cachedb_funcs *funcs)
 
 	cde = lookup_cachedb(&cachedb_name);
 	if (cde == NULL) {
-		LM_ERR("failed to bind to %.*s module. Is it loaded ?\n",
+		LM_ERR("failed to bind to [%.*s] module. Is it loaded ?\n",
 				cachedb_name.len,cachedb_name.s);
 		return -1;
 	}

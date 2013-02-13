@@ -1211,9 +1211,8 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 						break;
 				
 				}
-
-				bson_destroy(&new_b);
 			}
+			bson_destroy(&new_b);
 			return -1;
 		}
 		break;
@@ -1243,4 +1242,496 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 	LM_DBG("No suitable response found\n");
 	mongo_cursor_destroy(m_cursor);
 	return -2;
+}
+
+#define MONGO_DB_KEY_TRANS(key,val,index,op,query)\
+	do { \
+		if (VAL_NULL(val+index) == 0) { \
+			memcpy(key_buff,key[index]->s,key[index]->len); \
+			key_buff[key[index]->len]=0; \
+			if (op != NULL && strcmp(op[index],OP_EQ)) { \
+				bson_append_start_object(&query,key_buff);\
+				if (strcmp(op[index],OP_LT) == 0) \
+					memcpy(key_buff,"$lt",4); \
+				else if (strcmp(op[index],OP_GT) == 0) \
+					memcpy(key_buff,"$gt",4); \
+				else if (strcmp(op[index],OP_LEQ) == 0) \
+					memcpy(key_buff,"$lte",5); \
+				else if (strcmp(op[index],OP_GEQ) == 0) \
+					memcpy(key_buff,"$gte",5); \
+				else if (strcmp(op[index],OP_NEQ) == 0) \
+					memcpy(key_buff,"$ne",4); \
+			} \
+			switch VAL_TYPE(val+index) { \
+				case DB_INT: \
+					bson_append_int(&query,key_buff,VAL_INT(val+index)); \
+					break; \
+				case DB_STRING: \
+					bson_append_string(&query,key_buff,VAL_STRING(val+index)); \
+					break; \
+				case DB_STR: \
+					bson_append_string_n(&query,key_buff,VAL_STR(val+index).s, \
+							VAL_STR(val+index).len); \
+					break; \
+				case DB_BLOB: \
+					bson_append_string_n(&query,key_buff,VAL_BLOB(val+index).s, \
+							VAL_BLOB(val+index).len); \
+					break; \
+				case DB_DOUBLE: \
+					bson_append_double(&query,key_buff,VAL_DOUBLE(val+index)); \
+					break; \
+				case DB_BIGINT: \
+					bson_append_long(&query,key_buff,VAL_BIGINT(val+index)); \
+					break; \
+				case DB_DATETIME: \
+					bson_append_time_t(&query,key_buff,VAL_TIME(val+index)); \
+					break; \
+				case DB_BITMAP: \
+					bson_append_int(&query,key_buff,VAL_BITMAP(val+index)); \
+					break; \
+			} \
+			if (op != NULL && strcmp(op[index],OP_EQ)) { \
+				bson_append_finish_object(&query); \
+			} \
+		} \
+	} while (0)
+
+int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_op_t* _op,const db_val_t* _v, const db_key_t* _c, const int _n, const int _nc,const db_key_t _o, db_res_t** _r)
+{
+	char key_buff[32],namespace_buff[64],*p;
+	bson query;
+	bson fields;
+	bson err_b;
+	int i,j,row_no;
+	mongo *conn = &MONGO_CDB_CON(con);
+	mongo_cursor *m_cursor;
+	bson_iterator it;
+	char hex_oid[25];
+	db_row_t *current;
+	db_val_t *cur_val;
+	static str dummy_string = {"", 0};
+
+	if (!_c) {
+		LM_ERR("The module does not support 'select *' SQL queries \n");
+		return -1;
+	}
+
+	bson_init(&query);
+	if (_n) {
+		bson_append_start_object(&query, "$query");
+		for (i=0;i<_n;i++) {
+			MONGO_DB_KEY_TRANS(_k,_v,i,_op,query);
+		}
+		bson_append_finish_object(&query);
+	}
+
+	if (_o) {
+		memcpy(key_buff,_o->s,_o->len);
+		key_buff[_o->len]=0;
+		bson_append_start_object(&query, "$orderby");
+		bson_append_int(&query,key_buff,1);
+		bson_append_finish_object(&query);
+	}
+
+	bson_finish(&query);
+
+	bson_init(&fields);
+	for (i=0;i<_nc;i++) {
+		 memcpy(key_buff,_c[i]->s,_c[i]->len);
+		 key_buff[_c[i]->len]=0;
+		 bson_append_bool(&fields,key_buff,1);
+	}
+
+	/* we skip the _id key, we always leave it as auto-generated */
+	bson_append_bool(&fields,"_id",0);
+	bson_finish(&fields);
+
+	p=namespace_buff;
+	i = strlen(MONGO_DATABASE(con));
+	memcpy(p,MONGO_DATABASE(con),i);
+	p +=i;
+	*p++ = '.';
+	memcpy(p,table->s,table->len);
+	p+= table->len;
+	*p = 0;
+
+	LM_DBG("Running raw mongo query on table %s\n",namespace_buff);
+
+	for (i=0;i<2;i++) {
+		m_cursor = mongo_find(conn,namespace_buff,
+				&query,&fields,0,0,mongo_slave_ok);
+		if (m_cursor == NULL) {
+			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			mongo_reconnect(conn) == MONGO_OK &&
+			mongo_check_connection(conn) == MONGO_OK) {
+				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
+				continue;
+			}
+			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			bson_iterator_init(&it,&err_b);
+			while( bson_iterator_next(&it)) {
+				LM_DBG("Fetched key %s\n",bson_iterator_key(&it));	
+				switch( bson_iterator_type( &it ) ) {
+					case BSON_DOUBLE:
+						LM_DBG("(double) %e\n",bson_iterator_double(&it));
+						break;
+					case BSON_INT:
+						LM_DBG("(int) %d\n",bson_iterator_int(&it));
+						break;
+					case BSON_STRING:
+						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
+						break;
+					case BSON_OID:
+						bson_oid_to_string(bson_iterator_oid(&it),hex_oid);
+						LM_DBG("(oid) \"%s\"\n",hex_oid);
+						break;
+					default:
+						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
+						break;
+				
+				}
+			}
+			goto error;
+		}
+		break;
+	}
+
+	MONGO_CDB_CURSOR(con) = m_cursor;
+
+	*_r = db_new_result();
+	if (*_r == NULL) {
+		LM_ERR("Failed to init new result \n");
+		goto error;
+	}
+
+	RES_COL_N(*_r) = _nc;
+
+	row_no = m_cursor->reply->fields.num;
+	LM_DBG("We have %d rows\n",row_no);
+	if (row_no == 0) {
+		LM_DBG("No rows returned from Mongo \n");
+		bson_destroy(&fields);
+		bson_destroy(&query);
+		return 0;
+	}
+
+	/* on first iteration we allocate the result
+	 * we always assume the query returns exactly the number
+	 * of 'columns' as were requested */
+	if (db_allocate_columns(*_r,_nc) != 0) {
+		LM_ERR("Failed to allocate columns \n");
+		goto error2;
+	}
+
+	/* and we initialize the names as if all are there */
+	for (j=0;j<_nc;j++) {
+		/* since we don't have schema, the types will be allocated
+		 * when we fetch the actual rows */
+		RES_NAMES(*_r)[j]->s = _c[j]->s;
+		RES_NAMES(*_r)[j]->len = _c[j]->len;
+	}
+
+	if (db_allocate_rows(*_r,row_no) != 0) {
+		LM_ERR("No more private memory for rows \n");
+		goto error2;
+	}
+
+	RES_ROW_N(*_r) = row_no;
+
+	i=0;
+	while( mongo_cursor_next(m_cursor) == MONGO_OK ) {
+		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
+		current = &(RES_ROWS(*_r)[i]);
+		ROW_N(current) = RES_COL_N(*_r);
+		for (j=0;j<_nc;j++) {
+			memcpy(key_buff,_c[j]->s,_c[j]->len);
+			key_buff[_c[j]->len]=0;
+			cur_val = &ROW_VALUES(current)[j];
+			if (bson_find(&it,mongo_cursor_bson(m_cursor),key_buff) == BSON_EOO) {
+				memset(cur_val,0,sizeof(db_val_t));
+				VAL_STRING(cur_val) = dummy_string.s;
+				VAL_STR(cur_val) = dummy_string;
+				VAL_BLOB(cur_val) = dummy_string;
+				/* we treat null values as DB string */
+				VAL_TYPE(cur_val) = DB_STRING; 
+				VAL_NULL(cur_val) = 1;
+			} else {
+				switch( bson_iterator_type( &it ) ) {
+					case BSON_INT:
+						VAL_TYPE(cur_val) = DB_INT; 
+						VAL_INT(cur_val) = bson_iterator_int(&it);
+						LM_DBG("found int %d\n",bson_iterator_int(&it));
+						break;
+					case BSON_DOUBLE:
+						VAL_TYPE(cur_val) = DB_DOUBLE;
+						VAL_DOUBLE(cur_val) = bson_iterator_double(&it);
+						LM_DBG("found double %f\n",bson_iterator_double(&it));
+						break;
+					case BSON_STRING:
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = bson_iterator_string(&it);
+						LM_DBG("Found string %s\n",bson_iterator_string(&it));
+						break;
+					case BSON_LONG:
+						VAL_TYPE(cur_val) = DB_BIGINT;
+						VAL_BIGINT(cur_val) = bson_iterator_long(&it);
+						break;
+					case BSON_DATE:
+						VAL_TYPE(cur_val) = DB_DATETIME;
+						VAL_TYPE(cur_val) = bson_iterator_time_t(&it);
+						break;
+					default:
+						LM_WARN("Unsupported type %d - treating as NULL\n",bson_iterator_type(&it));
+						memset(cur_val,0,sizeof(db_val_t));
+						VAL_STRING(cur_val) = dummy_string.s;
+						VAL_STR(cur_val) = dummy_string;
+						VAL_BLOB(cur_val) = dummy_string;
+						/* we treat null values as DB string */
+						VAL_TYPE(cur_val) = DB_STRING; 
+						VAL_NULL(cur_val) = 1;
+						break;
+				}
+			}
+		}
+		i++;
+	}
+
+	LM_DBG("Succesfully ran query\n");
+	bson_destroy(&query);
+	bson_destroy(&fields);
+	return 0;
+
+error2:
+	db_free_result(*_r);
+	mongo_cursor_destroy(m_cursor);
+	*_r = NULL;
+	MONGO_CDB_CURSOR(con) = NULL;
+error:
+	bson_destroy(&query);
+	bson_destroy(&fields);
+	return -1;
+}
+
+int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
+{
+	if ((!con) || (!_r)) {
+		LM_ERR("invalid parameter value\n");
+		return -1;
+	}
+
+	LM_DBG("freeing mongo query result \n");
+
+	if (db_free_result(_r) < 0) {
+		LM_ERR("unable to free result structure\n");
+		return -1;
+	}
+
+	mongo_cursor_destroy(MONGO_CDB_CURSOR(con));
+	MONGO_CDB_CURSOR(con) = NULL;
+	return 0;
+}
+
+int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, const db_val_t* _v,const int _n)
+{
+	int i,j,ret;
+	bson query;
+	bson err_b;
+	char key_buff[32],namespace_buff[64],*p;
+	mongo *conn = &MONGO_CDB_CON(con);
+	bson_iterator it;
+
+	bson_init(&query);
+	for (i=0;i<_n;i++) {
+		if (VAL_NULL(_v+i) == 0) {
+			MONGO_DB_KEY_TRANS(_k,_v,i,((db_op_t*)0),query);
+		}
+	}
+	bson_finish(&query);
+
+	p=namespace_buff;
+	i = strlen(MONGO_DATABASE(con));
+	memcpy(p,MONGO_DATABASE(con),i);
+	p +=i;
+	*p++ = '.';
+	memcpy(p,table->s,table->len);
+	p+= table->len;
+	*p = 0;
+
+	LM_DBG("Running raw mongo insert on table %s\n",namespace_buff);
+
+	for (j=0;j<2;j++) {
+		ret = mongo_insert(conn,namespace_buff,&query,0);
+		if (ret == MONGO_ERROR) {
+			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			mongo_reconnect(conn) == MONGO_OK &&
+			mongo_check_connection(conn) == MONGO_OK) {
+				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
+				continue;
+			}
+			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			bson_iterator_init(&it,&err_b);
+			while( bson_iterator_next(&it)) {
+				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
+				switch( bson_iterator_type( &it ) ) {
+					case BSON_DOUBLE:
+						LM_DBG("(double) %e\n",bson_iterator_double(&it));
+						break;
+					case BSON_INT:
+						LM_DBG("(int) %d\n",bson_iterator_int(&it));
+						break;
+					case BSON_STRING:
+						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
+						break;
+					default:
+						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
+						break;
+				}
+			}
+
+			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			return -1;
+		}
+		break;
+	}
+
+	return 0;
+}
+
+int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const int _n)
+{
+	int i,j,ret;
+	bson query;
+	bson err_b;
+	char key_buff[32],namespace_buff[64],*p;
+	mongo *conn = &MONGO_CDB_CON(con);
+	bson_iterator it;
+
+	bson_init(&query);
+	for (i=0;i<_n;i++) {
+			MONGO_DB_KEY_TRANS(_k,_v,i,_o,query);
+	}
+	bson_finish(&query);
+
+	p=namespace_buff;
+	i = strlen(MONGO_DATABASE(con));
+	memcpy(p,MONGO_DATABASE(con),i);
+	p +=i;
+	*p++ = '.';
+	memcpy(p,table->s,table->len);
+	p+= table->len;
+	*p = 0;
+
+	LM_DBG("Running raw mongo delete on table %s\n",namespace_buff);
+
+	for (j=0;j<2;j++) {
+		ret = mongo_remove(conn,namespace_buff,&query,0);
+		if (ret == MONGO_ERROR) {
+			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			mongo_reconnect(conn) == MONGO_OK &&
+			mongo_check_connection(conn) == MONGO_OK) {
+				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
+				continue;
+			}
+			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			bson_iterator_init(&it,&err_b);
+			while( bson_iterator_next(&it)) {
+				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
+				switch( bson_iterator_type( &it ) ) {
+					case BSON_DOUBLE:
+						LM_DBG("(double) %e\n",bson_iterator_double(&it));
+						break;
+					case BSON_INT:
+						LM_DBG("(int) %d\n",bson_iterator_int(&it));
+						break;
+					case BSON_STRING:
+						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
+						break;
+					default:
+						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
+						break;
+				}
+			}
+
+			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			return -1;
+		}
+		break;
+	}
+
+	return 0;
+}
+
+int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,const db_op_t *_o, const db_val_t* _v,const db_key_t* _uk, const db_val_t* _uv, const int _n,const int _un)
+{
+	int i,j,ret;
+	bson query,op_query;
+	bson err_b;
+	char key_buff[32],namespace_buff[64],*p;
+	mongo *conn = &MONGO_CDB_CON(con);
+	bson_iterator it;
+
+	bson_init(&query);
+	for (i=0;i<_n;i++) {
+			MONGO_DB_KEY_TRANS(_k,_v,i,_o,query);
+	}
+	bson_finish(&query);
+
+	bson_init(&op_query);
+	bson_append_start_object(&op_query, "$set");
+	for (i=0;i<_un;i++) {
+		MONGO_DB_KEY_TRANS(_uk,_uv,i,((db_op_t*)0),op_query);
+	}
+	bson_append_finish_object(&op_query);
+	bson_finish(&op_query);
+
+	p=namespace_buff;
+	i = strlen(MONGO_DATABASE(con));
+	memcpy(p,MONGO_DATABASE(con),i);
+	p +=i;
+	*p++ = '.';
+	memcpy(p,table->s,table->len);
+	p+= table->len;
+	*p = 0;
+
+	LM_DBG("Running raw mongo update on table %s\n",namespace_buff);
+
+	for (j=0;j<2;j++) {
+		ret = mongo_update(conn,namespace_buff,
+				&query,&op_query,MONGO_UPDATE_UPSERT|MONGO_UPDATE_MULTI,0);
+		if (ret == MONGO_ERROR) {
+			if (mongo_check_connection(conn) == MONGO_ERROR && 
+			mongo_reconnect(conn) == MONGO_OK &&
+			mongo_check_connection(conn) == MONGO_OK) {
+				LM_INFO("Lost connection to Mongo but reconnected. Re-Trying\n");
+				continue;
+			}
+			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			mongo_cmd_get_last_error(conn,MONGO_DATABASE(con),&err_b);
+			bson_iterator_init(&it,&err_b);
+			while( bson_iterator_next(&it)) {
+				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&it));
+				switch( bson_iterator_type( &it ) ) {
+					case BSON_DOUBLE:
+						LM_DBG("(double) %e\n",bson_iterator_double(&it));
+						break;
+					case BSON_INT:
+						LM_DBG("(int) %d\n",bson_iterator_int(&it));
+						break;
+					case BSON_STRING:
+						LM_DBG("(string) \"%s\"\n",bson_iterator_string(&it));
+						break;
+					default:
+						LM_DBG("(unknown type %d)\n",bson_iterator_type(&it));
+						break;
+				}
+			}
+			return -1;
+		}
+		break;
+	}
+
+	return 0;
 }
