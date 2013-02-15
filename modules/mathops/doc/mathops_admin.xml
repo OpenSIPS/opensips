@@ -1,0 +1,441 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+
+	<section id="sec-overview">
+	<title>Overview</title>
+	<para>
+		The mathops module provides a series of functions which enable various
+		floating point operations at &osips; script level.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules.</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>decimal_digits</varname> (integer)</title>
+		<para>
+		The precision of the results returned by all the module functions.
+		The higher the <quote>decimal_digits</quote> value, the more decimal
+		digits the results will have.
+		</para>
+		<para>
+		Default value is <quote>6</quote>.
+		</para>
+		<example>
+		<title>Setting the decimal_digits module parameter</title>
+		<programlisting format="linespecific">
+modparam("mathops", "decimal_digits", "10")
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">math_eval(expression, result_pvar)</function>
+		</title>
+		<para>
+		The function evaluates a given expression and writes the results in the
+		output pseudo-variable. The expression may contain any number of pseudo
+		variables.
+		</para>
+		<para>
+		Currently allowed syntax for specifying an expression:
+		<itemizedlist>
+		<listitem>
+			<para> Nested parantheses </para>
+		</listitem>
+		<listitem>
+			<para> binary + - / * operators </para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>expression</emphasis> - String containing a
+			mathematical expression. It can also include pseudo variables. The
+			<emphasis>string</emphasis> parameter can only be given as a string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_eval</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Compute some random math expression
+
+$avp(1) = "3.141592";
+$avp(2) = "2.71828";
+$avp(3) = "123.45678";
+
+if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(result)")) {
+	xlog("Result of expression: $avp(result)\n");
+} else {
+	xlog("Math eval failed!\n");
+}
+
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">math_trunc(number, result_pvar)</function>
+		</title>
+		<para>
+		Truncation of a number towards zero. This means that trunc(3.7) = 3.0 and
+		trunc(-2.9) = -2.0. 
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>number</emphasis> - Number to be truncated. The
+			<emphasis>number</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - statically given</para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
+				(as string value - it makes no sense to truncate integers)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_trunc</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Truncate a random number
+
+$avp(1) = "3.141492";
+
+if (math_trunc("$avp(1)", "$avp(result)")) {
+	xlog("Truncate result: $avp(result)\n");
+} else {
+	xlog("Truncate failed!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">math_floor(number, result_pvar)</function>
+		</title>
+		<para>
+		Truncates a number, always towards -infinity. This means that floor(3.7) = 3.0
+		and floor(-2.9) = -3.0
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>number</emphasis> - Number to be truncated. The
+			<emphasis>number</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - statically given</para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
+				(as string value - it makes no sense to truncate integers)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_floor</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Truncate a random number
+
+$avp(1) = "3.141492";
+
+if (math_floor("$avp(1)", "$avp(result)")) {
+	xlog("Floor result: $avp(result)\n");
+} else {
+	xlog("Floor operation failed!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">math_ceil(number, result_pvar)</function>
+		</title>
+		<para>
+		Truncates a number, always towards +infinity. This means that ceil(3.2) = 4.0
+		and ceil(-2.9) = -2.0
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>number</emphasis> - Number to be truncated. The
+			<emphasis>number</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - statically given</para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
+				(as string value - it makes no sense to truncate integers)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_ceil</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Truncate a random number
+
+$avp(1) = "3.141492";
+
+if (math_ceil("$avp(1)", "$avp(result)")) {
+	xlog("Ceil result: $avp(result)\n");
+} else {
+	xlog("Ceil operation failed!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">math_round(number, result_pvar[, decimals])</function>
+		</title>
+		<para>
+		The round function returns the nearest integer, and tie-breaking is done away
+		from zero. Examples: round(1.2) = 1.0, round(0.5) = 1.0, round(-0.5) = -1.0
+		</para>
+		<para>
+		By default, the function returns an integer. An additional parameter controls
+		the number of decimal digits of the initial number which will be kept. The
+		rounding will then be done using the remaining decimal digits, and the result
+		will be a float value, represented as a string.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>number</emphasis> - Number to be rounded. The
+			<emphasis>number</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - statically given</para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
+				(as string value - it makes no sense to truncate integers)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>decimals</emphasis> - (pvar / integer as a string) which
+			further improves the precision of the rounding.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_round</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Rounding PI
+
+$avp(1) = "3.141492";
+
+if (math_round("$avp(1)", "$avp(result)")) {
+
+	# result should be: 3
+	xlog("Round result: $avp(result)\n");
+} else {
+	xlog("Round operation failed!\n");
+}
+
+...
+
+if (math_round("$avp(1)", "$avp(result)", "4")) {
+
+	# result should be: "3.1415"
+	xlog("Round result: $avp(result)\n");
+} else {
+	xlog("Round operation failed!\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">math_round_sf(number, result_pvar, figures)</function>
+		</title>
+		<para>
+		To give a simple explanation, rounding to N significant figures is done by 
+		first obtaining the number resulted from keeping N significant figures
+		(0 padded if necessary), then adjusting it if the N+1'th digit is greater
+		or equal to 5.
+		</para>
+		<para>
+		Some examples:
+		<itemizedlist>
+		<listitem>
+			<para> round_sf(17892.987, 1) = 20000 </para>
+			<para> round_sf(17892.987, 2) = 18000 </para>
+			<para> round_sf(17892.987, 3) = 17900 </para>
+			<para> round_sf(17892.987, 4) = 17890 </para>
+			<para> round_sf(17892.987, 5) = 17893 </para>
+			<para> round_sf(17892.987, 6) = 17893.0 </para>
+			<para> round_sf(17892.987, 7) = 17892.99 </para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>number</emphasis> - Number to be rounded. The
+			<emphasis>number</emphasis> parameter can have the following types:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>string</emphasis> - statically given</para>
+				</listitem>
+
+				<listitem>
+				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
+				(as string value - it makes no sense to truncate integers)
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
+			hold the result of the evaluation. Specified as a quoted string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>figures</emphasis> - (pvar / integer as a string) which
+			further improves the precision of the rounding.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_round_sf</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Rounding PI
+
+$avp(1) = "3.141492";
+
+if (math_round_sf("$avp(1)", "$avp(result)", "4")) {
+
+	# result should be: "3.141"
+	xlog("Round result: $avp(result)\n");
+} else {
+	xlog("Round operation failed!\n");
+}
+
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+</chapter>
+

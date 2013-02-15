@@ -1,0 +1,301 @@
+mathops Module
+
+Liviu Chircu
+
+   OpenSIPS Solutions
+   <liviu@opensips.org>
+
+Edited by
+
+Liviu Chircu
+
+   Copyright © 2013 www.opensips-solutions.com
+   Revision History
+   Revision $Revision$ $Date$
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. decimal_digits (integer)
+
+        1.4. Exported Functions
+
+              1.4.1. math_eval(expression, result_pvar)
+              1.4.2. math_trunc(number, result_pvar)
+              1.4.3. math_floor(number, result_pvar)
+              1.4.4. math_ceil(number, result_pvar)
+              1.4.5. math_round(number, result_pvar[, decimals])
+              1.4.6. math_round_sf(number, result_pvar, figures)
+
+   List of Examples
+
+   1.1. Setting the decimal_digits module parameter
+   1.2. math_eval usage
+   1.3. math_trunc usage
+   1.4. math_floor usage
+   1.5. math_ceil usage
+   1.6. math_round usage
+   1.7. math_round_sf usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The mathops module provides a series of functions which enable
+   various floating point operations at OpenSIPS script level.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules..
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. decimal_digits (integer)
+
+   The precision of the results returned by all the module
+   functions. The higher the “decimal_digits” value, the more
+   decimal digits the results will have.
+
+   Default value is “6”.
+
+   Example 1.1. Setting the decimal_digits module parameter
+modparam("mathops", "decimal_digits", "10")
+
+1.4. Exported Functions
+
+1.4.1.  math_eval(expression, result_pvar)
+
+   The function evaluates a given expression and writes the
+   results in the output pseudo-variable. The expression may
+   contain any number of pseudo variables.
+
+   Currently allowed syntax for specifying an expression:
+     * Nested parantheses
+     * binary + - / * operators
+
+   Meaning of the parameters is as follows:
+     * expression - String containing a mathematical expression.
+       It can also include pseudo variables. The string parameter
+       can only be given as a string.
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+
+   This function can be used from any route.
+
+   Example 1.2. math_eval usage
+...
+# Compute some random math expression
+
+$avp(1) = "3.141592";
+$avp(2) = "2.71828";
+$avp(3) = "123.45678";
+
+if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$a
+vp(result)")) {
+        xlog("Result of expression: $avp(result)\n");
+} else {
+        xlog("Math eval failed!\n");
+}
+
+...
+
+1.4.2.  math_trunc(number, result_pvar)
+
+   Truncation of a number towards zero. This means that trunc(3.7)
+   = 3.0 and trunc(-2.9) = -2.0.
+
+   Meaning of the parameters is as follows:
+     * number - Number to be truncated. The number parameter can
+       have the following types:
+          + string - statically given
+          + pvar - value of an existing pseudo-variable (as string
+            value - it makes no sense to truncate integers)
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+
+   This function can be used from any route.
+
+   Example 1.3. math_trunc usage
+...
+# Truncate a random number
+
+$avp(1) = "3.141492";
+
+if (math_trunc("$avp(1)", "$avp(result)")) {
+        xlog("Truncate result: $avp(result)\n");
+} else {
+        xlog("Truncate failed!\n");
+}
+...
+
+1.4.3.  math_floor(number, result_pvar)
+
+   Truncates a number, always towards -infinity. This means that
+   floor(3.7) = 3.0 and floor(-2.9) = -3.0
+
+   Meaning of the parameters is as follows:
+     * number - Number to be truncated. The number parameter can
+       have the following types:
+          + string - statically given
+          + pvar - value of an existing pseudo-variable (as string
+            value - it makes no sense to truncate integers)
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+
+   This function can be used from any route.
+
+   Example 1.4. math_floor usage
+...
+# Truncate a random number
+
+$avp(1) = "3.141492";
+
+if (math_floor("$avp(1)", "$avp(result)")) {
+        xlog("Floor result: $avp(result)\n");
+} else {
+        xlog("Floor operation failed!\n");
+}
+...
+
+1.4.4.  math_ceil(number, result_pvar)
+
+   Truncates a number, always towards +infinity. This means that
+   ceil(3.2) = 4.0 and ceil(-2.9) = -2.0
+
+   Meaning of the parameters is as follows:
+     * number - Number to be truncated. The number parameter can
+       have the following types:
+          + string - statically given
+          + pvar - value of an existing pseudo-variable (as string
+            value - it makes no sense to truncate integers)
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+
+   This function can be used from any route.
+
+   Example 1.5. math_ceil usage
+...
+# Truncate a random number
+
+$avp(1) = "3.141492";
+
+if (math_ceil("$avp(1)", "$avp(result)")) {
+        xlog("Ceil result: $avp(result)\n");
+} else {
+        xlog("Ceil operation failed!\n");
+}
+...
+
+1.4.5.  math_round(number, result_pvar[, decimals])
+
+   The round function returns the nearest integer, and
+   tie-breaking is done away from zero. Examples: round(1.2) =
+   1.0, round(0.5) = 1.0, round(-0.5) = -1.0
+
+   By default, the function returns an integer. An additional
+   parameter controls the number of decimal digits of the initial
+   number which will be kept. The rounding will then be done using
+   the remaining decimal digits, and the result will be a float
+   value, represented as a string.
+
+   Meaning of the parameters is as follows:
+     * number - Number to be rounded. The number parameter can
+       have the following types:
+          + string - statically given
+          + pvar - value of an existing pseudo-variable (as string
+            value - it makes no sense to truncate integers)
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+     * decimals - (pvar / integer as a string) which further
+       improves the precision of the rounding.
+
+   This function can be used from any route.
+
+   Example 1.6. math_round usage
+...
+# Rounding PI
+
+$avp(1) = "3.141492";
+
+if (math_round("$avp(1)", "$avp(result)")) {
+
+        # result should be: 3
+        xlog("Round result: $avp(result)\n");
+} else {
+        xlog("Round operation failed!\n");
+}
+
+...
+
+if (math_round("$avp(1)", "$avp(result)", "4")) {
+
+        # result should be: "3.1415"
+        xlog("Round result: $avp(result)\n");
+} else {
+        xlog("Round operation failed!\n");
+}
+...
+
+1.4.6.  math_round_sf(number, result_pvar, figures)
+
+   To give a simple explanation, rounding to N significant figures
+   is done by first obtaining the number resulted from keeping N
+   significant figures (0 padded if necessary), then adjusting it
+   if the N+1'th digit is greater or equal to 5.
+
+   Some examples:
+     * round_sf(17892.987, 1) = 20000
+       round_sf(17892.987, 2) = 18000
+       round_sf(17892.987, 3) = 17900
+       round_sf(17892.987, 4) = 17890
+       round_sf(17892.987, 5) = 17893
+       round_sf(17892.987, 6) = 17893.0
+       round_sf(17892.987, 7) = 17892.99
+
+   Meaning of the parameters is as follows:
+     * number - Number to be rounded. The number parameter can
+       have the following types:
+          + string - statically given
+          + pvar - value of an existing pseudo-variable (as string
+            value - it makes no sense to truncate integers)
+     * result_pvar - pseudo-variable which will hold the result of
+       the evaluation. Specified as a quoted string.
+     * figures - (pvar / integer as a string) which further
+       improves the precision of the rounding.
+
+   This function can be used from any route.
+
+   Example 1.7. math_round_sf usage
+...
+# Rounding PI
+
+$avp(1) = "3.141492";
+
+if (math_round_sf("$avp(1)", "$avp(result)", "4")) {
+
+        # result should be: "3.141"
+        xlog("Round result: $avp(result)\n");
+} else {
+        xlog("Round operation failed!\n");
+}
+
+...
