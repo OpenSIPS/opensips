@@ -915,7 +915,7 @@ static int main_loop(void)
 						if (send_status_code(-1) < 0)
 							LM_ERR("failed to send status code\n");
 						clean_write_pipeend();
-						if( (si==sctp_listen && i==0) && startup_done) {
+						if( (si==sctp_listen && i==0) && startup_done)
 							*startup_done = -1;
 						exit(-1);
 					}
