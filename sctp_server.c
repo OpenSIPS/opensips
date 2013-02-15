@@ -151,7 +151,7 @@ error:
 
 
 
-int sctp_server_rcv_loop()
+int sctp_server_rcv_loop(void)
 {
 	int len;
 #ifdef DYN_BUF
