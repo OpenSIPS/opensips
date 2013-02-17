@@ -470,8 +470,9 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		for(last_dst=data->dsts,i=0,j=0 ; last_dst ; last_dst=last_dst->next) {
 			if (last_dst->id==id_val.n) {used_dst_bitmap[i] &= ~(1<<j);break;}
 			j++;
-			if (j==sizeof(unsigned int)) {i++;j=0;}
+			if (j==8*sizeof(unsigned int)) {i++;j=0;}
 		}
+		LM_DBG("sequential call of LB - previous selected dst is %d\n",id_val.n);
 	} else {
 		/* first iteration for this call */
 		grp_avp = mask_avp = id_avp = NULL;
@@ -524,6 +525,11 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 			}
 			LM_DBG("destination <%.*s> selected for LB set with free=%d "
 				"(max=%d)\n",it->uri.len, it->uri.s,ld, load);
+		} else {
+			if (it->group==grp)
+				LM_DBG("skipping destination <%.*s> (used=%d , disabled=%d)\n",
+					it->uri.len, it->uri.s,
+					(used_dst_bitmap[i] & (1<<j))?0:1 , (it->flags&LB_DST_STAT_DSBL_FLAG)?1:0 );
 		}
 		j++;
 		if (j==8*sizeof(unsigned int)) {i++;j=0;}
@@ -554,6 +560,8 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		release_lock( call_res[i]->lock );
 
 	if (dst) {
+		LM_DBG("winning destination <%.*s> selected for LB set with free=%d\n",
+			dst->uri.len, dst->uri.s,load);
 		/* change (add/edit) the AVPs for the next iteration */
 		if (grp_avp==NULL && mask_avp==NULL) {
 			grp_val.n = grp;
