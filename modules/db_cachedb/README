@@ -27,7 +27,7 @@ Vladut-Stefan Paiu
 
         1.3. Examples of Usage
 
-              1.3.1. Distributed User Location
+              1.3.1. Distributed Subscriber Base
 
         1.4. Current Limitations
 
@@ -83,33 +83,31 @@ modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017
 
 1.3. Examples of Usage
 
-1.3.1.  Distributed User Location
+1.3.1.  Distributed Subscriber Base
 
    In order to achieve such a setup, one would have to set the
-   usrloc module to run in DB_ONLY mode ( so it will always go to
-   the DB for user location information ), and then you should set
-   the DB_URL parameter of the location module to point to the
+   db_url parameter of the auth_db module to point to the
    DB_CACHEDB URL.
 
    Example 1.2. OpenSIPS CFG Snippet for using DB_CACHEDB
-loadmodule "usrloc.so"
-modparam("usrloc", "db_mode",3)
+loadmodule "auth_db.so"
+modparam("auth_db", "load_credentials", "$avp(user_rpid)=rpid")
 
 loadmodule "db_cachedb.so"
 loadmodule "cachedb_mongodb.so"
 ...
 modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017
 /my_db.col")
-modparam("usrloc","db_url","cachedb://mongodb:mycluster")
+modparam("auth_db","db_url","cachedb://mongodb:mycluster")
 ...
 
-   With such a setup, the usrloc module will store the contacts in
-   the MongoDB cluster, in the 'my_db' database, in the 'location'
-   collection.
+   With such a setup, the auth_db module will load the subscribers
+   from the MongoDB cluster, in the 'my_db' database, in the
+   'subscriber' collection.
 
    The same mechanism/setup can be used to run other modules (
-   like dialog, permissions, drouting, etc ) on top of a cachedb
-   cluster.
+   like usrloc, dialog, permissions, drouting, etc ) on top of a
+   cachedb cluster.
 
 1.4. Current Limitations
 
