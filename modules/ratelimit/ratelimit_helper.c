@@ -109,6 +109,11 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 	if (rl_set_name(name) < 0)
 		return -1;
 
+	if (pipe->my_counter + c <= 0) {
+		LM_DBG("Counter going negative\n");
+		return 1;
+	}
+
 	if (cdbf.add(cdbc, &rl_name_buffer, c ? c : -(pipe->my_counter),
 				rl_expire_time, &new_counter) < 0){
 		LM_ERR("cannot change counter for pipe %.*s with %d\n",
@@ -645,7 +650,7 @@ int w_rl_set_count(str key, int val)
 			goto release;
 		}
 	} else {
-		if (val && val < (*pipe)->counter) {
+		if (val && (val + (*pipe)->counter >= 0)) {
 			(*pipe)->counter += val;
 		} else {
 			(*pipe)->counter = 0;
