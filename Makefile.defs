@@ -501,14 +501,6 @@ else
 	RADIUS_LIB= -lradiusclient-ng
 endif
 
-ifneq ($(TLS),)
-	DEFS+= -DUSE_TLS
-endif
-
-ifneq ($(SCTP),)
-	DEFS+= -DUSE_SCTP
-endif
-
 ifeq ($(mode),)
 	mode = release
 endif

@@ -458,6 +458,10 @@ int dump_make_conf(select_menu *menu,void *arg)
 	for (it=current->item_list;it;it=it->next) {
 		fprintf(f,"%sDEFS+= -D%s #%s",
 			it->enabled?"":"#",it->name,it->description);
+		if (strcmp(it->name,"USE_TLS") == 0 && it->enabled)
+			fprintf(f,"TLS=1\n");
+		else if (strcmp(it->name,"USE_SCTP") == 0 && it->enabled)
+			fprintf(f,"SCTP=1\n");
 		it->prev_state=it->enabled;
 	}
 
