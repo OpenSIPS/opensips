@@ -38,8 +38,6 @@
 NICER?=1
 auto_gen=lex.yy.c cfg.tab.c   #lexx, yacc etc
 
-#include  source related defs
-include Makefile.sources
 
 # whether or not to install opensips.cfg or just opensips.cfg.default
 # (opensips.cfg will never be overwritten by make install, this is usefull
@@ -51,7 +49,11 @@ skip_modules?=
 
 makefile_defs=0
 DEFS:=
+TLS:=
+SCTP:=
+
 include Makefile.conf
+include Makefile.sources
 include Makefile.defs
 
 # if not set on the cmd. line or the env, exclude this modules:
@@ -158,6 +160,7 @@ export DEFS PROFILE CC LD MKDEP MKTAGS CFLAGS LDFLAGS MOD_CFLAGS MOD_LDFLAGS
 export LIBS RADIUS_LIB
 export LEX YACC YACC_FLAGS
 export PREFIX LOCALBASE SYSBASE
+export TLS SCTP
 # export relevant variables for recursive calls of this makefile 
 # (e.g. make deb)
 #export LIBS
