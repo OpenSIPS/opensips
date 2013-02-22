@@ -533,10 +533,6 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 
 	LM_DBG("%d total records loaded from table %.*s\n", n,
 		drr_table->len, drr_table->s);
-	if (n==0) {
-		LM_WARN("no valid routing rules -> discarding all destinations\n");
-		free_rt_data( rdata, 0 );
-	}
 
 	return rdata;
 error:
