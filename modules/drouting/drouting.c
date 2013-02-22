@@ -220,9 +220,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"dr_disable", (cmd_function)dr_disable,      0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
-	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_pvar_null, 0,
+	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_sgp_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{"route_to_gw",     (cmd_function)route2_gw,     1,fixup_pvar_null, 0,
+	{"route_to_gw",     (cmd_function)route2_gw,     1,fixup_sgp_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -1721,9 +1721,8 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 	unsigned short carrier_idx[DR_MAX_GWLIST];
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
-	pv_value_t val;
 	pcr_t *cr;
-	str *ruri;
+	str *ruri, id;
 	int j,n;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
@@ -1732,8 +1731,7 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 	}
 
 	/* get the carrier ID */
-	if ( pv_get_spec_value(msg, (pv_spec_p)cr_str, &val)!=0 ||
-	(val.flags&PV_VAL_STR)==0 ) {
+	if (fixup_get_svalue(msg, (gparam_p)cr_str, &id) != 0) {
 		LM_ERR("failed to get string value for carrier ID\n");
 		return -1;
 	}
@@ -1763,9 +1761,9 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 	/* ref the data for reading */
 	lock_start_read( ref_lock );
 
-	cr = get_carrier_by_id( (*rdata)->carriers, &val.rs );
+	cr = get_carrier_by_id( (*rdata)->carriers, &id );
 	if (cr==NULL) {
-		LM_ERR("carrier <%.*s> was not found\n",val.rs.len, val.rs.s );
+		LM_ERR("carrier <%.*s> was not found\n", id.len, id.s );
 		goto error;
 	}
 
@@ -1833,9 +1831,8 @@ error:
 static int route2_gw(struct sip_msg* msg, char *gw_str)
 {
 	struct sip_uri  uri;
-	pv_value_t val;
 	pgw_t *gw;
-	str *ruri;
+	str *ruri, id;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
 		LM_DBG("empty routing table\n");
@@ -1843,9 +1840,8 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	}
 
 	/* get the gw ID */
-	if ( pv_get_spec_value(msg, (pv_spec_p)gw_str, &val)!=0 ||
-	(val.flags&PV_VAL_STR)==0 ) {
-		LM_ERR("failed to get string value for gw ID\n");
+	if (fixup_get_svalue(msg, (gparam_p)gw_str, &id) != 0) {
+		LM_ERR("Invalid number pseudo variable!\n");
 		return -1;
 	}
 
@@ -1860,9 +1856,9 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	/* ref the data for reading */
 	lock_start_read( ref_lock );
 
-	gw = get_gw_by_id( (*rdata)->pgw_l, &val.rs );
+	gw = get_gw_by_id( (*rdata)->pgw_l, &id );
 	if (gw==NULL) {
-		LM_ERR("no GW found with ID <%.*s> \n",val.rs.len,val.rs.s);
+		LM_ERR("no GW found with ID <%.*s> \n", id.len, id.s);
 		goto error;
 	}
 
