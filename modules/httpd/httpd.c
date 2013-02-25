@@ -137,12 +137,6 @@ int destroy(void)
 }
 
 
-const char *httpd_lookup_arg(void *connection, const char *key)
-{
-	return MHD_lookup_connection_value((struct MHD_Connection *)connection,
-			MHD_GET_ARGUMENT_KIND, key);
-}
-
 int httpd_register_httpdcb(const char *module, str *http_root,
 			httpd_acces_handler_cb f1,
 			httpd_flush_data_cb f2,

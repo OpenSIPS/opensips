@@ -198,20 +198,20 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 {
 	int mod = -1;
 	int cmd = -1;
-	const char *url_args;
+	str arg = {NULL, 0};
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
+		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
-			(int)*upload_data_size, upload_data, con_cls);
+			(int)*upload_data_size, upload_data, *con_cls);
 	if (strncmp(method, "GET", 3)==0) {
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
-			url_args = httpd_api.lookup_arg(connection, "arg");
-			LM_DBG("url_args [%p]->[%s]\n", url_args, url_args);
-			if (mod>=0 && cmd>=0 && url_args) {
-				tree = mi_http_run_mi_cmd(mod, cmd, url_args,
+			httpd_api.lookup_arg(connection, "arg", *con_cls, &arg);
+			if (mod>=0 && cmd>=0 && arg.s) {
+				LM_INFO("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
+				tree = mi_http_run_mi_cmd(mod, cmd, &arg,
 							page, buffer, &async_hdl);
 				if (tree == NULL) {
 					LM_ERR("no reply\n");
@@ -225,9 +225,9 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 					if(0!=mi_http_build_page(page, buffer->len,
 								mod, cmd, tree)){
 						LM_ERR("unable to build response "
-							"for cmd [%d] w/ args [%s]\n",
+							"for cmd [%d] w/ args [%.*s]\n",
 							cmd,
-							url_args);
+							arg.len, arg.s);
 						*page = MI_HTTP_U_ERROR;
 					}
 				}

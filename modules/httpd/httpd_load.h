@@ -110,8 +110,10 @@ struct httpd_cb {
 
 
 
-const char *lookup_arg(void *connection, const char *key);
-typedef const char *(*lookup_arg_f)(void *connection, const char *key);
+void lookup_arg(void *connection, const char *key,
+			void *con_cls, str *val);
+typedef void (*lookup_arg_f)(void *connection, const char *key,
+			void *con_cls, str *val);
 
 int register_httpdcb(const char *mod, str *root_path,
 			httpd_acces_handler_cb f1,
@@ -128,6 +130,8 @@ typedef struct httpd_api {
 }httpd_api_t;
 
 
+void httpd_lookup_arg(void *connection, const char *key,
+			void *con_cls, str *val);
 
 typedef int(*load_httpd_f)(httpd_api_t *api);
 int httpd_bind(httpd_api_t *api);

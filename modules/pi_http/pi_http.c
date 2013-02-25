@@ -69,8 +69,8 @@ static const str PI_HTTP_U_METHOD = str_init("<html><body>"
 
 /* module parameters */
 static param_export_t params[] = {
-	{"pi_http_root", STR_PARAM,	&http_root.s},
-	{"framework",    STR_PARAM,	&filename.s},
+	{"pi_http_root",   STR_PARAM, &http_root.s},
+	{"framework",      STR_PARAM, &filename.s},
 	{0,0,0}
 };
 
@@ -207,14 +207,14 @@ void ph_answer_to_connection (void *cls, void *connection,
 	int cmd = -1;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
+		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
-			(int)*upload_data_size, upload_data, con_cls);
+			(int)*upload_data_size, upload_data, *con_cls);
 	if (strncmp(method, "GET", 3)==0) {
 		lock_get(ph_lock);
 		if(0 == ph_parse_url(url, &mod, &cmd)) {
 				page->s = buffer->s;
-			if(0!=ph_run_pi_cmd(mod, cmd, connection, page, buffer)){
+			if(0!=ph_run_pi_cmd(mod, cmd, connection, *con_cls, page, buffer)){
 				LM_ERR("unable to build response for cmd [%d]\n",
 							cmd);
 				*page = PI_HTTP_U_ERROR;

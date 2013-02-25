@@ -506,7 +506,7 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 	return hdl;
 }
 
-struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
+struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 			str *page, str *buffer, struct mi_handler **async_hdl)
 {
 	struct mi_cmd *f;
@@ -542,9 +542,9 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
 	if (f->flags&MI_NO_INPUT_FLAG) {
 		mi_cmd = NULL;
 	} else {
-		if (arg) {
-			buf.s = (char*)arg;
-			buf.len = strlen(arg);
+		if (arg->s) {
+			buf.s = arg->s;
+			buf.len = arg->len;
 			LM_DBG("start parsing [%d][%s]\n", buf.len, buf.s);
 			mi_cmd = mi_http_parse_tree(&buf);
 			if (mi_cmd==NULL)

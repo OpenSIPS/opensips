@@ -53,7 +53,7 @@ void mi_http_destroy_async_lock(void);
 
 int mi_http_init_cmds(void);
 int mi_http_parse_url(const char* url, int* mod, int* cmd);
-struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const char* arg,
+struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 			str *page, str *buffer, struct mi_handler **async_hdl);
 int mi_http_build_page(str* page, int max_page_len,
 				int mod, int cmd, struct mi_root* tree);

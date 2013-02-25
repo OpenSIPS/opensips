@@ -118,7 +118,8 @@ void ph_destroy_async_lock(void);
 
 int ph_init_cmds(ph_framework_t **framework_data, const char* filename);
 int ph_parse_url(const char* url, int* mod, int* cmd);
-int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer);
+int ph_run_pi_cmd(int mod, int cmd, void *connection, void *con_cls,
+			str *page, str *buffer);
 
 #endif
 

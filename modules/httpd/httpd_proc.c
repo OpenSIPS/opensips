@@ -98,6 +98,21 @@ skip:
 
 
 #ifdef LIBMICROHTTPD
+void httpd_lookup_arg(void *connection, const char *key,
+		void *con_cls, str *val)
+{
+	if (val) {
+		val->s = (char *)MHD_lookup_connection_value(
+				(struct MHD_Connection *)connection,
+				MHD_GET_ARGUMENT_KIND, key);
+		if (val->s) val->len = strlen(val->s);
+		else val->len = 0;
+	} else {
+		LM_ERR("NULL holder for requested val\n");
+	}
+	return;
+}
+
 int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,

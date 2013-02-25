@@ -2464,14 +2464,17 @@ error:
 
 
 
-int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
+int ph_run_pi_cmd(int mod, int cmd,
+			void *connection, void *con_cls,
+			str *page, str *buffer)
 {
 	char *p;
 	char *buf;
 	int ret;
 
-	const char *arg = NULL;
+	//const char *arg = NULL;
 	str s_arg;
+	str l_arg;
 	//unsigned long i;
 	int i;
 	int j;
@@ -2508,8 +2511,10 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 
 	if (cmd<0) return ph_build_content(page, buffer->len, mod, cmd);
 
-	arg = httpd_api.lookup_arg(connection, "cmd");
-	if(arg==NULL) return ph_build_content(page, buffer->len, mod, cmd);
+	LM_INFO("S lookup cmd\n");
+	httpd_api.lookup_arg(connection, "cmd", con_cls, &l_arg);
+	LM_INFO("E lookup cmd\n");
+	if(l_arg.s==NULL) return ph_build_content(page, buffer->len, mod, cmd);
 
 	command = &ph_modules[mod].cmds[cmd];
 
@@ -2523,15 +2528,17 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 		memset(c_vals, 0, command->c_keys_size*sizeof(db_val_t));
 		for(i=0;i<command->c_keys_size;i++){
 			s_arg.s = int2str(i, &s_arg.len);
-			arg = httpd_api.lookup_arg(connection, s_arg.s);
-			if(arg==NULL){
+			LM_INFO("S lookup %.*s\n", s_arg.len, s_arg.s);
+			httpd_api.lookup_arg(connection, s_arg.s, con_cls, &l_arg);
+			LM_INFO("E lookup %.*s\n", s_arg.len, s_arg.s);
+			if(l_arg.s==NULL){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 					"No argument for clause field #%d: %.*s.",
 					i, command->c_keys[i]->len,
 					command->c_keys[i]->s);
 				goto done;
 			}
-			s_arg.len = strlen(arg);
+			s_arg.len = l_arg.len;
 			if(s_arg.len==0){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 					"Empty argument for clause field #%d: %.*s.",
@@ -2539,8 +2546,8 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 					command->c_keys[i]->s);
 				goto done;
 			}
-			//LM_DBG("s_arg=[%s] arg=[%s]\n", s_arg.s, arg);
-			s_arg.s = (char*)arg;
+			//LM_DBG("s_arg=[%s] l_arg=[%.*s]\n", s_arg.s, l_arg.len, l_arg.s);
+			s_arg.s = l_arg.s;
 			val = &c_vals[i];
 			val->type = command->c_types[i];
 			//c_vals[i].null = 0;
@@ -2570,15 +2577,15 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 				goto done;
 			}
 			LM_DBG("looking for arg [%s]\n", c);
-			arg = httpd_api.lookup_arg(connection, c);
-			if(arg==NULL){
+			httpd_api.lookup_arg(connection, c, con_cls, &l_arg);
+			if(l_arg.s==NULL){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 					"No argument for query field #%d: %.*s.",
 					i, command->q_keys[i]->len,
 					command->q_keys[i]->s);
 				goto done;
 			}
-			s_arg.len = strlen(arg);
+			s_arg.len = l_arg.len;
 			if(s_arg.len==0 && (command->q_types[i]!=DB_STR &&
 					command->q_types[i]!=DB_STRING &&
 					command->q_types[i]!=DB_BLOB)){
@@ -2588,7 +2595,7 @@ int ph_run_pi_cmd(int mod, int cmd, void *connection, str *page, str *buffer)
 					command->q_keys[i]->s);
 				goto done;
 			}
-			s_arg.s = (char*)arg;
+			s_arg.s = l_arg.s;
 			val = &q_vals[i];
 			val->type = command->q_types[i];
 			ret = getVal(val, command->q_types[i], command->q_keys[i],
