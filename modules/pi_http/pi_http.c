@@ -53,6 +53,7 @@ static ssize_t ph_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 static struct mi_root *mi_framework_reload(struct mi_root* cmd, void* param);
 
 str http_root = str_init("pi");
+int http_method = 0;
 str filename = {NULL, 0};
 
 httpd_api_t httpd_api;
@@ -139,6 +140,11 @@ static int mod_init(void)
 	filename.len = strlen(filename.s);
 
 	http_root.len = strlen(http_root.s);
+
+	if (http_method<0 || http_method>1) {
+		LM_ERR("pi_http_method can be between [0,1]\n");
+		return -1;
+	}
 
 	/* Load httpd api */
 	if(load_httpd_api(&httpd_api)<0) {

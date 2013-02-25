@@ -70,6 +70,7 @@
 #define PI_HTTP_XML_ID_ATTR		"id"
 
 extern str http_root;
+extern int http_method;
 extern httpd_api_t httpd_api;
 
 ph_framework_t *ph_framework_data = NULL;
@@ -249,6 +250,10 @@ do{								\
 		goto error;					\
 }while(0)
 
+static const str PI_HTTP_METHOD[] = {
+	str_init("GET"),
+	str_init("POST")
+};
 
 static const str PI_HTTP_Response_Head_1 = str_init("<html><head><title>"\
 	"OpenSIPS Provisionning Interface</title>"\
@@ -315,9 +320,11 @@ static const str PI_HTTP_BREAK = str_init("<br/>");
 static const str PI_HTTP_CODE_1 = str_init("<pre>");
 static const str PI_HTTP_CODE_2 = str_init("</pre>");
 
-static const str PI_HTTP_Post_Form_1 = str_init("\n"\
-"		<form name=\"input\" method=\"get\">\n"
+static const str PI_HTTP_Post_Form_1a = str_init("\n"\
+"		<form name=\"input\" method=\"");
+static const str PI_HTTP_Post_Form_1b = str_init("\">\n"
 "			<input type=hidden name=cmd value=\"on\">\n");
+
 static const str PI_HTTP_Post_Input = str_init(\
 "			");
 static const str PI_HTTP_Post_Clause_Input = str_init("<br/>Clause:");
@@ -2191,11 +2198,13 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd)
 					PI_HTTP_Response_Menu_Cmd_td_4a);
 			if (cmd>=0){
 				if (j==1) {
-					PI_HTTP_COPY_4(p,
+					PI_HTTP_COPY_6(p,
 						PI_HTTP_Response_Menu_Cmd_td_1c,
 						PI_HTTP_CMD_ROWSPAN,
 						PI_HTTP_Response_Menu_Cmd_td_3c,
-						PI_HTTP_Post_Form_1);
+						PI_HTTP_Post_Form_1a,
+						PI_HTTP_METHOD[http_method],
+						PI_HTTP_Post_Form_1b);
 					if(ph_build_form_imput(&p, buf, max_page_len,
 							mod, cmd)!=0)
 						return -1;
@@ -2212,14 +2221,16 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd)
 		}
 		if (cmd>=0){
 			if (j==1) {
-				PI_HTTP_COPY_8(p,PI_HTTP_Response_Menu_Cmd_tr_1,
+				PI_HTTP_COPY_10(p,PI_HTTP_Response_Menu_Cmd_tr_1,
 						PI_HTTP_Response_Menu_Cmd_td_1d,
 						PI_HTTP_NBSP,
 						PI_HTTP_Response_Menu_Cmd_td_4d,
 						PI_HTTP_Response_Menu_Cmd_td_1c,
 						PI_HTTP_CMD_ROWSPAN,
 						PI_HTTP_Response_Menu_Cmd_td_3c,
-						PI_HTTP_Post_Form_1);
+						PI_HTTP_Post_Form_1a,
+						PI_HTTP_METHOD[http_method],
+						PI_HTTP_Post_Form_1b);
 				if(ph_build_form_imput(&p, buf, max_page_len,
 						mod, cmd)!=0)
 					return -1;
