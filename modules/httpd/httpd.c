@@ -46,6 +46,10 @@
 #include "httpd_load.h"
 #include "httpd_proc.h"
 
+
+#define MIN_POST_BUF_SIZE 256
+#define DEFAULT_POST_BUF_SIZE 1024
+
 /* module functions */
 static int mod_init();
 static int destroy(void);
@@ -54,6 +58,7 @@ static struct mi_root* mi_list_root_path(struct mi_root* cmd, void* param);
 int port = 8888;
 str ip = {NULL, 0};
 str buffer = {NULL, 0};
+int post_buf_size = DEFAULT_POST_BUF_SIZE;
 struct httpd_cb *httpd_cb_list = NULL;
 
 
@@ -65,9 +70,10 @@ static proc_export_t mi_procs[] = {
 
 /** Module parameters */
 static param_export_t params[] = {
-	{"port",     INT_PARAM, &port},
-	{"ip",       STR_PARAM, &ip.s},
-	{"buf_size", INT_PARAM, &buffer.len},
+	{"port",          INT_PARAM, &port},
+	{"ip",            STR_PARAM, &ip.s},
+	{"buf_size",      INT_PARAM, &buffer.len},
+	{"post_buf_size", INT_PARAM, &post_buf_size},
 	{NULL, 0, NULL}
 };
 
@@ -114,6 +120,11 @@ static int mod_init(void)
 		}
 	}
 
+	if (post_buf_size < MIN_POST_BUF_SIZE) {
+		LM_ERR("post_buf_size should be bigger then %d\n",
+			MIN_POST_BUF_SIZE);
+		return -1;
+	}
 	if (buffer.len == 0)
 		buffer.len = (pkg_mem_size/4)*3;
 	LM_DBG("buf_size=[%d]\n", buffer.len);

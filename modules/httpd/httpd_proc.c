@@ -53,6 +53,7 @@
 extern int port;
 extern str ip;
 extern str buffer;
+extern int post_buf_size;
 extern struct httpd_cb *httpd_cb_list;
 
 static const str MI_HTTP_U_URL = str_init("<html><body>"
