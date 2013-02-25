@@ -224,9 +224,6 @@ void ph_answer_to_connection (void *cls, void *connection,
 			*page = PI_HTTP_U_URL;
 		}
 		lock_release(ph_lock);
-	} else if (strncmp(method, "POST", 4)==0) {
-		LM_ERR("unexpected method [%s]\n", method);
-		*page = PI_HTTP_U_METHOD;
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = PI_HTTP_U_METHOD;
