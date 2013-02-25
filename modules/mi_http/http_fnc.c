@@ -38,6 +38,7 @@
 
 
 extern str http_root;
+extern int http_method;
 str upSinceCTime;
 
 http_mi_cmd_t* http_mi_cmds;
@@ -109,6 +110,20 @@ do{	\
 	memcpy((p), (s6).s, (s6).len); (p) += (s6).len;	\
 }while(0)
 
+#define MI_HTTP_COPY_7(p,s1,s2,s3,s4,s5,s6,s7)	\
+do{	\
+	if ((int)((p)-buf)+(s1).len+(s2).len+(s3).len+(s4).len+(s5).len+(s6).len+(s7).len>max_page_len) {	\
+		goto error;	\
+	}	\
+	memcpy((p), (s1).s, (s1).len); (p) += (s1).len;	\
+	memcpy((p), (s2).s, (s2).len); (p) += (s2).len;	\
+	memcpy((p), (s3).s, (s3).len); (p) += (s3).len;	\
+	memcpy((p), (s4).s, (s4).len); (p) += (s4).len;	\
+	memcpy((p), (s5).s, (s5).len); (p) += (s5).len;	\
+	memcpy((p), (s6).s, (s6).len); (p) += (s6).len;	\
+	memcpy((p), (s7).s, (s7).len); (p) += (s7).len;	\
+}while(0)
+
 #define MI_HTTP_COPY_10(p,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10)	\
 do{	\
 	if ((int)((p)-buf)+(s1).len+(s2).len+(s3).len+(s4).len+(s5).len+(s6).len+(s7).len+(s8).len+(s9).len+(s10).len>max_page_len) {	\
@@ -143,6 +158,30 @@ do{	\
 	memcpy((p), (s10).s, (s10).len); (p) += (s10).len;	\
 	memcpy((p), (s11).s, (s11).len); (p) += (s11).len;	\
 }while(0)
+
+#define MI_HTTP_COPY_12(p,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12)	\
+do{	\
+	if ((int)((p)-buf)+(s1).len+(s2).len+(s3).len+(s4).len+(s5).len+(s6).len+(s7).len+(s8).len+(s9).len+(s10).len+(s11).len+(s12).len>max_page_len) {	\
+		goto error;	\
+	}	\
+	memcpy((p), (s1).s, (s1).len); (p) += (s1).len;	\
+	memcpy((p), (s2).s, (s2).len); (p) += (s2).len;	\
+	memcpy((p), (s3).s, (s3).len); (p) += (s3).len;	\
+	memcpy((p), (s4).s, (s4).len); (p) += (s4).len;	\
+	memcpy((p), (s5).s, (s5).len); (p) += (s5).len;	\
+	memcpy((p), (s6).s, (s6).len); (p) += (s6).len;	\
+	memcpy((p), (s7).s, (s7).len); (p) += (s7).len;	\
+	memcpy((p), (s8).s, (s8).len); (p) += (s8).len;	\
+	memcpy((p), (s9).s, (s9).len); (p) += (s9).len;	\
+	memcpy((p), (s10).s, (s10).len); (p) += (s10).len;	\
+	memcpy((p), (s11).s, (s11).len); (p) += (s11).len;	\
+	memcpy((p), (s12).s, (s12).len); (p) += (s12).len;	\
+}while(0)
+
+static const str MI_HTTP_METHOD[] = {
+	str_init("GET"),
+	str_init("POST")
+};
 
 static const str MI_HTTP_Response_Head_1 = str_init("<html><head><title>"\
 	"OpenSIPS Management Interface</title>"\
@@ -209,7 +248,9 @@ static const str MI_HTTP_CODE_1 = str_init("<pre>");
 static const str MI_HTTP_CODE_2 = str_init("</pre>");
 
 static const str MI_HTTP_Post_1 = str_init("\n"\
-"		<form name=\"input\" method=\"get\">\n"\
+"		<form name=\"input\" method=\"");
+
+static const str MI_HTTP_Post_2 = str_init("\">\n"\
 "			<input type=\"text\" name=\"arg\"/>\n"\
 "			<input type=\"submit\" value=\"Submit\"/>\n"\
 "		</form>\n");
@@ -820,11 +861,13 @@ int mi_http_build_header(str *page, int max_page_len,
 					MI_HTTP_Response_Menu_Cmd_td_4a);
 			if (cmd>=0){
 				if (j==1) {
-					MI_HTTP_COPY_5(p,
+					MI_HTTP_COPY_7(p,
 						MI_HTTP_Response_Menu_Cmd_td_1c,
 						MI_HTTP_CMD_ROWSPAN,
 						MI_HTTP_Response_Menu_Cmd_td_3c,
 						MI_HTTP_Post_1,
+						MI_HTTP_METHOD[http_method],
+						MI_HTTP_Post_2,
 						MI_HTTP_Response_Menu_Cmd_td_4c);
 				} else if (j>MI_HTTP_ROWSPAN) {
 					MI_HTTP_COPY_3(p,
@@ -837,7 +880,7 @@ int mi_http_build_header(str *page, int max_page_len,
 		}
 		if (cmd>=0){
 			if (j==1) {
-				MI_HTTP_COPY_10(p,MI_HTTP_Response_Menu_Cmd_tr_1,
+				MI_HTTP_COPY_12(p,MI_HTTP_Response_Menu_Cmd_tr_1,
 						MI_HTTP_Response_Menu_Cmd_td_1d,
 						MI_HTTP_NBSP,
 						MI_HTTP_Response_Menu_Cmd_td_4d,
@@ -845,6 +888,8 @@ int mi_http_build_header(str *page, int max_page_len,
 						MI_HTTP_CMD_ROWSPAN,
 						MI_HTTP_Response_Menu_Cmd_td_3c,
 						MI_HTTP_Post_1,
+						MI_HTTP_METHOD[http_method],
+						MI_HTTP_Post_2,
 						MI_HTTP_Response_Menu_Cmd_td_4c,
 						MI_HTTP_Response_Menu_Cmd_tr_2);
 				j++;

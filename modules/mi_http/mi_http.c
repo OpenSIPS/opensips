@@ -47,6 +47,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
 str http_root = str_init("mi");
+int http_method = 0;
 
 httpd_api_t httpd_api;
 
@@ -61,7 +62,7 @@ static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 
 /* module parameters */
 static param_export_t mi_params[] = {
-	{"mi_http_root",		STR_PARAM, &http_root.s},
+	{"mi_http_root",   STR_PARAM, &http_root.s},
 	{0,0,0}
 };
 
@@ -100,6 +101,10 @@ static int mod_init(void)
 {
 	http_root.len = strlen(http_root.s);
 
+	if (http_method<0 || http_method>1) {
+		LM_ERR("mi_http_method can be between [0,1]\n");
+		return -1;
+	}
 	/* Load httpd api */
 	if(load_httpd_api(&httpd_api)<0) {
 		LM_ERR("Failed to load httpd api\n");
