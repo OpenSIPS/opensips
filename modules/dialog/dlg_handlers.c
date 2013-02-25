@@ -458,8 +458,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			/* reference and attached to script */
 			ref_dlg(dlg,1);
 			current_dlg_pointer = t->dialog_ctx;
-			return;
 		}
+		return;
 	}
 
 	if (type==TMCB_TRANS_DELETED)
