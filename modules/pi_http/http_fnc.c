@@ -2511,9 +2511,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 
 	if (cmd<0) return ph_build_content(page, buffer->len, mod, cmd);
 
-	LM_INFO("S lookup cmd\n");
 	httpd_api.lookup_arg(connection, "cmd", con_cls, &l_arg);
-	LM_INFO("E lookup cmd\n");
 	if(l_arg.s==NULL) return ph_build_content(page, buffer->len, mod, cmd);
 
 	command = &ph_modules[mod].cmds[cmd];
@@ -2528,9 +2526,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		memset(c_vals, 0, command->c_keys_size*sizeof(db_val_t));
 		for(i=0;i<command->c_keys_size;i++){
 			s_arg.s = int2str(i, &s_arg.len);
-			LM_INFO("S lookup %.*s\n", s_arg.len, s_arg.s);
 			httpd_api.lookup_arg(connection, s_arg.s, con_cls, &l_arg);
-			LM_INFO("E lookup %.*s\n", s_arg.len, s_arg.s);
 			if(l_arg.s==NULL){
 				PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 					"No argument for clause field #%d: %.*s.",
