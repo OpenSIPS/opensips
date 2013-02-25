@@ -152,14 +152,15 @@ static const str MI_HTTP_Response_Head_1 = str_init("<html><head><title>"\
 		"a:hover{text-decoration:none;}a{text-decoration:underline;}"\
 		".foot{padding-top:40px;font-size:10px;color:#333333;}"\
 		".foot a{font-size:10px;color:#000000;}"
-		"table.center{margin-left:auto;margin-right:auto;}\n"\
+		"table.center{margin-left:auto;margin-right:auto;}"\
 	"</style>"\
 	"<meta http-equiv=\"Expires\" content=\"0\">"\
 	"<meta http-equiv=\"Pragma\" content=\"no-cache\">");
 
 
 static const str MI_HTTP_Response_Head_2 = str_init(\
-"</head>"\
+"<link rel=\"icon\" type=\"image/png\" href=\"http://opensips.org/favicon.png\">"\
+"</head>\n"\
 "<body alink=\"#000000\" bgcolor=\"#ffffff\" link=\"#000000\" text=\"#000000\" vlink=\"#000000\">");
 
 static const str MI_HTTP_Response_Title_Table_1 = str_init(\
