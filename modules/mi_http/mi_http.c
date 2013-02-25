@@ -210,7 +210,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
 			httpd_api.lookup_arg(connection, "arg", *con_cls, &arg);
 			if (mod>=0 && cmd>=0 && arg.s) {
-				LM_INFO("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
+				LM_DBG("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
 				tree = mi_http_run_mi_cmd(mod, cmd, &arg,
 							page, buffer, &async_hdl);
 				if (tree == NULL) {
