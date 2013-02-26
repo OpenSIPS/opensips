@@ -61,6 +61,11 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 
 #ifdef LIBMICROHTTPD
 struct MHD_Daemon *dmn;
+
+struct post_request {
+	struct MHD_PostProcessor *pp;
+	int status;
+};
 #endif
 
 struct httpd_cb *get_httpd_cb(const char *url)
@@ -99,6 +104,73 @@ skip:
 
 
 #ifdef LIBMICROHTTPD
+static int post_iterator (void *cls,
+		enum MHD_ValueKind kind,
+		const char *key,
+		const char *filename,
+		const char *content_type,
+		const char *transfer_encoding,
+		const char *value, uint64_t off, size_t size)
+{
+	int key_len;
+	struct post_request *pr;
+
+	LM_DBG("POST_ITERATOR: cls=%p, kind=%d key=[%p]->'%s'"
+			" filename='%s' content_type='%s' transfer_encoding='%s'"
+			" value=[%p]->'%s' off=%ld size=%ld\n",
+			cls, kind, key, key,
+			filename, content_type, transfer_encoding,
+			value, value, off, size);
+
+
+	pr = (struct post_request*)cls;
+	if (pr==NULL) {
+		LM_CRIT("corrupted data: null cls\n");
+		return MHD_NO;
+	}
+
+	if (off!=0) {
+		if (size==0) {
+			/* This is the last call post_iterator call
+			 * before destroying the post_processor. */
+			return MHD_YES;
+		} else {
+			LM_ERR("Trunkated data: post_iterator buffer to small!"
+					" Increase [FIXME]\n");
+			pr->status = -1; return MHD_NO;
+		}
+	}
+
+	if (key) {
+		key_len = strlen(key);
+		if (key_len==0) {
+			LM_ERR("empty key\n");
+			pr->status = -1; return MHD_NO;
+		}
+	} else {
+		LM_ERR("NULL key\n");
+		pr->status = -1; return MHD_NO;
+	}
+
+	if (filename) {
+		LM_ERR("we don't support file uploading\n");
+		pr->status = -1; return MHD_NO;
+	}
+	if (content_type) {
+		LM_ERR("we don't support content_type\n");
+		pr->status = -1; return MHD_NO;
+	}
+	if (transfer_encoding) {
+		LM_ERR("we don't support transfer_encoding\n");
+		pr->status = -1; return MHD_NO;
+	}
+
+	LM_DBG("[%.*s]->[%.*s]\n", key_len, key, (int)size, value);
+	
+	return MHD_YES;
+}
+
+
 void httpd_lookup_arg(void *connection, const char *key,
 		void *con_cls, str *val)
 {
@@ -121,26 +193,83 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 {
 	str page = {NULL, 0};
 	struct MHD_Response *response;
-	int ret = 0;
+	int ret;
 	void *async_data = NULL;
 	struct httpd_cb *cb;
 	const char *normalised_url;
+	struct post_request *pr;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-		"versio=%s, upload_data[%d]=%p, con_cls=%p\n",
+		"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
-			(int)*upload_data_size, upload_data, con_cls);
+			*upload_data_size, upload_data, *con_cls);
 
-	cb = get_httpd_cb(url);
-	if (cb) {
-		normalised_url = &url[cb->http_root->len+1];
-		LM_DBG("normalised_url=[%s]\n", normalised_url);
-		cb->callback(cls, (void*)connection,
-				normalised_url,
-				method, version,
-				upload_data, upload_data_size, con_cls,
-				&buffer, &page);
-	} else {
+	if(strncmp(method, "POST", 4)==0) {
+		pr = *con_cls;
+		if(pr == NULL){
+			pr = pkg_malloc(sizeof(struct post_request));
+			if(pr==NULL) {
+				LM_ERR("oom while allocating post_request structure\n");
+				return MHD_NO;
+			}
+			memset(pr, 0, sizeof(struct post_request));
+
+			LM_DBG("running MHD_create_post_processor ...\n");
+			pr->pp = MHD_create_post_processor(connection,
+											post_buf_size,
+											&post_iterator,
+											pr);
+			if(pr->pp==NULL) {
+				LM_ERR("Unable to execute MHD_create_post_processor\n");
+				return MHD_NO;
+			}
+
+			*con_cls = pr;
+			return MHD_YES;
+		} else {
+			LM_DBG("running MHD_post_process: "
+					"pp=%p status=%d upload_data_size=%ld\n",
+					pr->pp, pr->status, *upload_data_size);
+			if (pr->status<0) {
+				return MHD_NO;
+			}
+			ret =MHD_post_process(pr->pp, upload_data, *upload_data_size);
+			LM_DBG("ret=%d upload_data_size=%ld\n", ret, *upload_data_size);
+			if(*upload_data_size != 0) {
+				*upload_data_size = 0;
+				return MHD_YES;
+			}
+			MHD_destroy_post_processor(pr->pp);
+			LM_DBG("done MHD_destroy_post_processor\n");
+
+			cb = get_httpd_cb(url);
+			if (cb) {
+				normalised_url = &url[cb->http_root->len+1];
+				LM_DBG("normalised_url=[%s]\n", normalised_url);
+				cb->callback(cls, (void*)connection,
+						normalised_url,
+						method, version,
+						upload_data, upload_data_size, con_cls,
+						&buffer, &page);
+			} else {
+				page = MI_HTTP_U_URL;
+			}
+			pkg_free(pr);
+		}
+	}else if(strncmp(method, "GET", 3)==0) {
+		cb = get_httpd_cb(url);
+		if (cb) {
+			normalised_url = &url[cb->http_root->len+1];
+			LM_DBG("normalised_url=[%s]\n", normalised_url);
+			cb->callback(cls, (void*)connection,
+					normalised_url,
+					method, version,
+					upload_data, upload_data_size, con_cls,
+					&buffer, &page);
+		} else {
+			page = MI_HTTP_U_URL;
+		}
+	}else{
 		page = MI_HTTP_U_URL;
 	}
 
