@@ -190,7 +190,11 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 		}
 	}
 
-	if(p && p->expires < (int)time(NULL))
+	if (p && p->expires < (int)time(NULL) &&
+	!(p->expires==0 &&  p->waiting_reply && p->etag.len==0) )
+	/* presentities with expires=0, waiting for reply and no etag are newly added
+	 * presentities which were not yet confirmed (no reply received for first PUBLISH)
+	 * and we should find such records !  -bogdan */
 		return 0;
 
 	return p;
