@@ -110,6 +110,25 @@ modparam("httpd", "buf_size", 524288)
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>post_buf_size</varname> (integer)</title>
+		<para>
+		It specifies the length (in bytes) of the POST HTTP requests
+		processing buffer.  For large POST request, the default value
+		might require to be increased.
+		</para>
+		<para>
+		<emphasis> The default value is 1024. The minumal value is 256.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>post_buf_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "post_buf_size", 4096)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
