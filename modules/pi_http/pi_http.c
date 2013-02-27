@@ -70,6 +70,7 @@ static const str PI_HTTP_U_METHOD = str_init("<html><body>"
 /* module parameters */
 static param_export_t params[] = {
 	{"pi_http_root",   STR_PARAM, &http_root.s},
+	{"pi_http_method", INT_PARAM, &http_method},
 	{"framework",      STR_PARAM, &filename.s},
 	{0,0,0}
 };
@@ -210,7 +211,8 @@ void ph_answer_to_connection (void *cls, void *connection,
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
 			(int)*upload_data_size, upload_data, *con_cls);
-	if (strncmp(method, "GET", 3)==0) {
+	if ((strncmp(method, "GET", 3)==0)
+		|| (strncmp(method, "POST", 4)==0)) {
 		lock_get(ph_lock);
 		if(0 == ph_parse_url(url, &mod, &cmd)) {
 				page->s = buffer->s;
