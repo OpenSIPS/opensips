@@ -46,7 +46,7 @@
 	<section>
 		<title><varname>mi_http_root</varname>(string)</title>
 		<para>
-		It specifies the root path for mi http requests.
+		Specifies the root path for mi http requests.
 		The link to the mi web interface must be constructed
 		using the following patern:
 		http://[opensips_IP]:[opensips_mi_port]/[mi_http_root]
@@ -59,6 +59,27 @@
 		<programlisting format="linespecific">
 ...
 modparam("mi_http", "mi_http_root", "opensips_mi")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>mi_http_method</varname>(integer)</title>
+		<para>
+		Specifies the HTTP request method to be used:
+		<itemizedlist>
+			<listitem><para>0 - use GET HTTP request</para></listitem>
+			<listitem><para>1 - use POST HTTP request</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>The default value is 0.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mi_http_method</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_http", "mi_http_method", 1)
 ...
 </programlisting>
 		</example>

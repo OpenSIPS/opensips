@@ -8,10 +8,10 @@ Edited by
 
 Ovidiu Sas
 
-   Copyright © 2011-2012 VoIP Embedded, Inc.
+   Copyright © 2011-2013 VoIP Embedded, Inc.
    Revision History
-   Revision $Rev: 8580 $ $Date: 2011-11-21 14:51:00 -0500 (Mon, 21
-                         Nov 2011) $
+   Revision $Rev: 8688 $ $Date: 2013-01-29 07:35:11 -0500 (Tue, 29
+   Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -27,6 +27,7 @@ Ovidiu Sas
         1.4. Exported Parameters
 
               1.4.1. mi_http_root(string)
+              1.4.2. mi_http_method(integer)
 
         1.5. Exported Functions
         1.6. Known issues
@@ -34,6 +35,7 @@ Ovidiu Sas
    List of Examples
 
    1.1. Set mi_http_root parameter
+   1.2. Set mi_http_method parameter
 
 Chapter 1. Admin Guide
 
@@ -58,8 +60,8 @@ Chapter 1. Admin Guide
 
 1.4.1. mi_http_root(string)
 
-   It specifies the root path for mi http requests. The link to
-   the mi web interface must be constructed using the following
+   Specifies the root path for mi http requests. The link to the
+   mi web interface must be constructed using the following
    patern: http://[opensips_IP]:[opensips_mi_port]/[mi_http_root]
 
    The default value is "mi".
@@ -67,6 +69,19 @@ Chapter 1. Admin Guide
    Example 1.1. Set mi_http_root parameter
 ...
 modparam("mi_http", "mi_http_root", "opensips_mi")
+...
+
+1.4.2. mi_http_method(integer)
+
+   Specifies the HTTP request method to be used:
+     * 0 - use GET HTTP request
+     * 1 - use POST HTTP request
+
+   The default value is 0.
+
+   Example 1.2. Set mi_http_method parameter
+...
+modparam("mi_http", "mi_http_method", 1)
 ...
 
 1.5. Exported Functions

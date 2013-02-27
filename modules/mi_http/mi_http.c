@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2011-2012 VoIP Embedded Inc.
+ * Copyright (C) 2011-2013 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
  *
