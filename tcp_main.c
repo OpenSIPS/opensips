@@ -1900,6 +1900,9 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	char *p;
 	int len;
 
+	if (tcp_disable)
+		return init_mi_tree( 404, MI_SSTR("TCP support disabled"));
+
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==NULL)
 		return 0;
