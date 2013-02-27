@@ -47,6 +47,7 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../ut.h"
+#include "../../sliblist.h"
 #include "httpd_load.h"
 
 
@@ -58,6 +59,8 @@ extern struct httpd_cb *httpd_cb_list;
 
 static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
+static const str MI_HTTP_U_METHOD = str_init("<html><body>"
+"Unsupported HTTP request!</body></html>");
 
 #ifdef LIBMICROHTTPD
 struct MHD_Daemon *dmn;
@@ -65,9 +68,87 @@ struct MHD_Daemon *dmn;
 struct post_request {
 	struct MHD_PostProcessor *pp;
 	int status;
+	slinkedl_list_t *p_list;
 };
 #endif
 
+/**
+ * Data structure to store inside elents of slinkedl_list list.
+ */
+typedef struct str_str {
+	str key;
+	str val;
+} str_str_t;
+
+
+/**
+ * Allocator for the slinkedl_list list.
+ */
+void *httpd_alloc(size_t size) { return pkg_malloc(size); }
+
+/**
+ * De-allocator for the slinkedl_list list.
+ *
+ * @param ptr The pointer to memory that we want to free up.
+ */
+void httpd_free(void *ptr) { pkg_free(ptr); return; }
+
+/**
+ * Function to extract data from an element of a slinkedl_list list.
+ *
+ * @param e_data Pointer to the data stored by the current
+ *               element being processed (a str_str_t type).
+ * @param data   Pointer to the key idetifier.
+ * @param r_data Pointer where the value that we are looking for
+ */
+int httpd_get_val(void *e_data, void *data, void *r_data)
+{
+	str_str_t *kv = (str_str_t*)e_data;
+	str *val = (str*)r_data;
+	if (kv==NULL) {
+		LM_ERR("null data\n");
+	} else {
+		if (strncmp(kv->key.s, data, kv->key.len)==0) {
+			val->s = kv->val.s;
+			val->len = kv->val.len;
+			LM_DBG("DATA=[%p] [%p][%p] [%.*s]->[%.*s]\n",
+				kv, kv->key.s, kv->val.s,
+				kv->key.len, kv->key.s,
+				kv->val.len, kv->val.s);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Function to print data stored in  slinkedl_list list elemnts.
+ * For debugging purposes only.
+ */
+/*
+int httpd_print_data(void *e_data, void *data, void *r_data)
+{
+	str_str_t *kv = (str_str_t*)e_data;
+	if (kv==NULL) {
+		LM_ERR("null data\n");
+	} else {
+		LM_DBG("data=[%p] [%p][%p] [%.*s]->[%.*s]\n",
+			kv, kv->key.s, kv->val.s,
+			kv->key.len, kv->key.s,
+			kv->val.len, kv->val.s);
+	}
+	return 0;
+}
+*/
+
+
+/**
+ * Function that retrieves the callback function that should
+ * handle the current request.
+ *
+ * @param url Pointer to the root part of the HTTP URL.
+ * @return    The callback function to handle the HTTP request.
+ */
 struct httpd_cb *get_httpd_cb(const char *url)
 {
 	int url_len;
@@ -102,7 +183,6 @@ skip:
 	return NULL;
 }
 
-
 #ifdef LIBMICROHTTPD
 static int post_iterator (void *cls,
 		enum MHD_ValueKind kind,
@@ -114,8 +194,10 @@ static int post_iterator (void *cls,
 {
 	int key_len;
 	struct post_request *pr;
+	str_str_t *kv;
+	char *p;
 
-	LM_DBG("POST_ITERATOR: cls=%p, kind=%d key=[%p]->'%s'"
+	LM_DBG("post_iterator: cls=%p, kind=%d key=[%p]->'%s'"
 			" filename='%s' content_type='%s' transfer_encoding='%s'"
 			" value=[%p]->'%s' off=%ld size=%ld\n",
 			cls, kind, key, key,
@@ -126,7 +208,7 @@ static int post_iterator (void *cls,
 	pr = (struct post_request*)cls;
 	if (pr==NULL) {
 		LM_CRIT("corrupted data: null cls\n");
-		return MHD_NO;
+		pr->status = -1; return MHD_NO;
 	}
 
 	if (off!=0) {
@@ -136,7 +218,7 @@ static int post_iterator (void *cls,
 			return MHD_YES;
 		} else {
 			LM_ERR("Trunkated data: post_iterator buffer to small!"
-					" Increase [FIXME]\n");
+					" Increase post_buf_size value\n");
 			pr->status = -1; return MHD_NO;
 		}
 	}
@@ -167,24 +249,61 @@ static int post_iterator (void *cls,
 
 	LM_DBG("[%.*s]->[%.*s]\n", key_len, key, (int)size, value);
 	
+	kv = (str_str_t*)slinkedl_append(pr->p_list,
+						sizeof(str_str_t) + key_len + size);
+	p = (char*)(kv + 1);
+	kv->key.len = key_len; kv->key.s = p;
+	memcpy(p, key, key_len);
+	p += key_len;
+	kv->val.len = size; kv->val.s = p; 
+	memcpy(p, value, size);
+	LM_DBG("inserting element pr=[%p] pp=[%p] p_list=[%p]\n",
+				pr, pr->pp, pr->p_list);
+
 	return MHD_YES;
 }
 
 
+/**
+ * Performs lookup values for given keys.
+ * For GET requests, we will use the libmicrohttpd's
+ * internal API: MHD_lookup_connection_value().
+ * For POST requests, we will retrieve the value from
+ * the slinkedl_list that was created and populated by
+ * the post_iterator().
+ *
+ * @param connection Pointer to the MHD_Connection
+ * @param key        The key for which we need to retrieve
+ *                   the value.
+ * @param con_cls    This is a pointer to the slinkedl_list
+ *                   that was passed back and forth via
+ *                   several callback between the application
+ *                   and the libmicrohttpd library.
+ * @param val        Pointer to the value that we are looking
+ *                   for.
+ */
 void httpd_lookup_arg(void *connection, const char *key,
 		void *con_cls, str *val)
 {
+	slinkedl_list_t *list = (slinkedl_list_t*)con_cls;
+
 	if (val) {
-		val->s = (char *)MHD_lookup_connection_value(
-				(struct MHD_Connection *)connection,
-				MHD_GET_ARGUMENT_KIND, key);
-		if (val->s) val->len = strlen(val->s);
-		else val->len = 0;
+		if (list==NULL) {
+			val->s = (char *)MHD_lookup_connection_value(
+					(struct MHD_Connection *)connection,
+						MHD_GET_ARGUMENT_KIND, key);
+			if (val->s) val->len = strlen(val->s);
+			else val->len = 0;
+		} else {
+			slinkedl_traverse(list, &httpd_get_val, (void *)key, val);
+		}
 	} else {
 		LM_ERR("NULL holder for requested val\n");
 	}
+
 	return;
 }
+
 
 int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		const char *url, const char *method,
@@ -200,7 +319,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	struct post_request *pr;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-		"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
+			"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
 			*upload_data_size, upload_data, *con_cls);
 
@@ -213,8 +332,13 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				return MHD_NO;
 			}
 			memset(pr, 0, sizeof(struct post_request));
+			pr->p_list = slinkedl_init(&httpd_alloc, &httpd_free);
+			if (pr->p_list==NULL) {
+				LM_ERR("oom while allocating list\n");
+				return MHD_NO;
+			}
 
-			LM_DBG("running MHD_create_post_processor ...\n");
+			LM_DBG("running MHD_create_post_processor\n");
 			pr->pp = MHD_create_post_processor(connection,
 											post_buf_size,
 											&post_iterator,
@@ -225,12 +349,19 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			}
 
 			*con_cls = pr;
+			LM_DBG("pr=[%p] pp=[%p] p_list=[%p]\n",
+					pr, pr->pp, pr->p_list);
 			return MHD_YES;
 		} else {
 			LM_DBG("running MHD_post_process: "
 					"pp=%p status=%d upload_data_size=%ld\n",
 					pr->pp, pr->status, *upload_data_size);
 			if (pr->status<0) {
+				slinkedl_list_destroy(pr->p_list);
+				pr->p_list = NULL;
+				/* FIXME:
+				 * It might be better to reply with an error
+				 * instead of resetting the connection via MHD_NO */
 				return MHD_NO;
 			}
 			ret =MHD_post_process(pr->pp, upload_data, *upload_data_size);
@@ -239,8 +370,14 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				*upload_data_size = 0;
 				return MHD_YES;
 			}
+
+			LM_DBG("running MHD_destroy_post_processor: "
+					"pr=[%p] pp=[%p] p_list=[%p]\n",
+					pr, pr->pp, pr->p_list);
 			MHD_destroy_post_processor(pr->pp);
 			LM_DBG("done MHD_destroy_post_processor\n");
+			/* slinkedl_traverse(pr->p_list, &httpd_print_data, NULL, NULL); */
+			*con_cls = pr->p_list;
 
 			cb = get_httpd_cb(url);
 			if (cb) {
@@ -254,6 +391,8 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			} else {
 				page = MI_HTTP_U_URL;
 			}
+			/* slinkedl_traverse(pr->p_list, &httpd_print_data, NULL, NULL); */
+			slinkedl_list_destroy(*con_cls);
 			pkg_free(pr);
 		}
 	}else if(strncmp(method, "GET", 3)==0) {
@@ -270,7 +409,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			page = MI_HTTP_U_URL;
 		}
 	}else{
-		page = MI_HTTP_U_URL;
+		page = MI_HTTP_U_METHOD;
 	}
 
 	if (page.s) {
@@ -307,7 +446,7 @@ void httpd_proc(int rank)
 
 	/*child's initial settings*/
 	if (init_mi_child()!=0) {
-		LM_ERR("failed to init the mi process\n");
+		LM_ERR("failed to init the mi child process\n");
 		return;
 	}
 
