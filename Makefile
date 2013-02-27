@@ -48,9 +48,9 @@ skip_cfg_install?=
 skip_modules?=
 
 makefile_defs=0
-DEFS:=
-TLS:=
-SCTP:=
+DEFS?=
+TLS?=
+SCTP?=
 
 include Makefile.conf
 include Makefile.sources
