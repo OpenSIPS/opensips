@@ -261,7 +261,7 @@ opensipsdbctl pframework create
 	<section>
 		<title><varname>pi_http_root</varname>(string)</title>
 		<para>
-		It specifies the root path for pi http requests.
+		Specifies the root path for pi HTTP requests.
 		The link to the &osips; provisioning web interface must be constructed
 		using the following patern:
 		http://[opensips_IP]:[opensips_mi_port]/[pi_http_root]
@@ -281,7 +281,7 @@ modparam("pi_http", "pi_http_root", "opensips_pi")
 	<section>
 		<title><varname>framework</varname>(string)</title>
 		<para>
-		It specifies the full path for xml framework descriptor.
+		Specifies the full path for xml framework descriptor.
 		</para>
 		<para>
 		<emphasis>There's no default value. This parameter is mandatory.</emphasis>
@@ -291,6 +291,27 @@ modparam("pi_http", "pi_http_root", "opensips_pi")
 		<programlisting format="linespecific">
 ...
 modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.xml")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>pi_http_method</varname>(integrer)</title>
+		<para>
+		Specifies the HTTP request method to be used:
+		<itemizedlist>
+			<listitem><para>0 - use GET HTTP request</para></listitem>
+			<listitem><para>1 - use POST HTTP request</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>The default value is 0.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>pi_http_method</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pi_http", "pi_http_method", 1)
 ...
 </programlisting>
 		</example>

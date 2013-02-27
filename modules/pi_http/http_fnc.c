@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2011-2013 VoIP Embedded Inc.
  *
  * This file is part of Open SIP Server (opensips).
  *
@@ -357,7 +357,7 @@ static const str PI_HTTP_Response_Foot = str_init(\
 "\n</center>\n<div align=\"center\" class=\"foot\" style=\"margin:20px auto\">"\
 	"<span style='margin-left:5px;'></span>"\
 	"<a href=\"http://opensips.org\">OpenSIPS web site</a><br/>"\
-	"Copyright &copy; 2012-2013 <a href=\"http://www.voipembedded.com/\">VoIP Embedded</a>"\
+	"Copyright &copy; 2012-2013 <a href=\"http://www.voipembedded.com/\">VoIP Embedded, Inc.</a>"\
 								". All rights reserved."\
 "</div></body></html>");
 
