@@ -63,6 +63,7 @@ static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 /* module parameters */
 static param_export_t mi_params[] = {
 	{"mi_http_root",   STR_PARAM, &http_root.s},
+	{"mi_http_method", INT_PARAM, &http_method},
 	{0,0,0}
 };
 
@@ -206,7 +207,7 @@ void mi_http_answer_to_connection (void *cls, void *connection,
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
 			(int)*upload_data_size, upload_data, *con_cls);
-	if (strncmp(method, "GET", 3)==0) {
+	if (strncmp(method, "GET", 3)==0 || strncmp(method, "POST", 4)==0) {
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
 			httpd_api.lookup_arg(connection, "arg", *con_cls, &arg);
 			if (mod>=0 && cmd>=0 && arg.s) {
