@@ -772,9 +772,9 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	}
 no_id:
 		if (c==0){
-			//if (tcp_no_new_conn) {
+			if (tcp_no_new_conn) {
 				return -1;
-			//}
+			}
 			LM_DBG("no open tcp connection found, opening new one\n");
 			/* create tcp connection */
 			if ((c=tcpconn_connect(send_sock, to, type))==0){
