@@ -61,16 +61,8 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unsupported HTTP request!</body></html>");
-
-#ifdef LIBMICROHTTPD
-struct MHD_Daemon *dmn;
-
-struct post_request {
-	struct MHD_PostProcessor *pp;
-	int status;
-	slinkedl_list_t *p_list;
-};
-#endif
+static const str MI_HTTP_U_CNT_TYPE = str_init("<html><body>"
+"Unsupported Content-Type!</body></html>");
 
 /**
  * Data structure to store inside elents of slinkedl_list list.
@@ -79,6 +71,20 @@ typedef struct str_str {
 	str key;
 	str val;
 } str_str_t;
+
+
+#ifdef LIBMICROHTTPD
+struct MHD_Daemon *dmn;
+
+struct post_request {
+	struct MHD_PostProcessor *pp;
+	int status;
+	const char* cnt_type;
+	const char* cnt_len;
+	unsigned int content_len;
+	slinkedl_list_t *p_list;
+};
+#endif
 
 
 /**
@@ -184,6 +190,10 @@ skip:
 }
 
 #ifdef LIBMICROHTTPD
+/**
+ * Handle regular POST data.
+ *
+ */
 static int post_iterator (void *cls,
 		enum MHD_ValueKind kind,
 		const char *key,
@@ -263,6 +273,57 @@ static int post_iterator (void *cls,
 	return MHD_YES;
 }
 
+/**
+ * Lookup for HTTP headers.
+ *
+ * @param cls   Pointer to store return data.
+ * @param kind  Specifies the source of the key-value pairs that
+ *              we are looking for in the HTTP protocol.
+ * @param key   The key.
+ * @param value The value.
+ *
+ * @return MHD_YES to continue iterating,
+ *         MHD_NO to abort the iteration.
+ */
+int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
+					const char *key, const char *value)
+{
+	struct post_request *pr = (struct post_request*)cls;
+	str content_length;
+
+	if (cls == NULL) {
+		LM_ERR("Unable to store return data\n");
+		return MHD_NO;
+	}
+	if (kind != MHD_HEADER_KIND) {
+		LM_ERR("Got kind != MHD_HEADER_KIND\n");
+		return MHD_NO;
+	}
+
+	if (strcasecmp("Content-Type", key) == 0) {
+		LM_DBG("Content-Type=%s\n", value);
+		pr->cnt_type = value;
+		goto done;
+	}
+	if (strcasecmp("Content-Length", key) == 0) {
+		LM_DBG("Content-Length=%s\n", value);
+		content_length.s = (char*)value;
+		content_length.len = strlen(value);
+		if (str2int(&content_length, &pr->content_len)<0)
+			LM_ERR("got bogus Content-Length=%s\n", value);
+		pr->cnt_len = value;
+		goto done;
+	}
+
+	return MHD_YES;
+
+done:
+	if (pr->cnt_type && pr->cnt_len)
+		return MHD_NO;
+	else
+		return MHD_YES;
+}
+
 
 /**
  * Performs lookup values for given keys.
@@ -337,6 +398,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				LM_ERR("oom while allocating list\n");
 				return MHD_NO;
 			}
+			*con_cls = pr;
 
 			LM_DBG("running MHD_create_post_processor\n");
 			pr->pp = MHD_create_post_processor(connection,
@@ -344,15 +406,68 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 											&post_iterator,
 											pr);
 			if(pr->pp==NULL) {
-				LM_ERR("Unable to execute MHD_create_post_processor\n");
-				return MHD_NO;
+				if (*upload_data_size == 0) {
+					/* We need to wait for morte data before
+					 * handling the POST request */
+					return MHD_YES;
+				}
+				LM_DBG("NOT a regular POST :o)\n");
+				if (pr->cnt_type==NULL && pr->cnt_len==NULL)
+					MHD_get_connection_values(connection, MHD_HEADER_KIND,
+											&getConnectionHeader, pr);
+				if (pr->cnt_type==NULL || pr->cnt_len==NULL) {
+					LM_ERR("got a bogus request\n");
+					return MHD_NO;
+				}
+				if (*upload_data_size != pr->content_len) {
+					/* For now, we don't support large POST with truncated data */
+					LM_ERR("got a truncated POST request\n");
+					return MHD_NO;
+				}
+				LM_DBG("got [%s] with len [%s]: %.*s\\n",
+					pr->cnt_type, pr->cnt_len, (int)*upload_data_size, upload_data);
+				/* Here we need to parse the data. */
+				*upload_data_size = 0;
+				pkg_free(pr); *con_cls = NULL;
+				page = MI_HTTP_U_CNT_TYPE;
+				goto send_response;
 			}
 
-			*con_cls = pr;
 			LM_DBG("pr=[%p] pp=[%p] p_list=[%p]\n",
 					pr, pr->pp, pr->p_list);
 			return MHD_YES;
 		} else {
+			if (pr->pp==NULL) {
+				if (*upload_data_size == 0) {
+					pkg_free(pr); *con_cls = NULL;
+					/* Here we should prepare the reply based on the
+					 * data parsed by blah(); */
+					LM_DBG("sending the reply for [%s]\n", pr->cnt_type);
+					page = MI_HTTP_U_CNT_TYPE;
+					goto send_response;
+				}
+				LM_DBG("NOT a regular POST :o)\n");
+				if (pr->cnt_type==NULL && pr->cnt_len==NULL)
+					MHD_get_connection_values(connection, MHD_HEADER_KIND,
+											&getConnectionHeader, pr);
+				if (pr->cnt_type==NULL || pr->cnt_len==NULL) {
+					LM_ERR("got a bogus request\n");
+					return MHD_NO;
+				}
+				if (*upload_data_size != pr->content_len) {
+					/* For now, we don't support large POST with truncated data */
+					LM_ERR("got a truncated POST request\n");
+					return MHD_NO;
+				}
+				LM_DBG("got [%s] with len [%s]: %.*s\\n",
+					pr->cnt_type, pr->cnt_len, (int)*upload_data_size, upload_data);
+				/* Here we need to parse the data. */
+				// calling blah();
+
+				/* Mark the fact that we consumed all data */
+				*upload_data_size = 0;
+				return MHD_YES;
+			}
 			LM_DBG("running MHD_post_process: "
 					"pp=%p status=%d upload_data_size=%ld\n",
 					pr->pp, pr->status, *upload_data_size);
@@ -412,6 +527,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		page = MI_HTTP_U_METHOD;
 	}
 
+send_response:
 	if (page.s) {
 		LM_DBG("MHD_create_response_from_data [%p:%d]\n",
 			page.s, page.len);
