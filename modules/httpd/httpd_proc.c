@@ -383,6 +383,8 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	struct httpd_cb *cb;
 	const char *normalised_url;
 	struct post_request *pr;
+	str_str_t *kv;
+	char *p;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
@@ -432,11 +434,29 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
 					pr->content_type, pr->content_len,
 					(int)*upload_data_size, upload_data);
-				/* Here we need to parse the data. */
+				/* Here we save data. */
+				switch (pr->content_type) {
+				case HTTPD_TEXT_XML_CNT_TYPE:
+					/* Save the entire body as 'body' */
+					kv = (str_str_t*)slinkedl_append(pr->p_list,
+							sizeof(str_str_t) + 1 +
+							*upload_data_size);
+					p = (char*)(kv + 1);
+					kv->key.len = 1; kv->key.s = p;
+					memcpy(p, "1", 1);
+					p += 1;
+					kv->val.len = *upload_data_size;
+					kv->val.s = p;
+					memcpy(p, upload_data, *upload_data_size);
+					break;
+				default:
+					LM_ERR("Unhandled data for ContentType [%d]\n",
+							pr->content_type);
+					return MHD_NO;
+				}
+				/* Mark the fact that we consumed all data */
 				*upload_data_size = 0;
-				pkg_free(pr); *con_cls = NULL;
-				page = MI_HTTP_U_CNT_TYPE;
-				goto send_response;
+				return MHD_YES;
 			}
 
 			LM_DBG("pr=[%p] pp=[%p] p_list=[%p]\n",
@@ -445,12 +465,23 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		} else {
 			if (pr->pp==NULL) {
 				if (*upload_data_size == 0) {
-					pkg_free(pr); *con_cls = NULL;
-					/* Here we should prepare the reply based on the
-					 * data parsed by blah(); */
-					LM_DBG("sending the reply for POST with "
-							"ContentType [%d]\n", pr->content_type);
-					page = MI_HTTP_U_CNT_TYPE;
+					*con_cls = pr->p_list;
+					cb = get_httpd_cb(url);
+					if (cb) {
+						normalised_url = &url[cb->http_root->len+1];
+						LM_DBG("normalised_url=[%s]\n", normalised_url);
+						cb->callback(cls, (void*)connection,
+								normalised_url,
+								method, version,
+								upload_data, upload_data_size, con_cls,
+								&buffer, &page);
+					} else {
+						page = MI_HTTP_U_URL;
+					}
+					/* slinkedl_traverse(pr->p_list,
+							&httpd_print_data, NULL, NULL); */
+					slinkedl_list_destroy(*con_cls);
+					pkg_free(pr); pr = NULL;
 					goto send_response;
 				}
 				LM_DBG("NOT a regular POST :o)\n");
@@ -469,9 +500,26 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
 					pr->content_type, pr->content_len,
 					(int)*upload_data_size, upload_data);
-				/* Here we need to parse the data. */
-				// calling blah();
-
+				/* Here we save data. */
+				switch (pr->content_type) {
+				case HTTPD_TEXT_XML_CNT_TYPE:
+					/* Save the entire body as 'body' */
+					kv = (str_str_t*)slinkedl_append(pr->p_list,
+							sizeof(str_str_t) + 1 +
+							*upload_data_size);
+					p = (char*)(kv + 1);
+					kv->key.len = 1; kv->key.s = p;
+					memcpy(p, "1", 1);
+					p += 1;
+					kv->val.len = *upload_data_size;
+					kv->val.s = p;
+					memcpy(p, upload_data, *upload_data_size);
+					break;
+				default:
+					LM_ERR("Unhandled data for ContentType [%d]\n",
+							pr->content_type);
+					return MHD_NO;
+				}
 				/* Mark the fact that we consumed all data */
 				*upload_data_size = 0;
 				return MHD_YES;
