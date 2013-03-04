@@ -25,8 +25,17 @@
  */
 
 
-#ifndef _MI_HTTP_HTTPD_LOAD_H
-#define _MI_HTTP_HTTPD_LOAD_H
+#ifndef HTTPD_HTTPD_LOAD_H
+#define HTTPD_HTTPD_LOAD_H
+
+
+#define HTTPD_UNKNOWN_CONTENT_LEN	-1
+
+enum HTTPD_CONTENT_TYPE {
+	HTTPD_UNKNOWN_CNT_TYPE = -1,
+	HTTPD_STD_CNT_TYPE = 0,
+	HTTPD_TEXT_XML_CNT_TYPE
+};
 
 /**
  * A client has requested the given url using the given method ("GET",

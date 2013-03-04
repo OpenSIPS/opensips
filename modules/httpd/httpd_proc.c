@@ -79,9 +79,8 @@ struct MHD_Daemon *dmn;
 struct post_request {
 	struct MHD_PostProcessor *pp;
 	int status;
-	const char* cnt_type;
-	const char* cnt_len;
-	unsigned int content_len;
+	enum HTTPD_CONTENT_TYPE content_type;
+	int content_len;
 	slinkedl_list_t *p_list;
 };
 #endif
@@ -290,6 +289,7 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 {
 	struct post_request *pr = (struct post_request*)cls;
 	str content_length;
+	unsigned int len;
 
 	if (cls == NULL) {
 		LM_ERR("Unable to store return data\n");
@@ -302,23 +302,28 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 
 	if (strcasecmp("Content-Type", key) == 0) {
 		LM_DBG("Content-Type=%s\n", value);
-		pr->cnt_type = value;
+		if (strcasecmp("text/xml", value) == 0)
+			pr->content_type = HTTPD_TEXT_XML_CNT_TYPE;
+		else
+			pr->content_type = HTTPD_UNKNOWN_CNT_TYPE;
 		goto done;
 	}
 	if (strcasecmp("Content-Length", key) == 0) {
 		LM_DBG("Content-Length=%s\n", value);
 		content_length.s = (char*)value;
 		content_length.len = strlen(value);
-		if (str2int(&content_length, &pr->content_len)<0)
+		if (str2int(&content_length, &len)<0) {
 			LM_ERR("got bogus Content-Length=%s\n", value);
-		pr->cnt_len = value;
+			pr->content_len = HTTPD_UNKNOWN_CONTENT_LEN;
+		} else
+			pr->content_len = len;
 		goto done;
 	}
 
 	return MHD_YES;
 
 done:
-	if (pr->cnt_type && pr->cnt_len)
+	if (pr->content_type && pr->content_len)
 		return MHD_NO;
 	else
 		return MHD_YES;
@@ -412,10 +417,10 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					return MHD_YES;
 				}
 				LM_DBG("NOT a regular POST :o)\n");
-				if (pr->cnt_type==NULL && pr->cnt_len==NULL)
+				if (pr->content_type==0 && pr->content_len==0)
 					MHD_get_connection_values(connection, MHD_HEADER_KIND,
 											&getConnectionHeader, pr);
-				if (pr->cnt_type==NULL || pr->cnt_len==NULL) {
+				if (pr->content_type<=0 || pr->content_len<=0) {
 					LM_ERR("got a bogus request\n");
 					return MHD_NO;
 				}
@@ -424,8 +429,9 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					LM_ERR("got a truncated POST request\n");
 					return MHD_NO;
 				}
-				LM_DBG("got [%s] with len [%s]: %.*s\\n",
-					pr->cnt_type, pr->cnt_len, (int)*upload_data_size, upload_data);
+				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
+					pr->content_type, pr->content_len,
+					(int)*upload_data_size, upload_data);
 				/* Here we need to parse the data. */
 				*upload_data_size = 0;
 				pkg_free(pr); *con_cls = NULL;
@@ -442,15 +448,16 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					pkg_free(pr); *con_cls = NULL;
 					/* Here we should prepare the reply based on the
 					 * data parsed by blah(); */
-					LM_DBG("sending the reply for [%s]\n", pr->cnt_type);
+					LM_DBG("sending the reply for POST with "
+							"ContentType [%d]\n", pr->content_type);
 					page = MI_HTTP_U_CNT_TYPE;
 					goto send_response;
 				}
 				LM_DBG("NOT a regular POST :o)\n");
-				if (pr->cnt_type==NULL && pr->cnt_len==NULL)
+				if (pr->content_type==0 && pr->content_len==0)
 					MHD_get_connection_values(connection, MHD_HEADER_KIND,
 											&getConnectionHeader, pr);
-				if (pr->cnt_type==NULL || pr->cnt_len==NULL) {
+				if (pr->content_type<=0 || pr->content_len<=0) {
 					LM_ERR("got a bogus request\n");
 					return MHD_NO;
 				}
@@ -459,8 +466,9 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					LM_ERR("got a truncated POST request\n");
 					return MHD_NO;
 				}
-				LM_DBG("got [%s] with len [%s]: %.*s\\n",
-					pr->cnt_type, pr->cnt_len, (int)*upload_data_size, upload_data);
+				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
+					pr->content_type, pr->content_len,
+					(int)*upload_data_size, upload_data);
 				/* Here we need to parse the data. */
 				// calling blah();
 
