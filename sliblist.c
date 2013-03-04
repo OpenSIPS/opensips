@@ -1,5 +1,5 @@
 /*
- *$Id$
+ * $Id$
  *
  * A simple linked list implementation.
  *
