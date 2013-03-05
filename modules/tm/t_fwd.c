@@ -738,8 +738,12 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			tcp_no_new_conn = 0;
 #endif
 
-			if (ser_error)
+			if (ser_error) {
+				shm_free(t->uac[i].request.buffer.s);
+				t->uac[i].request.buffer.s = NULL;
+				t->uac[i].request.buffer.len = 0;
 				continue;
+			}
 
 			success_branch++;
 
