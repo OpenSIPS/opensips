@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "mi_xmlrpc_ng_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>mi_xmlrpc_ng Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+	    <author>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+		<email>osas@voipembedded.com</email>
+	    </author>
+	    <editor>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+	    </editor>
+	</authorgroup>
+	<copyright>
+	    <year>2013</year>
+	    <holder>
+		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
+	    </holder>
+	</copyright>
+	<revhistory>
+	    <revision>
+		<revnumber>$Rev: 8688 $</revnumber>
+		<date>$Date: 2013-02-27 11:30:09 -0500 (Wed, 27 Feb 2013) $</date>
+	    </revision>
+	</revhistory>
+  </bookinfo>
+    <toc></toc>
+    
+    &admin;
+    &faq;
+    
+</book>
+
+

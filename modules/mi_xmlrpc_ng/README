@@ -1,0 +1,92 @@
+mi_xmlrpc_ng Module
+
+Ovidiu Sas
+
+   <osas@voipembedded.com>
+
+Edited by
+
+Ovidiu Sas
+
+   Copyright © 2013 VoIP Embedded, Inc.
+   Revision History
+   Revision $Rev: 8688 $ $Date: 2013-02-27 11:30:09 -0500 (Wed, 27
+   Feb 2013) $
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. External Libraries or Applications
+              1.2.2. OpenSIPS Modules
+
+        1.3. Exported Parameters
+
+              1.3.1. mi_xmlrpc_ng_root(string)
+
+        1.4. Exported Functions
+        1.5. Known issues
+
+   List of Examples
+
+   1.1. Set mi_xmlrpc_ng_root parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements a xmlrpc server that handles xmlrpc
+   requests and generates xmlrpc responses. When a xmlrpc message
+   is received a default method is executed.
+
+   At first, it looks up the MI command. If found it parses the
+   called procedure's parameters into a MI tree and the command is
+   executed. A MI reply tree is returned that is formatted back in
+   xmlrpc. The response is built in two ways - like a string that
+   contains the MI tree nodes information (name, values and
+   attributes) or like an array whose elements are consisted of
+   each MI tree node stored information.
+
+1.2. Dependencies
+
+1.2.1. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * libxml2
+
+1.2.2. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * httpd module.
+
+1.3. Exported Parameters
+
+1.3.1. mi_xmlrpc_ng_root(string)
+
+   Specifies the root path for xmlrpc requests:
+   http://[opensips_IP]:[opensips_httpd_port]/[mi_xmlrpc_ng_root]
+
+   The default value is "xmlrpc".
+
+   Example 1.1. Set mi_xmlrpc_ng_root parameter
+...
+modparam("mi_xmlrpc_ng", "mi_xmlrpc_ng_root", "opensips_mi_xmlrpc")
+...
+
+1.4. Exported Functions
+
+   No function exported to be used from configuration file.
+
+1.5. Known issues
+
+   Commands with large responses (like ul_dump) will fail if the
+   configured size of the httpd buffer is to small (or if there
+   isn't enough pkg memory configured).
+
+   Future realeases of the httpd and mi_xmlrpc_ng modules will
+   address this issue.
