@@ -127,11 +127,11 @@ static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, siz
 		LM_ERR("Unexpected NULL mi handler!\n");
 		return -1;
 	}
-	LM_NOTICE("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
+	LM_DBG("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
 		 hdl, hdl->param, (int)pos, buf, (int)max);
 
 	if (pos){
-		LM_NOTICE("freeing hdl=[%p]: hdl->param=[%p], "
+		LM_DBG("freeing hdl=[%p]: hdl->param=[%p], "
 			" pos=[%d], buf=[%p], max=[%d]\n",
 			 hdl, hdl->param, (int)pos, buf, (int)max);
 		shm_free(hdl);
@@ -144,7 +144,7 @@ static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, siz
 	if (hdl->param) {
 		if (*(struct mi_root**)hdl->param) {
 			page.s = buf;
-			LM_NOTICE("tree=[%p]\n", *(struct mi_root**)hdl->param);
+			LM_DBG("tree=[%p]\n", *(struct mi_root**)hdl->param);
 			if (mi_xmlrpc_http_build_page(&page, max,
 						*(struct mi_root**)hdl->param)!=0){
 				LM_ERR("Unable to build response\n");
@@ -160,7 +160,7 @@ static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, siz
 				return page.len;
 			}
 		} else {
-			LM_NOTICE("data not ready yet\n");
+			LM_DBG("data not ready yet\n");
 			lock_release(lock);
 			return 0;
 		}
@@ -186,7 +186,7 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 
-	LM_NOTICE("START *** cls=%p, connection=%p, url=%s, method=%s, "
+	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
 			(int)*upload_data_size, upload_data, *con_cls);
@@ -199,10 +199,10 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 				LM_ERR("no reply\n");
 				*page = MI_HTTP_U_ERROR;
 			} else if (tree == MI_ROOT_ASYNC_RPL) {
-				LM_NOTICE("got an async reply\n");
+				LM_DBG("got an async reply\n");
 				tree = NULL;
 			} else {
-				LM_NOTICE("building on page [%p:%d]\n",
+				LM_DBG("building on page [%p:%d]\n",
 					page->s, page->len);
 				if(0!=mi_xmlrpc_http_build_page(page, buffer->len, tree)){
 					LM_ERR("unable to build response\n");

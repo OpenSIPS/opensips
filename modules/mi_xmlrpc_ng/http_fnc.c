@@ -300,7 +300,7 @@ struct mi_root* mi_xmlrpc_http_parse_tree(str* buf)
 	node = &root->node;
 	start = buf->s;
 	pmax = buf->s + buf->len;
-	LM_NOTICE("original: [%.*s]\n",(int)(pmax-start),start);
+	LM_DBG("original: [%.*s]\n",(int)(pmax-start),start);
 	while (start<=pmax) {
 		/* remove leading spaces */
 		//for(;start<pmax&&isspace((int)*start);start++);
@@ -312,7 +312,7 @@ struct mi_root* mi_xmlrpc_http_parse_tree(str* buf)
 		//for(;start<pmax&&!isspace((int)*start);start++);
 		for(;start<pmax&&*start!=' ';start++);
 		value.len=(int)(start-value.s);
-		//LM_NOTICE("[%.*s]\n",value.len,value.s);
+		//LM_DBG("[%.*s]\n",value.len,value.s);
 		if(!add_mi_node_child(node,0,name.s,name.len,value.s,value.len)){
 			LM_ERR("cannot add the child node to the tree\n");
 			if (root) free_mi_tree(root);
@@ -337,7 +337,7 @@ static void mi_xmlrpc_http_close_async(struct mi_root *mi_rpl, struct mi_handler
 		return;
 	}
 
-	LM_NOTICE("mi_root [%p], hdl [%p], hdl->param [%p], "
+	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], "
 		"*hdl->param [%p] and done [%u]\n",
 		mi_rpl, hdl, hdl->param, *(struct mi_root **)hdl->param, done);
 
@@ -358,7 +358,7 @@ static void mi_xmlrpc_http_close_async(struct mi_root *mi_rpl, struct mi_handler
 		/* mark it as invalid */
 		hdl->param = NULL;
 	}
-	LM_NOTICE("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
+	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p], *hdl->param [%p]\n",
 		shm_rpl, hdl, hdl->param,
 		(hdl->param)?*(struct mi_root **)hdl->param:NULL);
 	lock_release(lock);
@@ -390,7 +390,7 @@ static inline struct mi_handler* mi_xmlrpc_http_build_async_handler(void)
 
 	async_resp_data->lock = mi_xmlrpc_http_lock;
 
-	LM_NOTICE("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_xmlrpc_http_lock=[%p]\n",
+	LM_DBG("hdl [%p], hdl->param [%p], *hdl->param [%p] mi_xmlrpc_http_lock=[%p]\n",
 		hdl, hdl->param, (hdl->param)?*(struct mi_root **)hdl->param:NULL,
 		async_resp_data->lock);
 
@@ -410,7 +410,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	xmlNodePtr methodCall_node;
 	xmlNodePtr methodName_node;
 
-	//LM_NOTICE("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
+	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
 	doc = xmlParseDoc((const xmlChar *)arg->s);
 	if(doc==NULL){
 		LM_ERR("Failed to parse xml document: [%s]\n", arg->s);
@@ -435,7 +435,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		goto xml_error;
 	}
 	miCmd.len = strlen(miCmd.s);
-	LM_NOTICE("got methodName=%.*s\n", miCmd.len, miCmd.s);
+	LM_DBG("got methodName=%.*s\n", miCmd.len, miCmd.s);
 
 	f = lookup_mi_cmd(miCmd.s, miCmd.len);
 	if (f == NULL) {
@@ -464,7 +464,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 			buf.len = arg->len;
 			LM_ERR("FIXME: we need to do xml parsing as opposed "
 					"to string parsing.\n");
-			LM_NOTICE("start parsing [%d][%s]\n", buf.len, buf.s);
+			LM_DBG("start parsing [%d][%s]\n", buf.len, buf.s);
 			mi_cmd = mi_xmlrpc_http_parse_tree(&buf);
 			if (mi_cmd==NULL)
 				goto xml_error;
@@ -488,7 +488,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	} else if (mi_rpl != MI_ROOT_ASYNC_RPL) {
 		*page = html_page_data.page;
 	}
-	LM_NOTICE("got mi_rpl=[%p]\n",mi_rpl);
+	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
 	if (mi_cmd) free_mi_tree(mi_cmd);
 	if(doc)xmlFree(doc);doc=NULL;
@@ -610,7 +610,7 @@ int mi_xmlrpc_http_build_header(str *page, int max_page_len,
 	p = buf = page->s;
 
 	if (tree) {
-		LM_NOTICE("return code: %d\n", tree->code);
+		LM_DBG("return code: %d\n", tree->code);
 		if (!(tree->node.flags & MI_WRITTEN)) {
 			MI_XMLRPC_HTTP_COPY(p, MI_XMLRPC_HTTP_XML_START);
 			tree->node.flags |= MI_WRITTEN;
