@@ -523,11 +523,14 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 	/* attributes */
 	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
 		if (attr->name.s!=NULL) {
-			MI_XMLRPC_HTTP_COPY_2(*pointer,MI_XMLRPC_HTTP_ATTR_SEPARATOR,attr->name);
+			MI_XMLRPC_HTTP_COPY_2(*pointer,
+				MI_XMLRPC_HTTP_ATTR_SEPARATOR,
+				attr->name);
 		}
 		if (attr->value.s!=NULL) {
-			MI_XMLRPC_HTTP_COPY_2(*pointer,MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR,
-						attr->value);
+			MI_XMLRPC_HTTP_COPY_2(*pointer,
+				MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR,
+				attr->value);
 		}
 	}
 	return 0;
