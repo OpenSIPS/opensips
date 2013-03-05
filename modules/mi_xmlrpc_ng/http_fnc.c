@@ -411,7 +411,7 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 	xmlNodePtr methodName_node;
 
 	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
-	doc = xmlParseDoc((const xmlChar *)arg->s);
+	doc = xmlParseMemory(arg->s, arg->len);
 	if(doc==NULL){
 		LM_ERR("Failed to parse xml document: [%s]\n", arg->s);
 		return NULL;
