@@ -1804,6 +1804,8 @@ error:
 
 struct mi_root* mi_sync_db_dlg(struct mi_root *cmd, void *param)
 {
+	if (dlg_db_mode == 0)
+		return init_mi_tree( 400, MI_SSTR("Cannot sync in no-db mode"));
 	if (sync_dlg_db_mem() < 0)
 		return init_mi_tree( 400, MI_SSTR("Sync mem with DB failed"));
 	else
