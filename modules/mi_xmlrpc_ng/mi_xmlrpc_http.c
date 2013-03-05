@@ -1,5 +1,5 @@
 /*
- * $Id: mi_http.c 9846 2013-02-27 16:30:09Z osas $
+ * $Id$
  *
  * Copyright (C) 2013 VoIP Embedded Inc.
  *

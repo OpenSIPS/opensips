@@ -1,5 +1,5 @@
 /*
- * $Id: http_fnc.h 9825 2013-02-25 22:07:02Z osas $
+ * $Id$
  *
  * Copyright (C) 2013 VoIP Embedded Inc.
  *
