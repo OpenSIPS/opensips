@@ -385,6 +385,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	struct post_request *pr;
 	str_str_t *kv;
 	char *p;
+	int cnt_type = HTTPD_STD_CNT_TYPE;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
@@ -465,6 +466,8 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 		} else {
 			if (pr->pp==NULL) {
 				if (*upload_data_size == 0) {
+					if (pr->content_type==HTTPD_TEXT_XML_CNT_TYPE)
+						cnt_type = HTTPD_TEXT_XML_CNT_TYPE;
 					*con_cls = pr->p_list;
 					cb = get_httpd_cb(url);
 					if (cb) {
@@ -481,7 +484,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					/* slinkedl_traverse(pr->p_list,
 							&httpd_print_data, NULL, NULL); */
 					slinkedl_list_destroy(*con_cls);
-					pkg_free(pr); pr = NULL;
+					pkg_free(pr); *con_cls = pr = NULL;
 					goto send_response;
 				}
 				LM_DBG("NOT a regular POST :o)\n");
@@ -564,7 +567,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			}
 			/* slinkedl_traverse(pr->p_list, &httpd_print_data, NULL, NULL); */
 			slinkedl_list_destroy(*con_cls);
-			pkg_free(pr);
+			pkg_free(pr); *con_cls = pr = NULL;
 		}
 	}else if(strncmp(method, "GET", 3)==0) {
 		cb = get_httpd_cb(url);
@@ -598,6 +601,10 @@ send_response:
 							(void*)async_data,
 							NULL);
 	}
+	if (cnt_type==HTTPD_TEXT_XML_CNT_TYPE)
+		MHD_add_response_header(response,
+								MHD_HTTP_HEADER_CONTENT_TYPE,
+								"text/xml; charset=utf-8");
 	ret = MHD_queue_response (connection, MHD_HTTP_OK, response);
 	MHD_destroy_response (response);
 
