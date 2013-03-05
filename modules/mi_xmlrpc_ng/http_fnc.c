@@ -41,6 +41,10 @@
 
 #define MI_XMLRPC_HTTP_XML_METHOD_CALL_NODE "methodCall"
 #define MI_XMLRPC_HTTP_XML_METHOD_NAME_NODE "methodName"
+#define MI_XMLRPC_HTTP_XML_PARAMS_NODE      "params"
+#define MI_XMLRPC_HTTP_XML_PARAM_NODE       "param"
+#define MI_XMLRPC_HTTP_XML_VALUE_NODE       "value"
+#define MI_XMLRPC_HTTP_XML_STRING_NODE      "string"
 
 extern str http_root;
 
@@ -281,51 +285,6 @@ int mi_xmlrpc_http_flush_tree(void* param, struct mi_root *tree)
 }
 
 
-struct mi_root* mi_xmlrpc_http_parse_tree(str* buf)
-{
-	struct mi_root *root;
-	struct mi_node *node;
-	str name = {NULL, 0};
-	str value = {NULL, 0};
-	char *start, *pmax;
-
-	root = init_mi_tree(0,0,0);
-	if (!root) {
-		LM_ERR("the MI tree cannot be initialized!\n");
-		return NULL;
-	}
-	if (buf->len == 0)
-		return root;
-
-	node = &root->node;
-	start = buf->s;
-	pmax = buf->s + buf->len;
-	LM_DBG("original: [%.*s]\n",(int)(pmax-start),start);
-	while (start<=pmax) {
-		/* remove leading spaces */
-		//for(;start<pmax&&isspace((int)*start);start++);
-		for(;start<pmax&&*start==' ';start++);
-		if (start==pmax)
-			return root;
-		value.s=start;
-		/* skip to the next space */
-		//for(;start<pmax&&!isspace((int)*start);start++);
-		for(;start<pmax&&*start!=' ';start++);
-		value.len=(int)(start-value.s);
-		//LM_DBG("[%.*s]\n",value.len,value.s);
-		if(!add_mi_node_child(node,0,name.s,name.len,value.s,value.len)){
-			LM_ERR("cannot add the child node to the tree\n");
-			if (root) free_mi_tree(root);
-			return NULL;
-		}
-	}
-
-	LM_ERR("Parse error!\n");
-	if (root) free_mi_tree(root);
-	return NULL;
-}
-
-
 static void mi_xmlrpc_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl, int done)
 {
 	struct mi_root *shm_rpl = NULL;
@@ -401,14 +360,19 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		str *page, str *buffer, struct mi_handler **async_hdl)
 {
 	struct mi_cmd *f;
+	struct mi_node *node;
 	struct mi_root *mi_cmd;
 	struct mi_root *mi_rpl;
 	struct mi_handler *hdl;
 	str miCmd;
-	str buf;
 	xmlDocPtr doc;
 	xmlNodePtr methodCall_node;
 	xmlNodePtr methodName_node;
+	xmlNodePtr params_node;
+	xmlNodePtr param_node;
+	xmlNodePtr value_node;
+	xmlNodePtr string_node;
+	str val;
 
 	//LM_DBG("arg [%p]->[%.*s]\n", arg->s, arg->len, arg->s);
 	doc = xmlParseMemory(arg->s, arg->len);
@@ -459,15 +423,56 @@ struct mi_root* mi_xmlrpc_http_run_mi_cmd(const str* arg,
 		mi_cmd = NULL;
 	} else {
 		if (arg->s) {
-			/* FIXME: here we need to parse the rest of the params */
-			buf.s = arg->s;
-			buf.len = arg->len;
-			LM_ERR("FIXME: we need to do xml parsing as opposed "
-					"to string parsing.\n");
-			LM_DBG("start parsing [%d][%s]\n", buf.len, buf.s);
-			mi_cmd = mi_xmlrpc_http_parse_tree(&buf);
-			if (mi_cmd==NULL)
+			mi_cmd = init_mi_tree(0,0,0);
+			if (mi_cmd==NULL) {
+				LM_ERR("the MI tree cannot be initialized!\n");
 				goto xml_error;
+			}
+			params_node = mi_xmlNodeGetNodeByName(methodCall_node->children,
+									MI_XMLRPC_HTTP_XML_PARAMS_NODE);
+			if (params_node==NULL) {
+				LM_ERR("missing node %s\n", MI_XMLRPC_HTTP_XML_PARAMS_NODE);
+				goto xml_error;
+			}
+			for(param_node=params_node->children;
+						param_node;param_node=param_node->next){
+				if (xmlStrcasecmp(param_node->name,
+					(const xmlChar*)MI_XMLRPC_HTTP_XML_PARAM_NODE) == 0) {
+					value_node = mi_xmlNodeGetNodeByName(param_node->children,
+								MI_XMLRPC_HTTP_XML_VALUE_NODE);
+					if (value_node==NULL) {
+						LM_ERR("missing node %s\n",
+								MI_XMLRPC_HTTP_XML_VALUE_NODE);
+						goto xml_error;
+					}
+					string_node = mi_xmlNodeGetNodeByName(value_node->children,
+								MI_XMLRPC_HTTP_XML_STRING_NODE);
+					if (string_node==NULL) {
+						LM_ERR("missing node %s\n",
+								MI_XMLRPC_HTTP_XML_STRING_NODE);
+						goto xml_error;
+					}
+					val.s = (char*)xmlNodeGetContent(string_node);
+					if(val.s==NULL){
+						LM_ERR("No content for node [%s]\n",
+								string_node->name);
+						goto xml_error;
+					}
+					val.len = strlen(val.s);
+					if(val.len==0){
+						LM_ERR("Empty content for node [%s]\n",
+								string_node->name);
+						goto xml_error;
+					}
+					LM_DBG("got string param [%.*s]\n", val.len, val.s);
+					node = &mi_cmd->node;
+					if(!add_mi_node_child(node,0,NULL,0,val.s,val.len)){
+						LM_ERR("cannot add the child node to the tree\n");
+						free_mi_tree(mi_cmd);
+						goto xml_error;
+					}
+				}
+			}
 			mi_cmd->async_hdl = hdl;
 		} else {
 			mi_cmd = NULL;
