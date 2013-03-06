@@ -9,7 +9,22 @@ include ../../Makefile.defs
 auto_gen=
 NAME=cachedb_mongodb.so
 
-DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib -lmongoc -ljson
+ifeq ($(CROSS_COMPILE),)
+JSON_BUILDER = $(shell \
+	if pkg-config --exists json; then \
+		echo 'pkg-config json'; \
+	fi)
+endif
+
+ifeq ($(JSON_BUILDER),)
+	DEFS += -I$(LOCALBASE)/include
+	LIBS += -L$(LOCALBASE)/lib -ljson
+else
+	DEFS += $(shell $(JSON_BUILDER) --cflags)
+	LIBS += $(shell $(JSON_BUILDER) --libs)
+endif
+
+DEFS += -I$(LOCALBASE)/include
+LIBS += -L$(LOCALBASE)/lib -lmongoclient
 
 include ../../Makefile.modules
