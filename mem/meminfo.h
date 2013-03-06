@@ -41,7 +41,7 @@ struct mem_info{
 	unsigned long total_frags; /* total fragment no */
 };
 
-#ifdef STATISTICS
+#if defined(PKG_MALLOC) && defined(STATISTICS)
 // threshold percentage checked
 extern long event_pkg_threshold;
 // events are used only if STATISTICS are used

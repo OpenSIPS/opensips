@@ -681,17 +681,21 @@ assign_stm: DEBUG EQUAL snumber {
 					yyerror("statistics support not compiled in");
 				#endif /* STATISTICS */
 			#else /* SHM_MEM */
-				yyerror("shm support not compiled in");
+				yyerror("shm memory support not compiled in");
 			#endif
 			}
 		| EVENT_SHM_THRESHOLD EQUAL error { yyerror("int value expected"); }
 		| EVENT_PKG_THRESHOLD EQUAL NUMBER {
-			#ifdef STATISTICS
-				if ($3 < 0 || $3 > 100)
-					yyerror("PKG threshold has to be a percentage between 0 and 100");
-				event_pkg_threshold=$3;
-			#else
-				yyerror("statistics support not compiled in");
+			#ifdef PKG_MEM
+                                #ifdef STATISTICS
+                                        if ($3 < 0 || $3 > 100)
+                                                yyerror("PKG threshold has to be a percentage between 0 and 100");
+                                        event_pkg_threshold=$3;
+                                #else
+                                        yyerror("statistics support not compiled in");
+                                #endif
+			#else /* PKG_MEM */
+				yyerror("pkg memory support not compiled in");
 			#endif
 			}
 		| EVENT_PKG_THRESHOLD EQUAL error { yyerror("int value expected"); }
