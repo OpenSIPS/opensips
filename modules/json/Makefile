@@ -11,8 +11,8 @@ NAME=json.so
 
 ifeq ($(CROSS_COMPILE),)
 JSON_BUILDER = $(shell \
-	if pkg-config --exists ljson; then \
-		echo 'pkg-config ljson'; \
+	if pkg-config --exists json; then \
+		echo 'pkg-config json'; \
 	fi)
 endif
 
