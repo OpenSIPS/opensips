@@ -4035,6 +4035,8 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 	pv_value_t tok;
 	pv_elem_p it;
 	char *cur;
+	char *p;
+	int l;
 	
 	if(msg==NULL || list==NULL || buf==NULL || len==NULL)
 		return -1;
@@ -4067,18 +4069,35 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 		{
 			if(tok.flags&PV_VAL_NULL)
 				tok.rs = str_null;
-			if(n+tok.rs.len < *len)
-			{
-				if(tok.rs.len>0)
+			if (tok.flags&PV_VAL_STR) {
+				if(n+tok.rs.len < *len)
 				{
-					memcpy(cur, tok.rs.s, tok.rs.len);
-					n += tok.rs.len;
-					cur += tok.rs.len;
+					if(tok.rs.len>0)
+					{
+						memcpy(cur, tok.rs.s, tok.rs.len);
+						n += tok.rs.len;
+						cur += tok.rs.len;
+					}
+				} else {
+					LM_ERR("no more space for spec value  [%d][%d]\n",
+						n, tok.rs.len);
+					goto overflow;
+				}
+			} else if (tok.flags&(PV_VAL_INT|PV_TYPE_INT)){
+				p = int2str(tok.ri, &l);
+				if (n+l < *len)
+				{
+					memcpy(cur, p, l);
+					n += l;
+					cur += l;
+				} else {
+					LM_ERR("no more space for spec value  [%d][%d]\n",
+						n, tok.rs.len);
+					goto overflow;
 				}
 			} else {
-				LM_ERR("no more space for spec value  [%d][%d]\n",
-					n, tok.rs.len);
-				goto overflow;
+				LM_ERR("unkown type %x\n", tok.flags);
+				return -1;
 			}
 		}
 	}
