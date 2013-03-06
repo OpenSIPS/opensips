@@ -3087,10 +3087,9 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 
 		case 'l':
 		case 'L':
-			if (args->offer == 0) {
-				FORCE_RTP_PROXY_RET (-1);
+			if (args->offer != 0) {
+				flookup = 1;
 			}
-			flookup = 1;
 			break;
 
 		case 'f':
