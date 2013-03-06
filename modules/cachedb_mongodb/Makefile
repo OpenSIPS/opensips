@@ -25,6 +25,6 @@ else
 endif
 
 DEFS += -I$(LOCALBASE)/include
-LIBS += -L$(LOCALBASE)/lib -lmongoclient
+LIBS += -L$(LOCALBASE)/lib -lmongoc
 
 include ../../Makefile.modules
