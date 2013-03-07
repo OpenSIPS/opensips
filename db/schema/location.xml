@@ -64,7 +64,7 @@
     <column>
         <name>path</name>
         <type>string</type>
-        <size>&uri_len;</size>
+        <size>&hf_len;</size>
         <null/>
         <default><null/></default>
         <description>Path Header(s) per RFC 3327</description>
