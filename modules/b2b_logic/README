@@ -192,7 +192,6 @@ modparam("b2b_logic", "cleanup_period", 60)
    A list of SIP header names delimited by ';' that should be
    passed from the dialog of one side to the other side. There are
    a number of headers that are passed by default. They are:
-     * Max-Forwards (it is decreased by 1)
      * Content-Type
      * Supported
      * Allow
