@@ -5,7 +5,7 @@ CREATE TABLE location (
     domain CHAR(64) DEFAULT '' NOT NULL,
     contact CHAR(255) DEFAULT '' NOT NULL,
     received CHAR(128) DEFAULT NULL,
-    path CHAR(128) DEFAULT NULL,
+    path CHAR(255) DEFAULT NULL,
     expires DATETIME DEFAULT '2020-05-28 21:32:15' NOT NULL,
     q FLOAT(10,2) DEFAULT 1.0 NOT NULL,
     callid CHAR(255) DEFAULT 'Default-Call-ID' NOT NULL,
