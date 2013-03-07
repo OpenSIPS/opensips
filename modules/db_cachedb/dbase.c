@@ -186,3 +186,10 @@ int db_cachedb_use_table(db_con_t* _h, const str* _t)
 	CON_TABLE(_h) = _t;
 	return 0;
 }
+
+int db_cachedb_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
+{
+	/* This will most likely never be supported :( */
+	LM_ERR("RAW query not support by db_cachedb \n");
+	return -1;
+}

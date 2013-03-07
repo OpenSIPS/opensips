@@ -92,4 +92,9 @@ int db_cachedb_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
  */
 int db_cachedb_use_table(db_con_t* _h, const str* _t);
 
+/*
+ * Raw SQL query
+ */
+int db_cachedb_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r);
+
 #endif /* DB_CACHEDB_DBASE_H */

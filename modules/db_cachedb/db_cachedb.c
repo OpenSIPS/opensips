@@ -94,6 +94,7 @@ int db_cachedb_bind_api(const str* mod, db_func_t *dbb)
 	dbb->insert           = db_cachedb_insert;
 	dbb->delete           = db_cachedb_delete;
 	dbb->update           = db_cachedb_update;
+	dbb->raw_query        = db_cachedb_raw_query;
 
 	return 0;
 }
