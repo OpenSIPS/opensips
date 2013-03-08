@@ -30,15 +30,12 @@
 		</para>
 
 		Example:
+		<programlisting format="linespecific">
+fetch_even_params("$avp(first_param)");
+fetch_even_params("ip=$avp(pike_ip)");
+fetch_even_params("source=$avp(src);destination=$avp(dst)");
+</programlisting>
 
-		<para>
-			<emphasis>fetch_even_params("$avp(first_param)");</emphasis>
-
-			<emphasis>fetch_even_params("ip=$avp(pike_ip)");</emphasis>
-
-			<emphasis>fetch_even_params("source=$avp(src);destination=$avp(dst)");</emphasis>
-		</para>
-		
 		If the name of the parameter is not specified, the avp will be populated
 		according to the order of the parameters, as exported by the event. The
 		following code will populate the <emphasis>$avp(first)</emphasis> avp
