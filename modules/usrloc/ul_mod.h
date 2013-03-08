@@ -88,4 +88,9 @@ extern db_func_t ul_dbf;
 extern int matching_mode;
 
 
+/*! \brief
+ * Initialize event structures
+ */
+int ul_event_init(void);
+
 #endif /* UL_MOD_H */

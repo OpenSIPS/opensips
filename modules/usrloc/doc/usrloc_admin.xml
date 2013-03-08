@@ -866,5 +866,37 @@ modparam("usrloc", "hash_size", 10)
 	</section>
 
 
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_UL_AOR_INSERT</function>
+		</title>
+		<para>
+			This event is raised when a new AOR is inserted in the USRLOC
+			memory cache.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - The AOR of the inserted record.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section>
+		<title>
+		<function moreinfo="none">E_UL_AOR_DELETE</function>
+		</title>
+		<para>
+			This event is raised when a new AOR is deleted from the USRLOC
+			memory cache.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - The AOR of the deleted record.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
 </chapter>
-

@@ -120,6 +120,64 @@ error0:
 }
 
 
+static event_id_t ei_ins_id = EVI_ERROR;
+static event_id_t ei_del_id = EVI_ERROR;
+static str ei_ins_name = str_init("E_UL_AOR_INSERT");
+static str ei_del_name = str_init("E_UL_AOR_DELETE");
+static str ei_aor_name = str_init("aor");
+static evi_params_p ul_event_params;
+static evi_param_p ul_aor_param;
+
+/*! \brief
+ * Initialize event structures
+ */
+int ul_event_init(void)
+{
+	ei_ins_id = evi_publish_event(ei_ins_name);
+	if (ei_ins_id == EVI_ERROR) {
+		LM_ERR("cannot register insert event\n");
+		return -1;
+	}
+
+	ei_del_id = evi_publish_event(ei_del_name);
+	if (ei_del_id == EVI_ERROR) {
+		LM_ERR("cannot register delete event\n");
+		return -1;
+	}
+
+	ul_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (!ul_event_params) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memset(ul_event_params, 0, sizeof(evi_params_t));
+	ul_aor_param = evi_param_create(ul_event_params, &ei_aor_name);
+	if (!ul_aor_param) {
+		LM_ERR("cannot create AOR parameter\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/*! \brief
+ * Raise an event when an AOR is inserted/deleted
+ */
+static void ul_raise_event(event_id_t _e, struct urecord* _r)
+{
+	if (_e == EVI_ERROR) {
+		LM_ERR("event not yet registered %d\n", _e);
+		return;
+	}
+	if (evi_param_set_str(ul_aor_param, &_r->aor) < 0) {
+		LM_ERR("cannot set AOR parameter\n");
+		return;
+	}
+	if (evi_raise_event(_e, ul_event_params) < 0)
+		LM_ERR("cannot raise event\n");
+}
+
+
 /*! \brief
  * Free all memory allocated for
  * the domain
@@ -669,6 +727,7 @@ int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		return -1;
 	}
 
+	ul_raise_event(ei_ins_id, *_r);
 	update_stat( _d->users, 1);
 	return 0;
 }
@@ -679,6 +738,7 @@ int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
  */
 void mem_delete_urecord(udomain_t* _d, struct urecord* _r)
 {
+	ul_raise_event(ei_del_id, _r);
 	slot_rem(_r->slot, _r);
 	free_urecord(_r);
 	update_stat( _d->users, -1);

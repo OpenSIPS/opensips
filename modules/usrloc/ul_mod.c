@@ -298,6 +298,11 @@ static int mod_init(void)
 		nat_bflag = 1<<nat_bflag;
 	}
 
+	if (ul_event_init() < 0) {
+		LM_ERR("cannot initialize USRLOC events\n");
+		return -1;
+	}
+
 	init_flag = 1;
 
 	return 0;
