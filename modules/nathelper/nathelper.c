@@ -696,7 +696,7 @@ sdp_1918(struct sip_msg* msg)
 
 	if( bodies == NULL)
 	{
-		LM_ERR("Unable to get bodies from message\n");
+		LM_DBG("Unable to get bodies from message\n");
 		return 0;
 	}
 
