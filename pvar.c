@@ -4069,7 +4069,7 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 		{
 			if(tok.flags&PV_VAL_NULL)
 				tok.rs = str_null;
-			if (tok.flags&PV_VAL_STR) {
+			if (tok.flags&PV_VAL_STR || tok.flags&PV_VAL_NULL) {
 				if(n+tok.rs.len < *len)
 				{
 					if(tok.rs.len>0)
