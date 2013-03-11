@@ -1668,7 +1668,7 @@ static void ds_options_callback( struct cell *t, int type,
 	/* if we always probe, and we get a timeout 
 	 * or a reponse that is not within the allowed
 	 * reply codes, then disable*/
-	if(ds_probing_mode==1 && (ps->code == 408 || !check_options_rplcode(ps->code)))
+	if(ds_probing_mode==1 && ps->code != 200 && (ps->code == 408 || !check_options_rplcode(ps->code)))
 	{
 		if (ds_set_state(group, &uri, DS_PROBING_DST, 1) != 0)
 		{
