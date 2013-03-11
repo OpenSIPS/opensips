@@ -661,10 +661,10 @@ static inline int mi_http_write_node(char** pointer, char* buf, int max_page_len
 	/* attributes */
 	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
 		if (attr->name.s!=NULL) {
-			MI_HTTP_COPY_2(*pointer,MI_HTTP_ATTR_SEPARATOR,attr->name);
-		}
-		if (attr->value.s!=NULL) {
-			MI_HTTP_COPY_2(*pointer,MI_HTTP_ATTR_VAL_SEPARATOR,
+			MI_HTTP_COPY_4(*pointer,
+						MI_HTTP_ATTR_SEPARATOR,
+						attr->name,
+						MI_HTTP_ATTR_VAL_SEPARATOR,
 						attr->value);
 		}
 	}
