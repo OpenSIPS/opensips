@@ -10,8 +10,8 @@ Ovidiu Sas
 
    Copyright © 2013 VoIP Embedded, Inc.
    Revision History
-   Revision $Rev: 8688 $ $Date: 2013-02-27 11:30:09 -0500 (Wed, 27
-   Feb 2013) $
+   Revision $Rev: 9863 $ $Date: 2013-03-05 12:11:07 -0500 (Tue, 05
+   Mar 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -30,10 +30,12 @@ Ovidiu Sas
 
         1.4. Exported Functions
         1.5. Known issues
+        1.6. Example
 
    List of Examples
 
    1.1. Set mi_xmlrpc_ng_root parameter
+   1.2. XMLRPC request
 
 Chapter 1. Admin Guide
 
@@ -90,3 +92,43 @@ modparam("mi_xmlrpc_ng", "mi_xmlrpc_ng_root", "opensips_mi_xmlrpc")
 
    Future realeases of the httpd and mi_xmlrpc_ng modules will
    address this issue.
+
+1.6. Example
+
+   This is an example showing the xmlrpc format for the
+   “get_statistics net: uri:” MI commad: response.
+
+   Example 1.2. XMLRPC request
+
+POST /xmlrpc HTTP/1.0
+Host: my.host.com
+User-Agent: My xmlrpc UA
+Content-Type: text/xml
+Content-Length: 216
+
+<?xml version='1.0'?>
+<methodCall>
+        <methodName>get_statistics</methodName>
+        <params>
+                <param>
+                        <value><string>net:</string></value>
+                </param>
+                <param>
+                        <value><string>uri:</string></value>
+                </param>
+        </params>
+</methodCall>
+
+
+HTTP/1.0 200 OK
+Content-Length: 236
+Content-Type: text/xml; charset=utf-8
+Date: Mon, 8 Mar 2013 12:00:00 GMT
+
+<?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><v
+alue><string>
+:: net:waiting_udp = 0
+:: net:waiting_tcp = 0
+:: uri:positive checks = 0
+:: uri:negative_checks = 0
+</string></value></param></params></methodResponse>

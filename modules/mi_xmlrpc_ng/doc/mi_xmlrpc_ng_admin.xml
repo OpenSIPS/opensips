@@ -92,5 +92,52 @@ modparam("mi_xmlrpc_ng", "mi_xmlrpc_ng_root", "opensips_mi_xmlrpc")
 		</para>
 	</section>
 
+	<section>
+	<title>Example</title>
+		<para>
+		This is an example showing the xmlrpc format for the
+		<quote>get_statistics net: uri:</quote> MI commad:
+		response.
+		</para>
+		<example>
+		<title>XMLRPC request</title>
+		<programlisting format="linespecific">
+<![CDATA[
+POST /xmlrpc HTTP/1.0
+Host: my.host.com
+User-Agent: My xmlrpc UA
+Content-Type: text/xml
+Content-Length: 216
+
+<?xml version='1.0'?>
+<methodCall>
+	<methodName>get_statistics</methodName>
+	<params>
+		<param>
+			<value><string>net:</string></value>
+		</param>
+		<param>
+			<value><string>uri:</string></value>
+		</param>
+	</params>
+</methodCall>
+
+
+HTTP/1.0 200 OK
+Content-Length: 236
+Content-Type: text/xml; charset=utf-8
+Date: Mon, 8 Mar 2013 12:00:00 GMT
+
+<?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><value><string>
+:: net:waiting_udp = 0
+:: net:waiting_tcp = 0
+:: uri:positive checks = 0
+:: uri:negative_checks = 0
+</string></value></param></params></methodResponse>
+]]>
+</programlisting>
+	</example>
+	</section>
+
 </chapter>
 
