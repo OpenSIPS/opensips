@@ -241,36 +241,38 @@ int daemonize(char* name, int * own_pgid)
 		goto error;
 	}
 
-	/* fork to become!= group leader*/
-	if ((pid=fork())<0){
-		LM_CRIT("Cannot fork:%s\n", strerror(errno));
-		goto error;
-	}else if (pid!=0){
-		/* parent process => wait for status codes from children*/
-		clean_write_pipeend();
-		LM_DBG("waiting for status code from children\n");
-		rc = wait_for_all_children();
-		LM_INFO("pre-daemon process exiting with %d\n",rc);
-		exit(rc);
-	}
+	if (!no_daemon_mode) {
+		/* fork to become!= group leader*/
+		if ((pid=fork())<0){
+			LM_CRIT("Cannot fork:%s\n", strerror(errno));
+			goto error;
+		}else if (pid!=0){
+			/* parent process => wait for status codes from children*/
+			clean_write_pipeend();
+			LM_DBG("waiting for status code from children\n");
+			rc = wait_for_all_children();
+			LM_INFO("pre-daemon process exiting with %d\n",rc);
+			exit(rc);
+		}
 
-	/* cleanup read end - nobody should
-	 * need to read from status pipe from this point on */
-	clean_read_pipeend();
+		/* cleanup read end - nobody should
+		 * need to read from status pipe from this point on */
+		clean_read_pipeend();
 
-	/* become session leader to drop the ctrl. terminal */
-	if (setsid()<0){
-		LM_WARN("setsid failed: %s\n",strerror(errno));
-	}else{
-		*own_pgid=1;/* we have our own process group */
-	}
-	/* fork again to drop group  leadership */
-	if ((pid=fork())<0){
-		LM_CRIT("Cannot  fork:%s\n", strerror(errno));
-		goto error;
-	}else if (pid!=0){
-		/*parent process => exit */
-		exit(0);
+		/* become session leader to drop the ctrl. terminal */
+		if (setsid()<0){
+			LM_WARN("setsid failed: %s\n",strerror(errno));
+		}else{
+			*own_pgid=1;/* we have our own process group */
+		}
+		/* fork again to drop group  leadership */
+		if ((pid=fork())<0){
+			LM_CRIT("Cannot  fork:%s\n", strerror(errno));
+			goto error;
+		}else if (pid!=0){
+			/*parent process => exit */
+			exit(0);
+		}
 	}
 
 #ifdef __OS_linux

@@ -82,6 +82,7 @@ Options:\n\
     -v           Turn on \"via:\" host checking when forwarding replies\n\
     -d           Debugging mode (multiple -d increase the level)\n\
     -D           Do not fork into daemon mode\n\
+    -F           Daemon mode, but leave main process foreground\n\
     -E           Log to stderr\n"
 #ifdef USE_TCP
 "    -T           Disable tcp\n\

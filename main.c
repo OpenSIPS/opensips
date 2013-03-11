@@ -204,6 +204,7 @@ int *debug = &debug_init;
 int debug = L_NOTICE;
 #endif
 int dont_fork = 0;
+int no_daemon_mode = 0;
 /* start by logging to stderr */
 int log_stderr = 1;
 /* log facility (see syslog(3)) */
@@ -873,7 +874,7 @@ static int main_loop(void)
 							*startup_done = 1;
 						}
 
-						if (send_status_code(0) < 0)
+						if (!no_daemon_mode && send_status_code(0) < 0)
 							LM_ERR("failed to send status code\n");
 						clean_write_pipeend();
 
@@ -935,7 +936,7 @@ static int main_loop(void)
 						*startup_done = 1;
 					}
 
-					if (send_status_code(0) < 0)
+					if (!no_daemon_mode && send_status_code(0) < 0)
 						LM_ERR("failed to send status code\n");
 					clean_write_pipeend();
 
@@ -988,7 +989,7 @@ static int main_loop(void)
 				exit(-1);
 			}
 
-			if (send_status_code(0) < 0)
+			if (!no_daemon_mode && send_status_code(0) < 0)
 				LM_ERR("failed to send status code\n");
 			clean_write_pipeend();
 
@@ -1016,7 +1017,7 @@ static int main_loop(void)
 		goto error;
 	}
 
-	if (send_status_code(0) < 0)
+	if (!no_daemon_mode && send_status_code(0) < 0)
 		LM_ERR("failed to send status code\n");
 	clean_write_pipeend();
 
@@ -1068,7 +1069,7 @@ int main(int argc, char** argv)
 
 	/* process pkg mem size from command line */
 	opterr=0;
-	options="f:cCm:M:b:l:n:N:rRvdDETSVhw:t:u:g:P:G:W:o:";
+	options="f:cCm:M:b:l:n:N:rRvdDFETSVhw:t:u:g:P:G:W:o:";
 
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
@@ -1159,6 +1160,9 @@ int main(int argc, char** argv)
 					break;
 			case 'D':
 					dont_fork=1;
+					break;
+			case 'F':
+					no_daemon_mode=1;
 					break;
 			case 'E':
 					cfg_log_stderr=1;
@@ -1326,6 +1330,11 @@ try_again:
 #ifdef EXTRA_DEBUG
 	print_rl();
 #endif
+
+	if (no_daemon_mode+dont_fork > 1) {
+		LM_ERR("cannot use -D (fork=no) and -F together\n");
+		return ret;
+	}
 
 	/* init the resolver, before fixing the config */
 	resolv_init();

@@ -575,7 +575,7 @@ int start_module_procs(void)
 							exit(-1);
 						}
 
-						if (send_status_code(0) < 0)
+						if (!no_daemon_mode && send_status_code(0) < 0)
 							LM_ERR("failed to send status code\n");
 						clean_write_pipeend();
 					} else

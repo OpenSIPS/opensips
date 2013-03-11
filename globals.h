@@ -90,6 +90,7 @@ extern unsigned short tls_port_no;
 extern int sctp_disable;
 #endif
 extern int dont_fork;
+extern int no_daemon_mode;
 extern int check_via;
 extern int received_dns;
 /* extern int process_no; */
