@@ -37,9 +37,13 @@
 #include "../../ut.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
+#include "../../mod_fix.h"
+#include "../../mi/tree.h"
 
 #include "cachedb_local.h"
 #include "hash.h"
+
+#include <fnmatch.h>
 
 str cache_mod_name = str_init("local");
 static int mod_init(void);
@@ -50,6 +54,8 @@ lcache_t* cache_htable = NULL;
 int cache_htable_size = 9;
 int cache_clean_period = 600;
 
+static int remove_chunk_f(struct sip_msg* msg, char* glob);
+struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param);
 void localcache_clean(unsigned int ticks,void *param);
 
 static param_export_t params[]={
@@ -58,15 +64,27 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
+static cmd_export_t cmds[]= {
+	{"cache_remove_chunk",        (cmd_function)remove_chunk_f,  1,
+	fixup_str_null, 0,
+	REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
+	{0,0,0,0,0,0}
+};
+
+static mi_export_t mi_cmds[] = {
+	{ "cache_remove_chunk",           0, mi_cache_remove_chunk,         0,  0,  0},
+	{ 0, 0, 0, 0, 0, 0}
+};
+
 /** module exports */
 struct module_exports exports= {
 	"cachedb_local",               /* module name */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
-	0,                          /* exported functions */
+	cmds,                       /* exported functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
-	0,                          /* exported MI functions */
+	mi_cmds,                    /* exported MI functions */
 	0,                          /* exported pseudo-variables */
 	0,                          /* extra processes */
 	mod_init,                   /* module initialization function */
@@ -74,6 +92,103 @@ struct module_exports exports= {
 	(destroy_function) destroy, /* destroy function */
 	child_init                  /* per-child init function */
 };
+
+static char *key_buff = NULL;
+static int key_buff_size = 0;
+static char *pat_buff = NULL;
+static int pat_buff_size = 0;
+static int remove_chunk_f(struct sip_msg* msg, char* glob)
+{
+	int i;
+	str *pat = (str *)glob;
+	lcache_entry_t* me1, *me2;
+
+	if (pat->len+1 > pat_buff_size) {
+		pat_buff = pkg_realloc(pat_buff,pat->len+1);
+		if (pat_buff == NULL) {
+			LM_ERR("No more pkg mem\n");
+			pat_buff_size = 0;
+			return -1;
+		}
+
+		key_buff_size = pat->len +1;
+	}
+
+	memcpy(pat_buff,pat->s,pat->len);
+	pat_buff[pat->len] = 0;
+
+	LM_DBG("trying to remove chunk with pattern [%s]\n",pat_buff);
+
+	for(i = 0; i< cache_htable_size; i++) {
+		lock_get(&cache_htable[i].lock);
+		me1 = cache_htable[i].entries;
+		me2 = NULL;
+
+		while(me1) {
+			if (me1->attr.len + 1 > key_buff_size) {
+				key_buff = pkg_realloc(key_buff,me1->attr.len+1);
+				if (key_buff == NULL) {
+					LM_ERR("No more pkg mem\n");
+					key_buff_size = 0;
+					lock_release(&cache_htable[i].lock);
+					return -1;
+				}
+
+				key_buff_size = me1->attr.len + 1;
+			}
+
+			memcpy(key_buff,me1->attr.s,me1->attr.len);
+			key_buff[me1->attr.len] = 0;
+
+			if(fnmatch(pat_buff,key_buff,0) == 0) {
+				LM_DBG("[%.*s] matches glob [%.*s] - removing from bucket %d\n",
+						me1->attr.len, me1->attr.s,pat_buff_size,pat_buff,i);
+
+				if(me2) {
+					me2->next = me1->next;
+					shm_free(me1);
+					me1 = me2->next;
+				} else{
+					cache_htable[i].entries = me1->next;
+					shm_free(me1);
+					me1 = cache_htable[i].entries;
+				}
+			} else {
+				me2 = me1;
+				me1 = me1->next;
+			}
+		}
+		lock_release(&cache_htable[i].lock);
+	}
+
+	return 1;
+}
+
+struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param)
+{
+	struct mi_node* node;
+	int status, msg_len;
+	char *msg;
+
+	node = cmd_tree->node.kids;
+	if (node == NULL)
+		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	if (!node->value.s || !node->value.len)
+		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+
+	if (remove_chunk_f(NULL,(char *)(&node->value)) < 1) {
+		status = 500;
+		msg = MI_INTERNAL_ERR_S;
+		msg_len = MI_INTERNAL_ERR_LEN;
+	} else {
+		status = 200;
+		msg = MI_OK_S;
+		msg_len = MI_OK_LEN;
+	}
+
+	return init_mi_tree(status,msg,msg_len);
+}
 
 lcache_con* lcache_new_connection(struct cachedb_id* id)
 {
