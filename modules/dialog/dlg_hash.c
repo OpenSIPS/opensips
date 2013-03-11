@@ -189,6 +189,8 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 		shm_free(dv);
 	}
 
+	if (dlg->terminate_reason.s)
+		shm_free(dlg->terminate_reason.s);
 	shm_free(dlg);
 }
 

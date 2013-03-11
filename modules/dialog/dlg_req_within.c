@@ -468,6 +468,8 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 	/* lookup_dlg has incremented the reference count !! */
 
 	if(dlg){
+		init_dlg_term_reason(dlg,"MI Termination",sizeof("MI Termination")-1);
+
 		if ( dlg_end_dlg( dlg, mi_extra_hdrs) ) {
 			status = 500;
 			msg = MI_DLG_OPERATION_ERR;

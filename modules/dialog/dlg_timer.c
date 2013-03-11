@@ -646,6 +646,7 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		shm_free(it);
 		it = curr;
 
+		init_dlg_term_reason(dlg,"Ping Timeout",sizeof("Ping Timeout")-1);
 		/* FIXME - maybe better not to send BYE both ways as we know for
 		 * sure one end in down . */
 		dlg_end_dlg(dlg,0);

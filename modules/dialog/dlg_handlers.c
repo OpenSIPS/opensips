@@ -1142,7 +1142,13 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		/*destroy linkers */
 		destroy_linkers(dlg->profile_links);
 		dlg->profile_links = NULL;
-		
+
+		if (!dlg->terminate_reason.s) {
+			if (last_dst_leg == 0)
+				init_dlg_term_reason(dlg,"Upstream BYE",sizeof("Upstream BYE")-1);
+			else
+				init_dlg_term_reason(dlg,"Downstream BYE",sizeof("Downstream BYE")-1);
+		}
 
 		LM_DBG("BYE successfully processed - dst_leg = %d\n",last_dst_leg);
 
@@ -1403,6 +1409,9 @@ void dlg_ontimeout( struct dlg_tl *tl)
 
 	if ( (dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
 	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
+
+		init_dlg_term_reason(dlg,"Lifetime Timeout",sizeof("Lifetime Timeout")-1);
+
 		/* we just send the BYEs in both directions */
 		dlg_end_dlg( dlg, NULL);
 		/* dialog is no longer refed by timer; from now one it is refed
@@ -1805,7 +1814,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	return 0;
 }
 
-int terminate_dlg(unsigned int h_entry, unsigned int h_id)
+int terminate_dlg(unsigned int h_entry, unsigned int h_id,str *reason)
 {
 	struct dlg_cell * dlg = NULL;
 	int ret = 0;
@@ -1814,7 +1823,9 @@ int terminate_dlg(unsigned int h_entry, unsigned int h_id)
 
 	if(!dlg)
 		return 0;
-	
+
+	init_dlg_term_reason(dlg,reason->s,reason->len);
+
 	if ( dlg_end_dlg( dlg, 0) ) {
 		LM_ERR("Failed to end dialog");
 		ret = -1;

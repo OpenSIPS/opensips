@@ -2188,6 +2188,44 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 			</para>
 		</section>
 
+		<section>
+			<title><varname>$DLG_end_reason</varname></title>
+			<para>
+				Returns the reason for the dialog termination. It can be 
+				one of the following :
+
+				<itemizedlist>
+					<listitem>
+						<para><emphasis>Upstream BYE</emphasis> - Callee has sent a BYE
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>Downstream BYE</emphasis> - Caller has sent a BYE
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>Lifetime Timeout</emphasis> - Dialog lifetime expired
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>MI Termination</emphasis> - Dialog ended via the MI interface
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>Ping Timeout</emphasis> - Dialog ended because no reply to in-dialog pings
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>RTPProxy Timeout</emphasis> - Media timeout signaled by RTPProxy
+						</para>
+					</listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				NULL will be returned if there is no dialog for the request,
+				or if the dialog is not ended in the current context.
+			</para>
+		</section>
 
 		<section>
 			<title><varname>$dlg_val(name)</varname></title>

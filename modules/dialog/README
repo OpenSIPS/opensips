@@ -12,8 +12,8 @@ Vladut-Stefan Paiu
 
    Copyright © 2006-2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-03-08 11:33:05 +0200
-                              (Thu, 08 Mar 2012) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -120,7 +120,8 @@ Vladut-Stefan Paiu
               1.9.4. $DLG_flags
               1.9.5. $DLG_dir
               1.9.6. $DLG_did
-              1.9.7. $dlg_val(name)
+              1.9.7. $DLG_end_reason
+              1.9.8. $dlg_val(name)
 
    2. Developer Guide
 
@@ -1534,7 +1535,22 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
    NULL will be returned if there is no dialog for the request.
 
-1.9.7. $dlg_val(name)
+1.9.7. $DLG_end_reason
+
+   Returns the reason for the dialog termination. It can be one of
+   the following :
+     * Upstream BYE - Callee has sent a BYE
+     * Downstream BYE - Caller has sent a BYE
+     * Lifetime Timeout - Dialog lifetime expired
+     * MI Termination - Dialog ended via the MI interface
+     * Ping Timeout - Dialog ended because no reply to in-dialog
+       pings
+     * RTPProxy Timeout - Media timeout signaled by RTPProxy
+
+   NULL will be returned if there is no dialog for the request, or
+   if the dialog is not ended in the current context.
+
+1.9.8. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
    attribute named name. This PV will be available only for

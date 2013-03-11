@@ -120,6 +120,7 @@ struct dlg_cell
 	unsigned int         initial_t_label;
 	struct dlg_tl        tl;
 	struct dlg_ping_list *pl;
+	str                  terminate_reason;
 	str                  callid;
 	str                  from_uri;
 	str                  to_uri;
@@ -398,5 +399,20 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 }
 
 int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context);
+
+static inline void init_dlg_term_reason(struct dlg_cell *dlg,char *reason,int reason_len)
+{
+	if (!dlg->terminate_reason.s) {
+		dlg->terminate_reason.s = shm_malloc(reason_len);
+		if (dlg->terminate_reason.s) {
+			dlg->terminate_reason.len = reason_len;
+			memcpy(dlg->terminate_reason.s,reason,
+					reason_len);
+			LM_DBG("Setting DLG term reason to [%.*s] \n",
+					dlg->terminate_reason.len,dlg->terminate_reason.s);
+		} else
+			LM_ERR("Failed to initialize the terminate reason \n");
+	}
+}
 
 #endif

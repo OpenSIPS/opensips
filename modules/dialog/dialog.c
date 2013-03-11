@@ -146,6 +146,7 @@ int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_get_dlg_end_reason(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
@@ -294,6 +295,8 @@ static pv_export_t mod_items[] = {
 		pv_set_dlg_val,    pv_parse_name, 0, 0, 0},
 	{ {"DLG_did",     sizeof("DLG_did")-1},      1000, pv_get_dlg_did,
 		0,                 0, 0, 0, 0},
+	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},      1000, 
+		pv_get_dlg_end_reason,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1444,6 +1447,22 @@ int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
 	memcpy(buf_get_did + res->rs.len, aux.s, aux.len);
 	res->rs.len += aux.len;
 
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
+
+int pv_get_dlg_end_reason(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct dlg_cell *dlg;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())==NULL || dlg->terminate_reason.s == NULL)
+		return pv_get_null( msg, param, res);
+
+	res->rs = dlg->terminate_reason;
 	res->flags = PV_VAL_STR;
 
 	return 0;
