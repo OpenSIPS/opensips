@@ -111,5 +111,6 @@ int update_dialog_dbinfo(struct dlg_cell * cell);
 void dialog_update_db(unsigned int ticks, void * param);
 
 struct mi_root* mi_sync_db_dlg(struct mi_root *cmd, void *param);
+struct mi_root* mi_restore_dlg_db(struct mi_root *cmd, void *param);
 
 #endif

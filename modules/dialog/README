@@ -110,7 +110,8 @@ Vladut-Stefan Paiu
               1.8.5. profile_list_dlgs
               1.8.6. profile_get_values
               1.8.7. dlg_db_sync
-              1.8.8. list_all_profiles
+              1.8.8. dlg_restore_db
+              1.8.9. list_all_profiles
 
         1.9. Exported pseudo-variables
 
@@ -1461,7 +1462,21 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
                 :dlg_db_sync:_reply_fifo_file_
                 _empty_line_
 
-1.8.8. list_all_profiles
+1.8.8. dlg_restore_db
+
+   Restores the dialog table after a potential desynchronization
+   event. The table is truncated, then populated with CONFIRMED
+   dialogs from memory.
+
+   Name: dlg_restore_db
+
+   It takes no parameters
+
+   MI FIFO Command Format:
+                :dlg_restore_db:_reply_fifo_file_
+                _empty_line_
+
+1.8.9. list_all_profiles
 
    Lists all the dialog profiles, along with 1 or 0 if the given
    profile has/does not have an associated value.

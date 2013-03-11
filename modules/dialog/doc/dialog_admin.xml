@@ -2067,6 +2067,25 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		</section>
 
 		<section>
+		<title><varname>dlg_restore_db</varname></title>
+		<para>
+		Restores the dialog table after a potential desynchronization event.
+		The table is truncated, then populated with CONFIRMED dialogs from memory.
+		</para>
+		<para>
+		Name: <emphasis>dlg_restore_db</emphasis>
+		</para>
+		<para>It takes no parameters</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		:dlg_restore_db:_reply_fifo_file_
+		_empty_line_
+		</programlisting>
+		</section>
+
+		<section>
 		<title><varname>list_all_profiles</varname></title>
 		<para>
 		Lists all the dialog profiles, along with 1 or 0 if

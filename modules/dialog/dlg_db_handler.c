@@ -1802,12 +1802,158 @@ error:
 	return -1;
 }
 
+/*
+ * truncates and restores the dialog table with CONFIRMED dialogs from memory
+ */
+static int restore_dlg_db(void)
+{
+	int i, callee_leg, ins_done = 0;
+	struct dlg_entry *e;
+	struct dlg_cell *cell;
+	static query_list_t *ins_list = NULL;
+	static db_ps_t my_ps_insert = NULL;
+
+	db_val_t values[DIALOG_TABLE_TOTAL_COL_NO];
+
+	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {
+			&dlg_id_column,		&call_id_column,		&from_uri_column,
+			&from_tag_column,	&to_uri_column,			&to_tag_column,
+			&from_sock_column,	&to_sock_column,		&start_time_column,
+			&from_route_column,	&to_route_column,		&from_contact_column,
+			&to_contact_column, &mangled_fu_column,		&mangled_tu_column,
+			&state_column,		&timeout_column,		&from_cseq_column,
+			&to_cseq_column,	&from_ping_cseq_column, &to_ping_cseq_column,
+			&vars_column,		&profiles_column,		&sflags_column,
+			&flags_column};
+
+	VAL_TYPE(values) = DB_BIGINT;
+	VAL_TYPE(values+8) = 
+	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
+	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)= DB_INT;
+
+	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) = 
+	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) = 
+	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) = 
+	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
+	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) = 
+	VAL_TYPE(values+21) = VAL_TYPE(values+22) = DB_STR;
+
+	if (remove_all_dialogs_from_db() != 0) {
+		LM_ERR("Failed to truncate dialog table!\n");
+		return -1;
+	}
+
+	for (i = 0; i < d_table->size; i++) {
+		e = d_table->entries + i;
+
+		dlg_lock(d_table, e);
+
+		for (cell = e->first; cell; cell = cell->next) {
+
+			if (cell->state != DLG_STATE_CONFIRMED &&
+				cell->state != DLG_STATE_CONFIRMED_NA)
+				continue;
+
+			callee_leg = callee_idx(cell);
+			
+			SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+							 cell->h_id));
+			SET_STR_VALUE(values+1, cell->callid);
+			SET_STR_VALUE(values+2, cell->from_uri);
+
+			SET_STR_VALUE(values+3, cell->legs[DLG_CALLER_LEG].tag);
+			SET_STR_VALUE(values+4, cell->to_uri);
+			SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
+
+			SET_STR_VALUE(values+6,
+				cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+			if (cell->legs[callee_leg].bind_addr) {
+				SET_STR_VALUE(values+7, 
+					cell->legs[callee_leg].bind_addr->sock_str);
+			} else {
+				VAL_NULL(values+7) = 1;
+			}
+
+			SET_INT_VALUE(values+8,  cell->start_ts);
+
+			SET_STR_VALUE(values+9, cell->legs[DLG_CALLER_LEG].route_set);
+			SET_STR_VALUE(values+10,
+				cell->legs[callee_leg].route_set);
+			SET_STR_VALUE(values+11, cell->legs[DLG_CALLER_LEG].contact);
+			SET_STR_VALUE(values+12,
+				cell->legs[callee_leg].contact);
+
+
+			SET_STR_VALUE(values+13,cell->legs[callee_leg].from_uri);
+			SET_STR_VALUE(values+14,cell->legs[callee_leg].to_uri);
+
+			SET_INT_VALUE(values+15, cell->state);
+			SET_INT_VALUE(values+16, (unsigned int)((unsigned int)time(0)
+				+ cell->tl.timeout - get_ticks()) );
+
+			SET_STR_VALUE(values+17, cell->legs[DLG_CALLER_LEG].r_cseq);
+			SET_STR_VALUE(values+18, cell->legs[callee_leg].r_cseq);
+
+			SET_INT_VALUE(values+19, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
+			SET_INT_VALUE(values+20, cell->legs[callee_leg].last_gen_cseq);
+
+			set_final_update_cols(values+21, cell, 1);
+			SET_INT_VALUE(values+24, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|
+													 DLG_FLAG_VP_CHANGED));
+
+			CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+			if (con_set_inslist(&dialog_dbf,dialog_db_handle,
+			&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
+				CON_RESET_INSLIST(dialog_db_handle);
+
+			if((dialog_dbf.insert(dialog_db_handle, insert_keys, 
+			values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
+				LM_ERR("could not add another dialog to db\n");
+				
+				dlg_unlock(d_table, e);
+				return -1;
+			}
+
+			if (ins_done == 0)
+				ins_done = 1;
+
+			/* dialog saved */
+			run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+
+			cell->flags &= ~(DLG_FLAG_NEW |DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
+		}
+
+		dlg_unlock(d_table, e);
+	}
+
+	if (ins_done) {
+		LM_DBG("attempting to flush rows to DB\n");
+		/* flush everything to DB
+		 * so that next-time timer fires
+		 * we are sure that DB updates will be succesful */
+		if (ql_flush_rows(&dialog_dbf,dialog_db_handle,ins_list) < 0)
+			LM_ERR("failed to flush rows to DB\n");
+	}
+
+	return 0;
+}
+
 struct mi_root* mi_sync_db_dlg(struct mi_root *cmd, void *param)
 {
 	if (dlg_db_mode == 0)
 		return init_mi_tree( 400, MI_SSTR("Cannot sync in no-db mode"));
 	if (sync_dlg_db_mem() < 0)
 		return init_mi_tree( 400, MI_SSTR("Sync mem with DB failed"));
+	else
+		return init_mi_tree( 200, MI_SSTR(MI_OK));
+}
+
+struct mi_root* mi_restore_dlg_db(struct mi_root *cmd, void *param)
+{
+	if (dlg_db_mode == 0)
+		return init_mi_tree( 400, MI_SSTR("Cannot restore db in no-db mode!"));
+	if (restore_dlg_db() < 0)
+		return init_mi_tree( 400, MI_SSTR("Restore dlg DB failed!"));
 	else
 		return init_mi_tree( 200, MI_SSTR(MI_OK));
 }
