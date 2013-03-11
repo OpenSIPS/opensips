@@ -1412,7 +1412,7 @@ static int sync_dlg_db_mem(void)
 				continue;
 			}
 
-			hash_entry = (int)(VAL_BIGINT(values) & 0xffffffff00000000);
+			hash_entry = (int)(VAL_BIGINT(values) >> 32);
 			hash_id = (int)(VAL_BIGINT(values) & 0x00000000ffffffff);
 
 			if (VAL_NULL(values+6) || VAL_NULL(values+7)) {
@@ -1434,7 +1434,7 @@ static int sync_dlg_db_mem(void)
 
 			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
 			known_dlg = 0;
-			d_entry = &(d_table->entries[VAL_INT(values)]);
+			d_entry = &(d_table->entries[hash_entry]);
 
 			/* lock the whole entry */
 			dlg_lock( d_table, d_entry);
