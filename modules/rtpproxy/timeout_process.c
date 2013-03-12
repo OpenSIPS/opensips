@@ -77,6 +77,7 @@ void timeout_listener_process(int rank)
 	int optval = 1;
 	struct sockaddr rtpp_info;
 	struct rtpp_notify_node *rtpp_lst;
+	str terminate_reason = str_init("RTPProxy Timeout");
 
 	if (init_child(PROC_MODULE) != 0) {
 		LM_ERR("cannot init child process");
@@ -348,7 +349,7 @@ void timeout_listener_process(int rank)
 				}
 				LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
 
-				if(dlg_api.terminate_dlg(h_entry, h_id)< 0)
+				if(dlg_api.terminate_dlg(h_entry, h_id,&terminate_reason)< 0)
 					LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
 
 				/* go to end or to next digit */
