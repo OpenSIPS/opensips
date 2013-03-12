@@ -395,6 +395,46 @@ modparam("usrloc", "path_column", "path")
 	</section>
 
 	<section>
+		<title><varname>sip_instance_column</varname> (string)</title>
+		<para>
+		Name of column containing the SIP instance.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>sip_instance_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "sip_instance_column", "sip_instance")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>attr_column</varname> (string)</title>
+		<para>
+		Name of column containing additional registration-related information.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>attr_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "attr_column", "attr")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		If the domain part of the user should be also saved and used for

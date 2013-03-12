@@ -14,8 +14,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -47,8 +47,9 @@ Bogdan-Andrei Iancu
               1.3.11. retry_after (integer)
               1.3.12. sock_hdr_name (string)
               1.3.13. mcontact_avp (string)
-              1.3.14. gruu_secret (string)
-              1.3.15. disable_gruu (int)
+              1.3.14. attr_avp (string)
+              1.3.15. gruu_secret (string)
+              1.3.16. disable_gruu (int)
 
         1.4. Exported Functions
 
@@ -83,13 +84,14 @@ Bogdan-Andrei Iancu
    1.11. Set retry_after parameter
    1.12. Set sock_hdr_namer parameter
    1.13. Set mcontact_avp parameter
-   1.14. Set gruu_secret parameter
+   1.14. Set attr_avp parameter
    1.15. Set gruu_secret parameter
-   1.16. save usage
-   1.17. lookup usage
-   1.18. registered usage
-   1.19. is_other_contact usage
-   1.20. add_sock_hdr usage
+   1.16. Set gruu_secret parameter
+   1.17. save usage
+   1.18. lookup usage
+   1.19. registered usage
+   1.20. is_other_contact usage
+   1.21. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -373,25 +375,53 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 modparam("registrar", "mcontact_avp", "$avp(register)")
 ...
 
-1.3.14. gruu_secret (string)
+1.3.14. attr_avp (string)
+
+   AVP to store specific additional information for each
+   registration. This information is read from the AVP and stored
+   (in memory, db or both) at every registrar 'save'. When a
+   registrar 'lookup' is done, the attr_avp is populated with the
+   value saved at [re]registration.
+
+   When doing call forking, the avp will hold multiple values. The
+   position of the corresponding attribute information in attr_avp
+   is equal to the branch index. An example scenario is given
+   below.
+
+   Default value is NULL.
+
+   Example 1.14. Set attr_avp parameter
+# reading attributes from the attr_pvar when doing parallel forking
+...
+modparam("registrar", "attr_avp", "$avp(attr)")
+...
+t_on_branch("branch_route_1");
+...
+branch_route[branch_route_1] {
+        xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch
+_idx])\n");
+}
+
+
+1.3.15. gruu_secret (string)
 
    The string that will be used in XORing when generating
    temporary GRUUs.
 
    If not set, 'OpenSIPS' is the default secret.
 
-   Example 1.14. Set gruu_secret parameter
+   Example 1.15. Set gruu_secret parameter
 ...
 modparam("registrar", "gruu_secret", "top_secret")
 ...
 
-1.3.15. disable_gruu (int)
+1.3.16. disable_gruu (int)
 
    Globally disable GRUU handling
 
    Default value is 0 ( GRUU will be handled ).
 
-   Example 1.15. Set gruu_secret parameter
+   Example 1.16. Set gruu_secret parameter
 ...
 modparam("registrar", "gruu_secret", 1)
 ...
@@ -469,7 +499,7 @@ modparam("registrar", "gruu_secret", 1)
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.16. save usage
+   Example 1.17. save usage
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
@@ -524,7 +554,7 @@ save("location","mr", "$avp(i:1)");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.17. lookup usage
+   Example 1.18. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -564,7 +594,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.18. registered usage
+   Example 1.19. registered usage
 ...
 if (registered("location")) {
         sl_send_reply("100", "Trying");
@@ -588,7 +618,7 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.19. is_other_contact usage
+   Example 1.20. is_other_contact usage
 ...
 
 if (is_other_contact("location", "$avp(ips)")) {
@@ -610,7 +640,7 @@ if (is_other_contact("location", "$avp(ips)")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.20. add_sock_hdr usage
+   Example 1.21. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...

@@ -256,7 +256,7 @@ void print_udomain(FILE* _f, udomain_t* _d)
 static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 {
 	static ucontact_info_t ci;
-	static str callid, ua, received, host, path,instance;
+	static str callid, ua, received, host, path, instance, attr;
 	int port, proto;
 	char *p;
 
@@ -371,6 +371,15 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	}
 	ci.instance = instance;
 
+	if (VAL_NULL(vals+14) || !attr.s) {
+		attr.s = NULL;
+		attr.len = 0;
+	} else {
+		attr.s = (char*)VAL_STRING(vals+14);
+		attr.len  = strlen(attr.s);
+	}
+	ci.attr = &attr;
+
 	return &ci;
 }
 
@@ -382,7 +391,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	char uri[MAX_URI_SIZE];
 	ucontact_info_t *ci;
 	db_row_t *row;
-	db_key_t columns[16];
+	db_key_t columns[17];
 	db_res_t* res = NULL;
 	str user, contact;
 	char* domain;
@@ -408,7 +417,8 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	columns[12] = &methods_col;
 	columns[13] = &last_mod_col;
 	columns[14] = &sip_instance_col;
-	columns[15] = &domain_col;
+	columns[15] = &attr_col;
+	columns[16] = &domain_col;
 
 	if (ul_dbf.use_table(_c, _d->name) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -420,20 +430,20 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 #endif
 
 	if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(16):(15), 0,
+		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(17):(16), 0,
 		0) < 0) {
 			LM_ERR("db_query (1) failed\n");
 			return -1;
 		}
 		no_rows = estimate_available_rows( 32+64+4+8+128+8+4+4+64
-			+32+128+16+8+8+255+32, 16);
+			+32+128+16+8+8+255+32+255, 17);
 		if (no_rows==0) no_rows = 10;
 		if(ul_dbf.fetch_result(_c, &res, no_rows)<0) {
 			LM_ERR("fetching rows failed\n");
 			return -1;
 		}
 	} else {
-		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(16):(15), 0,
+		if (ul_dbf.query(_c, 0, 0, 0, columns, 0, (use_domain)?(17):(16), 0,
 		&res) < 0) {
 			LM_ERR("db_query failed\n");
 			return -1;
@@ -469,8 +479,8 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 			}
 
 			if (use_domain) {
-				domain = (char*)VAL_STRING(ROW_VALUES(row) + 15);
-				if (VAL_NULL(ROW_VALUES(row)+15) || domain==0 || domain[0]==0){
+				domain = (char*)VAL_STRING(ROW_VALUES(row) + 16);
+				if (VAL_NULL(ROW_VALUES(row)+16) || domain==0 || domain[0]==0){
 					LM_CRIT("empty domain record for user %.*s...skipping\n",
 							user.len, user.s);
 					continue;
@@ -541,7 +551,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 {
 	/*static db_ps_t my_ps = NULL;*/
 	ucontact_info_t *ci;
-	db_key_t columns[14];
+	db_key_t columns[15];
 	db_key_t keys[2];
 	db_val_t vals[2];
 	db_key_t order = &q_col;
@@ -570,6 +580,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	columns[11] = &methods_col;
 	columns[12] = &last_mod_col;
 	columns[13] = &sip_instance_col;
+	columns[14] = &attr_col;
 
 	if (desc_time_order)
 		order = &last_mod_col;
@@ -600,7 +611,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 
 	/* CON_PS_REFERENCE(_c) = &my_ps; - this is still dangerous with STMT */
 
-	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 14, order,
+	if (ul_dbf.query(_c, keys, 0, vals, columns, (use_domain)?2:1, 15, order,
 				&res) < 0) {
 		LM_ERR("db_query failed\n");
 		return 0;

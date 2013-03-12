@@ -213,6 +213,14 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t
 		if (node==0)
 			return -1;
 
+		/* additional information */
+		if (c->attr.len) {
+			node = add_mi_node_child( cnode, MI_DUP_VALUE, "Attr", 4,
+				c->attr.s, c->attr.len);
+			if (node==0)
+				return -1;
+		}
+
 	} /* for */
 
 	return 0;

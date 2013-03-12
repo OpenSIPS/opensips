@@ -85,6 +85,7 @@ typedef struct ucontact {
 	struct socket_info *sock; /*!< received socket */
 	time_t last_modified;   /*!< When the record was last modified */
 	unsigned int methods;   /*!< Supported methods */
+	str attr;               /*!< Additional registration info  */
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
 } ucontact_t;
@@ -103,6 +104,7 @@ typedef struct ucontact_info {
 	struct socket_info *sock;
 	unsigned int methods;
 	time_t last_modified;
+	str *attr;
 } ucontact_info_t;
 
 /*! \brief

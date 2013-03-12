@@ -109,6 +109,10 @@ char* mct_avp_param = 0;
 unsigned short mct_avp_type = 0;
 int mct_avp_name;
 
+char* attr_avp_param = 0;
+unsigned short attr_avp_type = 0;
+int attr_avp_name;
+
 
 int reg_use_domain = 0;
 /*!< Realm prefix to be removed */
@@ -182,6 +186,7 @@ static param_export_t params[] = {
 	{"retry_after",        INT_PARAM, &retry_after           },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s       },
 	{"mcontact_avp",       STR_PARAM, &mct_avp_param         },
+	{"attr_avp",           STR_PARAM, &attr_avp_param        },
 	{"gruu_secret",        STR_PARAM, &gruu_secret.s         },
 	{"disable_gruu",       INT_PARAM, &disable_gruu          },
 	{0, 0, 0}
@@ -279,6 +284,24 @@ static int mod_init(void)
 	} else {
 		mct_avp_name = -1;
 		mct_avp_type = 0;
+	}
+
+	if (attr_avp_param && *attr_avp_param) {
+		s.s = attr_avp_param; s.len = strlen(s.s);
+		if (pv_parse_spec(&s, &avp_spec)==0
+				|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %s AVP definition\n", attr_avp_param);
+			return -1;
+		}
+
+		if(pv_get_avp_name(0, &avp_spec.pvp, &attr_avp_name, &attr_avp_type)!=0)
+		{
+			LM_ERR("[%s]- invalid AVP definition\n", attr_avp_param);
+			return -1;
+		}
+	} else {
+		attr_avp_name = -1;
+		attr_avp_type = 0;
 	}
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);

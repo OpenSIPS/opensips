@@ -76,6 +76,7 @@
 #define PATH_COL       "path"
 #define SOCK_COL       "socket"
 #define METHODS_COL    "methods"
+#define ATTR_COL       "attr"
 #define LAST_MOD_COL   "last_modified"
 #define SIP_INSTANCE_COL   "sip_instance"
 
@@ -106,7 +107,8 @@ str received_col    = str_init(RECEIVED_COL);		/*!< Name of column containing tr
 str path_col        = str_init(PATH_COL);		/*!< Name of column containing the Path header */
 str sock_col        = str_init(SOCK_COL);		/*!< Name of column containing the received socket */
 str methods_col     = str_init(METHODS_COL);		/*!< Name of column containing the supported methods */
-str last_mod_col     = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
+str last_mod_col    = str_init(LAST_MOD_COL);		/*!< Name of column containing the last modified date */
+str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
 str db_url          = {NULL, 0};					/*!< Database URL */
 int timer_interval  = 60;				/*!< Timer interval in seconds */
@@ -125,7 +127,6 @@ db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
 
 
-
 /*! \brief
  * Exported functions
  */
@@ -139,30 +140,32 @@ static cmd_export_t cmds[] = {
  * Exported parameters 
  */
 static param_export_t params[] = {
-	{"user_column",       STR_PARAM, &user_col.s      },
-	{"domain_column",     STR_PARAM, &domain_col.s    },
-	{"contact_column",    STR_PARAM, &contact_col.s   },
-	{"expires_column",    STR_PARAM, &expires_col.s   },
-	{"q_column",          STR_PARAM, &q_col.s         },
-	{"callid_column",     STR_PARAM, &callid_col.s    },
-	{"cseq_column",       STR_PARAM, &cseq_col.s      },
-	{"flags_column",      STR_PARAM, &flags_col.s     },
-	{"cflags_column",     STR_PARAM, &cflags_col.s    },
-	{"db_url",            STR_PARAM, &db_url.s        },
-	{"timer_interval",    INT_PARAM, &timer_interval  },
-	{"db_mode",           INT_PARAM, &db_mode         },
-	{"use_domain",        INT_PARAM, &use_domain      },
-	{"desc_time_order",   INT_PARAM, &desc_time_order },
-	{"user_agent_column", STR_PARAM, &user_agent_col.s},
-	{"received_column",   STR_PARAM, &received_col.s  },
-	{"path_column",       STR_PARAM, &path_col.s      },
-	{"socket_column",     STR_PARAM, &sock_col.s      },
-	{"methods_column",    STR_PARAM, &methods_col.s   },
-	{"matching_mode",     INT_PARAM, &matching_mode   },
-	{"cseq_delay",        INT_PARAM, &cseq_delay      },
-	{"hash_size",         INT_PARAM, &ul_hash_size    },
-	{"nat_bflag",         STR_PARAM, &nat_bflag_str   },
-	{"nat_bflag",         INT_PARAM, &nat_bflag       },
+	{"user_column",        STR_PARAM, &user_col.s        },
+	{"domain_column",      STR_PARAM, &domain_col.s      },
+	{"contact_column",     STR_PARAM, &contact_col.s     },
+	{"expires_column",     STR_PARAM, &expires_col.s     },
+	{"q_column",           STR_PARAM, &q_col.s           },
+	{"callid_column",      STR_PARAM, &callid_col.s      },
+	{"cseq_column",        STR_PARAM, &cseq_col.s        },
+	{"flags_column",       STR_PARAM, &flags_col.s       },
+	{"cflags_column",      STR_PARAM, &cflags_col.s      },
+	{"db_url",             STR_PARAM, &db_url.s          },
+	{"timer_interval",     INT_PARAM, &timer_interval    },
+	{"db_mode",            INT_PARAM, &db_mode           },
+	{"use_domain",         INT_PARAM, &use_domain        },
+	{"desc_time_order",    INT_PARAM, &desc_time_order   },
+	{"user_agent_column",  STR_PARAM, &user_agent_col.s  },
+	{"received_column",    STR_PARAM, &received_col.s    },
+	{"path_column",        STR_PARAM, &path_col.s        },
+	{"socket_column",      STR_PARAM, &sock_col.s        },
+	{"methods_column",     STR_PARAM, &methods_col.s     },
+	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
+	{"attr_column",        STR_PARAM, &attr_col.s        },
+	{"matching_mode",      INT_PARAM, &matching_mode     },
+	{"cseq_delay",         INT_PARAM, &cseq_delay        },
+	{"hash_size",          INT_PARAM, &ul_hash_size      },
+	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
+	{"nat_bflag",          INT_PARAM, &nat_bflag         },
 	{0, 0, 0}
 };
 
@@ -232,6 +235,8 @@ static int mod_init(void)
 	path_col.len = strlen(path_col.s);
 	sock_col.len = strlen(sock_col.s);
 	methods_col.len = strlen(methods_col.s);
+	sip_instance_col.len = strlen(sip_instance_col.s);
+	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
 
 	if(ul_hash_size<=1)

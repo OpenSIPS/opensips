@@ -464,6 +464,41 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 		</example>
 	</section>
 	<section>
+		<title><varname>attr_avp</varname> (string)</title>
+		<para>
+		AVP to store specific additional information for each registration.
+		This information is read from the AVP and stored (in memory, db or both)
+		at every registrar 'save'. When a registrar 'lookup' is done, the
+		<emphasis>attr_avp</emphasis> is populated with the value saved at
+		[re]registration.
+		</para>
+		<para>
+		When doing call forking, the avp will hold multiple values. The position of
+		the corresponding attribute information in <emphasis>attr_avp</emphasis> is
+		equal to the branch index. An example scenario is given below.
+		</para>
+		<para>
+		<emphasis>
+			Default value is NULL.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>attr_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+# reading attributes from the attr_pvar when doing parallel forking
+...
+modparam("registrar", "attr_avp", "$avp(attr)")
+...
+t_on_branch("branch_route_1");
+...
+branch_route[branch_route_1] {
+	xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch_idx])\n");
+}
+
+		</programlisting>
+		</example>
+	</section>
+	<section>
 		<title><varname>gruu_secret</varname> (string)</title>
 		<para>
 		The string that will be used in XORing when generating

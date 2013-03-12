@@ -48,7 +48,7 @@
 #define WRITE_BACK    2
 #define DB_ONLY       3
 
-#define UL_TABLE_VERSION 1007
+#define UL_TABLE_VERSION 1008
 
 extern str user_col;
 extern str domain_col;
@@ -64,6 +64,7 @@ extern str received_col;
 extern str path_col;
 extern str sock_col;
 extern str methods_col;
+extern str attr_col;
 extern str last_mod_col;
 extern str sip_instance_col;
 
@@ -77,7 +78,6 @@ extern int ul_hash_size;
 
 extern db_con_t* ul_dbh;   /* Database connection handle */
 extern db_func_t ul_dbf;
-
 
 /*
  * Matching algorithms

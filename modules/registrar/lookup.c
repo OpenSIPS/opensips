@@ -71,6 +71,7 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	str path_dst;
 	str flags_s;
 	pv_value_t val;
+	int_str istr;
 	str sip_instance = {0,0},call_id = {0,0};
 
 	flags = 0;
@@ -223,6 +224,14 @@ search_valid_contact:
 		if (ptr->sock)
 			_m->force_send_socket = ptr->sock;
 
+		/* populate the 'attributes' avp */
+		if (attr_avp_name != -1) {
+			istr.s = ptr->attr;
+			if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
+				LM_ERR("Failed to populate attr avp!\n");
+			}
+		}
+
 		ptr = ptr->next;
 	}
 
@@ -249,6 +258,14 @@ search_valid_contact:
 				LM_ERR("failed to append a branch\n");
 				/* Also give a chance to the next branches*/
 				continue;
+			}
+
+			/* populate the 'attributes' avp */
+			if (attr_avp_name != -1) {
+				istr.s = ptr->attr;
+				if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0) {
+					LM_ERR("Failed to populate attr avp!\n");
+				}
 			}
 		}
 	}

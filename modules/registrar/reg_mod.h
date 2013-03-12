@@ -93,6 +93,8 @@ extern unsigned short rcv_avp_type;
 extern int rcv_avp_name;
 extern unsigned short mct_avp_type;
 extern int mct_avp_name;
+extern unsigned short attr_avp_type;
+extern int attr_avp_name;
 
 extern str rcv_param;
 extern int max_contacts;

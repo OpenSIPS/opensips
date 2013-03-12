@@ -205,6 +205,8 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 	static int received_found;
 	static unsigned int allowed, allow_parsed;
 	static struct sip_msg *m = 0;
+	static int_str attr_avp_value;
+	static struct usr_avp *avp_attr;
 	int_str val;
 
 	if (_m!=0) {
@@ -338,6 +340,16 @@ static inline ucontact_info_t* pack_ci( struct sip_msg* _m, contact_t* _c,
 			}
 		}
 
+		/* additional information (script pvar) */
+		if (attr_avp_name != -1) {
+			avp_attr = search_first_avp(attr_avp_type, attr_avp_name,
+										&attr_avp_value, NULL);
+			if (avp_attr) {
+				ci.attr = &attr_avp_value.s;
+
+				LM_DBG("Attributes: %.*s\n", ci.attr->len, ci.attr->s);
+			}
+		}
 	}
 
 	return &ci;
@@ -437,6 +449,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 				goto error;
 			}
 		}
+
 #ifdef USE_TCP
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
