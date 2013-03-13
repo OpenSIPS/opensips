@@ -228,7 +228,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		_c->path.len = 0;
 	}
 
-	if (_ci->attr->s && _ci->attr->len) {
+	if (_ci->attr && _ci->attr->s && _ci->attr->len) {
 		update_str( &_c->attr, _ci->attr);
 	} else {
 		if (_c->attr.s) shm_free(_c->attr.s);
