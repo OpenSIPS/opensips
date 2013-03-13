@@ -571,9 +571,10 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 				node->name);
 	}
 	if (node->value.s!=NULL) {
-		MI_XMLRPC_HTTP_COPY_2(*pointer,
-				MI_XMLRPC_HTTP_NODE_SEPARATOR,
-				node->value);
+		MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+		MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value,
+				temp_holder, temp_counter);
 	}
 	/* attributes */
 	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
