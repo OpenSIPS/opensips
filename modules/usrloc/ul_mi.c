@@ -221,6 +221,14 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t
 				return -1;
 		}
 
+		/* sip_instance */
+		if (c->instance.len && c->instance.s) {
+			node = add_mi_node_child( cnode, MI_DUP_VALUE, "SIP_instance", 12,
+				c->instance.s, c->instance.len);
+			if (node==0)
+				return -1;
+		}
+
 	} /* for */
 
 	return 0;
