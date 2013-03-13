@@ -183,6 +183,48 @@ do{	\
 	memcpy((p), (s12).s, (s12).len); (p) += (s12).len;	\
 }while(0)
 
+#define MI_XMLRPC_HTTP_ESC_COPY(p,str,temp_holder,temp_counter)	\
+do{	\
+	(temp_holder).s = (str).s;	\
+	(temp_holder).len = 0;	\
+	for((temp_counter)=0;(temp_counter)<(str).len;(temp_counter)++) {	\
+		switch((str).s[(temp_counter)]) {	\
+		case '<':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_LT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '>':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_GT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '&':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_AMP);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '"':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_QUOT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '\'':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_SQUOT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		}	\
+	}	\
+	(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+	MI_XMLRPC_HTTP_COPY(p, (temp_holder));	\
+}while(0)
+
 
 static const str MI_XMLRPC_HTTP_CR = str_init("\n");
 static const str MI_XMLRPC_HTTP_SLASH = str_init("/");
@@ -197,6 +239,13 @@ static const str MI_XMLRPC_HTTP_XML_START = str_init("<?xml version=\"1.0\" "
 "encoding=\"UTF-8\"?><methodResponse><params><param><value><string>\n");
 static const str MI_XMLRPC_HTTP_XML_STOP = str_init("</string></value></param>"
 "</params></methodResponse>");
+
+static const str MI_XMLRPC_HTTP_ESC_LT =    str_init("&lt;");   /* < */
+static const str MI_XMLRPC_HTTP_ESC_GT =    str_init("&gt;");   /* > */
+static const str MI_XMLRPC_HTTP_ESC_AMP =   str_init("&amp;");  /* & */
+static const str MI_XMLRPC_HTTP_ESC_QUOT =  str_init("&quot;"); /* " */
+static const str MI_XMLRPC_HTTP_ESC_SQUOT = str_init("&#39;");  /* ' */
+
 
 int mi_xmlrpc_http_init_async_lock(void)
 {
@@ -509,6 +558,8 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 					struct mi_node *node, int level)
 {
 	struct mi_attr *attr;
+	str temp_holder;
+	int temp_counter;
 
 	/* name and value */
 	if (node->name.s!=NULL) {
@@ -527,11 +578,12 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 	/* attributes */
 	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
 		if (attr->name.s!=NULL) {
-			MI_XMLRPC_HTTP_COPY_4(*pointer,
+			MI_XMLRPC_HTTP_COPY_3(*pointer,
 					MI_XMLRPC_HTTP_ATTR_SEPARATOR,
 					attr->name,
-					MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR,
-					attr->value);
+					MI_XMLRPC_HTTP_ATTR_VAL_SEPARATOR);
+			MI_XMLRPC_HTTP_ESC_COPY(*pointer, attr->value,
+					temp_holder, temp_counter);
 		}
 	}
 	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR);
