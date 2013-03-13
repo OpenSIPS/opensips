@@ -178,6 +178,49 @@ do{	\
 	memcpy((p), (s12).s, (s12).len); (p) += (s12).len;	\
 }while(0)
 
+
+#define MI_HTTP_ESC_COPY(p,str,temp_holder,temp_counter)	\
+do{	\
+	(temp_holder).s = (str).s;	\
+	(temp_holder).len = 0;	\
+	for((temp_counter)=0;(temp_counter)<(str).len;(temp_counter)++) {	\
+		switch((str).s[(temp_counter)]) {	\
+		case '<':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_LT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '>':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_GT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '&':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_AMP);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '"':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_QUOT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '\'':	\
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_SQUOT);	\
+			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		}	\
+	}	\
+	(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+	MI_HTTP_COPY(p, (temp_holder));	\
+}while(0)
+
 static const str MI_HTTP_METHOD[] = {
 	str_init("GET"),
 	str_init("POST")
@@ -266,6 +309,11 @@ static const str MI_HTTP_Response_Foot = str_init(\
 #define MI_HTTP_ROWSPAN 5
 static const str MI_HTTP_CMD_ROWSPAN = str_init("5");
 
+static const str MI_HTTP_ESC_LT =    str_init("&lt;");   /* < */
+static const str MI_HTTP_ESC_GT =    str_init("&gt;");   /* > */
+static const str MI_HTTP_ESC_AMP =   str_init("&amp;");  /* & */
+static const str MI_HTTP_ESC_QUOT =  str_init("&quot;"); /* " */
+static const str MI_HTTP_ESC_SQUOT = str_init("&#39;");  /* ' */
 
 
 int mi_http_init_async_lock(void)
@@ -647,6 +695,8 @@ static inline int mi_http_write_node(char** pointer, char* buf, int max_page_len
 					struct mi_node *node, int level)
 {
 	struct mi_attr *attr;
+	int temp_counter;
+	str temp_holder;
 
 	/* name and value */
 	if (node->name.s!=NULL) {
@@ -656,16 +706,21 @@ static inline int mi_http_write_node(char** pointer, char* buf, int max_page_len
 		MI_HTTP_COPY(*pointer,node->name);
 	}
 	if (node->value.s!=NULL) {
-		MI_HTTP_COPY_2(*pointer,MI_HTTP_NODE_SEPARATOR,node->value);
+		MI_HTTP_COPY(*pointer,MI_HTTP_NODE_SEPARATOR);
+		MI_HTTP_ESC_COPY(*pointer, node->value,
+				temp_holder, temp_counter);
 	}
 	/* attributes */
 	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
 		if (attr->name.s!=NULL) {
-			MI_HTTP_COPY_4(*pointer,
+			MI_HTTP_COPY_3(*pointer,
 						MI_HTTP_ATTR_SEPARATOR,
 						attr->name,
-						MI_HTTP_ATTR_VAL_SEPARATOR,
-						attr->value);
+						MI_HTTP_ATTR_VAL_SEPARATOR);
+			if(attr->value.len) {
+				MI_HTTP_ESC_COPY(*pointer, attr->value,
+							temp_holder, temp_counter);
+			}
 		}
 	}
 	MI_HTTP_COPY(*pointer,MI_HTTP_BREAK);
