@@ -120,7 +120,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 
 		/* eat the destination ID (alphanumerical) */
 		id.s = tmp;
-		while( *tmp && (isalpha(*tmp) || isdigit(*tmp) || (*tmp)=='_') )
+		while( *tmp && (isalpha(*tmp) || isdigit(*tmp) || (*tmp)=='_' || (*tmp)=='-') )
 			tmp++;
 		if (id.s == tmp) {
 			LM_ERR("bad id '%c' (%d)[%s]\n",
