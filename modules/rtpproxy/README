@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision: 8740 $ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision: 8740 $ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -46,6 +46,7 @@ Bogdan-Andrei Iancu
               1.5.10. rtpp_socket_col (string)
               1.5.11. set_id_col (string)
               1.5.12. rtpp_notify_socket (string)
+              1.5.13. rtpp_sock_pvar (string)
 
         1.6. Exported Functions
 
@@ -87,16 +88,17 @@ Bogdan-Andrei Iancu
    1.9. Set rtpp_socket_col parameter
    1.10. Set set_id parameter
    1.11. Set rtpp_notify_socket parameter
-   1.12. fix_nated_contact usage
-   1.13. engage_rtp_proxy usage
-   1.14. rtpproxy_offer usage
-   1.15. rtpproxy_answer usage
-   1.16. unforce_rtp_proxy usage
-   1.17. rtpproxy_stream2xxx usage
-   1.18. start_recording usage
-   1.19. rtpproxy_enable usage
-   1.20. rtpproxy_show usage
-   1.21. rtpproxy_reload usage
+   1.12. Set rtpp_sock_pvar parameter
+   1.13. fix_nated_contact usage
+   1.14. engage_rtp_proxy usage
+   1.15. rtpproxy_offer usage
+   1.16. rtpproxy_answer usage
+   1.17. unforce_rtp_proxy usage
+   1.18. rtpproxy_stream2xxx usage
+   1.19. start_recording usage
+   1.20. rtpproxy_enable usage
+   1.21. rtpproxy_show usage
+   1.22. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -380,6 +382,26 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 ...
 
 
+1.5.13. rtpp_sock_pvar (string)
+
+   Socket url for the rtpproxy instance used for setting up the
+   call.
+
+   Default value is “NULL (don't set pvar)”.
+
+   Example 1.12. Set rtpp_sock_pvar parameter
+...
+modparam("rtpproxy", "rtpp_sock_pvar", "$avp(rtp_sock)")
+
+#Load balancing rtpproxies
+modparam("rtpproxy", "rtpproxy_sock",
+        "udp:localhost:12221 udp:localhost:12222")
+
+engage_rtp_proxy("froc");
+xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
+...
+
+
 1.6. Exported Functions
 
 1.6.1.  set_rtp_proxy_set()
@@ -394,7 +416,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.12. fix_nated_contact usage
+   Example 1.13. fix_nated_contact usage
 ...
 set_rtp_proxy_set("2");
 rtpproxy_offer();
@@ -459,7 +481,7 @@ rtpproxy_offer();
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.13. engage_rtp_proxy usage
+   Example 1.14. engage_rtp_proxy usage
                 ...
                 if (is_method("INVITE") &&
                 has_totag()) {engage_rtp_proxy();};
@@ -478,7 +500,7 @@ rtpproxy_offer();
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. rtpproxy_offer usage
+   Example 1.15. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -522,7 +544,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. rtpproxy_answer usage
+   Example 1.16. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
@@ -533,7 +555,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.16. unforce_rtp_proxy usage
+   Example 1.17. unforce_rtp_proxy usage
 ...
 unforce_rtp_proxy();
 ...
@@ -573,7 +595,7 @@ rtpproxy_stream2uas(prompt_name, count)
        indefinitely, until appropriate rtpproxy_stop_stream2xxx is
        issued.
 
-   Example 1.17. rtpproxy_stream2xxx usage
+   Example 1.18. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -602,7 +624,7 @@ rtpproxy_stream2uas(prompt_name, count)
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.18. start_recording usage
+   Example 1.19. start_recording usage
 ...
 start_recording();
 ...
@@ -622,7 +644,7 @@ start_recording();
    NOTE: if a rtpproxy is defined multiple times (in the same or
    diferente sete), all its instances will be enables/disabled.
 
-   Example 1.19.  rtpproxy_enable usage
+   Example 1.20.  rtpproxy_enable usage
 ...
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 ...
@@ -634,7 +656,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.20.  rtpproxy_show usage
+   Example 1.21.  rtpproxy_show usage
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
@@ -648,7 +670,7 @@ $ opensipsctl fifo rtpproxy_show
 
    No parameter.
 
-   Example 1.21.  rtpproxy_reload usage
+   Example 1.22.  rtpproxy_reload usage
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...

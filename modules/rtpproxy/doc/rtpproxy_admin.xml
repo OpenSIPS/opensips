@@ -452,6 +452,35 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>rtpp_sock_pvar</varname> (string)</title>
+		<para>
+			Socket url for the rtpproxy instance used for setting up the call.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL (don't set pvar)</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>rtpp_sock_pvar</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "rtpp_sock_pvar", "$avp(rtp_sock)")
+
+#Load balancing rtpproxies
+modparam("rtpproxy", "rtpproxy_sock",
+	"udp:localhost:12221 udp:localhost:12222")
+
+engage_rtp_proxy("froc");
+xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
+...
+
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 

@@ -116,7 +116,7 @@ int init_rtpp_notify_list();
 void timeout_listener_process(int rank);
 
 /* Functions from nathelper */
-struct rtpp_node *select_rtpp_node(str, int);
+struct rtpp_node *select_rtpp_node(struct sip_msg *, str, int);
 char *send_rtpp_command(struct rtpp_node *, struct iovec *, int);
 int force_rtp_proxy_body(struct sip_msg *, struct force_rtpp_args *);
 

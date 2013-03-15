@@ -106,7 +106,7 @@ rtpproxy_stream(struct sip_msg* msg, str *pname, int count, int stream2uac)
     v[1].iov_len = sprintf(cbuf, "P%d", count);
     STR2IOVEC(callid, v[3]);
     STR2IOVEC(*pname, v[5]);
-    node = select_rtpp_node(callid, 1);
+    node = select_rtpp_node(msg, callid, 1);
     if (!node) {
         LM_ERR("no available proxies\n");
         return -1;
@@ -189,7 +189,7 @@ rtpproxy_stop_stream(struct sip_msg* msg, int stream2uac)
         return -1;
     }
     STR2IOVEC(callid, v[3]);
-    node = select_rtpp_node(callid, 1);
+    node = select_rtpp_node(msg, callid, 1);
     if (!node) {
         LM_ERR("no available proxies\n");
         return -1;

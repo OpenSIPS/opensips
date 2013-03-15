@@ -248,6 +248,10 @@ static str status_name = str_init("status");
 static str status_connected = str_init("active");
 static str status_disconnected = str_init("inactive");
 
+/* script accessible parameters */
+str rtpp_sock_pvar_pvname = {NULL, 0};
+pv_spec_t rtpp_sock_pvar_pv;
+
 static int extract_mediainfo(str *, str *, str *);
 static int alter_mediaip(struct sip_msg *, str *, str *, int, str *, int, int);
 static char *gencookie();
@@ -409,19 +413,20 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
-	{"nortpproxy_str",        STR_PARAM, &nortpproxy_str.s      },
+	{"nortpproxy_str",        STR_PARAM, &nortpproxy_str.s        },
 	{"rtpproxy_sock",         STR_PARAM|USE_FUNC_PARAM,
-	                         (void*)rtpproxy_set_store          },
-	{"rtpproxy_disable_tout", INT_PARAM, &rtpproxy_disable_tout },
-	{"rtpproxy_retr",         INT_PARAM, &rtpproxy_retr         },
-	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout         },
-	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout      },
-	{"rtpproxy_autobridge",   INT_PARAM, &rtpproxy_autobridge   },
-	{"db_url",                STR_PARAM, &db_url.s              },
-	{"db_table",              STR_PARAM, &table.s               },
-	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s       },
-	{"set_id_col",            STR_PARAM, &set_id_col.s          },
-	{"rtpp_notify_socket",    STR_PARAM, &rtpp_notify_socket.s  },
+	                         (void*)rtpproxy_set_store            },
+	{"rtpproxy_disable_tout", INT_PARAM, &rtpproxy_disable_tout   },
+	{"rtpproxy_retr",         INT_PARAM, &rtpproxy_retr           },
+	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout           },
+	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout        },
+	{"rtpproxy_autobridge",   INT_PARAM, &rtpproxy_autobridge     },
+	{"db_url",                STR_PARAM, &db_url.s                },
+	{"db_table",              STR_PARAM, &table.s                 },
+	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s         },
+	{"set_id_col",            STR_PARAM, &set_id_col.s            },
+	{"rtpp_notify_socket",    STR_PARAM, &rtpp_notify_socket.s    },
+	{"rtpp_sock_pvar",        STR_PARAM, &rtpp_sock_pvar_pvname.s },
 	{0, 0, 0}
 };
 
@@ -1146,6 +1151,15 @@ mod_init(void)
     else
     {
         exports.procs = 0;
+    }
+
+    if (rtpp_sock_pvar_pvname.s && (rtpp_sock_pvar_pvname.len=strlen(rtpp_sock_pvar_pvname.s))>0 ) {
+        if(pv_parse_spec(&rtpp_sock_pvar_pvname, &rtpp_sock_pvar_pv)==NULL
+                 || !pv_is_w(&rtpp_sock_pvar_pv))
+        {
+                        LM_ERR("[%s]- invalid rtpp_sock_pvar\n", rtpp_sock_pvar_pvname.s);
+                        return -1;
+        }
     }
 
 	ei_id = evi_publish_event(event_name); 
@@ -2124,11 +2138,12 @@ static struct rtpp_set * select_rtpp_set(int id_set ){
  * too expensive here.
  */
 struct rtpp_node *
-select_rtpp_node(str callid, int do_test)
+select_rtpp_node(struct sip_msg * msg, str callid, int do_test)
 {
 	unsigned sum, weight_sum;
 	struct rtpp_node* node;
 	int was_forced, sumcut, found, constant_weight_sum;
+	pv_value_t val;
 
 	/* check last list version */
 	if (my_version != *list_version && update_rtpp_proxies() < 0) {
@@ -2145,7 +2160,10 @@ select_rtpp_node(str callid, int do_test)
 		node = selected_rtpp_set->rn_first;
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks())
 			node->rn_disabled = rtpp_test(node, 1, 0);
-		return node->rn_disabled ? NULL : node;
+		if (node->rn_disabled)
+			return NULL;
+		
+		goto done;
 	}
 
 	/* XXX Use quick-and-dirty hashing algo */
@@ -2209,6 +2227,16 @@ found:
 		if (node->rn_disabled)
 			goto retry;
 	}
+done:
+	/* Store rtpproxy used */
+	if (rtpp_sock_pvar_pvname.s!=0) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_VAL_STR;
+		val.rs = node->rn_url;
+		if(pv_set_value(msg, &rtpp_sock_pvar_pv, (int)EQ_T, &val)<0)
+			LM_ERR("setting PV <%s> failed\n", rtpp_sock_pvar_pvname.s);
+	}
+
 	return node;
 }
 
@@ -2248,7 +2276,7 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* str1, char* str2)
 		selected_rtpp_set = *default_rtpp_set;
 	}
 	
-	node = select_rtpp_node(callid, 1);
+	node = select_rtpp_node(msg, callid, 1);
 	if (!node) {
 		LM_ERR("no available proxies\n");
 		goto error;
@@ -2912,7 +2940,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	if (msg->id != current_msg_id) {
 		selected_rtpp_set = *default_rtpp_set;
 	}
-	args.node = select_rtpp_node(args.callid, 1);
+	args.node = select_rtpp_node(msg, args.callid, 1);
 	if (args.node == NULL) {
 		LM_ERR("no available proxies\n");
 		return (-1);
@@ -3436,7 +3464,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 				}
 				/* if not successfull choose a different rtpproxy */
 				if (!cp) {
-					args->node = select_rtpp_node(args->callid, 0);
+					args->node = select_rtpp_node(msg, args->callid, 0);
 					if (!args->node) {
 						LM_ERR("no available proxies\n");
 						goto error;
@@ -3658,7 +3686,7 @@ static int start_recording_f(struct sip_msg* msg, char *foo, char *bar)
 		selected_rtpp_set = *default_rtpp_set;
 	}
 	
-	node = select_rtpp_node(callid, 1);
+	node = select_rtpp_node(msg, callid, 1);
 	if (!node) {
 		LM_ERR("no available proxies\n");
 		goto error;
