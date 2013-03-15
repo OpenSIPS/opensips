@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -183,6 +184,31 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags = PV_VAL_STR;
 			val->rs.s = _tr_buffer;
 			val->rs.len = i;
+			break;
+		case TR_S_HEX2DEC:
+			if(val->flags&PV_VAL_INT)
+				break; /* already converted */
+			s = NULL;
+			errno = 0;
+			i = strtol(val->rs.s, &s, 16);
+			if (!s || *s || errno == ERANGE)
+				return -1;
+			val->rs.s = int2str(i, &val->rs.len);
+			val->ri = i;
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			break;
+		case TR_S_DEC2HEX:
+			if(!(val->flags&PV_VAL_INT))
+			{
+				if(str2sint(&val->rs, &val->ri)!=0)
+					return -1;
+			}
+			val->rs.len = snprintf(_tr_buffer, TR_BUFFER_SIZE, "%x", val->ri);
+			if (val->rs.len < 0 || val->rs.len > TR_BUFFER_SIZE)
+				return -1;
+			val->ri = 0;
+			val->rs.s = _tr_buffer;
+			val->flags = PV_VAL_STR;
 			break;
 		case TR_S_ESCAPECOMMON:
 			if(!(val->flags&PV_VAL_STR))
@@ -2010,6 +2036,12 @@ char* tr_parse_string(str* in, trans_t *t)
 		return p;
 	} else if(name.len==11 && strncasecmp(name.s, "decode.hexa", 11)==0) {
 		t->subtype = TR_S_DECODEHEXA;
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "hex2dec", 7)==0) {
+		t->subtype = TR_S_HEX2DEC;
+		return p;
+	} else if(name.len==7 && strncasecmp(name.s, "dec2hex", 7)==0) {
+		t->subtype = TR_S_DEC2HEX;
 		return p;
 	} else if(name.len==13 && strncasecmp(name.s, "escape.common", 13)==0) {
 		t->subtype = TR_S_ESCAPECOMMON;
