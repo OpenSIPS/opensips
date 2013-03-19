@@ -512,8 +512,8 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
 
     LM_DBG("[pres_uri] %.*s\n", pres_uri.len, pres_uri.s);
 
-    /* if pidf_manipulation usage is configured */
-    if(pidf_manipulation)
+    /* if pidf_manipulation usage is configured and there are no other bodies */
+    if(pidf_manipulation && body_array == NULL)
     {
         if(p_get_xcap_doc(pres_user, pres_domain, PIDF_MANIPULATION, &pidf_doc) < 0)
         {
