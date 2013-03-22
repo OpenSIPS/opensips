@@ -132,7 +132,7 @@ modparam("sipcapture", "capture_on", 1)
 		</example>
 	</section>
         <section>
-                <title><varname>duplicate_with_hep</varname> (integer)</title>
+                <title><varname>hep_capture_on</varname> (integer)</title>
                 <para>
                 Parameter to enable/disable capture of HEP (on(1)/off(0))
                 </para>
@@ -142,10 +142,10 @@ modparam("sipcapture", "capture_on", 1)
                 </emphasis>
                 </para>
                 <example>
-                <title>Set <varname>duplicate_with_hep</varname> parameter</title>
+                <title>Set <varname>hep_capture_on</varname> parameter</title>
                 <programlisting format="linespecific">
 ...
-modparam("sipcapture", "duplicate_with_hep", 1)
+modparam("sipcapture", "hep_capture_on", 1)
 ...
 </programlisting>
                 </example>
