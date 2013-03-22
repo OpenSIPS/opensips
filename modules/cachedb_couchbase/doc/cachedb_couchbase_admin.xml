@@ -122,14 +122,16 @@
 			It can be set more than one time.
 			The prefix part of the URL will be the identifier that will be used
 			from the script.
+			The format of the URL is
+			couchbase[:identifier]://[username:password@]IP:Port/bucket_name
 		</para>
 		
 		<example>
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhost:6379/");
-modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:8888/");
+modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhost:6379/default");
+modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:8888/my_bucket");
 ...
 	</programlisting>
 		</example>
