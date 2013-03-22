@@ -30,7 +30,7 @@ Alexandr Dubovikov
               1.3.1. db_url (str)
               1.3.2. table_name (str)
               1.3.3. capture_on (integer)
-              1.3.4. duplicate_with_hep (integer)
+              1.3.4. hep_capture_on (integer)
               1.3.5. raw_ipip_capture_on (integer)
               1.3.6. raw_moni_capture_on (integer)
               1.3.7. raw_socket_listen (string)
@@ -52,7 +52,7 @@ Alexandr Dubovikov
    1.1. Set db_url parameter
    1.2. Set sip_capture parameter
    1.3. Set capture_on parameter
-   1.4. Set duplicate_with_hep parameter
+   1.4. Set hep_capture_on parameter
    1.5. Set raw_ipip_capture_on parameter
    1.6. Set raw_moni_capture_on parameter
    1.7. Set raw_socket_listen parameter
@@ -129,15 +129,15 @@ modparam("sipcapture", "table_name", "homer_capture")
 modparam("sipcapture", "capture_on", 1)
 ...
 
-1.3.4. duplicate_with_hep (integer)
+1.3.4. hep_capture_on (integer)
 
    Parameter to enable/disable capture of HEP (on(1)/off(0))
 
    Default value is "0".
 
-   Example 1.4. Set duplicate_with_hep parameter
+   Example 1.4. Set hep_capture_on parameter
 ...
-modparam("sipcapture", "duplicate_with_hep", 1)
+modparam("sipcapture", "hep_capture_on", 1)
 ...
 
 1.3.5. raw_ipip_capture_on (integer)
