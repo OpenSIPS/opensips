@@ -48,7 +48,7 @@ skip_cfg_install?=
 skip_modules?=
 
 makefile_defs=0
-DEFS?=
+DEFS:=
 TLS?=
 SCTP?=
 
