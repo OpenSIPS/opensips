@@ -773,8 +773,10 @@ int mem_timer_udomain(udomain_t* _d)
 		{
 
 			dest = iterator_val(&it);
-			if( dest == NULL )
+			if( dest == NULL ) {
+				unlock_ulslot(_d, i);
 				return -1;
+			}
 
 			ptr = (struct urecord *)*dest;
 

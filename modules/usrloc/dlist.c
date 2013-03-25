@@ -296,8 +296,10 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 
 				
 				dest = iterator_val(&it);
-				if( dest == NULL )
+				if( dest == NULL ) {
+					unlock_ulslot(p->d, i);
 					return -1;
+				}
 				r =( urecord_t * ) *dest;
 
 
