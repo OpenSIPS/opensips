@@ -375,15 +375,13 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 
 				dest = iterator_val(&it);
 				if( dest == NULL )
-					goto error;
+					goto error_unlock;
 				r =( urecord_t * ) *dest;
 
 
 				/* add entry */
-				if (mi_add_aor_node( node, r, t, short_dump)!=0) {
-					unlock_ulslot( dom, i);
-					goto error;
-				}
+				if (mi_add_aor_node( node, r, t, short_dump)!=0)
+					goto error_unlock;
 				n++;
 				/* at each 50 AORs, flush the tree */
 				if ( (n % 50) == 0 )
@@ -402,6 +400,9 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 	}
 
 	return rpl_tree;
+
+error_unlock:
+	unlock_ulslot( dom, i);
 error:
 	free_mi_tree(rpl_tree);
 	return 0;
