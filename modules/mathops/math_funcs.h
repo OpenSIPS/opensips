@@ -27,11 +27,7 @@
 #ifndef __MATHOPS_H__
 #define __MATHOPS_H__
 
-#include "../../pvar.h"
-#include "../../dprint.h"
-#include "../../error.h"
-#include "../../mem/mem.h"
-#include "../../trim.h"
+#include <math.h>
 
 #define MAX_STACK_SIZE   100
 

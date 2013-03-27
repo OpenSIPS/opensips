@@ -25,9 +25,20 @@
  */
 
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#define _ADDED_XOPEN
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+
+#ifdef _ADDED_XOPEN
+#undef _ADDED_XOPEN
+#undef _XOPEN_SOURCE
+#undef _GNU_SOURCE
+#endif
 
 #include "../../sr_module.h"
 #include "../../dprint.h"

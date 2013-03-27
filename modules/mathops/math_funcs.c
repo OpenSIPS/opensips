@@ -24,10 +24,28 @@
  * 2013-02-13: Created (Liviu)
  */
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#define _ADDED_XOPEN
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _ADDED_XOPEN
+#undef _ADDED_XOPEN
+#undef _XOPEN_SOURCE
+#undef _GNU_SOURCE
+#endif
+
 #include <errno.h>
-#include <math.h>
+
+#include "../../pvar.h"
+#include "../../dprint.h"
+#include "../../error.h"
+#include "../../mem/mem.h"
+#include "../../trim.h"
 
 #include "math_funcs.h"
 
