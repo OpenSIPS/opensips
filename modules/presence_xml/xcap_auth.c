@@ -338,26 +338,37 @@ error:
 static inline int oma_match_identity_condition(xmlNodePtr condition, subs_t *subs, str *w_uri)
 {
         int r = 0, many_match = 0;
-        char *id = NULL, *domain = NULL;
+        char *domain = NULL;
+        str uri;
+        str *normalized_uri;
         xmlNodePtr node = NULL, except_node = NULL;
 
         for(node = condition->children; node; node = node->next)
         {
                 if(xmlStrcasecmp(node->name, (unsigned char*)"one") == 0)
                 {
-                        id = xmlNodeGetAttrContentByName(node, "id");
-                        if(id == NULL)
+			uri.s = xmlNodeGetAttrContentByName(node, "id");
+			if(uri.s == NULL)
+			{
+				LM_ERR("when extracting entry attribute\n");
+				continue;
+			}
+                        uri.len = strlen(uri.s);
+
+                        normalized_uri = normalizeSipUri(&uri);
+                        if (normalized_uri->s == NULL || normalized_uri->len == 0)
                         {
-                                LM_ERR("while extracting attribute\n");
+                                LM_ERR("normalizing URI\n");
+                                xmlFree(uri.s);
                                 continue;
                         }
-                        if((strlen(id) == w_uri->len && (strncmp(id, w_uri->s, w_uri->len)==0)))
+                        xmlFree(uri.s);
+
+                        if (normalized_uri->len == w_uri->len && strncmp(normalized_uri->s, w_uri->s, w_uri->len) == 0)
                         {
-                                xmlFree(id);
                                 r = 1;
                                 break;
                         }
-                        xmlFree(id);
                 }
                 else if(xmlStrcasecmp(node->name, (unsigned char*)"many") == 0)
                 {
@@ -384,17 +395,24 @@ static inline int oma_match_identity_condition(xmlNodePtr condition, subs_t *sub
                                 if(xmlStrcasecmp(except_node->name, (unsigned char*)"except"))
                                         continue;
 
-                                id = xmlNodeGetAttrContentByName(except_node, "id");
-                                if(id != NULL)
+                                uri.s = xmlNodeGetAttrContentByName(except_node, "id");
+                                if(uri.s != NULL)
                                 {
-                                        if((strlen(id) == w_uri->len &&
-                                            (strncmp(id, w_uri->s, w_uri->len)==0)))
-                                        {
-                                                xmlFree(id);
-                                                many_match = 0;
-                                                break;
-                                        }
-                                        xmlFree(id);
+                                    uri.len = strlen(uri.s);
+                                    normalized_uri = normalizeSipUri(&uri);
+                                    if (normalized_uri->s == NULL || normalized_uri->len == 0)
+                                    {
+                                            LM_ERR("normalizing URI\n");
+                                            xmlFree(uri.s);
+                                            continue;
+                                    }
+                                    xmlFree(uri.s);
+
+                                    if (normalized_uri->len == w_uri->len && strncmp(normalized_uri->s, w_uri->s, w_uri->len) == 0)
+                                    {
+                                            many_match = 0;
+                                            break;
+                                    }
                                 }
                                 else
                                 {
