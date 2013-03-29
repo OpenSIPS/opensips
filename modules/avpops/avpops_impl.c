@@ -93,13 +93,15 @@ void init_store_avps(str **db_columns)
 	store_vals[5].nul  = 0;
 }
 
+#define AVPOPS_ATTR_LEN	64
+static char avpops_attr_buf[AVPOPS_ATTR_LEN];
 
 /* value 0 - attr value
  * value 1 - attr name
  * value 2 - attr type
  */
 static int dbrow2avp(struct db_row *row, struct db_param *dbp, int attr,
-											int attr_type, int just_val_flags)
+					int attr_type, int just_val_flags, str *prefix)
 {
 	unsigned int uint;
 	int  db_flags;
@@ -159,6 +161,22 @@ static int dbrow2avp(struct db_row *row, struct db_param *dbp, int attr,
 		} else {
 			atmp = row->values[1].val.str_val;
 		}
+
+		if (prefix)
+		{
+			if (atmp.len + prefix->len > AVPOPS_ATTR_LEN)
+			{
+				LM_ERR("name too long [%d/%.*s...]\n",
+								prefix->len + atmp.len, 16, prefix->s);
+				return -1;
+			}
+
+			memcpy(avpops_attr_buf, prefix->s, prefix->len);
+			memcpy(avpops_attr_buf + prefix->len, atmp.s, atmp.len);
+			atmp.s = avpops_attr_buf;
+			atmp.len += prefix->len;
+		}
+
 		/* there is always a name here - get the ID */
 		avp_attr = get_avp_id(&atmp);
 		if (avp_attr < 0)
@@ -260,11 +278,9 @@ static int avpops_get_aname(struct sip_msg* msg, struct fis_param *ap,
 	return pv_get_avp_name(msg, &ap->u.sval.pvp, avp_name, name_type);
 }
 
-#define AVPOPS_ATTR_LEN	64
-static char avpops_attr_buf[AVPOPS_ATTR_LEN];
 
 int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
-					struct db_param *dbp, struct db_url *url, int use_domain)
+		struct db_param *dbp, struct db_url *url, int use_domain, str *prefix)
 {
 	struct sip_uri   uri;
 	db_res_t         *res = NULL;
@@ -356,7 +372,6 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 			}
 		}
 	}
-	LM_DBG("attr dbp %s\n", dbp->sa.s);
 
 	/* do DB query */
 	res = db_load_avp( url, s0, s1,
@@ -371,32 +386,50 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	sh_flg = (dbp->scheme)?dbp->scheme->db_flags:-1;
+
+	/* validate row */
+	avp_name = -1;
+	if(dbp->a.type==AVPOPS_VAL_PVAR)
+	{
+		if(pv_has_dname(&dbp->a.u.sval))
+		{
+			if(xvalue.flags&PV_TYPE_INT)
+			{
+				avp_name = xvalue.ri;
+			} else {
+
+				if (prefix)
+				{
+					if (xvalue.rs.len + prefix->len > AVPOPS_ATTR_LEN)
+					{
+						LM_ERR("name too long [%d/%.*s...]\n",
+							prefix->len + xvalue.rs.len, 16, prefix->s);
+						goto error;
+					}
+
+					memcpy(avpops_attr_buf, prefix->s, prefix->len);
+					memcpy(avpops_attr_buf + prefix->len, xvalue.rs.s,
+																xvalue.rs.len);
+					xvalue.rs.s = avpops_attr_buf;
+					xvalue.rs.len = prefix->len + xvalue.rs.len;
+				}
+
+				avp_name = get_avp_id(&xvalue.rs);
+				if (avp_name < 0) {
+					LM_ERR("cannot get avp id\n");
+					return -1;
+				}
+			}
+		} else {
+			avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
+			avp_type = dbp->a.u.sval.pvp.pvn.u.isname.type;
+		}
+	}
+
 	/* process the results */
 	for( n=0,i=0 ; i<res->n ; i++)
 	{
-		/* validate row */
-		avp_name = -1;
-		if(dbp->a.type==AVPOPS_VAL_PVAR)
-		{
-			if(pv_has_dname(&dbp->a.u.sval))
-			{
-				if(xvalue.flags&PV_TYPE_INT)
-				{
-					avp_name = xvalue.ri;
-				} else {
-					avp_name = get_avp_id(&xvalue.rs);
-					if (avp_name < 0) {
-						LM_ERR("cannot get avp id\n");
-						return -1;
-					}
-				}
-			} else {
-				avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
-				avp_type = dbp->a.u.sval.pvp.pvn.u.isname.type;
-			}
-		}
-		//if ( dbrow2avp( &res->rows[i], dbp->a.opd, avp_name, sh_flg) < 0 )
-		if ( dbrow2avp( &res->rows[i], dbp, avp_name, avp_type, sh_flg) < 0 )
+		if (dbrow2avp(&res->rows[i], dbp, avp_name, avp_type, sh_flg, prefix) < 0)
 			continue;
 		n++;
 	}
@@ -412,7 +445,7 @@ error:
 
 
 int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
-					struct db_param *dbp, struct db_url *url, int use_domain)
+		struct db_param *dbp, struct db_url *url, int use_domain)
 {
 	struct sip_uri  uri;
 	int             res;

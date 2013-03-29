@@ -82,7 +82,7 @@ static int fixup_insert_avp(void** param, int param_no);
 
 static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
 static int w_dbload_avps(struct sip_msg* msg, char* source,
-		char* param, char* url);
+		char* param, char *url, char *prefix);
 static int w_dbdelete_avps(struct sip_msg* msg, char* source,
 		char* param, char* url);
 static int w_dbstore_avps(struct sip_msg* msg, char* source,
@@ -108,6 +108,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"avp_db_load", (cmd_function)w_dbload_avps,  3, fixup_db_load_avp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"avp_db_load", (cmd_function)w_dbload_avps,  4, fixup_db_load_avp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"avp_db_delete", (cmd_function)w_dbdelete_avps, 2, fixup_db_delete_avp, 0,
@@ -263,6 +266,49 @@ static int fixup_db_url(void ** param)
 	return 0;
 }
 
+/* parse the name avp again when adding an avp name prefix (param 4) */
+struct db_param *dbp_fixup;
+
+static int fixup_avp_prefix(void **param)
+{
+	str st, *name, *prefix;
+	char *p;
+
+	prefix = pkg_malloc(sizeof(*prefix));
+	if (!prefix) {
+		LM_ERR("No more pkg\n");
+		return -1;
+	}
+
+	prefix->s = (char *)*param;
+	prefix->len = strlen(prefix->s);
+
+	name = get_avp_name_id(dbp_fixup->a.u.sval.pvp.pvn.u.isname.name.n);
+
+	if (name && dbp_fixup->a.type == AVPOPS_VAL_PVAR) {
+		
+		p = pkg_malloc(name->len + prefix->len + 7);
+		if (!p) {
+			LM_ERR("No more pkg mem!\n");
+			return -1;
+		}
+
+		memcpy(p, "$avp(", 5);
+		memcpy(p + 5, prefix->s, prefix->len);
+		memcpy(p + 5 + prefix->len, name->s, name->len);
+		p[name->len + prefix->len + 5] = ')';
+		p[name->len + prefix->len + 6] = '\0';
+
+		st.s = p;
+		st.len = prefix->len + name->len + 6;
+
+		pv_parse_spec(&st, &dbp_fixup->a.u.sval);
+	}
+
+	*param = prefix;
+
+	return 0;
+}
 
 static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 {
@@ -353,9 +399,13 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 			LM_ERR("parse failed\n");
 			return E_UNSPEC;
 		}
+
+		dbp_fixup = dbp;
 		*param=(void*)dbp;
 	} else if (param_no==3) {
 		return fixup_db_url(param);
+	} else if (param_no==4) {
+		return fixup_avp_prefix(param);
 	}
 
 	return 0;
@@ -1096,16 +1146,16 @@ static int fixup_insert_avp(void** param, int param_no)
 
 
 static int w_dbload_avps(struct sip_msg* msg, char* source,
-													char* param, char *url)
+										char* param, char *url, char *prefix)
 {
 	return ops_dbload_avps ( msg, (struct fis_param*)source,
 		(struct db_param*)param,
 		url?(struct db_url*)url:default_db_url,
-		use_domain);
+		use_domain, (str *)prefix);
 }
 
 static int w_dbdelete_avps(struct sip_msg* msg, char* source,
-													char* param, char *url)
+										char* param, char *url)
 {
 	return ops_dbdelete_avps ( msg, (struct fis_param*)source,
 		(struct db_param*)param,
