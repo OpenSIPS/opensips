@@ -323,8 +323,6 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 							contact->expires->body.len,
 							contact->expires->body.s,
 							contact->uri.len, contact->uri.s);
-					} else {
-						rec->expires = exp;
 					}
 				}
 				break;
@@ -347,7 +345,11 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 			}
 		}
 		rec->state = REGISTERED_STATE;
-		rec->registration_timeout = now + rec->expires - timer_interval;
+		if (exp) {
+			rec->registration_timeout = now + exp - timer_interval;
+		} else {
+			rec->registration_timeout = now + rec->expires - timer_interval;
+		}
 		break;
 
 	case WWW_AUTH_CODE:
