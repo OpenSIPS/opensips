@@ -111,7 +111,7 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 			return -1;
 		}
 
-		key_buff_size = pat->len +1;
+		pat_buff_size = pat->len +1;
 	}
 
 	memcpy(pat_buff,pat->s,pat->len);
