@@ -2,29 +2,22 @@ pua dialoginfo
 
 Anca-Maria Vamanu
 
-   voice-system.ro
-
 Edited by
 
 Anca-Maria Vamanu
 
 Klaus Darilion
 
-   IPCom (Module implementation was partly sponsored by Silver
-   Server (www.sil.at))
-
 Edited by
 
 Klaus Darilion
 
-   IPCom
-
-   Copyright © 2006 voice-system.ro
+   Copyright © 2006 Voice Sistem SRL
 
    Copyright © 2008 Klaus Darilion IPCom
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -316,7 +309,7 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060"
 
    Example 1.6. Set caller_spec_param parameter
 ...
-modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
+modparam("pua_dialoginfo", "caller_spec_param", "$avp(10)")
 ...
 
 1.3.7. callee_spec_param (string)
@@ -329,7 +322,7 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
 
    Example 1.7. Set caller_spec_param parameter
 ...
-modparam("pua_dialoginfo", "callee_spec_param", "$avp(i:11)")
+modparam("pua_dialoginfo", "callee_spec_param", "$avp(11)")
 ...
 
 1.3.8. osips_ps (int)

@@ -18,8 +18,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005-2008 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -463,7 +463,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 
    Example 1.11. Set fr_timer_avp parameter
 ...
-modparam("tm", "fr_timer_avp", "$avp(i:24)")
+modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
 ...
 
 1.3.12. fr_inv_timer_avp (string)
@@ -479,7 +479,7 @@ modparam("tm", "fr_timer_avp", "$avp(i:24)")
 
    Example 1.12. Set fr_inv_timer_avp parameter
 ...
-modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
+modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
 ...
 
 1.3.13. tw_append (string)
@@ -505,7 +505,7 @@ modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
    Example 1.13. Set tw_append parameter
 ...
 modparam("tm", "tw_append",
-   "test: ua=$hdr(User-Agent) ;avp=$avp(i:10);$rb;time=$Ts")
+   "test: ua=$hdr(User-Agent) ;avp=$avp(avp);$rb;time=$Ts")
 ...
 
 1.3.14. pass_provisional_replies (integer)
@@ -857,8 +857,8 @@ if (t_local_replied("all")) {
 
    Example 1.30. t_write_req/unix usage
 ...
-modparam("tm","tw_append","append1:Email=avp[i:12];UA=hdr[User-Agent]")
-modparam("tm","tw_append","append2:body=msg[body]")
+modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
+modparam("tm","tw_append","append2:body=$rb")
 ...
 t_write_req("voicemail/append1","/tmp/appx_fifo");
 ...

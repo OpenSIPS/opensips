@@ -602,8 +602,8 @@ tel2sip();
 if (is_uri_user_e164("$fu")) {  # Check From header URI user part
    ...
 }
-if (is_uri_user_e164("$avp(i:705)") {
-   # Check user part of URI stored in avp i:705
+if (is_uri_user_e164("$avp(uri)") {
+   # Check user part of URI stored in avp uri
    ...
 };
 ...

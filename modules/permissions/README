@@ -24,8 +24,8 @@ Irina-Maria Stanescu
 
    Copyright © 2009 Irina-Maria Stanescu
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -579,8 +579,8 @@ if (method=="REGISTER") {
 if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
         t_relay();
 };
-if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(
-i:705)
+if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(ur
+i)
         t_relay();
 };
 ...
@@ -637,18 +637,17 @@ tocol
 test"
 // matches the regular expression field in the database table and stores
  the
-// context information in $avp(i:10)
-if (check_address("4","192.168.2.135","5700","$proto","$avp(i:10)", "tex
-ttest")) {
+// context information in $avp(ctx)
+if (check_address("4","192.168.2.135","5700","$proto","$avp(ctx)", "text
+test")) {
         t_relay();
-        xlog("$avp(i:10)\n");
+        xlog("$avp(ctx)\n");
 }
 
 ...
 
 // Checks if the tuple IP address/port/protocol of the source message is
- in group
-// 4 and stores context information in $avp(i:10)
+ in group 4
 if (check_address("4","$si","$sp","$proto")) {
         t_relay();
 }
@@ -657,14 +656,14 @@ if (check_address("4","$si","$sp","$proto")) {
 
 // Checks if the tuple IP address/port/protocol stored in AVPs s:ip/s:po
 rt/s:proto
-// is in group 4 and stores context information in $avp(i:10)
-$avp(s:ip) = "192.168.2.135";
-$avp(s:port) = 5061;
-$avp(s:proto) = "any";
-if (check_address("4","$avp(s:ip)","$avp(s:port)","$avp(s:proto)","$avp(
-i:10))) {
+// is in group 4 and stores context information in $avp(ctx)
+$avp(ip) = "192.168.2.135";
+$avp(port) = 5061;
+$avp(proto) = "any";
+if (check_address("4","$avp(ip)","$avp(port)","$avp(proto)","$avp(ctx)))
+ {
         t_relay();
-        xlog("$avp(i:10)\n");
+        xlog("$avp(ctx)\n");
 }
 
 ...
@@ -693,9 +692,9 @@ if (check_address("4","$si","5700","$proto","", "texttest")) {
    Example 1.22. check_source_address() usage
 ...
 // Check if source address/port/proto is in group 4 and stores
-// context information in $avp(i:9)
-if (check_source_address("4","$avp(i:9)")) {
-        xlog("$avp(i:9)\n");
+// context information in $avp(ctx)
+if (check_source_address("4","$avp(ctx)")) {
+        xlog("$avp(ctx)\n");
 }else {
         sl_send_reply("403", "Forbidden");
 }

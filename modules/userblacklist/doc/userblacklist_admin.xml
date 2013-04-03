@@ -138,9 +138,7 @@ modparam("userblacklist", "use_domain", 0)
 		<title><function>check_user_blacklist</function> usage</title>
 		<programlisting format="linespecific">
 ...
-$avp(i:80) = $rU;
-# rewrite the R-URI
-if (!check_user_blacklist("$avp(i:80)", "$avp(i:82)"))
+if (!check_user_blacklist("user", "domain.com"))
 	sl_send_reply("403", "Forbidden");
 	exit;
 }

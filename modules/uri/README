@@ -20,8 +20,8 @@ Irina-Maria Stanescu
 
    Copyright © 2005, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -449,8 +449,8 @@ tel2sip();
 if (is_uri_user_e164("$fu")) {  # Check From header URI user part
    ...
 }
-if (is_uri_user_e164("$avp(i:705)") {
-   # Check user part of URI stored in avp i:705
+if (is_uri_user_e164("$avp(uri)") {
+   # Check user part of URI stored in avp uri
    ...
 };
 ...

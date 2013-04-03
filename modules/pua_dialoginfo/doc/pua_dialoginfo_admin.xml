@@ -323,7 +323,7 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 			<title>Set <varname>caller_spec_param</varname> parameter</title>
 			<programlisting format="linespecific">
 ...
-modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
+modparam("pua_dialoginfo", "caller_spec_param", "$avp(10)")
 ...
 		</programlisting>
 		</example>
@@ -342,7 +342,7 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(i:10)")
 			<title>Set <varname>caller_spec_param</varname> parameter</title>
 			<programlisting format="linespecific">
 ...
-modparam("pua_dialoginfo", "callee_spec_param", "$avp(i:11)")
+modparam("pua_dialoginfo", "callee_spec_param", "$avp(11)")
 ...
 		</programlisting>
 		</example>

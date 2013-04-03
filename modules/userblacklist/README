@@ -13,8 +13,8 @@ Henning Westerholt
 
    Copyright © 2008 1&1 Internet AG
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -152,9 +152,7 @@ number, string table)
 
    Example 1.4. check_user_blacklist usage
 ...
-$avp(i:80) = $rU;
-# rewrite the R-URI
-if (!check_user_blacklist("$avp(i:80)", "$avp(i:82)"))
+if (!check_user_blacklist("user", "domain.com"))
         sl_send_reply("403", "Forbidden");
         exit;
 }

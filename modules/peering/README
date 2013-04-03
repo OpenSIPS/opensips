@@ -18,8 +18,8 @@ Irina-Maria Stanescu
 
    Copyright © 2008 Juha Heinanen
    Revision History
-   Revision $Revision$ $Date: 2009-08-14 12:58:29 +0300
-                              (Fri, 14 Aug 2009) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -169,7 +169,7 @@ modparam("peering", "verify_source_service_type", 22)
    Example 1.4. verify_destination() usage
 ...
 if (verify_destination()) {
-   append_hf("P-Request-Hash: $avp(i:200)\r\n");
+   append_hf("P-Request-Hash: $avp(prh)\r\n");
 }
 ...
 

@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -201,7 +201,7 @@ Note
 
    Example 1.5. Set received_avp parameter
 ...
-modparam("nathelper", "received_avp", "$avp(i:42)")
+modparam("nathelper", "received_avp", "$avp(received)")
 ...
 
 1.4.6. force_socket (string)
