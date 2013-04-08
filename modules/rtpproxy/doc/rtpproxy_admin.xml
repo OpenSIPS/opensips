@@ -495,6 +495,9 @@ rtpproxy_offer();
 		when the rtpproxy session must be updated. Function must only be
 		called for the initial INVITE
 		and internally takes care of rewriting the body of 200 OKs and ACKs.
+		Note that when used in bridge mode, this function might advertise wrong
+		interfaces in &sdp; (due to the fact that &osips; is not aware of the RTPProxy
+		configuration), so you might face an undefined behavior.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -514,14 +517,18 @@ rtpproxy_offer();
 				completed (reply in non-swap or ACK in swap mode).
 				</para></listitem>
 				<listitem><para>
-				<emphasis>i</emphasis> - flags that message is received from 
-				UA in the LAN (internal network). Only makes sense when 
-				RTP proxy is running in the bridge mode.
-				</para></listitem>
-				<listitem><para>
-				<emphasis>e</emphasis> - flags that message is received from 
-				UA in the WAN (external network). Only makes sense when RTP 
-				proxy is running in the bridge mode.
+				<emphasis>i/e</emphasis> - when RTPProxy is used in bridge mode,
+				these flags are used to indicate the direction of the media flow
+				for the current request/reply. 'i' refers to the LAN (internal
+				network) and corresponds to the first interface of RTPProxy (as
+				specified by the -l parameter). 'e' refers to the WAN (external
+				network) and corresponds to the second interface of RTPProxy.
+				These flags should always be used together. For example, an
+				INVITE (offer) that comes from the Internet (WAN) to goes to a
+				local media server (LAN) should use the 'ei' flags. The answer
+				should use the 'ie' flags. Depending on the scenario, the 'ii'
+				and 'ee' combination are also supported. Only makes sense when
+				RTPProxy is running in the bridge mode.
 				</para></listitem>
 				<listitem><para>
 				<emphasis>f</emphasis> - instructs rtpproxy to ignore marks 

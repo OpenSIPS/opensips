@@ -16,8 +16,8 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005 Voice Sistem SRL
    Revision History
-   Revision $Revision: 8740 $ $Date: 2012-02-22 19:29:43 +0200
-                              (Wed, 22 Feb 2012) $
+   Revision $Revision: 8740 $ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -406,7 +406,10 @@ rtpproxy_offer();
    proxy. It uses the dialog module facilities to keep track when
    the rtpproxy session must be updated. Function must only be
    called for the initial INVITE and internally takes care of
-   rewriting the body of 200 OKs and ACKs.
+   rewriting the body of 200 OKs and ACKs. Note that when used in
+   bridge mode, this function might advertise wrong interfaces in
+   SDP (due to the fact that OpenSIPS is not aware of the RTPProxy
+   configuration), so you might face an undefined behavior.
 
    Meaning of the parameters is as follows:
      * flags - flags to turn on some features.
@@ -416,12 +419,20 @@ rtpproxy_offer();
             corresponding session is already exists in the RTP
             proxy. By default is on when the session is to be
             completed (reply in non-swap or ACK in swap mode).
-          + i - flags that message is received from UA in the LAN
-            (internal network). Only makes sense when RTP proxy is
-            running in the bridge mode.
-          + e - flags that message is received from UA in the WAN
-            (external network). Only makes sense when RTP proxy is
-            running in the bridge mode.
+          + i/e - when RTPProxy is used in bridge mode, these
+            flags are used to indicate the direction of the media
+            flow for the current request/reply. 'i' refers to the
+            LAN (internal network) and corresponds to the first
+            interface of RTPProxy (as specified by the -l
+            parameter). 'e' refers to the WAN (external network)
+            and corresponds to the second interface of RTPProxy.
+            These flags should always be used together. For
+            example, an INVITE (offer) that comes from the
+            Internet (WAN) to goes to a local media server (LAN)
+            should use the 'ei' flags. The answer should use the
+            'ie' flags. Depending on the scenario, the 'ii' and
+            'ee' combination are also supported. Only makes sense
+            when RTPProxy is running in the bridge mode.
           + f - instructs rtpproxy to ignore marks inserted by
             another rtpproxy in transit to indicate that the
             session is already goes through another proxy. Allows
