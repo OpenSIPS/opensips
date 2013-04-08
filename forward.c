@@ -283,7 +283,8 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 					default:	LM_ERR("don't know how to forward to af %d\n",
 										to->s.sa_family);
 				}
-			}else send_sock = msg ? msg->rcv.bind_address : bind_address;
+			}else send_sock = (msg && msg->rcv.bind_address->address.af==bind_address->address.af &&
+				msg->rcv.bind_address->proto==bind_address->proto)? msg->rcv.bind_address : bind_address;
 			break;
 		default:
 			LM_CRIT("unknown proto %d\n", proto);
@@ -584,7 +585,8 @@ int forward_reply(struct sip_msg* msg)
 		|| (msg->via2==0) || (msg->via2->error!=PARSE_OK))
 	{
 		/* no second via => error */
-		LM_ERR("no 2nd via found in reply\n");
+		LM_ERR("no 2nd via found in reply from %s:%d <%.*s>\n",
+			ip_addr2a(&msg->rcv.src_ip),msg->rcv.src_port, msg->len,msg->buf );
 		goto error;
 	}
 
