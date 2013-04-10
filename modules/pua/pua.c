@@ -595,7 +595,6 @@ static void hashT_clean(unsigned int ticks,void *param)
 	time_t now;
 	ua_pres_t* p= NULL, *q= NULL;
 
-	return;
 	now = time(NULL);
 	for(i= 0;i< HASH_SIZE; i++)
 	{
@@ -662,7 +661,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 	if(p->watcher_uri== NULL)
 	{
 		str met= {"PUBLISH", 7};
-		ua_pres_t* cb_param;
+		unsigned long cb_param;
 		pua_event_t* ev;
 
 		ev = get_event(p->event);
@@ -681,7 +680,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 		}
 		LM_DBG("str_hdr:\n%.*s\n ", str_hdr->len, str_hdr->s);
 
-		cb_param = p;
+		cb_param = PRES_HASH_ID(p);
 
 		result= tmb.t_request(&met,    /* Type of the message*/
 				p->pres_uri,           /* Request-URI */
