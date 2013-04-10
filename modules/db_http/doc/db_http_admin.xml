@@ -221,6 +221,25 @@ modparam("db_http", "quote_delimiter","|")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>timeout</varname> (int)</title>
+		<para>
+		The maximum number of milliseconds that the HTTP ops are allowed to last
+		</para>
+		<para>
+		<emphasis>Default value is <quote>30000 ( 30 seconds )</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "timeout","5000")
+...
+</programlisting>
+		</example>
+	</section>
+
 
 </section>
 

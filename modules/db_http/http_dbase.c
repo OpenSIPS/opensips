@@ -28,6 +28,7 @@
 
 
 #include "http_dbase.h"
+#include "db_http.h"
 #include "../../db/db_id.h"
 #include "../../db/db_ut.h"
 #include "../../db/db_row.h"
@@ -1032,6 +1033,8 @@ db_con_t* db_http_init(const str* url)
 	curl_easy_setopt(curl->handle,CURLOPT_HTTPAUTH,CURLAUTH_ANY);
 
 	curl_easy_setopt(curl->handle,CURLOPT_ERRORBUFFER,error_buffer);
+	LM_DBG("timeout set to %d", db_http_timeout);
+	curl_easy_setopt(curl->handle,CURLOPT_TIMEOUT_MS,db_http_timeout);
 
 
 	strcat(path,"http");
