@@ -235,11 +235,11 @@ void publ_cback_func(struct cell *t, int type, struct tmcb_params *ps)
 		LM_ERR("no reply message found\n");
 		return;
 	}
-	LM_DBG("cback param = %ld\n", (long)*ps->param);
+	LM_DBG("cback param = %lu\n", (unsigned long)*ps->param);
 
-	pres_id = (long)*ps->param;
+	pres_id = (unsigned long)*ps->param;
 	PUA_PARSE_PRES_ID(pres_id, hash_index, local_index);
-	LM_DBG("hash_index= %d, local_index= %d\n", hash_index, local_index);
+	LM_DBG("hash_index= %u, local_index= %u\n", hash_index, local_index);
 
 	if(!find_htable(hash_index, local_index))
 	{
