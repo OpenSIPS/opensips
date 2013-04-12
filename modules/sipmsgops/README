@@ -31,8 +31,8 @@ Razvan Crainea
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision: 7480 $ $Date: 2010-12-07 19:37:12 +0200
-                              (Tue, 07 Dec 2010) $
+   Revision $Revision: 7480 $ $Date: 2013-01-29 14:35:11 +0200
+                              (Tue, 29 Jan 2013) $
      __________________________________________________________
 
    Table of Contents
@@ -63,7 +63,7 @@ Razvan Crainea
               1.3.14. is_privacy(privacy_type)
               1.3.15. strip_body(), strip_body(mime)
               1.3.16. add_body(body_text, new_content_type)
-              1.3.17. sipmsg_validate([flags])
+              1.3.17. sipmsg_validate([flags[,result_pvar]])
               1.3.18. codec_exists (name [,clock] )
               1.3.19. codec_delete (name [,clock] )
               1.3.20. codec_move_up (name [,clock] )
@@ -503,7 +503,7 @@ d in multipart
 add_body("Hello World!", "text/plain");
 ...
 
-1.3.17.  sipmsg_validate([flags])
+1.3.17.  sipmsg_validate([flags[,result_pvar]])
 
    The function returns true if the SIP message is properly built
    according to SIP RFC3261. It verifies if the mandatory headers
@@ -518,15 +518,36 @@ add_body("Hello World!", "text/plain");
      * 'r' - checks the R-URI and whether the domain contains
        valid characters.
 
+   The result_pvar parameter sets resulting pvar with text error
+   reason in case of negative result ( easy for logging or
+   propagating the rejection reason back to the bogus UA )
+
    This function can return the following codes:
      * 1 - the message is RFC3261 compliant and has been
        successfully validated.
-     * -1 - the message is not RFC3261 compliant.
-     * -2 - signals a parsing error.
-     * -3 - invalid SDP body.
-     * -4 - invalid headers body.
-     * -5 - invalid R-URI.
-     * -6 - invalid R-URI domain.
+     * -1 - No SIP message
+     * -2 - Header Parsing error
+     * -3 - No Call-ID header
+     * -4 - No Content-Length header for transports that require
+       it ( eg. TCP )
+     * -5 - Invalid Content-Length, other from the size of the
+       actual body
+     * -6 - SDP body parsing error.
+     * -7 - No Cseq header.
+     * -8 - No From header.
+     * -9 - No To header.
+     * -10 - No Via header.
+     * -11 - Request URI parse error.
+     * -12 - Bad hostname in R-URI.
+     * -13 - No Max-Forward header.
+     * -14 - No Contact header.
+     * -15 - Path user for non-Register request.
+     * -16 - No allow header in 405 reply.
+     * -17 - No Min-Expire header in 423 reply.
+     * -18 - No Proxy-Authorize header in 407 reply.
+     * -19 - No Unsupported header in 420 reply.
+     * -20 - No WWW-Authorize header in 401 reply.
+     * -21 - No Content-Type header
      * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

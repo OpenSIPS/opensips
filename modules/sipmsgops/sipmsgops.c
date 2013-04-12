@@ -128,7 +128,7 @@ static int strip_body_f2(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_f_1(struct sip_msg *msg, char *str1, char *str2 );
 static int add_body_f_2(struct sip_msg *msg, char *str1, char *str2 );
 static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 );
-static int w_sip_validate(struct sip_msg *msg, char *flags_s);
+static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result);
 
 static int hname_fixup(void** param, int param_no);
 static int free_hname_fixup(void** param, int param_no);
@@ -251,6 +251,9 @@ static cmd_export_t cmds[]={
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"sipmsg_validate",     (cmd_function)w_sip_validate,       1,
+		fixup_sip_validate, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
+	{"sipmsg_validate",     (cmd_function)w_sip_validate,       2,
 		fixup_sip_validate, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"change_reply_status", (cmd_function)change_reply_status_f, 2,
@@ -1393,49 +1396,60 @@ static int fixup_sip_validate(void** param, int param_no)
 {
 	char *flags_s, *end;
 	unsigned long flags = 0;
+	pv_elem_t *pvar;
+	str s;
 
-	if (param_no != 1) {
+	if (param_no==1) {
+		if (!param) {
+			goto end;
+		}
+		flags_s = (char*)*param;
+		end = flags_s + strlen(flags_s);
+
+		for ( ; flags_s < end; flags_s++) {
+			switch (*flags_s) {
+				case 's':
+				case 'S':
+					flags |= SIP_PARSE_SDP;
+					break;
+
+				case 'h':
+				case 'H':
+					flags |= SIP_PARSE_HDR;
+					break;
+
+				case 'm':
+				case 'M':
+					flags |= SIP_PARSE_NOMF;
+					break;
+
+				case 'r':
+				case 'R':
+					flags |= SIP_PARSE_RURI;
+					break;
+
+				default:
+					LM_DBG("unknown option \'%c\'\n", *flags_s);
+					break;
+			}
+		}
+end:
+		*param = (void *)(unsigned long)flags;
+		return 0;
+	} else if (param_no==2) {
+		s.s = (char*)(*param);
+		s.len = strlen(s.s);
+		if (pv_parse_format(&s, &pvar)<0)
+		{
+			LM_ERR( "wrong format[%s]\n",(char*)(*param));
+			return E_UNSPEC;
+		}
+		*param = (void*)pvar;
+		return 0;
+	} else {
 		LM_ERR("invalid parameter number %d\n", param_no);
 		return E_UNSPEC;
 	}
-	if (!param) {
-		goto end;
-	}
-
-	flags_s = (char*)*param;
-	end = flags_s + strlen(flags_s);
-
-	for ( ; flags_s < end; flags_s++) {
-		switch (*flags_s) {
-			case 's':
-			case 'S':
-				flags |= SIP_PARSE_SDP;
-				break;
-
-			case 'h':
-			case 'H':
-				flags |= SIP_PARSE_HDR;
-				break;
-
-			case 'm':
-			case 'M':
-				flags |= SIP_PARSE_NOMF;
-				break;
-
-			case 'r':
-			case 'R':
-				flags |= SIP_PARSE_RURI;
-				break;
-
-			default:
-				LM_DBG("unknown option \'%c\'\n", *flags_s);
-				break;
-		}
-	}
-	
-end:
-	*param = (void *)(unsigned long)flags;
-	return 0;
 }
 
 static int sip_validate_hdrs(struct sip_msg *msg)
@@ -1736,35 +1750,70 @@ static int check_hostname(str *domain)
 		} \
 	} while (0)
 
+#define MAX_REASON 256
 
+enum sip_validation_failures {
+	SV_NO_MSG=-1,
+	SV_HDR_PARSE_ERROR=-2,
+	SV_NO_CALLID=-3,
+	SV_NO_CONTENT_LENGTH=-4,
+	SV_INVALID_CONTENT_LENGTH=-5,
+	SV_PARSE_SDP=-6,
+	SV_NO_CSEQ=-7,
+	SV_NO_FROM=-8,
+	SV_NO_TO=-9,
+	SV_NO_VIA1=-10,
+	SV_RURI_PARSE_ERROR=-11,
+	SV_BAD_HOSTNAME=-12,
+	SV_NO_MF=-13,
+	SV_NO_CONTACT=-14,
+	SV_PATH_NONREGISTER=-15,
+	SV_NOALLOW_405=-16,
+	SV_NOMINEXP_423=-17,
+	SV_NO_PROXY_AUTH=-18,
+	SV_NO_UNSUPPORTED=-19,
+	SV_NO_WWW_AUTH=-20,
+	SV_NO_CONTENT_TYPE=-21,
+	SV_GENERIC_FAILURE=-255
+};
 
-static int w_sip_validate(struct sip_msg *msg, char *flags_s)
+static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 {
 	unsigned int hdrs_len;
 	int method;
 	str body;
 	struct cseq_body * cbody;
 	unsigned long flags;
+	pv_elem_t* pv_res = (pv_elem_t*)pv_result;
+	pv_value_t pv_val;
+	char reason[MAX_REASON];
+	int ret = -SV_GENERIC_FAILURE;
 
-	if (!msg)
-		return -1;
+	if (!msg) {
+		strcpy(reason, "no message object");
+		ret = SV_NO_MSG; 
+		goto failed;
+	}
 
 	/* try to check the whole SIP msg */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_DBG("message parsing failed\n");
-		return -2;
+		strcpy(reason, "message parsing failed");
+		ret = SV_HDR_PARSE_ERROR;
+		goto failed;
 	}
 
 	/* any message has to have a call-id */
 	if (!msg->callid) {
-		LM_DBG("message doesn't have callid\n");
+		strcpy(reason, "message doesn't have callid");
+		ret = SV_NO_CALLID;
 		goto failed;
 	}
 
 	/* content length should be present if protocol is not UDP */
 	if (msg->rcv.proto != PROTO_UDP && !msg->content_length) {
-		LM_DBG("message doesn't have Content Length header for proto %d\n",
-				msg->rcv.proto);
+		snprintf(reason, MAX_REASON-1, "message doesn't have Content Length header for proto %d",
+			msg->rcv.proto);
+		ret = SV_NO_CONTENT_LENGTH;
 		goto failed;
 	}
 
@@ -1776,8 +1825,9 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 	/* if not CANCEL, check if it has body */
 	if (msg->first_line.type!=SIP_REQUEST || msg->REQ_METHOD!=METHOD_CANCEL) {
 		if (!msg->unparsed) {
-			LM_DBG("Invalid parsing \n");
-			return -2;
+			strcpy(reason, "invalid parsing");
+			ret = SV_HDR_PARSE_ERROR;
+			goto failed;
 		}
 		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
 
@@ -1797,8 +1847,9 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 			body.len = msg->buf + msg->len - body.s;
 
 		if (get_content_length(msg) != body.len) {
-			LM_DBG("invalid body - content length %ld different then actual body %d\n",
-					get_content_length(msg), body.len);
+			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different then actual body %d",
+				get_content_length(msg), body.len);
+			ret = SV_INVALID_CONTENT_LENGTH;
 			goto failed;
 		}
 
@@ -1806,22 +1857,27 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		if (body.s && body.len && (flags & SIP_PARSE_SDP) &&
 		parse_content_type_hdr(msg)==(TYPE_APPLICATION<<16 | SUBTYPE_SDP) ) {
 			if (parse_sdp(msg) < 0) {
-				LM_DBG("failed to parse SDP message\n");
-				return -3;
+				strcpy(reason, "failed to parse SDP message");
+				ret = SV_PARSE_SDP;
+				goto failed;
 			}
 		}
 	}
 
 	/* Cseq */
+	ret = SV_NO_CSEQ;
 	CHECK_HEADER("", cseq);
 
 	/* From */
+	ret = SV_NO_FROM;
 	CHECK_HEADER("", from);
 
 	/* To */
+	ret = SV_NO_TO;
 	CHECK_HEADER("", to);
 
 	/* check only if Via1 is present */
+	ret = SV_NO_VIA1;
 	CHECK_HEADER("", via1);
 
 	/* request or reply */
@@ -1831,24 +1887,29 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 			/* check R-URI */
 			if (flags & SIP_PARSE_RURI) {
 				if(msg->parsed_uri_ok==0 && parse_sip_msg_uri(msg) < 0) {
-					LM_DBG("failed to parse R-URI\n");
-					return -5;
+					strcpy(reason, "failed to parse R-URI");
+					ret = SV_RURI_PARSE_ERROR;
+					goto failed;
 				}
 				if (check_hostname(&msg->parsed_uri.host) < 0) {
-					LM_DBG("invalid domain\n");
-					return -6;
+					strcpy(reason, "invalid domain");
+					ret = SV_BAD_HOSTNAME;
+					goto failed;
 				}
 			}
 			/* Max-Forwards */
 			if (!(flags & SIP_PARSE_NOMF))
+				ret = SV_NO_MF;
 				CHECK_HEADER("", maxforwards);
 
 			if (msg->REQ_METHOD == METHOD_INVITE) {
+				ret = SV_NO_CONTACT;
 				CHECK_HEADER("INVITE", contact);
 			}
 
 			if (msg->REQ_METHOD != METHOD_REGISTER && msg->path) {
-				LM_DBG("PATH header supported only for REGISTERs\n");
+				strcpy(reason, "PATH header supported only for REGISTERs");
+				ret = SV_PATH_NONREGISTER;
 				goto failed;
 			}
 
@@ -1860,30 +1921,37 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 			/* checking the reply's message type */
 			cbody = (struct cseq_body *)msg->cseq->parsed;
 			if (!cbody) {
-				LM_DBG("Cseq not parsed properly\n");
+				strcpy(reason, "cseq not parsed properly");
+				ret = SV_NO_CSEQ;
 				goto failed;
 			}
 			method = cbody->method_id;
 			if (method != METHOD_CANCEL) {
 				switch (msg->first_line.u.reply.statuscode) {
 				case 405:
+					ret = SV_NOALLOW_405;
 					CHECK_HEADER("", allow);
 					break;
 
 				case 423:
-					if (method == METHOD_REGISTER)
+					if (method == METHOD_REGISTER) {
+						ret = SV_NOMINEXP_423;
 						CHECK_HEADER("REGISTER", min_expires);
+					}
 					break;
 
 				case 407:
+					ret = SV_NO_PROXY_AUTH;
 					CHECK_HEADER("", proxy_authenticate);
 					break;
 
 				case 420:
+					ret = SV_NO_UNSUPPORTED;
 					CHECK_HEADER("", unsupported);
 					break;
 
 				case 401:
+					ret = SV_NO_WWW_AUTH;
 					CHECK_HEADER("", www_authenticate);
 					break;
 				}
@@ -1892,14 +1960,16 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 			break;
 
 		default:
-			LM_DBG("invalid message type\n");
-			return -255;
+			strcpy(reason, "invalid message type");
+			ret = SV_GENERIC_FAILURE;
+			goto failed;
 	}
 	/* check for body */
 	if (method != METHOD_CANCEL) {
 		if (!msg->unparsed) {
-			LM_DBG("Invalid parsing \n");
-			return -2;
+			strcpy(reason, "invalid parsing");
+			ret = SV_HDR_PARSE_ERROR;
+			goto failed;
 		}
 		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
 
@@ -1918,26 +1988,41 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s)
 		body.len = msg->buf + msg->len - body.s;
 
 		if (get_content_length(msg) != body.len) {
-			LM_DBG("invalid body - content length %ld different then "
-					"actual body %d\n", get_content_length(msg), body.len);
+			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different then "
+				"actual body %d\n", get_content_length(msg), body.len);
+			ret = SV_INVALID_CONTENT_LENGTH;
 			goto failed;
 		}
 
 		if (body.len && body.s) {
 			/* if it really has body, check for content type */
+			ret = SV_NO_CONTENT_TYPE;
 			CHECK_HEADER("", content_type);
 		}
 	}
 
 	if ((flags & SIP_PARSE_HDR) && sip_validate_hdrs(msg) < 0) {
-		LM_DBG("failed to parse headers\n");
-		return -4;
+		strcpy(reason, "failed to parse headers");
+		ret = SV_HDR_PARSE_ERROR;
+		goto failed;
 	}
 
 	return 1;
 failed:
-	LM_DBG("message does not comply with SIP RFC3261\n");
-	return -1;
+	LM_DBG("message does not comply with SIP RFC3261 : (%s)\n", reason);
+
+	if (pv_result != NULL)
+	{
+		pv_val.rs.len = strlen(reason);
+		pv_val.rs.s = reason;
+		pv_val.flags = PV_VAL_STR;
+		if (pv_set_value(msg, &pv_res->spec, 0, &pv_val) != 0)
+		{
+			LM_ERR("cannot populate parameter\n");
+			return SV_GENERIC_FAILURE;
+		}
+	}
+	return ret;
 }
 
 #undef CHECK_HEADER

@@ -699,7 +699,7 @@ add_body("Hello World!", "text/plain");
 
 	<section>
 		<title>
-		<function moreinfo="none">sipmsg_validate([flags])</function>
+		<function moreinfo="none">sipmsg_validate([flags[,result_pvar]])</function>
 		</title>
 		<para>
 		The function returns <emphasis>true</emphasis> if the SIP message
@@ -724,25 +724,56 @@ add_body("Hello World!", "text/plain");
 				</para></listitem>
 			</itemizedlist>
 		</para>
+		<para>The result_pvar parameter sets resulting pvar with text error reason in case of
+			negative result ( easy for logging or propagating the rejection reason back to the 
+			bogus UA )
+		</para>
 		<para>This function can return the following codes:
 			<itemizedlist>
 				<listitem><para><emphasis>1</emphasis> - the message is
 						RFC3261 compliant and has been successfully validated.
 				</para></listitem>
-				<listitem><para><emphasis>-1</emphasis> - the message is not
-						RFC3261 compliant.
+				<listitem><para><emphasis>-1</emphasis> - No SIP message
 				</para></listitem>
-				<listitem><para><emphasis>-2</emphasis> - signals a parsing
-						error.
+				<listitem><para><emphasis>-2</emphasis> - Header Parsing error
 				</para></listitem>
-				<listitem><para><emphasis>-3</emphasis> - invalid SDP body.
+				<listitem><para><emphasis>-3</emphasis> - No Call-ID header
 				</para></listitem>
-				<listitem><para><emphasis>-4</emphasis> - invalid headers
-						body.
+				<listitem><para><emphasis>-4</emphasis> - No Content-Length header for transports that require it ( eg. TCP )
 				</para></listitem>
-				<listitem><para><emphasis>-5</emphasis> - invalid R-URI.
+				<listitem><para><emphasis>-5</emphasis> - Invalid Content-Length, other from the size of the actual body
 				</para></listitem>
-				<listitem><para><emphasis>-6</emphasis> - invalid R-URI domain.
+				<listitem><para><emphasis>-6</emphasis> - SDP body parsing error.
+				</para></listitem>
+				<listitem><para><emphasis>-7</emphasis> - No Cseq header.
+				</para></listitem>
+				<listitem><para><emphasis>-8</emphasis> - No From header.
+				</para></listitem>
+				<listitem><para><emphasis>-9</emphasis> - No To header.
+				</para></listitem>
+				<listitem><para><emphasis>-10</emphasis> - No Via header.
+				</para></listitem>
+				<listitem><para><emphasis>-11</emphasis> - Request URI parse error.
+				</para></listitem>
+				<listitem><para><emphasis>-12</emphasis> - Bad hostname in R-URI.
+				</para></listitem>
+				<listitem><para><emphasis>-13</emphasis> - No Max-Forward header.
+				</para></listitem>
+				<listitem><para><emphasis>-14</emphasis> - No Contact header.
+				</para></listitem>
+				<listitem><para><emphasis>-15</emphasis> - Path user for non-Register request.
+				</para></listitem>
+				<listitem><para><emphasis>-16</emphasis> - No allow header in 405 reply.
+				</para></listitem>
+				<listitem><para><emphasis>-17</emphasis> - No Min-Expire header in 423 reply.
+				</para></listitem>
+				<listitem><para><emphasis>-18</emphasis> - No Proxy-Authorize header in 407 reply.
+				</para></listitem>
+				<listitem><para><emphasis>-19</emphasis> - No Unsupported header in 420 reply.
+				</para></listitem>
+				<listitem><para><emphasis>-20</emphasis> - No WWW-Authorize header in 401 reply.
+				</para></listitem>
+				<listitem><para><emphasis>-21</emphasis> - No Content-Type header
 				</para></listitem>
 				<listitem><para><emphasis>-255</emphasis> - undefined errors.
 				</para></listitem>
