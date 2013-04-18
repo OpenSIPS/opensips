@@ -139,12 +139,14 @@ error:
    allow the usage from other parts of the code */
 void run_error_route(struct sip_msg* msg, int force_reset)
 {
+	int old_route;
 	LM_DBG("triggering\n");
-	set_route_type( ERROR_ROUTE );
+	swap_route_type(old_route, ERROR_ROUTE);
 	run_actions(error_rlist.a, msg);
 	/* if continue, then reset error info */
 	if( force_reset || !( action_flags&(ACT_FL_EXIT|ACT_FL_RETURN) ) )
 		init_err_info();
+	set_route_type(old_route);
 }
 
 
