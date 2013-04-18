@@ -338,7 +338,11 @@ int w_topology_hiding(struct sip_msg *req)
 			LM_ERR("Failed to create dialog\n");
 			return -1;
 		}
-		dlg = get_current_dialog();
+		/* double check if the dialog can be retrieved */
+		if (!(dlg = get_current_dialog())) {
+			LM_ERR("failed to get dialog\n");
+			return -1;
+		}
 	}
 
 	dlg->flags |= DLG_FLAG_TOPHIDING;
