@@ -506,7 +506,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 										contact_t* _c, struct save_ctx *_sctx)
 {
 	ucontact_info_t *ci;
-	ucontact_t* c;
+	ucontact_t *c, *c_last, *c_it;
 	int e;
 	unsigned int cflags;
 	int ret;
@@ -566,19 +566,23 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				continue;
 
 			/* we need to add a new contact -> too many ?? */
-			if (_sctx->max_contacts && num>=_sctx->max_contacts) {
+			while (_sctx->max_contacts && num>=_sctx->max_contacts) {
 				if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
 					/* we are overflowing the number of maximum contacts,
-					   so remove the first (oldest) one to prevent this */
-					if (_r==NULL || _r->contacts==NULL) {
-						LM_CRIT("BUG - overflow detected with r=%p and "
-							"contacts=%p\n",_r,_r->contacts);
+					   so remove the oldest valid one to prevent this */
+					for( c_it=_r->contacts,c_last=NULL ; c_it ; c_it=c_it->next )
+						if (VALID_CONTACT(c_it, act_time)) c_last=c_it;
+					if (c_last==NULL) {
+						LM_CRIT("BUG - overflow detected but no valid contacts found :( \n");
 						goto error;
 					}
-					if (ul.delete_ucontact( _r, _r->contacts)!=0) {
+					LM_DBG("overflow on inserting new contact -> removing <%.*s>\n",
+						c_last->c.len, c_last->c.s);
+					if (ul.delete_ucontact( _r, c_last)!=0) {
 						LM_ERR("failed to remove contact\n");
 						goto error;
 					}
+					num--;
 				} else {
 					LM_INFO("too many contacts for AOR <%.*s>, max=%d\n",
 						_r->aor.len, _r->aor.s, _sctx->max_contacts);
@@ -615,6 +619,36 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 			} else {
 				/* do update */
+				/* if the contact to be updated is not valid, it will be after update, so need 
+				*  to compensate the total number of contact */
+				if ( !VALID_CONTACT(c,act_time) )
+					num++;
+				while ( _sctx->max_contacts && num>_sctx->max_contacts ) {
+					if (_sctx->flags&REG_SAVE_FORCE_REG_FLAG) {
+						/* we are overflowing the number of maximum contacts,
+						   so remove the first (oldest) one to prevent this (but not the one
+						   to be updated !) */
+						for( c_it=_r->contacts,c_last=NULL ; c_it ; c_it=c_it->next )
+							if (VALID_CONTACT(c_it, act_time) && c_it!=c) c_last=c_it;
+						if (c_last==NULL) {
+							LM_CRIT("BUG - overflow detected but no valid contacts found :( \n");
+							goto error;
+						}
+						LM_DBG("overflow on update -> removing contact <%.*s>\n",
+							c_last->c.len, c_last->c.s);
+						if (ul.delete_ucontact( _r, c_last)!=0) {
+							LM_ERR("failed to remove contact\n");
+							goto error;
+						}
+						num--;
+					} else {
+						LM_INFO("too many contacts for AOR <%.*s>, max=%d\n",
+							_r->aor.len, _r->aor.s, _sctx->max_contacts);
+						rerrno = R_TOO_MANY;
+						return -1;
+					}
+				}
+
 				/* pack the contact specific info */
 				if ( (ci=pack_ci( 0, _c, e, 0, _sctx->flags))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
