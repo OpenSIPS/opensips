@@ -70,8 +70,8 @@ int rmq_send(rmq_send_t* rmqs)
 
 	do {
 		rc = write(rmq_pipe[1], &rmqs, RMQ_SIZE);
-	} while ((rc < 0 && (IS_ERR(EINTR)||IS_ERR(EAGAIN)||IS_ERR(EWOULDBLOCK)))
-			|| retries-- > 0);
+	} while (rc < 0 && ((IS_ERR(EINTR)||IS_ERR(EAGAIN)||IS_ERR(EWOULDBLOCK))
+			|| retries-- > 0));
 
 	if (rc < 0) {
 		LM_ERR("unable to send rmq send struct to worker\n");
@@ -93,7 +93,7 @@ static rmq_send_t * rmq_receive(void)
 
 	do {
 		rc = read(rmq_pipe[0], &recv, RMQ_SIZE);
-	} while ((rc < 0 && IS_ERR(EINTR)) || retries-- > 0);
+	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
 
 	if (rc < 0) {
 		LM_ERR("cannot receive send param\n");
