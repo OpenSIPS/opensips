@@ -155,6 +155,9 @@ static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 
 static inline int dupl_string(str* dst, const char* begin, const char* end)
 {
+	if (dst->s)
+		shm_free(dst->s);
+
 	dst->s = shm_malloc(end - begin + 1);
 	if (!dst->s) {
 		LM_ERR("no more shm memory\n");
@@ -457,7 +460,7 @@ static int rmq_raise(str* ev_name, evi_reply_sock *sock,
 		LM_ERR("error while building parameters list\n");
 		return -1;
 	}
-	rmqs = shm_malloc(sizeof(rmq_send_t *) + len);
+	rmqs = shm_malloc(sizeof(rmq_send_t) + len);
 	if (!rmqs) {
 		LM_ERR("no more shm memory\n");
 		return -1;
@@ -486,7 +489,7 @@ static void destroy(void)
 
 static void rmq_free(evi_reply_sock *sock)
 {
-	rmq_send_t *rmqs = shm_malloc(sizeof(rmq_send_t *) + 1);
+	rmq_send_t *rmqs = shm_malloc(sizeof(rmq_send_t) + 1);
 	if (!rmqs) {
 		LM_ERR("no more shm memory\n");
 		goto destroy;
@@ -500,6 +503,8 @@ static void rmq_free(evi_reply_sock *sock)
 	}
 	return;
 destroy:
+	if (rmqs)
+		shm_free(rmqs);
 	rmq_destroy(sock);
 }
 
