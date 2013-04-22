@@ -488,7 +488,15 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 # reading attributes from the attr_pvar when doing parallel forking
 ...
 modparam("registrar", "attr_avp", "$avp(attr)")
+
 ...
+if (is_method("REGISTER")) {
+	$avp(attr) = "contact_info";
+	save("location");
+	exit;
+}
+...
+lookup("location");
 t_on_branch("branch_route_1");
 ...
 branch_route[branch_route_1] {
