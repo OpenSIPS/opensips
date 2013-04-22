@@ -94,6 +94,9 @@ modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhos
 t:6379/default");
 modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random
 _url:8888/my_bucket");
+#Multiple hosts
+modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random
+_url1:8888;random_url2:8888;random_url3:8888/my_bucket");
 ...
 
 1.5.2. timeout (int)
