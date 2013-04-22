@@ -246,10 +246,10 @@ void crcitt_string_array( char *dst, str src[], int size )
 void crc32_uint (str *source_string, unsigned int *hash_ret) {
 	unsigned int hash;
 	unsigned int len;
-	const char *data;
+	const unsigned char *data;
 
 	hash = 0xffffffff;
-	data = source_string->s;
+	data = (const unsigned char *)source_string->s;
 	for (len = source_string->len / 4; len--; data += 4) {
 		hash = crc_32_tab[((unsigned char)hash) ^ data[0]] ^ (hash >> 8);
 		hash = crc_32_tab[((unsigned char)hash) ^ data[1]] ^ (hash >> 8);
