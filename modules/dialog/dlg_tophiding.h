@@ -32,6 +32,7 @@
 #include "dlg_hash.h"
 
 int w_topology_hiding(struct sip_msg *req);
+int w_topology_hiding1(struct sip_msg *req,char *param);
 int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir);
 int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, 
 		struct sip_msg *req,int init_req, int dir);

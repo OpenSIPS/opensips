@@ -1263,10 +1263,19 @@ $var(account) = $dlg_val("account_type");
    modules functionalities: profiles, dialog variables, dialog
    timeouts, etc..
 
+   Optionally,the function also receives a string parameter, which
+   holds string flags. Current options for the string flags are :
+     * U - Propagate the Username in the Contact header URI
+
    Example 1.59. topology_hiding usage
 ...
 if(!has_totag() && is_method("INVITE")) {
         topology_hiding();
+}
+...
+...
+if(!has_totag() && is_method("INVITE")) {
+        topology_hiding("U");
 }
 ...
 

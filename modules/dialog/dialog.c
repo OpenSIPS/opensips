@@ -202,6 +202,8 @@ static cmd_export_t cmds[]={
 			BRANCH_ROUTE | LOCAL_ROUTE },
 	{"topology_hiding",(cmd_function)w_topology_hiding,0,NULL,
 			0, REQUEST_ROUTE},
+	{"topology_hiding",(cmd_function)w_topology_hiding1,1,fixup_create_dlg2,
+			0, REQUEST_ROUTE},
 	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
 			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},

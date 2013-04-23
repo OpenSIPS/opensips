@@ -33,6 +33,8 @@
 
 #include "../../data_lump.h"
 #include "../tm/tm_load.h"
+#include "../../mod_fix.h"
+#include "../../parser/contact/parse_contact.h"
 #include "dlg_tophiding.h"
 #include "dlg_handlers.h"
 
@@ -75,12 +77,13 @@ int dlg_del_vias(struct sip_msg* req)
 
 int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 {
-//	str local_contact;
 	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
 	int offset;
 	int len,n;
-	char *prefix=NULL,*suffix=NULL,*p,*p_init;
-	int prefix_len,suffix_len;
+	char *prefix=NULL,*suffix=NULL,*p,*p_init,*ct_username=NULL;
+	int prefix_len,suffix_len,ct_username_len=0;
+	struct sip_uri ctu;
+	str contact;
 
 	if(!msg->contact)
 	{
@@ -94,6 +97,26 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	}
 
 	prefix_len = 5; /* <sip: */
+
+	if (dlg->flags & DLG_FLAG_TOPH_KEEP_USER) {
+		if ( parse_contact(msg->contact)<0 ||
+			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
+			((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
+				LM_ERR("bad Contact HDR\n");
+		} else {
+			contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+			if(parse_uri(contact.s, contact.len, &ctu) < 0) {
+				LM_ERR("Bad Contact URI \n");
+			} else {
+				ct_username = ctu.user.s;
+				ct_username_len = ctu.user.len;
+				LM_DBG("Trying to propagate username [%.*s] \n",ct_username_len,
+									ct_username);
+				prefix_len += 1 + /* @ */ + ct_username_len;
+			}
+		}
+	}
+
 	prefix = pkg_malloc(prefix_len);
 	if (!prefix) {
 		LM_ERR("no more pkg\n");
@@ -108,6 +131,10 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	}
 
 	memcpy(prefix,"<sip:",prefix_len);
+	if (dlg->flags & DLG_FLAG_TOPH_KEEP_USER && ct_username_len > 0) {
+		memcpy(prefix+5,ct_username,ct_username_len);
+		prefix[prefix_len-1] = '@';
+	}
 	
 	p_init = p = suffix;
 	*p++ = ';';
@@ -193,7 +220,6 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		goto error;
 	}
 	
-//	LM_DBG("Replaced contact with [%.*s]\n", local_contact.len, local_contact.s);
 
 	return 0;
 error:
@@ -321,7 +347,7 @@ restore_rr:
 }
 
 /* hide via, route sets and contacts */
-int w_topology_hiding(struct sip_msg *req)
+static int topology_hiding(struct sip_msg *req,int extra_flags)
 {
 	struct dlg_cell *dlg;
 	struct hdr_field *it;
@@ -346,6 +372,7 @@ int w_topology_hiding(struct sip_msg *req)
 	}
 
 	dlg->flags |= DLG_FLAG_TOPHIDING;
+	dlg->flags |= extra_flags;
 
 	/* delete also the added record route and the did param */
 	for(crt=req->add_rm; crt;) {
@@ -428,6 +455,39 @@ int w_topology_hiding(struct sip_msg *req)
 	}
 
 	return 1;
+}
+
+int w_topology_hiding1(struct sip_msg *req,char *param)
+{
+	str res = {0,0};
+	int flags=0;
+	char *p;
+
+	if (fixup_get_svalue(req, (gparam_p)param, &res) !=0)
+	{
+		LM_ERR("no create dialog flags\n");
+		return -1;
+	}
+
+	for (p=res.s;p<res.s+res.len;p++)
+	{
+		switch (*p)
+		{
+			case 'U':
+				flags |= DLG_FLAG_TOPH_KEEP_USER;
+				LM_DBG("Will preserve usernames while doing topo hiding \n");
+				break;
+			default:
+				LM_DBG("unknown topology_hiding flag : [%c] . Skipping\n",*p);
+		}
+	}
+
+	return topology_hiding(req,flags);
+}
+
+int w_topology_hiding(struct sip_msg *req)
+{
+	return topology_hiding(req,0);
 }
 
 void dlg_th_down_onreply(struct cell* t, int type,struct tmcb_params *param)

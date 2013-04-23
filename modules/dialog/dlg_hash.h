@@ -62,16 +62,17 @@
 #define DLG_EVENT_REQBYE       7
 #define DLG_EVENT_REQ          8
 
-#define DLG_FLAG_NEW           (1<<0)
-#define DLG_FLAG_CHANGED       (1<<1)
-#define DLG_FLAG_HASBYE        (1<<2)
-#define DLG_FLAG_BYEONTIMEOUT  (1<<3)
-#define DLG_FLAG_ISINIT        (1<<4)
-#define DLG_FLAG_PING_CALLER   (1<<5)
-#define DLG_FLAG_PING_CALLEE   (1<<6)
-#define DLG_FLAG_TOPHIDING     (1<<7)
-#define DLG_FLAG_VP_CHANGED    (1<<8)
-#define DLG_FLAG_DB_DELETED    (1<<9)
+#define DLG_FLAG_NEW			(1<<0)
+#define DLG_FLAG_CHANGED		(1<<1)
+#define DLG_FLAG_HASBYE			(1<<2)
+#define DLG_FLAG_BYEONTIMEOUT	(1<<3)
+#define DLG_FLAG_ISINIT			(1<<4)
+#define DLG_FLAG_PING_CALLER	(1<<5)
+#define DLG_FLAG_PING_CALLEE	(1<<6)
+#define DLG_FLAG_TOPHIDING		(1<<7)
+#define DLG_FLAG_VP_CHANGED		(1<<8)
+#define DLG_FLAG_DB_DELETED		(1<<9)
+#define DLG_FLAG_TOPH_KEEP_USER	(1<<10)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1

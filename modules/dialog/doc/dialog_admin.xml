@@ -1757,12 +1757,27 @@ $var(account) = $dlg_val("account_type");
 			dialog module is that you can use all the dialog modules functionalities:
 			profiles, dialog variables, dialog timeouts, etc..
 		</para>
+		<para>
+			Optionally,the function also receives a string parameter, which holds string flags.
+			Current options for the string flags are :
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>U</emphasis> - Propagate the Username in the Contact header URI
+					</para>
+				</listitem>
+			</itemizedlist>
+		</para>
 		<example>
 		<title><function>topology_hiding</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if(!has_totag() &amp;&amp; is_method("INVITE")) {
 	topology_hiding();
+}
+...
+...
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding("U");
 }
 ...
 </programlisting>
