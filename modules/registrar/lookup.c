@@ -171,6 +171,7 @@ search_valid_contact:
 						break;
 					}
 			}
+			it=it->next;
 		}
 
 		if (it != NULL) {
