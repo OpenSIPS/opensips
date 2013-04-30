@@ -416,6 +416,17 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 _empty_line_
 		</programlisting>
 	</section>
+	<section>
+	<title><function moreinfo="none">reg_reload</function></title>
+		<para>Reloads the registrant records from the database.</para>
+		<para>Name: <emphasis>reg_reload</emphasis></para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+:reg_reload:_reply_fifo_file_
+_empty_line_
+		</programlisting>
+	</section>
 	</section>
 </chapter>
 
