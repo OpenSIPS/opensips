@@ -93,11 +93,13 @@ typedef reg_entry_t *reg_table_t;
 extern reg_table_t reg_htable;
 extern unsigned int reg_hsize;
 
+void *reg_alloc(size_t size);
+void reg_free(void *ptr);
 int init_reg_htable(void);
 void destroy_reg_htable(void);
 
 void new_call_id_ftag_4_record(reg_record_t *rec, str *now);
-int add_record(uac_reg_map_t *uac, str *now);
+int add_record(uac_reg_map_t *uac, str *now, unsigned int plist);
 void reg_print_record(reg_record_t *rec);
 
 #endif

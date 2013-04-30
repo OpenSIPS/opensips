@@ -106,20 +106,25 @@ void new_call_id_ftag_4_record(reg_record_t *rec, str *now)
 }
 
 
-int add_record(uac_reg_map_t *uac, str *now)
+int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 {
 	reg_record_t *record;
 	unsigned int size;
 	dlg_t *td;
 	str call_id_ftag;
 	char *p;
+	slinkedl_list_t *list;
 
 	/* Reserve space for record */
 	size = sizeof(reg_record_t) + MD5_LEN +
 		uac->to_uri.len + uac->from_uri.len + uac->registrar_uri.len +
 		uac->auth_user.len + uac->auth_password.len +
 		uac->contact_uri.len + uac->contact_params.len + uac->proxy_uri.len;
-	record = (reg_record_t *)slinkedl_append(reg_htable[uac->hash_code].p_list, size);
+
+	if(plist==0) list = reg_htable[uac->hash_code].p_list;
+	else list = reg_htable[uac->hash_code].s_list;
+
+	record = (reg_record_t*)slinkedl_append(list, size);
 	if(!record) {
 		LM_ERR("oom\n");
 		return -1;
@@ -260,6 +265,7 @@ void destroy_reg_htable(void) {
 		for(i=0; i<reg_hsize; i++) {
 			lock_destroy(&reg_htable[i].lock);
 			slinkedl_list_destroy(reg_htable[i].p_list);
+			reg_htable[i].p_list = NULL;
 		}
 		shm_free(reg_htable);
 		reg_htable = NULL;

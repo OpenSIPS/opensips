@@ -82,6 +82,7 @@ static int child_init(int rank);
 void timer_check(unsigned int ticks, void* param);
 
 static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param);
+static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param);
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 
 
@@ -146,8 +147,9 @@ static param_export_t params[]= {
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{"reg_list",	0, mi_reg_list,	0,	0,	0},
-	{0,		0,		0, 0,	0,	0}
+	{"reg_list",   0, mi_reg_list,   0, 0, 0},
+	{"reg_reload", 0, mi_reg_reload, 0,	0, 0},
+	{0,            0, 0,             0, 0, 0}
 };
 
 
@@ -777,7 +779,7 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 
-	for(i = 0; i< reg_hsize; i++) {
+	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
 		ret = slinkedl_traverse(reg_htable[i].p_list,
 						&run_mi_reg_list, (void*)rpl_tree, NULL);
@@ -789,5 +791,56 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 		}
 	}
 	return rpl_tree;
+}
+
+static struct mi_root* mi_reg_reload(struct mi_root* cmd, void* param)
+{
+	struct mi_root *rpl_tree;
+	int i;
+	int err = 0;
+
+	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree==NULL) return NULL;
+
+	for(i=0; i<reg_hsize; i++) {
+		lock_get(&reg_htable[i].lock);
+		if (reg_htable[i].s_list!=NULL) {
+			LM_ERR("Found non NULL s_list\n");
+			slinkedl_list_destroy(reg_htable[i].s_list);
+			reg_htable[i].s_list = NULL;
+		}
+		reg_htable[i].s_list = slinkedl_init(&reg_alloc, &reg_free);
+		if (reg_htable[i].p_list == NULL) {
+			LM_ERR("oom while allocating list\n");
+			err = 1;
+		}
+		lock_release(&reg_htable[i].lock);
+		if (err) goto error;
+	}
+	/* Load registrants into the secondary list */
+	if(load_reg_info_from_db(1) !=0){
+		LM_ERR("unable to reload the registrant data\n");
+		free_mi_tree(rpl_tree);
+		goto error;
+	}
+	/* Swap the lists: secondary will become primary */
+	for(i=0; i<reg_hsize; i++) {
+		lock_get(&reg_htable[i].lock);
+		slinkedl_list_destroy(reg_htable[i].p_list);
+		reg_htable[i].p_list = reg_htable[i].s_list;
+		reg_htable[i].s_list = NULL;
+		lock_release(&reg_htable[i].lock);
+	}
+
+	return rpl_tree;
+
+error:
+	for(i=0; i<reg_hsize; i++) {
+		lock_get(&reg_htable[i].lock);
+		if (reg_htable[i].s_list) slinkedl_list_destroy(reg_htable[i].s_list);
+		reg_htable[i].s_list = NULL;
+		lock_release(&reg_htable[i].lock);
+	}
+	return NULL;
 }
 

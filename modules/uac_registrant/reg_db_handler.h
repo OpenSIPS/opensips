@@ -69,6 +69,7 @@ extern str reg_table_name;
 
 int init_reg_db(const str *db_url);
 int connect_reg_db(const str *db_url);
+int load_reg_info_from_db(unsigned int plist);
 void destroy_reg_db(void);
 
 #endif

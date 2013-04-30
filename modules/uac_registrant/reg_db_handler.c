@@ -72,12 +72,12 @@ static int use_reg_table(void)
 }
 
 
-static int load_reg_info_from_db(void)
+int load_reg_info_from_db(unsigned int plist)
 {
 	db_res_t * res = NULL;
 	db_val_t * values;
 	db_row_t * rows;
-	int i, nr_rows;
+	int i, nr_rows, ret;
 	unsigned int n_result_cols = 0;
 	unsigned int registrar_col;
 	unsigned int proxy_col;
@@ -323,7 +323,10 @@ static int load_reg_info_from_db(void)
 				uac_param.proxy_uri.len, uac_param.proxy_uri.s,
 				uac_param.contact_uri.len, uac_param.contact_uri.s,
 				uac_param.from_uri.len, uac_param.from_uri.s);
-			if(add_record(&uac_param, &now)<0) {
+			lock_get(&reg_htable[uac_param.hash_code].lock);
+			ret = add_record(&uac_param, &now, plist);
+			lock_release(&reg_htable[uac_param.hash_code].lock);
+			if(ret<0) {
 				LM_ERR("can't load registrant\n");
 				continue;
 			}
@@ -367,7 +370,8 @@ int init_reg_db(const str *db_url)
 		LM_ERR("error during table version check.\n");
 		return -1;
 	}
-	if(load_reg_info_from_db() !=0){
+	/* Load registrants into the primary list */
+	if(load_reg_info_from_db(0) !=0){
 		LM_ERR("unable to load the registrant data\n");
 		return -1;
 	}
