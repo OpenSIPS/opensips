@@ -32,15 +32,17 @@
 #include "reg_records.h"
 
 extern unsigned int default_expires;
+extern const str uac_reg_state[];
 
 static char call_id_ftag_buf[MD5_LEN];
 
 
 void reg_print_record(reg_record_t *rec) {
-	LM_DBG("checking uac=[%p] state=[%d] expires=[%d]"
+	LM_DBG("checking uac=[%p] state=[%d][%.*s] expires=[%d]"
 			" last_register_sent=[%d] registration_timeout=[%d]"
 			" auth_user[%p][%d]->[%.*s] auth_password=[%p][%d]->[%.*s] sock=[%p]\n",
-		rec, rec->state, rec->expires,
+		rec, rec->state,
+		uac_reg_state[rec->state].len, uac_reg_state[rec->state].s, rec->expires,
 		(unsigned int)rec->last_register_sent, (unsigned int)rec->registration_timeout,
 		rec->auth_user.s, rec->auth_user.len, rec->auth_user.len, rec->auth_user.s,
 		rec->auth_password.s, rec->auth_password.len,
@@ -106,7 +108,7 @@ void new_call_id_ftag_4_record(reg_record_t *rec, str *now)
 
 int add_record(uac_reg_map_t *uac, str *now)
 {
-	reg_record_t *rec, *prev_rec, *record;
+	reg_record_t *record;
 	unsigned int size;
 	dlg_t *td;
 	str call_id_ftag;
@@ -117,7 +119,7 @@ int add_record(uac_reg_map_t *uac, str *now)
 		uac->to_uri.len + uac->from_uri.len + uac->registrar_uri.len +
 		uac->auth_user.len + uac->auth_password.len +
 		uac->contact_uri.len + uac->contact_params.len + uac->proxy_uri.len;
-	record = (reg_record_t *)shm_malloc(size);
+	record = (reg_record_t *)slinkedl_append(reg_htable[uac->hash_code].p_list, size);
 	if(!record) {
 		LM_ERR("oom\n");
 		return -1;
@@ -222,22 +224,11 @@ int add_record(uac_reg_map_t *uac, str *now)
 
 	reg_print_record(record);
 
-	rec = reg_htable[uac->hash_code].first;
-	if (rec) {
-		while(rec) {
-			prev_rec = rec;
-			rec = rec->next;
-		}
-		prev_rec->next = record;
-		record->prev = prev_rec;
-	} else {
-		reg_htable[uac->hash_code].first = record;
-		record->prev = record->next = NULL;
-	}
-	
 	return 0;
 }
 
+void *reg_alloc(size_t size) { return shm_malloc(size); }
+void reg_free(void *ptr) { shm_free(ptr); return; }
 
 int init_reg_htable(void) {
 	int i;
@@ -250,7 +241,13 @@ int init_reg_htable(void) {
 
 	for(i= 0; i<reg_hsize; i++) {
 		lock_init(&reg_htable[i].lock);
-		reg_htable[i].first = NULL;
+		reg_htable[i].p_list = slinkedl_init(&reg_alloc, &reg_free);
+		LM_DBG("reg_htable[%d].p_list=[%p]\n", i, reg_htable[i].p_list);
+		if (reg_htable[i].p_list == NULL) {
+			LM_ERR("oom while allocating list\n");
+			return -1;
+		}
+		reg_htable[i].s_list = NULL;
 	}
 	return 0;
 }
@@ -258,17 +255,11 @@ int init_reg_htable(void) {
 
 void destroy_reg_htable(void) {
 	int i;
-	reg_record_t *record;
 
 	if (reg_htable) {
 		for(i=0; i<reg_hsize; i++) {
 			lock_destroy(&reg_htable[i].lock);
-			record = reg_htable[i].first;
-
-			while(record) {
-				//delete the record
-				record = record->next;
-			}
+			slinkedl_list_destroy(reg_htable[i].p_list);
 		}
 		shm_free(reg_htable);
 		reg_htable = NULL;

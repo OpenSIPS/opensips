@@ -37,6 +37,7 @@
 #include "../../mem/shm_mem.h"
 #include "../tm/dlg.h"
 #include "../tm/tm_load.h"
+#include "../../sliblist.h"
 
 
 #define NOT_REGISTERED_STATE	0
@@ -82,7 +83,8 @@ typedef struct reg_record {
 } reg_record_t;
 
 typedef struct reg_entry {
-	reg_record_t *first;
+	slinkedl_list_t *p_list;
+	slinkedl_list_t *s_list;
 	gen_lock_t lock;
 } reg_entry_t;
 

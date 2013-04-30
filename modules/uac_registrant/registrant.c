@@ -42,18 +42,37 @@
 #include "reg_db_handler.h"
 
 
-#define UAC_REGISTRAR_URI_PARAM			1
-#define UAC_PROXY_URI_PARAM			2
-#define UAC_AOR_URI_PARAM			3
-#define UAC_THIRD_PARTY_REGISTRANT_URI_PARAM	4
-#define UAC_AUTH_USER_PARAM			5
-#define UAC_AUTH_PASSWORD_PARAM			6
-#define UAC_CONTACT_URI_PARAM			7
-#define UAC_CONTACT_PARAMS_PARAM		8
-#define UAC_EXPIRES_PARAM			9
-#define UAC_FORCED_SOCKET_PARAM			10
-#define UAC_MAX_PARAMS_NO			11
+#define UAC_REGISTRAR_URI_PARAM              1
+#define UAC_PROXY_URI_PARAM                  2
+#define UAC_AOR_URI_PARAM                    3
+#define UAC_THIRD_PARTY_REGISTRANT_URI_PARAM 4
+#define UAC_AUTH_USER_PARAM                  5
+#define UAC_AUTH_PASSWORD_PARAM              6
+#define UAC_CONTACT_URI_PARAM                7
+#define UAC_CONTACT_PARAMS_PARAM             8
+#define UAC_EXPIRES_PARAM                    9
+#define UAC_FORCED_SOCKET_PARAM             10
+#define UAC_MAX_PARAMS_NO                   11
 
+#define UAC_REG_NOT_REGISTERED_STATE    "NOT_REGISTERED_STATE"
+#define UAC_REG_REGISTERING_STATE       "REGISTERING_STATE"
+#define UAC_REG_AUTHENTICATING_STATE    "AUTHENTICATING_STATE"
+#define UAC_REG_REGISTERED_STATE        "REGISTERED_STATE"
+#define UAC_REG_REGISTER_TIMEOUT_STATE  "REGISTER_TIMEOUT_STATE"
+#define UAC_REG_INTERNAL_ERROR_STATE    "INTERNAL_ERROR_STATE"
+#define UAC_REG_WRONG_CREDENTIALS_STATE "WRONG_CREDENTIALS_STATE"
+#define UAC_REG_REGISTRAR_ERROR_STATE   "REGISTRAR_ERROR_STATE"
+
+const str uac_reg_state[]={
+	str_init(UAC_REG_NOT_REGISTERED_STATE),
+	str_init(UAC_REG_REGISTERING_STATE),
+	str_init(UAC_REG_AUTHENTICATING_STATE),
+	str_init(UAC_REG_REGISTERED_STATE),
+	str_init(UAC_REG_REGISTER_TIMEOUT_STATE),
+	str_init(UAC_REG_INTERNAL_ERROR_STATE),
+	str_init(UAC_REG_WRONG_CREDENTIALS_STATE),
+	str_init(UAC_REG_REGISTRAR_ERROR_STATE),
+};
 
 /** Functions declarations */
 static int mod_init(void);
@@ -227,13 +246,19 @@ static int child_init(int rank)
 
 void shm_free_param(void* param) {shm_free(param);}
 
-void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
+struct reg_tm_cback_data {
+	struct cell *t;
+	struct tmcb_params *ps;
+	time_t now;
+	reg_tm_cb_t *cb_param;
+};
+
+int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 {
 	struct sip_msg *msg;
-	reg_tm_cb_t *cb_param;
 	int statuscode = 0;
 	unsigned int exp = 0;
-	reg_record_t *rec;
+	reg_record_t *rec = (reg_record_t*)e_data;
 	struct hdr_field *c_ptr, *head_contact;
 	struct uac_credential crd;
 	contact_t *contact;
@@ -241,43 +266,22 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	HASHHEX response;
 	str *new_hdr;
+	struct reg_tm_cback_data *tm_cback_data = (struct reg_tm_cback_data*)data;
+	struct cell *t;
+	struct tmcb_params *ps;
 	time_t now;
+	reg_tm_cb_t *cb_param;
 
-	if(ps==NULL || ps->rpl==NULL) {
-		LM_ERR("wrong ps parameter\n");
-		return;
+	cb_param = tm_cback_data->cb_param;
+	if (rec!=cb_param->uac) {
+		/* no action on current list elemnt */
+		return 0; /* continue list traversal */
 	}
-	if(ps->param==NULL || *ps->param==NULL) {
-		LM_ERR("null callback parameter\n");
-		return;
-	}
-	cb_param = (reg_tm_cb_t *)*ps->param;
-	if(cb_param->uac == NULL) {
-		LM_ERR("null record\n");
-		return;
-	}
-	statuscode = ps->code;
-	now = time(0);
-	LM_DBG("tm [%p] notification cb for %s [%d] reply at [%d]\n",
-			t, (ps->rpl==FAKED_REPLY)?"FAKED_REPLY":"",
-			statuscode, (unsigned int)now);
 
-	if(statuscode<200) return;
+	t = tm_cback_data->t;
+	ps = tm_cback_data->ps;
+	now = tm_cback_data->now;
 
-	lock_get(&reg_htable[cb_param->hash_index].lock);
-	rec = reg_htable[cb_param->hash_index].first;
-	while(rec) {
-		if (rec==cb_param->uac) {
-			break;
-		}
-		rec = rec->next;
-	}
-	if(!rec) {
-		LM_ERR("record [%p] not found on hash index [%d]\n",
-		cb_param->uac, cb_param->hash_index);
-		lock_release(&reg_htable[cb_param->hash_index].lock);
-		return;
-	}
 	reg_print_record(rec);
 
 	if (ps->rpl==FAKED_REPLY)
@@ -285,6 +289,7 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 	else if (rec->td.forced_to_su.s.sa_family == AF_UNSPEC)
 		rec->td.forced_to_su = t->uac[0].request.dst.to;
 
+	statuscode = ps->code;
 	switch(statuscode) {
 	case 200:
 		msg = ps->rpl;
@@ -366,8 +371,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 			LM_ERR("Credentials not provisioned\n");
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
-			lock_release(&reg_htable[cb_param->hash_index].lock);
-			return;
+			/* action successfuly completed on current list element */
+			return 1; /* exit list traversal */
 		}
 
 		if (statuscode==WWW_AUTH_CODE) {
@@ -399,8 +404,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
 			rec->state = WRONG_CREDENTIALS_STATE;
 			rec->registration_timeout = 0;
-			lock_release(&reg_htable[cb_param->hash_index].lock);
-			return;
+			/* action successfuly completed on current list element */
+			return 1; /* exit list traversal */
 		default:
 			LM_ERR("Unexpected [%d] notification cb in state [%d]\n",
 				statuscode, rec->state);
@@ -451,6 +456,11 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 		}
 		break;
 
+	case 408: /* Interval Too Brief */
+		rec->state = REGISTER_TIMEOUT_STATE;
+		rec->registration_timeout = now + rec->expires - timer_interval;
+		break;
+
 	default:
 		if(statuscode<400 && statuscode>=300) {
 			LM_ERR("Redirection not implemented yet\n");
@@ -463,13 +473,61 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 		}
 	}
 
-	lock_release(&reg_htable[cb_param->hash_index].lock);
-
-	return;
+	/* action successfuly completed on current list element */
+	return 1; /* exit list traversal */
 done:
 	rec->state = INTERNAL_ERROR_STATE;
 	rec->registration_timeout = now + rec->expires;
+	return -1; /* exit list traversal */
+}
+
+
+
+void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
+{
+	reg_tm_cb_t *cb_param;
+	int statuscode = 0;
+	int ret;
+	time_t now;
+	struct reg_tm_cback_data tm_cback_data;
+
+	if(ps==NULL || ps->rpl==NULL) {
+		LM_ERR("wrong ps parameter\n");
+		return;
+	}
+	if(ps->param==NULL || *ps->param==NULL) {
+		LM_ERR("null callback parameter\n");
+		return;
+	}
+	cb_param = (reg_tm_cb_t *)*ps->param;
+	if(cb_param->uac == NULL) {
+		LM_ERR("null record\n");
+		return;
+	}
+	statuscode = ps->code;
+	now = time(0);
+	LM_DBG("tm [%p] notification cb for %s [%d] reply at [%d]\n",
+			t, (ps->rpl==FAKED_REPLY)?"FAKED_REPLY":"",
+			statuscode, (unsigned int)now);
+
+	if(statuscode<200) return;
+
+	/* Initialize slinkedl run traversal data */
+	tm_cback_data.t = t;
+    tm_cback_data.ps = ps;
+    tm_cback_data.cb_param = cb_param;
+	tm_cback_data.now = now;
+
+	lock_get(&reg_htable[cb_param->hash_index].lock);
+	ret = slinkedl_traverse(reg_htable[cb_param->hash_index].p_list,
+						&run_reg_tm_cback, (void*)&tm_cback_data, NULL);
 	lock_release(&reg_htable[cb_param->hash_index].lock);
+
+	if (ret==0) {
+		LM_ERR("record [%p] not found on hash index [%d]\n",
+		cb_param->uac, cb_param->hash_index);
+	}
+
 	return;
 }
 
@@ -537,14 +595,67 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 }
 
 
+struct timer_check_data {
+	time_t now;
+	str *s_now;
+};
+
+int run_timer_check(void *e_data, void *data, void *r_data)
+{
+	unsigned int i=hash_index;
+	reg_record_t *rec = (reg_record_t*)e_data;
+	struct timer_check_data *t_check_data = (struct timer_check_data*)data;
+	time_t now = t_check_data->now;
+	str *s_now = t_check_data->s_now;
+
+	switch(rec->state){
+	case REGISTERING_STATE:
+	case AUTHENTICATING_STATE:
+		break;
+	case WRONG_CREDENTIALS_STATE:
+	case REGISTER_TIMEOUT_STATE:
+	case INTERNAL_ERROR_STATE:
+	case REGISTRAR_ERROR_STATE:
+		reg_print_record(rec);
+		new_call_id_ftag_4_record(rec, s_now);
+		if(send_register(i, rec, NULL)==1) {
+			rec->last_register_sent = now;
+			rec->state = REGISTERING_STATE;
+		} else {
+			rec->registration_timeout = now + rec->expires - timer_interval;
+			rec->state = INTERNAL_ERROR_STATE;
+		}
+		break;
+	case REGISTERED_STATE:
+		/* check if we need to re-register */
+		if (now < rec->registration_timeout) {
+			break;
+		}
+	case NOT_REGISTERED_STATE:
+		if(send_register(i, rec, NULL)==1) {
+			rec->last_register_sent = now;
+			rec->state = REGISTERING_STATE;
+		} else {
+			rec->registration_timeout = now + rec->expires - timer_interval;
+			rec->state = INTERNAL_ERROR_STATE;
+		}
+		break;
+	default:
+		LM_ERR("Unexpected state [%d] for rec [%p]\n", rec->state, rec);
+	}
+
+	return 0; /* continue list traversal */
+}
+
+
 void timer_check(unsigned int ticks, void* param)
 {
 	unsigned int i=hash_index;
-	reg_record_t *rec;
 	char *p;
-	int len;
+	int len, ret;
 	time_t now;
 	str str_now = {NULL, 0};
+	struct timer_check_data t_check_data;
 
 	now = time(0);
 
@@ -560,47 +671,15 @@ void timer_check(unsigned int ticks, void* param)
 		}
 	}
 
+	/* Initialize slinkedl run traversal data */
+	t_check_data.now = now;
+	t_check_data.s_now = &str_now;
+
+	LM_DBG("checking ... [%d] on htable[%d]\n", (unsigned int)now, i);
 	lock_get(&reg_htable[i].lock);
-	//LM_DBG("checking ... [%d] on htable[%d]\n", (unsigned int)now, i);
-	rec = reg_htable[i].first;
-	while (rec) {
-		switch(rec->state){
-		case REGISTERING_STATE:
-		case AUTHENTICATING_STATE:
-			break;
-		case WRONG_CREDENTIALS_STATE:
-		case REGISTER_TIMEOUT_STATE:
-		case INTERNAL_ERROR_STATE:
-		case REGISTRAR_ERROR_STATE:
-			reg_print_record(rec);
-			new_call_id_ftag_4_record(rec, &str_now);
-			if(send_register(i, rec, NULL)==1) {
-				rec->last_register_sent = now;
-				rec->state = REGISTERING_STATE;
-			} else {
-				rec->registration_timeout = now + rec->expires - timer_interval;
-				rec->state = INTERNAL_ERROR_STATE;
-			}
-			break;
-		case REGISTERED_STATE:
-			/* check if we need to re-register */
-			if (now < rec->registration_timeout) {
-				break;
-			}
-		case NOT_REGISTERED_STATE:
-			if(send_register(i, rec, NULL)==1) {
-				rec->last_register_sent = now;
-				rec->state = REGISTERING_STATE;
-			} else {
-				rec->registration_timeout = now + rec->expires - timer_interval;
-				rec->state = INTERNAL_ERROR_STATE;
-			}
-			break;
-		default:
-			LM_ERR("Unexpected state [%d] for rec [%p]\n", rec->state, rec);
-		}
-		rec = rec->next;
-	}
+	ret = slinkedl_traverse(reg_htable[i].p_list, &run_timer_check,
+							(void*)&t_check_data, NULL);
+	if (ret<0) LM_CRIT("Unexpected return code %d\n", ret);
 	lock_release(&reg_htable[i].lock);
 
 	if (str_now.s) {pkg_free(str_now.s);}
@@ -611,98 +690,104 @@ void timer_check(unsigned int ticks, void* param)
 }
 
 
-static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
+/*** MI **/
+
+int run_mi_reg_list(void *e_data, void *data, void *r_data)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl=NULL, *node, *node1;
+	struct mi_root* rpl_tree = (struct mi_root*)data;
+	struct mi_node *node, *node1;
 	struct mi_attr* attr;
-	reg_record_t *rec;
-	int i, len;
+	reg_record_t *rec = (reg_record_t*)e_data;
+	int len;
 	char* p;
 	struct ip_addr addr;
 
+	node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE, "AOR", 3,
+							rec->td.rem_uri.s, rec->td.rem_uri.len);
+	if(node == NULL) goto error;
+	attr = add_mi_attr(node, MI_DUP_VALUE, "state", 5,
+				uac_reg_state[rec->state].s, uac_reg_state[rec->state].len);
+	if(attr == NULL) goto error;
+	p = int2str(rec->expires, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned int)rec->last_register_sent, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "last_register_sent", 18, p, len);
+	if(attr == NULL) goto error;
+	p = int2str((unsigned int)rec->registration_timeout, &len);
+	attr = add_mi_attr(node, MI_DUP_VALUE, "registration_timeout", 20, p, len);
+	if(attr == NULL) goto error;
+
+	node1 = add_mi_node_child(node, MI_DUP_VALUE, "registrar", 9,
+							rec->td.rem_target.s, rec->td.rem_target.len);
+	if(node1 == NULL) goto error;
+
+	node1 = add_mi_node_child(node, MI_DUP_VALUE, "binding", 7,
+							rec->contact_uri.s, rec->contact_uri.len);
+	if(node1 == NULL) goto error;
+
+	if(rec->td.loc_uri.s != rec->td.rem_uri.s) {
+		node1 = add_mi_node_child(node, MI_DUP_VALUE,
+								"third_party_registrant", 12,
+								rec->td.loc_uri.s, rec->td.loc_uri.len);
+		if(node1 == NULL) goto error;
+	}
+
+	if (rec->td.obp.s && rec->td.obp.len) {
+		node1 = add_mi_node_child(node, MI_DUP_VALUE,
+								"proxy", 5, rec->td.obp.s, rec->td.obp.len);
+		if(node1 == NULL) goto error;
+	}
+
+	switch(rec->td.forced_to_su.s.sa_family) {
+	case AF_UNSPEC:
+		break;
+	case AF_INET:
+	case AF_INET6:
+		node1 = add_mi_node_child(node, MI_DUP_VALUE, "dst_IP", 6,
+			(rec->td.forced_to_su.s.sa_family==AF_INET)?"IPv4":"IPv6", 4);
+		sockaddr2ip_addr(&addr, &rec->td.forced_to_su.s);
+		p = ip_addr2a(&addr);
+		if (p == NULL) goto error;
+		len = strlen(p);
+		attr = add_mi_attr(node1, MI_DUP_VALUE, "ip", 2, p, len);
+		if(attr == NULL) goto error;
+		break;
+	default:
+		LM_ERR("unexpected sa_family [%d]\n", rec->td.forced_to_su.s.sa_family);
+		node1 = add_mi_node_child(node, MI_DUP_VALUE, "dst_IP", 6, "Error", 5);
+		p = int2str(rec->td.forced_to_su.s.sa_family, &len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "sa_family", 9, p, len);
+		if(attr == NULL) goto error;
+	}
+
+	/* action successfuly completed on current list element */
+	return 0; /* continue list traversal */
+error:
+	LM_ERR("Unable to create reply\n");
+	return -1; /* exit list traversal */
+}
+
+
+static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
+{
+	struct mi_root *rpl_tree;
+	int i, ret;
+
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
-	rpl = &rpl_tree->node;
 
 	for(i = 0; i< reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
-		rec = reg_htable[i].first;
-		while (rec) {
-			node = add_mi_node_child(rpl, MI_DUP_VALUE, "AOR", 3,
-					rec->td.rem_uri.s, rec->td.rem_uri.len);
-			if(node == NULL) goto error;
-			p = int2str(rec->state, &len);
-			attr = add_mi_attr(node, MI_DUP_VALUE, "state", 5, p, len);
-			if(attr == NULL) goto error;
-			p = int2str(rec->expires, &len);
-			attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
-			if(attr == NULL) goto error;
-			p = int2str((unsigned int)rec->last_register_sent, &len);
-			attr = add_mi_attr(node, MI_DUP_VALUE, "last_register_sent", 18, p, len);
-                        if(attr == NULL) goto error;
-			p = int2str((unsigned int)rec->registration_timeout, &len);
-			attr = add_mi_attr(node, MI_DUP_VALUE, "registration_timeout", 20, p, len);
-                        if(attr == NULL) goto error;
-
-			node1 = add_mi_node_child(node, MI_DUP_VALUE, "registrar", 9,
-					rec->td.rem_target.s, rec->td.rem_target.len);
-			if(node1 == NULL) goto error;
-
-			node1 = add_mi_node_child(node, MI_DUP_VALUE, "binding", 7,
-					rec->contact_uri.s, rec->contact_uri.len);
-			if(node1 == NULL) goto error;
-
-			if(rec->td.loc_uri.s != rec->td.rem_uri.s) {
-				node1 = add_mi_node_child(node, MI_DUP_VALUE,
-						"third_party_registrant", 12,
-						rec->td.loc_uri.s, rec->td.loc_uri.len);
-				if(node1 == NULL) goto error;
-			}
-
-			if (rec->td.obp.s && rec->td.obp.len) {
-				node1 = add_mi_node_child(node, MI_DUP_VALUE,
-						"proxy", 5, rec->td.obp.s, rec->td.obp.len);
-				if(node1 == NULL) goto error;
-			}
-
-			switch(rec->td.forced_to_su.s.sa_family) {
-			case AF_UNSPEC:
-				break;
-			case AF_INET:
-			case AF_INET6:
-				node1 = add_mi_node_child(node, MI_DUP_VALUE,
-					"dst_IP", 6,
-					(rec->td.forced_to_su.s.sa_family==AF_INET)?
-						"IPv4":"IPv6", 4);
-				sockaddr2ip_addr(&addr, &rec->td.forced_to_su.s);
-				p = ip_addr2a(&addr);
-				if (p == NULL) goto error;
-				len = strlen(p);
-				attr = add_mi_attr(node1, MI_DUP_VALUE, "ip", 2,
-					p, len);
-				if(attr == NULL) goto error;
-				break;
-			default:
-				LM_ERR("unexpected sa_family [%d]\n",
-					rec->td.forced_to_su.s.sa_family);
-				node1 = add_mi_node_child(node, MI_DUP_VALUE,
-					"dst_IP", 6, "Error", 5);
-				p = int2str(rec->td.forced_to_su.s.sa_family, &len);
-				attr = add_mi_attr(node, MI_DUP_VALUE, "sa_family", 9,
-					p, len);
-				if(attr == NULL) goto error;
-			}
-
-			rec = rec->next;
-		}
+		ret = slinkedl_traverse(reg_htable[i].p_list,
+						&run_mi_reg_list, (void*)rpl_tree, NULL);
 		lock_release(&reg_htable[i].lock);
+		if (ret<0) {
+			LM_ERR("Unable to create reply\n");
+			free_mi_tree(rpl_tree);
+			return NULL;
+		}
 	}
 	return rpl_tree;
-error:
-	lock_release(&reg_htable[i].lock);
-	LM_ERR("Unable to create reply\n");
-	free_mi_tree(rpl_tree);
-	return NULL;
 }
 
