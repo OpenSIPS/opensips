@@ -136,7 +136,7 @@ void *slinkedl_append(slinkedl_list_t *list, size_t e_size);
  * @param run_data The funtion to operate on each list element.
  * @param data The data to be used by run_data function.
  * @parama r_data The data returned by run_data function.
- * @return The return code from last run_data(call.
+ * @return The return code from last run_data call.
  * @see slinkedl_run_data()
  */
 int slinkedl_traverse(slinkedl_list_t *list,
