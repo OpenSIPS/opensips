@@ -2498,7 +2498,8 @@ entity_search_done:
 		ci.body          = 0;
 		ci.from_tag      = 0;
 		ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):0;
-		get_local_contact( ci.send_sock, &ci.local_contact);
+		if (ci.send_sock) get_local_contact( ci.send_sock, &ci.local_contact);
+		else ci.local_contact = server_address;
 
 		if(msg)
 		{
