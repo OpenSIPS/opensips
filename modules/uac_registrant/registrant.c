@@ -707,18 +707,23 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 	node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE, "AOR", 3,
 							rec->td.rem_uri.s, rec->td.rem_uri.len);
 	if(node == NULL) goto error;
-	attr = add_mi_attr(node, MI_DUP_VALUE, "state", 5,
-				uac_reg_state[rec->state].s, uac_reg_state[rec->state].len);
-	if(attr == NULL) goto error;
 	p = int2str(rec->expires, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
 	if(attr == NULL) goto error;
-	p = int2str((unsigned int)rec->last_register_sent, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "last_register_sent", 18, p, len);
-	if(attr == NULL) goto error;
-	p = int2str((unsigned int)rec->registration_timeout, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "registration_timeout", 20, p, len);
-	if(attr == NULL) goto error;
+
+	node1 = add_mi_node_child(node, MI_DUP_VALUE, "state", 5,
+							uac_reg_state[rec->state].s, uac_reg_state[rec->state].len);
+	if(node1 == NULL) goto error;
+
+	p = ctime(&rec->last_register_sent);
+	len = strlen(p)-1;
+	node1 = add_mi_node_child(node, MI_DUP_VALUE, "last_register_sent", 18, p, len);
+	if(node1 == NULL) goto error;
+
+	p = ctime(&rec->registration_timeout);
+	len = strlen(p)-1;
+	node1 = add_mi_node_child(node, MI_DUP_VALUE, "registration_t_out", 18, p, len);
+	if(node1 == NULL) goto error;
 
 	node1 = add_mi_node_child(node, MI_DUP_VALUE, "registrar", 9,
 							rec->td.rem_target.s, rec->td.rem_target.len);
