@@ -585,7 +585,11 @@ error:
 		pua_dbf.free_result(pua_db, res);
 
 	if(p)
+	{
+		if(p->remote_contact.s) shm_free(p->remote_contact.s);
+		if(p->etag.s) shm_free(p->etag.s);
 		shm_free(p);
+	}
 	return -1;
 }
 
