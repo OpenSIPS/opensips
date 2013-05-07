@@ -121,7 +121,7 @@ str realm_prefix;
 
 str sock_hdr_name = {0,0};
 str gruu_secret = {0,0};
-int disable_gruu = 0;
+int disable_gruu = 1;
 
 #define RCV_NAME "received"
 str rcv_param = str_init(RCV_NAME);

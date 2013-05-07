@@ -427,11 +427,11 @@ modparam("registrar", "gruu_secret", "top_secret")
 
    Globally disable GRUU handling
 
-   Default value is 0 ( GRUU will be handled ).
+   Default value is 1 ( GRUU will not be handled ).
 
    Example 1.16. Set gruu_secret parameter
 ...
-modparam("registrar", "gruu_secret", 1)
+modparam("registrar", "disable_gruu", 0)
 ...
 
 1.4. Exported Functions
