@@ -48,29 +48,39 @@ static str str_watcher_uri_col= str_init("watcher_uri");
 static str str_event_col= str_init("event");
 static str str_remote_contact_col= str_init("remote_contact");
 
+
 void print_ua_pres(ua_pres_t* p)
 {
-	LM_DBG("\tpres_uri= %.*s   len= %d\n", p->pres_uri->len, p->pres_uri->s, p->pres_uri->len);
+	int now = (int)time(NULL);
+
+	LM_DBG("p=[%p] pres_uri=[%.*s]\n", p, p->pres_uri->len, p->pres_uri->s);
 	if(p->watcher_uri)
 	{	
-		LM_DBG("\twatcher_uri= %.*s  len= %d\n", p->watcher_uri->len, p->watcher_uri->s, p->watcher_uri->len);
-		LM_DBG("\tto_uri= %.*s  len= %d\n", p->to_uri.len, p->to_uri.s, p->to_uri.len);
-		LM_DBG("\tcall_id= %.*s   len= %d\n", p->call_id.len, p->call_id.s, p->call_id.len);
-		LM_DBG("\tfrom_tag= %.*s   len= %d\n", p->from_tag.len, p->from_tag.s, p->from_tag.len);
-		LM_DBG("\tto_tag= %.*s  len= %d\n", p->to_tag.len, p->to_tag.s, p->to_tag.len);
+		LM_DBG("watcher_uri=[%.*s]\n", p->watcher_uri->len, p->watcher_uri->s);
+		LM_DBG("to_uri=[%.*s]\n", p->to_uri.len, p->to_uri.s);
+		LM_DBG("call_id=[%.*s]\n", p->call_id.len, p->call_id.s);
+		LM_DBG("from_tag=[%.*s]\n", p->from_tag.len, p->from_tag.s);
+		LM_DBG("to_tag=[%.*s]\n", p->to_tag.len, p->to_tag.s);
+		LM_DBG("etag=[%.*s]\n", p->etag.len, p->etag.s);
 	}	
 	else
 	{
-		LM_DBG("\tetag= %.*s - len= %d\n", p->etag.len, p->etag.s, p->etag.len);
 		if(p->id.s)
-			LM_DBG("\tid= %.*s\n", p->id.len, p->id.s);
+			LM_DBG("etag=[%.*s] id=[%.*s]\n",
+				p->etag.len, p->etag.s, p->id.len, p->id.s);
+		else
+			LM_DBG("etag=[%.*s]\n", p->etag.len, p->etag.s);
 	}
-	LM_DBG("\tflag= %d\n", p->flag);
-	LM_DBG("\tevent= %d\n", p->event);
-	if(p->expires > (int)time(NULL))
-		LM_DBG("\texpires= %d\n", p->expires- (int)time(NULL));
+	LM_DBG("flag=[%d] event=[%d]\n", p->flag, p->event);
+	if (p->extra_headers->s && p->extra_headers->len)
+		LM_DBG("extra_headers=[%.*s]\n",
+				p->extra_headers->len, p->extra_headers->s);
+	if(p->expires > now)
+		LM_DBG("countdown=[%d] expires=[%d] desired_expires=[%d]\n",
+				p->expires - now, p->expires, p->desired_expires);
 	else
-		LM_DBG("\texpires= %d\n", p->expires);
+		LM_DBG("expires=[%d] desired_expires=[%d]\n",
+				p->expires, p->desired_expires);
 }
 
 htable_t* new_htable(void)
