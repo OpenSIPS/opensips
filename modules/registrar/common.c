@@ -138,7 +138,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 				LM_ERR("failed to parse Address of Record\n");
 				return -1;
 			}
-			call_id->len = (tgruu_dec+dec_size) - call_id->s -1;
+			call_id->len = (tgruu_dec+dec_size) - call_id->s;
 
 			LM_DBG("extracted aor [%.*s] and instance [%.*s] and callid [%.*s]\n",_a->len,_a->s,
 					sip_instance->len,sip_instance->s,call_id->len,call_id->s);

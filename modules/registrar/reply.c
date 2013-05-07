@@ -187,7 +187,7 @@ char * build_temp_gruu(str *aor,str *instance,str *callid,int *len)
 	char *time_str = int2str((unsigned long)act_time,&time_len);
 	str *magic;
 
-	*len = time_len + aor->len + instance->len + callid->len + 3; /* blank spaces */
+	*len = time_len + aor->len + instance->len + callid->len + 3 - 2; /* +3 blank spaces, -2 discarded chars of instance in memcpy below */
 	p = temp_gruu_buf;
 
 	memcpy(p,time_str,time_len);
