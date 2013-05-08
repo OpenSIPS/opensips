@@ -113,7 +113,7 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
 	str_hdr->len += CRLF_LEN;
 
-	if(extra_headers && extra_headers->len)
+	if(extra_headers && extra_headers->s && extra_headers->len)
 	{
 		memcpy(str_hdr->s+str_hdr->len, extra_headers->s, extra_headers->len);
 		str_hdr->len += extra_headers->len;
