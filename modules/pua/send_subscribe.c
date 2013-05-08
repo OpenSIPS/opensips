@@ -62,7 +62,7 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 	static char buf[3000];
 	char* subs_expires= NULL;
 	int len= 1;
-	pua_event_t* ev;	
+	pua_event_t* ev;
 
 	str_hdr= (str*)pkg_malloc(sizeof(str));
 	if(str_hdr== NULL)
@@ -72,8 +72,8 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 	}
 	memset(str_hdr, 0, sizeof(str));
 	str_hdr->s= buf;
-	
-	ev= get_event(event);	
+
+	ev= get_event(event);
 	if(ev== NULL)
 	{
 		LM_ERR("getting event from list\n");
@@ -86,7 +86,7 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 	str_hdr->len+= ev->name.len;
 	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
 	str_hdr->len += CRLF_LEN;
-	
+
 	memcpy(str_hdr->s+ str_hdr->len ,"Contact: <", 10);
 	str_hdr->len += 10;
 	memcpy(str_hdr->s +str_hdr->len, contact->s, 
@@ -193,7 +193,7 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 	td->loc_seq.value = presentity->cseq++;
 	td->loc_seq.is_set = 1;
 	td->state= DLG_CONFIRMED ;
-	
+
 	return td;
 }
 
@@ -249,7 +249,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		lock_release(&HashT->p_records[hentity->hash_index].lock);
 		goto done;
 	}
-	
+
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 	{
 		LM_ERR("when parsing headers\n");
@@ -271,8 +271,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		{
 			LM_ERR("cannot parse callid header\n");
 			goto done;
-		}		
-		
+		}
+
 		if (!msg->from || !msg->from->body.s)
 		{
 			LM_ERR("cannot find 'from' header!\n");
@@ -287,17 +287,17 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 			}
 		}
 		pfrom = (struct to_body*)msg->from->parsed;
-	
+
 		if( pfrom->tag_value.s ==NULL || pfrom->tag_value.len == 0)
 		{
 			LM_ERR("no from tag value present\n");
 			goto done;
-		}		
+		}
 		if( msg->to==NULL || msg->to->body.s==NULL)
 		{
 			LM_ERR("cannot parse TO header\n");
 			goto done;
-		}			
+		}
 
 		pto = get_to(msg);
 		if (pto == NULL || pto->error != PARSE_OK) {
@@ -313,7 +313,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		hentity->call_id=  msg->callid->body;
 		hentity->to_tag= pto->tag_value;
 		hentity->from_tag= pfrom->tag_value;
-	
+
 	}
 
 	/* extract the other necesary information for inserting a new record */
@@ -330,8 +330,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 
 	if(ps->code >= 300 )
 	{	/* if an error code and a stored dialog delete it and try to send 
-		   a subscription with type= INSERT_TYPE, else return*/	
-		
+		   a subscription with type= INSERT_TYPE, else return*/
+
 		if(!initial_request)
 		{
 			subs_info_t subs;
@@ -362,15 +362,15 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 				subs.expires= 0;
 			else
 				subs.expires= hentity->desired_expires- (int)time(NULL)+ 3;
-		
+
 			subs.flag= INSERT_TYPE;
 			subs.source_flag= flag;
 			subs.event= hentity->event;
 			subs.id= hentity->id;
 			subs.outbound_proxy= hentity->outbound_proxy;
-			subs.extra_headers= hentity->extra_headers;
+			subs.extra_headers= &hentity->extra_headers;
 			subs.cb_param= hentity->cb_param;
-		
+
 			if(send_subscribe(&subs)< 0)
 			{
 				LM_ERR("when trying to send SUBSCRIBE\n");
@@ -414,7 +414,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 
 	/* if a new dialog -> insert */
 	if(lexpire== 0)
-	{	
+	{
 		LM_DBG("expires= 0: no not insert\n");
 		goto done;
 	}
@@ -429,15 +429,15 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	{
 		LM_ERR("while converting str to int\n");
 		goto done;
-    }	
-	
+    }
+
 	/*process record route and add it to a string*/
 	if (msg->record_route!=NULL)
 	{
 		rt = print_rr_body(msg->record_route, &record_route, 1, 0);
 		if(rt != 0)
 		{
-			LM_ERR("parsing record route [%d]\n", rt);	
+			LM_ERR("parsing record route [%d]\n", rt);
 			record_route.s=NULL;
 			record_route.len=0;
 		}
@@ -447,9 +447,6 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		pfrom->uri.len+ pto->tag_value.len+ pfrom->tag_value.len
 		+msg->callid->body.len+ record_route.len+ hentity->contact.len+
 		hentity->id.len )*sizeof(char);
-
-	if(hentity->extra_headers)
-		size+= sizeof(str)+ hentity->extra_headers->len*sizeof(char);
 
 	presentity= (ua_pres_t*)shm_malloc(size);
 	if(presentity== NULL)
@@ -508,7 +505,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		pkg_free(record_route.s);
 	}
 
-	
+
 	presentity->contact.s= (char*)presentity + size;
 	memcpy(presentity->contact.s, hentity->contact.s, hentity->contact.len);
 	presentity->contact.len= hentity->contact.len;
@@ -522,16 +519,16 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		presentity->id.len= hentity->id.len; 
 		size+= presentity->id.len;
 	}
-	
-	if(hentity->extra_headers)
+
+	if(hentity->extra_headers.s && hentity->extra_headers.len)
 	{
-		presentity->extra_headers= (str*)((char*)presentity+ size);
-		size+= sizeof(str);
-		presentity->extra_headers->s=(char*)presentity+ size;
-		memcpy(presentity->extra_headers->s, hentity->extra_headers->s, 
-			hentity->extra_headers->len);
-		presentity->extra_headers->len= hentity->extra_headers->len; 
-		size+= hentity->extra_headers->len;
+		presentity->extra_headers.s= (char*)shm_malloc(hentity->extra_headers.len* sizeof(char));
+		if(presentity->extra_headers.s== NULL)
+		{
+			ERR_MEM(SHARE_MEM);
+		}
+		memcpy(presentity->extra_headers.s, hentity->extra_headers.s, hentity->extra_headers.len);
+		presentity->extra_headers.len= hentity->extra_headers.len;
 	}
 
 	/* write the remote contact filed */
@@ -552,7 +549,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	if(BLA_SUBSCRIBE & presentity->flag)
 	{
 		LM_DBG("BLA_SUBSCRIBE FLAG inserted\n");
-	}	
+	}
 	LM_DBG("record for subscribe from %.*s to %.*s inserted in datatbase\n",
 			presentity->watcher_uri->len, presentity->watcher_uri->s,
 			presentity->pres_uri->len, presentity->pres_uri->s);
@@ -564,9 +561,11 @@ done:
 		hentity->flag= flag;
 		run_pua_callbacks( hentity, msg);
 	}
-error:	
+error:
 	if(hentity)
-	{	
+	{
+		if(presentity->extra_headers.s) shm_free(presentity->extra_headers.s);
+		if(presentity->remote_contact.s) shm_free(presentity->remote_contact.s);
 		shm_free(hentity);
 		hentity= NULL;
 	}
@@ -574,7 +573,7 @@ error:
 }
 
 ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
-{	
+{
 	ua_pres_t* hentity= NULL;
 	int size;
 	str to_uri;
@@ -587,9 +586,6 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 
 	if(subs->outbound_proxy && subs->outbound_proxy->len && subs->outbound_proxy->s )
 		size+= sizeof(str)+ subs->outbound_proxy->len* sizeof(char);
-
-	if(subs->extra_headers && subs->extra_headers->s)
-		size+= sizeof(str)+ subs->extra_headers->len* sizeof(char);
 
 	hentity= (ua_pres_t*)shm_malloc(size);
 	if(hentity== NULL)
@@ -643,23 +639,35 @@ ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
 	{
 		CONT_COPY(hentity, hentity->id, subs->id);
 	}
-	if(subs->extra_headers)
-	{
-		hentity->extra_headers= (str*)((char*)hentity+ size);
-		size+= sizeof(str);
-		hentity->extra_headers->s= (char*)hentity+ size;
-		memcpy(hentity->extra_headers->s, subs->extra_headers->s,
-				subs->extra_headers->len);
-		hentity->extra_headers->len= subs->extra_headers->len;
-		size+= subs->extra_headers->len;
-	}
 	CONT_COPY(hentity, hentity->to_uri, to_uri);
+
+	if(subs->extra_headers && subs->extra_headers->s && subs->extra_headers->len)
+	{
+		hentity->extra_headers.s=
+			(char*)shm_malloc(subs->extra_headers->len* sizeof(char));
+		if(hentity->extra_headers.s== NULL)
+		{
+			LM_ERR("no more share memory\n");
+			goto error;
+		}
+		memcpy(hentity->extra_headers.s, subs->extra_headers->s,
+				subs->extra_headers->len);
+		hentity->extra_headers.len= subs->extra_headers->len;
+	}
+
 	hentity->flag= subs->source_flag;
 	hentity->event= subs->event;
 	hentity->ua_flag= hentity->ua_flag;
 	hentity->cb_param= subs->cb_param;
 	return hentity;
 
+error:
+	if(hentity)
+	{
+		if(hentity->extra_headers.s) shm_free(hentity->extra_headers.s);
+		shm_free(hentity);
+	}
+	return NULL;
 }
 
 ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
@@ -673,9 +681,6 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 
 	if(subs->outbound_proxy && subs->outbound_proxy->len && subs->outbound_proxy->s )
 		size+= sizeof(str)+ subs->outbound_proxy->len;
-
-	if(subs->extra_headers && subs->extra_headers->s)
-		size+= sizeof(str)+ subs->extra_headers->len;
 
 	if(subs->remote_contact.s)
 		size+= subs->remote_contact.len;
@@ -719,34 +724,37 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 		memcpy(hentity->outbound_proxy->s, subs->outbound_proxy->s, subs->outbound_proxy->len);
 		hentity->outbound_proxy->len= subs->outbound_proxy->len;
 		size+= subs->outbound_proxy->len;
-	}	
+	}
 
 	if(subs->id.s)
 	{
 		CONT_COPY(hentity, hentity->id, subs->id);
 	}
-	
+
 	if(subs->remote_contact.s)
 	{
 		CONT_COPY(hentity, hentity->remote_contact, subs->remote_contact);
 	}
 
-	if(subs->extra_headers)
-	{
-		hentity->extra_headers= (str*)((char*)hentity+ size);
-		size+= sizeof(str);
-		hentity->extra_headers->s= (char*)hentity+ size;
-		memcpy(hentity->extra_headers->s, subs->extra_headers->s,
-				subs->extra_headers->len);
-		hentity->extra_headers->len= subs->extra_headers->len;
-		size+= subs->extra_headers->len;
-	}
 	/* copy dialog information */
-	
 	CONT_COPY(hentity, hentity->to_tag, subs->to_tag);
 	CONT_COPY(hentity, hentity->from_tag, subs->from_tag);
 	CONT_COPY(hentity, hentity->call_id, subs->call_id);
-	
+
+	if(subs->extra_headers.s && subs->extra_headers.len)
+	{
+		hentity->extra_headers.s=
+				(char*)shm_malloc(subs->extra_headers.len* sizeof(char));
+		if(hentity->extra_headers.s== NULL)
+		{
+			LM_ERR("no more share memory\n");
+			goto error;
+		}
+		memcpy(hentity->extra_headers.s, subs->extra_headers.s,
+				subs->extra_headers.len);
+		hentity->extra_headers.len= subs->extra_headers.len;
+	}
+
 	if(expires< 0)
 		hentity->desired_expires= 0;
 	else
@@ -761,6 +769,13 @@ ua_pres_t* subs_cbparam_indlg(ua_pres_t* subs, int expires, int ua_flag)
 
 	return hentity;
 
+error:
+	if(hentity)
+	{
+		if(hentity->extra_headers.s) shm_free(hentity->extra_headers.s);
+		shm_free(hentity);
+	}
+	return NULL;
 }
 
 int send_subscribe(subs_info_t* subs)
@@ -833,7 +848,7 @@ int send_subscribe(subs_info_t* subs)
 			goto done;
 			commented this because of the strange type parameter in usrloc callback functions
 			*/
-			
+
 			LM_DBG("request for a subscription with update type"
 					" and no record found\n");
 			subs->flag= INSERT_TYPE;
@@ -881,7 +896,7 @@ int send_subscribe(subs_info_t* subs)
 						" do not send subscribe\n");
             
 				if (subs->event & PWINFO_EVENT)
-				{	
+				{
 					presentity->watcher_count++;
 				}
 				lock_release(&HashT->p_records[hash_index].lock);
@@ -889,9 +904,9 @@ int send_subscribe(subs_info_t* subs)
             
 			}
         
-		
+
 			if(subs->event & PWINFO_EVENT)
-			{	
+			{
 				if(subs->expires== 0)
 				{
 					presentity->watcher_count--;
@@ -910,9 +925,8 @@ int send_subscribe(subs_info_t* subs)
 						goto done;
 					}
 				}
-			}	
-			
-		}	
+			}
+		}
         */
 
 		dlg_t* td= NULL;

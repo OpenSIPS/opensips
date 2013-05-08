@@ -106,7 +106,7 @@ typedef struct ua_pres{
 	int version;
     int watcher_count;
 	str* outbound_proxy;
-	str* extra_headers;
+	str extra_headers;
 	str record_route;
 	str remote_contact;
 	str contact;

@@ -462,8 +462,6 @@ static int db_restore(void)
 
 			size= sizeof(ua_pres_t)+ sizeof(str)+ (pres_uri.len+ pres_id.len+
 						tuple_id.len)* sizeof(char);
-			if(extra_headers.s)
-					size+= sizeof(str)+ extra_headers.len* sizeof(char);
 
 			if(watcher_uri.s)
 				size+= sizeof(str)+ to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
@@ -525,16 +523,6 @@ static int db_restore(void)
 				p->version= row_vals[version_col].val.int_val;
 			}
 
-			if(extra_headers.s)
-			{
-				p->extra_headers= (str*)((char*)p+ size);
-				size+= sizeof(str);
-				p->extra_headers->s= (char*)p+ size;
-				memcpy(p->extra_headers->s, extra_headers.s, extra_headers.len);
-				p->extra_headers->len= extra_headers.len;
-				size+= extra_headers.len;
-			}
-
 			LM_DBG("size= %d\n", size);
 			p->event= row_vals[event_col].val.int_val;
 			p->expires= row_vals[expires_col].val.int_val;
@@ -553,6 +541,20 @@ static int db_restore(void)
 				}	
 				memcpy(p->etag.s, etag.s, etag.len);
 				p->etag.len= etag.len;
+			}
+
+			memset(&p->extra_headers, 0, sizeof(str));
+			if(extra_headers.s && extra_headers.len)
+			{
+				/* alloc separately */
+				p->extra_headers.s= (char*)shm_malloc(extra_headers.len);
+				if(p->extra_headers.s==  NULL)
+				{
+					LM_ERR("no more share memory\n");
+					goto error;
+				}
+				memcpy(p->extra_headers.s, extra_headers.s, extra_headers.len);
+				p->extra_headers.len= extra_headers.len;
 			}
 
 			print_ua_pres(p);
@@ -587,6 +589,7 @@ error:
 	if(p)
 	{
 		if(p->remote_contact.s) shm_free(p->remote_contact.s);
+		if(p->extra_headers.s) shm_free(p->extra_headers.s);
 		if(p->etag.s) shm_free(p->etag.s);
 		shm_free(p);
 	}
@@ -676,7 +679,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 		}
 
 		str_hdr = publ_build_hdr(expires, ev, NULL,
-				&p->etag, p->extra_headers, 0);
+				&p->etag, &p->extra_headers, 0);
 		if(str_hdr == NULL)
 		{
 			LM_ERR("while building extra_headers\n");
@@ -711,7 +714,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 			goto error;
 		}
 		LM_DBG("td->rem_uri= %.*s\n", td->rem_uri.len, td->rem_uri.s);
-		str_hdr= subs_build_hdr(&p->contact, expires,p->event,p->extra_headers);
+		str_hdr= subs_build_hdr(&p->contact, expires,p->event,&p->extra_headers);
 		if(str_hdr== NULL || str_hdr->s== NULL)
 		{
 			LM_ERR("while building extra headers\n");
@@ -753,15 +756,15 @@ error:
 	if(str_hdr)
 		pkg_free(str_hdr);
 	return -1;
-
 }
 
 static void db_update(unsigned int ticks,void *param)
 {
 	ua_pres_t* p= NULL;
-	db_key_t q_cols[20];
+	db_key_t q_cols[19];
+	db_val_t q_vals[19];
 	db_key_t db_cols[5];
-	db_val_t q_vals[21], db_vals[5];
+	db_val_t db_vals[5];
 	db_op_t  db_ops[1] ;
 	int n_query_cols= 0, n_query_update= 0;
 	int n_update_cols= 0;
@@ -888,6 +891,10 @@ static void db_update(unsigned int ticks,void *param)
 	db_vals[3].type = DB_INT;
 	db_vals[3].nul = 0;
 
+	db_cols[4]= &str_extra_headers_col;
+	db_vals[4].type = DB_STR;
+	db_vals[4].nul = 0;
+
 	if(pua_db== NULL)
 	{
 		LM_ERR("null database connection\n");
@@ -956,7 +963,17 @@ static void db_update(unsigned int ticks,void *param)
 					db_vals[1].val.int_val= p->cseq;
 					db_vals[2].val.str_val= p->etag;
 					db_vals[3].val.int_val= p->desired_expires;
-					n_update_cols= 4;
+					if(p->extra_headers.s && p->extra_headers.len)
+					{
+						db_vals[4].val.str_val= p->extra_headers;
+						n_update_cols= 5;
+					}
+					else
+					{
+						db_vals[4].val.str_val.s= NULL;
+						db_vals[4].val.str_val.len= 0;
+						n_update_cols= 4;
+					}
 
 					LM_DBG("Updating:n_query_update= %d\tn_update_cols= %d\n",
 							n_query_update, n_update_cols);
@@ -997,11 +1014,7 @@ static void db_update(unsigned int ticks,void *param)
 					q_vals[record_route_col].val.str_val = p->record_route;
 					q_vals[contact_col].val.str_val = p->contact;
 					q_vals[remote_contact_col].val.str_val = p->remote_contact;
-
-					if(p->extra_headers)
-						q_vals[extra_headers_col].val.str_val = *(p->extra_headers);
-					else
-						memset(&q_vals[extra_headers_col].val.str_val, 0, sizeof(str));
+					q_vals[extra_headers_col].val.str_val = p->extra_headers;
 
 					if(pua_dbf.insert(pua_db, q_cols, q_vals, n_query_cols)< 0)
 					{

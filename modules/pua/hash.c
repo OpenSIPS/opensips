@@ -48,7 +48,6 @@ static str str_watcher_uri_col= str_init("watcher_uri");
 static str str_event_col= str_init("event");
 static str str_remote_contact_col= str_init("remote_contact");
 
-
 void print_ua_pres(ua_pres_t* p)
 {
 	int now = (int)time(NULL);
@@ -72,9 +71,9 @@ void print_ua_pres(ua_pres_t* p)
 			LM_DBG("etag=[%.*s]\n", p->etag.len, p->etag.s);
 	}
 	LM_DBG("flag=[%d] event=[%d]\n", p->flag, p->event);
-	if (p->extra_headers->s && p->extra_headers->len)
+	if (p->extra_headers.s && p->extra_headers.len)
 		LM_DBG("extra_headers=[%.*s]\n",
-				p->extra_headers->len, p->extra_headers->s);
+				p->extra_headers.len, p->extra_headers.s);
 	if(p->expires > now)
 		LM_DBG("countdown=[%d] expires=[%d] desired_expires=[%d]\n",
 				p->expires - now, p->expires, p->desired_expires);
@@ -205,8 +204,9 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 	/* presentities with expires=0, waiting for reply and no etag are newly added
 	 * presentities which were not yet confirmed (no reply received for first PUBLISH)
 	 * and we should find such records !  -bogdan */
-		return 0;
+		return NULL;
 
+	LM_DBG("got presentity [%p]\n", p);
 	return p;
 }
 
@@ -298,8 +298,6 @@ ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
 
 	size= sizeof(ua_pres_t) + sizeof(str)+
 		publ->pres_uri->len+ publ->id.len;
-	if(publ->extra_headers)
-		size+= sizeof(str)+ publ->extra_headers->len;
 	if(publ->outbound_proxy.s)
 		size+= sizeof(str)+ publ->outbound_proxy.len;
 	if(tuple_id->s)
@@ -309,7 +307,7 @@ ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
 	if(presentity== NULL)
 	{
 		LM_ERR("no more share memory\n");
-		return 0;
+		goto error;
 	}
 	memset(presentity, 0, size);
 
@@ -325,14 +323,16 @@ ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
 //	presentity->id.s=(char*)presentity+ size;
 	CONT_COPY(presentity, presentity->id, publ->id);
 
-	if(publ->extra_headers)
+	if(publ->extra_headers && publ->extra_headers->s && publ->extra_headers->len)
 	{
-		presentity->extra_headers = (str*)((char*)presentity + size);
-		size+= sizeof(str);
-		presentity->extra_headers->s = (char*)presentity + size;
-		memcpy(presentity->extra_headers->s, publ->extra_headers->s, publ->extra_headers->len);
-		presentity->extra_headers->len = publ->extra_headers->len;
-		size+= publ->extra_headers->len;
+		presentity->extra_headers.s = (char*)shm_malloc(publ->extra_headers->len);
+		if(presentity->extra_headers.s == NULL)
+		{
+			LM_ERR("No more shared memory\n");
+			goto error;
+		}
+		memcpy(presentity->extra_headers.s, publ->extra_headers->s, publ->extra_headers->len);
+		presentity->extra_headers.len = publ->extra_headers->len;
 	}
 
 	if(publ->outbound_proxy.s)
@@ -353,6 +353,10 @@ ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
 	presentity->waiting_reply = 1;
 
 	return presentity;
+
+error:
+	if (presentity) shm_free(presentity);
+	return NULL;
 }
 
 /* insert in front; so when searching the most recent result is returned*/
@@ -506,6 +510,7 @@ void free_htable_entry(ua_pres_t* p)
 	else
 	if(p->remote_contact.s)
 		shm_free(p->remote_contact.s);
+	if(p->extra_headers.s) shm_free(p->extra_headers.s);
 	shm_free(p);
 }
 
@@ -561,6 +566,7 @@ void destroy_htable(void)
 			else
 				if(q->remote_contact.s)
 					shm_free(q->remote_contact.s);
+			if(q->extra_headers.s) shm_free(q->extra_headers.s);
 			shm_free(q);
 			q= NULL;
 		}

@@ -550,21 +550,41 @@ int send_publish( publ_info_t* publ )
 		lock_release(&HashT->p_records[hash_code].lock);
 		return 418;
 	}
-	if(presentity && presentity->waiting_reply)
+	if(presentity)
 	{
-		LM_DBG("Presentity is waiting for reply, queue this PUBLISH\n");
-		last = &presentity->pending_publ;
-		while (*last)
-			last = &((*last)->next);
-		*last = build_pending_publ(publ);
-		if(! *last)
+		/* handle extra headers */
+		if(presentity->extra_headers.s) shm_free(presentity->extra_headers.s);
+		presentity->extra_headers.len= 0;
+		if(publ->extra_headers && publ->extra_headers->s && publ->extra_headers->len)
 		{
-			LM_ERR("Failed to create pending publ record\n");
-			lock_release(&HashT->p_records[hash_code].lock);
-			return -1;
+			presentity->extra_headers.s= (char*)shm_malloc(publ->extra_headers->len);
+			if(presentity->extra_headers.s == NULL)
+			{
+				LM_ERR("while processing extra_headers\n");
+				lock_release(&HashT->p_records[hash_code].lock);
+				return -1;
+			}
+			memcpy(presentity->extra_headers.s, publ->extra_headers->s,
+					publ->extra_headers->len);
+			presentity->extra_headers.len= publ->extra_headers->len;
 		}
-		lock_release(&HashT->p_records[hash_code].lock);
-		return 0;
+		presentity->db_flag= UPDATEDB_FLAG;
+		if (presentity->waiting_reply)
+		{
+			LM_DBG("Presentity is waiting for reply, queue this PUBLISH\n");
+			last = &presentity->pending_publ;
+			while (*last)
+				last = &((*last)->next);
+			*last = build_pending_publ(publ);
+			if(! *last)
+			{
+				LM_ERR("Failed to create pending publ record\n");
+				lock_release(&HashT->p_records[hash_code].lock);
+				return -1;
+			}
+			lock_release(&HashT->p_records[hash_code].lock);
+			return 0;
+		}
 	}
 
 	return send_publish_int(presentity, publ, ev, hash_code);
