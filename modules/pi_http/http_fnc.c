@@ -2539,7 +2539,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	db_val_t *val;
 	str val_str = {NULL, 0};
 	int nr_rows;
-	ph_db_url_t *db_url;
+	ph_db_url_t *db_url = NULL;
 	db_res_t *res = NULL;
 	db_val_t *values;
 	db_row_t *rows;
@@ -2905,7 +2905,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	}
 	LM_ERR("You shoudn't end up here\n");
 error:
-	if (res)
+	if (db_url && res)
 		db_url->http_dbf.free_result(db_url->http_db_handle, res);
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
