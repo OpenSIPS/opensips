@@ -1,3 +1,917 @@
+=========================== Release 1.8.3 ==============================
+
+2013-05-08 20:23:31  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [10019] :
+
+	backport from trunk (rev #10017)
+	- fixed expiring of presentities in the pua module - remove from hash and DB.
+	  Credits go to Ovidiu Sas for reporting and helping with troubleshooting
+
+
+2013-05-08 20:15:34  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [10015] :
+
+	Updated version to 1.8.3
+
+
+2013-05-08 18:38:10  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10010] :
+
+	backport from trunk (rev #10008)
+	always enforce the column delimiter
+
+
+
+2013-05-08 16:38:49  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10004] :
+
+	allow digits in the Content-Type
+	Credits to Víctor Fernández Martínez
+
+
+
+2013-05-08 16:11:32  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10003] :
+
+	backport from 1.9 (rev #10001)
+
+	do not mess up existing dialog legs in case re-sizing the legs array fails due to no more share mem
+
+
+
+2013-05-08 14:44:34  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [10000] :
+
+	backport from trunk (rev #9998):
+	- fixed triggering of error route - reset the error info all the time after the error route execution, to be sure we have only 1 triggering. Not reseting the error info may trigger error route multiple time for the same error, due nested usage of run_action_list (for IF, WHILE and SWITCH statements)
+
+
+
+
+2013-05-07 14:32:45  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9993] :
+
+	backport from trunk (rev #9991)
+
+	GRUU fixes for building & matching GRUUs
+	Credits to Tolga Tarhan
+
+
+
+2013-04-28 18:55:12  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9981] :
+
+	backport from 1.9 (rev #9980)
+	fixed temporary GRUU bug that lead to infinite loop
+	Credits to Tolga Tarhan
+
+
+
+2013-04-22 18:01:38  Liviu Chircu <liviu at opensips dot org> 
+	* [9977] :
+
+	backport from trunk (rev #9975):
+	[core]: Fixed a typecast bug in crc32_uint
+
+
+
+2013-04-19 13:58:29  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9971] :
+
+	backport from trunk (rev #9969):
+	fixed the contact removel when using the force registration flag with limited number of contact.
+	- Credits to Kiss Karoly for reporting and assisting with the debugging / testing
+	- Closes bug id 3610662 on SF
+
+
+
+2013-04-19 12:02:54  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9968] :
+
+	Backported from trunk (rev #9966):
+	event_rabbitmq: read/write commands only once
+	Thanks to Brett and Trevor for helping in debugging this
+	Closes bug report #361001
+
+
+2013-04-18 18:36:24  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9965] :
+
+	Backported from trunk (rev #9963):
+	double check if the dialog can be found after created
+
+
+2013-04-18 18:29:53  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9962] :
+
+	Backported from trunk (rev #9960):
+	restore route type after running error route
+
+
+2013-04-18 17:28:51  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9959] :
+
+	Backported from trunk (rev #9957):
+	prevent REINVITEs from overwriting acc internal structures
+
+
+2013-04-10 18:49:21  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9954] :
+
+	backport from trunk (rev #9952):
+	- fixed re-PUBLISH in pua framework (when the PEUBLISH expire is shorter than presentity lifetime)
+	- fixed the callback parameter for the re-PUBLISH request.
+	  Many thanks to Damien Sandras for reporting and helping with troubleshooting and testing this.
+
+
+
+2013-04-08 19:25:45  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9951] :
+
+	Backported from trunk (rev #9949):
+	Updated rtpproxy documentation for bridge mode
+
+
+2013-04-08 18:57:22  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9948] :
+
+	backport from trunk (rev #9946):
+	- fixed choosing the outbound interface in serial forking scenarios
+	  Thanks to John Quick for reporting and helping with the troubleshooting
+
+
+
+2013-04-01 19:58:58  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9943] :
+
+	uac_registrant: backport from trunk (rev# 9935)
+	 - do NOT alter the initial expires interval for a binding
+	 - related to issue #3609028 reported by Paul (dipegang)
+
+
+
+2013-03-25 19:09:01  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9932] :
+
+	backport from 1.9 (rev #9930)
+
+	fixed deadlock in case of internal error
+
+
+
+2013-03-25 18:07:00  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9929] :
+
+	Backported from trunk (rev #9927):
+	make sure that DEFS is not inherited between executions
+
+
+2013-03-22 16:28:53  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9924] :
+
+	backport from trunk (rev #9922)
+	fixed docs about the hep_capture_on param
+
+
+
+2013-03-14 17:50:58  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9914] :
+
+	backport from trunk (rev #9912)
+	- fixed parsing the name of gateways in carrier definition (Gateways with minus char allowed in gateways, but carriers are not loading with such gateways)
+	  Credits go to Nick Altmann
+	  Closes patch #3607865
+
+
+
+2013-03-11 10:41:36  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9891] :
+
+	fixed probing mode 1 behavior
+
+
+
+2013-03-08 11:41:06  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9886] :
+
+	backport from trunk (rev #9884):
+	- move log from ERR to DBG - when testing the SDP for private IPs, not find an SDP is not actually an error.
+	  Reported by Jan ONDREJ.
+
+
+2013-03-07 17:40:32  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9883] :
+
+	backport from trunk (rev #9881):
+	 fix docs - MF hdr is no longer forwarded throught B2B, but a new one is generated for the new call.
+	   Reported by Ryan Bullock
+	   Closes bug #3607102
+
+
+
+2013-03-05 16:30:27  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9860] :
+
+	backport from trunk (rev #9858)
+
+	fixed issue with hanged transactions in case one forked branch fails to be sent
+
+
+
+2013-03-05 11:11:49  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9857] :
+
+	backport from trunk (rev #9855)
+
+	fixed dlg_db_sync crash while in no-db mode
+	Credits to Nick Altmann
+
+
+
+2013-02-28 17:29:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9850] :
+
+	- undo some change which accidentaly got on SVN :(....reverting
+	  Thanks to Razvan Crainea for spotting this
+
+
+2013-02-27 16:32:36  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9845] :
+
+	backport from 1.9 (rev #9843)
+
+	fixed regression - can now directly compile with TLS=1 make without setting the USE_TLS define via menuconfig
+
+
+
+2013-02-26 14:12:05  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9833] :
+
+	backport from trunk (rev #9831):
+	- consider foundable in hash table the presentities which were just created and are waiting for reply (they have no timeout, no etag, pending for initial reply). This will avoid creating multiple presentities if we have a burst of publishes but with slow repling.
+	  Many thanks to Damien Sandras  for reporting and helping with the debugging.
+
+
+
+2013-02-25 12:17:12  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9820] :
+
+	backport from trunk (rev #9818)
+
+	fixed missing return for Cancels already matched from script
+
+
+
+2013-02-22 18:41:28  Liviu Chircu <liviu at opensips dot org> 
+	* [9817] :
+
+	backport from trunk (rev #9812):
+	route_to_carrier() and route_to_gw() must accept both pvars and strings as parameters
+
+
+
+2013-02-22 18:39:31  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9816] :
+
+	backport from trunk (rev #9813):
+	- fixed loading data from db - do not discard GW/Carriers if no rules - we can do routing directly to a carrier (route_to_carrrier() )
+	  Reported by Nick Altmann
+	  Closes bug #3605439
+
+
+
+2013-02-21 14:20:55  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9811] :
+
+	backport from trunk (rev #9809)
+
+	automatically set TLS=1 when using menuconfig to enable USE_TLS
+
+
+
+2013-02-19 17:05:51  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9806] :
+
+	Backported from trunk (rev #9804):
+	Fixed ratelimit bug where the counter reaches -1
+	Reported by Matt Williams
+	Closes bug #3603732
+
+
+2013-02-17 20:37:09  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9802] :
+
+	- fixed URL for module docs
+
+
+
+2013-02-17 20:33:40  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9799] :
+
+	- fixed help text for "db migrate"
+
+
+
+2013-02-17 09:39:12  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9795] :
+
+	backport from trunk (rev #9793):
+	- fixed bug in marking as used (in a LB failover scenario) the destinations with IDs bigger than 8.
+	  Thanks to Seth Schultz for reporting and help with troubleshooting
+
+
+
+2013-02-15 11:15:25  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9791] :
+
+	backport from trunk (rev #9789):
+	- fixed missing braket in SCTP code
+	- fixed some warnings in SCTP code
+	  Reported by Muhammad Shahzad
+
+
+
+2013-02-08 17:51:22  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9777] :
+
+	backport from trunk (rev #9766 + #9775):
+	- fixed memory coruption when using siptrace diversion to homer via HEP protocol :
+	   - avoid changing fromip and toip strings in pipport2su (to avoid corruption of socket names or segfault when trying to change a static string in data segment
+	   - the static default string includes now port also (to avoid errors in pipport2su).
+	   Many thanks to Seth Schultz for reporting and help in troubleshooting
+
+
+
+2013-02-08 11:49:22  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9774] :
+
+	Backported from trunk (rev #9772):                                                                                                                                                                                   
+	fixed the rl_dec_count() function to actually decrease the counter when used
+	without cachedb backed
+
+
+2013-02-07 13:57:30  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9769] :
+
+	backport from trunk (rev #9767):
+	- subs_phtable_list MI command must flush as it may output a large amount of data.
+	  Credits go to Walter Doekes
+
+
+2013-02-06 18:04:55  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9763] :
+
+	Backported from trunk (rev #9761):
+	Removed forgotten debugging message
+
+
+2013-02-05 18:47:28  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9756] :
+
+	Backported from trunk (rev #9754);
+	In case of child init errors, mark startup_route as done even if it was not executed
+	- this prevents the attendant from blocking while waiting for the startup route to be finished.
+	Reported by Ovidiu Sas
+
+
+2013-02-05 15:25:20  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9749] :
+
+	fixed fetching of counter value
+	Reported by Julien Chavanton
+
+
+
+2013-02-05 12:32:52  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9746] :
+
+	backport from 1.9 (rev #9743)
+
+	properly set the prefixes len for cachedb 
+
+
+
+2013-02-05 12:30:21  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9745] :
+
+	backport from trunk (rev #9677)
+
+	fixed race condition that would lead to invalid memory access when using dialog pinging
+
+
+
+2013-02-04 19:23:42  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9735] :
+
+	backport from trunk (rev #9734):
+	- added IPPROTO_SCTP to socket() for SCTP.
+	  Credits go to Michael Schloh von Bennewitz
+
+
+2013-02-01 15:12:28  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9718] :
+
+	backport from trunk (rev #9716):
+	- fixed parser for Min-SE header
+	  Reported by Nick Altmann
+	  Closes bug #3602776
+
+
+
+2013-01-29 17:30:33  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9701] :
+
+	backport from trunk (rev #9700):
+	- fixed ugly bug in computing the fromIP and toIP (because of some mixture of STRING and STR type at db level).
+	  Thanks to Vlad Paiu for assisting with the debugging ;)
+	  Closes bug #3576351
+
+
+
+2013-01-29 17:07:22  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9697] :
+
+	Backported from trunk (rev #9635):
+	Added a xmlrpc_force_to_xml_chars() implementation for
+XMLRPC versions older than 1.12
+
+
+2013-01-29 12:28:11  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9690] :
+
+	backport from trunk (rev #9688)
+
+	do not allocate tmrec structure if time recurrence for rule is empty
+
+
+
+2013-01-29 12:17:58  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9683] :
+
+	backport from trunk (rev #9682):
+	- TMCB_ON_FAILURE_RO replaced with TMCB_ON_FAILURE as TMCB_ON_FAILURE_RO is no longer used.
+
+
+
+2013-01-29 10:33:56  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9680] :
+
+	Fixed compile error of timersub on Solaris.
+
+2013-01-28 15:55:51  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9673] :
+
+	backport from trunk (rev 9671):
+	- fixed who the NOTIFYs are built when triggered by a PUBLISH with expire 0; This is actually a revert of commit 9351, which seems to have some side-effects.
+	  Thanks to Damien Sandras for helping with the the debugging.
+	  Closes bug #3588141 
+
+
+
+2013-01-28 12:04:41  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9660] :
+
+	Backport from trunk (part of rev #9656)
+	- fixed deadlock in the TCP stack between TCP main process and a TCP worked (under heavy load).
+	  Credits for reporting it go to David Sanders
+	  Closes bug #3585606
+
+
+2013-01-25 12:00:42  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9654] :
+
+	backport from trunk (rev #9653):
+	fix returning NULL if json is not found
+
+
+2013-01-25 11:42:41  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9651] :
+
+	backport from trunk (rev #9650):
+	fixed default values for the primary_ip and alternate_ip parameters
+	better documentation
+
+
+
+2013-01-23 12:40:28  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9628] :
+
+	backport from trunk (rev #9627):
+	-fixed crash in a debug printing - pattern may be NULL
+	 Reproted by Nathaniel L Keeling III
+
+
+
+2013-01-23 11:30:29  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9625] :
+
+	Backported from trunk (rev #9624):
+	avoid including non-xml characters in the mi_xmlrpc response
+
+
+2013-01-22 16:18:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9617] :
+
+	backport from trunk (rev #9616)
+	- fixed a race condition when a CANCEL is received when cancelled INVITE is not yet completely processed:
+	* When t_forward_nonack() start, transaction is still not cancelled.
+	* When cancel_invite() process transaction, not all branches are created yet.
+	Result : cancel_invite() process correctly created branches but not ones created later. This is ending with never cancelled branches.
+
+	Credits for the spoting and solving this go to Christophe Sollet 
+	Closes patch #3545138.
+
+
+2013-01-22 16:13:19  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9615] :
+
+	parser/sdp: Fixed double free
+	 - Found and fixed by Hugh Waite @ Crocodile RCS
+	 - backport from trunk Rev: 9504
+
+
+
+2013-01-22 13:33:26  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9613] :
+
+	backport from trunk (rev #9612)
+	- fixed detection of T38 fax codec in SDP
+
+
+2013-01-22 13:19:16  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9610] :
+
+	backport from trunk (rev #9497)
+	- re-work of parse_hname2() (function that parses the name of headers) for fixing:
+	- do not accept spaces in the the name of the headers (not RFC compliant)
+	- do not include trailing spaces (between name and : separator) in the name (this affects detection of non-statdart headers - like "Foo" versus "Foo "
+	- buffer overflow when you have a non-standard header that are a prefix of a standard hdr (like "Content-L" versus "Content-Length") - this may leas to scaning entire memory space of the processs and even overflowing it.
+	- small various optimization in looking for the end of header name (like "From" versus "fromfoo")
+
+
+
+2013-01-18 07:29:55  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9596] :
+
+	Updated sample configuration file.
+
+2013-01-18 07:10:59  Di-Shi Sun <di-shi at transnexus dot com> 
+	* [9595] :
+
+	Fixed overlapping string copy bug.
+
+2013-01-17 19:41:52  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9575] :
+
+	backport from trunk (rev #9573):
+	- fixed the calculation of the global average by the _bm_log_timer function.
+	  Credits go to David Sanders
+	  Closes patch  #3555236
+
+
+2013-01-17 19:41:05  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9574] :
+
+	b2b_entities: fix proxy authentication
+	 - credits goes to shimaore (sourceforge id)
+	 - closes patch 3587231
+	 - backport from trunk rev: 9572
+
+
+
+2013-01-15 17:01:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9554] :
+
+	backport from trunk (rev #9553)
+	Fixes perl_exec2() in perlfunc.c. The message object that is passed to the perl-script
+	was left hanging after every call to perl_exec() in the opensips script.
+	Moved the declaration of OpenSIPS::Message object to the SAVETMPS/FREETMPS
+	segment so it will be freed before the function returns.
+	Tested by using Devel::Gladiator. 
+
+	  Credits go to Boris Ratner ( ratner2 on SF)
+	  Closes patch #3599210
+
+
+
+2013-01-09 10:57:32  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9542] :
+
+	Backported from trunk (r9255):
+	removed drouting blacklist error when no gateways are defined in a specific group
+
+
+2012-12-19 16:06:52  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9538] :
+
+	Backported from trunk (rev #9537):
+	Added events description in documentation for modules rtpproxy, dispatcher and pike
+	Added group description in the E_DISPATCHER_STATUS event
+	Renamed E_RTPPROXY_STATUS status names to active/inactive
+
+
+2012-12-17 20:21:53  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9534] :
+
+	backport from trunk (rev 9533)
+	- fixed some error messages
+	- fixed triggering the snmpgget command at startup - attendant process does not exists in fork=no mode
+	  Related to bug 3584278
+
+
+
+2012-12-17 20:15:31  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9531] :
+
+	backport from trunk (rev #9530):
+	- fixed parsing MI commands with no input for commands marked with input (commands with optional input)
+	  Closes bug 3590418
+	  Reported by Digipigeon (SF ID)
+
+
+
+2012-12-15 01:58:39  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9526] :
+
+	uac_registrant: fix crash when running from db_text with empty optional parameters
+	 - backport from trunk: rev 9525
+
+
+
+2012-12-14 17:58:38  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9521] :
+
+	backport from trunk (rev #9520)
+
+	for top hiding, force parsing of all via headers in order to safely remove all of them
+
+
+
+2012-12-13 19:54:27  sobomax 
+	* [9519] :
+
+	Also free any callback memory, which is not shared.
+
+	Bug ID:	3582691
+
+
+
+2012-12-12 17:39:55  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9506] :
+
+	backport from trunk (rev #9505):
+	- fixed limit check for natping_processes
+	  Closes bug 3594839.
+	  Credits go to Nick Altmann
+
+
+
+2012-12-12 11:55:42  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9502] :
+
+	backport from trunk (rev #9445)
+	- fixed internal fallback (inside of do_routing() function) if a rule has no GWs or all GWs are disabled.  Reported by Rico (SF ID)
+	  Closes bug #3587515
+
+
+
+
+2012-12-12 11:23:03  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9499] :
+
+	fixed potential dialog timer list corruption in cases where the dialog timeout is updated via the dialog_timeout_avp from script
+
+
+
+2012-12-11 12:13:26  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9493] :
+
+	Backported from trunk (rev #9492):
+	fixed ratelimit documentation regarding the default algorithm used
+
+
+2012-12-10 15:47:39  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9490] :
+
+	backport from trunk (rev #9489)
+	- bogus records in address table should be skipped 
+
+
+2012-12-10 15:37:51  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9488] :
+
+	backport from trunk (rev #9487):
+	- added libterm-readline-perl-perl as dep for osipsconsole package -> uses the PERL stub for ReadLine
+
+
+
+2012-12-10 15:35:29  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9486] :
+
+	backport from trunk (rev @9485):
+	-fixing of variable initialization (from exported variables versus default values)
+	-fixed historing
+	-fixed address related commands
+
+
+
+2012-12-07 11:43:04  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9483] :
+
+	backport from trunk (rev #9482):
+	- fixed setdebug() to accept also negative logging levels (like -1 = L_ERR)
+	  Credits go to David Sanders
+	  Closes patch #3593300
+
+
+
+2012-12-06 18:52:12  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9480] :
+
+	backport from trunk (rev #9479):
+	- fixed the NULL value in script variables - without an explicit NULL value, it is impossible to test the variables when expecting a string value (NULL was previously considered a 0 INT value).
+
+
+
+2012-12-04 21:51:26  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9477] :
+
+	fixed missing info for tcp thresholds
+
+2012-12-04 19:06:57  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9476] :
+
+	backport from trunk (rev #9475):
+	- switched annoying LM_INFO to DBG
+
+
+
+2012-12-04 12:00:28  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9473] :
+
+	backport from trunk (rev #9472):
+	 - fixed seg fault : all DR functions must check if DR data is available - data is loaded by first child and it may take a while.
+
+
+
+2012-12-04 10:44:07  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9470] :
+
+	Backported from trunk (rev #9469):
+	avp_print now displays both real name and id of the AVP
+
+
+2012-11-30 21:14:10  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9467] :
+
+	backport from trunk (rev #9466):
+	- before using be sure that TO hdr and FROM TAG are present.
+	  Reported by Nick Altmann
+	  Closes bug #3589142
+
+
+
+2012-11-30 19:22:17  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9465] :
+
+	backport from trunk (rev #9464)
+
+	fixed mem leak on Redis reconnection
+
+
+
+2012-11-30 10:26:03  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9462] :
+
+	Backporting from trunk (rev# 9461):
+	* On some Solaris systems, the iov maximum buffers number is 16. However
+	rtpproxy tries to send more, therefore the communication fails. This fix
+	prevents these cases by concatenating the last buffers.
+	 Credits go to Nathaniel L Keeling III for reporting and providing testing
+	environment
+
+	* added -n flag in documentation
+
+
+2012-11-29 15:06:49  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9459] :
+
+	mi_http: fix a few memory leaks
+	 - related to bug  #3590411
+	 - backport from trunk: rev 9455
+
+
+
+2012-11-28 18:50:54  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9457] :
+
+	backport from 1.7 (rev #9456)
+
+	fixed readme about the timeout_avp behavior
+	Credits to Walter Doekes
+
+
+
+2012-11-27 12:29:37  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9454] :
+
+	Backported from trunk (rev #9453):
+	fixed exported name of the sipmsgops module
+	Patch provided by Walter Doekes (#3590336)
+
+
+2012-11-23 16:01:16  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9452] :
+
+	backport from trunk (rev #9451)
+
+	fixed bug where dialog was marked as removed from ping list without having the ping list lock
+
+
+
+2012-11-23 13:38:41  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9449] :
+
+	- fix bug in port matching (side effect of the fix for doing SIP-wise DNS lookup on destination). This affects only goes_to_gw() function.
+
+
+2012-11-22 19:14:30  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9447] :
+
+	backport from trunk (rev #9366)
+
+	- bug fixed: if no interface explicitly set, select as outbound interface the interface the message was received rather than the interface served by the process.
+
+
+
+2012-11-22 18:39:57  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9446] :
+
+	fixed outgoing interface selection for locally generated messages
+
+
+
+2012-11-09 19:44:45  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9438] :
+
+	drouting: remove bogus semicolon in structure declaration
+	          (most likely a copy/paste error)
+	           backport from trunk (rev 9437)
+
+
+
+2012-11-06 22:53:41  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9430] :
+
+	backport from trunk (rev #9429):
+	-fixed the version and definition of the "aliases" table
+	 Reported by John Quick.
+
+
+
+2012-11-05 20:01:07  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9425] :
+
+	Backported from trunk (rev# 9424):
+Fixed exported parameter bug in event_* modules documentation
+
+
+2012-11-05 12:02:22  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9423] :
+
+	backport from trunk (rev #9422)
+
+	fixed memory corruption
+
+
+
+2012-11-02 09:02:36  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9421] :
+
+	backport from trunk (rev #9420)
+
+	fixed bug introduced in earlier dialog fix :|
+
+
+
+2012-11-01 18:35:16  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9418] :
+
+	Revised ChangeLog and Credits
+
+
+2012-11-01 17:17:51  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9417] :
+
+	Updated minor version to 2 in Makefile.defs
+
+
+2012-11-01 17:12:30  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9416] :
+
+	Updated version, changelog and credits for 1.8.2
+
+
 =========================== Release 1.8.2 ==============================
 
 2012-11-01 16:51:46  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
