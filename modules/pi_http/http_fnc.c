@@ -2849,6 +2849,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			}
 		}while (nr_rows>0);
 		db_url->http_dbf.free_result(db_url->http_db_handle, res);
+		res=NULL;
 		goto finish_page;
 		break;
 	case DB_CAP_INSERT:
@@ -2904,6 +2905,8 @@ int ph_run_pi_cmd(int mod, int cmd,
 	}
 	LM_ERR("You shoudn't end up here\n");
 error:
+	if (res)
+		db_url->http_dbf.free_result(db_url->http_db_handle, res);
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
 	return -1;

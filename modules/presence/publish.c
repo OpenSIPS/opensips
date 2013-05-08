@@ -279,6 +279,9 @@ no_notify:
 	}
 
 error:
+	if(result)
+		pa_dbf.free_result(pa_db, result);
+
 	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 	{
 		LM_ERR("in use_table\n");
@@ -291,9 +294,6 @@ error:
 		LM_ERR("cleaning expired messages\n");
 
 clean:
-	if(result)
-		pa_dbf.free_result(pa_db, result);
-
 	if(p)
 	{
 		for(i= 0; i< n; i++)
