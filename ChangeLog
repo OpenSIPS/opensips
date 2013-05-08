@@ -1,3 +1,354 @@
+=========================== Release 1.9.1 ==============================
+
+2013-05-08 20:22:28  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [10018] :
+
+	backport from trunk (rev #10017)
+	- fixed expiring of presentities in the pua module - remove from hash and DB.
+	  Credits go to Ovidiu Sas for reporting and helping with troubleshooting$
+
+
+
+2013-05-08 20:15:34  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [10016] :
+
+	Updated version to 1.9.1
+
+
+2013-05-08 18:56:35  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10014] :
+
+	fixed warning introduced by previous commit
+
+
+
+2013-05-08 18:44:48  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10012] :
+
+	backport from trunk (rev #10011)
+
+	always free the DB result ( or else subsequent select queries will/might fail )
+
+
+
+2013-05-08 18:37:10  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10009] :
+
+	backport from trunk (rev #10008)
+	always enforce the column delimiter
+
+
+
+2013-05-08 17:24:30  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10005] :
+
+	backport from 1.8 (rev #10004)
+
+	allow digits in the Content-Type
+	Victor Fernandez Martinez 
+
+
+
+2013-05-08 16:06:58  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [10001] :
+
+	do not mess up existing dialog legs in case re-sizing the legs array fails due to no more share mem
+
+
+
+2013-05-08 14:43:50  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9999] :
+
+	backport from trunk (rev #9998):
+	- fixed triggering of error route - reset the error info all the time after the error route execution, to be sure we have only 1 triggering. Not reseting the error info may trigger error route multiple time for the same error, due nested usage of run_action_list (for IF, WHILE and SWITCH statements)
+
+
+
+2013-05-07 14:31:01  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9992] :
+
+	backport from trunk (rev #9991)
+
+	GRUU fixes for building & matching GRUUs
+	Credits to Tolga Tarhan
+
+
+
+2013-05-03 17:22:16  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9989] :
+
+
+	b2b_logic: set proper Contact header for external scripts
+	 - closes sf 3612046: opensips crashing when excuting b2b_logic extern script
+	 - backport from trunk rev #9988
+
+
+
+2013-04-28 18:51:26  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9980] :
+
+	fixed temporary GRUU bug that lead to infinite loop
+	Credits to Tolga Tarhan
+
+
+
+2013-04-22 18:00:30  Liviu Chircu <liviu at opensips dot org> 
+	* [9976] :
+
+	backport from trunk (rev #9975):
+	[core]: Fixed a typecast related bug in crc32_uint
+
+
+
+2013-04-22 12:20:36  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9974] :
+
+	backport from trunk (rev #9973)
+
+	Improved error handling
+	Better re-connect handling
+	Credits to Ryan Bullock
+
+
+
+2013-04-19 13:55:53  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9970] :
+
+	backport from trunk (rev #9969):
+	fixed the contact removel when using the force registration flag with limited number of contact.
+	- Credits to Kiss Karoly for reporting and assisting with the debugging / testing
+	- Closes bug id 3610662 on SF
+
+
+
+2013-04-19 12:02:47  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9967] :
+
+	Backported from trunk (rev #9966):
+	event_rabbitmq: read/write commands only once
+	Thanks to Brett and Trevor for helping in debugging this
+	Closes bug report #361001
+
+
+2013-04-18 18:36:14  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9964] :
+
+	Backported from trunk (rev #9963):
+	double check if the dialog can be found after created
+
+
+2013-04-18 18:29:45  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9961] :
+
+	Backported from trunk (rev #9960):
+	restore route type after running error route
+
+
+2013-04-18 17:28:35  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9958] :
+
+	Backported from trunk (rev #9957):
+	prevent REINVITEs from overwriting acc internal structures
+
+
+2013-04-10 18:48:40  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9953] :
+
+	backport from trunk (rev #9952):
+	- fixed re-PUBLISH in pua framework (when the PEUBLISH expire is shorter than presentity lifetime)
+	- fixed the callback parameter for the re-PUBLISH request.
+	  Many thanks to Damien Sandras for reporting and helping with troubleshooting and testing this.
+
+
+
+2013-04-08 19:25:03  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9950] :
+
+	Backported from trunk (rev #9949):
+	Updated rtpproxy documentation for bridge mode
+
+
+2013-04-08 18:56:29  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9947] :
+
+	backport from trunk (rev #9946):
+	- fixed choosing the outbound interface in serial forking scenarios
+	  Thanks to John Quick for reporting and helping with the troubleshooting
+
+
+
+
+2013-04-01 19:46:26  Ovidiu Sas <osas at voipembedded dot com> 
+	* [9942] :
+
+	uac_registrant: backport from trunk (rev# 9934, rev# 9935)
+	 - fix mispelled id for registrant timer check
+	 - do NOT alter the initial expires interval for a binding
+	 - related to issue #3609028 reported by Paul (dipegang)
+
+
+
+2013-03-28 12:37:25  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [9938] :
+
+	Backport from trunk r9937
+
+	Fixed matching identity rules when using percent encoded URIs
+
+
+2013-03-25 18:48:06  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9930] :
+
+	fixed deadlock in case of internal error
+
+
+
+2013-03-25 18:06:48  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9928] :
+
+	Backported from trunk (rev #9927):
+	make sure that DEFS is not inherited between executions
+
+
+2013-03-22 16:52:31  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9926] :
+
+	backport from trunk (rev #9925)
+
+	fixed cachedb_url format documentation
+
+
+
+2013-03-22 16:27:37  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9923] :
+
+	backport from trunk (rev #9922)
+	fixed docs about the hep_capture_on param
+
+
+
+2013-03-19 14:05:41  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [9921] :
+
+	Backport from trunk r9919
+
+	Only send PIDF manipulation when there are no other presence bodies
+
+
+2013-03-19 14:04:12  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [9920] :
+
+	Backport from trunk r9918
+
+	Fix handling PUBLISH with Expires 0
+
+	SF bug ID: 3607182
+
+
+2013-03-14 17:46:07  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9913] :
+
+	backport from trunk (rev #9912)
+	- fixed parsing the name of gateways in carrier definition (Gateways with minus char allowed in gateways, but carriers are not loading with such gateways)
+	  Credits go to Nick Altmann
+	  Closes patch #3607865
+
+
+
+2013-03-11 11:49:29  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9895] :
+
+	backport from trunk (rev #9894)
+
+	fixed dlg_db_sync to match the recent dialog.id table changes
+
+
+
+2013-03-11 10:43:01  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9892] :
+
+	backport from 1.8 (rev #9891)
+
+	fixed probing mode 1 behavior
+
+
+
+2013-03-08 13:52:28  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9889] :
+
+	Backported from trunk (rev #9888);
+	fixed documentation typo
+
+
+2013-03-08 11:40:35  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9885] :
+
+	backport from trunk (rev #9884):
+	- move log from ERR to DBG - when testing the SDP for private IPs, not find an SDP is not actually an error.
+	  Reported by Jan ONDREJ.
+
+
+
+2013-03-07 17:39:36  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9882] :
+
+	backport from trunk (rev #9881):
+	 fix docs - MF hdr is no longer forwarded throught B2B, but a new one is generated for the new call.
+	  Reported by Ryan Bullock
+	  Closes bug #3607102
+
+
+
+2013-03-07 14:12:07  Bogdan-Andrei Iancu, <bogdan at opensips dot org> 
+	* [9879] :
+
+	backport from trunk (rev #9878):
+	- path field in location increased from 126 to 255 to accomodate larger path hdr from overSIP.
+	  Reported by Vallimamod Abdullah
+	    Closing bug report #3606244
+
+
+
+2013-03-06 16:07:53  Saúl Ibarra Corretgé <saul at ag-projects dot com> 
+	* [9872] :
+
+	Backport from trunk r9871
+
+	Fixed compilation when using system malloc for pkg memory
+
+
+2013-03-05 16:28:34  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9859] :
+
+	backport from trunk (rev #9858)
+
+	fixed issue with hanged transactions in case one forked branch fails to be sent
+
+
+
+2013-03-05 11:09:28  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9856] :
+
+	backport from trunk (rev #9855)
+
+	fixed dlg_db_sync crash while in no-db mode
+	Credits to Nick Altmann
+
+
+
+2013-02-27 16:27:43  Vlad Paiu <vladpaiu at opensips dot org> 
+	* [9843] :
+
+	fixed regression - can now directly compile with TLS=1 make without setting the USE_TLS define via menuconfig
+
+
+
+2013-02-27 15:44:38  Razvan Crainea <razvancrainea at opensips dot org> 
+	* [9842] :
+
+	Updated 1.9 stable Changelog
+
+
 =========================== Release 1.9.0 ==============================
 
 2013-02-27 15:41:54  Razvan Crainea <razvancrainea at opensips dot org> 
