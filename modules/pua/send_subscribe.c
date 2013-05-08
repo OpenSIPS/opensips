@@ -48,13 +48,12 @@
 
 void print_subs(subs_info_t* subs)
 {
-	LM_DBG("pres_uri= %.*s - len: %d\n", 
-			subs->pres_uri->len,  subs->pres_uri->s, subs->pres_uri->len );
-	LM_DBG("watcher_uri= %.*s - len: %d\n",
-			subs->watcher_uri->len,  subs->watcher_uri->s,
-			subs->watcher_uri->len);
+	LM_DBG("pres_uri[%d]=[%.*s]\n", subs->pres_uri->len,
+			subs->pres_uri->len,  subs->pres_uri->s);
+	LM_DBG("watcher_uri[%d]=[%.*s]\n", subs->watcher_uri->len,
+			subs->watcher_uri->len,  subs->watcher_uri->s);
 	if(subs->to_uri.s)
-		LM_DBG("to_uri= %.*s\n", subs->to_uri.len, subs->to_uri.s);
+		LM_DBG("to_uri=[%.*s]\n", subs->to_uri.len, subs->to_uri.s);
 }
 
 str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
