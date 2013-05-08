@@ -156,9 +156,8 @@ void run_error_route(struct sip_msg* msg, int force_reset)
 	LM_DBG("triggering\n");
 	swap_route_type(old_route, ERROR_ROUTE);
 	run_actions(error_rlist.a, msg);
-	/* if continue, then reset error info */
-	if( force_reset || !( action_flags&(ACT_FL_EXIT|ACT_FL_RETURN) ) )
-		init_err_info();
+	/* reset error info */
+	init_err_info();
 	set_route_type(old_route);
 }
 
