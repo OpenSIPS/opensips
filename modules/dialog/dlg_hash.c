@@ -311,17 +311,18 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
 		str *mangled_from,str *mangled_to)
 {
-	struct dlg_leg* leg;
+	struct dlg_leg* leg,*new_legs;
 	rr_t *head = NULL, *rrp;
 
 	if ( (dlg->legs_no[DLG_LEGS_ALLOCED]-dlg->legs_no[DLG_LEGS_USED])==0) {
-		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
-		dlg->legs = (struct dlg_leg*)shm_realloc(dlg->legs,
-			dlg->legs_no[DLG_LEGS_ALLOCED]*sizeof(struct dlg_leg));
-		if (dlg->legs==NULL) {
+		new_legs = (struct dlg_leg*)shm_realloc(dlg->legs,
+			(dlg->legs_no[DLG_LEGS_ALLOCED]+2)*sizeof(struct dlg_leg));
+		if (new_legs==NULL) {
 			LM_ERR("Failed to resize legs array\n");
 			return -1;
 		}
+		dlg->legs=new_legs;
+		dlg->legs_no[DLG_LEGS_ALLOCED] += 2;
 		memset( dlg->legs+dlg->legs_no[DLG_LEGS_ALLOCED]-2, 0,
 			2*sizeof(struct dlg_leg));
 	}
