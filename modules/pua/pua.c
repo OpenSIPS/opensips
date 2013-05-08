@@ -625,17 +625,10 @@ static void hashT_clean(unsigned int ticks,void *param)
 
 				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 						p->pres_uri->s);
-				p->desired_expires = p->expires;
-				if(update_pua(p, i)< 0)
-				{
-					LM_ERR("failed to update record\n");
-					/* delete it */
-					q = p->next;
-					delete_htable_safe(p, p->hash_index);
-					p = q;
-				}
-				else
-					p = p->next;
+				/* delete it */
+				q = p->next;
+				delete_htable_safe(p, p->hash_index);
+				p = q;
 			}
 			else
 				p= p->next;
