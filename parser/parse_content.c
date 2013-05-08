@@ -41,7 +41,7 @@
 
 
 #define is_mime_char(_c_) \
-	(isalpha((int)_c_) || (_c_)=='-' || (_c_)=='+' || (_c_)=='.')
+	(isalnum((int)_c_) || (_c_)=='-' || (_c_)=='+' || (_c_)=='.')
 #define is_char_equal(_c_,_cs_) \
 	( (isalpha((int)_c_)?(((_c_)|0x20)==(_cs_)):((_c_)==(_cs_)))==1 )
 
