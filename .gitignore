@@ -1,0 +1,24 @@
+*.o
+*.d
+*.so
+*.swp
+tags
+
+# /
+/cfg.tab.c
+/cfg.tab.h
+/lex.yy.c
+/opensips
+/debian
+/curses.out
+/.svnrevision
+
+
+# /doc/
+/doc/database
+
+# /menuconfig/
+/menuconfig/configure
+
+# /utils/opensipsunix/
+/utils/opensipsunix/opensipsunix
