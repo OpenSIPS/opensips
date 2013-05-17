@@ -273,7 +273,10 @@ fi
 DISPATCHER_ID_COLUMN=id
 DISPATCHER_SETID_COLUMN=setid
 DISPATCHER_DESTINATION_COLUMN=destination
+DISPATCHER_SOCKET_COLUMN=socket
 DISPATCHER_FLAGS_COLUMN=flags
+DISPATCHER_WEIGHT_COLUMN=weight
+DISPATCHER_ATTRS_COLUMN=attrs
 DISPATCHER_DESCRIPTION_COLUMN=description
 
 # drouting tables
@@ -492,13 +495,13 @@ usage_dispatcher() {
 	mecho " -- command 'dispatcher' - manage dispatcher"
 	echo
 cat <<EOF
-   * Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 1 'outbound gateway'
-   *            dispatcher addgw 2 sip:1.2.3.4:5050 3 ''
+   * Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 2 50 'og1' 'Outbound Gateway1'
+   *            dispatcher addgw 2 sip:1.2.3.4:5050 '' 3 50 'og2' 'Outbound Gateway2'
    *            dispatcher rmgw 4
  dispatcher show ..................... show dispatcher gateways
  dispatcher reload ................... reload dispatcher gateways
  dispatcher dump ..................... show in memory dispatcher gateways
- dispatcher addgw <setid> <destination> <flags> <description>
+ dispatcher addgw <setid> <destination> <socket> <flags> <weight> <attrs> [description]
             .......................... add gateway
  dispatcher rmgw <id> ................ delete gateway
 EOF
