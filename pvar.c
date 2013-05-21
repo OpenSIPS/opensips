@@ -3074,10 +3074,13 @@ static pv_export_t _pv_names_table[] = {
 	{{"an", (sizeof("an")-1)}, /* */
 		PVT_AUTH_NONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 5},
+	{{"auth.nonce", (sizeof("auth.nonce")-1)}, /* */
+		PVT_AUTH_NONCE, pv_get_authattr, 0,
+		0, 0, pv_init_iname, 5},
 	{{"auth.resp", (sizeof("auth.resp")-1)}, /* */
 		PVT_AUTH_RESPONSE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 6},
-	{{"auth.nonce", (sizeof("auth.nonce")-1)}, /* */
+	{{"auth.cnonce", (sizeof("auth.cnonce")-1)}, /* */
 		PVT_AUTH_CNONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 7},
 	{{"auth.opaque", (sizeof("auth.opaque")-1)}, /* */
