@@ -2013,7 +2013,7 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 {
 	unsigned short j;
 	for ( j=0 ; j<pgwa->ips_no ; j++)
-		if ( (pgwa->ports[j]==0 || pgwa->ports[j]==port) &&
+		if ( (pgwa->ports[j]==0 || port==0 || pgwa->ports[j]==port) &&
 		ip_addr_cmp( &pgwa->ips[j], ip) ) return 1;
 	return 0;
 }
