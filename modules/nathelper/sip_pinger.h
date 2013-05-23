@@ -130,17 +130,31 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
+	str address, port;
 	char *p;
 	int len;
 
+	if (s->adv_name_str.len)
+		address = s->adv_name_str;
+	else if (default_global_address.len)
+		address = default_global_address;
+	else
+		address = s->address_str;
+	if (s->adv_port_str.len)
+		port = s->adv_port_str;
+	else if (default_global_port.len)
+		port = default_global_port;
+	else
+		port = s->port_no_str;
+
 	if ( sipping_method.len + 1 + curi->len + s_len(" SIP/2.0"CRLF) +
-		s_len("Via: SIP/2.0/UDP ") + s->address_str.len +
-		1 + s->port_no_str.len + s_len(";branch=0") +
+		s_len("Via: SIP/2.0/UDP ") + address.len +
+		1 + port.len + s_len(";branch=0") +
 		(path->len ? (s_len(CRLF"Route: ") + path->len) : 0) +
 		s_len(CRLF"From: ") +  sipping_from.len + s_len(";tag=") + 8 +
 		s_len(CRLF"To: ") + curi->len +
 		s_len(CRLF"Call-ID: ") + sipping_callid.len + 1 + 8 + 1 + 8 + 1 +
-		s->address_str.len +
+		address.len +
 		s_len(CRLF"CSeq: 1 ") + sipping_method.len +
 		s_len(CRLF"Max-Forwards: "MAX_FORWARD) +
 		s_len(CRLF"Content-Length: 0" CRLF CRLF)
@@ -155,9 +169,9 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 	*(p++) = ' ';
 	append_str( p, *curi);
 	append_fix( p, " SIP/2.0"CRLF"Via: SIP/2.0/UDP ");
-	append_str( p, s->address_str);
+	append_str( p, address);
 	*(p++) = ':';
-	append_str( p, s->port_no_str);
+	append_str( p, port);
 	if (path->len) {
 		append_fix( p, ";branch=0"CRLF"Route: ");
 		append_str( p, *path);
@@ -180,7 +194,7 @@ static inline char* build_sipping(str *curi, struct socket_info* s, str *path,
 	len = 8;
 	int2reverse_hex( &p, &len, get_ticks() );
 	*(p++) = '@';
-	append_str( p, s->address_str);
+	append_str( p, address);
 	append_fix( p, CRLF"CSeq: 1 ");
 	append_str( p, sipping_method);
 	append_fix( p, CRLF"Max-Forwards: "MAX_FORWARD);
