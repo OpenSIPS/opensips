@@ -47,6 +47,7 @@ typedef struct {
 	struct cachedb_pool_con_t *next;
 
 	int type; /* single node or cluster node */
+	unsigned short slots_assigned; /* total slots for cluster */
 	cluster_node *nodes; /* one or more Redis nodes */
 } redis_con;
 

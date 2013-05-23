@@ -77,9 +77,9 @@ uint16_t crc16(const char *buf, int len)
     return crc;
 }
 
-unsigned int redisHash(str* key) 
+unsigned int redisHash(redis_con *con, str* key) 
 {
-	return crc16(key->s,key->len) & 0x0FFF;
+	return crc16(key->s,key->len) & con->slots_assigned;
 }
 
 inline cluster_node *get_redis_connection(redis_con *con,str *key)
@@ -90,7 +90,7 @@ inline cluster_node *get_redis_connection(redis_con *con,str *key)
 	if (con->type & REDIS_SINGLE_INSTANCE)
 		return con->nodes;
 	else {
-		hash_slot = redisHash(key);
+		hash_slot = redisHash(con, key);
 		for (it=con->nodes;it;it=it->next) {
 			if (it->start_slot <= hash_slot && it->end_slot >= hash_slot)
 				return it;
