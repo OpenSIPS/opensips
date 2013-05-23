@@ -110,7 +110,7 @@ int parse_dep_line(char *line,select_menu *parent)
 /* Parse the include modules line */
 int parse_include_line(char *line,select_menu *parent)
 {
-	char *p,*start,*end;
+	char *p,*start=NULL,*end;
 	int len = strlen(line),mod_len=0;
 	int found_mod=0;
 
