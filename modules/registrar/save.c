@@ -749,7 +749,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	sctx.max_contacts = -1;
 
 	sctx.flags = 0;
-	if (_f && _f[0]!=0) {
+	if ( _f ) {
 		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s)!=0) {
 			LM_ERR("invalid flags parameter");
 			return -1;
