@@ -39,6 +39,7 @@
 #include "dlg_handlers.h"
 
 extern struct tm_binds d_tmb;
+extern char * rr_param;
 
 #define RECORD_ROUTE "Record-Route: "
 #define RECORD_ROUTE_LEN (sizeof(RECORD_ROUTE)-1)
@@ -78,7 +79,7 @@ int dlg_del_vias(struct sip_msg* req)
 int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 {
 	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
-	int offset;
+	int offset,rr_param_len;
 	int len,n;
 	char *prefix=NULL,*suffix=NULL,*p,*p_init,*ct_username=NULL;
 	int prefix_len,suffix_len,ct_username_len=0;
@@ -138,8 +139,9 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	
 	p_init = p = suffix;
 	*p++ = ';';
-	memcpy(p,"did",3);
-	p+=3;
+	rr_param_len = strlen(rr_param);
+	memcpy(p,rr_param,rr_param_len);
+	p+=rr_param_len;
 	*p++ = '=';
 
 	n = RR_DLG_PARAM_SIZE - (p-p_init);
