@@ -1037,7 +1037,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
 		goto error;
 	}
-	if (entity->no < 0 || entity->no > 1)
+	if (entity->no > 1)
 	{
 		LM_ERR("unexpected entity->no [%d] for tuple [%p]\n", entity->no, tuple);
 		goto error;
@@ -1378,7 +1378,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		LM_ERR("No b2b_key match found [%.*s], src=%d\n", key->len, key->s, src);
 		goto error;
 	}
-	if (entity->no < 0 || entity->no > 1)
+	if (entity->no > 1)
 	{
 		LM_ERR("unexpected entity->no [%d] for tuple [%p]\n", entity->no, tuple);
 		goto error;
