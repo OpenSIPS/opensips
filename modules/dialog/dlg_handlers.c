@@ -71,7 +71,8 @@
 #include "dlg_req_within.h"
 #include "dlg_tophiding.h"
 
-static str       rr_param;
+extern str       rr_param;
+
 static pv_spec_t *timeout_avp;
 static int       default_timeout;
 static int       shutdown_done = 0;
@@ -87,12 +88,8 @@ extern stat_var *failed_dlgs;
 
 int  last_dst_leg = -1;
 
-void init_dlg_handlers(char *rr_param_p,
-		pv_spec_t *timeout_avp_p ,int default_timeout_p)
+void init_dlg_handlers(pv_spec_t *timeout_avp_p ,int default_timeout_p)
 {
-	rr_param.s = rr_param_p;
-	rr_param.len = strlen(rr_param.s);
-
 	timeout_avp = timeout_avp_p;
 	default_timeout = default_timeout_p;
 }

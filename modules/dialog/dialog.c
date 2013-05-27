@@ -71,9 +71,9 @@ static int child_init(int rank);
 static void mod_destroy(void);
 
 /* module parameter */
-static int dlg_hash_size = 4096;
 int log_profile_hash_size = 4;
-static char* rr_param = "did";
+str rr_param = {"did",3};
+static int dlg_hash_size = 4096;
 static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
 static int ping_interval = 30; /* seconds */
@@ -211,7 +211,7 @@ static param_export_t mod_params[]={
 	{ "enable_stats",          INT_PARAM, &dlg_enable_stats         },
 	{ "hash_size",             INT_PARAM, &dlg_hash_size            },
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
-	{ "rr_param",              STR_PARAM, &rr_param                 },
+	{ "rr_param",              STR_PARAM, &rr_param.s               },
 	{ "timeout_avp",           STR_PARAM, &timeout_spec.s           },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
 	{ "ping_interval",         INT_PARAM, &ping_interval            },
@@ -613,10 +613,12 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (rr_param==0 || rr_param[0]==0) {
+	if (rr_param.s==0 || rr_param.s[0]==0) {
 		LM_ERR("empty rr_param!!\n");
 		return -1;
-	} else if (strlen(rr_param)>MAX_DLG_RR_PARAM_NAME) {
+	}
+	rr_param.len = strlen(rr_param.s);
+	if (rr_param.len>MAX_DLG_RR_PARAM_NAME) {
 		LM_ERR("rr_param too long (max=%d)!!\n", MAX_DLG_RR_PARAM_NAME);
 		return -1;
 	}
@@ -738,8 +740,7 @@ static int mod_init(void)
 	}
 
 	/* init handlers */
-	init_dlg_handlers( rr_param,
-		timeout_spec.s?&timeout_avp:0, default_timeout);
+	init_dlg_handlers(timeout_spec.s?&timeout_avp:0, default_timeout);
 
 	/* init timer */
 	if (init_dlg_timer(dlg_ontimeout)!=0) {
@@ -914,7 +915,7 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 
 static int w_match_dialog(struct sip_msg *msg)
 {
-	int backup,i,rr_param_len;
+	int backup,i;
 	void *match_param = NULL;
 	struct sip_uri *r_uri;
 
@@ -940,15 +941,14 @@ static int w_match_dialog(struct sip_msg *msg)
 	}
 
 	r_uri = &msg->parsed_uri;
-	rr_param_len = strlen(rr_param);
 
 	if (check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1 &&
 		msg->route == NULL) {
 		/* Seems we are in the topo hiding case :
 		 * we are in the R-URI and there are no other route headers */
 		for (i=0;i<r_uri->u_params_no;i++)
-			if (r_uri->u_name[i].len == rr_param_len &&
-				memcmp(rr_param,r_uri->u_name[i].s,rr_param_len)==0) {
+			if (r_uri->u_name[i].len == rr_param.len &&
+				memcmp(rr_param.s,r_uri->u_name[i].s,rr_param.len)==0) {
 				LM_DBG("We found DID param in R-URI with value of %.*s \n",
 					r_uri->u_val[i].len,r_uri->u_val[i].s);
 				/* pass the param value to the matching funcs */
