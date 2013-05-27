@@ -1003,13 +1003,23 @@ static int use_next_gw(struct sip_msg* msg)
 			if (avp) destroy_avp(avp);
 		}
 
-		/* remove old gw ID */
+		/* remove old gw ID and search next one */
 		avp = NULL;
 		do {
 			if (avp) destroy_avp(avp);
 			avp = search_first_avp(gw_id_avp.type, gw_id_avp.name, NULL, 0);
 		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
-		if (avp) destroy_avp(avp);
+		if (!avp) {
+			LM_WARN("no GWs found at all -> have you done do_routing in script ?? \n");
+			return -1;
+		}
+		do {
+			if (avp) destroy_avp(avp);
+			avp = search_first_avp(gw_id_avp.type, gw_id_avp.name, NULL, 0);
+		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+		/* any GW found ? */
+		if (!avp)
+			goto rule_fallback;
 
 		/* search for the first RURI AVP containing a string */
 		avp_ru = NULL;
@@ -1025,12 +1035,7 @@ static int use_next_gw(struct sip_msg* msg)
 		LM_DBG("new RURI set to <%.*s>\n", val.s.len,val.s.s);
 
 		/* get value for next gw ID from avp */
-		if (avp) {
-			get_avp_val(avp, &val);
-		} else {
-			/* if no other ID found, simply use the GW as good */
-			break;
-		}
+		get_avp_val(avp, &val);
 
 		/* we have an ID, so we can check the GW state */
 		lock_start_read( ref_lock );
