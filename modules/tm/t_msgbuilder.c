@@ -872,6 +872,9 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	if (w-buf != *len ) abort();
 #endif
 
+	/* make buffer NULL terminated */
+	buf[*len] = 0;
+
 	pkg_free(via.s);
 	return buf;
 
