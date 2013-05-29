@@ -31,7 +31,7 @@ all_utils:=$(addprefix utils/, $(all_utils))
 
 
 # normal rules
-$(NAME): $(NEWSVNREVISION) $(objs) $(ALLDEP)
+$(NAME): $(NEWREVISION) $(objs) $(ALLDEP)
 	@echo "Linking $(NAME)"
 	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
 
@@ -45,13 +45,14 @@ dep: $(depends)
 .PHONY: static
 static: $(objs)
 
-.PHONY: dosvnrev
-dosvnrev:
-	@echo "New SVN revision: $(SVNREVISION)"
+.PHONY: dosetrev
+dosetrev:
+	@echo "New $(VERSIONTYPE) revision: $(THISREVISION)"
 	@if [ -f "main.o" ] ; then \
 		rm main.o ; \
 	fi
-	@echo "$(SVNREVISION)" >.svnrevision
+	@echo "$(THISREVISION)" >.$(VERSIONTYPE)revision
+
 
 .PHONY: docbook-clean
 docbook-clean:

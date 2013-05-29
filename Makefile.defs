@@ -282,29 +282,50 @@ CC   := $(shell echo "$${CC}")
 LEX  := $(shell echo "$${LEX}")
 YACC := $(shell echo "$${YACC}")
  
-ifeq ($(SVNVERSION),)
-SVNVERSION = $(shell which svnversion)
+ifeq ($(VERSIONTYPE),)
+VERSIONTYPE = $(shell if [ -d ".svn" ]; then \
+			  		echo "svn"; \
+				elif [ -d ".git" ]; then \
+					echo "git"; \
+				fi )
 endif
 
-ifeq ($(OLDSVNREVISION),)
-OLDSVNREVISION = $(shell if [ -f ".svnrevision" ] ; then \
-					 cat .svnrevision ;\
-				 fi )
+ifneq ($(VERSIONTYPE),)
+  ifeq ($(GETVERSION),)
+    ifeq ($(VERSIONTYPE),svn)
+    GETVERSION = $(shell which svnversion)
+    GETVERSIONOPTS = -n -c .
+    endif
+    ifeq ($(VERSIONTYPE),git)
+    GETVERSION = $(shell which git)
+    GETVERSIONOPTS = rev-parse --short HEAD
+    endif
+  endif
+ 
+  ifeq ($(OLDREVISION),)
+  OLDREVISION = $(shell if [ -f ".$(VERSIONTYPE)revision" ] ; then \
+ 					 cat .$(VERSIONTYPE)revision ;\
+ 				 fi )
+  endif
+ 
+  ifeq ($(THISREVISION),)
+  THISREVISION = $(shell if [ -f main.c -a -f Makefile.defs ] ; then \
+ 				if [ -x "$(GETVERSION)" ] ; then \
+ 					$(GETVERSION) $(GETVERSIONOPTS) ;\
+ 				fi ;\
+ 		fi )
+  endif
+ 
+  ifneq ($(THISREVISION),)
+  NEWREVISION = $(shell if [ "$(THISREVISION)" != "$(OLDREVISION)" ] ; then \
+  						echo "dosetrev" ; \
+  					fi )
+  else
+  THISREVISION = unknown
+  endif
+ 
 endif
 
-ifeq ($(SVNREVISION),)
-SVNREVISION = $(shell if [ -d .svn -a -f main.c -a -f Makefile.defs ] ; then \
-				if [ -x "$(SVNVERSION)" ] ; then \
-					$(SVNVERSION) -n -c . ;\
-				fi ;\
-		fi )
-endif
-
-ifneq ($(SVNREVISION),)
-NEWSVNREVISION = $(shell if [ "$(SVNREVISION)" != "$(OLDSVNREVISION)" ] ; then \
-						echo "dosvnrev" ; \
-					fi )
-endif
 
 ifeq ($(DBXML2HTML),)
 DBXML2HTML = $(shell which xsltproc)
@@ -490,8 +511,8 @@ DEFS+= $(extra_defs) \
 # use make mode=debug all instead. Anyway now by default opensips 
 # is  compiled w/ debugging symbols in all cases (-g). --andrei
 
-ifneq ($(SVNREVISION),)
-	DEFS+= -DSVNREVISION='"$(SVNREVISION)"' 
+ifneq ($(VERSIONTYPE),)
+	DEFS+= -DVERSIONTYPE='"$(VERSIONTYPE)"' -DTHISREVISION='"$(THISREVISION)"'
 endif
 
 ifneq ($(FREERADIUS),)

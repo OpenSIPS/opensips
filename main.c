@@ -166,13 +166,9 @@ void print_ct_constants(void)
 #ifdef USE_TCP
 	printf("poll method support: %s.\n", poll_support);
 #endif
-	printf("svnrevision: %s\n",
-#ifdef SVNREVISION
-	SVNREVISION
-#else
-	"unknown"
+#ifdef VERSIONTYPE
+	printf("%s revision: %s\n", VERSIONTYPE, THISREVISION);
 #endif
-	);
 }
 
 /* global vars */
