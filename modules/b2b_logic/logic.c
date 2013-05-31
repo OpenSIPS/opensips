@@ -757,6 +757,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* store this sdp */
 		if(tuple->b1_sdp.s)
 			shm_free(tuple->b1_sdp.s);
+		if (tuple->b1_sdp.s==tuple->sdp)
+			tuple->sdp = 0;
 		tuple->b1_sdp.s = 0;
 		if(body)
 		{
