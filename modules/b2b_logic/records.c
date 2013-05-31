@@ -374,6 +374,7 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 							LM_ERR("inconsistent tuple [%p]->[%.*s]\n",
 							tuple, tuple->key->len, tuple->key->s);
 					}
+					break;
 				default:
 					LM_CRIT("we should never end up here\n");
 			}
