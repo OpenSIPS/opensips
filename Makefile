@@ -370,6 +370,7 @@ tar:
 		--exclude=$(notdir $(CURDIR))/tmp* \
 		--exclude=$(notdir $(CURDIR))/debian* \
 		--exclude=.svn* \
+		--exclude=.git* \
 		--exclude=*.[do] \
 		--exclude=*.so \
 		--exclude=*.il \
