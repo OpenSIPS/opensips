@@ -649,22 +649,30 @@ skip_before:
 				break;
 			case LUMP_DEL:
 				/* fix overlapping deleted zones */
-				if (t->u.offset < s_offset){
-					/* change len */
-					if (t->len>s_offset-t->u.offset)
-							t->len-=s_offset-t->u.offset;
-					else t->len=0;
-					t->u.offset=s_offset;
+				//if (t->u.offset < s_offset){
+				//	/* change len */
+				//	if (t->len>s_offset-t->u.offset)
+				//			t->len-=s_offset-t->u.offset;
+				//	else t->len=0;
+				//	t->u.offset=s_offset;
+				//}
+				/* lump inside a delete area ? */
+				if (s_offset > t->u.offset) {
+					continue;
 				}
 				s_offset=t->u.offset+t->len;
 				new_len-=t->len;
 				break;
 			case LUMP_NOP:
 				/* fix offset if overlapping on a deleted zone */
-				if (t->u.offset < s_offset){
-					t->u.offset=s_offset;
-				}else
-					s_offset=t->u.offset;
+				//if (t->u.offset < s_offset){
+				//	t->u.offset=s_offset;
+				//}else
+				//	s_offset=t->u.offset;
+				/* lump inside a delete area ? */
+				if (s_offset<t->u.offset) {
+					continue;
+				}
 				/* do nothing */
 				break;
 			default:
@@ -1043,8 +1051,12 @@ skip_after:
 				break;
 			case LUMP_NOP:
 			case LUMP_DEL:
+				/* skip this lump if the "offset" is still in a "deleted" area */
+				if (s_offset > t->u.offset) {
+					continue;
+				}
 				/* copy till offset */
-				if (s_offset>t->u.offset){
+				if (s_offset>t->u.offset){ /* this should never happen !! */
 					LM_WARN("(%d) overlapped lumps offsets,"
 						" ignoring(%x, %x)\n", t->op, s_offset,t->u.offset);
 					/* this should've been fixed above (when computing len) */
