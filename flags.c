@@ -42,6 +42,9 @@
 /* several lists of maximum MAX_FLAG flags */
 struct flag_entry *flag_lists[FLAG_LIST_COUNT];
 
+/* buffer used to offer string representations of flag bitmasks */
+static char print_buffer[PRINT_BUFFER_SIZE];
+
 /*********************** msg flags ****************************/
 
 int setflag( struct sip_msg* msg, flag_t flag ) {
@@ -78,6 +81,27 @@ int flag_idx2mask(int *flag)
 		*flag = 1<<(*flag);
 	}
 	return 0;
+}
+
+str print_flag_bitmask(enum flag_type type, int bitmask)
+{
+	struct flag_entry *entry;
+	str ret;
+
+	ret.s   = print_buffer;
+	ret.len = sprintf(print_buffer, "{ ");
+	for (entry = flag_lists[type]; entry; entry = entry->next) {
+
+		if (bitmask & (1 << entry->bit)) {
+			memcpy(ret.s + ret.len, entry->name.s, entry->name.len);
+			ret.len += entry->name.len;
+
+			ret.s[ret.len++] = ' ';
+		}
+	}
+
+	ret.len += sprintf(ret.s + ret.len, "}");
+	return ret;
 }
 
 /**
