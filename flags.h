@@ -34,6 +34,7 @@
 typedef unsigned int flag_t;
 
 #define MAX_FLAG  ((unsigned int)( sizeof(flag_t) * CHAR_BIT - 1 ))
+#define PRINT_BUFFER_SIZE         2048
 #define NAMED_FLAG_ERROR          33
 
 #define fix_flag_name(_s, _flag)                         \
@@ -45,7 +46,12 @@ typedef unsigned int flag_t;
 		}                                                \
 	 } while (0)
 
-enum { FLAG_TYPE_MSG=0, FLAG_TYPE_SCRIPT, FLAG_TYPE_BRANCH, FLAG_LIST_COUNT };
+enum flag_type {
+	FLAG_TYPE_MSG=0,
+	FLAG_TYPE_SCRIPT,
+	FLAG_TYPE_BRANCH,
+	FLAG_LIST_COUNT,
+};
 
 struct sip_msg;
 
@@ -63,6 +69,12 @@ int resetflag( struct sip_msg* msg, flag_t flag );
 int isflagset( struct sip_msg* msg, flag_t flag );
 int flag_idx2mask(int *flag);
 
+/**
+ * returns a string representation of the named flags set in the bitmask
+ * 
+ * Note: prints data in a static buffer
+ */
+str print_flag_bitmask(enum flag_type type, int bitmask);
 
 unsigned int fixup_flag(int flag_type, str *flag_name);
 int get_flag_id_by_name(int flag_type, char *flag_name);

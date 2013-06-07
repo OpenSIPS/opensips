@@ -964,12 +964,16 @@ static int pv_get_msg_len(struct sip_msg *msg, pv_param_t *param,
 }
 
 static int pv_get_flags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
+                         pv_value_t *res)
 {
-	if(msg==NULL)
+	str buf;
+
+	if (!msg)
 		return -1;
 
-	return pv_get_uintval(msg, param, res, msg->flags);
+	buf = print_flag_bitmask(FLAG_TYPE_MSG, msg->flags);
+
+	return pv_get_strval(msg, param, res, &buf);
 }
 
 static inline char* int_to_8hex(int val)
@@ -993,52 +997,30 @@ static inline char* int_to_8hex(int val)
 	return outbuf;
 }
 
-static int pv_get_hexflags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str s;
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	s.s = int_to_8hex(msg->flags);
-	s.len = 8;
-	return pv_get_strintval(msg, param, res, &s, (int)msg->flags);
-}
-
 static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	return pv_get_uintval(msg, param, res, getb0flags());
-}
+	str buf;
 
-static int pv_get_hexbflags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str s;
-	if(res==NULL)
+	if (!msg)
 		return -1;
 
-	s.s = int_to_8hex((int)getb0flags());
-	s.len = 8;
-	return pv_get_strintval(msg, param, res, &s, (int)getb0flags());
+	buf = print_flag_bitmask(FLAG_TYPE_BRANCH, getb0flags());
+
+	return pv_get_strval(msg, param, res, &buf);
 }
 
 static int pv_get_sflags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	return pv_get_uintval(msg, param, res, getsflags());
-}
+	str buf;
 
-static int pv_get_hexsflags(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str s;
-	if(res==NULL)
+	if (!msg)
 		return -1;
 
-	s.s = int_to_8hex((int)getsflags());
-	s.len = 8;
-	return pv_get_strintval(msg, param, res, &s, (int)getsflags());
+	buf = print_flag_bitmask(FLAG_TYPE_SCRIPT, getsflags());
+
+	return pv_get_strval(msg, param, res, &buf);
 }
 
 static int pv_get_callid(struct sip_msg *msg, pv_param_t *param,
@@ -2774,84 +2756,6 @@ error:
 	return -1;
 }
 
-int pv_set_mflags(struct sip_msg* msg, pv_param_t *param,
-		int op, pv_value_t *val)
-{
-	if(msg==NULL || param==NULL)
-	{
-		LM_ERR("bad parameters\n");
-		return -1;
-	}
-					
-	if(val == NULL)
-	{
-		msg->flags = 0;
-		return 0;
-	}
-
-	if(!(val->flags&PV_VAL_INT))
-	{
-		LM_ERR("assigning non-int value to msg flags\n");
-		return -1;
-	}
-
-	msg->flags = val->ri;
-
-	return 0;
-}
-
-int pv_set_sflags(struct sip_msg* msg, pv_param_t *param,
-		int op, pv_value_t *val)
-{
-	if(msg==NULL || param==NULL)
-	{
-		LM_ERR("bad parameters\n");
-		return -1;
-	}
-					
-	if(val == NULL)
-	{
-		setsflagsval(0);
-		return 0;
-	}
-
-	if(!(val->flags&PV_VAL_INT))
-	{
-		LM_ERR("assigning non-int value to script flags\n");
-		return -1;
-	}
-	
-	setsflagsval((unsigned int)val->ri);
-
-	return 0;
-}
-
-int pv_set_bflags(struct sip_msg* msg, pv_param_t *param,
-		int op, pv_value_t *val)
-{
-	if(msg==NULL || param==NULL)
-	{
-		LM_ERR("bad parameters\n");
-		return -1;
-	}
-					
-	if(val == NULL)
-	{
-		setb0flags(0);
-		return 0;
-	}
-
-	if(!(val->flags&PV_VAL_INT))
-	{
-		LM_ERR("assigning non-int value to branch 0 flags\n");
-		return -1;
-	}
-	
-	setb0flags((unsigned int)val->ri);
-
-	return 0;
-}
-
 /********* end PV set functions *********/
 
 int pv_parse_scriptvar_name(pv_spec_p sp, str *in)
@@ -3102,10 +3006,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
 	{{"bf", (sizeof("bf")-1)}, /* */
-		PVT_BFLAGS, pv_get_bflags, pv_set_bflags,
-		0, 0, 0, 0},
-	{{"bF", (sizeof("bF")-1)}, /* */
-		PVT_HEXBFLAGS, pv_get_hexbflags, pv_set_bflags,
+		PVT_BFLAGS, pv_get_bflags, 0,
 		0, 0, 0, 0},
 	{{"branch", (sizeof("branch")-1)}, /* */
 		PVT_BRANCH, pv_get_branch_fields, pv_set_branch,
@@ -3204,10 +3105,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_MSG_BUF, pv_get_msg_buf, 0,
 		0, 0, 0, 0},
 	{{"mf", (sizeof("mf")-1)}, /* */
-		PVT_FLAGS, pv_get_flags, pv_set_mflags,
-		0, 0, 0, 0},
-	{{"mF", (sizeof("mF")-1)}, /* */
-		PVT_HEXFLAGS, pv_get_hexflags, pv_set_mflags,
+		PVT_FLAGS, pv_get_flags, 0,
 		0, 0, 0, 0},
 	{{"mi", (sizeof("mi")-1)}, /* */
 		PVT_MSGID, pv_get_msgid, 0,
@@ -3315,10 +3213,7 @@ static pv_export_t _pv_names_table[] = {
 		PVT_RCVPORT, pv_get_rcvport, 0,
 		0, 0, 0, 0},
 	{{"sf", (sizeof("sf")-1)}, /* */
-		PVT_SFLAGS, pv_get_sflags, pv_set_sflags,
-		0, 0, 0, 0},
-	{{"sF", (sizeof("sF")-1)}, /* */
-		PVT_HEXSFLAGS, pv_get_hexsflags, pv_set_sflags,
+		PVT_SFLAGS, pv_get_sflags, 0,
 		0, 0, 0, 0},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
