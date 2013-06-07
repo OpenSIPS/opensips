@@ -127,6 +127,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 
 
 static str val_buf = { NULL, 0};
+static int val_buf_size;
 
 
 int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
@@ -139,7 +140,11 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 
 	id = _get_name_id(name);
 
-	val = val_has_buf ? ival : &val_buf;
+	if (!val_has_buf) {
+		val = &val_buf;
+		val->len = val_buf_size;
+	} else
+		val = ival;
 
 	/* lock dialog */
 	dlg_lock_dlg( dlg );
@@ -153,10 +158,16 @@ int fetch_dlg_value(struct dlg_cell *dlg, str *name,str *ival, int val_has_buf)
 			if (dv->val.len > val->len) {
 				val->s = (char*)pkg_realloc(val->s,dv->val.len);
 				if (val->s==NULL) {
+					if (!val_has_buf)
+						val_buf_size = 0;
+
 					dlg_unlock_dlg( dlg );
 					LM_ERR("failed to do realloc for %d\n",dv->val.len);
 					return -1;
 				}
+
+				if (!val_has_buf)
+					val_buf_size = dv->val.len;
 			}
 			memcpy( val->s, dv->val.s, dv->val.len );
 			val->len = dv->val.len;
