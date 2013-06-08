@@ -40,12 +40,28 @@ ifeq ($(ORAPATH),)
 	    echo $(SYSBASE)/lib64/oracle$(ORAVERDIR) )
 endif
 ifeq ($(ORAPATH),)
-    ORAPATH=$(shell [ -f $(SYSBASE)/lib/oracle$(ORAVERDIR)/libocci.so ] && \
-	    echo $(SYSBASE)/lib/oracle$(ORAVERDIR) )
+    ORAPATH=$(shell [ -f $(LOCALBASE)/lib64/oracle$(ORAVERDIR)/lib/libocci.so ] && \
+	    echo $(LOCALBASE)/lib64/oracle$(ORAVERDIR)/lib )
+endif
+ifeq ($(ORAPATH),)
+    ORAPATH=$(shell [ -f $(SYSBASE)/lib64/oracle$(ORAVERDIR)/lib/libocci.so ] && \
+	    echo $(SYSBASE)/lib64/oracle$(ORAVERDIR)/lib )
+endif
+ifeq ($(ORAPATH),)
+    ORAPATH=$(shell [ -f $(LOCALBASE)/lib/oracle$(ORAVERDIR)/libocci.so ] && \
+	    echo $(LOCALBASE)/lib/oracle$(ORAVERDIR) )
 endif
 ifeq ($(ORAPATH),)
     ORAPATH=$(shell [ -f $(SYSBASE)/lib/oracle$(ORAVERDIR)/libocci.so ] && \
 	    echo $(SYSBASE)/lib/oracle$(ORAVERDIR) )
+endif
+ifeq ($(ORAPATH),)
+    ORAPATH=$(shell [ -f $(LOCALBASE)/lib/oracle$(ORAVERDIR)/lib/libocci.so ] && \
+	    echo $(LOCALBASE)/lib/oracle$(ORAVERDIR)/lib )
+endif
+ifeq ($(ORAPATH),)
+    ORAPATH=$(shell [ -f $(SYSBASE)/lib/oracle$(ORAVERDIR)/lib/libocci.so ] && \
+	    echo $(SYSBASE)/lib/oracle$(ORAVERDIR)/lib )
 endif
 
 ifneq ($(ORAPATH),)
