@@ -343,7 +343,8 @@ skip:
 	return (b==end)?NULL:b;
 }
 
-
+/* The function is always considered to be lock-less ( safe ) 
+ * it's either called when dialog is not linked yes, or is under the dialog lock */
 static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 {
 	str name, val;
@@ -362,7 +363,7 @@ static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 		LM_DBG("new var found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
 
 		/* add the variable */
-		if (store_dlg_value( dlg, &name, &val)!=0)
+		if (store_dlg_value_unsafe( dlg, &name, &val)!=0)
 			LM_ERR("failed to add val, skipping...\n");
 	} while(p!=end);
 
