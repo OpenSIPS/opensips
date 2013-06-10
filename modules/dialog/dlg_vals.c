@@ -68,8 +68,7 @@ static inline struct dlg_val *new_dlg_val(str *name, str *val)
 	return dv;
 }
 
-
-int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
+int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val)
 {
 	struct dlg_val *dv=NULL;
 	struct dlg_val *it;
@@ -82,9 +81,6 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 	}
 
 	id = _get_name_id(name);
-
-	/* lock dialog */
-	dlg_lock_dlg( dlg );
 
 	/* iterate the list */
 	for( it_prev=NULL, it=dlg->vals ; it ; it_prev=it,it=it->next) {
@@ -104,9 +100,6 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 			}
 			dlg->flags |= DLG_FLAG_VP_CHANGED;
 
-			/* unlock dialog */
-			dlg_unlock_dlg( dlg );
-
 			shm_free(it);
 			return 0;
 		}
@@ -119,12 +112,22 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
 	dlg->vals = dv;
 
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
-	/* unlock dialog */
-	dlg_unlock_dlg( dlg );
 
 	return 0;
 }
 
+int store_dlg_value(struct dlg_cell *dlg, str *name, str *val)
+{
+	int ret;
+
+	/* lock dialog */
+	dlg_lock_dlg( dlg );
+	ret = store_dlg_value_unsafe(dlg,name,val);
+	/* unlock dialog */
+	dlg_unlock_dlg( dlg );
+
+	return ret;
+}
 
 static str val_buf = { NULL, 0};
 
