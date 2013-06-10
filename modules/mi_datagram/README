@@ -10,8 +10,7 @@ Andreea-Ancuta Onofrei
 
    Copyright © 2007 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Ma, 21 iul 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -239,4 +238,4 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.

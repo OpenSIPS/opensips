@@ -12,8 +12,7 @@ Vladut-Stefan Paiu
 
    Copyright © 2006-2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-03-08 11:33:05 +0200
-                              (Thu, 08 Mar 2012) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -1617,4 +1616,4 @@ Chapter 3. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.
