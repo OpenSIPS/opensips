@@ -22,12 +22,11 @@ Bogdan-Andrei Iancu
    voice-system.ro
    <bogdan@voice-system.ro>
 
-   Copyright � 2002, 2003 FhG FOKUS
+   Copyright © 2002, 2003 FhG FOKUS
 
-   Copyright � 2004, 2006 voice-system.ro
+   Copyright © 2004, 2006 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -153,7 +152,7 @@ Chapter 1. Admin Guide
    To account a transaction and to choose which set of backends to
    be used, the script writer just has to set some flags (see the
    module parameters section for flag definitions Section 1.5,
-   "Exported Parameters"). If the accounting flag for a specific
+   “Exported Parameters”). If the accounting flag for a specific
    backend is set, the acc module will then report on completed
    transaction. A typical usage of the module takes no
    acc-specific script command -- the functionality binds
@@ -165,8 +164,8 @@ Chapter 1. Admin Guide
    The accounting module will log by default a fixed set of
    attributes for the transaction - if you customize your
    accounting by adding more information to be logged, please see
-   the next chapter about extra accounting - Section 1.2, "Extra
-   accounting".
+   the next chapter about extra accounting - Section 1.2, “Extra
+   accounting”.
 
    The fixed minimal accounting information is:
      * Request Method name
@@ -364,7 +363,7 @@ Note
    the listed modules must be loaded before this module):
      * tm -- Transaction Manager
      * a database module -- If SQL support is used.
-     * rr -- Record Route, if "detect_direction" module parameter
+     * rr -- Record Route, if “detect_direction” module parameter
        is enabled.
 
 1.4.2. External Libraries or Applications
@@ -422,7 +421,7 @@ modparam("acc", "report_cancels", 1)
 
 1.5.5. detect_direction (integer)
 
-   Controlles the direction detection for sequential requests. If
+   Controls the direction detection for sequential requests. If
    enabled (non zero value), for sequential requests with upstream
    direction (from callee to caller), the FROM and TO will be
    swapped (the direction will be preserved as in the original
@@ -439,7 +438,7 @@ modparam("acc", "detect_direction", 1)
 1.5.6. multi_leg_info (string)
 
    Defines the AVP set to be used in per-call-leg accounting. See
-   Section 1.3, "Multi Call-Legs accounting" for a detailed
+   Section 1.3, “Multi Call-Legs accounting” for a detailed
    description of the Multi Call-Legs accounting.
 
    If empty, the multi-leg accounting support will be disabled.
@@ -521,7 +520,7 @@ modparam("acc", "log_extra", "ua=$hdr(User-Agent);uuid=$avp(i:123)")
    If the parameter is set to empty string, the RADIUS accounting
    support will be disabled (even if compiled).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.12. radius_config example
 modparam("acc", "radius_config", "/etc/radiusclient/radiusclient.conf")
@@ -550,9 +549,10 @@ modparam("acc", "radius_missed_flag", 3)
 
    Radius service type used for accounting.
 
-   Default value is 15 (SIP).
+   Default value is not-set.
 
    Example 1.15. service_type example
+# Default value of service type for SIP is 15
 modparam("acc", "service_type", 16)
 
 1.5.16. radius_extra (string)
@@ -589,7 +589,7 @@ modparam("acc", "db_missed_flag", 3)
    Table name of accounting successfull calls -- database
    specific.
 
-   Default value is "acc"
+   Default value is “acc”
 
    Example 1.19. db_table_acc example
 modparam("acc", "db_table_acc", "myacc_table")
@@ -598,17 +598,17 @@ modparam("acc", "db_table_acc", "myacc_table")
 
    Table name for accounting missed calls -- database specific.
 
-   Default value is "missed_calls"
+   Default value is “missed_calls”
 
    Example 1.20. db_table_missed_calls example
 modparam("acc", "db_table_missed_calls", "myMC_table")
 
 1.5.21. db_url (string)
 
-   SQL address -- database specific. If is set to NULL or emty
+   SQL address -- database specific. If is set to NULL or empty
    string, the SQL support is disabled.
 
-   Default value is "NULL" (SQL disabled).
+   Default value is “NULL” (SQL disabled).
 
    Example 1.21. db_url example
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
@@ -618,7 +618,7 @@ modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
    Column name in accounting table to store the request's method
    name as string.
 
-   Default value is "method".
+   Default value is “method”.
 
    Example 1.22. acc_method_column example
 modparam("acc", "acc_method_column", "method")
@@ -628,7 +628,7 @@ modparam("acc", "acc_method_column", "method")
    Column name in accounting table to store the From header TAG
    parameter.
 
-   Default value is "from_tag".
+   Default value is “from_tag”.
 
    Example 1.23. acc_from_tag_column example
 modparam("acc", "acc_from_tag_column", "from_tag")
@@ -638,7 +638,7 @@ modparam("acc", "acc_from_tag_column", "from_tag")
    Column name in accounting table to store the To header TAG
    parameter.
 
-   Default value is "to_tag".
+   Default value is “to_tag”.
 
    Example 1.24. acc_to_tag_column example
 modparam("acc", "acc_to_tag_column", "to_tag")
@@ -648,7 +648,7 @@ modparam("acc", "acc_to_tag_column", "to_tag")
    Column name in accounting table to store the request's Callid
    value.
 
-   Default value is "callid".
+   Default value is “callid”.
 
    Example 1.25. acc_callid_column example
 modparam("acc", "acc_callid_column", "callid")
@@ -656,9 +656,9 @@ modparam("acc", "acc_callid_column", "callid")
 1.5.26. acc_sip_code_column (string)
 
    Column name in accounting table to store the final reply's
-   numric code value in string format.
+   numeric code value in string format.
 
-   Default value is "sip_code".
+   Default value is “sip_code”.
 
    Example 1.26. acc_sip_code_column example
 modparam("acc", "acc_sip_code_column", "sip_code")
@@ -668,7 +668,7 @@ modparam("acc", "acc_sip_code_column", "sip_code")
    Column name in accounting table to store the final reply's
    reason phrase value.
 
-   Default value is "sip_reason".
+   Default value is “sip_reason”.
 
    Example 1.27. acc_sip_reason_column example
 modparam("acc", "acc_sip_reason_column", "sip_reason")
@@ -678,7 +678,7 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
    Column name in accounting table to store the time stamp of the
    transaction completion in date-time format.
 
-   Default value is "time".
+   Default value is “time”.
 
    Example 1.28. acc_time_column example
 modparam("acc", "acc_time_column", "time")
@@ -718,7 +718,7 @@ modparam("acc", "diameter_missed_flag", 3)
    Hostname of the machine where the DIAMETER Client is running --
    DIAMETER specific.
 
-   Default value is "localhost".
+   Default value is “localhost”.
 
    Example 1.32. diameter_client_host example
 modparam("acc", "diameter_client_host", "3a_server.net")
@@ -728,7 +728,7 @@ modparam("acc", "diameter_client_host", "3a_server.net")
    Port number where the Diameter Client is listening -- DIAMETER
    specific.
 
-   Default value is 3000.
+   Default value is “3000”.
 
    Example 1.33. diameter_client_host example
 modparam("acc", "diameter_client_port", 3000)
@@ -766,7 +766,7 @@ acc_log_request("Some comment");
 1.6.2.  acc_db_request(comment, table)
 
    Like acc_log_request, acc_db_request reports on a request. The
-   report is sent to database at "db_url", in the table referred
+   report is sent to database at “db_url”, in the table referred
    to in the second action parameter.
 
    Meaning of the parameters is as follows:
@@ -783,7 +783,7 @@ acc_log_request("Some comment", "Some table");
 1.6.3.  acc_rad_request(comment)
 
    Like acc_log_request, acc_rad_request reports on a request. It
-   reports to radius server as configured in "radius_config".
+   reports to radius server as configured in “radius_config”.
 
    Meaning of the parameters is as follows:
      * comment - Comment to be appended.
@@ -814,7 +814,7 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with old log_fmt parameter
+       What happened with old log_fmt parameter
 
        The parameter became obsolete with the restructure of the data
        logged by ACC module (refer to the Overview chapter). For
@@ -823,15 +823,15 @@ Chapter 2. Frequently Asked Questions
 
    2.2.
 
-       What happend with old multi_leg_enabled parameter
+       What happened with old multi_leg_enabled parameter
 
-       The parameter becaome obsolete by the addition of the new
+       The parameter became obsolete by the addition of the new
        multi_leg_info parameter. The multi-leg accouting is
        automatically enabled when multi_leg_info is defined.
 
    2.3.
 
-       What happend with old src_leg_avp_id and dst_leg_avp_id
+       What happened with old src_leg_avp_id and dst_leg_avp_id
        parameters
 
        The parameter was replaced by the more generic new parameter
@@ -867,4 +867,4 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.

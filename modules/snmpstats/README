@@ -9,10 +9,9 @@ Edited by
 
 Jeffrey Magder
 
-   Copyright � 2006 SOMA Networks, Inc.
+   Copyright © 2006 SOMA Networks, Inc.
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -325,7 +324,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    snmpget query to the master agent. You can use this parameter
    to set the path to your instance of NetSNMP's snmpget program.
 
-   Default value is "/usr/local/bin/".
+   Default value is “/usr/local/bin/”.
 
    Example 1.6. Setting the snmpgetPath parameter
 ...
@@ -340,7 +339,7 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
    community string for the snmp daemon, you need to specify it
    with this parameter.
 
-   Default value is "public".
+   Default value is “public”.
 
    Example 1.7. Setting the snmpCommunity parameter
 ...
@@ -691,4 +690,4 @@ theTableName
    How can I report a bug?
 
    Please follow the guidelines provided at:
-   http://sourceforge.net/tracker/?group_id=232389.
+   https://github.com/OpenSIPS/opensips/issues.

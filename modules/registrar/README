@@ -12,10 +12,9 @@ Edited by
 
 Bogdan-Andre Iancu
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2008-07-29 19:23:00 +0300
-                              (Tue, 29 Jul 2008) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -116,9 +115,9 @@ Chapter 1. Admin Guide
      * off - stores the value of the Path headers into usrloc
        without passing it back to the UAC in the reply.
      * lazy - stores the Path header and passes it back to the UAC
-       if Path-support is indicated by the "path" param in the
+       if Path-support is indicated by the “path” param in the
        Supported HF.
-     * strict - rejects the registration with "420 Bad Extension"
+     * strict - rejects the registration with “420 Bad Extension”
        if there's a Path header but no support for it is indicated
        by the UAC. Otherwise it's stored and passed back to the
        UAC.
@@ -132,7 +131,7 @@ Chapter 1. Admin Guide
 
    The whole process is transparent to the user, so no config
    changes are required beside setting the registrar-parameters
-   "use_path" and "path_mode".
+   “use_path” and “path_mode”.
 
 1.2. Dependencies
 
@@ -210,7 +209,7 @@ modparam("registrar", "default_q", 1000)
    The parameter specifies the message flag to be used to control
    the module behaviour regarding TCP connections. If the flag is
    set for a REGISTER via TCP containing a TCP contact, the
-   module, via the "save()" functions will set the lifetime of the
+   module, via the “save()” functions will set the lifetime of the
    TCP connection to the contact expire value. By doing this, the
    TCP connection will stay on as long as the contact is valid.
 
@@ -398,7 +397,7 @@ modparam("registrar", "method_filtering", 1)
 1.3.17. use_path (integer)
 
    If set to 1, the Path header is handled according to the
-   parameter "path_mode".
+   parameter “path_mode”.
 
    Default value is 0 (disabled).
 
@@ -416,14 +415,14 @@ modparam("registrar", "use_path", 1)
        included in the reply.
      * 1 - The Path header is saved into usrloc, but is only
        included in the reply if path support is indicated in the
-       registration request by the "path" option of the
-       "Supported" header.
+       registration request by the “path” option of the
+       “Supported” header.
      * 2 - The path header is only saved into usrloc, if path
        support is indicated in the registration request by the
-       "path" option of the "Supported" header. If no path support
-       is indicated, the request is rejected with "420 - Bad
-       Extension" and the header "Unsupported: path" is included
-       in the reply along with the received "Path" header. This
+       “path” option of the “Supported” header. If no path support
+       is indicated, the request is rejected with “420 - Bad
+       Extension” and the header “Unsupported: path” is included
+       in the reply along with the received “Path” header. This
        mode is the one recommended by RFC-3327.
 
    Default value is 2.
@@ -435,11 +434,11 @@ modparam("registrar", "path_mode", 0)
 
 1.3.19. path_use_received (integer)
 
-   If set to 1, the "received" parameter of the first Path URI of
+   If set to 1, the “received” parameter of the first Path URI of
    a registration is set as received-uri and the NAT branch flag
    is set for this contact. This is useful if the registrar is
    placed behind a SIP loadbalancer, which passes the nat'ed UAC
-   address as "received" parameter in it's Path uri.
+   address as “received” parameter in it's Path uri.
 
    Default value is 0 (disabled).
 
@@ -522,7 +521,7 @@ save("location","0x01");
    Example 1.22. lookup usage
 ...
 lookup("location");
-switch ($?) {
+switch ($retcode) {
     case -1:
     case -3:
         sl_send_reply("404", "Not Found");
@@ -556,7 +555,7 @@ if (registered("location")) {
 1.4.5.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
-   "hdr_name" which contains the description of the received
+   “hdr_name” which contains the description of the received
    socket (proto:ip:port)
 
    This make sens only in multiple replicated servers scenarios.
@@ -597,25 +596,25 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with the old "nat_flag" module parameter?
+       What happend with the old “nat_flag” module parameter?
 
        In was removed, as the module internally loads this value from
-       the "USRLOC" module (see the "nat_bflag" USRLOC parameter).
+       the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.2.
 
-       What happend with the old "use_domain" module parameter?
+       What happend with the old “use_domain” module parameter?
 
        In was removed, as the module internally loads this option from
-       the "USRLOC" module. This was done in order to simplify the
+       the “USRLOC” module. This was done in order to simplify the
        configuration.
 
    2.3.
 
-       What happend with the old "save_noreply" and "save_memory"
+       What happend with the old “save_noreply” and “save_memory”
        functions?
 
-       There functions were merged into the new "save(domain,flags)"
+       There functions were merged into the new “save(domain,flags)”
        functions. If a reply should be sent or if the DB should be
        updated also is controlled via the flags.
 
@@ -648,7 +647,7 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.
 
    2.7.
 

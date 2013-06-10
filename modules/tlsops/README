@@ -8,10 +8,9 @@ Edited by
 
 Klaus Darilion
 
-   Copyright � 2006 enum.at
+   Copyright © 2006 enum.at
    Revision History
-   Revision $Revision$ $Date: 2008-07-12 00:16:22 +0300
-                              (Sat, 12 Jul 2008) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -114,7 +113,7 @@ if (is_peer_verified()) {
 
    Some pseudo variables are available for both, the peer'S
    certificate and the local certificate. Further, some parameters
-   can be read from the "Subject" field or the "Issuer" field.
+   can be read from the “Subject” field or the “Issuer” field.
 
 1.5.1. $tls_version
 
@@ -187,23 +186,23 @@ if (is_peer_verified()) {
 
 1.5.14. $tls_[peer|my]_san_email
 
-   $tls_[peer|my]_san_email - email address in the "subject
-   alternative name" extension. String type.
+   $tls_[peer|my]_san_email - email address in the “subject
+   alternative name” extension. String type.
 
 1.5.15. $tls_[peer|my]_san_hostname
 
-   $tls_[peer|my]_san_hostname - hostname (DNS) in the "subject
-   alternative name" extension. String type.
+   $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
+   alternative name” extension. String type.
 
 1.5.16. $tls_[peer|my]_san_uri
 
-   $tls_[peer|my]_san_uri - URI in the "subject alternative name"
+   $tls_[peer|my]_san_uri - URI in the “subject alternative name”
    extension. String type.
 
 1.5.17. $tls_[peer|my]_san_ip
 
-   $tls_[peer|my]_san_ip - ip address in the "subject alternative
-   name" extension. String type.
+   $tls_[peer|my]_san_ip - ip address in the “subject alternative
+   name” extension. String type.
 
 1.5.18. $tls_peer_verified
 
@@ -381,4 +380,4 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.
