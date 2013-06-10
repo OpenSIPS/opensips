@@ -13,7 +13,7 @@
 <!ENTITY osipssol "<ulink url='http://www.opensips-solutions.com/'>www.opensips-solutions.com</ulink>">
 
 <!ENTITY osipshome "http://www.opensips.org/">
-<!ENTITY osipsbugs "http://sourceforge.net/tracker/?group_id=232389">
+<!ENTITY osipsbugs "https://github.com/OpenSIPS/opensips/issues">
 <!ENTITY osipshelp "http://lists.opensips.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY osipsusers "http://lists.opensips.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY osipsdev "http://lists.opensips.org/cgi-bin/mailman/listinfo/devel">

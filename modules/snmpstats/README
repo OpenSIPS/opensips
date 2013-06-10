@@ -11,8 +11,7 @@ Jeffrey Magder
 
    Copyright © 2006 SOMA Networks, Inc.
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -691,4 +690,4 @@ theTableName
    How can I report a bug?
 
    Please follow the guidelines provided at:
-   http://sourceforge.net/tracker/?group_id=232389.
+   https://github.com/OpenSIPS/opensips/issues.
