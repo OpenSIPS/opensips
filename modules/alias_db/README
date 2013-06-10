@@ -14,7 +14,7 @@ Daniel-Constantin Mierla
 
    <miconda@gmail.com>
 
-   Copyright � 2005 voice-system.ro
+   Copyright © 2005 voice-system.ro
      __________________________________________________________
 
    Table of Contents
@@ -60,13 +60,13 @@ Chapter 1. Admin Guide
 
    ALIAS_DB module can be used as an alternative for user aliases
    via usrloc. The main feature is that it does not store all
-   addiacent data as for user location and always uses database
-   for search (no memory caching).
+   adjacent data as for user location and always uses database for
+   search (no memory caching).
 
-   Having no memory caching the speed of search can decrease but
-   the provisioning is easier. With very fast databases like MySQL
-   the speed penalty can be lowered. Also, the search can be
-   performed on different tables in the same script.
+   Having no memory caching, search speed might decrease but
+   provisioning is easier. With very fast databases like MySQL,
+   speed penalty can be lowered. Also, search can be performed on
+   different tables in the same script.
 
 1.2. Dependencies
 
@@ -88,7 +88,7 @@ Chapter 1. Admin Guide
    Database URL.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/opensips".
+   “mysql://opensipsro:opensipsro@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -100,7 +100,7 @@ me")
 
    Name of the column storing username.
 
-   Default value is "username".
+   Default value is “username”.
 
    Example 1.2. Set user_column parameter
 ...
@@ -111,7 +111,7 @@ modparam("alias_db", "user_column", "susername")
 
    Name of the column storing user's domain.
 
-   Default value is "domain".
+   Default value is “domain”.
 
    Example 1.3. Set domain_column parameter
 ...
@@ -122,7 +122,7 @@ modparam("alias_db", "domain_column", "sdomain")
 
    Name of the column storing alias username.
 
-   Default value is "alias_username".
+   Default value is “alias_username”.
 
    Example 1.4. Set alias_user_column parameter
 ...
@@ -133,7 +133,7 @@ modparam("alias_db", "alias_user_column", "auser")
 
    Name of the column storing alias domain.
 
-   Default value is "alias_domain".
+   Default value is “alias_domain”.
 
    Example 1.5. Set alias_domain_column parameter
 ...
@@ -146,7 +146,7 @@ modparam("alias_db", "alias_domain_column", "adomain")
    searching for alias. If set to 0, the domain from R-URI is not
    used, if set to 1 the domain from R-URI is used.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.6. Set use_domain parameter
 ...
@@ -158,7 +158,7 @@ modparam("alias_db", "use_domain", 1)
    Specifies the prefix to be stripped from the domain in R-URI
    before doing the search.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.7. Set domain_prefix parameter
 ...
@@ -170,7 +170,7 @@ modparam("alias_db", "domain_prefix", "sip.")
    If the alias resolves to many SIP IDs, the first is replacing
    the R-URI, the rest are added as branches.
 
-   Default value is "0" (0 - don't add branches; 1 - add
+   Default value is “0” (0 - don't add branches; 1 - add
    branches).
 
    Example 1.8. Set append_branches parameter

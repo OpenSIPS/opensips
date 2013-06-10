@@ -8,10 +8,9 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright � 2009 voice-system.ro
+   Copyright © 2009 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-16 13:54:34 +0300
-                              (Thu, 16 Jul 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -100,7 +99,7 @@ Chapter 1. Admin Guide
    are stored.
 
    Default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -112,7 +111,7 @@ modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost
 
    The name of the DB table containing the load-balancing rules.
 
-   Default value is "load_balancer".
+   Default value is “load_balancer”.
 
    Example 1.2. Set db_table parameter
 ...
@@ -230,4 +229,4 @@ Chapter 3. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.

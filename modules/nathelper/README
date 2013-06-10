@@ -12,12 +12,11 @@ Edited by
 
 Bogdan-Andrei Iancu
 
-   Copyright � 2003-2008 Sippy Software, Inc.
+   Copyright © 2003-2008 Sippy Software, Inc.
 
-   Copyright � 2005 voice-system.ro
+   Copyright © 2005 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-16 13:54:34 +0300
-                              (Thu, 16 Jul 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -165,7 +164,7 @@ Chapter 1. Admin Guide
    - load-balancing will be performed over a set and the user has
    the ability to choose what set should be used. The set is
    selected via its id - the id being defined along with the set.
-   Refer to the "rtpproxy_sock" module parameter definition for
+   Refer to the “rtpproxy_sock” module parameter definition for
    syntax description.
 
    The balancing inside a set is done automatically by the module
@@ -222,7 +221,7 @@ modparam("nathelper", "natping_interval", 10)
 1.5.2. ping_nated_only (integer)
 
    If this variable is set then only contacts that have
-   "behind_NAT" flag in user location database set will get ping.
+   “behind_NAT” flag in user location database set will get ping.
 
    Default value is 0.
 
@@ -283,7 +282,7 @@ modparam("nathelper", "received_avp", "$avp(i:42)")
    Definition of socket(s) used to connect to (a set) RTPProxy. It
    may specify a UNIX socket or an IPv4/IPv6 UDP socket.
 
-   Default value is "NONE" (disabled).
+   Default value is “NONE” (disabled).
 
    Example 1.6. Set rtpproxy_sock parameter
 ...
@@ -305,7 +304,7 @@ modparam("nathelper", "rtpproxy_sock",
    nathelper will not attempt to establish communication to
    RTPProxy for rtpproxy_disable_tout seconds.
 
-   Default value is "60".
+   Default value is “60”.
 
    Example 1.7. Set rtpproxy_disable_tout parameter
 ...
@@ -316,7 +315,7 @@ modparam("nathelper", "rtpproxy_disable_tout", 20)
 
    Timeout value in waiting for reply from RTPProxy.
 
-   Default value is "1".
+   Default value is “1”.
 
    Example 1.8. Set rtpproxy_tout parameter
 ...
@@ -328,7 +327,7 @@ modparam("nathelper", "rtpproxy_tout", 2)
    How many times nathelper should retry to send and receive after
    timeout was generated.
 
-   Default value is "5".
+   Default value is “5”.
 
    Example 1.9. Set rtpproxy_retr parameter
 ...
@@ -341,7 +340,7 @@ modparam("nathelper", "rtpproxy_retr", 2)
    sense only for UDP communication. If no one specified, the OS
    will choose.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.10. Set force_socket parameter
 ...
@@ -368,7 +367,7 @@ modparam("nathelper", "sipping_bflag", 7)
    pinging feature, you have to set this parameter. The SIP
    request pinging will be used only for requests marked so.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.12. Set sipping_from parameter
 ...
@@ -380,7 +379,7 @@ modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
    The parameter sets the SIP method to be used in generating the
    SIP requests for NAT ping purposes.
 
-   Default value is "OPTIONS".
+   Default value is “OPTIONS”.
 
    Example 1.13. Set sipping_method parameter
 ...
@@ -399,7 +398,7 @@ Note
    The string must be a complete SDP line, including the EOH
    (\r\n).
 
-   Default value is "a=nortpproxy:yes\r\n".
+   Default value is “a=nortpproxy:yes\r\n”.
 
    Example 1.14. Set nortpproxy_str parameter
 ...
@@ -416,7 +415,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
    the MI command nh_reload_rtpp is issued(the definitions will be
    replaced with the ones from the database table).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.15. Set db_url parameter
 ...
@@ -430,7 +429,7 @@ modparam("nathelper", "db_url",
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
 
-   Default value is "nh_sockets".
+   Default value is “nh_sockets”.
 
    Example 1.16. Set db_table parameter
 ...
@@ -442,7 +441,7 @@ modparam("nathelper", "db_table", "nh_rtpp")
 
    The name rtpp socket column in the database table.
 
-   Default value is "rtpproxy_sock".
+   Default value is “rtpproxy_sock”.
 
    Example 1.17. Set rtpp_socket_col parameter
 ...
@@ -454,7 +453,7 @@ modparam("nathelper", "rtpp_socket_col", "rtpp_socket")
 
    The name set id column in the database table.
 
-   Default value is "set_id".
+   Default value is “set_id”.
 
    Example 1.18. Set set_id parameter
 ...
@@ -479,18 +478,18 @@ if (search("User-Agent: Cisco ATA.*") {fix_nated_contact();};
 1.6.2.  fix_nated_sdp(flags [, ip_address])
 
    Alters the SDP information in orer to facilitate NAT traversal.
-   What changes to be performed may be controled via the "flags"
+   What changes to be performed may be controled via the “flags”
    paramter.
 
    Meaning of the parameters is as follows:
      * flags - the value may be a bitwise OR of the following
        flags:
-          + 0x01 - adds "a=direction:active" SDP line;
+          + 0x01 - adds “a=direction:active” SDP line;
           + 0x02 - rewrite media IP address (c=) with source
             address of the message or the provided IP address (the
             provide IP address take precedence over the source
             address).
-          + 0x04 - adds "a=nortpproxy:yes" SDP line;
+          + 0x04 - adds “a=nortpproxy:yes” SDP line;
           + 0x08 - rewrite IP from origin description (o=) with
             source address of the message or the provided IP
             address (the provide IP address take precedence over
@@ -539,7 +538,7 @@ force_rtp_proxy();
      * flags - flags to turn on some features.
           + a - flags that UA from which message is received
             doesn't support symmetric RTP.
-          + l - force "lookup", that is, only rewrite SDP when
+          + l - force “lookup”, that is, only rewrite SDP when
             corresponding session is already exists in the RTP
             proxy. By default is on when the session is to be
             completed (reply in non-swap or ACK in swap mode).
@@ -863,9 +862,9 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happend with "rtpproxy_disable" parameter?
+       What happend with “rtpproxy_disable” parameter?
 
-       It was removed as it became obsolete - now "rtpproxy_sock" can
+       It was removed as it became obsolete - now “rtpproxy_sock” can
        take empty value to disable the rtpproxy functionality.
 
    2.2.
@@ -897,4 +896,4 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.
