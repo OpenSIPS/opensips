@@ -656,7 +656,7 @@ skip_before:
 				//	else t->len=0;
 				//	t->u.offset=s_offset;
 				//}
-				/* lump inside a delete area ? */
+				/* lump inside a deleted area ? */
 				if (s_offset > t->u.offset) {
 					continue;
 				}
@@ -669,8 +669,8 @@ skip_before:
 				//	t->u.offset=s_offset;
 				//}else
 				//	s_offset=t->u.offset;
-				/* lump inside a delete area ? */
-				if (s_offset<t->u.offset) {
+				/* lump inside a deleted area ? */
+				if (s_offset > t->u.offset) {
 					continue;
 				}
 				/* do nothing */
