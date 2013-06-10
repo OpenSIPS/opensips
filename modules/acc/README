@@ -31,8 +31,7 @@ Irina-Maria Stanescu
 
    Copyright © 2004, 2006, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-08-17 17:26:57 +0300
-                              (Mon, 17 Aug 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -904,4 +903,4 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.

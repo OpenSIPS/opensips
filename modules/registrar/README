@@ -14,8 +14,7 @@ Bogdan-Andrei Iancu
 
    Copyright © 2003 FhG FOKUS
    Revision History
-   Revision $Revision$ $Date: 2009-09-23 17:34:55 +0300
-                              (Wed, 23 Sep 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -669,7 +668,7 @@ Chapter 2. Frequently Asked Questions
         How can I report a bug?
 
         Please follow the guidelines provided at:
-        http://sourceforge.net/tracker/?group_id=232389.
+        https://github.com/OpenSIPS/opensips/issues.
 
    2.12.
 
