@@ -8,10 +8,9 @@ Edited by
 
 Bastian Friedrich
 
-   Copyright � 2007 Collax GmbH
+   Copyright © 2007 Collax GmbH
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -287,7 +286,7 @@ if (perl_exec("ldap_alias")) {
      * IPC::Shareable perl module from CPAN
 
    Although SuSE delivers a lot of perl modules, others may have
-   to be fetched from CPAN. Consider using the program "cpan2rpm"
+   to be fetched from CPAN. Consider using the program “cpan2rpm”
    - which, in turn, is available on CPAN. It creates RPM files
    from CPAN.
 
@@ -297,7 +296,7 @@ if (perl_exec("ldap_alias")) {
 
    This is the file name of your script. This may be set once
    only, but it may include an arbitary number of functions and
-   "use" as many Perl module as necessary.
+   “use” as many Perl module as necessary.
 
    May not be empty!
 
@@ -310,7 +309,7 @@ modparam("perl", "filename", "/home/john/opensips/myperl.pl")
 
    The path to the Perl modules included (OpenSIPS.pm et.al). It
    is not absolutely crucial to set this path, as you may install
-   the Modules in Perl's standard path, or update the "%INC"
+   the Modules in Perl's standard path, or update the “%INC”
    variable from within your script. Using this module parameter
    is the standard behavior, though.
 
@@ -420,7 +419,7 @@ OpenSIPS::log(L_INFO, "foobar");
 
    my $ruri = $m->getRURI();
 
-   getRURI returns a string. See "getParsedRURI()" below how to
+   getRURI returns a string. See “getParsedRURI()” below how to
    receive a parsed structure.
 
    This function is valid in request messages only.
@@ -1180,16 +1179,15 @@ Returns or sets the rows of the object.
 Chapter 3. Perl samples
 
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date$
 
 3.1. sample directory
 
-   There are a number of example scripts in the "samples/". They
+   There are a number of example scripts in the “samples/”. They
    are documented well. Read them, it will explain a lot to you :)
 
    If you want to use any of these scripts directly in your
-   implementation, you can use Perl's "require" mechanism to
+   implementation, you can use Perl's “require” mechanism to
    import them (just remember that you need to use quotes when
    require'ing .pl files).
 
@@ -1229,7 +1227,7 @@ Chapter 3. Perl samples
    calling functions from within perl, and the different types of
    functions you can offer for OpenSIPS access.
 
-   "exportedfuncs" simply demonstrates that you can use the
+   “exportedfuncs” simply demonstrates that you can use the
    moduleFunction method to call functions offered by other
    modules. The results are equivalent to calling these functions
    from your config file. In the demonstrated case, telephone
@@ -1241,14 +1239,14 @@ Chapter 3. Perl samples
    available in OpenSIPS 1.2. See the method's documentation for
    details.
 
-   "paramfunc" shows that you can pass arbitrary strings to perl
+   “paramfunc” shows that you can pass arbitrary strings to perl
    functions. Do with them whatever you want :)
 
-   "autotest" demonstrates that unknown functions in
+   “autotest” demonstrates that unknown functions in
    OpenSIPS::Message objects are automatically transformed into
    calls to module functions.
 
-   The "diefunc"s show that dying perl scripts - by "manual"
+   The “diefunc”s show that dying perl scripts - by "manual"
    dying, or because of script errors - are handled by the
    OpenSIPS package. The error message is logged through
    OpenSIPS's logging mechanism. Please note that this only works
@@ -1261,22 +1259,22 @@ Chapter 3. Perl samples
    while processing SIP messages. This sample script demonstrates
    access to header names and values within two sample functions.
 
-   "headernames" extracts all header names and logs their names.
+   “headernames” extracts all header names and logs their names.
 
-   "someheaders" logs the contents of the two headers, "To" and
-   "WWW-Contact". As you can see, headers that occur more than
+   “someheaders” logs the contents of the two headers, “To” and
+   “WWW-Contact”. As you can see, headers that occur more than
    once are retrieved as an array, which may be accessed by Perl's
    array accessing methods.
 
 3.1.1.6. logging.pl
 
    For debugging purposes, you probably want to write messages to
-   the syslog. The "logdemo" shows three ways to access the
+   the syslog. The “logdemo” shows three ways to access the
    OpenSIPS log function: it is available through the OpenSIPS
    class as well as through the OpenSIPS::Message class.
 
    Remember that you can use exported functions from other
-   modules. You may thus as well use the "xlog" module and it's
+   modules. You may thus as well use the “xlog” module and it's
    xlog function.
 
    The L_INFO, L_DBG, L_ERR, L_CRIT... constants are available
@@ -1307,7 +1305,7 @@ Chapter 3. Perl samples
 
 3.1.1.10. pseudovars.pl
 
-   This script demonstrates the Perl module's "pseudoVar" method.
+   This script demonstrates the Perl module's “pseudoVar” method.
    It may be used to retrieve the values of current pseudo
    variables.
 
@@ -1365,4 +1363,4 @@ Chapter 4. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.

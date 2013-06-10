@@ -8,10 +8,9 @@ Edited by
 
 Andreea-Ancuta Onofrei
 
-   Copyright � 2007 voice-system.ro
+   Copyright © 2007 voice-system.ro
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -170,7 +169,7 @@ modparam("mi_datagram", "socket_timeout", 2000)
    structure is tree oriendeted, the depth level will printed as
    indentation.
 
-   Default value is ""\t" (TAB)".
+   Default value is “"\t" (TAB)”.
 
    Example 1.7. Set reply_indent parameter
 ...
@@ -184,7 +183,7 @@ modparam("mi_datagram", "reply_indent", "    ")
 1.6. Example
 
    This is an example showing the DATAGRAM format for the
-   "get_statistics dialog: tm:" MI commad: response.
+   “get_statistics dialog: tm:” MI commad: response.
 
    Example 1.8. DATAGRAM request
 
@@ -239,4 +238,4 @@ Chapter 2. Frequently Asked Questions
        How can I report a bug?
 
        Please follow the guidelines provided at:
-       http://sourceforge.net/tracker/?group_id=232389.
+       https://github.com/OpenSIPS/opensips/issues.
