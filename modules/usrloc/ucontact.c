@@ -458,9 +458,10 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	vals[6].nul = 0;
 	vals[6].val.bitmap_val = _c->flags;
 
-	vals[7].type = DB_INT;
+	vals[7].type = DB_STR;
 	vals[7].nul = 0;
-	vals[7].val.bitmap_val = _c->cflags;
+	vals[7].val.str_val = bitmask_to_flag_list(FLAG_TYPE_BRANCH, _c->cflags);
+	vals[7].val.str_val.len = vals[7].val.str_val.len;
 
 	vals[8].type = DB_STR;
 	vals[8].nul = 0;

@@ -36,6 +36,7 @@ typedef unsigned int flag_t;
 #define MAX_FLAG  ((unsigned int)( sizeof(flag_t) * CHAR_BIT - 1 ))
 #define PRINT_BUFFER_SIZE         2048
 #define NAMED_FLAG_ERROR          33
+#define FLAG_DELIM                ' '
 
 #define fix_flag_name(_s, _flag)                         \
      do {                                                \
@@ -72,9 +73,17 @@ int flag_idx2mask(int *flag);
 /**
  * returns a string representation of the named flags set in the bitmask
  * 
- * Note: prints data in a static buffer
+ * Note: prints data in a static buffer, flags are delimited by FLAG_DELIM
  */
-str print_flag_bitmask(enum flag_type type, int bitmask);
+str bitmask_to_flag_list(enum flag_type type, int bitmask);
+
+/**
+ * parses a list of named flags and returns the corresponding bitmask
+ *
+ * Note: flags which are not used at script level and are not instantiated with
+ * get_flag_id_by_name will be ignored
+ */
+int flag_list_to_bitmask(str *flags, enum flag_type type, char delim);
 
 unsigned int fixup_flag(int flag_type, str *flag_name);
 int get_flag_id_by_name(int flag_type, char *flag_name);

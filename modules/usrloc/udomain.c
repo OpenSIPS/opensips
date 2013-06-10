@@ -256,7 +256,7 @@ void print_udomain(FILE* _f, udomain_t* _d)
 static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 {
 	static ucontact_info_t ci;
-	static str callid, ua, received, host, path, instance, attr;
+	static str callid, ua, received, host, path, instance, attr, flags;
 	int port, proto;
 	char *p;
 
@@ -301,11 +301,15 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	}
 	ci.flags  = VAL_BITMAP(vals+5);
 
-	if (VAL_NULL(vals+6)) {
-		LM_CRIT("empty cflag\n");
-		return 0;
+	if (!VAL_NULL(vals+6)) {
+		flags.s   = (char *)VAL_STRING(vals+6);
+		flags.len = strlen(flags.s);
+		LM_DBG("flag str: '%.*s'\n", flags.len, flags.s);
+	
+		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM);
+	
+		LM_DBG("set flags: %d\n", ci.cflags);
 	}
-	ci.cflags  = VAL_BITMAP(vals+6);
 
 	ua.s  = (char*)VAL_STRING(vals+7);
 	if (VAL_NULL(vals+7) || !ua.s || !ua.s[0]) {
