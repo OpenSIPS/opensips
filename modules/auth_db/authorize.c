@@ -61,7 +61,8 @@ static inline int get_ha1(struct username* _username, str* _domain,
 	db_val_t vals[2];
 	db_key_t *col;
 	str result;
-	static db_ps_t auth_ps = NULL;
+	static db_ps_t auth_ha1_ps = NULL;
+	static db_ps_t auth_ha1b_ps = NULL;
 
 	int n, nc;
 
@@ -75,8 +76,13 @@ static inline int get_ha1(struct username* _username, str* _domain,
 	keys[1] = &domain_column;
 
 	/* should we calculate the HA1, and is it calculated with domain? */
-	col[0] = (_username->domain.len && !calc_ha1) ?
-		(&pass_column_2) : (&pass_column);
+	if (_username->domain.len && !calc_ha1) {
+		col[0] = &pass_column_2 ;
+		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1b_ps;
+	} else {
+		col[0] = &pass_column;
+		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1_ps;
+	}
 
 	for (n = 0, cred=credentials; cred ; n++, cred=cred->next) {
 		col[1 + n] = &cred->attr_name;
@@ -99,8 +105,6 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		pkg_free(col);
 		return -1;
 	}
-
-	CON_PS_REFERENCE(auth_db_handle) = &auth_ps;
 
 	n = (use_domain ? 2 : 1);
 	nc = 1 + credentials_n;
