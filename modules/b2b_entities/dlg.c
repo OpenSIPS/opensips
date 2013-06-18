@@ -86,6 +86,10 @@ void print_b2b_dlg(b2b_dlg_t *dlg)
 
 static inline struct uac_credential *get_avp_credential(b2b_dlg_t* dlg, struct sip_msg *msg, str *realm)
 {
+	if(dlg->crd_realm.len == 0) {
+		return uac_auth_api._lookup_realm( realm );
+	}
+
 	LM_DBG("Checking dlg = %p, realm = %s vs crd_realm = %s\n",dlg,realm->s,dlg->crd_realm.s);
 
 	/* is it the domain we are looking for? */
