@@ -104,6 +104,10 @@
 			</para>
 			
 			<para>
+				On the latest Debian based distributions, hiredis can be installed
+				by running 'apt-get install libhiredis-dev'
+
+				Alternatively, if hiredis is not available on your OS repos,
 				hiredis can be downloaded from: https://github.com/antirez/hiredis .
 				Download the archive, extract sources, run make,sudo make install.
 			</para>
