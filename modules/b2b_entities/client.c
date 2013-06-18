@@ -115,7 +115,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
 		+ ci->from_dname.len + ci->to_dname.len +
-		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE + B2BL_MAX_KEY_LEN;
+		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE + B2BL_MAX_KEY_LEN +
+		ci->crd_realm.len + ci->crd_user.len + ci->crd_passwd.len;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -135,6 +136,12 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		CONT_COPY(dlg, dlg->from_dname, ci->from_dname);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 	CONT_COPY(dlg, dlg->contact[CALLER_LEG], ci->local_contact);
+	if(ci->crd_realm.s)
+		CONT_COPY(dlg, dlg->crd_realm, ci->crd_realm);
+	if(ci->crd_user.s)
+		CONT_COPY(dlg, dlg->crd_user, ci->crd_user);
+	if(ci->crd_passwd.s)
+		CONT_COPY(dlg, dlg->crd_passwd, ci->crd_passwd);
 
 	if(param && param->s)
 	{

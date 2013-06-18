@@ -2619,6 +2619,37 @@ static void gen_fromtag(str* callid, str* fromtag, str* uri, struct sip_msg* msg
 	LM_DBG("Gen from_tag= %s\n", fromtag_buf);
 }
 
+extern pv_spec_t b2b_username_spec;
+extern pv_spec_t b2b_realm_spec;
+extern pv_spec_t b2b_password_spec;
+
+static inline int save_avp_credential(client_info_t* ci, struct sip_msg *msg)
+{
+        pv_value_t pv_val;
+
+        LM_DBG("Get realm for ci = %p\n",ci);
+        if(pv_get_spec_value( msg, &b2b_realm_spec, &pv_val)!=0
+        || pv_val.flags&PV_VAL_NULL || pv_val.rs.len<=0)
+                return 0;
+
+        ci->crd_realm = pv_val.rs;
+        LM_DBG("Realm = %s\n",ci->crd_realm.s);
+
+        /* get username and password */
+        LM_DBG("Get username\n");
+        if(pv_get_spec_value( msg, &b2b_username_spec, &pv_val)!=0
+        || pv_val.flags&PV_VAL_NULL || pv_val.rs.len<=0)
+                return 0;
+        ci->crd_user = pv_val.rs;
+
+        LM_DBG("Get password\n");
+        if(pv_get_spec_value( msg, &b2b_password_spec, &pv_val)!=0
+        || pv_val.flags&PV_VAL_NULL || pv_val.rs.len<=0)
+                return 0;
+        ci->crd_passwd = pv_val.rs;
+
+        return 0;
+}
 
 str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		void* cb_param, unsigned int cb_mask, str* custom_hdrs, struct b2b_params *params)
@@ -2709,6 +2740,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.body          = (body.s?&body:NULL);
 	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 	get_local_contact( ci.send_sock, &ci.local_contact);
+	save_avp_credential(&ci,msg);
 
 	dlginfo = tuple->servers[0]->dlginfo;
 	gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &ci.req_uri, msg, &from_tag_gen);

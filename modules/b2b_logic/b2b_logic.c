@@ -122,6 +122,10 @@ str server_address = {0, 0};
 int b2bl_db_mode = WRITE_BACK;
 int unsigned b2bl_th_init_timeout = 60;
 
+static char* b2b_username_avp = NULL;
+static char* b2b_realm_avp = NULL;
+static char* b2b_password_avp = NULL;
+
 /** Exported functions */
 static cmd_export_t cmds[]=
 {
@@ -154,6 +158,9 @@ static param_export_t params[]=
 	{"b2bl_key_avp",    STR_PARAM,                &b2bl_key_avp_param.s      },
 	*/
 	{"b2bl_from_spec_param",STR_PARAM,            &b2bl_from_spec_param.s    },
+	{"b2b_username_avp", STR_PARAM,               &b2b_username_avp   },
+	{"b2b_realm_avp",    STR_PARAM,               &b2b_realm_avp      },
+	{"b2b_password_avp", STR_PARAM,               &b2b_password_avp   },
 	{"server_address",  STR_PARAM,                &server_address.s          },
 	{"init_callid_hdr", STR_PARAM,                &init_callid_hdr.s         },
 	{"db_mode",         INT_PARAM,                &b2bl_db_mode              },
@@ -186,6 +193,21 @@ struct module_exports exports= {
 	(destroy_function) mod_destroy, /* destroy function */
 	child_init                      /* per-child init function */
 };
+
+pv_spec_t b2b_username_spec;
+pv_spec_t b2b_realm_spec;
+pv_spec_t b2b_password_spec;
+
+inline static int parse_auth_avp( char *avp_spec, pv_spec_t *avp, char *txt)
+{
+        str s;
+        s.s = avp_spec; s.len = strlen(s.s);
+        if (pv_parse_spec(&s, avp)==NULL) {
+                LM_ERR("malformed or non AVP %s AVP definition\n",txt);
+                return -1;
+        }
+        return 0;
+}
 
 /** Module init function */
 static int mod_init(void)
@@ -330,6 +352,24 @@ static int mod_init(void)
 			default: ;
 		}
 	}
+
+        /* parse the auth AVP spesc, if any */
+        if ( b2b_username_avp || b2b_password_avp || b2b_realm_avp) {
+                if (!b2b_username_avp || !b2b_password_avp || !b2b_realm_avp) {
+                        LM_ERR("partial definition of auth AVP!");
+                        return -1;
+                }
+                if ( parse_auth_avp(b2b_realm_avp, &b2b_realm_spec, "realm")<0
+                || parse_auth_avp(b2b_username_avp, &b2b_username_spec, "username")<0
+                || parse_auth_avp(b2b_password_avp, &b2b_password_spec, "password")<0
+                ) {
+                        return -1;
+                }
+        } else {
+                memset( &b2b_realm_spec, 0, sizeof(pv_spec_t));
+                memset( &b2b_password_spec, 0, sizeof(pv_spec_t));
+                memset( &b2b_username_spec, 0, sizeof(pv_spec_t));
+        }
 
 	/* parse extra headers */
 	if(custom_headers.s)

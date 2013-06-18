@@ -79,7 +79,27 @@ void print_b2b_dlg(b2b_dlg_t *dlg)
 			leg, leg->next, leg->id, leg->tag.len, leg->tag.s, leg->cseq);
 		leg = leg->next;
 	}
+	LM_DBG("dlg[%p]: crd_realm=[%.*s] crd_user=[%.*s] crd_passwd=[%.*s]\n",
+		dlg, dlg->crd_realm.len, dlg->crd_realm.s, dlg->crd_user.len, dlg->crd_user.s, dlg->crd_passwd.len, dlg->crd_passwd.s);
 	return;
+}
+
+static inline struct uac_credential *get_avp_credential(b2b_dlg_t* dlg, struct sip_msg *msg, str *realm)
+{
+	LM_DBG("Checking dlg = %p, realm = %s vs crd_realm = %s\n",dlg,realm->s,dlg->crd_realm.s);
+
+	/* is it the domain we are looking for? */
+	if (realm->len!=dlg->crd_realm.len ||
+	    strncmp( realm->s, dlg->crd_realm.s, realm->len)!=0 )
+		return 0;
+
+	struct uac_credential* crd;
+	crd = (struct uac_credential*)pkg_malloc(sizeof(struct uac_credential));
+	crd->realm  = dlg->crd_realm;
+	crd->user   = dlg->crd_user;
+	crd->passwd = dlg->crd_passwd;
+	crd->next   = NULL;
+	return crd;
 }
 
 
@@ -351,7 +371,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+
 		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
 		dlg->contact[0].len+ dlg->contact[1].len+ dlg->ruri.len+ B2BL_MAX_KEY_LEN+
-		dlg->from_dname.len + dlg->to_dname.len;
+		dlg->from_dname.len + dlg->to_dname.len +
+		dlg->crd_user.len + dlg->crd_passwd.len + dlg->crd_realm.len;
 
 	new_dlg = (b2b_dlg_t*)shm_malloc(size);
 	if(new_dlg == 0)
@@ -401,6 +422,12 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	new_dlg->last_invite_cseq = dlg->last_invite_cseq;
 	new_dlg->db_flag          = dlg->db_flag;
 	new_dlg->send_sock        = dlg->send_sock;
+	if(dlg->crd_realm.len && dlg->crd_realm.s)
+		CONT_COPY(new_dlg, new_dlg->crd_realm, dlg->crd_realm);
+	if(dlg->crd_user.len && dlg->crd_user.s)
+		CONT_COPY(new_dlg, new_dlg->crd_user, dlg->crd_user);
+	if(dlg->crd_passwd.len && dlg->crd_passwd.s)
+		CONT_COPY(new_dlg, new_dlg->crd_passwd, dlg->crd_passwd);
 
 	return new_dlg;
 }
@@ -2281,7 +2308,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			}
 			if(uac_auth_loaded && auth && dlg->state == B2B_NEW)
 			{
-				crd = uac_auth_api._lookup_realm( &auth->realm );
+				crd = get_avp_credential( dlg, msg, &auth->realm );
 				if(crd)
 				{
 					memset(&auth_nc_cnonce, 0,
