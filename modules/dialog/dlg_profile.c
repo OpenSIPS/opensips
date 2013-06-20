@@ -246,6 +246,7 @@ static int dlg_fill_value(str *name, str *value)
 		LM_ERR("cannot realloc profile with value buffer\n");
 		return -1;
 	}
+
 	dlg_prof_val_buf.s = buf;
 	dlg_prof_val_buf.len = cdb_val_prefix.len;
 
@@ -253,6 +254,7 @@ static int dlg_fill_value(str *name, str *value)
 	DLG_COPY(dlg_prof_val_buf, &dlg_prof_sep);
 	base64encode((unsigned char*)dlg_prof_val_buf.s + dlg_prof_val_buf.len,
 			(unsigned char *)value->s, value->len);
+
 	dlg_prof_val_buf.len += val_len;
 
 	return 0;
@@ -304,28 +306,7 @@ int init_cachedb(void)
 		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
 		return -1;
 	}
-	dlg_prof_val_buf.s = pkg_malloc(cdb_val_prefix.len + 32);
-	if (!dlg_prof_val_buf.s) {
-		LM_ERR("no more memory to allocate buffer\n");
-		return -1;
-	}
-
-	dlg_prof_noval_buf.s = pkg_malloc(cdb_noval_prefix.len + 32);
-	if (!dlg_prof_noval_buf.s) {
-		LM_ERR("no more memory to allocate buffer\n");
-		return -1;
-	}
-
-	dlg_prof_size_buf.s = pkg_malloc(cdb_size_prefix.len + 32);
-	if (!dlg_prof_size_buf.s) {
-		LM_ERR("no more memory to allocate buffer\n");
-		return -1;
-	}
-
-	/* copy prefixes in buffer */
-	memcpy(dlg_prof_val_buf.s, cdb_val_prefix.s, cdb_val_prefix.len);
-	memcpy(dlg_prof_noval_buf.s, cdb_noval_prefix.s, cdb_noval_prefix.len);
-	memcpy(dlg_prof_size_buf.s, cdb_size_prefix.s, cdb_size_prefix.len);
+	LM_DBG("Inited cachedb \n");
 	return 0;
 }
 
@@ -367,6 +348,29 @@ int init_cachedb_utils(void)
 		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
 		return -1;
 	}
+
+	dlg_prof_val_buf.s = pkg_malloc(cdb_val_prefix.len + 32);
+	if (!dlg_prof_val_buf.s) {
+		LM_ERR("no more memory to allocate buffer\n");
+		return -1;
+	}
+
+	dlg_prof_noval_buf.s = pkg_malloc(cdb_noval_prefix.len + 32);
+	if (!dlg_prof_noval_buf.s) {
+		LM_ERR("no more memory to allocate buffer\n");
+		return -1;
+	}
+
+	dlg_prof_size_buf.s = pkg_malloc(cdb_size_prefix.len + 32);
+	if (!dlg_prof_size_buf.s) {
+		LM_ERR("no more memory to allocate buffer\n");
+		return -1;
+	}
+
+	/* copy prefixes in buffer */
+	memcpy(dlg_prof_val_buf.s, cdb_val_prefix.s, cdb_val_prefix.len);
+	memcpy(dlg_prof_noval_buf.s, cdb_noval_prefix.s, cdb_noval_prefix.len);
+	memcpy(dlg_prof_size_buf.s, cdb_size_prefix.s, cdb_size_prefix.len);
 
 	return 0;
 }
