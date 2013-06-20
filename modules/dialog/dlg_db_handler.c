@@ -391,10 +391,11 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_link *it;
-	str name, val;
+	str name, val,double_check_name;
 	char *end;
-	char *p;
+	char *p,*s,*e;
 	char bk;
+	int use_cached;
 
 	end = b + l;
 	p = b;
@@ -408,9 +409,29 @@ static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double
 		LM_DBG("new profile found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
 
 		if (double_check) {
+			LM_DBG("Double checking profile - if it exists we'll skip it \n");
+			use_cached = 0;
+
+			/* check if this is a shared profile, and remove /s for manual
+			 * matching */
+			double_check_name = name;
+			s = memchr(name.s, '/', name.len);
+
+			if (s) {
+				e = double_check_name.s + double_check_name.len;
+				double_check_name.len = s - double_check_name.s;
+				trim_spaces_lr( double_check_name );
+				/* skip spaces after p */
+				for (++s; *s == ' ' && s < e; s++);
+				if ( s < e && *s == 's')
+				use_cached=1;
+			}
+
 			for (it=dlg->profile_links;it;it=it->next) {
-				if (it->profile->name.len == name.len &&
-						memcmp(it->profile->name.s,name.s,name.len) == 0) {
+				if (it->profile->use_cached == use_cached && 
+					it->profile->name.len == double_check_name.len &&
+					memcmp(it->profile->name.s,double_check_name.s,
+						   double_check_name.len) == 0) {
 					LM_DBG("Profile is already linked into the dlg\n");
 					goto next;
 				}
@@ -1007,7 +1028,8 @@ error:
 }
 
 
-static inline unsigned int write_pair( char *b, str *name, str *val)
+static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
+				str *val)
 {
 	int i,j;
 
@@ -1015,6 +1037,10 @@ static inline unsigned int write_pair( char *b, str *name, str *val)
 		if (name->s[i]=='|' || name->s[i]=='#' || name->s[i]=='\\')
 			b[j++] = '\\';
 		b[j++] = name->s[i];
+	}
+	if (name_suffix) {
+		memcpy(b+j,name_suffix->s,name_suffix->len);
+		j+=name_suffix->len;
 	}
 	b[j++] = '#';
 	for( i=0 ; val && i<val->len ; i++) {
@@ -1060,7 +1086,7 @@ static str* write_dialog_vars( struct dlg_val *vars)
 	o.len = l;
 	p = o.s;
 	for ( v=vars ; v ; v=v->next) {
-		p += write_pair( p, &v->name, &v->val);
+		p += write_pair( p, &v->name,NULL, &v->val);
 	}
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
@@ -1075,7 +1101,7 @@ static str* write_dialog_vars( struct dlg_val *vars)
 
 static str* write_dialog_profiles( struct dlg_profile_link *links)
 {
-	static str o = {NULL,0};
+	static str o = {NULL,0},cached_marker={"/s",2};
 	static int o_l = 0;
 	struct dlg_profile_link *link;
 	unsigned int l,i;
@@ -1090,6 +1116,8 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 		for( i=0 ; i<link->value.len ; i++ )
 			if (link->value.s[i]=='|' || link->value.s[i]=='#'
 					|| link->value.s[i]=='\\') l++;
+		if (link->profile->use_cached)
+			l+=cached_marker.len;
 	}
 
 	/* allocate the string to be stored */
@@ -1107,7 +1135,11 @@ static str* write_dialog_profiles( struct dlg_profile_link *links)
 	o.len = l;
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
-		p += write_pair( p, &link->profile->name, &link->value);
+		if (link->profile->use_cached)
+			p += write_pair( p, &link->profile->name, &cached_marker, 
+							&link->value);
+		else
+			p += write_pair( p, &link->profile->name, NULL, &link->value);
 	}
 	if (o.len!=p-o.s) {
 		LM_CRIT("BUG - buffer overflow allocated %d, written %d\n",
