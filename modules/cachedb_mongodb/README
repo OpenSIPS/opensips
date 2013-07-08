@@ -88,6 +88,8 @@ Chapter 1. Admin Guide
      * mongo-c-driver
        The mongo C driver can be downloaded from
        https://github.com/mongodb/mongo-c-driver
+       note: the latest version of this driver does not work with 
+       cacedb_mongodb, please checkout v0.6 before compiling.
 
 1.5. Exported Parameters
 
