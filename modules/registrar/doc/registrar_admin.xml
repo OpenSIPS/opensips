@@ -483,6 +483,44 @@ modparam("registrar", "gruu_secret", "top_secret")
 		</programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>disable_gruu</varname> (int)</title>
+		<para>
+			Globally disable GRUU handling
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 ( GRUU will be handled ).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gruu_secret</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrar", "gruu_secret", 1)
+...
+		</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>disable_gruu</varname> (int)</title>
+		<para>
+			Globally disable GRUU handling
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 ( GRUU will be handled ).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gruu_secret</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrar", "gruu_secret", 1)
+...
+		</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
