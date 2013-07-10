@@ -30,6 +30,7 @@
 #define _PRES_XML_H_
 
 #include "../../db/db.h"
+#include "../../cachedb/cachedb.h"
 #include "../signaling/signaling.h"
 #include "../presence/event_list.h"
 #include "../presence/presence.h"
@@ -47,8 +48,13 @@ extern str xcap_table;
 extern add_event_t pres_add_event;
 extern db_con_t *pxml_db;
 extern db_func_t pxml_dbf;
+extern cachedb_funcs cdbf;
+extern cachedb_con *con;
 extern int force_active;
 extern int pidf_manipulation;
+extern int im_to_rpidf;
+extern int merge;
+extern str merge_primary_source;
 extern int integrated_xcap_server;
 extern xcap_serv_t* xs_list;
 extern xcapGetNewDoc_t xcap_GetNewDoc;
@@ -57,5 +63,6 @@ extern struct sig_binds xml_sigb;
 extern str pres_rules_auid;
 extern str pres_rules_filename;
 extern int generate_offline_body;
+extern str cachedb_url;
 
 #endif

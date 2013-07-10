@@ -1723,14 +1723,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	int ret_code= -1;
 	free_body_t* free_fct = 0;
 
-	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
-	if(subs_array == NULL)
-	{
-		LM_DBG("Could not find subs_dialog\n");
-		ret_code= 0;
-		goto done;
-	}
-
+        LM_INFO("NOTIFY for uri %.*s\n", pres_uri.len, pres_uri.s);
 	/* if the event does not require aggregation - we have the final body */
 	if(p->event->agg_nbody)
 	{
@@ -1739,11 +1732,19 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct);
 	}
 
+	subs_array= get_subs_dialog(&pres_uri, p->event , p->sender);
+	if(subs_array == NULL)
+	{
+		LM_DBG("Could not find subs_dialog\n");
+		ret_code= 0;
+		goto done;
+	}
+
 	s= subs_array;
 	while(s)
 	{
 		s->auth_rules_doc= rules_doc;
-		LM_INFO("notify\n");
+		LM_INFO("will notify\n");
 		if(notify(s, NULL, notify_body?notify_body:body,
 			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs)< 0 )
 		{
@@ -1998,10 +1999,16 @@ jump_over_body:
 		goto error;
 	}
 
-	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
-		td->rem_uri.len, td->rem_uri.s, td->hooks.next_hop->len, td->hooks.next_hop->s,
-		td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
-		td->id.loc_tag.len, td->id.loc_tag.s, td->loc_seq.value);
+        if (notify_body)
+          LM_INFO("NOTIFY %.*s on behalf of %.*s for event %.*s with body %s\n",
+                  td->rem_uri.len, td->rem_uri.s,
+                  td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
+                  notify_body->s);
+        else
+          LM_INFO("NOTIFY %.*s ,via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
+                  td->rem_uri.len, td->rem_uri.s, td->hooks.next_hop->len, td->hooks.next_hop->s,
+                  td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
+                  td->id.loc_tag.len, td->id.loc_tag.s, td->loc_seq.value);
 
 	free_tm_dlg(td);
 	
