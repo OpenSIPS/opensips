@@ -342,7 +342,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 		}
 	}
 	setup_dialog_callbacks(did, info);
-	set_timeout_avp(msg, info->interval);
+        set_timeout_avp(msg, info->interval);
 	return;
 }
 
@@ -432,9 +432,10 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				// FIXME: need an error message here
 				return;
 			}
-			/* Early resetting of the value here */
-			set_timeout_avp(msg, minfo.se);
-			info->interval = minfo.se;
+                       /* Early resetting of the value here */
+                       info->interval = MIN(MIN(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+	               info->supported = (minfo.supported?SST_UAC:SST_UNDF);
+                       set_timeout_avp(msg, info->interval);
 		}
 		else if (msg->first_line.u.request.method_value == METHOD_PRACK) {
 			/* Special case here. The PRACK will cause the dialog
@@ -468,6 +469,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				return;
 			}
 			set_timeout_avp(msg, minfo.se);
+	                info->supported = (minfo.supported?SST_UAC:SST_UNDF);
 			info->interval = minfo.se;
 		}
 	}
@@ -534,8 +536,13 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 				LM_ERR("failed to parse sst information for the 2XX reply\n");
 				return;
 			}
-
+                        LM_DBG("parsing 200 OK response %d / %d\n", minfo.supported, minfo.se);
+                        if (info->supported != SST_UAC) {
+                                info->supported = (minfo.supported?SST_UAS:SST_UNDF);
+                        }
 			if (minfo.se != 0) {
+                                info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                                LM_DBG("UAS supports timer\n");
 				if (set_timeout_avp(msg, info->interval)) {
 					// FIXME: need an error message here
 					return;
@@ -543,9 +550,10 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 			}
 			else {
 				/* no se header found, we want to resquest it. */
-				if (info->requester == SST_PXY || info->supported == SST_UAC) {
+				if (info->supported == SST_UAC) {
 					char se_buf[80];
 					
+                                        LM_DBG("UAC supports timer\n");
 					LM_DBG("appending the Session-Expires: header to the 2XX reply."
 							" UAC will deal with it.\n");
 					/*
@@ -569,6 +577,10 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * does not support it */
 					LM_DBG("UAC and UAS do not support timers!"
 							" No session timers for this session.\n");
+					/* Disable the dialog timeout HERE */
+					if (set_timeout_avp(msg, 0)) {
+						return;
+					}
 				}
 			}
 		} /* End of 2XX for an INVITE */
@@ -824,6 +836,7 @@ static int set_timeout_avp(struct sip_msg *msg, unsigned int value)
 				if (pv_set_value(msg,timeout_avp,EQ_T,&pv_val)!=0) {
 					LM_ERR("failed to set new dialog timeout value\n");
 				} else {
+                                        LM_DBG("set dialog timeout value to %d\n", value);
 					rtn = 0;
 				}
 			}
@@ -869,12 +882,10 @@ static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo)
 	 * if not found or an error parsing the one it did find! So assume
 	 * it is not found if unsuccessfull.
 	 */
-	if ((rtn = parse_supported(msg)) == 0) {
-		if ((((struct supported_body*)msg->supported->parsed)->supported_all
-						& F_SUPPORTED_TIMER)) {
+        if (msg->supported && parse_supported(msg) == 0 &&
+                            (get_supported(msg) & F_SUPPORTED_TIMER))
 			minfo->supported = 1;
-		}
-	}
+
 	/*
 	 * Parse the Min-SE: header next.
 	 */
@@ -954,8 +965,8 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info)
 	 * immutable! we must do all the real work in the DLGCB_FRD
 	 * callback were we can change the message.
 	 */
-	LM_DBG("Adding callback DLGCB_RESPONSE_FWDED\n");
-	dlg_binds->register_dlgcb(did, DLGCB_RESPONSE_FWDED,
+	LM_DBG("Adding callback DLGCB_RESPONSE_FWDED|DLGCB_RESPONSE_WITHIN\n");
+	dlg_binds->register_dlgcb(did, DLGCB_RESPONSE_FWDED|DLGCB_RESPONSE_WITHIN,
 			sst_dialog_response_fwded_CB, info, NULL);
 	
 	LM_DBG("Adding mi handler\n");
