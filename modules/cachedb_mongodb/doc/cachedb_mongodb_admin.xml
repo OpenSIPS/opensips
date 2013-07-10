@@ -124,6 +124,7 @@
 			
 			<para>
 				The mongo C driver can be downloaded from https://github.com/mongodb/mongo-c-driver
+				Note : Please use the 0.6 version of the driver
 			</para>
 			
 			</listitem>
