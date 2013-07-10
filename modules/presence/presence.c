@@ -53,6 +53,7 @@
 #include "../../pt.h"
 #include "../../mi/mi.h"
 #include "../pua/hash.h"
+#include "../pua/pidf.h"
 #include "publish.h"
 #include "subscribe.h"
 #include "event_list.h"
@@ -128,6 +129,13 @@ str bla_presentity_spec_param = {0, 0};
 pv_spec_t bla_presentity_spec;
 int fix_remote_target=1;
 
+/** libxml api */
+xmlNodeGetNodeByName_t XMLNodeGetNodeByName;
+xmlNodeGetNodeContentByName_t XMLNodeGetNodeContentByName;
+xmlNodeGetAttrContentByName_t XMLNodeGetAttrContentByName;
+xmlDocGetNodeByName_t XMLDocGetNodeByName;
+
+
 static cmd_export_t cmds[]=
 {
 	{"handle_publish",  (cmd_function)handle_publish,  0,fixup_presence,0, REQUEST_ROUTE},
@@ -191,6 +199,9 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
+	bind_libxml_t bind_libxml;
+	libxml_api_t libxml_api;
+
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
 	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
 	presentity_table.len = strlen(presentity_table.s);
@@ -258,6 +269,29 @@ static int mod_init(void)
 	if(db_url.s== NULL)
 	{
 		LM_ERR("database url not set!\n");
+		return -1;
+	}
+
+	/* bind libxml wrapper functions */
+	if((bind_libxml=(bind_libxml_t)find_export("bind_libxml_api", 1, 0))== NULL)
+	{
+		LM_ERR("can't import bind_libxml_api\n");
+		return -1;
+	}
+	if(bind_libxml(&libxml_api)< 0)
+	{
+		LM_ERR("can not bind libxml api\n");
+		return -1;
+	}
+	XMLNodeGetAttrContentByName= libxml_api.xmlNodeGetAttrContentByName;
+	XMLDocGetNodeByName= libxml_api.xmlDocGetNodeByName;
+	XMLNodeGetNodeByName= libxml_api.xmlNodeGetNodeByName;
+       XMLNodeGetNodeContentByName= libxml_api.xmlNodeGetNodeContentByName;
+
+	if(XMLNodeGetAttrContentByName== NULL || XMLDocGetNodeByName== NULL ||
+			XMLNodeGetNodeByName== NULL || XMLNodeGetNodeContentByName== NULL)
+	{
+		LM_ERR("libxml wrapper functions could not be bound\n");
 		return -1;
 	}
 
