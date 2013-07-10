@@ -41,11 +41,12 @@
 #include "../alias_db/alias_db.h"
 #include "../../data_lump_rpl.h"
 #include "presentity.h"
-#include "presence.h" 
+#include "presence.h"
 #include "notify.h"
 #include "publish.h"
 #include "hash.h"
 #include "utils_func.h"
+
 
 
 #define DLG_STATES_NO  4
@@ -58,9 +59,7 @@ char* presence_notes[]={ "Calling",
                     "On the phone",
                                ""};
 
-unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name);
-xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
-													const char *ns);
+
 static str pu_200_rpl  = str_init("OK");
 static str pu_412_rpl  = str_init("Conditional request failed");
 
@@ -162,53 +161,32 @@ error:
 	return -1;
 }
 
-xmlAttrPtr xmlNodeGetAttrByName(xmlNodePtr node, const char *name)
-{
-	xmlAttrPtr attr = node->properties;
-	while (attr) {
-		if (xmlStrcasecmp(attr->name, (unsigned char*)name) == 0)
-			return attr;
-		attr = attr->next;
-	}
-	return NULL;
-}
-
-
-unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name)
-{
-	xmlAttrPtr attr = xmlNodeGetAttrByName(node, name);
-	if (attr)
-		return xmlNodeGetContent(attr->children);
-	else
-		return NULL;
-}
-
 
 xmlNodePtr xmlNodeGetChildByName(xmlNodePtr node, const char *name)
 {
-	xmlNodePtr cur = node->children;
-	while (cur) {
-		if (xmlStrcasecmp(cur->name, (unsigned char*)name) == 0)
-			return cur;
-		cur = cur->next;
-	}
-	return NULL;
+        xmlNodePtr cur = node->children;
+        while (cur) {
+                if (xmlStrcasecmp(cur->name, (unsigned char*)name) == 0)
+                        return cur;
+                cur = cur->next;
+        }
+        return NULL;
 }
 
 #define bla_extract_dlginfo(node, callid, fromtag, totag) \
 	do {\
-	callid  = xmlNodeGetAttrContentByName(node, "call-id");\
-	dir     = xmlNodeGetAttrContentByName(node, "direction");\
+	callid  = XMLNodeGetAttrContentByName(node, "call-id");\
+	dir     = XMLNodeGetAttrContentByName(node, "direction");\
 	if(dir == NULL) {\
 		LM_ERR("Dialog direction not specified\n");\
 		goto error;\
 	}\
 	if(xmlStrcasecmp(dir, (unsigned char*)"initiator") == 0) {\
-		fromtag = xmlNodeGetAttrContentByName(node, "local-tag");\
-		totag   = xmlNodeGetAttrContentByName(node, "remote-tag");\
+		fromtag = XMLNodeGetAttrContentByName(node, "local-tag");\
+		totag   = XMLNodeGetAttrContentByName(node, "remote-tag");\
 	} else {\
-		totag   = xmlNodeGetAttrContentByName(node, "local-tag");\
-		fromtag = xmlNodeGetAttrContentByName(node, "remote-tag");\
+		totag   = XMLNodeGetAttrContentByName(node, "local-tag");\
+		fromtag = XMLNodeGetAttrContentByName(node, "remote-tag");\
 	}\
 	xmlFree(dir);\
 	dir = NULL;\
@@ -1039,10 +1017,10 @@ char* extract_sphere(str body)
 		return NULL;
 	}
 
-	node= xmlNodeGetNodeByName(doc->children, "sphere", "rpid");
+	node= XMLNodeGetNodeByName(doc->children, "sphere", "rpid");
 	
 	if(node== NULL)
-		node= xmlNodeGetNodeByName(doc->children, "sphere", "r");
+		node= XMLNodeGetNodeByName(doc->children, "sphere", "r");
 
 	if(node)
 	{
@@ -1068,25 +1046,6 @@ char* extract_sphere(str body)
 error:
 	xmlFreeDoc(doc);
 	return sphere;
-}
-
-xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
-													const char *ns)
-{
-	xmlNodePtr cur = node;
-	while (cur) {
-		xmlNodePtr match = NULL;
-		if (xmlStrcasecmp(cur->name, (unsigned char*)name) == 0) {
-			if (!ns || (cur->ns && xmlStrcasecmp(cur->ns->prefix,
-							(unsigned char*)ns) == 0))
-				return cur;
-		}
-		match = xmlNodeGetNodeByName(cur->children, name, ns);
-		if (match)
-			return match;
-		cur = cur->next;
-	}
-	return NULL;
 }
 
 char* get_sphere(str* pres_uri)
@@ -1452,13 +1411,13 @@ str* xml_dialog2presence(str* pres_uri, str* body)
 		LM_ERR("Wrong formated xml document\n");
 		return NULL;
 	}
-	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);
+	dialog_node = XMLNodeGetNodeByName(dlg_doc->children, "dialog", 0);
 	if(!dialog_node)
 	{
 		goto done;
 	}
 
-	node = xmlNodeGetNodeByName(dialog_node, "state", 0);
+	node = XMLNodeGetNodeByName(dialog_node, "state", 0);
 	if(!node)
 		goto done;
 

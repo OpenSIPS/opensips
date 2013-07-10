@@ -33,6 +33,7 @@
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
 #include "../signaling/signaling.h"
+#include "../pua/pidf.h"
 #include "../../db/db.h"
 #include "../../parser/parse_from.h"
 #include "event_list.h"
@@ -76,5 +77,11 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 extern str bla_presentity_spec_param;
 extern pv_spec_t bla_presentity_spec;
 extern int fix_remote_target;
+
+/** libxml api */
+extern xmlNodeGetNodeByName_t XMLNodeGetNodeByName;
+extern xmlDocGetNodeByName_t XMLDocGetNodeByName;
+extern xmlNodeGetNodeContentByName_t XMLNodeGetNodeContentByName;
+extern xmlNodeGetAttrContentByName_t XMLNodeGetAttrContentByName;
 
 #endif /* PA_MOD_H */
