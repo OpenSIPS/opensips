@@ -87,7 +87,8 @@ Chapter 1. Admin Guide
        http://oss.metaparadigm.com/json-c/
      * mongo-c-driver
        The mongo C driver can be downloaded from
-       https://github.com/mongodb/mongo-c-driver
+       https://github.com/mongodb/mongo-c-driver Note : Please use
+       the 0.6 version of the driver
 
 1.5. Exported Parameters
 
