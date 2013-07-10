@@ -39,6 +39,7 @@
 #include "xcap_auth.h"
 #include "notify_body.h"
 #include "add_events.h"
+#include "../presence/utils_func.h"
 #include "presence_xml.h"
 #include "pidf.h"
 
@@ -49,6 +50,9 @@ static str pu_415_rpl  = str_init("Unsupported media type");
  */
 int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 {	
+	str pres_uri= {0, 0};
+	str pres_user= {0, 0};
+	str pres_domain= {0, 0};
 	str body= {0, 0};
 	xmlDocPtr doc= NULL;
 
@@ -58,8 +62,24 @@ int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 		LM_ERR("cannot extract body from msg\n");
 		return -1;
 	}
-	if (body.len == 0)
+	if (body.len == 0) {
+	        /* get pres_uri from Request-URI*/
+	        if( parse_sip_msg_uri(msg)< 0)
+                {
+		        LM_ERR("parsing Request URI\n");
+		        goto error;
+	        }
+	        pres_user= msg->parsed_uri.user;
+	        pres_domain= msg->parsed_uri.host;
+                if(uandd_to_uri(pres_user, pres_domain, &pres_uri)< 0)
+                {
+                        LM_ERR("constructing uri from user and domain\n");
+                        goto error;
+                }
+                cachedb_update_merged_presence_state (&body, &pres_user);
+
 		return 1;
+        }
 
 	doc= xmlParseMemory( body.s, body.len );
 	if(doc== NULL)
@@ -78,6 +98,8 @@ int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 	return 1;
 
 error:
+	if(pres_uri.s)
+		pkg_free(pres_uri.s);
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	xmlMemoryDump();

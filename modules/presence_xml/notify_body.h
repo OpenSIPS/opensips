@@ -35,5 +35,5 @@ str* presence_agg_nbody(str* pres_user, str* pres_domain, str** body_array,
 		int n, int off_index);
 int pres_apply_auth(str* notify_body, subs_t* subs, str** final_nbody);
 void free_xml_body(char* body);
-
+void cachedb_update_merged_presence_state (str* body, str* pres_user);
 #endif

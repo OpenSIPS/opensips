@@ -32,6 +32,7 @@
 #include <libxml/parser.h>
 #include <time.h>
 
+#include "../../cachedb/cachedb.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../str.h"
@@ -67,9 +68,12 @@ update_watchers_t pres_update_watchers;
 pres_get_sphere_t pres_get_sphere;
 
 str xcap_table= str_init("xcap");
+str merge_primary_source= str_init("primary");
 str db_url = {NULL, 0};
 int force_active= 0;
 int pidf_manipulation= 0;
+int im_to_rpidf= 0;
+int merge= 0;
 int integrated_xcap_server= 0;
 xcap_serv_t* xs_list= NULL;
 str pres_rules_auid = {0, 0};
@@ -83,6 +87,11 @@ struct sig_binds xml_sigb;
 db_con_t *pxml_db = NULL;
 db_func_t pxml_dbf;
 
+/* cachedb stuff */
+str cachedb_url = {0,0};
+cachedb_funcs cdbf;
+cachedb_con *con = NULL;
+
 /* functions imported from xcap_client module */
 
 xcapGetNewDoc_t xcap_GetNewDoc;
@@ -91,12 +100,16 @@ static param_export_t params[]={
 	{ "db_url",                 STR_PARAM,                          &db_url.s},
 	{ "xcap_table",             STR_PARAM,                      &xcap_table.s},
 	{ "force_active",           INT_PARAM,                     &force_active },
-	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation}, 
-	{ "integrated_xcap_server", INT_PARAM,            &integrated_xcap_server}, 
+	{ "im_to_rpidf",            INT_PARAM,                       &im_to_rpidf},
+	{ "pidf_manipulation",      INT_PARAM,                 &pidf_manipulation},
+	{ "integrated_xcap_server", INT_PARAM,            &integrated_xcap_server},
 	{ "xcap_server",     STR_PARAM|USE_FUNC_PARAM,(void*)pxml_add_xcap_server},
+	{ "merge",                  INT_PARAM,                             &merge},
+	{ "merge_primary_source",   STR_PARAM,            &merge_primary_source.s},
 	{ "pres_rules_auid",        STR_PARAM,                 &pres_rules_auid.s},
 	{ "pres_rules_filename",    STR_PARAM,             &pres_rules_filename.s},
 	{ "generate_offline_body",  INT_PARAM,             &generate_offline_body},
+	{ "cachedb_url",            STR_PARAM,                     &cachedb_url.s},
 	{  0,                       0,                                          0}
 };
 
@@ -104,18 +117,18 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"presence_xml",				/* module name */
-	MODULE_VERSION,				/* module version */
-	 DEFAULT_DLFLAGS,           /* dlopen flags */
-	 0,  						/* exported functions */
-	 params,					/* exported parameters */
-	 0,							/* exported statistics */
-	 0,							/* exported MI functions */
-	 0,							/* exported pseudo-variables */
-	 0,							/* extra processes */
-	 mod_init,					/* module initialization function */
-	 (response_function) 0,		/* response handling function */
- 	 destroy,					/* destroy function */
-	 child_init                 /* per-child init function */
+	 MODULE_VERSION,			/* module version */
+	 DEFAULT_DLFLAGS,                       /* dlopen flags */
+         0,     				/* exported functions */
+	 params,				/* exported parameters */
+	 0,					/* exported statistics */
+	 0,					/* exported MI functions */
+	 0,					/* exported pseudo-variables */
+	 0,					/* extra processes */
+	 mod_init,				/* module initialization function */
+	 (response_function) 0,		        /* response handling function */
+ 	 destroy,				/* destroy function */
+	 child_init                             /* per-child init function */
 };
 
 static int verify_db(void)
@@ -185,6 +198,19 @@ static int mod_init(void)
 		return -1;
 	}
 	
+	/* we are only interested in these parameters if the cachedb url was defined */
+	if (cachedb_url.s) {
+
+                cachedb_url.len = cachedb_url.s ? strlen(cachedb_url.s) : 0;
+                LM_DBG("binding to specific module, based on URL\n");
+
+                if (cachedb_bind_mod(&cachedb_url,&cdbf) < 0)
+                {
+		        LM_ERR("failed to bind to mod\n");
+                        return -1;
+                }
+	}
+
 	pres_get_sphere= pres.get_sphere;
 	pres_add_event= pres.add_event;
 	pres_update_watchers= pres.update_watchers_status;
@@ -272,6 +298,16 @@ static int child_init(int rank)
 		LM_DBG("child %d: Database connection opened successfully\n",rank);
 	}
 
+	if (cachedb_url.s && cachedb_url.len > 0)
+        {
+                con = cdbf.init(&cachedb_url);
+                if (con == NULL)
+                {
+                        LM_ERR("failed to connect to back-end\n");
+                        return -1;
+                }
+        }
+
 	return 0;
 }	
 
@@ -282,6 +318,12 @@ static void destroy(void)
 		pxml_dbf.close(pxml_db);
 
 	free_xs_list(xs_list, SHM_MEM_TYPE);
+
+        if (con != NULL)
+        {
+	        LM_DBG("Closing connection to back-end\n");
+                cdbf.destroy(con);
+        }
 
 	return ;
 }
@@ -434,4 +476,3 @@ static int xcap_doc_updated(int doc_type, str xid, char* doc)
 	return 0;
 
 }
-

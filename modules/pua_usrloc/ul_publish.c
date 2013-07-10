@@ -133,6 +133,7 @@ str* build_pidf(ucontact_t* c)
 	xmlNewProp(root_node, BAD_CAST "entity", BAD_CAST pres_uri.s);
 
 	tuple_node =xmlNewChild(root_node, NULL, BAD_CAST "tuple", NULL) ;
+        xmlNewProp(tuple_node, BAD_CAST "id", BAD_CAST "pua_register");
 	if( tuple_node ==NULL)
 	{
 		LM_ERR("while adding child\n");
