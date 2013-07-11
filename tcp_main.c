@@ -473,7 +473,6 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	}
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	LM_DBG("on port %d, type %d\n", c->rcv.src_port, type);
-	init_tcp_req(&c->req);
 	c->id=(*connection_id)++;
 	c->rcv.proto_reserved1=0; /* this will be filled before receive_message*/
 	c->rcv.proto_reserved2=0;

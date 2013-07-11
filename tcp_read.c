@@ -74,6 +74,11 @@ static struct tcp_connection* tcp_conn_lst=0;		/*!< list of tcp connections hand
 static io_wait_h io_w; /* io_wait handler*/
 static int tcpmain_sock=-1;
 
+/* buffer to be used for reading all TCP SIP messages
+   detached from the actual con - in order to improve
+   paralelism ( process the SIP message while the con
+   can be sent back to main to do more stuff */
+struct tcp_req current_req;
 
 /*! \brief reads next available bytes
  * \return number of bytes read, 0 on EOF or -1 on error,
@@ -81,13 +86,11 @@ static int tcpmain_sock=-1;
  * (to distinguish from reads that would block which could return 0)
  * sets also r->error 
  */
-int tcp_read(struct tcp_connection *c)
+int tcp_read(struct tcp_connection *c,struct tcp_req *r)
 {
 	int bytes_free, bytes_read;
-	struct tcp_req *r;
 	int fd;
 
-	r=&c->req;
 	fd=c->fd;
 	bytes_free=TCP_BUF_SIZE- (int)(r->pos - r->buf);
 	
@@ -133,12 +136,11 @@ again:
  * when either r->body!=0 or r->state==H_BODY =>
  * all headers have been read. It should be called in a while loop.
  * returns < 0 if error or 0 if EOF */
-int tcp_read_headers(struct tcp_connection *c)
+int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 {
 	unsigned int remaining;
 	int bytes;
 	char *p;
-	struct tcp_req* r;
 	
 	#define crlf_default_skip_case \
 					case '\n': \
@@ -181,17 +183,16 @@ int tcp_read_headers(struct tcp_connection *c)
 							  break
 
 
-	r=&c->req;
 	/* if we still have some unparsed part, parse it first, don't do the read*/
 	if (r->parsed<r->pos){
 		bytes=0;
 	}else{
 #ifdef USE_TLS
 		if (c->type==PROTO_TLS)
-			bytes=tls_read(c);
+			bytes=tls_read(c,r);
 		else
 #endif
-			bytes=tcp_read(c);
+			bytes=tcp_read(c,r);
 		if (bytes<=0) return bytes;
 	}
 	p=r->parsed;
@@ -430,8 +431,32 @@ skip:
 	return bytes;
 }
 
+void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
+{
+	long response[2];
+	
+	LM_DBG(" releasing con %p, state %ld, fd=%d, id=%d\n",
+			c, state, c->fd, c->id);
+	LM_DBG(" extra_data %p\n", c->extra_data);
 
+	if (c->con_req)
+		pkg_free(c->con_req);
 
+	/* release req & signal the parent */
+	if (c->fd!=-1) close(c->fd);
+	/* errno==EINTR, EWOULDBLOCK a.s.o todo */
+	response[0]=(long)c;
+	response[1]=state;
+	if (send_all(unix_sock, response, sizeof(response))<=0)
+		LM_ERR("send_all failed\n");
+}
+
+/* Responsible for reading the request
+ *	* if returns >= 0 : it keeps the connection for further usage
+ *			or releases it manually
+ *	* if returns <  0 : the connection should be released by the
+ *			upper layer
+ */
 int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 {
 	int bytes;
@@ -439,166 +464,248 @@ int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 	int resp;
 	long size;
 	struct tcp_req* req;
-/*	int s; */
 	char c;
+	struct receive_info local_rcv;
+	char *msg_buf;
+	int msg_len;
 		
-		bytes=-1;
-		total_bytes=0;
-		resp=CONN_RELEASE;
-		/* s=con->fd; */
-		req=&con->req;
-#ifdef USE_TLS
-		if (con->type==PROTO_TLS){
-			if (tls_fix_read_conn(con)!=0){
-				resp=CONN_ERROR;
-				goto end_req;
-			}
-			if(con->state!=S_CONN_OK) goto end_req; /* not enough data */
-		}
-#endif
+	bytes=-1;
+	total_bytes=0;
+	resp=CONN_RELEASE;
 
-again:
-		if(req->error==TCP_REQ_OK){
-			bytes=tcp_read_headers(con);
-#ifdef EXTRA_DEBUG
-						/* if timeout state=0; goto end__req; */
-			LM_DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
-					bytes, (int)(req->parsed-req->start), req->state,
-					req->error );
-			LM_DBG("last char=0x%02X, parsed msg=\n%.*s\n",
-					*(req->parsed-1), (int)(req->parsed-req->start),
-					req->start);
-#endif
-			if (bytes==-1){
-				LM_ERR("failed to read \n");
-				resp=CONN_ERROR;
-				goto end_req;
-			}
-			total_bytes+=bytes;
-			/* eof check:
-			 * is EOF if eof on fd and req.  not complete yet,
-			 * if req. is complete we might have a second unparsed
-			 * request after it, so postpone release_with_eof
-			 */
-			if ((con->state==S_CONN_EOF) && (req->complete==0)) {
-				LM_DBG("EOF\n");
-				resp=CONN_EOF;
-				goto end_req;
-			}
-		
-		}
-		if (req->error!=TCP_REQ_OK){
-			LM_ERR("bad request, state=%d, error=%d "
-					  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
-					  (int)(req->pos-req->buf), req->buf,
-					  (int)(req->parsed-req->start), req->start);
-			LM_DBG("- received from: port %d\n", con->rcv.src_port);
-			print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
+	if (con->con_req) {
+		req=con->con_req;
+		LM_DBG("Using the per connection buff \n");
+	} else {
+		LM_DBG("Using the global ( per process ) buff \n");
+		req=&current_req;
+	}
+
+#ifdef USE_TLS
+	if (con->type==PROTO_TLS){
+		if (tls_fix_read_conn(con)!=0){
 			resp=CONN_ERROR;
 			goto end_req;
 		}
-		if (req->complete){
-#ifdef EXTRA_DEBUG
-			LM_DBG("end of header part\n");
-			LM_DBG("- received from: port %d\n", con->rcv.src_port);
-			print_ip("- received from: ip ", &con->rcv.src_ip, "\n");
-			LM_DBG("headers:\n%.*s.\n",(int)(req->body-req->start), req->start);
+		if(con->state!=S_CONN_OK) goto end_req; /* not enough data */
+	}
 #endif
-			if (req->has_content_len){
-				LM_DBG("content-length= %d\n", req->content_len);
-#ifdef EXTRA_DEBUG
-				LM_DBG("body:\n%.*s\n", req->content_len,req->body);
-#endif
-			}else{
-				req->error=TCP_REQ_BAD_LEN;
-				LM_ERR("content length not present or unparsable\n");
-				resp=CONN_ERROR;
-				goto end_req;
-			}
-			/* if we are here everything is nice and ok*/
-			update_stat( pt[process_no].load, +1 );
-			resp=CONN_RELEASE;
-#ifdef EXTRA_DEBUG
-			LM_DBG("calling receive_msg(%p, %d, )\n",
-					req->start, (int)(req->parsed-req->start));
-#endif
-			/* rcv.bind_address should always be !=0 */
-			bind_address=con->rcv.bind_address;
-			/* just for debugging use sendipv4 as receiving socket  FIXME*/
-			/*
-			if (con->rcv.dst_ip.af==AF_INET6){
-				bind_address=sendipv6_tcp;
-			}else{
-				bind_address=sendipv4_tcp;
-			}
-			*/
-			con->rcv.proto_reserved1=con->id; /* copy the id */
-			c=*req->parsed; /* ugly hack: zero term the msg & save the
-							   previous char, req->parsed should be ok
-							   because we always alloc BUF_SIZE+1 */
-			*req->parsed=0;
 
-			if (req->state==H_PING_CRLFCRLF) {
-				if (tcp_send( con->rcv.bind_address, con->rcv.proto,CRLF,
-				CRLF_LEN, &(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
-					LM_ERR("CRLF pong - tcp_send() failed\n");
-				}
-			} else if (receive_msg(req->start, req->parsed-req->start,
-			&con->rcv)<0) {
-				*req->parsed=c;
-				resp=CONN_ERROR;
-				update_stat( pt[process_no].load, -1 );
-				goto end_req;
-			}
-			*req->parsed=c;
-		
-			update_stat( pt[process_no].load, -1 );
-
-			/* prepare for next request */
-			size=req->pos-req->parsed;
-			if (size) memmove(req->buf, req->parsed, size);
+again:
+	if(req->error==TCP_REQ_OK){
+		bytes=tcp_read_headers(con,req);
+//#ifdef EXTRA_DEBUG
+					/* if timeout state=0; goto end__req; */
+		LM_DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
+				bytes, (int)(req->parsed-req->start), req->state,
+				req->error );
+		LM_DBG("last char=0x%02X, parsed msg=\n%.*s\n",
+				*(req->parsed-1), (int)(req->parsed-req->start),
+				req->start);
+//#endif
+		if (bytes==-1){
+			LM_ERR("failed to read \n");
+			resp=CONN_ERROR;
+			goto end_req;
+		}
+		total_bytes+=bytes;
+		/* eof check:
+		 * is EOF if eof on fd and req.  not complete yet,
+		 * if req. is complete we might have a second unparsed
+		 * request after it, so postpone release_with_eof
+		 */
+		if ((con->state==S_CONN_EOF) && (req->complete==0)) {
+			LM_DBG("EOF\n");
+			resp=CONN_EOF;
+			goto end_req;
+		}
+	
+	}
+	if (req->error!=TCP_REQ_OK){
+		LM_ERR("bad request, state=%d, error=%d "
+				  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
+				  (int)(req->pos-req->buf), req->buf,
+				  (int)(req->parsed-req->start), req->start);
+		LM_DBG("- received from: port %d\n", con->rcv.src_port);
+		print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
+		resp=CONN_ERROR;
+		goto end_req;
+	}
+	if (req->complete){
 #ifdef EXTRA_DEBUG
-			LM_DBG("preparing for new request, kept %ld bytes\n", size);
+		LM_DBG("end of header part\n");
+		LM_DBG("- received from: port %d\n", con->rcv.src_port);
+		print_ip("- received from: ip ", &con->rcv.src_ip, "\n");
+		LM_DBG("headers:\n%.*s.\n",(int)(req->body-req->start), req->start);
 #endif
-			req->pos=req->buf+size;
-			req->parsed=req->buf;
-			req->start=req->buf;
-			req->body=0;
-			req->error=TCP_REQ_OK;
-			req->state=H_SKIP_EMPTY;
-			req->complete=req->content_len=req->has_content_len=0;
-			req->bytes_to_go=0;
-			/* if we still have some unparsed bytes, try to  parse them too*/
-			if (size) goto again;
-			else if (con->state==S_CONN_EOF){
-				LM_DBG("EOF after reading complete request\n");
-				resp=CONN_EOF;
-			}
-			
+		if (req->has_content_len){
+			LM_DBG("content-length= %d\n", req->content_len);
+#ifdef EXTRA_DEBUG
+			LM_DBG("body:\n%.*s\n", req->content_len,req->body);
+#endif
+		}else{
+			req->error=TCP_REQ_BAD_LEN;
+			LM_ERR("content length not present or unparsable\n");
+			resp=CONN_ERROR;
+			goto end_req;
 		}
 		
+		/* update the timeout - we succesfully read the request */
+		con->timeout=get_ticks()+TCP_CHILD_MAX_MSG_TIME;
+
+		/* if we are here everything is nice and ok*/
+		update_stat( pt[process_no].load, +1 );
+		resp=CONN_RELEASE;
+#ifdef EXTRA_DEBUG
+		LM_DBG("calling receive_msg(%p, %d, )\n",
+				req->start, (int)(req->parsed-req->start));
+#endif
+		/* rcv.bind_address should always be !=0 */
+		bind_address=con->rcv.bind_address;
+		/* just for debugging use sendipv4 as receiving socket  FIXME*/
+		/*
+		if (con->rcv.dst_ip.af==AF_INET6){
+			bind_address=sendipv6_tcp;
+		}else{
+			bind_address=sendipv4_tcp;
+		}
+		*/
+		con->rcv.proto_reserved1=con->id; /* copy the id */
+		c=*req->parsed; /* ugly hack: zero term the msg & save the
+						   previous char, req->parsed should be ok
+						   because we always alloc BUF_SIZE+1 */
+		*req->parsed=0;
+
+		/* prepare for next request */
+		size=req->pos-req->parsed;
+
+		if (req->state==H_PING_CRLFCRLF) {
+			/* we send the reply */
+			if (tcp_send( con->rcv.bind_address, con->rcv.proto,CRLF,
+			CRLF_LEN, &(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
+				LM_ERR("CRLF pong - tcp_send() failed\n");
+			}
+
+			if (!size) {
+				/* we can release the connection */
+				io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING);
+				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+				if (con->state==S_CONN_EOF)
+					release_tcpconn(con, CONN_EOF, tcpmain_sock);
+				else
+					release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+			}
+		} else { 	
+			msg_buf = req->start;
+			msg_len = req->parsed-req->start;
+			local_rcv = con->rcv;
+
+			if (!size) {
+				/* did not read any more things -  we can release the connection */
+				LM_DBG("We're releasing the connection in state %d \n",con->state);
+
+				if (req != &current_req) {
+					/* we have the buffer in the connection tied buff - 
+					 *	detach it , release the conn and free it afterwards */
+					con->con_req = NULL;
+				}
+
+				io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING);
+				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+				/* if we have EOF, signal that to MAIN as well
+				 * otherwise - just pass it back */
+				if (con->state==S_CONN_EOF)
+					release_tcpconn(con, CONN_EOF, tcpmain_sock);
+				else
+					release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+			} else {
+				LM_DBG("We still have things on the pipe - keeping connection \n");
+			}
+
+			if (receive_msg(msg_buf, msg_len,
+				&local_rcv) <0)
+					LM_ERR("receive_msg failed \n");
+
+			if (req != &current_req)
+				pkg_free(req);
+		}
+
+		*req->parsed=c;
+	
+		update_stat( pt[process_no].load, -1 );
+
+		if (size) memmove(req->buf, req->parsed, size);
+#ifdef EXTRA_DEBUG
+		LM_DBG("preparing for new request, kept %ld bytes\n", size);
+#endif
+		req->pos=req->buf+size;
+		req->parsed=req->buf;
+		req->start=req->buf;
+		req->body=0;
+		req->error=TCP_REQ_OK;
+		req->state=H_SKIP_EMPTY;
+		req->complete=req->content_len=req->has_content_len=0;
+		req->bytes_to_go=0;
+		con->msg_attempts = 0;
+
+		/* if we still have some unparsed bytes, try to  parse them too*/
+		if (size) goto again;
+	} else {
+		/* request not complete - check the if the thresholds are exceeded */
+
+		con->msg_attempts ++;
+		if (con->msg_attempts == TCP_CHILD_MAX_MSG_CHUNK) {
+			LM_ERR("Made %u read attempts but message is not complete yet - "
+				   "closing connection \n",con->msg_attempts);
+			resp = CONN_ERROR;
+			goto end_req;
+		}
+
+		if (req == &current_req) {
+			/* let's duplicate this - most likely another conn will come in */
+
+			LM_DBG("We didn't manage to read a full request. Back to child poll\n");
+			/* FIXME - PKG or SHM ? */
+			con->con_req = pkg_malloc(sizeof(struct tcp_req));
+			if (con->con_req == NULL) {
+				LM_ERR("No more mem for dynamic con request buffer\n");
+				resp = CONN_ERROR;
+				goto end_req;
+			}
+
+			con->con_req->content_len = req->content_len;
+			con->con_req->bytes_to_go = req->bytes_to_go;
+			con->con_req->error = req->error;
+			con->con_req->state = req->state;
+
+			if (req->pos != req->buf) {
+				/* we have read some bytes */
+				memcpy(con->con_req->buf,req->buf,req->pos-req->buf);
+				con->con_req->pos = con->con_req->buf + (req->pos-req->buf);
+			} else {
+				con->con_req->pos = con->con_req->buf;
+			}
+
+			if (req->start != req->buf) 
+				con->con_req->start = con->con_req->buf + (req->start-req->buf);
+			else
+				con->con_req->start = con->con_req->buf;
+
+			if (req->parsed != req->buf) 
+				con->con_req->parsed = con->con_req->buf + (req->parsed-req->buf);
+			else
+				con->con_req->parsed = con->con_req->buf;
+
+			/* zero out the per process req for the future SIP msg */
+			init_tcp_req(&current_req);
+		}
+	}
 		
+		
+	LM_DBG("tcp_read_req end\n");
 	end_req:
 		if (bytes_read) *bytes_read=total_bytes;
 		return resp;
-}
-
-
-
-void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
-{
-	long response[2];
-	
-		LM_DBG(" releasing con %p, state %ld, fd=%d, id=%d\n",
-				c, state, c->fd, c->id);
-		LM_DBG(" extra_data %p\n", c->extra_data);
-		/* release req & signal the parent */
-		if (c->fd!=-1) close(c->fd);
-		/* errno==EINTR, EWOULDBLOCK a.s.o todo */
-		response[0]=(long)c;
-		response[1]=state;
-		if (send_all(unix_sock, response, sizeof(response))<=0)
-			LM_ERR("send_all failed\n");
 }
 
 
@@ -800,12 +907,18 @@ again:
 				release_tcpconn(con, CONN_ERROR, tcpmain_sock);
 				break; /* try to recover */
 			}
+
+			/* reset the per process TCP req struct */
+			init_tcp_req(&current_req);
+			/* 0 attempts so far for this SIP MSG */
+			con->msg_attempts = 0;
+
 			/* must be before io_watch_add, io_watch_add might catch some
 			 * already existing events => might call handle_io and
 			 * handle_io might decide to del. the new connection =>
 			 * must be in the list */
 			tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
-			con->timeout=get_ticks()+TCP_CHILD_TIMEOUT;
+			con->timeout=get_ticks()+TCP_CHILD_MAX_MSG_TIME;
 			if (io_watch_add(&io_w, s, F_TCPCONN, con)<0){
 				LM_CRIT("failed to add new socket to the fd list\n");
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
@@ -815,15 +928,12 @@ again:
 		case F_TCPCONN:
 			con=(struct tcp_connection*)fm->data;
 			resp=tcp_read_req(con, &ret);
-			if (resp<0){
+			if (resp<0) {
 				ret=-1; /* some error occured */
 				io_watch_del(&io_w, con->fd, idx, IO_FD_CLOSING);
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 				con->state=S_CONN_BAD;
 				release_tcpconn(con, resp, tcpmain_sock);
-			}else{
-				/* update timeout */
-				con->timeout=get_ticks()+TCP_CHILD_TIMEOUT;
 			}
 			break;
 		case F_NONE:
@@ -855,7 +965,7 @@ static inline void tcp_receive_timeout(void)
 	unsigned int ticks;
 	
 	ticks=get_ticks();
-	for (con=tcp_conn_lst; con; con=next){
+	for (con=tcp_conn_lst; con; con=next) {
 		next=con->c_next; /* safe for removing */
 		if (con->state<0){   /* kill bad connections */ 
 			/* S_CONN_BAD or S_CONN_ERROR, remove it */
@@ -867,13 +977,13 @@ static inline void tcp_receive_timeout(void)
 			continue;
 		}
 		if (con->timeout<=ticks){
-			/* expired, return to "tcp main" */
-			LM_DBG("%p expired (%d, %d) lt=%d\n",
+			/* expired, signal error & return to "tcp main" */
+			LM_DBG("%p expired - (%d, %d) lt=%d\n",
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-			release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
+			release_tcpconn(con, CONN_ERROR, tcpmain_sock);
 		}
 	}
 }
@@ -892,6 +1002,7 @@ void tcp_receive_loop(int unix_sock)
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
+
 	/* main loop */
 	switch(io_w.poll_method){
 		case POLL_POLL:

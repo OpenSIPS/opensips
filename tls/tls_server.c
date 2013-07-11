@@ -822,7 +822,7 @@ error:
  * ssl structures 
  */
 size_t
-tls_read(struct tcp_connection * c)
+tls_read(struct tcp_connection * c,struct tcp_req *r)
 {
 	/*
 	* no lock acquired 
@@ -831,11 +831,9 @@ tls_read(struct tcp_connection * c)
 	* shamelessly stolen from tcp_read 
 	*/
 	int             bytes_free;
-	struct tcp_req *r;
 	int             fd,
 					read;
 
-	r = &c->req;
 	fd = c->fd;
 	bytes_free = TCP_BUF_SIZE - (int) (r->pos - r->buf);
 
