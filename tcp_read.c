@@ -977,13 +977,15 @@ static inline void tcp_receive_timeout(void)
 			continue;
 		}
 		if (con->timeout<=ticks){
-			/* expired, signal error & return to "tcp main" */
 			LM_DBG("%p expired - (%d, %d) lt=%d\n",
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-			release_tcpconn(con, CONN_ERROR, tcpmain_sock);
+			if (con->msg_attempts)
+				release_tcpconn(con, CONN_ERROR, tcpmain_sock);
+			else
+				release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
 		}
 	}
 }
