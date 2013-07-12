@@ -152,6 +152,7 @@ void free_rdata_list(struct rdata* head);
 
 
 extern int dns_try_ipv6;
+extern int dns_try_naptr;
 
 
 #define HEX2I(c) \

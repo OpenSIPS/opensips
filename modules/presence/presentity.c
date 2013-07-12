@@ -41,11 +41,12 @@
 #include "../alias_db/alias_db.h"
 #include "../../data_lump_rpl.h"
 #include "presentity.h"
-#include "presence.h" 
+#include "presence.h"
 #include "notify.h"
 #include "publish.h"
 #include "hash.h"
 #include "utils_func.h"
+
 
 
 #define DLG_STATES_NO  4
@@ -53,14 +54,12 @@ char* dialog_states[]= {  "trying",
                            "early",
                        "confirmed",
                      "terminated"};
-char* presence_notes[]={ "Calling",
-                         "Calling",
+char* presence_notes[]={ "Proceeding",
+                         "Proceeding",
                     "On the phone",
                                ""};
 
-unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name);
-xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
-													const char *ns);
+
 static str pu_200_rpl  = str_init("OK");
 static str pu_412_rpl  = str_init("Conditional request failed");
 
@@ -162,53 +161,32 @@ error:
 	return -1;
 }
 
-xmlAttrPtr xmlNodeGetAttrByName(xmlNodePtr node, const char *name)
-{
-	xmlAttrPtr attr = node->properties;
-	while (attr) {
-		if (xmlStrcasecmp(attr->name, (unsigned char*)name) == 0)
-			return attr;
-		attr = attr->next;
-	}
-	return NULL;
-}
-
-
-unsigned char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name)
-{
-	xmlAttrPtr attr = xmlNodeGetAttrByName(node, name);
-	if (attr)
-		return xmlNodeGetContent(attr->children);
-	else
-		return NULL;
-}
-
 
 xmlNodePtr xmlNodeGetChildByName(xmlNodePtr node, const char *name)
 {
-	xmlNodePtr cur = node->children;
-	while (cur) {
-		if (xmlStrcasecmp(cur->name, (unsigned char*)name) == 0)
-			return cur;
-		cur = cur->next;
-	}
-	return NULL;
+        xmlNodePtr cur = node->children;
+        while (cur) {
+                if (xmlStrcasecmp(cur->name, (unsigned char*)name) == 0)
+                        return cur;
+                cur = cur->next;
+        }
+        return NULL;
 }
 
 #define bla_extract_dlginfo(node, callid, fromtag, totag) \
 	do {\
-	callid  = xmlNodeGetAttrContentByName(node, "call-id");\
-	dir     = xmlNodeGetAttrContentByName(node, "direction");\
+	callid  = XMLNodeGetAttrContentByName(node, "call-id");\
+	dir     = XMLNodeGetAttrContentByName(node, "direction");\
 	if(dir == NULL) {\
 		LM_ERR("Dialog direction not specified\n");\
 		goto error;\
 	}\
 	if(xmlStrcasecmp(dir, (unsigned char*)"initiator") == 0) {\
-		fromtag = xmlNodeGetAttrContentByName(node, "local-tag");\
-		totag   = xmlNodeGetAttrContentByName(node, "remote-tag");\
+		fromtag = XMLNodeGetAttrContentByName(node, "local-tag");\
+		totag   = XMLNodeGetAttrContentByName(node, "remote-tag");\
 	} else {\
-		totag   = xmlNodeGetAttrContentByName(node, "local-tag");\
-		fromtag = xmlNodeGetAttrContentByName(node, "remote-tag");\
+		totag   = XMLNodeGetAttrContentByName(node, "local-tag");\
+		fromtag = XMLNodeGetAttrContentByName(node, "remote-tag");\
 	}\
 	xmlFree(dir);\
 	dir = NULL;\
@@ -224,6 +202,34 @@ int bla_same_dialog(unsigned char* n_callid, unsigned char* n_fromtag, unsigned 
 	if(n_totag && o_totag && xmlStrcasecmp(n_totag, o_totag))
 		return 0;
 	return 1;
+}
+
+int snom_fix_is_unchanged_publish_refresh(str body, str cur_body)
+{
+	xmlDocPtr doc = NULL;
+	xmlDocPtr cur_doc = NULL;
+	xmlNodePtr node;
+	xmlNodePtr cur_node;
+
+	doc = xmlParseMemory(body.s, body.len);
+	cur_doc = xmlParseMemory(cur_body.s, cur_body.len);
+	if (!doc || !cur_doc)
+                goto error;
+
+        node = XMLDocGetNodeByName(doc, "im", NULL);
+        cur_node = XMLDocGetNodeByName(cur_doc, "im", NULL);
+        if(node && cur_node && xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)xmlNodeGetContent(cur_node)) == 0) {
+		xmlFreeDoc(cur_doc);
+		xmlFreeDoc(doc);
+                return 1;
+        }
+error:
+	if (cur_doc)
+		xmlFreeDoc(cur_doc);
+	if (doc)
+		xmlFreeDoc(doc);
+
+	return 0;
 }
 
 int dialog_fix_remote_target(str *body, str *fixed_body)
@@ -399,21 +405,25 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 //	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
 //		   my_ps_update_body = NULL;
 //	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
-	db_key_t query_cols[13], update_keys[8], result_cols[1];
+	db_key_t query_cols[13], update_keys[8], result_cols[2];
 	db_op_t  query_ops[13];
 	db_val_t query_vals[13], update_vals[8];
 	int n_query_cols = 0;
 	int n_update_cols = 0;
 	str etag= {NULL, 0};
 	str notify_body = {NULL, 0};
+	str cur_body= {NULL, 0};
 	str cur_etag= {NULL, 0};
 	str* rules_doc= NULL;
 	str pres_uri= {NULL, 0};
 	pres_entry_t* p= NULL;
 	unsigned int hash_code;
+        unsigned int different_body = 0;
 	str body = presentity->body;
 	str *extra_hdrs = presentity->extra_hdrs;
 	db_res_t *result= NULL;
+
+
 
 	*sent_reply= 0;
 	if(presentity->event->req_auth)
@@ -462,6 +472,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	n_query_cols++;
 
 	result_cols[0] = &str_etag_col;
+	result_cols[1] = &str_body_col;
 
 	if(presentity->etag_new)
 	{
@@ -548,9 +559,10 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
 				&presentity->etag, hash_code);
 
-		if(!p)
+		if(!p || body.s)
 		{
 			lock_release(&pres_htable[hash_code].lock);
+                        p= NULL;
 			/* search also in db */
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 			{
@@ -558,7 +570,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					goto error;
 			}
 			if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
-					 result_cols, n_query_cols, 1, 0, &result) < 0)
+					 result_cols, n_query_cols, 2, 0, &result) < 0)
 			{
 					LM_ERR("unsuccessful sql query\n");
 					goto error;
@@ -579,7 +591,17 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					*sent_reply= 1;
 					goto done;
 			}
+                        else if (body.s) {
+                                different_body= 1;
 
+                                cur_body.s= (char*)RES_ROWS(result)[0].values[1].val.str_val.s;
+                                cur_body.len = RES_ROWS(result)[0].values[1].val.str_val.len;
+                                cur_body.s[cur_body.len] = '\0';
+
+                                if (snom_fix_is_unchanged_publish_refresh(body, cur_body)) {
+                                        different_body= 0;
+                                }
+                        }
 
 			pa_dbf.free_result(pa_db, result);
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
@@ -610,6 +632,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 				goto error;
 			}
 
+			if(publ_notify(presentity, pres_uri, body.s ? &body : 0, &presentity->etag,
+			   rules_doc, NULL) < 0)
+			{
+				LM_ERR("while sending notify\n");
+				goto error;
+			}
+
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
 			{
 				LM_ERR("unsuccessful sql use table\n");
@@ -623,6 +652,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 			LM_DBG("Expires=0, deleted from db %.*s\n",
 					presentity->user.len,presentity->user.s);
+
+                        /* Send another NOTIFY, this time rely on whatever is on the DB, so in case there are no documents an empty
+                         * NOTIFY will be sent to the watchers */
+			if(publ_notify(presentity, pres_uri, NULL, NULL, rules_doc, NULL) < 0)
+			{
+				LM_ERR("while sending notify\n");
+				goto error;
+			}
 
 			goto send_mxd_notify;
 		}
@@ -672,12 +709,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			(int)time(NULL);
 		n_update_cols++;
 
-		update_keys[n_update_cols] = &str_received_time_col;
-		update_vals[n_update_cols].type = DB_INT;
-		update_vals[n_update_cols].nul = 0;
-		update_vals[n_update_cols].val.int_val= presentity->received_time;
-		n_update_cols++;
-
 		update_keys[n_update_cols] = &str_sender_col;
 		update_vals[n_update_cols].type = DB_STR;
 		update_vals[n_update_cols].nul = 0;
@@ -701,6 +732,14 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			update_vals[n_update_cols].val.str_val = *extra_hdrs;
 			n_update_cols++;
 		}
+
+                if(different_body) {
+		         update_keys[n_update_cols] = &str_received_time_col;
+                        update_vals[n_update_cols].type = DB_INT;
+                        update_vals[n_update_cols].nul = 0;
+                        update_vals[n_update_cols].val.int_val= presentity->received_time;
+                        n_update_cols++;
+                }
 
 		if(body.s)
 		{
@@ -1015,10 +1054,10 @@ char* extract_sphere(str body)
 		return NULL;
 	}
 
-	node= xmlNodeGetNodeByName(doc->children, "sphere", "rpid");
+	node= XMLNodeGetNodeByName(doc->children, "sphere", "rpid");
 	
 	if(node== NULL)
-		node= xmlNodeGetNodeByName(doc->children, "sphere", "r");
+		node= XMLNodeGetNodeByName(doc->children, "sphere", "r");
 
 	if(node)
 	{
@@ -1044,25 +1083,6 @@ char* extract_sphere(str body)
 error:
 	xmlFreeDoc(doc);
 	return sphere;
-}
-
-xmlNodePtr xmlNodeGetNodeByName(xmlNodePtr node, const char *name,
-													const char *ns)
-{
-	xmlNodePtr cur = node;
-	while (cur) {
-		xmlNodePtr match = NULL;
-		if (xmlStrcasecmp(cur->name, (unsigned char*)name) == 0) {
-			if (!ns || (cur->ns && xmlStrcasecmp(cur->ns->prefix,
-							(unsigned char*)ns) == 0))
-				return cur;
-		}
-		match = xmlNodeGetNodeByName(cur->children, name, ns);
-		if (match)
-			return match;
-		cur = cur->next;
-	}
-	return NULL;
 }
 
 char* get_sphere(str* pres_uri)
@@ -1428,13 +1448,13 @@ str* xml_dialog2presence(str* pres_uri, str* body)
 		LM_ERR("Wrong formated xml document\n");
 		return NULL;
 	}
-	dialog_node = xmlNodeGetNodeByName(dlg_doc->children, "dialog", 0);
+	dialog_node = XMLNodeGetNodeByName(dlg_doc->children, "dialog", 0);
 	if(!dialog_node)
 	{
 		goto done;
 	}
 
-	node = xmlNodeGetNodeByName(dialog_node, "state", 0);
+	node = XMLNodeGetNodeByName(dialog_node, "state", 0);
 	if(!node)
 		goto done;
 

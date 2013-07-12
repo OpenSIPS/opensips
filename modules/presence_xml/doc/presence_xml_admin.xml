@@ -190,6 +190,85 @@ modparam("presence_xml", "integrated_xcap_server", 1)
 		</example>
 	</section>
 	<section>
+		<title><varname>merge</varname> (int)</title>
+		<para>
+                Some presentities can publish different (R)PIDF presence documents.
+                In that case, the default behavior is to notify subscribers with an
+                aggregated presence document. However, some UAs do not support
+                receiving aggregated presence documents containing different presence
+                states and randomly choose one to display to the user. To prevent this,
+                it is possible to ask the presence server to merge the various presence
+                documents and always notify the most up to date document to the subscribers.
+		</para>
+                <para>
+                For example, if a UA publishes a first document valid for 60 minutes
+                indicating the presentity is available, and another UA publishes a second
+                document for the same presentity indicating it is away, subscribers will
+                be notified with the away state until it expires and the available state
+                is valid again.
+                </para>
+		<emphasis>Default value is <quote>0</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>merge</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_xml", "merge", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>merge_primary_source</varname> (str)</title>
+		<para>
+                Allows a specific presence source to have priority over others even
+                if it is not the last one having been published.
+                The <quote>merge_primary_source</quote> string needs to appear in
+                the tuple id for the source to be recognized as primary.
+		</para>
+                <para>
+                Requires the <quote>merge</quote> parameter to be set to 1.
+                </para>
+		<emphasis>Default value is <quote>primary</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>merge_primary_source</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_xml", "merge_primary_source", "calendar")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>cachedb_url</varname> (str)</title>
+		<para>
+                Allows caching the RPIDF activities and note elements in
+                the cachedb database.
+                If there is no RPIDF, stores the basic element or
+                the im element values.
+		</para>
+                <para>
+                It allows presence based routing.
+		</para>
+                <para>
+                Requires the <quote>merge</quote> parameter to be set to 1.
+                </para>
+		<emphasis>Default value is <quote>empty</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("presence_xml", "cachedb_url", "db://")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
 		<title><varname>xcap_server</varname> (str)</title>
 		<para>
 		The address of the xcap servers used for storage.

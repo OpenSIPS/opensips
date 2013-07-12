@@ -285,6 +285,7 @@ AUTO_ALIASES	auto_aliases
 DNS		 dns
 REV_DNS	 rev_dns
 DNS_TRY_IPV6    dns_try_ipv6
+DNS_TRY_NAPTR   dns_try_naptr
 DNS_RETR_TIME   dns_retr_time
 DNS_RETR_NO     dns_retr_no
 DNS_SERVERS_NO  dns_servers_no
@@ -555,6 +556,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{REV_DNS}	{ count(); yylval.strval=yytext; return REV_DNS; }
 <INITIAL>{DNS_TRY_IPV6}		{ count(); yylval.strval=yytext;
 								return DNS_TRY_IPV6; }
+<INITIAL>{DNS_TRY_NAPTR}	{ count(); yylval.strval=yytext;
+								return DNS_TRY_NAPTR; }
 <INITIAL>{DNS_RETR_TIME}	{ count(); yylval.strval=yytext;
 								return DNS_RETR_TIME; }
 <INITIAL>{DNS_RETR_NO}		{ count(); yylval.strval=yytext;
