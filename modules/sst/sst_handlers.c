@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: sst_handlers.c 7046 2010-07-22 14:07:23Z bogdan_iancu $
  *
  * Copyright (C) 2006 SOMA Networks, Inc.
  * Written by Ron Winacott (karwin)
@@ -342,6 +342,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 		}
 	}
 	setup_dialog_callbacks(did, info);
+        /* Early setup of default timeout */
         set_timeout_avp(msg, info->interval);
 	return;
 }
@@ -420,6 +421,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 	sst_info_t *info = (sst_info_t *)*(params->param);
 	sst_msg_info_t minfo = {0,0,0,0};
 	struct sip_msg* msg = params->msg;
+        int *param;
 
 	if (msg->first_line.type == SIP_REQUEST) {
 		if ((msg->first_line.u.request.method_value == METHOD_INVITE ||
@@ -433,23 +435,25 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				return;
 			}
                        /* Early resetting of the value here */
-                       info->interval = MIN(MIN(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                       if (minfo.se > 0)
+                                info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                       else {
+                                param = find_param_export("dialog", "default_timeout", INT_PARAM);
+                                info->interval = param?*param:12*3600;
+                       }
 	               info->supported = (minfo.supported?SST_UAC:SST_UNDF);
                        set_timeout_avp(msg, info->interval);
 		}
-		else if (msg->first_line.u.request.method_value == METHOD_PRACK) {
+		else if (msg->first_line.u.request.method_value == METHOD_PRACK
+                         || msg->first_line.u.request.method_value == METHOD_ACK) {
 			/* Special case here. The PRACK will cause the dialog
 			 * module to reset the timeout value to the ldg->lifetime
 			 * value and look for the new AVP value bound to the
 			 * 1XX/PRACK/200OK/ACK transaction and not to the
 			 * INVITE/200OK avp value. So we need to set the AVP
-			 * again! I think this is a bug in the dialog module,
-			 * either it should ignore PRACK like it ignored ACK, or
-			 * the setting of the timeout value when returning to the
-			 * confiremed callback code should look for the new AVP
-			 * value, which is does not.
+			 * again!
 			 */
-			LM_DBG("PRACK workaround applied!\n");
+			LM_DBG("ACK/PRACK workaround applied!%d\n", info->interval);
 			set_timeout_avp(msg, info->interval);
 		}
 	}
@@ -488,6 +492,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params) 
 {
 	struct sip_msg* msg = params->msg;
+        int *param;
 
 	/*
 	 * This test to see if the message is a response sould ALWAYS be
@@ -561,6 +566,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * header and forward back to the UAC and it will
 					 * deal with refreshing the session.
 					 */
+                                        info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
 					snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n", 
 							info->interval);
 					if (append_header(msg, se_buf)) {
@@ -577,8 +583,9 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * does not support it */
 					LM_DBG("UAC and UAS do not support timers!"
 							" No session timers for this session.\n");
-					/* Disable the dialog timeout HERE */
-					if (set_timeout_avp(msg, 0)) {
+                                        param = find_param_export("dialog", "default_timeout", INT_PARAM);
+                                        info->interval = param?*param:12*3600;
+					if (set_timeout_avp(msg, info->interval)) {
 						return;
 					}
 				}
