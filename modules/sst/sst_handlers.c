@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: sst_handlers.c 7046 2010-07-22 14:07:23Z bogdan_iancu $
  *
  * Copyright (C) 2006 SOMA Networks, Inc.
  * Written by Ron Winacott (karwin)
@@ -342,7 +342,8 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 		}
 	}
 	setup_dialog_callbacks(did, info);
-	set_timeout_avp(msg, info->interval);
+        /* Early setup of default timeout */
+        set_timeout_avp(msg, info->interval);
 	return;
 }
 
@@ -420,6 +421,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 	sst_info_t *info = (sst_info_t *)*(params->param);
 	sst_msg_info_t minfo = {0,0,0,0};
 	struct sip_msg* msg = params->msg;
+        int *param;
 
 	if (msg->first_line.type == SIP_REQUEST) {
 		if ((msg->first_line.u.request.method_value == METHOD_INVITE ||
@@ -432,23 +434,26 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				// FIXME: need an error message here
 				return;
 			}
-			/* Early resetting of the value here */
-			set_timeout_avp(msg, minfo.se);
-			info->interval = minfo.se;
+                       /* Early resetting of the value here */
+                       if (minfo.se > 0)
+                                info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                       else {
+                                param = find_param_export("dialog", "default_timeout", INT_PARAM);
+                                info->interval = param?*param:12*3600;
+                       }
+	               info->supported = (minfo.supported?SST_UAC:SST_UNDF);
+                       set_timeout_avp(msg, info->interval);
 		}
-		else if (msg->first_line.u.request.method_value == METHOD_PRACK) {
+		else if (msg->first_line.u.request.method_value == METHOD_PRACK
+                         || msg->first_line.u.request.method_value == METHOD_ACK) {
 			/* Special case here. The PRACK will cause the dialog
 			 * module to reset the timeout value to the ldg->lifetime
 			 * value and look for the new AVP value bound to the
 			 * 1XX/PRACK/200OK/ACK transaction and not to the
 			 * INVITE/200OK avp value. So we need to set the AVP
-			 * again! I think this is a bug in the dialog module,
-			 * either it should ignore PRACK like it ignored ACK, or
-			 * the setting of the timeout value when returning to the
-			 * confiremed callback code should look for the new AVP
-			 * value, which is does not.
+			 * again!
 			 */
-			LM_DBG("PRACK workaround applied!\n");
+			LM_DBG("ACK/PRACK workaround applied!%d\n", info->interval);
 			set_timeout_avp(msg, info->interval);
 		}
 	}
@@ -468,6 +473,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				return;
 			}
 			set_timeout_avp(msg, minfo.se);
+	                info->supported = (minfo.supported?SST_UAC:SST_UNDF);
 			info->interval = minfo.se;
 		}
 	}
@@ -486,6 +492,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params) 
 {
 	struct sip_msg* msg = params->msg;
+        int *param;
 
 	/*
 	 * This test to see if the message is a response sould ALWAYS be
@@ -534,8 +541,13 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 				LM_ERR("failed to parse sst information for the 2XX reply\n");
 				return;
 			}
-
+                        LM_DBG("parsing 200 OK response %d / %d\n", minfo.supported, minfo.se);
+                        if (info->supported != SST_UAC) {
+                                info->supported = (minfo.supported?SST_UAS:SST_UNDF);
+                        }
 			if (minfo.se != 0) {
+                                info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                                LM_DBG("UAS supports timer\n");
 				if (set_timeout_avp(msg, info->interval)) {
 					// FIXME: need an error message here
 					return;
@@ -543,9 +555,10 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 			}
 			else {
 				/* no se header found, we want to resquest it. */
-				if (info->requester == SST_PXY || info->supported == SST_UAC) {
+				if (info->supported == SST_UAC) {
 					char se_buf[80];
 					
+                                        LM_DBG("UAC supports timer\n");
 					LM_DBG("appending the Session-Expires: header to the 2XX reply."
 							" UAC will deal with it.\n");
 					/*
@@ -553,6 +566,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * header and forward back to the UAC and it will
 					 * deal with refreshing the session.
 					 */
+                                        info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
 					snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n", 
 							info->interval);
 					if (append_header(msg, se_buf)) {
@@ -569,6 +583,11 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * does not support it */
 					LM_DBG("UAC and UAS do not support timers!"
 							" No session timers for this session.\n");
+                                        param = find_param_export("dialog", "default_timeout", INT_PARAM);
+                                        info->interval = param?*param:12*3600;
+					if (set_timeout_avp(msg, info->interval)) {
+						return;
+					}
 				}
 			}
 		} /* End of 2XX for an INVITE */
@@ -824,6 +843,7 @@ static int set_timeout_avp(struct sip_msg *msg, unsigned int value)
 				if (pv_set_value(msg,timeout_avp,EQ_T,&pv_val)!=0) {
 					LM_ERR("failed to set new dialog timeout value\n");
 				} else {
+                                        LM_DBG("set dialog timeout value to %d\n", value);
 					rtn = 0;
 				}
 			}
@@ -869,12 +889,10 @@ static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo)
 	 * if not found or an error parsing the one it did find! So assume
 	 * it is not found if unsuccessfull.
 	 */
-	if ((rtn = parse_supported(msg)) == 0) {
-		if ((((struct supported_body*)msg->supported->parsed)->supported_all
-						& F_SUPPORTED_TIMER)) {
+        if (msg->supported && parse_supported(msg) == 0 &&
+                            (get_supported(msg) & F_SUPPORTED_TIMER))
 			minfo->supported = 1;
-		}
-	}
+
 	/*
 	 * Parse the Min-SE: header next.
 	 */
@@ -954,8 +972,8 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info)
 	 * immutable! we must do all the real work in the DLGCB_FRD
 	 * callback were we can change the message.
 	 */
-	LM_DBG("Adding callback DLGCB_RESPONSE_FWDED\n");
-	dlg_binds->register_dlgcb(did, DLGCB_RESPONSE_FWDED,
+	LM_DBG("Adding callback DLGCB_RESPONSE_FWDED|DLGCB_RESPONSE_WITHIN\n");
+	dlg_binds->register_dlgcb(did, DLGCB_RESPONSE_FWDED|DLGCB_RESPONSE_WITHIN,
 			sst_dialog_response_fwded_CB, info, NULL);
 	
 	LM_DBG("Adding mi handler\n");
