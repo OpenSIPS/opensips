@@ -1,39 +1,7 @@
 %define name    opensips
-%define ver     1.9.0
-%define rel     0
+%define ver     1.9.1
+%define rel     5
 %define _sharedir %{_prefix}/share
-
-%define EXCLUDED_MODULES	aaa_radius b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cpl-c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_unixodbc dialplan event_rabbitmq h350 identity jabber json ldap lua httpd pi_http mi_xmlrpc mmgeoip osp perl presence presence_dialoginfo presence_mwi presence_xml pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp regex rls snmpstats xcap xcap_client xmpp
-%define MYSQL_MODULES		modules/db_mysql
-%define UNIXODBC_MODULES	modules/db_unixodbc
-%define POSTGRES_MODULES	modules/db_postgres
-%define XMPP_MODULES		modules/jabber modules/xmpp
-%define CPL_MODULES		modules/cpl-c
-%define SNMPSTATS_MODULES	modules/snmpstats
-%define PRESENCE_MODULES	modules/presence modules/presence_dialoginfo modules/presence_xml modules/presence_mwi modules/presence_xcapdiff modules/pua modules/pua_bla modules/pua_dialoginfo modules/pua_mi modules/pua_usrloc modules/pua_xmpp modules/rls modules/xcap modules/xcap_client
-%define RADIUS_MODULES		modules/aaa_radius modules/peering
-%define B2BUA_MODULES		modules/b2b_entities modules/b2b_logic
-%define HTTP_MODULES		modules/db_http modules/httpd modules/pi_http
-%define JSON_MODULES		modules/json
-%define     CASSANDRA_MODULES	modules/cachedb_cassandra
-%define COUCHBASE_MODULES	modules/cachedb_couchbase
-%define MEMCACHED_MODULES	modules/cachedb_memcached
-%define     MONGODB_MODULES	modules/cachedb_mongodb
-%define REDIS_MODULES		modules/cachedb_redis
-%define RABBITMQ_MODULES	modules/event_rabbitmq
-%define XMLRPC_MODULES		modules/mi_xmlrpc
-%define ORACLE_MODULES		modules/db_oracle
-%define BERKELEY_MODULES	modules/db_berkeley
-%define     OSP_MODULES		modules/osp
-%define PERL_MODULES		modules/perl modules/db_perlvdb
-%define CARRIERROUTE_MODULES	modules/carrierroute
-%define MMGEOIP_MODULES		modules/mmgeoip
-%define LDAP_MODULES		modules/ldap modules/h350
-%define IDENTITY_MODULES	modules/identity
-%define REGEX_MODULES		modules/regex modules/dialplan
-
-
-
 
 Summary:      OpenSIPS, very fast and flexible SIP Server
 Name:         %name
@@ -313,274 +281,85 @@ This module provides access to a database that is implemented as a HTTP server.
 It may be used in special cases where traversing firewalls is a problem,
 or where data encryption is required. 
 
+%package  cachedb_cassandra
+Summary:  Cassandra connector
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+
+%description  cachedb_cassandra
+Cassandra module is an implementation of a cache system designed to
+work with a cassandra server.
+
+%package  cachedb_mongodb
+Summary:  Mongodb connector
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+
+%description  cachedb_mongodb
+Mongodb module is an implementation of a cache system designed to
+work with a mongodb server.
+
+%package  osp
+Summary:  OSP Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+
+%description  osp
+The OSP module enables OpenSIPS to support secure, multi-lateral peering using
+the OSP standard defined by ETSI (TS 101 321 V4.1.1).
+
+%package  perl
+Summary:  Helps implement your own OpenSIPS extensions in Perl
+Group:    System Environment/Daemons
+BuildRequires:  perl(ExtUtils::MakeMaker),perl(ExtUtils::Embed), perl-devel
+Requires: opensips = %ver
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+
+%description  perl
+The time needed when writing a new OpenSIPS module unfortunately is quite
+high, while the options provided by the configuration file are limited to
+the features implemented in the modules. With this Perl module, you can
+easily implement your own OpenSIPS extensions in Perl.  This allows for
+simple access to the full world of CPAN modules. SIP URI rewriting could be
+implemented based on regular expressions; accessing arbitrary data backends,
+e.g. LDAP or Berkeley DB files, is now extremely simple.
+
+%package  perlvdb
+Summary:  Perl virtual database engine
+Group:    System Environment/Daemons
+BuildRequires:  perl(ExtUtils::MakeMaker)
+Requires: opensips = %ver
+Requires: opensips-perl
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+
+%description  perlvdb
+The Perl Virtual Database (VDB) provides a virtualization framework for
+OpenSIPS's database access. It does not handle a particular database engine
+itself but lets the user relay database requests to arbitrary Perl functions.
+
+%package  tlsops
+Summary:  TLS-relating functions for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: opensips = %ver
+
+%description  tlsops
+The opensips-tlsops package implements TLS related functions to use in the
+routing script, and exports pseudo variables with certificate and TLS
+parameters.
+
 
 
 %prep
 %setup -n %{name}-%{ver}-tls
 
 %build
-make all exclude_modules="%EXCLUDED_MODULES" cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%MYSQL_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%POSTGRES_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%UNIXODBC_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%XMPP_MODULES"      cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%CPL_MODULES"       cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%PRESENCE_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%RADIUS_MODULES"    cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%B2BUA_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%SNMPSTATS_MODULES" cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%LDAP_MODULES"	  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%IDENTITY_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%REGEX_MODULES"	  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%MMGEOIP_MODULES"	  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%CARRIERROUTE_MODULES" cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%MEMCACHED_MODULES" cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%JSON_MODULES"      cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%RABBITMQ_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%COUCHBASE_MODULES" cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%REDIS_MODULES"     cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%BERKELEY_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make utils modules="%BERKELEY_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%ORACLE_MODULES"  ORAVERSION=11.2/client cfg-target=/%{_sysconfdir}/opensips/
-make utils modules="%ORACLE_MODULES"  ORAVERSION=11.2/client cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%XMLRPC_MODULES"  cfg-target=/%{_sysconfdir}/opensips/
-make modules modules="%HTTP_MODULES"	  cfg-target=/%{_sysconfdir}/opensips/
+make all exclude_modules="" ORAVERSION=11.2/client cfg-target=/%{_sysconfdir}/opensips/
 
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf "$RPM_BUILD_ROOT"
 
-make install skip_modules="%EXCLUDED_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%MYSQL_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%MYSQL_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%POSTGRES_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%POSTGRES_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%UNIXODBC_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%UNIXODBC_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%XMPP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%XMPP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%CPL_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%CPL_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%PRESENCE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%PRESENCE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%RADIUS_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%RADIUS_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%B2BUA_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%B2BUA_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%SNMPSTATS_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%SNMPSTATS_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%LDAP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%LDAP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%IDENTITY_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%IDENTITY_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%REGEX_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%REGEX_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%MMGEOIP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%MMGEOIP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%CARRIERROUTE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%CARRIERROUTE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%MEMCACHED_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%MEMCACHED_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%JSON_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%JSON_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%RABBITMQ_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%RABBITMQ_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%COUCHBASE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%COUCHBASE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%REDIS_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%REDIS_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%BERKELEY_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%BERKELEY_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%ORACLE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%ORACLE_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%XMLRPC_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%XMLRPC_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-modules modules="%HTTP_MODULES" \
-		basedir=$RPM_BUILD_ROOT \
-		prefix=/usr \
-		cfg-prefix=$RPM_BUILD_ROOT \
-		cfg-target=/%{_sysconfdir}/opensips/ 
-make install-doc modules="%HTTP_MODULES" \
+make install exclude_modules="" \
 		basedir=$RPM_BUILD_ROOT \
 		prefix=/usr \
 		cfg-prefix=$RPM_BUILD_ROOT \
@@ -649,11 +428,13 @@ fi
 %doc %{_docdir}/opensips/README.group
 %doc %{_docdir}/opensips/README.imc
 %doc %{_docdir}/opensips/README.load_balancer
+%doc %{_docdir}/opensips/README.lua
 %doc %{_docdir}/opensips/README.mangler
 %doc %{_docdir}/opensips/README.maxfwd
 %doc %{_docdir}/opensips/README.mediaproxy
 %doc %{_docdir}/opensips/README.mi_datagram
 %doc %{_docdir}/opensips/README.mi_fifo
+%doc %{_docdir}/opensips/README.mi_http
 %doc %{_docdir}/opensips/README.msilo
 %doc %{_docdir}/opensips/README.nat_traversal
 %doc %{_docdir}/opensips/README.nathelper
@@ -732,11 +513,13 @@ fi
 %{_libdir}/opensips/modules/group.so
 %{_libdir}/opensips/modules/imc.so
 %{_libdir}/opensips/modules/load_balancer.so
+%{_libdir}/opensips/modules/lua.so
 %{_libdir}/opensips/modules/mangler.so
 %{_libdir}/opensips/modules/maxfwd.so
 %{_libdir}/opensips/modules/mediaproxy.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
+%{_libdir}/opensips/modules/mi_http.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/nathelper.so
@@ -748,6 +531,7 @@ fi
 %{_libdir}/opensips/modules/pike.so
 %{_libdir}/opensips/modules/presence_callinfo.so
 %{_libdir}/opensips/modules/presence_xcapdiff.so
+%{_libdir}/opensips/modules/python.so
 %{_libdir}/opensips/modules/qos.so
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
@@ -985,54 +769,7 @@ fi
 %{_libdir}/opensips/modules/db_berkeley.so
 %{_libdir}/opensips/opensipsctl/opensipsctl.db_berkeley
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.db_berkeley
-%{_sharedir}/opensips/db_berkeley/opensips/acc
-%{_sharedir}/opensips/db_berkeley/opensips/active_watchers
-%{_sharedir}/opensips/db_berkeley/opensips/address
-%{_sharedir}/opensips/db_berkeley/opensips/aliases
-%{_sharedir}/opensips/db_berkeley/opensips/b2b_entities
-%{_sharedir}/opensips/db_berkeley/opensips/b2b_logic
-%{_sharedir}/opensips/db_berkeley/opensips/cachedb
-%{_sharedir}/opensips/db_berkeley/opensips/carrierfailureroute
-%{_sharedir}/opensips/db_berkeley/opensips/carrierroute
-%{_sharedir}/opensips/db_berkeley/opensips/closeddial
-%{_sharedir}/opensips/db_berkeley/opensips/cpl
-%{_sharedir}/opensips/db_berkeley/opensips/dbaliases
-%{_sharedir}/opensips/db_berkeley/opensips/dialog
-%{_sharedir}/opensips/db_berkeley/opensips/dialplan
-%{_sharedir}/opensips/db_berkeley/opensips/dispatcher
-%{_sharedir}/opensips/db_berkeley/opensips/domain
-%{_sharedir}/opensips/db_berkeley/opensips/domainpolicy
-%{_sharedir}/opensips/db_berkeley/opensips/dr_carriers
-%{_sharedir}/opensips/db_berkeley/opensips/dr_gateways
-%{_sharedir}/opensips/db_berkeley/opensips/dr_groups
-%{_sharedir}/opensips/db_berkeley/opensips/dr_gw_lists
-%{_sharedir}/opensips/db_berkeley/opensips/dr_rules
-%{_sharedir}/opensips/db_berkeley/opensips/globalblacklist
-%{_sharedir}/opensips/db_berkeley/opensips/grp
-%{_sharedir}/opensips/db_berkeley/opensips/imc_members
-%{_sharedir}/opensips/db_berkeley/opensips/imc_rooms
-%{_sharedir}/opensips/db_berkeley/opensips/load_balancer
-%{_sharedir}/opensips/db_berkeley/opensips/location
-%{_sharedir}/opensips/db_berkeley/opensips/missed_calls
-%{_sharedir}/opensips/db_berkeley/opensips/pdt
-%{_sharedir}/opensips/db_berkeley/opensips/presentity
-%{_sharedir}/opensips/db_berkeley/opensips/pua
-%{_sharedir}/opensips/db_berkeley/opensips/re_grp
-%{_sharedir}/opensips/db_berkeley/opensips/registrant
-%{_sharedir}/opensips/db_berkeley/opensips/rls_presentity
-%{_sharedir}/opensips/db_berkeley/opensips/rls_watchers
-%{_sharedir}/opensips/db_berkeley/opensips/route_tree
-%{_sharedir}/opensips/db_berkeley/opensips/rtpproxy_sockets
-%{_sharedir}/opensips/db_berkeley/opensips/silo
-%{_sharedir}/opensips/db_berkeley/opensips/sip_trace
-%{_sharedir}/opensips/db_berkeley/opensips/speed_dial
-%{_sharedir}/opensips/db_berkeley/opensips/subscriber
-%{_sharedir}/opensips/db_berkeley/opensips/uri
-%{_sharedir}/opensips/db_berkeley/opensips/userblacklist
-%{_sharedir}/opensips/db_berkeley/opensips/usr_preferences
-%{_sharedir}/opensips/db_berkeley/opensips/version
-%{_sharedir}/opensips/db_berkeley/opensips/watchers
-%{_sharedir}/opensips/db_berkeley/opensips/xcap
+%{_sharedir}/opensips/db_berkeley/*
 
 
 %files db_oracle
@@ -1044,48 +781,7 @@ fi
 %{_libdir}/opensips/opensipsctl/opensipsctl.oracle
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.oracle
 %{_libdir}/opensips/opensipsctl/opensipsdbfunc.oracle
-%{_sharedir}/opensips/oracle/README.TYPES
-%{_sharedir}/opensips/oracle/acc-create.sql
-%{_sharedir}/opensips/oracle/admin/README
-%{_sharedir}/opensips/oracle/admin/_create_as_sys.tmpl
-%{_sharedir}/opensips/oracle/admin/_drop_as_sys.tmpl
-%{_sharedir}/opensips/oracle/alias_db-create.sql
-%{_sharedir}/opensips/oracle/auth_db-create.sql
-%{_sharedir}/opensips/oracle/avpops-create.sql
-%{_sharedir}/opensips/oracle/b2b-create.sql
-%{_sharedir}/opensips/oracle/cachedb_sql-create.sql
-%{_sharedir}/opensips/oracle/carrierroute-create.sql
-%{_sharedir}/opensips/oracle/closeddial-create.sql
-%{_sharedir}/opensips/oracle/cpl-create.sql
-%{_sharedir}/opensips/oracle/dialog-create.sql
-%{_sharedir}/opensips/oracle/dialplan-create.sql
-%{_sharedir}/opensips/oracle/dispatcher-create.sql
-%{_sharedir}/opensips/oracle/domain-create.sql
-%{_sharedir}/opensips/oracle/domainpolicy-create.sql
-%{_sharedir}/opensips/oracle/drouting-create.sql
-%{_sharedir}/opensips/oracle/group-create.sql
-%{_sharedir}/opensips/oracle/imc-create.sql
-%{_sharedir}/opensips/oracle/inc/_create_compat.sql
-%{_sharedir}/opensips/oracle/inc/_createsch.tmpl
-%{_sharedir}/opensips/oracle/inc/_dropsch.tmpl
-%{_sharedir}/opensips/oracle/inc/_grantfunc.tmpl
-%{_sharedir}/opensips/oracle/inc/_grantroot.tmpl
-%{_sharedir}/opensips/oracle/load_balancer-create.sql
-%{_sharedir}/opensips/oracle/msilo-create.sql
-%{_sharedir}/opensips/oracle/pdt-create.sql
-%{_sharedir}/opensips/oracle/permissions-create.sql
-%{_sharedir}/opensips/oracle/presence-create.sql
-%{_sharedir}/opensips/oracle/registrant-create.sql
-%{_sharedir}/opensips/oracle/registrar-create.sql
-%{_sharedir}/opensips/oracle/rls-create.sql
-%{_sharedir}/opensips/oracle/rtpproxy-create.sql
-%{_sharedir}/opensips/oracle/siptrace-create.sql
-%{_sharedir}/opensips/oracle/speeddial-create.sql
-%{_sharedir}/opensips/oracle/standard-create.sql
-%{_sharedir}/opensips/oracle/uri_db-create.sql
-%{_sharedir}/opensips/oracle/userblacklist-create.sql
-%{_sharedir}/opensips/oracle/usrloc-create.sql
-
+%{_sharedir}/opensips/oracle/*
 
 %files mi_xmlrpc
 %defattr(-,root,root)
@@ -1103,77 +799,74 @@ fi
 %{_libdir}/opensips/modules/db_http.so
 %{_libdir}/opensips/modules/httpd.so
 %{_libdir}/opensips/modules/pi_http.so
-%{_sharedir}/opensips/pi_http/acc-mod
-%{_sharedir}/opensips/pi_http/acc-table
-%{_sharedir}/opensips/pi_http/alias_db-mod
-%{_sharedir}/opensips/pi_http/alias_db-table
-%{_sharedir}/opensips/pi_http/auth_db-mod
-%{_sharedir}/opensips/pi_http/auth_db-table
-%{_sharedir}/opensips/pi_http/avpops-mod
-%{_sharedir}/opensips/pi_http/avpops-table
-%{_sharedir}/opensips/pi_http/b2b-mod
-%{_sharedir}/opensips/pi_http/b2b-table
-%{_sharedir}/opensips/pi_http/cachedb_sql-mod
-%{_sharedir}/opensips/pi_http/cachedb_sql-table
-%{_sharedir}/opensips/pi_http/carrierroute-mod
-%{_sharedir}/opensips/pi_http/carrierroute-table
-%{_sharedir}/opensips/pi_http/closeddial-mod
-%{_sharedir}/opensips/pi_http/closeddial-table
-%{_sharedir}/opensips/pi_http/cpl-mod
-%{_sharedir}/opensips/pi_http/cpl-table
-%{_sharedir}/opensips/pi_http/dialog-mod
-%{_sharedir}/opensips/pi_http/dialog-table
-%{_sharedir}/opensips/pi_http/dialplan-mod
-%{_sharedir}/opensips/pi_http/dialplan-table
-%{_sharedir}/opensips/pi_http/dispatcher-mod
-%{_sharedir}/opensips/pi_http/dispatcher-table
-%{_sharedir}/opensips/pi_http/domain-mod
-%{_sharedir}/opensips/pi_http/domain-table
-%{_sharedir}/opensips/pi_http/domainpolicy-mod
-%{_sharedir}/opensips/pi_http/domainpolicy-table
-%{_sharedir}/opensips/pi_http/drouting-mod
-%{_sharedir}/opensips/pi_http/drouting-table
-%{_sharedir}/opensips/pi_http/group-mod
-%{_sharedir}/opensips/pi_http/group-table
-%{_sharedir}/opensips/pi_http/imc-mod
-%{_sharedir}/opensips/pi_http/imc-table
-%{_sharedir}/opensips/pi_http/load_balancer-mod
-%{_sharedir}/opensips/pi_http/load_balancer-table
-%{_sharedir}/opensips/pi_http/msilo-mod
-%{_sharedir}/opensips/pi_http/msilo-table
-%{_sharedir}/opensips/pi_http/pdt-mod
-%{_sharedir}/opensips/pi_http/pdt-table
-%{_sharedir}/opensips/pi_http/permissions-mod
-%{_sharedir}/opensips/pi_http/permissions-table
-%{_sharedir}/opensips/pi_http/pi_framework-00
-%{_sharedir}/opensips/pi_http/pi_framework-01
-%{_sharedir}/opensips/pi_http/pi_framework-02
-%{_sharedir}/opensips/pi_http/pi_framework.xml
-%{_sharedir}/opensips/pi_http/pi_framework_example.xml
-%{_sharedir}/opensips/pi_http/presence-mod
-%{_sharedir}/opensips/pi_http/presence-table
-%{_sharedir}/opensips/pi_http/registrant-mod
-%{_sharedir}/opensips/pi_http/registrant-table
-%{_sharedir}/opensips/pi_http/registrar-mod
-%{_sharedir}/opensips/pi_http/registrar-table
-%{_sharedir}/opensips/pi_http/rls-mod
-%{_sharedir}/opensips/pi_http/rls-table
-%{_sharedir}/opensips/pi_http/rtpproxy-mod
-%{_sharedir}/opensips/pi_http/rtpproxy-table
-%{_sharedir}/opensips/pi_http/siptrace-mod
-%{_sharedir}/opensips/pi_http/siptrace-table
-%{_sharedir}/opensips/pi_http/speeddial-mod
-%{_sharedir}/opensips/pi_http/speeddial-table
-%{_sharedir}/opensips/pi_http/standard-mod
-%{_sharedir}/opensips/pi_http/standard-table
-%{_sharedir}/opensips/pi_http/uri_db-mod
-%{_sharedir}/opensips/pi_http/uri_db-table
-%{_sharedir}/opensips/pi_http/userblacklist-mod
-%{_sharedir}/opensips/pi_http/userblacklist-table
-%{_sharedir}/opensips/pi_http/usrloc-mod
-%{_sharedir}/opensips/pi_http/usrloc-table
+%{_sharedir}/opensips/pi_http/*
+
+%files cachedb_cassandra
+%defattr(-,root,root,-)
+%doc %{_docdir}/opensips/README.cachedb_cassandra
+
+%{_libdir}/opensips/modules/cachedb_cassandra.so
+
+%files cachedb_mongodb
+%defattr(-,root,root,-)
+%doc %{_docdir}/opensips/README.cachedb_mongodb
+
+%{_libdir}/opensips/modules/cachedb_mongodb.so
+
+%files osp
+%defattr(-,root,root,-)
+%doc %{_docdir}/opensips/README.osp
+
+%{_libdir}/opensips/modules/osp.so
+
+%files perl
+%defattr(-,root,root,-)
+%dir %{_libdir}/opensips/perl/OpenSIPS
+%dir %{_libdir}/opensips/perl/OpenSIPS/LDAPUtils
+%dir %{_libdir}/opensips/perl/OpenSIPS/Utils
+%doc %{_docdir}/opensips/README.perl
+
+%{_libdir}/opensips/modules/perl.so
+%{_libdir}/opensips/perl/OpenSIPS.pm
+%{_libdir}/opensips/perl/OpenSIPS/Constants.pm
+%{_libdir}/opensips/perl/OpenSIPS/LDAPUtils/LDAPConf.pm
+%{_libdir}/opensips/perl/OpenSIPS/LDAPUtils/LDAPConnection.pm
+%{_libdir}/opensips/perl/OpenSIPS/Message.pm
+%{_libdir}/opensips/perl/OpenSIPS/Utils/PhoneNumbers.pm
+%{_libdir}/opensips/perl/OpenSIPS/Utils/Debug.pm
+
+%files perlvdb
+%defattr(-,root,root,-)
+%dir %{_libdir}/opensips/perl/OpenSIPS/VDB
+%dir %{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter
+%doc %{_docdir}/opensips/README.db_perlvdb
+
+%{_libdir}/opensips/modules/db_perlvdb.so
+%{_libdir}/opensips/perl/OpenSIPS/VDB.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter/AccountingSIPtrace.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter/Alias.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter/Auth.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter/Describe.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter/Speeddial.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Adapter/TableVersions.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Column.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Pair.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/ReqCond.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Result.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/VTab.pm
+%{_libdir}/opensips/perl/OpenSIPS/VDB/Value.pm
+
+%files tlsops
+%defattr(-,root,root,-)
+%doc %{_docdir}/opensips/README.tlsops
+
+%{_libdir}/opensips/modules/tlsops.so
 
 
+%changelog
+* Sun Jul 21 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+- Some new rpm optional modules are added:
+  cachedb_cassandra,cachedb_mongodb,osp,perl,perlvdb,tlsops
 %changelog
 * Sun Jun 02 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - CentOS 6 support
