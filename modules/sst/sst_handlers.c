@@ -433,7 +433,12 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				return;
 			}
                        /* Early resetting of the value here */
-                       info->interval = MIN(MIN(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                       if (minfo.se > 0) {
+                                if (sst_interval > minfo.min_se)
+                                      info->interval = sst_interval;
+                                else
+                                      info->interval = MAX(minfo.se, sst_min_se);
+                       }
 	               info->supported = (minfo.supported?SST_UAC:SST_UNDF);
                        set_timeout_avp(msg, info->interval);
 		}
@@ -541,7 +546,10 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
                                 info->supported = (minfo.supported?SST_UAS:SST_UNDF);
                         }
 			if (minfo.se != 0) {
-                                info->interval = MIN(MAX(MAX(sst_min_se, minfo.min_se),minfo.se),sst_interval);
+                                if (sst_interval > minfo.min_se)
+                                        info->interval = sst_interval;
+                                else
+                                        info->interval = MAX(minfo.se, sst_min_se);
                                 LM_DBG("UAS supports timer\n");
 				if (set_timeout_avp(msg, info->interval)) {
 					// FIXME: need an error message here
@@ -561,6 +569,13 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * header and forward back to the UAC and it will
 					 * deal with refreshing the session.
 					 */
+<<<<<<< HEAD
+=======
+                                        if (sst_interval > minfo.min_se)
+                                                info->interval = sst_interval;
+                                        else
+                                                info->interval = MAX(minfo.se, sst_min_se);
+>>>>>>> 2a347b9... Fixed SST timer being reset to the lowest value on session refresh.
 					snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n", 
 							info->interval);
 					if (append_header(msg, se_buf)) {
