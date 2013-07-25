@@ -647,13 +647,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 			*sent_reply= 1;
 
-			if(publ_notify(presentity, pres_uri, body.s ? &body : 0, 
-			&presentity->etag, rules_doc, NULL) < 0)
-			{
-				LM_ERR("while sending notify\n");
-				goto error;
-			}
-
 			if(publ_notify(presentity, pres_uri, body.s ? &body : 0, &presentity->etag,
 			   rules_doc, NULL) < 0)
 			{
