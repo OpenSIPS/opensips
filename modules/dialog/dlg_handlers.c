@@ -470,10 +470,9 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 	next_state_dlg( dlg, event, &old_state, &new_state, &unref);
 
-	if (new_state==DLG_STATE_EARLY) {
+	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
 		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM, 0);
-		if (old_state!=DLG_STATE_EARLY)
-			if_update_stat(dlg_enable_stats, early_dlgs, 1);
+	        if_update_stat(dlg_enable_stats, early_dlgs, 1);
 		return;
 	}
 
