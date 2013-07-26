@@ -441,10 +441,6 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
                                 else
                                       info->interval = MAX(minfo.se, sst_min_se);
                        }
-                       else {
-                                param = find_param_export("dialog", "default_timeout", INT_PARAM);
-                                info->interval = param?*param:12*3600;
-                       }
 	               info->supported = (minfo.supported?SST_UAC:SST_UNDF);
                        set_timeout_avp(msg, info->interval);
 		}
