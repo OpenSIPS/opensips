@@ -55,7 +55,13 @@ extern struct socket_info* sctp_listen;
 int add_listen_iface(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,
 							unsigned short children, enum si_flags flags);
+inline struct socket_info *
+new_sock_info(char* name, unsigned short port, unsigned short proto,
+							char *adv_name, unsigned short adv_port,
+							unsigned short children, enum si_flags flags);
+
 int fix_all_socket_lists();
+int fix_socket_list(struct socket_info **);
 
 /*
  * This function will retrieve a list of all ip addresses and ports that 

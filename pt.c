@@ -37,6 +37,7 @@
 #include "dprint.h"
 #include "timer.h"
 #include "pt.h"
+#include "bin_interface.h"
 
 
 /* array with children pids, 0= main proc,
@@ -76,6 +77,10 @@ int init_multi_proc_support(void)
 		/* attendent */
 		proc_no++;
 	}
+
+	/* info packet UDP receivers */
+	proc_no += bin ? bin_children : 0;
+
 	/* timer processes */
 	proc_no += count_timer_procs();
 

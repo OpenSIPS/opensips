@@ -106,6 +106,7 @@
 #include "daemonize.h"
 #include "route.h"
 #include "udp_server.h"
+#include "bin_interface.h"
 #include "globals.h"
 #include "mem/mem.h"
 #ifdef SHM_MEM
@@ -824,6 +825,17 @@ static int main_loop(void)
 				goto error;
 			}
 			*startup_done = 0;
+		}
+
+		if (fix_socket_list(&bin) != 0) {
+			LM_ERR("failed to initialize binary interface socket list!\n");
+			goto error;
+		}
+
+		/* OpenSIPS <--> OpenSIPS communication interface */
+		if (bin && start_bin_receivers() != 0) {
+			LM_CRIT("cannot start binary interface receiver processes!\n");
+			goto error;
 		}
 
 		/* udp processes */

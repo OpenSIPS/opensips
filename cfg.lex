@@ -284,6 +284,8 @@ LOGFACILITY	log_facility
 LOGNAME		log_name
 AVP_ALIASES	avp_aliases
 LISTEN		listen
+BIN_LISTEN    bin_listen
+BIN_CHILDREN  bin_children
 ALIAS		alias
 AUTO_ALIASES	auto_aliases
 DNS		 dns
@@ -564,6 +566,10 @@ IMPORTFILE      "import_file"
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{AVP_ALIASES}	{ yylval.strval=yytext; return AVP_ALIASES; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
+<INITIAL>{BIN_CHILDREN}	{ count(); yylval.strval=yytext;
+								return BIN_CHILDREN; }
+<INITIAL>{BIN_LISTEN}	{ count(); yylval.strval=yytext;
+								return BIN_LISTEN; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }
 <INITIAL>{DNS}	{ count(); yylval.strval=yytext; return DNS; }

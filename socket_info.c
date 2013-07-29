@@ -1,4 +1,5 @@
-/* $Id$
+/*
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -102,7 +103,7 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-static inline struct socket_info* new_sock_info(	char* name,
+inline struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,
 								char *adv_name, unsigned short adv_port,
 								unsigned short children,enum si_flags flags)
@@ -531,7 +532,7 @@ error:
 
 /* fixes a socket list => resolve addresses, 
  * interface names, fills missing members, remove duplicates */
-static int fix_socket_list(struct socket_info **list)
+int fix_socket_list(struct socket_info **list)
 {
 	struct socket_info* si;
 	struct socket_info* l;
@@ -540,7 +541,7 @@ static int fix_socket_list(struct socket_info **list)
 	int len;
 	struct hostent* he;
 	char** h;
-	
+
 	/* try to change all the interface names into addresses
 	 *  --ugly hack */
 	
