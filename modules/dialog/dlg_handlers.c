@@ -70,6 +70,7 @@
 #include "dlg_profile.h"
 #include "dlg_req_within.h"
 #include "dlg_tophiding.h"
+#include "dlg_replication.h"
 
 extern str       rr_param;
 
@@ -523,6 +524,9 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog confirmed */
 		run_dlg_callbacks( DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
+
+		if (replication_dests)
+			replicate_dialog_created(dlg);
 
 		if (old_state==DLG_STATE_EARLY)
 			if_update_stat(dlg_enable_stats, early_dlgs, -1);
@@ -1280,6 +1284,9 @@ after_unlock5:
 				dlg->flags |= DLG_FLAG_CHANGED;
 				if ( dlg_db_mode==DB_MODE_REALTIME )
 					update_dialog_dbinfo(dlg);
+
+				if (replication_dests)
+					replicate_dialog_updated(dlg);
 			}
 		}
 		else
@@ -1380,6 +1387,9 @@ early_check:
 		dlg->flags |= DLG_FLAG_CHANGED;
 		if(dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
+
+		if (replication_dests)
+			replicate_dialog_updated(dlg);
 	}
 
 	return;

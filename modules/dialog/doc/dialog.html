@@ -1,0 +1,1450 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>dialog Module</title><link rel="stylesheet" type="text/css" href="../../../doc/module-docbook.css"><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="book" title="dialog Module"><div class="titlepage"><div><div><h1 class="title"><a name="idp471536"></a>dialog Module</h1></div><div><div class="authorgroup"><div class="author"><h3 class="author"><span class="firstname">Bogdan-Andrei</span> <span class="surname">Iancu</span></h3></div><div class="editor"><h4 class="editedby">Edited by</h4><h3 class="editor"><span class="firstname">Bogdan-Andrei</span> <span class="surname">Iancu</span></h3></div><div class="editor"><h4 class="editedby">Edited by</h4><h3 class="editor"><span class="firstname">Vladut-Stefan</span> <span class="surname">Paiu</span></h3></div></div></div><div><p class="copyright">Copyright © 2006-2009 Voice Sistem SRL</p></div><div><div class="revhistory"><table border="1" width="100%" summary="Revision history"><tr><th align="left" valign="top" colspan="2"><b>Revision History</b></th></tr><tr><td align="left">Revision $Revision: 8771 $</td><td align="left">$Date$</td></tr></table></div></div></div><hr></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="chapter"><a href="#idp4603808">1. Admin Guide</a></span></dt><dd><dl><dt><span class="section"><a href="#idp4556496">1.1. Overview</a></span></dt><dt><span class="section"><a href="#idp3041664">1.2. How it works</a></span></dt><dt><span class="section"><a href="#idp473504">1.3. Dialog profiling</a></span></dt><dt><span class="section"><a href="#idp2000">1.4. Dialog replication</a></span></dt><dt><span class="section"><a href="#idp5506080">1.5. Dependencies</a></span></dt><dd><dl><dt><span class="section"><a href="#idp5506720">1.5.1. OpenSIPS Modules</a></span></dt><dt><span class="section"><a href="#idp5510560">1.5.2. External Libraries or Applications</a></span></dt></dl></dd><dt><span class="section"><a href="#idp5513504">1.6. Exported Parameters</a></span></dt><dd><dl><dt><span class="section"><a href="#idp5514144">1.6.1. <code class="varname">enable_stats</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5518704">1.6.2. <code class="varname">hash_size</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5523920">1.6.3. <code class="varname">log_profile_hash_size</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5528560">1.6.4. <code class="varname">rr_param</code> (string)</a></span></dt><dt><span class="section"><a href="#timeout-avp-id">1.6.5. <code class="varname">timeout_avp</code> (string)</a></span></dt><dt><span class="section"><a href="#default-timeout-id">1.6.6. <code class="varname">default_timeout</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5556080">1.6.7. <code class="varname">dlg_extra_hdrs</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5560656">1.6.8. <code class="varname">dlg_match_mode</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5568976">1.6.9. <code class="varname">db_url</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5573664">1.6.10. <code class="varname">db_mode</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5583744">1.6.11. <code class="varname">db_update_period</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5588496">1.6.12. <code class="varname">ping_interval</code> (integer)</a></span></dt><dt><span class="section"><a href="#idp5592944">1.6.13. <code class="varname">table_name</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5597408">1.6.14. <code class="varname">callid_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5601744">1.6.15. <code class="varname">from_uri_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5606160">1.6.16. <code class="varname">from_tag_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5610688">1.6.17. <code class="varname">to_uri_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5615200">1.6.18. <code class="varname">to_tag_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5619760">1.6.19. <code class="varname">caller_cseq_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5624272">1.6.20. <code class="varname">callee_cseq_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5628784">1.6.21. <code class="varname">caller_route_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5633328">1.6.22. <code class="varname">callee_route_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5637872">1.6.23. <code class="varname">caller_contact_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5642384">1.6.24. <code class="varname">callee_contact_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5646896">1.6.25. <code class="varname">caller_sock_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5651456">1.6.26. <code class="varname">callee_sock_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5656016">1.6.27. <code class="varname">dlg_id_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5660528">1.6.28. <code class="varname">state_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5665040">1.6.29. <code class="varname">start_time_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5669568">1.6.30. <code class="varname">timeout_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5674064">1.6.31. <code class="varname">profiles_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5678576">1.6.32. <code class="varname">vars_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5683072">1.6.33. <code class="varname">sflags_column</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5687584">1.6.34. <code class="varname">profiles_with_value</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5692016">1.6.35. <code class="varname">profiles_no_value</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5696448">1.6.36. <code class="varname">db_flush_vals_profiles</code> (int)</a></span></dt><dt><span class="section"><a href="#idp5701008">1.6.37. <code class="varname">own_timer_proc</code> (int)</a></span></dt><dt><span class="section"><a href="#idp5705488">1.6.38. <code class="varname">timer_bulk_del_no</code> (int)</a></span></dt><dt><span class="section"><a href="#idp5709968">1.6.39. <code class="varname">cachedb_url</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5714512">1.6.40. <code class="varname">profile_value_prefix</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5719120">1.6.41. <code class="varname">profile_no_value_prefix</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5723728">1.6.42. <code class="varname">profile_size_prefix</code> (string)</a></span></dt><dt><span class="section"><a href="#idp5728336">1.6.43. <code class="varname">profile_timeout</code> (int)</a></span></dt><dt><span class="section"><a href="#idp5732928">1.6.44. <code class="varname">accept_replicated_dialogs</code> (int)</a></span></dt><dt><span class="section"><a href="#idp5737344">1.6.45. <code class="varname">replicate_dialogs_to</code> (string)</a></span></dt></dl></dd><dt><span class="section"><a href="#idp5742096">1.7. Exported Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#idp5742736">1.7.1. 
+		<code class="function">create_dialog()</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5748112">1.7.2. 
+		<code class="function">match_dialog()</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5754640">1.7.3. 
+		<code class="function">validate_dialog()</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5765232">1.7.4. 
+		<code class="function">fix_route_dialog()</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5769744">1.7.5. 
+		<code class="function">get_dialog_info(attr,var,key,key_val)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5780416">1.7.6. 
+		<code class="function">set_dlg_profile(profile,[value])</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5788432">1.7.7. 
+		<code class="function">unset_dlg_profile(profile,[value])</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5796192">1.7.8. 
+		<code class="function">is_in_profile(profile,[value])</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5804416">1.7.9. 
+		<code class="function">get_profile_size(profile,[value],size)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5813280">1.7.10. 
+		<code class="function">set_dlg_flag(idx)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5818880">1.7.11. 
+		<code class="function">test_and_set_dlg_flag(idx, value)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5825200">1.7.12. 
+		<code class="function">reset_dlg_flag(idx)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5830800">1.7.13. 
+		<code class="function">is_dlg_flag_set(idx)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5836496">1.7.14. 
+		<code class="function">store_dlg_value(name,val)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5843872">1.7.15. 
+		<code class="function">fetch_dlg_value(name,pvar)</code>
+		</a></span></dt><dt><span class="section"><a href="#idp5850944">1.7.16. 
+		<code class="function">topology_hiding()</code>
+		</a></span></dt></dl></dd><dt><span class="section"><a href="#idp5862096">1.8. Exported statistics</a></span></dt><dd><dl><dt><span class="section"><a href="#idp5862736">1.8.1. <code class="varname">active_dialogs</code></a></span></dt><dt><span class="section"><a href="#idp5864112">1.8.2. <code class="varname">early_dialogs</code></a></span></dt><dt><span class="section"><a href="#idp5865392">1.8.3. <code class="varname">processed_dialogs</code></a></span></dt><dt><span class="section"><a href="#idp5866800">1.8.4. <code class="varname">expired_dialogs</code></a></span></dt><dt><span class="section"><a href="#idp5868160">1.8.5. <code class="varname">failed_dialogs</code></a></span></dt><dt><span class="section"><a href="#idp5869616">1.8.6. <code class="varname">create_sent</code></a></span></dt><dt><span class="section"><a href="#idp5871520">1.8.7. <code class="varname">update_sent</code></a></span></dt><dt><span class="section"><a href="#idp5873424">1.8.8. <code class="varname">delete_sent</code></a></span></dt><dt><span class="section"><a href="#idp5875328">1.8.9. <code class="varname">create_recv</code></a></span></dt><dt><span class="section"><a href="#idp5877232">1.8.10. <code class="varname">update_recv</code></a></span></dt><dt><span class="section"><a href="#idp5879136">1.8.11. <code class="varname">delete_recv</code></a></span></dt></dl></dd><dt><span class="section"><a href="#idp5881168">1.9. Exported MI Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#idp5881808">1.9.1. <code class="varname">dlg_list</code></a></span></dt><dt><span class="section"><a href="#idp5892144">1.9.2. <code class="varname">dlg_list_ctx</code></a></span></dt><dt><span class="section"><a href="#idp5896752">1.9.3. <code class="varname">dlg_end_dlg</code></a></span></dt><dt><span class="section"><a href="#idp5904336">1.9.4. <code class="varname">profile_get_size</code></a></span></dt><dt><span class="section"><a href="#idp5910560">1.9.5. <code class="varname">profile_list_dlgs</code></a></span></dt><dt><span class="section"><a href="#idp5916896">1.9.6. <code class="varname">profile_get_values</code></a></span></dt><dt><span class="section"><a href="#idp5921968">1.9.7. <code class="varname">dlg_db_sync</code></a></span></dt><dt><span class="section"><a href="#idp5925632">1.9.8. <code class="varname">dlg_restore_db</code></a></span></dt><dt><span class="section"><a href="#idp5929232">1.9.9. <code class="varname">list_all_profiles</code></a></span></dt></dl></dd><dt><span class="section"><a href="#idp5933392">1.10. Exported pseudo-variables</a></span></dt><dd><dl><dt><span class="section"><a href="#idp5934032">1.10.1. <code class="varname">$DLG_count</code></a></span></dt><dt><span class="section"><a href="#idp5935408">1.10.2. <code class="varname">$DLG_status</code></a></span></dt><dt><span class="section"><a href="#idp5943392">1.10.3. <code class="varname">$DLG_lifetime</code></a></span></dt><dt><span class="section"><a href="#idp5945440">1.10.4. <code class="varname">$DLG_flags</code></a></span></dt><dt><span class="section"><a href="#idp5947424">1.10.5. <code class="varname">$DLG_dir</code></a></span></dt><dt><span class="section"><a href="#idp5949424">1.10.6. <code class="varname">$DLG_did</code></a></span></dt><dt><span class="section"><a href="#idp5951440">1.10.7. <code class="varname">$DLG_end_reason</code></a></span></dt><dt><span class="section"><a href="#idp5959968">1.10.8. <code class="varname">$dlg_val(name)</code></a></span></dt></dl></dd></dl></dd><dt><span class="chapter"><a href="#idp6434096">2. Developer Guide</a></span></dt><dd><dl><dt><span class="section"><a href="#idp6434608">2.1. Available Functions</a></span></dt><dd><dl><dt><span class="section"><a href="#idp6396848">2.1.1. 
+		<code class="function">register_dlgcb (dialog, type, cb, param, free_param_cb)</code>
+		</a></span></dt></dl></dd></dl></dd><dt><span class="chapter"><a href="#idp6489216">3. Frequently Asked Questions</a></span></dt></dl></div><div class="list-of-examples"><p><b>List of Examples</b></p><dl><dt>1.1. <a href="#idp5516800">Set <code class="varname">enable_stats</code> parameter</a></dt><dt>1.2. <a href="#idp5522016">Set <code class="varname">hash_size</code> parameter</a></dt><dt>1.3. <a href="#idp5526656">Set <code class="varname">hash_size</code> parameter</a></dt><dt>1.4. <a href="#idp5531152">Set <code class="varname">rr_param</code> parameter</a></dt><dt>1.5. <a href="#idp5548208">Set <code class="varname">timeout_avp</code> parameter</a></dt><dt>1.6. <a href="#idp5554176">Set <code class="varname">default_timeout</code> parameter</a></dt><dt>1.7. <a href="#idp5558656">Set <code class="varname">dlf_extra_hdrs</code> parameter</a></dt><dt>1.8. <a href="#idp5567072">Set <code class="varname">dlg_match_mode</code> parameter</a></dt><dt>1.9. <a href="#idp5571440">Set <code class="varname">db_url</code> parameter</a></dt><dt>1.10. <a href="#idp5581712">Set <code class="varname">db_mode</code> parameter</a></dt><dt>1.11. <a href="#idp5586592">Set <code class="varname">db_update_period</code> parameter</a></dt><dt>1.12. <a href="#idp5591040">Set <code class="varname">ping_interval</code> parameter</a></dt><dt>1.13. <a href="#idp5595504">Set <code class="varname">table_name</code> parameter</a></dt><dt>1.14. <a href="#idp5599840">Set <code class="varname">callid_column</code> parameter</a></dt><dt>1.15. <a href="#idp5604176">Set <code class="varname">from_uri_column</code> parameter</a></dt><dt>1.16. <a href="#idp5608704">Set <code class="varname">from_tag_column</code> parameter</a></dt><dt>1.17. <a href="#idp5613216">Set <code class="varname">to_uri_column</code> parameter</a></dt><dt>1.18. <a href="#idp5617776">Set <code class="varname">to_tag_column</code> parameter</a></dt><dt>1.19. <a href="#idp5622288">Set <code class="varname">caller_cseq_column</code> parameter</a></dt><dt>1.20. <a href="#idp5626800">Set <code class="varname">callee_cseq_column</code> parameter</a></dt><dt>1.21. <a href="#idp5631344">Set <code class="varname">caller_route_column</code> parameter</a></dt><dt>1.22. <a href="#idp5635888">Set <code class="varname">to_route_column</code> parameter</a></dt><dt>1.23. <a href="#idp5640400">Set <code class="varname">caller_contact_column</code> parameter</a></dt><dt>1.24. <a href="#idp5644912">Set <code class="varname">callee_contact_column</code> parameter</a></dt><dt>1.25. <a href="#idp5649472">Set <code class="varname">caller_sock_column</code> parameter</a></dt><dt>1.26. <a href="#idp5654032">Set <code class="varname">callee_sock_column</code> parameter</a></dt><dt>1.27. <a href="#idp5658544">Set <code class="varname">dlg_id_column</code> parameter</a></dt><dt>1.28. <a href="#idp5663056">Set <code class="varname">state_column</code> parameter</a></dt><dt>1.29. <a href="#idp5667584">Set <code class="varname">start_time_column</code> parameter</a></dt><dt>1.30. <a href="#idp5672080">Set <code class="varname">timeout_column</code> parameter</a></dt><dt>1.31. <a href="#idp5676592">Set <code class="varname">profiles_column</code> parameter</a></dt><dt>1.32. <a href="#idp5681088">Set <code class="varname">vars_column</code> parameter</a></dt><dt>1.33. <a href="#idp5685600">Set <code class="varname">sflags_column</code> parameter</a></dt><dt>1.34. <a href="#idp5690016">Set <code class="varname">profiles_with_value</code> parameter</a></dt><dt>1.35. <a href="#idp5694448">Set <code class="varname">profiles_no_value</code> parameter</a></dt><dt>1.36. <a href="#idp5699024">Set <code class="varname">db_flush_vals_profiles</code> parameter</a></dt><dt>1.37. <a href="#idp5703584">Set <code class="varname">own_timer_proc</code> parameter</a></dt><dt>1.38. <a href="#idp5708064">Set <code class="varname">timer_bulk_del_no</code> parameter</a></dt><dt>1.39. <a href="#idp5712528">Set <code class="varname">cachedb_url</code> parameter</a></dt><dt>1.40. <a href="#idp5717136">Set <code class="varname">profile_value_prefix</code> parameter</a></dt><dt>1.41. <a href="#idp5721744">Set <code class="varname">profile_no_value_prefix</code> parameter</a></dt><dt>1.42. <a href="#idp5726352">Set <code class="varname">profile_size_prefix</code> parameter</a></dt><dt>1.43. <a href="#idp5730944">Set <code class="varname">profile_timeout</code> parameter</a></dt><dt>1.44. <a href="#idp5735360">Set <code class="varname">accept_replicated_dialogs</code> parameter</a></dt><dt>1.45. <a href="#idp5739984">Set <code class="varname">replicate_dialogs_to</code> parameter</a></dt><dt>1.46. <a href="#idp5745936"><code class="function">create_dialog()</code> usage</a></dt><dt>1.47. <a href="#idp5752080"><code class="function">match_dialog()</code> usage</a></dt><dt>1.48. <a href="#idp5762528"><code class="function">validate_dialog()</code> usage</a></dt><dt>1.49. <a href="#idp5767552"><code class="function">fix_route_dialog()</code> usage</a></dt><dt>1.50. <a href="#idp5778096"><code class="function">get_dialog_info</code> usage</a></dt><dt>1.51. <a href="#idp5786320"><code class="function">set_dlg_profile</code> usage</a></dt><dt>1.52. <a href="#idp5794080"><code class="function">unset_dlg_profile</code> usage</a></dt><dt>1.53. <a href="#idp5802192"><code class="function">is_in_profile</code> usage</a></dt><dt>1.54. <a href="#idp5811024"><code class="function">get_profile_size</code> usage</a></dt><dt>1.55. <a href="#idp5816864"><code class="function">set_dlg_flag</code> usage</a></dt><dt>1.56. <a href="#idp5823184"><code class="function">test_and_set_dlg_flag</code> usage</a></dt><dt>1.57. <a href="#idp5828784"><code class="function">reset_dlg_flag</code> usage</a></dt><dt>1.58. <a href="#idp5834384"><code class="function">is_dlg_flag_set</code> usage</a></dt><dt>1.59. <a href="#idp5841712"><code class="function">store_dlg_value</code> usage</a></dt><dt>1.60. <a href="#idp5848768"><code class="function">fetch_dlg_value</code> usage</a></dt><dt>1.61. <a href="#idp5857344"><code class="function">topology_hiding</code> usage</a></dt><dt>1.62. <a href="#idp5859472"><code class="function">calling match_dialog() function for topology hiding sequential requests</code></a></dt></dl></div><div class="chapter" title="Chapter 1. Admin Guide"><div class="titlepage"><div><div><h2 class="title"><a name="idp4603808"></a>Chapter 1. Admin Guide</h2></div></div></div><div class="section" title="1.1. Overview"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp4556496"></a>1.1. Overview</h2></div></div></div><p>
+	The dialog module provides dialog awareness to the OpenSIPS proxy. Its 
+	functionality is to keep trace of the current dialogs, to offer information
+	about them (like how many dialogs are active).
+	</p><p>
+	Aside tracking, the dialog module offers functionalities like flags and
+	attributes per dialog (persistent data across dialog), dialog profiling 
+	and dialog termination (on timeout base or external triggered).
+	</p><p>
+	The module, via an internal API, also provide the foundation to build on 
+	top of it more complex dialog-based functionalities via other OpenSIPS 
+	modules.
+	</p></div><div class="section" title="1.2. How it works"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp3041664"></a>1.2. How it works</h2></div></div></div><p>
+	To create the dialog associated to an initial request, you must call
+	the create_dialog() function, with or without parameter..
+	</p><p>
+	The dialog is automatically destroyed when a <span class="quote">&#8220;<span class="quote">BYE</span>&#8221;</span> is 
+	received. In case of no <span class="quote">&#8220;<span class="quote">BYE</span>&#8221;</span>, the dialog lifetime is 
+	controlled via the default timeout (see <span class="quote">&#8220;<span class="quote">default_timeout</span>&#8221;</span>
+	- <a class="xref" href="#default-timeout-id" title="1.6.6. default_timeout (integer)">Section 1.6.6, &#8220;<code class="varname">default_timeout</code> (integer)&#8221;</a>) and custom timeout (see 
+	<span class="quote">&#8220;<span class="quote">timeout_avp</span>&#8221;</span> - <a class="xref" href="#timeout-avp-id" title="1.6.5. timeout_avp (string)">Section 1.6.5, &#8220;<code class="varname">timeout_avp</code> (string)&#8221;</a>). The 
+	dialog timeout is reset each time a sequential (except ACKs) request 
+	passes.
+	</p></div><div class="section" title="1.3. Dialog profiling"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp473504"></a>1.3. Dialog profiling</h2></div></div></div><p>
+	Dialog profiling is a mechanism that helps in classifying, sorting and
+	keeping trace of certain types of dialogs, using whatever properties of
+	the dialog (like caller, destination, type of calls, etc).
+	Dialogs can be dynamically added in different (and several) profile 
+	tables - logically, each profile table can have a special meaning (like 
+	dialogs outside the domain, dialogs terminated to PSTN, etc).
+	</p><p>
+	There are two types of profiles:
+	</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+			<span class="emphasis"><em>with no value</em></span> - a dialog simply belongs 
+			to a profile. (like outbound calls profile). There is no other 
+			additional information to describe the dialog's belonging to the
+			profile;
+		</p></li><li class="listitem"><p>
+			<span class="emphasis"><em>with value</em></span> - a dialog belongs to a profile 
+			having a certain value (like in caller profile, where the value 
+			is the caller ID). The belonging of the dialog to the profile is
+			strictly related to the value.
+		</p></li></ul></div><p>
+	</p><p>
+	A dialog can be added to multiple profiles in the same time.
+	</p><p>
+	Profiles are visible (at the moment) in the request route (for initial 
+	and sequential requests) and in the branch, failure and reply routes of 
+	the original request.
+	</p><p>
+	Dialog profiles can also be used in distributed systems, using the OpenSIPS
+	CacheDB Interface. This feature allows you to share dialog profile
+	information with multiple OpenSIPS instaces that use the same CacheDB
+	backend. In order to do that, the <span class="emphasis"><em>cachedb_url</em></span> parameter
+	must be defined. Also, the profile must be marked as shared, by adding the
+	<span class="emphasis"><em>'/s'</em></span> suffix to the name of the profile in the
+	<span class="emphasis"><em>profiles_with_value</em></span> or
+	<span class="emphasis"><em>profiles_no_value</em></span> parameters.
+	</p></div><div class="section" title="1.4. Dialog replication"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp2000"></a>1.4. Dialog replication</h2></div></div></div><p>
+	<span class="bold"><strong>Dialog replication</strong></span> is a mechanism used to
+	mirror all dialog changes taking place in one OpenSIPS instance to one or
+	more other different instances. The logic is simplified by using the core
+	<span class="emphasis"><em>Binary Internal Interface</em></span> to build and send the
+	replication-related UDP packets.
+	</p><p>
+		The feature is especially useful when dealing with very large systems,
+	where failover through a database backend is no longer feasible, due to the
+	high amount of time required for the backup instance to load the dialog
+	information stored in a typical <span class="emphasis"><em>dialog</em></span> table by the
+	crashed instance.
+	</p><p>
+		Configuring both receival and sending of dialog replication packets is
+	trivial and can be done by using the
+	<span class="bold"><strong>accept_replicated_dialogs</strong></span> and
+	<span class="bold"><strong>replicate_dialogs_to</strong></span> parameters of the
+	module. In addition to this, the module also exports several statistics
+	regarding the number of replication packets sent/received.
+	</p></div><div class="section" title="1.5. Dependencies"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp5506080"></a>1.5. Dependencies</h2></div></div></div><div class="section" title="1.5.1. OpenSIPS Modules"><div class="titlepage"><div><div><h3 class="title"><a name="idp5506720"></a>1.5.1. OpenSIPS Modules</h3></div></div></div><p>
+		The following modules must be loaded before this module:
+			</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>TM</em></span> - Transaction module
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>RR</em></span> - Record-Route module
+			</p></li></ul></div><p>
+		</p></div><div class="section" title="1.5.2. External Libraries or Applications"><div class="titlepage"><div><div><h3 class="title"><a name="idp5510560"></a>1.5.2. External Libraries or Applications</h3></div></div></div><p>
+		The following libraries or applications must be installed before 
+		running OpenSIPS with this module loaded:
+			</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>None</em></span>.
+			</p></li></ul></div><p>
+		</p></div></div><div class="section" title="1.6. Exported Parameters"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp5513504"></a>1.6. Exported Parameters</h2></div></div></div><div class="section" title="1.6.1. enable_stats (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5514144"></a>1.6.1. <code class="varname">enable_stats</code> (integer)</h3></div></div></div><p>
+		If the statistics support should be enabled or not. Via statistic 
+		variables, the module provide information about the dialog processing.
+		Set it to zero to disable or to non-zero to enable it.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">1 (enabled)</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5516800"></a><p class="title"><b>Example 1.1. Set <code class="varname">enable_stats</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "enable_stats", 0)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.2. hash_size (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5518704"></a>1.6.2. <code class="varname">hash_size</code> (integer)</h3></div></div></div><p>
+		The size of the hash table internally used to keep the dialogs. A 
+		larger table is much faster but consumes more memory. The hash size
+		must be a power of 2 number.
+		</p><p>
+		IMPORTANT: If dialogs' information should be stored in a database, 
+		a constant hash_size should be used, otherwise the restored process 
+		will not take place. If you really want to modify the hash_size you 
+		must delete all table's rows before restarting OpenSIPS.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">4096</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5522016"></a><p class="title"><b>Example 1.2. Set <code class="varname">hash_size</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "hash_size", 1024)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.3. log_profile_hash_size (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5523920"></a>1.6.3. <code class="varname">log_profile_hash_size</code> (integer)</h3></div></div></div><p>
+		The size of the hash table internally used to store  profile-&gt;dialog
+		associations. A larger table can provide more
+		parallel operations but consumes more memory. The hash size
+		is provided as the base 2 logarithm(e.g. log_profile_hash_size =4
+		means the table has 2^4 entries).
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">4</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5526656"></a><p class="title"><b>Example 1.3. Set <code class="varname">hash_size</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "log_profile_hash_size", 5) #set a table size of 32
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.4. rr_param (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5528560"></a>1.6.4. <code class="varname">rr_param</code> (string)</h3></div></div></div><p>
+		Name of the Record-Route parameter to be added with the dialog cookie.
+		It is used for fast dialog matching of the sequential requests.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">did</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5531152"></a><p class="title"><b>Example 1.4. Set <code class="varname">rr_param</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "rr_param", "xyz")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.5. timeout_avp (string)"><div class="titlepage"><div><div><h3 class="title"><a name="timeout-avp-id"></a>1.6.5. <code class="varname">timeout_avp</code> (string)</h3></div></div></div><p>
+		The specification of an AVP to contain a custom timeout (in seconds)
+		for the dialog. It may be used only in a request 
+		(initial or sequential) context.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">none</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5548208"></a><p class="title"><b>Example 1.5. Set <code class="varname">timeout_avp</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "timeout_avp", "$avp(10)")
+...
+</pre></div></div><br class="example-break"><p>
+		<span class="emphasis"><em>
+			Make sure you call this before <code class="function">loose_route()</code>.
+		</em></span>
+		</p></div><div class="section" title="1.6.6. default_timeout (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="default-timeout-id"></a>1.6.6. <code class="varname">default_timeout</code> (integer)</h3></div></div></div><p>
+		The default dialog timeout (in seconds) if no custom one is set.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">43200 (12 hours)</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5554176"></a><p class="title"><b>Example 1.6. Set <code class="varname">default_timeout</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "default_timeout", 21600)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.7. dlg_extra_hdrs (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5556080"></a>1.6.7. <code class="varname">dlg_extra_hdrs</code> (string)</h3></div></div></div><p>
+		A string containing the extra headers (full format, with EOH)
+		to be added in the requests generated by the module (like BYEs).
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">NULL</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5558656"></a><p class="title"><b>Example 1.7. Set <code class="varname">dlf_extra_hdrs</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.8. dlg_match_mode (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5560656"></a>1.6.8. <code class="varname">dlg_match_mode</code> (integer)</h3></div></div></div><p>
+		How the seqential requests should be matched against the known dialogs.
+		The modes are a combination between matching based on a cookie (DID)
+		stored as cookie in Record-Route header and the matching based on SIP 
+		elements (as in RFC3261).
+		</p><p>
+		The supported modes are:
+		</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>0 - DID_ONLY</em></span> - the match is done 
+				exclusively based on DID;
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>1 - DID_FALLBACK</em></span> - the match is first 
+				tried based on DID and if not present, it will fallback to
+				SIP matching;
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>2 - DID_NONE</em></span> - the match is done 
+				exclusively based on SIP elements; no DID information is added 
+				in RR.
+			</p></li></ul></div><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">0 (DID_ONLY)</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5567072"></a><p class="title"><b>Example 1.8. Set <code class="varname">dlg_match_mode</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "dlg_match_mode", 1)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.9. db_url (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5568976"></a>1.6.9. <code class="varname">db_url</code> (string)</h3></div></div></div><p>
+		If you want to store the information about the dialogs in a database 
+		a database url must be specified.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">mysql://opensips:opensipsrw@localhost/opensips</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5571440"></a><p class="title"><b>Example 1.9. Set <code class="varname">db_url</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "db_url", "dbdriver://username:password@dbhost/dbname")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.10. db_mode (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5573664"></a>1.6.10. <code class="varname">db_mode</code> (integer)</h3></div></div></div><p>
+		Describe how to push into the DB the dialogs' information from memory.
+		</p><p>
+		The supported modes are:
+		</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>0 - NO_DB</em></span> - the memory content is not
+				flushed into DB;
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>1 - REALTIME</em></span> - any dialog information 
+				changes will be reflected into the database immediatly.
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>2 - DELAYED</em></span> - the dialog information 
+				changes will be flushed into DB periodically, based on a
+				timre routine.
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>3 - SHUTDOWN</em></span> - the dialog information 
+				will be flushed into DB only at shutdown - no runtime updates.
+			</p></li></ul></div><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">0</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5581712"></a><p class="title"><b>Example 1.10. Set <code class="varname">db_mode</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "db_mode", 1)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.11. db_update_period (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5583744"></a>1.6.11. <code class="varname">db_update_period</code> (integer)</h3></div></div></div><p>
+			The interval (seconds) at which to update dialogs' information if you chose to store the dialogs' info at a given interval.
+			A too short interval will generate intensiv database operations, a too large one will not notice short dialogs.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">60</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5586592"></a><p class="title"><b>Example 1.11. Set <code class="varname">db_update_period</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "db_update_period", 120)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.12. ping_interval (integer)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5588496"></a>1.6.12. <code class="varname">ping_interval</code> (integer)</h3></div></div></div><p>
+			The interval (seconds) at which OpenSIPS will generate in-dialog pings for dialogs. 
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">30</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5591040"></a><p class="title"><b>Example 1.12. Set <code class="varname">ping_interval</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "ping_interval", 20)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.13. table_name (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5592944"></a>1.6.13. <code class="varname">table_name</code> (string)</h3></div></div></div><p>
+		If you want to store the information about the dialogs in a 
+		database a table name must be specified.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">dialog</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5595504"></a><p class="title"><b>Example 1.13. Set <code class="varname">table_name</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "table_name", "my_dialog")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.14. callid_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5597408"></a>1.6.14. <code class="varname">callid_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the dialogs' callid.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">callid</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5599840"></a><p class="title"><b>Example 1.14. Set <code class="varname">callid_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "callid_column", "callid_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.15. from_uri_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5601744"></a>1.6.15. <code class="varname">from_uri_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the caller's 
+			sip address.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">from_uri</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5604176"></a><p class="title"><b>Example 1.15. Set <code class="varname">from_uri_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "from_uri_column", "from_uri_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.16. from_tag_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5606160"></a>1.6.16. <code class="varname">from_tag_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the From tag from 
+			the Invite request.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">from_tag</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5608704"></a><p class="title"><b>Example 1.16. Set <code class="varname">from_tag_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "from_tag_column", "from_tag_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.17. to_uri_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5610688"></a>1.6.17. <code class="varname">to_uri_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the calee's sip address.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">to_uri</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5613216"></a><p class="title"><b>Example 1.17. Set <code class="varname">to_uri_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "to_uri_column", "to_uri_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.18. to_tag_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5615200"></a>1.6.18. <code class="varname">to_tag_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the To tag from 
+			the 200 OK response to the Invite request, if present.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">to_tag</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5617776"></a><p class="title"><b>Example 1.18. Set <code class="varname">to_tag_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "to_tag_column", "to_tag_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.19. caller_cseq_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5619760"></a>1.6.19. <code class="varname">caller_cseq_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the cseq from caller
+			side.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">caller_cseq</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5622288"></a><p class="title"><b>Example 1.19. Set <code class="varname">caller_cseq_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "caller_cseq_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.20. callee_cseq_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5624272"></a>1.6.20. <code class="varname">callee_cseq_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the cseq from callee
+			side.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">callee_cseq</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5626800"></a><p class="title"><b>Example 1.20. Set <code class="varname">callee_cseq_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "callee_cseq_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.21. caller_route_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5628784"></a>1.6.21. <code class="varname">caller_route_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the route records from
+			caller side (proxy to caller).
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">caller_route_set</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5631344"></a><p class="title"><b>Example 1.21. Set <code class="varname">caller_route_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "caller_route_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.22. callee_route_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5633328"></a>1.6.22. <code class="varname">callee_route_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the route records from
+			callee side (proxy to callee).
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">callee_route_set</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5635888"></a><p class="title"><b>Example 1.22. Set <code class="varname">to_route_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "to_route_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.23. caller_contact_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5637872"></a>1.6.23. <code class="varname">caller_contact_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the caller's contact 
+			uri.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">from_contact</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5640400"></a><p class="title"><b>Example 1.23. Set <code class="varname">caller_contact_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "caller_contact_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.24. callee_contact_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5642384"></a>1.6.24. <code class="varname">callee_contact_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the callee's contact 
+			uri.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">callee_contact</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5644912"></a><p class="title"><b>Example 1.24. Set <code class="varname">callee_contact_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "callee_contact_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.25. caller_sock_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5646896"></a>1.6.25. <code class="varname">caller_sock_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the information about 
+			the local interface receiving the traffic from caller.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">caller_sock</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5649472"></a><p class="title"><b>Example 1.25. Set <code class="varname">caller_sock_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "caller_sock_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.26. callee_sock_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5651456"></a>1.6.26. <code class="varname">callee_sock_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store information about the 
+			local interface receiving the traffic from callee.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">callee_contact</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5654032"></a><p class="title"><b>Example 1.26. Set <code class="varname">callee_sock_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "callee_sock_column", "column_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.27. dlg_id_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5656016"></a>1.6.27. <code class="varname">dlg_id_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the dialogs' 
+			id information.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">hash_id</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5658544"></a><p class="title"><b>Example 1.27. Set <code class="varname">dlg_id_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "dlg_id_column", "dlg_id_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.28. state_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5660528"></a>1.6.28. <code class="varname">state_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the 
+			dialogs' state information.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">state</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5663056"></a><p class="title"><b>Example 1.28. Set <code class="varname">state_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "state_column", "state_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.29. start_time_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5665040"></a>1.6.29. <code class="varname">start_time_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the 
+			dialogs' start time information.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">start_time</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5667584"></a><p class="title"><b>Example 1.29. Set <code class="varname">start_time_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "start_time_column", "start_time_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.30. timeout_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5669568"></a>1.6.30. <code class="varname">timeout_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the dialogs' timeout.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">timeout</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5672080"></a><p class="title"><b>Example 1.30. Set <code class="varname">timeout_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "timeout_column", "timeout_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.31. profiles_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5674064"></a>1.6.31. <code class="varname">profiles_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the dialogs' profiles.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">profiles</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5676592"></a><p class="title"><b>Example 1.31. Set <code class="varname">profiles_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profiles_column", "profiles_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.32. vars_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5678576"></a>1.6.32. <code class="varname">vars_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the dialogs' vars.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">vars</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5681088"></a><p class="title"><b>Example 1.32. Set <code class="varname">vars_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "vars_column", "vars_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.33. sflags_column (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5683072"></a>1.6.33. <code class="varname">sflags_column</code> (string)</h3></div></div></div><p>
+			The column's name in the database to store the dialogs' script flags.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">script_flags</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5685600"></a><p class="title"><b>Example 1.33. Set <code class="varname">sflags_column</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "sflags_column", "sflags_c_name")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.34. profiles_with_value (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5687584"></a>1.6.34. <code class="varname">profiles_with_value</code> (string)</h3></div></div></div><p>
+			List of names for profiles with values.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">empty</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5690016"></a><p class="title"><b>Example 1.34. Set <code class="varname">profiles_with_value</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.35. profiles_no_value (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5692016"></a>1.6.35. <code class="varname">profiles_no_value</code> (string)</h3></div></div></div><p>
+			List of names for profiles without values.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">empty</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5694448"></a><p class="title"><b>Example 1.35. Set <code class="varname">profiles_no_value</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.36. db_flush_vals_profiles (int)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5696448"></a>1.6.36. <code class="varname">db_flush_vals_profiles</code> (int)</h3></div></div></div><p>
+			Pushes dialog values, profiles and flags into the database
+			along with other dialog state information (see db_mode 1 and 2).
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">empty</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5699024"></a><p class="title"><b>Example 1.36. Set <code class="varname">db_flush_vals_profiles</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "db_flush_vals_profiles", 1)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.37. own_timer_proc (int)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5701008"></a>1.6.37. <code class="varname">own_timer_proc</code> (int)</h3></div></div></div><p>
+			Whether the dialog timer should be a 
+			sepparate process or if the tasks should be done in the
+			global timer process.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">0</span>&#8221;</span>, run the timer in the
+			global process.
+		</em></span>
+		</p><div class="example"><a name="idp5703584"></a><p class="title"><b>Example 1.37. Set <code class="varname">own_timer_proc</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "dlg_id_column", 1)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.38. timer_bulk_del_no (int)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5705488"></a>1.6.38. <code class="varname">timer_bulk_del_no</code> (int)</h3></div></div></div><p>
+			The number of dialogs that should be attempted to be
+			deleted at the same time ( a single query ) from the 
+			DB back-end.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">1</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5708064"></a><p class="title"><b>Example 1.38. Set <code class="varname">timer_bulk_del_no</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "timer_bulk_del_no", 10)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.39. cachedb_url (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5709968"></a>1.6.39. <code class="varname">cachedb_url</code> (string)</h3></div></div></div><p>
+			Enables distributed dialog profiles and specifies the
+			backend that should be used by the CacheDB interface.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">empty</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5712528"></a><p class="title"><b>Example 1.39. Set <code class="varname">cachedb_url</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.40. profile_value_prefix (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5714512"></a>1.6.40. <code class="varname">profile_value_prefix</code> (string)</h3></div></div></div><p>
+			Specifies what prefix should be added to the profiles with 
+			value when they are inserted into CacheDB backed. This is
+			only used when distributed profiles are enabled.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">dlg_val_</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5717136"></a><p class="title"><b>Example 1.40. Set <code class="varname">profile_value_prefix</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profile_value_prefix", "dlgv_")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.41. profile_no_value_prefix (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5719120"></a>1.6.41. <code class="varname">profile_no_value_prefix</code> (string)</h3></div></div></div><p>
+			Specifies what prefix should be added to the profiles without
+			value when they are inserted into CacheDB backed. This is
+			only used when distributed profiles are enabled.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">dlg_noval_</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5721744"></a><p class="title"><b>Example 1.41. Set <code class="varname">profile_no_value_prefix</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profile_no_value_prefix", "dlgnv_")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.42. profile_size_prefix (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5723728"></a>1.6.42. <code class="varname">profile_size_prefix</code> (string)</h3></div></div></div><p>
+			Specifies what prefix should be added to the entity that holds
+			the profiles with value size in CacheDB backed. This is
+			only used when distributed profiles are enabled.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">dlg_size_</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5726352"></a><p class="title"><b>Example 1.42. Set <code class="varname">profile_size_prefix</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profile_size_prefix", "dlgs_")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.43. profile_timeout (int)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5728336"></a>1.6.43. <code class="varname">profile_timeout</code> (int)</h3></div></div></div><p>
+			Specifies how long a dialog profile should be kept in the CacheDB
+			until it expires. This is only used when distributed profiles are
+			enabled.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">86400</span>&#8221;</span>.
+		</em></span>
+		</p><div class="example"><a name="idp5730944"></a><p class="title"><b>Example 1.43. Set <code class="varname">profile_timeout</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "profile_timeout", "43200")
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.44. accept_replicated_dialogs (int)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5732928"></a>1.6.44. <code class="varname">accept_replicated_dialogs</code> (int)</h3></div></div></div><p>
+		Registers the <span class="emphasis"><em>dialog</em></span> module to the OpenSIPS Binary
+		Internal Interface.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is 0 (not registered).
+		</em></span>
+		</p><div class="example"><a name="idp5735360"></a><p class="title"><b>Example 1.44. Set <code class="varname">accept_replicated_dialogs</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "accept_replicated_dialogs", 1)
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.6.45. replicate_dialogs_to (string)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5737344"></a>1.6.45. <code class="varname">replicate_dialogs_to</code> (string)</h3></div></div></div><p>
+			Adds a new dialog replication destination. The destination will
+		receive all dialog-related events (creation, updating and deletion)
+		over UDP, using the Binary Internal Interface.
+		</p><p>
+		<span class="emphasis"><em>
+			Default value is <span class="quote">&#8220;<span class="quote">null</span>&#8221;</span> (no replication destinations).
+		</em></span>
+		</p><div class="example"><a name="idp5739984"></a><p class="title"><b>Example 1.45. Set <code class="varname">replicate_dialogs_to</code> parameter</b></p><div class="example-contents"><pre class="programlisting">
+...
+modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
+...
+</pre></div></div><br class="example-break"></div></div><div class="section" title="1.7. Exported Functions"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp5742096"></a>1.7. Exported Functions</h2></div></div></div><div class="section" title="1.7.1.  create_dialog()"><div class="titlepage"><div><div><h3 class="title"><a name="idp5742736"></a>1.7.1. 
+		<code class="function">create_dialog()</code>
+		</h3></div></div></div><p>
+		The function creats the dialog for the currently processed request. The
+		request must be an initial request.
+
+		Optionally,the function also receives a string parameter, which specifies
+		whether the dialog end-points should be pinged via SIP options
+		messages. The parameter can be "P" to specify to only ping the
+		caller, "p" to only ping the callee or "Pp" to ping both dialog
+		sides. If the extra string parameter is provided and one
+		end-point fails to respond to a options ping, OpenSIPS will
+		terminate the dialog from the middle.
+
+		The string parameter can also contain "B" to activate the bye on
+		timeout behavior.
+
+		</p><p>
+		The function returns true if the dialog was successfully created or 
+		if the dialog was previously created.
+		</p><p>
+		This function can be used from REQUEST_ROUTE.
+		</p><div class="example"><a name="idp5745936"></a><p class="title"><b>Example 1.46. <code class="function">create_dialog()</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+create_dialog();
+...
+#ping caller
+create_dialog("P");
+...
+#ping caller and callee
+create_dialog("Pp");
+
+#bye on timeout
+create_dialog("B");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.2.  match_dialog()"><div class="titlepage"><div><div><h3 class="title"><a name="idp5748112"></a>1.7.2. 
+		<code class="function">match_dialog()</code>
+		</h3></div></div></div><p>
+		This function is to be used to match a sequential (in-dialog) request
+		to an existing dialog. In other words, the function will try to match 
+		the current request to an known ongoing dialog.
+		</p><p>
+		The function tries to use (for dialog matching) the DID (Dialog ID)
+		from Route header and also falls back to SIP-wise matching.
+		</p><p>
+		As sequential requests are automatically matched to the dialog when 
+		doing "loose_route()" from script, this function is intended to:
+		(A) control the place in your script where the dialog matching is done
+		and (B) to cope with bogus sequential requests that do not have Route 
+		headers, so they are not handled by loose_route().
+		</p><p>
+		The function returns true if a dialog exists for the request.
+		</p><p>
+		This function can be used from REQUEST_ROUTE.
+		</p><div class="example"><a name="idp5752080"></a><p class="title"><b>Example 1.47. <code class="function">match_dialog()</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+    if (has_totag()) {
+        loose_route();
+        if ($DLG_status==NULL &amp;&amp; !match_dialog() ) {
+            xlog(" cannot match request to a dialog \n");
+        }
+    }
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.3.  validate_dialog()"><div class="titlepage"><div><div><h3 class="title"><a name="idp5754640"></a>1.7.3. 
+		<code class="function">validate_dialog()</code>
+		</h3></div></div></div><p>
+		The function checks the current received requests against the dialog 
+		(internal data) it belongs to.
+		Performing several tests, the function will help to detect the bogus
+		injected in-dialog requests (like malicious BYEs).
+		</p><p>
+		The performed tests are related to CSEQ sequance checking and routing
+		information checking (contact and route set).
+		</p><p>
+		The function returns true if a dialog exists for the request and if 
+		the request is valid (according to dialog data). If the request is invalid,
+		the following return codes are returned :
+		</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>-1</em></span> - invalid cseq
+			</p></li><li class="listitem"><p><span class="emphasis"><em>-2</em></span> - invalid remote target
+			</p></li><li class="listitem"><p><span class="emphasis"><em>-3</em></span> - invalid route set
+			</p></li><li class="listitem"><p><span class="emphasis"><em>-4</em></span> - other errors ( parsing, no dlg, etc )
+			</p></li></ul></div><p>
+
+		</p><p>
+		This function can be used from REQUEST_ROUTE.
+		</p><div class="example"><a name="idp5762528"></a><p class="title"><b>Example 1.48. <code class="function">validate_dialog()</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+    if (has_totag()) {
+        loose_route();
+        if ($DLG_status!=NULL &amp;&amp; !validate_dialog() ) {
+            xlog(" in-dialog bogus request \n");
+        } else {
+            xlog(" in-dialog valid request - $DLG_dir !\n");
+        }
+    }
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.4.  fix_route_dialog()"><div class="titlepage"><div><div><h3 class="title"><a name="idp5765232"></a>1.7.4. 
+		<code class="function">fix_route_dialog()</code>
+		</h3></div></div></div><p>
+			The function forces an in dialog SIP message to contain the ruri, route headers and 
+			dst_uri, as specified by the internal data of the dialog it belongs to.
+			The function will prevent the existence of bogus injected in-dialog 
+			requests ( like malicious BYEs )
+		</p><p>
+		This function can be used from REQUEST_ROUTE.
+		</p><div class="example"><a name="idp5767552"></a><p class="title"><b>Example 1.49. <code class="function">fix_route_dialog()</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+    if (has_totag()) {
+        loose_route();
+        if ($DLG_status!=NULL)
+            if (!validate_dialog())
+                fix_route_dialog();
+    }
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.5.  get_dialog_info(attr,var,key,key_val)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5769744"></a>1.7.5. 
+		<code class="function">get_dialog_info(attr,var,key,key_val)</code>
+		</h3></div></div></div><p>
+		The function extracts a dialog value from another dialog - it search 
+		through all existing (ongoing) dialogs for a dialog
+		that has a dialog variable named "key" with the value "key_val" 
+		(so a dialog where $dlg_val(key)=="key_val") - once found, it return
+		in pvar "var" the value of the the dialog variable "attr" from the 
+		found dialog.
+		</p><p>
+		NOTE: the function does not require to be called in the context of
+		a dialog - you can use it whenever / whereever for searching for other
+		dialogs.
+		</p><p>Meaning of the parameters is as follows:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>attr</em></span> - the name of the dialog variable
+			(from the found dialog) to be returned;
+			</p></li><li class="listitem"><p><span class="emphasis"><em>var</em></span> - a pvar where to store the value of
+			the "attr" dialog variable
+			</p></li><li class="listitem"><p><span class="emphasis"><em>key</em></span> - name of a dialog variable to be
+			used a search key (when looking after the target dialog)
+			</p></li><li class="listitem"><p><span class="emphasis"><em>key_val</em></span> - the value of the dialog 
+			variable that is used as key in searching the target dialog.
+			</p></li></ul></div><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
+		</p><div class="example"><a name="idp5778096"></a><p class="title"><b>Example 1.50. <code class="function">get_dialog_info</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
+	xlog("caller $fU has another ongoing, talking to callee $var(x)\n")
+}
+
+# create dialog for current call and place the caller and callee attributes
+create_dialog();
+$dlg_val(caller) = $fu;
+$dlg_val(callee) = $ru;
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.6.  set_dlg_profile(profile,[value])"><div class="titlepage"><div><div><h3 class="title"><a name="idp5780416"></a>1.7.6. 
+		<code class="function">set_dlg_profile(profile,[value])</code>
+		</h3></div></div></div><p>
+		Inserts the current dialog into a profile. Note that the profile does
+		not supports values, this will be silently discarded. Also, there is
+		no check for inserting the same dialog in the same profile for multiple
+		times.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>Meaning of the parameters is as follows:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>profile</em></span> - name of the profile to be 
+			added to;
+			</p></li><li class="listitem"><p><span class="emphasis"><em>value</em></span> (optional) - string value to 
+			define the belonging of the dialog to the profile - note that the
+			profile must support values.
+			Pseudo-variables are supported.
+			</p></li></ul></div><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5786320"></a><p class="title"><b>Example 1.51. <code class="function">set_dlg_profile</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+set_dlg_profile("inbound_call");
+set_dlg_profile("caller","$fu");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.7.  unset_dlg_profile(profile,[value])"><div class="titlepage"><div><div><h3 class="title"><a name="idp5788432"></a>1.7.7. 
+		<code class="function">unset_dlg_profile(profile,[value])</code>
+		</h3></div></div></div><p>
+		Removes the current dialog from a profile.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>Meaning of the parameters is as follows:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>profile</em></span> - name of the profile to be 
+			removed from;
+			</p></li><li class="listitem"><p><span class="emphasis"><em>value</em></span> (optional) - string value to 
+			define the belonging of the dialog to the profile - note that the
+			profile must support values.
+			Pseudo-variables are supported.
+			</p></li></ul></div><p>
+		This function can be used from BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5794080"></a><p class="title"><b>Example 1.52. <code class="function">unset_dlg_profile</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+unset_dlg_profile("inbound_call");
+unset_dlg_profile("caller","$fu");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.8.  is_in_profile(profile,[value])"><div class="titlepage"><div><div><h3 class="title"><a name="idp5796192"></a>1.7.8. 
+		<code class="function">is_in_profile(profile,[value])</code>
+		</h3></div></div></div><p>
+		Checks if the current dialog belongs to a profile. If the profile 
+		supports values, the check can be reinforced to take into account a 
+		specific value - if the dialog was inserted into the profile for a 
+		specific value. If not value is passed, only simply belonging of the 
+		dialog to the profile is checked. Note that the profile does not 
+		supports values, this will be silently discarded.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>Meaning of the parameters is as follows:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>profile</em></span> - name of the profile to be 
+			checked against;
+			</p></li><li class="listitem"><p><span class="emphasis"><em>value</em></span> (optional) - string value to 
+			toughen  the check. Pseudo-variables are supported.
+			</p></li></ul></div><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5802192"></a><p class="title"><b>Example 1.53. <code class="function">is_in_profile</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+if (is_in_profile("inbound_call")) {
+	log("this request belongs to a inbound call\n");
+}
+...
+if (is_in_profile("caller","XX")) {
+	log("this request belongs to a call of user XX\n");
+}
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.9.  get_profile_size(profile,[value],size)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5804416"></a>1.7.9. 
+		<code class="function">get_profile_size(profile,[value],size)</code>
+		</h3></div></div></div><p>
+		Returns the number of dialogs belonging to a profile. If the profile 
+		supports values, the check can be reinforced to take into account a 
+		specific value - how many dialogs were inserted into the profile with 
+		a specific value. If not value is passed, only simply belonging of the 
+		dialog to the profile is checked. Note that the profile does not 
+		supports values, this will be silently discarded.
+		</p><p>Meaning of the parameters is as follows:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>profile</em></span> - name of the profile to get 
+			the size for;
+			</p></li><li class="listitem"><p><span class="emphasis"><em>value</em></span> (optional) - string value to 
+			toughen  the check. Pseudo-variables are supported;
+			</p></li><li class="listitem"><p><span class="emphasis"><em>size</em></span> - an AVP or script variable to
+			return the profile size in.
+			</p></li></ul></div><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5811024"></a><p class="title"><b>Example 1.54. <code class="function">get_profile_size</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+get_profile_size("inbound_call","$avp(size)");
+xlog("currently there are $avp(size) inbound calls\n");
+...
+get_profile_size("caller","$fu");
+xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.10.  set_dlg_flag(idx)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5813280"></a>1.7.10. 
+		<code class="function">set_dlg_flag(idx)</code>
+		</h3></div></div></div><p>
+		Sets the dialog flag index <span class="emphasis"><em>idx</em></span> to true. The dialog
+		flags are dialog persistent and they can be accessed (set and test)
+		for all requests belonging to the dialog.
+		</p><p>
+		The flag index can be between 0 and 31.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5816864"></a><p class="title"><b>Example 1.55. <code class="function">set_dlg_flag</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+set_dlg_flag("3");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.11.  test_and_set_dlg_flag(idx, value)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5818880"></a>1.7.11. 
+		<code class="function">test_and_set_dlg_flag(idx, value)</code>
+		</h3></div></div></div><p>
+		Atomically checks if the dialog flag index <span class="emphasis"><em>idx</em></span> is
+		equal to <span class="emphasis"><em>value</em></span>. If true, changes the value with the
+		oppsosite one. This operation is done under the dialog lock.
+		</p><p>
+		The flag index can be between 0 and 31.
+		</p><p>
+		The value should be 0 (false) or 1 (true).
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5823184"></a><p class="title"><b>Example 1.56. <code class="function">test_and_set_dlg_flag</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+test_and_set_dlg_flag("3", "0");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.12.  reset_dlg_flag(idx)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5825200"></a>1.7.12. 
+		<code class="function">reset_dlg_flag(idx)</code>
+		</h3></div></div></div><p>
+		Resets the dialog flag index <span class="emphasis"><em>idx</em></span> to false.
+		The dialog flags are dialog persistent and they can be accessed 
+		(set and test) for all requests belonging to the dialog.
+		</p><p>
+		The flag index can be between 0 and 31.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5828784"></a><p class="title"><b>Example 1.57. <code class="function">reset_dlg_flag</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+reset_dlg_flag("16");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.13.  is_dlg_flag_set(idx)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5830800"></a>1.7.13. 
+		<code class="function">is_dlg_flag_set(idx)</code>
+		</h3></div></div></div><p>
+		Returns true if the dialog flag index <span class="emphasis"><em>idx</em></span> is set.
+		The dialog flags are dialog persistent and they can be accessed 
+		(set and test) for all requests belonging to the dialog.
+		</p><p>
+		The flag index can be between 0 and 31.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5834384"></a><p class="title"><b>Example 1.58. <code class="function">is_dlg_flag_set</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+if (is_dlg_flag_set("16")) {
+	xlog("dialog flag 16 is set\n");
+}
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.14.  store_dlg_value(name,val)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5836496"></a>1.7.14. 
+		<code class="function">store_dlg_value(name,val)</code>
+		</h3></div></div></div><p>
+		Attaches to the dialog the value <span class="emphasis"><em>val</em></span> under the 
+		name <span class="emphasis"><em>name</em></span>. The values attached to dialogs are 
+		dialog persistent and they can be accessed (read and write) for all 
+		requests belonging to the dialog.
+		</p><p>
+		Parameter <span class="emphasis"><em>val</em></span> may contain pseudo-variables.
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>
+		Same functionality may be obtain by assigning a value to pseudo
+		variable <span class="emphasis"><em>$dlg_val(name)</em></span>.
+		</p><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5841712"></a><p class="title"><b>Example 1.59. <code class="function">store_dlg_value</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+store_dlg_value("inv_src_ip","$si");
+store_dlg_value("account type","prepaid");
+# or
+$dlg_val("account_type") = "prepaid";
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.15.  fetch_dlg_value(name,pvar)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5843872"></a>1.7.15. 
+		<code class="function">fetch_dlg_value(name,pvar)</code>
+		</h3></div></div></div><p>
+		Fetches from the dialog the value of attribute named 
+		<span class="emphasis"><em>name</em></span>. The values attached to dialogs are 
+		dialog persistent and they can be accessed (read and write) for all 
+		requests belonging to the dialog.
+		</p><p>
+		Parameter <span class="emphasis"><em>pvar</em></span> may be a script var ($var) or
+		and avp ($avp).
+		</p><p>
+		NOTE: the dialog must be created before using this function (use 
+		create_dialog() function before).
+		</p><p>
+		Same functionality may be obtain by reading the pseudo
+		variable <span class="emphasis"><em>$dlg_val(name)</em></span>.
+		</p><p>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+			REPLY_ROUTE and FAILURE_ROUTE.
+		</p><div class="example"><a name="idp5848768"></a><p class="title"><b>Example 1.60. <code class="function">fetch_dlg_value</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+fetch_dlg_value("inv_src_ip","$avp(2)");
+fetch_dlg_value("account type","$var(account)");
+# or
+$var(account) = $dlg_val("account_type");
+...
+</pre></div></div><br class="example-break"></div><div class="section" title="1.7.16.  topology_hiding()"><div class="titlepage"><div><div><h3 class="title"><a name="idp5850944"></a>1.7.16. 
+		<code class="function">topology_hiding()</code>
+		</h3></div></div></div><p>
+			Dialog module can also do a small overhead topology hiding. By calling this
+			function on an initial Invite, for the current dialog, the modules will
+			hide the topology, meaning that it will strip and restore all the Via,
+			Record-Route and Route headers and it will replace the contact with the
+			IP address of the interface where the request was received.
+		</p><p>
+			You must note however, that the detection of the future in-dialog requests(BYE, reInvite, etc.)
+			for these dialogs on which topology hiding is applied, is not done automatically.
+			Without topology hiding and only normal dialog, the detection was
+			done when loose_route was called. But now, for this dialogs where topology
+			hiding is applied, the in dialog requests reaching OpenSIPS won't have any Route headers
+			and the RURI will point to OpenSIPS machine.
+			So, to be able to match the in-dialog requests to the corresponding dialog, a script
+			function must be called. It's name is <span class="emphasis"><em>match_dialog</em></span> and you can read
+			it's description above.
+			The in-dialog topology requests are requests with a to tag,
+			RURI pointing to opensips and with a method specific to a
+			Invite dialog. For this kind of requests you should call
+			match_dialog() function. If a dialog is found the function
+			returns success.
+		</p><p>
+			The great advantage of using the topology hiding functionality built inside
+			dialog module is that you can use all the dialog modules functionalities:
+			profiles, dialog variables, dialog timeouts, etc..
+		</p><p>
+			Optionally,the function also receives a string parameter, which holds string flags.
+			Current options for the string flags are :
+			</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>U</em></span> - Propagate the Username in the Contact header URI
+					</p></li></ul></div><p>
+		</p><div class="example"><a name="idp5857344"></a><p class="title"><b>Example 1.61. <code class="function">topology_hiding</code> usage</b></p><div class="example-contents"><pre class="programlisting">
+...
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding();
+}
+...
+...
+if(!has_totag() &amp;&amp; is_method("INVITE")) {
+	topology_hiding("U");
+}
+...
+</pre></div></div><br class="example-break"><div class="example"><a name="idp5859472"></a><p class="title"><b>Example 1.62. <code class="function">calling match_dialog() function for topology hiding sequential requests</code></b></p><div class="example-contents"><pre class="programlisting">
+...
+if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BYE|UPDATE")
+        if(match_dialog())
+        {
+                xlog(" in-dialog topology hiding request - $DLG_dir\n");
+                route(1);
+                exit;
+        }
+}
+...
+</pre></div></div><br class="example-break"></div></div><div class="section" title="1.8. Exported statistics"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp5862096"></a>1.8. Exported statistics</h2></div></div></div><div class="section" title="1.8.1. active_dialogs"><div class="titlepage"><div><div><h3 class="title"><a name="idp5862736"></a>1.8.1. <code class="varname">active_dialogs</code></h3></div></div></div><p>
+			Returns the number of current active dialogs (may be confirmed or
+			not).
+			</p></div><div class="section" title="1.8.2. early_dialogs"><div class="titlepage"><div><div><h3 class="title"><a name="idp5864112"></a>1.8.2. <code class="varname">early_dialogs</code></h3></div></div></div><p>
+			Returns the number of early dialogs.
+			</p></div><div class="section" title="1.8.3. processed_dialogs"><div class="titlepage"><div><div><h3 class="title"><a name="idp5865392"></a>1.8.3. <code class="varname">processed_dialogs</code></h3></div></div></div><p>
+			Returns the total number of processed dialogs (terminated, 
+			expired or active) from the startup.
+			</p></div><div class="section" title="1.8.4. expired_dialogs"><div class="titlepage"><div><div><h3 class="title"><a name="idp5866800"></a>1.8.4. <code class="varname">expired_dialogs</code></h3></div></div></div><p>
+			Returns the total number of expired dialogs from the startup.
+			</p></div><div class="section" title="1.8.5. failed_dialogs"><div class="titlepage"><div><div><h3 class="title"><a name="idp5868160"></a>1.8.5. <code class="varname">failed_dialogs</code></h3></div></div></div><p>
+			Returns the number of failed dialogs ( dialogs were
+			never established due to whatever reasons - internal error,
+			negative reply, cancelled, etc )
+			</p></div><div class="section" title="1.8.6. create_sent"><div class="titlepage"><div><div><h3 class="title"><a name="idp5869616"></a>1.8.6. <code class="varname">create_sent</code></h3></div></div></div><p>
+				Returns the number of replicated dialog
+			<span class="bold"><strong>create</strong></span> requests send to other OpenSIPS
+			instances.
+			</p></div><div class="section" title="1.8.7. update_sent"><div class="titlepage"><div><div><h3 class="title"><a name="idp5871520"></a>1.8.7. <code class="varname">update_sent</code></h3></div></div></div><p>
+				Returns the number of replicated dialog
+			<span class="bold"><strong>update</strong></span> requests send to other OpenSIPS
+			instances.
+			</p></div><div class="section" title="1.8.8. delete_sent"><div class="titlepage"><div><div><h3 class="title"><a name="idp5873424"></a>1.8.8. <code class="varname">delete_sent</code></h3></div></div></div><p>
+				Returns the number of replicated dialog
+			<span class="bold"><strong>delete</strong></span> requests send to other OpenSIPS
+			instances.
+			</p></div><div class="section" title="1.8.9. create_recv"><div class="titlepage"><div><div><h3 class="title"><a name="idp5875328"></a>1.8.9. <code class="varname">create_recv</code></h3></div></div></div><p>
+				Returns the number of dialog
+			<span class="bold"><strong>create</strong></span> events received from other
+			OpenSIPS instances.
+			</p></div><div class="section" title="1.8.10. update_recv"><div class="titlepage"><div><div><h3 class="title"><a name="idp5877232"></a>1.8.10. <code class="varname">update_recv</code></h3></div></div></div><p>
+				Returns the number of dialog
+			<span class="bold"><strong>update</strong></span> events received from other
+			OpenSIPS instances.
+			</p></div><div class="section" title="1.8.11. delete_recv"><div class="titlepage"><div><div><h3 class="title"><a name="idp5879136"></a>1.8.11. <code class="varname">delete_recv</code></h3></div></div></div><p>
+				Returns the number of dialog
+			<span class="bold"><strong>delete</strong></span> events received from other
+			OpenSIPS instances.
+			</p></div></div><div class="section" title="1.9. Exported MI Functions"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp5881168"></a>1.9. Exported MI Functions</h2></div></div></div><div class="section" title="1.9.1. dlg_list"><div class="titlepage"><div><div><h3 class="title"><a name="idp5881808"></a>1.9.1. <code class="varname">dlg_list</code></h3></div></div></div><p>
+		Lists the description of the dialogs (calls). If no paramter is given,
+		all dialogs will be listed. If a dialog identifier is passed
+		as paramter (callid and fromtag), only that dialog will be listed. If
+		a index and conter parameter is passed, it will list only a number of
+		"counter" dialogs starting with index (as offset) - this is used to
+		get only section of dialogs.
+		</p><p>
+		Name: <span class="emphasis"><em>dlg_list</em></span>
+		</p><p>Parameters (with dialog idetification):</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>callid</em></span> (optional) - callid if a single
+				dialog to be listed.
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>from_tag</em></span> (optional, but cannot be present
+				without the callid paramter) - fromtag (as per initial request)
+				of the dialog to be listed.
+				entry
+			</p></li></ul></div><p>Parameters (with dialog counting):</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>index</em></span> - offset where the dialog listing
+				should start.
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>counter</em></span> - how many dialogs should be 
+				listed (starting from the offset)
+			</p></li></ul></div><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:dlg_list:_reply_fifo_file_
+		_empty_line_
+		</pre><pre class="programlisting">
+		:dlg_list:_reply_fifo_file_
+		abcdrssfrs122444@192.168.1.1
+		AAdfeEFF33
+		</pre><pre class="programlisting">
+		:dlg_list:_reply_fifo_file_
+		40
+		10
+		</pre></div><div class="section" title="1.9.2. dlg_list_ctx"><div class="titlepage"><div><div><h3 class="title"><a name="idp5892144"></a>1.9.2. <code class="varname">dlg_list_ctx</code></h3></div></div></div><p>
+		The same as the <span class="quote">&#8220;<span class="quote">dlg_list</span>&#8221;</span> but including in the 
+		dialog description
+		the associated context from modules sitting on top of
+		the dialog module.
+		</p><p>
+		Name: <span class="emphasis"><em>dlg_list_ctx</em></span>
+		</p><p>Parameters: <span class="emphasis"><em>see <span class="quote">&#8220;<span class="quote">dlg_list</span>&#8221;</span></em></span>
+		</p><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:dlg_list_ctx:_reply_fifo_file_
+		_empty_line_
+		</pre></div><div class="section" title="1.9.3. dlg_end_dlg"><div class="titlepage"><div><div><h3 class="title"><a name="idp5896752"></a>1.9.3. <code class="varname">dlg_end_dlg</code></h3></div></div></div><p>
+				Terminates an ongoing dialog.
+				If dialog is established, BYEs are sent in both directions.
+				If dialog is in unconfirmed or early state, a CANCEL will be sent
+				to the callee side, that will trigger a 487 from the callee,
+				which, when relayed, will also end the dialog on the caller's side.
+			</p><p>
+		Name: <span class="emphasis"><em>dlg_end_dlg</em></span>
+		</p><p>Parameters:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>h_entry</em></span> - hash entry of the dialog in the
+				internal dialog table
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>h_id</em></span> - hash id of the dialog on the hash
+				entry
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>extra_hdrs</em></span> - (optional) string containg 
+				extra headers (full format) to be added to the BYE requests.
+			</p></li></ul></div><p>
+		The values for the h_entry and h_id can be get via the dlg_list
+		MI command.
+		</p><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:dlg_end_dlg:_reply_fifo_file_
+		342
+		56
+		_empty_line_
+		</pre></div><div class="section" title="1.9.4. profile_get_size"><div class="titlepage"><div><div><h3 class="title"><a name="idp5904336"></a>1.9.4. <code class="varname">profile_get_size</code></h3></div></div></div><p>
+		Returns the number of dialogs belonging to a profile. If the profile 
+		supports values, the check can be reinforced to take into account a 
+		specific value - how many dialogs were inserted into the profile with 
+		a specific value. If not value is passed, only simply belonging of the 
+		dialog to the profile is checked. Note that the profile does not 
+		supports values, this will be silently discarded.
+		</p><p>
+		Name: <span class="emphasis"><em>profile_get_size</em></span>
+		</p><p>Parameters:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>profile</em></span> - name of the profile to get the
+				value for.
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>value</em></span> (optional)- string value to 
+				toughen the check;
+			</p></li></ul></div><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:profile_get_size:_reply_fifo_file_
+		inbound_calls
+		_empty_line_
+		</pre></div><div class="section" title="1.9.5. profile_list_dlgs"><div class="titlepage"><div><div><h3 class="title"><a name="idp5910560"></a>1.9.5. <code class="varname">profile_list_dlgs</code></h3></div></div></div><p>
+		Lists all the dialogs belonging to a profile. If the profile 
+		supports values, the check can be reinforced to take into account a 
+		specific value - list only the dialogs that were inserted into the 
+		profile with that specific value. If not value is passed, all dialogs 
+		belonging to the profile will be listed. Note that the profile does 
+		not supports values, this will be silently discarded. Also, when using
+		shared profiles using the CacheDB interface, this command will only
+		display the local dialogs.
+		</p><p>
+		Name: <span class="emphasis"><em>profile_list_dlgs</em></span>
+		</p><p>Parameters:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>profile</em></span> - name of the profile to list the
+				dialog for.
+			</p></li><li class="listitem"><p>
+				<span class="emphasis"><em>value</em></span> (optional)- string value to 
+				toughen the check;
+			</p></li></ul></div><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:profile_list_dlgs:_reply_fifo_file_
+		inbound_calls
+		_empty_line_
+		</pre></div><div class="section" title="1.9.6. profile_get_values"><div class="titlepage"><div><div><h3 class="title"><a name="idp5916896"></a>1.9.6. <code class="varname">profile_get_values</code></h3></div></div></div><p>
+		Lists all the values belonging to a profile along with their
+		count. If the profile does not support values a total count
+		will be returned. Note that this function does not work for shared
+		profiles over the CacheDB interface.
+		</p><p>
+		Name: <span class="emphasis"><em>profile_get_values</em></span>
+		</p><p>Parameters:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+				<span class="emphasis"><em>profile</em></span> - name of the profile to list the
+				dialog for.
+			</p></li></ul></div><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:profile_get_values:_reply_fifo_file_
+		inbound_calls
+		_empty_line_
+		</pre></div><div class="section" title="1.9.7. dlg_db_sync"><div class="titlepage"><div><div><h3 class="title"><a name="idp5921968"></a>1.9.7. <code class="varname">dlg_db_sync</code></h3></div></div></div><p>
+		Will synchronize the information about the dialogs from the database
+		with the OpenSIPS internal memory. To be used mainly for transfering
+		OpenSIPS dialog information from one server to another.
+		</p><p>
+		Name: <span class="emphasis"><em>dlg_db_sync</em></span>
+		</p><p>It takes no parameters</p><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:dlg_db_sync:_reply_fifo_file_
+		_empty_line_
+		</pre></div><div class="section" title="1.9.8. dlg_restore_db"><div class="titlepage"><div><div><h3 class="title"><a name="idp5925632"></a>1.9.8. <code class="varname">dlg_restore_db</code></h3></div></div></div><p>
+		Restores the dialog table after a potential desynchronization event.
+		The table is truncated, then populated with CONFIRMED dialogs from memory.
+		</p><p>
+		Name: <span class="emphasis"><em>dlg_restore_db</em></span>
+		</p><p>It takes no parameters</p><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:dlg_restore_db:_reply_fifo_file_
+		_empty_line_
+		</pre></div><div class="section" title="1.9.9. list_all_profiles"><div class="titlepage"><div><div><h3 class="title"><a name="idp5929232"></a>1.9.9. <code class="varname">list_all_profiles</code></h3></div></div></div><p>
+		Lists all the dialog profiles, along with 1 or 0 if
+		the given profile has/does not have an associated value.
+		</p><p>
+		Name: <span class="emphasis"><em>list_all_profiles</em></span>
+		</p><p>Parameters: <span class="emphasis"><em>It takes no parameters</em></span>
+		</p><p>
+		MI FIFO Command Format:
+		</p><pre class="programlisting">
+		:list_all_profiles:_reply_fifo_file_
+		_empty_line_
+		</pre></div></div><div class="section" title="1.10. Exported pseudo-variables"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp5933392"></a>1.10. Exported pseudo-variables</h2></div></div></div><div class="section" title="1.10.1. $DLG_count"><div class="titlepage"><div><div><h3 class="title"><a name="idp5934032"></a>1.10.1. <code class="varname">$DLG_count</code></h3></div></div></div><p>
+			Returns the number of current active dialogs (may be confirmed or
+			not).
+			</p></div><div class="section" title="1.10.2. $DLG_status"><div class="titlepage"><div><div><h3 class="title"><a name="idp5935408"></a>1.10.2. <code class="varname">$DLG_status</code></h3></div></div></div><p>
+			Returns the status of the dialog corresponding to the processed 
+			sequential request. This PV will be available only for sequential
+			requests, after doing loose_route().
+			</p><p>
+			Value may be:
+			</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>
+					<span class="emphasis"><em>NULL</em></span> - Dialog not found.
+				</p></li><li class="listitem"><p>
+					<span class="emphasis"><em>1</em></span> - Dialog unconfirmed (created
+					but no reply received at all)
+				</p></li><li class="listitem"><p>
+					<span class="emphasis"><em>2</em></span> - Dialog in early state (created
+					provisional reply received, but no final reply received
+					yet)
+				</p></li><li class="listitem"><p>
+					<span class="emphasis"><em>3</em></span> - Confirmed by a final reply but 
+					no ACK received yet.
+				</p></li><li class="listitem"><p>
+					<span class="emphasis"><em>4</em></span> - Confirmed by a final reply and
+					ACK received.
+				</p></li><li class="listitem"><p>
+					<span class="emphasis"><em>5</em></span> - Dialog ended.
+				</p></li></ul></div></div><div class="section" title="1.10.3. $DLG_lifetime"><div class="titlepage"><div><div><h3 class="title"><a name="idp5943392"></a>1.10.3. <code class="varname">$DLG_lifetime</code></h3></div></div></div><p>
+			Returns the duration (in seconds) of the dialog corresponding to 
+			the processed sequential request. The duration is calculated from 
+			the dialog confirmation and the current moment. This PV will be 
+			available only for sequential requests, after doing loose_route().
+			</p><p>
+			NULL will be returned if there is no dialog for the request.
+			</p></div><div class="section" title="1.10.4. $DLG_flags"><div class="titlepage"><div><div><h3 class="title"><a name="idp5945440"></a>1.10.4. <code class="varname">$DLG_flags</code></h3></div></div></div><p>
+			Returns the dialog flags array (as a single interger value)
+			of the dialog corresponding to the processed sequential request.
+			This PV will be available only for sequential requests, 
+			after doing loose_route().
+			</p><p>
+			NULL will be returned if there is no dialog for the request.
+			</p></div><div class="section" title="1.10.5. $DLG_dir"><div class="titlepage"><div><div><h3 class="title"><a name="idp5947424"></a>1.10.5. <code class="varname">$DLG_dir</code></h3></div></div></div><p>
+			Returns the direction of the request in dialog (as "UPSTREAM" or
+			"DOWNSTREAM" string) - to be used for sequential request.
+			This PV will be available only for sequential requests (on 
+			replies), after doing loose_route().
+			</p><p>
+			NULL will be returned if there is no dialog for the request.
+			</p></div><div class="section" title="1.10.6. $DLG_did"><div class="titlepage"><div><div><h3 class="title"><a name="idp5949424"></a>1.10.6. <code class="varname">$DLG_did</code></h3></div></div></div><p>
+			Returns the id of the dialog corresponding to 
+			the processed sequential request. The output format is 
+			entry ':' id (as returned by the dlg_list MI function). This PV will be 
+			available only for sequential requests, after doing loose_route().
+			</p><p>
+			NULL will be returned if there is no dialog for the request.
+			</p></div><div class="section" title="1.10.7. $DLG_end_reason"><div class="titlepage"><div><div><h3 class="title"><a name="idp5951440"></a>1.10.7. <code class="varname">$DLG_end_reason</code></h3></div></div></div><p>
+				Returns the reason for the dialog termination. It can be 
+				one of the following :
+
+				</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>Upstream BYE</em></span> - Callee has sent a BYE
+						</p></li><li class="listitem"><p><span class="emphasis"><em>Downstream BYE</em></span> - Caller has sent a BYE
+						</p></li><li class="listitem"><p><span class="emphasis"><em>Lifetime Timeout</em></span> - Dialog lifetime expired
+						</p></li><li class="listitem"><p><span class="emphasis"><em>MI Termination</em></span> - Dialog ended via the MI interface
+						</p></li><li class="listitem"><p><span class="emphasis"><em>Ping Timeout</em></span> - Dialog ended because no reply to in-dialog pings
+						</p></li><li class="listitem"><p><span class="emphasis"><em>RTPProxy Timeout</em></span> - Media timeout signaled by RTPProxy
+						</p></li></ul></div><p>
+			</p><p>
+				NULL will be returned if there is no dialog for the request,
+				or if the dialog is not ended in the current context.
+			</p></div><div class="section" title="1.10.8. $dlg_val(name)"><div class="titlepage"><div><div><h3 class="title"><a name="idp5959968"></a>1.10.8. <code class="varname">$dlg_val(name)</code></h3></div></div></div><p>
+			This is a read/write variable that allows access to the dialog 
+			attribute named <span class="emphasis"><em>name</em></span>.
+			This PV will be available only for sequential requests,
+			after doing loose_route().
+			</p><p>
+			NULL will be returned if there is no dialog for the request.
+			</p></div></div></div><div class="chapter" title="Chapter 2. Developer Guide"><div class="titlepage"><div><div><h2 class="title"><a name="idp6434096"></a>Chapter 2. Developer Guide</h2></div></div></div><div class="section" title="2.1. Available Functions"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="idp6434608"></a>2.1. Available Functions</h2></div></div></div><div class="section" title="2.1.1.  register_dlgcb (dialog, type, cb, param, free_param_cb)"><div class="titlepage"><div><div><h3 class="title"><a name="idp6396848"></a>2.1.1. 
+		<code class="function">register_dlgcb (dialog, type, cb, param, free_param_cb)</code>
+		</h3></div></div></div><p>
+		Register a new callback to the dialog.
+		</p><p>Meaning of the parameters is as follows:</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p><span class="emphasis"><em>struct dlg_cell* dlg</em></span> - dialog to 
+			register callback to. If maybe NULL only for DLG_CREATED callback
+			type, which is not a per dialog type.
+			</p></li><li class="listitem"><p><span class="emphasis"><em>int type</em></span> - types of callbacks; more
+			types may be register for the same callback function; only 
+			DLG_CREATED must be register alone. Possible types:
+			</p><div class="itemizedlist"><ul class="itemizedlist" type="circle"><li class="listitem"><p><span class="emphasis"><em>DLGCB_LOADED</em></span>
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLGCB_SAVED</em></span>
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLG_CREATED</em></span> - called when a new 
+				dialog is created - it's a global type (not associated to 
+				any dialog)
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLG_FAILED</em></span> - called when the dialog
+				was negatively replied (non-2xx) - it's a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLG_CONFIRMED</em></span> - called when the 
+				dialog is confirmed (2xx replied) - it's a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLG_REQ_WITHIN</em></span> - called when the 
+				dialog matches a sequential request - it's a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLG_TERMINATED</em></span> - called when the 
+				dialog is terminated via BYE - it's a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLG_EXPIRED</em></span> - called when the 
+				dialog expires without receiving a BYE - it's a per dialog 
+				type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLGCB_EARLY</em></span> - called when the
+				dialog is created in an early state (18x replied) - it's
+				a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLGCB_RESPONSE_FWDED</em></span> - called when
+				the dialog matches a reply to the initial INVITE request - it's
+				a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLGCB_RESPONSE_WITHIN</em></span> - called when
+				the dialog matches a reply to a subsequent in dialog request
+				- it's a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLGCB_MI_CONTEXT</em></span> - called when the
+				mi dlg_list_ctx command is invoked - it's a per dialog type.
+				</p></li><li class="listitem"><p><span class="emphasis"><em>DLGCB_DESTROY</em></span>
+				</p></li></ul></div><p>
+			</p></li><li class="listitem"><p><span class="emphasis"><em>dialog_cb cb</em></span> - callback function to be 
+			called. Prototype is: <span class="quote">&#8220;<span class="quote">void (dialog_cb) 
+			(struct dlg_cell* dlg, int type, struct dlg_cb_params * params);
+			</span>&#8221;</span>
+			</p></li><li class="listitem"><p><span class="emphasis"><em>void *param</em></span> - parameter to be passed to
+			the callback function.
+			</p></li><li class="listitem"><p><span class="emphasis"><em>param_free callback_param_free</em></span> - 
+			callback function to be called to free the param.
+			Prototype is: <span class="quote">&#8220;<span class="quote">void (param_free_cb) (void *param);</span>&#8221;</span>
+			</p></li></ul></div></div></div></div><div class="chapter" title="Chapter 3. Frequently Asked Questions"><div class="titlepage"><div><div><h2 class="title"><a name="idp6489216"></a>Chapter 3. Frequently Asked Questions</h2></div></div></div><div class="qandaset" title="Frequently Asked Questions"><a name="idp6428944"></a><table border="0" width="100%" summary="Q and A Set"><col align="left" width="1%"><col><tbody><tr class="question" title="3.1."><td align="left" valign="top"><a name="idp6429792"></a><a name="idp6430048"></a><p><b>3.1.</b></p></td><td align="left" valign="top"><p>What happend with <span class="quote">&#8220;<span class="quote">use_tight_match</span>&#8221;</span> 
+		parameter?</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p>
+			The parameter was removed with version 1.3 as the option of tight
+			matching became mandatory and not configurable. Now, the tight
+			matching is done all the time (when using DID matching).
+		</p></td></tr><tr class="question" title="3.2."><td align="left" valign="top"><a name="idp6432400"></a><a name="idp6490432"></a><p><b>3.2.</b></p></td><td align="left" valign="top"><p>What happend with <span class="quote">&#8220;<span class="quote">bye_on_timeout_flag</span>&#8221;</span> 
+		parameter?</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p>
+			The parameter was removed in a dialog module parameter restructuring.
+			To keep the bye on timeout behavior, you need to provide a "B" 
+			string parameter to the create_dialog() function.
+		</p></td></tr><tr class="question" title="3.3."><td align="left" valign="top"><a name="idp6492688"></a><a name="idp6492944"></a><p><b>3.3.</b></p></td><td align="left" valign="top"><p>What happend with <span class="quote">&#8220;<span class="quote">dlg_flag</span>&#8221;</span> 
+		parameter?</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p>
+			The parameter is considered obsolete. The only way to
+			create a dialog is to call the create_dialog() function
+		</p></td></tr><tr class="question" title="3.4."><td align="left" valign="top"><a name="idp6495120"></a><a name="idp6495376"></a><p><b>3.4.</b></p></td><td align="left" valign="top"><p>Where can I find more about OpenSIPS?</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p>
+			Take a look at <a class="ulink" href="http://www.opensips.org/" target="_top">http://www.opensips.org/</a>.
+		</p></td></tr><tr class="question" title="3.5."><td align="left" valign="top"><a name="idp6496656"></a><a name="idp6496912"></a><p><b>3.5.</b></p></td><td align="left" valign="top"><p>Where can I post a question about this module?</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p>
+			First at all check if your question was already answered on one of
+			our mailing lists: 
+		</p><div class="itemizedlist"><ul class="itemizedlist" type="disc"><li class="listitem"><p>User Mailing List - <a class="ulink" href="http://lists.opensips.org/cgi-bin/mailman/listinfo/users" target="_top">http://lists.opensips.org/cgi-bin/mailman/listinfo/users</a></p></li><li class="listitem"><p>Developer Mailing List - <a class="ulink" href="http://lists.opensips.org/cgi-bin/mailman/listinfo/devel" target="_top">http://lists.opensips.org/cgi-bin/mailman/listinfo/devel</a></p></li></ul></div><p>
+			E-mails regarding any stable OpenSIPS release should be sent to 
+			<code class="email">&lt;<a class="email" href="mailto:users@lists.opensips.org">users@lists.opensips.org</a>&gt;</code> and e-mails regarding development versions
+			should be sent to <code class="email">&lt;<a class="email" href="mailto:devel@lists.opensips.org">devel@lists.opensips.org</a>&gt;</code>.
+		</p><p>
+			If you want to keep the mail private, send it to 
+			<code class="email">&lt;<a class="email" href="mailto:users@lists.opensips.org">users@lists.opensips.org</a>&gt;</code>.
+		</p></td></tr><tr class="question" title="3.6."><td align="left" valign="top"><a name="idp6503648"></a><a name="idp6506816"></a><p><b>3.6.</b></p></td><td align="left" valign="top"><p>How can I report a bug?</p></td></tr><tr class="answer"><td align="left" valign="top"></td><td align="left" valign="top"><p>
+			Please follow the guidelines provided at:
+			<a class="ulink" href="https://github.com/OpenSIPS/opensips/issues" target="_top">https://github.com/OpenSIPS/opensips/issues</a>.
+		</p></td></tr></tbody></table></div></div></div></body></html>

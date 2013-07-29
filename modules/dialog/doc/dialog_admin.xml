@@ -92,6 +92,32 @@
 	</section>
 
 	<section>
+	<title>Dialog replication</title>
+	<para>
+	<emphasis role='bold'>Dialog replication</emphasis> is a mechanism used to
+	mirror all dialog changes taking place in one OpenSIPS instance to one or
+	more other different instances. The logic is simplified by using the core
+	<emphasis>Binary Internal Interface</emphasis> to build and send the
+	replication-related UDP packets.
+	</para>
+	<para>
+		The feature is especially useful when dealing with very large systems,
+	where failover through a database backend is no longer feasible, due to the
+	high amount of time required for the backup instance to load the dialog
+	information stored in a typical <emphasis>dialog</emphasis> table by the
+	crashed instance.
+	</para>
+	<para>
+		Configuring both receival and sending of dialog replication packets is
+	trivial and can be done by using the
+	<emphasis role='bold'>accept_replicated_dialogs</emphasis> and
+	<emphasis role='bold'>replicate_dialogs_to</emphasis> parameters of the
+	module. In addition to this, the module also exports several statistics
+	regarding the number of replication packets sent/received.
+	</para>
+	</section>
+
+	<section>
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -1074,7 +1100,7 @@ modparam("dialog", "profile_size_prefix", "dlgs_")
 	<section>
 		<title><varname>profile_timeout</varname> (int)</title>
 		<para>
-			Specifies ho long a dialog profile should be kept in the CacheDB
+			Specifies how long a dialog profile should be kept in the CacheDB
 			until it expires. This is only used when distributed profiles are
 			enabled.
 		</para>
@@ -1093,6 +1119,48 @@ modparam("dialog", "profile_timeout", "43200")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>accept_replicated_dialogs</varname> (int)</title>
+		<para>
+		Registers the <emphasis>dialog</emphasis> module to the &osips; Binary
+		Internal Interface.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (not registered).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>accept_replicated_dialogs</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "accept_replicated_dialogs", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>replicate_dialogs_to</varname> (string)</title>
+		<para>
+			Adds a new dialog replication destination. The destination will
+		receive all dialog-related events (creation, updating and deletion)
+		over UDP, using the Binary Internal Interface.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>null</quote> (no replication destinations).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>replicate_dialogs_to</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
+...
+</programlisting>
+		</example>
+	</section>
 
 
 	</section>
@@ -1835,6 +1903,54 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 			Returns the number of failed dialogs ( dialogs were
 			never established due to whatever reasons - internal error,
 			negative reply, cancelled, etc )
+			</para>
+		</section>
+		<section>
+			<title><varname>create_sent</varname></title>
+			<para>
+				Returns the number of replicated dialog
+			<emphasis role='bold'>create</emphasis> requests send to other OpenSIPS
+			instances.
+			</para>
+		</section>
+		<section>
+			<title><varname>update_sent</varname></title>
+			<para>
+				Returns the number of replicated dialog
+			<emphasis role='bold'>update</emphasis> requests send to other OpenSIPS
+			instances.
+			</para>
+		</section>
+		<section>
+			<title><varname>delete_sent</varname></title>
+			<para>
+				Returns the number of replicated dialog
+			<emphasis role='bold'>delete</emphasis> requests send to other OpenSIPS
+			instances.
+			</para>
+		</section>
+		<section>
+			<title><varname>create_recv</varname></title>
+			<para>
+				Returns the number of dialog
+			<emphasis role='bold'>create</emphasis> events received from other
+			OpenSIPS instances.
+			</para>
+		</section>
+		<section>
+			<title><varname>update_recv</varname></title>
+			<para>
+				Returns the number of dialog
+			<emphasis role='bold'>update</emphasis> events received from other
+			OpenSIPS instances.
+			</para>
+		</section>
+		<section>
+			<title><varname>delete_recv</varname></title>
+			<para>
+				Returns the number of dialog
+			<emphasis role='bold'>delete</emphasis> events received from other
+			OpenSIPS instances.
 			</para>
 		</section>
 	</section>

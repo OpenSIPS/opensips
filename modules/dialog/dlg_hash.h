@@ -165,6 +165,8 @@ extern struct dlg_cell  *current_dlg_pointer;
 
 struct dlg_cell *get_current_dialog();
 
+#define dlg_hash(_callid) core_hash(_callid, 0, d_table->size)
+
 #define dlg_lock(_table, _entry) \
 		lock_set_get( (_table)->locks, (_entry)->lock_idx);
 #define dlg_unlock(_table, _entry) \

@@ -57,6 +57,7 @@
 #include "../tm/tm_load.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
+#include "dlg_replication.h"
 
 #define MAX_LDG_LOCKS  2048
 #define MIN_LDG_LOCKS  2
@@ -68,8 +69,6 @@ extern int last_dst_leg;
 
 struct dlg_table *d_table = NULL;
 struct dlg_cell  *current_dlg_pointer = NULL ;
-
-#define dlg_hash(_callid) core_hash(_callid, 0, d_table->size)
 
 
 int dialog_cleanup( struct sip_msg *msg, void *param )
@@ -219,6 +218,9 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 	}
 
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
+
+	if (replication_dests)
+		replicate_dialog_deleted(dlg);
 
 	free_dlg_dlg(dlg);
 }

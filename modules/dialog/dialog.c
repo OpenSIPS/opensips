@@ -55,6 +55,8 @@
 #include "../../mi/mi.h"
 #include "../tm/tm_load.h"
 #include "../rr/api.h"
+#include "../../bin_interface.h"
+
 #include "dlg_hash.h"
 #include "dlg_timer.h"
 #include "dlg_handlers.h"
@@ -65,6 +67,7 @@
 #include "dlg_profile.h"
 #include "dlg_vals.h"
 #include "dlg_tophiding.h"
+#include "dlg_replication.h"
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -97,6 +100,12 @@ stat_var *processed_dlgs = 0;
 stat_var *expired_dlgs = 0;
 stat_var *failed_dlgs = 0;
 stat_var *early_dlgs  = 0;
+stat_var *create_sent  = 0;
+stat_var *update_sent  = 0;
+stat_var *delete_sent  = 0;
+stat_var *create_recv  = 0;
+stat_var *update_recv  = 0;
+stat_var *delete_recv  = 0;
 
 struct tm_binds d_tmb;
 struct rr_binds d_rrb;
@@ -111,8 +120,14 @@ extern int last_dst_leg;
 /* cachedb stuff */
 str cdb_url = {0,0};
 
+/* dialog replication using the bpi interface */
+int accept_replicated_dlg;
+struct replication_dest *replication_dests;
+
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+
+static int add_replication_dest(modparam_t type, void *val);
 
 /* commands wrappers and fixups */
 static int fixup_profile(void** param, int param_no);
@@ -255,6 +270,10 @@ static param_export_t mod_params[]={
 	{ "profile_no_value_prefix", STR_PARAM, &cdb_noval_prefix.s     },
 	{ "profile_size_prefix",     STR_PARAM, &cdb_size_prefix.s      },
 	{ "profile_timeout",         INT_PARAM, &profile_timeout        },
+	/* dialog replication through UDP binary packets */
+	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
+	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
+								(void *)add_replication_dest        },
 	{ 0,0,0 }
 };
 
@@ -265,6 +284,12 @@ static stat_export_t mod_stats[] = {
 	{"processed_dialogs" ,  0,              &processed_dlgs    },
 	{"expired_dialogs" ,    0,              &expired_dlgs      },
 	{"failed_dialogs",      0,              &failed_dlgs       },
+	{"create_sent",         0,              &create_sent       },
+	{"update_sent",         0,              &update_sent       },
+	{"delete_sent",         0,              &delete_sent       },
+	{"create_recv",         0,              &create_recv       },
+	{"update_recv",         0,              &update_recv       },
+	{"delete_recv",         0,              &delete_recv       },
 	{0,0,0}
 };
 
@@ -715,6 +740,12 @@ static int mod_init(void)
 
 	if (register_script_cb( dialog_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB,0)<0) {
 		LM_ERR("cannot regsiter script callback");
+		return -1;
+	}
+
+	if (accept_replicated_dlg &&
+		bin_register_cb("dialog", receive_binary_packet) < 0) {
+		LM_ERR("Cannot register binary packet callback!\n");
 		return -1;
 	}
 
@@ -1493,3 +1524,46 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 
 	return 0;
 }
+
+static int add_replication_dest(modparam_t type, void *val)
+{
+	struct replication_dest *rd;
+	char *host;
+	int hlen, port;
+	int proto;
+	struct hostent *he;
+	str st;
+
+	rd = pkg_malloc(sizeof(*rd));
+	memset(rd, 0, sizeof(*rd));
+
+	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
+		LM_ERR("Bad replication destination IP!\n");
+		return -1;
+	}
+
+	if (proto == PROTO_NONE)
+		proto = PROTO_UDP;
+
+	if (proto != PROTO_UDP) {
+		LM_ERR("Dialog replication only supports UDP packets!\n");
+		return -1;
+	}
+
+	st.s = host;
+	st.len = hlen;
+	he = sip_resolvehost(&st, (unsigned short *)&port,
+							  (unsigned short *)&proto, 0, 0);
+	if (!he) {
+		LM_ERR("Cannot resolve host: %.*s\n", hlen, host);
+		return -1;
+	}
+
+	hostent2su(&rd->to, he, 0, port);
+
+	rd->next = replication_dests;
+	replication_dests = rd;
+
+	return 1;
+}
+

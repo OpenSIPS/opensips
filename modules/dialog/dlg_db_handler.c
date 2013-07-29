@@ -362,7 +362,7 @@ skip:
 
 /* The function is always considered to be lock-less ( safe ) 
  * it's either called when dialog is not linked yes, or is under the dialog lock */
-static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
+void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 {
 	str name, val;
 	char *end;
@@ -387,7 +387,7 @@ static void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 }
 
 
-static void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check)
+void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check)
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_link *it;
@@ -1054,7 +1054,7 @@ static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
 }
 
 
-static str* write_dialog_vars( struct dlg_val *vars)
+str* write_dialog_vars( struct dlg_val *vars)
 {
 	static str o = {NULL,0};
 	static int o_l=0;
@@ -1099,7 +1099,7 @@ static str* write_dialog_vars( struct dlg_val *vars)
 }
 
 
-static str* write_dialog_profiles( struct dlg_profile_link *links)
+str* write_dialog_profiles( struct dlg_profile_link *links)
 {
 	static str o = {NULL,0},cached_marker={"/s",2};
 	static int o_l = 0;
