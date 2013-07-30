@@ -465,7 +465,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 	if(presentity->etag_new)
 	{
-		if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
+		if (msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
 		{
 			LM_ERR("sending 200OK\n");
 			goto error;
@@ -480,7 +480,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			goto error;
 		}
 
-		/* insert new record into database */	
+		/* insert new record into database */
 		query_cols[n_query_cols] = &str_expires_col;
 		query_vals[n_query_cols].type = DB_INT;
 		query_vals[n_query_cols].nul = 0;
@@ -571,10 +571,10 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					pa_dbf.free_result(pa_db, result);
 					LM_ERR("No E_Tag match [%.*s]\n", presentity->etag.len,
 							presentity->etag.s);
-					if (sigb.reply(msg, 412, &pu_412_rpl, 0) == -1)
+					if (msg && sigb.reply(msg, 412, &pu_412_rpl, 0)==-1 )
 					{
-							LM_ERR("sending '412 Conditional request failed' reply\n");
-							goto error;
+						LM_ERR("sending '412 Conditional request failed' reply\n");
+						goto error;
 					}
 					*sent_reply= 1;
 					goto done;
@@ -596,7 +596,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			}
 
 			lock_release(&pres_htable[hash_code].lock);
-			if( publ_send200ok(msg, presentity->expires, presentity->etag)< 0)
+			if(msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
 			{
 				LM_ERR("sending 200OK reply\n");
 				goto error;
@@ -615,17 +615,17 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 				LM_ERR("unsuccessful sql use table\n");
 				goto error;
 			}
-		//	CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+			//CON_PS_REFERENCE(pa_db) = &my_ps_delete;
 			if(pa_dbf.delete(pa_db,query_cols,0,query_vals,n_query_cols)<0)
 			{
 				LM_ERR("unsuccessful sql delete operation");
 				goto error;
 			}
 			LM_DBG("Expires=0, deleted from db %.*s\n",
-					presentity->user.len,presentity->user.s);
-
-                        /* Send another NOTIFY, this time rely on whatever is on the DB, so in case there are no documents an empty
-                         * NOTIFY will be sent to the watchers */
+				presentity->user.len,presentity->user.s);
+			/* Send another NOTIFY, this time rely on whatever is on the DB,
+			 *  so in case there are no documents an empty
+			 * NOTIFY will be sent to the watchers */
 			if(publ_notify(presentity, pres_uri, NULL, NULL, rules_doc, NULL) < 0)
 			{
 				LM_ERR("while sending notify\n");
@@ -740,11 +740,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					goto error;
 				}
 			}
-		//	CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
+			//CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
 		}
 		else
 		{
-		//	CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
+			//CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
 		}
 
 		if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
@@ -761,7 +761,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		}
 		
 		/* send 200OK */
-		if( publ_send200ok(msg, presentity->expires, cur_etag)< 0)
+		if (msg && publ_send200ok(msg, presentity->expires, cur_etag)<0 )
 		{
 			LM_ERR("sending 200OK reply\n");
 			goto error;
@@ -784,7 +784,7 @@ send_notify:
 send_mxd_notify:
 	/* if event dialog -> send Notify for presence also */
 	if(mix_dialog_presence && *pres_event_p &&
-			presentity->event->evp->parsed == EVENT_DIALOG)
+	presentity->event->evp->parsed == EVENT_DIALOG)
 	{
 		str* dialog_body= NULL;
 
@@ -846,6 +846,18 @@ error:
 		pkg_free(pres_uri.s);
 	return -1;
 }
+
+
+/*  This is just a wrappter over "update_presentity" to be able to export the
+ *  function via the internal API - basically provides the "publishing" support
+ *  without actually having the PUBLISH SIP request, but directly a presentity
+ */
+int internal_update_presentity(presentity_t* presentity)
+{
+	int dummy;
+	return update_presentity( NULL, presentity, &dummy);
+}
+
 
 int pres_htable_restore(void)
 {

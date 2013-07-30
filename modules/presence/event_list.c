@@ -220,6 +220,7 @@ int add_event(pres_ev_t* event)
 	ev->get_auth_status= event->get_auth_status;
 	ev->get_rules_doc= event->get_rules_doc;
 	ev->evs_publ_handl= event->evs_publ_handl;
+	ev->evs_subs_handl= event->evs_subs_handl;
 	ev->mandatory_body = event->mandatory_body;
 	ev->mandatory_timeout_notification = event->mandatory_timeout_notification;
 	ev->etag_not_new= event->etag_not_new;

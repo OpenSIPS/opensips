@@ -73,6 +73,8 @@ extern long waiting_subs_time;
 
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 
+int terminate_watchers(str *pres_uri, pres_ev_t* ev);
+
 extern str bla_presentity_spec_param;
 extern pv_spec_t bla_presentity_spec;
 extern int fix_remote_target;

@@ -34,6 +34,8 @@
 #include "presentity.h"
 
 typedef int (*update_watchers_t)(str pres_uri, pres_ev_t* ev, str* rules_doc);
+typedef int (*update_presentity_t)(presentity_t* presentity);
+typedef int (*terminate_watchers_t)(str *pres_uri, pres_ev_t* ev);
 
 typedef struct presence_api {
 	add_event_t add_event;
@@ -41,6 +43,8 @@ typedef struct presence_api {
 	search_event_t search_event;
 	get_event_list_t get_event_list;
 	update_watchers_t update_watchers_status;
+	terminate_watchers_t terminate_watchers;
+	update_presentity_t update_presentity;
 	/* subs hash table functions */
 	new_shtable_t new_shtable;
 	destroy_shtable_t destroy_shtable;

@@ -328,7 +328,7 @@ static int mod_init(void)
 
 	if(clean_period>0)
 	{
-		register_timer("presnce-pclean", msg_presentity_clean, 0,
+		register_timer("presence-pclean", msg_presentity_clean, 0,
 			clean_period);
 		register_timer("presence-wclean", msg_watchers_clean, 0,
 			watchers_clean_period);
@@ -923,6 +923,35 @@ int pres_db_delete_status(subs_t* s)
 	}
 	return 0;
 }
+
+
+int terminate_watchers(str *pres_uri, pres_ev_t* ev)
+{
+	subs_t *all_s;
+	subs_t *s;
+	subs_t *tmp;
+
+	/* get all watchers for the presentity */
+	all_s = get_subs_dialog( pres_uri, ev, NULL);
+	if ( all_s==NULL ) {
+		LM_DBG("No subscription dialogs found for <%.*s>\n",
+			pres_uri->len, pres_uri->s);
+		return 0;
+	}
+	/* set expire on 0 for all watchers */
+	for( s=all_s ; s ; ) {
+		s->expires = 0;
+		tmp = s;
+		s = s->next;
+		/* update subscription */
+		update_subscription( NULL, tmp, 0);
+	}
+
+	free_subs_list( all_s, PKG_MEM_TYPE, 0);
+
+	return 0;
+}
+
 
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 {

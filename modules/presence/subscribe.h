@@ -105,4 +105,6 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int max_expire,
 typedef int (*extract_sdialog_info_t)(subs_t* subs, struct sip_msg* msg,
 		int max_expire, int* to_tag_gen, str local_address);
 
+int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req);
+
 #endif

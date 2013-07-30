@@ -54,6 +54,8 @@ typedef struct presentity
 	str body;
 } presentity_t;
 
+int internal_update_presentity(presentity_t* presentity);
+
 /* update presentity in database */
 int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_reply);
 

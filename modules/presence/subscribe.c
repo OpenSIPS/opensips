@@ -374,7 +374,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			subs->local_cseq= delete_shtable(subs_htable,hash_code,
 					subs->to_tag);
 
-			if( send_2XX_reply(msg, reply_code, subs->expires, 0,
+			if( msg && send_2XX_reply(msg, reply_code, subs->expires, 0,
 						&subs->local_contact) <0)
 			{
 				LM_ERR("sending %d OK\n", reply_code);
@@ -398,7 +398,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			}
 		}
 
-		if(send_2XX_reply(msg, reply_code, subs->expires, 0,
+		if(msg && send_2XX_reply(msg, reply_code, subs->expires, 0,
 			&subs->local_contact)<0)
 		{
 			LM_ERR("sending 2XX reply\n");
@@ -407,7 +407,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 	}
 	else
 	{
-		if(send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
+		if(msg && send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
 			&subs->local_contact)<0)
 		{
 			LM_ERR("sending 2XX reply\n");
@@ -611,7 +611,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* str2)
 	/* call event specific subscription handling */
 	if(event->evs_subs_handl)
 	{
-		if(event->evs_subs_handl(msg)< 0)
+		if(event->evs_subs_handl(msg, &subs, &reply_code, &reply_str)< 0)
 		{
 			LM_ERR("in event specific subscription handling\n");
 			goto error;
