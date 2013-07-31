@@ -45,41 +45,6 @@
 
 extern struct tm_binds uac_tmb;
 extern uac_auth_api_t uac_auth_api;
-extern pv_spec_t auth_username_spec;
-extern pv_spec_t auth_realm_spec;
-extern pv_spec_t auth_password_spec;
-
-
-static inline struct uac_credential *get_avp_credential(struct sip_msg *msg,
-																str *realm)
-{
-	static struct uac_credential crd;
-	pv_value_t pv_val;
-
-	if(pv_get_spec_value( msg, &auth_realm_spec, &pv_val)!=0
-	|| pv_val.flags&PV_VAL_NULL || pv_val.rs.len<=0)
-		return 0;
-	
-	crd.realm = pv_val.rs;
-	/* is it the domain we are looking for? */
-	if (realm->len!=crd.realm.len ||
-	strncmp( realm->s, crd.realm.s, realm->len)!=0 )
-		return 0;
-
-	/* get username and password */
-	if(pv_get_spec_value( msg, &auth_username_spec, &pv_val)!=0
-	|| pv_val.flags&PV_VAL_NULL || pv_val.rs.len<=0)
-		return 0;
-	crd.user = pv_val.rs;
-
-	if(pv_get_spec_value( msg, &auth_password_spec, &pv_val)!=0
-	|| pv_val.flags&PV_VAL_NULL || pv_val.rs.len<=0)
-		return 0;
-	crd.passwd = pv_val.rs;
-
-	return &crd;
-}
-
 
 
 static inline int apply_urihdr_changes( struct sip_msg *req,
@@ -187,13 +152,8 @@ int uac_auth( struct sip_msg *msg)
 	}
 
 	/* can we authenticate this realm? */
-	crd = 0;
-	/* first look into AVP, if set */
-	if ( auth_realm_spec.type==PVT_AVP )
-		crd = get_avp_credential( msg, &auth->realm );
-	/* if not found, look into predefined credentials */
-	if (crd==0)
-		crd = uac_auth_api._lookup_realm( &auth->realm );
+	/* look into existing credentials */
+	crd = uac_auth_api._lookup_realm( &auth->realm );
 	/* found? */
 	if (crd==0)
 	{

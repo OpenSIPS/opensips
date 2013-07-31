@@ -57,9 +57,6 @@
 
 /* local variable used for init */
 static char* restore_mode_str = NULL;
-static char* auth_username_avp = NULL;
-static char* auth_realm_avp = NULL;
-static char* auth_password_avp = NULL;
 
 /* global param variables */
 str rr_from_param = str_init("vsf");
@@ -76,9 +73,6 @@ int restore_mode = UAC_AUTO_RESTORE;
 struct tm_binds uac_tmb;
 struct rr_binds uac_rrb;
 uac_auth_api_t uac_auth_api;
-pv_spec_t auth_username_spec;
-pv_spec_t auth_realm_spec;
-pv_spec_t auth_password_spec;
 int force_dialog = 0;
 struct dlg_binds dlg_api;
 
@@ -129,9 +123,6 @@ static param_export_t params[] = {
 	{"rr_to_store_param",   STR_PARAM,                &rr_to_param.s         },
 	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
 	{"restore_passwd",      STR_PARAM,                &uac_passwd.s          },
-	{"auth_username_avp",   STR_PARAM,                &auth_username_avp     },
-	{"auth_realm_avp",      STR_PARAM,                &auth_realm_avp        },
-	{"auth_password_avp",   STR_PARAM,                &auth_password_avp     },
 	{"force_dialog",        INT_PARAM,                &force_dialog          },
 	{0, 0, 0}
 };
@@ -154,17 +145,6 @@ struct module_exports exports= {
 	0  /* per-child init function */
 };
 
-
-inline static int parse_auth_avp( char *avp_spec, pv_spec_t *avp, char *txt)
-{
-	str s;
-	s.s = avp_spec; s.len = strlen(s.s);
-	if (pv_parse_spec(&s, avp)==NULL) {
-		LM_ERR("malformed or non AVP %s AVP definition\n",txt);
-		return -1;
-	}
-	return 0;
-}
 
 
 inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
@@ -212,24 +192,6 @@ static int mod_init(void)
 	}
 
 	uac_passwd.len = strlen(uac_passwd.s);
-
-	/* parse the auth AVP spesc, if any */
-	if ( auth_username_avp || auth_password_avp || auth_realm_avp) {
-		if (!auth_username_avp || !auth_password_avp || !auth_realm_avp) {
-			LM_ERR("partial definition of auth AVP!");
-			goto error;
-		}
-		if ( parse_auth_avp(auth_realm_avp, &auth_realm_spec, "realm")<0
-		|| parse_auth_avp(auth_username_avp, &auth_username_spec, "username")<0
-		|| parse_auth_avp(auth_password_avp, &auth_password_spec, "password")<0
-		) {
-			goto error;
-		}
-	} else {
-		memset( &auth_realm_spec, 0, sizeof(pv_spec_t));
-		memset( &auth_password_spec, 0, sizeof(pv_spec_t));
-		memset( &auth_username_spec, 0, sizeof(pv_spec_t));
-	}
 
 	/* load the TM API - FIXME it should be loaded only
 	 * if NO_RESTORE and AUTH */

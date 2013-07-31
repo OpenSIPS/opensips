@@ -2,6 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2011 VoIP Embedded Inc.
+ * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -42,6 +43,15 @@
 #include "uac_auth.h"
 
 
+extern int            realm_avp_name;
+extern unsigned short realm_avp_type;
+extern int            user_avp_name;
+extern unsigned short user_avp_type;
+extern int            pwd_avp_name;
+extern unsigned short pwd_avp_type;
+
+
+
 static str nc = {"00000001", 8};
 static str cnonce = {"o", 1};
 
@@ -61,14 +71,15 @@ static struct uac_credential *crd_list = NULL;
 
 int has_credentials(void) {return (crd_list)?1:0;}
 
+
 void free_credential(struct uac_credential *crd)
 {
 	if (crd) {
 		if (crd->realm.s) pkg_free(crd->realm.s);
 		if (crd->user.s) pkg_free(crd->user.s);
-                if (crd->passwd.s) pkg_free(crd->passwd.s);
-                pkg_free(crd);
-        }
+			if (crd->passwd.s) pkg_free(crd->passwd.s);
+			pkg_free(crd);
+	}
 }
 
 
@@ -178,10 +189,46 @@ void destroy_credentials(void)
 }
 
 
+static inline struct uac_credential *get_avp_credential(str *realm)
+{
+	static struct uac_credential crd;
+	struct usr_avp *avp;
+	int_str val;
+
+	avp = search_first_avp( realm_avp_type, realm_avp_name, &val, 0);
+	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
+		return 0;
+
+	crd.realm = val.s;
+	/* is it the domain we are looking for? */
+	if (realm->len!=crd.realm.len ||
+	strncmp( realm->s, crd.realm.s, realm->len)!=0 )
+		return 0;
+
+	/* get username and password */
+	avp = search_first_avp( user_avp_type, user_avp_name, &val, 0);
+	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
+		return 0;
+	crd.user = val.s;
+
+	avp = search_first_avp( pwd_avp_type, pwd_avp_name, &val, 0);
+	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
+		return 0;
+	crd.passwd = val.s;
+
+	return &crd;
+}
+
+
 struct uac_credential *lookup_realm( str *realm)
 {
 	struct uac_credential *crd;
 
+	/* first look into AVP, if set */
+	if ( realm_avp_name && (crd=get_avp_credential(realm))!=NULL )
+		return crd;
+
+	/* search in the static list */
 	for( crd=crd_list ; crd ; crd=crd->next )
 		if (realm->len==crd->realm.len &&
 		strncmp( realm->s, crd->realm.s, realm->len)==0 )
