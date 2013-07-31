@@ -9,6 +9,7 @@ Group=opensips
 EnvironmentFile=-/etc/sysconfig/opensips
 PIDFile=/var/run/opensips/opensips.pid
 ExecStart=/usr/sbin/opensips -P /var/run/opensips/opensips.pid -f /etc/opensips/opensips.cfg $OPTIONS
+ExecStartPre=/usr/sbin/opensips-m4cfg
 
 [Install]
 WantedBy=multi-user.target
