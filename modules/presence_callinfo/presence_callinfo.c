@@ -48,6 +48,7 @@
 
 int call_info_timeout_notification = 1;
 int line_seize_timeout_notification = 0;
+int no_dialog_support = 0;
 static int hash_size = 64;
 
 /* external API's */
@@ -80,6 +81,7 @@ static cmd_export_t cmds[] =
 /* module exported paramaters */
 static param_export_t params[] = {
 	{"line_hash_size",                  INT_PARAM, &hash_size},
+	{"disable_dialog_support_for_sca",  INT_PARAM, &no_dialog_support},
 	{"call_info_timeout_notification",  INT_PARAM, &call_info_timeout_notification},
 	{"line_seize_timeout_notification", INT_PARAM, &line_seize_timeout_notification},
 	{0, 0, 0}
@@ -112,12 +114,6 @@ static int mod_init(void)
 
 	LM_INFO("initializing...\n");
 
-	/* bind to the dialog API */
-	if (init_dialog_support()<0 ) {
-		LM_ERR("failed to enable the dialog support\n");
-		return -1;
-	}
-
 	/* bind to presence module */
 	bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
 	if (!bind_presence) {
@@ -138,10 +134,18 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* init internal hash table to keep the SCA/lines status */
-	if ( init_sca_hash(hash_size) < 0 ) {
-		LM_ERR("failed to init hash table for SCA lines\n");
-		return -1;
+	if (no_dialog_support==0) {
+		/* bind to the dialog API */
+		if (init_dialog_support()<0 ) {
+			LM_ERR("failed to enable the dialog support\n");
+			return -1;
+		}
+
+		/* init internal hash table to keep the SCA/lines status */
+		if ( init_sca_hash(hash_size) < 0 ) {
+			LM_ERR("failed to init hash table for SCA lines\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -157,7 +161,8 @@ static int child_init(int rank)
 static void destroy(void)
 {
 	LM_DBG("destroying module ...\n");
-	destroy_sca_hash();
+	if (no_dialog_support==0)
+		destroy_sca_hash();
 	return;
 }
 
@@ -166,6 +171,11 @@ int sca_set_calling_line(struct sip_msg *msg, char *line_var)
 {
 	pv_value_t value;
 	str line;
+
+	if (no_dialog_support) {
+		LM_ERR("dialog support is disabled, cannot use this function\n");
+		return -1;
+	}
 
 	if (msg->REQ_METHOD != METHOD_INVITE)
 		return 1;
@@ -199,6 +209,11 @@ int sca_set_called_line(struct sip_msg *msg, char *line_var)
 {
 	pv_value_t value;
 	str line;
+
+	if (no_dialog_support) {
+		LM_ERR("dialog support is disabled, cannot use this function\n");
+		return -1;
+	}
 
 	if (msg->REQ_METHOD != METHOD_INVITE)
 		return 1;

@@ -59,25 +59,25 @@ static str dummy_ci_hdr2 = str_init(">;appearance-index=*;appearance-state=idle\
 /*
  * event specific publish handling - check if body format is ok
  */
-int callinfo_publ_handl(struct sip_msg* msg, int* sent_reply)
+static int callinfo_hdr_checker(struct sip_msg* msg, int* sent_reply)
 {
-    if (parse_headers(msg,HDR_EOH_F, 0) == -1) {
-	LM_ERR("parsing headers\n");
-	return -1;
-    }
+	if (parse_headers(msg,HDR_EOH_F, 0) == -1) {
+		LM_ERR("parsing headers\n");
+		return -1;
+	}
 
-    if (!msg->call_info)
-    {
-	LM_ERR("No 'Call-Info' header\n");
-	return -1;
-    }
-    if (0 != parse_call_info_header(msg)) {
-	LM_ERR("Unable to parse Call-Info\n");
-	return -1;
-    }
+	if (!msg->call_info) {
+		LM_ERR("No 'Call-Info' header\n");
+		return -1;
+	}
+	if (0 != parse_call_info_header(msg)) {
+		LM_ERR("Unable to parse Call-Info\n");
+		return -1;
+	}
 
-    return 1;
+	return 1;
 }
+
 
 /*
  * event specific extra headers builder - for empty notifications
@@ -422,7 +422,7 @@ int callinfo_add_events(void)
 	event.default_expires= 3600;
 	event.mandatory_timeout_notification = call_info_timeout_notification;
 	event.type = PUBL_TYPE;
-	event.evs_publ_handl = callinfo_publ_handl;
+	event.evs_publ_handl = callinfo_hdr_checker;
 
 	/* register the dummy Call-Info header builder */
 	event.build_empty_pres_info = build_callinfo_dumy_header;
@@ -450,10 +450,15 @@ int callinfo_add_events(void)
 	event.default_expires= 15;
 	event.mandatory_timeout_notification = line_seize_timeout_notification;
 	event.type = PUBL_TYPE;
-	event.evs_subs_handl = lineseize_subs_handl;
-
-	/* register the Call-Info builder for NOTIFIES */
-	event.build_empty_pres_info = build_lineseize_notify_hdrs;
+	if (no_dialog_support) {
+		/* with no dialog, just check the Call-Info hdrs */
+		event.evs_publ_handl = callinfo_hdr_checker;
+	} else {
+		/* with dialog, handle the subscribes */
+		event.evs_subs_handl = lineseize_subs_handl;
+		/* register the Call-Info builder for NOTIFIES */
+		event.build_empty_pres_info = build_lineseize_notify_hdrs;
+	}
 
 	if (pres.add_event(&event) < 0) {
 		LM_ERR("failed to add event \"line-seize\"\n");

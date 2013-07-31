@@ -34,4 +34,7 @@
 /* presence API */
 extern presence_api_t pres;
 
+/* if dialog support is on or off */
+extern int no_dialog_support;
+
 #endif
