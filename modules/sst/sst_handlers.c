@@ -432,17 +432,16 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				// FIXME: need an error message here
 				return;
 			}
-			/* Early resetting of the value here */
+		   /* Early resetting of the value here */
 			if (minfo.se > 0) {
 				if (sst_interval > minfo.min_se)
-					info->interval = sst_interval;
+					  info->interval = sst_interval;
 				else
 					info->interval = MAX(minfo.se, sst_min_se);
 			}
 			info->supported = (minfo.supported?SST_UAC:SST_UNDF);
-			set_timeout_avp(msg, info->interval);
-		}
-		else if (msg->first_line.u.request.method_value == METHOD_PRACK) {
+				set_timeout_avp(msg, info->interval);
+		} else if (msg->first_line.u.request.method_value == METHOD_PRACK) {
 			/* Special case here. The PRACK will cause the dialog
 			 * module to reset the timeout value to the ldg->lifetime
 			 * value and look for the new AVP value bound to the
@@ -541,16 +540,16 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 				LM_ERR("failed to parse sst information for the 2XX reply\n");
 				return;
 			}
-                        LM_DBG("parsing 200 OK response %d / %d\n", minfo.supported, minfo.se);
-                        if (info->supported != SST_UAC) {
-                                info->supported = (minfo.supported?SST_UAS:SST_UNDF);
-                        }
+			LM_DBG("parsing 200 OK response %d / %d\n", minfo.supported, minfo.se);
+			if (info->supported != SST_UAC) {
+					info->supported = (minfo.supported?SST_UAS:SST_UNDF);
+			}
 			if (minfo.se != 0) {
-                                if (sst_interval > minfo.min_se)
-                                        info->interval = sst_interval;
-                                else
-                                        info->interval = MAX(minfo.se, sst_min_se);
-                                LM_DBG("UAS supports timer\n");
+				if (sst_interval > minfo.min_se)
+						info->interval = sst_interval;
+				else
+						info->interval = MAX(minfo.se, sst_min_se);
+				LM_DBG("UAS supports timer\n");
 				if (set_timeout_avp(msg, info->interval)) {
 					// FIXME: need an error message here
 					return;
@@ -569,13 +568,10 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 					 * header and forward back to the UAC and it will
 					 * deal with refreshing the session.
 					 */
-<<<<<<< HEAD
-=======
-                                        if (sst_interval > minfo.min_se)
-                                                info->interval = sst_interval;
-                                        else
-                                                info->interval = MAX(minfo.se, sst_min_se);
->>>>>>> 2a347b9... Fixed SST timer being reset to the lowest value on session refresh.
+					if (sst_interval > minfo.min_se)
+							info->interval = sst_interval;
+					else
+							info->interval = MAX(minfo.se, sst_min_se);
 					snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n", 
 							info->interval);
 					if (append_header(msg, se_buf)) {
