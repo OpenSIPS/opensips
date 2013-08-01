@@ -553,7 +553,7 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
 
 
         node = xmlDocGetNodeByName(doc, "activities", "rpid");
-        if (node== NULL)
+        if (node== NULL || node->children== NULL)
         {
                node = xmlDocGetNodeByName(doc, "basic", NULL);
                if (node!= NULL)
