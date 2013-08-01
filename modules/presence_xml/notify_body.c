@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: notify_body.c 9309 2012-10-09 16:07:21Z saghul $
  *
  * presence_xml module -  
  *
@@ -553,7 +553,7 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
 
 
         node = xmlDocGetNodeByName(doc, "activities", "rpid");
-        if (node == NULL)
+        if (node== NULL)
         {
                node = xmlDocGetNodeByName(doc, "basic", NULL);
                if (node!= NULL)
@@ -1038,7 +1038,7 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
         str* body= NULL;
         xmlDocPtr* xml_array ;
         xmlNodePtr node = NULL;
-        int j = 0, i = 0, primary_source = -1, phone_source = -1, pua_source = -1;
+        int j = 0, i = 0, primary_source = -1, phone_source = -1, last_not_pua_source = -1;
 
         xml_array = (xmlDocPtr*)pkg_malloc((n+2)*sizeof(xmlDocPtr));
         if(xml_array == NULL)
@@ -1056,7 +1056,7 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
         if(n > 1)
                 LM_DBG("Multiple states to merge\n");
 
-        for(i = 0; (i< n && phone_source== -1) ; i++)
+        for(i = 0; i< n; i++)
         {
                 LM_INFO("examining document %d\n", i);
                 if(body_array[i] == NULL)
@@ -1119,7 +1119,10 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                 if(xmlStrcasestr((unsigned char*)elem_id, (unsigned char*)"pua_register") != NULL)
                 {
                         LM_DBG("Found pua presence info\n");
-                        pua_source = j;
+                }
+                else
+                {
+                        last_not_pua_source = j;
                 }
 
                 node = xmlDocGetNodeByName(xml_array[j], "activities", "rpid");
@@ -1130,7 +1133,7 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                         {
                                 if(xmlStrcasecmp((unsigned char*)(cur->name), (unsigned char*)"on-the-phone") == 0)
                                 {
-                                        LM_DBG("Found dialog presence info, ignore others\n");
+                                        LM_DBG("Found dialog presence info\n");
                                         phone_source = j;
                                 }
                                 cur = cur->next;
@@ -1156,8 +1159,8 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                 j = phone_source;
         else if (primary_source >= 0)
                 j = primary_source;
-        else if (j > 0 && pua_source == j)
-                j--;
+        else if (last_not_pua_source >= 0)
+                j = last_not_pua_source;
         xmlDocDumpMemory(xml_array[j], (xmlChar**)(void*)&body->s,&body->len);
         LM_DBG("Will return body: %.*s\n", body->len, body->s);
 
