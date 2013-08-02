@@ -553,8 +553,16 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 					" (auto detected)\n", poll_method_str[poll_method]);
 		}
 	}
-	
+
 	h->poll_method=poll_method;
+
+	if (h->poll_method != POLL_POLL && h->poll_method != POLL_EPOLL_LT &&
+		h->poll_method != POLL_EPOLL_ET) {
+		if (tcp_async)
+			LM_WARN("Tried to enable async TCP but current poll method is %d." 
+				" Currently we only support POLL and EPOLL \n",h->poll_method);
+		tcp_async=0;
+	}
 	
 	/* common stuff, everybody has fd_hash */
 	h->fd_hash=local_malloc(sizeof(*(h->fd_hash))*h->max_fd_no);

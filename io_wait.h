@@ -106,10 +106,11 @@ typedef int fd_type;
 
 /*! \brief maps a fd to some other structure; used in almost all cases
  * except epoll and maybe kqueue or /dev/poll */
-struct fd_map{
+struct fd_map {
 	int fd;               /* fd no */
 	fd_type type;         /* "data" type */
 	void* data;           /* pointer to the corresponding structure */
+	int flags;            /* so far used to indicate whether we should read, write or both */
 };
 
 
@@ -126,6 +127,8 @@ struct fd_map{
 #endif
 #endif
 
+
+#define IO_FD_CLOSING 16
 
 /*! \brief handler structure */
 struct io_wait_handler{
@@ -171,21 +174,38 @@ typedef struct io_wait_handler io_wait_h;
 /*! \brief remove a fd_map structure from the hash;
  * the pointer must be returned by get_fd_map or hash_fd_map
  */
-#define unhash_fd_map(pfm)	\
+#define unhash_fd_map(pfm,c_flags,sock_flags,erase)	\
 	do{ \
-		(pfm)->type=0 /*F_NONE */; \
-		(pfm)->fd=-1; \
+		if ((c_flags & IO_FD_CLOSING) || pfm->flags == sock_flags) { \
+			(pfm)->type=0 /*F_NONE */; \
+			(pfm)->fd=-1; \
+			(pfm)->flags = 0; \
+			erase = 1; \
+		} else { \
+			(pfm)->flags &= ~sock_flags; \
+			erase = 0; \
+		} \
 	}while(0)
 
 /*! \brief add a fd_map structure to the fd hash */
 static inline struct fd_map* hash_fd_map(	io_wait_h* h,
 						int fd,
 						fd_type type,
-						void* data)
+						void* data,
+						int flags,
+						int *already)
 {
+	if (h->fd_hash[fd].fd <= 0) {
+		*already = 0;
+	} else {
+		*already = 1;
+	}
+
 	h->fd_hash[fd].fd=fd;
 	h->fd_hash[fd].type=type;
 	h->fd_hash[fd].data=data;
+	h->fd_hash[fd].flags|=flags;
+
 	return &h->fd_hash[fd];
 }
 
@@ -206,9 +226,9 @@ static inline struct fd_map* hash_fd_map(	io_wait_h* h,
  *         >0 on successfull read from the fd (when there might be more io
  *            queued -- the receive buffer might still be non-empty)
  */
-inline static int handle_io(struct fd_map* fm, int idx);
+inline static int handle_io(struct fd_map* fm, int idx,int event_type);
 #else
-static int handle_io(struct fd_map* fm, int idx) {
+static int handle_io(struct fd_map* fm, int idx,int event_type) {
 	return 0;
 }
 #endif
@@ -250,6 +270,9 @@ again:
 #endif
 
 
+#define IO_WATCH_READ	1
+#define IO_WATCH_WRITE	2
+#define IO_WATCH_ERROR	3
 
 /*! \brief generic io_watch_add function
  * \return 0 on success, -1 on error
@@ -261,14 +284,20 @@ again:
 inline static int io_watch_add(	io_wait_h* h,
 								int fd,
 								fd_type type,
-								void* data)
+								void* data,
+								int flags)
 {
 
 	/* helper macros */
 #define fd_array_setup \
 	do{ \
 		h->fd_array[h->fd_no].fd=fd; \
-		h->fd_array[h->fd_no].events=POLLIN; /* useless for select */ \
+		if (!already) \
+			h->fd_array[h->fd_no].events=0; \
+		if (flags & IO_WATCH_READ) \
+			h->fd_array[h->fd_no].events|=POLLIN; /* useless for select */ \
+		if (flags & IO_WATCH_WRITE) \
+			h->fd_array[h->fd_no].events|=POLLOUT; /* useless for select */ \
 		h->fd_array[h->fd_no].revents=0;     /* useless for select */ \
 	}while(0)
 	
@@ -289,7 +318,6 @@ inline static int io_watch_add(	io_wait_h* h,
 	
 	
 	struct fd_map* e;
-	int flags;
 #ifdef HAVE_EPOLL
 	struct epoll_event ep_event;
 #endif
@@ -301,12 +329,14 @@ inline static int io_watch_add(	io_wait_h* h,
 	int idx;
 	int check_io;
 	struct pollfd pf;
+	int already;
 	
 	check_io=0; /* set to 1 if we need to check for pre-existing queued
 				   io/data on the fd */
 	idx=-1;
 #endif
 	e=0;
+
 	if (fd==-1){
 		LM_CRIT("fd is -1!\n");
 		goto error;
@@ -317,18 +347,24 @@ inline static int io_watch_add(	io_wait_h* h,
 				" %d/%d\n", h->fd_no, h->max_fd_no);
 		goto error;
 	}
-	LM_DBG("io_watch_add(%p, %d, %d, %p), fd_no=%d\n",
-			h, fd, type, data, h->fd_no);
+	LM_DBG("io_watch_add op on %d (%p, %d, %d, %p,%d), fd_no=%d\n",
+			fd,h,fd,type,data,flags,h->fd_no);
 	/*  hash sanity check */
 	e=get_fd_map(h, fd);
-	if (e && (e->type!=0 /*F_NONE*/)){
-		LM_ERR("trying to overwrite entry %d"
-				" in the hash(%d, %d, %p) with (%d, %d, %p)\n",
-				fd, e->fd, e->type, e->data, fd, type, data);
-		goto error;
+
+	if (e->flags & flags){
+		if (e->data != data) {
+			LM_ERR("BUG trying to overwrite entry %d"
+					" in the hash(%d, %d, %p,%d) with (%d, %d, %p,%d)\n",
+					fd, e->fd, e->type, e->data,e->flags, fd, type, data,flags);
+			goto error;
+		} 
+		LM_DBG("Socket %d is already being listened on for flags %d\n",
+			   fd,flags);
+		return 0;
 	}
 	
-	if ((e=hash_fd_map(h, fd, type, data))==0){
+	if ((e=hash_fd_map(h, fd, type, data,flags,&already))==0){
 		LM_ERR("failed to hash the fd %d\n", fd);
 		goto error;
 	}
@@ -380,31 +416,61 @@ inline static int io_watch_add(	io_wait_h* h,
 #endif
 #ifdef HAVE_EPOLL
 		case POLL_EPOLL_LT:
-			ep_event.events=EPOLLIN;
 			ep_event.data.ptr=e;
+			ep_event.events=0;
+			if (e->flags & IO_WATCH_READ)
+				ep_event.events|=EPOLLIN;
+			if (e->flags & IO_WATCH_WRITE)
+				ep_event.events|=EPOLLOUT;
+			if (!already) {
 again1:
-			n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
-			if (n==-1){
-				if (errno==EAGAIN) goto again1;
-				LM_ERR("epoll_ctl failed: %s [%d]\n",
-					strerror(errno), errno);
-				goto error;
+				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
+				if (n==-1){
+					if (errno==EAGAIN) goto again1;
+					LM_ERR("epoll_ctl failed: %s [%d]\n",
+						strerror(errno), errno);
+					goto error;
+				}
+			} else {
+again11:
+				n=epoll_ctl(h->epfd, EPOLL_CTL_MOD, fd, &ep_event);
+				if (n==-1){
+					if (errno==EAGAIN) goto again11;
+					LM_ERR("epoll_ctl failed: %s [%d]\n",
+						strerror(errno), errno);
+					goto error;
+				}
 			}
 			break;
 		case POLL_EPOLL_ET:
 			set_fd_flags(O_NONBLOCK);
-			ep_event.events=EPOLLIN|EPOLLET;
+			ep_event.events=EPOLLET;
 			ep_event.data.ptr=e;
+			if (e->flags & IO_WATCH_READ)
+				ep_event.events|=EPOLLIN;
+			if (e->flags & IO_WATCH_WRITE)
+				ep_event.events|=EPOLLOUT;
 again2:
-			n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
-			if (n==-1){
-				if (errno==EAGAIN) goto again2;
-				LM_ERR("epoll_ctl failed: %s [%d]\n",
-					strerror(errno), errno);
-				goto error;
+			if (!already) {
+				n=epoll_ctl(h->epfd, EPOLL_CTL_ADD, fd, &ep_event);
+				if (n==-1){
+					if (errno==EAGAIN) goto again2;
+					LM_ERR("epoll_ctl failed: %s [%d]\n",
+						strerror(errno), errno);
+					goto error;
+				}
+				check_io=1;
+			} else {
+again22:
+				n=epoll_ctl(h->epfd, EPOLL_CTL_MOD, fd, &ep_event);
+				if (n==-1){
+					if (errno==EAGAIN) goto again22;
+					LM_ERR("epoll_ctl failed: %s [%d]\n",
+						strerror(errno), errno);
+					goto error;
+				}
 			}
 			idx=-1;
-			check_io=1;
 			break;
 #endif
 #ifdef HAVE_KQUEUE
@@ -435,15 +501,18 @@ again_devpoll:
 			goto error;
 	}
 	
-	h->fd_no++; /* "activate" changes, for epoll/kqueue/devpoll it
-				   has only informative value */
+	if (!already) {
+		h->fd_no++; /* "activate" changes, for epoll/kqueue/devpoll it
+					   has only informative value */
+	}
+
 #if defined(HAVE_SIGIO_RT) || defined (HAVE_EPOLL)
 	if (check_io){
 		/* handle possible pre-existing events */
 		pf.fd=fd;
 		pf.events=POLLIN;
 check_io_again:
-		while( ((n=poll(&pf, 1, 0))>0) && (handle_io(e, idx)>0));
+		while( ((n=poll(&pf, 1, 0))>0) && (handle_io(e, idx,IO_WATCH_READ)>0));
 		if (n==-1){
 			if (errno==EINTR) goto check_io_again;
 			LM_ERR("check_io poll: %s [%d]\n",
@@ -453,15 +522,13 @@ check_io_again:
 #endif
 	return 0;
 error:
-	if (e) unhash_fd_map(e);
+	if (e) unhash_fd_map(e,0,flags,already);
 	return -1;
 #undef fd_array_setup
 #undef set_fd_flags 
 }
 
 
-
-#define IO_FD_CLOSING 16
 
 /*!
  * \brief
@@ -477,9 +544,9 @@ error:
  *                    remove operations (e.g.: epoll, kqueue, sigio)
  * \return 0 if ok, -1 on error
  */
-inline static int io_watch_del(io_wait_h* h, int fd, int idx, int flags)
+inline static int io_watch_del(io_wait_h* h, int fd, int idx, 
+					int flags,int sock_flags)
 {
-	
 #define fix_fd_array \
 	do{\
 			if (idx==-1){ \
@@ -488,8 +555,17 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx, int flags)
 							(h->fd_array[idx].fd!=fd); idx++); \
 			} \
 			if (idx<h->fd_no){ \
-				memmove(&h->fd_array[idx], &h->fd_array[idx+1], \
-					(h->fd_no-(idx+1))*sizeof(*(h->fd_array))); \
+				if (erase) \
+					memmove(&h->fd_array[idx], &h->fd_array[idx+1], \
+						(h->fd_no-(idx+1))*sizeof(*(h->fd_array))); \
+				else { \
+					h->fd_array[idx].events = 0; \
+					if (e->flags & IO_WATCH_READ) \
+						h->fd_array[idx].events|=POLLIN; /* useless for select */ \
+					if (flags & IO_WATCH_WRITE) \
+						h->fd_array[idx].events|=POLLOUT; /* useless for select */ \
+					h->fd_array[idx].revents = 0; \
+				} \
 			} \
 	}while(0)
 	
@@ -504,13 +580,14 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx, int flags)
 #ifdef HAVE_SIGIO_RT
 	int fd_flags;
 #endif
+	int erase = 0;
 	
 	if ((fd<0) || (fd>=h->max_fd_no)){
 		LM_CRIT("invalid fd %d, not in [0, %d) \n", fd, h->fd_no);
 		goto error;
 	}
-	LM_DBG("io_watch_del (%p, %d, %d, 0x%x) fd_no=%d called\n",
-			h, fd, idx, flags, h->fd_no);
+	LM_DBG("io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) fd_no=%d called\n",
+			idx,fd, h, fd, idx, flags,sock_flags,h->fd_no);
 	e=get_fd_map(h, fd);
 	/* more sanity checks */
 	if (e==0){
@@ -523,8 +600,14 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx, int flags)
 				fd, e->fd, e->type, e->data);
 		goto error;
 	}
+
+	if ((e->flags & sock_flags) == 0) {
+		LM_ERR("BUG - trying to del fd %d with flags %d %d\n",fd,
+			   e->flags,sock_flags);
+		goto error;
+	}
 	
-	unhash_fd_map(e);
+	unhash_fd_map(e,flags,sock_flags,erase);
 	
 	switch(h->poll_method){
 		case POLL_POLL:
@@ -574,11 +657,26 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx, int flags)
 #ifdef EPOLL_NO_CLOSE_BUG
 			if (!(flags & IO_FD_CLOSING)){
 #endif
-				n=epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event);
-				if (n==-1){
-					LM_ERR("removing fd from epoll "
-							"list failed: %s [%d]\n", strerror(errno), errno);
-					goto error;
+				if (erase) {
+					n=epoll_ctl(h->epfd, EPOLL_CTL_DEL, fd, &ep_event);
+					if (n==-1){
+						LM_ERR("removing fd from epoll "
+								"list failed: %s [%d]\n", strerror(errno), errno);
+						goto error;
+					}
+				} else {
+					ep_event.data.ptr=e;
+					ep_event.events=0;
+					if (e->flags & IO_WATCH_READ)
+						ep_event.events|=EPOLLIN;
+					if (e->flags & IO_WATCH_WRITE)
+						ep_event.events|=EPOLLOUT;
+					n=epoll_ctl(h->epfd, EPOLL_CTL_MOD, fd, &ep_event);
+					if (n==-1){
+						LM_ERR("epoll_ctl failed: %s [%d]\n",
+							strerror(errno), errno);
+						goto error;
+					}
 				}
 #ifdef EPOLL_NO_CLOSE_BUG
 			}
@@ -614,7 +712,10 @@ again_devpoll:
 				poll_method_str[h->poll_method], h->poll_method);
 			goto error;
 	}
-	h->fd_no--;
+	if (erase) {
+		h->fd_no--;
+	}
+
 	return 0;
 error:
 	return -1;
@@ -644,7 +745,7 @@ again:
 			}
 		}
 		for (r=0; (r<h->fd_no) && n; r++){
-			if (h->fd_array[r].revents & (POLLIN|POLLERR|POLLHUP)){
+			if (h->fd_array[r].revents & POLLOUT) {
 				n--;
 				/* sanity checks */
 				if ((h->fd_array[r].fd >= h->max_fd_no)||
@@ -655,7 +756,20 @@ again:
 					h->fd_array[r].events=0; /* clear the events */
 					continue;
 				}
-				while((handle_io(get_fd_map(h, h->fd_array[r].fd), r) > 0)
+				handle_io(get_fd_map(h, h->fd_array[r].fd),r,IO_WATCH_WRITE);
+			} else if (h->fd_array[r].revents & (POLLIN|POLLERR|POLLHUP)){
+				n--;
+				/* sanity checks */
+				if ((h->fd_array[r].fd >= h->max_fd_no)||
+						(h->fd_array[r].fd < 0)){
+					LM_CRIT("bad fd %d (no in the 0 - %d range)\n",
+							h->fd_array[r].fd, h->max_fd_no);
+					/* try to continue anyway */
+					h->fd_array[r].events=0; /* clear the events */
+					continue;
+				}
+	
+				while((handle_io(get_fd_map(h, h->fd_array[r].fd), r,IO_WATCH_READ) > 0)
 						 && repeat);
 			}
 		}
@@ -688,7 +802,7 @@ again:
 		/* use poll fd array */
 		for(r=0; (r<h->max_fd_no) && n; r++){
 			if (FD_ISSET(h->fd_array[r].fd, &sel_set)){
-				while((handle_io(get_fd_map(h, h->fd_array[r].fd), r)>0)
+				while((handle_io(get_fd_map(h, h->fd_array[r].fd), r,IO_WATCH_READ)>0)
 						&& repeat);
 				n--;
 			}
@@ -723,9 +837,11 @@ again:
 			}
 		}
 #endif
-		for (r=0; r<n; r++){
-			if (h->ep_array[r].events & (EPOLLIN|EPOLLERR|EPOLLHUP)){
-				while((handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1)>0)
+		for (r=0; r<n; r++) {
+			if (h->ep_array[r].events & EPOLLOUT) {
+				handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_WRITE);
+			} else if (h->ep_array[r].events & (EPOLLIN|EPOLLERR|EPOLLHUP)){
+				while((handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_READ)>0)
 					&& repeat);
 			}else{
 				LM_ERR("unexpected event %x on %d/%d, data=%p\n", 
@@ -774,7 +890,7 @@ again:
 							strerror(h->kq_array[r].data),
 							(long)h->kq_array[r].data);
 			}else /* READ/EOF */
-				while((handle_io((struct fd_map*)h->kq_array[r].udata, -1)>0)
+				while((handle_io((struct fd_map*)h->kq_array[r].udata, -1,IO_WATCH_READ)>0)
 						&& repeat);
 		}
 error:
@@ -842,7 +958,7 @@ again:
 			/* we can have queued signals generated by fds not watched
 			 * any more, or by fds in transition, to a child => ignore them*/
 			if (fm->type)
-				handle_io(fm, -1);
+				handle_io(fm, -1,IO_WATCH_READ);
 		}else{
 #ifdef EXTRA_DEBUG
 			LM_DBG("siginfo: signal=%d (%d),"
@@ -861,7 +977,7 @@ again:
 			 	 * any more, or by fds in transition, to a child 
 				 * => ignore them */
 				if (fm->type)
-					handle_io(fm, -1);
+					handle_io(fm, -1,IO_WATCH_READ);
 				else
 					LM_ERR("ignoring event"
 							" %x on fd %d (fm->fd=%d, fm->data=%p)\n",
@@ -921,7 +1037,7 @@ again:
 							h->fd_array[r].fd, h->fd_array[r].revents);
 			}
 			/* POLLIN|POLLHUP just go through */
-			while((handle_io(get_fd_map(h, h->fd_array[r].fd), r) > 0) &&
+			while((handle_io(get_fd_map(h, h->fd_array[r].fd), r,IO_WATCH_READ) > 0) &&
 						repeat);
 		}
 error:

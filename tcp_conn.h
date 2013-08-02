@@ -68,6 +68,8 @@
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING   1
 #define F_CONN_REMOVED        2 /*!< no longer in "main" listen fd list */
+#define F_CONN_NOT_CONNECTED  4 /*!< a connection in pending state,
+								  waiting to be connected */
 
 
 /* keepalive */
@@ -113,7 +115,7 @@ enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
 
 /* fd communication commands */
 enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE, 
-		CONN_GET_FD, CONN_NEW };
+		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE };
 /* CONN_RELEASE, EOF, ERROR, DESTROY can be used by "reader" processes
  * CONN_GET_FD, NEW, ERROR only by writers */
 
@@ -147,6 +149,13 @@ struct tcp_conn_alias{
 };
 
 
+struct tcp_send_chunk{
+	char *buf; /* buffer that needs to be sent out */
+	char *pos; /* the position that we should be writing next */
+	int len;   /* length of the buffer */
+	int ticks; /* time at which this chunk was initially
+				  attempted to be written */
+};
 
 /*! \brief TCP connection structure */
 struct tcp_connection{
@@ -171,6 +180,10 @@ struct tcp_connection{
 	int aliases;				/*!< Number of aliases, at least 1 */
 	struct tcp_req *con_req;	/*!< Per connection req buffer */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
+	struct tcp_send_chunk **async_chunks; /*!< the chunks that need to be written on this
+										   connection when it will become writable */
+	int async_chunks_no; /* the total number of chunks pending to be written */
+	int oldest_chunk; /* the oldest chunk in our write list */
 };
 
 

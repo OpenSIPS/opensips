@@ -349,6 +349,10 @@ extern int line;
 %token WDIR
 %token MHOMED
 %token DISABLE_TCP
+%token ASYNC_TCP
+%token ASYNC_TCP_LOCAL_CON_TIMEOUT
+%token ASYNC_TCP_LOCAL_WRITE_TIMEOUT
+%token ASYNC_TCP_MAX_POSTPONED_CHUNKS
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
 %token TCP_CONNECT_TIMEOUT
@@ -363,6 +367,8 @@ extern int line;
 %token TCP_KEEPCOUNT
 %token TCP_KEEPIDLE
 %token TCP_KEEPINTERVAL
+%token TCP_MAX_MSG_CHUNKS
+%token TCP_MAX_MSG_TIME
 %token DISABLE_TLS
 %token TLSLOG
 %token TLS_PORT_NO
@@ -730,6 +736,38 @@ assign_stm: DEBUG EQUAL snumber {
 									#endif
 									}
 		| DISABLE_TCP EQUAL error { yyerror("boolean value expected"); }
+		| ASYNC_TCP EQUAL NUMBER {
+									#ifdef USE_TCP
+										tcp_async=$3;
+									#else
+										warn("tcp support not compiled in");
+									#endif
+									}
+		| ASYNC_TCP EQUAL error { yyerror("boolean value expected"); }
+		| ASYNC_TCP_LOCAL_CON_TIMEOUT EQUAL NUMBER {
+									#ifdef USE_TCP
+										tcp_async_local_connect_timeout=$3;
+									#else
+										warn("tcp support not compiled in");
+									#endif
+									}
+		| ASYNC_TCP_LOCAL_CON_TIMEOUT EQUAL error { yyerror("boolean value expected"); }
+		| ASYNC_TCP_LOCAL_WRITE_TIMEOUT EQUAL NUMBER {
+									#ifdef USE_TCP
+										tcp_async_local_write_timeout=$3;
+									#else
+										warn("tcp support not compiled in");
+									#endif
+									}
+		| ASYNC_TCP_LOCAL_WRITE_TIMEOUT EQUAL error { yyerror("boolean value expected"); }
+		| ASYNC_TCP_MAX_POSTPONED_CHUNKS EQUAL NUMBER {
+									#ifdef USE_TCP
+										tcp_async_max_postponed_chunks=$3;
+									#else
+										warn("tcp support not compiled in");
+									#endif
+									}
+		| ASYNC_TCP_MAX_POSTPONED_CHUNKS EQUAL error { yyerror("boolean value expected"); }
 		| TCP_ACCEPT_ALIASES EQUAL NUMBER {
 									#ifdef USE_TCP
 										tcp_accept_aliases=$3;
@@ -853,6 +891,22 @@ assign_stm: DEBUG EQUAL snumber {
 			#endif
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
+		| TCP_MAX_MSG_CHUNKS EQUAL NUMBER {
+			#ifdef USE_TCP
+			        tcp_max_msg_chunks=$3;
+			#else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_MAX_MSG_CHUNKS EQUAL error { yyerror("boolean value expected"); }
+		| TCP_MAX_MSG_TIME EQUAL NUMBER {
+			#ifdef USE_TCP
+			        tcp_max_msg_time=$3;
+			#else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_MAX_MSG_TIME EQUAL error { yyerror("boolean value expected"); }
 		| TCP_KEEPCOUNT EQUAL NUMBER 		{ 
 			#ifdef USE_TCP
 			    #ifndef HAVE_TCP_KEEPCNT

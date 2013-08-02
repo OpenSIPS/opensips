@@ -134,6 +134,7 @@
 #ifdef USE_TCP
 #include "poll_types.h"
 #include "tcp_init.h"
+#include "tcp_conn.h"
 #ifdef USE_TLS
 #include "tls/tls_init.h"
 #endif
@@ -186,6 +187,29 @@ int children_no = 0;			/* number of children processing requests */
 int tcp_children_no = 0;
 int tcp_disable = 0; /* 1 if tcp is disabled */
 int tcp_crlf_pingpong = 1; /* 0: send CRLF pong to incoming CRLFCRLF ping */
+int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK; /* Max number of chunks that
+													 we except to receive a SIP
+													 message - anything above will
+													 lead to the connection
+													 being treat as broken & closed */
+int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
+												   we except a full SIP message
+												   to arrive in - anything above
+												   will lead to the connection to
+												   closed */
+int tcp_async = 0;	/* 1 if TCP connect & write should be async */
+int tcp_async_local_connect_timeout = 10000; /* Number of microseconds that a
+									worker will block waiting for a local
+									connect - if connect op exceeds this, it
+									will get passed to TCP main*/
+int tcp_async_local_write_timeout = 10000; /* Number of microseconds that a
+									worker will block waiting for a local
+									write - if write op exceeds this, it
+									will get passed to TCP main*/
+int tcp_async_max_postponed_chunks = 32; /* maximum number of write chunks that
+											will be queued per TCP connection -
+											if we exceed this number, we just
+											drop the connection */
 #endif
 #ifdef USE_TLS
 int tls_disable = 1; /* 1 if tls is disabled */
