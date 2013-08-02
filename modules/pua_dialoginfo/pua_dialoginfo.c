@@ -87,6 +87,8 @@ static str callee_spec_param= {0, 0};
 static pv_spec_t caller_spec;
 static pv_spec_t callee_spec;
 static int osips_ps = 1;
+static int publish_on_trying = 0;
+static int nopublish_flag = -1;
 
 
 /** module functions */
@@ -108,10 +110,12 @@ static param_export_t params[]={
 	{"include_localremote", INT_PARAM, &include_localremote },
 	{"include_tags",        INT_PARAM, &include_tags },
 	{"caller_confirmed",    INT_PARAM, &caller_confirmed },
+	{"publish_on_trying",   INT_PARAM, &publish_on_trying },
 	{"presence_server",     STR_PARAM, &presence_server.s },
 	{"caller_spec_param",   STR_PARAM, &caller_spec_param.s },
 	{"callee_spec_param",   STR_PARAM, &callee_spec_param.s },
 	{"osips_ps",            INT_PARAM, &osips_ps },
+	{"nopublish_flag",	        INT_PARAM, &nopublish_flag	},
 	{0, 0, 0 }
 };
 
@@ -241,6 +245,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	struct to_body peer_to_body;
 	str entity_uri= {0, 0};
 	int buf_len = 255;
+	struct sip_msg* msg = _params->msg;
 
 	flag_str.s = &flag;
 	flag_str.len = 1;
@@ -308,8 +313,15 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
 			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
 		break;
+	case DLGCB_RESPONSE_WITHIN:
+                if (get_cseq(msg)->method_id==METHOD_INVITE || get_cseq(msg)->method_id==METHOD_INVITE) {
+                  if (msg->flags & nopublish_flag) {
+                    LM_DBG("nopublish flag was set for this INVITE\n");
+                    break;
+                  }
+                  LM_DBG("nopublish flag not set for this INVITE, will publish\n");
+                }
 	case DLGCB_CONFIRMED:
-	case DLGCB_REQ_WITHIN:
 		LM_DBG("dialog confirmed, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
 			dialog_publish("confirmed", &from, &peer_to_body, &(dlg->callid), 1, dlg->lifetime, 0, 0);
@@ -383,6 +395,20 @@ error:
 	if (from.param_lst)
 		free_to_params(&from);
 }
+
+
+static void
+__dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+{
+	/* register dialog callbacks which triggers sending PUBLISH */
+        if (dlg_api.register_dlgcb(dlg,
+	         DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
+                DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
+                __dialog_sendpublish, 0, 0) != 0) {
+                LM_ERR("cannot register callback for interesting dialog types\n");
+        }
+}
+
 
 int dialoginfo_process_body(struct publ_info* publ, str** fin_body,
 									   int ver, str* tuple)
@@ -469,6 +495,12 @@ static int mod_init(void)
 	}
 	pua_send_publish= pua.send_publish;
 
+	if (nopublish_flag!= -1 && nopublish_flag > MAX_FLAG) {
+		LM_ERR("invalid nopublish flag %d!!\n", nopublish_flag);
+		return -1;
+	}
+        nopublish_flag = (nopublish_flag!=-1)?(1<<nopublish_flag):0;
+
 	if(!osips_ps)
 		evp = dialoginfo_process_body;
 
@@ -483,6 +515,11 @@ static int mod_init(void)
 		LM_ERR("failed to find dialog API - is dialog module loaded?\n");
 		return -1;
 	}
+
+        // register dialog loading callback
+        if (dlg_api.register_dlgcb(NULL, DLGCB_LOADED, __dialog_loaded, NULL, NULL) != 0) {
+                LM_CRIT("cannot register callback for dialogs loaded from the database\n");
+        }
 
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
@@ -726,7 +763,7 @@ default_callee:
 	/* register dialog callbacks which triggers sending PUBLISH */
 	if (dlg_api.register_dlgcb(dlg,
 		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-		DLGCB_REQ_WITHIN | DLGCB_EARLY,
+		DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
 		__dialog_sendpublish, 0, 0) != 0) {
 		LM_ERR("cannot register callback for interesting dialog types\n");
 		goto end;
@@ -744,11 +781,13 @@ default_callee:
 	}
 #endif
 
-	if(flag == DLG_PUB_A || flag == DLG_PUB_AB)
-		dialog_publish("trying", from, &peer_to_body, &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
+        if(publish_on_trying) {
+	        if(flag == DLG_PUB_A || flag == DLG_PUB_AB)
+		        dialog_publish("trying", from, &peer_to_body, &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
 
-	if(flag == DLG_PUB_B || flag == DLG_PUB_AB)
-		dialog_publish("trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
+	        if(flag == DLG_PUB_B || flag == DLG_PUB_AB)
+		        dialog_publish("trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
+        }
 
 	ret=1;
 end:
