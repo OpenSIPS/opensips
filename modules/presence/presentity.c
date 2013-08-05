@@ -411,6 +411,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	str pres_uri= {NULL, 0};
 	pres_entry_t* p= NULL;
 	unsigned int hash_code;
+	unsigned int turn;
 	str body = presentity->body;
 	str *extra_hdrs = presentity->extra_hdrs;
 	db_res_t *result= NULL;
@@ -462,6 +463,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	n_query_cols++;
 
 	result_cols[0] = &str_etag_col;
+	hash_code= core_hash(&pres_uri, NULL, phtable_size);
 
 	if(presentity->etag_new)
 	{
@@ -473,8 +475,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		*sent_reply= 1;
 
 		/* insert new record in hash_table */
-		if(insert_phtable(&pres_uri, presentity->event->evp->parsed,
-					&presentity->etag, presentity->sphere)< 0)
+		p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
+					&presentity->etag, presentity->sphere, 1);
+		if (p==NULL)
 		{
 			LM_ERR("inserting record in hash table\n");
 			goto error;
@@ -542,14 +545,27 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	}
 	else
 	{
-		hash_code= core_hash(&pres_uri, NULL, phtable_size);
 		lock_get(&pres_htable[hash_code].lock);
-
 		p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
 				&presentity->etag, hash_code);
+		if (p) {
 
-		if(!p)
-		{
+			turn = p->last_turn++;
+			LM_DBG("xXx - my turn is %d, current turn is %d\n",turn, p->current_turn);
+
+			/* wait to get our turn as order of handling pubishs
+			   (need to wait the ongoing published to terminate
+			   before starting */
+			while (p && turn!=p->current_turn) {
+				lock_release(&pres_htable[hash_code].lock);
+				sleep_us(100);
+				lock_get(&pres_htable[hash_code].lock);
+				p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
+					&presentity->etag, hash_code);
+			}
+
+		} else {
+
 			lock_release(&pres_htable[hash_code].lock);
 			/* search also in db */
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
@@ -579,7 +595,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					*sent_reply= 1;
 					goto done;
 			}
-
 
 			pa_dbf.free_result(pa_db, result);
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
@@ -644,8 +659,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			else
 			{
 				lock_release(&pres_htable[hash_code].lock);
-				if(insert_phtable(&pres_uri, presentity->event->evp->parsed,
-							&presentity->etag, presentity->sphere)< 0)
+				p = insert_phtable(&pres_uri, presentity->event->evp->parsed,
+							&presentity->etag, presentity->sphere, 1);
+				if ( p==NULL )
 				{
 					LM_ERR("inserting record in hash table\n");
 					goto error;
@@ -806,6 +822,10 @@ send_mxd_notify:
 	}
 
 done:
+	/* allow next publish to be handled */
+	if (p)
+		next_turn_phtable( p, hash_code);
+
 	if (notify_body.s)
 		xmlFree(notify_body.s);
 
@@ -820,6 +840,10 @@ done:
 	return 0;
 
 error:
+	/* allow next publish to be handled */
+	if (p)
+		next_turn_phtable( p, hash_code);
+
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 	if(etag.s)
@@ -962,7 +986,7 @@ int pres_htable_restore(void)
 				sphere= extract_sphere(body);
 			}
 
-			if(insert_phtable(&uri, event, &etag, sphere)< 0)
+			if(insert_phtable(&uri, event, &etag, sphere, 0)< 0)
 			{
 				LM_ERR("inserting record in presentity hash table");
 				pkg_free(uri.s);
