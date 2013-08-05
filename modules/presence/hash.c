@@ -506,7 +506,7 @@ void update_pres_etag(pres_entry_t* p, str* etag)
 	p->etag_count++;
 }
 
-int insert_phtable(str* pres_uri, int event, str* etag, char* sphere)
+pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, int init_turn)
 {
 	unsigned int hash_code;
 	pres_entry_t* p= NULL;
@@ -543,14 +543,16 @@ int insert_phtable(str* pres_uri, int event, str* etag, char* sphere)
 	p->next= pres_htable[hash_code].entries->next;
 	pres_htable[hash_code].entries->next= p;
 
+	p->last_turn = init_turn;
+
 	lock_release(&pres_htable[hash_code].lock);
 
-	return 0;
+	return p;
 
 error:
 	if(p)
 		shm_free(p);
-	return -1;
+	return NULL;
 }
 
 int delete_phtable_query(str *pres_uri, int event, str* etag)
@@ -571,6 +573,25 @@ int delete_phtable_query(str *pres_uri, int event, str* etag)
 	lock_release(&pres_htable[hash_code].lock);
 	return 0;
 }
+
+
+void next_turn_phtable(pres_entry_t* p_p, unsigned int hash_code)
+{
+	pres_entry_t* p;
+
+	lock_get(&pres_htable[hash_code].lock);
+	for ( p=pres_htable[hash_code].entries->next ; p ; p=p->next ) {
+		if(p==p_p) {
+			p->current_turn++;
+			LM_DBG("xXx - new current turn is %d\n",p->current_turn);
+			break;
+		}
+	}
+
+	lock_release(&pres_htable[hash_code].lock);
+	return;
+}
+
 
 int delete_phtable(pres_entry_t* p, unsigned int hash_code)
 {
