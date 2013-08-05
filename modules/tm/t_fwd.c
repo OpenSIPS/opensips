@@ -613,6 +613,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	str path;
 	str bk_path;
 
+	int timers_started;
+
 	/* make -Wall happy */
 	current_uri.s=0;
 
@@ -709,6 +711,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 #endif
 
 			do {
+				timers_started = 0;
+
 				if (check_blacklists( t->uac[i].request.dst.proto,
 				&t->uac[i].request.dst.to,
 				t->uac[i].request.buffer.s,
@@ -716,6 +720,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					LM_DBG("blocked by blacklists\n");
 					ser_error=E_IP_BLOCKED;
 				} else {
+					start_retr( &t->uac[i].request );
+					timers_started = 1;
 					if (SEND_BUFFER( &t->uac[i].request)==0) {
 						ser_error = 0;
 						break;
@@ -739,6 +745,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 #endif
 
 			if (ser_error) {
+				if(timers_started) {
+					reset_timer( &t->uac[i].request.retr_timer );
+					reset_timer( &t->uac[i].request.fr_timer );
+				}
+
 				shm_free(t->uac[i].request.buffer.s);
 				t->uac[i].request.buffer.s = NULL;
 				t->uac[i].request.buffer.len = 0;
@@ -747,7 +758,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 			success_branch++;
 
-			start_retr( &t->uac[i].request );
 			set_kr(REQ_FWDED);
 
 			/* successfully sent out -> run callbacks */
