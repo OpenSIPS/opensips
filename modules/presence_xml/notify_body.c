@@ -526,22 +526,22 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
         {
                 if (cdbf.get(con, &activities_key_op, &value_op) < 0)
                 {
-                        LM_ERR("failed to get key\n");
+                        LM_DBG("failed to get activities key for %.*s\n", pres_user->len, pres_user->s);
                         goto error;
                 }
                 else if (cdbf.set(con, &activities_key_op, &value_op, max_expires_publish) < 0)
-                        LM_ERR("failed to set key\n");
+                        LM_ERR("failed to set activities key for %.*s\n", pres_user->len, pres_user->s);
                 LM_INFO("refreshed cachedb activities %.*s for user %.*s\n",
                         value_op.len, value_op.s, pres_user->len, pres_user->s);
                 pkg_free (value_op.s);
 
                 if (cdbf.get(con, &note_key_op, &value_op) < 0)
                 {
-                        LM_ERR("failed to get key\n");
+                        LM_DBG("failed to get notes key for %.*s\n", pres_user->len, pres_user->s);
                         goto error;
                 }
                 else if (cdbf.set(con, &note_key_op, &value_op, max_expires_publish) < 0)
-                        LM_ERR("failed to set key\n");
+                        LM_ERR("failed to set notes key for %.*s\n", pres_user->len, pres_user->s);
                 pkg_free (value_op.s);
 
                 goto error;
