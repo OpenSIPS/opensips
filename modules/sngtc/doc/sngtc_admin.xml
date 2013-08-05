@@ -1,0 +1,243 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		The <emphasis role='bold'>Sangoma transcoding module</emphasis> offers the possibility of performing
+	voice transcoding with the D-series transcoding cards manufactured by
+	Sangoma. The module makes use of the Sangoma Transcoding API in order to 
+	manage transcoding sessions on the dedicated equipment. For the cards
+	in the network to be detected, the Sangoma SOAP server must be up and
+	running (<emphasis>sngtc_server</emphasis> daemon).
+	</para>
+	</section>
+
+	<section>
+	<title>How it works</title>
+	<para>
+		The module performs several modifications in the SDP body of SIP INVITE,
+	200 OK and ACK messages. In all transcoding scenarios, the UAC performs early
+	SDP negotiation, while the UAS does late negotiation. This way, OpenSIPS
+	becomes responsible for intersecting the codec offer and answer, together with
+	the management of transcoding sessions on the Sangoma cards.
+	</para>
+
+	<para>
+		This scenario brings about a couple of
+	<emphasis role='bold'>restrictions</emphasis>:
+	<itemizedlist>
+		<listitem>
+			<para>
+				UACs MUST only perform early SDP negotiation
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				UASs MUST support late SDP negotiation (rfc 3261 requirement)
+			</para>
+		</listitem>
+	</itemizedlist>
+	</para>
+
+	<para>
+		Since the <emphasis>sngtc_node</emphasis> library performs several memory
+	allocations with each newly created transcoding session, the module uses a
+	dedicated process, responsible for the management of the above-mentioned sessions. The
+	<emphasis>sangoma_worker</emphasis> process communicates with the OpenSIPS
+	UDP receivers through a series of pipes.
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+		<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following  modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>dialog</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		</section>
+
+		<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>sngtc_node library</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>sngtc_server up and running</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		</section>
+	</section>
+
+	<section>
+	<title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">sngtc_offer()</function>
+		</title>
+		<para>
+			The function strips off the SDP offer from a SIP INVITE, thus
+		asking for another SDP offer from the opposite endpoint (late negotiation).
+		<para>
+
+		</para>
+		The following <emphasis role='bold'>error codes</emphasis> may be returned:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>-1</emphasis> - SDP parsing error
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - internal error / no more memory
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>
+		The function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">sngtc_offer</function> usage</title>
+		<programlisting format="linespecific">
+...
+	if (is_method("INVITE")) {
+		t_newtran();
+		create_dialog();
+		sngtc_offer();
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">sngtc_callee_answer([listen_if_A[, listen_if_B]])
+		</function>
+		</title>
+		<para>
+			Handles the SDP offer from 200 OK responses, intersects both offers with
+		the capabilities of the transcoding card and creates a new transcoding
+		session on the card <emphasis role='bold'>only if</emphasis> necessary. It then rewrites the 200 OK SDP so that it 
+		contains the information resulted from the codec intersection.
+		</para>
+
+		<para><emphasis role='bold'>Parameters</emphasis> explained:</para>
+		<para>
+			Since the D-series transcoding cards are connected through either a
+		PCI slot or simply an Ethernet connector, they cannot be assigned
+		global IPs. Consequently, the module will write the local, private IP of the
+		card in the SDP answers sent to each of the endpoints. Since this will not
+		work with non-local UAs, the optional parameters force the RTP listen
+		interface for each UA. This way, the script writer can enforce a global IP
+		for the incoming RTP (which can be port forwarded to a transcoding card).
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>listen_if_A</emphasis> - the interface where the UAC (the caller) will send RTP after the call is established (IP from the 'c=' SDP line(s))
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>listen_if_B</emphasis> - the interface where the UAS (the callee) will send RTP after the call is established (IP from the 'c=' SDP line(s))
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>
+		The following <emphasis role='bold'>error codes</emphasis> may be returned:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>-1</emphasis> - SDP parsing error
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - failed to create transcoding session
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - internal error / no more memory
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">sngtc_callee_answer</function> usage</title>
+		<programlisting format="linespecific">
+...
+onreply_route[1] {
+	if ($rs == 200)
+		sngtc_callee_answer("11.12.13.14", "11.12.13.14");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">sngtc_caller_answer()</function>
+		</title>
+		<para>
+			Attaches an SDP body to the caller's ACK request, so that it matches
+		the late SDP negotiation done by the UAS.
+		</para>
+
+		<para>
+		The following <emphasis role='bold'>error codes</emphasis> may be returned:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>-3</emphasis> - internal error / no more memory
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">sngtc_caller_answer</function> usage</title>
+		<programlisting format="linespecific">
+...
+	if (has_totag()) {
+		if (loose_route()) {
+			...
+			if (is_method("ACK"))
+				sngtc_caller_answer();
+		}
+		...
+	}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+</chapter>
+

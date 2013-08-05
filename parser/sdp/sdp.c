@@ -350,7 +350,7 @@ sdp_payload_attr_t* get_sdp_payload4index(sdp_stream_cell_t *stream, int index)
 /**
  * SDP parser method.
  */
-static int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t* _sdp)
+int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t* _sdp)
 {
 	str body = *sdp_body;
 	str sdp_ip = {NULL,0};
@@ -749,14 +749,20 @@ int parse_sdp(struct sip_msg* _m)
 /**
  * Free all memory.
  */
-void free_sdp(sdp_info_t** _sdp)
+void free_sdp(sdp_info_t** sdp)
 {
-	sdp_info_t *sdp = *_sdp;
+	__free_sdp(*sdp);
+	pkg_free(sdp);
+	*sdp = NULL;
+}
+
+void __free_sdp(sdp_info_t* sdp)
+{
 	sdp_session_cell_t *session, *l_session;
 	sdp_stream_cell_t *stream, *l_stream;
 	sdp_payload_attr_t *payload, *l_payload;
 
-	LM_DBG("_sdp = %p\n", _sdp);
+	LM_DBG("sdp = %p\n", sdp);
 	if (sdp == NULL) return;
 	LM_DBG("sdp = %p\n", sdp);
 	session = sdp->sessions;
@@ -781,10 +787,7 @@ void free_sdp(sdp_info_t** _sdp)
 		}
 		pkg_free(l_session);
 	}
-	pkg_free(sdp);
-	*_sdp = NULL;
 }
-
 
 void print_sdp_stream(sdp_stream_cell_t *stream, int log_level)
 {
