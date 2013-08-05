@@ -1,3 +1,10 @@
+opensips (1.10.0-1) stable; urgency=low
+
+  * Major Public Release.
+
+ -- Bogdan-Andrei Iancu <bogdan@opensips.org>  Mon, 05 Aug 2013 16:26:40 +0200
+
+
 opensips (1.9.0-1) stable; urgency=low
 
   * Major Public Release.
