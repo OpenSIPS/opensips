@@ -127,6 +127,9 @@ typedef struct pres_entry
 	char* sphere;
 	char etag[ETAG_LEN];
 	int etag_len;
+	/* ordering */
+	unsigned int current_turn;
+	unsigned int last_turn;
 	struct pres_entry* next;
 }pres_entry_t;
 
@@ -144,9 +147,11 @@ pres_entry_t* search_phtable_etag(str* pres_uri, int event,
 
 void update_pres_etag(pres_entry_t* p, str* etag);
 
-int insert_phtable(str* pres_uri, int event, str* etag, char* sphere);
+pres_entry_t* insert_phtable(str* pres_uri, int event, str* etag, char* sphere, int init_turn);
 
 int update_phtable(struct presentity* presentity, str pres_uri, str body);
+
+void next_turn_phtable(pres_entry_t* p_p, unsigned int hash_code);
 
 int delete_phtable(pres_entry_t* p, unsigned int hash_code);
 int delete_phtable_query(str *pres_uri, int event, str* etag);
