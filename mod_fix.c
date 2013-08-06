@@ -203,7 +203,6 @@ int fixup_uint_uint(void** param, int param_no)
 	return fixup_uint(param);
 }
 
-#if 0
 /*! \brief
  * - helper function
  * Convert char* parameter to signed int
@@ -220,7 +219,7 @@ int fixup_sint( void** param)
 	if(str2sint(&s, &si)==0)
 	{
 		pkg_free(*param);
-		*param=(void *)si;
+		*param=(void *)(unsigned long)si;
 		return 0;
 	}
 	LM_ERR("bad number <%s>\n", (char *)(*param));
@@ -256,6 +255,7 @@ int fixup_sint_sint(void** param, int param_no)
 	return fixup_sint(param);
 }
 
+#if 0
 /*! \brief
  * fixup for functions that get two parameters
  * - first parameter is converted to signed int
