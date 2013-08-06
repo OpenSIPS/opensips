@@ -456,7 +456,7 @@ int form_result(var_str buff, db_res_t** r)
 	db_res_t * res;
 	char * cur, * dest, * start, * end;
 	int col_count, cur_col, line_count, cur_line, delim_count, len;
-	int state, next, first_line, consume;
+	int state, next, consume;
 
 	
 	LM_DBG("Called with : %.*s\n",buff.len,buff.s);
@@ -559,7 +559,6 @@ int form_result(var_str buff, db_res_t** r)
 
 	cur_col = 0;
 	cur_line = -1;
-	first_line = 1;
 	start = dest;
 
 	while( cur < end )
@@ -1035,9 +1034,10 @@ db_con_t* db_http_init(const str* url)
 	curl_easy_setopt(curl->handle,CURLOPT_HTTPAUTH,CURLAUTH_ANY);
 
 	curl_easy_setopt(curl->handle,CURLOPT_ERRORBUFFER,error_buffer);
+#if LIBCURL_VERSION_NUM >= 0x071002
 	LM_DBG("timeout set to %d", db_http_timeout);
 	curl_easy_setopt(curl->handle,CURLOPT_TIMEOUT_MS,db_http_timeout);
-
+#endif
 
 	strcat(path,"http");
 	if ( use_ssl )
