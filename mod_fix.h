@@ -58,9 +58,9 @@ int fixup_free_str_str(void** param, int param_no);
 int fixup_uint_null(void** param, int param_no);
 int fixup_uint_uint(void** param, int param_no);
 
-#if 0
 int fixup_sint_null(void** param, int param_no);
 int fixup_sint_sint(void** param, int param_no);
+#if 0
 int fixup_sint_uint(void** param, int param_no);
 int fixup_uint_sint(void** param, int param_no);
 #endif
@@ -102,6 +102,7 @@ int fixup_spve(void** param);
 int fixup_pvar(void **param);
 int fixup_str(void **param);
 int fixup_uint(void** param);
+int fixup_sint(void** param);
 int fixup_igp(void** param);
 
 int fixup_sgp(void** param);
