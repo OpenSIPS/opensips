@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2013 Steve Frécinaux
+ *    Be IP s.a. http://www.beip.be
+ * Copyright (C) 2013 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,7 +22,8 @@
  *
  * history:
  * ---------
- *  2013-01-xx  created (vlad-paiu)
+ *  2013-01-xx  created (Steve Frécinaux)
+ *  2013-01-xx  improved implementation of cachedb (vlad-paiu)
  */
 
 
@@ -293,7 +296,9 @@ static int dbcache_add(cachedb_con *con, str *attr, int val, int expires, int *n
 	else
 		expires = 0;
 
-	i = snprintf(query_buf, sizeof(query_buf), "insert into %.*s (%.*s, %.*s, %.*s) values ('%.*s', %d, %d) on duplicate key update %.*s=%.*s %c %d, %.*s=%d",
+	i = snprintf(query_buf, sizeof(query_buf), 
+				 "insert into %.*s (%.*s, %.*s, %.*s) values ('%.*s', %d, %d)"
+				 "on duplicate key update %.*s=%.*s %c %d, %.*s=%d",
 				 db_table.len, db_table.s,
 				 key_column.len, key_column.s,
 				 counter_column.len, counter_column.s,
