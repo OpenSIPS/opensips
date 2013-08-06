@@ -1956,7 +1956,7 @@ static int fixup_from_gw( void** param, int param_no)
 {
 	if (param_no == 1) {
 		/* GW type*/
-		return fixup_uint(param);
+		return fixup_sint(param);
 	} else if (param_no == 2) {
 		/* GW ops */
 		return fixup_spve(param);
@@ -1971,7 +1971,7 @@ static int fixup_is_gw( void** param, int param_no)
 		return fixup_pvar(param);
 	} else if (param_no == 2) {
 		/* GW type*/
-		return fixup_uint(param);
+		return fixup_sint(param);
 	} else if (param_no == 3) {
 		/* GW ops */
 		return fixup_spve(param);
