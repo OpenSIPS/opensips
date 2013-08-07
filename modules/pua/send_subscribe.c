@@ -564,8 +564,13 @@ done:
 error:
 	if(hentity)
 	{
-		if(presentity->extra_headers.s) shm_free(presentity->extra_headers.s);
-		if(presentity->remote_contact.s) shm_free(presentity->remote_contact.s);
+	        if(presentity)
+	        {
+		        if(presentity->extra_headers.s)
+		                shm_free(presentity->extra_headers.s);
+		        if(presentity->remote_contact.s)
+		                shm_free(presentity->remote_contact.s);
+	        }
 		shm_free(hentity);
 		hentity= NULL;
 	}
