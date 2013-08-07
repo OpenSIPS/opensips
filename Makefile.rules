@@ -99,6 +99,7 @@ proper realclean distclean: clean
 			 $(MAKE) -C $$r proper ; \
 		fi ; \
 	done 
+	-@if [ -d menuconfig ]; then $(MAKE) -C menuconfig proper; fi
 	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix proper; fi
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
 	-@if [ -d utils/db_oracle ]; then $(MAKE) -C utils/db_oracle proper; fi
