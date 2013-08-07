@@ -583,8 +583,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 
 		if(!p || body.s)
 		{
-			lock_release(&pres_htable[hash_code].lock);
-                        p= NULL;
+			if (!p) lock_release(&pres_htable[hash_code].lock);
+
 			/* search also in db */
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 			{
