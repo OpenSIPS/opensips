@@ -744,6 +744,7 @@ again:
 			}
 
 			con->con_req->content_len = req->content_len;
+			con->con_req->has_content_len = req->has_content_len;
 			con->con_req->bytes_to_go = req->bytes_to_go;
 			con->con_req->error = req->error;
 			con->con_req->state = req->state;
