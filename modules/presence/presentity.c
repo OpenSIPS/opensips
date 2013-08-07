@@ -986,7 +986,7 @@ int pres_htable_restore(void)
 				sphere= extract_sphere(body);
 			}
 
-			if(insert_phtable(&uri, event, &etag, sphere, 0)< 0)
+			if(insert_phtable(&uri, event, &etag, sphere, 0)== NULL)
 			{
 				LM_ERR("inserting record in presentity hash table");
 				pkg_free(uri.s);
