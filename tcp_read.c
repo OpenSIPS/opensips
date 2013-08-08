@@ -935,7 +935,7 @@ skip:
  */
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 {	
-	int ret;
+	int ret=0;
 	int n;
 	struct tcp_connection* con;
 	int s,rw;
