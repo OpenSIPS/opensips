@@ -207,7 +207,7 @@ modules:
 			if [ -d "$$r" ]; then \
 				echo  "" ; \
 				echo  "" ; \
-				$(MAKE) -C $$r ; \
+				$(MAKE) -j -C $$r ; \
 			fi ; \
 		fi ; \
 	done 
