@@ -369,6 +369,7 @@ char* check_poll_method(enum poll_types poll_method)
 
 	ret=0;
 	os_ver=get_sys_version(0,0,0);	
+	(void)os_ver;
 	switch(poll_method){
 		case POLL_NONE:
 			break;
@@ -448,6 +449,7 @@ enum poll_types choose_poll_method(void)
 	unsigned int os_ver;
 
 	os_ver=get_sys_version(0,0,0);
+	(void)os_ver;
 	poll_method=0;
 #ifdef HAVE_EPOLL
 	if (os_ver>=0x020542) /* if ver >= 2.5.66 */
