@@ -86,6 +86,7 @@
 #include <fcntl.h>
 
 #include "dprint.h"
+#include "globals.h"   /* tcp_async */
 
 #include "poll_types.h" /* poll_types*/
 #ifdef HAVE_SIGIO_RT
@@ -318,6 +319,7 @@ inline static int io_watch_add(	io_wait_h* h,
 	
 	
 	struct fd_map* e;
+	int already;
 #ifdef HAVE_EPOLL
 	struct epoll_event ep_event;
 #endif
@@ -329,7 +331,6 @@ inline static int io_watch_add(	io_wait_h* h,
 	int idx;
 	int check_io;
 	struct pollfd pf;
-	int already;
 	
 	check_io=0; /* set to 1 if we need to check for pre-existing queued
 				   io/data on the fd */
