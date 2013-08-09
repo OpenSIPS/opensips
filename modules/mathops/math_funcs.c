@@ -179,7 +179,7 @@ static int convert_to_rpn(str *exp)
 
 	while (s.len) {
 
-		if (*s.s > '0' && *s.s < '9') {
+		if (*s.s >= '0' && *s.s <= '9') {
 			errno = 0;
 			d = strtod(s.s, &p);
 
