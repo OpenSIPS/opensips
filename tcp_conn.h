@@ -190,6 +190,7 @@ struct tcp_connection{
 
 #define init_tcp_req( r) \
 	do{ \
+	        memset( (r), 0, sizeof(struct tcp_req)); \
 		(r)->parsed=(r)->pos=(r)->start=(r)->buf; \
 		(r)->error=TCP_REQ_OK;\
 		(r)->state=H_SKIP_EMPTY; \
