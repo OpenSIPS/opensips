@@ -245,7 +245,7 @@ int parse_prefix_line(char *line,select_menu *menu)
 }
 
 /* Parse an m4 defs line for a cfg entry */
-#define READ_BUF_SIZE	512
+#define READ_BUF_SIZE	1024
 static char read_buf[READ_BUF_SIZE];
 int parse_defs_m4_line(char *line,select_menu *menu)
 {
