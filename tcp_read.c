@@ -439,8 +439,10 @@ void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
-	if (c->con_req)
+	if (c->con_req) {
 		pkg_free(c->con_req);
+		c->con_req = NULL;
+	}
 
 	/* release req & signal the parent */
 	if (c->fd!=-1) close(c->fd);
@@ -696,8 +698,11 @@ again:
 				&local_rcv) <0)
 					LM_ERR("receive_msg failed \n");
 
-			if (req != &current_req)
+			if (!size && req != &current_req) {
+				/* if we no longer need this tcp_req
+				 * we can free it now */
 				pkg_free(req);
+			}
 		}
 
 		*req->parsed=c;
@@ -743,11 +748,6 @@ again:
 				goto end_req;
 			}
 
-			con->con_req->content_len = req->content_len;
-			con->con_req->bytes_to_go = req->bytes_to_go;
-			con->con_req->error = req->error;
-			con->con_req->state = req->state;
-
 			if (req->pos != req->buf) {
 				/* we have read some bytes */
 				memcpy(con->con_req->buf,req->buf,req->pos-req->buf);
@@ -766,6 +766,18 @@ again:
 			else
 				con->con_req->parsed = con->con_req->buf;
 
+			if (req->body != 0) {
+				con->con_req->body = con->con_req->buf + (req->body-req->buf);
+			} else
+				con->con_req->body = 0;
+
+			con->con_req->complete=req->complete;
+			con->con_req->has_content_len=req->has_content_len;
+			con->con_req->content_len=req->content_len;
+			con->con_req->bytes_to_go=req->bytes_to_go;
+			con->con_req->error = req->error;
+			con->con_req->state = req->state;
+			
 			/* zero out the per process req for the future SIP msg */
 			init_tcp_req(&current_req);
 		}
