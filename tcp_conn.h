@@ -193,6 +193,9 @@ struct tcp_connection{
 		(r)->parsed=(r)->pos=(r)->start=(r)->buf; \
 		(r)->error=TCP_REQ_OK;\
 		(r)->state=H_SKIP_EMPTY; \
+		(r)->body=0; \
+		(r)->complete=(r)->content_len=(r)->has_content_len=0; \
+		(r)->bytes_to_go=0; \
 	}while(0)
 
 
