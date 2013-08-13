@@ -5,12 +5,12 @@
 %endif
 %endif
 
-%global EXCLUDE_MODULES osp cachedb_cassandra cachedb_couchbase cachedb_mongodb %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis} %{!?_with_oracle:db_oracle} lua
+%global EXCLUDE_MODULES sngtc osp cachedb_cassandra cachedb_couchbase cachedb_mongodb %{?disable_snmpstats} %{?el5:db_perlvdb} %{?el5:cachedb_redis} %{!?_with_oracle:db_oracle} lua
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.11.0
-Release:  4%{?dist}
+Version:  1.10.0
+Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
 Source0:  http://opensips.org/pub/%{name}/%{version}/src/%{name}-%{version}-tls_src.tar.gz
@@ -533,6 +533,15 @@ Requires: %{name} = %{version}-%{release}
 This module offers matching operations against regular
 expressions using the powerful PCRE library.
 
+%package  rest_client
+Summary:  Implementation of an HTTP client
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  rest_client
+The rest_client module provides a means of interacting with an HTTP server
+by doing RESTful queries, such as GET and POST.
+
 %package  rls
 Summary:  Resource List Server
 Group:    System Environment/Daemons
@@ -695,6 +704,7 @@ done
 # install systemd files
 install -D -m 0644 -p packaging/fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
 install -D -m 0644 -p packaging/fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
+install -D -m 0755 -p packaging/fedora/%{name}.m4cfg $RPM_BUILD_ROOT%{_sbindir}/%{name}-m4cfg
 mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
 %else
 install -p -D -m 755 packaging/fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
@@ -776,6 +786,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %if 0%{?fedora} > 16
 %{_unitdir}/%{name}.service
 %{_sysconfdir}/tmpfiles.d/%{name}.conf
+%{_sbindir}/opensips-m4cfg
 %dir %attr(0755, %{name}, %{name}) %{_localstatedir}/run/%{name}
 %else
 %attr(755,root,root) %{_initrddir}/opensips
@@ -841,6 +852,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/closeddial.so
 %{_libdir}/opensips/modules/cfgutils.so
+%{_libdir}/opensips/modules/db_cachedb.so
 %{_libdir}/opensips/modules/db_flatstore.so
 %{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/db_text.so
@@ -860,6 +872,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/imc.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/mangler.so
+%{_libdir}/opensips/modules/mathops.so
 %{_libdir}/opensips/modules/maxfwd.so
 %{_libdir}/opensips/modules/mediaproxy.so
 %{_libdir}/opensips/modules/mi_fifo.so
@@ -908,6 +921,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.call_control
 %doc docdir/README.cfgutils
 %doc docdir/README.closeddial
+%doc docdir/README.db_cachedb
 %doc docdir/README.db_flatstore
 %doc docdir/README.db_text
 %doc docdir/README.db_virtual
@@ -927,6 +941,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.imc
 %doc docdir/README.load_balancer
 %doc docdir/README.mangler
+%doc docdir/README.mathops
 %doc docdir/README.maxfwd
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
@@ -1186,6 +1201,10 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/regex.so
 %doc docdir/README.regex
 
+%files rest_client
+%{_libdir}/opensips/modules/rest_client.so
+%doc docdir/README.rest_client
+
 %files rls
 %{_libdir}/opensips/modules/rls.so
 %doc docdir/README.rls
@@ -1229,13 +1248,18 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 
 %files xmlrpc
 %{_libdir}/opensips/modules/mi_xmlrpc.so
+%{_libdir}/opensips/modules/mi_xmlrpc_ng.so
 %doc docdir/README.mi_xmlrpc
+%doc docdir/README.mi_xmlrpc_ng
 
 %files xmpp
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
 %changelog
+* Tue Jul 30 2013 Nick Altmann <nick.altmann@gmail.com> - 1.10.0-1
+- Update to 1.10.0
+
 * Wed May 22 2013 Nick Altmann <nick.altmann@gmail.com> - 1.9.1-1
 - Rebuild specification, add new modules and dependencies
 

@@ -25,6 +25,8 @@ oser=/usr/sbin/$prog
 pidfile="/var/run/$prog.pid"
 lockfile="/var/lock/subsys/$prog"
 configfile="/etc/$prog/$prog.cfg"
+m4configfile="/etc/$prog/$prog.m4"
+m4archivedir="/etc/$prog/archive"
 OPTIONS=""
 RETVAL=0
 
@@ -39,9 +41,31 @@ start() {
 		return 0
 	fi
 
+	# Generate config from M4
+	if [ -f $m4configfile ]; then
+		m4 -Q $m4configfile >$configfile.tmp
+		if [ $? != 0 ]; then
+			log "cannot process m4 macro"
+			rm "$configfile.tmp"
+			return 1
+		fi
+
+		[ -e $configfile ] || touch $configfile
+
+		# compare configs
+		if [ `md5sum $configfile|awk '{print $1}'` != `md5sum $configfile.tmp|awk '{print $1}'` ]; then
+			mkdir -p "$m4archivedir"
+			mv "$configfile" "$m4archivedir/$prog.cfg-`date +%Y%m%d_%H%M%S`"
+		fi
+
+		mv "$configfile.tmp" "$configfile"
+		chown $prog:$prog $configfile
+		chmod 640 $configfile
+	fi
+
 	# there is something at end of this output which is needed to
 	# report proper [ OK ] status in Fedora scripts
-	daemon $oser -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
+	daemon $oser -u $prog -g $prog -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && touch $lockfile
