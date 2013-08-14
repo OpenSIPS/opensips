@@ -752,7 +752,7 @@ int parse_sdp(struct sip_msg* _m)
 void free_sdp(sdp_info_t** sdp)
 {
 	__free_sdp(*sdp);
-	pkg_free(sdp);
+	pkg_free(*sdp);
 	*sdp = NULL;
 }
 
