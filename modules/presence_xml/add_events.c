@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: add_events.c 8628 2011-12-19 14:20:30Z bogdan_iancu $
  *
  * presence_xml module - 
  *
@@ -50,9 +50,6 @@ static str pu_415_rpl  = str_init("Unsupported media type");
  */
 int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 {	
-	str pres_uri= {0, 0};
-	str pres_user= {0, 0};
-	str pres_domain= {0, 0};
 	str body= {0, 0};
 	xmlDocPtr doc= NULL;
 
@@ -69,14 +66,7 @@ int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 		        LM_ERR("parsing Request URI\n");
 		        goto error;
 	        }
-	        pres_user= msg->parsed_uri.user;
-	        pres_domain= msg->parsed_uri.host;
-                if(uandd_to_uri(pres_user, pres_domain, &pres_uri)< 0)
-                {
-                        LM_ERR("constructing uri from user and domain\n");
-                        goto error;
-                }
-                cachedb_update_merged_presence_state (&body, &pres_user);
+                cachedb_update_merged_presence_state (&body, &msg->parsed_uri.user);
 
 		return 1;
         }
@@ -98,8 +88,6 @@ int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
 	return 1;
 
 error:
-	if(pres_uri.s)
-		pkg_free(pres_uri.s);
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	xmlMemoryDump();
