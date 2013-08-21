@@ -348,6 +348,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	int end_time;
 	action_elem_t *route_params_bak;
 	int route_params_number_bak;
+	int aux_counter;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -1233,7 +1234,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			int aux_counter;
+
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
 			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
@@ -1310,8 +1311,20 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			expires = (int)a->elem[3].u.number;
 
-			/* TODO - return the new value to script ? */
-			ret = cachedb_add(&a->elem[0].u.s, &name_s, increment,expires,NULL);
+			ret = cachedb_add(&a->elem[0].u.s, &name_s, increment, expires, &aux_counter);
+
+			/* Return the new value */
+			if (ret > 0 && a->elem[4].u.data != NULL) {
+				val.ri = aux_counter;
+				val.flags = PV_TYPE_INT|PV_VAL_INT;
+
+				spec = (pv_spec_t*)a->elem[4].u.data;
+				if (pv_set_value(msg, spec, 0, &val) < 0) {
+					LM_ERR("cannot set the variable value\n");
+					return -1;
+				}
+			}
+
 			break;
 		case CACHE_SUB_T:
 			script_trace("core", "cache_sub", msg, a->line) ;
@@ -1366,8 +1379,20 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			expires = (int)a->elem[3].u.number;
 
-			/* TODO - return new value to script ? */
-			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement,expires,NULL);
+			ret = cachedb_sub(&a->elem[0].u.s, &name_s, decrement,expires,&aux_counter);
+
+			/* Return the new value */
+			if (ret > 0 && a->elem[4].u.data != NULL) {
+				val.ri = aux_counter;
+				val.flags = PV_TYPE_INT|PV_VAL_INT;
+
+				spec = (pv_spec_t*)a->elem[4].u.data;
+				if (pv_set_value(msg, spec, 0, &val) < 0) {
+					LM_ERR("cannot set the variable value\n");
+					return -1;
+				}
+			}
+
 			break;
 		case CACHE_RAW_QUERY_T:
 			if ((a->elem[0].type!=STR_ST)) {
