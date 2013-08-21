@@ -232,6 +232,8 @@ int snom_fix_is_unchanged_publish_refresh(str body, str cur_body)
 	xmlDocPtr cur_doc = NULL;
 	xmlNodePtr node;
 	xmlNodePtr cur_node;
+        unsigned char* node_val = NULL;
+        unsigned char* cur_node_val = NULL;
 
 	doc = xmlParseMemory(body.s, body.len);
 	cur_doc = xmlParseMemory(cur_body.s, cur_body.len);
@@ -240,12 +242,24 @@ int snom_fix_is_unchanged_publish_refresh(str body, str cur_body)
 
         node = XMLDocGetNodeByName(doc, "im", NULL);
         cur_node = XMLDocGetNodeByName(cur_doc, "im", NULL);
-        if(node && cur_node && xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)xmlNodeGetContent(cur_node)) == 0) {
+        if (!node || !cur_node)
+                goto error;
+        node_val = xmlNodeGetContent(node);
+        cur_node_val = xmlNodeGetContent(cur_node);
+        if (!node_val || !cur_node_val)
+                goto error;
+        if (xmlStrcasecmp(node_val, cur_node_val) == 0) {
+                xmlFree(node_val);
+                xmlFree(cur_node_val);
 		xmlFreeDoc(cur_doc);
 		xmlFreeDoc(doc);
                 return 1;
         }
 error:
+        if (node_val)
+                xmlFree(node_val);
+        if (cur_node_val)
+                xmlFree(cur_node_val);
 	if (cur_doc)
 		xmlFreeDoc(cur_doc);
 	if (doc)
