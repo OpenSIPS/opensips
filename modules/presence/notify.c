@@ -922,7 +922,7 @@ error:
 }
 
 str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body,
-		str* contact, str* dbody, str* extra_hdrs, free_body_t** free_fct)
+		str* contact, str* dbody, str* extra_hdrs, free_body_t** free_fct, int from_publish)
 {
 	int body_col, extra_hdrs_col, expires_col, etag_col= 0;
 	db_res_t *result = NULL;
@@ -1257,6 +1257,26 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 			body_array[build_off_n] = publ_body;
 			build_off_n = -1;
 		}
+
+                /* RFC 4235 states that a NOTIFY generated after an initial
+                 * or refreshed SUBSCRIBE request must contain a full-state notification.
+                 * In other cases, only the modified state should be notified using
+                 * a partial state notification.
+                 */
+                if (event->evp->parsed == EVENT_DIALOG && from_publish && publ_body) {
+
+                        /* Presence dialoginfo knows that special n value of -2 means we publish
+                         * a partial state. Calling the agg_nbody method is however required because
+                         * it builds the full NOTIFY body as described in the RFC (it adds the version
+                         * field to the body, defines if state is partial or full, ...).
+                         */
+                        notify_body = event->agg_nbody(&uri.user, &uri.host, &publ_body, -2, build_off_n);
+			if(notify_body)
+			{
+				goto done;
+			}
+                }
+
 		notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, build_off_n);
 		if(notify_body == NULL)
 		{
@@ -1715,7 +1735,7 @@ error:
 }
 
 int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
-		str* rules_doc, str* dialog_body)
+		str* rules_doc, str* dialog_body, int from_publish)
 {
 	str *notify_body = NULL;
 	str notify_extra_hdrs = {NULL, 0};
@@ -1736,7 +1756,8 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	{
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, body,
 				NULL, dialog_body,
-				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct);
+				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct,
+                                from_publish);
 	}
 
 	s= subs_array;
@@ -1745,7 +1766,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 		s->auth_rules_doc= rules_doc;
 		LM_INFO("notify\n");
 		if(notify(s, NULL, notify_body?notify_body:body,
-			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs)< 0 )
+			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, from_publish)< 0 )
 		{
 			LM_ERR("Could not send notify for %.*s\n",
 					p->event->name.len, p->event->name.s);
@@ -1793,7 +1814,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	if(event->type & PUBL_TYPE)
 	{
 		notify_body = get_p_notify_body(*pres_uri, event, 0, 0, 0, 0,
-				&notify_extra_hdrs, &free_fct);
+				&notify_extra_hdrs, &free_fct, 0);
 	}
 
 	s= subs_array;
@@ -1801,7 +1822,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 	while(s)
 	{
 		LM_INFO("notify\n");
-		if(notify(s, watcher_subs, notify_body, 0, NULL)< 0 )
+		if(notify(s, watcher_subs, notify_body, 0, NULL, 0)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
 					event->name.len, event->name.s);
@@ -1836,7 +1857,7 @@ done:
 }
 
 int send_notify_request(subs_t* subs, subs_t * watcher_subs,
-		str* n_body,int force_null_body, str* extra_hdrs)
+		str* n_body,int force_null_body, str* extra_hdrs, int from_publish)
 {
 	dlg_t* td = NULL;
 	str met = {"NOTIFY", 6};
@@ -1899,9 +1920,14 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			}
 			else
 			{
-				notify_body = get_p_notify_body(subs->pres_uri,
+                                if (from_publish && n_body!= 0 && n_body->s!= 0)
+                                        notify_body = n_body;
+                                else
+				        notify_body =
+                                          get_p_notify_body(subs->pres_uri,
 						subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
-						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs, &free_fct);
+						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs,
+                                                &free_fct, from_publish);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
@@ -2058,7 +2084,7 @@ error:
 }
 
 
-int notify(subs_t* subs, subs_t * watcher_subs, str* n_body, int force_null_body, str* extra_hdrs)
+int notify(subs_t* subs, subs_t * watcher_subs, str* n_body, int force_null_body, str* extra_hdrs, int from_publish)
 {
 	/* update first in hash table and the send Notify */
 	if(subs->expires!= 0 && subs->status != TERMINATED_STATUS)
@@ -2086,7 +2112,7 @@ int notify(subs_t* subs, subs_t * watcher_subs, str* n_body, int force_null_body
 		force_null_body = 1;
 	}
 
-	if(send_notify_request(subs, watcher_subs, n_body, force_null_body, extra_hdrs)< 0)
+	if(send_notify_request(subs, watcher_subs, n_body, force_null_body, extra_hdrs, from_publish)< 0)
 	{
 		LM_ERR("sending Notify not successful\n");
 		return -1;
