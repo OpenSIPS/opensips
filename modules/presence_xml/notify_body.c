@@ -498,6 +498,7 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
         int max_expires_publish = 0;
         xmlDocPtr doc = NULL;
         xmlNodePtr node = NULL;
+        unsigned char* node_val = NULL;
 
         str activities_key_op = {NULL, 0};
         str note_key_op = {NULL, 0};
@@ -518,7 +519,8 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
             LM_ERR("cannot find max_expires_publish parameter in the dialog module, using 3600\n");
             max_expires_publish = 3600;
         }
-        max_expires_publish = (int) ((3/2)*(*param));
+        else
+            max_expires_publish = (int) ((3/2)*(*param));
 
         LM_DBG("called for %.*s, body: %.*s with max_expires: %d\n", pres_user->len, pres_user->s, body->len, body->s, max_expires_publish);
         doc = xmlParseMemory(body->s, body->len);
@@ -550,24 +552,24 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
         if (cdbf.remove(con, &note_key_op) < 0)
                 LM_ERR("failed to remove key\n");
 
-
-
         node = xmlDocGetNodeByName(doc, "activities", "rpid");
         if (node== NULL || node->children== NULL)
         {
                node = xmlDocGetNodeByName(doc, "basic", NULL);
                if (node!= NULL)
                {
-                        if(xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)"open")== 0)
+                        node_val = xmlNodeGetContent(node);
+                        if(node_val && xmlStrcasecmp(node_val, (unsigned char*)"open")== 0)
                         {
                                 str_set_from_string ("available", &value_op);
                                 LM_INFO("set cachedb activities to available according to basic element\n");
                                 if (cdbf.set(con, &activities_key_op, &value_op, max_expires_publish) < 0)
                                         LM_ERR("failed to set key\n");
                                 pkg_free (value_op.s);
+                                xmlFree(node_val);
+                                found = 1;
                         } else cdbf.remove(con, &activities_key_op);
                }
-               found = 1;
         }
 
 	xmlNodePtr cur = node->children;
@@ -593,18 +595,20 @@ void cachedb_update_merged_presence_state (str* body, str* pres_user)
         if (node!= NULL)
         {
                 /* This is the extended status code */
-                str_set_from_string ((const char*)xmlNodeGetContent(node), &value_op);
+                node_val = xmlNodeGetContent(node);
+                str_set_from_string ((const char*)node_val, &value_op);
                 if (cdbf.set(con, &note_key_op, &value_op, max_expires_publish) < 0)
                         LM_ERR("failed to set key\n");
                 LM_INFO("set cachedb note to %.*s\n", value_op.len, value_op.s);
-                pkg_free (value_op.s);
+                pkg_free(value_op.s);
+                xmlFree(node_val);
         }
 error:
         if (doc)
                 xmlFreeDoc(doc);
 
-        pkg_free (note_key_op.s);
-        pkg_free (activities_key_op.s);
+        pkg_free(note_key_op.s);
+        pkg_free(activities_key_op.s);
 }
 
 str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
@@ -970,16 +974,21 @@ static int from_im_to_rpidf(xmlDocPtr doc, xmlNodePtr node)
 {
         xmlNodePtr root_node = NULL;
         int state= 1; /* 0 = Available; 1 = Away; 2 = Vacation; -1 = Busy */
+        unsigned char* node_val = NULL;
 
         if (node== NULL || doc== NULL)
                 return 0;
 
-        if(xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)"busy") == 0)
+        node_val = xmlNodeGetContent(node);
+        if (node_val== NULL)
+                return 0;
+        if(xmlStrcasecmp(node_val, (unsigned char*)"busy")== 0)
                 state = -1;
-        else if(xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)"vacation") == 0)
+        else if(xmlStrcasecmp(node_val, (unsigned char*)"vacation")== 0)
                 state = 2;
-        else if(xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)"available") == 0)
+        else if(xmlStrcasecmp(node_val, (unsigned char*)"available")== 0)
                 state = 0;
+        xmlFree(node_val);
 
         root_node = xmlDocGetRootElement(doc);
         xmlNewProp(root_node, BAD_CAST "xmlns:dm",
@@ -1035,6 +1044,7 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
         char* root_name = "presence";
         char* elem_name = "tuple";
         char* elem_id = NULL;
+        unsigned char* node_val = NULL;
         str* body= NULL;
         xmlDocPtr* xml_array ;
         xmlNodePtr node = NULL;
@@ -1083,20 +1093,31 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                 }
 
                 node = xmlDocGetNodeByName(xml_array[j], "basic", NULL);
-                if(xmlStrcasecmp((unsigned char*)xmlNodeGetContent(node), (unsigned char*)"closed") == 0)
+                if (node== NULL) {
+                        xmlFree(elem_id);
+                        continue;
+                }
+                node_val = xmlNodeGetContent(node);
+                if(node_val && xmlStrcasecmp(node_val), (unsigned char*)"closed") == 0)
                 {
                         if(j > 0 || i+1 < n)
                         {
                                 LM_DBG("Tuple %d is offline, skipping\n", j);
+                                xmlFree(elem_id);
+                                xmlFree(node_val);
                                 continue;
                         }
                         else
                         {
                                 LM_DBG("Tuple %d is offline, but no other tuples...\n", j);
                                 j++;
+                                xmlFree(elem_id);
+                                xmlFree(node_val);
                                 break;
                         }
                 }
+                if (node_val)
+                        xmlFree(node_val);
 
                 if(im_to_rpidf)
                 {
@@ -1104,6 +1125,7 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                         if (node != NULL && !from_im_to_rpidf(xml_array[j], node))
                         {
                                 LM_DBG("while converting from im to RPIDF, skipping\n");
+                                xmlFree(elem_id);
                                 continue;
                         }
 
@@ -1141,10 +1163,16 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                 }
 
                 j++;
+                xmlFree(elem_id);
         }
 
         if(j == 0)  /* no body */
         {
+                for(i = 0; i <= j; i++)
+                {
+                        if(xml_array[i] != NULL)
+                                xmlFreeDoc(xml_array[i]);
+                }
                 if(xml_array != NULL)
                         pkg_free(xml_array);
                 return NULL;
@@ -1176,7 +1204,6 @@ static str* merge_presence_xmls(str* pres_user, str* pres_domain, str** body_arr
                 pkg_free(xml_array);
 
         return body;
-
 error:
         LM_ERR ("Merge error\n");
         return NULL;
