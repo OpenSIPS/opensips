@@ -856,6 +856,10 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 			switch (dlg->state) {
 				case DLG_STATE_CONFIRMED_NA:
 				case DLG_STATE_CONFIRMED:
+					if ( last_dst_leg!=dlg->legs_no[DLG_LEG_200OK] )
+						/* to end the call, the BYE must be received 
+						 * on the same leg as the 200 OK for INVITE */
+						break;
 					dlg->flags |= DLG_FLAG_HASBYE;
 					dlg->state = DLG_STATE_DELETED;
 					*unref = 1; /* unref from hash -> dialog ended */
