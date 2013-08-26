@@ -204,17 +204,12 @@ app: $(NAME)
 
 
 .PHONY: modules
-modules:
-	@set -e; \
-	for r in $(modules) "" ; do \
-		if [ -n "$$r" ]; then \
-			if [ -d "$$r" ]; then \
-				echo  "" ; \
-				echo  "" ; \
-				$(MAKE) -j -C $$r ; \
-			fi ; \
-		fi ; \
-	done 
+.PHONY: $(modules)
+
+$(modules):
+	$(MAKE) -C $@
+
+modules: $(modules)
 
 .PHONY: modules-readme
 modules-readme:
