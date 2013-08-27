@@ -25,6 +25,7 @@
 #include "bin_interface.h"
 #include "udp_server.h"
 #include "config.h"
+#include "daemonize.h"
 #include "pt.h"
 
 struct socket_info *bin;
@@ -433,6 +434,14 @@ int start_bin_receivers(void)
 							bin->sock_str.len,
 							bin->sock_str.s);
 			bind_address = bin;
+
+			if (init_child(PROC_BIN) < 0) {
+				LM_ERR("init_child failed for BIN listener\n");
+				if (send_status_code(-1) < 0)
+					LM_ERR("failed to send status code\n");
+				clean_write_pipeend();
+				exit(-1);
+			}
 
 			bin_receive_loop();
 			exit(-1);
