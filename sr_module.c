@@ -425,6 +425,7 @@ int init_child(int rank)
 	case PROC_TIMER:    type = "PROC_TIMER";    break;
 	case PROC_MODULE:   type = "PROC_MODULE";   break;
 	case PROC_TCP_MAIN: type = "PROC_TCP_MAIN"; break;
+	case PROC_BIN:      type = "PROC_BIN";      break;
 	}
 
 	if (!type) {
