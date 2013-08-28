@@ -59,12 +59,33 @@ void free_xml_body(char* body)
 str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n, int off_index)
 {
 	str* n_body= NULL;
+	str *pres_uri= NULL;
+	char buf[MAX_URI_SIZE+1];
 
-	LM_DBG("[pres_user]=%.*s [pres_domain]= %.*s, [n]=%d\n",
-			pres_user->len, pres_user->s, pres_domain->len, pres_domain->s, n);
+	if ( (pres_user->len + pres_domain->len + 1) > MAX_URI_SIZE) {
+		LM_ERR("entity URI too long, maximum=%d\n", MAX_URI_SIZE);
+		return NULL;
+	}
+	memcpy(buf, "sip:", 4);
+	memcpy(buf+4, pres_user->s, pres_user->len);
+	buf[pres_user->len+4] = '@';
+	memcpy(buf + pres_user->len + 5, pres_domain->s, pres_domain->len);
+	buf[pres_user->len + 5 + pres_domain->len]= '\0';
+
+	pres_uri = (str*)pkg_malloc(sizeof(str));
+	if(pres_uri == NULL)
+	{
+		LM_ERR("while allocating memory\n");
+		return NULL;
+	}
+	memset(pres_uri, 0, sizeof(str));
+	pres_uri->s = buf;
+	pres_uri->len = pres_user->len + 5 + pres_domain->len;
+
+	LM_DBG("[pres_uri] %.*s, [n]=%d\n", pres_uri->len, pres_uri->s, n);
 
 	if(body_array== NULL)
-		return build_dialoginfo(pres_user, pres_domain);
+		return build_empty_dialoginfo(pres_uri, NULL);
 
 	n_body= agregate_xmls(pres_user, pres_domain, body_array, n);
 	LM_DBG("[n_body]=%p\n", n_body);
@@ -81,7 +102,7 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
     xmlMemoryDump();
 
 	if (n_body== NULL)
-		n_body= build_dialoginfo(pres_user, pres_domain);
+		n_body= build_empty_dialoginfo(pres_uri, NULL);
 	return n_body;
 }
 
