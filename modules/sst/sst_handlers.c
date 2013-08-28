@@ -421,7 +421,6 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 	sst_info_t *info = (sst_info_t *)*(params->param);
 	sst_msg_info_t minfo = {0,0,0,0};
 	struct sip_msg* msg = params->msg;
-	int *param;
 
 	if (msg->first_line.type == SIP_REQUEST) {
 		if ((msg->first_line.u.request.method_value == METHOD_INVITE ||
