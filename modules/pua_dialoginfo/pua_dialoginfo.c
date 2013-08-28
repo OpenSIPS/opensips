@@ -88,7 +88,7 @@ static pv_spec_t caller_spec;
 static pv_spec_t callee_spec;
 static int osips_ps = 1;
 static int publish_on_trying = 0;
-static int publish_on_reinvite = 0;
+static int nopublish_flag = -1;
 
 
 /** module functions */
@@ -110,12 +110,12 @@ static param_export_t params[]={
 	{"include_localremote", INT_PARAM, &include_localremote },
 	{"include_tags",        INT_PARAM, &include_tags },
 	{"caller_confirmed",    INT_PARAM, &caller_confirmed },
-	{"publish_on_reinvite", INT_PARAM, &publish_on_reinvite },
 	{"publish_on_trying",   INT_PARAM, &publish_on_trying },
 	{"presence_server",     STR_PARAM, &presence_server.s },
 	{"caller_spec_param",   STR_PARAM, &caller_spec_param.s },
 	{"callee_spec_param",   STR_PARAM, &callee_spec_param.s },
 	{"osips_ps",            INT_PARAM, &osips_ps },
+	{"nopublish_flag",	        INT_PARAM, &nopublish_flag	},
 	{0, 0, 0 }
 };
 
@@ -245,6 +245,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	struct to_body peer_to_body;
 	str entity_uri= {0, 0};
 	int buf_len = 255;
+	struct sip_msg* msg = _params->msg;
 
 	flag_str.s = &flag;
 	flag_str.len = 1;
@@ -312,7 +313,14 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
 			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
 		break;
-	case DLGCB_REQ_WITHIN:
+	case DLGCB_RESPONSE_WITHIN:
+                if (get_cseq(msg)->method_id==METHOD_INVITE || get_cseq(msg)->method_id==METHOD_INVITE) {
+                  if (msg->flags & nopublish_flag) {
+                    LM_DBG("nopublish flag was set for this INVITE\n");
+                    break;
+                  }
+                  LM_DBG("nopublish flag not set for this INVITE, will publish\n");
+                }
 	case DLGCB_CONFIRMED:
 		LM_DBG("dialog confirmed, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
@@ -393,23 +401,12 @@ static void
 __dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	/* register dialog callbacks which triggers sending PUBLISH */
-        if (publish_on_reinvite) {
-	        if (dlg_api.register_dlgcb(dlg,
-		        DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-        		DLGCB_REQ_WITHIN | DLGCB_EARLY,
-	        	__dialog_sendpublish, 0, 0) != 0) {
-		        LM_ERR("cannot register callback for interesting dialog types\n");
-	        }
+        if (dlg_api.register_dlgcb(dlg,
+	         DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
+                DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
+                __dialog_sendpublish, 0, 0) != 0) {
+                LM_ERR("cannot register callback for interesting dialog types\n");
         }
-        else {
-	        if (dlg_api.register_dlgcb(dlg,
-		        DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-        		DLGCB_EARLY,
-	        	__dialog_sendpublish, 0, 0) != 0) {
-		        LM_ERR("cannot register callback for interesting dialog types\n");
-	        }
-        }
-        LM_ERR("ici: LOADED DB CB\n");
 }
 
 
@@ -497,6 +494,12 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_send_publish= pua.send_publish;
+
+	if (nopublish_flag!= -1 && nopublish_flag > MAX_FLAG) {
+		LM_ERR("invalid nopublish flag %d!!\n", nopublish_flag);
+		return -1;
+	}
+        nopublish_flag = (nopublish_flag!=-1)?(1<<nopublish_flag):0;
 
 	if(!osips_ps)
 		evp = dialoginfo_process_body;
@@ -758,24 +761,13 @@ default_callee:
 	}
 
 	/* register dialog callbacks which triggers sending PUBLISH */
-        if (publish_on_reinvite) {
-	        if (dlg_api.register_dlgcb(dlg,
-		        DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-        		DLGCB_REQ_WITHIN | DLGCB_EARLY,
-	        	__dialog_sendpublish, 0, 0) != 0) {
-		        LM_ERR("cannot register callback for interesting dialog types\n");
-        		goto end;
-	        }
-        }
-        else {
-	        if (dlg_api.register_dlgcb(dlg,
-		        DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-        		DLGCB_EARLY,
-	        	__dialog_sendpublish, 0, 0) != 0) {
-		        LM_ERR("cannot register callback for interesting dialog types\n");
-        		goto end;
-	        }
-        }
+	if (dlg_api.register_dlgcb(dlg,
+		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
+		DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
+		__dialog_sendpublish, 0, 0) != 0) {
+		LM_ERR("cannot register callback for interesting dialog types\n");
+		goto end;
+	}
 
 #ifdef PUA_DIALOGINFO_DEBUG
 	/* dialog callback testing (registered last to be executed first) */
