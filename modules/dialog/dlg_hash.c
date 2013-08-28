@@ -764,7 +764,7 @@ static inline void log_next_state_dlg(const int event,
 
 
 void next_state_dlg(struct dlg_cell *dlg, int event,
-								int *old_state, int *new_state, int *unref)
+			int dir, int *old_state, int *new_state, int *unref)
 {
 	struct dlg_entry *d_entry;
 
@@ -856,7 +856,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 			switch (dlg->state) {
 				case DLG_STATE_CONFIRMED_NA:
 				case DLG_STATE_CONFIRMED:
-					if ( last_dst_leg!=dlg->legs_no[DLG_LEG_200OK] )
+					if (dir == DLG_DIR_DOWNSTREAM && last_dst_leg!=dlg->legs_no[DLG_LEG_200OK] )
 						/* to end the call, the BYE must be received 
 						 * on the same leg as the 200 OK for INVITE */
 						break;

@@ -33,6 +33,8 @@
 extern int active_dlgs_cnt;
 extern int early_dlgs_cnt;
 
+extern int last_dst_leg;
+
 extern int dlg_enable_stats;
 
 extern stat_var *active_dlgs;
@@ -380,7 +382,9 @@ int dlg_replicated_delete(void)
 	destroy_linkers(dlg->profile_links);
 	dlg->profile_links = NULL;
 
-	next_state_dlg(dlg, DLG_EVENT_REQBYE, &old_state, &new_state, &unref);
+	/* simulate BYE received from caller */
+	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
+	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state, &new_state, &unref);
 
 	if (old_state == new_state) {
 		LM_ERR("duplicate dialog delete request (callid: |%.*s|"
