@@ -355,7 +355,7 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 	else
 	{
 		subs->local_cseq= s->local_cseq++;
-		s->version= subs->version+ 1;
+		subs->version= s->version++;
 	}
 
 	if(strncmp(s->contact.s, subs->contact.s, subs->contact.len))
@@ -583,7 +583,8 @@ void next_turn_phtable(pres_entry_t* p_p, unsigned int hash_code)
 	for ( p=pres_htable[hash_code].entries->next ; p ; p=p->next ) {
 		if(p==p_p) {
 			p->current_turn++;
-			LM_DBG("xXx - new current turn is %d\n",p->current_turn);
+			LM_DBG("new current turn is %d for <%.*s>\n",p->current_turn,
+				p_p->pres_uri.len, p_p->pres_uri.s);
 			break;
 		}
 	}
