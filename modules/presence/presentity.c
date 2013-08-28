@@ -551,7 +551,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		if (p) {
 
 			turn = p->last_turn++;
-			LM_DBG("xXx - my turn is %d, current turn is %d\n",turn, p->current_turn);
+			LM_DBG("pres <%.*s> my turn is %d, current turn is %d\n",pres_uri.len,
+				pres_uri.s, turn, p->current_turn);
 
 			/* wait to get our turn as order of handling pubishs
 			   (need to wait the ongoing published to terminate
@@ -994,7 +995,7 @@ int pres_htable_restore(void)
 				sphere= extract_sphere(body);
 			}
 
-			if(insert_phtable(&uri, event, &etag, sphere, 0)< 0)
+			if(insert_phtable(&uri, event, &etag, sphere, 0)== NULL)
 			{
 				LM_ERR("inserting record in presentity hash table");
 				pkg_free(uri.s);
