@@ -1117,7 +1117,8 @@ nh_timer(unsigned int ticks, void *timer_idx)
 {
 	static unsigned int iteration = 0;
 	int rval;
-	void *buf, *cp;
+	void *buf = NULL;
+	void *cp;
 	str c;
 	str opt;
 	str path;
@@ -1131,7 +1132,6 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	if((*natping_state) == 0)
 		goto done;
 
-	buf = NULL;
 	if (cblen > 0) {
 		buf = pkg_malloc(cblen);
 		if (buf == NULL) {
@@ -1159,7 +1159,6 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		   ((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
 		   natping_processes*natping_interval);
 		if (rval != 0) {
-			pkg_free(buf);
 			goto done;
 		}
 	}
@@ -1239,8 +1238,9 @@ nh_timer(unsigned int ticks, void *timer_idx)
 }
 		}
 	}
-	pkg_free(buf);
 done:
+	if (buf)
+		pkg_free(buf);
 	iteration++;
 	if (iteration==natping_interval)
 		iteration = 0;
