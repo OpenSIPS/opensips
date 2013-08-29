@@ -525,7 +525,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		presentity->extra_headers.s= (char*)shm_malloc(hentity->extra_headers.len* sizeof(char));
 		if(presentity->extra_headers.s== NULL)
 		{
-			ERR_MEM(SHARE_MEM);
+			LM_ERR("no more share memory\n");
+			goto mem_error;
 		}
 		memcpy(presentity->extra_headers.s, hentity->extra_headers.s, hentity->extra_headers.len);
 		presentity->extra_headers.len= hentity->extra_headers.len;
@@ -535,7 +536,8 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	presentity->remote_contact.s= (char*)shm_malloc(contact.len* sizeof(char));
 	if(presentity->remote_contact.s== NULL)
 	{
-		ERR_MEM(SHARE_MEM);
+		LM_ERR("no more share memory\n");
+		goto mem_error;
 	}
 	memcpy(presentity->remote_contact.s, contact.s, contact.len);
 	presentity->remote_contact.len= contact.len;
@@ -561,20 +563,22 @@ done:
 		hentity->flag= flag;
 		run_pua_callbacks( hentity, msg);
 	}
+
 error:
-	if(hentity)
-	{
-	        if(presentity)
-	        {
-		        if(presentity->extra_headers.s)
-		                shm_free(presentity->extra_headers.s);
-		        if(presentity->remote_contact.s)
-		                shm_free(presentity->remote_contact.s);
-	        }
-		shm_free(hentity);
-		hentity= NULL;
-	}
+        if(hentity->extra_headers.s)
+		shm_free(hentity->extra_headers.s);
+	shm_free(hentity);
 	return;
+
+mem_error:
+        if(presentity->extra_headers.s)
+		shm_free(presentity->extra_headers.s);
+        if(presentity->remote_contact.s)
+                shm_free(presentity->remote_contact.s);
+	shm_free(presentity);
+        if(hentity->extra_headers.s)
+		shm_free(hentity->extra_headers.s);
+	shm_free(hentity);
 }
 
 ua_pres_t* subscribe_cbparam(subs_info_t* subs, int ua_flag)
@@ -885,6 +889,8 @@ int send_subscribe(subs_info_t* subs)
 		if(result< 0)
 		{
 			LM_ERR("while sending request with t_request\n");
+			if (hentity->extra_headers.s)
+				shm_free(hentity->extra_headers.s);
 			shm_free(hentity);
 			goto  done;
 		}
