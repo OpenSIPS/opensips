@@ -540,7 +540,7 @@ void destroy_dlg_profiles(void)
 
 
 
-void destroy_linkers(struct dlg_profile_link *linker)
+void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 {
 	map_t entry;
 	struct dlg_profile_link *l;
@@ -573,7 +573,7 @@ void destroy_linkers(struct dlg_profile_link *linker)
 				l->profile->counts[l->hash_idx]--;
 			
 			lock_set_release( l->profile->locks, l->hash_idx  );
-		} else {
+		} else if (!is_replicated) {
 			if (!cdbc) {
 				LM_WARN("CacheDB not initialized - some information might"
 						" not be deleted from the cachedb engine\n");
@@ -632,7 +632,7 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 
 
 static void link_dlg_profile(struct dlg_profile_link *linker,
-													struct dlg_cell *dlg)
+                             struct dlg_cell *dlg, char is_replicated)
 {
 	unsigned int hash;
 	map_t p_entry;
@@ -674,7 +674,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 			linker->profile->counts[hash]++;
 
 		lock_set_release( linker->profile->locks,hash );
-	} else {
+	} else if (!is_replicated) {
 		if (!cdbc) {
 			LM_WARN("Cachedb not initialized yet - cannot update profile\n");
 			LM_WARN("Make sure that the dialog profile information is persistent\n");
@@ -717,7 +717,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 
 
 int set_dlg_profile(struct sip_msg *msg, str *value,
-									struct dlg_profile_table *profile)
+                    struct dlg_profile_table *profile, char is_replicated)
 {
 	struct dlg_cell *dlg;
 	struct dlg_profile_link *linker;
@@ -749,7 +749,7 @@ int set_dlg_profile(struct sip_msg *msg, str *value,
 	}
 
 	/* add linker to the dialog and profile */
-	link_dlg_profile( linker, dlg);
+	link_dlg_profile( linker, dlg, is_replicated);
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
 	return 0;
@@ -804,7 +804,7 @@ found:
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	dlg_unlock( d_table, d_entry);
 	/* remove linker from profile table and free it */
-	destroy_linkers(linker);
+	destroy_linkers(linker, 0);
 	return 1;
 }
 

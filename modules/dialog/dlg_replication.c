@@ -245,7 +245,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	dlg_unlock(d_table, d_entry);
 
 	if (profiles.s && profiles.len != 0)
-		read_dialog_profiles(profiles.s, profiles.len, dlg, 0);
+		read_dialog_profiles(profiles.s, profiles.len, dlg, 0, 1);
 
 	if_update_stat(dlg_enable_stats, active_dlgs, 1);
 
@@ -346,7 +346,7 @@ int dlg_replicated_update(void)
 	dlg_unlock(d_table, d_entry);
 
 	if (profiles.s && profiles.len != 0)
-		read_dialog_profiles(profiles.s, profiles.len, dlg, 1);
+		read_dialog_profiles(profiles.s, profiles.len, dlg, 1, 1);
 
 	return 0;
 
@@ -379,7 +379,7 @@ int dlg_replicated_delete(void)
 	        return -1;
 	}
 
-	destroy_linkers(dlg->profile_links);
+	destroy_linkers(dlg->profile_links, 1);
 	dlg->profile_links = NULL;
 
 	/* simulate BYE received from caller */

@@ -80,7 +80,10 @@ struct dlg_profile_table {
 };
 
 typedef int (*set_dlg_profile_f)(struct sip_msg *msg, str *value,
-										struct dlg_profile_table *profile);
+                        struct dlg_profile_table *profile, char is_replicated);
+
+typedef int (*unset_dlg_profile_f)(struct sip_msg *msg, str *value,
+                         struct dlg_profile_table *profile);
 
 typedef unsigned int (*get_profile_size_f)(struct dlg_profile_table *profile,
 										str *value);
@@ -102,10 +105,10 @@ void destroy_dlg_profiles();
 
 struct dlg_profile_table* search_dlg_profile(str *name);
 
-void destroy_linkers(struct dlg_profile_link *linker);
+void destroy_linkers(struct dlg_profile_link *linker, char is_replicated);
 
 int set_dlg_profile(struct sip_msg *msg, str *value,
-		struct dlg_profile_table *profile);
+		struct dlg_profile_table *profile, char is_replicated);
 
 int unset_dlg_profile(struct sip_msg *msg, str *value,
 		struct dlg_profile_table *profile);

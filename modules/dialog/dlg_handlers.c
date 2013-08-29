@@ -539,7 +539,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		LM_DBG("dialog %p failed (negative reply)\n", dlg);
 
 		/*destroy linkers */
-		destroy_linkers(dlg->profile_links);
+		destroy_linkers(dlg->profile_links, 0);
 		dlg->profile_links = NULL;
 
 		/* dialog setup not completed (3456XX) */
@@ -1140,7 +1140,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	old_state!=DLG_STATE_DELETED) {
 		
 		/*destroy linkers */
-		destroy_linkers(dlg->profile_links);
+		destroy_linkers(dlg->profile_links, 0);
 		dlg->profile_links = NULL;
 
 		if (!dlg->terminate_reason.s) {
@@ -1441,7 +1441,7 @@ void dlg_ontimeout( struct dlg_tl *tl)
 			ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 
 		/*destroy linkers */
-		destroy_linkers(dlg->profile_links);
+		destroy_linkers(dlg->profile_links, 0);
 		dlg->profile_links = NULL;
 
 		/* dialog timeout */

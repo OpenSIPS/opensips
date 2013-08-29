@@ -387,7 +387,8 @@ void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 }
 
 
-void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check)
+void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
+                          char is_replicated)
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_link *it;
@@ -458,7 +459,8 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check)
 				continue;
 			}
 		}
-		if (set_dlg_profile( NULL, profile->has_value?&val:NULL, profile) < 0 )
+		if (set_dlg_profile( NULL, profile->has_value ? &val : NULL, profile,
+		    is_replicated) < 0 )
 			LM_ERR("failed to add to profile, skipping....\n");
 		next:
 			;
@@ -624,7 +626,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/* profiles */
 			if (!VAL_NULL(values+18))
 				read_dialog_profiles( VAL_STR(values+18).s,
-					strlen(VAL_STR(values+18).s), dlg,0);
+					strlen(VAL_STR(values+18).s), dlg, 0, 0);
 
 
 			/* script flags */
@@ -1565,7 +1567,7 @@ static int sync_dlg_db_mem(void)
 				/* profiles */
 				if (!VAL_NULL(values+18))
 					read_dialog_profiles( VAL_STR(values+18).s,
-						strlen(VAL_STR(values+18).s), dlg,0);
+						strlen(VAL_STR(values+18).s), dlg, 0, 0);
 
 
 				/* script flags */
@@ -1729,7 +1731,7 @@ static int sync_dlg_db_mem(void)
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+18))
 						read_dialog_profiles( VAL_STR(values+18).s,
-							strlen(VAL_STR(values+18).s), known_dlg,1);
+							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
 					dlg_unlock( d_table, d_entry);
 				} else {
@@ -1806,7 +1808,7 @@ static int sync_dlg_db_mem(void)
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+18))
 						read_dialog_profiles( VAL_STR(values+18).s,
-							strlen(VAL_STR(values+18).s), known_dlg,1);
+							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
 					dlg_unlock( d_table, d_entry);
 				}
