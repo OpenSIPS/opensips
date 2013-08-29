@@ -490,10 +490,7 @@ void free_htable_entry(ua_pres_t* p)
 	pua_db_delete(p);
 
 	if(p->etag.s)
-	{
 		shm_free(p->etag.s);
-	}
-	else
 	if(p->remote_contact.s)
 		shm_free(p->remote_contact.s);
 	shm_free(p);
@@ -772,8 +769,6 @@ int update_contact(struct sip_msg* msg, char* str1, char* str2)
 		LM_ERR("no record for the dialog found in hash table\n");
 		return -1;
 	}
-
-	shm_free(p->remote_contact.s);
 
 	if(!(p->remote_contact.len== contact.len && 
 				strncmp(p->remote_contact.s, contact.s, contact.len)==0))
