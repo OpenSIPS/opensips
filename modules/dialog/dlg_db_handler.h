@@ -111,7 +111,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell);
 void dialog_update_db(unsigned int ticks, void * param);
 
 void read_dialog_vars(char *b, int l, struct dlg_cell *dlg);
-void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg, int double_check);
+void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,
+                          int double_check, char is_replicated);
 str* write_dialog_vars(struct dlg_val *vars);
 str* write_dialog_profiles(struct dlg_profile_link *links);
 

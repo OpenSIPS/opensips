@@ -1052,13 +1052,13 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 			return -1;
 		}
 		if ( set_dlg_profile( msg, &val_s,
-		(struct dlg_profile_table*)profile) < 0 ) {
+		(struct dlg_profile_table*)profile, 0) < 0 ) {
 			LM_ERR("failed to set profile\n");
 			return -1;
 		}
 	} else {
 		if ( set_dlg_profile( msg, NULL,
-		(struct dlg_profile_table*)profile) < 0 ) {
+		(struct dlg_profile_table*)profile, 0) < 0 ) {
 			LM_ERR("failed to set profile\n");
 			return -1;
 		}
