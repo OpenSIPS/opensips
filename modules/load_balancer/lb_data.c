@@ -550,7 +550,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		/* add to the profiles */
 		for( i=0 ; i<rl->n ; i++) {
 			if (lb_dlg_binds.set_profile( req, &dst->profile_id,
-			call_res[i]->profile)!=0)
+			call_res[i]->profile, 0)!=0)
 				LM_ERR("failed to add to profile\n");
 		}
 	}
@@ -741,7 +741,7 @@ end_search:
 	/* add to the profiles */
 	for( i=0 ; i<rl->n ; i++) {
 		if (lb_dlg_binds.set_profile( req, &dst->profile_id,
-		call_res[i]->profile)!=0)
+		call_res[i]->profile, 0)!=0)
 			LM_ERR("failed to add to profile\n");
 	}
 
