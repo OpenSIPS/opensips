@@ -604,8 +604,12 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.extra_headers = tuple->extra_headers;
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
-	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;;
-	get_local_contact( ci.send_sock, &ci.local_contact);
+	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
+	if (ci.send_sock) {
+		get_local_contact( ci.send_sock, &ci.local_contact);
+	} else {
+		ci.local_contact = tuple->local_contact;
+	}
 
 	if(msg)
 	{
@@ -699,7 +703,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.extra_headers = extra_headers;
 			ci.body          = body;
 			ci.from_tag      = NULL;
-			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;;
+			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 			get_local_contact( ci.send_sock, &ci.local_contact);
 
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
@@ -2513,7 +2517,11 @@ entity_search_done:
 		ci.body          = 0;
 		ci.from_tag      = 0;
 		ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):0;
-		get_local_contact( ci.send_sock, &ci.local_contact);
+		if (ci.send_sock) {
+			get_local_contact( ci.send_sock, &ci.local_contact);
+		} else {
+			ci.local_contact = tuple->local_contact;
+		}
 
 		if(msg)
 		{
@@ -3227,7 +3235,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,struct sip_msg* m
 			ci.from_dname    = from_dname;
 			ci.extra_headers = tuple->extra_headers;
 			ci.body          = (body.s?&body:NULL);
-			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;;
+			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 			get_local_contact( ci.send_sock, &ci.local_contact);
 
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
@@ -3512,7 +3520,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.extra_headers = tuple->extra_headers;
 		ci.body          = tuple->b1_sdp.s?&tuple->b1_sdp:0;
 		ci.cseq          = 1;
-		get_local_contact( ci.send_sock, &ci.local_contact);
+		ci.local_contact = tuple->local_contact;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 				b2b_add_dlginfo, tuple->key);
