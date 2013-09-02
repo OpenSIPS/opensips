@@ -468,7 +468,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	else
 		event = DLG_EVENT_RPL3xx;
 
-	next_state_dlg( dlg, event, &old_state, &new_state, &unref);
+	last_dst_leg = DLG_CALLER_LEG;
+	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state, &unref);
 
 	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
 		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM, 0);
@@ -1114,8 +1115,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	/* save last_dst_leg before running state machine
 	 * helpful for logging various bogus cases according to the RFC */
 	last_dst_leg = dst_leg;
-
-	next_state_dlg( dlg, event, &old_state, &new_state, &unref);
+	next_state_dlg( dlg, event, dir, &old_state, &new_state, &unref);
 
 	/* set current dialog - it will keep a ref! */
 	set_current_dialog(dlg);
@@ -1403,7 +1403,9 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		return ;
 	}
 
-	next_state_dlg( dlg, DLG_EVENT_REQBYE, &old_state, &new_state, &unref);
+	/* act like as if we've received a BYE from caller */
+	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
+	next_state_dlg( dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state, &new_state, &unref);
 
 	if (new_state==DLG_STATE_DELETED && old_state!=DLG_STATE_DELETED) {
 		LM_DBG("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
