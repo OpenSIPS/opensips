@@ -219,9 +219,6 @@ inline void destroy_dlg(struct dlg_cell *dlg)
 
 	run_dlg_callbacks( DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, 0);
 
-	if (replication_dests)
-		replicate_dialog_deleted(dlg);
-
 	free_dlg_dlg(dlg);
 }
 
@@ -763,8 +760,8 @@ static inline void log_next_state_dlg(const int event,
 }
 
 
-void next_state_dlg(struct dlg_cell *dlg, int event,
-			int dir, int *old_state, int *new_state, int *unref)
+void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
+					int *new_state, int *unref, char is_replicated)
 {
 	struct dlg_entry *d_entry;
 
@@ -907,6 +904,9 @@ void next_state_dlg(struct dlg_cell *dlg, int event,
 	*new_state = dlg->state;
 
 	dlg_unlock( d_table, d_entry);
+
+	if (!is_replicated && replication_dests && dlg->state == DLG_STATE_DELETED)
+		replicate_dialog_deleted(dlg);
 
 	LM_DBG("dialog %p changed from state %d to "
 		"state %d, due event %d\n",dlg,*old_state,*new_state,event);

@@ -213,7 +213,8 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 
 	event = DLG_EVENT_REQBYE;
 	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
-	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state, &unref);
+	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
+	               &unref, 0);
 	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
