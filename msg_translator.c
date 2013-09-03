@@ -427,6 +427,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 											struct socket_info* send_sock)
 {
 	unsigned int s_offset, new_len;
+	unsigned int last_del, only_before;
 	struct lump *t, *r;
 	str *send_address_str, *send_port_str;
 	str *rcv_address_str=NULL;
@@ -575,6 +576,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	
 	s_offset=0;
 	new_len=0;
+	last_del=0;
 	/* init send_address_str & send_port_str */
 	if(send_sock && send_sock->adv_name_str.len)
 		send_address_str=&(send_sock->adv_name_str);
@@ -601,8 +603,17 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 	
-	
 	for(t=lumps;t;t=t->next){
+		only_before=0;
+		/* is this lump still valid? (it must not be anchored in a deleted area */
+		if (s_offset > t->u.offset) {
+			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
+				t->op,s_offset, t->u.offset,last_del);
+			if (t->u.offset!=last_del)
+				continue;
+			/* process only the before lumps */
+			only_before = 1;
+		}
 		/* if a SKIP lump, go to the last in the list*/
 		if (t->op==LUMP_SKIP) {
 			if (!t->next) break;
@@ -635,7 +646,10 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("invalid op for data lump (%x)\n", r->op);
 			}
 		}
+		LM_DBG("new len is %d after before\n",new_len);
 skip_before:
+		if (only_before)
+			continue;
 		switch(t->op){
 			case LUMP_ADD:
 				new_len+=t->len;
@@ -648,36 +662,17 @@ skip_before:
 				 * before & after */
 				break;
 			case LUMP_DEL:
-				/* fix overlapping deleted zones */
-				//if (t->u.offset < s_offset){
-				//	/* change len */
-				//	if (t->len>s_offset-t->u.offset)
-				//			t->len-=s_offset-t->u.offset;
-				//	else t->len=0;
-				//	t->u.offset=s_offset;
-				//}
-				/* lump inside a deleted area ? */
-				if (s_offset > t->u.offset) {
-					continue;
-				}
+				last_del=t->u.offset;
 				s_offset=t->u.offset+t->len;
 				new_len-=t->len;
 				break;
 			case LUMP_NOP:
-				/* fix offset if overlapping on a deleted zone */
-				//if (t->u.offset < s_offset){
-				//	t->u.offset=s_offset;
-				//}else
-				//	s_offset=t->u.offset;
-				/* lump inside a deleted area ? */
-				if (s_offset > t->u.offset) {
-					continue;
-				}
 				/* do nothing */
 				break;
 			default:
 				LM_CRIT("op for data lump (%x)\n", r->op);
 		}
+		LM_DBG("new len is %d after main\n",new_len);
 		for (r=t->after;r;r=r->after){
 			switch(r->op){
 				case LUMP_ADD:
@@ -702,6 +697,7 @@ skip_before:
 					LM_CRIT("invalid op for data lump (%x)\n", r->op);
 			}
 		}
+		LM_DBG("new len is %d after after\n",new_len);
 skip_after:
 		; /* to make gcc 3.* happy */
 	}
@@ -723,6 +719,7 @@ void process_lumps(	struct sip_msg* msg,
 	struct lump *t, *r;
 	char* orig;
 	unsigned int size, offset, s_offset;
+	unsigned int last_del, only_before;
 	str *send_address_str, *send_port_str;
 	str *rcv_address_str=NULL;
 	str *rcv_port_str=NULL;
@@ -959,8 +956,19 @@ void process_lumps(	struct sip_msg* msg,
 	orig=msg->buf;
 	offset=*new_buf_offs;
 	s_offset=*orig_offs;
+	last_del=0;
 	
 	for (t=lumps;t;t=t->next){
+		only_before = 0;
+		/* skip this lump if the "offset" is still in a "deleted" area */
+		if (s_offset > t->u.offset) {
+			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
+				t->op,s_offset, t->u.offset,last_del);
+			if (last_del!= t->u.offset)
+				continue;
+			only_before = 1;
+		}
+
 		switch(t->op){
 			case LUMP_SKIP:
 				/* if a SKIP lump, go to the last in the list*/
@@ -1004,6 +1012,8 @@ void process_lumps(	struct sip_msg* msg,
 					}
 				}
 skip_before:
+				if (only_before)
+					continue;
 				/* copy "main" part */
 				switch(t->op){
 					case LUMP_ADD:
@@ -1051,23 +1061,14 @@ skip_after:
 				break;
 			case LUMP_NOP:
 			case LUMP_DEL:
-				/* skip this lump if the "offset" is still in a "deleted" area */
-				if (s_offset > t->u.offset) {
-					continue;
-				}
-				/* copy till offset */
-				if (s_offset>t->u.offset){ /* this should never happen !! */
-					LM_WARN("(%d) overlapped lumps offsets,"
-						" ignoring(%x, %x)\n", t->op, s_offset,t->u.offset);
-					/* this should've been fixed above (when computing len) */
-					/* just ignore it*/
-					break;
-				}
-				size=t->u.offset-s_offset;
-				if (size){
+				/* copy till offset (if any) */
+				if (s_offset<t->u.offset){
+					size=t->u.offset-s_offset;
 					memcpy(new_buf+offset, orig+s_offset,size);
 					offset+=size;
 					s_offset+=size;
+					if (t->op==LUMP_DEL)
+						last_del=t->u.offset;
 				}
 				/* process before  */
 				for(r=t->before;r;r=r->before){
@@ -1097,6 +1098,8 @@ skip_after:
 					}
 				}
 skip_nop_before:
+				if (only_before)
+					continue;
 				/* process main (del only) */
 				if (t->op==LUMP_DEL){
 					/* skip len bytes from orig msg */
