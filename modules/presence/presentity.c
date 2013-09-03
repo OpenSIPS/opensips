@@ -640,9 +640,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			LM_DBG("Expires=0, deleted from db %.*s\n",
 					presentity->user.len,presentity->user.s);
 
-                        /* Send another NOTIFY, this time rely on whatever is on the DB, so in case there are no documents an empty
-                         * NOTIFY will be sent to the watchers */
-			if(publ_notify(presentity, pres_uri, NULL, NULL, rules_doc, NULL) < 0)
+			/* Send another NOTIFY, this time rely on whatever is on the DB, so in case there are no documents an empty
+			 * NOTIFY will be sent to the watchers */
+			if(publ_notify(presentity, pres_uri, NULL, NULL, rules_doc, NULL, 1) < 0)
 			{
 				LM_ERR("while sending notify\n");
 				goto error;
