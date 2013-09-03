@@ -259,7 +259,7 @@ no_notify:
 			LM_ERR("getting rules doc\n");
 			goto error;
 		}
-		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL)< 0)
+		if(publ_notify( p[i].p, p[i].uri, NULL, &p[i].p->etag, rules_doc, NULL, 0)< 0)
 		{
 			LM_ERR("sending Notify request\n");
 			goto error;
