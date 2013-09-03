@@ -87,10 +87,10 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	if(body_array== NULL)
 		return build_empty_dialoginfo(pres_uri, NULL);
 
-        if (n == -2)
-	        n_body= agregate_xmls(pres_user, pres_domain, body_array, 1, 1);
-        else
-	        n_body= agregate_xmls(pres_user, pres_domain, body_array, n, 0);
+	if (n == -2)
+		n_body= agregate_xmls(pres_user, pres_domain, body_array, 1, 1);
+	else
+		n_body= agregate_xmls(pres_user, pres_domain, body_array, n, 0);
 
 	LM_DBG("[n_body]=%p\n", n_body);
 	if(n_body) {
@@ -206,10 +206,10 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 	*/
     xmlNewProp(root_node, BAD_CAST "version", BAD_CAST VERSION_HOLDER);
     xmlNewProp(root_node, BAD_CAST "entity",  BAD_CAST buf);
-    if (!partial)
-        xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "full" );
-    else
-        xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "partial" );
+	if (!partial)
+		xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "full" );
+	else
+		xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "partial" );
 
 	/* loop over all bodies and create the aggregated body */
 	for(i=0; i<j; i++)

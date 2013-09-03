@@ -1258,24 +1258,23 @@ str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag, str* publ_body
 			build_off_n = -1;
 		}
 
-                /* RFC 4235 states that a NOTIFY generated after an initial
-                 * or refreshed SUBSCRIBE request must contain a full-state notification.
-                 * In other cases, only the modified state should be notified using
-                 * a partial state notification.
-                 */
-                if (event->evp->parsed == EVENT_DIALOG && from_publish && publ_body) {
+		/* RFC 4235 states that a NOTIFY generated after an initial
+ 		 * or refreshed SUBSCRIBE request must contain a full-state notification.
+ 		 * In other cases, only the modified state should be notified using
+ 		 * a partial state notification.
+ 		 */
+		if (event->evp->parsed == EVENT_DIALOG && from_publish && publ_body) {
 
-                        /* Presence dialoginfo knows that special n value of -2 means we publish
-                         * a partial state. Calling the agg_nbody method is however required because
-                         * it builds the full NOTIFY body as described in the RFC (it adds the version
-                         * field to the body, defines if state is partial or full, ...).
-                         */
-                        notify_body = event->agg_nbody(&uri.user, &uri.host, &publ_body, -2, build_off_n);
-			if(notify_body)
-			{
+			/* Presence dialoginfo knows that special n value of -2 means we publish
+ 			 * a partial state. Calling the agg_nbody method is however required because
+ 			 * it builds the full NOTIFY body as described in the RFC (it adds the version
+ 			 * field to the body, defines if state is partial or full, ...).
+ 			 */
+			notify_body = event->agg_nbody(&uri.user, &uri.host, &publ_body, -2, build_off_n);
+			if(notify_body) {
 				goto done;
 			}
-                }
+		}
 
 		notify_body = event->agg_nbody(&uri.user, &uri.host, body_array, body_cnt, build_off_n);
 		if(notify_body == NULL)
@@ -1757,7 +1756,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 		notify_body = get_p_notify_body(pres_uri, p->event , offline_etag, body,
 				NULL, dialog_body,
 				p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, &free_fct,
-                                from_publish);
+				from_publish);
 	}
 
 	s= subs_array;
@@ -1920,14 +1919,13 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			}
 			else
 			{
-                                if (from_publish && n_body!= 0 && n_body->s!= 0)
-                                        notify_body = n_body;
-                                else
-				        notify_body =
-                                          get_p_notify_body(subs->pres_uri,
-						subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
-						NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs,
-                                                &free_fct, from_publish);
+				if (from_publish && n_body!= 0 && n_body->s!= 0)
+					notify_body = n_body;
+				else
+					notify_body = get_p_notify_body(subs->pres_uri,
+							subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
+							NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs,
+							&free_fct, from_publish);
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
