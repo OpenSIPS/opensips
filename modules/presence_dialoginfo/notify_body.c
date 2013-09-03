@@ -43,7 +43,7 @@
 #include "notify_body.h"
 #include "pidf.h"
 
-str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n);
+str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, int partial);
 str* build_dialoginfo(str* pres_user, str* pres_domain);
 extern int force_single_dialog;
 
@@ -87,7 +87,11 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	if(body_array== NULL)
 		return build_empty_dialoginfo(pres_uri, NULL);
 
-	n_body= agregate_xmls(pres_user, pres_domain, body_array, n);
+	if (n == -2)
+		n_body= agregate_xmls(pres_user, pres_domain, body_array, 1, 1);
+	else
+		n_body= agregate_xmls(pres_user, pres_domain, body_array, n, 0);
+
 	LM_DBG("[n_body]=%p\n", n_body);
 	if(n_body) {
 		LM_DBG("[*n_body]=%.*s\n",
@@ -106,7 +110,7 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	return n_body;
 }
 
-str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
+str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, int partial)
 {
 	int i, j= 0;
 
@@ -201,8 +205,11 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n)
 	   signed int) has max. 10 characters + 1 character for the sign
 	*/
     xmlNewProp(root_node, BAD_CAST "version", BAD_CAST VERSION_HOLDER);
-    xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "partial" );
     xmlNewProp(root_node, BAD_CAST "entity",  BAD_CAST buf);
+	if (!partial)
+		xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "full" );
+	else
+		xmlNewProp(root_node, BAD_CAST "state",  BAD_CAST "partial" );
 
 	/* loop over all bodies and create the aggregated body */
 	for(i=0; i<j; i++)
