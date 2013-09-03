@@ -620,7 +620,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			*sent_reply= 1;
 
 			if(publ_notify(presentity, pres_uri, body.s ? &body : 0, 
-			&presentity->etag, rules_doc, NULL) < 0)
+			&presentity->etag, rules_doc, NULL, 1) < 0)
 			{
 				LM_ERR("while sending notify\n");
 				goto error;
@@ -792,7 +792,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 send_notify:
 
 	if (publ_notify(presentity, pres_uri, body.s?&body:0,
-				NULL, rules_doc, NULL)<0)
+				NULL, rules_doc, NULL, 1)<0)
 	{
 		LM_ERR("while sending Notify requests to watchers\n");
 		goto error;
@@ -812,7 +812,7 @@ send_mxd_notify:
 		{
 			/* send Notify for presence */
 			presentity->event = *pres_event_p;
-			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body)<0)
+			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body, 1)<0)
 			{
 				LM_ERR("while sending Notify requests to watchers\n");
 				if(dialog_body && dialog_body!=FAKED_BODY)

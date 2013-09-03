@@ -1157,7 +1157,7 @@ send_notify:
 	while(s)
 	{
 
-		if(notify(s, NULL, NULL, 0, NULL)< 0)
+		if(notify(s, NULL, NULL, 0, NULL, 0)< 0)
 		{
 			LM_ERR( "sending Notify request\n");
 			goto done;
@@ -1247,7 +1247,7 @@ int refresh_send_winfo_notify(watcher_t* watchers, str pres_uri,
 			goto error;
 		}
 
-		if(notify(s, NULL, winfo_nbody, 0, NULL)< 0 )
+		if(notify(s, NULL, winfo_nbody, 0, NULL, 0)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
 				s->event->name.len, s->event->name.s);
