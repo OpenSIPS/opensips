@@ -461,7 +461,6 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	vals[7].type = DB_STR;
 	vals[7].nul = 0;
 	vals[7].val.str_val = bitmask_to_flag_list(FLAG_TYPE_BRANCH, _c->cflags);
-	vals[7].val.str_val.len = vals[7].val.str_val.len;
 
 	vals[8].type = DB_STR;
 	vals[8].nul = 0;
@@ -633,9 +632,9 @@ int db_update_ucontact(ucontact_t* _c)
 	vals2[3].nul = 0;
 	vals2[3].val.bitmap_val = _c->flags;
 
-	vals2[4].type = DB_BITMAP;
+	vals2[4].type = DB_STR;
 	vals2[4].nul = 0;
-	vals2[4].val.bitmap_val = _c->cflags;
+	vals2[4].val.str_val = bitmask_to_flag_list(FLAG_TYPE_BRANCH, _c->cflags);
 
 	vals2[5].type = DB_STR;
 	vals2[5].nul = 0;

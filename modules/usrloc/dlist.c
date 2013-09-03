@@ -92,53 +92,61 @@ static inline int find_dlist(str* _n, dlist_t** _d)
 		
 		ptr = ptr->next;
 	}
-	
+
 	return 1;
 }
 
-
-
-static inline int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
-								unsigned int part_idx, unsigned int part_max)
+static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
+                                unsigned int part_idx, unsigned int part_max)
 {
 	static char query_buf[512];
 	static str query_str;
 
 	struct socket_info *sock;
-	unsigned int dbflags;
-	db_res_t* res = NULL;
+	db_res_t *res = NULL;
 	db_row_t *row;
+	db_val_t *val;
 	dlist_t *dom;
-	char *p, *p1;
-	char now_s[25];
+	str host, flag_list;
+	int i, no_rows = 10;
 	int now_len;
+	char now_s[25];
+	char *p, *p1;
 	int port, proto, p_len, p1_len;
-	str host;
-	int i;
-	void *cp;
-	int shortage, needed;
+	unsigned int dbflags;
+	int needed;
+	int shortage = 0;
 
-	cp = buf;
 	shortage = 0;
 	/* Reserve space for terminating 0000 */
-	len -= sizeof(p_len);
+	len -= sizeof p_len;
 
 	/* get the current time in DB format */
 	now_len = 25;
-	if (db_time2str( time(0), now_s, &now_len)!=0) {
+	if (db_time2str(time(NULL), now_s, &now_len) != 0) {
 		LM_ERR("failed to print now time\n");
 		return -1;
 	}
 
-	for (dom = root; dom!=NULL ; dom=dom->next) {
-		/* build query */
-		i = snprintf( query_buf, sizeof(query_buf), "select %.*s, %.*s, %.*s,"
+	LM_DBG("buf: %p. flags: %d\n", buf, flags);
+
+	/* for each table */
+	for (dom = root; dom; dom = dom->next) {
+		if (db_check_table_version(&ul_dbf, ul_dbh, dom->d->name, UL_TABLE_VERSION))
+			goto error;
+
+		/* read the destinations */
+		if (ul_dbf.use_table(ul_dbh, dom->d->name) < 0) {
+			LM_ERR("cannot select table \"%.*s\"\n", dom->d->name->len,
+			       dom->d->name->s);
+			goto error;
+		}
+
+		i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-			" %.*s, %.*s from %s where %.*s > %.*s and "
-			"bitand(%.*s, %d) = %d and mod(id, %u) = %u",
+		" %.*s, %.*s from %s where %.*s > %.*s and mod(id, %u) = %u",
 #else
-			" %.*s, %.*s from %s where %.*s > %.*s and %.*s & %d = %d and "
-			"id %% %u = %u",
+		" %.*s, %.*s from %s where %.*s > %.*s and id %% %u = %u",
 #endif
 			received_col.len, received_col.s,
 			contact_col.len, contact_col.s,
@@ -148,112 +156,161 @@ static inline int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 			dom->d->name->s,
 			expires_col.len, expires_col.s,
 			now_len, now_s,
-			cflags_col.len, cflags_col.s,
-			flags, flags, part_max, part_idx);
-		if ( i>=sizeof(query_buf) ) {
+			part_max, part_idx);
+
+		LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
+		if (i >= sizeof query_buf) {
 			LM_ERR("DB query too long\n");
-			return -1;
+			goto error;
 		}
+
 		query_str.s = query_buf;
 		query_str.len = i;
-		if ( ul_dbf.raw_query( ul_dbh, &query_str, &res)<0 ) {
+
+		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
+			if (ul_dbf.raw_query(ul_dbh, &query_str, 0) < 0) {
+				LM_ERR("raw_query failed\n");
+				goto error;
+			}
+
+			no_rows = estimate_available_rows(20+128+20+128+64, 5);
+			if (no_rows == 0)
+				no_rows = 10;
+
+			LM_DBG("fetching %d rows\n", no_rows);
+
+			if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
+				LM_ERR("Error fetching rows\n");
+				goto error;
+			}
+		} else if (ul_dbf.raw_query(ul_dbh, &query_str, &res) < 0) {
 			LM_ERR("raw_query failed\n");
-			return -1;
-		}
-		if( RES_ROW_N(res)==0 ) {
-			ul_dbf.free_result(ul_dbh, res);
-			continue;
+			goto error;
 		}
 
-		for(i = 0; i < RES_ROW_N(res); i++) {
-			row = RES_ROWS(res) + i;
+		do {
+			for (i = 0; i < RES_ROW_N(res); i++) {
+				row = RES_ROWS(res) + i;
+				val = ROW_VALUES(row) + 3; /* cflags */
+				flag_list.s   = (char *)VAL_STRING(val);
+				flag_list.len = strlen(flag_list.s);
 
-			/* received */
-			p = (char*)VAL_STRING(ROW_VALUES(row));
-			if ( VAL_NULL(ROW_VALUES(row)) || p==0 || p[0]==0 ) {
-				/* contact */
-				p = (char*)VAL_STRING(ROW_VALUES(row)+1);
-				if (VAL_NULL(ROW_VALUES(row)+1) || p==0 || p[0]==0) {
-					LM_ERR("empty contact -> skipping\n");
-					continue;
+				LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
+
+				if (flags) {
+					/* contact is not flagged at all */
+					if (val->nul || !flag_list.s)
+						continue;
+
+					LM_DBG("masks: param: %d --- %d :db\n", flags,
+					flag_list_to_bitmask(&flag_list,FLAG_TYPE_BRANCH,FLAG_DELIM));
+
+					/* check if contact flags match the given bitmask */
+					if ((flag_list_to_bitmask(&flag_list, FLAG_TYPE_BRANCH,
+					    FLAG_DELIM) & flags) != flags)
+						continue;
 				}
-			}
-			p_len = strlen(p);
 
-			/* path */
-			p1 = (char*)VAL_STRING(ROW_VALUES(row)+4);
-			if (VAL_NULL(ROW_VALUES(row)+4) || p1==0 || p1[0]==0){
-				p1 = NULL;
-				p1_len = 0;
-			} else {
-				p1_len = strlen(p1);
-			}
-
-			needed = (int)(sizeof(p_len)+p_len+sizeof(sock)+sizeof(dbflags)+
-				sizeof(p1_len)+p1_len);
-			if (len < needed) {
-				shortage += needed ;
-				continue;
-			}
-
-			/* write received/contact */
-			memcpy(cp, &p_len, sizeof(p_len));
-			cp = (char*)cp + sizeof(p_len);
-			memcpy(cp, p, p_len);
-			cp = (char*)cp + p_len;
-
-			/* sock */
-			p  = (char*)VAL_STRING(ROW_VALUES(row) + 2);
-			if (VAL_NULL(ROW_VALUES(row)+2) || p==0 || p[0]==0){
-				sock = 0;
-			} else {
-				if (parse_phostport( p, strlen(p), &host.s, &host.len,
-				&port, &proto)!=0) {
-					LM_ERR("bad socket <%s>...ignoring\n", p);
-					sock = 0;
-				} else {
-					sock = grep_sock_info( &host, (unsigned short)port, proto);
-					if (sock==0) {
-						LM_DBG("non-local socket <%s>...ignoring\n", p);
+				/* received */
+				p = (char*)VAL_STRING(ROW_VALUES(row));
+				if (VAL_NULL(ROW_VALUES(row)) || !p || !p[0]) {
+					/* contact */
+					p = (char*)VAL_STRING(ROW_VALUES(row) + 1);
+					if (VAL_NULL(ROW_VALUES(row) + 1) || !p || *p == '\0') {
+						LM_ERR("empty contact -> skipping\n");
+						continue;
 					}
 				}
+				p_len = strlen(p);
+
+				/* path */
+				p1 = (char*)VAL_STRING(ROW_VALUES(row) + 4);
+				if (VAL_NULL(ROW_VALUES(row) + 4) || !p1 || *p1 == '\0') {
+					p1 = NULL;
+					p1_len = 0;
+				} else
+					p1_len = strlen(p1);
+
+				needed = (int)(p_len + sizeof p_len + sizeof sock +
+				               sizeof dbflags + p1_len + sizeof p1_len);
+
+				LM_DBG("len: %d, needed: %d\n", len, needed);
+
+				if (len < needed) {
+					shortage += needed;
+					continue;
+				}
+
+				/* write received/contact */
+				memcpy(buf, &p_len, sizeof p_len);
+				buf += sizeof p_len;
+				memcpy(buf, p, p_len);
+				buf += p_len;
+
+				/* sock */
+				p  = (char*)VAL_STRING(ROW_VALUES(row) + 2);
+				if (VAL_NULL(ROW_VALUES(row)+2) || !p || *p == '\0') {
+					sock = NULL;
+				} else {
+					if (parse_phostport(p, strlen(p), &host.s, &host.len,
+					    &port, &proto) != 0) {
+						LM_ERR("bad socket <%s>...ignoring\n", p);
+						sock = NULL;
+					} else {
+						sock = grep_sock_info(&host, (unsigned short)port, proto);
+						if (!sock)
+							LM_DBG("non-local socket <%s>...ignoring\n", p);
+					}
+				}
+
+				/* flags */
+				dbflags = VAL_BITMAP(ROW_VALUES(row) + 3);
+
+				/* write sock and flags */
+				memcpy(buf, &sock, sizeof sock);
+				buf += sizeof sock;
+				memcpy(buf, &dbflags, sizeof dbflags);
+				buf += sizeof dbflags;
+
+				/* write path */
+				memcpy(buf, &p1_len, sizeof p1_len);
+				buf += sizeof p1_len;
+				memcpy(buf, p1, p1_len);
+				buf += p1_len;
+
+				len -= needed;
 			}
 
-			/* flags */
-			dbflags = VAL_BITMAP(ROW_VALUES(row) + 3);
+			if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
+				if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
+					LM_ERR("fetching rows (1)\n");
+					goto error;
+				}
+			} else
+				break;
 
-			/* write sock and flags */
-			memcpy(cp, &sock, sizeof(sock));
-			cp = (char*)cp + sizeof(sock);
-			memcpy(cp, &dbflags, sizeof(dbflags));
-			cp = (char*)cp + sizeof(dbflags);
-
-			/* write path */
-			memcpy(cp, &p1_len, sizeof(p1_len));
-			cp = (char*)cp + sizeof(p1_len);
-			memcpy(cp, p1, p1_len);
-			cp = (char*)cp + p1_len;
-
-			len -= needed;
-		} /* row cycle */
+		} while (RES_ROW_N(res) > 0);
 
 		ul_dbf.free_result(ul_dbh, res);
-	} /* domain cycle */
+	}
 
-	/* len < 0 is possible, if size of the buffer < sizeof(c->c.len) */
+	/* len < 0 is possible, if size of the buffer < sizeof c->c.len */
 	if (len >= 0)
-		memset(cp, 0, sizeof(p_len));
+		memset(buf, 0, sizeof p_len);
 
 	/* Shouldn't happen */
-	if (shortage > 0 && len > shortage) {
+	if (shortage > 0 && len > shortage)
 		abort();
-	}
 
 	shortage -= len;
 
 	return shortage > 0 ? shortage : 0;
-}
 
+error:
+	if (res)
+		ul_dbf.free_result(ul_dbh, res);
+	return -1;
+}
 
 
 static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,

@@ -109,6 +109,7 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask)
 int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 {
 	char *p, *lim;
+	char *crt_flag;
 	str name;
 	struct flag_entry *e;
 	int ret = 0;
@@ -117,14 +118,15 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 		return 0;
 
 	lim = flags->s + flags->len;
+	crt_flag = flags->s;
 	for (p = flags->s; p <= lim; p++) {
 
 		if (p == lim || *p == delim) {
 
-			name.s   = flags->s;
-			name.len = p - flags->s;
+			name.s   = crt_flag;
+			name.len = p - crt_flag;
 			for (e = flag_lists[type]; e; e = e->next) {
-				if (e->name.len == p - flags->s &&
+				if (e->name.len == p - crt_flag &&
 				    str_strcmp(&e->name, &name) == 0) {
 
 					ret |= 1 << e->bit;
@@ -132,7 +134,7 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
 				}
 			}
 
-			flags->s = p + 1;
+			crt_flag = p + 1;
 		}
 	}
 
@@ -190,6 +192,7 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 	it->next = *flag_list;
 	*flag_list = it;
 
+	LM_DBG("New flag: [ %.*s : %d ][%d]\n", fn.len, fn.s, it->bit, flag_type);
 	return it->bit;
 }
 

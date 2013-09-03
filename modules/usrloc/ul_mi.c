@@ -95,6 +95,7 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t
 	struct mi_node *node;
 	struct mi_attr *attr;
 	ucontact_t* c;
+	str st;
 	char *p;
 	int len;
 
@@ -189,8 +190,8 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t
 			return -1;
 
 		/* cflags */
-		p = int2str((unsigned long)c->cflags, &len);
-		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Cflags", 5, p, len);
+		st = bitmask_to_flag_list(FLAG_TYPE_BRANCH, c->cflags);
+		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Cflags", 6, st.s, st.len);
 		if (node==0)
 			return -1;
 
