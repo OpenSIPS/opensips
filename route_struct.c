@@ -635,3 +635,19 @@ void print_actions(struct action* a)
 }	
 
 
+int is_mod_func_used(struct action *a, char *name, int param_no)
+{
+	cmd_export_t *cmd;
+	while(a) {
+		if (a->type==MODULE_T) {
+			/* first param is the name of the function */
+			cmd = (cmd_export_t*)a->elem[0].u.data;
+			if (strcasecmp(cmd->name, name)==0 &&
+			(param_no==cmd->param_no || param_no==-1) )
+				return 1;
+		}
+		a = a->next;
+	}
+
+	return 0;
+}
