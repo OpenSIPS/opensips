@@ -144,9 +144,9 @@ inline static void _set_fr_retr( struct retr_buf *rb, int retr )
 
 	if (!fr_avp2timer(&timer)) {
 		LM_DBG("FR_TIMER = %llu\n", timer);
-		set_timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
+		set_1timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
 	} else {
-		set_timer(&rb->fr_timer, FR_TIMER_LIST, 0);
+		set_1timer(&rb->fr_timer, FR_TIMER_LIST, 0);
 	}
 }
 
