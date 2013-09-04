@@ -167,7 +167,7 @@ static int mod_init(void)
 	 * if authentication is required */
 	if(load_uac_auth_api(&uac_auth_api)<0)
 	{
-		LM_DBG("authentication functionality disabled:"
+		LM_INFO("authentication functionality disabled:"
 				" load uac_auth first to enable it\n");
 		uac_auth_loaded = 0;
 	}
