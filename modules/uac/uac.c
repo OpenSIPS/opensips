@@ -109,7 +109,7 @@ static cmd_export_t cmds[]={
 	{"uac_restore_to",  (cmd_function)w_restore_to,   0,
 			0, 0,
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_auth",          (cmd_function)w_uac_auth,       0,
+	{"uac_auth",        (cmd_function)w_uac_auth,     0,
 			0, 0,
 			FAILURE_ROUTE },
 	{0,0,0,0,0,0}
@@ -168,6 +168,21 @@ static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
 
+	if ( is_script_func_used("uac_auth", -1) ) {
+		/* load the UAC_AUTH API as uac_auth() is invoked from script */
+		if(load_uac_auth_api(&uac_auth_api)<0){
+			LM_ERR("can't load UAC_AUTH API, needed for uac_auth()\n");
+			goto error;
+		}
+	}
+
+	/* load the TM API - FIXME it should be loaded only
+	 * if NO_RESTORE and AUTH */
+	if (load_tm_api(&uac_tmb)!=0) {
+		LM_ERR("can't load TM API\n");
+		goto error;
+	}
+
 	if (restore_mode_str && *restore_mode_str) {
 		if (strcasecmp(restore_mode_str,"none")==0) {
 			restore_mode = UAC_NO_RESTORE;
@@ -182,72 +197,64 @@ static int mod_init(void)
 		}
 	}
 
-	rr_from_param.len = strlen(rr_from_param.s);
-	rr_to_param.len = strlen(rr_to_param.s);
-	if ( (rr_from_param.len==0 || rr_to_param.len==0) &&
-	restore_mode!=UAC_NO_RESTORE)
-	{
-		LM_ERR("rr_store_param cannot be empty if FROM is restoreable\n");
-		goto error;
-	}
+	if ( is_script_func_used("uac_replace_from", -1) ||
+	is_script_func_used("uac_replace_to", -1) ) {
 
-	uac_passwd.len = strlen(uac_passwd.s);
+		/* replace TO/FROM stuff is used, get prepared */
 
-	/* load the TM API - FIXME it should be loaded only
-	 * if NO_RESTORE and AUTH */
-	if (load_tm_api(&uac_tmb)!=0) {
-		LM_ERR("can't load TM API\n");
-		goto error;
-	}
-
-	/* load the UAC_AUTH API - FIXME it should be loaded only
-	 * if uac_auth() is invoked from script */
-	if(load_uac_auth_api(&uac_auth_api)<0){
-		LM_ERR("can't load UAC_AUTH API\n");
-		goto error;
-	}
-
-	if (restore_mode!=UAC_NO_RESTORE) {
-		/* load the RR API */
-		if (load_rr_api(&uac_rrb)!=0) {
-			LM_ERR("can't load RR API\n");
+		rr_from_param.len = strlen(rr_from_param.s);
+		rr_to_param.len = strlen(rr_to_param.s);
+		if ( (rr_from_param.len==0 || rr_to_param.len==0) &&
+		restore_mode!=UAC_NO_RESTORE) {
+			LM_ERR("rr_store_param cannot be empty if FROM is restoreable\n");
 			goto error;
 		}
 
-		if (restore_mode==UAC_AUTO_RESTORE) {
-			/* we need the append_fromtag on in RR */
-			if (!force_dialog && !uac_rrb.append_fromtag) {
-				LM_ERR("'append_fromtag' RR param is not enabled!"
-					" - required by AUTO restore mode\n");
+		uac_passwd.len = strlen(uac_passwd.s);
+
+		if (restore_mode!=UAC_NO_RESTORE) {
+			/* load the RR API */
+			if (load_rr_api(&uac_rrb)!=0) {
+				LM_ERR("can't load RR API\n");
 				goto error;
 			}
 
-			/* trying to load dialog module */
-			memset(&dlg_api, 0, sizeof(struct dlg_binds));
-			if (load_dlg_api(&dlg_api)!=0) {
-				if (force_dialog) {
-					LM_ERR("cannot force dialog. dialog module not loaded\n");
+			if (restore_mode==UAC_AUTO_RESTORE) {
+				/* we need the append_fromtag on in RR */
+				if (!force_dialog && !uac_rrb.append_fromtag) {
+					LM_ERR("'append_fromtag' RR param is not enabled!"
+						" - required by AUTO restore mode\n");
 					goto error;
 				}
-				LM_DBG("failed to find dialog API - is dialog module loaded?\n");
-			} else {
-				if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
-					 parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
-					LM_ERR("cannot set correct store parameters\n");
-					goto error;
-				}
-			}
 
-			/* get all requests doing loose route */
-			if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
-				LM_ERR("failed to install RR callback\n");
-				goto error;
+				/* trying to load dialog module */
+				memset(&dlg_api, 0, sizeof(struct dlg_binds));
+				if (load_dlg_api(&dlg_api)!=0) {
+					if (force_dialog) {
+						LM_ERR("cannot force dialog. dialog module not loaded\n");
+						goto error;
+					}
+					LM_DBG("failed to find dialog API - is dialog module loaded?\n");
+				} else {
+					if ( (parse_store_bavp(&store_to_bavp, &to_bavp_spec) ||
+					parse_store_bavp(&store_from_bavp, &from_bavp_spec))) {
+						LM_ERR("cannot set correct store parameters\n");
+						goto error;
+					}
+				}
+
+				/* get all requests doing loose route */
+				if (uac_rrb.register_rrcb( rr_checker, 0, 2)!=0) {
+					LM_ERR("failed to install RR callback\n");
+					goto error;
+				}
 			}
 		}
-	}
 
-	/* init from replacer */
-	init_from_replacer();
+		/* init from replacer */
+		init_from_replacer();
+
+	}
 
 	return 0;
 error:
