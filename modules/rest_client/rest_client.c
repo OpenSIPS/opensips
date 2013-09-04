@@ -69,17 +69,23 @@ static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
  */
 static cmd_export_t cmds[] = {
 	{ "rest_get",(cmd_function)w_rest_get, 2, fixup_rest_get, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
 	{ "rest_get",(cmd_function)w_rest_get, 3, fixup_rest_get, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
 	{ "rest_get",(cmd_function)w_rest_get, 4, fixup_rest_get, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_post",(cmd_function)w_rest_post, 4, fixup_rest_post, 0, 
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_post",(cmd_function)w_rest_post, 5, fixup_rest_post, 0, 
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
-	{ "rest_post",(cmd_function)w_rest_post, 6, fixup_rest_post, 0, 
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+	{ "rest_post",(cmd_function)w_rest_post, 4, fixup_rest_post, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+	{ "rest_post",(cmd_function)w_rest_post, 5, fixup_rest_post, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
+	{ "rest_post",(cmd_function)w_rest_post, 6, fixup_rest_post, 0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+		ONREPLY_ROUTE|STARTUP_ROUTE|TIMER_ROUTE },
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
