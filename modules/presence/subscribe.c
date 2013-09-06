@@ -2173,6 +2173,8 @@ int get_db_subs_auth(subs_t* subs, int* found)
 	pa_dbf.free_result(pa_db, result);
 	return 0;
 error:
+	if (result)
+		pa_dbf.free_result(pa_db, result);
 	return -1;
 }
 
