@@ -1215,13 +1215,17 @@ after_unlock5:
 		LM_DBG("sequential request successfully processed (dst_leg=%d)\n",
 			dst_leg);
 
+		/* if there is a lifetime update, the dlg_callbacks will want
+		 * to know. fetch it before running the callbacks */
+		timeout = get_dlg_timeout_update(req);
+		if (timeout != 0)
+			dlg->lifetime = timeout;
+
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
-		timeout = get_dlg_timeout_update(req);
 		/* update timer during sequential request? */
 		if (timeout != 0) {
-			dlg->lifetime = timeout;
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
 		}
