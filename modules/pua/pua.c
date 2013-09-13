@@ -98,7 +98,7 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-static int update_pua(ua_pres_t* p, unsigned int hash_code);
+static int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final);
 
 static int db_restore(void);
 static void db_update(unsigned int ticks,void *param);
@@ -613,7 +613,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 						"refresh PUBLISH desired_expires=%d - expires=%d\n",
 						p->desired_expires, p->expires);
 
-					if(update_pua(p, i)< 0)
+					if(update_pua(p, i, 0)< 0)
 					{
 						LM_ERR("while updating record\n");
 						lock_release(&HashT->p_records[i].lock);
@@ -625,6 +625,10 @@ static void hashT_clean(unsigned int ticks,void *param)
 
 				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 						p->pres_uri->s);
+				if(update_pua(p, i, 1)< 0)
+				{
+					LM_ERR("while updating record\n");
+				}
 				/* delete it */
 				q = p->next;
 				delete_htable_safe(p, p->hash_index);
@@ -637,20 +641,27 @@ static void hashT_clean(unsigned int ticks,void *param)
 	}
 }
 
-int update_pua(ua_pres_t* p, unsigned int hash_code)
+int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 {
 	str* str_hdr= NULL;
 	int expires;
 	int result;
-	
-	if(p->desired_expires== 0)
-		expires= 3600;
+
+	if(final > 0)
+	{
+		expires= 0;
+		p->desired_expires= 0;
+	}
 	else
-		expires= p->desired_expires- (int)time(NULL);
+	{
+		if(p->desired_expires== 0)
+			expires= 3600;
+		else
+			expires= p->desired_expires- (int)time(NULL);
 
-	if(expires < min_expires)
-		expires = min_expires;
-
+		if(expires < min_expires)
+			expires = min_expires;
+	}
 	if(p->watcher_uri== NULL)
 	{
 		str met= {"PUBLISH", 7};
@@ -671,7 +682,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code)
 			LM_ERR("while building extra_headers\n");
 			goto error;
 		}
-		LM_DBG("str_hdr:\n%.*s\n ", str_hdr->len, str_hdr->s);
+		LM_DBG("str_hdr:\n%.*s expires:%d\n ", str_hdr->len, str_hdr->s, expires);
 
 		cb_param = PRES_HASH_ID(p);
 
