@@ -65,7 +65,7 @@ event_id_t evi_publish_event(str event_name)
 		}
 	} else if (events_no == max_alloc_events) {
 		max_alloc_events *= 2;
-		events = shm_realloc(events, max_alloc_events);
+		events = shm_realloc(events, max_alloc_events * sizeof(evi_event_t));
 		if (!events) {
 			LM_ERR("no more shm memory to hold %d events\n", max_alloc_events);
 			return EVI_ERROR;
