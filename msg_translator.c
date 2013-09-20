@@ -646,7 +646,6 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("invalid op for data lump (%x)\n", r->op);
 			}
 		}
-		LM_DBG("new len is %d after before\n",new_len);
 skip_before:
 		if (only_before)
 			continue;
@@ -672,7 +671,6 @@ skip_before:
 			default:
 				LM_CRIT("op for data lump (%x)\n", r->op);
 		}
-		LM_DBG("new len is %d after main\n",new_len);
 		for (r=t->after;r;r=r->after){
 			switch(r->op){
 				case LUMP_ADD:
@@ -697,7 +695,6 @@ skip_before:
 					LM_CRIT("invalid op for data lump (%x)\n", r->op);
 			}
 		}
-		LM_DBG("new len is %d after after\n",new_len);
 skip_after:
 		; /* to make gcc 3.* happy */
 	}
@@ -1067,9 +1064,9 @@ skip_after:
 					memcpy(new_buf+offset, orig+s_offset,size);
 					offset+=size;
 					s_offset+=size;
-					if (t->op==LUMP_DEL)
-						last_del=t->u.offset;
 				}
+				if (t->op==LUMP_DEL)
+					last_del=t->u.offset;
 				/* process before  */
 				for(r=t->before;r;r=r->before){
 					switch (r->op){
