@@ -71,6 +71,7 @@
  *  2007-01-25  disable_dns_failover option added (bogdan)
  *  2012-01-19  added TCP keepalive support
  *  2012-12-06  added event_route (razvanc)
+ *  2013-05-23  added NAPTR lookup option (dsandras)
  */
 
 
@@ -312,6 +313,7 @@ extern int line;
 %token DNS
 %token REV_DNS
 %token DNS_TRY_IPV6
+%token DNS_TRY_NAPTR
 %token DNS_RETR_TIME
 %token DNS_RETR_NO
 %token DNS_SERVERS_NO
@@ -652,6 +654,8 @@ assign_stm: DEBUG EQUAL snumber {
 		| REV_DNS EQUAL error { yyerror("boolean value expected"); }
 		| DNS_TRY_IPV6 EQUAL NUMBER   { dns_try_ipv6=$3; }
 		| DNS_TRY_IPV6 error { yyerror("boolean value expected"); }
+		| DNS_TRY_NAPTR EQUAL NUMBER   { dns_try_naptr=$3; }
+		| DNS_TRY_NAPTR error { yyerror("boolean value expected"); }
 		| DNS_RETR_TIME EQUAL NUMBER   { dns_retr_time=$3; }
 		| DNS_RETR_TIME error { yyerror("number expected"); }
 		| DNS_RETR_NO EQUAL NUMBER   { dns_retr_no=$3; }
