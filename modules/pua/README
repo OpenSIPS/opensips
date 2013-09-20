@@ -2,16 +2,15 @@ Presence User Agent Module
 
 Anca-Maria Vamanu
 
-   voice-system.ro
+   Voice Sistem SRL
 
 Edited by
 
 Anca-Maria Vamanu
 
-   Copyright © 2006 voice-system.ro
+   Copyright © 2006 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-21 10:45:05 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -143,7 +142,7 @@ modparam("pua", "db_table", "pua")
 
    The inferior expires limit for both Publish and Subscribe.
 
-   Default value is “0”.
+   Default value is “300”.
 
    Example 1.4. Set min_expires parameter
 ...
