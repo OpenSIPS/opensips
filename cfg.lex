@@ -194,6 +194,7 @@ NEXT_BRANCHES	"next_branches"
 USE_BLACKLIST	"use_blacklist"
 UNUSE_BLACKLIST	"unuse_blacklist"
 CACHE_STORE		"cache_store"
+CACHE_RAW_REDIS	"cache_raw_redis"
 CACHE_FETCH		"cache_fetch"
 CACHE_COUNTER_FETCH	"cache_counter_fetch"
 CACHE_REMOVE	"cache_remove"
@@ -521,6 +522,8 @@ IMPORTFILE      "import_file"
 
 <INITIAL>{CACHE_STORE}		{	count(); yylval.strval=yytext;
 									return CACHE_STORE; }
+<INITIAL>{CACHE_RAW_REDIS}	{	count(); yylval.strval=yytext;
+									return CACHE_RAW_REDIS; }
 <INITIAL>{CACHE_FETCH}		{	count(); yylval.strval=yytext;
 									return CACHE_FETCH; }
 <INITIAL>{CACHE_COUNTER_FETCH}	{	count(); yylval.strval=yytext;

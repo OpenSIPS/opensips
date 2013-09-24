@@ -282,6 +282,7 @@ extern int line;
 %token SCTP
 %token NULLV
 %token CACHE_STORE
+%token CACHE_RAW_REDIS
 %token CACHE_FETCH
 %token CACHE_COUNTER_FETCH
 %token CACHE_REMOVE
@@ -2745,7 +2746,58 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.data = $9;
 								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
 							}
-
+		| CACHE_RAW_REDIS LPAREN STRING COMMA STRING COMMA STRING COMMA STRING 
+								RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = STR_ST; 
+								elems[2].u.data = $7;
+								elems[3].type = STR_ST; 
+								elems[3].u.data = $9; 
+								$$ = mk_action(CACHE_RAW_REDIS_T, 4, elems, line); 
+							}
+		| CACHE_RAW_REDIS LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA NUMBER 
+								RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = STR_ST; 
+								elems[2].u.data = $7;
+								elems[3].type = STR_ST; 
+								elems[3].u.data = $9; 
+								elems[4].type = NUMBER_ST; 
+								elems[4].u.number = $11;
+								$$ = mk_action(CACHE_RAW_REDIS_T, 5, elems, line); 
+							}
+		| CACHE_RAW_REDIS LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA script_var
+								RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = STR_ST; 
+								elems[2].u.data = $7;
+								elems[3].type = STR_ST; 
+								elems[3].u.data = $9;
+								elems[4].type = SCRIPTVAR_ST; 
+								elems[4].u.data = $11;
+								$$ = mk_action(CACHE_RAW_REDIS_T, 5, elems, line); 
+							}
+		| CACHE_RAW_REDIS LPAREN STRING COMMA STRING COMMA STRING COMMA script_var 
+								RPAREN { 
+								elems[0].type = STR_ST; 
+								elems[0].u.data = $3; 
+								elems[1].type = STR_ST; 
+								elems[1].u.data = $5; 
+								elems[2].type = STR_ST; 
+								elems[2].u.data = $7;
+								elems[3].type = SCRIPTVAR_ST; 
+								elems[3].u.data = $9; 
+								$$ = mk_action(CACHE_RAW_REDIS_T, 4, elems, line); 
+							}
 		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN { 
 									mk_action2( $$, CACHE_REMOVE_T,
 													STR_ST,

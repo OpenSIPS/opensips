@@ -63,6 +63,7 @@ typedef void (cachedb_destroy_f)(cachedb_con *con);
 typedef int (cachedb_get_f)(cachedb_con *con,str *attr,str *val);
 typedef int (cachedb_getcounter_f)(cachedb_con *con,str *attr,int *val);
 typedef int (cachedb_set_f)(cachedb_con *con,str *attr,str *val,int expires);
+typedef int (cachedb_raw_redis_f)(cachedb_con *con,str *rcmd,str *attr,str *val,int expires);
 typedef int (cachedb_remove_f)(cachedb_con *con,str *attr);
 typedef int (cachedb_add_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 typedef int (cachedb_sub_f)(cachedb_con *con,str *attr,int val,int expires,int *new_val);
@@ -81,6 +82,7 @@ typedef struct cachedb_funcs_t {
 	cachedb_get_f			*get;
 	cachedb_getcounter_f	*get_counter;
 	cachedb_set_f			*set;
+	cachedb_raw_redis_f		*raw_redis;
 	cachedb_remove_f		*remove;
 	cachedb_add_f			*add;
 	cachedb_sub_f			*sub;
@@ -105,6 +107,7 @@ int register_cachedb(cachedb_engine* cde_entry);
 
 /* functions to be used from script */
 int cachedb_store(str* cachedb_engine, str* attr, str* val,int expires);
+int cachedb_raw_redis(str* cachedb_engine, str* rcmd, str* attr, str* val,int expires);
 int cachedb_remove(str* cachedb_engine, str* attr);
 int cachedb_fetch(str* cachedb_engine, str* attr, str* val);
 int cachedb_counter_fetch(str* cachedb_engine, str* attr, int* val);

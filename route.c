@@ -75,6 +75,7 @@
 #include "mem/mem.h"
 #include "xlog.h"
 #include "evi/evi_modules.h"
+#include "cmd.h"
 
 
 /* main routing script table  */
@@ -658,6 +659,55 @@ static int fix_actions(struct action* a)
 						}
 					}
 				}
+				break;
+			case CACHE_RAW_REDIS_T:
+				/* cmd name */
+				s.s = (char*)t->elem[1].u.data;
+				s.len = strlen(s.s);
+				if(s.len==0) {
+					LM_ERR("param 2 is empty string!\n");
+					return E_CFG;
+				}
+
+				if(pv_parse_format(&s ,&model) || model==NULL) {
+						LM_ERR("wrong format [%s] for cmd param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+				}
+				t->elem[1].u.data = (void*)model;
+				
+				/* value */
+				int cmdtype = find_cmd_type(s.s);
+				if(cmdtype == -1) {
+					s.s = (char*)t->elem[3].u.data;
+					s.len = strlen(s.s);
+					if(s.len==0) {
+						LM_ERR("param 4 is empty string!\n");
+						return E_CFG;
+					}
+
+					if(pv_parse_format(&s ,&model) || model==NULL) {
+						LM_ERR("wrong format [%s] for value param!\n",s.s);
+						ret=E_BUG;
+						goto error;
+					}
+					t->elem[3].u.data = (void*)model;
+				}
+
+				/* attr name */
+				s.s = (char*)t->elem[2].u.data;
+				s.len = strlen(s.s);
+				if(s.len==0) {
+					LM_ERR("param 3 is empty string!\n");
+					return E_CFG;
+				}
+
+				if(pv_parse_format(&s ,&model) || model==NULL) {
+						LM_ERR("wrong format [%s] for attr param!\n", s.s);
+						ret=E_BUG;
+						goto error;
+				}
+				t->elem[2].u.data = (void*)model;
 				break;
 			case SET_ADV_ADDR_T:
 				s.s = (char *)t->elem[0].u.data;
