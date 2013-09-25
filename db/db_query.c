@@ -241,8 +241,10 @@ build_query:
 
 				/* if we have a PS, leave the function handling prep stmts
 				   in the module to free the rows once it's done */
-				if (!CON_HAS_PS(_h))
+				if (!CON_HAS_PS(_h)) {
 					shm_free(buffered_rows[i]);
+					buffered_rows[i] = NULL;
+				}
 			}
 
 			if (off + 1 > SQL_BUF_LEN) goto error0;
