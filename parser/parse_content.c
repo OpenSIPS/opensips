@@ -243,6 +243,11 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	number = 0;
 	while (p<end && *p>='0' && *p<='9') {
 		number = number*10 + (*p)-'0';
+		if (number<0) {
+			LM_ERR("number overflow at pos %d in len number [%.*s]\n",
+				(int)(p-buffer),(int)(end-buffer), buffer);
+			return 0;
+		}
 		size ++;
 		p++;
 	}
