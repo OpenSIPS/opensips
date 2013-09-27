@@ -375,6 +375,7 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	}
 	ci.instance = instance;
 
+	attr.s = (char*)VAL_STRING(vals+14);
 	if (VAL_NULL(vals+14) || !attr.s) {
 		attr.s = NULL;
 		attr.len = 0;
