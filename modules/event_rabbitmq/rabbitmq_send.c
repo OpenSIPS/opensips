@@ -251,11 +251,25 @@ static int rmq_reconnect(evi_reply_sock *sock)
 		}
 		amqp_set_sockfd(rmqp->conn, rmqp->sock);
 
-		if (rmq_error("Logging in", amqp_login(rmqp->conn,
+/*
+librabbitmq-0.1-0.2 amqp.h
+RABBITMQ_EXPORT amqp_rpc_reply_t amqp_login(amqp_connection_state_t state,
+                                        char const *vhost,
+                                        int channel_max,
+                                        int frame_max,
+                                        int heartbeat,
+                                        amqp_sasl_method_enum sasl_method, ...);
+
+channel_max: the maximum number of channels per connection
+frame_max: maximum AMQP frame size for client
+*/
+
+		if (rmq_error("Logging in", amqp_login(
+				rmqp->conn,
 				RMQ_DEFAULT_VHOST,
 				0,
 				RMQ_DEFAULT_MAX,
-				0,
+				rmqp->heartbeat,
 				AMQP_SASL_METHOD_PLAIN,
 				rmqp->flags & RMQ_PARAM_USER ? rmqp->user.s : RMQ_DEFAULT_UP,
 				rmqp->flags & RMQ_PARAM_PASS ? rmqp->pass.s : RMQ_DEFAULT_UP)))
@@ -279,14 +293,11 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
 
-	LM_DBG("rmqp->exchange: %s\n", rmqp->exchange.s);
-	LM_DBG("rmqp->routing_key: %s\n", rmqp->routing_key.s);
-
 	/* all checks should be already done */
 	return amqp_basic_publish(rmqp->conn,
 			rmqp->channel,
+			AMQP_EMPTY_BYTES,
 			amqp_cstring_bytes(rmqp->exchange.s),
-			amqp_cstring_bytes(rmqp->routing_key.s),
 			0,
 			0,
 			0,

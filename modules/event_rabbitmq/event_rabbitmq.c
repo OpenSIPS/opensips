@@ -23,32 +23,13 @@
  *  2011-05-xx  created (razvancrainea)
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
 #include "../../sr_module.h"
 #include "../../evi/evi_transport.h"
 #include "../../ut.h"
-#include "../../mod_fix.h"
-
 #include "event_rabbitmq.h"
 #include "rabbitmq_send.h"
+#include <string.h>
 
-#include "../../dprint.h"
-#include "../../mem/mem.h"
-#include "../../mod_fix.h"
-
-/*enhance functions*/
-
-
-static int set_routing_key_f(struct sip_msg* msg, char* _sp, rmq_params_t * rmqp);
-static int fallback_default_exchange_f(rmq_params_t * rmqp);
-static int fixup_routing_key_f(void** param, int param_no);
-
-static char* rk_avp_param = NULL;
-static unsigned short rk_avp_type = 0;
-static int rk_avp_name = -1;
 
 
 /* send buffer */
@@ -61,6 +42,11 @@ static int rmq_buffer_len;
 static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
+
+/**
+ * module parameters
+ */
+static unsigned int heartbeat = 0;
 
 /**
  * exported functions
@@ -78,14 +64,11 @@ static proc_export_t procs[] = {
 	{0,0,0,0,0,0}
 };
 
-/*
- * Script commands: Exported Parameters.
- */
+/* module parameters */
 static param_export_t mod_params[] = {
-	{"routing-key_avp",     STR_PARAM, &rk_avp_param      },
-	{0, 0, 0}
+	{"heartbeat",					INT_PARAM, &heartbeat},
+	{0,0,0}
 };
-
 
 /**
  * module exports
@@ -95,7 +78,7 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	0,							/* exported functions */
-	mod_params,					/* exported parameters */
+	mod_params,							/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
 	0,							/* exported pseudo-variables */
@@ -125,7 +108,7 @@ static evi_export_t trans_export_rmq = {
  */
 static int mod_init(void)
 {
-	LM_NOTICE("initializing module ...\n");
+	LM_NOTICE("initializing module ......\n");
 
 	if (register_event_mod(&trans_export_rmq)) {
 		LM_ERR("cannot register transport functions for RabbitMQ\n");
@@ -137,34 +120,11 @@ static int mod_init(void)
 		return -1;
 	}
 
-	pv_spec_t avp_spec;
-	str rk;
-
-	if (rk_avp_param && *rk_avp_param) {
-		rk.s = rk_avp_param; rk.len = strlen(rk.s);
-		if (pv_parse_spec(&rk, &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
-			LM_ERR("Malformed RMQ AVP definition: %s\n", rk_avp_param);
-			return -1;
-		} else {
-			LM_DBG("Valid RMQ AVP definition - [%s] \n", rk_avp_param);
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &rk_avp_name, &rk_avp_type)!=0)
-		{
-			LM_ERR("Invalid RMQ AVP definition - [%s] \n", rk_avp_param);
-			return -1;
-		}
-	
-		if (fixup_routing_key_f(&rk_avp_param, 1) < 0) {
-			//how to release the rk_avp_param, might have leak??
-			rk_avp_param = NULL;
-			LM_ERR("RMQ AVP Processing Error - [%s] \n", rk_avp_param);
-			return -1;
-		}
-
+	if ( heartbeat <= 0 || heartbeat > 65535) {
+		LM_WARN("heartbeat is disabled according to the modparam configuration\n");
+		heartbeat = 0;
 	} else {
-		rk_avp_name = -1;
-		rk_avp_type = 0;
+		LM_WARN("heartbeat is enabled for [%d] seconds\n", heartbeat);
 	}
 
 	return 0;
@@ -350,6 +310,7 @@ static evi_reply_sock* rmq_parse(str socket)
 				if (dupl_string(&sock->address, begin, socket.s + i) < 0)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
+
 				if (dupl_string(&param->exchange, socket.s + i + 1, 
 							socket.s + len) < 0)
 					goto err;
@@ -368,6 +329,7 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				}
 				sock->flags |= EVI_PORT;
+
 				if (dupl_string(&param->exchange, socket.s + i + 1, 
 							socket.s + len) < 0)
 					goto err;
@@ -389,7 +351,9 @@ success:
 		param->user.s = param->pass.s = RMQ_DEFAULT_UP;
 		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
 		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
+		param->heartbeat = heartbeat;
 	}
+
 	sock->params = param;
 	sock->flags |= EVI_PARAMS | RMQ_FLAG;
 
@@ -576,107 +540,14 @@ static int rmq_raise(struct sip_msg *msg, str* ev_name,
 		LM_ERR("no more shm memory\n");
 		return -1;
 	}
-
 	memcpy(rmqs->msg, rmq_buffer, len);
 	rmqs->sock = sock;
-
-	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
-
-	str rk;
-	// getting rabbitmq routing-key
-	if (rk_avp_param && *rk_avp_param) {
-		rk.s = rk_avp_param; rk.len = strlen(rk.s);
-		LM_DBG("modparam: routing-key_avp is set");
-		// modparam: routing-key_avp is set
-		if (set_routing_key_f(msg, rk_avp_param, rmqp)) {
-			LM_DBG("pvar value processing error\n");
-			//fallback to use default exchange
-			if (fallback_default_exchange_f(rmqp)) {
-				LM_DBG("fallback error");
-			} else {
-				LM_DBG("fallback success");
-			}
-		}
-	} else {
-		// modparam: routing-key_avp is not set
-		LM_DBG("modparam: routing-key_avp is not set");
-		//fallback to use default exchange
-		if (fallback_default_exchange_f(rmqp)) {
-			LM_DBG("fallback error");
-		} else {
-			LM_DBG("fallback success");
-		}
-	}
 
 	if (rmq_send(rmqs) < 0) {
 		LM_ERR("cannot send message\n");
 		shm_free(rmqs);
 		return -1;
 	}
-
-	return 0;
-}
-
-
-static int fixup_routing_key_f(void** param, int param_no) {
-	if (!rk_avp_param) {
-		LM_ERR("Configuration error: NO rk_avp_param\n");
-		return -1;
-	}
-	fixup_pvar_null(param, param_no);
-	return 0;
-}
-
-static int set_routing_key_f(struct sip_msg* msg, char* _sp, rmq_params_t * rmqp) {
-	pv_spec_t *sp;
-    pv_value_t pv_val;
-
-    sp = (pv_spec_t *)_sp;
-
-    if (sp && (pv_get_spec_value(msg, sp, &pv_val) == 0)) {
-		if (pv_val.flags & PV_VAL_STR) {
-	    	if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
-				LM_DBG("pvar value is empty\n");
-				return -1;
-	    	}
-		} else {
-		    LM_DBG("pvar value is invalid\n");
-	    	return -1;
-		}
-    } else {
-		LM_DBG("cannot get the pvar spec\n");
-		return -1;
-    }
-	
-	int length = strlen(pv_val.rs.s);
-	char rk[length];
-	strncpy(rk, pv_val.rs.s, length);
-	rk[length]='\0';
-	char empty[] = "";
-	
-	if (dupl_string(&rmqp->routing_key, rk, empty)) {
-		return -1;
-	}
-
-	return 0;
-}
-
-static int fallback_default_exchange_f(rmq_params_t * rmqp) {
-
-	//fallback the routing-key as the exchange from the rabbitmq's URI
-	if (!rmqp->routing_key.s) {
-		int length = strlen(rmqp->exchange.s);
-		char rk[length];
-		strncpy(rk, rmqp->exchange.s, length);
-		rk[length]='\0';
-		char empty[] = "";
-		
-		if (dupl_string(&rmqp->routing_key, rk, empty)) {
-			return -1;
-		}
-	}
-
-	rmqp->exchange.s = "";
 
 	return 0;
 }
