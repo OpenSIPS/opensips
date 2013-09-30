@@ -68,6 +68,7 @@ typedef struct _rmq_params {
 	int sock;
 	int channel;
 	int flags;
+	int heartbeat;
 } rmq_params_t;
 
 #endif

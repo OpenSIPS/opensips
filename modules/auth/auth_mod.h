@@ -34,7 +34,7 @@
 #include "../signaling/signaling.h"
 #include "../../lock_ops.h"
 
-#define MAX_NONCE_INDEX     100000
+#define MAX_NONCE_INDEX     256000
 #define NBUF_LEN            (MAX_NONCE_INDEX>>3)
 
 /*
