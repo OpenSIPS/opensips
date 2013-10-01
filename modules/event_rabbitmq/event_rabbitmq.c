@@ -44,6 +44,11 @@ static int child_init(int);
 static void destroy(void);
 
 /**
+ * module parameters
+ */
+static unsigned int heartbeat = 0;
+
+/**
  * exported functions
  */
 static evi_reply_sock* rmq_parse(str socket);
@@ -58,6 +63,13 @@ static proc_export_t procs[] = {
 	{"RabbitMQ sender",  0,  0, rmq_process, 1, 0},
 	{0,0,0,0,0,0}
 };
+
+/* module parameters */
+static param_export_t mod_params[] = {
+	{"heartbeat",					INT_PARAM, &heartbeat},
+	{0,0,0}
+};
+
 /**
  * module exports
  */
@@ -66,7 +78,7 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	0,							/* exported functions */
-	0,							/* exported parameters */
+	mod_params,							/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
 	0,							/* exported pseudo-variables */
@@ -96,7 +108,7 @@ static evi_export_t trans_export_rmq = {
  */
 static int mod_init(void)
 {
-	LM_NOTICE("initializing module ...\n");
+	LM_NOTICE("initializing module ......\n");
 
 	if (register_event_mod(&trans_export_rmq)) {
 		LM_ERR("cannot register transport functions for RabbitMQ\n");
@@ -106,6 +118,13 @@ static int mod_init(void)
 	if (rmq_create_pipe() < 0) {
 		LM_ERR("cannot create communication pipe\n");
 		return -1;
+	}
+
+	if ( heartbeat <= 0 || heartbeat > 65535) {
+		LM_WARN("heartbeat is disabled according to the modparam configuration\n");
+		heartbeat = 0;
+	} else {
+		LM_WARN("heartbeat is enabled for [%d] seconds\n", heartbeat);
 	}
 
 	return 0;
@@ -332,6 +351,7 @@ success:
 		param->user.s = param->pass.s = RMQ_DEFAULT_UP;
 		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
 		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
+		param->heartbeat = heartbeat;
 	}
 
 	sock->params = param;
@@ -562,4 +582,5 @@ destroy:
 		shm_free(rmqs);
 	rmq_destroy(sock);
 }
+
 
