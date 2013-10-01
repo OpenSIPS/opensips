@@ -14,7 +14,7 @@
 	<title>Dialog support</title>
 	<para>&osips; is basically <emphasis>only</emphasis> a transaction statefull 
 	proxy, without any dialog support build in. There are many features/services
-	which actually requires a dialog awareness, like storing the information in 
+	which actually require dialog awareness, like storing the information in 
 	the dialog creation stage, information which will be used during the whole 
 	dialog existence.
 	</para>

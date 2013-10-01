@@ -781,14 +781,14 @@ modparam("dialog", "db_flush_vals_profiles", 1)
 
 1.6.37. own_timer_proc (int)
 
-   Whether the dialog timer should be a sepparate process or if
-   the tasks should be done in the global timer process.
+   Whether the dialog timer should be a separate process or if the
+   tasks should be done in the global timer process.
 
    Default value is “0”, run the timer in the global process.
 
    Example 1.37. Set own_timer_proc parameter
 ...
-modparam("dialog", "dlg_id_column", 1)
+modparam("dialog", "own_timer_proc", 1)
 ...
 
 1.6.38. timer_bulk_del_no (int)
@@ -1051,10 +1051,10 @@ $dlg_val(callee) = $ru;
 
 1.7.6.  set_dlg_profile(profile,[value])
 
-   Inserts the current dialog into a profile. Note that the
-   profile does not supports values, this will be silently
-   discarded. Also, there is no check for inserting the same
-   dialog in the same profile for multiple times.
+   Inserts the current dialog into a profile. Note that if the
+   profile does not support values, this will be silently
+   discarded. A dialog may be inserted in the same profile
+   multiple times.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).

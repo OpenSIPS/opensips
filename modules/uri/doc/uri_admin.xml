@@ -317,8 +317,9 @@ if (db_check_from()) {
 		Check if username in the request &uri; belongs to an existing user.
 		</para>
 		<para>
-		As the checking is done against &uri; table (if use_uri_table is set) 
-		or subscriber table.
+			Matching is done against the &uri; table (if
+			<emphasis role='bold'>use_uri_table</emphasis> is set) 
+			or the <emphasis>subscriber</emphasis> table.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.

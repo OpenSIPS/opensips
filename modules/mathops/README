@@ -78,7 +78,7 @@ Chapter 1. Admin Guide
    Default value is “6”.
 
    Example 1.1. Setting the decimal_digits module parameter
-modparam("mathops", "decimal_digits", "10")
+modparam("mathops", "decimal_digits", 10)
 
 1.4. Exported Functions
 
@@ -94,8 +94,8 @@ modparam("mathops", "decimal_digits", "10")
 
    Meaning of the parameters is as follows:
      * expression - String containing a mathematical expression.
-       It can also include pseudo variables. The string parameter
-       can only be given as a string.
+       It can also include pseudo variables. The expression
+       parameter can only be given as a string.
      * result_pvar - pseudo-variable which will hold the result of
        the evaluation. Specified as a quoted string.
 

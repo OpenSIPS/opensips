@@ -1151,7 +1151,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 		<para>
 		Returns true if the current request is associated to a transaction. 
 		The relationship between the request and transaction is defined as
-		follow:
+		follows:
 		</para>
 		<itemizedlist>
 		<listitem>
