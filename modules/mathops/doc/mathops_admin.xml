@@ -59,7 +59,7 @@
 		<example>
 		<title>Setting the decimal_digits module parameter</title>
 		<programlisting format="linespecific">
-modparam("mathops", "decimal_digits", "10")
+modparam("mathops", "decimal_digits", 10)
 </programlisting>
 		</example>
 	</section>
@@ -92,7 +92,7 @@ modparam("mathops", "decimal_digits", "10")
 		<listitem>
 			<para><emphasis>expression</emphasis> - String containing a
 			mathematical expression. It can also include pseudo variables. The
-			<emphasis>string</emphasis> parameter can only be given as a string.
+			<emphasis>expression</emphasis> parameter can only be given as a string.
 			</para>
 		</listitem>
 		<listitem>

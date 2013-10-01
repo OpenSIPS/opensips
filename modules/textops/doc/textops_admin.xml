@@ -371,7 +371,7 @@ if(has_body() &amp;&amp; replace_body_atonce("^.+$", ""))
 			're' - is regular expresion
 			</para>
 			<para>
-			'repl' - is replacement string - may contain pseudo-varibales
+			'repl' - is replacement string - may contain pseudo-variables
 			</para>
 			<para>
 			'flags' - substitution flags (i - ignore case, g - global)
@@ -416,7 +416,7 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\2/ig') )
 			're' - is regular expresion
 			</para>
 			<para>
-			'repl' - is replacement string - may contain pseudo-varibales
+			'repl' - is replacement string - may contain pseudo-variables
 			</para>
 			<para>
 			'flags' - substitution flags (i - ignore case, g - global)
@@ -463,7 +463,7 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\0/i')){$
 			're' - is regular expresion
 			</para>
 			<para>
-			'repl' - is replacement string - may contain pseudo-varibales
+			'repl' - is replacement string - may contain pseudo-variables
 			</para>
 			<para>
 			'flags' - substitution flags (i - ignore case, g - global)
@@ -508,7 +508,7 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 			're' - is regular expresion
 			</para>
 			<para>
-			'repl' - is replacement string - may contain pseudo-varibales
+			'repl' - is replacement string - may contain pseudo-variables
 			</para>
 			<para>
 			'flags' - substitution flags (i - ignore case, g - global)

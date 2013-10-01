@@ -20,8 +20,7 @@ Irina-Maria Stanescu
 
    Copyright © 2005, 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -277,8 +276,8 @@ if (db_check_from()) {
    Check if username in the request URI belongs to an existing
    user.
 
-   As the checking is done against URI table (if use_uri_table is
-   set) or subscriber table.
+   Matching is done against the URI table (if use_uri_table is
+   set) or the subscriber table.
 
    This function can be used from REQUEST_ROUTE.
 
