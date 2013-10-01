@@ -868,7 +868,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    Returns true if the current request is associated to a
    transaction. The relationship between the request and
-   transaction is defined as follow:
+   transaction is defined as follows:
      * non-CANCEL/non-ACK requests - if the request belongs to a
        transaction (it's a retransmision), the function will do a
        standard processing of the retransmission and will

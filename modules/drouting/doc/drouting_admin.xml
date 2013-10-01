@@ -946,7 +946,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">do_routing([[[groupID],flags],gw_whitelist])</function>
+		<function moreinfo="none">do_routing([groupID[, flags[, gw_whitelist]]])</function>
 		</title>
 		<para>
 		Function to trigger routing of the message according to the 
@@ -983,7 +983,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 						destination from the current rules failed.
 					</listitem>
 					<listitem>
-						<emphasis>L</emphasis> - Do strict lenght matching over the
+						<emphasis>L</emphasis> - Do strict length matching over the
 						prefix - actually DR engine will do full number maching and 
 						not prefix matching anymore.
 					</listitem>

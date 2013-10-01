@@ -16,8 +16,7 @@ Anca-Maria Vamanu
 
    Copyright © 2009-2012 www.opensips-solutions.com
    Revision History
-   Revision $Revision$ $Date: 2012-03-22 20:43:49 +0200
-                              (Thu, 22 Mar 2012) $
+   Revision $Revision: 8834 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -68,7 +67,9 @@ Anca-Maria Vamanu
 
         1.4. Exported Functions
 
-              1.4.1. do_routing([[[groupID],flags],gw_whitelist])
+              1.4.1. do_routing([groupID[, flags[,
+                      gw_whitelist]]])
+
               1.4.2. route_to_carrier(carrier_id)
               1.4.3. route_to_gw(gw_id)
               1.4.4. use_next_gw()/next_routing()
@@ -699,7 +700,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
 1.4. Exported Functions
 
-1.4.1.  do_routing([[[groupID],flags],gw_whitelist])
+1.4.1.  do_routing([groupID[, flags[, gw_whitelist]]])
 
    Function to trigger routing of the message according to the
    rules in the database table and the configured parameters.
@@ -723,7 +724,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
             flag, the enging will fallback and use rules with less
             priority or shorter prefix when all the destination
             from the current rules failed.
-          + L - Do strict lenght matching over the prefix -
+          + L - Do strict length matching over the prefix -
             actually DR engine will do full number maching and not
             prefix matching anymore.
           + C - Only check if the dialed number matches any
