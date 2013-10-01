@@ -279,11 +279,14 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
 
+	LM_DBG("rmqp->exchange: %s\n", rmqp->exchange.s);
+	LM_DBG("rmqp->routing_key: %s\n", rmqp->routing_key.s);
+
 	/* all checks should be already done */
 	return amqp_basic_publish(rmqp->conn,
 			rmqp->channel,
-			AMQP_EMPTY_BYTES,
 			amqp_cstring_bytes(rmqp->exchange.s),
+			amqp_cstring_bytes(rmqp->routing_key.s),
 			0,
 			0,
 			0,
