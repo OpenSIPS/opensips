@@ -291,6 +291,7 @@ int registered(struct sip_msg* _m, char* _t, char* _s, char *_c)
 	pv_value_t val;
 	str callid;
 	int res;
+	int_str istr;
 
 	/* get the AOR */
 	if (_s) {
@@ -351,6 +352,15 @@ int registered(struct sip_msg* _m, char* _t, char* _s, char *_c)
 		for( ; ptr ; ptr=ptr->next ) {
 			if (callid.len==0 || (callid.len==ptr->callid.len &&
 			memcmp(callid.s,ptr->callid.s,callid.len)==0 ) ) {
+
+				/* also populate the 'attributes' avp */
+				if (attr_avp_name != -1) {
+				    istr.s = ptr->attr;
+
+				    if (add_avp_last(AVP_VAL_STR, attr_avp_name, istr) != 0)
+				        LM_ERR("Failed to populate attr avp!\n");
+				}
+
 				ul.unlock_udomain((udomain_t*)_t, &aor);
 				LM_DBG("'%.*s' found in usrloc\n", aor.len, ZSW(aor.s));
 				return 1;
