@@ -887,7 +887,7 @@ static int main_loop(void)
 					else {
 						/* wait for first proc to finish the startup route */
 						if(chd_rank == 1 && startup_done!=NULL)
-							while( !(*startup_done) ) usleep(5);
+							while( !(*startup_done) ) {usleep(5);handle_sigs();}
 					}
 				}
 			}
@@ -944,7 +944,7 @@ static int main_loop(void)
 				} else {
 					/* wait for first proc to finish the startup route */
 					if( (si==sctp_listen && i==0) && startup_done!=NULL)
-						while( !(*startup_done) ) usleep(5);
+						while( !(*startup_done) ) {usleep(5);handle_sigs();}
 				}
 			}
 		}
@@ -966,7 +966,7 @@ static int main_loop(void)
 		if (tcp_init_children(&chd_rank, startup_done)<0) goto error;
 		/* wait for the startup route to be executed */
 		if( startup_done!=NULL)
-			while( !(*startup_done) ) usleep(5);
+			while( !(*startup_done) ) {usleep(5);handle_sigs();}
 		/* start tcp+tls master proc */
 		if ( (pid=internal_fork( "TCP main"))<0 ) {
 			LM_CRIT("cannot fork tcp main process\n");
