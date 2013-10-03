@@ -480,7 +480,7 @@ modparam("acc", "multi_leg_info",
     "leg_src=$avp(src);leg_dst=$avp(dst)")
 # for AAA-based accounting, use the names of the AAA AVPs
 modparam("acc", "multi_leg_info",
-    "AAA_LEG_SRC=$avp(src);AAA_LEG_SRC=$avp(dst)")
+    "AAA_LEG_SRC=$avp(src);AAA_LEG_DST=$avp(dst)")
 # for DIAMETER-based accounting, use the DIAMETER AVP ID (as integer)
 modparam("acc", "multi_leg_info",
     "2345=$avp(src);2346=$avp(dst)")
