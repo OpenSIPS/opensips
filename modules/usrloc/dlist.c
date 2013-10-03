@@ -202,12 +202,13 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 					if (val->nul || !flag_list.s)
 						continue;
 
-					LM_DBG("masks: param: %d --- %d :db\n", flags,
-					flag_list_to_bitmask(&flag_list,FLAG_TYPE_BRANCH,FLAG_DELIM));
+					dbflags = flag_list_to_bitmask(&flag_list,
+					                FLAG_TYPE_BRANCH, FLAG_DELIM);
+
+					LM_DBG("masks: param: %d --- %d :db\n", flags, dbflags);
 
 					/* check if contact flags match the given bitmask */
-					if ((flag_list_to_bitmask(&flag_list, FLAG_TYPE_BRANCH,
-					    FLAG_DELIM) & flags) != flags)
+					if ((dbflags & flags) != flags)
 						continue;
 				}
 
@@ -262,9 +263,6 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 							LM_DBG("non-local socket <%s>...ignoring\n", p);
 					}
 				}
-
-				/* flags */
-				dbflags = VAL_BITMAP(ROW_VALUES(row) + 3);
 
 				/* write sock and flags */
 				memcpy(buf, &sock, sizeof sock);
