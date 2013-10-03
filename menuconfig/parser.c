@@ -35,6 +35,7 @@
 #define MENUCONFIG_CFG_PATH_LEN		strlen(MENUCONFIG_CFG_PATH)
 
 static char prev_module[MAX_MODULE_NAME_SIZE];
+static int prev_module_len=0;
 static select_item *prev_item;
 
 /* Parses a single module dependency line */
@@ -56,7 +57,21 @@ int parse_dep_line(char *line,select_menu *parent)
 	mod_name[name_len]=0;
 
 	/* Is this still the previous module ? */
-	if (memcmp(prev_module,mod_name,name_len) != 0) {
+	if (name_len == prev_module_len && memcmp(prev_module,mod_name,name_len) == 0) {
+		/* Previously found module with multiple deps.
+		 * Just add the new dependency */
+		fprintf(output,"found prev module %s with extra deps\n",mod_name);
+
+		mod_dep = p+1;
+		dep_len = (line+len) - mod_dep;
+		mod_dep[dep_len]=0;
+
+		if (add_dependency(prev_item,mod_dep) < 0) {
+			fprintf(output,"Failed to add dependency\n");
+			return -1;
+		}
+	} else {
+		fprintf(output,"found new module %s\n",mod_name);
 		
 		/* nope, new module, get description */
 		mod_desc=p+1;
@@ -90,19 +105,8 @@ int parse_dep_line(char *line,select_menu *parent)
 		prev_item = item;
 
 		strcpy(prev_module,mod_name);
-	} else {
-		/* Previously found module with multiple deps.
-		 * Just add the new dependency */
-
-		mod_dep = p+1;
-		dep_len = (line+len) - mod_dep;
-		mod_dep[dep_len]=0;
-
-		if (add_dependency(prev_item,mod_dep) < 0) {
-			fprintf(output,"Failed to add dependency\n");
-			return -1;
-		}
-	}
+		prev_module_len = name_len;
+	} 
 
 	return 0;
 }
