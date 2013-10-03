@@ -1864,6 +1864,10 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 		}
 	}
 
+	/* set reason to empty (covers cases where we
+	 * exit via CHECK_HEADER) */
+	reason[0] = 0;
+
 	/* Cseq */
 	ret = SV_NO_CSEQ;
 	CHECK_HEADER("", cseq);
@@ -1898,9 +1902,10 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 				}
 			}
 			/* Max-Forwards */
-			if (!(flags & SIP_PARSE_NOMF))
+			if (!(flags & SIP_PARSE_NOMF)) {
 				ret = SV_NO_MF;
 				CHECK_HEADER("", maxforwards);
+			}
 
 			if (msg->REQ_METHOD == METHOD_INVITE) {
 				ret = SV_NO_CONTACT;
