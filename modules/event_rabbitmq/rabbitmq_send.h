@@ -45,3 +45,4 @@ void rmq_free_param(rmq_params_t *rmqp);
 void rmq_destroy(evi_reply_sock *sock);
 
 #endif
+
