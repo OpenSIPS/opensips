@@ -129,59 +129,37 @@ int add_url(int index, char * name){
     LM_DBG("add url (%i . %s)\n", index, name);
 
     int i;
-    if(global->set_list[index].size){
-        LM_DBG("add another url %p\n", global->set_list[index].db_list);
 
-        /* realoc */
-        i = global->set_list[index].size;
+    LM_DBG("add another url %p\n", global->set_list[index].db_list);
 
-        /* db_list realloc */
-        global->set_list[index].db_list =
-            (info_db_t *) shm_realloc(global->set_list[index].db_list,
-            (i+1)* sizeof(info_db_t));
-        global->set_list[index].size +=1;
+    /* realoc */
+    i = global->set_list[index].size;
 
-        /* db_url */
-        global->set_list[index].db_list[i].db_url.s =
-                (char *) shm_malloc(strlen(name) * sizeof(char));
-        global->set_list[index].db_list[i].db_url.len = strlen(name);
-        memcpy(global->set_list[index].db_list[i].db_url.s,
-                name, strlen(name));
+    /* db_list realloc */
+    global->set_list[index].db_list =
+        (info_db_t *) shm_realloc(global->set_list[index].db_list,
+        (i+1)* sizeof(info_db_t));
 
-    
-    }else{
+    if(!global->set_list[index].db_list)
+        MEM_ERR(MEM_SHM);
 
-        LM_DBG("add first set url\n");
+    global->set_list[index].size++;
 
-        i=0;
-        /* alloc set_list index */
-        global->set_list[index].db_list =
-                (info_db_t *) shm_malloc(1 * sizeof(info_db_t));
-        if(!global->set_list[index].db_list)
-            MEM_ERR(MEM_SHM);
-
-        memset(global->set_list[index].db_list, 0, sizeof(info_db_t));
-
-        global->set_list[index].size = 1;
-
-        /* alloc url name */
-        global->set_list[index].db_list[0].db_url.s =
-                (char *) shm_malloc(strlen(name)*sizeof(char));
-        global->set_list[index].db_list[0].db_url.len = strlen(name);
-
-        memcpy(global->set_list[index].db_list[0].db_url.s,
-                name, strlen(name));    
-    }
+    /* db_url */
+    global->set_list[index].db_list[i].db_url.s =
+            (char *) shm_malloc(strlen(name) * sizeof(char));
+    global->set_list[index].db_list[i].db_url.len = strlen(name);
+    memcpy(global->set_list[index].db_list[i].db_url.s,
+            name, strlen(name));
 
     global->set_list[index].db_list[i].flags = CAN_USE | MAY_USE;
     return 0;
 
-    error:
+error:
     return 1;
 }
 
 int add_set(char * name, char * mode){
-    
 
     int nmode = 0;
 
@@ -194,70 +172,39 @@ int add_set(char * name, char * mode){
 
     LM_DBG("add set=%s mode=%i\n", name, nmode);
 
-    if(global){
-        LM_DBG("realloc\n");
-        /* realoc set_list */
-        int i = global->size;
-        global->set_list = (info_set_t *)shm_realloc(global->set_list,
-                                (i+1)*sizeof(info_set_t));
-        if(!global->set_list)
-            MEM_ERR(MEM_SHM);
+	if (!global) {
+        global = shm_malloc(sizeof *global);
 
-        global->size +=1;
-        
-        global->set_list[i].set_name.s =
-                (char *) shm_malloc(strlen(name)*sizeof(char));
-        global->set_list[i].set_name.len = strlen(name);
-        memcpy(global->set_list[i].set_name.s, name, strlen(name));
+		if (!global)
+			MEM_ERR(MEM_SHM);
 
-        /* set mode */
-        global->set_list[i].set_mode = nmode;
+	    memset(global, 0, sizeof *global);
+	}
 
-        global->set_list[i].size = 0 ;
+    /* realloc set_list */
+    int i = global->size;
+    global->set_list = (info_set_t *)shm_realloc(global->set_list,
+                            (i+1)*sizeof(info_set_t));
+    if(!global->set_list)
+        MEM_ERR(MEM_SHM);
 
+    memset(&global->set_list[i], 0, sizeof *global->set_list);
 
+    global->size++;
 
-    }else{
-        LM_DBG("alloc %p %i\n", global, (int)sizeof(info_global_t));
-        /* alloc global */
-        LM_DBG("alloc %p\n", global);
-        global = (info_global_t *) shm_malloc (1 * sizeof(info_global_t));
-        LM_DBG("alloc %p\n", global);
-        
-        if(!global)
-            MEM_ERR(MEM_SHM);
+    global->set_list[i].set_name.s =
+            (char *) shm_malloc(strlen(name)*sizeof(char));
+    global->set_list[i].set_name.len = strlen(name);
+    memcpy(global->set_list[i].set_name.s, name, strlen(name));
 
-        memset(global, 0, 1 * sizeof(info_global_t));
-        LM_DBG("alloc done\n");
+    /* set mode */
+    global->set_list[i].set_mode = nmode;
 
-        /* alloc set array */
-        global->set_list = (info_set_t *) shm_malloc (1 * sizeof(info_set_t));
-        if(!global->set_list)
-            MEM_ERR(MEM_SHM);
-
-        memset(global->set_list, 0, 1 * sizeof(info_set_t));
-
-        /* set array size */
-        global->size = 1;
-
-
-        /* alloc set name */
-        global->set_list[0].set_name.s =
-                (char *) shm_malloc(strlen(name)*sizeof(char));
-        global->set_list[0].set_name.len = strlen(name);
-
-        memcpy(global->set_list[0].set_name.s, name, strlen(name));
-
-        /* set mode */
-        global->set_list[0].set_mode = nmode;
-
-        /* set size */
-        global->set_list[0].size=0;
-    }
+    global->set_list[i].size = 0;
 
     return 0;
 
-    error:
+error:
     return 1;
 }
 
@@ -425,7 +372,7 @@ int virtual_mod_init(void){
 
 
 static void destroy(void){
-	LM_NOTICE("destroy module bla bla...\n");
+	LM_NOTICE("destroying module...\n");
 
         int i, j;
         
