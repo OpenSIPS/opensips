@@ -1307,7 +1307,8 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_INT_VALUE(values+19, cell->legs[DLG_CALLER_LEG].last_gen_cseq);
 				SET_INT_VALUE(values+20, cell->legs[callee_leg].last_gen_cseq);
 
-				set_final_update_cols(values+21, cell, on_shutdown);
+				set_final_update_cols(values+21, cell,
+					(on_shutdown) || (cell->flags&DLG_FLAG_CHANGED)  );
 				SET_INT_VALUE(values+24, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED));
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
