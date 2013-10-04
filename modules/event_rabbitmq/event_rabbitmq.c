@@ -395,8 +395,8 @@ success:
 		param->user.s = param->pass.s = RMQ_DEFAULT_UP;
 		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
 		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
-    param->heartbeat = heartbeat;
 	}
+	param->heartbeat = heartbeat;
 	sock->params = param;
 	sock->flags |= EVI_PARAMS | RMQ_FLAG;
 
