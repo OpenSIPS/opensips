@@ -1268,7 +1268,7 @@ create_dialog("B");
 		injected in-dialog requests (like malicious BYEs).
 		</para>
 		<para>
-		The performed tests are related to CSEQ sequance checking and routing
+		The performed tests are related to CSEQ sequence checking and routing
 		information checking (contact and route set).
 		</para>
 		<para>

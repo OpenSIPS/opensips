@@ -964,7 +964,7 @@ create_dialog("B");
    the function will help to detect the bogus injected in-dialog
    requests (like malicious BYEs).
 
-   The performed tests are related to CSEQ sequance checking and
+   The performed tests are related to CSEQ sequence checking and
    routing information checking (contact and route set).
 
    The function returns true if a dialog exists for the request
