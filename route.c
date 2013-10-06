@@ -749,7 +749,7 @@ static int fix_actions(struct action* a)
 					s.len = strlen(s.s);
 					if (pv_parse_format(&s, &model) || model == NULL)
 					{
-						LM_ERR("wrong fomat [%s] for value param\n",s.s);
+						LM_ERR("wrong format [%s] for value param\n",s.s);
 						ret=E_BUG;
 						goto error;
 					}
