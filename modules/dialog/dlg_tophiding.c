@@ -113,7 +113,8 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 				ct_username_len = ctu.user.len;
 				LM_DBG("Trying to propagate username [%.*s] \n",ct_username_len,
 									ct_username);
-				prefix_len += 1 + /* @ */ + ct_username_len;
+				if (ct_username_len > 0)
+					prefix_len += 1 + /* @ */ + ct_username_len;
 			}
 		}
 	}
