@@ -572,7 +572,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/* script variables */
 			if (!VAL_NULL(values+18))
 				read_dialog_vars( VAL_STR(values+18).s,
-					VAL_STR(values+18).len, dlg);
+					strlen(VAL_STR(values+18).s), dlg);
 
 			/* profiles */
 			if (!VAL_NULL(values+19))
