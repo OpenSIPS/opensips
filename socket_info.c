@@ -867,13 +867,13 @@ int fix_all_socket_lists(void)
 
 	if ((udp_listen==0)
 #ifdef USE_TCP
-			&& (tcp_listen==0)
+			&& (tcp_listen==0 || tcp_disable)
 #ifdef USE_TLS
-			&& (tls_listen==0)
+			&& (tls_listen==0 || tls_disable)
 #endif
 #endif
 #ifdef USE_SCTP
-			&& (sctp_listen==0)
+			&& (sctp_listen==0 || sctp_disable)
 #endif
 	){
 		LM_ERR("no listening sockets\n");
