@@ -82,15 +82,17 @@ int bin_init(str *mod_name, int cmd_type)
 
 /*
  * copies the given string at the 'cpos' position in the buffer
+ * allows null strings (NULL content or NULL param)
  *
  * @return: 0 on success
  */
 int bin_push_str(const str *info)
 {
-	if (!cpos || (cpos - send_buffer + info->len + LEN_FIELD_SIZE) > BUF_SIZE)
+	if (!cpos || (cpos - send_buffer + LEN_FIELD_SIZE + (info ? info->len : 0))
+	              > BUF_SIZE)
 		return -1;
 
-	if (!info || info->len == 0) {
+	if (!info || info->len == 0 || !info->s) {
 		memset(cpos, 0, LEN_FIELD_SIZE);
 		cpos += LEN_FIELD_SIZE;
 		return 0;
