@@ -438,6 +438,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		} else {
 			rec->state = INTERNAL_ERROR_STATE;
 		}
+		pkg_free(new_hdr->s);
+		new_hdr->s = NULL; new_hdr->len = 0;
 		break;
 
 	case 423: /* Interval Too Brief */

@@ -2324,6 +2324,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					extra_headers.len = new_hdr->len +
 								t->uac[0].extra_headers.len;
 					LM_DBG("[%.*s]\n", extra_headers.len, extra_headers.s);
+					pkg_free(new_hdr->s);
+					new_hdr->s = NULL; new_hdr->len = 0;
 
 					b2b_send_indlg_req(dlg, B2B_CLIENT, b2b_key, &t->method,
 							&extra_headers, &t->uac[0].body, 0);
