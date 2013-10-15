@@ -49,10 +49,11 @@ extern int _osp_use_np;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
+extern int _osp_paramstr_location;
+extern char* _osp_paramstr_value;
 extern int _osp_srcdev_avpid;
 extern unsigned short _osp_srcdev_avptype;
 
-static void ospSkipPlus(char* e164);
 static void ospSkipUserParam(char* userinfo);
 static int ospAppendHeader(struct sip_msg* msg, str* header);
 
@@ -81,22 +82,6 @@ void ospCopyStrToBuffer(
 
     strncpy(buffer, source->s, copybytes);
     buffer[copybytes] = '\0';
-}
-
-/*
- * Remove '+' in E164 string
- * param e164 E164 string
- */
-static void ospSkipPlus(
-    char* e164)
-{
-    int size;
-
-    if (*e164 == '+') {
-        size = strlen(e164);
-        memmove(e164, e164 + 1, size - 1);
-        e164[size - 1] = '\0';
-    }
 }
 
 /*
@@ -141,7 +126,6 @@ int ospGetFromUserpart(
                 if (parse_uri(from->uri.s, from->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, fromuser, bufsize);
                     ospSkipUserParam(fromuser);
-                    ospSkipPlus(fromuser);
                     result = 0;
                 } else {
                     LM_ERR("failed to parse From uri\n");
@@ -183,7 +167,6 @@ int ospGetRpidUserpart(
                 if (parse_uri(rpid->uri.s, rpid->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, rpiduser, bufsize);
                     ospSkipUserParam(rpiduser);
-                    ospSkipPlus(rpiduser);
                     result = 0;
                 } else {
                     LM_ERR("failed to parse RPID uri\n");
@@ -226,7 +209,6 @@ int ospGetPaiUserpart(
                 if (parse_uri(pai->uri.s, pai->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, paiuser, bufsize);
                     ospSkipUserParam(paiuser);
-                    ospSkipPlus(paiuser);
                     result = 0;
                 } else {
                     LM_ERR("failed to parse PAI uri\n");
@@ -283,7 +265,6 @@ int ospGetPChargeInfoUserpart(
                     if (parse_uri(pci->uri.s, pci->uri.len, &uri) == 0) {
                         ospCopyStrToBuffer(&uri.user, pciuser, bufsize);
                         ospSkipUserParam(pciuser);
-                        ospSkipPlus(pciuser);
                         result = 0;
                     } else {
                         LM_ERR("failed to parse P-Charge-Info uri\n");
@@ -333,7 +314,6 @@ int ospGetToUserpart(
                 if (parse_uri(to->uri.s, to->uri.len, &uri) == 0) {
                     ospCopyStrToBuffer(&uri.user, touser, bufsize);
                     ospSkipUserParam(touser);
-                    ospSkipPlus(touser);
                     result = 0;
                 } else {
                     LM_ERR("failed to parse To uri\n");
@@ -417,7 +397,6 @@ int ospGetUriUserpart(
         if (parse_sip_msg_uri(msg) >= 0) {
             ospCopyStrToBuffer(&msg->parsed_uri.user, uriuser, bufsize);
             ospSkipUserParam(uriuser);
-            ospSkipPlus(uriuser);
             result = 0;
         } else {
             LM_ERR("failed to parse Request-Line URI\n");
@@ -771,6 +750,7 @@ int ospRebuildDestinationUri(
     int uriparamsize;
     int userparamsize;
     int dnidsize;
+    int paramstrsize;
     int count;
 
     calledsize = strlen(dest->called);
@@ -797,6 +777,8 @@ int ospRebuildDestinationUri(
     uriparamsize = _osp_append_userphone ? USERPHONE.len : 0;
     /* destination network ID parameter */
     dnidsize = (_osp_dnid_location && dest->dnid[0]) ? 1 + strlen(_osp_dnid_param) + 1 + strlen(dest->dnid) : 0;
+    /* parameter string */
+    paramstrsize = (_osp_paramstr_location && _osp_paramstr_value[0]) ? 1 + strlen(_osp_paramstr_value) : 0;
 
     LM_DBG("'%s' (%d) '%s' (%d) '%s' '%s' '%d' '%s' '%s' '%s' '%s' '%s' '%s' (%d) '%s' (%d)\n",
         dest->called,
@@ -819,7 +801,7 @@ int ospRebuildDestinationUri(
     /* "sip:" + called + NP + "@" + host + ";user=phone" + ";_osp_dnid_param=" + dnid + " SIP/2.0" or
        "sip:" + called + NP + ";_osp_dnid_param=" + dnid + "@" + host + ";user=phone" SIP/2.0" */
     /* OpenSIPS will add "<>" for the Contact headers of SIP 3xx messages */
-    if (newuri->len < (4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + 1 + 7 + TRANS.len)) {
+    if (newuri->len < (4 + calledsize + userparamsize + 1 + hostsize + uriparamsize + dnidsize + paramstrsize + 1 + 7 + TRANS.len)) {
         LM_ERR("new uri buffer is too small\n");
         newuri->len = 0;
         return -1;
@@ -877,6 +859,11 @@ int ospRebuildDestinationUri(
         buffer += count;
     }
 
+    if ((_osp_paramstr_location == 1) && (_osp_paramstr_value[0] != '\0')) {
+        count = sprintf(buffer, ";%s", _osp_paramstr_value);
+        buffer += count;
+    }
+
     *buffer++ = '@';
 
     strncpy(buffer, dest->host, newuri->len - (buffer - newuri->s));
@@ -889,6 +876,11 @@ int ospRebuildDestinationUri(
 
     if ((_osp_dnid_location == 2) && (dest->dnid[0] != '\0')) {
         count = sprintf(buffer, ";%s=%s", _osp_dnid_param, dest->dnid);
+        buffer += count;
+    }
+
+    if ((_osp_paramstr_location == 2) && (_osp_paramstr_value[0] != '\0')) {
+        count = sprintf(buffer, ";%s", _osp_paramstr_value);
         buffer += count;
     }
 

@@ -71,6 +71,8 @@ extern int _osp_use_np;
 extern int _osp_append_userphone;
 extern int _osp_dnid_location;
 extern char* _osp_dnid_param;
+extern int _osp_paramstr_location;
+extern char* _osp_paramstr_value;
 extern char _osp_PRIVATE_KEY[];
 extern char _osp_LOCAL_CERTIFICATE[];
 extern char _osp_CA_CERTIFICATE[];
@@ -163,6 +165,8 @@ static param_export_t params[]={
     { "append_userphone",                 INT_PARAM, &_osp_append_userphone },
     { "networkid_location",               INT_PARAM, &_osp_dnid_location},
     { "networkid_parameter",              STR_PARAM, &_osp_dnid_param },
+    { "parameterstring_location",         INT_PARAM, &_osp_paramstr_location},
+    { "parameterstring_value",            STR_PARAM, &_osp_paramstr_value },
     { "source_device_avp",                STR_PARAM, &_osp_srcdev_avp },
     { "source_networkid_avp",             STR_PARAM, &_osp_snid_avp },
     { "custom_info_avp",                  STR_PARAM, &_osp_cinfo_avp },
@@ -342,6 +346,15 @@ static int ospVerifyParameters(void)
         _osp_dnid_param = OSP_DEF_DNIDPARAM;
     }
 
+    if ((_osp_paramstr_location < 0) || (_osp_paramstr_location > 2)) {
+        _osp_paramstr_location = OSP_DEF_PARAMSTRLOC;
+        LM_WARN("parameterstring_location is out of range, reset to %d\n", OSP_DEF_PARAMSTRLOC);
+    }
+
+    if (!(_osp_paramstr_value && *_osp_paramstr_value)) {
+        _osp_paramstr_value = OSP_DEF_PARAMSTRVAL;
+    }
+
     if ((_osp_work_mode == 1) && _osp_srcdev_avp && *_osp_srcdev_avp) {
         avp_str.s = _osp_srcdev_avp;
         avp_str.len = strlen(_osp_srcdev_avp);
@@ -429,6 +442,8 @@ static void ospDumpParameters(void)
     LM_INFO("    append_userphone '%d' ", _osp_append_userphone);
     LM_INFO("    networkid_location '%d' ", _osp_dnid_location);
     LM_INFO("    networkid_parameter '%s' ", _osp_dnid_param);
+    LM_INFO("    parameterstring_location '%d' ", _osp_paramstr_location);
+    LM_INFO("    parameterstring_value '%s' ", _osp_paramstr_value);
     LM_INFO("    max_destinations '%d'\n", _osp_max_dests);
     LM_INFO("    report_networkid '%d'\n", _osp_report_nid);
     LM_INFO("    support_nonsip_protocol '%d'\n", _osp_non_sip);

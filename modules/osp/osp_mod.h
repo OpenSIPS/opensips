@@ -57,6 +57,8 @@
 #define OSP_DEF_USERPHONE               0
 #define OSP_DEF_DNIDLOC                 2
 #define OSP_DEF_DNIDPARAM               "networkid"
+#define OSP_DEF_PARAMSTRLOC             0
+#define OSP_DEF_PARAMSTRVAL             ""
 #define OSP_DEF_SRCIPAVP                "$avp(_osp_source_device_)"
 #define OSP_DEF_SNIDAVP                 "$avp(_osp_source_networkid_)"
 #define OSP_DEF_CINFOS                  8

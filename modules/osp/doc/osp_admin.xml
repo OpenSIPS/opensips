@@ -289,6 +289,29 @@ modparam("osp","networkid_param","networkid")
       </example>
     </section>
     <section>
+      <title><varname>parameterstring_location</varname></title>
+      <para>The parameterstring_location (integer) parameter instructs the OSP module where the parameter string should be appended. The default value is 0</para>
+      <para>0 - parameter string is not appended.</para>
+      <para>1 - parameter string is appended as userinfo parameter.</para>
+      <para>2 - parameter string is appended as URI parameter.</para>
+      <example>
+        <title>Append parameter string location</title>
+        <programlisting format="linespecific">
+modparam("osp","parameterstring_location",0)
+        </programlisting>
+      </example>
+    </section>
+    <section>
+      <title><varname>parameterstring_value</varname></title>
+      <para>The parameterstring_value (string) parameter instructs the OSP module to append the parameter string in outbound URIs. The default value is ""</para>
+      <example>
+        <title>Parameter string value</title>
+        <programlisting format="linespecific">
+modparam("osp","parameterstring_value","")
+        </programlisting>
+      </example>
+    </section>
+    <section>
       <title><varname>source_device_avp</varname></title>
       <para>The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(_osp_source_device_)".  Then the source device IP can be set by "$avp(_osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.</para>
       <example>
