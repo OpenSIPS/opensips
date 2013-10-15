@@ -155,6 +155,28 @@ modparam("cachedb_couchbase", "timeout",5000000);
 	</programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title><varname>lazy_connect</varname> (int)</title>
+		<para>
+			Delay connecting to a bucket until the first time it is used.
+			Connecting to many buckets at startup can be time consuming. This option allows for
+			faster startup by delaying connections until they are needed.
+			This option can be dangerous for untested bucket configurations/settings. Always test
+			first without lazy_connect.
+			This option will show errors in the log during the first access made to a bucket.
+			Default is 0 ( Connect to all buckets on startup )
+		</para>
+		
+		<example>
+		<title>Set <varname>lazy_connect</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_couchbase", "lazy_connect", 1);
+...
+	</programlisting>
+		</example>
+	</section>
 		
 		<example>
 		<title>Use CouchBase servers </title>
