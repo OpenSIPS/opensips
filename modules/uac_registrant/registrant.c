@@ -431,6 +431,8 @@ void reg_tm_cback(struct cell *t, int type, struct tmcb_params *ps)
 		} else {
 			rec->state = INTERNAL_ERROR_STATE;
 		}
+		pkg_free(new_hdr->s);
+		new_hdr->s = NULL; new_hdr->len = 0;
 		break;
 
 	case 423: /* Interval Too Brief */
