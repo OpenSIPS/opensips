@@ -68,6 +68,8 @@ int _osp_use_np = OSP_DEF_USENP;
 int _osp_append_userphone = OSP_DEF_USERPHONE;
 int _osp_dnid_location = OSP_DEF_DNIDLOC;
 char* _osp_dnid_param = OSP_DEF_DNIDPARAM;
+int _osp_paramstr_location = OSP_DEF_PARAMSTRLOC;
+char* _osp_paramstr_value = OSP_DEF_PARAMSTRVAL;
 char _osp_PRIVATE_KEY[OSP_STRBUF_SIZE];
 char _osp_LOCAL_CERTIFICATE[OSP_STRBUF_SIZE];
 char _osp_CA_CERTIFICATE[OSP_STRBUF_SIZE];
