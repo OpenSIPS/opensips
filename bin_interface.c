@@ -39,7 +39,6 @@ static char *cpos;
 
 static char rcv_buf[BUF_SIZE];
 static char *rcv_end;
-static int  rcv_size;
 
 static struct packet_cb_list *reg_modules;
 
@@ -262,16 +261,17 @@ int bin_send(union sockaddr_union *dest)
 		return 0;
 
 	st.s = send_buffer + HEADER_SIZE;
-	st.len = (cpos - send_buffer) - HEADER_SIZE;
+	st.len = bin_send_size - HEADER_SIZE;
 
 	/* compute a checksum of the binary packet content */
 	crc32_uint(&st, (unsigned int *)(send_buffer + BIN_PACKET_MARKER_SIZE));
 
-	LM_DBG("sending packet: %.*s [%d B] from socket %d\n",
-	       (int)(cpos - send_buffer), send_buffer, (int)(cpos - send_buffer),
-	       bin->socket);
+	LM_DBG("sending packet {'%.*s', %d}: %.*s [%d B] from socket %d\n",
+	        *(int *)(send_buffer + HEADER_SIZE), send_buffer + HEADER_SIZE +
+	        LEN_FIELD_SIZE, bin_send_type, bin_send_size, send_buffer, bin_send_size,
+	        bin->socket);
 
-	rc = udp_send(bin, send_buffer, cpos - send_buffer, dest);
+	rc = udp_send(bin, send_buffer, bin_send_size, dest);
 	if (rc == -1)
 		LM_ERR("binary packet UDP send failed!\n");
 
@@ -362,6 +362,8 @@ static void bin_receive_loop(void)
 				goto exit;
 		}
 
+		rcv_end = rcv_buf + rcv_bytes;
+
 #ifndef NO_ZERO_CHECKS
 		if (rcv_bytes < MIN_UDP_PACKET) {
 			LM_DBG("probing packet received len = %d\n", rcv_bytes);
@@ -381,22 +383,17 @@ static void bin_receive_loop(void)
 		}
 
 		get_name(rcv_buf, name);
+		cpos = name.s + name.len + CMD_FIELD_SIZE;
 
 		/* packet will be now processed by a specific module */
 		for (p = reg_modules; p; p = p->next) {
 			if (p->module.len == name.len &&
-					memcmp(name.s, p->module.s, name.len) == 0) {
+			    memcmp(name.s, p->module.s, name.len) == 0) {
 
-				cpos = name.s + name.len;
-				rcv_size = rcv_bytes - HEADER_SIZE - LEN_FIELD_SIZE
-									 - name.len - CMD_FIELD_SIZE;
-				rcv_end = rcv_buf + rcv_bytes;
-
-				cpos += CMD_FIELD_SIZE;
 				LM_DBG("binary Packet CMD: %d. Module: %.*s\n",
-						*(int *)(cpos - CMD_FIELD_SIZE), name.len, name.s);
+						bin_rcv_type, name.len, name.s);
 
-				p->cbf(*(int *)(cpos - CMD_FIELD_SIZE));
+				p->cbf(bin_rcv_type);
 
 				break;
 			}

@@ -35,6 +35,17 @@
 #define CMD_FIELD_SIZE         sizeof(int)
 #define HEADER_SIZE            (BIN_PACKET_MARKER_SIZE + CRC_FIELD_SIZE)
 
+#define bin_send_type \
+	(*(int *)(send_buffer + HEADER_SIZE + LEN_FIELD_SIZE + \
+	  *(int *)(send_buffer + HEADER_SIZE)))
+
+#define bin_rcv_type \
+	(*(int *)(rcv_buf + HEADER_SIZE + LEN_FIELD_SIZE + \
+	  *(int *)(rcv_buf + HEADER_SIZE)))
+
+#define bin_send_size ((int)(cpos - send_buffer))
+#define bin_rcv_size  ((int)(rcv_end - rcv_buf))
+
 #define is_valid_bin_packet(_p) \
 	(memcmp(_p, BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE) == 0)
 
