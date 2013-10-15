@@ -44,6 +44,7 @@
 
 static str nc = {"00000001", 8};
 static str cnonce = {"o", 1};
+static str auth_hdr = {NULL, 0};
 
 static struct uac_credential *crd_list = NULL;
 
@@ -415,7 +416,6 @@ str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
 		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response)
 {
-	static str hdr;
 	char *p;
 	int len;
 	int response_len;
@@ -438,14 +438,17 @@ str* build_authorization_hdr(int code, str *uri,
 				NC_FIELD_LEN + auth_nc_cnonce->nc->len + FIELD_SEPARATOR_UQ_LEN +
 				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce->len + FIELD_SEPARATOR_LEN;
 
-	hdr.s = (char*)pkg_malloc( len + 1);
-	if (hdr.s==0)
+	if (auth_hdr.s || auth_hdr.len)
+		LM_WARN("potential memory leak at addr: %p\n", auth_hdr.s);
+
+	auth_hdr.s = (char*)pkg_malloc( len + 1);
+	if (auth_hdr.s==NULL)
 	{
 		LM_ERR("no more pkg mem\n");
 		goto error;
 	}
 
-	p = hdr.s;
+	p = auth_hdr.s;
 	/* header start */
 	if (code==401)
 	{
@@ -496,20 +499,20 @@ str* build_authorization_hdr(int code, str *uri,
 	add_string( p, FIELD_SEPARATOR_S ALGORITHM_FIELD_S CRLF,
 		FIELD_SEPARATOR_LEN+ALGORITHM_FIELD_LEN+CRLF_LEN);
 
-	hdr.len = p - hdr.s;
+	auth_hdr.len = p - auth_hdr.s;
 
-	if (hdr.len!=len)
+	if (auth_hdr.len!=len)
 	{
 		LM_CRIT("BUG: bad buffer computation "
-			"(%d<>%d)\n",len,hdr.len);
-		pkg_free( hdr.s );
+			"(%d<>%d)\n",len,auth_hdr.len);
+		pkg_free( auth_hdr.s );
+		auth_hdr.s = NULL; auth_hdr.len = 0;
 		goto error;
 	}
 
-	LM_DBG("hdr is <%.*s>\n",
-		hdr.len,hdr.s);
+	LM_DBG("auth_hdr is <%.*s>\n", auth_hdr.len, auth_hdr.s);
 
-	return &hdr;
+	return &auth_hdr;
 error:
 	return 0;
 }
