@@ -3670,8 +3670,10 @@ int pv_parse_format(str *in, pv_elem_p *el)
 	if(in->len == 0)
 	{
 		*el = pkg_malloc(sizeof(pv_elem_t));
-		if(*el == NULL)
+		if(*el == NULL) {
+			LM_ERR("not enough pkg memory for PV element (1)\n");
 			goto error;
+		}
 		memset(*el, 0, sizeof(pv_elem_t));
 		(*el)->text = *in;
 		return 0;
@@ -3685,8 +3687,10 @@ int pv_parse_format(str *in, pv_elem_p *el)
 	{
 		e0 = e;
 		e = pkg_malloc(sizeof(pv_elem_t));
-		if(!e)
+		if(!e) {
+			LM_ERR("not enough pkg memory for PV element (2)\n");
 			goto error;
+		}
 		memset(e, 0, sizeof(pv_elem_t));
 		n++;
 		if(*el == NULL)
@@ -3705,8 +3709,10 @@ int pv_parse_format(str *in, pv_elem_p *el)
 		s.len = in->s+in->len-p;
 		p0 = pv_parse_spec(&s, &e->spec);
 		
-		if(p0==NULL)
+		if(p0==NULL) {
+			LM_ERR("parsing PV spec failed\n");
 			goto error;
+		}
 		if(!is_in_str(p0,in))
 			break;
 		p = p0;
