@@ -413,6 +413,7 @@ void rl_timer(unsigned int ticks, void *param)
 	map_iterator_t it, del;
 	rl_pipe_t **pipe;
 	str *key;
+	void *value;
 	unsigned long now = time(0);
 
 	/* get CPU load */
@@ -455,10 +456,8 @@ void rl_timer(unsigned int ticks, void *param)
 			if ((*pipe)->last_used + rl_expire_time < now) {
 				/* this pipe is engaged in a transaction */
 				del = it;
-				if (iterator_prev(&it) < 0) {
-					LM_DBG("cannot find previous iterator\n");
-					goto next_pipe;
-				}
+				if (iterator_next(&it) < 0)
+					LM_DBG("cannot find next iterator\n");
 				if ((*pipe)->algo == PIPE_ALGO_NETWORK) {
 					lock_get(rl_lock);
 					(*rl_network_count)--;
@@ -466,17 +465,16 @@ void rl_timer(unsigned int ticks, void *param)
 				}
 				LM_DBG("Deleting ratelimit pipe key \"%.*s\"\n",
 						key->len, key->s);
-				if (*pipe != iterator_delete(&del)) {
-					LM_ERR("error while deleting key\n");
-				}
+				value = iterator_delete(&del);
 				/* free resources */
-				shm_free(*pipe);
+				if (value)
+					shm_free(value);
+				continue;
 			} else {
 				/* leave the lock if a cachedb query should be done*/
 				if (RL_USE_CDB(*pipe)) {
 					if (rl_get_counter(key, *pipe) < 0) {
 						LM_ERR("cannot get pipe counter\n");
-						RL_GET_LOCK(i);
 						goto next_pipe;
 					}
 				}
@@ -499,7 +497,6 @@ void rl_timer(unsigned int ticks, void *param)
 				if (RL_USE_CDB(*pipe)) {
 					if (rl_change_counter(key, *pipe, 0) < 0) {
 						LM_ERR("cannot reset counter\n");
-						RL_GET_LOCK(i);
 					}
 				} else {
 					(*pipe)->counter = 0;
