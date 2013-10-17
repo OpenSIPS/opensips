@@ -56,6 +56,7 @@
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
 #include "ucontact.h"        /* update_ucontact */
+#include "ureplication.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
@@ -86,9 +87,13 @@ static void timer(unsigned int ticks, void* param); /*!< Timer handler */
 static int child_init(int rank);                    /*!< Per-child init function */
 static int mi_child_init(void);
 
+static int add_replication_dest(modparam_t type, void *val);
+
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
 extern rw_lock_t *sync_lock;
+extern int skip_replicated_db_ops; 
+
 /*
  * Module parameters and their default values
  */
@@ -122,6 +127,10 @@ int ul_hash_size = 9;
 unsigned int nat_bflag = (unsigned int)-1;
 static char *nat_bflag_str = 0;
 unsigned int init_flag = 0;
+
+/* usrloc data replication using the bin interface */
+int accept_replicated_udata;
+struct replication_dest *replication_dests;
 
 db_con_t* ul_dbh = 0; /* Database connection handle */
 db_func_t ul_dbf;
@@ -166,6 +175,11 @@ static param_export_t params[] = {
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
 	{"nat_bflag",          INT_PARAM, &nat_bflag         },
+    /* data replication through UDP binary packets */
+	{ "accept_replicated_contacts",INT_PARAM, &accept_replicated_udata },
+	{ "replicate_contacts_to",     STR_PARAM|USE_FUNC_PARAM,
+	                            (void *)add_replication_dest           },
+	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops     },
 	{0, 0, 0}
 };
 
@@ -308,6 +322,13 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* register handler for processing usrloc packets from the bin interface */
+	if (accept_replicated_udata &&
+		bin_register_cb(repl_module_name.s, receive_binary_packet) < 0) {
+		LM_ERR("cannot register binary packet callback!\n");
+		return -1;
+	}
+
 	init_flag = 1;
 
 	return 0;
@@ -324,9 +345,9 @@ static int child_init(int _rank)
 			return 0;
 		case DB_ONLY:
 		case WRITE_THROUGH:
-			/* we need connection from working SIP and TIMER and MAIN
-			 * processes only */
-			if (_rank<=0 && _rank!=PROC_TIMER && _rank!=PROC_MAIN)
+			/* we need connection from working SIP, BIN, TIMER and MAIN procs */
+			if (_rank <= 0 && _rank != PROC_BIN &&
+			    _rank != PROC_TIMER && _rank != PROC_MAIN)
 				return 0;
 			break;
 		case WRITE_BACK:
@@ -420,5 +441,47 @@ static void timer(unsigned int ticks, void* param)
 	}
 	if (sync_lock)
 		lock_stop_read(sync_lock);
+}
+
+static int add_replication_dest(modparam_t type, void *val)
+{
+	struct replication_dest *rd;
+	char *host;
+	int hlen, port;
+	int proto;
+	struct hostent *he;
+	str st;
+
+	rd = pkg_malloc(sizeof *rd);
+	memset(rd, 0, sizeof *rd);
+
+	if (parse_phostport(val, strlen(val), &host, &hlen, &port, &proto) < 0) {
+		LM_ERR("bad replication destination IP: '%s'!\n", (char *)val);
+		return -1;
+	}
+
+	if (proto == PROTO_NONE)
+		proto = PROTO_UDP;
+
+	if (proto != PROTO_UDP) {
+		LM_ERR("usrloc replication only supports UDP packets!\n");
+		return -1;
+	}
+
+	st.s = host;
+	st.len = hlen;
+	he = sip_resolvehost(&st, (unsigned short *)&port,
+	                          (unsigned short *)&proto, 0, 0);
+	if (!he) {
+		LM_ERR("cannot resolve host: %.*s\n", hlen, host);
+		return -1;
+	}
+
+	hostent2su(&rd->to, he, 0, port);
+
+	rd->next = replication_dests;
+	replication_dests = rd;
+
+	return 1;
 }
 

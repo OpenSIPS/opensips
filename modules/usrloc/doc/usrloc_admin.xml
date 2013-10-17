@@ -14,7 +14,7 @@
 		<section id="contact-matching-algs">
 		<title>Contact matching</title>
 		<para>
-		How the contacts are matched (dor same AOR - Address of Record) is an 
+		How the contacts are matched (for same AOR - Address of Record) is an
 		important aspect of the usrloc modules, especialy in the context of NAT
 		traversal - this raise mre problems since contacts from different 
 		phones of same users may overlap (if behind NATs with same
@@ -31,25 +31,93 @@
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>contact based only</emphasis> - it strict RFC 3261
-				compiancy - the contact is matched as string and extra checked
-				via callid and cseg (if callid is the same, it must have a 
+				<emphasis>contact based only</emphasis> - strict RFC 3261
+				compliancy - the contact is matched as string and extra checked
+				via callid and cseq (if callid is the same, it must have a
 				higher cseq number, otherwise invalid).
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>contact nad callid based</emphasis> - it an extension
-				of the first case - the contact and callid must matched as 
-				string; the cseg must be higher than the previous one - so be
+				<emphasis>contact and callid based</emphasis> - an extension
+				of the first case - the contact and callid must match as
+				strings; the cseq must be higher than the previous one - so be
 				careful how you deal with REGISTER retransmissions in this 
 				case.
 			</para>
 			</listitem>
 		</itemizedlist>
 		<para>
-		How to control/select the contact maching algorithm, please see the
-		module parameter matching_mode at <xref linkend="matching-mode"/>.
+		For more details on how to control/select the contact matching algorithm,
+		please see the module parameter matching_mode at
+		<xref linkend="matching-mode"/>.
+		</para>
+		</section>
+
+		<section id="usrloc-replication">
+		<title>Contact replication</title>
+		<para>
+		Starting from &osips; 1.11, the <emphasis>usrloc</emphasis> module
+		offers the possibility of performing real-time mirroring of the entire
+		in-memory user location information of one &osips; instance to one or more
+		other instances. This module-to-module communication is UDP-based, and
+		it is done through the <emphasis>Binary Interface</emphasis>.
+		</para>
+		<para>
+		Advantages of replicating user-location data using this feature
+		instead of sending duplicated SIP REGISTER requests:
+		<itemizedlist>
+			<listitem>
+				<para>
+					no message parsing required
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					reduced bandwith usage
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					no additional script logic needed
+				</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		In order to control the DB operations performed by the receiving instance(s),
+		the <emphasis role='bold'><xref linkend="skip_replicated_db_ops"/></emphasis>
+		parameter can be set. To summarise, the replication logic works together
+		with the DB modes as follows:
+		<itemizedlist>
+			<listitem>
+				<para>
+					<emphasis role='bold'>0 (No DB)</emphasis> - only in-memory
+					data is replicated (no DB operations are performed at all)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis role='bold'>1 (Write through) and 2 (Write back)</emphasis>
+					- default behaviour on all instances, <emphasis role='bold'><xref
+						linkend="skip_replicated_db_ops"/></emphasis> can be set
+					on the receiving ones
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis role='bold'>3 (DB only)</emphasis> -
+						data replication is <emphasis role='bold'>OFF</emphasis>
+				</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Configuring both receival and sending of usrloc replication packets is
+		trivial and can be done by using the
+		<emphasis role='bold'><xref linkend="accept_replicated_contacts"/></emphasis> and
+		<emphasis role='bold'><xref linkend="replicate_contacts_to"/></emphasis> parameters of the
+		module.
 		</para>
 		</section>
 	</section>
@@ -94,10 +162,8 @@
 		used by all other modules depending of usrloc module.
 		</para>
 		<para>
-		<para>
 		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
 		Use quoted strings instead!
-		</para>
 		<emphasis>
 			Default value is <quote>NULL</quote> (not set).
 		</emphasis>
@@ -658,6 +724,89 @@ modparam("usrloc", "matching_mode", 1)
 		<programlisting format="linespecific">
 ...
 modparam("usrloc", "cseq_delay", 5)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id='accept_replicated_contacts'
+	         xreflabel="accept_replicated_contacts">
+		<title><varname>accept_replicated_contacts</varname> (integer)</title>
+		<para>
+		Set this to 1 in order to accept and process user-location related
+		information received from other &osips; instances through the
+		<emphasis role='bold'>Binary Interface</emphasis>.
+		</para>
+		<para>
+		Default value is <quote>0</quote> - Binary Interface listeners (if any)
+		will simply ignore any usrloc-related packets
+		</para>
+		<para>
+			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
+		</para>
+		<example>
+		<title>Setting the <varname>accept_replicated_contacts</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "accept_replicated_contacts", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id='replicate_contacts_to'
+	         xreflabel="replicate_contacts_to">
+		<title><varname>replicate_contacts_to</varname> (string)</title>
+		<para>
+		Define a new &osips; instance which will receive all the user-location
+		related information from this machine
+		(<emphasis>addresses-of-record</emphasis>, <emphasis>contacts</emphasis>),
+		organized into specific events (inserts, deletes or updates)
+		</para>
+		<para>
+			This parameter may be set multiple times. It does
+		<emphasis role='bold'>not</emphasis> ignore duplicate entries.
+		</para>
+		<para>
+		Default value is "none" (no replication destinations)
+		</para>
+		<para>
+			More details on the user location replication mechanism are available in <xref linkend="usrloc-replication"/>
+		</para>
+		<example>
+		<title>Setting the <varname>replicate_contacts_to</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "replicate_contacts_to", "192.168.2.182:5062")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id='skip_replicated_db_ops'
+	         xreflabel="skip_replicated_db_ops">
+		<title><varname>skip_replicated_db_ops</varname> (int)</title>
+		<para>
+		Prevent &osips; from performing any DB-related contact operations
+		when events are received over the <emphasis>Binary Interface</emphasis>.
+		This is commonly used to prevent unneeded duplicate operations.
+		</para>
+		<para>
+		Default value is "0" (upon receival of usrloc-related Binary Interface
+		events, DB queries may be freely performed)
+		</para>
+		<para>
+		More details on the user location replication mechanism are available
+		in <xref linkend="usrloc-replication"/>
+		</para>
+		<example>
+		<title>Setting the <varname>skip_replicated_db_ops</varname>
+			parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "skip_replicated_db_ops", 1)
 ...
 </programlisting>
 		</example>

@@ -272,7 +272,7 @@ search_valid_contact:
 	}
 
 done:
-	ul.release_urecord(r);
+	ul.release_urecord(r, 0);
 	ul.unlock_udomain((udomain_t*)_t, &aor);
 	return ret;
 }

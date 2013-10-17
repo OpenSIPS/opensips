@@ -45,6 +45,7 @@
 #include "../../hash_func.h"
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
+#include "ureplication.h"
 
 
 
@@ -889,16 +890,21 @@ void unlock_ulslot(udomain_t* _d, int i)
 /*! \brief
  * Create and insert a new record
  */
-int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
+int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
+                   char is_replicated)
 {
 	if (db_mode!=DB_ONLY) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
 			LM_ERR("inserting record failed\n");
 			return -1;
 		}
+
+		if (!is_replicated && replication_dests)
+			replicate_urecord_insert(*_r);
 	} else {
 		get_static_urecord( _d, _aor, _r);
 	}
+
 	return 0;
 }
 
@@ -945,7 +951,8 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 /*! \brief
  * Delete a urecord from domain
  */
-int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r)
+int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
+                   char is_replicated)
 {
 	struct ucontact* c, *t;
 
@@ -966,16 +973,19 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r)
 		}
 	}
 
+	if (!is_replicated && replication_dests)
+		replicate_urecord_delete(_r);
+
 	c = _r->contacts;
 	while(c) {
 		t = c;
 		c = c->next;
-		if (delete_ucontact(_r, t) < 0) {
+		if (delete_ucontact(_r, t, is_replicated) < 0) {
 			LM_ERR("deleting contact failed\n");
 			return -1;
 		}
 	}
-	release_urecord(_r);
+	release_urecord(_r, is_replicated);
 	return 0;
 }
 

@@ -98,7 +98,7 @@ static inline int star(udomain_t* _d, struct save_ctx *_sctx,
 		}
 	}
 
-	if (ul.delete_urecord(_d, &_sctx->aor, 0) < 0) {
+	if (ul.delete_urecord(_d, &_sctx->aor, NULL, 0) < 0) {
 		LM_ERR("failed to remove record from usrloc\n");
 		
 		     /* Delete failed, try to get corresponding
@@ -407,7 +407,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 						"contacts=%p\n",r,r->contacts);
 					goto error;
 				}
-				if (ul.delete_ucontact( r, r->contacts)!=0) {
+				if (ul.delete_ucontact( r, r->contacts, 0)!=0) {
 					LM_ERR("failed to remove contact\n");
 					goto error;
 				}
@@ -422,7 +422,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		}
 
 		if (r==0) {
-			if (ul.insert_urecord(_d, _a, &r) < 0) {
+			if (ul.insert_urecord(_d, _a, &r, 0) < 0) {
 				rerrno = R_UL_NEW_R;
 				LM_ERR("failed to insert new record structure\n");
 				goto error;
@@ -437,13 +437,13 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 		if ( r->contacts==0 ||
 		ul.get_ucontact(r, &_c->uri, ci->callid, ci->cseq+1, &c)!=0 ) {
-			if (ul.insert_ucontact( r, &_c->uri, ci, &c) < 0) {
+			if (ul.insert_ucontact( r, &_c->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
 			}
 		} else {
-			if (ul.update_ucontact( r, c, ci) < 0) {
+			if (ul.update_ucontact( r, c, ci, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				goto error;
@@ -472,7 +472,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		if (r->contacts) {
 			build_contact(r->contacts,_m);
 		}
-		ul.release_urecord(r);
+		ul.release_urecord(r, 0);
 	}
 
 #ifdef USE_TCP
@@ -485,7 +485,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	return 0;
 error:
 	if (r)
-		ul.delete_urecord(_d, _a, r);
+		ul.delete_urecord(_d, _a, r, 0);
 	return -1;
 }
 
@@ -578,7 +578,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					}
 					LM_DBG("overflow on inserting new contact -> removing <%.*s>\n",
 						c_last->c.len, c_last->c.s);
-					if (ul.delete_ucontact( _r, c_last)!=0) {
+					if (ul.delete_ucontact( _r, c_last, 0)!=0) {
 						LM_ERR("failed to remove contact\n");
 						goto error;
 					}
@@ -597,7 +597,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				goto error;
 			}
 
-			if (ul.insert_ucontact( _r, &_c->uri, ci, &c) < 0) {
+			if (ul.insert_ucontact( _r, &_c->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
@@ -612,7 +612,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					c->flags &= ~FL_MEM;
 				}
 
-				if (ul.delete_ucontact(_r, c) < 0) {
+				if (ul.delete_ucontact(_r, c, 0) < 0) {
 					rerrno = R_UL_DEL_C;
 					LM_ERR("failed to delete contact\n");
 					goto error;
@@ -636,7 +636,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 						}
 						LM_DBG("overflow on update -> removing contact <%.*s>\n",
 							c_last->c.len, c_last->c.s);
-						if (ul.delete_ucontact( _r, c_last)!=0) {
+						if (ul.delete_ucontact( _r, c_last, 0)!=0) {
 							LM_ERR("failed to remove contact\n");
 							goto error;
 						}
@@ -655,7 +655,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					goto error;
 				}
 
-				if (ul.update_ucontact(_r, c, ci) < 0) {
+				if (ul.update_ucontact(_r, c, ci, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
 					goto error;
@@ -713,12 +713,12 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 	if (res == 0) { /* Contacts found */
 		if (update_contacts(_m, r, _c, _sctx) < 0) {
 			build_contact(r->contacts,_m);
-			ul.release_urecord(r);
+			ul.release_urecord(r, 0);
 			ul.unlock_udomain(_d, &_sctx->aor);
 			return -3;
 		}
 		build_contact(r->contacts,_m);
-		ul.release_urecord(r);
+		ul.release_urecord(r, 0);
 	} else {
 		if (insert_contacts(_m, _c, _d, &_sctx->aor, _sctx) < 0) {
 			ul.unlock_udomain(_d, &_sctx->aor);

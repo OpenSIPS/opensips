@@ -46,7 +46,6 @@
 #include "urecord.h"
 #include "hslot.h"
 
-
 struct hslot;   /*!< Hash table slot */
 struct urecord; /*!< Usrloc record */
 
@@ -159,8 +158,10 @@ void unlock_ulslot(udomain_t* _d, int slot);
 /*! \brief
  * Create and insert a new record
  */
-typedef int (*insert_urecord_t)(udomain_t* _d, str* _aor, struct urecord** _r);
-int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
+typedef int (*insert_urecord_t)(udomain_t* _d, str* _aor, struct urecord** _r,
+                                char is_replicated);
+int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
+                   char is_replicated);
 
 
 /*! \brief
@@ -173,8 +174,10 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 /*! \brief
  * Delete a urecord from domain
  */
-typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r);
-int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r);
+typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r,
+                                 char is_replicated);
+int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
+                   char is_replicated);
 
 
 

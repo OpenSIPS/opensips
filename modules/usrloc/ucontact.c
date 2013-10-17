@@ -46,6 +46,7 @@
 #include "ul_callback.h"
 #include "urecord.h"
 #include "ucontact.h"
+#include "ureplication.h"
 
 
 /*! \brief
@@ -842,7 +843,8 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
 /*! \brief
  * Update ucontact with new values
  */
-int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci)
+int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
+                    char is_replicated)
 {
 	int ret;
 
@@ -852,6 +854,9 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci)
 		LM_ERR("failed to update memory\n");
 		return -1;
 	}
+
+	if (!is_replicated && replication_dests && db_mode != DB_ONLY)
+		replicate_ucontact_update(_r, &_c->c, _ci);
 
 	/* run callbacks for UPDATE event */
 	if (exists_ulcb_type(UL_CONTACT_UPDATE))

@@ -196,7 +196,6 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 				flag_list.len = strlen(flag_list.s);
 
 				LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
-				LM_DBG("masks: param: %d --- %d :db\n", flags, dbflags);
 
 				/* contact is not flagged at all */
 				if (flags && (val->nul || !flag_list.s))
@@ -204,6 +203,8 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 
 				dbflags = flag_list_to_bitmask(&flag_list,
 				                FLAG_TYPE_BRANCH, FLAG_DELIM);
+
+				LM_DBG("masks: param: %d --- %d :db\n", flags, dbflags);
 
 				/* check if contact flags match the given bitmask */
 				if ((dbflags & flags) != flags)

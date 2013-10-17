@@ -112,24 +112,25 @@ int db_delete_urecord(urecord_t* _r);
  * Release urecord previously obtained
  * through get_urecord
  */
-typedef void (*release_urecord_t)(urecord_t* _r);
-void release_urecord(urecord_t* _r);
+typedef void (*release_urecord_t)(urecord_t* _r, char is_replicated);
+void release_urecord(urecord_t* _r, char is_replicated);
 
 
 /*
  * Insert new contact
  */
 typedef int (*insert_ucontact_t)(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c);
+		ucontact_info_t* _ci, ucontact_t** _c, char is_replicated);
 int insert_ucontact(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c);
+		ucontact_info_t* _ci, ucontact_t** _c, char is_replicated);
 
 
 /*
  * Delete ucontact from urecord
  */
-typedef int (*delete_ucontact_t)(urecord_t* _r, struct ucontact* _c);
-int delete_ucontact(urecord_t* _r, struct ucontact* _c);
+typedef int (*delete_ucontact_t)(urecord_t* _r, struct ucontact* _c,
+                                 char is_replicated);
+int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated);
 
 
 /*

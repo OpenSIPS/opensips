@@ -209,8 +209,9 @@ struct urecord;
  * Update ucontact with new values
  */
 typedef int (*update_ucontact_t)(struct urecord* _r, ucontact_t* _c,
-		ucontact_info_t* _ci);
+		ucontact_info_t* _ci, char is_replicated);
 
-int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci);
+int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
+                    char is_replicated);
 
 #endif /* UCONTACT_H */

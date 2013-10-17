@@ -264,7 +264,7 @@ struct mi_root* mi_usrloc_rm_aor(struct mi_root *cmd, void *param)
 		return init_mi_tree( 400, "Domain missing in AOR", 21);
 
 	lock_udomain( dom, aor);
-	if (delete_urecord( dom, aor, 0) < 0) {
+	if (delete_urecord( dom, aor, NULL, 0) < 0) {
 		unlock_udomain( dom, aor);
 		return init_mi_tree( 500, "Failed to delete AOR", 20);
 	}
@@ -321,12 +321,12 @@ struct mi_root* mi_usrloc_rm_contact(struct mi_root *cmd, void *param)
 		return init_mi_tree( 404, "Contact not found", 17);
 	}
 
-	if (delete_ucontact(rec, con) < 0) {
+	if (delete_ucontact(rec, con, 0) < 0) {
 		unlock_udomain( dom, aor);
 		return 0;
 	}
 
-	release_urecord(rec);
+	release_urecord(rec, 0);
 	unlock_udomain( dom, aor);
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
@@ -519,7 +519,7 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 
 	n = get_urecord( dom, aor, &r);
 	if ( n==1) {
-		if (insert_urecord( dom, aor, &r) < 0)
+		if (insert_urecord( dom, aor, &r, 0) < 0)
 			goto lock_error;
 		c = 0;
 	} else {
@@ -537,17 +537,17 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 	if (c) {
 		/* update contact record */
 		ci.cseq = c->cseq;
-		if (update_ucontact( r, c, &ci) < 0)
+		if (update_ucontact( r, c, &ci, 0) < 0)
 			goto release_error;
 	} else {
 		/* new contact record */
 		ci.callid = &mi_ul_cid;
 		ci.cseq = MI_UL_CSEQ;
-		if ( insert_ucontact( r, contact, &ci, &c) < 0 )
+		if ( insert_ucontact( r, contact, &ci, &c, 0) < 0 )
 			goto release_error;
 	}
 
-	release_urecord(r);
+	release_urecord(r, 0);
 
 	unlock_udomain( dom, aor);
 
@@ -555,7 +555,7 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 bad_syntax:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 release_error:
-	release_urecord(r);
+	release_urecord(r, 0);
 lock_error:
 	unlock_udomain( dom, aor);
 	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);

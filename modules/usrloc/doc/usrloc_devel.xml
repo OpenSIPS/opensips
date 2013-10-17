@@ -31,7 +31,8 @@
 
 	<section>
 		<title>
-		<function moreinfo="none">ul_insert_urecord(domain, aor, rec)</function>
+			<function moreinfo="none">
+				ul_insert_urecord(domain, aor, rec, is_replicated)</function>
 		</title>
 		<para>
 		The function creates a new record structure and inserts it in the 
@@ -45,19 +46,21 @@
 				returned by ul_register_udomain.
 			</para>
 		</listitem>
-		</itemizedlist>
-		<itemizedlist>
 		<listitem>
 			<para><emphasis>str* aor</emphasis> - Address of Record (aka 
 			username) of the new record (at this time the record will 
 			contain no contacts yet).
 			</para>
 		</listitem>
-		</itemizedlist>
-		<itemizedlist>
 		<listitem>
 			<para><emphasis>urecord_t** rec</emphasis> - The newly created 
 			record structure.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>char is_replicated</emphasis> - Specifies whether
+			this function will be called from the context of a Binary Interface
+			callback. If uncertain, simply use 0.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -66,7 +69,8 @@
 
 	<section>
 		<title>
-		<function moreinfo="none">ul_delete_urecord(domain, aor)</function>
+			<function moreinfo="none">
+				ul_delete_urecord(domain, aor, is_replicated)</function>
 		</title>
 		<para>
 		The function deletes all the contacts bound with the given Address 
@@ -79,11 +83,15 @@
 			returned by ul_register_udomain.
 			</para>
 		</listitem>
-		</itemizedlist>
-		<itemizedlist>
 		<listitem>
 			<para><emphasis>str* aor</emphasis> - Address of record (aka 
 			username) of the record, that should be deleted.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>char is_replicated</emphasis> - Specifies whether
+			this function will be called from the context of a Binary Interface
+			callback. If uncertain, simply use 0.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -152,7 +160,8 @@
 
 	<section>
 		<title>
-		<function moreinfo="none">ul_release_urecord(record)</function>
+			<function moreinfo="none">
+				ul_release_urecord(record, is_replicated)</function>
 		</title>
 		<para>
 		Do some sanity checks - if all contacts have been removed, delete 
@@ -165,13 +174,19 @@
 			released.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>char is_replicated</emphasis> - Specifies whether
+			this function will be called from the context of a Binary Interface
+			callback. If uncertain, simply use 0.
+			</para>
+		</listitem>
 		</itemizedlist>
 	</section>
 
 	<section>
 		<title>
 		<function moreinfo="none">ul_insert_ucontact(record, contact, 
-		expires, q, callid, cseq, flags, cont, ua, sock)</function>
+		contact_info, contact, is_replicated)</function>
 		</title>
 		<para>
 		The function inserts a new contact in the given record with 
@@ -189,41 +204,14 @@
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>time_t expires</emphasis> - Expires of the 
-			contact in absolute value.
+			<para><emphasis>ucontact_info_t* contact_info</emphasis> -
+				Single structure containing the new contact information
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>float q</emphasis> - q value of the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>str* callid</emphasis> - Call-ID of the REGISTER 
-			message that contained the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>int cseq</emphasis> - CSeq of the REGISTER 
-			message that contained the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>unsigned int flags</emphasis> - Flags to be set.
-			</para> 
-		</listitem>
-		<listitem>
-			<para><emphasis>ucontact_t* cont</emphasis> - Pointer to newly 
-			created structure.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>str* ua</emphasis> - User-Agent of the REGISTER 
-			message that contained the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>struct socket_info *sock</emphasis> - socket on
-			which the REGISTER message was received on.
+			<para><emphasis>char is_replicated</emphasis> - Specifies whether
+			this function will be called from the context of a Binary Interface
+			callback. If uncertain, simply use 0.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -232,7 +220,7 @@
 	<section>
 		<title>
 		<function moreinfo="none">ul_delete_ucontact
-			(record, contact)</function>
+			(record, contact, is_replicated)</function>
 		</title>
 		<para>
 		The function deletes given contact from record.
@@ -249,6 +237,12 @@
 		<listitem>
 			<para><emphasis>ucontact_t* contact</emphasis> - Contact to be 
 			deleted.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>char is_replicated</emphasis> - Specifies whether
+			this function will be called from the context of a Binary Interface
+			callback. If uncertain, simply use 0.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -324,8 +318,8 @@
 
 	<section>
 		<title>
-		<function moreinfo="none">ul_update_ucontact(contact, expires, q, 
-		callid, cseq, set, res, ua, sock)</function>
+			<function moreinfo="none">ul_update_ucontact(record, contact,
+				contact_info, is_replicated)</function>
 		</title>
 		<para>
 		The function updates contact with new values.
@@ -333,48 +327,23 @@
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
+			<para><emphasis>urecord_t* record</emphasis> - Record in which 
+			the contact should be inserted.
+			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>ucontact_t* contact</emphasis> - Contact &uri;.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>time_t expires</emphasis> - Expires of the 
-			contact in absolute value.
+			<para><emphasis>ucontact_info_t* contact_info</emphasis> -
+				Single structure containing the new contact information
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>float q</emphasis> - q value of the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>str* callid</emphasis> - Call-ID of the REGISTER 
-			message that contained the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>int cseq</emphasis> - CSeq of the REGISTER message 
-			that contained the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			<emphasis>unsigned int set</emphasis> - OR value of flags to 
-			be set.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			<emphasis>unsigned int res</emphasis> - OR value of flags to be 
-			reset.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>str* ua</emphasis> - User-Agent of the REGISTER 
-			message that contained the contact.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>struct socket_info *sock</emphasis> - socket on
-			which the REGISTER message was received on.
+			<para><emphasis>char is_replicated</emphasis> - Specifies whether
+			this function will be called from the context of a Binary Interface
+			callback. If uncertain, simply use 0.
 			</para>
 		</listitem>
 		</itemizedlist>

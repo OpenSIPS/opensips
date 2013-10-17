@@ -16,8 +16,7 @@ Bogdan-Andrei Iancu
 
    Copyright © 2005-2008 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -27,6 +26,7 @@ Bogdan-Andrei Iancu
         1.1. Overview
 
               1.1.1. Contact matching
+              1.1.2. Contact replication
 
         1.2. Dependencies
 
@@ -59,7 +59,10 @@ Bogdan-Andrei Iancu
               1.3.22. db_mode (integer)
               1.3.23. matching_mode (integer)
               1.3.24. cseq_delay (integer)
-              1.3.25. hash_size (integer)
+              1.3.25. accept_replicated_contacts (integer)
+              1.3.26. replicate_contacts_to (string)
+              1.3.27. skip_replicated_db_ops (int)
+              1.3.28. hash_size (integer)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -89,20 +92,25 @@ Bogdan-Andrei Iancu
         2.1. Available Functions
 
               2.1.1. ul_register_domain(name)
-              2.1.2. ul_insert_urecord(domain, aor, rec)
-              2.1.3. ul_delete_urecord(domain, aor)
+              2.1.2. ul_insert_urecord(domain, aor, rec,
+                      is_replicated)
+
+              2.1.3. ul_delete_urecord(domain, aor, is_replicated)
+
               2.1.4. ul_get_urecord(domain, aor)
               2.1.5. ul_lock_udomain(domain)
               2.1.6. ul_unlock_udomain(domain)
-              2.1.7. ul_release_urecord(record)
-              2.1.8. ul_insert_ucontact(record, contact, expires,
-                      q, callid, cseq, flags, cont, ua, sock)
+              2.1.7. ul_release_urecord(record, is_replicated)
+              2.1.8. ul_insert_ucontact(record, contact,
+                      contact_info, contact, is_replicated)
 
-              2.1.9. ul_delete_ucontact (record, contact)
+              2.1.9. ul_delete_ucontact (record, contact,
+                      is_replicated)
+
               2.1.10. ul_get_ucontact(record, contact)
               2.1.11. ul_get_all_ucontacts (buf, len, flags)
-              2.1.12. ul_update_ucontact(contact, expires, q,
-                      callid, cseq, set, res, ua, sock)
+              2.1.12. ul_update_ucontact(record, contact,
+                      contact_info, is_replicated)
 
               2.1.13. ul_bind_ursloc( api )
               2.1.14. ul_register_ulcb(type ,callback, param)
@@ -134,7 +142,10 @@ Bogdan-Andrei Iancu
    1.22. Set db_mode parameter
    1.23. Set matching_mode parameter
    1.24. Set cseq_delay parameter
-   1.25. Set hash_size parameter
+   1.25. Setting the accept_replicated_contacts parameter
+   1.26. Setting the replicate_contacts_to parameter
+   1.27. Setting the skip_replicated_db_ops parameter
+   1.28. Set hash_size parameter
 
 Chapter 1. Admin Guide
 
@@ -146,7 +157,7 @@ Chapter 1. Admin Guide
 
 1.1.1. Contact matching
 
-   How the contacts are matched (dor same AOR - Address of Record)
+   How the contacts are matched (for same AOR - Address of Record)
    is an important aspect of the usrloc modules, especialy in the
    context of NAT traversal - this raise mre problems since
    contacts from different phones of same users may overlap (if
@@ -160,18 +171,49 @@ Chapter 1. Admin Guide
    otherwise invalid). But as argumented above, this is not enough
    in NAT traversal context, so the OpenSIPS implementation of
    contact machting offers more algorithms:
-     * contact based only - it strict RFC 3261 compiancy - the
+     * contact based only - strict RFC 3261 compliancy - the
        contact is matched as string and extra checked via callid
-       and cseg (if callid is the same, it must have a higher cseq
+       and cseq (if callid is the same, it must have a higher cseq
        number, otherwise invalid).
-     * contact nad callid based - it an extension of the first
-       case - the contact and callid must matched as string; the
-       cseg must be higher than the previous one - so be careful
-       how you deal with REGISTER retransmissions in this case.
+     * contact and callid based - an extension of the first case -
+       the contact and callid must match as strings; the cseq must
+       be higher than the previous one - so be careful how you
+       deal with REGISTER retransmissions in this case.
 
-   How to control/select the contact maching algorithm, please see
-   the module parameter matching_mode at Section 1.3.23,
-   “matching_mode (integer)”.
+   For more details on how to control/select the contact matching
+   algorithm, please see the module parameter matching_mode at
+   Section 1.3.23, “matching_mode (integer)”.
+
+1.1.2. Contact replication
+
+   Starting from OpenSIPS 1.11, the usrloc module offers the
+   possibility of performing real-time mirroring of the entire
+   in-memory user location information of one OpenSIPS instance to
+   one or more other instances. This module-to-module
+   communication is UDP-based, and it is done through the Binary
+   Interface.
+
+   Advantages of replicating user-location data using this feature
+   instead of sending duplicated SIP REGISTER requests:
+     * no message parsing required
+     * reduced bandwith usage
+     * no additional script logic needed
+
+   In order to control the DB operations performed by the
+   receiving instance(s), the skip_replicated_db_ops parameter can
+   be set. To summarise, the replication logic works together with
+   the DB modes as follows:
+     * 0 (No DB) - only in-memory data is replicated (no DB
+       operations are performed at all)
+     * 1 (Write through) and 2 (Write back) - default behaviour on
+       all instances, skip_replicated_db_ops can be set on the
+       receiving ones
+     * 3 (DB only) - data replication is OFF
+
+   Configuring both receival and sending of usrloc replication
+   packets is trivial and can be done by using the
+   accept_replicated_contacts and replicate_contacts_to parameters
+   of the module.
 
 1.2. Dependencies
 
@@ -196,9 +238,7 @@ Chapter 1. Admin Guide
    module.
 
    WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead!
-
-   Default value is “NULL” (not set).
+   instead! Default value is “NULL” (not set).
 
    Example 1.1. Set nat_bflag parameter
 ...
@@ -522,7 +562,61 @@ modparam("usrloc", "matching_mode", 1)
 modparam("usrloc", "cseq_delay", 5)
 ...
 
-1.3.25. hash_size (integer)
+1.3.25. accept_replicated_contacts (integer)
+
+   Set this to 1 in order to accept and process user-location
+   related information received from other OpenSIPS instances
+   through the Binary Interface.
+
+   Default value is “0” - Binary Interface listeners (if any) will
+   simply ignore any usrloc-related packets
+
+   More details on the user location replication mechanism are
+   available in Section 1.1.2, “Contact replication”
+
+   Example 1.25. Setting the accept_replicated_contacts parameter
+...
+modparam("usrloc", "accept_replicated_contacts", 1)
+...
+
+1.3.26. replicate_contacts_to (string)
+
+   Define a new OpenSIPS instance which will receive all the
+   user-location related information from this machine
+   (addresses-of-record, contacts), organized into specific events
+   (inserts, deletes or updates)
+
+   This parameter may be set multiple times. It does not ignore
+   duplicate entries.
+
+   Default value is "none" (no replication destinations)
+
+   More details on the user location replication mechanism are
+   available in Section 1.1.2, “Contact replication”
+
+   Example 1.26. Setting the replicate_contacts_to parameter
+...
+modparam("usrloc", "replicate_contacts_to", "192.168.2.182:5062")
+...
+
+1.3.27. skip_replicated_db_ops (int)
+
+   Prevent OpenSIPS from performing any DB-related contact
+   operations when events are received over the Binary Interface.
+   This is commonly used to prevent unneeded duplicate operations.
+
+   Default value is "0" (upon receival of usrloc-related Binary
+   Interface events, DB queries may be freely performed)
+
+   More details on the user location replication mechanism are
+   available in Section 1.1.2, “Contact replication”
+
+   Example 1.27. Setting the skip_replicated_db_ops parameter
+...
+modparam("usrloc", "skip_replicated_db_ops", 1)
+...
+
+1.3.28. hash_size (integer)
 
    The number of entries of the hash table used by usrloc to store
    the location records is 2^hash_size. For hash_size=4, the
@@ -530,7 +624,7 @@ modparam("usrloc", "cseq_delay", 5)
 
    Default value is “9”.
 
-   Example 1.25. Set hash_size parameter
+   Example 1.28. Set hash_size parameter
 ...
 modparam("usrloc", "hash_size", 10)
 ...
@@ -680,7 +774,7 @@ Chapter 2. Developer Guide
      * const char* name - Name of the domain (also called table)
        to be registered.
 
-2.1.2.  ul_insert_urecord(domain, aor, rec)
+2.1.2.  ul_insert_urecord(domain, aor, rec, is_replicated)
 
    The function creates a new record structure and inserts it in
    the specified domain. The record is structure that contains all
@@ -689,14 +783,15 @@ Chapter 2. Developer Guide
    Meaning of the parameters is as follows:
      * udomain_t* domain - Pointer to domain returned by
        ul_register_udomain.
-
      * str* aor - Address of Record (aka username) of the new
        record (at this time the record will contain no contacts
        yet).
-
      * urecord_t** rec - The newly created record structure.
+     * char is_replicated - Specifies whether this function will
+       be called from the context of a Binary Interface callback.
+       If uncertain, simply use 0.
 
-2.1.3.  ul_delete_urecord(domain, aor)
+2.1.3.  ul_delete_urecord(domain, aor, is_replicated)
 
    The function deletes all the contacts bound with the given
    Address Of Record.
@@ -704,9 +799,11 @@ Chapter 2. Developer Guide
    Meaning of the parameters is as follows:
      * udomain_t* domain - Pointer to domain returned by
        ul_register_udomain.
-
      * str* aor - Address of record (aka username) of the record,
        that should be deleted.
+     * char is_replicated - Specifies whether this function will
+       be called from the context of a Binary Interface callback.
+       If uncertain, simply use 0.
 
 2.1.4.  ul_get_urecord(domain, aor)
 
@@ -738,16 +835,19 @@ Chapter 2. Developer Guide
    Meaning of the parameters is as follows:
      * udomain_t* domain - Domain to be unlocked.
 
-2.1.7.  ul_release_urecord(record)
+2.1.7.  ul_release_urecord(record, is_replicated)
 
    Do some sanity checks - if all contacts have been removed,
    delete the entire record structure.
 
    Meaning of the parameters is as follows:
      * urecord_t* record - Record to be released.
+     * char is_replicated - Specifies whether this function will
+       be called from the context of a Binary Interface callback.
+       If uncertain, simply use 0.
 
-2.1.8.  ul_insert_ucontact(record, contact, expires, q, callid, cseq,
-flags, cont, ua, sock)
+2.1.8.  ul_insert_ucontact(record, contact, contact_info, contact,
+is_replicated)
 
    The function inserts a new contact in the given record with
    specified parameters.
@@ -756,20 +856,13 @@ flags, cont, ua, sock)
      * urecord_t* record - Record in which the contact should be
        inserted.
      * str* contact - Contact URI.
-     * time_t expires - Expires of the contact in absolute value.
-     * float q - q value of the contact.
-     * str* callid - Call-ID of the REGISTER message that
-       contained the contact.
-     * int cseq - CSeq of the REGISTER message that contained the
-       contact.
-     * unsigned int flags - Flags to be set.
-     * ucontact_t* cont - Pointer to newly created structure.
-     * str* ua - User-Agent of the REGISTER message that contained
-       the contact.
-     * struct socket_info *sock - socket on which the REGISTER
-       message was received on.
+     * ucontact_info_t* contact_info - Single structure containing
+       the new contact information
+     * char is_replicated - Specifies whether this function will
+       be called from the context of a Binary Interface callback.
+       If uncertain, simply use 0.
 
-2.1.9.  ul_delete_ucontact (record, contact)
+2.1.9.  ul_delete_ucontact (record, contact, is_replicated)
 
    The function deletes given contact from record.
 
@@ -778,6 +871,9 @@ flags, cont, ua, sock)
        removed.
 
      * ucontact_t* contact - Contact to be deleted.
+     * char is_replicated - Specifies whether this function will
+       be called from the context of a Binary Interface callback.
+       If uncertain, simply use 0.
 
 2.1.10.  ul_get_ucontact(record, contact)
 
@@ -811,25 +907,20 @@ flags, cont, ua, sock)
 
      * unsigned int flags - Flags that must be set.
 
-2.1.12.  ul_update_ucontact(contact, expires, q, callid, cseq, set,
-res, ua, sock)
+2.1.12.  ul_update_ucontact(record, contact, contact_info,
+is_replicated)
 
    The function updates contact with new values.
 
    Meaning of the parameters is as follows:
+     * urecord_t* record - Record in which the contact should be
+       inserted.
      * ucontact_t* contact - Contact URI.
-     * time_t expires - Expires of the contact in absolute value.
-     * float q - q value of the contact.
-     * str* callid - Call-ID of the REGISTER message that
-       contained the contact.
-     * int cseq - CSeq of the REGISTER message that contained the
-       contact.
-     * unsigned int set - OR value of flags to be set.
-     * unsigned int res - OR value of flags to be reset.
-     * str* ua - User-Agent of the REGISTER message that contained
-       the contact.
-     * struct socket_info *sock - socket on which the REGISTER
-       message was received on.
+     * ucontact_info_t* contact_info - Single structure containing
+       the new contact information
+     * char is_replicated - Specifies whether this function will
+       be called from the context of a Binary Interface callback.
+       If uncertain, simply use 0.
 
 2.1.13.  ul_bind_ursloc( api )
 

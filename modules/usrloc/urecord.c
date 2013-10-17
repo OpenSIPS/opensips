@@ -44,6 +44,7 @@
 #include "ul_mod.h"
 #include "utime.h"
 #include "ul_callback.h"
+#include "ureplication.h"
 
 
 int matching_mode = CONTACT_ONLY;
@@ -413,11 +414,15 @@ int db_delete_urecord(urecord_t* _r)
  * Release urecord previously obtained
  * through get_urecord
  */
-void release_urecord(urecord_t* _r)
+void release_urecord(urecord_t* _r, char is_replicated)
 {
 	if (db_mode==DB_ONLY) {
 		free_urecord(_r);
 	} else if (_r->contacts == 0) {
+
+		if (!is_replicated && replication_dests)
+			replicate_urecord_delete(_r);
+
 		mem_delete_urecord(_r->slot->d, _r);
 	}
 }
@@ -428,12 +433,15 @@ void release_urecord(urecord_t* _r)
  * into urecord
  */
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
-															ucontact_t** _c)
+                    ucontact_t** _c, char is_replicated)
 {
 	if ( ((*_c)=mem_insert_ucontact(_r, _contact, _ci)) == 0) {
 		LM_ERR("failed to insert contact\n");
 		return -1;
 	}
+
+	if (!is_replicated && replication_dests && db_mode != DB_ONLY)
+		replicate_ucontact_insert(_r, _contact, _ci);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT)) {
 		run_ul_callbacks( UL_CONTACT_INSERT, *_c);
@@ -454,8 +462,11 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 /*! \brief
  * Delete ucontact from urecord
  */
-int delete_ucontact(urecord_t* _r, struct ucontact* _c)
+int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 {
+	if (!is_replicated && replication_dests && db_mode != DB_ONLY)
+		replicate_ucontact_delete(_r, _c);
+
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
 		run_ul_callbacks( UL_CONTACT_DELETE, _c);
 	}
