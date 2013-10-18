@@ -186,6 +186,8 @@ CASE			"case"
 DEFAULT			"default"
 SBREAK			"break"|"esac"
 WHILE			"while"
+FOR             "for"
+IN              "in"
 SET_ADV_ADDRESS	"set_advertised_address"
 SET_ADV_PORT	"set_advertised_port"
 FORCE_SEND_SOCKET	"force_send_socket"
@@ -500,6 +502,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{DEFAULT}	{ count(); yylval.strval=yytext; return DEFAULT; }
 <INITIAL>{SBREAK}	{ count(); yylval.strval=yytext; return SBREAK; }
 <INITIAL>{WHILE}	{ count(); yylval.strval=yytext; return WHILE; }
+<INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
+<INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }
 
 <INITIAL>{INCLUDEFILE}  { count(); BEGIN(INCLF); }
 <INITIAL>{IMPORTFILE}  { count(); BEGIN(IMPTF); }

@@ -348,6 +348,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 	int end_time;
 	action_elem_t *route_params_bak;
 	int route_params_number_bak;
+	struct usr_avp *avp;
+	int_str istr;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -1071,6 +1073,55 @@ int do_action(struct action* a, struct sip_msg* msg)
 						}
 					}
 				}
+			break;
+		case FOR_EACH_T:
+			script_trace("core", "for-each", msg, a->line) ;
+			/* TODO
+			 * allowed syntax: "for ({$var, $avp} in {$avp, $branch, $ct})" */
+			if (a->elem[2].type == ACTIONS_ST && a->elem[2].u.data) {
+				int avp_name;
+
+				spec = a->elem[1].u.data;
+				switch (spec->type) {
+				case PVT_AVP:
+					/* run all actions for each value in the avp */
+					if (pv_get_avp_name(msg, &spec->pvp, &avp_name, (void *)&v)) {
+						LM_ERR("invalid avp given\n");
+						return -1;
+					}
+
+					avp = NULL;
+					while ((avp = search_first_avp(v, avp_name, &istr, avp))) {
+						if (avp->flags & AVP_VAL_STR) {
+							val.rs    = istr.s;
+							val.flags = PV_VAL_STR;
+						} else {
+							val.rs.s  = sint2str(istr.n, &val.rs.len);
+							val.ri    = istr.n;
+							val.flags = PV_VAL_INT|PV_TYPE_INT;
+						}
+
+						if (((pv_spec_p)a->elem[0].u.data)->
+								setf(msg, &((pv_spec_p)a->elem[0].u.data)->pvp,
+						             0, &val) != 0) {
+							LM_ERR("failed to set scriptvar value\n");
+							return -1;
+						}
+
+						ret = run_action_list(
+						              (struct action *)a->elem[2].u.data, msg);
+
+						/* check if return was done */
+						if (action_flags & (ACT_FL_RETURN | ACT_FL_EXIT))
+							break;
+
+						return_code = ret;
+					}
+					break;
+				default:
+					LM_DBG("unable to iterate over pvar type %d\n", spec->type);
+				}
+			}
 			break;
 		case CACHE_STORE_T:
 			script_trace("core", "cache_store", msg, a->line) ;

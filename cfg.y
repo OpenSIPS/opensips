@@ -246,6 +246,8 @@ extern int line;
 %token DEFAULT
 %token SBREAK
 %token WHILE
+%token FOR
+%token IN
 %token SET_ADV_ADDRESS
 %token SET_ADV_PORT
 %token FORCE_SEND_SOCKET
@@ -464,6 +466,7 @@ extern int line;
 /*non-terminals */
 %type <expr> exp exp_elem exp_cond assignexp /*, condition*/
 %type <action> action actions cmd if_cmd stm exp_stm assign_cmd while_cmd
+			   foreach_cmd
 %type <action> switch_cmd switch_stm case_stms case_stm default_stm
 %type <intval> module_func_param
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
@@ -2103,6 +2106,7 @@ actions:	actions action	{$$=append_action($1, $2); }
 action:		cmd SEMICOLON {$$=$1;}
 		| if_cmd {$$=$1;}
 		| while_cmd { $$=$1;}
+		| foreach_cmd { $$=$1;}
 		| switch_cmd {$$=$1;}
 		| assign_cmd SEMICOLON {$$=$1;}
 		| SEMICOLON /* null action */ {$$=0;}
@@ -2133,6 +2137,30 @@ while_cmd:		WHILE exp stm				{ mk_action2( $$, WHILE_T,
 													 $2,
 													 $3);
 									}
+	;
+
+foreach_cmd:	FOR LPAREN script_var IN script_var RPAREN stm {
+					if ($3->type != PVT_SCRIPTVAR &&
+					    $3->type != PVT_AVP) {
+						yyerror("\nfor-each statement: only \"var\" "
+					            "and \"avp\" iterators are supported");
+					}
+
+					if ($5->type != PVT_AVP &&
+						$5->type != PVT_BRANCH &&
+						$5->type != PVT_CONTACT) {
+						yyerror("\nfor-each statement: can only iterate over "
+					            "\"avp\", \"branch\" and \"contact\"");
+					}
+
+					mk_action3( $$, FOR_EACH_T,
+					            SCRIPTVAR_ST,
+					            SCRIPTVAR_ST,
+					            ACTIONS_ST,
+					            $3,
+					            $5,
+					            $7);
+					}
 	;
 
 switch_cmd:		SWITCH LPAREN script_var RPAREN LBRACE switch_stm	RBRACE	{

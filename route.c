@@ -414,6 +414,19 @@ static int fix_actions(struct action* a)
 						return ret;
 				}
 				break;
+			case FOR_EACH_T:
+				if (t->elem[2].type != ACTIONS_ST) {
+					LM_CRIT("bad subtype %d in for-each (should be actions)\n",
+				             t->elem[2].type);
+					ret = E_BUG;
+					goto error;
+				}
+
+				if (t->elem[2].u.data) {
+					if ((ret=fix_actions((struct action*)t->elem[2].u.data))<0)
+						return ret;
+				}
+				break;
 			case SWITCH_T:
 				if ( (t->elem[1].type==ACTIONS_ST)&&(t->elem[1].u.data) ){
 					if ((ret=fix_actions((struct action*)t->elem[1].u.data))<0)
@@ -695,7 +708,7 @@ static int fix_actions(struct action* a)
 						ret=E_BUG;
 						goto error;
 					}
-					
+
 					t->elem[0].u.data = (void*)model;
 					t->elem[0].type = SCRIPTVAR_ELEM_ST;
 				}
@@ -1827,7 +1840,7 @@ error:
 
 
 
-/*! \return ret= 0/1 (true/false) ,  -1 on error or EXPR_DROP (-127)  */
+/*! \return ret= 0/1 (false/true) ,  -1 on error or EXPR_DROP (-127)  */
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 	static int rec_lev=0;
@@ -2018,6 +2031,10 @@ static int check_actions(struct action *a, int r_type)
 				break;
 			case WHILE_T:
 				if (check_actions((struct action*)a->elem[1].u.data, r_type)!=0)
+					goto error;
+				break;
+			case FOR_EACH_T:
+				if (check_actions((struct action*)a->elem[2].u.data, r_type)!=0)
 					goto error;
 				break;
 			case SWITCH_T:
