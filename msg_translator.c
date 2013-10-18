@@ -427,7 +427,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 											struct socket_info* send_sock)
 {
 	unsigned int s_offset, new_len;
-	unsigned int last_del, only_before;
+	unsigned int last_del;
 	struct lump *t, *r;
 	str *send_address_str, *send_port_str;
 	str *rcv_address_str=NULL;
@@ -604,15 +604,11 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	}
 	
 	for(t=lumps;t;t=t->next){
-		only_before=0;
 		/* is this lump still valid? (it must not be anchored in a deleted area */
-		if (s_offset > t->u.offset) {
+		if (s_offset > t->u.offset && t->u.offset!=last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
-			if (t->u.offset!=last_del)
-				continue;
-			/* process only the before lumps */
-			only_before = 1;
+			continue;
 		}
 		/* if a SKIP lump, go to the last in the list*/
 		if (t->op==LUMP_SKIP) {
@@ -647,8 +643,6 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			}
 		}
 skip_before:
-		if (only_before)
-			continue;
 		switch(t->op){
 			case LUMP_ADD:
 				new_len+=t->len;
@@ -716,7 +710,7 @@ void process_lumps(	struct sip_msg* msg,
 	struct lump *t, *r;
 	char* orig;
 	unsigned int size, offset, s_offset;
-	unsigned int last_del, only_before;
+	unsigned int last_del;
 	str *send_address_str, *send_port_str;
 	str *rcv_address_str=NULL;
 	str *rcv_port_str=NULL;
@@ -956,14 +950,11 @@ void process_lumps(	struct sip_msg* msg,
 	last_del=0;
 	
 	for (t=lumps;t;t=t->next){
-		only_before = 0;
 		/* skip this lump if the "offset" is still in a "deleted" area */
-		if (s_offset > t->u.offset) {
+		if (s_offset > t->u.offset && last_del!= t->u.offset) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
-			if (last_del!= t->u.offset)
-				continue;
-			only_before = 1;
+			continue;
 		}
 
 		switch(t->op){
@@ -1009,8 +1000,6 @@ void process_lumps(	struct sip_msg* msg,
 					}
 				}
 skip_before:
-				if (only_before)
-					continue;
 				/* copy "main" part */
 				switch(t->op){
 					case LUMP_ADD:
@@ -1095,8 +1084,6 @@ skip_after:
 					}
 				}
 skip_nop_before:
-				if (only_before)
-					continue;
 				/* process main (del only) */
 				if (t->op==LUMP_DEL){
 					/* skip len bytes from orig msg */
