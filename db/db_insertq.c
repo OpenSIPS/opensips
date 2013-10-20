@@ -125,10 +125,6 @@ void flush_query_list(void)
 			}
 
 			it->dbf.use_table(it->conn,&it->table);
-
-			//Reset prepared statement between query lists/connections
-			my_ps = NULL;
-
 			CON_PS_REFERENCE(it->conn) = &my_ps;
 
 			/* and let's insert the rows */
