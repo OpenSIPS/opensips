@@ -22,7 +22,7 @@
 		<type>unsigned long</type>
 		<size>&table_id_len;</size>
 		<primary/>
-		<type db="dbtext">long,auto</type>
+		<type db="dbtext">long</type>
 		<description>h_entry | h_id</description>
 	</column>
 
