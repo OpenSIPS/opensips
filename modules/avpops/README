@@ -12,8 +12,7 @@ Ramona-Elena Modroiu
 
    Copyright © 2004-2008 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 5901 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -323,6 +322,7 @@ avp_db_load("$fu", "$avp(678)");
 avp_db_load("$ru/domain", "i/domain_preferences");
 avp_db_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
 avp_db_load("$ru", "$avp(123)/$some_scheme");
+
 # use DB URL id 3
 avp_db_load("$ru", "$avp(1)", "3");
 

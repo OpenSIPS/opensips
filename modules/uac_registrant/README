@@ -12,8 +12,7 @@ Ovidiu Sas
 
    Copyright © 2011-2013 VoIP Embedded, Inc.
    Revision History
-   Revision $Revision$ $Date: 2013-01-29 07:35:11 -0500 (Tue, 29
-   Jan 2013) $
+   Revision $Revision$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -152,8 +151,8 @@ modparam("uac_registrant", "timer_interval", 120)
 
    Example 1.3. Set “db_url” parameter
 ...
-modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/data
-base")
+modparam("uac_registrant", "db_url", "mysql://user:passw@localhost/datab
+ase")
 ...
 
 1.3.4. table_name (string)
