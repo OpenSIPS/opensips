@@ -318,8 +318,8 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 					case DB_INT:
 					case DB_BIGINT:
 					case DB_DATETIME:
-						//LM_DBG("INT value!\n");
-						dtval.val.int_val = 0;
+						//LM_DBG("INT/BIGINT/DATETIME value!\n");
+						dtval.val.bigint_val = 0;
 						dtval.type = dtp->colv[ccol]->type;
 
 						if(c==DBT_DELIM || 
@@ -339,12 +339,12 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 								goto clean;
 							while(c>='0' && c<='9')
 							{
-								dtval.val.int_val=dtval.val.int_val*10+c-'0';
+								dtval.val.bigint_val=dtval.val.bigint_val*10+c-'0';
 								c = fgetc(fin);
 							}
-							dtval.val.int_val *= sign;
+							dtval.val.bigint_val *= sign;
 							//LM_DBG("data[%d,%d]=%d\n", crow,
-							//	ccol, dtval.val.int_val);
+							//	ccol, dtval.val.bigint_val);
 						}
 						if(c!=DBT_DELIM && c!=DBT_DELIM_R && c!=EOF)
 							goto clean;
@@ -352,8 +352,10 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 									ccol))
 							goto clean;
 						if(ccol == dtp->auto_col)
-							max_auto = (max_auto<dtval.val.int_val)?
-									dtval.val.int_val:max_auto;
+							max_auto = (max_auto<dtval.val.bigint_val)?
+									dtval.val.bigint_val:max_auto;
+						if (dtval.type!=DB_BIGINT)
+							dtval.val.int_val = (int)dtval.val.bigint_val;
 					break;
 					
 					case DB_DOUBLE:
@@ -533,7 +535,7 @@ int dbt_print_table(dbt_table_p _dtp, str *_dbn)
 				fprintf(fout, "%.*s(int", colp->name.len, colp->name.s);
 			break;
 			case DB_BIGINT:
-				fprintf(fout, "%.*s(bigint", colp->name.len, colp->name.s);
+				fprintf(fout, "%.*s(long", colp->name.len, colp->name.s);
 			break;
 			case DB_DOUBLE:
 				fprintf(fout, "%.*s(double", colp->name.len, colp->name.s);
