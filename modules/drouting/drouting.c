@@ -1127,7 +1127,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 			LM_DBG("random number is %d\n",rand_no);
 			/* select the element */
 			for( i=first ; i<size ; i++ )
-				if (running_sum[i]>=rand_no) break;
+				if (running_sum[i]>rand_no) break;
 			if (i==size) {
 				LM_CRIT("bug in weight sort\n");
 				return -1;
