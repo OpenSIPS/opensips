@@ -387,12 +387,13 @@ fix_nated_register();
 
    Meaning of the flags is as follows:
      * 1 - Contact header field is searched for occurrence of
-       RFC1918 addresses.
+       RFC1918 / RFC6598 addresses.
      * 2 - the "received" test is used: address in Via is compared
        against source IP address of signaling
      * 4 - Top Most VIA is searched for occurrence of RFC1918
+       / RFC6598 addresses
+     * 8 - SDP is searched for occurrence of RFC1918 / RFC6598
        addresses
-     * 8 - SDP is searched for occurrence of RFC1918 addresses
      * 16 - test if the source port is different from the port in
        Via
      * 32 - address in Contact is compared against source IP

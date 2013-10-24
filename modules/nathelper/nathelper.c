@@ -118,9 +118,10 @@ static struct {
 	uint32_t netaddr;
 	uint32_t mask;
 } nets_1918[] = {
-	{"10.0.0.0",    0, 0xffffffffu << 24},
-	{"172.16.0.0",  0, 0xffffffffu << 20},
-	{"192.168.0.0", 0, 0xffffffffu << 16},
+	{"10.0.0.0",    0, 0xffffffffu << 24},	/* RFC 1918 */
+	{"172.16.0.0",  0, 0xffffffffu << 20},  /* RFC 1918 */
+	{"192.168.0.0", 0, 0xffffffffu << 16},  /* RFC 1918 */
+	{"100.64.0.0",  0, 0xffffffffu << 22},	/* RFC 6598 */
 	{NULL, 0, 0}
 };
 /*
@@ -506,7 +507,7 @@ mod_init(void)
 		}
 	}
 
-	/* Prepare 1918 networks list */
+	/* Prepare 1918/6598 networks list */
 	for (i = 0; nets_1918[i].cnetaddr != NULL; i++) {
 		if (inet_aton(nets_1918[i].cnetaddr, &addr) != 1)
 			abort();
@@ -643,7 +644,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 
 
 /*
- * Test if IP address pointed to by saddr belongs to RFC1918 networks
+ * Test if IP address pointed to by saddr belongs to RFC1918 / RFC6598 networks
  */
 static inline int
 is1918addr(str *saddr)
@@ -673,7 +674,7 @@ theend:
 }
 
 /*
- * test for occurrence of RFC1918 IP address in Contact HF
+ * test for occurrence of RFC1918 / RFC6598 IP address in Contact HF
  */
 static int
 contact_1918(struct sip_msg* msg)
@@ -689,7 +690,7 @@ contact_1918(struct sip_msg* msg)
 }
 
 /*
- * test for occurrence of RFC1918 IP address in SDP
+ * test for occurrence of RFC1918 / RFC6598 IP address in SDP
  */
 static int
 sdp_1918(struct sip_msg* msg)
@@ -739,7 +740,7 @@ sdp_1918(struct sip_msg* msg)
 }
 
 /*
- * test for occurrence of RFC1918 IP address in top Via
+ * test for occurrence of RFC1918 / RFC6598 IP address in top Via
  */
 static int
 via_1918(struct sip_msg* msg)
@@ -811,18 +812,18 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 	if ((tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
 		return 1;
 	/*
-	 * test for occurrences of RFC1918 addresses in Contact
+	 * test for occurrences of RFC1918 / RFC6598 addresses in Contact
 	 * header field
 	 */
 	if ((tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
 		return 1;
 	/*
-	 * test for occurrences of RFC1918 addresses in SDP body
+	 * test for occurrences of RFC1918 / RFC6598 addresses in SDP body
 	 */
 	if ((tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
 		return 1;
 	/*
-	 * test for occurrences of RFC1918 addresses top Via
+	 * test for occurrences of RFC1918 / RFC6598 addresses top Via
 	 */
 	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
 		return 1;
