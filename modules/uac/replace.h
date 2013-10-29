@@ -48,5 +48,6 @@ int restore_uri( struct sip_msg *msg, int to, int check_from);
 /* RR callback functions */
 void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param);
 
+void dlg_restore_callback(struct dlg_cell* dlg, int type, struct dlg_cb_params * params);
 
 #endif
