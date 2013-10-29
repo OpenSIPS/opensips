@@ -579,6 +579,35 @@ failed:
 
 /************************** Dialog functions ******************************/
 
+void dlg_restore_callback(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
+{
+	str val;
+
+	/* check if the UAC corresponding values are present */
+
+	if ( dlg_api.fetch_dlg_value( dlg, &rr_to_param_new, &val, 0)==0 ) {
+		/* TO variable found -> TO URI changed */
+		LM_DBG("UAC TO related DLG vals found -> installing callback\n");
+		if ( dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+		replace_callback, (void*)1/*to*/, 0) != 0) {
+			LM_ERR("cannot register callback\n");
+		}
+	}
+
+	if ( dlg_api.fetch_dlg_value( dlg, &rr_from_param_new, &val, 0)==0 ) {
+		/* FROM variable found -> FROM URI changed */
+		LM_DBG("UAC FROM related DLG vals found -> installing callback\n");
+		if ( dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
+		replace_callback, (void*)0/*from*/, 0) != 0) {
+			LM_ERR("cannot register callback\n");
+		}
+	}
+
+	return;
+}
+
+
+
 static void replace_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
