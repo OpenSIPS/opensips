@@ -241,6 +241,12 @@ static int mod_init(void)
 						LM_ERR("cannot set correct store parameters\n");
 						goto error;
 					}
+					/* install calback to catch all loaded dialogs */
+					if ( dlg_api.register_dlgcb( NULL, DLGCB_LOADED,
+					dlg_restore_callback, NULL, NULL) != 0 ) {
+						LM_ERR("failed to install dialog restore callback\n");
+						goto error;
+					}
 				}
 
 				/* get all requests doing loose route */
