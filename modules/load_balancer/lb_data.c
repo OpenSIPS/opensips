@@ -509,7 +509,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 
 	/* lock the resources */
 	for( i=0 ; i<rl->n ; i++)
-		get_lock( call_res[i]->lock );
+		lock_get( call_res[i]->lock );
 
 	/* do the load-balancing */
 	load = 0;
@@ -557,7 +557,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 
 	/* unlock the resources*/
 	for( i=0 ; i<rl->n ; i++)
-		release_lock( call_res[i]->lock );
+		lock_release( call_res[i]->lock );
 
 	if (dst) {
 		LM_DBG("winning destination <%.*s> selected for LB set with free=%d\n",
@@ -736,7 +736,7 @@ end_search:
 
 	/* lock the resources */
 	for( i=0 ; i<rl->n ; i++)
-		get_lock( call_res[i]->lock );
+		lock_get( call_res[i]->lock );
 
 	/* add to the profiles */
 	for( i=0 ; i<rl->n ; i++) {
@@ -747,7 +747,7 @@ end_search:
 
 	/* unlock the resources*/
 	for( i=0 ; i<rl->n ; i++)
-		release_lock( call_res[i]->lock );
+		lock_release( call_res[i]->lock );
 
 	return 0;
 }
