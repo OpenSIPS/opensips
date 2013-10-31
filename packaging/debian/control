@@ -330,7 +330,7 @@ Description: LUA extensions for OpenSIPS
 
 Package: opensips-http-modules
 Architecture: any
-Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libmicrohttpd5
+Depends: ${shlibs:Depends}, opensips (= ${binary:Version}), libmicrohttpd5|libmicrohttpd10
 Description: HTTP transport layer and Management Interface for OpenSIPS.
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
