@@ -178,7 +178,8 @@ void mi_json_answer_to_connection (void *cls, void *connection,
     size_t *upload_data_size, void **con_cls,
     str *buffer, str *page)
 {
-  str arg = {NULL, 0};
+  str command = {NULL, 0};
+  str params = {NULL, 0};
   struct mi_root *tree = NULL;
   struct mi_handler *async_hdl;
 
@@ -186,10 +187,14 @@ void mi_json_answer_to_connection (void *cls, void *connection,
     "versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
       cls, connection, url, method, version,
       (int)*upload_data_size, upload_data, *con_cls);
-  if (strncmp(method, "POST", 4)==0) {
-    httpd_api.lookup_arg(connection, "1", *con_cls, &arg);
-    if (arg.s) {
-      tree = mi_json_run_mi_cmd(&arg,
+  if (strncmp(method, "GET", 3)==0) {
+    if(url && url[0] == '/' && url[1] != '\0') {
+      command.s = (char*)url+1;
+      command.len = strlen(command.s);
+    }
+    httpd_api.lookup_arg(connection, "params", *con_cls, &params);
+    if (command.s) {
+      tree = mi_json_run_mi_cmd(&command,&params,
             page, buffer, &async_hdl);
       if (tree == NULL) {
         LM_ERR("no reply\n");

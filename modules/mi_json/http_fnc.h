@@ -39,10 +39,9 @@ typedef struct mi_json_async_resp_data_ {
 int mi_json_init_async_lock(void);
 void mi_json_destroy_async_lock(void);
 
-struct mi_root* mi_json_run_mi_cmd(const str* arg,
+struct mi_root* mi_json_run_mi_cmd(const str* command, const str* params,
       str *page, str *buffer, struct mi_handler **async_hdl);
 int mi_json_build_page(str* page, int max_page_len,
         struct mi_root* tree);
 
 #endif
-
