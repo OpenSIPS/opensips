@@ -226,48 +226,6 @@ int bla_same_dialog(unsigned char* n_callid, unsigned char* n_fromtag, unsigned 
 	return 1;
 }
 
-int snom_fix_is_unchanged_publish_refresh(str body, str cur_body)
-{
-	xmlDocPtr doc = NULL;
-	xmlDocPtr cur_doc = NULL;
-	xmlNodePtr node;
-	xmlNodePtr cur_node;
-        unsigned char* node_val = NULL;
-        unsigned char* cur_node_val = NULL;
-
-	doc = xmlParseMemory(body.s, body.len);
-	cur_doc = xmlParseMemory(cur_body.s, cur_body.len);
-	if (!doc || !cur_doc)
-                goto error;
-
-        node = XMLDocGetNodeByName(doc, "im", NULL);
-        cur_node = XMLDocGetNodeByName(cur_doc, "im", NULL);
-        if (!node || !cur_node)
-                goto error;
-        node_val = xmlNodeGetContent(node);
-        cur_node_val = xmlNodeGetContent(cur_node);
-        if (!node_val || !cur_node_val)
-                goto error;
-        if (xmlStrcasecmp(node_val, cur_node_val) == 0) {
-                xmlFree(node_val);
-                xmlFree(cur_node_val);
-		xmlFreeDoc(cur_doc);
-		xmlFreeDoc(doc);
-                return 1;
-        }
-error:
-        if (node_val)
-                xmlFree(node_val);
-        if (cur_node_val)
-                xmlFree(cur_node_val);
-	if (cur_doc)
-		xmlFreeDoc(cur_doc);
-	if (doc)
-		xmlFreeDoc(doc);
-
-	return 0;
-}
-
 int dialog_fix_remote_target(str *body, str *fixed_body)
 {
 	xmlDocPtr doc = NULL;
@@ -441,20 +399,18 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 //	static db_ps_t my_ps_insert = NULL, my_ps_update_no_body = NULL,
 //		   my_ps_update_body = NULL;
 //	static db_ps_t my_ps_delete = NULL, my_ps_query = NULL;
-	db_key_t query_cols[13], update_keys[8], result_cols[2];
+	db_key_t query_cols[13], update_keys[8], result_cols[1];
 	db_op_t  query_ops[13];
 	db_val_t query_vals[13], update_vals[8];
 	int n_query_cols = 0;
 	int n_update_cols = 0;
 	str etag= {NULL, 0};
 	str notify_body = {NULL, 0};
-	str cur_body= {NULL, 0};
 	str cur_etag= {NULL, 0};
 	str* rules_doc= NULL;
 	str pres_uri= {NULL, 0};
 	pres_entry_t* p= NULL;
 	unsigned int hash_code;
-        unsigned int different_body = 0;
 	str body = presentity->body;
 	str *extra_hdrs = presentity->extra_hdrs;
 	db_res_t *result= NULL;
@@ -508,7 +464,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 	n_query_cols++;
 
 	result_cols[0] = &str_etag_col;
-	result_cols[1] = &str_body_col;
 
 	if(presentity->etag_new)
 	{
@@ -595,9 +550,9 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 		p = search_phtable_etag(&pres_uri, presentity->event->evp->parsed,
 				&presentity->etag, hash_code);
 
-		if(!p || body.s)
+		if(!p)
 		{
-			if (!p) lock_release(&pres_htable[hash_code].lock);
+			lock_release(&pres_htable[hash_code].lock);
 
 			/* search also in db */
 			if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
@@ -606,7 +561,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					goto error;
 			}
 			if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
-					 result_cols, n_query_cols, 2, 0, &result) < 0)
+					 result_cols, n_query_cols, 1, 0, &result) < 0)
 			{
 					LM_ERR("unsuccessful sql query\n");
 					goto error;
@@ -627,17 +582,6 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 					*sent_reply= 1;
 					goto done;
 			}
-                        else if (body.s) {
-                                different_body= 1;
-
-                                cur_body.s= (char*)RES_ROWS(result)[0].values[1].val.str_val.s;
-                                cur_body.len = RES_ROWS(result)[0].values[1].val.str_val.len;
-                                cur_body.s[cur_body.len] = '\0';
-
-                                if (snom_fix_is_unchanged_publish_refresh(body, cur_body)) {
-                                        different_body= 0;
-                                }
-                        }
 
 			pa_dbf.free_result(pa_db, result);
 			LM_INFO("*** found in db but not in htable [%.*s]\n",
@@ -754,16 +698,13 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			n_update_cols++;
 		}
 
-                if(different_body) {
-		         update_keys[n_update_cols] = &str_received_time_col;
+                if(body.s) {
+		        update_keys[n_update_cols] = &str_received_time_col;
                         update_vals[n_update_cols].type = DB_INT;
                         update_vals[n_update_cols].nul = 0;
                         update_vals[n_update_cols].val.int_val= presentity->received_time;
                         n_update_cols++;
-                }
 
-		if(body.s)
-		{
 			if (fix_remote_target)
 			    {
 				if (dialog_fix_remote_target(&body, &notify_body)== 0)
