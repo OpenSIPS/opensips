@@ -49,6 +49,9 @@ static inline void MI_JSON_COPY(struct page_buf* pb, const str s) {
   if ( pb->status ) {
     return;
   }
+  if ( s.s == NULL || s.len == 0 ) {
+    return;
+  }
   if ( (int)(pb->current - pb->buf) + s.len > pb->max_page_len) {
     pb->status = -1;
   } else {
@@ -62,6 +65,12 @@ static const str MI_JSON_ESC_QUOT =  str_init("\\\""); /* " */
 static inline void MI_JSON_ESC_COPY(struct page_buf* pb, const str s) {
   str temp_holder;
   int temp_counter;
+  if( pb->status ) {
+    return;
+  }
+  if( s.s == NULL || s.len == 0 ) {
+    return;
+  }
   temp_holder.s = s.s;
   temp_holder.len = 0;
   for(temp_counter=0;temp_counter<s.len;temp_counter++) {
@@ -224,6 +233,7 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
   struct mi_root *mi_rpl;
   struct mi_handler *hdl;
   str val;
+  int i, j;
 
   LM_DBG("got command=%.*s\n", miCmd->len, miCmd->s);
 
@@ -234,6 +244,7 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
   }
 
   if (f->flags&MI_ASYNC_RPL_FLAG) {
+    LM_DBG("command=%.*s is async\n", miCmd->len, miCmd->s);
     /* We need to build an async handler */
     hdl = mi_json_build_async_handler();
     if (hdl==NULL) {
@@ -246,28 +257,22 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
   *async_hdl = hdl;
 
   if (f->flags&MI_NO_INPUT_FLAG) {
+    LM_DBG("command=%.*s requires no parameters\n", miCmd->len, miCmd->s);
     mi_cmd = NULL;
   } else {
+    LM_DBG("command=%.*s requires parameters\n", miCmd->len, miCmd->s);
     if (params->s) {
       mi_cmd = init_mi_tree(0,0,0);
       if (mi_cmd==NULL) {
         LM_ERR("the MI tree cannot be initialized!\n");
         goto error;
       }
-      /*
-        for params... {
-          val.s = (char*).....;
-          if(val.s==NULL){
-            LM_ERR("No content for node [%s]\n",
-                string_node->name);
-            goto error;
-          }
-          val.len = strlen(val.s);
-          if(val.len==0){
-            LM_ERR("Empty content for node [%s]\n",
-                string_node->name);
-            goto error;
-          }
+      i = 0;
+      j = 0;
+      for( i = 0; i < params->len; i++ ) {
+        if (params->s[i] == ',') {
+          val.s = params->s + j;
+          val.len = i-j;
           LM_DBG("got string param [%.*s]\n", val.len, val.s);
           node = &mi_cmd->node;
           if(!add_mi_node_child(node,0,NULL,0,val.s,val.len)){
@@ -275,11 +280,25 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
             free_mi_tree(mi_cmd);
             goto error;
           }
+          j = i+1;
         }
-      */
+      }
+      if( j < params->len ) {
+        val.s = params->s + j;
+        val.len = params->len-j;
+        LM_DBG("got string param [%.*s]\n", val.len, val.s);
+        node = &mi_cmd->node;
+        if(!add_mi_node_child(node,0,NULL,0,val.s,val.len)){
+          LM_ERR("cannot add the child node to the tree\n");
+          free_mi_tree(mi_cmd);
+          goto error;
+        }
+      }
       mi_cmd->async_hdl = hdl;
     } else {
+      LM_DBG("but no parameters were found\n");
       mi_cmd = NULL;
+      goto error;
     }
   }
 
@@ -310,6 +329,7 @@ error:
 static inline int mi_json_write_node_array(struct page_buf* pb,
           struct mi_node *node)
 {
+  LM_DBG("start\n");
   MI_JSON_COPY(pb, MI_JSON_SQUOT);
   MI_JSON_ESC_COPY(pb, node->value);
   MI_JSON_COPY(pb, MI_JSON_SQUOT);
@@ -320,6 +340,8 @@ static inline int mi_json_write_node_array(struct page_buf* pb,
 static inline int mi_json_write_node_hash(struct page_buf* pb,
           struct mi_node *node)
 {
+  LM_DBG("start\n");
+
   MI_JSON_COPY(pb, MI_JSON_SQUOT);
   MI_JSON_ESC_COPY(pb, node->name);
   MI_JSON_COPY(pb, MI_JSON_SQUOT);
@@ -340,8 +362,7 @@ static inline int mi_json_write_node(struct page_buf* pb,
           struct mi_node *node)
 {
   struct mi_attr *attr;
-  str temp_holder;
-  int temp_counter;
+  LM_DBG("start\n");
 
   /* name */
   MI_JSON_COPY(pb, MI_JSON_KEY_NAME);
@@ -403,6 +424,7 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
   int attributes = 0;
   int kids = 0;
   struct mi_node* t;
+  LM_DBG("start\n");
   for( t = tree; t ; t=t->next ) {
     if(t->name.s) {
       names++;
@@ -419,46 +441,54 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
   }
 
   if(names == 0 && values > 0 && attributes == 0 && kids == 0) {
+    LM_DBG("Treat as an array\n");
     /* Treat as an array */
     MI_JSON_COPY(pb, MI_JSON_ARRAY_START);
     for( t = tree; t; t=t->next ) {
       mi_json_write_node_array(pb,t);
+      t->flags |= MI_WRITTEN;
       if(t->next) {
         MI_JSON_COPY(pb, MI_JSON_COMMA);
       }
     }
     MI_JSON_COPY(pb, MI_JSON_ARRAY_STOP);
-    tree->flags |= MI_WRITTEN;
+    LM_DBG("done\n");
     return 0;
   }
   if(names >= values && attributes == 0 && kids == 0) {
+    LM_DBG("Treat as a hash\n");
     /* Treat as a hash */
     MI_JSON_COPY(pb, MI_JSON_OBJECT_START);
     for( t = tree; t; t=t->next ) {
+      LM_DBG("t = %p\n",t);
       mi_json_write_node_hash(pb,t);
+      t->flags |= MI_WRITTEN;
       if(t->next) {
         MI_JSON_COPY(pb, MI_JSON_COMMA);
       }
     }
     MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
-    tree->flags |= MI_WRITTEN;
+    LM_DBG("done\n");
     return 0;
   }
   if(names == 0 && values == 0 && attributes == 0 && kids > 0) {
+    LM_DBG("Treat as an array of objects\n");
     /* Treat as an array of objects */
     MI_JSON_COPY(pb, MI_JSON_ARRAY_START);
     for( t = tree; t; t=t->next ) {
       mi_json_recur_write_tree(pb,t->kids);
+      t->flags |= MI_WRITTEN;
       if(t->next) {
         MI_JSON_COPY(pb, MI_JSON_COMMA);
       }
     }
     MI_JSON_COPY(pb, MI_JSON_ARRAY_STOP);
-    tree->flags |= MI_WRITTEN;
+    LM_DBG("done\n");
     return 0;
   }
 
   /* Otherwise */
+  LM_DBG("Treat as a complex array of hashes\n");
   /* Treat as a complex array of hashes */
   MI_JSON_COPY(pb, MI_JSON_ARRAY_START);
   for( t = tree; t; t=t->next ) {
@@ -475,7 +505,7 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
     }
   }
   MI_JSON_COPY(pb, MI_JSON_ARRAY_STOP);
-  tree->flags |= MI_WRITTEN;
+  LM_DBG("done\n");
   return pb->status;
 }
 
@@ -484,24 +514,26 @@ int mi_json_build_content(str *page, int max_page_len,
         struct mi_root* tree)
 {
   struct page_buf pb;
+  LM_DBG("start\n");
 
   pb.buf = page->s;
   pb.current = page->s + page->len;
   pb.max_page_len = max_page_len;
+  pb.status = 0;
 
   if (tree) { /* Build mi reply */
-    if (mi_json_recur_write_tree(&pb,
-            tree->node.kids)<0)
-      return -1;
+    mi_json_recur_write_tree(&pb, tree->node.kids);
     page->len = pb.current - page->s;
   }
-  return 0;
+  LM_DBG("done\n");
+  return pb.status;
 }
 
 
 int mi_json_build_page(str *page, int max_page_len,
         struct mi_root *tree)
 {
+  LM_DBG("start\n");
   return mi_json_build_content(page, max_page_len, tree);
 }
 
@@ -510,8 +542,8 @@ int mi_json_build_page(str *page, int max_page_len,
 static int mi_json_recur_flush_tree(struct page_buf* pb,
           struct mi_node *tree)
 {
-  struct mi_node *kid, *tmp;
-  int ret;
+  struct mi_node *kid;
+  LM_DBG("start\n");
 
   for(kid = tree->kids ; kid ; ){
     if (kid->flags & MI_NOT_COMPLETED) {
@@ -520,6 +552,7 @@ static int mi_json_recur_flush_tree(struct page_buf* pb,
   }
 
   mi_json_recur_write_tree(pb,tree);
+  LM_DBG("done\n");
   return pb->status;
 }
 
@@ -527,15 +560,16 @@ int mi_json_flush_content(str *page, int max_page_len,
         struct mi_root* tree)
 {
   struct page_buf pb;
+  LM_DBG("start\n");
   pb.buf = page->s;
   pb.current = page->s + page->len;
   pb.max_page_len = max_page_len;
+  pb.status = 0;
 
   if (tree) { /* Build mi reply */
-    if (mi_json_recur_flush_tree(&pb,
-          &tree->node)<0)
-      return -1;
+    mi_json_recur_flush_tree(&pb, &tree->node);
     page->len = pb.current - page->s;
   }
-  return 0;
+  LM_DBG("done\n");
+  return pb.status;
 }
