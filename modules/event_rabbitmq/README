@@ -24,6 +24,9 @@ Razvan Crainea
               1.4.2. External Libraries or Applications
 
         1.5. Exported Parameters
+
+              1.5.1. heartbeat (integer)
+
         1.6. Exported Functions
         1.7. Example
         1.8. Installation and Running
@@ -34,9 +37,10 @@ Razvan Crainea
 
    List of Examples
 
-   1.1. E_PIKE_BLOCKED event
-   1.2. RabbitMQ socket
-   1.3. OpenSIPS config script - sample event_rabbitmq usage
+   1.1. Set heartbeat parameter
+   1.2. E_PIKE_BLOCKED event
+   1.3. RabbitMQ socket
+   1.4. OpenSIPS config script - sample event_rabbitmq usage
    2.1. Event subscription
    2.2. Event subscription
 
@@ -107,7 +111,21 @@ Chapter 1. Admin Guide
 
 1.5. Exported Parameters
 
-   No parameter exported by this module.
+1.5.1. heartbeat (integer)
+
+   Enables heartbeat support for the AMQP communication. If the
+   client does not receive a heartbeat from server within the
+   specified interval, the socket is automatically closed by the
+   rabbitmq-client. This prevents OpenSIPS from blocking while
+   waiting for a response from a dead rabbitmq-server. The value
+   represents the heartbit interval in seconds.
+
+   Default value is “0 (disabled)”.
+
+   Example 1.1. Set heartbeat parameter
+...
+modparam("event_rabbitmq", "heartbeat", 3)
+...
 
 1.6. Exported Functions
 
@@ -118,13 +136,13 @@ Chapter 1. Admin Guide
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.1. E_PIKE_BLOCKED event
+   Example 1.2. E_PIKE_BLOCKED event
 
         E_PIKE_BLOCKED
         ip::192.168.2.11
 
 
-   Example 1.2. RabbitMQ socket
+   Example 1.3. RabbitMQ socket
 
         rabbitmq:guest:guest@127.0.0.1:5672/pike
 
@@ -142,7 +160,7 @@ Chapter 1. Admin Guide
    The parameters passed to the server are the R-URI username and
    the message body.
 
-   Example 1.3. OpenSIPS config script - sample event_rabbitmq
+   Example 1.4. OpenSIPS config script - sample event_rabbitmq
    usage
 ...
 loadmodule "signaling.so"
