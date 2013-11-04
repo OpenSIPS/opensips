@@ -72,6 +72,7 @@
 #include "tcp_server.h"
 #endif
 
+#include "cmd.h"
 #include "script_var.h"
 #include "xlog.h"
 #include "evi/evi_modules.h"
@@ -1193,6 +1194,111 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			ret = cachedb_store( &a->elem[0].u.s, &name_s, &val_s,expires);
 
+			break;
+		case CACHE_RAW_REDIS_T:
+			script_trace("core", "cache_raw_redis", msg, a->line) ;
+			if ((a->elem[0].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_raw_redis() - first argument not of"
+						" type string [%d]\n",
+					a->elem[0].type );
+				ret=E_BUG;
+				break;
+			}
+
+			if ((a->elem[1].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_raw_redis()  - second argument not of "
+						"type string [%d]\n", a->elem[1].type );
+				ret=E_BUG;
+				break;
+			}
+
+			if ((a->elem[2].type!=STR_ST)) {
+				LM_ALERT("BUG in cache_raw_redis() - third argument not of type"
+						" string%d\n", a->elem[2].type );
+				ret=E_BUG;
+				break;
+			}
+
+			str rcmd_s;
+
+			/* parse the cmd argument */
+			pve = (pv_elem_t *)a->elem[1].u.data;
+			if ( pv_printf_s(msg, pve, &rcmd_s)!=0 || 
+			rcmd_s.len == 0 || rcmd_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+
+			/* parse the name argument */
+			pve = (pv_elem_t *)a->elem[2].u.data;
+			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			name_s.len == 0 || name_s.s == NULL) {
+				LM_WARN("cannot get string for value\n");
+				ret=E_BUG;
+				break;
+			}
+
+			int cmdtype = find_cmd_type(rcmd_s.s);
+			if(cmdtype != -1) {
+
+				if (a->elem[3].type!=SCRIPTVAR_ST){
+					LM_ALERT("BUG in cache_raw_redis() type %d\n",
+							a->elem[3].type);
+					ret=E_BUG;
+					break;
+				}
+				str aux = {0, 0};
+				ret = cachedb_raw_redis( &a->elem[0].u.s, &rcmd_s, &name_s, &aux,-1);
+				if(ret > 0)
+				{
+					val.rs = aux;
+					val.flags = PV_VAL_STR;
+
+					spec = (pv_spec_t*)a->elem[3].u.data;
+					if (pv_set_value(msg, spec, 0, &val) < 0) {
+						LM_ERR("cannot set the variable value\n");
+						pkg_free(aux.s);
+						return -1;
+					}
+					pkg_free(aux.s);
+				}
+			} else {
+				/* value */
+				pve = (pv_elem_t *)a->elem[3].u.data;
+				if ( pv_printf_s(msg, pve, &val_s)!=0 || 
+				val_s.len == 0 || val_s.s == NULL) {
+					LM_WARN("cannot get string for value\n");
+					ret=E_BUG;
+					break;
+				}
+
+				/* get the expires value */
+				if ( a->elem[4].type == SCRIPTVAR_ST )
+				{
+					spec = (pv_spec_t*)a->elem[4].u.data;
+					memset(&val, 0, sizeof(pv_value_t));
+					if(pv_get_spec_value(msg, spec, &val) < 0)
+					{
+						LM_DBG("Failed to get scriptvar value while executing cache_raw_redis\n");
+						ret=E_BUG;
+						break;
+					}
+					if (!(val.flags&PV_VAL_INT))
+					{
+						LM_ERR("Wrong value for cache_raw_redis expires, not an integer [%.*s]\n",
+								val.rs.len, val.rs.s);
+					}
+					expires = val.ri;
+				}
+				else
+				if ( a->elem[4].type == NUMBER_ST )
+				{
+					expires = (int)a->elem[4].u.number;
+				}
+
+				ret = cachedb_raw_redis( &a->elem[0].u.s, &rcmd_s, &name_s, &val_s,expires);
+			}
 			break;
 		case CACHE_REMOVE_T:
 			script_trace("core", "cache_remove", msg, a->line) ;

@@ -29,6 +29,7 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../cachedb/cachedb.h"
+#include "../../cmd.h"
 
 #include <string.h>
 #include <hiredis/hiredis.h>
@@ -296,6 +297,62 @@ int redis_set(cachedb_con *connection,str *attr,str *val,int expires)
 	freeReplyObject(reply);
 
 	if (expires) {
+		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
+
+		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
+				reply->len,reply->str);
+
+		freeReplyObject(reply);
+	}
+
+	return 0;
+}
+
+int redis_raw_redis(cachedb_con *connection,str *rcmd,str *attr,str *val,int expires)
+{
+	redis_con *con;
+	cluster_node *node;
+	redisReply *reply;
+	int i;
+
+	if (!attr || !val || !connection) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	int cmdtype = find_cmd_type(rcmd->s);
+	if(cmdtype != -1) {
+		redis_run_command(con,attr,strcat(rcmd->s," %b"),attr->s,attr->len);
+
+		if (reply->type == REDIS_REPLY_NIL || reply->str == NULL
+				|| reply->len == 0) {
+			LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+			val->s = NULL;
+			val->len = 0;
+			return -2;
+		}
+
+		LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,reply->len,reply->str);
+
+		val->s = pkg_malloc(reply->len);
+		if (val->s == NULL) {
+			LM_ERR("no more pkg\n");
+			freeReplyObject(reply);
+			return -1;
+		}
+
+		memcpy(val->s,reply->str,reply->len);
+		val->len = reply->len;
+	} else {
+		redis_run_command(con,attr,strcat(rcmd->s," %b %b"),attr->s,attr->len,val->s,val->len);
+		
+		LM_DBG("set %.*s to %.*s - status = %d - %.*s\n",attr->len,attr->s,val->len,
+			val->s,reply->type,reply->len,reply->str);
+	}
+
+	freeReplyObject(reply);
+
+	if (expires!=-1) {
 		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
 
 		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
