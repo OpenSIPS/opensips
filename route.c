@@ -670,6 +670,14 @@ static int fix_actions(struct action* a)
 							goto error;
 						}
 					}
+				} else if (t->type==CACHE_ADD_T || t->type==CACHE_SUB_T) {
+					if(t->elem[4].u.data != NULL && ((pv_spec_p)t->elem[4].u.data)->setf == NULL)
+					{
+						LM_ERR("Fourth argument cannot be a read-only pvar\n");
+						ret=E_CFG;
+						goto error;
+					}
+
 				}
 				break;
 			case SET_ADV_ADDR_T:
