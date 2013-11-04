@@ -2793,10 +2793,10 @@ int b2b_apply_lumps(struct sip_msg* msg)
 
 	if (msg->first_line.type==SIP_REQUEST)
 		obuf.s = build_req_buf_from_sip_req(msg, (unsigned int*)&obuf.len,
-			NULL, 0, MSG_TRANS_NOVIA_FLAG );
+			msg->rcv.bind_address, msg->rcv.proto, MSG_TRANS_NOVIA_FLAG );
 	else
 		obuf.s = build_res_buf_from_sip_res(msg, (unsigned int*)&obuf.len,
-			NULL);
+			msg->rcv.bind_address);
 
 	if (!obuf.s) {
 		LM_ERR("no more shm mem\n");
