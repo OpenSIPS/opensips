@@ -260,7 +260,7 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
     LM_DBG("command=%.*s requires no parameters\n", miCmd->len, miCmd->s);
     mi_cmd = NULL;
   } else {
-    LM_DBG("command=%.*s requires parameters\n", miCmd->len, miCmd->s);
+    LM_DBG("command=%.*s accepts parameters\n", miCmd->len, miCmd->s);
     if (params->s) {
       mi_cmd = init_mi_tree(0,0,0);
       if (mi_cmd==NULL) {
@@ -297,8 +297,11 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
       mi_cmd->async_hdl = hdl;
     } else {
       LM_DBG("but no parameters were found\n");
-      mi_cmd = NULL;
-      goto error;
+      mi_cmd = init_mi_tree(0,0,0);
+      if (mi_cmd==NULL) {
+        LM_ERR("the MI tree cannot be initialized!\n");
+        goto error;
+      }
     }
   }
 
