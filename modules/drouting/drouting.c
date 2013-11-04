@@ -1326,7 +1326,8 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	wl_list = NULL;
 	rt_info = NULL;
 
-	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
+	/* allow no GWs if we're only trying to use DR for checking purposes */
+	if ( (*rdata)==0 || ((flags & DR_PARAM_ONLY_CHECK) == 0 && (*rdata)->pgw_l==0 )) {
 		LM_DBG("empty routing table\n");
 		goto error1;
 	}
