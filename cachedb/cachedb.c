@@ -299,6 +299,7 @@ int cachedb_remove(str* cachedb_name, str* attr)
 	str cde_engine,grp_name;
 	char *p;
 	cachedb_con *con;
+	int ret;
 
 	if(cachedb_name == NULL || attr == NULL)
 	{
@@ -338,7 +339,10 @@ int cachedb_remove(str* cachedb_name, str* attr)
 		return -1;
 	}
 
-	return cde->cdb_func.remove(con,attr)<0?-1:1;
+	ret = cde->cdb_func.remove(con,attr);
+	if (ret == 0)
+		ret++;
+	return ret;
 }
 
 int cachedb_store(str* cachedb_name, str* attr, str* val,int expires)
@@ -347,6 +351,7 @@ int cachedb_store(str* cachedb_name, str* attr, str* val,int expires)
 	str cde_engine,grp_name;
 	char *p;
 	cachedb_con *con;
+	int ret;
 
 	if(cachedb_name == NULL || attr == NULL || val == NULL)
 	{
@@ -386,7 +391,10 @@ int cachedb_store(str* cachedb_name, str* attr, str* val,int expires)
 		return -1;
 	}
 
-	return cde->cdb_func.set(con,attr,val,expires)<0?-1:1;
+	ret = cde->cdb_func.set(con,attr,val,expires);
+	if (ret == 0)
+		ret++;
+	return ret;
 }
 
 int cachedb_fetch(str* cachedb_name, str* attr, str* val)
@@ -395,6 +403,7 @@ int cachedb_fetch(str* cachedb_name, str* attr, str* val)
 	str cde_engine,grp_name;
 	char *p;
 	cachedb_con *con;
+	int ret;
 
 	if(cachedb_name == NULL || attr == NULL || val == NULL)
 	{
@@ -434,7 +443,10 @@ int cachedb_fetch(str* cachedb_name, str* attr, str* val)
 		return -1;
 	}
 
-	return cde->cdb_func.get(con,attr,val)<0?-1:1;
+	ret = cde->cdb_func.get(con,attr,val);
+	if (ret == 0)
+		ret++;
+	return ret;
 }
 
 int cachedb_add(str* cachedb_name, str* attr, int val,int expires,int *new_val)
@@ -443,6 +455,7 @@ int cachedb_add(str* cachedb_name, str* attr, int val,int expires,int *new_val)
 	str cde_engine,grp_name;
 	char *p;
 	cachedb_con *con;
+	int ret;
 
 	if(cachedb_name == NULL || attr == NULL)
 	{
@@ -488,7 +501,10 @@ int cachedb_add(str* cachedb_name, str* attr, int val,int expires,int *new_val)
 		return -1;
 	}
 
-	return cde->cdb_func.add(con,attr,val,expires,new_val)<0?-1:1;
+	ret = cde->cdb_func.add(con,attr,val,expires,new_val);
+	if (ret == 0)
+		ret++;
+	return ret;
 }
 
 int cachedb_sub(str* cachedb_name, str* attr, int val,int expires,int *new_val)
@@ -497,6 +513,7 @@ int cachedb_sub(str* cachedb_name, str* attr, int val,int expires,int *new_val)
 	str cde_engine,grp_name;
 	char *p;
 	cachedb_con *con;
+	int ret;
 
 	if(cachedb_name == NULL || attr == NULL)
 	{
@@ -542,7 +559,11 @@ int cachedb_sub(str* cachedb_name, str* attr, int val,int expires,int *new_val)
 		return -1;
 	}
 
-	return cde->cdb_func.sub(con,attr,val,expires,new_val)<0?-1:1;
+	ret = cde->cdb_func.sub(con,attr,val,expires,new_val);
+	if (ret == 0)
+		ret++;
+
+	return ret;
 }
 
 cachedb_con* cachedb_do_init(str *url,void* (*new_connection)(struct cachedb_id *))
