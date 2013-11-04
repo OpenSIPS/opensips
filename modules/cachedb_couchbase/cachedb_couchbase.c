@@ -48,6 +48,7 @@ static str cache_mod_name = str_init("couchbase");
 struct cachedb_url *couchbase_script_urls = NULL;
 
 int couch_timeout_usec=3000000; /* defaults to 3 seconds */
+int couch_lazy_connect=0;/*Don't be lazy, connect on start*/
 
 int set_connection(unsigned int type, void *val)
 {
@@ -57,6 +58,7 @@ int set_connection(unsigned int type, void *val)
 static param_export_t params[]={
 	{ "cachedb_url",	STR_PARAM|USE_FUNC_PARAM,	(void *)&set_connection},
 	{ "timeout",		INT_PARAM,					&couch_timeout_usec },
+	{ "lazy_connect",       INT_PARAM,                                      &couch_lazy_connect },
 	{0,0,0}
 };
 
