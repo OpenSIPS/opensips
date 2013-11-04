@@ -224,8 +224,8 @@ void redis_destroy(cachedb_con *con) {
 		for (i=2;i;i--) { \
 			reply = redisCommand(node->context,fmt,##args); \
 			if (reply == NULL || reply->type == REDIS_REPLY_ERROR) { \
-				LM_ERR("Redis operation failure - %.*s\n",\
-					reply?reply->len:7,reply?reply->str:"FAILURE"); \
+				LM_ERR("Redis operation failure - %p %.*s\n",\
+					reply,reply?reply->len:7,reply?reply->str:"FAILURE"); \
 				if (reply) \
 					freeReplyObject(reply); \
 				if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) { \
@@ -432,4 +432,225 @@ int redis_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	freeReplyObject(reply);
 	return 0;
+}
+
+int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
+		int expected_kv_no,int *reply_no)
+{
+	int current_size=0,len,i;
+
+	/* start with a single returned document */
+	*ret = pkg_malloc(1 * sizeof(cdb_raw_entry *));
+	if (*ret == NULL) {
+		LM_ERR("No more PKG mem\n");
+		goto error;
+	}
+
+	**ret = pkg_malloc(expected_kv_no * sizeof(cdb_raw_entry));
+	if (**ret == NULL) {
+		LM_ERR("No more pkg mem\n");
+		goto error;
+	}
+
+	switch (reply->type) {
+		case REDIS_REPLY_STRING:
+			(*ret)[current_size][0].val.s.s = pkg_malloc(reply->len);
+			if (! (*ret)[current_size][0].val.s.s ) {
+				LM_ERR("No more pkg \n");
+				goto error;
+			}
+
+			memcpy((*ret)[current_size][0].val.s.s,reply->str,reply->len);
+			(*ret)[current_size][0].val.s.len = reply->len;
+			(*ret)[current_size][0].type = CDB_STR;
+
+			current_size++;
+			break;
+		case REDIS_REPLY_INTEGER:
+			(*ret)[current_size][0].val.n = reply->integer;
+			(*ret)[current_size][0].type = CDB_INT;
+			current_size++;
+			break;
+		case REDIS_REPLY_ARRAY:
+			for (i=0;i<reply->elements;i++) {
+				switch (reply->element[i]->type) {
+					case REDIS_REPLY_STRING:
+					case REDIS_REPLY_INTEGER:
+						if (current_size > 0) {
+							*ret = pkg_realloc(*ret,(current_size + 1) * sizeof(cdb_raw_entry *));
+							if (*ret == NULL) {
+								LM_ERR("No more pkg\n");
+								goto error;
+							}
+							(*ret)[current_size] = pkg_malloc(expected_kv_no * sizeof(cdb_raw_entry));
+							if ((*ret)[current_size] == NULL) {
+								LM_ERR("No more pkg\n");
+								goto error;
+							}
+						}
+
+						
+						if (reply->element[i]->type == REDIS_REPLY_INTEGER) {
+							(*ret)[current_size][0].val.n = reply->element[i]->integer;
+							(*ret)[current_size][0].type = CDB_INT;
+						} else {
+							(*ret)[current_size][0].val.s.s = pkg_malloc(reply->element[i]->len);
+							if (! (*ret)[current_size][0].val.s.s ) {
+								LM_ERR("No more pkg \n");
+								goto error;
+							}
+
+							memcpy((*ret)[current_size][0].val.s.s,reply->element[i]->str,reply->element[i]->len);
+							(*ret)[current_size][0].val.s.len = reply->element[i]->len;
+							(*ret)[current_size][0].type = CDB_STR;
+						}
+
+						current_size++;
+						break;
+					default:
+						LM_DBG("Unexpected data type %d found in array - skipping \n",reply->element[i]->type);
+				}
+			}
+			break;
+	}
+
+	*reply_no = current_size;
+	freeReplyObject(reply);
+	return 1;
+
+error:
+	if (*ret) {
+		pkg_free(*ret);
+		for (len = 0;len<current_size;len++) {
+			if ( (*ret)[len][0].type == CDB_STR)
+				pkg_free((*ret)[len][0].val.s.s);
+			pkg_free((*ret)[len]);
+		}
+	}
+
+	*ret = NULL;
+	*reply_no=0;
+		
+	freeReplyObject(reply);
+	return -1;
+}
+
+/* TODO - altough in most of the cases the targetted key is the 2nd query string,
+	that's not always the case ! - make this 100% */
+int redis_raw_query_extract_key(str *attr,str *query_key)
+{
+	int len;
+	char *p,*q,*r;
+
+	if (!attr || attr->s == NULL || query_key == NULL)
+		return -1;
+
+	trim_len(len,p,*attr);
+	q = memchr(p,' ',len);
+	if (q == NULL) {
+		LM_ERR("Malformed Redis RAW query \n");
+		return -1;
+	}
+
+	query_key->s = q+1;
+	r = memchr(query_key->s,' ',len - (query_key->s - p));
+	if (r == NULL) {
+		query_key->len = (p+len) - query_key->s;
+	} else {
+		query_key->len = r-query_key->s;
+	}
+	
+	return 0;
+}
+
+int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entry ***rpl,int expected_kv_no,int *reply_no,str *attr, ...)
+{
+	redis_con *con;
+	cluster_node *node;
+	int i,end;
+	va_list ap;
+	str query_key;
+
+	con = (redis_con *)connection->data;
+	if (redis_raw_query_extract_key(attr,&query_key) < 0) {
+		LM_ERR("Failed to extra Redis raw query key \n");
+		return -1;
+	}
+
+	node = get_redis_connection(con,&query_key);
+	if (node == NULL) {
+		LM_ERR("Bad cluster configuration\n");
+		return -10;
+	}
+
+	va_start(ap,attr);
+	end = attr->s[attr->len];
+	attr->s[attr->len] = 0;
+
+	for (i=2;i;i--) {
+		*reply = redisvCommand(node->context,attr->s,ap); 
+		if (*reply == NULL || (*reply)->type == REDIS_REPLY_ERROR) {
+			LM_ERR("Redis operation failure - %.*s\n",
+				*reply?(*reply)->len:7,*reply?(*reply)->str:"FAILURE");
+			if (*reply)
+				freeReplyObject(*reply);
+			if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) {
+				i = 0; break;
+			}
+		} else break;
+	}
+
+	va_end(ap);
+	attr->s[attr->len]=end;
+
+	if (i==0) {
+		LM_ERR("giving up on query\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int expected_kv_no,int *reply_no)
+{
+	redisReply *reply;
+
+	if (!attr || !connection) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+
+	if (redis_raw_query_send(connection,&reply,rpl,expected_kv_no,reply_no,attr) < 0) {
+		LM_ERR("Failed to send query to server \n");
+		return -1;
+	}
+
+	switch (reply->type) {
+		case REDIS_REPLY_ERROR:
+			LM_ERR("Error encountered when running Redis raw query [%.*s]\n",
+			attr->len,attr->s);
+			return -1;
+		case REDIS_REPLY_NIL:
+			LM_DBG("Redis raw query [%.*s] failed - no such key\n",attr->len,attr->s);
+			freeReplyObject(reply);
+			return -2;
+		case REDIS_REPLY_STATUS:
+			LM_DBG("Received a status of %.*s from Redis \n",reply->len,reply->str);
+			if (reply_no)
+				*reply_no = 0;
+			freeReplyObject(reply);
+			return 1;
+		default:
+			/* some data arrived - yay */
+			
+			if (rpl == NULL) {
+				LM_DBG("Received reply type %d but script writer not interested in it \n",reply->type);
+				freeReplyObject(reply);
+				return 1;
+			}
+			return redis_raw_query_handle_reply(reply,rpl,expected_kv_no,reply_no);
+	}
+
+	return 1;	
 }

@@ -158,7 +158,47 @@ cache_remove("redis:cluster1","key");
 		in configuration script.</para>
 	</section>	
 
+	<section>
+	<title>Raw Query Syntax</title>
+		<para>
+			The cachedb_redis module allows to run RAW queries, thus taking full advantage of the capabilities of the back-end.
 
+			The query syntax is the typical REDIS one.
+		</para>
+
+		<para>
+			Here are a couple examples of running some Redis queries :
+			<example>
+			<title>Redis Raw Query Examples</title>
+			<programlisting format="linespecific">
+...
+	$var(my_hash) = "my_hash_name";
+	$var(my_key) = "my_key_name";
+	$var(my_value) = "my_key_value";
+	cache_raw_query("redis","HSET $var(my_hash) $var(my_key) $var(my_value)"); 
+	cache_raw_query("redis","HGET $var(my_hash) $var(my_key)","$avp(result)");
+	xlog("We have fetched $avp(result) \n"); 
+...
+	$var(my_hash) = "my_hash_name";
+	$var(my_key1) = "my_key1_name";
+	$var(my_key2) = "my_key2_name";
+	$var(my_value1) = "my_key1_value";
+	$var(my_value2) = "my_key2_value";
+	cache_raw_query("redis","HSET $var(my_hash) $var(my_key1) $var(my_value1)"); 
+	cache_raw_query("redis","HSET $var(my_hash) $var(my_key2) $var(my_value2)"); 
+	cache_raw_query("redis","HGETALL $var(my_hash)","$avp(result)");
+
+	$var(it) = 0;
+	while ($(avp(result_final)[$var(it)]) != NULL) {
+		xlog("Multiple key reply: - we have fetched $(avp(result_final)[$var(it)]) \n"); 
+		$var(it) = $var(it) + 1;
+	}
+...
+			</programlisting>
+			</example>
+		</para>
+
+	</section>
 </section>
 
 </chapter>

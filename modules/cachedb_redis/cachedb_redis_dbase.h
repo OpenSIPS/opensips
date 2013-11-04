@@ -59,6 +59,7 @@ int redis_remove(cachedb_con *con,str *attr);
 int redis_add(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_get_counter(cachedb_con *connection,str *attr,int *val);
+int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
 
 #endif /* CACHEDBREDIS_DBASE_H */
 

@@ -84,6 +84,7 @@ static int mod_init(void)
 	cachedb_engine cde;
 
 	LM_NOTICE("initializing module cachedb_redis ...\n");
+	memset(&cde,0,sizeof(cachedb_engine));
 
 	cde.name = cache_mod_name;
 
@@ -95,6 +96,7 @@ static int mod_init(void)
 	cde.cdb_func.remove = redis_remove;
 	cde.cdb_func.add = redis_add;
 	cde.cdb_func.sub = redis_sub;
+	cde.cdb_func.raw_query = redis_raw_query;
 
 	cde.cdb_func.capability = 0; 
 
