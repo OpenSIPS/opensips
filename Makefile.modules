@@ -23,6 +23,9 @@ ifneq ($(makefile_defs), 1)
 $(error "the local makefile does not include Makefile.defs!")
 endif
 
+ifeq (,$(wildcard ../../Makefile.conf))
+$(shell cp ../../Makefile.conf.template ../../Makefile.conf)
+endif
 include ../../Makefile.conf
 
 else
