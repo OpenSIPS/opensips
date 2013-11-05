@@ -1,14 +1,14 @@
 mi_json Module
 
-StA(c)phane Alnet
+Stephane Alnet
 
    <stephane@shimaore.net>
 
 Edited by
 
-StA(c)phane Alnet
+Stephane Alnet
 
-   Copyright (c) 2013 shimaore.net
+   Copyright © 2013 shimaore.net
    Revision History
    Revision $Rev$ $Date$
      __________________________________________________________
@@ -85,12 +85,12 @@ modparam("mi_xmlrpc_ng", "mi_json_root", "opensips_mi_json")
 1.6. Examples
 
    This is an example showing the JSON format for the
-   "get_statistics net: uri:" MI command. Notice how the
+   “get_statistics net: uri:” MI command. Notice how the
    paramaters are comma-separated then URI-encoded.
 
    Example 1.2. JSON request
 
-GET /json/get_statistics?params==net%3A%2Curi%3A HTTP/1.1
+GET /json/get_statistics?params=net%3A%2Curi%3A HTTP/1.1
 Accept: application/json
 Host: example.net
 
@@ -103,7 +103,7 @@ Date: Fri, 01 Nov 2013 12:00:00 GMT
 , "uri:negative_checks = 0"]
 
 
-   Here is another example showing the JSON format for the "ps" MI
+   Here is another example showing the JSON format for the “ps” MI
    command.
 
    Example 1.3. JSON request
