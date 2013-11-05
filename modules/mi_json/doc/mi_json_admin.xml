@@ -85,7 +85,7 @@ modparam("mi_xmlrpc_ng", "mi_json_root", "opensips_mi_json")
 		<title>JSON request</title>
 		<programlisting format="linespecific">
 <![CDATA[
-GET /json/get_statistics?params==net%3A%2Curi%3A HTTP/1.1
+GET /json/get_statistics?params=net%3A%2Curi%3A HTTP/1.1
 Accept: application/json
 Host: example.net
 
