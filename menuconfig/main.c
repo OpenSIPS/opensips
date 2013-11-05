@@ -129,7 +129,7 @@ int init_main_menu()
 	link_child(main_menu,aux);
 
 	if (parse_make_conf() < 0) {
-		fprintf(output,"Failed to parse Makefile.conf");
+		fprintf(output,"Failed to parse %s\n", MAKE_CONF_FILE);
 		return -1;
 	}
 #else
@@ -211,7 +211,7 @@ int init_main_menu()
 		link_child(main_menu,aux);
 
 		if (parse_make_conf() < 0) {
-			fprintf(output,"Failed to parse Makefile.conf");
+			fprintf(output,"Failed to parse %s\n", MAKE_CONF_FILE);
 			return -1;
 		}
 	} else {

@@ -40,6 +40,7 @@ extern char *prev_prefix;
 extern WINDOW *menu_window;
 
 #define MAKE_CONF_FILE	"Makefile.conf"
+#define MAKE_TEMP_FILE	"Makefile.conf.template"
 #define DEFAULT_INSTALL_PREFIX	"/usr/"
 
 #define CONF_COMPILE_OPT	"Configure Compile Options"

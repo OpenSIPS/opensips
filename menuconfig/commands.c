@@ -418,6 +418,10 @@ int dump_make_conf(select_menu *menu,void *arg)
 	int i,k=0;
 
 	FILE *f = fopen(MAKE_CONF_FILE,"w");
+	if (!f) {
+		fprintf(stderr,"Failed to open [%s]\n",MAKE_CONF_FILE);
+		return -1;
+	}
 
 	/* START compile MODULES related options */
 	current = find_menu(CONF_EXCLUDED_MODS,main_menu);

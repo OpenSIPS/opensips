@@ -359,9 +359,12 @@ int parse_make_conf()
 	int defs=0;
 
 	if (!conf) {
-		fprintf(output,"Failed to open [%s]\n",MAKE_CONF_FILE);
-		return -1;
-
+		/* if we cannot find the Makefile.conf, try the template */
+		conf = fopen(MAKE_TEMP_FILE, "r");
+		if (!conf) {
+			fprintf(output,"Failed to open [%s]\n",MAKE_TEMP_FILE);
+			return -1;
+		}
 	}
 	state = PARSE_DEPENDENCIES;
 
