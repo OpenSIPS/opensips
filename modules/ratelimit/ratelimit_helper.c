@@ -105,17 +105,31 @@ static inline int rl_set_name(str * name)
 static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 {
 	int new_counter;
+	int ret;
 
 	if (rl_set_name(name) < 0)
 		return -1;
 
-	if (pipe->my_counter + c <= 0) {
+	if (pipe->my_counter + c < 0) {
 		LM_DBG("Counter going negative\n");
 		return 1;
 	}
 
-	if (cdbf.add(cdbc, &rl_name_buffer, c ? c : -(pipe->my_counter),
-				rl_expire_time, &new_counter) < 0){
+	if (c) {
+		if (c < 0)
+			ret = cdbf.sub(cdbc, &rl_name_buffer, -c, rl_expire_time, &new_counter);
+		else
+			ret = cdbf.add(cdbc, &rl_name_buffer, c, rl_expire_time, &new_counter);
+	} else {
+		if (pipe->my_counter) {
+			ret = cdbf.sub(cdbc, &rl_name_buffer, pipe->my_counter, rl_expire_time,
+					&new_counter);
+		} else {
+			ret = cdbf.get_counter(cdbc, &rl_name_buffer, &new_counter);
+		}
+	}
+
+	if (ret < 0) {
 		LM_ERR("cannot change counter for pipe %.*s with %d\n",
 				name->len, name->s, c);
 		return -1;
