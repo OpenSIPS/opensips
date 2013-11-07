@@ -71,6 +71,7 @@ typedef struct pgw_ {
 	/* type of gateway */
 	int type;
 	str ip_str;
+	struct socket_info *sock;
 	/* strip / pri and attrs */
 	str pri;
 	int strip;

@@ -42,6 +42,7 @@
 #include "../../db/db.h"
 #include "../../mem/shm_mem.h"
 #include "../../time_rec.h"
+#include "../../socket_info.h"
 
 #include "dr_load.h"
 #include "routing.h"
@@ -56,7 +57,9 @@
 #define PREFIX_DRD_COL   "pri_prefix"
 #define TYPE_DRD_COL     "type"
 #define ATTRS_DRD_COL    "attrs"
-#define PROBE_DRD_COL	 "probe_mode"
+#define PROBE_DRD_COL    "probe_mode"
+#define SOCKET_DRD_COL   "socket"
+#define STATE_DRD_COL    "state"
 static str id_drd_col = str_init(ID_DRD_COL);
 static str gwid_drd_col = str_init(GWID_DRD_COL);
 static str address_drd_col = str_init(ADDRESS_DRD_COL);
@@ -65,6 +68,8 @@ static str prefix_drd_col = str_init(PREFIX_DRD_COL);
 static str type_drd_col = str_init(TYPE_DRD_COL);
 static str attrs_drd_col = str_init(ATTRS_DRD_COL);
 static str probe_drd_col = str_init(PROBE_DRD_COL);
+static str sock_drd_col = str_init(SOCKET_DRD_COL);
+static str state_drd_col = str_init(STATE_DRD_COL);
 
 #define RULE_ID_DRR_COL   "ruleid"
 #define GROUP_DRR_COL     "groupid"
@@ -86,11 +91,13 @@ static str dstlist_drr_col = str_init(DSTLIST_DRR_COL);
 #define FLAGS_DRC_COL  "flags"
 #define GWLIST_DRC_COL "gwlist"
 #define ATTRS_DRC_COL  "attrs"
+#define STATE_DRC_COL  "attrs"
 static str id_drc_col = str_init(ID_DRC_COL);
 static str cid_drc_col = str_init(CID_DRC_COL);
 static str flags_drc_col = str_init(FLAGS_DRC_COL);
 static str gwlist_drc_col = str_init(GWLIST_DRC_COL);
 static str attrs_drc_col = str_init(ATTRS_DRC_COL);
+static str state_drc_col = str_init(STATE_DRC_COL);
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
@@ -216,12 +223,12 @@ error:
 
 
 rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
-							str *drd_table, str *drc_table, str* drr_table )
+		str *drd_table, str *drc_table, str* drr_table, int persistent_state)
 {
-	int    int_vals[4];
+	int    int_vals[5];
 	char * str_vals[6];
 	str tmp;
-	db_key_t columns[8];
+	db_key_t columns[10];
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
@@ -229,6 +236,10 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	tmrec_t   *time_rec;
 	int i,n;
 	int no_rows = 10;
+	int db_cols;
+	struct socket_info *sock;
+	str s_sock, host;
+	int proto, port;
 
 	res = 0;
 	ri = 0;
@@ -240,7 +251,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		goto error;
 	}
 
-	if (db_check_table_version(dr_dbf, db_hdl, drd_table, 5 )!= 0)
+	if (db_check_table_version(dr_dbf, db_hdl, drd_table, 6/*version*/ )!= 0)
 		goto error;
 
 	/* read the destinations */
@@ -257,20 +268,27 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[5] = &type_drd_col;
 	columns[6] = &attrs_drd_col;
 	columns[7] = &probe_drd_col;
+	columns[8] = &sock_drd_col;
+	if (persistent_state) {
+		columns[9] = &state_drd_col;
+		db_cols = 10;
+	} else {
+		db_cols = 9;
+	}
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+32+15+4+32+4+128+4, 8);
+		no_rows = estimate_available_rows( 4+32+15+4+32+4+128+4+32+4, db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows )<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -307,12 +325,42 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/*PROBE_MODE column */
 			check_val(PROBE_DRD_COL, ROW_VALUES(row)+7, DB_INT, 1, 0);
 			int_vals[3] = VAL_INT(ROW_VALUES(row)+7);
+			/*SOCKET column */
+			check_val(SOCKET_DRD_COL, ROW_VALUES(row)+8, DB_STRING, 0, 0);
+			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
+			(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
+				s_sock.len = strlen(s_sock.s);
+				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
+				&port, &proto)!=0){
+					LM_ERR("GW <%s>(%d): socket description <%.*s> "
+						"is not valid -> ignoring socket\n", str_vals[3],
+						int_vals[0], s_sock.len,s_sock.s);
+					sock = NULL;
+				} else {
+					sock = grep_sock_info( &host, port, proto);
+					if (sock == NULL) {
+						LM_ERR("GW <%s>(%d): socket <%.*s> is not local to"
+						" OpenSIPS (we must listen on it) -> ignoring socket\n",
+						str_vals[3], int_vals[0], s_sock.len,s_sock.s);
+					}
+				}
+			} else {
+				sock = NULL;
+			}
+			/*STATE column */
+			if (persistent_state) {
+				check_val(STATE_DRD_COL, ROW_VALUES(row)+9, DB_INT, 1, 0);
+				int_vals[4] = VAL_INT(ROW_VALUES(row)+9);
+			} else {
+				int_vals[4] = 0; /* by default enabled */
+			}
 
 			/* add the destinaton definition in */
 			if ( add_dst( rdata, str_vals[3], str_vals[0], int_vals[1],
-			str_vals[1], int_vals[2], str_vals[2], int_vals[3])<0 ) {
-				LM_ERR("failed to add destination id %d -> skipping\n",
-					int_vals[0]);
+			str_vals[1], int_vals[2], str_vals[2], int_vals[3],
+			sock, int_vals[4] )<0 ) {
+				LM_ERR("failed to add destination <%s>(%d) -> skipping\n",
+					str_vals[3],int_vals[0]);
 				continue;
 			}
 			n++;
@@ -341,20 +389,26 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	columns[2] = &flags_drc_col;
 	columns[3] = &gwlist_drc_col;
 	columns[4] = &attrs_drc_col;
+	if (persistent_state) {
+		columns[5] = &state_drc_col;
+		db_cols = 6;
+	} else {
+		db_cols = 5;
+	}
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+4+32+64+64, 5/*cols*/);
+		no_rows = estimate_available_rows( 4+4+32+64+64, db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 5, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -383,10 +437,17 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				/* ATTRS column */
 				check_val(ATTRS_DRC_COL, ROW_VALUES(row)+4, DB_STRING, 0, 0);
 				str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+				/* STATE column */
+				if (persistent_state) {
+					check_val(STATE_DRC_COL, ROW_VALUES(row)+5, DB_INT, 1, 0);
+					int_vals[2] = VAL_INT(ROW_VALUES(row)+5);
+				} else {
+					int_vals[2] = 0; /* by default enabled */
+				}
 
 				/* add the new carrier */
 				if ( add_carrier( int_vals[0], str_vals[0], int_vals[1],
-				str_vals[1], str_vals[2], rdata) != 0 ) {
+				str_vals[1], str_vals[2], int_vals[2], rdata) != 0 ) {
 					LM_ERR("failed to add carrier db_id %d -> skipping\n",
 						int_vals[0]);
 					continue;
