@@ -1425,12 +1425,13 @@ int ds_next_dst(struct sip_msg *msg, int mode)
 	/* get AVP with next destination socket */
 	tmp_avp = search_first_avp(sock_avp_type, sock_avp_name,
 	&sock_avp_value, 0);
-	if (tmp_avp) {
+	if (!tmp_avp) {
 		/* this shuold not happen, it is a bogus state */
 		sock = NULL;
 	} else {
 		if (sscanf( sock_avp_value.s.s, "%p", (void**)&sock ) != 1)
 			sock = NULL;
+		destroy_avp(tmp_avp);
 	}
 
 	if(ds_update_dst(msg, &avp_value.s, sock, mode)!=0)
