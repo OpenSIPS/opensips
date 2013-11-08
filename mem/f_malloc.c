@@ -219,7 +219,9 @@ void fm_split_frag(struct fm_block* qm, struct fm_frag* frag,
 		#endif
 
 		 */
+		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
 		qm->used-=FRAG_OVERHEAD;
+		#endif
 
 		#ifdef DBG_F_MALLOC
 		/* frag created by malloc, mark it*/
