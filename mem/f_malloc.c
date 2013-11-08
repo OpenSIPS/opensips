@@ -355,7 +355,8 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 				frag->size += n->size + FRAG_OVERHEAD;
 
 				#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-				qm->real_used -= FRAG_OVERHEAD;
+				//qm->real_used -= FRAG_OVERHEAD;
+				qm->used += FRAG_OVERHEAD;
 				#endif
 
 				if( frag->size >size )
@@ -457,7 +458,8 @@ join:
 		f->size += n->size + FRAG_OVERHEAD;
 
 		#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-		qm->real_used -= FRAG_OVERHEAD;
+		//qm->real_used -= FRAG_OVERHEAD;
+		qm->used += FRAG_OVERHEAD;
 		#endif
 
 		goto join;
@@ -542,7 +544,8 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size)
 			f->size += n->size + FRAG_OVERHEAD;
 
 			#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-			qm->real_used -= FRAG_OVERHEAD;
+			//qm->real_used -= FRAG_OVERHEAD;
+			qm->used += FRAG_OVERHEAD;
 			#endif
 
 			/* split it if necessary */
