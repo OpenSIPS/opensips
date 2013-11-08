@@ -457,6 +457,12 @@ static void run_timer_process(struct sr_timer_process *tpl)
 		multiple = (( TIMER_TICK * 1000000 ) / UTIMER_TICK ) / 1000000;
 	}
 
+	if (tpl->utimer_list && tpl->utimer_list->label) {
+		set_proc_attrs("timer: %s", tpl->utimer_list->label);
+	} else if (tpl->timer_list && tpl->timer_list->label) {
+		set_proc_attrs("timer: %s", tpl->timer_list->label);
+	}
+
 	LM_DBG("tv = %ld, %ld , m=%d\n",
 		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
 
