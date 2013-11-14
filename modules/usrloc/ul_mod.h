@@ -69,6 +69,7 @@ extern str last_mod_col;
 extern str sip_instance_col;
 
 extern str db_url;
+extern str sockaddr_list_str;
 extern int timer_interval;
 extern int db_mode;
 extern int use_domain;

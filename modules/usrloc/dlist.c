@@ -100,6 +100,7 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
                                 unsigned int part_idx, unsigned int part_max)
 {
 	static char query_buf[512];
+	static char query_socket[512];
 	static str query_str;
 
 	struct socket_info *sock;
@@ -130,6 +131,18 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 
 	LM_DBG("buf: %p. flags: %d\n", buf, flags);
 
+	if (sockaddr_list_str.s) {
+		i = snprintf(query_socket, sizeof(query_socket), " and socket in (%.*s)",
+			sockaddr_list_str.len, sockaddr_list_str.s);
+		if (i >= sizeof(query_socket)) {
+			LM_WARN("listen interfaces list too large: %.*s\n",
+				sockaddr_list_str.len, sockaddr_list_str.s);
+			query_socket[0] = '\0';
+		}
+	} else {
+		query_socket[0] = '\0';
+	}
+
 	/* for each table */
 	for (dom = root; dom; dom = dom->next) {
 		if (db_check_table_version(&ul_dbf, ul_dbh, dom->d->name, UL_TABLE_VERSION))
@@ -144,9 +157,9 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 
 		i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
-		" %.*s, %.*s from %s where %.*s > %.*s and mod(id, %u) = %u",
+		" %.*s, %.*s from %s where %.*s > %.*s and mod(id, %u) = %u%s",
 #else
-		" %.*s, %.*s from %s where %.*s > %.*s and id %% %u = %u",
+		" %.*s, %.*s from %s where %.*s > %.*s and id %% %u = %u%s",
 #endif
 			received_col.len, received_col.s,
 			contact_col.len, contact_col.s,
@@ -156,7 +169,7 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 			dom->d->name->s,
 			expires_col.len, expires_col.s,
 			now_len, now_s,
-			part_max, part_idx);
+			part_max, part_idx, query_socket);
 
 		LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
 		if (i >= sizeof query_buf) {
