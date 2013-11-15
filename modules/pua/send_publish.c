@@ -409,6 +409,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 			memcpy(tuple_id.s, presentity->tuple_id.s, presentity->tuple_id.len);
 			tuple_id.len = presentity->tuple_id.len;
 		}
+               presentity->desired_expires= publ->expires + (int)time(NULL);
 
 		presentity->waiting_reply = 1;
 		presentity->cb_param = publ->cb_param;
