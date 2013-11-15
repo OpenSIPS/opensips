@@ -900,13 +900,6 @@ static void db_update(unsigned int ticks,void *param)
 		return ;
 	}
 
-	db_vals[0].val.int_val= (int)time(NULL)- 10;
-	db_ops[0]= OP_LT;
-	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
-	{
-		LM_ERR("while deleting from db table pua\n");
-	}
-
 	for(i=0; i<HASH_SIZE; i++) 
 	{
 		if(!no_lock)
@@ -1019,6 +1012,13 @@ static void db_update(unsigned int ticks,void *param)
 		}
 		if(!no_lock)
 			lock_release(&HashT->p_records[i].lock);
+	}
+
+	db_vals[0].val.int_val= (int)time(NULL)- 10;
+	db_ops[0]= OP_LT;
+	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
+	{
+		LM_ERR("while deleting from db table pua\n");
 	}
 
 	return ;
