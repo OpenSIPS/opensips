@@ -462,6 +462,11 @@ extern int line;
 %type <intval> snumber
 %type <strval> route_name
 
+/*
+ * since "if_cmd" is inherently ambiguous,
+ * skip 1 harmless shift/reduce conflict when compiling our grammar
+ */
+%expect 1
 
 
 %%
