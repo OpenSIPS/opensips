@@ -121,12 +121,8 @@ static int rl_change_counter(str *name, rl_pipe_t *pipe, int c)
 		else
 			ret = cdbf.add(cdbc, &rl_name_buffer, c, rl_expire_time, &new_counter);
 	} else {
-		if (pipe->my_counter) {
-			ret = cdbf.sub(cdbc, &rl_name_buffer, pipe->my_counter, rl_expire_time,
-					&new_counter);
-		} else {
-			ret = cdbf.get_counter(cdbc, &rl_name_buffer, &new_counter);
-		}
+		ret = cdbf.sub(cdbc, &rl_name_buffer, pipe->my_counter, rl_expire_time,
+				&new_counter);
 	}
 
 	if (ret < 0) {
