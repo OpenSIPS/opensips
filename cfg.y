@@ -487,6 +487,11 @@ extern int line;
 %type <strval> route_name
 %type <intval> route_param
 
+/*
+ * since "if_cmd" is inherently ambiguous,
+ * skip 1 harmless shift/reduce conflict when compiling our grammar
+ */
+%expect 1
 
 
 %%
