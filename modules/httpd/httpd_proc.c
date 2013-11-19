@@ -309,7 +309,6 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 			pr->accept_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
 		else
 			pr->accept_type = HTTPD_UNKNOWN_CNT_TYPE;
-		LM_ERR("Processed Accept-Type header\n");
 		return MHD_YES;
 	}
 	if (strcasecmp("Content-Type", key) == 0) {
