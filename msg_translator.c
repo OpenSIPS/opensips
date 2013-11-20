@@ -389,28 +389,42 @@ static inline int lump_check_opt(	struct lump *l,
 			get_ip_port_proto;
 			/* faster tests first */
 			if ((port==snd_s->port_no)&&(proto==snd_s->proto)&&
-				(ip_addr_cmp(ip, &snd_s->address)))
+				(ip_addr_cmp(ip, &snd_s->address))) {
+				l->flags &= ~LUMPFLAG_COND_TRUE;
 				return 0;
+			}
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
 		case COND_IF_DIFF_AF:
 			get_ip_port_proto;
-			if (ip->af==snd_s->address.af) return 0;
+			if (ip->af==snd_s->address.af) {
+				l->flags &= ~LUMPFLAG_COND_TRUE;
+				return 0;
+			}
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
 		case COND_IF_DIFF_PROTO:
 			get_ip_port_proto;
-			if (proto==snd_s->proto) return 0;
+			if (proto==snd_s->proto) {
+				l->flags &= ~LUMPFLAG_COND_TRUE;
+				return 0;
+			}
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
 		case COND_IF_DIFF_PORT:
 			get_ip_port_proto;
-			if (port==snd_s->port_no) return 0;
+			if (port==snd_s->port_no) { 
+				l->flags &= ~LUMPFLAG_COND_TRUE;
+				return 0;
+			}
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
 		case COND_IF_DIFF_IP:
 			get_ip_port_proto;
-			if (ip_addr_cmp(ip, &snd_s->address)) return 0;
+			if (ip_addr_cmp(ip, &snd_s->address)) {
+				l->flags &= ~LUMPFLAG_COND_TRUE;
+				return 0;
+			}
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
 		default:
@@ -573,7 +587,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 				LM_CRIT("unknown subst type %d\n", \
 						(subst_l)->u.subst); \
 		}
-	
+
+
 	s_offset=0;
 	new_len=0;
 	last_del=0;
@@ -916,7 +931,7 @@ void process_lumps(	struct sip_msg* msg,
 							(subst_l)->u.subst); \
 	} \
  \
-	
+
 	/* init send_address_str & send_port_str */
 	if(send_sock && send_sock->adv_name_str.len)
 		send_address_str=&(send_sock->adv_name_str);
