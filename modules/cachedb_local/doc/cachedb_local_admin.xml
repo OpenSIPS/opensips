@@ -60,6 +60,25 @@ modparam("cachedb_local", "cache_table_size", 10)
 	</programlisting>
 		</example>
 	</section>
+		<section>
+		<title><varname>exec_threshold</varname> (int)</title>
+		<para>
+			The maximum number of microseconds that a local cache query can last.
+			Anything above the threshold will trigger a warning message to the log
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 ( unlimited - no warnings )</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>exec_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "exec_threshold", 100000)
+...
+	</programlisting>
+		</example>
+	</section>
 	<section>
 		<title><varname>cache_clean_period</varname> (int)</title>
 		<para>

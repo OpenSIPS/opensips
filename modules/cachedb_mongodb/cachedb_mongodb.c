@@ -53,6 +53,7 @@ int mongo_slave_ok=0;      /* not ok to send read requests to secondaries */
 str mongo_write_concern_str = {0,0};
 bson mongo_write_concern_b;
 mongo_write_concern mwc;
+int mongo_exec_threshold=0;
 
 int set_connection(unsigned int type, void *val)
 {
@@ -64,6 +65,7 @@ static param_export_t params[]={
 	{ "op_timeout",    INT_PARAM, &mongo_op_timeout},
 	{ "slave_ok",      INT_PARAM, &mongo_slave_ok},
 	{ "write_concern", STR_PARAM, &mongo_write_concern_str },
+	{ "exec_treshold", INT_PARAM, &mongo_exec_threshold },
 	{0,0,0}
 };
 

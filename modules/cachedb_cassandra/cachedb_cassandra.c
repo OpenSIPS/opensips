@@ -45,6 +45,8 @@ int send_timeout=2000; /* ms */
 int recv_timeout=2000; /* ms */
 int rd_consistency_level=1;
 int wr_consistency_level=1;
+/* TODO - implement */
+int cassandra_exec_threshold = 0;
 
 static int mod_init(void);
 static int child_init(int);
@@ -65,6 +67,7 @@ static param_export_t params[]={
 	{ "receive_timeout",             INT_PARAM, &recv_timeout},
 	{ "rd_consistency_level",        INT_PARAM, &rd_consistency_level},
 	{ "wr_consistency_level",        INT_PARAM, &wr_consistency_level},
+	{ "exec_threshold",		 INT_PARAM, &cassandra_exec_threshold},
 	{0,0,0}
 };
 

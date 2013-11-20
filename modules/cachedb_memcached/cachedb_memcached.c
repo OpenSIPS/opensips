@@ -44,6 +44,7 @@
 static str cache_mod_name = str_init("memcached");
 
 struct cachedb_url *memcached_script_urls = NULL;
+static int memcache_exec_threshold=0; 
 
 int mc_set_connection(unsigned int type, void *val)
 {
@@ -71,6 +72,7 @@ mem_server * servers;
 /** module parameters */
 static param_export_t params[]={
 	{"cachedb_url",        STR_PARAM|USE_FUNC_PARAM, (void*)&mc_set_connection },
+	{"exec_threshold",     INT_PARAM,                &memcache_exec_threshold  },
 	{0,0,0}
 };
 
@@ -96,11 +98,16 @@ int wrap_memcached_insert(cachedb_con *con,str* attr, str* value,int expires)
 {
 	memcached_return  rc;
 	memcached_con *connection;
+	struct timeval start;
 
+	start_expire_timer(start,memcache_exec_threshold);
 	connection = (memcached_con *)con->data;
 
 	rc = memcached_set(connection->memc,attr->s, attr->len , value->s,
 				value->len, (time_t)expires, (uint32_t)0);
+
+	stop_expire_timer(start,memcache_exec_threshold,
+	"cachedb_memcached insert",attr->s,attr->len,0);
 
 	if( rc != MEMCACHED_SUCCESS)
 	{
@@ -115,10 +122,15 @@ int wrap_memcached_remove(cachedb_con *connection,str* attr)
 {
 	memcached_return  rc;
 	memcached_con *con;
+	struct timeval start;
 
+	start_expire_timer(start,memcache_exec_threshold);
 	con = (memcached_con *)connection->data;
 
 	rc = memcached_delete(con->memc,attr->s,attr->len,0);
+
+	stop_expire_timer(start,memcache_exec_threshold,
+	"cachedb_memcached remove",attr->s,attr->len,0);
 
 	if( rc != MEMCACHED_SUCCESS && rc != MEMCACHED_NOTFOUND)
 	{
@@ -138,7 +150,9 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 	char * err;
 	char * value;
 	memcached_con *con;
-    
+	struct timeval start;
+
+	start_expire_timer(start,memcache_exec_threshold);
 	con = (memcached_con *)connection->data;
     
 	ret = memcached_get(con->memc,attr->s, attr->len,
@@ -150,12 +164,16 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 		{
 			res->s = NULL;
 			res->len = 0;
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached get",attr->s,attr->len,0);
 			return -2;
 		}
 		else
 		{
 			err = (char*)memcached_strerror(con->memc,rc);
 			LM_ERR("Failed to get: %s\n",err );
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached get",attr->s,attr->len,0);
 			return -1;
 		}
 	}
@@ -164,6 +182,8 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 	if( value == NULL)
 	{
 		LM_ERR("Memory allocation");
+		stop_expire_timer(start,memcache_exec_threshold,
+		"cachedb_memcached get",attr->s,attr->len,0);
 		return -1;
 	}
 
@@ -172,7 +192,9 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 	res->len = ret_len;
 
 	free(ret);
-
+	
+	stop_expire_timer(start,memcache_exec_threshold,
+	"cachedb_memcached get",attr->s,attr->len,0);
 	return 0;
 }
 
@@ -184,7 +206,9 @@ int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 	memcached_con *con;
 	uint64_t res;
 	str ins_val;
+	struct timeval start;
 
+	start_expire_timer(start,memcache_exec_threshold);
 	con = (memcached_con *)connection->data;
 
 	rc = memcached_increment(con->memc,attr->s,attr->len,val,&res);
@@ -194,14 +218,20 @@ int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 			ins_val.s = sint2str(val,&ins_val.len);
 			if (wrap_memcached_insert(connection,attr,&ins_val,expires) < 0) {
 				LM_ERR("failed to insert value\n");
+				stop_expire_timer(start,memcache_exec_threshold,
+				"cachedb_memcached add",attr->s,attr->len,0);
 				return -1;
 			}
 			if (new_val)
 				*new_val = val;
 
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached add",attr->s,attr->len,0);
 			return 0;
 		} else {
 			LM_ERR("Failed to add: %s\n",memcached_strerror(con->memc,rc));
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached add",attr->s,attr->len,0);
 			return -1;
 		}
 	}
@@ -209,6 +239,8 @@ int wrap_memcached_add(cachedb_con *connection,str* attr,int val,
 	if (new_val)
 		*new_val = (int)res;
 
+	stop_expire_timer(start,memcache_exec_threshold,
+	"cachedb_memcached add",attr->s,attr->len,0);
 	return 0;
 }
 
@@ -220,7 +252,9 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 	memcached_con *con;
 	uint64_t res;
 	str ins_val;
+	struct timeval start;
 
+	start_expire_timer(start,memcache_exec_threshold);
 	con = (memcached_con *)connection->data;
 
 	rc = memcached_decrement(con->memc,attr->s,attr->len,val,&res);
@@ -230,20 +264,29 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 			ins_val.s = sint2str(val,&ins_val.len);
 			if (wrap_memcached_insert(connection,attr,&ins_val,expires) < 0) {
 				LM_ERR("failed to insert value\n");
+				stop_expire_timer(start,memcache_exec_threshold,
+				"cachedb_memcached sub",attr->s,attr->len,0);
 				return -1;
 			}
 			if (new_val)
 				*new_val = val;
 
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached sub",attr->s,attr->len,0);
 			return 0;
 		} else {
 			LM_ERR("Failed to sub: %s\n",memcached_strerror(con->memc,rc));
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached sub",attr->s,attr->len,0);
 			return -1;
 		}
 	}
 
 	if (new_val)
 		*new_val = (int)res;
+
+	stop_expire_timer(start,memcache_exec_threshold,
+	"cachedb_memcached sub",attr->s,attr->len,0);
 
 	return 0;
 }

@@ -34,6 +34,7 @@
 
 extern int couch_timeout_usec;
 extern int couch_lazy_connect;
+extern int couch_exec_threshold;
 
 volatile str get_res = {0,0};
 volatile int arithmetic_res = 0;
@@ -253,7 +254,9 @@ int couchbase_set(cachedb_con *connection,str *attr,
 	lcb_error_t oprc;
 	lcb_store_cmd_t cmd;
 	const lcb_store_cmd_t *commands[1];
+	struct timeval start;
 
+	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
 
 	commands[0] = &cmd;
@@ -271,6 +274,8 @@ int couchbase_set(cachedb_con *connection,str *attr,
 		LM_ERR("Set request failed - %s\n", lcb_strerror(instance, oprc));
 		//Attempt reconnect
 		if(couchbase_conditional_reconnect(connection, oprc) != 1) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase set",attr->s,attr->len,0);
 			return -2;
 		}
 
@@ -280,11 +285,15 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 		if (oprc != LCB_SUCCESS) {
 			LM_ERR("Set command retry failed - %s\n", lcb_strerror(instance, oprc));
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase set",attr->s,attr->len,0);
 			return -2;
 		}
 		LM_ERR("Set command successfully retried\n");
 	}
 	LM_DBG("Succesfully stored\n");
+	stop_expire_timer(start,couch_exec_threshold,
+	"cachedb_couchbase set",attr->s,attr->len,0);
 	return 1;
 }
 
@@ -294,7 +303,9 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 	lcb_error_t oprc;
 	lcb_remove_cmd_t cmd;
 	const lcb_remove_cmd_t *commands[1];
+	struct timeval start;
 
+	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
 	commands[0] = &cmd;
 	memset(&cmd, 0, sizeof(cmd));
@@ -304,11 +315,15 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 
 	if (oprc != LCB_SUCCESS) {
 		if (oprc == LCB_KEY_ENOENT) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase remove",attr->s,attr->len,0);
 			return -1;
 		}
 
 		LM_ERR("Failed to send the remove query - %s\n", lcb_strerror(instance, oprc));
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase remove",attr->s,attr->len,0);
 			return -2;
 		};
 
@@ -318,15 +333,21 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Remove command successfully retried\n");
+				stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase remove",attr->s,attr->len,0);
 				return -1;
 			}
 			LM_ERR("Remove command retry failed - %s\n", lcb_strerror(instance, oprc));
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase remove",attr->s,attr->len,0);
 			return -2;
 		}
 		LM_ERR("Remove command successfully retried\n");
 	}
 
 	LM_DBG("Succesfully removed\n");
+	stop_expire_timer(start,couch_exec_threshold,
+	"cachedb_couchbase remove",attr->s,attr->len,0);
 	return 1;
 }
 
@@ -336,7 +357,9 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 	lcb_error_t oprc;
 	lcb_get_cmd_t cmd;
 	const lcb_get_cmd_t *commands[1];
+	struct timeval start;
 
+	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
 
 	commands[0] = &cmd;
@@ -348,11 +371,15 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
 		if (oprc == LCB_KEY_ENOENT) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get",attr->s,attr->len,0);
 			return -1;
 		}
 
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get",attr->s,attr->len,0);
 			return -2;
 		}
 
@@ -362,9 +389,13 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Get command successfully retried\n");
+				stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get",attr->s,attr->len,0);
 				return -1;
 			}
 			LM_ERR("Get command retry failed - %s\n", lcb_strerror(instance, oprc));
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get",attr->s,attr->len,0);
 			return -2;
 		}
 		LM_ERR("Get command successfully retried\n");
@@ -372,9 +403,13 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 
 	//Incase of malloc failure
 	if (!get_res.s) {
+		stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase get",attr->s,attr->len,0);
 		return -2;
 	}
 
+	stop_expire_timer(start,couch_exec_threshold,
+	"cachedb_couchbase get",attr->s,attr->len,0);
 	*val = get_res;
 	return 1;
 }
@@ -385,7 +420,9 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	lcb_error_t oprc;
 	lcb_arithmetic_cmd_t cmd;
 	const lcb_arithmetic_cmd_t *commands[1];
+	struct timeval start;
 
+	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
 
 	commands[0] = &cmd;
@@ -401,11 +438,15 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	if (oprc != LCB_SUCCESS) {
 		if (oprc == LCB_KEY_ENOENT) {
 			return -1;
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase add",attr->s,attr->len,0);
 		}
 
 		LM_ERR("Failed to send the arithmetic query - %s\n", lcb_strerror(instance, oprc));
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase add",attr->s,attr->len,0);
 			return -2;
 		}
 
@@ -416,9 +457,13 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Arithmetic command successfully retried\n");
+				stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase add",attr->s,attr->len,0);
 				return -1;
 			}
 			LM_ERR("Arithmetic command retry failed - %s\n", lcb_strerror(instance, oprc));
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase add",attr->s,attr->len,0);
 			return -2;
 		}
 		LM_ERR("Arithmetic command successfully retried\n");
@@ -427,6 +472,8 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	if (new_val)
 		*new_val = arithmetic_res;
 
+	stop_expire_timer(start,couch_exec_threshold,
+	"cachedb_couchbase add",attr->s,attr->len,0);
 	return 1;
 }
 

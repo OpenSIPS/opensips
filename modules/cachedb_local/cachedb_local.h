@@ -35,6 +35,7 @@
 
 extern lcache_t* cache_htable;
 extern int cache_htable_size;
+extern int local_exec_threshold;
 
 typedef struct {
 	struct cachedb_id *id;

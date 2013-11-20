@@ -53,6 +53,8 @@ static void destroy(void);
 lcache_t* cache_htable = NULL;
 int cache_htable_size = 9;
 int cache_clean_period = 600;
+int local_exec_threshold = 0;
+
 
 static int remove_chunk_f(struct sip_msg* msg, char* glob);
 struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param);
@@ -60,7 +62,8 @@ void localcache_clean(unsigned int ticks,void *param);
 
 static param_export_t params[]={
 	{ "cache_table_size",   INT_PARAM, &cache_htable_size },
-	{ "cache_clean_period", INT_PARAM, &cache_clean_period},
+	{ "cache_clean_period", INT_PARAM, &cache_clean_period },
+	{ "exec_threshold",     INT_PARAM, &local_exec_threshold },
 	{0,0,0}
 };
 
@@ -102,6 +105,7 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 	int i;
 	str *pat = (str *)glob;
 	lcache_entry_t* me1, *me2;
+	struct timeval start;
 
 	if (pat->len+1 > pat_buff_size) {
 		pat_buff = pkg_realloc(pat_buff,pat->len+1);
@@ -118,6 +122,7 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 	pat_buff[pat->len] = 0;
 
 	LM_DBG("trying to remove chunk with pattern [%s]\n",pat_buff);
+	start_expire_timer(start,local_exec_threshold);
 
 	for(i = 0; i< cache_htable_size; i++) {
 		lock_get(&cache_htable[i].lock);
@@ -131,6 +136,8 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 					LM_ERR("No more pkg mem\n");
 					key_buff_size = 0;
 					lock_release(&cache_htable[i].lock);
+					stop_expire_timer(start,local_exec_threshold,
+					"cachedb_local remove_chunk",pat->s,pat->len,0);
 					return -1;
 				}
 
@@ -161,6 +168,8 @@ static int remove_chunk_f(struct sip_msg* msg, char* glob)
 		lock_release(&cache_htable[i].lock);
 	}
 
+	stop_expire_timer(start,local_exec_threshold,
+	"cachedb_local remove_chunk",pat->s,pat->len,0);
 	return 1;
 }
 

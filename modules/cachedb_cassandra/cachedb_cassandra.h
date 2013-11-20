@@ -31,5 +31,6 @@ extern int send_timeout;
 extern int recv_timeout;
 extern int rd_consistency_level;
 extern int wr_consistency_level;
+extern int cassandra_exec_threshold;
 
 #endif

@@ -36,6 +36,7 @@ extern mongo_write_concern mwc;
 extern str mongo_write_concern_str;
 extern str mongo_write_concern_b;
 extern int mongo_slave_ok;
+extern int mongo_exec_threshold;
 
 mongo_con* mongo_new_connection(struct cachedb_id* id)
 {
@@ -239,14 +240,16 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 	int rez_len,i;
 	mongo *conn = &MONGO_CDB_CON(connection);
 	char hex_oid[25];
+	struct timeval start;
 
 	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 	bson_finish(&new_b);
 
@@ -287,7 +290,7 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 
 				bson_destroy(&new_b);
 			}
-			return -1;
+			goto error;
 		}
 		break;
 	}
@@ -305,18 +308,20 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 					LM_ERR("Failed to convert %d to str\n",
 						bson_iterator_int(&it));
 					mongo_cursor_destroy(m_cursor);
-					return -1;
+					goto error;
 				}
 					
 				val->s = pkg_malloc(rez_len);
 				if (val->s == NULL) {
 					LM_ERR("No more pkg malloc\n");
 					mongo_cursor_destroy(m_cursor);
-					return -1;
+					goto error;
 				}	
 				memcpy(val->s,rez,rez_len);
 				val->len = rez_len;
 				mongo_cursor_destroy(m_cursor);
+				stop_expire_timer(start,mongo_exec_threshold,
+				"cachedb_mongo get",attr->s,attr->len,0);
 				return 0;
 
 				break;
@@ -325,7 +330,7 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 				if (rez == NULL) {
 					LM_ERR("Got null str for mongo\n");
 					mongo_cursor_destroy(m_cursor);
-					return -1;
+					goto error;
 				}
 				rez_len=strlen(rez);
 				val->s = pkg_malloc(rez_len);
@@ -333,11 +338,13 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 				if (val->s == NULL) {
 					LM_ERR("No more pkg malloc\n");
 					mongo_cursor_destroy(m_cursor);
-					return -1;
+					goto error;
 				}	
 				memcpy(val->s,rez,rez_len);
 				val->len = rez_len;
 				mongo_cursor_destroy(m_cursor);
+				stop_expire_timer(start,mongo_exec_threshold,
+				"cachedb_mongo get",attr->s,attr->len,0);
 				return 0;
 					
 				break;
@@ -349,28 +356,36 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 
 	LM_DBG("No suitable response found\n");
 	mongo_cursor_destroy(m_cursor);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo get",attr->s,attr->len,0);
 	return -2;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo get",attr->s,attr->len,0);
+	return -1;
 }
 
 int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)
 {
 	bson new_b;
 	int i;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 
 	LM_DBG("Set operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 	
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	if (bson_append_string_n(&new_b,"opensips",val->s,val->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	bson_finish(&new_b);
@@ -387,27 +402,35 @@ int mongo_con_set(cachedb_con *connection,str *attr,str *val,int expires)
 			LM_ERR("Failed to do insert. Con err = %d\n",
 				conn->err);
 			bson_destroy(&new_b);
-			return -1;
+			goto error;
 		}
 	}	
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo set",attr->s,attr->len,0);
 	bson_destroy(&new_b);
 	return 0;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo set",attr->s,attr->len,0);
+	return -1;
 }
 
 int mongo_con_remove(cachedb_con *connection,str *attr)
 {
 	bson new_b;
 	int i;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 
 	LM_DBG("Remove operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 	
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	bson_finish(&new_b);
@@ -424,12 +447,18 @@ int mongo_con_remove(cachedb_con *connection,str *attr)
 			LM_ERR("Failed to do insert. Con err = %d\n",
 				conn->err);
 			bson_destroy(&new_b);
-			return -1;
+			goto error;
 		}	
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo remove",attr->s,attr->len,0);
 	bson_destroy(&new_b);
 	return 0;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo remove",attr->s,attr->len,0);
+	return -1;
 }
 
 void dbg_bson_print_raw( const char *data , int depth ) 
@@ -993,15 +1022,17 @@ int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply
 	bson new_b;
 	int ret;
 	bson_iterator i;
+	struct timeval start;
 	const char *op=NULL;
 
 	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 
 	if (attr->len > raw_query_buf_len) {
 		raw_query_buf = pkg_realloc(raw_query_buf,attr->len+1);
 		if (!raw_query_buf) {
 			LM_ERR("No more pkg\n");
-			return -1;
+			goto error;
 		}
 
 		memcpy(raw_query_buf,attr->s,attr->len);
@@ -1017,19 +1048,19 @@ int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply
 
 	if (ret < 0) {
 		LM_ERR("Failed to convert [%.*s] to BSON\n",attr->len,attr->s);
-		return -1;
+		goto error;
 	}
 
 	if (bson_find(&i,&new_b,"op") == BSON_EOO) {
 		LM_ERR("No \"op\" specified \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	if (bson_iterator_type( &i ) != BSON_STRING) {
 		LM_ERR("The op must be a string \n");
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
 	op = bson_iterator_string( &i );
@@ -1047,11 +1078,17 @@ int mongo_con_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply
 	} else {
 		LM_ERR("Unsupported op type [%s] \n",op);
 		bson_destroy(&new_b);
-		return -1;
+		goto error;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo raw",attr->s,attr->len,0);
 	bson_destroy(&new_b);
 	return ret;
+error:
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo raw",attr->s,attr->len,0);
+	return -1;
 }
 
 static char counter_q_buf[256];
@@ -1059,9 +1096,12 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 {
 	bson cmd,err_b,out;
 	int j,ret;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 	bson_iterator it,it2;
 	const char *curr_key,*inner_key;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init( &cmd );
 	bson_append_string(&cmd,"findAndModify",MONGO_COLLECTION(connection));
@@ -1112,6 +1152,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 				}
 			}
 			bson_destroy(&cmd);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo add",attr->s,attr->len,0);
 			return -1;
 		}
 		break;
@@ -1120,6 +1162,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	if (!new_val) {
 		bson_destroy(&out);
 		bson_destroy(&cmd);
+		stop_expire_timer(start,mongo_exec_threshold,
+		"cachedb_mongo add",attr->s,attr->len,0);
 		return 0;
 	}
 
@@ -1140,6 +1184,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 					*new_val = bson_iterator_int(&it2) + val;
 					bson_destroy(&out);
 					bson_destroy(&cmd);
+					stop_expire_timer(start,mongo_exec_threshold,
+					"cachedb_mongo add",attr->s,attr->len,0);
 					return 0;
 				}
 			}
@@ -1149,6 +1195,8 @@ int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 err:
 	bson_destroy(&out);
 	bson_destroy(&cmd);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo add",attr->s,attr->len,0);
 	return -1;
 
 }
@@ -1164,15 +1212,19 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 	mongo_cursor *m_cursor;
 	bson_iterator it;
 	int i;
+	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
 	char hex_oid[25];
 
 	LM_DBG("Get counter operation on namespace %s\n",MONGO_NAMESPACE(connection));
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&new_b);
 	if (bson_append_string_n(&new_b,"_id",attr->s,attr->len) != BSON_OK) {
 		LM_ERR("Failed to append _id \n");
 		bson_destroy(&new_b);
+		stop_expire_timer(start,mongo_exec_threshold,
+		"cachedb_mongo get_counter",attr->s,attr->len,0);
 		return -1;
 	}
 	bson_finish(&new_b);
@@ -1213,6 +1265,8 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 				}
 			}
 			bson_destroy(&new_b);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo get_counter",attr->s,attr->len,0);
 			return -1;
 		}
 		break;
@@ -1230,6 +1284,8 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 					*val = bson_iterator_int(&it);
 
 				mongo_cursor_destroy(m_cursor);
+				stop_expire_timer(start,mongo_exec_threshold,
+				"cachedb_mongo get_counter",attr->s,attr->len,0);
 				return 0;
 
 				break;
@@ -1241,6 +1297,8 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	LM_DBG("No suitable response found\n");
 	mongo_cursor_destroy(m_cursor);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo get_counter",attr->s,attr->len,0);
 	return -2;
 }
 
@@ -1310,6 +1368,9 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	db_row_t *current;
 	db_val_t *cur_val;
 	static str dummy_string = {"", 0};
+	struct timeval start;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	if (!_c) {
 		LM_ERR("The module does not support 'select *' SQL queries \n");
@@ -1413,6 +1474,8 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		LM_DBG("No rows returned from Mongo \n");
 		bson_destroy(&fields);
 		bson_destroy(&query);
+		stop_expire_timer(start,mongo_exec_threshold,
+		"cachedb_mongo sql_select",table->s,table->len,0);
 		return 0;
 	}
 
@@ -1500,6 +1563,8 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	LM_DBG("Succesfully ran query\n");
 	bson_destroy(&query);
 	bson_destroy(&fields);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_select",table->s,table->len,0);
 	return 0;
 
 error2:
@@ -1510,6 +1575,8 @@ error2:
 error:
 	bson_destroy(&query);
 	bson_destroy(&fields);
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_select",table->s,table->len,0);
 	return -1;
 }
 
@@ -1540,6 +1607,9 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
+	struct timeval start;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&query);
 	for (i=0;i<_n;i++) {
@@ -1591,11 +1661,15 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 			}
 
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo sql_insert",table->s,table->len,0);
 			return -1;
 		}
 		break;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_insert",table->s,table->len,0);
 	return 0;
 }
 
@@ -1607,6 +1681,9 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
+	struct timeval start;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&query);
 	for (i=0;i<_n;i++) {
@@ -1656,11 +1733,15 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 			}
 
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo sql_delete",table->s,table->len,0);
 			return -1;
 		}
 		break;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_delete",table->s,table->len,0);
 	return 0;
 }
 
@@ -1672,6 +1753,9 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	char key_buff[32],namespace_buff[64],*p;
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
+	struct timeval start;
+
+	start_expire_timer(start,mongo_exec_threshold);
 
 	bson_init(&query);
 	for (i=0;i<_n;i++) {
@@ -1729,9 +1813,13 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 				}
 			}
 			return -1;
+			stop_expire_timer(start,mongo_exec_threshold,
+			"cachedb_mongo sql_update",table->s,table->len,0);
 		}
 		break;
 	}
 
+	stop_expire_timer(start,mongo_exec_threshold,
+	"cachedb_mongo sql_update",table->s,table->len,0);
 	return 0;
 }
