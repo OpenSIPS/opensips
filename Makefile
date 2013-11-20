@@ -208,6 +208,7 @@ _modules: $(modules)
 
 .PHONY: $(modules)
 $(modules):
+	@if ! echo $(MAKEFLAGS) | grep -q -- --jobserver; then echo; echo; fi  # extra LF if not using -j
 	$(MAKE) -C $@
 
 .PHONY: modules
