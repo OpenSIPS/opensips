@@ -610,6 +610,8 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity, int* sent_r
 			{
 					LM_ERR("deleting record from hash table failed\n");
 			}
+			/* presentity removed, pointer no longer valid */
+			p = NULL;
 
 			lock_release(&pres_htable[hash_code].lock);
 			if(msg && publ_send200ok(msg,presentity->expires,presentity->etag)<0)
