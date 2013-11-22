@@ -698,6 +698,69 @@ save("location","mr", "$avp(aor)");
 
 	<section>
 		<title>
+		<function moreinfo="none">remove(domain, AOR[, target]])</function>
+		</title>
+		<para>
+		Explicitly remove contacts behind a given address-of-record.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain</emphasis> - Logical domain within registrar. 
+			If database is used then this must be name of the table which 
+			stores the contacts.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>target (optional)</emphasis> -
+				may be specified in two ways:
+				<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis role='bold'>single delete - </emphasis>
+						Specific contact to be deleted (SIP URI)
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis role='bold'>multi delete - </emphasis>
+						IP/hostname of the AOR's contacts which will be deleted
+					</para>
+				</listitem>
+				</itemizedlist>
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>remove</function> usage</title>
+		<programlisting format="linespecific">
+...
+# remove all contacts belonging to the "bob" AOR
+remove("location", "sip:bob@atlanta.com");
+...
+# remove only bob's home phone
+remove("location", "sip:bob@atlanta.com", "sip:bob_home@proxy.com");
+...
+# remove all bob's phones which are behind "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+save("location", "sip:bob@atlanta.com", "$var(next_hop)");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
 		<function moreinfo="none">lookup(domain [, flags [, aor]])</function>
 		</title>
 		<para>

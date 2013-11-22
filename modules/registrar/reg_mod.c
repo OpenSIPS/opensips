@@ -81,6 +81,7 @@ static int  child_init(int);
 static void mod_destroy(void);
 /*! \brief Fixup functions */
 static int registrar_fixup(void** param, int param_no);
+static int fixup_remove(void** param, int param_no);
 static int registered_fixup(void** param, int param_no);
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
@@ -147,6 +148,10 @@ static cmd_export_t cmds[] = {
 	{"save",         (cmd_function)save,         2,  registrar_fixup,  0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"remove",       (cmd_function)_remove,      2,  fixup_remove,     0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"remove",       (cmd_function)_remove,      3,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
 		REQUEST_ROUTE | FAILURE_ROUTE },
@@ -375,6 +380,24 @@ static int domain_fixup(void** param)
 	return 0;
 }
 
+/*! \brief
+ * @params: domain, AOR, contact/domain
+ */
+static int fixup_remove(void** param, int param_no)
+{
+	switch (param_no) {
+	case 1:
+		return domain_fixup(param);
+	case 2:
+		return fixup_spve(param);
+	case 3:
+		return fixup_spve(param);
+
+	default:
+		LM_ERR("maximum 3 params! given at least %d\n", param_no);
+		return E_INVALID_PARAMS;
+	}
+}
 
 /*! \brief
  * Fixup for "save"+"lookup" functions - domain, flags, AOR params
@@ -392,7 +415,6 @@ static int registrar_fixup(void** param, int param_no)
 		return fixup_pvar(param);
 	}
 }
-
 
 static int registered_fixup(void** param, int param_no)
 {

@@ -53,10 +53,11 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. lookup(domain [, flags [, aor]])
-              1.4.3. registered(domain [,AOR[, callid]])
-              1.4.4. is_other_contact(domain , IPs)
-              1.4.5. add_sock_hdr(hdr_name)
+              1.4.2. remove(domain, AOR[, target]])
+              1.4.3. lookup(domain [, flags [, aor]])
+              1.4.4. registered(domain [,AOR[, callid]])
+              1.4.5. is_other_contact(domain , IPs)
+              1.4.6. add_sock_hdr(hdr_name)
 
         1.5. Exported Statistics
 
@@ -87,10 +88,11 @@ Bogdan-Andrei Iancu
    1.15. Set gruu_secret parameter
    1.16. Set gruu_secret parameter
    1.17. save usage
-   1.18. lookup usage
-   1.19. registered usage
-   1.20. is_other_contact usage
-   1.21. add_sock_hdr usage
+   1.18. remove usage
+   1.19. lookup usage
+   1.20. registered usage
+   1.21. is_other_contact usage
+   1.22. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -522,7 +524,37 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  lookup(domain [, flags [, aor]])
+1.4.2.  remove(domain, AOR[, target]])
+
+   Explicitly remove contacts behind a given address-of-record.
+
+   Meaning of the parameters is as follows:
+     * domain - Logical domain within registrar. If database is
+       used then this must be name of the table which stores the
+       contacts.
+     * AOR - address-of-record to be searched (SIP URI)
+     * target (optional) - may be specified in two ways:
+          + single delete - Specific contact to be deleted (SIP
+            URI)
+          + multi delete - IP/hostname of the AOR's contacts which
+            will be deleted
+
+   This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+
+   Example 1.18. remove usage
+...
+# remove all contacts belonging to the "bob" AOR
+remove("location", "sip:bob@atlanta.com");
+...
+# remove only bob's home phone
+remove("location", "sip:bob@atlanta.com", "sip:bob_home@proxy.com");
+...
+# remove all bob's phones which are behind "50.60.50.60"
+$var(next_hop) = "50.60.50.60"
+save("location", "sip:bob@atlanta.com", "$var(next_hop)");
+...
+
+1.4.3.  lookup(domain [, flags [, aor]])
 
    The functions extracts username from Request-URI and tries to
    find all contacts for the username in usrloc. If there are no
@@ -561,7 +593,7 @@ save("location","mr", "$avp(aor)");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.18. lookup usage
+   Example 1.19. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -579,7 +611,7 @@ switch ($retcode) {
 };
 ...
 
-1.4.3.  registered(domain [,AOR[, callid]])
+1.4.4.  registered(domain [,AOR[, callid]])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -601,7 +633,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.19. registered usage
+   Example 1.20. registered usage
 ...
 if (registered("location")) {
         sl_send_reply("100", "Trying");
@@ -612,7 +644,7 @@ if (registered("location","$fu")) {
 }
 ...
 
-1.4.4.  is_other_contact(domain , IPs)
+1.4.5.  is_other_contact(domain , IPs)
 
    This function returns true if there are any other contacts
    registered, different from the ones from the IPs avp.
@@ -625,7 +657,7 @@ if (registered("location","$fu")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.20. is_other_contact usage
+   Example 1.21. is_other_contact usage
 ...
 
 if (is_other_contact("location", "$avp(ips)")) {
@@ -634,7 +666,7 @@ if (is_other_contact("location", "$avp(ips)")) {
 };
 ...
 
-1.4.5.  add_sock_hdr(hdr_name)
+1.4.6.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
@@ -647,7 +679,7 @@ if (is_other_contact("location", "$avp(ips)")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.21. add_sock_hdr usage
+   Example 1.22. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
