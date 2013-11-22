@@ -1157,13 +1157,13 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	str c;
 	str opt;
 	str path;
-	struct sip_uri curi;
 	union sockaddr_union to;
-	struct hostent* he;
+	struct hostent *he;
 	struct socket_info* send_sock;
 	unsigned int flags;
+	struct proxy_l next_hop;
 
-	if((*natping_state) == 0)
+	if ((*natping_state) == 0)
 		goto done;
 
 	if (cblen > 0) {
@@ -1209,74 +1209,60 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		memcpy(&(c.len), cp, sizeof(c.len));
 		if (c.len == 0)
 			break;
+
 		c.s = (char*)cp + sizeof(c.len);
-		cp =  (char*)cp + sizeof(c.len) + c.len;
-		memcpy( &send_sock, cp, sizeof(send_sock));
+		cp = (char*)cp + sizeof(c.len) + c.len;
+		memcpy(&path.len, cp, sizeof(path.len));
+		path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL;
+		cp = (char*)cp + sizeof(path.len) + path.len;
+		memcpy(&send_sock, cp, sizeof(send_sock));
 		cp = (char*)cp + sizeof(send_sock);
-		memcpy( &flags, cp, sizeof(flags));
+		memcpy(&flags, cp, sizeof(flags));
 		cp = (char*)cp + sizeof(flags);
-		memcpy( &(path.len), cp, sizeof(path.len));
-		path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL ;
-		cp =  (char*)cp + sizeof(path.len) + path.len;
+		memcpy(&next_hop, cp, sizeof(next_hop));
+		cp = (char*)cp + sizeof(next_hop);
 
-		/* determine the destination */
-		if ( path.len && (flags&sipping_flag)!=0 ) {
-			/* send to first URI in path */
-			if (get_path_dst_uri( &path, &opt) < 0) {
-				LM_ERR("failed to get dst_uri for Path\n");
-				continue;
-			}
-			/* send to the contact/received */
-			if (parse_uri(opt.s, opt.len, &curi) < 0) {
-				LM_ERR("can't parse contact dst_uri\n");
-				continue;
-			}
-		} else {
-			/* send to the contact/received */
-			if (parse_uri(c.s, c.len, &curi) < 0) {
-				LM_ERR("can't parse contact uri\n");
-				continue;
-			}
-		}
-		if (curi.proto != PROTO_NONE && curi.proto != PROTO_UDP &&
-		     (natping_tcp == 0 || (curi.proto != PROTO_TCP &&
-			                       curi.proto != PROTO_TLS)))
+		if (next_hop.proto != PROTO_NONE && next_hop.proto != PROTO_UDP &&
+		    (natping_tcp == 0 || (next_hop.proto != PROTO_TCP &&
+		                          next_hop.proto != PROTO_TLS)))
 			continue;
 
-		/* we should get rid of this resolve (too often and too slow); for the
-		 * moment we are lucky since the curi is an IP -bogdan */
-		he = sip_resolvehost(&curi.host, &curi.port_no, &curi.proto, 0, 0);
-		if (he == NULL){
-			LM_ERR("can't resolve_host\n");
+		LM_DBG("resolving next hop: '%.*s'\n",
+		        next_hop.name.len, next_hop.name.s);
+		he = sip_resolvehost(&next_hop.name, &next_hop.port,
+		                     &next_hop.proto, 0, NULL);
+		if (!he) {
+			LM_ERR("failed to resolve next hop: '%.*s'\n",
+			        next_hop.name.len, next_hop.name.s);
 			continue;
 		}
-		hostent2su(&to, he, 0, curi.port_no);
 
-		if (send_sock==0) {
-			send_sock=force_socket ? force_socket :
-					get_send_socket(0, &to, curi.proto);
-			if (send_sock == NULL) {
+		hostent2su(&to, he, 0, next_hop.port);
+
+		if (!send_sock) {
+			send_sock = force_socket ? force_socket :
+			                           get_send_socket(0, &to, next_hop.proto);
+			if (!send_sock) {
 				LM_ERR("can't get sending socket\n");
 				continue;
 			}
 		}
 
-		if ( (flags&sipping_flag)!=0 &&
-		(opt.s=build_sipping( &c, send_sock, &path, &opt.len))!=0 ) {
-			if (msg_send(send_sock, curi.proto, &to, 0, opt.s, opt.len) < 0) {
+		if ((flags & sipping_flag) &&
+		    (opt.s = build_sipping(&c, send_sock, &path, &opt.len))) {
+			if (msg_send(send_sock, next_hop.proto, &to, 0, opt.s, opt.len) < 0) {
 				LM_ERR("sip msg_send failed\n");
 			}
-		} else if (raw_ip && curi.proto == PROTO_UDP) {
+		} else if (raw_ip && next_hop.proto == PROTO_UDP) {
 			if (send_raw((char*)sbuf, sizeof(sbuf), &to, raw_ip, raw_port)<0) {
 				LM_ERR("send_raw failed\n");
 			}
 		} else {
-			if (msg_send(send_sock, curi.proto, &to, 0,
+			if (msg_send(send_sock, next_hop.proto, &to, 0,
 			             (char *)sbuf, sizeof(sbuf)) < 0) {
 				LM_ERR("sip msg_send failed!\n");
 			}
 		}
-
 	}
 
 #ifdef USE_TCP

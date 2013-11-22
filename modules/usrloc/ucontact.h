@@ -42,6 +42,7 @@
 #include <time.h>
 #include "../../qvalue.h"
 #include "../../str.h"
+#include "../../proxy.h"
 #include "../../db/db_insertq.h"
 
 
@@ -65,7 +66,7 @@ typedef enum flags {
 
 
 /*! \brief
- * Main structure for handling of registered Contact: data 
+ * Main structure for handling of registered Contact: data
  */
 typedef struct ucontact {
 	str* domain;            /*!< Pointer to domain name (NULL terminated) */
@@ -86,6 +87,8 @@ typedef struct ucontact {
 	time_t last_modified;   /*!< When the record was last modified */
 	unsigned int methods;   /*!< Supported methods */
 	str attr;               /*!< Additional registration info  */
+	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
+
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
 } ucontact_t;

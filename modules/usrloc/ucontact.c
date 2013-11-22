@@ -35,6 +35,8 @@
 
 #include "ucontact.h"
 #include <string.h>             /* memcpy */
+#include "../../parser/parse_uri.h"
+#include "../../parser/parse_rr.h"
 #include "../../mem/shm_mem.h"
 #include "../../ut.h"
 #include "../../ip_addr.h"
@@ -48,6 +50,43 @@
 #include "ucontact.h"
 #include "ureplication.h"
 
+/*
+ * Determines the IP address of the next hop on the way to given contact based
+ * on following URIs: path URI -> received URI -> contact URI
+ *
+ * @contact:     input/output param; results are written in contact->next_hop
+ */
+static int compute_next_hop(ucontact_t *contact)
+{
+	str uri;
+	struct sip_uri puri;
+
+	if (contact->path.s && contact->path.len > 0) {
+		if (get_path_dst_uri(&contact->path, &uri) < 0) {
+			LM_ERR("failed to get dst_uri for Path '%*.s'\n",
+			        contact->path.len, contact->path.s);
+			return -1;
+		}
+
+	} else if (contact->received.s && contact->received.len > 0)
+		uri = contact->received;
+	else if (contact->c.s && contact->c.len > 0)
+		uri = contact->c;
+
+	if (parse_uri(uri.s, uri.len, &puri) < 0) {
+		LM_ERR("failed to parse URI of next hop: '%*.s'\n", uri.len, uri.s);
+		return -1;
+	}
+
+	memset(&contact->next_hop, 0, sizeof contact->next_hop);
+
+	contact->next_hop.port  = puri.port_no;
+	contact->next_hop.proto = puri.proto;
+	contact->next_hop.name  = puri.host;
+
+	return 0;
+}
+
 
 /*! \brief
  * Create a new contact structure
@@ -59,28 +98,28 @@ ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
 	if (!c) {
 		LM_ERR("no more shm memory\n");
-		return 0;
+		return NULL;
 	}
 	memset(c, 0, sizeof(ucontact_t));
 
-	if (shm_str_dup( &c->c, _contact) < 0) goto error;
-	if (shm_str_dup( &c->callid, _ci->callid) < 0) goto error;
-	if (shm_str_dup( &c->user_agent, _ci->user_agent) < 0) goto error;
+	if (shm_str_dup( &c->c, _contact) < 0) goto mem_error;
+	if (shm_str_dup( &c->callid, _ci->callid) < 0) goto mem_error;
+	if (shm_str_dup( &c->user_agent, _ci->user_agent) < 0) goto mem_error;
 
 	if (_ci->received.s && _ci->received.len) {
-		if (shm_str_dup( &c->received, &_ci->received) < 0) goto error;
+		if (shm_str_dup( &c->received, &_ci->received) < 0) goto mem_error;
 	}
 
 	if (_ci->instance.s && _ci->instance.len) {
-		if (shm_str_dup( &c->instance, &_ci->instance) < 0) goto error;
+		if (shm_str_dup( &c->instance, &_ci->instance) < 0) goto mem_error;
 	}
 
 	if (_ci->path && _ci->path->len) {
-		if (shm_str_dup( &c->path, _ci->path) < 0) goto error;
+		if (shm_str_dup( &c->path, _ci->path) < 0) goto mem_error;
 	}
 
 	if (_ci->attr && _ci->attr->len) {
-		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto error;
+		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
 
 	c->domain = _dom;
@@ -95,9 +134,17 @@ ucontact_t* new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _
 	c->methods = _ci->methods;
 	c->last_modified = _ci->last_modified;
 
+	if (compute_next_hop(c) != 0) {
+		LM_ERR("failed to resolve next hop\n");
+		goto out_free;
+	}
+
 	return c;
-error:
+
+mem_error:
 	LM_ERR("no more shm memory\n");
+
+out_free:
 	if (c->path.s) shm_free(c->path.s);
 	if (c->received.s) shm_free(c->received.s);
 	if (c->user_agent.s) shm_free(c->user_agent.s);
@@ -106,7 +153,7 @@ error:
 	if (c->instance.s) shm_free(c->instance.s);
 	if (c->attr.s) shm_free(c->attr.s);
 	shm_free(c);
-	return 0;
+	return NULL;
 }
 
 
@@ -220,7 +267,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		_c->received.s = 0;
 		_c->received.len = 0;
 	}
-	
+
 	if (_ci->path) {
 		update_str( &_c->path, _ci->path);
 	} else {
@@ -245,6 +292,10 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	_c->last_modified = _ci->last_modified;
 	_c->flags = _ci->flags;
 	_c->cflags = _ci->cflags;
+
+	if (compute_next_hop(_c) != 0)
+		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
+		        _c->next_hop.name.len, _c->next_hop.name.s);
 
 	return 0;
 }

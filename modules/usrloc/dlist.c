@@ -45,6 +45,8 @@
 #include "../../dprint.h"
 #include "../../ip_addr.h"
 #include "../../socket_info.h"
+#include "../../parser/parse_rr.h"
+#include "../../parser/parse_uri.h"
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
 #include "ul_mod.h"
@@ -101,13 +103,15 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 {
 	static char query_buf[512];
 	static str query_str;
+	static struct sip_uri puri;
 
 	struct socket_info *sock;
+	struct proxy_l next_hop;
 	db_res_t *res = NULL;
 	db_row_t *row;
 	db_val_t *val;
 	dlist_t *dom;
-	str host, flag_list;
+	str uri, host, flag_list;
 	int i, no_rows = 10;
 	int now_len;
 	char now_s[25];
@@ -230,8 +234,8 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 				} else
 					p1_len = strlen(p1);
 
-				needed = (int)(p_len + sizeof p_len + sizeof sock +
-				               sizeof dbflags + p1_len + sizeof p1_len);
+				needed = (int)(p_len + sizeof p_len + p1_len + sizeof p1_len +
+				               sizeof sock + sizeof dbflags + sizeof next_hop);
 
 				LM_DBG("len: %d, needed: %d\n", len, needed);
 
@@ -240,11 +244,39 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 					continue;
 				}
 
+				/* determine and parse the URI of this contact's next hop */
+				if (p1_len > 0) {
+					/* send to first URI in path */
+					host.s   = p1;
+					host.len = p1_len;
+					if (get_path_dst_uri(&host, &uri) < 0) {
+						LM_ERR("failed to get dst_uri for Path\n");
+						continue;
+					}
+					if (parse_uri(uri.s, uri.len, &puri) < 0) {
+						LM_ERR("failed to parse path URI of next hop: '%*.s'\n",
+						        p1_len, p1);
+						return -1;
+					}
+				} else {
+					if (parse_uri(p, p_len, &puri) < 0) {
+						LM_ERR("failed to parse contact of next hop: '%*.s'\n",
+						        p_len, p);
+						return -1;
+					}
+				}
+
 				/* write received/contact */
 				memcpy(buf, &p_len, sizeof p_len);
 				buf += sizeof p_len;
 				memcpy(buf, p, p_len);
 				buf += p_len;
+
+				/* write path */
+				memcpy(buf, &p1_len, sizeof p1_len);
+				buf += sizeof p1_len;
+				memcpy(buf, p1, p1_len);
+				buf += p1_len;
 
 				/* sock */
 				p  = (char*)VAL_STRING(ROW_VALUES(row) + 2);
@@ -268,11 +300,14 @@ static int get_all_db_ucontacts(void *buf, int len, unsigned int flags,
 				memcpy(buf, &dbflags, sizeof dbflags);
 				buf += sizeof dbflags;
 
-				/* write path */
-				memcpy(buf, &p1_len, sizeof p1_len);
-				buf += sizeof p1_len;
-				memcpy(buf, p1, p1_len);
-				buf += p1_len;
+				memset(&next_hop, 0, sizeof next_hop);
+				next_hop.port  = puri.port_no;
+				next_hop.proto = puri.proto;
+				next_hop.name  = puri.host;
+
+				/* write the next hop */
+				memcpy(buf, &next_hop, sizeof next_hop);
+				buf += sizeof next_hop;
 
 				len -= needed;
 			}
@@ -366,45 +401,55 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 					 */
 					if ((c->cflags & flags) != flags)
 						continue;
+
 					if (c->received.s) {
-						needed = (int)(sizeof(c->received.len)
-								+ c->received.len + sizeof(c->sock)
-								+ sizeof(c->cflags) + sizeof(c->path.len)
-								+ c->path.len);
+						needed = (int)
+						          (sizeof(c->received.len) + c->received.len +
+						           sizeof(c->path.len) + c->path.len +
+						           sizeof(c->sock) + sizeof(c->cflags) +
+						           sizeof(c->next_hop));
+
 						if (len >= needed) {
 							memcpy(cp,&c->received.len,sizeof(c->received.len));
 							cp = (char*)cp + sizeof(c->received.len);
 							memcpy(cp, c->received.s, c->received.len);
 							cp = (char*)cp + c->received.len;
-							memcpy(cp, &c->sock, sizeof(c->sock));
-							cp = (char*)cp + sizeof(c->sock);
-							memcpy(cp, &c->cflags, sizeof(c->cflags));
-							cp = (char*)cp + sizeof(c->cflags);
 							memcpy(cp, &c->path.len, sizeof(c->path.len));
 							cp = (char*)cp + sizeof(c->path.len);
 							memcpy(cp, c->path.s, c->path.len);
 							cp = (char*)cp + c->path.len;
+							memcpy(cp, &c->sock, sizeof(c->sock));
+							cp = (char*)cp + sizeof(c->sock);
+							memcpy(cp, &c->cflags, sizeof(c->cflags));
+							cp = (char*)cp + sizeof(c->cflags);
+							memcpy(cp, &c->next_hop, sizeof(c->next_hop));
+							cp = (char*)cp + sizeof(c->next_hop);
 							len -= needed;
 						} else {
 							shortage += needed;
 						}
 					} else {
-						needed = (int)(sizeof(c->c.len) + c->c.len +
-							sizeof(c->sock) + sizeof(c->cflags) +
-							sizeof(c->path.len) + c->path.len);
+						needed = (int)
+						          (sizeof(c->c.len) + c->c.len +
+						           sizeof(c->path.len) + c->path.len +
+						           sizeof(c->sock) + sizeof(c->cflags) +
+						           sizeof(c->next_hop));
+
 						if (len >= needed) {
 							memcpy(cp, &c->c.len, sizeof(c->c.len));
 							cp = (char*)cp + sizeof(c->c.len);
 							memcpy(cp, c->c.s, c->c.len);
 							cp = (char*)cp + c->c.len;
-							memcpy(cp, &c->sock, sizeof(c->sock));
-							cp = (char*)cp + sizeof(c->sock);
-							memcpy(cp, &c->cflags, sizeof(c->cflags));
-							cp = (char*)cp + sizeof(c->cflags);
 							memcpy(cp, &c->path.len, sizeof(c->path.len));
 							cp = (char*)cp + sizeof(c->path.len);
 							memcpy(cp, c->path.s, c->path.len);
 							cp = (char*)cp + c->path.len;
+							memcpy(cp, &c->sock, sizeof(c->sock));
+							cp = (char*)cp + sizeof(c->sock);
+							memcpy(cp, &c->cflags, sizeof(c->cflags));
+							cp = (char*)cp + sizeof(c->cflags);
+							memcpy(cp, &c->next_hop, sizeof(c->next_hop));
+							cp = (char*)cp + sizeof(c->next_hop);
 							len -= needed;
 						} else {
 							shortage += needed;
