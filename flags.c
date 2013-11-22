@@ -83,24 +83,61 @@ int flag_idx2mask(int *flag)
 	return 0;
 }
 
-str print_flag_bitmask(enum flag_type type, int bitmask)
+str bitmask_to_flag_list(enum flag_type type, int bitmask)
 {
 	struct flag_entry *entry;
 	str ret;
 
 	ret.s   = print_buffer;
-	ret.len = sprintf(print_buffer, "{ ");
+	ret.len = 0;
 	for (entry = flag_lists[type]; entry; entry = entry->next) {
 
 		if (bitmask & (1 << entry->bit)) {
 			memcpy(ret.s + ret.len, entry->name.s, entry->name.len);
 			ret.len += entry->name.len;
 
-			ret.s[ret.len++] = ' ';
+			ret.s[ret.len++] = FLAG_DELIM;
 		}
 	}
 
-	ret.len += sprintf(ret.s + ret.len, "}");
+	if (ret.len > 0)
+		ret.len--;
+
+	return ret;
+}
+
+int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
+{
+	char *p, *lim;
+	char *crt_flag;
+	str name;
+	struct flag_entry *e;
+	int ret = 0;
+
+	if (flags->len < 0)
+		return 0;
+
+	lim = flags->s + flags->len;
+	crt_flag = flags->s;
+	for (p = flags->s; p <= lim; p++) {
+
+		if (p == lim || *p == delim) {
+
+			name.s   = crt_flag;
+			name.len = p - crt_flag;
+			for (e = flag_lists[type]; e; e = e->next) {
+				if (e->name.len == p - crt_flag &&
+				    str_strcmp(&e->name, &name) == 0) {
+
+					ret |= 1 << e->bit;
+					break;
+				}
+			}
+
+			crt_flag = p + 1;
+		}
+	}
+
 	return ret;
 }
 

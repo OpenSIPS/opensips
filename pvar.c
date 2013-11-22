@@ -971,7 +971,7 @@ static int pv_get_flags(struct sip_msg *msg, pv_param_t *param,
 	if (!msg)
 		return -1;
 
-	buf = print_flag_bitmask(FLAG_TYPE_MSG, msg->flags);
+	buf = bitmask_to_flag_list(FLAG_TYPE_MSG, msg->flags);
 
 	return pv_get_strval(msg, param, res, &buf);
 }
@@ -1005,7 +1005,7 @@ static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
 	if (!msg)
 		return -1;
 
-	buf = print_flag_bitmask(FLAG_TYPE_BRANCH, getb0flags());
+	buf = bitmask_to_flag_list(FLAG_TYPE_BRANCH, getb0flags());
 
 	return pv_get_strval(msg, param, res, &buf);
 }
@@ -1018,7 +1018,7 @@ static int pv_get_sflags(struct sip_msg *msg, pv_param_t *param,
 	if (!msg)
 		return -1;
 
-	buf = print_flag_bitmask(FLAG_TYPE_SCRIPT, getsflags());
+	buf = bitmask_to_flag_list(FLAG_TYPE_SCRIPT, getsflags());
 
 	return pv_get_strval(msg, param, res, &buf);
 }
