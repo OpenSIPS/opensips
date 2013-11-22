@@ -353,11 +353,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			}
 		}
 		rec->state = REGISTERED_STATE;
-		if (exp) {
-			rec->registration_timeout = now + exp - timer_interval;
-		} else {
-			rec->registration_timeout = now + rec->expires - timer_interval;
-		}
+		if (exp) rec->expires = exp;
+		rec->registration_timeout = now + rec->expires - timer_interval;
 		break;
 
 	case WWW_AUTH_CODE:
