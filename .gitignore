@@ -3,6 +3,7 @@
 *.so
 *.swp
 tags
+cscope*
 
 # /
 /cfg.tab.c
