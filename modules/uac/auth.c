@@ -180,9 +180,11 @@ int uac_auth( struct sip_msg *msg)
 	{
 		LM_ERR("failed to apply changes\n");
 		pkg_free(new_hdr->s);
+		new_hdr->s = NULL; new_hdr->len = 0;
 		goto error;
 	}
 
+	new_hdr->s = NULL; new_hdr->len = 0;
 	return 0;
 error:
 	return -1;
