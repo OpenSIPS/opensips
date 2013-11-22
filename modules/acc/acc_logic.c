@@ -477,7 +477,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			LM_DBG("flags were not saved in dialog\n");
 			return;
 		}
-		flags_l = (unsigned int)*flags_s.s;
+		flags_l = flag_list_to_bitmask(&flags_s, FLAG_TYPE_MSG, FLAG_DELIM);
 
 		/* register database callbacks */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
@@ -566,9 +566,8 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			return;
 		}
 
-		flags_s.s = (char*)&req->flags;
-		flags_s.len = sizeof(unsigned int);
-		
+		flags_s = bitmask_to_flag_list(FLAG_TYPE_MSG, req->flags);
+
 		/* store flags into dlg */ 
 		if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
 			LM_ERR("cannot store flag value into dialog\n");
