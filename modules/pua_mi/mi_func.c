@@ -264,9 +264,14 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 	str etag;
 	str reason= {0, 0};
 
-	if(reply== NULL || hentity== NULL || hentity->cb_param== NULL)
+	if(reply== NULL || hentity== NULL)
 	{
 		LM_ERR("NULL parameter\n");
+		return -1;
+	}
+	if(hentity->cb_param== NULL)
+	{
+		LM_DBG("NULL callback parameter, probably a refresh\n");
 		return -1;
 	}
 	if(reply== FAKED_REPLY)
