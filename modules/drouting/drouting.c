@@ -56,6 +56,7 @@
 #include "prefix_tree.h"
 #include "routing.h"
 #include "dr_bl.h"
+#include "dr_db_def.h"
 
 
 #define DR_PARAM_USE_WEIGTH         (1<<0)
@@ -80,20 +81,12 @@ static int dr_disable(struct sip_msg *req);
 /*** DB relatede stuff ***/
 /* parameters  */
 static str db_url = {NULL,0};
-static str drg_table = str_init("dr_groups");
-static str drd_table = str_init("dr_gateways");
-static str drr_table = str_init("dr_rules");
-static str drc_table = str_init("dr_carriers");
 static int dr_persistent_state = 1;
 /* DRG use domain */
 static int use_domain = 1;
 int dr_default_grp = -1;
 int dr_force_dns = 1;
 
-/* DRG table columns */
-static str drg_user_col = str_init("username");
-static str drg_domain_col = str_init("domain");
-static str drg_grpid_col = str_init("groupid");
 /* variables */
 static db_con_t  *db_hdl=0;     /* DB handler */
 static db_func_t dr_dbf;        /* DB functions */
@@ -332,8 +325,8 @@ static int dr_disable(struct sip_msg *req)
 	}
 
 	gw = get_gw_by_id( (*rdata)->pgw_l, &id_val.s );
-	if (gw!=NULL)
-		gw->flags |= DR_DST_STAT_DSBL_FLAG;
+	if (gw!=NULL && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0)
+		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
 
 	lock_stop_read( ref_lock );
 
@@ -360,14 +353,16 @@ static void dr_probing_callback( struct cell *t, int type,
 
 	if ((code == 200) || check_options_rplcode(code)) {
 		/* re-enable to DST  (if allowed) */
-		if ( gw->flags&DR_DST_STAT_NOEN_FLAG )
+		if ( (gw->flags&DR_DST_STAT_NOEN_FLAG)!=0 ||  /* permanently disabled */
+		(gw->flags&DR_DST_STAT_DSBL_FLAG)==0)         /* not disabled at all */
 			goto end;
 		gw->flags &= ~DR_DST_STAT_DSBL_FLAG;
+		gw->flags |= DR_DST_STAT_DIRT_FLAG;
 		goto end;
 	}
 
-	if (code>=400) {
-		gw->flags |= DR_DST_STAT_DSBL_FLAG;
+	if (code>=400 && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
+		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
 	}
 
 
@@ -381,6 +376,7 @@ end:
 static void dr_prob_handler(unsigned int ticks, void* param)
 {
 	static char buff[1000] = {"sip:"};
+	dlg_t *dlg;
 	str uri;
 
 	if (rdata==NULL || *rdata==NULL)
@@ -406,12 +402,19 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 		memcpy(buff + 4, dst->ip_str.s, dst->ip_str.len);
 		uri.s = buff;
 		uri.len = dst->ip_str.len + 4;
-		
-		if (dr_tmb.t_request( &dr_probe_method, &uri, &uri,
-		&dr_probe_from, NULL, NULL, NULL, dr_probing_callback,
-		(void*)(long)dst->_id, NULL) < 0) {
-			LM_ERR("probing failed\n");
+
+		/* Execute the Dialog using the "request"-Method of the
+		 * TM-Module.*/
+		if (dr_tmb.new_auto_dlg_uac(&dr_probe_from, &uri, dst->sock, &dlg)!=0) {
+			LM_ERR("failed to create new TM dlg\n");
+			continue;
 		}
+		dlg->state = DLG_CONFIRMED;
+		if (dr_tmb.t_request_within(&dr_probe_method, NULL, NULL, dlg,
+		dr_probing_callback, (void*)(long)dst->_id, NULL) < 0) {
+			LM_ERR("unable to execute dialog\n");
+		}
+		dr_tmb.free_dlg(dlg);
 
 	}
 
@@ -419,10 +422,102 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	lock_stop_read( ref_lock );
 }
 
+
+static void dr_state_flusher(void)
+{
+	pgw_t *gw;
+	pcr_t *cr;
+	db_key_t key_cmp;
+	db_val_t val_cmp;
+	db_key_t key_set;
+	db_val_t val_set;
+
+
+	val_cmp.type = DB_INT;
+	val_cmp.nul  = 0;
+
+	val_set.type = DB_INT;
+	val_set.nul  = 0;
+
+	/* update the gateways */
+	if (dr_dbf.use_table( db_hdl, &drd_table) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n", drd_table.len, drd_table.s);
+		return;
+	}
+	key_cmp = &id_drd_col;
+	key_set = &state_drd_col;
+
+	/* iterate the gateways */
+	for( gw=(*rdata)->pgw_l ; gw ; gw=gw->next ) {
+		if ( (gw->flags & DR_DST_STAT_DIRT_FLAG)==0 )
+			/* nothing to do for this gateway */
+			continue;
+
+		/* populate the update */
+		val_cmp.val.int_val = gw->_id;
+		val_set.val.int_val = (gw->flags&DR_DST_STAT_DSBL_FLAG) ? ((gw->flags&DR_DST_STAT_NOEN_FLAG)?1:2) : (0);
+
+		/* update the state of this gateway */
+		LM_DBG("updating the state of gw %d (%.*s) to %d\n",
+			gw->_id, gw->id.len, gw->id.s, val_set.val.int_val);
+
+		if ( dr_dbf.update(db_hdl,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
+			LM_ERR("DB update failed\n");
+		} else {
+			gw->flags &= ~DR_DST_STAT_DIRT_FLAG;
+		}
+	}
+
+	/* update the carriers */
+	if (dr_dbf.use_table( db_hdl, &drc_table) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n", drc_table.len, drc_table.s);
+		return;
+	}
+	key_cmp = &id_drc_col;
+	key_set = &state_drc_col;
+
+	/* iterate the carriers */
+	for( cr=(*rdata)->carriers ; cr ; cr=cr->next ) {
+		if ( (gw->flags & DR_CR_FLAG_DIRTY)==0 )
+			/* nothing to do for this gateway */
+			continue;
+
+		/* populate the update */
+		val_cmp.val.int_val = cr->db_id;
+		val_set.val.int_val = (cr->flags&DR_CR_FLAG_IS_OFF) ? 1 : 0;
+
+		/* update the state of this gateway */
+		LM_DBG("updating the state of gw %d (%.*s) to %d\n",
+			cr->db_id, cr->id.len, cr->id.s, val_set.val.int_val);
+
+		if ( dr_dbf.update(db_hdl,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
+			LM_ERR("DB update failed\n");
+		} else {
+			cr->flags &= ~DR_CR_FLAG_DIRTY;
+		}
+	}
+
+	return;
+}
+
+/* Flushes to DB the state of carriers and gateways (if modified) 
+ * Locking is done to protect the data consistency */
+static void dr_state_timer(unsigned int ticks, void* param)
+{
+	lock_start_read( ref_lock );
+
+	dr_state_flusher();
+
+	lock_stop_read( ref_lock );
+}
+
+
 static inline int dr_reload_data( void )
 {
 	rt_data_t *new_data;
 	rt_data_t *old_data;
+	pgw_t *gw, *old_gw;
+	pcr_t *cr, *old_cr;
 
 	new_data = dr_load_routing_info( &dr_dbf, db_hdl,
 		&drd_table, &drc_table, &drr_table, dr_persistent_state);
@@ -440,8 +535,28 @@ static inline int dr_reload_data( void )
 	lock_stop_write( ref_lock );
 
 	/* destroy old data */
-	if (old_data)
+	if (old_data) {
+		/* copy the state of gw/cr from old data */
+		/* interate new gws and search them into old data */
+		for( gw=new_data->pgw_l ; gw ; gw=gw->next ) {
+			old_gw = get_gw_by_id( old_data->pgw_l, &gw->id);
+			if (old_gw) {
+				gw->flags &= ~DR_DST_STAT_MASK;
+				gw->flags |= old_gw->flags&DR_DST_STAT_MASK;
+			}
+		}
+		/* interate new crs and search them into old data */
+		for( cr=new_data->carriers ; cr ; cr=cr->next ) {
+			old_cr = get_carrier_by_id( old_data->carriers, &cr->id);
+			if (old_cr) {
+				cr->flags &= ~DR_CR_FLAG_IS_OFF;
+				cr->flags |= old_cr->flags&DR_CR_FLAG_IS_OFF;
+			}
+		}
+
+		/* free old data */
 		free_rt_data( old_data, 1 );
+	}
 
 	/* generate new blacklist from the routing info */
 	populate_dr_bls((*rdata)->pgw_l);
@@ -635,6 +750,14 @@ static int dr_init(void)
 
 	}
 
+	if (dr_persistent_state) {
+		/* register function to flush changes in state */
+		if (register_timer("dr-flush", dr_state_timer, NULL, 30)<0) {
+			LM_ERR("failed to register state flush handler\n");
+			return -1;
+		}
+	}
+
 	return 0;
 error:
 	if (ref_lock) {
@@ -656,8 +779,12 @@ error:
 
 static int dr_child_init(int rank)
 {
-	/* only workers needs DB connection */
-	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN)
+	/* We need DB connection from:
+	 * 	 - attendant - for shutdown, flushing state
+     *   - timer - may trigger routes with dr group
+     *   - workers - execute routes with dr group
+     *   - module's proc - ??? */
+	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
 		return 0;
 
 	/* init DB connection */
@@ -684,6 +811,9 @@ static int dr_child_init(int rank)
 
 static int dr_exit(void)
 {
+	if (dr_persistent_state)
+		dr_state_flusher();
+
 	/* close DB connection */
 	if (db_hdl) {
 		dr_dbf.close(db_hdl);
@@ -1019,6 +1149,8 @@ static int use_next_gw(struct sip_msg* msg)
 		LM_ERR("failed to rewite RURI\n");
 		return -1;
 	}
+	if (sock)
+		msg->force_send_socket = sock;
 
 	destroy_avp(avp_ru);
 
@@ -2139,6 +2271,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 	unsigned int stat;
 	pgw_t *gw;
 	str *id;
+	int old_flags;
 
 	node = cmd->node.kids;
 
@@ -2208,11 +2341,15 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 		goto done;
 	}
 	/* set the disable/enable */
+	old_flags = gw->flags;
 	if (stat) {
 		gw->flags &= ~ (DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG);
 	} else {
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
 	}
+	if (old_flags!=gw->flags)
+		gw->flags |= DR_DST_STAT_DIRT_FLAG;
+
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
 done:
@@ -2233,6 +2370,7 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 	unsigned int stat;
 	pcr_t *cr;
 	str *id;
+	int old_flags;
 
 	node = cmd->node.kids;
 
@@ -2299,11 +2437,15 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 		goto done;
 	}
 	/* set the disable/enable */
+	old_flags = cr->flags;
 	if (stat) {
 		cr->flags &= ~ (DR_CR_FLAG_IS_OFF);
 	} else {
 		cr->flags |= DR_CR_FLAG_IS_OFF;
 	}
+	if (old_flags!=cr->flags)
+		cr->flags |= DR_CR_FLAG_DIRTY;
+
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
 done:
