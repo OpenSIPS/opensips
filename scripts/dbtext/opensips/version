@@ -16,8 +16,8 @@ dialplan:4
 dispatcher:5
 domain:2
 domainpolicy:3
-dr_carriers:1
-dr_gateways:5
+dr_carriers:2
+dr_gateways:6
 dr_groups:2
 dr_rules:3
 globalblacklist:2

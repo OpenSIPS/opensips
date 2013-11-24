@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','5');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','6');
 CREATE TABLE dr_gateways (
     id NUMBER(10) PRIMARY KEY,
     gwid VARCHAR2(64),
@@ -8,6 +8,8 @@ CREATE TABLE dr_gateways (
     pri_prefix VARCHAR2(16) DEFAULT NULL,
     attrs VARCHAR2(255) DEFAULT NULL,
     probe_mode NUMBER(10) DEFAULT 0 NOT NULL,
+    state NUMBER(10) DEFAULT 0 NOT NULL,
+    socket VARCHAR2(128) DEFAULT NULL,
     description VARCHAR2(128) DEFAULT '',
     CONSTRAINT dr_gateways_dr_gw_idx  UNIQUE (gwid)
 );
@@ -41,12 +43,13 @@ END dr_rules_tr;
 /
 BEGIN map2users('dr_rules'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_carriers','1');
+INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
 CREATE TABLE dr_carriers (
     id NUMBER(10) PRIMARY KEY,
     carrierid VARCHAR2(64),
     gwlist VARCHAR2(255),
     flags NUMBER(10) DEFAULT 0 NOT NULL,
+    state NUMBER(10) DEFAULT 0 NOT NULL,
     attrs VARCHAR2(255) DEFAULT '',
     description VARCHAR2(128) DEFAULT '',
     CONSTRAINT dr_carriers_dr_carrier_idx  UNIQUE (carrierid)

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dr_gateways','5');
+INSERT INTO version (table_name, table_version) values ('dr_gateways','6');
 CREATE TABLE dr_gateways (
     id SERIAL PRIMARY KEY NOT NULL,
     gwid VARCHAR(64) NOT NULL,
@@ -8,6 +8,8 @@ CREATE TABLE dr_gateways (
     pri_prefix VARCHAR(16) DEFAULT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
     probe_mode INTEGER DEFAULT 0 NOT NULL,
+    state INTEGER DEFAULT 0 NOT NULL,
+    socket VARCHAR(128) DEFAULT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT dr_gateways_dr_gw_idx UNIQUE (gwid)
 );
@@ -25,12 +27,13 @@ CREATE TABLE dr_rules (
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('dr_carriers','1');
+INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
 CREATE TABLE dr_carriers (
     id SERIAL PRIMARY KEY NOT NULL,
     carrierid VARCHAR(64) NOT NULL,
     gwlist VARCHAR(255) NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
+    state INTEGER DEFAULT 0 NOT NULL,
     attrs VARCHAR(255) DEFAULT '',
     description VARCHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT dr_carriers_dr_carrier_idx UNIQUE (carrierid)

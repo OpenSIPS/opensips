@@ -317,6 +317,8 @@
 		<column><field>pri_prefix</field><type>DB_STR</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>probe_mode</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>socket</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of dr_rules table-->
@@ -341,6 +343,7 @@
 		<column><field>carrierid</field><type>DB_STR</type></column>
 		<column><field>gwlist</field><type>DB_STR</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
@@ -1822,6 +1825,8 @@
 				<col><field>pri_prefix</field></col>
 				<col><field>attrs</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>state</field></col>
+				<col><field>socket</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -1836,6 +1841,8 @@
 				<col><field>pri_prefix</field></col>
 				<col><field>attrs</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>state</field></col>
+				<col><field>socket</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -1853,6 +1860,8 @@
 				<col><field>pri_prefix</field></col>
 				<col><field>attrs</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>state</field></col>
+				<col><field>socket</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -1930,6 +1939,7 @@
 				<col><field>carrierid</field></col>
 				<col><field>gwlist</field></col>
 				<col><field>flags</field></col>
+				<col><field>state</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
@@ -1941,6 +1951,7 @@
 				<col><field>carrierid</field></col>
 				<col><field>gwlist</field></col>
 				<col><field>flags</field></col>
+				<col><field>state</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
@@ -1955,6 +1966,7 @@
 				<col><field>carrierid</field></col>
 				<col><field>gwlist</field></col>
 				<col><field>flags</field></col>
+				<col><field>state</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>

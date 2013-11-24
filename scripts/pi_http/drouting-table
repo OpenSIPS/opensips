@@ -10,6 +10,8 @@
 		<column><field>pri_prefix</field><type>DB_STR</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>probe_mode</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>socket</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of dr_rules table-->
@@ -34,6 +36,7 @@
 		<column><field>carrierid</field><type>DB_STR</type></column>
 		<column><field>gwlist</field><type>DB_STR</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>state</field><type>DB_INT</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
