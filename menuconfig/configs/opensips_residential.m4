@@ -172,6 +172,7 @@ modparam("auth_db|usrloc|uri", "use_domain", 1)
 ', `')
 
 ifelse(USE_PRESENCE,`yes',`#### PRESENCE modules
+loadmodule "xcap.so"
 loadmodule "presence.so"
 loadmodule "presence_xml.so"
 modparam("presence", "db_url",
