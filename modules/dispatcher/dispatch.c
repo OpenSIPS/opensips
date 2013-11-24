@@ -494,6 +494,42 @@ int init_ds_db(void)
 	return ret;
 }
 
+
+void ds_inherit_state( int new_idx, int old_idx)
+{
+	ds_set_p new_set, old_set;
+	ds_dest_p new_ds, old_ds;
+
+	/* search the new sets through the old sets */
+	for ( new_set=ds_lists[new_idx] ; new_set ; new_set=new_set->next ) {
+		for ( old_set=ds_lists[old_idx] ; old_set ; old_set=old_set->next ) {
+			if (new_set->id==old_set->id)
+				break;
+		}
+		if (old_set==NULL) {
+			LM_DBG("new set id %d not found in old sets\n",new_set->id);
+			continue;
+		}
+		LM_DBG("set id %d found in old sets\n",new_set->id);
+
+		/* sets are matching, try to match the destinations, one by one */
+		for ( new_ds=new_set->dlist ; new_ds ; new_ds=new_ds->next ) {
+			for ( old_ds=old_set->dlist ; old_ds ; old_ds=old_ds->next ) {
+				if (new_ds->uri.len==old_ds->uri.len &&
+				strncasecmp(new_ds->uri.s, old_ds->uri.s, old_ds->uri.len)==0 ) {
+					LM_DBG("DST <%.*s> found in old set, copying state\n",
+						new_ds->uri.len,new_ds->uri.s);
+					new_ds->flags = old_ds->flags;
+					break;
+				}
+			}
+			if (old_ds==NULL)
+				LM_DBG("DST <%.*s> not found in old set\n",
+					new_ds->uri.len,new_ds->uri.s);
+		}
+	}
+}
+
 /*load groups of destinations from DB*/
 int ds_load_db(void)
 {
@@ -622,6 +658,10 @@ int ds_load_db(void)
 			LM_ERR("error on reindex\n");
 			goto err2;
 		}
+
+		/* copy the state of the destinations from the old set 
+		 * (for the matching ids) */
+		ds_inherit_state( *next_idx, *crt_idx);
 	}
 
 load_done:
