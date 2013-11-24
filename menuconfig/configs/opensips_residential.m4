@@ -174,7 +174,7 @@ modparam("auth_db|usrloc|uri", "use_domain", 1)
 ifelse(USE_PRESENCE,`yes',`#### PRESENCE modules
 loadmodule "presence.so"
 loadmodule "presence_xml.so"
-modparam("presence|presence_xml", "db_url",
+modparam("presence", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("presence_xml", "force_active", 1)
 modparam("presence", "server_address", "sip:127.0.0.1:5060") # CUSTOMIZE ME
