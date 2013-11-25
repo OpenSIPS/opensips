@@ -568,7 +568,8 @@ int send_publish( publ_info_t* publ )
 					publ->extra_headers->len);
 			presentity->extra_headers.len= publ->extra_headers->len;
 		}
-		presentity->db_flag= UPDATEDB_FLAG;
+		if(presentity->db_flag == NO_UPDATEDB_FLAG)
+			presentity->db_flag= UPDATEDB_FLAG;
 		if (presentity->waiting_reply)
 		{
 			LM_DBG("Presentity is waiting for reply, queue this PUBLISH\n");
