@@ -202,11 +202,26 @@
 		<section>
 			<title>Dependencies of external libraries</title>
 			<para>
-				&ser; TLS support requires the following packages:
+				&ser; TLS v1.0 support requires the following packages:
 				<itemizedlist>
 					<listitem>
 					<para><emphasis>openssl</emphasis> or 
 						<emphasis>libssl</emphasis> >= 0.9.6
+					</para>
+					</listitem>
+					<listitem>
+					<para><emphasis>openssl-dev</emphasis> or 
+						<emphasis>libssl-dev</emphasis>
+					</para>
+					</listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				&ser; TLS v1.1/1.2 support requires the following packages:
+				<itemizedlist>
+					<listitem>
+					<para><emphasis>openssl</emphasis> or 
+						<emphasis>libssl</emphasis> >= 1.0.1e
 					</para>
 					</listitem>
 					<listitem>
@@ -469,6 +484,11 @@ tls_port_no = 5062
 			</para>
 			<itemizedlist>
 				<listitem>
+				<para><emphasis>TLSv1_2</emphasis> - means &ser; will 
+				accept only TLSv1.2 connections (rfc3261 conformant).
+				</para>
+				</listitem>
+				<listitem>
 				<para><emphasis>TLSv1</emphasis> - means &ser; will 
 				accept only TLSv1 connections (rfc3261 conformant).
 				</para>
@@ -605,6 +625,33 @@ tls_ca_list="/mycerts/certs/ca_list.pem"
 				</programlisting>
 			</example>
 		</section>
+		
+		<section>
+			<title><varname>tls_ca_dir</varname>=path</title>
+			<para>
+			Directory storing trusted CAs. The path contains the 
+			certificates accepted, each as hash which is linked to
+			certificate file.
+			</para>
+			<para>
+			See previous chapter <xref linkend="tls-set-ca"> for more 
+			information.
+			</para>
+			<para>
+			It's usable only if TLS support was compiled.
+			</para>
+			<para><emphasis>
+				Default value is "".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>tls_ca_dir</varname> variable</title>
+				<programlisting format="linespecific">
+...
+tls_ca_dir="/mycerts/certs"
+...
+				</programlisting>
+			</example>
+		</section>
 
 		<section>
 			<title><varname>tls_ciphers_list</varname>=string</title>
@@ -636,6 +683,48 @@ tls_ciphers_list="NULL"
 ...
 				</programlisting>
 			</example>
+		</section>
+
+		<section>
+			<title><varname>tls_dh_params</varname>=file</title>
+			<para>
+			You can specify a file which contains Diffie-Hellman 
+			parameters as a PEM-file. This is needed if you would like
+			to specify ciphers including Diffie-Hellman mode.
+			</para>
+			<para>
+			It's usable only if TLS support was compiled.
+			</para>
+			<para><emphasis>
+				It defaults to not set a dh param file.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>tls_dh_params</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+tls_dh_param="/etc/pki/CA/dh1024.pem"
+...
+				</programlisting>
+			</example>
+		</section>
+		
+		<section>
+			<title><varname>tls_ec_curve</varname>=string</title>
+			<para>
+			You can specify an elliptic curve which should be used for
+			ciphers which demand an elliptic curve.
+			</para>
+			<para>
+			It's usable only if TLS v1.1/1.2 support was compiled.
+			A list of curves which can be used you can get by
+			<programlisting format="linespecific">
+				openssl ecparam -list_curve
+			</programlisting>
+			</para>
+			<para><emphasis>
+				It defaults to not set a elliptic curve.
+			</emphasis></para>
 		</section>
 
 		<section>

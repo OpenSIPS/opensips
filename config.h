@@ -25,6 +25,7 @@
  * 2003-07-04  fixed SRV lookup prefix for TLS/sips (andrei)
  * 2007-02-16  Added an OPENSER_OID define to localize OpenSER's IANA assigned
  *             OID under the enterprise branch (jmagder)
+ * 2013-09-17  TLS_DH_PARAMS_FILE added (mehmet)
  */
 
 /*!
@@ -44,7 +45,8 @@
 #define TLS_PKEY_FILE CFG_DIR "tls/cert.pem" 
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CA_FILE 0 		/*!< no CA list file by default */
-
+#define TLS_CA_DIRECTORY      "/etc/pki/CA/"
+#define TLS_DH_PARAMS_FILE 0   /*!< no DH params file by default */
 
 #define MAX_LISTEN 16		/*!< maximum number of addresses on which we will listen */
 

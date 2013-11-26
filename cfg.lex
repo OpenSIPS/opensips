@@ -351,6 +351,9 @@ TLS_REQUIRE_CLIENT_CERTIFICATE "tls_require_client_certificate"
 TLS_CERTIFICATE	"tls_certificate"
 TLS_PRIVATE_KEY "tls_private_key"
 TLS_CA_LIST		"tls_ca_list"
+TLS_CA_DIR		"tls_ca_dir"
+TLS_DH_PARAMS		"tls_dh_params"
+TLS_EC_CURVE		"tls_ec_curve"
 TLS_CIPHERS_LIST	"tls_ciphers_list"
 TLS_HANDSHAKE_TIMEOUT	"tls_handshake_timeout"
 TLS_SEND_TIMEOUT	"tls_send_timeout"
@@ -390,6 +393,7 @@ SSLv23			"sslv23"|"SSLv23"|"SSLV23"
 SSLv2			"sslv2"|"SSLv2"|"SSLV2"
 SSLv3			"sslv3"|"SSLv3"|"SSLV3"
 TLSv1			"tlsv1"|"TLSv1"|"TLSV1"
+TLSv1_2			"tlsv1_2"|"TLSv1_2"|"TLSV1_2"
 NULLV			"null"|"NULL"
 
 LETTER		[a-zA-Z]
@@ -660,6 +664,12 @@ IMPORTFILE      "import_file"
 										return TLS_PRIVATE_KEY; }
 <INITIAL>{TLS_CA_LIST}	{ count(); yylval.strval=yytext; 
 										return TLS_CA_LIST; }
+<INITIAL>{TLS_CA_DIR}  { count(); yylval.strval=yytext;
+                                                                                return TLS_CA_DIR; }
+<INITIAL>{TLS_DH_PARAMS}  { count(); yylval.strval=yytext;
+										return TLS_DH_PARAMS; }
+<INITIAL>{TLS_EC_CURVE}  { count(); yylval.strval=yytext;
+										return TLS_EC_CURVE; }
 <INITIAL>{TLS_CIPHERS_LIST}	{ count(); yylval.strval=yytext; 
 										return TLS_CIPHERS_LIST; }
 <INITIAL>{TLS_HANDSHAKE_TIMEOUT}	{ count(); yylval.strval=yytext;
@@ -767,6 +777,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{SSLv2}		{ count(); yylval.strval=yytext; return SSLv2; }
 <INITIAL>{SSLv3}		{ count(); yylval.strval=yytext; return SSLv3; }
 <INITIAL>{TLSv1}		{ count(); yylval.strval=yytext; return TLSv1; }
+<INITIAL>{TLSv1_2}		{ count(); yylval.strval=yytext; return TLSv1_2; }
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
