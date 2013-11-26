@@ -46,11 +46,10 @@
 #define SER_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.2.0")
 #define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
 
-
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
+#if OPENSSL_VERSION_NUMBER < 0x10001000L	
 	#warning ""
 	#warning "=============================================================="
-	#warning "Your version of OpenSSL is < 0.9.7."
+	#warning "Your version of OpenSSL is < 1.0.1."
 	#warning " Upgrade for better compatibility, features and security fixes!"
 	#warning "============================================================="
 	#warning ""
@@ -420,10 +419,12 @@ init_ssl_methods(void)
 	ssl_methods[TLS_USE_SSLv23_cli - 1] = SSLv23_client_method();
 	ssl_methods[TLS_USE_SSLv23_srv - 1] = SSLv23_server_method();
 	ssl_methods[TLS_USE_SSLv23 - 1] = SSLv23_method();
-	
+
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L	
 	ssl_methods[TLS_USE_TLSv1_2_cli - 1] = TLSv1_2_client_method();
 	ssl_methods[TLS_USE_TLSv1_2_srv - 1] = TLSv1_2_server_method();
 	ssl_methods[TLS_USE_TLSv1_2 - 1] = TLSv1_2_method();
+#endif
 	
 }
 
