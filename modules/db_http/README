@@ -10,8 +10,7 @@ Andrei Dragus
 
    Copyright © 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision: 8740 $ $Date: 2013-01-29 14:35:11 +0200
-                              (Tue, 29 Jan 2013) $
+   Revision $Revision: 8740 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -216,7 +215,7 @@ modparam("db_http", "quote_delimiter","|")
 
    Example 1.10. Set timeout parameter
 ...
-modparam("db_http", "timeout","5000")
+modparam("db_http", "timeout",5000)
 ...
 
 1.4. Exported Functions
