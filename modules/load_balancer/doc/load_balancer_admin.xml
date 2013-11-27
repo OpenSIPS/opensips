@@ -428,7 +428,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<title><function>lb_is_destination</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_destination("$si","$sp") ) {
+if (lb_is_destination("$si","$sp") ) {
 	# request from a LB destination
 }
 ...
