@@ -34,6 +34,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+extern unsigned xmlrpc_struct_on;
+
 /**
  * module functions
  */
@@ -58,6 +60,13 @@ static proc_export_t procs[] = {
 	{0,0,0,0,0,0}
 };
 
+/* module parameters */
+static param_export_t mod_params[] = {
+	{"use_struct_param",		INT_PARAM, &xmlrpc_struct_on},
+	{0,0,0}
+};
+
+
 /**
  * module exports
  */
@@ -66,7 +75,7 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	0,							/* exported functions */
-	0,							/* exported parameters */
+	mod_params,					/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
 	0,							/* exported pseudo-variables */

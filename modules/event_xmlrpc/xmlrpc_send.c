@@ -34,6 +34,7 @@
 
 #define IS_ERR(_err) (errno == _err)
 
+unsigned xmlrpc_struct_on = 0;
 static char * xmlrpc_body_buf = 0;
 static struct iovec xmlrpc_iov[XMLRPC_IOVEC_MAX_SIZE];
 static unsigned xmlrpc_iov_len = 0;
@@ -297,6 +298,14 @@ int xmlrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 			COPY_STR(START_TAG(XMLRPC_PARAM), LENOF(START_TAG(XMLRPC_PARAM)));
 
 			if (param->name.len && param->name.s) {
+				if (xmlrpc_struct_on) {
+					COPY_STR(START_TAG(XMLRPC_VALUE),
+							LENOF(START_TAG(XMLRPC_VALUE)) - 1);
+					COPY_STR(START_TAG(XMLRPC_STRUCT),
+							LENOF(START_TAG(XMLRPC_STRUCT)) - 1);
+					COPY_STR(START_TAG(XMLRPC_MEMBER),
+							LENOF(START_TAG(XMLRPC_MEMBER)));
+				}
 				LM_DBG("adding parameter %.*s\n",
 						param->name.len, param->name.s);
 				/* <name> */
@@ -339,6 +348,16 @@ int xmlrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 			}
 			COPY_STR(END_TAG(XMLRPC_VALUE),
 					LENOF(END_TAG(XMLRPC_VALUE)));
+
+			if (param->name.len && param->name.s &&
+				xmlrpc_struct_on) {
+					COPY_STR(END_TAG(XMLRPC_MEMBER),
+							LENOF(END_TAG(XMLRPC_MEMBER)) - 1);
+					COPY_STR(END_TAG(XMLRPC_STRUCT),
+							LENOF(END_TAG(XMLRPC_STRUCT)) - 1);
+					COPY_STR(END_TAG(XMLRPC_VALUE),
+							LENOF(END_TAG(XMLRPC_VALUE)));
+			}
 			COPY_STR(END_TAG(XMLRPC_PARAM),
 					LENOF(END_TAG(XMLRPC_PARAM)));
 		}

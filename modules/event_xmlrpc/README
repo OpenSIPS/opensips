@@ -23,13 +23,17 @@ Razvan Crainea
               1.3.2. External Libraries or Applications
 
         1.4. Exported Parameters
+
+              1.4.1. use_struct_param (integer)
+
         1.5. Exported Functions
         1.6. Example
 
    List of Examples
 
-   1.1. E_PIKE_BLOCKED event
-   1.2. XMLRPC socket
+   1.1. Set use_struct_param parameter
+   1.2. E_PIKE_BLOCKED event
+   1.3. XMLRPC socket
 
 Chapter 1. Admin Guide
 
@@ -78,7 +82,20 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-   No parameter exported by this module.
+1.4.1. use_struct_param (integer)
+
+   When raising an event, pack the name and value of the
+   parameters in a XMLRPC structure. This provides an easier way
+   for some XMLRPC server implementations to interpret the
+   parameters. Set it to zero to disable or to non-zero to enable
+   it.
+
+   Default value is “0 (disabled)”.
+
+   Example 1.1. Set use_struct_param parameter
+...
+modparam("event_xmlrpc", "use_struct_param", 1)
+...
 
 1.5. Exported Functions
 
@@ -89,7 +106,7 @@ Chapter 1. Admin Guide
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.1. E_PIKE_BLOCKED event
+   Example 1.2. E_PIKE_BLOCKED event
 
 
 POST /RPC2 HTTP/1.1.
@@ -114,7 +131,7 @@ Content-length: 240.
 </methodCall>
 
 
-   Example 1.2. XMLRPC socket
+   Example 1.3. XMLRPC socket
 
         # calls the 'block_ip' function
         xmlrpc:127.0.0.1:8080:block_ip

@@ -70,6 +70,8 @@ int xmlrpc_build_buffer(str *,
 
 #define XMLRPC_METHOD_CALL	"methodCall"
 #define XMLRPC_METHOD_NAME	"methodName"
+#define XMLRPC_STRUCT		"struct"
+#define XMLRPC_MEMBER		"member"
 #define XMLRPC_PARAMS		"params"
 #define XMLRPC_PARAM		"param"
 #define XMLRPC_ATTR			"name"

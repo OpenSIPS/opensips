@@ -88,9 +88,29 @@
 
 	<section>
 	<title>Exported Parameters</title>
+	<section>
+		<title><varname>use_struct_param</varname> (integer)</title>
 		<para>
-		No parameter exported by this module.
+			When raising an event, pack the name and value of the
+			parameters in a XMLRPC structure. This provides an easier
+			way for some XMLRPC server implementations to interpret
+			the parameters.
+			Set it to zero to disable or to non-zero to enable it.
 		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>use_struct_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_xmlrpc", "use_struct_param", 1)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section>
