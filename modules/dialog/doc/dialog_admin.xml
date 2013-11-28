@@ -2021,6 +2021,9 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		dialog description
 		the associated context from modules sitting on top of
 		the dialog module.
+		This function also prints the dialog's values. In case of
+		binary values, the non-printable chars are represented in hex
+		(e.g. \x00)
 		</para>
 		<para>
 		Name: <emphasis>dlg_list_ctx</emphasis>

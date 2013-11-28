@@ -89,9 +89,11 @@
 		<xsl:text>double</xsl:text>
 	    </xsl:when>
 	    <xsl:when test="$type='string' or
-						$type='text' or
-						$type='binary'">
+						$type='text'">
 		<xsl:text>string</xsl:text>
+	    </xsl:when>
+		<xsl:when test="$type='binary'">
+		<xsl:text>blob</xsl:text>
 	    </xsl:when>
 	    <xsl:otherwise>
 		<xsl:call-template name="type-error"/>

@@ -914,6 +914,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 
 
 /**************************** MI functions ******************************/
+static char *dlg_val_buf;
 static inline int internal_mi_print_dlg(struct mi_node *rpl,
 									struct dlg_cell *dlg, int with_context)
 {
@@ -924,7 +925,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	struct dlg_val* dv;
 	int len;
 	char* p;
-	int i;
+	int i, j;
 
 	node = add_mi_node_child(rpl, 0, "dialog",6 , 0, 0 );
 	if (node==0)
@@ -1044,8 +1045,32 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 			goto error;
 		/* print dlg values -> iterate the list */
 		for( dv=dlg->vals ; dv ; dv=dv->next) {
+			/* escape non-printable chars */
+			p = pkg_realloc(dlg_val_buf, 4 * dv->val.len + 1);
+			if (!p) {
+				LM_ERR("not enough mem to allocate: %d\n", dv->val.len);
+				continue;
+			}
+			for (i = 0, j = 0; i < dv->val.len; i++) {
+				if (dv->val.s[i] < 0x20) {
+					p[j++] = '\\';
+					switch ((unsigned char)dv->val.s[i]) {
+					case 0x9: p[j++] = 't'; break;
+					case 0xA: p[j++] = 'n'; break;
+					case 0xD: p[j++] = 'r'; break;
+					default:
+						p[j++] = 'x';
+						j += snprintf(&p[j], 3, "%02x",
+								(unsigned char)dv->val.s[i]);
+						break;
+					}
+				} else {
+					p[j++] = dv->val.s[i];
+				}
+			}
 			addf_mi_node_child(node1, MI_DUP_VALUE, MI_SSTR("value"),
-				"%.*s = %.*s",dv->name.len,dv->name.s,dv->val.len,dv->val.s);
+				"%.*s = %.*s",dv->name.len,dv->name.s,j,p);
+			dlg_val_buf = p;
 		}
 		/* print dlg profiles */
 		for( dl=dlg->profile_links ; dl ; dl=dl->next) {
