@@ -400,13 +400,16 @@ error:
 static void
 __dialog_loaded(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
-	/* register dialog callbacks which triggers sending PUBLISH */
-        if (dlg_api.register_dlgcb(dlg,
-	         DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
-                DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
-                __dialog_sendpublish, 0, 0) != 0) {
-                LM_ERR("cannot register callback for interesting dialog types\n");
-        }
+	str peer_uri= {0, 0};
+	if(dlg_api.fetch_dlg_value(dlg, &peer_dlg_var, &peer_uri, 1)==0 && peer_uri.len!=0) {
+		/* register dialog callbacks which triggers sending PUBLISH */
+		if (dlg_api.register_dlgcb(dlg,
+			DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
+			DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
+			__dialog_sendpublish, 0, 0) != 0) {
+			LM_ERR("cannot register callback for interesting dialog types\n");
+		}
+	}
 }
 
 
