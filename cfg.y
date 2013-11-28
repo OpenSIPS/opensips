@@ -707,7 +707,7 @@ assign_stm: DEBUG EQUAL snumber {
 			}
 		| EVENT_SHM_THRESHOLD EQUAL error { yyerror("int value expected"); }
 		| EVENT_PKG_THRESHOLD EQUAL NUMBER {
-			#ifdef PKG_MEM
+			#ifdef PKG_MALLOC
                                 #ifdef STATISTICS
                                         if ($3 < 0 || $3 > 100)
                                                 yyerror("PKG threshold has to be a percentage between 0 and 100");
@@ -715,7 +715,7 @@ assign_stm: DEBUG EQUAL snumber {
                                 #else
                                         yyerror("statistics support not compiled in");
                                 #endif
-			#else /* PKG_MEM */
+			#else /* PKG_MALLOC */
 				yyerror("pkg memory support not compiled in");
 			#endif
 			}
