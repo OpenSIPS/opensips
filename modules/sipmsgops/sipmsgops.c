@@ -440,6 +440,19 @@ int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
 	return 0;
 }
 
+static int hf_already_removed(struct sip_msg* msg, unsigned int offset,
+		unsigned int len, enum _hdr_types_t type)
+{
+	struct lump *it;
+	/* parse only the msg headers, not the body */
+	for (it = msg->add_rm; it; it = it->next) {
+		if (it->op == LUMP_DEL && it->type == type &&
+			it->u.offset == offset && it->len == len)
+			return 1;
+	}
+	return 0;
+}
+
 static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 {
 	struct hdr_field *hf;
@@ -475,7 +488,11 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 			if (strncasecmp(hf->name.s, gp->v.sval.s, hf->name.len)!=0)
 				continue;
 		}
-		l=del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
+		/* check to see if the header was already removed */
+		if (hf_already_removed(msg, hf->name.s-msg->buf, hf->len,
+				hf->type))
+			continue;
+		l=del_lump(msg, hf->name.s-msg->buf, hf->len, hf->type);
 		if (l==0) {
 			LM_ERR("no memory\n");
 			return -1;
@@ -522,7 +539,12 @@ static int remove_hf_match_f(struct sip_msg* msg, char* pattern, char* regex_or_
 				return -1;
 			}
 			*(hf->name.s+hf->name.len) = tmp;
-			l=del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
+
+			/* check to see if the header was already removed */
+			if (hf_already_removed(msg, hf->name.s-msg->buf, hf->len,
+					hf->type))
+				continue;
+			l=del_lump(msg, hf->name.s-msg->buf, hf->len, hf->type);
 			if (l==0) {
 				LM_ERR("no memory\n");
 				return -1;
