@@ -61,7 +61,7 @@
 #define FLAGS_COL				"flags"
 #define DIALOG_TABLE_NAME		"dialog"
 
-#define DLG_TABLE_VERSION		8
+#define DLG_TABLE_VERSION		9
 
 /*every minute the dialogs' information will be refreshed*/
 #define DB_DEFAULT_UPDATE_PERIOD	60
