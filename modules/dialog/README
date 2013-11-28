@@ -1445,7 +1445,9 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
    The same as the “dlg_list” but including in the dialog
    description the associated context from modules sitting on top
-   of the dialog module.
+   of the dialog module. This function also prints the dialog's
+   values. In case of binary values, the non-printable chars are
+   represented in hexa (e.g. \x00).
 
    Name: dlg_list_ctx
 
