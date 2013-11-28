@@ -619,9 +619,14 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 			/* script variables */
-			if (!VAL_NULL(values+17))
-				read_dialog_vars( VAL_STR(values+17).s,
-					VAL_STR(values+17).len, dlg);
+			if (!VAL_NULL(values+17)) {
+				if (VAL_TYPE(values+17) == DB_BLOB) {
+					read_dialog_vars( VAL_BLOB(values+17).s,
+							VAL_BLOB(values+17).len, dlg);
+				} else {
+					LM_ERR("non-blob variables column - cannot store dialog variables\n");
+				}
+			}
 
 			/* profiles */
 			if (!VAL_NULL(values+18))
@@ -1561,9 +1566,14 @@ static int sync_dlg_db_mem(void)
 				dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 				/* script variables */
-				if (!VAL_NULL(values+17))
-					read_dialog_vars( VAL_STR(values+17).s,
-						VAL_STR(values+17).len, dlg);
+				if (!VAL_NULL(values+17)) {
+					if (VAL_TYPE(values+17) == DB_BLOB) {
+						read_dialog_vars( VAL_BLOB(values+17).s,
+								VAL_BLOB(values+17).len, dlg);
+					} else {
+						LM_ERR("non-blob variables column - cannot store dialog variables\n");
+					}
+				}
 
 				/* profiles */
 				if (!VAL_NULL(values+18))
@@ -1722,9 +1732,14 @@ static int sync_dlg_db_mem(void)
 					/* update script variables
 					 * if already found, delete the old ones
 					 * and replace with new one */
-					if (!VAL_NULL(values+17))
-						read_dialog_vars( VAL_STR(values+17).s,
-							VAL_STR(values+17).len, known_dlg);
+					if (!VAL_NULL(values+17)) {
+						if (VAL_TYPE(values+17) == DB_BLOB) {
+							read_dialog_vars( VAL_BLOB(values+17).s,
+									VAL_BLOB(values+17).len, known_dlg);
+						} else {
+							LM_ERR("non-blob variables column - cannot store dialog variables\n");
+						}
+					}
 
 					/* skip flags - keep what we have - anyway can't tell which is new */
 
@@ -1801,9 +1816,14 @@ static int sync_dlg_db_mem(void)
 					/* update script variables
 					 * if already found, delete the old one
 					 * and replace with new one */
-					if (!VAL_NULL(values+17))
-						read_dialog_vars( VAL_STR(values+17).s,
-							VAL_STR(values+17).len, known_dlg);
+					if (!VAL_NULL(values+17)) {
+						if (VAL_TYPE(values+17) == DB_BLOB) {
+							read_dialog_vars( VAL_BLOB(values+17).s,
+									VAL_BLOB(values+17).len, known_dlg);
+						} else {
+							LM_ERR("non-blob variables column - cannot store dialog variables\n");
+						}
+					}
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
