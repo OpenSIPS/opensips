@@ -69,6 +69,7 @@ static int fixup_round_op(void **param, int param_no);
  * Function headers
  */
 static int w_evaluate_exp(struct sip_msg *msg, char *exp, char *result);
+static int w_evaluate_rpn(struct sip_msg *msg, char *exp, char *result);
 static int w_basic_round_op(struct sip_msg *msg, char *number, char *result,
                             double (*math_op)(double));
 static int w_floor_op(struct sip_msg *msg, char *number, char *result);
@@ -85,6 +86,9 @@ static int w_round_sf_op(struct sip_msg *msg, char *number, char *result,
  */
 static cmd_export_t cmds[] = {
 	{"math_eval",(cmd_function)w_evaluate_exp, 2, fixup_evaluate_exp, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE},
+	{"math_rpn",(cmd_function)w_evaluate_rpn, 2, fixup_evaluate_exp, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE},
 	{"math_floor",(cmd_function)w_floor_op, 2, fixup_binary_op, 0,
@@ -257,7 +261,22 @@ static int w_evaluate_exp(struct sip_msg *msg, char *exp, char *result)
 
 	LM_DBG("Evaluating expression: %.*s\n", s.len, s.s);
 
-	return evaluate_exp(msg, &s, (pv_spec_p)result);
+	return evaluate_exp(msg, &s, (pv_spec_p)result, 0);
+}
+
+static int w_evaluate_rpn(struct sip_msg *msg, char *exp, char *result)
+{
+	pv_elem_p exp_fmt = (pv_elem_p)exp;
+	str s;
+
+	if (pv_printf_s(msg, exp_fmt, &s) != 0) {
+		LM_ERR("Failed to print the pv format string!\n");
+		return -1;
+	}
+
+	LM_DBG("Evaluating expression: %.*s\n", s.len, s.s);
+
+	return evaluate_exp(msg, &s, (pv_spec_p)result, 1);
 }
 
 
