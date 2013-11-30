@@ -185,7 +185,7 @@ if (math_rpn("1 $avp(1) swap swap dup drop / exp ln 1 swap /", "$avp(result)")) 
 
 /* This example RPN script will push 1 then 3 onto the stack, then do a couple no-ops
 (exchange the two values twice, duplicate one of them then drop the duplicate),
-compute the division of 1 by 3, then do another no-op (expnentiation then logarithm), and
+compute the division of 1 by 3, then do another no-op (exponentiation then logarithm), and
 finally compute 1 divided by the result, giving 3 as the result. */
 </programlisting>
 		</example>

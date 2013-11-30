@@ -292,7 +292,7 @@ const struct mathop_entry word_to_mathop[] = {
   {s:{ len:9, s:"nearbyint" }, op:MATHOP_NEARBYINT},
   {s:{ len:5, s:"trunc" }, op:MATHOP_TRUNC},
   {s:{ len:1, s:"e" }, op:MATHOP_E},
-  {s:{ len:1, s:"pi" }, op:MATHOP_PI},
+  {s:{ len:2, s:"pi" }, op:MATHOP_PI},
   {s:{ len:0, s:NULL}, op:-1}
 };
 
