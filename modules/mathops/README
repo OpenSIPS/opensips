@@ -165,8 +165,8 @@ ult)")) {
 couple no-ops
 (exchange the two values twice, duplicate one of them then drop the dupl
 icate),
-compute the division of 1 by 3, then do another no-op (expnentiation the
-n logarithm), and
+compute the division of 1 by 3, then do another no-op (exponentiation th
+en logarithm), and
 finally compute 1 divided by the result, giving 3 as the result. */
 
 1.4.3.  math_trunc(number, result_pvar)
