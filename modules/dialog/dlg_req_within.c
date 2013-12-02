@@ -210,6 +210,7 @@ error:
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
 {
 	int event, old_state, new_state, unref, ret;
+	struct dlg_cell *curr;
 
 	event = DLG_EVENT_REQBYE;
 	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
@@ -249,8 +250,11 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 			unref++;
 		}
 
+		curr = current_dlg_pointer;
+		current_dlg_pointer = dlg;
 		/* dialog terminated (BYE) */
 		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
+		current_dlg_pointer = curr;
 
 		LM_DBG("first final reply\n");
 		/* derefering the dialog */
@@ -285,6 +289,8 @@ void bye_reply_cb(struct cell* t, int type, struct tmcb_params* ps)
 	}
 
 	LM_DBG("receiving a final reply %d\n",ps->code);
+	/* mark the transaction as belonging to this dialog */
+	t->dialog_ctx = *(ps->param);
 
 	dual_bye_event( (struct dlg_cell *)(*(ps->param)), ps->req, 1);
 }

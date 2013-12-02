@@ -88,15 +88,18 @@ int dialog_cleanup( struct sip_msg *msg, void *param )
 struct dlg_cell *get_current_dialog(void)
 {
 	struct cell *trans;
-
+	
 	if (route_type==REQUEST_ROUTE || route_type==LOCAL_ROUTE) {
 		/* use the per-process static holder */
 		return current_dlg_pointer;
 	} else {
 		/* use current transaction to get dialog */
 		trans = d_tmb.t_gett();
-		if (trans==NULL || trans==T_UNDEFINED)
-			return NULL;
+		if (trans==NULL || trans==T_UNDEFINED) {
+			/* no transaction - perhaps internally terminated
+			dialog - trust the module */
+			return current_dlg_pointer;
+		}	
 		return (struct dlg_cell*)trans->dialog_ctx;
 	}
 }

@@ -281,22 +281,31 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 	pv_value_t value;
 	int n;
 	int r;
+	static struct sip_msg *req;
 
 	if (idx < 0 || idx > MAX_ACC_BUFS-2 /* last one is for legs */) {
 		LM_ERR("Invalid buffer index %d - maximum %d\n", idx, MAX_ACC_BUFS-2);
 		return 0;
 	}
-	
-	if (!rq) {
-		/* no SIP message - probably internally terminated dialog
-			just nullify everything and skip them */
-		for (n=0; extra ; extra=extra->next,n++) {
-			val_arr[n].s = 0;
-			val_arr[n].len = 0;
-		}
-		return n;
-	}
 
+	if(rq == NULL) {
+		if (req == NULL) {
+			req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+			if(req == NULL)
+			{
+				LM_ERR("No more memory\n");
+				return -1;
+			}
+			memset(req, 0, sizeof(struct sip_msg));
+			req->first_line.type = SIP_REQUEST;
+			req->first_line.u.request.method.s= "DUMMY";
+			req->first_line.u.request.method.len= 5;
+			req->first_line.u.request.uri.s= "sip:user@domain.com";
+			req->first_line.u.request.uri.len= 19;
+		}
+		rq = req;
+	}
+	
 	for( n=0,r=0 ; extra ; extra=extra->next,n++) {
 		/* get the value */
 		if (extra->use_rpl) {
@@ -341,6 +350,8 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 	}
 
 done:
+	if (rq == req)
+		free_sip_msg(req);
 	return n;
 }
 

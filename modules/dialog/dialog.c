@@ -1490,11 +1490,12 @@ int pv_get_dlg_end_reason(struct sip_msg *msg, pv_param_t *param, pv_value_t *re
 {
 	struct dlg_cell *dlg;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
-	if ( (dlg=get_current_dialog())==NULL || dlg->terminate_reason.s == NULL)
+	if ( (dlg=get_current_dialog())==NULL || dlg->terminate_reason.s == NULL) {
 		return pv_get_null( msg, param, res);
+	}
 
 	res->rs = dlg->terminate_reason;
 	res->flags = PV_VAL_STR;
