@@ -43,7 +43,7 @@ aliases|1007
 address|
 address|5
 dr_carriers|
-dr_carriers|1
+dr_carriers|2
 carrierfailureroute|
 carrierfailureroute|2
 watchers|
@@ -80,10 +80,8 @@ userblacklist|
 userblacklist|2
 cpl|
 cpl|2
-METADATA_DEFAULTS
-NIL|NIL|''
 dr_gateways|
-dr_gateways|5
+dr_gateways|6
 pua|
 pua|8
 rls_watchers|

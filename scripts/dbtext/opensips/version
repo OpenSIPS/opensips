@@ -16,7 +16,7 @@ sip_trace:3
 xcap:4
 aliases:1007
 address:5
-dr_carriers:1
+dr_carriers:2
 carrierfailureroute:2
 watchers:4
 dispatcher:6
@@ -35,7 +35,7 @@ closeddial:1
 carrierroute:3
 userblacklist:2
 cpl:2
-dr_gateways:5
+dr_gateways:6
 pua:8
 rls_watchers:2
 imc_members:2
