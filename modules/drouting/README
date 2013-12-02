@@ -435,7 +435,7 @@ modparam("drouting", "drg_table", "groups")
    The name of the db table storing definitions of the carriers
    that will be used directly by the routing rules.
 
-   Default value is “dr_gw_lists”.
+   Default value is “dr_carriers”.
 
    Example 1.5. Set drc_table parameter
 ...
