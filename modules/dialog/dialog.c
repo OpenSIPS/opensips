@@ -586,7 +586,7 @@ static int pv_get_dlg_count(struct sip_msg *msg, pv_param_t *param,
 	int l;
 	char *ch;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
 	n = active_dlgs ? get_stat_val(active_dlgs) : 0;
@@ -1354,7 +1354,7 @@ int pv_get_dlg_lifetime(struct sip_msg *msg, pv_param_t *param,
 	char *ch = NULL;
 	struct dlg_cell *dlg;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
 	if ( (dlg=get_current_dialog())==NULL )
@@ -1379,7 +1379,7 @@ int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param,
 	char *ch = NULL;
 	struct dlg_cell *dlg;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
 	if ( (dlg=get_current_dialog())==NULL )
@@ -1404,7 +1404,7 @@ int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 	char *ch = NULL;
 	struct dlg_cell *dlg;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
 	if ( (dlg=get_current_dialog())==NULL )
@@ -1427,7 +1427,7 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 {
 	struct dlg_cell *dlg;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
 	if ( (dlg=get_current_dialog())==NULL || last_dst_leg<0)
@@ -1454,7 +1454,7 @@ int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
 	struct dlg_cell *dlg;
 	str aux;
 
-	if(msg==NULL || res==NULL)
+	if(res==NULL)
 		return -1;
 
 	if ( (dlg=get_current_dialog())==NULL )
