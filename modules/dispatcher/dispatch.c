@@ -114,7 +114,7 @@ int init_data(void)
 	return 0;
 }
 
-int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
+int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 							int weight, str attrs, int list_idx, int * setn)
 {
 	ds_dest_p dp = NULL;
@@ -183,10 +183,23 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int flags,
 		dp->attrs.len = attrs.len;
 	}
 
-	/* copy flags, weight & socket */
-	dp->flags = flags;
-	dp->weight = weight;
+	/* copy state, weight & socket */
 	dp->sock = sock;
+	dp->weight = weight;
+	switch (state) {
+		case 0:
+			dp->flags = 0;
+			break;
+		case 1:
+			dp->flags = DS_INACTIVE_DST;
+			break;
+		case 2:
+			dp->flags = DS_PROBING_DST;
+			break;
+		default:
+			LM_CRIT("BUG: unknown state %d for destination %.*s\n",
+				state, uri.len, uri.s);
+	}
 
 	/* Do a DNS-Lookup for the Host-Name: */
 	proxy = mk_proxy( &puri.host, puri.port_no, puri.proto,
@@ -530,11 +543,64 @@ void ds_inherit_state( int new_idx, int old_idx)
 	}
 }
 
+
+void ds_flusher_routine(unsigned int ticks, void* param)
+{
+	db_key_t key_cmp;
+	db_val_t val_cmp;
+	db_key_t key_set;
+	db_val_t val_set;
+	ds_set_p list;
+	int j;
+
+	val_cmp.type = DB_STR;
+	val_cmp.nul  = 0;
+
+	val_set.type = DB_INT;
+	val_set.nul  = 0;
+
+	/* update the gateways */
+	if (ds_dbf.use_table(ds_db_handle, &ds_table_name) < 0) {
+		LM_ERR("cannot select table \"%.*s\"\n",
+			ds_table_name.len, ds_table_name.s);
+		return;
+	}
+	key_cmp = &ds_dest_uri_col;
+	key_set = &ds_dest_state_col;
+
+	/* Iterate over the groups and the entries of each group */
+	for(list = _ds_list; list!= NULL; list= list->next) {
+		for(j=0; j<list->nr; j++) {
+			/* If the Flag of the entry is STATE_DIRTY -> flush do db */
+			if ( (list->dlist[j].flags&DS_STATE_DIRTY_DST)==0 )
+				/* nothing to do for this destination */
+				continue;
+
+			/* populate the update */
+			val_cmp.val.str_val = list->dlist[j].uri;
+			val_set.val.int_val = (list->dlist[j].flags&DS_INACTIVE_DST) ? 1 : ((list->dlist[j].flags&DS_PROBING_DST)?2:0) ;
+
+			/* update the state of this gateway */
+			LM_DBG("updating the state of destination <%.*s> to %d\n",
+				list->dlist[j].uri.len, list->dlist[j].uri.s, val_set.val.int_val);
+
+			if ( ds_dbf.update(ds_db_handle,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
+				LM_ERR("DB update failed\n");
+			} else {
+				list->dlist[j].flags &= ~DS_STATE_DIRTY_DST;
+			}
+		}
+	}
+
+	return;
+}
+
+
 /*load groups of destinations from DB*/
 int ds_load_db(void)
 {
 	int i, id, nr_rows, setn, cnt;
-	int flags;
+	int state;
 	int weight;
 	struct socket_info *sock;
 	str uri;
@@ -546,7 +612,7 @@ int ds_load_db(void)
 	db_row_t * rows;
 
 	db_key_t query_cols[6] = {&ds_set_id_col, &ds_dest_uri_col,
-			&ds_dest_sock_col, &ds_dest_flags_col,
+			&ds_dest_sock_col, &ds_dest_state_col,
 			&ds_dest_weight_col, &ds_dest_attrs_col};
 
 	if( (*crt_idx) != (*next_idx))
@@ -622,11 +688,11 @@ int ds_load_db(void)
 			sock = NULL;
 		}
 
-		/* flags */
+		/* state */
 		if (VAL_NULL(values+3)) {
-			flags = 0;
+			state = 0;
 		} else {
-			flags = VAL_INT(values+3);
+			state = VAL_INT(values+3);
 		}
 
 		/* weight */
@@ -640,7 +706,7 @@ int ds_load_db(void)
 		get_str_from_dbval( "ATTRIBUTES", values+5,
 			0/*not_null*/, 0/*not_empty*/, attrs, err2);
 
-		if(add_dest2list(id, uri, sock, flags, weight, attrs, *next_idx,
+		if(add_dest2list(id, uri, sock, state, weight, attrs, *next_idx,
 		&setn) != 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",uri.len,uri.s,id);
 			continue;
@@ -1539,6 +1605,7 @@ int ds_set_state(int group, str *address, int state, int type)
 	int i=0;
 	ds_set_p idx = NULL;
 	evi_params_p list = NULL;
+	int old_flags;
 
 	if(_ds_list==NULL || _ds_list_nr<=0)
 	{
@@ -1584,11 +1651,16 @@ int ds_set_state(int group, str *address, int state, int type)
 				idx->dlist[i].failure_count = 0;
 				state &= ~DS_RESET_FAIL_DST;
 			}
-			
+
+			/* set the new state of the destination */
+			old_flags = idx->dlist[i].flags;
 			if(type)
 				idx->dlist[i].flags |= state;
 			else
 				idx->dlist[i].flags &= ~state;
+			if ( idx->dlist[i].flags != old_flags)
+				idx->dlist[i].flags |= DS_STATE_DIRTY_DST;
+
 			if (dispatch_evi_id == EVI_ERROR) {
 				LM_ERR("event not registered %d\n", dispatch_evi_id);
 			} else if (evi_probe_event(dispatch_evi_id)) {
@@ -1623,48 +1695,6 @@ int ds_set_state(int group, str *address, int state, int type)
 	}
 
 	return -1;
-}
-
-int ds_print_list(FILE *fout)
-{
-	int j;
-	ds_set_p list;
-		
-	if(_ds_list==NULL || _ds_list_nr<=0)
-	{
-		LM_DBG("empty destination sets\n");
-		return -1;
-	}
-	
-	fprintf(fout, "\nnumber of destination sets: %d\n", _ds_list_nr);
-	
-	for(list = _ds_list; list!= NULL; list= list->next)
-	{
-		for(j=0; j<list->nr; j++)
-		{
-			fprintf(fout, "\n set #%d\n", list->id);
-		
-			if (list->dlist[j].flags&DS_INACTIVE_DST)
-  				fprintf(fout, "    Disabled         ");
-  			else if (list->dlist[j].flags&DS_PROBING_DST)
-  				fprintf(fout, "    Probing          ");
-  			else {
-  				fprintf(fout, "    Active");
-  				/* Optional: Print the tries for this host. */
-  				if (list->dlist[j].failure_count > 0) {
-  					fprintf(fout, " (Fail %d/%d)",
-  							list->dlist[j].failure_count,
- 							probing_threshhold);
-  				} else {
-  					fprintf(fout, "           ");
-  				}
-  			}
-  
-  			fprintf(fout, "   %.*s\n",
-  				list->dlist[j].uri.len, list->dlist[j].uri.s);		
-		}
-	}
-	return 0;
 }
 
 
@@ -1779,21 +1809,21 @@ int ds_print_mi_list(struct mi_node* rpl)
 			return -1;
 
 		for(j=0; j<list->nr; j++)
-  		{
-  			node= add_mi_node_child(set_node, 0, "URI", 3,
-  					list->dlist[j].uri.s, list->dlist[j].uri.len);
-  			if(node == NULL)
-  				return -1;
-  
-  			if (list->dlist[j].flags & DS_INACTIVE_DST) c = 'I';
-  			else if (list->dlist[j].flags & DS_PROBING_DST) c = 'P';
-  			else c = 'A';
-  
-  			attr = add_mi_attr (node, MI_DUP_VALUE, "flag",4, &c, 1);
-  			if(attr == 0)
-  				return -1;
-  
- 		}
+		{
+			node= add_mi_node_child(set_node, 0, "URI", 3,
+					list->dlist[j].uri.s, list->dlist[j].uri.len);
+			if(node == NULL)
+				return -1;
+
+			if (list->dlist[j].flags & DS_INACTIVE_DST) c = 'I';
+			else if (list->dlist[j].flags & DS_PROBING_DST) c = 'P';
+			else c = 'A';
+
+			attr = add_mi_attr (node, MI_DUP_VALUE, "flag",4, &c, 1);
+			if(attr == 0)
+				return -1;
+
+		}
 	}
 
 	return 0;

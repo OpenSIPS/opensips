@@ -50,6 +50,7 @@
 #define DS_INACTIVE_DST		1  /* inactive destination */
 #define DS_PROBING_DST		2  /* checking destination */
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
+#define DS_STATE_DIRTY_DST	8  /* STATE is dirty */
 
 #define DS_PV_ALGO_MARKER	"%u"	/* Marker to indicate where the URI should
 									   be inserted in the pvar */
@@ -102,7 +103,7 @@ extern str ds_table_name;
 extern str ds_set_id_col;
 extern str ds_dest_uri_col;
 extern str ds_dest_sock_col;
-extern str ds_dest_flags_col;
+extern str ds_dest_state_col;
 extern str ds_dest_weight_col;
 extern str ds_dest_attrs_col;
 
@@ -143,7 +144,6 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 int ds_next_dst(struct sip_msg *msg, int mode);
 int ds_set_state(int group, str *address, int state, int type);
 int ds_mark_dst(struct sip_msg *msg, int mode);
-int ds_print_list(FILE *fout);
 int ds_print_mi_list(struct mi_node* rpl);
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret);
 
@@ -153,6 +153,8 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *addr, pv_spec_t *port,
  * Timer for checking inactive destinations
  */
 void ds_check_timer(unsigned int ticks, void* param);
+void ds_flusher_routine(unsigned int ticks, void* param);
+
 
 int check_options_rplcode(int code);
 
