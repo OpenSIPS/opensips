@@ -129,7 +129,7 @@ dbtext:
 	done
 	set -e; \
 	TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`; \
-	for FILE in  $(wildcard $(ROOT)/scripts/dbtext/opensips/*) ; do \
+	for FILE in  $(sort $(wildcard $(ROOT)/scripts/dbtext/opensips/*)) ; do \
 		if [ -f "$$FILE" ]; then \
 			if [  "$$FILE" != "$(ROOT)/scripts/dbtext/opensips/version" -a \
 					`wc -l "$$FILE" | cut -f 1 -d ' '` -gt 1 ]; then \
@@ -155,7 +155,7 @@ db_berkeley:
 	done
 	set -e; \
 	TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`; \
-	for FILE in  $(wildcard $(ROOT)/scripts/db_berkeley/opensips/*) ; do \
+	for FILE in  $(sort $(wildcard $(ROOT)/scripts/db_berkeley/opensips/*)) ; do \
 		if [ -f "$$FILE" ]; then \
 			if [  "$$FILE" != "$(ROOT)/scripts/db_berkeley/opensips/version" ]; then \
 				tail -2 "$$FILE" >> "$(ROOT)/scripts/db_berkeley/opensips/version" ; \
