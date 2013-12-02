@@ -1,10 +1,10 @@
-INSERT INTO version (table_name, table_version) values ('dispatcher','5');
+INSERT INTO version (table_name, table_version) values ('dispatcher','6');
 CREATE TABLE dispatcher (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     setid INT DEFAULT 0 NOT NULL,
     destination CHAR(192) DEFAULT '' NOT NULL,
     socket CHAR(128) DEFAULT NULL,
-    flags INT DEFAULT 0 NOT NULL,
+    state INT DEFAULT 0 NOT NULL,
     weight INT DEFAULT 1 NOT NULL,
     attrs CHAR(128) DEFAULT '' NOT NULL,
     description CHAR(64) DEFAULT '' NOT NULL

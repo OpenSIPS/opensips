@@ -67,7 +67,7 @@
 
 #include "dispatch.h"
 
-#define DS_TABLE_VERSION	5
+#define DS_TABLE_VERSION	6
 
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;

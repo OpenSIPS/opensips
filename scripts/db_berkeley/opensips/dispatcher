@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) setid(int) destination(str) socket(str) flags(int) weight(int) attrs(str) description(str)
+id(int) setid(int) destination(str) socket(str) state(int) weight(int) attrs(str) description(str)
 METADATA_KEY
 1 4 5 
 METADATA_READONLY
