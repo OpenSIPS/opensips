@@ -501,7 +501,7 @@ modparam("drouting", "drg_table", "groups")
 		be used directly by the routing rules.
 		</para>
 		<para>
-		<emphasis>	Default value is <quote>dr_gw_lists</quote>.
+		<emphasis>	Default value is <quote>dr_carriers</quote>.
 		</emphasis>
 		</para>
 		<example>
