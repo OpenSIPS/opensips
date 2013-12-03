@@ -773,7 +773,7 @@ if (method=="REGISTER") {
 if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
 	t_relay();
 };
-if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
+if (allow_uri("basename", "$avp(basename)") {  // Check URI stored in $avp(basename)
 	t_relay();
 };
 ...
@@ -867,16 +867,15 @@ if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
 // Checks if the tuple IP address/port (given as strings) and source protocol 
 // (given as pvar), belongs to group 4, verifies if pattern string "texttest" 
 // matches the regular expression field in the database table and stores the 
-// context information in $avp(i:10)
-if (check_address("4","192.168.2.135","5700","$proto","$avp(i:10)", "texttest")) {
+// context information in $avp(context)
+if (check_address("4","192.168.2.135","5700","$proto","$avp(context)", "texttest")) {
 	t_relay();
-	xlog("$avp(i:10)\n");
+	xlog("$avp(context)\n");
 }
 
 ...
 
-// Checks if the tuple IP address/port/protocol of the source message is in group
-// 4 and stores context information in $avp(i:10)
+// Checks if the tuple IP address/port/protocol of the source message is in group 4
 if (check_address("4","$si","$sp","$proto")) {
 	t_relay();
 }
@@ -884,13 +883,13 @@ if (check_address("4","$si","$sp","$proto")) {
 ...
 
 // Checks if the tuple IP address/port/protocol stored in AVPs s:ip/s:port/s:proto 
-// is in group 4 and stores context information in $avp(i:10)
-$avp(s:ip) = "192.168.2.135";
-$avp(s:port) = 5061;
-$avp(s:proto) = "any";
-if (check_address("4","$avp(s:ip)","$avp(s:port)","$avp(s:proto)","$avp(i:10))) {
+// is in group 4 and stores context information in $avp(context)
+$avp(ip) = "192.168.2.135";
+$avp(port) = 5061;
+$avp(proto) = "any";
+if (check_address("4","$avp(ip)","$avp(port)","$avp(proto)","$avp(context))) {
 	t_relay();
-	xlog("$avp(i:10)\n");
+	xlog("$avp(context)\n");
 }
 
 ...    
@@ -924,9 +923,9 @@ if (check_address("4","$si","5700","$proto","", "texttest")) {
 		<programlisting format="linespecific">
 ...
 // Check if source address/port/proto is in group 4 and stores
-// context information in $avp(i:9)
-if (check_source_address("4","$avp(i:9)")) {
-	xlog("$avp(i:9)\n");
+// context information in $avp(context)
+if (check_source_address("4","$avp(context)")) {
+	xlog("$avp(context)\n");
 }else {
 	sl_send_reply("403", "Forbidden");
 }

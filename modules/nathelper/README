@@ -200,7 +200,7 @@ Note
 
    Example 1.5. Set received_avp parameter
 ...
-modparam("nathelper", "received_avp", "$avp(i:42)")
+modparam("nathelper", "received_avp", "$avp(received_avp)")
 ...
 
 1.4.6. force_socket (string)

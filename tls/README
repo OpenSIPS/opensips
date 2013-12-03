@@ -779,7 +779,7 @@ route{
 ...
     # calls to other SIP domains
     # set the proper SSL context (certificate) for local hosted domains
-    avp_write("$fd","$avp(i:400)");
+    avp_write("$fd","$avp(fd)");
     t_relay(); # uses NAPTR and SRV lookups
     exit;
 ...

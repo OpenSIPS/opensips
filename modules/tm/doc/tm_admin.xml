@@ -466,7 +466,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 		<title>Set <varname>fr_timer_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "fr_timer_avp", "$avp(i:24)")
+modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
 ...
 </programlisting>
 		</example>
@@ -492,7 +492,7 @@ modparam("tm", "fr_timer_avp", "$avp(i:24)")
 		<title>Set <varname>fr_inv_timer_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
+modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
 ...
 </programlisting>
 		</example>
@@ -538,7 +538,7 @@ modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
 		<programlisting format="linespecific">
 ...
 modparam("tm", "tw_append",
-   "test: ua=$hdr(User-Agent) ;avp=$avp(i:10);$rb;time=$Ts")
+   "test: ua=$hdr(User-Agent) ;avp=$avp(extra);$rb;time=$Ts")
 ...
 </programlisting>
 		</example>

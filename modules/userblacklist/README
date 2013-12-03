@@ -151,9 +151,9 @@ number, string table)
 
    Example 1.4. check_user_blacklist usage
 ...
-$avp(i:80) = $rU;
+$avp(username) = $rU;
 # rewrite the R-URI
-if (!check_user_blacklist("$avp(i:80)", "$avp(i:82)"))
+if (!check_user_blacklist("$avp(username)", "$avp(return)"))
         sl_send_reply("403", "Forbidden");
         exit;
 }

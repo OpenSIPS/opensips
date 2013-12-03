@@ -457,7 +457,7 @@ modparam("msilo", "sc_snd_time", "send_reminder_time")
 
    Example 1.24. Set the “snd_time_avp” parameter
 ...
-modparam("msilo", "snd_time_avp", "$avp(i:123)")
+modparam("msilo", "snd_time_avp", "$avp(snd_time_avp)")
 ...
 
 1.3.25. add_date (int)
