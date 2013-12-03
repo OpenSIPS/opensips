@@ -50,7 +50,7 @@ What is new in 1.6.0
 2.4  Transformations
 
     * added a new nameaddr transformation: param; it extract the value of a certain parameter
-          o example: avp(i:4) = $(hdr(From){nameaddr.param, tag}); 
+          o example: avp(from) = $(hdr(From){nameaddr.param, tag}); 
 
 2.5  AAA API and enhancement of RADIUS support(NEW)
 AAA API
@@ -201,7 +201,7 @@ important - Renamed as AUTH_AAA module - see the AAA API and module changes.
     * example: 
 
 modparam("call_control", "init", "call-id=$ci to=$tu from=$fu 
-			authruri=$du another_field = $avp(i:10)")
+			authruri=$du another_field = $avp(extra)")
 
     * the message sent if one of these parameter is set will be the string resulted after expanding the pvars 
 
