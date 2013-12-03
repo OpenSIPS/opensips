@@ -612,7 +612,7 @@ save("location","mc5");
 save("location","","$fu");
 ...
 # save into 'location',no DB update, no reply to send, take AOR from AVP
-save("location","mr", "$avp(i:1)");
+save("location","mr", "$avp(aor)");
 ...
 </programlisting>
 		</example>

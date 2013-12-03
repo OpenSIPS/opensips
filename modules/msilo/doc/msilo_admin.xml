@@ -531,7 +531,7 @@ modparam("msilo", "sc_snd_time", "send_reminder_time")
 		<title>Set the <quote>snd_time_avp</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("msilo", "snd_time_avp", "$avp(i:123)")
+modparam("msilo", "snd_time_avp", "$avp(snd_time_avp)")
 ...
 </programlisting>
 		</example>

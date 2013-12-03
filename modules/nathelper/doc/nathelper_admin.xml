@@ -214,7 +214,7 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 		<title>Set <varname>received_avp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "received_avp", "$avp(i:42)")
+modparam("nathelper", "received_avp", "$avp(received_avp)")
 ...
 </programlisting>
 		</example>

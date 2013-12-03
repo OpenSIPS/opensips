@@ -462,7 +462,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 
    Example 1.11. Set fr_timer_avp parameter
 ...
-modparam("tm", "fr_timer_avp", "$avp(i:24)")
+modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
 ...
 
 1.3.12. fr_inv_timer_avp (string)
@@ -478,7 +478,7 @@ modparam("tm", "fr_timer_avp", "$avp(i:24)")
 
    Example 1.12. Set fr_inv_timer_avp parameter
 ...
-modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
+modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
 ...
 
 1.3.13. tw_append (string)
@@ -504,7 +504,7 @@ modparam("tm", "fr_inv_timer_avp", "$avp(i:25)")
    Example 1.13. Set tw_append parameter
 ...
 modparam("tm", "tw_append",
-   "test: ua=$hdr(User-Agent) ;avp=$avp(i:10);$rb;time=$Ts")
+   "test: ua=$hdr(User-Agent) ;avp=$avp(extra);$rb;time=$Ts")
 ...
 
 1.3.14. pass_provisional_replies (integer)
