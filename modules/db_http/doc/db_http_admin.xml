@@ -234,7 +234,7 @@ modparam("db_http", "quote_delimiter","|")
 		<title>Set <varname>timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("db_http", "timeout","5000")
+modparam("db_http", "timeout",5000)
 ...
 </programlisting>
 		</example>
