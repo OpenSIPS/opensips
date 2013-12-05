@@ -32,6 +32,8 @@
  *              to ds_is_from_list.
  * 2009-05-18  Added support for weights for the destinations;
  *              added support for custom "attrs" (opaque string) (bogdan)
+ * 2013-12-02  Added support state persistency (restart and reload) (bogdan)
+ * 2013-12-05  Added a safer reload mechanism based on locking read/writter (bogdan)
  */
 
 #ifndef _DISPATCH_H_
@@ -41,8 +43,6 @@
 #include "../../pvar.h"
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
-
-#include "ds_bl.h"
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
@@ -87,16 +87,18 @@ typedef struct _ds_set
 	struct _ds_set *next;
 } ds_set_t, *ds_set_p;
 
+typedef struct _ds_data
+{
+	ds_set_t *sets;
+	unsigned int sets_no;
+} ds_data_t;
+
 typedef struct _ds_pvar_param
 {
 	pv_spec_t pvar;
 	int value;
 } ds_pvar_param_t, *ds_pvar_param_p;
 
-
-extern ds_set_p *ds_lists;
-extern int *crt_idx;
-extern int *next_idx;
 
 extern str ds_db_url;
 extern str ds_table_name;
@@ -134,12 +136,15 @@ extern int probing_threshhold; /* number of failed requests,
 						before a destination is taken into probing */ 
 extern int ds_probing_mode;
 
-int init_data();
+
 int init_ds_db();
 int ds_connect_db();
 void ds_disconnect_db();
-int ds_load_db();
-int ds_destroy_list();
+int ds_reload_db();
+
+int init_ds_data();
+void ds_destroy_data();
+
 int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_results);
 int ds_next_dst(struct sip_msg *msg, int mode);
 int ds_set_state(int group, str *address, int state, int type);

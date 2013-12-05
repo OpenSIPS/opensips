@@ -26,15 +26,17 @@
  * -------
  * 2004-07-31  first version, by daniel
  * 2007-01-11  Added a function to check if a specific gateway is in a group
- *				(carsten - Carsten Bock, BASIS AudioNet GmbH)
+ *              (carsten - Carsten Bock, BASIS AudioNet GmbH)
  * 2007-02-09  Added active probing of failed destinations and automatic
- *				re-enabling of destinations (carsten)
+ *              re-enabling of destinations (carsten)
  * 2007-05-08  Ported the changes to SVN-Trunk and renamed ds_is_domain
- *				to ds_is_from_list.  (carsten)
+ *              to ds_is_from_list.  (carsten)
  * 2007-07-18  Added support for load/reload groups from DB 
- * 			   reload triggered from ds_reload MI_Command (ancuta)
+ *              reload triggered from ds_reload MI_Command (ancuta)
  * 2009-05-18  Added support for weights for the destinations;
- * 			   added support for custom "attrs" (opaque string) (bogdan)
+ *              added support for custom "attrs" (opaque string) (bogdan)
+ * 2013-12-02  Added support state persistency (restart and reload) (bogdan)
+ * 2013-12-05  Added a safer reload mechanism based on locking read/writter (bogdan)
  */
 
 #include <stdio.h>
@@ -54,6 +56,7 @@
 #include "../../db/db.h"
 
 #include "dispatch.h"
+#include "ds_bl.h"
 
 
 #define DS_SET_ID_COL		"setid"
@@ -118,6 +121,7 @@ struct socket_info *probing_sock = NULL;
 /* event */
 static str dispatcher_event = str_init("E_DISPATCHER_STATUS");
 event_id_t dispatch_evi_id;
+
 
 /** module functions */
 static int mod_init(void);
@@ -246,8 +250,6 @@ static int mod_init(void)
 
 	/* Load stuff from DB */
 	init_db_url( ds_db_url , 0 /*cannot be null*/);
-	if(init_data()!= 0)
-		return -1;
 
 	ds_table_name.len = strlen(ds_table_name.s);
 	ds_set_id_col.len = strlen(ds_set_id_col.s);
@@ -256,12 +258,6 @@ static int mod_init(void)
 	ds_dest_state_col.len = strlen(ds_dest_state_col.s);
 	ds_dest_weight_col.len = strlen(ds_dest_weight_col.s);
 	ds_dest_attrs_col.len = strlen(ds_dest_attrs_col.s);
-
-	if(init_ds_db()!= 0)
-	{
-		LM_ERR("failed to load data from database\n");
-		return -1;
-	}
 
 	/* handle AVPs spec */
 	dst_avp_param.len = strlen(dst_avp_param.s);
@@ -335,16 +331,6 @@ static int mod_init(void)
 		attrs_avp_type = 0;
 	}
 
-	if (init_ds_bls()!=0) {
-		LM_ERR("failed to init DS blacklists\n");
-		return E_CFG;
-	}
-
-	if (populate_ds_bls()) {
-		LM_ERR("Failed to populate DS blacklist\n");
-		return E_CFG;
-	}
-
 	if (hash_pvar_param.s && (hash_pvar_param.len=strlen(hash_pvar_param.s))>0 ) {
 		if(pv_parse_format(&hash_pvar_param, &hash_param_model) < 0
 				|| hash_param_model==NULL) {
@@ -367,6 +353,31 @@ static int mod_init(void)
 	pvar_algo_param.len = strlen(pvar_algo_param.s);
 	if (pvar_algo_param.len)
 		ds_pvar_parse_pattern(pvar_algo_param);
+
+	if (init_ds_bls()!=0) {
+		LM_ERR("failed to init DS blacklists\n");
+		return E_CFG;
+	}
+
+	if (init_ds_data()!=0) {
+		LM_ERR("failed to init DS data holder\n");
+		return -1;
+	}
+
+	/* open DB connection to load provisioning data */
+	if (init_ds_db()!= 0) {
+		LM_ERR("failed to init database support\n");
+		return -1;
+	}
+
+	/* do the actula data load */
+	if (ds_reload_db()!=0) {
+		LM_ERR("failed to load data from DB\n");
+		return -1;
+	}
+
+	/* close DB connection */
+	ds_disconnect_db();
 
 	/* Only, if the Probing-Timer is enabled the TM-API needs to be loaded: */
 	if (ds_ping_interval > 0)
@@ -428,7 +439,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-
 	dispatch_evi_id = evi_publish_event(dispatcher_event);
 	if (dispatch_evi_id == EVI_ERROR)
 		LM_ERR("cannot register dispatcher event\n");
@@ -467,7 +477,7 @@ static void destroy(void)
 	/* flush the state of the destinations */
 	ds_flusher_routine(0, NULL);
 
-	ds_destroy_list();
+	ds_destroy_data();
 
 	/* destroy blacklists */
 	destroy_ds_bls();
@@ -497,6 +507,7 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 	return ds_select_dst(msg, s, a, 0 /*set dst uri*/, 1000);
 }
 
+
 /**
  * same wrapper as w_ds_select_dst, but it allows cutting down the result set
  */
@@ -525,6 +536,7 @@ static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, ch
 	return ds_select_dst(msg, s, a, 0 /*set dst uri*/, m);
 }
 
+
 /**
  *
  */
@@ -547,6 +559,7 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 
 	return ds_select_dst(msg, s, a, 1/*set host port*/, 1000);
 }
+
 
 /**
  *
@@ -576,6 +589,7 @@ static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg,
 	return ds_select_dst(msg, s, a, 1/*set host port*/, m);
 }
 
+
 /**
  *
  */
@@ -583,6 +597,7 @@ static int w_ds_next_dst(struct sip_msg *msg, char *str1, char *str2)
 {
 	return ds_next_dst(msg, 0/*set dst uri*/);
 }
+
 
 /**
  *
@@ -592,6 +607,7 @@ static int w_ds_next_domain(struct sip_msg *msg, char *str1, char *str2)
 	return ds_next_dst(msg, 1/*set host port*/);
 }
 
+
 /**
  *
  */
@@ -599,6 +615,7 @@ static int w_ds_mark_dst0(struct sip_msg *msg, char *str1, char *str2)
 {
 	return ds_mark_dst(msg, 0);
 }
+
 
 /**
  *
@@ -640,6 +657,7 @@ static int in_list_fixup(void** param, int param_no)
 		return -1;
 	}
 }
+
 
 static int ds_count_fixup(void** param, int param_no)
 {
@@ -695,6 +713,7 @@ static int ds_count_fixup(void** param, int param_no)
 
 	return 0;
 }
+
 
 /************************** MI STUFF ************************/
 
@@ -782,12 +801,8 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 
 static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 {
-	if (ds_load_db()<0)
+	if (ds_reload_db()<0)
 		return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
-
-	if (populate_ds_bls()<0) {
-		return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
-	}
 
 	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 }

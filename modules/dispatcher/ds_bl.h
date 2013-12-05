@@ -29,6 +29,7 @@
 #define _DS_BL_H_
 
 #include "../../blacklists.h"
+#include "dispatch.h"
 
 #define DS_BL_MAX_SETS		32
 
@@ -45,6 +46,6 @@ int init_ds_bls(void);
 
 void destroy_ds_bls(void);
 
-int populate_ds_bls(void);
+int populate_ds_bls(ds_set_t *sets);
 
 #endif /* _DS_BL_H_ */
