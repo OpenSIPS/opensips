@@ -811,7 +811,7 @@ static int dr_child_init(int rank)
 
 static int dr_exit(void)
 {
-	if (dr_persistent_state)
+	if (dr_persistent_state && db_hdl)
 		dr_state_flusher();
 
 	/* close DB connection */
