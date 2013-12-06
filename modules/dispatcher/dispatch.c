@@ -1653,7 +1653,10 @@ int ds_set_state(int group, str *address, int state, int type)
 					idx->dlist[i].failure_count++;
 					/* Fire only, if the Threshold is reached. */
 					if (idx->dlist[i].failure_count 
-							< probing_threshhold) return 0;
+							< probing_threshhold) {
+						lock_stop_read( ds_lock );
+						return 0;
+					}
 					if (idx->dlist[i].failure_count
 							> probing_threshhold) 
 						idx->dlist[i].failure_count
@@ -1679,8 +1682,8 @@ int ds_set_state(int group, str *address, int state, int type)
 				LM_ERR("event not registered %d\n", dispatch_evi_id);
 			} else if (evi_probe_event(dispatch_evi_id)) {
 				if (!(list = evi_get_params())) {
-					return 0;
 					lock_stop_read( ds_lock );
+					return 0;
 				}
 				if (evi_param_add_int(list, &group_str, &group)) {
 					LM_ERR("unable to add group parameter\n");
