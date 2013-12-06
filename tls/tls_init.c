@@ -46,11 +46,10 @@
 #define SER_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.2.0")
 #define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
 
-
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
+#if OPENSSL_VERSION_NUMBER < 0x10001000L	
 	#warning ""
 	#warning "=============================================================="
-	#warning "Your version of OpenSSL is < 0.9.7."
+	#warning "Your version of OpenSSL is < 1.0.1."
 	#warning " Upgrade for better compatibility, features and security fixes!"
 	#warning "============================================================="
 	#warning ""
@@ -321,6 +320,80 @@ load_ca(SSL_CTX * ctx, char *filename)
 }
 
 
+/*  
+ * Load a caList from a directory instead of a single file.
+ */ 
+static int
+load_ca_dir(SSL_CTX * ctx, char *directory)
+{
+        LM_DBG("Entered\n");        
+        if (!SSL_CTX_load_verify_locations(ctx, 0 , directory)) {
+                LM_ERR("unable to load ca directory '%s'\n", directory);
+                return -1;
+        }
+
+        LM_DBG("CA '%s' successfuly loaded from directory\n", directory);
+        return 0;
+}
+
+/*  
+ * Load and set DH params to be used in ephemeral key exchange from a file.
+ */
+static int
+set_dh_params(SSL_CTX * ctx, char *filename)
+{
+	LM_DBG("Entered\n");
+	BIO *bio = BIO_new_file(filename, "r");
+	if (!bio) {
+		LM_ERR("unable to open dh params file '%s'\n", filename);
+		return -1;
+	}
+
+	DH *dh = PEM_read_bio_DHparams(bio, 0, 0, 0);
+	BIO_free(bio);
+	if (!dh) {
+		LM_ERR("unable to read dh params from '%s'\n", filename);
+		return -1;
+	}
+	
+	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
+		LM_ERR("unable to set dh params\n");
+		return -1;
+	}
+	
+	DH_free(dh);
+	LM_DBG("DH params from '%s' successfuly set\n", filename);
+	return 0;
+}
+
+/*  
+ * Set elliptic curve.
+ */
+static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
+{
+	int curve = 0;
+	if (curve_name) {
+		curve = OBJ_txt2nid(curve_name);
+	}
+	if (curve > 0) {
+		EC_KEY *ecdh = EC_KEY_new_by_curve_name (curve);
+		if (! ecdh) {
+			LM_ERR("unable to create EC curve\n");
+			return -1;
+		}
+		if (1 != SSL_CTX_set_tmp_ecdh (ctx, ecdh)) {
+			LM_ERR("unable to set tmp_ecdh\n");
+			return -1;
+		}
+		EC_KEY_free (ecdh);
+	}
+	else {
+		LM_ERR("unable to find the EC curve\n");
+		return -1;
+	}
+    return 0;
+}
+
 /*
  * initialize ssl methods 
  */
@@ -346,6 +419,13 @@ init_ssl_methods(void)
 	ssl_methods[TLS_USE_SSLv23_cli - 1] = SSLv23_client_method();
 	ssl_methods[TLS_USE_SSLv23_srv - 1] = SSLv23_server_method();
 	ssl_methods[TLS_USE_SSLv23 - 1] = SSLv23_method();
+
+#if OPENSSL_VERSION_NUMBER >= 0x10001000L	
+	ssl_methods[TLS_USE_TLSv1_2_cli - 1] = TLSv1_2_client_method();
+	ssl_methods[TLS_USE_TLSv1_2_srv - 1] = TLSv1_2_server_method();
+	ssl_methods[TLS_USE_TLSv1_2 - 1] = TLSv1_2_method();
+#endif
+	
 }
 
 
@@ -356,6 +436,28 @@ init_ssl_methods(void)
 static int
 init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
+
+	/*
+	 * set dh params
+	 */
+	if (!d->tmp_dh_file) {
+			LM_NOTICE("no DH params file for tls[%s:%d] defined, "
+					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+					tls_tmp_dh_file);
+			d->tmp_dh_file = tls_tmp_dh_file;
+	}
+	if (d->tmp_dh_file && set_dh_params(d->ctx, d->tmp_dh_file) < 0)
+			return -1;
+
+	if (d->tls_ec_curve) {
+		if (set_ec_params(d->ctx, d->tls_ec_curve) < 0) {
+			return -1;
+		}
+	}
+	else {
+		LM_NOTICE("No EC curve defined\n");
+	}
+	
 	if( d->ciphers_list != 0 ) {
 		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
 			LM_ERR("failure to set SSL context "
@@ -729,6 +831,21 @@ init_tls_domains(struct tls_domain *d)
 		}
 		if (d->ca_file && load_ca(d->ctx, d->ca_file) < 0)
 			return -1;
+			
+		/*
+		* load ca from directory
+		*/
+		if (!d->ca_directory) {
+
+			LM_NOTICE("no CA for tls[%s:%d] defined, "
+				"using default '%s'\n", ip_addr2a(&d->addr), d->port,
+				 tls_ca_dir);
+			d->ca_directory = tls_ca_dir;
+		}
+
+		if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
+			return -1;
+
 		d = d->next;
 	}
 

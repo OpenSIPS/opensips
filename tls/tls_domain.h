@@ -54,6 +54,9 @@ struct tls_domain {
 	char           *cert_file;
 	char           *pkey_file;
 	char           *ca_file;
+	char           *tmp_dh_file;
+	char           *tls_ec_curve;
+	char	       *ca_directory;	
 	char           *ciphers_list;
 	enum tls_method method;
 	struct tls_domain *next;

@@ -39,7 +39,10 @@ enum tls_method {
 	TLS_USE_TLSv1,
 	TLS_USE_SSLv23_cli,
 	TLS_USE_SSLv23_srv,
-	TLS_USE_SSLv23
+	TLS_USE_SSLv23,
+	TLS_USE_TLSv1_2_cli,
+	TLS_USE_TLSv1_2_srv,
+	TLS_USE_TLSv1_2
 };
 
 extern int      tls_log;
@@ -51,6 +54,8 @@ extern int      tls_require_client_cert;
 extern char    *tls_cert_file;
 extern char    *tls_pkey_file;
 extern char    *tls_ca_file;
+extern char    *tls_ca_dir;
+extern char    *tls_tmp_dh_file;
 extern char    *tls_ciphers_list;
 extern int      tls_handshake_timeout;
 extern int      tls_send_timeout;

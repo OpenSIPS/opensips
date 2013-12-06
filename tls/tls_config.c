@@ -43,6 +43,8 @@ int             tls_require_client_cert = 1;
 char           *tls_cert_file = TLS_CERT_FILE;
 char           *tls_pkey_file = TLS_PKEY_FILE;
 char           *tls_ca_file   = TLS_CA_FILE;
+char 	       *tls_ca_dir    = TLS_CA_DIRECTORY;  	
+char           *tls_tmp_dh_file        = TLS_DH_PARAMS_FILE;
 /* defaul cipher=0, this means the DEFAULT ciphers */
 char           *tls_ciphers_list = 0;
 /* TLS timeouts; should be low to detect problems fast */
