@@ -1087,7 +1087,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt>0)
 				ret = 1;
-			else if(rt==0 && s1->len>s1->len)
+			else if(rt==0 && s1->len>s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1097,7 +1097,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt>0)
 				ret = 1;
-			else if(rt==0 && s1->len>=s1->len)
+			else if(rt==0 && s1->len>=s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1107,7 +1107,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt<0)
 				ret = 1;
-			else if(rt==0 && s1->len<s1->len)
+			else if(rt==0 && s1->len<s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
@@ -1117,7 +1117,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			rt = strncasecmp(s1->s,s2->s, n);
 			if (rt<0)
 				ret = 1;
-			else if(rt==0 && s1->len<=s1->len)
+			else if(rt==0 && s1->len<=s2->len)
 				ret = 1;
 			else ret = 0;
 			break;
