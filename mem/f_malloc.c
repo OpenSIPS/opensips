@@ -283,7 +283,7 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size)
 	qm->first_frag=(struct fm_frag*)(start+ROUNDUP(sizeof(struct fm_block)));
 	qm->last_frag=(struct fm_frag*)(end-sizeof(struct fm_frag));
 	/* init initial fragment*/
-	qm->first_frag->size=qm->used;
+	qm->first_frag->size=size-init_overhead;
 	qm->last_frag->size=0;
 
 	qm->last_frag->prev=NULL;
