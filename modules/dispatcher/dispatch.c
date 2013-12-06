@@ -484,10 +484,9 @@ int ds_connect_db(void)
 		return -1;
 	}
 
-	if ((ds_db_handle = ds_dbf.init(&ds_db_url)) == 0){
-		
+	if ((ds_db_handle = ds_dbf.init(&ds_db_url)) == 0)
 			return -1;
-	}
+
 	return 0;
 }
 
@@ -656,11 +655,12 @@ static ds_data_t* ds_load_data(void)
 		return NULL;
 	}
 
-	d_data = (ds_data_t*)shm_malloc( sizeof(ds_data) );
+	d_data = (ds_data_t*)shm_malloc( sizeof(ds_data_t) );
 	if (d_data==NULL) {
 		LM_ERR("failed to allocate new data structure in shm\n");
 		return NULL;
 	}
+	memset( d_data, 0, sizeof(ds_data_t));
 
 	/*select the whole table and all the columns*/
 	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,6,0,&res) < 0) {

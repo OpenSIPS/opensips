@@ -449,11 +449,12 @@ static int mod_init(void)
 /*
  * Per process init function
  */
+#include "../../pt.h"
 static int ds_child_init(int rank)
 {
 	/* we need DB connection from the timer procs (for the flushing) 
 	 * and from the main proc (for final flush on shutdown) */
-	if ( (rank==PROC_MAIN || rank==PROC_TIMER) && ds_db_url.s)
+	if ( (process_no==0 || rank==PROC_TIMER) && ds_db_url.s)
 		return ds_connect_db();
 	return 0;
 }
