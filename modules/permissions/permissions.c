@@ -167,7 +167,7 @@ static param_export_t params[] = {
 	{"address_table",      STR_PARAM, &address_table.s   },
 	{"ip_col",             STR_PARAM, &ip_col.s          },
 	{"proto_col",          STR_PARAM, &proto_col.s       },
-	{"from_col",           STR_PARAM, &pattern_col.s     },
+	{"pattern_col",        STR_PARAM, &pattern_col.s     },
 	{"info_col",           STR_PARAM, &info_col.s        },
 	{"grp_col",            STR_PARAM, &grp_col.s         },
 	{"mask_col",           STR_PARAM, &mask_col.s        },
