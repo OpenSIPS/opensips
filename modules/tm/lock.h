@@ -89,8 +89,8 @@ int release_timerlist_lock( struct timer *timerlist );
 
 /* lock semaphore s */
 #ifdef DBG_LOCK
-static inline void _lock( ser_lock_t* s , char *file, char *function,
-							unsigned int line )
+static inline void _lock(ser_lock_t* s , const char *file, const char *function,
+                         unsigned int line)
 #else
 static inline void _lock( ser_lock_t* s )
 #endif
@@ -108,8 +108,8 @@ static inline void _lock( ser_lock_t* s )
 
 
 #ifdef DBG_LOCK
-static inline void _unlock( ser_lock_t* s, char *file, char *function,
-		unsigned int line )
+static inline void _unlock(ser_lock_t* s, const char *file, const char *function,
+                           unsigned int line)
 #else
 static inline void _unlock( ser_lock_t* s )
 #endif
