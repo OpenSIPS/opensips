@@ -1055,11 +1055,13 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 				continue;
 			}
 			for (i = 0, j = 0; i < dv->val.len; i++) {
-				if (dv->val.s[i] < 0x20 || dv->val.s[i] == 0x7F) {
+				if (dv->val.s[i] < 0x20 || dv->val.s[i] >= 0x7F) {
 					p[j++] = '\\';
 					switch ((unsigned char)dv->val.s[i]) {
+					case 0x7: p[j++] = 'b'; break;
 					case 0x9: p[j++] = 't'; break;
 					case 0xA: p[j++] = 'n'; break;
+					case 0xC: p[j++] = 'f'; break;
 					case 0xD: p[j++] = 'r'; break;
 					default:
 						p[j++] = 'x';
