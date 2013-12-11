@@ -1058,7 +1058,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 				if (dv->val.s[i] < 0x20 || dv->val.s[i] >= 0x7F) {
 					p[j++] = '\\';
 					switch ((unsigned char)dv->val.s[i]) {
-					case 0x7: p[j++] = 'b'; break;
+					case 0x8: p[j++] = 'b'; break;
 					case 0x9: p[j++] = 't'; break;
 					case 0xA: p[j++] = 'n'; break;
 					case 0xC: p[j++] = 'f'; break;
