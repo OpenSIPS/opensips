@@ -60,7 +60,7 @@ static inline void MI_JSON_COPY(struct page_buf* pb, const str s) {
   }
 }
 
-static const str MI_JSON_ESC_QUOT =  str_init("\\\""); /* " */
+static const str MI_JSON_ESC =  str_init("\\");
 
 static inline void MI_JSON_ESC_COPY(struct page_buf* pb, const str s) {
   str temp_holder;
@@ -76,11 +76,12 @@ static inline void MI_JSON_ESC_COPY(struct page_buf* pb, const str s) {
   for(temp_counter=0;temp_counter<s.len;temp_counter++) {
     switch(s.s[temp_counter]) {
     case '"':
+    case '\\':
       temp_holder.len = temp_counter - temp_holder.len;
       MI_JSON_COPY(pb, temp_holder);
-      MI_JSON_COPY(pb, MI_JSON_ESC_QUOT);
-      temp_holder.s += temp_counter + 1;
-      temp_holder.len = temp_counter + 1;
+      MI_JSON_COPY(pb, MI_JSON_ESC);
+      temp_holder.s = s.s + temp_counter;
+      temp_holder.len = temp_counter;
       break;
     }
   }
