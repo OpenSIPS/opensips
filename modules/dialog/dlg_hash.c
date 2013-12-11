@@ -923,6 +923,8 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 {
 	struct mi_node* node= NULL;
 	struct mi_node* node1 = NULL;
+	struct mi_node* node2 = NULL;
+	struct mi_node* node3 = NULL;
 	struct mi_attr* attr= NULL;
 	struct dlg_profile_link *dl;
 	struct dlg_val* dv;
@@ -1046,42 +1048,52 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		node1 = add_mi_node_child(node, 0, "context", 7, 0, 0);
 		if(node1 == 0)
 			goto error;
-		/* print dlg values -> iterate the list */
-		for( dv=dlg->vals ; dv ; dv=dv->next) {
-			/* escape non-printable chars */
-			p = pkg_realloc(dlg_val_buf, 4 * dv->val.len + 1);
-			if (!p) {
-				LM_ERR("not enough mem to allocate: %d\n", dv->val.len);
-				continue;
-			}
-			for (i = 0, j = 0; i < dv->val.len; i++) {
-				if (dv->val.s[i] < 0x20 || dv->val.s[i] >= 0x7F) {
-					p[j++] = '\\';
-					switch ((unsigned char)dv->val.s[i]) {
-					case 0x8: p[j++] = 'b'; break;
-					case 0x9: p[j++] = 't'; break;
-					case 0xA: p[j++] = 'n'; break;
-					case 0xC: p[j++] = 'f'; break;
-					case 0xD: p[j++] = 'r'; break;
-					default:
-						p[j++] = 'x';
-						j += snprintf(&p[j], 3, "%02x",
-								(unsigned char)dv->val.s[i]);
-						break;
-					}
-				} else {
-					p[j++] = dv->val.s[i];
+		if (dlg->vals) {
+			node2 = add_mi_node_child(node1, 0, "values", 6, 0, 0);
+			if(node2 == 0)
+				goto error;
+			/* print dlg values -> iterate the list */
+			for( dv=dlg->vals ; dv ; dv=dv->next) {
+				/* escape non-printable chars */
+				p = pkg_realloc(dlg_val_buf, 4 * dv->val.len + 1);
+				if (!p) {
+					LM_ERR("not enough mem to allocate: %d\n", dv->val.len);
+					continue;
 				}
+				for (i = 0, j = 0; i < dv->val.len; i++) {
+					if (dv->val.s[i] < 0x20 || dv->val.s[i] >= 0x7F) {
+						p[j++] = '\\';
+						switch ((unsigned char)dv->val.s[i]) {
+						case 0x8: p[j++] = 'b'; break;
+						case 0x9: p[j++] = 't'; break;
+						case 0xA: p[j++] = 'n'; break;
+						case 0xC: p[j++] = 'f'; break;
+						case 0xD: p[j++] = 'r'; break;
+						default:
+							p[j++] = 'x';
+							j += snprintf(&p[j], 3, "%02x",
+									(unsigned char)dv->val.s[i]);
+							break;
+						}
+					} else {
+						p[j++] = dv->val.s[i];
+					}
+				}
+				add_mi_node_child(node2, MI_DUP_NAME|MI_DUP_VALUE,dv->name.s,dv->name.len,
+					p,j);
+				dlg_val_buf = p;
 			}
-			addf_mi_node_child(node1, MI_DUP_VALUE, MI_SSTR("value"),
-				"%.*s = %.*s",dv->name.len,dv->name.s,j,p);
-			dlg_val_buf = p;
 		}
 		/* print dlg profiles */
-		for( dl=dlg->profile_links ; dl ; dl=dl->next) {
-			addf_mi_node_child(node1, MI_DUP_VALUE, MI_SSTR("profile"),
-				"%.*s = %.*s",dl->profile->name.len,dl->profile->name.s,
-				dl->value.len,ZSW(dl->value.s));
+		if (dlg->profile_links) {
+			node3 = add_mi_node_child(node1, 0, "profiles", 8, 0, 0);
+			if(node3 == 0)
+				goto error;
+			for( dl=dlg->profile_links ; dl ; dl=dl->next) {
+				add_mi_node_child(node3, MI_DUP_NAME|MI_DUP_VALUE,
+					dl->profile->name.s,dl->profile->name.len,
+					ZSW(dl->value.s),dl->value.len);
+			}
 		}
 		/* print external context info */
 		run_dlg_callbacks( DLGCB_MI_CONTEXT, dlg, NULL,
