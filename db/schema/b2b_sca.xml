@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="b2b_sca" xmlns:db="http://docbook.org/ns/docbook">
+	<name>b2b_sca</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>Persistent sca information for the b2b_sca module. More 
+		information can be found at: &OPENSIPS_MOD_DOC;b2b_sca.html
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>unique ID</description>
+	</column>
+
+	<column id="shared_line">
+		<name>shared_line</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<description>The shared line.</description>
+		
+	</column>
+
+	<column>
+		<name>watchers</name>
+		<type>string</type>
+		<size>255</size>
+		<description>The URI list of watchers</description>
+	</column>
+
+
+	<column>
+		<name>app1_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app1_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app1_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app1_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app1_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app2_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app2_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app2_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app2_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app2_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app3_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app3_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app3_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app3_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app3_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app4_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app4_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app4_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app4_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app4_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app5_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app5_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app5_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app5_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app5_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app6_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app6_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app6_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app6_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app6_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app7_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app7_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app7_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app7_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app7_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app8_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app8_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app8_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app8_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app8_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app9_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app9_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app9_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app9_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app9_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<column>
+		<name>app10_shared_entity</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The entity to keep.</description>
+	</column>
+
+	<column>
+		<name>app10_call_state</name>
+		<type>unsigned int</type>
+		<size>1</size>
+		<null/>
+		<default><null/></default>
+		<description>The state of the appearance index.</description>
+	</column>
+
+	<column>
+		<name>app10_call_info_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app10_call_info_appearance_uri</name>
+		<type>string</type>
+		<size>&uri_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The URI of the appearance in Call-Info header</description>
+	</column>
+
+	<column>
+		<name>app10_b2bl_key</name>
+		<type>string</type>
+		<size>&user_len;</size>
+		<null/>
+		<default><null/></default>
+		<description>The b2b_logic key.</description>
+	</column>
+
+
+	<index>
+		<name>sca_idx</name>
+		<colref linkend="shared_line"/>
+		<unique/>
+	</index>
+</table>
