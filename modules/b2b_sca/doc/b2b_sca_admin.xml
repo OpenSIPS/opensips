@@ -1,0 +1,518 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section><title>Overview</title>
+	<para>
+		This module provides core SCA (Shared Call Appearance) functionality
+		for &osips;.
+		It is designed to work in tandem with the presence_callinfo module.
+	</para>
+	<para>
+		The module handles the basic SIP signalling for call controll while
+		publishing callinfo events to a presence server.
+		It is built on top of the b2b_logic module and it is using the
+		'top hiding' scenario to control SIP signalling.
+	</para>
+	<para>
+		A typical usage example is provided below, where Alice makes a
+		call to Bob.  The call leg between Alice and the b2b_sca server
+		is an "appearance" call of the "shared" call between the b2b_sca server
+		and Bob.
+	</para>
+	<programlisting format="linespecific">
+<![CDATA[
+   caller         caller      b2b_sca     callee   presence server
+alice1@example alice2@example  server   bob@example watcher@example
+     |              |             |           |           |
+     |--INV bob------------------>|           |           |
+     |              |             |--INV bob->|           |
+     |              |             |--PUBLISH(alerting)--->|
+     |              |             |<-----200 OK-----------|
+     |              |             |           |           |
+     |              |             |<-180 ring-|           |
+     |<-180 ring------------------|           |           |
+     |              |             |           |           |
+     |              |             |           |           |
+     |              |             |<-200 OK---|           |
+     |<-200 OK--------------------|--ACK----->|           |
+     |--ACK---------------------->|--PUBLISH(active)----->|
+     |              |             |<-----200 OK-----------|
+     |              |             |           |           |
+     |--INV bob (hold)----------->|           |           |
+     |              |             |--INV bob->|           |
+     |              |             |--PUBLISH(held)------->|
+     |              |             |<-----200 OK-----------|
+     |              |             |<-200 OK---|           |
+     |<--200 OK-------------------|           |           |
+     |              |             |           |           |
+     |              |--INV------->|           |           |
+     |              |             |--INV bob->|           |
+     |<-BYE-----------------------|--PUBLISH(active)----->|
+     |--200 OK------------------->|<-----200 OK-----------|
+     |              |             |<-200 OK---|           |
+     |              |<-200 OK-----|           |
+]]>
+	</programlisting>
+	<itemizedlist>
+	<listitem><para>
+	Alice calls Bob from her desk IP phone (alice1).
+	</para></listitem>
+	<listitem><para>
+	Bob answers the call.
+	</para></listitem>
+	<listitem><para>
+	Alice decide to carry the conversation from a meeting room
+	and she put's BOB on hold.
+	</para></listitem>
+	<listitem><para>
+	Alice arrives to the meeting room and retrieves the call on the
+	conference room IP phone (alice2).
+	</para></listitem>
+	</itemizedlist>
+	</section>
+	
+	<section>
+	<title>To-do</title>
+		<para>
+		Features to be added in the future:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			possibility to handle unlimited number of appearances.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	
+	<section><title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis> module.
+				<emphasis>pua</emphasis> module.
+				<emphasis>b2b_logic</emphasis> module.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section><title>Exported Parameters</title>
+	<section>
+		<title><varname>hash_size</varname>(integer)</title>
+		<para>
+		The size of the hash table internally used to keep the shared calls.
+		A larger table means faster acces at the expense of memory.
+		The hash size is a power of number two.
+		</para>
+		<para>
+		<emphasis>The default value is "10".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>hash_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "hash_size", "5")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>presence_server</varname>(string)</title>
+		<para>
+		The address of the presence server, where the PUBLISH
+		messages should be sent (not compulsory).
+		If not set, the PUBLISH requests will be routed based
+		on watcher's URI.
+		</para>
+		<para>
+		<emphasis>The default value is "NULL".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>presence_server</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "presence_server", "sip:opensips.org")
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>watchers_avp_spec</varname>(string)</title>
+		<para>
+		AVP that will hold one or more watcher URI(s).
+		If not set, no PUBLISH requests will be sent out.
+		The watchers_avp_spec MUST be set before calling sca_init_request();
+		</para>
+		<para>
+		<emphasis>The default value is "NULL".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>watchers_avp_spec</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "watchers_avp_spec", "$avp(watchers_avp_spec)")
+...
+route {
+	...
+	$avp(watchers_avp_spec) = "sip:first_watcher@opensip.org";
+	$avp(watchers_avp_spec) = "sip:second_watcher@opensip.org";
+	...
+}
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>shared_line_spec_param</varname>(string)</title>
+		<para>
+		Mandatory parameter.
+		Opaque string identifing the shared line/call.
+		The shared_line_spec_param MUST be set before calling sca_init_request();
+		</para>
+		<para>
+		<emphasis>The default value is "NULL".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>shared_line_spec_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "shared_line_spec_param", "$var(shared_line)")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>appearance_name_addr_spec_param</varname>(string)</title>
+		<para>
+		Mandatory parameter.
+		It must be a valid SIP URI.
+		It will populate the <emphasis>appearance-uri</emphasis> SIP parameter
+		inside the <emphasis>Call-Info</emphasis> SIP header.
+		The appearance_name_addr_spec_param MUST be set before calling sca_init_request();
+		</para>
+		<para>
+		<emphasis>The default value is "NULL".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>appearance_name_addr_spec_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "appearance_name_addr_spec_param", "")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>db_url</varname>(string)</title>
+		<para>
+		This is URL of the database to be used.
+		</para>
+		<para>
+		<emphasis>The default value is "NULL".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[dbhost]/[dbname]")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>db_mode</varname>(integer)</title>
+		<para>
+		The b2b_sca module can utilize database for persistent call appearance storage.
+		Using a database ensure that active call appearances will survive
+		machine restarts or SW crashes.
+		The following databse accessing modes are available for b2b_sca module:
+		</para>
+		<para>
+		<itemizedlist>
+			<listitem>NO DB STORAGE - set this parameter to 0</listitem>
+			<listitem>WRITE THROUGH (synchronous write in database) - set this parameter to 1</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>The default value is 0 (NO DB STORAGE).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "db_mode", 1)
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>table_name</varname>(string)</title>
+		<para>
+		Identifies the table name from the defined database.
+		</para>
+		<para>
+		<emphasis>The default value is "sca".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>table_name</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "table_name", "sla")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>shared_line_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the shared call/line id.
+		See "shared_line_spec_param" parameter.
+		</para>
+		<para>
+		<emphasis>The default value is "shared_line".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>shared_line_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "shared_line_column", "")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>watchers_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the list of watchers.
+		See "watchers_avp_spec" parameter.
+		</para>
+		<para>
+		<emphasis>The default value is "watchers".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>watchers_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "watchers_column", "")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>app[index]_shared_entity_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the shared entity of a
+		particular appearance.
+		See "sca_init_request" for more info.
+		</para>
+		<para>
+		<emphasis>The default value is "app[index]_shared_entity".</emphasis>
+		Index is an integer between 1 and 10.
+		</para>
+		<example>
+		<title>Set <varname>app[index]_shared_entity_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "app1_shared_entity_column", "first_shared_entity")
+modparam("b2b_sca", "app2_shared_entity_column", "second_shared_entity")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>app[index]_call_state_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the call state of a
+		particular appearance.  The following states are stored:
+		</para>
+		<para>
+		<itemizedlist>
+			<listitem>1 - alerting,</listitem>
+			<listitem>2 - active,</listitem>
+			<listitem>3 - held,</listitem>
+			<listitem>4 - held-private.</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>The default value is "app[index]_call_state".</emphasis>
+		Index is an integer between 1 and 10.
+		</para>
+		<example>
+		<title>Set <varname>app[index]_call_state_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "app1_call_state_column", "first_call_state")
+modparam("b2b_sca", "app2_call_state_column", "second_call_state")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>app[index]_call_info_uri_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the call info URI of a
+		particular appearance.
+		</para>
+		<para>
+		<emphasis>The default value is "app[index]_call_info_uri".</emphasis>
+		Index is an integer between 1 and 10.
+		</para>
+		<example>
+		<title>Set <varname>app[index]_call_info_uri_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "app1_call_info_uri_column", "first_call_info_uri")
+modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>app[index]_call_info_appearance_uri_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the call info appearance URI
+		of a particular appearance.
+		For each appearance, the value is extracted from the
+		"appearance_name_addr_spec_param" parameter.
+		</para>
+		<para>
+		<emphasis>The default value is "app[index]_call_info_appearance_uri".</emphasis>
+		Index is an integer between 1 and 10.
+		</para>
+		<example>
+		<title>Set <varname>app[index]_call_info_appearance_uri_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "app1_call_info_appearance_uri_column", "first_call_info_appearance_uri")
+modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_call_info_appearance_uri")
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><varname>app[index]_b2bl_key_column</varname>(string)</title>
+		<para>
+		The column's name in the database storing the b2b_logic key of a
+		particular appearance.
+		</para>
+		<para>
+		<emphasis>The default value is "app[index]_b2bl_key".</emphasis>
+		Index is an integer between 1 and 10.
+		</para>
+		<example>
+		<title>Set <varname>app[index]_b2bl_key_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_sca", "app1_b2bl_key_column", "first_b2bl_key")
+modparam("b2b_sca", "app2_b2bl_key_column", "second_b2bl_key")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section><title>Exported Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">sca_init_request(shared_line)</function>
+		</title>
+		<para>
+		This is the function that must be called by the script writer
+		on an initial INVITE for which an SCA call must be instantiated
+		(see the call from alice1 in the above diagram).
+		</para>
+		<para>Meaning of the parameters:</para>
+		<itemizedlist>
+		<listitem><para><emphasis>shared_line</emphasis> - a PV (pseudo-variable)
+		identifying the call leg as being an "appearnace" call or a "shared" call:
+			<itemizedlist>
+			<listitem><para>0: "shared" call</para></listitem>
+			<listitem><para>1: "appearance" call</para></listitem>
+			</itemizedlist>
+		</para>
+		</listitem>
+		</itemizedlist>
+		<example><title><function>sca_init_request()</function> usage</title>
+<programlisting format="linespecific">
+...
+modparam("b2b_sca",
+	"shared_line_spec_param","$var(shared_line)")
+modparam("b2b_sca",
+	"appearance_name_addr_spec_param","$var(appearance_name_addr)")
+modparam("b2b_sca",
+	"watchers_avp_spec","$avp(watchers_avp_spec)")
+
+...
+
+	# Setting the shared call identifier
+	$var(shared_line) = "alice";
+
+	# Setting the watchers
+	$avp(watchers_avp_spec) = "sip:alice1@example.com";
+	$avp(watchers_avp_spec) = "sip:alice2@example.com";
+
+	if (INCOMING_SHARED_CALL) {
+		# The incoming call is a 'shared' call
+		$var(shared_line_entity) = 0;
+		# Setting the appearance name address
+		$var(appearance_name_addr) = $fu;
+	}
+	else {
+		# The incoming call is an 'appearance' call
+		# - see Alice's initial call leg in the given example
+		$var(shared_line_entity) = 1;
+		# Setting the appearance name address
+		$var(appearance_name_addr) = $tu;
+	}
+
+	# Initiate the call
+	if (!sca_init_request("$var(shared_line_entity)")) {
+		send_reply("403", "Internal Server Error (SLA)");
+		exit;
+	}
+...
+</programlisting>
+		</example>
+	</section>
+	<section><title><function moreinfo="none">sca_bridge_request(shared_line_to bridge)</function></title>
+		<para>
+		This is the function that must be called by the script writer on an initial
+		"appearance" INVITE for an existing shared call.  It will bridge the current
+		"appearance" call with the existing "shared" call and the old "appearance"
+		call will be disconnected (see the call from alice2 in the above diagram).
+		</para>
+		<para>Meaning of the parameters:</para>
+		<itemizedlist>
+		<listitem><para><emphasis>shared_line_to_bridge</emphasis> - a PV identifying
+		the shared line/call that was previously set by sca_init_request().
+		</para>
+		</listitem>
+		</itemizedlist>
+<programlisting format="linespecific">
+...
+	if ($rU==NULL &amp;&amp; is_method("INVITE") &amp;&amp;
+		$fU==$tU &amp;&amp; is_present_hf("Call-Info")) {
+		# The incoming call is an 'appearance' call
+		# - see Alice's call from alice2 in the given example
+		$var(shared_line_to_bridge) = "alice";
+		if (!sca_bridge_request("$var(shared_line_to_bridge)"))
+			send_reply("403", "Internal SLA Error");
+			exit;
+		}
+	}
+...
+</programlisting>
+	</section>
+	</section>
+
+	<section><title>Exported MI Functions</title>
+	<section><title><function moreinfo="none">sca_list</function></title>
+	<para>
+	It lists the appearances belonging to a shared line/call.
+	</para>
+	<para>Name: <emphasis>sca_list</emphasis></para>
+	<para>Parameters: <emphasis>none</emphasis></para>
+	<para>MI FIFO Command Format:</para>
+<programlisting  format="linespecific">
+	:sca_list:_reply_fifo_file_
+	_empty_line_
+</programlisting>
+	</section>
+	</section>
+</chapter>
+
