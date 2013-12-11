@@ -311,8 +311,9 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
   html_page_data.buffer.s = buffer->s;
   html_page_data.buffer.len = buffer->len;
 
+  /* FIXME: find a proper way for handling flushing */
   mi_rpl = run_mi_cmd(f, mi_cmd,
-        (mi_flush_f *)mi_json_flush_tree, &html_page_data);
+        NULL, &html_page_data);
   if (mi_rpl == NULL) {
     LM_ERR("failed to process the command\n");
     if (mi_cmd) free_mi_tree(mi_cmd);
