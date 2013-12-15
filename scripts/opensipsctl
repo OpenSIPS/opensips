@@ -1402,7 +1402,7 @@ dr() {
 				exit 1
 			fi
 
-			$CTLCMD ds_reload
+			$CTLCMD dr_reload
 			;;
 		rmgw)
 			shift
@@ -1452,7 +1452,7 @@ dr() {
 				exit 1
 			fi
 
-			$CTLCMD ds_reload
+			$CTLCMD dr_reload
 			;;
 		rmcr)
 			shift
@@ -1500,7 +1500,7 @@ dr() {
 				exit 1
 			fi
 
-			$CTLCMD ds_reload
+			$CTLCMD dr_reload
 			;;
 		rmgrp)
 			shift
@@ -1552,7 +1552,7 @@ dr() {
 				exit 1
 			fi
 
-			$CTLCMD ds_reload
+			$CTLCMD dr_reload
 			;;
 		rmgrule)
 			shift
