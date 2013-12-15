@@ -314,13 +314,16 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
 		break;
 	case DLGCB_RESPONSE_WITHIN:
-                if (get_cseq(msg)->method_id==METHOD_INVITE || get_cseq(msg)->method_id==METHOD_INVITE) {
-                  if (msg->flags & nopublish_flag) {
-                    LM_DBG("nopublish flag was set for this INVITE\n");
-                    break;
-                  }
-                  LM_DBG("nopublish flag not set for this INVITE, will publish\n");
-                }
+		if (get_cseq(msg)->method_id==METHOD_INVITE) {
+			if (msg->flags & nopublish_flag) {
+				LM_DBG("nopublish flag was set for this INVITE\n");
+				break;
+			}
+			LM_DBG("nopublish flag not set for this INVITE, will publish\n");
+		} else {
+			/* no publish for non-INVITEs */
+			break;
+		}
 	case DLGCB_CONFIRMED:
 		LM_DBG("dialog confirmed, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
