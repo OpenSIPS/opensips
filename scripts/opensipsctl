@@ -2618,6 +2618,30 @@ tls_ca() {
 	fi
 }
 
+##### ================================================ #####
+### trap with gdb opensips processes
+#
+
+opensips_trap() {
+	echo -n "Trapping OpenSIPS with gdb: "
+	DATE=`/bin/date +%Y%m%d_%H%M%S`
+	LOG_FILE=/tmp/gdb_opensips_$DATE
+	$CTLCMD ps > $LOG_FILE
+	PID_TIMESTAMP_VECTOR=`sed -e 's/.*PID=\([0-9]*\).*/\1/' $LOG_FILE`
+	for pid in $PID_TIMESTAMP_VECTOR
+	do
+		echo -n "."
+		PID=`echo $pid | cut -d '-' -f 1`
+		echo "" >> $LOG_FILE
+		echo "---start $PID -----------------------------------------------------" >> $LOG_FILE
+		$GDB opensips $PID -batch --eval-command="bt full" &>> $LOG_FILE
+		echo "---end $PID -------------------------------------------------------" >> $LOG_FILE
+	done
+	echo "."
+	echo "gdb dumps available: $LOG_FILE"
+	
+}
+
 #
 ##### ================================================ #####
 ### main command switch
@@ -2755,6 +2779,10 @@ case $1 in
 	tls)
 		shift
 		tls_ca "$@"
+		;;
+
+	trap)
+		opensips_trap
 		;;
 
 	start)

@@ -62,6 +62,15 @@ if [ -z "$AWK" ] ; then
 	fi
 	AWK="$TOOLPATH"
 fi
+if [ -z "$GDB" ] ; then
+	locate_tool gdb
+	if [ -z "$TOOLPATH" ] ; then
+		# now error, but we can look for alternative names if it is the case
+		echo "error: 'gdb' tool not found: set GDB variable to correct tool path"
+		exit
+	fi
+	GDB="$TOOLPATH"
+fi
 if [ -z "$MD5" ]; then
 	locate_tool md5sum md5
 	if [ -z "$TOOLPATH" ] ; then
@@ -359,9 +368,10 @@ REGISTRANT_FORCED_SOCKET_COLUMN=forced_socket
 
 usage_base() {
 	echo
-	mecho " -- command 'start|stop|restart'"
+	mecho " -- command 'start|stop|restart|trap'"
 	echo
 cat <<EOF
+ trap ............................... trap with gdb OpenSIPS processes
  restart ............................ restart OpenSIPS
  start .............................. start OpenSIPS
  stop ............................... stop OpenSIPS

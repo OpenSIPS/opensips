@@ -59,6 +59,9 @@
 # awk tool
 # AWK="awk"
 
+# gdb tool
+# GDB="gdb"
+
 # grep tool
 # GREP="grep"
 
