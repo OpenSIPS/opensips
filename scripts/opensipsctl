@@ -2623,11 +2623,13 @@ tls_ca() {
 #
 
 opensips_trap() {
-	echo -n "Trapping OpenSIPS with gdb: "
 	DATE=`/bin/date +%Y%m%d_%H%M%S`
 	LOG_FILE=/tmp/gdb_opensips_$DATE
+	minfo "Trap file: $LOG_FILE"
 	$CTLCMD ps > $LOG_FILE
+	echo -n "Trapping OpenSIPS with gdb: "
 	PID_TIMESTAMP_VECTOR=`sed -e 's/.*PID=\([0-9]*\).*/\1/' $LOG_FILE`
+	minfo "$PID_TIMESTAMP_VECTOR"
 	for pid in $PID_TIMESTAMP_VECTOR
 	do
 		echo -n "."
@@ -2638,8 +2640,6 @@ opensips_trap() {
 		echo "---end $PID -------------------------------------------------------" >> $LOG_FILE
 	done
 	echo "."
-	echo "gdb dumps available: $LOG_FILE"
-	
 }
 
 #
@@ -2782,6 +2782,7 @@ case $1 in
 		;;
 
 	trap)
+		require_ctlengine
 		opensips_trap
 		;;
 
