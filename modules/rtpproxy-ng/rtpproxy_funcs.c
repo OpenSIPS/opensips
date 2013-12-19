@@ -174,8 +174,7 @@ int extract_body(struct sip_msg *msg, str *body )
 	struct hdr_field hf;
 	unsigned int mime;
 
-	body->s = get_body(msg);
-	if (body->s==0) {
+	if (get_body(msg,body)!=0 || body->len==0) {
 		LM_ERR("failed to get the message body\n");
 		goto error;
 	}
