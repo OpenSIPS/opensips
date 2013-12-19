@@ -1765,7 +1765,7 @@ rtpproxy_manage(struct sip_msg *msg, const char *flags, const str *force_addr)
 	if(method==METHOD_CANCEL || method==METHOD_BYE)
 		return unforce_rtp_proxy_f(msg, flags, 0);
 
-	if(msg->msg_flags & FL_SDP_BODY)
+	if(msg_has_sdp(msg))
 		nosdp = 0;
 	else
 		nosdp = parse_sdp(msg);
@@ -1776,10 +1776,6 @@ rtpproxy_manage(struct sip_msg *msg, const char *flags, const str *force_addr)
 		if(method==METHOD_UPDATE && nosdp==0)
 			return force_rtp_proxy(msg, flags, force_addr, OP_OFFER);
 		if(method==METHOD_INVITE && nosdp==0) {
-			msg->msg_flags |= FL_SDP_BODY;
-			if(tmb.t_gett!=NULL && tmb.t_gett()!=NULL
-					&& tmb.t_gett()!=T_UNDEFINED)
-				tmb.t_gett()->uas.request->msg_flags |= FL_SDP_BODY;
 			if(route_type==FAILURE_ROUTE)
 				return unforce_rtp_proxy_f(msg, flags, 0);
 			return force_rtp_proxy(msg, flags, force_addr, OP_OFFER);
@@ -1792,8 +1788,6 @@ rtpproxy_manage(struct sip_msg *msg, const char *flags, const str *force_addr)
 				return force_rtp_proxy(msg, flags, force_addr, OP_ANSWER);
 			if(tmb.t_gett==NULL || tmb.t_gett()==NULL
 					|| tmb.t_gett()==T_UNDEFINED)
-				return force_rtp_proxy(msg, flags, force_addr, OP_ANSWER);
-			if(tmb.t_gett()->uas.request->msg_flags & FL_SDP_BODY)
 				return force_rtp_proxy(msg, flags, force_addr, OP_ANSWER);
 			return force_rtp_proxy(msg, flags, force_addr, OP_OFFER);
 		}
