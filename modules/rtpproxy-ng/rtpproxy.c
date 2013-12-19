@@ -223,8 +223,6 @@
 #include "rtpproxy_funcs.h"
 #include "bencode.h"
 
-MODULE_VERSION
-
 #if !defined(AF_LOCAL)
 #define	AF_LOCAL AF_UNIX
 #endif
@@ -461,6 +459,7 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"rtpproxy-ng",
+	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
 	params,
