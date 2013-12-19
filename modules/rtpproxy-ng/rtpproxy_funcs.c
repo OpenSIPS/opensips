@@ -343,7 +343,7 @@ int
 get_to_tag(struct sip_msg* _m, str* _tag)
 {
 
-        if (parse_to_header(_m) < 0) {
+        if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
                 LM_ERR("To header field missing\n");
                 return -1;
         }
