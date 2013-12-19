@@ -190,6 +190,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../../str.h"
 #include "../../flags.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
