@@ -247,7 +247,7 @@ int extract_body(struct sip_msg *msg, str *body )
 				return -1;
 			if(hf.type==HDR_CONTENTTYPE_T) {
 				if(decode_mime_type(hf.body.s, hf.body.s + hf.body.len,
-						&mime)==NULL)
+						&mime, NULL)==NULL)
 					return -1;
 				if (((((unsigned int)mime)>>16) == TYPE_APPLICATION)
 						&& ((mime&0x00ff) == SUBTYPE_SDP)) {
