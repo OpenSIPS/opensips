@@ -471,6 +471,35 @@ struct module_exports exports = {
 	child_init
 };
 
+int msg_has_sdp(struct sip_msg *msg)
+{
+	str body;
+	struct part *p;
+	struct multi_body *m;
+
+	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
+		LM_ERR("cannot parse cseq header");
+		return 0;
+	}
+
+	body.len = get_content_length(msg);
+	if (!body.len)
+		return 0;
+
+	m = get_all_bodies(msg);
+	if (!m) {
+		LM_DBG("cannot parse body\n");
+		return 0;
+	}
+
+	for (p = m->first; p; p = p->next) {
+		if (p->content_type == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP))
+			return 1;
+	}
+
+	return 0;
+}
+
 
 static int rtpproxy_set_store(modparam_t type, void * val){
 
