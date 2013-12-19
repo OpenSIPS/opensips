@@ -432,7 +432,7 @@ static cmd_export_t cmds[] = {
 
 static pv_export_t mod_pvs[] = {
     {{"rtpstat", (sizeof("rtpstat")-1)}, /* RTP-Statistics */
-     PVT_OTHER, pv_get_rtpstat_f, 0, 0, 0, 0, 0},
+     1000, pv_get_rtpstat_f, 0, 0, 0, 0, 0},
     {{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
