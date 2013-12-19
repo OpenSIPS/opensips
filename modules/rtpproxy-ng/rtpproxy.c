@@ -366,6 +366,7 @@ static str timeout_socket_str = {0, 0};
 #endif
 static pv_elem_t *extra_id_pv = NULL;
 
+#define ANY_ROUTE     (REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE)
 static cmd_export_t cmds[] = {
 	{"set_rtp_proxy_set",  (cmd_function)set_rtp_proxy_set_f,    1,
 		fixup_set_id, 0,
