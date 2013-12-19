@@ -1704,7 +1704,7 @@ static int
 unforce_rtp_proxy1_f(struct sip_msg* msg, char* str1, char* str2)
 {
 	str flags;
-	get_str_fparam(&flags, msg, (fparam_t *) str1);
+	fixup_get_svalue(msg, (gparam_p)str1, &flags);
 	return rtpp_function_call_simple(msg, OP_DELETE, flags.s);
 }
 
@@ -1825,7 +1825,7 @@ rtpproxy_offer1_f(struct sip_msg *msg, char *str1, char *str2)
 	str flags;
 
 	if (str1)
-		get_str_fparam(&flags, msg, (fparam_t *) str1);
+		fixup_get_svalue(msg, (gparam_p)str1, &flags);
 	else
 		flags.s = NULL;
 	return force_rtp_proxy(msg, flags.s, NULL, OP_OFFER);
@@ -1835,9 +1835,8 @@ static int
 rtpproxy_offer2_f(struct sip_msg *msg, char *param1, char *param2)
 {
 	str flags, new_ip;
-
-	get_str_fparam(&flags, msg, (fparam_t *) param1);
-	get_str_fparam(&new_ip, msg, (fparam_t *) param2);
+	fixup_get_svalue(msg, (gparam_p)param1, &flags);
+	fixup_get_svalue(msg, (gparam_p)param2, &new_ip);
 	return force_rtp_proxy(msg, flags.s, &new_ip, OP_OFFER);
 }
 
@@ -1851,7 +1850,7 @@ rtpproxy_answer1_f(struct sip_msg *msg, char *str1, char *str2)
 			return -1;
 
 	if (str1)
-		get_str_fparam(&flags, msg, (fparam_t *) str1);
+		fixup_get_svalue(msg, (gparam_p)str1, &flags);
 	else
 		flags.s = NULL;
 	return force_rtp_proxy(msg, flags.s, NULL, OP_ANSWER);
@@ -1867,8 +1866,8 @@ rtpproxy_answer2_f(struct sip_msg *msg, char *param1, char *param2)
 		if (msg->first_line.u.request.method_value != METHOD_ACK)
 			return -1;
 
-	get_str_fparam(&flags, msg, (fparam_t *) param1);
-	get_str_fparam(&new_ip, msg, (fparam_t *) param2);
+	fixup_get_svalue(msg, (gparam_p)param1, &flags);
+	fixup_get_svalue(msg, (gparam_p)param2, &new_ip);
 	return force_rtp_proxy(msg, flags.s, &new_ip, OP_ANSWER);
 }
 
