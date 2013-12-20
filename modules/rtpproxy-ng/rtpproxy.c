@@ -744,12 +744,10 @@ static int fixup_set_id(void ** param, int param_no)
 	s.len = strlen(s.s);
 
 	if(s.s[0] == PV_MARKER) {
-		int_val = pv_locate_name(&s);
-		if(int_val<0 || int_val!=s.len) {
+		if ( pv_parse_spec(&s, rtpl->rpv) == NULL ) {
 			LM_ERR("invalid parameter %s\n", s.s);
 			return -1;
 		}
-		rtpl->rpv = pv_cache_get(&s);
 		if(rtpl->rpv == NULL) {
 			LM_ERR("invalid pv parameter %s\n", s.s);
 			return -1;
