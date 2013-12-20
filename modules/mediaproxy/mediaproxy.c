@@ -690,8 +690,8 @@ check_content_type(struct sip_msg *msg)
 static int
 get_sdp_message(struct sip_msg *msg, str *sdp)
 {
-    if ( get_body(msg, sdp)!=0 || sdp->len==0)
-        return -1;
+    if (get_body(msg, sdp)!=0 || sdp->len==0)
+        return -2;
 
     if (!check_content_type(msg))
         return -1;
