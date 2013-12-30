@@ -432,6 +432,9 @@ static void dr_state_flusher(void)
 	db_key_t key_set;
 	db_val_t val_set;
 
+	/* is data avaialable? */
+	if (!rdata || !(*rdata))
+		return;
 
 	val_cmp.type = DB_INT;
 	val_cmp.nul  = 0;
