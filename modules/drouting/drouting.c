@@ -481,16 +481,16 @@ static void dr_state_flusher(void)
 
 	/* iterate the carriers */
 	for( cr=(*rdata)->carriers ; cr ; cr=cr->next ) {
-		if ( (gw->flags & DR_CR_FLAG_DIRTY)==0 )
-			/* nothing to do for this gateway */
+		if ( (cr->flags & DR_CR_FLAG_DIRTY)==0 )
+			/* nothing to do for this carrier */
 			continue;
 
 		/* populate the update */
 		val_cmp.val.int_val = cr->db_id;
 		val_set.val.int_val = (cr->flags&DR_CR_FLAG_IS_OFF) ? 1 : 0;
 
-		/* update the state of this gateway */
-		LM_DBG("updating the state of gw %d (%.*s) to %d\n",
+		/* update the state of this carrier */
+		LM_DBG("updating the state of cr %d (%.*s) to %d\n",
 			cr->db_id, cr->id.len, cr->id.s, val_set.val.int_val);
 
 		if ( dr_dbf.update(db_hdl,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
