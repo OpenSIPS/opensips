@@ -221,7 +221,7 @@ static int dp_get_ivalue(struct sip_msg* msg, dp_param_p dp, int *val)
 
 	if( pv_get_spec_value( msg, &dp->v.sp[0], &value)!=0
 	|| value.flags&(PV_VAL_NULL|PV_VAL_EMPTY) || !(value.flags&PV_VAL_INT)) {
-		LM_ERR("no PV or NULL or non-STR val found (error in scripts)\n");
+		LM_ERR("no PV or NULL or non-INT val found (error in script)\n");
 		return -1;
 	}
 	*val = value.ri;
@@ -237,7 +237,7 @@ static int dp_get_svalue(struct sip_msg * msg, pv_spec_t spec, str* val)
 
 	if ( pv_get_spec_value(msg,&spec,&value)!=0 || value.flags&PV_VAL_NULL
 	|| value.flags&PV_VAL_EMPTY || !(value.flags&PV_VAL_STR)){
-			LM_ERR("no PV or NULL or non-STR val found (error in scripts)\n");
+			LM_ERR("no PV or NULL or non-STR val found (error in script)\n");
 			return -1;
 	}
 
