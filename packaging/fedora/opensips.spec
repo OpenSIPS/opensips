@@ -786,7 +786,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %if 0%{?fedora} > 16
 %{_unitdir}/%{name}.service
 %{_sysconfdir}/tmpfiles.d/%{name}.conf
-%{_sbindir}/opensips-m4cfg
+%{_sbindir}/%{name}-m4cfg
 %dir %attr(0755, %{name}, %{name}) %{_localstatedir}/run/%{name}
 %else
 %attr(755,root,root) %{_initrddir}/opensips
