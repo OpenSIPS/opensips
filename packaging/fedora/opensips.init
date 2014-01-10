@@ -21,12 +21,13 @@
 . /etc/rc.d/init.d/functions
 
 prog=opensips
-oser=/usr/sbin/$prog
+opensips=/usr/sbin/$prog
+cfgdir="/etc/$prog"
 pidfile="/var/run/$prog.pid"
 lockfile="/var/lock/subsys/$prog"
-configfile="/etc/$prog/$prog.cfg"
-m4configfile="/etc/$prog/$prog.m4"
-m4archivedir="/etc/$prog/archive"
+configfile="$cfgdir/$prog.cfg"
+m4configfile="$cfgdir/$prog.m4"
+m4archivedir="$cfgdirg/archive"
 OPTIONS=""
 RETVAL=0
 
@@ -43,9 +44,10 @@ start() {
 
 	# Generate config from M4
 	if [ -f $m4configfile ]; then
+		cd "$cfgdir"
 		m4 -Q $m4configfile >$configfile.tmp
 		if [ $? != 0 ]; then
-			log "cannot process m4 macro"
+			echo -n "cannot process m4 macro" && failure && echo
 			rm "$configfile.tmp"
 			return 1
 		fi
@@ -65,7 +67,7 @@ start() {
 
 	# there is something at end of this output which is needed to
 	# report proper [ OK ] status in Fedora scripts
-	daemon $oser -u $prog -g $prog -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
+	daemon $opensips -u $prog -g $prog -P $pidfile -f $configfile $OPTIONS 2>/dev/null | tail -1
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && touch $lockfile
