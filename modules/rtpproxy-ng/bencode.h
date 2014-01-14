@@ -5,7 +5,7 @@
 #include <string.h>
 
 #if defined(PKG_MALLOC) || defined(pkg_malloc)
-/* kamailio */
+/* opensips */
 # include "../../mem/mem.h"
 # include "../../str.h"
 # ifndef BENCODE_MALLOC

@@ -55,7 +55,7 @@ Richard Fuchs
         2. Multiple RTPProxy usage
         3. Dependencies
 
-              3.1. Kamailio Modules
+              3.1. OpenSIPS Modules
               3.2. External Libraries or Applications
 
         4. Parameters
@@ -112,7 +112,7 @@ Chapter 1. Admin Guide
    2. Multiple RTPProxy usage
    3. Dependencies
 
-        3.1. Kamailio Modules
+        3.1. OpenSIPS Modules
         3.2. External Libraries or Applications
 
    4. Parameters
@@ -180,10 +180,10 @@ Chapter 1. Admin Guide
 
 3. Dependencies
 
-   3.1. Kamailio Modules
+   3.1. OpenSIPS Modules
    3.2. External Libraries or Applications
 
-3.1. Kamailio Modules
+3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * tm module - (optional) if you want to have rtpproxy_manage() fully
@@ -192,7 +192,7 @@ Chapter 1. Admin Guide
 3.2. External Libraries or Applications
 
    The following libraries or applications must be installed before
-   running Kamailio with this module loaded:
+   running OpenSIPS with this module loaded:
      * None.
 
 4. Parameters
@@ -609,7 +609,7 @@ $ kamctl fifo nh_show_rtpp
 Chapter 2. Frequently Asked Questions
 
    2.1. What happend with "rtpproxy_disable" parameter?
-   2.2. Where can I find more about Kamailio?
+   2.2. Where can I find more about OpenSIPS?
    2.3. Where can I post a question about this module?
    2.4. How can I report a bug?
 
@@ -622,9 +622,9 @@ Chapter 2. Frequently Asked Questions
 
    2.2.
 
-   Where can I find more about Kamailio?
+   Where can I find more about OpenSIPS?
 
-   Take a look at http://www.kamailio.org/.
+   Take a look at http://www.opensips.org/.
 
    2.3.
 
@@ -633,20 +633,20 @@ Chapter 2. Frequently Asked Questions
    First at all check if your question was already answered on one of our
    mailing lists:
      * User Mailing List -
-       http://lists.sip-router.org/cgi-bin/mailman/listinfo/sr-users
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
      * Developer Mailing List -
-       http://lists.sip-router.org/cgi-bin/mailman/listinfo/sr-dev
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-   E-mails regarding any stable Kamailio release should be sent to
-   <sr-users@lists.sip-router.org> and e-mails regarding development
-   versions should be sent to <sr-dev@lists.sip-router.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
    If you want to keep the mail private, send it to
-   <sr-users@lists.sip-router.org>.
+   <users@lists.opensips.org>.
 
    2.4.
 
    How can I report a bug?
 
    Please follow the guidelines provided at:
-   http://sip-router.org/tracker.
+   https://github.com/OpenSIPS/opensips/issues.
