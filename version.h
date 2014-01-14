@@ -28,7 +28,7 @@
 #define OPENSIPS_FULL_VERSION  NAME " " VERSION " (" ARCH "/" OS ")" 
 
 
-#ifdef STATS
+#ifdef STATISTICS
 #define STATS_STR  "STATS: On"
 #else
 #define STATS_STR  "STATS: Off"
