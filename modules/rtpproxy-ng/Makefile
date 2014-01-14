@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile 5901 2009-07-21 07:45:05Z bogdan_iancu $
 #
 # print example module makefile
 #
@@ -10,10 +10,5 @@ auto_gen=
 NAME=rtpproxy-ng.so
 LIBS=
 
-DEFS+=-DKAMAILIO_MOD_INTERFACE
-
-SERLIBPATH=../../lib
-SER_LIBS+=$(SERLIBPATH)/kmi/kmi
-SER_LIBS+=$(SERLIBPATH)/kcore/kcore
 include ../../Makefile.modules
 
