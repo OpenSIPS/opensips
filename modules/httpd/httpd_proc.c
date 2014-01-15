@@ -228,7 +228,7 @@ void httpd_proc(int rank)
 			exit(-1);
 			break;
 		case EINTR:
-			LM_WARN("error returned by select: EINTR [%d] "
+			LM_DBG("failure returned by select: EINTR [%d] "
 				"(Non blocked signal caught)\n", status);
 			break;
 		case EINVAL:
