@@ -221,6 +221,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 			}
 
 			old_value+=val;
+			expires = it->expires;
 			new_value = sint2str(old_value,&new_len);
 			it = shm_realloc(it,sizeof(lcache_entry_t) + attr->len +new_len);
 			if (it == NULL) {
@@ -236,13 +237,10 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 			
 			it->attr.s = (char*)(it + 1);
 			it->value.s =(char *)(it + 1) + attr->len;
-			
+			it->expires = expires;
+
 			memcpy(it->value.s,new_value,new_len);
 			it->value.len = new_len;
-			if( expires != 0) {
-				LM_DBG("key %.*s will expire in %d s\n",attr->len,attr->s,expires);
-				it->expires = get_ticks() + expires;
-			}
 			lock_release(&cache_htable[hash_code].lock);
 			if (new_val)
 				*new_val = old_value;
