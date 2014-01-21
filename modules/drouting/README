@@ -844,6 +844,8 @@ if (use_next_gw()) {
             gw_id_avp AVP
           + 'n' (Ignore port) - ignores port number during
             matching
+          + 'c' (Carrier ID) - return the carrier id into
+            carrier_id_avp AVP
 
    Example 1.30. goes_to_gw usage
 ...
@@ -876,6 +878,8 @@ if (goes_to_gw("1")) {
             gw_id_avp AVP
           + 'n' (Ignore port) - ignores port number during
             matching
+          + 'c' (Carrier ID) - return the carrier id into
+            carrier_id_avp AVP
 
    Example 1.31. is_from_gw usage
 ...

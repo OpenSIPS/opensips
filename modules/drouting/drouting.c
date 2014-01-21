@@ -2100,6 +2100,7 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 #define DR_IFG_ATTRS_FLAG      (1<<2)
 #define DR_IFG_IDS_FLAG        (1<<3)
 #define DR_IFG_IGNOREPORT_FLAG (1<<4)
+#define DR_IFG_CARRIERID_FLAG  (1<<5)
 
 
 /*
@@ -2110,6 +2111,7 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 							int type, struct ip_addr *ip, unsigned int port)
 {
 	pgw_t *pgwa = NULL;
+	pcr_t *pcr = NULL;
 	int flags = 0;
 	str flags_s;
 	int_str val;
@@ -2130,6 +2132,7 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 				case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
+				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
 				default: LM_WARN("unsuported flag %c \n",flags_s.s[i]);
 			}
 		}
@@ -2164,6 +2167,26 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 				if (add_avp(AVP_VAL_STR, gw_id_avp, val)!=0)
 					LM_ERR("failed to insert GW attrs avp\n");
 			}
+
+			if ( flags & DR_IFG_CARRIERID_FLAG ) {
+				/* lookup first carrier that contains this gw */
+				for (pcr=(*rdata)->carriers;pcr;pcr=pcr->next) {
+					for (i=0;i<pcr->pgwa_len;i++) {
+						if (pcr->pgwl[i].is_carrier == 0 &&
+						pcr->pgwl[i].dst.gw == pgwa ) {
+							/* found our carrier */
+							if (carrier_id_avp!=-1) {
+								val.s = pcr->id;
+								if (add_avp_last(AVP_VAL_STR, carrier_id_avp, val)!=0) {
+									LM_ERR("failed to add carrier id AVP\n");
+								}
+							}
+							goto end;
+						}							
+					}
+				}							
+			}
+end:
 			return 1;
 		}
 		pgwa = pgwa->next;

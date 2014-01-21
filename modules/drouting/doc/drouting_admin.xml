@@ -1168,6 +1168,10 @@ if (use_next_gw()) {
 							<emphasis>'n'</emphasis> (Ignore port) - ignores port
 							number during matching
 						</listitem>
+						<listitem>
+							<emphasis>'c'</emphasis> (Carrier ID) - return the
+							carrier id into carrier_id_avp AVP
+						</listitem>
 					</itemizedlist>
 				</listitem>
 			</itemizedlist>
@@ -1229,6 +1233,10 @@ if (goes_to_gw("1")) {
 						<listitem>
 							<emphasis>'n'</emphasis> (Ignore port) - ignores port
 							number during matching
+						</listitem>
+						<listitem>
+							<emphasis>'c'</emphasis> (Carrier ID) - return the
+							carrier id into carrier_id_avp AVP
 						</listitem>
 					</itemizedlist>
 				</listitem>
