@@ -377,7 +377,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		int hash_index)
 {
 	unsigned long pres_id= 0;
-	int ret = -1;
+	int ret = ERR_PUBLISH_GENERIC;
 	char etag_buf[256];
 	char tuple_buf[128];
 	str tuple_id= {0, 0};
@@ -447,6 +447,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		{
 			LM_DBG("request for a publish with expires 0 and"
 					" no record found\n");
+			ret = ERR_PUBLISH_NO_RECORD;
 			goto error;
 		}
 		if(publ->body== NULL)
@@ -496,7 +497,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		pkg_free(body);
 	}
 
-	return 0;
+	return ERR_PUBLISH_NO_ERROR;
 
 error:
 	if(body && ev->process_body)

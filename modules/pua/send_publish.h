@@ -31,7 +31,10 @@
 #include "hash.h"
 #include "event_list.h"
 
-#define ERR_PUBLISH_NO_BODY -10
+#define ERR_PUBLISH_NO_ERROR   0
+#define ERR_PUBLISH_GENERIC   -1
+#define ERR_PUBLISH_NO_RECORD -9
+#define ERR_PUBLISH_NO_BODY   -10
 
 typedef struct publ_info
 {
