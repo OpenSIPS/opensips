@@ -340,7 +340,12 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	} else {
 		tag = get_to(rpl)->tag_value;
 		if (tag.s==0 || tag.len==0) {
-			LM_ERR("missing TAG param in TO hdr :-/\n");
+			/* Don't print error for final replies in DLG_STATE_UNCONFIRMED */
+			if (!(dlg->state == DLG_STATE_UNCONFIRMED &&
+				rpl->first_line.u.reply.statuscode >= 300)) {
+				LM_ERR("[%d] reply in dlg state [%d]: missing TAG param in TO hdr\n",
+					rpl->first_line.u.reply.statuscode, dlg->state);
+			}
 			tag.s = 0;
 			tag.len = 0;
 		}
