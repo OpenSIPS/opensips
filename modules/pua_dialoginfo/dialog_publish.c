@@ -295,6 +295,7 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 {
 	str* body= NULL;
 	publ_info_t publ;
+	int ret_code;
 
 	body= build_dialoginfo(state, entity, peer, callid, initiator, localtag, remotetag);
 	if(body == NULL || body->s == NULL)
@@ -325,8 +326,12 @@ void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, s
 	publ.outbound_proxy = presence_server;
 
 	print_publ(&publ);
-	if(pua_send_publish(&publ)< 0)
-	{
+	ret_code = pua_send_publish(&publ);
+	switch (ret_code) {
+	case ERR_PUBLISH_NO_ERROR:
+	case ERR_PUBLISH_NO_RECORD:
+		break;
+	default:
 		LM_ERR("sending publish failed for pres_uri [%.*s] to server [%.*s]\n",
 			publ.pres_uri->len, publ.pres_uri->s,
 			publ.outbound_proxy.len, publ.outbound_proxy.s);
