@@ -26,12 +26,20 @@
 		<surname>Vamanu</surname>
 	    </editor>
 	    <author>
-		<firstname>Klaus </firstname>
+		<firstname>Klaus</firstname>
 		<surname>Darilion</surname>
 	    </author>
 	    <editor>
-		<firstname>Klaus </firstname>
+		<firstname>Klaus</firstname>
 		<surname>Darilion</surname>
+	    </editor>
+	    <author>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+	    </author>
+	    <editor>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
 	    </editor>
 	</authorgroup>
 	<copyright>
@@ -41,6 +49,12 @@
 	<copyright>
 	    <year>2008</year>
 	    <holder>Klaus Darilion IPCom</holder>
+	</copyright>
+	<copyright>
+	    <year>2014</year>
+	    <holder>
+		<ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink>
+	    </holder>
 	</copyright>
 	<revhistory>
 	    <revision>
