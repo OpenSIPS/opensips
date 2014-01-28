@@ -62,6 +62,8 @@
 #define MAX_LDG_LOCKS  2048
 #define MIN_LDG_LOCKS  2
 
+#define MI_DATE_BUF_LEN 21
+
 
 extern struct tm_binds d_tmb;
 extern int last_dst_leg;
@@ -931,6 +933,10 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	int len;
 	char* p;
 	int i, j;
+	time_t _ts;
+	struct tm* t;
+	char date_buf[MI_DATE_BUF_LEN];
+	int date_buf_len;
 
 	node = add_mi_node_child(rpl, 0, "dialog",6 , 0, 0 );
 	if (node==0)
@@ -951,16 +957,40 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 	if (node1==0)
 		goto error;
 
-	p= int2str((unsigned long)dlg->start_ts, &len);
+	_ts = (time_t)dlg->start_ts;
+	p= int2str((unsigned long)_ts, &len);
 	node1 = add_mi_node_child(node,MI_DUP_VALUE,"timestart",9, p, len);
 	if (node1==0)
 		goto error;
+	if (_ts) {
+		t = localtime(&_ts);
+		date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
+						"%Y-%m-%d %H:%M:%S", t);
+		if (date_buf_len != 0) {
+			node1 = add_mi_node_child(node,MI_DUP_VALUE, "datestart", 9,
+						date_buf, date_buf_len);
+			if (node1==0)
+				goto error;
+		}
+	}
 
-	p= int2str((unsigned long)(dlg->tl.timeout?((unsigned int)time(0) +
-				dlg->tl.timeout - get_ticks()):0), &len);
+	_ts = (time_t)(dlg->tl.timeout?((unsigned int)time(0) +
+                dlg->tl.timeout - get_ticks()):0);
+	p= int2str((unsigned long)_ts, &len);
 	node1 = add_mi_node_child(node,MI_DUP_VALUE, "timeout", 7, p, len);
 	if (node1==0)
 		goto error;
+	if (_ts) {
+		t = localtime(&_ts);
+		date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
+						"%Y-%m-%d %H:%M:%S", t);
+		if (date_buf_len != 0) {
+			node1 = add_mi_node_child(node,MI_DUP_VALUE, "dateout", 7,
+						date_buf, date_buf_len);
+			if (node1==0)
+				goto error;
+		}
+	}
 
 	node1 = add_mi_node_child(node, MI_DUP_VALUE, "callid", 6,
 			dlg->callid.s, dlg->callid.len);
