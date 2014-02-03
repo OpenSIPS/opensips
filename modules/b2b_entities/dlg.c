@@ -795,7 +795,7 @@ search_dialog:
 logic_notify:
 	etype = (table==server_htable?B2B_SERVER:B2B_CLIENT);
 
-	if(req_routeid)
+	if(req_routeid > 0)
 	{
 		lock_release(&table[hash_index].lock);
 		run_top_route(rlist[req_routeid].a, msg);
