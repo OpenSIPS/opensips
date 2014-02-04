@@ -597,26 +597,29 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 	key_cmp = &ds_dest_uri_col;
 	key_set = &ds_dest_state_col;
 
-	/* Iterate over the groups and the entries of each group */
-	for(list = (*ds_data)->sets; list!= NULL; list= list->next) {
-		for(j=0; j<list->nr; j++) {
-			/* If the Flag of the entry is STATE_DIRTY -> flush do db */
-			if ( (list->dlist[j].flags&DS_STATE_DIRTY_DST)==0 )
-				/* nothing to do for this destination */
-				continue;
+	if (*ds_data) {
+		/* Iterate over the groups and the entries of each group */
+		for(list = (*ds_data)->sets; list!= NULL; list= list->next) {
+			for(j=0; j<list->nr; j++) {
+				/* If the Flag of the entry is STATE_DIRTY -> flush do db */
+				if ( (list->dlist[j].flags&DS_STATE_DIRTY_DST)==0 )
+					/* nothing to do for this destination */
+					continue;
 
-			/* populate the update */
-			val_cmp.val.str_val = list->dlist[j].uri;
-			val_set.val.int_val = (list->dlist[j].flags&DS_INACTIVE_DST) ? 1 : ((list->dlist[j].flags&DS_PROBING_DST)?2:0) ;
+				/* populate the update */
+				val_cmp.val.str_val = list->dlist[j].uri;
+				val_set.val.int_val =
+					(list->dlist[j].flags&DS_INACTIVE_DST) ? 1 : ((list->dlist[j].flags&DS_PROBING_DST)?2:0);
 
-			/* update the state of this gateway */
-			LM_DBG("updating the state of destination <%.*s> to %d\n",
-				list->dlist[j].uri.len, list->dlist[j].uri.s, val_set.val.int_val);
+				/* update the state of this gateway */
+				LM_DBG("updating the state of destination <%.*s> to %d\n",
+					list->dlist[j].uri.len, list->dlist[j].uri.s, val_set.val.int_val);
 
-			if ( ds_dbf.update(ds_db_handle,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
-				LM_ERR("DB update failed\n");
-			} else {
-				list->dlist[j].flags &= ~DS_STATE_DIRTY_DST;
+				if ( ds_dbf.update(ds_db_handle,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
+					LM_ERR("DB update failed\n");
+				} else {
+					list->dlist[j].flags &= ~DS_STATE_DIRTY_DST;
+				}
 			}
 		}
 	}
