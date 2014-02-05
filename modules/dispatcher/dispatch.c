@@ -1822,6 +1822,7 @@ int ds_print_mi_list(struct mi_node* rpl)
 	char c;
 	ds_set_p list;
 	struct mi_node* node = NULL;
+	struct mi_node* node1;
 	struct mi_node* set_node = NULL;
 	struct mi_attr* attr = NULL;
 	
@@ -1851,9 +1852,27 @@ int ds_print_mi_list(struct mi_node* rpl)
 			else c = 'A';
 
 			attr = add_mi_attr (node, MI_DUP_VALUE, "flag",4, &c, 1);
-			if(attr == 0)
+			if(attr == NULL)
 				goto error;
 
+			if (list->dlist[j].sock)
+			{
+				p = socket2str(list->dlist[j].sock, NULL, &len, 0);
+				if (p)
+				{
+					node1= add_mi_node_child(node, 0, "socket", 6, p, len);
+					if(node1 == NULL)
+						goto error;
+				}
+			}
+
+			if (list->dlist[j].attrs.s)
+			{
+				node1= add_mi_node_child(node, 0, "attr", 4,
+					list->dlist[j].attrs.s, list->dlist[j].attrs.len);
+				if(node1 == NULL)
+					goto error;
+			}
 		}
 	}
 
