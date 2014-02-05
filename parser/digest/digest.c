@@ -115,13 +115,6 @@ dig_err_t check_dig_cred(dig_cred_t* _c)
 	     /* Realm must be present */
 	if (_c->realm.s == 0)  res |= E_DIG_REALM;
 
-	     /* If Username has domain, it must equal to Realm */
-	if (_c->username.domain.s && 
-	    ((_c->username.domain.len != _c->realm.len) ||
-	     (strncmp(_c->username.domain.s, _c->realm.s,
-		      _c->realm.len) != 0)))
-	    res |= E_DIG_DOMAIN;
-
 	     /* Nonce that was used must be specified */
 	if (_c->nonce.s == 0) res |= E_DIG_NONCE;
 
