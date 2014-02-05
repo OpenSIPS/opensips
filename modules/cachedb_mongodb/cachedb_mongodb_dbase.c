@@ -1519,30 +1519,38 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 				/* we treat null values as DB string */
 				VAL_TYPE(cur_val) = DB_STRING; 
 				VAL_NULL(cur_val) = 1;
+				LM_DBG("Found empty [%.*s]\n", _c[j]->len, _c[j]->s);
 			} else {
 				switch( bson_iterator_type( &it ) ) {
 					case BSON_INT:
 						VAL_TYPE(cur_val) = DB_INT; 
 						VAL_INT(cur_val) = bson_iterator_int(&it);
-						LM_DBG("found int %d\n",bson_iterator_int(&it));
+						LM_DBG("Found int [%.*s]=[%d]\n",
+							_c[j]->len, _c[j]->s, VAL_INT(cur_val));
 						break;
 					case BSON_DOUBLE:
 						VAL_TYPE(cur_val) = DB_DOUBLE;
 						VAL_DOUBLE(cur_val) = bson_iterator_double(&it);
-						LM_DBG("found double %f\n",bson_iterator_double(&it));
+						LM_DBG("Found double [%.*s]=[%f]\n",
+							_c[j]->len, _c[j]->s, VAL_DOUBLE(cur_val));
 						break;
 					case BSON_STRING:
 						VAL_TYPE(cur_val) = DB_STRING;
 						VAL_STRING(cur_val) = bson_iterator_string(&it);
-						LM_DBG("Found string %s\n",bson_iterator_string(&it));
+						LM_DBG("Found string [%.*s]=[%s]\n",
+							_c[j]->len, _c[j]->s, VAL_STRING(cur_val));
 						break;
 					case BSON_LONG:
 						VAL_TYPE(cur_val) = DB_BIGINT;
 						VAL_BIGINT(cur_val) = bson_iterator_long(&it);
+						LM_DBG("Found long [%.*s]=[%lld]\n",
+							_c[j]->len, _c[j]->s, VAL_BIGINT(cur_val));
 						break;
 					case BSON_DATE:
 						VAL_TYPE(cur_val) = DB_DATETIME;
-						VAL_TYPE(cur_val) = bson_iterator_time_t(&it);
+						VAL_TIME(cur_val) = bson_iterator_time_t(&it);
+						LM_DBG("Found time [%.*s]=[%d]\n",
+							_c[j]->len, _c[j]->s, (int)VAL_TIME(cur_val));
 						break;
 					default:
 						LM_WARN("Unsupported type %d - treating as NULL\n",bson_iterator_type(&it));
