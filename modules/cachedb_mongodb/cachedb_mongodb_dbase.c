@@ -39,6 +39,7 @@ extern int mongo_slave_ok;
 extern int mongo_exec_threshold;
 
 #define HEX_OID_SIZE 25
+char *hex_oid_id = NULL;
 
 mongo_con* mongo_new_connection(struct cachedb_id* id)
 {
@@ -1405,8 +1406,6 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 		 bson_append_bool(&fields,key_buff,1);
 	}
 
-	/* we skip the _id key, we always leave it as auto-generated */
-	bson_append_bool(&fields,"_id",0);
 	bson_finish(&fields);
 
 	p=namespace_buff;
@@ -1504,6 +1503,11 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 
 	RES_ROW_N(*_r) = row_no;
 
+	hex_oid_id = pkg_malloc(sizeof(char) * row_no * HEX_OID_SIZE);
+	if (hex_oid_id==NULL) {
+		LM_ERR("oom\n");
+		goto error2;
+	}
 	i=0;
 	while( mongo_cursor_next(m_cursor) == MONGO_OK ) {
 		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
@@ -1554,8 +1558,18 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 						LM_DBG("Found time [%.*s]=[%d]\n",
 							_c[j]->len, _c[j]->s, (int)VAL_TIME(cur_val));
 						break;
+					case BSON_OID:
+						bson_oid_to_string(bson_iterator_oid(&it), hex_oid);
+						p = &hex_oid_id[i*HEX_OID_SIZE];
+						memcpy(p, hex_oid, HEX_OID_SIZE);
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = p;
+						LM_DBG("Found oid [%.*s]=[%s]\n",
+							_c[j]->len, _c[j]->s, VAL_STRING(cur_val));
+						break;
 					default:
-						LM_WARN("Unsupported type %d - treating as NULL\n",bson_iterator_type(&it));
+						LM_WARN("Unsupported type [%d] for [%.*s] - treating as NULL\n",
+							bson_iterator_type(&it), _c[j]->len, _c[j]->s);
 						memset(cur_val,0,sizeof(db_val_t));
 						VAL_STRING(cur_val) = dummy_string.s;
 						VAL_STR(cur_val) = dummy_string;
@@ -1598,6 +1612,10 @@ int mongo_db_free_result_trans(cachedb_con* con, db_res_t* _r)
 	}
 
 	LM_DBG("freeing mongo query result \n");
+
+	if (hex_oid_id) {
+		pkg_free(hex_oid_id); hex_oid_id = NULL;
+	}
 
 	if (db_free_result(_r) < 0) {
 		LM_ERR("unable to free result structure\n");
