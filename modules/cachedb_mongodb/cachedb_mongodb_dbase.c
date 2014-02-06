@@ -38,6 +38,8 @@ extern str mongo_write_concern_b;
 extern int mongo_slave_ok;
 extern int mongo_exec_threshold;
 
+#define HEX_OID_SIZE 25
+
 mongo_con* mongo_new_connection(struct cachedb_id* id)
 {
 	mongo_con *con;
@@ -239,7 +241,7 @@ int mongo_con_get(cachedb_con *connection,str *attr,str *val)
 	const char *rez;
 	int rez_len,i;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	char hex_oid[25];
+	char hex_oid[HEX_OID_SIZE];
 	struct timeval start;
 
 	LM_DBG("Get operation on namespace %s\n",MONGO_NAMESPACE(connection));
@@ -467,7 +469,7 @@ void dbg_bson_print_raw( const char *data , int depth )
 	const char *key;
 	int temp;
 	bson_timestamp_t ts;
-	char oidhex[25];
+	char oidhex[HEX_OID_SIZE];
 	bson scope;
 	bson_iterator_from_buffer( &i, data );
 
@@ -1214,7 +1216,7 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 	int i;
 	struct timeval start;
 	mongo *conn = &MONGO_CDB_CON(connection);
-	char hex_oid[25];
+	char hex_oid[HEX_OID_SIZE];
 
 	LM_DBG("Get counter operation on namespace %s\n",MONGO_NAMESPACE(connection));
 	start_expire_timer(start,mongo_exec_threshold);
@@ -1364,7 +1366,7 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	mongo *conn = &MONGO_CDB_CON(con);
 	mongo_cursor *m_cursor;
 	bson_iterator it;
-	char hex_oid[25];
+	char hex_oid[HEX_OID_SIZE];
 	db_row_t *current;
 	db_val_t *cur_val;
 	static str dummy_string = {"", 0};
