@@ -1345,6 +1345,7 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 						bson_oid_from_string(&_id, VAL_STR(val+index).s); \
 						*p = _old_char; \
 						bson_append_oid(&query,key_buff,&_id); \
+						appendOID = 0; \
 					} else { \
 						bson_append_string_n(&query,key_buff,VAL_STR(val+index).s, \
 							VAL_STR(val+index).len); \
