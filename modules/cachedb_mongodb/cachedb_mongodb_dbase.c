@@ -1390,6 +1390,10 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	}
 
 	if (_o) {
+		if (!_n) {
+			bson_append_start_object(&query, "$query");
+			bson_append_finish_object(&query);
+		}
 		memcpy(key_buff,_o->s,_o->len);
 		key_buff[_o->len]=0;
 		bson_append_start_object(&query, "$orderby");
