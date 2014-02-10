@@ -1328,11 +1328,27 @@ int mongo_con_get_counter(cachedb_con *connection,str *attr,int *val)
 					bson_append_int(&query,key_buff,VAL_INT(val+index)); \
 					break; \
 				case DB_STRING: \
-					bson_append_string(&query,key_buff,VAL_STRING(val+index)); \
+					if (appendOID && key[index]->len == 3 && strncmp("_id", key[index]->s,key[index]->len) == 0) { \
+						LM_DBG("we got it [%.*s]\n", key[index]->len, key[index]->s); \
+						bson_oid_from_string(&_id, VAL_STRING(val+index)); \
+						bson_append_oid(&query,key_buff,&_id); \
+						appendOID = 0; \
+					} else { \
+						bson_append_string(&query,key_buff,VAL_STRING(val+index)); \
+					} \
 					break; \
 				case DB_STR: \
-					bson_append_string_n(&query,key_buff,VAL_STR(val+index).s, \
+					if (appendOID && key[index]->len == 3 && strncmp("_id", key[index]->s,key[index]->len) == 0) { \
+						p = VAL_STR(val+index).s + VAL_STR(val+index).len; \
+						_old_char = *p; \
+						*p = '\0'; \
+						bson_oid_from_string(&_id, VAL_STR(val+index).s); \
+						*p = _old_char; \
+						bson_append_oid(&query,key_buff,&_id); \
+					} else { \
+						bson_append_string_n(&query,key_buff,VAL_STR(val+index).s, \
 							VAL_STR(val+index).len); \
+					} \
 					break; \
 				case DB_BLOB: \
 					bson_append_string_n(&query,key_buff,VAL_BLOB(val+index).s, \
@@ -1372,6 +1388,9 @@ int mongo_db_query_trans(cachedb_con *con,const str *table,const db_key_t* _k, c
 	db_val_t *cur_val;
 	static str dummy_string = {"", 0};
 	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
 
 	start_expire_timer(start,mongo_exec_threshold);
 
@@ -1640,6 +1659,9 @@ int mongo_db_insert_trans(cachedb_con *con,const str *table,const db_key_t* _k, 
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
 	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
 
 	start_expire_timer(start,mongo_exec_threshold);
 
@@ -1714,6 +1736,9 @@ int mongo_db_delete_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
 	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
 
 	start_expire_timer(start,mongo_exec_threshold);
 
@@ -1786,6 +1811,9 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	mongo *conn = &MONGO_CDB_CON(con);
 	bson_iterator it;
 	struct timeval start;
+	char _old_char;
+	bson_oid_t _id;
+	int appendOID = 1;
 
 	start_expire_timer(start,mongo_exec_threshold);
 
@@ -1798,7 +1826,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	bson_init(&op_query);
 	bson_append_start_object(&op_query, "$set");
 	for (i=0;i<_un;i++) {
-		MONGO_DB_KEY_TRANS(_uk,_uv,i,((db_op_t*)0),op_query);
+		MONGO_DB_KEY_TRANS(_uk,_uv,i,((db_op_t*)NULL),op_query);
 	}
 	bson_append_finish_object(&op_query);
 	bson_finish(&op_query);
@@ -1810,7 +1838,7 @@ int mongo_db_update_trans(cachedb_con *con,const str *table,const db_key_t* _k,c
 	*p++ = '.';
 	memcpy(p,table->s,table->len);
 	p+= table->len;
-	*p = 0;
+	*p = '\0';
 
 	LM_DBG("Running raw mongo update on table %s\n",namespace_buff);
 
