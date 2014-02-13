@@ -472,7 +472,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE.
+		BRANCH_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>fix_nated_contact</function> usage</title>
