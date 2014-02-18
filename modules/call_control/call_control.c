@@ -66,6 +66,7 @@
 #define DIVERTER_AVP_SPEC      "$avp(cc_diverter)"
 #define CALL_LIMIT_AVP_SPEC    "$avp(cc_call_limit)"
 #define CALL_TOKEN_AVP_SPEC    "$avp(cc_call_token)"
+#define SIP_APPLICATION_AVP_SPEC "$avp(cc_sip_application)"
 
 // Although `AF_LOCAL' is mandated by POSIX.1g, `AF_UNIX' is portable to
 // more systems.  `AF_UNIX' was the traditional name stemming from BSD, so
@@ -133,7 +134,6 @@ static CallControlSocket callcontrol_socket = {
 
 static int disable = False;
 
-
 /* The AVP where the diverter URI is stored (if defined) */
 static AVP_Param diverter_avp = {str_init(DIVERTER_AVP_SPEC), -1, 0};
 
@@ -148,6 +148,9 @@ static AVP_Param call_limit_avp = {str_init(CALL_LIMIT_AVP_SPEC), -1, 0};
 
 /* The AVP where the call token is stored (if defined) */
 static AVP_Param call_token_avp = {str_init(CALL_TOKEN_AVP_SPEC), -1, 0};
+
+/* The AVP where the SIP application type is stored (if defined) */
+static AVP_Param sip_application_avp = {str_init(SIP_APPLICATION_AVP_SPEC), -1, 0};
 
 
 struct dlg_binds dlg_api;
@@ -175,6 +178,7 @@ static param_export_t parameters[] = {
     {"signaling_ip_avp",        STR_PARAM, &(signaling_ip_avp.spec.s)},
     {"call_limit_avp",          STR_PARAM, &(call_limit_avp.spec.s)},
     {"call_token_avp",          STR_PARAM, &(call_token_avp.spec.s)},
+    {"sip_application_avp",     STR_PARAM, &(sip_application_avp.spec.s)},
     {"prepaid_account_flag",    STR_PARAM, &prepaid_account_str},
     {"prepaid_account_flag",    INT_PARAM, &prepaid_account_flag},
     {0, 0, 0}
@@ -226,6 +230,7 @@ typedef struct CallInfo {
     str from;
     str from_tag;
     str call_token;
+    str sip_application;
     char* prepaid_account;
     int call_limit;
 } CallInfo;
@@ -406,6 +411,22 @@ get_signaling_ip(struct sip_msg* msg)
     return value.s;
 }
 
+// Get SIP application type
+static str
+get_sip_application(struct sip_msg* msg)
+{
+    int_str value;
+
+    if (!search_first_avp(sip_application_avp.type | AVP_VAL_STR,
+                          sip_application_avp.name, &value, NULL) ||
+        !value.s.s || value.s.len==0) {
+
+        value.s.s = "";
+        value.s.len = strlen(value.s.s);
+    }
+
+    return value.s;
+}
 
 static str
 get_diverter(struct sip_msg *msg)
@@ -563,6 +584,7 @@ get_call_info(struct sip_msg *msg, CallControlAction action)
         call_info.source_ip = get_signaling_ip(msg);
         call_info.call_limit = get_call_limit(msg);
         call_info.call_token = get_call_token(msg);
+        call_info.sip_application = get_sip_application(msg);
         if (prepaid_account_flag >= 0) {
             call_info.prepaid_account = isflagset(msg, prepaid_account_flag)==1 ? "true" : "false";
         } else {
@@ -640,6 +662,7 @@ make_default_request(CallInfo *call)
                        "prepaid: %s\r\n"
                        "call_limit: %d\r\n"
                        "call_token: %.*s\r\n"
+                       "sip_application: %.*s\r\n"
                        "\r\n",
                        call->ruri.len, call->ruri.s,
                        call->diverter.len, call->diverter.s,
@@ -649,7 +672,8 @@ make_default_request(CallInfo *call)
                        call->from_tag.len, call->from_tag.s,
                        call->prepaid_account,
                        call->call_limit,
-                       call->call_token.len, call->call_token.s);
+                       call->call_token.len, call->call_token.s,
+                       call->sip_application.len, call->sip_application.s);
 
         if (len >= sizeof(request)) {
             LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
@@ -1170,6 +1194,21 @@ mod_init(void)
     }
     if (pv_get_avp_name(0, &(avp_spec.pvp), &(diverter_avp.name), &(diverter_avp.type))!=0) {
         LM_CRIT("invalid AVP specification for diverter_avp: `%s'\n", diverter_avp.spec.s);
+        return -1;
+    }
+
+    // initialize the sip_application_avp structure
+    if (sip_application_avp.spec.s==NULL || *(sip_application_avp.spec.s)==0) {
+        LM_ERR("missing/empty sip_application_avp parameter. using default.\n");
+        sip_application_avp.spec.s = SIP_APPLICATION_AVP_SPEC;
+    }
+    sip_application_avp.spec.len = strlen(sip_application_avp.spec.s);
+    if (pv_parse_spec(&(sip_application_avp.spec), &avp_spec)==0 || avp_spec.type!=PVT_AVP) {
+        LM_CRIT("invalid AVP specification for sip_application_avp: `%s'\n", sip_application_avp.spec.s);
+        return -1;
+    }
+    if (pv_get_avp_name(0, &(avp_spec.pvp), &(sip_application_avp.name), &(sip_application_avp.type))!=0) {
+        LM_CRIT("invalid AVP specification for sip_application_avp: `%s'\n", sip_application_avp.spec.s);
         return -1;
     }
 
