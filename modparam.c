@@ -45,7 +45,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 	struct sr_module* t;
 	param_export_t* param;
 	regex_t preg;
-	int mod_found, len;
+	int mod_found, param_found, len;
 	char* reg;
 	int n;
 
@@ -61,48 +61,60 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 	reg[len + 2] = ')';
 	reg[len + 3] = '$';
 	reg[len + 4] = '\0';
-	
+
 	if (regcomp(&preg, reg, REG_EXTENDED | REG_NOSUB | REG_ICASE)) {
 		LM_ERR("failed to compile regular expression\n");
 		pkg_free(reg);
 		return -2;
 	}
-	
+
 	mod_found = 0;
 
 	for(t = modules; t; t = t->next) {
 		if (regexec(&preg, t->exports->name, 0, 0, 0) == 0) {
 			LM_DBG("%s matches module %s\n",regex, t->exports->name);
 			mod_found = 1;
+			param_found = 0;
+
 			for(param=t->exports->params;param && param->name ; param++) {
-				if ((strcmp(name, param->name) == 0) &&
-				( PARAM_TYPE_MASK(param->type) == type)) {
-					LM_DBG("found <%s> in module %s [%s]\n",
-						name, t->exports->name, t->path);
 
-					if (param->type&USE_FUNC_PARAM) {
-						n = ((param_func_t)(param->param_pointer))(type, val );
-						if (n<0)
-							return -4;
-					} else {
-						switch(type) {
-							case STR_PARAM:
-								*((char**)(param->param_pointer)) =
-									strdup((char*)val);
-								break;
-							case INT_PARAM:
-								*((int*)(param->param_pointer)) =
-									(int)(long)val;
-								break;
+				if (strcmp(name, param->name) == 0) {
+					param_found = 1;
+
+					if (PARAM_TYPE_MASK(param->type) == type) {
+						LM_DBG("found <%s> in module %s [%s]\n",
+							name, t->exports->name, t->path);
+
+						if (param->type&USE_FUNC_PARAM) {
+							n = ((param_func_t)(param->param_pointer))(type, val );
+							if (n<0)
+								return -4;
+						} else {
+							switch(type) {
+								case STR_PARAM:
+									*((char**)(param->param_pointer)) =
+										strdup((char*)val);
+									break;
+								case INT_PARAM:
+									*((int*)(param->param_pointer)) =
+										(int)(long)val;
+									break;
+							}
 						}
-					}
 
-					break;
+						break;
+					}
 				}
 			}
+
 			if (!param || !param->name) {
-				LM_ERR("parameter <%s> not found in module <%s>\n",
-				    name, t->exports->name);
+				if (param_found)
+					LM_ERR("type mismatch for parameter <%s> in module <%s>\n",
+					        name, t->exports->name);
+				else
+					LM_ERR("parameter <%s> not found in module <%s>\n",
+						    name, t->exports->name);
+
 				regfree(&preg);
 				pkg_free(reg);
 				return -3;
