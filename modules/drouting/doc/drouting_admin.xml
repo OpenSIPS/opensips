@@ -1061,15 +1061,16 @@ if ( route_to_carrier("my_top_carrier") ) {
 		<function moreinfo="none">route_to_gw(gw_id)</function>
 		</title>
 		<para>
-		Function to trigger the direct routing to a given gateway. Attributes 
-		and per-gw preocessing will be available.
+		Function to trigger the direct routing to a given gateway (or list of gateways).
+		Attributes and per-gw preocessing will be available.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
-		Function takes a single mandatory parameter, the ID of the gateway
-		to be used (variables are accepted).
+		Function takes a single mandatory parameter, the ID (or list) of the gateway
+		to be used (variables are accepted). If a list is used, the elements must be
+		comma separated.
 		</para>
 
 		<example>
@@ -1077,6 +1078,11 @@ if ( route_to_carrier("my_top_carrier") ) {
 		<programlisting format="linespecific">
 ...
 if ( route_to_gw("gw_europe") ) {
+	t_relay();
+	exit;
+}
+...
+if ( route_to_gw("gw1,gw2,gw3") ) {
 	t_relay();
 	exit;
 }
