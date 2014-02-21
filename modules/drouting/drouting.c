@@ -1907,7 +1907,9 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
-	str *ruri, id;
+	str *ruri, ids, id;
+	char *p;
+	int idx;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
 		LM_DBG("empty routing table\n");
@@ -1915,7 +1917,7 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	}
 
 	/* get the gw ID */
-	if (fixup_get_svalue(msg, (gparam_p)gw_str, &id) != 0) {
+	if (fixup_get_svalue(msg, (gparam_p)gw_str, &ids) != 0) {
 		LM_ERR("Invalid number pseudo variable!\n");
 		return -1;
 	}
@@ -1931,26 +1933,42 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	/* ref the data for reading */
 	lock_start_read( ref_lock );
 
-	gw = get_gw_by_id( (*rdata)->pgw_l, &id );
-	if (gw==NULL) {
-		LM_ERR("no GW found with ID <%.*s> \n", id.len, id.s);
-		goto error;
-	}
 
-	if ( push_gw_for_usage(msg, &uri, gw, NULL, NULL, 0 ) ) {
-		LM_ERR("failed to use gw <%.*s>, skipping\n",
-			gw->id.len, gw->id.s);
-		goto error;
-	}
+	idx = 0;
+	do {
+		id.s = ids.s;
+		p = memchr( ids.s , ',' , ids.len);
+		id.len = (p==NULL)?ids.len:(p-ids.s);
+
+		if (id.len==0) {
+			/* skipping empty ID */
+		} else {
+			trim_spaces_lr(id);
+			LM_DBG("found and looking for gw id <%.*s>,len=%d\n",id.len, id.s, id.len);
+			gw = get_gw_by_id( (*rdata)->pgw_l, &id );
+			if (gw==NULL) {
+				LM_ERR("no GW found with ID <%.*s> -> ignorring\n", id.len, id.s);
+			} else if ( push_gw_for_usage(msg, &uri, gw, NULL, NULL, idx ) ) {
+				LM_ERR("failed to use gw <%.*s>, skipping\n",
+					gw->id.len, gw->id.s);
+			} else {
+				idx++;
+			}
+		}
+
+		ids.len -= id.len + (p?1:0);
+		ids.s += id.len + (p?1:0);
+	} while(ids.len>0);
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( ref_lock );
+
+	if ( idx==0 ) {
+		LM_ERR("no GW added at all\n");
+		return -1;
+	}
 
 	return 1;
-error:
-	/* we are done reading -> unref the data */
-	lock_stop_read( ref_lock );
-	return -1;
 }
 
 
