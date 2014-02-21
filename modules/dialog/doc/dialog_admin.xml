@@ -34,9 +34,7 @@
 	received. In case of no <quote>BYE</quote>, the dialog lifetime is 
 	controlled via the default timeout (see <quote>default_timeout</quote>
 	- <xref linkend="default-timeout-id"/>) and custom timeout (see 
-	<quote>timeout_avp</quote> - <xref linkend="timeout-avp-id"/>). The 
-	dialog timeout is reset each time a sequential (except ACKs) request 
-	passes.
+	<quote>$DLG_timeout</quote> - <xref linkend="timeout-pvar-id"/>).
 	</para>
 	</section>
 
@@ -2379,6 +2377,23 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 				or if the dialog is not ended in the current context.
 			</para>
 		</section>
+
+		<section id="timeout-pvar-id">
+			<title><varname>$DLG_timeout</varname></title>
+			<para>
+				Used to set the dialog lifetime (in seconds). When read, the variable
+				returns the number of seconds until the dialog expires and is destroyed.
+				Note that reading the variable is only possible after the dialog is created
+				(for initial requests) or after doing loose_route() (for sequential requests).
+				Important notice: using this variable with a REALTIME db_mode is very inefficient,
+				because every time the dialog value is changed, a database update is done.
+			</para>
+			<para>
+				NULL will be returned if there is no dialog for the request, otherwise the
+				number of seconds until the dialog expiration.
+			</para>
+		</section>
+
 
 		<section>
 			<title><varname>$dlg_val(name)</varname></title>

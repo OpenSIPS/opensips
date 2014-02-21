@@ -130,7 +130,8 @@ Vladut-Stefan Paiu
               1.10.5. $DLG_dir
               1.10.6. $DLG_did
               1.10.7. $DLG_end_reason
-              1.10.8. $dlg_val(name)
+              1.10.8. $DLG_timeout
+              1.10.9. $dlg_val(name)
 
    2. Developer Guide
 
@@ -234,9 +235,7 @@ Chapter 1. Admin Guide
    In case of no “BYE”, the dialog lifetime is controlled via the
    default timeout (see “default_timeout” - Section 1.6.6,
    “default_timeout (integer)”) and custom timeout (see
-   “timeout_avp” - Section 1.6.5, “timeout_avp (string)”). The
-   dialog timeout is reset each time a sequential (except ACKs)
-   request passes.
+   “$DLG_timeout” - Section 1.10.8, “$DLG_timeout”).
 
 1.3. Dialog profiling
 
@@ -1664,7 +1663,21 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
    NULL will be returned if there is no dialog for the request, or
    if the dialog is not ended in the current context.
 
-1.10.8. $dlg_val(name)
+1.10.8. $DLG_timeout
+
+   Used to set the dialog lifetime (in seconds). When read, the
+   variable returns the number of seconds until the dialog expires
+   and is destroyed. Note that reading the variable is only
+   possible after the dialog is created (for initial requests) or
+   after doing loose_route() (for sequential requests). Important
+   notice: using this variable with a REALTIME db_mode is very
+   inefficient, because every time the dialog value is changed, a
+   database update is done.
+
+   NULL will be returned if there is no dialog for the request,
+   otherwise the number of seconds until the dialog expiration.
+
+1.10.9. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
    attribute named name. This PV will be available only for
