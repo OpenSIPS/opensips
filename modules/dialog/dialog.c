@@ -109,7 +109,6 @@ stat_var *delete_recv  = 0;
 
 struct tm_binds d_tmb;
 struct rr_binds d_rrb;
-pv_spec_t timeout_avp;
 
 /* db stuff */
 static str db_url = {NULL,0};
@@ -159,10 +158,13 @@ static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
 int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_end_reason(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val);
+int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
 static cmd_export_t cmds[]={
@@ -230,7 +232,6 @@ static param_export_t mod_params[]={
 	{ "hash_size",             INT_PARAM, &dlg_hash_size            },
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
 	{ "rr_param",              STR_PARAM, &rr_param.s               },
-	{ "timeout_avp",           STR_PARAM, &timeout_spec.s           },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
 	{ "ping_interval",         INT_PARAM, &ping_interval            },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
@@ -325,6 +326,8 @@ static pv_export_t mod_items[] = {
 		0,                 0, 0, 0, 0},
 	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},      1000,
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
+	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000, 
+		pv_get_dlg_timeout, pv_set_dlg_timeout,  0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -654,15 +657,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (timeout_spec.s) {
-		if ( pv_parse_spec(&timeout_spec, &timeout_avp)==0
-				&& (timeout_avp.type!=PVT_AVP)){
-			LM_ERR("malformed or non AVP timeout "
-				"AVP definition in '%.*s'\n", timeout_spec.len,timeout_spec.s);
-			return -1;
-		}
-	}
-
 	if (default_timeout<=0) {
 		LM_ERR("0 default_timeout not accepted!!\n");
 		return -1;
@@ -777,7 +771,7 @@ static int mod_init(void)
 	}
 
 	/* init handlers */
-	init_dlg_handlers(timeout_spec.s?&timeout_avp:0, default_timeout);
+	init_dlg_handlers(default_timeout);
 
 	/* init timer */
 	if (init_dlg_timer(dlg_ontimeout)!=0) {
@@ -1422,6 +1416,34 @@ int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 }
 
 
+int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	int l = 0;
+	char *ch = NULL;
+	struct dlg_cell *dlg;
+
+	if(res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())==NULL )
+		return pv_get_null( msg, param, res);
+
+	dlg_lock_dlg(dlg);
+	l = dlg->tl.timeout - get_ticks();
+	dlg_unlock_dlg(dlg);
+
+
+	ch = int2str( (unsigned long)res->ri, &l);
+
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -1522,6 +1544,65 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	dlg->user_flags = val->ri;
+
+	return 0;
+}
+
+int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct dlg_cell *dlg;
+	int timeout, db_update = 0, timer_update = 0;
+
+	if (val==NULL || val->flags & PV_VAL_NULL) {
+		LM_ERR("cannot assign dialog timeout to NULL\n");
+		return -1;
+	}
+
+	if (!(val->flags&PV_VAL_INT)){
+		/* try parsing the string */
+		if (str2sint(&val->rs, &timeout) < 0) {
+			LM_ERR("assigning non-int value to dialog flags\n");
+			return -1;
+		}
+	} else {
+		timeout = val->ri;
+	}
+
+	if (timeout < 0) {
+		LM_ERR("cannot set a negative timeout\n");
+		return -1;
+	}
+	if ((dlg = get_current_dialog()) != NULL) {
+
+		dlg_lock_dlg(dlg);
+		dlg->lifetime = timeout;
+		/* update now only if realtime and the dialog is confirmed */
+		if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME)
+			db_update = 1;
+		else
+			dlg->flags |= DLG_FLAG_CHANGED;
+		if (dlg->state >= DLG_STATE_CONFIRMED_NA)
+			timer_update = 1;
+		dlg_unlock_dlg(dlg);
+
+		if (db_update)
+			update_dialog_timeout_info(dlg);
+
+		if (replication_dests)
+			replicate_dialog_updated(dlg);
+
+		/* make sure we don't update it again later */
+		dlg_tmp_timeout = -1;
+
+		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
+			LM_ERR("failed to update timer\n");
+			return -1;
+		}
+	} else {
+		/* store it until we match the dialog */
+		dlg_tmp_timeout = timeout;
+	}
 
 	return 0;
 }

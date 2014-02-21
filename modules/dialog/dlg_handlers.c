@@ -74,7 +74,6 @@
 
 extern str       rr_param;
 
-static pv_spec_t *timeout_avp;
 static int       default_timeout;
 static int       shutdown_done = 0;
 
@@ -88,10 +87,10 @@ extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
 
 int  last_dst_leg = -1;
+int  dlg_tmp_timeout = -1;
 
-void init_dlg_handlers(pv_spec_t *timeout_avp_p ,int default_timeout_p)
+void init_dlg_handlers(int default_timeout_p)
 {
-	timeout_avp = timeout_avp_p;
 	default_timeout = default_timeout_p;
 }
 
@@ -745,27 +744,9 @@ static void dlg_seq_down_onreply(struct cell* t, int type,
 	return;
 }
 
-inline static int get_dlg_timeout(struct sip_msg *req)
+inline static int get_dlg_timeout(void)
 {
-	pv_value_t pv_val;
-
-	if( timeout_avp && pv_get_spec_value( req, timeout_avp, &pv_val)==0
-	&& pv_val.flags&PV_VAL_INT && pv_val.ri>0 ) {
-		return pv_val.ri;
-	}
-	LM_DBG("invalid AVP value, use default timeout\n");
-	return default_timeout;
-}
-
-inline static int get_dlg_timeout_update(struct sip_msg *req)
-{
-	pv_value_t pv_val;
-
-	if( timeout_avp && pv_get_spec_value( req, timeout_avp, &pv_val)==0
-	&& pv_val.flags&PV_VAL_INT && pv_val.ri>0 ) {
-		return pv_val.ri;
-	}
-	return 0;
+	return (dlg_tmp_timeout != -1 ? dlg_tmp_timeout: default_timeout);
 }
 
 
@@ -839,8 +820,6 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		LM_DBG("t hash_index = %u, t label = %u\n",t->hash_index,t->label);
 		current_dlg_pointer->initial_t_hash_index = t->hash_index;
 		current_dlg_pointer->initial_t_label = t->label;
-
-		current_dlg_pointer->lifetime = get_dlg_timeout(param->req);
 
 		t->dialog_ctx = (void*)current_dlg_pointer;
 
@@ -933,11 +912,11 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		LM_DBG("t hash_index = %u, t label = %u\n",t->hash_index,t->label);
 		dlg->initial_t_hash_index = t->hash_index;
 		dlg->initial_t_label = t->label;
-		dlg->lifetime = get_dlg_timeout(req);
 
 		t->dialog_ctx = (void*) dlg;
 		dlg->flags |= DLG_FLAG_ISINIT;
 	}
+	dlg->lifetime = get_dlg_timeout();
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
 
@@ -1018,7 +997,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	int old_state;
 	int unref;
 	int event;
-	int timeout;
 	unsigned int update_val;
 	unsigned int dir,dst_leg,src_leg;
 	int ret = 0,ok = 1;
@@ -1243,13 +1221,13 @@ after_unlock5:
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
-		timeout = get_dlg_timeout_update(req);
 		/* update timer during sequential request? */
-		if (timeout != 0) {
-			dlg->lifetime = timeout;
+		if (dlg_tmp_timeout != -1) {
+			dlg->lifetime = dlg_tmp_timeout;
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
 		}
+		LM_DBG("dialog_timeout: %d\n", dlg->lifetime);
 		if ( event!=DLG_EVENT_REQACK ) {
 
 			if (dst_leg==-1 || switch_cseqs(dlg, dst_leg) != 0 ||

@@ -108,6 +108,7 @@ void destroy_dlg_db();
 
 int remove_dialog_from_db(struct dlg_cell * cell);
 int update_dialog_dbinfo(struct dlg_cell * cell);
+int update_dialog_timeout_info(struct dlg_cell * cell);
 void dialog_update_db(unsigned int ticks, void * param);
 
 void read_dialog_vars(char *b, int l, struct dlg_cell *dlg);

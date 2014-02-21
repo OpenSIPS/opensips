@@ -864,6 +864,55 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	return 0;
 }
 
+int update_dialog_timeout_info(struct dlg_cell * cell)
+{
+	static db_ps_t my_ps_update = NULL;
+	struct dlg_entry entry;
+	db_val_t values[2];
+
+	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = { 
+			&dlg_id_column,      &timeout_column};
+
+	if(use_dialog_table()!=0)
+		return -1;
+
+	if (!(cell->flags & DLG_FLAG_CHANGED))
+		return 0;
+
+	/* save only dialog's state and timeout */
+	VAL_TYPE(values) = DB_BIGINT;
+	VAL_TYPE(values+1) = DB_INT;
+
+	/* lock the entry */
+	entry = (d_table->entries)[cell->h_entry];
+	dlg_lock( d_table, &entry);
+
+	SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+				 cell->h_id));
+	SET_INT_VALUE(values+1, (unsigned int)( (unsigned int)time(0) +
+			 cell->tl.timeout - get_ticks()) );
+
+	CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
+
+	if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
+					(values), (insert_keys+1), (values+1), 1, 1)) !=0){
+		LM_ERR("could not update database timeout info\n");
+		goto error;
+	}
+
+	/* dialog saved */
+	run_dlg_callbacks( DLGCB_SAVED, cell, 0, DLG_DIR_NONE, 0);
+
+	cell->flags &= ~(DLG_FLAG_CHANGED);
+
+	dlg_unlock( d_table, &entry);
+	return 0;
+
+error:
+	dlg_unlock( d_table, &entry);
+	return -1;
+}
+
 int update_dialog_dbinfo(struct dlg_cell * cell)
 {
 	static db_ps_t my_ps_insert = NULL;
