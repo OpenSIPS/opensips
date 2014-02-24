@@ -95,14 +95,16 @@ struct rtpp_notify_head {
 
 /* parameter type for set_rtp_proxy_set() */
 
-#define NH_VAL_SET_FIXED              0
+#define NH_VAL_SET_FIXED            0
 #define NH_VAL_SET_SPEC             1
+#define NH_VAL_SET_UNDEF            2
 
 typedef struct rtpp_set_param{
         int t;
         union {
                 struct rtpp_set * fixed_set;
                 pv_spec_t var_set;
+                int int_set;
         } v;
 } nh_set_param_t;
 
