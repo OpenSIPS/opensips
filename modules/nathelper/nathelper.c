@@ -70,7 +70,6 @@
 #include "../../mod_fix.h"
 #include "../registrar/sip_msg.h"
 #include "../usrloc/usrloc.h"
-#include "nathelper.h"
 #include "sip_pinger.h"
 #include "../../parser/parse_content.h"
 
