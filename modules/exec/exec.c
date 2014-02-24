@@ -48,8 +48,10 @@
 #include "../../action.h"
 #include "../../usr_avp.h"
 #include "../../ut.h"
+#include "../../trim.h"
 
 #include "exec.h"
+#include "kill.h"
 
 #define SLEEP_INTERVAL		300
 
@@ -61,20 +63,27 @@ int exec_msg(struct sip_msg *msg, char *cmd )
 	FILE *pipe;
 	int exit_status;
 	int ret;
+	pid_t pid;
 
 	ret=-1; /* pessimist: assume error */
-	pipe=popen( cmd, "w" );
-	if (pipe==NULL) {
+	pid = __popen(cmd, "w", &pipe);
+	if (pid < 0) {
 		LM_ERR("cannot open pipe: %s\n", cmd);
 		ser_error=E_EXEC;
 		return -1;
 	}
+
+	LM_DBG("Forked pid %d\n", pid);
 
 	if (fwrite(msg->buf, 1, msg->len, pipe)!=msg->len) {
 		LM_ERR("failed to write to pipe\n");
 		ser_error=E_EXEC;
 		goto error01;
 	}
+
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	/* success */
 	ret=1;
 
@@ -84,7 +93,8 @@ error01:
 		ser_error=E_EXEC;
 		ret=-1;
 	}
-	exit_status=pclose(pipe);
+
+	pclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -94,57 +104,6 @@ error01:
 		ret=-1;
 	}
 	return ret;
-}
-
-#define MAX_EXEC_PARAMETERS 32
-static const char *exec_argv[MAX_EXEC_PARAMETERS];
-
-/* modifies the string in order to execute the command using exec */
-void exec_build_params(char *cmd)
-{
-	char q, *p = cmd, *end = cmd + strlen(cmd);
-	int i = 1;
-
-	exec_argv[0] = (const char *)cmd;
-	/* extract command */
-	while (p < end && (*p != ' '  || *(p-1) == '\''))
-		p++;
-
-	/* check if no parameters were specified */
-	if (p == end)
-		goto end;
-
-	do {
-		/* terminate previous cmd/param */
-		*p++ = '\0';
-		/* skip spaces */
-		while (p < end && *p == ' ')
-			p++;
-		if (p == end)
-			goto end;
-
-		/* quoted? */
-		if (*p == '\'') {
-			p++;
-			q = '\'';
-		} else {
-			q = ' ';
-		}
-
-		exec_argv[i] = (const char *)p;
-		if (i == MAX_EXEC_PARAMETERS) {
-			LM_WARN("Too may parameters: %d - ignoring ...\n", i);
-			goto end;
-		}
-		i++;
-		/* skip parameter */
-		while (p < end && (*p != q || *(p-1) == '\''))
-			p++;
-	} while (p < end);
-
-end:
-	LM_DBG("XXX: reseting parameter %d\n", i);
-	exec_argv[i] = NULL;
 }
 
 void exec_async_proc(int rank)
@@ -167,12 +126,11 @@ void exec_async_proc(int rank)
 			} else if (pid) {
 				exec_async_list->active_childs++;
 				cmd->pid = pid;
+				schedule_to_kill(pid);
 			} else {
 				LM_DBG("running command %s (%d)\n", cmd->cmd, getpid());
-				/* build the argv vector */
-				exec_build_params(cmd->cmd);
-				/* call command */
-				execv(cmd->cmd, (char * const *)exec_argv);
+				execl("/bin/sh", "/bin/sh", "-c", cmd->cmd, NULL);
+
 				LM_ERR("failed to run command\n");
 				exit(0);
 			}
@@ -260,10 +218,11 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 	int uri_cnt;
 	str uri;
 	int exit_status;
+	pid_t pid;
 
 	/* pessimist: assume error by default */
 	ret=-1;
-	
+
 	l1=strlen(cmd);
 	if(param_len>0)
 		cmd_len=l1+param_len+4;
@@ -288,27 +247,25 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 	} else {
 		cmd_line[l1] = 0;
 	}
-	
-	pipe=popen( cmd_line, "r" );
-	if (pipe==NULL) {
-		LM_ERR("cannot open pipe: %s\n", cmd_line);
+
+	pid = __popen(cmd_line, "r", &pipe);
+	if (pid < 0) {
+		LM_ERR("failed to run command: %s\n", cmd_line);
 		ser_error=E_EXEC;
 		goto error01;
 	}
 
+	LM_DBG("Forked pid %d\n", pid);
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	/* read now line by line */
 	uri_cnt=0;
-	while( fgets(uri_line, MAX_URI_SIZE, pipe)!=NULL){
+	while (fgets(uri_line, MAX_URI_SIZE, pipe)) {
 		uri.s = uri_line;
 		uri.len=strlen(uri.s);
-		/* trim from right */
-		while(uri.len && (uri.s[uri.len-1]=='\r' 
-				|| uri.s[uri.len-1]=='\n' 
-				|| uri.s[uri.len-1]=='\t'
-				|| uri.s[uri.len-1]==' ' )) {
-			LM_DBG("rtrim\n");
-			uri.len--;
-		}
+		trim_trailing(&uri);
+
 		/* skip empty line */
 		if (uri.len==0) continue;
 		/* ZT */
@@ -340,7 +297,8 @@ error02:
 		ser_error=E_EXEC;
 		ret=-1;
 	}
-	exit_status=pclose(pipe);
+
+	pclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -368,30 +326,30 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	int exit_status;
 	int i;
 	pvname_list_t* crt;
+	pid_t pid;
 
 	/* pessimist: assume error by default */
 	ret=-1;
-	
-	pipe=popen( cmd, "r" );
-	if (pipe==NULL) {
-		LM_ERR("cannot open pipe: %s\n", cmd);
+
+	pid = __popen(cmd, "r", &pipe);
+	if (pid < 0) {
+		LM_ERR("failed to run command: %s\n", cmd);
 		ser_error=E_EXEC;
 		return ret;
 	}
 
+	LM_DBG("Forked pid %d\n", pid);
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
 	/* read now line by line */
 	i=0;
 	crt = avpl;
-	while( fgets(res_line, MAX_URI_SIZE, pipe)!=NULL){
+	while (fgets(res_line, MAX_URI_SIZE, pipe)) {
 		res.s = res_line;
 		res.len=strlen(res.s);
-		/* trim from right */
-		while(res.len && (res.s[res.len-1]=='\r' 
-				|| res.s[res.len-1]=='\n' 
-				|| res.s[res.len-1]=='\t'
-				|| res.s[res.len-1]==' ' )) {
-			res.len--;
-		}
+		trim_trailing(&res);
+
 		/* skip empty line */
 		if (res.len==0) continue;
 		/* ZT */
@@ -443,7 +401,8 @@ error:
 		ser_error=E_EXEC;
 		ret=-1;
 	}
-	exit_status=pclose(pipe);
+
+	pclose(pipe);
 	if (WIFEXITED(exit_status)) { /* exited properly .... */
 		/* return false if script exited with non-zero status */
 		if (WEXITSTATUS(exit_status)!=0) ret=-1;
@@ -500,18 +459,16 @@ int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 
 	avp_type |= AVP_VAL_STR;
 	avp_val.s = res;
-	
+
 	if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 	{
 		LM_ERR("unable to add avp\n");
 		goto error;
 	}
-	
+
 	/* success */
 	ret=1;
 
 error:
 	return ret;
 }
-
-

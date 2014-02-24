@@ -120,7 +120,8 @@ void exec_shutdown(void)
 static int mod_init( void )
 {
 	LM_INFO("exec - initializing\n");
-	if (time_to_kill) initialize_kill();
+	if (time_to_kill)
+		initialize_kill();
 
 	if (async) {
 		/* init exeternal structure if async enabled */

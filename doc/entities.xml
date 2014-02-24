@@ -45,6 +45,7 @@
 <!ENTITY rtp "<acronym>RTP</acronym>">
 <!ENTITY pstn "<acronym>PSTN</acronym>">
 <!ENTITY http "<acronym>HTTP</acronym>">
+<!ENTITY ruri "<acronym>R-URI</acronym>">
 <!ENTITY uri "<acronym>URI</acronym>">
 <!ENTITY url "<acronym>URL</acronym>">
 <!ENTITY uac "<acronym>UAC</acronym>">

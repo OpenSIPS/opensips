@@ -7,11 +7,11 @@
 	<section>
 	<title>Overview</title>
 	<para>
-		Exec module allows to start an external command from a &osips; script. 
-		The commands may be any valid shell commands--the command string is 
-		passed to shell using <quote>popen</quote> command. &osips; passes 
-		additionally lot of information about request in environment
-		variables:
+		The Exec module enables the execution of external commands from the
+		&osips; script. Any valid shell commands are accepted. The final input
+		string is evaluated and executed using the "/bin/sh" symlink/binary.
+		&osips; may additionally pass a lot more information about the request
+		using environment variables:
 	</para>
 	<itemizedlist>
 		<listitem>
@@ -64,10 +64,10 @@
 		</listitem>
 	</itemizedlist>
 	<para>
-		NOTE: The envirnment variables must be specified with double $
-		(e.g., $$SIP_OUSER) in the parameters given to exec functions.
-		Otherwise they will be evaluated as &osips; pseudo-variables,
-		throwing errors.
+		NOTE: Any environment variables which are given to the exec module
+		functions must be specified using the '$$' delimiter (e.g., $$SIP_OUSER),
+		otherwise they will be evaluated as &osips; pseudo-variables,
+		throwing scripting errors.
 	</para>
 	</section>
 
@@ -123,17 +123,17 @@ modparam("exec", "setvars", 1)
 </programlisting>
 		</example>
 	</section>
-	<section>
+	<section id='time_to_kill' xreflabel='time_to_kill'>
 		<title>
 			<varname>time_to_kill</varname> (integer)
 		</title>
 		<para>
-		Specifies the longest time a program is allowed to execute. If the 
+		Specifies the longest time a program is allowed to execute. If the
 		time is exceeded, the program is killed.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0.
+			Default value is 0 (disabled).
 		</emphasis>
 		</para>
 		<example>
@@ -148,13 +148,13 @@ modparam("exec", "time_to_kill", 20)
 	<section>
 		<title><varname>async</varname> (integer)</title>
 		<para>
-		Turns on the asynchronous mode for 'exec_msg' function. All commands
+		Turns on the asynchronous mode for the 'exec_msg' function. All commands
 		will be executed by a different process and the caller will continue
-		it's flow, without waiting for a response.
+		its flow, without waiting for a response.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0.
+			Default value is 0 (disabled).
 		</emphasis>
 		</para>
 		<example>
@@ -175,22 +175,24 @@ modparam("exec", "async", 1)
 		<function moreinfo="none">exec_dset(command)</function>
 		</title>
 		<para>
-		Executes an external command. Current &uri; is passed to the command 
-		as parameter. Output of the command is considered &uri; set 
-		(separated by lines).
+		Executes an external command. The current &ruri; is appended to the command
+		as its last parameter. The output of the command will rewrite the current R-URI.
+		Multiple lines of output lead to multiple branches.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>command</emphasis> - Command to be executed. It can
-			include pseudo- variabes;
+			<para><emphasis>command (string, pvar)</emphasis> - command to be
+			executed. It can include pseudo-variables or '$$' delimited UNIX
+			environment variables
 			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-		WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_dset("print-contact.sh '$ct'");
+		WARNING: most OpenSIPS scripting variables should be quoted before being
+		passed to external commands, as in: exec_avp("log-call.sh '$ct'").
+		This may help avoid some unexpected behaviour
+		(e.g. unwanted extra parameters, errors due to special bash characters, etc.)
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -199,8 +201,8 @@ modparam("exec", "async", 1)
 		<title><function moreinfo="none">exec_dset</function> usage</title>
 		<programlisting format="linespecific">
 ...
-exec_dset("echo TEST > /tmp/test.txt");
-exec_dset("echo TEST > /tmp/$rU.txt");
+exec_dset("ruri-changer.sh");
+exec_dset("ruri-changer.sh '$ct'");
 ...
 </programlisting>
 		</example>
@@ -210,9 +212,9 @@ exec_dset("echo TEST > /tmp/$rU.txt");
 		<function moreinfo="none">exec_msg(command)</function>
 		</title>
 		<para>
-		Executes an external command. The whole message is passed to it in 
-		input, no command-line parameters are added, output of the command is 
-		not processed.
+		Executes an external command. The current SIP message is passed to it in
+		the standard input, no command-line parameters are added and the output
+		of the command is ignored.
 		</para>
 		<para>
 		See sip-server/modules/exec/etc/exec.cfg in the source tarball for 
@@ -221,15 +223,17 @@ exec_dset("echo TEST > /tmp/$rU.txt");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>command</emphasis> - Command to be executed. It
-			can include pseudo-variables.
+			<para><emphasis>command (string)</emphasis> - command to be executed. It
+			can include pseudo-variables or '$$' delimited UNIX
+			environment variables
 			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-		WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_msg("print-contact.sh '$ct'");
+		WARNING: most OpenSIPS scripting variables should be quoted before being
+		passed to external commands, as in: exec_avp("log-call.sh '$ct'").
+		This may help avoid some unexpected behaviour
+		(e.g. unwanted extra parameters, errors due to special bash characters, etc.)
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -238,48 +242,50 @@ exec_dset("echo TEST > /tmp/$rU.txt");
 		<title><function moreinfo="none">exec_msg</function> usage</title>
 		<programlisting format="linespecific">
 ...
-exec_msg("echo TEST > /tmp/test.txt");
-exec_msg("echo TEST > /tmp/$rU.txt");
+exec_msg("call-logger.sh '$ct' > /var/log/call-logger/'$rU'.calls");
 ...
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">exec_avp(command [, avplist])</function>
+		<function moreinfo="none">exec_avp(command[, avplist])</function>
 		</title>
 		<para>
-		Executes an external command. Each line from output of the command
-		is saved in an AVP from 'avplist'. If 'avplist' is missing, the
-		AVP are named 1, 2, 3, ...
+		Executes an external command. Each output line of the command
+		is saved in its corresponding AVP from <emphasis>avplist</emphasis>.
+		If <emphasis>avplist</emphasis> is missing or is incomplete, the
+		populated AVPs will be 1, 2, 3... or N, N+1, N+2...
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>command</emphasis> - Command to be executed. It can
-			include pseudo- variabes;
+			<para><emphasis>command (string)</emphasis> - command to be
+			executed. It can include pseudo-variables or '$$' delimited UNIX
+			environment variables
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>avplist</emphasis> - comma separated list with AVP 
-			names to store the result in;
+			<para><emphasis>avplist (string)</emphasis> - comma separated list with AVP
+			names to store the result in
 			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-		WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_avp("print-contact.sh '$ct'");
+		WARNING: most OpenSIPS scripting variables should be quoted before being
+		passed to external commands, as in: exec_avp("log-call.sh '$ct'").
+		This may help avoid some unexpected behaviour
+		(e.g. unwanted extra parameters, errors due to special bash characters, etc.)
 		</para>
 		<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, STARTUP_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">exec_avp</function> usage</title>
 		<programlisting format="linespecific">
 ...
-exec_avp("echo TEST");
-exec_avp("echo TEST", "$avp(test)");
+exec_avp("get-subscriber-details.sh '$rU'", "$avp(credit) $avp(contract_model)");
 ...
 </programlisting>
 		</example>
@@ -287,40 +293,39 @@ exec_avp("echo TEST", "$avp(test)");
 
 	<section>
 		<title>
-		<function moreinfo="none">exec_getenv(environment_variable [, avp])</function>
+		<function moreinfo="none">exec_getenv(environment_variable[, avp])</function>
 		</title>
 		<para>
-		Get the value of an evironment_variable. The value is saved 
-		in 'avp'. If 'avp' is missing, the AVP is named 1. If there
-		is no such environment variable no value is returned.
+		Obtains the value of a UNIX evironment_variable. The value is saved
+		in 'avp'. If 'avp' is missing, output will be stored in $avp(1). If there
+		is no such environment variable no value will be returned.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>environment_variable</emphasis> - Environent 
-			variable name. It can include pseudo- variabes;
+			<para><emphasis>environment_variable (string)</emphasis> -
+				environent variable name. Can also be specified as a pseudo-variable
 		</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>avp</emphasis> - an AVP names to store the 
-			result in;
+			<para><emphasis>avp</emphasis> - an AVP to store the  result in
 			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-		WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_getenv("'$ct'");
+		WARNING: any OpenSIPS pseudo-vars which may contain special bash
+		characters should be placed inside quotes, e.g. exec_getenv("'$ct'");
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, STARTUP_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">exec_getenv</function> usage</title>
 		<programlisting format="linespecific">
 ...
 exec_getenv("HOSTNAME");
-exec_getenv("HOSTNAME", "$avp(test)");
+exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 </programlisting>
 		</example>
@@ -333,9 +338,12 @@ exec_getenv("HOSTNAME", "$avp(test)");
 	<section>
 	<title>Known Issues</title>
 	<para>
-		There is currently no guarantee that scripts ever return and stop 
-		blocking &sip; server. (There is kill.c but it is not used along with 
-		the current mechanisms based on popen. Besides that kill.c is ugly).
+		When imposing an execution timeout using
+		<emphasis role='bold'><xref linkend="time_to_kill"/></emphasis>,
+		make sure your "/bin/sh" is a shell which does not fork when executed,
+		case in which the job itself will not be killed, but rather its parent shell,
+		while the job is silently inherited by "init" and will continue to run.
+		"/bin/dash" is one of these troublesome shell environments.
 	</para>
 	</section>
 </chapter>
