@@ -490,22 +490,61 @@ static void destroy(void)
  */
 static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 {
-	int a, s;
-	
+	int i_algo, i_set;
+	unsigned int algo_flags, set_flags;
+	str s_algo = {NULL, 0};
+	str s_set = {NULL, 0};
+
 	if(msg==NULL)
 		return -1;
-	if(fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+
+	/* Retrieve dispatcher set */
+	if(fixup_get_isvalue(msg, (gparam_p)set, &i_set, &s_set, &set_flags)!=0)
 	{
 		LM_ERR("no dst set value\n");
 		return -1;
 	}
-	if(fixup_get_ivalue(msg, (gparam_p)alg, &a)!=0)
+	if(!(set_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(set_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_set, &i_set)!=0)
+			{
+				LM_ERR("Unable to get set from [%.*s]\n", s_set.len, s_set.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected set flags [%ud]\n", set_flags);
+			return -1;
+		}
+	}
+
+	/* Retrieve dispatcher algorithm */
+	if(fixup_get_isvalue(msg, (gparam_p)alg, &i_algo, &s_algo, &algo_flags)!=0)
 	{
 		LM_ERR("no alg value\n");
 		return -1;
 	}
+	if(!(algo_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(algo_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_algo, &i_algo)!=0)
+			{
+				LM_ERR("Unable to get algo from [%.*s]\n", s_algo.len, s_algo.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected algo flags [%u]\n", algo_flags);
+			return -1;
+		}
+	}
 
-	return ds_select_dst(msg, s, a, 0 /*set dst uri*/, 1000);
+	return ds_select_dst(msg, i_set, i_algo, 0 /*set dst uri*/, 1000);
 }
 
 
@@ -514,27 +553,85 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
  */
 static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
-	int a, s, m;
+	int i_algo, i_set, i_max;
+	unsigned int algo_flags, set_flags, max_flags;
+	str s_algo = {NULL, 0};
+	str s_set = {NULL, 0};
+	str s_max = {NULL, 0};
 
 	if(msg==NULL)
 		return -1;
-	if(fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+
+	/* Retrieve dispatcher set */
+	if(fixup_get_isvalue(msg, (gparam_p)set, &i_set, &s_set, &set_flags)!=0)
 	{
 		LM_ERR("no dst set value\n");
 		return -1;
 	}
-	if(fixup_get_ivalue(msg, (gparam_p)alg, &a)!=0)
+	if(!(set_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(set_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_set, &i_set)!=0)
+			{
+				LM_ERR("Unable to get set from [%.*s]\n", s_set.len, s_set.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected set flags [%u]\n", set_flags);
+			return -1;
+		}
+	}
+
+	/* Retrieve dispatcher algorithm */
+	if(fixup_get_isvalue(msg, (gparam_p)alg, &i_algo, &s_algo, &algo_flags)!=0)
 	{
 		LM_ERR("no alg value\n");
 		return -1;
 	}
-	if(fixup_get_ivalue(msg, (gparam_p)max_results, &m)!=0)
+	if(!(algo_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(algo_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_algo, &i_algo)!=0)
+			{
+				LM_ERR("Unable to get algo from [%.*s]\n", s_algo.len, s_algo.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected algo flags [%u]\n", algo_flags);
+			return -1;
+		}
+	}
+
+	/* Retrieve dispatcher max results */
+	if(fixup_get_isvalue(msg, (gparam_p)max_results, &i_max, &s_max, &max_flags)!=0)
 	{
 		LM_ERR("no max results value\n");
 		return -1;
 	}
+	if(!(max_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(max_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_max, &i_max)!=0)
+			{
+				LM_ERR("Unable to get max results from [%.*s]\n", s_max.len, s_max.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected max results flags [%u]\n", max_flags);
+			return -1;
+		}
+	}
 
-	return ds_select_dst(msg, s, a, 0 /*set dst uri*/, m);
+	return ds_select_dst(msg, i_set, i_algo, 0 /*set dst uri*/, i_max);
 }
 
 
@@ -543,22 +640,61 @@ static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, ch
  */
 static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 {
-	int a, s;
+	int i_algo, i_set;
+	unsigned int algo_flags, set_flags;
+	str s_algo = {NULL, 0};
+	str s_set = {NULL, 0};
+
 	if(msg==NULL)
 		return -1;
 
-	if(fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+	/* Retrieve dispatcher set */
+	if(fixup_get_isvalue(msg, (gparam_p)set, &i_set, &s_set, &set_flags)!=0)
 	{
 		LM_ERR("no dst set value\n");
 		return -1;
 	}
-	if(fixup_get_ivalue(msg, (gparam_p)alg, &a)!=0)
+	if(!(set_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(set_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_set, &i_set)!=0)
+			{
+				LM_ERR("Unable to get set from [%.*s]\n", s_set.len, s_set.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected set flags [%ud]\n", set_flags);
+			return -1;
+		}
+	}
+
+	/* Retrieve dispatcher algorithm */
+	if(fixup_get_isvalue(msg, (gparam_p)alg, &i_algo, &s_algo, &algo_flags)!=0)
 	{
 		LM_ERR("no alg value\n");
 		return -1;
 	}
+	if(!(algo_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(algo_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_algo, &i_algo)!=0)
+			{
+				LM_ERR("Unable to get algo from [%.*s]\n", s_algo.len, s_algo.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected algo flags [%u]\n", algo_flags);
+			return -1;
+		}
+	}
 
-	return ds_select_dst(msg, s, a, 1/*set host port*/, 1000);
+	return ds_select_dst(msg, i_set, i_algo, 1/*set host port*/, 1000);
 }
 
 
@@ -567,27 +703,85 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
  */
 static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
-	int a, s, m;
+	int i_algo, i_set, i_max;
+	unsigned int algo_flags, set_flags, max_flags;
+	str s_algo = {NULL, 0};
+	str s_set = {NULL, 0};
+	str s_max = {NULL, 0};
+
 	if(msg==NULL)
 		return -1;
 
-	if(fixup_get_ivalue(msg, (gparam_p)set, &s)!=0)
+	/* Retrieve dispatcher set */
+	if(fixup_get_isvalue(msg, (gparam_p)set, &i_set, &s_set, &set_flags)!=0)
 	{
 		LM_ERR("no dst set value\n");
 		return -1;
 	}
-	if(fixup_get_ivalue(msg, (gparam_p)alg, &a)!=0)
+	if(!(set_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(set_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_set, &i_set)!=0)
+			{
+				LM_ERR("Unable to get set from [%.*s]\n", s_set.len, s_set.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected set flags [%u]\n", set_flags);
+			return -1;
+		}
+	}
+
+	/* Retrieve dispatcher algorithm */
+	if(fixup_get_isvalue(msg, (gparam_p)alg, &i_algo, &s_algo, &algo_flags)!=0)
 	{
 		LM_ERR("no alg value\n");
 		return -1;
 	}
-	if(fixup_get_ivalue(msg, (gparam_p)max_results, &m)!=0)
+	if(!(algo_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(algo_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_algo, &i_algo)!=0)
+			{
+				LM_ERR("Unable to get algo from [%.*s]\n", s_algo.len, s_algo.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected algo flags [%u]\n", algo_flags);
+			return -1;
+		}
+	}
+
+	/* Retrieve dispatcher max results */
+	if(fixup_get_isvalue(msg, (gparam_p)max_results, &i_max, &s_max, &max_flags)!=0)
 	{
 		LM_ERR("no max results value\n");
 		return -1;
 	}
+	if(!(max_flags&GPARAM_INT_VALUE_FLAG))
+	{
+		if(max_flags&GPARAM_STR_VALUE_FLAG)
+		{
+			if(str2sint(&s_max, &i_max)!=0)
+			{
+				LM_ERR("Unable to get max results from [%.*s]\n", s_max.len, s_max.s);
+				return -1;
+			}
+		}
+		else
+		{
+			LM_ERR("unexpected max results flags [%u]\n", max_flags);
+			return -1;
+		}
+	}
 
-	return ds_select_dst(msg, s, a, 1/*set host port*/, m);
+	return ds_select_dst(msg, i_set, i_algo, 1/*set host port*/, i_max);
 }
 
 
