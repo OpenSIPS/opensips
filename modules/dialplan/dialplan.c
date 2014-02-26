@@ -295,13 +295,15 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 	/* we are done reading -> unref the data */
 	lock_stop_read( table->ref_lock );
 
-	pval.flags = PV_VAL_STR;
-	pval.rs = attrs;
+	if (attr_spec) {
+		pval.flags = PV_VAL_STR;
+		pval.rs = attrs;
 
-	if (pv_set_value(msg, (pv_spec_p)attr_spec, 0, &pval) != 0) {
-		LM_ERR("failed to set value '%.*s' for the attr pvar!\n",
-		        attrs.len, attrs.s);
-		goto error;
+		if (pv_set_value(msg, (pv_spec_p)attr_spec, 0, &pval) != 0) {
+			LM_ERR("failed to set value '%.*s' for the attr pvar!\n",
+			        attrs.len, attrs.s);
+			goto error;
+		}
 	}
 
 	return 1;
