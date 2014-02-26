@@ -1069,7 +1069,7 @@ int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp)
 	struct hostent delete_he, *he;
 	urecord_t *record;
 	ucontact_t *contact, *it;
-	str uri, aor_user, delete_user;
+	str uri, aor_user, delete_user = { NULL, 0 };
 	int err, count = 0;
 	int delete_by_hostname = 0;
 	unsigned short delete_port;
