@@ -219,7 +219,7 @@
 
 	<section>
 	<title>Exported Parameters</title>
-	<section>
+	<section id='fr_timer' xreflabel='fr_timer'>
 		<title><varname>fr_timer</varname> (integer)</title>
 		<para>
 		Timer which hits if no final reply for a request or ACK for a 
@@ -240,7 +240,7 @@ modparam("tm", "fr_timer", 10)
 		</example>
 	</section>
 
-	<section>
+	<section id='fr_inv_timer' xreflabel='fr_inv_timer'>
 		<title><varname>fr_inv_timer</varname> (integer)</title>
 		<para>
 		Timer which hits if no final reply for an INVITE arrives after a 
@@ -441,58 +441,6 @@ modparam("tm", "unix_tx_timeout", 5)
 		<programlisting format="linespecific">
 ...
 modparam("tm", "restart_fr_on_each_reply", 0)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>fr_timer_avp</varname> (string)</title>
-		<para>
-		Full specification (NAME, ID, Alias) of an AVP which contains a final
-		response timeout value. If present, ths value will override the 
-		static fr_timer parameter.
-		</para>
-		<para>
-		If set to empty string, the whole mechanism for variable timeout will
-		be disabled, falling back to the static value.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (feature disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>fr_timer_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>fr_inv_timer_avp</varname> (string)</title>
-		<para>
-		Full specification (NAME, ID, Alias) of an AVP which contains a final
-		INVITE response timeout value. If present, ths value will overeide the 
-		static fr_inv_timer parameter.
-		</para>
-		<para>
-		If set to empty string, the whole mechanism for variable timeout will
-		be disabled, falling back to the static value.
-		</para>
-		<para>
-		<emphasis>
-			Default value is "NULL" (feature disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>fr_inv_timer_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
 ...
 </programlisting>
 		</example>
@@ -1501,10 +1449,31 @@ branch_route[1] {
 			</para>
 		</section>
 		<section>
+		<title>$T_fr_timer</title>
+			<para>
+			<emphasis>$T_fr_timer (R/W)</emphasis> - the timeout
+			for the final reply to the current transaction; with each different
+			request received, <emphasis>$T_fr_timer</emphasis> will initially
+			be equal to the
+			<emphasis role='bold'><xref linkend="fr_timer"/></emphasis> parameter.
+			</para>
+		</section>
+		<section>
+		<title>$T_fr_inv_timer</title>
+			<para>
+			<emphasis>$T_fr_inv_timer (R/W)</emphasis> - the timeout
+			for the final reply to an INVITE request, after a 1XX reply
+			was received; with each different request received,
+			<emphasis>$T_fr_inv_timer</emphasis> will initially be equal to the
+			<emphasis role='bold'>
+			<xref linkend="fr_inv_timer"/></emphasis> parameter.
+			</para>
+		</section>
+		<section>
 		<title>$T_ruri</title>
 			<para>
 			<emphasis>$T_ruri</emphasis> - the ruri of the current branch; this
-			information is taken from the transaction structure, so you can 
+			information is taken from the transaction structure, so you can
 			access this information for any sip message (request/reply) that
 			has a transaction.
 			</para>

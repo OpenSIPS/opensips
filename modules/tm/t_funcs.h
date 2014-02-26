@@ -51,17 +51,19 @@
 #include "../../parser/parse_uri.h"
 #include "../../usr_avp.h"
 
+struct s_table;
+struct timer;
+struct entry;
+struct cell;
+struct retr_buf;
+
+#include "t_lookup.h"
 #include "config.h"
 #include "lock.h"
 #include "timer.h"
 #include "sip_msg.h"
 #include "h_table.h"
 #include "ut.h"
-
-struct s_table;
-struct timer;
-struct entry;
-struct cell;
 
 extern int noisy_ctimer;
 
@@ -119,52 +121,11 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len);
 #define INIT_REF_UNSAFE(_T_cell) ((_T_cell)->ref_count=1)
 #define IS_REFFED_UNSAFE(_T_cell) ((_T_cell)->ref_count!=0)
 
-/*
- * Parse and fixup the fr_*_timer AVP specs
- */
-int init_avp_params(char *fr_timer_param, char *fr_inv_timer_param);
-
-
-/*
- * Get the FR_{INV}_TIMER from corresponding AVP
- */
-int fr_avp2timer( utime_t* timer);
-int fr_inv_avp2timer( utime_t* timer);
-
-
-
-inline static void _set_fr_retr( struct retr_buf *rb, int retr )
-{
-	utime_t timer;
-
-	if (retr && !rb->retr_timer.deleted) {
-		rb->retr_list=RT_T1_TO_1;
-		set_timer( &rb->retr_timer, RT_T1_TO_1, 0 );
-	}
-
-	if (!fr_avp2timer(&timer)) {
-		LM_DBG("FR_TIMER = %llu\n", timer);
-		set_1timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
-	} else {
-		set_1timer(&rb->fr_timer, FR_TIMER_LIST, 0);
-	}
-}
-
-
-inline static void start_retr(struct retr_buf *rb)
-{
-	_set_fr_retr(rb, rb->dst.proto==PROTO_UDP);
-}
-
-
-inline static void force_retr(struct retr_buf *rb)
-{
-	_set_fr_retr(rb, 1);
-}
-
+inline void set_fr_retr(struct retr_buf *rb, int retr );
+inline void start_retr(struct retr_buf *rb);
+inline void force_retr(struct retr_buf *rb);
 
 void tm_shutdown();
-
 
 /* function returns:
  *       1 - a new transaction was created

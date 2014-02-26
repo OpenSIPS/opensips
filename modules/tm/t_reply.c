@@ -1572,13 +1572,9 @@ int reply_received( struct sip_msg  *p_msg )
 			 * attempt to restart retransmission any more
 			 */
 			backup_list = set_avp_list(&t->user_avps);
-			if (!fr_inv_avp2timer(&timer)) {
-				LM_DBG("FR_INV_TIMER = %lld\n", timer);
-				set_timer(&uac->request.fr_timer,
-					FR_INV_TIMER_LIST, &timer);
-			} else {
-				set_timer(& uac->request.fr_timer, FR_INV_TIMER_LIST, 0);
-			}
+			timer = t->fr_inv_timeout;
+			LM_DBG("FR_INV_TIMER = %lld\n", timer);
+			set_timer(&uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
 			set_avp_list(backup_list);
 		} else {
 			/* non-invite: restart retransmissions (slow now) */

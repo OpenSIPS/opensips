@@ -55,14 +55,7 @@
 #include "t_lookup.h"
 #include "config.h"
 
-/* fr_timer AVP specs */
-static int     fr_timer_avp_type;
-static int     fr_timer_avp;
-static int     fr_inv_timer_avp_type;
-static int     fr_inv_timer_avp;
-
 static str relay_reason_100 = str_init("Giving a try");
-
 
 
 /* ----------------------------------------------------- */
@@ -269,101 +262,33 @@ done:
 	return ret;
 }
 
-
-
-/*
- * Initialize parameters containing the ID of
- * AVPs with variable timers
- */
-int init_avp_params(char *fr_timer_param, char *fr_inv_timer_param)
+inline void _set_fr_retr( struct retr_buf *rb, int retr )
 {
-	pv_spec_t avp_spec;
-	unsigned short avp_flags;
-	str s;
-	if (fr_timer_param && *fr_timer_param) {
-		s.s = fr_timer_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n", fr_timer_param);
-			return -1;
-		}
+	utime_t timer;
+	struct cell *t;
 
-		if(pv_get_avp_name(0, &avp_spec.pvp, &fr_timer_avp, &avp_flags)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", fr_timer_param);
-			return -1;
-		}
-		fr_timer_avp_type = avp_flags;
-	} else {
-		fr_timer_avp = -1;
-		fr_timer_avp_type = 0;
+	if (retr && !rb->retr_timer.deleted) {
+		rb->retr_list=RT_T1_TO_1;
+		set_timer( &rb->retr_timer, RT_T1_TO_1, NULL );
 	}
 
-	if (fr_inv_timer_param && *fr_inv_timer_param) {
-		s.s = fr_inv_timer_param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &avp_spec)==0
-				|| avp_spec.type!=PVT_AVP) {
-			LM_ERR("malformed or non AVP %s AVP definition\n",
-					fr_inv_timer_param);
-			return -1;
-		}
-
-		if(pv_get_avp_name(0, &avp_spec.pvp, &fr_inv_timer_avp, &avp_flags)!=0)
-		{
-			LM_ERR("[%s]- invalid AVP definition\n", fr_inv_timer_param);
-			return -1;
-		}
-		fr_inv_timer_avp_type = avp_flags;
-	} else {
-		fr_inv_timer_avp = -1;
-		fr_inv_timer_avp_type = 0;
+	t = get_t();
+	if (!t || t == T_UNDEFINED)
+		set_1timer(&rb->fr_timer, FR_TIMER_LIST, NULL);
+	else {
+		timer = t->fr_timeout;
+		set_1timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
 	}
-	return 0;
 }
 
 
-/*
- * Get the FR_{INV}_TIMER from corresponding AVP
- */
-static inline int avp2timer(utime_t *timer, int type, int name)
+inline void start_retr(struct retr_buf *rb)
 {
-	struct usr_avp *avp;
-	int_str val_istr;
-	int err;
-
-	avp = search_first_avp( type, name, &val_istr, 0);
-	if (!avp)
-		return 1;
-
-	if (avp->flags & AVP_VAL_STR) {
-		*timer = str2s(val_istr.s.s, val_istr.s.len, &err);
-		if (err) {
-			LM_ERR("failed to convert string to integer\n");
-			return -1;
-		}
-	} else {
-		*timer = val_istr.n;
-	}
-
-	return 0;
+	_set_fr_retr(rb, rb->dst.proto==PROTO_UDP);
 }
 
 
-int fr_avp2timer(utime_t* timer)
+inline void force_retr(struct retr_buf *rb)
 {
-	if (fr_timer_avp>=0)
-		return avp2timer( timer, fr_timer_avp_type, fr_timer_avp);
-	else
-		return 1;
+	_set_fr_retr(rb, 1);
 }
-
-
-int fr_inv_avp2timer(utime_t* timer)
-{
-	if (fr_inv_timer_avp>=0)
-		return avp2timer( timer, fr_inv_timer_avp_type, fr_inv_timer_avp);
-	else
-		return 1;
-}
-
-

@@ -125,9 +125,9 @@ int t_cancel_trans(struct cell *t, str *hdrs);
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
 
-/* strings with avp definition */
-static char *fr_timer_param = NULL;
-static char *fr_inv_timer_param = NULL;
+/* these values are used when the transaction has not been defined yet */
+int fr_timeout;
+int fr_inv_timeout;
 
 #define TM_CANCEL_BRANCH_ALL    (1<<0)
 #define TM_CANCEL_BRANCH_OTHERS (1<<1)
@@ -140,8 +140,12 @@ static char *fr_inv_timer_param = NULL;
 static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
 
 
-int pv_get_tm_branch_avp(struct sip_msg*,  pv_param_t*, pv_value_t*);
-int pv_set_tm_branch_avp(struct sip_msg*,  pv_param_t*, int, pv_value_t*);
+int pv_get_tm_branch_avp(struct sip_msg*, pv_param_t*, pv_value_t*);
+int pv_set_tm_branch_avp(struct sip_msg*, pv_param_t*, int, pv_value_t*);
+int pv_get_tm_fr_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
+int pv_set_tm_fr_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
+int pv_get_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
+int pv_set_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
 struct usr_avp** get_bavp_list(void);
 
 
@@ -233,10 +237,6 @@ static param_export_t params[]={
 		&tm_unix_tx_timeout},
 	{"restart_fr_on_each_reply",  INT_PARAM,
 		&restart_fr_on_each_reply},
-	{"fr_timer_avp",              STR_PARAM,
-		&fr_timer_param},
-	{"fr_inv_timer_avp",          STR_PARAM,
-		&fr_inv_timer_param},
 	{"tw_append",                 STR_PARAM|USE_FUNC_PARAM,
 		(void*)parse_tw_append },
 	{ "enable_stats",             INT_PARAM,
@@ -287,6 +287,10 @@ static pv_export_t mod_items[] = {
 		 0, 0, 0, 0 },
 	{ {"bavp",         sizeof("bavp")-1},         903, pv_get_tm_branch_avp,
 		pv_set_tm_branch_avp, pv_parse_avp_name, pv_parse_index, 0, 0 },
+	{ {"T_fr_timer", sizeof("T_fr_timer")-1}, 904, pv_get_tm_fr_timeout,
+		pv_set_tm_fr_timeout, 0, 0, 0, 0 },
+	{ {"T_fr_inv_timer", sizeof("T_fr_inv_timer")-1}, 905,
+		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout, 0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -651,8 +655,12 @@ static int script_init( struct sip_msg *foo, void *bar)
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
-	/* reset the kr status */
+	fr_timeout = timer_id2timeout[FR_TIMER_LIST];
+	fr_inv_timeout = timer_id2timeout[FR_INV_TIMER_LIST];
+
+	/* reset the kill reason status */
 	reset_kr();
+
 	/* reset the static holders for T routes */
 	t_on_negative( 0 );
 	t_on_reply(0);
@@ -768,10 +776,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ( init_avp_params( fr_timer_param, fr_inv_timer_param)<0 ){
-		LM_ERR("ERROR:tm:mod_init: failed to process timer AVPs\n");
-		return -1;
-	}
 	if(register_pv_context("request", tm_pv_context_request)< 0)
 	{
 		LM_ERR("Failed to register pv contexts\n");
@@ -1668,4 +1672,80 @@ struct usr_avp** get_bavp_list(void)
 
 	/* setting the avp head */
 	return &t->uac[_tm_branch_index].user_avps;
+}
+
+int pv_get_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param,
+                         pv_value_t *ret)
+{
+	struct cell *t;
+
+	if (!msg || !ret)
+		return -1;
+
+	t = get_t();
+
+	ret->flags = PV_VAL_INT;
+	ret->ri = (t && t != T_UNDEFINED) ? t->fr_timeout : fr_timeout;
+
+	return 0;
+}
+
+int pv_set_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param, int op,
+                         pv_value_t *val)
+{
+	struct cell *t;
+
+	if (!msg || !val)
+		return -1;
+
+	if (!(val->flags & PV_VAL_INT)) {
+		LM_ERR("assigning non-int value as a timeout\n");
+		return -1;
+	}
+
+	t = get_t();
+	if (t && t != T_UNDEFINED)
+		t->fr_timeout = val->ri;
+	else
+		fr_timeout = val->ri;
+
+	return 0;
+}
+
+int pv_get_tm_fr_inv_timeout(struct sip_msg *msg,
+                             pv_param_t *param, pv_value_t *ret)
+{
+	struct cell *t;
+
+	if (!msg || !ret)
+		return -1;
+
+	t = get_t();
+
+	ret->flags = PV_VAL_INT;
+	ret->ri = (t && t != T_UNDEFINED) ? t->fr_inv_timeout : fr_inv_timeout;
+
+	return 0;
+}
+
+int pv_set_tm_fr_inv_timeout(struct sip_msg *msg, pv_param_t *param,
+                             int op, pv_value_t *val)
+{
+	struct cell *t;
+
+	if (!msg || !val)
+		return -1;
+
+	if (!(val->flags & PV_VAL_INT)) {
+		LM_ERR("assigning non-int value as a timeout\n");
+		return -1;
+	}
+
+	t = get_t();
+	if (t && t != T_UNDEFINED)
+		t->fr_inv_timeout = val->ri;
+	else
+		fr_inv_timeout = val->ri;
+
+	return 0;
 }

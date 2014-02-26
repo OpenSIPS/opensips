@@ -273,6 +273,9 @@ typedef struct cell
 	/* the branch_route to be processed separately for each branch */
 	unsigned int on_branch;
 
+	int fr_timeout;     /* final reply timeout (sec) */
+	int fr_inv_timeout; /* final reply timeout for an INVITE, after 1XX (sec) */
+
 	/* MD5checksum  (meaningful only if syn_branch=0) */
 	char md5[MD5_LEN];
 
@@ -353,6 +356,8 @@ struct s_table
 
 
 extern int syn_branch;
+extern int fr_timeout;
+extern int fr_inv_timeout;
 
 
 void reset_kr();

@@ -304,6 +304,8 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 
 	/* UAC */
 	init_branches(new_cell);
+	new_cell->fr_timeout = fr_timeout;
+	new_cell->fr_inv_timeout = fr_inv_timeout;
 
 	new_cell->relaied_reply_branch   = -1;
 	/* new_cell->T_canceled = T_UNDEFINED; */
