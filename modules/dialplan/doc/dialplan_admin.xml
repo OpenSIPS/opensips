@@ -502,37 +502,14 @@ modparam("dialplan", "disabled_col", "disabled_column")
 		</example>
 	</section>
 
-
-	<section>
-		<title><varname>attrs_pvar</varname> (string)</title>
-		<para>
-		The pvar to store the rule's attributes, after translation (dp_translate() succeeds).
-		This parameter can be any PVAR that can be written.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>attrs_pvar</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialplan", "attrs_pvar", "$avp(dest)")
-...
-		</programlisting>
-		</example>
 	</section>
-
-	</section>
-
 
 	<section>
 	<title>Exported Functions</title>
 	
 	<section>
 	<title>
-		<function moreinfo="none">dp_translate([table/]id, src/dest)</function>
+		<function moreinfo="none">dp_translate([table/]id, src/dest[, attrs_pvar])</function>
 	</title>
 	<para>
 	Will try to translate the src string into dest string according to 
@@ -556,6 +533,7 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 			existing pseudo-variable (as integer value)
 			</para>
 			</listitem>
+
 		</itemizedlist>
 	</listitem>
 
@@ -588,6 +566,13 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
 		pseudo-variable, but it must be a writtable one.
 		</para>
 	</listitem>
+
+	<listitem>
+		<para>
+		<emphasis>attrs_pvar (output, optional)</emphasis> - a pseudo-variable
+		which will hold the attributes of the matched translation rule.
+	</para>
+	</listitem>
 	</itemizedlist>
 	<para>
 	This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
@@ -606,8 +591,8 @@ xlog("translated to var $avp(dest) \n");
 	<programlisting format="linespecific">
 ...
 $avp(src) = $ruri.user;
-dp_translate("$var(x)", "$avp(src)/$var(y)");
-xlog("translated to var $var(y) \n");
+dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
+xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 	</programlisting>
 	</example>
@@ -616,8 +601,8 @@ xlog("translated to var $var(y) \n");
 	<programlisting format="linespecific">
 ...
 $avp(src) = $uri.user;
-dp_translate("example_table/$var(x)", "$avp(src)/$var(y)");
-xlog("translated to var $var(y) \n");
+dp_translate("example_table/$var(x)", "$avp(src)/$var(y)", "$avp(attrs)");
+xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
 ...
 	</programlisting>
 	</example>

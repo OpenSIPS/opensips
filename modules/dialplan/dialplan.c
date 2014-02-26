@@ -41,6 +41,7 @@
 #include "../../mem/mem.h"
 #include "../../mi/mi.h"
 #include "../../parser/parse_to.h"
+#include "../../mod_fix.h"
 #include "dialplan.h"
 #include "dp_db.h"
 
@@ -55,11 +56,8 @@ static int mi_child_init();
 
 static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree,void *param);
 static struct mi_root * mi_translate(struct mi_root *cmd_tree, void *param);
-static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2);
+static int dp_translate_f(struct sip_msg *m, char *id, char *out, char *attrs);
 static int dp_trans_fixup(void ** param, int param_no);
-
-str attr_pvar_s = {NULL,0};
-pv_spec_t * attr_pvar = NULL;
 
 str default_param_s = str_init(DEFAULT_PARAM);
 dp_param_p default_par2 = NULL;
@@ -76,8 +74,6 @@ static param_export_t mod_params[]={
 	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
 	{ "disabled_col",	STR_PARAM,	&disabled_column.s},
-	{ "attrs_pvar",	    STR_PARAM,	&attr_pvar_s.s},
-	{ "attribute_pvar",	STR_PARAM,	&attr_pvar_s.s},
 	{0,0,0}
 };
 
@@ -88,6 +84,9 @@ static mi_export_t mi_cmds[] = {
 };
 
 static cmd_export_t cmds[]={
+	{"dp_translate",(cmd_function)dp_translate_f,	3,	dp_trans_fixup,  0,
+			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE|
+			STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"dp_translate",(cmd_function)dp_translate_f,	2,	dp_trans_fixup,  0,
 			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE|
 			STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
@@ -130,29 +129,6 @@ static int mod_init(void)
 	attrs_column.len    	= strlen(attrs_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if(attr_pvar_s.s) {
-		attr_pvar = (pv_spec_t *)shm_malloc(sizeof(pv_spec_t));
-		if(!attr_pvar){
-			LM_ERR("out of shm memory\n");
-			return -1;
-		}
-
-		attr_pvar_s.len = strlen(attr_pvar_s.s);
-		if (pv_parse_spec(&attr_pvar_s, attr_pvar)==NULL) {
-			LM_ERR("invalid pvar name\n");
-			return E_CFG;
-		}
-		if ( attr_pvar->type==PVT_NULL || attr_pvar->type==PVT_EMPTY
-		|| attr_pvar->type==PVT_NONE ) { 
-			LM_ERR("NULL/EMPTY Parameter TYPE for ATTR PVAR\n");\
-				return E_CFG;
-		}
-		if (attr_pvar->setf==NULL) {
-			LM_ERR("the ATTR PVAR is read-only!!\n");
-			return E_CFG;
-		}
-	}
-
 	default_par2 = (dp_param_p)shm_malloc(sizeof(dp_param_t));
 	if(default_par2 == NULL){
 		LM_ERR("no shm more memory\n");
@@ -194,10 +170,7 @@ static void mod_destroy(void)
 		shm_free(default_par2);
 		default_par2 = NULL;
 	}
-	if(attr_pvar){
-		shm_free(attr_pvar);
-		attr_pvar = NULL;
-	}
+
 	destroy_data();
 }
 
@@ -247,7 +220,7 @@ static int dp_get_svalue(struct sip_msg * msg, pv_spec_t spec, str* val)
 
 
 static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
-											str * repl, str * attrs)
+                     str * repl)
 {
 	pv_value_t val;
 
@@ -260,33 +233,25 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 		}
 	}
 
-	if(!attr_pvar)
-		return 0;
-
-	val.flags = PV_VAL_STR;
-	val.rs = *attrs;
-	if (pv_set_value( msg, attr_pvar, 0, &val)!=0) {
-		LM_ERR("falied to set the attr value!\n");
-		return -1;
-	}
-
 	return 0;
 }
 
 
-static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
+static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
+                          char *attr_spec)
 {
 	int dpid;
 	str input, output;
 	dpl_id_p idp;
 	dp_param_p id_par, repl_par;
-	str attrs, * attrs_par;
+	str attrs, *attrs_par;
 	dp_table_list_p table;
+	pv_value_t pval;
 
-	if(!msg)
+	if (!msg)
 		return -1;
 
-	/*verify first param's value*/
+	/* verify first param's value */
 	id_par = (dp_param_p) str1;
 	if (dp_get_ivalue(msg, id_par, &dpid) != 0){
 		LM_ERR("no dpid value\n");
@@ -306,29 +271,38 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 	/* ref the data for reading */
 	lock_start_read( table->ref_lock );
 
-	if ((idp = select_dpid(table, dpid, table->crt_index)) ==0 ){
+	if ((idp = select_dpid(table, dpid, table->crt_index)) == 0) {
 		LM_DBG("no information available for dpid %i\n", dpid);
 		goto error;
 	}
 
-	attrs_par = (!attr_pvar)?NULL:&attrs;
-	if (translate(msg, input, &output, idp, attrs_par)!=0){
+	attrs_par =  attr_spec ? &attrs : NULL;
+	if (translate(msg, input, &output, idp, attrs_par) != 0) {
 		LM_DBG("could not translate %.*s "
 			"with dpid %i\n", input.len, input.s, idp->dp_id);
 		goto error;
 	}
+
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
 
-	/*set the output*/
-	if (dp_update(msg, &repl_par->v.sp[0], &repl_par->v.sp[1], 
-	&output, attrs_par) !=0){
+	/* set the output */
+	if (dp_update(msg, &repl_par->v.sp[0], &repl_par->v.sp[1], &output) != 0) {
 		LM_ERR("cannot set the output\n");
 		goto error;
 	}
 
 	/* we are done reading -> unref the data */
 	lock_stop_read( table->ref_lock );
+
+	pval.flags = PV_VAL_STR;
+	pval.rs = attrs;
+
+	if (pv_set_value(msg, (pv_spec_p)attr_spec, 0, &pval) != 0) {
+		LM_ERR("failed to set value '%.*s' for the attr pvar!\n",
+		        attrs.len, attrs.s);
+		goto error;
+	}
 
 	return 1;
 
@@ -353,9 +327,11 @@ error:
  */
 static char *parse_dp_command(char * p, int len, str * table_name)
 {
+	#define is_space(p) (*(p) == ' ' || *(p) == '\t' || \
+			             *(p) == '\r' || *(p) == '\n')
 	char *s, *q;
 
-	while (*p == ' ') {
+	while (is_space(p)) {
 		p++;
 		len--;
 	}
@@ -369,7 +345,7 @@ static char *parse_dp_command(char * p, int len, str * table_name)
 	if (s != 0) {
 		q = s+1;
 
-		while (s > p && *(s-1) == ' ')
+		while (s > p && is_space(s-1))
 			s--;
 
 		if (s == p || (*q == '\0'))
@@ -380,7 +356,7 @@ static char *parse_dp_command(char * p, int len, str * table_name)
 
 		p = q;
 
-		while (*p == ' ')
+		while (is_space(p))
 			p++;
 
 	} else {
@@ -403,7 +379,7 @@ static int dp_trans_fixup(void ** param, int param_no){
 	str lstr, table_name;
 	dp_table_list_t *list = NULL;
 
-	if(param_no!=1 && param_no!=2) 
+	if (param_no < 1 || param_no > 3)
 		return 0;
 
 	p = (char*)*param;
@@ -419,7 +395,8 @@ static int dp_trans_fixup(void ** param, int param_no){
 	}
 	memset(dp_par, 0, sizeof(dp_param_t));
 
-	if(param_no == 1) {
+	switch (param_no) {
+	case 1:
 		p = parse_dp_command(p, -1, &table_name);
 
 		if (p == NULL) {
@@ -436,7 +413,7 @@ static int dp_trans_fixup(void ** param, int param_no){
 			}
 		}
 
-		if(*p != '$') {
+		if (*p != PV_MARKER) {
 			dp_par->type = DP_VAL_INT;
 			lstr.s = p; lstr.len = strlen(p);
 			if(str2sint(&lstr, &dpid) != 0) {
@@ -458,7 +435,9 @@ static int dp_trans_fixup(void ** param, int param_no){
 		}
 
 		dp_par->hash = list;
-	} else {
+		break;
+
+	case 2:
 		if( ((s = strchr(p, '/')) == 0) ||( *(s+1)=='\0'))
 				goto error;
 		*s = '\0'; s++;
@@ -480,8 +459,12 @@ static int dp_trans_fixup(void ** param, int param_no){
 		}
 
 		dp_par->type = DP_VAL_SPEC;
+		break;
+
+	case 3:
+		return fixup_pvar(param);
 	}
-	
+
 	*param = (void *)dp_par;
 
 	return 0;

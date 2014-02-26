@@ -2,16 +2,13 @@ dialplan Module
 
 Andreea-Ancuta Onofrei
 
-   Voice Sistem SRL
-
 Edited by
 
 Andreea-Ancuta Onofrei
 
    Copyright © 2007-2008 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2009-07-20 17:11:05 +0300
-                              (Mon, 20 Jul 2009) $
+   Revision $Revision: 5895 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -43,11 +40,11 @@ Andreea-Ancuta Onofrei
               1.6.9. repl_exp_col (string)
               1.6.10. attrs_col (string)
               1.6.11. disabled_col (integer)
-              1.6.12. attrs_pvar (string)
 
         1.7. Exported Functions
 
-              1.7.1. dp_translate([table/]id, src/dest)
+              1.7.1. dp_translate([table/]id, src/dest[,
+                      attrs_pvar])
 
         1.8. Exported MI Functions
 
@@ -71,10 +68,9 @@ Andreea-Ancuta Onofrei
    1.9. Set repl_exp_col parameter
    1.10. Set attrs_col parameter
    1.11. Set disabled_col parameter
-   1.12. Set attrs_pvar parameter
+   1.12. dp_translate usage
    1.13. dp_translate usage
    1.14. dp_translate usage
-   1.15. dp_translate usage
 
 Chapter 1. Admin Guide
 
@@ -334,22 +330,9 @@ modparam("dialplan", "attrs_col", "column_name")
 modparam("dialplan", "disabled_col", "disabled_column")
 ...
 
-1.6.12. attrs_pvar (string)
-
-   The pvar to store the rule's attributes, after translation
-   (dp_translate() succeeds). This parameter can be any PVAR that
-   can be written.
-
-   Default value is “NULL”.
-
-   Example 1.12. Set attrs_pvar parameter
-...
-modparam("dialplan", "attrs_pvar", "$avp(dest)")
-...
-
 1.7. Exported Functions
 
-1.7.1.  dp_translate([table/]id, src/dest)
+1.7.1.  dp_translate([table/]id, src/dest[, attrs_pvar])
 
    Will try to translate the src string into dest string according
    to the translation rules with dialplan ID equal to id.
@@ -371,27 +354,30 @@ modparam("dialplan", "attrs_pvar", "$avp(dest)")
        The “src” variable can be any type of pseudo-variable.
        The “dest” variable can be also any type of
        pseudo-variable, but it must be a writtable one.
+     * attrs_pvar (output, optional) - a pseudo-variable which
+       will hold the attributes of the matched translation rule.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
-   Example 1.13. dp_translate usage
+   Example 1.12. dp_translate usage
 ...
 dp_translate("240", "$ruri.user/$avp(dest)");
 xlog("translated to var $avp(dest) \n");
 ...
 
-   Example 1.14. dp_translate usage
+   Example 1.13. dp_translate usage
 ...
 $avp(src) = $ruri.user;
-dp_translate("$var(x)", "$avp(src)/$var(y)");
-xlog("translated to var $var(y) \n");
+dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
+xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 
-   Example 1.15. dp_translate usage
+   Example 1.14. dp_translate usage
 ...
 $avp(src) = $uri.user;
-dp_translate("example_table/$var(x)", "$avp(src)/$var(y)");
-xlog("translated to var $var(y) \n");
+dp_translate("example_table/$var(x)", "$avp(src)/$var(y)", "$avp(attrs)"
+);
+xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
 ...
 
 1.8. Exported MI Functions
@@ -443,8 +429,7 @@ xlog("translated to var $var(y) \n");
 Chapter 2. Developer's Guide
 
    Revision History
-   Revision $Revision$ $Date: 2009-07-20 17:11:05 +0300
-                              (Mon, 20 Jul 2009) $
+   Revision $Revision: 5895 $ $Date$
 
    The module does not provide any API to use in other OpenSIPS
    modules.
