@@ -35,6 +35,10 @@
 #define GPARAM_TYPE_PVS		2
 #define GPARAM_TYPE_PVE		3
 
+#define GPARAM_INT_VALUE_FLAG	(1U<<0)
+#define GPARAM_STR_VALUE_FLAG	(1U<<1)
+
+
 /*!
  * generic parameter that holds a string, an int or a pseudo-variable
  */
@@ -97,6 +101,8 @@ int fixup_spve_null(void** param, int param_no);
 int fixup_spve_uint(void** param, int param_no);
 int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val);
 
+int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
+			int *i_val, str *s_val, unsigned int *flags);
 
 int fixup_spve(void** param);
 int fixup_pvar(void **param);

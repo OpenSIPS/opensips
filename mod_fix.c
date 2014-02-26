@@ -941,3 +941,56 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
 	return -1;
 }
 
+/*! \brief
+ * - helper function
+ * Return string and/or int value from a gparam_t
+ */
+int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
+			int *i_val, str *s_val, unsigned int *flags)
+{
+	pv_value_t value;
+
+	*flags = 0;
+	switch(gp->type)
+	{
+	case GPARAM_TYPE_INT:
+		*i_val = gp->v.ival;
+		*flags |= GPARAM_INT_VALUE_FLAG;
+		break;
+	case GPARAM_TYPE_STR:
+		*s_val = gp->v.sval;
+		*flags |= GPARAM_STR_VALUE_FLAG;
+		break;
+	case GPARAM_TYPE_PVE:
+		if(pv_printf_s( msg, gp->v.pve, s_val)!=0)
+		{
+			LM_ERR("cannot print the PV-formated string\n");
+			return -1;
+		}
+		*flags |= GPARAM_STR_VALUE_FLAG;
+		break;
+	case GPARAM_TYPE_PVS:
+		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
+			|| value.flags&PV_VAL_NULL)
+		{
+			LM_ERR("no valid PV value found (error in scripts)\n");
+			return -1;
+		}
+		if(value.flags&PV_VAL_INT)
+		{
+			*i_val = value.ri;
+			*flags |= GPARAM_INT_VALUE_FLAG;
+		}
+		if(value.flags&PV_VAL_STR)
+		{
+			*s_val = value.rs;
+			*flags |= GPARAM_STR_VALUE_FLAG;
+		}
+		break;
+	default:
+		LM_ERR("unexpected gp->type=[%d]\n", gp->type);
+		return -1;
+	}
+	return 0;
+}
+
