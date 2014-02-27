@@ -491,15 +491,12 @@ static void destroy(void)
 		return -1; \
 	} \
 	if(!((value_flags)&GPARAM_INT_VALUE_FLAG)) { \
-		if((value_flags)&GPARAM_STR_VALUE_FLAG) { \
-			if(str2sint(&(s_value), &(i_value))!=0) { \
-				LM_ERR("Unable to get %s from [%.*s]\n", (param_name), (s_value).len, (s_value).s); \
-				return -1; \
-			} \
+		if (((value_flags)&GPARAM_STR_VALUE_FLAG)) { \
+			LM_ERR("Unable to get %s from [%.*s]\n", (param_name), (s_value).len, (s_value).s); \
 		} else { \
-			LM_ERR("unexpected %s flags [%u]\n", (param_name), (value_flags)); \
-			return -1; \
+			LM_ERR("Unable to get %s\n", (param_name)); \
 		} \
+		return -1; \
 	} \
 
 
