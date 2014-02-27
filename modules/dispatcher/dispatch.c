@@ -1370,7 +1370,9 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 			ds_id = 0;
 		break;
 		default:
-			LM_WARN("algo %d not implemented - using first entry...\n", alg);
+			LM_WARN("dispatching via [%d] with unknown algo [%d]"
+					": defaulting to 0 - first entry\n",
+					set, alg);
 			ds_id = 0;
 	}
 
