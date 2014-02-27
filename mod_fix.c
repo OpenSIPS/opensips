@@ -983,6 +983,11 @@ int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
 		}
 		if(value.flags&PV_VAL_STR)
 		{
+			/* Let's convert to int, if possible */
+			if(*flags==0 && str2sint(&value.rs, i_val)==0)
+			{
+				*flags |= GPARAM_INT_VALUE_FLAG;
+			}
 			*s_val = value.rs;
 			*flags |= GPARAM_STR_VALUE_FLAG;
 		}
