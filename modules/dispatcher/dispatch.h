@@ -99,6 +99,14 @@ typedef struct _ds_pvar_param
 	int value;
 } ds_pvar_param_t, *ds_pvar_param_p;
 
+typedef struct _ds_select_ctl
+{
+	int set;			/* set id to process */
+	int alg;			/* algorith to aply */
+	int mode;			/* set destination uri */
+	int max_results;	/* max destinaitons to process */
+} ds_select_ctl_t, *ds_select_ctl_p;
+
 
 extern str ds_db_url;
 extern str ds_table_name;
@@ -145,7 +153,7 @@ int ds_reload_db();
 int init_ds_data();
 void ds_destroy_data();
 
-int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_results);
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p p);
 int ds_next_dst(struct sip_msg *msg, int mode);
 int ds_set_state(int group, str *address, int state, int type);
 int ds_mark_dst(struct sip_msg *msg, int mode);

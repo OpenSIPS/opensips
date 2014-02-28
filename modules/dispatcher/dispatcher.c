@@ -505,21 +505,24 @@ static void destroy(void)
  */
 static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 {
-	int i_algo, i_set;
 	unsigned int algo_flags, set_flags;
 	str s_algo = {NULL, 0};
 	str s_set = {NULL, 0};
+	ds_select_ctl_t ds_select_ctl;
 
 	if(msg==NULL)
 		return -1;
 
 	/* Retrieve dispatcher set */
-	GET_VALUE("destination set", set, i_set, s_set, set_flags);
+	GET_VALUE("destination set", set, ds_select_ctl.set, s_set, set_flags);
 
 	/* Retrieve dispatcher algorithm */
-	GET_VALUE("algorithm", alg, i_algo, s_algo, algo_flags);
+	GET_VALUE("algorithm", alg, ds_select_ctl.alg, s_algo, algo_flags);
 
-	return ds_select_dst(msg, i_set, i_algo, 0 /*set dst uri*/, 1000);
+	ds_select_ctl.mode = 0;
+	ds_select_ctl.max_results = 1000;
+
+	return ds_select_dst(msg, &ds_select_ctl);
 }
 
 
@@ -528,25 +531,27 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
  */
 static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
-	int i_algo, i_set, i_max;
 	unsigned int algo_flags, set_flags, max_flags;
 	str s_algo = {NULL, 0};
 	str s_set = {NULL, 0};
 	str s_max = {NULL, 0};
+	ds_select_ctl_t ds_select_ctl;
 
 	if(msg==NULL)
 		return -1;
 
 	/* Retrieve dispatcher set */
-	GET_VALUE("destination set", set, i_set, s_set, set_flags);
+	GET_VALUE("destination set", set, ds_select_ctl.set, s_set, set_flags);
 
 	/* Retrieve dispatcher algorithm */
-	GET_VALUE("algorithm", alg, i_algo, s_algo, algo_flags);
+	GET_VALUE("algorithm", alg, ds_select_ctl.alg, s_algo, algo_flags);
 
 	/* Retrieve dispatcher max results */
-	GET_VALUE("max results", max_results, i_max, s_max, max_flags);
+	GET_VALUE("max results", max_results, ds_select_ctl.max_results, s_max, max_flags);
 
-	return ds_select_dst(msg, i_set, i_algo, 0 /*set dst uri*/, i_max);
+	ds_select_ctl.mode = 0;
+
+	return ds_select_dst(msg, &ds_select_ctl);
 }
 
 
@@ -555,21 +560,24 @@ static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, ch
  */
 static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 {
-	int i_algo, i_set;
 	unsigned int algo_flags, set_flags;
 	str s_algo = {NULL, 0};
 	str s_set = {NULL, 0};
+	ds_select_ctl_t ds_select_ctl;
 
 	if(msg==NULL)
 		return -1;
 
 	/* Retrieve dispatcher set */
-	GET_VALUE("destination set", set, i_set, s_set, set_flags);
+	GET_VALUE("destination set", set, ds_select_ctl.set, s_set, set_flags);
 
 	/* Retrieve dispatcher algorithm */
-	GET_VALUE("algorithm", alg, i_algo, s_algo, algo_flags);
+	GET_VALUE("algorithm", alg, ds_select_ctl.alg, s_algo, algo_flags);
 
-	return ds_select_dst(msg, i_set, i_algo, 1/*set host port*/, 1000);
+	ds_select_ctl.mode = 1;
+	ds_select_ctl.max_results = 1000;
+
+	return ds_select_dst(msg, &ds_select_ctl);
 }
 
 
@@ -578,25 +586,27 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
  */
 static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
-	int i_algo, i_set, i_max;
 	unsigned int algo_flags, set_flags, max_flags;
 	str s_algo = {NULL, 0};
 	str s_set = {NULL, 0};
 	str s_max = {NULL, 0};
+	ds_select_ctl_t ds_select_ctl;
 
 	if(msg==NULL)
 		return -1;
 
 	/* Retrieve dispatcher set */
-	GET_VALUE("destination set", set, i_set, s_set, set_flags);
+	GET_VALUE("destination set", set, ds_select_ctl.set, s_set, set_flags);
 
 	/* Retrieve dispatcher algorithm */
-	GET_VALUE("algorithm", alg, i_algo, s_algo, algo_flags);
+	GET_VALUE("algorithm", alg, ds_select_ctl.alg, s_algo, algo_flags);
 
 	/* Retrieve dispatcher max results */
-	GET_VALUE("max results", max_results, i_max, s_max, max_flags);
+	GET_VALUE("max results", max_results, ds_select_ctl.max_results, s_max, max_flags);
 
-	return ds_select_dst(msg, i_set, i_algo, 1/*set host port*/, i_max);
+	ds_select_ctl.mode = 1;
+
+	return ds_select_dst(msg, &ds_select_ctl);
 }
 
 

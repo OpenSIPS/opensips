@@ -1244,7 +1244,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds )
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_results)
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 {
 	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
@@ -1268,7 +1268,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		return -1;
 	}
 
-	if((mode==0) && (ds_force_dst==0)
+	if((ds_select_ctl->mode==0) && (ds_force_dst==0)
 			&& (msg->dst_uri.s!=NULL || msg->dst_uri.len>0))
 	{
 		LM_ERR("destination already set [%.*s]\n", msg->dst_uri.len,
@@ -1281,17 +1281,17 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	lock_start_read( ds_lock );
 
 	/* get the index of the set */
-	if(ds_get_index(set, &idx)!=0)
+	if(ds_get_index(ds_select_ctl->set, &idx)!=0)
 	{
-		LM_ERR("destination set [%d] not found\n", set);
+		LM_ERR("destination set [%d] not found\n", ds_select_ctl->set);
 		goto error;
 	}
 	
-	LM_DBG("set [%d]\n", set);
+	LM_DBG("set [%d]\n", ds_select_ctl->set);
 
 	ds_hash = 0;
 	ds_id = -1;
-	switch(alg)
+	switch(ds_select_ctl->alg)
 	{
 		case 0:
 			if(ds_hash_callid(msg, &ds_hash)!=0)
@@ -1359,7 +1359,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		case 9:
 			if (!ds_has_pattern && ds_pattern_suffix.len == 0 ) {
 				LM_WARN("no pattern specified - using first entry...\n");
-				alg = 8;
+				ds_select_ctl->alg = 8;
 				break;
 			}
 			if ((ds_id = ds_pvar_algo(msg, idx, &sorted_set)) <= 0)
@@ -1372,7 +1372,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		default:
 			LM_WARN("dispatching via [%d] with unknown algo [%d]"
 					": defaulting to 0 - first entry\n",
-					set, alg);
+					ds_select_ctl->set, ds_select_ctl->alg);
 			ds_id = 0;
 	}
 
@@ -1392,7 +1392,7 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
-	if (alg != 9) {
+	if (ds_select_ctl->alg != 9) {
 		i=ds_id;
 		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
 		{
@@ -1421,16 +1421,16 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 		selected = sorted_set[0];
 	}
 
-	if(ds_update_dst(msg, &selected->uri, selected->sock, mode)!=0)
+	if(ds_update_dst(msg, &selected->uri, selected->sock, ds_select_ctl->mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		goto error;
 	}
 	/* if alg is round-robin then update the shortcut to next to be used */
-	if(alg==4)
+	if(ds_select_ctl->alg==4)
 		idx->last = (ds_id+1) % idx->nr;
 	
-	LM_DBG("selected [%d-%d/%d] <%.*s>\n", alg, set, ds_id,
+	LM_DBG("selected [%d-%d/%d] <%.*s>\n", ds_select_ctl->alg, ds_select_ctl->set, ds_id,
 			selected->uri.len, selected->uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
@@ -1455,25 +1455,25 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	inactive_dst_count = count_inactive_destinations(idx);
 	/* don't count inactive and default entries into total */
 	destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_use_default!=0);
-	destination_entries_to_skip -= max_results;
+	destination_entries_to_skip -= ds_select_ctl->max_results;
 
 	/* add to avp */
 
 	for(i_unwrapped = ds_id-1+idx->nr; i_unwrapped>ds_id; i_unwrapped--) {
 		i = i_unwrapped % idx->nr;
-		dest = (alg == 9 ? sorted_set[i] : &idx->dlist[i]);
+		dest = (ds_select_ctl->alg == 9 ? sorted_set[i] : &idx->dlist[i]);
 
 		if((dest->flags & DS_INACTIVE_DST)
 				|| (ds_use_default!=0 && i==(idx->nr-1)))
 			continue;
 		if(destination_entries_to_skip > 0) {
 			LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n",
-				set, i, max_results);
+				ds_select_ctl->set, i, ds_select_ctl->max_results);
 			destination_entries_to_skip--;
 			continue;
 		}
 
-		LM_DBG("using entry [%d/%d]\n", set, i);
+		LM_DBG("using entry [%d/%d]\n", ds_select_ctl->set, i);
 		if (push_ds_2_avps( dest ) != 0 )
 			goto error;
 		cnt++;
@@ -1493,7 +1493,7 @@ done:
 	}
 
 	/* add to avp the group id */
-	avp_val.n = set;
+	avp_val.n = ds_select_ctl->set;
 	if(add_avp(grp_avp_type, grp_avp_name, avp_val)!=0)
 		goto error;
 
