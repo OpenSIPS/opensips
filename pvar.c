@@ -736,7 +736,7 @@ static int pv_get_contact_body(struct sip_msg *msg, pv_param_t *param,
 					ct = ct_b->contacts;
 				}
 			}
-		} while (ct_b);
+		} while (ct_h);
 
 		res->rs.s = pv_local_buf;
 		res->rs.len = p - pv_local_buf;
