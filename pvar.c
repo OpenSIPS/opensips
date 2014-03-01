@@ -2977,8 +2977,7 @@ static pv_export_t _pv_names_table[] = {
 		pv_parse_avp_name, pv_parse_index, 0, 0},
 	{{"hdr", (sizeof("hdr")-1)}, PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
 		pv_parse_index, 0, 0},
-	{{"hdrcnt", (sizeof("hdrcnt")-1)}, PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name,
-		pv_parse_index, 0, 0},
+	{{"hdrcnt", (sizeof("hdrcnt")-1)}, PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name, 0, 0, 0},
 	{{"var", (sizeof("var")-1)}, PVT_SCRIPTVAR, pv_get_scriptvar,
 		pv_set_scriptvar, pv_parse_scriptvar_name, 0, 0, 0},
 	{{"ai", (sizeof("ai")-1)}, /* */
