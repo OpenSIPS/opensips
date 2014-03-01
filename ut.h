@@ -82,6 +82,13 @@ struct sip_msg;
 		for(;(_s_).s[0]==' ';(_s_).s=(_s_).s+1,(_s_).len--);\
 	}while(0);
 
+/* right and left space trimming without '0' padding */
+#define str_trim_spaces_lr(_s_) \
+	do{\
+		for(;(_s_).s[(_s_).len-1]==' ';--(_s_).len);\
+		for(;(_s_).s[0]==' ';(_s_).s=(_s_).s+1,(_s_).len--);\
+	}while(0);
+
 
 #define  translate_pointer( _new_buf , _org_buf , _p) \
 	( (_p)?(_new_buf + (_p-_org_buf)):(0) )
@@ -217,7 +224,7 @@ static inline char* q_memchr(char* p, int c, unsigned int size)
 	}
 	return 0;
 }
-	
+
 
 inline static int reverse_hex2int( char *c, int len )
 {
