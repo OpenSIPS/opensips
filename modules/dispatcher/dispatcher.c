@@ -537,7 +537,7 @@ static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_resu
  */
 static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
 {
-	return w_ds_select(msg, set, alg, NULL, 0);
+	return w_ds_select(msg, set, alg, NULL, mode);
 }
 
 /**
@@ -545,7 +545,7 @@ static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
  */
 static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
 {
-	return w_ds_select(msg, set, alg, max_results, 0);
+	return w_ds_select(msg, set, alg, max_results, mode);
 }
 
 /**
