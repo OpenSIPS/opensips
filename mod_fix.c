@@ -997,6 +997,8 @@ int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
 		&& str2sint(s_val, i_val) == 0)
 		*flags |= GPARAM_INT_VALUE_FLAG;
 
+	if (!*flags) return -1;
+
 	return 0;
 }
 
