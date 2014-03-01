@@ -109,8 +109,6 @@ action_elem_t *route_params = NULL;
 int route_params_number = 0;
 
 
-void script_trace(char *class, char *action, struct sip_msg *msg, int line) ;
-
 /* run actions from a route */
 /* returns: 0, or 1 on success, <0 on error */
 /* (0 if drop or break encountered, 1 if not ) */
@@ -2004,21 +2002,18 @@ error_fwd_uri:
 }
 
 /**
- * If enabled, prints the current point of execution in the OpenSIPS script
- * Params:
- *    - class - optional, string to be printed meaning the class of action (if any)
- *    - action - mandatory, string with the name of action
- *    - msg - mandatory, sip message
- *    - line - line in script
+ * prints the current point of execution in the OpenSIPS script
+ *
+ * @class - optional, string to be printed meaning the class of action (if any)
+ * @action - mandatory, string with the name of action
+ * @msg - mandatory, sip message
+ * @line - line in script
  */
-void script_trace(char *class, char *action, struct sip_msg *msg, int line)
+void __script_trace(char *class, char *action, struct sip_msg *msg, int line)
 {
 	gparam_t param;
 	str val;
 
-	if (use_script_trace == 0)
-		return;
-	
 	param.type = GPARAM_TYPE_PVE;
 	param.v.pve = &script_trace_elem;
 
@@ -2040,5 +2035,3 @@ void script_trace(char *class, char *action, struct sip_msg *msg, int line)
 			class?class:"", action, val.len, val.s);
 	}
 }
-
-

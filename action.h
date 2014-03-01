@@ -37,6 +37,7 @@
 #define ACT_FL_DROP		4
 
 extern int action_flags;
+extern int use_script_trace;
 
 #define LONGEST_ACTION_SIZE		5
 
@@ -52,5 +53,13 @@ int do_action(struct action* a, struct sip_msg* msg);
 int run_top_route(struct action* a, struct sip_msg* msg);
 int run_action_list(struct action* a, struct sip_msg* msg);
 void run_error_route(struct sip_msg* msg, int force_reset);
+
+#define script_trace(class, action, msg, line) \
+	do { \
+		if (use_script_trace) \
+			__script_trace(class, action, msg, line); \
+	} while (0)
+
+void __script_trace(char *class, char *action, struct sip_msg *msg, int line);
 
 #endif
