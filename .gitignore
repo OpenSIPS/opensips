@@ -15,7 +15,6 @@ cscope*
 /.svnrevision
 /.gitrevision
 
-
 # /doc/
 /doc/database
 
@@ -25,3 +24,11 @@ cscope*
 
 # /utils/opensipsunix/
 /utils/opensipsunix/opensipsunix
+
+# miscellaneous files
+core
+core.*
+out
+log
+*.log
+*.html
