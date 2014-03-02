@@ -2263,13 +2263,6 @@ foreach_cmd:	FOR LPAREN script_var IN script_var RPAREN stm {
 					            "and \"avp\" iterators are supported");
 					}
 
-					if ($5->type != PVT_AVP &&
-						$5->type != PVT_BRANCH &&
-						$5->type != PVT_CONTACT) {
-						yyerror("\nfor-each statement: can only iterate over "
-					            "\"avp\", \"branch\" and \"contact\"");
-					}
-
 					mk_action3( $$, FOR_EACH_T,
 					            SCRIPTVAR_ST,
 					            SCRIPTVAR_ST,
