@@ -222,7 +222,20 @@ static inline char* q_memchr(char* p, int c, unsigned int size)
 	for(;p<end;p++){
 		if (*p==(unsigned char)c) return p;
 	}
-	return 0;
+	return NULL;
+}
+
+
+/* faster memrchr version */
+static inline char* q_memrchr(char* p, int c, unsigned int size)
+{
+	char* cursor;
+
+	cursor=p+size-1;
+	for(;cursor>=p;cursor--){
+		if (*cursor==(unsigned char)c) return cursor;
+	}
+	return NULL;
 }
 
 
@@ -439,7 +452,7 @@ static inline void strlower(str* _s)
 static inline int str2int(str* _s, unsigned int* _r)
 {
 	int i;
-	
+
 	*_r = 0;
 	for(i = 0; i < _s->len; i++) {
 		if ((_s->s[i] >= '0') && (_s->s[i] <= '9')) {
@@ -449,7 +462,7 @@ static inline int str2int(str* _s, unsigned int* _r)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -460,7 +473,7 @@ static inline int str2sint(str* _s, int* _r)
 {
 	int i;
 	int s;
-	
+
 	*_r = 0;
 	s = 1;
 	i=0;
@@ -505,7 +518,7 @@ static inline int shm_str_dup(str* dst, const str* src)
 		LM_ERR("no shared memory left\n");
 		return -1;
 	}
-	
+
 	memcpy(dst->s, src->s, src->len);
 	dst->len = src->len;
 	return 0;
@@ -522,7 +535,7 @@ static inline int pkg_str_dup(str* dst, const str* src)
 		LM_ERR("no private memory left\n");
 		return -1;
 	}
-	
+
 	memcpy(dst->s, src->s, src->len);
 	dst->len = src->len;
 	return 0;
