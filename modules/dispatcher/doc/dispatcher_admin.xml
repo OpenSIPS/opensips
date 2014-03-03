@@ -67,7 +67,7 @@
 		</para>
 		<example>
 		<title>Set <quote>db_url</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 ...
@@ -99,11 +99,11 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 		</para>
 		<example>
 		<title>Set the <quote>flags</quote> parameter</title>
- <programlisting format="linespecific">
- ...
- modparam("dispatcher", "flags", 3)
- ...
- </programlisting>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "flags", 3)
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -143,11 +143,11 @@ modparam("dispatcher", "force_dst", 1)
 		</para>
 		<example>
 		<title>Set the <quote>use_default</quote> parameter</title>
- <programlisting format="linespecific">
- ...
- modparam("dispatcher", "use_default", 1)
- ...
- </programlisting>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "use_default", 1)
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -169,11 +169,11 @@ modparam("dispatcher", "force_dst", 1)
 		</para>
 		<example>
 		<title>Set the <quote>attrs_avp</quote> parameter</title>
- <programlisting format="linespecific">
- ...
- modparam("dispatcher", "attrs_avp", "$avp(272)")
- ...
- </programlisting>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "attrs_avp", "$avp(272)")
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -225,11 +225,11 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 		</para>
 		<example>
 		<title>Set the <quote>setid_pvar</quote> parameter</title>
- <programlisting format="linespecific">
- ...
- modparam("dispatcher", "setid_pvar", "$var(setid)")
- ...
- </programlisting>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "setid_pvar", "$var(setid)")
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -433,11 +433,11 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
 		</para>
 		<example>
 		<title>Set the <quote>dst_avp</quote> parameter</title>
- <programlisting format="linespecific">
- ...
- modparam("dispatcher", "dst_avp", "$avp(271)")
- ...
- </programlisting>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "dst_avp", "$avp(271)")
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -546,7 +546,7 @@ modparam("dispatcher", "sock_avp", "$stat(load_%u)")
 		</para>
 		<example>
 		<title>Set <quote>table_name</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
 ...
@@ -566,7 +566,7 @@ modparam("dispatcher", "table_name", "my_dispatcher")
 		</para>
 		<example>
 		<title>Set <quote>setid_col</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
@@ -587,7 +587,7 @@ modparam("dispatcher", "setid_col", "groupid")
 		</para>
 		<example>
 		<title>Set <quote>destination_col</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
@@ -608,7 +608,7 @@ modparam("dispatcher", "destination_col", "uri")
 		</para>
 		<example>
 		<title>Set <quote>flags_col</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "flags_col", "dstflags")
 ...
@@ -629,7 +629,7 @@ modparam("dispatcher", "flags_col", "dstflags")
 		</para>
 		<example>
 		<title>Set <quote>weight_col</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
@@ -650,7 +650,7 @@ modparam("dispatcher", "weight_col", "dstweight")
 		</para>
 		<example>
 		<title>Set <quote>attrs_col</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
@@ -671,7 +671,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 		</para>
 		<example>
 		<title>Set <quote>socket_col</quote> parameter</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
@@ -697,14 +697,14 @@ modparam("dispatcher", "socket_col", "my_sock")
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>set</emphasis> - the id of the set from where to pick
-			up destination address.
+			<emphasis>set</emphasis> - the id of the set or a list of sets
+			from where to pick up destination address (variables are accepted).
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>alg</emphasis> - the algorithm used to select the
-			destination address.
+			<emphasis>alg</emphasis> - the algorithm(s) used to select the
+			destination address (variables are accepted).
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -734,7 +734,9 @@ modparam("dispatcher", "socket_col", "my_sock")
 			</listitem>
 			<listitem>
 				<para>
-				<quote>5</quote> - hash over authorization-username (Proxy-Authorization or "normal" authorization). If no username is found, round robin is used.
+				<quote>5</quote> - hash over authorization-username
+				(Proxy-Authorization or "normal" authorization).
+				If no username is found, round robin is used.
 				</para>
 			</listitem>
 			<listitem>
@@ -775,7 +777,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 			<emphasis>max_results</emphasis> - If specified, only that many results
 			will be put into the specified avp for failover. This allows having many
 			destinations but limit the useless traffic in case of a number that is
-			bound to fail everywhere.
+			bound to fail everywhere. It can accept variables.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -783,18 +785,26 @@ modparam("dispatcher", "socket_col", "my_sock")
 		If the bit 2 in 'flags' is set, the rest of the addresses from the
 		destination set is stored in AVP list. You can use 'ds_next_dst()' to
 		use next address to achieve serial forking to all possible
-		destinations.
+		destinations.  If multiple dispatching groups are used, the AVP list
+		is constructed based on the position of each dispatching id in the list:
+		first one has the higher priority, followed by the second one and so on.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 		</para>
 		<example>
 		<title><function>ds_select_dst</function> usage</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 ds_select_dst("1", "0");
 ...
 ds_select_dst("1", "0", "5");
+...
+# dispatch over multiple dispatching groups
+$var(setid) = "1, 2";
+$var(alg) = "4, 2";
+$var(max) = "2,3";
+ds_select_dst("$var(setid)", "$var(alg)", "$var(max)");
 ...
 </programlisting>
 		</example>
@@ -934,7 +944,7 @@ ds_select_dst("1", "0", "5");
 		</para>
 		<example>
 		<title><function>ds_count</function> usage</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 if (ds_count("1", "a", "$avp(result)")) {
 	...
@@ -988,7 +998,7 @@ if (ds_count("$avp(set)", "ip", "$avp(result)")) {
 		</para>
 		<example>
 		<title><function>ds_is_in_list</function> usage</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 if (ds_is_in_list("$si", "$sp")) {
 	# source IP:PORT is in a dispatcher list
@@ -1011,7 +1021,7 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 		<function moreinfo="none">ds_set_state</function>
 		</title>
 		<para>
-        Sets the status for a destination address (can be use to mark the destination 
+		Sets the status for a destination address (can be use to mark the destination 
 		as active or inactive).
 		</para>
 		<para>
@@ -1020,9 +1030,9 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>_state_ : state of the destination address</para>
-			      <itemizedlist>
-	                 <listitem><para> <quote>a</quote>: active </para></listitem> 
-			         <listitem><para> <quote>i</quote>: inactive </para></listitem>	
+				  <itemizedlist>
+					 <listitem><para> <quote>a</quote>: active </para></listitem> 
+					 <listitem><para> <quote>i</quote>: inactive </para></listitem>	
 				<listitem><para> <quote>p</quote>: probing </para></listitem>
 				  </itemizedlist>
 			</listitem>	  
@@ -1034,14 +1044,14 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 		<para>
 		MI FIFO Command Format:
 		</para>
-        <programlisting  format="linespecific">
-		:ds_set_state:_reply_fifo_file_
-		_state_
-		_group_
-		_address_
-		_empty_line_
-		</programlisting>
-    </section>
+<programlisting  format="linespecific">
+:ds_set_state:_reply_fifo_file_
+_state_
+_group_
+_address_
+_empty_line_
+</programlisting>
+	</section>
 	<section>
 		<title>
 		<function moreinfo="none">ds_list</function>
@@ -1056,11 +1066,11 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 		<para>
 		MI FIFO Command Format:
 		</para>
-        <programlisting  format="linespecific">
-		:ds_list:_reply_fifo_file_
-		_empty_line_
-		</programlisting>
-    </section>
+<programlisting  format="linespecific">
+:ds_list:_reply_fifo_file_
+_empty_line_
+</programlisting>
+	</section>
 	<section>
 		<title>
 		<function moreinfo="none">ds_reload</function>
@@ -1075,12 +1085,12 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 		<para>
 		MI DATAGRAM Command Format:
 		</para>
-        <programlisting  format="linespecific">
-		":ds_reload:\n."
-		</programlisting>
-    </section>
+<programlisting  format="linespecific">
+":ds_reload:\n."
+</programlisting>
+	</section>
 
-    </section>
+	</section>
 	
 	<section>
 	<title>Exported Events</title>
@@ -1119,11 +1129,11 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 		</para>
 		<example>
 		<title>&osips; config script - sample dispatcher usage</title>
-		<programlisting format="linespecific">
+<programlisting format="linespecific">
 ...
 &dispatchercfg;
 ...
-		</programlisting>
+</programlisting>
 		</example>
 	</section>
 	</section>

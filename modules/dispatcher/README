@@ -6,6 +6,12 @@ Daniel-Constantin Mierla
 
 Edited by
 
+Ovidiu Sas
+
+   <osas@voipembedded.com>
+
+Edited by
+
 Daniel-Constantin Mierla
 
    <team@voice-system.ro>
@@ -164,8 +170,8 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set “db_url” parameter
 ...
-modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database
-")
+modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/databas
+e")
 ...
 
 1.3.2. flags (int)
@@ -185,9 +191,9 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database
    Default value is “0”.
 
    Example 1.2. Set the “flags” parameter
- ...
- modparam("dispatcher", "flags", 3)
- ...
+...
+modparam("dispatcher", "flags", 3)
+...
 
 1.3.3. force_dst (int)
 
@@ -211,9 +217,9 @@ modparam("dispatcher", "force_dst", 1)
    Default value is “0”.
 
    Example 1.4. Set the “use_default” parameter
- ...
- modparam("dispatcher", "use_default", 1)
- ...
+...
+modparam("dispatcher", "use_default", 1)
+...
 
 1.3.5. attrs_avp (str)
 
@@ -229,9 +235,9 @@ Note
    Default value is “null” - don't provide ATTRIBUTEs.
 
    Example 1.5. Set the “attrs_avp” parameter
- ...
- modparam("dispatcher", "attrs_avp", "$avp(272)")
- ...
+...
+modparam("dispatcher", "attrs_avp", "$avp(272)")
+...
 
 1.3.6. hash_pvar (str)
 
@@ -263,9 +269,9 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
    Default value is “null” - don't set PV.
 
    Example 1.8. Set the “setid_pvar” parameter
- ...
- modparam("dispatcher", "setid_pvar", "$var(setid)")
- ...
+...
+modparam("dispatcher", "setid_pvar", "$var(setid)")
+...
 
 1.3.8. ds_ping_method (string)
 
@@ -394,9 +400,9 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
    Default value is “$avp(ds_dst_failover)”
 
    Example 1.17. Set the “dst_avp” parameter
- ...
- modparam("dispatcher", "dst_avp", "$avp(271)")
- ...
+...
+modparam("dispatcher", "dst_avp", "$avp(271)")
+...
 
 1.3.17. grp_avp (str)
 
@@ -543,9 +549,10 @@ modparam("dispatcher", "socket_col", "my_sock")
    The method selects a destination from addresses set.
 
    Meaning of the parameters is as follows:
-     * set - the id of the set from where to pick up destination
-       address.
-     * alg - the algorithm used to select the destination address.
+     * set - the id of the set or a list of sets from where to
+       pick up destination address (variables are accepted).
+     * alg - the algorithm(s) used to select the destination
+       address (variables are accepted).
           + “0” - hash over callid
           + “1” - hash over from uri.
           + “2” - hash over to uri.
@@ -567,12 +574,16 @@ modparam("dispatcher", "socket_col", "my_sock")
      * max_results - If specified, only that many results will be
        put into the specified avp for failover. This allows having
        many destinations but limit the useless traffic in case of
-       a number that is bound to fail everywhere.
+       a number that is bound to fail everywhere. It can accept
+       variables.
 
    If the bit 2 in 'flags' is set, the rest of the addresses from
    the destination set is stored in AVP list. You can use
    'ds_next_dst()' to use next address to achieve serial forking
-   to all possible destinations.
+   to all possible destinations. If multiple dispatching groups
+   are used, the AVP list is constructed based on the position of
+   each dispatching id in the list: first one has the higher
+   priority, followed by the second one and so on.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -581,6 +592,12 @@ modparam("dispatcher", "socket_col", "my_sock")
 ds_select_dst("1", "0");
 ...
 ds_select_dst("1", "0", "5");
+...
+# dispatch over multiple dispatching groups
+$var(setid) = "1, 2";
+$var(alg) = "4, 2";
+$var(max) = "2,3";
+ds_select_dst("$var(setid)", "$var(alg)", "$var(max)");
 ...
 
 1.4.2.  ds_select_domain(set, alg [, max_results])
@@ -727,11 +744,11 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
      * _address_: address of the destination in the _group_
 
    MI FIFO Command Format:
-                :ds_set_state:_reply_fifo_file_
-                _state_
-                _group_
-                _address_
-                _empty_line_
+:ds_set_state:_reply_fifo_file_
+_state_
+_group_
+_address_
+_empty_line_
 
 1.5.2.  ds_list
 
@@ -742,8 +759,8 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
    Parameters: none
 
    MI FIFO Command Format:
-                :ds_list:_reply_fifo_file_
-                _empty_line_
+:ds_list:_reply_fifo_file_
+_empty_line_
 
 1.5.3.  ds_reload
 
@@ -754,7 +771,7 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
    Parameters: none
 
    MI DATAGRAM Command Format:
-                ":ds_reload:\n."
+":ds_reload:\n."
 
 1.6. Exported Events
 
@@ -807,8 +824,8 @@ loadmodule "dispatcher.so"
 # ----------------- setting module-specific parameters ---------------
 # -- dispatcher params --
 
-modparam("dispatcher", "db_url", "mysql://opensips:opensipsrw@localhost/
-opensips")
+modparam("dispatcher", "db_url", "mysql://opensips:opensipsrw@localhost
+/opensips")
 
 route{
         if ( !mf_process_maxfwd_header("10") )
@@ -831,69 +848,69 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Does dispatcher provide a fair distribution?
+   Does dispatcher provide a fair distribution?
 
-       There is no guarantee of that. You should do some measurements
-       to decide what distribution algorithm fits better in your
-       environment.
+   There is no guarantee of that. You should do some measurements
+   to decide what distribution algorithm fits better in your
+   environment.
 
    2.2.
 
-       Is dispatcher dialog stateful?
+   Is dispatcher dialog stateful?
 
-       No. Dispatcher is stateless, although some distribution
-       algorithms are designed to select same destination for
-       subsequent requests of the same dialog (e.g., hashing the
-       call-id).
+   No. Dispatcher is stateless, although some distribution
+   algorithms are designed to select same destination for
+   subsequent requests of the same dialog (e.g., hashing the
+   call-id).
 
    2.3.
 
-       What happend with the ds_is_from_list() function?
+   What happend with the ds_is_from_list() function?
 
-       The function was replaced by the more generic ds_is_in_list()
-       function that takes as parameters the IP and PORT to test
-       against the dispatcher list.
+   The function was replaced by the more generic ds_is_in_list()
+   function that takes as parameters the IP and PORT to test
+   against the dispatcher list.
 
-       ds_is_from_list() == ds_is_in_list("$si","$sp")
+   ds_is_from_list() == ds_is_in_list("$si","$sp")
 
    2.4.
 
-       What happend with the list_file module parameter ?
+   What happend with the list_file module parameter ?
 
-       The support for text file (for provisioning destinations) was
-       dropped. Only the DB support (provisioning via a DB table) is
-       now available - if you still want to use a text file for
-       provisioning, use db_text DB driver (DB emulated via text
-       files)
+   The support for text file (for provisioning destinations) was
+   dropped. Only the DB support (provisioning via a DB table) is
+   now available - if you still want to use a text file for
+   provisioning, use db_text DB driver (DB emulated via text
+   files)
 
    2.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable version should be sent to
-       <users@lists.opensips.org> and e-mail regarding development
-       versions or SVN snapshots should be send to
-       <devel@lists.opensips.org>.
+   E-mails regarding any stable version should be sent to
+   <users@lists.opensips.org> and e-mail regarding development
+   versions or SVN snapshots should be send to
+   <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues
