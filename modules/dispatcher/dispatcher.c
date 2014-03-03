@@ -485,19 +485,64 @@ static void destroy(void)
 }
 
 
-#define GET_VALUE(param_name,param,i_value,s_value,value_flags) \
+#define GET_VALUE(param_name,param,i_value,s_value,value_flags) do{ \
 	if(fixup_get_isvalue(msg, (gparam_p)(param), &(i_value), &(s_value), &(value_flags))!=0) { \
 		LM_ERR("no %s value\n", (param_name)); \
 		return -1; \
 	} \
-	if(!((value_flags)&GPARAM_INT_VALUE_FLAG)) { \
-		if (((value_flags)&GPARAM_STR_VALUE_FLAG)) { \
-			LM_ERR("Unable to get %s from [%.*s]\n", (param_name), (s_value).len, (s_value).s); \
-		} else { \
-			LM_ERR("Unable to get %s\n", (param_name)); \
-		} \
+}while(0)
+
+#define CHECK_INVALID_PARAM(param) do{ \
+	if ((param).s[(param).len-1]==',') { \
+		LM_ERR("invalid param [%.*s]\n", (param).len, (param).s); \
 		return -1; \
 	} \
+}while(0)
+
+#define PARSE_PARAM(param_name,param,ctl_param) do{ \
+	p = q_memrchr( (param).s , ',' , (param).len); \
+	_param.s = (p==NULL)?(param).s:p+1; \
+	_param.len = (p==NULL)?(param).len:((param).s+(param).len-p-1); \
+	(param).len -= _param.len + (p?1:0); \
+	if (_param.len<=0) { \
+		LM_ERR("empty slot\n"); \
+		goto error; \
+	} else { \
+		str_trim_spaces_lr(_param); \
+		if (_param.len<=0) { \
+			LM_ERR("empty %s slot after trimming\n", (param_name)); \
+			goto error; \
+		} \
+		if (str2sint(&_param, &(ctl_param))!=0) { \
+			LM_ERR("bogus %s slot [%.*s]\n", (param_name), _param.len,_param.s); \
+			goto error; \
+		} \
+	} \
+}while(0)
+
+#define DBG_PARSE_PARAM(param_name,param,ctl_param) do{ \
+	p = q_memrchr( (param).s , ',' , (param).len); \
+	_param.s = (p==NULL)?(param).s:p+1; \
+	_param.len = (p==NULL)?(param).len:((param).s+(param).len-p-1); \
+	(param).len -= _param.len + (p?1:0); \
+	LM_DBG("got %s slot [%p][%d]->[%.*s]\n", (param_name), _param.s,_param.len, _param.len,_param.s); \
+	if (_param.len<=0) { \
+		LM_ERR("empty slot\n"); \
+		goto error; \
+	} else { \
+		str_trim_spaces_lr(_param); \
+		if (_param.len<=0) { \
+			LM_ERR("empty %s slot after trimming\n", (param_name)); \
+			goto error; \
+		} \
+		if (str2sint(&_param, &(ctl_param))!=0) { \
+			LM_ERR("bogus %s slot [%.*s]\n", (param_name), _param.len,_param.s); \
+			goto error; \
+		} \
+		LM_DBG("found %s    [%p][%d]->[%.*s] => [%d]\n", \
+				(param_name), _param.s,_param.len, _param.len,_param.s, (ctl_param)); \
+	} \
+}while(0)
 
 
 /**
@@ -509,10 +554,19 @@ static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_resu
 	str s_algo = {NULL, 0};
 	str s_set = {NULL, 0};
 	str s_max = {NULL, 0};
-	ds_select_ctl_t ds_select_ctl;
+	str _param;
+	char *p;
+	int ret;
+	int run_prev_ds_select = 0;
+	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
 
 	if(msg==NULL)
 		return -1;
+
+	ds_select_ctl.mode = mode;
+	ds_select_ctl.max_results = 1000;
+	ds_select_ctl.reset_AVP = 1;
+	ds_select_ctl.set_destination = 1;
 
 	/* Retrieve dispatcher set */
 	GET_VALUE("destination set", set, ds_select_ctl.set, s_set, set_flags);
@@ -523,13 +577,98 @@ static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_resu
 	/* Retrieve dispatcher max results */
 	if (max_results) {
 		GET_VALUE("max results", max_results, ds_select_ctl.max_results, s_max, max_flags);
+		if( !( (set_flags  & GPARAM_INT_VALUE_FLAG)
+			&& (algo_flags & GPARAM_INT_VALUE_FLAG)
+			&& (max_flags  & GPARAM_INT_VALUE_FLAG) ) ) {
+			goto handle_str_params;
+		}
 	} else {
-		ds_select_ctl.max_results = 1000;
+		if( !( (set_flags  & GPARAM_INT_VALUE_FLAG)
+			&& (algo_flags & GPARAM_INT_VALUE_FLAG) ) ) {
+			goto handle_str_params;
+		}
 	}
 
-	ds_select_ctl.mode = mode;
-
 	return ds_select_dst(msg, &ds_select_ctl);
+
+handle_str_params:
+	if (max_results) {
+		if(  ( (set_flags  & GPARAM_INT_VALUE_FLAG)
+			|| (algo_flags & GPARAM_INT_VALUE_FLAG)
+			|| (max_flags  & GPARAM_INT_VALUE_FLAG) ) ) {
+			LM_ERR("Mixed param types: set_flags=[%u] algo_flags=[%u] max_flags=[%u]\n",
+				set_flags, algo_flags, max_flags);
+			return -1;
+		}
+		if( !( (set_flags  & GPARAM_STR_VALUE_FLAG)
+			&& (algo_flags & GPARAM_STR_VALUE_FLAG)
+			&& (max_flags  & GPARAM_STR_VALUE_FLAG) ) ) {
+			LM_ERR("Not all params are strings: set_flags=[%u] algo_flags=[%u] max_flags=[%u]\n",
+				set_flags, algo_flags, max_flags);
+			return -1;
+		}
+	} else {
+		if(  ( (set_flags  & GPARAM_INT_VALUE_FLAG)
+			|| (algo_flags & GPARAM_INT_VALUE_FLAG) ) ) {
+			LM_ERR("Mixed param types: set_flags=[%u] algo_flags=[%u]\n",
+				set_flags, algo_flags);
+			return -1;
+		}
+		if( !( (set_flags  & GPARAM_STR_VALUE_FLAG)
+			&& (algo_flags & GPARAM_STR_VALUE_FLAG) ) ) {
+			LM_ERR("Not all params are strings: set_flags=[%u] algo_flags=[%u]\n",
+				set_flags, algo_flags);
+			return -1;
+		}
+	}
+
+	CHECK_INVALID_PARAM(s_set);
+	CHECK_INVALID_PARAM(s_algo);
+	if (max_results) CHECK_INVALID_PARAM(s_max);
+
+	/* Avoid compiler warning */
+	memset(&prev_ds_select_ctl, 0, sizeof(ds_select_ctl_t));
+
+	ds_select_ctl.set_destination = 0;
+
+	/* Parse the params in reverse order.
+	 * We need to runt the first entry last to properly populate ds_select_dst AVPs.
+	 * On the first ds_select_dst run we need to reset AVPs.
+	 * On the last ds_select_dst run we need to set destination.  */
+	do {
+		PARSE_PARAM("set", s_set,  ds_select_ctl.set);
+		PARSE_PARAM("alg", s_algo, ds_select_ctl.alg);
+		if (max_results) PARSE_PARAM("max", s_max, ds_select_ctl.max_results);
+
+		if (run_prev_ds_select) {
+			LM_DBG("ds_select: %d %d %d %d %d\n",
+				prev_ds_select_ctl.set, prev_ds_select_ctl.alg, prev_ds_select_ctl.max_results,
+				prev_ds_select_ctl.reset_AVP, prev_ds_select_ctl.set_destination);
+			ret = ds_select_dst(msg, &prev_ds_select_ctl);
+			if (ret<0) return ret;
+			/* stop resetting AVPs. */
+			ds_select_ctl.reset_AVP = 0;
+		} else {
+			/* Enable running ds_select_dst on next loop. */
+			run_prev_ds_select = 1;
+		}
+		prev_ds_select_ctl = ds_select_ctl;
+	} while (s_set.len>0 || s_algo.len>0);
+
+	if (max_results && s_max.len>0) {
+		LM_ERR("extra max slot(s) [%.*s]\n", s_max.len,s_max.s);
+		goto error;
+	}
+
+	/* las ds_select_dst run: setting destination. */
+	ds_select_ctl.set_destination = 1;
+	LM_DBG("ds_select: %d %d %d %d %d\n",
+		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
+		ds_select_ctl.reset_AVP, ds_select_ctl.set_destination);
+	return ds_select_dst(msg, &ds_select_ctl);
+
+error:
+	return -1;
 }
 
 /**

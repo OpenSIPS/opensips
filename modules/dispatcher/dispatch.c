@@ -1421,7 +1421,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		selected = sorted_set[0];
 	}
 
-	if(ds_update_dst(msg, &selected->uri, selected->sock, ds_select_ctl->mode)!=0)
+	if(ds_select_ctl->set_destination
+		&& ds_update_dst(msg, &selected->uri, selected->sock, ds_select_ctl->mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		goto error;
@@ -1436,13 +1437,17 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
 
-	/* do some AVP cleanup before start populating new ones */
-	destroy_avps( 0 /*all types*/, dst_avp_name, 1 /*all*/);
-	destroy_avps( 0 /*all types*/, grp_avp_name, 1 /*all*/);
-	destroy_avps( 0 /*all types*/, cnt_avp_name, 1 /*all*/);
-	destroy_avps( 0 /*all types*/,sock_avp_name, 1 /*all*/);
-	if (attrs_avp_name>0)
-		destroy_avps( 0 /*all types*/,attrs_avp_name, 1 /*all*/);
+	if(ds_select_ctl->reset_AVP)
+	{
+		/* do some AVP cleanup before start populating new ones */
+		destroy_avps( 0 /*all types*/, dst_avp_name, 1 /*all*/);
+		destroy_avps( 0 /*all types*/, grp_avp_name, 1 /*all*/);
+		destroy_avps( 0 /*all types*/, cnt_avp_name, 1 /*all*/);
+		destroy_avps( 0 /*all types*/,sock_avp_name, 1 /*all*/);
+		if (attrs_avp_name>0)
+			destroy_avps( 0 /*all types*/,attrs_avp_name, 1 /*all*/);
+		ds_select_ctl->reset_AVP = 0;
+	}
 
 
 	if(ds_use_default!=0 && ds_id!=idx->nr-1)

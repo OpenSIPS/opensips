@@ -105,6 +105,8 @@ typedef struct _ds_select_ctl
 	int alg;			/* algorith to aply */
 	int mode;			/* set destination uri */
 	int max_results;	/* max destinaitons to process */
+	int reset_AVP;		/* reset AVPs flag */
+	int set_destination;/* set destination flag */
 } ds_select_ctl_t, *ds_select_ctl_p;
 
 
