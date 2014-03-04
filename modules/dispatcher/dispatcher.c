@@ -493,8 +493,9 @@ static void destroy(void)
 }while(0)
 
 #define CHECK_INVALID_PARAM(param) do{ \
-	if ((param).s[(param).len-1]==',') { \
-		LM_ERR("invalid param [%.*s]\n", (param).len, (param).s); \
+	str_trim_spaces_lr(param); \
+	if ((param).s[0] == ',' || (param).s[(param).len-1]==',') { \
+		LM_ERR("Empty slot in param [%.*s]\n", (param).len, (param).s); \
 		return -1; \
 	} \
 }while(0)
