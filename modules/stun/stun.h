@@ -47,6 +47,9 @@
 #define IN_OUT
 #define MAX_UNKNOWN_ATTRIBUTES 12
 
+#define ADV_IP(ip, adv_ip) (adv_ip != -1 ? adv_ip : ip)
+#define ADV_PORT(port, adv_port) (adv_port ? adv_port : port)
+
 /* types */
 typedef char        Bool;
 typedef char        T8;

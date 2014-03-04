@@ -23,6 +23,7 @@
  * History:
  * --------
  *  2009-09-03 initial version (razvan)
+ *  2014-03-04 added advertised IPs and ports (liviu)
  */
 
 #include "../../sr_module.h"    /* param_export_t, proc_export_t */
@@ -30,16 +31,9 @@
 #include "../../socket_info.h"  /* grep_sock_info() */
 #include "../../ip_addr.h"      /* struct socket_info */
 #include "../../str.h"          /* str */
+#include "../../trim.h"
 
 #include "stun.h"
-
-/* Exported parameters */
-char* primary_ip    = NULL;
-char* primary_port  = "5060";
-
-char* alternate_ip  = NULL;
-char* alternate_port= "3478";
-
 
 /* Globals */
 struct socket_info* grep1 = NULL;
@@ -54,17 +48,30 @@ int sockfd3=-1;	/* ip2 port1 */
 int sockfd4=-1;	/* ip2 port2 */
 
 int ip1, ip2;
-int port1, port2;
+int port1 = 5060, port2 = 3478; /* default SIP and STUN ports */
+
+/* dot representation of the above IPs - for socket matching and printing */
+char *primary_ip, *alternate_ip;
+
+/* different advertised IPs and ports, in case we're behind NAT */
+int adv_ip1 = -1, adv_ip2 = -1;
+int adv_port1, adv_port2;
+
+/* Fixup functions */
+int parse_primary_ip(modparam_t type, void *val);
+int parse_primary_port(modparam_t type, void *val);
+int parse_alternate_ip(modparam_t type, void *val);
+int parse_alternate_port(modparam_t type, void *val);
 
 /*
  * Exported parameters ip, port
  */
 static param_export_t params[] = {
-	{"primary_ip",      STR_PARAM,  (void*) &primary_ip},
-	{"primary_port",    STR_PARAM,  (void*) &primary_port},
-	{"alternate_ip",    STR_PARAM,  (void*) &alternate_ip},
-	{"alternate_port",  STR_PARAM,  (void*) &alternate_port},
-	{0, 0, 0}
+	{"primary_ip",      STR_PARAM | USE_FUNC_PARAM,  parse_primary_ip     },
+	{"primary_port",    STR_PARAM | USE_FUNC_PARAM,  parse_primary_port   },
+	{"alternate_ip",    STR_PARAM | USE_FUNC_PARAM,  parse_alternate_ip   },
+	{"alternate_port",  STR_PARAM | USE_FUNC_PARAM,  parse_alternate_port },
+	{ 0, 0, 0}
 };
 
 /* Extra proces for listening loop */
@@ -88,8 +95,6 @@ struct module_exports exports = {
 	0,                  /* destroy function */
 	child_init          /* per-child init function */
 };
-
-
 
 /* init */
 int bind_ip_port(int ip, int port, int* sockfd){
@@ -124,38 +129,21 @@ static int stun_mod_init(void)
 {
 	str s;
 
-	if (primary_ip==NULL || primary_ip[0]==0) {
+	if (!primary_ip || primary_ip[0] == '\0') {
 		LM_ERR("Primary IP was not configured!\n");
 		return -1;
 	}
-	if (inet_pton(AF_INET, primary_ip, &ip1) < 1) {
-		LM_ERR("Invalid ip1 %s : %s\n",primary_ip, strerror(errno));
+
+	if (!alternate_ip || alternate_ip[0] == '\0') {
+		LM_ERR("Alternate IP was not configured!\n");
 		return -1;
 	}
 
-	if (alternate_ip==NULL || alternate_ip[0]==0) {
-		LM_ERR("Primary IP was not configured!\n");
-		return -1;
-	}
-	if (inet_pton(AF_INET, alternate_ip, &ip2) < 1) {
-		LM_ERR("Invalid ip2 %s : %s\n",alternate_ip, strerror(errno));
-		return -1;
-	}
+	if (adv_ip1 != -1 && adv_port1 == 0)
+		adv_port1 = port1;
 
-	ip1 = ntohl(ip1);
-	ip2 = ntohl(ip2);
-
-	port1 = atoi(primary_port);
-	if(!(0<port1 && port1< 65536)){
-		LM_ERR("Invalid port1 %s\n",primary_port);
-		return -1;
-	}
-
-	port2 = atoi(alternate_port);
-	if(!(0<port2 && port2< 65536)){
-		LM_ERR("Invalid port2 %s\n",alternate_port);
-		return -1;
-	}
+	if (adv_ip2 != -1 && adv_port2 == 0)
+		adv_port1 = port2;
 
 	s.s = primary_ip; s.len = strlen(primary_ip);
 	grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
@@ -251,6 +239,7 @@ void stun_loop(int rank)
 	memset( &ri, 0, sizeof(ri) );
 
 	for(;;){
+		LM_DBG("READING\n");
 		read_set = all_set;
 
 		nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
@@ -320,15 +309,15 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 
 	/* info & checks*/
     if(sockfd == sockfd1)
-	sprintf(s, "%i %s %s", sockfd1, primary_ip, primary_port);
+	sprintf(s, "%i %s %d", sockfd1, primary_ip, port1);
     else if(sockfd == sockfd2)
-	sprintf(s, "%i %s %s", sockfd2, primary_ip, alternate_port);
+	sprintf(s, "%i %s %d", sockfd2, primary_ip, port2);
     else if(sockfd == sockfd3)
-	sprintf(s, "%i %s %s", sockfd3, alternate_ip, primary_port);
+	sprintf(s, "%i %s %d", sockfd3, alternate_ip, port1);
     else if(sockfd == sockfd4)
-	sprintf(s, "%i %s %s", sockfd4, alternate_ip, alternate_port);
+	sprintf(s, "%i %s %d", sockfd4, alternate_ip, port2);
     else{
-	sprintf(s, "%i unknown %s %s", sockfd, alternate_ip, alternate_port);
+	sprintf(s, "%i unknown %s %d", sockfd, alternate_ip, port2);
 	LM_DBG("Received: on [%s] from [%s %i]; drop msg\n", s, inet_ntoa(client->sin_addr),
 	    ntohs(client->sin_port));
 	return -1;
@@ -374,13 +363,13 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 
 /* send */
     if(ctl.sock_outbound == sockfd1)
-	sprintf(s, "%i %s %s", sockfd1, primary_ip, primary_port);
+	sprintf(s, "%i %s %d", sockfd1, primary_ip, port1);
     else if(ctl.sock_outbound == sockfd2)
-	sprintf(s, "%i %s %s", sockfd2, primary_ip, alternate_port);
+	sprintf(s, "%i %s %d", sockfd2, primary_ip, port2);
     else if(ctl.sock_outbound == sockfd3)
-	sprintf(s, "%i %s %s", sockfd3, alternate_ip, primary_port);
+	sprintf(s, "%i %s %d", sockfd3, alternate_ip, port1);
     else if(ctl.sock_outbound == sockfd4)
-	sprintf(s, "%i %s %s", sockfd4, alternate_ip, alternate_port);
+	sprintf(s, "%i %s %d", sockfd4, alternate_ip, port2);
     else
 	sprintf(s, "%i unknown", ctl.sock_outbound);
 
@@ -729,17 +718,17 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 	    msg->sourceAddress->family = 0x01;
 
 	    if(ctl->sock_outbound == sockfd1){
-		msg->sourceAddress->ip4 = ip1;
-		msg->sourceAddress->port = port1;
+		msg->sourceAddress->ip4 = ADV_IP(ip1, adv_ip1);
+		msg->sourceAddress->port = ADV_PORT(port1, adv_port1);
 	    }else if(ctl->sock_outbound == sockfd2){
-		msg->sourceAddress->ip4 = ip1;
-		msg->sourceAddress->port = port2;
+		msg->sourceAddress->ip4 = ADV_IP(ip1, adv_ip1);
+		msg->sourceAddress->port = ADV_PORT(port2, adv_port2);
 	    }else if(ctl->sock_outbound == sockfd3){
-		msg->sourceAddress->ip4 = ip2;
-		msg->sourceAddress->port = port1;
+		msg->sourceAddress->ip4 = ADV_IP(ip2, adv_ip2);
+		msg->sourceAddress->port = ADV_PORT(port1, adv_port1);
 	    }else if(ctl->sock_outbound == sockfd4){
-		msg->sourceAddress->ip4 = ip2;
-		msg->sourceAddress->port = port2;
+		msg->sourceAddress->ip4 = ADV_IP(ip2, adv_ip2);
+		msg->sourceAddress->port = ADV_PORT(port2, adv_port2);
 	    }
 	    return 2 + 2 + 8;
 
@@ -765,17 +754,17 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 		1 >< 4  ;  2 >< 3
 	     */
 	    if(ctl->sock_inbound == sockfd1){
-		msg->changedAddress->ip4 = ip2;
-		msg->changedAddress->port = port2;
+		msg->changedAddress->ip4 = ADV_IP(ip2, adv_ip2);
+		msg->changedAddress->port = ADV_PORT(port2, adv_port2);
 	    }else if(ctl->sock_inbound == sockfd2){
-		msg->changedAddress->ip4 = ip2;
-		msg->changedAddress->port = port1;
+		msg->changedAddress->ip4 = ADV_IP(ip2, adv_ip2);
+		msg->changedAddress->port = ADV_PORT(port1, adv_port1);
 	    }else if(ctl->sock_inbound == sockfd3){
-		msg->changedAddress->ip4 = ip1;
-		msg->changedAddress->port = port2;
+		msg->changedAddress->ip4 = ADV_IP(ip1, adv_ip1);
+		msg->changedAddress->port = ADV_PORT(port2, adv_port2);
 	    }else if(ctl->sock_inbound == sockfd4){
-		msg->changedAddress->ip4 = ip1;
-		msg->changedAddress->port = port1;
+		msg->changedAddress->ip4 = ADV_IP(ip1, adv_ip1);
+		msg->changedAddress->port = ADV_PORT(port1, adv_port1);
 	    }
 	    return 2 + 2 + 8;
 
@@ -1415,4 +1404,132 @@ void print_hex(IN char* buffer, IN int size){
 	LM_DBG("%04hX", ntohs(t16[i]));
     }
     LM_DBG("\n");
+}
+
+/**
+ * @buf:        a "ip[ / advertised_ip]" type of string
+ * @rcv_ip:     IP of a receiving interface (dot representation)
+ * @rcv_ip_int: same as above (integer representation)
+ * @adv_ip:     IP of an advertised interface (integer representation)
+ */
+static int parse_ip_modparam(char *buf, char **rcv_ip, int *rcv_ip_int,
+                             int *adv_ip)
+{
+	char *p;
+	str ip;
+
+	p = strchr(buf, '/');
+
+	if (p) {
+		ip.s   = buf;
+		ip.len = p - ip.s;
+	} else {
+		ip.s   = buf;
+		ip.len = strlen(buf);
+	}
+
+	trim(&ip);
+
+	if (p)
+		ip.s[ip.len] = '\0';
+
+	*rcv_ip = ip.s;
+
+	if (inet_pton(AF_INET, ip.s, rcv_ip_int) < 1) {
+		LM_ERR("Invalid ip %s : %s\n", ip.s, strerror(errno));
+		return -1;
+	}
+
+	*rcv_ip_int = ntohl(*rcv_ip_int);
+
+	LM_DBG("Parsed IP: %s %d\n", *rcv_ip, *rcv_ip_int);
+
+	if (!p || !adv_ip)
+		return 0;
+
+	ip.s   = p + 1;
+	ip.len = strlen(ip.s);
+	trim(&ip);
+
+	if (inet_pton(AF_INET, ip.s, adv_ip) < 1) {
+		LM_ERR("Invalid advertised ip %s : %s\n", ip.s, strerror(errno));
+		return -1;
+	}
+
+	*adv_ip = ntohl(*adv_ip);
+
+	LM_DBG("Parsed advertised IP: %.*s %d\n", ip.len, ip.s, *adv_ip);
+
+	return 0;
+}
+
+/**
+ * @buf:        a "port[ / advertised_port]" type of string
+ * @port:       STUN listening port
+ * @adv_port:   STUN advertised port
+ */
+static int parse_port_modparam(char *buf, int *port, int *adv_port)
+{
+	char *p;
+	str st;
+
+	p = strchr(buf, '/');
+
+	if (p) {
+		st.s   = buf;
+		st.len = p - buf;
+	} else {
+		st.s = buf;
+		st.len = strlen(buf);
+	}
+
+	trim(&st);
+
+	if (p)
+		st.s[st.len] = '\0';
+
+	*port = atoi(st.s);
+	if (!(0 < *port && *port < 65536)) {
+		LM_ERR("Invalid port %.*s\n", st.len, st.s);
+		return -1;
+	}
+
+	LM_DBG("Parsed port: %d\n", *port);
+
+	if (!p || !adv_port)
+		return 0;
+
+	st.s   = p + 1;
+	st.len = strlen(st.s);
+	trim(&st);
+
+	*adv_port = atoi(st.s);
+	if (!(0 < *adv_port && *adv_port < 65536)) {
+		LM_ERR("Invalid port %.*s\n", st.len, st.s);
+		return -1;
+	}
+
+	LM_DBG("Parsed advertised port: %d\n", *adv_port);
+
+	return 0;
+}
+
+int parse_primary_ip(modparam_t type, void *val)
+{
+	return parse_ip_modparam(val, &primary_ip, &ip1, &adv_ip1);
+}
+
+int parse_primary_port(modparam_t type, void *val)
+{
+	return parse_port_modparam(val, &port1, &adv_port1);
+}
+
+int parse_alternate_ip(modparam_t type, void *val)
+{
+	return parse_ip_modparam(val, &alternate_ip, &ip2, &adv_ip2);
+}
+
+int parse_alternate_port(modparam_t type, void *val)
+{
+	return parse_port_modparam(val, &port2, &adv_port2);
 }
