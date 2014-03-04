@@ -1918,7 +1918,12 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 
 	/* get the gw ID */
 	if (fixup_get_svalue(msg, (gparam_p)gw_str, &ids) != 0) {
-		LM_ERR("Invalid number pseudo variable!\n");
+		LM_ERR("Invalid pseudo variable!\n");
+		return -1;
+	}
+	str_trim_spaces_lr(ids);
+	if (ids.s[0] == ',' || ids.s[ids.len-1] == ',') {
+		LM_ERR("Empty slot\n");
 		return -1;
 	}
 
@@ -1943,10 +1948,12 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 		ids.len -= id.len + (p?1:0);
 		ids.s += id.len + (p?1:0);
 
-		if (id.len==0) {
-			/* skipping empty ID */
+		str_trim_spaces_lr(id);
+		if (id.len<=0) {
+			LM_ERR("empty slot\n");
+			lock_stop_read( ref_lock );
+			return -1;
 		} else {
-			str_trim_spaces_lr(id);
 			LM_DBG("found and looking for gw id <%.*s>,len=%d\n",id.len, id.s, id.len);
 			gw = get_gw_by_id( (*rdata)->pgw_l, &id );
 			if (gw==NULL) {
