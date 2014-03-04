@@ -55,7 +55,9 @@ Chapter 1. Admin Guide
    A stun server working with the same port as SIP (5060) in order
    to gain accurate information. The benefit would be an exact
    external address in the case of NATs translating differently
-   when given different destination ports.
+   when given different destination ports. The server may also
+   advertise different network addresses than the ones it is
+   actually listening on.
 
 1.1.2.  Basic Operation
 
@@ -115,43 +117,78 @@ Chapter 1. Admin Guide
 
 1.3.1.  primary_ip (str)
 
-   The ip of the an interface configured as UDP SIP listener in
-   OpenSIPS. It is a mandatory paramter, by default empty.
+   The IP of an interface which is configured as an UDP SIP
+   listener in OpenSIPS. This is a mandatory parameter.
+
+   Syntax: "ip [/ advertised_ip]
+
+   By default, the primary_ip and the advertised primary_ip will
+   be identical. This may be changed with an optional "/
+   xxx.xxx.xxx.xxx" string.
 
    Example 1.1. Set primary_ip parameter
 ...
-modparam("stun","primary_ip","192.168.0.100")
+modparam("stun", "primary_ip", "192.168.0.100")
+
+# Example of a STUN server within OpenSIPS which is behind NAT
+modparam("stun", "primary_ip", "192.168.0.100 / 64.50.46.78")
 ...
 
 1.3.2.  primary_port (str)
 
    The port configured (together with the primary_ip) as an UDP
-   SIP listener in OpenSIPS. It is a mandatory paramter, by
-   default 5060.
+   SIP listener in OpenSIPS. The default value is 5060.
+
+   Syntax: "port [/ advertised_port]
+
+   By default, the primary_port and the advertised primary_port
+   will be identical. This may be changed with an optional "/
+   adv_port" string.
 
    Example 1.2. Set primary_port parameter
 ...
-modparam("stun","primary_port","5060")
+modparam("stun", "primary_port", "5060")
+
+# Listening on a primary port, but advertising a different one
+modparam("stun", "primary_port", "5060 / 5062")
 ...
 
 1.3.3.  alternate_ip (str)
 
-   Another ip from another interface. It is mandatory to be set,
-   default is empty (not set).
+   Another IP from another interface. This is a mandatory
+   parameter.
+
+   Syntax: "ip [/ advertised_ip]
+
+   By default, the alternate_ip and the advertised alternate_ip
+   will be identical. This may be changed with an optional "/
+   xxx.xxx.xxx.xxx" string.
 
    Example 1.3. Set alternate_ip parameter
 ...
 modparam("stun","alternate_ip","11.22.33.44")
+
+# Example of a STUN server within OpenSIPS which is behind NAT
+modparam("stun", "alternate_ip", "192.168.0.100 / 64.78.46.50")
 ...
 
 1.3.4.  alternate_port (str)
 
-   Another port used by STUN. It is mandatory to be set, default
-   value is 3478 (default STUN port).
+   The port used by the STUN server for the second interface. The
+   default value is 3478 (default STUN port).
+
+   Syntax: "port [/ advertised_port]
+
+   By default, the alternate_port and the advertised
+   alternate_port will be identical. This may be changed with an
+   optional "/ adv_port" string.
 
    Example 1.4. Set alternate_port parameter
 ...
 modparam("stun","alternate_port","3479")
+
+# Listening on a alternate port, but advertising a different one
+modparam("stun", "alternate_port", "5060 / 5062")
 ...
 
 1.4. Exported MI Functions

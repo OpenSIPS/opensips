@@ -13,7 +13,8 @@
 			A stun server working with the same port as SIP (5060) in order to
 			gain accurate information. The benefit would be an exact external 
 			address in the case of NATs translating differently when given 
-			different destination ports.
+			different destination ports. The server may also advertise different
+			network addresses than the ones it is actually listening on.
 			</para>
 		</section>
 
@@ -110,8 +111,16 @@
 				<varname>primary_ip</varname> (str)
 			</title>
 			<para>
-			The ip of the an interface configured as UDP SIP listener
-			in &osips;. It is a mandatory paramter, by default empty.
+			The IP of an interface which is configured as an UDP SIP listener
+			in &osips;. This is a mandatory parameter. 
+			</para>
+			<para>
+			Syntax: "ip [/ advertised_ip]
+			</para>
+			<para>
+			By default, the <emphasis>primary_ip</emphasis> and the advertised
+			<emphasis>primary_ip</emphasis> will be identical.
+			This may be changed with an optional "/ xxx.xxx.xxx.xxx" string.
 			</para>
 			<example>
 				<title>Set
@@ -119,7 +128,10 @@
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("stun","primary_ip","192.168.0.100")
+modparam("stun", "primary_ip", "192.168.0.100")
+
+# Example of a STUN server within OpenSIPS which is behind NAT
+modparam("stun", "primary_ip", "192.168.0.100 / 64.50.46.78")
 ...
 				</programlisting>
 			</example>
@@ -130,27 +142,45 @@ modparam("stun","primary_ip","192.168.0.100")
 				<varname>primary_port</varname> (str)
 			</title>
 			<para>
-			The port configured (together with the primary_ip) as an UDP SIP
-			listener in &osips;. It is a mandatory paramter, by default 5060.
+			The port configured (together with the <emphasis>primary_ip</emphasis>) as an UDP SIP
+			listener in &osips;. The default value is 5060.
+			</para>
+			<para>
+			Syntax: "port [/ advertised_port]
+			</para>
+			<para>
+			By default, the <emphasis>primary_port</emphasis> and the advertised
+			<emphasis>primary_port</emphasis> will be identical.
+			This may be changed with an optional "/ adv_port" string.
 			</para>
 			<example>
 				<title>Set <varname>primary_port</varname> parameter
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("stun","primary_port","5060")
+modparam("stun", "primary_port", "5060")
+
+# Listening on a primary port, but advertising a different one
+modparam("stun", "primary_port", "5060 / 5062")
 ...
 				</programlisting>
 			</example>
 		</section>
-		
+
 		<section>
 			<title>
 				<varname>alternate_ip</varname> (str)
 			</title>
 			<para>
-			Another ip from another interface. It is mandatory to be set,
-			default is empty (not set).
+			Another IP from another interface. This is a mandatory parameter.
+			</para>
+			<para>
+			Syntax: "ip [/ advertised_ip]
+			</para>
+			<para>
+			By default, the <emphasis>alternate_ip</emphasis> and the advertised
+			<emphasis>alternate_ip</emphasis> will be identical.
+			This may be changed with an optional "/ xxx.xxx.xxx.xxx" string.
 			</para>
 			<example>
 				<title>Set
@@ -159,6 +189,9 @@ modparam("stun","primary_port","5060")
 				<programlisting format="linespecific">
 ...
 modparam("stun","alternate_ip","11.22.33.44")
+
+# Example of a STUN server within OpenSIPS which is behind NAT
+modparam("stun", "alternate_ip", "192.168.0.100 / 64.78.46.50")
 ...
 				</programlisting>
 			</example>
@@ -169,8 +202,16 @@ modparam("stun","alternate_ip","11.22.33.44")
 				<varname>alternate_port</varname> (str)
 			</title>
 			<para>
-			Another port used by STUN. It is mandatory to be set, default
-			value is 3478 (default STUN port).
+			The port used by the STUN server for the second interface.
+			The default value is 3478 (default STUN port).
+			</para>
+			<para>
+			Syntax: "port [/ advertised_port]
+			</para>
+			<para>
+			By default, the <emphasis>alternate_port</emphasis> and the advertised
+			<emphasis>alternate_port</emphasis> will be identical.
+			This may be changed with an optional "/ adv_port" string.
 			</para>
 			<example>
 				<title>Set
@@ -179,6 +220,9 @@ modparam("stun","alternate_ip","11.22.33.44")
 				<programlisting format="linespecific">
 ...
 modparam("stun","alternate_port","3479")
+
+# Listening on a alternate port, but advertising a different one
+modparam("stun", "alternate_port", "5060 / 5062")
 ...
 				</programlisting>
 			</example>
