@@ -1937,13 +1937,16 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	idx = 0;
 	do {
 		id.s = ids.s;
-		p = memchr( ids.s , ',' , ids.len);
+		p = q_memchr( ids.s , ',' , ids.len);
 		id.len = (p==NULL)?ids.len:(p-ids.s);
+
+		ids.len -= id.len + (p?1:0);
+		ids.s += id.len + (p?1:0);
 
 		if (id.len==0) {
 			/* skipping empty ID */
 		} else {
-			trim_spaces_lr(id);
+			str_trim_spaces_lr(id);
 			LM_DBG("found and looking for gw id <%.*s>,len=%d\n",id.len, id.s, id.len);
 			gw = get_gw_by_id( (*rdata)->pgw_l, &id );
 			if (gw==NULL) {
@@ -1955,9 +1958,6 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 				idx++;
 			}
 		}
-
-		ids.len -= id.len + (p?1:0);
-		ids.s += id.len + (p?1:0);
 	} while(ids.len>0);
 
 	/* we are done reading -> unref the data */
