@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "../../mem/shm_mem.h" 
 #include "../../dprint.h"
