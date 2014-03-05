@@ -2388,10 +2388,37 @@ module_func_param: STRING {
 										elems[$1+1].u.data = $3;
 										$$=$1+1;
 										}
+		| COMMA {
+										elems[1].type = NULLV_ST;
+										elems[1].u.data = NULL;
+										elems[2].type = NULLV_ST;
+										elems[2].u.data = NULL;
+										$$=2;
+										}
+		| COMMA STRING {
+										elems[1].type = NULLV_ST;
+										elems[1].u.data = NULL;
+										elems[2].type = STRING_ST;
+										elems[2].u.data = $2;
+										$$=2;
+										}
+		| module_func_param COMMA {
+										if ($1+1>=MAX_ACTION_ELEMS) {
+										 	   yyerror("too many arguments in function\n");
+										 	   $$=0;
+										}
+										elems[$1+1].type = NULLV_ST;
+										elems[$1+1].u.data = NULL;
+										$$=$1+1;
+										}
 		| NUMBER {
 										$$=0;
 										yyerror("numbers used as parameters - they should be quoted");
 										}
+		| COMMA NUMBER {
+									   $$=0;
+									   yyerror("numbers used as parameters - they should be quoted");
+									   }
 		| module_func_param COMMA NUMBER {
 										$$=0;
 										yyerror("numbers used as parameters - they should be quoted");

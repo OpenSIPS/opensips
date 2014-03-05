@@ -455,9 +455,12 @@ static int fix_actions(struct action* a)
 					}
 					else {
 						for (i=1; i<=cmd->param_no; i++) {
-							ret=cmd->fixup(&t->elem[i].u.data, i);
-							t->elem[i].type=MODFIXUP_ST;
-							if (ret<0) goto error;
+							/* we only call the fixup for non-null arguments */
+							if (t->elem[i].type != NULLV_ST) {
+								ret=cmd->fixup(&t->elem[i].u.data, i);
+								t->elem[i].type=MODFIXUP_ST;
+								if (ret<0) goto error;
+							}
 						}
 					}
 				}
