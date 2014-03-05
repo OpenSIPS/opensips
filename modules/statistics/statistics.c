@@ -145,7 +145,7 @@ static int fixup_stat(void** param, int param_no)
 		/* reference to the statistic name */
 		sp = (struct stat_param *)pkg_malloc(sizeof(struct stat_param));
 		if (sp==NULL) {
-			LM_ERR("no more pkg mem (%ld)\n",sizeof(struct stat_param));
+			LM_ERR("no more pkg mem (%d)\n", (int)sizeof(struct stat_param));
 			return E_OUT_OF_MEM;
 		}
 		memset( sp, 0 , sizeof(struct stat_param) );
