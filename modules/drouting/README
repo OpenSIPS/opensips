@@ -73,7 +73,7 @@ Anca-Maria Vamanu
               1.4.2. route_to_carrier(carrier_id)
               1.4.3. route_to_gw(gw_id)
               1.4.4. use_next_gw()/next_routing()
-              1.4.5. goes_to_gw([[type],flags])
+              1.4.5. goes_to_gw([type[, flags]])
               1.4.6. is_from_gw( [type, [flag]])
               1.4.7. dr_is_gw(src_pv, [type, [flag]])
               1.4.8. dr_disable()
@@ -159,16 +159,15 @@ Chapter 1. Admin Guide
 
    The dynamic routing implementation for OpenSIPS is designed
    with the following properties:
-     * routing info (destinations, carriers, rules, groups) are
+     * The routing info (destinations, carriers, rules, groups) is
        stored in a database and loaded into memory at start up
-       time; reload at runtime via an Management Interface
-       command.
-     * weigth-based or random selection of the destinations (from
+       time; reload at runtime via a Management Interface command.
+     * weight-based or random selection of the destinations (from
        a rule or from a carrier), failure detection of gateways
        (with switching to next available gateway).
      * able to handle large volume of routing info (10M of rules)
        with minimal speed/time and memory consumption penalties
-     * script integration - Pseudo variables support in functions;
+     * script integration - Pseudo-variable support in functions;
        scripting route triggering when rules are matched
      * bidirectional behavior - inbound and outbound processing
        (strip and prefixing when sending and receiving from a
@@ -184,8 +183,8 @@ Chapter 1. Admin Guide
    There were several tests performed regarding the performance of
    the module when dealing with a large number of routing rules.
 
-   The tests were performed with a set of 383000 rules and to
-   values were measured:
+   The tests were performed with a set of 383000 rules and
+   measured:
      * time to load from DB
      * used shared memory
 
@@ -210,8 +209,8 @@ Chapter 1. Admin Guide
    These are the end SIP entities where actually the traffic needs
    to be sent after routing. They are stored in a table called
    “dr_gateways”. Gateway addresses are stored in a separate table
-   because of need to access them independent of Dynamic Routing
-   processing (e.g., adding/ removing gateway PRI prefix
+   because of the need to access them independent of Dynamic
+   Routing processing (e.g., adding/ removing gateway PRI prefix
    before/after performing other operation -- receiving/relaying
    to gateway).
 
@@ -256,9 +255,9 @@ Chapter 1. Admin Guide
 
 1.1.4.3. Routing Rules
 
-   These are the actual rule which control the routing - like
-   based on different criterias (prefix, time, priority, etc) they
-   will decide to which gateways the call will be sent.
+   These are the actual rules which control the routing. Using
+   different criterias (prefix, time, priority, etc), they will
+   decide to which gateways the call will be sent.
 
    Default name for the table storing rule definitions is
    “dr_rules”.
@@ -266,21 +265,21 @@ Chapter 1. Admin Guide
    In DR, a carrier is defined by:
      * group (list of numbers) - rules can be grouped (a rule may
        belong to multiple groups in the same time ) and you can
-       use only a certian group at a point; like having a
+       use only a certain group at a point; like having a
        “premium” or “standard” or “interstate” or “intrastate”
        groups of rules to be used in different cases
      * prefix (string with digits only) - prefix to be used for
        matching this rule (longest prefix matching)
      * time validity (time recurrence string) - when this rule is
        valid from time point of view (see RFC 2445)
-     * priority (number) - prority off the rule - higher value,
+     * priority (number) - priority of the rule - higher value,
        higher priority (see rule section alg)
      * script route ID (string) - if defined, then execute the
        route with the specified ID when this rule is matched.
        That's it, a route which can be used to perform custom
        operations on message. NOTE that no modification is
        performed at signaling level and you must NOT do any
-       signalling operations in that script route
+       signaling operations in that script route
      * list of GWs/carriers (string) - a comma separated list of
        gateways or carriers (defined by IDs) to be used for this
        rule; the carrier IDs are prefixed with “#” sign. For each
@@ -293,12 +292,12 @@ Chapter 1. Admin Guide
 
    More on time recurrence:
      * A date-time expression that defines the time recurrence to
-       match for current rule. Time recurrences are based closely
-       on the specification of recurring intervals of time in the
-       Internet Calendaring and Scheduling Core Object
-       Specification (calendar COS), RFC 2445. The set of
-       attributes used in routing rule specification is subset of
-       time recurrence attributes.
+       be matched for current rule. Time recurrences are based
+       closely on the recurring time intervals from the Internet
+       Calendaring and Scheduling Core Object Specification
+       (calendar COS), RFC 2445. The set of attributes used in
+       routing rule specification is a subset of time recurrence
+       attributes.
      * The value stored in database has the format of:
        <dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bym
        onthday>|<byyearday>|<byweekno>|<bymonth>
@@ -326,11 +325,11 @@ Chapter 1. Admin Guide
        If a certain flag is set, then the processing is stopped
        after executing the route block.
      * The rule must contain a chain of gateways and carriers. The
-       module will execute serial forking for each address in
-       chain (in which order the destinations will be tried,
-       depends on the defintion order or depends on the weights
-       (weights selection must be enabled). The next address in
-       chain is used only if the previously has failed.
+       module will execute serial forking for each address in the
+       chain (ordering is either done by simply using the
+       definition order or it may weight-based - weight selection
+       must be enabled). The next address in chain is used only if
+       the previously has failed.
      * With the right gateway address found, the prefix (PRI) of
        the gateway is added to the request URI and then the
        request is forwarded.
@@ -721,7 +720,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
             their weight.
           + F - Enable rule fallback; normally the engine is using
             a single rule for routing a call; by setting this
-            flag, the enging will fallback and use rules with less
+            flag, the engine will fallback and use rules with less
             priority or shorter prefix when all the destination
             from the current rules failed.
           + L - Do strict length matching over the prefix -
@@ -731,8 +730,9 @@ modparam("drouting", "drg_grpid_col", "grpid")
             routing rule, without loading / applying any routing
             info (no GW is set, the RURI is not altered)
      * gw_whitelist - a comma separated white list of gateways.
-       This will force routing over this list of carriers or
-       gateways (a subset of what found in the prefix rules).
+       This will force routing over, at most, this list of
+       carriers or gateways (an intersection with the results of
+       the search through the rules).
 
    Example 1.26. do_routing usage
 ...
@@ -776,18 +776,25 @@ if ( route_to_carrier("my_top_carrier") ) {
 
 1.4.3.  route_to_gw(gw_id)
 
-   Function to trigger the direct routing to a given gateway.
-   Attributes and per-gw preocessing will be available.
+   Function to trigger the direct routing to a given gateway (or
+   list of gateways). Attributes and per-gw preocessing will be
+   available.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE.
 
-   Function takes a single mandatory parameter, the ID of the
-   gateway to be used (variables are accepted).
+   Function takes a single mandatory parameter, the ID (or list)
+   of the gateway to be used (variables are accepted). If a list
+   is used, the elements must be comma separated.
 
    Example 1.28. route_to_gw usage
 ...
 if ( route_to_gw("gw_europe") ) {
+        t_relay();
+        exit;
+}
+...
+if ( route_to_gw("gw1,gw2,gw3") ) {
         t_relay();
         exit;
 }
@@ -817,7 +824,7 @@ if (use_next_gw()) {
 }
 ...
 
-1.4.5.  goes_to_gw([[type],flags])
+1.4.5.  goes_to_gw([type[, flags]])
 
    Function returns true if the destination of the current request
    (destination URI or Request URI) points (as IP) to one of the
@@ -1000,11 +1007,12 @@ Enabled:: yes
 
 1.6. Installation
 
-   The module requires 4 table in OpenSIPS database: dr_groups,
-   dr_gateways, dr_carriers, dr_rules. The SQL syntax to create
-   them can be found in drouting-create.sql script in the database
-   directories in the opensips/scripts folder. You can also find
-   the complete database documentation on the project webpage,
+   The module requires 4 tables in the OpenSIPS database:
+   dr_groups, dr_gateways, dr_carriers, dr_rules. The SQL syntax
+   to create them can be found in the drouting-create.sql script,
+   located in the database directories of the opensips/scripts
+   folder. You can also find the complete database documentation
+   on the project webpage,
    http://www.opensips.org/html/docs/db/db-schema-devel.html.
 
 Chapter 2. Developer Guide

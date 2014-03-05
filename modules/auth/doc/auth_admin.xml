@@ -51,7 +51,7 @@
 			the listed modules must be loaded before this module):
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>signalign</emphasis> -- Signaling module</para>
+				<para><emphasis>signaling</emphasis> -- Signaling module</para>
 			</listitem>
 			</itemizedlist>
 			</para>

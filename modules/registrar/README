@@ -53,7 +53,7 @@ Bogdan-Andrei Iancu
         1.4. Exported Functions
 
               1.4.1. save(domain [,flags ,[aor]])
-              1.4.2. remove(domain, AOR[, target]])
+              1.4.2. remove(domain, AOR[, target])
               1.4.3. lookup(domain [, flags [, aor]])
               1.4.4. registered(domain [,AOR[, callid]])
               1.4.5. is_other_contact(domain , IPs)
@@ -351,7 +351,7 @@ modparam("registrar", "retry_after", 30)
    and used only if the flag 's' (Socket header) is set at
    "save()" time.
 
-   This make sens only in multiple replicated servers scenarios.
+   This makes sense only in multiple replicated servers scenarios.
 
    Default value is NULL.
 
@@ -367,7 +367,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
    registrar). The AVP will be used to extract the imposed expires
    from the 200ok reply.
 
-   This make sens only in cached registrations scenario.
+   This makes sense only in cached registrations scenario.
 
    Default value is NULL.
 
@@ -381,8 +381,8 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
    (in memory, db or both) at every registrar 'save'. When a
-   registrar 'lookup' is done, the attr_avp is populated with the
-   value saved at [re]registration.
+   registrar 'lookup' or 'registered' function is called, the
+   attr_avp is populated with the value saved at [re]registration.
 
    When doing call forking, the avp will hold multiple values. The
    position of the corresponding attribute information in attr_avp
@@ -524,7 +524,7 @@ save("location","","$fu");
 save("location","mr", "$avp(aor)");
 ...
 
-1.4.2.  remove(domain, AOR[, target]])
+1.4.2.  remove(domain, AOR[, target])
 
    Explicitly remove contacts behind a given address-of-record.
 
@@ -547,11 +547,11 @@ save("location","mr", "$avp(aor)");
 remove("location", "sip:bob@atlanta.com");
 ...
 # remove only bob's home phone
-remove("location", "sip:bob@atlanta.com", "sip:bob_home@proxy.com");
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 ...
 # remove all bob's phones which are behind "50.60.50.60"
 $var(next_hop) = "50.60.50.60"
-save("location", "sip:bob@atlanta.com", "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 ...
 
 1.4.3.  lookup(domain [, flags [, aor]])
@@ -583,7 +583,7 @@ save("location", "sip:bob@atlanta.com", "$var(next_hop)");
             contact filtering based on supported methods should be
             performed during lookup.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
-       used as AOR; This can be a variable.
+       used as AOR; This must be a variable.
 
    Return codes:
      * 1 - contacts found and returned.
@@ -623,7 +623,7 @@ switch ($retcode) {
    Meaning of the parameters is as follows:
      * domain - Name of table that should be used for the lookup.
      * AOR (optional)- AOR to lookup for; if missing, the RURI is
-       used as AOR; This can be a variable.
+       used as AOR; This must be a variable.
      * callid (optional)- callid to check if a contact if
        registered with this callid (this may help you to make
        distinction between newly registered contact (callid not
@@ -672,7 +672,7 @@ if (is_other_contact("location", "$avp(ips)")) {
    “hdr_name” which contains the description of the received
    socket (proto:ip:port)
 
-   This make sens only in multiple replicated servers scenarios.
+   This makes sense only in multiple replicated servers scenarios.
 
    Meaning of the parameters is as follows:
      * hdr_name - header name to be used.

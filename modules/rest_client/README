@@ -137,13 +137,13 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
    Issues an HTTP GET request to the given 'url', and returns a
    representation of the resource.
 
-   The body_pv avp will hold the body of the HTTP response.
+   The body_pv pseudo-var will hold the body of the HTTP response.
 
-   The optional ctype_pv avp will contain the value of the
+   The optional ctype_pv pseudo-var will contain the value of the
    "Content-Type:" header.
 
-   The optional retcode_pv avp is used to retain the HTTP status
-   code of the response message.
+   The optional retcode_pv pseudo-var is used to retain the HTTP
+   status code of the response message.
 
    Possible parameter types
      * url - String, pseudo-variable, or a String which includes
@@ -158,9 +158,9 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
 # Example of querying a REST service to get the credit of an account
 
-if (!rest_get("http://getcredit.org/?ruri=$fU", "$avp(credit)", "$avp(ct
-)", "$avp(rcode)")) {
-        xlog("Error code $avp(rcode) in HTTP GET!\n");
+if (!rest_get("http://getcredit.org/?ruri=$fU", "$var(credit)", "$var(ct
+)", "$var(rcode)")) {
+        xlog("Error code $var(rcode) in HTTP GET!\n");
         send_reply("403", "Not registered");
         exit;
 }
@@ -173,13 +173,14 @@ recv_ctype_pv[, retcode_pv]])
    body will be copied from the 'send_body_pv' pseudo-variable.
    Its MIME content type will be taken from 'send_ctype_pv'.
 
-   The recv_body_pv avp will hold the body of the HTTP response.
+   The recv_body_pv pseudo-var will hold the body of the HTTP
+   response.
 
    The optional recv_ctype_pv parameter will contain the value of
    the "Content-Type:" header of the response message.
 
-   The optional retcode_pv avp parameter can be given in order to
-   save the HTTP status code of the response message.
+   The optional retcode_pv pseudo-var parameter can be given in
+   order to save the HTTP status code of the response message.
 
    Possible parameter types
      * url, send_body_pv, send_type_pv - String, pseudo-variable,
@@ -194,8 +195,8 @@ recv_ctype_pv[, retcode_pv]])
 # Storing data using a RESTful service with an HTTP POST request
 
 if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain",
- "$avp(body)", "$avp(ct)", "$avp(rcode)")) {
-        xlog("Error code $avp(rcode) in HTTP POST!\n");
+ "$var(body)", "$var(ct)", "$var(rcode)")) {
+        xlog("Error code $var(rcode) in HTTP POST!\n");
         send_reply("403", "POST Forbidden");
         exit;
 }

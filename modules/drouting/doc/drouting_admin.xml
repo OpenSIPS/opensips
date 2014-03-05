@@ -50,15 +50,15 @@
 	<itemizedlist>
 	<listitem>
 	<para>
-	routing info (destinations, carriers, rules, groups) are stored in a 
+	The routing info (destinations, carriers, rules, groups) is stored in a 
 	database and loaded into memory at start up time; reload at runtime via
-	an Management Interface command.
+	a Management Interface command.
 	</para>
 	</listitem>
 
 	<listitem>
 	<para>
-	weigth-based or random selection of the destinations (from a rule or
+	weight-based or random selection of the destinations (from a rule or
 	 from a carrier), failure detection of gateways (with switching to next
 	 available gateway).
 	</para>
@@ -73,7 +73,7 @@
 	
 	<listitem>
 	<para>
-	script integration - Pseudo variables support in functions; scripting
+	script integration - Pseudo-variable support in functions; scripting
 	route triggering when rules are matched
 	</para>
 	</listitem>
@@ -105,8 +105,7 @@
 	when dealing with a large number of routing rules.
 	</para>
 	<para>
-	The tests were performed with a set of 383000 rules and to values were
-	measured:
+	The tests were performed with a set of 383000 rules and measured:
 	</para>
 	<itemizedlist>
 	<listitem><para>time to load from DB</para></listitem>
@@ -139,7 +138,7 @@
 	<para>
 	These are the end SIP entities where actually the traffic needs to be sent
 	after routing. They are stored in a table called <quote>dr_gateways</quote>.
-	Gateway addresses are stored in a separate table because of need to access them
+	Gateway addresses are stored in a separate table because of the need to access them
 	independent of Dynamic Routing processing (e.g., adding/ removing gateway PRI
 	prefix before/after performing other operation -- receiving/relaying to gateway). 
 	</para>
@@ -202,8 +201,8 @@
 	<section>
 	<title>Routing Rules</title>
 	<para>
-	These are the actual rule which control the routing - like based on
-	different criterias (prefix, time, priority, etc) they will decide
+	These are the actual rules which control the routing. Using
+	different criterias (prefix, time, priority, etc), they will decide
 	to which gateways the call will be sent.
 	</para>
 	<para>
@@ -216,7 +215,7 @@
 	<itemizedlist>
 	<listitem><para>group (list of numbers) - rules can be grouped (a rule may
 	belong to multiple groups in the same time ) and you can
-	use only a certian group at a point; like having a <quote>premium</quote> or
+	use only a certain group at a point; like having a <quote>premium</quote> or
 	<quote>standard</quote> or <quote>interstate</quote> or 
 	<quote>intrastate</quote> groups of rules to be used in different 
 	cases</para></listitem>
@@ -224,13 +223,13 @@
 	matching this rule (longest prefix matching)</para></listitem>
 	<listitem><para>time validity (time recurrence string) - when this rule is
 	valid from time point of view (see RFC 2445)</para></listitem>
-	<listitem><para>priority (number) - prority off the rule - higher value, 
+	<listitem><para>priority (number) - priority of the rule - higher value, 
 	higher priority (see rule section alg)</para></listitem>
 	<listitem><para>script route ID (string) - if defined, then execute the 
 	route with the specified ID when this rule is matched. That's it, a route
 	which can be used to perform custom operations on message. NOTE that no 
 	modification is performed at signaling level and you must NOT do
-	any signalling operations in that script route</para></listitem>
+	any signaling operations in that script route</para></listitem>
 	<listitem><para>list of GWs/carriers (string) - a comma separated list
 	of gateways or carriers (defined by IDs) to be used for this rule; the 
 	carrier IDs are prefixed with <quote>#</quote> sign. For each ID (GW or
@@ -247,11 +246,11 @@
 	</para>
 	<itemizedlist>
 	<listitem><para>
-	A date-time expression that defines the time recurrence to match for
-	current rule. Time recurrences are based closely on the specification
-	of recurring intervals of time in the Internet Calendaring and Scheduling
+	A date-time expression that defines the time recurrence to be matched for
+	current rule. Time recurrences are based closely on the recurring time
+	intervals from the Internet Calendaring and Scheduling
 	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is subset of time recurrence attributes.
+	used in routing rule specification is a subset of time recurrence attributes.
 	</para></listitem>
 	<listitem><para>
 	The value stored in database has the format of:
@@ -306,10 +305,9 @@
 	<listitem>
 	<para>
 	The rule must contain a chain of gateways and carriers. The module will 
-	execute serial forking for each address in chain (in which order the 
-	destinations will be tried, depends on the defintion order or depends on
-	the weights (weights selection must be enabled). The next address in chain
-	is used only if the previously has failed.
+	execute serial forking for each address in the chain (ordering is either done
+	by simply using the definition order or it may weight-based - weight selection must be
+	enabled). The next address in chain is used only if the previously has failed.
 	</para>
 	</listitem>
 	<listitem>
@@ -978,7 +976,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 					<listitem>
 						<emphasis>F</emphasis> - Enable rule fallback; normally
 						the engine is using a single rule for routing a call; by
-						setting this flag, the enging will fallback and use
+						setting this flag, the engine will fallback and use
 						rules with less priority or shorter prefix when all the 
 						destination from the current rules failed.
 					</listitem>
@@ -996,8 +994,9 @@ modparam("drouting", "drg_grpid_col", "grpid")
 				</listitem>
 				<listitem>
 					<emphasis>gw_whitelist</emphasis> - a comma separated white
-					list of gateways. This will force routing over this list of 
-					carriers or gateways (a subset of what found in the prefix rules).
+					list of gateways. This will force routing over, at most, this
+					list of carriers or gateways (an intersection with the
+					results of the search through the rules).
 				</listitem>
 			</itemizedlist>
 		</para>
@@ -1127,7 +1126,7 @@ if (use_next_gw()) {
 
 	<section>
 		<title>
-		<function moreinfo="none">goes_to_gw([[type],flags])</function>
+		<function moreinfo="none">goes_to_gw([type[, flags]])</function>
 		</title>
 		<para>
 		Function returns true if the destination of the current request 
@@ -1441,10 +1440,10 @@ Enabled:: yes
 <section>
 	<title>Installation</title>
 	<para>
-	The module requires 4 table in OpenSIPS database: dr_groups,
+	The module requires 4 tables in the OpenSIPS database: dr_groups,
 	dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
-	found in drouting-create.sql script in the database directories
-	in the opensips/scripts folder. You can also find the complete
+	found in the drouting-create.sql script, located in the database directories
+	of the opensips/scripts folder. You can also find the complete
 	database documentation on the project webpage, &osipsdbdocslink;.
 	</para>
 </section>

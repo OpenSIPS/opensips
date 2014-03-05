@@ -94,13 +94,13 @@
 			<listitem>
 				<para>
 				<quote>none</quote> - no information about original URI is 
-				stored; restoretion is not possible.
+				stored; restoration is not possible.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
 				<quote>manual</quote> - all following replies will be restored,
-				but not also the sequential requests - this must be manually 
+				except for the sequential requests - these must be manually 
 				updated based on original URI.
 				</para>
 			</listitem>

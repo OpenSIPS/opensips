@@ -105,9 +105,9 @@ Chapter 1. Admin Guide
    There are 3 mode of restoring the original headers (FROM/TO)
    URI:
      * “none” - no information about original URI is stored;
-       restoretion is not possible.
-     * “manual” - all following replies will be restored, but not
-       also the sequential requests - this must be manually
+       restoration is not possible.
+     * “manual” - all following replies will be restored, except
+       for the sequential requests - these must be manually
        updated based on original URI.
      * “auto” - all sequential requests and replies will be
        automatically updated based on stored original URI.

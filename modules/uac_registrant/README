@@ -176,7 +176,7 @@ modparam("uac_registrant", "table_name", "my_registrant")
 
    Example 1.5. Set “registrar_column” parameter
 ...
-modparam("uac_registrant", "registrar_column", "registranr_uri")
+modparam("uac_registrant", "registrar_column", "registrant_uri")
 ...
 
 1.3.6. proxy_column (string)

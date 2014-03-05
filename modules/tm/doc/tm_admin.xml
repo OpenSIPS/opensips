@@ -835,7 +835,7 @@ if (!t_relay()) {
 		Relay a message statefully to a fixed destination. The destination is
 		specified as <quote>[proto:]host[:port]</quote>. If a destination URI
 		<quote>$du</quote> for this message was set before the function
-		is called then this value will be used as destination instead of the
+		is called then this value will be used as the destination instead of the
 		function parameter.
 		</para>
 		<para>
@@ -1106,7 +1106,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 			<para><emphasis>non-CANCEL/non-ACK requests</emphasis> - if the
 			request belongs to a transaction (it's a retransmision), the
 			function will do a standard processing of the retransmission and
-			will break/stop the script. The function return false if the
+			will break/stop the script. The function returns false if the
 			request is not a retransmission.
 			</para>
 		</listitem>

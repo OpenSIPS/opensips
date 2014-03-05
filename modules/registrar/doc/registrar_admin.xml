@@ -421,7 +421,7 @@ modparam("registrar", "retry_after", 30)
 		the flag 's' (Socket header) is set at "save()" time.
 		</para>
 		<para>
-		This make sens only in multiple replicated servers scenarios.
+		This makes sense only in multiple replicated servers scenarios.
 		</para>
 		<para>
 		<emphasis>
@@ -447,7 +447,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 		expires from the 200ok reply.
 		</para>
 		<para>
-		This make sens only in cached registrations scenario.
+		This makes sense only in cached registrations scenario.
 		</para>
 		<para>
 		<emphasis>
@@ -468,9 +468,9 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 		<para>
 		AVP to store specific additional information for each registration.
 		This information is read from the AVP and stored (in memory, db or both)
-		at every registrar 'save'. When a registrar 'lookup' is done, the
-		<emphasis>attr_avp</emphasis> is populated with the value saved at
-		[re]registration.
+		at every registrar 'save'. When a registrar 'lookup' or 'registered'
+		function is called, the <emphasis>attr_avp</emphasis> is populated with
+		the value saved at [re]registration.
 		</para>
 		<para>
 		When doing call forking, the avp will hold multiple values. The position of
@@ -698,7 +698,7 @@ save("location","mr", "$avp(aor)");
 
 	<section>
 		<title>
-		<function moreinfo="none">remove(domain, AOR[, target]])</function>
+		<function moreinfo="none">remove(domain, AOR[, target])</function>
 		</title>
 		<para>
 		Explicitly remove contacts behind a given address-of-record.
@@ -749,11 +749,11 @@ save("location","mr", "$avp(aor)");
 remove("location", "sip:bob@atlanta.com");
 ...
 # remove only bob's home phone
-remove("location", "sip:bob@atlanta.com", "sip:bob_home@proxy.com");
+remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 ...
 # remove all bob's phones which are behind "50.60.50.60"
 $var(next_hop) = "50.60.50.60"
-save("location", "sip:bob@atlanta.com", "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 ...
 </programlisting>
 		</example>
@@ -812,7 +812,7 @@ save("location", "sip:bob@atlanta.com", "$var(next_hop)");
 		<listitem>
 			<para>
 			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This can be a variable.
+			missing, the RURI is used as AOR; This must be a variable.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -883,7 +883,7 @@ switch ($retcode) {
 		<listitem>
 			<para>
 			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This can be a variable.
+			missing, the RURI is used as AOR; This must be a variable.
 			</para>
 		</listitem>
 		<listitem>
@@ -966,7 +966,7 @@ if (is_other_contact("location", "$avp(ips)")) {
 		received socket (proto:ip:port)
 		</para>
 		<para>
-		This make sens only in multiple replicated servers scenarios.
+		This makes sense only in multiple replicated servers scenarios.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>

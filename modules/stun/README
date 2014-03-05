@@ -187,7 +187,7 @@ modparam("stun", "alternate_ip", "192.168.0.100 / 64.78.46.50")
 ...
 modparam("stun","alternate_port","3479")
 
-# Listening on a alternate port, but advertising a different one
+# Listening on an alternate port, but advertising a different one
 modparam("stun", "alternate_port", "5060 / 5062")
 ...
 

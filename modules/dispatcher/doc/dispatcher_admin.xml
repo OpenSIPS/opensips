@@ -8,8 +8,8 @@
 	<title>Overview</title>
 	<para>
 		This modules implements a dispatcher for destination addresses. It 
-		computes hashes over parts of the request and selects an address from
-		a destination set. The selected address is then used as outbound
+		computes hashes over various parts of the request and selects an
+		address from a destination set. The selected address is then used as outbound
 		proxy.
 	</para>
 	<para>
@@ -691,7 +691,8 @@ modparam("dispatcher", "socket_col", "my_sock")
 		<function moreinfo="none">ds_select_dst(set, alg [, max_results])</function>
 		</title>
 		<para>
-		The method selects a destination from addresses set.
+		The method selects a destination from the given set of addresses. It will
+		overwrite the "destination URI" of a SIP request (<emphasis>$du</emphasis>).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>

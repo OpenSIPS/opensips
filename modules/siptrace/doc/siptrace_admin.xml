@@ -190,7 +190,7 @@ modparam("siptrace", "traced_user_avp", "$avp(user)")
 		store the SIP messages. If it is not set, the value of
 		'table' parameter is used. In this way one can select
 		dynamically where to store the traced messages. The table
-		must exists, and must have the same structure as 'sip_trace'
+		must exist, and must have the same structure as 'sip_trace'
 		table.
 		</para>
 		<para>

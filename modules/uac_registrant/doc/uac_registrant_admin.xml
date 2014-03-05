@@ -193,7 +193,7 @@ modparam("uac_registrant", "table_name", "my_registrant")
 		<title>Set <quote>registrar_column</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("uac_registrant", "registrar_column", "registranr_uri")
+modparam("uac_registrant", "registrar_column", "registrant_uri")
 ...
 </programlisting>
 		</example>

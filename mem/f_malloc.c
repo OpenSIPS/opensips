@@ -338,7 +338,7 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 	}
 	/* not found, bad! */
 
-	LM_WARN("Not enough free memory, will atempt defragmenation\n");
+	LM_WARN("Not enough free memory, will atempt defragmentation\n");
 
 	for( frag = qm->first_frag; (char*)frag < (char*)qm->last_frag;  )
 	{

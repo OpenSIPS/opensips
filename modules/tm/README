@@ -678,8 +678,8 @@ if (!t_relay()) {
    Relay a message statefully to a fixed destination. The
    destination is specified as “[proto:]host[:port]”. If a
    destination URI “$du” for this message was set before the
-   function is called then this value will be used as destination
-   instead of the function parameter.
+   function is called then this value will be used as the
+   destination instead of the function parameter.
 
    The function may take as parameter an optional set of flags for
    controlling the internal behaviour - for details see the above
@@ -838,7 +838,7 @@ t_write_unix("logger/append2","/var/run/logger.sock");
      * non-CANCEL/non-ACK requests - if the request belongs to a
        transaction (it's a retransmision), the function will do a
        standard processing of the retransmission and will
-       break/stop the script. The function return false if the
+       break/stop the script. The function returns false if the
        request is not a retransmission.
      * CANCEL request - true if the cancelled INVITE transaction
        exists.

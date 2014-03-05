@@ -361,7 +361,7 @@ static int fixup_profile(void** param, int param_no)
 	if (param_no==1) {
 		profile = search_dlg_profile( &s );
 		if (profile==NULL) {
-			LM_CRIT("profile <%s> not definited\n",s.s);
+			LM_CRIT("profile <%s> not defined\n",s.s);
 			return E_CFG;
 		}
 		pkg_free(*param);

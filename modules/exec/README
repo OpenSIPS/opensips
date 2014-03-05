@@ -183,7 +183,7 @@ exec_dset("ruri-changer.sh '$ct'");
 
    Example 1.5. exec_msg usage
 ...
-exec_msg("call-logger.sh '$ct' > /var/log/call-logger/'$rU'.calls");
+exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
 ...
 
 1.4.3.  exec_avp(command[, avplist])

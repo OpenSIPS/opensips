@@ -400,12 +400,12 @@ modparam("dialog", "db_url", "&exampledb;")
 			</para></listitem>
 			<listitem><para>
 				<emphasis>1 - REALTIME</emphasis> - any dialog information 
-				changes will be reflected into the database immediatly.
+				changes will be reflected into the database immediately.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>2 - DELAYED</emphasis> - the dialog information 
-				changes will be flushed into DB periodically, based on a
-				timre routine.
+				changes will be flushed into the DB periodically, based on a
+				timer routine.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>3 - SHUTDOWN</emphasis> - the dialog information 
@@ -431,7 +431,7 @@ modparam("dialog", "db_mode", 1)
 		<title><varname>db_update_period</varname> (integer)</title>
 		<para>
 			The interval (seconds) at which to update dialogs' information if you chose to store the dialogs' info at a given interval.
-			A too short interval will generate intensiv database operations, a too large one will not notice short dialogs.
+			A too short interval will generate intensive database operations, a too large one will not notice short dialogs.
 		</para>
 		<para>
 		<emphasis>
@@ -1349,12 +1349,13 @@ create_dialog("B");
 		<function moreinfo="none">get_dialog_info(attr,var,key,key_val)</function>
 		</title>
 		<para>
-		The function extracts a dialog value from another dialog - it search 
-		through all existing (ongoing) dialogs for a dialog
-		that has a dialog variable named "key" with the value "key_val" 
-		(so a dialog where $dlg_val(key)=="key_val") - once found, it return
-		in pvar "var" the value of the the dialog variable "attr" from the 
-		found dialog.
+		The function extracts a dialog value from another dialog. It first searches
+		through all existing (ongoing) dialogs for a dialog that has a dialog
+		variable named "key" with the value "key_val" 
+		(so a dialog where $dlg_val(key)=="key_val"). If found, it returns
+		the value of the dialog variable "attr" from the 
+		found dialog in the "var" pseudo-variable, otherwise nothing is written
+		in "var", and a negative error code is returned.
 		</para>
 		<para>
 		NOTE: the function does not require to be called in the context of
