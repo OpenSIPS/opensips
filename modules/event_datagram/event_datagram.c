@@ -85,7 +85,7 @@ struct module_exports exports= {
 
 
 /**
- * exported functions for core event interface 
+ * exported functions for core event interface
  */
 static evi_export_t trans_export_udp = {
 	UDP_STR,					/* transport module name */
@@ -139,7 +139,7 @@ static int datagram_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 	if (((sock1->flags & EVI_PORT) != (sock2->flags & EVI_PORT)) ||
 			((sock1->flags & EVI_PORT) && (sock1->port != sock2->port)))
 		return 0;
-	
+
 	if (sock1->flags & EVI_ADDRESS && sock2->flags & EVI_ADDRESS) {
 		if (!memcmp(sock1->address.s, sock2->address.s,
 					sock1->address.len)) {
@@ -200,7 +200,7 @@ static evi_reply_sock* datagram_parse(str socket, int is_unix)
 	if (port) {
 		sock->flags = EVI_PORT;
 		sock->port = port;
-		
+
 		/* also build sockaddr */
 		*p = 0;
 		hentity = resolvehost(host, 0);
@@ -285,7 +285,7 @@ static str datagram_print(evi_reply_sock *sock)
 		aux.s = int2str(sock->port, &aux.len);
 		DO_PRINT(aux.s, aux.len);
 	}
-		
+
 end:
 	return datagram_print_s;
 }
@@ -315,7 +315,7 @@ static int datagram_build_params(str* ev_name, evi_params_p ev_params)
 	}
 
 	dgram_buffer_len = 0;
-	
+
 	/* first is event name - cannot be larger than the buffer size */
 	memcpy(dgram_buffer, ev_name->s, ev_name->len);
 	dgram_buffer[ev_name->len] = PARAM_SEP;

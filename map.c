@@ -64,7 +64,7 @@ static int str_cmp(str s1, str s2)
 	if( ret == 0)
 		ret =  s1.len -  s2.len;
 
-		
+
 	return ret;
 }
 
@@ -86,7 +86,7 @@ map_t map_create(int flags)
 	tree->avl_root = NULL;
 	tree->flags = flags;
 	tree->avl_count = 0;
-	
+
 
 	return tree;
 }
@@ -139,7 +139,7 @@ void ** map_get( map_t tree, str key)
 	}
 
 	avl_malloc( n, sizeof *n, tree->flags );
-	
+
 	if (n == NULL)
 		return NULL;
 
@@ -157,7 +157,7 @@ void ** map_get( map_t tree, str key)
 	}
 	else
 		n->key = key;
-	
+
 	n->val = NULL;
 	if (q != NULL)
 		q->avl_link[dir] = n;
@@ -268,7 +268,7 @@ void * map_put( map_t table, str key, void *item)
 
 	ret = *p;
 	*p = item;
-	
+
 	return ret == item ? NULL : ret;
 }
 
@@ -449,7 +449,7 @@ void * map_remove( map_t tree, str key)
 {
 	struct avl_node *p; /* Traverses tree to find node to delete. */
 	int dir; /* Side of |q| on which |p| is linked. */
-		
+
 	if (tree->avl_root == NULL)
 		return NULL;
 
@@ -466,7 +466,7 @@ void * map_remove( map_t tree, str key)
 	}
 
 	return delete_node( tree, p );
-	
+
 }
 
 
@@ -570,7 +570,7 @@ str *	iterator_key( map_iterator_t * it )
 {
 	if( it == NULL )
 		return NULL;
-	
+
 	return &it->node->key;
 }
 
@@ -586,7 +586,7 @@ int iterator_is_valid( map_iterator_t * it )
 {
 	if( it == NULL || it->map ==NULL || it->node == NULL)
 		return 0;
-	
+
 	return 1;
 }
 

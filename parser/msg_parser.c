@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * sip msg. header proxy parser 
+ * sip msg. header proxy parser
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -94,7 +94,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 	}
 
 	/* eliminate leading whitespace */
-	tmp=eat_lws_end(tmp, end); 
+	tmp=eat_lws_end(tmp, end);
 	if (tmp>=end) {
 		LM_ERR("hf empty\n");
 		goto error_bad_hdr;
@@ -150,8 +150,8 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			hdr->parsed=cseq_b;
 			hdr->body.len=tmp-hdr->body.s;
 			LM_DBG("cseq <%.*s>: <%.*s> <%.*s>\n",
-					hdr->name.len, ZSW(hdr->name.s), 
-					cseq_b->number.len, ZSW(cseq_b->number.s), 
+					hdr->name.len, ZSW(hdr->name.s),
+					cseq_b->number.len, ZSW(cseq_b->number.s),
 					cseq_b->method.len, cseq_b->method.s);
 			break;
 		case HDR_TO_T:
@@ -174,7 +174,7 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr)
 			hdr->parsed=to_b;
 			hdr->body.len=tmp-hdr->body.s;
 			LM_DBG("<%.*s> [%d]; uri=[%.*s] \n",
-				hdr->name.len, ZSW(hdr->name.s), 
+				hdr->name.len, ZSW(hdr->name.s),
 				hdr->body.len, to_b->uri.len,ZSW(to_b->uri.s));
 			LM_DBG("to body [%.*s]\n",to_b->body.len, ZSW(to_b->body.s));
 			break;
@@ -303,13 +303,13 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 
 	end=msg->buf+msg->len;
 	tmp=msg->unparsed;
-	
+
 	if (next) {
 		orig_flag = msg->parsed_flag;
 		msg->parsed_flag &= ~flags;
 	}else
-		orig_flag=0; 
-	
+		orig_flag=0;
+
 	LM_DBG("flags=%llx\n", (unsigned long long)flags);
 	while( tmp<end && (flags & msg->parsed_flag) != flags){
 		hf=pkg_malloc(sizeof(struct hdr_field));
@@ -523,8 +523,8 @@ int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next)
 		}
 #ifdef EXTRA_DEBUG
 		LM_DBG("header field type %d, name=<%.*s>, body=<%.*s>\n",
-			hf->type, 
-			hf->name.len, ZSW(hf->name.s), 
+			hf->type,
+			hf->name.len, ZSW(hf->name.s),
 			hf->body.len, ZSW(hf->body.s));
 #endif
 		tmp=rest;
@@ -563,7 +563,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	switch(fl->type){
 		case SIP_INVALID:
 			LM_DBG("invalid message\n");
-			/* if failed to parse the first line, we simply consider that the whole 
+			/* if failed to parse the first line, we simply consider that the whole
 			   buffer was parsed, so that nothing is left to be parsed :) - this will
 			   do the trick and make "msg" struct acceptable for following parsing
 			   attempts */
@@ -602,52 +602,52 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	/* dump parsed data */
 	if (msg->via1){
 		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
-			msg->via1->name.len, 
-			ZSW(msg->via1->name.s), 
+			msg->via1->name.len,
+			ZSW(msg->via1->name.s),
 			msg->via1->version.len,
 			ZSW(msg->via1->version.s),
 			msg->via1->transport.len,
-			ZSW(msg->via1->transport.s), 
+			ZSW(msg->via1->transport.s),
 			msg->via1->host.len,
 			ZSW(msg->via1->host.s),
-			msg->via1->port_str.len, 
-			ZSW(msg->via1->port_str.s), 
+			msg->via1->port_str.len,
+			ZSW(msg->via1->port_str.s),
 			msg->via1->port);
-		if (msg->via1->params.s)  LM_DBG(";<%.*s>", 
+		if (msg->via1->params.s)  LM_DBG(";<%.*s>",
 				msg->via1->params.len, ZSW(msg->via1->params.s));
-		if (msg->via1->comment.s) 
-				LM_DBG(" <%.*s>", 
+		if (msg->via1->comment.s)
+				LM_DBG(" <%.*s>",
 					msg->via1->comment.len, ZSW(msg->via1->comment.s));
 		LM_DBG ("\n");
 	}
 	if (msg->via2){
 		LM_DBG(" first  via: <%.*s/%.*s/%.*s> <%.*s:%.*s(%d)>",
-			msg->via2->name.len, 
-			ZSW(msg->via2->name.s), 
+			msg->via2->name.len,
+			ZSW(msg->via2->name.s),
 			msg->via2->version.len,
 			ZSW(msg->via2->version.s),
-			msg->via2->transport.len, 
-			ZSW(msg->via2->transport.s), 
+			msg->via2->transport.len,
+			ZSW(msg->via2->transport.s),
 			msg->via2->host.len,
 			ZSW(msg->via2->host.s),
-			msg->via2->port_str.len, 
-			ZSW(msg->via2->port_str.s), 
+			msg->via2->port_str.len,
+			ZSW(msg->via2->port_str.s),
 			msg->via2->port);
-		if (msg->via2->params.s)  LM_DBG(";<%.*s>", 
+		if (msg->via2->params.s)  LM_DBG(";<%.*s>",
 				msg->via2->params.len, ZSW(msg->via2->params.s));
-		if (msg->via2->comment.s) LM_DBG(" <%.*s>", 
+		if (msg->via2->comment.s) LM_DBG(" <%.*s>",
 				msg->via2->comment.len, ZSW(msg->via2->comment.s));
 		LM_DBG ("\n");
 	}
 #endif
-	
+
 
 #ifdef EXTRA_DEBUG
 	LM_DBG("exiting\n");
 #endif
 
 	return 0;
-	
+
 error:
 	/* more debugging, msg->orig is/should be null terminated*/
 	LM_ERR("message=<%.*s>\n", (int)len, ZSW(buf));
@@ -683,7 +683,7 @@ void free_sip_msg(struct sip_msg* msg)
 	if (msg->multi )  { free_multi_body(msg->multi);msg->multi = 0;}
 	/* don't free anymore -- now a pointer to a static buffer */
 #	ifdef DYN_BUF
-	pkg_free(msg->buf); 
+	pkg_free(msg->buf);
 #	endif
 }
 
@@ -831,7 +831,7 @@ int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq,str *cal
 	end = buf+len;
 	state = 1;
 	b = 0;
-	flags = ((from!=0)?0x1:0) | ((to!=0)?0x2:0) | ((cseq!=0)?0x4:0) 
+	flags = ((from!=0)?0x1:0) | ((to!=0)?0x2:0) | ((cseq!=0)?0x4:0)
 				| ((callid!=0)?0x8:0);
 	flag = 0;
 	fill = 0;

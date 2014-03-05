@@ -19,8 +19,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -60,7 +60,7 @@
 
 #define DEFAULT_CREATED_LIFETIME 3600
 
-/* define PUA_DIALOGINFO_DEBUG to activate more verbose 
+/* define PUA_DIALOGINFO_DEBUG to activate more verbose
  * logging and dialog info callback debugging
  */
 /* #define PUA_DIALOGINFO_DEBUG 1 */
@@ -170,7 +170,7 @@ __dialog_cbtest(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 					"or missing TO hdr :-/\n");
 				tag.s = 0;
 				tag.len = 0;
-			} else 
+			} else
 				tag = get_to(_params->msg)->tag_value;
 		} else {
 			tag = get_to(_params->msg)->tag_value;
@@ -488,7 +488,7 @@ static int mod_init(void)
 		LM_ERR("Can't bind pua\n");
 		return -1;
 	}
-	
+
 	if (bind_pua(&pua) < 0)
 	{
 		LM_ERR("Can't bind pua\n");

@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -76,7 +76,7 @@ static str auth_500_err = str_init(MESSAGE_500);
 /*
  * Create {WWW,Proxy}-Authenticate header field
  */
-static inline char *build_auth_hf(int _retries, int _stale, str* _realm, 
+static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 				  int* _len, int _qop, char* _hf_name)
 {
 	int hf_name_len;
@@ -107,7 +107,7 @@ static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 		+DIGEST_MD5_LEN
 #endif
 		+CRLF_LEN ;
-	
+
 	p=hf=pkg_malloc(*_len+1);
 	if (!hf) {
 		LM_ERR("no pkg memory left\n");
@@ -135,7 +135,7 @@ static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 #endif
 	memcpy(p, CRLF, CRLF_LEN ); p+=CRLF_LEN;
 	*p=0; /* zero terminator, just in case */
-	
+
 	LM_DBG("'%s'\n", hf);
 	return hf;
 }
@@ -158,7 +158,7 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 
 	switch(_code) {
 	case 401:
-		get_authorized_cred(_msg->authorization, &h); 
+		get_authorized_cred(_msg->authorization, &h);
 		hftype = HDR_AUTHORIZATION_T;
 		break;
 	case 407:
@@ -191,7 +191,7 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 		strip_realm(&realm);
 	}
 
-	auth_hf = build_auth_hf(0, (cred ? cred->stale : 0), &realm, 
+	auth_hf = build_auth_hf(0, (cred ? cred->stale : 0), &realm,
 			&auth_hf_len, _qop, _challenge_msg);
 	if (!auth_hf) {
 		LM_ERR("failed to generate nonce\n");
@@ -206,7 +206,7 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 		LM_ERR("failed to send the response\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -242,8 +242,8 @@ int consume_credentials(struct sip_msg* _m, char* _s1, char* _s2)
 	get_authorized_cred(_m->authorization, &h);
 	if (!h) {
 		get_authorized_cred(_m->proxy_auth, &h);
-		if (!h) { 
-			if (_m->REQ_METHOD!=METHOD_ACK 
+		if (!h) {
+			if (_m->REQ_METHOD!=METHOD_ACK
 					&& _m->REQ_METHOD!=METHOD_CANCEL) {
 				LM_ERR("no authorized credentials found (error in scripts)\n");
 			}

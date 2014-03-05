@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -76,12 +76,12 @@ int forward_reply( struct sip_msg* msg);
 
 /*! \brief
  *
- *  \param send_sock = 0 if already known (e.g. for udp in some cases), 
+ *  \param send_sock = 0 if already known (e.g. for udp in some cases),
  *        non-0 otherwise
  *  \param proto =TCP|UDP
  *  \param to = sockaddr-like description of the destination
- *  \param id - only used on tcp, it will force sending on connection "id" 
- *       if id!=0 and the connection exists, else it will send to "to" 
+ *  \param id - only used on tcp, it will force sending on connection "id"
+ *       if id!=0 and the connection exists, else it will send to "to"
  *       (useful for sending replies on  the same connection as the request
  *       that generated them; use 0 if you don't want this)
  * \param buf - the buffer containing the message to be sent

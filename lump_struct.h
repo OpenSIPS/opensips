@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -83,7 +83,7 @@ enum lump_flag { LUMPFLAG_NONE=0, LUMPFLAG_DUPED=1,
 struct lump{
 	enum _hdr_types_t type; /*!< HDR_VIA_T, HDR_OTHER_T (0), ... */
 	enum lump_op op;        /*!< DEL, ADD, NOP, UNSPEC(=0) */
-	
+
 	union{
 		unsigned int offset;       /*!< used for DEL, MODIFY */
 		enum lump_subst subst;     /*!< what to subst: ip addr, port, proto*/
@@ -91,8 +91,8 @@ struct lump{
 		char * value; /*!< used for ADD */
 	}u;
 	unsigned int len; /*!< length of this header field */
-	
-	
+
+
 	struct lump* before;  /*!< list of headers to be inserted in front of the
 								current one */
 	struct lump* after;   /*!< list of headers to be inserted immediately after
@@ -106,7 +106,7 @@ struct lump{
 /*
  * hdrs must be kept sorted after their offset (DEL, NOP, UNSPEC)
  * and/or their position (ADD). E.g.:
- *  - to delete header Z insert it in to the list according to its offset 
+ *  - to delete header Z insert it in to the list according to its offset
  *   and with op=DELETE
  * - if you want to add a new header X after a  header Y, insert Y in the list
  *   with op NOP and after it X (op ADD).
@@ -115,11 +115,11 @@ struct lump{
  *  -if you want to replace Y with X, insert Y with op=DELETE and then X with
  *  op=ADD.
  * before and after must contain only ADD ops!
- * 
+ *
  * Difference between "after" & "next" when Adding:
  * "after" forces the new header immediately after the current one while
  * "next" means another header can be inserted between them.
- * 
+ *
  */
 
 /*! \brief frees the content of a lump struct */

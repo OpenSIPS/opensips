@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -106,7 +106,7 @@ uint64_t FileSize(TFile *f)
 
     fstat(*f,&fs);
     return (fs.st_size);
-#endif  
+#endif
 }
 
 abyss_bool FileClose(TFile *f)
@@ -210,7 +210,7 @@ abyss_bool FileFindNext(TFileFind *filefind,TFileInfo *fileinfo)
         strncat(z,"/",NAME_MAX);
         strncat(z,fileinfo->name,NAME_MAX);
         z[NAME_MAX]='\0';
-        
+
         stat(z,&fs);
 
         if (fs.st_mode & S_IFDIR)
@@ -220,7 +220,7 @@ abyss_bool FileFindNext(TFileFind *filefind,TFileInfo *fileinfo)
 
         fileinfo->size=fs.st_size;
         fileinfo->time_write=fs.st_mtime;
-        
+
         return TRUE;
     };
 

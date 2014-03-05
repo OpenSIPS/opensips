@@ -109,8 +109,8 @@ SocketWrite(TSocket *             const socketP,
             abyss_bool *          const failedP);
 
 uint32_t
-SocketRead(TSocket *       const socketP, 
-           unsigned char * const buffer, 
+SocketRead(TSocket *       const socketP,
+           unsigned char * const buffer,
            uint32_t        const len);
 
 abyss_bool

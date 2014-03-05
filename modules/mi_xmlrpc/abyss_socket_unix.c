@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -148,7 +148,7 @@ SocketUnixCreate(TSocket ** const socketPP) {
         else {
             socketUnixP->fd = rc;
             socketUnixP->userSuppliedFd = FALSE;
-            
+
             {
                 int32_t n = 1;
                 int rc;
@@ -234,7 +234,7 @@ socketWrite(TSocket *             const socketP,
         size_t const maxSend = (size_t)(-1) >> 1;
 
         ssize_t rc;
-        
+
         rc = send(socketUnixP->fd, &buffer[len-bytesLeft],
                   MIN(maxSend, bytesLeft), 0);
 
@@ -261,8 +261,8 @@ socketWrite(TSocket *             const socketP,
 
 
 static uint32_t
-socketRead(TSocket * const socketP, 
-           char *    const buffer, 
+socketRead(TSocket * const socketP,
+           char *    const buffer,
            uint32_t  const len) {
 
     struct socketUnix * const socketUnixP = socketP->implP;
@@ -273,7 +273,7 @@ socketRead(TSocket * const socketP,
         if (rc < 0)
             fprintf(stderr, "Abyss socket: recv() failed.  errno=%d (%s)",
                     errno, strerror(errno));
-        else 
+        else
             fprintf(stderr, "Abyss socket: read %u bytes: '%.*s'\n",
                     len, (int)len, buffer);
     }
@@ -390,7 +390,7 @@ socketAccept(TSocket *    const listenSocketP,
             if (acceptedSocketUnixP) {
                 acceptedSocketUnixP->fd = acceptedFd;
                 acceptedSocketUnixP->userSuppliedFd = FALSE;
-                
+
                 SocketCreate(&vtbl, acceptedSocketUnixP, acceptedSocketPP);
                 if (!*acceptedSocketPP)
                     failed = TRUE;
@@ -408,7 +408,7 @@ socketAccept(TSocket *    const listenSocketP,
             interrupted = TRUE;
         else
             failed = TRUE;
-    }   
+    }
     *failedP    = failed;
     *connectedP = connected;
 }
@@ -444,16 +444,16 @@ socketWait(TSocket *  const socketP,
         rc = select(socketUnixP->fd + 1, &rfds, &wfds, NULL,
                     (timems == TIME_INFINITE ? NULL : &tv));
 
-        switch(rc) {   
+        switch(rc) {
         case 0: /* time out */
             return 0;
 
         case -1:  /* socket error */
             if (errno == EINTR)
                 break;
-            
+
             return 0;
-            
+
         default:
             if (FD_ISSET(socketUnixP->fd, &rfds))
                 return 1;
@@ -494,7 +494,7 @@ socketGetPeerName(TSocket *    const socketP,
     struct sockaddr sockAddr;
 
     addrlen = sizeof(sockAddr);
-    
+
     rc = getpeername(socketUnixP->fd, &sockAddr, &addrlen);
 
     if (rc < 0) {

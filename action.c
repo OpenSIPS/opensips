@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -34,7 +34,7 @@
  *  2003-10-29  added FORCE_TCP_ALIAS_T (andrei)
  *  2004-11-30  added FORCE_SEND_SOCKET_T (andrei)
  *  2005-11-29  added serialize_branches and next_branches (bogdan)
- *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to
  *               a function address - more info is accessible (bogdan)
  *  2006-05-22  forward(_udp,_tcp,_tls) and send(_tcp) merged in forward() and
  *               send() (bogdan)
@@ -127,7 +127,7 @@ static inline int run_actions(struct action* a, struct sip_msg* msg)
 	}
 
 	if (a==0){
-		LM_WARN("null action list (rec_level=%d)\n", 
+		LM_WARN("null action list (rec_level=%d)\n",
 			rec_lev);
 		ret=1;
 		goto error;
@@ -148,7 +148,7 @@ error:
 }
 
 
-/* run the error route with correct handling - simpler wrapper to 
+/* run the error route with correct handling - simpler wrapper to
    allow the usage from other parts of the code */
 void run_error_route(struct sip_msg* msg, int force_reset)
 {
@@ -316,7 +316,7 @@ error:
 		}	\
 	} while(0)
 
-/* ret= 0! if action -> end of list(e.g DROP), 
+/* ret= 0! if action -> end of list(e.g DROP),
       > 0 to continue processing next actions
    and <0 on error */
 int do_action(struct action* a, struct sip_msg* msg)
@@ -452,14 +452,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_OUT_OF_MEM;
 				break;
 			}
-			
+
 			p=(struct proxy_l*)a->elem[0].u.data;
-			
+
 			ret=hostent2su(to, &p->host, p->addr_idx,
 						(p->port)?p->port:SIP_PORT );
 			if (ret==0){
 				if (pve) {
-					if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+					if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 							name_s.len == 0 || name_s.s == NULL) {
 						LM_WARN("cannot get string for value\n");
 						ret=E_UNSPEC;
@@ -530,7 +530,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				msg->path_vec.s = 0;
 				msg->path_vec.len = 0;
 			} else {
-				ret = append_branch(msg, &a->elem[0].u.s, &msg->dst_uri, 
+				ret = append_branch(msg, &a->elem[0].u.s, &msg->dst_uri,
 					&msg->path_vec, a->elem[1].u.number, getb0flags(),
 					msg->force_send_socket);
 			}
@@ -670,13 +670,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 		case PREFIX_T:
 		case STRIP_T:
 		case STRIP_TAIL_T:
-				script_trace("core", 
+				script_trace("core",
 					(unsigned char)a->type == SET_HOST_T     ? "set_host" :
-					(unsigned char)a->type == SET_HOSTPORT_T ? "set_hostport" : 
+					(unsigned char)a->type == SET_HOSTPORT_T ? "set_hostport" :
 					(unsigned char)a->type == SET_USER_T     ? "set_user" :
-					(unsigned char)a->type == SET_USERPASS_T ? "set_userpass" : 
+					(unsigned char)a->type == SET_USERPASS_T ? "set_userpass" :
 					(unsigned char)a->type == SET_PORT_T     ? "set_port" :
-					(unsigned char)a->type == SET_URI_T      ? "set_uri" : 
+					(unsigned char)a->type == SET_URI_T      ? "set_uri" :
 					(unsigned char)a->type == PREFIX_T       ? "prefix" :
 					(unsigned char)a->type == STRIP_T  ? "strip" : "strip_tail",
 					msg, a->line);
@@ -714,7 +714,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_UNSPEC;
 					break;
 				}
-				
+
 				new_uri=pkg_malloc(MAX_URI_SIZE);
 				if (new_uri==0){
 					LM_ERR("memory allocation failure\n");
@@ -732,7 +732,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					if (crt+a->elem[0].u.s.len>end) goto error_uri;
 					memcpy( crt, a->elem[0].u.s.s, a->elem[0].u.s.len);
 					crt+=a->elem[0].u.s.len;
-					/* whatever we had before, with prefix we have username 
+					/* whatever we had before, with prefix we have username
 					   now */
 					user=1;
 				}
@@ -1004,7 +1004,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 							LM_WARN("error in expression (l=%d)\n", a->line);
 						}
 					}
-					
+
 					ret=1;  /*default is continue */
 					if (v>0) {
 						if ((a->elem[1].type==ACTIONS_ST)&&a->elem[1].u.data){
@@ -1047,7 +1047,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 										a->line);
 							}
 						}
-					
+
 						ret=1;  /*default is continue */
 						if (v>0) {
 							if ((a->elem[1].type==ACTIONS_ST)
@@ -1105,7 +1105,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1114,7 +1114,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			/* parse the value argument */
 			pve = (pv_elem_t *)a->elem[2].u.data;
-			if ( pv_printf_s(msg, pve, &val_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &val_s)!=0 ||
 			val_s.len == 0 || val_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1164,7 +1164,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1195,7 +1195,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			str aux = {0, 0};
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1216,7 +1216,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				}
 				pkg_free(aux.s);
 			}
-			
+
 			break;
 		case CACHE_COUNTER_FETCH_T:
 			script_trace("core", "cache_counter_fetch", msg, a->line) ;
@@ -1241,7 +1241,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1281,7 +1281,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1349,7 +1349,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1411,7 +1411,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			if (a->elem[2].u.data != NULL && 
+			if (a->elem[2].u.data != NULL &&
 				a->elem[2].type!=STR_ST){
 				LM_ALERT("BUG in cache_raw_query() type %d\n",
 						a->elem[2].type);
@@ -1420,7 +1420,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			/* parse the name argument */
 			pve = (pv_elem_t *)a->elem[1].u.data;
-			if ( pv_printf_s(msg, pve, &name_s)!=0 || 
+			if ( pv_printf_s(msg, pve, &name_s)!=0 ||
 			name_s.len == 0 || name_s.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1453,10 +1453,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 								LM_ERR("cannot get avp name [%d/%d]\n",i,j);
 								goto next_avp;
 							}
-							
+
 							switch (cdb_reply[i][j].type) {
 								case CDB_INT:
-									avp_val.n = cdb_reply[i][j].val.n; 
+									avp_val.n = cdb_reply[i][j].val.n;
 									break;
 								case CDB_STR:
 									avp_type |= AVP_VAL_STR;
@@ -1595,8 +1595,8 @@ next_avp:
 				pve = (pv_elem_t *)a->elem[i].u.data;
 				if (pve->spec.getf)
 				{
-					if ( pv_printf_s(msg, pve, &vals[i])!=0 || 
-						vals[i].len == 0 || vals[i].s == NULL) 
+					if ( pv_printf_s(msg, pve, &vals[i])!=0 ||
+						vals[i].len == 0 || vals[i].s == NULL)
 					{
 						LM_WARN("cannot get string for value\n");
 						ret=E_BUG;
@@ -1606,7 +1606,7 @@ next_avp:
 				else
 					vals[i] = pve->text;
 			}
-			
+
 			result.s = construct_uri(&vals[0],&vals[1],&vals[2],&vals[3],&vals[4],
 					&result.len);
 
@@ -1708,7 +1708,7 @@ next_avp:
 									val.rs.len)==0)
 							cmatch = 1;
 					} else { /* number */
-						if(val.flags&PV_VAL_INT && 
+						if(val.flags&PV_VAL_INT &&
 								val.ri==aitem->elem[0].u.number)
 							cmatch = 1;
 					}
@@ -1769,7 +1769,7 @@ next_avp:
 			}
 			str adv_addr;
 			pve = (pv_elem_t *)a->elem[0].u.data;
-			if ( pv_printf_s(msg, pve, &adv_addr)!=0 || 
+			if ( pv_printf_s(msg, pve, &adv_addr)!=0 ||
 			adv_addr.len == 0 || adv_addr.s == NULL) {
 				LM_WARN("cannot get string for value\n");
 				ret=E_BUG;
@@ -1799,7 +1799,7 @@ next_avp:
 					|| msg->rcv.proto==PROTO_TLS
 #endif
 			   ){
-				
+
 				if (a->elem[0].type==NOSUBTYPE)	port=msg->via1->port;
 				else if (a->elem[0].type==NUMBER_ST)
 					port=(int)a->elem[0].u.number;
@@ -1809,7 +1809,7 @@ next_avp:
 					ret=E_BUG;
 					break;
 				}
-						
+
 				if (tcpconn_add_alias(msg->rcv.proto_reserved1, port,
 									msg->rcv.proto)!=0){
 					LM_ERR("tcp alias failed\n");
@@ -1899,7 +1899,7 @@ next_avp:
 				LM_ERR("setting PV failed\n");
 				goto error;
 			}
-			
+
 			ret = 1;
 			break;
 		case SCRIPT_TRACE_T:
@@ -1907,9 +1907,9 @@ next_avp:
 			if (a->elem[0].type==NOSUBTYPE) {
 				use_script_trace = 0;
 			} else {
-				
+
 				use_script_trace = 1;
-				
+
 				if (a->elem[0].type != NUMBER_ST ||
 					a->elem[1].type != SCRIPTVAR_ELEM_ST) {
 
@@ -1945,7 +1945,7 @@ error:
 	LM_ERR("error at line: %d\n", a->line);
 	update_longest_action();
 	return ret;
-	
+
 error_uri:
 	LM_ERR("set*: uri too long\n");
 	if (new_uri) pkg_free(new_uri);

@@ -88,7 +88,7 @@ struct module_exports exports= {
 
 
 /**
- * exported functions for core event interface 
+ * exported functions for core event interface
  */
 static evi_export_t trans_export_xmlrpc = {
 	XMLRPC_STR,					/* transport module name */
@@ -187,7 +187,7 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 
 	LM_DBG("host is %.*s - remains <%.*s>[%d]\n", host.len, host.s,
 			socket.len, socket.s, socket.len);
-	
+
 	if (!socket.len || *socket.s == '\0') {
 		LM_ERR("invalid port number\n");
 		return NULL;
@@ -215,10 +215,10 @@ static evi_reply_sock* xmlrpc_parse(str socket)
 		LM_ERR("invalid method name\n");
 		return NULL;
 	}
-	
+
 	LM_DBG("method is %.*s[%d]\n", socket.len, socket.s, socket.len);
 
-	len = sizeof(evi_reply_sock) - sizeof(void*) + sizeof(str) + 
+	len = sizeof(evi_reply_sock) - sizeof(void*) + sizeof(str) +
 		host.len + socket.len;
 	sock = shm_malloc(len);
 	if (!sock) {
@@ -304,7 +304,7 @@ static str xmlrpc_print(evi_reply_sock *sock)
 		aux.s = int2str(sock->port, &aux.len);
 		DO_PRINT(aux.s, aux.len);
 	}
-		
+
 	if (sock->flags & EVI_PARAMS) {
 		DO_PRINT(":", 1);
 		method = (str *) &sock->params;

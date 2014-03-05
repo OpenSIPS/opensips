@@ -47,7 +47,7 @@ static LDAP* last_ldap_handle = NULL;
 static LDAPMessage* last_ldap_result = NULL;
 
 int get_connected_ldap_session(
-	char* _lds_name, 
+	char* _lds_name,
 	struct ld_session** _lds);
 	int lds_search(char* _lds_name,
 	char* _dn,
@@ -93,7 +93,7 @@ int get_ldap_handle(char* _lds_name, LDAP** _ldap_handle)
 }
 
 int get_connected_ldap_session(char* _lds_name, struct ld_session** _lds)
-{	
+{
 	/*
 	* get ld session
 	*/
@@ -137,7 +137,7 @@ int get_connected_ldap_session(char* _lds_name, struct ld_session** _lds)
 		last_ldap_result = NULL;
 	}
 	*/
-	
+
 	return 0;
 }
 
@@ -184,7 +184,7 @@ int ldap_params_search(
 	{
 		LM_ERR(	"[%s]: filter string too long (len [%d], max len [%d])\n",
 			_lds_name,
-			rc, 
+			rc,
 			LDAP_MAX_FILTER_LEN);
 		return -1;
 	}
@@ -208,7 +208,7 @@ int ldap_params_search(
 		!= 0)
 	{
 		/* try again if LDAP API ERROR */
-		if (LDAP_API_ERROR(rc) && 
+		if (LDAP_API_ERROR(rc) &&
 				(lds_search(_lds_name,
 						_dn,
 						_scope,
@@ -228,11 +228,11 @@ int ldap_params_search(
 			return -1;
 		}
 	}
-	
-	LM_DBG(	"[%s]: [%d] LDAP entries found\n", 
+
+	LM_DBG(	"[%s]: [%d] LDAP entries found\n",
 		_lds_name,
 		*_ld_result_count);
-	
+
 	return 0;
 }
 
@@ -417,16 +417,16 @@ int lds_search(
                 last_ldap_result = NULL;
         }
 
-	
+
 	LM_DBG(	"[%s]: performing LDAP search: dn [%s],"
 		" scope [%d], filter [%s], client_timeout [%d] usecs\n",
 		_lds_name,
 		_dn,
 		_scope,
 		_filter,
-		(int)(lds->client_search_timeout.tv_sec * 1000000 
+		(int)(lds->client_search_timeout.tv_sec * 1000000
 			+ lds->client_search_timeout.tv_usec));
-	
+
 #ifdef LDAP_PERF
 	gettimeofday(&before_search, NULL);
 #endif
@@ -468,7 +468,7 @@ int lds_search(
 		{
 			ldap_disconnect(_lds_name);
 		}
-		
+
 		LM_DBG( "[%s]: ldap_search_ext_st failed: %s\n",
 			_lds_name,
 			ldap_err2string(*_ld_error));

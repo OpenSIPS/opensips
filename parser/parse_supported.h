@@ -24,7 +24,7 @@
  *
  * History:
  * -------
- * 2006-03-02  parse_supported() parses and cumulates all SUPPORTED 
+ * 2006-03-02  parse_supported() parses and cumulates all SUPPORTED
  *             headers (bogdan)
  */
 
@@ -64,7 +64,7 @@
 struct supported_body {
 	unsigned int supported;        /* supported mask for the current hdr */
 	unsigned int supported_all;    /* suppoted mask for the all "supported" hdr
-	                                *  - it's set only for the first hdr in 
+	                                *  - it's set only for the first hdr in
 	                                *  sibling list*/
 };
 

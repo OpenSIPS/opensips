@@ -320,7 +320,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		LM_ERR("no more pkg mem\n");
 		goto error;
 	}
-	memcpy( p, uri->s, uri->len); 
+	memcpy( p, uri->s, uri->len);
 	if (insert_new_lump_after( l, p, uri->len, 0)==0) {
 		LM_ERR("insert new lump failed\n");
 		pkg_free(p);
@@ -366,7 +366,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 			}
 			LM_DBG("stored <%.*s> param in dialog\n", rr_param->len, rr_param->s);
 		}
-		if (dlg_api.store_dlg_value(dlg, 
+		if (dlg_api.store_dlg_value(dlg,
 					to ? &rr_to_param_new : &rr_from_param_new, uri) < 0) {
 			LM_ERR("cannot store new uri value\n");
 			goto error;
@@ -449,7 +449,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		}
 		/* set TO/ FROM sepcific flags */
 		msg->msg_flags |= uac_flag;
-		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED && 
+		if ( (Trans=uac_tmb.t_gett())!=NULL && Trans!=T_UNDEFINED &&
 		Trans->uas.request)
 			Trans->uas.request->msg_flags |= uac_flag;
 	}
@@ -714,7 +714,7 @@ void rr_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 	if ( (restore_uri( msg, 0, 1/*from*/) +
 	restore_uri( msg, 1, 0/*to*/) )!= -2 ) {
 		/* restore in req performed -> replace in reply */
-		/* in callback we need TO/FROM to be parsed- it's already done 
+		/* in callback we need TO/FROM to be parsed- it's already done
 		 * by restore_from_to() function */
 		if ( uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_IN,
 		restore_uris_reply, 0, 0)!=1 ) {
@@ -787,7 +787,7 @@ int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
 		LM_DBG("dialog not found - cannot move branch avps\n");
 		goto not_moved;
 	}
-	
+
 	code = msg->first_line.u.reply.statuscode;
 	if (msg->first_line.type == SIP_REPLY && code >= 200 && code < 300) {
 		/* check to see if there are bavps stored */
@@ -804,7 +804,7 @@ int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
 			return -1;
 		}
 
-		LM_DBG("moved <%.*s> from branch avp list in dlg\n", 
+		LM_DBG("moved <%.*s> from branch avp list in dlg\n",
 				rr_param->len, rr_param->s);
 		return 1;
 	}
@@ -829,7 +829,7 @@ void move_bavp_callback(struct cell* t, int type, struct tmcb_params *p)
 	if (req == FAKED_REPLY || rpl == FAKED_REPLY)
 		return;
 
-	if (req->msg_flags & FL_USE_UAC_FROM && 
+	if (req->msg_flags & FL_USE_UAC_FROM &&
 			(move_bavp_dlg(rpl, &rr_from_param, &from_bavp_spec) < 0))
 		LM_ERR("failed to move bavp list\n");
 

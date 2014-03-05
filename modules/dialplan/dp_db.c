@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -43,7 +43,7 @@ str match_flags_column  =   str_init(MATCH_FLAGS_COL);
 str subst_exp_column    =   str_init(SUBST_EXP_COL);
 str repl_exp_column     =   str_init(REPL_EXP_COL);
 str disabled_column     =   str_init(DISABLED_COL);
-str attrs_column        =   str_init(ATTRS_COL); 
+str attrs_column        =   str_init(ATTRS_COL);
 
 static db_con_t* dp_db_handle    = 0; /* database connection handle */
 static db_func_t dp_dbf;
@@ -195,7 +195,7 @@ int dp_load_db(dp_table_list_p dp_table)
 
 	dpl_node_t *rule;
 	int no_rows = 10;
-	
+
 	if( dp_table->crt_index != dp_table->next_index){
 		LM_WARN("a load command already generated, aborting reload...\n");
 		return 0;
@@ -420,7 +420,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	if(str_to_shm(attrs, &new_rule->attrs)!=0)
 		goto err;
 
-	LM_DBG("attrs are %.*s\n", 
+	LM_DBG("attrs are %.*s\n",
 		new_rule->attrs.len, new_rule->attrs.s);
 
 	if (match_comp)
@@ -536,7 +536,7 @@ void destroy_hash(dpl_id_t **rules_hash)
 			 i++, indexp = &crt_idp->rule_hash[i]) {
 
 			for (rulep = indexp->first_rule; rulep; rulep=indexp->first_rule) {
-			
+
 				destroy_rule(rulep);
 				indexp->first_rule = rulep->next;
 
@@ -559,7 +559,7 @@ void destroy_rule(dpl_node_t * rule){
 	if(!rule)
 		return;
 
-	LM_DBG("destroying rule with priority %i\n", 
+	LM_DBG("destroying rule with priority %i\n",
 		rule->pr);
 
 	if(rule->match_comp)
@@ -577,10 +577,10 @@ void destroy_rule(dpl_node_t * rule){
 
 	if(rule->subst_exp.s)
 		shm_free(rule->subst_exp.s);
-	
+
 	if(rule->repl_exp.s)
 		shm_free(rule->repl_exp.s);
-	
+
 	if(rule->attrs.s)
 		shm_free(rule->attrs.s);
 }
@@ -596,7 +596,7 @@ dpl_id_p select_dpid(dp_table_list_p table, int id, int index)
 	for(idp = table->hash[index]; idp!=NULL; idp = idp->next)
 		if(idp->dp_id == id)
 			return idp;
-	
+
 	return NULL;
 }
 
@@ -638,8 +638,8 @@ void list_rule(dpl_node_t * rule)
 	LM_DBG("RULE %p: pr %i next %p match_exp %.*s match_flags %d, "
 		"subst_exp %.*s, repl_exp %.*s and attrs %.*s\n", rule,
 		rule->pr, rule->next,
-		rule->match_exp.len, rule->match_exp.s, 
-		rule->match_flags, 
+		rule->match_exp.len, rule->match_exp.s,
+		rule->match_flags,
 		rule->subst_exp.len, rule->subst_exp.s,
 		rule->repl_exp.len, rule->repl_exp.s,
 		rule->attrs.len,	rule->attrs.s);

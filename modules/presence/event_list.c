@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -31,9 +31,9 @@
 #include <string.h>
 #include "../../str.h"
 #include "../../dprint.h"
-#include "../../parser/parse_event.h" 
-#include "../../mem/shm_mem.h" 
-#include "../../mem/mem.h" 
+#include "../../parser/parse_event.h"
+#include "../../mem/shm_mem.h"
+#include "../../mem/mem.h"
 #include "event_list.h"
 #include "hash.h"
 
@@ -94,7 +94,7 @@ void shm_free_event(event_t* ev)
 {
 	if(ev== NULL)
 		return;
-	
+
 	if(ev->text.s)
 		shm_free(ev->text.s);
 
@@ -136,7 +136,7 @@ int add_event(pres_ev_t* event)
 			return -1;
 		}
 	}
-	
+
 	ev= contains_event(&event->name, &parsed_event);
 	if(ev== NULL)
 	{
@@ -186,7 +186,7 @@ int add_event(pres_ev_t* event)
 
 	sep= strchr(event->name.s, '.');
 	if(sep != NULL && strncasecmp(sep+1, "winfo", 5)== 0)
-	{	
+	{
 		ev->type= WINFO_TYPE;
 		wipeer_name.s= event->name.s;
 		wipeer_name.len= sep - event->name.s;
@@ -202,11 +202,11 @@ int add_event(pres_ev_t* event)
 		wipeer_name.len+= 6;
 		ev->wipeer= contains_event(&wipeer_name, NULL);
 	}
-	
+
 	if(ev->wipeer)
 		ev->wipeer->wipeer= ev;
 
-	if(event->req_auth && 
+	if(event->req_auth &&
 		( event->get_auth_status==0 ||event->get_rules_doc== 0))
 	{
 		LM_ERR("bad event structure\n");
@@ -236,7 +236,7 @@ int add_event(pres_ev_t* event)
 		EvList->events= ev;
 	}
 	EvList->ev_count++;
-	
+
 	LM_DBG("succesfully added event: %.*s - len= %d\n",ev->name.len,
 			ev->name.s, ev->name.len);
 
@@ -282,15 +282,15 @@ evlist_t* init_evlist(void)
 	}
 	list->ev_count= 0;
 	list->events= NULL;
-	
+
 	return list;
-}	
+}
 
 pres_ev_t* contains_event(str* sname, event_t* parsed_event)
 {
 	event_t event;
 	pres_ev_t* e;
-	
+
 	memset(&event, 0, sizeof(event_t));
 	if(event_parser(sname->s, sname->len, &event)< 0)
 	{
@@ -322,7 +322,7 @@ void free_event_params(param_t* params, int mem_type)
 			pkg_free(t1);
 		t1= t2;
 	}
-	
+
 }
 
 pres_ev_t* search_event(event_t* event)
@@ -340,7 +340,7 @@ pres_ev_t* search_event(event_t* event)
 			{
 				return pres_ev;
 			}
-	
+
 			/* search all parameters in event in ev */
 /*			if(search_event_params(event, pres_ev->evp)< 0)
 				goto cont;
@@ -368,13 +368,13 @@ int search_event_params(event_t* ev, event_t* searched_ev)
 	{
 		p= searched_ev->params;
 		found= 0;
-	
+
 		while(p)
 		{
-			if(p->name.len== ps->name.len && 
+			if(p->name.len== ps->name.len &&
 				strncmp(p->name.s,ps->name.s, ps->name.len)== 0)
 				if((p->body.s== 0 && ps->body.s== 0) ||
-					(p->body.len== ps->body.len && 
+					(p->body.len== ps->body.len &&
 					strncmp(p->body.s,ps->body.s,ps->body.len)== 0))
 				{
 					found= 1;
@@ -391,15 +391,15 @@ int search_event_params(event_t* ev, event_t* searched_ev)
 
 }
 int get_event_list(str** ev_list)
-{	
+{
 	pres_ev_t* ev= EvList->events;
 	int i;
 	str* list;
 	*ev_list= NULL;
-	
+
 	if(EvList->ev_count== 0)
 		return 0;
-	
+
 	list= (str*)pkg_malloc(sizeof(str));
 	if(list== NULL)
 	{
@@ -415,19 +415,19 @@ int get_event_list(str** ev_list)
 		return -1;
 	}
 	list->s[0]= '\0';
-	
+
 	for(i= 0; i< EvList->ev_count; i++)
 	{
 		if(i> 0)
 		{
 			memcpy(list->s+ list->len, ", ", 2);
 			list->len+= 2;
-		}	
+		}
 		memcpy(list->s+ list->len, ev->name.s, ev->name.len );
 		list->len+= ev->name.len ;
 		ev= ev->next;
 	}
-	
+
 	*ev_list= list;
 	return 0;
 }
@@ -435,7 +435,7 @@ int get_event_list(str** ev_list)
 void destroy_evlist(void)
 {
     pres_ev_t* e1, *e2;
-    if (EvList) 
+    if (EvList)
 	{
 		e1= EvList->events;
 		while(e1)
@@ -443,7 +443,7 @@ void destroy_evlist(void)
 			e2= e1->next;
 			free_pres_event(e1);
 			e1= e2;
-	    }	
+	    }
 		shm_free(EvList);
     }
 }

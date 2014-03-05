@@ -340,7 +340,7 @@ void timeout_listener_process(int rank)
 				id.s = ++p;
 				/* go to end or to next non-digit */
 				for (; (p < buffer + len ) && IS_DIGIT(*p); ++p);
-				
+
 				id.len = p - id.s;
 				if(str2int(&id, &h_id)< 0) {
 					LM_ERR("Wrong formated message received from rtpproxy - invalid"
@@ -420,7 +420,7 @@ int init_rtpp_notify_list(void)
 		return 0;
 	}
 
-	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 				crt_rtpp = crt_rtpp->rn_next) {
@@ -484,7 +484,7 @@ void update_rtpproxy_list(void)
 	LM_DBG("updating rtppproxy list\n");
 
 	/* add new rtppproxies */
-	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
+	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 				crt_rtpp = crt_rtpp->rn_next) {
@@ -518,7 +518,7 @@ void update_rtpproxy_list(void)
 		/* don't update for unix sockets */
 		if (rtpp_lst->mode == 0)
 			goto loop;
-		for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL; 
+		for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 				rtpp_list = rtpp_list->rset_next) {
 			for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next) {

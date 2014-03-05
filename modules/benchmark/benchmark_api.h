@@ -60,7 +60,7 @@ static inline int load_bm_api( struct bm_binds *bmb )
 		LM_ERR("load_bm failed\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 

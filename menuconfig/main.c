@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -273,11 +273,11 @@ int main(int argc,char **argv)
 	}
 
 	/* don't buffer input until the enter key is pressed */
-	cbreak(); 
+	cbreak();
 	/* don't echo user input to the screen */
-	noecho(); 
+	noecho();
 	/* allow the use of arrow keys */
-	keypad(stdscr, TRUE); 
+	keypad(stdscr, TRUE);
 	/* Clear anything that might be on the screen */
 	clear();
 	refresh();

@@ -59,10 +59,10 @@ static char * xmlrpc_typeName ( xmlrpc_type type ) {
 }
 
 static void validateType ( xmlrpc_env * env, xmlrpc_value * value, xmlrpc_type expectedType ) {
-	
+
     if ( value->_type != expectedType ) {
     	xmlrpc_env_set_fault_formatted(
-            env, XMLRPC_TYPE_ERROR, "Value of type %s supplied where type %s was expected.", 
+            env, XMLRPC_TYPE_ERROR, "Value of type %s supplied where type %s was expected.",
             xmlrpc_typeName(value->_type), xmlrpc_typeName(expectedType));
     }
 }
@@ -78,7 +78,7 @@ static void verifyNoNulls ( xmlrpc_env * env, char * content, unsigned int len )
 }
 
 static void accessStringValue ( xmlrpc_env * env, xmlrpc_value * value, size_t * length, char ** contents ) {
-    
+
     validateType(env, value, XMLRPC_TYPE_STRING);
 
     if ( !env->fault_occurred ) {
@@ -104,10 +104,10 @@ static void xmlrpc_read_string( xmlrpc_env * env, xmlrpc_value * value, char ** 
     accessStringValue(env, value, &length, &contents);
 
     if ( !env->fault_occurred ) {
-                     
+
         str = (char*) pkg_malloc (length+1);
         if ( str == NULL ) {
-            xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR, 
+            xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR,
 					"Unable to allocate space for %u-character string", length);
 			LM_ERR("pkg_malloc cannot allocate any more memory!\n");
 		}
@@ -127,7 +127,7 @@ static void verifyNoNullsW( xmlrpc_env * env, wchar_t * contents, unsigned int l
 
     for (i = 0; i < len && !env->fault_occurred; i++)
         if ( contents[i] == '\0' )
-            xmlrpc_env_set_fault(env, XMLRPC_INTERNAL_ERROR, 
+            xmlrpc_env_set_fault(env, XMLRPC_INTERNAL_ERROR,
 					"String must not contain NULL characters.");
 }
 
@@ -136,11 +136,11 @@ static void accessStringValueW (xmlrpc_env * env, xmlrpc_value * value, size_t *
     validateType(env, value, XMLRPC_TYPE_STRING);
 
     if ( !env->fault_occurred ) {
-      
+
         if ( !env->fault_occurred ) {
             wchar_t * wcontents = XMLRPC_TYPED_MEM_BLOCK_CONTENTS(wchar_t, value->_wcs_block);
             size_t len = XMLRPC_TYPED_MEM_BLOCK_SIZE(wchar_t, value->_wcs_block) - 1;
-            
+
             verifyNoNullsW(env, wcontents, len);
             *length = len;
             *stringValueW = wcontents;
@@ -152,7 +152,7 @@ static void xmlrpc_read_string_w ( xmlrpc_env * env, xmlrpc_value * value, wchar
 
     size_t length;
     wchar_t * wcontents, * str;
-    
+
     accessStringValueW(env, value, &length, &wcontents);
 
     if ( !env->fault_occurred ) {
@@ -164,7 +164,7 @@ static void xmlrpc_read_string_w ( xmlrpc_env * env, xmlrpc_value * value, wchar
 
        	str = (wchar_t*) pkg_malloc (length + 1);
         if ( str == NULL ){
-			xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR, 
+			xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR,
 					"Unable to allocate space for %u-byte string", length);
 			LM_ERR("pkg_malloc cannot allocate any more memory!\n");
 		}

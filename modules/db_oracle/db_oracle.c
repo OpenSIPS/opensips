@@ -108,7 +108,7 @@ static int db_oracle_bind_api(const str* mod, db_func_t *dbb)
 	dbb->raw_query        = db_oracle_raw_query;
 	dbb->free_result      = db_oracle_free_result;
 	dbb->insert           = db_oracle_insert;
-	dbb->delete           = db_oracle_delete; 
+	dbb->delete           = db_oracle_delete;
 	dbb->update           = db_oracle_update;
 
 	return 0;

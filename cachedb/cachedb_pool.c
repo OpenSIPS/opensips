@@ -33,7 +33,7 @@ static cachedb_pool_con *cachedb_pool = NULL;
 cachedb_pool_con* cachedb_pool_get(struct cachedb_id *id)
 {
 	cachedb_pool_con *it;
-	
+
 	for (it=cachedb_pool;it;it=it->next)
 		if (cmp_cachedb_id(id,it->id)) {
 			it->ref++;

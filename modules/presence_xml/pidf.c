@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -101,7 +101,7 @@ xmlNodePtr xmlDocGetNodeByName(xmlDocPtr doc, const char *name, const char *ns)
 	return xmlNodeGetNodeByName(cur, name, ns);
 }
 
-char *xmlDocGetNodeContentByName(xmlDocPtr doc, const char *name, 
+char *xmlDocGetNodeContentByName(xmlDocPtr doc, const char *name,
 		const char *ns)
 {
 	xmlNodePtr node = xmlDocGetNodeByName(doc, name, ns);
@@ -133,7 +133,7 @@ time_t xml_parse_dateTime(char* xml_time_str)
 		printf("error: failed to parse time\n");
 		return 0;
 	}
-	
+
 	if(*p== '\0')
 		goto done;
 
@@ -150,7 +150,7 @@ time_t xml_parse_dateTime(char* xml_time_str)
 	if(*p== '\0')
 		goto done;
 
-	
+
 	/* read time zone */
 
 	if(*p== 'Z')
@@ -164,14 +164,14 @@ time_t xml_parse_dateTime(char* xml_time_str)
 	p++;
 
 	sscanf(p, "%c%c:%c%c", &h1, &h2, &m1, &m2);
-	
+
 	h= (h1- '0')*10+ h2- '0';
 	m= (m1- '0')*10+ m2- '0';
 
 	timezone_diff= sign* ((m+ h* 60)* 60);
 
 done:
-	return (mktime(&tm) + timezone_diff);	
+	return (mktime(&tm) + timezone_diff);
 }
 
 

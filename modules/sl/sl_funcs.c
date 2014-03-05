@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -105,12 +105,12 @@ int sl_get_totag(struct sip_msg *msg, str *totag)
 
 
 /* Take care of the statistics associated with numerical codes and replies */
-static inline void update_sl_reply_stat(int code) 
+static inline void update_sl_reply_stat(int code)
 {
 	stat_var *numerical_stat;
 
 	/* If stats aren't enabled, just skip over this. */
-	if (!sl_enable_stats) 
+	if (!sl_enable_stats)
 		return;
 
 	/* OpenSIPS already kept track of the total number of 1xx, 2xx, replies.
@@ -165,7 +165,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
 	/* add a to-tag if there is a To header field without it */
 	if ( code>=180 &&
 		(msg->to || (parse_headers(msg,HDR_TO_F, 0)!=-1 && msg->to))
-		&& (get_to(msg)->tag_value.s==0 || get_to(msg)->tag_value.len==0) ) 
+		&& (get_to(msg)->tag_value.s==0 || get_to(msg)->tag_value.len==0) )
 	{
 		calc_crc_suffix( msg, tag_suffix );
 		buf.s = build_res_buf_from_sip_req( code, text, &sl_tag, msg,
@@ -220,7 +220,7 @@ int sl_reply_error(struct sip_msg *msg )
 	str text;
 	int ret;
 
-	ret = err2reason_phrase( prev_ser_error, &sip_error, 
+	ret = err2reason_phrase( prev_ser_error, &sip_error,
 		err_buf, sizeof(err_buf), "SL");
 	if (ret<=0) {
 		LM_ERR("err2reason failed\n");
@@ -269,7 +269,7 @@ int sl_filter_ACK(struct sip_msg *msg, void *bar )
 		tag_str = &(get_to(msg)->tag_value);
 		if ( tag_str->len==TOTAG_VALUE_LEN )
 		{
-			/* calculate the variable part of to-tag */	
+			/* calculate the variable part of to-tag */
 			calc_crc_suffix(msg, tag_suffix);
 			/* test whether to-tag equal now */
 			if (memcmp(tag_str->s,sl_tag.s,sl_tag.len)==0) {

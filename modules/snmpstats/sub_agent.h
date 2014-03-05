@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -25,9 +25,9 @@
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * This file defines all functions required to establish a relationship with a
- * master agent.  
+ * master agent.
  */
 
 #ifndef _SNMPSTATS_SUB_AGENT_

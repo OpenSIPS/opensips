@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -134,7 +134,7 @@ static inline int find_credentials(struct sip_msg* _m, str* _realm,
 			} else break;
 		}
 	}
-	
+
 	/*
 	 * Credentials with given realm not found
 	 */
@@ -173,7 +173,7 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 			}
 			return ERROR;
 		}
-		
+
 		*_realm = uri->host;
 		strip_realm(_realm);
 	}
@@ -185,7 +185,7 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 	ret = find_credentials(_m, _realm, _hftype, _h);
 	if (ret < 0) {
 		LM_ERR("failed to find credentials\n");
-		if (send_resp(_m, (ret == -2) ? 500 : 400, 
+		if (send_resp(_m, (ret == -2) ? 500 : 400,
 			      (ret == -2) ? &auth_500_err : &auth_400_err, 0, 0) == -1) {
 			LM_ERR("failed to send 400 reply\n");
 		}
@@ -242,8 +242,8 @@ auth_result_t post_auth(struct sip_msg* _m, struct hdr_field* _h)
 
 	c = (auth_body_t*)((_h)->parsed);
 
-	if ((_m->REQ_METHOD == METHOD_ACK) || 
-		(_m->REQ_METHOD == METHOD_CANCEL)) 
+	if ((_m->REQ_METHOD == METHOD_ACK) ||
+		(_m->REQ_METHOD == METHOD_CANCEL))
 		return AUTHORIZED;
 
 	if(!disable_nonce_check) {
@@ -287,9 +287,9 @@ int check_response(dig_cred_t* _cred, str* _method, char* _ha1)
 		&(_cred->nc), &(_cred->cnonce),
 		&(_cred->qop.qop_str), _cred->qop.qop_parsed == QOP_AUTHINT_D,
 		_method, &(_cred->uri), hent, resp);
-	
+
 	LM_DBG("our result = \'%s\'\n", resp);
-	
+
 	/*
 	 * And simply compare the strings, the user is
 	 * authorized if they match

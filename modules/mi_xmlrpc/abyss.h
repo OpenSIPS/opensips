@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -198,7 +198,7 @@ bool ListFindString(TList *sl,char *str,uint16 *index);
 ** Table
 *********************************************************************/
 
-typedef struct 
+typedef struct
 {
 	char *name,*value;
 	uint16 hash;
@@ -371,10 +371,10 @@ uint32 SocketAvailableReadBytes(TSocket *s);
 #ifdef ABYSS_WIN32
 #ifndef __BORLANDC__
 #define O_APPEND	_O_APPEND
-#define O_CREAT 	_O_CREAT 
+#define O_CREAT 	_O_CREAT
 #define O_EXCL		_O_EXCL
 #define O_RDONLY	_O_RDONLY
-#define O_RDWR		_O_RDWR 
+#define O_RDWR		_O_RDWR
 #define O_TRUNC	_O_TRUNC
 #define O_WRONLY	_O_WRONLY
 #define O_TEXT		_O_TEXT
@@ -427,7 +427,7 @@ typedef struct finddata_t
 	time_t time_write;
 } TFileInfo;
 
-typedef struct 
+typedef struct
 {
 	char path[NAME_MAX+1];
 	DIR *handle;
@@ -474,7 +474,7 @@ typedef struct
 	uid_t uid;
 	gid_t gid;
 	TFile pidfile;
-#endif	
+#endif
 } TServer;
 
 
@@ -482,13 +482,13 @@ typedef struct
 ** Conn
 *********************************************************************/
 
-#define BUFFER_SIZE	4096 
+#define BUFFER_SIZE	4096
 
 typedef struct _TConn
 {
 	TServer *server;
 	uint32 buffersize,bufferpos;
-	uint32 inbytes,outbytes;	
+	uint32 inbytes,outbytes;
 	TSocket socket;
 	TIPAddr peerip;
 	TThread thread;

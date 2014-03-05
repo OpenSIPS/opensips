@@ -25,7 +25,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -43,23 +43,23 @@
 
 #define M_NAME "acc"
 
-/* TCP connection setup */ 
+/* TCP connection setup */
 int init_mytcp(char* host, int port)
 {
 	int sockfd;
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
-    
+
 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
-	
-    if (sockfd < 0) 
+
+    if (sockfd < 0)
 	{
 		LM_ERR("failed to create the socket\n");
 		return -1;
-	}	
-	
+	}
+
     server = resolvehost(host,0);
-    if (server == NULL) 
+    if (server == NULL)
 	{
 		LM_ERR("failed to find the host\n");
 		return -1;
@@ -70,19 +70,19 @@ int init_mytcp(char* host, int port)
     memcpy((char *)&serv_addr.sin_addr.s_addr, (char *)server->h_addr,
 					server->h_length);
     serv_addr.sin_port = htons(port);
-	
-    if (connect(sockfd, (const struct sockaddr *)&serv_addr, 
-							sizeof(serv_addr)) < 0) 
+
+    if (connect(sockfd, (const struct sockaddr *)&serv_addr,
+							sizeof(serv_addr)) < 0)
 	{
         LM_ERR("failed to connec to the DIAMETER client\n");
 		return -1;
-	}	
+	}
 
 	return sockfd;
 }
 
 /* send a message over an already opened TCP connection */
-int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb, 
+int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 					unsigned int waited_id)
 {
 	int n, number_of_tries;
@@ -95,7 +95,7 @@ int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 	unsigned int m_id;
 
 	/* try to write the message to the Diameter client */
-	while( (n=write(sockfd, buf, len))==-1 ) 
+	while( (n=write(sockfd, buf, len))==-1 )
 	{
 		if (errno==EINTR)
 			continue;
@@ -103,7 +103,7 @@ int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 		return AAA_ERROR;
 	}
 
-	if (n!=len) 
+	if (n!=len)
 	{
 		LM_ERR("write gave no error but wrote less than asked\n");
 		return AAA_ERROR;
@@ -142,12 +142,12 @@ int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 				LM_ERR("failed to read from socket\n");
 				return AAA_CONN_CLOSED;
 		}
-		
+
 		/* obtain the structure corresponding to the message */
-		msg = AAATranslateMessage(rb->buf, rb->buf_len, 0);	
+		msg = AAATranslateMessage(rb->buf, rb->buf_len, 0);
 		if(!msg)
 		{
-			LM_ERR("message structure not obtained\n");	
+			LM_ERR("message structure not obtained\n");
 			return AAA_ERROR;
 		}
 		avp = AAAFindMatchingAVP(msg, NULL, AVP_SIP_MSGID,
@@ -219,7 +219,7 @@ int do_read( int socket, rd_buf_t *p)
 		ptr = p->buf + p->buf_len;
 	}
 
-	while( (n=recv( socket, ptr, wanted_len, MSG_DONTWAIT ))>0 ) 
+	while( (n=recv( socket, ptr, wanted_len, MSG_DONTWAIT ))>0 )
 	{
 //		LM_DBG("(sock=%d)  -> n=%d (expected=%d)\n", p->sock,n,wanted_len);
 		p->buf_len += n;
@@ -229,7 +229,7 @@ int do_read( int socket, rd_buf_t *p)
 			wanted_len -= n;
 			ptr += n;
 		}
-		else 
+		else
 		{
 			if (p->buf==0)
 			{
@@ -285,22 +285,22 @@ void close_tcp_connection(int sfd)
 	shutdown(sfd, 2);
 }
 
-/* 
- * Extract URI depending on the request from To or From header 
+/*
+ * Extract URI depending on the request from To or From header
  */
 int get_uri(struct sip_msg* m, str** uri)
 {
-	if ((REQ_LINE(m).method.len == 8) && 
-					(memcmp(REQ_LINE(m).method.s, "REGISTER", 8) == 0)) 
+	if ((REQ_LINE(m).method.len == 8) &&
+					(memcmp(REQ_LINE(m).method.s, "REGISTER", 8) == 0))
 	{/* REGISTER */
-		if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1) || !m->to )) 
+		if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1) || !m->to ))
 		{
 			LM_ERR("the To header field was not found or malformed\n");
 			return -1;
 		}
 		*uri = &(get_to(m)->uri);
-	} 
-	else 
+	}
+	else
 	{
 		if (parse_from_header(m)<0)
 		{

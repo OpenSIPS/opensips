@@ -48,16 +48,16 @@ typedef struct { volatile unsigned int counter; } atomic_t;
  * atomic_set - set atomic variable
  * @v: pointer of type atomic_t
  * @i: required value
- * 
+ *
  * Atomically sets the value of @v to @i.
- */ 
+ */
 #define atomic_set(v,i)		(((v)->counter) = (i))
 
 /*! \brief
  * atomic_add - add integer to atomic variable
  * @i: integer value to add
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically adds @i to @v.
  */
 static __inline__ void atomic_add(int i, atomic_t *v)
@@ -72,7 +72,7 @@ static __inline__ void atomic_add(int i, atomic_t *v)
  * atomic_sub - subtract the atomic variable
  * @i: integer value to subtract
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically subtracts @i from @v.
  */
 static __inline__ void atomic_sub(int i, atomic_t *v)
@@ -86,9 +86,9 @@ static __inline__ void atomic_sub(int i, atomic_t *v)
 /*! \brief
  * atomic_inc - increment atomic variable
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically increments @v by 1.
- */ 
+ */
 static __inline__ void atomic_inc(atomic_t *v)
 {
 	__asm__ __volatile__(
@@ -100,9 +100,9 @@ static __inline__ void atomic_inc(atomic_t *v)
 /*! \brief
  * atomic_dec - decrement atomic variable
  * @v: pointer of type atomic_t
- * 
+ *
  * Atomically decrements @v by 1.
- */ 
+ */
 static __inline__ void atomic_dec(atomic_t *v)
 {
 	__asm__ __volatile__(

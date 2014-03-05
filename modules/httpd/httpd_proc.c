@@ -258,14 +258,14 @@ static int post_iterator (void *cls,
 	}
 
 	LM_DBG("[%.*s]->[%.*s]\n", key_len, key, (int)size, value);
-	
+
 	kv = (str_str_t*)slinkedl_append(pr->p_list,
 						sizeof(str_str_t) + key_len + size);
 	p = (char*)(kv + 1);
 	kv->key.len = key_len; kv->key.s = p;
 	memcpy(p, key, key_len);
 	p += key_len;
-	kv->val.len = size; kv->val.s = p; 
+	kv->val.len = size; kv->val.s = p;
 	memcpy(p, value, size);
 	LM_DBG("inserting element pr=[%p] pp=[%p] p_list=[%p]\n",
 				pr, pr->pp, pr->p_list);

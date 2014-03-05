@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -28,8 +28,8 @@
 /*!
  * \file
  * \brief SIP registrar module - lookup contacts in usrloc
- * \ingroup registrar  
- */  
+ * \ingroup registrar
+ */
 
 
 #include <string.h>
@@ -135,7 +135,7 @@ search_valid_contact:
 	if (sip_instance.len && sip_instance.s) {
 		LM_DBG("ruri has gruu in lookup\n");
 		/* uri has GRUU */
-		if (ptr->instance.len-2 != sip_instance.len || 
+		if (ptr->instance.len-2 != sip_instance.len ||
 				memcmp(ptr->instance.s+1,sip_instance.s,sip_instance.len)) {
 			LM_DBG("no match to sip instace - [%.*s] - [%.*s]\n",ptr->instance.len-2,ptr->instance.s+1,
 					sip_instance.len,sip_instance.s);
@@ -245,13 +245,13 @@ search_valid_contact:
 	for( ; ptr ; ptr = ptr->next ) {
 		if (VALID_CONTACT(ptr, act_time) && allowed_method(_m,ptr,flags)) {
 			path_dst.len = 0;
-			if(ptr->path.s && ptr->path.len 
+			if(ptr->path.s && ptr->path.len
 			&& get_path_dst_uri(&ptr->path, &path_dst) < 0) {
 				LM_ERR("failed to get dst_uri for Path\n");
 				continue;
 			}
 
-			/* The same as for the first contact applies for branches 
+			/* The same as for the first contact applies for branches
 			 * regarding path vs. received. */
 			LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
 			if (append_branch(_m,&ptr->c,path_dst.len?&path_dst:&ptr->received,

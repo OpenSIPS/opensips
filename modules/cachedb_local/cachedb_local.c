@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -202,7 +202,7 @@ struct mi_root * mi_cache_remove_chunk(struct mi_root *cmd_tree,void *param)
 lcache_con* lcache_new_connection(struct cachedb_id* id)
 {
 	lcache_con *con;
-	
+
 	if (id->flags != CACHEDB_ID_NO_URL) {
 		LM_ERR("bogus url for local cachedb\n");
 		return 0;
@@ -222,7 +222,7 @@ lcache_con* lcache_new_connection(struct cachedb_id* id)
 	memset(con,0,sizeof(lcache_con));
 	con->id = id;
 	con->ref = 1;
-	
+
 	return con;
 }
 
@@ -236,7 +236,7 @@ void lcache_free_connection(cachedb_pool_con *con)
 	pkg_free(con);
 }
 
-void lcache_destroy(cachedb_con *con) 
+void lcache_destroy(cachedb_con *con)
 {
 	cachedb_do_close(con,lcache_free_connection);
 }
@@ -251,7 +251,7 @@ static int mod_init(void)
 	cachedb_con *con;
 	str url=str_init("local://");
 	str name=str_init("local");
-	
+
 	if(cache_htable_size< 1)
 		cache_htable_size= 512;
 	else
@@ -274,7 +274,7 @@ static int mod_init(void)
 	cde.cdb_func.remove = lcache_htable_remove;
 	cde.cdb_func.add = lcache_htable_add;
 	cde.cdb_func.sub = lcache_htable_sub;
-	
+
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 
 	if(cache_clean_period <= 0 )
@@ -340,7 +340,7 @@ void localcache_clean(unsigned int ticks,void *param)
 		{
 			if((me1->expires > 0) && (me1->expires < get_ticks()))
 			{
-				LM_DBG("deleted entry attr= [%.*s]\n", 
+				LM_DBG("deleted entry attr= [%.*s]\n",
 						me1->attr.len, me1->attr.s);
 
 				if(me2)

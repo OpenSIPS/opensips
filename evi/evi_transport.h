@@ -90,7 +90,7 @@ typedef struct evi_trans_ {
 
 
 /* functions used by the transport modules */
-/* 
+/*
  * Used to register a transport module
  * Parameters:
  *  + export functions

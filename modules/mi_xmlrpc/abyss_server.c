@@ -90,7 +90,7 @@ determineSortType(const char *  const query,
     *sortP = 1;
     *textP = FALSE;
     *errorP = NULL;
-    
+
     if (query) {
         if (xmlrpc_streq(query, "plain"))
             *textP = TRUE;
@@ -121,7 +121,7 @@ generateListing(TList *       const listP,
                 TPool *       const poolP,
                 const char ** const errorP,
                 uint16_t *    const responseStatusP) {
-    
+
     TFileInfo fileinfo;
     TFileFind findhandle;
 
@@ -158,7 +158,7 @@ generateListing(TList *       const listP,
         if (*errorP) {
             *responseStatusP = 500;
             ListFree(listP);
-        }            
+        }
         FileFindClose(&findhandle);
     }
 }
@@ -209,7 +209,7 @@ sendDirectoryDocument(TList *      const listP,
     /* Sort the files */
     qsort(listP->item, listP->size, sizeof(void *),
           (TQSortProc)(sort == 1 ? cmpfilenames : cmpfiledates));
-    
+
     /* Write the listing */
     if (ascending)
         i = 0;
@@ -226,7 +226,7 @@ sendDirectoryDocument(TList *      const listP,
             ++i;
         else
             --i;
-            
+
         strcpy(z, fi->name);
 
         k = strlen(z);
@@ -245,12 +245,12 @@ sendDirectoryDocument(TList *      const listP,
             p = z1 + 24;
         } else {
             strcpy(z1, z);
-            
+
             ++k;
             p = z1 + k;
             while (k < 25)
                 z1[k++] = ' ';
-            
+
             z1[25] = '\0';
         }
 
@@ -276,9 +276,9 @@ sendDirectoryDocument(TList *      const listP,
                         u = 'G';
                 }
             }
-                
+
             sprintf(z3, "%5llu %c", (long long unsigned int)fi->size, u);
-            
+
             if (xmlrpc_streq(fi->name, ".."))
                 z4 = "";
             else
@@ -297,13 +297,13 @@ sendDirectoryDocument(TList *      const listP,
 
         HTTPWriteBodyChunk(sessionP, z, strlen(z));
     }
-        
+
     /* Write the tail of the file */
     if (text)
         strcpy(z, SERVER_PLAIN_INFO);
     else
         strcpy(z, "</PRE>" SERVER_HTML_INFO "</BODY></HTML>" CRLF CRLF);
-    
+
     HTTPWriteBodyChunk(sessionP, z, strlen(z));
 }
 
@@ -346,7 +346,7 @@ ServerDirectoryHandler(TSession * const r,
     uint16_t responseStatus=0;
     TDate dirdate;
     const char * imsHdr;
-    
+
     determineSortType(r->request_info.query, &ascending, &sort, &text, &error);
 
     if (error) {
@@ -388,7 +388,7 @@ ServerDirectoryHandler(TSession * const r,
 
     if (DateToString(&dirdate, z))
         ResponseAddField(r, "Last-Modified", z);
-    
+
     ResponseChunked(r);
     ResponseWrite(r);
 
@@ -433,7 +433,7 @@ sendBody(TSession *   const sessionP,
                 uint64_t start;
                 uint64_t end;
                 abyss_bool decoded;
-                    
+
                 decoded = RangeDecode((char *)(sessionP->ranges.item[i]),
                                       filesize,
                                       &start, &end);
@@ -473,7 +473,7 @@ ServerFileHandler(TSession * const r,
     TDate date;
     char * p;
     TDate filedate;
-    
+
     mediatype = MIMETypeGuessFromFile2(mimeTypeP, z);
 
     if (!FileOpen(&file,z,O_BINARY | O_RDONLY)) {
@@ -510,7 +510,7 @@ ServerFileHandler(TSession * const r,
             ResponseStatus(r, 200);
             break;
         }
-        
+
         sprintf(z, "bytes %llu-%llu/%llu", (long long unsigned int)start,
 			(long long unsigned int)end, (long long unsigned int)filesize);
 
@@ -524,12 +524,12 @@ ServerFileHandler(TSession * const r,
         ResponseStatus(r, 206);
         break;
     }
-    
+
     if (r->ranges.size == 0) {
         ResponseContentLength(r, filesize);
         ResponseContentType(r, mediatype);
     }
-    
+
     if (DateToString(&filedate, z))
         ResponseAddField(r, "Last-Modified", z);
 
@@ -620,7 +620,7 @@ ServerDefaultHandlerFunc(TSession * const sessionP) {
 
         i = srvP->defaultfilenames.size;
         while (i-- > 0) {
-            *p = '\0';        
+            *p = '\0';
             strcat(z, (srvP->defaultfilenames.item[i]));
             if (FileStat(z, &fs)) {
                 if (!(fs.st_mode & S_IFDIR))
@@ -630,7 +630,7 @@ ServerDefaultHandlerFunc(TSession * const sessionP) {
         }
 
         *(p-1) = '\0';
-        
+
         if (!FileStat(z, &fs)) {
             ResponseStatusErrno(sessionP);
             return TRUE;
@@ -721,7 +721,7 @@ static void
 createServer(struct _TServer ** const srvPP,
              abyss_bool         const noAccept,
              TSocket *          const userSocketP,
-             uint16_t           const portNumber,             
+             uint16_t           const portNumber,
              const char **      const errorP) {
 
     struct _TServer * srvP;
@@ -748,7 +748,7 @@ createServer(struct _TServer ** const srvPP,
             srvP->advertise        = TRUE;
             srvP->mimeTypeP        = NULL;
             srvP->useSigchld       = FALSE;
-            
+
             initUnixStuff(srvP);
 
             ListInitAutoFree(&srvP->handlers);
@@ -757,7 +757,7 @@ createServer(struct _TServer ** const srvPP,
             srvP->logfileisopen = FALSE;
 
             *errorP = NULL;
-        }        
+        }
         if (*errorP)
             free(srvP);
     }
@@ -808,7 +808,7 @@ ServerCreate(TServer *    const serverP,
         success = FALSE;
     } else {
         success = TRUE;
-    
+
         setNamePathLog(serverP, name, filesPath, logFileName);
     }
 
@@ -855,7 +855,7 @@ ServerCreateSocket(TServer *    const serverP,
             xmlrpc_strfree(error);
         } else {
             success = TRUE;
-            
+
             setNamePathLog(serverP, name, filesPath, logFileName);
         }
     } else
@@ -885,7 +885,7 @@ ServerCreateNoAccept(TServer *    const serverP,
         xmlrpc_strfree(error);
     } else {
         success = TRUE;
-        
+
         setNamePathLog(serverP, name, filesPath, logFileName);
     }
     return success;
@@ -897,7 +897,7 @@ void
 ServerCreateSocket2(TServer *     const serverP,
                     TSocket *     const socketP,
                     const char ** const errorP) {
-    
+
     abyss_bool const noAcceptFalse = FALSE;
 
     assert(socketP);
@@ -937,7 +937,7 @@ ServerFree(TServer * const serverP) {
     xmlrpc_strfree(srvP->name);
 
     xmlrpc_strfree(srvP->filespath);
-    
+
     ListFree(&srvP->defaultfilenames);
 
     terminateHandlers(&srvP->handlers);
@@ -959,7 +959,7 @@ ServerSetName(TServer *    const serverP,
               const char * const name) {
 
     xmlrpc_strfree(serverP->srvP->name);
-    
+
     serverP->srvP->name = strdup(name);
 }
 
@@ -970,7 +970,7 @@ ServerSetFilesPath(TServer *    const serverP,
                    const char * const filesPath) {
 
     xmlrpc_strfree(serverP->srvP->filespath);
-    
+
     serverP->srvP->filespath = strdup(filesPath);
 }
 
@@ -979,12 +979,12 @@ ServerSetFilesPath(TServer *    const serverP,
 void
 ServerSetLogFileName(TServer *    const serverP,
                      const char * const logFileName) {
-    
+
     struct _TServer * const srvP = serverP->srvP;
 
     if (srvP->logfilename)
         xmlrpc_strfree(srvP->logfilename);
-    
+
     srvP->logfilename = strdup(logFileName);
 }
 
@@ -1041,18 +1041,18 @@ runUserHandler(TSession *        const sessionP,
 
     abyss_bool handled;
     int i;
-    
+
     for (i = srvP->handlers.size-1, handled = FALSE;
          i >= 0 && !handled;
          --i) {
         URIHandler2 * const handlerP = srvP->handlers.item[i];
-        
+
         if (handlerP->handleReq2)
             handlerP->handleReq2(handlerP, sessionP, &handled);
         else if (handlerP->handleReq1)
             handled = handlerP->handleReq1(sessionP);
     }
-    
+
     if (!handled)
         ((URIHandler)(srvP->defaulthandler))(sessionP);
 }
@@ -1069,7 +1069,7 @@ processDataFromClient(TConn *      const connectionP,
     RequestInit(&session, connectionP);
 
     session.serverDeniesKeepalive = lastReqOnConn;
-        
+
     RequestRead(&session);
     if (session.status == 0) {
         if (session.version.major >= 2)
@@ -1080,14 +1080,14 @@ processDataFromClient(TConn *      const connectionP,
             runUserHandler(&session, connectionP->server->srvP);
     }
     assert(session.status != 0);
-    
+
     if (session.responseStarted)
         HTTPWriteEndChunk(&session);
     else
         ResponseError(&session);
 
     *keepAliveP = HTTPKeepalive(&session);
-    
+
     SessionLog(&session);
 
     RequestFree(&session);
@@ -1115,7 +1115,7 @@ serverFunc(void * const userHandle) {
 
     while (!connectionDone) {
         abyss_bool success;
-        
+
         /* Wait to read until timeout */
         success = ConnRead(connectionP, srvP->keepalivetimeout);
 
@@ -1126,14 +1126,14 @@ serverFunc(void * const userHandle) {
                 requestCount + 1 >= srvP->keepalivemaxconn;
 
             abyss_bool keepalive;
-            
+
             processDataFromClient(connectionP, lastReqOnConn, &keepalive);
-            
+
             ++requestCount;
 
             if (!keepalive)
                 connectionDone = TRUE;
-            
+
             /**************** Must adjust the read buffer *****************/
             ConnReadInit(connectionP);
         }
@@ -1152,16 +1152,16 @@ createAndBindSocket(struct _TServer * const srvP) {
         TraceMsg("Can't initialize TCP sockets");
     else {
         TSocket * socketP;
-        
+
         SocketUnixCreate(&socketP);
-        
+
         if (!socketP)
             TraceMsg("Can't create a socket");
         else {
             abyss_bool success;
-            
+
             success = SocketBind(socketP, NULL, srvP->port);
-            
+
             if (!success)
                 TraceMsg("Failed to bind listening socket to port number %u",
                          srvP->port);
@@ -1190,7 +1190,7 @@ ServerInit(TServer * const serverP) {
 -----------------------------------------------------------------------------*/
     struct _TServer * const srvP = serverP->srvP;
     abyss_bool success;
-    
+
     if (!srvP->serverAcceptsConnections) {
         TraceMsg("ServerInit() is not valid on a server that doesn't "
                  "accept connections "
@@ -1214,7 +1214,7 @@ ServerInit(TServer * const serverP) {
 
 
 
-/* We don't do any locking on the outstanding connections list, so 
+/* We don't do any locking on the outstanding connections list, so
    we must make sure that only the master thread (the one that listens
    for connections) ever accesses it.
 
@@ -1285,12 +1285,12 @@ freeFinishedConns(outstandingConnList * const listP) {
         TConn * const connectionP = (*pp);
 
         ThreadUpdateStatus(connectionP->threadP);
-        
+
         if (connectionP->finished) {
             /* Take it out of the list */
             *pp = connectionP->nextOutstandingP;
             --listP->count;
-            
+
             ConnWaitAndRelease(connectionP);
         } else {
             /* Move to next connection in list */
@@ -1326,7 +1326,7 @@ waitForNoConnections(outstandingConnList * const outstandingConnListP) {
 
     while (outstandingConnListP->firstP) {
         freeFinishedConns(outstandingConnListP);
-    
+
         if (outstandingConnListP->firstP)
             waitForConnectionFreed(outstandingConnListP);
     }
@@ -1363,7 +1363,7 @@ void
 ServerUseSigchld(TServer * const serverP) {
 
     struct _TServer * const srvP = serverP->srvP;
-    
+
     srvP->useSigchld = TRUE;
 }
 
@@ -1389,7 +1389,7 @@ destroyConnSocket(void * const userHandle) {
 }
 
 
-static void 
+static void
 serverRun2(TServer * const serverP) {
 
     struct _TServer * const srvP = serverP->srvP;
@@ -1408,7 +1408,7 @@ serverRun2(TServer * const serverP) {
         SocketAccept(srvP->listenSocketP,
                      &connected, &failed,
                      &connectedSocketP, &peerIpAddr);
-        
+
         if (connected) {
             const char * error;
 
@@ -1424,7 +1424,7 @@ serverRun2(TServer * const serverP) {
                 addToOutstandingConnList(outstandingConnListP, connectionP);
                 ConnProcess(connectionP);
                 SocketClose(connectedSocketP);
-                
+
                 /* When connection is done (which could be later, courtesy
                    of a background thread), destroyConnSocket() will
                    destroy *connectedSocketP.
@@ -1443,7 +1443,7 @@ serverRun2(TServer * const serverP) {
 
 
 
-void 
+void
 ServerRun(TServer * const serverP) {
 
     struct _TServer * const srvP = serverP->srvP;
@@ -1474,7 +1474,7 @@ serverRunConn(TServer * const serverP,
 
     srvP->keepalivemaxconn = 1;
 
-    ConnCreate(&connectionP, 
+    ConnCreate(&connectionP,
                serverP, connectedSocketP,
                &serverFunc, NULL, ABYSS_FOREGROUND, srvP->useSigchld,
                &error);
@@ -1561,7 +1561,7 @@ ServerRunOnce(TServer * const serverP) {
         abyss_bool failed;
         TSocket *  connectedSocketP;
         TIPAddr    remoteAddr;
-    
+
         srvP->keepalivemaxconn = 1;
 
         SocketAccept(srvP->listenSocketP,
@@ -1598,7 +1598,7 @@ ServerRunOnce2(TServer *           const serverP,
 static void
 setGroups(void) {
 
-#ifdef HAVE_SETGROUPS   
+#ifdef HAVE_SETGROUPS
     if (setgroups(0, NULL) == (-1))
         TraceExit("Failed to setup the group.");
 #endif
@@ -1632,7 +1632,7 @@ ServerDaemonize(TServer * const serverP) {
         /* We are the parent */
         exit(0);
     }
-    
+
     setsid();
 
     /* Change the current user if we are root */
@@ -1647,14 +1647,14 @@ ServerDaemonize(TServer * const serverP) {
         if (srvP->gid != (gid_t)-1)
             if (setgid(srvP->gid)==(-1))
                 TraceExit("Failed to change the group.");
-        
+
         if (setuid(srvP->uid) == -1)
             TraceExit("Failed to change the user.");
     }
-    
+
     if (srvP->pidfile != -1) {
         char z[16];
-    
+
         sprintf(z, "%d", getpid());
         FileWrite(&srvP->pidfile, z, strlen(z));
         FileClose(&srvP->pidfile);
@@ -1758,7 +1758,7 @@ LogWrite(TServer *    const serverP,
             const char * const lbr = "\n";
             FileWrite(&srvP->logfile, msg, strlen(msg));
             FileWrite(&srvP->logfile, lbr, strlen(lbr));
-        
+
             MutexUnlock(&srvP->logmutex);
         }
     }
@@ -1782,7 +1782,7 @@ LogWrite(TServer *    const serverP,
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE

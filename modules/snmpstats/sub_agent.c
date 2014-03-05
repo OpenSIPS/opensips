@@ -4,7 +4,7 @@
  * 2006-11-23 initial version (jmagder)
  *
  * This file defines all functions required to establish a relationship with a
- * master agent.  
+ * master agent.
  */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@
 static int keep_running;
 
 /* The function handles Handles shutting down of the sub_agent process. */
-static void sigterm_handler(int signal) 
+static void sigterm_handler(int signal)
 {
 	/* Just exit.  The master agent will clean everything up for us */
 	exit(0);
@@ -50,16 +50,16 @@ static void sigterm_handler(int signal)
  *   1) Registers itself with the Master Agent
  *
  *   2) Initializes all of the SNMPStats modules scalars and tables, while
- *      simultaneously registering their respective SNMP OID's and handlers 
+ *      simultaneously registering their respective SNMP OID's and handlers
  *      with the master agent.
  *
  *   3) Repeatedly checks for new SNMP messages to process
  *
- * Note: This function never returns, so it should always be called from a 
- *       sub-process. 
+ * Note: This function never returns, so it should always be called from a
+ *       sub-process.
  *
  */
-static int initialize_agentx(void) 
+static int initialize_agentx(void)
 {
 	/* We register with a master agent */
 	register_with_master_agent(AGENT_PROCESS_NAME);
@@ -121,7 +121,7 @@ void agentx_child(int rank)
 	sigaction(SIGINT,  &default_handlers, NULL);
 	sigaction(SIGHUP,  &default_handlers, NULL);
 	sigaction(SIGUSR1, &default_handlers, NULL);
-	/* SIGUSR2 must be handled by OpenSIPS as it is used for 
+	/* SIGUSR2 must be handled by OpenSIPS as it is used for
 	   collecting info on pkg memory */
 	/*sigaction(SIGUSR2, &default_handlers, NULL);*/
 
@@ -146,7 +146,7 @@ void agentx_child(int rank)
 
 /* This function opens up a connection with the master agent specified in
  * the snmpstats modules configuration file */
-void register_with_master_agent(char *name_to_register_under) 
+void register_with_master_agent(char *name_to_register_under)
 {
 	/* Set ourselves up as an AgentX Client. */
 	netsnmp_ds_set_boolean(NETSNMP_DS_APPLICATION_ID, NETSNMP_DS_AGENT_ROLE, 1);

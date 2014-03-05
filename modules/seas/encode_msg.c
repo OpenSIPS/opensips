@@ -14,26 +14,26 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 /*
  * =====================================================================================
- * 
+ *
  *        Filename:  main.c
- * 
+ *
  *     Description:  functions to encode a message
- * 
+ *
  *         Version:  1.0
  *         Created:  14/11/05 13:42:53 CET
  *        Revision:  none
  *        Compiler:  gcc
- * 
+ *
  *          Author:  Elias Baixas (EB), elias@conillera.net
  *         Company:  VozTele.com
- * 
+ *
  * =====================================================================================
  */
 
@@ -258,7 +258,7 @@ int encode_msg(struct sip_msg *msg,char *payload,int len)
    /*now copy the number of bytes that the headers-meta-section has occupied,right afther
     * headers-meta-section(the array with ['v',[2:where],'r',[2:where],'R',[2:where],...]
     * this is to know where the LAST header ends, since the length of each header-struct
-    * is calculated substracting the nextHeaderStart - presentHeaderStart 
+    * is calculated substracting the nextHeaderStart - presentHeaderStart
     * the k+1 is because payload[k] is usually the letter*/
    memcpy(&payload[k+1],&j,2);
    k+=3;
@@ -388,8 +388,8 @@ int dump_msg_test(char *code,int fd,char header,char segregationLevel)
    r=(i<100)?1:0;
    if(r){
       if(segregationLevel & ALSO_RURI){
-	 if(!(segregationLevel & JUNIT)){ 
-	    
+	 if(!(segregationLevel & JUNIT)){
+
 	    k=htonl(payload[REQUEST_URI_IDX+1]+payload[REQUEST_URI_IDX+2]);
 	    n=write(fd,&k,4);
 	    n=write(fd,msg,ntohl(k));

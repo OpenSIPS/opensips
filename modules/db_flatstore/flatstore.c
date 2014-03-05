@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Flatstore module interface
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -44,7 +44,7 @@
 static int parse_flat_url(const str* url, str* path)
 {
 	struct stat st_buf;
-	
+
 	if (!url || !url->s || !path) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
@@ -81,11 +81,11 @@ db_con_t* flat_db_init(const str* url)
 	}
 
 	/* We do not know the name of the table (and the name of the corresponding
-	 * file) at this point, we will simply store the path taken from the url 
-	 * parameter in the table variable, flat_use_table will then pick that 
+	 * file) at this point, we will simply store the path taken from the url
+	 * parameter in the table variable, flat_use_table will then pick that
 	 * value and open the file
 	 */
-	/* as the table (path) is a substring of the received str, we need to 
+	/* as the table (path) is a substring of the received str, we need to
 	 * allocate a separate str struct for it -bogdan
 	 */
 	res = pkg_malloc(sizeof(db_con_t)+sizeof(struct flat_con*)+sizeof(str));
@@ -136,7 +136,7 @@ int flat_use_table(db_con_t* h, const str* t)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -217,7 +217,7 @@ static int flat_prepare_iovec(const int n)
 	flat_iov[flat_iov_len - 1].iov_base = "\n";
 	flat_iov[flat_iov_len - 1].iov_len = 1;
 	LM_DBG("Successfully allocated %d fields", flat_iov_len);
-	
+
 	return 0;
 }
 

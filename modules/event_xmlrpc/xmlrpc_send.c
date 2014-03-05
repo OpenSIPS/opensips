@@ -183,7 +183,7 @@ static int xmlrpc_sendmsg(xmlrpc_send_t *sock)
 
 	/* now compute content length */
 	for (i = xmlrpc_xmlbody_index; i < xmlrpc_iov_len; i++)
-		len += xmlrpc_iov[i].iov_len;	
+		len += xmlrpc_iov[i].iov_len;
 
 	aux = (int *)&xmlrpc_iov[xmlrpc_ct_len_index].iov_len;
 	xmlrpc_iov[xmlrpc_ct_len_index].iov_base = int2str(len, aux);
@@ -291,7 +291,7 @@ int xmlrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 		b += (_l); \
 	} while (0)
 
- 
+
 	if (params) {
 		for (param = params->first; param; param = param->next) {
 			/* '<param>' */

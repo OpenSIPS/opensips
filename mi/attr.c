@@ -26,7 +26,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Attributes
  * \ingroup mi
  */
@@ -150,7 +150,7 @@ struct mi_attr *get_mi_attr_by_name(struct mi_node *node, char *name, int len)
 		return NULL;
 
 	for(head = node->attributes ; head->next ; head = head->next)
-		if(len == head->name.len 
+		if(len == head->name.len
 		&& !strncasecmp(name, head->name.s, head->name.len))
 			return head;
 

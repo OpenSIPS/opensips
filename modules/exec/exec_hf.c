@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * history
@@ -32,9 +32,9 @@
  * canonical form; multiple header field occurrences are merged
  * into a single variable
  *
- * known limitations: 
- * - compact header field names unknown to parser will not be translated to 
- *   canonical form. Thus, environment variables may have either name and 
+ * known limitations:
+ * - compact header field names unknown to parser will not be translated to
+ *   canonical form. Thus, environment variables may have either name and
  *   users have to check for both of them.
  * - symbols in header field names will be translated to underscore
  *
@@ -66,7 +66,7 @@ static int insert_hf( struct hf_wrapper **list, struct hdr_field *hf )
 		return 0;
 	}
 	memset(w, 0, sizeof(struct hf_wrapper));
-	w->var_type=W_HF;w->u.hf=hf; 
+	w->var_type=W_HF;w->u.hf=hf;
 	w->prefix=HF_PREFIX; w->prefix_len=HF_PREFIX_LEN;
 
 	/* is there another hf of the same type?... */
@@ -74,7 +74,7 @@ static int insert_hf( struct hf_wrapper **list, struct hdr_field *hf )
 		if (i->var_type==W_HF && i->u.hf->type==hf->type) {
 			/* if it is OTHER, check name too */
 			if (hf->type==HDR_OTHER_T && (hf->name.len!=i->u.hf->name.len
-					|| strncasecmp(i->u.hf->name.s, hf->name.s, 
+					|| strncasecmp(i->u.hf->name.s, hf->name.s,
 					   hf->name.len)!=0))
 				continue;
 			/* yes, we found a hf of same type */
@@ -119,43 +119,43 @@ static int compacthdr_type2str(hdr_types_t  type, char **hname, int *hlen )
 	switch(type) {
 		/* HDR_CONTENT_ENCODING: 'e' -- unsupported by parser */
 		/* HDR_SUBJECT: 's' -- unsupported by parser */
-		case HDR_VIA_T /* v */ : 
+		case HDR_VIA_T /* v */ :
 			*hname=VAR_VIA;
 			*hlen=VAR_VIA_LEN;
 			break;
-		case HDR_CONTENTTYPE_T /* c */ : 
+		case HDR_CONTENTTYPE_T /* c */ :
 			*hname=VAR_CTYPE;
 			*hlen=VAR_CTYPE_LEN;
 			break;
-		case HDR_FROM_T /* f */: 
+		case HDR_FROM_T /* f */:
 			*hname=VAR_FROM;
 			*hlen=VAR_FROM_LEN;
 			break;
-		case HDR_CALLID_T /* i */: 
+		case HDR_CALLID_T /* i */:
 			*hname=VAR_CALLID;
 			*hlen=VAR_CALLID_LEN;
 			break;
-		case HDR_SUPPORTED_T /* k */: 
+		case HDR_SUPPORTED_T /* k */:
 			*hname=VAR_SUPPORTED;
 			*hlen=VAR_SUPPORTED_LEN;
 			break;
-		case HDR_CONTENTLENGTH_T /* l */: 
+		case HDR_CONTENTLENGTH_T /* l */:
 			*hname=VAR_CLEN;
 			*hlen=VAR_CLEN_LEN;
 			break;
-		case HDR_CONTACT_T /* m */: 
+		case HDR_CONTACT_T /* m */:
 			*hname=VAR_CONTACT;
 			*hlen=VAR_CONTACT_LEN;
 			break;
-		case HDR_TO_T /* t */: 
+		case HDR_TO_T /* t */:
 			*hname=VAR_TO;
 			*hlen=VAR_TO_LEN;
 			break;
-		case HDR_EVENT_T /* o */: 
+		case HDR_EVENT_T /* o */:
 			*hname=VAR_EVENT;
 			*hlen=VAR_EVENT_LEN;
 			break;
-		default:	
+		default:
 			return 0;
 	}
 	return 1;
@@ -175,17 +175,17 @@ static int canonize_headername(str *orig, char **hname, int *hlen )
 	}
 	for (c=orig->s, i=0; i<*hlen; i++, c++) {
 		/* lowercase to uppercase */
-		if (*c>='a' && *c<='z') 
+		if (*c>='a' && *c<='z')
 			*((*hname)+i)=*c-('a'-'A');
 			/* uppercase and numbers stay "as is" */
-		else if ((*c>='A' && *c<='Z')||(*c>='0' && *c<='9')) 
+		else if ((*c>='A' && *c<='Z')||(*c>='0' && *c<='9'))
 			*((*hname)+i)=*c;
 		/* legal symbols will be translated to underscore */
 		else if (strchr(UNRESERVED_MARK HNV_UNRESERVED, *c)
 				|| (*c==ESCAPE))
 			*((*hname)+i)=HFN_SYMBOL;
 		else {
-			LM_ERR("print_var unexpected char '%c' in hfname %.*s\n", 
+			LM_ERR("print_var unexpected char '%c' in hfname %.*s\n",
 					*c, *hlen, orig->s );
 			*((*hname)+i)=HFN_SYMBOL;
 		}
@@ -241,7 +241,7 @@ static int print_hf_var(struct hf_wrapper *w, int offset)
 			LM_ERR("canonize_hn error\n");
 			return 0;
 		}
-	} 
+	}
 	/* now we have a header name, let us generate the var */
 	envvar_len=w->u.hf->body.len;
 	for(wi=w->next_same; wi; wi=wi->next_same) { /* other values, separated */
@@ -264,7 +264,7 @@ static int print_hf_var(struct hf_wrapper *w, int offset)
 	}
 	*c=0; /* zero termination */
 	LM_DBG("%s\n", envvar );
-	
+
 	w->envvar=envvar;
 	if (!canonical) pkg_free(hname);
 	return 1;
@@ -277,9 +277,9 @@ error00:
 static int print_var(struct hf_wrapper *w, int offset)
 {
 	switch(w->var_type) {
-		case W_HF: 
+		case W_HF:
 			return print_hf_var(w, offset);
-		case W_AV: 
+		case W_AV:
 			return print_av_var(w);
 		default:
 		   	LM_CRIT("unknown type: %d\n", w->var_type );
@@ -287,7 +287,7 @@ static int print_var(struct hf_wrapper *w, int offset)
 	}
 }
 
-static void release_vars(struct hf_wrapper *list) 
+static void release_vars(struct hf_wrapper *list)
 {
 	while(list) {
 		if (list->envvar) {
@@ -413,7 +413,7 @@ static int append_var(char *name, char *value, int len, struct hf_wrapper **list
 		LM_ERR("ran out of pkg mem\n");
 		return 0;
 	}
-	memset(w, 0, sizeof(struct hf_wrapper)); 
+	memset(w, 0, sizeof(struct hf_wrapper));
 	w->var_type=W_AV;
 	w->u.av.attr.s=name;
 	w->u.av.attr.len=strlen(name);
@@ -439,7 +439,7 @@ static int append_fixed_vars(struct sip_msg *msg, struct hf_wrapper **list)
 		return 0;
 	}
 	/* request URI */
-	uri=msg->new_uri.s && msg->new_uri.len ? 
+	uri=msg->new_uri.s && msg->new_uri.len ?
 		&msg->new_uri : &msg->first_line.u.request.uri;
 	if (!append_var(EV_RURI, uri->s, uri->len, list )) {
 		LM_ERR("append_var URI failed\n");
@@ -449,7 +449,7 @@ static int append_fixed_vars(struct sip_msg *msg, struct hf_wrapper **list)
 	if (parse_uri(uri->s, uri->len, &parsed_uri)<0) {
 		LM_WARN("uri not parsed\n");
 	} else {
-		if (!append_var(EV_USER, parsed_uri.user.s, 
+		if (!append_var(EV_USER, parsed_uri.user.s,
 					parsed_uri.user.len, list)) {
 			LM_ERR("append_var USER failed\n");
 			goto error;
@@ -462,12 +462,12 @@ static int append_fixed_vars(struct sip_msg *msg, struct hf_wrapper **list)
 		goto error;
 	}
 	/* userpart of request URI */
-	if (parse_uri(msg->first_line.u.request.uri.s, 
-				msg->first_line.u.request.uri.len, 
+	if (parse_uri(msg->first_line.u.request.uri.s,
+				msg->first_line.u.request.uri.len,
 				&oparsed_uri)<0) {
 		LM_WARN("orig URI not parsed\n");
 	} else {
-		if (!append_var(EV_OUSER, oparsed_uri.user.s, 
+		if (!append_var(EV_OUSER, oparsed_uri.user.s,
 					oparsed_uri.user.len, list)) {
 			LM_ERR("ppend_var OUSER failed\n");
 			goto error;

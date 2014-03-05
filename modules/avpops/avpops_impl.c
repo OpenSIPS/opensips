@@ -315,7 +315,7 @@ int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
 		uuid.s   = sp->u.s.s;
 		uuid.len = sp->u.s.len;
 	}
-	
+
 	if(sp->opd&AVPOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
@@ -477,7 +477,7 @@ int ops_dbdelete_avps (struct sip_msg* msg, struct fis_param *sp,
 		uuid.s   = sp->u.s.s;
 		uuid.len = sp->u.s.len;
 	}
-	
+
 	if(sp->opd&AVPOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
@@ -577,7 +577,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	keys_nr = 6; /* uuid, avp name, avp val, avp type, user, domain */
-	
+
 	/* get uuid from avp */
 	if (sp->opd&AVPOPS_VAL_PVAR)
 	{
@@ -596,7 +596,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 		uuid.s   = sp->u.s.s;
 		uuid.len = sp->u.s.len;
 	}
-	
+
 	if(sp->opd&AVPOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
@@ -685,7 +685,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	/* set the script flags */
 	if(dbp->a.type==AVPOPS_VAL_PVAR)
 		name_type |= dbp->a.u.sval.pvp.pvn.u.isname.type&0xff00;
-	
+
 	/* set uuid/(username and domain) fields */
 
 	n =0 ;
@@ -777,7 +777,7 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	printbuf_len = buf_size-1;
 	if(pv_printf(msg, query, printbuf, &printbuf_len)<0 || printbuf_len<=0)
 	{
@@ -789,7 +789,7 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 
 	ret = db_query_avp(url, msg, printbuf, dest);
 
-	//Empty return set	
+	//Empty return set
 	if(ret==1)
 		return -2;
 
@@ -1029,7 +1029,7 @@ int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 			LM_CRIT("destination unknown (%d/%d)\n", dst->opd, dst->ops);
 			goto error;
 		}
-	
+
 		if ( act_type )
 		{
 			/* rewrite part of ruri */
@@ -1373,7 +1373,7 @@ int ops_print_avp(void)
 		}
 	}
 
-	
+
 	return 1;
 }
 
@@ -1406,7 +1406,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 
 	if(avp==NULL)
 		return -1;
-	
+
 	if(src[1]!=0)
 	{
 		/* get dst avp name */
@@ -1419,7 +1419,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 		name_type2 = name_type1;
 		avp_name2 = avp_name1;
 	}
-/* TODO: delete?	
+/* TODO: delete?
 	if(name_type2&AVP_NAME_STR)
 	{
 		if(avp_name2.s.len>=STR_BUF_SIZE)
@@ -1440,7 +1440,7 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 			avp = search_first_avp(name_type1, avp_name1, &avp_val, prev_avp);
 			continue;
 		}
-		
+
 		result=subst_str(avp_val.s.s, msg, se, &nmatches);
 		if(result!=NULL)
 		{
@@ -1687,7 +1687,7 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 	int_str avp_value;
 	int index;
 	int findex;
-	
+
 	/* get avp name */
 	if(avpops_get_aname(msg, ap, &avp_name, &name_type)!=0)
 	{
@@ -1701,11 +1701,11 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 		LM_ERR("failed to get AVP index\n");
 		return -1;
 	}
-	
+
 	avp=search_first_avp(name_type, avp_name, &avp_value, 0);
 	if(avp==0)
 		return -1;
-	
+
 	do {
 		/* last index [-1] or all [*] go here as well */
 		if(index<=0)
@@ -1734,7 +1734,7 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 		}
 		index--;
 	} while ((avp=search_first_avp(name_type, avp_name, &avp_value, avp))!=0);
-	
+
 	return -1;
 }
 
@@ -1797,7 +1797,7 @@ int w_insert_avp(struct sip_msg* msg, char* name, char* value,
 	/* search the previous avp */
 	index--;
 	avp = NULL;
-	while ( (avp=search_first_avp( name_type, avp_name, 0, avp))!=0 ) 
+	while ( (avp=search_first_avp( name_type, avp_name, 0, avp))!=0 )
 	{
 		if( index == 0 )
 		{

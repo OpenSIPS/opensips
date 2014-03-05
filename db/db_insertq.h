@@ -30,16 +30,16 @@
 #include "db_query.h"
 #include "../locking.h"
 
-extern int query_buffer_size; /* number of insert queries that will be 
-								 held in memory once this number of same 
-								 type of queries pile up to this number, 
+extern int query_buffer_size; /* number of insert queries that will be
+								 held in memory once this number of same
+								 type of queries pile up to this number,
 								 they will be flushed to DB */
 extern int query_flush_time; /* if the query contains inserts older
 								that query_flush_time seconds, the timer
 								will kick in and flush to DB,
 								to maintain "real time" sync with DB */
 
-#define CON_HAS_INSLIST(cn)	((cn)->ins_list) 
+#define CON_HAS_INSLIST(cn)	((cn)->ins_list)
 #define DEF_FLUSH_TIME		10 /* seconds */
 
 typedef struct query_list {
@@ -90,7 +90,7 @@ inline int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry);
 	do { \
 		*((int *)&(con)->flags) &= ~CON_INSTANT_FLUSH; \
 		lock_release((entry)->lock); \
-	} while (0) 
+	} while (0)
 
 inline void cleanup_rows(db_val_t **rows);
 void handle_ql_shutdown(void);

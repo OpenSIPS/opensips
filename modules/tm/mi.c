@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -140,14 +140,14 @@ static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
 	for (; hf; hf=hf->next) {
 		if (skip_hf(hf)) continue;
 
-		begin=needle=hf->name.s; 
+		begin=needle=hf->name.s;
 		hf_avail=hf->len;
 
 		/* substitution loop */
 		while(hf_avail) {
 			d=memchr(needle, SUBST_CHAR, hf_avail);
 			if (!d || d+1>=needle+hf_avail) { /* nothing to substitute */
-				new=new_str(begin, hf_avail, &last, &total_len); 
+				new=new_str(begin, hf_avail, &last, &total_len);
 				if (!new) goto error;
 				break;
 			} else {
@@ -156,7 +156,7 @@ static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
 				switch(*d) {
 					case SUBST_CHAR:	/* double SUBST_CHAR: IP */
 						/* string before substitute */
-						new=new_str(begin, frag_len, &last, &total_len); 
+						new=new_str(begin, frag_len, &last, &total_len);
 						if (!new) goto error;
 						/* substitute */
 						if (!sock_name) {
@@ -361,7 +361,7 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 		pkg_free(text.s);
 		mi_print_uris( &rpl_tree->node, 0 );
 		add_mi_node_child( &rpl_tree->node, 0, 0, 0, ".",1);
-	} else { 
+	} else {
 		addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
 			ps->rpl->first_line.u.reply.statuscode,
 			ps->rpl->first_line.u.reply.reason.len,
@@ -467,7 +467,7 @@ struct mi_root*  mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param)
 		hdrs = &node->value;
 		/* use SIP parser to look at what is in the FIFO request */
 		memset( &tmp_msg, 0, sizeof(struct sip_msg));
-		tmp_msg.len = hdrs->len; 
+		tmp_msg.len = hdrs->len;
 		tmp_msg.buf = tmp_msg.unparsed = hdrs->s;
 		if (parse_headers( &tmp_msg, HDR_EOH_F, 0) == -1 )
 			return init_mi_tree( 400, "Bad headers", 11);
@@ -702,7 +702,7 @@ struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param)
 	node = node->next;
 	if (node->value.len==1 && node->value.s[0]=='.')
 		new_hdrs = 0;
-	else 
+	else
 		new_hdrs = &node->value;
 
 	/* body (param 5 - optional) */

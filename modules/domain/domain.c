@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Domain table related functions
@@ -17,13 +17,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
- *  2004-06-07  updated to the new DB api, moved reload_table here, created 
+ *  2004-06-07  updated to the new DB api, moved reload_table here, created
  *               domain_db_{init.bind,ver,close} (andrei)
  *  2004-09-06  is_uri_host_local() can now be called also from
  *              failure route (juhe)
@@ -57,7 +57,7 @@ int domain_db_bind(const str* db_url)
 
 
 int domain_db_init(const str* db_url)
-{	
+{
 	if (domain_dbf.init==0){
 		LM_ERR("Unbound database module\n");
 		goto error;
@@ -102,12 +102,12 @@ int is_domain_local(str* _host)
 	if (db_mode == 0) {
 		db_key_t keys[1];
 		db_val_t vals[1];
-		db_key_t cols[1]; 
+		db_key_t cols[1];
 		db_res_t* res = NULL;
 
 		keys[0] = &domain_col;
 		cols[0] = &domain_col;
-		
+
 		if (domain_dbf.use_table(db_handle, &domain_table) < 0) {
 			LM_ERR("Error while trying to use domain table\n");
 			return -3;
@@ -115,7 +115,7 @@ int is_domain_local(str* _host)
 
 		VAL_TYPE(vals) = DB_STR;
 		VAL_NULL(vals) = 0;
-		
+
 		VAL_STR(vals).s = _host->s;
 		VAL_STR(vals).len = _host->len;
 
@@ -126,12 +126,12 @@ int is_domain_local(str* _host)
 		}
 
 		if (RES_ROW_N(res) == 0) {
-			LM_DBG("Realm '%.*s' is not local\n", 
+			LM_DBG("Realm '%.*s' is not local\n",
 			       _host->len, ZSW(_host->s));
 			domain_dbf.free_result(db_handle, res);
 			return -1;
 		} else {
-			LM_DBG("Realm '%.*s' is local\n", 
+			LM_DBG("Realm '%.*s' is local\n",
 			       _host->len, ZSW(_host->s));
 			domain_dbf.free_result(db_handle, res);
 			return 1;
@@ -139,7 +139,7 @@ int is_domain_local(str* _host)
 	} else {
 		return hash_table_lookup (_host);
 	}
-			
+
 }
 
 /*
@@ -241,11 +241,11 @@ int reload_domain_table ( void )
 	row = RES_ROWS(res);
 
 	LM_DBG("Number of rows in domain table: %d\n", RES_ROW_N(res));
-		
+
 	for (i = 0; i < RES_ROW_N(res); i++) {
 		val = ROW_VALUES(row + i);
 		if ((ROW_N(row) == 1) && (VAL_TYPE(val) == DB_STRING)) {
-			
+
 			LM_DBG("Value: %s inserted into domain hash table\n",VAL_STRING(val));
 
 			if (hash_table_install(new_hash_table,(char*)VAL_STRING(val))==-1){
@@ -262,7 +262,7 @@ int reload_domain_table ( void )
 	domain_dbf.free_result(db_handle, res);
 
 	*hash_table = new_hash_table;
-	
+
 	return 1;
 }
 

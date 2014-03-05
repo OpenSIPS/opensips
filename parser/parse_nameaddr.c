@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -47,7 +47,7 @@ int parse_nameaddr(str* _s, name_addr_t* _a)
 
 	_a->name.s = _s->s;
 
-	_a->uri.s = find_not_quoted(_s, '<'); 
+	_a->uri.s = find_not_quoted(_s, '<');
 	if (_a->uri.s) {
 		_a->name.len = _a->uri.s - _a->name.s;
 		_a->uri.s++; /* We will skip < character */
@@ -55,10 +55,10 @@ int parse_nameaddr(str* _s, name_addr_t* _a)
 		LM_ERR("no < found\n");
 		return -3;
 	}
-	
+
 	_a->uri.len = _s->len - _a->name.len - 1;
 	uri_end = find_not_quoted(&_a->uri, '>');
-	
+
 	if (!uri_end) {
 		LM_ERR("no > found\n");
 		return -4;
@@ -66,7 +66,7 @@ int parse_nameaddr(str* _s, name_addr_t* _a)
 
 	     /* Total length of the field including <> */
 	_a->len = uri_end - _a->name.s + 1;
-	
+
 	_a->uri.len = uri_end - _a->uri.s;
 	return 0;
 }

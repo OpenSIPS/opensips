@@ -22,7 +22,7 @@
  * History:
  * ---------
  *  2006-01-23  first version (bogdan)
- *  2006-11-28  Added statistics for the number of bad URI's, methods, and 
+ *  2006-11-28  Added statistics for the number of bad URI's, methods, and
  *              proxy requests (Jeffrey Magder - SOMA Networks)
  *  2009-04-23  NET and PKG statistics added (bogdan)
  */

@@ -223,7 +223,7 @@ static int db_oracle_submit_query(const db_con_t* _h, const str* _s)
 			(unsigned)hc);
 		return -1;
 	}
-	
+
 	if (!pqd->_rs) {
 		/*
 		 * This method is at ~25% faster as set OCI_COMMIT_ON_SUCCESS
@@ -498,7 +498,7 @@ int db_oracle_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 {
 	query_data_t cb;
 	int rc;
-	
+
 	if (!_h || !CON_TABLE(_h)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;

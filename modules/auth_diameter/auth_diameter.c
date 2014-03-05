@@ -1,5 +1,5 @@
 /*
- * $Id$ 
+ * $Id$
  *
  * Digest Authentication - Diameter support
  *
@@ -11,20 +11,20 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
- * 
+ *
  * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * -------
- *  
- *  
+ *
+ *
  * 2006-03-01 pseudo variables support for domain name (bogdan)
  */
 
@@ -34,7 +34,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 
 #include "../../sr_module.h"
 #include "../../error.h"
@@ -129,24 +129,24 @@ static int mod_init(void)
 		return -1;
 	}
 
-	
+
 	return 0;
 }
 
 static int mod_child_init(int r)
-{	
+{
 	/* open TCP connection */
 	LM_DBG("initializing TCP connection\n");
 
 	sockfd = init_mytcp(diameter_client_host, diameter_client_port);
-	if(sockfd==-1) 
+	if(sockfd==-1)
 	{
 		LM_DBG("the TCP connection was not established\n");
 		return -1;
 	}
 
 	LM_DBG("the TCP connection was established on socket=%d\n", sockfd);
-	
+
 	rb = (rd_buf_t*)pkg_malloc(sizeof(rd_buf_t));
 	if(!rb)
 	{
@@ -216,41 +216,41 @@ static int group_fixup(void** param, int param_no)
 {
 	str* s;
 
-	if (param_no == 1) 
+	if (param_no == 1)
 	{
-		if (!strcasecmp((char*)*param, "Request-URI")) 
+		if (!strcasecmp((char*)*param, "Request-URI"))
 		{
 			*param = (void*)1;
 			goto end;
-		} 
+		}
 
-		if(!strcasecmp((char*)*param, "To")) 
+		if(!strcasecmp((char*)*param, "To"))
 		{
 			*param = (void*)2;
 			goto end;
-		} 
+		}
 
-		if (!strcasecmp((char*)*param, "From")) 
+		if (!strcasecmp((char*)*param, "From"))
 		{
 			*param = (void*)3;
 			goto end;
-		} 
+		}
 
-		if (!strcasecmp((char*)*param, "Credentials")) 
+		if (!strcasecmp((char*)*param, "Credentials"))
 		{
 			*param = (void*)4;
 			goto end;
 		}
-				
+
 		LM_ERR("unsupported Header Field identifier\n");
 		return E_UNSPEC;
-		
-	} 
-	
-	if (param_no == 2) 
+
+	}
+
+	if (param_no == 2)
 	{
 		s = (str*)pkg_malloc(sizeof(str));
-		if (!s) 
+		if (!s)
 		{
 			LM_ERR("no pkg memory left\n");
 			return E_UNSPEC;

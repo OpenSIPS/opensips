@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -259,13 +259,13 @@ int insert_shtable(shtable_t htable,unsigned int hash_code, subs_t* subs)
 		new_rec->db_flag= INSERTDB_FLAG;
 
 	lock_get(&htable[hash_code].lock);
-	
+
 	new_rec->next= htable[hash_code].entries->next;
-	
+
 	htable[hash_code].entries->next= new_rec;
-	
+
 	lock_release(&htable[hash_code].lock);
-	
+
 	return 0;
 
 error:
@@ -287,7 +287,7 @@ int delete_shtable(shtable_t htable,unsigned int hash_code,str to_tag)
 	int found= -1;
 
 	lock_get(&htable[hash_code].lock);
-	
+
 	ps= htable[hash_code].entries;
 	s= ps->next;
 
@@ -331,7 +331,7 @@ void free_subs_list(subs_t* s_array, int mem_type, int ic)
 	}
 }
 
-int update_shtable(shtable_t htable,unsigned int hash_code, 
+int update_shtable(shtable_t htable,unsigned int hash_code,
 		subs_t* subs, int type)
 {
 	subs_t* s;
@@ -423,7 +423,7 @@ error:
 		{
 			if(htable[i].entries)
 				shm_free(htable[i].entries);
-			else 
+			else
 				break;
 			lock_destroy(&htable[i].lock);
 		}
@@ -599,7 +599,7 @@ int delete_phtable(pres_entry_t* p, unsigned int hash_code)
 	pres_entry_t* prev_p= NULL;
 
 	LM_DBG("Count = 0, delete\n");
-	/* delete record */	
+	/* delete record */
 	prev_p= pres_htable[hash_code].entries;
 	while(prev_p->next)
 	{
@@ -638,7 +638,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 
 	/* search for record in hash table */
 	hash_code= core_hash(&pres_uri, NULL, phtable_size);
-	
+
 	lock_get(&pres_htable[hash_code].lock);
 
 	p= search_phtable(&pres_uri, presentity->event->evp->parsed, hash_code);
@@ -647,7 +647,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 		lock_release(&pres_htable[hash_code].lock);
 		goto done;
 	}
-	
+
 	if(p->sphere)
 	{
 		if(strcmp(p->sphere, sphere)!= 0)
@@ -662,7 +662,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 			pkg_free(sphere);
 			return 0;
 		}
-	
+
 	}
 
 
@@ -674,7 +674,7 @@ int update_phtable(presentity_t* presentity, str pres_uri, str body)
 		goto done;
 	}
 	strcpy(p->sphere, sphere);
-		
+
 	lock_release(&pres_htable[hash_code].lock);
 
 	/* call for watchers status update */

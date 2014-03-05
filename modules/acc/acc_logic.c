@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * Accounting module logic
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -365,7 +365,7 @@ void acc_onreq( struct cell* t, int type, struct tmcb_params *ps )
 static inline int should_acc_reply(struct sip_msg *req,struct sip_msg *rpl,
 																	int code)
 {
-	/* negative transactions reported otherwise only if explicitly 
+	/* negative transactions reported otherwise only if explicitly
 	 * demanded */
 	if ( !is_failed_acc_on(req) && code >=300 )
 		return 0;
@@ -418,7 +418,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 	/* we report on missed calls when the first
 	 * forwarding attempt fails; we do not wish to
-	 * report on every attempt; so we clear the flags; 
+	 * report on every attempt; so we clear the flags;
 	 */
 
 	if (is_evi_mc_on(req)) {
@@ -570,13 +570,13 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		flags_s = bitmask_to_flag_list(FLAG_TYPE_MSG, req->flags);
 
-		/* store flags into dlg */ 
+		/* store flags into dlg */
 		if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
 			LM_ERR("cannot store flag value into dialog\n");
 			return;
 		}
 
-		/* store flags into dlg */ 
+		/* store flags into dlg */
 		if ( dlg_api.store_dlg_value(dlg, &table_str, &table.s) < 0) {
 			LM_ERR("cannot store the table name into dialog\n");
 			return;
@@ -599,7 +599,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		if (is_aaa_acc_on(req))
 			acc_aaa_request( req, reply );
-	
+
 		if (is_db_acc_on(req)) {
 			env_set_text( table.s.s, table.s.len);
 			acc_db_request( req, reply, &acc_ins_list);

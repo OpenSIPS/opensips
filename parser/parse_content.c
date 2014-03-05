@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -195,7 +195,7 @@ static type_node_t subtype_tree[] = {
 									{'c',SUBTYPE_UNKNOWN,1,-1},
 										{'.',SUBTYPE_UNKNOWN,1,-1},
 											{'p',SUBTYPE_UNKNOWN,1,-1},
-												{'i',SUBTYPE_UNKNOWN,1,-1}, 
+												{'i',SUBTYPE_UNKNOWN,1,-1},
 													{'d',SUBTYPE_UNKNOWN,1,-1},
 														{'f',SUBTYPE_XML_MSRTC_PIDF,0,-1},
 	{'e',SUBTYPE_UNKNOWN,1,118}, /* 105 */
@@ -360,11 +360,11 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 		if( con == NULL)
 			for(p++; p<end && *p!=','; p++);
 		else
-		{ 
+		{
 			str params_str;
 			param_hooks_t phooks;
 			param_t * cur;
-			
+
 			params_str.s = p;
 			params_str.len = end - p ;
 
@@ -372,14 +372,14 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 				goto error;
 
 			p = params_str.s;
-		
+
 			cur = con->params;
 
 			while(cur)
 			{
 				if( cur->name.len == 8 && !strncasecmp(cur->name.s,"boundary",cur->name.len ) )
 					con->boundary = cur->body;
-				
+
 				if( cur->name.len == 5 && !strncasecmp(cur->name.s,"start",cur->name.len ) )
 					con->start = cur->body;
 
@@ -458,7 +458,7 @@ int parse_content_type_hdr( struct sip_msg *msg )
 		goto parse_error;
 	}
 
-	
+
 	rez->type = mime;
 	msg->content_type->parsed = rez;
 	return mime;
@@ -562,4 +562,4 @@ void free_contenttype(content_t ** con)
 	}
 	*con = 0;
 }
-	
+

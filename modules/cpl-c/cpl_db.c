@@ -49,7 +49,7 @@ int cpl_db_bind(const str* db_url, const str *db_table)
 		    "Did you forget to load a database module ?\n");
 		return -1;
 	}
-	
+
 	/* CPL module uses all database functions */
 	if (!DB_CAPABILITY(cpl_dbf, DB_CAP_ALL)) {
 		LM_CRIT("Database modules does not "
@@ -80,12 +80,12 @@ int cpl_db_init(const str* db_url, const str* db_table)
 	}
 
 	db_hdl=cpl_dbf.init(db_url);
-	
+
 	if (db_hdl==0){
 		LM_CRIT("cannot initialize database connection\n");
 		return -1;
 	}
-	
+
 	if (cpl_dbf.use_table(db_hdl, db_table)<0) {
 		LM_CRIT("cannot select table \"%.*s\"\n",db_table->len, db_table->s);
 		cpl_db_close();

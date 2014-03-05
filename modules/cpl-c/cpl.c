@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -28,7 +28,7 @@
  * 2004-06-14: all global variables merged into cpl_env and cpl_fct;
  *             case_sensitive and realm_prefix added for building AORs - see
  *             build_userhost (bogdan)
- * 2004-10-09: added process_register_norpl to allow register processing 
+ * 2004-10-09: added process_register_norpl to allow register processing
  *             without sending the reply(bogdan) - based on a patch sent by
  *             Christopher Crawford
  */
@@ -518,7 +518,7 @@ static inline int get_orig_user(struct sip_msg *msg, str *username, str *domain)
 {
 	struct to_body *from;
 	struct sip_uri uri;
-	
+
 	/* if it's outgoing -> get the user_name from From */
 	/* parsing from header */
 	LM_DBG("trying to get user from From\n");
@@ -539,9 +539,9 @@ static inline int get_orig_user(struct sip_msg *msg, str *username, str *domain)
 
 
 
-/* Params: 
- *   str1 - as unsigned int - can be CPL_RUN_INCOMING or CPL_RUN_OUTGOING 
- *   str2 - as unsigned int - flags regarding state(less)|(ful) 
+/* Params:
+ *   str1 - as unsigned int - can be CPL_RUN_INCOMING or CPL_RUN_OUTGOING
+ *   str2 - as unsigned int - flags regarding state(less)|(ful)
  */
 static int cpl_invoke_script(struct sip_msg* msg, char* str1, char* str2)
 {

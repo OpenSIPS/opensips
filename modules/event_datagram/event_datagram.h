@@ -45,7 +45,7 @@
 #define PARAM_SEP			'\n'
 #define QUOTE_C				'"'
 #define ESC_C				'\\'
-#define ATTR_SEP_S			"::"			
+#define ATTR_SEP_S			"::"
 #define ATTR_SEP_LEN		(sizeof(ATTR_SEP_S) - 1)
 
 struct dgram_socks {

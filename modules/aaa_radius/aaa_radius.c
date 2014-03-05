@@ -28,8 +28,8 @@
  */
 
 /*
- * This is an implementation of the generic AAA Interface that also provides 
- * via script functions the possibility to run custom RADIUS requests and 
+ * This is an implementation of the generic AAA Interface that also provides
+ * via script functions the possibility to run custom RADIUS requests and
  * to get information from the RADIUS reply.
  */
 
@@ -263,7 +263,7 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 		pv_get_spec_value(msg, mp->pv, &pt);
 
 		if (pt.flags & PV_VAL_INT) {
-			//LM_DBG("%.*s---->%d---->%d---->%d\n",mp->name.len, mp->name.s, 
+			//LM_DBG("%.*s---->%d---->%d---->%d\n",mp->name.len, mp->name.s,
 			//		pt.ri, mp->value, pt.flags);
 
 			if (!rc_avpair_add(rh, send, ATTRID(mp->value), &pt.ri, -1, VENDOR(mp->value)))
@@ -271,7 +271,7 @@ int make_send_message(struct sip_msg* msg, int index, VALUE_PAIR **send) {
 		}
 		else
 		if (pt.flags & PV_VAL_STR) {
-			//LM_DBG("%.*s----->%.*s---->%d---->%d---->%d\n",mp->name.len, 
+			//LM_DBG("%.*s----->%.*s---->%d---->%d---->%d\n",mp->name.len,
 			//		mp->name.s, pt.rs.len, pt.rs.s, mp->value, pt.flags, pt.rs.len);
 			if (rc_dict_getattr(rh,mp->value)->type == PW_TYPE_IPADDR) {
 				uint32_t ipaddr=rc_get_ipaddr(pt.rs.s);
@@ -364,7 +364,7 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2) {
 
 	if ( res!=OK_RC && res!=BADRESP_RC)
 		goto error;
-	
+
 
 	if (send) rc_avpair_free(send);
 	if (recv) rc_avpair_free(recv);

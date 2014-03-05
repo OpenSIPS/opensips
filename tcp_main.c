@@ -27,7 +27,7 @@
  *  2003-02-20  s/lock_t/gen_lock_t/ to avoid a conflict on solaris (andrei)
  *  2003-02-25  Nagle is disabled if -DDISABLE_NAGLE (andrei)
  *  2003-03-29  SO_REUSEADDR before calling bind to allow
- *              server restart, Nagle set on the (hopefuly) 
+ *              server restart, Nagle set on the (hopefuly)
  *              correct socket (jiri)
  *  2003-03-31  always try to find the corresponding tcp listen socket for
  *               a temp. socket and store in in *->bind_address: added
@@ -42,7 +42,7 @@
  *              does not inc refcnt by itself anymore (andrei)
  *  2003-11-07  different unix sockets are used for fd passing
  *              to/from readers/writers (andrei)
- *  2003-11-17  handle_new_connect & tcp_connect will close the 
+ *  2003-11-17  handle_new_connect & tcp_connect will close the
  *              new socket if tcpconn_new return 0 (e.g. out of mem) (andrei)
  *  2003-11-28  tcp_blocking_write & tcp_blocking_connect added (andrei)
  *  2004-11-08  dropped find_tcp_si and replaced with find_si (andrei)
@@ -112,7 +112,7 @@
 #include "daemonize.h"
 #ifdef USE_TLS
 #include "tls/tls_server.h"
-#endif 
+#endif
 
 #define local_malloc pkg_malloc
 #define local_free   pkg_free
@@ -161,7 +161,7 @@ struct tcp_connection** tcpconn_id_hash=0;
 gen_lock_t* tcpconn_lock=0;
 
 struct tcp_child *tcp_children=0;
-static int* connection_id=0; /*!< unique for each connection, used for 
+static int* connection_id=0; /*!< unique for each connection, used for
 				quickly finding the corresponding connection for a reply */
 int unix_tcp_sock = -1;
 
@@ -231,7 +231,7 @@ static int init_sock_opt(int s)
 {
 	int flags;
 	int optval;
-	
+
 #ifdef DISABLE_NAGLE
 	flags=1;
 	if ( (tcp_proto_no!=-1) && (setsockopt(s, tcp_proto_no , TCP_NODELAY,
@@ -272,11 +272,11 @@ error:
 
 
 /*! \brief blocking connect on a non-blocking fd; it will timeout after
- * tcp_connect_timeout 
+ * tcp_connect_timeout
  * if BLOCKING_USE_SELECT and HAVE_SELECT are defined it will internally
  * use select() instead of poll (bad if fd > FD_SET_SIZE, poll is preferred)
  */
-static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr, 
+static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr,
 			socklen_t addrlen)
 {
 	int n;
@@ -295,7 +295,7 @@ static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr,
 	int poll_err;
 	char *ip;
 	unsigned short port;
-	
+
 	poll_err=0;
 	to=tcp_connect_timeout;
 	ticks=get_ticks();
@@ -313,7 +313,7 @@ again:
 			goto error;
 		}
 	}else goto end;
-	
+
 	/* poll/select loop */
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		FD_ZERO(&orig_set);
@@ -326,7 +326,7 @@ again:
 		elapsed=(get_ticks()-ticks)*TIMER_TICK;
 		if (elapsed<to)
 			to-=elapsed;
-		else 
+		else
 			goto error_timeout;
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		sel_set=orig_set;
@@ -346,7 +346,7 @@ again:
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		if (FD_ISSET(fd, &sel_set))
 #else
-		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){ 
+		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
 			LM_ERR("poll error: flags %d - %d %d %d %d \n", pf.revents,
 				   POLLOUT,POLLERR,POLLHUP,POLLNVAL);
 			poll_err=1;
@@ -376,7 +376,7 @@ end:
 
 
 #if 0
-/*! \brief blocking write even on non-blocking sockets 
+/*! \brief blocking write even on non-blocking sockets
  * if TCP_TIMEOUT will return with error */
 static int tcp_blocking_write(struct tcp_connection* c, int fd, char* buf,
 								unsigned int len)
@@ -386,10 +386,10 @@ static int tcp_blocking_write(struct tcp_connection* c, int fd, char* buf,
 	struct timeval timeout;
 	int ticks;
 	int initial_len;
-	
+
 	initial_len=len;
 again:
-	
+
 	n=send(fd, buf, len,
 #ifdef HAVE_MSG_NOSIGNAL
 			MSG_NOSIGNAL
@@ -445,11 +445,11 @@ end:
 
 
 struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
-									struct socket_info* ba, int type, 
+									struct socket_info* ba, int type,
 									int state)
 {
 	struct tcp_connection *c;
-	
+
 	c=(struct tcp_connection*)shm_malloc(sizeof(struct tcp_connection));
 	if (c==0){
 		LM_ERR("shared memory allocation failure\n");
@@ -462,9 +462,9 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 		LM_ERR("init lock failed\n");
 		goto error;
 	}
-	
+
 	c->rcv.src_su=*su;
-	
+
 	c->refcnt=0;
 	su2ip_addr(&c->rcv.src_ip, su);
 	c->rcv.src_port=su_getport(su);
@@ -500,10 +500,10 @@ struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 			goto error;
 		}
 	}
-	
+
 	tcp_connections_no++;
 	return c;
-	
+
 error:
 	if (c) shm_free(c);
 	return 0;
@@ -542,7 +542,7 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 		shm_free(c);
 		return -2;
 	}
-	
+
 	con->async_chunks[con->async_chunks_no++] = c;
 	if (con->async_chunks_no == 1)
 		con->oldest_chunk = c->ticks;
@@ -556,7 +556,7 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 #define ASYNC_TCP_CONN			((struct tcp_connection *)-1)
 #define ASYNC_TCP_CONN_ERR		((struct tcp_connection *)-2)
 
-static inline struct tcp_connection * async_connect_or_pass(int fd, 
+static inline struct tcp_connection * async_connect_or_pass(int fd,
 		union sockaddr_union *server,socklen_t addrlen,
 		struct socket_info *send_sock,char *buf, int len,
 		int type,unsigned int max_us)
@@ -642,7 +642,7 @@ again:
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		if (FD_ISSET(fd, &sel_set))
 #else
-		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){ 
+		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
 			LM_ERR("poll error: flags %x\n", pf.revents);
 			poll_err=1;
 		}
@@ -703,7 +703,7 @@ struct tcp_connection* tcpconn_async_connect(struct socket_info* send_sock,
 	union sockaddr_union my_name;
 	socklen_t my_name_len;
 	struct tcp_connection* con;
-	
+
 	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
 	if (s==-1){
 		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
@@ -790,7 +790,7 @@ struct tcp_connection*  tcpconn_add(struct tcp_connection *c)
 		hash=tcp_id_hash(c->id);
 		c->id_hash=hash;
 		tcpconn_listadd(tcpconn_id_hash[hash], c, id_next, id_prev);
-		
+
 		hash=tcp_addr_hash(&c->rcv.src_ip, c->rcv.src_port);
 		/* set the first alias */
 		c->con_aliases[0].port=c->rcv.src_port;
@@ -817,7 +817,7 @@ void _tcpconn_rm(struct tcp_connection* c)
 	tcpconn_listrm(tcpconn_id_hash[c->id_hash], c, id_next, id_prev);
 	/* remove all the aliases */
 	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(tcpconn_aliases_hash[c->con_aliases[r].hash], 
+		tcpconn_listrm(tcpconn_aliases_hash[c->con_aliases[r].hash],
 						&c->con_aliases[r], next, prev);
 	lock_destroy(&c->write_lock);
 #ifdef USE_TLS
@@ -840,7 +840,7 @@ void tcpconn_rm(struct tcp_connection* c)
 	tcpconn_listrm(tcpconn_id_hash[c->id_hash], c, id_next, id_prev);
 	/* remove all the aliases */
 	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(tcpconn_aliases_hash[c->con_aliases[r].hash], 
+		tcpconn_listrm(tcpconn_aliases_hash[c->con_aliases[r].hash],
 						&c->con_aliases[r], next, prev);
 	TCPCONN_UNLOCK;
 	lock_destroy(&c->write_lock);
@@ -860,7 +860,7 @@ struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
 	struct tcp_connection *c;
 	struct tcp_conn_alias* a;
 	unsigned hash;
-	
+
 #ifdef EXTRA_DEBUG
 	LM_DBG("%d  port %d\n",id, port);
 	if (ip) print_ip("tcpconn_find: ip ", ip, "\n");
@@ -878,7 +878,7 @@ struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
 		hash=tcp_addr_hash(ip, port);
 		for (a=tcpconn_aliases_hash[hash]; a; a=a->next){
 #ifdef EXTRA_DEBUG
-			LM_DBG("a=%p, c=%p, c->id=%d, alias port= %d port=%d\n", 
+			LM_DBG("a=%p, c=%p, c->id=%d, alias port= %d port=%d\n",
 				a, a->parent, a->parent->id, a->port, a->parent->rcv.src_port);
 			print_ip("ip=",&a->parent->rcv.src_ip,"\n");
 #endif
@@ -916,7 +916,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 	struct tcp_connection* c;
 	unsigned hash;
 	struct tcp_conn_alias* a;
-	
+
 	a=0;
 	/* fix the port */
 	port=port?port:((proto==PROTO_TLS)?SIPS_PORT:SIP_PORT);
@@ -938,7 +938,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 		c->con_aliases[c->aliases].parent=c;
 		c->con_aliases[c->aliases].port=port;
 		c->con_aliases[c->aliases].hash=hash;
-		tcpconn_listadd(tcpconn_aliases_hash[hash], 
+		tcpconn_listadd(tcpconn_aliases_hash[hash],
 								&c->con_aliases[c->aliases], next, prev);
 		c->aliases++;
 	}else goto error_not_found;
@@ -1011,7 +1011,7 @@ again:
 			LM_ERR("Failed first TCP async send : (%d) %s\n",
 					errno, strerror(errno));
 			return -1;
-		} else 
+		} else
 			goto poll_loop;
 	}
 
@@ -1041,13 +1041,13 @@ poll_loop:
 			LM_ERR("Failed to add write chunk to connection \n");
 			return -1;
 		} else {
-			/* we have succesfully added async write chunk 
+			/* we have succesfully added async write chunk
 			 * tell MAIN to poll out for us */
 			response[0]=(long)c;
 			response[1]=ASYNC_WRITE;
 			n=send_all(unix_tcp_sock, response, sizeof(response));
 			if (n<=0){
-				LM_ERR("Failed to tell main to poll out for us :%s (%d)\n",	
+				LM_ERR("Failed to tell main to poll out for us :%s (%d)\n",
 						strerror(errno), errno);
 				return -1;
 			}
@@ -1076,7 +1076,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	long response[2];
 	int n;
 	struct timeval get,rcv,snd;
-	
+
 	port=0;
 
 	reset_tcp_vars(tcpthreshold);
@@ -1085,7 +1085,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		c=tcpconn_get(id, &ip, port, tcp_con_lifetime); 
+		c=tcpconn_get(id, &ip, port, tcp_con_lifetime);
 	}else if (id){
 		c=tcpconn_get(id, 0, 0, tcp_con_lifetime);
 	}else{
@@ -1093,7 +1093,7 @@ int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
 		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 		return -1;
 	}
-	
+
 	if (id){
 		if (c==0) {
 			if (to){
@@ -1144,7 +1144,7 @@ no_id:
 			c->refcnt++; /* safe to do it w/o locking, it's not yet
 							available to the rest of the world */
 			fd=c->s;
-			
+
 			/* send the new tcpconn to "tcp main" */
 			response[0]=(long)c;
 			response[1]=CONN_NEW;
@@ -1154,7 +1154,7 @@ no_id:
 				LM_ERR("failed send_fd: %s (%d)\n",	strerror(errno), errno);
 				n=-1;
 				goto end;
-			}	
+			}
 			goto send_it;
 		}
 get_fd:
@@ -1204,7 +1204,7 @@ get_fd:
 			start_expire_timer(rcv,tcpthreshold);
 			n=send_all(unix_tcp_sock, response, sizeof(response));
 			if (n<=0){
-				LM_ERR("failed to get fd(write):%s (%d)\n",	
+				LM_ERR("failed to get fd(write):%s (%d)\n",
 						strerror(errno), errno);
 				n=-1;
 				get_time_difference(rcv,tcpthreshold,tcp_timeout_receive_fd);
@@ -1231,9 +1231,9 @@ get_fd:
 				goto end;
 			}
 			LM_DBG("after receive_fd: c= %p n=%d fd=%d\n",c, n, fd);
-		
-	
-	
+
+
+
 send_it:
 	LM_DBG("sending...\n");
 	lock_get(&c->write_lock);
@@ -1248,7 +1248,7 @@ send_it:
 		if (tcp_async) {
 			n=async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
 		} else {
-		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000); 
+		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000);
 		get_time_difference(snd,tcpthreshold,tcp_timeout_send);
 		stop_expire_timer(get,tcpthreshold,"tcp ops",buf,(int)len,1);
 		}
@@ -1300,7 +1300,7 @@ int tcp_init(struct socket_info* sock_info)
 		}
 	}
 #endif
-	
+
 	addr=&sock_info->su;
 	/* sock_info->proto=PROTO_TCP; */
 	if (init_su(addr, &sock_info->address, sock_info->port_no)<0){
@@ -1322,11 +1322,11 @@ int tcp_init(struct socket_info* sock_info)
 #endif
 
 
-#if  !defined(TCP_DONT_REUSEADDR) 
+#if  !defined(TCP_DONT_REUSEADDR)
 	/* Stevens, "Network Programming", Section 7.5, "Generic Socket
 	 * Options": "...server started,..a child continues..on existing
 	 * connection..listening server is restarted...call to bind fails
-	 * ... ALL TCP servers should specify the SO_REUSEADDRE option 
+	 * ... ALL TCP servers should specify the SO_REUSEADDRE option
 	 * to allow the server to be restarted in this situation
 	 *
 	 * Indeed, without this option, the server can't restart.
@@ -1341,7 +1341,7 @@ int tcp_init(struct socket_info* sock_info)
 #endif
 	/* tos */
 	optval = tos;
-	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval, 
+	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
 				sizeof(optval)) ==-1){
 		LM_WARN("setsockopt tos: %s\n", strerror(errno));
 		/* continue since this is not critical */
@@ -1357,7 +1357,7 @@ int tcp_init(struct socket_info* sock_info)
 	init_sock_keepalive(sock_info->socket);
 	if (bind(sock_info->socket, &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s:%d : %s\n",
- 				sock_info->socket, &addr->s, 
+ 				sock_info->socket, &addr->s,
  				(unsigned)sockaddru_len(*addr),
  				sock_info->address_str.s,
 				sock_info->port_no,
@@ -1366,13 +1366,13 @@ int tcp_init(struct socket_info* sock_info)
 	}
 	if (listen(sock_info->socket, tcp_listen_backlog)==-1){
 		LM_ERR("listen(%x, %p, %d) on %s: %s\n",
-				sock_info->socket, &addr->s, 
+				sock_info->socket, &addr->s,
 				(unsigned)sockaddru_len(*addr),
 				sock_info->address_str.s,
 				strerror(errno));
 		goto error;
 	}
-	
+
 	return 0;
 error:
 	if (sock_info->socket!=-1){
@@ -1390,7 +1390,7 @@ static int send2child(struct tcp_connection* tcpconn,int rw)
 	int min_busy;
 	int idx;
 	long response[2];
-	
+
 	min_busy=tcp_children[0].busy;
 	idx=0;
 	for (i=0; i<tcp_children_no; i++){
@@ -1403,7 +1403,7 @@ static int send2child(struct tcp_connection* tcpconn,int rw)
 			idx=i;
 		}
 	}
-	
+
 	tcp_children[idx].busy++;
 	tcp_children[idx].n_reqs++;
 	if (min_busy){
@@ -1419,7 +1419,7 @@ static int send2child(struct tcp_connection* tcpconn,int rw)
 		LM_ERR("send_fd failed\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -1438,7 +1438,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	struct tcp_connection* tcpconn;
 	socklen_t su_len;
 	int new_sock;
-	
+
 	/* got a connection on r */
 	su_len=sizeof(su);
 	new_sock=accept(si->socket, &(su.s), &su_len);
@@ -1459,14 +1459,14 @@ static inline int handle_new_connect(struct socket_info* si)
 		close(new_sock);
 		return 1; /* success, because the accept was succesfull */
 	}
-	
+
 	/* add socket to list */
 	tcpconn=tcpconn_new(new_sock, &su, si, si->proto, S_CONN_ACCEPT);
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
 		tcpconn_add(tcpconn);
-		LM_DBG("new connection: %p %d flags: %04x\n", 
+		LM_DBG("new connection: %p %d flags: %04x\n",
 				tcpconn, tcpconn->s, tcpconn->flags);
 		/* pass it to a child */
 		if(send2child(tcpconn,IO_WATCH_READ)<0){
@@ -1482,7 +1482,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	}else{ /*tcpconn==0 */
 		LM_ERR("tcpconn_new failed, closing socket\n");
 		close(new_sock);
-		
+
 	}
 	return 1; /* accept() was succesfull */
 }
@@ -1496,7 +1496,7 @@ static void tcpconn_destroy(struct tcp_connection* tcpconn)
 
 	TCPCONN_LOCK; /*avoid races w/ tcp_send*/
 	tcpconn->refcnt--;
-	if (tcpconn->refcnt==0){ 
+	if (tcpconn->refcnt==0){
 		LM_DBG("destroying connection %p, flags %04x\n",
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->s;
@@ -1514,7 +1514,7 @@ static void tcpconn_destroy(struct tcp_connection* tcpconn)
 		tcpconn->state=S_CONN_BAD;
 		LM_DBG("delaying (%p, flags %04x) ref = %d ...\n",
 				tcpconn, tcpconn->flags,tcpconn->refcnt);
-		
+
 	}
 	TCPCONN_UNLOCK;
 }
@@ -1523,7 +1523,7 @@ static void tcpconn_destroy(struct tcp_connection* tcpconn)
 
 /*! \brief
  * handles an io event on one of the watched tcp connections
- * 
+ *
  * \param    tcpconn - pointer to the tcp_connection for which we have an io ev.
  * \param    fd_i    - index in the fd_array table (needed for delete)
  * \return   handle_* return convention, but on success it always returns 0
@@ -1537,10 +1537,10 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 	int fd;
 	int err;
 	unsigned int err_len;
-	
-	/*  is refcnt!=0 really necessary? 
+
+	/*  is refcnt!=0 really necessary?
 	 *  No, in fact it's a bug: I can have the following situation: a send only
-	 *   tcp connection used by n processes simultaneously => refcnt = n. In 
+	 *   tcp connection used by n processes simultaneously => refcnt = n. In
 	 *   the same time I can have a read event and this situation is perfectly
 	 *   valid. -- andrei
 	 */
@@ -1572,7 +1572,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 			}else tcpconn->timeout=0; /* force expire*/
 			TCPCONN_UNLOCK;
 		}
-		return 0; /* we are not interested in possibly queued io events, 
+		return 0; /* we are not interested in possibly queued io events,
 					 the fd was either passed to a child, or closed */
 	} else {
 		LM_DBG("connection %p fd %d is now writeable\n",tcpconn,tcpconn->s);
@@ -1661,7 +1661,7 @@ static inline void set_tcp_timeout(struct tcp_connection *c)
 
 /*! \brief handles io from a tcp child process
  * \param  tcp_c - pointer in the tcp_children array, to the entry for
- *                 which an io event was detected 
+ *                 which an io event was detected
  * \param  fd_i  - fd index in the fd_array (usefull for optimizing
  *                 io_watch_deletes)
  * \return handle_* return convention: -1 on error, 0 on EAGAIN (no more
@@ -1674,7 +1674,7 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 	long response[2];
 	int cmd;
 	int bytes;
-	
+
 	if (tcp_c->unix_sock<=0){
 		/* (we can't have a fd==0, 0 is never closed )*/
 		LM_CRIT("fd %d for %d (pid %d, ser no %d)\n", tcp_c->unix_sock,
@@ -1688,10 +1688,10 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 		if (bytes==0){
 			/* EOF -> bad, child has died */
 			LM_DBG("dead tcp child %d (pid %d, no %d)"
-					" (shutting down?)\n", (int)(tcp_c-&tcp_children[0]), 
+					" (shutting down?)\n", (int)(tcp_c-&tcp_children[0]),
 					tcp_c->pid, tcp_c->proc_no );
 			/* don't listen on it any more */
-			io_watch_del(&io_h, tcp_c->unix_sock, fd_i, 0,IO_WATCH_READ); 
+			io_watch_del(&io_h, tcp_c->unix_sock, fd_i, 0,IO_WATCH_READ);
 			goto error; /* eof. so no more io here, it's ok to return error */
 		}else if (bytes<0){
 			/* EAGAIN is ok if we try to empty the buffer
@@ -1714,7 +1714,7 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 			goto end;
 		}
 	}
-	
+
 	LM_DBG("reader response= %lx, %ld from %d \n",
 					response[0], response[1], (int)(tcp_c-&tcp_children[0]));
 	cmd=response[1];
@@ -1729,7 +1729,7 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 	switch(cmd){
 		case CONN_RELEASE:
 			tcp_c->busy--;
-			if (tcpconn->state==S_CONN_BAD){ 
+			if (tcpconn->state==S_CONN_BAD){
 				tcpconn_destroy(tcpconn);
 				break;
 			}
@@ -1742,7 +1742,7 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 			break;
 		case ASYNC_WRITE:
 			tcp_c->busy--;
-			if (tcpconn->state==S_CONN_BAD){ 
+			if (tcpconn->state==S_CONN_BAD){
 				tcpconn_destroy(tcpconn);
 				break;
 			}
@@ -1777,14 +1777,14 @@ error:
 
 
 /*! \brief handles io from a "generic" ser process (get fd or new_fd from a tcp_send)
- * 
+ *
  * \param p     - pointer in the ser processes array (pt[]), to the entry for
  *                 which an io event was detected
  * \param fd_i  - fd index in the fd_array (usefull for optimizing
  *                 io_watch_deletes)
  * \return  handle_* return convention:
  *          - -1 on error reading from the fd,
- *          -  0 on EAGAIN  or when no  more io events are queued 
+ *          -  0 on EAGAIN  or when no  more io events are queued
  *             (receive buffer empty),
  *          -  >0 on successfull reads from the fd (the receive buffer might
  *             be non-empty).
@@ -1797,15 +1797,15 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 	int bytes;
 	int ret;
 	int fd;
-	
+
 	ret=-1;
 	if (p->unix_sock<=0){
 		/* (we can't have a fd==0, 0 is never closed )*/
-		LM_CRIT("fd %d for %d (pid %d)\n", 
+		LM_CRIT("fd %d for %d (pid %d)\n",
 				p->unix_sock, (int)(p-&pt[0]), p->pid);
 		goto error;
 	}
-			
+
 	/* get all bytes and the fd (if transmitted)
 	 * (this is a SOCK_STREAM so read is not atomic) */
 	bytes=receive_fd(p->unix_sock, response, sizeof(response), &fd,
@@ -1823,7 +1823,7 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			/* EAGAIN is ok if we try to empty the buffer
 			 * e.g: SIGIO_RT overflow mode or EPOLL ET */
 			if ((errno!=EAGAIN) && (errno!=EWOULDBLOCK)){
-				LM_CRIT("read from child %d (pid %d):  %s [%d]\n", 
+				LM_CRIT("read from child %d (pid %d):  %s [%d]\n",
 						(int)(p-&pt[0]), p->pid, strerror(errno), errno);
 				ret=-1;
 			}else{
@@ -1904,7 +1904,7 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		case ASYNC_WRITE:
-			if (tcpconn->state==S_CONN_BAD){ 
+			if (tcpconn->state==S_CONN_BAD){
 				tcpconn_destroy(tcpconn);
 				break;
 			}
@@ -1931,7 +1931,7 @@ error:
  * \param  fm  - pointer to a fd hash entry
  * \param  idx - index in the fd_array (or -1 if not known)
  * \return -1 on error
- *          0 on EAGAIN or when by some other way it is known that no more 
+ *          0 on EAGAIN or when by some other way it is known that no more
  *            io events are queued on the fd (the receive buffer is empty).
  *            Usefull to detect when there are no more io events queued for
  *            sigio_rt, epoll_et, kqueue.
@@ -1939,9 +1939,9 @@ error:
  *            queued -- the receive buffer might still be non-empty)
  */
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
-{	
+{
 	int ret;
-	
+
 	switch(fm->type){
 		case F_SOCKINFO:
 			ret=handle_new_connect((struct socket_info*)fm->data);
@@ -1959,7 +1959,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			LM_CRIT("empty fd map\n");
 			goto error;
 		default:
-			LM_CRIT("uknown fd type %d\n", fm->type); 
+			LM_CRIT("uknown fd type %d\n", fm->type);
 			goto error;
 	}
 	return ret;
@@ -1980,8 +1980,8 @@ static inline void tcpconn_timeout(int force)
 	unsigned int ticks;
 	unsigned h;
 	int fd;
-	
-	
+
+
 	ticks=get_ticks();
 	TCPCONN_LOCK; /* fixme: we can lock only on delete IMO */
 	for(h=0; h<TCP_ID_HASH_SIZE; h++){
@@ -2058,9 +2058,9 @@ void tcp_main_loop(void)
 	/* add all the unix sockets used for communcation with other opensips
 	 * processes (get fd, new connection a.s.o) */
 	for (r=1; r<counted_processes; r++){
-		/* skip myslef (as process) and -1 socks (disabled) 
+		/* skip myslef (as process) and -1 socks (disabled)
 		   (we can't have 0, we never close it!) */
-		if (r!=process_no && pt[r].unix_sock>0) 
+		if (r!=process_no && pt[r].unix_sock>0)
 			if (io_watch_add(&io_h, pt[r].unix_sock, F_PROC, &pt[r],IO_WATCH_READ)<0){
 					LM_CRIT("failed to add process %d (%s) unix socket "
 						"to the fd list\n", r, pt[r].desc);
@@ -2091,13 +2091,13 @@ void tcp_main_loop(void)
 			}
 		}
 	}
-	
+
 	/* main loop */
 	switch(io_h.poll_method){
 		case POLL_POLL:
 			while(1){
 				/* wait and process IO */
-				io_wait_loop_poll(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0); 
+				io_wait_loop_poll(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0);
 				/* remove old connections */
 				tcpconn_timeout(0);
 			}
@@ -2149,7 +2149,7 @@ void tcp_main_loop(void)
 			break;
 #endif
 		default:
-			LM_CRIT("no support for poll method %s (%d)\n", 
+			LM_CRIT("no support for poll method %s (%d)\n",
 					poll_method_name(io_h.poll_method), io_h.poll_method);
 			goto error;
 	}
@@ -2189,7 +2189,7 @@ void destroy_tcp(void)
 int init_tcp(void)
 {
 	char* poll_err;
-	
+
 	/* init lock */
 	tcpconn_lock=lock_alloc();
 	if (tcpconn_lock==0){
@@ -2231,16 +2231,16 @@ int init_tcp(void)
 		goto error;
 	}
 	/* init hashtables*/
-	memset((void*)tcpconn_aliases_hash, 0, 
+	memset((void*)tcpconn_aliases_hash, 0,
 			TCP_ALIAS_HASH_SIZE * sizeof(struct tcp_conn_alias*));
-	memset((void*)tcpconn_id_hash, 0, 
+	memset((void*)tcpconn_id_hash, 0,
 			TCP_ID_HASH_SIZE * sizeof(struct tcp_connection*));
-	
+
 	/* fix config variables */
 	/* they can have only positive values due the config parser so we can
 	 * ignore most of them */
 		poll_err=check_poll_method(tcp_poll_method);
-	
+
 	/* set an appropiate poll method */
 	if (poll_err || (tcp_poll_method==0)){
 		tcp_poll_method=choose_poll_method();
@@ -2255,7 +2255,7 @@ int init_tcp(void)
 			LM_INFO("using %s as the TCP io watch method (config)\n",
 					poll_method_name(tcp_poll_method));
 	}
-	
+
 	return 0;
 error:
 	/* clean-up */
@@ -2274,9 +2274,9 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 	pid_t pid;
 	struct socket_info *si;
 	stat_var *load_p = NULL;
-	
+
 	/* estimate max fd. no:
-	 * 1 tcp send unix socket/all_proc, 
+	 * 1 tcp send unix socket/all_proc,
 	 *  + 1 udp sock/udp proc + 1 tcp_child sock/tcp child*
 	 *  + no_listen_tcp */
 	for(r=0, si=tcp_listen; si; si=si->next, r++);
@@ -2284,13 +2284,13 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 	if (! tls_disable)
 		for (si=tls_listen; si; si=si->next, r++);
 #endif
-	
+
 	tcp_max_fd_no=counted_processes*2 +r-1 /* timer */ +3; /* stdin/out/err*/
 	tcp_max_fd_no+=tcp_max_connections;
-	
+
 	/* create the tcp sock_info structures */
 	/* copy the sockets --moved to main_loop*/
-	
+
 	if (register_tcp_load_stat( &load_p )!=0) {
 		LM_ERR("failed to init tcp load statistics\n");
 		goto error;
@@ -2306,7 +2306,7 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 			LM_ERR("socketpair failed: %s\n", strerror(errno));
 			goto error;
 		}
-		
+
 		(*chd_rank)++;
 		pid=internal_fork("SIP receiver TCP");
 		if (pid<0){
@@ -2337,7 +2337,7 @@ int tcp_init_children(int *chd_rank, int *startup_done)
 				*startup_done = -1;
 				exit(-1);
 			}
-	
+
 			/* was startup route executed so far ? */
 			if (startup_done!=NULL && *startup_done==0 && r==0) {
 				LM_DBG("runing startup for first TCP\n");

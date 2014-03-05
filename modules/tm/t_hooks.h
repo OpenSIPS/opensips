@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -52,7 +52,7 @@ struct cell;
 #define TMCB_TRANS_DELETED      (1<<12)
 #define TMCB_MAX                ((1<<13)-1)
 
-/* 
+/*
  *  Caution: most of the callbacks work with shmem-ized messages
  *  which you can no more change (e.g., lumps are fixed). Most
  *  reply-processing callbacks are also called from a mutex,
@@ -84,13 +84,13 @@ struct cell;
  * TMCB_RESPONSE_IN -- a brand-new reply was received which matches
  *  an existing transaction. It may or may not be a retransmission.
  *
- * TMCB_RESPONSE_PRE_OUT -- a final reply is about to be sent out 
- *  (either local or proxied); you cannnot change the reply, but 
+ * TMCB_RESPONSE_PRE_OUT -- a final reply is about to be sent out
+ *  (either local or proxied); you cannnot change the reply, but
  *  it is usefull to update your state before putting the reply on
- *  the network and to avoid any races (receiving an ACK before 
+ *  the network and to avoid any races (receiving an ACK before
  *  updating with the status of the reply)
  *
- * TMCB_RESPONSE_OUT -- a final reply was sent out (either local 
+ * TMCB_RESPONSE_OUT -- a final reply was sent out (either local
  *  or proxied) -- there is nothing more you can change from
  *  the callback, it is good for accounting-like uses.
  *
@@ -102,19 +102,19 @@ struct cell;
  *    need it ... locally initiated UAC transactions set it to 0.
  *
  * (obsolete) TMCB_ON_FAILURE_RO -- called on receipt of a reply or timer;
- *  it means all branches completed with a failure; the callback 
+ *  it means all branches completed with a failure; the callback
  *  function MUST not change anything in the transaction (READONLY)
  *  that's a chance for doing ACC or stuff like this
  *
  * TMCB_ON_FAILURE -- called on receipt of a reply or timer;
- *  it means all branches completed with a failure; that's 
+ *  it means all branches completed with a failure; that's
  *  a chance for example to add new transaction branches
  *
  * TMCB_RESPONSE_FWDED -- called when a reply is about to be
  *  forwarded; it is called after a message is received but before
- *  a message is sent out: it is called when the decision is 
- *  made to forward a reply; it is parametrized by pkg message 
- *  which caused the transaction to complete (which is not 
+ *  a message is sent out: it is called when the decision is
+ *  made to forward a reply; it is parametrized by pkg message
+ *  which caused the transaction to complete (which is not
  *  necessarily the same which will be forwarded). As forwarding
  *  has not been executed and may fail, there is no guarantee
  *  a reply will be successfully sent out at this point of time.
@@ -132,9 +132,9 @@ struct cell;
  *     feature, either set the global option "noisy_ctimer"
  *     to 1, or set t->noisy_ctimer for selected transaction.
  *
- * TMCB_REQUEST_FWDED -- request is being forwarded out. It is 
+ * TMCB_REQUEST_FWDED -- request is being forwarded out. It is
  *  called before a message is forwarded and it is your last
- *  chance to change its shape. 
+ *  chance to change its shape.
  *
  * TMCB_LOCAL_COMPLETED -- final reply for localy initiated
  *  transaction arrived. Message may be FAKED_REPLY.

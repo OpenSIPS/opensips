@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -69,12 +69,12 @@
 struct vqm_frag {
 	/* XXX */
 	/* total chunk size including all overhead/bellowfoot/roundings/etc */
-	/* useless as otherwise size implied by bucket (if I really want to save 
+	/* useless as otherwise size implied by bucket (if I really want to save
        bytes, I'll remove it  from here */
 	unsigned long size;
 	union{
 		/* pointer to next chunk in a bucket if free */
-		struct vqm_frag* nxt_free; 
+		struct vqm_frag* nxt_free;
 		struct {   /* or bucket number if busy */
 			unsigned char magic;
 			unsigned char bucket;
@@ -95,7 +95,7 @@ struct vqm_frag {
 
 struct vqm_frag_end{
 	/* total chunk size including all overhead/bellowfoot/roundings/etc */
-	unsigned long size; 
+	unsigned long size;
 	/* XXX */
 	/* used only for variable-size chunks; might have different
            data structures for variable/fixed length chunks */
@@ -133,9 +133,9 @@ struct vqm_block* vqm_malloc_init(char* address, unsigned int size);
 
 #ifdef DBG_QM_MALLOC
 void vqm_debug_frag(struct vqm_block* qm, struct vqm_frag* f);
-void* vqm_malloc(struct vqm_block*, unsigned int size, char* file, char* func, 
+void* vqm_malloc(struct vqm_block*, unsigned int size, char* file, char* func,
 					unsigned int line);
-void  vqm_free(struct vqm_block*, void* p, char* file, char* func, 
+void  vqm_free(struct vqm_block*, void* p, char* file, char* func,
 				unsigned int line);
 #else
 void* vqm_malloc(struct vqm_block*, unsigned int size);

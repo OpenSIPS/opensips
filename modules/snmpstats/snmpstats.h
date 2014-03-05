@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -25,7 +25,7 @@
  * History:
  * --------
  * 2006-11-23 initial version (jmagder)
- * 
+ *
  * Structure and prototype definitions for the SNMPStats module.
  *
  * There are some important points to understanding the SNMPStat modules
@@ -34,7 +34,7 @@
  * 1) The SNMPStats module will fork off a new process in mod_child_init when
  *    the rank is equal to PROC_MAIN_PROCESS.  The sub-process will be
  *    responsible for registering with a master agent (the source of snmp
- *    requests), and handling all received requests. 
+ *    requests), and handling all received requests.
  *
  * 2) The Module will register a periodic alarm checking function with a sip
  *    timer using register_timer().  This function checks for alarm conditions,
@@ -46,7 +46,7 @@
  *    spawning a short-lived process.  For this reason, the module temporarily
  *    installs a new SIGCHLD handler to deal specifically with this process.  It
  *    does not change the normal SIGCHLD behaviour for any process except for
- *    this short lived sysUpTime process. 
+ *    this short lived sysUpTime process.
  *
  * 4) mod_init() will initialize some interprocess communication buffers, as
  *    well as callback mechanisms for the usrloc module.  To understand what the
@@ -97,16 +97,16 @@ static proc_export_t mod_procs[] = {
 
 /*
  * This structure defines the SNMPStats parameters that can be configured
- * through the opensips.cfg configuration file.  
+ * through the opensips.cfg configuration file.
  */
-static param_export_t mod_params[] = 
+static param_export_t mod_params[] =
 {
 	{ "sipEntityType",          STR_PARAM|USE_FUNC_PARAM,
 			(void *)handleSipEntityType       },
 	{ "MsgQueueMinorThreshold", INT_PARAM|USE_FUNC_PARAM,
-			(void *)set_queue_minor_threshold }, 
+			(void *)set_queue_minor_threshold },
 	{ "MsgQueueMajorThreshold", INT_PARAM|USE_FUNC_PARAM,
-			(void *)set_queue_major_threshold }, 
+			(void *)set_queue_major_threshold },
 	{ "dlg_minor_threshold",    INT_PARAM|USE_FUNC_PARAM,
 			(void *)set_dlg_minor_threshold   },
 	{ "dlg_major_threshold",    INT_PARAM|USE_FUNC_PARAM,
@@ -114,12 +114,12 @@ static param_export_t mod_params[] =
 	{ "snmpgetPath",            STR_PARAM|USE_FUNC_PARAM,
 			(void *)set_snmpget_path          },
 	{ "snmpCommunity",          STR_PARAM|USE_FUNC_PARAM,
-			(void *)set_snmp_community        }, 
+			(void *)set_snmp_community        },
 	{ 0,0,0 }
 };
 
 
-struct module_exports exports = 
+struct module_exports exports =
 {
 	SNMPSTATS_MODULE_NAME,   /* module's name */
 	MODULE_VERSION,          /* module's version */

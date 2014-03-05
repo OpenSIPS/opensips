@@ -19,7 +19,7 @@
  *
  * History:
  * ---------
- * 2009-02-07 Initial version of closeddial module (saguti) 
+ * 2009-02-07 Initial version of closeddial module (saguti)
  */
 
 
@@ -86,7 +86,7 @@ static param_export_t params[] = {
 
 /* Module interface */
 struct module_exports exports = {
-	"closeddial", 
+	"closeddial",
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */

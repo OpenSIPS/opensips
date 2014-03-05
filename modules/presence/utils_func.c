@@ -81,16 +81,16 @@ void to64frombits(unsigned char *out, const unsigned char *in, int inlen)
 		*out++ = '=';
 	}
 		*out = '\0';
-		
+
 }
 
 int a_to_i (char *s,int len)
 {
 	int n = 0, i= 0;
-	
-	while( i<len  )		
+
+	while( i<len  )
 		n=n*10+( s[i++] -'0');
-	
+
 	return n;
 }
 
@@ -118,7 +118,7 @@ int send_error_reply(struct sip_msg* msg, int reply_code, str reply_str)
 			{
 				memcpy(hdr_append.s+ hdr_append.len, ", ", 2);
 				hdr_append.len+= 2;
-			}	
+			}
 			memcpy(hdr_append.s+ hdr_append.len, ev->name.s, ev->name.len );
 			hdr_append.len+= ev->name.len ;
 			ev= ev->next;
@@ -126,7 +126,7 @@ int send_error_reply(struct sip_msg* msg, int reply_code, str reply_str)
 		memcpy(hdr_append.s+ hdr_append.len, CRLF, CRLF_LEN);
 		hdr_append.len+=  CRLF_LEN;
 		hdr_append.s[hdr_append.len]= '\0';
-		
+
 		if (add_lump_rpl( msg, hdr_append.s, hdr_append.len, LUMP_RPL_HDR)==0 )
 		{
 			LM_ERR("unable to add lump_rl\n");

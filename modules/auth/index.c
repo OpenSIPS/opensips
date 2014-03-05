@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -135,7 +135,7 @@ done:
 int is_nonce_index_valid(int index)
 {
     /* if greater than MAX_NONCE_INDEX ->error */
-    
+
     if(index>= MAX_NONCE_INDEX )
     {
         LM_ERR("index greater than buffer length\n");
@@ -185,7 +185,7 @@ int is_nonce_index_valid(int index)
         LM_DBG("nonce already used\n");
         goto error;
     }
-    
+
     set_buf_bit(index);
     lock_release(nonce_lock);
     return 1;

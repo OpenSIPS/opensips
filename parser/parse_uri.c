@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -153,13 +153,13 @@ int parse_uri_headers(str headers, str h_name[], str h_val[], int h_size)
 
 /* buf= pointer to begining of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
- * returns: fills uri & returns <0 on error or 0 if ok 
+ * returns: fills uri & returns <0 on error or 0 if ok
  */
 int parse_uri(char* buf, int len, struct sip_uri* uri)
 {
 	enum states  {	URI_INIT, URI_USER, URI_PASSWORD, URI_PASSWORD_ALPHA,
 					URI_HOST, URI_HOST_P,
-					URI_HOST6_P, URI_HOST6_END, URI_PORT, 
+					URI_HOST6_P, URI_HOST6_END, URI_PORT,
 					URI_PARAM, URI_PARAM_P, URI_PARAM_VAL_P, URI_VAL_P, URI_HEADERS,
 					/* param states */
 					/* transport */
@@ -179,7 +179,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					PG_G, PG_G_FIN, PG_eq,
 					/* r2 */
 					PR2_R, PR2_2_FIN, PR2_eq,
-					
+
 					/* transport values */
 					/* udp */
 					VU_U, VU_D, VU_P_FIN,
@@ -209,16 +209,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 #ifdef EXTRA_DEBUG
 	int i;
 #endif
-	
+
 #define SIP_SCH		0x3a706973
 #define SIPS_SCH	0x73706973
 #define TEL_SCH		0x3a6c6574
-	
+
 #define case_port( ch, var) \
 	case ch: \
 			 (var)=(var)*10+ch-'0'; \
 			 break
-			 
+
 #define still_at_user  \
 						if (found_user==0){ \
 							user.s=uri->host.s; \
@@ -241,7 +241,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 							found_user=1;\
 							error_headers=0; \
 							state=URI_HOST; \
-						}else goto error_bad_char 
+						}else goto error_bad_char
 
 #define check_host_end \
 					case ':': \
@@ -265,14 +265,14 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						break; \
 					case '&': \
 					case '@': \
-						goto error_bad_char 
+						goto error_bad_char
 
 
 #define param_set(t_start, v_start) \
 					param->s=(t_start);\
 					param->len=(p-(t_start));\
 					param_val->s=(v_start); \
-					param_val->len=(p-(v_start)) 
+					param_val->len=(p-(v_start))
 
 #define u_param_set(t_start, v_start) \
 			if (uri->u_params_no < URI_MAX_U_PARAMS){ \
@@ -298,7 +298,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 							found_user=1;/* no user, pass cannot contain ';'*/ \
 							pass=0; \
 						} \
-						state=URI_PARAM   /* new param */ 
+						state=URI_PARAM   /* new param */
 
 #define question_case \
 					case '?': \
@@ -453,8 +453,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						break; \
 				} \
 				break
-			
-	
+
+
 
 	/* init */
 	end=buf+len;
@@ -481,7 +481,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	}else if (scheme==TEL_SCH){
 		uri->type=TEL_URI_T;
 	}else goto error_bad_uri;
-	
+
 	s=p;
 	for(;p<end; p++){
 		switch((unsigned char)state){
@@ -502,7 +502,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					default:
 						state=URI_USER;
 				}
-				break; 
+				break;
 			case URI_USER:
 				switch(*p){
 					case '@':
@@ -623,7 +623,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					case '[':
 						state=URI_HOST6_P;
 						break;
-					case ':': 
+					case ':':
 					case ';':
 					case '?': /* null host name ->invalid */
 					case '&':
@@ -806,7 +806,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			value_switch(VS_C, 't', 'T', VS_T);
 			value_switch(VS_T, 'p', 'P', VS_P_FIN);
 			transport_fin(VS_P_FIN, PROTO_SCTP);
-			
+
 			/* ttl */
 			param_switch(PTTL_T2,  'l', 'L', PTTL_L);
 			param_switch1(PTTL_L,  '=', PTTL_eq);
@@ -820,7 +820,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_VAL_P;
 				}
 				break;
-			
+
 			/* user param */
 			param_switch(PU_U, 's', 'S', PU_S);
 			param_switch(PU_S, 'e', 'E', PU_E);
@@ -836,7 +836,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_VAL_P;
 				}
 				break;
-			
+
 			/* method*/
 			param_switch_big(PM_M, 'e', 'E', 'a', 'A', PM_E, PMA_A);
 			param_switch(PM_E, 't', 'T', PM_T);
@@ -870,22 +870,22 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_VAL_P;
 				}
 				break;
-			
+
 			/* lr */
 			param_switch(PLR_L,  'r', 'R', PLR_R_FIN);
 			case PLR_R_FIN:
 				switch(*p){
 					case '@':
-						still_at_user; 
+						still_at_user;
 						break;
 					case '=':
 						state=PLR_eq;
 						break;
-					semicolon_case; 
+					semicolon_case;
 						uri->lr.s=b;
 						uri->lr.len=(p-b);
 						break;
-					question_case; 
+					question_case;
 						uri->lr.s=b;
 						uri->lr.len=(p-b);
 						break;
@@ -912,16 +912,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			case PR2_2_FIN:
 				switch(*p){
 					case '@':
-						still_at_user; 
+						still_at_user;
 						break;
 					case '=':
 						state=PR2_eq;
 						break;
-					semicolon_case; 
+					semicolon_case;
 						uri->r2.s=b;
 						uri->r2.len=(p-b);
 						break;
-					question_case; 
+					question_case;
 						uri->r2.s=b;
 						uri->r2.len=(p-b);
 						break;
@@ -942,23 +942,23 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_VAL_P;
 				}
 				break;
-				
+
 
 			/* gr */
 			param_switch(PG_G,  'r', 'R', PG_G_FIN);
 			case PG_G_FIN:
 				switch(*p){
 					case '@':
-						still_at_user; 
+						still_at_user;
 						break;
 					case '=':
 						state=PG_eq;
 						break;
-					semicolon_case; 
+					semicolon_case;
 						uri->gr.s=b;
 						uri->gr.len=(p-b);
 						break;
-					question_case; 
+					question_case;
 						uri->gr.s=b;
 						uri->gr.len=(p-b);
 						break;
@@ -980,9 +980,9 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 				}
 				break;
 
-				
+
 			case URI_HEADERS:
-				/* for now nobody needs them so we completely ignore the 
+				/* for now nobody needs them so we completely ignore the
 				 * headers (they are not allowed in request uri) --andrei */
 				switch(*p){
 					case '@':
@@ -1199,7 +1199,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->host.len=0;
 			break;
 		case ERROR_URI_T:
-			LM_ERR("unexpected error (BUG?)\n"); 
+			LM_ERR("unexpected error (BUG?)\n");
 			goto error_bad_uri;
 			break; /* do nothing, avoids a compilation warning */
 	}
@@ -1220,21 +1220,21 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->transport.len, ZSW(uri->transport.s), uri->transport_val.len,
 			ZSW(uri->transport_val.s), uri->proto);
 	LM_DBG("   user-param=<%.*s>, val=<%.*s>\n",
-			uri->user_param.len, ZSW(uri->user_param.s), 
+			uri->user_param.len, ZSW(uri->user_param.s),
 			uri->user_param_val.len, ZSW(uri->user_param_val.s));
 	LM_DBG("   method=<%.*s>, val=<%.*s>\n",
-			uri->method.len, ZSW(uri->method.s), 
+			uri->method.len, ZSW(uri->method.s),
 			uri->method_val.len, ZSW(uri->method_val.s));
 	LM_DBG("   ttl=<%.*s>, val=<%.*s>\n",
-			uri->ttl.len, ZSW(uri->ttl.s), 
+			uri->ttl.len, ZSW(uri->ttl.s),
 			uri->ttl_val.len, ZSW(uri->ttl_val.s));
 	LM_DBG("   maddr=<%.*s>, val=<%.*s>\n",
-			uri->maddr.len, ZSW(uri->maddr.s), 
+			uri->maddr.len, ZSW(uri->maddr.s),
 			uri->maddr_val.len, ZSW(uri->maddr_val.s));
 	LM_DBG("   lr=<%.*s>, val=<%.*s>\n", uri->lr.len, ZSW(uri->lr.s),
-			uri->lr_val.len, ZSW(uri->lr_val.s)); 
+			uri->lr_val.len, ZSW(uri->lr_val.s));
 	LM_DBG("   r2=<%.*s>, val=<%.*s>\n", uri->r2.len, ZSW(uri->r2.s),
-			uri->r2_val.len, ZSW(uri->r2_val.s)); 
+			uri->r2_val.len, ZSW(uri->r2_val.s));
 	for(i=0; i<URI_MAX_U_PARAMS && uri->u_name[i].s; i++)
 		LM_DBG("uname=[%p]-><%.*s> uval=[%p]-><%.*s>\n",
 			uri->u_name[i].s, uri->u_name[i].len, uri->u_name[i].s,
@@ -1243,7 +1243,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		LM_ERR("inconsisten # of u_name:[%d]!=[%d]\n", i, uri->u_params_no);
 #endif
 	return 0;
-	
+
 error_too_short:
 	LM_ERR("uri too short: <%.*s> (%d)\n",
 			len, ZSW(buf), len);
@@ -1353,7 +1353,7 @@ int parse_orig_ruri(struct sip_msg* msg)
 	} while (0)
 
 /* Compare 2 SIP URIs according to RFC 3261
- * 
+ *
  * Return value : 0 if URIs match
  *				  1 if URIs don't match
  *				 -1 if errors have occured
@@ -1374,7 +1374,7 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 
 	if (raw_uri_a && raw_uri_b)
 	{
-		
+
 		/* maybe we're lucky and straight-forward comparison succeeds */
 		if (raw_uri_a->len == raw_uri_b->len)
 			if (strncasecmp(raw_uri_a->s,raw_uri_b->s,raw_uri_a->len) == 0)

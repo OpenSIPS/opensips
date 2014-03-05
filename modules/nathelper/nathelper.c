@@ -36,7 +36,7 @@
  *
  * 2006-03-08  fix_nated_sdp() may take one more param to force a specific IP;
  *             force_rtp_proxy() accepts a new flag 's' to swap creation/
- *              confirmation between requests/replies; 
+ *              confirmation between requests/replies;
  *             add_rcv_param() may take as parameter a flag telling if the
  *              parameter should go to the contact URI or contact header;
  *             (bogdan)
@@ -298,7 +298,7 @@ static int fixup_fix_nated_register(void** param, int param_no)
 
 
 
-static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree, 
+static struct mi_root* mi_enable_natping(struct mi_root* cmd_tree,
 											void* param )
 {
 	unsigned int value;
@@ -356,7 +356,7 @@ static int init_raw_socket(void)
 }
 
 
-static int get_natping_socket(char *socket, 
+static int get_natping_socket(char *socket,
 										unsigned int *ip, unsigned short *port)
 {
 	struct hostent* he;
@@ -513,7 +513,7 @@ mod_init(void)
 			abort();
 		nets_1918[i].netaddr = ntohl(addr.s_addr) & nets_1918[i].mask;
 	}
-	
+
 
 	return 0;
 }
@@ -565,7 +565,7 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 
 	for ( c=NULL,hdr=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; ) {
 
-		/* if uri string points outside the original msg buffer, it means 
+		/* if uri string points outside the original msg buffer, it means
 		   the URI was already changed, and we cannot do it again */
 		if( c->uri.s < msg->buf || c->uri.s > msg->buf+msg->len ) {
 			LM_ERR("SCRIPT BUG - second attempt to change URI Contact \n");
@@ -716,14 +716,14 @@ sdp_1918(struct sip_msg* msg)
 
 		body = p->body;
 		trim_r(body);
-		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) 
+		if( p->content_type != ((TYPE_APPLICATION << 16) + SUBTYPE_SDP)
 							 || body.len == 0)
 		{
 			p=p->next;
 			continue;
 		}
-		
-		
+
+
 		if (extract_mediaip(&body, &ip, &pf, "c=") == -1)
 		{
 			LM_ERR("can't extract media IP from the SDP\n");
@@ -946,7 +946,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 	return 0;
 }
 
-static inline int 
+static inline int
 replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
 {
 	str body1, oldip, newip;
@@ -1011,7 +1011,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 		return -1;
 
 	bodies = get_all_bodies(msg);
-	
+
 	if( bodies == NULL)
 	{
 		LM_ERR("Unable to get bodies from message\n");
@@ -1343,7 +1343,7 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 	p = buf;
 	memcpy(p, "sip:", 4);
 	p += 4;
-	
+
 	if (m->rcv.src_ip.af==AF_INET6)
 		*p++ = '[';
 	memcpy(p, ip.s, ip.len);
@@ -1352,7 +1352,7 @@ create_rcv_uri(str* uri, struct sip_msg* m)
 		*p++ = ']';
 
 	*p++ = ':';
-	
+
 	memcpy(p, port.s, port.len);
 	p += port.len;
 
@@ -1415,7 +1415,7 @@ add_rcv_param_f(struct sip_msg* msg, char* str1, char* str2)
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
-		}		
+		}
 
 		if (insert_new_lump_after(anchor, param, RECEIVED_LEN + 1 + uri.len + 1, 0) == 0) {
 			LM_ERR("insert_new_lump_after failed\n");

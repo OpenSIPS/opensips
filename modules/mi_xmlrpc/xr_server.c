@@ -154,13 +154,13 @@ static inline struct mi_handler* build_async_handler(void)
 
 
 #ifdef XMLRPC_OLD_VERSION
-xmlrpc_value*  default_method	(xmlrpc_env* 	env, 
+xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 								char* 			host,
 								char* 			methodName,
 								xmlrpc_value* 	paramArray,
 								void* 			serverInfo)
 #else
-xmlrpc_value*  default_method	(xmlrpc_env* 	env, 
+xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 								const char* 	host,
 								const char* 	methodName,
 								xmlrpc_value* 	paramArray,
@@ -178,10 +178,10 @@ xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 	LM_DBG("starting up.....\n");
 
 	f = lookup_mi_cmd((char*)methodName, strlen(methodName));
-	
+
 	if ( f == 0 ) {
 		LM_ERR("command %s is not available!\n", methodName);
-		xmlrpc_env_set_fault_formatted(env, XMLRPC_NO_SUCH_METHOD_ERROR, 
+		xmlrpc_env_set_fault_formatted(env, XMLRPC_NO_SUCH_METHOD_ERROR,
 			"Requested command (%s) is not available!", methodName);
 		goto error;
 	}
@@ -220,14 +220,14 @@ xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 
 	if ((mi_rpl=run_mi_cmd(f,mi_cmd,(mi_flush_f*)xr_flush_response,env))==0){
 		LM_ERR("command (%s) processing failed.\n", methodName);
-		xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR, 
+		xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR,
 			"Command (%s) processing failed.\n", methodName);
 		goto error;
 	} else if (mi_rpl==MI_ROOT_ASYNC_RPL) {
 		mi_rpl = wait_async_reply(hdl);
 		hdl = 0;
 		if (mi_rpl==0) {
-			xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR, 
+			xmlrpc_env_set_fault_formatted(env, XMLRPC_INTERNAL_ERROR,
 				"Command (%s) processing failed (async).\n", methodName);
 			goto error;
 		}
@@ -240,7 +240,7 @@ xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 		if ( xr_build_response_array( env, mi_rpl ) != 0 ){
 			if ( !env->fault_occurred ) {
 				LM_ERR("failed parsing the xmlrpc response from the mi tree\n");
-				xmlrpc_env_set_fault(env, XMLRPC_INTERNAL_ERROR, 
+				xmlrpc_env_set_fault(env, XMLRPC_INTERNAL_ERROR,
 					"Failed to parse the xmlrpc response from the mi tree.");
 				}
 			goto error;

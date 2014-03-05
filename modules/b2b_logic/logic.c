@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -187,7 +187,7 @@ int msg_add_dlginfo(b2bl_entity_id_t* entity, struct sip_msg* msg, str* totag)
 
 	if (msg->from->parsed == NULL)
 	{
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("cannot parse From header\n");
 			return -1;
@@ -198,7 +198,7 @@ int msg_add_dlginfo(b2bl_entity_id_t* entity, struct sip_msg* msg, str* totag)
 	dlginfo.totag  = *totag;
 	dlginfo.callid = callid;
 	dlginfo.fromtag= fromtag;
-	
+
 	if(entity_add_dlginfo(entity, &dlginfo) < 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
@@ -266,7 +266,7 @@ int b2b_msg_get_from(struct sip_msg* msg, str* from_uri, str* from_dname)
 	}
 	if (msg->from->parsed == NULL)
 	{
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("cannot parse From header\n");
 			return -1;
@@ -299,7 +299,7 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 	memset(entity, 0, size);
 
 	size = sizeof(b2bl_entity_id_t);
-	
+
 	if(entity_id)
 	{
 		entity->key.s= (char*)entity+ size;
@@ -547,7 +547,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 
 		ret = cbf(&cb_params, B2B_REJECT_CB);
 		LM_DBG("ret = %d\n", ret);
-		
+
 		lock_get(&b2bl_htable[hash_index].lock);
 		/* must search the tuple again
 		 * you can't know what might have happened with it */
@@ -628,7 +628,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
-	
+
 	if(bentity0 == NULL)
 	{
 		LM_ERR("Bridge entities 0 is NULL\n");
@@ -1085,10 +1085,10 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 		goto done;
 	}
 
-	/* if a reply from the client side was received, 
+	/* if a reply from the client side was received,
 	* tell the server side to send a reply also */
 
-	if((scenario && 
+	if((scenario &&
 			scenario->reply_rules) || tuple->scenario_state == B2B_BRIDGING_STATE)
 	{
 		if(tuple->scenario_state == B2B_BRIDGING_STATE) /* if in a predefined state */
@@ -1288,7 +1288,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 
 						if (msg->from->parsed == NULL)
 						{
-							if ( parse_from_header( msg )<0 ) 
+							if ( parse_from_header( msg )<0 )
 							{
 								LM_ERR("cannot parse From header\n");
 								return -1;
@@ -1298,7 +1298,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						((struct to_body*)msg->from->parsed)->tag_value;
 
 						dlginfo.fromtag = get_to(msg)->tag_value;
-	
+
 						shm_free(entity->dlginfo);
 						entity->dlginfo = NULL;
 						if(entity_add_dlginfo(entity, &dlginfo) < 0)
@@ -1537,7 +1537,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				LM_ERR("Failed to process BYE received in bridging state\n");
 				goto error;
 			}
-			
+
 			if(tuple->to_del && entity->peer==NULL)
 			{
 				LM_DBG("Delete this b2bl record after process_bridge_bye\n");
@@ -1611,7 +1611,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				LM_ERR("Unexpected return code [%d]\n", ret);
 				goto send_usual_request;
 			}
-			
+
 		}
 		break;
 	}
@@ -1620,7 +1620,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	{
 		if(request_id == B2B_BYE)
 		{
-			/* even though I don;t receive a reply, 
+			/* even though I don;t receive a reply,
 			I should delete this record*/
 			tuple->lifetime = 30 + get_ticks();
 		}
@@ -1708,7 +1708,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 							strncmp(attr.s, entity->scenario_id.s, attr.len) != 0))
 					{
 						LM_DBG("Scenary id did not match - do not apply the rule"
-								" found [%.*s] , required [%s]\n", 
+								" found [%.*s] , required [%s]\n",
 								entity->scenario_id.len, entity->scenario_id.s, attr.s);
 						xmlFree(attr.s);
 						goto send_usual_request;
@@ -2213,7 +2213,7 @@ done:
 
 
 /* This function does the following actions:
- *	- extract the entities description from the scenario document 
+ *	- extract the entities description from the scenario document
  *	- send invite or reInvite to one of the parties
  *	 - mark in the scenario instantiation which are the bridged entities and
  *	 that this scenario is currently taking place
@@ -2417,12 +2417,12 @@ entity_search_done:
 					xmlFree(value_content);
 					goto error;
 				}
-				
+
 			}
 			LM_DBG("New entity, dest = [%.*s]\n", entity_dest.len, entity_dest.s);
 			entity = b2bl_create_new_entity(B2B_CLIENT, 0, &entity_dest, 0,
 					from_dname.s?&from_dname:0, &attr, 0);
-	
+
 			if(fdname_content)
 				xmlFree(fdname_content);
 			fdname_content = 0;
@@ -2456,7 +2456,7 @@ entity_search_done:
 		bridge_entities[0] = old_entity;
 	}
 
-	/* I have the two entities ->  now do the first step of the bridging scenario 
+	/* I have the two entities ->  now do the first step of the bridging scenario
 	 * -> send reInvite or Invite to one of the parties */
 	if(old_entity)
 	{
@@ -2992,7 +2992,7 @@ int udh_to_uri(str user, str host, str port, str* uri)
 }
 
 
-str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct, 
+str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	struct sip_msg* msg, str* args[], b2bl_cback_f cbf, void* cb_param,
 	unsigned int cb_mask, str* custom_hdrs, struct b2b_params *params)
 {
@@ -3098,7 +3098,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			LM_ERR("A request for a server entity and no message\n");
 			goto error;
 		}
-		/* a server entity can only deal with a message and there can 
+		/* a server entity can only deal with a message and there can
 		 * only be one server entity */
 		/* extract the id */
 		entity_sid.s = (char*)xmlNodeGetNodeContentByName(server_node,
@@ -3494,7 +3494,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 			b2bl_print_tuple(tuple, L_ERR);
 			goto error;
 		}
-		LM_DBG("End peer dialog [%p]\n", old_entity);	
+		LM_DBG("End peer dialog [%p]\n", old_entity);
 		old_entity->peer = NULL;
 		if(old_entity->disconnected && old_entity->state==B2BL_ENT_CONFIRMED)
 		{
@@ -3649,7 +3649,7 @@ int b2bl_get_stats(str* key, b2bl_dlg_stat_t* stat)
 		lock_release(&b2bl_htable[hash_index].lock);
 		return -1;
 	}
-	
+
 	if(stat && tuple->bridge_entities[0])
 	{
 		stat->start_time = tuple->bridge_entities[0]->stats.start_time;
@@ -3825,7 +3825,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		LM_ERR("No entity found\n");
 		goto error;
 	}
-	
+
 	e1 = tuple->bridge_entities[0];
 	if(e1 == NULL || e1->disconnected)
 	{
@@ -3861,7 +3861,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	e2->peer = e1;
 	e1->no = 0;
 	e2->no = 1;
-	
+
 	if(b2b_api.update_b2bl_param(e2->type, &e2->key, tuple->key) < 0)
 	{
 		LM_ERR("Failed to update b2bl parameter in b2b_entities\n");

@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -33,7 +33,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief SIP routing engine - structure helping functions
  */
 
@@ -96,7 +96,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 {
 	int i;
 	struct action* a;
-	
+
 	if(n>MAX_ACTION_ELEMS)
 	{
 		LM_ERR("too many action elements at line %d for %d", line, type);
@@ -119,7 +119,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 	a->line = line;
 	a->next=0;
 	return a;
-	
+
 error:
 	LM_CRIT("pkg memory allocation failure\n");
 	return 0;
@@ -132,7 +132,7 @@ struct action* append_action(struct action* a, struct action* b)
 	struct action *t;
 	if (b==0) return a;
 	if (a==0) return b;
-	
+
 	for(t=a;t->next;t=t->next);
 	t->next=b;
 	return a;
@@ -258,7 +258,7 @@ void print_expr(struct expr* exp)
 				LM_DBG("<UNKNOWN[%d]>", exp->op);
 		}
 		switch(exp->right.type){
-			case NOSUBTYPE: 
+			case NOSUBTYPE:
 					/* LM_DBG("N/A"); */
 					break;
 			case STRING_ST:
@@ -307,7 +307,7 @@ void print_expr(struct expr* exp)
 					print_expr(exp->right.v.expr);
 					LM_DBG(" )");
 					break;
-			case NOT_OP:	
+			case NOT_OP:
 					LM_DBG("NOT( ");
 					print_expr(exp->left.v.expr);
 					LM_DBG(" )");
@@ -395,7 +395,7 @@ void print_expr(struct expr* exp)
 			default:
 					LM_DBG("UNKNOWN_EXP[%d] ", exp->op);
 		}
-					
+
 	}else{
 		LM_ERR("unknown type\n");
 	}
@@ -625,14 +625,14 @@ void print_action(struct action* t)
 	else	LM_DBG("); ");
 
 }
-			
+
 void print_actions(struct action* a)
 {
 	while(a) {
 		print_action(a);
 		a = a->next;
 	}
-}	
+}
 
 
 int is_mod_func_used(struct action *a, char *name, int param_no)

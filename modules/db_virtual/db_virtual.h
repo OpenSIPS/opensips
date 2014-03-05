@@ -97,7 +97,7 @@ typedef struct info_db{
 
 
 typedef struct info_set{
-    
+
     str         set_name;       /* name of the set; ex: set1, set2...*/
     char        set_mode;       /* mode of the set: PARALLEL, FAILOVER, ... */
 

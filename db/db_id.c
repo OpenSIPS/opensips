@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Copyright (C) 2001-2005 iptel.org
@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -56,7 +56,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 
 /**
- * Parse a database URL of form 
+ * Parse a database URL of form
  * scheme://[username[:password]@]hostname[:port]/database
  *
  * \param id filled id struct
@@ -127,7 +127,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 				st = ST_USER_HOST;
 				begin = url->s + i + 1;
 				break;
-				
+
 			default:
 				goto err;
 			}
@@ -194,7 +194,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 				return 0;
 			}
 			break;
-			
+
 		case ST_DB:
 			break;
 		}

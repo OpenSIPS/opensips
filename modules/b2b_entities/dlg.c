@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -122,7 +122,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 					dlg, dlg->uas_tran);
 				return dlg;
 			}
-		
+
 		}
 		else
 		{
@@ -134,7 +134,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 			if(dlg->tag[CALLER_LEG].len == to_tag->len &&
 				strncmp(dlg->tag[CALLER_LEG].s, to_tag->s, to_tag->len)== 0)
 			{
-				
+
 				leg = dlg->legs;
 				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED)
 				{
@@ -208,7 +208,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src,
 
 	if(!reload)
 		lock_get(&table[hash_index].lock);
-	
+
 	dlg->prev = dlg->next = NULL;
 	it = table[hash_index].first;
 
@@ -269,7 +269,7 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 	if(!key || !key->s)
 		return -1;
 
-	if(strncmp(key->s, b2b_key_prefix.s, b2b_key_prefix.len) != 0 || 
+	if(strncmp(key->s, b2b_key_prefix.s, b2b_key_prefix.len) != 0 ||
 			key->len<(b2b_key_prefix.len +4) || key->s[b2b_key_prefix.len]!='.')
 	{
 		LM_DBG("Does not have b2b_entities prefix\n");
@@ -462,7 +462,7 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 	dlg = server_htable[hash_index].first;
 	while(dlg)
 	{
-		LM_DBG("Found callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s, 
+		LM_DBG("Found callid= %.*s, tag= %.*s\n", dlg->callid.len, dlg->callid.s,
 			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s);
 		if(dlg->callid.len == callid->len && strncmp(dlg->callid.s, callid->s, callid->len)== 0 &&
 			dlg->tag[CALLER_LEG].len == from_tag->len &&
@@ -619,7 +619,7 @@ search_dialog:
 	}
 	if (msg->from->parsed == NULL)
 	{
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("cannot parse From header\n");
 			return -1;
@@ -758,7 +758,7 @@ search_dialog:
 			if(method_value != METHOD_ACK)
 			{
 				str ok = str_init("OK");
-			
+
 				if(method_value == METHOD_BYE)
 					tmb.t_reply(msg, 200, &ok);
 				else
@@ -1026,7 +1026,7 @@ void destroy_b2b_htables(void)
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		b2b_dlg_t* init_dlg, str* param)
 {
-	struct to_body *pto, *pfrom = NULL; 
+	struct to_body *pto, *pfrom = NULL;
 	b2b_dlg_t dlg;
 	contact_body_t*  b;
 	b2b_dlg_t* shm_dlg = NULL;
@@ -1071,7 +1071,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	}
 	if (msg->from->parsed == NULL)
 	{
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("cannot parse From header\n");
 			return 0;
@@ -1153,7 +1153,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	else
 		dlg.contact[CALLEE_LEG]=*local_contact;
 
-	if (!msg->content_length) 
+	if (!msg->content_length)
 	{
 		LM_ERR("no Content-Length header found!\n");
 		return 0;
@@ -1254,7 +1254,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	}
 	else
 	{
-		dlg = b2b_search_htable_dlg(table, hash_index, local_index, 
+		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
 		&fromtag, &totag, &dlginfo->callid);
 	}
 	if(dlg== NULL)
@@ -1384,7 +1384,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	}
 
 	lock_release(&table[hash_index].lock);
-	
+
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact.len
 			+ 20 + CRLF_LEN > BUF_LEN)
 	{
@@ -1500,7 +1500,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 
 	if(db_del)
 		b2b_entity_db_delete(et, dlg);
-	
+
 	b2b_delete_record(dlg, table, hash_index);
 	lock_release(&table[hash_index].lock);
 }
@@ -1568,7 +1568,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 			dlg->cseq[CALLEE_LEG]--;
 		else
 			dlg->cseq[CALLER_LEG]--;
-		
+
 		if(dlg->ack_sdp.s)
 		{
 			shm_free(dlg->ack_sdp.s);
@@ -1696,7 +1696,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	}
 	else
 	{
-		dlg = b2b_search_htable_dlg(table, hash_index, local_index, 
+		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
 		totag.s?&totag:NULL, fromtag.s?&fromtag:NULL, &dlginfo->callid);
 	}
 	if(dlg== NULL)
@@ -2068,7 +2068,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			LM_ERR("failed to parse cseq header\n");
 			return;
 		}
-	
+
 		if( msg->callid==NULL || msg->callid->body.s==NULL)
 		{
 			LM_ERR("no callid header found\n");
@@ -2082,7 +2082,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		}
 		if (msg->from->parsed == NULL)
 		{
-			if ( parse_from_header( msg )<0 ) 
+			if ( parse_from_header( msg )<0 )
 			{
 				LM_ERR("cannot parse From header\n");
 				return;
@@ -2139,7 +2139,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		     * - this is the cancelled branch of a paralel call fork
 		     *   and the entity was deleted already.
 		     */
-		    /* FIXME: we may revisit the logic of paralel forking and 
+		    /* FIXME: we may revisit the logic of paralel forking and
 		     * properly ignore this kind of callbacks.
 		     */
 			if (method_id==METHOD_INVITE && statuscode==487)
@@ -2180,7 +2180,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		}
 		else {
 			dlg = previous_dlg;
-			/* if the transaction is no longer saved or is not the same as 
+			/* if the transaction is no longer saved or is not the same as
 			 * the one that the reply belongs to => exit*/
 			LM_DBG("I don't care anymore about this transaction for dlg [%p]"
 				" last_method=%d method_id=%d t=[%p] dlg->uac_tran=[%p]\n",
@@ -2227,7 +2227,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 
 	LM_DBG("Received reply [%d] for dialog [%p], method [%.*s]\n",
 		statuscode, dlg, t->method.len, t->method.s);
-	
+
 	if(statuscode >= 300)
 	{
 		if(dlg->uac_tran == t )
@@ -2312,7 +2312,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 								t->uac[0].extra_headers.len);
 					if (extra_headers.s == NULL)
 					{
-						LM_ERR("No more private memory\n");	
+						LM_ERR("No more private memory\n");
 						dlg->state = B2B_TERMINATED;
 						lock_release(&htable[hash_index].lock);
 						goto error;
@@ -2505,7 +2505,7 @@ dummy_reply:
 
 			if(dlg->next)
 				dlg->next->prev = new_dlg;
-			
+
 			dlg->next= dlg->prev = NULL;
 			b2b_delete_legs(&dlg->legs);
 			shm_free(dlg);
@@ -2536,7 +2536,7 @@ dummy_reply:
 				}
 				UPDATE_DBFLAG(dlg);
 				/* PRACK handling */
-				/* if the provisional reply contains a 
+				/* if the provisional reply contains a
 				 * Require: 100rel header -> send PRACK */
 				hdr = get_header_by_static_name( msg, "Require");
 				while(hdr)
@@ -2573,7 +2573,7 @@ dummy_reply:
 							rseq.len, rseq.s, cseq.len, cseq.s);
 					extra_headers.s = buf;
 					extra_headers.len = strlen(buf);
-						
+
 					if(dlg->callid.s==0 || dlg->callid.len==0)
 						dlg->callid = msg->callid->body;
 					if(b2b_send_req(dlg, etype, leg, &method, &extra_headers, 0) < 0)
@@ -2631,7 +2631,7 @@ dummy_reply:
 					dlginfo.callid = dlg->callid;
 					dlginfo.totag = dlg->tag[CALLER_LEG];
 					dlg->state = B2B_CONFIRMED;
-					
+
 					if(b2be_db_mode == WRITE_THROUGH)
 					{
 						b2be_db_insert(dlg, etype);

@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -24,15 +24,15 @@
  *  2003-01-23  t_uac_dlg now uses get_out_socket (jiri)
  *  2003-01-27  fifo:t_uac_dlg completed (jiri)
  *  2003-01-29  scratchpad removed (jiri)
- *  2003-02-13  t_uac, t _uac_dlg, gethfblock, uri2proxy changed to use 
+ *  2003-02-13  t_uac, t _uac_dlg, gethfblock, uri2proxy changed to use
  *               proto & rb->dst (andrei)
  *  2003-02-27  FIFO/UAC now dumps reply -- good for CTD (jiri)
  *  2003-02-28  scratchpad compatibility abandoned (jiri)
  *  2003-03-01  kr set through a function now (jiri)
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2003-04-02  port_no_str does not contain a leading ':' anymore (andrei)
- *  2003-07-08  appropriate log messages in check_params(...), 
- *               call calculate_hooks if next_hop==NULL in t_uac (dcm) 
+ *  2003-07-08  appropriate log messages in check_params(...),
+ *               call calculate_hooks if next_hop==NULL in t_uac (dcm)
  *  2003-10-24  updated to the new socket_info lists (andrei)
  *  2003-12-03  completion filed removed from transaction and uac callbacks
  *              merged in transaction callbacks as LOCAL_COMPLETED (bogdan)
@@ -81,7 +81,7 @@ struct cell** last_localT;
 /*
  * Initialize UAC
  */
-int uac_init(void) 
+int uac_init(void)
 {
 	str src[3];
 	struct socket_info *si;
@@ -118,7 +118,7 @@ void generate_fromtag(str* tag, str* callid)
 {
 	     /* calculate from tag from callid */
 	crcitt_string_array(&from_tag[MD5_LEN + 1], callid, 1);
-	tag->s = from_tag; 
+	tag->s = from_tag;
 	tag->len = FROM_TAG_LEN;
 }
 
@@ -178,7 +178,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 	/* populate some special fields in sip_msg */
 	req.set_global_address=default_global_address;
 	req.set_global_port=default_global_port;
-	req.force_send_socket = dialog->send_sock; 
+	req.force_send_socket = dialog->send_sock;
 	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
 		LM_ERR("failed to set dst_uri");
 		free_sip_msg(&req);
@@ -213,8 +213,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	str h_to, h_from, h_cseq, h_callid;
 
 	ret=-1;
-	
-	/*** added by dcm 
+
+	/*** added by dcm
 	 * - needed by external ua to send a request within a dlg
 	 */
 	if(!dialog->hooks.next_hop && w_calculate_hooks(dialog)<0)
@@ -321,7 +321,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			set_avp_list( backup );
 
 			/* check for changes - if none, do not regenerate the buffer */
-			if (req->new_uri.s || req->add_rm || req->body_lumps || 
+			if (req->new_uri.s || req->add_rm || req->body_lumps ||
 					req->dst_uri.len != dialog->hooks.next_hop->len ||
 					memcmp(req->dst_uri.s,dialog->hooks.next_hop->s,req->dst_uri.len) != 0) {
 				new_send_sock = NULL;
@@ -387,7 +387,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					new_cell->callid = h_callid;
 					new_cell->cseq_n = h_cseq;
 				}
-				/* here we rely on how build_uac_req() 
+				/* here we rely on how build_uac_req()
 				   builds the first line */
 				new_cell->uac[0].uri.s = buf1 +
 					req->first_line.u.request.method.len + 1;
@@ -428,7 +428,7 @@ abort_update:
 	}
 
 	if (SEND_BUFFER(request) == -1) {
-		LM_ERR("attempt to send to '%.*s' failed\n", 
+		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 	}
@@ -490,7 +490,7 @@ int req_outside(str* method, str* to, str* from,
 	str callid, fromtag;
 
 	if (check_params(method, to, from, dialog) < 0) goto err;
-	
+
 	generate_callid(&callid);
 	generate_fromtag(&fromtag, &callid);
 
@@ -530,7 +530,7 @@ int request(str* m, str* ruri, str* to, str* from, str* h, str* b, str *oburi,
 		dialog->rem_target.len = ruri->len;
 		dialog->hooks.request_uri = &dialog->rem_target;
 	}
-	
+
 	if (oburi && oburi->s) dialog->hooks.next_hop = oburi;
 
 	w_calculate_hooks(dialog);

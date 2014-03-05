@@ -11,14 +11,14 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
- * 
+ *
  * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <string.h>
 
 /* memory management */
@@ -73,20 +73,20 @@ static str dia_500_err = str_init(MESSAGE_500);
 /* Extract URI depending on the request from To or From header */
 int get_uri(struct sip_msg* m, str** uri)
 {
-	if ((REQ_LINE(m).method.len == 8) && 
-					(memcmp(REQ_LINE(m).method.s, "REGISTER", 8) == 0)) 
-	{	
+	if ((REQ_LINE(m).method.len == 8) &&
+					(memcmp(REQ_LINE(m).method.s, "REGISTER", 8) == 0))
+	{
 		/* REGISTER */
-		if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1)|| (!m->to))) 
+		if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1)|| (!m->to)))
 		{
 			LM_ERR("the To header field was not found or malformed\n");
-			
+
 			/* it was a REGISTER and an error appeared when parsing TO header*/
 			return -1;
 		}
 		*uri = &(get_to(m)->uri);
-	} 
-	else 
+	}
+	else
 	{
 		if (parse_from_header(m)<0)
 		{
@@ -110,23 +110,23 @@ int get_realm(struct sip_msg* m, int hftype, struct sip_uri* u)
 
 	/* extracting the uri */
 	if ((REQ_LINE(m).method.len==8)
-					&& !memcmp(REQ_LINE(m).method.s, "REGISTER", 8) 
-					&& (hftype == HDR_AUTHORIZATION_T) ) 
-	{ 
+					&& !memcmp(REQ_LINE(m).method.s, "REGISTER", 8)
+					&& (hftype == HDR_AUTHORIZATION_T) )
+	{
 		/* REGISTER */
-		if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1) || (!m->to))) 
+		if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1) || (!m->to)))
 		{
 			LM_ERR("failed to parse TO header\n");
 			/* signal the error */
 			return -1;
 		}
-		
+
 	    /* Body of To header field is parsed automatically */
-		uri = get_to(m)->uri; 
-	} 
-	else 
+		uri = get_to(m)->uri;
+	}
+	else
 	{
-		if (parse_from_header(m)<0) 
+		if (parse_from_header(m)<0)
 		{
 			LM_ERR("failed to parse FROM header\n");
 			/* signal the error */
@@ -135,20 +135,20 @@ int get_realm(struct sip_msg* m, int hftype, struct sip_uri* u)
 
 		uri = get_from(m)->uri;
 	}
-	
+
 	/* parsing the uri */
-	if (parse_uri(uri.s, uri.len, u) < 0) 
+	if (parse_uri(uri.s, uri.len, u) < 0)
 	{
 		LM_ERR("failed to parse URI\n");
 		return -1;
 	}
-	
+
 	/* everything was OK */
 	return 0;
 }
 
 /* Find credentials with given realm in a SIP message header */
-int find_credentials(struct sip_msg* _m, str* _realm, int _hftype, 
+int find_credentials(struct sip_msg* _m, str* _realm, int _hftype,
 													struct hdr_field** _h)
 {
 	struct hdr_field** hook, *ptr, *prev;
@@ -156,7 +156,7 @@ int find_credentials(struct sip_msg* _m, str* _realm, int _hftype,
 	hdr_flags_t hdr_flags;
 	str* r;
 
-	switch(_hftype) 
+	switch(_hftype)
 	{
 		case HDR_AUTHORIZATION_T:
 			hook = &(_m->authorization);
@@ -173,64 +173,64 @@ int find_credentials(struct sip_msg* _m, str* _realm, int _hftype,
 	}
 
 	/* If the credentials haven't been parsed yet, do it now */
-	if (*hook == 0) 
-		if (parse_headers(_m, hdr_flags, 0) == -1) 
+	if (*hook == 0)
+		if (parse_headers(_m, hdr_flags, 0) == -1)
 		{
 			LM_ERR("failed to parse headers\n");
 			return -1;
 		}
-	
+
 	ptr = *hook;
 
-	/* Iterate through the credentials of the message to find 
-		credentials with given realm 
+	/* Iterate through the credentials of the message to find
+		credentials with given realm
 	*/
-	while(ptr) 
+	while(ptr)
 	{
 		res = parse_credentials(ptr);
-		if (res < 0) 
+		if (res < 0)
 		{
 			LM_ERR("failed to parse credentials\n");
 			return (res == -1) ? -2 : -3;
 		}
-		else 
-			if (res == 0) 
+		else
+			if (res == 0)
 			{
 				r = &(((auth_body_t*)(ptr->parsed))->digest.realm);
-	
-				if (r->len == _realm->len) 
+
+				if (r->len == _realm->len)
 				{
-					if (!strncasecmp(_realm->s, r->s, r->len)) 
+					if (!strncasecmp(_realm->s, r->s, r->len))
 					{
 						*_h = ptr;
 						return 0;
 					}
 				}
 			}
-			
+
 			prev = ptr;
-			if (parse_headers(_m, hdr_flags, 1) == -1) 
+			if (parse_headers(_m, hdr_flags, 1) == -1)
 			{
 				LM_ERR("failed to parse headers\n");
 				return -4;
 			}
-			else 
-			{	
-				if (prev != _m->last_header) 
+			else
+			{
+				if (prev != _m->last_header)
 				{
 					if (_m->last_header->type == _hftype) ptr = _m->last_header;
 					else break;
-				} 
+				}
 				else break;
 			}
 	}
-	     
+
      /* Credentials with given realm not found */
 	return 1;
 }
 
 
-auth_result_t diam_pre_auth(struct sip_msg* _m, str* _realm, int _hftype, 
+auth_result_t diam_pre_auth(struct sip_msg* _m, str* _realm, int _hftype,
 													struct hdr_field** _h)
 {
 	int ret;
@@ -240,39 +240,39 @@ auth_result_t diam_pre_auth(struct sip_msg* _m, str* _realm, int _hftype,
 		return AUTHORIZED;
 
 	/* if no realm supplied, find out now */
-	if (_realm==0 || _realm->len == 0) 
+	if (_realm==0 || _realm->len == 0)
 	{
-		if (get_realm(_m, _hftype, &uri) < 0) 
+		if (get_realm(_m, _hftype, &uri) < 0)
 		{
 			LM_ERR("failed to extract realm\n");
-			if (send_resp(_m, 400, &dia_400_err, 0, 0) == -1) 
+			if (send_resp(_m, 400, &dia_400_err, 0, 0) == -1)
 			{
 				LM_ERR("failed to send 400 reply\n");
 			}
 			return ERROR;
 		}
-		
+
 		*_realm = uri.host;
 	}
 
 	ret = find_credentials(_m, _realm, _hftype, _h);
-	if (ret < 0) 
+	if (ret < 0)
 	{
 		LM_ERR("credentials not found\n");
-		if (send_resp(_m, (ret == -2) ? 500 : 400, 
-			      (ret == -2) ? &dia_500_err : &dia_400_err, 0, 0) == -1) 
+		if (send_resp(_m, (ret == -2) ? 500 : 400,
+			      (ret == -2) ? &dia_500_err : &dia_400_err, 0, 0) == -1)
 		{
 			LM_ERR("failed to send 400 reply\n");
 		}
 		return ERROR;
-	} 
-	else 
-		if (ret > 0) 
+	}
+	else
+		if (ret > 0)
 		{
 			LM_ERR("credentials with given realm not found\n");
 			return NO_CREDENTIALS;
 		}
-	
+
 
 	return DO_AUTHORIZATION;
 }
@@ -301,7 +301,7 @@ int authorize(struct sip_msg* msg, pv_elem_t* realm, int hftype)
 	/* see what is to do after a first look at the message */
 	ret = diam_pre_auth(msg, &domain, hftype, &h);
 
-	switch(ret) 
+	switch(ret)
 	{
 		case NO_CREDENTIALS:   cred = NULL;
 							   break;
@@ -311,50 +311,50 @@ int authorize(struct sip_msg* msg, pv_elem_t* realm, int hftype)
 		default:               return ret;
 	}
 
-	if (get_uri(msg, &uri) < 0) 
+	if (get_uri(msg, &uri) < 0)
 	{
 		LM_ERR("From/To URI not found\n");
 		return AUTH_ERROR;
 	}
-	
-	if (parse_uri(uri->s, uri->len, &puri) < 0) 
+
+	if (parse_uri(uri->s, uri->len, &puri) < 0)
 	{
 		LM_ERR("failed to parse From/To URI\n");
 		return AUTH_ERROR;
 	}
 //	user.s = (char *)pkg_malloc(puri.user.len);
 //	un_escape(&(puri.user), &user);
-	
+
 	/* parse the ruri, if not yet */
 	if(msg->parsed_uri_ok==0 && parse_sip_msg_uri(msg)<0)
 	{
 		LM_ERR("failed to parse the Request-URI\n");
 		return AUTH_ERROR;
 	}
-	
+
 	/* preliminary check */
 	if(cred)
 	{
-		if (puri.host.len != cred->digest.realm.len) 
+		if (puri.host.len != cred->digest.realm.len)
 		{
-			LM_DBG("credentials realm and URI host do not match\n");  
+			LM_DBG("credentials realm and URI host do not match\n");
 			return AUTH_ERROR;
 		}
-	
-		if (strncasecmp(puri.host.s, cred->digest.realm.s, puri.host.len) != 0) 
+
+		if (strncasecmp(puri.host.s, cred->digest.realm.s, puri.host.len) != 0)
 		{
 			LM_DBG("credentials realm and URI host do not match\n");
 			return AUTH_ERROR;
 		}
 	}
-	
+
 	if( diameter_authorize(cred?h:NULL, &msg->first_line.u.request.method,
 					puri, msg->parsed_uri, msg->id, rb) != 1)
 	{
 		send_resp(msg, 500, &dia_500_err, NULL, 0);
 		return AUTH_ERROR;
 	}
-	
+
 	if( srv_response(msg, rb, hftype) != 1 )
 		return AUTH_ERROR;
 
@@ -367,19 +367,19 @@ int authorize(struct sip_msg* msg, pv_elem_t* realm, int hftype)
 
 /*
  * This function creates and submits diameter authentication request as per
- * draft-srinivas-aaa-basic-digest-00.txt. 
+ * draft-srinivas-aaa-basic-digest-00.txt.
  * Service type of the request is Authenticate-Only.
  * Returns:
  * 		 1 - success
  * 		-1 - error
- * 			
+ *
  */
 int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 						struct sip_uri ruri, unsigned int m_id, rd_buf_t* rb)
 {
 	str user_name;
 	AAAMessage *req;
-	AAA_AVP *avp, *position; 
+	AAA_AVP *avp, *position;
 	int name_flag, port_flag;
 	dig_cred_t* cred;
 	unsigned int tmp;
@@ -419,7 +419,7 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 				memcpy(user_name.s, uri.host.s, uri.host.len);
 		}
 
-		if( (avp=AAACreateAVP(AVP_User_Name, 0, 0, user_name.s, 
+		if( (avp=AAACreateAVP(AVP_User_Name, 0, 0, user_name.s,
 							user_name.len, AVP_FREE_DATA)) == 0)
 		{
 			LM_ERR("no more pkg memory left!\n");
@@ -436,7 +436,7 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 	else /* it is a SIP message with credentials */
 	{
 		/* Add Username AVP */
-		if (cred->username.domain.len>0) 
+		if (cred->username.domain.len>0)
 		{
 			if( (avp=AAACreateAVP(AVP_User_Name, 0, 0, cred->username.whole.s,
 							cred->username.whole.len, AVP_DUPLICATE_DATA)) == 0)
@@ -451,31 +451,31 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 				goto error1;
 			}
 		}
-		else 
+		else
 		{
 			user_name.s = 0;
 			user_name.len = cred->username.user.len + cred->realm.len;
 			if(user_name.len>0)
 			{
 				user_name.s = ad_malloc(user_name.len);
-				if (!user_name.s) 
+				if (!user_name.s)
 				{
 					LM_ERR(" no more pkg memory left\n");
 					goto error;
 				}
-				memcpy(user_name.s, cred->username.whole.s, 
+				memcpy(user_name.s, cred->username.whole.s,
 									cred->username.whole.len);
 				if(cred->username.whole.len>0)
 				{
 					user_name.s[cred->username.whole.len] = '@';
-					memcpy(user_name.s + cred->username.whole.len + 1, 
+					memcpy(user_name.s + cred->username.whole.len + 1,
 							cred->realm.s, cred->realm.len);
 				}
 				else
 					memcpy(user_name.s,	cred->realm.s, cred->realm.len);
 			}
 
-			if( (avp=AAACreateAVP(AVP_User_Name, 0, 0, user_name.s,	
+			if( (avp=AAACreateAVP(AVP_User_Name, 0, 0, user_name.s,
 							user_name.len, AVP_FREE_DATA)) == 0)
 			{
 				LM_ERR(" no more pkg memory left!\n");
@@ -495,7 +495,7 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 	/* SIP_MSGID AVP */
 	LM_DBG("******* m_id=%d\n", m_id);
 	tmp = m_id;
-	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&tmp), 
+	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&tmp),
 				sizeof(m_id), AVP_DUPLICATE_DATA)) == 0)
 	{
 		LM_ERR(" no more pkg memory left!\n");
@@ -507,10 +507,10 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 		goto error1;
 	}
 
-	
-	
+
+
 	/* SIP Service AVP */
-	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_AUTHENTICATION, 
+	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_AUTHENTICATION,
 				SERVICE_LEN, AVP_DUPLICATE_DATA)) == 0)
 	{
 		LM_ERR(" no more pkg memory left!\n");
@@ -521,7 +521,7 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 		LM_ERR(" avp not added \n");
 		goto error1;
 	}
-		
+
 	/* Destination-Realm AVP */
 	if( (avp=AAACreateAVP(AVP_Destination_Realm, 0, 0, uri.host.s,
 						uri.host.len, AVP_DUPLICATE_DATA)) == 0)
@@ -530,8 +530,8 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 		goto error;
 	}
 
-#ifdef DEBUG	
-	LM_DBG("Destination Realm: %.*s\n", uri.host.len, uri.host.s);	
+#ifdef DEBUG
+	LM_DBG("Destination Realm: %.*s\n", uri.host.len, uri.host.s);
 #endif
 
 	if( AAAAddAVPToMessage(req, avp, 0)!= AAA_ERR_SUCCESS)
@@ -539,7 +539,7 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 		LM_ERR(" avp not added \n");
 		goto error1;
 	}
-	
+
 	/* Resource AVP */
 	user_name.len = ruri.user.len + ruri.host.len + ruri.port.len + 2;
 	user_name.s = (char*)ad_malloc(user_name.len*sizeof(char));
@@ -548,20 +548,20 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 
 	name_flag= 0;
 	if(ruri.user.s)
-	{		
+	{
 		name_flag = 1;
 		memcpy(user_name.s+ruri.user.len, "@", 1);
-	}	
+	}
 
 	memcpy(user_name.s+ruri.user.len+name_flag, ruri.host.s, ruri.host.len);
 
 	port_flag=0;
 	if(ruri.port.s)
 	{
-		port_flag = 1;	
+		port_flag = 1;
 		memcpy(user_name.s+ruri.user.len+ruri.host.len+1, ":", 1);
-	}	
-	memcpy(user_name.s+ruri.user.len+ruri.host.len+name_flag+port_flag, 
+	}
+	memcpy(user_name.s+ruri.user.len+ruri.host.len+name_flag+port_flag,
 					ruri.port.s, ruri.port.len);
 #ifdef DEBUG
 	LM_DBG(": AVP_Resource=%.*s\n", user_name.len, user_name.s);
@@ -590,10 +590,10 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 			LM_ERR(" no more pkg memory left!\n");
 			goto error;
 		}
-		
+
 		position = AAAGetLastAVP(&(req->avpList));
 		if( AAAAddAVPToMessage(req, avp, position)!= AAA_ERR_SUCCESS)
-				
+
 		{
 			LM_ERR(" avp not added \n");
 			goto error1;
@@ -606,17 +606,17 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 			LM_ERR(" no more pkg memory left!\n");
 			goto error;
 		}
-		
+
 		position = AAAGetLastAVP(&(req->avpList));
 		if( AAAAddAVPToMessage(req, avp, position)!= AAA_ERR_SUCCESS)
-				
+
 		{
 			LM_ERR(" avp not added \n");
 			goto error1;
 		}
 
-	
-	}			
+
+	}
 #ifdef DEBUG
 	AAAPrintMessage(req);
 #endif
@@ -627,7 +627,7 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 		LM_ERR(" message buffer not created\n");
 		goto error;
 	}
-	
+
 	if(sockfd==AAA_NO_CONNECTION)
 	{
 		sockfd = init_mytcp(diameter_client_host, diameter_client_port);
@@ -642,10 +642,10 @@ int diameter_authorize(struct hdr_field* hdr, str* p_method, struct sip_uri uri,
 	switch( tcp_send_recv(sockfd, req->buf.s, req->buf.len, rb, m_id) )
 	{
 		case AAA_ERROR: /* a transmission error occurred */
-			LM_ERR(" message sending to the" 
+			LM_ERR(" message sending to the"
 					" DIAMETER backend authorization server failed\n");
 			goto error;
-	
+
 		case AAA_CONN_CLOSED:
 			LM_NOTICE("connection to Diameter"
 					" client closed.It will be reopened by the next request\n");
@@ -680,7 +680,7 @@ int srv_response(struct sip_msg* msg, rd_buf_t * rb, int hftype)
 	{
 		case AAA_AUTHORIZED:
 			return 1;
-			
+
 		case AAA_NOT_AUTHORIZED:
 			send_resp(msg, 403, &dia_403_err, NULL, 0);
 			return -1;
@@ -688,7 +688,7 @@ int srv_response(struct sip_msg* msg, rd_buf_t * rb, int hftype)
 		case AAA_SRVERR:
 			send_resp(msg, 500, &dia_500_err, NULL, 0);
 			return -1;
-				
+
 		case AAA_CHALENGE:
 		 	if(hftype==HDR_AUTHORIZATION_T) /* SIP server */
 			{
@@ -698,7 +698,7 @@ int srv_response(struct sip_msg* msg, rd_buf_t * rb, int hftype)
 				memcpy(auth_hf,WWW_AUTH_CHALLENGE, WWW_AUTH_CHALLENGE_LEN);
 				memcpy(auth_hf+WWW_AUTH_CHALLENGE_LEN, rb->chall,
 					rb->chall_len);
-		
+
 				ret = send_resp(msg, 401, &dia_401_err, auth_hf, auth_hf_len);
 
 			}
@@ -708,23 +708,23 @@ int srv_response(struct sip_msg* msg, rd_buf_t * rb, int hftype)
 				auth_hf = (char*)ad_malloc(auth_hf_len*(sizeof(char)));
 				memset(auth_hf, 0, auth_hf_len);
 				memcpy(auth_hf, PROXY_AUTH_CHALLENGE, PROXY_AUTH_CHALLENGE_LEN);
-				memcpy(auth_hf + PROXY_AUTH_CHALLENGE_LEN, rb->chall, 
+				memcpy(auth_hf + PROXY_AUTH_CHALLENGE_LEN, rb->chall,
 						rb->chall_len);
 				ret = send_resp(msg, 407, &dia_407_err, auth_hf, auth_hf_len);
 			}
 
 			if (auth_hf) pkg_free(auth_hf);
-	
-			if (ret == -1) 
+
+			if (ret == -1)
 			{
 				LM_ERR("failed to send challenge to the client of SER\n");
 				return -1;
 			}
 			return -1;
 	}
-	
-	// never reach this 
-	return -1;		
+
+	// never reach this
+	return -1;
 }
 
 

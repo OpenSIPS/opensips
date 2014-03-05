@@ -20,8 +20,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * ---
@@ -29,37 +29,37 @@
  * History
  * -------
  * 2003-04-06 initial code written (Greg Fausak/Andy Fullford)
- * 2006-07-28 within pg_get_result(): added check to immediatly return of no 
- *            result set was returned added check to only execute 
- *            convert_result() if PGRES_TUPLES_OK added safety check to avoid 
+ * 2006-07-28 within pg_get_result(): added check to immediatly return of no
+ *            result set was returned added check to only execute
+ *            convert_result() if PGRES_TUPLES_OK added safety check to avoid
  *            double pg_free_result() (norm)
  * 2006-08-07 Rewrote pg_get_result().
  *            Additional debugging lines have been placed through out the code.
- *            Added Asynchronous Command Processing (PQsendQuery/PQgetResult) 
- *            instead of PQexec. this was done in preparation of adding FETCH 
- *            support.  Note that PQexec returns a result pointer while 
- *            PQsendQuery does not.  The result set pointer is obtained from 
+ *            Added Asynchronous Command Processing (PQsendQuery/PQgetResult)
+ *            instead of PQexec. this was done in preparation of adding FETCH
+ *            support.  Note that PQexec returns a result pointer while
+ *            PQsendQuery does not.  The result set pointer is obtained from
  *            a call (or multiple calls) to PQgetResult.
- *            Removed transaction processing calls (BEGIN/COMMIT/ROLLBACK) as 
- *            they added uneeded overhead.  Klaus' testing showed in excess of 
- *            1ms gain by removing each command.  In addition, OpenSIPS only 
+ *            Removed transaction processing calls (BEGIN/COMMIT/ROLLBACK) as
+ *            they added uneeded overhead.  Klaus' testing showed in excess of
+ *            1ms gain by removing each command.  In addition, OpenSIPS only
  *            issues single queries and is not, at this time transaction aware.
- *            The transaction processing routines have been left in place 
+ *            The transaction processing routines have been left in place
  *            should this support be needed in the future.
- *            Updated logic in pg_query / pg_raw_query to accept a (0) result 
+ *            Updated logic in pg_query / pg_raw_query to accept a (0) result
  *            set (_r) parameter.  In this case, control is returned
- *            immediately after submitting the query and no call to 
- *            pg_get_results() is performed. This is a requirement for 
+ *            immediately after submitting the query and no call to
+ *            pg_get_results() is performed. This is a requirement for
  *            FETCH support. (norm)
  * 2006-10-27 Added fetch support (norm)
  *            Removed dependency on aug_* memory routines (norm)
  *            Added connection pooling support (norm)
  *            Standardized API routines to pg_* names (norm)
- * 2006-11-01 Updated pg_insert(), pg_delete(), pg_update() and 
- *            pg_get_result() to handle failed queries.  Detailed warnings 
- *            along with the text of the failed query is now displayed in the 
- *            log. Callers of these routines can now assume that a non-zero 
- *            rc indicates the query failed and that remedial action may need 
+ * 2006-11-01 Updated pg_insert(), pg_delete(), pg_update() and
+ *            pg_get_result() to handle failed queries.  Detailed warnings
+ *            along with the text of the failed query is now displayed in the
+ *            log. Callers of these routines can now assume that a non-zero
+ *            rc indicates the query failed and that remedial action may need
  *            to be taken. (norm)
  */
 
@@ -153,7 +153,7 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 	/* this bit of nonsense in case our connection get screwed up */
 	switch(PQstatus(CON_CONNECTION(_con)))
 	{
-		case CONNECTION_OK: 
+		case CONNECTION_OK:
 			break;
 		case CONNECTION_BAD:
 			LM_DBG("connection reset\n");
@@ -253,12 +253,12 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 
 		switch(pqresult) {
 			case PGRES_COMMAND_OK:
-				/* Successful completion of a command returning no data 
+				/* Successful completion of a command returning no data
 				 * (such as INSERT or UPDATE). */
 				return 0;
 
 			case PGRES_TUPLES_OK:
-				/* Successful completion of a command returning data 
+				/* Successful completion of a command returning data
 				 * (such as a SELECT or SHOW). */
 				if (db_postgres_get_columns(_con, *_res) < 0) {
 					LM_ERR("failed to get column names\n");
@@ -312,7 +312,7 @@ int db_postgres_fetch_result(const db_con_t* _con, db_res_t** _res, const int nr
 		return 0;
 
 	/* if the fetch count is less than the remaining rows to process                 */
-	/* set the number of rows to process (during this call) equal to 
+	/* set the number of rows to process (during this call) equal to
 	 * the fetch count */
 	if (nrows < rows)
 		rows = nrows;
@@ -449,7 +449,7 @@ int db_postgres_store_result(const db_con_t* _con, db_res_t** _r)
 	}
 
 	pqresult = PQresultStatus(CON_RESULT(_con));
-	
+
 	LM_DBG("%p PQresultStatus(%s) PQgetResult(%p)\n", _con,
 		PQresStatus(pqresult), CON_RESULT(_con));
 
@@ -512,7 +512,7 @@ done:
  * _v: values of the keys
  * _n: number of key=value pairs
  */
-int db_postgres_insert(const db_con_t* _h, const db_key_t* _k, 
+int db_postgres_insert(const db_con_t* _h, const db_key_t* _k,
 		const db_val_t* _v, const int _n)
 {
 	db_res_t* _r = NULL;
@@ -523,7 +523,7 @@ int db_postgres_insert(const db_con_t* _h, const db_key_t* _k,
 
 	if (submit_func_called)
 	{
-		/* finish the async query, 
+		/* finish the async query,
 		 * otherwise the next query will not complete */
 
 		/* only call this if the DB API has effectively called
@@ -537,7 +537,7 @@ int db_postgres_insert(const db_con_t* _h, const db_key_t* _k,
 
 		submit_func_called = 0;
 	}
-	
+
 	if (_r)
 		db_free_result(_r);
 
@@ -567,7 +567,7 @@ int db_postgres_delete(const db_con_t* _h, const db_key_t* _k,
 
 	if (db_postgres_store_result(_h, &_r) != 0)
 		LM_WARN("unexpected result returned");
-	
+
 	if (_r)
 		db_free_result(_r);
 
@@ -587,7 +587,7 @@ int db_postgres_delete(const db_con_t* _h, const db_key_t* _k,
  * _un: number of columns to update
  */
 int db_postgres_update(const db_con_t* _h, const db_key_t* _k,
-		const db_op_t* _o, const db_val_t* _v, const db_key_t* _uk, 
+		const db_op_t* _o, const db_val_t* _v, const db_key_t* _uk,
 		const db_val_t* _uv, const int _n, const int _un)
 {
 	db_res_t* _r = NULL;

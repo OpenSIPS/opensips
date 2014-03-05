@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -78,7 +78,7 @@ static unsigned char dset_state = 1 /*enabled*/ ;
 unsigned int nr_branches = 0;
 
 /*! The q parameter of the Request-URI */
-static qvalue_t ruri_q = Q_UNSPECIFIED; 
+static qvalue_t ruri_q = Q_UNSPECIFIED;
 
 
 /*! Branch flags of the Request-URI */
@@ -248,7 +248,7 @@ void clear_branches(void)
 
 
 /* ! \brief
- * Add a new branch to current transaction 
+ * Add a new branch to current transaction
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		qvalue_t q, unsigned int flags, struct socket_info* force_socket)
@@ -259,7 +259,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		return -1;
 
 	/* if we have already set up the maximum number
-	 * of branches, don't try new ones 
+	 * of branches, don't try new ones
 	 */
 	if (nr_branches == MAX_BRANCHES - 1) {
 		LM_ERR("max nr of branches exceeded\n");
@@ -405,7 +405,7 @@ int remove_branch( unsigned int idx)
 	if ( idx+1!=nr_branches )
 		memmove( branches+idx , branches+idx+1,
 			(nr_branches-idx-1)*sizeof(struct branch) );
-	
+
 	nr_branches--;
 
 	return 0;
@@ -416,7 +416,7 @@ int remove_branch( unsigned int idx)
  * Create a Contact header field from the dset
  * array
  */
-char* print_dset(struct sip_msg* msg, int* len) 
+char* print_dset(struct sip_msg* msg, int* len)
 {
 	int cnt, i, idx;
 	unsigned int qlen;

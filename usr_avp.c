@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -342,7 +342,7 @@ struct usr_avp *search_first_avp( unsigned short flags,
 	if(start==0)
 	{
 		assert( crt_avps!=0 );
-	
+
 		if (*crt_avps==0)
 			return 0;
 		head = *crt_avps;
@@ -460,7 +460,7 @@ inline void destroy_avp_list( struct usr_avp **list )
 void reset_avps(void)
 {
 	assert( crt_avps!=0 );
-	
+
 	if ( crt_avps!=&global_avps) {
 		crt_avps = &global_avps;
 	}
@@ -471,7 +471,7 @@ void reset_avps(void)
 struct usr_avp** set_avp_list( struct usr_avp **list )
 {
 	struct usr_avp **foo;
-	
+
 	assert( crt_avps!=0 );
 
 	foo = crt_avps;

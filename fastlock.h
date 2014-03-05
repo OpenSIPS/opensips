@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -85,7 +85,7 @@ inline static int tsl(fl_lock_t* lock)
 	);
 #else
 	val=1;
-	asm volatile( 
+	asm volatile(
 		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
 	);
 #endif /*NOSMP*/
@@ -97,7 +97,7 @@ inline static int tsl(fl_lock_t* lock)
 #endif
 			: "=r"(val) : "r"(lock):"memory"
 	);
-	
+
 #elif defined __CPU_arm
 	asm volatile(
 			"# here \n\t"
@@ -105,7 +105,7 @@ inline static int tsl(fl_lock_t* lock)
 			: "=&r" (val)
 			: "r"(1), "r" (lock) : "memory"
 	);
-	
+
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
 			"1: lwarx  %0, 0, %2\n\t"
@@ -125,7 +125,7 @@ inline static int tsl(fl_lock_t* lock)
 #elif defined __CPU_mips2
 	long tmp;
 	tmp=1; /* just to kill a gcc 2.95 warning */
-	
+
 	asm volatile(
 		".set noreorder\n\t"
 		"1:  ll %1, %2   \n\t"
@@ -134,8 +134,8 @@ inline static int tsl(fl_lock_t* lock)
 		"    beqz %0, 1b \n\t"
 		"    nop \n\t"
 		".set reorder\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock) 
-		: "0" (tmp), "2" (*lock) 
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
+		: "0" (tmp), "2" (*lock)
 		: "cc"
 	);
 #elif defined __CPU_alpha
@@ -146,7 +146,7 @@ inline static int tsl(fl_lock_t* lock)
 		"1:  ldl %0, %1   \n\t"
 		"    blbs %0, 2f  \n\t"  /* optimization if locked */
 		"    ldl_l %0, %1 \n\t"
-		"    blbs %0, 2f  \n\t" 
+		"    blbs %0, 2f  \n\t"
 		"    lda %2, 1    \n\t"  /* or: or $31, 1, %2 ??? */
 		"    stl_c %2, %1 \n\t"
 		"    beq %2, 1b   \n\t"
@@ -174,7 +174,7 @@ inline static void get_lock(fl_lock_t* lock)
 #ifdef ADAPTIVE_WAIT
 	int i=ADAPTIVE_WAIT_LOOPS;
 #endif
-	
+
 	while(tsl(lock)){
 #ifdef BUSY_WAIT
 #elif defined ADAPTIVE_WAIT
@@ -199,7 +199,7 @@ inline static void release_lock(fl_lock_t* lock)
 	asm volatile(
 		" movb $0, (%0)" : /*no output*/ : "r"(lock): "memory"
 		/*" xchg %b0, %1" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"*/
-	); 
+	);
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
 	asm volatile(
 #ifndef NOSMP
@@ -212,8 +212,8 @@ inline static void release_lock(fl_lock_t* lock)
 	);
 #elif defined __CPU_arm
 	asm volatile(
-		" str %0, [%1] \n\r" 
-		: /*no outputs*/ 
+		" str %0, [%1] \n\r"
+		: /*no outputs*/
 		: "r"(0), "r"(lock)
 		: "memory"
 	);
@@ -243,7 +243,7 @@ inline static void release_lock(fl_lock_t* lock)
 		"    mb          \n\t"
 		"    stl $31, %0 \n\t"
 		: "=m"(*lock) :/* no input*/ : "memory"  /* because of the mb */
-	);  
+	);
 #else
 #error "unknown architecture"
 #endif

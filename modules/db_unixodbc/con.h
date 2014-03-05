@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * UNIXODBC module

@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -35,7 +35,7 @@ char* eat_line(char* buffer, unsigned int len)
  		  as I do not care about CR
 	*/
 	nl=(char *)q_memchr( buffer, '\n', len );
-	if ( nl ) { 
+	if ( nl ) {
 		if ( nl + 1 < buffer+len)  nl++;
 		if (( nl+1<buffer+len) && * nl=='\r')  nl++;
 	} else  nl=buffer+len;

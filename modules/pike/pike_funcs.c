@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -162,7 +162,7 @@ int pike_check_req(struct sip_msg *msg)
 			/* tree leafs which are not potential red nodes are not update in
 			 * order to make them to expire */
 			/* debug */
-			assert( has_timer_set(&(node->timer_ll)) 
+			assert( has_timer_set(&(node->timer_ll))
 				&& (node->flags&(NODE_EXPIRED_FLAG|NODE_INTIMER_FLAG)) );
 			/* if node exprired, ignore the current hit and let is
 			 * expire in timer process */
@@ -172,7 +172,7 @@ int pike_check_req(struct sip_msg *msg)
 			}
 		} else {
 			/* debug */
-			assert( !has_timer_set(&(node->timer_ll)) 
+			assert( !has_timer_set(&(node->timer_ll))
 				&& !(node->flags&(NODE_INTIMER_FLAG|NODE_EXPIRED_FLAG)) );
 			/* debug */
 			assert( !(node->flags&NODE_IPLEAF_FLAG) && node->kids );
@@ -267,7 +267,7 @@ void clean_routine(unsigned int ticks , void *param)
 				continue;
 
 			/* process the node */
-			LM_DBG("clean node %p (kids=%p; hits=[%d,%d];leaf=[%d,%d])\n", 
+			LM_DBG("clean node %p (kids=%p; hits=[%d,%d];leaf=[%d,%d])\n",
 				node,node->kids,
 				node->hits[PREV_POS],node->hits[CURR_POS],
 				node->leaf_hits[PREV_POS],node->leaf_hits[CURR_POS]);

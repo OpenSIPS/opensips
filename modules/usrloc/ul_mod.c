@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -92,7 +92,7 @@ static int add_replication_dest(modparam_t type, void *val);
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
 extern rw_lock_t *sync_lock;
-extern int skip_replicated_db_ops; 
+extern int skip_replicated_db_ops;
 
 /*
  * Module parameters and their default values
@@ -146,7 +146,7 @@ static cmd_export_t cmds[] = {
 
 
 /*! \brief
- * Exported parameters 
+ * Exported parameters
  */
 static param_export_t params[] = {
 	{"user_column",        STR_PARAM, &user_col.s        },
@@ -305,7 +305,7 @@ static int mod_init(void)
 	}
 
 	fix_flag_name(&nat_bflag_str, nat_bflag);
-	
+
 	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
 
 	if (nat_bflag==(unsigned int)-1) {

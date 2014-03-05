@@ -419,12 +419,12 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 
 	query_str.s = query;
 	query_str.len = strlen(query);
-	
+
 	if(url->dbf.raw_query( url->hdl, &query_str, &db_res)!=0)
 	{
 		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
 			? url->hdl->table : 0;
-		LM_ERR("raw_query failed: db%d(%.*s) %.40s...\n", 
+		LM_ERR("raw_query failed: db%d(%.*s) %.40s...\n",
 		  url->idx, t?t->len:0, t?t->s:"", query);
 		return -1;
 	}
@@ -438,11 +438,11 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 
 	LM_DBG("rows [%d]\n", RES_ROW_N(db_res));
 	/* reverse order of rows so that first row get's in front of avp list */
-	for(i = RES_ROW_N(db_res)-1; i >= 0; i--) 
+	for(i = RES_ROW_N(db_res)-1; i >= 0; i--)
 	{
 		LM_DBG("row [%d]\n", i);
 		crt = dest;
-		for(j = 0; j < RES_COL_N(db_res); j++) 
+		for(j = 0; j < RES_COL_N(db_res); j++)
 		{
 			if(RES_ROWS(db_res)[i].values[j].nul)
 				goto next_avp;

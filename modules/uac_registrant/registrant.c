@@ -335,7 +335,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				}
 				break;
 			}
-					
+
 			/* get the next contact */
 			if (contact->next == NULL) {
 				contact = NULL;
@@ -470,7 +470,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			/* we got an error from the server */
 			rec->state = REGISTRAR_ERROR_STATE;
 			rec->registration_timeout = now + rec->expires - timer_interval;
-			
+
 		}
 	}
 

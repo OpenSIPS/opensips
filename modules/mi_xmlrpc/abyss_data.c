@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -73,7 +73,7 @@ ListFree(TList * const sl) {
             unsigned int i;
             for (i = sl->size; i > 0; --i)
                 free(sl->item[i-1]);
-            
+
         }
         free(sl->item);
     }
@@ -107,7 +107,7 @@ ListAdd(TList * const sl,
     if (sl->size >= sl->maxsize) {
         uint16_t newSize = sl->maxsize + 16;
         void **newitem;
-        
+
         newitem = realloc(sl->item, newSize * sizeof(void *));
         if (newitem) {
             sl->item    = newitem;
@@ -144,12 +144,12 @@ ListAddFromString(TList *      const list,
                   const char * const stringArg) {
 
     abyss_bool retval;
-    
+
     if (!stringArg)
         retval = TRUE;
     else {
         char * buffer;
-        
+
         buffer = strdup(stringArg);
         if (!buffer)
             retval = FALSE;
@@ -163,10 +163,10 @@ ListAddFromString(TList *      const list,
                 ) {
                 const char * t;
                 NextToken((const char **)&c);
-                
+
                 while (*c == ',')
                     ++c;
-                
+
                 t = GetToken(&c);
                 if (!t)
                     endOfString = TRUE;
@@ -175,11 +175,11 @@ ListAddFromString(TList *      const list,
 
                     for (p = c - 2; *p == ','; --p)
                         *p = '\0';
-                    
+
                     if (t[0] != '\0') {
                         abyss_bool added;
                         added = ListAdd(list, (void*)t);
-                        
+
                         if (!added)
                             error = TRUE;
                     }
@@ -266,7 +266,7 @@ abyss_bool BufferRealloc(TBuffer *buf,uint32_t memsize)
     else
     {
         void *d;
-        
+
         d=realloc(buf->data,memsize);
         if (d)
         {
@@ -303,7 +303,7 @@ abyss_bool StringConcat(TString *s,char *s2)
     if (len+s->size+1>s->buffer.size)
         if (!BufferRealloc(&(s->buffer),((len+s->size+1+256)/256)*256))
             return FALSE;
-    
+
     strcat((char *)(s->buffer.data),s2);
     s->size+=len;
     return TRUE;
@@ -316,7 +316,7 @@ abyss_bool StringBlockConcat(TString *s,char *s2,char **ref)
     if (len+s->size>s->buffer.size)
         if (!BufferRealloc(&(s->buffer),((len+s->size+1+256)/256)*256))
             return FALSE;
-    
+
     *ref=(char *)(s->buffer.data)+s->size;
     memcpy(*ref,s2,len);
     s->size+=len;
@@ -342,9 +342,9 @@ static uint16_t
 Hash16(const char * const start) {
 
     const char * s;
-    
+
     uint16_t i;
-    
+
     s = start;
     i = 0;
 
@@ -376,7 +376,7 @@ void TableFree(TTable *t)
                 free(t->item[i-1].name);
                 free(t->item[i-1].value);
             };
-            
+
         free(t->item);
     }
 
@@ -442,7 +442,7 @@ TableAdd(TTable *     const t,
 
     if (t->size>=t->maxsize) {
         TTableItem *newitem;
-        
+
         t->maxsize+=16;
 
         newitem=(TTableItem *)realloc(t->item,(t->maxsize)*sizeof(TTableItem));
@@ -485,7 +485,7 @@ static TPoolZone *
 PoolZoneAlloc(uint32_t const zonesize) {
 
     TPoolZone * poolZoneP;
-    
+
     MALLOCARRAY(poolZoneP, zonesize);
     if (poolZoneP) {
         poolZoneP->pos    = &poolZoneP->data[0];
@@ -613,7 +613,7 @@ PoolFree(TPool * const poolP) {
 
     TPoolZone * poolZoneP;
     TPoolZone * nextPoolZoneP;
-    
+
     for (poolZoneP = poolP->firstzone; poolZoneP; poolZoneP = nextPoolZoneP) {
         nextPoolZoneP = poolZoneP->next;
         free(poolZoneP);

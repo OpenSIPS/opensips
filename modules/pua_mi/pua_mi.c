@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -91,14 +91,14 @@ struct module_exports exports= {
  	 destroy,					/* destroy function */
 	 child_init                 /* per-child init function */
 };
-	
+
 /**
  * init module function
  */
 static int mod_init(void)
 {
 	bind_pua_t bind_pua;
-	
+
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
 
@@ -108,7 +108,7 @@ static int mod_init(void)
 		LM_ERR("Can't bind pua (check if pua module is loaded)\n");
 		return -1;
 	}
-	
+
 	if (bind_pua(&pua) < 0)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -127,12 +127,12 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_send_subscribe= pua.send_subscribe;
-	
+
 	if(pua.register_puacb(MI_ASYN_PUBLISH, mi_publ_rpl_cback, NULL)< 0)
 	{
 		LM_ERR("Could not register callback\n");
 		return -1;
-	}	
+	}
 
 	return 0;
 }
@@ -141,10 +141,10 @@ static int child_init(int rank)
 {
 	LM_DBG("child [%d]  pid [%d]\n", rank, getpid());
 	return 0;
-}	
+}
 
 static void destroy(void)
-{	
+{
 	LM_DBG("destroying module ...\n");
 
 	return ;

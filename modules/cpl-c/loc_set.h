@@ -69,7 +69,7 @@ static inline int add_location(struct location **loc_set, str *uri,
 	if(received && received->s && received->len)
 		loc = (struct location*)shm_malloc(sizeof(struct location)+
 				((flags&CPL_LOC_DUPL)?uri->len+1+received->len+1:0) );
-	else 
+	else
 		loc = (struct location*)shm_malloc(
 			sizeof(struct location)+((flags&CPL_LOC_DUPL)?uri->len+1:0) );
 	if (!loc) {

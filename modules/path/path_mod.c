@@ -1,5 +1,5 @@
 /*
- * $Id$ 
+ * $Id$
  *
  * Path handling for intermediate proxies
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -95,7 +95,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"path", 
+	"path",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
@@ -131,7 +131,7 @@ static int mod_init(void)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 

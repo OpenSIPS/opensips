@@ -1,5 +1,5 @@
 /*
- * $Id$ 
+ * $Id$
  *
  * Group membership - module interface
  *
@@ -19,8 +19,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -33,7 +33,7 @@
  *  2004-06-07  updated to the new DB api: calls to group_db_* (andrei)
  *  2005-10-06 - added support for regexp-based groups (bogdan)
  *  2008-12-26  pseudovar argument for group parameter at is_user_in (saguti).
- *  2009-08-07 - joined with group_radius module to support generic AAA group 
+ *  2009-08-07 - joined with group_radius module to support generic AAA group
  *		requests (Irina Stanescu)
  */
 
@@ -108,7 +108,7 @@ static str db_url = {NULL, 0};
 static str aaa_proto_url = {NULL, 0};
 
 /* Table name where group definitions are stored */
-str table         = {TABLE, TABLE_LEN}; 
+str table         = {TABLE, TABLE_LEN};
 str user_column   = {USER_COL, USER_COL_LEN};
 str domain_column = {DOMAIN_COL, DOMAIN_COL_LEN};
 str group_column  = {GROUP_COL, GROUP_COL_LEN};
@@ -171,7 +171,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"group", 
+	"group",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */

@@ -150,7 +150,7 @@ int unode = 0;
 static str attrs_empty = str_init("");
 
 /* reader-writers lock for reloading the data */
-static rw_lock_t *ref_lock = NULL; 
+static rw_lock_t *ref_lock = NULL;
 
 static int dr_init(void);
 static int dr_child_init(int rank);
@@ -392,7 +392,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 		/* dst requires probing ? */
 		if ( dst->flags&DR_DST_STAT_NOEN_FLAG
 			|| !( (dst->flags&DR_DST_PING_PERM_FLAG)  ||  /*permanent probing*/
-					( dst->flags&DR_DST_PING_DSBL_FLAG 
+					( dst->flags&DR_DST_PING_DSBL_FLAG
 					&& dst->flags&DR_DST_STAT_DSBL_FLAG  /*probing on disable*/
 					)
 				)
@@ -503,7 +503,7 @@ static void dr_state_flusher(void)
 	return;
 }
 
-/* Flushes to DB the state of carriers and gateways (if modified) 
+/* Flushes to DB the state of carriers and gateways (if modified)
  * Locking is done to protect the data consistency */
 static void dr_state_timer(unsigned int ticks, void* param)
 {
@@ -836,7 +836,7 @@ static int dr_exit(void)
 		lock_destroy_rw( ref_lock );
 		ref_lock = 0;
 	}
-	
+
 	/* destroy blacklists */
 	destroy_dr_bls();
 
@@ -1451,7 +1451,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 				}
 				grp_id = val.n;
 			} else
-				grp_id = 0; 
+				grp_id = 0;
 		}
 
 		/* get the number/RURI and make a copy of it */
@@ -1517,7 +1517,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 search_again:
 
 	if (rt_info) {
-		/* we are here because of the "search_again", on a 
+		/* we are here because of the "search_again", on a
 		   sequential retry based on rule FALL BACK */
 		/* => force fallback, either on next rule, either on shorter prefix */
 		username.len = prefix_len -(rule_idx?0:1);
@@ -1720,7 +1720,7 @@ no_gws:
 
 	if ( flags & DR_PARAM_RULE_FALLBACK ) {
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
-			/* first time ? we need to save some date, to be able to 
+			/* first time ? we need to save some date, to be able to
 			   do the rule fallback later in "next_gw" */
 			LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
 				prefix_len - (rule_idx?0:1), username.s);
@@ -1744,7 +1744,7 @@ no_gws:
 				LM_ERR("failed to insert ruri avp for fallback\n");
 				flags = flags & ~DR_PARAM_RULE_FALLBACK;
 			}
-			/* we need to save a some date, to be able to do the rule 
+			/* we need to save a some date, to be able to do the rule
 			   fallback later in "next_gw" (prefix/index already added) */
 			if (wl_list) {
 				val.s = parsed_whitelist ;
@@ -2020,7 +2020,7 @@ static int fixup_do_routing(void** param, int param_no)
 				return E_CFG;
 			}
 			drg->type = 1;
-			/* do not free the param as the AVP spec may point inside 
+			/* do not free the param as the AVP spec may point inside
 			   this string*/
 		} else {
 			while(s && *s) {
@@ -2079,7 +2079,7 @@ static int fixup_is_gw( void** param, int param_no)
 static int strip_username(struct sip_msg* msg, int strip)
 {
 	struct action act;
- 
+
 	act.type = STRIP_T;
 	act.elem[0].type = NUMBER_ST;
 	act.elem[0].u.number = strip;
@@ -2096,7 +2096,7 @@ static int strip_username(struct sip_msg* msg, int strip)
 static int prefix_username(struct sip_msg* msg, str *pri)
 {
 	struct action act;
- 
+
 	act.type = PREFIX_T;
 	act.elem[0].type = STR_ST;
 	act.elem[0].u.s = *pri;
@@ -2207,9 +2207,9 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 								}
 							}
 							goto end;
-						}							
+						}
 					}
-				}							
+				}
 			}
 end:
 			return 1;

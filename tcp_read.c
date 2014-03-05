@@ -24,7 +24,7 @@
  * 2002-12-??  created by andrei.
  * 2003-02-10  zero term before calling receive_msg & undo afterward (andrei)
  * 2003-05-13  l: (short form of Content-Length) is now recognized (andrei)
- * 2003-07-01  tcp_read & friends take no a single tcp_connection 
+ * 2003-07-01  tcp_read & friends take no a single tcp_connection
  *              parameter & they set c->state to S_CONN_EOF on eof (andrei)
  * 2003-07-04  fixed tcp EOF handling (possible infinite loop) (andrei)
  * 2005-07-05  migrated to the new io_wait code (andrei)
@@ -84,7 +84,7 @@ struct tcp_req current_req;
  * \return number of bytes read, 0 on EOF or -1 on error,
  * on EOF it also sets c->state to S_CONN_EOF
  * (to distinguish from reads that would block which could return 0)
- * sets also r->error 
+ * sets also r->error
  */
 int tcp_read(struct tcp_connection *c,struct tcp_req *r)
 {
@@ -93,7 +93,7 @@ int tcp_read(struct tcp_connection *c,struct tcp_req *r)
 
 	fd=c->fd;
 	bytes_free=TCP_BUF_SIZE- (int)(r->pos - r->buf);
-	
+
 	if (bytes_free==0){
 		LM_ERR("buffer overrun, dropping\n");
 		r->error=TCP_REQ_OVERRUN;
@@ -141,14 +141,14 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 	unsigned int remaining;
 	int bytes;
 	char *p;
-	
+
 	#define crlf_default_skip_case \
 					case '\n': \
 						r->state=H_LF; \
 						break; \
 					default: \
 						r->state=H_SKIP
-	
+
 	#define content_len_beg_case \
 					case ' ': \
 					case '\t': \
@@ -167,7 +167,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 						if (!r->has_content_len) r->state=H_L_COLON; \
 						else r->state=H_SKIP; \
 						break
-						
+
 	#define change_state(upper, lower, newstate)\
 					switch(*p){ \
 						case upper: \
@@ -175,7 +175,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 							r->state=(newstate); break; \
 						crlf_default_skip_case; \
 					}
-	
+
 	#define change_state_case(state0, upper, lower, newstate)\
 					case state0: \
 							  change_state(upper, lower, newstate); \
@@ -196,7 +196,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 		if (bytes<=0) return bytes;
 	}
 	p=r->parsed;
-	
+
 	while(p<r->pos && r->error==TCP_REQ_OK){
 		switch((unsigned char)r->state){
 			case H_BODY: /* read the body*/
@@ -209,7 +209,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 					goto skip;
 				}
 				break;
-				
+
 			case H_SKIP:
 				/* find lf, we are in this state if we are not interested
 				 * in anything till end of line*/
@@ -221,7 +221,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 					p=r->pos;
 				}
 				break;
-				
+
 			case H_LF:
 				/* terminate on LF CR LF or LF LF */
 				switch (*p){
@@ -245,7 +245,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 						}
 						break;
 					content_len_beg_case;
-					default: 
+					default:
 						r->state=H_SKIP;
 				}
 				p++;
@@ -269,7 +269,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 				}else r->state=H_SKIP;
 				p++;
 				break;
-				
+
 			case H_STARTWS:
 				switch (*p){
 					content_len_beg_case;
@@ -291,9 +291,9 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 					case '\t':
 						/* skip empty lines */
 						break;
-					case 'C': 
-					case 'c': 
-						r->state=H_CONT_LEN1; 
+					case 'C':
+					case 'c':
+						r->state=H_CONT_LEN1;
 						r->start=p;
 						break;
 					case 'l':
@@ -350,7 +350,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 			change_state_case(H_CONT_LEN11, 'G', 'g', H_CONT_LEN12);
 			change_state_case(H_CONT_LEN12, 'T', 't', H_CONT_LEN13);
 			change_state_case(H_CONT_LEN13, 'H', 'h', H_L_COLON);
-			
+
 			case H_L_COLON:
 				switch(*p){
 					case ' ':
@@ -363,7 +363,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 				};
 				p++;
 				break;
-			
+
 			case  H_CONT_LEN_BODY:
 				switch(*p){
 					case ' ':
@@ -387,7 +387,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 				}
 				p++;
 				break;
-				
+
 			case H_CONT_LEN_BODY_PARSE:
 				switch(*p){
 					case '0':
@@ -420,7 +420,7 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 				}
 				p++;
 				break;
-			
+
 			default:
 				LM_CRIT("unexpected state %d\n", r->state);
 				abort();
@@ -434,7 +434,7 @@ skip:
 void release_tcpconn(struct tcp_connection* c, long state, int unix_sock)
 {
 	long response[2];
-	
+
 	LM_DBG(" releasing con %p, state %ld, fd=%d, id=%d\n",
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
@@ -485,7 +485,7 @@ again:
 	);
 
 	if (n<0) {
-		if (errno==EINTR) 
+		if (errno==EINTR)
 			goto again;
 		else if (errno==EAGAIN || errno==EWOULDBLOCK) {
 			LM_DBG("Can't finish to write chunk %p on conn %p\n",
@@ -540,7 +540,7 @@ int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 	struct receive_info local_rcv;
 	char *msg_buf;
 	int msg_len;
-		
+
 	bytes=-1;
 	total_bytes=0;
 	resp=CONN_RELEASE;
@@ -591,7 +591,7 @@ again:
 			resp=CONN_EOF;
 			goto end_req;
 		}
-	
+
 	}
 	if (req->error!=TCP_REQ_OK){
 		LM_ERR("bad request, state=%d, error=%d "
@@ -621,7 +621,7 @@ again:
 			resp=CONN_ERROR;
 			goto end_req;
 		}
-		
+
 		/* update the timeout - we succesfully read the request */
 		con->timeout=get_ticks()+tcp_max_msg_time;
 
@@ -667,7 +667,7 @@ again:
 				else
 					release_tcpconn(con, CONN_RELEASE, tcpmain_sock);
 			}
-		} else { 	
+		} else {
 			msg_buf = req->start;
 			msg_len = req->parsed-req->start;
 			local_rcv = con->rcv;
@@ -677,7 +677,7 @@ again:
 				LM_DBG("We're releasing the connection in state %d \n",con->state);
 
 				if (req != &current_req) {
-					/* we have the buffer in the connection tied buff - 
+					/* we have the buffer in the connection tied buff -
 					 *	detach it , release the conn and free it afterwards */
 					con->con_req = NULL;
 				}
@@ -706,7 +706,7 @@ again:
 		}
 
 		*req->parsed=c;
-	
+
 		update_stat( pt[process_no].load, -1 );
 
 		if (size) memmove(req->buf, req->parsed, size);
@@ -756,12 +756,12 @@ again:
 				con->con_req->pos = con->con_req->buf;
 			}
 
-			if (req->start != req->buf) 
+			if (req->start != req->buf)
 				con->con_req->start = con->con_req->buf + (req->start-req->buf);
 			else
 				con->con_req->start = con->con_req->buf;
 
-			if (req->parsed != req->buf) 
+			if (req->parsed != req->buf)
 				con->con_req->parsed = con->con_req->buf + (req->parsed-req->buf);
 			else
 				con->con_req->parsed = con->con_req->buf;
@@ -777,13 +777,13 @@ again:
 			con->con_req->bytes_to_go=req->bytes_to_go;
 			con->con_req->error = req->error;
 			con->con_req->state = req->state;
-			
+
 			/* zero out the per process req for the future SIP msg */
 			init_tcp_req(&current_req);
 		}
 	}
-		
-		
+
+
 	LM_DBG("tcp_read_req end\n");
 	end_req:
 		if (bytes_read) *bytes_read=total_bytes;
@@ -807,14 +807,14 @@ void tcp_receive_loop(int unix_sock)
 	int maxfd;
 	struct timeval timeout;
 	int ticks;
-	
-	
+
+
 	/* init */
 	list=con=0;
 	FD_ZERO(&master_set);
 	FD_SET(unix_sock, &master_set);
 	maxfd=unix_sock;
-	
+
 	/* listen on the unix socket for the fd */
 	for(;;){
 			timeout.tv_sec=TCP_CHILD_SELECT_TIMEOUT;
@@ -823,7 +823,7 @@ void tcp_receive_loop(int unix_sock)
 			nfds=select(maxfd+1, &sel_set, 0 , 0 , &timeout);
 #ifdef EXTRA_DEBUG
 			for (n=0; n<maxfd; n++){
-				if (FD_ISSET(n, &sel_set)) 
+				if (FD_ISSET(n, &sel_set))
 					LM_DBG("fd %d is set\n", n);
 			}
 #endif
@@ -901,7 +901,7 @@ skip:
 #endif
 					nfds--;
 					resp=tcp_read_req(con);
-					
+
 					if (resp<0){
 						FD_CLR(con->fd, &master_set);
 						tcpconn_listrm(list, con, c_next, c_prev);
@@ -924,7 +924,7 @@ skip:
 					}
 				}
 			}
-		
+
 	}
 }
 #else /* DEBUG_TCP_RECEIVE */
@@ -938,7 +938,7 @@ skip:
  *          idx - index in the fd_array (or -1 if not known)
  * return: -1 on error, or when we are not interested any more on reads
  *            from this fd (e.g.: we are closing it )
- *          0 on EAGAIN or when by some other way it is known that no more 
+ *          0 on EAGAIN or when by some other way it is known that no more
  *            io events are queued on the fd (the receive buffer is empty).
  *            Usefull to detect when there are no more io events queued for
  *            sigio_rt, epoll_et, kqueue.
@@ -946,14 +946,14 @@ skip:
  *            queued -- the receive buffer might still be non-empty)
  */
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
-{	
+{
 	int ret=0;
 	int n;
 	struct tcp_connection* con;
 	int s,rw;
 	long resp;
 	long response[2];
-	
+
 	switch(fm->type){
 		case F_TCPMAIN:
 again:
@@ -1028,7 +1028,7 @@ again:
 			}
 			break;
 		case F_TCPCONN:
-			if (event_type & IO_WATCH_READ) { 
+			if (event_type & IO_WATCH_READ) {
 				con=(struct tcp_connection*)fm->data;
 				resp=tcp_read_req(con, &ret);
 				if (resp<0) {
@@ -1048,10 +1048,10 @@ again:
 						fm->fd, fm->type, fm->data);
 			goto error;
 		default:
-			LM_CRIT("uknown fd type %d\n", fm->type); 
+			LM_CRIT("uknown fd type %d\n", fm->type);
 			goto error;
 	}
-	
+
 	return ret;
 con_error:
 	con->state=S_CONN_BAD;
@@ -1069,11 +1069,11 @@ static inline void tcp_receive_timeout(void)
 	struct tcp_connection* con;
 	struct tcp_connection* next;
 	unsigned int ticks;
-	
+
 	ticks=get_ticks();
 	for (con=tcp_conn_lst; con; con=next) {
 		next=con->c_next; /* safe for removing */
-		if (con->state<0){   /* kill bad connections */ 
+		if (con->state<0){   /* kill bad connections */
 			/* S_CONN_BAD or S_CONN_ERROR, remove it */
 			/* fd will be closed in release_tcpconn */
 			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
@@ -1100,7 +1100,7 @@ static inline void tcp_receive_timeout(void)
 
 void tcp_receive_loop(int unix_sock)
 {
-	
+
 	/* init */
 	tcpmain_sock=unix_sock; /* init com. socket */
 	if (init_io_wait(&io_w, tcp_max_fd_no, tcp_poll_method)<0)
@@ -1166,7 +1166,7 @@ void tcp_receive_loop(int unix_sock)
 			break;
 #endif
 		default:
-			LM_CRIT("no support for poll method %s (%d)\n", 
+			LM_CRIT("no support for poll method %s (%d)\n",
 					poll_method_name(io_w.poll_method), io_w.poll_method);
 			goto error;
 	}

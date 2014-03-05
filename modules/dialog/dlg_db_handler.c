@@ -15,14 +15,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  * 2007-05-10  initial version (ancuta)
- * 2007-07-06 additional information saved in the database: cseq, contact, 
+ * 2007-07-06 additional information saved in the database: cseq, contact,
  *            route set and socket_info for both caller and callee (ancuta)
  * 2009-09-09 support for early dialogs added; proper handling of cseq
  *            while PRACK is used (bogdan)
@@ -290,7 +290,7 @@ struct socket_info * create_socket_info(db_val_t * vals, int n){
 	if (VAL_NULL(vals+n) || p.s==0 || p.s[0]==0){
 		sock = 0;
 	} else {
-		if (parse_phostport( p.s, p.len, &host.s, &host.len, 
+		if (parse_phostport( p.s, p.len, &host.s, &host.len,
 		&port, &proto)!=0) {
 			LM_ERR("bad socket <%.*s>\n", p.len, p.s);
 			return 0;
@@ -360,7 +360,7 @@ skip:
 	return (b==end)?NULL:b;
 }
 
-/* The function is always considered to be lock-less ( safe ) 
+/* The function is always considered to be lock-less ( safe )
  * it's either called when dialog is not linked yes, or is under the dialog lock */
 void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 {
@@ -429,7 +429,7 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 			}
 
 			for (it=dlg->profile_links;it;it=it->next) {
-				if (it->profile->use_cached == use_cached && 
+				if (it->profile->use_cached == use_cached &&
 					it->profile->name.len == double_check_name.len &&
 					memcmp(it->profile->name.s,double_check_name.s,
 						   double_check_name.len) == 0) {
@@ -672,14 +672,14 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			dlg->lifetime = 0;
 
-			dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
+			dlg->legs[DLG_CALLER_LEG].last_gen_cseq =
 				(unsigned int)(VAL_INT(values+20));
-			dlg->legs[callee_idx(dlg)].last_gen_cseq = 
+			dlg->legs[callee_idx(dlg)].last_gen_cseq =
 				(unsigned int)(VAL_INT(values+21));
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
-				if (0 != insert_ping_timer(dlg)) 
-					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg); 
+				if (0 != insert_ping_timer(dlg))
+					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
 					/* reference dialog as kept in ping timer list */
 					ref_dlg(dlg,1);
@@ -773,7 +773,7 @@ int dlg_timer_remove_from_db(struct dlg_cell *cell)
 	}
 
 	/* store info in del holders */
-	VAL_BIGINT(dlg_del_values+dlg_del_curr_no) = 
+	VAL_BIGINT(dlg_del_values+dlg_del_curr_no) =
 			((long long)cell->h_entry << 32) | (cell->h_id);
 	dlg_del_holder[dlg_del_curr_no]=cell;
 	/* mark is as deleted so we don't care about it later
@@ -786,7 +786,7 @@ int dlg_timer_remove_from_db(struct dlg_cell *cell)
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
 		CON_USE_OR_OP(dialog_db_handle);
-		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys, 
+		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys,
 					0, dlg_del_values, dlg_bulk_del_no) < 0)
 			LM_ERR("failed to delete bulk database information !!!\n");
 
@@ -814,7 +814,7 @@ int dlg_timer_flush_del(void)
 
 	if (dlg_del_curr_no > 0) {
 		CON_USE_OR_OP(dialog_db_handle);
-		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys, 
+		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys,
 					0, dlg_del_values, dlg_del_curr_no) < 0)
 			LM_ERR("failed to delete bulk database information !!!\n");
 
@@ -838,7 +838,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 
 	/*if the dialog hasn 't been yet inserted in the database*/
 	LM_DBG("trying to remove a dialog, update_flag is %i\n", cell->flags);
-	if (cell->flags & DLG_FLAG_NEW) 
+	if (cell->flags & DLG_FLAG_NEW)
 		return 0;
 
 	if (use_dialog_table()!=0)
@@ -873,12 +873,12 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 	db_val_t values[DIALOG_TABLE_TOTAL_COL_NO];
 	int callee_leg;
 
-	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = { 
+	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {
 			&dlg_id_column,      &call_id_column,     &from_uri_column,
 			&from_tag_column,    &to_uri_column,      &to_tag_column,
 			&from_sock_column,   &to_sock_column,
 			&start_time_column,  &mangled_fu_column,  &mangled_tu_column,
-			
+
 			&state_column,       &timeout_column,
 			&from_cseq_column,   &to_cseq_column,     &from_ping_cseq_column,
 			&to_ping_cseq_column,&flags_column,
@@ -895,14 +895,14 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		/* save all the current dialogs information*/
 		VAL_TYPE(values) = DB_BIGINT;
 
-		VAL_TYPE(values+8) = VAL_TYPE(values+11) = VAL_TYPE(values+12) = 
-		VAL_TYPE(values+15) =VAL_TYPE(values+16) = VAL_TYPE(values+17) = 
+		VAL_TYPE(values+8) = VAL_TYPE(values+11) = VAL_TYPE(values+12) =
+		VAL_TYPE(values+15) =VAL_TYPE(values+16) = VAL_TYPE(values+17) =
 		VAL_TYPE(values+20) = DB_INT;
 
-		VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) = 
-		VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) = 
+		VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
+		VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 		VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
-		VAL_TYPE(values+13) = VAL_TYPE(values+14) = 
+		VAL_TYPE(values+13) = VAL_TYPE(values+14) =
 		VAL_TYPE(values+18) = VAL_TYPE(values+19) = VAL_TYPE(values+21) =
 		VAL_TYPE(values+22) = VAL_TYPE(values+23) =
 		VAL_TYPE(values+24) = DB_STR;
@@ -922,7 +922,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		SET_STR_VALUE(values+6, cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
 		if (cell->legs[callee_leg].bind_addr) {
-			SET_STR_VALUE(values+7, 
+			SET_STR_VALUE(values+7,
 				cell->legs[callee_leg].bind_addr->sock_str);
 		} else {
 			VAL_NULL(values+7) = 1;
@@ -950,7 +950,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
-		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values, 
+		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values,
 								DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 			LM_ERR("could not add another dialog to db\n");
 			goto error;
@@ -990,7 +990,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
-		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
+		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 						(values), (insert_keys+11), (values+11), 1, 10)) !=0){
 			LM_ERR("could not update database info\n");
 			goto error;
@@ -1013,7 +1013,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
 
-		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
+		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 						(values), (insert_keys+18), (values+18), 1, 3)) !=0){
 			LM_ERR("could not update database info\n");
 			goto error;
@@ -1143,7 +1143,7 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 	p = o.s;
 	for ( link=links; link ; link=link->next) {
 		if (link->profile->use_cached)
-			p += write_pair( p, &link->profile->name, &cached_marker, 
+			p += write_pair( p, &link->profile->name, &cached_marker,
 							&link->value);
 		else
 			p += write_pair( p, &link->profile->name, NULL, &link->value);
@@ -1208,7 +1208,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 	int index;
 	db_val_t values[DIALOG_TABLE_TOTAL_COL_NO];
 	struct dlg_entry *entry;
-	struct dlg_cell  * cell,*next_cell; 
+	struct dlg_cell  * cell,*next_cell;
 	unsigned char on_shutdown;
 	int callee_leg,ins_done=0;
 	static query_list_t *ins_list = NULL;
@@ -1231,15 +1231,15 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 	/*save the current dialogs information*/
 	VAL_TYPE(values) = DB_BIGINT;
-	VAL_TYPE(values+8) = 
+	VAL_TYPE(values+8) =
 	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
 	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)= DB_INT;
 
-	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) = 
-	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) = 
-	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) = 
+	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
+	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
+	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
-	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) = 
+	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
 	VAL_TYPE(values+21) = VAL_TYPE(values+22) = DB_STR;
 
 	for(index = 0; index< d_table->size; index++){
@@ -1283,7 +1283,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				SET_STR_VALUE(values+6,
 					cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
 				if (cell->legs[callee_leg].bind_addr) {
-					SET_STR_VALUE(values+7, 
+					SET_STR_VALUE(values+7,
 						cell->legs[callee_leg].bind_addr->sock_str);
 				} else {
 					VAL_NULL(values+7) = 1;
@@ -1321,7 +1321,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 				&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
 					CON_RESET_INSLIST(dialog_db_handle);
 
-				if((dialog_dbf.insert(dialog_db_handle, insert_keys, 
+				if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 					LM_ERR("could not add another dialog to db\n");
 					goto error;
@@ -1362,7 +1362,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
 
-				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
+				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+15), (values+15), 1, 10)) !=0) {
 					LM_ERR("could not update database info\n");
 					goto error;
@@ -1381,7 +1381,7 @@ void dialog_update_db(unsigned int ticks, void * param)
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
 
-				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0, 
+				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+21), (values+21), 1, 3)) !=0) {
 					LM_ERR("could not update database info\n");
 					goto error;
@@ -1481,7 +1481,7 @@ static int sync_dlg_db_mem(void)
 			dlg_lock( d_table, d_entry);
 
 			for (it=d_entry->first;it;it=it->next)
-				if (it->callid.len == callid.len && 
+				if (it->callid.len == callid.len &&
 					it->legs[DLG_CALLER_LEG].tag.len == from_tag.len &&
 					memcmp(it->callid.s,callid.s,callid.len)==0 &&
 					memcmp(it->legs[DLG_CALLER_LEG].tag.s,from_tag.s,from_tag.len)==0) {
@@ -1518,7 +1518,7 @@ static int sync_dlg_db_mem(void)
 				if(dlg->h_entry != hash_entry){
 					LM_ERR("inconsistent hash data in the dialog database: "
 						"you may have restarted opensips using a different "
-						"hash_size: please erase %.*s database and restart\n", 
+						"hash_size: please erase %.*s database and restart\n",
 						dialog_table_name.len, dialog_table_name.s);
 					shm_free(dlg);
 					goto error;
@@ -1619,14 +1619,14 @@ static int sync_dlg_db_mem(void)
 
 				dlg->lifetime = 0;
 
-				dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
+				dlg->legs[DLG_CALLER_LEG].last_gen_cseq =
 					(unsigned int)(VAL_INT(values+20));
-				dlg->legs[callee_idx(dlg)].last_gen_cseq = 
+				dlg->legs[callee_idx(dlg)].last_gen_cseq =
 					(unsigned int)(VAL_INT(values+21));
 
 				if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
-					if (0 != insert_ping_timer(dlg)) 
-						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg); 
+					if (0 != insert_ping_timer(dlg))
+						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 					else {
 						/* reference dialog as kept in ping timer list */
 						ref_dlg(dlg,1);
@@ -1650,9 +1650,9 @@ static int sync_dlg_db_mem(void)
 				} else if (known_dlg->state == VAL_INT(values+7)) {
 					LM_DBG("mem has same state as DB \n");
 					/* same state :-( no way to tell which is newer */
-					
+
 					/* play nice and store longest timeout, although not always correct*/
-					db_timeout = (unsigned int)(VAL_INT(values+8)) + 
+					db_timeout = (unsigned int)(VAL_INT(values+8)) +
 						get_ticks();
 					if (db_timeout<=(unsigned int)time(0))
 						db_timeout = 0;
@@ -1666,14 +1666,14 @@ static int sync_dlg_db_mem(void)
 					if (!VAL_NULL(values+9)) {
 						cseq1.s = VAL_STR(values+9).s;
 						cseq1.len = strlen(cseq1.s);
-						
+
 						str2int(&cseq1,&db_caller_cseq);
 						str2int(&known_dlg->legs[DLG_CALLER_LEG].r_cseq,&dlg_caller_cseq);
 
 						/* Is DB cseq newer ? */
 						if (db_caller_cseq > dlg_caller_cseq) {
 							if (known_dlg->legs[DLG_CALLER_LEG].r_cseq.len < cseq1.len) {
-								known_dlg->legs[DLG_CALLER_LEG].r_cseq.s = 
+								known_dlg->legs[DLG_CALLER_LEG].r_cseq.s =
 									shm_realloc(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.len);
 								if (!known_dlg->legs[DLG_CALLER_LEG].r_cseq.s) {
 									LM_ERR("no more shm\n");
@@ -1685,7 +1685,7 @@ static int sync_dlg_db_mem(void)
 							known_dlg->legs[DLG_CALLER_LEG].r_cseq.len = cseq1.len;
 						}
 					} else {
-						/* DB has a null cseq - just keep 
+						/* DB has a null cseq - just keep
 						 * what we have so far */
 						;
 					}
@@ -1702,7 +1702,7 @@ static int sync_dlg_db_mem(void)
 						/* Is DB cseq newer ? */
 						if (db_callee_cseq > dlg_callee_cseq) {
 							if (known_dlg->legs[callee_leg_idx].r_cseq.len < cseq2.len) {
-								known_dlg->legs[callee_leg_idx].r_cseq.s = 
+								known_dlg->legs[callee_leg_idx].r_cseq.s =
 									shm_realloc(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.len);
 								if (!known_dlg->legs[callee_leg_idx].r_cseq.s) {
 									LM_ERR("no more shm\n");
@@ -1714,7 +1714,7 @@ static int sync_dlg_db_mem(void)
 							known_dlg->legs[callee_leg_idx].r_cseq.len = cseq2.len;
 						}
 					} else {
-						/* DB has a null cseq - just keep 
+						/* DB has a null cseq - just keep
 						 * what we have so far */
 						;
 					}
@@ -1758,7 +1758,7 @@ static int sync_dlg_db_mem(void)
 					known_dlg->state = VAL_INT(values+7);
 
 					/* update timeout */
-					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) + 
+					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8)) +
 						get_ticks();
 					if (known_dlg->tl.timeout<=(unsigned int)time(0))
 						known_dlg->tl.timeout = 0;
@@ -1771,7 +1771,7 @@ static int sync_dlg_db_mem(void)
 						cseq1.len = strlen(cseq1.s);
 
 						if (known_dlg->legs[DLG_CALLER_LEG].r_cseq.len < cseq1.len) {
-							known_dlg->legs[DLG_CALLER_LEG].r_cseq.s = 
+							known_dlg->legs[DLG_CALLER_LEG].r_cseq.s =
 								shm_realloc(known_dlg->legs[DLG_CALLER_LEG].r_cseq.s,cseq1.len);
 							if (!known_dlg->legs[DLG_CALLER_LEG].r_cseq.s) {
 								LM_ERR("no more shm\n");
@@ -1789,7 +1789,7 @@ static int sync_dlg_db_mem(void)
 						callee_leg_idx = callee_idx(known_dlg);
 
 						if (known_dlg->legs[callee_leg_idx].r_cseq.len < cseq2.len) {
-							known_dlg->legs[callee_leg_idx].r_cseq.s = 
+							known_dlg->legs[callee_leg_idx].r_cseq.s =
 								shm_realloc(known_dlg->legs[callee_leg_idx].r_cseq.s,cseq2.len);
 							if (!known_dlg->legs[callee_leg_idx].r_cseq.s) {
 								LM_ERR("no more shm\n");
@@ -1803,9 +1803,9 @@ static int sync_dlg_db_mem(void)
 					}
 
 					/* update ping cseqs */
-					known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq = 
+					known_dlg->legs[DLG_CALLER_LEG].last_gen_cseq =
 						(unsigned int)(VAL_INT(values+20));
-					known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq = 
+					known_dlg->legs[callee_idx(known_dlg)].last_gen_cseq =
 						(unsigned int)(VAL_INT(values+21));
 
 					/* update flags */
@@ -1883,15 +1883,15 @@ static int restore_dlg_db(void)
 			&flags_column};
 
 	VAL_TYPE(values) = DB_BIGINT;
-	VAL_TYPE(values+8) = 
+	VAL_TYPE(values+8) =
 	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
 	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)= DB_INT;
 
-	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) = 
-	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) = 
-	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) = 
+	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
+	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
+	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
-	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) = 
+	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
 	VAL_TYPE(values+21) = VAL_TYPE(values+22) = DB_STR;
 
 	if (remove_all_dialogs_from_db() != 0) {
@@ -1911,7 +1911,7 @@ static int restore_dlg_db(void)
 				continue;
 
 			callee_leg = callee_idx(cell);
-			
+
 			SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
 							 cell->h_id));
 			SET_STR_VALUE(values+1, cell->callid);
@@ -1924,7 +1924,7 @@ static int restore_dlg_db(void)
 			SET_STR_VALUE(values+6,
 				cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
 			if (cell->legs[callee_leg].bind_addr) {
-				SET_STR_VALUE(values+7, 
+				SET_STR_VALUE(values+7,
 					cell->legs[callee_leg].bind_addr->sock_str);
 			} else {
 				VAL_NULL(values+7) = 1;
@@ -1962,10 +1962,10 @@ static int restore_dlg_db(void)
 			&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
 				CON_RESET_INSLIST(dialog_db_handle);
 
-			if((dialog_dbf.insert(dialog_db_handle, insert_keys, 
+			if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 			values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
 				LM_ERR("could not add another dialog to db\n");
-				
+
 				dlg_unlock(d_table, e);
 				return -1;
 			}

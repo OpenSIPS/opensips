@@ -37,7 +37,7 @@ enum poll_types { POLL_NONE, POLL_POLL, POLL_EPOLL_LT, POLL_EPOLL_ET,
 /* all the function and vars are defined in io_wait.c */
 
 extern char* poll_method_str[POLL_END];
-extern char* poll_support; 
+extern char* poll_support;
 
 
 enum poll_types choose_poll_method();

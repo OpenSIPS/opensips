@@ -43,4 +43,4 @@ char *xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name);
 
 time_t xml_parse_dateTime(char* xml_time_str);
 
-#endif 
+#endif

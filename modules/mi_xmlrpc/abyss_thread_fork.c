@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -90,7 +90,7 @@ struct abyss_thread {
 static struct {
     struct abyss_thread * firstP;
 } ThreadPool;
-   
+
 
 
 void
@@ -107,7 +107,7 @@ findThread(pid_t const pid) {
     struct abyss_thread * p;
 
     for (p = ThreadPool.firstP; p && p->pid != pid; p = p->nextInPoolP);
-    
+
     return p;
 }
 
@@ -142,7 +142,7 @@ removeFromPool(struct abyss_thread * const threadP) {
         for (p = ThreadPool.firstP;
              p && p->nextInPoolP != threadP;
              p = p->nextInPoolP);
-        
+
         if (p)
             /* p points to thread right before the one we want to remove */
             p->nextInPoolP = threadP->nextInPoolP;
@@ -191,7 +191,7 @@ ThreadCreate(TThread **      const threadPP,
              TThreadDoneFn * const threadDone,
              abyss_bool      const useSigchld,
              const char **   const errorP) {
-    
+
     TThread * threadP;
 
     MALLOCVAR(threadP);
@@ -215,7 +215,7 @@ ThreadCreate(TThread **      const threadPP,
         blockSignalClass(SIGCHLD, &oldBlockedSet);
 
         rc = fork();
-        
+
         if (rc < 0)
             xmlrpc_asprintf(errorP, "fork() failed, errno=%d (%s)",
                             errno, strerror(errno));
@@ -245,7 +245,7 @@ ThreadCreate(TThread **      const threadPP,
 
 abyss_bool
 ThreadRun(TThread * const threadP ATTR_UNUSED) {
-    return TRUE;    
+    return TRUE;
 }
 
 

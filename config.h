@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -42,7 +42,7 @@
 
 #define CFG_FILE CFG_DIR "opensips.cfg"
 
-#define TLS_PKEY_FILE CFG_DIR "tls/cert.pem" 
+#define TLS_PKEY_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CA_FILE 0 		/*!< no CA list file by default */
 #define TLS_CA_DIRECTORY      "/etc/pki/CA/"
@@ -123,7 +123,7 @@
 #define TIMER_TICK   1  			/*!< one second */
 #define UTIMER_TICK  100*1000			/*!< 100 miliseconds*/
 
-/*!< dimensioning buckets in q_malloc 
+/*!< dimensioning buckets in q_malloc
 	 size of the size2bucket table; everything beyond that asks for
    	a variable-size kilo-bucket
  */

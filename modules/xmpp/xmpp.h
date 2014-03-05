@@ -61,7 +61,7 @@ char *random_secret(void);
 char *db_key(char *secret, char *domain, char *id);
 char* uri_sip2xmpp(str* uri);
 char* uri_xmpp2sip(char* uri, int* len);
- 
+
 
 /* xmpp_server.c */
 int xmpp_server_child_process(int data_pipe);

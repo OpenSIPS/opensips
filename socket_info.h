@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to" the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to" the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -33,7 +33,7 @@
 
 #include <stdlib.h>
 
-#include "ip_addr.h" 
+#include "ip_addr.h"
 #include "dprint.h"
 #include "globals.h"
 #include "ut.h"
@@ -64,13 +64,13 @@ int fix_all_socket_lists();
 int fix_socket_list(struct socket_info **);
 
 /*
- * This function will retrieve a list of all ip addresses and ports that 
- * OpenSIPS is listening on, with respect to the transport protocol specified 
+ * This function will retrieve a list of all ip addresses and ports that
+ * OpenSIPS is listening on, with respect to the transport protocol specified
  * with 'protocol'.
  *
- * The first parameter, ipList, is a pointer to a pointer. It will be assigned 
- * new block of memory holding the IP Addresses and ports being listened to 
- * with respect to 'protocol'.  The array maps a 2D array into a 1 dimensional 
+ * The first parameter, ipList, is a pointer to a pointer. It will be assigned
+ * new block of memory holding the IP Addresses and ports being listened to
+ * with respect to 'protocol'.  The array maps a 2D array into a 1 dimensional
  * space, and is layed out as follows:
  *
  * The first NUM_IP_OCTETS indices will be the IP address, and the next index
@@ -84,14 +84,14 @@ int fix_socket_list(struct socket_info **);
  *  - iplist[5] will be the first octet of the first ip address,
  *  - and so on.
  *
- * The function will return the number of sockets which were found.  This can 
+ * The function will return the number of sockets which were found.  This can
  * be used to index into ipList.
  *
  * NOTE: This function assigns a block of memory equal to:
  *
  *            returnedValue * (NUM_IP_OCTETS + 1) * sizeof(int);
  *
- *       Therefore it is CRUCIAL that you free ipList when you are done with 
+ *       Therefore it is CRUCIAL that you free ipList when you are done with
  *       its contents, to avoid a nasty memory leak.
  */
 int get_socket_list_from_proto(int **ipList, int protocol);
@@ -100,9 +100,9 @@ int get_socket_list_from_proto(int **ipList, int protocol);
  * Returns the sum of the number of bytes waiting to be consumed on all network
  * interfaces and transports that OpenSIPS is listening on.
  *
- * Note: This currently only works on systems supporting the 
- *       /proc/net/[tcp|udp] interface.  On other systems, zero will always 
- *       be returned.  Details of why this is so can be found in 
+ * Note: This currently only works on systems supporting the
+ *       /proc/net/[tcp|udp] interface.  On other systems, zero will always
+ *       be returned.  Details of why this is so can be found in
  *       network_stats.c
  */
 int get_total_bytes_waiting(int only_proto);
@@ -127,7 +127,7 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 
 static inline struct socket_info** get_sock_info_list(unsigned short proto)
 {
-	
+
 	switch(proto){
 		case PROTO_UDP:
 			return &udp_listen;
@@ -244,7 +244,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 								(((unsigned int)(b))<<8)+  \
 								((unsigned int)(c)) ) | 0x20202020)
 	unsigned int i;
-	
+
 	/* must support 3-char arrays for udp, tcp, tls,
 	 * must support 4-char arrays for sctp */
 	*proto=PROTO_NONE;
@@ -294,11 +294,11 @@ inline static int parse_phostport(char* s, int slen, char** host, int* hlen,
 	int   bracket;
 	str   tmp;
 	char* end;
-	
+
 	first=second=0;
 	bracket=0;
 	end = s + slen;
-	
+
 	/* find the first 2 ':', ignoring possible ipv6 addresses
 	 * (substrings between [])
 	 */
@@ -323,7 +323,7 @@ inline static int parse_phostport(char* s, int slen, char** host, int* hlen,
 	}
 	if (p==s) return -1;
 	if (*(p-1)==':') goto error_colons;
-	
+
 	if (first==0){ /* no ':' => only host */
 		*host=s;
 		*hlen=(int)(p-s);

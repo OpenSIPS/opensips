@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * UNIXODBC module
  *
@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *
@@ -78,7 +78,7 @@ int db_unixodbc_list_insert(list** start, list** link, int n, strn* value)
 			}
 			strncpy((*link)->data[i], value[i].s, (*link)->lengths[i]);
 		}
-	
+
 		*start = *link;
 		return 0;
 	}

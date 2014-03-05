@@ -18,10 +18,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ *
  * History:
  * --------
  * 2007-09-19  genesis (wiquan)
@@ -100,13 +100,13 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 	/* Save the number of rows in the current fetch */
 	RES_ROW_N(_res) = 1;
 	row = RES_ROWS(_res);
-	
+
 	/* Save the number of columns in the ROW structure */
 	ROW_N(row) = RES_COL_N(_res);
 
 	/*
 	 * Allocate an array of pointers one per column.
-	 * It that will be used to hold the address of the string 
+	 * It that will be used to hold the address of the string
 	 * representation of each column.
 	 */
 	len = sizeof(char *) * RES_COL_N(_res);
@@ -142,7 +142,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 					memset(row_buf[i], 0, len+1);
 					strncpy(row_buf[i], s, len);
 				}
-				
+
 			}
 		}
 		else {
@@ -184,10 +184,10 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 		    row->values[col].type == DB_DATETIME
 		 )
 			pkg_free(row_buf[col]);
-		
+
 	}
 
-	
+
 	LM_DBG("freeing row buffer at %p\n", row_buf);
 	if( row_buf[col])
 		pkg_free(row_buf);
@@ -213,14 +213,14 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 	char **row_buf, *s;
 	db_row_t* row = NULL;
 	col = len = i = j = 0;
-	
+
 	if (!_res) {
 		LM_ERR("invalid parameter");
 		return -1;
 	}
-	
+
 	row = &(RES_ROWS(_res)[_rx]);
-	
+
 	/* Save the number of columns in the ROW structure */
 	ROW_N(row) = RES_COL_N(_res);
 
@@ -236,14 +236,14 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 	}
 	LM_DBG("allocate for %d columns %d bytes in row buffer at %p\n", RES_COL_N(_res), len, row_buf);
 	memset(row_buf, 0, len);
-	
+
 	/*populate the row_buf with bdb_result*/
 	/*bdb_result is memory from our callers stack so we copy here*/
 
 	LM_DBG("Found: [%s]\n",bdb_result);
 
 
-	
+
 	s = strsep(&bdb_result, DELIM);
 	while( s!=NULL)
 	{
@@ -285,7 +285,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 		s = strsep(&bdb_result, DELIM);
 		col++;
 	}
-	
+
 	/*do the type conversion per col*/
 	for(col = 0; col < ROW_N(row); col++) {
 #ifdef BDB_EXTRA_DEBUG
@@ -315,7 +315,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 			pkg_free(row_buf[col]);
 	}
 
-	
+
 	if( row_buf )
 		pkg_free(row_buf);
 	row_buf = NULL;
@@ -335,14 +335,14 @@ error:
 int* bdb_get_colmap(table_p _dtp, db_key_t* _k, int _n)
 {
 	int i, j, *_lref=NULL;
-	
+
 	if(!_dtp || !_k || _n < 0)
 		return NULL;
-	
+
 	_lref = (int*)pkg_malloc(_n*sizeof(int));
 	if(!_lref)
 		return NULL;
-	
+
 	for(i=0; i < _n; i++)
 	{
 		for(j=0; j<_dtp->ncols; j++) {
@@ -366,7 +366,7 @@ int* bdb_get_colmap(table_p _dtp, db_key_t* _k, int _n)
 int bdb_is_neq_type(db_type_t _t0, db_type_t _t1)
 {
 	if(_t0 == _t1)	return 0;
-	
+
 	switch(_t1)
 	{
 		case DB_INT:
@@ -402,12 +402,12 @@ int bdb_row_match(db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n, db_res_t* _r
 {
 	int i, res;
 	db_row_t* row = NULL;
-	
+
 	if(!_r || !_lkey)
 		return 1;
-	
+
 	row = RES_ROWS(_r);
-	
+
 	for(i=0; i<_n; i++) {
 		res = bdb_cmp_val(&(ROW_VALUES(row)[_lkey[i]]), &_v[i]);
 
@@ -434,7 +434,7 @@ int bdb_row_match(db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n, db_res_t* _r
 			return res;
 		}}}}}
 	}
-	
+
 	return 1;
 }
 
@@ -443,7 +443,7 @@ int bdb_row_match(db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n, db_res_t* _r
 int bdb_cmp_val(db_val_t* _vp, db_val_t* _v)
 {
 	int _l, _n;
-	
+
 	if(!_vp && !_v)
 		return 0;
 	if(!_v)
@@ -456,7 +456,7 @@ int bdb_cmp_val(db_val_t* _vp, db_val_t* _v)
 		return 1;
 	if(_vp->nul)
 		return -1;
-	
+
 	switch(VAL_TYPE(_v))
 	{
 		case DB_INT:

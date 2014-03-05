@@ -11,20 +11,20 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
- * 
+ *
  * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * -------
- *  
- *  
+ *
+ *
  */
 
 #include <stdio.h>
@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <string.h>
 
 /* memory management */
@@ -63,15 +63,15 @@
 static inline int get_to_uri(struct sip_msg* m, str* u)
 {
      // check that the header field is there and is parsed
-	if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1)|| (!m->to))) 
+	if (!m->to && ((parse_headers(m, HDR_TO_F, 0) == -1)|| (!m->to)))
 	{
 		LM_ERR("can't get To header field\n");
 		return -1;
 	}
-	
+
 	u->s   = ((struct to_body*)m->to->parsed)->uri.s;
 	u->len = ((struct to_body*)m->to->parsed)->uri.len;
-	
+
 	return 0;
 }
 
@@ -84,7 +84,7 @@ static inline int get_from_uri(struct sip_msg* m, str* u)
 		LM_ERR("failed to parse From body\n");
 		return -1;
 	}
-	
+
 	u->s   = ((struct to_body*)m->from->parsed)->uri.s;
 	u->len = ((struct to_body*)m->from->parsed)->uri.len;
 
@@ -100,7 +100,7 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 	struct hdr_field* h;
 	struct sip_uri puri;
 	AAAMessage *req;
-	AAA_AVP *avp; 
+	AAA_AVP *avp;
 	int ret;
 	unsigned int tmp;
 
@@ -112,14 +112,14 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 	uri.len = 0;
 
 	/* extract the uri according with the _hf parameter */
-	switch(hf_type) 
+	switch(hf_type)
 	{
 		case 1: /* Request-URI */
 			uri = *(GET_RURI(_m));
 		break;
 
 		case 2: /* To */
-			if (get_to_uri(_m, &uri) < 0) 
+			if (get_to_uri(_m, &uri) < 0)
 			{
 				LM_ERR("failed to extract To\n");
 				return -2;
@@ -127,7 +127,7 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 			break;
 
 		case 3: /* From */
-			if (get_from_uri(_m, &uri) < 0) 
+			if (get_from_uri(_m, &uri) < 0)
 			{
 				LM_ERR("failed to extract From URI\n");
 				return -3;
@@ -136,10 +136,10 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 
 		case 4: /* Credentials */
 			get_authorized_cred(_m->authorization, &h);
-			if (!h) 	
+			if (!h)
 			{
 				get_authorized_cred(_m->proxy_auth, &h);
-				if (!h) 
+				if (!h)
 				{
 					LM_ERR("no authorized credentials found "
 							"(error in scripts)\n");
@@ -150,22 +150,22 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 			break;
 	}
 
-	if (hf_type != 4) 
+	if (hf_type != 4)
 	{
-		if (parse_uri(uri.s, uri.len, &puri) < 0) 
+		if (parse_uri(uri.s, uri.len, &puri) < 0)
 		{
 			LM_ERR("failed to parse URI\n");
 			return -5;
 		}
 		user = puri.user;
 		domain = puri.host;
-	} 
+	}
 	else
 	{
 		user = cred->username.user;
 		domain = cred->realm;
 	}
-	
+
 	/* user@domain mode */
 	if (use_domain)
 	{
@@ -175,12 +175,12 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 		{
 			user_name.len++;
 			user_name.s = (char*)pkg_malloc(user_name.len);
-			if (!user_name.s) 
+			if (!user_name.s)
 			{
 				LM_ERR("no pkg memory left\n");
 				return -6;
 			}
-		
+
 			memcpy(user_name.s, user.s, user.len);
 			if(user.len>0)
 			{
@@ -190,17 +190,17 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 			else
 				memcpy(user_name.s, domain.s, domain.len);
 		}
-	} 
-	else 
+	}
+	else
 		user_name = user;
-	
-	
+
+
 	if ( (req=AAAInMessage(AA_REQUEST, AAA_APP_NASREQ))==NULL)
 	{
 		LM_ERR("can't create new AAA message!\n");
 		return -1;
 	}
-	
+
 	/* Username AVP */
 	if( (avp=AAACreateAVP(AVP_User_Name, 0, 0, user_name.s,
 				user_name.len, AVP_DUPLICATE_DATA)) == 0)
@@ -230,7 +230,7 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 	/* SIP_MSGID AVP */
 	LM_DBG("******* m_id=%d\n", _m->id);
 	tmp = _m->id;
-	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&tmp), 
+	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&tmp),
 				sizeof(tmp), AVP_DUPLICATE_DATA)) == 0)
 	{
 		LM_ERR("no more pkg memory!\n");
@@ -242,9 +242,9 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 		goto error1;
 	}
 
-	
+
 	/* ServiceType AVP */
-	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_GROUP_CHECK, 
+	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_GROUP_CHECK,
 				SERVICE_LEN, AVP_DUPLICATE_DATA)) == 0)
 	{
 		LM_ERR("no more pkg memory!\n");
@@ -255,7 +255,7 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 		LM_ERR("avp not added \n");
 		goto error1;
 	}
-	
+
 
 	/* Destination-Realm AVP */
 	uri = *(GET_RURI(_m));
@@ -266,13 +266,13 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 		LM_ERR("no more pkg memory!\n");
 		goto error;
 	}
-	
+
 	if( AAAAddAVPToMessage(req, avp, 0)!= AAA_ERR_SUCCESS)
 	{
 		LM_ERR("avp not added \n");
 		goto error1;
 	}
-	
+
 #ifdef DEBUG
 	AAAPrintMessage(req);
 #endif
@@ -310,7 +310,7 @@ int diameter_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 				"failed or user is not in group\n");
 		goto error;
 	}
-	
+
 	AAAFreeMessage(&req);
 	return 1;
 

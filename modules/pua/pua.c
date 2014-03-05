@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -332,13 +332,13 @@ static int db_restore(void)
 		LM_ERR("null database connection\n");
 		return -1;
 	}
-	
+
 	if(pua_dbf.use_table(pua_db, &db_table)< 0)
 	{
 		LM_ERR("in use table\n");
 		return -1;
 	}
-	
+
 	if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
 		if(pua_dbf.query(pua_db,0, 0, 0, result_cols,0, n_result_cols, 0,0)< 0)
 		{
@@ -432,24 +432,24 @@ static int db_restore(void)
 				LM_DBG("to_uri= %.*s\n", to_uri.len, to_uri.s);
 				call_id.s= (char*)row_vals[callid_col].val.string_val;
 				call_id.len = strlen(call_id.s);
-				
+
 				to_tag.s= (char*)row_vals[totag_col].val.string_val;
 				to_tag.len = strlen(to_tag.s);
-				
+
 				from_tag.s= (char*)row_vals[fromtag_col].val.string_val;
 				from_tag.len = strlen(from_tag.s);
-				
+
 				if(row_vals[record_route_col].val.string_val)
 				{
 					record_route.s= (char*)
 						row_vals[record_route_col].val.string_val;
 					record_route.len= strlen(record_route.s);
 				}
-				
+
 				contact.s= (char*)row_vals[contact_col].val.string_val;
 				contact.len = strlen(contact.s);
-				
-				remote_contact.s= 
+
+				remote_contact.s=
 					(char*)row_vals[remote_contact_col].val.string_val;
 				if(remote_contact.s)
 					remote_contact.len = strlen(remote_contact.s);
@@ -466,7 +466,7 @@ static int db_restore(void)
 			if(watcher_uri.s)
 				size+= sizeof(str)+ to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
 					from_tag.len+ record_route.len+ contact.len;
-			
+
 			p= (ua_pres_t*)shm_malloc(size);
 			if(p== NULL)
 			{
@@ -475,14 +475,14 @@ static int db_restore(void)
 			}
 			memset(p, 0, size);
 			size= sizeof(ua_pres_t);
-			
+
 			p->pres_uri= (str*)((char*)p+ size);
 			size+= sizeof(str);
 			p->pres_uri->s= (char*)p + size;
 			memcpy(p->pres_uri->s, pres_uri.s, pres_uri.len);
 			p->pres_uri->len= pres_uri.len;
 			size+= pres_uri.len;
-			
+
 			if(pres_id.s)
 			{
 				CONT_COPY(p, p->id, pres_id);
@@ -538,7 +538,7 @@ static int db_restore(void)
 				{
 					LM_ERR("no more share memory\n");
 					goto error;
-				}	
+				}
 				memcpy(p->etag.s, etag.s, etag.len);
 				p->etag.len= etag.len;
 			}
@@ -573,7 +573,7 @@ static int db_restore(void)
 
 	pua_dbf.free_result(pua_db, res);
 	res = NULL;
-	
+
 	if(pua_dbf.delete(pua_db, 0, 0 , 0, 0) < 0)
 	{
 		LM_ERR("while deleting information from db\n");
@@ -613,7 +613,7 @@ static void hashT_clean(unsigned int ticks,void *param)
 			LM_DBG("---\n");
 			if(p->expires -update_period < now )
 			{
-				if((p->desired_expires> p->expires + 5) || 
+				if((p->desired_expires> p->expires + 5) ||
 						(p->desired_expires== 0 ))
 				{
 					LM_DBG("Desired expires greater than expires -> send a "
@@ -751,7 +751,7 @@ int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 
 		pkg_free(td);
 		td= NULL;
-	}	
+	}
 
 	pkg_free(str_hdr);
 	return 0;
@@ -786,7 +786,7 @@ static void db_update(unsigned int ticks,void *param)
 	q_vals[puri_col].type = DB_STR;
 	q_vals[puri_col].nul = 0;
 	n_query_cols++;
-	
+
 	q_cols[pid_col= n_query_cols] = &str_pres_id_col;
 	q_vals[pid_col].type = DB_STR;
 	q_vals[pid_col].nul = 0;
@@ -918,7 +918,7 @@ static void db_update(unsigned int ticks,void *param)
 		LM_ERR("while deleting from db table pua\n");
 	}
 
-	for(i=0; i<HASH_SIZE; i++) 
+	for(i=0; i<HASH_SIZE; i++)
 	{
 		if(!no_lock)
 			lock_get(&HashT->p_records[i].lock);

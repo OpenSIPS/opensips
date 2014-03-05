@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -46,15 +46,15 @@
 
 extern str dp_db_url;
 extern str dp_table_name;
-extern str dpid_column; 
-extern str pr_column; 
-extern str match_op_column; 
-extern str match_exp_column; 
-extern str match_flags_column; 
-extern str subst_exp_column; 
-extern str repl_exp_column; 
-extern str attrs_column; 
-extern str disabled_column; 
+extern str dpid_column;
+extern str pr_column;
+extern str match_op_column;
+extern str match_exp_column;
+extern str match_flags_column;
+extern str subst_exp_column;
+extern str repl_exp_column;
+extern str attrs_column;
+extern str disabled_column;
 
 struct dp_param_list;
 

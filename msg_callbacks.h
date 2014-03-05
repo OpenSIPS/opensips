@@ -24,7 +24,7 @@
 /*
  * This is a mechanism to register per-message callback handlers
  * to be called at certain points of the message lifecycle.
- * 
+ *
  * Apart from the sip_msg structure, each handler is passed a
  * pointer to a handler type-specific structure from the core
  * and pointer to an opaque structure allocated by the module.

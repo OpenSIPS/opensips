@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2007 Voice Sistem SRL
- * 
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -208,7 +208,7 @@ int count_init_children(int flags)
 	struct sr_module *m;
 	struct socket_info* si;
 
-	if (dont_fork) 
+	if (dont_fork)
 		goto skip_listeners;
 
 	/* UDP listening children */
@@ -236,7 +236,7 @@ skip_listeners:
 		for (i=0;m->exports->procs[i].name;i++) {
 			if (!m->exports->procs[i].no || !m->exports->procs[i].function)
 				continue;
-			
+
 			if (!flags || (m->exports->procs[i].flags & flags))
 				ret+=m->exports->procs[i].no;
 		}

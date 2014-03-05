@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -353,7 +353,7 @@ static int check_blacklist_fixup(void **arg, int arg_no)
 	if (add_source(table) != 0) {
 		LM_ERR("could not add table");
 		return -1;
-	}	
+	}
 
 	/* get the node that belongs to the table */
 	node = table2dt(table);
@@ -521,7 +521,7 @@ struct mi_root * mi_reload_blacklist(struct mi_root* cmd, void* param)
 	struct mi_root * tmp = NULL;
 
 	if(reload_sources() == 0) {
-		tmp = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);	
+		tmp = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	} else {
 		tmp = init_mi_tree( 500, "cannot reload blacklist", 21);
 	}

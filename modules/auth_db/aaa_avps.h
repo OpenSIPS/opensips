@@ -105,7 +105,7 @@ static inline int parse_aaa_avps(char *definition,
 				goto parse_error;
 			t = foo.s[foo.len];
 			foo.s[foo.len] = '\0';
-			
+
 			if (pv_parse_spec(&foo, &avp_spec)==0
 					|| avp_spec.type!=PVT_AVP) {
 				LM_ERR("malformed or non AVP %s AVP definition\n", foo.s);

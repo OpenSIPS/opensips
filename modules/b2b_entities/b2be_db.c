@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -432,7 +432,7 @@ int b2b_entities_restore(void)
 	if (DB_CAPABILITY(b2be_dbf, DB_CAP_FETCH))
 	{
 		if(b2be_dbf.query(b2be_db,0,0,0,qcols, 0,
-			DB_COLS_NO, 0, 0) < 0) 
+			DB_COLS_NO, 0, 0) < 0)
 		{
 			LM_ERR("Error while querying (fetch) database\n");
 			return -1;
@@ -577,7 +577,7 @@ int b2b_entities_restore(void)
 
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(b2be_dbf, DB_CAP_FETCH)) {
-			if (b2be_dbf.fetch_result( b2be_db, &result, no_rows) < 0) 
+			if (b2be_dbf.fetch_result( b2be_db, &result, no_rows) < 0)
 			{
 				LM_ERR("fetching more rows failed\n");
 				goto error;

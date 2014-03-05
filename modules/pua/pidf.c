@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -100,7 +100,7 @@ xmlNodePtr xmlDocGetNodeByName(xmlDocPtr doc, const char *name, const char *ns)
 	return xmlNodeGetNodeByName(cur, name, ns);
 }
 
-char *xmlDocGetNodeContentByName(xmlDocPtr doc, const char *name, 
+char *xmlDocGetNodeContentByName(xmlDocPtr doc, const char *name,
 		const char *ns)
 {
 	xmlNodePtr node = xmlDocGetNodeByName(doc, name, ns);
@@ -121,7 +121,7 @@ int bind_libxml_api(libxml_api_t* api)
 	api->xmlNodeGetNodeByName        =  xmlNodeGetNodeByName;
 	api->xmlNodeGetNodeContentByName =  xmlNodeGetNodeContentByName;
 	api->xmlNodeGetAttrContentByName =  xmlNodeGetAttrContentByName;
-	
+
 	return 0;
-}	
+}
 

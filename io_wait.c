@@ -1,6 +1,6 @@
-/* 
+/*
  * $Id$
- * 
+ *
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of opensips, a free SIP server.
@@ -78,7 +78,7 @@ char* poll_support="poll"
 ;
 
 /*! supported poll methods */
-char* poll_method_str[POLL_END]={ "none", "poll", "epoll_lt", "epoll_et", 
+char* poll_method_str[POLL_END]={ "none", "poll", "epoll_lt", "epoll_et",
 								  "sigio_rt", "select", "kqueue",  "/dev/poll"
 								};
 
@@ -104,14 +104,14 @@ static int init_sigio(io_wait_h* h, int rsig)
 	int signo;
 	int start_sig;
 	sigset_t oldset;
-	
+
 	if (!_sigio_init){
 		_sigio_init=1;
 		_sigio_crt_rtsig=SIGRTMIN;
 		sigemptyset(&_sigio_rtsig_used);
 	}
 	h->signo=0;
-	
+
 	if (rsig==0){
 		start_sig=_sigio_crt_rtsig;
 		n=SIGRTMAX-SIGRTMIN;
@@ -124,7 +124,7 @@ static int init_sigio(io_wait_h* h, int rsig)
 		start_sig=rsig;
 		n=0;
 	}
-	
+
 	sigemptyset(&h->sset);
 	sigemptyset(&oldset);
 retry1:
@@ -135,7 +135,7 @@ retry1:
 				strerror(errno), errno);
 		/* try to continue */
 	}
-	
+
 	for (r=start_sig; r<=(n+start_sig); r++){
 		signo=(r>SIGRTMAX)?r-SIGRTMAX+SIGRTMIN:r;
 		if (! sigismember(&_sigio_rtsig_used, signo) &&
@@ -146,7 +146,7 @@ retry1:
 			break;
 		}
 	}
-	
+
 	if (h->signo==0){
 			LM_CRIT("init_sigio: %s\n",
 					rsig?"could not assign requested real-time signal":
@@ -155,7 +155,7 @@ retry1:
 	}
 
 	LM_DBG("trying signal %d... \n", h->signo);
-	
+
 	if (sigaddset(&h->sset, h->signo)==-1){
 		LM_ERR("sigaddset failed for %d: %s [%d]\n",
 				h->signo, strerror(errno), errno);
@@ -183,7 +183,7 @@ error:
 
 
 /*!
- * \brief sigio specific destroy 
+ * \brief sigio specific destroy
  * \param h IO handle
  */
 static void destroy_sigio(io_wait_h* h)
@@ -305,7 +305,7 @@ static void destroy_devpoll(io_wait_h* h)
 #ifdef HAVE_SELECT
 /*!
  * \brief select specific init
- * \param h IO handle 
+ * \param h IO handle
  * \return zero
  * \todo make this method void, and remove the check in io_wait.c
  */
@@ -322,7 +322,7 @@ static int init_select(io_wait_h* h)
  * \brief return system version
  * Return system version (major.minor.minor2) as (major<<16)|(minor)<<8|(minor2)
  * (if some of them are missing, they are set to 0)
- * if the parameters are not null they are set to the coresp. part 
+ * if the parameters are not null they are set to the coresp. part
  * \param major major version
  * \param minor minor version
  * \param minor2 minor2 version
@@ -335,7 +335,7 @@ static unsigned int get_sys_version(int* major, int* minor, int* minor2)
 	int m2;
 	int m3;
 	char* p;
-	
+
 	memset (&un, 0, sizeof(un));
 	m1=m2=m3=0;
 	/* get sys version */
@@ -368,7 +368,7 @@ char* check_poll_method(enum poll_types poll_method)
 	unsigned int os_ver;
 
 	ret=0;
-	os_ver=get_sys_version(0,0,0);	
+	os_ver=get_sys_version(0,0,0);
 	(void)os_ver;
 	switch(poll_method){
 		case POLL_NONE:
@@ -454,7 +454,7 @@ enum poll_types choose_poll_method(void)
 #ifdef HAVE_EPOLL
 	if (os_ver>=0x020542) /* if ver >= 2.5.66 */
 		poll_method=POLL_EPOLL_LT; /* or POLL_EPOLL_ET */
-		
+
 #endif
 #ifdef HAVE_KQUEUE
 	if (poll_method==0)
@@ -477,7 +477,7 @@ enum poll_types choose_poll_method(void)
 	#endif
 #endif
 #ifdef  HAVE_SIGIO_RT
-		if (poll_method==0) 
+		if (poll_method==0)
 			if (os_ver>=0x020200) /* if ver >= 2.2.0 */
 				poll_method=POLL_SIGIO_RT;
 #endif
@@ -504,19 +504,19 @@ char* poll_method_name(enum poll_types poll_method)
 /*!
  * \brief converts a string into a poll_method
  * \param s converted string
- * \return POLL_NONE (0) on error, else the corresponding poll type 
+ * \return POLL_NONE (0) on error, else the corresponding poll type
  */
 enum poll_types get_poll_type(char* s)
 {
 	int r;
 	unsigned int l;
-	
+
 	l=strlen(s);
 	for (r=POLL_END-1; r>POLL_NONE; r--)
 		if ((strlen(poll_method_str[r])==l) &&
 			(strncasecmp(poll_method_str[r], s, l)==0))
 			break;
-	return r; 
+	return r;
 }
 
 
@@ -530,7 +530,7 @@ enum poll_types get_poll_type(char* s)
 int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 {
 	char * poll_err;
-	
+
 	memset(h, 0, sizeof(*h));
 	h->max_fd_no=max_fd;
 #ifdef HAVE_EPOLL
@@ -543,7 +543,7 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 	h->dpoll_fd=-1;
 #endif
 	poll_err=check_poll_method(poll_method);
-	
+
 	/* set an appropiate poll method */
 	if (poll_err || (poll_method==0)){
 		poll_method=choose_poll_method();
@@ -561,11 +561,11 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 	if (h->poll_method != POLL_POLL && h->poll_method != POLL_EPOLL_LT &&
 		h->poll_method != POLL_EPOLL_ET) {
 		if (tcp_async)
-			LM_WARN("Tried to enable async TCP but current poll method is %d." 
+			LM_WARN("Tried to enable async TCP but current poll method is %d."
 				" Currently we only support POLL and EPOLL \n",h->poll_method);
 		tcp_async=0;
 	}
-	
+
 	/* common stuff, everybody has fd_hash */
 	h->fd_hash=local_malloc(sizeof(*(h->fd_hash))*h->max_fd_no);
 	if (h->fd_hash==0){
@@ -574,7 +574,7 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 		goto error;
 	}
 	memset((void*)h->fd_hash, 0, sizeof(*(h->fd_hash))*h->max_fd_no);
-	
+
 	switch(poll_method){
 		case POLL_POLL:
 #ifdef HAVE_SELECT
@@ -611,7 +611,7 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 				goto error;
 			}
 #endif
-			
+
 			break;
 #ifdef HAVE_EPOLL
 		case POLL_EPOLL_LT:

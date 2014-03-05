@@ -102,15 +102,15 @@ typedef struct handle_con {
 
 typedef struct handle_set {
     /* index in the info_global list; used for the 1 to 1 relationship */
-    int             set_index;  
+    int             set_index;
 
     /* index in con_list; used for FAILOVER and ROUNDROBIN mode */
-    int             curent_con; 
+    int             curent_con;
     handle_con_t*   con_list;
     int             size;
 
     /* used for exactly once call of real init() and close() */
-    int             refcount;   
+    int             refcount;
 } handle_set_t;
 
 

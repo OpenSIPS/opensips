@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -33,7 +33,7 @@
 #include <string.h>
 
 /*! \page QvalueHandling Q Value Handling
- * 
+ *
  * The q value expresses the priority of a URI within a set of URIs
  * (Contact header field in the same SIP message or dset array in
  * ser. The higher is the q value of a URI the higher is the priority
@@ -145,7 +145,7 @@ static inline char* q2str(qvalue_t q, unsigned int* len)
 	} else {
 		memcpy(p, Q_PREFIX, Q_PREFIX_LEN);
 		p += Q_PREFIX_LEN;
-		
+
 		*p++ = q / 100 + '0';
 		q %= 100;
 		if (!q) goto end;

@@ -2,7 +2,7 @@
  * $Id$
  *
  * recovery for berkeley_db module
- * 
+ *
  * Copyright (C) 2007 Cisco Systems
  *
  * This file is part of opensips, a free SIP server.
@@ -17,15 +17,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ *
  * History:
  * --------
  * 2007-09-19  genesis (wiquan)
  */
- 
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,7 +51,7 @@
 #define METADATA_COLUMNS "METADATA_COLUMNS"
 
 /*operations*/
-enum 
+enum
 {
 	INSERT,
 	UPDATE,

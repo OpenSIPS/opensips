@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -54,13 +54,13 @@ inline void set_avp_fields( AAA_AVPCode code, AAA_AVP *avp)
 		case 293: /*AVP Destination Host*/
 		case 264: /*AVP_Origin_Host*/
 		case 296: /*AVP Origin_Realm*/
-		case 400: /* AVP_Resource */	
-		case 401: /* AVP_Response */	
-		case 402: /* AVP_Chalenge */	
+		case 400: /* AVP_Resource */
+		case 401: /* AVP_Response */
+		case 402: /* AVP_Chalenge */
 		case 403: /* AVP_Method */
 		case 404: /* Service_Type AVP */
 		case 405: /* User_Group AVP*/
-		case 279:					
+		case 279:
 			avp->flags = 0x40|(0x20&avp->flags);
 			avp->type = AAA_AVP_STRING_TYPE;
 			break;

@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -56,7 +56,7 @@ enum sip_protos { PROTO_NONE, PROTO_UDP, PROTO_TCP, PROTO_TLS, PROTO_SCTP, PROTO
 struct ip_addr{
 	unsigned int af; /*!< address family: AF_INET6 or AF_INET */
 	unsigned int len;    /*!< address len, 16 or 4 */
-	
+
 	/*! \brief 64 bits aligned address */
 	union {
 		unsigned long  addrl[16/sizeof(long)]; /*!< long format*/
@@ -123,7 +123,7 @@ struct receive_info {
 
 struct dest_info {
 	int proto;
-	int proto_reserved1; /*!< tcp stores the connection id here */ 
+	int proto_reserved1; /*!< tcp stores the connection id here */
 	union sockaddr_union to;
 	struct socket_info* send_sock;
 };
@@ -153,7 +153,7 @@ struct socket_id {
 #define sockaddru_len(su)	sizeof(struct sockaddr_in)
 #endif /*USE_IPV6*/
 #endif /* HAVE_SOCKADDR_SA_LEN*/
-	
+
 /*! \brief inits an ip_addr with the addr. info from a hostent structure
  * ip = struct ip_addr*
  * he= struct hostent*
@@ -164,7 +164,7 @@ struct socket_id {
 		(ip)->len=(he)->h_length;  \
 		memcpy((ip)->u.addr, (he)->h_addr_list[(addr_no)], (ip)->len); \
 	}while(0)
-	
+
 
 
 
@@ -192,13 +192,13 @@ void print_net(struct net* net);
 int is_mcast(struct ip_addr* ip);
 #endif /* USE_MCAST */
 
-/*! \brief returns 1 if ip & net.mask == net.ip ; 0 otherwise & -1 on error 
+/*! \brief returns 1 if ip & net.mask == net.ip ; 0 otherwise & -1 on error
 	[ diff. address families ]) */
 inline static int matchnet(struct ip_addr* ip, struct net* net)
 {
 	unsigned int r;
 /* int ret;
-	
+
 	ret=-1; */
 	if (ip->af == net->ip.af){
 		for(r=0; r<ip->len/4; r++){ /* ipv4 & ipv6 addresses are
@@ -308,7 +308,7 @@ static inline void su_setport(union sockaddr_union* su, unsigned short port)
 static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
 {
 	switch(su->s.sa_family){
-	case AF_INET: 
+	case AF_INET:
 		ip->af=AF_INET;
 		ip->len=4;
 		memcpy(ip->u.addr, &su->sin.sin_addr, 4);
@@ -329,19 +329,19 @@ static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
 /*! \brief ip_addr2su -> the same as \ref init_su() */
 #define ip_addr2su init_su
 
-/*! \brief inits a struct sockaddr_union from a struct ip_addr and a port no 
+/*! \brief inits a struct sockaddr_union from a struct ip_addr and a port no
  * \return 0 if ok, -1 on error (unknown address family)
  * \note the port number is in host byte order */
 static inline int init_su( union sockaddr_union* su,
 							struct ip_addr* ip,
-							unsigned short   port ) 
+							unsigned short   port )
 {
 	memset(su, 0, sizeof(union sockaddr_union));/*needed on freebsd*/
 	su->s.sa_family=ip->af;
 	switch(ip->af){
 #ifdef USE_IPV6
 	case	AF_INET6:
-		memcpy(&su->sin6.sin6_addr, ip->u.addr, ip->len); 
+		memcpy(&su->sin6.sin6_addr, ip->u.addr, ip->len);
 		#ifdef HAVE_SOCKADDR_SA_LEN
 			su->sin6.sin6_len=sizeof(struct sockaddr_in6);
 		#endif
@@ -371,7 +371,7 @@ static inline int init_su( union sockaddr_union* su,
 static inline int hostent2su( union sockaddr_union* su,
 								struct hostent* he,
 								unsigned int idx,
-								unsigned short   port ) 
+								unsigned short   port )
 {
 	memset(su, 0, sizeof(union sockaddr_union)); /*needed on freebsd*/
 	su->s.sa_family=he->h_addrtype;
@@ -416,8 +416,8 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 #endif
 	int r;
 	#define HEXDIG(x) (((x)>=10)?(x)-10+'A':(x)+'0')
-	
-	
+
+
 	offset=0;
 	switch(ip->af){
 	#ifdef USE_IPV6
@@ -519,12 +519,12 @@ static inline char* ip_addr2a(struct ip_addr* ip)
 				_ip_addr_A_buff[offset+1]=0;
 			}
 			break;
-		
+
 		default:
 			LM_CRIT("unknown address family %d\n", ip->af);
 			return 0;
 	}
-	
+
 	return _ip_addr_A_buff;
 }
 
@@ -540,7 +540,7 @@ static inline struct hostent* ip_addr2he(str* name, struct ip_addr* ip)
 	static char* p_addr[2];
 	static char address[16];
 	int len;
-	
+
 	p_aliases[0]=0; /* no aliases*/
 	p_addr[1]=0; /* only one address*/
 	p_addr[0]=address;
@@ -549,7 +549,7 @@ static inline struct hostent* ip_addr2he(str* name, struct ip_addr* ip)
 	hostname[len] = 0;
 	if (ip->len>16) return 0;
 	memcpy(address, ip->u.addr, ip->len);
-	
+
 	he.h_addrtype=ip->af;
 	he.h_length=ip->len;
 	he.h_addr_list=p_addr;

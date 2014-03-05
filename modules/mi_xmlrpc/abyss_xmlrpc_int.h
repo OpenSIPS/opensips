@@ -8,13 +8,13 @@ extern const char * const xmlrpc_strsol;
 void
 xmlrpc_millisecond_sleep(unsigned int const milliseconds);
 
-void 
+void
 xmlrpc_asprintf(const char ** const retvalP, const char * const fmt, ...);
 
 void
 xmlrpc_strfree(const char * const string);
 
-static inline unsigned short 
+static inline unsigned short
 xmlrpc_streq(const char * const a,
              const char * const b) {
     return (strcmp(a, b) == 0);

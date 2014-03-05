@@ -422,7 +422,7 @@ add_dst(
 	rt_data_t *r,
 	/* id */
 	char *id,
-	/* ip address */ 
+	/* ip address */
 	char* ip,
 	/* strip len */
 	int strip,
@@ -634,7 +634,7 @@ void del_carriers_list(
 	}
 }
 
-void 
+void
 free_rt_data(
 		rt_data_t* rt_data,
 		int all

@@ -92,7 +92,7 @@ char* uri_xmpp2sip(char* uri, int* len)
 		}
 		else
 			user.len = strlen(uri);
-	
+
 		if(5 + user.len > 256)
 		{
 			LM_ERR("Buffer overflow\n");
@@ -133,7 +133,7 @@ char* uri_xmpp2sip(char* uri, int* len)
 char *extract_domain(char *jid)
 {
 	char *p;
-	
+
 	if ((p = strchr(jid, '/')))
 		*p = 0;
 	if ((p = strchr(jid, '@'))) {
@@ -161,7 +161,7 @@ char *db_key(char *secret, char *domain, char *id)
 {
 	char buf[1024];
 	char *hash;
-	
+
 	snprintf(buf, sizeof(buf), "%s", secret);
 	hash = shahash(buf);
 

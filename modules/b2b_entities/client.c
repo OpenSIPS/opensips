@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -67,7 +67,7 @@ static void generate_tag(str* tag, str* src, str* callid)
 	LM_DBG("from_tag = %.*s\n", tag->len, tag->s);
 }
 
-/** 
+/**
  * Function to create a new client entity a send send an initial message
  *	method  : the method of the message
  *	to_uri  : the destination URI
@@ -227,7 +227,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		td.obp = ci->dst_uri;
 
 	tmb.setlocalTholder(&dlg->uac_tran);
-	
+
 	/* send request */
 	result= tmb.t_request_within
 		(&ci->method,          /* method*/

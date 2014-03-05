@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * presence_xml module - 
+ * presence_xml module -
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -48,7 +48,7 @@ static str pu_415_rpl  = str_init("Unsupported media type");
  * in event specific publish handling - only check is good body format
  */
 int	xml_publ_handl(struct sip_msg* msg, int* sent_reply)
-{	
+{
 	str body= {0, 0};
 	xmlDocPtr doc= NULL;
 
@@ -141,7 +141,7 @@ error:
 int xml_add_events(void)
 {
 	pres_ev_t event;
-	
+
 	/* constructing presence event */
 	memset(&event, 0, sizeof(pres_ev_t));
 	event.name.s= "presence";
@@ -185,7 +185,7 @@ int xml_add_events(void)
 		LM_ERR("while adding event presence.winfo\n");
 		return -1;
 	}
-	
+
 	/* constructing bla event */
 	memset(&event, 0, sizeof(pres_ev_t));
 	event.name.s= "dialog;sla";
@@ -208,7 +208,7 @@ int xml_add_events(void)
 		LM_ERR("while adding event dialog;sla\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 

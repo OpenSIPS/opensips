@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -50,7 +50,7 @@ typedef struct publ_info
 	str* etag;
 	str* extra_headers;
 	str outbound_proxy;
-	void* cb_param;   /* the parameter for the function to be called on the callback 
+	void* cb_param;   /* the parameter for the function to be called on the callback
 						 for the received reply; it must be allocated in share memory;
 						 a reference to it will be found in the cb_param filed of the ua_pres_structure
 						 receied as a parameter for the registered function*/

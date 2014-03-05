@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Hash table collision slot related functions
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -153,8 +153,8 @@ int slot_add(hslot_t* _s, struct urecord* _r)
 		LM_ERR("inserting into map\n");
 		return -1;
 	}
-	 
-	
+
+
 	*dest = _r;
 
 	_r->slot = _s;
@@ -170,5 +170,5 @@ void slot_rem(hslot_t* _s, struct urecord* _r)
 {
 
 	map_remove( _s->records, _r->aor );
-	_r->slot = 0;	
+	_r->slot = 0;
 }

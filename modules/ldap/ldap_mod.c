@@ -72,16 +72,16 @@ static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param);
 static int w_ldap_result1(struct sip_msg* msg, char* src, char* param);
 static int w_ldap_result2(struct sip_msg* msg, char* src, char* subst);
 static int w_ldap_result_next(struct sip_msg* msg, char* foo, char *bar);
-static int w_ldap_filter_url_encode(struct sip_msg* msg, 
+static int w_ldap_filter_url_encode(struct sip_msg* msg,
 		char* filter_component, char* dst_avp_name);
-static int w_ldap_result_check_1(struct sip_msg* msg, 
+static int w_ldap_result_check_1(struct sip_msg* msg,
 		char* attr_name_check_str, char* param);
 static int w_ldap_result_check_2(struct sip_msg* msg,
 		char* attr_name_check_str, char* attr_val_re);
 
 
-/* 
-* Default module parameter values 
+/*
+* Default module parameter values
 */
 #define DEF_LDAP_CONFIG "/usr/local/etc/opensips/ldap.cfg"
 
@@ -95,25 +95,25 @@ static dictionary* config_vals = NULL;
 * Exported functions
 */
 static cmd_export_t cmds[] = {
-	{"ldap_search",            (cmd_function)w_ldap_search,            1, 
+	{"ldap_search",            (cmd_function)w_ldap_search,            1,
 		ldap_search_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result",            (cmd_function)w_ldap_result1,           1, 
+	{"ldap_result",            (cmd_function)w_ldap_result1,           1,
 		ldap_result_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result",            (cmd_function)w_ldap_result2,           2, 
+	{"ldap_result",            (cmd_function)w_ldap_result2,           2,
 		ldap_result_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result_next",       (cmd_function)w_ldap_result_next,       0, 
+	{"ldap_result_next",       (cmd_function)w_ldap_result_next,       0,
 		0, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result_check",      (cmd_function)w_ldap_result_check_1,    1, 
+	{"ldap_result_check",      (cmd_function)w_ldap_result_check_1,    1,
 		ldap_result_check_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result_check",      (cmd_function)w_ldap_result_check_2,    2, 
+	{"ldap_result_check",      (cmd_function)w_ldap_result_check_2,    2,
 		ldap_result_check_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_filter_url_encode", (cmd_function)w_ldap_filter_url_encode, 2, 
+	{"ldap_filter_url_encode", (cmd_function)w_ldap_filter_url_encode, 2,
 		ldap_filter_url_encode_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"load_ldap",              (cmd_function)load_ldap,  0,
@@ -137,7 +137,7 @@ static param_export_t params[] = {
 * Module interface
 */
 struct module_exports exports = {
-	"ldap", 
+	"ldap",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
@@ -157,7 +157,7 @@ static int child_init(int rank)
 {
 	int i = 0, ld_count = 0;
 	char* ld_name;
-	
+
 	/* don't do anything for non-worker process */
 	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN) {
 		return 0;
@@ -185,9 +185,9 @@ static int child_init(int rank)
 			ldap_disconnect(ld_name);
 			return -1;
 		}
-		
+
 	}
-	
+
 	return 0;
 }
 
@@ -197,7 +197,7 @@ static int mod_init(void)
 	int ld_count = 0, i = 0;
 	char* section_name;
 	char* ldap_version;
-	
+
 	LM_INFO("LDAP_H350 module - initializing\n");
 
 	/*
@@ -232,13 +232,13 @@ static int mod_init(void)
 		if (!iniparser_find_entry(config_vals,
 					get_ini_key_name(section_name, CFG_N_LDAP_HOST)))
 		{
-			LM_ERR(	"mandatory %s not defined in [%s]\n", 
-				CFG_N_LDAP_HOST, 
+			LM_ERR(	"mandatory %s not defined in [%s]\n",
+				CFG_N_LDAP_HOST,
 				section_name);
 			return -2;
 		}
-	}	
-	
+	}
+
 	/*
 	* print ldap version string
 	*/
@@ -305,8 +305,8 @@ static int w_ldap_result_check_1(struct sip_msg* msg,
 static int w_ldap_result_check_2(struct sip_msg* msg,
 		char* attr_name_check_str, char* attr_val_re)
 {
-	return ldap_result_check( msg, 
-		(struct ldap_result_check_params*)attr_name_check_str, 
+	return ldap_result_check( msg,
+		(struct ldap_result_check_params*)attr_name_check_str,
 		(struct subst_expr*)attr_val_re);
 }
 
@@ -345,10 +345,10 @@ static int ldap_result_fixup(void** param, int param_no)
 	char *p;
 	str s;
 	int dst_avp_val_type = 0;
-	
+
 	if (param_no == 1) {
 		arg_str = (char*)*param;
-		if ((dst_avp_str = strchr(arg_str, '/')) == 0) 
+		if ((dst_avp_str = strchr(arg_str, '/')) == 0)
 		{
 			/* no / found in arg_str */
 			LM_ERR("invalid first argument [%s]\n", arg_str);
@@ -377,7 +377,7 @@ static int ldap_result_fixup(void** param, int param_no)
 			return E_OUT_OF_MEM;
 		}
 		memset(lp, 0, sizeof(struct ldap_result_params));
-		
+
 		lp->ldap_attr_name.s = arg_str;
 		lp->ldap_attr_name.len = strlen(arg_str);
 
@@ -397,7 +397,7 @@ static int ldap_result_fixup(void** param, int param_no)
 			return E_UNSPEC;
 		}
 		*param = (void*)lp;
-		
+
 	} else if (param_no == 2) {
 		subst.s = *param;
 		subst.len = strlen(*param);
@@ -421,7 +421,7 @@ static int ldap_result_check_fixup(void** param, int param_no)
 	str s;
 	char *arg_str, *check_str;
 	int arg_str_len;
-	
+
 	if (param_no == 1)
 	{
 		arg_str = (char*)*param;
@@ -434,7 +434,7 @@ static int ldap_result_check_fixup(void** param, int param_no)
 			return E_UNSPEC;
 		}
 		*(check_str++) = 0;
-		
+
 		lp = (struct ldap_result_check_params*)pkg_malloc(sizeof(struct ldap_result_check_params));
 		if (lp == NULL) {
 			LM_ERR("no memory\n");
@@ -458,7 +458,7 @@ static int ldap_result_check_fixup(void** param, int param_no)
 				LM_ERR("pv_parse_format failed\n");
 				return E_OUT_OF_MEM;
 			}
-		}	
+		}
 		*param = (void*)lp;
 	}
 	else if (param_no == 2)
@@ -474,7 +474,7 @@ static int ldap_result_check_fixup(void** param, int param_no)
 		*param = (void*)se;
 	}
 
-	return 0;	
+	return 0;
 }
 
 static int ldap_filter_url_encode_fixup(void** param, int param_no)

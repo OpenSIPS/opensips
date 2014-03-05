@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Fast 32-bit Header Field Name Parser
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -48,7 +48,7 @@ static inline char* skip_ws(char* p, char *end)
 	}
 	return p;
 }
-	
+
 /*
  * Parser macros
  */
@@ -168,13 +168,13 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 					switch(LOWER_BYTE(*(p + 1))) {
 						case 'o':
 							p += 2;
-							hdr->type = HDR_TO_T; 
+							hdr->type = HDR_TO_T;
 							hdr->name.len = 2;
 							goto dc_cont;
 						case ' ':
 						case '\t':
 							p += 2;
-							hdr->type = HDR_TO_T; 
+							hdr->type = HDR_TO_T;
 							hdr->name.len = 1;
 							goto dc_end;
 						case ':':

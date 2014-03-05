@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -42,7 +42,7 @@ enum tls_domain_type {
 };
 
 /*
- * separate configuration per ip:port 
+ * separate configuration per ip:port
  */
 struct tls_domain {
 	int             type;
@@ -56,7 +56,7 @@ struct tls_domain {
 	char           *ca_file;
 	char           *tmp_dh_file;
 	char           *tls_ec_curve;
-	char	       *ca_directory;	
+	char	       *ca_directory;
 	char           *ciphers_list;
 	enum tls_method method;
 	struct tls_domain *next;
@@ -69,19 +69,19 @@ extern struct tls_domain *tls_default_server_domain;
 extern struct tls_domain *tls_default_client_domain;
 
 /*
- * find domain with given ip and port 
+ * find domain with given ip and port
  */
 struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
 				   unsigned short port);
 
 /*
- * find client with given ip and port 
+ * find client with given ip and port
  */
 struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
 				   unsigned short port);
 
 /*
- * find domain with given name 
+ * find domain with given name
  */
 struct tls_domain *tls_find_client_domain_name(str name);
 
@@ -107,7 +107,7 @@ int             tls_new_client_domain_name(char *s, int len);
 struct tls_domain *tls_new_domain(int type);
 
 /*
- * clean up 
+ * clean up
  */
 void            tls_free_domains(void);
 

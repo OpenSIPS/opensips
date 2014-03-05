@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Diversion Header Field Support
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -89,7 +89,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"diversion", 
+	"diversion",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */
@@ -139,12 +139,12 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 		msg_id = msg->id;
 		anchor = 0;
 	}
-	
+
 	if (!msg->diversion && parse_headers(msg, HDR_DIVERSION_F, 0) == -1) {
 		LM_ERR("header parsing failed\n");
 		return -1;
 	}
-	
+
 	if (msg->diversion) {
 		     /* Insert just before the topmost Diversion header */
 		ptr = msg->diversion->name.s;
@@ -160,7 +160,7 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 			return -2;
 		}
 	}
-	
+
 	if (!insert_new_lump_before(anchor, s->s, s->len, 0)) {
 		LM_ERR("can't insert lump\n");
 		return -3;

@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -42,7 +42,7 @@
  *  2003-10-24  converted to the new socket_info lists (andrei)
  *  2004-10-10  modified check_self to use grep_sock_info (andrei)
  *  2004-11-08  added force_send_socket support in get_send_socket (andrei)
- *  2006-09-06  added new algorithm for building VIA branch parameter for 
+ *  2006-09-06  added new algorithm for building VIA branch parameter for
  *              stateless requests - it complies to RFC3261 requirement to be
  *              unique through time and space (bogdan)
  */
@@ -142,7 +142,7 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 {
 	int temp_sock;
 	socklen_t len;
-	union sockaddr_union from; 
+	union sockaddr_union from;
 	struct socket_info* si;
 	struct ip_addr ip;
 
@@ -150,7 +150,7 @@ struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
 		LM_CRIT("can only be called for UDP\n");
 		return 0;
 	}
-	
+
 	temp_sock=socket(to->s.sa_family, SOCK_DGRAM, 0 );
 	if (temp_sock==-1) {
 		LM_ERR("socket() failed: %s\n", strerror(errno));
@@ -182,15 +182,15 @@ error:
 /*! \brief returns a socket_info pointer to the sending socket or 0 on error
  * \param msg SIP message (can be null)
  * \param to  destination socket_union pointer
- * \param proto protocol 
+ * \param proto protocol
  *
  * \note if msg!=null and msg->force_send_socket, the force_send_socket will be used
  */
-struct socket_info* get_send_socket(struct sip_msg *msg, 
+struct socket_info* get_send_socket(struct sip_msg *msg,
 										union sockaddr_union* to, int proto)
 {
 	struct socket_info* send_sock;
-	
+
 	/* check if send interface is not forced */
 	if (msg && msg->force_send_socket){
 		if (msg->force_send_socket->proto!=proto){
@@ -199,7 +199,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 											msg->force_send_socket->port_no,
 											proto);
 		}
-		if (msg->force_send_socket && (msg->force_send_socket->socket!=-1)) 
+		if (msg->force_send_socket && (msg->force_send_socket->socket!=-1))
 			return msg->force_send_socket;
 		else{
 			if (msg->force_send_socket && msg->force_send_socket->socket==-1)
@@ -236,7 +236,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 				case AF_INET6:	send_sock=sendipv6_tcp;
 								break;
 #endif
-				default:	LM_ERR("don't know how to forward to af %d\n", 
+				default:	LM_ERR("don't know how to forward to af %d\n",
 								to->s.sa_family);
 			}
 			break;
@@ -265,7 +265,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 				case AF_INET6:	send_sock=sendipv6_sctp;
 								break;
 #endif
-				default:	LM_ERR("don't know how to forward to af %d\n", 
+				default:	LM_ERR("don't know how to forward to af %d\n",
 								to->s.sa_family);
 			}
 			break;
@@ -380,7 +380,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	buf=0;
 
 	/* calculate branch for outbound request - if the branch buffer is already
-	 * set (maybe by an upper level as TM), used it; otherwise computes 
+	 * set (maybe by an upper level as TM), used it; otherwise computes
 	 * the branch for stateless fwd. . According to the latest discussions
 	 * on the topic, you should reuse the latest statefull branch
 	 * --bogdan */
@@ -486,7 +486,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 	unsigned short port;
 
 	port=0;
-	if(via==msg->via1){ 
+	if(via==msg->via1){
 		/* _local_ reply, we ignore any rport or received value
 		 * (but we will send back to the original port if rport is
 		 *  present) */
@@ -512,12 +512,12 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 
 		if (via->maddr){
 			name= &(via->maddr->value);
-			if (port==0) port=via->port?via->port:SIP_PORT; 
+			if (port==0) port=via->port?via->port:SIP_PORT;
 		} else if (via->received){
 			LM_DBG("using 'received'\n");
 			name=&(via->received->value);
 			/* making sure that we won't do SRV lookup on "received" */
-			if (port==0) port=via->port?via->port:SIP_PORT; 
+			if (port==0) port=via->port?via->port:SIP_PORT;
 		}else{
 			LM_DBG("using via host\n");
 			name=&(via->host);
@@ -531,7 +531,7 @@ int update_sock_struct_from_via( union sockaddr_union* to,
 		LM_NOTICE("resolve_host(%.*s) failure\n", name->len, name->s);
 		return -1;
 	}
-		
+
 	hostent2su( to, he, 0, port);
 	return 1;
 }
@@ -552,7 +552,7 @@ int forward_reply(struct sip_msg* msg)
 	char* s;
 	int len;
 #endif
-	
+
 	to=0;
 	id=0;
 	new_buf=0;
@@ -561,7 +561,7 @@ int forward_reply(struct sip_msg* msg)
 		if (check_self(&msg->via1->host,
 					msg->via1->port?msg->via1->port:SIP_PORT,
 					msg->via1->proto)!=1){
-			LM_ERR("host in first via!=me : %.*s:%d\n", 
+			LM_ERR("host in first via!=me : %.*s:%d\n",
 				msg->via1->host.len, msg->via1->host.s,	msg->via1->port);
 			/* send error msg back? */
 			goto error;
@@ -581,7 +581,7 @@ int forward_reply(struct sip_msg* msg)
 		goto skip;
 
 	/* we have to forward the reply stateless, so we need second via -bogdan*/
-	if (parse_headers( msg, HDR_VIA2_F, 0 )==-1 
+	if (parse_headers( msg, HDR_VIA2_F, 0 )==-1
 		|| (msg->via2==0) || (msg->via2->error!=PARSE_OK))
 	{
 		/* no second via => error */
@@ -632,7 +632,7 @@ int forward_reply(struct sip_msg* msg)
 	 * the correct port is choosen in update_sock_struct_from_via,
 	 * as its visible with su_getport(to); .
 	 */
-	LM_DBG("reply forwarded to %.*s:%d\n", msg->via2->host.len, 
+	LM_DBG("reply forwarded to %.*s:%d\n", msg->via2->host.len,
 		msg->via2->host.s, (unsigned short) msg->via2->port);
 
 	pkg_free(new_buf);

@@ -11,20 +11,20 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
- * 
+ *
  * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * -------
- *  
- *  
+ *
+ *
  */
 
 #include <stdio.h>
@@ -34,7 +34,7 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
 #include <errno.h>
 
 /* memory management */
@@ -53,23 +53,23 @@
 
 #define MAX_TRIES	10
 
-/* it initializes the TCP connection */ 
+/* it initializes the TCP connection */
 int init_mytcp(char* host, int port)
 {
 	int sockfd;
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
-    
+
 	sockfd = socket(PF_INET, SOCK_STREAM, 0);
-	
-    if (sockfd < 0) 
+
+    if (sockfd < 0)
 	{
 		LM_ERR("error creating the socket\n");
 		return -1;
-	}	
-	
+	}
+
     server = resolvehost(host,0);
-    if (server == NULL) 
+    if (server == NULL)
 	{
 		LM_ERR("error finding the host\n");
 		return -1;
@@ -80,14 +80,14 @@ int init_mytcp(char* host, int port)
     memcpy((char *)&serv_addr.sin_addr.s_addr, (char *)server->h_addr,
 					server->h_length);
     serv_addr.sin_port = htons(port);
-	
-    if (connect(sockfd, (const struct sockaddr *)&serv_addr, 
-							sizeof(serv_addr)) < 0) 
+
+    if (connect(sockfd, (const struct sockaddr *)&serv_addr,
+							sizeof(serv_addr)) < 0)
 	{
         LM_ERR("error connecting to the "
 						"DIAMETER client\n");
 		return -1;
-	}	
+	}
 
 	return sockfd;
 }
@@ -127,7 +127,7 @@ int do_read( int socket, rd_buf_t *p)
 		ptr = p->buf + p->buf_len;
 	}
 
-	while( (n=recv( socket, ptr, wanted_len, MSG_DONTWAIT ))>0 ) 
+	while( (n=recv( socket, ptr, wanted_len, MSG_DONTWAIT ))>0 )
 	{
 //		LM_DBG("(sock=%d)  -> n=%d (expected=%d)\n", p->sock,n,wanted_len);
 		p->buf_len += n;
@@ -137,7 +137,7 @@ int do_read( int socket, rd_buf_t *p)
 			wanted_len -= n;
 			ptr += n;
 		}
-		else 
+		else
 		{
 			if (p->buf==0)
 			{
@@ -189,7 +189,7 @@ error:
 
 
 /* send a message over an already opened TCP connection */
-int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb, 
+int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 					unsigned int waited_id)
 {
 	int n, number_of_tries;
@@ -202,7 +202,7 @@ int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 	unsigned int m_id;
 
 	/* try to write the message to the Diameter client */
-	while( (n=write(sockfd, buf, len))==-1 ) 
+	while( (n=write(sockfd, buf, len))==-1 )
 	{
 		if (errno==EINTR)
 			continue;
@@ -210,7 +210,7 @@ int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 		return AAA_ERROR;
 	}
 
-	if (n!=len) 
+	if (n!=len)
 	{
 		LM_ERR("write gave no error but wrote less than asked\n");
 		return AAA_ERROR;
@@ -251,12 +251,12 @@ int tcp_send_recv(int sockfd, char* buf, int len, rd_buf_t* rb,
 				LM_ERR("connection closed by diameter client!\n");
 				return AAA_CONN_CLOSED;
 		}
-		
+
 		/* obtain the structure corresponding to the message */
-		msg = AAATranslateMessage(rb->buf, rb->buf_len, 0);	
+		msg = AAATranslateMessage(rb->buf, rb->buf_len, 0);
 		if(!msg)
 		{
-			LM_ERR("message structure not obtained\n");	
+			LM_ERR("message structure not obtained\n");
 			return AAA_ERROR;
 		}
 		avp = AAAFindMatchingAVP(msg, NULL, AVP_SIP_MSGID,
@@ -327,8 +327,8 @@ next:
 		default:							/* error */
 			rb->ret_code = AAA_SRVERR;
 	}
-	
-    return rb->ret_code;	
+
+    return rb->ret_code;
 }
 void close_tcp_connection(int sfd)
 {

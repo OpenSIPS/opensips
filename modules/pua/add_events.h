@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *	initial version 2007-05-03 (anca)
@@ -31,7 +31,7 @@
 
 /*
  *  should return:   0  if not changed ( fin_body points to publ->body)
- *                   1  if changed ( must be freed)	
+ *                   1  if changed ( must be freed)
  * */
 int pua_add_events(void);
 

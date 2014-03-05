@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -255,7 +255,7 @@ int insert_ping_timer(struct dlg_cell* dlg)
 		LM_ERR("no more shm mem\n");
 		return -1;
 	}
-	
+
 	node->dlg = dlg;
 	node->next = 0;
 	node->prev = 0;
@@ -549,7 +549,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 			LM_ERR("Null callback parameter\n");
 			return;
 	}
-	
+
 	rpl = ps->rpl;
 	statuscode = ps->code;
 	dlg = *(ps->param);
@@ -567,7 +567,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 
 	if (statuscode == 481)
 	{
-		/* call/transaction does not exist 
+		/* call/transaction does not exist
 		 * terminate the dialog */
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
@@ -596,7 +596,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 			LM_ERR("Null callback parameter\n");
 			return;
 	}
-	
+
 	rpl = ps->rpl;
 	statuscode = ps->code;
 	dlg = *(ps->param);
@@ -614,7 +614,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 
 	if (statuscode == 481)
 	{
-		/* call/transaction does not exist 
+		/* call/transaction does not exist
 		 * terminate the dialog */
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
@@ -660,7 +660,7 @@ void dlg_ping_routine(unsigned int ticks , void * attr)
 		dlg = it->dlg;
 		LM_DBG("dialog %p-%.*s has terminated\n",dlg,dlg->callid.len,dlg->callid.s);
 		curr = it->next;
-		/* if marked as to be deleted, we let it go 
+		/* if marked as to be deleted, we let it go
 		 * for the ping timer list as well */
 		unref_dlg(dlg,1);
 		shm_free(it);

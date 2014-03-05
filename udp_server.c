@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -165,18 +165,18 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 #ifdef USE_IPV6
 	struct ipv6_mreq mreq6;
 #endif /* USE_IPV6 */
-	
+
 	if (addr->s.sa_family==AF_INET){
 		memcpy(&mreq.imr_multiaddr, &addr->sin.sin_addr,
 		       sizeof(struct in_addr));
 		mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-		
+
 		if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq,
 			       sizeof(mreq))==-1){
 			LM_ERR("setsockopt: %s\n", strerror(errno));
 			return -1;
 		}
-		
+
 #ifdef USE_IPV6
 	} else if (addr->s.sa_family==AF_INET6){
 		memcpy(&mreq6.ipv6mr_multiaddr, &addr->sin6.sin6_addr,
@@ -191,7 +191,7 @@ static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
 			LM_ERR("setsockopt:%s\n",  strerror(errno));
 			return -1;
 		}
-		
+
 #endif /* USE_IPV6 */
 	} else {
 		LM_ERR("unsupported protocol family\n");
@@ -221,7 +221,7 @@ int udp_init(struct socket_info* sock_info)
 		LM_ERR("could not init sockaddr_union\n");
 		goto error;
 	}
-	
+
 	sock_info->socket = socket(AF2PF(addr->s.sa_family), SOCK_DGRAM, 0);
 	if (sock_info->socket==-1){
 		LM_ERR("socket: %s\n", strerror(errno));
@@ -236,7 +236,7 @@ int udp_init(struct socket_info* sock_info)
 	}
 	/* tos */
 	optval=tos;
-	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval, 
+	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
 			sizeof(optval)) ==-1){
 		LM_WARN("setsockopt tos: %s\n", strerror(errno));
 		/* continue since this is not critical */
@@ -252,14 +252,14 @@ int udp_init(struct socket_info* sock_info)
 #endif
 
 #ifdef USE_MCAST
-	if ((sock_info->flags & SI_IS_MCAST) 
+	if ((sock_info->flags & SI_IS_MCAST)
 	    && (setup_mcast_rcvr(sock_info->socket, addr)<0)){
 			goto error;
 	}
 	/* set the multicast options */
 	if (addr->s.sa_family==AF_INET){
 		m_optval = mcast_loopback;
-		if (setsockopt(sock_info->socket, IPPROTO_IP, IP_MULTICAST_LOOP, 
+		if (setsockopt(sock_info->socket, IPPROTO_IP, IP_MULTICAST_LOOP,
 						&m_optval, sizeof(m_optval))==-1){
 			LM_WARN("setsockopt(IP_MULTICAST_LOOP): %s\n", strerror(errno));
 			/* it's only a warning because we might get this error if the
@@ -275,7 +275,7 @@ int udp_init(struct socket_info* sock_info)
 		}
 #ifdef USE_IPV6
 	} else if (addr->s.sa_family==AF_INET6){
-		if (setsockopt(sock_info->socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP, 
+		if (setsockopt(sock_info->socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
 						&mcast_loopback, sizeof(mcast_loopback))==-1){
 			LM_WARN("setsockopt (IPV6_MULTICAST_LOOP): %s\n", strerror(errno));
 			/* it's only a warning because we might get this error if the
@@ -298,9 +298,9 @@ int udp_init(struct socket_info* sock_info)
 
 	if (probe_max_sock_buff(sock_info->socket,0,MAX_RECV_BUFFER_SIZE,
 				BUFFER_INCREMENT)==-1) goto error;
-	
+
 	if (bind(sock_info->socket,  &addr->s, sockaddru_len(*addr))==-1){
-		LM_ERR("bind(%x, %p, %d) on %s: %s\n", sock_info->socket, &addr->s, 
+		LM_ERR("bind(%x, %p, %d) on %s: %s\n", sock_info->socket, &addr->s,
 				(unsigned)sockaddru_len(*addr),	sock_info->address_str.s,
 				strerror(errno));
 	#ifdef USE_IPV6
@@ -417,7 +417,7 @@ int udp_rcv_loop(void)
 			LM_INFO("dropping 0 port packet from %s\n", tmp);
 			continue;
 		}
-		
+
 		update_stat( pt[process_no].load, +1 );
 
 		/* receive_msg must free buf too!*/
@@ -434,7 +434,7 @@ error:
 
 /**
  * Main UDP send function, called from msg_send.
- * \see msg_send 
+ * \see msg_send
  * \param source send socket
  * \param buf sent data
  * \param len data length in bytes

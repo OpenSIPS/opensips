@@ -17,11 +17,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <libxml/parser.h>
@@ -38,11 +38,11 @@
 
 /*
  * mi cmd: pua_publish
- *		<presentity_uri> 
+ *		<presentity_uri>
  *		<expires>
  *		<event package>
  *		<content_type>     - body type if body of a type different from default
- *                            event content-type or . 
+ *                            event content-type or .
  *		<ETag>             - ETag that publish should match or . if no ETag
  *		<extra_headers>    - extra headers to be added to the request or .
  *		<publish_body>     - may not be present in case of update for expire
@@ -105,7 +105,7 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 		LM_ERR("invalid expires parameter\n" );
 		goto error;
 	}
-	
+
 	exp= exp* sign;
 
 	LM_DBG("expires '%d'\n", exp);
@@ -196,13 +196,13 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 
 	/* Create the publ_info_t structure */
 	memset(&publ, 0, sizeof(publ_info_t));
-	
+
 	publ.pres_uri= &pres_uri;
 	if(body.s)
 	{
 		publ.body= &body;
 	}
-	
+
 	publ.event= get_event_flag(&event);
 	if(publ.event< 0)
 	{
@@ -212,12 +212,12 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 	if(content_type.len!= 1)
 	{
 		publ.content_type= content_type;
-	}	
-	
+	}
+
 	if(! (etag.len== 1 && etag.s[0]== '.'))
 	{
 		publ.etag= &etag;
-	}	
+	}
 	publ.expires= exp;
 
 	if (!(extra_headers.len == 1 && extra_headers.s[0] == '.')) {
@@ -228,7 +228,7 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 	{
 		publ.source_flag= MI_ASYN_PUBLISH;
 		publ.cb_param= (void*)cmd->async_hdl;
-	}	
+	}
 	else
 		publ.source_flag|= MI_PUBLISH;
 
@@ -240,10 +240,10 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 	{
 		LM_ERR("sending publish failed\n");
 		return init_mi_tree(500, "MI/PUBLISH failed", 17);
-	}	
+	}
 	if(result== 418)
 		return init_mi_tree(418, "Wrong ETag", 10);
-	
+
 	if (cmd->async_hdl==NULL)
 			return init_mi_tree( 202, "Accepted", 8);
 	else
@@ -287,21 +287,21 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 	}
 
 	mi_hdl = (struct mi_handler *)(hentity->cb_param);
-	
+
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==0)
 		goto done;
-	
+
 	addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
 		statuscode, reason.len, reason.s);
-	
-	
+
+
 	if(statuscode== 200)
 	{
 		/* extract ETag and expires */
 		lexpire = ((exp_body_t*)reply->expires->parsed)->val;
 		LM_DBG("lexpire= %d\n", lexpire);
-		
+
 		hdr = get_header_by_static_name( reply, "SIP-ETag");
 		if( hdr==NULL ) /* must find SIP-Etag header field in 200 OK msg*/
 		{
@@ -309,18 +309,18 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 			goto error;
 		}
 		etag= hdr->body;
-			
+
 		addf_mi_node_child( &rpl_tree->node, 0, "ETag", 4, "%.*s", etag.len, etag.s);
-		
+
 		addf_mi_node_child( &rpl_tree->node, 0, "Expires", 7, "%d", lexpire);
-	}	
+	}
 
 done:
-	if ( statuscode >= 200) 
+	if ( statuscode >= 200)
 	{
 		mi_hdl->handler_f( rpl_tree, mi_hdl, 1);
 	}
-	else 
+	else
 	{
 		mi_hdl->handler_f( rpl_tree, mi_hdl, 0 );
 	}
@@ -363,7 +363,7 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 	}
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)<0 )
 	{
-		LM_ERR("bad uri\n");	
+		LM_ERR("bad uri\n");
 		return init_mi_tree(400, "Bad uri", 7);
 	}
 
@@ -378,7 +378,7 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 	}
 	if(parse_uri(watcher_uri.s, watcher_uri.len, &uri)<0 )
 	{
-		LM_ERR("bad uri\n");	
+		LM_ERR("bad uri\n");
 		return init_mi_tree(400, "Bad uri", 7);
 	}
 
@@ -407,7 +407,7 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 	{
 		LM_ERR("Bad expires parameter\n");
 		return init_mi_tree(400, "Bad expires", 11);
-	}		
+	}
 	if(expires.s[0]== '-')
 	{
 		sign= -1;
@@ -419,19 +419,19 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 		LM_ERR("invalid expires parameter\n" );
 		goto error;
 	}
-	
+
 	exp= exp* sign;
 
 	LM_DBG("expires '%d'\n", exp);
-	
+
 	memset(&subs, 0, sizeof(subs_info_t));
-	
+
 	subs.pres_uri= &pres_uri;
 
 	subs.watcher_uri= &watcher_uri;
 
 	subs.contact= &watcher_uri;
-	
+
 	subs.expires= exp;
 	subs.source_flag |= MI_SUBSCRIBE;
 	subs.event= get_event_flag(&event);
@@ -446,11 +446,11 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 		LM_ERR("while sending subscribe\n");
 		goto error;
 	}
-	
+
 	rpl= init_mi_tree(202, "accepted", 8);
 	if(rpl == NULL)
 		return 0;
-	
+
 	return rpl;
 
 error:

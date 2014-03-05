@@ -31,6 +31,6 @@ int bind_domain(domain_api_t* api)
     }
 
     api->is_domain_local = is_domain_local;
-    
+
     return 0;
 }

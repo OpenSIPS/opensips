@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -53,7 +53,7 @@
 
 /**
  * \brief Specify table name that will be used for subsequent operations.
- * 
+ *
  * The function db_use_table takes a table name and stores it db_con_t structure.
  * All subsequent operations (insert, delete, update, query) are performed on
  * that table.
@@ -69,11 +69,11 @@ typedef int (*db_use_table_f)(db_con_t* _h, const str * _t);
  * This function initialize the database API and open a new database
  * connection. This function must be called after bind_dbmod but before any
  * other database API function is called.
- * 
+ *
  * The function takes one parameter, the parameter must contain the database
- * connection URL. The URL is of the form 
+ * connection URL. The URL is of the form
  * mysql://username:password\@host:port/database where:
- * 
+ *
  * username: Username to use when logging into database (optional).
  * password: password if it was set (optional)
  * host:     Hosname or IP address of the host where database server lives (mandatory)
@@ -90,11 +90,11 @@ typedef db_con_t* (*db_init_f) (const str* _sqlurl);
 /**
  * \brief Close a database connection and free all memory used.
  *
- * The function closes previously open connection and frees all previously 
+ * The function closes previously open connection and frees all previously
  * allocated memory. The function db_close must be the very last function called.
  * \param _h db_con_t structure representing the database connection
  */
-typedef void (*db_close_f) (db_con_t* _h); 
+typedef void (*db_close_f) (db_con_t* _h);
 
 
 /**
@@ -132,7 +132,7 @@ typedef int (*db_query_f) (const db_con_t* _h, const db_key_t* _k, const db_op_t
 
 /**
  * \brief Fetch a number of rows from a result.
- * 
+ *
  * The function fetches a number of rows from a database result. If the number
  * of wanted rows is zero, the function returns anything with a result of zero.
  * \param _h structure representing database connection
@@ -176,11 +176,11 @@ typedef int (*db_free_result_f) (db_con_t* _h, db_res_t* _r);
 
 /**
  * \brief Insert a row into the specified table.
- * 
+ *
  * This function implements INSERT SQL directive, you can insert one or more
  * rows in a table using this function.
  * \param _h database connection handle
- * \param _k array of keys (column names) 
+ * \param _k array of keys (column names)
  * \param _v array of values for keys specified in _k parameter
  * \param _n number of keys-value pairs int _k and _v parameters
  * \return returns 0 if everything is OK, otherwise returns value < 0
@@ -197,7 +197,7 @@ typedef int (*db_insert_f) (const db_con_t* _h, const db_key_t* _k,
  * If _k is NULL and _v is NULL and _n is zero, all rows are deleted, the
  * resulting table will be empty.
  * If _o is NULL, the equal operator "=" will be used for the comparison.
- * 
+ *
  * \param _h database connection handle
  * \param _k array of keys (column names) that will be matched
  * \param _o array of operators to be used with key-value pairs
@@ -249,7 +249,7 @@ typedef int (*db_replace_f) (const db_con_t* handle, const db_key_t* keys,
  * \brief Retrieve the last inserted ID in a table.
  *
  * The function returns the value generated for an AUTO_INCREMENT column by the
- * previous INSERT or UPDATE  statement. Use this function after you have 
+ * previous INSERT or UPDATE  statement. Use this function after you have
  * performed an INSERT statement into a table that contains an AUTO_INCREMENT
  * field.
  * \param _h structure representing database connection
@@ -261,7 +261,7 @@ typedef int (*db_last_inserted_id_f) (const db_con_t* _h);
 
 /**
  * \brief Insert a row into specified table, update on duplicate key.
- * 
+ *
  * The function implements the INSERT ON DUPLICATE KEY UPDATE SQL directive.
  * It is possible to insert a row and update if one already exists.
  * The old row will not deleted before the insertion of the new data.
@@ -277,7 +277,7 @@ typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
 
 /**
  * \brief Database module callbacks
- * 
+ *
  * This structure holds function pointer to all database functions. Before this
  * structure can be used it must be initialized with bind_dbmod.
  * \see bind_dbmod
@@ -292,12 +292,12 @@ typedef struct db_func {
 	db_raw_query_f    raw_query;     /* Raw query - SQL */
 	db_free_result_f  free_result;   /* Free a query result */
 	db_insert_f       insert;        /* Insert into table */
-	db_delete_f       delete;        /* Delete from table */ 
+	db_delete_f       delete;        /* Delete from table */
 	db_update_f       update;        /* Update table */
 	db_replace_f      replace;       /* Replace row in a table */
 	db_last_inserted_id_f  last_inserted_id;  /* Retrieve the last inserted ID
 	                                            in a table */
-	db_insert_update_f insert_update; /* Insert into table, update on duplicate key */ 
+	db_insert_update_f insert_update; /* Insert into table, update on duplicate key */
 } db_func_t;
 
 
@@ -305,7 +305,7 @@ typedef struct db_func {
  * \brief Bind database module functions
  *
  * This function is special, it's only purpose is to call find_export function in
- * the core and find the addresses of all other database related functions. The 
+ * the core and find the addresses of all other database related functions. The
  * db_func_t callback given as parameter is updated with the found addresses.
  *
  * This function must be called before any other database API call!
@@ -338,7 +338,7 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)());
 /**
  * \brief Helper for db_close function.
  *
- * This helper method does some work for the closing of a database 
+ * This helper method does some work for the closing of a database
  * connection. No function should be called after this
  * \param _h database connection handle
  * \param (*free_connection) Pointer to the db specifc free_connection method
@@ -400,7 +400,7 @@ typedef int (*db_bind_api_f)(const str* mod, db_func_t *dbb);
  *          payload_size: the total size of data that will be stored in a row
  *          column_count: the column count, used for aproximating the overhead
  *  return  > 0 : estimate of how many rows may be allocated
- *          = 0 : allocator does not support statistics. 
+ *          = 0 : allocator does not support statistics.
  *          < 0 : allocator internal error when counting. -> you should ignore it
  */
 int estimate_available_rows( int payload_size, int column_count);

@@ -115,7 +115,7 @@ static int mod_init(void)
 	cde.cdb_func.db_delete_trans = mongo_db_delete_trans;
 	cde.cdb_func.db_update_trans = mongo_db_update_trans;
 
-	cde.cdb_func.capability = 0; 
+	cde.cdb_func.capability = 0;
 
 	if (mongo_write_concern_str.s != NULL) {
 		/* TODO - try manually building the getlasterror bson */

@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -40,8 +40,8 @@ enum privacy_value {
 	PRIVACY_HISTORY=64
 };
 
- 
-/* 
+
+/*
  * casting macro for accessing enumeration of priv-values
  */
 #define get_privacy_values(p_msg) \

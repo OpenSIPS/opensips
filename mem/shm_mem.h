@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -111,7 +111,7 @@
 #	define  shm_malloc_init qm_malloc_init
 #endif
 
-	
+
 	extern gen_lock_t* mem_lock;
 
 
@@ -183,19 +183,19 @@ inline static void* _shm_malloc_unsafe(unsigned int size,
 	return p;
 }
 
-inline static void* _shm_malloc(unsigned int size, 
+inline static void* _shm_malloc(unsigned int size,
 	const char *file, const char *function, int line )
 {
 	void *p;
-	
+
 	shm_lock();
 	p=_shm_malloc_unsafe(size, file, function, line );
 	shm_unlock();
-	return p; 
+	return p;
 }
 
 
-inline static void* _shm_realloc(void *ptr, unsigned int size, 
+inline static void* _shm_realloc(void *ptr, unsigned int size,
 		const char* file, const char* function, int line )
 {
 	void *p;
@@ -253,11 +253,11 @@ inline static void *shm_malloc_unsafe(unsigned int size)
 inline static void* shm_malloc(unsigned int size)
 {
 	void *p;
-	
+
 	shm_lock();
 	p=shm_malloc_unsafe(size);
 	shm_unlock();
-	return p; 
+	return p;
 }
 
 

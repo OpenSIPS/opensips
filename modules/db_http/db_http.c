@@ -146,7 +146,7 @@ int db_http_bind_api( const str* mod, db_func_t *dbb)
 	dbb->insert           = db_http_insert;
 	dbb->delete           = db_http_delete;
 	dbb->update           = db_http_update;
-		
+
 
 	return 0;
 }

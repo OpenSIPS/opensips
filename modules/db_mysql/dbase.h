@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -83,7 +83,7 @@ int db_mysql_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, 
 /*
  * Delete a row from table
  */
-int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const 
+int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const
 	db_op_t* _o, const db_val_t* _v, const int _n);
 
 

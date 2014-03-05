@@ -61,13 +61,13 @@ int ldap_connect(char* _ld_name)
 	/*
 	* get ld session and session config parameters
 	*/
-	
+
 	if ((lds = get_ld_session(_ld_name)) == NULL)
 	{
 		LM_ERR("ld_session [%s] not found\n", _ld_name);
 		return -1;
 	}
-	
+
 	/*
 	 * ldap_initialize
 	 */
@@ -81,7 +81,7 @@ int ldap_connect(char* _ld_name)
 			ldap_err2string(rc));
 		return -1;
 	}
-	
+
 	/*
 	 * set LDAP OPTIONS
 	 */
@@ -96,17 +96,17 @@ int ldap_connect(char* _ld_name)
 		break;
 	default:
 		LM_ERR(	"[%s]: Invalid LDAP protocol version [%d]\n",
-			_ld_name, 
+			_ld_name,
 			lds->version);
 		return -1;
 	}
 	if (ldap_set_option(lds->handle,
 				LDAP_OPT_PROTOCOL_VERSION,
 				&ldap_proto_version)
-			!= LDAP_OPT_SUCCESS) 
+			!= LDAP_OPT_SUCCESS)
 	{
 		LM_ERR(	"[%s]: Could not set LDAP_OPT_PROTOCOL_VERSION [%d]\n",
-			_ld_name, 
+			_ld_name,
 			ldap_proto_version);
 		return -1;
 	}
@@ -133,7 +133,7 @@ int ldap_connect(char* _ld_name)
 		}
 	}
 	*/
-	
+
 	/* LDAP_OPT_NETWORK_TIMEOUT */
 	if ((lds->network_timeout.tv_sec > 0) || (lds->network_timeout.tv_usec > 0))
 	{
@@ -144,13 +144,13 @@ int ldap_connect(char* _ld_name)
 		{
 			LM_ERR(	"[%s]: Could not set"
 				" LDAP_NETWORK_TIMEOUT to [%d.%d]\n",
-				_ld_name, 
+				_ld_name,
 				(int)lds->network_timeout.tv_sec,
 				(int)lds->network_timeout.tv_usec);
 		}
 	}
-	
-	
+
+
 	/* if timeout == 0 then use default */
 	if ((lds->client_bind_timeout.tv_sec == 0)
 			&& (lds->client_bind_timeout.tv_usec == 0))
@@ -199,7 +199,7 @@ int ldap_connect(char* _ld_name)
 	}
 
 	LM_DBG(	"[%s]: LDAP bind successful (ldap_host [%s])\n",
-		_ld_name, 
+		_ld_name,
 		lds->host_name);
 
 	return 0;
@@ -232,7 +232,7 @@ int ldap_disconnect(char* _ld_name)
 int ldap_reconnect(char* _ld_name)
 {
 	int rc;
-	
+
 	if (ldap_disconnect(_ld_name) != 0)
 	{
 		LM_ERR("[%s]: disconnect failed\n", _ld_name);
@@ -263,7 +263,7 @@ int ldap_get_vendor_version(char** _version)
 #else
 	api.ldapai_info_version = 1;
 #endif
-	
+
 	if (ldap_get_option(NULL, LDAP_OPT_API_INFO, &api) != LDAP_SUCCESS)
 	{
 		LM_ERR("ldap_get_option(API_INFO) failed\n");

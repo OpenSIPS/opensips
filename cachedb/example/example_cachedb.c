@@ -174,7 +174,7 @@ static int process_msg(struct sip_msg *msg)
 {
 	str key=str_init("inv_bye");
 	int ret,result;
-	
+
 	LM_DBG("Inside process_msg\n");
 
 	/* based on different message contents, decide to do some Cache/DB ops

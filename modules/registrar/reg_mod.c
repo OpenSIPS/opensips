@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -37,9 +37,9 @@
  *              removed the module parameter "use_domain" - now it is
  *              imported from usrloc module (bogdan)
  *  2006-11-28  Added statistics tracking for the number of accepted/rejected
- *              registrations, as well as for the max expiry time, max 
+ *              registrations, as well as for the max expiry time, max
  *              contacts and default expiry time(Jeffrey Magder-SOMA Networks)
- *  2007-02-24  sip_natping_flag moved into branch flags, so migrated to 
+ *  2007-02-24  sip_natping_flag moved into branch flags, so migrated to
  *              nathelper module (bogdan)
  *
  */
@@ -47,13 +47,13 @@
 /*!
  * \defgroup registrar SIP Registrar support
  * The module contains REGISTER processing logic.
- */  
+ */
 
 /*!
  * \file
  * \brief SIP registrar module - interface
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 #include <stdio.h>
 #include "../../sr_module.h"
@@ -325,7 +325,7 @@ static int mod_init(void)
 			default_q = MIN_Q;
 		}
 	}
-	
+
 
 	if (bind_usrloc(&ul) < 0) {
 		return -1;

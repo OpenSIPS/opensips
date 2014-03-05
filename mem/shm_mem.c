@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -145,7 +145,7 @@ end:
 inline static void* sh_realloc(void* p, unsigned int size)
 {
 	void *r;
-	shm_lock(); 
+	shm_lock();
 	shm_free_unsafe(p);
 	r=shm_malloc_unsafe(size);
 	shm_threshold_check();
@@ -179,7 +179,7 @@ void* _shm_resize( void* p , unsigned int s)
 #	ifdef DBG_QM_MALLOC
 #	ifdef VQ_MALLOC
 	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
-	LM_DBG("params (%p, %d), called from %s: %s(%d)\n",  
+	LM_DBG("params (%p, %d), called from %s: %s(%d)\n",
 			p, s, file, func, line);
 	VQM_DEBUG_FRAG(shm_block, f);
 	if (p>(void *)shm_block->core_end || p<(void*)shm_block->init_core){
@@ -188,7 +188,7 @@ void* _shm_resize( void* p , unsigned int s)
 	}
 #endif
 #	endif
-	return sh_realloc( p, s ); 
+	return sh_realloc( p, s );
 }
 
 
@@ -212,7 +212,7 @@ int shm_getmem(void)
 		LM_CRIT("shm already initialized\n");
 		return -1;
 	}
-	
+
 #ifdef SHM_MMAP
 #ifdef USE_ANON_MMAP
 	shm_mempool=mmap(0, shm_mem_size, PROT_READ|PROT_WRITE,
@@ -228,7 +228,7 @@ int shm_getmem(void)
 	close(fd);
 #endif /* USE_ANON_MMAP */
 #else
-	
+
 	shm_shmid=shmget(IPC_PRIVATE, /* SHM_MEM_SIZE */ shm_mem_size , 0700);
 	if (shm_shmid==-1){
 		LM_CRIT("could not allocate shared memory segment: %s\n",
@@ -258,7 +258,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_mem_destroy();
 		return -1;
 	}
-	mem_lock=shm_malloc_unsafe(sizeof(gen_lock_t)); /* skip lock_alloc, 
+	mem_lock=shm_malloc_unsafe(sizeof(gen_lock_t)); /* skip lock_alloc,
 													   race cond*/
 	if (mem_lock==0){
 		LM_CRIT("could not allocate lock\n");
@@ -289,9 +289,9 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 
 	}
 #endif /* STATISTICS */
-	
+
 	LM_DBG("success\n");
-	
+
 	return 0;
 }
 
@@ -299,7 +299,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 int shm_mem_init(void)
 {
 	int ret;
-	
+
 	ret=shm_getmem();
 	if (ret<0) return ret;
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
@@ -311,7 +311,7 @@ void shm_mem_destroy(void)
 #ifndef SHM_MMAP
 	struct shmid_ds shm_info;
 #endif
-	
+
 	LM_DBG("\n");
 	if (mem_lock){
 		LM_DBG("destroying the shared memory lock\n");

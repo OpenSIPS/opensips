@@ -15,20 +15,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *
  * History:
  * -------
  *  2006-01-26  initial version
- *  
+ *
  * tls module, it implements the following commands:
  * is_peer_verified(): returns 1 if the message is received via TLS
  *     and the peer was verified during TLS connection handshake,
  *     otherwise it returns -1
- *  
+ *
  */
 
 #include <stdio.h>
@@ -63,7 +63,7 @@ static void mod_destroy(void);
  * Exported functions
  */
 static cmd_export_t cmds[]={
-	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0, 
+	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
 			REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -73,7 +73,7 @@ static cmd_export_t cmds[]={
  */
 static param_export_t params[] = {
 	{0,0,0}
-}; 
+};
 
 /*
  *  pseudo variables
@@ -105,7 +105,7 @@ static pv_export_t mod_items[] = {
 	{{"tls_my_serial", sizeof("tls_my_serial")-1},
 		850, tlsops_sn,0,
 		0, 0, pv_init_iname, CERT_LOCAL },
-	/* certificate parameters for peer and local, for subject and issuer*/	
+	/* certificate parameters for peer and local, for subject and issuer*/
 	{{"tls_peer_subject", sizeof("tls_peer_subject")-1},
 		850, tlsops_comp, 0,
 		0, 0, pv_init_iname, CERT_PEER  | CERT_SUBJECT },
@@ -190,7 +190,7 @@ static pv_export_t mod_items[] = {
 	{{"tls_my_issuer_unit", sizeof("tls_my_issuer_unit")-1},
 		850, tlsops_comp, 0,
 		0, 0, pv_init_iname, CERT_LOCAL | CERT_ISSUER  | COMP_OU },
-	/* subject alternative name parameters for peer and local */	
+	/* subject alternative name parameters for peer and local */
 	{{"tls_peer_san_email", sizeof("tls_peer_san_email")-1},
 		850, tlsops_alt, 0,
 		0, 0, pv_init_iname, CERT_PEER  | COMP_E },
@@ -215,7 +215,7 @@ static pv_export_t mod_items[] = {
 	{{"tls_my_san_ip", sizeof("tls_my_san_ip")-1},
 		850, tlsops_alt, 0,
 		0, 0, pv_init_iname, CERT_LOCAL | COMP_IP },
-	/* peer certificate validation parameters */		
+	/* peer certificate validation parameters */
 	{{"tls_peer_verified", sizeof("tls_peer_verified")-1},
 		850, tlsops_check_cert, 0,
 		0, 0, pv_init_iname, CERT_VERIFIED },
@@ -237,13 +237,13 @@ static pv_export_t mod_items[] = {
 
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 
-}; 
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
-	"tlsops", 
+	"tlsops",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,        /* Exported functions */
@@ -261,7 +261,7 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_DBG("%s module - initializing...\n", exports.name);
-	
+
 	return 0;
 }
 
@@ -286,7 +286,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 	}
 
 	LM_DBG("trying to find TCP connection of received message...\n");
-	/* what if we have multiple connections to the same remote socket? e.g. we can have 
+	/* what if we have multiple connections to the same remote socket? e.g. we can have
 	     connection 1: localIP1:localPort1 <--> remoteIP:remotePort
 	     connection 2: localIP2:localPort2 <--> remoteIP:remotePort
 	   but I think the is very unrealistic */
@@ -306,7 +306,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 		return -1;
 	}
 
-	ssl = (SSL *) c->extra_data;		
+	ssl = (SSL *) c->extra_data;
 
 	ssl_verify = SSL_get_verify_result(ssl);
 	if ( ssl_verify != X509_V_OK ) {
@@ -314,7 +314,7 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 		tcpconn_put(c);
 		return -1;
 	}
-	
+
 	/* now, we have only valid peer certificates or peers without certificates.
 	 * Thus we have to check for the existence of a peer certificate
 	 */
@@ -325,11 +325,11 @@ static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
 		tcpconn_put(c);
 		return -1;
 	}
-	
+
 	X509_free(x509_cert);
-	
+
 	tcpconn_put(c);
-	
+
 	LM_DBG("tlsops:is_peer_verified: peer is successfuly verified"
 		"...done\n");
 	return 1;

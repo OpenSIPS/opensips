@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -43,9 +43,9 @@
  * aligned memory */
 	#define ROUNDTO		sizeof(long long)
 #else
-	#define ROUNDTO		sizeof(void*) /* minimum possible ROUNDTO ->heavy 
+	#define ROUNDTO		sizeof(void*) /* minimum possible ROUNDTO ->heavy
 										 debugging*/
-#endif 
+#endif
 #else /* DBG_QM_MALLOC */
 	#define ROUNDTO		16UL /* size we round to, must be = 2^n  and also
 							 sizeof(qm_frag)+sizeof(qm_frag_end)
@@ -109,10 +109,10 @@ struct qm_block{
 	unsigned long used; /* alloc'ed size*/
 	unsigned long real_used; /* used+malloc overhead*/
 	unsigned long max_real_used;
-	
+
 	struct qm_frag* first_frag;
 	struct qm_frag_end* last_frag_end;
-	
+
 	struct qm_frag_lnk free_hash[QM_HASH_SIZE];
 	/*struct qm_frag_end free_lst_end;*/
 };
@@ -129,7 +129,7 @@ void* qm_malloc(struct qm_block*, unsigned long size);
 #endif
 
 #ifdef DBG_QM_MALLOC
-void  qm_free(struct qm_block*, void* p, const char* file, const char* func, 
+void  qm_free(struct qm_block*, void* p, const char* file, const char* func,
 				unsigned int line);
 #else
 void  qm_free(struct qm_block*, void* p);

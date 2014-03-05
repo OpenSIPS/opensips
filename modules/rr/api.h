@@ -74,7 +74,7 @@ int load_rr( struct rr_binds * );
 
 
 /*! \brief
- * function to be called directly from other modules 
+ * function to be called directly from other modules
  * to load the RR API
  */
 inline static int load_rr_api( struct rr_binds *rrb )

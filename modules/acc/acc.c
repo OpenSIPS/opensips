@@ -110,7 +110,7 @@ extern struct acc_extra *db_extra_bye;
 extern int acc_log_facility;
 
 static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
-static int build_extra_dlg_values(struct acc_extra* extra, 
+static int build_extra_dlg_values(struct acc_extra* extra,
 		struct dlg_cell *dlg,struct sip_msg *req, struct sip_msg *reply);
 static int build_leg_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
 static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals);
@@ -474,7 +474,7 @@ static void acc_db_init_keys(void)
 		VAL_NULL(db_vals + i)=0;
 	}
 	VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
-	
+
 	if (dlg_api.get_dlg) {
 		db_keys[n++] = &acc_duration_col;
 		db_keys[n++] = &acc_setuptime_col;
@@ -738,7 +738,7 @@ static aaa_map
 	rd_attrs[RA_STATIC_MAX+ACC_CORE_LEN+ACC_DLG_LEN-2+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static aaa_map rd_vals[RV_STATIC_MAX];
 
-int init_acc_aaa(char* aaa_proto_url, int srv_type) 
+int init_acc_aaa(char* aaa_proto_url, int srv_type)
 {
 	int n;
 	str prot_url;
@@ -1134,13 +1134,13 @@ int acc_diam_init()
 inline unsigned long diam_status(struct sip_msg *rq, int code)
 {
 	if ((rq->REQ_METHOD==METHOD_INVITE || rq->REQ_METHOD==METHOD_ACK)
-				&& code>=200 && code<300) 
+				&& code>=200 && code<300)
 		return AAA_ACCT_START;
 
 	if ((rq->REQ_METHOD==METHOD_BYE || rq->REQ_METHOD==METHOD_CANCEL))
 		return AAA_ACCT_STOP;
 
-	if (code>=200 && code <=300)  
+	if (code>=200 && code <=300)
 		return AAA_ACCT_EVENT;
 
 	return -1;
@@ -1189,7 +1189,7 @@ int acc_diam_request( struct sip_msg *req, struct sip_msg *rpl)
 	}
 	/* SIP_MSGID AVP */
 	mid = req->id;
-	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&mid), 
+	if( (avp=AAACreateAVP(AVP_SIP_MSGID, 0, 0, (char*)(&mid),
 	sizeof(mid), AVP_DUPLICATE_DATA)) == 0) {
 		LM_ERR("failed to create AVP:no more free memory!\n");
 		goto error;
@@ -1201,7 +1201,7 @@ int acc_diam_request( struct sip_msg *req, struct sip_msg *rpl)
 	}
 
 	/* SIP Service AVP */
-	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_ACCOUNTING, 
+	if( (avp=AAACreateAVP(AVP_Service_Type, 0, 0, SIP_ACCOUNTING,
 	SERVICE_LEN, AVP_DUPLICATE_DATA)) == 0) {
 		LM_ERR("failed to create AVP:no more free memory!\n");
 		goto error;
@@ -1522,7 +1522,7 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto end;
 	}
 
-	
+
 	LM_DBG("XXX: nr before extra is: %d\n", ret);
 	ret = prebuild_extra_arr(dlg, msg, &extra_s,
 			&evi_extra_str, evi_extra_bye, ret);
@@ -1675,7 +1675,7 @@ int set_dlg_value(str *value)
 
 	memcpy(cdr_buf.s + cdr_buf.len + 2, value->s, value->len);
 	cdr_buf.len += value->len + 2;
-	
+
 	return 1;
 }
 
@@ -1713,7 +1713,7 @@ int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 		LM_ERR("cannot build legs value string\n");
 		return -1;
 	}
-	
+
 	if (dlg_api.store_dlg_value(dlg,&leg_str,&cdr_buf) < 0) {
 		LM_ERR("cannot store dialog string\n");
 		return -1;
@@ -1751,7 +1751,7 @@ static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req)
 	for (i=0; i<count; i++)
 		if (set_dlg_value(&val_arr[i]) < 0)
 			return -1;
-	
+
 	value.s = (char*)&acc_env.ts;
 	value.len = sizeof(time_t);
 	if (set_dlg_value(&value) < 0)
@@ -1883,7 +1883,7 @@ int create_acc_dlg(struct sip_msg* req)
 	curr_time = time(NULL);
 	current_time.s = (char*)&curr_time;
 	current_time.len = sizeof(time_t);
-	
+
 	if ( dlg_api.store_dlg_value(dlg,&created_str,&current_time) < 0)
 		return -1;
 

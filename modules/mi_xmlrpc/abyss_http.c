@@ -148,7 +148,7 @@ unescapeUri(char *       const uri,
     char * y;
 
     x = y = uri;
-    
+
     *errorP = FALSE;
 
     while (*x && !*errorP) {
@@ -194,7 +194,7 @@ parseHostPort(char *           const hostport,
               const char **    const hostP,
               unsigned short * const portP,
               uint16_t *       const httpErrorCodeP) {
-    
+
     char * colonPos;
 
     colonPos = strchr(hostport, ':');
@@ -209,7 +209,7 @@ parseHostPort(char *           const hostport,
         for (p = colonPos + 1, port = 0;
              isdigit(*p) && port < 65535;
              (port = port * 10 + (*p - '0')), ++p);
-            
+
         *portP = port;
 
         if (*p || port == 0)
@@ -245,7 +245,7 @@ parseRequestUri(char *           const requestUri,
     abyss_bool error;
 
     unescapeUri(requestUri, &error);
-    
+
     if (error)
         *httpErrorCodeP = 400;  /* Bad Request */
     else {
@@ -256,14 +256,14 @@ parseRequestUri(char *           const requestUri,
         {
             /* Split requestUri at the question mark */
             char * const qmark = strchr(requestUri, '?');
-            
+
             if (qmark) {
                 *qmark = '\0';
                 *queryP = qmark + 1;
             } else
                 *queryP = NULL;
         }
-        
+
         requestUriNoQuery = requestUri;
 
         if (requestUriNoQuery[0] == '/') {
@@ -277,11 +277,11 @@ parseRequestUri(char *           const requestUri,
                 char * const hostportpath = &requestUriNoQuery[7];
                 char * const slashPos = strchr(hostportpath, '/');
                 char * hostport;
-                
+
                 if (slashPos) {
                     char * p;
                     *pathP = slashPos;
-                    
+
                     /* Nul-terminate the host name.  To make space for
                        it, slide the whole name back one character.
                        This moves it into the space now occupied by
@@ -290,7 +290,7 @@ parseRequestUri(char *           const requestUri,
                     for (p = hostportpath; *p != '/'; ++p)
                         *(p-1) = *p;
                     *(p-1) = '\0';
-                    
+
                     hostport = hostportpath - 1;
                     *httpErrorCodeP = 0;
                 } else {
@@ -350,11 +350,11 @@ parseRequestLine(char *           const requestLine,
             *httpMethodP = m_head;
         else
             *httpMethodP = m_unknown;
-        
+
         /* URI and Query Decoding */
         NextToken((const char **)&p);
 
-        
+
         requestUri = GetToken(&p);
         if (!requestUri)
             *httpErrorCodeP = 400;  /* Bad Request */
@@ -366,9 +366,9 @@ parseRequestLine(char *           const requestLine,
                 const char * httpVersion;
 
                 NextToken((const char **)&p);
-        
+
                 /* HTTP Version Decoding */
-                
+
                 httpVersion = GetToken(&p);
                 if (httpVersion) {
                     uint32_t vmin, vmaj;
@@ -412,11 +412,11 @@ static void
 getFieldNameToken(char **    const pP,
                   char **    const fieldNameP,
                   uint16_t * const httpErrorCodeP) {
-    
+
     char * fieldName;
 
     NextToken((const char **)pP);
-    
+
     fieldName = GetToken(pP);
     if (!fieldName)
         *httpErrorCodeP = 400;  /* Bad Request */
@@ -428,7 +428,7 @@ getFieldNameToken(char **    const pP,
             fieldName[strlen(fieldName)-1] = '\0';  /* remove trailing colon */
 
             strtolower(fieldName);
-            
+
             *httpErrorCodeP = 0;  /* no error */
             *fieldNameP = fieldName;
         }
@@ -522,12 +522,12 @@ RequestRead(TSession * const sessionP) {
                         char * fieldValue;
 
                         NextToken((const char **)&p);
-                        
+
                         fieldValue = p;
-                        
+
                         TableAdd(&sessionP->request_headers,
                                  fieldName, fieldValue);
-                        
+
                         processHeader(fieldName, fieldValue, sessionP,
                                       &httpErrorCode);
                     }
@@ -557,7 +557,7 @@ RequestValidURI(TSession * const sessionP) {
 
     if (!sessionP->request_info.uri)
         return FALSE;
-    
+
     if (xmlrpc_streq(sessionP->request_info.uri, "*"))
         return (sessionP->request_info.method != m_options);
 
@@ -687,42 +687,42 @@ HTTPReasonByStatus(uint16_t const code) {
     };
 
     static struct _HTTPReasons const reasons[] =  {
-        { 100,"Continue" }, 
-        { 101,"Switching Protocols" }, 
-        { 200,"OK" }, 
-        { 201,"Created" }, 
-        { 202,"Accepted" }, 
-        { 203,"Non-Authoritative Information" }, 
-        { 204,"No Content" }, 
-        { 205,"Reset Content" }, 
-        { 206,"Partial Content" }, 
-        { 300,"Multiple Choices" }, 
-        { 301,"Moved Permanently" }, 
-        { 302,"Moved Temporarily" }, 
-        { 303,"See Other" }, 
-        { 304,"Not Modified" }, 
-        { 305,"Use Proxy" }, 
-        { 400,"Bad Request" }, 
-        { 401,"Unauthorized" }, 
-        { 402,"Payment Required" }, 
-        { 403,"Forbidden" }, 
-        { 404,"Not Found" }, 
-        { 405,"Method Not Allowed" }, 
-        { 406,"Not Acceptable" }, 
-        { 407,"Proxy Authentication Required" }, 
-        { 408,"Request Timeout" }, 
-        { 409,"Conflict" }, 
-        { 410,"Gone" }, 
-        { 411,"Length Required" }, 
-        { 412,"Precondition Failed" }, 
-        { 413,"Request Entity Too Large" }, 
-        { 414,"Request-URI Too Long" }, 
-        { 415,"Unsupported Media Type" }, 
-        { 500,"Internal Server Error" }, 
-        { 501,"Not Implemented" }, 
-        { 502,"Bad Gateway" }, 
-        { 503,"Service Unavailable" }, 
-        { 504,"Gateway Timeout" }, 
+        { 100,"Continue" },
+        { 101,"Switching Protocols" },
+        { 200,"OK" },
+        { 201,"Created" },
+        { 202,"Accepted" },
+        { 203,"Non-Authoritative Information" },
+        { 204,"No Content" },
+        { 205,"Reset Content" },
+        { 206,"Partial Content" },
+        { 300,"Multiple Choices" },
+        { 301,"Moved Permanently" },
+        { 302,"Moved Temporarily" },
+        { 303,"See Other" },
+        { 304,"Not Modified" },
+        { 305,"Use Proxy" },
+        { 400,"Bad Request" },
+        { 401,"Unauthorized" },
+        { 402,"Payment Required" },
+        { 403,"Forbidden" },
+        { 404,"Not Found" },
+        { 405,"Method Not Allowed" },
+        { 406,"Not Acceptable" },
+        { 407,"Proxy Authentication Required" },
+        { 408,"Request Timeout" },
+        { 409,"Conflict" },
+        { 410,"Gone" },
+        { 411,"Length Required" },
+        { 412,"Precondition Failed" },
+        { 413,"Request Entity Too Large" },
+        { 414,"Request-URI Too Long" },
+        { 415,"Unsupported Media Type" },
+        { 500,"Internal Server Error" },
+        { 501,"Not Implemented" },
+        { 502,"Bad Gateway" },
+        { 503,"Service Unavailable" },
+        { 504,"Gateway Timeout" },
         { 505,"HTTP Version Not Supported" },
         { 000, NULL }
     };
@@ -825,7 +825,7 @@ HTTPKeepalive(TSession * const sessionP) {
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE

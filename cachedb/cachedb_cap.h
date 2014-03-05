@@ -59,7 +59,7 @@ static inline int check_cachedb_api(cachedb_engine *cde)
 				cde->name.len,cde->name.s);
 		return -1;
 	}
-	
+
 	if (cde->cdb_func.get)
 		cde->cdb_func.capability |= CACHEDB_CAP_GET;
 	if (cde->cdb_func.set)

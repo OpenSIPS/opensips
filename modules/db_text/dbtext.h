@@ -17,14 +17,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  * 2003-01-30 created by Daniel
- * 
+ *
  */
 
 
@@ -59,7 +59,7 @@ int dbt_free_result(db_con_t* _h, db_res_t* _r);
 /*
  * Do a query
  */
-int dbt_query(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, 
+int dbt_query(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 			db_key_t* _c, int _n, int _nc, db_key_t _o, db_res_t** _r);
 
 

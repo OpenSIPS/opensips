@@ -112,7 +112,7 @@ void destroy_stats_collector();
 #define register_stat(_mod,_name,_pvar,_flags) \
 		register_stat2(_mod,_name,_pvar,_flags, 0)
 
-int register_stat2( char *module, char *name, stat_var **pvar, 
+int register_stat2( char *module, char *name, stat_var **pvar,
 		unsigned  short flags, void* context);
 
 int register_dynamic_stat( str *name, stat_var **pvar);
@@ -129,10 +129,10 @@ unsigned int get_stat_val( stat_var *var );
  * Returns the statistic associated with 'numerical_code' and 'is_a_reply'.
  * Specifically:
  *
- *  - if in_codes is nonzero, then the stat_var for the number of messages 
+ *  - if in_codes is nonzero, then the stat_var for the number of messages
  *    _received_ with the 'numerical_code' will be returned if it exists.
- *  - otherwise, the stat_var for the number of messages _sent_ with the 
- *    'numerical_code' will be returned, if the stat exists. 
+ *  - otherwise, the stat_var for the number of messages _sent_ with the
+ *    'numerical_code' will be returned, if the stat exists.
  */
 stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int in_codes);
 

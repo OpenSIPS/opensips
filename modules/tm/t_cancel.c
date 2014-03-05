@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -58,7 +58,7 @@ void which_cancel( struct cell *t, branch_bm_t *cancel_bm )
 	int i;
 
 	for( i=t->first_branch ; i<t->nr_of_outgoings ; i++ ) {
-		if (should_cancel_branch(t, i)) 
+		if (should_cancel_branch(t, i))
 			*cancel_bm |= 1<<i ;
 
 	}
@@ -71,7 +71,7 @@ void cancel_uacs( struct cell *t, branch_bm_t cancel_bm )
 	int i;
 
 	/* cancel pending client transactions, if any */
-	for( i=0 ; i<t->nr_of_outgoings ; i++ ) 
+	for( i=0 ; i<t->nr_of_outgoings ; i++ )
 		if (cancel_bm & (1<<i))
 			cancel_branch(t, i);
 }
@@ -103,7 +103,7 @@ void cancel_branch( struct cell *t, int branch )
 	crb->buffer.len=len;
 	crb->dst=irb->dst;
 	crb->branch=branch;
-	/* label it as cancel so that FR timer can better now how 
+	/* label it as cancel so that FR timer can better now how
 	 * to deal with it */
 	crb->activ_type=TYPE_LOCAL_CANCEL;
 

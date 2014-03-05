@@ -63,7 +63,7 @@ pdt_tree_t* pdt_init_tree(str* sdomain)
 	memcpy(pt->sdomain.s, sdomain->s, sdomain->len);
 	pt->sdomain.len = sdomain->len;
 //	printf("sdomain:%.*s\n", pt->sdomain.len, pt->sdomain.s);
-	
+
 	pt->head = (pdt_node_t*)shm_malloc(PDT_NODE_SIZE*sizeof(pdt_node_t));
 	if(pt->head == NULL)
 	{
@@ -73,7 +73,7 @@ pdt_tree_t* pdt_init_tree(str* sdomain)
 		return NULL;
 	}
 	memset(pt->head, 0, PDT_NODE_SIZE*sizeof(pdt_node_t));
-	
+
 	return pt;
 }
 
@@ -81,7 +81,7 @@ int add_to_tree(pdt_tree_t *pt, str *sp, str *sd)
 {
 	int l;
 	pdt_node_t *itn, *itn0;
-	
+
 	if(pt==NULL || sp==NULL || sp->s==NULL
 			|| sd==NULL || sd->s==NULL)
 	{
@@ -94,7 +94,7 @@ int add_to_tree(pdt_tree_t *pt, str *sp, str *sd)
 		LM_ERR("max prefix len exceeded\n");
 		return -1;
 	}
-	
+
 	l = 0;
 	itn0 = pt->head;
 	itn = itn0[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].child;
@@ -105,9 +105,9 @@ int add_to_tree(pdt_tree_t *pt, str *sp, str *sd)
 		{
 			LM_ERR("invalid char %d in prefix [%c (0x%x)]\n",
 				l, sp->s[l], sp->s[l]);
-			return -1;			
+			return -1;
 		}
-		
+
 		if(itn == NULL)
 		{
 			itn = (pdt_node_t*)shm_malloc(PDT_NODE_SIZE*sizeof(pdt_node_t));
@@ -119,7 +119,7 @@ int add_to_tree(pdt_tree_t *pt, str *sp, str *sd)
 			memset(itn, 0, PDT_NODE_SIZE*sizeof(pdt_node_t));
 			itn0[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].child = itn;
 		}
-		l++;	
+		l++;
 		itn0 = itn;
 		itn = itn0[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].child;
 	}
@@ -143,14 +143,14 @@ int add_to_tree(pdt_tree_t *pt, str *sp, str *sd)
 	itn0[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].domain.len = sd->len;
 	itn0[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].domain.s[sd->len]
 		= '\0';
-	
+
 	return 0;
 }
 
 pdt_tree_t* pdt_get_tree(pdt_tree_t *pl, str *sdomain)
 {
 	pdt_tree_t *it;
-			   
+
 	if(pl==NULL)
 		return NULL;
 
@@ -167,7 +167,7 @@ pdt_tree_t* pdt_get_tree(pdt_tree_t *pl, str *sdomain)
 
 	if(it==NULL || str_strcmp(&it->sdomain, sdomain)>0)
 		return NULL;
-	
+
 	return it;
 }
 
@@ -182,14 +182,14 @@ int pdt_add_to_tree(pdt_tree_t **dpt, str *sdomain, str *code, str *domain)
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	ndl = NULL;
-	
+
 	it = *dpt;
 	prev = NULL;
 	/* search the it position before which to insert new domain */
 	while(it!=NULL && str_strcmp(&it->sdomain, sdomain)<0)
-	{	
+	{
 		prev = it;
 		it = it->next;
 	}
@@ -202,7 +202,7 @@ int pdt_add_to_tree(pdt_tree_t **dpt, str *sdomain, str *code, str *domain)
 		if(ndl==NULL)
 		{
 			LM_ERR("no more shm memory\n");
-			return -1; 
+			return -1;
 		}
 
 		if(add_to_tree(ndl, code, domain)<0)
@@ -211,7 +211,7 @@ int pdt_add_to_tree(pdt_tree_t **dpt, str *sdomain, str *code, str *domain)
 			return -1;
 		}
 		ndl->next = it;
-		
+
 		/* new domain must be added as first element */
 		if(prev==NULL)
 			*dpt = ndl;
@@ -219,7 +219,7 @@ int pdt_add_to_tree(pdt_tree_t **dpt, str *sdomain, str *code, str *domain)
 			prev->next=ndl;
 
 	}
-	else 
+	else
 		/* add (prefix, code) to already present sdomain */
 		if(add_to_tree(it, code, domain)<0)
 		{
@@ -241,7 +241,7 @@ str* get_domain(pdt_tree_t *pt, str *sp, int *plen)
 		LM_ERR("bad parameters\n");
 		return NULL;
 	}
-	
+
 	l = len = 0;
 	itn = pt->head;
 	domain = NULL;
@@ -260,16 +260,16 @@ str* get_domain(pdt_tree_t *pt, str *sp, int *plen)
 			domain = &itn[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].domain;
 			len = l+1;
 		}
-		
+
 		itn = itn[strpos(pdt_char_list.s,sp->s[l])%PDT_NODE_SIZE].child;
-		l++;	
+		l++;
 	}
-	
+
 	if(plen!=NULL)
 		*plen = len;
-	
+
 	return domain;
-	
+
 }
 str* pdt_get_domain(pdt_tree_t *pl, str* sdomain, str *code, int *plen)
 {
@@ -287,10 +287,10 @@ str* pdt_get_domain(pdt_tree_t *pl, str* sdomain, str *code, int *plen)
 	it = pl;
 	while(it!=NULL && str_strcmp(&it->sdomain, sdomain)<0)
 		it = it->next;
-	
+
 	if(it==NULL || str_strcmp(&it->sdomain, sdomain)>0)
 		return NULL;
-	
+
 	domain = get_domain(it, code, &len);
 	if(plen!=NULL)
 			*plen = len;
@@ -319,7 +319,7 @@ void pdt_free_node(pdt_node_t *pn)
 	}
 	shm_free(pn);
 	pn = NULL;
-	
+
 	return;
 }
 
@@ -328,13 +328,13 @@ void pdt_free_tree(pdt_tree_t *pt)
 	if(pt == NULL)
 		return;
 
-	if(pt->head!=NULL) 
+	if(pt->head!=NULL)
 		pdt_free_node(pt->head);
 	if(pt->next!=NULL)
 		pdt_free_tree(pt->next);
 	if(pt->sdomain.s!=NULL)
 		shm_free(pt->sdomain.s);
-	
+
 	shm_free(pt);
 	pt = NULL;
 	return;
@@ -346,7 +346,7 @@ int pdt_print_node(pdt_node_t *pn, char *code, int len)
 
 	if(pn==NULL || code==NULL || len>=PDT_MAX_DEPTH)
 		return 0;
-	
+
 	for(i=0; i<PDT_NODE_SIZE; i++)
 	{
 		code[len]=pdt_char_list.s[i];
@@ -369,7 +369,7 @@ int pdt_print_tree(pdt_tree_t *pt)
 		LM_DBG("tree is empty\n");
 		return 0;
 	}
-	
+
 	LM_DBG("[%.*s]\n", pt->sdomain.len, pt->sdomain.s);
 	len = 0;
 	pdt_print_node(pt->head, pdt_code_buf, len);
@@ -381,7 +381,7 @@ int pdt_check_pd_node(pdt_node_t *pn, str *sp, str *sd,
 {
 	int i;
 	int ret;
- 
+
 	if(pn==NULL || code==NULL || len>=PDT_MAX_DEPTH)
 		return 0;
 	ret = 0;
@@ -414,8 +414,8 @@ int pdt_check_pd_node(pdt_node_t *pn, str *sp, str *sd,
 	return ret;
 }
 
-/* returns 
- * 1 if prefix or domain already exists 
+/* returns
+ * 1 if prefix or domain already exists
  * 0 if prefix or domain does not exist
  * -1 if any error
  */
@@ -424,7 +424,7 @@ int pdt_check_pd(pdt_tree_t *pt, str* sdomain, str *sp, str *sd)
 	int len;
 	int ret;
 	pdt_tree_t *it;
-		
+
 	if(pt==NULL || sp==NULL || sd==NULL)
 	{
 		LM_ERR("bad parameters\n");

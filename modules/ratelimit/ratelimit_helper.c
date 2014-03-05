@@ -407,7 +407,7 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 	LM_DBG("Pipe %.*s counter:%d load:%d limit:%d should %sbe blocked (%p)\n",
 			name.len, name.s, (*pipe)->counter, (*pipe)->load,
 			(*pipe)->limit, ret == 1? "NOT " : "", *pipe);
-	
+
 
 release:
 	RL_RELEASE_LOCK(hash_idx);
@@ -498,7 +498,7 @@ void rl_timer(unsigned int ticks, void *param)
 						(*pipe)->load =
 							(*rl_network_load > (*pipe)->limit) ? -1 : 1;
 						break;
-				
+
 					case PIPE_ALGO_RED:
 						if ((*pipe)->limit && rl_timer_interval)
 							(*pipe)->load = (*pipe)->counter /

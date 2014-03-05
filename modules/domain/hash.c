@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -72,7 +72,7 @@ int hash_table_lookup (str *domain)
 	struct domain_list *np;
 
 	for (np = (*hash_table)[dom_hash(domain)]; np != NULL; np = np->next) {
-		if ((np->domain.len == domain->len) && 
+		if ((np->domain.len == domain->len) &&
 		    (strncasecmp(np->domain.s, domain->s, domain->len) == 0)) {
 			return 1;
 		}
@@ -93,7 +93,7 @@ int hash_table_mi_print(struct domain_list **hash_table, struct mi_node* rpl)
 	for (i = 0; i < DOM_HASH_SIZE; i++) {
 		np = hash_table[i];
 		while (np) {
-			node = add_mi_node_child(rpl, 0, 0, 0, 
+			node = add_mi_node_child(rpl, 0, 0, 0,
 					np->domain.s, np->domain.len);
 			if(node == 0)
 				return -1;
@@ -109,7 +109,7 @@ void hash_table_free (struct domain_list **hash_table)
 {
 	int i;
 	struct domain_list *np, *next;
-	
+
 	if(hash_table==0)
 		return;
 

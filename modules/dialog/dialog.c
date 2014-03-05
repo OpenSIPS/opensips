@@ -17,22 +17,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  *  2006-04-14 initial version (bogdan)
  *  2006-11-28 Added statistic support for the number of early and failed
- *              dialogs. (Jeffrey Magder - SOMA Networks) 
+ *              dialogs. (Jeffrey Magder - SOMA Networks)
  *  2007-04-30 added dialog matching without DID (dialog ID), but based only
- *              on RFC3261 elements - based on an original patch submitted 
+ *              on RFC3261 elements - based on an original patch submitted
  *              by Michel Bensoussan <michel@extricom.com> (bogdan)
  *  2007-05-15 added saving dialogs' information to database (ancuta)
- *  2007-07-04 added saving dialog cseq, contact, record route 
+ *  2007-07-04 added saving dialog cseq, contact, record route
  *              and bind_addresses(sock_info) for caller and callee (ancuta)
- *  2008-04-14 added new type of callback to be triggered when dialogs are 
+ *  2008-04-14 added new type of callback to be triggered when dialogs are
  *              loaded from DB (bogdan)
  */
 
@@ -323,7 +323,7 @@ static pv_export_t mod_items[] = {
 		pv_set_dlg_val,    pv_parse_name, 0, 0, 0},
 	{ {"DLG_did",     sizeof("DLG_did")-1},      1000, pv_get_dlg_did,
 		0,                 0, 0, 0, 0},
-	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},      1000, 
+	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},      1000,
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -655,7 +655,7 @@ static int mod_init(void)
 	}
 
 	if (timeout_spec.s) {
-		if ( pv_parse_spec(&timeout_spec, &timeout_avp)==0 
+		if ( pv_parse_spec(&timeout_spec, &timeout_avp)==0
 				&& (timeout_avp.type!=PVT_AVP)){
 			LM_ERR("malformed or non AVP timeout "
 				"AVP definition in '%.*s'\n", timeout_spec.len,timeout_spec.s);
@@ -965,7 +965,7 @@ static int w_match_dialog(struct sip_msg *msg)
 	backup = seq_match_mode;
 	seq_match_mode = SEQ_MATCH_FALLBACK;
 
-	/* See if we can force DID matching, for the case of topo 
+	/* See if we can force DID matching, for the case of topo
 	 * hiding, where we have the DID as param of the contact */
 	if (parse_sip_msg_uri(msg)<0) {
 		LM_ERR("Failed to parse request URI\n");
@@ -1046,7 +1046,7 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 	pve = (pv_elem_t *)value;
 
 	if (((struct dlg_profile_table*)profile)->has_value) {
-		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 || 
+		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
@@ -1075,7 +1075,7 @@ static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 	pve = (pv_elem_t *)value;
 
 	if (((struct dlg_profile_table*)profile)->has_value) {
-		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 || 
+		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
@@ -1104,7 +1104,7 @@ static int w_is_in_profile(struct sip_msg *msg, char *profile, char *value)
 	pve = (pv_elem_t *)value;
 
 	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {
-		if ( pv_printf_s(msg, pve, &val_s)!=0 || 
+		if ( pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
@@ -1118,7 +1118,7 @@ static int w_is_in_profile(struct sip_msg *msg, char *profile, char *value)
 }
 
 
-static int w_get_profile_size(struct sip_msg *msg, char *profile, 
+static int w_get_profile_size(struct sip_msg *msg, char *profile,
 													char *value, char *result)
 {
 	pv_elem_t *pve;
@@ -1134,7 +1134,7 @@ static int w_get_profile_size(struct sip_msg *msg, char *profile,
 	sp_dest = (pv_spec_t *)result;
 
 	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {
-		if ( pv_printf_s(msg, pve, &val_s)!=0 || 
+		if ( pv_printf_s(msg, pve, &val_s)!=0 ||
 		val_s.len == 0 || val_s.s == NULL) {
 			LM_WARN("cannot get string for value\n");
 			return -1;
@@ -1236,7 +1236,7 @@ int w_store_dlg_value(struct sip_msg *msg, char *name, char *val)
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
 
-	if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 || 
+	if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
 	val_s.len == 0 || val_s.s == NULL) {
 		LM_WARN("cannot get string for value\n");
 		return -1;
@@ -1314,7 +1314,7 @@ static int w_get_dlg_info(struct sip_msg *msg, char *attr, char *attr_val,
 	str val_s;
 	int n;
 
-	if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 || 
+	if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
 	val_s.len == 0 || val_s.s == NULL) {
 		LM_WARN("cannot get string for value\n");
 		return -1;

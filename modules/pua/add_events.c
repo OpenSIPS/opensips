@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *	initial version 2007-05-03 (anca)
@@ -136,7 +136,7 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 		{
 			xmlFree(person_id);
 		}
-	}	
+	}
 	body= (str*)pkg_malloc(sizeof(str));
 	if(body== NULL)
 	{
@@ -152,7 +152,7 @@ int pres_process_body(publ_info_t* publ, str** fin_body, int ver, str* tuple)
 	}
 	xmlFreeDoc(doc);
 	doc= NULL;
-	
+
 	*fin_body= body;
 	xmlMemoryDump();
 	xmlCleanupParser();

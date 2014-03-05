@@ -42,7 +42,7 @@
 #define MAX_MI_FILENAME 128
 
 /* size of buffer used by parser to read and build the MI tree */
-#define MI_CHILD_NO	    1 
+#define MI_CHILD_NO	    1
 
 #include <sys/un.h>
 #include "../../ip_addr.h"

@@ -46,7 +46,7 @@ struct hep_hdr{
 struct hep_timehdr{
    u_int32_t tv_sec;         /* seconds */
    u_int32_t tv_usec;        /* useconds */
-   u_int16_t captid;          /* Capture ID node */           
+   u_int16_t captid;          /* Capture ID node */
 };
 
 struct hep_iphdr{

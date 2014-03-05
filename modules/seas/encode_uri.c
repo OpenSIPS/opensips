@@ -14,26 +14,26 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 /*
  * =====================================================================================
- * 
+ *
  *        Filename:  xuri.c
- * 
+ *
  *     Description:  first trial to implement xuri
- * 
+ *
  *         Version:  1.0
  *         Created:  16/11/05 18:07:24 CET
  *        Revision:  none
  *        Compiler:  gcc
- * 
+ *
  *          Author:  Elias Baixas (EB), elias@conillera.net
  *         Company:  VozTele.com
- * 
+ *
  * =====================================================================================
  */
 
@@ -63,9 +63,9 @@
  *
  * 1: The first byte of the structure, is a
  * HEADER_START-based pointer to the beginning of the URI
- * (including the "sip:").  
- * 1: The next byte is the length of the uri, so URIMAX 
- * is 256 (enough...) 
+ * (including the "sip:").
+ * 1: The next byte is the length of the uri, so URIMAX
+ * is 256 (enough...)
  * 2: Flags specifying the parts that are present in the URI
  *
  * as follows:
@@ -102,14 +102,14 @@
  * The reason to have the OTHER and HEADERS flags at the
  * beginning(just after the strictly-uri stuff), is that it
  * will be necessary to know the length of the parameters
- * section and the headers section.  
+ * section and the headers section.
  *
  * The parameters can
  * appear in an arbitrary order, so they won't be following
  * the convention of transport-ttl-user-method-maddr-lr, so
  * we can't rely on the next pointer to compute the length
- * of the previous pointer field, as the ttl param can 
- * appear before the transport param. so the parameter 
+ * of the previous pointer field, as the ttl param can
+ * appear before the transport param. so the parameter
  * pointers must have 2 bytes: pointer+length.
  *
  */
@@ -226,7 +226,7 @@ int encode_uri2(char *hdr,int hdrlen,str uri_str, struct sip_uri *uri_parsed,uns
 	 flags1 |= SECURE_F;
       }
    }else goto error;
-	
+
    payload[2]=flags1;
    payload[3]=flags2;
    j=i;
@@ -321,7 +321,7 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
    char *ch_uriptr,*aux,*aux2,*aux3,*uritype=NULL,*secure=NULL;
    FILE *fp;
 
-   if ( (fp = fdopen(fd, "w*")) == NULL) 
+   if ( (fp = fdopen(fd, "w*")) == NULL)
       return -1;
 
    uriidx=payload[0];
@@ -346,7 +346,7 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
    if(flags1 & USER_F){
       fprintf(fp,"%.*s\n",(payload[i+1]-1)-payload[i],&ch_uriptr[payload[i]]);
       ++i;
-   }else 
+   }else
       fprintf(fp,"(null)\n");
    fprintf(fp,"%sgetUserPassword=(S)",prefix);
    if(flags1 & PASSWORD_F){
@@ -378,12 +378,12 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
 	    fprintf(fp,"%.*s=;",(int)(aux3-aux+k),aux);
 	    aux2=NULL;/*resets the parameterValue-start pointer*/
 	    aux=aux3+1+k;/*points to the next parameter*/
-	 }else 
+	 }else
 	    if((aux3[k]==';'||(k==m)) && aux2!=NULL){
 	       fprintf(fp,"%.*s=%.*s;",(int)(aux2-aux),aux,(int)(aux3-aux2-1+k),aux2+1);
 	       aux2=NULL;
 	       aux=aux3+1+k;
-	    } else 
+	    } else
 	       if(aux3[k]=='='){
 		  aux2=aux3+k;
 	       }
@@ -402,12 +402,12 @@ int print_uri_junit_tests(char *hdrstart,int hdrlen,unsigned char *payload,int p
 	    fprintf(fp,"%.*s=;",(int)(aux3-aux+k),aux);
 	    aux2=NULL;/*resets the parameterValue-start pointer*/
 	    aux=aux3+1+k;/*points to the next parameter*/
-	 }else 
+	 }else
 	    if((aux3[k]==';'||(k==m)) && aux2!=NULL){
 	       fprintf(fp,"%.*s=%.*s;",(int)(aux2-aux),aux,(int)(aux3-aux2-1+k),aux2+1);
 	       aux2=NULL;
 	       aux=aux3+1+k;
-	    } else 
+	    } else
 	       if(aux3[k]=='='){
 		  aux2=aux3+k;
 	       }

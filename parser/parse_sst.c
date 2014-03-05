@@ -1,6 +1,6 @@
-/* 
+/*
  * $Id$
- * 
+ *
  * Copyright (c) 2006 SOMA Networks, Inc. <http://www.somanetworks.com/>
  *
  * This file is part of opensips, a free SIP server.
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -130,7 +130,7 @@ parse_session_expires_body( struct hdr_field *hf )
 							}
 						}
 						else /* not "esher=" */ {
-							/* there are no other se-params 
+							/* there are no other se-params
 							   that start with "refr" */
 							for ( ; pos < len && *p != ';'; ++pos, ++p )
 								/*skip to ';'*/;

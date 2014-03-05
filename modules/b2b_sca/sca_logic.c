@@ -175,7 +175,7 @@ int build_publish_call_info_header(b2b_sca_record_t *rec, str *publish_hdr)
 	b2b_sca_call_t *call = NULL;
 	char *p;
 
-	rec->expires = 30; 
+	rec->expires = 30;
 	size += callinfo_default_uri.len +
 		callinfo_appindex.len + callinfo_hdr_postfix.len;
 
@@ -190,7 +190,7 @@ int build_publish_call_info_header(b2b_sca_record_t *rec, str *publish_hdr)
 		if (rec->call[i]) {
 			call = rec->call[i];
 			if (call->call_state > ALERTING_STATE)
-				rec->expires = 36000; 
+				rec->expires = 36000;
 			size += call->call_info_uri.len +
 				callinfo_appuri_prefix.len +
 				call->call_info_apperance_uri.len +

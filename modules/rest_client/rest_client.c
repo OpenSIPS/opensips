@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -66,7 +66,7 @@ static int fixup_rest_post(void **param, int param_no);
  */
 static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
 				char *type_pv, char *code_pv);
-static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body, 
+static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
 				char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
 
 
@@ -113,7 +113,7 @@ static param_export_t params[] = {
  * Module parameter variables
  */
 struct module_exports exports = {
-	"rest_client", 
+	"rest_client",
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
@@ -175,7 +175,7 @@ static int fixup_rest_post(void **param, int param_no)
 	case 5:
 	case 6:
 		return fixup_pvar(param);
-	
+
 	default:
 		LM_ERR("Too many parameters!\n");
 		return -1;
@@ -198,7 +198,7 @@ static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
 	                       (pv_spec_p)code_pv);
 }
 
-static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body, 
+static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
                    char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
 {
 	str url, ctype, body;

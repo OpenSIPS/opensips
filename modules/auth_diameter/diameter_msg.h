@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -222,12 +222,12 @@ typedef enum {
 	AVP_Origin_Realm                  =  296,
 /* begin SIP AAA with DIAMETER*/
 	AVP_Resource					  =  400,
-	AVP_Response					  =  401,	
+	AVP_Response					  =  401,
 	AVP_Challenge					  =  402,
 	AVP_Method						  =  403,
 	AVP_Service_Type				  =  404,
 	AVP_User_Group					  =  405,
-	AVP_SIP_MSGID					  =  406	
+	AVP_SIP_MSGID					  =  406
 
 /* end SIP AAA with DIAMETER */
 }AAA_AVPCodeNr;

@@ -138,7 +138,7 @@ static int mi_fifo_check(int fd, char* fname)
 {
 	struct stat fst;
 	struct stat lst;
-	
+
 	if (fstat(fd, &fst)<0){
 		LM_ERR("fstat failed: %s\n", strerror(errno));
 		return -1;
@@ -191,7 +191,7 @@ static FILE *mi_open_reply_pipe( char *pipe_name )
 	}
 
 tryagain:
-	/* open non-blocking to make sure that a broken client will not 
+	/* open non-blocking to make sure that a broken client will not
 	 * block the FIFO server forever */
 	fifofd=open( pipe_name, O_WRONLY | O_NONBLOCK );
 	if (fifofd==-1) {
@@ -215,7 +215,7 @@ tryagain:
 		LM_ERR("open error (%s): %s\n", pipe_name, strerror(errno));
 		return 0;
 	}
-	/* security checks: is this really a fifo?, is 
+	/* security checks: is this really a fifo?, is
 	 * it hardlinked? is it a soft link? */
 	if (mi_fifo_check(fifofd, pipe_name)<0) goto error;
 
@@ -266,7 +266,7 @@ retry:
 		kill(0, SIGTERM);
 	}
 	/* if we did not read whole line, our buffer is too small
-	   and we cannot process the request; consume the remainder of 
+	   and we cannot process the request; consume the remainder of
 	   request
 	*/
 
@@ -409,7 +409,7 @@ void mi_fifo_server(FILE *fifo_stream)
 				line_len--;
 				mi_buf[line_len]=0;
 			} else break;
-		} 
+		}
 
 		if (line_len==0) {
 			LM_DBG("command empty\n");

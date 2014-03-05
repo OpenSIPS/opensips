@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -88,10 +88,10 @@ static int mod_init(void)
 	LM_NOTICE("initializing module ...\n");
 
 	/* load TM API*/
-	if ( (load_tm=(load_tm_f)find_export("load_tm", 0, 0))) 
+	if ( (load_tm=(load_tm_f)find_export("load_tm", 0, 0)))
 	{
 		if (load_tm( &tmb )==-1)
-		{ 
+		{
 			LM_ERR("failed to load tm api\n");
 			return -1;
 		}
@@ -115,12 +115,12 @@ static int mod_init(void)
 				" loading at least one of these two\n");
 		return -1;
 	}
-	
+
 	return 0;
 }
 
 /*
- * sig_send_reply - function to be called from script to send appropiate 
+ * sig_send_reply - function to be called from script to send appropiate
  * replies (statefull or stateless)
  * */
 int sig_send_reply(struct sip_msg* msg, char* str1, char* str2)
@@ -137,7 +137,7 @@ int sig_send_reply(struct sip_msg* msg, char* str1, char* str2)
 	} else {
 		code_i = ((pv_elem_p)str1)->spec.pvp.pvn.u.isname.name.n;
 	}
-	
+
 	if(((pv_elem_p)str2)->spec.getf!=NULL)
 	{
 		if(pv_printf_s(msg, (pv_elem_p)str2, &code_s)!=0 || code_s.len <=0)
@@ -206,8 +206,8 @@ sl_reply:
 	return 1;
 }
 
-/* * 
- * fixup_sig_send_reply 
+/* *
+ * fixup_sig_send_reply
  */
 static int fixup_sig_send_reply(void** param, int param_no)
 {

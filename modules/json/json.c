@@ -94,7 +94,7 @@ typedef struct _json_name
 	str name;
 	json_tag * tags;
 	json_tag ** end;
-	
+
 
 }json_name;
 
@@ -235,10 +235,10 @@ struct json_object* json_parse(const char *str,int len)
 
 	if( tok-> err == json_tokener_continue )
 		obj = json_tokener_parse_ex(tok, "", -1);
-	
+
 	if(tok->err != json_tokener_success)
 		obj = (struct json_object*)error_ptr(-tok->err);
-	
+
 	json_tokener_free(tok);
 	return obj;
 }
@@ -261,7 +261,7 @@ pv_json_t * get_pv_json (pv_param_t* pvp)
 	}
 
 	return cur;
-	
+
 }
 
 
@@ -278,10 +278,10 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 	int poz;
 
 
-	
+
 	cur_tag = id->tags;
 	cur_obj = var->data;
-	
+
 
 	while( cur_tag  )
 	{
@@ -303,7 +303,7 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 				goto error;
 
 
-			
+
 		}
 
 		if( cur_tag->type & TAG_IDX )
@@ -336,7 +336,7 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 				goto error;
 
 		}
-		
+
 		cur_tag = cur_tag->next;
 	}
 
@@ -387,7 +387,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 
 	if( var == NULL )
 	{
-		/* this is not an error - we simply came across a json spec 
+		/* this is not an error - we simply came across a json spec
 		 * pointing a json var which was never set/init */
 		LM_DBG("Variable named:%.*s not found\n",id->name.len,id->name.s);
 		return pv_get_null( msg, pvp, val);
@@ -404,7 +404,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 		val->rs.s = int2str(json_object_get_int(obj), &val->rs.len);
 		val->ri = json_object_get_int(obj);;
 		val->flags |= PV_VAL_INT|PV_TYPE_INT;
-		
+
 	}
 	else
 	{
@@ -439,7 +439,7 @@ int pv_add_json ( pv_param_t* pvp, json_t * obj )
 			LM_ERR("Object is not initialized yet\n");
 			return -1;
 		}
-		
+
 		var = (pv_json_t *) pkg_malloc(sizeof(pv_json_t));
 
 		if( var == NULL )
@@ -500,7 +500,7 @@ int pv_add_json ( pv_param_t* pvp, json_t * obj )
 				LM_ERR("Invalid parameter for deletion\n");
 				return -1;
 			}
-			
+
 			json_object_array_add(dest,obj);
 			return 0;
 
@@ -508,7 +508,7 @@ int pv_add_json ( pv_param_t* pvp, json_t * obj )
 
 		if(  poz < 0 )
 			poz += json_object_array_length(dest);
-		
+
 
 
 
@@ -561,7 +561,7 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 	/* If we want the value to be interpreted prepare the object */
 	if( flag == COLONEQ_T )
 	{
-		
+
 		if( ! (val->flags & PV_VAL_STR) )
 		{
 			LM_ERR("Trying to interpret a non-string value\n");
@@ -589,11 +589,11 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 		{
 			obj = json_object_new_string_len( val->rs.s, val->rs.len);
 		}
-		
+
 	}
 
 
-	
+
 	return pv_add_json(pvp,obj);
 }
 
@@ -707,7 +707,7 @@ void print_tag_list( json_tag * start, json_tag * end, int err)
 
 			cur = cur->next;
 		}
-		
+
 	}
 }
 
@@ -724,7 +724,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 
 	if( state != ST_TEST )
 		LM_DBG("JSON tag type=%d value=%.*s\n",state,(int)(cur-start),start);
-		
+
 	switch(state)
 	{
 		case ST_NAME:
@@ -758,7 +758,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 				return 0;
 			}
 
-			
+
 			node->key = in;
 
 			break;
@@ -770,7 +770,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 				LM_ERR("Out of memory\n");
 				return -1;
 			}
-			
+
 			memset(node,0,sizeof(json_tag));
 			node->type = TAG_IDX;
 			*id->end = node;
@@ -785,13 +785,13 @@ int get_value(int state, json_name * id, char *start, char * cur)
 					empty = 0;
 					break;
 				}
-			
+
 			if( empty)
 			{
 				node->type |= TAG_END;
 				return 0;
 			}
-			
+
 
 			if( *i == '$' )
 			{
@@ -811,7 +811,7 @@ int get_value(int state, json_name * id, char *start, char * cur)
 					(int)(cur-start), start );
 				return -1;
 			}
-			
+
 			break;
 
 
@@ -906,7 +906,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 			if ( get_value(state, id, start, cur) )
 				return -1;
 
-	
+
 		if( ignore[state][(unsigned int)*cur])
 		{
 			cur --;
@@ -914,7 +914,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 
 		prev_state = state;
 		state = next_state;
-		
+
 	}
 
 	if( state == ST_IDX)
@@ -944,7 +944,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 
 int mod_init(void)
 {
-	
+
 	return 0;
 }
 
@@ -955,6 +955,6 @@ int child_init(int rank)
 
 void mod_destroy(void)
 {
-	
+
 }
 

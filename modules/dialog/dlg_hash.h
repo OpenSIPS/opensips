@@ -15,19 +15,19 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  * 2006-04-14  initial version (bogdan)
- * 2006-11-28  Added num_100s and num_200s to dlg_cell, to aid in adding 
+ * 2006-11-28  Added num_100s and num_200s to dlg_cell, to aid in adding
  *             statistics tracking of the number of early, and active dialogs.
  *             (Jeffrey Magder - SOMA Networks)
  * 2007-03-06  syncronized state machine added for dialog state. New tranzition
  *             design based on events; removed num_1xx and num_2xx (bogdan)
- * 2007-07-06  added flags, cseq, contact, route_set and bind_addr 
+ * 2007-07-06  added flags, cseq, contact, route_set and bind_addr
  *             to struct dlg_cell in order to store these information into db
  *             (ancuta)
  * 2008-04-17  added new dialog flag to avoid state tranzitions from DELETED to
@@ -251,7 +251,7 @@ void destroy_dlg_table();
 struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 		str *to_uri, str *from_tag);
 
-int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, 
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
 		str *mangled_from,str *mangled_to);
 

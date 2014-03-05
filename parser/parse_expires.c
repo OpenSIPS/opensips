@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -82,7 +82,7 @@ int parse_expires(struct hdr_field* _h)
 		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
-	
+
 	memset(e, 0, sizeof(exp_body_t));
 
 	if (expires_parser(_h->body.s, _h->body.len, e) < 0) {
@@ -93,7 +93,7 @@ int parse_expires(struct hdr_field* _h)
 		pkg_free(e);
 		return -2;
 	}
-	
+
 	_h->parsed = (void*)e;
 	return 0;
 }

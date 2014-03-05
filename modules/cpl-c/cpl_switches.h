@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -1012,7 +1012,7 @@ static inline char *run_language_switch( struct cpl_interpreter *intr )
 						goto script_error;
 					}
 				}
-				
+
 				/* get the value from the SIP message -> if not yet, do it now
 				 * and remember it for the next times */
 				if (!msg_val.s) {
@@ -1038,7 +1038,7 @@ static inline char *run_language_switch( struct cpl_interpreter *intr )
 				trim_len( msg_val.len,msg_val.s, *(intr->subject));
 				LM_DBG("extracted msg string is "
 					"<%.*s>\n",msg_val.len, msg_val.s);
-				
+
 				/* does the value from script match the one from message? */
 				if (msg_val.len && msg_val.s) {
 					j = is_lang_tag_matching(&msg_val,&lang_tag,&lang_subtag);

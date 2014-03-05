@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -26,8 +26,8 @@
  *               in a non-gcc specific way (andrei)
  *  2003-03-13  now send_pr_buffer will be called w/ function/line info
  *               only when compiling w/ -DEXTRA_DEBUG (andrei)
- *  2003-03-31  200 for INVITE/UAS resent even for UDP (jiri) 
- *  2007-01-25  DNS failover at transaction level added (bogdan) 
+ *  2003-03-31  200 for INVITE/UAS resent even for UDP (jiri)
+ *  2007-01-25  DNS failover at transaction level added (bogdan)
  */
 
 

@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -148,10 +148,10 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 
 	while(it)
 	{
-		if(it->attr.len == attr.len && 
+		if(it->attr.len == attr.len &&
 				(strncmp(it->attr.s, attr.s, attr.len) == 0))
 		{
-			
+
 			if(me)
 				me->next = it->next;
 			else
@@ -187,7 +187,7 @@ int lcache_htable_remove(cachedb_con *con,str* attr)
 	return 0;
 }
 
-int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_val) 
+int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_val)
 {
 	int hash_code;
 	lcache_entry_t *it=NULL,*it_prev=NULL;
@@ -204,7 +204,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 
 	it = cache_htable[hash_code].entries;
 	while (it) {
-		if (it->attr.len == attr->len && 
+		if (it->attr.len == attr->len &&
 				memcmp(it->attr.s,attr->s,attr->len) == 0) {
 			if (it->expires !=0 && it->expires < get_ticks()) {
 				/* found an expired entry  -> delete it */
@@ -212,7 +212,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 					it_prev->next = it->next;
 				else
 					cache_htable[hash_code].entries = it->next;
-				
+
 				shm_free(it);
 				lock_release(&cache_htable[hash_code].lock);
 
@@ -257,7 +257,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 				it_prev->next = it;
 			else
 				cache_htable[hash_code].entries = it;
-			
+
 			it->attr.s = (char*)(it + 1);
 			it->value.s =(char *)(it + 1) + attr->len;
 			it->expires = expires;
@@ -277,7 +277,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 	}
 
 	lock_release(&cache_htable[hash_code].lock);
-	
+
 	/* not found */
 	ins_val.s = sint2str(val,&ins_val.len);
 	if (lcache_htable_insert(con,attr,&ins_val,expires) < 0) {
@@ -294,7 +294,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 	return 0;
 }
 
-int lcache_htable_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val) 
+int lcache_htable_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val)
 {
 	return lcache_htable_add(con,attr,-val,expires,new_val);
 }
@@ -321,7 +321,7 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 
 	while(it)
 	{
-		if(it->attr.len == attr->len && 
+		if(it->attr.len == attr->len &&
 				(strncmp(it->attr.s, attr->s, attr->len) == 0))
 		{
 			if( it->expires != 0 && it->expires < get_ticks())
@@ -331,7 +331,7 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 					it_aux->next = it->next;
 				else
 					cache_htable[hash_code].entries = it->next;
-				
+
 				shm_free(it);
 
 				lock_release(&cache_htable[hash_code].lock);
@@ -360,7 +360,7 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 		it_aux = it;
 		it = it->next;
 	}
-	
+
 	lock_release(&cache_htable[hash_code].lock);
 	stop_expire_timer(start,local_exec_threshold,
 	"cachedb_local fetch",attr->s,attr->len,0);
@@ -383,7 +383,7 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 
 	while(it)
 	{
-		if(it->attr.len == attr->len && 
+		if(it->attr.len == attr->len &&
 				(strncmp(it->attr.s, attr->s, attr->len) == 0))
 		{
 			if( it->expires != 0 && it->expires < get_ticks())
@@ -393,7 +393,7 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 					it_aux->next = it->next;
 				else
 					cache_htable[hash_code].entries = it->next;
-				
+
 				shm_free(it);
 
 				lock_release(&cache_htable[hash_code].lock);
@@ -419,7 +419,7 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 		it_aux = it;
 		it = it->next;
 	}
-	
+
 	lock_release(&cache_htable[hash_code].lock);
 	stop_expire_timer(start,local_exec_threshold,
 	"cachedb_local fetch_counter",attr->s,attr->len,0);

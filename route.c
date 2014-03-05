@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -35,7 +35,7 @@
  *              the ip with all the addresses (andrei)
  *  2003-10-10  added more operators support to comp_* (<,>,<=,>=,!=) (andrei)
  *  2004-10-19  added from_uri & to_uri (andrei)
- *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to 
+ *  2006-03-02  MODULE_T action points to a cmd_export_t struct instead to
  *               a function address - more info is accessible (bogdan)
  *              Fixup failure reports the config line (bogdan)
  *  2006-12-22  support for script and branch flags added (bogdan)
@@ -43,12 +43,12 @@
 
 
 /*!
- * \file 
+ * \file
  * \brief SIP routing engine
  */
 
 
- 
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <regex.h>
@@ -103,7 +103,7 @@ static int fix_actions(struct action* a); /*fwd declaration*/
 
 extern int return_code;
 
-/*! 
+/*!
  * \brief Initialize routing lists
  */
 void init_route_lists(void)
@@ -160,14 +160,14 @@ int get_script_route_ID_by_name(char *name, struct script_route *sr, int size)
 }
 
 
-/*! \brief traverses an expression tree and compiles the REs where necessary) 
- * \return 0 for ok, <0 if errors 
+/*! \brief traverses an expression tree and compiles the REs where necessary)
+ * \return 0 for ok, <0 if errors
  */
 static int fix_expr(struct expr* exp)
 {
 	regex_t* re;
 	int ret;
-	
+
 	ret=E_BUG;
 	if (exp==0){
 		LM_CRIT("null pointer\n");
@@ -240,7 +240,7 @@ static int fix_expr(struct expr* exp)
 
 
 
-/*! \brief Adds the proxies in the proxy list & resolves the hostnames 
+/*! \brief Adds the proxies in the proxy list & resolves the hostnames
  * \return 0 if ok, <0 on error */
 static int fix_actions(struct action* a)
 {
@@ -257,7 +257,7 @@ static int fix_actions(struct action* a)
 	int i = 0;
 	str s;
 	pv_elem_t *model=NULL;
-	pv_elem_t *models[5]; 
+	pv_elem_t *models[5];
 	xl_level_p xlp;
 	event_id_t ev_id;
 
@@ -355,7 +355,7 @@ static int fix_actions(struct action* a)
 						ret=E_BUG;
 						goto error;
 					}
-					
+
 					t->elem[1].u.data = (void*)model;
 					t->elem[1].type = SCRIPTVAR_ELEM_ST;
 				}
@@ -640,7 +640,7 @@ static int fix_actions(struct action* a)
 					break;
 
 				/* value */
-				if (t->type==CACHE_FETCH_T || 
+				if (t->type==CACHE_FETCH_T ||
 					t->type==CACHE_COUNTER_FETCH_T) {
 					if(((pv_spec_p)t->elem[2].u.data)->setf == NULL)
 					{
@@ -749,8 +749,8 @@ static int fix_actions(struct action* a)
 							LM_ERR("invalid level param\n");
 							return E_UNSPEC;
 						}
-					} 
-					else 
+					}
+					else
 					{
 						xlp->type = 0;
 						switch(s.s[2])
@@ -796,7 +796,7 @@ static int fix_actions(struct action* a)
 				}
 				t->elem[0].u.number = ev_id;
 				t->elem[0].type = NUMBER_ST;
-				if (t->elem[1].u.data && 
+				if (t->elem[1].u.data &&
 						((pv_spec_p)t->elem[1].u.data)->type != PVT_AVP) {
 					LM_ERR("second parameter should be an avp\n");
 					ret=E_UNSPEC;
@@ -812,13 +812,13 @@ static int fix_actions(struct action* a)
 				break;
 			case CONSTRUCT_URI_T:
 				for (i=0;i<5;i++)
-				{	
+				{
 					s.s = (char*)t->elem[i].u.data;
 					s.len = strlen(s.s);
-					if(s.len==0) 
+					if(s.len==0)
 						continue;
 
-					if(pv_parse_format(&s ,&(models[i])) || models[i]==NULL) 
+					if(pv_parse_format(&s ,&(models[i])) || models[i]==NULL)
 					{
 						LM_ERR("wrong format [%s] for value param!\n",s.s);
 						ret=E_BUG;
@@ -827,7 +827,7 @@ static int fix_actions(struct action* a)
 
 					t->elem[i].u.data = (void*)models[i];
 				}
-				
+
 				if (((pv_spec_p)t->elem[5].u.data)->type != PVT_AVP)
 				{
 					LM_ERR("Wrong type for the third argument - "
@@ -865,7 +865,7 @@ error:
 
 inline static int comp_no( int port, void *param, int op, int subtype )
 {
-	
+
 	if (subtype!=NUMBER_ST) {
 		LM_CRIT("number expected: %d\n", subtype );
 		return E_BUG;
@@ -890,7 +890,7 @@ inline static int comp_no( int port, void *param, int op, int subtype )
 }
 
 /*! \brief eval_elem helping function
- * \return str op param 
+ * \return str op param
  */
 inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 		operand_t *opd)
@@ -904,7 +904,7 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 
 	if(ival==NULL || ival->s==NULL)
 		goto error;
-	
+
 	res.s = 0; res.len = 0;
 	if(opd->type == SCRIPTVAR_ST)
 	{
@@ -977,12 +977,12 @@ inline static int comp_strval(struct sip_msg *msg, int op, str* ival,
 			goto error;
 	}
 	return ret;
-	
+
 error:
 	return -1;
 }
 
-/*! \brief eval_elem helping function, returns str op param 
+/*! \brief eval_elem helping function, returns str op param
  */
 inline static int comp_str(char* str, void* param, int op, int subtype)
 {
@@ -1023,7 +1023,7 @@ inline static int comp_str(char* str, void* param, int op, int subtype)
 			goto error;
 	}
 	return ret;
-	
+
 error:
 	return -1;
 }
@@ -1033,7 +1033,7 @@ error:
 inline static int check_self_op(int op, str* s, unsigned short p)
 {
 	int ret;
-	
+
 	ret=check_self(s, p, 0);
 	switch(op){
 		case EQUAL_OP:
@@ -1136,7 +1136,7 @@ inline static int comp_ip(struct sip_msg *msg, int op, struct ip_addr* ip,
 error_op:
 	LM_CRIT("invalid operator %d\n", op);
 	return -1;
-	
+
 }
 
 /*! \brief compare str to str */
@@ -1300,7 +1300,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	pv_value_t lvalue;
 	pv_value_t rvalue;
 	int type;
-	
+
 	lstr.s = 0; lstr.len = 0;
 	rstr.s = 0; rstr.len = 0;
 	ln = 0; rn =0;
@@ -1339,7 +1339,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 				return (op==EQUAL_OP)?1:0;
 			return (op==DIFF_OP)?1:0;
 		}
-		
+
 		if(op==MATCH_OP||op==NOTMATCH_OP)
 		{
 			if(!((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)))
@@ -1374,7 +1374,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
 			{
-				LM_CRIT("invalid operation %d/%d/%d!!\n", op, 
+				LM_CRIT("invalid operation %d/%d/%d!!\n", op,
 						right->type, lvalue.flags);
 				goto error;
 			}
@@ -1406,22 +1406,22 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	}
 
 	if(type==1) { /* compare str */
-		LM_DBG("str %d : %.*s\n", op, lstr.len, ZSW(lstr.s)); 
+		LM_DBG("str %d : %.*s\n", op, lstr.len, ZSW(lstr.s));
 		return comp_s2s(op, &lstr, &rstr);
 	} else if(type==2) {
-		LM_DBG("int %d : %d / %d\n", op, ln, rn); 
+		LM_DBG("int %d : %d / %d\n", op, ln, rn);
 		return comp_n2n(op, ln, rn);
 	} else {
 		LM_CRIT("invalid operation %d/%d\n", op, right->type);
 	}
-	
+
 error:
 	return -1;
 }
 
 
-/*! \brief 
- * \return 0/1 (false/true) or -1 on error, -127 EXPR_DROP 
+/*! \brief
+ * \return 0/1 (false/true) or -1 on error, -127 EXPR_DROP
  */
 static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
@@ -1435,13 +1435,13 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 	pv_value_t rval;
 	char *p;
 	int i,n;
-	
+
 	ret=E_BUG;
 	if (e->type!=ELEM_T){
 		LM_CRIT("invalid type\n");
 		goto error;
 	}
-	
+
 	if(val) memset(val, 0, sizeof(pv_value_t));
 
 	switch(e->left.type){
@@ -1564,7 +1564,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				if(e->right.v.data)
 					eval_expr((struct expr*)e->right.v.data,msg,&rval);
 					/* retr=eval_expr((struct expr*)e->right.v.data,msg,&rval); */
-			
+
 				if(lval.flags&PV_TYPE_INT)
 				{
 					if( (rval.flags&PV_VAL_NULL) )
@@ -1595,7 +1595,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 								pv_value_destroy(&lval);
 								pv_value_destroy(&rval);
 								return 0;
-							} else 
+							} else
 								ival = lval.ri / rval.ri;
 							break;
 						case MULT_OP:
@@ -1608,7 +1608,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 								pv_value_destroy(&lval);
 								pv_value_destroy(&rval);
 								return 0;
-							} else 
+							} else
 								ival = lval.ri % rval.ri;
 							break;
 						case BAND_OP:
@@ -1721,13 +1721,13 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 				}
 				break;
 		case SRCPORT_O:
-				ret=comp_no(msg->rcv.src_port, 
+				ret=comp_no(msg->rcv.src_port,
 					e->right.v.data, /* e.g., 5060 */
 					e->op, /* e.g. == */
 					e->right.type /* 5060 is number */);
 				break;
 		case DSTPORT_O:
-				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op, 
+				ret=comp_no(msg->rcv.dst_port, e->right.v.data, e->op,
 							e->right.type);
 				break;
 		case PROTO_O:
@@ -1795,7 +1795,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							memcpy(val, &lval, sizeof(pv_value_t));
 						if(lval.flags&PV_VAL_STR)
 						{
-							if(!((lval.flags&PV_VAL_PKG) 
+							if(!((lval.flags&PV_VAL_PKG)
 									|| (lval.flags&PV_VAL_SHM)))
 							{
 								if(val!=NULL)
@@ -1817,7 +1817,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							}
 							return 1;
 						}
-						if(lval.flags==PV_VAL_NONE 
+						if(lval.flags==PV_VAL_NONE
 								|| (lval.flags & PV_VAL_NULL)
 								|| (lval.flags & PV_VAL_EMPTY))
 							return 0;
@@ -1856,14 +1856,14 @@ int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 {
 	static int rec_lev=0;
 	int ret;
-	
+
 	rec_lev++;
 	if (rec_lev>MAX_REC_LEV){
 		LM_CRIT("too many expressions (%d)\n", rec_lev);
 		ret=-1;
 		goto skip;
 	}
-	
+
 	if (e->type==ELEM_T){
 		ret=eval_elem(e, msg, val);
 	}else if (e->type==EXP_T){
@@ -1925,15 +1925,15 @@ int add_actions(struct action* a, struct action** head)
 	if ((ret=fix_actions(a))!=0) goto error;
 	push(a,head);
 	return 0;
-	
+
 error:
 	return ret;
 }
 
 
 
-/*! \brief fixes all action tables 
- * \return 0 if ok , <0 on error 
+/*! \brief fixes all action tables
+ * \return 0 if ok , <0 on error
  */
 int fix_rls(void)
 {
@@ -2082,7 +2082,7 @@ error:
 
 /*! \brief check all routing tables for compatiblity between
  * route types and called module functions;
- * \return 0 if ok , <0 on error 
+ * \return 0 if ok , <0 on error
  */
 int check_rls(void)
 {
@@ -2147,7 +2147,7 @@ int check_rls(void)
 			LM_ERR("check failed for timer_route\n");
 			return ret;
 		}
-		
+
 	}
 
 	for(i = 1; i< EVENT_RT_NO; i++) {
@@ -2158,7 +2158,7 @@ int check_rls(void)
 			LM_ERR("check failed for event_route\n");
 			return ret;
 		}
-		
+
 	}
 
 

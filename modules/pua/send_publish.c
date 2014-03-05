@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -89,7 +89,7 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 	str_hdr->len+= len;
 	memcpy(str_hdr->s+str_hdr->len, CRLF, CRLF_LEN);
 	str_hdr->len += CRLF_LEN;
-	
+
 	if(etag)
 	{
 		LM_DBG("UPDATE_TYPE [etag]= %.*s\n", etag->len, etag->s);
@@ -101,13 +101,13 @@ str* publ_build_hdr(int expires, pua_event_t* ev, str* content_type, str* etag,
 		str_hdr->len += CRLF_LEN;
 	}
 	if(is_body)
-	{	
+	{
 		if(content_type== NULL || content_type->s== NULL || content_type->len== 0)
 		{
-			ctype= ev->content_type; /* use event default value */ 
+			ctype= ev->content_type; /* use event default value */
 		}
 		else
-		{	
+		{
 			ctype.s=   content_type->s;
 			ctype.len= content_type->len;
 		}
@@ -462,7 +462,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		pres_id = new_publ_record(publ, ev, &tuple_id);
 	}
 
-	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type, 
+	str_hdr = publ_build_hdr(((publ->expires< 0)?3600:publ->expires), ev, &publ->content_type,
 				(etag.s?&etag:NULL), publ->extra_headers, ((body)?1:0));
 	if(str_hdr == NULL)
 	{

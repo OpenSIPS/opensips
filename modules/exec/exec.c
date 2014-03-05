@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
-/* 
+/*
 #include <sys/resource.h>
 */
 #include <sys/wait.h>
@@ -210,7 +210,7 @@ error:
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 
 	int cmd_len;
-	FILE *pipe;	
+	FILE *pipe;
 	char *cmd_line;
 	int ret;
 	int l1;
@@ -236,7 +236,7 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 	}
 
 	/* 'command parameter \0' */
-	memcpy(cmd_line, cmd, l1); 
+	memcpy(cmd_line, cmd, l1);
 	if(param_len>0)
 	{
 		cmd_line[l1]=' ';
@@ -319,7 +319,7 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	int_str avp_val;
 	int_str avp_name;
 	unsigned short avp_type;
-	FILE *pipe;	
+	FILE *pipe;
 	int ret;
 	char res_line[MAX_URI_SIZE+1];
 	str res;
@@ -378,13 +378,13 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 
 		avp_type |= AVP_VAL_STR;
 		avp_val.s = res;
-	
+
 		if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 		{
 			LM_ERR("unable to add avp\n");
 			goto error;
 		}
-	
+
 		if(crt)
 			crt = crt->next;
 

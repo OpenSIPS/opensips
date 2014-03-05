@@ -165,7 +165,7 @@ typedef struct ptree_ {
 	ptree_node_t ptnode[PTREE_CHILDREN];
 } ptree_t;
 
-void 
+void
 print_interim(
 		int,
 		int,
@@ -197,7 +197,7 @@ get_prefix(
 
 int
 add_rt_info(
-	ptree_node_t*, 
+	ptree_node_t*,
 	rt_info_t*,
 	unsigned int
 	);

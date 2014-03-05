@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -27,7 +27,7 @@
 #include<stdlib.h>
 #include<string.h>
 
-#include<sys/ioctl.h> 
+#include<sys/ioctl.h>
 #include<errno.h>
 
 #include "curses.h"
@@ -88,7 +88,7 @@ int draw_sibling_menu(select_menu *menu)
 	int max_len=0,len;
 again:
 	wclear(menu_window);
-	
+
 	/* print title in colour */
 	attron(COLOR_PAIR(1));
 	mvprintw(HIGH_NOTICE_Y,max_x/2-20,menu->parent?menu->parent->name:"OpenSIPS Main Configuration Menu");
@@ -106,7 +106,7 @@ again:
 		if (len > max_len)
 			max_len = len;
 	}
-	
+
 	/* draw selection marker */
 	wmove(menu_window, max_y/4+cur_index, (max_x / 2) - 25);
 	waddstr(menu_window, "--->");
@@ -153,7 +153,7 @@ again:
 		case 'h':
 		case 'H':
 			clear();
-			print_notice(max_y/2,20,0,"Use UP and DOWN arrow keys to navigate."); 
+			print_notice(max_y/2,20,0,"Use UP and DOWN arrow keys to navigate.");
 			print_notice(max_y/2+1,20,0,"Use RIGHT arrow or ENTER key to enter a certain menu.");
 			print_notice(max_y/2+2,20,0,"Use LEFT arror or Q key to go back.");
 			print_notice(max_y/2+3,20,0,"Use SPACE to toggle an entry ON/OFF.\n");
@@ -163,24 +163,24 @@ again:
 		case KEY_LEFT:
 		case 'q':
 		case 'Q':
-			for (it=menu;it;it=it->next_sibling) { 	
+			for (it=menu;it;it=it->next_sibling) {
 				if (it->child_changed == CHILD_CHANGED) {
 					if (skip == 0) {
 						/* have we asked before and got negative response ? */
 						print_notice(NOTICE_Y,NOTICE_X,0,"You have not saved changes. Go back anyway ? [y/n] ");
 						c = getch();
-						if (c == 'n' || c == 'N') 	
+						if (c == 'n' || c == 'N')
 							goto again;
 						else {
 							it->child_changed = CHILD_CHANGE_IGNORED;
 							skip=1;
 							return 0;
 						}
-					} else 
+					} else
 						it->child_changed = CHILD_CHANGE_IGNORED;
 				}
 			}
-			if (skip == 1) 
+			if (skip == 1)
 				return 0;
 			return 0;
 	}
@@ -253,7 +253,7 @@ again:
 	}
 
 	move(max_y/4+actual_pos,max_x/2-19);
-	
+
 	/* draw box */
 	wattron(menu_window,COLOR_PAIR(2));
 	for (d=-1;d<i+1;d++) {
@@ -275,14 +275,14 @@ again:
 		wmove(menu_window,max_y/4,max_x/2-5+max_len);
 		wprintw(menu_window,"Scroll up for more");
 	}
-	
+
 	if (should_scroll && disp_start + max_display < menu->item_no) {
 		wmove(menu_window,max_y/4+max_display-1,max_x/2-5+max_len);
 		wprintw(menu_window,"Scroll down for more");
 	}
 
 	wattroff(menu_window,COLOR_PAIR(2));
-		
+
 	wrefresh(menu_window);
 	k=0;
 
@@ -291,9 +291,9 @@ again:
 			case KEY_UP:
 				if (should_scroll && curopt != 0) {
 					if (curopt == disp_start) {
-						disp_start--;	
+						disp_start--;
 						actual_pos=0;
-					} else 
+					} else
 						actual_pos--;
 					curopt--;
 				} else if (curopt!=0) {
@@ -303,7 +303,7 @@ again:
 			case KEY_DOWN:
 				if (should_scroll && curopt < menu->item_no-1) {
 					if (curopt == (disp_start+max_display-1)) {
-						disp_start++;	
+						disp_start++;
 						actual_pos=i-1;
 					} else
 						actual_pos++;

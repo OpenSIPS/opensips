@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -71,7 +71,7 @@ void t_on_branch( unsigned int go_to )
 	struct cell *t = get_t();
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
-	 * in MODE_REQUEST T will be set only if the transaction was already 
+	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
 	if (route_type==BRANCH_ROUTE || !t || t==T_UNDEFINED )
 		goto_on_branch=go_to;
@@ -86,7 +86,7 @@ unsigned int get_on_branch(void)
 }
 
 
-static inline int pre_print_uac_request( struct cell *t, int branch, 
+static inline int pre_print_uac_request( struct cell *t, int branch,
 		struct sip_msg *request)
 {
 	int backup_route_type;
@@ -120,7 +120,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/********** run route & callback ************/
 
-	/* run branch route, if any; run it before RURI's DNS lookup 
+	/* run branch route, if any; run it before RURI's DNS lookup
 	 * to allow to be changed --bogdan */
 	if (t->on_branch) {
 		/* need to pkg_malloc the dst_uri */
@@ -192,7 +192,7 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 	buf=build_req_buf_from_sip_req( i_req, len, send_sock, proto,
 			MSG_TRANS_SHM_FLAG);
 	if (!buf) {
-		LM_ERR("no more shm_mem\n"); 
+		LM_ERR("no more shm_mem\n");
 		ser_error=E_OUT_OF_MEM;
 		return NULL;
 	}
@@ -287,7 +287,7 @@ int add_blind_uac(void)  /*struct cell *t*/
 		return -1;
 	}
 
-	branch=t->nr_of_outgoings;	
+	branch=t->nr_of_outgoings;
 	if (branch==MAX_BRANCHES) {
 		LM_ERR("maximum number of branches exceeded\n");
 		return -1;
@@ -350,7 +350,7 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
 	unsigned int cnt = 0;
 	struct lump *r;
 
-	/* we look for the RR anchors only 
+	/* we look for the RR anchors only
 	 * in the main list (no after or before) */
 	for( r=req->add_rm ; r ; r=r->next )
 		if ( r->type==HDR_RECORDROUTE_T && r->op==LUMP_NOP) {
@@ -371,7 +371,7 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
    or error (<0); it doesn't send a message yet -- a reply to it
    might interfere with the processes of adding multiple branches
 */
-static int add_uac( struct cell *t, struct sip_msg *request, str *uri, 
+static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 							str* next_hop, str* path, struct proxy_l *proxy)
 {
 	unsigned short branch;
@@ -459,7 +459,7 @@ error:
 }
 
 
-int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel, 
+int e2e_cancel_branch( struct sip_msg *cancel_msg, struct cell *t_cancel,
 	struct cell *t_invite, int branch )
 {
 	int ret;
@@ -594,7 +594,7 @@ void cancel_invite(struct sip_msg *cancel_msg,
  *       1 - forward successful
  *      -1 - error during forward
  */
-int t_forward_nonack( struct cell *t, struct sip_msg* p_msg , 
+int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	struct proxy_l * proxy)
 {
 	str backup_uri;
@@ -655,7 +655,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 	/* as first branch, use current uri */
 	current_uri = *GET_RURI(p_msg);
-	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst, 
+	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
 		&p_msg->path_vec, proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;
@@ -671,7 +671,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 		   note that picking lowest error is just as good as
 		   any other algorithm which picks any other negative
 		   branch result */
-		if (branch_ret>=0) 
+		if (branch_ret>=0)
 			added_branches |= 1<<branch_ret;
 		else
 			lowest_ret=branch_ret;

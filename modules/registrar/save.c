@@ -18,31 +18,31 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * ----------
  * 2003-01-27 next baby-step to removing ZT - PRESERVE_ZT (jiri)
  * 2003-02-28 scrathcpad compatibility abandoned (jiri)
- * 2003-03-21 save_noreply added, patch provided by Maxim Sobolev 
+ * 2003-03-21 save_noreply added, patch provided by Maxim Sobolev
  *            <sobomax@portaone.com> (janakj)
  * 2005-07-11 added sip_natping_flag for nat pinging with SIP method
  *            instead of UDP package (bogdan)
  * 2006-04-13 added tcp_persistent_flag for keeping the TCP connection as long
  *            as a TCP contact is registered (bogdan)
  * 2006-11-22 save_noreply and save_memory merged into save() (bogdan)
- * 2006-11-28 Added statistic support for the number of accepted/rejected 
- *            registrations. (Jeffrey Magder - SOMA Networks) 
- * 2007-02-24  sip_natping_flag moved into branch flags, so migrated to 
+ * 2006-11-28 Added statistic support for the number of accepted/rejected
+ *            registrations. (Jeffrey Magder - SOMA Networks)
+ * 2007-02-24  sip_natping_flag moved into branch flags, so migrated to
  *             nathelper module (bogdan)
  */
 /*!
  * \file
  * \brief SIP registrar module - Process REGISTER request and send reply
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 
 #include "../../str.h"
@@ -74,8 +74,8 @@
 #include "save.h"
 
 /*! \brief
- * Process request that contained a star, in that case, 
- * we will remove all bindings with the given username 
+ * Process request that contained a star, in that case,
+ * we will remove all bindings with the given username
  * from the usrloc and return 200 OK response
  */
 static inline int star(udomain_t* _d, struct save_ctx *_sctx,
@@ -83,7 +83,7 @@ static inline int star(udomain_t* _d, struct save_ctx *_sctx,
 {
 	urecord_t* r;
 	ucontact_t* c;
-	
+
 	ul.lock_udomain(_d, &_sctx->aor);
 
 	if (!ul.get_urecord(_d, &_sctx->aor, &r)) {
@@ -100,7 +100,7 @@ static inline int star(udomain_t* _d, struct save_ctx *_sctx,
 
 	if (ul.delete_urecord(_d, &_sctx->aor, NULL, 0) < 0) {
 		LM_ERR("failed to remove record from usrloc\n");
-		
+
 		     /* Delete failed, try to get corresponding
 		      * record structure and send back all existing
 		      * contacts
@@ -141,7 +141,7 @@ static struct socket_info *get_sock_hdr(struct sip_msg *msg)
 	if (socks.len==0)
 		return 0;
 
-	if (parse_phostport( socks.s, socks.len, &hosts.s, &hosts.len, 
+	if (parse_phostport( socks.s, socks.len, &hosts.s, &hosts.len,
 	&port, &proto)!=0) {
 		LM_ERR("bad socket <%.*s> in \n",
 			socks.len, socks.s);
@@ -171,7 +171,7 @@ static inline int no_contacts(udomain_t* _d, str* _a,struct sip_msg *_m)
 {
 	urecord_t* r;
 	int res;
-	
+
 	ul.lock_udomain(_d, _a);
 	res = ul.get_urecord(_d, _a, &r);
 	if (res < 0) {
@@ -180,7 +180,7 @@ static inline int no_contacts(udomain_t* _d, str* _a,struct sip_msg *_m)
 		ul.unlock_udomain(_d, _a);
 		return -1;
 	}
-	
+
 	if (res == 0) {  /* Contacts found */
 		build_contact(r->contacts,_m);
 	}
@@ -412,7 +412,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 					goto error;
 				}
 			} else {
-				LM_INFO("too many contacts (%d) for AOR <%.*s>, max=%d\n", 
+				LM_INFO("too many contacts (%d) for AOR <%.*s>, max=%d\n",
 						num, _a->len, _a->s, _sctx->max_contacts);
 				rerrno = R_TOO_MANY;
 				goto error;
@@ -454,7 +454,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
-				LM_ERR("failed to parse contact <%.*s>\n", 
+				LM_ERR("failed to parse contact <%.*s>\n",
 						_c->uri.len, _c->uri.s);
 			} else if (uri.proto==PROTO_TCP || uri.proto==PROTO_TLS) {
 				if (e_max) {
@@ -619,7 +619,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 			} else {
 				/* do update */
-				/* if the contact to be updated is not valid, it will be after update, so need 
+				/* if the contact to be updated is not valid, it will be after update, so need
 				*  to compensate the total number of contact */
 				if ( !VALID_CONTACT(c,act_time) )
 					num++;
@@ -666,7 +666,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
-				LM_ERR("failed to parse contact <%.*s>\n", 
+				LM_ERR("failed to parse contact <%.*s>\n",
 						_c->uri.len, _c->uri.s);
 			} else if (uri.proto==PROTO_TCP || uri.proto==PROTO_TLS) {
 				if (e_max>0) {
@@ -766,7 +766,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 				case 'c':
 					sctx.max_contacts = 0;
 					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
-						sctx.max_contacts = sctx.max_contacts*10 + 
+						sctx.max_contacts = sctx.max_contacts*10 +
 							flags_s.s[st+1] - '0';
 						st++;
 					}
@@ -774,7 +774,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 				case 'e':
 					sctx.min_expires = 0;
 					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
-						sctx.min_expires = sctx.min_expires*10 + 
+						sctx.min_expires = sctx.min_expires*10 +
 							flags_s.s[st+1] - '0';
 						st++;
 					}
@@ -782,7 +782,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 				case 'E':
 					sctx.max_expires = 0;
 					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
-						sctx.max_expires = sctx.max_expires*10 + 
+						sctx.max_expires = sctx.max_expires*10 +
 							flags_s.s[st+1] - '0';
 						st++;
 					}
@@ -928,7 +928,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 	if (check_contacts(msg, &st) > 0) return -1;
 
 	/* msg - request
-	   _m  - reply 
+	   _m  - reply
 	*/
 	request_c = get_first_contact(msg);
 	if(request_c) {
@@ -1250,7 +1250,7 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 	contact_t* ct;
 	int exp, found;
 	udomain_t* ud = (udomain_t*)_d;
-	
+
 	if (parse_message(msg) < 0) {
 		LM_ERR("unable to parse message\n");
 		return -2;
@@ -1294,7 +1294,7 @@ int is_other_contact_f(struct sip_msg* msg, char* _d, char *_s)
 		goto end;
 	} else {
 		c = r->contacts;
-	}	
+	}
 
 	while (c) {
 		if (!c->received.len || !c->received.s || c->received.len < 4 /* sip:*/) {

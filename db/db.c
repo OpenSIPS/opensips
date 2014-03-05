@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2007-2008 1&1 Internet AG
- * 
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
  /*
@@ -271,7 +271,7 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 		LM_ERR("SQL URL too long\n");
 		return 0;
 	}
-	
+
 	/* this is the root memory for this database connection. */
 	res = (db_con_t*)pkg_malloc(con_size);
 	if (!res) {
@@ -373,10 +373,10 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 	VAL_TYPE(val) = DB_STR;
 	VAL_NULL(val) = 0;
 	VAL_STR(val) = *table;
-	
+
 	str tmp2 = str_init(VERSION_COLUMN);
 	col[0] = &tmp2;
-	
+
 	if (dbf->query(connection, key, 0, val, col, 1, 1, 0, &res) < 0) {
 		LM_ERR("error in db_query\n");
 		return -1;

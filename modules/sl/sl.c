@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -232,7 +232,7 @@ static int w_sl_send_reply(struct sip_msg* msg, char* str1, char* str2)
 	} else {
 		code_i = ((pv_elem_p)str1)->spec.pvp.pvn.u.isname.name.n;
 	}
-	
+
 	if(((pv_elem_p)str2)->spec.getf!=NULL)
 	{
 		if(pv_printf_s(msg, (pv_elem_p)str2, &code_s)!=0 || code_s.len <=0)

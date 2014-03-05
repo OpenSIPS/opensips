@@ -1,4 +1,4 @@
-/* 
+/*
  *$Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -36,8 +36,8 @@
  * 2006-12-22 functions for script flags added (bogdan)
  */
 
-/*! 
- * \file 
+/*!
+ * \file
  * \brief Receive message and process routing for it
  */
 
@@ -81,10 +81,10 @@ unsigned int get_next_msg_no(void)
 	return ++msg_no;
 }
 
-/*! \note WARNING: buf must be 0 terminated (buf[len]=0) or some things might 
+/*! \note WARNING: buf must be 0 terminated (buf[len]=0) or some things might
  * break (e.g.: modules/textops)
  */
-int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info) 
+int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 {
 	struct sip_msg* msg;
 	struct timeval start;
@@ -107,7 +107,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	msg->id=msg_no;
 	msg->set_global_address=default_global_address;
 	msg->set_global_port=default_global_port;
-	
+
 	if (parse_msg(buf,len, msg)!=0){
 		tmp=ip_addr2a(&(rcv_info->src_ip));
 		LM_ERR("Unable to parse msg received from [%s:%d]\n", tmp, rcv_info->src_port);
@@ -136,7 +136,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* check if necessary to add receive?->moved to forward_req */
 		/* check for the alias stuff */
 #ifdef USE_TCP
-		if (msg->via1->alias && tcp_accept_aliases && 
+		if (msg->via1->alias && tcp_accept_aliases &&
 				(((rcv_info->proto==PROTO_TCP) && !tcp_disable)
 #ifdef USE_TLS
 					|| ((rcv_info->proto==PROTO_TLS) && !tls_disable)

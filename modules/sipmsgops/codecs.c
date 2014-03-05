@@ -122,7 +122,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 					cur_cell->payloads.len,0);
 
 			lumps[count] = l;
-			
+
 			if( l == NULL)
 			{
 				LM_ERR("Error adding delete lump for m=\n");

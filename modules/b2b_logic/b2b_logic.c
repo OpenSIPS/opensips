@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -608,7 +608,7 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 			memset(rule_struct, 0, sizeof(b2b_rule_t));
 			rule_struct->next =  scenario->request_rules[request_id];
 			scenario->request_rules[request_id] = rule_struct;
-			
+
 			attr.s = (char*)xmlNodeGetAttrContentByName(rule_node, "id");
 			if(attr.s == NULL)
 			{
@@ -694,7 +694,7 @@ error:
 			xmlFree(scenario->id.s);
 		pkg_free(scenario);
 	}
-	
+
 	return -1;
 }
 
@@ -973,7 +973,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 					b2bl_from.uri.len, b2bl_from.uri.s);
 				return NULL;
 			}
-			
+
 			/* side effect of parsing - nobody should need them later on,
 			 * so free them right now */
 			free_to_params(&b2bl_from);
@@ -1003,13 +1003,13 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 	}
 	hash_index = core_hash(args[0], args[1], b2bl_hsize);
 
-	LM_DBG("start: bridge [%.*s] with [%.*s]\n", args[0]->len, args[0]->s, 
+	LM_DBG("start: bridge [%.*s] with [%.*s]\n", args[0]->len, args[0]->s,
 			 args[1]->len, args[1]->s);
 	/* find the scenario with the corresponding id */
 	scenario_struct = extern_scenarios;
 	while(scenario_struct)
 	{
-		if(scenario_struct->id.len == scenario_name->len && 
+		if(scenario_struct->id.len == scenario_name->len &&
 				strncmp(scenario_struct->id.s, scenario_name->s, scenario_name->len) == 0)
 		{
 			break;
@@ -1021,7 +1021,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 		LM_ERR("No scenario found with the specified id\n");
 		return 0;
 	}
-	
+
 	/* apply the init part of the scenario */
 	tuple = b2bl_insert_new(NULL, hash_index, scenario_struct, args,
 				NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG);
@@ -1224,7 +1224,7 @@ static struct mi_root* mi_b2b_bridge(struct mi_root* cmd, void* param)
 	node = node->next;
 	if(node == NULL)
 		return 0;
-	
+
 	new_dest = node->value;
 	if(new_dest.s == NULL || new_dest.len == 0)
 	{

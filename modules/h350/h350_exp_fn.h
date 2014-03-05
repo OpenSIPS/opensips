@@ -51,8 +51,8 @@ int h350_exp_fn_init();
 int h350_sipuri_lookup(struct sip_msg* _msg, pv_elem_t* _sip_uri);
 
 int h350_auth_lookup(
-	struct sip_msg* _msg, 
-	pv_elem_t* _digest_username, 
+	struct sip_msg* _msg,
+	pv_elem_t* _digest_username,
 	struct h350_auth_lookup_avp_params* _avp_specs);
 
 int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix);

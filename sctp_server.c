@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -68,14 +68,14 @@ int sctp_server_init(struct socket_info* sock_info)
 		LM_ERR("could not init sockaddr_union\n");
 		goto error;
 	}
-	
+
 	sock_info->socket = socket(AF2PF(addr->s.sa_family), SOCK_SEQPACKET,
 		IPPROTO_SCTP);
 	if (sock_info->socket==-1){
 		LM_ERR("socket: %s [%d]\n", strerror(errno), errno);
 		goto error;
 	}
-	
+
 	optval=1;
 	if (setsockopt(sock_info->socket, SOL_SOCKET, SO_REUSEADDR ,
 					(void*)&optval, sizeof(optval)) ==-1){
@@ -86,7 +86,7 @@ int sctp_server_init(struct socket_info* sock_info)
 #ifdef DISABLE_NAGLE
 	/* turns of Nagle-like algorithm/chunk-bundling.*/
 	optval=1;
-	if (setsockopt(sock_info->socket, IPPROTO_SCTP, SCTP_NODELAY, 
+	if (setsockopt(sock_info->socket, IPPROTO_SCTP, SCTP_NODELAY,
 				(void*)&optval, sizeof(optval))==-1){
 		LM_WARN("setsockopt %s\n", strerror(errno));
 	/* continues since this is not critical */
@@ -94,13 +94,13 @@ int sctp_server_init(struct socket_info* sock_info)
 #endif
 
 	/* tos */
-	
+
 	/* this sockopt causes a kernel panic in some sctp implementations.
 	 * commenting it out. -gmarmon */
-	
+
 	/*
 	optval=tos;
-	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval, 
+	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
 			sizeof(optval)) ==-1){
 		LM_WARN("setsockopt tos: %s\n", strerror(errno));
 	}
@@ -119,10 +119,10 @@ int sctp_server_init(struct socket_info* sock_info)
 
 	/*if ( probe_max_receive_buffer(sock_info->socket)==-1) goto error;
 	 */
-	
+
 	if (bind(sock_info->socket, &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s: %s\n",
-				sock_info->socket, &addr->s, 
+				sock_info->socket, &addr->s,
 				(unsigned)sockaddru_len(*addr),
 				sock_info->address_str.s,
 				strerror(errno));
@@ -136,8 +136,8 @@ int sctp_server_init(struct socket_info* sock_info)
 	if(listen(sock_info->socket, LISTEN_BACKLOG)<0){
 		LM_ERR("listen(%x, %d) on %s: %s\n",
 				sock_info->socket,
-				LISTEN_BACKLOG, 
-				sock_info->address_str.s, 
+				LISTEN_BACKLOG,
+				sock_info->address_str.s,
 				strerror(errno));
 		goto error;
 	}
@@ -187,7 +187,7 @@ int sctp_server_rcv_loop(void)
 #endif
 		fromlen=sockaddru_len(bind_address->su);
 		len = sctp_recvmsg(bind_address->socket, buf, BUF_SIZE, &from->s, &fromlen, &sinfo, 0);
-		
+
 		if (len==-1){
 			if (errno==EAGAIN){
 				LM_DBG("packet with bad checksum received\n");
@@ -218,19 +218,19 @@ int sctp_server_rcv_loop(void)
 			LM_INFO("dropping 0 port packet from %s\n", tmp);
 			continue;
 		}
-		
-		
+
+
 		/* receive_msg must free buf too!*/
 		receive_msg(buf, len, &ri);
-		
+
 	/* skip: do other stuff */
-		
+
 	}
 	/*
 	if (from) pkg_free(from);
 	return 0;
 	*/
-	
+
 error:
 	if (from) pkg_free(from);
 	return -1;

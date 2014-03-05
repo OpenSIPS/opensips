@@ -296,7 +296,7 @@ static int dbcache_add(cachedb_con *con, str *attr, int val, int expires, int *n
 	else
 		expires = 0;
 
-	i = snprintf(query_buf, sizeof(query_buf), 
+	i = snprintf(query_buf, sizeof(query_buf),
 				 "insert into %.*s (%.*s, %.*s, %.*s) values ('%.*s', %d, %d)"
 				 "on duplicate key update %.*s=%.*s %c %d, %.*s=%d",
 				 db_table.len, db_table.s,

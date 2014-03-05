@@ -60,7 +60,7 @@ typedef uint32_t    T32;
 typedef enum {
                 FALSE = 0,
                 TRUE =1
-                        
+
 } Boolean;
 
 typedef enum {
@@ -134,13 +134,13 @@ typedef struct stun_message{
     StunAddr*	mappedAddress;	    /* host order */
 
     Bool	hasResponceAddress;
-    StunAddr*	responceAddress;    
+    StunAddr*	responceAddress;
 
     Bool	hasSourceAddress;
-    StunAddr*	sourceAddress;	    
+    StunAddr*	sourceAddress;
 
     Bool	hasChangedAddress;
-    StunAddr*	changedAddress;	    
+    StunAddr*	changedAddress;
 
     Bool	hasReflectedFrom;
     StunAddr*	reflectedFromAddress;

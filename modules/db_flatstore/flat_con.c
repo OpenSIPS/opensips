@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Flastore module connection structure
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -82,7 +82,7 @@ static char* get_name(struct flat_id* id)
 					total_len, buf_len);
 		return 0;
 	}
-	
+
 	buf=pkg_malloc(buf_len);
 	if (buf==0){
 		LM_ERR("pkg memory allocation failure\n");
@@ -142,7 +142,7 @@ struct flat_con* flat_new_connection(struct flat_id* id)
 
 	memset(res, 0, sizeof(struct flat_con));
 	res->ref = 1;
-	
+
 	res->id = id;
 
 	fn = get_name(id);
@@ -158,7 +158,7 @@ struct flat_con* flat_new_connection(struct flat_id* id)
 		pkg_free(res);
 		return 0;
 	}
-	
+
 	return res;
 }
 

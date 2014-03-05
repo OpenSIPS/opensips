@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -166,7 +166,7 @@ int uri_param_2(struct sip_msg* _msg, char* _param, char* _value)
 			params = params->next;
 		}
 	}
-	
+
 nok:
 	free_params(params);
 	return -1;
@@ -349,7 +349,7 @@ static inline int e164_check(str* _user)
 {
     int i;
     char c;
-    
+
     if ((_user->len > 2) && (_user->len < 17) && ((_user->s)[0] == '+')) {
 	for (i = 1; i <= _user->len; i++) {
 	    c = (_user->s)[i];

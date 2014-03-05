@@ -17,16 +17,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
+ *
  * History:
  * --------
  * 2003-01-30 created by Daniel
  * 2003-03-11 New module interface (janakj)
  * 2003-03-16 flags export parameter added (janakj)
- * 
+ *
  */
 
 #include <stdio.h>
@@ -76,7 +76,7 @@ static mi_export_t mi_cmds[] = {
 	{0,          0,           0, 0, 0, 0}
 };
 
-struct module_exports exports = {	
+struct module_exports exports = {
 	"db_text",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
@@ -98,7 +98,7 @@ static int mod_init(void)
 	if(dbt_init_cache())
 		return -1;
 	/* return make_demo(); */
-	
+
 	return 0;
 }
 
@@ -124,7 +124,7 @@ int dbt_bind_api(const str* mod, db_func_t *dbb)
 	dbb->query       = (db_query_f)dbt_query;
 	dbb->free_result = dbt_free_result;
 	dbb->insert      = (db_insert_f)dbt_insert;
-	dbb->delete      = (db_delete_f)dbt_delete; 
+	dbb->delete      = (db_delete_f)dbt_delete;
 	dbb->update      = (db_update_f)dbt_update;
 
 	return 0;

@@ -255,7 +255,7 @@ int extra2attrs( struct acc_extra *extra, aaa_map *attrs, int offset)
 }
 
 
-/* converts the name of the extra from str to integer 
+/* converts the name of the extra from str to integer
  * and stores it over str.len ; str.s is freed and made zero
  */
 int extra2int( struct acc_extra *extra, int *attrs )
@@ -305,7 +305,7 @@ int extra2strar( struct acc_extra *extra, struct sip_msg *rq,
 		}
 		rq = req;
 	}
-	
+
 	for( n=0,r=0 ; extra ; extra=extra->next,n++) {
 		/* get the value */
 		if (extra->use_rpl) {

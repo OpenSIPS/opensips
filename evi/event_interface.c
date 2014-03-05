@@ -110,13 +110,13 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 		return -1;
 	}
 	memset(req, 0, sizeof(struct sip_msg));
-	
+
 	req->first_line.type = SIP_REQUEST;
 	req->first_line.u.request.method.s= "DUMMY";
 	req->first_line.u.request.method.len= 5;
 	req->first_line.u.request.uri.s= "sip:user@domain.com";
 	req->first_line.u.request.uri.len= 19;
-	
+
 	bak_avps = set_avp_list(&event_avps);
 
 	status = evi_raise_event_msg(req, id, params);

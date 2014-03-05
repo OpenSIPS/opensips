@@ -42,7 +42,7 @@ static int xode_send(int fd, xode x)
 {
 	char *str = xode_to_str(x);
 	int len = strlen(str);
-	
+
 	LM_DBG("xode_send [%s]\n", str);
 
 	if (net_send(fd, str, len) != len) {
@@ -53,7 +53,7 @@ static int xode_send(int fd, xode x)
 	return len;
 }
 
-static void stream_node_callback(int type, xode node, void *arg) 
+static void stream_node_callback(int type, xode node, void *arg)
 {
 	struct xmpp_private_data *priv = (struct xmpp_private_data *) arg;
 	char *id, *hash, *tag;
@@ -66,7 +66,7 @@ static void stream_node_callback(int type, xode node, void *arg)
 		id = xode_get_attrib(node, "id");
 		snprintf(buf, sizeof(buf), "%s%s", id, xmpp_password);
 		hash = shahash(buf);
-		
+
 		x = xode_new_tag("handshake");
 		xode_insert_cdata(x, hash, -1);
 		xode_send(priv->fd, x);
@@ -83,14 +83,14 @@ static void stream_node_callback(int type, xode node, void *arg)
 			char *type = xode_get_attrib(node, "type");
 			xode body = xode_get_tag(node, "body");
 			char *msg;
-			
+
 			if (!type)
 				type = "chat";
-			if (!strcmp(type, "error")) {	
+			if (!strcmp(type, "error")) {
 				LM_DBG("received message error stanza\n");
 				goto out;
 			}
-			
+
 			if (!from || !to || !body) {
 				LM_DBG("invalid <message/> attributes\n");
 				goto out;
@@ -137,7 +137,7 @@ static int do_send_message_component(struct xmpp_private_data *priv,
 	xode_put_attrib(x, "to", cmd->to);
 	xode_put_attrib(x, "type", "chat");
 	xode_insert_cdata(xode_insert_tag(x, "body"), cmd->body, -1);
-			
+
 	xode_send(priv->fd, x);
 	xode_free(x);
 
@@ -185,7 +185,7 @@ int xmpp_component_child_process(int data_pipe)
 	xode_stream stream;
 	struct xmpp_private_data priv;
 	struct xmpp_pipe_cmd *cmd;
-	
+
 	while (1) {
 		fd = net_connect(xmpp_host, xmpp_port);
 		if (fd < 0) {
@@ -196,16 +196,16 @@ int xmpp_component_child_process(int data_pipe)
 
 		priv.fd = fd;
 		priv.running = 1;
-		
+
 		pool = xode_pool_new();
 		stream = xode_stream_new(pool, stream_node_callback, &priv);
-		
+
 		net_printf(fd,
 			"<?xml version='1.0'?>"
 			"<stream:stream xmlns='jabber:component:accept' to='%s' "
 			"version='1.0' xmlns:stream='http://etherx.jabber.org/streams'>",
 			xmpp_domain);
-		
+
 		while (priv.running) {
 			FD_ZERO(&fdset);
 			FD_SET(data_pipe, &fdset);
@@ -238,9 +238,9 @@ int xmpp_component_child_process(int data_pipe)
 				}
 			}
 		}
-		
+
 		xode_pool_free(pool);
-		
+
 		close(fd);
 	}
 	return 0;

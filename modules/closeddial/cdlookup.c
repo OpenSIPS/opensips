@@ -66,7 +66,7 @@ int cd_lookup(struct sip_msg* _msg, char* _table, char* _group)
 	int key_count=0;
 
 	/* Query to execute: select new_uri from closeddial
- 	 * where cd_username='username' and group='group' 
+ 	 * where cd_username='username' and group='group'
  	 * [ and domain='domain' ]
  	 */
 
@@ -113,7 +113,7 @@ int cd_lookup(struct sip_msg* _msg, char* _table, char* _group)
 	/* ... where cd_username ... */
 	colsToCompare[0]=&cd_user_column;
 
-	/* ... and group_id ... */ 
+	/* ... and group_id ... */
 	colsToCompare[1]=&group_id_column;
 
 	if(parse_sip_msg_uri(_msg) < 0){
@@ -144,10 +144,10 @@ int cd_lookup(struct sip_msg* _msg, char* _table, char* _group)
 		valsToMatch[key_count].val.str_val.s=from_uri->host.s;
 		valsToMatch[key_count].val.str_val.len=from_uri->host.len;
 		key_count++;
-	}	
+	}
 
 	colsToReturn[0]=&new_uri_column;
-		
+
 	if(db_functions.use_table(db_connection, &table_s) < 0) {
 		LM_ERR("Error trying to use table %s\n", table_s.s);
 		return -1;
@@ -178,21 +178,21 @@ int cd_lookup(struct sip_msg* _msg, char* _table, char* _group)
 
 	user_s.s = useruri_buf+4;
 	switch(RES_ROWS(result)[0].values[0].type)
-	{ 
+	{
 		case DB_STRING:
-			strcpy(user_s.s, 
+			strcpy(user_s.s,
 				(char*)RES_ROWS(result)[0].values[0].val.string_val);
 			user_s.len = strlen(user_s.s);
 		break;
 		case DB_STR:
-			strncpy(user_s.s, 
+			strncpy(user_s.s,
 				(char*)RES_ROWS(result)[0].values[0].val.str_val.s,
 				RES_ROWS(result)[0].values[0].val.str_val.len);
 			user_s.len = RES_ROWS(result)[0].values[0].val.str_val.len;
 			user_s.s[user_s.len] = '\0';
 		break;
 		case DB_BLOB:
-			strncpy(user_s.s, 
+			strncpy(user_s.s,
 				(char*)RES_ROWS(result)[0].values[0].val.blob_val.s,
 				RES_ROWS(result)[0].values[0].val.blob_val.len);
 			user_s.len = RES_ROWS(result)[0].values[0].val.blob_val.len;
@@ -205,7 +205,7 @@ int cd_lookup(struct sip_msg* _msg, char* _table, char* _group)
 			}
 			return -1;
 	}
-	
+
 	/* check 'sip:' */
 	if(user_s.len<4 || strncasecmp(user_s.s, "sip:", 4))
 	{
@@ -243,7 +243,7 @@ str _get_group(struct sip_uri *from_uri)
 	db_res_t *result = NULL;
 	static db_ps_t my_ps = NULL;
 
-	/* Query to exec is: 
+	/* Query to exec is:
 	 * select group_id from closeddial where username='value'
 	 */
 
@@ -282,16 +282,16 @@ str _get_group(struct sip_uri *from_uri)
 	}
 
 	if(RES_ROW_N(result) == 0) {
-		LM_DBG("No group_id for username %s\n", from_uri->user.s);    
+		LM_DBG("No group_id for username %s\n", from_uri->user.s);
 	}
 	else {
 
-		switch(RES_ROWS(result)[0].values[0].type) { 
+		switch(RES_ROWS(result)[0].values[0].type) {
 			case DB_STRING:
 				returnValue.s = (char*)RES_ROWS(result)[0].values[0].val.string_val;
 				returnValue.len = strlen(returnValue.s);
 				break;
-	
+
 			case DB_STR:
 				returnValue.s=(char*)RES_ROWS(result)[0].values[0].val.str_val.s;
 				returnValue.len=strlen(returnValue.s);

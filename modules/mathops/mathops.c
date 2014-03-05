@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -126,7 +126,7 @@ static param_export_t params[] = {
  * Module parameter variables
  */
 struct module_exports exports = {
-	"mathops", 
+	"mathops",
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,     /* Exported functions */
@@ -145,7 +145,7 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_DBG("Initializing...\n");
-	
+
 	LM_INFO("Module initialized!\n");
 
 	return 0;
@@ -170,7 +170,7 @@ static int fixup_binary_op(void **param, int param_no)
 		}
 
 		memset(sp, 0, sizeof(*sp));
-		
+
 		s.s = (char *)*param; s.len = strlen(s.s);
 		if (!pv_parse_spec(&s, sp)) {
 			LM_ERR("Parameter 2 only accepts pvars! Given: <%.*s>\n", s.len, s.s);
@@ -195,7 +195,7 @@ static int fixup_round_op(void **param, int param_no)
 		return fixup_binary_op(param, param_no);
 	case 3:
 		return fixup_igp(param);
-	
+
 	default:
 		LM_ERR("Invalid parameter number: %d\n", param_no);
 		return E_UNSPEC;
@@ -215,7 +215,7 @@ static int fixup_evaluate_exp(void **param, int param_no)
 	}
 
 	if (param_no == 1) {
-		
+
     	s.s = (char*)(*param); s.len = strlen(s.s);
 
 		if (pv_parse_format(&s, &ep) < 0) {
@@ -233,7 +233,7 @@ static int fixup_evaluate_exp(void **param, int param_no)
 		}
 
 		memset(sp, 0, sizeof(*sp));
-		
+
 		s.s = (char *)*param; s.len = strlen(s.s);
 		if (!pv_parse_spec(&s, sp)) {
 			LM_ERR("Parameter 2 only accepts pvars! Given: <%.*s>\n", s.len, s.s);

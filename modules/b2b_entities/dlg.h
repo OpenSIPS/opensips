@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -228,7 +228,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 
 typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
 	 b2b_dlginfo_t* dlginfo, int db_del);
-b2b_dlg_t* b2b_search_htable(b2b_table table, 
+b2b_dlg_t* b2b_search_htable(b2b_table table,
 		unsigned int hash_index, unsigned int local_index);
 
 void b2b_tm_cback(struct cell* t, b2b_table htable, struct tmcb_params *ps);

@@ -39,14 +39,14 @@ ResponseError(TSession * const sessionP) {
     ResponseAddField(sessionP, "Content-type", "text/html");
 
     ResponseWriteStart(sessionP);
-    
+
     xmlrpc_asprintf(&errorDocument,
                     "<HTML><HEAD><TITLE>Error %d</TITLE></HEAD>"
-                    "<BODY><H1>Error %d</H1><P>%s</P>" SERVER_HTML_INFO 
+                    "<BODY><H1>Error %d</H1><P>%s</P>" SERVER_HTML_INFO
                     "</BODY></HTML>",
                     sessionP->status, sessionP->status, reason);
-    
-    ConnWrite(sessionP->conn, errorDocument, strlen(errorDocument)); 
+
+    ConnWrite(sessionP->conn, errorDocument, strlen(errorDocument));
 
     xmlrpc_strfree(errorDocument);
 }
@@ -158,7 +158,7 @@ ResponseWriteStart(TSession * const sessionP) {
 
     if (HTTPKeepalive(sessionP)) {
         const char * keepaliveValue;
-        
+
         ResponseAddField(sessionP, "Connection", "Keep-Alive");
 
         xmlrpc_asprintf(&keepaliveValue, "timeout=%u, max=%u",
@@ -169,7 +169,7 @@ ResponseWriteStart(TSession * const sessionP) {
         xmlrpc_strfree(keepaliveValue);
     } else
         ResponseAddField(sessionP, "Connection", "close");
-    
+
     if (sessionP->chunkedwrite && sessionP->chunkedwritemode)
         ResponseAddField(sessionP, "Transfer-Encoding", "chunked");
 
@@ -188,7 +188,7 @@ ResponseWriteStart(TSession * const sessionP) {
         xmlrpc_strfree(line);
     }
 
-    ConnWrite(sessionP->conn, "\r\n", 2);  
+    ConnWrite(sessionP->conn, "\r\n", 2);
 }
 
 
@@ -224,7 +224,7 @@ abyss_bool
 ResponseContentLength(TSession * const sessionP,
                       uint64_t   const len) {
     char contentLengthValue[32];
-    
+
     sprintf(contentLengthValue, "%llu", (long long unsigned int)len);
 
     return ResponseAddField(sessionP, "Content-length", contentLengthValue);
@@ -248,7 +248,7 @@ static MIMEType * globalMimeTypeP = NULL;
 
 MIMEType *
 MIMETypeCreate(void) {
- 
+
     MIMEType * MIMETypeP;
 
     MALLOCVAR(MIMETypeP);
@@ -300,7 +300,7 @@ mimeTypeAdd(MIMEType *   const MIMETypeP,
             const char * const type,
             const char * const ext,
             abyss_bool * const successP) {
-    
+
     uint16_t index;
     void * mimeTypesItem;
     abyss_bool typeIsInList;
@@ -328,7 +328,7 @@ mimeTypeAdd(MIMEType *   const MIMETypeP,
                     ListAdd(&MIMETypeP->typeList, mimeTypesItem);
                 if (addedToMimeTypes) {
                     abyss_bool addedToExt;
-                    
+
                     addedToExt = ListAdd(&MIMETypeP->extList, extItem);
                     *successP = addedToExt;
                     if (!*successP)
@@ -358,7 +358,7 @@ MIMETypeAdd2(MIMEType *   const MIMETypeArg,
 
     if (MIMETypeP == NULL)
         success = FALSE;
-    else 
+    else
         mimeTypeAdd(MIMETypeP, type, ext, &success);
 
     return success;
@@ -390,7 +390,7 @@ mimeTypeFromExt(MIMEType *   const MIMETypeP,
         retval = NULL;
     else
         retval = MIMETypeP->typeList.item[extindex];
-    
+
     return retval;
 }
 
@@ -434,7 +434,7 @@ findExtension(const char *  const fileName,
     /* We're looking for the last dot after the last slash */
     for (i = 0, extFound = FALSE; fileName[i]; ++i) {
         char const c = fileName[i];
-        
+
         if (c == '.') {
             extFound = TRUE;
             extPos = i + 1;
@@ -459,7 +459,7 @@ mimeTypeFromFileName(MIMEType *   const MIMETypeP,
     const char * ext;
 
     assert(MIMETypeP != NULL);
-    
+
     findExtension(fileName, &ext);
 
     if (ext)
@@ -477,7 +477,7 @@ MIMETypeFromFileName2(MIMEType *   const MIMETypeArg,
                       const char * const fileName) {
 
     const char * retval;
-    
+
     MIMEType * MIMETypeP = MIMETypeArg ? MIMETypeArg : globalMimeTypeP;
 
     if (MIMETypeP == NULL)
@@ -516,13 +516,13 @@ fileContainsText(const char * const fileName) {
         unsigned int i;
 
         readRc = FileRead(&file, buffer, sizeof(buffer));
-       
+
         if (readRc >= 0) {
             unsigned int bytesRead = readRc;
             abyss_bool nonTextFound;
 
             nonTextFound = FALSE;  /* initial value */
-    
+
             for (i = 0; i < bytesRead; ++i) {
                 char const c = buffer[i];
                 if (c < ' ' && !isspace(c) && c != ctlZ)
@@ -539,7 +539,7 @@ fileContainsText(const char * const fileName) {
 }
 
 
- 
+
 static const char *
 mimeTypeGuessFromFile(MIMEType *   const MIMETypeP,
                       const char * const fileName) {
@@ -553,12 +553,12 @@ mimeTypeGuessFromFile(MIMEType *   const MIMETypeP,
 
     if (ext && MIMETypeP)
         retval = MIMETypeFromExt2(MIMETypeP, ext);
-    
+
     if (!retval) {
         if (fileContainsText(fileName))
             retval = "text/plain";
         else
-            retval = "application/octet-stream";  
+            retval = "application/octet-stream";
     }
     return retval;
 }
@@ -581,7 +581,7 @@ MIMETypeGuessFromFile(const char * const fileName) {
     return mimeTypeGuessFromFile(globalMimeTypeP, fileName);
 }
 
-                                  
+
 
 /*********************************************************************
 ** Base64
@@ -603,7 +603,7 @@ void Base64Encode(char *s,char *d)
 
     uint32_t i,length=strlen(s);
     char *p=d;
-    
+
     /* Transform the 3x8 bits to 4x6 bits, as required by base64. */
     for (i = 0; i < length; i += 3)
     {
@@ -613,13 +613,13 @@ void Base64Encode(char *s,char *d)
         *p++ = tbl[s[2] & 0x3f];
         s += 3;
     }
-    
+
     /* Pad the result if necessary... */
     if (i == length + 1)
         *(p - 1) = '=';
     else if (i == length + 2)
         *(p - 1) = *(p - 2) = '=';
-    
+
     /* ...and zero-terminate it. */
     *p = '\0';
 }
@@ -641,7 +641,7 @@ void Base64Encode(char *s,char *d)
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE

@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * presence_dialoginfo module -  
+ * presence_dialoginfo module -
  *
  * Copyright (C) 2006 Voice Sistem S.R.L.
  * Copyright (C) 2008 Klaus Darilion, IPCom
@@ -146,7 +146,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 
 		xml_array[j] = NULL;
 		xml_array[j] = xmlParseMemory( body_array[i]->s, body_array[i]->len );
-		
+
 		/* LM_DBG("parsing XML body: [n]=%d, [i]=%d, [j]=%d xml_array[j]=%p\n", n, i, j, xml_array[j] ); */
 
 		if( xml_array[j]== NULL)
@@ -156,7 +156,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 		}
 		j++;
 
-	} 
+	}
 
 	if(j== 0)  /* no body */
 	{
@@ -197,7 +197,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 	xmlSetNs(root_node, namespace);
 	/* The version must be increased for each new document and is a 32bit int.
        As the version is different for each watcher, we can not set here the
-       correct value. Thus, we just put here a placeholder which will be 
+       correct value. Thus, we just put here a placeholder which will be
 	   replaced by the correct value in the aux_body_processing callback.
 	   Thus we have CPU intensive XML aggregation only once and can use
 	   quick search&replace in the per-watcher aux_body_processing callback.
@@ -227,8 +227,8 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 					LM_DBG("node type: Element, name: %s\n", node->name);
 					/* we do not copy the node, but unlink it and then add it ot the new node
 					 * this destroys the original document but we do not need it anyway.
-					 * using "copy" instead of "unlink" would also copy the namespace which 
-					 * would then be declared redundant (libxml unfortunately can not remove 
+					 * using "copy" instead of "unlink" would also copy the namespace which
+					 * would then be declared redundant (libxml unfortunately can not remove
 					 * namespaces)
 					 */
 					if (!force_single_dialog || (j==1)) {
@@ -271,7 +271,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 		ERR_MEM(PKG_MEM_STR);
 	}
 
-	xmlDocDumpMemory(doc,(xmlChar**)(void*)&body->s, 
+	xmlDocDumpMemory(doc,(xmlChar**)(void*)&body->s,
 			&body->len);
 
   	for(i=0; i<j; i++)
@@ -283,7 +283,7 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 		xmlFreeDoc(doc);
 	if(xml_array!=NULL)
 		pkg_free(xml_array);
-    
+
 	xmlCleanupParser();
     xmlMemoryDump();
 

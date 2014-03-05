@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -88,12 +88,12 @@ int register_builtin_modules(void)
 
 	ret=0;
 #ifdef STATIC_TM
-	ret=register_module(&tm_exports,"built-in", 0); 
+	ret=register_module(&tm_exports,"built-in", 0);
 	if (ret<0) return ret;
 #endif
 
 #ifdef STATIC_EXEC
-	ret=register_module(&exec_exports,"built-in", 0); 
+	ret=register_module(&exec_exports,"built-in", 0);
 	if (ret<0) return ret;
 #endif
 
@@ -103,15 +103,15 @@ int register_builtin_modules(void)
 #endif
 
 #ifdef STATIC_AUTH
-	ret=register_module(&auth_exports, "built-in", 0); 
+	ret=register_module(&auth_exports, "built-in", 0);
 	if (ret<0) return ret;
 #endif
-	
+
 #ifdef STATIC_RR
 	ret=register_module(&rr_exports, "built-in", 0);
 	if (ret<0) return ret;
 #endif
-	
+
 #ifdef STATIC_USRLOC
 	ret=register_module(&usrloc_exports, "built-in", 0);
 	if (ret<0) return ret;
@@ -121,7 +121,7 @@ int register_builtin_modules(void)
 	ret=register_module(&sl_exports, "built-in", 0);
 	if (ret<0) return ret;
 #endif
-	
+
 	return ret;
 }
 
@@ -133,7 +133,7 @@ int register_module(struct module_exports* e, char* path, void* handle)
 {
 	int ret;
 	struct sr_module* mod;
-	
+
 	ret=-1;
 
 	/* add module to the list */
@@ -263,7 +263,7 @@ skip:
 
 
 /* searches the module list and returns pointer to the "name" function or
- * 0 if not found 
+ * 0 if not found
  * flags parameter is OR value of all flags that must match
  */
 cmd_function find_export(char* name, int param_no, int flags)
@@ -307,7 +307,7 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 
 
 /*
- * searches the module list and returns pointer to "name" function in module 
+ * searches the module list and returns pointer to "name" function in module
  * "mod" or 0 if not found
  * flags parameter is OR value of all flags that must match
  */
@@ -390,7 +390,7 @@ static int init_mod_child( struct sr_module* m, int rank, char *type )
 			return -1;
 
 		if (m->exports && m->exports->init_child_f) {
-			LM_DBG("type=%s, rank=%d, module=%s\n", 
+			LM_DBG("type=%s, rank=%d, module=%s\n",
 					type, rank, m->exports->name);
 			if (m->exports->init_child_f(rank)<0) {
 				LM_ERR("failed to initializing module %s, rank %d\n",

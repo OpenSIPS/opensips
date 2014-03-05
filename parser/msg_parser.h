@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -96,7 +96,7 @@ enum request_method {
 #define FL_USE_UAC_TO        (1<<7)  /* take TO hdr from UAC insteas of UAS */
 #define FL_USE_UAC_CSEQ      (1<<8)  /* take CSEQ hdr from UAC insteas of UAS*/
 #define FL_REQ_UPSTREAM      (1<<9)  /* it's an upstream going request */
-#define FL_DO_KEEPALIVE      (1<<10) /* keepalive request's source after a 
+#define FL_DO_KEEPALIVE      (1<<10) /* keepalive request's source after a
                                       * positive reply */
 #define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
                                       * a dialog */
@@ -152,7 +152,7 @@ struct sip_uri {
 	str host;     /* Host name */
 	str port;     /* Port number */
 	str params;   /* Parameters */
-	str headers;  
+	str headers;
 	unsigned short port_no;
 	unsigned short proto; /* from transport */
 	uri_type type; /* uri scheme */
@@ -248,7 +248,7 @@ struct sip_msg {
 
 	char* eoh;        /* pointer to the end of header (if found) or null */
 	char* unparsed;   /* here we stopped parsing*/
-	
+
 	struct receive_info rcv; /* source & dest ip, ports, proto a.s.o*/
 
 	char* buf;        /* scratch pad, holds a unmodified message,
@@ -261,7 +261,7 @@ struct sip_msg {
                   * don't forget to set parsed_uri_ok to 0 */
 
 	str dst_uri; /* Destination URI, must be forwarded to this URI if len!=0 */
-	
+
 	/* current uri */
 	int parsed_uri_ok; /* 1 if parsed_uri is valid, 0 if not, set it to 0
 	                      if you modify the uri (e.g change new_uri)*/
@@ -278,16 +278,16 @@ struct sip_msg {
 	/* whatever whoever want to append to branch comes here */
 	char add_to_branch_s[MAX_BRANCH_PARAM_LEN];
 	int add_to_branch_len;
-	
-	/* index to TM hash table; stored in core to avoid 
+
+	/* index to TM hash table; stored in core to avoid
 	 * unnecessary calculations */
 	unsigned int  hash_index;
 
 	/* flags used from script */
 	flag_t flags;
 
-	/* flags used by core - allows to set various flags on the message; may 
-	 * be used for simple inter-module communication or remembering 
+	/* flags used by core - allows to set various flags on the message; may
+	 * be used for simple inter-module communication or remembering
 	 * processing state reached */
 	unsigned int msg_flags;
 
@@ -345,7 +345,7 @@ inline static int char_msg_val( struct sip_msg *msg, char *cv )
 	src[2]= msg->callid->body;
 	src[3]= msg->first_line.u.request.uri;
 	src[4]= get_cseq( msg )->number;
-	
+
 	/* topmost Via is part of transaction key as well ! */
 	src[5]= msg->via1->host;
 	src[6]= msg->via1->port_str;
@@ -406,9 +406,9 @@ inline static int get_body(struct sip_msg *msg, str *body)
 }
 
 
-/* 
+/*
  * Search through already parsed headers (no parsing done) a non-standard
- * header - all known headers are skipped! 
+ * header - all known headers are skipped!
  */
 #define get_header_by_static_name(_msg, _name) \
 		get_header_by_name(_msg, _name, sizeof(_name)-1)

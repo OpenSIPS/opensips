@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -25,16 +25,16 @@
  * 2007-03-06  syncronized state machine added for dialog state. New tranzition
  *             design based on events; removed num_1xx and num_2xx (bogdan)
  * 2007-04-30  added dialog matching without DID (dialog ID), but based only
- *             on RFC3261 elements - based on an original patch submitted 
+ *             on RFC3261 elements - based on an original patch submitted
  *             by Michel Bensoussan <michel@extricom.com> (bogdan)
  * 2007-07-06  additional information stored in order to save it in the db:
- *             cseq, route_set, contact and sock_info for both caller and 
+ *             cseq, route_set, contact and sock_info for both caller and
  *             callee (ancuta)
  * 2007-07-10  Optimized dlg_match_mode 2 (DID_NONE), it now employs a proper
- *             hash table lookup and isn't dependant on the is_direction 
- *             function (which requires an RR param like dlg_match_mode 0 
- *             anyways.. ;) ; based on a patch from 
- *             Tavis Paquette <tavis@galaxytelecom.net> 
+ *             hash table lookup and isn't dependant on the is_direction
+ *             function (which requires an RR param like dlg_match_mode 0
+ *             anyways.. ;) ; based on a patch from
+ *             Tavis Paquette <tavis@galaxytelecom.net>
  *             and Peter Baer <pbaer@galaxytelecom.net>  (bogdan)
  * 2008-04-17  added new type of callback to be triggered right before the
  *              dialog is destroyed (deleted from memory) (bogdan)
@@ -90,7 +90,7 @@ int dialog_cleanup( struct sip_msg *msg, void *param )
 struct dlg_cell *get_current_dialog(void)
 {
 	struct cell *trans;
-	
+
 	if (route_type==REQUEST_ROUTE || route_type==LOCAL_ROUTE) {
 		/* use the per-process static holder */
 		return current_dlg_pointer;
@@ -101,7 +101,7 @@ struct dlg_cell *get_current_dialog(void)
 			/* no transaction - perhaps internally terminated
 			dialog - trust the module */
 			return current_dlg_pointer;
-		}	
+		}
 		return (struct dlg_cell*)trans->dialog_ctx;
 	}
 }
@@ -313,7 +313,7 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
-int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr, 
+int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
 		str *mangled_from,str *mangled_to)
 {
@@ -436,7 +436,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 
 		/* set cseq for caller to 0
 		 * future requests to the caller leg will update this
-		 * needed for proper validation of in-dialog requests 
+		 * needed for proper validation of in-dialog requests
 		 *
 		 * TM also increases this value by one, if dialog
 		 * is terminated from the middle, so 0 is ok*/
@@ -466,7 +466,7 @@ int dlg_add_leg_info(struct dlg_cell *dlg, str* tag, str *rr,
 int dlg_update_cseq(struct dlg_cell * dlg, unsigned int leg, str *cseq,int inv)
 {
 	str* update_cseq;
-	
+
 	if (inv == 1)
 		update_cseq = &dlg->legs[leg].inv_cseq;
 	else
@@ -791,7 +791,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 					unref_dlg_unsafe(dlg,1,d_entry); /* unref from TM CBs*/
 					break;
 				case DLG_STATE_DELETED:
-					/* as the dialog aleady is in DELETE state, it is 
+					/* as the dialog aleady is in DELETE state, it is
 					dangerous to directly unref it from here as it might
 					be last ref -> dialog will be destroied and we will end up
 					with a dangling pointer :D - bogdan */
@@ -859,7 +859,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 				case DLG_STATE_CONFIRMED_NA:
 				case DLG_STATE_CONFIRMED:
 					if (dir == DLG_DIR_DOWNSTREAM && last_dst_leg!=dlg->legs_no[DLG_LEG_200OK] )
-						/* to end the call, the BYE must be received 
+						/* to end the call, the BYE must be received
 						 * on the same leg as the 200 OK for INVITE */
 						break;
 					dlg->flags |= DLG_FLAG_HASBYE;
@@ -871,7 +871,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 				default:
 					/* only case for BYEs in early or unconfirmed states
 					 * is for requests generate by caller or callee.
-					 * We never internally generate BYEs for early dialogs 
+					 * We never internally generate BYEs for early dialogs
 					 *
 					 * RFC says caller may send BYEs for early dialogs,
 					 * while the callee side MUST not send such requests*/
@@ -1033,7 +1033,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 			goto error;
 
 		node1 = add_mi_node_child(node, 0,"caller_bind_addr",16,
-				dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.s, 
+				dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.s,
 				dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.len);
 		if(node1 == 0)
 			goto error;
@@ -1064,7 +1064,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		if (dlg->legs[i].bind_addr) {
 			node1 = add_mi_node_child(node, 0,
 				"callee_bind_addr",16,
-				dlg->legs[i].bind_addr->sock_str.s, 
+				dlg->legs[i].bind_addr->sock_str.s,
 				dlg->legs[i].bind_addr->sock_str.len);
 		} else {
 			node1 = add_mi_node_child(node, 0,
@@ -1190,7 +1190,7 @@ error:
 }
 
 
-static int match_downstream_dialog(struct dlg_cell *dlg, 
+static int match_downstream_dialog(struct dlg_cell *dlg,
 													str *callid, str *ftag)
 {
 	if (dlg->callid.len!=callid->len ||

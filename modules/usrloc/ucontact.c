@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Usrloc contact structure
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -255,7 +255,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 
 	char* ptr;
 
-	/* No need to update Callid as it is constant 
+	/* No need to update Callid as it is constant
 	 * per ucontact (set at insert time)  -bogdan */
 
 	update_str( &_c->user_agent, _ci->user_agent);
@@ -318,9 +318,9 @@ void st_update_ucontact(ucontact_t* _c)
 		break;
 
 	case CS_SYNC:
-			 /* For db mode 1 & 2 a modified contact needs to be 
-			  * updated also in the database, so transit into 
-			  * CS_DIRTY and let the timer to do the update 
+			 /* For db mode 1 & 2 a modified contact needs to be
+			  * updated also in the database, so transit into
+			  * CS_DIRTY and let the timer to do the update
 			  * again. For db mode 1 we try to update right
 			  * now and if fails, let the timer to do the job
 			  */
@@ -356,10 +356,10 @@ int st_delete_ucontact(ucontact_t* _c)
 	case CS_SYNC:
 	case CS_DIRTY:
 		     /* Contact is in the database,
-		      * we cannot remove it from the memory 
+		      * we cannot remove it from the memory
 		      * directly, but we can set expires to zero
-		      * and the timer will take care of deleting 
-		      * the contact from the memory as well as 
+		      * and the timer will take care of deleting
+		      * the contact from the memory as well as
 		      * from the database
 		      */
 		if (db_mode == WRITE_BACK) {
@@ -381,7 +381,7 @@ int st_delete_ucontact(ucontact_t* _c)
 
 /*! \brief
  * Called when the timer is about to delete
- * an expired contact. 
+ * an expired contact.
  * \return 1 if the contact should be removed from
  * the database and 0 otherwise
  */
@@ -486,7 +486,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 	vals[1].type = DB_STR;
 	vals[1].nul = 0;
-	vals[1].val.str_val.s = _c->c.s; 
+	vals[1].val.str_val.s = _c->c.s;
 	vals[1].val.str_val.len = _c->c.len;
 
 	vals[2].type = DB_DATETIME;
@@ -527,7 +527,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		vals[9].val.str_val.s = _c->received.s;
 		vals[9].val.str_val.len = _c->received.len;
 	}
-	
+
 	vals[10].type = DB_STR;
 	if (_c->path.s == 0) {
 		vals[10].nul = 1;
@@ -699,7 +699,7 @@ int db_update_ucontact(ucontact_t* _c)
 		vals2[6].nul = 0;
 		vals2[6].val.str_val = _c->received;
 	}
-	
+
 	vals2[7].type = DB_STR;
 	if (_c->path.s == 0) {
 		vals2[7].nul = 1;
@@ -758,7 +758,7 @@ int db_update_ucontact(ucontact_t* _c)
 
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
-	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 
+	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2,
 	(use_domain) ? (4) : (3), 12) < 0) {
 		LM_ERR("updating database failed\n");
 		return -1;

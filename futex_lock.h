@@ -13,8 +13,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -101,7 +101,7 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 		: "=q" (val), "=m" (*lock) : "0"(val) : "memory", "cc" /* "cc" */
 	);
 #else
-	asm volatile( 
+	asm volatile(
 		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
 	);
 #endif /*NOSMP*/
@@ -150,8 +150,8 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 		"    beqz %0, 1b \n\t"
 		"    nop \n\t"
 		".set reorder\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock) 
-		: "0" (tmp), "2" (*lock) 
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
+		: "0" (tmp), "2" (*lock)
 		: "cc"
 	);
 #elif defined __CPU_alpha
@@ -162,7 +162,7 @@ inline static int _atomic_xchg(fx_lock_t* lock, int val)
 		"1:  ldl %0, %1   \n\t"
 		"    blbs %0, 2f  \n\t"  /* optimization if locked */
 		"    ldl_l %0, %1 \n\t"
-		"    blbs %0, 2f  \n\t" 
+		"    blbs %0, 2f  \n\t"
 		"    lda %2, 1    \n\t"  /* or: or $31, 1, %2 ??? */
 		"    stl_c %2, %1 \n\t"
 		"    beq %2, 1b   \n\t"

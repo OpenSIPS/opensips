@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * version and compile flags macros 
+ * version and compile flags macros
  *
  * Copyright (C) 2004 FhG Fokus
  *
@@ -17,15 +17,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #ifndef version_h
 #define version_h
 
-#define OPENSIPS_FULL_VERSION  NAME " " VERSION " (" ARCH "/" OS ")" 
+#define OPENSIPS_FULL_VERSION  NAME " " VERSION " (" ARCH "/" OS ")"
 
 
 #ifdef STATISTICS
@@ -48,7 +48,7 @@
 
 #ifdef USE_TLS
 #define USE_TLS_STR ", USE_TLS"
-#else 
+#else
 #define USE_TLS_STR ""
 #endif
 

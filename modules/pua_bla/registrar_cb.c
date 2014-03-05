@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -100,7 +100,7 @@ void bla_cb(ucontact_t* c, int type, void* param)
 	subs.source_flag= BLA_SUBSCRIBE;
 	subs.event= BLA_EVENT;
 	subs.contact= &server_address;
-	
+
 	if(bla_outbound_proxy.s && bla_outbound_proxy.len)
 		subs.outbound_proxy= &bla_outbound_proxy;
 	else
@@ -115,9 +115,9 @@ void bla_cb(ucontact_t* c, int type, void* param)
 	if(pua_send_subscribe(&subs)< 0)
 	{
 		LM_ERR("while sending subscribe\n");
-	}	
+	}
 	pkg_free(uri.s);
 error:
 	is_bla_aor= 0;
 	return ;
-}	
+}

@@ -21,7 +21,7 @@
  *
  * History:
  * ---------
- * 
+ *
  */
 
 
@@ -93,7 +93,7 @@ static param_export_t params[] = {
 
 /* Module interface */
 struct module_exports exports = {
-	"speeddial", 
+	"speeddial",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,       /* Exported functions */

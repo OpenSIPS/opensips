@@ -1915,7 +1915,7 @@ int ph_parse_url(const char* url, int* mod, int* cmd)
 	int i;
 	int mod_len, cmd_len;
 	ph_mod_t *ph_modules = ph_framework_data->ph_modules;
-	
+
 
 	if (url_len<0) {
 		LM_ERR("Invalid url length [%d]\n", url_len);
@@ -2671,7 +2671,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			if(j)PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_1d);
 			PI_HTTP_COPY_2(p,*(command->q_keys[j]),
 					PI_HTTP_Response_Menu_Cmd_td_4d);
-					
+
 		}
 		if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
 			if(db_url->http_dbf.query(db_url->http_db_handle,

@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -55,10 +55,10 @@ SessionRefillBuffer(TSession * const sessionP) {
 -----------------------------------------------------------------------------*/
     struct _TServer * const srvP = sessionP->conn->server->srvP;
     abyss_bool succeeded;
-            
+
     /* Reset our read buffer & flush data from previous reads. */
     ConnReadInit(sessionP->conn);
-    
+
     /* Read more network data into our buffer.  If we encounter a
        timeout, exit immediately.  We're very forgiving about the
        timeout here.  We allow a full timeout per network read, which
@@ -83,9 +83,9 @@ SessionReadDataAvail(TSession * const sessionP) {
 
 
 void
-SessionGetReadData(TSession *    const sessionP, 
-                   size_t        const max, 
-                   const char ** const outStartP, 
+SessionGetReadData(TSession *    const sessionP,
+                   size_t        const max,
+                   const char ** const outStartP,
                    size_t *      const outLenP) {
 /*----------------------------------------------------------------------------
    Extract some data which the server has read and buffered for the
@@ -114,7 +114,7 @@ SessionGetReadData(TSession *    const sessionP,
 void
 SessionGetRequestInfo(TSession *            const sessionP,
                       const TRequestInfo ** const requestInfoPP) {
-    
+
     *requestInfoPP = &sessionP->request_info;
 }
 
@@ -141,7 +141,7 @@ SessionLog(TSession * const sessionP) {
                         IPB3(sessionP->conn->peerip),
                         IPB4(sessionP->conn->peerip),
                         user ? user : "",
-                        date, 
+                        date,
                         sessionP->request_info.requestline,
                         sessionP->status,
                         sessionP->conn->outbytes

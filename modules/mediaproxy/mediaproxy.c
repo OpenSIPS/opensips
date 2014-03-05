@@ -866,7 +866,7 @@ has_ice_candidates(str *block)
 }
 
 
-// will return true if given block contains an ICE 
+// will return true if given block contains an ICE
 // candidate with the given component ID
 static Bool
 has_ice_candidate_component(str *block, int id)
@@ -891,7 +891,7 @@ has_ice_candidate_component(str *block, int id)
                 return True;
             }
         }
-        
+
         chunk.s   = zone.s + zone.len;
         chunk.len = block_end - chunk.s;
     }
@@ -1450,7 +1450,7 @@ send_command(char *command)
 // ice_candidate_data: it carries data across the dialog when using engage_media_proxy:
 //   - priority: the priority that should be used for the ICE candidate
 //      * -1: no candidate should be added.
-//      * other: the specified type preference should be used for calculating 
+//      * other: the specified type preference should be used for calculating
 //   - skip_next_reply: flag for knowing the fact that the next reply with SDP must be skipped
 //     because it is a reply to a re-INVITE or UPDATE *after* the ICE negotiation
 static int
@@ -1472,7 +1472,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
         type = "request";
     } else if (msg->first_line.type == SIP_REPLY) {
         if (ice_data != NULL && ice_data->skip_next_reply) {
-            // we don't process replies to ICE negotiation end requests 
+            // we don't process replies to ICE negotiation end requests
             // (those containing a=remote-candidates)
             ice_data->skip_next_reply = False;
             return -1;
@@ -1510,7 +1510,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
             }
             return -1;
         }
-       
+
         status = get_session_info(&sdp, &session);
         if (status < 0) {
             LM_ERR("can't extract media streams from the SDP message\n");
@@ -1647,7 +1647,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
         if (j >= len) {
             break;
         }
-        
+
         if (!isnullport(stream.port)) {
             if (!replace_element(msg, &stream.port, &tokens[j])) {
                 LM_ERR("failed to replace port in media stream number %d\n", i+1);
@@ -1709,7 +1709,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
             candidate.len = sprintf(candidate.s, "a=candidate:R%x 1 UDP %u %.*s %i typ relay%.*s",
                                     hexip.s_addr,
                                     priority,
-                                    tokens[0].len, tokens[0].s, 
+                                    tokens[0].len, tokens[0].s,
                                     port,
                                     session.separator.len, session.separator.s);
 
@@ -1723,7 +1723,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
                 candidate.len = sprintf(candidate.s, "a=candidate:R%x 2 UDP %u %.*s %i typ relay%.*s",
                                         hexip.s_addr,
                                         priority-1,
-                                        tokens[0].len, tokens[0].s, 
+                                        tokens[0].len, tokens[0].s,
                                         port+1,
                                         session.separator.len, session.separator.s);
 

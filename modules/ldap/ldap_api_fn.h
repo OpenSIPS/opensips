@@ -66,7 +66,7 @@ int ldap_str2scope(char* scope_str);
 
 int get_ldap_handle(char* _lds_name, LDAP** _ldap_handle);
 
-void get_last_ldap_result(LDAP** _last_ldap_handle, 
+void get_last_ldap_result(LDAP** _last_ldap_handle,
 		LDAPMessage** _last_ldap_result);
 
 #endif /* LDAP_API_FN_H */

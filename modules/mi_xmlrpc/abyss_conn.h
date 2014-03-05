@@ -5,7 +5,7 @@
 #include "abyss_socket.h"
 #include "abyss_file.h"
 
-#define BUFFER_SIZE 4096 
+#define BUFFER_SIZE 4096
 
 struct _TConn {
     struct _TConn * nextOutstandingP;
@@ -21,7 +21,7 @@ struct _TConn {
         /* Index into the connection buffer (buffer[], below) where
            the next byte to be delivered to the user is.
         */
-    uint32_t inbytes,outbytes;  
+    uint32_t inbytes,outbytes;
     TSocket * socketP;
     TIPAddr peerip;
     abyss_bool hasOwnThread;

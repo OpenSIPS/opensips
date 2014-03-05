@@ -102,7 +102,7 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 		case AF_LOCAL:
 			LM_DBG("we have a unix socket: %s\n", addr->unix_addr.sun_path);
 			socket_name = addr->unix_addr.sun_path;
-			if(bind(socks->rx_sock,(struct sockaddr*)&addr->unix_addr, 
+			if(bind(socks->rx_sock,(struct sockaddr*)&addr->unix_addr,
 					SUN_LEN(&addr->unix_addr))< 0) {
 				LM_ERR("bind: %s\n", strerror(errno));
 				goto err_rx;
@@ -152,7 +152,7 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 			socks->tx_sock = socks->rx_sock;
 			break;
 #ifdef USE_IPV6
-		case AF_INET6: 
+		case AF_INET6:
 			if(bind(socks->rx_sock, (struct sockaddr*)&addr->udp_addr.sin6,
 					sizeof(addr->udp_addr)) < 0) {
 				LM_ERR("bind: %s\n", strerror(errno));
@@ -197,7 +197,7 @@ int mi_sock_check(int fd, char* fname)
 	struct stat lst;
 
 	if (fstat(fd, &fst)<0){
-		LM_ERR("fstat failed: %s\n", 
+		LM_ERR("fstat failed: %s\n",
 		strerror(errno));
 		return -1;
 	}
@@ -208,7 +208,7 @@ int mi_sock_check(int fd, char* fname)
 	}
 	/* check if hard-linked */
 	if (fst.st_nlink>1){
-		LM_ERR("security: sock_check: %s is hard-linked %d times\n", 
+		LM_ERR("security: sock_check: %s is hard-linked %d times\n",
 				fname, (unsigned)fst.st_nlink);
 		return -1;
 	}
@@ -239,7 +239,7 @@ int mi_sock_check(int fd, char* fname)
 
 
 /* this function sends the reply over the reply socket */
-static int mi_send_dgram(int fd, char* buf, unsigned int len, 
+static int mi_send_dgram(int fd, char* buf, unsigned int len,
 				const struct sockaddr* to, int tolen, int timeout)
 {
 	int n;
@@ -251,7 +251,7 @@ static int mi_send_dgram(int fd, char* buf, unsigned int len,
 
 	if(total_len == 0 || tolen ==0)
 		return -1;
-	
+
 	if (total_len>DATAGRAM_SOCK_BUF_SIZE)
 	{
 		LM_DBG("datagram too big, "
@@ -265,7 +265,7 @@ static int mi_send_dgram(int fd, char* buf, unsigned int len,
 
 
 
-/*function that verifyes that the function from the datagram's first 
+/*function that verifyes that the function from the datagram's first
  * line is correct and exists*/
 static int identify_command(datagram_stream * dtgram, struct mi_cmd * *f)
 {
@@ -277,7 +277,7 @@ static int identify_command(datagram_stream * dtgram, struct mi_cmd * *f)
 		LM_ERR("null pointer  \n");
 		return -1;
 	}
-	
+
 	/*if no command*/
 	if ( dtgram->len ==0 ){
 		LM_DBG("command empty case1 \n");
@@ -352,14 +352,14 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 				goto err1;
 			}
 			LM_DBG("the response is %s", dtgram.start);
-		
+
 			/*send the response*/
 			ret = mi_send_dgram(p->tx_sock, dtgram.start,
-							dtgram.current - dtgram.start, 
-							 (struct sockaddr *)&p->address, 
+							dtgram.current - dtgram.start,
+							 (struct sockaddr *)&p->address,
 							 p->address_len, mi_socket_timeout);
 			if (ret>0){
-				LM_DBG("the response: %s has been sent in %i octets\n", 
+				LM_DBG("the response: %s has been sent in %i octets\n",
 					dtgram.start, ret);
 			}else{
 				LM_ERR("failed to send the response, ret is %i\n",ret);
@@ -368,7 +368,7 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 			pkg_free(dtgram.start);
 		} else {
 			mi_send_dgram(p->tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
-							(struct sockaddr*)&reply_addr, reply_addr_len, 
+							(struct sockaddr*)&reply_addr, reply_addr_len,
 							mi_socket_timeout);
 		}
 	}
@@ -436,7 +436,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		reply_addr_len = sizeof(reply_addr);
 
 		/* get the client's address */
-		ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0, 
+		ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0,
 					(struct sockaddr*)&reply_addr, &reply_addr_len);
 
 		if (ret == -1) {
@@ -472,9 +472,9 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		if(ret != 0)
 		{
 			LM_ERR("command not available\n");
-			mi_send_dgram(tx_sock, MI_COMMAND_NOT_AVAILABLE, 
-						  MI_COMMAND_AVAILABLE_LEN, 
-						  (struct sockaddr* )&reply_addr, reply_addr_len, 
+			mi_send_dgram(tx_sock, MI_COMMAND_NOT_AVAILABLE,
+						  MI_COMMAND_AVAILABLE_LEN,
+						  (struct sockaddr* )&reply_addr, reply_addr_len,
 						  mi_socket_timeout);
 			continue;
 		}
@@ -522,26 +522,26 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		/*error while running the command*/
 			LM_ERR("failed to process the command\n");
 			mi_send_dgram(tx_sock, MI_COMMAND_FAILED, MI_COMMAND_FAILED_LEN,
-							(struct sockaddr* )&reply_addr, reply_addr_len, 
+							(struct sockaddr* )&reply_addr, reply_addr_len,
 							mi_socket_timeout);
 			goto failure;
 		}
 
 		/*the command exited well*/
-		LM_DBG("command process (%s)succeded\n",f->name.s); 
+		LM_DBG("command process (%s)succeded\n",f->name.s);
 
 		if (mi_rpl!=MI_ROOT_ASYNC_RPL) {
 			if(mi_datagram_write_tree(&dtgram , mi_rpl) != 0){
-				LM_ERR("failed to build the response \n");	
+				LM_ERR("failed to build the response \n");
 				goto failure;
 			}
 
 			len = dtgram.current - dtgram.start;
-			ret = mi_send_dgram(tx_sock, dtgram.start,len, 
-							(struct sockaddr* )&reply_addr, 
+			ret = mi_send_dgram(tx_sock, dtgram.start,len,
+							(struct sockaddr* )&reply_addr,
 							reply_addr_len, mi_socket_timeout);
 			if (ret>0){
-				LM_DBG("the response: %s has been sent in %i octets\n", 
+				LM_DBG("the response: %s has been sent in %i octets\n",
 					dtgram.start, ret);
 			}else{
 				LM_ERR("failed to send the response: %s (%d)\n",
@@ -550,7 +550,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 			free_mi_tree( mi_rpl );
 			free_async_handler(hdl);
 			if (mi_cmd) free_mi_tree( mi_cmd );
-		}else {	
+		}else {
 			if (mi_cmd) free_mi_tree( mi_cmd );
 		}
 

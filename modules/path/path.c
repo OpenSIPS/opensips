@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -62,7 +62,7 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 	int prefix_len, suffix_len;
 	str rcv_addr = {0, 0};
 	char *src_ip;
-		
+
 	prefix = suffix = crlf = r2 = 0;
 
 	prefix_len = PATH_PREFIX_LEN + (user->len ? (user->len+1) : 0);
@@ -146,9 +146,9 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 	}
 	l2 = insert_new_lump_before(l2, crlf, CRLF_LEN+1, 0);
 	if (!l2) goto out5;
-	
+
 	return 1;
-	
+
 out1:
 	if (prefix) pkg_free(prefix);
 out2:
@@ -178,7 +178,7 @@ static int prepend_path(struct sip_msg* _m, str *user, int recv)
 	for (hf = _m->headers; hf; hf = hf->next) {
 		if (hf->type == HDR_PATH_T) {
 			break;
-		} 
+		}
 	}
 
 	if (hf) {

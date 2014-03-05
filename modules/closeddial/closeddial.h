@@ -18,7 +18,7 @@
  *
  * History:
  * ---------
- * 2009-02-07 Initial version of closeddial module (saguti) 
+ * 2009-02-07 Initial version of closeddial module (saguti)
  */
 
 

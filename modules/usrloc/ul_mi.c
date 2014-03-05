@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -349,7 +349,7 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 	int short_dump;
 	map_iterator_t it;
 	void ** dest;
-	
+
 	node = cmd->node.kids;
 	if (node && node->next)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -440,7 +440,7 @@ struct mi_root* mi_usrloc_flush(struct mi_root *cmd, void *param)
 
 
 /*! \brief
- * Expects 7 nodes: 
+ * Expects 7 nodes:
  *        table name,
  *        AOR
  *        contact

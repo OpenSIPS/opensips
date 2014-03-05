@@ -17,10 +17,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *	
+ *
  * History
  * ------
  * 2003-02-14 un-escaping added (janakj)
@@ -34,7 +34,7 @@
  * \ingroup registrar
  */
 
-#include <string.h> 
+#include <string.h>
 #include "../../dprint.h"
 #include "../../ut.h"      /* q_memchr */
 #include "../../parser/parse_uri.h"
@@ -76,7 +76,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 		return -1;
 	}
 
-	/* if have ;gr param and func caller is interested in 
+	/* if have ;gr param and func caller is interested in
 	 * potentially extracting the sip instance */
 	if ((puri.gr.s && puri.gr.len) && sip_instance)
 	{
@@ -103,7 +103,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 				tgruu_dec[i] ^= magic->s[i%magic->len];
 
 			LM_DBG("decoded [%.*s]\n",dec_size,tgruu_dec);
-			/* extract aor - skip tgruu generation time at 
+			/* extract aor - skip tgruu generation time at
 			 * the beggining */
 			_a->s = (char *)memchr(tgruu_dec,' ',dec_size) + 1;
 			if (_a->s == NULL) {
@@ -112,7 +112,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 				return -1;
 			}
 			_a->len = (char *)memchr(_a->s,' ',dec_size - (_a->s-tgruu_dec)) - _a->s;
-			if (_a->len < 0) { 
+			if (_a->len < 0) {
 				rerrno = R_AOR_PARSE;
 				LM_ERR("failed to parse Address of Record\n");
 				return -1;
@@ -126,7 +126,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 			}
 			sip_instance->len = (char *)memchr(sip_instance->s,' ',
 					dec_size-(sip_instance->s-tgruu_dec)) - sip_instance->s;
-			if (sip_instance->len < 0) { 
+			if (sip_instance->len < 0) {
 				rerrno = R_AOR_PARSE;
 				LM_ERR("failed to parse Address of Record\n");
 				return -1;
@@ -152,7 +152,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 			*sip_instance = puri.gr_val;
 		}
 	}
-	
+
 	if ( (puri.user.len + puri.host.len + 1) > MAX_AOR_LEN
 	|| puri.user.len > USERNAME_MAX_SIZE
 	||  puri.host.len > DOMAIN_MAX_SIZE ) {

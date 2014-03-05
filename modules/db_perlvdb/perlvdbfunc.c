@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Perl virtual database module interface
@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -131,7 +131,7 @@ db_con_t* perlvdb_db_init(const str* url) {
 				PERL_VDB_BASECLASS);
 		return NULL;
 	}
-	
+
 	res = pkg_malloc(consize);
 	if (!res) {
 		LM_ERR("no pkg memory left\n");
@@ -261,7 +261,7 @@ int perlvdb_db_update(db_con_t* h, db_key_t* k, db_op_t* o, db_val_t* v,
 
 	condarrref = newRV_noinc((SV*)condarr);
 	updatearrref = newRV_noinc((SV*)updatearr);
-	
+
 	ret = perlvdb_perlmethod(getobj(h), PERL_VDB_UPDATEMETHOD,
 			condarrref, updatearrref, NULL, NULL);
 
@@ -302,22 +302,22 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
 	condarr = conds2perlarray(k, op, v, n);
 
 	retkeysarr = keys2perlarray(c, nc);
-	
+
 	if (o) order = newSVpv(o->s, o->len);
 	else order = &PL_sv_undef;
-	
+
 	condarrref = newRV_noinc((SV*)condarr);
 	retkeysref = newRV_noinc((SV*)retkeysarr);
 
 	/* Call perl method */
 	resultset = perlvdb_perlmethod(getobj(h), PERL_VDB_QUERYMETHOD,
 			condarrref, retkeysref, order, NULL);
-	
+
 	SvREFCNT_dec(condarrref);
 	SvREFCNT_dec(retkeysref);
 	if(SvOK(order))
 		SvREFCNT_dec(order);
-	
+
 	/* Transform perl result set to OpenSIPS result set */
 	if (!resultset) {
 		/* No results. */
@@ -326,8 +326,8 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
 		if (sv_isa(resultset, "OpenSIPS::VDB::Result")) {
 			retval = perlresult2dbres(resultset, r);
 		/* Nested refs are decreased/deleted inside the routine */
-			SvREFCNT_dec(resultset); 
-		} else {			
+			SvREFCNT_dec(resultset);
+		} else {
 			LM_ERR("invalid result set retrieved from perl call.\n");
 			retval = -1;
 		}
@@ -342,7 +342,7 @@ int perlvdb_db_query(db_con_t* h, db_key_t* k, db_op_t* op, db_val_t* v,
 int perlvdb_db_free_result(db_con_t* _h, db_res_t* _r) {
 	int i,j;
 	SV* temp;
-	/* free result set 
+	/* free result set
 	 * use the order of allocation
 	 * first free values
 	*/
@@ -364,7 +364,7 @@ int perlvdb_db_free_result(db_con_t* _h, db_res_t* _r) {
 					case DB_DOUBLE:
 					case DB_BITMAP:
 					case DB_DATETIME:
-						break;				
+						break;
                                 }
 			} /* for each column in row i*/
 		} /* for each row */
@@ -372,7 +372,7 @@ int perlvdb_db_free_result(db_con_t* _h, db_res_t* _r) {
 		for(i=0; i< RES_COL_N(_r); i++){
 			pkg_free(RES_NAMES(_r)[i]->s);
 		}
-		db_free_result(_r);		
+		db_free_result(_r);
 	}
 	return 0;
 }

@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -47,7 +47,7 @@ typedef struct dpl_node{
 	int match_flags;
 	str match_exp, subst_exp, repl_exp; /*keeping the original strings*/
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
-	struct subst_expr * repl_comp; 
+	struct subst_expr * repl_comp;
 	str attrs;
 
 	struct dpl_node * next; /*next rule*/
@@ -115,6 +115,6 @@ pcre * wrap_pcre_compile(char *  pattern, int flags);
 void wrap_pcre_free( pcre*);
 
 
-extern rw_lock_t *ref_lock; 
+extern rw_lock_t *ref_lock;
 
 #endif

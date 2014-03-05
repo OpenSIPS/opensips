@@ -91,7 +91,7 @@ struct module_exports exports= {
 
 
 /**
- * exported functions for core event interface 
+ * exported functions for core event interface
  */
 static evi_export_t trans_export_rmq = {
 	RMQ_STR,					/* transport module name */
@@ -253,7 +253,7 @@ static evi_reply_sock* rmq_parse(str socket)
 				if (dupl_string(&sock->address, begin, socket.s + i) < 0)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->exchange, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
 				param->flags |= RMQ_PARAM_EXCH;
@@ -288,7 +288,7 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				}
 				sock->flags |= EVI_PORT;
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->exchange, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
 				param->flags |= RMQ_PARAM_EXCH;
@@ -311,7 +311,7 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
 
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->exchange, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
 				param->flags |= RMQ_PARAM_EXCH;
@@ -330,7 +330,7 @@ static evi_reply_sock* rmq_parse(str socket)
 				}
 				sock->flags |= EVI_PORT;
 
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->exchange, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
 				param->flags |= RMQ_PARAM_EXCH;
@@ -339,7 +339,7 @@ static evi_reply_sock* rmq_parse(str socket)
 			break;
 		}
 	}
-	LM_WARN("not implemented %.*s\n", socket.len, socket.s); 
+	LM_WARN("not implemented %.*s\n", socket.len, socket.s);
 	goto err;
 
 success:
@@ -352,7 +352,7 @@ success:
 		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
 		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
 	}
-	
+
 	param->heartbeat = heartbeat;
 	sock->params = param;
 	sock->flags |= EVI_PARAMS | RMQ_FLAG;
@@ -444,7 +444,7 @@ static int rmq_build_params(str* ev_name, evi_params_p ev_params)
 	}
 
 	rmq_buffer_len = 0;
-	
+
 	/* first is event name - cannot be larger than the buffer size */
 	memcpy(rmq_buffer, ev_name->s, ev_name->len);
 	rmq_buffer_len = ev_name->len;

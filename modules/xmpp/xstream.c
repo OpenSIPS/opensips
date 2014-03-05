@@ -138,7 +138,7 @@ xode_stream xode_stream_new(xode_pool p, xode_stream_onNode f, void *arg)
     XML_SetElementHandler(newx->parser,
 		(void (*)(void*, const char*, const char**))_xode_stream_startElement,
 		(void (*)(void*, const char*))_xode_stream_endElement);
-    XML_SetCharacterDataHandler(newx->parser, 
+    XML_SetCharacterDataHandler(newx->parser,
 		(void (*)(void*, const char*, int))_xode_stream_charData);
     xode_pool_cleanup(p, _xode_stream_cleanup, (void *)newx);
 

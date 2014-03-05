@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * ALIAS_DB Module
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -97,7 +97,7 @@ static int alias_db_query(struct sip_msg* _msg, char* _table,
 		db_vals[1].nul = 0;
 		db_vals[1].val.str_val.s = puri->host.s;
 		db_vals[1].val.str_val.len = puri->host.len;
-	
+
 		if (domain_prefix.s && domain_prefix.len>0
 			&& domain_prefix.len<puri->host.len
 			&& strncasecmp(puri->host.s,domain_prefix.s,
@@ -134,20 +134,20 @@ static int alias_db_query(struct sip_msg* _msg, char* _table,
 		user_s.len = 4;
 		user_s.s = useruri_buf+4;
 		switch(RES_ROWS(db_res)[i].values[0].type)
-		{ 
+		{
 			case DB_STRING:
-				strcpy(user_s.s, 
+				strcpy(user_s.s,
 					(char*)RES_ROWS(db_res)[i].values[0].val.string_val);
 				user_s.len += strlen(user_s.s);
 			break;
 			case DB_STR:
-				strncpy(user_s.s, 
+				strncpy(user_s.s,
 					(char*)RES_ROWS(db_res)[i].values[0].val.str_val.s,
 					RES_ROWS(db_res)[i].values[0].val.str_val.len);
 				user_s.len += RES_ROWS(db_res)[i].values[0].val.str_val.len;
 			break;
 			case DB_BLOB:
-				strncpy(user_s.s, 
+				strncpy(user_s.s,
 					(char*)RES_ROWS(db_res)[i].values[0].val.blob_val.s,
 					RES_ROWS(db_res)[i].values[0].val.blob_val.len);
 				user_s.len += RES_ROWS(db_res)[i].values[0].val.blob_val.len;
@@ -159,29 +159,29 @@ static int alias_db_query(struct sip_msg* _msg, char* _table,
 				}
 				goto err_server;
 		}
-	
+
 		/* add the @*/
 		useruri_buf[user_s.len] = '@';
 		user_s.len++;
-	
+
 		/* add the domain */
 		user_s.s = useruri_buf+user_s.len;
 		switch(RES_ROWS(db_res)[i].values[1].type)
-		{ 
+		{
 			case DB_STRING:
-				strcpy(user_s.s, 
+				strcpy(user_s.s,
 					(char*)RES_ROWS(db_res)[i].values[1].val.string_val);
 				user_s.len += strlen(user_s.s);
 			break;
 			case DB_STR:
-				strncpy(user_s.s, 
+				strncpy(user_s.s,
 					(char*)RES_ROWS(db_res)[i].values[1].val.str_val.s,
 					RES_ROWS(db_res)[i].values[1].val.str_val.len);
 				user_s.len += RES_ROWS(db_res)[i].values[1].val.str_val.len;
 				useruri_buf[user_s.len] = '\0';
 			break;
 			case DB_BLOB:
-				strncpy(user_s.s, 
+				strncpy(user_s.s,
 					(char*)RES_ROWS(db_res)[i].values[1].val.blob_val.s,
 					RES_ROWS(db_res)[i].values[1].val.blob_val.len);
 				user_s.len += RES_ROWS(db_res)[i].values[1].val.blob_val.len;

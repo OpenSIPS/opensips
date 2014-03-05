@@ -43,7 +43,7 @@ ListFindString(TList *      const listP,
                uint16_t *   const indexP);
 
 
-typedef struct 
+typedef struct
 {
     char *name,*value;
     uint16_t hash;

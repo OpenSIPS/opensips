@@ -26,7 +26,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Management
  * \ingroup mi
  */
@@ -107,7 +107,7 @@ static inline struct mi_root* run_mi_cmd(struct mi_cmd *cmd, struct mi_root *t,
 	crt_flush_param = param;
 
 	ret = cmd->f( t, cmd->param);
-	
+
 	/* reset the flush function */
 	crt_flush_fnct = 0;
 	crt_flush_param = 0;

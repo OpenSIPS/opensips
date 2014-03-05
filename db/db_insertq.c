@@ -33,7 +33,7 @@ query_list_t **query_list = NULL;
 query_list_t **last_query = NULL;
 gen_lock_t *ql_lock;
 
-/* inits all the global variables needed for the insert query lists */ 
+/* inits all the global variables needed for the insert query lists */
 int init_query_list(void)
 {
 	query_list = shm_malloc(sizeof(query_list_t *));
@@ -81,12 +81,12 @@ error0:
  * inherit same queue */
 int init_ql_support(void)
 {
-	if (query_buffer_size > 1) 
+	if (query_buffer_size > 1)
 	{
 		if  (init_query_list() != 0 ||
 			register_timer_process("querydb-flush", ql_timer_routine,NULL,
 				query_flush_time>0?query_flush_time:DEF_FLUSH_TIME,
-				TIMER_PROC_INIT_FLAG) < 0 ) 
+				TIMER_PROC_INIT_FLAG) < 0 )
 		{
 			LM_ERR("failed initializing ins list support\n");
 			return -1;
@@ -109,7 +109,7 @@ void flush_query_list(void)
 		if (it->no_rows > 0)
 		{
 			memset(&it->dbf,0,sizeof(db_func_t));
-			if (db_bind_mod(&it->url,&it->dbf) < 0) 
+			if (db_bind_mod(&it->url,&it->dbf) < 0)
 			{
 				LM_ERR("failed to bind to db at shutdown\n");
 				lock_release(it->lock);
@@ -152,7 +152,7 @@ void flush_query_list(void)
 void destroy_query_list(void)
 {
 	query_list_t *it;
-	
+
 	for (it=*query_list;it;it=it->next)
 	{
 		lock_destroy(it->lock);
@@ -176,7 +176,7 @@ void handle_ql_shutdown(void)
 	}
 }
 
-/* adds a new type of query to the list 
+/* adds a new type of query to the list
  * assumes ql_lock is acquired*/
 void ql_add_unsafe(query_list_t *entry)
 {
@@ -226,7 +226,7 @@ int ql_detach_rows_unsafe(query_list_t *entry,db_val_t ***ins_rows)
 	return no_rows;
 }
 
-/* safely adds a new row to the insert list 
+/* safely adds a new row to the insert list
  * also checks if the queue is full and returns all the rows that need to
  * be flushed to DB to the caller
  *
@@ -336,7 +336,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 		key_size += cols[i]->len;
 
 	row_q_size = sizeof(db_val_t *) * query_buffer_size;
-	size = sizeof(query_list_t) + con->table->len + key_size + 
+	size = sizeof(query_list_t) + con->table->len + key_size +
 					row_q_size + con->url.len;
 
 	entry = shm_malloc(size);
@@ -364,7 +364,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 		shm_free(entry);
 		return NULL;
 	}
-	
+
 	/* deal with the table name */
 	entry->table.s = (char *)entry+sizeof(query_list_t);
 	entry->table.len = con->table->len;
@@ -378,10 +378,10 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 	pos = (char *)(entry->cols + col_no) + col_no * sizeof(str);
 	for (i=0;i<col_no;i++)
 	{
-		entry->cols[i] = (str *)((char *)(entry->cols + col_no) + 
+		entry->cols[i] = (str *)((char *)(entry->cols + col_no) +
 							i * sizeof(str));
 		entry->cols[i]->len = cols[i]->len;
-		entry->cols[i]->s = pos; 
+		entry->cols[i]->s = pos;
 		memcpy(pos,cols[i]->s,cols[i]->len);
 		pos += cols[i]->len;
 	}
@@ -424,14 +424,14 @@ query_list_t *find_query_list_unsafe(const str *table,db_key_t *cols,int col_no)
 		}
 
 		/* match table name */
-		if (it->table.len != table->len || 
+		if (it->table.len != table->len ||
 				memcmp(it->table.s,table->s,table->len) != 0)
 		{
 			LM_DBG("different tables - [%.*s] - [%.*s] \n",it->table.len,it->table.s,
 						table->len,table->s);
 			continue;
 		}
-		
+
 		/* match columns */
 		for (i=0;i<col_no;i++)
 		{
@@ -452,7 +452,7 @@ query_list_t *find_query_list_unsafe(const str *table,db_key_t *cols,int col_no)
 next_query:
 		;
 	}
-	
+
 	LM_DBG("returning %p\n",entry);
 	return entry;
 }
@@ -490,7 +490,7 @@ inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 		{
 			LM_DBG("couldn't find entry for this query\n");
 			/* first query of this type is done from this process,
-			 * it's my job to initialize the query list 
+			 * it's my job to initialize the query list
 			 * and save for later use */
 			entry = ql_init(con,cols,col_no);
 			if (entry == NULL)
@@ -531,9 +531,9 @@ inline int con_set_inslist(db_func_t *dbf,db_con_t *con,query_list_t **list,
 inline void cleanup_rows(db_val_t **rows)
 {
 	int i;
-	
-	if (rows != NULL) 
-		for (i=0;i<query_buffer_size;i++) 
+
+	if (rows != NULL)
+		for (i=0;i<query_buffer_size;i++)
 			if (rows[i] != NULL)
 			{
 				shm_free(rows[i]);
@@ -553,7 +553,7 @@ void ql_timer_routine(unsigned int ticks,void *param)
 	for (it=*query_list;it;it=it->next)
 	{
 		lock_get(it->lock);
-	
+
 		/* are there any old queries in queue ? */
 		if (it->oldest_query && (now - it->oldest_query > query_flush_time))
 		{
@@ -562,7 +562,7 @@ void ql_timer_routine(unsigned int ticks,void *param)
 			if (it->conn == NULL)
 			{
 				/* first time timer kicked in for this query */
-				if (db_bind_mod(&it->url,&it->dbf) < 0) 
+				if (db_bind_mod(&it->url,&it->dbf) < 0)
 				{
 					LM_ERR("timer failed to bind to db\n");
 					lock_release(it->lock);

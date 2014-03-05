@@ -149,7 +149,7 @@ static int l_sipstate_xlog(lua_State *L)
 	}
       str = luaL_checklstring(L, 2, &len);
     }
-  siplua_log(lev, "%.*s", (int)len, str); 
+  siplua_log(lev, "%.*s", (int)len, str);
   return 0;
 }
 

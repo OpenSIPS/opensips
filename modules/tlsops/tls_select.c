@@ -20,8 +20,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -286,7 +286,7 @@ int tlsops_check_cert(struct sip_msg *msg, pv_param_t *param,
 		LM_CRIT("unexpected parameter value \"%d\"\n",
 				param->pvn.u.isname.name.n);
 		return pv_get_null(msg, param, res);
-	}   
+	}
 
 	c = get_cur_connection(msg);
 	if (!c) return -1;
@@ -347,7 +347,7 @@ int tlsops_validity(struct sip_msg *msg, pv_param_t *param,
 		LM_ERR("failed to print certificate date/time\n");
 		goto err;
 	}
-	
+
 	BIO_get_mem_ptr(mem, &p);
 	if (p->length >= 1024) {
 		LM_ERR("Date/time too long\n");
@@ -388,17 +388,17 @@ int tlsops_sn(struct sip_msg *msg, pv_param_t *param,
 		LM_CRIT("could not determine certificate\n");
 		return pv_get_null(msg, param, res);
 	}
-	
+
 	if (get_cert(&cert, &c, msg, my) < 0)
 		return pv_get_null(msg, param, res);
-	
+
 	serial = ASN1_INTEGER_get(X509_get_serialNumber(cert));
 	sn = int2str( serial, &res->rs.len);
 	memcpy(buf, sn, res->rs.len);
 	res->rs.s = buf;
 	res->ri = serial;
-	res->flags = PV_VAL_STR | PV_VAL_INT;	
-	
+	res->flags = PV_VAL_STR | PV_VAL_INT;
+
 	if (!my) X509_free(cert);
 	tcpconn_put(c);
 	return 0;
@@ -484,7 +484,7 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 				"certificate subject/issuer\n", elem);
 			goto err;
 		}
-	
+
 		e = X509_NAME_get_entry(name, index);
 		asn1 = X509_NAME_ENTRY_get_data(e);
 		text.len = ASN1_STRING_to_UTF8((unsigned char**)(void*)&text.s, asn1);
@@ -496,7 +496,7 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 		res->rs.s = buf;
 		res->rs.len = text.len;
 		res->flags = PV_VAL_STR;
-	
+
 		OPENSSL_free(text.s);
 	}
 	if (!my) X509_free(cert);

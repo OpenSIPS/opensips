@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Postgres module interface
  *
@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -59,7 +59,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-struct module_exports exports = {	
+struct module_exports exports = {
 	"db_postgres",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
@@ -97,7 +97,7 @@ int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 	dbb->raw_query        = db_postgres_raw_query;
 	dbb->free_result      = db_postgres_free_result;
 	dbb->insert           = db_postgres_insert;
-	dbb->delete           = db_postgres_delete; 
+	dbb->delete           = db_postgres_delete;
 	dbb->update           = db_postgres_update;
 
 	dbb->cap |= DB_CAP_MULTIPLE_INSERT;

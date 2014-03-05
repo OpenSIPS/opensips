@@ -37,7 +37,7 @@
 typedef struct evi_subscriber {
 	evi_export_t* trans_mod;			/* transport module */
 	evi_reply_sock* reply_sock;		/* reply socket */
-	struct evi_subscriber *next;		/* next subscriber */ 
+	struct evi_subscriber *next;		/* next subscriber */
 } evi_subs_t, *evi_subs_p;
 
 

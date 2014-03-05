@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <sys/poll.h>
@@ -61,13 +61,13 @@
 
 
 /*
- * Update ssl structure with new fd 
+ * Update ssl structure with new fd
  */
 static int
 tls_update_fd(struct tcp_connection *c, int fd)
 {
 	/*
-	* must be run from within a lock 
+	* must be run from within a lock
 	*/
 	SSL            *ssl;
 
@@ -84,7 +84,7 @@ tls_update_fd(struct tcp_connection *c, int fd)
 
 
 /*
- * dump ssl error stack 
+ * dump ssl error stack
  */
 void
 tls_print_errstack(void)
@@ -213,7 +213,7 @@ static void tls_dump_verification_failure(long verification_result)
 }
 
 /*
- * Wrapper around SSL_accept, returns -1 on error, 0 on success 
+ * Wrapper around SSL_accept, returns -1 on error, 0 on success
  */
 static int
 tls_accept(struct tcp_connection *c, short *poll_events)
@@ -277,7 +277,7 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 		                LM_INFO("TLS connection from %s:%d accept failed cleanly\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				c->state = S_CONN_BAD;
 				return -1;
-		
+
 			case SSL_ERROR_WANT_READ:
 				if (poll_events)
 					*poll_events = POLLIN;
@@ -286,7 +286,7 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 				if (poll_events)
 					*poll_events = POLLOUT;
 				return 0;
-		
+
 			default:
 				c->state = S_CONN_BAD;
 				if (errno == 0) {
@@ -306,7 +306,7 @@ tls_accept(struct tcp_connection *c, short *poll_events)
 
 
 /*
- * wrapper around SSL_connect, returns 0 on success, -1 on error 
+ * wrapper around SSL_connect, returns 0 on success, -1 on error
  */
 static int
 tls_connect(struct tcp_connection *c, short *poll_events)
@@ -361,7 +361,7 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 		                LM_INFO("New TLS connection to %s:%d failed cleanly\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 				c->state = S_CONN_BAD;
 				return -1;
-		
+
 			case SSL_ERROR_WANT_READ:
 				if (poll_events)
 					*poll_events = POLLIN;
@@ -370,7 +370,7 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 				if (poll_events)
 					*poll_events = POLLOUT;
 				return 0;
-		
+
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
@@ -389,7 +389,7 @@ tls_connect(struct tcp_connection *c, short *poll_events)
 }
 
 /*
- * wrapper around SSL_shutdown, returns -1 on error, 0 on success 
+ * wrapper around SSL_shutdown, returns -1 on error, 0 on success
  */
 static int
 tls_shutdown(struct tcp_connection *c)
@@ -399,7 +399,7 @@ tls_shutdown(struct tcp_connection *c)
 	SSL            *ssl;
 
 	/*
-	* we do not implement full ssl shutdown 
+	* we do not implement full ssl shutdown
 	*/
 	ssl = (SSL *) c->extra_data;
 	if (ssl == 0) {
@@ -420,12 +420,12 @@ tls_shutdown(struct tcp_connection *c)
 			case SSL_ERROR_ZERO_RETURN:
 				c->state = S_CONN_EOF;
 				return 0;
-		
+
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
 				c->state = S_CONN_EOF;
 				return 0;
-		
+
 			default:
 				LM_ERR("something wrong in SSL:\n");
 				c->state = S_CONN_BAD;
@@ -433,15 +433,15 @@ tls_shutdown(struct tcp_connection *c)
 				return -1;
 		}
 	}
-	
+
 	LM_ERR("bug\n");
 	return -1;
 }
 
 
 /*
- * Wrapper around SSL_write, returns number of bytes written on success, * 
- * -1 on error, 0 when it would block 
+ * Wrapper around SSL_write, returns number of bytes written on success, *
+ * -1 on error, 0 when it would block
  */
 static int
 tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *poll_events)
@@ -449,7 +449,7 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 	int             ret,
 					err;
 	/*
-	* runs within write lock, no need to lock here 
+	* runs within write lock, no need to lock here
 	*/
 	SSL            *ssl;
 
@@ -466,7 +466,7 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 			LM_DBG("connection closed cleanly\n");
 			c->state = S_CONN_EOF;
 			return -1;
-	
+
 		case SSL_ERROR_WANT_READ:
 			if (poll_events)
 				*poll_events = POLLIN;
@@ -475,7 +475,7 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 			if (poll_events)
 				*poll_events = POLLOUT;
 			return 0;
-	
+
 		default:
 		        LM_ERR("TLS connection to %s:%d write failed\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			LM_ERR("TLS write error:\n");
@@ -491,11 +491,11 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
 
 
 /*
- * Wrapper around SSL_read 
+ * Wrapper around SSL_read
  */
 /*
- * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1 
- * on error 
+ * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1
+ * on error
  */
 static int
 _tls_read(struct tcp_connection *c, void *buf, size_t len)
@@ -516,15 +516,15 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		case SSL_ERROR_ZERO_RETURN:
 		        LM_INFO("TLS connection to %s:%d closed cleanly\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			/*
-			* mark end of file 
+			* mark end of file
 			*/
 			c->state = S_CONN_EOF;
 			return 0;
-	
+
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
 			return 0;
-	
+
 		case SSL_ERROR_SYSCALL:
 			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
 		default:
@@ -544,10 +544,10 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 
 /*
  * Called when new tcp connection is accepted or connected, create ssl
- * data structures here, there is no need to acquire any lock, because the 
+ * data structures here, there is no need to acquire any lock, because the
  * connection is being created by a new process and on other process has
  * access to it yet, this is called before adding the tcp_connection
- * structure into the hash 
+ * structure into the hash
  */
 int
 tls_tcpconn_init(struct tcp_connection *c, int sock)
@@ -558,12 +558,12 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 	int_str val;
 
 	/*
-	* new connection within a single process, no lock necessary 
+	* new connection within a single process, no lock necessary
 	*/
 	LM_DBG("entered: Creating a whole new ssl connection\n");
-	
+
 	/*
-	* do everything tcpconn_new wouldn't do when TLS 
+	* do everything tcpconn_new wouldn't do when TLS
 	*/
 	c->type = PROTO_TLS;
 	c->rcv.proto = PROTO_TLS;
@@ -651,13 +651,13 @@ tls_tcpconn_init(struct tcp_connection *c, int sock)
 
 
 /*
- * clean the extra data upon connection shut down 
+ * clean the extra data upon connection shut down
  */
 void
 tls_tcpconn_clean(struct tcp_connection *c)
 {
 	/*
-	* runs within global tcp lock 
+	* runs within global tcp lock
 	*/
 	LM_DBG("entered\n");
 
@@ -669,15 +669,15 @@ tls_tcpconn_clean(struct tcp_connection *c)
 
 
 /*
- * perform one-way shutdown, do not wait fro notify from the remote peer 
+ * perform one-way shutdown, do not wait fro notify from the remote peer
  */
 void
 tls_close(struct tcp_connection *c, int fd)
 {
 	/*
-	* runs within global tcp lock 
+	* runs within global tcp lock
 	*/
-	LM_DBG("closing TLS connection\n");	
+	LM_DBG("closing TLS connection\n");
 	tls_update_fd(c, fd);
 	tls_shutdown(c);
 }
@@ -685,10 +685,10 @@ tls_close(struct tcp_connection *c, int fd)
 
 
 /*
- * This is shamelessly stolen tsend_stream from tsend.c 
+ * This is shamelessly stolen tsend_stream from tsend.c
  */
 /*
- * fixme: probably does not work correctly 
+ * fixme: probably does not work correctly
  */
 size_t
 tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
@@ -716,18 +716,18 @@ again:
 				goto error;
 			timeout = tls_handshake_timeout * 1000;
 			break;
-	
+
 		case S_CONN_CONNECT:
 			if (tls_connect(c, &(pf.events)) < 0)
 				goto error;
 			timeout = tls_handshake_timeout * 1000;
 			break;
-	
+
 		case S_CONN_OK:
 			n = tls_write(c, fd, buf, len, &(pf.events));
 			timeout = tls_send_timeout * 1000;
 			break;
-	
+
 		default:
 			LM_ERR("TLS broken connection\n");
 			goto error;
@@ -754,28 +754,28 @@ again:
 	written += n;
 	if (n < len) {
 		/*
-		* partial write 
+		* partial write
 		*/
 		buf += n;
 		len -= n;
 	} else {
 		/*
-		* successful full write 
+		* successful full write
 		*/
 		return written;
 	}
 
 	/*
-	* 
+	*
 	*/
 	if (pf.events == 0)
 		pf.events = POLLOUT;
-		
+
 poll_loop:
 	while (1) {
 		/*
 		* keep tls_send_timeout in seconds to be compatible with
-		* tcp_send_timeout 
+		* tcp_send_timeout
 		*/
 		n = poll(&pf, 1, timeout);
 		if (n < 0) {
@@ -788,14 +788,14 @@ poll_loop:
 				goto poll_loop;
 		} else if (n == 0) {
 			/*
-			* timeout 
+			* timeout
 			*/
 			LM_ERR("TLS send timeout (%d)\n", timeout);
 			goto error;
 		}
 		if (pf.revents & POLLOUT || pf.revents & POLLIN) {
 			/*
-			* we can read or write again 
+			* we can read or write again
 			*/
 			goto again;
 		} else if (pf.revents & (POLLERR | POLLHUP | POLLNVAL)) {
@@ -805,7 +805,7 @@ poll_loop:
 		/*
 		* if POLLPRI or other non-harmful events happened, continue (
 		* although poll should never signal them since we're not
-		* interested in them => we should never reach this point) 
+		* interested in them => we should never reach this point)
 		*/
 	}
 
@@ -819,16 +819,16 @@ error:
  * about accepting or connecting here, each modification of ssl data
  * structures has to be protected, another process might ask for the same
  * connection and attempt write to it which would result in updating the
- * ssl structures 
+ * ssl structures
  */
 size_t
 tls_read(struct tcp_connection * c,struct tcp_req *r)
 {
 	/*
-	* no lock acquired 
+	* no lock acquired
 	*/
 	/*
-	* shamelessly stolen from tcp_read 
+	* shamelessly stolen from tcp_read
 	*/
 	int             bytes_free;
 	int             fd,
@@ -845,7 +845,7 @@ tls_read(struct tcp_connection * c,struct tcp_req *r)
 
 	/*
 	* ssl structures may be accessed from several processes, we need to
-	* protect each access and modification by a lock 
+	* protect each access and modification by a lock
 	*/
 	lock_get(&c->write_lock);
 	tls_update_fd(c, fd);
@@ -861,13 +861,13 @@ tls_read(struct tcp_connection * c,struct tcp_req *r)
  * called before tls_read, the this function should attempt tls_accept or
  * tls_connect depending on the state of the connection, if this function
  * does not transit a connection into S_CONN_OK then tcp layer would not
- * call tcp_read 
+ * call tcp_read
  */
 int
 tls_fix_read_conn(struct tcp_connection *c)
 {
 	/*
-	* no lock acquired 
+	* no lock acquired
 	*/
 	int             ret;
 
@@ -876,22 +876,22 @@ tls_fix_read_conn(struct tcp_connection *c)
 	/*
 	* We have to acquire the lock before testing c->state, otherwise a
 	* writer could modify the structure if it gets preempted and has
-	* something to write 
+	* something to write
 	*/
 	lock_get(&c->write_lock);
     switch (c->state) {
 		case S_CONN_ACCEPT:
 			ret = tls_update_fd(c, c->fd);
-			if (!ret) 
+			if (!ret)
 				ret = tls_accept(c, NULL);
 			break;
-	
+
 		case S_CONN_CONNECT:
 			ret = tls_update_fd(c, c->fd);
 			if (!ret)
 				ret = tls_connect(c, NULL);
 			break;
-	
+
 		default:	/* fall through */
 			break;
 	}

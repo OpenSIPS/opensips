@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -31,7 +31,7 @@
  *              re-enabling of destinations (carsten)
  * 2007-05-08  Ported the changes to SVN-Trunk and renamed ds_is_domain
  *              to ds_is_from_list.  (carsten)
- * 2007-07-18  Added support for load/reload groups from DB 
+ * 2007-07-18  Added support for load/reload groups from DB
  *              reload triggered from ds_reload MI_Command (ancuta)
  * 2009-05-18  Added support for weights for the destinations;
  *              added support for custom "attrs" (opaque string) (bogdan)
@@ -69,8 +69,8 @@
 
 /** parameters */
 int  ds_force_dst   = 0;
-int  ds_flags       = 0; 
-int  ds_use_default = 0; 
+int  ds_flags       = 0;
+int  ds_use_default = 0;
 static str dst_avp_param = str_init("$avp(ds_dst_failover)");
 static str grp_avp_param = str_init("$avp(ds_grp_failover)");
 static str cnt_avp_param = str_init("$avp(ds_cnt_failover)");
@@ -114,7 +114,7 @@ pv_spec_t ds_setid_pv;
 
 static str options_reply_codes_str= {0, 0};
 static int* options_reply_codes = NULL;
-static int options_codes_no; 
+static int options_codes_no;
 static char *probing_sock_s = NULL;
 struct socket_info *probing_sock = NULL;
 
@@ -336,7 +336,7 @@ static int mod_init(void)
 				|| hash_param_model==NULL) {
 			LM_ERR("malformed PV string: %s\n", hash_pvar_param.s);
 			return -1;
-		}		
+		}
 	} else {
 		hash_param_model = NULL;
 	}
@@ -452,7 +452,7 @@ static int mod_init(void)
 #include "../../pt.h"
 static int ds_child_init(int rank)
 {
-	/* we need DB connection from the timer procs (for the flushing) 
+	/* we need DB connection from the timer procs (for the flushing)
 	 * and from the main proc (for final flush on shutdown) */
 	if ( (process_no==0 || rank==PROC_TIMER) && ds_db_url.s)
 		return ds_connect_db();
@@ -986,7 +986,7 @@ static int w_ds_count(struct sip_msg* msg, char *set, const char *cmp, char *res
 int check_options_rplcode(int code)
 {
 	int i;
-	
+
 	for (i =0; i< options_codes_no; i++)
 	{
 		if(options_reply_codes[i] == code)

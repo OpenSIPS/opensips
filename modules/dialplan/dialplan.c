@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -496,7 +496,7 @@ static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 	} else if (node->value.s == NULL || node->value.len == 0) {
 			return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 	} else {
-			el = dp_get_table(&node->value);	
+			el = dp_get_table(&node->value);
 			if (!el)
 					return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 			/* Reload rules from specified table */
@@ -510,13 +510,13 @@ static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==0)
 		return 0;
-	
+
 	return rpl_tree;
 }
 
-/* 
+/*
  *  mi cmd:  dp_translate
- *			<dialplan id> 
+ *			<dialplan id>
  *			<input>
  *		* */
 
@@ -592,7 +592,7 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	}
 
 	if (translate(NULL, input, &output, idp, &attrs)!=0){
-		LM_DBG("could not translate %.*s with dpid %i\n", 
+		LM_DBG("could not translate %.*s with dpid %i\n",
 			input.len, input.s, idp->dp_id);
 		goto error1;
 	}
@@ -675,5 +675,5 @@ pcre * wrap_pcre_compile(char *  pattern, int flags)
 void wrap_pcre_free( pcre* re)
 {
 	shm_free(re);
-	
+
 }

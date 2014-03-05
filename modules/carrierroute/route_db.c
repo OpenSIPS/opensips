@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -242,7 +242,7 @@ int load_route_data(struct rewrite_data * rd) {
 			LM_ERR("Failed to query database to prepare fetchrow.\n");
 			return -1;
 		}
-		no_rows = estimate_available_rows( 4+64+64+64+4+4+4+64+4+64+64+128, 
+		no_rows = estimate_available_rows( 4+64+64+64+4+4+4+64+4+64+64+128,
 			COLUMN_NUM);
 		if (no_rows==0) no_rows = 10;
 		if(dbf.fetch_result(dbh, &res, no_rows) < 0) {
@@ -311,7 +311,7 @@ int load_route_data(struct rewrite_data * rd) {
 
 	dbf.free_result(dbh, res);
 	res = NULL;
-	
+
 	if (dbf.use_table(dbh, &db_failure_table) < 0) {
 		LM_ERR("cannot set database table '%.*s'.\n",
 				db_failure_table.len, db_failure_table.s);
@@ -414,7 +414,7 @@ if(res){
 static void destroy_carriers(struct carrier * start){
 	struct carrier * tmp, * tmp2;
 	tmp = start;
-	
+
 	while(tmp){
 		tmp2 = tmp;
 		tmp = tmp->next;

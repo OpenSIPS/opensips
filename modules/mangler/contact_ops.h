@@ -17,13 +17,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
- *  2003-04-07 first version.  
+ *  2003-04-07 first version.
  */
 
 /* TODO :decode2format unpleasant */
@@ -64,7 +64,7 @@ typedef struct uri_format contact_fields_t;
 int encode_contact (struct sip_msg *msg, char *encoding_prefix,char *public_ip);
 int decode_contact (struct sip_msg *msg, char *unused1,char *unused2);
 int decode_contact_header (struct sip_msg *msg, char *unused1,char *unused2);
-	
+
 int encode2format (str uri, struct uri_format *format);
 int decode2format (str uri, char separator, struct uri_format *format);
 

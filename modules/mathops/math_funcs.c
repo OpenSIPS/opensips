@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -64,11 +64,11 @@ static int precedence(int op)
 	case MATHOP_ADD:
 	case MATHOP_SUB:
 		return 1;
-	
+
 	case MATHOP_MUL:
 	case MATHOP_DIV:
 		return 2;
-	
+
 	default:
 		return 3;
 	}
@@ -364,7 +364,7 @@ static int convert_to_rpn(str *exp)
 			break;
 
 		case MATHOP_R_PAREN:
-			
+
 			while (top > 0 && stack[top-1].type != MATHOP_LPAREN) {
 				pop_to_output();
 			}
@@ -500,11 +500,11 @@ int evaluate_exp(struct sip_msg *msg, str *exp, pv_spec_p result_var, short is_r
 	}
 
 	sprintf(print_buffer, "%.*lf", decimal_digits, result);
-	
+
 	pv_val.flags = PV_VAL_STR;
 	pv_val.rs.s = print_buffer;
 	pv_val.rs.len = strlen(print_buffer);
-	
+
 	if (pv_set_value(msg, result_var, 0, &pv_val) != 0)
 	{
 		LM_ERR("SET output value failed.\n");
@@ -564,7 +564,7 @@ int round_dp_op(struct sip_msg *msg, str *n, pv_spec_p result_var, int digits)
 		pv_val.ri = (int)round(d);
 	} else {
 		sprintf(print_buffer, "%.*lf", digits, d);
-	
+
 		pv_val.flags = PV_VAL_STR;
 		pv_val.rs.s = print_buffer;
 		pv_val.rs.len = strlen(print_buffer);
@@ -593,7 +593,7 @@ int round_sf_op(struct sip_msg *msg, str *n, pv_spec_p result_var, int digits)
 	d = round(d * factor) / factor;
 
 	sprintf(print_buffer, "%.*f", decimal_digits, d);
-	
+
 	pv_val.flags = PV_VAL_STR;
 	pv_val.rs.s = print_buffer;
 	pv_val.rs.len = strlen(print_buffer);

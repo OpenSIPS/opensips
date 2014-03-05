@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -34,7 +34,7 @@
  *
  *
  * gflags module: global flags; it keeps a bitmap of flags
- * in shared memory and may be used to change behaviour 
+ * in shared memory and may be used to change behaviour
  * of server based on value of the flags. E.g.,
  *    if (is_gflag("1")) { t_relay_to_udp("10.0.0.1","5060"); }
  *    else { t_relay_to_udp("10.0.0.2","5060"); }
@@ -95,7 +95,7 @@ static cmd_export_t cmds[]={
 
 static param_export_t params[]={
 	{"initial", INT_PARAM, &initial},
-	{0,0,0} 
+	{0,0,0}
 };
 
 static mi_export_t mi_cmds[] = {
@@ -161,7 +161,7 @@ static int fixup_gflags( void** param, int param_no)
 
 /**************************** module functions ******************************/
 
-static int set_gflag(struct sip_msg *bar, char *flag, char *foo) 
+static int set_gflag(struct sip_msg *bar, char *flag, char *foo)
 {
 	(*gflags) |= (unsigned int)(long)flag;
 	return 1;

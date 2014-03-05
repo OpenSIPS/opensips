@@ -355,7 +355,7 @@ int add_rule_to_list(struct bl_rule **first, struct bl_rule **last,
 	/* is it a duplicate? */
 	for(q = *first ; q ; q = q->next) {
 		if ( (flags==q->flags) && (port==q->port) &&
-			(proto==q->proto) && 
+			(proto==q->proto) &&
 			(ip_class_compare(ip_net, &q->ip_net)==1) &&
 			((body==NULL && q->body.s==NULL) || (body && q->body.s &&
 				(body->len==q->body.len) &&
@@ -417,7 +417,7 @@ static inline void rm_dups(struct bl_head *head,
 	for( p=0,q=*first ; q ; ) {
 		for( r=head->first; r ; r = r->next) {
 			if ( (r->flags==q->flags) && (r->port==q->port) &&
-			(r->proto==q->proto) && 
+			(r->proto==q->proto) &&
 			(ip_class_compare(&r->ip_net, &q->ip_net)==1) &&
 			((!r->body.s && !q->body.s) || ((r->body.len==q->body.len) &&
 				!strncmp(r->body.s,q->body.s,q->body.len)) )

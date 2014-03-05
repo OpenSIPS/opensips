@@ -24,7 +24,7 @@
  * 2005-01-25  first tree version (ramona)
  */
 
-		       
+
 #ifndef _PDTREE_H_
 #define _PDTREE_H_
 

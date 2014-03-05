@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -81,7 +81,7 @@ static int open_server_sockets(struct ip_addr *address,unsigned short port,int *
 
 
 /** Main loop for the Event Dispatcher process.
- * 
+ *
  */
 int dispatcher_main_loop(void)
 {
@@ -137,7 +137,7 @@ int dispatcher_main_loop(void)
 	    }else if (WIFSIGNALED(chld_status)) {
 	       LM_INFO("child process %d exited by a signal %d\n",
 				   chld,WTERMSIG(chld_status));
-	    }else if (WIFSTOPPED(chld_status)) 
+	    }else if (WIFSTOPPED(chld_status))
 	       LM_INFO("child process %d stopped by a signal %d\n",
 				   chld,WSTOPSIG(chld_status));
 	    for (as=as_list;as;as=as->next) {
@@ -336,7 +336,7 @@ int dispatcher_main_loop(void)
 
 
 /**
- * opens the server socket, which attends (accepts) the clients, that is: 
+ * opens the server socket, which attends (accepts) the clients, that is:
  * params:
  * address:
  * 	address to which to listen
@@ -405,7 +405,7 @@ union helper{
 };
 
 /**
- * Sends event 
+ * Sends event
  *
  * returns
  * 	 0  OK
@@ -487,7 +487,7 @@ write_again:
       if(j<thepointer.ptr->len)
 	 goto write_again;
    }else if(i==0){
-      if (tries++ > MAX_WRITE_TRIES) { 
+      if (tries++ > MAX_WRITE_TRIES) {
 	 LM_ERR("MAX WRITE TRIES !!!\n");
 	 goto error;
       }else
@@ -543,7 +543,7 @@ static inline int add_new_as(int event_idx,int action_idx,struct as_entry *as)
 	 }
       }
    }
-   /*TODO attention, this is pkg_malloc because only the Event_Dispatcher process 
+   /*TODO attention, this is pkg_malloc because only the Event_Dispatcher process
     * has to use it !!*/
    if(!(the_as->ev_buffer.s = pkg_malloc(AS_BUF_SIZE))){
       LM_ERR("unable to alloc pkg mem for the event buffer\n");
@@ -556,8 +556,8 @@ static inline int add_new_as(int event_idx,int action_idx,struct as_entry *as)
       if(tmp->type==AS_TYPE)
 	 continue;
       for (j=0;j<tmp->u.cs.num;j++) {
-	 if (tmp->u.cs.as_names[j].len == the_as->name.len && 
-	       !memcmp(tmp->u.cs.as_names[j].s,the_as->name.s,the_as->name.len)) { 
+	 if (tmp->u.cs.as_names[j].len == the_as->name.len &&
+	       !memcmp(tmp->u.cs.as_names[j].s,the_as->name.s,the_as->name.len)) {
 	    if(tmp->u.cs.num==tmp->u.cs.registered){
 	       LM_ERR("AS %.*s belongs to cluster %.*s which is already completed\n",
 		     the_as->name.len,the_as->name.s,tmp->name.len,tmp->name.s);
@@ -738,14 +738,14 @@ again:
 /**
  * This function processess the Application Server buffer. We do buffered
  * processing because it increases performance quite a bit. Any message
- * sent from the AS comes with the first 2 bytes as an NBO unsigned short int 
+ * sent from the AS comes with the first 2 bytes as an NBO unsigned short int
  * which says the length of the following message (header and payload).
  * This way, we avoid multiple small reads() to the socket, which (as we know), consumes
  * far more processor because of the kernel read(2) system call. The drawback
  * is the added complexity of mantaining a buffer, the bytes read, and looking
  * if there is a complete message already prepared.
  *
- * Actions are supposed to be small, that's why BUF_SIZE is 2000 bytes length. 
+ * Actions are supposed to be small, that's why BUF_SIZE is 2000 bytes length.
  * Most of the actions will be that size or less. That is why the 4 bytes telling the
  * length of the Action payload are included in its size. This way you can use a fixed size
  * buffer to receive the Actions and not need to be pkb_malloc'ing for each new event.
@@ -853,9 +853,9 @@ int process_bind_action(as_p as,char *payload,int len)
 	 goto error;
    }
    for(si=xxx_listen;si;si=si->next){
-      if(my_addr.af==si->address.af && 
-	    my_addr.len==si->address.len && 
-	    !memcmp(si->address.u.addr,my_addr.u.addr,my_addr.len) && 
+      if(my_addr.af==si->address.af &&
+	    my_addr.len==si->address.len &&
+	    !memcmp(si->address.u.addr,my_addr.u.addr,my_addr.len) &&
 	    port == si->port_no){
 	 as->binds[i]=si;
 	 as->bound_processor[i]=processor_id;
@@ -956,13 +956,13 @@ static int handle_unc_as_data(int fd)
       return -2;
    }
    unc_as_t[i].flags |= HAS_NAME;
-   /* the loop's upper bound, 
+   /* the loop's upper bound,
     * if 'i' is in the lower part, then look for an unc_as in the upper part*/
    k=(i>=MAX_UNC_AS_NR?MAX_UNC_AS_NR:2*MAX_UNC_AS_NR);
    /* the loop's lower bound */
    for(j=(i>=MAX_UNC_AS_NR?0:MAX_UNC_AS_NR);j<k;j++)
-      if(unc_as_t[j].valid && 
-	    (unc_as_t[j].flags & HAS_NAME) && 
+      if(unc_as_t[j].valid &&
+	    (unc_as_t[j].flags & HAS_NAME) &&
 	    !strcmp(unc_as_t[i].name,unc_as_t[j].name))
 	 break;
    LM_INFO("Fantastic, we have a new client: %s\n",unc_as_t[i].name);
@@ -1023,14 +1023,14 @@ try_again2:
    return namelen;
 }
 
-/* handle new App Server connect. 
+/* handle new App Server connect.
  * params:
  * fd:
  * 	fd on which to accept.
  * which:
  * 	if the fd is the event one, which='e', if is action, which='a'
  *
- * TODO: not very reliable, because if someone connects() to one of the serversockets 
+ * TODO: not very reliable, because if someone connects() to one of the serversockets
  * but not to the other one, then synchronization would be lost, and any subsequent connect
  * attempts would fail (remember, we receive a connect in event[] and wait for a connect in action)
  * the point is, the connects must allways come in pairs, if one comes alone, we lost sync.

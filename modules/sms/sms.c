@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -86,9 +86,9 @@ static proc_export_t sms_procs[] = {
 
 
 static cmd_export_t cmds[]={
-	{"sms_send_msg_to_net", (cmd_function)w_sms_send_msg_to_net, 1, 
+	{"sms_send_msg_to_net", (cmd_function)w_sms_send_msg_to_net, 1,
 	     fixup_sms_send_msg_to_net, 0, REQUEST_ROUTE},
-	{"sms_send_msg",        (cmd_function)w_sms_send_msg,        0,  
+	{"sms_send_msg",        (cmd_function)w_sms_send_msg,        0,
 	     0, 0,                         REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -502,7 +502,7 @@ parse_error:
 		(int)(p - ((step==1)?modems_config:
 				   (step==2?networks_config:links_config))),
 		(*p==0)?4:1,(*p==0)?"NULL":p );
-					
+
 error:
 	return -1;
 }

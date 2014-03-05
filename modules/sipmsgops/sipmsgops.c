@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *
@@ -42,7 +42,7 @@
  *  2004-07-06  subst_user added (like subst_uri but only for user) (sobomax)
  *  2004-11-12  subst_user changes (old serdev mails) (andrei)
  *  2005-07-05  is_method("name") to check method using id (ramona)
- *  2006-03-17  applied patch from Marc Haisenko <haisenko@comdasys.com> 
+ *  2006-03-17  applied patch from Marc Haisenko <haisenko@comdasys.com>
  *              for adding has_body() function (bogdan)
  *  2009-07-23  added methods for sdp codec manipulation(andreidragus)
  *  2012-02-21  add change_reply_status (idea from kamailio/textopsx) (rpedraza)
@@ -157,10 +157,10 @@ static cmd_export_t cmds[]={
 	{"append_hf",        (cmd_function)append_hf_2,       2,
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"insert_hf",        (cmd_function)insert_hf_1,       1, 
+	{"insert_hf",        (cmd_function)insert_hf_1,       1,
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"insert_hf",        (cmd_function)insert_hf_2,       2, 
+	{"insert_hf",        (cmd_function)insert_hf_2,       2,
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"append_urihf",     (cmd_function)append_urihf,      2,
@@ -187,7 +187,7 @@ static cmd_export_t cmds[]={
 	{"has_body",         (cmd_function)has_body_f,        0,
 		0, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"has_body",         (cmd_function)has_body_f,        1, 
+	{"has_body",         (cmd_function)has_body_f,        1,
 		fixup_body_type, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_privacy",       (cmd_function)is_privacy_f,      1,
@@ -199,10 +199,10 @@ static cmd_export_t cmds[]={
 	{"strip_body",      (cmd_function)strip_body_f2,     1,
 		fixup_body_type, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
-	{"add_body",         (cmd_function)add_body_f_1,        1, 
+	{"add_body",         (cmd_function)add_body_f_1,        1,
 		fixup_spve_null, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"add_body",         (cmd_function)add_body_f_2,        2, 
+	{"add_body",         (cmd_function)add_body_f_2,        2,
 		add_header_fixup, 0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"codec_exists",	(cmd_function)codec_find,	1,
@@ -335,11 +335,11 @@ static int filter_body_f(struct sip_msg* msg, char* _content_type,
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
-	
+
 	content_type = (str *)_content_type;
 	start = body.s;
 	len = body.len;
-	
+
 	while (find_line_start("Content-Type: ", 14, &start, &len)) {
 	    start = start + 14;
 	    len = len - 14;
@@ -391,7 +391,7 @@ int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
 	pv_value_t pval;
 	struct hdr_field hdr;
 	int hdr_len;
-	
+
 	if (pv_get_spec_value(msg, gp->v.pvs, &pval) != 0 || pval.flags & PV_VAL_NULL)
 	{
 		LM_ERR("no valid PV value found!\n");
@@ -415,7 +415,7 @@ int parse_pvs_header(struct sip_msg *msg, gparam_p gp)
 	header_body.s[pval.rs.len] = ':';
 
 	LM_DBG("Parsing %.*s\n", hdr_len, header_body.s);
-	if (parse_hname2(header_body.s, header_body.s + 
+	if (parse_hname2(header_body.s, header_body.s +
 					(hdr_len < 4 ? 4 : hdr_len), &hdr) == 0)
 	{
 		LM_ERR("error parsing header name\n");
@@ -473,8 +473,8 @@ static int remove_hf_f(struct sip_msg* msg, char* str_hf, char* foo)
 	/* we need to be sure we have seen all HFs */
 	parse_headers(msg, HDR_EOH_F, 0);
 	for (hf=msg->headers; hf; hf=hf->next) {
-		/* for well known header names str_hf->s will be set to NULL 
-		   during parsing of opensips.cfg and str_hf->len contains 
+		/* for well known header names str_hf->s will be set to NULL
+		   during parsing of opensips.cfg and str_hf->len contains
 		   the header type */
 		if(gp->type==GPARAM_TYPE_INT)
 		{
@@ -642,7 +642,7 @@ static int append_to_reply_f(struct sip_msg* msg, char* key, char* str0)
 		LM_ERR("cannot print the format\n");
 		return -1;
 	}
- 
+
 	if ( add_lump_rpl( msg, s0.s, s0.len, LUMP_RPL_HDR)==0 )
 	{
 		LM_ERR("unable to add lump_rl\n");
@@ -668,7 +668,7 @@ static int add_hf_helper(struct sip_msg* msg, str *str1, str *str2,
 		LM_ERR("error while parsing message\n");
 		return -1;
 	}
-	
+
 	hf = 0;
 	if(hfanc!=NULL) {
 		for (hf=msg->headers; hf; hf=hf->next) {
@@ -721,7 +721,7 @@ static int add_hf_helper(struct sip_msg* msg, str *str1, str *str2,
 			s0.s   = 0;
 		}
 	}
-		
+
 	len=s0.len;
 	if (str2) len+= str2->len + REQ_LINE(msg).uri.len;
 
@@ -763,7 +763,7 @@ static int insert_hf_1(struct sip_msg *msg, char *str1, char *str2 )
 
 static int insert_hf_2(struct sip_msg *msg, char *str1, char *str2 )
 {
-	return add_hf_helper(msg, 0, 0, (gparam_p)str1, 1, 
+	return add_hf_helper(msg, 0, 0, (gparam_p)str1, 1,
 			(gparam_p)str2);
 }
 
@@ -824,7 +824,7 @@ static int hname_fixup(void** param, int param_no)
 		c = gp->v.sval.s[gp->v.sval.len];
 		gp->v.sval.s[gp->v.sval.len] = ':';
 		gp->v.sval.len++;
-		
+
 		if (parse_hname2(gp->v.sval.s, gp->v.sval.s
 		             + ((gp->v.sval.len<4)?4:gp->v.sval.len), &hdr)==0)
 		{
@@ -832,10 +832,10 @@ static int hname_fixup(void** param, int param_no)
 			pkg_free(gp);
 			return E_UNSPEC;
 		}
-		
+
 		gp->v.sval.len--;
 		gp->v.sval.s[gp->v.sval.len] = c;
-	
+
 		if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T)
 		{
 			LM_INFO("using hdr type (%d) instead of <%.*s>\n",
@@ -949,7 +949,7 @@ static int fixup_method(void** param, int param_no)
 	char *p;
 	int m;
 	unsigned int method;
-	
+
 	s = (str*)pkg_malloc(sizeof(str));
 	if (!s) {
 		LM_ERR("no pkg memory left\n");
@@ -1030,7 +1030,7 @@ static int fixup_privacy(void** param, int param_no)
 	LM_ERR("invalid privacy value\n");
 	return E_UNSPEC;
     }
-    
+
     *param = (void *)(long)val;
     return 0;
 }
@@ -1131,7 +1131,7 @@ static int has_body_f(struct sip_msg *msg, char *type, char *str2 )
 			return 1;
 		p = p->next;
 	}
-	
+
 	return -1;
 }
 
@@ -1158,9 +1158,9 @@ static int strip_body_f(struct sip_msg *msg, char *str1, char *str2 )
 		LM_DBG("message body has zero length\n");
 		return -1;
 	}
-	
+
 	/* delete all body lumps from the list */
-	/* NOTE: do not delete the SHM lumps (which are primarily stored in TM 
+	/* NOTE: do not delete the SHM lumps (which are primarily stored in TM
 	   Such lumps need to skipped and only detached  - bogdan */
 	del_notflaged_lumps( &msg->body_lumps, LUMPFLAG_SHMEM );
 	msg->body_lumps = NULL;
@@ -1186,7 +1186,7 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 	struct multi_body * m;
 	struct part * p;
 	int deleted = 0,mime;
-	
+
 
 	/* parse content len hdr */
 	if ( msg->content_length==NULL &&
@@ -1203,7 +1203,7 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 
 	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART || (mime >>16) != TYPE_MULTIPART)
 	{
-		
+
 
 		if( mime == ((int)(long)type ) )
 		{
@@ -1212,7 +1212,7 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 
 		return -1;
 	}
-	
+
 
 	m = get_all_bodies(msg);
 
@@ -1243,10 +1243,10 @@ static int strip_body_f2(struct sip_msg *msg, char *type, char *str2 )
 				LM_ERR("Failed to add body lump\n");
 				return -1;
 			}
-			
+
 			deleted =  1;
 		}
-			
+
 		p = p->next;
 	}
 
@@ -1325,13 +1325,13 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 		pkg_free(value);
 		return -1;
 	}
-	
+
 	if(ctype) {
 		if(fixup_get_svalue(msg, ctype, &content_type)!=0) {
 			LM_ERR("cannot print the format\n");
 			return -1;
 		}
-		
+
 		if(msg->content_type) {
 			/* verify if the parameter has the same value */
 			if(content_type.len == msg->content_type->body.len &&
@@ -1347,9 +1347,9 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 			}
 		}
 		/* add new Content-Type header */
-		
+
 		/* construct header */
-		
+
 		ctype_hf.len = strlen("Content-Type: ") + content_type.len+ CRLF_LEN;
 		ctype_hf.s = (char*)pkg_malloc(ctype_hf.len);
 		if(ctype_hf.s == NULL) {
@@ -1358,7 +1358,7 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 		}
 		sprintf(ctype_hf.s, "Content-Type: %.*s%s", content_type.len,
 				content_type.s, CRLF);
-		
+
 		if( add_hf_helper(msg, &ctype_hf, 0, 0, 0, 0)< 0) {
 			LM_ERR("failed to add content type header\n");
 			pkg_free(ctype_hf.s);
@@ -1813,7 +1813,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 
 	if (!msg) {
 		strcpy(reason, "no message object");
-		ret = SV_NO_MSG; 
+		ret = SV_NO_MSG;
 		goto failed;
 	}
 

@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -203,7 +203,7 @@ again:
  * with all the SER processes. With a this ring buffer, the lock_get/release only
  * involve the SEAS processes.
  * This function scans the ping structures in the buffer, computing the elapsed time
- * from when the ping was sent, so if the ping has timed out, it increases the 
+ * from when the ping was sent, so if the ping has timed out, it increases the
  * timed_out_pings counter. All the timed-out pings are removed from the buffer (the
  * begin index is incremented). Because the pings are added always at the end
  * of the buffer, they will always be ordered in increasing time, so when we find one ping
@@ -241,7 +241,7 @@ static inline int process_pings(struct ha *the_table)
    return 0;
 }
 
-/* Because TransactionModule organizes statistics based on process_no, 
+/* Because TransactionModule organizes statistics based on process_no,
  * and process_no are only assigned to SER processes (not to Action dispatchers like us ;)
  * we have to simulate we are the FIFO process, so TM thinks that the transactions WE put
  * are put by the fifo process...
@@ -381,13 +381,13 @@ int process_pong(struct ha *the_table,unsigned int seqno)
  * @param the_as Application Server structure which sent this action
  * @param action action payload
  * @param len the length of the payload
- * 
+ *
  * This function cancels a previously initiated UAC Transaction.
  * it receives the HashIndex and Label of the cell being cancelled
- * and invokes t_cancel_uac from the transactionModule API which 
+ * and invokes t_cancel_uac from the transactionModule API which
  * cancels the transaction.
  *
- * Returns: 
+ * Returns:
  * */
 
 int ac_cancel(as_p the_as,char *action,int len)
@@ -978,7 +978,7 @@ int ac_uac_req(as_p the_as,char *action,int len)
       LM_ERR("Headers missing (to,from,call-id,cseq)?");
       goto error;
    }
-   if(!(get_from(my_msg)) || !(get_from(my_msg)->tag_value.s) || 
+   if(!(get_from(my_msg)) || !(get_from(my_msg)->tag_value.s) ||
 	 !(get_from(my_msg)->tag_value.len)){
       as_action_fail_resp(uac_id,SE_UAC,"From tag missing",0);
       LM_ERR("From tag missing");
@@ -1411,7 +1411,7 @@ void uac_cleanup_cb(struct cell* t, int type, struct tmcb_params *rcvd_params)
 
 	ev_info=(struct as_uac_param*)*rcvd_params->param;
 
-	if(ev_info) {	
+	if(ev_info) {
 		shm_free(ev_info);
 		*rcvd_params->param=NULL;
 	}
@@ -1419,8 +1419,8 @@ void uac_cleanup_cb(struct cell* t, int type, struct tmcb_params *rcvd_params)
 
 /**
  * This function will be called from a SER process when a reply is received for
- * the transaction. The SER processes only have acces to the EventDispatcher 
- * fifo (not to the ActionDispatcher) so EventDispatcher will be the one who 
+ * the transaction. The SER processes only have acces to the EventDispatcher
+ * fifo (not to the ActionDispatcher) so EventDispatcher will be the one who
  * will send the event to the AppServer.
  * TODO WARNING !!! there's a clear MEMORY LEAK here, see exit: at the bottom of
  * the function... it should free ev_info !!!!!!!!

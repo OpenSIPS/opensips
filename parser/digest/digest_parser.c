@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -207,7 +207,7 @@ static inline int parse_digest_param(str* _s, dig_cred_t* _c)
 			return -4;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -256,7 +256,7 @@ static inline void parse_algorithm(struct algorithm* _a)
 		_a->alg_parsed = ALG_MD5SESS;
 	} else {
 		_a->alg_parsed = ALG_OTHER;
-	}	
+	}
 }
 
 
@@ -292,11 +292,11 @@ static inline int parse_digest_params(str* _s, dig_cred_t* _c)
 		if (parse_digest_param(_s, _c) < 0) {
 			return -1;
 		}
-		
+
 		     /* Try to find the next parameter */
 		comma = q_memchr(_s->s, ',', _s->len);
 		if (comma) {
-			     /* Yes, there is another, 
+			     /* Yes, there is another,
 			      * remove any leading white-spaces
 			      * and let _s point to the next
 			      * parameter name
@@ -338,7 +338,7 @@ int parse_digest_cred(str* _s, dig_cred_t* _c)
 	str tmp;
 
 	     /* Make a temporary copy, we are
-	      * going to modify it 
+	      * going to modify it
 	      */
 	tmp.s = _s->s;
 	tmp.len = _s->len;
@@ -354,14 +354,14 @@ int parse_digest_cred(str* _s, dig_cred_t* _c)
 	      */
 	if (!strncasecmp(tmp.s, DIGEST_SCHEME, DIG_LEN) &&
 	    ((tmp.s[DIG_LEN] == ' ') ||     /* Test for one of LWS chars */
-	     (tmp.s[DIG_LEN] == '\r') || 
-	     (tmp.s[DIG_LEN] == 'n') || 
+	     (tmp.s[DIG_LEN] == '\r') ||
+	     (tmp.s[DIG_LEN] == 'n') ||
 	     (tmp.s[DIG_LEN] == '\t') ||
 	     (tmp.s[DIG_LEN] == ','))) {
 		     /* Scheme is Digest */
 		tmp.s += DIG_LEN + 1;
 		tmp.len -= DIG_LEN + 1;
-		
+
 		     /* Again, skip all white-spaces */
 		trim_leading(&tmp);
 

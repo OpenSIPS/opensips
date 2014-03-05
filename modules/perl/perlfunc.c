@@ -3,7 +3,7 @@
  *
  * Perl module for OpenSIPS
  *
- * Copyright (C) 2006 Collax GmbH 
+ * Copyright (C) 2006 Collax GmbH
  *                    (Bastian Friedrich <bastian.friedrich@collax.com>)
  *
  * This file is part of opensips, a free SIP server.
@@ -106,7 +106,7 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 		}
 		return -1;
 	}
-	
+
 	switch ((_msg->first_line).type) {
 	case SIP_REQUEST:
 		if (parse_sip_msg_uri(_msg) < 0) {

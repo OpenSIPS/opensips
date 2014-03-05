@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -66,10 +66,10 @@ static inline int append_multipart_body(char **buf, int *buf_len, int *size, str
 }
 
 
-int send_full_notify(subs_t* subs, xmlNodePtr rl_node, 
+int send_full_notify(subs_t* subs, xmlNodePtr rl_node,
 		int version, str* rl_uri, unsigned int hash_code);
 
-typedef int (*list_func_t)(char* uri, void* param); 
+typedef int (*list_func_t)(char* uri, void* param);
 
 int process_list_and_exec(xmlNodePtr list, str username, str domain, list_func_t f, void* p, int* c);
 char* generate_string(int seed, int length);

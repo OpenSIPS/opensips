@@ -81,17 +81,17 @@ gen_lock_t *stat_lock = 0;
  * Returns the statistic associated with 'numerical_code' and 'out_codes'.
  * Specifically:
  *
- *  - if out_codes is nonzero, then the stat_var for the number of messages 
+ *  - if out_codes is nonzero, then the stat_var for the number of messages
  *    _sent out_ with the 'numerical_code' will be returned if it exists.
- *  - otherwise, the stat_var for the number of messages _received_ with the 
- *    'numerical_code' will be returned, if the stat exists. 
+ *  - otherwise, the stat_var for the number of messages _received_ with the
+ *    'numerical_code' will be returned, if the stat exists.
  */
 stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int out_codes)
 {
 	static char msg_code[INT2STR_MAX_LEN+4];
 	str stat_name;
 
-	stat_name.s = int2bstr( (unsigned long)numerical_code, msg_code, 
+	stat_name.s = int2bstr( (unsigned long)numerical_code, msg_code,
 		&stat_name.len);
 	stat_name.s[stat_name.len++] = '_';
 
@@ -162,7 +162,7 @@ int register_udp_load_stat(str *name, stat_var **s, int children)
 	}
 	memset((*s)->u.val,0,sizeof(stat_val));
 
-	if ( (stat_name = build_stat_name(name,"load")) == 0 || 
+	if ( (stat_name = build_stat_name(name,"load")) == 0 ||
 	register_stat2("load",stat_name,(stat_var**)calc_udp_load,
 	STAT_IS_FUNC,*s) != 0) {
 		LM_ERR("failed to add load stat\n");
@@ -439,7 +439,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	int name_len;
 
 	if (module==0 || name==0 || pvar==0) {
-		LM_ERR("invalid parameters module=%p, name=%p, pvar=%p \n", 
+		LM_ERR("invalid parameters module=%p, name=%p, pvar=%p \n",
 				module, name, pvar);
 		goto error;
 	}
@@ -504,7 +504,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 		for( it=shash[hash] ; it ; it=stat->hnext ) {
 			if ( (it->name.len==stat->name.len) &&
 			(strncasecmp( it->name.s, stat->name.s, stat->name.len)==0) ) {
-				/* duplicate found -> drop current stat and return the 
+				/* duplicate found -> drop current stat and return the
 				 * found one */
 				lock_stop_write((rw_lock_t *)collector->rwl);
 				if (flags&STAT_SHM_NAME) shm_free(stat->name.s);

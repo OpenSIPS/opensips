@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -25,11 +25,11 @@
  *  2003-07-03  default port value set according to proto (andrei)
  *  2007-01-25  support for DNS failover added (bogdan)
  *  2008-07-25  support for SRV load-balancing added (bogdan)
- */ 
+ */
 
 
 /*!
- * \file 
+ * \file
  * \brief DNS resolver for OpenSIPS
  */
 
@@ -245,7 +245,7 @@ int get_dns_answer(union dns_query *answer,int anslen,char *qname,int qtype,int 
 				had_error++;
 				continue;
 			}
-			
+
 			strcpy(bp, tbuf);
 			global_he.h_name = bp;
 			bp += n;
@@ -409,7 +409,7 @@ struct hostent* own_gethostbyname2(char *name,int af)
 		default:
 			LM_ERR("Only A and AAAA queries\n");
 			return NULL;
-	}	
+	}
 
 	cached_he = (struct hostent *)dnscache_fetch_func(name,af==AF_INET?T_A:T_AAAA,0);
 	if (cached_he == NULL) {
@@ -431,7 +431,7 @@ query:
 	if (size < 0) {
 		LM_DBG("Domain name not found\n");
 		if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,NULL,0,1,0) < 0)
-			LM_ERR("Failed to store %s - %d in cache\n",name,af);	
+			LM_ERR("Failed to store %s - %d in cache\n",name,af);
 		return NULL;
 	}
 
@@ -439,16 +439,16 @@ query:
 		LM_ERR("Failed to get dns answer\n");
 		return NULL;
 	}
-	
+
 	if (dnscache_put_func(name,af==AF_INET?T_A:T_AAAA,&global_he,-1,0,min_ttl) < 0)
-		LM_ERR("Failed to store %s - %d in cache\n",name,af);	
+		LM_ERR("Failed to store %s - %d in cache\n",name,af);
 	return &global_he;
 }
 
 inline struct hostent* resolvehost(char* name, int no_ip_test)
 {
 	static struct hostent* he=0;
-#ifdef HAVE_GETIPNODEBYNAME 
+#ifdef HAVE_GETIPNODEBYNAME
 	int err;
 	static struct hostent* he2=0;
 #endif
@@ -486,7 +486,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 		else {
 			he=gethostbyname2(name, AF_INET6);
 		}
-		
+
 	#elif defined HAVE_GETIPNODEBYNAME
 		/* on solaris 8 getipnodebyname has a memory leak,
 		 * after some time calls to it will fail with err=3
@@ -580,17 +580,17 @@ query:
 	if (size < 0) {
 		LM_DBG("ptr not found\n");
 		if (dnscache_put_func(addr,T_PTR,NULL,len,1,0) < 0)
-			LM_ERR("Failed to store PTR in cache\n");	
+			LM_ERR("Failed to store PTR in cache\n");
 		return NULL;
 	}
 
 	if (get_dns_answer(&ptr_buff,size,qbuf,T_PTR,&min_ttl) < 0) {
 		LM_ERR("Failed to get dns answer\n");
 		return NULL;
-	}	
-		
+	}
+
 	if (dnscache_put_func(addr,T_PTR,&global_he,len,0,min_ttl) < 0)
-		LM_ERR("Failed to store PTR in cache\n");	
+		LM_ERR("Failed to store PTR in cache\n");
 	return &global_he;
 }
 
@@ -601,13 +601,13 @@ inline struct hostent* rev_resolvehost(struct ip_addr *ip)
 		return own_gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
 	} else
 		return gethostbyaddr((char*)(ip)->u.addr, (ip)->len, (ip)->af);
-} 
+}
 
 /*! \brief checks if ip is in host(name) and ?host(ip)=name?
  * ip must be in network byte order!
  *  resolver = DO_DNS | DO_REV_DNS; if 0 no dns check is made
  * \return 0 if equal */
-int check_ip_address(struct ip_addr* ip, str *name, 
+int check_ip_address(struct ip_addr* ip, str *name,
 				unsigned short port, unsigned short proto, int resolver)
 {
 	struct hostent* he;
@@ -634,7 +634,7 @@ int check_ip_address(struct ip_addr* ip, str *name,
 		else
 	#endif
 
-			if (strncmp(name->s, s, name->len)==0) 
+			if (strncmp(name->s, s, name->len)==0)
 				return 0;
 	}else{
 		LM_CRIT("could not convert ip address\n");
@@ -752,7 +752,7 @@ unsigned char* dns_skipname(unsigned char* p, unsigned char* end)
  *   \param msg   - pointer to the dns message
  *   \param end   - pointer to the end of the message
  *   \param rdata - pointer  to the rdata part of the srv answer
- *   \return 0 on error, or a dyn. alloc'ed srv_rdata structure 
+ *   \return 0 on error, or a dyn. alloc'ed srv_rdata structure
  *
  * SRV rdata format:
  *            111111
@@ -774,7 +774,7 @@ struct srv_rdata* dns_srv_parser( unsigned char* msg, unsigned char* end,
 {
 	struct srv_rdata* srv;
 	int len;
-	
+
 	srv=0;
 	if ((rdata+6)>=end) goto error;
 	srv=(struct srv_rdata*)local_malloc(sizeof(struct srv_rdata));
@@ -782,7 +782,7 @@ struct srv_rdata* dns_srv_parser( unsigned char* msg, unsigned char* end,
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
-	
+
 	memcpy((void*)&srv->priority, rdata, 2);
 	memcpy((void*)&srv->weight,   rdata+2, 2);
 	memcpy((void*)&srv->port,     rdata+4, 2);
@@ -805,7 +805,7 @@ error:
  *   \param msg   - pointer to the dns message
  *   \param end   - pointer to the end of the message
  *   \param rdata - pointer  to the rdata part of the naptr answer
- *   \return  0 on error, or a dyn. alloc'ed naptr_rdata structure 
+ *   \return  0 on error, or a dyn. alloc'ed naptr_rdata structure
  *
  * NAPTR rdata format:
  *            111111
@@ -832,7 +832,7 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 								  unsigned char* rdata)
 {
 	struct naptr_rdata* naptr;
-	
+
 	naptr = 0;
 	if ((rdata + 7) >= end)
 		goto error;
@@ -841,7 +841,7 @@ struct naptr_rdata* dns_naptr_parser( unsigned char* msg, unsigned char* end,
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
-	
+
 	memcpy((void*)&naptr->order, rdata, 2);
 	naptr->order=ntohs(naptr->order);
 	memcpy((void*)&naptr->pref, rdata + 2, 2);
@@ -878,7 +878,7 @@ struct cname_rdata* dns_cname_parser( unsigned char* msg, unsigned char* end,
 {
 	struct cname_rdata* cname;
 	int len;
-	
+
 	cname=0;
 	cname=(struct cname_rdata*)local_malloc(sizeof(struct cname_rdata));
 	if(cname==0){
@@ -901,7 +901,7 @@ error:
 struct a_rdata* dns_a_parser(unsigned char* rdata, unsigned char* end)
 {
 	struct a_rdata* a;
-	
+
 	if (rdata+4>=end) goto error;
 	a=(struct a_rdata*)local_malloc(sizeof(struct a_rdata));
 	if (a==0){
@@ -917,12 +917,12 @@ error:
 
 
 /*! \brief Parses an AAAA (ipv6) record rdata into an aaaa_rdata structure
- * \return 0 on error or a dyn. alloc'ed aaaa_rdata struct 
+ * \return 0 on error or a dyn. alloc'ed aaaa_rdata struct
  */
 struct aaaa_rdata* dns_aaaa_parser(unsigned char* rdata, unsigned char* end)
 {
 	struct aaaa_rdata* aaaa;
-	
+
 	if (rdata+16>=end) goto error;
 	aaaa=(struct aaaa_rdata*)local_malloc(sizeof(struct aaaa_rdata));
 	if (aaaa==0){
@@ -947,7 +947,7 @@ struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 {
 	struct txt_rdata* txt;
 	unsigned int len;
-	
+
 	txt=0;
 	txt=(struct txt_rdata*)local_malloc(sizeof(struct txt_rdata));
 	if(txt==0){
@@ -971,7 +971,7 @@ error:
 }
 
 
-/*! \brief parses a EBL record into a ebl_rdata structure 
+/*! \brief parses a EBL record into a ebl_rdata structure
  *
  * EBL Record
  *
@@ -989,7 +989,7 @@ struct ebl_rdata* dns_ebl_parser( unsigned char* msg, unsigned char* end,
 {
 	struct ebl_rdata* ebl;
 	int len;
-	
+
 	ebl=0;
 	ebl=(struct ebl_rdata*)local_malloc(sizeof(struct ebl_rdata));
 	if(ebl==0){
@@ -1082,16 +1082,16 @@ struct rdata* get_record(char* name, int type)
 		head = (struct rdata *)dnscache_fetch_func(name,type,0);
 		if (head == NULL) {
 			LM_DBG("not found in cache or other internal error\n");
-			goto query;			
+			goto query;
 		} else if (head == (void *)-1) {
 			LM_DBG("previously failed query\n");
-			goto not_found;	
+			goto not_found;
 		} else {
 			LM_DBG("cache hit for %s - %d\n",name,type);
 			return head;
 		}
 	}
-	
+
 query:
 	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
@@ -1100,14 +1100,14 @@ query:
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
 		if (dnscache_put_func != NULL) {
 			if (dnscache_put_func(name,type,NULL,0,1,0) < 0)
-				LM_ERR("Failed to store %s - %d in cache\n",name,type);	
+				LM_ERR("Failed to store %s - %d in cache\n",name,type);
 		}
 		goto not_found;
 	}
 	else if ((unsigned int)size > sizeof(buff)) size=sizeof(buff);
 	head=rd=0;
 	last=crt=&head;
-	
+
 	p=buff.buff+DNS_HDR_SIZE;
 	end=buff.buff+size;
 	if (p>=end) goto error_boundary;
@@ -1155,7 +1155,7 @@ query:
 		/* get ttl*/
 		memcpy((void*) &ttl, (void*)p, 4);
 		ttl=ntohl(ttl);
-		if (ttl < min_ttl) 
+		if (ttl < min_ttl)
 			min_ttl = ttl;
 		p+=4;
 		/* get size */
@@ -1171,7 +1171,7 @@ query:
 		}
 		*/
 		/* expand the "type" record  (rdata)*/
-		
+
 		rd=(struct rdata*) local_malloc(sizeof(struct rdata));
 		if (rd==0){
 			LM_ERR("out of pkg memory\n");
@@ -1188,15 +1188,15 @@ query:
 				srv_rd= dns_srv_parser(buff.buff, end, p);
 				if (srv_rd==0) goto error_parse;
 				if (dnscache_put_func)
-					rdata_buf_len+=4*sizeof(unsigned short) + 
+					rdata_buf_len+=4*sizeof(unsigned short) +
 					sizeof(unsigned int ) + srv_rd->name_len+1;
 				rd->rdata=(void*)srv_rd;
-				
+
 				/* insert sorted into the list */
 				for (crt=&head; *crt; crt= &((*crt)->next)){
 					crt_srv=(struct srv_rdata*)(*crt)->rdata;
 					if ((srv_rd->priority <  crt_srv->priority) ||
-					   ( (srv_rd->priority == crt_srv->priority) && 
+					   ( (srv_rd->priority == crt_srv->priority) &&
 							 ((srv_rd->weight==0) || (crt_srv->weight!=0)) ) ){
 						/* insert here */
 						goto skip;
@@ -1207,7 +1207,7 @@ query:
 				/* insert here */
 				rd->next=*crt;
 				*crt=rd;
-				
+
 				break;
 			case T_A:
 				rd->rdata=(void*) dns_a_parser(p,end);
@@ -1240,7 +1240,7 @@ query:
 				rd->rdata=(void*) naptr_rd;
 				if(rd->rdata==0) goto error_parse;
 				if (dnscache_put_func)
-					rdata_buf_len+=2*sizeof(unsigned short) + 
+					rdata_buf_len+=2*sizeof(unsigned short) +
 					4*sizeof(unsigned int) + naptr_rd->flags_len+1 +
 					+ naptr_rd->services_len+1+naptr_rd->regexp_len +
 					+ 1 + naptr_rd->repl_len + 1;
@@ -1249,7 +1249,7 @@ query:
 				break;
 			case T_TXT:
 				txt_rd = dns_txt_parser(buff.buff, end, p);
-				rd->rdata=(void*) txt_rd; 
+				rd->rdata=(void*) txt_rd;
 				if(rd->rdata==0) goto error_parse;
 				if (dnscache_put_func)
 					rdata_buf_len+=sizeof(int)+strlen(txt_rd->txt)+1;
@@ -1258,11 +1258,11 @@ query:
 				break;
 			case T_EBL:
 				ebl_rd = dns_ebl_parser(buff.buff, end, p);
-				rd->rdata=(void*) ebl_rd; 
+				rd->rdata=(void*) ebl_rd;
 				if(rd->rdata==0) goto error_parse;
 				if (dnscache_put_func)
 					rdata_buf_len+=sizeof(unsigned char)+
-					2*sizeof(unsigned int)+ebl_rd->apex_len + 1 + 
+					2*sizeof(unsigned int)+ebl_rd->apex_len + 1 +
 					ebl_rd->separator_len + 1;
 				*last=rd;
 				last=&(rd->next);
@@ -1273,14 +1273,14 @@ query:
 				*last=rd;
 				last=&(rd->next);
 		}
-		
+
 		p+=rdlength;
-		
+
 	}
 
 	if (dnscache_put_func != NULL) {
 		if (dnscache_put_func(name,type,head,rdata_buf_len,0,min_ttl) < 0)
-			LM_ERR("Failed to store %s - %d in cache\n",name,type);	
+			LM_ERR("Failed to store %s - %d in cache\n",name,type);
 	}
 	return head;
 error_boundary:
@@ -1445,7 +1445,7 @@ static inline void sort_srvs(struct rdata **head)
 				/* -> calculate running sums (and detect the end) */
 				weight_sum = rd2srv(rd)->running_sum = rd2srv(rd)->weight;
 				crt = rd;
-				while( crt && crt->next && 
+				while( crt && crt->next &&
 				(rd2srv(rd)->priority==rd2srv(crt->next)->priority) ) {
 					crt = crt->next;
 					weight_sum += rd2srv(crt)->weight;
@@ -1508,7 +1508,7 @@ static inline struct hostent* do_srv_lookup(char *name, unsigned short* port, st
 			free_rdata_list(head);
 			return 0;
 		}
-		LM_DBG("resolving [%s]\n",srv->name);	
+		LM_DBG("resolving [%s]\n",srv->name);
 		he = resolvehost(srv->name, 1);
 		if ( he!=0 ) {
 			LM_DBG("SRV(%s) = %s:%d\n",     name, srv->name, srv->port);
@@ -1585,7 +1585,7 @@ static inline void filter_and_sort_naptr( struct rdata** head_p, struct rdata** 
 		LM_DBG("found valid %.*s -> %s\n",
 			(int)naptr->services_len,naptr->services, naptr->repl);
 
-		/* this is a supported service -> add it according to order to the 
+		/* this is a supported service -> add it according to order to the
 		 * new head list */
 		prio = naptr_prio(get_naptr(l));
 		if (head==0) {
@@ -1702,7 +1702,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port, int *proto,
 		if (head)
 			free_rdata_list(head);
 	}
-	LM_DBG("no valid NAPTR record found for %.*s," 
+	LM_DBG("no valid NAPTR record found for %.*s,"
 		" trying direct SRV lookup...\n", name->len, name->s);
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
@@ -1744,8 +1744,8 @@ do_srv:
 	he = do_srv_lookup( tmp, port );
 	if (he)
 		return he;
-	
-	LM_DBG("no valid SRV record found for %s," 
+
+	LM_DBG("no valid SRV record found for %s,"
 		" trying A record lookup...\n", tmp);
 	/* set default port */
 	*port = (is_sips||((*proto)==PROTO_TLS))?SIPS_PORT:SIP_PORT;
@@ -1865,7 +1865,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 		if (head)
 			free_rdata_list(head);
 	}
-	LM_DBG("no valid NAPTR record found for %.*s," 
+	LM_DBG("no valid NAPTR record found for %.*s,"
 		" trying direct SRV lookup...\n", name->len, name->s);
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
@@ -1915,7 +1915,7 @@ do_srv:
 	he = do_srv_lookup( tmp, port, dn);
 	if (he)
 		return he;
-	
+
 	LM_DBG("no valid SRV record found for %s, trying A record lookup...\n",
 		tmp);
 	/* set default port */

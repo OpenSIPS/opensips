@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -212,7 +212,7 @@ inline void action_stat(struct cell *t)
  * stats socket sould be an IP_address:port or unix://path/to_file
  * TODO handling unix sockets and IPv6 !!
  *
- * returns 
+ * returns
  * 0 if no stats
  * 1 if stats properly started
  * -1 if error
@@ -298,7 +298,7 @@ error:
  * stats socket sould be an IP_address:port or unix://path/to_file
  * TODO handling unix sockets and IPv6 !!
  *
- * returns 
+ * returns
  * 0 if no stats
  * 1 if stats properly started
  * -1 if error
@@ -341,7 +341,7 @@ void serve_stats(int fd)
 	    if(errno==EINTR){
 	       continue;
 	    }else{
-	       LM_ERR("unknown error reading from socket\n"); 
+	       LM_ERR("unknown error reading from socket\n");
 	       close(sock);
 	       /** and continue accept()'ing*/
 	       break;

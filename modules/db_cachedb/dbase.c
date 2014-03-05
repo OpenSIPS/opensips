@@ -137,7 +137,7 @@ int db_cachedb_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	return ptr->cdbf.db_query_trans(ptr->cdbc,_h->table,_k,_op,_v,_c,_n,_nc,_o,_r);
 }
 
-int db_cachedb_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n) 
+int db_cachedb_insert(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v, const int _n)
 {
 	struct db_cachedb_con* ptr = (struct db_cachedb_con *)_h->tail;
 

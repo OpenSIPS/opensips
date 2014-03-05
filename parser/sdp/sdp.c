@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *
@@ -57,7 +57,7 @@ static inline int new_sdp(struct sip_msg* _m)
 		return -1;
 	}
 	memset( sdp, 0, sizeof(sdp_info_t));
-		
+
 	_m->sdp = sdp;
 
 	return 0;
@@ -299,7 +299,7 @@ sdp_stream_cell_t* get_sdp_stream(struct sip_msg* _m, int session_num, int strea
 {
 	if (_m->sdp == NULL) return NULL;
 	return get_sdp_stream_sdp(_m->sdp, session_num, stream_num);
-      
+
 }
 
 
@@ -436,7 +436,7 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 	m2p = m1p;
 	stream_num = 0;
 	for (;;) {
-		m1p = m2p; 
+		m1p = m2p;
 		if (m1p == NULL || m1p >= bodylimit)
 			break;
 		m2p = find_next_sdp_line(m1p, bodylimit, 'm', bodylimit);

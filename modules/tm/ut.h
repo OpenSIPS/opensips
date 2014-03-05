@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -115,7 +115,7 @@ inline static struct proxy_l *uri2proxy( str *uri, int forced_proto )
 		LM_ERR("bad host name in URI <%.*s>\n", uri->len, ZSW(uri->s));
 		return 0;
 	}
-	
+
 	return p;
 }
 
@@ -131,7 +131,7 @@ static inline int uri2su(str *uri, union sockaddr_union *to_su, int proto)
 		return -1;
 	}
 
-	hostent2su(to_su, &proxy->host, proxy->addr_idx, 
+	hostent2su(to_su, &proxy->host, proxy->addr_idx,
 		(proxy->port) ? proxy->port : SIP_PORT);
 	proto = proxy->proto;
 

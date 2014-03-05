@@ -83,7 +83,7 @@ void xj_wlist_del(xj_wlist, xj_jkey, int);
 void xj_wlist_free(xj_wlist);
 int  xj_wlist_set_aliases(xj_wlist, char *, char *, char *);
 int  xj_wlist_check_aliases(xj_wlist, str*);
-int  xj_wlist_clean_jobs(xj_wlist, int, int); 
+int  xj_wlist_clean_jobs(xj_wlist, int, int);
 
 int xj_worker_process(xj_wlist, char*, int, char*, int, db_con_t*, db_func_t*);
 

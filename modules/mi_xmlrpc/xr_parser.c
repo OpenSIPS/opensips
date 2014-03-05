@@ -38,7 +38,7 @@
  * Convert in argument string each LFLF to CRLF and return length of
  * the string not including the terminating `\0' character.
  * This is a hack that is needed as long as Abyss XML-RPC server "normalizes"
- * CRLF to LF in XML-RPC strings. 
+ * CRLF to LF in XML-RPC strings.
  */
 int lflf_to_crlf_hack(char *s) {
 
@@ -64,7 +64,7 @@ int lflf_to_crlf_hack(char *s) {
 struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 
 	struct mi_root * mi_root;
-	
+
 	int size, i;
 	size_t length;
 
@@ -81,16 +81,16 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 	char * stringValue = 0;
 	char * byteStringValue =0;
 	xmlrpc_value * item;
-	
+
 	mi_root = init_mi_tree(0, 0, 0);
-	
+
 	if ( !mi_root ) {
 		LM_ERR("the MI tree cannot be initialized!\n");
 		goto error;
 	}
 
 	size = xmlrpc_array_size(env, paramArray);
-	
+
 	for (i=0 ; i< size ; i++) {
 
 		item = xmlrpc_array_get_item(env, paramArray, i);
@@ -98,14 +98,14 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 			LM_ERR("failed to get array item: %s\n", env->fault_string);
 			goto error;
 		}
-		
+
 		switch ( xmlrpc_value_type(item) ) {
-		
+
 		case (XMLRPC_TYPE_INT):
 
 			#ifdef XMLRPC_OLD_VERSION
 			intValue = item->_value.i;
-			#else 
+			#else
 			xmlrpc_read_int(env,item,&intValue);
 			#endif
 
@@ -149,7 +149,7 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 		case (XMLRPC_TYPE_STRING):
 
 			#if HAVE_UNICODE_WCHAR
-			
+
 			#ifdef  XMLRPC_OLD_VERSION
 			xmlrpc_read_string_w(env, item, &stringValue);
 			#else
@@ -176,7 +176,7 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 				LM_ERR("failed to add node to the MI tree.\n");
 				goto error;
 			}
-			
+
 			break;
 
 		case (XMLRPC_TYPE_BASE64):
@@ -207,12 +207,12 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 				(const unsigned char **)(void*)&byteStringValue);
 
 			if ( env->fault_occurred ) {
-				LM_ERR("failed to read byteStringValue: %s!\n", 
+				LM_ERR("failed to read byteStringValue: %s!\n",
 						env->fault_string);
 				goto error;
 			}
 
-			if ( add_mi_node_child(&mi_root->node, MI_DUP_VALUE, 0, 0, 
+			if ( add_mi_node_child(&mi_root->node, MI_DUP_VALUE, 0, 0,
 			byteStringValue, length) == NULL ) {
 				LM_ERR("failed to add node to the MI tree.\n");
 				goto error;
@@ -225,13 +225,13 @@ struct mi_root * xr_parse_tree( xmlrpc_env * env, xmlrpc_value * paramArray ) {
 
 		default :
 			LM_ERR("unsupported node type %d\n",  xmlrpc_value_type(item)  );
-			xmlrpc_env_set_fault_formatted( env, XMLRPC_TYPE_ERROR, 
+			xmlrpc_env_set_fault_formatted( env, XMLRPC_TYPE_ERROR,
 				"Unsupported value of type %d supplied",
 				xmlrpc_value_type(item));
 			goto error;
 		}
 	}
-	
+
 	return mi_root;
 
 error:

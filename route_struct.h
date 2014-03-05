@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -31,7 +31,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief SIP routing engine - structure management
  */
 
@@ -44,25 +44,25 @@
  * Other important values (no macros for them yet):
  * expr true = 1
  * expr false = 0 (used only inside the expression and if evaluator)
- * 
+ *
  * action continue  or if used in condition true = 1
  * action drop/quit/stop script processing = 0
  * action error or if used in condition false = -1 (<0 and !=EXPR_DROP)
- * 
+ *
  */
 
 /*! \todo Add documentation for all ENUMs in this file. */
 enum { EXP_T=1, ELEM_T };
 enum { AND_OP=1, OR_OP, NOT_OP, EVAL_OP, PLUS_OP, MINUS_OP, DIV_OP, MULT_OP, MODULO_OP,
 		BAND_OP, BOR_OP, BXOR_OP, BNOT_OP, BLSHIFT_OP, BRSHIFT_OP };
-enum { EQUAL_OP=20, MATCH_OP, NOTMATCH_OP, MATCHD_OP, NOTMATCHD_OP, 
+enum { EQUAL_OP=20, MATCH_OP, NOTMATCH_OP, MATCHD_OP, NOTMATCHD_OP,
 	GT_OP, LT_OP, GTE_OP, LTE_OP, DIFF_OP, VALUE_OP, NO_OP };
 enum { METHOD_O=1, URI_O, FROM_URI_O, TO_URI_O, SRCIP_O, SRCPORT_O,
 	   DSTIP_O, DSTPORT_O, PROTO_O, AF_O, MSGLEN_O, DEFAULT_O, ACTION_O,
 	   EXPR_O, NUMBER_O, NUMBERV_O, STRINGV_O, RETCODE_O, SCRIPTVAR_O};
 
 enum { FORWARD_T=1, SEND_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
-		SET_HOST_T, SET_HOSTPORT_T, SET_USER_T, SET_USERPASS_T, 
+		SET_HOST_T, SET_HOSTPORT_T, SET_USER_T, SET_USERPASS_T,
 		SET_PORT_T, SET_URI_T, IF_T, MODULE_T, SET_DEBUG_T,
 		SETFLAG_T, RESETFLAG_T, ISFLAGSET_T ,
 		SETSFLAG_T, RESETSFLAG_T, ISSFLAGSET_T ,
@@ -111,7 +111,7 @@ typedef struct operand {
 		int n;
 		pv_spec_t* spec;
 		void* data;
-	} v;	
+	} v;
 } operand_t, *operand_p;
 
 
@@ -135,7 +135,7 @@ typedef struct action_elem_ {
 
 /*! \brief increase MAX_ACTION_ELEMS to support more module function parameters
    if you change this define, you need also to change the assignment in
-   the action.c file 
+   the action.c file
  */
 #define MAX_ACTION_ELEMS	7
 struct action{

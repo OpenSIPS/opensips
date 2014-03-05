@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -89,7 +89,7 @@ str* subs_build_hdr(str* contact, int expires, int event, str* extra_headers)
 
 	memcpy(str_hdr->s+ str_hdr->len ,"Contact: <", 10);
 	str_hdr->len += 10;
-	memcpy(str_hdr->s +str_hdr->len, contact->s, 
+	memcpy(str_hdr->s +str_hdr->len, contact->s,
 			contact->len);
 	str_hdr->len+= contact->len;
 	memcpy(str_hdr->s+ str_hdr->len, ">", 1);
@@ -135,7 +135,7 @@ dlg_t* pua_build_dlg_t(ua_pres_t* presentity)
 	int size;
 
 	size= sizeof(dlg_t)+ presentity->call_id.len+ presentity->to_tag.len+
-		presentity->from_tag.len+ presentity->watcher_uri->len+ 
+		presentity->from_tag.len+ presentity->watcher_uri->len+
 		presentity->to_uri.len+ presentity->remote_contact.len;
 
 	td = (dlg_t*)pkg_malloc(size);
@@ -280,7 +280,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 		}
 		if (msg->from->parsed == NULL)
 		{
-			if ( parse_from_header( msg )<0 ) 
+			if ( parse_from_header( msg )<0 )
 			{
 				LM_ERR("cannot parse From header\n");
 				goto done;
@@ -329,7 +329,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	}
 
 	if(ps->code >= 300 )
-	{	/* if an error code and a stored dialog delete it and try to send 
+	{	/* if an error code and a stored dialog delete it and try to send
 		   a subscription with type= INSERT_TYPE, else return*/
 
 		if(!initial_request)
@@ -479,19 +479,19 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	size+= pfrom->uri.len;
 
 	presentity->call_id.s= (char*)presentity + size;
-	memcpy(presentity->call_id.s,msg->callid->body.s, 
+	memcpy(presentity->call_id.s,msg->callid->body.s,
 		msg->callid->body.len);
 	presentity->call_id.len= msg->callid->body.len;
 	size+= presentity->call_id.len;
 
 	presentity->to_tag.s= (char*)presentity + size;
-	memcpy(presentity->to_tag.s,pto->tag_value.s, 
+	memcpy(presentity->to_tag.s,pto->tag_value.s,
 			pto->tag_value.len);
 	presentity->to_tag.len= pto->tag_value.len;
 	size+= pto->tag_value.len;
 
 	presentity->from_tag.s= (char*)presentity + size;
-	memcpy(presentity->from_tag.s,pfrom->tag_value.s, 
+	memcpy(presentity->from_tag.s,pfrom->tag_value.s,
 			pfrom->tag_value.len);
 	presentity->from_tag.len= pfrom->tag_value.len;
 	size+= pfrom->tag_value.len;
@@ -514,9 +514,9 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	if(hentity->id.s)
 	{
 		presentity->id.s=(char*)presentity+ size;
-		memcpy(presentity->id.s, hentity->id.s, 
+		memcpy(presentity->id.s, hentity->id.s,
 			hentity->id.len);
-		presentity->id.len= hentity->id.len; 
+		presentity->id.len= hentity->id.len;
 		size+= presentity->id.len;
 	}
 
@@ -847,7 +847,7 @@ int send_subscribe(subs_info_t* subs)
 
 	if(presentity== NULL )
 	{
-		lock_release(&HashT->p_records[hash_index].lock); 
+		lock_release(&HashT->p_records[hash_index].lock);
 		if(subs->flag & UPDATE_TYPE)
 		{
 			/*
@@ -900,21 +900,21 @@ int send_subscribe(subs_info_t* subs)
         /*
 		if(presentity->desired_expires== 0)
 		{
-            
+
 			if(subs->expires< 0)
 			{
 			    LM_DBG("Found previous request for unlimited subscribe-"
 						" do not send subscribe\n");
-            
+
 				if (subs->event & PWINFO_EVENT)
 				{
 					presentity->watcher_count++;
 				}
 				lock_release(&HashT->p_records[hash_index].lock);
 			    goto done;
-            
+
 			}
-        
+
 
 			if(subs->event & PWINFO_EVENT)
 			{

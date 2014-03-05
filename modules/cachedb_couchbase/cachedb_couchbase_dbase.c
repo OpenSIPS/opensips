@@ -163,13 +163,13 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 		if (rc != LCB_SUCCESS) {
 			/*Consider these connect failurs as fatal*/
 			if(rc == LCB_AUTH_ERROR || rc == LCB_INVALID_HOST_FORMAT || rc == LCB_INVALID_CHAR) {
-				LM_ERR("Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s", 
+				LM_ERR("Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s",
 					id->host, id->database, lcb_strerror(instance, rc));
 				lcb_destroy(instance);
 				return 0;
 			} else {
 			/* Non-fatal errors, we may be able to connect later */
-				LM_ERR("Non-Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s", 
+				LM_ERR("Non-Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s",
 					id->host, id->database, lcb_strerror(instance, rc));
 			}
 		} else {

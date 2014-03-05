@@ -49,7 +49,7 @@ typedef int (*ldap_params_search_t)(
 	int _scope,
 	char** _attrs,
 	char* _filter,
-	...); 
+	...);
 
 typedef int (*ldap_url_search_t)(
 	char* _ldap_url,
@@ -68,7 +68,7 @@ typedef int (*ldap_str2scope_t)(char* scope_str);
 typedef int (*get_ldap_handle_t)(char* _lds_name, LDAP** _ldap_handle);
 
 typedef void (*get_last_ldap_result_t)(
-	LDAP** _last_ldap_handle, 
+	LDAP** _last_ldap_handle,
 	LDAPMessage** _last_ldap_result);
 
 typedef int (*ldap_rfc4515_escape_t)(str *sin, str *sout, int url_encode);

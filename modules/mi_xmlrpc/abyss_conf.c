@@ -17,7 +17,7 @@
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -197,7 +197,7 @@ readMIMETypesFile(const char * const filename,
             while (ConfReadLine(&file, z, 512)) {
                 char * p;
                 p = &z[0];
-            
+
                 if (ConfNextToken(&p)) {
                     const char * mimetype = ConfGetToken(&p);
                     if (mimetype) {
@@ -233,7 +233,7 @@ readMIMETypesFile(const char * const filename,
 static void
 chdirx(const char * const newdir,
        abyss_bool * const successP) {
-    
+
 #if defined(WIN32) && !defined(__BORLANDC__)
     *successP = _chdir(newdir) == 0;
 #else
@@ -244,12 +244,12 @@ chdirx(const char * const newdir,
 
 
 static void
-parseUser(const char *      const p, 
+parseUser(const char *      const p,
           struct _TServer * const srvP) {
 #ifdef _UNIX
     if (p[0] == '#') {
         int32_t n;
-        
+
         if (!ConfReadInt(&p[1], &n, 0, 0))
             TraceExit("Bad user number '%s'", p);
         else
@@ -259,14 +259,14 @@ parseUser(const char *      const p,
 
         if (!(pwd = getpwnam(p)))
             TraceExit("Unknown user '%s'", p);
-        
+
         srvP->uid = pwd->pw_uid;
         if ((int)srvP->gid==(-1))
             srvP->gid = pwd->pw_gid;
     };
 #else
     TraceMsg("User option ignored");
-#endif  /* _UNIX */ 
+#endif  /* _UNIX */
 }
 
 
@@ -281,7 +281,7 @@ parsePidfile(const char *      const p,
     };
 #else
     TraceMsg("PidFile option ignored");
-#endif  /* _UNIX */ 
+#endif  /* _UNIX */
 }
 
 
@@ -333,7 +333,7 @@ ConfReadServerFile(const char * const filename,
                     TraceExit("Invalid path '%s'", p);
                 } else if (strcasecmp(option, "default") == 0) {
                     const char * filename;
-                    
+
                     while ((filename = ConfGetToken(&p))) {
                         ListAdd(&srvP->defaultfilenames, strdup(filename));
                         if (!ConfNextToken(&p))

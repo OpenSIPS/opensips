@@ -48,7 +48,7 @@ static int mod_init(void);
 struct sig_binds sigb;
 
 /*
- * statistic variables 
+ * statistic variables
  */
 int sst_enable_stats = 1;
 stat_var *expired_sst = 0;
@@ -59,7 +59,7 @@ stat_var *expired_sst = 0;
  * code will set the dialog lifetime when it returns from the INVITE
  * and IN_ROUTE callbacks.
  */
-pv_spec_t timeout_avp; 
+pv_spec_t timeout_avp;
 static char* timeout_spec = 0; /* Place holder for the passed in name */
 
 /*
@@ -68,7 +68,7 @@ static char* timeout_spec = 0; /* Place holder for the passed in name */
  * proxy will except any value from the UAC as its min-SE value. If
  * the value is NOT set then the default will be asserted.
  */
-unsigned int sst_minSE = 90; 
+unsigned int sst_minSE = 90;
 
 /*
  * Should the PROXY (us) reject (with a 422 reply) and SE < sst_minSE
@@ -80,11 +80,11 @@ unsigned int sst_reject = 1;
 static int sst_flag = -1;
 static char *sst_flag_str = 0;
 
-/* 
+/*
  * The sst minimum interval in Session-Expires header if OpenSIPS
  * request the use of session times. The used value will be the
  * maximum value between OpenSIPS minSE, UAS minSE and this value
-*/ 
+*/
 unsigned int sst_interval = 0;
 
 /*
@@ -149,7 +149,7 @@ struct module_exports exports= {
  * @return 0 to continue to load the OpenSIPS, -1 to stop the loading
  * and abort OpenSIPS.
  */
-static int mod_init(void) 
+static int mod_init(void)
 {
 	str s;
 	LM_INFO("SIP Session Timer module - initializing\n");
@@ -167,7 +167,7 @@ static int mod_init(void)
 	if (sst_flag == -1) {
 		LM_ERR("no sst flag set!!\n");
 		return -1;
-	} 
+	}
 	else if (sst_flag > MAX_FLAG) {
 		LM_ERR("invalid sst flag %d!!\n", sst_flag);
 		return -1;
@@ -176,7 +176,7 @@ static int mod_init(void)
 	if (timeout_spec != NULL) {
 		LM_DBG("Dialog AVP is %s", timeout_spec);
 		s.s = timeout_spec; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &timeout_avp)==0 
+		if (pv_parse_spec(&s, &timeout_avp)==0
 		&& (timeout_avp.type != PVT_AVP)){
 			LM_ERR("malformed or non AVP timeout AVP definition in '%s'\n",
 					timeout_spec);
@@ -193,7 +193,7 @@ static int mod_init(void)
 	/*
 	 * Init the handlers
 	 */
-	sst_handler_init((timeout_spec?&timeout_avp:0), sst_minSE, 
+	sst_handler_init((timeout_spec?&timeout_avp:0), sst_minSE,
 			sst_flag, sst_reject,sst_interval);
 
 	/*

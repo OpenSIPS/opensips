@@ -17,13 +17,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
- *  2003-04-07 first version.  
+ *  2003-04-07 first version.
  */
 
 #include <stdio.h>
@@ -58,8 +58,8 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 	char *s, *pos,*begin,*key;
 	char buf[6];
 	str body;
-	
-	
+
+
 	key = PORT_REGEX;
 	/*
 	 * Checking if msg has a payload
@@ -77,7 +77,7 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 	}
 
 	oldContentLength = get_content_length(msg);
-	
+
 	if (offset == NULL)
 		return -14;
 	if (sscanf (offset, "%d", &offsetValue) != 1)
@@ -85,13 +85,13 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 		LM_ERR("invalid value for offset \n");
 		return -13;
 	}
-	
+
 	//offsetValue = (int)offset;
 #ifdef DEBUG
 	fprintf (stdout,"---START--------MANGLE PORT-----------------\n");
 	fprintf(stdout,"===============OFFSET = %d\n",offsetValue);
 #endif
-	
+
 	if ((offsetValue < MIN_OFFSET_VALUE) || (offsetValue > MAX_OFFSET_VALUE))
 	{
 		LM_ERR("invalid value %d for offset \n",offsetValue);
@@ -103,7 +103,7 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 
 	/* try to use pre-compiled expressions */
 	needToDealocate = 0;
-	if (portExpression != NULL) 
+	if (portExpression != NULL)
 		{
 		re = portExpression;
 #ifdef DEBUG
@@ -129,7 +129,7 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 #endif
 
 			}
-	
+
 	diff = 0;
 	while ((begin < msg->buf + msg->len) && (regexec (re, begin, 1, &pmatch, 0) == 0))
 	{
@@ -139,21 +139,21 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 			LM_ERR("offset unknown\n");
 			return -6;
 		}
-	
+
 #ifdef STRICT_CHECK
 		pmatch.rm_eo --; /* return with one space */
 #endif
-	
-		/* 
+
+		/*
                 for BSD and Solaris we avoid memrchr
-                pos = (char *) memrchr (begin + pmatch.rm_so, ' ',pmatch.rm_eo - pmatch.rm_so); 
+                pos = (char *) memrchr (begin + pmatch.rm_so, ' ',pmatch.rm_eo - pmatch.rm_so);
                 */
                 pos = begin+pmatch.rm_eo;
 #ifdef DEBUG
                 printf("begin=%c pos=%c rm_so=%d rm_eo=%d\n",*begin,*pos,pmatch.rm_so,pmatch.rm_eo);
 #endif
                 do pos--; while (*pos != ' '); /* we should find ' ' because we matched m=audio port */
-                
+
 		pos++;		/* jumping over space */
 		oldlen = (pmatch.rm_eo - pmatch.rm_so) - (pos - (begin + pmatch.rm_so));	/* port length */
 
@@ -192,7 +192,7 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 #ifdef DEBUG
                 printf("WARNING: sdp_mangle_port: Silent fail for not matching new port %d\n",newPort);
 #endif
-                
+
 			LM_WARN("silent fail for not matching new port %d\n",newPort);
 #ifdef STRICT_CHECK
 			return -9;
@@ -219,10 +219,10 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 								if (newPort >= 10) len = 2;
 									else len = 1;
 
-		/* replaced five div's + 1 add with most probably 1 comparison or 2 */							
-		
+		/* replaced five div's + 1 add with most probably 1 comparison or 2 */
+
 		/* deleting old port */
-		if ((l = del_lump (msg, pmatch.rm_so + off + 
+		if ((l = del_lump (msg, pmatch.rm_so + off +
 						(pos -(begin + pmatch.rm_so)),oldlen, 0)) == 0)
 		{
 			LM_ERR("del_lump failed\n");
@@ -260,7 +260,7 @@ continue1:
 		fprintf(stdout,"Deallocating expression for port ...\n");
 #endif
 		}
-	
+
 	if (diff != 0)
 	{
 		newContentLength = oldContentLength + diff;
@@ -291,7 +291,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 	fprintf (stdout,"---START--------MANGLE IP-----------------\n");
 #endif
 
-	
+
 	key = IP_REGEX;
 
 	/*
@@ -350,7 +350,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 
 	/* try to use pre-compiled expressions */
 	needToDealocate = 0;
-	if (ipExpression != NULL) 
+	if (ipExpression != NULL)
 		{
 		re = ipExpression;
 #ifdef DEBUG
@@ -386,14 +386,14 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 			LM_ERR("offset unknown\n");
 			return -9;
 		}
-	
+
 #ifdef STRICT_CHECK
 		pmatch.rm_eo --; /* return with one space,\n,\r */
 #endif
-	
-		/* 
+
+		/*
                 for BSD and Solaris we avoid memrchr
-                pos = (char *) memrchr (begin + pmatch.rm_so, ' ',pmatch.rm_eo - pmatch.rm_so); 
+                pos = (char *) memrchr (begin + pmatch.rm_so, ' ',pmatch.rm_eo - pmatch.rm_so);
                 */
                 pos = begin+pmatch.rm_eo;
                 do pos--; while (*pos != ' '); /* we should find ' ' because we matched c=IN IP4 ip */
@@ -405,24 +405,24 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 			LM_WARN("silent fail because oldlen > 15\n");
 #ifdef STRICT_CHECK
 			return -10;
-#else 
+#else
 			goto continue2;	/* silent fail return -10; invalid ip format ,probably like 1000.3.12341.2 */
 #endif
 
-			
+
 		}
 		buffer[0] = '\0';
-		strncat ((char *) buffer, pos, oldlen);	
+		strncat ((char *) buffer, pos, oldlen);
 		buffer[oldlen] = '\0';
 		i = parse_ip_address (buffer, &locatedIp);
 		if (i == 0)
 		{
 			LM_WARN("silent fail on parsing matched address \n");
-			
+
 #ifdef STRICT_CHECK
 			return -11;
-#else 
-			goto continue2;	
+#else
+			goto continue2;
 #endif
 		}
 		if (same_net (locatedIp, address, mask) == 0)
@@ -441,7 +441,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 		/* replacing ip */
 
 		/* deleting old ip */
-		if ((l = del_lump (msg,pmatch.rm_so + off + 
+		if ((l = del_lump (msg,pmatch.rm_so + off +
 						(pos - (begin + pmatch.rm_so)),oldlen, 0)) == 0)
 		{
 			LM_ERR("del_lump failed\n");
@@ -476,7 +476,7 @@ continue2:
 		fprintf(stdout,"Deallocating expression for ip ...\n");
 #endif
 	}
-	
+
 	if (diff != 0)
 	{
 		newContentLength = oldContentLength + diff;
@@ -508,7 +508,7 @@ int compile_expresions(char *port,char *ip)
 		{
 			LM_ERR("unable to alloc portExpression in pkg mem\n");
 		}
-	
+
 	ipExpression = NULL;
 	ipExpression = pkg_malloc(sizeof(regex_t));
 	if (ipExpression != NULL)
@@ -524,19 +524,19 @@ int compile_expresions(char *port,char *ip)
 		{
 			LM_ERR("unable to alloc ipExpression in pkg mem\n");
 		}
-	
+
 	return 0;
 }
 
 int free_compiled_expresions(void)
 {
-	if (portExpression != NULL) 
+	if (portExpression != NULL)
 		{
 		regfree(portExpression);
 		pkg_free(portExpression);
 		portExpression = NULL;
 		}
-	if (ipExpression != NULL) 
+	if (ipExpression != NULL)
 		{
 		regfree(ipExpression);
 		pkg_free(ipExpression);

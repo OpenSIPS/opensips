@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -91,7 +91,7 @@ static inline int find_dlist(str* _n, dlist_t** _d)
 			*_d = ptr;
 			return 0;
 		}
-		
+
 		ptr = ptr->next;
 	}
 
@@ -382,7 +382,7 @@ static inline int get_all_mem_ucontacts(void *buf, int len, unsigned int flags,
 				iterator_is_valid(&it);
 				iterator_next(&it) ) {
 
-				
+
 				dest = iterator_val(&it);
 				if( dest == NULL ) {
 					unlock_ulslot(p->d, i);
@@ -575,7 +575,7 @@ int register_udomain(const char* _n, udomain_t** _d)
 		*_d = d->d;
 		return 0;
 	}
-	
+
 	if (new_dlist(&s, &d) < 0) {
 		LM_ERR("failed to create new domain\n");
 		return -1;
@@ -606,7 +606,7 @@ int register_udomain(const char* _n, udomain_t** _d)
 
 	d->next = root;
 	root = d;
-	
+
 	*_d = d->d;
 	return 0;
 
@@ -643,7 +643,7 @@ void free_all_udomains(void)
 void print_all_udomains(FILE* _f)
 {
 	dlist_t* ptr;
-	
+
 	ptr = root;
 
 	fprintf(_f, "===Domain list===\n");
@@ -656,19 +656,19 @@ void print_all_udomains(FILE* _f)
 
 
 /*! \brief
- *  Loops through all domains summing up the number of users. 
+ *  Loops through all domains summing up the number of users.
  */
 unsigned long get_number_of_users(void* foo)
 {
 	int numberOfUsers = 0;
 
 	dlist_t* current_dlist;
-	
+
 	current_dlist = root;
 
 	while (current_dlist)
 	{
-		numberOfUsers += get_stat_val(current_dlist->d->users); 
+		numberOfUsers += get_stat_val(current_dlist->d->users);
 		current_dlist  = current_dlist->next;
 	}
 

@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * MySQL module core functions
  *
@@ -19,8 +19,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -217,7 +217,7 @@ static inline void reset_all_statements(const db_con_t* conn)
 	struct prep_stmt *pq_ptr;
 	struct my_stmt_ctx *ctx;
 
-	LM_INFO("reseting all statements on connection: (%p) %p\n", 
+	LM_INFO("reseting all statements on connection: (%p) %p\n",
 		conn,(void*)conn->tail);
 	for( pq_ptr=CON_PS_LIST(conn); pq_ptr ; pq_ptr=pq_ptr->next ) {
 		for (ctx = pq_ptr->stmts ; ctx ; ctx=ctx->next ) {
@@ -368,14 +368,14 @@ static int re_init_statement(const db_con_t* conn, struct prep_stmt *pq_ptr,
 
 	LM_DBG(" query  is <%.*s>, ptr=%p\n",
 		ctx->query.len, ctx->query.s, ctx->stmt);
-	
+
 	for( i=0 ; i<2 ; i++ ) {
 		/* re-init the statement */
 		if ( !(ctx->stmt=mysql_stmt_init(CON_CONNECTION(conn))) ) {
 			LM_ERR("failed while mysql_stmt_init()\n");
 			goto error;
 		}
-		
+
 		code = wrapper_single_mysql_stmt_prepare(conn, ctx);
 		if (code < 0) {
 			/* got disconnected during call */
@@ -446,7 +446,7 @@ static struct my_stmt_ctx * get_new_stmt_ctx(const db_con_t* conn,
 		LM_ERR("no more pkg mem for statement context\n");
 		return NULL;
 	}
-	memset( ctx, 0, 
+	memset( ctx, 0,
 		sizeof(struct my_stmt_ctx) + CON_TABLE(conn)->len + query->len);
 	ctx->table.s = (char*)(ctx+1);
 	ctx->table.len = CON_TABLE(conn)->len;
@@ -515,7 +515,7 @@ static struct prep_stmt* alloc_new_prepared_stmt(const db_con_t *conn,const db_v
 				pq_ptr->bind_in[i].is_null = &pq_ptr->in_bufs[i].null;
 				if (VAL_TYPE(v+i%n)==DB_DATETIME)
 					pq_ptr->bind_in[i].buffer = &mt[--time_no];
-			}	
+			}
 		} else {
 			for( i=0 ; i<n ; i++ ) {
 				pq_ptr->bind_in[i].length = &pq_ptr->in_bufs[i].len;
@@ -560,7 +560,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	db_val_t **buffered_rows = NULL;
 
 	LM_DBG("conn=%p (tail=%ld) MC=%p\n",conn, conn->tail,CON_CONNECTION(conn));
-	
+
 	if ( CON_MYSQL_PS(conn) == NULL ) {
 		/*  First time when this query is run, so we need to init it ->
 		**  allocate new structure for prepared statemet and its values
@@ -588,7 +588,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		/* link it to the connection */
 		pq_ptr->next = CON_PS_LIST(conn);
 		CON_PS_LIST(conn) = pq_ptr;
-		LM_DBG("new statement(%p) on connection: (%p) %p\n", 
+		LM_DBG("new statement(%p) on connection: (%p) %p\n",
 			pq_ptr, conn, (void*)conn->tail);
 		/* also return it for direct future usage */
 		CON_CURR_PS(conn) = pq_ptr;
@@ -616,7 +616,7 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		}
 	}
 
-	
+
 	if (query_buffer_size > 1 && CON_HAS_INSLIST(conn)) {
 		if (ql_row_add(conn->ins_list,v,&buffered_rows) < 0) {
 			LM_ERR("failed to insert row to buffered list\n");
@@ -634,13 +634,13 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 	LM_DBG("set values for the statement run\n");
 
 	if (query_buffer_size > 1 && CON_HAS_INSLIST(conn)) {
-		/* got here, we need to push data to DB 
+		/* got here, we need to push data to DB
 		 * first bind data */
 		for (j=0;j<query_buffer_size;j++) {
 			for (i=0;i<n;i++) {
 				if (db_mysql_val2bind( buffered_rows[j]+i , mysql_bind, j*n+i)<0 ) {
 					LM_ERR("val2bind() failed for i=%d (1)\n", j*n+i);
-				    cleanup_rows(buffered_rows);	
+				    cleanup_rows(buffered_rows);
 					return -1;
 				}
 			}
@@ -1015,7 +1015,7 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 		return 0;
 
 	/* if the fetch count is less than the remaining rows to process */
-	/* set the number of rows to process (during this call) equal 
+	/* set the number of rows to process (during this call) equal
 	to the fetch count */
 	if(nrows < rows)
 		rows = nrows;
@@ -1151,8 +1151,8 @@ int db_mysql_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
  * \param _un number of columns to update
  * \return zero on success, negative value on failure
  */
-int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o, 
-	const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n, 
+int db_mysql_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
+	const db_val_t* _v, const db_key_t* _uk, const db_val_t* _uv, const int _n,
 	const int _un)
 {
 	int ret;
@@ -1228,12 +1228,12 @@ int db_last_inserted_id(const db_con_t* _h)
 	int off, ret;
 	static str  sql_str;
 	static char sql_buf[SQL_BUF_LEN];
- 
+
 	if ((!_h) || (!_k) || (!_v) || (!_n)) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
- 
+
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 
 	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (",
@@ -1254,19 +1254,19 @@ int db_last_inserted_id(const db_con_t* _h)
 	off += ret;
 
 	*(sql_buf + off++) = ')';
-	
+
 	ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, " on duplicate key update ");
 	if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error;
 	off += ret;
-	
+
 	ret = db_print_set(_h, sql_buf + off, SQL_BUF_LEN - off, _k, _v, _n,
 		db_mysql_val2str);
 	if (ret < 0) return -1;
 	off += ret;
-	
+
 	sql_str.s = sql_buf;
 	sql_str.len = off;
- 
+
 	if (db_mysql_submit_query(_h, &sql_str) < 0) {
 		LM_ERR("error while submitting query\n");
 		return -2;

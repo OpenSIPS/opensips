@@ -44,7 +44,7 @@
 static str cache_mod_name = str_init("memcached");
 
 struct cachedb_url *memcached_script_urls = NULL;
-static int memcache_exec_threshold=0; 
+static int memcache_exec_threshold=0;
 
 int mc_set_connection(unsigned int type, void *val)
 {
@@ -154,7 +154,7 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 
 	start_expire_timer(start,memcache_exec_threshold);
 	con = (memcached_con *)connection->data;
-    
+
 	ret = memcached_get(con->memc,attr->s, attr->len,
 				&ret_len,&fl,&rc);
 
@@ -192,7 +192,7 @@ int wrap_memcached_get(cachedb_con *connection,str* attr, str* res)
 	res->len = ret_len;
 
 	free(ret);
-	
+
 	stop_expire_timer(start,memcache_exec_threshold,
 	"cachedb_memcached get",attr->s,attr->len,0);
 	return 0;
@@ -373,7 +373,7 @@ void memcached_free_connection(cachedb_pool_con *con)
 
 	if (!con) return;
 	c = (memcached_con *)con;
-	
+
 	memcached_free(c->memc);
 }
 
@@ -404,7 +404,7 @@ static int mod_init(void)
 	cde.cdb_func.sub = wrap_memcached_sub;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
-	
+
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to initialize cachedb_memcached\n");
 		return -1;

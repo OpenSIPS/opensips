@@ -1,4 +1,4 @@
-#ifndef DIAMETER_DEFS 
+#ifndef DIAMETER_DEFS
 #define  DIAMETER_DEFS
 
 #define vendorID	0
@@ -22,13 +22,13 @@
 #define AAA_ERROR			-1
 #define AAA_CONN_CLOSED		-2
 #define AAA_TIMEOUT			-3
-#define AAA_USER_IN_GROUP	 0	
+#define AAA_USER_IN_GROUP	 0
 
 #define AAA_NO_CONNECTION	-1
 
 #define WWW_AUTH_CHALLENGE_LEN 		18
 #define PROXY_AUTH_CHALLENGE_LEN 	20
-		
+
 #define WWW_AUTH_CHALLENGE		"WWW-Authenticate: "
 #define PROXY_AUTH_CHALLENGE 	"Proxy-Authenticate: "
 
@@ -44,7 +44,7 @@ typedef struct rd_buf
 {
 	/* used to return a parsed response */
 	int ret_code;
-	unsigned int chall_len; 
+	unsigned int chall_len;
 	unsigned char *chall;
 
 	/* used to read the message*/

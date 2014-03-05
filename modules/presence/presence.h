@@ -2,7 +2,7 @@
  * $Id
  *
  * presence - presence server implementation
- * 
+ *
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -50,7 +50,7 @@ extern db_con_t* pa_db;
 extern str db_url;
 extern str presentity_table;
 extern str active_watchers_table;
-extern str watchers_table; 
+extern str watchers_table;
 
 extern int counter;
 extern int pid;

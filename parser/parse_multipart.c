@@ -2,7 +2,7 @@
  * $Id$
  *
  * Copyright (C) 2009 Voice Sistem SRL
- * 
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -267,7 +267,7 @@ void free_multi_body(struct multi_body * multi)
 	struct part * p, *tmp;
 
 	p = multi->first;
-	
+
 
 	while(p)
 	{

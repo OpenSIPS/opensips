@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -28,22 +28,22 @@
 #include "../tcp_conn.h"
 
 /*
- * dump ssl error stack 
+ * dump ssl error stack
  */
 void            tls_print_errstack(void);
 
 /*
- * Called when new tcp connection is accepted 
+ * Called when new tcp connection is accepted
  */
 int             tls_tcpconn_init(struct tcp_connection *c, int sock);
 
 /*
- * clean the extra data upon connection shut down 
+ * clean the extra data upon connection shut down
  */
 void            tls_tcpconn_clean(struct tcp_connection *c);
 
 /*
- * shut down the TLS connection 
+ * shut down the TLS connection
  */
 void            tls_close(struct tcp_connection *c, int fd);
 

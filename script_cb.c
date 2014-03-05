@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -24,7 +24,7 @@
  *  2003-03-29  cleaning pkg allocation introduced (jiri)
  *  2003-03-19  replaced all mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2005-02-13  script callbacks devided into request and reply types (bogdan)
- *  2009-05-21  keep the callback lists in the same order as callbacks 
+ *  2009-05-21  keep the callback lists in the same order as callbacks
                  were registered (bogdan)
  */
 
@@ -67,7 +67,7 @@ static inline int add_callback( struct script_cb **list,
 	new_cb->param = param;
 	new_cb->next = NULL;
 	/* link at the end of the list - it is important to keep the order of
-	  register time, as this reflects the order of loading/init the modules 
+	  register time, as this reflects the order of loading/init the modules
 	  -bogdan */
 	if (*list==NULL) {
 		*list = new_cb;

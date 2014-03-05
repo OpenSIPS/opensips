@@ -396,7 +396,7 @@ static void mod_destroy(void)
 	LM_INFO("destroying module\n");
 }
 
-static int sng_logger(int level, char *fmt, ...) 
+static int sng_logger(int level, char *fmt, ...)
 {
 	va_list args;
 	static char buffer[256];
@@ -997,7 +997,7 @@ static int process_stream(struct sdp_stream_cell *s1, struct sdp_stream_cell *s2
 			                        att->rtp_enc.len,     att->rtp_enc.s,
 			                        att->rtp_clock.len,   att->rtp_clock.s);
 		}
-	} else 
+	} else
 		dst->len += sprintf(dst->s + dst->len, "%.*s%s"
 		                    "a=rtpmap:%.*s %.*s/%.*s",
 		                    att->rtp_payload.len, att->rtp_payload.s, CRLF,

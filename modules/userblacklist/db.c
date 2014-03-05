@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -94,7 +94,7 @@ int db_build_userbl_tree(const str *username, const str *domain, const str *tabl
 	db_res_t *res;
 	int i;
 	int n = 0;
-	
+
 	if (dbf.use_table(dbc, table) < 0) {
 		LM_ERR("cannot use table '%.*s'.\n", table->len, table->s);
 		return -1;
@@ -141,7 +141,7 @@ int db_reload_source(const str *table, struct dt_node_t *root)
 	db_res_t *res;
 	int i;
 	int n = 0;
-	
+
 	if (dbf.use_table(dbc, table) < 0) {
 		LM_ERR("cannot use table '%.*s'.\n", table->len, table->s);
 		return -1;

@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -35,16 +35,16 @@
 
 
 
-#ifndef GEN_LOCK_T_PREFERED 
+#ifndef GEN_LOCK_T_PREFERED
 /* semaphore probing limits */
 #define SEM_MIN		16
 #define SEM_MAX		4096
 
 /* we implement mutex here using lock sets; as the number of
-   semaphores may be limited (e.g. sysv) and number of synchronized 
-   elements high, we partition the synced SER elements and share 
-   semaphores in each of the partitions; we try to use as many 
-   semaphores as OS gives us for finest granularity. 
+   semaphores may be limited (e.g. sysv) and number of synchronized
+   elements high, we partition the synced SER elements and share
+   semaphores in each of the partitions; we try to use as many
+   semaphores as OS gives us for finest granularity.
 
    we allocate the locks according to the following plans:
 
@@ -72,7 +72,7 @@ gen_lock_set_t* reply_semaphore=0;
 
 
 static ser_lock_t* timer_group_lock=0; /* pointer to a TG_NR lock array,
-								    it's safer if we alloc this in shared mem 
+								    it's safer if we alloc this in shared mem
 									( required for fast lock ) */
 
 /* initialize the locks; return 0 on success, -1 otherwise
@@ -123,12 +123,12 @@ again:
 			lock_set_destroy(reply_semaphore);
 			lock_set_dealloc(reply_semaphore);
 		}
-		
+
 		if (i==0){
 			LM_CRIT("failed allocate semaphore sets\n");
 			goto error;
 		}
-		
+
 		if (((entry_semaphore=lock_set_alloc(i))==0)||
 			(lock_set_init(entry_semaphore)==0)) {
 			LM_DBG("entry semaphore initialization failure:  %s\n",
@@ -199,7 +199,7 @@ void lock_cleanup()
 {
 	/* that's system-wide; all other processes trying to use
 	   the semaphore will fail! call only if it is for sure
-	   no other process lives 
+	   no other process lives
 	*/
 
 	/* sibling double-check missing here; install a signal handler */

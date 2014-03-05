@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 #ifndef AVL_H
-#define AVL_H 
+#define AVL_H
 
 
 
@@ -53,7 +53,7 @@ typedef struct avl_table {
 	struct avl_node *avl_root;	/* Tree's root. */
 	size_t avl_count;		/* Number of items in tree. */
 	int ret_code;
-	
+
 } *map_t;
 
 /* Iterator data structure. */
@@ -86,7 +86,7 @@ typedef  void (* value_destroy_func)(void *);
  *
  * Should return 0. A non-zero return code will cause the processing to stop
  * and the it will be returned by map_for_each();
- * 
+ *
  */
 
 typedef  int (* process_each_func )(void * param, str key, void * value);
@@ -100,7 +100,7 @@ typedef  int (* process_each_func )(void * param, str key, void * value);
  *
  * AVLMAP_SHARED -> flag for shared memory
  * AVLMAP_NO_DUPLICATE -> flag for key duplication
- * 
+ *
  */
 
 map_t map_create ( int flags );

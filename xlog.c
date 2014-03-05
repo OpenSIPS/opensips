@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -78,7 +78,7 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	xlp = (xl_level_p)lev;
 	if(xlp->type==1)
 	{
-		if(pv_get_spec_value(msg, &xlp->v.sp, &value)!=0 
+		if(pv_get_spec_value(msg, &xlp->v.sp, &value)!=0
 			|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_INT))
 		{
 			LM_ERR("invalid log level value [%d]\n", value.flags);
@@ -153,7 +153,7 @@ int pv_parse_color_name(pv_spec_p sp, str *in)
 		LM_ERR("color name must have two chars\n");
 		return -1;
 	}
-	
+
 	/* foreground */
 	switch(in->s[0])
 	{
@@ -165,10 +165,10 @@ int pv_parse_color_name(pv_spec_p sp, str *in)
 		case 'B': case 'P': case 'C':
 		case 'W':
 		break;
-		default: 
+		default:
 			goto error;
 	}
-                               
+
 	/* background */
 	switch(in->s[1])
 	{
@@ -176,11 +176,11 @@ int pv_parse_color_name(pv_spec_p sp, str *in)
 		case 's': case 'r': case 'g':
 		case 'y': case 'b': case 'p':
 		case 'c': case 'w':
-		break;   
-		default: 
+		break;
+		default:
 			goto error;
 	}
-	
+
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
 	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	sp->pvp.pvn.u.isname.name.s = *in;
@@ -207,7 +207,7 @@ error:
                         LM_ERR("append_sstring overflow\n"); \
                         goto error;\
                 } \
-        } while(0) 
+        } while(0)
 
 
 int pv_get_color(struct sip_msg *msg, pv_param_t *param,
@@ -227,10 +227,10 @@ int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 
 	p = color;
 	end = p + COL_BUF;
-        
+
 	/* excape sequenz */
 	append_sstring(p, end, "\033[");
-        
+
 	if(param->pvn.u.isname.name.s.s[0]!='_')
 	{
 		if (islower((int)param->pvn.u.isname.name.s.s[0]))
@@ -243,7 +243,7 @@ int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 			param->pvn.u.isname.name.s.s[0] += 32;
 		}
 	}
-         
+
 	/* foreground */
 	switch(param->pvn.u.isname.name.s.s[0])
 	{
@@ -278,7 +278,7 @@ int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 			LM_ERR("invalid foreground\n");
 			return pv_get_null(msg, param, res);
 	}
-         
+
 	/* background */
 	switch(param->pvn.u.isname.name.s.s[1])
 	{

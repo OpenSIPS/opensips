@@ -26,15 +26,15 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Attributes
  * \ingroup mi
  */
 
 /*!
  * \defgroup mi OpenSIPS Management Interface
- * 
- * The OpenSIPS management interface (MI) is a plugin architecture with a few different 
+ *
+ * The OpenSIPS management interface (MI) is a plugin architecture with a few different
  * handlers that gives access to the management interface over various transports.
  *
  * The OpenSIPS core and modules register commands to the interface at runtime.
@@ -229,7 +229,7 @@ struct mi_root *mi_help(struct mi_root *root, void *param)
 			LM_ERR("cannot add new child\n");
 			goto error;
 		}
-		if (cmd->module.len && cmd->module.s && 
+		if (cmd->module.len && cmd->module.s &&
 				!add_mi_node_child(rpl, 0, "Exported by", 11,
 					cmd->module.s, cmd->module.len)) {
 			LM_ERR("cannot add new child\n");

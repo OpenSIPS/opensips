@@ -1,7 +1,7 @@
 /*
  * $Id$
  *
- * SNMPStats Module 
+ * SNMPStats Module
  * Copyright (C) 2006 SOMA Networks, INC.
  * Written by: Jeffrey Magder (jmagder@somanetworks.com)
  *
@@ -102,7 +102,7 @@
 #define TC_ROWSTATUS_NOTINSERVICE  2
 #define TC_ROWSTATUS_NOTREADY      3
 #define TC_ROWSTATUS_CREATEANDGO   4
-#define TC_ROWSTATUS_CREATEANDWAIT 5 
+#define TC_ROWSTATUS_CREATEANDWAIT 5
 #define TC_ROWSTATUS_DESTROY       6
 /*
  * Textual Conventions for INTEGER types - ends

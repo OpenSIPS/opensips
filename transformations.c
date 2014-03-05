@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -34,8 +34,8 @@
 
 #include "dprint.h"
 #include "mem/mem.h"
-#include "ut.h" 
-#include "trim.h" 
+#include "ut.h"
+#include "trim.h"
 #include "dset.h"
 #include "usr_avp.h"
 #include "errinfo.h"
@@ -69,11 +69,11 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val)
 	int ret = 0;
 
 	if(tr==NULL || val==NULL){
-		
+
 		LM_DBG("null pointer\n");
 		return -1;
 	}
-	
+
 	it = tr;
 	while(it)
 	{
@@ -111,7 +111,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			{
 				if(str2sint(&val->rs, &val->ri)!=0)
 					return -1;
-			} else { 
+			} else {
 				if(!(val->flags&PV_VAL_STR))
 					val->rs.s = int2str(val->ri, &val->rs.len);
 			}
@@ -897,7 +897,7 @@ search:
 					LM_ERR("no more memory");
 					goto error;
 				}
-				
+
 				/* should be end of string ! */
 				if (last) { last->next = t;} else {*list = t;}
 				return 0;
@@ -913,7 +913,7 @@ search:
 				string +=len+1;
 			}
 		}
-		
+
 		if (last) { last->next = t;} else {*list = t;}
 		last = t;
 	}
@@ -963,14 +963,14 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		_tr_csv_str.len = val->rs.len;
 		memcpy(_tr_csv_str.s, val->rs.s, val->rs.len);
 		_tr_csv_str.s[_tr_csv_str.len] = '\0';
-		
+
 		/* reset old values */
 		if(_tr_csv_list != NULL)
 		{
 			free_csv_list(_tr_csv_list);
 			_tr_csv_list = 0;
 		}
-		
+
 		/* parse csv */
 		sv = _tr_csv_str;
 		if (parse_csv(&sv,&_tr_csv_list)<0)
@@ -1080,7 +1080,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		_tr_sdp_str.len = val->rs.len;
 		memcpy(_tr_sdp_str.s, val->rs.s, val->rs.len);
 		_tr_sdp_str.s[_tr_sdp_str.len] = '\0';
-		
+
 	}
 
 	switch (subtype)
@@ -1090,7 +1090,7 @@ int tr_eval_sdp(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			searchLine = *(tp->v.s.s);
 			if(tp->next->type==TR_PARAM_NUMBER)
 				entryNo = tp->next->v.n;
-			else 
+			else
 			{
 				if(pv_get_spec_value(msg, (pv_spec_p)tp->next->v.data, &v)!=0
 						|| (!(v.flags&PV_VAL_INT)))
@@ -1192,7 +1192,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				LM_ERR("Invalid ip address provided for ip.ntop. Binary format expected !\n");
 				return -1;
 			}
-			
+
 			memcpy(ip.u.addr,val->rs.s,val->rs.len);
 			ip.len = val->rs.len;
 			buffer = ip_addr2a(&ip);
@@ -1256,7 +1256,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				val->rs.len = 0;
 				return 0;
 			}
-			
+
 			buffer = ip_addr2a(&ip);
 			val->rs.s = buffer;
 			val->rs.len = strlen(buffer);
@@ -1298,7 +1298,7 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					}
 					sv = v.rs;
 				}
-				LM_DBG("Trying to apply regexp [%.*s] on : [%.*s]\n", 
+				LM_DBG("Trying to apply regexp [%.*s] on : [%.*s]\n",
 						sv.len,sv.s,val->rs.len, val->rs.s);
 				if (reg_buf_len != sv.len || memcmp(reg_buf,sv.s,sv.len) != 0) {
 					LM_DBG("we must compile the regexp\n");
@@ -1383,21 +1383,21 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		_tr_params_str.len = val->rs.len;
 		memcpy(_tr_params_str.s, val->rs.s, val->rs.len);
 		_tr_params_str.s[_tr_params_str.len] = '\0';
-		
+
 		/* reset old values */
 		if(_tr_params_list != NULL)
 		{
 			free_params(_tr_params_list);
 			_tr_params_list = 0;
 		}
-		
+
 		/* parse params */
 		sv = _tr_params_str;
 		if (parse_params(&sv, CLASS_ANY, &phooks, &_tr_params_list)<0)
 			return -1;
 
 	}
-	
+
 	if(_tr_params_list==NULL)
 		return -1;
 
@@ -1425,7 +1425,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				sv = v.rs;
 			}
-			
+
 			for (pit = _tr_params_list; pit; pit=pit->next)
 			{
 				if (pit->name.len==sv.len
@@ -1471,7 +1471,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					n--;
 				}
 			} else {
-				/* ugly hack -- params are in reverse order 
+				/* ugly hack -- params are in reverse order
 				 * - first count then find */
 				i = 0;
 				for (pit = _tr_params_list; pit; pit=pit->next)
@@ -1526,7 +1526,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					n--;
 				}
 			} else {
-				/* ugly hack -- params are in reverse order 
+				/* ugly hack -- params are in reverse order
 				 * - first count then find */
 				i = 0;
 				for (pit = _tr_params_list; pit; pit=pit->next)
@@ -1576,7 +1576,7 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				}
 				sv = v.rs;
 			}
-			
+
 			val->ri = 0;
 			for (pit = _tr_params_list; pit; pit=pit->next)
 			{
@@ -1687,7 +1687,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			/* search the parameter */
 			while(topar)
 			{
-				if(topar->name.len == tp->v.s.len && 
+				if(topar->name.len == tp->v.s.len &&
 						strncmp(topar->name.s, tp->v.s.s, topar->name.len)== 0)
 					break;
 				topar = topar->next;
@@ -1703,7 +1703,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			else {
 				LM_DBG("We have params\n");
 				val->rs.s = topar->name.s;
-				val->rs.len = nameaddr_to_body->last_param->value.s + 
+				val->rs.len = nameaddr_to_body->last_param->value.s +
 					nameaddr_to_body->last_param->value.len - val->rs.s;
 			}
 			break;
@@ -1730,7 +1730,7 @@ char* parse_transformation(str *in, trans_t **tr)
 
 	if(in==NULL || in->s==NULL || tr==NULL)
 		return NULL;
-	
+
 	p = in->s;
 	do {
 		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
@@ -2136,7 +2136,7 @@ char* tr_parse_string(str* in, trans_t *t)
 			goto error;
 		}
 		return p;
-	} 
+	}
 
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
@@ -2586,12 +2586,12 @@ char * tr_parse_csv(str *in, trans_t *t)
 		}
 		return p;
 	}
-	
+
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
 error:
 	return NULL;
-	
+
 }
 
 char * tr_parse_sdp(str *in, trans_t *t)
@@ -2658,7 +2658,7 @@ char * tr_parse_sdp(str *in, trans_t *t)
 			pkg_free(spec);
 			spec = NULL;
 		}
-		
+
 		_tr_parse_nparam(p, p0, tp, spec,n,sign, in, s);
 		if(tp->type==TR_PARAM_NUMBER && tp->v.n<0)
 		{
@@ -2674,7 +2674,7 @@ char * tr_parse_sdp(str *in, trans_t *t)
 				in->len, in->s);
 			goto error;
 		}
-		
+
 		return p;
 	}
 
@@ -2732,7 +2732,7 @@ char * tr_parse_ip(str *in, trans_t *t)
 			name.len, name.s, name.len);
 error:
 	return NULL;
-	
+
 }
 
 char* tr_parse_re(str *in,trans_t *t)

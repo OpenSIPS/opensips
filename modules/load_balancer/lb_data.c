@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -68,7 +68,7 @@ struct lb_resource *get_resource_by_name(struct lb_data *data, str *name)
 	struct lb_resource *res;
 
 	for( res=data->resources ; res ; res=res->next ) {
-		if (name->len==res->name.len && 
+		if (name->len==res->name.len &&
 		memcmp( name->s, res->name.s, name->len)==0) {
 			LM_DBG("found resource [%.*s]\n",name->len,name->s);
 			return res;
@@ -262,7 +262,7 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 	memcpy( dst->uri.s , uri, len);
 
 	dst->profile_id.s = dst->uri.s + len;
-	dst->profile_id.len = snprintf(dst->profile_id.s, 
+	dst->profile_id.len = snprintf(dst->profile_id.s,
 		2+2*sizeof(struct lb_dst*), "%X", id);
 
 	dst->id = id;

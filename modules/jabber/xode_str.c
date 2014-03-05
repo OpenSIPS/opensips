@@ -34,7 +34,7 @@ int xode_spool_getlen(const xode_spool s)
     if(s == NULL)
         return 0;
 
-    return s->len;    
+    return s->len;
 }
 
 void xode_spool_free(xode_spool s)

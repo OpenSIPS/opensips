@@ -42,7 +42,7 @@
 /* maximum length of a FIFO line */
 #define MAX_MI_FIFO_BUFFER    1024
 
-/* how patient is ser with FIFO clients not awaiting a reply? 
+/* how patient is ser with FIFO clients not awaiting a reply?
 	4 x 80ms = 0.32 sec */
 #define FIFO_REPLY_RETRIES  4
 

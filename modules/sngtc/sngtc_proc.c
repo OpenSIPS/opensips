@@ -33,7 +33,7 @@
 
 void sangoma_worker_loop(int proc_no)
 {
-	struct sngtc_request req; 
+	struct sngtc_request req;
 	int rc;
 
 	close(sangoma_pipe[WRITE_END]);

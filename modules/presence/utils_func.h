@@ -67,7 +67,7 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 	memcpy(out->s + out->len, domain.s, domain.len);
 	out->len += domain.len;
 	out->s[out->len] = '\0';
-	
+
 	return 0;
 }
 

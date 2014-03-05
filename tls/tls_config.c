@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -43,7 +43,7 @@ int             tls_require_client_cert = 1;
 char           *tls_cert_file = TLS_CERT_FILE;
 char           *tls_pkey_file = TLS_PKEY_FILE;
 char           *tls_ca_file   = TLS_CA_FILE;
-char 	       *tls_ca_dir    = TLS_CA_DIRECTORY;  	
+char 	       *tls_ca_dir    = TLS_CA_DIRECTORY;
 char           *tls_tmp_dh_file        = TLS_DH_PARAMS_FILE;
 /* defaul cipher=0, this means the DEFAULT ciphers */
 char           *tls_ciphers_list = 0;

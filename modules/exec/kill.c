@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -47,7 +47,7 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "../../mem/shm_mem.h" 
+#include "../../mem/shm_mem.h"
 #include "../../dprint.h"
 #include "../../timer.h"
 #include "../../locking.h"
@@ -229,8 +229,8 @@ int initialize_kill(void)
 void destroy_kill(void)
 {
 	/* if disabled ... */
-	if (time_to_kill==0) 
-		return; 
+	if (time_to_kill==0)
+		return;
 
 	if (kill_lock) {
 		lock_destroy(kill_lock);

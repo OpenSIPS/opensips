@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * Copyright (C) 2001-2004 iptel.org
@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -39,7 +39,7 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 	char *ports;
 
 	LM_DBG("db_id = %p\n", id);
- 
+
 	if (!id) {
 		LM_ERR("invalid db_id parameter value\n");
 		return 0;

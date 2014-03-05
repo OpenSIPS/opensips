@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -32,10 +32,10 @@
 #include "../../ut.h"
 #include "../../str.h"
 #include "../../parser/parse_to.h"
-#include "../../parser/parse_uri.h" 
-#include "../../parser/parse_expires.h" 
-#include "../../parser/parse_event.h" 
-#include "../../parser/parse_content.h" 
+#include "../../parser/parse_uri.h"
+#include "../../parser/parse_expires.h"
+#include "../../parser/parse_event.h"
+#include "../../parser/parse_content.h"
 #include "../../lock_ops.h"
 #include "../../hash_func.h"
 #include "../../db/db.h"
@@ -119,7 +119,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	db_op_t  db_ops[2] ;
 	db_key_t result_cols[6];
 	db_res_t *result = NULL;
-	db_row_t *row ;	
+	db_row_t *row ;
 	db_val_t *row_vals ;
 	int i =0, size= 0;
 	struct p_modif* p= NULL;
@@ -132,7 +132,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 	str* rules_doc= NULL;
 	static str query_str = str_init("username");
 
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		return ;
@@ -196,7 +196,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 
 		event.s= (char*)row_vals[event_col].val.string_val;
 		event.len= strlen(event.s);
-		
+
 		size= sizeof(presentity_t) + user.len+ domain.len+ etag.len;
 		pres= (presentity_t*)pkg_malloc(size);
 		if(pres== NULL)
@@ -205,7 +205,7 @@ void msg_presentity_clean(unsigned int ticks,void *param)
 		}
 		memset(pres, 0, size);
 		size= sizeof(presentity_t);
-		
+
 		pres->user.s= (char*)pres+ size;
 		memcpy(pres->user.s, user.s, user.len);
 		pres->user.len= user.len;
@@ -253,7 +253,7 @@ no_notify:
 
 		rules_doc= NULL;
 
-		if(p[i].p->event->get_rules_doc && 
+		if(p[i].p->event->get_rules_doc &&
 		p[i].p->event->get_rules_doc(&p[i].p->user, &p[i].p->domain, &rules_doc)< 0)
 		{
 			LM_ERR("getting rules doc\n");
@@ -282,7 +282,7 @@ error:
 	if(result)
 		pa_dbf.free_result(pa_db, result);
 
-	if (pa_dbf.use_table(pa_db, &presentity_table) < 0) 
+	if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
 	{
 		LM_ERR("in use_table\n");
 		goto clean;
@@ -298,7 +298,7 @@ clean:
 	{
 		for(i= 0; i< n; i++)
 		{
-			
+
 			if(p[i].p)
 				pkg_free(p[i].p);
 			if(p[i].uri.s)
@@ -394,7 +394,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		LM_DBG("Expires header found, value= %d\n", lexpire);
 
 	}
-	else 
+	else
 	{
 		LM_DBG("'expires' not found; default=%d\n",	event->default_expires);
 		lexpire = event->default_expires;
@@ -433,7 +433,7 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		LM_DBG("existing etag= %.*s\n", etag.len, etag.s);
 	}
 
-	if (!msg->content_length) 
+	if (!msg->content_length)
 	{
 		LM_ERR("no Content-Length header found!\n");
 		goto error;
@@ -489,8 +489,8 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 		{
 			LM_ERR("bad sender SIP address!\n");
 			goto error;
-		} 
-		else 
+		}
+		else
 		{
 			LM_DBG("using user id [%.*s]\n",buf_len,buf);
 		}
@@ -549,14 +549,14 @@ int handle_publish(struct sip_msg* msg, char* sender_uri, char* str2)
 	return 1;
 
 unsupported_event:
-	
+
 	LM_ERR("Missing or unsupported event header field value\n");
-		
+
 	if(msg->event && msg->event->body.s && msg->event->body.len>0)
 		LM_ERR("\tevent=[%.*s]\n", msg->event->body.len, msg->event->body.s);
 
 	reply_code= BAD_EVENT_CODE;
-	reply_str=	pu_489_rpl; 
+	reply_str=	pu_489_rpl;
 
 error:
 	if(sent_reply== 0)

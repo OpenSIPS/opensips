@@ -54,7 +54,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 
 /**
- * Parse a database URL of form 
+ * Parse a database URL of form
  * scheme://[username[:password]@]hostname[:port]/database
  *
  * \param id filled id struct
@@ -88,12 +88,12 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	if (!id || !url || !url->s) {
 		goto err;
 	}
-	
+
 	len = url->len;
 	if (len < SHORTEST_DB_URL_LEN) {
 		goto err;
 	}
-	
+
 	LM_DBG("parsing [%.*s]\n",url->len,url->s);
 
 	/* Initialize all attributes to 0 */
@@ -142,7 +142,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				st = ST_USER_HOST;
 				begin = url->s + i + 1;
 				break;
-				
+
 			default:
 				goto err;
 			}
@@ -249,7 +249,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
 				break;
 			}
-			
+
 		case ST_DB:
 			break;
 		}

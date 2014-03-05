@@ -286,7 +286,7 @@ static int fixup_avp_prefix(void **param)
 	name = get_avp_name_id(dbp_fixup->a.u.sval.pvp.pvn.u.isname.name.n);
 
 	if (name && dbp_fixup->a.type == AVPOPS_VAL_PVAR) {
-		
+
 		p = pkg_malloc(name->len + prefix->len + 7);
 		if (!p) {
 			LM_ERR("No more pkg mem!\n");
@@ -375,7 +375,7 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 					"expected : $pseudo-variable or int/str value\n");
 				return E_UNSPEC;
 			}
-			
+
 			if(sp->u.sval.type==PVT_RURI || sp->u.sval.type==PVT_FROM
 					|| sp->u.sval.type==PVT_TO || sp->u.sval.type==PVT_OURI)
 			{
@@ -454,7 +454,7 @@ static int fixup_db_query_avp(void** param, int param_no)
 			LM_ERR("wrong format[%s]\n", s.s);
 			return E_UNSPEC;
 		}
-			
+
 		*param = (void*)model;
 		return 0;
 	} else if(param_no==2) {
@@ -493,7 +493,7 @@ static int fixup_delete_avp(void** param, int param_no)
 		/* attribute name / alias */
 		if ( (p=strchr(s,'/'))!=0 )
 			*(p++)=0;
-		
+
 		if(*s=='$')
 		{
 			/* is variable */
@@ -836,7 +836,7 @@ static int fixup_subst(void** param, int param_no)
 	struct fis_param **av;
 	char *s;
 	char *p;
-	
+
 	if (param_no==1) {
 		s = (char*)*param;
 		ap = 0;
@@ -845,7 +845,7 @@ static int fixup_subst(void** param, int param_no)
 		if(av==NULL)
 		{
 			LM_ERR("no more pkg memory\n");
-			return E_UNSPEC;			
+			return E_UNSPEC;
 		}
 		memset(av, 0, 2*sizeof(struct fis_param*));
 
@@ -876,7 +876,7 @@ static int fixup_subst(void** param, int param_no)
 			*param=(void*)av;
 			return 0;
 		}
-		
+
 		/* dst || flags */
 		s = p;
 		if(*s==PV_MARKER)
@@ -891,7 +891,7 @@ static int fixup_subst(void** param, int param_no)
 					LM_ERR("unable to get pseudo-variable in param 2 [%s]\n",s);
 					return E_OUT_OF_MEM;
 				}
-			
+
 				if (ap->u.sval.type!=PVT_AVP)
 				{
 					LM_ERR("bad attribute name <%s>!\n", s);
@@ -912,7 +912,7 @@ static int fixup_subst(void** param, int param_no)
 				return 0;
 			}
 		}
-		
+
 		/* flags */
 		for( ; p&&*p ; p++ )
 		{
@@ -965,7 +965,7 @@ static int fixup_op_avp(void** param, int param_no)
 		if(av==NULL)
 		{
 			LM_ERR("no more pkg memory\n");
-			return E_UNSPEC;			
+			return E_UNSPEC;
 		}
 		memset(av, 0, 2*sizeof(struct fis_param*));
 		/* avp src / avp dst */
@@ -989,7 +989,7 @@ static int fixup_op_avp(void** param, int param_no)
 			*param=(void*)av;
 			return 0;
 		}
-		
+
 		s = p;
 		ap = avpops_parse_pvar(s);
 		if (ap==0)
@@ -1029,20 +1029,20 @@ static int fixup_is_avp_set(void** param, int param_no)
 	struct fis_param *ap;
 	char *p;
 	char *s;
-	
+
 	s = (char*)(*param);
 	if (param_no==1) {
 		/* attribute name | alias / flags */
 		if ( (p=strchr(s,'/'))!=0 )
 			*(p++)=0;
-		
+
 		ap = avpops_parse_pvar(s);
 		if (ap==0)
 		{
 			LM_ERR("unable to get pseudo-variable in param\n");
 			return E_OUT_OF_MEM;
 		}
-		
+
 		if (ap->u.sval.type!=PVT_AVP)
 		{
 			LM_ERR("bad attribute name <%s>\n", (char*)*param);
@@ -1082,7 +1082,7 @@ static int fixup_is_avp_set(void** param, int param_no)
 					return E_UNSPEC;
 			}
 		}
-		
+
 		*param=(void*)ap;
 	}
 

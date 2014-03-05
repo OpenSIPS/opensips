@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -226,8 +226,8 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	dlg->lifetime = 0;
 
 	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
-		if (insert_ping_timer(dlg) != 0) 
-			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg); 
+		if (insert_ping_timer(dlg) != 0)
+			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 		else {
 			/* reference dialog as kept in ping timer list */
 			ref_dlg(dlg, 1);

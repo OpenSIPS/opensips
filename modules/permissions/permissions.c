@@ -19,8 +19,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -506,7 +506,7 @@ static int single_fixup(void** param, int param_no)
 
 	strcpy(buffer, (char*)*param);
 	strcat(buffer, allow_suffix);
-	tmp = buffer; 
+	tmp = buffer;
 	ret = load_fixup(&tmp, 1);
 
 	strcpy(buffer + param_len, deny_suffix);
@@ -545,10 +545,10 @@ static int double_fixup(void** param, int param_no)
 		LM_ERR("no pkg memory left\n");
 		return -1;
 	    }
-	    
+
 	    strcpy(buffer, (char*)*param);
 	    strcat(buffer, allow_suffix);
-	    tmp = buffer; 
+	    tmp = buffer;
 	    ret = load_fixup(&tmp, 1);
 
 	    strcpy(buffer + param_len, deny_suffix);
@@ -592,7 +592,7 @@ static int double_fixup(void** param, int param_no)
 
 
 /*
- * module initialization function 
+ * module initialization function
  */
 static int mod_init(void)
 {
@@ -656,10 +656,10 @@ static int mi_addr_child_init(void)
 }
 */
 
-/* 
- * destroy function 
+/*
+ * destroy function
  */
-static void mod_exit(void) 
+static void mod_exit(void)
 {
 	int i;
 
@@ -704,7 +704,7 @@ int allow_routing_2(struct sip_msg* msg, char* allow_file, char* deny_file)
 /*
  * Test of REGISTER messages. Creates To-Contact pairs and compares them
  * against rules in allow and deny files passed as parameters. The function
- * iterates over all Contacts and creates a pair with To for each contact 
+ * iterates over all Contacts and creates a pair with To for each contact
  * found. That allows to restrict what IPs may be used in registrations, for
  * example
  */
@@ -736,7 +736,7 @@ static int check_register(struct sip_msg* msg, int idx)
 		LM_ERR("To or Contact not found\n");
 		return -1;
 	}
-	
+
 	if (!msg->contact) {
 		     /* REGISTER messages that contain no Contact header field
 		      * are allowed. Such messages do not modify the contents of
@@ -784,7 +784,7 @@ static int check_register(struct sip_msg* msg, int idx)
 		if (search_rule(allow[idx].rules, to_str, contact_str)) {
 			if (check_all_branches) goto skip_deny;
 		}
-	
+
 		     /* rule exists in deny file */
 		if (search_rule(deny[idx].rules, to_str, contact_str)) {
 			LM_DBG("deny rule found => Register denied\n");
@@ -820,7 +820,7 @@ int allow_register_2(struct sip_msg* msg, char* allow_file, char* deny_file)
  * -1:	deny
  * 1:	allow
  */
-static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp) 
+static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp)
 {
 	struct hdr_field *from;
 	int idx, len;
@@ -831,30 +831,30 @@ static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp)
 
 	idx = (int)(long)_idx;
 	sp = (pv_spec_t *)_sp;
-	
+
 	/* turn off control, allow any uri */
 	if ((!allow[idx].rules) && (!deny[idx].rules)) {
 		LM_DBG("no rules => allow any uri\n");
 		return 1;
 	}
-	
+
 	/* looking for FROM HF */
         if ((!msg->from) && (parse_headers(msg, HDR_FROM_F, 0) == -1)) {
                 LM_ERR("failed to parse message\n");
                 return -1;
         }
-	
+
 	if (!msg->from) {
 		LM_ERR("FROM header field not found\n");
 		return -1;
 	}
-	
+
 	/* we must call parse_from_header explicitly */
         if ((!(msg->from)->parsed) && (parse_from_header(msg) < 0)) {
                 LM_ERR("failed to parse From body\n");
                 return -1;
         }
-	
+
 	from = msg->from;
 	len = ((struct to_body*)from->parsed)->uri.len;
 	if (len > EXPRESSION_LENGTH) {
@@ -888,7 +888,7 @@ static int allow_uri(struct sip_msg* msg, char* _idx, char* _sp)
     		LM_DBG("allow rule found => URI is allowed\n");
 		return 1;
 	}
-	
+
 	/* rule exists in deny file */
 	if (search_rule(deny[idx].rules, from_str, uri_str)) {
 	    LM_DBG("deny rule found => URI is denied\n");
@@ -908,7 +908,7 @@ int allow_test(char *file, char *uri, char *contact)
 {
     char *pathname;
     int idx;
-    
+
     pathname = get_pathname(file);
     if (!pathname) {
 	LM_ERR("Cannot get pathname of <%s>\n", file);
@@ -923,13 +923,13 @@ int allow_test(char *file, char *uri, char *contact)
     }
 
     pkg_free(pathname);
-	
+
     /* turn off control, allow any routing */
     if ((!allow[idx].rules) && (!deny[idx].rules)) {
 	LM_DBG("No rules => Allowed\n");
 	return 1;
     }
-    
+
     LM_DBG("Looking for URI: %s, Contact: %s\n", uri, contact);
 
     /* rule exists in allow file */
@@ -937,7 +937,7 @@ int allow_test(char *file, char *uri, char *contact)
 	LM_DBG("Allow rule found => Allowed\n");
 	return 1;
     }
-	
+
     /* rule exists in deny file */
     if (search_rule(deny[idx].rules, uri, contact)) {
 	LM_DBG("Deny rule found => Denied\n");

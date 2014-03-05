@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -35,7 +35,7 @@
  *             re-enabling of destinations (carsten)
  * 2007-05-08  Ported the changes to SVN-Trunk, renamed ds_is_domain to
  *             ds_is_from_list and modified the function to work with IPv6 adresses.
- * 2007-07-18  removed index stuff 
+ * 2007-07-18  removed index stuff
  *             added DB support to load/reload data(ancuta)
  * 2007-09-17  added list-file support for reload data (carstenbock)
  * 2009-05-18  Added support for weights for the destinations;
@@ -83,7 +83,7 @@ static db_con_t* ds_db_handle=0;
 /* dispatching data holder */
 static ds_data_t **ds_data = NULL;
 /* reader-writers lock for reloading the data */
-static rw_lock_t *ds_lock = NULL; 
+static rw_lock_t *ds_lock = NULL;
 
 
 
@@ -184,7 +184,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 			LM_ERR("no more memory.\n");
 			goto err;
 		}
-		
+
 		memset(sp, 0, sizeof(ds_set_t));
 		sp->next = d_data->sets;
 		d_data->sets = sp;
@@ -308,7 +308,7 @@ int reindex_dests( ds_data_t *d_data)
 
 			dp = sp->dlist;
 			sp->dlist = dp->next;
-			
+
 			shm_free(dp);
 			dp=NULL;
 		}
@@ -393,7 +393,7 @@ ds_pvar_param_p ds_get_pvar_param(str uri)
 		shm_free(param);
 		return NULL;
 	}
-	
+
 	return param;
 }
 
@@ -784,7 +784,7 @@ int ds_reload_db(void)
 
 	/* destroy old data */
 	if (old_data) {
-		/* copy the state of the destinations from the old set 
+		/* copy the state of the destinations from the old set
 		 * (for the matching ids) */
 		ds_inherit_state( old_data, new_data);
 		ds_destroy_data_set( old_data );
@@ -822,8 +822,8 @@ unsigned int ds_get_hash(str *x, str *y)
 		}
 		v=0;
 		for (;p<(x->s+x->len); p++)
-		{ 
-			v<<=8; 
+		{
+			v<<=8;
 			v+=*p;
 		}
 		h+=v^(v>>3);
@@ -831,7 +831,7 @@ unsigned int ds_get_hash(str *x, str *y)
 	if(y)
 	{
 		p=y->s;
-		if (y->len>=4) 
+		if (y->len>=4)
 		{
 			for (; p<=(y->s+y->len-4); p+=4)
 			{
@@ -839,11 +839,11 @@ unsigned int ds_get_hash(str *x, str *y)
 				h+=v^(v>>3);
 			}
 		}
-	
+
 		v=0;
 		for (;p<(y->s+y->len); p++)
-		{ 
-			v<<=8; 
+		{
+			v<<=8;
 			v+=*p;
 		}
 		h+=v^(v>>3);
@@ -872,7 +872,7 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 							str* uri, struct sip_uri* parsed_uri, int flags)
 {
 	struct sip_uri tmp_p_uri; /* used only if parsed_uri==0 */
-	
+
 	if (parsed_uri==0)
 	{
 		if (parse_uri(uri->s, uri->len, &tmp_p_uri)<0)
@@ -889,7 +889,7 @@ static inline int get_uri_hash_keys(str* key1, str* key2,
 					uri->len, uri->len?uri->s:"");
 			goto error;
 	}
-	
+
 	/* we want: user@host:port if port !=5060
 	 *          user@host if port==5060
 	 *          user if the user flag is set*/
@@ -927,31 +927,31 @@ int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash)
 	str from;
 	str key1;
 	str key2;
-	
+
 	if(msg==NULL || hash == NULL)
 	{
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	if(parse_from_header(msg)<0)
 	{
 		LM_ERR("cannot parse From hdr\n");
 		return -1;
 	}
-	
+
 	if(msg->from==NULL || get_from(msg)==NULL)
 	{
 		LM_ERR("cannot get From uri\n");
 		return -1;
 	}
-	
+
 	from   = get_from(msg)->uri;
 	trim(&from);
 	if (get_uri_hash_keys(&key1, &key2, &from, 0, ds_flags)<0)
 		return -1;
 	*hash = ds_get_hash(&key1, &key2);
-	
+
 	return 0;
 }
 
@@ -965,7 +965,7 @@ int ds_hash_touri(struct sip_msg *msg, unsigned int *hash)
 	str to;
 	str key1;
 	str key2;
-	
+
 	if(msg==NULL || hash == NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -977,15 +977,15 @@ int ds_hash_touri(struct sip_msg *msg, unsigned int *hash)
 		LM_ERR("cannot parse To hdr\n");
 		return -1;
 	}
-	
-	
+
+
 	to   = get_to(msg)->uri;
 	trim(&to);
-	
+
 	if (get_uri_hash_keys(&key1, &key2, &to, 0, ds_flags)<0)
 		return -1;
 	*hash = ds_get_hash(&key1, &key2);
-	
+
 	return 0;
 }
 
@@ -1002,20 +1002,20 @@ int ds_hash_callid(struct sip_msg *msg, unsigned int *hash)
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	if(msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0)==-1) ||
 				(msg->callid==NULL)) )
 	{
 		LM_ERR("cannot parse Call-Id\n");
 		return -1;
 	}
-	
+
 	cid.s   = msg->callid->body.s;
 	cid.len = msg->callid->body.len;
 	trim(&cid);
-	
+
 	*hash = ds_get_hash(&cid, NULL);
-	
+
 	return 0;
 }
 
@@ -1026,8 +1026,8 @@ int ds_hash_ruri(struct sip_msg *msg, unsigned int *hash)
 	str* uri;
 	str key1;
 	str key2;
-	
-	
+
+
 	if(msg==NULL || hash == NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -1037,11 +1037,11 @@ int ds_hash_ruri(struct sip_msg *msg, unsigned int *hash)
 		LM_ERR("bad request uri\n");
 		return -1;
 	}
-	
+
 	uri=GET_RURI(msg);
 	if (get_uri_hash_keys(&key1, &key2, uri, &msg->parsed_uri, ds_flags)<0)
 		return -1;
-	
+
 	*hash = ds_get_hash(&key1, &key2);
 	return 0;
 }
@@ -1055,7 +1055,7 @@ int ds_hash_authusername(struct sip_msg *msg, unsigned int *hash)
 	str username = {0, 0};
 	/* The Credentials from this request */
 	auth_body_t* cred;
-	
+
 	if(msg==NULL || hash == NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -1096,14 +1096,14 @@ int ds_hash_authusername(struct sip_msg *msg, unsigned int *hash)
 		LM_ERR("No Authorization-Username or Credentials!\n");
 		return 1;
 	}
-	
+
 	username.s = cred->digest.username.user.s;
 	username.len = cred->digest.username.user.len;
 
 	trim(&username);
-	
+
 	*hash = ds_get_hash(&username, NULL);
-	
+
 	return 0;
 }
 
@@ -1112,7 +1112,7 @@ int ds_hash_pvar(struct sip_msg *msg, unsigned int *hash)
 {
 	/* The String to create the hash */
 	str hash_str = {0, 0};
-	
+
 	if(msg==NULL || hash == NULL || hash_param_model == NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -1132,7 +1132,7 @@ int ds_hash_pvar(struct sip_msg *msg, unsigned int *hash)
 	LM_DBG("Hashing %.*s!\n", hash_str.len, hash_str.s);
 
 	*hash = ds_get_hash(&hash_str, NULL);
-	
+
 	return 0;
 }
 
@@ -1140,10 +1140,10 @@ int ds_hash_pvar(struct sip_msg *msg, unsigned int *hash)
 static inline int ds_get_index(int group, ds_set_p *index)
 {
 	ds_set_p si = NULL;
-	
+
 	if(index==NULL || group<0 || (*ds_data)->sets==NULL)
 		return -1;
-	
+
 	/* get the index of the set */
 	for ( si=(*ds_data)->sets ; si ; si = si->next ) {
 		if(si->id == group) {
@@ -1177,7 +1177,7 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri,
 				act.elem[0].u.s.len -= 4;
 			}
 			act.next = 0;
-	
+
 			if (do_action(&act, msg) < 0) {
 				LM_ERR("error while setting host\n");
 				return -1;
@@ -1275,7 +1275,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 				msg->dst_uri.s);
 		return -1;
 	}
-	
+
 
 	/* access ds data under reader's lock */
 	lock_start_read( ds_lock );
@@ -1286,7 +1286,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		LM_ERR("destination set [%d] not found\n", ds_select_ctl->set);
 		goto error;
 	}
-	
+
 	LM_DBG("set [%d]\n", ds_select_ctl->set);
 
 	ds_hash = 0;
@@ -1430,7 +1430,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 	/* if alg is round-robin then update the shortcut to next to be used */
 	if(ds_select_ctl->alg==4)
 		idx->last = (ds_id+1) % idx->nr;
-	
+
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n", ds_select_ctl->alg, ds_select_ctl->set, ds_id,
 			selected->uri.len, selected->uri.s);
 
@@ -1585,18 +1585,18 @@ int ds_mark_dst(struct sip_msg *msg, int mode)
 	}
 
 	prev_avp = search_first_avp(grp_avp_type, grp_avp_name, &avp_value, 0);
-	
+
 	if(prev_avp==NULL || prev_avp->flags&AVP_VAL_STR)
 		return -1; /* grp avp deleted -- strange */
 	group = avp_value.n;
-	
+
 	prev_avp = search_first_avp(dst_avp_type, dst_avp_name, &avp_value, 0);
-	
+
 	if(prev_avp==NULL || !(prev_avp->flags&AVP_VAL_STR))
 		return -1; /* dst avp deleted -- strange */
-	
+
 	if(mode==1) {
-		ret = ds_set_state(group, &avp_value.s, 
+		ret = ds_set_state(group, &avp_value.s,
 				DS_INACTIVE_DST|DS_PROBING_DST, 0);
 	} else if(mode==2) {
 		ret = ds_set_state(group, &avp_value.s, DS_PROBING_DST, 1);
@@ -1607,10 +1607,10 @@ int ds_mark_dst(struct sip_msg *msg, int mode)
 		if (ret == 0) ret = ds_set_state(group, &avp_value.s,
 				DS_PROBING_DST, 0);
 	}
-	
+
 	LM_DBG("mode [%d] grp [%d] dst [%.*s]\n", mode, group, avp_value.s.len,
 			avp_value.s.s);
-	
+
 	return (ret==0)?1:-1;
 }
 
@@ -1645,11 +1645,11 @@ int ds_set_state(int group, str *address, int state, int type)
 
 	while(i<idx->nr)
 	{
-		if(idx->dlist[i].uri.len==address->len 
+		if(idx->dlist[i].uri.len==address->len
 				&& strncasecmp(idx->dlist[i].uri.s, address->s,
 					address->len)==0)
 		{
-			
+
 			/* remove the Probing/Inactive-State? Set the fail-count to 0. */
 			if (state == DS_PROBING_DST) {
 				if (type) {
@@ -1659,16 +1659,16 @@ int ds_set_state(int group, str *address, int state, int type)
 						lock_stop_read( ds_lock );
 						return 0;
 					}
-					
+
 					idx->dlist[i].failure_count++;
 					/* Fire only, if the Threshold is reached. */
-					if (idx->dlist[i].failure_count 
+					if (idx->dlist[i].failure_count
 							< probing_threshhold) {
 						lock_stop_read( ds_lock );
 						return 0;
 					}
 					if (idx->dlist[i].failure_count
-							> probing_threshhold) 
+							> probing_threshhold)
 						idx->dlist[i].failure_count
 							= probing_threshhold;
 				}
@@ -1832,7 +1832,7 @@ int ds_print_mi_list(struct mi_node* rpl)
 	struct mi_node* node1;
 	struct mi_node* set_node = NULL;
 	struct mi_attr* attr = NULL;
-	
+
 	if ( (*ds_data)->sets==NULL ) {
 		LM_DBG("empty destination sets\n");
 		return  0;
@@ -1895,8 +1895,8 @@ error:
  * Callback-Function for the OPTIONS-Request
  * This Function is called, as soon as the Transaction is finished
  * (e. g. a Response came in, the timeout was hit, ...)
- * 
- */ 
+ *
+ */
 static void ds_options_callback( struct cell *t, int type,
 		struct tmcb_params *ps )
 {
@@ -1936,10 +1936,10 @@ static void ds_options_callback( struct cell *t, int type,
 					uri.s, group);
 		}
 	}
-	/* if we always probe, and we get a timeout 
+	/* if we always probe, and we get a timeout
 	 * or a reponse that is not within the allowed
 	 * reply codes, then disable*/
-	if(ds_probing_mode==1 && ps->code != 200 && 
+	if(ds_probing_mode==1 && ps->code != 200 &&
 	(ps->code == 408 || !check_options_rplcode(ps->code)))
 	{
 		if (ds_set_state(group, &uri, DS_PROBING_DST, 1) != 0)
@@ -1954,7 +1954,7 @@ static void ds_options_callback( struct cell *t, int type,
 
 /*
  * Timer for checking inactive destinations
- * 
+ *
  * This timer is regularly fired.
  */
 void ds_check_timer(unsigned int ticks, void* param)
@@ -1973,7 +1973,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 	/* Iterate over the groups and the entries of each group: */
 	for( list=(*ds_data)->sets ; list!= NULL ; list= list->next)
 	{
-		for(j=0; j<list->nr; j++) 
+		for(j=0; j<list->nr; j++)
 		{
 			/* If the Flag of the entry has "Probing set, send a probe:	*/
 			if ( ((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&

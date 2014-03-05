@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -219,7 +219,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 
 	lock_get(&b2bl_htable[hash_index].lock);
 
-	if(local_index>= 0) /* a local index specified */ 
+	if(local_index>= 0) /* a local index specified */
 	{
 		tuple->id = local_index;
 		if(b2bl_htable[hash_index].first == NULL)
@@ -233,7 +233,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			/*insert it in the proper place  */
 			for(it = b2bl_htable[hash_index].first; it && it->id<local_index; it=it->next)
 			{
-				prev_it = it;	
+				prev_it = it;
 			}
 			if(!prev_it)
 			{
@@ -244,13 +244,13 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			}
 			else
 			{
-				tuple->prev = prev_it; 
+				tuple->prev = prev_it;
 				prev_it->next = tuple;
 				tuple->next = it;
 				if(it)
 					it->prev = tuple;
 			}
-		}		
+		}
 	}
 	else
 	{
@@ -277,7 +277,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	LM_DBG("hash index [%d]:\n", hash_index);
 	for(it = b2bl_htable[hash_index].first; it; it=it->next)
 	{
-		LM_DBG("id [%d]", it->id);	
+		LM_DBG("id [%d]", it->id);
 	}
 
 	b2bl_key = b2bl_generate_key(hash_index, tuple->id);
@@ -465,7 +465,7 @@ int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
  			tuple, tuple->key->len, tuple->key->s);
  		return -1;
  	}
-		
+
 
 	/* check for inconsistencies */
 	for (i = pos + 1; i < MAX_B2BL_ENT; i++)
@@ -506,7 +506,7 @@ int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
 			tuple, tuple->key->len, tuple->key->s);
 		return -1;
 	}
-		
+
 	b2bl_print_tuple(tuple, L_DBG);
 	return 0;
 }
@@ -623,7 +623,7 @@ int b2bl_parse_key(str* key, unsigned int* hash_index,
 	s.len = hi_len;
 	if(str2int(&s, hash_index)< 0)
 		return -1;
-	
+
 	s.s = p+1;
 	s.len = key->s + key->len - s.s;
 	if(str2int(&s, local_index)< 0)
@@ -675,7 +675,7 @@ int init_b2bl_htable(void)
 	b2bl_htable = (b2bl_table_t)shm_malloc(b2bl_hsize* sizeof(b2bl_entry_t));
 	if(!b2bl_htable)
 		ERR_MEM(SHARE_MEM);
-	
+
 	memset(b2bl_htable, 0, b2bl_hsize* sizeof(b2bl_entry_t));
 	for(i= 0; i< b2bl_hsize; i++)
 	{
@@ -711,8 +711,8 @@ void destroy_b2bl_htable(void)
 }
 
 /* Take headers to pass on the other side:
- *	Content-Type: 
- *	Allow: 
+ *	Content-Type:
+ *	Allow:
  *	Supported:
  *	Require
  *	RSeq
@@ -750,7 +750,7 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 		hdrs[hdrs_no++] = msg->min_se;
 	if(msg->event)
 		hdrs[hdrs_no++] = msg->event;
-	
+
 
 	require_hdr = get_header_by_static_name( msg, "Require");
 	if(require_hdr)

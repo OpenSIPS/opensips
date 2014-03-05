@@ -19,8 +19,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -43,14 +43,14 @@
 #include "authaaa_mod.h"
 
 
-/* 
- * Extract URI depending on the request from To or From header 
+/*
+ * Extract URI depending on the request from To or From header
  */
 static inline int get_uri_user(struct sip_msg* _m, str** _uri_user)
 {
     struct sip_uri *puri;
 
-    if ((REQ_LINE(_m).method.len == 8) && 
+    if ((REQ_LINE(_m).method.len == 8) &&
 	(memcmp(REQ_LINE(_m).method.s, "REGISTER", 8) == 0)) {
 	if ((puri=parse_to_uri(_m))==NULL) {
 	    LM_ERR("failed to parse To header\n");
@@ -107,7 +107,7 @@ static inline int authorize(struct sip_msg* _msg, pv_elem_t* _realm,
     if (_uri_user) {
 	if (pv_get_spec_value(_msg, _uri_user, &pv_val) == 0) {
 	    if (pv_val.flags & PV_VAL_STR) {
-		res = aaa_authorize_sterman(_msg, &cred->digest, 
+		res = aaa_authorize_sterman(_msg, &cred->digest,
 					       &_msg->first_line.u.request.method,
 					       &pv_val.rs);
 	    } else {
@@ -129,7 +129,7 @@ static inline int authorize(struct sip_msg* _msg, pv_elem_t* _realm,
 	    return AUTH_ERROR;
 	}
 	un_escape(uri_user, &user);
-	res = aaa_authorize_sterman(_msg, &cred->digest, 
+	res = aaa_authorize_sterman(_msg, &cred->digest,
 				       &_msg->first_line.u.request.method,
 				       &user);
 	pkg_free(user.s);

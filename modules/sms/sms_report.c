@@ -276,12 +276,12 @@ str* get_error_str(int status)
 			START_ERR_MSG"Error, remote procedure error"END_ERR_MSG;
 			err_str.len = 29 + START_ERR_MSG_LEN + END_ERR_MSG_LEN;
 			break;
-		case 65: 
+		case 65:
 			err_str.s =
 			START_ERR_MSG"Error,incompatible destination"END_ERR_MSG;
 			err_str.len = 30 + START_ERR_MSG_LEN + END_ERR_MSG_LEN;
 			break;
-		case 66: 
+		case 66:
 			err_str.s =
 			START_ERR_MSG"Error,connection rejected by SME"END_ERR_MSG;
 			err_str.len = 32 + START_ERR_MSG_LEN + END_ERR_MSG_LEN;

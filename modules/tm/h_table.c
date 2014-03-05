@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History
@@ -26,7 +26,7 @@
  *             from transaction state to a static var(jiri)
  * 2003-03-16  removed _TOTAG (jiri)
  * 2003-03-30  set_kr for requests only (jiri)
- * 2003-04-04  bug_fix: REQ_IN callback not called for local 
+ * 2003-04-04  bug_fix: REQ_IN callback not called for local
  *             UAC transactions (jiri)
  * 2003-09-12  timer_link->tg will be set only if EXTRA_DEBUG (andrei)
  * 2003-12-04  global callbacks replaceed with callbacks per transaction;
@@ -82,13 +82,13 @@ enum kill_reason get_kr(void) {
 }
 
 
-void lock_hash(int i) 
+void lock_hash(int i)
 {
 	lock(&tm_table->entrys[i].mutex);
 }
 
 
-void unlock_hash(int i) 
+void unlock_hash(int i)
 {
 	unlock(&tm_table->entrys[i].mutex);
 }
@@ -105,8 +105,8 @@ unsigned int transaction_count( void )
 	unsigned int i;
 	unsigned int count;
 
-	count=0;	
-	for (i=0; i<TM_TABLE_ENTRIES; i++) 
+	count=0;
+	for (i=0; i<TM_TABLE_ENTRIES; i++)
 		count+=tm_table->entrys[i].cur_entries;
 	return count;
 }
@@ -211,7 +211,7 @@ static inline void init_synonym_id( struct cell *t )
 			char_msg_val( p_msg, t->md5 );
 		} else {
 			/* char value for a UAC transaction is created
-			   randomly -- UAC is an originating stateful element 
+			   randomly -- UAC is an originating stateful element
 			   which cannot be refreshed, so the value can be
 			   anything
 			*/
@@ -268,7 +268,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 #endif
 	new_cell->uas.response.my_T=new_cell;
 
-	/* dcm: - local generation transactions should not inherit AVPs 
+	/* dcm: - local generation transactions should not inherit AVPs
 	 * - commpletely new message */
 	if(p_msg) {
 		/* move the current avp list to transaction -bogdan */

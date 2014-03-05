@@ -53,7 +53,7 @@ struct ldap_result_check_params
 };
 
 int ldap_search_impl(
-	struct sip_msg* _msg, 
+	struct sip_msg* _msg,
 	pv_elem_t* _ldap_url);
 
 int ldap_write_result(

@@ -21,7 +21,7 @@
  * --------
  * 080511 -- Initial revision, KE
  *
- * XXX -- todo: Add command variant to pull source/dest IP from 
+ * XXX -- todo: Add command variant to pull source/dest IP from
  *              current SIP message.
  *
  */
@@ -43,7 +43,7 @@ static str MMG_city_db_path = {NULL, 0};
 static GeoIP *MMG_gi = NULL;
 
 static int
-mod_init(void) 
+mod_init(void)
 {
 	LM_INFO("MM GeoIP module - initializing\n");
 
@@ -192,14 +192,14 @@ mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_d
 	token=strtok_r(field_buf,MMG_OP_DELIMS,&saveptr);
 	while (token) {
 		if(!strcmp(token,"lat")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->latitude); }
-		else if(!strcmp(token,"lon"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->longitude); } 
-		else if(!strcmp(token,"cont")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->continent_code); } 
-		else if(!strcmp(token,"cc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->country_code); } 
-		else if(!strcmp(token,"reg"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->region); } 
-		else if(!strcmp(token,"city")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->city); } 
-		else if(!strcmp(token,"pc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->postal_code); } 
-		else if(!strcmp(token,"dma"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->dma_code); } 
-		else if(!strcmp(token,"ac"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->area_code); } 
+		else if(!strcmp(token,"lon"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%f",gir->longitude); }
+		else if(!strcmp(token,"cont")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->continent_code); }
+		else if(!strcmp(token,"cc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->country_code); }
+		else if(!strcmp(token,"reg"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->region); }
+		else if(!strcmp(token,"city")) { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->city); }
+		else if(!strcmp(token,"pc"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%s",gir->postal_code); }
+		else if(!strcmp(token,"dma"))  { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->dma_code); }
+		else if(!strcmp(token,"ac"))   { rslt.s.len=snprintf(rslt_buf,sizeof rslt_buf,"%d",gir->area_code); }
 		else if(!strcmp(token,"rbc"))  {
 			rslt.s.len=snprintf(
 				rslt_buf,sizeof rslt_buf,"%s",GeoIP_region_name_by_code(gir->country_code, gir->region));

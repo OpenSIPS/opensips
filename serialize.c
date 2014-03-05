@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -165,7 +165,7 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 		memset(enc_info.s, 0, enc_info.len);
 		p = enc_info.s;
 
-		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u>\n", 
+		LM_DBG("Branch information <%.*s,%.*s,%.*s,%d,%u>\n",
 				branch.len, branch.s,
 				dst_uri.len, dst_uri.s,
 				path.len, path.s,

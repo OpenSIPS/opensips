@@ -114,7 +114,7 @@ int timetToSipDateStr(time_t date, char* buf, int bufLen)
 		gmt->tm_sec
 		);
 
-	/* snprintf returns number of chars it should have printed, so you 
+	/* snprintf returns number of chars it should have printed, so you
 	 * need to bounds check against input*/
 	return (len > bufLen) ? bufLen : len;
 }
@@ -149,7 +149,7 @@ int m_extract_content_type(char* src, int len, content_type_t* ctype, int flag)
 			while(p < end && *p!=' ' && *p!='\t' && *p!='\0'
 					 && *p!=';' && *p!='\r' && *p!='\n')
 				p++;
-			
+
 			LM_DBG("content-type found\n");
 			f |= CT_TYPE;
 			ctype->type.len = p - ctype->type.s;
@@ -184,7 +184,7 @@ error:
 	return -1;
 }
 
-/** build MESSAGE headers 
+/** build MESSAGE headers
  *
  * Add Content-Type, Contact and Date headers if they exist
  * expects - max buf len of the resulted body in body->len
@@ -217,7 +217,7 @@ int m_build_headers(str *buf, str ctype, str contact, time_t date)
 		p += ctype.len;
 		strncpy(p, CRLF, CRLF_LEN);
 		p += CRLF_LEN;
-	
+
 	}
 	if(contact.len > 0)
 	{
@@ -234,7 +234,7 @@ error:
 	return -1;
 }
 
-/** build MESSAGE body --- add incoming time and 'from' 
+/** build MESSAGE body --- add incoming time and 'from'
  *
  * expects - max buf len of the resulted body in body->len
  *         - body->s MUST be allocated
@@ -243,11 +243,11 @@ error:
 int m_build_body(str *body, time_t date, str msg, time_t sdate)
 {
 	char *p;
-	
+
 	if(!body || !(body->s) || body->len <= 0 || msg.len <= 0
 			|| date < 0 || msg.len < 0 || (46+msg.len > body->len) )
 		goto error;
-	
+
 	p = body->s;
 
 	if(ms_add_date!=0)
@@ -256,7 +256,7 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 		{
 			strncpy(p, "[Reminder message - ", 20);
 			p += 20;
-		
+
 			strncpy(p, ctime(&sdate), 24);
 			p += 24;
 
@@ -264,7 +264,7 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 		} else {
 			strncpy(p, "[Offline message - ", 19);
 			p += 19;
-	
+
 			strncpy(p, ctime(&date), 24);
 			p += 24;
 
@@ -272,12 +272,12 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 		}
 		*p++ = ' ';
 	}
-	
+
 	memcpy(p, msg.s, msg.len);
 	p += msg.len;
 
 	body->len = p - body->s;
-	
+
 	return 0;
 error:
 	return -1;
@@ -289,13 +289,13 @@ int ms_extract_time(str *time_str, int *time_val)
 	struct tm stm;
 	int i;
 
-	if(time_str==NULL || time_str->s==NULL  
+	if(time_str==NULL || time_str->s==NULL
 			|| time_str->len<=0 || time_val==NULL)
 	{
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	memset(&stm, 0, sizeof(struct tm));
 	for(i=0; i<time_str->len; i++)
 	{

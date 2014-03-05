@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -112,7 +112,7 @@ after_strcseq:
 		 	LM_ERR("failed to parse route set\n");
 			goto error;
 		}
-	} 
+	}
 
 	/*remote target--- Request URI*/
 	if (cell->legs[dst_leg].contact.s==0 || cell->legs[dst_leg].contact.len==0){
@@ -121,7 +121,7 @@ after_strcseq:
 	}
 	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg): 
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg):
 					 *dlg_leg_to_uri(cell,dst_leg);
 	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_to_uri(cell,dst_leg):
 					 *dlg_leg_from_uri(cell,dst_leg);
@@ -179,7 +179,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 		 	LM_ERR("failed to parse route set\n");
 			goto error;
 		}
-	} 
+	}
 
 	/*remote target--- Request URI*/
 	if (cell->legs[dst_leg].contact.s==0 || cell->legs[dst_leg].contact.len==0){
@@ -188,7 +188,7 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg)
 	}
 	td->rem_target = cell->legs[dst_leg].contact;
 
-	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg): 
+	td->rem_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_from_uri(cell,dst_leg):
 					 *dlg_leg_to_uri(cell,dst_leg);
 	td->loc_uri = (dst_leg==DLG_CALLER_LEG)? *dlg_leg_to_uri(cell,dst_leg):
 					 *dlg_leg_from_uri(cell,dst_leg);
@@ -219,7 +219,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
-		
+
 		LM_DBG("removing dialog with h_entry %u and h_id %u\n",
 			dlg->h_entry, dlg->h_id);
 
@@ -301,7 +301,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 {
 	char *p;
 
-	str_hdr->len = dlg_extra_hdrs.len + 
+	str_hdr->len = dlg_extra_hdrs.len +
 		(extra_hdrs?extra_hdrs->len:0);
 
 	str_hdr->s = (char*)pkg_malloc( str_hdr->len * sizeof(char) );
@@ -326,7 +326,7 @@ static inline int build_extra_hdr(struct dlg_cell * cell, str *extra_hdrs,
 
 	return 0;
 
-error: 
+error:
 	return -1;
 }
 
@@ -497,7 +497,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 
 end:
 	return init_mi_tree(404, MI_DIALOG_NOT_FOUND, MI_DIALOG_NOT_FOUND_LEN);
-	
+
 error:
 	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 

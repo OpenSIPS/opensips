@@ -1,4 +1,4 @@
-/* 
+/*
  * $Id$
  *
  * UNIXODBC module row related functions
@@ -40,7 +40,7 @@
 /*
  * Convert a row from result into db API representation
  */
-int db_unixodbc_convert_row(const db_con_t* _h, const db_res_t* _res, 
+int db_unixodbc_convert_row(const db_con_t* _h, const db_res_t* _res,
 									db_row_t* _r, const unsigned long* lengths)
 {
 	int i;

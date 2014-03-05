@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -176,7 +176,7 @@ static int mod_init(void)
 		uac_auth_loaded = 1;
 	}
 
-	/* initialize the hash tables; they will be allocated in shared memory 
+	/* initialize the hash tables; they will be allocated in shared memory
 	 * to be accesible by all processes */
 	if(init_b2b_htables()< 0)
 	{
@@ -230,7 +230,7 @@ static int mod_init(void)
 			b2be_dbf.close(b2be_db);
 		b2be_db = NULL;
 	}
-	else 
+	else
 		b2be_db_mode = 0;
 
 	if(register_script_cb( b2b_prescript_f, PRE_SCRIPT_CB|REQ_TYPE_CB, 0 ) < 0)

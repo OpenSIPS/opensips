@@ -50,7 +50,7 @@ typedef struct hb_ {
 
 /* routing data is comprised of:
 	- a list of PSTN gw
-	- a hash over routing groups containing 
+	- a hash over routing groups containing
 	pointers to the coresponding prefix trees
 */
 typedef struct rt_data_ {
@@ -95,7 +95,7 @@ add_dst(
 	rt_data_t*,
 	/* id */
 	char *,
-	/* ip address */ 
+	/* ip address */
 	char*,
 	/* strip len */
 	int,

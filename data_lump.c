@@ -14,8 +14,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -50,7 +50,7 @@
 #include <dmalloc.h>
 #endif
 
-/*! \note WARNING: all lump add/insert operations expect a pkg_malloc'ed char* 
+/*! \note WARNING: all lump add/insert operations expect a pkg_malloc'ed char*
  * pointer the will be DEALLOCATED when the sip_msg is destroyed! */
 
 enum lump_dir { LD_NEXT, LD_BEFORE, LD_AFTER };
@@ -64,7 +64,7 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 {
 	struct lump** t;
 	struct lump* tmp;
-	
+
 	for (t=list;*t;t=&((*t)->next));
 
 	tmp=pkg_malloc(sizeof(struct lump));
@@ -72,7 +72,7 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 		LM_ERR("out of pkg memory\n");
 		return 0;
 	}
-		
+
 	memset(tmp,0,sizeof(struct lump));
 	tmp->type=type;
 	tmp->flags=init_lump_flags;
@@ -85,7 +85,7 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 
 
 
-/*! \brief inserts a header to the beginning 
+/*! \brief inserts a header to the beginning
  *  \return returns pointer if success, 0 on error */
 struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 								unsigned int len, enum _hdr_types_t type)
@@ -110,7 +110,7 @@ struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 
 
 
-/*! \brief inserts a  header/data lump immediately after hdr 
+/*! \brief inserts a  header/data lump immediately after hdr
  * \return returns pointer on success, 0 on error */
 struct lump* insert_new_lump_after( struct lump* after, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
@@ -136,7 +136,7 @@ struct lump* insert_new_lump_after( struct lump* after, char* new_hdr,
 
 
 
-/*! \brief inserts a  header/data lump immediately before "before" 
+/*! \brief inserts a  header/data lump immediately before "before"
  * \return returns pointer on success, 0 on error */
 struct lump* insert_new_lump_before( struct lump* before, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
@@ -162,13 +162,13 @@ struct lump* insert_new_lump_before( struct lump* before, char* new_hdr,
 
 
 
-/*! \brief inserts a  subst lump immediately after hdr 
+/*! \brief inserts a  subst lump immediately after hdr
  * \return returns pointer on success, 0 on error */
 struct lump* insert_subst_lump_after( struct lump* after,enum lump_subst subst,
 										enum _hdr_types_t type)
 {
 	struct lump* tmp;
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -188,14 +188,14 @@ struct lump* insert_subst_lump_after( struct lump* after,enum lump_subst subst,
 
 
 
-/*! \brief inserts a  subst lump immediately before "before" 
+/*! \brief inserts a  subst lump immediately before "before"
  * \return returns pointer on success, 0 on error */
-struct lump* insert_subst_lump_before(	struct lump* before, 
+struct lump* insert_subst_lump_before(	struct lump* before,
 										enum lump_subst subst,
 										enum _hdr_types_t type)
 {
 	struct lump* tmp;
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -215,13 +215,13 @@ struct lump* insert_subst_lump_before(	struct lump* before,
 
 
 
-/*! \brief inserts a  cond lump immediately after hdr 
+/*! \brief inserts a  cond lump immediately after hdr
  * \return returns pointer on success, 0 on error */
 struct lump* insert_cond_lump_after( struct lump* after,enum lump_conditions c,
 										enum _hdr_types_t type)
 {
 	struct lump* tmp;
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -241,14 +241,14 @@ struct lump* insert_cond_lump_after( struct lump* after,enum lump_conditions c,
 
 
 
-/*! \brief inserts a  conditional lump immediately before "before" 
+/*! \brief inserts a  conditional lump immediately before "before"
  * \return returns pointer on success, 0 on error */
-struct lump* insert_cond_lump_before(	struct lump* before, 
+struct lump* insert_cond_lump_before(	struct lump* before,
 										enum lump_conditions c,
 										enum _hdr_types_t type)
 {
 	struct lump* tmp;
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -268,12 +268,12 @@ struct lump* insert_cond_lump_before(	struct lump* before,
 
 
 
-/*! \brief inserts a skip lump immediately after hdr 
+/*! \brief inserts a skip lump immediately after hdr
  * \return returns pointer on success, 0 on error */
 struct lump* insert_skip_lump_after( struct lump* after)
 {
 	struct lump* tmp;
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -290,12 +290,12 @@ struct lump* insert_skip_lump_after( struct lump* after)
 
 
 
-/*! \brief inserts a skip lump immediately before "before" 
+/*! \brief inserts a skip lump immediately before "before"
  * \return returns pointer on success, 0 on error */
 struct lump* insert_skip_lump_before( struct lump* before )
 {
 	struct lump* tmp;
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -338,7 +338,7 @@ struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
 	if (len==0){
 		LM_WARN("called with 0 len (offset =%d)\n",	offset);
 	}
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		LM_ERR("out of pkg memory\n");
@@ -381,7 +381,7 @@ struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 	struct lump* prev, *t;
 	struct lump** list;
 
-	
+
 	/* extra checks */
 	if (offset>msg->len){
 		LM_CRIT("offset exceeds message size (%d > %d)"
@@ -394,7 +394,7 @@ struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 			LM_WARN("offset + len exceeds message"
 					" size (%d + %d > %d)\n", offset, len,  msg->len);
 	}
-	
+
 	tmp=pkg_malloc(sizeof(struct lump));
 	if (tmp==0){
 		ser_error=E_OUT_OF_MEM;
@@ -413,14 +413,14 @@ struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 		list=&msg->body_lumps;
 	else
 		list=&msg->add_rm;
-		
+
 	for (t=*list;t; prev=t, t=t->next){
 		/* insert it sorted after offset */
 		if (((t->op==LUMP_DEL)||(t->op==LUMP_NOP))&&(t->u.offset>offset))
 			break;
 	}
 	tmp->next=t;
-	
+
 	if (prev) prev->next=tmp;
 	else *list=tmp;
 	return tmp;
@@ -467,7 +467,7 @@ void free_lump_list(struct lump* l)
 			free_lump(foo);
 			pkg_free(foo);
 		}
-		
+
 		/*clean current elem*/
 		free_lump(crt);
 		pkg_free(crt);
@@ -493,7 +493,7 @@ static void free_shallow_lump( struct lump *l )
 }
 
 /*! \brief* duplicate (shallow-ly) a lump list into pkg memory */
-static struct lump *dup_lump_list_r( struct lump *l, 
+static struct lump *dup_lump_list_r( struct lump *l,
 				enum lump_dir dir, int *error)
 {
 	int deep_error;
@@ -511,22 +511,22 @@ static struct lump *dup_lump_list_r( struct lump *l,
 	new_lump->next=new_lump->before=new_lump->after=0;
 
 	switch(dir) {
-		case LD_NEXT:	
-				new_lump->before=dup_lump_list_r(l->before, 
+		case LD_NEXT:
+				new_lump->before=dup_lump_list_r(l->before,
 								LD_BEFORE, &deep_error);
 				if (deep_error) goto deeperror;
-				new_lump->after=dup_lump_list_r(l->after, 
+				new_lump->after=dup_lump_list_r(l->after,
 								LD_AFTER, &deep_error);
 				if (deep_error) goto deeperror;
-				new_lump->next=dup_lump_list_r(l->next, 
+				new_lump->next=dup_lump_list_r(l->next,
 								LD_NEXT, &deep_error);
 				break;
 		case LD_BEFORE:
-				new_lump->before=dup_lump_list_r(l->before, 
+				new_lump->before=dup_lump_list_r(l->before,
 								LD_BEFORE, &deep_error);
 				break;
 		case LD_AFTER:
-				new_lump->after=dup_lump_list_r(l->after, 
+				new_lump->after=dup_lump_list_r(l->after,
 								LD_AFTER, &deep_error);
 				break;
 		default:
@@ -578,7 +578,7 @@ void free_duped_lump_list(struct lump* l)
 			 * duped list, remove it completely, preserve it
 			 * otherwise (it is still referred by original list)
 			 */
-			if (foo->flags!=LUMPFLAG_DUPED) 
+			if (foo->flags!=LUMPFLAG_DUPED)
 					free_lump(foo);
 			pkg_free(foo);
 		}
@@ -589,7 +589,7 @@ void free_duped_lump_list(struct lump* l)
 				free_lump(foo);
 			pkg_free(foo);
 		}
-		
+
 		/*clean current elem*/
 		if (crt->flags!=LUMPFLAG_DUPED) /* (+) ... see above */
 			free_lump(crt);

@@ -30,7 +30,7 @@
 
 int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v );
 
-int json_to_bson_append_array( bson *bb , struct json_object *a ) 
+int json_to_bson_append_array( bson *bb , struct json_object *a )
 {
 	int i,al_len;
 	char *al;
@@ -78,7 +78,7 @@ int json_to_bson_append(bson *bb,struct json_object *o)
 	return 0;
 }
 
-int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v ) 
+int json_to_bson_append_element( bson *bb , const char *k , struct json_object *v )
 {
 	if (v==NULL) {
 		bson_append_null(bb,k);
@@ -136,7 +136,7 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 				LM_ERR("Failed to append start array\n");
 				return -1;
 			}
-			
+
 			if (json_to_bson_append_array(bb,v) < 0) {
 				LM_ERR("Failed to append array to bson\n");
 				return -1;
@@ -157,7 +157,7 @@ int json_to_bson_append_element( bson *bb , const char *k , struct json_object *
 
 int json_to_bson(char *json,bson *bb)
 {
-	struct json_object *obj; 
+	struct json_object *obj;
 
 	LM_DBG("Trying to convert [%s]\n",json);
 

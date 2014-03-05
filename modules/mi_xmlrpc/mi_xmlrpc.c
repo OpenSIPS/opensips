@@ -78,7 +78,7 @@ static int destroy(void);
 static void xmlrpc_process(int rank);
 
 static int port = 8080;
-static char *log_file = NULL; 
+static char *log_file = NULL;
 static int read_buf_size = MAX_READ;
 static TServer srv;
 
@@ -155,7 +155,7 @@ static void xmlrpc_sigchld( int sig )
 			break;
 		}
 		#ifndef XMLRPC_OLD_VERSION
-		else 
+		else
 			ServerHandleSigchld(pid);
 		#endif
 	}
@@ -182,7 +182,7 @@ static void xmlrpc_process(int rank)
 	xmlrpc_server_abyss_init_registry();
 	registryP= xmlrpc_server_abyss_registry();
 	#else
-	registryP = xmlrpc_registry_new(&env);    
+	registryP = xmlrpc_registry_new(&env);
 	#endif
 
 	DateInit();

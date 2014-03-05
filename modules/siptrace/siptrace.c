@@ -764,7 +764,7 @@ static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *pa
 {
 	struct sip_msg *req;
 	req = param->req;
-	
+
 	LM_DBG("Tracing incoming cancel due to trace_dialog() \n");
 
 	/* set the flag */

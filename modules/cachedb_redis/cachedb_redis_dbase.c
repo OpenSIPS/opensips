@@ -111,7 +111,7 @@ int redis_connect(redis_con *con)
 		LM_DBG("AUTH [password] -  %.*s\n",rpl->len,rpl->str);
 		freeReplyObject(rpl);
 	}
-	
+
 	rpl = redisCommand(ctx,"CLUSTER NODES");
 	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 		/* single instace mode */
@@ -161,12 +161,12 @@ int redis_connect(redis_con *con)
 redis_con* redis_new_connection(struct cachedb_id* id)
 {
 	redis_con *con;
-	
+
 	if (id == NULL) {
 		LM_ERR("null cachedb_id\n");
 		return 0;
 	}
-	
+
 	if (id->flags & CACHEDB_ID_MULTIPLE_HOSTS) {
 		LM_ERR("multiple hosts are not supported for redis\n");
 		return 0;
@@ -489,7 +489,7 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 							}
 						}
 
-						
+
 						if (reply->element[i]->type == REDIS_REPLY_INTEGER) {
 							(*ret)[current_size][0].val.n = reply->element[i]->integer;
 							(*ret)[current_size][0].type = CDB_INT;
@@ -530,7 +530,7 @@ error:
 
 	*ret = NULL;
 	*reply_no=0;
-		
+
 	freeReplyObject(reply);
 	return -1;
 }
@@ -559,7 +559,7 @@ int redis_raw_query_extract_key(str *attr,str *query_key)
 	} else {
 		query_key->len = r-query_key->s;
 	}
-	
+
 	return 0;
 }
 
@@ -588,7 +588,7 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 	attr->s[attr->len] = 0;
 
 	for (i=2;i;i--) {
-		*reply = redisvCommand(node->context,attr->s,ap); 
+		*reply = redisvCommand(node->context,attr->s,ap);
 		if (*reply == NULL || (*reply)->type == REDIS_REPLY_ERROR) {
 			LM_ERR("Redis operation failure - %.*s\n",
 				*reply?(*reply)->len:7,*reply?(*reply)->str:"FAILURE");
@@ -643,7 +643,7 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 			return 1;
 		default:
 			/* some data arrived - yay */
-			
+
 			if (rpl == NULL) {
 				LM_DBG("Received reply type %d but script writer not interested in it \n",reply->type);
 				freeReplyObject(reply);
@@ -652,5 +652,5 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 			return redis_raw_query_handle_reply(reply,rpl,expected_kv_no,reply_no);
 	}
 
-	return 1;	
+	return 1;
 }

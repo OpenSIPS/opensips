@@ -70,7 +70,7 @@
 
 /* Flags for reporting network ID */
 #define OSP_REPORT_SNID         (1<<0)
-#define OSP_REPORT_DNID         (1<<1) 
+#define OSP_REPORT_DNID         (1<<1)
 
 extern int _osp_report_nid;
 extern int _osp_origdest_avpid;

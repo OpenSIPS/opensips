@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -31,12 +31,12 @@
 #include "../tcp_conn.h"
 
 /*
- * just once before cleanup 
+ * just once before cleanup
  */
 void            destroy_tls(void);
 
 /*
- * for each socket 
+ * for each socket
  */
 int             tls_init(struct socket_info *si);
 
@@ -47,7 +47,7 @@ int             tls_init(struct socket_info *si);
 int             pre_init_tls(void);
 
 /*
- * just once, initialize the tls subsystem 
+ * just once, initialize the tls subsystem
  */
 int             init_tls(void);
 

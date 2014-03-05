@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -40,10 +40,10 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 
-/** 
- * Function to create a new server entity 
+/**
+ * Function to create a new server entity
  *	msg: SIP message
- *	b2b_cback: callback function to notify the logic about a change in dialog 
+ *	b2b_cback: callback function to notify the logic about a change in dialog
  *	param: the parameter that will be used when calling b2b_cback function
  *
  *	Return value: the dialog key allocated in private memory
@@ -101,7 +101,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	tmb.t_setkr(REQ_FWDED);
 
 	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s] dlg->uas_tran=[%p]\n",
-		dlg, dlg->callid.len, dlg->callid.s, 
+		dlg, dlg->callid.len, dlg->callid.s,
 		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
 		dlg->param.len, dlg->param.s, dlg->uas_tran);
 

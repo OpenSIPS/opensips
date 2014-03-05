@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -54,7 +54,7 @@ static char *table_name = NULL;
 struct dlg_binds lb_dlg_binds;
 
 /* reader-writers lock for data reloading */
-static rw_lock_t *ref_lock = NULL; 
+static rw_lock_t *ref_lock = NULL;
 struct lb_data **curr_data = NULL;
 
 /* probing related stuff */
@@ -207,7 +207,7 @@ static int fixup_resources(void** param, int param_no)
 
 	} else if (param_no==2) {
 
-		/* parameter is string (semi-colon separated list) 
+		/* parameter is string (semi-colon separated list)
 		 * of needed resources */
 		lbp = (struct lb_res_parse *)pkg_malloc(sizeof(struct lb_res_parse));
 		if (!lbp) {
@@ -748,7 +748,7 @@ error:
 }
 
 /*! \brief
- * Expects 3 nodes: 
+ * Expects 3 nodes:
  *        destination ID (number)
  *        resource name (string)
  *        size (number)
@@ -795,7 +795,7 @@ static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
 			memcmp( dst->rmap[n].resource->name.s, name->s, name->len)==0)
 				break;
 		if (n==dst->rmap_no) {
-			rpl_tree = init_mi_tree( 404, 
+			rpl_tree = init_mi_tree( 404,
 				MI_SSTR("Destination has no such resource"));
 		} else {
 			dst->rmap[n].max_load = size;
@@ -813,7 +813,7 @@ bad_syntax:
 
 
 /*! \brief
- * Expects 2 nodes: 
+ * Expects 2 nodes:
  *        destination ID (number)
  *        status (number)
  */
@@ -875,7 +875,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 					dst->flags &=
 						~ (LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
 				} else {
-					dst->flags |= 
+					dst->flags |=
 						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
 				}
 				lock_stop_read( ref_lock );

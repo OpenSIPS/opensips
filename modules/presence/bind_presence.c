@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -40,7 +40,7 @@ int bind_presence(presence_api_t* api)
 		LM_ERR("Invalid parameter value\n");
 		return -1;
 	}
-	
+
 	api->add_event = add_event;
 	api->contains_event= contains_event;
 	api->search_event= search_event;

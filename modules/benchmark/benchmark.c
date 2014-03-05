@@ -142,7 +142,7 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
-static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param, 
+static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
 static pv_export_t mod_items[] = {
@@ -155,7 +155,7 @@ static pv_export_t mod_items[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"benchmark", 
+	"benchmark",
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	cmds,       /* Exported functions */
@@ -212,7 +212,7 @@ static void destroy(void)
 	benchmark_timer_t *bmt = 0;
 	benchmark_timer_t *bmp = 0;
 
-	if(bm_mycfg!=NULL) 
+	if(bm_mycfg!=NULL)
 	{
 		/* free timers list */
 		bmt = bm_mycfg->timers;
@@ -233,7 +233,7 @@ static void soft_reset_timer(benchmark_timer_t *timer) {
 	timer->calls = 0;
 	timer->last_sum = 0;
 	timer->last_max = 0;
-	timer->last_min = STARTING_MIN_VALUE; 
+	timer->last_min = STARTING_MIN_VALUE;
 }
 
 static void reset_timer(int i)
@@ -242,7 +242,7 @@ static void reset_timer(int i)
 
 	if(bm_mycfg==NULL || (timer = bm_mycfg->tindex[i])==NULL)
 		return;
-	
+
 	lock_get(timer->lock);
 
 	timer->calls = 0;
@@ -253,7 +253,7 @@ static void reset_timer(int i)
 	timer->global_calls = 0;
 	timer->global_max = 0;
 	timer->global_min = STARTING_MIN_VALUE;
-	
+
 	lock_release(timer->lock);
 }
 
@@ -317,7 +317,7 @@ static int _bm_log_timer(unsigned int id)
 		LM_ERR("error getting current time\n");
 		return -1;
 	}
-	
+
 	timer = bm_mycfg->tindex[id];
 	tdiff = bm_diff_time(timer->start, &now);
 	_bm_last_time_diff = (int)tdiff;
@@ -333,7 +333,7 @@ static int _bm_log_timer(unsigned int id)
 	timer->last_sum += tdiff;
 	timer->calls++;
 	timer->global_calls++;
-	
+
 	if (tdiff < timer->last_min)
 		timer->last_min = tdiff;
 
@@ -368,11 +368,11 @@ static int _bm_log_timer(unsigned int id)
 
 		soft_reset_timer(timer);
 	}
-	
+
 	lock_release(timer->lock);
 
 	return 1;
-}	
+}
 
 static int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr)
 {
@@ -425,7 +425,7 @@ static int _bm_register_timer(char *tname, int mode, unsigned int *id)
 	}
 
 	/* private memory, otherwise we have races */
-	bmt->start = (bm_timeval_t*)pkg_malloc(sizeof(bm_timeval_t)); 
+	bmt->start = (bm_timeval_t*)pkg_malloc(sizeof(bm_timeval_t));
 	if(bmt->start == NULL)
 	{
 		lock_dealloc(bmt->lock);
@@ -433,7 +433,7 @@ static int _bm_register_timer(char *tname, int mode, unsigned int *id)
 		LM_ERR("no more pkg\n");
 		return -1;
 	}
-	memset(bmt->start, 0, sizeof(bm_timeval_t)); 
+	memset(bmt->start, 0, sizeof(bm_timeval_t));
 
 	strcpy(bmt->name, tname);
 	if(bm_mycfg->timers==0)
@@ -567,7 +567,7 @@ static struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param)
 	//p2 = strndup(node->next->value.s, node->next->value.len);
 	p2 = pkg_strndup(node->next->value.s, node->next->value.len);
 	v2 = strtol(p2, &e2, 0);
-	
+
 	pkg_free(p1);
 	pkg_free(p2);
 
@@ -630,7 +630,7 @@ static struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param)
 	p1 = pkg_strndup(node->value.s, node->value.len);
 
 	v1 = strtol(p1, &e1, 0);
-	
+
 	pkg_free(p1);
 
 	if ((*e1 != '\0') || (*p1 == '\0'))
@@ -668,7 +668,7 @@ static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param)
 {
 	struct mi_root *rpl_tree;
 	benchmark_timer_t *bmt;
-	
+
 	if (bm_mycfg->granularity!=0)
 		return init_mi_tree( 400, MI_CALL_INVALID_S, MI_CALL_INVALID_LEN);
 
@@ -683,7 +683,7 @@ static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param)
 
 		add_results_node(&rpl_tree->node, bmt);
 		soft_reset_timer(bmt);
-		
+
 		lock_release(bmt->lock);
 	}
 

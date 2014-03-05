@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -39,7 +39,7 @@
  *  2004-02-11  FIFO/CANCEL + alignments (hash=f(callid,cseq)) (uli+jiri)
  *  2004-02-18  t_reply exported via FIFO - imported from VM (bogdan)
  *  2004-10-01  added a new param.: restart_fr_on_each_reply (andrei)
- *  2005-05-30  light version of tm_load - find_export dropped -> module 
+ *  2005-05-30  light version of tm_load - find_export dropped -> module
  *              interface dosen't need to export internal functions (bogdan)
  *  2006-01-15  merged functions which diff only via proto (like t_relay,
  *              t_replicate and t_forward_nonack) (bogdan)
@@ -330,7 +330,7 @@ struct module_exports exports= {
 static int fixup_froute(void** param, int param_no)
 {
 	int rt;
-	
+
 	rt = get_script_route_ID_by_name( (char *)*param,
 			failure_rlist, FAILURE_RT_NO);
 	if (rt==-1) {
@@ -346,7 +346,7 @@ static int fixup_froute(void** param, int param_no)
 static int fixup_rroute(void** param, int param_no)
 {
 	int rt;
-	
+
 	rt = get_script_route_ID_by_name( (char *)*param,
 		onreply_rlist, ONREPLY_RT_NO);
 	if (rt==-1) {
@@ -362,7 +362,7 @@ static int fixup_rroute(void** param, int param_no)
 static int fixup_broute(void** param, int param_no)
 {
 	int rt;
-	
+
 	rt = get_script_route_ID_by_name( (char *)*param,
 		branch_rlist, BRANCH_RT_NO);
 	if (rt==-1) {
@@ -403,7 +403,7 @@ static int fixup_t_replicate(void** param, int param_no)
 		s.s = (char*)*param;
 		s.len = strlen(s.s);
 		model = NULL;
-		
+
 		if(pv_parse_format(&s ,&model) || model==NULL) {
 			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
 			return E_CFG;
@@ -1054,7 +1054,7 @@ inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
 }
 
 
-inline static int w_t_newtran( struct sip_msg* p_msg, char* foo, char* bar ) 
+inline static int w_t_newtran( struct sip_msg* p_msg, char* foo, char* bar )
 {
 	/* t_newtran returns 0 on error (negative value means
 	   'transaction exists' */
@@ -1494,7 +1494,7 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 			} else {
 				val->rs.s = sint2str(avp_value.n, &val->rs.len);
 			}
-			
+
 			if(p-pv_local_buf+val->rs.len+1>PV_LOCAL_BUF_SIZE) {
 				LM_ERR("local buffer length exceeded!\n");
 				pv_get_null(msg, param, val);

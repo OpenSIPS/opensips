@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -46,7 +46,7 @@ struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
 	struct net* n;
 	int warning;
 	unsigned int r;
-	
+
 	warning=0;
 	if ((ip->af != mask->af) || (ip->len != mask->len)){
 		LM_CRIT("trying to use a different mask family"
@@ -54,7 +54,7 @@ struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
 		goto error;
 	}
 	n=(struct net*)pkg_malloc(sizeof(struct net));
-	if (n==0){ 
+	if (n==0){
 		LM_CRIT("memory allocation failure\n");
 		goto error;
 	}
@@ -83,7 +83,7 @@ struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
 {
 	struct ip_addr mask;
 	unsigned int r;
-	
+
 	if (bitlen>ip->len*8){
 		LM_CRIT("bad bitlen number %d\n", bitlen);
 		goto error;
@@ -93,7 +93,7 @@ struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen)
 	if (bitlen%8) mask.u.addr[r]=  ~((1<<(8-(bitlen%8)))-1);
 	mask.af=ip->af;
 	mask.len=ip->len;
-	
+
 	return mk_net(ip, &mask);
 error:
 	return 0;

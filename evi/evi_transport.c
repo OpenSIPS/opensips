@@ -72,15 +72,15 @@ int register_event_mod(evi_export_t *ev)
 				LM_ERR("duplicate flag %x\n", ev->flags);
 				goto error;
 			}
-			if (ev->proto.len == trans_mod->module->proto.len && 
+			if (ev->proto.len == trans_mod->module->proto.len &&
 					!memcmp(ev->proto.s,trans_mod->module->proto.s,ev->proto.len)){
-				LM_ERR("duplicate transport module protocol <%.*s>\n", 
+				LM_ERR("duplicate transport module protocol <%.*s>\n",
 						ev->proto.len, ev->proto.s);
 				goto error;
 			}
 		}
 	}
-		
+
 	trans_mod = shm_malloc(sizeof(evi_trans_t));
 	if (!trans_mod) {
 		LM_ERR("no more shm memory\n");

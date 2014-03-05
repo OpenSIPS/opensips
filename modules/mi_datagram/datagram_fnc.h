@@ -53,7 +53,7 @@
 
 
 typedef struct datagram_str{
-	char * start, * current; 
+	char * start, * current;
 	int len;
 }datagram_stream;
 
@@ -63,7 +63,7 @@ typedef struct rx_tx{
 
 
 int  mi_init_datagram_server(sockaddr_dtgram * address, unsigned int domain,
-								rx_tx_sockets * socks,int mode, 
+								rx_tx_sockets * socks,int mode,
 								int uid, int gid );
 int mi_init_datagram_buffer();
 void mi_datagram_server(int rx_sock, int tx_sock);

@@ -268,7 +268,7 @@ static inline void cvt_hex(HASH bin, HASHHEX hex)
 
 
 
-/* 
+/*
  * calculate H(A1)
  */
 void uac_calc_HA1( struct uac_credential *crd,
@@ -303,7 +303,7 @@ void uac_calc_HA1( struct uac_credential *crd,
 
 
 
-/* 
+/*
  * calculate H(A2)
  */
 void uac_calc_HA2( str *method, str *uri,
@@ -331,8 +331,8 @@ void uac_calc_HA2( str *method, str *uri,
 
 
 
-/* 
- * calculate request-digest/response-digest as per HTTP Digest spec 
+/*
+ * calculate request-digest/response-digest as per HTTP Digest spec
  */
 void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
 		struct authenticate_body *auth,
@@ -459,7 +459,7 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 	}while(0)
 
 
-str* build_authorization_hdr(int code, str *uri, 
+str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
 		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response)
 {
@@ -512,7 +512,7 @@ str* build_authorization_hdr(int code, str *uri,
 		FIELD_SEPARATOR_LEN+REALM_FIELD_LEN);
 	add_string( p, crd->realm.s, crd->realm.len);
 	/* NONCE */
-	add_string( p, FIELD_SEPARATOR_S NONCE_FIELD_S, 
+	add_string( p, FIELD_SEPARATOR_S NONCE_FIELD_S,
 		FIELD_SEPARATOR_LEN+NONCE_FIELD_LEN);
 	add_string( p, auth->nonce.s, auth->nonce.len);
 	/* URI */
@@ -522,19 +522,19 @@ str* build_authorization_hdr(int code, str *uri,
 	/* OPAQUE */
 	if (auth->opaque.len )
 	{
-		add_string( p, FIELD_SEPARATOR_S OPAQUE_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_S OPAQUE_FIELD_S,
 			FIELD_SEPARATOR_LEN+OPAQUE_FIELD_LEN);
 		add_string( p, auth->opaque.s, auth->opaque.len);
 	}
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 	{
-		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S,
 			FIELD_SEPARATOR_LEN+QOP_FIELD_LEN);
 		add_string( p, "auth", 4);
-		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S,
 			FIELD_SEPARATOR_UQ_LEN+NC_FIELD_LEN);
 		add_string( p, auth_nc_cnonce->nc->s, auth_nc_cnonce->nc->len);
-		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S, 
+		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S,
 			FIELD_SEPARATOR_UQ_LEN+CNONCE_FIELD_LEN);
 		add_string( p, auth_nc_cnonce->cnonce->s, auth_nc_cnonce->cnonce->len);
 	}

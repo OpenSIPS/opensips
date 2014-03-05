@@ -68,7 +68,7 @@ static const uint16_t crc16tab[256]= {
     0x6e17,0x7e36,0x4e55,0x5e74,0x2e93,0x3eb2,0x0ed1,0x1ef0
 };
 
-uint16_t crc16(const char *buf, int len) 
+uint16_t crc16(const char *buf, int len)
 {
     int counter;
     uint16_t crc = 0;
@@ -77,7 +77,7 @@ uint16_t crc16(const char *buf, int len)
     return crc;
 }
 
-unsigned int redisHash(redis_con *con, str* key) 
+unsigned int redisHash(redis_con *con, str* key)
 {
 	return crc16(key->s,key->len) & con->slots_assigned;
 }
@@ -99,7 +99,7 @@ inline cluster_node *get_redis_connection(redis_con *con,str *key)
 	}
 }
 
-void destroy_cluster_nodes(redis_con *con) 
+void destroy_cluster_nodes(redis_con *con)
 {
 	cluster_node *new,*foo;
 
@@ -121,7 +121,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 	unsigned short port,start_slot,end_slot;
 	int err;
 	cluster_node *new;
-	
+
 	LM_DBG("info = [%.*s]\n",size,info);
 
 	end = info+size;
@@ -138,7 +138,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 			goto error;
 
 		while (is_valid(aux,end) && (*aux) == ' ') aux++;
-		
+
 		size -= (aux-p);
 		p = aux;
 
@@ -152,7 +152,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 			p = memchr(aux,':',size);
 			if (!is_valid(p,end))
 				goto error;
-			
+
 			*p = 0;
 			ip = aux;
 			size -= (p-aux);
@@ -160,7 +160,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 			aux = memchr(p+1,' ',size);
 			if (!is_valid(aux,end))
 				goto error;
-			
+
 			port = str2s(p+1,aux-p-1,&err);
 			if (err)
 				goto error;
@@ -176,7 +176,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 		p++;
 		size -= (p-aux);
 		aux = p-2;
-		
+
 		while (*aux == ' ') aux--;
 		aux2 = aux;
 		while (*aux != '-') aux--;
@@ -196,7 +196,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 			LM_ERR("no more pkg\n");
 			goto error;
 		}
-		
+
 		memset(new,0,sizeof(cluster_node));
 
 		strcpy(new->ip,ip);
@@ -210,7 +210,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 			new->next = con->nodes;
 			con->nodes = new;
 		}
-		
+
 	}
 
 	return 0;

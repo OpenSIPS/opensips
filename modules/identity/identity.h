@@ -1,7 +1,7 @@
 /*
  *$Id$
  *
- *Copyright (C) 2007 Alexander Christ, 
+ *Copyright (C) 2007 Alexander Christ,
  * Cologne University of Applied Sciences
  *
  * This file is part of openser, a free SIP server.
@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  *
@@ -25,9 +25,9 @@
  * -------
  *  2007-03-29  initial version
  *  2007-04-06  added GPL copyright, #ifndef ... ; changed MIN macro
- *  
+ *
  */
- 
+
 #ifndef _IDENTITY_H_
 #define _IDENTITY_H_
 
@@ -49,7 +49,7 @@
 
 #define HOSTNAME_ILLCHAR "?[" //forbidden characters in certHostname
 
-#define MIN(a, b) ((a < b) ? a : b)  
+#define MIN(a, b) ((a < b) ? a : b)
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -57,13 +57,13 @@ static void mod_destroy(void);
 static int authservice_(struct sip_msg* msg, char* str1, char* str2);
 static int verifier_(struct sip_msg* msg, char* str1, char* str2);
 static int getDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg);
-static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg);	
+static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg);
 static long getDateDelta(time_t dateHFValue);
 static int authCertMatchesDate(time_t dateHFValue);
 static int makeDigestString(char * digestString, char * dateHF, struct sip_msg * msg);
-static int addIdentity(char * dateHF, struct sip_msg * msg);		
+static int addIdentity(char * dateHF, struct sip_msg * msg);
 static int addIdentityInfo(struct sip_msg * msg);
-static int getIdentityHF(char * identityHF, struct sip_msg * msg);	
+static int getIdentityHF(char * identityHF, struct sip_msg * msg);
 static int getCert(X509 ** certp, STACK_OF(X509) ** certchainp, struct sip_msg * msg);
 static int validateCert(X509 * cert, STACK_OF(X509) * certchain);
 static int checkAuthority(X509 * cert, struct sip_msg * msg);

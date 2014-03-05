@@ -77,7 +77,7 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	0,
-	params,	
+	params,
 	0,
 	0,
 	0,

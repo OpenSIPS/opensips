@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -81,7 +81,7 @@ struct mi_root* mi_allow_uri(struct mi_root *cmd, void *param)
     struct mi_node *node;
     str *basenamep, *urip, *contactp;
     char basename[MAX_FILE_LEN + 1];
-    char uri[MAX_URI_SIZE + 1], contact[MAX_URI_SIZE + 1]; 
+    char uri[MAX_URI_SIZE + 1], contact[MAX_URI_SIZE + 1];
     unsigned int allow_suffix_len;
 
     node = cmd->node.kids;

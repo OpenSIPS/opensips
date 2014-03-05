@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -157,10 +157,10 @@ inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo)
 	environment_t *backup;
 	int ret;
 	str command;
-	
+
 	if(msg==0 || cmd==0)
 		return -1;
-	
+
 	backup=0;
 	if (setvars) {
 		backup=set_env(msg);
@@ -174,13 +174,13 @@ inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo)
 		uri=&msg->new_uri;
 	else
 		uri=&msg->first_line.u.request.uri;
-	
+
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
 	{
 		LM_ERR("invalid command parameter");
 		return -1;
 	}
-	
+
 	LM_DBG("executing [%s]\n", command.s);
 
 	ret=exec_str(msg, command.s, uri->s, uri->len);
@@ -196,7 +196,7 @@ inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo)
 	environment_t *backup;
 	int ret;
 	str command;
-	
+
 	if(msg==0 || cmd==0)
 		return -1;
 
@@ -208,15 +208,15 @@ inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo)
 			return -1;
 		}
 	}
-	
+
 	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0)
 	{
 		LM_ERR("invalid command parameter");
 		return -1;
 	}
-	
+
 	LM_DBG("executing [%s]\n", command.s);
-	
+
 	if(async)
 		ret=exec_async(msg, command.s);
 	else
@@ -232,10 +232,10 @@ inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl)
 	environment_t *backup;
 	int ret;
 	str command;
-	
+
 	if(msg==0 || cmd==0)
 		return -1;
-	
+
 	backup=0;
 	if (setvars) {
 		backup=set_env(msg);
@@ -250,7 +250,7 @@ inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl)
 		LM_ERR("invalid command parameter");
 		return -1;
 	}
-	
+
 	LM_DBG("executing [%s]\n", command.s);
 
 	ret=exec_avp(msg, command.s, (pvname_list_p)avpl);

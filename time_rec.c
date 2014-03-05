@@ -89,7 +89,7 @@ int ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 	_atp->t.tm_wday = _tm->tm_wday;     /* day of the week */
 	_atp->t.tm_yday = _tm->tm_yday;     /* day in the year */
 	_atp->t.tm_isdst = _tm->tm_isdst;   /* daylight saving time */
-	
+
 	_atp->mweek = ac_get_mweek(_tm);
 	_atp->yweek = ac_get_yweek(_tm);
 	_atp->ywday = ac_get_wday_yr(_tm);
@@ -124,10 +124,10 @@ int ac_get_yweek(struct tm* _tm)
 #ifdef USE_YWEEK_V
 	int days;
 #endif
-	
+
 	if(!_tm)
 		return -1;
-	
+
 #ifdef USE_YWEEK_U
 	week = SUN_WEEK(_tm);
 #else
@@ -137,10 +137,10 @@ int ac_get_yweek(struct tm* _tm)
 #ifdef USE_YWEEK_V
 	days = ((_tm->tm_yday + 7 - (_tm->tm_wday ? _tm->tm_wday-1 : 6)) % 7);
 
-	if(days >= 4) 
+	if(days >= 4)
 		week++;
-	else 
-		if(week == 0) 
+	else
+		if(week == 0)
 			week = 53;
 #endif
 	return week;
@@ -187,7 +187,7 @@ static ac_maxval_p ac_get_maxval(ac_tm_p _atp)
 		default:
 			_amp.mday = 31;
 	}
-	
+
 	/* maximum occurrences of a week day in the year */
 	memset(&_tm, 0, sizeof(struct tm));
 	_tm.tm_year = _atp->t.tm_year;
@@ -200,13 +200,13 @@ static ac_maxval_p ac_get_maxval(ac_tm_p _atp)
 	else
 		_v = _tm.tm_wday - _atp->t.tm_wday;
 	_amp.ywday = (int)((_tm.tm_yday-_v)/7) + 1;
-	
+
 	/* maximum number of weeks in the year */
 	_amp.yweek = ac_get_yweek(&_tm) + 1;
-	
+
 	/* maximum number of the week day in the month */
 	_amp.mwday=(int)((_amp.mday-1-(_amp.mday-_atp->t.tm_mday)%7)/7)+1;
-	
+
 	/* maximum number of weeks in the month */
 	_v = (_atp->t.tm_wday + (_amp.mday - _atp->t.tm_mday)%7)%7;
 #ifdef USE_YWEEK_U
@@ -221,13 +221,13 @@ static ac_maxval_p ac_get_maxval(ac_tm_p _atp)
 
 int ac_print(ac_tm_p _atp)
 {
-	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; 
+	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"};
 	if(!_atp)
 	{
 		printf("\n(null)\n");
 		return -1;
 	}
-	
+
 	printf("\nSys time: %d\nTime: %02d:%02d:%02d\n", (int)_atp->time,
 				_atp->t.tm_hour, _atp->t.tm_min, _atp->t.tm_sec);
 	printf("Date: %s, %04d-%02d-%02d\n", _wdays[_atp->t.tm_wday],
@@ -280,10 +280,10 @@ int tr_byxxx_init(tr_byxxx_p _bxp, int _nr)
 			shm_free(_bxp->xxx);
 		return -1;
 	}
-	
+
 	memset(_bxp->xxx, 0, _nr*sizeof(int));
 	memset(_bxp->req, 0, _nr*sizeof(int));
-	
+
 	return 0;
 }
 
@@ -332,7 +332,7 @@ int tmrec_free(tmrec_p _trp)
 {
 	if(!_trp)
 		return -1;
-	
+
 	tr_byxxx_free(_trp->byday);
 	tr_byxxx_free(_trp->bymday);
 	tr_byxxx_free(_trp->byyday);
@@ -426,7 +426,7 @@ int tr_parse_byday(tmrec_p _trp, char *_in)
 {
 	if(!_trp || !_in)
 		return -1;
-	_trp->byday = ic_parse_byday(_in, _trp->flags); 
+	_trp->byday = ic_parse_byday(_in, _trp->flags);
 	return 0;
 }
 
@@ -434,7 +434,7 @@ int tr_parse_bymday(tmrec_p _trp, char *_in)
 {
 	if(!_trp || !_in)
 		return -1;
-	_trp->bymday = ic_parse_byxxx(_in, _trp->flags); 
+	_trp->bymday = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
 }
 
@@ -442,7 +442,7 @@ int tr_parse_byyday(tmrec_p _trp, char *_in)
 {
 	if(!_trp || !_in)
 		return -1;
-	_trp->byyday = ic_parse_byxxx(_in, _trp->flags); 
+	_trp->byyday = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
 }
 
@@ -450,7 +450,7 @@ int tr_parse_bymonth(tmrec_p _trp, char *_in)
 {
 	if(!_trp || !_in)
 		return -1;
-	_trp->bymonth = ic_parse_byxxx(_in, _trp->flags); 
+	_trp->bymonth = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
 }
 
@@ -458,7 +458,7 @@ int tr_parse_byweekno(tmrec_p _trp, char *_in)
 {
 	if(!_trp || !_in)
 		return -1;
-	_trp->byweekno = ic_parse_byxxx(_in, _trp->flags); 
+	_trp->byweekno = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
 }
 
@@ -472,9 +472,9 @@ int tr_parse_wkst(tmrec_p _trp, char *_in)
 
 int tr_print(tmrec_p _trp)
 {
-	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; 
+	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"};
 	int i;
-	
+
 	if(!_trp)
 	{
 		printf("\n(null)\n");
@@ -482,7 +482,7 @@ int tr_print(tmrec_p _trp)
 	}
 	printf("Recurrence definition\n-- start time ---\n");
 	printf("Sys time: %d\n", (int)_trp->dtstart);
-	printf("Time: %02d:%02d:%02d\n", _trp->ts.tm_hour, 
+	printf("Time: %02d:%02d:%02d\n", _trp->ts.tm_hour,
 				_trp->ts.tm_min, _trp->ts.tm_sec);
 	printf("Date: %s, %04d-%02d-%02d\n", _wdays[_trp->ts.tm_wday],
 				_trp->ts.tm_year+1900, _trp->ts.tm_mon+1, _trp->ts.tm_mday);
@@ -535,9 +535,9 @@ time_t ic_parse_datetime(char *_in, struct tm *_tm)
 {
 	if(!_in || !_tm || strlen(_in)!=15)
 		return 0;
-	
+
 	memset(_tm, 0, sizeof(struct tm));
-	_tm->tm_year = _D(_in[0])*1000 + _D(_in[1])*100 
+	_tm->tm_year = _D(_in[0])*1000 + _D(_in[1])*100
 			+ _D(_in[2])*10 + _D(_in[3]) - 1900;
 	_tm->tm_mon = _D(_in[4])*10 + _D(_in[5]) - 1;
 	_tm->tm_mday = _D(_in[6])*10 + _D(_in[7]);
@@ -553,10 +553,10 @@ time_t ic_parse_duration(char *_in)
 	time_t _t, _ft;
 	char *_p;
 	int _fl;
-	
+
 	if(!_in || strlen(_in)<2)
 		return 0;
-	
+
 	if(*_in == 'P' || *_in=='p')
 	{
 		_p = _in+1;
@@ -565,9 +565,9 @@ time_t ic_parse_duration(char *_in)
 		_p = _in;
 		_fl = 0;
 	}
-	
+
 	_t = _ft = 0;
-	
+
 	while(*_p)
 	{
 		switch(*_p)
@@ -578,7 +578,7 @@ time_t ic_parse_duration(char *_in)
 			case '9':
 				_t = _t*10 + *_p - '0';
 			break;
-			
+
 			case 'w':
 			case 'W':
 				if(!_fl)
@@ -692,7 +692,7 @@ tr_byxxx_p ic_parse_byday(char *_in, char type)
 			case '9':
 				_v = _v*10 + *_p - '0';
 			break;
-			
+
 			case 's':
 			case 'S':
 				_p++;
@@ -825,7 +825,7 @@ tr_byxxx_p ic_parse_byxxx(char *_in, char type)
 			case '9':
 				_v = _v*10 + *_p - '0';
 			break;
-			
+
 			case '-':
 				_s = -1;
 			break;
@@ -861,7 +861,7 @@ int ic_parse_wkst(char *_in)
 {
 	if(!_in || strlen(_in)!=2)
 		goto error;
-	
+
 	switch(_in[0])
 	{
 		case 's':
@@ -909,7 +909,7 @@ int ic_parse_wkst(char *_in)
 		default:
 			goto error;
 	}
-	
+
 error:
 #ifdef USE_YWEEK_U
 	return WDAY_SU;
@@ -948,7 +948,7 @@ int check_tmrec(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 	/* compute the duration of the recurrence interval */
 	if(!_IS_SET(_trp->duration))
 		_trp->duration = _trp->dtend - _trp->dtstart;
-	
+
 	if(_atp->time <= _trp->dtstart+_trp->duration)
 	{
 		if(_tsw)
@@ -966,11 +966,11 @@ int check_tmrec(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 		}
 		return REC_MATCH;
 	}
-	
+
 	/* after the bound of recurrence */
 	if(_IS_SET(_trp->until) && _atp->time >= _trp->until + _trp->duration)
 		return REC_NOMATCH;
-	
+
 	/* check if the instance of recurrence matches the 'interval' */
 	if(check_freq_interval(_trp, _atp)!=REC_MATCH)
 		return REC_NOMATCH;
@@ -991,13 +991,13 @@ int check_freq_interval(tmrec_p _trp, ac_tm_p _atp)
 	struct tm _tm;
 	if(!_trp || !_atp)
 		return REC_ERR;
-	
+
 	if(!_IS_SET(_trp->freq))
 		return REC_NOMATCH;
-	
+
 	if(!_IS_SET(_trp->interval) || _trp->interval==1)
 		return REC_MATCH;
-	
+
 	switch(_trp->freq)
 	{
 		case FREQ_DAILY:
@@ -1032,7 +1032,7 @@ int check_freq_interval(tmrec_p _trp, ac_tm_p _atp)
 			return ((_atp->t.tm_year-_trp->ts.tm_year)%_trp->interval==0)?
 					REC_MATCH:REC_NOMATCH;
 	}
-	
+
 	return REC_NOMATCH;
 }
 
@@ -1040,16 +1040,16 @@ int get_min_interval(tmrec_p _trp)
 {
 	if(!_trp)
 		return FREQ_NOFREQ;
-	
+
 	if(_trp->freq == FREQ_DAILY || _trp->byday || _trp->bymday || _trp->byyday)
 		return FREQ_DAILY;
-	if(_trp->freq == FREQ_WEEKLY || _trp->byweekno) 
+	if(_trp->freq == FREQ_WEEKLY || _trp->byweekno)
 		return FREQ_WEEKLY;
 	if(_trp->freq == FREQ_MONTHLY || _trp->bymonth)
 		return FREQ_MONTHLY;
 	if(_trp->freq == FREQ_YEARLY)
 		return FREQ_YEARLY;
-	
+
 	return FREQ_NOFREQ;
 }
 
@@ -1071,7 +1071,7 @@ int check_min_unit(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 				return REC_NOMATCH;
 		break;
 		case FREQ_YEARLY:
-			if(_trp->ts.tm_mon != _atp->t.tm_mon 
+			if(_trp->ts.tm_mon != _atp->t.tm_mon
 					|| _trp->ts.tm_mday != _atp->t.tm_mday)
 				return REC_NOMATCH;
 		break;
@@ -1097,7 +1097,7 @@ int check_min_unit(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 		}
 		return REC_MATCH;
 	}
-	
+
 	return REC_NOMATCH;
 }
 
@@ -1108,7 +1108,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 
 	if(!_trp || !_atp)
 		return REC_ERR;
-	if(!_trp->byday && !_trp->bymday && !_trp->byyday && !_trp->bymonth 
+	if(!_trp->byday && !_trp->bymday && !_trp->byyday && !_trp->bymonth
 			&& !_trp->byweekno)
 		return REC_MATCH;
 
@@ -1118,7 +1118,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 	{
 		for(i=0; i<_trp->bymonth->nr; i++)
 		{
-			if(_atp->t.tm_mon == 
+			if(_atp->t.tm_mon ==
 					(_trp->bymonth->xxx[i]*_trp->bymonth->req[i]+12)%12)
 				break;
 		}
@@ -1171,7 +1171,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 			{
 #ifdef EXTRA_DEBUG
 				LM_DBG("%d==%d && %d==%d\n", _atp->t.tm_wday,
-					_trp->byday->xxx[i], _atp->ywday+1, 
+					_trp->byday->xxx[i], _atp->ywday+1,
 					(_trp->byday->req[i]+_amp->ywday)%_amp->ywday);
 #endif
 				if(_atp->t.tm_wday == _trp->byday->xxx[i] &&
@@ -1185,7 +1185,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 				{
 #ifdef EXTRA_DEBUG
 					LM_DBG("%d==%d && %d==%d\n", _atp->t.tm_wday,
-						_trp->byday->xxx[i], _atp->mwday+1, 
+						_trp->byday->xxx[i], _atp->mwday+1,
 						(_trp->byday->req[i]+_amp->mwday)%_amp->mwday);
 #endif
 					if(_atp->t.tm_wday == _trp->byday->xxx[i] &&

@@ -99,7 +99,7 @@ static cmd_export_t cmds[] = {
 	{ "perl_exec_simple", (cmd_function)perl_exec_simple2, 2,  NULL, 0,
 							     REQUEST_ROUTE | FAILURE_ROUTE
 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{ "perl_exec", (cmd_function)perl_exec1, 1,  NULL, 0, 
+	{ "perl_exec", (cmd_function)perl_exec1, 1,  NULL, 0,
 							     REQUEST_ROUTE | FAILURE_ROUTE
 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{ "perl_exec", (cmd_function)perl_exec2, 2, NULL, 0,
@@ -124,7 +124,7 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	/* FIXME This does not yet work... 
+	/* FIXME This does not yet work...
 	{ "perl_reload",  perl_mi_reload, MI_NO_INPUT_FLAG,  0,  0  },*/
 	{ 0, 0, 0, 0, 0, 0}
 
@@ -151,7 +151,7 @@ static mi_export_t mi_cmds[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"perl", 
+	"perl",
 	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL,
 	cmds,       /* Exported functions */
@@ -211,7 +211,7 @@ PerlInterpreter *parser_init(void) {
 	perl_construct(new_perl);
 
 	argv[0] = ""; argc++; /* First param _needs_ to be empty */
-	
+
 	 /* Possible Include path extension by modparam */
 	if (modpath && (strlen(modpath) > 0)) {
 		modpathset = argc;

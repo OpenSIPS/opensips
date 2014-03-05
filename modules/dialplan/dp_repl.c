@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -151,8 +151,8 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 		/*search for the pattern from the compiled subst_exp*/
 		if(test_match(string, rule->subst_comp,matches,MAX_MATCHES) <= 0){
 			LM_ERR("the string %.*s "
-				"matched the match_exp %.*s but not the subst_exp %.*s!\n", 
-				string.len, string.s, 
+				"matched the match_exp %.*s but not the subst_exp %.*s!\n",
+				string.len, string.s,
 				rule->match_exp.len, rule->match_exp.s,
 				rule->subst_exp.len, rule->subst_exp.s);
 			return -1;
@@ -175,10 +175,10 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 
 	/* offset- offset in the replacement string */
 	result->len = repl_nb = offset = 0;
-	
+
 	while( repl_nb < repl_comp->n_escapes){
 		token = repl_comp->replace[repl_nb];
-		
+
 		if(offset< token.offset){
 			if((repl_comp->replacement.len < offset)||
 				(result->len + token.offset -offset >= MAX_PHONE_NB_DIGITS)){
@@ -186,7 +186,7 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 				goto error;
 			}
 			/*copy from the replacing string*/
-			memcpy(result->s + result->len, repl_comp->replacement.s + offset, 
+			memcpy(result->s + result->len, repl_comp->replacement.s + offset,
 					token.offset-offset);
 			result->len += (token.offset - offset);
 			offset += token.offset-offset; /*update the offset*/
@@ -194,7 +194,7 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 
 		switch(token.type) {
 			case REPLACE_NMATCH:
-				/*copy from the match subexpression*/	
+				/*copy from the match subexpression*/
 				match_nb = token.u.nmatch;
 
 				match_begin = string.s + matches[2*match_nb];
@@ -238,7 +238,7 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 					LM_DBG("replace spec attempted on no message\n");
 					break;
 				}
-			if(pv_get_spec_value(msg, 
+			if(pv_get_spec_value(msg,
 				&repl_comp->replace[repl_nb].u.spec, &sv)!=0){
 					LM_CRIT( "item substitution returned error\n");
 					break; /* ignore, we can continue */
@@ -261,7 +261,7 @@ int rule_translate(struct sip_msg *msg, str string, dpl_node_t * rule,
 	if( repl_nb && token.offset+token.size < repl_comp->replacement.len){
 		/*copy from the replacing string*/
 		memcpy(result->s + result->len,
-			repl_comp->replacement.s + token.offset+token.size, 
+			repl_comp->replacement.s + token.offset+token.size,
 			repl_comp->replacement.len -(token.offset+token.size) );
 			result->len +=repl_comp->replacement.len-(token.offset+token.size);
 	}
@@ -316,7 +316,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 	/* try to match the input in the regexp bucket */
 	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule;
 		 rrulep; rrulep=rrulep->next) {
-	
+
 		regexp_res = (test_match(input, rrulep->match_comp, matches, MAX_MATCHES)
 					>= 0 ? 0 : -1);
 
@@ -380,7 +380,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 int test_match(str string, pcre * exp, int * out, int out_max)
 {
 	int i, result_count;
-	
+
 	if(!exp){
 		LM_ERR("invalid compiled expression\n");
 		return -1;

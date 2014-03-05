@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -41,7 +41,7 @@ typedef struct sel_menu {
 	int item_no;			/* number of items in item_list. For fast detection of scrolling */
 	int child_changed;		/* did any of the childs for this menu suffer any changes ? */
 	struct sel_menu *parent;	/* parent of the current menu */
-	struct sel_menu *child;		/* select menus that this menu displays after selection */ 
+	struct sel_menu *child;		/* select menus that this menu displays after selection */
 	struct sel_menu *next_sibling;	/* menus that should be shown along this menu */
 	struct sel_menu *prev_sibling;	/* menus that should be shown along this menu */
 } select_menu;

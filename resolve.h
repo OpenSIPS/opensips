@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -223,10 +223,10 @@ static inline struct ip_addr* str2ip(str* st)
 	if (i<3) goto error_dots;
 	ip.af=AF_INET;
 	ip.len=4;
-	
+
 	return &ip;
 error_dots:
-	LM_DBG("too %s dots in [%.*s]\n", (i>3)?"many":"few", 
+	LM_DBG("too %s dots in [%.*s]\n", (i>3)?"many":"few",
 			st->len, st->s);
 	return NULL;
  error_char:
@@ -253,7 +253,7 @@ static inline struct ip_addr* str2ip6(str* st)
 	unsigned short* addr;
 	unsigned char* limit;
 	unsigned char* s;
-	
+
 	/* init */
 	if ((st->len) && (st->s[0]=='[')){
 		/* skip over [ ] */
@@ -297,7 +297,7 @@ static inline struct ip_addr* str2ip6(str* st)
 	}
 	if (!double_colon){ /* not ending in ':' */
 		addr[i]=htons(addr[i]);
-		i++; 
+		i++;
 	}
 	/* if address contained '::' fix it */
 	if (addr==addr_end){
@@ -310,7 +310,7 @@ static inline struct ip_addr* str2ip6(str* st)
 /*
 	DBG("str2ip6: idx1=%d, rest=%d, no_colons=%d, hex=%x\n",
 			idx1, rest, no_colons, hex);
-	DBG("str2ip6: address %x:%x:%x:%x:%x:%x:%x:%x\n", 
+	DBG("str2ip6: address %x:%x:%x:%x:%x:%x:%x:%x\n",
 			addr_start[0], addr_start[1], addr_start[2],
 			addr_start[3], addr_start[4], addr_start[5],
 			addr_start[6], addr_start[7] );
@@ -345,7 +345,7 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port,
 
 inline struct hostent* resolvehost(char* name, int no_ip_test);
 
-inline struct hostent* rev_resolvehost(struct ip_addr *ip); 
+inline struct hostent* rev_resolvehost(struct ip_addr *ip);
 
 /*! \brief free the DNS resolver state machine */
 void free_dns_res( struct proxy_l *p );

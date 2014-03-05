@@ -26,7 +26,7 @@
  */
 
 /*!
- * \file 
+ * \file
  * \brief MI :: Attributes
  * \ingroup mi
  */

@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -56,9 +56,9 @@ struct proxy_l* proxies=0;
 
 int disable_dns_failover=0;
 
-/* searches for the proxy named 'name', on port 'port' with 
+/* searches for the proxy named 'name', on port 'port' with
    proto 'proto'; if proto==0 => proto wildcard (will match any proto)
-   returns: pointer to proxy_l on success or 0 if not found */ 
+   returns: pointer to proxy_l on success or 0 if not found */
 static struct proxy_l* find_proxy(str *name, unsigned short port, int proto)
 {
 	struct proxy_l* t;
@@ -177,7 +177,7 @@ int hostent_cpy(struct hostent *dst, struct hostent* src)
 	dst->h_addrtype=src->h_addrtype;
 	dst->h_length=src->h_length;
 	/*finished hostent copy */
-	
+
 	return 0;
 
 error:
@@ -198,7 +198,7 @@ void free_hostent(struct hostent *dst)
 		pkg_free(dst->h_aliases);
 	}
 	if (dst->h_addr_list){
-		for (r=0; dst->h_addr_list[r];r++) { 
+		for (r=0; dst->h_addr_list[r];r++) {
 			pkg_free(dst->h_addr_list[r]);
 		}
 		pkg_free(dst->h_addr_list);
@@ -211,7 +211,7 @@ struct proxy_l* add_proxy( str* name, unsigned short port,
 		unsigned short proto)
 {
 	struct proxy_l* p;
-	
+
 	if ((p=find_proxy(name, port, proto))!=0) return p;
 	if ((p=mk_proxy(name, port, proto, 0))==0) goto error;
 	/* add p to the proxy list */
@@ -322,7 +322,7 @@ void free_shm_proxy(struct proxy_l* p)
 }
 
 /* same as add_proxy, but it doesn't add the proxy to the list
- * uses also SRV if possible & port==0 (quick hack) 
+ * uses also SRV if possible & port==0 (quick hack)
    works in shared memory */
 struct proxy_l* mk_shm_proxy(str* name, unsigned short port, unsigned short proto,
 		int is_sips)

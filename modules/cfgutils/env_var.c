@@ -24,7 +24,7 @@ int pv_parse_env_name(pv_spec_p sp, str *in)
 		return -1;
 	}
 	memset(it, 0, sizeof(env_var_t));
-	
+
 	it->name.s = (char*)pkg_malloc(in->len + 1);
 	if (!it->name.s) {
 		LM_ERR("no more pkg mem\n");
@@ -58,7 +58,7 @@ int pv_get_env(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return pv_get_null(msg, param, res);
 
 	env_v = (env_var_p)param->pvn.u.dname;
-	
+
 	env_val = getenv(env_v->name.s);
 	if (!env_val) {
 		LM_DBG("env variable <%s> could not be found\n", env_v->name.s);

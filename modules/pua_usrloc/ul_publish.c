@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -51,7 +51,7 @@ int pua_unset_publish(struct sip_msg* msg , void* param)
 	return 1;
 }
 
-	
+
 /* for debug purpose only */
 void print_publ(publ_info_t* p)
 {
@@ -59,11 +59,11 @@ void print_publ(publ_info_t* p)
 	LM_DBG("uri= %.*s\n", p->pres_uri->len, p->pres_uri->s);
 	LM_DBG("id= %.*s\n", p->id.len, p->id.s);
 	LM_DBG("expires= %d\n", p->expires);
-}	
+}
 
 str* build_pidf(ucontact_t* c)
 {
-	xmlDocPtr  doc = NULL; 
+	xmlDocPtr  doc = NULL;
 	xmlNodePtr root_node = NULL;
 	xmlNodePtr tuple_node = NULL;
 	xmlNodePtr status_node = NULL;
@@ -107,7 +107,7 @@ str* build_pidf(ucontact_t* c)
 
 		pres_uri.s[pres_uri.len++]= '@';
 		memcpy(pres_uri.s+ pres_uri.len, default_domain.s, default_domain.len);
-		pres_uri.len+= default_domain.len;		
+		pres_uri.len+= default_domain.len;
 	}
 	pres_uri.s[pres_uri.len]= '\0';
 
@@ -119,7 +119,7 @@ str* build_pidf(ucontact_t* c)
     root_node = xmlNewNode(NULL, BAD_CAST "presence");
 	if(root_node==0)
 		goto error;
-    
+
 	xmlDocSetRootElement(doc, root_node);
 
     xmlNewProp(root_node, BAD_CAST "xmlns",
@@ -138,23 +138,23 @@ str* build_pidf(ucontact_t* c)
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-	
+
 	status_node = xmlNewChild(tuple_node, NULL, BAD_CAST "status", NULL) ;
 	if( status_node ==NULL)
 	{
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-	
+
 	basic_node = xmlNewChild(status_node, NULL, BAD_CAST "basic",
 		BAD_CAST "open") ;
-	
+
 	if( basic_node ==NULL)
 	{
 		LM_ERR("while adding child\n");
 		goto error;
 	}
-	
+
 	body = (str*)pkg_malloc(sizeof(str));
 	if(body == NULL)
 	{
@@ -218,7 +218,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	}
 	else
 		body = NULL;
-	
+
 	uri.s = (char*)pkg_malloc(sizeof(char)*(c->aor->len+default_domain.len+6));
 	if(uri.s == NULL)
 		goto error;
@@ -236,7 +236,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 		memcpy(uri.s+ uri.len, default_domain.s, default_domain.len);
 		uri.len+= default_domain.len;
 	}
-	
+
 	LM_DBG("uri= %.*s\n", uri.len, uri.s);
 
 	memset(&publ, 0, sizeof(publ_info_t));
@@ -250,7 +250,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 		publ.expires= 0;
 	else
 		publ.expires= c->expires - (int)time(NULL);
-	
+
 	if(type & UL_CONTACT_INSERT)
 		publ.flag= INSERT_TYPE;
 	else
@@ -291,7 +291,7 @@ error:
 			xmlFree(body->s);
 		pkg_free(body);
 	}
-	
+
 	if(uri.s)
 		pkg_free(uri.s);
 	pua_ul_publish= 0;

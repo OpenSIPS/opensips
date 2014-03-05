@@ -189,7 +189,7 @@ int extract_publish_data_from_line(struct sca_line *sca, str *user, str *host, s
 }
 
 
-/* send the pusblish for the line - expects to get the line locked, 
+/* send the pusblish for the line - expects to get the line locked,
  * returnes the line unlocked */
 int do_callinfo_publish(struct sca_line *sca)
 {
@@ -276,7 +276,7 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 	if (sca==NULL) {
 		LM_DBG("SCA not found, expires=%d\n",subs->expires);
 		if (subs->expires==0) {
-			/* an unsubscribe from an inexisting list, 
+			/* an unsubscribe from an inexisting list,
 			   let presence deal with it, we do not really care */
 			return 0;
 		} else {

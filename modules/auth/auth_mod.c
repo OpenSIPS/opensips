@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Digest Authentication Module
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -27,7 +27,7 @@
  * 2003-03-10 New module interface (janakj)
  * 2003-03-16 flags export parameter added (janakj)
  * 2003-03-19 all mallocs/frees replaced w/ pkg_malloc/pkg_free (andrei)
- * 2003-04-28 rpid contributed by Juha Heinanen added (janakj) 
+ * 2003-04-28 rpid contributed by Juha Heinanen added (janakj)
  * 2005-05-31 general avp specification added for rpid (bogdan)
  * 2006-03-01 pseudo variables support for domain name (bogdan)
  */
@@ -117,7 +117,7 @@ int* next_index= NULL;
 int disable_nonce_check = 0;
 
 /*
- * Exported functions 
+ * Exported functions
  */
 static cmd_export_t cmds[] = {
 	{"www_challenge",       (cmd_function)www_challenge,           2,
@@ -165,7 +165,7 @@ static param_export_t params[] = {
  * Module interface
  */
 struct module_exports exports = {
-	"auth", 
+	"auth",
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	cmds,
@@ -305,7 +305,7 @@ static int mod_init(void)
 			return -10;
 		}
 		memset(nonce_buf, 255, NBUF_LEN);
-	   
+
 		sec_monit= (int*)shm_malloc((nonce_expire +1)* sizeof(int));
 		if(sec_monit== NULL)
 		{
@@ -355,7 +355,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 		str* _domain, char* _ha1)
 {
 	pv_value_t sval;
-	
+
 	/* get username from PV */
 	memset(&sval, 0, sizeof(pv_value_t));
 	if(pv_get_spec_value(msg, &user_spec, &sval)==0)
@@ -399,7 +399,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 		memcpy(_ha1, sval.rs.s, sval.rs.len);
 		_ha1[sval.rs.len] = '\0';
 	}
-    
+
 	return 0;
 }
 

@@ -18,8 +18,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -166,7 +166,7 @@ grp_found:
 
 	for (node = table[perm_hash(str_ip)]; node; node = node->next) {
 /*	 		LM_DBG("Comparing (%s %s) , (%d %d) , (%d %d) , (%d %d)\n",
-				ip_addr2a(node->ip), ip_addr2a(ip), 
+				ip_addr2a(node->ip), ip_addr2a(ip),
 				node->proto, proto,
 				node->port , port,
 				node->grp , grp);

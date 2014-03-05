@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -50,7 +50,7 @@ int t_newtran( struct sip_msg* p_msg );
 
 int _add_branch_label( struct cell *trans,
     char *str, int *len, int branch );
-int add_branch_label( struct cell *trans, 
+int add_branch_label( struct cell *trans,
 	struct sip_msg *p_msg, int branch );
 
 /* references T-context */
@@ -73,7 +73,7 @@ typedef struct cell * (*tlookuporiginalt_f)(struct sip_msg*);
 typedef struct cell * (*tgett_f)(void);
 struct cell *get_t();
 
-/* use carefully or better not at all -- current transaction is 
+/* use carefully or better not at all -- current transaction is
  * primarily set by lookup functions */
 void set_t(struct cell *t);
 
@@ -95,7 +95,7 @@ typedef int (*tget_ti_f)(struct sip_msg*, unsigned int*, unsigned int*);
 typedef int (*tlookup_ident_f)(struct cell**, unsigned int, unsigned int);
 
 int t_is_local(struct sip_msg*);
-int t_get_trans_ident(struct sip_msg* p_msg, 
+int t_get_trans_ident(struct sip_msg* p_msg,
 	unsigned int* hash_index, unsigned int* label);
 int t_lookup_ident(struct cell** trans,
 	unsigned int hash_index, unsigned int label);

@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -37,8 +37,8 @@ struct sip_msg;
 extern unsigned int nr_branches;
 
 
-/*! \brief 
- * Add a new branch to current transaction 
+/*! \brief
+ * Add a new branch to current transaction
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
 		qvalue_t q, unsigned int flags, struct socket_info* force_socket);
@@ -84,13 +84,13 @@ void clear_branches(void);
 char* print_dset(struct sip_msg* msg, int* len);
 
 
-/*! \brief 
+/*! \brief
  * Set the q value of the Request-URI
  */
 void set_ruri_q(qvalue_t q);
 
 
-/*! \brief 
+/*! \brief
  * Get the q value of the Request-URI
  */
 qvalue_t get_ruri_q(void);

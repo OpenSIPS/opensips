@@ -16,8 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -55,10 +55,10 @@
  * @param rewrite_local_suffix the rewrite suffix
  * @param status the status of the rule
  * @param hash_index the hash index of the rule
- * @param backup indicates if the route is backed up by another. only 
+ * @param backup indicates if the route is backed up by another. only
                  useful if status==0, if set, it is the hash value
                  of another rule
- * @param backed_up an -1-termintated array of hash indices of the route 
+ * @param backed_up an -1-termintated array of hash indices of the route
                     for which this route is backup
  * @param comment a comment for the route rule
  *
@@ -85,7 +85,7 @@ int add_route_to_tree(struct route_tree_item * route_tree, const str * scan_pref
  * @param scan_prefix the prefix at the current position
  * @param full_prefix the whole scan prefix
  * @param host the hostname last tried
- * @param reply_code the reply code 
+ * @param reply_code the reply code
  * @param flags user defined flags
  * @param mask mask for user defined flags
  * @param next_domain continue routing with this domain id

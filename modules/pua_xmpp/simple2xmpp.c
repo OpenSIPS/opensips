@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -72,7 +72,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	char buf_to[256];
 
 	memset(&dialog, 0, sizeof(ua_pres_t));
-	
+
 	LM_DBG("start...\n\n");
 
 	if( parse_headers(msg,HDR_EOH_F, 0)==-1 )
@@ -103,7 +103,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	URI_ADD_NULL_TERM(to_uri, buf_to, dialog.watcher_uri);
 
 	if (pto->tag_value.s==NULL || pto->tag_value.len==0 )
-	{  
+	{
 		LM_ERR("to tag value not parsed\n");
 		goto error;
 	}
@@ -125,7 +125,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	if (msg->from->parsed == NULL)
 	{
 		/* parsing from header */
-		if ( parse_from_header( msg )<0 ) 
+		if ( parse_from_header( msg )<0 )
 		{
 			LM_ERR("ERROR cannot parse From header\n");
 			goto error;
@@ -151,20 +151,20 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 
 	dialog.to_tag= pfrom->tag_value;
 	dialog.flag|= XMPP_SUBSCRIBE;
-	if(msg->event->body.len== 8 && 
+	if(msg->event->body.len== 8 &&
 			(strncasecmp(msg->event->body.s,"presence",8 )==0))
 		event_flag|= PRESENCE_EVENT;
 	else
-	if(msg->event->body.len== 14 && 
+	if(msg->event->body.len== 14 &&
 			(strncasecmp(msg->event->body.s,"presence.winfo",14 )==0))
 		event_flag|= PWINFO_EVENT;
 	else
 	{
 		LM_ERR("wrong event\n");
 		goto error;
-	}	
+	}
 	dialog.event= event_flag;
-	
+
 	if(pua_is_dialog(&dialog)< 0) // verify if within a stored dialog
 	{
 		LM_ERR("Notify in a non existing dialog\n");
@@ -175,7 +175,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 	{
 		body.s= NULL;
 		body.len= 0;
-	}	
+	}
 	else
 	{
 		if ( get_body(msg,&body)!=0 || body.len==0)
@@ -185,7 +185,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 		}
 	}
 
-	/* treat the two cases: event= presence & event=presence.winfo */	
+	/* treat the two cases: event= presence & event=presence.winfo */
 	if(event_flag & PRESENCE_EVENT)
 	{
 		LM_DBG("PRESENCE\n");
@@ -198,14 +198,14 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 				LM_DBG("Received Notification with state"
 					"terminated; reason= timeout=> don't send notification\n");
 				return 1;
-			}	
+			}
 			is_terminated= 1;
 
 		}
-	
+
 		if(build_xmpp_content(&to_uri, &from_uri, &body, &id, is_terminated)< 0)
 		{
-			LM_ERR("in function build_xmpp_content\n");	
+			LM_ERR("in function build_xmpp_content\n");
 			goto error;
 		}
 		xmlFreeDoc(doc);
@@ -218,7 +218,7 @@ int Notify2Xmpp(struct sip_msg* msg, char* s1, char* s2)
 			hdr = get_header_by_static_name( msg, "Subscription-State" );
 			if(hdr && strncasecmp(hdr->body.s,"terminated", 10)== 0)
 			{
-				LM_DBG("Notify for presence.winfo with" 
+				LM_DBG("Notify for presence.winfo with"
 					" Subscription-State terminated- should not translate\n");
 				goto error;
 			}
@@ -288,7 +288,7 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 		goto error;
 	}
 	if(is_terminated)
-	{	
+	{
 		attr=  xmlNewProp(xmpp_root, BAD_CAST "type", BAD_CAST "unsubscribed");
 		if(attr== NULL)
 		{
@@ -321,7 +321,7 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 		LM_ERR("while extracting 'presence' node\n");
 		goto error;
 	}
-	
+
 	node = XMLNodeGetNodeByName(sip_root, "basic", NULL);
 	if(node== NULL)
 	{
@@ -361,11 +361,11 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 		}
 		node= XMLNodeGetNodeByName(node, "note", NULL);
 		if(node== NULL)
-		{	
+		{
 			LM_DBG("Person node has no note node\n");
 			goto done;
-		}	
-	}	
+		}
+	}
 	note= (char*)xmlNodeGetContent(node);
 	if(note== NULL)
 	{
@@ -381,7 +381,7 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 		{
 			LM_ERR("while adding node show: away\n");
 			goto error;
-		}	
+		}
 	}
 	else
 		if(xmlStrcasecmp((unsigned char*)note, (unsigned char*)"busy")== 0)
@@ -392,7 +392,7 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 			{
 				LM_ERR("while adding node show: away\n");
 				goto error;
-			}	
+			}
 		}
 
 		/*
@@ -403,9 +403,9 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 			{
 				LM_ERR("while adding node show: chat\n");
 				goto error;
-			}	
+			}
 		}
-		else 
+		else
 			if(xmlStrcasecmp((unsigned char*)note, (unsigned char*)"idle")== 0)
 			{
 				new_node = xmlNewChild(xmpp_root, NULL, BAD_CAST "show", BAD_CAST "idle");
@@ -413,9 +413,9 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 				{
 					LM_ERR("while adding node: idle\n");
 					goto error;
-				}	
+				}
 			}
-			else */	
+			else */
 				if((xmlStrcasecmp((unsigned char*)note,
 					(unsigned char*)"dnd")== 0)||
 					(xmlStrcasecmp((unsigned char*)note,
@@ -427,18 +427,18 @@ int build_xmpp_content(str* to_uri, str* from_uri, str* body, str* id,
 					{
 						LM_ERR("while adding node show: dnd\n");
 						goto error;
-					}		
+					}
 				}
 
-	
+
 	/* adding status node */
 	new_node = xmlNewChild(xmpp_root, NULL, BAD_CAST "status", BAD_CAST note);
 	if(new_node== NULL)
 	{
 		LM_ERR("while adding node status\n");
 		goto error;
-	}	
-	
+	}
+
 	xmlFree(note);
 	note= NULL;
 
@@ -474,7 +474,7 @@ done:
 		LM_ERR("while adding creating new buffer\n");
 		goto error;
 	}
-	
+
 	xmpp_msg.len= xmlNodeDump(buffer, doc, xmpp_root, 1,1);
 	if(xmpp_msg.len== -1)
 	{
@@ -487,7 +487,7 @@ done:
 		LM_ERR("while extracting buffer content\n");
 		goto error;
 	}
-	
+
 	LM_DBG("xmpp_msg: %.*s\n",xmpp_msg.len, xmpp_msg.s);
 	if( xmpp_notify(from_uri, to_uri, &xmpp_msg, id)< 0)
 	{
@@ -547,11 +547,11 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 		LM_ERR("while extracting 'presence' node\n");
 		goto error;
 	}
-	
+
 	node = XMLNodeGetNodeByName(pidf_root, "watcher", NULL);
 
 	for (; node!=NULL; node = node->next)
-	{		
+	{
 		if( xmlStrcasecmp(node->name,(unsigned char*)"watcher"))
 			continue;
 
@@ -612,7 +612,7 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 			LM_ERR("while adding creating new buffer\n");
 			goto error;
 		}
-		
+
 		xmpp_msg.len= xmlNodeDump(buffer, doc, root_node, 1,1);
 		if(xmpp_msg.len== -1)
 		{
@@ -625,9 +625,9 @@ int winfo2xmpp(str* to_uri, str* body, str* id)
 			LM_ERR("while extracting buffer content\n");
 			goto error;
 		}
-	
+
 		LM_DBG("xmpp_msg: %.*s\n",xmpp_msg.len, xmpp_msg.s);
-		
+
 		if( xmpp_subscribe(&from_uri, to_uri, &xmpp_msg, id)< 0)
 		{
 			LM_ERR("while sending xmpp_subscribe\n");
@@ -656,7 +656,7 @@ error:
 		xmlBufferFree(buffer);
 	xmlCleanupParser();
 	xmlMemoryDump();
-	
+
 	return -1;
 }
 
@@ -670,7 +670,7 @@ char* get_error_reason(int code, str* reason)
 		LM_ERR("no more memory\n");
 		return NULL;
 	}
-	
+
 	switch( code )
 	{
 		case 300:	{ strcpy(err_cond, "redirect");					break;}
@@ -718,10 +718,10 @@ char* get_error_reason(int code, str* reason)
 	}
 
 	return err_cond;
-}	
+}
 
 
-int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg) 
+int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 {
 	/* named according to the direction of the message in xmpp*/
 	str from_uri;
@@ -734,7 +734,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	str reason;
 	char* err_reason= NULL;
 	xmlBufferPtr buffer= NULL;
-	char buf_to[256];	
+	char buf_to[256];
 
 	LM_DBG("*** Entered the callback\n");
 
@@ -750,9 +750,9 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	doc= xmlNewDoc(BAD_CAST "1.0");
 	if(doc==0)
 		goto error;
-    	
+
 	root_node = xmlNewNode(NULL, BAD_CAST "presence");
-	
+
 	if(root_node==0)
 		goto error;
     	xmlDocSetRootElement(doc, root_node);
@@ -793,7 +793,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 			LM_ERR("couldn't get response phrase\n");
 			goto error;
 		}
-	
+
 		attr= xmlNewProp(root_node, BAD_CAST "type", BAD_CAST "error");
 		if(attr== NULL)
 		{
@@ -805,15 +805,15 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 		{
 			LM_ERR("while adding new node\n");
 			goto error;
-		}	
+		}
 		node= xmlNewChild(node, 0,  BAD_CAST err_reason, 0 );
 		if(node== NULL)
 		{
 			LM_ERR("while adding new node\n");
 			goto error;
-		}	
+		}
 
-		attr= xmlNewProp(node, BAD_CAST "xmlns", 
+		attr= xmlNewProp(node, BAD_CAST "xmlns",
 				BAD_CAST "urn:ietf:params:xml:ns:xmpp-stanzas");
 		if(attr== NULL)
 		{
@@ -838,7 +838,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 			LM_ERR("while adding creating new buffer\n");
 			goto error;
 		}
-		
+
 		xmpp_msg.len= xmlNodeDump(buffer, doc, root_node, 1,1);
 		if(xmpp_msg.len== -1)
 		{
@@ -851,10 +851,10 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 			LM_ERR("while extracting buffer content\n");
 			goto error;
 		}
-	
+
 
 	LM_DBG("xmpp_msg: %.*s\n",xmpp_msg.len, xmpp_msg.s);
-	
+
 	if(xmpp_packet(&from_uri, &to_uri, &xmpp_msg, &hentity->to_tag)< 0)
 	{
 		LM_ERR("while sending xmpp_reply_to_subscribe\n");
@@ -863,7 +863,7 @@ int Sipreply2Xmpp(ua_pres_t* hentity, struct sip_msg * msg)
 	if(err_reason)
 		pkg_free(err_reason);
 	xmlFreeDoc(doc);
-	
+
 	return 0;
 
 error:

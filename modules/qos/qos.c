@@ -99,7 +99,7 @@ int load_qos( struct qos_binds *qosb)
  * Bind to the dialog module and setup the callbacks. Also initialize
  * the shared memory to store our interninal information in.
  */
-static int mod_init(void) 
+static int mod_init(void)
 {
 	fix_flag_name(&qos_flag_str, qos_flag);
 
@@ -108,7 +108,7 @@ static int mod_init(void)
 	if (qos_flag == -1) {
 		LM_ERR("no qos flag set!!\n");
 		return -1;
-	} 
+	}
 	else if (qos_flag > MAX_FLAG) {
 		LM_ERR("invalid qos flag %d!!\n", qos_flag);
 		return -1;

@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -26,11 +26,11 @@
  * 2004-06-07 updated to the new DB api (andrei)
  * 2004-08-23  hash function changed to process characters as unsigned
  *             -> no negative results occur (jku)
- *   
+ *
  */
 
 /*! \file
- *  \brief USRLOC - 
+ *  \brief USRLOC -
  *  \ingroup usrloc
  */
 
@@ -63,7 +63,7 @@ int new_udomain(str* _n, int _s, udomain_t** _d)
 #ifdef STATISTICS
 	char *name;
 #endif
-	
+
 	/* Must be always in shared memory, since
 	 * the cache is accessed from timer which
 	 * lives in a separate process
@@ -74,7 +74,7 @@ int new_udomain(str* _n, int _s, udomain_t** _d)
 		goto error0;
 	}
 	memset(*_d, 0, sizeof(udomain_t));
-	
+
 	(*_d)->table = (hslot_t*)shm_malloc(sizeof(hslot_t) * _s);
 	if (!(*_d)->table) {
 		LM_ERR("no memory left 2\n");
@@ -82,7 +82,7 @@ int new_udomain(str* _n, int _s, udomain_t** _d)
 	}
 
 	(*_d)->name = _n;
-	
+
 	for(i = 0; i < _s; i++) {
 		if (init_slot(*_d, &((*_d)->table[i]), i) < 0) {
 			LM_ERR("initializing hash table failed\n");
@@ -186,7 +186,7 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 void free_udomain(udomain_t* _d)
 {
 	int i;
-	
+
 	if (_d->table) {
 		for(i = 0; i < _d->size; i++) {
 			lock_ulslot(_d, i);
@@ -242,9 +242,9 @@ void print_udomain(FILE* _f, udomain_t* _d)
 			iterator_is_valid(&it);
 			iterator_next(&it) )
 			print_urecord(_f, (struct urecord *)*iterator_val(&it));
-		
+
 	}
-	
+
 	fprintf(_f, "\nMax slot: %d (%d/%d)\n", max, slot, n);
 	fprintf(_f, "\n---/Domain---\n");
 }
@@ -306,9 +306,9 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 		flags.s   = (char *)VAL_STRING(vals+6);
 		flags.len = strlen(flags.s);
 		LM_DBG("flag str: '%.*s'\n", flags.len, flags.s);
-	
+
 		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM);
-	
+
 		LM_DBG("set flags: %d\n", ci.cflags);
 	}
 
@@ -329,7 +329,7 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 		received.len = strlen(received.s);
 	}
 	ci.received = received;
-	
+
 	path.s  = (char*)VAL_STRING(vals+9);
 		if (VAL_NULL(vals+9) || !path.s || !path.s[0]) {
 			path.len = 0;
@@ -344,7 +344,7 @@ static inline ucontact_info_t* dbrow2info( db_val_t *vals, str *contact)
 	if (VAL_NULL(vals+10) || p==0 || p[0]==0){
 		ci.sock = 0;
 	} else {
-		if (parse_phostport( p, strlen(p), &host.s, &host.len, 
+		if (parse_phostport( p, strlen(p), &host.s, &host.len,
 		&port, &proto)!=0) {
 			LM_ERR("bad socket <%s>\n", p);
 			return 0;
@@ -501,7 +501,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				}
 			}
 
-		
+
 			lock_udomain(_d, &user);
 			if (get_urecord(_d, &user, &r) > 0) {
 				if (mem_insert_urecord(_d, &user, &r) < 0) {
@@ -637,7 +637,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 					_aor->len, _aor->s, _d->name->s);
 			continue;
 		}
-		
+
 		if ( r==0 )
 			get_static_urecord( _d, _aor, &r);
 
@@ -710,7 +710,7 @@ int testdb_udomain(db_con_t* con, udomain_t* d)
 	VAL_TYPE(val) = DB_STRING;
 	VAL_NULL(val) = 0;
 	VAL_STRING(val) = "dummy_user";
-	
+
 	if (ul_dbf.query( con, key, 0, val, col, 1, 1, 0, &res) < 0) {
 		LM_ERR("failure in db_query\n");
 		return -1;
@@ -727,7 +727,7 @@ int testdb_udomain(db_con_t* con, udomain_t* d)
 int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 {
 	int sl;
-	
+
 	if (new_urecord(_d->name, _aor, _r) < 0) {
 		LM_ERR("creating urecord failed\n");
 		return -1;
@@ -793,7 +793,7 @@ int mem_timer_udomain(udomain_t* _d)
 				unlock_ulslot(_d, i);
 				return -1;
 			}
-			
+
 			if (ret)
 				flush=1;
 
@@ -804,7 +804,7 @@ int mem_timer_udomain(udomain_t* _d)
 				mem_delete_urecord(_d,ptr);
 			}
 		}
-		
+
 		unlock_ulslot(_d, i);
 	}
 
@@ -922,7 +922,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		/* search in cache */
 		aorhash = core_hash(_aor, 0, 0);
 		sl = aorhash&(_d->size-1);
-		
+
 
 		dest = map_find(_d->table[sl].records, *_aor);
 
@@ -933,7 +933,7 @@ int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 
 		return 0;
 
-		
+
 	} else {
 		/* search in DB */
 		r = db_load_urecord( ul_dbh, _d, _aor);

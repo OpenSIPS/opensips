@@ -42,7 +42,7 @@
 #include "sipheader.h"
 #include "usage.h"
 
-#ifndef timersub 
+#ifndef timersub
 #define timersub(a, b, result)							\
 {														\
 	(result)->tv_sec = (a)->tv_sec - (b)->tv_sec;		\
@@ -52,7 +52,7 @@
 		(result)->tv_usec += 1000000;					\
 	}													\
 }
-#endif 
+#endif
 
 extern int _osp_calling_avpid;
 extern int _osp_service_type;

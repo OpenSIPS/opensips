@@ -1,8 +1,8 @@
 /*
- * $Id$ 
+ * $Id$
  *
  * via parsing automaton
- * 
+ *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -17,14 +17,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 
 
-/* 
+/*
  *  2003-01-21  added rport parsing code, contributed by
  *               Maxim Sobolev  <sobomax@FreeBSD.org>
  *  2003-01-23  added extra via param parsing code (i=...), used
@@ -59,13 +59,13 @@
 
 
 /* main via states (uri:port ...) */
-enum {	         
+enum {
 	F_HOST, P_HOST,
 	L_PORT, F_PORT, P_PORT,
 	L_PARAM, F_PARAM, P_PARAM,
 	L_VIA, F_VIA,
 	F_COMMENT, P_COMMENT,
-	F_IP6HOST, P_IP6HOST, 
+	F_IP6HOST, P_IP6HOST,
 	F_CRLF,
 	F_LF,
 	F_CR,
@@ -91,7 +91,7 @@ enum {
 /* param related states
  * WARNING: keep in sync with parse_via.h, PARAM_HIDDEN, ...
  */
-enum {	
+enum {
 	L_VALUE = 200, F_VALUE, P_VALUE, P_STRING,
 	HIDDEN1, HIDDEN2, HIDDEN3, HIDDEN4, HIDDEN5,
 	TTL1, TTL2,
@@ -112,12 +112,12 @@ enum {
 /* entry state must be F_PARAM, or saved_state=F_PARAM and
  * state=F_{LF,CR,CRLF}!
  * output state = L_PARAM or F_PARAM or END_OF_HEADER
- * (and saved_state= last state); everything else => error 
- * WARNING: param->start must be filled before, it's used in param->size 
+ * (and saved_state= last state); everything else => error
+ * WARNING: param->start must be filled before, it's used in param->size
  * computation.
  */
 static /*inline*/ char* parse_via_param(char* p, char* end,
-										unsigned char* pstate, 
+										unsigned char* pstate,
 				    					unsigned char* psaved_state,
 										struct via_param* param)
 {
@@ -173,7 +173,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_ALIAS:
 						param->type=state;
 						param->name.len=tmp-param->name.s;
-						param->size=tmp-param->start; 
+						param->size=tmp-param->start;
 						saved_state=L_PARAM;
 						state=F_LF;
 						goto endofparam;
@@ -185,7 +185,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_RPORT:
 						param->type=state;
 						param->name.len=tmp-param->name.s;
-						param->size=tmp-param->start; 
+						param->size=tmp-param->start;
 						saved_state=L_VALUE;
 						state=F_LF;
 						goto find_value;
@@ -205,7 +205,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						param->type=GEN_PARAM;
 						saved_state=L_VALUE;
 						param->name.len=tmp-param->name.s;
-						param->size=tmp-param->start; 
+						param->size=tmp-param->start;
 						state=F_LF;
 						goto find_value;
 				}
@@ -216,7 +216,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_ALIAS:
 						param->type=state;
 						param->name.len=tmp-param->name.s;
-						param->size=tmp-param->start; 
+						param->size=tmp-param->start;
 						saved_state=L_PARAM;
 						state=F_CR;
 						goto endofparam;
@@ -228,7 +228,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					case FIN_RPORT:
 						param->type=state;
 						param->name.len=tmp-param->name.s;
-						param->size=tmp-param->start; 
+						param->size=tmp-param->start;
 						saved_state=L_VALUE;
 						state=F_CR;
 						goto find_value;
@@ -244,7 +244,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 					default:
 						param->type=GEN_PARAM;
 						param->name.len=tmp-param->name.s;
-						param->size=tmp-param->start; 
+						param->size=tmp-param->start;
 						saved_state=L_VALUE;
 						state=F_CR;
 						goto find_value;
@@ -339,7 +339,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						state=F_VIA;
 						goto endofvalue;
 				}
-				break; 
+				break;
 
 				/* param names */
 			case 'h':
@@ -740,7 +740,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 	saved_state=state;
 	state=END_OF_HEADER;
 	goto parse_error;
-	
+
  find_value:
 	tmp++;
 	for(;*tmp;tmp++){
@@ -750,7 +750,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 				switch(state){
 					case L_VALUE:
 					case F_VALUE: /*eat space*/
-						break; 
+						break;
 					case P_VALUE:
 						state=L_PARAM;
 						param->value.len=tmp-param->value.s;
@@ -935,7 +935,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 	saved_state=state;
 	state=END_OF_HEADER;
 	goto parse_error;
-	
+
  endofparam:
  endofvalue:
 	param->size=tmp-param->start;
@@ -943,15 +943,15 @@ normal_exit:
 	*pstate=state;
 	*psaved_state=saved_state;
 	LM_DBG("found param type %d, <%.*s> = <%.*s>; state=%d\n", param->type,
-			param->name.len, ZSW(param->name.s), 
+			param->name.len, ZSW(param->name.s),
 			(param->value.len?param->value.len:3),
 			(param->value.len?param->value.s:"n/a"), state);
 	return tmp;
-	
+
  end_via:
 	     /* if we are here we found an "unexpected" end of via
 	      *  (cr/lf). This is valid only if the param type is GEN_PARAM or
-		  *  RPORT (the only ones which can miss the value; HIDDEN is a 
+		  *  RPORT (the only ones which can miss the value; HIDDEN is a
 		  *  special case )*/
 	if ((param->type==GEN_PARAM)||(param->type==PARAM_RPORT)){
 		saved_state=L_PARAM; /* change the saved_state, we have an unknown
@@ -1167,7 +1167,7 @@ parse_again:
 						goto parse_error;
 				}
 				break;
-			
+
 			case '/':
 				switch(state){
 					case FIN_SIP:
@@ -1503,7 +1503,7 @@ parse_again:
 						goto parse_error;
 				}
 				break;
-			
+
 			default:
 				switch(state){
 					case F_PROTO:
@@ -1679,7 +1679,7 @@ parse_again:
 						goto parse_error;
 				}
 			break;
-			
+
 			case ':':
 				switch(state){
 					case F_HOST:
@@ -1774,7 +1774,7 @@ parse_again:
 						break;
 					case P_COMMENT: /*everything is allowed in a comment*/
 						break;
-					
+
 					default:
 						LM_CRIT("on <%c> state %d\n", *tmp, state);
 						goto parse_error;
@@ -1811,7 +1811,7 @@ parse_again:
 						goto parse_error;
 					case F_VIA:
 						/* do  nothing,  eat ","*/
-						break;	
+						break;
 					case F_CRLF:
 					case F_LF:
 					case F_CR:
@@ -1962,7 +1962,7 @@ parse_again:
 						goto  parse_error;
 				}
 				break;
-						
+
 			default:
 				switch(state){
 					case F_HOST:
@@ -2047,7 +2047,7 @@ parse_again:
 								vb->maddr=param;
 								break;
 						}
-						
+
 						if (state==END_OF_HEADER){
 							state=saved_state;
 							goto endofheader;
@@ -2094,7 +2094,7 @@ parse_again:
 
 	LM_DBG("end of packet reached, state=%d\n", state);
 	goto endofpacket; /*end of packet, probably should be goto error*/
-	
+
 endofheader:
 	state=saved_state;
 	LM_DBG("end of header reached, state=%d\n", state);

@@ -3,7 +3,7 @@ SMS Server Tools
 Copyright (C) 2000 Stefan Frings
 
 This program is free software unless you got it under another license directly
-from the author. You can redistribute it and/or modify it under the terms of 
+from the author. You can redistribute it and/or modify it under the terms of
 the GNU General Public License as published by the Free Software Foundation.
 Either version 2 of the License, or (at your option) any later version.
 
@@ -14,7 +14,7 @@ mailto:s.frings@mail.isis.de
 
 #include "libsms_charset.h"
 
-#define noc 183 
+#define noc 183
 // non existent character
 
 // iso 8859-1
@@ -35,7 +35,7 @@ unsigned char charset[128] ={
 		     'h' , 'i' , 'j' , 'k' , 'l' , 'm' , 'n' , 'o' ,
 		     'p' , 'q' , 'r' , 's' , 't' , 'u' , 'v' , 'w' ,
 		     'x' , 'y' , 'z' , 228 , 246 , 241 , 252 , 224 };
-		      
+
 char ascii2sms(const char c)
 {
 	char found='*'; // replacement for nonexistent characters

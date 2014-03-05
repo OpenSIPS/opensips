@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -134,7 +134,7 @@ static int mod_init(void)
 
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
-	
+
 	/* import the TM auto-loading function */
 	if((load_tm=(load_tm_f)find_export("load_tm", 0, 0))==NULL)
 	{
@@ -198,7 +198,7 @@ static int mod_init(void)
 		return -1;
 	}
 	xmpp_notify= xmpp_api.xnotify;
-	
+
 	if(xmpp_api.xpacket== NULL)
 	{
 		LM_ERR("Could not import xnotify from xmpp\n");
@@ -208,7 +208,7 @@ static int mod_init(void)
 
 	xmpp_uri_xmpp2sip = xmpp_api.uri_xmpp2sip;
 	xmpp_uri_sip2xmpp = xmpp_api.uri_sip2xmpp;
-	
+
 	if(xmpp_api.register_callback== NULL)
 	{
 		LM_ERR("Could not import register_callback"
@@ -229,7 +229,7 @@ static int mod_init(void)
 		LM_ERR("Can't bind pua\n");
 		return -1;
 	}
-	
+
 	if (bind_pua(&pua) < 0)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -248,7 +248,7 @@ static int mod_init(void)
 		return -1;
 	}
 	pua_send_subscribe= pua.send_subscribe;
-	
+
 	if(pua.is_dialog == NULL)
 	{
 		LM_ERR("Could not import send_subscribe\n");
@@ -260,7 +260,7 @@ static int mod_init(void)
 	{
 		LM_ERR("Could not register callback\n");
 		return -1;
-	}	
+	}
 
 	return 0;
 }
@@ -283,7 +283,7 @@ static int fixup_pua_xmpp(void** param, int param_no)
 			LM_ERR("wrong format[%s]\n",(char*)(*param));
 			return E_UNSPEC;
 		}
-			
+
 		*param = (void*)model;
 		return 0;
 	}

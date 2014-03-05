@@ -160,7 +160,7 @@ inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
 		return -1;
 	}
 	return 0;
-	
+
 }
 
 

@@ -912,7 +912,7 @@ void siplua_register_api_cclosures(lua_State *L)
 /* 		LM_ERR("Invalid URI reference\n"); */
 /* 		ret = NULL; */
 /* 	} else { */
-		
+
 /* 		switch (what) { */
 /* 			case XS_URI_USER:	ret = &(myuri->user); */
 /* 						break; */

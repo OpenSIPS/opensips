@@ -17,16 +17,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 /*!
  * \file
  * \brief SIP registrar module - SIP message related functions
- * \ingroup registrar   
- */  
+ * \ingroup registrar
+ */
 
 
 
@@ -53,7 +53,7 @@ static struct hdr_field* act_contact;
 static inline int get_expires_hf(struct sip_msg* _m)
 {
 	exp_body_t* p;
-	
+
 	if (_m->expires) {
 		p = (exp_body_t*)_m->expires->parsed;
 		if (p->valid) {
@@ -74,13 +74,13 @@ static inline int get_expires_hf(struct sip_msg* _m)
 int parse_message(struct sip_msg* _m)
 {
 	struct hdr_field* ptr;
-	
+
 	if (parse_headers(_m, HDR_EOH_F, 0) == -1) {
 		rerrno = R_PARSE;
 		LM_ERR("failed to parse headers\n");
 		return -1;
 	}
-	
+
 	if (!_m->to) {
 		rerrno = R_TO_MISS;
 		LM_ERR("To not found\n");
@@ -104,7 +104,7 @@ int parse_message(struct sip_msg* _m)
 		LM_ERR("failed to parse expires body\n");
 		return -5;
 	}
-	
+
 	if (_m->contact) {
 		ptr = _m->contact;
 		while(ptr) {
@@ -118,7 +118,7 @@ int parse_message(struct sip_msg* _m)
 			ptr = ptr->next;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -132,11 +132,11 @@ int check_contacts(struct sip_msg* _m, int* _s)
 {
 	struct hdr_field* p;
 	contact_t*  c;
-	
+
 	*_s = 0;
 	/* Message without contacts is OK */
 	if (_m->contact == 0) return 0;
-	
+
 	if (((contact_body_t*)_m->contact->parsed)->star == 1) {
 		/* The first Contact HF is star */
 		/* Expires must be zero */
@@ -144,13 +144,13 @@ int check_contacts(struct sip_msg* _m, int* _s)
 			rerrno = R_STAR_EXP;
 			return 1;
 		}
-		
+
 		/* Message must contain no contacts */
 		if (((contact_body_t*)_m->contact->parsed)->contacts) {
 			rerrno = R_STAR_CONT;
 			return 1;
 		}
-		
+
 		/* Message must contain no other Contact HFs */
 		p = _m->contact->next;
 		while(p) {
@@ -160,7 +160,7 @@ int check_contacts(struct sip_msg* _m, int* _s)
 			}
 			p = p->next;
 		}
-		
+
 		*_s = 1;
 	} else { /* The first Contact HF is not star */
 		/* Message must contain no star Contact HF */

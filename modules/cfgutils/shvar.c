@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
@@ -432,10 +432,10 @@ void destroy_shvars(void)
 int pv_parse_shvar_name(pv_spec_p sp, str *in)
 {
 	pv_spec_list_t *pvi = 0;
-	
+
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;
-	
+
 	sp->pvp.pvn.type = PV_NAME_PVAR;
 	if(shvar_initialized)
 		sp->pvp.pvn.u.dname = (void*)add_shvar(in);
@@ -470,13 +470,13 @@ int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
 	int len = 0;
 	char *sval = NULL;
 	sh_var_t *shv=NULL;
-	
+
 	if(msg==NULL || res==NULL)
 		return -1;
 
 	if(param==NULL || param->pvn.u.dname==0)
 		return pv_get_null(msg, param, res);
-	
+
 	shv= (sh_var_t*)param->pvn.u.dname;
 
 	lock_shvar(shv);
@@ -496,16 +496,16 @@ int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
 		}
 		strncpy(param->pvv.s, shv->v.value.s.s, shv->v.value.s.len);
 		param->pvv.len = shv->v.value.s.len;
-		
+
 		unlock_shvar(shv);
-		
+
 		res->rs = param->pvv;
 		res->flags = PV_VAL_STR;
 	} else {
 		res->ri = shv->v.value.n;
-		
+
 		unlock_shvar(shv);
-		
+
 		sval = sint2str(res->ri, &len);
 		res->rs.s = sval;
 		res->rs.len = len;
@@ -649,7 +649,7 @@ struct mi_root* mi_shvar_get(struct mi_root* cmd_tree, void* param)
 		shv = get_shvar_by_name(&name);
 		if(shv==NULL)
 			return init_mi_tree(404, MI_SSTR("Not found"));
-		
+
 		rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 		if (rpl_tree==NULL)
 			return NULL;
@@ -762,7 +762,7 @@ int param_set_xvar( modparam_t type, void* val, int mode)
 
 	if(*p!='=')
 		goto error;
-	
+
 	s.len = p - s.s;
 	if(s.len == 0)
 		goto error;
@@ -792,7 +792,7 @@ int param_set_xvar( modparam_t type, void* val, int mode)
 		goto error;
 	if(set_var_value(sv, &isv, flags)==NULL)
 		goto error;
-	
+
 	return 0;
 error:
 	LM_ERR("unable to set shv parame [%s]\n", s.s);
@@ -819,7 +819,7 @@ int pv_parse_time_name(pv_spec_p sp, str *in)
 
 	switch(in->len)
 	{
-		case 3: 
+		case 3:
 			if(strncmp(in->s, "sec", 3)==0)
 				sp->pvp.pvn.u.isname.name.n = 0;
 			else if(strncmp(in->s, "min", 3)==0)
@@ -828,7 +828,7 @@ int pv_parse_time_name(pv_spec_p sp, str *in)
 				sp->pvp.pvn.u.isname.name.n = 4;
 			else goto error;
 		break;
-		case 4: 
+		case 4:
 			if(strncmp(in->s, "hour", 4)==0)
 				sp->pvp.pvn.u.isname.name.n = 2;
 			else if(strncmp(in->s, "mday", 4)==0)
@@ -841,7 +841,7 @@ int pv_parse_time_name(pv_spec_p sp, str *in)
 				sp->pvp.pvn.u.isname.name.n = 7;
 			else goto error;
 		break;
-		case 5: 
+		case 5:
 			if(strncmp(in->s, "isdst", 5)==0)
 				sp->pvp.pvn.u.isname.name.n = 8;
 			else goto error;
@@ -878,7 +878,7 @@ int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 			return -1;
 		}
 	}
-	
+
 	switch(param->pvn.u.isname.name.n)
 	{
 		case 1:
@@ -888,16 +888,16 @@ int pv_get_time(struct sip_msg *msg, pv_param_t *param,
 		case 3:
 			return pv_get_uintval(msg, param, res, (unsigned int)stored_ts.tm_mday);
 		case 4:
-			return pv_get_uintval(msg, param, res, 
+			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_mon+1));
 		case 5:
 			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_year+1900));
 		case 6:
-			return pv_get_uintval(msg, param, res, 
+			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_wday+1));
 		case 7:
-			return pv_get_uintval(msg, param, res, 
+			return pv_get_uintval(msg, param, res,
 					(unsigned int)(stored_ts.tm_yday+1));
 		case 8:
 			return pv_get_sintval(msg, param, res, stored_ts.tm_isdst);

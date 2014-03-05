@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -38,7 +38,7 @@
 
 /*
  * This method is used to parse the from header. It was decided not to parse
- * anything in core that is not *needed* so this method gets called by 
+ * anything in core that is not *needed* so this method gets called by
  * rad_acc module and any other modules that needs the FROM header.
  *
  * params: msg : sip msg
@@ -97,7 +97,7 @@ error:
 struct sip_uri *parse_from_uri(struct sip_msg *msg)
 {
 	struct to_body *tb = NULL;
-	
+
 	if(msg==NULL)
 		return NULL;
 
@@ -106,7 +106,7 @@ struct sip_uri *parse_from_uri(struct sip_msg *msg)
 		LM_ERR("cannot parse FROM header\n");
 		return NULL;
 	}
-	
+
 	if(msg->from==NULL || get_from(msg)==NULL)
 		return NULL;
 

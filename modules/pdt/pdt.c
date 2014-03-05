@@ -21,7 +21,7 @@
  *
  * History:
  * -------
- * 2003-04-07: a structure for both hashes introduced (ramona) 
+ * 2003-04-07: a structure for both hashes introduced (ramona)
  * 2003-04-06: db connection closed in mod_init (janakj)
  * 2004-06-07: updated to the new DB api (andrei)
  * 2005-01-26: removed terminating code (ramona)
@@ -63,7 +63,7 @@
 
 
 /** structures containing prefix-domain pairs */
-pdt_tree_t **_ptree = NULL; 
+pdt_tree_t **_ptree = NULL;
 
 /** database connection */
 static db_con_t *db_con = NULL;
@@ -84,7 +84,7 @@ str prefix = {"", 0};
 str pdt_char_list = {"0123456789", 10};
 
 /* reader-writers lock */
-static rw_lock_t *pdt_lock = NULL; 
+static rw_lock_t *pdt_lock = NULL;
 
 static int  w_prefix2domain(struct sip_msg* msg, char* str1, char* str2);
 static int  w_prefix2domain_1(struct sip_msg* msg, char* mode, char* str2);
@@ -192,23 +192,23 @@ static int mod_init(void)
 	db_con = pdt_dbf.init(&db_url);
 	if(db_con==NULL)
 	{
-		LM_ERR("failed to connect to the database\n");        
+		LM_ERR("failed to connect to the database\n");
 		return -1;
 	}
-	
+
 	if (pdt_dbf.use_table(db_con, &db_table) < 0)
 	{
 		LM_ERR("failed to use_table\n");
 		goto error1;
 	}
 	LM_DBG("database connection opened successfully\n");
-	
+
 	/* create & init lock */
 	if ((pdt_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init lock\n");
 		goto error1;
 	}
-	
+
 	/* tree pointer in shm */
 	_ptree = (pdt_tree_t**)shm_malloc( sizeof(pdt_tree_t*) );
 	if (_ptree==0) {
@@ -220,10 +220,10 @@ static int mod_init(void)
 	/* loading all information from database */
 	if(pdt_load_db()!=0)
 	{
-		LM_ERR("cannot load info from database\n");	
+		LM_ERR("cannot load info from database\n");
 		goto error1;
 	}
-		
+
 	pdt_dbf.close(db_con);
 	db_con = 0;
 
@@ -355,13 +355,13 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 	str *d, p, all={"*",1};
 	int plen;
 	struct sip_uri uri;
-	
+
 	if(msg==NULL)
 	{
 		LM_ERR("received null msg\n");
 		return -1;
 	}
-	
+
 	/* parse the uri, if not yet */
 	if(msg->parsed_uri_ok==0)
 		if(parse_sip_msg_uri(msg)<0)
@@ -375,28 +375,28 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 	{
 		LM_DBG("user part of the message is empty\n");
 		return -1;
-	}   
-    
+	}
+
 	if(prefix.len>0)
 	{
 		if (msg->parsed_uri.user.len<=prefix.len)
 		{
 			LM_DBG("user part is less than prefix\n");
 			return -1;
-		}   
+		}
 		if(strncasecmp(prefix.s, msg->parsed_uri.user.s, prefix.len)!=0)
 		{
 			LM_DBG("PSTN prefix did not matched\n");
 			return -1;
 		}
-	}   
-	
+	}
+
 	if(prefix.len>0 && prefix.len < msg->parsed_uri.user.len
 			&& strncasecmp(prefix.s, msg->parsed_uri.user.s, prefix.len)!=0)
 	{
 		LM_DBG("PSTN prefix did not matched\n");
 		return -1;
-			
+
 	}
 
 	p.s   = msg->parsed_uri.user.s + prefix.len;
@@ -405,22 +405,22 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 	lock_start_read( pdt_lock );
 
 	if(sd_en==2)
-	{	
+	{
 		/* take the domain from  FROM uri as sdomain */
-		if(parse_from_header(msg)<0 ||  msg->from == NULL 
+		if(parse_from_header(msg)<0 ||  msg->from == NULL
 				|| get_from(msg)==NULL)
 		{
 			LM_ERR("cannot parse FROM header\n");
 			goto error;
-		}	
-		
+		}
+
 		memset(&uri, 0, sizeof(struct sip_uri));
 		if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len , &uri)<0)
 		{
 			LM_ERR("failed to parse From uri\n");
 			goto error;
 		}
-	
+
 		/* find the domain that corresponds to this prefix */
 		plen = 0;
 		if((d=pdt_get_domain(*_ptree, &uri.host, &p, &plen))==NULL)
@@ -432,22 +432,22 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 				goto error;
 			}
 		}
-	} else if(sd_en==1) {	
+	} else if(sd_en==1) {
 		/* take the domain from  FROM uri as sdomain */
 		if(parse_from_header(msg)<0 ||  msg->from == NULL
 				|| get_from(msg)==NULL)
 		{
 			LM_ERR("ERROR cannot parse FROM header\n");
 			goto error;
-		}	
-		
+		}
+
 		memset(&uri, 0, sizeof(struct sip_uri));
 		if (parse_uri(get_from(msg)->uri.s, get_from(msg)->uri.len , &uri)<0)
 		{
 			LM_ERR("failed to parse From uri\n");
 			goto error;
 		}
-	
+
 		/* find the domain that corresponds to this prefix */
 		plen = 0;
 		if((d=pdt_get_domain(*_ptree, &uri.host, &p, &plen))==NULL)
@@ -464,7 +464,7 @@ static int prefix2domain(struct sip_msg* msg, int mode, int sd_en)
 			goto error;
 		}
 	}
-	
+
 	/* update the new uri */
 	if(update_new_uri(msg, plen, d, mode)<0)
 	{
@@ -489,7 +489,7 @@ static int update_new_uri(struct sip_msg *msg, int plen, str *d, int mode)
 		LM_ERR("bad parameters\n");
 		return -1;
 	}
-	
+
 	if(mode==0 || (mode==1 && prefix.len>0))
 	{
 		act.type = STRIP_T;
@@ -506,7 +506,7 @@ static int update_new_uri(struct sip_msg *msg, int plen, str *d, int mode)
 			return -1;
 		}
 	}
-	
+
 	act.type = SET_HOSTPORT_T;
 	act.elem[0].type = STR_ST;
 	act.elem[0].u.s = *d;
@@ -518,9 +518,9 @@ static int update_new_uri(struct sip_msg *msg, int plen, str *d, int mode)
 		return -1;
 	}
 
-	LM_DBG("len=%d uri=%.*s\n", msg->new_uri.len, 
+	LM_DBG("len=%d uri=%.*s\n", msg->new_uri.len,
 			msg->new_uri.len, msg->new_uri.s);
-	
+
 	return 0;
 }
 
@@ -530,8 +530,8 @@ static int pdt_load_db(void)
 	str p, d, sdomain;
 	db_res_t* db_res = NULL;
 	int i, ret;
-	pdt_tree_t *_ptree_new = NULL; 
-	pdt_tree_t *old_tree = NULL; 
+	pdt_tree_t *_ptree_new = NULL;
+	pdt_tree_t *old_tree = NULL;
 	int no_rows = 10;
 
 	if(db_con==NULL)
@@ -539,7 +539,7 @@ static int pdt_load_db(void)
 		LM_ERR("no db connection\n");
 		return -1;
 	}
-		
+
 	if (pdt_dbf.use_table(db_con, &db_table) < 0)
 	{
 		LM_ERR("failed to use_table\n");
@@ -590,7 +590,7 @@ static int pdt_load_db(void)
 
 			p.s = (char*)(RES_ROWS(db_res)[i].values[1].val.string_val);
 			p.len = strlen(p.s);
-			
+
 			d.s = (char*)(RES_ROWS(db_res)[i].values[2].val.string_val);
 			d.len = strlen(d.s);
 
@@ -600,7 +600,7 @@ static int pdt_load_db(void)
 				LM_ERR("Error - bad values in db\n");
 				continue;
 			}
-		
+
 			if(pdt_check_domain!=0 && _ptree_new!=NULL
 					&& pdt_check_pd(_ptree_new, &sdomain, &p, &d)==1)
 			{
@@ -662,10 +662,10 @@ static struct mi_root* pdt_mi_reload(struct mi_root *cmd_tree, void *param)
 	/* re-loading all information from database */
 	if(pdt_load_db()!=0)
 	{
-		LM_ERR("cannot re-load info from database\n");	
+		LM_ERR("cannot re-load info from database\n");
 		goto error;
 	}
-	
+
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
 error:
@@ -724,7 +724,7 @@ struct mi_root* pdt_mi_add(struct mi_root* cmd_tree, void* param)
 
 	while(i< sp.len)
 	{
-		if(strpos(pdt_char_list.s,sp.s[i]) < 0) 
+		if(strpos(pdt_char_list.s,sp.s[i]) < 0)
 			return init_mi_tree(400, "bad prefix", 10);
 		i++;
 	}
@@ -744,7 +744,7 @@ struct mi_root* pdt_mi_add(struct mi_root* cmd_tree, void* param)
 	if(*sd.s=='.')
 		 return init_mi_tree(400, "empty param", 11);
 
-	
+
 	if(pdt_check_domain!=0 && *_ptree!=NULL
 			&& pdt_check_pd(*_ptree, &sdomain, &sp, &sd)==1)
 	{
@@ -766,7 +766,7 @@ struct mi_root* pdt_mi_add(struct mi_root* cmd_tree, void* param)
 	db_vals[2].nul = 0;
 	db_vals[2].val.str_val.s = sd.s;
 	db_vals[2].val.str_val.len = sd.len;
-	
+
 	/* insert a new domain into database */
 	if(pdt_dbf.insert(db_con, db_keys, db_vals, NR_KEYS)<0)
 	{
@@ -777,15 +777,15 @@ struct mi_root* pdt_mi_add(struct mi_root* cmd_tree, void* param)
 	/* re-loading all information from database */
 	if(pdt_load_db()!=0)
 	{
-		LM_ERR("cannot re-load info from database\n");	
+		LM_ERR("cannot re-load info from database\n");
 		goto error;
 	}
-	
+
 	LM_DBG("new prefix added %.*s-%.*s => %.*s\n",
 			sdomain.len, sdomain.s, sp.len, sp.s, sd.len, sd.s);
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
-	
+
 error:
 	if(pdt_dbf.delete(db_con, db_keys, db_ops, db_vals, NR_KEYS)<0)
 		LM_ERR("database/cache are inconsistent\n");
@@ -841,7 +841,7 @@ struct mi_root* pdt_mi_delete(struct mi_root* cmd_tree, void* param)
 	db_vals[0].nul = 0;
 	db_vals[0].val.str_val.s = sdomain.s;
 	db_vals[0].val.str_val.len = sdomain.len;
-	
+
 	db_vals[1].type = DB_STR;
 	db_vals[1].nul = 0;
 	db_vals[1].val.str_val.s = sd.s;
@@ -851,11 +851,11 @@ struct mi_root* pdt_mi_delete(struct mi_root* cmd_tree, void* param)
 	{
 		LM_ERR("database/cache are inconsistent\n");
 		return init_mi_tree( 500, "database/cache are inconsistent", 31 );
-	} 
+	}
 	/* re-loading all information from database */
 	if(pdt_load_db()!=0)
 	{
-		LM_ERR("cannot re-load info from database\n");	
+		LM_ERR("cannot re-load info from database\n");
 		return init_mi_tree( 500, "cannot reload", 13 );
 	}
 
@@ -876,7 +876,7 @@ int pdt_print_mi_node(pdt_node_t *pt, struct mi_node* rpl, char *code,
 
 	if(pt==NULL || len>=PDT_MAX_DEPTH)
 		return 0;
-	
+
 	for(i=0; i<PDT_NODE_SIZE; i++)
 	{
 		code[len]=pdt_char_list.s[i];
@@ -884,7 +884,7 @@ int pdt_print_mi_node(pdt_node_t *pt, struct mi_node* rpl, char *code,
 		{
 			if((sp->s==NULL && sd->s==NULL)
 				|| (sp->s==NULL && (sd->s!=NULL && pt[i].domain.len==sd->len
-						&& strncasecmp(pt[i].domain.s, sd->s, sd->len)==0)) 
+						&& strncasecmp(pt[i].domain.s, sd->s, sd->len)==0))
 				|| (sd->s==NULL && (len+1>=sp->len
 						&& strncmp(code, sp->s, sp->len)==0))
 				|| ((sp->s!=NULL && len+1>=sp->len
@@ -904,7 +904,7 @@ int pdt_print_mi_node(pdt_node_t *pt, struct mi_node* rpl, char *code,
 							code, len+1);
 				if(attr == NULL)
 					goto error;
-						
+
 				attr = add_mi_attr(node, MI_DUP_VALUE,"DOMAIN", 6,
 							pt[i].domain.s, pt[i].domain.len);
 				if(attr == NULL)
@@ -930,10 +930,10 @@ error:
  * 	  all domains starting with 'a' are listed
  *
  * 	  Examples
- * 	  pdt_list o 2 .    - lists the entries where sdomain is starting with 'o', 
+ * 	  pdt_list o 2 .    - lists the entries where sdomain is starting with 'o',
  * 	                      prefix is starting with '2' and domain is anything
- * 	  
- * 	  pdt_list . 2 open - lists the entries where sdomain is anything, prefix 
+ *
+ * 	  pdt_list . 2 open - lists the entries where sdomain is anything, prefix
  * 	                      starts with '2' and domain starts with 'open'
  */
 
@@ -1010,11 +1010,11 @@ struct mi_root* pdt_mi_list(struct mi_root* cmd_tree, void* param)
 		return rpl_tree;
 
 	pt = *_ptree;
-	
+
 	while(pt!=NULL)
 	{
-		if(sdomain.s==NULL || 
-			(sdomain.s!=NULL && pt->sdomain.len>=sdomain.len && 
+		if(sdomain.s==NULL ||
+			(sdomain.s!=NULL && pt->sdomain.len>=sdomain.len &&
 			 strncmp(pt->sdomain.s, sdomain.s, sdomain.len)==0))
 		{
 			len = 0;
@@ -1024,7 +1024,7 @@ struct mi_root* pdt_mi_list(struct mi_root* cmd_tree, void* param)
 		}
 		pt = pt->next;
 	}
-	
+
 	return rpl_tree;
 
 error:

@@ -171,7 +171,7 @@ static int fetchsms(struct modem *mdm, int sim, char* pdu)
 		position=strstr(answer,"+CMGR:");
 	}
 
-	/* keine SMS empfangen, weil Modem nicht mit +CMGR 
+	/* keine SMS empfangen, weil Modem nicht mit +CMGR
 	oder +CMGL geantwortet hat */
 	if (position==0)
 		return 0;
@@ -220,7 +220,7 @@ int check_memory(struct modem *mdm, int flag)
 	int   err,foo;
 	int   j, out;
 
-	for(out=0,j=0;!out && j<10; j++) 
+	for(out=0,j=0;!out && j<10; j++)
 	{
 		if (put_command(mdm,"AT+CPMS?\r",9,answer,sizeof(answer),50,0)
 		&& (posi=strstr(answer,"+CPMS:"))!=0 )
@@ -359,7 +359,7 @@ static int split_type_0( char* Pointer,struct incame_sms *sms)
 
 
 /* Subroutine for splitpdu() for messages type 2 (Staus Report)
-   Returns the length of the ascii string. In binary mode ascii 
+   Returns the length of the ascii string. In binary mode ascii
    contains the binary SMS */
 static int split_type_2( char* position, struct incame_sms *sms)
 {

@@ -15,8 +15,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -49,7 +49,7 @@ select_menu *find_menu(char *name,select_menu *menu)
 		if (ret)
 			return ret;
 	}
-	
+
 	/* search through the siblings */
 	if (menu->next_sibling)
 		return find_menu(name,menu->next_sibling);
@@ -58,10 +58,10 @@ select_menu *find_menu(char *name,select_menu *menu)
 }
 
 /* Allocate & Init a menu with the passed name, flags, & actions
- * 
+ *
  * Returns a pointer to the menu or NULL in case of failure
 */
-select_menu *init_menu(char *menu_name,int flags,run_action action) 
+select_menu *init_menu(char *menu_name,int flags,run_action action)
 {
 	select_menu *ret;
 	int len;
@@ -104,7 +104,7 @@ void link_sibling(select_menu *dest,select_menu *to_link)
 /* Link 'to_link' to 'dest' list of childs
  * also link all the childs as sibling between each other
  */
-void link_child(select_menu *dest,select_menu *to_link) 
+void link_child(select_menu *dest,select_menu *to_link)
 {
 	if (dest->child == NULL) {
 		dest->child = to_link;
@@ -115,7 +115,7 @@ void link_child(select_menu *dest,select_menu *to_link)
 	}
 }
 
-/* Generate menu entries for all the types of 
+/* Generate menu entries for all the types of
  * cfg entries that have been added
 */
 int gen_scripts_menu(select_menu *parent)
@@ -172,7 +172,7 @@ int gen_scripts_menu(select_menu *parent)
 }
 
 /* Returns 1 if the menu parameter is a top level menu
- * exiting such a menu will lead to exiting the curses app 
+ * exiting such a menu will lead to exiting the curses app
  */
 int is_top_menu(select_menu *menu)
 {
@@ -185,7 +185,7 @@ int is_top_menu(select_menu *menu)
 }
 
 /* Execute menu's associated action when the user
- * enters the menu 
+ * enters the menu
 */
 int exec_menu_action(select_menu *menu)
 {

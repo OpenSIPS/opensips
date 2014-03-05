@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -34,7 +34,7 @@ int bind_pua(pua_api_t* api)
 		return -1;
 	}
 
-	api->send_publish   =  send_publish; 
+	api->send_publish   =  send_publish;
 	api->send_subscribe =  send_subscribe;
 	api->register_puacb =  register_puacb;
 	api->is_dialog      =  is_dialog;

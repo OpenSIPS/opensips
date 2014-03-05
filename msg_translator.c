@@ -17,14 +17,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
  * --------
  * 2003-01-20  bug_fix: use of return value of snprintf aligned to C99 (jiri)
- * 2003-01-23  added rport patches, contributed by 
+ * 2003-01-23  added rport patches, contributed by
  *              Maxim Sobolev <sobomax@FreeBSD.org> and heavily modified by me
  *              (andrei)
  * 2003-01-24  added i param to via of outgoing requests (used by tcp),
@@ -39,7 +39,7 @@
  * 2003-03-18  killed the build_warning snprintf (andrei)
  * 2003-03-31  added subst lump support (andrei)
  * 2003-04-01  added opt (conditional) lump support (andrei)
- * 2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL  
+ * 2003-04-02  added more subst lumps: SUBST_{SND,RCV}_ALL
  *              => ip:port;transport=proto (andrei)
  * 2003-04-12  added FL_FORCE_RPORT support (andrei)
  * 2003-04-13  updated warning builder -- fixed (andrei)
@@ -77,18 +77,18 @@
  *   if no received was present and received is added too)
  * \section localreplies Local replies:
  *    (see also sl_send_reply)
- *  - rport and received are added in mostly the same way as for requests, but 
- *    in the reverse order (first rport and then received). See also 
+ *  - rport and received are added in mostly the same way as for requests, but
+ *    in the reverse order (first rport and then received). See also
  *    limitations.
- *  - the local reply is sent to the message source ip address. The 
- *    destination port is set to the source port if rport is present or 
+ *  - the local reply is sent to the message source ip address. The
+ *    destination port is set to the source port if rport is present or
  *    FL_FORCE_RPORT flag is set, to the via port or to
  *    the default sip port (5060) if neither rport or via port are present.
  * \section normalreplies "Normal" replies:
  *  - if received is present the message is sent to the received address else
- *    if no port is present (neither a normal via port or rport) a dns srv 
- *    lookup is performed on the host part and the reply is sent to the 
- *    resulting ip. If a port is present or the host part is an ip address 
+ *    if no port is present (neither a normal via port or rport) a dns srv
+ *    lookup is performed on the host part and the reply is sent to the
+ *    resulting ip. If a port is present or the host part is an ip address
  *    the dns lookup will be a "normal" one (A or AAAA).
  *  - if rport is present, it's value will be used as the destination port
  *   (and this will also disable srv lookups)
@@ -146,19 +146,19 @@ extern int version_len;
 int received_test( struct sip_msg *msg )
 {
 	int rcvd;
-	
+
 	if(msg->via1->received !=NULL)
 		return 1;
 
 	if(msg->via1->maddr){
-		rcvd = check_ip_address(&msg->rcv.src_ip, &msg->via1->maddr->value, 
+		rcvd = check_ip_address(&msg->rcv.src_ip, &msg->via1->maddr->value,
 			msg->via1->port, msg->via1->proto, received_dns);
 	} else {
 		rcvd = check_ip_address(&msg->rcv.src_ip,
 			&msg->via1->host, msg->via1->port, msg->via1->proto, received_dns);
 	}
 
-	return rcvd; 
+	return rcvd;
 }
 
 
@@ -177,29 +177,29 @@ static char * warning_builder( struct sip_msg *msg, unsigned int *returned_len)
 			memcpy(buf+clen, (string), l); \
 			clen+=l; \
 		}while(0)
-	
+
 #define str_lenpair_print(string, string_len, string2, string2_len) \
 		do{ \
 			str_print(string, string_len); \
 			str_print(string2, string2_len);\
 		}while(0)
-	
+
 #define str_pair_print( string, string2, string2_len) \
 		str_lenpair_print((string), strlen((string)), (string2), (string2_len))
-		
+
 #define str_int_print(string, intval)\
 		do{\
 			t=int2str((intval), &print_len); \
 			str_pair_print(string, t, print_len);\
 		} while(0)
-		
+
 #define str_ipaddr_print(string, ipaddr_val)\
 		do{\
 			t=ip_addr2a((ipaddr_val)); \
 			print_len=strlen(t); \
 			str_pair_print(string, t, print_len);\
 		} while(0)
-	
+
 	clen=0;
 	str_lenpair_print(WARNING, WARNING_LEN,
 						msg->rcv.bind_address->name.s,
@@ -207,7 +207,7 @@ static char * warning_builder( struct sip_msg *msg, unsigned int *returned_len)
 	str_lenpair_print(":", 1, msg->rcv.bind_address->port_no_str.s,
 						msg->rcv.bind_address->port_no_str.len);
 	str_print(WARNING_PHRASE, WARNING_PHRASE_LEN);
-	
+
 	/*adding out_uri*/
 	if (msg->new_uri.s)
 		foo=&(msg->new_uri);
@@ -226,8 +226,8 @@ static char * warning_builder( struct sip_msg *msg, unsigned int *returned_len)
 	str_int_print("=", via_cnt);
 	if (clen<MAX_WARNING_LEN){ buf[clen]='"'; clen++; }
 	else goto error_overflow;
-		
-		
+
+
 	*returned_len=clen;
 	return buf;
 error_overflow:
@@ -258,7 +258,7 @@ char* received_builder(struct sip_msg *msg, unsigned int *received_len)
 		return 0; /* error*/
 	tmp_len=strlen(tmp);
 	len=RECEIVED_LEN+tmp_len;
-	
+
 	memcpy(buf+RECEIVED_LEN, tmp, tmp_len);
 	buf[len]=0; /*null terminate it */
 
@@ -272,7 +272,7 @@ char* rport_builder(struct sip_msg *msg, unsigned int *rport_len)
 {
 	char* buf, * tmp;
 	int len, tmp_len;
-	
+
 	tmp_len=0;
 	tmp=int2str(msg->rcv.src_port, &tmp_len);
 	len=RPORT_LEN+tmp_len;
@@ -285,7 +285,7 @@ char* rport_builder(struct sip_msg *msg, unsigned int *rport_len)
 	memcpy(buf, RPORT, RPORT_LEN);
 	memcpy(buf+RPORT_LEN, tmp, tmp_len);
 	buf[len]=0; /*null terminate it*/
-	
+
 	*rport_len=len;
 	return buf;
 }
@@ -297,7 +297,7 @@ char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 	char* buf, *p;
 	int len, value_len, size;
 	char revhex[sizeof(int)*2];
-	
+
 	size=sizeof(int)*2;
 	p=&revhex[0];
 	if (int2reverse_hex(&p, &size, msg->rcv.proto_reserved1)==-1){
@@ -305,7 +305,7 @@ char* id_builder(struct sip_msg* msg, unsigned int *id_len)
 		return 0;
 	}
 	value_len=p-&revhex[0];
-	len=ID_PARAM_LEN+value_len; 
+	len=ID_PARAM_LEN+value_len;
 	buf=pkg_malloc(sizeof(char)*(len+1));/* place for ending \0 */
 	if (buf==0){
 		ser_error=E_OUT_OF_MEM;
@@ -326,7 +326,7 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 	char *buf, * value_s;
 	int len, value, value_len;
 	str body;
-	
+
 	if ( (get_body(msg,&body)!=0) || body.len==0 ) {
 		ser_error=E_BAD_REQ;
 		LM_ERR("no message body found (missing crlf?)");
@@ -335,7 +335,7 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 	value = body.len + diff;
 	value_s=int2str(value, &value_len);
 	LM_DBG("content-length: %d (%s)\n", value, value_s);
-		
+
 	len=CONTENT_LENGTH_LEN+value_len+CRLF_LEN;
 	buf=pkg_malloc(sizeof(char)*(len+1));
 	if (buf==0){
@@ -353,7 +353,7 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 
 
 
-/*! \brief* checks if a lump opt condition 
+/*! \brief* checks if a lump opt condition
  * returns 1 if cond is true, 0 if false */
 static inline int lump_check_opt(	struct lump *l,
 									struct sip_msg* msg,
@@ -378,7 +378,7 @@ static inline int lump_check_opt(	struct lump *l,
 				port=msg->rcv.dst_port; \
 				proto=msg->rcv.proto; \
 			} \
-			
+
 	switch(l->u.cond){
 		case COND_FALSE:
 			return 0;
@@ -413,7 +413,7 @@ static inline int lump_check_opt(	struct lump *l,
 			return 1;
 		case COND_IF_DIFF_PORT:
 			get_ip_port_proto;
-			if (port==snd_s->port_no) { 
+			if (port==snd_s->port_no) {
 				l->flags &= ~LUMPFLAG_COND_TRUE;
 				return 0;
 			}
@@ -617,7 +617,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
-	
+
 	for(t=lumps;t;t=t->next){
 		/* is this lump still valid? (it must not be anchored in a deleted area */
 		if (s_offset > t->u.offset && t->u.offset!=last_del) {
@@ -642,7 +642,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 					SUBST_LUMP_LEN(r);
 					break;
 				case LUMP_ADD_OPT:
-					/* skip if this is an OPT lump and the condition is 
+					/* skip if this is an OPT lump and the condition is
 					 * not satisfied */
 					if (!lump_check_opt(r, msg, send_sock))
 						goto skip_before;
@@ -689,7 +689,7 @@ skip_before:
 					SUBST_LUMP_LEN(r);
 					break;
 				case LUMP_ADD_OPT:
-					/* skip if this is an OPT lump and the condition is 
+					/* skip if this is an OPT lump and the condition is
 					 * not satisfied */
 					if (!lump_check_opt(r, msg, send_sock))
 						goto skip_after;
@@ -717,8 +717,8 @@ skip_after:
 
 void process_lumps(	struct sip_msg* msg,
 					struct lump* lumps,
-					char* new_buf, 
-					unsigned int* new_buf_offs, 
+					char* new_buf,
+					unsigned int* new_buf_offs,
 					unsigned int* orig_offs,
 					struct socket_info* send_sock)
 {
@@ -963,7 +963,7 @@ void process_lumps(	struct sip_msg* msg,
 	offset=*new_buf_offs;
 	s_offset=*orig_offs;
 	last_del=0;
-	
+
 	for (t=lumps;t;t=t->next){
 		/* skip this lump if the "offset" is still in a "deleted" area */
 		if (s_offset > t->u.offset && last_del!= t->u.offset) {
@@ -981,10 +981,10 @@ void process_lumps(	struct sip_msg* msg,
 			case LUMP_ADD:
 			case LUMP_ADD_SUBST:
 			case LUMP_ADD_OPT:
-				/* skip if this is an OPT lump and the condition is 
+				/* skip if this is an OPT lump and the condition is
 				 * not satisfied */
 				if ((t->op==LUMP_ADD_OPT) &&
-						(!lump_check_opt(t, msg, send_sock))) 
+						(!lump_check_opt(t, msg, send_sock)))
 					continue;
 				/* just add it here! */
 				/* process before  */
@@ -1027,7 +1027,7 @@ skip_before:
 					case LUMP_ADD_OPT:
 						/* do nothing, it's only a condition */
 						break;
-					default: 
+					default:
 						/* should not ever get here */
 						LM_CRIT("unhandled data lump op %d\n", t->op);
 				}
@@ -1118,7 +1118,7 @@ skip_nop_before:
 						case LUMP_ADD_OPT:
 							/* skip if this is an OPT lump and the condition is
 					 		* not satisfied */
-							if (!lump_check_opt(r, msg, send_sock)) 
+							if (!lump_check_opt(r, msg, send_sock))
 								goto skip_nop_after;
 							break;
 						case LUMP_SKIP:
@@ -1158,7 +1158,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 
 	clen_buf = 0;
 	anchor=0;
-	
+
 	/* check to see if we need to add clen */
 #ifdef USE_TCP
 	if (proto == PROTO_TCP
@@ -1184,14 +1184,14 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 		}
 	}
 #endif
-	
-	
+
+
 	if ((anchor==0) && body_delta){
 		if (parse_headers(msg, HDR_CONTENTLENGTH_F, 0) == -1) {
 			LM_ERR("parsing Content-Length\n");
 			goto error;
 		}
-		
+
 		/* The body has been changed, try to find
 		 * existing Content-Length
 		 */
@@ -1222,7 +1222,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			}
 		}
 	}
-	
+
 	if (anchor){
 		clen_buf = clen_builder(msg, &clen_len, body_delta);
 		if (!clen_buf) goto error;
@@ -1240,9 +1240,9 @@ error:
 
 /*! \brief
  * Save given Path body as Route header in message.
- * 
- * If another Route HF is found, it's placed right before that. 
- * Otherwise, it's placed after the last Via HF. If also no 
+ *
+ * If another Route HF is found, it's placed right before that.
+ * Otherwise, it's placed after the last Via HF. If also no
  * Via HF is found, it's placed as first HF.
  */
 #define ROUTE_STR  "Route: "
@@ -1332,7 +1332,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	struct lump *anchor, *via_insert_param;
 	str branch, extra_params;
 	struct hostport hp;
-	
+
 	id_buf=0;
 	id_len=0;
 	via_insert_param=0;
@@ -1391,7 +1391,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	if(msg->msg_flags&FL_FORCE_LOCAL_RPORT) {
 		id_buf=extra_params.s;
 		id_len=extra_params.len;
-		extra_params.len += RPORT_LEN-1; /* last char in RPORT define is '=' 
+		extra_params.len += RPORT_LEN-1; /* last char in RPORT define is '='
 										which is not added, but the new buffer
 										will be null terminated */
 		extra_params.s = (char*)pkg_malloc(extra_params.len+1);
@@ -1400,7 +1400,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 			if (id_buf) pkg_free(id_buf);
 			goto error;
 		}
-		
+
 		if(id_buf!=0) {
 			memcpy(extra_params.s, id_buf, id_len);
 			pkg_free(id_buf);
@@ -1422,9 +1422,9 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 	via1_deleted = is_del_via1_lump(msg);
 	/* check if received needs to be added:
-	 *  - if the VIA address and the received address are different 
+	 *  - if the VIA address and the received address are different
 	 *  - if the rport was forced (rport requires received)
-	 *  - if the rport was received in the VIA hdr 
+	 *  - if the rport was received in the VIA hdr
 	 *  - and there is no lump that delets VIA1 hdr */
 	if ( (msg->via1->rport || (msg->msg_flags&FL_FORCE_RPORT) ||
 			received_test(msg) ) && !via1_deleted) {
@@ -1433,7 +1433,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 			goto error01;  /* free also line_buf */
 		}
 	}
-	
+
 	/* check if rport needs to be updated:
 	 *  - if FL_FORCE_RPORT is set add it (and del. any previous version)
 	 *  - if via already contains an rport add it and overwrite the previous
@@ -1466,7 +1466,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 				size += msg->via1->port_str.len + 1; /* +1 for ':'*/
 			}
 	}
-	/* if received needs to be added, add anchor after host and add it, or 
+	/* if received needs to be added, add anchor after host and add it, or
 	 * overwrite the previous one if already present */
 	if (received_len){
 		if (msg->via1->received){ /* received already present => overwrite it*/
@@ -1511,7 +1511,7 @@ build_msg:
 	}
 	if (flags&MSG_TRANS_SHM_FLAG)
 		new_buf=(char*)shm_malloc(new_len+1);
-	else 
+	else
 		new_buf=(char*)pkg_malloc(new_len+1);
 	if (new_buf==0){
 		ser_error=E_OUT_OF_MEM;
@@ -1595,9 +1595,9 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	}
 
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock);
-	
+
 	LM_DBG(" old size: %d, new size: %d\n", len, new_len);
-	new_buf=(char*)pkg_malloc(new_len+1); /* +1 is for debugging 
+	new_buf=(char*)pkg_malloc(new_len+1); /* +1 is for debugging
 											 (\0 to print it )*/
 	if (new_buf==0){
 		LM_ERR("out of pkg mem\n");
@@ -1610,11 +1610,11 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	process_lumps(msg, msg->body_lumps, new_buf, &offset, &s_offset, sock);
 	/* copy the rest of the message */
 	memcpy(new_buf+offset,
-		buf+s_offset, 
+		buf+s_offset,
 		len-s_offset);
 	/* as it is a relaied reply, if 503, make it 500 (just reply code) */
 	if ( !disable_503_translation && msg->first_line.u.reply.statuscode==503 )
-		new_buf[(int)(msg->first_line.u.reply.status.s-msg->buf)+2] = '0'; 
+		new_buf[(int)(msg->first_line.u.reply.status.s-msg->buf)+2] = '0';
 	/* send it! */
 	LM_DBG("copied size: orig:%d, new: %d, rest: %d"
 			" msg=\n%s\n", s_offset, offset, len-s_offset, new_buf);
@@ -1663,7 +1663,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 			LM_ERR("rport_builder failed\n");
 			goto error00;
 		}
-		if (msg->via1->rport) 
+		if (msg->via1->rport)
 			len -= msg->via1->rport->size+1; /* include ';' */
 	}
 
@@ -1784,18 +1784,18 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 							append_str(p, rport_buf, rport_len);
 							/* copy the rest of the via */
 							append_str_trans(p, msg->via1->rport->start+
-												msg->via1->rport->size, 
+												msg->via1->rport->size,
 												hdr->body.s+hdr->body.len-
 												msg->via1->rport->start-
 												msg->via1->rport->size, msg);
 						}else{ /* just copy rport and rest of hdr */
 							append_str(p, rport_buf, rport_len);
-							append_str_trans( p, hdr->name.s+i , 
+							append_str_trans( p, hdr->name.s+i ,
 								(hdr->body.s+hdr->body.len)-hdr->name.s-i,msg);
 						}
 					}else{
 						/* normal whole via copy */
-						append_str_trans( p, hdr->name.s+i , 
+						append_str_trans( p, hdr->name.s+i ,
 							(hdr->body.s+hdr->body.len)-hdr->name.s-i, msg);
 					}
 				}else{
@@ -1829,7 +1829,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 						bmark->to_tag_val.s=p;
 						bmark->to_tag_val.len=new_tag->len;
 						append_str( p, new_tag->s,new_tag->len);
-						append_str( p, after_body, 
+						append_str( p, after_body,
 										hdr->name.s+hdr->len-after_body);
 					}
 					break;
@@ -1956,11 +1956,11 @@ int branch_builder( unsigned int hash_index,
 
 	*len=MAX_BRANCH_PARAM_LEN-size;
 	return size;
-		
+
 }
 
 
-char* via_builder( unsigned int *len, 
+char* via_builder( unsigned int *len,
 	struct socket_info* send_sock,
 	str* branch, str* extra_params, int proto, struct hostport* hp)
 {
@@ -1969,7 +1969,7 @@ char* via_builder( unsigned int *len,
 	int max_len, local_via_len=MY_VIA_LEN;
 	str* address_str; /* address displayed in via */
 	str* port_str; /* port no displayed in via */
-	
+
 	/* use pre-set address in via or the outbound socket one */
 	if (hp && hp->host && hp->host->len)
 		address_str=hp->host;
@@ -2004,7 +2004,7 @@ char* via_builder( unsigned int *len,
 
 	extra_len=0;
 
-	memcpy(line_buf, MY_VIA, local_via_len); 
+	memcpy(line_buf, MY_VIA, local_via_len);
 	if (proto==PROTO_UDP){
 		/* do nothing */
 	}else if (proto==PROTO_TCP){
@@ -2018,9 +2018,9 @@ char* via_builder( unsigned int *len,
 		LM_CRIT("unknown proto %d\n", proto);
 		return 0;
 	}
-	
+
 	via_len=local_via_len+address_str->len; /*space included in MY_VIA*/
-	
+
 	memcpy(line_buf+local_via_len+extra_len, address_str->s, address_str->len);
 	line_buf[via_len]=':'; via_len++;
 	memcpy(line_buf+via_len, port_str->s, port_str->len);
@@ -2038,7 +2038,7 @@ char* via_builder( unsigned int *len,
 		memcpy(line_buf+via_len, extra_params->s, extra_params->len);
 		via_len+=extra_params->len;
 	}
-	
+
 	memcpy(line_buf+via_len, CRLF, CRLF_LEN);
 	via_len+=CRLF_LEN;
 	line_buf[via_len]=0; /* null terminate the string*/
@@ -2070,11 +2070,11 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 		LM_ERR("no domain specified\n");
 		return 0;
 	}
-	
+
 	memcpy(uri_buff,protocol->s,protocol->len);
 	pos += protocol->len;
 	uri_buff[pos++] = ':';
-	
+
 	if (username->s && username->len != 0)
 	{
 		memcpy(uri_buff+pos,username->s,username->len);

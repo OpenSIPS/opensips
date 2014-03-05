@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -148,7 +148,7 @@ static int mod_init(void)
 		LM_ERR("Database module not found\n");
 		return -1;
 	}
-	
+
 	if (!DB_CAPABILITY(xcap_dbf, DB_CAP_ALL)) {
 		LM_ERR("Database module does not implement all functions"
 				" needed by the module\n");
@@ -168,7 +168,7 @@ static int mod_init(void)
 	{
 		register_timer("xcapc-update", query_xcap_update, 0, query_period);
 	}
-	
+
 	if(xcap_db)
 		xcap_dbf.close(xcap_db);
 	xcap_db = NULL;
@@ -208,8 +208,8 @@ void query_xcap_update(unsigned int ticks, void* param)
 	db_key_t result_cols[7];
 	int n_result_cols = 0, n_query_cols= 0, n_update_cols= 0;
 	db_res_t* result= NULL;
-	int user_col, domain_col, doc_type_col, etag_col, doc_uri_col, port_col; 
-	db_row_t *row ;	
+	int user_col, domain_col, doc_type_col, etag_col, doc_uri_col, port_col;
+	db_row_t *row ;
 	db_val_t *row_vals ;
 	unsigned int port;
 	char* etag, *path, *new_etag= NULL;
@@ -245,8 +245,8 @@ void query_xcap_update(unsigned int ticks, void* param)
 	result_cols[etag_col=n_result_cols++]      = &str_etag_col;
 	result_cols[doc_uri_col= n_result_cols++]  = &str_doc_uri_col;
 	result_cols[port_col= n_result_cols++]     = &str_port_col;
-	
-	if (xcap_dbf.use_table(xcap_db, &xcap_db_table) < 0) 
+
+	if (xcap_dbf.use_table(xcap_db, &xcap_db_table) < 0)
 	{
 		LM_ERR("in use_table-[table]= %.*s\n", xcap_db_table.len, xcap_db_table.s);
 		goto error;
@@ -269,13 +269,13 @@ void query_xcap_update(unsigned int ticks, void* param)
 		return;
 	}
 	n_query_cols++;
-	
+
 	/* ask if updated */
 	for(i= 0; i< result->n; i++)
 	{
 		row = &result->rows[i];
 		row_vals = ROW_VALUES(row);
-	
+
 		path= (char*)row_vals[doc_uri_col].val.string_val;
 		port= row_vals[port_col].val.int_val;
 		etag= (char*)row_vals[etag_col].val.string_val;
@@ -332,17 +332,17 @@ error:
 
 int parse_doc_url(str doc_url, char** serv_addr, xcap_doc_sel_t* doc_sel)
 {
-	char* sl, *str_type;	
-	
+	char* sl, *str_type;
+
 	sl= strchr(doc_url.s, '/');
 	*sl= '\0';
 	*serv_addr= doc_url.s;
-	
+
 	sl++;
 	doc_sel->auid.s= sl;
 	sl= strchr(sl, '/');
 	doc_sel->auid.len= sl- doc_sel->auid.s;
-	
+
 	sl++;
 	str_type= sl;
 	sl= strchr(sl, '/');
@@ -361,7 +361,7 @@ int parse_doc_url(str doc_url, char** serv_addr, xcap_doc_sel_t* doc_sel)
 }
 /*
  * mi cmd: refreshXcapDoc
- *			<document uri> 
+ *			<document uri>
  *			<xcap_port>
  * */
 
@@ -410,7 +410,7 @@ struct mi_root* refreshXcapDoc(struct mi_root* cmd, void* param)
 		LM_ERR("in http get\n");
 		return 0;
 	}
-	
+
 	/* call registered functions with document argument */
 	if(parse_doc_url(doc_url, &serv_addr, &doc_sel)< 0)
 	{

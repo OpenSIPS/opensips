@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -42,7 +42,7 @@ static inline int new_credentials(struct hdr_field* _h)
 		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
-		
+
 	init_dig_cred(&(b->digest));
 	b->stale = 0;
 	b->authorized = 0;
@@ -78,7 +78,7 @@ int parse_credentials(struct hdr_field* _h)
 	      * credentials are broken
 	      */
 	res = parse_digest_cred(&(_h->body), &(((auth_body_t*)(_h->parsed))->digest));
-	
+
 	if (res != 0) {
 		free_credentials((auth_body_t**)(void*)&(_h->parsed));
 	}
@@ -99,11 +99,11 @@ void free_credentials(auth_body_t** _b)
 
 /*
  * Check semantics of a digest credentials structure
- * Make sure that all attributes needed to verify response 
+ * Make sure that all attributes needed to verify response
  * string are set or at least have a default value
  *
  * The returned value is logical OR of all errors encountered
- * during the check, see dig_err_t type for more details 
+ * during the check, see dig_err_t type for more details
  */
 dig_err_t check_dig_cred(dig_cred_t* _c)
 {
@@ -133,8 +133,8 @@ dig_err_t check_dig_cred(dig_cred_t* _c)
 		     /* and also nonce count must be specified */
 		if (_c->nc.s == 0) res |= E_DIG_NC;
 	}
-		
-	return res;	
+
+	return res;
 }
 
 
@@ -190,7 +190,7 @@ void print_cred(dig_cred_t* _c)
 int mark_authorized_cred(struct sip_msg* _m, struct hdr_field* _h)
 {
 	struct hdr_field* f;
-	
+
 	switch(_h->type) {
 	case HDR_AUTHORIZATION_T: f = _m->authorization; break;
 	case HDR_PROXYAUTH_T:     f = _m->proxy_auth;    break;
@@ -223,6 +223,6 @@ int get_authorized_cred(struct hdr_field* _f, struct hdr_field** _h)
 	} else {
 		*_h = 0;
 	}
-	
+
 	return 0;
 }

@@ -446,15 +446,15 @@ badparam:
 	con = CON_ORA(_h);
 	{
 	    query_data_t *pcb = con->pqdata;
-	    
+
 
 	    if (!pcb || !pcb->_rs)
 		    goto badparam;
-		    
+
 	    hs = *pcb->_rs;
 	    pcb->_rs = NULL; /* paranoid for next call */
-	}	    
-	
+	}
+
 	rc = -1;
 	if (_r)	*_r = NULL;	/* unification for all errors */
 

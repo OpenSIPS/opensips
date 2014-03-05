@@ -1,5 +1,5 @@
 /* These are some dynamic memory allocation facilities.  They are essentially
-   an extension to C, as they do allocations with a cognizance of C 
+   an extension to C, as they do allocations with a cognizance of C
    variables.  You can use them to make C read more like a high level
    language.
 
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 static __inline__ void
-mallocProduct(void **      const resultP, 
+mallocProduct(void **      const resultP,
               unsigned int const factor1,
               unsigned int const factor2) {
 /*----------------------------------------------------------------------------
@@ -37,10 +37,10 @@ mallocProduct(void **      const resultP,
     if (factor1 == 0 || factor2 == 0)
         *resultP = malloc(1);
     else {
-        if (UINT_MAX / factor2 < factor1) 
+        if (UINT_MAX / factor2 < factor1)
             *resultP = NULL;
-        else 
-            *resultP = malloc(factor1 * factor2); 
+        else
+            *resultP = malloc(factor1 * factor2);
     }
 }
 
@@ -50,11 +50,11 @@ static __inline__ void
 reallocProduct(void **      const blockP,
                unsigned int const factor1,
                unsigned int const factor2) {
-    
-    if (UINT_MAX / factor2 < factor1) 
+
+    if (UINT_MAX / factor2 < factor1)
         *blockP = NULL;
-    else 
-        *blockP = realloc(*blockP, factor1 * factor2); 
+    else
+        *blockP = realloc(*blockP, factor1 * factor2);
 }
 
 

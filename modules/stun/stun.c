@@ -460,7 +460,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		msg->hasResponceAddress = TRUE;
 		msg->responceAddress = (StunAddr*) pkg_malloc(sizeof(StunAddr));
 		if(!msg->responceAddress)
-		    return -6;		
+		    return -6;
 		memset(msg->responceAddress, 0, sizeof(StunAddr));
 
 		msg->responceAddress->unused = *(char*) b;
@@ -502,13 +502,13 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		msg->hmac = (Buffer*) pkg_malloc(sizeof(Buffer));
 		if(!msg->hmac)
 		    return -6;
-		
+
 		memset(msg->hmac, 0, sizeof(Buffer));
 
 		/* allocate 20 bytes */
 		msg->hmac->buffer = (char*)pkg_malloc(20 * sizeof(char));
 		if(!msg->hmac->buffer)
-		    return -6;		
+		    return -6;
 		msg->hmac->size = 20;
 
 		/* copy the 20 bytes */
@@ -544,7 +544,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		    msg->unknownAttributes = (Buffer*) pkg_malloc(
 			    sizeof(Buffer));
 		    if(!msg->unknownAttributes)
-			return -6;		    
+			return -6;
 		    memset(msg->unknownAttributes, 0, sizeof(Buffer));
 
 		    /* allocate array of unknownAttributes (12 should suffice)*/
@@ -554,7 +554,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 			return -6;
 		    memset(msg->unknownAttributes->buffer, 0,
 			    MAX_UNKNOWN_ATTRIBUTES * sizeof(T16));
-		    
+
 		    /* size reprezents the serializable size of attributes*/
 		    msg->unknownAttributes->size = 0;
 
@@ -987,7 +987,7 @@ StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 		/* swap ports - mentain ips */
 		swap(&t1, &t2);
 		swap(&t3, &t4);
-		
+
 	    }
 	    /* LM_DBG("process()3 t1=%i  t2=%i  t3=%i  t4=%i\n", t1, t2, t3, t4); */
 	    ctl->sock_outbound  = t1;
@@ -1020,7 +1020,7 @@ StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 		    LM_DBG("error at UNKNOWN_ATTRIBUTES\n");
 		    goto error;
 		}
-		rmsg->len+=rc;		
+		rmsg->len+=rc;
 	    }
 	    /* even if it has CHANGE_REQUEST,
 	     * the error response is send to source */
@@ -1069,7 +1069,7 @@ StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 	    goto error;
 	}
 	rmsg->len+=rc;
-    
+
     }else{
 	pkg_free(rmsg);
 	return NULL;

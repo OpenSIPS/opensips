@@ -26,8 +26,8 @@
  */
 
 /*!
- * \file 
- * \brief MI :: Tree 
+ * \file
+ * \brief MI :: Tree
  * \ingroup mi
  */
 
@@ -176,7 +176,7 @@ static inline struct mi_node *add_next(struct mi_node *brother,
 
 	if(!brother)
 		return NULL;
-	
+
 	new = create_mi_node(name, name_len, value, value_len, flags);
 	if(!new)
 		return NULL;

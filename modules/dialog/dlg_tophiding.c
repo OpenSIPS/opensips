@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -137,7 +137,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		memcpy(prefix+5,ct_username,ct_username_len);
 		prefix[prefix_len-1] = '@';
 	}
-	
+
 	p_init = p = suffix;
 	*p++ = ';';
 	memcpy(p,rr_param.s,rr_param.len);
@@ -221,7 +221,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
-	
+
 
 	return 0;
 error:
@@ -382,7 +382,7 @@ static int topology_hiding(struct sip_msg *req,int extra_flags)
 		if(crt->type != HDR_RECORDROUTE_T)
 			/* check on before list for parameters */
 			for( lump=crt->before ; lump ; lump=lump->before ) {
-				/* we are looking for the lump that adds the 
+				/* we are looking for the lump that adds the
 				 * suffix of the RR header */
 				if ( lump->type==HDR_RECORDROUTE_T && lump->op==LUMP_ADD)
 				{

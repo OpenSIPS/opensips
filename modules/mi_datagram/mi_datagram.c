@@ -195,7 +195,7 @@ static int mi_mod_init(void)
 			LM_ERR("invalid port number; must be in [1024,%d]\n",MAX_NB_PORT);
 			return -1;
 		}
-		
+
 		if(! (host = resolvehost(host_s, 0)) ){
 			LM_ERR("failed to resolve %s\n", host_s);
 			return -1;
@@ -211,7 +211,7 @@ static int mi_mod_init(void)
 	{
 		/*in case of a Unix socket*/
 		LM_DBG("we have an UNIX socket\n");
-		
+
 		n=stat(mi_socket, &filestat);
 		if( n==0){
 			LM_INFO("the socket %s already exists, trying to delete it...\n",
@@ -231,15 +231,15 @@ static int mi_mod_init(void)
 					"forcing it to rw-------\n");
 			mi_unix_socket_mode = S_IRUSR| S_IWUSR;
 		}
-	
+
 		if (mi_unix_socket_uid_s){
-			if (user2uid(&mi_unix_socket_uid, &mi_unix_socket_gid, 
+			if (user2uid(&mi_unix_socket_uid, &mi_unix_socket_gid,
 					mi_unix_socket_uid_s)<0){
 				LM_ERR("bad user name %s\n", mi_unix_socket_uid_s);
 				return -1;
 			}
 		}
-	
+
 		if (mi_unix_socket_gid_s){
 			if (group2gid(&mi_unix_socket_gid, mi_unix_socket_gid_s)<0){
 				LM_ERR("bad group name %s\n", mi_unix_socket_gid_s);
@@ -276,7 +276,7 @@ static int pre_datagram_process(void)
 
 	/*create the sockets*/
 	res = mi_init_datagram_server(&mi_dtgram_addr, mi_socket_domain, &sockets,
-								mi_unix_socket_mode, mi_unix_socket_uid, 
+								mi_unix_socket_mode, mi_unix_socket_uid,
 								mi_unix_socket_gid);
 
 	if ( res ) {
@@ -333,7 +333,7 @@ static int mi_destroy(void)
 		n=stat(mi_socket, &filestat);
 		if (n==0){
 			if (unlink(mi_socket)<0){
-				LM_ERR("cannot delete the socket (%s): %s\n", 
+				LM_ERR("cannot delete the socket (%s): %s\n",
 						mi_socket, strerror(errno));
 				goto error;
 			}

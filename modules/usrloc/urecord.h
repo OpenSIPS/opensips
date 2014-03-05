@@ -1,5 +1,5 @@
-/* 
- * $Id$ 
+/*
+ * $Id$
  *
  * Usrloc record structure
  *
@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * History:
@@ -50,7 +50,7 @@ struct hslot;
  * Basic hash table element
  */
 typedef struct urecord {
-	str* domain;                   /*!< Pointer to domain we belong to 
+	str* domain;                   /*!< Pointer to domain we belong to
                                     * ( null terminated string) */
 	str aor;                       /*!< Address of record */
 	unsigned int aorhash;          /*!< Hash over address of record */
@@ -88,7 +88,7 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c);
 
 
 /*
- * Remove contact from the list and delete 
+ * Remove contact from the list and delete
  */
 void mem_delete_ucontact(urecord_t* _r, ucontact_t* _c);
 

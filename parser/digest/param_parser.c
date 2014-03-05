@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -188,16 +188,16 @@ int parse_param_name(str* _s, dig_par_t* _type)
         register char* p;
         register int val;
 	char* end;
-	
+
 	end = _s->s + _s->len;
-	
+
 	p = _s->s;
 	val = READ(p);
-	
+
 	if (_s->len < 4) {
 		goto other;
 	}
-	
+
         switch(LOWER_DWORD(val)) {
 	FIRST_QUATERNIONS;
 	default:
@@ -213,7 +213,7 @@ int parse_param_name(str* _s, dig_par_t* _type)
 	if (_s->s[0] == '=') {
 		return 0;
 	}
-	
+
  other:
 	p = q_memchr(p, '=', end - p);
 	if (!p) {

@@ -17,10 +17,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *	
+ *
  *History:
  *--------
  *  2007-08-30  initial version (anca)
@@ -40,8 +40,8 @@ void run_xcap_update_cb(int type, str xid, char* stream)
 
 	for (cb= xcapcb_list; cb; cb=cb->next)
 	{
-		if(cb->types & type) 
-		{	
+		if(cb->types & type)
+		{
 			LM_DBG("found callback\n");
 			cb->callback(type, xid, stream);
 		}
@@ -72,7 +72,7 @@ error:
 void destroy_xcapcb_list(void)
 {
 	xcap_callback_t* xcb, *prev_xcb;
-	
+
 	xcb= xcapcb_list;
 	while(xcb)
 	{

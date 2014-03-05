@@ -84,7 +84,7 @@ struct module_exports exports= {
 
 
 /**
- * exported functions for core event interface 
+ * exported functions for core event interface
  */
 static evi_export_t trans_export_scriptroute = {
 	SCRIPTROUTE_NAME_STR,	/* transport module name */
@@ -153,7 +153,7 @@ static int child_init(int rank)
 		}
 		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
 		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
-		
+
 		/* register the subscriber - does not expire */
 		if (evi_event_subscribe(event_name, sock_name, 0, 0) < 0) {
 			LM_ERR("cannot subscribe to event %s\n", event_name.s);
@@ -402,7 +402,7 @@ static int fixup_scriptroute_fetch(void **param, int param_no)
 			name.len = e - s.s;
 			trim_spaces_lr(name);
 			if (name.len <= 0) {
-				LM_WARN("No name specified near <%.*s>\n", 
+				LM_WARN("No name specified near <%.*s>\n",
 						(int)(p - s.s), s.s);
 				goto next;
 			}
@@ -410,7 +410,7 @@ static int fixup_scriptroute_fetch(void **param, int param_no)
 			s.len = p - s.s;
 			trim_spaces_lr(s);
 			if (s.len <= 0) {
-				LM_WARN("No pvar specified near %.*s\n", 
+				LM_WARN("No pvar specified near %.*s\n",
 						(int)(p - s.s), s.s);
 				goto next;
 			}

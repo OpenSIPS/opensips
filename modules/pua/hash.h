@@ -17,8 +17,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License 
- * along with this program; if not, write to the Free Software 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -117,7 +117,7 @@ typedef struct hash_entry
 {
 	ua_pres_t* entity;
 	gen_lock_t lock;
-}hash_entry_t;	
+}hash_entry_t;
 
 typedef struct htable{
     hash_entry_t* p_records;
@@ -153,7 +153,7 @@ typedef int  (*query_dialog_t)(ua_pres_t* presentity);
 
 static inline int get_event_flag(str* event)
 {
-    switch (event->len) 
+    switch (event->len)
     {
 		case 6:
 			if (strncasecmp(event->s, "dialog", 6) == 0)

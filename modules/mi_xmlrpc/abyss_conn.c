@@ -65,7 +65,7 @@ static void
 threadDone(void * const userHandle) {
 
     TConn * const connectionP = userHandle;
-    
+
     connDone(connectionP);
 }
 
@@ -76,7 +76,7 @@ makeThread(TConn *             const connectionP,
            enum abyss_foreback const foregroundBackground,
            abyss_bool          const useSigchld,
            const char **       const errorP) {
-           
+
     switch (foregroundBackground) {
     case ABYSS_FOREGROUND:
         connectionP->hasOwnThread = FALSE;
@@ -98,7 +98,7 @@ makeThread(TConn *             const connectionP,
     } /* switch */
 }
 
-    
+
 
 void
 ConnCreate(TConn **            const connectionPP,
@@ -202,7 +202,7 @@ void
 ConnWaitAndRelease(TConn * const connectionP) {
     if (connectionP->hasOwnThread)
         ThreadWaitAndRelease(connectionP->threadP);
-    
+
     free(connectionP);
 }
 
@@ -239,17 +239,17 @@ traceBuffer(const char * const label,
 
     unsigned int nonPrintableCount;
     unsigned int i;
-    
+
     nonPrintableCount = 0;  /* Initial value */
-    
+
     for (i = 0; i < size; ++i) {
         if (!isprint(buffer[i]) && buffer[i] != '\n' && buffer[i] != '\r')
             ++nonPrintableCount;
     }
     if (nonPrintableCount > 0)
-        fprintf(stderr, "%s contains %u nonprintable characters.\n", 
+        fprintf(stderr, "%s contains %u nonprintable characters.\n",
                 label, nonPrintableCount);
-    
+
     fprintf(stderr, "%s:\n", label);
     fprintf(stderr, "%.*s\n", (int)size, buffer);
 }
@@ -284,10 +284,10 @@ traceSocketWrite(TConn *      const connectionP,
 
 static uint32_t
 bufferSpace(TConn * const connectionP) {
-    
+
     return BUFFER_SIZE - connectionP->buffersize;
 }
-                    
+
 
 
 abyss_bool
@@ -306,7 +306,7 @@ ConnRead(TConn *  const connectionP,
 
     cantGetData = FALSE;
     gotData = FALSE;
-    
+
     while (!gotData && !cantGetData) {
         int const timeLeft = deadline - time(NULL);
 
@@ -314,17 +314,17 @@ ConnRead(TConn *  const connectionP,
             cantGetData = TRUE;
         else {
             int rc;
-            
+
             rc = SocketWait(connectionP->socketP, TRUE, FALSE,
                             timeLeft * 1000);
-            
+
             if (rc != 1)
                 cantGetData = TRUE;
             else {
                 uint32_t bytesAvail;
-            
+
                 bytesAvail = SocketAvailableReadBytes(connectionP->socketP);
-                
+
                 if (bytesAvail <= 0)
                     cantGetData = TRUE;
                 else {
@@ -355,7 +355,7 @@ ConnRead(TConn *  const connectionP,
 }
 
 
-            
+
 abyss_bool
 ConnWrite(TConn *      const connectionP,
           const void * const buffer,
@@ -421,12 +421,12 @@ ConnWriteFromFile(TConn *  const connectionP,
 
             bytesReadThisTime = FileRead(fileP, buffer, bytesToRead);
             bytesread += bytesReadThisTime;
-            
+
             if (bytesReadThisTime > 0)
                 ConnWrite(connectionP, buffer, bytesReadThisTime);
             else
                 break;
-            
+
             if (waittime > 0)
                 xmlrpc_millisecond_sleep(waittime);
         }
@@ -440,7 +440,7 @@ ConnWriteFromFile(TConn *  const connectionP,
 static void
 processHeaderLine(char *       const start,
                   const char * const headerStart,
-                  TConn *      const connectionP,                  
+                  TConn *      const connectionP,
                   time_t       const deadline,
                   abyss_bool * const gotHeaderP,
                   char **      const nextP,
@@ -473,12 +473,12 @@ processHeaderLine(char *       const start,
                    Must read more.
                 */
                 int const timeLeft = deadline - time(NULL);
-                
+
                 *errorP = !ConnRead(connectionP, timeLeft);
             }
             if (!*errorP) {
                 p = lfPos; /* Point to LF */
-                
+
                 /* If the next line starts with whitespace, it's a
                    continuation line, so blank out the line
                    delimiter (LF or CRLF) so as to join the next
@@ -614,7 +614,7 @@ ConnServer(TConn * const connectionP) {
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
 **    derived from this software without specific prior written permission.
-** 
+**
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
 ** ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 ** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
