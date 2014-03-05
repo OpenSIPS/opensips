@@ -28,6 +28,9 @@ Liviu Chircu
 
               1.3.1. connection_timeout (integer)
               1.3.2. curl_timeout (integer)
+              1.3.3. ssl_verifypeer (integer)
+              1.3.4. ssl_verifyhost (integer)
+              1.3.5. ssl_capath (integer)
 
         1.4. Exported Functions
 
@@ -41,8 +44,11 @@ Liviu Chircu
 
    1.1. Setting the connection_timeout parameter
    1.2. Setting the curl_timeout parameter
-   1.3. rest_get usage
-   1.4. rest_post usage
+   1.3. Setting the ssl_verifypeer parameter
+   1.4. Setting the ssl_verifyhost parameter
+   1.5. Setting the ssl_capath parameter
+   1.6. rest_get usage
+   1.7. rest_post usage
 
 Chapter 1. Admin Guide
 
@@ -88,6 +94,42 @@ modparam("rest_client", "connection_timeout", 300)
 modparam("rest_client", "curl_timeout", 300)
 ...
 
+1.3.3. ssl_verifypeer (integer)
+
+   Set this to 0 in order to disable the verification of the
+   remote peer's certificate. Verification is done using a default
+   bundle of CA certificates which come with libcurl.
+
+   Default value is “1” (enabled).
+
+   Example 1.3. Setting the ssl_verifypeer parameter
+...
+modparam("rest_client", "ssl_verifypeer", 0)
+...
+
+1.3.4. ssl_verifyhost (integer)
+
+   Set this to 0 in order to disable the verification that the
+   remote peer actually corresponds to the server listed in the
+   certificate.
+
+   Default value is “1” (enabled).
+
+   Example 1.4. Setting the ssl_verifyhost parameter
+...
+modparam("rest_client", "ssl_verifyhost", 0)
+...
+
+1.3.5. ssl_capath (integer)
+
+   An optional path for CA certificates to be used for host
+   verifications.
+
+   Example 1.5. Setting the ssl_capath parameter
+...
+modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
+...
+
 1.4. Exported Functions
 
 1.4.1.  rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
@@ -112,7 +154,7 @@ modparam("rest_client", "curl_timeout", 300)
    This function can be used from the startup, branch, failure,
    request and timer routes.
 
-   Example 1.3. rest_get usage
+   Example 1.6. rest_get usage
 ...
 # Example of querying a REST service to get the credit of an account
 
@@ -147,7 +189,7 @@ recv_ctype_pv[, retcode_pv]])
    This function can be used from the startup, branch, failure,
    request and timer routes.
 
-   Example 1.4. rest_post usage
+   Example 1.7. rest_post usage
 ...
 # Storing data using a RESTful service with an HTTP POST request
 

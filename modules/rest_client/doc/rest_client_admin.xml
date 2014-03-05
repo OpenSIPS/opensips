@@ -65,6 +65,7 @@ modparam("rest_client", "connection_timeout", 300)
 </programlisting>
 		</example>
 	</section>
+
 	<section>
 		<title><varname>curl_timeout</varname> (integer)</title>
 		<para>
@@ -80,6 +81,64 @@ modparam("rest_client", "connection_timeout", 300)
 		<programlisting format="linespecific">
 ...
 modparam("rest_client", "curl_timeout", 300)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>ssl_verifypeer</varname> (integer)</title>
+		<para>
+		Set this to 0 in order to disable the verification of the remote peer's
+		certificate. Verification is done using a default bundle of CA certificates
+		which come with libcurl.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>ssl_verifypeer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "ssl_verifypeer", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>ssl_verifyhost</varname> (integer)</title>
+		<para>
+		Set this to 0 in order to disable the verification that the remote peer
+		actually corresponds to the server listed in the certificate.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>ssl_verifyhost</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "ssl_verifyhost", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>ssl_capath</varname> (integer)</title>
+		<para>
+		An optional path for CA certificates to be used for host verifications.
+		</para>
+		<example>
+		<title>Setting the <varname>ssl_capath</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
 </programlisting>
 		</example>
