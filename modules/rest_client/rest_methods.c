@@ -34,6 +34,15 @@
 static char err_buff[CURL_ERROR_SIZE];
 static char print_buff[MAX_CONTENT_TYPE_LEN];
 
+#define w_curl_easy_setopt(h, opt, value) \
+	do { \
+		rc = curl_easy_setopt(h, opt, value); \
+		if (rc != CURLE_OK) { \
+			LM_ERR("setopt operation %d failed (%d)\n", opt, rc); \
+			goto error; \
+		} \
+	} while (0)
+
 /**
  * rest_get_method - performs an HTTP GET request, stores results in pvars
  * @msg:		sip message struct
@@ -58,21 +67,30 @@ int rest_get_method(struct sip_msg *msg, char *url,
 		return -1;
 	}
 
-	curl_easy_setopt(handle, CURLOPT_URL, url);
+	w_curl_easy_setopt(handle, CURLOPT_URL, url);
 
-	curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
-	curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
-	curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
+	w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
+	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
 
-	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
-	curl_easy_setopt(handle, CURLOPT_WRITEDATA, &body);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &body);
 
-	curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
+
+	if (ssl_ca_path)
+		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_ca_path);
+
+	if (!ssl_verifypeer)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+
+	if (!ssl_verifyhost)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
 	rc = curl_easy_perform(handle);
 	if (rc != CURLE_OK) {
@@ -156,27 +174,36 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 	if (ctype) {
 		sprintf(print_buff, "Content-Type: %s", ctype);
 		list = curl_slist_append(list, print_buff);
-		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
+		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, list);
 	}
 
-	curl_easy_setopt(handle, CURLOPT_URL, url);
+	w_curl_easy_setopt(handle, CURLOPT_URL, url);
 
-	curl_easy_setopt(handle, CURLOPT_POST, 1);
-	curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
+	w_curl_easy_setopt(handle, CURLOPT_POST, 1);
+	w_curl_easy_setopt(handle, CURLOPT_POSTFIELDS, body);
 
-	curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
 
-	curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
-	curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
-	curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
-	curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
+	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+	w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
 
-	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
-	curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
 
-	curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
+
+	if (ssl_ca_path)
+		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_ca_path);
+
+	if (!ssl_verifypeer)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+
+	if (!ssl_verifyhost)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
 
 	rc = curl_easy_perform(handle);
 	curl_slist_free_all(list);
@@ -231,4 +258,3 @@ error:
 	curl_easy_cleanup(handle);
 	return -1;
 }
-

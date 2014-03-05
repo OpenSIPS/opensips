@@ -35,6 +35,10 @@
 extern long connection_timeout;
 extern long curl_timeout;
 
+extern char *ssl_ca_path;
+extern int ssl_verifypeer;
+extern int ssl_verifyhost;
+
 int rest_get_method(struct sip_msg *msg, char *url,
                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
 int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
