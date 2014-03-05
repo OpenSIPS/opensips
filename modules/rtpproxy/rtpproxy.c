@@ -2195,7 +2195,8 @@ static struct rtpp_set * select_rtpp_set(int id_set){
 
 	struct rtpp_set * rtpp_list;
 	/*is it a valid set_id?*/
-
+	LM_DBG("Looking for set_id %d\n", id_set);
+	
 	if(!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first){
 		LM_ERR("no rtp_proxy configured\n");
 		return 0;
@@ -2474,8 +2475,7 @@ static int rtpp_get_var_svalue(struct sip_msg *msg, gparam_p gp, str *val, int n
 static int
 rtpproxy_offer3_f(struct sip_msg *msg, char *param1, char *param2, char *param3)
 {
-	str flag_str;
-	str ip_str;
+	str aux_str;
 
 	if(rtpp_notify_socket.s)
 	{
@@ -2489,50 +2489,51 @@ rtpproxy_offer3_f(struct sip_msg *msg, char *param1, char *param2, char *param3)
 			dlg_api.create_dlg(msg,0);
 	}
 
-	if (param1==NULL)
-		return force_rtp_proxy(msg, NULL, NULL, NULL, 1);
-
-	if (rtpp_get_var_svalue(msg, (gparam_p)param1, &flag_str, 0)<0) {
-		LM_ERR("bogus flags parameter\n");
-		return -1;
+	if (param1) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param1, &aux_str, 0)<0) {
+			LM_ERR("bogus flags parameter\n");
+			return -1;
+		}
+		param1 = aux_str.s;
 	}
 
-	if (param2==NULL)
-		return force_rtp_proxy(msg, flag_str.s, NULL, NULL, 1);
-
-	if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
-		LM_ERR("bogus IP addr parameter\n");
-		return -1;
+	if (param2) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &aux_str, 1)<0) {
+			LM_ERR("bogus IP addr parameter\n");
+			return -1;
+		}
+		param2 = aux_str.s;
 	}
-	return force_rtp_proxy(msg, flag_str.s, ip_str.s, param3, 1);
+
+	return force_rtp_proxy(msg, param1, param2, param3, 1);
 }
 
 static int
 rtpproxy_answer3_f(struct sip_msg *msg, char *param1, char *param2, char *param3)
 {
-	str flag_str;
-	str ip_str;
+	str aux_str;
 
 	if (msg->first_line.type == SIP_REQUEST)
 		if (msg->first_line.u.request.method_value != METHOD_ACK)
 			return -1;
 
-	if (param1==NULL)
-		return force_rtp_proxy(msg, NULL, NULL, NULL, 0);
-
-	if (rtpp_get_var_svalue(msg, (gparam_p)param1, &flag_str, 0)<0) {
-		LM_ERR("bogus flags parameter\n");
-		return -1;
+	if (param1) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param1, &aux_str, 0)<0) {
+			LM_ERR("bogus flags parameter\n");
+			return -1;
+		}
+		param1 = aux_str.s;
 	}
 
-	if (param2==NULL)
-		return force_rtp_proxy(msg, flag_str.s, NULL, NULL, 0);
-
-	if (rtpp_get_var_svalue(msg, (gparam_p)param2, &ip_str,1)<0) {
-		LM_ERR("bogus IP addr parameter\n");
-		return -1;
+	if (param2) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &aux_str, 1)<0) {
+			LM_ERR("bogus IP addr parameter\n");
+			return -1;
+		}
+		param2 = aux_str.s;
 	}
-	return force_rtp_proxy(msg, flag_str.s, ip_str.s, param3, 0);
+
+	return force_rtp_proxy(msg, param1, param2, param3, 0);
 }
 
 static void engage_callback(struct dlg_cell *dlg, int type,
@@ -3062,7 +3063,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, int of
 	}
 
 	LM_DBG("force rtp proxy with param1 <%s> and param2 <%s>\n",
-			str1, str2 ? str2 : "none");
+			str1 ? str1 : "none", str2 ? str2 : "none");
 
 	if (get_callid(msg, &args.callid) == -1 || args.callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
