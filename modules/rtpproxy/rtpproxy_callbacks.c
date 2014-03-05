@@ -63,7 +63,7 @@ rtpproxy_pre_fwd(struct sip_msg *msg, cb_type_t cb_type, void *mod_args, void *c
         }
         sprintf(args->raddr.s, "[%s]", cp);
     }
-    force_rtp_proxy_body(msg, args);
+    force_rtp_proxy_body(msg, args, NULL);
 }
 
 void
