@@ -105,6 +105,19 @@ again:
 	return n;
 }
 
+/* gcc does the right thing */
+static inline int get_unaligned_int(const void *p)
+{
+	const struct { int d; } __attribute__((packed)) *pp = p;
+	return pp->d;
+}
+
+/* gcc does the right thing */
+static inline void put_unaligned_int(void *p, int value)
+{
+	struct { int d; } __attribute__((packed, may_alias)) *pp = p;
+	pp->d = value;
+}
 
 /* at least 1 byte must be sent! */
 int send_fd(int unix_socket, void* data, int data_len, int fd)
@@ -129,7 +142,7 @@ int send_fd(int unix_socket, void* data, int data_len, int fd)
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
 	cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
-	*(int*)CMSG_DATA(cmsg)=fd;
+	put_unaligned_int(CMSG_DATA(cmsg), fd);
 	msg.msg_flags=0;
 #else
 	msg.msg_accrights=(caddr_t) &fd;
@@ -237,7 +250,7 @@ again:
 			ret=-1;
 			goto error;
 		}
-		*fd=*((int*) CMSG_DATA(cmsg));
+		*fd = get_unaligned_int(CMSG_DATA(cmsg));
 	}else{
 		/*
 		LM_ERR("no descriptor passed, cmsg=%p,len=%d\n", 
