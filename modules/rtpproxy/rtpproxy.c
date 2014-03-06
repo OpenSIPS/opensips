@@ -1210,7 +1210,8 @@ mod_init(void)
 		LM_DBG("can't load TM API - check if tm module was loaded\n");
 
 	if (parse_bavp(&param1_bavp_name, &param1_spec) < 0 ||
-			parse_bavp(&param2_bavp_name, &param2_spec) < 0)
+			parse_bavp(&param2_bavp_name, &param2_spec) < 0 ||
+			parse_bavp(&param3_bavp_name, &param3_spec) < 0)
 		LM_DBG("cannot parse bavps\n");
 
     if(rtpp_notify_socket.s) {
