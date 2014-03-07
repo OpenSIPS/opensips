@@ -39,15 +39,9 @@
 		weight value than 0) respond. Default weight is 1.
 	</para>
 	<para>
-		The selection of the set is done from script prior using 
-		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-		functions - see the set_rtp_proxy_set() function.
-	</para>
-	<para>
-		For backward compatibility reasons, a set with no id take by default 
-		the id 0. Also if no set is explicitly set before 
-		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-		the 0 id set will be used.
+		Starting with &osips; 1.11, the set_rtp_proxy_set() function has
+		been removed. The set is now specified for each function. If
+		absend, the default set 0 is used.
 	</para>
 	<para>
 		IMPORTANT: if you use multiple sets, take care and use the same set for
@@ -452,35 +446,6 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 		</example>
 	</section>
 
-	<section>
-		<title><varname>rtpp_sock_pvar</varname> (string)</title>
-		<para>
-			Socket url for the rtpproxy instance used for setting up the call.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>NULL (don't set pvar)</quote>.
-		</emphasis>
-		</para>
-
-		<example>
-		<title>Set <varname>rtpp_sock_pvar</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("rtpproxy", "rtpp_sock_pvar", "$avp(rtp_sock)")
-
-#Load balancing rtpproxies
-modparam("rtpproxy", "rtpproxy_sock",
-	"udp:localhost:12221 udp:localhost:12222")
-
-engage_rtp_proxy("roc");
-xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
-...
-
-</programlisting>
-		</example>
-	</section>
-
 </section>
 
 
@@ -488,34 +453,7 @@ xlog("Used rtpproxy $avp(rtp_sock) for callid $ci");
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">set_rtp_proxy_set()</function>
-		</title>
-		<para>
-		Sets the Id of the rtpproxy set to be used for the next 
-		unforce_rtp_proxy(), rtpproxy_offer() or rtpproxy_answer()
-		command.
-		</para>
-		<para>
-		Paramter can also be a pseudo-variable that contain (as string
-		or integer) the ID of the rtpproxy set to be used.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
-		</para>
-		<example>
-		<title><function>fix_nated_contact</function> usage</title>
-		<programlisting format="linespecific">
-...
-set_rtp_proxy_set("2");
-rtpproxy_offer();
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title>
-			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address]])</function>
+			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
 		</title>
 
 		<para>
@@ -532,7 +470,7 @@ rtpproxy_offer();
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> - flags to turn on some features.
+			<emphasis>flags(optional)</emphasis> - flags to turn on some features.
 			</para>
 			<itemizedlist>
 				<listitem><para>
@@ -604,29 +542,41 @@ rtpproxy_offer();
 			</itemizedlist>
 		</listitem>
 		<listitem><para>
-		<emphasis>ip_address</emphasis> - new SDP IP address.
+		<emphasis>ip_address(optional)</emphasis> - new SDP IP address.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>set_id(optional)</emphasis> - the set used for this call.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+		socket chosen for this call. Note that the variable will only be populated in the
+		initial request.
 		</para></listitem>
 		</itemizedlist>
-		<para>
-		Both parmeters do accept variables in any combination.
-		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
 		<title><function>engage_rtp_proxy</function> usage</title>
 		<programlisting format="linespecific">
-		...
-		if (is_method("INVITE") &amp;&amp;
-		has_totag()) {engage_rtp_proxy();};
-		...
+...
+if (is_method("INVITE") &amp;&amp; has_totag()) {
+	if ($var(setid) != 0) {
+		engage_rtp_proxy(,,"$var(setid)", "$var(proxy)");
+		xlog("SCRIPT: RTPProxy server used is $var(proxy)\n");
+	} else {
+		engage_rtp_proxy();
+		xlog("SCRIPT: using default RTPProxy set\n");
+	}
+}
+...
 		</programlisting>
 		</example>
 		</section>
 
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_offer([flags [, ip_address]])</function>
+                <function moreinfo="none">rtpproxy_offer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
@@ -680,7 +630,7 @@ onreply_route[2]
 	</section>
         <section>
                 <title>
-                <function moreinfo="none">rtpproxy_answer([flags [, ip_address]])</function>
+                <function moreinfo="none">rtpproxy_answer([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -705,11 +655,21 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">unforce_rtp_proxy()</function>
+		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
 		Tears down the RTPProxy session for the current call.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
@@ -724,8 +684,8 @@ unforce_rtp_proxy();
 	</section>
 	<section id="rtpproxy_stream2xxx">
 	<title>
-	    <function>rtpproxy_stream2uac(prompt_name, count)</function>,
-	    <function>rtpproxy_stream2uas(prompt_name, count)</function>
+	    <function>rtpproxy_stream2uac(prompt_name, count [, set_id [, sock_pvar]])</function>,
+	    <function>rtpproxy_stream2uas(prompt_name, count [, set_id [, sock_pvar]])</function>
 	</title>
 	<para>
 	    Instruct the RTPproxy to stream prompt/announcement pre-encoded with
@@ -770,6 +730,13 @@ unforce_rtp_proxy();
 		    <function>rtpproxy_stop_stream2xxx</function> is issued.
 		</para>
 	    </listitem>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
 	</itemizedlist>
 	<example>
 	    <title><function>rtpproxy_stream2xxx</function> usage</title>
@@ -789,8 +756,8 @@ unforce_rtp_proxy();
 	</section>
 	<section id="rtpproxy_stop_stream2xxx">
 	<title>
-	    <function>rtpproxy_stop_stream2uac()</function>,
-	    <function>rtpproxy_stop_stream2uas()</function>
+	    <function>rtpproxy_stop_stream2uac([set_id [, sock_pvar]])</function>,
+	    <function>rtpproxy_stop_stream2uas([set_id [, sock_pvar]])</function>
 	</title>
 	<para>
 	    Stop streaming of announcement/prompt/MOH started previously by the
@@ -798,18 +765,38 @@ unforce_rtp_proxy();
 	    suffix selects whose announcement relatively to tha current
 	    transaction should be stopped - UAC or UAS.
 	</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
 	<para>
 	    These functions can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 	</para>
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">start_recording()</function>
+		<function moreinfo="none">start_recording([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
 		the RTP stream on the RTP-Proxy.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>set_id(optional)</emphasis> - the set used for this call.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>sock_pvar(optional)</emphasis> - pvar used to store the RTPProxy
+			socket chosen for this call.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>
