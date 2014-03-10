@@ -1471,27 +1471,12 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 	update_vals[u_version_col].nul = 0;
 	n_update_cols++;
 
-	if(db== NULL)
-	{
+	if (db==NULL){
 		LM_ERR("null database connection\n");
 		return;
 	}
 
-	LM_DBG("delete expired\n");
-	update_vals[0].val.int_val= (int)time(NULL);
-	update_ops[0]= OP_LT;
-	CON_PS_REFERENCE(db) = &my_ps_delete;
-	if(dbf.use_table(db, &active_watchers_table) < 0)
-	{
-		LM_ERR("deleting expired information from database\n");
-	}
-
-	if(dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
-	{
-		LM_ERR("deleting expired information from database\n");
-	}
-
-	for(i=0; i<htable_size; i++) 
+	for(i=0; i<htable_size; i++)
 	{
 		if(!no_lock)
 			lock_get(&hash_table[i].lock);
@@ -1610,7 +1595,23 @@ void update_db_subs(db_con_t *db,db_func_t dbf, shtable_t hash_table,
 		if(!no_lock)
 			lock_release(&hash_table[i].lock);
 	}
+
+	/* now that all records were updated, delete whatever 
+	   was still left as expired */
+	LM_DBG("delete expired\n");
+	update_vals[0].val.int_val = (int)time(NULL);
+	update_ops[0] = OP_LT;
+	CON_PS_REFERENCE(db) = &my_ps_delete;
+	if (dbf.use_table(db, &active_watchers_table) < 0) {
+		LM_ERR("deleting expired information from database\n");
+	} else {
+		if (dbf.delete(db, update_cols, update_ops, update_vals, 1) < 0)
+			LM_ERR("deleting expired information from database\n");
+	}
+
+	return;
 }
+
 
 int insert_subs_db(subs_t* s)
 {
