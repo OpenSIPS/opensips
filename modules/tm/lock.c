@@ -285,6 +285,6 @@ int release_timerlist_lock( struct timer *timerlist )
 int init_timerlist_lock( unsigned int set, enum lists timerlist_id)
 {
 	get_timertable()[set].timers[timerlist_id].mutex=
-		&(timer_group_lock[ set*NR_OF_TIMER_LISTS + timer_group[timerlist_id] ]);
+		&(timer_group_lock[ set*TG_NR + timer_group[timerlist_id] ]);
 	return 0;
 }
