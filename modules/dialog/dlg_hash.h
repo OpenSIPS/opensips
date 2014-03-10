@@ -156,6 +156,7 @@ struct dlg_table
 extern struct dlg_table *d_table;
 extern struct dlg_cell  *current_dlg_pointer;
 extern int dlg_tmp_timeout;
+extern int dlg_tmp_timeout_id;
 
 #define callee_idx(_dlg) \
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \

@@ -88,6 +88,7 @@ extern stat_var *failed_dlgs;
 
 int  last_dst_leg = -1;
 int  dlg_tmp_timeout = -1;
+int  dlg_tmp_timeout_id = -1;
 
 void init_dlg_handlers(int default_timeout_p)
 {
@@ -744,9 +745,10 @@ static void dlg_seq_down_onreply(struct cell* t, int type,
 	return;
 }
 
-inline static int get_dlg_timeout(void)
+inline static int get_dlg_timeout(struct sip_msg *msg)
 {
-	return (dlg_tmp_timeout != -1 ? dlg_tmp_timeout: default_timeout);
+	return ((dlg_tmp_timeout != -1 && dlg_tmp_timeout_id == msg->id) ?
+			dlg_tmp_timeout: default_timeout);
 }
 
 
@@ -916,7 +918,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		t->dialog_ctx = (void*) dlg;
 		dlg->flags |= DLG_FLAG_ISINIT;
 	}
-	dlg->lifetime = get_dlg_timeout();
+	dlg->lifetime = get_dlg_timeout(req);
 
 	if_update_stat( dlg_enable_stats, processed_dlgs, 1);
 
@@ -1222,7 +1224,7 @@ after_unlock5:
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
 		/* update timer during sequential request? */
-		if (dlg_tmp_timeout != -1) {
+		if (dlg_tmp_timeout != -1 && dlg_tmp_timeout_id == req->id) {
 			dlg->lifetime = dlg_tmp_timeout;
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");

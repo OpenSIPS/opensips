@@ -81,6 +81,7 @@ int dialog_cleanup( struct sip_msg *msg, void *param )
 	}
 	last_dst_leg = -1;
 	dlg_tmp_timeout = -1;
+	dlg_tmp_timeout_id = -1;
 
 	/* need to return non-zero - 0 will break the exec of the request */
 	return 1;

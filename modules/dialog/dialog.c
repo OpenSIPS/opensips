@@ -1594,6 +1594,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 
 		/* make sure we don't update it again later */
 		dlg_tmp_timeout = -1;
+		dlg_tmp_timeout_id = -1;
 
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");
@@ -1602,6 +1603,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	} else {
 		/* store it until we match the dialog */
 		dlg_tmp_timeout = timeout;
+		dlg_tmp_timeout_id = msg->id;
 	}
 
 	return 0;
