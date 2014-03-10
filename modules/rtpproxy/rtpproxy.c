@@ -272,6 +272,8 @@ static struct rtpp_set * select_rtpp_set(int id_set);
 static int rtpproxy_set_store(modparam_t type, void * val);
 static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id);
 static int _add_proxies_from_database();
+static int unforce_rtpproxy(struct sip_msg* msg, str callid,
+		str from_tag, str to_tag, char *pset, char *var);
 
 static int mod_init(void);
 static int child_init(int);
@@ -2349,10 +2351,6 @@ static int
 unforce_rtp_proxy_f(struct sip_msg* msg, char* pset, char *var)
 {
 	str callid, from_tag, to_tag;
-	struct rtpp_node *node;
-	struct rtpp_set *set;
-	struct iovec v[1 + 4 + 3] = {{NULL, 0}, {"D", 1}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}};
-						/* 1 */   /* 2 */   /* 3 */    /* 4 */   /* 5 */    /* 6 */   /* 1 */
 
 	if (!msg || msg == FAKED_REPLY)
 		return 1;
@@ -2370,6 +2368,17 @@ unforce_rtp_proxy_f(struct sip_msg* msg, char* pset, char *var)
 		LM_ERR("can't get From tag\n");
 		return -1;
 	}
+
+	return unforce_rtpproxy(msg, callid, from_tag, to_tag, pset, var);
+}
+
+static int unforce_rtpproxy(struct sip_msg* msg, str callid,
+		str from_tag, str to_tag, char *pset, char *var)
+{
+	struct rtpp_node *node;
+	struct rtpp_set *set;
+	struct iovec v[1 + 4 + 3] = {{NULL, 0}, {"D", 1}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}, {" ", 1}, {NULL, 0}};
+						/* 1 */   /* 2 */   /* 3 */    /* 4 */   /* 5 */    /* 6 */   /* 1 */
 	STR2IOVEC(callid, v[3]);
 	STR2IOVEC(from_tag, v[5]);
 	STR2IOVEC(to_tag, v[7]);
@@ -2590,7 +2599,9 @@ static void engage_close_callback(struct dlg_cell *dlg, int type,
 	}
 	param.t = NH_VAL_SET_UNDEF;
 
-	if (unforce_rtp_proxy_f(_params->msg, (char *)&param, NULL) < 0) {
+	if (unforce_rtpproxy(_params->msg, dlg->callid,
+			dlg->legs[DLG_CALLER_LEG].tag, dlg->legs[callee_idx(dlg)].tag,
+			(char *)&param, NULL) < 0) {
 		LM_ERR("cannot unforce rtp proxy\n");
 	}
 }
