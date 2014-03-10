@@ -77,7 +77,7 @@ static ser_lock_t* timer_group_lock=0; /* pointer to a TG_NR lock array,
 
 /* initialize the locks; return 0 on success, -1 otherwise
 */
-int lock_initialize(void)
+int lock_initialize( unsigned int timer_sets )
 {
 	int i;
 #ifndef GEN_LOCK_T_PREFERED
@@ -87,13 +87,13 @@ int lock_initialize(void)
 	/* first try allocating semaphore sets with fixed number of semaphores */
 	LM_DBG("lock initialization started\n");
 
-	timer_group_lock=shm_malloc(TG_NR*sizeof(ser_lock_t));
+	timer_group_lock=shm_malloc(timer_sets*TG_NR*sizeof(ser_lock_t));
 	if (timer_group_lock==0){
 		LM_CRIT("no more share mem\n");
 		goto error;
 	}
 #ifdef GEN_LOCK_T_PREFERED
-	for(i=0;i<TG_NR;i++) lock_init(&timer_group_lock[i]);
+	for(i=0;i<timer_sets*TG_NR;i++) lock_init(&timer_group_lock[i]);
 #else
 	/* transaction timers */
 	if (((timer_semaphore= lock_set_alloc( TG_NR ) ) == 0)||
@@ -282,9 +282,9 @@ int release_timerlist_lock( struct timer *timerlist )
 	return 0;
 }
 
-int init_timerlist_lock( enum lists timerlist_id)
+int init_timerlist_lock( unsigned int set, enum lists timerlist_id)
 {
-	get_timertable()->timers[timerlist_id].mutex=
-		&(timer_group_lock[ timer_group[timerlist_id] ]);
+	get_timertable()[set].timers[timerlist_id].mutex=
+		&(timer_group_lock[ set*NR_OF_TIMER_LISTS + timer_group[timerlist_id] ]);
 	return 0;
 }

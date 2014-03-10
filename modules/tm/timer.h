@@ -59,7 +59,8 @@ typedef struct timer_link
 	struct timer_link     *ld_tl;
 	volatile utime_t      time_out;
 	struct timer          *timer_list;
-	unsigned int          deleted;
+	unsigned short        deleted;
+	unsigned short        set;
 #ifdef EXTRA_DEBUG
 	enum timer_groups  tg;
 #endif
@@ -92,11 +93,11 @@ extern unsigned int timer_id2timeout[NR_OF_TIMER_LISTS];
 
 
 
-struct timer_table * tm_init_timers();
+struct timer_table * tm_init_timers( unsigned int sets );
 void unlink_timer_lists();
 void free_timer_table();
-void init_timer_list( enum lists list_id);
-void reset_timer_list( enum lists list_id);
+void init_timer_list( unsigned int set, enum lists list_id);
+void reset_timer_list( unsigned int set, enum lists list_id);
 
 void reset_timer( struct timer_link* tl );
 

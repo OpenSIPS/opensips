@@ -225,7 +225,7 @@ static inline void init_synonym_id( struct cell *t )
 	}
 }
 
-static inline void init_branches(struct cell *t)
+static inline void init_branches(struct cell *t, unsigned int set)
 {
 	unsigned int i;
 	struct ua_client *uac;
@@ -239,6 +239,10 @@ static inline void init_branches(struct cell *t)
 		uac->request.fr_timer.tg = TG_FR;
 		uac->request.retr_timer.tg = TG_RT;
 #endif
+		uac->request.fr_timer.set = set;
+		uac->request.retr_timer.set = set;
+		uac->local_cancel.fr_timer.set = set;
+		uac->local_cancel.retr_timer.set = set;
 		uac->local_cancel=uac->request;
 	}
 }
@@ -250,6 +254,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	int          sip_msg_len;
 	struct usr_avp **old;
 	struct tm_callback *cbs, *cbs_tmp;
+	unsigned short set;
 
 	/* allocs a new cell */
 	new_cell = (struct cell*)shm_malloc( sizeof( struct cell ) );
@@ -261,11 +266,18 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	/* filling with 0 */
 	memset( new_cell, 0, sizeof( struct cell ) );
 
+	/* get timer set id based on the transaction pointer, but
+	 * devide by 64 to avoid issues because pointer are 64 bits
+	 * aligned */
+	set = ( ((long)new_cell)>>3 ) % tm_table->timer_sets;
+
 	/* UAS */
 #ifdef EXTRA_DEBUG
 	new_cell->uas.response.retr_timer.tg=TG_RT;
 	new_cell->uas.response.fr_timer.tg=TG_FR;
 #endif
+	new_cell->uas.response.retr_timer.set = set;
+	new_cell->uas.response.fr_timer.set = set;
 	new_cell->uas.response.my_T=new_cell;
 
 	/* dcm: - local generation transactions should not inherit AVPs
@@ -303,7 +315,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	}
 
 	/* UAC */
-	init_branches(new_cell);
+	init_branches(new_cell, set);
 	new_cell->fr_timeout = fr_timeout;
 	new_cell->fr_inv_timeout = fr_inv_timeout;
 
@@ -313,6 +325,8 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	new_cell->wait_tl.tg=TG_WT;
 	new_cell->dele_tl.tg=TG_DEL;
 #endif
+	new_cell->wait_tl.set = set;
+	new_cell->dele_tl.set = set;
 
 	init_synonym_id(new_cell);
 	init_cell_lock(  new_cell );
@@ -366,7 +380,7 @@ void free_hash_table(void)
 
 /*
  */
-struct s_table* init_hash_table(void)
+struct s_table* init_hash_table( unsigned int timer_sets )
 {
 	int              i;
 
@@ -374,14 +388,12 @@ struct s_table* init_hash_table(void)
 	tm_table= (struct s_table*)shm_malloc( sizeof( struct s_table ) );
 	if ( !tm_table) {
 		LM_ERR("no more share memory\n");
-		goto error0;
+		goto error;
 	}
 
 	memset( tm_table, 0, sizeof (struct s_table ) );
 
-	/* try first allocating all the structures needed for syncing */
-	if (lock_initialize()==-1)
-		goto error1;
+	tm_table->timer_sets = timer_sets;
 
 	/* inits the entrys */
 	for(  i=0 ; i<TM_TABLE_ENTRIES; i++ )
@@ -392,9 +404,7 @@ struct s_table* init_hash_table(void)
 
 	return  tm_table;
 
-error1:
-	free_hash_table( );
-error0:
+error:
 	return 0;
 }
 

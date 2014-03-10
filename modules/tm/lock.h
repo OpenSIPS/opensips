@@ -65,7 +65,7 @@ enum timer_groups {
 #define IPC_PERMISSIONS 0666
 
 
-int lock_initialize();
+int lock_initialize( unsigned int timer_sets );
 void lock_cleanup();
 
 #ifdef DBG_LOCK
@@ -124,7 +124,7 @@ static inline void _unlock( ser_lock_t* s )
 #endif
 }
 
-int init_timerlist_lock(  enum lists timerlist_id);
+int init_timerlist_lock( unsigned int set, enum lists timerlist_id);
 
 
 #endif

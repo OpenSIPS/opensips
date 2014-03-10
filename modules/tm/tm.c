@@ -672,6 +672,7 @@ static int script_init( struct sip_msg *foo, void *bar)
 static int mod_init(void)
 {
 	void *timer;
+	unsigned int timer_sets,set;
 
 	LM_INFO("TM - initializing...\n");
 
@@ -711,8 +712,15 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* how many timer sets do we need to create? */
+	timer_sets = (own_timer_proc<=1)?1:own_timer_proc ;
+
+	/* try first allocating all the structures needed for syncing */
+	if (lock_initialize( timer_sets )==-1)
+		return -1;
+
 	/* building the hash table*/
-	if (!init_hash_table()) {
+	if (!init_hash_table( timer_sets )) {
 		LM_ERR("initializing hash_table failed\n");
 		return -1;
 	}
@@ -720,23 +728,25 @@ static int mod_init(void)
 	/* init static hidden values */
 	init_t();
 
-	if (!tm_init_timers()) {
+	if (!tm_init_timers( timer_sets ) ) {
 		LM_ERR("timer init failed\n");
 		return -1;
 	}
 
 	/* register the timer functions */
 	if (own_timer_proc) {
-		timer = register_timer_process( "tm-timer", timer_routine, NULL, 1,
-					TIMER_PROC_INIT_FLAG);
-		if (timer==NULL) {
-			LM_ERR("failed to register timer\n");
-			return -1;
-		}
-		if (append_utimer_to_process( "tm-utimer", utimer_routine, 0,
-			100*1000, timer)<0) {
-			LM_ERR("failed to register utimer\n");
-			return -1;
+		for ( set=0 ; set<timer_sets ; set++ ) {
+			timer = register_timer_process( "tm-timer", timer_routine,
+				(void*)(long)set, 1, TIMER_PROC_INIT_FLAG);
+			if (timer==NULL) {
+				LM_ERR("failed to register timer for set %d\n",set);
+				return -1;
+			}
+			if (append_utimer_to_process( "tm-utimer", utimer_routine,
+			(void*)(long)set, 100*1000, timer)<0) {
+				LM_ERR("failed to register utimer for set %d\n",set);
+				return -1;
+			}
 		}
 	} else {
 		if (register_timer( "tm-timer", timer_routine , 0, 1 )<0) {

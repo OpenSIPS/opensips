@@ -321,6 +321,9 @@ struct s_table
 {
 	/* table of hash entries; each of them is a list of synonyms  */
 	struct entry   entrys[ TM_TABLE_ENTRIES ];
+	/* we keep it here just as a shortcut, we need it for assigning
+	 * a transaction to a specific timer set */
+	unsigned short timer_sets;
 };
 
 
@@ -364,9 +367,9 @@ void reset_kr();
 void set_kr( enum kill_reason kr );
 enum kill_reason get_kr();
 
-struct s_table* get_tm_table();
-struct s_table* init_hash_table();
-void   free_hash_table( );
+struct s_table* get_tm_table( void );
+struct s_table* init_hash_table(unsigned int timer_sets);
+void   free_hash_table( void );
 void   free_cell( struct cell* dead_cell );
 struct cell*  build_cell( struct sip_msg* p_msg );
 void   remove_from_hash_table_unsafe( struct cell * p_cell);
