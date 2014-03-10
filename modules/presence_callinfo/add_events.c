@@ -89,7 +89,7 @@ int lineseize_publ_handl(struct sip_msg* msg, int* sent_reply)
 /*
  * event specific extra headers builder - for empty notifications
  */
-str* build_callinfo_dumy_header(str* pres_uri, str* extra_hdrs)
+str* build_callinfo_dummy_header(str* pres_uri, str* extra_hdrs)
 {
 	if (extra_hdrs->s == NULL)
 	{
@@ -122,7 +122,7 @@ int callinfo_add_events(void)
 	event.evs_publ_handl = callinfo_publ_handl;
 
 	/* register the dummy Call-Info header builder */
-	event.build_empty_pres_info = build_callinfo_dumy_header;
+	event.build_empty_pres_info = build_callinfo_dummy_header;
 
 
 	if (pres_add_event(&event) < 0) {

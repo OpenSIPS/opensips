@@ -47,6 +47,8 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 str* build_dialoginfo(str* pres_user, str* pres_domain);
 extern int force_single_dialog;
 
+static str* _build_empty_dialoginfo(const char* pres_uri_char, str* extra_hdrs);
+
 #define VERSION_HOLDER "00000000000"
 
 void free_xml_body(char* body)
@@ -59,33 +61,23 @@ void free_xml_body(char* body)
 str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n, int off_index)
 {
 	str* n_body= NULL;
-	str *pres_uri= NULL;
-	char buf[MAX_URI_SIZE+1];
+	char pres_uri_char[MAX_URI_SIZE+1];
 
-	if ( (pres_user->len + pres_domain->len + 1) > MAX_URI_SIZE) {
+	if ((pres_user->len + pres_domain->len + 5) > MAX_URI_SIZE) {
 		LM_ERR("entity URI too long, maximum=%d\n", MAX_URI_SIZE);
 		return NULL;
 	}
-	memcpy(buf, "sip:", 4);
-	memcpy(buf+4, pres_user->s, pres_user->len);
-	buf[pres_user->len+4] = '@';
-	memcpy(buf + pres_user->len + 5, pres_domain->s, pres_domain->len);
-	buf[pres_user->len + 5 + pres_domain->len]= '\0';
+	memcpy(pres_uri_char, "sip:", 4);
+	memcpy(pres_uri_char + 4, pres_user->s, pres_user->len);
+	pres_uri_char[pres_user->len + 4] = '@';
+	memcpy(pres_uri_char + pres_user->len + 5, pres_domain->s, pres_domain->len);
+	pres_uri_char[pres_user->len + 5 + pres_domain->len] = '\0';
 
-	pres_uri = (str*)pkg_malloc(sizeof(str));
-	if(pres_uri == NULL)
-	{
-		LM_ERR("while allocating memory\n");
-		return NULL;
-	}
-	memset(pres_uri, 0, sizeof(str));
-	pres_uri->s = buf;
-	pres_uri->len = pres_user->len + 5 + pres_domain->len;
+	LM_DBG("[pres_uri] %s (%d), [n]=%d\n", pres_uri_char,
+		pres_user->len + 5 + pres_domain->len, n);
 
-	LM_DBG("[pres_uri] %.*s, [n]=%d\n", pres_uri->len, pres_uri->s, n);
-
-	if(body_array== NULL)
-		return build_empty_dialoginfo(pres_uri, NULL);
+	if(body_array == NULL)
+		return _build_empty_dialoginfo(pres_uri_char, NULL);
 
 	if (n == -2)
 		n_body= agregate_xmls(pres_user, pres_domain, body_array, 1, 1);
@@ -103,10 +95,10 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 	}
 
 	xmlCleanupParser();
-    xmlMemoryDump();
+	xmlMemoryDump();
 
 	if (n_body== NULL)
-		n_body= build_empty_dialoginfo(pres_uri, NULL);
+		n_body = _build_empty_dialoginfo(pres_uri_char, NULL);
 	return n_body;
 }
 
@@ -467,12 +459,11 @@ error:
 	return NULL;
 }
 
-str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
+static str* _build_empty_dialoginfo(const char* pres_uri_char, str* extra_hdrs)
 {
 	str* nbody= 0;
 	xmlDocPtr doc = NULL;
 	xmlNodePtr node;
-	char* pres_uri_char = NULL;
 
 	nbody= (str*) pkg_malloc(sizeof(str));
 	if(nbody== NULL)
@@ -500,16 +491,7 @@ str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
 	xmlNewProp(node, BAD_CAST "version", BAD_CAST VERSION_HOLDER);
 	xmlNewProp(node, BAD_CAST "state",   BAD_CAST "full");
 
-	pres_uri_char = (char*)pkg_malloc(pres_uri->len + 1);
-	if(pres_uri_char == NULL)
-	{
-		LM_ERR("No more memory\n");
-		goto error;
-	}
-	memcpy(pres_uri_char, pres_uri->s, pres_uri->len);
-	pres_uri_char[pres_uri->len] = '\0';
 	xmlNewProp(node, BAD_CAST "entity", BAD_CAST pres_uri_char);
-	pkg_free(pres_uri_char);
 
 	xmlDocDumpMemory(doc,(xmlChar**)(void*)&nbody->s,
 		&nbody->len);
@@ -527,3 +509,24 @@ error:
 	return 0;
 }
 
+str* build_empty_dialoginfo(str* pres_uri, str* extra_hdrs)
+{
+	char* pres_uri_char;
+	str* ret;
+
+	pres_uri_char = (char*)pkg_malloc(pres_uri->len + 1);
+	if(pres_uri_char == NULL)
+	{
+		LM_ERR("No more memory\n");
+		return NULL;
+	}
+	memcpy(pres_uri_char, pres_uri->s, pres_uri->len);
+	pres_uri_char[pres_uri->len] = '\0';
+
+	/* do the call with a null-terminated pres_uri */
+	ret = _build_empty_dialoginfo(pres_uri_char, extra_hdrs);
+	
+	pkg_free(pres_uri_char);
+
+	return ret;
+}
