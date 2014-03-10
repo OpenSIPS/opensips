@@ -82,7 +82,7 @@ static int callinfo_hdr_checker(struct sip_msg* msg, int* sent_reply)
 /*
  * event specific extra headers builder - for empty notifications
  */
-str* build_callinfo_dumy_header(str* pres_uri, str* extra_hdrs)
+str* build_callinfo_dummy_header(str* pres_uri, str* extra_hdrs)
 {
 	if (extra_hdrs->s == NULL)
 	{
@@ -425,7 +425,7 @@ int callinfo_add_events(void)
 	event.evs_publ_handl = callinfo_hdr_checker;
 
 	/* register the dummy Call-Info header builder */
-	event.build_empty_pres_info = build_callinfo_dumy_header;
+	event.build_empty_pres_info = build_callinfo_dummy_header;
 
 	if (pres.add_event(&event) < 0) {
 		LM_ERR("failed to add event \"call-info\"\n");
