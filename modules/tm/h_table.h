@@ -361,6 +361,7 @@ struct s_table
 extern int syn_branch;
 extern int fr_timeout;
 extern int fr_inv_timeout;
+extern int tm_timer_shift;
 
 
 void reset_kr();

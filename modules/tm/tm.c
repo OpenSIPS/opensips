@@ -673,6 +673,7 @@ static int mod_init(void)
 {
 	void *timer;
 	unsigned int timer_sets,set;
+	unsigned int roundto_init;
 
 	LM_INFO("TM - initializing...\n");
 
@@ -732,6 +733,20 @@ static int mod_init(void)
 		LM_ERR("timer init failed\n");
 		return -1;
 	}
+
+	/* the ROUNDTO macro taken from the locking interface */
+#ifdef ROUNDTO
+	roundto_init = ROUNDTO;
+#else
+	roundto_init = sizeof(void *);
+#endif
+	while (roundto_init != 1) {
+		tm_timer_shift++;
+		roundto_init >>= 1;
+	}
+
+	LM_DBG("timer set shift is %d\n", tm_timer_shift);
+
 
 	/* register the timer functions */
 	if (own_timer_proc) {

@@ -57,6 +57,9 @@
 #include "t_fwd.h"
 #include "t_lookup.h"
 
+/* indicates how much we have to shift the transaction pointer in order to
+ * obtain a fair distribution on the tm timers */
+int tm_timer_shift = 0;
 static enum kill_reason kr;
 
 /* pointer to the big table where all the transaction data
@@ -269,7 +272,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	/* get timer set id based on the transaction pointer, but
 	 * devide by 64 to avoid issues because pointer are 64 bits
 	 * aligned */
-	set = ( ((long)new_cell)>>3 ) % tm_table->timer_sets;
+	set = ( ((long)new_cell)>>tm_timer_shift ) % tm_table->timer_sets;
 
 	/* UAS */
 #ifdef EXTRA_DEBUG
