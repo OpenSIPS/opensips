@@ -222,6 +222,27 @@ modparam("db_http", "quote_delimiter","|")
 	</section>
 
 	<section>
+		<title><varname>value_delimiter</varname> (str)</title>
+		<para>
+		The delimiter used to separate multiple fields of a single
+		variable (see <xref linkend="http-variables"/>).
+		Only one char may be set.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>,</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>value_delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "value_delimiter",";")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>timeout</varname> (int)</title>
 		<para>
 		The maximum number of milliseconds that the HTTP ops are allowed to last
@@ -280,7 +301,7 @@ GET /presentity/?c=username,domain,event,expires HTTP/1.1
 	</section>
 
 
-	<section>
+	<section id="http-variables">
 		<title>Variables</title>
 		<para>
 		A description of all the variables. Each variable can have

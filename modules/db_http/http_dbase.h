@@ -43,6 +43,7 @@
 int set_col_delim( unsigned int type, void *val);
 int set_line_delim( unsigned int type, void *val);
 int set_quote_delim( unsigned int type, void *val);
+int set_value_delim( unsigned int type, void *val);
 
 
 
