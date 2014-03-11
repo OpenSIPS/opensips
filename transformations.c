@@ -470,6 +470,144 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags = PV_VAL_STR;
 			val->rs = st;
 			break;
+		case TR_S_INDEX:
+		case TR_S_RINDEX:
+			/* Ensure it is in string format */
+			if(!(val->flags&PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+			}
+
+			/* Needle to look for in haystack */
+			if(tp->type==TR_PARAM_STRING)
+			{
+				st = tp->v.s;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+                                                || (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
+				{
+					LM_ERR("index/rindex cannot get p1\n");
+					return -1;
+				}
+
+				st = v.rs;
+			}
+
+			/* User supplied starting position */
+			if (tp->next != NULL) {
+				if(tp->next->type==TR_PARAM_NUMBER)
+				{
+					i = tp->next->v.n;
+				} else {
+					if(pv_get_spec_value(msg, (pv_spec_p)tp->next->v.data, &v)!=0
+							|| (!(v.flags&PV_VAL_INT)))
+					{
+						LM_ERR("index/rindex cannot get p2\n");
+						return -1;
+					}
+					i = v.ri;
+				}
+			} else {
+				/* Default start positions: 0 for index, end of str for rindex */
+				i = (subtype == TR_S_INDEX ? 0 : (val->rs.len - 1));
+			}
+
+			/* If start is negative base it off end of string
+			   e.g -2 on 10 char str start of 8. */
+			if (i < 0 ){
+				if ( val->rs.len > 0 ) {
+					/* Support wrapping on negative index
+					   e.g -2 and -12 index are same on strlen of 10 */
+					i = ( (i * -1) % val->rs.len );
+					/* No remainder means we start at 0
+					   otherwise take remainder off the end */
+					if ( i > 0) {
+						i = (val->rs.len - i);
+					}
+				} else {
+					/* Case of searching through an empty string is caught later */
+					i = 0;
+				}
+			}
+
+			/* Index */
+			if (subtype == TR_S_INDEX) {
+				/* If start index is beyond end of string or
+				   Needle is bigger than haystack return -1 */
+				if ( i >= val->rs.len || st.len > (val->rs.len - i)) {
+					memset(val, 0, sizeof(pv_value_t));
+					val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+					val->ri = -1;
+					val->rs.s = int2str(val->ri, &val->rs.len);
+					break;
+				}
+
+				/* Iterate through string starting at index
+				   After j there are no longer enough characters left to match the needle */
+				j = (val->rs.len - st.len);
+				while (i <= j) {
+					if (val->rs.s[i] == st.s[0]) {
+						/* First character matches, do a full comparison
+						   shortcut for single character lookups */
+						if (st.len == 1 || strncmp(val->rs.s + i, st.s, st.len) == 0) {
+							/* Bingo, found it */
+							memset(val, 0, sizeof(pv_value_t));
+							val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+							val->ri = i;
+							val->rs.s = int2str(val->ri, &val->rs.len);
+							return 0;
+						}
+					}
+					i++;
+				}
+			/* Rindex */
+			} else {
+				/* Needle bigger than haystack */
+				if ( st.len > val->rs.len ) {
+					memset(val, 0, sizeof(pv_value_t));
+					val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+					val->ri = -1;
+					val->rs.s = int2str(val->ri, &val->rs.len);
+					break;
+				}
+
+				/* Incase of RINDEX clamp index to end of string */
+				if (i >= val->rs.len) {
+					i = (val->rs.len - 1);
+				}
+
+				/* Start position does not leave enough characters to match needle, jump ahead */
+				if ( st.len > (val->rs.len - i) ) {
+					/* Minimum start position allowing for matches */
+					i = (val->rs.len - st.len);
+				}
+
+				/* Iterate through string starting at index and going backwards */
+				while (i >= 0) {
+					if (val->rs.s[i] == st.s[0]) {
+						/* First character matches, do a full comparison
+						   shortcut for single character lookups */
+						if (st.len == 1 || strncmp(val->rs.s + i, st.s, st.len) == 0) {
+							/* Bingo, found it */
+							memset(val, 0, sizeof(pv_value_t));
+							val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+							val->ri = i;
+							val->rs.s = int2str(val->ri, &val->rs.len);
+							return 0;
+						}
+					}
+					i--;
+				}
+
+			}
+
+			/* Not found */
+			memset(val, 0, sizeof(pv_value_t));
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->ri = -1;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -1988,6 +2126,7 @@ char* tr_parse_string(str* in, trans_t *t)
 {
 	char *p;
 	char *p0;
+	char *ps;
 	str name;
 	str s;
 	pv_spec_t *spec = NULL;
@@ -2060,6 +2199,76 @@ char* tr_parse_string(str* in, trans_t *t)
 		return p;
 	} else if(name.len==14 && strncasecmp(name.s, "unescape.param", 14)==0) {
 		t->subtype = TR_S_UNESCAPEPARAM;
+		return p;
+	} else if(name.len==5 && strncasecmp(name.s, "index", 5)==0) {
+		t->subtype = TR_S_INDEX;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid index transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_PARAM_MARKER && *p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid index transformation: %.*s!\n",
+				in->len, in->s);
+			goto error;
+		}
+		if (*p!=TR_RBRACKET) {
+			p++;
+			_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s);
+			t->params->next = tp;
+		} else {
+			t->params->next = NULL;
+		}
+
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid index transformation: %.*s!!\n",
+				in->len, in->s);
+			goto error;
+		}
+		return p;
+	} else if(name.len==6 && strncasecmp(name.s, "rindex", 6)==0) {
+		t->subtype = TR_S_RINDEX;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid rindex transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		t->params = tp;
+		tp = 0;
+		while(*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_PARAM_MARKER && *p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid rindex transformation: %.*s!\n",
+				in->len, in->s);
+			goto error;
+		}
+		if (*p!=TR_RBRACKET) {
+			p++;
+			_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s);
+			t->params->next = tp;
+		} else {
+			t->params->next = NULL;
+		}
+
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if(*p!=TR_RBRACKET)
+		{
+			LM_ERR("invalid rindex transformation: %.*s!!\n",
+				in->len, in->s);
+			goto error;
+		}
 		return p;
 	} else if(name.len==6 && strncasecmp(name.s, "substr", 6)==0) {
 		t->subtype = TR_S_SUBSTR;
