@@ -175,7 +175,7 @@ ifelse(USE_PRESENCE,`yes',`#### PRESENCE modules
 loadmodule "xcap.so"
 loadmodule "presence.so"
 loadmodule "presence_xml.so"
-modparam("presence", "db_url",
+modparam("xcap|presence", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
 modparam("presence_xml", "force_active", 1)
 modparam("presence", "server_address", "sip:127.0.0.1:5060") # CUSTOMIZE ME
