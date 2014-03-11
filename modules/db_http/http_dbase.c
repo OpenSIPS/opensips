@@ -74,7 +74,6 @@ int next_state[3][256];
 
 char line_delim = '\n';
 char col_delim = ';';
-char *col_delim_s = ";";
 char quote_delim = '|';
 
 extern int use_ssl;
@@ -101,7 +100,6 @@ int set_col_delim( unsigned int type, void *val)
 		return -1;
 	}
 	col_delim = v[0];
-	col_delim_s = val;
 
 	return 0;
 }
@@ -194,7 +192,7 @@ static int append_keys (var_str * q,const char * name, const db_key_t* k,
 
 			CHECK(append_str(q,url_encode(*k[i])),0,error);
 			if( i < n-1)
-				CHECK(append_const(q,col_delim_s),0,error);
+				CHECK(append_const(q,","),0,error);
 		}
 		*started = 1;
 	}
@@ -223,7 +221,7 @@ static int append_values (var_str * q,const char * name, const db_val_t* v,
 		{
 			CHECK(append_str(q,url_encode(value_to_string(&v[i]))),0,error);
 			if( i < n-1)
-				CHECK(append_const(q,col_delim_s),0,error);
+				CHECK(append_const(q,","),0,error);
 		}
 
 		*started = 1;
@@ -262,7 +260,7 @@ static int append_ops(var_str * q,const char * name, const db_op_t* op,
 
 
 			if( i < n-1)
-				CHECK(append_const(q,col_delim_s),0,error);
+				CHECK(append_const(q,","),0,error);
 		}
 		*started = 1;
 	}
