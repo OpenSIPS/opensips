@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.8.3
+Version:  1.8.4
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1168,7 +1168,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.xmpp
 
 %changelog
-* Wed May 22 2013 Nick Altmann <nick.altmann@gmail.com> - 1.8.3-1
+* Wed May 22 2013 Nick Altmann <nick.altmann@gmail.com> - 1.8.4-1
 - Rebuild specification, add new dependencies
 
 * Tue Jan 22 2013 Peter Lemenkov <lemenkov@gmail.com> - 1.8.2-3
