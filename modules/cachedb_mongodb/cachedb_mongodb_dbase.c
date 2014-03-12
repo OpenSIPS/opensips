@@ -584,7 +584,11 @@ int mongo_raw_find(cachedb_con *connection,bson *raw_query,cdb_raw_entry ***repl
 				continue;
 			}
 			LM_ERR("Failed to run query. Err = %d, %d , %d \n",conn->err,conn->errcode,conn->lasterrcode);
-			mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			ret = mongo_cmd_get_last_error(conn,MONGO_DATABASE(connection),&err_b);
+			if (ret == MONGO_OK) {
+				LM_ERR("We had error - can't tell what it was - we're really bogus - probably mongos down\n");
+				return -1;
+			}
 			bson_iterator_init(&i,&err_b);
 			while( bson_iterator_next(&i)) {
 				LM_ERR("Fetched ERR key [%s]. Val = ",bson_iterator_key(&i));
