@@ -191,12 +191,86 @@ error:
 	return -1;
 }
 
+void bson_to_json_generic(struct json_object *obj,bson_iterator *it,int type)
+{
+	const char *curr_key;
+	char *s;
+	int len;
+	struct json_object *obj2=NULL;
+	bson_iterator it2;
+
+		while (bson_iterator_next(it)) {
+			curr_key=bson_iterator_key(it);
+
+			switch( bson_iterator_type(it) ) {
+					case BSON_INT:
+						LM_DBG("Found key %s with type int\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int(bson_iterator_int(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int(bson_iterator_int(it)));
+						break;
+					case BSON_LONG:
+						LM_DBG("Found key %s with type long\n",curr_key);
+						/* no intrinsic support in OpenSIPS for 64bit integers -
+ 						 * converting to string */
+						s = int2str(bson_iterator_long(it),&len);
+						s[len]=0;
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,json_object_new_string(s));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_string(s));
+						break;
+					case BSON_DOUBLE:
+						/* no intrinsic support in OpenSIPS for floating point numbers
+ 						 * converting to int */
+						LM_DBG("Found key %s with type double\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int((int)bson_iterator_double(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int((int)bson_iterator_double(it)));
+						break;
+					case BSON_STRING:
+						LM_DBG("Found key %s with type string\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_string(bson_iterator_string(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_string(bson_iterator_string(it)));
+						break;
+					case BSON_BOOL:
+						LM_DBG("Found key %s with type bool\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int((int)bson_iterator_bool(it)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int((int)bson_iterator_bool(it)));
+						break;
+					case BSON_ARRAY:
+						LM_DBG("Found key %s with type array\n",curr_key);
+						obj2 = json_object_new_array();
+						bson_iterator_subiterator(it, &it2 );
+						bson_to_json_generic(obj2,&it2,BSON_ARRAY);
+						json_object_object_add(obj,curr_key,obj2);
+						//json_object_put(obj2);
+						break;
+					default:
+						/* TODO - support embedded documents */
+						LM_DBG("Unsupported type %d for key %s - skipping\n",
+								bson_iterator_type(it),curr_key);
+						break;
+			}
+		}
+}
+
 int mongo_cursor_to_json(mongo_cursor *m_cursor,
 		cdb_raw_entry ***reply,int expected_kv_no,int *reply_no)
 {
 	struct json_object *obj=NULL;
 	bson_iterator it;
-	const char *curr_key,*p;
+	const char *p;
 	int current_size=0,len;
 
 	/* start with a single returned document */
@@ -229,30 +303,8 @@ int mongo_cursor_to_json(mongo_cursor *m_cursor,
 		}
 
 		obj = json_object_new_object();
-
 		bson_iterator_init(&it,mongo_cursor_bson(m_cursor));
-		while (bson_iterator_next(&it)) {
-			curr_key=bson_iterator_key(&it);
-
-			switch( bson_iterator_type( &it ) ) {
-					case BSON_INT:
-						json_object_object_add(obj,curr_key,
-								json_object_new_int(bson_iterator_int(&it)));
-						break;
-					case BSON_DOUBLE:
-						json_object_object_add(obj,curr_key,
-								json_object_new_int((int)bson_iterator_double(&it)));
-						break;
-					case BSON_STRING:
-						json_object_object_add(obj,curr_key,
-								json_object_new_string(bson_iterator_string(&it)));
-						break;
-					default:
-						/* TODO - support embedded documents */
-						LM_WARN("Unsupported type %d - skipping\n",bson_iterator_type(&it));
-						break;
-			}
-		}
+		bson_to_json_generic(obj,&it,BSON_OBJECT);
 
 		p = json_object_to_json_string(obj);
 		if (!p) {
@@ -279,7 +331,10 @@ int mongo_cursor_to_json(mongo_cursor *m_cursor,
 
 	*reply_no = current_size;
 	LM_DBG("Fetched %d results\n",current_size);
-	return 0;
+	if (current_size == 0)
+		return -2;
+
+	return 1;
 
 error_cleanup:
 	if (obj)
