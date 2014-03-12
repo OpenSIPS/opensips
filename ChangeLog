@@ -1,3 +1,1058 @@
+=========================== Release 1.10.1 ==============================
+
+2014-03-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [1e2622f] :
+
+	Added support for embedded arrays within MongoDB documents
+	(cherry picked from commit 61e21a0a2d9d79b91e5e8692a7c1f3e7cc77cf83)
+
+
+2014-03-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [5a119db] :
+
+	For topo hiding and fix_route_dialog() usage, do not try do add del lumps for already deleted route headers
+
+
+2014-03-11  Liviu Chircu  <liviu at opensips dot org>
+	* [1e32092] :
+
+	residential config: Also define the "xcap" db_url
+	(cherry picked from commit 4b4ac96e13dc4686172eb4eecb9dee68be2e6f2b)
+
+
+2014-03-11  Razvan Crainea  <razvan at opensips dot org>
+	* [53f6461] :
+
+	db_http: add value_delimiter parameter
+	Add a new parameter used to specify the fields delimiters for queries
+	variables
+	(cherry picked from commit ab80adec1665b6416d92637d10677a696550c1db)
+
+
+2014-03-10  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [1ccb254] :
+
+	Merge pull request #174 from wdoekes/wjd-fix_dialogaggr_memleak
+	presence_dialoginfo: Fix memory leak in dlginfo_agg_nbody.
+	(cherry picked from commit 1e02b323fa38e81949a3e8e9b3cf4e37dd9fa6e5)
+
+
+2014-03-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [916f3ee] :
+
+	When updating the database records, first perform all update and inserts and then check the timeout for expired records -> records to be deleted. Doing first the delete may hide records "expired but to be updated". Credits go to Nick Altmann Closes bug #112.
+	(cherry picked from commit 3c1164a012204e92150c5df5101aba709e4cb123)
+
+
+2014-03-05  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [42718eb] :
+
+	Fixed the lex for tcp_max_msg_chunks and tcp_max_msg_time
+	(cherry picked from commit 5cf71c32561c5f47abaf2cab015f7cf707be14e6)
+
+
+2014-03-01  Liviu Chircu  <liviu at opensips dot org>
+	* [6e5ed26] :
+
+	Fix crash when printing $(ct[*])
+	(cherry picked from commit aeb4e886d4cd4fde00440671f913605def9db02f)
+
+
+2014-02-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5760ba2] :
+
+	improve docs
+
+
+2014-02-06  Liviu Chircu  <liviu at opensips dot org>
+	* [06a76bb] :
+
+	Fix NULL pointer deref. in "acc_db_request" when "db_url" is not set
+	(cherry picked from commit 5d61f3789b191c04d0595aed6e1eb94392fc9e0c)
+
+
+2014-02-06  Ovidiu Sas  <osas at voipembedded dot com>
+	* [13f4325] :
+
+	cachedb_mongodb: fix BSON_DATE conversion
+	(cherry picked from commit abdcbaf5731ddea8de37d23a9e7a65b7388db66a)
+
+
+2014-02-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d83619e] :
+
+	Fixed bogus test over the presence of a request route. This was generating bogus warning messages to the logs, but without any negative impact over the actual processing. Credits go to rrb3942 on GITHUB Closes issue #162
+
+
+2014-02-05  Walter Doekes  <walter+github at wjd dot nu>
+	* [26044bf] :
+
+	digest+m_auth: Allow a domain in the digest username.
+	Before this patch, a domain in the digest username was allowed:
+
+	    Digest username="abc@domain", realm="domain"
+
+	but only if the domain is equal to the realm. This was introduced in
+	a92bf789 (Juha Heinanen, Mar. 29 2006).
+
+	The SIP spec. doesn't mention any such restriction.
+
+	This patch undoes that commit and makes sure the whole username is used
+	when authenticating through `pv_www_authorize` and `pv_proxy_authorize`.
+	That makes the following valid:
+
+	    Digest username="abc@domain", realm="something different"
+
+
+2014-01-30  Liviu Chircu  <liviu at opensips dot org>
+	* [d31d332] :
+
+	Fix "mf_process_maxfwd_header" retcode in case of parsing errors
+	(cherry picked from commit 707982e4ec75f33a1feb5fb00b8b1b71ef77a6bf)
+
+
+2014-01-15  vladpaiu  <vladpaiu at opensips dot org>
+	* [a36e379] :
+
+	Merge pull request #160 from rrb3942/localcache_counter_expire
+	Do not reset counter expiration on incr/decr
+	(cherry picked from commit 11a74d7c6dcf1578672b337923729bf3a0aa4a33)
+
+
+2014-01-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8d725d0] :
+
+	"Interrupted system call" on "select" must not be reported as error/warning
+
+
+2014-01-15  Razvan Crainea  <razvan at opensips dot org>
+	* [1e486f8] :
+
+	properly print statistics while running "-V"
+	(cherry picked from commit e8195fc099efbd0af6c1b5ebfced857da5dab31d)
+
+
+2014-01-10  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [8555a91] :
+
+	Merge pull request #156 from lovelle/1.8
+	Add new line in dbt_base.c for info message log
+
+
+2014-01-10  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [d51b53f] :
+
+	Merge pull request #159 from nikbyte/1.10
+	Fixed bugs with processing m4 in fedora init scripts
+
+
+2014-01-10  Nick Altmann  <nick at altmann dot pro>
+	* [5305565] :
+
+	Fixed bugs with processing m4 in fedora init scripts
+
+
+2013-12-20  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [15f435e] :
+
+	mediaproxy: fixed detecting messages without a body
+	(cherry picked from e4a334eaba6e7f402fd26a9e354428b066fc6835)
+
+
+2013-12-20  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [3b1761a] :
+
+	mediaproxy: always parse To header
+	(cherry picked from 359db7f8713921042d14beffd83b5b07e40536fe)
+
+
+2013-12-17  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f2d32ec] :
+
+	Makefile.conf.template: add newline at end of file
+	(cherry picked from commit 55bde1d8e2d3d387a796e2a9ed8fcbd6876185d3)
+
+
+2013-12-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [39c76cf] :
+
+	Fixed bogus triggering of PUBLISHing for non-INVITE sequential requests. Credits go to Damien Sandras Closes pull request #149
+	(cherry picked from commit e0cc9d009151a086f42c08d7f8092b8c7d5835ed)
+
+
+2013-12-15  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [f56a971] :
+
+	Merge pull request #150 from staskobzar/master
+	opensipsctl is calling ds_relaod for dr instead of dr_reload
+	(cherry picked from commit 6b6be3057762fb9d0e98bcea104e02d45a30b4c2)
+
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [fe65336] :
+
+	revert bogus commit for mi_json
+
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [bd38945] :
+
+	remove bogus flushing for mi_json
+	TODO: find a proper way for handling flushing, since the current
+	implementation leads to a infinite loop
+	(cherry picked from commit 0d47a32d18c656a22aa536f5eeb24e3310ade481)
+
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [dd6e62a] :
+
+	mi_json: escape '\\' character
+	also fix incorrect '"' escaping
+	(cherry picked from commit 28b399bb166a786bb0e943ff072606d2d01d96b6)
+
+	Conflicts:
+		modules/mi_json/http_fnc.c
+
+
+2013-12-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0bfe616] :
+
+	Generate proper branch param for the NAT ping requests Credits go to Varun (varunvairavan on GITHUB) Closes #145
+	(cherry picked from commit 1f18541ced045645f8cbda1c73a85fe52597a1db)
+
+
+2013-12-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [52cf171] :
+
+	Merge pull request #135 from bat-modulis/master
+	Renamed permissions parameter 'from_col' to 'pattern_col'
+	(cherry picked from commit 10763008a99a48c0375f1a5bee32bb05231426b0)
+
+
+2013-12-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [9134ebf] :
+
+	Merge pull request #129 from dsandras/ds-pua-expires-refresh-fix
+	Fix bug where a new publication does not extend the desired expire time.
+	(cherry picked from commit ccac0fac1da8ad663e500148fb7f7d9e43e34fd1)
+
+
+2013-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [96921f5] :
+
+	Fixed bogus condition in GT, GTE, LT and LTE script tests. Reported by dcb314 on GITHUB Closing issue #146
+
+
+2013-12-03  Răzvan Crainea  <razvan at opensips dot org>
+	* [6a58fb6] :
+
+	fixed doc avp names
+	(cherry picked from commit f93bbd32775f72a53b050ca95d31d391d91a27e8)
+
+
+2013-12-03  vladpaiu  <vladpaiu at opensips dot org>
+	* [16af319] :
+
+	Merge pull request #141 from shimaore/db_http_timeout_doc
+	Corrected db_http example: the timeout is an integer.
+	(cherry picked from commit 9a807b819927f7bbbe68dd99a483eb6ee9210385)
+
+
+2013-12-02  Razvan Crainea  <razvan at opensips dot org>
+	* [4115aca] :
+
+	drouting: fix drc_table doc default value
+	(cherry picked from commit f25c8e1e520902fde023613cf86ef0cc675d0e32)
+
+
+2013-12-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [8079e64] :
+
+	Properly take into account the dialplan priority in case entry matches both string and regex rules
+	(cherry picked from commit 0625610376acbc29f5a9f6a7a79ec897ebfe53fa)
+
+
+2013-11-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [0ee2e29] :
+
+	pua_dialoginfo: do not blindly load all dialogs  - only dialogs with "dlg_peer" vals should be registered for callbacks
+	(cherry picked from commit c631abce52ee4fdbcc98434f7067ee849089af76)
+
+
+2013-11-28  Răzvan Crainea  <razvan at opensips dot org>
+	* [8fee8bb] :
+
+	Merge pull request #139 from shimaore/pkg_mem_events
+	Allow for `event_pkg_threshold` support.
+
+	Credits go to Stéphane Alnet (shimaore)
+	(cherry picked from commit 25289f0c2b0f2bd3137dc062a031be359d6e8937)
+
+
+2013-11-27  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [37ecc40] :
+
+	fixed README typo
+	(cherry picked from commit 144e112db1f785875a671f57a727393c2a3b7764)
+
+
+2013-11-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [b7438f2] :
+
+	pua: set db_flag to UPDATEDB_FLAG only if there was a previous update (NO_UPDATEDB_FLAG)  - in case of a server restart, if the db_flag went from INSERTDB_FLAG to UPDATEDB_FLAG    the record will be lost because the record is marked as to be updated,    and since there's no record in the db, the update will fail.  - if the db_flag is INSERTDB_FLAG, any updates should leave the flag as is and this    will cause the new record to be properly inserted (and not updated) into the db.
+	(cherry picked from commit 40962ceb87c1c79db5ded5ed36a5ae82bc735bf2)
+
+
+2013-11-24  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [669efaf] :
+
+	Load xcap module, presence_xml depends on it
+
+
+2013-11-24  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [9b786aa] :
+
+	Fixed residential example when using presence
+
+
+2013-11-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [a5d593a] :
+
+	Merge pull request #122 from dsandras/ds-fix-dialog-info-entity
+	This patch fixes the entity URI in XML documents to contain "sip:".
+	(cherry picked from commit 377e7574d411aa974cf469d6df18b6213b43a31f)
+
+
+2013-11-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [f2264be] :
+
+	Merge pull request #131 from dsandras/ds-pua-mi-warning-fix
+	Fixes bug where a refreshed PUBLISH request triggers an error message.
+	(cherry picked from commit ded0559c527f30181e9bbd494f0e63b048059108)
+
+
+2013-11-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [68976ca] :
+
+	Fixed bogus warning because of variables not being reset. Reported by Jeff Pyle, part of fixing issue #126.
+
+
+2013-11-22  Ovidiu Sas  <osas at voipembedded dot com>
+	* [94a4481] :
+
+	uac_registrant: re-register with expires value imposed by the registrar
+	(cherry picked from commit f9a8d985829ed1cce3a2f0985a8c72368d0b3325)
+
+
+2013-11-22  Liviu Chircu  <liviu at opensips dot org>
+	* [aead3a7] :
+
+	Fix the DB representation of message flags in the acc module
+	* storing flags as strings rather than bitmasks prevents flag conflicts
+	  when doing flag modifications in the script, then restarting the proxy
+	* similar usrloc issue was fixed in commit 98b6b0437
+	(cherry picked from commit f90e347e281b555f89ba05226175ac8d9f07c4ed)
+
+
+2013-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [1aab2e8] :
+
+	revert commit ec0d05a
+	dialog variables might be binary, therefore strlen should not be used
+	(cherry picked from commit 7401a7a4a4820706aa05d96d5bebdc93c6db6b40)
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d5f92dd] :
+
+	Do not free the header string as it is part of the lumps (and freed together with the lumps). Reported by Jeff Pyle. Fixing bug #126
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f0816e0] :
+
+	Fixed keeping turns on handling PUBLISHes for the same presentity - when presentity is deleted (due a unPUBLISH) do not do any turn related ops anymore Reported by Damien Sanders
+
+
+2013-11-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [f931f0d] :
+
+	Reset the lump cond flags when the condition evaluates to false.
+	In case there are multiple branches, the conditions can evaluate
+	differently on each branch - which might lead to bad counting of the
+	added lumps ( used by the dialog module for dlg validation )
+	(cherry picked from commit 24f9366858d0568a2eaa231f37d349efd2d70d96)
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e8661d1] :
+
+	Fixed restoring SOCKET info from AVP during failover
+	(cherry picked from commit cc657ffc81e13e66dfba9ffba3e5e9f380e22c1d)
+
+
+2013-11-17  Liviu Chircu  <liviu at opensips dot org>
+	* [a532650] :
+
+	Mask compile-time shift/reduce conflict due to if statement ambiguity
+	(cherry picked from commit c4b8be1cb86ba6d169ae97b221d4986f8ecad9a4)
+
+
+2013-11-15  Razvan Crainea  <razvan at opensips dot org>
+	* [b4cf13a] :
+
+	rework ratelimit distributed queries
+	instead of adding -1 to the counter, use the cachedb_sub function exported by
+	the cachedb module. This prevents ratelimit counters from adding extremely
+	large values for some backends (ex: memcached).
+	Thanks go to Brett Nemeroff for reporting and testing.
+	(cherry picked from commit c06183325e408f47ba4e0a1e1be274fe23581e25)
+
+
+2013-11-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [dcb87bc] :
+
+	Proper usage of build_req_buf_from_sip_req() function - socket and proto are required. Closes Bug 664 on SF.
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [dde0516] :
+
+	Allow drouting module to be used for DID matching only ( where you only have prefixes provisioned, no GWs, and call do_routing with the 'C' flag )
+	(cherry picked from commit 92a2c9d6061462b2c818da0963e805cbfaa62904)
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [86cbfee] :
+
+	Do proper return code to script from cachedb_* functions ( treat 0 as success )
+	(cherry picked from commit 5635d716e0bf1ce8a23688698fe6497fadfe7f23)
+
+
+2013-11-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [50463f0] :
+
+	Also trace the CANCEL requests in case we're doing trace_dialog()
+
+
+2013-10-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f1db3dd] :
+
+	core: enhance error log for un-parsable msg by adding the source IP and port
+	(cherry picked from commit 57e60928db2ba2a406026565e4569155fb811b6b)
+
+
+2013-10-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f792543] :
+
+	Use proper locking function (via the generic locking API) Reported by Max E. Reyes Vera Juarez.
+
+
+2013-10-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [82380ca] :
+
+	Re-install dlg callbacks (for restoring FROM/TO hdr) upon re-loading dialogs on startup. Reported by Jeff Pyle.
+
+
+2013-10-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [5eeab0f] :
+
+	Merge pull request #109 from rrb3942/shutdown_segfault
+	Reset prepared statement between query lists on shutdown
+
+
+2013-10-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [76bcd17] :
+
+	Fixed the weight-based balancing alg. Credits go to Rob Gagnon (rgagnon24)
+
+
+2013-10-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [34d4155] :
+
+	Proper support for BIGINT (as long) in the db_text SQL driver. Many thanks to Jeff Pyle for reporting and troubleshooting this.
+
+
+2013-10-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6b259e6] :
+
+	Removed "auto" flag for the dlg_id in DB_TEXT spec file Reported by Jeff Pyle.
+
+
+2013-10-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aa52721] :
+
+	README files regenerated from XMLs
+
+
+2013-10-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [55197a3] :
+
+	Fixed bad prototype for abort when compiling with TM_TIMER_DEBUG. Reported by Mayama Takeshi Closes issue #105
+
+
+2013-10-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [784e87f] :
+
+	Fixed locking on purging profiles for terminated dialogs - in strange cases of concurancy between provisional and final replies, the profile ops for provisional reply may end up iterating on a deleted list. Reported by Trevor Francis (46labs) Closes issue #102
+
+
+2013-10-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e6f4a51] :
+
+	Fixed accepting "after" changes in lumps attached to the beginning of a del lump Reported by NicK Altmann Solves issues with missing Route hdrs when using the dialog based TH
+
+
+2013-10-18  Earl C. Ruby III  <eruby at knowledgematters dot net>
+	* [403862a] :
+
+	The latest Linux distros from OpenSUSE, Fedora, and other non-Debian based distros no longer add symlinks for libcurses.so -> libncurses.so. Trying to compile menuconfig with -lcurses will not work on these distros, so I changed -lcurses to -lncurses, since -lncurses will work on any modern Linux distro with the ncurses5 libraries installed.
+	See http://stackoverflow.com/questions/1517756/whats-the-difference-between-lcurses-and-lncurses-when-compiling-c-using-ncur for more info.
+	(cherry picked from commit 7ae769dac06146253ea07d8d930d73f7ccaa817a)
+
+
+2013-10-17  Razvan Crainea  <razvan at opensips dot org>
+	* [09ab451] :
+
+	fix ratelimit memory corruption
+	(cherry picked from commit 19cd04ab12fe37a4fd5685e7eabde1d435f8c8b4)
+
+
+2013-10-15  Ovidiu Sas  <osas at voipembedded dot com>
+	* [46dbe2b] :
+
+	uac_auth: fix memory leak reported by Jeff Pyle <jpyle@fidelityvoice.com>  - affected modules: b2b_entities, uac, uac_registrant
+	(cherry picked from commit 868976769543970844d9001a2c68e11a3eb026b0)
+
+
+2013-10-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [62e7692] :
+
+	Make pv_parse_format() more verbous on reporting the causes to fail. Reported by peppolon on IRC
+
+
+2013-10-15  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [9485224] :
+
+	1. Added support for appending parameter string in outbound URI. 2. Removed skip plus feature for called number.
+	(cherry picked from commit 414504077dc72054ae6954f61b998df2ba6ffd53)
+
+
+2013-10-10  Liviu Chircu  <liviu at opensips dot org>
+	* [7e0aa9a] :
+
+	Allow NULL strings to be pushed into binary interface packets
+	(cherry picked from commit 3a334c3042be2fbc5e7e6019c0f9c8ddef4f6922)
+
+
+2013-10-10  Liviu Chircu  <liviu at opensips dot org>
+	* [728bdef] :
+
+	Fix a particular startup crash
+	e.g. when defining only 1 tcp interface while specifying
+	"disable_tcp=true"
+	(cherry picked from commit 101ee782480af07cd9d056b41b9f33d331d21951)
+
+
+2013-10-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [2e6b442] :
+
+	Fixed the re-loading of dlg vars after restart Credits to Nick Altmann
+	(cherry picked from commit ec0d05aaef41b0a4f30419bbab1295eb4bce7e49)
+
+
+2013-10-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [52a732e] :
+
+	Fixed topology_hiding("U") in case of no username in Contact header Credits for report & fix to Nick Altmann
+	(cherry picked from commit b200e11cf0308ab12c9562c552d69b1a78c52576)
+
+
+2013-10-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [606c02e] :
+
+	Fixed is_mod_func_used() (used from is_script_func_used()) to determin if a function is used from script - we need to follow the IF / WHILE / MODULE set of instructions too. Reported by Mayama Takeshi - many thanks for the detailed report on this. Closes issue #98
+
+
+2013-10-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f6dea9f] :
+
+	In DELAYED mode, flush vars & profile to DB at ACK time too - no timer tick between 200 OK and ACK was droping the update operation to DB. Please note that this "bug" had actually no implications, as dialog data is either used from memory cache, either from DB after a restart (and a shutdown flushes everything to DB). Related to issue #97.
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c95e902] :
+
+	handle the signals while waiting for the startup route to end (if not, the main proc will never know if the child running startup route crashed and it will hang for ever during startup)
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8e3b9ee] :
+
+	Merge branch 'master' of github.com:OpenSIPS/opensips
+
+
+2013-10-03  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [2c4b0d3] :
+
+	Fixed menuconfig errors when selecting mi_xmlrpc vs mi_xmlrpc_ng
+	(cherry picked from commit 7ad1db27dd7bea313beeb97eb276c303d8339fab)
+
+
+2013-10-03  liviuchircu  <liviu at opensips dot org>
+	* [184a746] :
+
+	Properly load contact flags even when NAT pinging is disabled
+	(cherry picked from commit 39119d1dadb09f3d0999023e41736548a0e446aa)
+
+
+2013-10-03  liviuchircu  <liviu at opensips dot org>
+	* [8f7e4cb] :
+
+	Fix unpatched assignment in commit b33d4b3f
+	Credits to Nick Altmann for reporting, along with an initial patch
+	(cherry picked from commit bfcc635c4046bc94017be5166bad8867e98d4f1e)
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c9bf445] :
+
+	- doc examples fixed   Reported by "miha" on IRC
+
+
+2013-10-02  liviuchircu  <liviu at opensips dot org>
+	* [1bd459e] :
+
+	"registered" must also populate the 'attr' avp, if defined
+	(cherry picked from commit 286f06f2a21c269aebdbeee81d2f5a264be2518d)
+
+
+2013-10-01  liviuchircu  <liviu at opensips dot org>
+	* [ec236bf] :
+
+	Fix some documentation typos
+	(cherry picked from commit c229d98c3074e3f3c83e99918ed30f9d7e1c8dd6)
+
+
+2013-10-01  liviuchircu  <liviu at opensips dot org>
+	* [6f18ea9] :
+
+	Fix missing GPL headers in event_xmlrpc module
+	(cherry picked from commit 5bcab3923d0c4ed7d8d613544cc6f1a043dc78c3)
+
+
+2013-09-27  liviuchircu  <liviu at opensips dot org>
+	* [036fea2] :
+
+	Fix invalid pointer when fetching the usrloc extra info column
+	(cherry picked from commit f2b283de399a58ed3f09f2b46dc9b92958558175)
+
+
+2013-09-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7a3ef04] :
+
+	- fixed double free when building insert fails (in buffered insert mode)   Reported by Brett Nemeroff
+
+
+2013-09-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [743f48e] :
+
+	- fixed overflow in parsing the content len value   Reported by franklyfox on GITHUB   Closing issue #78
+
+
+2013-09-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [2b22274] :
+
+	Merge pull request #73 from wdoekes/wjd-pua_min_expires_doc
+	pua.c sets int min_expires= 300, not 0 as documentation states.
+
+
+2013-09-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e16f7e1] :
+
+	- fixed updating the index of the last DEL operation - this is essential for deciding which lumps must be skipped (as overlapping with delete parts of the message)   Credits go to Nick Altmann for reporting and helping with troubleshooting.   Closes issue #79
+
+
+2013-09-17  Damien Sandras  <dsandras at beip dot be>
+	* [763ea32] :
+
+	Fix PUA module so that it sends a final PUBLISH on expiration.
+	A final PUBLISH with expires=0 is now generated when a publication has
+	expired. This will trigger the transmission of a final state NOTIFY.
+
+	Cherry picked from: c5a57a8d39cf568d6558332ca71ea8344a5a4f57
+
+
+2013-09-16  liviuchircu  <liviu at opensips dot org>
+	* [85cdc6d] :
+
+	Fix evi crash when defining more than 10 events
+	(cherry picked from commit ba04cba6d5f7bc945bbc42d2e46694639fea8b79)
+
+
+2013-09-10  Razvan Crainea  <razvan at opensips dot org>
+	* [8d5950c] :
+
+	removed the beta flag
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bfd86ab] :
+
+	- UAC module does not load (no dependency) on UAC_AUTH if the uac_auth() function is not used. - UAC module does not load RR and DIALOG (with further dependencies on the params of those modules) if no FROM/TO replace ops are done.
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [da85c3a] :
+
+	- new functions added to help a module to check if its functions are used from the script (we cannot rely on the fixup functions as we have functions without parameters or need for fixup). Such function is needed for fixing dependencies between modules (to follow up)
+
+
+2013-09-04  liviuchircu  <liviu at opensips dot org>
+	* [bc3c8e8] :
+
+	Fix: allow rest_client functions in onreply_route
+	Credits to Jayesh Nambiar for reporting
+	(cherry picked from commit 6f048e038c4ae6e3e620d1b5f17cf1880fdef246)
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0ebb2f6] :
+
+	- fixed CANCEL matching in B2B
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [512aaca] :
+
+	-  Gracefully detect if the uac_auth modules is available for usage in b2b_entities modules - do not through an error message but rather an info one, as find the uac_auth module is optional.
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4363dbc] :
+
+	- when starting the FR timer, it should not override any previous setting of a FR or FR_INV timers.   Solves Issue #25 (reported and troubleshooted by Mayama Takeshi) when a very fast 100 reply may stop retransmissions, but brake the updating of fr timer from FR to FR_INV state.
+
+
+2013-09-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [25629fc] :
+
+	- fixed how lumps can overlap on the edge - an "add" just next to a "delete"   Reported by Saul Ibarra Corretge   Closes issue #59
+
+
+2013-09-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b01c688] :
+
+	 - fixed incomplete function call (resulted from the merged commit 09a291e)
+
+
+2013-09-03  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [a039ec9] :
+
+	Merge pull request #62 from dsandras/ds-dialoginfo-notifications-fixes
+	Fixed RFC 4235 notifications compliance.
+
+
+2013-09-03  liviuchircu  <liviu at opensips dot org>
+	* [63b158d] :
+
+	Fix several usrloc named flag issues
+	- fix get_all_db_ucontacts() lookup logic to work with named flags
+	- fix "Cflags" row of MI *ul_dump* command
+	- fix DB contact update function to properly store the flags
+	(cherry picked from commit b33d4b3f019c157a5e63b21a846ad9f891da559e)
+
+
+2013-09-02  liviuchircu  <liviu at opensips dot org>
+	* [444207b] :
+
+	Fix replication of dialog delete events
+	- instead of sending "deleted" packets based on hash delete operations,
+	they are now sent when a dialog changes state to "DLG_STATE_DELETED"
+	- this prevents the receiving instance from replicating the event again
+	(cherry picked from commit 5a63dcdf87c8d69c3dc9e5d6330f3d58953c28b5)
+
+
+2013-08-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [21b91ad] :
+
+	- fixed NULL sockets in external scenarios (this leads to crashing when building the contact hdr)   Reported by dexteruk on IRC .
+
+
+2013-08-30  liviuchircu  <liviu at opensips dot org>
+	* [6ee40a5] :
+
+	Fix compilation issue introduced in commit a9fcd84c
+	(cherry picked from commit 6f8244921231ed837f1d54204cf6b616c33cabc4)
+
+
+2013-08-29  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [14b667a] :
+
+	Merge pull request #68 from wdoekes/wjd-fix_nathelper_memleak
+	Fix memleak in nathelper natping when "failed to fetch contacts".
+
+
+2013-08-29  liviuchircu  <liviu at opensips dot org>
+	* [a9fcd84] :
+
+	Fix replicated dialog profile management in distributed systems
+	- replication-receiving instances must not do any profile-related
+	  DB queries
+	(cherry picked from commit 20c92450fac2fd45506f759f7b19473a3dc657f9)
+
+
+2013-08-29  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [017274c] :
+
+	Merge pull request #58 from saghul/pua_double_free
+	Fixed double free issue in pua module
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f44264a] :
+
+	- complete port of pull request #34
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e57330a] :
+
+	- complete backport from 1.8 of pull request #15
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [062baa3] :
+
+	- complete backport from 1.8 of pull request #15
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fa9cb4a] :
+
+	- removed unused variable
+
+
+2013-08-28  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [86a6b3c] :
+
+	Fixed bug introduced by previous commit : 	- downstream BYEs should go to 200OK leg in order to trigger dialog termination 	- upstream BYEs have no such limitation ( there's only one caller leg :) )
+	(cherry picked from commit 18257f33e71061828493f4232b9dbd8dd7fa6729)
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8a45cd6] :
+
+	- proper backport of all changes from 1.8 branch
+
+
+2013-08-27  liviuchircu  <liviu at opensips dot org>
+	* [0d38a5a] :
+
+	Fix: also run child_init for bin listeners
+	- bin listeners are now identified by the PROC_BIN rank
+	- this way, only the UDP listeners receive positive ranks
+	(cherry picked from commit 389de529cc7865a475823365cdba90f1a920c1a5)
+
+
+2013-08-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5341c98] :
+
+	- BYE requests received in confirmed state should terminate the dialog only if they match the TO-tag from 200 OK INVITE.   This affects parallel forking scenarios where rejected branches are terminated via BYE by caller.   Thanks for reporting and testing to Marco Hierl.
+
+
+2013-08-14  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [34fe501] :
+
+	pike: correct spelling
+	(cherry picked from commit 879eacbb5e2f90f1dba2f9b23165e725a5c754d4)
+
+
+2013-08-14  liviuchircu  <liviu at opensips dot org>
+	* [a9c462d] :
+
+	Fix: sdp_free() bug introduced in commit bde8c0a045
+	Credits to csollet for reporting.
+	(cherry picked from commit a5e9f4bc818a94b282e7ccd10f44dec2d74a794e)
+
+
+2013-08-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [c55408b] :
+
+	Merge pull request #38 from fabriziopicconi/1.10
+	wrong mpath folder (detected by rpmbuild)
+
+
+2013-08-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [eb9cbfc] :
+
+	Merge pull request #40 from fabriziopicconi/patch-7
+	Update to 1.10
+
+
+2013-08-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [649c5e7] :
+
+	Merge pull request #53 from nikbyte/1.10
+	yum package specs / init-scripts changes for el/fedora
+
+
+2013-08-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5392af6] :
+
+	fixed setting the default min_expires and max_expires module parameters. Credits go to MayamaTakeshi.
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [30fb94b] :
+
+	add m4 config support for el/fedora distros, spec file synced with build server
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [4597948] :
+
+	add m4 config support for debian distros
+
+
+2013-08-13  Damien Sandras  <dsandras at beip dot be>
+	* [c13a50d] :
+
+	Added documentation for recent changes.
+
+
+2013-08-13  Damien Sandras  <dsandras at beip dot be>
+	* [9d4bc28] :
+
+	PUBLISH requests are now handled in the same order than received.
+	That is specifically useful for pua dialoginfo which was generating dialog
+	info notifications that were handled in the wrong order with that patch.
+	PUBLISH with older documents were sometimes treated after PUBLISH requests
+	with newer documents, leading to incoherent states.
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [8a1c5d9] :
+
+	porting of 8ed2ed: spec file for el/fedora synced with build server
+	spec file for el/fedora synced with build server
+
+
+2013-08-13  vladpaiu  <vladpaiu at opensips dot org>
+	* [6ff91a1] :
+
+	Merge pull request #47 from fabriziopicconi/patch-9
+	remove warning compilation
+
+
+2013-08-12  vladpaiu  <vladpaiu at opensips dot org>
+	* [ddd0c34] :
+
+	Merge pull request #49 from fabriziopicconi/patch-11
+	improved parallel compilation
+
+
+2013-08-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [6b13b19] :
+
+	Fixed double free issue when reading multiple SIP messages in one TCP chunk Do proper zero-ing out of the tcp_req structure
+	(cherry picked from commit db24ec00b0d1c48ea109c9609bed81d1f8efa014)
+
+
+2013-08-11  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [e8c3c82] :
+
+	Increased menuconfig parsing buffer to 1024 (Reported by Richard Revels)
+	Removed mi_http from the excluded modules list - has no external dependencies
+	(cherry picked from commit 41157e7b911bfb896f4f0a9cb2dc1049a0c2b0c4)
+
+
+2013-08-11  saghul  <saghul at gmail dot com>
+	* [51c5504] :
+
+	Fixed compilation in systems without EPOLL
+	(cherry picked from 7d727aafa93f79421304121d95f2a038bdbf887c)
+
+
+2013-08-09  liviuchircu  <liviu at opensips dot org>
+	* [4b6531e] :
+
+	Fix: mathops internal parsing bug
+	Credits to Jayesh Nambiar for reporting
+	(cherry picked from commit aeddd311d29c9d5cae5017bd59674031089b5574)
+
+
+2013-08-08  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [50b3436] :
+
+	Fixed warning Fixed compilation error for libcurl < 7.16.2 ( due to CURLOPT_TIMEOUT_MS )
+	(cherry picked from commit 1ee176a5fadb872cc5015141a118f0398bcb1f8f)
+
+
+2013-08-08  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [33134fe] :
+
+	parallel compilation
+	speedup compilation on multicore/multicpu machines
+
+
+2013-08-08  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [5d253f8] :
+
+	parallel compilation
+	speeduo compilation on multicore/multicpu machines
+
+
+2013-08-08  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [314537b] :
+
+	remove warning compilation
+	remove warning: ‘ret’ may be used uninitialized in this function
+
+
+2013-08-07  saghul  <saghul at gmail dot com>
+	* [09757ce] :
+
+	Cleanup menucnfig files when doing make proper
+	(cherry picked from commit 4d4d3dbefc084db00c122e499b9299240ed6e0d5)
+
+
+2013-08-07  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [4626525] :
+
+	Fixed crash if send_subscribe fails early
+	In that case presentity is still NULL, check for it
+	(cherry picked from commit 6e3b16ec6d3fe59b5a1b415b548394be401e69af)
+
+
+2013-08-06  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3509fc9] :
+
+	Properly mentioned Steve Frécinaux from Be IP as the module creator
+	(cherry picked from commit 8f642bab2a47f29c2984f286279f5be4d0d5815a)
+
+
+2013-08-06  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [4bce0cb] :
+
+	Fixed goes_to_gw, is_from_gw and dr_is_gw so that they accept negative gateway types ( to match all gw types)
+	(cherry picked from commit 3bfd505b72d46ea31930efe31b52e3bd5ea477de)
+
+
+2013-08-06  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [5af905e] :
+
+	Update to 1.10
+	Some new rpm optional modules are added:
+	mi_xmlrpc_ng,sngtc,db_cachedb,mathops,rest_client
+
+
+2013-08-06  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [a031014] :
+
+	wrong mpath folder (detected by rpmbuild)
+
+
 =========================== Release 1.10.0 ==============================
 
 2013-08-05  Liviu Chircu  <liviu at opensips dot org>
