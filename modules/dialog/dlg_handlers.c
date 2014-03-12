@@ -389,6 +389,7 @@ routing_info:
 					((t->relaied_reply_branch>=0)?
 					(t->uac[t->relaied_reply_branch].added_rr):0);
 
+		LM_DBG("Skipping %d ,%d, %d, %d \n",skip_rrs, dlg->from_rr_nb,t->relaied_reply_branch,t->uac[t->relaied_reply_branch].added_rr);
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
 		dlg_update_routing( dlg, leg, &rr_set, &contact );
 		if( rr_set.s )
@@ -1547,11 +1548,14 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 		buf = req->buf;
 
 		if (req->route) {
-			for (it=req->route;it;it=it->sibling)
+			for (it=req->route;it;it=it->sibling) {
+				if (it->parsed && ((rr_t*)it->parsed)->deleted)
+					continue;
 				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
 					LM_ERR("del_lump failed \n");
 					return -1;
 				}
+			}
 		}
 
 		if ( leg->route_set.len !=0 && leg->route_set.s) {
@@ -1614,6 +1618,8 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 
 		if (req->route) {
 			for (it=req->route;it;it=it->sibling)
+				if (it->parsed && ((rr_t*)it->parsed)->deleted)
+					continue;
 				if ((lmp = del_lump(req,it->name.s - buf,it->len,HDR_ROUTE_T)) == 0) {
 					LM_ERR("del_lump failed \n");
 					return -1;
