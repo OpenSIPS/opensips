@@ -46,36 +46,41 @@ Anca-Maria Vamanu
               1.3.5. drc_table(str)
               1.3.6. ruri_avp (str)
               1.3.7. gw_id_avp (str)
-              1.3.8. gw_attrs_avp (str)
-              1.3.9. gw_priprefix_avp (str)
-              1.3.10. rule_id_avp (str)
-              1.3.11. rule_attrs_avp (str)
-              1.3.12. rule_prefix_avp (str)
-              1.3.13. carrier_id_avp (str)
-              1.3.14. carrier_attrs_avp (str)
-              1.3.15. define_blacklist (str)
-              1.3.16. default_group (int)
-              1.3.17. force_dns (int)
-              1.3.18. probing_interval (integer)
-              1.3.19. probing_method (string)
-              1.3.20. probing_from (string)
-              1.3.21. probing_reply_codes (string)
-              1.3.22. use_domain (int)
-              1.3.23. drg_user_col (str)
-              1.3.24. drg_domain_col (str)
-              1.3.25. drg_grpid_col (str)
+              1.3.8. gw_priprefix_avp (str)
+              1.3.9. rule_id_avp (str)
+              1.3.10. rule_prefix_avp (str)
+              1.3.11. carrier_id_avp (str)
+              1.3.12. define_blacklist (str)
+              1.3.13. default_group (int)
+              1.3.14. force_dns (int)
+              1.3.15. probing_interval (integer)
+              1.3.16. probing_method (string)
+              1.3.17. probing_from (string)
+              1.3.18. probing_reply_codes (string)
+              1.3.19. use_domain (int)
+              1.3.20. drg_user_col (str)
+              1.3.21. drg_domain_col (str)
+              1.3.22. drg_grpid_col (str)
 
         1.4. Exported Functions
 
-              1.4.1. do_routing([groupID[, flags[,
-                      gw_whitelist]]])
+              1.4.1. do_routing([groupID], [flags],
+                      [gw_whitelist], [rule_attrs_pvar],
+                      [gw_attrs_pvar], [carrier_attrs_pvar])
 
-              1.4.2. route_to_carrier(carrier_id)
-              1.4.3. route_to_gw(gw_id)
-              1.4.4. use_next_gw()/next_routing()
-              1.4.5. goes_to_gw([type[, flags]])
-              1.4.6. is_from_gw( [type, [flag]])
-              1.4.7. dr_is_gw(src_pv, [type, [flag]])
+              1.4.2. route_to_carrier(carrier_id, [gw_attrs_pvar],
+                      [carrier_attrs_pvar])
+
+              1.4.3. route_to_gw(gw_id, [gw_attrs_pvar])
+              1.4.4. use_next_gw([rule_attrs_pvar],
+                      [gw_attrs_pvar],
+                      [carrier_attrs_pvar])/next_routing()
+
+              1.4.5. goes_to_gw([type], [flags], [gw_attrs_pvar])
+              1.4.6. is_from_gw([type], [flag], [gw_attrs_pvar])
+              1.4.7. dr_is_gw(src_avp, [type], [flag],
+                      [gw_attrs_pvar])
+
               1.4.8. dr_disable()
 
         1.5. Exported MI Functions
@@ -97,34 +102,31 @@ Anca-Maria Vamanu
    1.5. Set drc_table parameter
    1.6. Set ruri_avp parameter
    1.7. Set gw_id_avp parameter
-   1.8. Set gw_attrs_avp parameter
-   1.9. Set gw_priprefix_avp parameter
-   1.10. Set rule_id_avp parameter
-   1.11. Set rule_attrs_avp parameter
-   1.12. Set rule_prefix_avp parameter
-   1.13. Set carrier_id_avp parameter
-   1.14. Set carrier_attrs_avp parameter
-   1.15. Set define_blacklist parameter
-   1.16. Set default_group parameter
-   1.17. Set force_dns parameter
-   1.18. Set probing_interval parameter
-   1.19. Set probing_method parameter
-   1.20. Set probing_from parameter
-   1.21. Set probing_reply_codes parameter
-   1.22. Set use_domain parameter
-   1.23. Set drg_user_col parameter
-   1.24. Set drg_domain_col parameter
-   1.25. Set drg_grpid_col parameter
-   1.26. do_routing usage
-   1.27. route_to_carrier usage
-   1.28. route_to_gw usage
-   1.29. use_next_gw usage
-   1.30. goes_to_gw usage
-   1.31. is_from_gw usage
-   1.32. dr_is_gw usage
-   1.33. dr_disable() usage
-   1.34. dr_gw_status usage
-   1.35. dr_carrier_status usage
+   1.8. Set gw_priprefix_avp parameter
+   1.9. Set rule_id_avp parameter
+   1.10. Set rule_prefix_avp parameter
+   1.11. Set carrier_id_avp parameter
+   1.12. Set define_blacklist parameter
+   1.13. Set default_group parameter
+   1.14. Set force_dns parameter
+   1.15. Set probing_interval parameter
+   1.16. Set probing_method parameter
+   1.17. Set probing_from parameter
+   1.18. Set probing_reply_codes parameter
+   1.19. Set use_domain parameter
+   1.20. Set drg_user_col parameter
+   1.21. Set drg_domain_col parameter
+   1.22. Set drg_grpid_col parameter
+   1.23. do_routing usage
+   1.24. route_to_carrier usage
+   1.25. route_to_gw usage
+   1.26. use_next_gw usage
+   1.27. goes_to_gw usage
+   1.28. is_from_gw usage
+   1.29. dr_is_gw usage
+   1.30. dr_disable() usage
+   1.31. dr_gw_status usage
+   1.32. dr_carrier_status usage
 
 Chapter 1. Admin Guide
 
@@ -469,22 +471,7 @@ modparam("drouting", "gw_id_avp", '$avp(gw_id)')
 modparam("drouting", "gw_id_avp", '$avp(334)')
 ...
 
-1.3.8. gw_attrs_avp (str)
-
-   The name of the avp for storing the attributes of the current
-   selected destination/gateway - once a new destination is
-   selected (via the use_next_gw() function), the AVP will be
-   updated with the attrs of the new used destination.
-
-   Default value is “NULL”.
-
-   Example 1.8. Set gw_attrs_avp parameter
-...
-modparam("drouting", "gw_attrs_avp", '$avp(gw_attrs)')
-modparam("drouting", "gw_attrs_avp", '$avp(67)')
-...
-
-1.3.9. gw_priprefix_avp (str)
+1.3.8. gw_priprefix_avp (str)
 
    The name of the avp for storing the PRI prefix of the current
    selected destination/gateway - once a new destination is
@@ -493,74 +480,49 @@ modparam("drouting", "gw_attrs_avp", '$avp(67)')
 
    Default value is “NULL”.
 
-   Example 1.9. Set gw_priprefix_avp parameter
+   Example 1.8. Set gw_priprefix_avp parameter
 ...
 modparam("drouting", "gw_priprefix_avp", '$avp(gw_priprefix)')
 ...
 
-1.3.10. rule_id_avp (str)
+1.3.9. rule_id_avp (str)
 
    The name of the avp for storing the id of the current matched
    routing rule (see dr_rules table).
 
    Default value is “NULL”.
 
-   Example 1.10. Set rule_id_avp parameter
+   Example 1.9. Set rule_id_avp parameter
 ...
 modparam("drouting", "rule_id_avp", '$avp(rule_id)')
 modparam("drouting", "rule_id_avp", '$avp(335)')
 ...
 
-1.3.11. rule_attrs_avp (str)
-
-   The name of the avp for storing the attributes of the current
-   matched routing rule (see dr_rules table).
-
-   Default value is “NULL”.
-
-   Example 1.11. Set rule_attrs_avp parameter
-...
-modparam("drouting", "rule_attrs_avp", '$avp(rule_attrs)')
-modparam("drouting", "rule_attrs_avp", '$avp(66)')
-...
-
-1.3.12. rule_prefix_avp (str)
+1.3.10. rule_prefix_avp (str)
 
    The actual prefix that matched the routing rule (the part from
    RURI username that matched the routing rule).
 
    Default value is “NULL”.
 
-   Example 1.12. Set rule_prefix_avp parameter
+   Example 1.10. Set rule_prefix_avp parameter
 ...
 modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 ...
 
-1.3.13. carrier_id_avp (str)
+1.3.11. carrier_id_avp (str)
 
    AVP to be populate with the ID string for the carrier the
    current GW belongs to.
 
    Default value is “NULL”.
 
-   Example 1.13. Set carrier_id_avp parameter
+   Example 1.11. Set carrier_id_avp parameter
 ...
 modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 ...
 
-1.3.14. carrier_attrs_avp (str)
-
-   AVP to be populate with the attributes string for the carrier
-   the current GW belongs to.
-
-   Default value is “NULL”.
-
-   Example 1.14. Set carrier_attrs_avp parameter
-...
-modparam("drouting", "carrier_attrs_avp", '$avp(carrier_attrs)')
-...
-
-1.3.15. define_blacklist (str)
+1.3.12. define_blacklist (str)
 
    Defines a backlist based on a list of GW types - the list will
    contain the IPs (no port, all protocols) of the GWs with the
@@ -570,25 +532,25 @@ modparam("drouting", "carrier_attrs_avp", '$avp(carrier_attrs)')
 
    Default value is “NULL”.
 
-   Example 1.15. Set define_blacklist parameter
+   Example 1.12. Set define_blacklist parameter
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
 ...
 
-1.3.16. default_group (int)
+1.3.13. default_group (int)
 
    Group to be used if the caller (FROM user) is not found in the
    GROUP table.
 
    Default value is “NONE”.
 
-   Example 1.16. Set default_group parameter
+   Example 1.13. Set default_group parameter
 ...
 modparam("drouting", "default_group", 4)
 ...
 
-1.3.17. force_dns (int)
+1.3.14. force_dns (int)
 
    Force DNS resolving of GW/destination names (if not IPs) during
    startup. If not enabled, the GW name will be blindly used
@@ -596,12 +558,12 @@ modparam("drouting", "default_group", 4)
 
    Default value is “1 (enabled)”.
 
-   Example 1.17. Set force_dns parameter
+   Example 1.14. Set force_dns parameter
 ...
 modparam("drouting", "force_dns", 0)
 ...
 
-1.3.18. probing_interval (integer)
+1.3.15. probing_interval (integer)
 
    How often (in seconds) the probing of a destination should be
    done. If set to 0, the probing will be disabled as
@@ -609,34 +571,34 @@ modparam("drouting", "force_dns", 0)
 
    Default value is “30”.
 
-   Example 1.18. Set probing_interval parameter
+   Example 1.15. Set probing_interval parameter
 ...
 modparam("drouting", "probing_interval", 60)
 ...
 
-1.3.19. probing_method (string)
+1.3.16. probing_method (string)
 
    The SIP method to be used for the probing requests.
 
    Default value is “"OPTIONS"”.
 
-   Example 1.19. Set probing_method parameter
+   Example 1.16. Set probing_method parameter
 ...
 modparam("drouting", "probing_method", "INFO")
 ...
 
-1.3.20. probing_from (string)
+1.3.17. probing_from (string)
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
    Default value is “"sip:prober@localhost"”.
 
-   Example 1.20. Set probing_from parameter
+   Example 1.17. Set probing_from parameter
 ...
 modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 ...
 
-1.3.21. probing_reply_codes (string)
+1.3.18. probing_reply_codes (string)
 
    A comma separted list of SIP reply codes. The codes defined
    here will be considered as valid reply codes for probing
@@ -644,62 +606,63 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
    Default value is “NULL”.
 
-   Example 1.21. Set probing_reply_codes parameter
+   Example 1.18. Set probing_reply_codes parameter
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
 
-1.3.22. use_domain (int)
+1.3.19. use_domain (int)
 
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
    Default value is “1”.
 
-   Example 1.22. Set use_domain parameter
+   Example 1.19. Set use_domain parameter
 ...
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.23. drg_user_col (str)
+1.3.20. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is “username”.
 
-   Example 1.23. Set drg_user_col parameter
+   Example 1.20. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.24. drg_domain_col (str)
+1.3.21. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is “domain”.
 
-   Example 1.24. Set drg_domain_col parameter
+   Example 1.21. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.25. drg_grpid_col (str)
+1.3.22. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is “groupid”.
 
-   Example 1.25. Set drg_grpid_col parameter
+   Example 1.22. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
 1.4. Exported Functions
 
-1.4.1.  do_routing([groupID[, flags[, gw_whitelist]]])
+1.4.1.  do_routing([groupID], [flags], [gw_whitelist],
+[rule_attrs_pvar], [gw_attrs_pvar], [carrier_attrs_pvar])
 
    Function to trigger routing of the message according to the
    rules in the database table and the configured parameters.
@@ -707,13 +670,15 @@ modparam("drouting", "drg_grpid_col", "grpid")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE.
 
-   The function can take two optional parameters:
+   All parameters are optional. Any of them may be ignored,
+   provided the necessary separation marks "," are properly
+   placed.
      * groupID - the routing group the caller belongs to - this
        may be a static numerical value or an AVP specification
        (value must be numerical type, string types are ignored!).
        If none specified, the function will automatically try to
        query the dr_group table to get this information;
-     * flags - Controlls the behavior of the function. Possible
+     * flags - Controls the behavior of the function. Possible
        flags are:
           + W - Instead of using the destination (from the rule
             definition) in the given order, sort them based on
@@ -731,10 +696,20 @@ modparam("drouting", "drg_grpid_col", "grpid")
             info (no GW is set, the RURI is not altered)
      * gw_whitelist - a comma separated white list of gateways.
        This will force routing over, at most, this list of
-       carriers or gateways (an intersection with the results of
-       the search through the rules).
+       carriers or gateways (in other words, the whitelist will be
+       intersected with the results of the search through the
+       rules).
+     * rule_attrs_pvar (output, optional)- a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched dynamic routing rule.
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched gateway.
+     * carrier_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched carrier.
 
-   Example 1.26. do_routing usage
+   Example 1.23. do_routing usage
 ...
 # all groups, sort on order
 do_routing();
@@ -746,13 +721,15 @@ do_routing("0");
 do_routing("$avp(10)");
 ...
 # all groups, sort on weights
-do_routing("","W");
+do_routing("", "W");
 ...
-# group id 2, sort on order, fallback rule
-do_routing("2","F");
+# group id 2, sort on order, fallback rule and also return the gateway a
+ttributes
+do_routing("2", "F", , , "$var(gw_attributes)");
 ...
 
-1.4.2.  route_to_carrier(carrier_id)
+1.4.2.  route_to_carrier(carrier_id, [gw_attrs_pvar],
+[carrier_attrs_pvar])
 
    Function to trigger the direct routing to a given carrier. In
    this case the routing is not done prefix based, but carrier
@@ -762,19 +739,26 @@ do_routing("2","F");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE..
 
-   Function takes a single mandatory parameter, the ID of the
-   carrier to be used (variables are accepted).
+     * carrier_id (mandatory) - the ID (name) of the carrier to be
+       used; pseudo-variables are accepted
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the currently matched gateway of this carrier.
+     * carrier_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of this carrier.
 
-   Example 1.27. route_to_carrier usage
+   Example 1.24. route_to_carrier usage
 ...
-if ( route_to_carrier("my_top_carrier") ) {
+if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
+        xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
         t_on_failure("next_gw");
         t_relay();
         exit;
 }
 ...
 
-1.4.3.  route_to_gw(gw_id)
+1.4.3.  route_to_gw(gw_id, [gw_attrs_pvar])
 
    Function to trigger the direct routing to a given gateway (or
    list of gateways). Attributes and per-gw preocessing will be
@@ -783,28 +767,33 @@ if ( route_to_carrier("my_top_carrier") ) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE.
 
-   Function takes a single mandatory parameter, the ID (or list)
-   of the gateway to be used (variables are accepted). If a list
-   is used, the elements must be comma separated.
+     * gw_id (mandatory) - the ID / comma-separated list of IDs of
+       the gateway(s) to be used. pseudo-variables are accepted
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the currently matched gateway.
 
-   Example 1.28. route_to_gw usage
+   Example 1.25. route_to_gw usage
 ...
 if ( route_to_gw("gw_europe") ) {
         t_relay();
         exit;
 }
 ...
-if ( route_to_gw("gw1,gw2,gw3") ) {
+if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
+        xlog("Relaying to first gateway from our list - $var(gw_attrs)\n
+");
         t_relay();
         exit;
 }
 ...
 
-1.4.4.  use_next_gw()/next_routing()
+1.4.4.  use_next_gw([rule_attrs_pvar], [gw_attrs_pvar],
+[carrier_attrs_pvar])/next_routing()
 
    The function takes the next available destination (set by
-   do_routing, as alternative destinations) and push it into RURI.
-   Note that the function just sets the RURI (nothing more).
+   do_routing, as alternative destinations) and pushes it into the
+   RURI. Note that the function just sets the RURI (nothing more).
 
    If a new RURI is set, the used destination is removed from the
    pending set of alternative destinations.
@@ -814,17 +803,36 @@ if ( route_to_gw("gw1,gw2,gw3") ) {
 
    The function returns true only if a new RURI was set. False is
    returned is no other alternative destinations are found or in
-   case of internal processing error.
+   case of an internal processing error. It may take the following
+   optional parameters:
 
-   Example 1.29. use_next_gw usage
+     * rule_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched dynamic routing rule.
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched gateway.
+     * carrier_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched carrier.
+
+   Example 1.26. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
         exit;
 }
 ...
+# Also fetch the carrier attributes, if any
+if (use_next_gw(, , "$var(carrier_attrs)")) {
+        xlog("Carrier attributes of current gateway: $var(carrier_attrs)
+\n");
+        t_relay();
+        exit;
+}
+...
 
-1.4.5.  goes_to_gw([type[, flags]])
+1.4.5.  goes_to_gw([type], [flags], [gw_attrs_pvar])
 
    Function returns true if the destination of the current request
    (destination URI or Request URI) points (as IP) to one of the
@@ -836,33 +844,37 @@ if (use_next_gw()) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   The function can take two optional parameters:
-     * type (optional) - GW/destination type to be checked; a
-       negative value (ex: -1) means match any group;
+   All parameters are optional. Any of them may be ignored,
+   provided the necessary separation marks "," are properly
+   placed.
+     * type (optional) - GW/destination type to be checked; when
+       ommiting this parameter or specifying a negative value i.e.
+       "-1", matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
             defined by the GW
           + 'p' (Prefix) - apply to the username of RURI the
             prefix defined by the GW
-          + 'a' (Attributes) - return the attributes string
-            defined by the GW into gw_attrs_avp AVP
           + 'i' (Gateway ID) - return the gateway id into
             gw_id_avp AVP
           + 'n' (Ignore port) - ignores port number during
             matching
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched gateway.
 
-   Example 1.30. goes_to_gw usage
+   Example 1.27. goes_to_gw usage
 ...
-if (goes_to_gw("1")) {
+if (goes_to_gw("1", , "$var(gw_attrs)")) {
         sl_send_reply("403","Forbidden");
         exit;
 }
 ...
 
-1.4.6.  is_from_gw( [type, [flag]])
+1.4.6.  is_from_gw([type], [flag], [gw_attrs_pvar])
 
    The function checks if the sender of the message is a gateway
    from a certain group.
@@ -870,31 +882,35 @@ if (goes_to_gw("1")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    ONREPLY_ROUTE.
 
-   The function can take two optional parameters:
-     * type (optional) - GW/destination type to be checked; a
-       negative value (ex: -1) means match any group;
+   All parameters are optional. Any of them may be ignored,
+   provided the necessary separation marks "," are properly
+   placed.
+     * type (optional) - GW/destination type to be checked; when
+       ommiting this parameter or specifying a negative value i.e.
+       "-1", matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
             defined by the GW
           + 'p' (Prefix) - apply to the username of RURI the
             prefix defined by the GW
-          + 'a' (Attributes) - return the attributes string
-            defined by the GW into gw_attrs_avp AVP
           + 'i' (Gateway ID) - return the gateway id into
             gw_id_avp AVP
           + 'n' (Ignore port) - ignores port number during
             matching
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched gateway.
 
-   Example 1.31. is_from_gw usage
+   Example 1.28. is_from_gw usage
 ...
 if (is_from_gw("3","1") {
 }
 ...
 
-1.4.7.  dr_is_gw(src_pv, [type, [flag]])
+1.4.7.  dr_is_gw(src_avp, [type], [flag], [gw_attrs_pvar])
 
    The function checks if the ip address in pvar src_pv is a
    gateway from a certain group.
@@ -904,23 +920,27 @@ if (is_from_gw("3","1") {
    TIMER_ROUTE and EVENT_ROUTE.
 
    Meaning of the parameters is as follows:
-     * src_pv (mandatory) - pvar containing SIP URI. May be a
-       script var or avp.
-     * type (optional) - GW/destination type to be checked; a
-       negative value (ex: -1) means match any group;
+     * src_avp (mandatory) - avp containing a SIP URI. Does not
+       support other OpenSIPS pseudo-variables.
+     * type (optional) - GW/destination type to be checked; when
+       ommiting this parameter or specifying a negative value i.e.
+       "-1", matching will be done against all groups
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
             defined by the GW
           + 'p' (Prefix) - apply to the username of RURI the
             prefix defined by the GW
-          + 'a' (Attributes) - return the attributes string
-            defined by the GW into gw_attrs_avp pvar
           + 'i' (Gateway ID) - return the gateway id into
             gw_id_avp pvar
           + 'n' (Ignore port) - ignores port number
+          + 'c' (Carrier ID) - return the carrier id into
+            carrier_id_avp AVP
+     * gw_attrs_pvar (output, optional) - a writable
+       pseudo-variable which will be populated with the attributes
+       of the matched gateway.
 
-   Example 1.32. dr_is_gw usage
+   Example 1.29. dr_is_gw usage
 ...
 if (dr_is_gw("$avp(uac)","3") {
 }
@@ -936,7 +956,7 @@ if (dr_is_gw("$avp(uac)","3") {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.33. dr_disable() usage
+   Example 1.30. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -974,7 +994,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 status (optional)
                 _empty_line_
 
-   Example 1.34. dr_gw_status usage
+   Example 1.31. dr_gw_status usage
 $ ./opensipsctl fifo dr_gw_status 2
 Enabled:: no
 $ ./opensipsctl fifo dr_gw_status 2 1
@@ -998,7 +1018,7 @@ Enabled:: yes
                 status (optional)
                 _empty_line_
 
-   Example 1.35. dr_carrier_status usage
+   Example 1.32. dr_carrier_status usage
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1
