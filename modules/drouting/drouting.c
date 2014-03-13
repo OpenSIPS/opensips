@@ -95,21 +95,21 @@ static db_func_t dr_dbf;        /* DB functions */
 static rt_data_t **rdata = 0;
 
 
-/* AVP used to store serial RURIs */
+/* internal AVP used to store serial RURIs */
 static int ruri_avp = -1;
-static str ruri_avp_spec = str_init("$avp(0xad346b2f)");
+static str ruri_avp_spec = str_init("$avp(___dr_ruri__)");
 
-/* AVP used to store GW IDs */
+/* internal AVP used to store GW IDs */
 static int gw_id_avp = -1;
-static str gw_id_avp_spec = str_init("$avp(0xad346b30)");
+static str gw_id_avp_spec = str_init("$avp(___dr_gw_id__)");
 
-/* AVP used to store GW socket */
+/* internal AVP used to store GW socket */
 static int gw_sock_avp = -1;
-static str gw_sock_avp_spec = str_init("$avp(dr_sock)");
+static str gw_sock_avp_spec = str_init("$avp(___dr_sock__)");
 
-/* AVP used to store GW ATTRs */
+/* internal AVP used to store GW ATTRs */
 static int gw_attrs_avp = -1;
-static str gw_attrs_avp_spec = { NULL, 0};
+static str gw_attrs_avp_spec = str_init("$avp(___dr_gw_att__)");
 
 /* AVP used to store GW Pri Prefix */
 static int gw_priprefix_avp = -1;
@@ -119,9 +119,9 @@ static str gw_priprefix_avp_spec = { NULL, 0};
 static int rule_id_avp = -1;
 static str rule_id_avp_spec = {NULL, 0};
 
-/* AVP used to store RULE ATTRs */
+/* internal AVP used to store RULE ATTRs */
 static int rule_attrs_avp = -1;
-static str rule_attrs_avp_spec = {NULL, 0};
+static str rule_attrs_avp_spec = str_init("$avp(___dr_ru_att__)");
 
 /* AVP used to store RULE prefix */
 static int rule_prefix_avp = -1;
@@ -131,9 +131,25 @@ static str rule_prefix_avp_spec = {NULL, 0};
 static int carrier_id_avp = -1;
 static str carrier_id_avp_spec = {NULL, 0};
 
-/* AVP used to store CARRIER ATTRs */
+/* internal AVP used to store CARRIER ATTRs */
 static int carrier_attrs_avp = -1;
-static str carrier_attrs_avp_spec = {NULL, 0};
+static str carrier_attrs_avp_spec = str_init("$avp(___dr_cr_att__)");
+
+/*
+ * global pointers for faster parameter passing between functions
+ * meaning: current script pvar to dump attrs in (NULL to ignore)
+ */
+static pv_spec_p rule_attrs_spec;
+static pv_spec_p gw_attrs_spec;
+static pv_spec_p carrier_attrs_spec;
+
+/*
+ * if the attributes are not used at all in the script,
+ * do not store them in their internal AVPs at all --liviu
+ */
+static int populate_rule_attrs;
+static int populate_gw_attrs;
+static int populate_carrier_attrs;
 
 /* internal AVPs used for fallback */
 static int avpID_store_ruri;
@@ -157,21 +173,28 @@ static int dr_child_init(int rank);
 static int dr_exit(void);
 
 static int fixup_do_routing(void** param, int param_no);
+static int fixup_next_gw(void** param, int param_no);
 static int fixup_from_gw(void** param, int param_no);
 static int fixup_is_gw(void** param, int param_no);
+static int fixup_route2_carrier( void** param, int param_no);
+static int fixup_route2_gw( void** param, int param_no);
 
 static int do_routing(struct sip_msg* msg, dr_group_t *drg, int sort, gparam_t* wl);
 static int do_routing_0(struct sip_msg* msg);
-static int do_routing_123(struct sip_msg* msg, char* str1, char* str2, char *str3);
-static int use_next_gw(struct sip_msg* msg);
-static int is_from_gw_0(struct sip_msg* msg, char* str1, char* str2);
-static int is_from_gw_1(struct sip_msg* msg, char* str1, char* str2);
-static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2);
-static int goes_to_gw_0(struct sip_msg* msg, char* f1, char* f2);
-static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2);
-static int dr_is_gw(struct sip_msg* msg, char* str1, char* str2, char* str3);
-static int route2_carrier(struct sip_msg* msg, char* cr);
-static int route2_gw(struct sip_msg* msg, char* gw);
+static int do_routing_1(struct sip_msg* msg, char* id, char* fl, char* wl,
+					char* rule_att, char* gw_att, char* carr_att);
+static int use_next_gw(struct sip_msg* msg,
+					char* rule_att, char* gw_att, char* carr_att);
+static int is_from_gw_0(struct sip_msg* msg);
+static int is_from_gw_1(struct sip_msg* msg, char* str1);
+static int is_from_gw_2(struct sip_msg* msg, char* str1, char* str2, char* str3);
+static int goes_to_gw_0(struct sip_msg* msg);
+static int goes_to_gw_1(struct sip_msg* msg, char* f1, char* f2, char* f3);
+static int dr_is_gw(struct sip_msg* msg, char* str1, char* str2, char* str3,
+					char* str4);
+static int route2_carrier(struct sip_msg* msg, char* cr_str,
+                          char* gw_att_pv, char* carr_att_pv);
+static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
@@ -184,15 +207,33 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
 static cmd_export_t cmds[] = {
 	{"do_routing",  (cmd_function)do_routing_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_123, 1,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_1, 1,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_123, 2,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_1, 2,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{"do_routing",  (cmd_function)do_routing_123, 3,  fixup_do_routing, 0,
+	{"do_routing",  (cmd_function)do_routing_1, 3,  fixup_do_routing, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"do_routing",  (cmd_function)do_routing_1, 4,  fixup_do_routing, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"do_routing",  (cmd_function)do_routing_1, 5,  fixup_do_routing, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"do_routing",  (cmd_function)do_routing_1, 6,  fixup_do_routing, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"use_next_gw",  (cmd_function)use_next_gw,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"use_next_gw",  (cmd_function)use_next_gw,   1,  fixup_next_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"use_next_gw",  (cmd_function)use_next_gw,   2,  fixup_next_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"use_next_gw",  (cmd_function)use_next_gw,   3,  fixup_next_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"next_routing",  (cmd_function)use_next_gw,  0,  0, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"next_routing",  (cmd_function)use_next_gw,  1,  fixup_next_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"next_routing",  (cmd_function)use_next_gw,  2,  fixup_next_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"next_routing",  (cmd_function)use_next_gw,  3,  fixup_next_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
@@ -200,23 +241,39 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"is_from_gw",  (cmd_function)is_from_gw_2,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
+	{"is_from_gw",  (cmd_function)is_from_gw_2,   3,  fixup_from_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_0,   0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   1,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   2,  fixup_from_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"goes_to_gw",  (cmd_function)goes_to_gw_1,   3,  fixup_from_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"dr_is_gw",  (cmd_function)dr_is_gw,         1,  fixup_is_gw, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"dr_is_gw",  (cmd_function)dr_is_gw,         2,  fixup_is_gw, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"dr_is_gw",  (cmd_function)dr_is_gw,         3,  fixup_is_gw, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"dr_is_gw",  (cmd_function)dr_is_gw,         4,  fixup_is_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"dr_disable", (cmd_function)dr_disable,      0,  0, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE},
-	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_sgp_null, 0,
+	{"route_to_carrier",(cmd_function)route2_carrier,1,fixup_route2_carrier, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{"route_to_gw",     (cmd_function)route2_gw,     1,fixup_sgp_null, 0,
+	{"route_to_carrier",(cmd_function)route2_carrier,2,fixup_route2_carrier, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"route_to_carrier",(cmd_function)route2_carrier,3,fixup_route2_carrier, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"route_to_gw",     (cmd_function)route2_gw,     1,fixup_route2_gw, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"route_to_gw",     (cmd_function)route2_gw,     2,fixup_route2_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -237,14 +294,11 @@ static param_export_t params[] = {
 	{"drg_grpid_col",    STR_PARAM, &drg_grpid_col.s  },
 	{"ruri_avp",         STR_PARAM, &ruri_avp_spec.s  },
 	{"gw_id_avp",        STR_PARAM, &gw_id_avp_spec.s         },
-	{"gw_attrs_avp",     STR_PARAM, &gw_attrs_avp_spec.s      },
 	{"gw_priprefix_avp", STR_PARAM, &gw_priprefix_avp_spec.s  },
 	{"gw_sock_avp",      STR_PARAM, &gw_sock_avp_spec.s       },
 	{"rule_id_avp",      STR_PARAM, &rule_id_avp_spec.s       },
-	{"rule_attrs_avp",   STR_PARAM, &rule_attrs_avp_spec.s    },
 	{"rule_prefix_avp",  STR_PARAM, &rule_prefix_avp_spec.s   },
 	{"carrier_id_avp",   STR_PARAM, &carrier_id_avp_spec.s    },
-	{"carrier_attrs_avp",STR_PARAM, &carrier_attrs_avp_spec.s },
 	{"force_dns",        INT_PARAM, &dr_force_dns             },
 	{"default_group",    INT_PARAM, &dr_default_grp           },
 	{"define_blacklist", STR_PARAM|USE_FUNC_PARAM, (void*)set_dr_bl },
@@ -664,8 +718,12 @@ static int dr_init(void)
 
 	dr_fix_avp_definition( gw_sock_avp_spec, gw_sock_avp, "GW SOCKET");
 
-	if (gw_attrs_avp_spec.s)
-		dr_fix_avp_definition( gw_attrs_avp_spec, gw_attrs_avp, "GW ATTRS");
+	dr_fix_avp_definition( gw_attrs_avp_spec, gw_attrs_avp, "GW ATTRS");
+
+	dr_fix_avp_definition( rule_attrs_avp_spec, rule_attrs_avp, "RULE ATTRS");
+
+	dr_fix_avp_definition( carrier_attrs_avp_spec, carrier_attrs_avp,
+	                      "CARRIER ATTRS");
 
 	if (gw_priprefix_avp_spec.s)
 		dr_fix_avp_definition( gw_priprefix_avp_spec, gw_priprefix_avp,
@@ -674,18 +732,11 @@ static int dr_init(void)
 	if (rule_id_avp_spec.s)
 		dr_fix_avp_definition( rule_id_avp_spec, rule_id_avp, "RULE ID");
 
-	if (rule_attrs_avp_spec.s)
-		dr_fix_avp_definition( rule_attrs_avp_spec, rule_attrs_avp, "RULE ATTRS");
-
 	if (rule_prefix_avp_spec.s)
 		dr_fix_avp_definition( rule_prefix_avp_spec, rule_prefix_avp, "RULE PREFIX");
 
 	if (carrier_id_avp_spec.s)
 		dr_fix_avp_definition( carrier_id_avp_spec, carrier_id_avp, "CARRIER ID");
-
-	if (carrier_attrs_avp_spec.s)
-		dr_fix_avp_definition( carrier_attrs_avp_spec, carrier_attrs_avp,
-			"CARRIER ATTRS");
 
 	if (init_dr_bls()!=0) {
 		LM_ERR("failed to init DR blacklists\n");
@@ -982,19 +1033,21 @@ static inline str* build_ruri(struct sip_uri *uri, int strip, str *pri,
 
 static int do_routing_0(struct sip_msg* msg)
 {
+	rule_attrs_spec = gw_attrs_spec = carrier_attrs_spec = NULL;
+
 	return do_routing(msg, NULL, 0, NULL);
 }
 
-static int do_routing_123(struct sip_msg* msg, char* grp, char* param,
-															char* white_list)
+static int do_routing_1(struct sip_msg* msg, char* grp, char* _flags, char* wlst,
+                        char* rule_att, char* gw_att, char* carr_att)
 {
 	str res = {0,0};
 	int flags=0;
 	char *p;
 
-	if (param) {
-		if (fixup_get_svalue(msg, (gparam_p)param, &res) !=0){
-			LM_ERR("falied to extract flags\n");
+	if (_flags) {
+		if (fixup_get_svalue(msg, (gparam_p)_flags, &res) != 0) {
+			LM_ERR("failed to extract flags\n");
 			return -1;
 		}
 
@@ -1024,32 +1077,82 @@ static int do_routing_123(struct sip_msg* msg, char* grp, char* param,
 		}
 	}
 
-	return do_routing(msg, (dr_group_t*)grp, flags, (gparam_t*)white_list);
+	rule_attrs_spec = (pv_spec_p)rule_att;
+	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)carr_att;
+
+	return do_routing(msg, (dr_group_t*)grp, flags, (gparam_t*)wlst);
 }
 
 
-static int use_next_gw(struct sip_msg* msg)
+static int use_next_gw(struct sip_msg* msg,
+                       char* rule_att, char* gw_att, char* carr_att)
 {
 	struct usr_avp *avp, *avp_ru, *avp_sk;
 	unsigned int flags;
 	gparam_t wl_list;
 	dr_group_t grp;
 	int_str val;
+	pv_value_t pv_val;
 	str ruri;
 	int ok;
 	pgw_t * dst;
 	struct socket_info *sock;
 
+	rule_attrs_spec = (pv_spec_p)rule_att;
+	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)carr_att;
+
+	/*
+	 * pop a value from each AVP
+	 * (also remove all bogus non-STR top-most values)
+	 */
 	while(1)
 	{
+		if (rule_attrs_spec) {
+			avp = search_first_avp(0, rule_attrs_avp, &val, NULL);
+			if (avp) {
+				pv_val.flags = PV_VAL_STR;
+				pv_val.rs = val.s;
+				if (pv_set_value(msg, rule_attrs_spec, 0, &pv_val) != 0)
+					LM_ERR("failed to set value for rule attrs pvar\n");
+			}
+		}
+
 		/* remove the old attrs */
-		if (gw_attrs_avp!=-1) {
+		if (gw_attrs_spec) {
 			avp = NULL;
 			do {
 				if (avp) destroy_avp(avp);
-				avp = search_first_avp( 0, gw_attrs_avp, NULL, 0);
+				avp = search_first_avp( 0, gw_attrs_avp, NULL, NULL);
 			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 			if (avp) destroy_avp(avp);
+
+			avp = search_first_avp(0, gw_attrs_avp, &val, NULL);
+			if (avp) {
+				pv_val.flags = PV_VAL_STR;
+				pv_val.rs = val.s;
+				if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0)
+					LM_ERR("failed to set value for gateway attrs pvar\n");
+			}
+		}
+
+		/* remove the old carrier attrs */
+		if (carrier_attrs_spec) {
+			avp = NULL;
+			do {
+				if (avp) destroy_avp(avp);
+				avp = search_first_avp( 0, carrier_attrs_avp, NULL, NULL);
+			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
+			if (avp) destroy_avp(avp);
+
+			avp = search_first_avp(0, carrier_attrs_avp, &val, NULL);
+			if (avp) {
+				pv_val.flags = PV_VAL_STR;
+				pv_val.rs = val.s;
+				if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0)
+					LM_ERR("failed to set value for carrier attrs pvar\n");
+			}
 		}
 
 		/* remove the old priprefix */
@@ -1057,7 +1160,7 @@ static int use_next_gw(struct sip_msg* msg)
 			avp = NULL;
 			do {
 				if (avp) destroy_avp(avp);
-				avp = search_first_avp( 0, gw_priprefix_avp, NULL, 0);
+				avp = search_first_avp( 0, gw_priprefix_avp, NULL, NULL);
 			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 			if (avp) destroy_avp(avp);
 		}
@@ -1067,17 +1170,7 @@ static int use_next_gw(struct sip_msg* msg)
 			avp = NULL;
 			do {
 				if (avp) destroy_avp(avp);
-				avp = search_first_avp( 0, carrier_id_avp, NULL, 0);
-			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
-			if (avp) destroy_avp(avp);
-		}
-
-		/* remove the old carrier attrs */
-		if (carrier_attrs_avp!=-1) {
-			avp = NULL;
-			do {
-				if (avp) destroy_avp(avp);
-				avp = search_first_avp( 0, carrier_attrs_avp, NULL, 0);
+				avp = search_first_avp( 0, carrier_id_avp, NULL, NULL);
 			}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 			if (avp) destroy_avp(avp);
 		}
@@ -1086,7 +1179,7 @@ static int use_next_gw(struct sip_msg* msg)
 		avp = NULL;
 		do {
 			if (avp) destroy_avp(avp);
-			avp = search_first_avp( 0, gw_id_avp, NULL, 0);
+			avp = search_first_avp( 0, gw_id_avp, NULL, NULL);
 		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 		if (!avp) {
 			LM_WARN("no GWs found at all -> have you done do_routing in script ?? \n");
@@ -1094,7 +1187,7 @@ static int use_next_gw(struct sip_msg* msg)
 		}
 		do {
 			if (avp) destroy_avp(avp);
-			avp = search_first_avp( 0, gw_id_avp, NULL, 0);
+			avp = search_first_avp( 0, gw_id_avp, NULL, NULL);
 		}while (avp && (avp->flags&AVP_VAL_STR)==0 );
 		/* any GW found ? */
 		if (!avp)
@@ -1104,7 +1197,7 @@ static int use_next_gw(struct sip_msg* msg)
 		avp_ru = NULL;
 		do {
 			if (avp_ru) destroy_avp(avp_ru);
-			avp_ru = search_first_avp( 0, ruri_avp, &val, 0);
+			avp_ru = search_first_avp( 0, ruri_avp, &val, NULL);
 		}while (avp_ru && (avp_ru->flags&AVP_VAL_STR)==0 );
 
 		if (!avp_ru)
@@ -1115,7 +1208,7 @@ static int use_next_gw(struct sip_msg* msg)
 		avp_sk = NULL;
 		do {
 			if (avp_sk) destroy_avp(avp_sk);
-			avp_sk = search_first_avp( 0, gw_sock_avp, &val, 0);
+			avp_sk = search_first_avp( 0, gw_sock_avp, &val, NULL);
 		}while (avp_sk && (avp_sk->flags&AVP_VAL_STR)==0 );
 		if (!avp_sk) {
 			/* this shuold not happen, it is a bogus state */
@@ -1161,23 +1254,24 @@ static int use_next_gw(struct sip_msg* msg)
 
 
 rule_fallback:
+	LM_DBG("using rule fallback\n");
 
 	/* check if a "flags" AVP is there and if fallback allowed */
-	avp = search_first_avp( 0, avpID_store_flags, &val, 0);
+	avp = search_first_avp( 0, avpID_store_flags, &val, NULL);
 	if (avp==NULL || !(val.n & DR_PARAM_RULE_FALLBACK) )
 		return -1;
 
 	/* fallback allowed, fetch the rest of data from AVPs */
 	flags = val.n | DR_PARAM_INTERNAL_TRIGGERED;
 
-	if (search_first_avp( 0, avpID_store_group, &val, 0)==NULL) {
+	if (!search_first_avp( 0, avpID_store_group, &val, NULL)) {
 		LM_ERR("Cannot find group AVP during a fallback\n");
 		goto fallback_failed;
 	}
 	grp.type = 0;
 	grp.u.grp_id = val.n;
 
-	if (search_first_avp( AVP_VAL_STR, avpID_store_whitelist, &val, 0)==NULL) {
+	if (!search_first_avp( AVP_VAL_STR, avpID_store_whitelist, &val, NULL)) {
 		wl_list.type = 0;
 	} else {
 		wl_list.type = GPARAM_TYPE_STR;
@@ -1306,12 +1400,12 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 		goto error;
 	}
 
-	/* add GW attrs avp */
-	if (gw_attrs_avp!=-1) {
+	/* add internal GW attrs avp if requested at least once in the script */
+	if (populate_gw_attrs) {
 		val.s = gw->attrs.s? gw->attrs : attrs_empty;
-		LM_DBG("setting GW attr [%.*s] as avp\n",val.s.len,val.s.s);
+		LM_DBG("setting GW attr [%.*s] as avp\n", val.s.len, val.s.s);
 		if (add_avp_last(AVP_VAL_STR, gw_attrs_avp, val)!=0){
-			LM_ERR("failed to insert attrs avp\n");
+			LM_ERR("failed to insert gw attrs avp\n");
 			goto error;
 		}
 	}
@@ -1335,11 +1429,12 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct sip_uri *uri,
 		}
 	}
 
-	if (carrier_attrs_avp!=-1) {
-		val.s = (c_attrs && c_attrs->s)? *c_attrs : attrs_empty ;
-		LM_DBG("setting CR attr [%.*s] as avp\n",val.s.len,val.s.s);
-		if (add_avp_last(AVP_VAL_STR, carrier_attrs_avp, val)!=0){
-			LM_ERR("failed to insert attrs avp\n");
+	/* add internal carrier attrs avp if requested at least once in the script */
+	if (populate_carrier_attrs) {
+		val.s = (c_attrs && c_attrs->s)? *c_attrs : attrs_empty;
+		LM_DBG("setting CR attr [%.*s] as avp\n", val.s.len, val.s.s);
+		if (add_avp_last(AVP_VAL_STR, carrier_attrs_avp, val)!=0) {
+			LM_ERR("failed to insert carrier attrs avp\n");
 			goto error;
 		}
 	}
@@ -1374,6 +1469,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	struct to_body  *from;
 	struct sip_uri  uri;
 	rt_info_t  *rt_info;
+	pv_value_t pv_val;
 	struct usr_avp *avp, *avp_prefix=NULL, *avp_index=NULL;
 	str parsed_whitelist;
 	pgw_list_t *dst, *cdst;
@@ -1385,7 +1481,7 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	int grp_id;
 	int i, j, n;
 	int_str val;
-	str ruri;
+	str ruri, next_carrier_attrs, next_gw_attrs;
 	int ret;
 	char tmp;
 	char *ruri_buf;
@@ -1405,14 +1501,14 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	destroy_avps( 0, ruri_avp, 1);
 	destroy_avps( 0, gw_id_avp, 1);
 	destroy_avps( 0, gw_sock_avp, 1);
-	if (gw_attrs_avp!=-1)
-		destroy_avps( 0, gw_attrs_avp, 1);
+	destroy_avps( 0, rule_attrs_avp, 1);
+	destroy_avps( 0, gw_attrs_avp, 1);
+	destroy_avps( 0, carrier_attrs_avp, 1);
+
 	if (gw_priprefix_avp!=-1)
 		destroy_avps( 0, gw_priprefix_avp, 1);
 	if (rule_id_avp!=-1)
 		destroy_avps( 0, rule_id_avp, 1);
-	if (rule_attrs_avp!=-1)
-		destroy_avps( 0, rule_attrs_avp, 1);
 	if (rule_prefix_avp!=-1)
 		destroy_avps( 0, rule_prefix_avp, 1);
 
@@ -1650,8 +1746,16 @@ search_again:
 							cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
 						n++;
+
+						/* only export the top-most carrier/gw
+						 * attributes in the script */
+						if (n == 1) {
+							next_carrier_attrs = dst->dst.carrier->attrs;
+							next_gw_attrs = cdst->dst.gw->attrs;
+						}
+
+						/* use only first valid GW */
 						if (dst->dst.carrier->flags&DR_CR_FLAG_FIRST)
-							/* use only first valid GW */
 							break;
 					}
 				}
@@ -1671,6 +1775,11 @@ search_again:
 					dst->dst.gw->id.len, dst->dst.gw->id.s);
 			} else {
 				n++;
+				/* only export the first gw attributes in the script */
+				if (n == 1) {
+					next_carrier_attrs.s = NULL;
+					next_gw_attrs = dst->dst.gw->attrs;
+				}
 			}
 
 		}
@@ -1684,6 +1793,24 @@ search_again:
 		goto error2;
 	}
 
+	pv_val.flags = PV_VAL_STR;
+
+	if (gw_attrs_spec) {
+		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
+		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
+			LM_ERR("failed to set value for gateway attrs pvar\n");
+			goto error2;
+		}
+	}
+
+	if (carrier_attrs_spec) {
+		pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
+		if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0) {
+			LM_ERR("failed to set value for carrier attrs pvar\n");
+			goto error2;
+		}
+	}
+
 no_gws:
 	/* add RULE prefix avp */
 	if (rule_prefix_avp!=-1) {
@@ -1695,13 +1822,22 @@ no_gws:
 			goto error2;
 		}
 	}
-	/* add RULE attrs avp */
-	if (rule_attrs_avp!=-1) {
-		val.s = rt_info->attrs.s ? rt_info->attrs : attrs_empty;
-		LM_DBG("setting RULE attr [%.*s] \n",val.s.len,val.s.s);
-		if (add_avp( AVP_VAL_STR, rule_attrs_avp, val)!=0 ) {
+
+	/* add internal RULE attrs avp if requested at least once in the script */
+	if (populate_rule_attrs) {
+		val.s = !rt_info->attrs.s ? attrs_empty : rt_info->attrs;
+		LM_DBG("setting RULE attr [%.*s] \n", val.s.len, val.s.s);
+		if (add_avp( AVP_VAL_STR, rule_attrs_avp, val) != 0) {
 			LM_ERR("failed to insert rule attrs avp\n");
 			goto error2;
+		}
+
+		if (rule_attrs_spec) {
+			pv_val.rs = val.s;
+			if (pv_set_value(msg, rule_attrs_spec, 0, &pv_val) != 0) {
+				LM_ERR("failed to set value for rule attrs pvar\n");
+				goto error2;
+			}
 		}
 	}
 
@@ -1790,13 +1926,15 @@ error1:
 }
 
 
-static int route2_carrier(struct sip_msg* msg, char *cr_str)
+static int route2_carrier(struct sip_msg* msg, char* cr_str,
+                          char* gw_att_pv, char* carr_att_pv)
 {
 	unsigned short carrier_idx[DR_MAX_GWLIST];
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
 	pcr_t *cr;
-	str *ruri, id;
+	pv_value_t pv_val;
+	str *ruri, id, next_carrier_attrs, next_gw_attrs;
 	int j,n;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
@@ -1810,18 +1948,21 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 		return -1;
 	}
 
+	gw_attrs_spec = (pv_spec_p) gw_att_pv;
+	carrier_attrs_spec = (pv_spec_p) carr_att_pv;
+
 	/* do some cleanup first */
 	destroy_avps( 0, ruri_avp, 1);
 	destroy_avps( 0, gw_id_avp, 1);
 	destroy_avps( 0, gw_sock_avp, 1);
-	if (gw_attrs_avp!=-1)
-		destroy_avps( 0, gw_attrs_avp, 1);
+	destroy_avps( 0, gw_attrs_avp, 1);
+	destroy_avps( 0, rule_attrs_avp, 1);
+	destroy_avps( 0, carrier_attrs_avp, 1);
+
 	if (gw_priprefix_avp!=-1)
 		destroy_avps( 0, gw_priprefix_avp, 1);
 	if (rule_id_avp!=-1)
 		destroy_avps( 0, rule_id_avp, 1);
-	if (rule_attrs_avp!=-1)
-		destroy_avps( 0, rule_attrs_avp, 1);
 	if (rule_prefix_avp!=-1)
 		destroy_avps( 0, rule_prefix_avp, 1);
 
@@ -1878,8 +2019,16 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 					cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 			} else {
 				n++;
+
+				/* only export the top-most carrier/gw
+				 * attributes in the script */
+				if (n == 1) {
+					next_carrier_attrs = cr->attrs;
+					next_gw_attrs = cdst->dst.gw->attrs;
+				}
+
+				/* use only first valid GW */
 				if (cr->flags&DR_CR_FLAG_FIRST)
-					/* use only first valid GW */
 					break;
 			}
 		}
@@ -1890,6 +2039,25 @@ static int route2_carrier(struct sip_msg* msg, char *cr_str)
 		LM_ERR("All the gateways are disabled\n");
 		goto error;
 	}
+
+	pv_val.flags = PV_VAL_STR;
+
+	if (gw_attrs_spec) {
+		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
+		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
+			LM_ERR("failed to set value for gateway attrs pvar\n");
+			goto error;
+		}
+	}
+
+	if (carrier_attrs_spec) {
+		pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
+		if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0) {
+			LM_ERR("failed to set value for carrier attrs pvar\n");
+			goto error;
+		}
+	}
+
 no_gws:
 
 	/* we are done reading -> unref the data */
@@ -1903,11 +2071,12 @@ error:
 }
 
 
-static int route2_gw(struct sip_msg* msg, char *gw_str)
+static int route2_gw(struct sip_msg* msg, char* gw_str, char* gw_att_pv)
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
-	str *ruri, ids, id;
+	pv_value_t pv_val;
+	str *ruri, ids, id, next_gw_attrs;
 	char *p;
 	int idx;
 
@@ -1915,6 +2084,8 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 		LM_DBG("empty routing table\n");
 		return -1;
 	}
+
+	gw_attrs_spec = (pv_spec_p)gw_att_pv;
 
 	/* get the gw ID */
 	if (fixup_get_svalue(msg, (gparam_p)gw_str, &ids) != 0) {
@@ -1963,6 +2134,10 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 					gw->id.len, gw->id.s);
 			} else {
 				idx++;
+
+				/* only export the top-most gw attributes in the script */
+				if (idx == 1)
+					next_gw_attrs = gw->attrs;
 			}
 		}
 	} while(ids.len>0);
@@ -1973,6 +2148,14 @@ static int route2_gw(struct sip_msg* msg, char *gw_str)
 	if ( idx==0 ) {
 		LM_ERR("no GW added at all\n");
 		return -1;
+	}
+
+	if (gw_attrs_spec) {
+		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
+		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
+			LM_ERR("failed to set value for gateway attrs pvar\n");
+			return -1;
+		}
 	}
 
 	return 1;
@@ -1989,8 +2172,9 @@ static int fixup_do_routing(void** param, int param_no)
 
 	s = (char*)*param;
 
-	if (param_no==1) {
-		/* group */
+	switch (param_no) {
+	/* group ID */
+	case 1:
 		drg = (dr_group_t*)pkg_malloc(sizeof(dr_group_t));
 		if(drg==NULL) {
 			LM_ERR( "no more memory\n");
@@ -1999,8 +2183,7 @@ static int fixup_do_routing(void** param, int param_no)
 		memset(drg, 0, sizeof(dr_group_t));
 
 		if ( s==NULL || s[0]==0 ) {
-			pkg_free(*param);
-			*param = NULL;
+			pkg_free(drg);
 			return 0;
 		}
 
@@ -2034,47 +2217,137 @@ static int fixup_do_routing(void** param, int param_no)
 			pkg_free(*param);
 		}
 		*param = (void*)drg;
-	} else
-	if (param_no==2) {
-		/* string of flags */
+		return 0;
+
+	/* string with flags */
+	case 2:
 		return fixup_sgp(param);
-	} else
-	if (param_no==3) {
-		/* white_list of GWs/Carriers */
+
+	/* white list of GWs/Carriers */
+	case 3:
 		return fixup_spve(param);
+
+	/* rule | gateway | carrier attributes output pvars */
+	case 4:
+		populate_rule_attrs = 1;
+		return fixup_pvar(param);
+	case 5:
+		populate_gw_attrs = 1;
+		return fixup_pvar(param);
+	case 6:
+		populate_carrier_attrs = 1;
+		return fixup_pvar(param);
 	}
 
-	return 0;
+	return -1;
+}
+
+static int fixup_next_gw( void** param, int param_no)
+{
+	switch (param_no) {
+	/* rule attrs pvar */
+	case 1:
+		populate_rule_attrs = 1;
+		return fixup_pvar(param);
+
+	/* gateway attrs pvar */
+	case 2:
+		populate_gw_attrs = 1;
+		return fixup_pvar(param);
+
+	/* carrier attrs pvar */
+	case 3:
+		populate_carrier_attrs = 1;
+		return fixup_pvar(param);
+	}
+
+	return -1;
 }
 
 
 static int fixup_from_gw( void** param, int param_no)
 {
-	if (param_no == 1) {
-		/* GW type*/
+	switch (param_no) {
+	/* GW type*/
+	case 1:
 		return fixup_sint(param);
-	} else if (param_no == 2) {
-		/* GW ops */
+
+	/* GW ops */
+	case 2:
 		return fixup_spve(param);
+
+	/* ATTRS pseudo-var */
+	case 3:
+		return fixup_pvar(param);
 	}
-	return 0;
+
+	return -1;
 }
 
 
 static int fixup_is_gw( void** param, int param_no)
 {
-	if (param_no == 1) {
+	switch (param_no) {
+	/* SIP URI pseudo-var */
+	case 1:
 		return fixup_pvar(param);
-	} else if (param_no == 2) {
-		/* GW type*/
+
+	/* GW type*/
+	case 2:
 		return fixup_sint(param);
-	} else if (param_no == 3) {
-		/* GW ops */
+
+	/* GW ops */
+	case 3:
 		return fixup_spve(param);
+
+	/* ATTRS pseudo-var */
+	case 4:
+		return fixup_pvar(param);
 	}
-	return 0;
+
+	return -1;
 }
 
+
+static int fixup_route2_carrier( void** param, int param_no)
+{
+	switch (param_no) {
+
+	/* carrier name string */
+	case 1:
+		return fixup_sgp(param);
+
+	/* gateway attrs pvar */
+	case 2:
+		populate_gw_attrs = 1;
+		return fixup_pvar(param);
+
+	/* carrier attrs pvar */
+	case 3:
+		populate_carrier_attrs = 1;
+		return fixup_pvar(param);
+	}
+
+	return -1;
+}
+
+
+static int fixup_route2_gw( void** param, int param_no)
+{
+	switch (param_no) {
+
+	/* gateway / gateways (csv) */
+	case 1:
+		return fixup_sgp(param);
+
+	/* gateway attrs pvar */
+	case 2:
+		populate_gw_attrs = 1;
+		return fixup_pvar(param);
+	}
+
+	return -1;
+}
 
 static int strip_username(struct sip_msg* msg, int strip)
 {
@@ -2122,7 +2395,6 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 
 #define DR_IFG_STRIP_FLAG      (1<<0)
 #define DR_IFG_PREFIX_FLAG     (1<<1)
-#define DR_IFG_ATTRS_FLAG      (1<<2)
 #define DR_IFG_IDS_FLAG        (1<<3)
 #define DR_IFG_IGNOREPORT_FLAG (1<<4)
 #define DR_IFG_CARRIERID_FLAG  (1<<5)
@@ -2137,6 +2409,7 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 {
 	pgw_t *pgwa = NULL;
 	pcr_t *pcr = NULL;
+	pv_value_t pv_val;
 	int flags = 0;
 	str flags_s;
 	int_str val;
@@ -2154,7 +2427,6 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 			switch (flags_s.s[i]) {
 				case 's': flags |= DR_IFG_STRIP_FLAG; break;
 				case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
-				case 'a': flags |= DR_IFG_ATTRS_FLAG; break;
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
@@ -2180,11 +2452,13 @@ static int _is_dr_gw(struct sip_msg* msg, char* flags_pv,
 				}
 				prefix_username(msg, &pgwa->pri);
 			}
+
 			/* attrs ? */
-			if (flags & DR_IFG_ATTRS_FLAG && gw_attrs_avp!=-1) {
-				val.s = pgwa->attrs.s ? pgwa->attrs : attrs_empty ;
-				if (add_avp(AVP_VAL_STR, gw_attrs_avp, val)!=0)
-					LM_ERR("failed to insert GW attrs avp\n");
+			if (gw_attrs_spec) {
+				pv_val.flags = PV_VAL_STR;
+				pv_val.rs = pgwa->attrs.s ? pgwa->attrs : attrs_empty;
+				if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0)
+					LM_ERR("failed to set value for GW attrs pvar\n");
 			}
 
 			if ( flags & DR_IFG_IDS_FLAG ) {
@@ -2224,7 +2498,7 @@ end:
 /*
  * Checks if a given src IP and PORT is a GW; no TYPE, no FLAGS
  */
-static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
+static int is_from_gw_0(struct sip_msg* msg)
 {
 	return _is_dr_gw( msg, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port);
 }
@@ -2233,17 +2507,21 @@ static int is_from_gw_0(struct sip_msg* msg, char* str, char* str2)
 /*
  * Checks if a given src IP and PORT is a GW; tests the TYPE too, no FLAGS
  */
-static int is_from_gw_1(struct sip_msg* msg, char* type_s, char* str2)
+static int is_from_gw_1(struct sip_msg* msg, char* type_s)
 {
-	return _is_dr_gw( msg, NULL, (int)(long)type_s, &msg->rcv.src_ip , msg->rcv.src_port);
+	return _is_dr_gw(msg, NULL, (!type_s ? -1 : (int)(long)type_s),
+	                 &msg->rcv.src_ip , msg->rcv.src_port);
 }
 
 
 /*
  * Checks if a given src IP and PORT is a GW; tests the TYPE too
  */
-static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv)
+static int is_from_gw_2(struct sip_msg* msg, char* type_s, char* flags_pv,
+                        char* gw_att)
 {
+	gw_attrs_spec = (pv_spec_p)gw_att;
+
 	return _is_dr_gw( msg, flags_pv,
 			(int)(long)type_s, &msg->rcv.src_ip , msg->rcv.src_port);
 }
@@ -2283,25 +2561,30 @@ static int _is_dr_uri_gw(struct sip_msg* msg, char* flags_pv, int type, str *uri
 /*
  * Checks if RURI is a GW ; tests the TYPE too
  */
-static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv)
+static int goes_to_gw_1(struct sip_msg* msg, char* _type, char* flags_pv,
+                        char* gw_att)
 {
-	return _is_dr_uri_gw( msg, flags_pv, (int)(long)_type, GET_NEXT_HOP(msg));
+	gw_attrs_spec = (pv_spec_p)gw_att;
+
+	return _is_dr_uri_gw(msg, flags_pv, (!_type ? -1 : (int)(long)_type),
+	                     GET_NEXT_HOP(msg));
 }
 
 
 /*
  * Checks if RURI is a GW; not TYPE check
  */
-static int goes_to_gw_0(struct sip_msg* msg, char* _type, char* _f2)
+static int goes_to_gw_0(struct sip_msg* msg)
 {
-	return goes_to_gw_1(msg, (char*)(long)-1, _f2);
+	return goes_to_gw_1(msg, (char *)-1, NULL, NULL);
 }
 
 
 /*
  * Checks if a variable (containing a SIP URI) is a GW; tests the TYPE too
  */
-static int dr_is_gw(struct sip_msg* msg, char* src_pv, char* type_s, char* flags_pv)
+static int dr_is_gw(struct sip_msg* msg, char* src_pv, char* type_s,
+                    char* flags_pv, char* gw_att)
 {
 	pv_value_t src;
 
@@ -2309,6 +2592,8 @@ static int dr_is_gw(struct sip_msg* msg, char* src_pv, char* type_s, char* flags
 		LM_ERR("failed to get string value for src\n");
 		return -1;
 	}
+
+	gw_attrs_spec = (pv_spec_p)gw_att;
 
 	return _is_dr_uri_gw( msg, flags_pv, (int)(long)type_s, &src.rs );
 }
