@@ -700,10 +700,11 @@ static inline int do_dns_failover(struct cell *t)
 {
 	static struct sip_msg faked_req;
 	struct sip_msg *shmem_msg;
+	struct sip_msg *req;
 	struct ua_client *uac;
-	int ret;
+	dlg_t dialog;
+	int ret, sip_msg_len;
 
-	shmem_msg = t->uas.request;
 	uac = &t->uac[picked_branch];
 
 	/* check if the DNS resolver can get at least one new IP */
@@ -711,6 +712,36 @@ static inline int do_dns_failover(struct cell *t)
 		return -1;
 
 	LM_DBG("new destination available\n");
+
+	if (t->uas.request==NULL) {
+		if (!is_local(t)) {
+			LM_CRIT("BUG: proxy transaction without UAS request :-/\n");
+			return -1;
+		}
+		/* create the cloned SIP msg -> first create a new SIP msg */
+		memset( &dialog, 0, sizeof(dialog));
+		dialog.send_sock = uac->request.dst.send_sock;
+		dialog.hooks.next_hop = &uac->uri;
+		req = buf_to_sip_msg(uac->request.buffer.s, uac->request.buffer.len,
+			&dialog);
+		if (req==NULL) {
+			LM_ERR("failed to generate SIP msg from previous buffer\n");
+			return -1;
+		}
+		/* now do the actual cloning of the SIP message */
+		t->uas.request = sip_msg_cloner( req, &sip_msg_len);
+		if (t->uas.request==NULL) {
+			LM_ERR("cloning failed\n");
+			free_sip_msg(req);
+			return -1;
+		}
+		t->uas.end_request = ((char*)t->uas.request) + sip_msg_len;
+		/* free the actual SIP message, keep the clone only */
+		free_sip_msg(req);
+		/* the sip_msg structure is static in buf_to_sip_msg,
+		   so no need to free it */
+	}
+	shmem_msg = t->uas.request;
 
 	if (!fake_req(&faked_req, shmem_msg, &t->uas, uac)) {
 		LM_ERR("fake_req failed\n");
@@ -1487,7 +1518,7 @@ int reply_received( struct sip_msg  *p_msg )
 			backup_list = 0;
 		}
 		/* transfer transaction flag to branch context */
-		p_msg->flags = t->uas.request->flags;
+		p_msg->flags = t->uas.request ? t->uas.request->flags : 0;
 		setb0flags(t->uac[branch].br_flags);
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
@@ -1511,7 +1542,8 @@ int reply_received( struct sip_msg  *p_msg )
 		}
 		/* transfer current message context back to t */
 		t->uac[branch].br_flags = getb0flags();
-		t->uas.request->flags = p_msg->flags;
+		if (t->uas.request)
+			t->uas.request->flags = p_msg->flags;
 		if (onreply_avp_mode)
 			/* restore original avp list */
 			set_avp_list( backup_list );

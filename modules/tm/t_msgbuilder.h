@@ -29,6 +29,7 @@
 #define _MSGBUILDER_H
 
 #include "../../ip_addr.h"
+#include "../../receive.h"
 #include "dlg.h"
 
 
@@ -76,5 +77,36 @@ int t_calc_branch(struct cell *t,
 /* exported minimum functions for use in t_cancel */
 char* print_callid_mini(char* target, str callid);
 char* print_cseq_mini(char* target, str* cseq, str* method);
+
+
+static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
+															dlg_t *dialog)
+{
+	static struct sip_msg req;
+
+	memset( &req, 0, sizeof(req) );
+	req.id = get_next_msg_no();
+	req.buf = buf;
+	req.len = len;
+	if (parse_msg(buf, len, &req)!=0) {
+		LM_CRIT("BUG - buffer parsing failed!");
+		return NULL;
+	}
+	/* populate some special fields in sip_msg */
+	req.set_global_address=default_global_address;
+	req.set_global_port=default_global_port;
+	req.force_send_socket = dialog->send_sock;
+	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
+		LM_ERR("failed to set dst_uri");
+		free_sip_msg(&req);
+		return NULL;
+	}
+	req.rcv.proto = dialog->send_sock->proto;
+	req.rcv.src_ip = req.rcv.dst_ip = dialog->send_sock->address;
+	req.rcv.src_port = req.rcv.dst_port = dialog->send_sock->port_no;
+	req.rcv.bind_address = dialog->send_sock;
+
+	return &req;
+}
 
 #endif

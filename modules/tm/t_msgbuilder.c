@@ -629,7 +629,7 @@ static inline int assemble_via(str* dest, struct cell* t, struct socket_info* so
 static inline char* print_request_uri(char* w, str* method, dlg_t* dialog, struct cell* t, int branch)
 {
 	append_string(w, method->s, method->len);
-	append_string(w, " ", 1);
+	*(w++) = ' ';
 
 	t->uac[branch].uri.s = w;
 	t->uac[branch].uri.len = dialog->hooks.request_uri->len;
@@ -726,7 +726,7 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 char* print_cseq_mini(char* target, str* cseq, str* method) {
 	append_string(target, CSEQ, CSEQ_LEN);
 	append_string(target, cseq->s, cseq->len);
-	append_string(target, " ", 1);
+	*(target++) = ' ';
 	append_string(target, method->s, method->len);
 	return target;
 }

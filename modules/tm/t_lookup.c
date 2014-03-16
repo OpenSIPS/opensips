@@ -314,7 +314,7 @@ static int matching_3261( struct sip_msg *p_msg, struct cell **trans,
 		 * to correlate the e2e ACKs with transaction context, e.g., for
 		 * purpose of accounting. We think it is a bad place here, among
 		 * other things because it is not reliable. If a transaction loops
-		 * via SER the ACK can't be matched to proper INVITE transaction
+		 * via OpenSIPS the ACK can't be matched to proper INVITE transaction
 		 * (it is a separate transactino with its own branch ID) and it
 		 * matches all transaction instances in the loop dialog-wise.
 		 * Eventually, regardless to which transaction in the loop the
