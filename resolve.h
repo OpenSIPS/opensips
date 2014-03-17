@@ -44,6 +44,7 @@
 #include <arpa/nameser_compat.h>
 #endif
 
+#include "mem/shm_mem.h"
 #include "ip_addr.h"
 #include "proxy.h"
 
@@ -166,6 +167,31 @@ extern int dns_try_naptr;
 
 #define get_srv(_rdata) \
 	( ((struct srv_rdata*)(_rdata)->rdata) )
+
+
+int  check_ip_address(struct ip_addr* ip, str *name,
+		unsigned short port, unsigned short proto, int resolver);
+
+struct hostent* sip_resolvehost(str* name, unsigned short* port,
+		unsigned short *proto, int is_sips, struct dns_node **dn);
+
+inline struct hostent* resolvehost(char* name, int no_ip_test);
+
+inline struct hostent* rev_resolvehost(struct ip_addr *ip);
+
+/*! \brief free the DNS resolver state machine */
+void free_dns_res( struct proxy_l *p );
+
+/*! \brief make a perfect copy of a resolver state machine */
+struct dns_node *dns_res_copy(struct dns_node *s);
+
+/*! \brief taked the next destination from a resolver state machine */
+int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl);
+
+
+int resolv_init();
+
+int resolv_blacklist_init();
 
 
 
@@ -337,29 +363,47 @@ error_char:
 }
 
 
-int  check_ip_address(struct ip_addr* ip, str *name,
-		unsigned short port, unsigned short proto, int resolver);
+static inline struct proxy_l* shm_clone_proxy(struct proxy_l *sp,
+													unsigned int move_dn)
+{
+	struct proxy_l *dp;
 
-struct hostent* sip_resolvehost(str* name, unsigned short* port,
-		unsigned short *proto, int is_sips, struct dns_node **dn);
+	dp = (struct proxy_l*)shm_malloc(sizeof(struct proxy_l));
+	if (dp==NULL) {
+		LM_ERR("no more shm memory\n");
+		return 0;
+	}
+	memset( dp , 0 , sizeof(struct proxy_l));
 
-inline struct hostent* resolvehost(char* name, int no_ip_test);
+	dp->port = sp->port;
+	dp->proto = sp->proto;
+	dp->addr_idx = sp->addr_idx;
+	dp->flags = PROXY_SHM_FLAG;
 
-inline struct hostent* rev_resolvehost(struct ip_addr *ip);
+	/* clone the hostent */
+	if (hostent_shm_cpy( &dp->host, &sp->host)!=0)
+		goto error0;
 
-/*! \brief free the DNS resolver state machine */
-void free_dns_res( struct proxy_l *p );
+	/* clone the dns resolver */
+	if (sp->dn) {
+		if (move_dn) {
+			dp->dn = sp->dn;
+			sp->dn = 0;
+		} else {
+			dp->dn = dns_res_copy(sp->dn);
+			if (dp->dn==NULL)
+				goto error1;
+		}
+	}
 
-/*! \brief make a perfect copy of a resolver state machine */
-struct dns_node *dns_res_copy(struct dns_node *s);
+	return dp;
+error1:
+	free_shm_hostent(&dp->host);
+error0:
+	shm_free(dp);
+	return 0;
+}
 
-/*! \brief taked the next destination from a resolver state machine */
-int get_next_su(struct proxy_l *p, union sockaddr_union* su, int add_to_bl);
-
-
-int resolv_init();
-
-int resolv_blacklist_init();
 
 
 #endif
