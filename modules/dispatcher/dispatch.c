@@ -582,6 +582,9 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 	ds_set_p list;
 	int j;
 
+	if (ds_db_handle==NULL)
+		return;
+
 	val_cmp.type = DB_STR;
 	val_cmp.nul  = 0;
 
