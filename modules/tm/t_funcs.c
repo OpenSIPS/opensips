@@ -265,18 +265,16 @@ done:
 inline void _set_fr_retr( struct retr_buf *rb, int retr )
 {
 	utime_t timer;
-	struct cell *t;
 
 	if (retr && !rb->retr_timer.deleted) {
 		rb->retr_list=RT_T1_TO_1;
 		set_timer( &rb->retr_timer, RT_T1_TO_1, NULL );
 	}
 
-	t = get_t();
-	if (!t || t == T_UNDEFINED)
+	if (!rb->my_T || rb->my_T->fr_timeout==0)
 		set_1timer(&rb->fr_timer, FR_TIMER_LIST, NULL);
 	else {
-		timer = t->fr_timeout;
+		timer = rb->my_T->fr_timeout;
 		set_1timer(&rb->fr_timer, FR_TIMER_LIST, &timer);
 	}
 }

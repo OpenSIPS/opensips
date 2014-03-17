@@ -97,6 +97,7 @@ static int fixup_cancel_branch(void** param, int param_no);
 static int fixup_froute(void** param, int param_no);
 static int fixup_rroute(void** param, int param_no);
 static int fixup_broute(void** param, int param_no);
+static int fixup_t_new_request(void** param, int param_no);
 
 
 /* init functions */
@@ -121,6 +122,7 @@ inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
 inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
 inline static int w_t_add_hdrs(struct sip_msg* msg, char* );
 int t_cancel_trans(struct cell *t, str *hdrs);
+inline static int w_t_new_request(struct sip_msg* msg, char*, char*, char*, char*, char*, char*);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -169,47 +171,53 @@ stat_var *tm_trans_inuse;
 
 static cmd_export_t cmds[]={
 	{"t_newtran",       (cmd_function)w_t_newtran,      0, 0,
-			0, REQUEST_ROUTE},
+		0, REQUEST_ROUTE},
 	{"t_reply",         (cmd_function)w_pv_t_reply,     2, fixup_t_send_reply,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_replicate",     (cmd_function)w_t_replicate,    1, fixup_t_replicate,
-			0, REQUEST_ROUTE},
+		0, REQUEST_ROUTE},
 	{"t_replicate",     (cmd_function)w_t_replicate,    2, fixup_t_replicate,
-			0, REQUEST_ROUTE},
+		0, REQUEST_ROUTE},
 	{"t_relay",         (cmd_function)w_t_relay,        0, 0,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_relay",         (cmd_function)w_t_relay,        1, fixup_t_relay1,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_relay",         (cmd_function)w_t_relay,        2, fixup_t_relay2,
-			0, REQUEST_ROUTE | FAILURE_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE },
 	{"t_on_failure",    (cmd_function)w_t_on_negative,  1, fixup_froute,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE },
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_reply",      (cmd_function)w_t_on_reply,     1, fixup_rroute,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_branch",     (cmd_function)w_t_on_branch,    1, fixup_broute,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_check_status",  (cmd_function)t_check_status,   1, fixup_regexp_null,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_write_req",     (cmd_function)t_write_req,      2, fixup_t_write,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
 	{"t_write_unix",    (cmd_function)t_write_unix,     2, fixup_t_write,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
 	{"t_flush_flags",   (cmd_function)t_flush_flags,    0, 0,
-			0, REQUEST_ROUTE | BRANCH_ROUTE  },
+		0, REQUEST_ROUTE | BRANCH_ROUTE  },
 	{"t_local_replied", (cmd_function)t_local_replied,  1, fixup_local_replied,
-			0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
 	{"t_check_trans",   (cmd_function)t_check_trans,    0, 0,
-			0, REQUEST_ROUTE | BRANCH_ROUTE },
+		0, REQUEST_ROUTE | BRANCH_ROUTE },
 	{"t_was_cancelled", (cmd_function)t_was_cancelled,  0, 0,
-			0, FAILURE_ROUTE | ONREPLY_ROUTE },
+		0, FAILURE_ROUTE | ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,0, 0,
-			0, ONREPLY_ROUTE },
+		0, ONREPLY_ROUTE },
 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,1, fixup_cancel_branch,
-			0, ONREPLY_ROUTE },
+		0, ONREPLY_ROUTE },
 	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
-			0, REQUEST_ROUTE },
-	{"t_reply_with_body",(cmd_function)w_t_reply_with_body,3, fixup_t_send_reply,
-			0, REQUEST_ROUTE },
+		0, REQUEST_ROUTE },
+	{"t_reply_with_body",(cmd_function)w_t_reply_with_body,3,fixup_t_send_reply,
+		0, REQUEST_ROUTE },
+	{"t_new_request",    (cmd_function)w_t_new_request, 3, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+	{"t_new_request",    (cmd_function)w_t_new_request, 5, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -577,8 +585,15 @@ static int fixup_cancel_branch(void** param, int param_no)
 	pkg_free(*param);
 	*param = (void*)(unsigned long)flags;
 	return 0;
-
 }
+
+
+static int fixup_t_new_request(void** param, int param_no)
+{
+	/* static string or pv-format for all parameters */
+	return fixup_spve(param);
+}
+
 
 
 /***************************** init functions *****************************/
@@ -655,8 +670,8 @@ static int script_init( struct sip_msg *foo, void *bar)
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
-	fr_timeout = timer_id2timeout[FR_TIMER_LIST];
-	fr_inv_timeout = timer_id2timeout[FR_INV_TIMER_LIST];
+	fr_timeout = 0;
+	fr_inv_timeout = 0;
 
 	/* reset the kill reason status */
 	reset_kr();
@@ -1302,6 +1317,14 @@ inline static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
 
 	return 1;
 }
+
+
+inline static int w_t_new_request(struct sip_msg* msg, char *c1, char *c2, char *c3, char *c4, char *c5, char *c6)
+{
+	return 1; // TODO
+}
+
+
 
 
 /* pseudo-variable functions */
