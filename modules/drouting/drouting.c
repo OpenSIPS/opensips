@@ -1481,7 +1481,9 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	int grp_id;
 	int i, j, n;
 	int_str val;
-	str ruri, next_carrier_attrs, next_gw_attrs;
+	str ruri;
+	str next_carrier_attrs = {NULL, 0};
+	str next_gw_attrs = {NULL, 0};
 	int ret;
 	char tmp;
 	char *ruri_buf;
@@ -1934,7 +1936,9 @@ static int route2_carrier(struct sip_msg* msg, char* cr_str,
 	pgw_list_t *cdst;
 	pcr_t *cr;
 	pv_value_t pv_val;
-	str *ruri, id, next_carrier_attrs, next_gw_attrs;
+	str *ruri, id;
+	str next_carrier_attrs = {NULL, 0};
+	str next_gw_attrs = {NULL, 0};
 	int j,n;
 
 	if ( (*rdata)==0 || (*rdata)->pgw_l==0 ) {
@@ -2076,7 +2080,8 @@ static int route2_gw(struct sip_msg* msg, char* gw_str, char* gw_att_pv)
 	struct sip_uri  uri;
 	pgw_t *gw;
 	pv_value_t pv_val;
-	str *ruri, ids, id, next_gw_attrs;
+	str *ruri, ids, id;
+	str next_gw_attrs = {NULL, 0};
 	char *p;
 	int idx;
 
