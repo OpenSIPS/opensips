@@ -105,6 +105,7 @@ typedef struct dlg {
 				 * prevent repeated analyzing of the dialog data
 				 */
 	struct socket_info* send_sock;
+	struct usr_avp *avps;
 } dlg_t;
 
 

@@ -262,6 +262,10 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	insert_into_hash_table_unsafe(new_cell, hi);
 	UNLOCK_HASH(hi);
 
+	/* copy AVPs into transaction */
+	new_cell->user_avps = dialog->avps;
+	dialog->avps = NULL;
+
 
 	/* ***** Create the message buffer ***** */
 	buf = build_uac_req(method, headers, body, dialog, 0, new_cell, &buf_len);

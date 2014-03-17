@@ -104,7 +104,7 @@ int t_reply( struct cell *t, struct sip_msg * , unsigned int , str * );
    processing
 */
 
-int w_t_reply_with_body(struct sip_msg* msg,str* code,str *text, str *body);
+int w_t_reply_body(struct sip_msg* msg,str* code,str *text, str *body);
 
 int t_reply_unsafe( struct cell *t, struct sip_msg * , unsigned int , str * );
 

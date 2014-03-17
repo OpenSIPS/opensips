@@ -141,6 +141,9 @@ int fr_inv_timeout;
 #define PV_LOCAL_BUF_SIZE	511
 static char pv_local_buf[PV_LOCAL_BUF_SIZE+1];
 
+static str uac_ctx_avp = str_init("uac_ctx");
+static int uac_ctx_avp_id;
+
 
 int pv_get_tm_branch_avp(struct sip_msg*, pv_param_t*, pv_value_t*);
 int pv_set_tm_branch_avp(struct sip_msg*, pv_param_t*, int, pv_value_t*);
@@ -210,14 +213,14 @@ static cmd_export_t cmds[]={
 		0, ONREPLY_ROUTE },
 	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
 		0, REQUEST_ROUTE },
-	{"t_reply_with_body",(cmd_function)w_t_reply_with_body,3,fixup_t_send_reply,
+	{"t_reply_with_body",(cmd_function)w_t_reply_body,  3,fixup_t_send_reply,
 		0, REQUEST_ROUTE },
-	{"t_new_request",    (cmd_function)w_t_new_request, 3, fixup_t_new_request,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+	{"t_new_request",    (cmd_function)w_t_new_request, 4, fixup_t_new_request,
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_new_request",    (cmd_function)w_t_new_request, 5, fixup_t_new_request,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
+		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"load_tm",         (cmd_function)load_tm,          0, 0,
 			0, 0},
 	{0,0,0,0,0,0}
@@ -816,20 +819,24 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(register_pv_context("request", tm_pv_context_request)< 0)
-	{
+	if(register_pv_context("request", tm_pv_context_request)< 0) {
 		LM_ERR("Failed to register pv contexts\n");
 		return -1;
 	}
 
-	if(register_pv_context("reply", tm_pv_context_reply)< 0)
-	{
+	if(register_pv_context("reply", tm_pv_context_reply)< 0) {
 		LM_ERR("Failed to register pv contexts\n");
+		return -1;
+	}
+
+	if ( parse_avp_spec( &uac_ctx_avp, &uac_ctx_avp_id)<0 ) {
+		LM_ERR("failed to register AVP name <%s>\n",uac_ctx_avp.s);
 		return -1;
 	}
 
 	return 0;
 }
+
 
 static int child_init(int rank)
 {
@@ -1319,9 +1326,155 @@ inline static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
 }
 
 
-inline static int w_t_new_request(struct sip_msg* msg, char *c1, char *c2, char *c3, char *c4, char *c5, char *c6)
+inline static int w_t_new_request(struct sip_msg* msg, char *p_method,
+			char *p_ruri, char *p_from, char *p_to, char *p_body, char *p_ctx)
 {
-	return 1; // TODO
+#define CONTENT_TYPE_HDR      "Content-Type: "
+#define CONTENT_TYPE_HDR_LEN  (sizeof(CONTENT_TYPE_HDR)-1)
+	static dlg_t dlg;
+	struct usr_avp **avp_list;
+	str ruri;
+	str method;
+	str body;
+	str headers;
+	str s;
+	int_str ctx;
+	char *p;
+
+	memset( &dlg, 0, sizeof(dlg_t));
+
+	/* evaluate the parameters */
+
+	/* method */
+	if ( fixup_get_svalue(msg, (gparam_p)p_method, &method)<0 ) {
+		LM_ERR("failed to extract METHOD param\n");
+		return -1;
+	}
+	LM_DBG("setting METHOD to <%.*s>\n", method.len, method.s);
+
+	/* ruri - next hop is the same as RURI */
+	dlg.hooks.next_hop = dlg.hooks.request_uri = &ruri;
+	if ( fixup_get_svalue(msg, (gparam_p)p_ruri, &ruri)<0 ) {
+		LM_ERR("failed to extract RURI param\n");
+		return -1;
+	}
+	LM_DBG("setting RURI to <%.*s>\n",
+		dlg.hooks.next_hop->len, dlg.hooks.next_hop->s);
+
+	/* FROM URI + display */
+	if ( fixup_get_svalue(msg, (gparam_p)p_from, &s)<0 ) {
+		LM_ERR("failed to extract FROM param\n");
+		return -1;
+	}
+	if ( (p=q_memrchr(s.s, ' ', s.len))==NULL ) {
+		/* no display, only FROM URI */
+		dlg.loc_uri = s;
+		dlg.loc_dname.s = NULL;
+		dlg.loc_dname.len = 0;
+	} else {
+		/* display + URI */
+		dlg.loc_uri.s = p+1;
+		dlg.loc_uri.len = s.s+s.len - dlg.loc_uri.s;
+		dlg.loc_dname.s = s.s;
+		dlg.loc_dname.len = p - s.s;
+	}
+	LM_DBG("setting FROM to <%.*s> + <%.*s>\n",
+		dlg.loc_dname.len, dlg.loc_dname.s,
+		dlg.loc_uri.len, dlg.loc_uri.s);
+
+	/* TO URI + display */
+	if ( fixup_get_svalue(msg, (gparam_p)p_to, &s)<0 ) {
+		LM_ERR("failed to extract TO param\n");
+		return -1;
+	}
+	if ( (p=q_memrchr(s.s, ' ', s.len))==NULL ) {
+		/* no display, only TO URI */
+		dlg.rem_uri = s;
+		dlg.rem_dname.s = NULL;
+		dlg.rem_dname.len = 0;
+	} else {
+		/* display + URI */
+		dlg.rem_uri.s = p+1;
+		dlg.rem_uri.len = s.s+s.len - dlg.rem_uri.s;
+		dlg.rem_dname.s = s.s;
+		dlg.rem_dname.len = p - s.s;
+	}
+	LM_DBG("setting TO to <%.*s> + <%.*s>\n",
+		dlg.rem_dname.len, dlg.rem_dname.s,
+		dlg.rem_uri.len, dlg.rem_uri.s);
+
+	/* BODY and Content-Type */
+	if (p_body!=NULL) {
+		if ( fixup_get_svalue(msg, (gparam_p)p_body, &body)<0 ) {
+			LM_ERR("failed to extract BODY param\n");
+			return -1;
+		}
+		if ( (p=q_memchr(body.s, ' ', body.len))==NULL ) {
+			LM_ERR("Content Type not found in the beginning of body <%.*s>\n",
+				body.len, body.s);
+			return -1;
+		}
+		/* build the Content-type header */
+		headers.len = CONTENT_TYPE_HDR_LEN + (p-body.s) + CRLF_LEN;
+		if ( (headers.s=(char*)pkg_malloc(headers.len))==NULL ) {
+			LM_ERR("failed to get pkg mem (needed %d)\n",headers.len);
+			return -1;
+		}
+		memcpy( headers.s, CONTENT_TYPE_HDR, CONTENT_TYPE_HDR_LEN);
+		memcpy( headers.s+CONTENT_TYPE_HDR_LEN, body.s, p-body.s);
+		memcpy( headers.s+CONTENT_TYPE_HDR_LEN+(p-body.s), CRLF, CRLF_LEN);
+		/* set the body */
+		body.len = body.s + body.len - (p+1);
+		body.s = p + 1;
+		LM_DBG("setting BODY to <%.*s> <%.*s>\n",
+			headers.len, headers.s,
+			body.len, body.s );
+	} else {
+		body.s = NULL;
+		body.len = 0;
+		headers.s = NULL;
+		headers.len = 0;
+	}
+
+	/* context value */
+	if (p_ctx!=NULL) {
+		if ( fixup_get_svalue(msg, (gparam_p)p_ctx, &ctx.s)<0 ) {
+			LM_ERR("failed to extract BODY param\n");
+			if (p_body) pkg_free(headers.s);
+			return -1;
+		}
+		LM_DBG("setting CTX AVP to <%.*s>\n", ctx.s.len, ctx.s.s);
+		avp_list = set_avp_list( &dlg.avps );
+		if (!add_avp( AVP_VAL_STR, uac_ctx_avp_id, ctx))
+			LM_ERR("failed to add ctx AVP, ignorring...\n");
+		set_avp_list( avp_list );
+	}
+
+	/* add cseq */
+	dlg.loc_seq.value = DEFAULT_CSEQ;
+	dlg.loc_seq.is_set = 1;
+
+	/* add callid */
+	generate_callid(&dlg.id.call_id);
+
+	/* add FROM tag */
+	generate_fromtag(&dlg.id.loc_tag, &dlg.id.call_id);
+	/* TO tag is empty as this is a initial request */
+	dlg.id.rem_tag.s = NULL;
+	dlg.id.rem_tag.len = 0;
+
+	/* do the actual sending now */
+	if ( t_uac( &method, headers.s?&headers:NULL, body.s?&body:NULL,
+	&dlg, 0, 0, 0) <= 0 ) {
+		LM_ERR("failed to send the request out\n");
+		if (headers.s) pkg_free(headers.s);
+		if (dlg.avps) destroy_avp_list(&dlg.avps);
+		return -1;
+	}
+
+	/* success -> do cleanup */
+	if (headers.s) pkg_free(headers.s);
+	return 1;
 }
 
 

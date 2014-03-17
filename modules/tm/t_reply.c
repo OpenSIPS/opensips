@@ -1631,7 +1631,7 @@ not_found:
 	return 1;
 }
 
-int w_t_reply_with_body(struct sip_msg* msg, str* code, str *text,
+int w_t_reply_body(struct sip_msg* msg, str* code, str *text,
 								str *body)
 {
 	struct cell *t;
