@@ -203,18 +203,25 @@ all: $(NAME) modules utils
 app: $(NAME)
 
 
+.PHONY: _modules
+_modules: $(modules)
+
+.PHONY: $(modules)
+$(modules):
+	@if ! echo $(MAKEFLAGS) | grep -q -- --jobserver; then echo; echo; fi  # extra LF if not using -j
+	$(MAKE) -C $@
+
 .PHONY: modules
 modules:
-	@set -e; \
-	for r in $(modules) "" ; do \
-		if [ -n "$$r" ]; then \
-			if [ -d "$$r" ]; then \
-				echo  "" ; \
-				echo  "" ; \
-				$(MAKE) -j -C $$r ; \
-			fi ; \
-		fi ; \
-	done 
+	@$(MAKE) _modules || ( \
+		status=$$?; \
+		if echo $(MAKEFLAGS) | grep -q -- --jobserver; then \
+			printf '\nBuilding one or more modules failed!\n'; \
+			printf 'Please re-run make without -j / --jobs to find out which.\n\n'; \
+		fi; \
+		exit $$status \
+	)
+
 
 .PHONY: modules-readme
 modules-readme:
