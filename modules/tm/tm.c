@@ -87,6 +87,10 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
+/* TODO: remove in future versions (deprecated parameters) */
+int __set_fr_timer(modparam_t type, void* val);
+int __set_fr_inv_timer(modparam_t type, void* val);
+
 /* fixup functions */
 static int fixup_t_send_reply(void** param, int param_no);
 static int fixup_local_replied(void** param, int param_no);
@@ -232,10 +236,14 @@ static param_export_t params[]={
 		&ruri_matching},
 	{"via1_matching",             INT_PARAM,
 		&via1_matching},
-	{"fr_timer",                  INT_PARAM,
+	{"fr_timeout",                  INT_PARAM,
 		&(timer_id2timeout[FR_TIMER_LIST])},
-	{"fr_inv_timer",              INT_PARAM,
+	{"fr_inv_timeout",              INT_PARAM,
 		&(timer_id2timeout[FR_INV_TIMER_LIST])},
+	{"fr_timer",                  INT_PARAM|USE_FUNC_PARAM,
+		__set_fr_timer},
+	{"fr_inv_timer",              INT_PARAM|USE_FUNC_PARAM,
+		__set_fr_inv_timer},
 	{"wt_timer",                  INT_PARAM,
 		&(timer_id2timeout[WT_TIMER_LIST])},
 	{"delete_timer",              INT_PARAM,
@@ -298,9 +306,9 @@ static pv_export_t mod_items[] = {
 		 0, 0, 0, 0 },
 	{ {"bavp",         sizeof("bavp")-1},         903, pv_get_tm_branch_avp,
 		pv_set_tm_branch_avp, pv_parse_avp_name, pv_parse_index, 0, 0 },
-	{ {"T_fr_timer", sizeof("T_fr_timer")-1}, 904, pv_get_tm_fr_timeout,
+	{ {"T_fr_timeout", sizeof("T_fr_timeout")-1}, 904, pv_get_tm_fr_timeout,
 		pv_set_tm_fr_timeout, 0, 0, 0, 0 },
-	{ {"T_fr_inv_timer", sizeof("T_fr_inv_timer")-1}, 905,
+	{ {"T_fr_inv_timeout", sizeof("T_fr_inv_timeout")-1}, 905,
 		pv_get_tm_fr_inv_timeout, pv_set_tm_fr_inv_timeout, 0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
@@ -1949,4 +1957,22 @@ int pv_set_tm_fr_inv_timeout(struct sip_msg *msg, pv_param_t *param,
 		fr_inv_timeout = val->ri;
 
 	return 0;
+}
+
+int __set_fr_timer(modparam_t type, void* val)
+{
+	LM_WARN("\"fr_timer\" is now deprecated! Use \"fr_timeout\" instead!\n");
+
+	timer_id2timeout[FR_TIMER_LIST] = (int)(long)val;
+
+	return 1;
+}
+
+int __set_fr_inv_timer(modparam_t type, void* val)
+{
+	LM_WARN("\"fr_inv_timer\" is now deprecated! Use \"fr_inv_timeout\" instead!\n");
+
+	timer_id2timeout[FR_INV_TIMER_LIST] = (int)(long)val;
+
+	return 1;
 }
