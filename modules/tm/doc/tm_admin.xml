@@ -115,41 +115,42 @@
 		</para>
 	</section>
 	<section id="timer-based-failover">
-		<title>Timer-Based Failover</title>
+		<title>Timeout-Based Failover</title>
 		<para>
-		Timers can be used to trigger failover behavior. E.g. if we send a call
-		a gateway and the gateway does not send a provisional response within 3
+		Timeouts can be used to trigger failover behavior. E.g. if we send a call
+		to a gateway and the gateway does not send a provisional response within 3
 		seconds, we want to cancel this call and send the call to another 
 		gateway. Another example is to ring a SIP client only for 30 seconds 
 		and then redirect the call to the voicemail.
 		</para>
 		<para>
-		There are two timers in &osips; :
+		The transaction module exports two types of timeouts:
 		</para>
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>fr_timer</emphasis> - this timer is used when
-				no response was received yet. If there is no response after
-				<emphasis>fr_timer</emphasis> seconds the timer triggers
+				<emphasis role='bold'>fr_timeout</emphasis> - used when no response was
+				received yet. If there is no response after
+				<emphasis>fr_timeout</emphasis> seconds, the timer triggers
 				(and failure route will be executed if t_on_failure() was
-				called). If a provisional response was received, the timer
-				is set to fr_inv_timer for INVITE transactions, and RT_T2
-				for all other transactions. If a final reponse is received, 
-				the transaction has finished.
+				called). For INVITE transactions, if a provisional response was
+				received, the timeout is reset to <emphasis>fr_inv_timeout</emphasis>
+				seconds and RT_T2 for all other transactions. Once a final response
+				is received, the transaction has finished.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>fr_inv_timer</emphasis> - this timer is used when 
-				a provisional reponse was received for an INVITE transaction.
+				<emphasis role='bold'>fr_inv_timeout</emphasis> - this timeout
+				starts counting down once a provisional response was received
+				for an INVITE transaction.
 			</para>
 			</listitem>
 			</itemizedlist>
 		<para>
 		For example: You want to have failover if there is no provisional 
 		response after 3 seconds, but you want to ring for 60 seconds. 
-		Thuse, set the fr_timer to 3 and fr_inv_timer to 60.
+		Thus, set the <emphasis>fr_timeout</emphasis> to 3 and <emphasis>fr_inv_timeout</emphasis> to 60.
 		</para>
 	</section>
 	<section>
@@ -219,10 +220,10 @@
 
 	<section>
 	<title>Exported Parameters</title>
-	<section id='fr_timer' xreflabel='fr_timer'>
-		<title><varname>fr_timer</varname> (integer)</title>
+	<section id='fr_timeout' xreflabel='fr_timeout'>
+		<title><varname>fr_timeout</varname> (integer)</title>
 		<para>
-		Timer which hits if no final reply for a request or ACK for a 
+		Timeout which is triggered if no final reply for a request or ACK for a 
 		negative INVITE reply arrives (in seconds).
 		</para>
 		<para>
@@ -231,24 +232,23 @@
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>fr_timer</varname> parameter</title>
+		<title>Set <varname>fr_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "fr_timer", 10)
+modparam("tm", "fr_timeout", 10)
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section id='fr_inv_timer' xreflabel='fr_inv_timer'>
-		<title><varname>fr_inv_timer</varname> (integer)</title>
+	<section id='fr_inv_timeout' xreflabel='fr_inv_timeout'>
+		<title><varname>fr_inv_timeout</varname> (integer)</title>
 		<para>
-		Timer which hits if no final reply for an INVITE arrives after a 
-		provisional message was received (in seconds). This timer is started
-		after the first provisional response. Thus, fast failover (no 100 
-		trying from gateway) can be achieved by setting fr_timer to low 
-		values. See example below
-
+		Timeout which is triggered if no final reply for an INVITE arrives after a 
+		provisional message was received (in seconds). This timeout starts
+		counting down once the first provisional response is received. Thus,
+		fast failover (no 100 trying from gateway) can be achieved by setting
+		<emphasis> fr_timeout</emphasis> to low values. See example below.
 		</para>
 		<para>
 		<emphasis>
@@ -256,10 +256,10 @@ modparam("tm", "fr_timer", 10)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>fr_inv_timer</varname> parameter</title>
+		<title>Set <varname>fr_inv_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("tm", "fr_inv_timer", 200)
+modparam("tm", "fr_inv_timeout", 200)
 ...
 </programlisting>
 		</example>
@@ -428,8 +428,8 @@ modparam("tm", "unix_tx_timeout", 5)
 		<para>
 		If true (non null value), the final response timer will be re-triggered
 		for each received provisional reply. In this case, final response
-		timeout may occure after a time longe than fr_inv_timer (if UAS keeps
-		sending provisional replies)
+		timeout may occure after a time longer than <emphasis>fr_inv_timeout</emphasis>
+		(if UAS keeps sending provisional replies)
 		</para>
 		<para>
 		<emphasis>
@@ -1449,24 +1449,24 @@ branch_route[1] {
 			</para>
 		</section>
 		<section>
-		<title>$T_fr_timer</title>
+		<title>$T_fr_timeout</title>
 			<para>
-			<emphasis>$T_fr_timer (R/W)</emphasis> - the timeout
+			<emphasis>$T_fr_timeout (R/W)</emphasis> - the timeout
 			for the final reply to the current transaction; with each different
-			request received, <emphasis>$T_fr_timer</emphasis> will initially
+			request received, <emphasis>$T_fr_timeout</emphasis> will initially
 			be equal to the
-			<emphasis role='bold'><xref linkend="fr_timer"/></emphasis> parameter.
+			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis> parameter.
 			</para>
 		</section>
 		<section>
-		<title>$T_fr_inv_timer</title>
+		<title>$T_fr_inv_timeout</title>
 			<para>
-			<emphasis>$T_fr_inv_timer (R/W)</emphasis> - the timeout
+			<emphasis>$T_fr_inv_timeout (R/W)</emphasis> - the timeout
 			for the final reply to an INVITE request, after a 1XX reply
 			was received; with each different request received,
-			<emphasis>$T_fr_inv_timer</emphasis> will initially be equal to the
+			<emphasis>$T_fr_inv_timeout</emphasis> will initially be equal to the
 			<emphasis role='bold'>
-			<xref linkend="fr_inv_timer"/></emphasis> parameter.
+			<xref linkend="fr_inv_timeout"/></emphasis> parameter.
 			</para>
 		</section>
 		<section>
