@@ -470,8 +470,12 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 			<function moreinfo="none">check_time_rec(time_string)</function>
 		</title>
 		<para>
-		The function returns a positive value if the specified time reccurence string
+		The function returns a positive value if the specified time recurrence string
 		matches the current time, or a negative value otherwise.
+		</para>
+		<para>
+		The syntax of each field is identical to the corresponding field from
+		RFC 2445.
 		</para>
 		<para>
 			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
