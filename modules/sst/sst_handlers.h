@@ -40,7 +40,7 @@
  */
 enum sst_flags {
 	SST_UNDF=0,             /* 0 - --- */
-	SST_UAC=1,              /* 1 - 2^0 */
+	SST_UAC=2,              /* 1 - 2^0 */
 	SST_UAS=2,              /* 2 - 2^1 */
 	SST_PXY=4,              /* 4 - 2^2 */
 	SST_NSUP=8              /* 8 - 2^3 */
@@ -71,7 +71,7 @@ int sst_check_min(struct sip_msg *msg, char *str1, char *str2);
 /**
  * The handlers initializer function
  */
-void sst_handler_init(pv_spec_t *timeout_avp, unsigned int minSE,
-		int flag, unsigned int reject, unsigned int interval);
+void sst_handler_init(unsigned int minSE, int flag, unsigned int reject,
+                      unsigned int interval);
 
 #endif /* _SST_HANDLERS_H_ */

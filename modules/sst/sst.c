@@ -54,15 +54,6 @@ int sst_enable_stats = 1;
 stat_var *expired_sst = 0;
 
 /*
- * The name of the AVP the dialog module will use to hold the timeout
- * value so we can set the AVP in the dialog callbacks so the dialog
- * code will set the dialog lifetime when it returns from the INVITE
- * and IN_ROUTE callbacks.
- */
-pv_spec_t timeout_avp;
-static char* timeout_spec = 0; /* Place holder for the passed in name */
-
-/*
  * The default or script parameter for the requested MIN-SE: value for
  * this proxy. (in seconds) If the passed in value is 0, then this
  * proxy will except any value from the UAC as its min-SE value. If
@@ -107,7 +98,6 @@ static cmd_export_t cmds[]={
 static param_export_t mod_params[]={
 	{ "enable_stats", INT_PARAM, &sst_enable_stats			},
 	{ "min_se", INT_PARAM, &sst_minSE						},
-	{ "timeout_avp", STR_PARAM, &timeout_spec				},
 	{ "reject_to_small",		INT_PARAM, &sst_reject 		},
 	{ "sst_flag",				STR_PARAM, &sst_flag_str	},
 	{ "sst_flag",				INT_PARAM, &sst_flag		},
@@ -151,7 +141,6 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
-	str s;
 	LM_INFO("SIP Session Timer module - initializing\n");
 	/*
 	 * if statistics are disabled, prevent their registration to core.
@@ -173,17 +162,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (timeout_spec != NULL) {
-		LM_DBG("Dialog AVP is %s", timeout_spec);
-		s.s = timeout_spec; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, &timeout_avp)==0
-		&& (timeout_avp.type != PVT_AVP)){
-			LM_ERR("malformed or non AVP timeout AVP definition in '%s'\n",
-					timeout_spec);
-			return -1;
-		}
-	}
-
 	/* load SIGNALING API */
 	if(load_sig_api(&sigb)< 0) {
 		LM_ERR("can't load signaling functions\n");
@@ -193,8 +171,7 @@ static int mod_init(void)
 	/*
 	 * Init the handlers
 	 */
-	sst_handler_init((timeout_spec?&timeout_avp:0), sst_minSE,
-			sst_flag, sst_reject,sst_interval);
+	sst_handler_init(sst_minSE, sst_flag, sst_reject,sst_interval);
 
 	/*
 	 * Register the main (static) dialog call back.

@@ -113,6 +113,7 @@ struct dlg_cell
 	unsigned int         h_entry;
 	unsigned int         state;
 	unsigned int         lifetime;
+	unsigned int         lifetime_dirty; /* 1 if lifetime timer should be updated */
 	unsigned int         start_ts;    /* start time  (absolute UNIX ts)*/
 	unsigned int         flags;
 	unsigned int         from_rr_nb;

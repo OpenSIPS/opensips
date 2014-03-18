@@ -1221,12 +1221,18 @@ after_unlock5:
 		LM_DBG("sequential request successfully processed (dst_leg=%d)\n",
 			dst_leg);
 
+		if (dlg_tmp_timeout != -1 && dlg_tmp_timeout_id == req->id) {
+			dlg->lifetime = dlg_tmp_timeout;
+			dlg->lifetime_dirty = 1;
+		} else {
+			dlg->lifetime_dirty = 0;
+		}
+
 		/* within dialog request */
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
 		/* update timer during sequential request? */
-		if (dlg_tmp_timeout != -1 && dlg_tmp_timeout_id == req->id) {
-			dlg->lifetime = dlg_tmp_timeout;
+		if (dlg->lifetime_dirty) {
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
 		}

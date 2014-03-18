@@ -128,9 +128,9 @@ static int send_response(struct sip_msg *request, int code, str *reason,
 		char *header, int header_len);
 static int append_header(struct sip_msg *msg, const char *header);
 static int remove_minse_header(struct sip_msg *msg);
-static int set_timeout_avp(struct sip_msg *msg, unsigned int value);
 static int parse_msg_for_sst_info(struct sip_msg *msg, sst_msg_info_t *minfo);
 static int send_reject(struct sip_msg *msg, unsigned int min_se);
+static void set_dialog_lifetime(struct dlg_cell *dlg, unsigned int value);
 static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info);
 
 /**
@@ -138,11 +138,6 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info);
  * 422 reply if asked to with a Min-SE: header value to small.
  */
 extern struct sig_binds sigb;
-
-/**
- * The dialog modules timeout AVP spac.
- */
-static pv_spec_t *timeout_avp = 0;
 
 /**
  * Our Min-SE: header field value and test.
@@ -183,10 +178,9 @@ static str sst_422_rpl = str_init("Session Timer Too Small");
  * @param interval - The minimum session expire value used by this
  *                  PROXY
  */
-void sst_handler_init(pv_spec_t *timeout_avp_p, unsigned int min_se,
-		int flag, unsigned int reject, unsigned int interval)
+void sst_handler_init(unsigned int min_se, int flag, unsigned int reject,
+		unsigned int interval)
 {
-	timeout_avp = timeout_avp_p;
 	sst_min_se = min_se;
 	sst_flag = 1 << flag;
 	sst_reject = reject;
@@ -343,7 +337,7 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 	}
 	setup_dialog_callbacks(did, info);
 	/* Early setup of default timeout */
-	set_timeout_avp(msg, info->interval);
+	set_dialog_lifetime(did, info->interval);
 	return;
 }
 
@@ -441,7 +435,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 					info->interval = MAX(minfo.se, sst_min_se);
 			}
 			info->supported = (minfo.supported?SST_UAC:SST_UNDF);
-			set_timeout_avp(msg, info->interval);
+			set_dialog_lifetime(did, info->interval);
 		}
 		else if (msg->first_line.u.request.method_value == METHOD_PRACK
 		|| msg->first_line.u.request.method_value == METHOD_ACK) {
@@ -453,7 +447,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 			 * again!
 			 */
 			LM_DBG("ACK/PRACK workaround applied!%d\n", info->interval);
-			set_timeout_avp(msg, info->interval);
+			set_dialog_lifetime(did, info->interval);
 		}
 	}
 	else if (msg->first_line.type == SIP_REPLY) {
@@ -471,7 +465,7 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				// FIXME: need an error message here
 				return;
 			}
-			set_timeout_avp(msg, minfo.se);
+			set_dialog_lifetime(did, minfo.se);
 	info->supported = (minfo.supported?SST_UAC:SST_UNDF);
 			info->interval = minfo.se;
 		}
@@ -550,10 +544,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 				else
 					info->interval = MAX(minfo.se, sst_min_se);
 				LM_DBG("UAS supports timer\n");
-				if (set_timeout_avp(msg, info->interval)) {
-					// FIXME: need an error message here
-					return;
-				}
+				set_dialog_lifetime(did, info->interval);
 			}
 			else {
 				/* no se header found, we want to resquest it. */
@@ -579,9 +570,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 						return;
 					}
 					/* Set the dialog timeout HERE */
-					if (set_timeout_avp(msg, info->interval)) {
-						return;
-					}
+					set_dialog_lifetime(did, info->interval);
 				}
 				else {
 					/* We are sunk, uac did not request it, and it
@@ -590,9 +579,7 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 							" No session timers for this session.\n");
 					param = find_param_export("dialog", "default_timeout", INT_PARAM);
 					info->interval = param?*param:12*3600;
-					if (set_timeout_avp(msg, info->interval)) {
-						return;
-					}
+					set_dialog_lifetime(did, info->interval);
 				}
 			}
 		} /* End of 2XX for an INVITE */
@@ -821,46 +808,16 @@ static int remove_minse_header(struct sip_msg *msg)
  * Set the dialog's AVP value so the dialog module will use this value
  * and not the default when returning from the dialog callback.
  *
- * @param msg The current message to bind the AVP to.
+ * @param dlg The current dialog
  * @param value The value you want to set the AVP to.
- *
- * @return 0 on success, -1 on an error.
  */
-static int set_timeout_avp(struct sip_msg *msg, unsigned int value)
+static void set_dialog_lifetime(struct dlg_cell *dlg, unsigned int value)
 {
-	int rtn = -1; /* assume failure */
-	pv_value_t pv_val;
-	int result = 0;
-
 	/* Set the dialog timeout HERE */
-	if (timeout_avp) {
-		if ((result = pv_get_spec_value(msg, timeout_avp, &pv_val)) == 0) {
-			/* We now hold a reference to the AVP */
-			if (pv_val.flags & PV_VAL_INT && pv_val.ri == value) {
-				/* INT AVP with the same value */
-				LM_DBG("Current timeout value already set to %d\n",
-					value);
-				rtn = 0;
-			} else {
-				/* AVP not found or non-INT value -> add a new one*/
-				pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
-				pv_val.ri = value;
-				if (pv_set_value(msg,timeout_avp,EQ_T,&pv_val)!=0) {
-					LM_ERR("failed to set new dialog timeout value\n");
-				} else {
-					LM_DBG("set dialog timeout value to %d\n", value);
-					rtn = 0;
-				}
-			}
-		}
-		else {
-			LM_ERR("SST not reset. get avp result is %d\n", result);
-		}
-	}
-	else {
-		LM_ERR("SST needs to know the name of the dialog timeout AVP!\n");
-	}
-	return(rtn);
+	dlg->lifetime = value;
+	dlg->lifetime_dirty = 1;
+
+	LM_DBG("set dialog timeout value to %d\n", value);
 }
 
 /**
