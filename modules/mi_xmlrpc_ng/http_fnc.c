@@ -560,6 +560,7 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 	struct mi_attr *attr;
 	str temp_holder;
 	int temp_counter;
+	int insert_node_separator;
 
 	/* name and value */
 	if (node->name.s!=NULL) {
@@ -569,15 +570,26 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 		}
 		MI_XMLRPC_HTTP_COPY(*pointer,
 				node->name);
+		insert_node_separator = 1;
+	} else {
+		insert_node_separator = 0;
 	}
 	if (node->value.s!=NULL) {
-		MI_XMLRPC_HTTP_COPY(*pointer,
+		if (insert_node_separator) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
 				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+			insert_node_separator = 0;
+		}
 		MI_XMLRPC_HTTP_ESC_COPY(*pointer, node->value,
 				temp_holder, temp_counter);
 	}
 	/* attributes */
 	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
+		if (insert_node_separator) {
+			MI_XMLRPC_HTTP_COPY(*pointer,
+				MI_XMLRPC_HTTP_NODE_SEPARATOR);
+			insert_node_separator = 0;
+		}
 		if (attr->name.s!=NULL) {
 			MI_XMLRPC_HTTP_COPY_3(*pointer,
 					MI_XMLRPC_HTTP_ATTR_SEPARATOR,
