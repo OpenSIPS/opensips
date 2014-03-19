@@ -669,7 +669,7 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 
 	reset_e2eack_t();
 
-	return t_unref(foo);
+	return t_unref(foo) == 0 ? SCB_DROP_MSG : SCB_RUN_ALL;
 }
 
 
@@ -691,7 +691,8 @@ static int script_init( struct sip_msg *foo, void *bar)
 	t_on_negative( 0 );
 	t_on_reply(0);
 	t_on_branch(0);
-	return 1;
+
+	return SCB_RUN_ALL;
 }
 
 

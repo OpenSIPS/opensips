@@ -150,12 +150,16 @@ void destroy_script_cb(void)
 
 static inline int exec_pre_cb( struct sip_msg *msg, struct script_cb *cb)
 {
+	int bitmask = SCB_RUN_ALL;
+
 	for ( ; cb ; cb=cb->next ) {
-		/* stop on error */
-		if (cb->cbf(msg, cb->param)==0)
-			return 0;
+		bitmask &= cb->cbf(msg, cb->param);
+
+		if (bitmask == SCB_DROP_MSG)
+			break;
 	}
-	return 1;
+
+	return bitmask;
 }
 
 

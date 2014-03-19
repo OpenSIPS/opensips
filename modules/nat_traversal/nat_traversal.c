@@ -1910,16 +1910,16 @@ preprocess_request(struct sip_msg *msg, void *_param)
     str totag;
 
     if (msg->REQ_METHOD != METHOD_INVITE)
-        return 1;
+        return SCB_RUN_ALL;
 
     if (parse_headers(msg, HDR_TO_F, 0) == -1) {
         LM_ERR("failed to parse To header\n");
-        return -1;
+        return SCB_RUN_ALL;
     }
 
     if (!msg->to) {
         LM_ERR("missing To header\n");
-        return -1;
+        return SCB_RUN_ALL;
     }
 
     totag = get_to(msg)->tag_value;
@@ -1927,7 +1927,7 @@ preprocess_request(struct sip_msg *msg, void *_param)
         msg->msg_flags |= FL_NAT_TRACK_DIALOG;
     }
 
-    return 1;
+	return SCB_RUN_ALL;
 }
 
 

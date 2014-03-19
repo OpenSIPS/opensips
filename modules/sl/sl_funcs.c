@@ -55,6 +55,7 @@
 #include "../../action.h"
 #include "../../config.h"
 #include "../../tags.h"
+#include "../../script_cb.h"
 #include "sl.h"
 #include "sl_funcs.h"
 #include "sl_cb.h"
@@ -262,7 +263,7 @@ int sl_filter_ACK(struct sip_msg *msg, void *bar )
 	if (parse_headers( msg, HDR_TO_F, 0 )==-1)
 	{
 		LM_ERR("unable to parse To header\n");
-		return -1;
+		return SCB_RUN_ALL;
 	}
 
 	if (msg->to) {
@@ -276,12 +277,13 @@ int sl_filter_ACK(struct sip_msg *msg, void *bar )
 				LM_DBG("local ACK found -> dropping it!\n");
 				if_update_stat( sl_enable_stats, rcv_acks, 1);
 				run_sl_callbacks( SLCB_ACK_IN, msg, 0, 0, 0, 0 );
-				return 0;
+
+				return SCB_DROP_MSG;
 			}
 		}
 	}
 
 pass_it:
-	return 1;
+	return SCB_RUN_ALL;
 }
 

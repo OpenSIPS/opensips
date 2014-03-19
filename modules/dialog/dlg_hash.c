@@ -55,6 +55,7 @@
 #include "../../md5utils.h"
 #include "../../parser/parse_to.h"
 #include "../tm/tm_load.h"
+#include "../../script_cb.h"
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 #include "dlg_replication.h"
@@ -83,8 +84,7 @@ int dialog_cleanup( struct sip_msg *msg, void *param )
 	dlg_tmp_timeout = -1;
 	dlg_tmp_timeout_id = -1;
 
-	/* need to return non-zero - 0 will break the exec of the request */
-	return 1;
+	return SCB_RUN_ALL;
 }
 
 

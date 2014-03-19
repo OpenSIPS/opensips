@@ -738,7 +738,8 @@ static int trace_dialog(struct sip_msg *msg)
 static int siptrace_cleanup( struct sip_msg *msg, void *param )
 {
 	do_dlg_siptrace=0;
-	return 0;
+
+	return SCB_DROP_MSG;
 }
 
 static void siptrace_dlg_created(struct dlg_cell *did, int type,

@@ -34,8 +34,20 @@
 
 #include "parser/msg_parser.h"
 
+/**
+ * @return:
+ * - SCB_DROP_MSG stops the processing (also skips any other callbacks)
+ * - a combination of the SCB_ flags or SCB_RUN_ALL for any other cases
+ *
+ * NB: return values are logically AND'ed
+ *   (one module may wish to skip top route, others may skip post callbacks)
+ */
 typedef int (cb_function)( struct sip_msg *msg, void *param );
 
+#define SCB_DROP_MSG      0
+#define SCB_RUN_TOP_ROUTE (1<<0)
+#define SCB_RUN_POST_CBS  (1<<1)
+#define SCB_RUN_ALL (SCB_RUN_TOP_ROUTE | SCB_RUN_POST_CBS)
 
 #define PRE_SCRIPT_CB    (1<<0)
 #define POST_SCRIPT_CB   (1<<1)

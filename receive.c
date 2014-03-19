@@ -88,6 +88,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 {
 	struct sip_msg* msg;
 	struct timeval start;
+	int rc;
 	char *tmp;
 
 	msg=pkg_malloc(sizeof(struct sip_msg));
@@ -162,16 +163,20 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		 * (like presence of at least one via), so you can count
 		 * on via1 being parsed in a pre-script callback --andrei
 		 */
-		if (exec_pre_req_cb(msg)==0 ) {
+		rc = exec_pre_req_cb(msg);
+		if (rc == SCB_DROP_MSG) {
 			update_stat( drp_reqs, 1);
 			goto end; /* drop the message */
 		}
 
 		/* exec the routing script */
-		run_top_route(rlist[DEFAULT_RT].a, msg);
+		if (rc & SCB_RUN_TOP_ROUTE)
+			run_top_route(rlist[DEFAULT_RT].a, msg);
 
 		/* execute post request-script callbacks */
-		exec_post_req_cb(msg);
+		if (rc & SCB_RUN_POST_CBS)
+			exec_post_req_cb(msg);
+
 	} else if (msg->first_line.type==SIP_REPLY) {
 		update_stat( rcv_rpls, 1);
 		/* sanity checks */
@@ -192,15 +197,17 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		 * (like presence of at least one via), so you can count
 		 * on via1 being parsed in a pre-script callback --andrei
 		 */
-		if (exec_pre_rpl_cb(msg)==0 ) {
+		rc = exec_pre_rpl_cb(msg);
+		if (rc == SCB_DROP_MSG) {
 			update_stat( drp_rpls, 1);
 			goto end; /* drop the reply */
 		}
 
 		/* exec the onreply routing script */
-		if ( onreply_rlist[DEFAULT_RT].a!=0 &&
-		(run_top_route(onreply_rlist[DEFAULT_RT].a,msg)&ACT_FL_DROP)
-		&& msg->REPLY_STATUS<200 ) {
+		if (rc & SCB_RUN_TOP_ROUTE &&  onreply_rlist[DEFAULT_RT].a &&
+		    (run_top_route(onreply_rlist[DEFAULT_RT].a,msg) & ACT_FL_DROP)
+		    && msg->REPLY_STATUS < 200) {
+
 			LM_DBG("dropping provisional reply %d\n", msg->REPLY_STATUS);
 			update_stat( drp_rpls, 1);
 			goto end; /* drop the message */
@@ -211,7 +218,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		}
 
 		/* execute post reply-script callbacks */
-		exec_post_rpl_cb(msg);
+		if (rc & SCB_RUN_POST_CBS)
+			exec_post_rpl_cb(msg);
 	}
 
 end:

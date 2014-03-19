@@ -48,7 +48,8 @@ int pua_set_publish(struct sip_msg* msg , char* s1, char* s2)
 int pua_unset_publish(struct sip_msg* msg , void* param)
 {
 	pua_ul_publish= 0;
-	return 1;
+
+	return SCB_RUN_ALL;
 }
 
 

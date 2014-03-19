@@ -46,6 +46,7 @@
 #include "../../resolve.h"
 #include "../../action.h"
 #include "../../route.h"
+#include "../../script_cb.h"
 #include "ip_tree.h"
 #include "pike_funcs.h"
 #include "timer.h"
@@ -201,12 +202,13 @@ int pike_check_req(struct sip_msg *msg)
 int run_pike_route( struct sip_msg *msg, void *rt ) {
 	/* the check was dropped */
 	if ( run_top_route( rlist[(int)(long)rt].a, msg)&ACT_FL_DROP)
-		return 1;
+		return SCB_RUN_ALL;
 
 	/* run the check */
 	if (pike_check_req(msg)<0)
-		return 0;
-	return 1;
+		return SCB_DROP_MSG;
+
+	return SCB_RUN_ALL;
 }
 
 
