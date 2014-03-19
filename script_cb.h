@@ -56,14 +56,19 @@ typedef int (cb_function)( struct sip_msg *msg, void *param );
 #define PARSE_ERR_CB     (1<<4)
 
 
-struct script_cb{
+struct script_cb {
 	cb_function *cbf;
 	struct script_cb *next;
 	unsigned int id;
 	void *param;
+	int prio; /* allows callback ordering; highest runs first */
 };
 
-int register_script_cb( cb_function f, int type, void *param );
+#define register_script_cb(func, type, param) \
+	__register_script_cb(func, type, param, 0)
+
+/* sorted by priority in descending order (highest prio callback runs first) */
+int __register_script_cb( cb_function f, int type, void *param, int prio);
 void destroy_script_cb();
 
 int exec_pre_req_cb( struct sip_msg *msg);

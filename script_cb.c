@@ -52,7 +52,7 @@ static unsigned int cb_id=0;
 
 
 static inline int add_callback( struct script_cb **list,
-	cb_function f, void *param)
+	cb_function f, void *param, int prio)
 {
 	struct script_cb *last_cb;
 	struct script_cb *new_cb;
@@ -66,20 +66,31 @@ static inline int add_callback( struct script_cb **list,
 	new_cb->id = cb_id++;
 	new_cb->param = param;
 	new_cb->next = NULL;
-	/* link at the end of the list - it is important to keep the order of
-	  register time, as this reflects the order of loading/init the modules
-	  -bogdan */
+	new_cb->prio = prio;
+
+	/* descending priority sorting; equal priorities are inserted at the end
+	  it is important to keep the order at register time, as this reflects the
+	  order of loading/init the modules --bogdan */
 	if (*list==NULL) {
 		*list = new_cb;
+	} else if ((*list)->prio < prio) {
+		new_cb->next = *list;
+		*list = new_cb;
 	} else {
-		for( last_cb=*list ; last_cb->next!=NULL ; last_cb=last_cb->next);
+		for (last_cb = *list;
+		     last_cb->next && last_cb->next->prio >= prio;
+		     last_cb = last_cb->next)
+			;
+
+		new_cb->next = last_cb->next;
 		last_cb->next = new_cb;
 	}
+
 	return 0;
 }
 
 
-int register_script_cb( cb_function f, int type, void *param )
+int __register_script_cb( cb_function f, int type, void *param, int prio)
 {
 	/* type checkings */
 	if ( (type&(REQ_TYPE_CB|RPL_TYPE_CB|PARSE_ERR_CB))==0 ) {
@@ -93,27 +104,27 @@ int register_script_cb( cb_function f, int type, void *param )
 	}
 
 	if (type&PARSE_ERR_CB) {
-		if (add_callback( &parse_err_cb, f, param)<0)
+		if (add_callback( &parse_err_cb, f, param, prio)<0)
 			goto add_error;
 	}
 
 	if (type&REQ_TYPE_CB) {
 		/* callback for request script */
 		if (type&PRE_SCRIPT_CB) {
-			if (add_callback( &pre_req_cb, f, param)<0)
+			if (add_callback( &pre_req_cb, f, param, prio)<0)
 				goto add_error;
 		} else if (type&POST_SCRIPT_CB) {
-			if (add_callback( &post_req_cb, f, param)<0)
+			if (add_callback( &post_req_cb, f, param, prio)<0)
 				goto add_error;
 		}
 	}
 	if (type&RPL_TYPE_CB) {
 		/* callback (also) for reply script */
 		if (type&PRE_SCRIPT_CB) {
-			if (add_callback( &pre_rpl_cb, f, param)<0)
+			if (add_callback( &pre_rpl_cb, f, param, prio)<0)
 				goto add_error;
 		} else if (type&POST_SCRIPT_CB) {
-			if (add_callback( &post_rpl_cb, f, param)<0)
+			if (add_callback( &post_rpl_cb, f, param, prio)<0)
 				goto add_error;
 		}
 	}
