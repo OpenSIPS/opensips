@@ -176,8 +176,12 @@ static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 
 static inline int dupl_string(str* dst, const char* begin, const char* end)
 {
+	str tmp;
 	if (dst->s)
 		shm_free(dst->s);
+
+	tmp.s = (char *)begin;
+	tmp.len = end - begin;
 
 	dst->s = shm_malloc(end - begin + 1);
 	if (!dst->s) {
@@ -185,9 +189,13 @@ static inline int dupl_string(str* dst, const char* begin, const char* end)
 		return -1;
 	}
 
-	memcpy(dst->s, begin, end - begin);
-	dst->s[end - begin] = 0;
-	dst->len = end - begin + 1;
+	if (un_escape(&tmp, dst) < 0)
+		return -1;
+
+	/* NULL-terminate the string */
+	dst->s[dst->len] = 0;
+	dst->len++;
+
 	return 0;
 }
 
