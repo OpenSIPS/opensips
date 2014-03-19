@@ -208,11 +208,27 @@ _modules: $(modules)
 
 .PHONY: $(modules)
 $(modules):
-	@if ! echo $(MAKEFLAGS) | grep -q -- --jobserver; then echo; echo; fi  # extra LF if not using -j
-	$(MAKE) -C $@
+	@$(MAKE) --no-print-directory -C $@ && \
+		echo "Building $(notdir $@) module succeeded" || (\
+			status=$$?; \
+			echo "ERROR: Building $(notdir $@) module failed!"; \
+			exit $$status; \
+		)
 
 .PHONY: modules
 modules:
+ifeq (,$(FASTER))
+	@set -e; \
+	for r in $(modules) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -d "$$r" ]; then \
+				echo  "" ; \
+				echo  "" ; \
+				$(MAKE) -j -C $$r ; \
+			fi ; \
+		fi ; \
+	done
+else
 	@$(MAKE) _modules || ( \
 		status=$$?; \
 		if echo $(MAKEFLAGS) | grep -q -- --jobserver; then \
@@ -221,6 +237,7 @@ modules:
 		fi; \
 		exit $$status \
 	)
+endif
 
 
 .PHONY: modules-readme

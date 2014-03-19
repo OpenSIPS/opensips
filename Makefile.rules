@@ -21,7 +21,9 @@ all_utils:=$(addprefix utils/, $(all_utils))
 
 #implicit rules
 %.o: %.c $(ALLDEP)
+ifeq (,$(FASTER))
 	@echo "Compiling $<"
+endif
 	$(Q)$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
 
 %.d: %.c $(ALLDEP)
@@ -32,7 +34,9 @@ all_utils:=$(addprefix utils/, $(all_utils))
 
 # normal rules
 $(NAME): $(NEWREVISION) $(objs) $(ALLDEP)
+ifeq (,$(FASTER))
 	@echo "Linking $(NAME)"
+endif
 	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
 
 
