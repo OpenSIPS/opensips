@@ -31,6 +31,7 @@
 #include "../../parser/parse_expires.h"
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
+#include "../../script_cb.h"
 #include "../usrloc/usrloc.h"
 #include "../usrloc/ul_callback.h"
 #include "../tm/tm_load.h"
