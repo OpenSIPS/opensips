@@ -43,7 +43,7 @@
 long connection_timeout = 20;
 long curl_timeout = 20;
 
-char *ssl_ca_path;
+char *ssl_capath;
 
 /* libcurl enables these by default */
 int ssl_verifypeer = 1;
@@ -102,7 +102,7 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{ "connection_timeout",	INT_PARAM, &connection_timeout	},
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
-	{ "ssl_ca_path",		STR_PARAM, &ssl_ca_path			},
+	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
 	{ 0, 0, 0 }

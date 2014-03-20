@@ -83,8 +83,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
 
-	if (ssl_ca_path)
-		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_ca_path);
+	if (ssl_capath)
+		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
 
 	if (!ssl_verifypeer)
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -196,8 +196,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
 
-	if (ssl_ca_path)
-		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_ca_path);
+	if (ssl_capath)
+		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
 
 	if (!ssl_verifypeer)
 		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);

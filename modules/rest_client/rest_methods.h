@@ -35,7 +35,7 @@
 extern long connection_timeout;
 extern long curl_timeout;
 
-extern char *ssl_ca_path;
+extern char *ssl_capath;
 extern int ssl_verifypeer;
 extern int ssl_verifyhost;
 
