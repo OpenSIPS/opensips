@@ -876,7 +876,7 @@ error:
 
 	if (forced_c) free_contacts(&forced_c);
 
-	return 0;
+	return -2;
 
 return_minus_one:
 	if (forced_c) free_contacts(&forced_c);
