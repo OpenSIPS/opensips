@@ -33,6 +33,13 @@
 #define RMQ_SIZE (sizeof(rmq_send_t *))
 #define IS_ERR(_err) (errno == _err)
 
+#ifdef HAVE_SCHED_YIELD
+#include <sched.h>
+#else
+#include <unistd.h>
+/** Fake sched_yield if no unistd.h include is available */
+        #define sched_yield()   sleep(0)
+#endif
 
 /* used to communicate with the sending process */
 static int rmq_pipe[2];
