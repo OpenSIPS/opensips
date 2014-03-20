@@ -50,8 +50,10 @@ dep: $(depends)
 static: $(objs)
 
 Makefile.conf: Makefile.conf.template
-	@echo Creating new $<
-	@cp $< $@
+	@if ! [ -e "$@" ]; then \
+		echo Creating new $@; \
+		cp $< $@; \
+	fi
 
 
 .PHONY: dosetrev
