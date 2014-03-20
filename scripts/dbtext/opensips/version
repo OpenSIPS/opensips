@@ -5,9 +5,13 @@ address:5
 aliases:1007
 b2b_entities:1
 b2b_logic:2
+b2b_sca:1
 cachedb:1
 carrierfailureroute:2
 carrierroute:3
+cc_agents:1
+cc_cdrs:1
+cc_flows:1
 closeddial:1
 cpl:2
 dbaliases:2
