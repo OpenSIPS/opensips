@@ -1179,7 +1179,7 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 
 		if(!strcmp(extstr, "subjectAltName"))
 		{
-			if(!(meth = X509V3_EXT_get(cext)))
+			if(!(meth = (X509V3_EXT_METHOD*)X509V3_EXT_get(cext)))
 			{
 				LM_ERR("X509V3_EXT_get failed\n");
 				return 0;
