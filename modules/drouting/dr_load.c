@@ -185,6 +185,13 @@ error:
 #define STR_VALS_ATTRS_DRD_COL    2
 #define STR_VALS_GWID_DRD_COL     3
 
+/* dr_carriers table */
+#define INT_VALS_ID_DRC_COL       0
+#define INT_VALS_FLAGS_DRC_COL    1
+#define INT_VALS_STATE_DRC_COL    2
+#define STR_VALS_CID_DRC_COL      0
+#define STR_VALS_GWLIST_DRC_COL   1
+#define STR_VALS_ATTRS_DRC_COL    2
 
 rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		str *drd_table, str *drc_table, str* drr_table, int persistent_state)
@@ -396,32 +403,36 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				row = RES_ROWS(res) + i;
 				/* ID column */
 				check_val( id_drc_col, ROW_VALUES(row), DB_INT, 1, 0);
-				int_vals[0] = VAL_INT(ROW_VALUES(row));
+				int_vals[INT_VALS_ID_DRC_COL] = VAL_INT(ROW_VALUES(row));
 				/* CARRIER_ID column */
 				check_val( cid_drc_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-				str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+				str_vals[STR_VALS_CID_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 				/* flags column */
 				check_val( flags_drc_col, ROW_VALUES(row)+2, DB_INT, 1, 0);
-				int_vals[1] = VAL_INT(ROW_VALUES(row)+2);
+				int_vals[INT_VALS_FLAGS_DRC_COL] = VAL_INT(ROW_VALUES(row)+2);
 				/* GWLIST column */
 				check_val( gwlist_drc_col, ROW_VALUES(row)+3, DB_STRING, 1, 1);
-				str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+3);
+				str_vals[STR_VALS_GWLIST_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+3);
 				/* ATTRS column */
 				check_val( attrs_drc_col, ROW_VALUES(row)+4, DB_STRING, 0, 0);
-				str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 				/* STATE column */
 				if (persistent_state) {
 					check_val( state_drc_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
-					int_vals[2] = VAL_INT(ROW_VALUES(row)+5);
+					int_vals[INT_VALS_STATE_DRC_COL] = VAL_INT(ROW_VALUES(row)+5);
 				} else {
-					int_vals[2] = 0; /* by default enabled */
+					int_vals[INT_VALS_STATE_DRC_COL] = 0; /* by default enabled */
 				}
 
 				/* add the new carrier */
-				if ( add_carrier( int_vals[0], str_vals[0], int_vals[1],
-				str_vals[1], str_vals[2], int_vals[2], rdata) != 0 ) {
+				if ( add_carrier( int_vals[INT_VALS_ID_DRC_COL],
+						str_vals[STR_VALS_CID_DRC_COL],
+						int_vals[INT_VALS_FLAGS_DRC_COL],
+						str_vals[STR_VALS_GWLIST_DRC_COL],
+						str_vals[STR_VALS_ATTRS_DRC_COL],
+						int_vals[INT_VALS_STATE_DRC_COL], rdata) != 0 ) {
 					LM_ERR("failed to add carrier db_id %d -> skipping\n",
-						int_vals[0]);
+						int_vals[INT_VALS_ID_DRC_COL]);
 					continue;
 				}
 			}
