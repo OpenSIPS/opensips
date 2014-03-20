@@ -49,6 +49,11 @@ dep: $(depends)
 .PHONY: static
 static: $(objs)
 
+Makefile.conf: Makefile.conf.template
+	@echo Creating new $<
+	@cp $< $@
+
+
 .PHONY: dosetrev
 dosetrev:
 	@echo "New $(VERSIONTYPE) revision: $(THISREVISION)"
