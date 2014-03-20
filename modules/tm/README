@@ -1079,16 +1079,22 @@ branch_route[1] {
 1.5.3. $T_fr_timeout
 
    $T_fr_timeout (R/W) - the timeout for the final reply to the
-   current transaction; with each different request received,
-   $T_fr_timeout will initially be equal to the fr_timeout
-   parameter.
+   current transaction
+
+   With each different request received, $T_fr_timeout will
+   initially be equal to the fr_timeout parameter.
+
+   "$T_fr_timeout = NULL;" will reset it to fr_timeout.
 
 1.5.4. $T_fr_inv_timeout
 
    $T_fr_inv_timeout (R/W) - the timeout for the final reply to an
-   INVITE request, after a 1XX reply was received; with each
-   different request received, $T_fr_inv_timeout will initially be
-   equal to the fr_inv_timeout parameter.
+   INVITE request, after a 1XX reply was received
+
+   With each different request received, $T_fr_inv_timeout will
+   initially be equal to the fr_inv_timeout parameter.
+
+   "$T_fr_inv_timeout = NULL;" will reset it to fr_inv_timeout.
 
 1.5.5. $T_ruri
 

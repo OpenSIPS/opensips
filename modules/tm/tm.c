@@ -614,6 +614,7 @@ int load_tm( struct tm_binds *tmb)
 
 	/* relay function */
 	tmb->t_relay = (cmd_function)w_t_relay;
+
 	/* reply functions */
 	tmb->t_reply = (treply_f)w_t_reply;
 	tmb->t_reply_with_body = t_reply_with_body;
@@ -621,6 +622,7 @@ int load_tm( struct tm_binds *tmb)
 	/* transaction location/status functions */
 	tmb->t_newtran = t_newtran;
 	tmb->t_is_local = t_is_local;
+	tmb->t_check_trans = (cmd_function)t_check_trans;
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
@@ -1904,20 +1906,30 @@ int pv_set_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param, int op,
                          pv_value_t *val)
 {
 	struct cell *t;
+	int timeout;
 
-	if (!msg || !val)
+	if (!msg)
 		return -1;
+
+	/* "$T_fr_timer = NULL" will set the default timeout */
+	if (!val) {
+		timeout = timer_id2timeout[FR_TIMER_LIST];
+		goto set_timeout;
+	}
 
 	if (!(val->flags & PV_VAL_INT)) {
 		LM_ERR("assigning non-int value as a timeout\n");
 		return -1;
 	}
 
+	timeout = val->ri;
+
+set_timeout:
 	t = get_t();
 	if (t && t != T_UNDEFINED)
-		t->fr_timeout = val->ri;
+		t->fr_timeout = timeout;
 	else
-		fr_timeout = val->ri;
+		fr_timeout = timeout;
 
 	return 0;
 }
@@ -1942,20 +1954,30 @@ int pv_set_tm_fr_inv_timeout(struct sip_msg *msg, pv_param_t *param,
                              int op, pv_value_t *val)
 {
 	struct cell *t;
+	int timeout;
 
-	if (!msg || !val)
+	if (!msg)
 		return -1;
+
+	/* "$T_fr_inv_timer = NULL" will set the default timeout */
+	if (!val) {
+		timeout = timer_id2timeout[FR_INV_TIMER_LIST];
+		goto set_timeout;
+	}
 
 	if (!(val->flags & PV_VAL_INT)) {
 		LM_ERR("assigning non-int value as a timeout\n");
 		return -1;
 	}
 
+	timeout = val->ri;
+
+set_timeout:
 	t = get_t();
 	if (t && t != T_UNDEFINED)
-		t->fr_inv_timeout = val->ri;
+		t->fr_inv_timeout = timeout;
 	else
-		fr_inv_timeout = val->ri;
+		fr_inv_timeout = timeout;
 
 	return 0;
 }

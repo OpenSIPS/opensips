@@ -49,6 +49,7 @@
 struct tm_binds {
 	register_tmcb_f  register_tmcb;
 	cmd_function     t_relay;
+	cmd_function     t_check_trans;
 	tnewtran_f       t_newtran;
 	treply_f         t_reply;
 	treply_wb_f      t_reply_with_body;

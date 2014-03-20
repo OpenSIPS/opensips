@@ -1452,10 +1452,17 @@ branch_route[1] {
 		<title>$T_fr_timeout</title>
 			<para>
 			<emphasis>$T_fr_timeout (R/W)</emphasis> - the timeout
-			for the final reply to the current transaction; with each different
+			for the final reply to the current transaction
+			</para>
+			<para>
+			With each different
 			request received, <emphasis>$T_fr_timeout</emphasis> will initially
 			be equal to the
 			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis> parameter.
+			</para>
+			<para>
+			<emphasis>"$T_fr_timeout = NULL;"</emphasis> will reset it to
+			<emphasis role='bold'><xref linkend="fr_timeout"/></emphasis>.
 			</para>
 		</section>
 		<section>
@@ -1463,10 +1470,17 @@ branch_route[1] {
 			<para>
 			<emphasis>$T_fr_inv_timeout (R/W)</emphasis> - the timeout
 			for the final reply to an INVITE request, after a 1XX reply
-			was received; with each different request received,
+			was received
+			</para>
+			<para>
+			With each different request received,
 			<emphasis>$T_fr_inv_timeout</emphasis> will initially be equal to the
 			<emphasis role='bold'>
 			<xref linkend="fr_inv_timeout"/></emphasis> parameter.
+			</para>
+			<para>
+			<emphasis>"$T_fr_inv_timeout = NULL;"</emphasis> will reset it to
+			<emphasis role='bold'><xref linkend="fr_inv_timeout"/></emphasis>.
 			</para>
 		</section>
 		<section>
