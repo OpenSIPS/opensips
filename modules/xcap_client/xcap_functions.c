@@ -83,10 +83,10 @@ void xcapFreeNodeSel(xcap_node_sel_t* node)
 	n= node->ns_list;
 	while(n)
 	{
-		m= n;
-		n= n->next;
-		pkg_free(n->value.s);
-		pkg_free(n);
+		m=n;
+		n=n->next;
+		pkg_free(m->value.s);
+		pkg_free(m);
 	}
 
 	pkg_free(node);
