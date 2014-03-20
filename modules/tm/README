@@ -583,7 +583,7 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 
 1.3.18. own_timer_proc (integer)
 
-   If TM module should create its own timer(s) process (timer is
+   If TM module should create its own timer process(es) (timer is
    used for handling retransmissions, timeouts, etc). If disabled,
    TM will used the global timer process which may be affected
    (desynchronized) by the operations performed by other modules

@@ -663,7 +663,7 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 	<section>
 		<title><varname>own_timer_proc</varname> (integer)</title>
 		<para>
-		If TM module should create its own timer(s) process (timer is used for 
+		If TM module should create its own timer process(es) (timer is used for 
 		handling retransmissions, timeouts, etc). If disabled, TM will used
 		the global timer process which may be affected (desynchronized) by
 		the operations performed by other modules on that timer (like usrloc
