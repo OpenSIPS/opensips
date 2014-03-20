@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<scenario id="call center" name="Call center" param="1" type="script">
+	<init>
+		<bridge>
+			<server>
+				<id>server1</id>
+			</server>
+			<client>
+				<id>client1</id>
+				<type>message</type>
+				<destination>
+					<value type="param">1</value>
+				</destination>
+			</client>
+		</bridge>
+		<state>1</state>
+	</init>
+</scenario>

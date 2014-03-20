@@ -1,0 +1,86 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+	<title>Overview</title>
+	<para>
+	TODO
+	</para>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>b2b_logic</emphasis> - B2bUA module
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>database</emphasis> - one of the SQL DB modules
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+
+	<section>
+	<title>Exported Parameters</title>
+
+	</section>
+
+
+	<section>
+	<title>Exported Functions</title>
+
+	</section>
+
+
+	<section>
+	<title>Exported statistics</title>
+	</section>
+
+
+	<section>
+	<title>Exported MI Functions</title>
+
+	</section>
+
+
+	<section>
+	<title>Exported pseudo-variables</title>
+	<para>
+	NONE
+	</para>
+	</section>
+
+
+
+</chapter>
+
