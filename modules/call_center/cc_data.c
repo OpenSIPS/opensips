@@ -214,7 +214,7 @@ void update_cc_flow_awt(struct cc_flow *flow, unsigned long duration)
 		(float)flow->avg_waittime_no;
 }
 
-
+#ifdef STATISTICS
 static unsigned long cc_flow_get_etw( void *flow_p)
 {
 	struct cc_flow *flow = (struct cc_flow*)flow_p;
@@ -237,7 +237,7 @@ static unsigned long cc_flow_get_load( void *flow_p)
 	return (flow->logged_agents==0) ? 0 :
 	(100*(get_stat_val(flow->st_onhold_calls)+flow->logged_agents-cc_flow_free_agents(flow))/flow->logged_agents);
 }
-
+#endif
 
 int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 												str *cid, str *recordings )
@@ -245,8 +245,10 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 	struct cc_flow *flow, *prev_flow;
 	unsigned int i;
 	unsigned int skill_id;
+#ifdef STATISTICS
 	char *name;
 	str s;
+#endif
 
 	/* is the flow a new one? - search by ID */
 	flow = get_flow_by_name( data, id);
@@ -295,6 +297,7 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 				flow->recordings[i].len = recordings[i].len;
 			}
 		}
+#ifdef STATISTICS
 		/* statistics */
 		s.s = "ccf_incalls";s.len = 11 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
@@ -360,6 +363,7 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
+#endif
 
 		flow->is_new = 1;
 		/* insert the new flow in the list */
@@ -459,11 +463,12 @@ void update_cc_agent_att(struct cc_agent *agent, unsigned long duration)
 }
 
 
+#ifdef STATISTICS
 static unsigned long cc_agent_get_att( void *agent_p)
 {
 	return (unsigned long)((struct cc_agent*)agent_p)->avg_talktime;
 }
-
+#endif
 
 int add_cc_agent( struct cc_data *data, str *id, str *location,
 				str *skills, unsigned int logstate, unsigned int last_call_end)
@@ -473,8 +478,10 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 	str skill;
 	char *p;
 	unsigned int n,skill_id;
+#ifdef STATISTICS
 	char *name;
 	str s;
+#endif
 
 	/* is the agent a new one? - search by ID */
 	agent = get_agent_by_name( data, id, &prev_agent);
@@ -528,6 +535,7 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 			}
 		}
 		/* statistics */
+#ifdef STATISTICS
 		s.s = "cca_dist_incalls";s.len = 16 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
 		name, &agent->st_dist_incalls, STAT_SHM_NAME)!=0 ) {
@@ -553,6 +561,7 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
+#endif
 		if(last_call_end && (last_call_end + wrapup_time < (int)time(NULL))) {
 			agent->state = CC_AGENT_WRAPUP;
 			agent->last_call_end = last_call_end - startup_time; /* it will be a negative value */

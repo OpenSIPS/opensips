@@ -784,7 +784,7 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	call->eta = (unsigned int) (( flow->avg_call_duration * (float)get_stat_val(flow->st_queued_calls) ) /
 			(float)flow->logged_agents);
 	
-	LM_DBG("avg_call_duration=%.2f queued_calls=%ld logedin_agents=%d\n",
+	LM_DBG("avg_call_duration=%.2f queued_calls=%d logedin_agents=%d\n",
 		flow->avg_call_duration, get_stat_val(flow->st_queued_calls),
 		flow->logged_agents);
 
