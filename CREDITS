@@ -2,7 +2,7 @@
 #   OpenSIPS  #
 #=============#
 
-Current OpenSIPS team in alphabetical order as of 5 August 2013:
+Current OpenSIPS team in alphabetical order as of 20 March 2014:
 
 Core Team:
 
@@ -26,19 +26,31 @@ Saúl Ibarra Corretgé
 Dynamic Packet
 
 
-============== Release 1.10.0 =================
-Damien Sandras
-Ezequiel Lovelle
-Fabrizio Picconi
-Guillaume Bour
-Kiss Karoly
-Mark Dalby
-Michael Schloh von Bennewitz
-Nathaniel L Keeling III
+============== Release 1.11.0 =================
+Baptiste Cholley
+Brett Nemeroff
+Christian Lahme
+Damien Sanders
+Di-Shi Sun
+Earl C. Ruby III
+Jayesh Nambiar
+Jeff Pyle
+Marco Hierl
+Max E. Reyes Vera Juarez
+Mayama Takeshi
 Nick Altmann
 Norm Brandinger
+Richard Revels
+Rob Gagnon
 Ryan Bullock
-Saúl Ibarra Corretgé
-Steve Brisson
-Tolga Tarhan
+Stas Kobzar
+Stéphane Alnet
+Trevor Francis
 Walter Doekes
+csollet
+dcb314
+dexteruk
+fabriziopicconi
+franklyfox
+peppolon
+Varun (varunvairavan on GITHUB)
