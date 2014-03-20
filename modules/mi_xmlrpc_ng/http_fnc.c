@@ -732,13 +732,8 @@ int mi_xmlrpc_http_build_content(str *page, int max_page_len,
 int mi_xmlrpc_http_build_page(str *page, int max_page_len,
 				struct mi_root *tree)
 {
-	char *p, *buf;
-
 	if (0!=mi_xmlrpc_http_build_content(page, max_page_len, tree))
 		return -1;
-	buf = page->s;
-	p = page->s + page->len;
-
 	return 0;
 }
 
