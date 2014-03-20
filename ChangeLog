@@ -1,1466 +1,2532 @@
-=========================== Release 1.10.0 ==============================
+=========================== Release 1.11.0 ==============================
 
-2013-08-05  Liviu Chircu  <liviu at opensips dot org>
-	* [bde8c0a] :
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [1c7f225] :
 
-	Added a new module for performing voice transcoding using Sangoma D-series cards. (libsngtc_node dependency)
+	Makefile.conf.template: disable HP_MALLOC from the default setup
 
-2013-08-02  Damien Sandras  <dsandras at beip dot be>
-	* [70b6629] :
 
-	Improved PUA DialogInfo.
-	Several fixes here:
-	  - Dialog callbacks are now correctly setup after a restart of
-	    OpenSIPS. In other words, restarting OpenSIPS will not lead to ghost BLFs
-	    anymore.
-	  - Added an option allowing not to publish state change in case of reINVITE.
-	  - Added an option allowing not to publish state change in trying state.
-	    In other words, a PUBLISH will be sent only when OpenSIPS has received a
-	    18x response type and not before.
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [56b325b] :
 
-2013-08-02  Liviu Chircu  <liviu at opensips dot org>
-	* [a95b7c0] :
+	core: High Performance Memory Allocator included
+		* ideal for systems with high volumes of calls-per-second
+		* fine-grained locking
+		* tunable two-level hashing of free memory fragments
+		* memory allocation pattern recording
+		* fragmentation-on-startup
+		* enable "HP_MALLOC" within "make menuconfig"
 
-	Remove html file added in commit 7f22da1f69
 
-2013-08-02  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [7d3dc75] :
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [5fbc82f] :
 
-	Added async TCP support Currently only support for POLL and EPOLL polling methods Added tcp_async, tcp_async_local_connect_timeout, tcp_async_local_write_timeout and tcp_async_max_postponed_chunks script options for configuring async TCP Added tcp_max_msg_chunks and tcp_max_msg_time script options for configuring overall TCP reading
+	atomic.h: add 64-bit atomic operations
 
-2013-08-01  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [1aaef5e] :
 
-	fixed compile errors introduced by previous commit (cherry picked from commit 2a6542a230dca3e0078a89db6aca2509d1cef41e)
-	Conflicts:
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [66354d1] :
 
-		modules/sst/sst_handlers.c
+	update specs for 1.11
 
-2013-07-31  Damien Sandras  <dsandras at beip dot be>
-	* [bc0a807] :
 
-	Trigger exactly one callback per early state change.
-	There are several reasons behind this change:
-	1) Other callbacks are only triggered once for each state change.
-	2) SNOM phones send several 180 Ringing messages in a row. That triggers
-	several early dialog callbacks, which in turn trigger several PUBLISH
-	and NOTIFY through the pua_dialoginfo module. This can potentially lead
-	to problems.
+2014-03-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [fcc1ab5] :
 
-2013-07-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [9366758] :
+	Changed 1.11 status to beta
 
-	Fixed SST timer being reset to the lowest value on session refresh.
-	Conflicts:
 
-		modules/sst/sst_handlers.c
+2014-03-20  Răzvan Crainea  <razvan at opensips dot org>
+	* [1a0310f] :
 
-2013-07-31  Damien Sandras  <dsandras at beip dot be>
-	* [679dcf2] :
+	dialog: remove timeout_avp from docs
 
-	This patch implements several fixes to the SST module:
-	 - Fixed things when only one peer supports Session-Timers.
-	 - Fixed timer removal when both peers do not support Session-Timers and a
-	   timer was fired at some point.
-	 - Fixed Session-Timers usage in case of re-INVITES.
-	 - Allow the proxy to negotiate a lower Session-Expires value if configured
-	   to do so.
 
-2013-07-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [74f1c14] :
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [c6b1a6a] :
 
-	 auth_[realm|username|password]_avp parameters moved from UAC module to UAC_AUTH; the UAC_AUTH module is responsible for handling all the credentials (static or dynamic).  B2B module gets visibility to credentials defined via AVPs.
+	packaging: remove old debian-lenny
 
-2013-07-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [7643f6e] :
 
-	- updated docs for the module
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [d110328] :
 
-2013-07-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [346510b] :
+	update credits for 1.11
 
-	- new parameter "disable_dialog_support_for_sca" added - it controlls if the dialog support (for  SCA) should be enabled or not; without it, the module will expect to receive PUBLISH events from other entities; with the support enabled, the modules will internally PUBLISH the SCA events based on the dialog events.
 
-2013-07-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [707e9ed] :
+2014-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e2c7ece] :
 
-	- support for SCA Broadsoft based on dialog module
+	MYSQL DB migration script updated from 1.10 to 1.11 migration
 
-2013-07-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [a08f5c8] :
 
-	- enhanced the presence API to allow internal publishing (not via SIP) and a better control over the watchers (needed for SCA implementation)
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [bffa103] :
 
-2013-07-29  Liviu Chircu  <liviu at opensips dot org>
-	* [7f22da1] :
+	tm: fix README
 
-	Added a new mechanism for replicating dialogs using the new UDP-based internal communication interface
 
-2013-07-29  Liviu Chircu  <liviu at opensips dot org>
-	* [f78d87e] :
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [6d41b53] :
 
-	Fix: added all files from previous commit
+	tm: update doc for "own_timer_proc" parameter  - it defines the number of timer procs  - completes commit f001f098a0cf3996655e1ca47675b15d2f69c984
 
-2013-07-29  Liviu Chircu  <liviu at opensips dot org>
-	* [4aa361d] :
 
-	Added a new interface for UDP based inter-OpenSIPS communication
+2014-03-20  Răzvan Crainea  <razvan at opensips dot org>
+	* [ff3f11a] :
 
-2013-07-22  Răzvan Crainea  <razvan at opensips dot org>
-	* [96c7097] :
+	rtpproxy: update documentation
 
-	Merge pull request #22 from Fabrizio Picconi/patch-4
-	new rpm modules
 
-2013-07-21  Fabrizio Picconi  <fabrizio.picconi at alice dot it>
-	* [4659c22] :
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [3c36a16] :
 
-	new rpm modules
-	Some new rpm optional modules are added:
-	  cachedb_cassandra,cachedb_mongodb,osp,perl,perlvdb,tlsops
+	rtpproxy: rename script functions
+	* engage_rtp_proxy() is deprecated and replaced by rtpproxy_engage()
+	* unforce_rtp_proxy() is deprecated and replaced by rtpproxy_unforce()
+	* start_recording() is deprecated and replaced by rtpproxy_start_recording()
 
-2013-07-11  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [bdf1285] :
 
-	if timeout expired in child while nothing was read - simply pass back to main otherwise, if we read only a small piece of a message, terminate the connection
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [00c42e3] :
 
-2013-07-11  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [6d8fef7] :
+	call_center: fix compile warning for unsigned printing
 
-	Improved TCP/TLS reading
-	- moved TCP read buffer on a per process basis
-	- limit the number of chunks per SIP message
-	- limit the overall time spent reading a SIP message
 
-2013-07-10  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [a46436f] :
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [c2b3726] :
 
-	Mentioned the dependency on mongo-c-driver v0.6 Credits to KryptoKnight
+	drouting: use constans for indexing values while loading dr_rules table
 
-2013-06-20  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [bca2880] :
 
-	Properly store the dialogs which belong to shared profiles when saving them in the DB Properly re-link the shared profiles to the dialog at startup
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [7b3ead2] :
 
-2013-06-18  root  <root at vlad-pc dot (none)>
-	* [215e1ef] :
+	makefile: prevent Makefile.conf from being ovewritten
 
-	Fix Makefile.conf typo Add mention of libhiredis-dev in Debian repos in cachedb_redis doc
 
-2013-06-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [6da030d] :
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [bdda717] :
 
 	Merge branch 'master' of github.com:OpenSIPS/opensips
 
-2013-06-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [8d74b95] :
 
-	- fixed usage of prepared statements durin auth - we may use 2 different queries in the same time.   Credits for reporting the bug and the problem go to Steve Brisson   Closes issue #6 on GH.
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f552335] :
 
-2013-06-14  Răzvan Crainea  <razvan at opensips dot org>
-	* [2537078] :
+	mi_xmlrpc_ng: make module opensips-cp compatible
 
-	Merge pull request #5 from Fabrizio Picconi/patch-3
-	spec file update to CentOS 6
 
-2013-06-12  Fabrizio Picconi  <fabrizio.picconi at alice dot it>
-	* [ef3eb8c] :
+2014-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [6d76fe3] :
 
-	spec file update to CentOS 6
-	- CentOS 6 support
-	Remove rpmbuild warning on BuildPrereq now deprecated for BuildRequires
-	- opensips 1.9.0 support
-	Updated list of excluded modules
-	Updated list of file in rpm of core and modules
-	- Some new rpm optional modules are added:
-	db_http pi_http json cachedb_couchbase cachedb_memcached   cachedb_redis event_rabbitmq db_berkeley perl db_perlvdb carrierroute mmgeoip ldap h350 identity regex dialplan Xlog mi_xmlrpc db_oracle
+	compile: add Makefile.conf dependency
 
-2013-06-10  Liviu Chircu  <liviu at opensips dot org>
-	* [a54a6c8] :
 
-	Update location table version
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [ca046ae] :
 
-2013-06-10  Liviu Chircu  <liviu at opensips dot org>
-	* [98b6b04] :
+	drouting: use constans for indexing values while loading dr_carriers table
 
-	Fix: proper representation of branch flags in the location table Table schema has been changed, as it is the only way to maintain consistency when multiple OpenSIPS instances share the same location table
 
-2013-06-10  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [d43e760] :
+2014-03-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [a6f42db] :
 
-	Avoid dead-lock when dlg_db_sync loads an already existing dialog on the machine, that has dialog variables associated to it
+	Fixed compile warning Module compiles even with STATISTICS support disabled
 
-2013-06-10  Răzvan Crainea  <razvan at opensips dot org>
-	* [05e4580] :
 
-	Merge pull request #3 from Fabrizio Picconi/patch-1
-	Compilation problem under CentOS 6 - library path updates
+2014-03-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [8c83b13] :
 
-2013-06-10  Răzvan Crainea  <razvan at opensips dot org>
-	* [4f3f654] :
+	fixed sched_yield() warning
 
-	Merge pull request #4 from Fabrizio Picconi/patch-2
-	Compilation problem under CentOS 6
 
-2013-06-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [f12f54f] :
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [ecbc003] :
 
-	 - fixed bug related to lump processing (added in commit 095aaa)
+	drouting: use constans for indexing values while loading dr_gateways table
 
-2013-06-10  Răzvan Crainea  <razvan at opensips dot org>
-	* [ba5dbd1] :
 
-	Updated documentation links to the new tracker
+2014-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [791ab01] :
 
-2013-06-08  Fabrizio Picconi  <fabrizio.picconi at tiscali dot it>
-	* [38fab02] :
+	fixed compile warning
 
-	Compilation problem under CentOS 6
-	The installation of oracle-instantclient11.2-11.2.0.3.0-1.i386.rpm put the libocci into /usr/lib/oracle/11.2/client/lib folder.
-	 This path add this folder in the search list.
 
-2013-06-08  Fabrizio Picconi  <fabrizio.picconi at tiscali dot it>
-	* [0ea16ef] :
+2014-03-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [f14766a] :
 
-	Compilation problem under CentOS 6
-	The installation of oracle-instantclient11.2-11.2.0.3.0-1.i386.rpm put the libocci into /usr/lib/oracle/11.2/client/lib folder.
-	This path add this folder in the search list.
+	Fixed free which lead to bogus memory access:
 
-2013-06-07  Liviu Chircu  <liviu at opensips dot org>
-	* [4828380] :
 
-	Optimize buffer reallocs when fetching dlg values
+2014-03-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [804c9f7] :
 
-2013-06-07  Liviu Chircu  <liviu at opensips dot org>
-	* [a76dc7b] :
+	Fixed compile warning
 
-	Fix: $mf, $sf and $bf pvars are now Read-Only and output a list of named flags Delete: $mF, $sF and $bF pvars serve no purpose anymore and have been removed
 
-2013-06-05  Răzvan Crainea  <razvan at opensips dot org>
-	* [b71ea81] :
+2014-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5492dbf] :
 
-	Makefile tar ignore git's files
+	Code cleanup - removed variables which are not actually used for anything
 
-2013-06-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [095aaa9] :
 
-	- drop the lumps (del or anchors) pointing inside a deleted area - this will solve many inconsistencies in regards to overalapping of different lumps (del and add) over the same part of the message. Ex : change From HDR and later remove it.   This is an experimental fix, need to be tested to see if there are any side effects.
+2014-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8ad0901] :
 
-2013-05-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [027e7d0] :
+	Fixed return code in case of error
 
-	- fixed compile errors from last commit
 
-2013-05-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [da55c3e] :
+2014-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a4cdbcb] :
 
-	- fixed bogus linking of same SDP to multiple entities. - fixed missing break in switch   Credits for reporting and helping with testing go to Tolga Tarhan.
+	Added db schema for the Call Center module; DB stuff re-generated
 
-2013-05-30  Răzvan Crainea  <razvan at opensips dot org>
-	* [730e86d] :
 
-	display git revision in opensips exec
+2014-03-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [4f5b87a] :
 
-2013-05-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [837c42a] :
+	pua_usrloc: fix error: SCB_RUN_ALL undeclared (first use in this function)
 
-	- make the internally generated msg buffers also null terminated - this is a must for the regexp oriented functions like replace_all   Reported by Ovidiu Sas.
 
-2013-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [2e53752] :
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [276339f] :
 
-	- make rr_param external variable - we need it in several places, no need to pass it as param all the time   change data type of rr_param from char * to str .   Fixes side effect of commit f3495a, related to fixing bug 661 (SF)
+	[NEW] Script Helper module
+		* simplifies the scripting process in OpenSIPS
+		* transparent sequential request management
+		* embedded record routing and loose routing logic
+		* may be configured to include dialog support
+		* future directions include NAT and auth support
 
-2013-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [d329bc7] :
 
-	- fixed dangling AVP value when doing use_next_gw() - this was resulting in random crashes in this function   Reported by Ronald Cepres (many thanks for the help in troubleshooting)   Closes bug #640 on SF.
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [f333109] :
 
-2013-05-26  Norm Brandinger  <n.brandinger at gmail dot com>
-	* [d3697cc] :
+	tm: reset $T_fr_timeout to default when setting a NULL value
+		* same for $T_fr_inv_timeout
+		* docs updated
 
-	Enhance opensipsctl to support ALL of the dispatcher table columns
 
-2013-05-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [ea99377] :
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [a9c8016] :
 
-	b2b_logic: fix compiler warning  - warning: comparison is always false due to limited range of data type
+	rest_client: rename "ssl_ca_path" to match documentation
 
-2013-05-24  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [f3495a5] :
 
-	Properly use the RR param cookie Reported by jrudolph
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [ff4f8c1] :
 
-2013-05-24  Ovidiu Sas  <osas at voipembedded dot com>
-	* [f3eba62] :
+	call_center: added README
 
-	menuconfig/parser.c: fix unitialized compiler warning
 
-2013-05-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [8cd2be5] :
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [6e46a57] :
 
-	- fixed bogus test in checking the flags for save() function.   Credits for reporting and help in troubleshooting go to Nathaniel L Keeling III
+	script callbacks: add a priority-based register function
+		* useful for modules which must run their callback first/last
 
-2013-05-23  Vlad Paiu  <vladpaiu at opensips dot org>
-	* [e684725] :
 
-	Added support for slot numbers different than 4096 Credits to Ezequiel Lovelle Closes patch #272
+2014-03-20  Liviu Chircu  <liviu at opensips dot org>
+	* [4570b22] :
 
-2013-05-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [f910cac] :
+	script callbacks: new return code mechanism
+		* script callbacks must now return a "what-to-run-next" bitmask
+		* e.g. a module may now skip running top route, yet run post callbacks
 
-	port from 1.8 branch : - NAT pings generated by nathelper should respect the advertised address (global or per interface)   Reported by Ovidiu Sas   Closing bug 660 on SF
 
-2013-05-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [b1abb5f] :
+2014-03-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cb847c1] :
 
-	- fixed GW matching (in is_from_gw() ) when the using the "n" flag for ignoring the port part.   Reported by Miguel J. López Valverde
+	Adding new module "Call-Center" for call queueing and distribution TODO : add documentation and add DB schema
 
-2013-05-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [b130fa0] :
 
-	- fixed variable auth.nonce and auth.cnonce Credits for reporting go to Nick Altmann Closes bug #659
+2014-03-19  Ovidiu Sas  <osas at voipembedded dot com>
+	* [657ce89] :
 
-2013-05-16  Răzvan Crainea  <razvan.crainea at gmail dot com>
-	* [3aa7f14] :
+	mi_xmlrpc_ng: align output format with mi_xmlrpc module
 
-	fixed typo in config file
 
-2013-05-16  Razvan Crainea  <razvan at opensips dot org>
-	* [fc28778] :
+2014-03-19  Razvan Crainea  <razvan at opensips dot org>
+	* [beb383f] :
 
-	added main .gitignore
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10025 689a6050-402a-0410-94f2-e92a70836424
+	makefile: add FASTER variable
+	Increase the compile time of opensips by compiling all modules in parallel.
+	Because the output of the command gets mixed and it is hard to parse, we
+	simply suppress it.
+	Usage example: FASTER=1 make -j all
 
-2013-05-09  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [789a1f0] :
 
-	typo in CFG
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10024 689a6050-402a-0410-94f2-e92a70836424
+2014-03-19  Walter Doekes  <walter+github at wjd dot nu>
+	* [176a41f] :
 
-2013-05-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [d2ce2d0] :
+	Address concern: readability of compiling modules without -j.
 
-	- fixed expiring of presentities in the pua module - remove from hash and DB.   Credits go to Ovidiu Sas for reporting and helping with troubleshooting
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10017 689a6050-402a-0410-94f2-e92a70836424
 
-2013-05-08  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [57e6020] :
+2014-03-19  Walter Doekes  <walter+github at wjd dot nu>
+	* [67cfefe] :
 
-	fixed warning introduced by previous commit
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10013 689a6050-402a-0410-94f2-e92a70836424
+	Address concerns: clearly note that there was an error.
 
-2013-05-08  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [5c9b24f] :
 
-	always free the DB result ( or else subsequent select queries will/might fail )
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10011 689a6050-402a-0410-94f2-e92a70836424
+2014-03-19  Walter Doekes  <walter+github at wjd dot nu>
+	* [9271a45] :
 
-2013-05-08  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [4584e60] :
+	Replace odd -j in module-submake with ability for proper parallelism.
+	Recently `-j` was added to the list of flags passed to the modules
+	$(MAKE) command. That's bad practise for two reasons: (1) the caller
+	should decide on how much -j is required, not the programmer, and (2)
+	just -j without any numeric argument is "use all resources you can
+	get", which can be too much.
 
-	always enforce the column delimiter
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10008 689a6050-402a-0410-94f2-e92a70836424
+	We order the Makefile around so the supermake (the user invocation)
+	can dispatch individual submakes in a parallel fashion. This is done
+	by (a) making the module directories phony targets and (b) replacing
+	the sequential for-loop over the modules with a simple dependency.
 
-2013-05-08  Ovidiu Sas  <osas at voipembedded dot com>
-	* [172e299] :
 
-	pua: extra_headers can change for a presentity  - updated the code to store a str instead of *str  - save in the database the updated extra_headers
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10007 689a6050-402a-0410-94f2-e92a70836424
+2014-03-19  Razvan Crainea  <razvan at opensips dot org>
+	* [0260de0] :
 
-2013-05-08  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [31373df] :
+	event_rabbitmq: URI-decode fields in rabbitmq socket
+	Closes issue #148
 
-	backport from 1.8 (rev #10004)
-	allow digits in the Content-Type
-	Victor Fernandez Martinez 
 
+2014-03-19  Ovidiu Sas  <osas at voipembedded dot com>
+	* [ff5f403] :
 
+	pi_http: fix copy/paste error that can lead to a crash when 'order_by_cols' are used
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10006 689a6050-402a-0410-94f2-e92a70836424
 
-2013-05-08  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [7411010] :
+2014-03-18  Razvan Crainea  <razvan at opensips dot org>
+	* [a65eca9] :
 
-	backport from 1.9 (rev #10001)
-	do not mess up existing dialog legs in case re-sizing the legs array fails due to no more share mem
+	fix sst dialog timeout after timeout_avp removal
 
 
+2014-03-18  Liviu Chircu  <liviu at opensips dot org>
+	* [b91cba4] :
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@10002 689a6050-402a-0410-94f2-e92a70836424
+	cfgutils doc: specify RFC 2445 compatibility of "check_time_rec()" params
 
-2013-05-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [1fb7c6e] :
 
-	- fixed triggering of error route - reset the error info all the time after the error route execution, to be sure we have only 1 triggering. Not reseting the error info may trigger error route multiple time for the same error, due nested usage of run_action_list (for IF, WHILE and SWITCH statements)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9998 689a6050-402a-0410-94f2-e92a70836424
+2014-03-18  Liviu Chircu  <liviu at opensips dot org>
+	* [26af2e8] :
 
-2013-05-08  Ovidiu Sas  <osas at voipembedded dot com>
-	* [92f5848] :
+	tm: update documentation with latest changes
 
-	pua: be more aggressive when checking for valid extra_headers  - check both pointer and length
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9997 689a6050-402a-0410-94f2-e92a70836424
 
-2013-05-08  Ovidiu Sas  <osas at voipembedded dot com>
-	* [79a0a28] :
+2014-03-18  Liviu Chircu  <liviu at opensips dot org>
+	* [4b5e4f8] :
 
-	pua: refactor some DBG probes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9996 689a6050-402a-0410-94f2-e92a70836424
+	tm: rename "fr_timer" and "fr_inv_timer" 	* to "fr_timeout", "fr_inv_timeout" 	* rename equivalent variables to $T_fr_timeout and 	* $T_fr_inv_timeout 	* backwards-compatible
 
-2013-05-08  Ovidiu Sas  <osas at voipembedded dot com>
-	* [5914622] :
 
-	pua: fix memory leak in case of errors while performing db_restore
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9995 689a6050-402a-0410-94f2-e92a70836424
+2014-03-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [253753e] :
 
-2013-05-08  Ovidiu Sas  <osas at voipembedded dot com>
-	* [c059b5c] :
+	Added new script function t_new_request() to allow sending SIP initial requests (as UAC transactions) from the OpenSIPS script.
 
-	pua: refactor some DBG probes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9994 689a6050-402a-0410-94f2-e92a70836424
 
-2013-05-07  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [9038019] :
+2014-03-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6c0cdf3] :
 
-	GRUU fixes for building & matching GRUUs Credits to Tolga Tarhan
-	Fixed docs about disable_gruu and set disable_gruu to 1 by default
+	Before DB flush, check if the DB connection was actually open (during failed starts, destroy may be triggered without having init done)
 
 
+2014-03-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d244686] :
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9991 689a6050-402a-0410-94f2-e92a70836424
+	Fixed setting timeout (via script vars) for UAC transactions
 
-2013-05-03  Ovidiu Sas  <osas at voipembedded dot com>
-	* [375e79d] :
 
-	uac_registrant: prettify reg_list mi command
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9990 689a6050-402a-0410-94f2-e92a70836424
+2014-03-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b4bb68b] :
 
-2013-05-03  Ovidiu Sas  <osas at voipembedded dot com>
-	* [9f01d8d] :
+	Forgotten file from commit 1db2fc (local route changes) Reported by Ovidiu Sas.
 
-	b2b_logic: set proper Contact header for external scripts  - closes sf 3612046: opensips crashing when excuting b2b_logic extern script
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9988 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-30  Ovidiu Sas  <osas at voipembedded dot com>
-	* [839bf22] :
+2014-03-17  Ovidiu Sas  <osas at voipembedded dot com>
+	* [40a34fb] :
 
-	uac_registrant: documentation updates for reg_reload MI command
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9987 689a6050-402a-0410-94f2-e92a70836424
+	drouting: fix compiler warnings  - * may be used uninitialized in this function
 
-2013-04-30  Ovidiu Sas  <osas at voipembedded dot com>
-	* [ad337a6] :
 
-	uac_registrant: new MI function  - reg_reload: reloads the registrant records from the database.
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9986 689a6050-402a-0410-94f2-e92a70836424
+2014-03-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1db2fc5] :
 
-2013-04-30  Ovidiu Sas  <osas at voipembedded dot com>
-	* [c187874] :
+	LOCAL Route support enhanced :     - serial forking for UAC transactions added     - possibility to use ONREPLY and FAILURE routes for UAC transactions     - ability to use (transaction wise) AVPs, flags, timeouts     - DNS based failover works now for UAC transactions (solving #140)
 
-	uac_registrant: integrated with sliblist
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9985 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-30  Ovidiu Sas  <osas at voipembedded dot com>
-	* [4193a0e] :
+2014-03-15  Ovidiu Sas  <osas at voipembedded dot com>
+	* [75f1ed6] :
 
-	sliblist: fix small typo
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9984 689a6050-402a-0410-94f2-e92a70836424
+	pi_http: run DB_UPDATE commands with prefilled values
 
-2013-04-30  Ovidiu Sas  <osas at voipembedded dot com>
-	* [3818836] :
 
-	rest_client: update svn:ignore property
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9983 689a6050-402a-0410-94f2-e92a70836424
+2014-03-13  Liviu Chircu  <liviu at opensips dot org>
+	* [3f3d52d] :
 
-2013-04-28  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [54e027a] :
+	drouting: update documentation with latest changes
+	* also fix some missing paragraph tags
 
-	backport from 1.9 (rev #9980) fixed temporary GRUU bug that lead to infinite loop Credits to Tolga Tarhan
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9982 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-24  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [608f678] :
+2014-03-13  Liviu Chircu  <liviu at opensips dot org>
+	* [d24b10e] :
 
-	completed previous timeout commit
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9979 689a6050-402a-0410-94f2-e92a70836424
+	drouting: Rework of all "attributes" AVPs
+	* now exported at script level using optional function pvar parameters
+	* by default, they are not stored at all inside the transaction
+	* stored internally if pvars are given to do_routing|route_to_carrier|route_to_gw
+	* no additionally required module parameters
+	* NOT backwards-compatible
 
-2013-04-23  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [8883ec1] :
 
-	Added new string flags parameter to the topology_hiding() function "U" string flag will propagate the Contact Username from one side to the other
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9978 689a6050-402a-0410-94f2-e92a70836424
+2014-03-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [61e21a0] :
 
-2013-04-22  Liviu Chircu  <liviu at opensips dot org>
-	* [669512c] :
+	Added support for embedded arrays within MongoDB documents
 
-	[core]: Fixed a typecast bug in crc32_uint
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9975 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-22  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [d065ca2] :
+2014-03-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [2520b8a] :
 
-	Improved error handling Better re-connect handling Credits to Ryan Bullock
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9973 689a6050-402a-0410-94f2-e92a70836424
+	For topo hiding and fix_route_dialog() usage, do not try do add del lumps for already deleted route headers
+	(cherry picked from commit 5a119db9031d6231c521367847bf1b3c1b6bb7a5)
 
-2013-04-22  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [02e3856] :
 
-	improved docs for the per contact attribute feature
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9972 689a6050-402a-0410-94f2-e92a70836424
+2014-03-11  Liviu Chircu  <liviu at opensips dot org>
+	* [e93234b] :
 
-2013-04-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [ee84e4d] :
+	Merge branch 'master' of github.com:OpenSIPS/opensips
 
-	fixed the contact removel when using the force registration flag with limited number of contact. - Credits to Kiss Karoly for reporting and assisting with the debugging / testing - Closes bug id 3610662 on SF
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9969 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-19  Razvan Crainea  <razvan at opensips dot org>
-	* [ff5f24b] :
+2014-03-11  Liviu Chircu  <liviu at opensips dot org>
+	* [4b4ac96] :
 
-	event_rabbitmq: read/write commands only once Thanks to Brett and Trevor for helping in debugging this Closes bug report #3610016
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9966 689a6050-402a-0410-94f2-e92a70836424
+	residential config: Also define the "xcap" db_url
 
-2013-04-18  Razvan Crainea  <razvan at opensips dot org>
-	* [0d5a8a6] :
 
-	double check if the dialog can be found after created
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9963 689a6050-402a-0410-94f2-e92a70836424
+2014-03-11  Razvan Crainea  <razvan at opensips dot org>
+	* [ab80ade] :
 
-2013-04-18  Razvan Crainea  <razvan at opensips dot org>
-	* [66ba2b0] :
+	db_http: add value_delimiter parameter
+	Add a new parameter used to specify the fields delimiters for queries
+	variables
 
-	restore route type after running error route
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9960 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-18  Razvan Crainea  <razvan at opensips dot org>
-	* [4192eee] :
+2014-03-11  Răzvan Crainea  <razvan at opensips dot org>
+	* [112f504] :
 
-	prevent REINVITEs from overwriting acc internal structures
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9957 689a6050-402a-0410-94f2-e92a70836424
+	Merge pull request #125 from rrb3942/index_trans
+	Add s.index and s.rindex transformations
 
-2013-04-12  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [96f8676] :
 
-	added error reason phrase pvar param to sipmsg_validate() function added proper return codes for all types of failures Credits toNick Altmann
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9956 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [1e02b32] :
 
-2013-04-10  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [b515add] :
+	Merge pull request #174 from wdoekes/wjd-fix_dialogaggr_memleak
+	presence_dialoginfo: Fix memory leak in dlginfo_agg_nbody.
 
-	added timeout param, to control the maximum allowed time for a db_http query Credits to Guillaume Bour
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9955 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [08920b2] :
+2014-03-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3c1164a] :
 
-	- fixed re-PUBLISH in pua framework (when the PEUBLISH expire is shorter than presentity lifetime) - fixed the callback parameter for the re-PUBLISH request.   Many thanks to Damien Sandras for reporting and helping with troubleshooting and testing this.
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9952 689a6050-402a-0410-94f2-e92a70836424
+	When updating the database records, first perform all update and inserts and then check the timeout for expired records -> records to be deleted. Doing first the delete may hide records "expired but to be updated". Credits go to Nick Altmann Closes bug #112.
 
-2013-04-08  Razvan Crainea  <razvan at opensips dot org>
-	* [9ab9868] :
 
-	Updated rtpproxy documentation for bridge mode
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9949 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [ec56716] :
 
-2013-04-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [bf9049f] :
+	tm: compute the timer set based on the fragments align
 
-	- fixed choosing the outbound interface in serial forking scenarios   Thanks to John Quick for reporting and helping with the troubleshooting
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9946 689a6050-402a-0410-94f2-e92a70836424
 
-2013-04-03  Razvan Crainea  <razvan at opensips dot org>
-	* [7307274] :
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [ed31ed5] :
 
-	fixed avp names in documentation
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9945 689a6050-402a-0410-94f2-e92a70836424
+	tm: prevent timer list overflow when using multiple timer procs
 
-2013-04-02  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [3c82bc6] :
 
-	fixed copy paste error
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9944 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [67ced1c] :
 
-2013-03-29  Liviu Chircu  <liviu at opensips dot org>
-	* [732a796] :
+	dialog: only update timer if the timeout is set on current request
 
-	Makefile.conf: added rest_client to the list of excluded modules
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9941 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-29  Liviu Chircu  <liviu at opensips dot org>
-	* [ce90955] :
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [ea19362] :
 
-	[NEW rest_client module]: Offers the possibility of interaction with an HTTP server
-	It requires libcurl and currently implements the GET and POST methods.
+	rtpproxy: properly unforce dialog when using engage
 
 
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [ff18c53] :
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9940 689a6050-402a-0410-94f2-e92a70836424
+	rtpproxy: updated documentation for the setid and pvar changes
 
-2013-03-29  Liviu Chircu  <liviu at opensips dot org>
-	* [3f70bbf] :
 
-	[avpops module]: avp_db_load() new optional string parameter
-	If specified, it will serve as a prefix for the names of the populated AVPs.
-	Allows distinction at script level between identical attributes in the usr_preferences table.
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [6a213ed] :
 
+	rtpproxy: properly store/fetch variables by engage
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9939 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-28  Saúl Ibarra Corretgé  <saul at ag-projects dot com>
-	* [309ac60] :
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [dbe4535] :
 
-	Fixed matching identity rules when using percent encoded URIs
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9937 689a6050-402a-0410-94f2-e92a70836424
+	rtpproxy: properly parse the bavp set
 
-2013-03-27  Liviu Chircu  <liviu at opensips dot org>
-	* [0376cf4] :
 
-	Added feature test macros for the glibc truncation functions (fixes compilation issues on some systems)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9936 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [26ed2fa] :
 
-2013-03-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [1b2c2b4] :
+	rtpproxy: removed the 'rtpp_sock_pvar' parameter
+	now all functions return the rtpproxy server used in the 4th optional
+	parameter
 
-	uac_registrant: do NOT alter the initial expires interval for a binding  - related to issue #3609028 reported by Paul (dipegang)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9935 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [0ee6bdc] :
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [2d4ce86] :
 
-	uac_registrant: fix mispelled id for registrant timer check
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9934 689a6050-402a-0410-94f2-e92a70836424
+	rtpproxy: allow functions to receive optional parameters
 
-2013-03-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [79bc321] :
 
-	Makefile.conf: remove duplicate entries for mi_xmlrpc
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9933 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [b528acd] :
 
-2013-03-25  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [5d2df28] :
+	rtpproxy: remove set_rtp_proxy_set() function
+	The set_rtp_proxy_set() function has been completely remove. From now on, you
+	can specify the set directly in the rtpproxy comands. If not specified, the
+	default set is used.
 
-	backport from 1.9 (rev #9930)
-	fixed deadlock in case of internal error
 
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [ba80ddd] :
 
+	nathelper: remove unused nathelper.h header
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9931 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-25  Razvan Crainea  <razvan at opensips dot org>
-	* [0ad3b24] :
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [6b3c22c] :
 
-	overwrite DEFS is order to make sure it is not inherited between executions
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9927 689a6050-402a-0410-94f2-e92a70836424
+	rtpproxy: allow unexisting set
+	Do not exit if a set is not found during startup, since it may be later on
+	loaded from database.
 
-2013-03-22  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [785b99d] :
 
-	fixed cachedb_url format documentation
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9925 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [b5fd777] :
 
-2013-03-22  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [ba77c9e] :
+	dialog: add $DLG_timeout pvar documentation
 
-	fixed docs about the hep_capture_on param
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9922 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-19  Saúl Ibarra Corretgé  <saul at ag-projects dot com>
-	* [a0330b8] :
+2014-03-10  Razvan Crainea  <razvan at opensips dot org>
+	* [dc57fed] :
 
-	Only send PIDF manipulation when there are no other presence bodies
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9919 689a6050-402a-0410-94f2-e92a70836424
+	dialog: replace timeout_avp with $DLG_timeout
+	* removed the timeout_avp parameter
+	* added DLG_timeout pseudovariable for specifying dialog timeout
 
-2013-03-19  Saúl Ibarra Corretgé  <saul at ag-projects dot com>
-	* [94a1a91] :
 
-	Fix handling PUBLISH with Expires 0
-	SF bug ID: 3607182
+2014-03-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f001f09] :
 
+	Added support for multiple timer processes in TM. The timer process may easyly become a bottleneck in TM because: 	 (a) single lock on the timer lists, 	 (b) single process to purge/free all transactions, 	 (c) single process running all failure routes (with all script complexity of failure routes). This patch addresses all the above problems allowing multi-locking and multi-processing for the the overall timer concept in TM. Existing "own_timer_proc" module parameter extended from boolean value to an integer value : 0 - no separate timer proc for TM; 1 - one separate timer proc for TM; n - multiple timer procs for TM.
 
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9918 689a6050-402a-0410-94f2-e92a70836424
+2014-03-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9314abb] :
 
-2013-03-19  Ovidiu Sas  <osas at voipembedded dot com>
-	* [df886da] :
+	Output the address of previous fragment when overwritten is detected (just better logging)
 
-	httpd.cfg: load mi_xmlrpc_ng
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9917 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-15  Razvan Crainea  <razvan at opensips dot org>
-	* [6c3d5b7] :
+2014-03-06  Walter Doekes  <walter+github at wjd dot nu>
+	* [60716e8] :
 
-	New string transformations: hex2dec and dec2hex used to convert decimals to hexa values and reversed. Applied patch #3607644, provided by Nick Altmann
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9916 689a6050-402a-0410-94f2-e92a70836424
+	presence_dialoginfo: Fix memory leak in dlginfo_agg_nbody.
+	This commit fixes a couple of presence issues (introduced in 80c48e6):
+	 * There was a memory leak in dlginfo_agg_nbody.
+	 * Bounds checking in dlginfo_agg_nbody was off by 4 (potential stack
+	   corruption).
+	 * There were 2 PKG allocs, straight after one another while no alloc
+	   was needed at all: reduced to 1 optional one.
+	 * Replace "dumy" with "dummy" in the vicinity.
 
-2013-03-15  Razvan Crainea  <razvan at opensips dot org>
-	* [d4b0b7e] :
 
-	rtpproxy: returns in a pseudo-variable the rtpproxy server used Patch provided by Ryan Bullock (patch #3606986)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9915 689a6050-402a-0410-94f2-e92a70836424
+2014-03-05  Liviu Chircu  <liviu at opensips dot org>
+	* [9a801ba] :
 
-2013-03-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [64da0da] :
+	Remove 18KB worth of whitespace from all .c, .h and .cpp files
 
-	- fixed parsing the name of gateways in carrier definition (Gateways with minus char allowed in gateways, but carriers are not loading with such gateways)   Credits go to Nick Altmann   Closes patch #3607865
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9912 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-13  Ovidiu Sas  <osas at voipembedded dot com>
-	* [95dc5d7] :
+2014-03-05  Liviu Chircu  <liviu at opensips dot org>
+	* [1f47b10] :
 
-	mi_http: escape special characters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9911 689a6050-402a-0410-94f2-e92a70836424
+	Fix various typos throughout documentation and code
 
-2013-03-13  Ovidiu Sas  <osas at voipembedded dot com>
-	* [0d1ceda] :
 
-	usrloc: fix crash when no attr were used (NULL pointer was dereferenced)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9910 689a6050-402a-0410-94f2-e92a70836424
+2014-03-05  Liviu Chircu  <liviu at opensips dot org>
+	* [15784be] :
 
-2013-03-13  Ovidiu Sas  <osas at voipembedded dot com>
-	* [89e6ad3] :
+	statistics: fix compiler warning in 32-bit environments
 
-	usrloc: add sip_instance (if present) to ul_dump MI command
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9909 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-13  Ovidiu Sas  <osas at voipembedded dot com>
-	* [213ce09] :
+2014-03-05  Liviu Chircu  <liviu at opensips dot org>
+	* [a1d61f3] :
 
-	mi_xmlrpc_ng: we need to escape the value of a node too
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9908 689a6050-402a-0410-94f2-e92a70836424
+	Merge branch 'wjd-compile_warnings' of https://github.com/wdoekes/opensips into wdoekes-wjd-compile_warnings
 
-2013-03-13  Ovidiu Sas  <osas at voipembedded dot com>
-	* [ec9bd11] :
 
-	mi_xmlrpc_ng: escape special characters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9907 689a6050-402a-0410-94f2-e92a70836424
+2014-03-05  Razvan Crainea  <razvan at opensips dot org>
+	* [f544472] :
 
-2013-03-13  Ovidiu Sas  <osas at voipembedded dot com>
-	* [01652e2] :
+	config: skip optional parameters
+	when a parameter is not mandatory, you can skip it by adding the next comma.
+	For example: uac_replace_from(,"sip:robin@gotham.org")
 
-	pi_http: escape special characters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9906 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-12  Liviu Chircu  <liviu at opensips dot org>
-	* [10c8a8e] :
+2014-03-05  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [5cf71c3] :
 
-	[usrloc module]: added a new 'attr' column in the location table, used to store additional registration-related information
-	[registrar module]: new avp used to load/store the 'attr' column
-	information in the location table. Its content is read and stored in db and/or
-	memory when doing a 'save' operation, and it is populated after doing a 'lookup'.
+	Fixed the lex for tcp_max_msg_chunks and tcp_max_msg_time
 
-	When doing call forking, the avp will hold a value for each branch. The 'attr'
-	value of a branch is accessed using $T_branch_idx.
 
+2014-03-05  Walter Doekes  <walter+github at wjd dot nu>
+	* [f2e64f5] :
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9905 689a6050-402a-0410-94f2-e92a70836424
+	core: Fix pass_fd.c aliasing warnings by forcing proper packing.
+	    Compiling pass_fd.c
+	    pass_fd.c: In function ‘send_fd’:
+	    pass_fd.c:132:2: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+	      *(int*)CMSG_DATA(cmsg)=fd;
+	      ^
+	    pass_fd.c: In function ‘receive_fd’:
+	    pass_fd.c:240:3: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+	       *fd=*((int*) CMSG_DATA(cmsg));
+	       ^
 
-2013-03-12  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [59d06fd] :
 
-	complete commit #9896
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9904 689a6050-402a-0410-94f2-e92a70836424
+2014-03-05  Walter Doekes  <walter+github at wjd dot nu>
+	* [0b18a17] :
 
-2013-03-11  Liviu Chircu  <liviu at opensips dot org>
-	* [e81f034] :
+	exec: Fix kill.c compile warnings by including <unistd.h>.
+	    Compiling kill.c
+	    kill.c: In function ‘__popen’:
+	    kill.c:129:2: warning: implicit declaration of function ‘pipe’ [-Wimplicit-function-declaration]
+	      if (pipe(fds) != 0) {
+	      ^
+	    ...
 
-	dialog: New MI command for restoring the dialog table dlg_restore_db - truncates the table and populates it with CONFIRMED dialogs from memory
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9903 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-11  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [e32b617] :
+2014-03-05  Liviu Chircu  <liviu at opensips dot org>
+	* [4aa4f49] :
 
-	added -F option, to leave the main process in foreground ( useful for various monitoring tools ) Credits to Nick Altmann
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9902 689a6050-402a-0410-94f2-e92a70836424
+	rest_client: update documentation
 
-2013-03-11  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [39d7f1a] :
 
-	added a cache_remove_chunk script & MI function that removes all the keys that match a specific glob
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9901 689a6050-402a-0410-94f2-e92a70836424
+2014-03-05  Liviu Chircu  <liviu at opensips dot org>
+	* [15423bb] :
 
-2013-03-11  Ovidiu Sas  <osas at voipembedded dot com>
-	* [da8f585] :
+	rest_client: allow disabling of SSL remote host verifications
+	* with the new *ssl_verifypeer* and *ssl_verifyhost* modparams
 
-	mi_http: fix formatting for empty attributes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9900 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-11  Ovidiu Sas  <osas at voipembedded dot com>
-	* [98335ae] :
+2014-03-04  Liviu Chircu  <liviu at opensips dot org>
+	* [277f587] :
 
-	mi_xmlrpc_ng: documentation updates  - adding xmlrpc POST example
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9899 689a6050-402a-0410-94f2-e92a70836424
+	stun: update documentation
 
-2013-03-11  Ovidiu Sas  <osas at voipembedded dot com>
-	* [e4bd63a] :
 
-	mi_xmlrpc_ng: small code cleanup
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9898 689a6050-402a-0410-94f2-e92a70836424
+2014-03-04  Liviu Chircu  <liviu at opensips dot org>
+	* [d5f7ddf] :
 
-2013-03-11  Ovidiu Sas  <osas at voipembedded dot com>
-	* [96db6de] :
+	stun: add the option to specify advertised addresses and ports
+	* as an extension to the existing modparam strings
 
-	cachedb_couchbase: svn propedit svn:ignore .
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9897 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-11  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [1c9b1c6] :
+2014-03-04  Ovidiu Sas  <osas at voipembedded dot com>
+	* [7c171aa] :
 
-	added a new PVAR, $DLG_end_reason, that is populated with the reason the dialog was terminated See the docs for possible values
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9896 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: ds_select_dst/domain - fast emty slot detection
 
-2013-03-11  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [ac2b208] :
 
-	fixed dlg_db_sync to match the recent dialog.id table changes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9894 689a6050-402a-0410-94f2-e92a70836424
+2014-03-04  Ovidiu Sas  <osas at voipembedded dot com>
+	* [650a60b] :
 
-2013-03-11  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [6d63ef9] :
+	drouting: enforce route_to_gw() param parsing  - no empty slots allowed inside GW list
 
-	backport from 1.8 (rev #9891)
-	fixed probing mode 1 behavior
 
+2014-03-04  Ovidiu Sas  <osas at voipembedded dot com>
+	* [d809369] :
 
+	drouting: do not alter PVARs while scanning GW lists in route_to_gw()
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9893 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-08  Razvan Crainea  <razvan at opensips dot org>
-	* [50102c3] :
+2014-03-04  Ovidiu Sas  <osas at voipembedded dot com>
+	* [b3696d2] :
 
-	added usrloc events for AOR insertion and deletion
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9890 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: update documentation for ds_select_dst/domain
 
-2013-03-08  Razvan Crainea  <razvan at opensips dot org>
-	* [0d75d61] :
 
-	fixed documentation typo
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9888 689a6050-402a-0410-94f2-e92a70836424
+2014-03-03  Ovidiu Sas  <osas at voipembedded dot com>
+	* [37f8774] :
 
-2013-03-08  Razvan Crainea  <razvan at opensips dot org>
-	* [6481e0f] :
+	dispatcher: add ability to dispatch over multiple dispatchng groups  - ds_select_dst/domain can accept lists of comma separated values as parameters
 
-	print <null> for null variables instead of raising an error
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9887 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [8e19c7b] :
+2014-03-03  Ovidiu Sas  <osas at voipembedded dot com>
+	* [671b81d] :
 
-	- move log from ERR to DBG - when testing the SDP for private IPs, not find an SDP is not actually an error.   Reported by Jan ONDREJ.
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9884 689a6050-402a-0410-94f2-e92a70836424
+	core: add q_memrchr - faster memrchr version
 
-2013-03-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [4b9df4a] :
 
-	 fix docs - MF hdr is no longer forwarded throught B2B, but a new one is generated for the new call.  Reported by Ryan Bullock  Closes bug #3607102
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9881 689a6050-402a-0410-94f2-e92a70836424
+2014-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [9bfce00] :
 
-2013-03-07  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [a239de4] :
+	for-each statement completed
+	* final syntax: for ($var(it) in $(ct[*])) { ... }
+	* now works for any pvar which supports indexing
+	* current such pvars in OpenSIPS: $avp, $ct, $ct.fields, $branch, $hdr(xxx))
 
-	properly set the raw_query func
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9880 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [7b50630] :
+2014-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [c09c126] :
 
-	- path field in location increased from 126 to 255 to accomodate larger path hdr from overSIP.   Reported by Vallimamod Abdullah   Closing bug report #3606244
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9878 689a6050-402a-0410-94f2-e92a70836424
+	Update .gitignore
 
-2013-03-06  Ovidiu Sas  <osas at voipembedded dot com>
-	* [2d66889] :
 
-	cachedb_mongodb: fix typo for -lmongoc
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9877 689a6050-402a-0410-94f2-e92a70836424
+2014-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [cd93704] :
 
-2013-03-06  Ovidiu Sas  <osas at voipembedded dot com>
-	* [b3c7789] :
+	core: $hdrcnt should not be indexed
 
-	cachedb_mongodb: proper cflags and lib detection for json
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9876 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-06  Ovidiu Sas  <osas at voipembedded dot com>
-	* [2de5459] :
+2014-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [a5cd55b] :
 
-	json: fix typo in previous commit
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9875 689a6050-402a-0410-94f2-e92a70836424
+	core: improve script_trace() performance with a wrapper macro
 
-2013-03-06  Ovidiu Sas  <osas at voipembedded dot com>
-	* [0b898af] :
 
-	json: proper cflags and lib detection for json
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9874 689a6050-402a-0410-94f2-e92a70836424
+2014-03-01  Ovidiu Sas  <osas at voipembedded dot com>
+	* [0e37b92] :
 
-2013-03-06  Razvan Crainea  <razvan at opensips dot org>
-	* [305db80] :
+	mod_fix: return error for fixup_get_isvalue() if no int or str value is available
 
-	Allow '-l' parameter to rtpproxy_answer() even if it does not do anything Reported by Marcello Lupo
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9873 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-06  Saúl Ibarra Corretgé  <saul at ag-projects dot com>
-	* [7e82a12] :
+2014-03-01  Ovidiu Sas  <osas at voipembedded dot com>
+	* [3186e69] :
 
-	Fixed compilation when using system malloc for pkg memory
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9871 689a6050-402a-0410-94f2-e92a70836424
+	core: new function: str_trim_spaces_lr()  - same as trim_spaces_lr() but without '0' padding
 
-2013-03-06  Razvan Crainea  <razvan at opensips dot org>
-	* [35a19b9] :
 
-	fixed pv_printf to also print integer values
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9870 689a6050-402a-0410-94f2-e92a70836424
+2014-03-01  Ovidiu Sas  <osas at voipembedded dot com>
+	* [08eb851] :
 
-2013-03-06  Ovidiu Sas  <osas at voipembedded dot com>
-	* [9ebe1fb] :
+	dispatcher: fix erroneous forced mode 0 introduced by previous commit
 
-	mi_xmlrpc_ng: small output tweaks
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9869 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [4810a99] :
+2014-03-01  Liviu Chircu  <liviu at opensips dot org>
+	* [aeb4e88] :
 
-	mi_xmlrpc_ng: retrieve values from the request's xml body
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9868 689a6050-402a-0410-94f2-e92a70836424
+	Fix crash when printing $(ct[*])
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [dba04a1] :
 
-	mi_xmlrpc_ng: code re-indentation
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9867 689a6050-402a-0410-94f2-e92a70836424
+2014-03-01  Ovidiu Sas  <osas at voipembedded dot com>
+	* [2b64f2a] :
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [f2128f2] :
+	dispatcher: use a single helper function for all ds_select_dst/domain functions
 
-	mi_xmlrpc_ng: proper in memory xml parsing
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9866 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [2763209] :
+2014-02-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [2049108] :
 
-	Makefile.conf: adding mi_xmlrpc_ng to the list of excluded modules
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9865 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: change signature for ds_select_dst  - group all controlling params in a single structure
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [8e080e9] :
 
-	mi_xmlrpc_ng: fix debug probes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9864 689a6050-402a-0410-94f2-e92a70836424
+2014-02-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [abf3947] :
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [1af740c] :
+	mod_fix:fixup_get_isvalue - make sure that we have a valid string for int converision
 
-	mi_xmlrpc_ng: svn settings
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9863 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [17e1147] :
+2014-02-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [d15578c] :
 
-	mi_xmlrpc_ng: new module for handling xmlrpc requests  - initial framework for the mi_xmlrpc_ng module  - initial basic support for mi commands without parameters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9862 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: enhance error probe  - print dispatching id for unknown dispatching algorithm
 
-2013-03-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [aa0db06] :
 
-	httpd: for "text/xml" POST requests reply with "text/xml"
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9861 689a6050-402a-0410-94f2-e92a70836424
+2014-02-27  Liviu Chircu  <liviu at opensips dot org>
+	* [52b6793] :
 
-2013-03-05  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [724fcd3] :
+	mod_fix: have commit 4e3b6b7c390a work on strings and pv_elem_t as well
 
-	fixed issue with hanged transactions in case one forked branch fails to be sent
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9858 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-05  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [beaec02] :
+2014-02-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [bf56024] :
 
-	fixed dlg_db_sync crash while in no-db mode Credits to Nick Altmann
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9855 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: simplify ds_select_dst/domain params handling
 
-2013-03-04  Ovidiu Sas  <osas at voipembedded dot com>
-	* [01d65c4] :
 
-	httpd: support for POST with Content-Type: text/xml
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9854 689a6050-402a-0410-94f2-e92a70836424
+2014-02-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [4e3b6b7] :
 
-2013-03-04  Ovidiu Sas  <osas at voipembedded dot com>
-	* [4effcce] :
+	mod_fix: fixup_get_isvalue - return the int value if possible
 
-	httpd: some code refactoring
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9853 689a6050-402a-0410-94f2-e92a70836424
 
-2013-03-04  Ovidiu Sas  <osas at voipembedded dot com>
-	* [0ff8d57] :
+2014-02-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [bc4ccbe] :
 
-	sliblist: svn keywords
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9852 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: reorganize the code by using a define
 
-2013-03-01  Ovidiu Sas  <osas at voipembedded dot com>
-	* [279f351] :
 
-	httpd: implemented framework for more generic POSTS  - this should make the new xmlrpc implementation easier
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9851 689a6050-402a-0410-94f2-e92a70836424
+2014-02-26  Liviu Chircu  <liviu at opensips dot org>
+	* [79bc8d7] :
 
-2013-02-27  Ovidiu Sas  <osas at voipembedded dot com>
-	* [8129f5a] :
+	tm: change the "fr_(inv_)?timer_avp" params into module vars
+	* namely $T_fr_timer and $T_fr_inv_timer
+	* simplifies the scripting logic (also prevents some errors)
+	* less CPU cycles, less mem usage
+	* documentation updated
 
-	httpd: documentation updates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9848 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-27  Ovidiu Sas  <osas at voipembedded dot com>
-	* [cdedff6] :
+2014-02-26  Liviu Chircu  <liviu at opensips dot org>
+	* [1d5e117] :
 
-	pi_http: documentation updates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9847 689a6050-402a-0410-94f2-e92a70836424
+	Fix issue introduced in commit "23174d2629c"
 
-2013-02-27  Ovidiu Sas  <osas at voipembedded dot com>
-	* [4a6906a] :
 
-	mi_http: documentation updates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9846 689a6050-402a-0410-94f2-e92a70836424
+2014-02-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [ff6e145] :
 
-2013-02-27  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [4ffef23] :
+	dispatcher: add ability to handle string PVs for ds_select_dst/domain
 
-	fixed regression - can now directly compile with TLS=1 make without setting the USE_TLS define via menuconfig
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9844 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [944a032] :
+2014-02-26  Liviu Chircu  <liviu at opensips dot org>
+	* [23174d2] :
 
-	- fixed crash in MI command "list_tcp_conns" when TCP support is compiled in but disabled.   Reported by Ovidiu Sas.   Closes bug #3606141
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9838 689a6050-402a-0410-94f2-e92a70836424
+	dialplan: move the "attrs" pvar into the "dp_translate" param list
+	* simplifies the scripting logic
+	* more efficient - it is now a local option, as opposed to a global one
 
-2013-02-27  Ovidiu Sas  <osas at voipembedded dot com>
-	* [fc50fe2] :
 
-	pi_http: enable support for HTTP POST requests  - adding a new parameter mi_http_method to    switch between GET nad POST HTTP requests
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9837 689a6050-402a-0410-94f2-e92a70836424
+2014-02-26  Liviu Chircu  <liviu at opensips dot org>
+	* [6da4e47] :
 
-2013-02-27  Ovidiu Sas  <osas at voipembedded dot com>
-	* [602622b] :
+	registrar: Fix harmless compiler warning
 
-	mi_http: enable support for HTTP POST requests  - adding a new parameter mi_http_method to    switch between GET nad POST HTTP requests
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9836 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-27  Ovidiu Sas  <osas at voipembedded dot com>
-	* [7926778] :
+2014-02-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [7870f22] :
 
-	httpd: support for simple POST HTTP requests completed
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9835 689a6050-402a-0410-94f2-e92a70836424
+	mod_fix: new helper fixup function that returns string and/or int value from a gparam_t
 
-2013-02-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [85b0020] :
 
-	sliblist: a simple linked list library
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9834 689a6050-402a-0410-94f2-e92a70836424
+2014-02-24  Liviu Chircu  <liviu at opensips dot org>
+	* [1ccdca4] :
 
-2013-02-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [518ef16] :
+	Job timeout for the 'exec' module
+	* the "time_to_kill" parameter now works for all "exec_*" commands
+	* improved overall documentation and usage examples
 
-	- consider foundable in hash table the presentities which were just created and are waiting for reply (they have no timeout, no etag, pending for initial reply). This will avoid creating multiple presentities if we have a burst of publishes but with slow repling.   Many thanks to Damien Sandras  for reporting and helping with the debugging.
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9831 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [bf2dc63] :
+2014-02-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aaa5f60] :
 
-	httpd: basic infrastructure for POST HTTP requests
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9830 689a6050-402a-0410-94f2-e92a70836424
+	docs updated for route_to_gw()
 
-2013-02-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [20b581c] :
 
-	pi_http: remove debug probes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9829 689a6050-402a-0410-94f2-e92a70836424
+2014-02-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5232238] :
 
-2013-02-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [bd4861d] :
+	allow route_to_gw() to receive a list of gw IDs (instead of only one) - the list is a comma separated list of gw IDs
 
-	httpd: new parameter post_buf_size  - this parameter will set the size of the buffer to be used    for handling POST HTTP requests
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9828 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-26  Ovidiu Sas  <osas at voipembedded dot com>
-	* [6e41e0c] :
+2014-02-20  Liviu Chircu  <liviu at opensips dot org>
+	* [7637f58] :
 
-	mi_http: fix probe level (INFO->DBG)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9827 689a6050-402a-0410-94f2-e92a70836424
+	Proper reporting for invalid module parameter types
 
-2013-02-25  Ovidiu Sas  <osas at voipembedded dot com>
-	* [485f8ad] :
 
-	pi_http: remove duplicated code
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9826 689a6050-402a-0410-94f2-e92a70836424
+2014-02-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [57d60b6] :
 
-2013-02-25  Ovidiu Sas  <osas at voipembedded dot com>
-	* [df0f8b9] :
+	improve docs
 
-	httpd: support for http POST requests (API changes - step 2)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9825 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-25  Ovidiu Sas  <osas at voipembedded dot com>
-	* [e36f0a4] :
+2014-02-10  Ovidiu Sas  <osas at voipembedded dot com>
+	* [14c2630] :
 
-	pi_http: support for http POST requests (first step)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9824 689a6050-402a-0410-94f2-e92a70836424
+	cachedb_mongodb: complete previous commit - handle _id based queries
 
-2013-02-25  Ovidiu Sas  <osas at voipembedded dot com>
-	* [f284bb5] :
 
-	mi_http: support for http POST requests (first step)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9823 689a6050-402a-0410-94f2-e92a70836424
+2014-02-10  Ovidiu Sas  <osas at voipembedded dot com>
+	* [a6148b1] :
 
-2013-02-25  Ovidiu Sas  <osas at voipembedded dot com>
-	* [b2c1167] :
+	cachedb_mongodb: handle _id based queries
 
-	mi_http: add favicon
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9822 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-25  Ovidiu Sas  <osas at voipembedded dot com>
-	* [dabf23f] :
+2014-02-10  Ovidiu Sas  <osas at voipembedded dot com>
+	* [4b48f18] :
 
-	pi_http: add favicon
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9821 689a6050-402a-0410-94f2-e92a70836424
+	cachedb_mongodb: fix sorting results for mongo queries
 
-2013-02-25  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [bf7221d] :
 
-	fixed missing return for Cancels already matched from script
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9818 689a6050-402a-0410-94f2-e92a70836424
+2014-02-07  Ovidiu Sas  <osas at voipembedded dot com>
+	* [49a9f2a] :
 
-2013-02-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [faffe23] :
+	cachedb_mongodb: retieve ObjectId _id as string
 
-	- fixed loading data from db - do not discard GW/Carriers if no rules - we can do routing directly to a carrier (route_to_carrrier() )   Reported by Nick Altmann   Closes bug #3605439
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9813 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-22  Liviu Chircu  <liviu at opensips dot org>
-	* [1c9b9f7] :
+2014-02-06  Ovidiu Sas  <osas at voipembedded dot com>
+	* [36fa3cc] :
 
-	route_to_carrier() and route_to_gw() must accept both pvars and strings as parameters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9812 689a6050-402a-0410-94f2-e92a70836424
+	cachedb_mongodb: use constants for oip size
 
-2013-02-21  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [eb93ec0] :
 
-	automatically set TLS=1 when using menuconfig to enable USE_TLS
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9809 689a6050-402a-0410-94f2-e92a70836424
+2014-02-06  Liviu Chircu  <liviu at opensips dot org>
+	* [5d61f37] :
 
-2013-02-20  Ovidiu Sas  <osas at voipembedded dot com>
-	* [cef989a] :
+	Fix NULL pointer deref. in "acc_db_request" when "db_url" is not set
 
-	mathops: svn propedit svn:ignore
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9808 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-20  Ovidiu Sas  <osas at voipembedded dot com>
-	* [0bd3950] :
+2014-02-06  Ovidiu Sas  <osas at voipembedded dot com>
+	* [abdcbaf] :
 
-	db_cachedb: svn propedit svn:ignore
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9807 689a6050-402a-0410-94f2-e92a70836424
+	cachedb_mongodb: fix BSON_DATE conversion
 
-2013-02-19  Razvan Crainea  <razvan at opensips dot org>
-	* [fae915e] :
 
-	Fixed ratelimit bug where the counter reaches -1 Reported by Matt Williams Closes bug #3603732
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9804 689a6050-402a-0410-94f2-e92a70836424
+2014-02-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cdd3c51] :
 
-2013-02-18  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [b93199b] :
+	Fixed bogus test over the presence of a request route. This was generating bogus warning messages to the logs, but without any negative impact over the actual processing. Credits go to rrb3942 on GITHUB Closes issue #162
 
-	slightly changed the docs
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9803 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [d85064e] :
+2014-02-05  Ovidiu Sas  <osas at voipembedded dot com>
+	* [5bdd706] :
 
-	- fixed URL for module docs
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9800 689a6050-402a-0410-94f2-e92a70836424
+	dispatcher: enhance MI ds_list command  - print socket if set  - print attr if set
 
-2013-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [18e8a77] :
 
-	- fixed help text for "db migrate"
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9797 689a6050-402a-0410-94f2-e92a70836424
+2014-02-05  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [7949175] :
 
-2013-02-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [7b69335] :
+	Merge pull request #164 from wdoekes/wjd-allow_domain_in_digest_user
+	digest+m_auth: Allow a domain in the digest username.
 
-	- fixed bug in marking as used (in a LB failover scenario) the destinations with IDs bigger than 8.   Thanks to Seth Schultz for reporting and help with troubleshooting
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9793 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-15  Liviu Chircu  <liviu at opensips dot org>
-	* [193b717] :
+2014-02-05  Walter Doekes  <walter+github at wjd dot nu>
+	* [3b66855] :
 
-	Added a new module for handling floating point operations. Currently, it supports various rounding operations and offers a simple expression evaluator, which should handle the majority of day-to-day floating point operations done at script level.
-	Refer to the module documentation for more details.
+	digest+m_auth: Allow a domain in the digest username.
+	Before this patch, a domain in the digest username was allowed:
 
+	    Digest username="abc@domain", realm="domain"
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9792 689a6050-402a-0410-94f2-e92a70836424
+	but only if the domain is equal to the realm. This was introduced in
+	a92bf789 (Juha Heinanen, Mar. 29 2006).
 
-2013-02-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [eba3323] :
+	The SIP spec. doesn't mention any such restriction.
 
-	- fixed missing braket in SCTP code - fixed some warnings in SCTP code   Reported by Muhammad Shahzad
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9789 689a6050-402a-0410-94f2-e92a70836424
+	This patch undoes that commit and makes sure the whole username is used
+	when authenticating through `pv_www_authorize` and `pv_proxy_authorize`.
+	That makes the following valid:
 
-2013-02-13  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [cff4645] :
+	    Digest username="abc@domain", realm="something different"
 
-	Added a new module, db_cachedb, that acts as a virtual layer between the DB and CACHEDB interfaces, allowing for SQL to NoSQL specific query language translations
-	Enhanced the MongoDB module to support the SQL translations
 
+2014-02-04  Ovidiu Sas  <osas at voipembedded dot com>
+	* [11db9b8] :
 
+	dispatcher: fix crash at shutdown with incorrect table version
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9788 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-12  Ovidiu Sas  <osas at voipembedded dot com>
-	* [90af025] :
+2014-01-30  Liviu Chircu  <liviu at opensips dot org>
+	* [707982e] :
 
-	pi_http: remove unused variable
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9786 689a6050-402a-0410-94f2-e92a70836424
+	Fix "mf_process_maxfwd_header" retcode in case of parsing errors
 
-2013-02-12  Ovidiu Sas  <osas at voipembedded dot com>
-	* [3bac05c] :
 
-	pi_http: remove unused variable
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9784 689a6050-402a-0410-94f2-e92a70836424
+2014-01-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [76d2499] :
 
-2013-02-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [ece4647] :
+	dialog: print dialog start and timeout in human readable format (MI)
 
-	- fixed bug - do not try to apply lumps to the dummy sip reply which is constructed by the b2b_entities module   Reported by Nick Altmann
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9782 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-11  Liviu Chircu  <liviu at opensips dot org>
-	* [355f454] :
+2014-01-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [45d660d] :
 
-	- the specific search group for lb_is_destination() can now be also specified as a pseudo variable
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9780 689a6050-402a-0410-94f2-e92a70836424
+	pua_dialoginfo: documentation updates
 
-2013-02-10  Liviu Chircu  <liviu at opensips dot org>
-	* [d483204] :
 
-	- fixed a bug in the lb_count_call() function
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9778 689a6050-402a-0410-94f2-e92a70836424
+2014-01-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [188b2e7] :
 
-2013-02-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [712cb99] :
+	pua_dialog_info: failed calls should not trigger PUBLISH errors  - related to Issue #142
 
-	- additional fix (to #9766) on the char* to str conversion for the fromip and toip.
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9775 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-08  Razvan Crainea  <razvan at opensips dot org>
-	* [a414311] :
+2014-01-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [51b5195] :
 
-	fixed the rl_dec_count() function to actually decrease the counter when used without cachedb backed
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9772 689a6050-402a-0410-94f2-e92a70836424
+	pua: define constants for send_publish return codes
 
-2013-02-08  Razvan Crainea  <razvan at opensips dot org>
-	* [20b3466] :
 
-	fixed crash in rtpproxy_offer/answer functions when called without parameters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9770 689a6050-402a-0410-94f2-e92a70836424
+2014-01-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f10288b] :
 
-2013-02-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [b32a202] :
+	dialog: do not print missing to tag error for final replies in DLG_STATE_UNCONFIRMED
 
-	- subs_phtable_list MI command must flush as it may output a large amount of data.   Credits go to Walter Doekes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9767 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [f8cd7bd] :
+2014-01-21  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [ce35927] :
 
-	- fixed memory coruption when using siptrace diversion to homer via HEP protocol :    - avoid changing fromip and toip strings in pipport2su (to avoid corruption of socket names or segfault when trying to change a static string in data segment    - the static default string includes now port also (to avoid errors in pipport2su).   Many thanks to Seth Schultz for reporting and help in troubleshooting
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9766 689a6050-402a-0410-94f2-e92a70836424
+	Added new flag to is_from_gw/goes_to_gw , 'c' , which will push the respective carrier ID to the carrier_id_avp AVP
 
-2013-02-07  Ovidiu Sas  <osas at voipembedded dot com>
-	* [80cb877] :
 
-	httpd: documentation updates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9764 689a6050-402a-0410-94f2-e92a70836424
+2014-01-15  vladpaiu  <vladpaiu at opensips dot org>
+	* [11a74d7] :
 
-2013-02-06  Razvan Crainea  <razvan at opensips dot org>
-	* [aa8d996] :
+	Merge pull request #160 from rrb3942/localcache_counter_expire
+	Do not reset counter expiration on incr/decr
 
-	Removed forgotten debugging message
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9761 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [13c1f22] :
+2014-01-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [adc3aaa] :
 
-	removed unused variable
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9759 689a6050-402a-0410-94f2-e92a70836424
+	"Interrupted system call" on "select" must not be reported as error/warning
 
-2013-02-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [49d541d] :
 
-	- fixed double free   Thanks to Pete Kelly for reporting and helping with troubleshooting
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9757 689a6050-402a-0410-94f2-e92a70836424
+2014-01-14  Razvan Crainea  <razvan at opensips dot org>
+	* [e8195fc] :
 
-2013-02-05  Razvan Crainea  <razvan at opensips dot org>
-	* [ff76e33] :
+	properly print statistics while running "-V"
 
-	In case of child init errors, mark startup_route as done even if it was not executed - this prevents the attendant from blocking while waiting for the startup route to be finished. Reported by Ovidiu Sas
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9754 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-05  Razvan Crainea  <razvan at opensips dot org>
-	* [3071b00] :
+2014-01-10  Ryan Bullock  <rrb3942 at gmail dot com>
+	* [4eed903] :
 
-	remove double printing of the event transport module don't print events with no subscribers (suggested by Ovidiu Sas)
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9752 689a6050-402a-0410-94f2-e92a70836424
+	Do not reset counter expiration on incr/decr
 
-2013-02-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [4f215a5] :
 
-	pi_http: documentation updates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9750 689a6050-402a-0410-94f2-e92a70836424
+2014-01-10  Liviu Chircu  <liviu at opensips dot org>
+	* [5685379] :
 
-2013-02-05  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [4e2a177] :
+	Merge pull request #144 from shimaore/mathops_extension
+	Mathops extension: new RPN expression parsing function
 
-	backport from 1.9 (rev #9747) fixed bug on fetching the memcached counter value Reported by Julien Chavanton
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9748 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-05  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [5f7406c] :
+2014-01-10  Liviu Chircu  <liviu at opensips dot org>
+	* [6c06594] :
 
-	backport from 1.9 (rev #9743)
-	properly set the prefixes len for cachedb 
+	Correct an error message
 
 
+2014-01-10  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [09500ab] :
 
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9744 689a6050-402a-0410-94f2-e92a70836424
+	Merge pull request #158 from nikbyte/master
+	Fixed bugs with processing m4 in fedora init scripts
 
-2013-02-05  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [92c8b88] :
 
-	fixed branch route name
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9740 689a6050-402a-0410-94f2-e92a70836424
+2014-01-10  Nick Altmann  <nick at altmann dot pro>
+	* [4f10a57] :
 
-2013-02-05  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [84a8a8e] :
+	Fixed bugs with processing m4 in fedora init scripts
 
-	fixed the tcp_persistent_flag to accept named flags as well
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9739 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-05  Ovidiu Sas  <osas at voipembedded dot com>
-	* [c85ec83] :
+2014-01-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [934fa69] :
 
-	mi_http: fix output for mi commands that require periodic flush
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9737 689a6050-402a-0410-94f2-e92a70836424
+	Fixed copy'n'paste error in the state flushing routine. Reported by Stéphane Alnet (shimaore) Closing issue #154
 
-2013-02-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [bd1d18f] :
 
-	- added IPPROTO_SCTP to socket() for SCTP.   Credits go to Michael Schloh von Bennewitz
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9734 689a6050-402a-0410-94f2-e92a70836424
+2013-12-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7565996] :
 
-2013-02-04  Ovidiu Sas  <osas at voipembedded dot com>
-	* [de31417] :
+	Fixed crash when dr_state_flusher() (via timer) may be called before data is loaded (by first SIP worker) Credits go to shimaore on GITHUB
 
-	db: while converting strings to bigint check for invalid characters  - completing previous commit
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9732 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-04  Ovidiu Sas  <osas at voipembedded dot com>
-	* [6d737f2] :
+2013-12-20  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [e4a334e] :
 
-	db: while converting strings to int/bigint check for invalid characters
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9730 689a6050-402a-0410-94f2-e92a70836424
+	mediaproxy: fixed detecting messages without a body
 
-2013-02-04  Razvan Crainea  <razvan at opensips dot org>
-	* [3951937] :
 
-	event_xmlrpc: fixed the Content-Length header in the xmlrpc request
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9728 689a6050-402a-0410-94f2-e92a70836424
+2013-12-20  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [359db7f] :
 
-2013-02-01  Ovidiu Sas  <osas at voipembedded dot com>
-	* [b9ee5cc] :
+	mediaproxy: always parse To header
 
-	pi_http: new commands in the pi_framework_sample:  - add  - update  - delete
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9726 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [8e07483] :
+2013-12-17  Ovidiu Sas  <osas at voipembedded dot com>
+	* [54a22de] :
 
-	- default config file re-generated
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9724 689a6050-402a-0410-94f2-e92a70836424
+	scripts/opensipsctl: nicer output for 'trap' if opensips is not running
 
-2013-02-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [b6366c3] :
 
-	- templates updated with named flags and routes
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9722 689a6050-402a-0410-94f2-e92a70836424
+2013-12-17  Ovidiu Sas  <osas at voipembedded dot com>
+	* [55bde1d] :
 
-2013-02-01  Ovidiu Sas  <osas at voipembedded dot com>
-	* [04d716a] :
+	Makefile.conf.template: add newline at end of file
 
-	opensipsdbctl.base: adding registrant to the list of *_EXTRA
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9720 689a6050-402a-0410-94f2-e92a70836424
 
-2013-02-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [aacdfa5] :
+2013-12-16  Ovidiu Sas  <osas at voipembedded dot com>
+	* [9d25d0c] :
 
-	- fixed parser for Min-SE header   Reported by Nick Altmann   Closes bug #3602776
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9716 689a6050-402a-0410-94f2-e92a70836424
+	opensipsctl: new command 'trap'  - useful to get a full bt dump of all opensips processes  - handy in dead-lock investigatigations
 
-2013-01-31  Vladut Paiu  <vladpaiu at opensips dot org>
-	* [ec0157c] :
 
-	fixed double entry for xcap_client
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9714 689a6050-402a-0410-94f2-e92a70836424
+2013-12-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0ecaccb] :
 
-2013-01-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [c7bb94e] :
+	Fixed bogus triggering of PUBLISHing for non-INVITE sequential requests. Credits go to Damien Sandras Closes pull request #149
+	(cherry picked from commit e0cc9d009151a086f42c08d7f8092b8c7d5835ed)
 
-	- fixed proper apply_lumps - auth needs to see changes too.   Credits go to Nick Altmann
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9712 689a6050-402a-0410-94f2-e92a70836424
 
-2013-01-30  Razvan Crainea  <razvan at opensips dot org>
-	* [4aa9456] :
+2013-12-15  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [6b6be30] :
 
-	fixed crash in acc evi caused by uninitialized parameters list
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9710 689a6050-402a-0410-94f2-e92a70836424
+	Merge pull request #150 from staskobzar/master
+	opensipsctl is calling ds_relaod for dr instead of dr_reload
 
-2013-01-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [32158ba] :
 
-	increased version number to reflect the 1.9 release -> devel is now 1.10
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9709 689a6050-402a-0410-94f2-e92a70836424
+2013-12-15  Stas Kobzar  <stas at modulis dot ca>
+	* [da687c5] :
 
-2013-01-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [dc533d5] :
+	opensipsctl is calling ds_relaod for dr instead of dr_reload
 
-	- db schema updated
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9707 689a6050-402a-0410-94f2-e92a70836424
 
-2013-01-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [a0aa0ff] :
+2013-12-11  Ovidiu Sas  <osas at voipembedded dot com>
+	* [017e0c0] :
 
-	some updates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9706 689a6050-402a-0410-94f2-e92a70836424
+	scripts: db files for b2b_sca module
 
-2013-01-29  Razvan Crainea  <razvan at opensips dot org>
-	* [af5b762] :
 
-	updated credits for 1.9
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9705 689a6050-402a-0410-94f2-e92a70836424
+2013-12-11  Ovidiu Sas  <osas at voipembedded dot com>
+	* [b1cd8a5] :
 
-2013-01-29  Razvan Crainea  <razvan at opensips dot org>
-	* [dc2574e] :
+	db/schema: xml files for b2b_sca module
 
-	Updated changelog
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9704 689a6050-402a-0410-94f2-e92a70836424
 
-2013-01-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [1ec3573] :
+2013-12-11  Ovidiu Sas  <osas at voipembedded dot com>
+	* [29e1b28] :
 
-	- fixed shell line to find the builder
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9703 689a6050-402a-0410-94f2-e92a70836424
+	b2b_sca: new module providing SCA functionality
 
-2013-01-29  Ovidiu Sas  <osas at voipembedded dot com>
-	* [47b4934] :
 
-	Makefile: fix path in menuconfig_templates
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9702 689a6050-402a-0410-94f2-e92a70836424
+2013-12-11  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [d4e8c03] :
 
-2013-01-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
-	* [fc74d5a] :
+	Re-formatted the dlg_list_ctx output
+	Added extra intermediary nodes for the dlg values and profiles in order to avoid key duplication for certain MI output formats ( eg. xml, json )
 
-	- fixed ugly bug in computing the fromIP and toIP (because of some mixture of STRING and STR type at db level).   Thanks to Vlad Paiu for assisting with the debugging ;)   Closes bug #3576351
-	git-svn-id: svn+ssh://svn.code.sf.net/p/opensips/svn/trunk@9700 689a6050-402a-0410-94f2-e92a70836424
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [0935742] :
+
+	fixing the '\b' hexa representation for dialog vals
+	Thanks go to Walter Doekes for reporting on IRC
+
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [0d47a32] :
+
+	remove bogus flushing for mi_json
+	TODO: find a proper way for handling flushing, since the current
+	implementation leads to a infinite loop
+
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [28b399b] :
+
+	mi_json: escape '\\' character
+	also fix incorrect '"' escaping
+
+
+2013-12-11  Razvan Crainea  <razvan at opensips dot org>
+	* [9df9872] :
+
+	properly fix the dialog values escaping for nonascii chars
+
+
+2013-12-10  Liviu Chircu  <liviu at opensips dot org>
+	* [c8f47c8] :
+
+	Fix compile warnings when defining -DDBG_LOCK
+
+
+2013-12-09  Razvan Crainea  <razvan at opensips dot org>
+	* [9eacde3] :
+
+	fixed dialog dlg_vals printing
+	Also encode DEL (0x7f) character since it does not print properly at the
+	console
+
+
+2013-12-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [8988cdb] :
+
+	Merge pull request #138 from secusmartChris/master
+	Feature request #77 fulfilled
+
+
+2013-12-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [1076300] :
+
+	Merge pull request #135 from bat-modulis/master
+	Renamed permissions parameter 'from_col' to 'pattern_col'
+
+
+2013-12-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [ef43e3d] :
+
+	Merge pull request #129 from dsandras/ds-pua-expires-refresh-fix
+	Fix bug where a new publication does not extend the desired expire time.
+	(cherry picked from commit ccac0fac1da8ad663e500148fb7f7d9e43e34fd1)
+
+
+2013-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [012ad21] :
+
+	Fixed keeping DB conn open in the process doing shutdown Fixed bug in memory handling (size and init)
+
+
+2013-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [89b8ffb] :
+
+	At shutdown, do not attempt to use the DB conn if not opened.
+
+
+2013-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1f18541] :
+
+	Generate proper branch param for the NAT ping requests Credits go to Varun (varunvairavan on GITHUB) Closes #145
+
+
+2013-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d0086df] :
+
+	Fixed bogus condition in GT, GTE, LT and LTE script tests. Reported by dcb314 on GITHUB Closing issue #146
+	(cherry picked from commit 96921f5f90919bdc3dc1a573bcb0c32899c65075)
+
+
+2013-12-06  Razvan Crainea  <razvan at opensips dot org>
+	* [6adb5c3] :
+
+	fixed compile error when statistics are not enabled
+	Thanks to Liviu Chircu for reporting them
+
+
+2013-12-06  Liviu Chircu  <liviu at opensips dot org>
+	* [21f543d] :
+
+	Fix a couple of potential deadlocks in commit b30b43b4
+
+
+2013-12-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b30b43b] :
+
+	Rework the reload part - use readers/writers locking for ensure safe and efficient reload.
+
+
+2013-12-03  Răzvan Crainea  <razvan at opensips dot org>
+	* [f93bbd3] :
+
+	fixed doc avp names
+
+
+2013-12-03  vladpaiu  <vladpaiu at opensips dot org>
+	* [9a807b8] :
+
+	Merge pull request #141 from shimaore/db_http_timeout_doc
+	Corrected db_http example: the timeout is an integer.
+
+
+2013-12-02  Razvan Crainea  <razvan at opensips dot org>
+	* [8587e79] :
+
+	sort the db_berkeley and dbtext version entries
+	this makes further updating easier, since the entries are no longer in a
+	random entry. Moreover, they can be easily followed in the file.
+
+
+2013-12-02  Razvan Crainea  <razvan at opensips dot org>
+	* [177fe84] :
+
+	drouting: properly update the drouting versions
+
+
+2013-12-02  Razvan Crainea  <razvan at opensips dot org>
+	* [f25c8e1] :
+
+	drouting: fix drc_table doc default value
+
+
+2013-12-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bd1b78e] :
+
+	Updated DB schema for dispatcher in order to reflect latest changes (state persistency)
+
+
+2013-12-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3583ab2] :
+
+	Added persistency for the state of the destinations : (1) persistency across opensips restart, via DB amd (2) persistency across reloads.
+
+
+2013-12-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d2facc3] :
+
+	State of the destination is persistent across reloads.
+
+
+2013-12-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [0625610] :
+
+	Properly take into account the dialplan priority in case entry matches both string and regex rules
+
+
+2013-12-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [adebbe6] :
+
+	For dialog pvars, we don't actually need a SIP msg in order to evaluate
+
+
+2013-12-02  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [11e393a] :
+
+	For db_extra & db_extra_bye params, create dummy SIP message in case we have NULL msg, in order to allow the evaluation of PVARs that don't actually need the SIP msg ( eg. $DLG_end_reason )
+
+
+2013-11-30  Stephane Alnet  <stephane at shimaore dot net>
+	* [2776156] :
+
+	Rebuilt README
+
+
+2013-11-30  Stephane Alnet  <stephane at shimaore dot net>
+	* [d823932] :
+
+	Corrected typos.
+
+
+2013-11-30  Stephane Alnet  <stephane at shimaore dot net>
+	* [be2ce6f] :
+
+	Built README
+
+
+2013-11-30  Stephane Alnet  <stephane at shimaore dot net>
+	* [a87b2af] :
+
+	Mathops extensions
+	Add a new `math_rpn` function, and capacity to add new operators when using the RPN parser.
+	New operators (RPN only): `exp`, `floor`
+
+
+2013-11-28  Ovidiu Sas  <osas at voipembedded dot com>
+	* [c631abc] :
+
+	pua_dialoginfo: do not blindly load all dialogs  - only dialogs with "dlg_peer" vals should be registered for callbacks
+
+
+2013-11-28  Răzvan Crainea  <razvan at opensips dot org>
+	* [25289f0] :
+
+	Merge pull request #139 from shimaore/pkg_mem_events
+	Allow for `event_pkg_threshold` support.
+
+	Credits go to Stéphane Alnet (shimaore)
+
+
+2013-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [609c81c] :
+
+	sipmsgops: prevent remove_hf from removing header twice
+	closes #137
+
+
+2013-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [1ed8107] :
+
+	Merge branch 'dialog-vars-fix'
+	Conflicts:
+		scripts/db_berkeley/opensips/version
+		scripts/dbtext/opensips/version
+
+
+2013-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [62d644e] :
+
+	dialog: hexa representation for dlg_list_ctx binary values
+
+
+2013-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [6c7e9c7] :
+
+	dialog: update dialog dbschema
+
+
+2013-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [36b533b] :
+
+	dialog: dialog variables should be blob
+
+
+2013-11-28  Razvan Crainea  <razvan at opensips dot org>
+	* [0aec9af] :
+
+	dbtext: generate blob instead of string for binary columns
+
+
+2013-11-27  Razvan Crainea  <razvan at opensips dot org>
+	* [4c1fb5d] :
+
+	event_xmlrpc: pass parameters as struct
+	Added a new parameter that allows the possibility to send the event parameters
+	as XMLRPC structures, instead of simple values.
+
+
+2013-11-27  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [144e112] :
+
+	fixed README typo
+
+
+2013-11-27  Razvan Crainea  <razvan at opensips dot org>
+	* [fae8dc3] :
+
+	dbtext: fix newline typo
+
+
+2013-11-27  Razvan Crainea  <razvan at opensips dot org>
+	* [0636a00] :
+
+	dbschema: fix tmp file usage in makefile
+
+
+2013-11-26  Stephane Alnet  <stephane at shimaore dot net>
+	* [2c1af18] :
+
+	Corrected db_http example: the timeout is an integer.
+
+
+2013-11-26  Stephane Alnet  <stephane at shimaore dot net>
+	* [e86bf5d] :
+
+	Allow for `event_pkg_threshold` support.
+	PKG_MEM is not defined or use anywhere else in the code, so assuming `PKG_MALLOC` is meant here.
+
+
+2013-11-26  Christian Lahme  <christian.lahme at secusmart dot com>
+	* [9394e0a] :
+
+	Added IFDEF to ensure TLSv1.2 is only used when openssl >= 1.0.1 is used
+
+
+2013-11-26  Christian Lahme  <christian.lahme at secusmart dot com>
+	* [2383515] :
+
+	Feature request #77 fulfilled
+
+
+2013-11-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [40962ce] :
+
+	pua: set db_flag to UPDATEDB_FLAG only if there was a previous update (NO_UPDATEDB_FLAG)  - in case of a server restart, if the db_flag went from INSERTDB_FLAG to UPDATEDB_FLAG    the record will be lost because the record is marked as to be updated,    and since there's no record in the db, the update will fail.  - if the db_flag is INSERTDB_FLAG, any updates should leave the flag as is and this    will cause the new record to be properly inserted (and not updated) into the db.
+
+
+2013-11-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4e51f8d] :
+
+	STEP 3 - flushing changes in GW/CARRIER's state back to DB (periodically and at shutdown) ; preserve the state of GWs/CARRIERs during reload.
+
+
+2013-11-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [253704e] :
+
+	Updated DB schema to reflect the changes in the DR module (adding persistency for carrier/gateway's state and sockets for gateways)
+
+
+2013-11-24  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [a802488] :
+
+	Load xcap module, presence_xml depends on it
+
+
+2013-11-24  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [002b43f] :
+
+	Fixed residential example when using presence
+
+
+2013-11-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [175f853] :
+
+	Merge pull request #122 from dsandras/ds-fix-dialog-info-entity
+	This patch fixes the entity URI in XML documents to contain "sip:".
+	(cherry picked from commit 377e7574d411aa974cf469d6df18b6213b43a31f)
+
+
+2013-11-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [8c64901] :
+
+	Merge pull request #131 from dsandras/ds-pua-mi-warning-fix
+	Fixes bug where a refreshed PUBLISH request triggers an error message.
+	(cherry picked from commit ded0559c527f30181e9bbd494f0e63b048059108)
+
+
+2013-11-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [3cf2c68] :
+
+	Merge pull request #133 from shimaore/add-callid-to-ul_mi
+	Add `callid` field to information returned by the `ul` module's MI.
+
+
+2013-11-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cfb8457] :
+
+	Fixed bogus warning because of variables not being reset. Reported by Jeff Pyle, part of fixing issue #126.
+
+
+2013-11-22  Liviu Chircu  <liviu at opensips dot org>
+	* [f456377] :
+
+	Ignore all cscope database files
+
+
+2013-11-22  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f9a8d98] :
+
+	uac_registrant: re-register with expires value imposed by the registrar
+
+
+2013-11-22  Liviu Chircu  <liviu at opensips dot org>
+	* [f90e347] :
+
+	Fix the DB representation of message flags in the acc module
+	* storing flags as strings rather than bitmasks prevents flag conflicts
+	  when doing flag modifications in the script, then restarting the proxy
+	* similar usrloc issue was fixed in commit 98b6b0437
+
+
+2013-11-22  Liviu Chircu  <liviu at opensips dot org>
+	* [0845069] :
+
+	Add the "remove" script function to the registrar module
+	* remove(domain, AOR[, target]])
+	* explicitly remove	contacts behind specific addresses-of-record
+	* may delete contacts by Contact URI or by domain
+	* domains are resolved before they are matched
+
+
+2013-11-22  Liviu Chircu  <liviu at opensips dot org>
+	* [9d5889b] :
+
+	Add the SIP-wise determined "next_hop" field to ucontact_t
+	* based on Path -> Received -> Contact (decreasing priorities)
+	* URIs are parsed only at contact creation
+	* useful for the nathelper SIP pinging routine and domain-based lookups
+	* compatible with all DB modes, no extra DB columns required
+
+
+2013-11-22  Razvan Crainea  <razvan at opensips dot org>
+	* [7401a7a] :
+
+	revert commit ec0d05a
+	dialog variables might be binary, therefore strlen should not be used
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b279e17] :
+
+	Do not free the header string as it is part of the lumps (and freed together with the lumps). Reported by Jeff Pyle. Fixing bug #126
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a0ba76e] :
+
+	Fixed keeping turns on handling PUBLISHes for the same presentity - when presentity is deleted (due a unPUBLISH) do not do any turn related ops anymore Reported by Damien Sanders
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3d33b3b] :
+
+	Step 2: use the socket info during routing to GW
+
+
+2013-11-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [24f9366] :
+
+	Reset the lump cond flags when the condition evaluates to false.
+	In case there are multiple branches, the conditions can evaluate
+	differently on each branch - which might lead to bad counting of the
+	added lumps ( used by the dialog module for dlg validation )
+
+
+2013-11-20  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [b4b3517] :
+
+	Added exec_threshold parameter to cachedb_* modules in order to be able to track slow queries
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cc657ff] :
+
+	Fixed restoring SOCKET info from AVP during failover
+
+
+2013-11-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fdfc71d] :
+
+	Step 1 in enhancing drouting: - GW - load state and outbound sokcet from database - carriers - load state (as separate field) from database - cleanup - remove the avp "type" as no longer used (work in progress)
+
+
+2013-11-20  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f7dac99] :
+
+	httpd: remove bogus error log
+
+
+2013-11-19  Baptiste Cholley  <baptiste.cholley at modulis dot ca>
+	* [4f285d1] :
+
+	Renamed parameter 'from_col' to 'pattern_col'
+
+
+2013-11-17  Liviu Chircu  <liviu at opensips dot org>
+	* [c4b8be1] :
+
+	Mask compile-time shift/reduce conflict due to if statement ambiguity
+
+
+2013-11-16  Stephane Alnet  <stephane at shimaore dot net>
+	* [6408bd7] :
+
+	Add `callid` field to information returned by the `ul` module's MI.
+	This allows e.g. to retrieve the information even when using a memory-only store.
+
+
+2013-11-15  Razvan Crainea  <razvan at opensips dot org>
+	* [5852895] :
+
+	when joining two frags, only the used memory changes
+
+
+2013-11-15  Razvan Crainea  <razvan at opensips dot org>
+	* [27197fa] :
+
+	memory statistics can be used only if stats are on
+
+
+2013-11-15  Razvan Crainea  <razvan at opensips dot org>
+	* [a8bdfa8] :
+
+	rework ratelimit distributed queries
+	instead of adding -1 to the counter, use the cachedb_sub function exported by
+	the cachedb module. This prevents ratelimit counters from adding extremely
+	large values for some backends (ex: memcached).
+	Thanks go to Brett Nemeroff for reporting and testing.
+
+
+2013-11-12  Ryan Bullock  <rrb3942 at gmail dot com>
+	* [ba22d03] :
+
+	Add s.index and s.rindex transformations
+
+
+2013-11-08  Ovidiu Sas  <osas at voipembedded dot com>
+	* [cae7f80] :
+
+	core: set proper identification label for timer procs  - check labels via 'ps' MI command
+
+
+2013-11-07  Liviu Chircu  <liviu at opensips dot org>
+	* [2418f37] :
+
+	Fix bogus comma when printing an AVP array with $(avp(foo)[*])
+
+
+2013-11-05  Razvan Crainea  <razvan at opensips dot org>
+	* [26d9adc] :
+
+	removed Makfile.conf from versioning
+
+
+2013-11-05  Razvan Crainea  <razvan at opensips dot org>
+	* [2055db5] :
+
+	menuconfig reads from template if config does not exist
+
+
+2013-11-05  Razvan Crainea  <razvan at opensips dot org>
+	* [2cdf24f] :
+
+	separate file for the original Makefile.conf
+	The original Makefile.conf is now found in Makefile.conf.template. This
+	prevents merge conflicts while updating the Makefile.conf
+
+
+2013-11-05  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [cbe8d24] :
+
+	Rebuilt mi_json README
+
+
+2013-11-05  vladpaiu  <vladpaiu at opensips dot org>
+	* [fefa37c] :
+
+	Merge pull request #121 from shimaore/mi_json
+	mi_json documentation: corrected typo and XML translation problem
+
+
+2013-11-05  Stephane Alnet  <stephane at shimaore dot net>
+	* [fff5c39] :
+
+	mi_json documentation: corrected typo and XML translation problem
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [52405e6] :
+
+	Added mi_json module README
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [afa15e3] :
+
+	If commands accepts parameters, doesn't mean they are mandatory Leave it to the MI function to decide if it's ok to have empty params
+
+
+2013-11-04  vladpaiu  <vladpaiu at opensips dot org>
+	* [7339345] :
+
+	Merge pull request #119 from shimaore/mi_json
+	mi_json module (new module)
+
+
+2013-11-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [02f983d] :
+
+	Proper usage of build_req_buf_from_sip_req() function - socket and proto are required. Closes Bug 664 on SF.
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [92a2c9d] :
+
+	Allow drouting module to be used for DID matching only ( where you only have prefixes provisioned, no GWs, and call do_routing with the 'C' flag )
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [43de2d8] :
+
+	rebuilt the cachedb_couchbase documentation to reflect the recent changes
+
+
+2013-11-04  vladpaiu  <vladpaiu at opensips dot org>
+	* [4d1736d] :
+
+	Merge pull request #106 from rrb3942/couchbase
+	Switches to LCB_SYNCHRONOUS. Enables better reconnect support with command retry as well as a lazy_connect option.
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [f59fef0] :
+
+	Support returning the new value from cache_add/cache_sub Credits to rrb3942
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [5635d71] :
+
+	Do proper return code to script from cachedb_* functions ( treat 0 as success )
+
+
+2013-11-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3738a7c] :
+
+	Added Redis Raw query capability
+
+
+2013-11-01  Razvan Crainea  <razvan at opensips dot org>
+	* [bbdd474] :
+
+	event_rabbitmq: added heartbeat parameter doc
+
+
+2013-11-01  Răzvan Crainea  <razvan at opensips dot org>
+	* [a6090ec] :
+
+	Merge pull request #100 from franklyfox/1.9_rabbitmq_heartbeat
+	enable rabbitmq heartbeat to solve issues of hanging SIP processing because of a broken amqp socket
+
+
+2013-11-01  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [34df519] :
+
+	Merge pull request #111 from csollet/rfc6598
+	nat_uac_test() : Add support for Shared Address Space (RFC 6598)
+
+
+2013-11-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [043606a] :
+
+	Also trace the CANCEL requests in case we're doing trace_dialog()
+	(cherry picked from commit 50463f044c5bd42eb5485cac52419a8ec45ee201)
+
+
+2013-11-01  Stephane Alnet  <stephane at shimaore dot net>
+	* [7f5019b] :
+
+	mi_json documentation
+
+
+2013-11-01  Stephane Alnet  <stephane at shimaore dot net>
+	* [0263804] :
+
+	Modified httpd to support `application/json` for our purposes.
+
+
+2013-11-01  Stephane Alnet  <stephane at shimaore dot net>
+	* [90b909a] :
+
+	mi_json: simplify datasets
+	Also rewrote the string handling code.
+
+
+2013-10-31  Stephane Alnet  <stephane at shimaore dot net>
+	* [c1d6f19] :
+
+	libmicrohttpd5 is no longer in Debian/testing
+
+
+2013-10-31  Stephane Alnet  <stephane at shimaore dot net>
+	* [ece1322] :
+
+	Initial code, copied over from mi_xmlrpc_ng, with output changed to JSON.
+	The input is statically set to the "which" command.
+
+
+2013-10-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [57e6092] :
+
+	core: enhance error log for un-parsable msg by adding the source IP and port
+
+
+2013-10-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c5b2030] :
+
+	Use proper locking function (via the generic locking API) Reported by Max E. Reyes Vera Juarez.
+
+
+2013-10-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [adfe53f] :
+
+	Re-install dlg callbacks (for restoring FROM/TO hdr) upon re-loading dialogs on startup. Reported by Jeff Pyle.
+
+
+2013-10-24  csollet  <csollet-git at keyyo dot com>
+	* [9af4953] :
+
+	nat_uac_test() : Add support for Shared Address Space (RFC 6598) 100.64.0.0/10 address block is processed like any RFC 1918 blocks
+
+
+2013-10-23  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [d2c84e7] :
+
+	Merge pull request #109 from rrb3942/shutdown_segfault
+	Reset prepared statement between query lists on shutdown
+
+
+2013-10-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aa61cec] :
+
+	Fixed the weight-based balancing alg. Credits go to Rob Gagnon (rgagnon24)
+
+
+2013-10-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [582a949] :
+
+	Proper support for BIGINT (as long) in the db_text SQL driver. Many thanks to Jeff Pyle for reporting and troubleshooting this.
+
+
+2013-10-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fbab4a8] :
+
+	Removed "auto" flag for the dlg_id in DB_TEXT spec file Reported by Jeff Pyle.
+
+
+2013-10-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2739d12] :
+
+	README files regenerated from XMLs
+
+
+2013-10-20  Ryan Bullock  <rrb3942 at gmail dot com>
+	* [a24848f] :
+
+	Reset prepared statement between query lists on shutdown
+
+
+2013-10-20  Ryan Bullock  <rrb3942 at gmail dot com>
+	* [83e6399] :
+
+	Revert "Reset prepared statement between query lists on shutdown"
+	This reverts commit 1a070015f4cffe612d3a3cb3a66e864d7374db04.
+
+
+2013-10-20  Ryan Bullock  <rrb3942 at gmail dot com>
+	* [1a07001] :
+
+	Reset prepared statement between query lists on shutdown
+
+
+2013-10-18  Liviu Chircu  <liviu at opensips dot org>
+	* [1b12e26] :
+
+	Scripting enhancement: for-each statement - syntax: for ($var(it) in $avp(array)) { ... } - faster than the "while"-based equivalent loop - currently only allows iterating over an avp's values
+
+
+2013-10-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bd0952d] :
+
+	Fixed bad prototype for abort when compiling with TM_TIMER_DEBUG. Reported by Mayama Takeshi Closes issue #105
+
+
+2013-10-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [47a3386] :
+
+	Fixed locking on purging profiles for terminated dialogs - in strange cases of concurancy between provisional and final replies, the profile ops for provisional reply may end up iterating on a deleted list. Reported by Trevor Francis (46labs) Closes issue #102
+
+
+2013-10-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9ceb0c0] :
+
+	Fixed accepting "after" changes in lumps attached to the beginning of a del lump Reported by NicK Altmann Solves issues with missing Route hdrs when using the dialog based TH
+
+
+2013-10-17  Liviu Chircu  <liviu at opensips dot org>
+	* [62cadee] :
+
+	Enhance usrloc with the binary replication feature - 3 additional module parameters - extra parameter in some usrloc_api functions - properly works with all DB modes
+
+
+2013-10-17  Razvan Crainea  <razvan at opensips dot org>
+	* [72ab3f4] :
+
+	fix ratelimit memory corruption
+
+
+2013-10-15  Ryan Bullock  <rrb3942 at gmail dot com>
+	* [b51b980] :
+
+	Switches to LCB_SYNCHRONOUS. Enables better reconnect support with command retry as well as a lazy_connect option.
+
+
+2013-10-15  Ovidiu Sas  <osas at voipembedded dot com>
+	* [8689767] :
+
+	uac_auth: fix memory leak reported by Jeff Pyle <jpyle@fidelityvoice.com>  - affected modules: b2b_entities, uac, uac_registrant
+
+
+2013-10-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1abc835] :
+
+	Make pv_parse_format() more verbous on reporting the causes to fail. Reported by peppolon on IRC
+
+
+2013-10-15  Liviu Chircu  <liviu at opensips dot org>
+	* [268803b] :
+
+	Merge branch 'master' of github.com:OpenSIPS/opensips
+
+
+2013-10-15  Liviu Chircu  <liviu at opensips dot org>
+	* [0dc6524] :
+
+	Minor binary interface improvements - better debugging on receive operations - improve readability with a couple of macros
+
+
+2013-10-15  Di-Shi Sun  <di-shi at transnexus dot com>
+	* [4145040] :
+
+	1. Added support for appending parameter string in outbound URI. 2. Removed skip plus feature for called number.
+
+
+2013-10-10  Liviu Chircu  <liviu at opensips dot org>
+	* [3a334c3] :
+
+	Allow NULL strings to be pushed into binary interface packets
+
+
+2013-10-10  Liviu Chircu  <liviu at opensips dot org>
+	* [101ee78] :
+
+	Fix a particular startup crash
+	e.g. when defining only 1 tcp interface while specifying
+	"disable_tcp=true"
+
+
+2013-10-07  vladpaiu  <vladpaiu at opensips dot org>
+	* [6ce4321] :
+
+	Merge pull request #85 from earlruby/master
+	Changed -lcurses to -lncurses
+
+
+2013-10-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [ec0d05a] :
+
+	Fixed the re-loading of dlg vars after restart Credits to Nick Altmann
+
+
+2013-10-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [b200e11] :
+
+	Fixed topology_hiding("U") in case of no username in Contact header Credits for report & fix to Nick Altmann
+
+
+2013-10-06  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [8dbef29] :
+
+	route.c - correct spelling
+
+
+2013-10-05  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [de01e4c] :
+
+	dialog module - correct spelling in documentation
+
+
+2013-10-04  liviuchircu  <liviu at opensips dot org>
+	* [d54a04c] :
+
+	Fix duplicated code in db_virtual
+
+
+2013-10-04  franklyfox  <franklyfox at outlook dot com>
+	* [8c21659] :
+
+	enable rabbitmq heartbeat to solve issues of hanging SIP processing because of a broken amqp socket
+	This implementation enabled the rabbitmq's client side's heartbeat negotiation.
+
+	Issue:
+	Because of TCP's nature, it takes very long time for a TCP peer to make the decision of closing a local socket when the connection actually is broken. The event_rabbitmq module didn't handle the situation which causes the Opensips1.9 stop processing UDP packets until the O.S decides to close the local socket. One of the consequence is that UAC cannot register to the registrar during this time period.
+
+	Issue Reproduce:
+	1. Block an existing amqp connection from the rabbitmq-server that event_rabbitmq module connects to.
+	2. From the event_rabbitmq side, the UDP receive-buffer that Opensips uses should be full.
+
+	Solution:
+	If the module, even_rabbitmq/rabbitmq-client, doesn't get a heartbeat message from the rabbitmq-server within X seconds, the rabbitmq-client will kill the local socket connection actively.
+
+	Added a modparam:
+
+	modparam("event_rabbitmq", "heartbeat", [X seconds]
+
+
+2013-10-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bdf49e0] :
+
+	Fixed is_mod_func_used() (used from is_script_func_used()) to determin if a function is used from script - we need to follow the IF / WHILE / MODULE set of instructions too. Reported by Mayama Takeshi - many thanks for the detailed report on this. Closes issue #98
+
+
+2013-10-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2ca05d9] :
+
+	In DELAYED mode, flush vars & profile to DB at ACK time too - no timer tick between 200 OK and ACK was droping the update operation to DB. Please note that this "bug" had actually no implications, as dialog data is either used from memory cache, either from DB after a restart (and a shutdown flushes everything to DB). Related to issue #97.
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d990644] :
+
+	handle the signals while waiting for the startup route to end (if not, the main proc will never know if the child running startup route crashed and it will hang for ever during startup)
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [00b8b63] :
+
+	Merge branch 'master' of github.com:OpenSIPS/opensips
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b341dde] :
+
+	Fixed the un-initialized "reason" string when certain headers are missing Fixed reported "invalid" code on maxforrward missing (closes Issue #95)
+
+
+2013-10-03  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [7ad1db2] :
+
+	Fixed menuconfig errors when selecting mi_xmlrpc vs mi_xmlrpc_ng
+
+
+2013-10-03  liviuchircu  <liviu at opensips dot org>
+	* [39119d1] :
+
+	Properly load contact flags even when NAT pinging is disabled
+
+
+2013-10-03  liviuchircu  <liviu at opensips dot org>
+	* [bfcc635] :
+
+	Fix unpatched assignment in commit b33d4b3f
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [af195e9] :
+
+	Merge branch 'master' of github.com:OpenSIPS/opensips
+
+
+2013-10-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7ccddbe] :
+
+	- doc examples fixed   Reported by "miha" on IRC
+
+
+2013-10-02  liviuchircu  <liviu at opensips dot org>
+	* [286f06f] :
+
+	"registered" must also populate the 'attr' avp, if defined
+
+
+2013-10-01  franklyfox  <franklyfox at outlook dot com>
+	* [62ce85f] :
+
+	enable rabbitmq heartbeat to solve processes hang by amqp socket
+
+
+2013-10-01  liviuchircu  <liviu at opensips dot org>
+	* [c229d98] :
+
+	Fix some documentation typos
+
+
+2013-10-01  liviuchircu  <liviu at opensips dot org>
+	* [5bcab39] :
+
+	Fix missing GPL headers in event_xmlrpc module
+
+
+2013-09-27  liviuchircu  <liviu at opensips dot org>
+	* [f2b283d] :
+
+	Fix invalid pointer when fetching the usrloc extra info column
+
+
+2013-09-25  Earl C. Ruby III  <eruby at knowledgematters dot net>
+	* [7ae769d] :
+
+	The latest Linux distros from OpenSUSE, Fedora, and other non-Debian based distros no longer add symlinks for libcurses.so -> libncurses.so. Trying to compile menuconfig with -lcurses will not work on these distros, so I changed -lcurses to -lncurses, since -lncurses will work on any modern Linux distro with the ncurses5 libraries installed.
+	See http://stackoverflow.com/questions/1517756/whats-the-difference-between-lcurses-and-lncurses-when-compiling-c-using-ncur for more info.
+
+
+2013-09-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8fbdcc4] :
+
+	- fixed double free when building insert fails (in buffered insert mode)   Reported by Brett Nemeroff
+
+
+2013-09-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3559383] :
+
+	- fixed overflow in parsing the content len value   Reported by franklyfox on GITHUB   Closing issue #78
+
+
+2013-09-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [5c3bcaa] :
+
+	Merge pull request #69 from dsandras/ds-try-naptr2
+	Added new dns_try_naptr option.
+
+
+2013-09-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [615a36e] :
+
+	Merge pull request #73 from wdoekes/wjd-pua_min_expires_doc
+	pua.c sets int min_expires= 300, not 0 as documentation states.
+
+
+2013-09-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7938941] :
+
+	- fixed updating the index of the last DEL operation - this is essential for deciding which lumps must be skipped (as overlapping with delete parts of the message)   Credits go to Nick Altmann for reporting and helping with troubleshooting.   Closes issue #79
+
+
+2013-09-17  Damien Sandras  <dsandras at beip dot be>
+	* [c5a57a8] :
+
+	Fix PUA module so that it sends a final PUBLISH on expiration.
+	A final PUBLISH with expires=0 is now generated when a publication has
+	expired. This will trigger the transmission of a final state NOTIFY.
+
+
+2013-09-16  liviuchircu  <liviu at opensips dot org>
+	* [ba04cba] :
+
+	Fix evi crash when defining more than 10 events
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [98330c7] :
+
+	- UAC module does not load (no dependency) on UAC_AUTH if the uac_auth() function is not used. - UAC module does not load RR and DIALOG (with further dependencies on the params of those modules) if no FROM/TO replace ops are done.
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [99b233a] :
+
+	- new functions added to help a module to check if its functions are used from the script (we cannot rely on the fixup functions as we have functions without parameters or need for fixup). Such function is needed for fixing dependencies between modules (to follow up)
+
+
+2013-09-04  liviuchircu  <liviu at opensips dot org>
+	* [6f048e0] :
+
+	Fix: allow rest_client functions in onreply_route
+	Credits to Jayesh Nambiar for reporting
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [01db912] :
+
+	- fixed CANCEL matching in B2B
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bb2313d] :
+
+	-  Gracefully detect if the uac_auth modules is available for usage in b2b_entities modules - do not through an error message but rather an info one, as find the uac_auth module is optional.
+
+
+2013-09-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ea44068] :
+
+	- when starting the FR timer, it should not override any previous setting of a FR or FR_INV timers.   Solves Issue #25 (reported and troubleshooted by Mayama Takeshi) when a very fast 100 reply may stop retransmissions, but brake the updating of fr timer from FR to FR_INV state.
+
+
+2013-09-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ec82ef8] :
+
+	- fixed how lumps can overlap on the edge - an "add" just next to a "delete"   Reported by Saul Ibarra Corretge   Closes issue #59
+
+
+2013-09-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6dd4b76] :
+
+	- fixed incomplete function call (resulted from the merged commit 09a291e)
+
+
+2013-09-03  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [31a7aa2] :
+
+	Merge pull request #62 from dsandras/ds-dialoginfo-notifications-fixes
+	Fixed RFC 4235 notifications compliance.
+
+
+2013-09-03  Damien Sandras  <dsandras at beip dot be>
+	* [515b790] :
+
+	Added new dns_try_naptr option.
+	The rationale behind this is that many stacks do not implement NAPTR
+	correctly and rely only on DNS SRV. With misconfigured DNS servers, it
+	can lead to useless lookups generating potentially long delays.
+
+	This can now be disabled if not needed.
+
+
+2013-09-03  liviuchircu  <liviu at opensips dot org>
+	* [b33d4b3] :
+
+	Fix several usrloc named flag issues
+	- fix get_all_db_ucontacts() lookup logic to work with named flags
+	- fix "Cflags" row of MI *ul_dump* command
+	- fix DB contact update function to properly store the flags
+
+
+2013-09-02  liviuchircu  <liviu at opensips dot org>
+	* [5a63dcd] :
+
+	Fix replication of dialog delete events
+	- instead of sending "deleted" packets based on hash delete operations,
+	they are now sent when a dialog changes state to "DLG_STATE_DELETED"
+	- this prevents the receiving instance from replicating the event again
+
+
+2013-08-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5e33750] :
+
+	- fixed NULL sockets in external scenarios (this leads to crashing when building the contact hdr)   Reported by dexteruk on IRC .
+
+
+2013-08-30  liviuchircu  <liviu at opensips dot org>
+	* [6f82449] :
+
+	Fix compilation issue introduced in commit a9fcd84c
+
+
+2013-08-29  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [3eb2a54] :
+
+	Merge pull request #68 from wdoekes/wjd-fix_nathelper_memleak
+	Fix memleak in nathelper natping when "failed to fetch contacts".
+
+
+2013-08-29  liviuchircu  <liviu at opensips dot org>
+	* [20c9245] :
+
+	Fix replicated dialog profile management in distributed systems
+	- replication-receiving instances must not do any profile-related
+	  DB queries
+
+
+2013-08-29  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [50117fb] :
+
+	Merge pull request #58 from saghul/pua_double_free
+	Fixed double free issue in pua module
+
+
+2013-08-29  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [9da5524] :
+
+	Fixed double free issue in pua module
+	Also fix a couple of related memory leaks
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5fb6bb8] :
+
+	- complete port of pull request #34
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f26c257] :
+
+	- complete backport from 1.8 of pull request #15
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6cfdc3a] :
+
+	- complete backport from 1.8 of pull request #15
+
+
+2013-08-28  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [18257f3] :
+
+	Fixed bug introduced by previous commit : 	- downstream BYEs should go to 200OK leg in order to trigger dialog termination 	- upstream BYEs have no such limitation ( there's only one caller leg :) )
+
+
+2013-08-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [78ff5db] :
+
+	- proper backport of all changes from 1.8 branch
+
+
+2013-08-27  liviuchircu  <liviu at opensips dot org>
+	* [389de52] :
+
+	Fix: also run child_init for bin listeners
+	- bin listeners are now identified by the PROC_BIN rank
+	- this way, only the UDP listeners receive positive ranks
+
+
+2013-08-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f153a9a] :
+
+	- BYE requests received in confirmed state should terminate the dialog only if they match the TO-tag from 200 OK INVITE.   This affects parallel forking scenarios where rejected branches are terminated via BYE by caller.   Thanks for reporting and testing to Marco Hierl.
+
+
+2013-08-14  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [879eacb] :
+
+	pike: correct spelling
+
+
+2013-08-14  liviuchircu  <liviu at opensips dot org>
+	* [a5e9f4b] :
+
+	Fix: sdp_free() bug introduced in commit bde8c0a045
+	Credits to csollet for reporting.
+
+
+2013-08-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [b19eca9] :
+
+	Merge pull request #37 from fabriziopicconi/patch-5
+	wrong mpath folder (detected by rpmbuild)
+
+
+2013-08-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [9e8a497] :
+
+	Merge pull request #39 from fabriziopicconi/patch-6
+	Update Centos spec file
+
+
+2013-08-13  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [c00b39a] :
+
+	Merge pull request #54 from nikbyte/master
+	yum package specs / init-scripts changes for el/fedora
+
+
+2013-08-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [39669e8] :
+
+	fixed setting the default min_expires and max_expires module parameters. Credits go to MayamaTakeshi.
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [775d22f] :
+
+	changed el/fedora spec version to 1.11.0
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [2425adf] :
+
+	add m4 config support for el/fedora distros, spec file synced with build server
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [310e195] :
+
+	add m4 config support for debian distros
+
+
+2013-08-13  Damien Sandras  <dsandras at beip dot be>
+	* [b31075d] :
+
+	Added documentation for recent changes.
+
+
+2013-08-13  Damien Sandras  <dsandras at beip dot be>
+	* [b4d0368] :
+
+	PUBLISH requests are now handled in the same order than received.
+	That is specifically useful for pua dialoginfo which was generating dialog
+	info notifications that were handled in the wrong order with that patch.
+	PUBLISH with older documents were sometimes treated after PUBLISH requests
+	with newer documents, leading to incoherent states.
+
+
+2013-08-13  Nick Altmann  <nick.altmann at gmail dot com>
+	* [196ec52] :
+
+	spec file for el/fedora synced with build server
+
+
+2013-08-13  vladpaiu  <vladpaiu at opensips dot org>
+	* [3a49140] :
+
+	Merge pull request #46 from fabriziopicconi/patch-8
+	remove warning compilation
+
+
+2013-08-12  vladpaiu  <vladpaiu at opensips dot org>
+	* [c8e64b8] :
+
+	Merge pull request #48 from fabriziopicconi/patch-10
+	improved parallel compilation
+
+
+2013-08-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [db24ec0] :
+
+	Fixed double free issue when reading multiple SIP messages in one TCP chunk Do proper zero-ing out of the tcp_req structure
+
+
+2013-08-11  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [41157e7] :
+
+	Increased menuconfig parsing buffer to 1024 (Reported by Richard Revels)
+	Removed mi_http from the excluded modules list - has no external dependencies
+
+
+2013-08-09  liviuchircu  <liviu at opensips dot org>
+	* [aeddd31] :
+
+	Fix: mathops internal parsing bug
+	Credits to Jayesh Nambiar for reporting
+
+
+2013-08-08  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [56f0269] :
+
+	parallel compilation
+	speedup compilation on multicore/multicpu machines
+
+
+2013-08-08  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [6dfb090] :
+
+	remove warning compilation
+	remove warning: ‘ret’ may be used uninitialized in this function
+
+
+2013-08-08  saghul  <saghul at gmail dot com>
+	* [dc83eb1] :
+
+	Kill compilation warnings
+	io_wait.c: In function ‘check_poll_method’:
+	io_wait.c:368:15: warning: variable ‘os_ver’ set but not used [-Wunused-but-set-variable]
+	  unsigned int os_ver;
+	               ^
+	io_wait.c: In function ‘choose_poll_method’:
+	io_wait.c:448:15: warning: variable ‘os_ver’ set but not used [-Wunused-but-set-variable]
+	  unsigned int os_ver;
+	               ^
+
+
+2013-08-08  saghul  <saghul at gmail dot com>
+	* [7d727aa] :
+
+	Fixed compilation in systems without EPOLL
+
+
+2013-08-07  saghul  <saghul at gmail dot com>
+	* [4d4d3db] :
+
+	Cleanup menucnfig files when doing make proper
+
+
+2013-08-07  Saúl Ibarra Corretgé  <saghul at gmail dot com>
+	* [6e3b16e] :
+
+	Fixed crash if send_subscribe fails early
+	In that case presentity is still NULL, check for it
+
+
+2013-08-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [1ee176a] :
+
+	Fixed warning Fixed compilation error for libcurl < 7.16.2 ( due to CURLOPT_TIMEOUT_MS )
+
+
+2013-08-06  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [8f642ba] :
+
+	Properly mentioned Steve Frécinaux from Be IP as the module creator
+
+
+2013-08-06  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3bfd505] :
+
+	Fixed goes_to_gw, is_from_gw and dr_is_gw so that they accept negative gateway types ( to match all gw types)
+
+
+2013-08-06  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [7fe3f81] :
+
+	Update Centos spec file
+	Some new rpm optional modules are added:
+	mi_xmlrpc_ng,sngtc,db_cachedb,mathops,rest_client
+
+
+2013-08-06  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [9e1f0d3] :
+
+	wrong mpath folder (detected by rpmbuild)
+	change modules-prefix (tmp folder) to modules-target (installation folder)
 
