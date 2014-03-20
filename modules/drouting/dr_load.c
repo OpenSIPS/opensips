@@ -174,6 +174,18 @@ error:
 }
 
 
+/* dr_gateways table */
+#define INT_VALS_ID_DRD_COL       0
+#define INT_VALS_STRIP_DRD_COL    1
+#define INT_VALS_TYPE_DRD_COL     2
+#define INT_VALS_PROBE_DRD_COL    3
+#define INT_VALS_STATE_DRD_COL    4
+#define STR_VALS_ADDRESS_DRD_COL  0
+#define STR_VALS_PREFIX_DRD_COL   1
+#define STR_VALS_ATTRS_DRD_COL    2
+#define STR_VALS_GWID_DRD_COL     3
+
+
 rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		str *drd_table, str *drc_table, str* drr_table, int persistent_state)
 {
@@ -255,28 +267,28 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			row = RES_ROWS(res) + i;
 			/* DB ID column */
 			check_val( id_drd_col, ROW_VALUES(row), DB_INT, 1, 0);
-			int_vals[0] = VAL_INT(ROW_VALUES(row));
+			int_vals[INT_VALS_ID_DRD_COL] = VAL_INT(ROW_VALUES(row));
 			/* GW ID column */
 			check_val( gwid_drd_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
-			str_vals[3] = (char*)VAL_STRING(ROW_VALUES(row)+1);
+			str_vals[STR_VALS_GWID_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 			/* ADDRESS column */
 			check_val( address_drd_col, ROW_VALUES(row)+2, DB_STRING, 1, 1);
-			str_vals[0] = (char*)VAL_STRING(ROW_VALUES(row)+2);
+			str_vals[STR_VALS_ADDRESS_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+2);
 			/* STRIP column */
 			check_val( strip_drd_col, ROW_VALUES(row)+3, DB_INT, 1, 0);
-			int_vals[1] = VAL_INT   (ROW_VALUES(row)+3);
+			int_vals[INT_VALS_STRIP_DRD_COL] = VAL_INT   (ROW_VALUES(row)+3);
 			/* PREFIX column */
 			check_val( prefix_drd_col, ROW_VALUES(row)+4, DB_STRING, 0, 0);
-			str_vals[1] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+			str_vals[STR_VALS_PREFIX_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 			/* TYPE column */
 			check_val( type_drd_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
-			int_vals[2] = VAL_INT(ROW_VALUES(row)+5);
+			int_vals[INT_VALS_TYPE_DRD_COL] = VAL_INT(ROW_VALUES(row)+5);
 			/* ATTRS column */
 			check_val( attrs_drd_col, ROW_VALUES(row)+6, DB_STRING, 0, 0);
-			str_vals[2] = (char*)VAL_STRING(ROW_VALUES(row)+6);
+			str_vals[STR_VALS_ATTRS_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+6);
 			/*PROBE_MODE column */
 			check_val( probe_drd_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
-			int_vals[3] = VAL_INT(ROW_VALUES(row)+7);
+			int_vals[INT_VALS_PROBE_DRD_COL] = VAL_INT(ROW_VALUES(row)+7);
 			/*SOCKET column */
 			check_val( sock_drd_col, ROW_VALUES(row)+8, DB_STRING, 0, 0);
 			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
@@ -285,15 +297,17 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
 				&port, &proto)!=0){
 					LM_ERR("GW <%s>(%d): socket description <%.*s> "
-						"is not valid -> ignoring socket\n", str_vals[3],
-						int_vals[0], s_sock.len,s_sock.s);
+						"is not valid -> ignoring socket\n",
+						str_vals[STR_VALS_GWID_DRD_COL],
+						int_vals[INT_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					sock = NULL;
 				} else {
 					sock = grep_sock_info( &host, port, proto);
 					if (sock == NULL) {
 						LM_ERR("GW <%s>(%d): socket <%.*s> is not local to"
 						" OpenSIPS (we must listen on it) -> ignoring socket\n",
-						str_vals[3], int_vals[0], s_sock.len,s_sock.s);
+						str_vals[STR_VALS_GWID_DRD_COL],
+						int_vals[INT_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					}
 				}
 			} else {
@@ -302,17 +316,23 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			/*STATE column */
 			if (persistent_state) {
 				check_val( state_drd_col, ROW_VALUES(row)+9, DB_INT, 1, 0);
-				int_vals[4] = VAL_INT(ROW_VALUES(row)+9);
+				int_vals[INT_VALS_STATE_DRD_COL] = VAL_INT(ROW_VALUES(row)+9);
 			} else {
-				int_vals[4] = 0; /* by default enabled */
+				int_vals[INT_VALS_STATE_DRD_COL] = 0; /* by default enabled */
 			}
 
 			/* add the destinaton definition in */
-			if ( add_dst( rdata, str_vals[3], str_vals[0], int_vals[1],
-			str_vals[1], int_vals[2], str_vals[2], int_vals[3],
-			sock, int_vals[4] )<0 ) {
+			if ( add_dst( rdata, str_vals[STR_VALS_GWID_DRD_COL],
+						str_vals[STR_VALS_ADDRESS_DRD_COL],
+						int_vals[INT_VALS_STRIP_DRD_COL],
+						str_vals[STR_VALS_PREFIX_DRD_COL],
+						int_vals[INT_VALS_TYPE_DRD_COL],
+						str_vals[STR_VALS_ATTRS_DRD_COL],
+						int_vals[INT_VALS_PROBE_DRD_COL],
+						sock,
+						int_vals[INT_VALS_STATE_DRD_COL] )<0 ) {
 				LM_ERR("failed to add destination <%s>(%d) -> skipping\n",
-					str_vals[3],int_vals[0]);
+					str_vals[STR_VALS_GWID_DRD_COL],int_vals[INT_VALS_ID_DRD_COL]);
 				continue;
 			}
 			n++;
