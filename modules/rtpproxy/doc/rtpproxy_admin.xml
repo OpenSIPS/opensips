@@ -41,11 +41,14 @@
 	<para>
 		Starting with &osips; 1.11, the set_rtp_proxy_set() function has
 		been removed. The set is now specified for each function. If
-		absend, the default set 0 is used.
+		absend, the default set 0 is used. Also, engage_rtp_proxy(),
+		unforce_rtp_proxy() and start_recording() functions have been deprecated
+		and replaced by rtpproxy_engage(), rtpproxy_unforce() and
+		rtpproxy_start_recording() respectively.
 	</para>
 	<para>
-		IMPORTANT: if you use multiple sets, take care and use the same set for
-		both rtpproxy_offer()/rtpproxy_answer() and unforce_rtpproxy()!!
+		IMPORTANT: if you use multiple sets, make sure you use the same set for
+		both rtpproxy_offer()/rtpproxy_answer() and rtpproxy_unforce()!!
 	</para>
 	</section>
 
@@ -78,7 +81,7 @@
 			module parameter in your configuration script. This is the socket where further
 			notification will be received from rtpproxies. This socket must be a TCP or 
 			UNIX socket. Also, for all the calls that require notification, the
-			engage_rtp_proxy(), rtpproxy_offer() and rtpproxy_answer() functions must
+			rtpproxy_engage(), rtpproxy_offer() and rtpproxy_answer() functions must
 			be called with the <quote>n</quote> flag.   
 		</para>
 		<para>
@@ -161,7 +164,7 @@
 
 			<listitem>
 			<para>
-				<emphasis>dialog</emphasis> module - if using the engage_rtp_proxy
+				<emphasis>dialog</emphasis> module - if using the rtpproxy_engage
 				functions or RTPProxy timeout notifications.
 			</para>
 			</listitem>
@@ -453,7 +456,8 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
+			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>,
+			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>
 		</title>
 
 		<para>
@@ -557,15 +561,15 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
-		<title><function>engage_rtp_proxy</function> usage</title>
+		<title><function>rtpproxy_engage</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if (is_method("INVITE") &amp;&amp; has_totag()) {
 	if ($var(setid) != 0) {
-		engage_rtp_proxy(,,"$var(setid)", "$var(proxy)");
+		rtpproxy_engage(,,"$var(setid)", "$var(proxy)");
 		xlog("SCRIPT: RTPProxy server used is $var(proxy)\n");
 	} else {
-		engage_rtp_proxy();
+		rtpproxy_engage();
 		xlog("SCRIPT: using default RTPProxy set\n");
 	}
 }
@@ -585,7 +589,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 		when SDPs are in 200 OK and ACK.
                 </para>
                 <para>
-		See engage_rtp_proxy() function description above for the meaning of the
+		See rtpproxy_engage() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
@@ -639,7 +643,7 @@ onreply_route[2]
 		when SDPs are in 200 OK and ACK.
 		</para>
 		<para>
-		See engage_rtp_proxy() function description above for the meaning of the
+		See rtpproxy_engage() function description above for the meaning of the
 		parameters.
 		</para>
 		<para>
@@ -655,7 +659,8 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]])</function>
+		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
 		Tears down the RTPProxy session for the current call.
@@ -674,10 +679,10 @@ onreply_route[2]
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
 		<example>
-		<title><function>unforce_rtp_proxy</function> usage</title>
+		<title><function>rtpproxy_unforce</function> usage</title>
 		<programlisting format="linespecific">
 ...
-unforce_rtp_proxy();
+rtpproxy_unforce();
 ...
 </programlisting>
 		</example>
@@ -781,7 +786,8 @@ unforce_rtp_proxy();
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">start_recording([set_id [, sock_pvar]])</function>
+		<function moreinfo="none">start_recording([set_id [, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">rtpproxy_start_recording([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
 		This command will send a signal to the RTP-Proxy to record 
@@ -801,10 +807,10 @@ unforce_rtp_proxy();
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>
 		<example>
-		<title><function>start_recording</function> usage</title>
+		<title><function>rtpproxy_start_recording</function> usage</title>
 		<programlisting format="linespecific">
 ...
-start_recording();
+rtpproxy_start_recording();
 ...
 		</programlisting>
 		</example>
