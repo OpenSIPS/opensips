@@ -52,6 +52,8 @@
 		struct vqm_block* mem_block;
 	#elif defined F_MALLOC
 		struct fm_block* mem_block;
+	#elif defined HP_MALLOC
+		struct fm_block* mem_block;
 	#else
 		struct qm_block* mem_block;
 	#endif
@@ -72,12 +74,14 @@ int init_pkg_mallocs(void)
 		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size);
 	#elif F_MALLOC
 		mem_block=fm_malloc_init(mem_pool, pkg_mem_size);
+	#elif HP_MALLOC
+		mem_block=fm_malloc_init(mem_pool, pkg_mem_size);
 	#else
 		mem_block=qm_malloc_init(mem_pool, pkg_mem_size);
 	#endif
 	if (mem_block==0){
 		LM_CRIT("could not initialize memory pool\n");
-		fprintf(stderr, "Too much pkg memory demanded: %ld\n",
+		fprintf(stderr, "Given PKG mem size is not enough: %ld\n",
 			pkg_mem_size );
 		return -1;
 	}

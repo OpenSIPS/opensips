@@ -327,6 +327,8 @@ extern int line;
 %token PORT
 %token CHILDREN
 %token CHECK_VIA
+%token SHM_HASH_SPLIT_PERCENTAGE
+%token SHM_SECONDARY_HASH_SIZE
 %token MEMLOG
 %token MEMDUMP
 %token EXECMSGTHRESHOLD
@@ -689,6 +691,10 @@ assign_stm: DEBUG EQUAL snumber {
 		| CHILDREN EQUAL error { yyerror("number expected"); } 
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
+		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER { shm_hash_split_percentage=$3; }
+		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error { yyerror("number expected"); }
+		| SHM_SECONDARY_HASH_SIZE EQUAL NUMBER { shm_secondary_hash_size=$3; }
+		| SHM_SECONDARY_HASH_SIZE EQUAL error { yyerror("number expected"); }
 		| MEMLOG EQUAL NUMBER { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL NUMBER { memdump=$3; }

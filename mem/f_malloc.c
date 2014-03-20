@@ -155,9 +155,12 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 		(*f)->prev = &(frag->u.nxt_free);
 
 	*f=frag;
-	qm->free_hash[hash].no++;
-	free_plus(qm , frag->size);
 
+	#if defined(DBG_F_MALLOC) || defined(STATISTICS)
+	qm->free_hash[hash].no++;
+	#endif
+
+	free_plus(qm, frag->size);
 }
 
 static inline void fm_remove_free(struct fm_block* qm, struct fm_frag* n)

@@ -336,9 +336,25 @@ time_t startup_time = 0;
 
 /* shared memory (in MB) */
 unsigned long shm_mem_size=SHM_MEM_SIZE * 1024 * 1024;
+unsigned int shm_hash_split_percentage = DEFAULT_SHM_HASH_SPLIT_PERCENTAGE;
+unsigned int shm_secondary_hash_size = DEFAULT_SHM_SECONDARY_HASH_SIZE;
 
-/* shared memory (in MB) */
+/* packaged memory (in MB) */
 unsigned long pkg_mem_size=PKG_MEM_SIZE * 1024 * 1024;
+
+/*
+ * adaptive image of OpenSIPS's memory usage during runtime
+ * used to fragment the shared memory pool at daemon startup
+ */
+char *mem_warming_pattern_file;
+int mem_warming_enabled = 1;
+
+/*
+ * percentage of shared memory which will be fragmented at startup
+ * values between [0, 75]
+ */
+int mem_warming_percentage = -1;
+
 
 /* export command-line to anywhere else */
 int my_argc;
@@ -362,10 +378,22 @@ void cleanup(int show_status)
 {
 	LM_INFO("cleanup\n");
 	/*clean-up*/
+
+	/* hack: force-unlock the shared memory lock in case
+	   		 some process crashed and let it locked; this will
+	   		 allow an almost gracious shutdown */
 	if (mem_lock)
-		shm_unlock(); /* hack: force-unlock the shared memory lock in case
-					 some process crashed and let it locked; this will
-					 allow an almost gracious shutdown */
+#ifdef HP_MALLOC
+	{
+		int i;
+
+		for (i = 0; i < F_HASH_SIZE; i++)
+			shm_unlock(i);
+	}
+#else
+		shm_unlock();
+#endif
+
 	handle_ql_shutdown();
 	destroy_modules();
 #ifdef USE_TCP
@@ -1438,6 +1466,13 @@ try_again:
 	 * --andrei */
 	if (init_shm_mallocs()==-1)
 		goto error;
+
+	/* Init statistics */
+	if (init_stats_collector()<0) {
+		LM_ERR("failed to initialize statistics\n");
+		goto error;
+	}
+
 	/*init timer, before parsing the cfg!*/
 	if (init_timer()<0){
 		LM_CRIT("could not initialize timer, exiting...\n");
@@ -1510,11 +1545,6 @@ try_again:
 	/* init serial forking engine */
 	if (init_serialization()!=0) {
 		LM_ERR("failed to initialize serialization\n");
-		goto error;
-	}
-	/* Init statistics */
-	if (init_stats_collector()<0) {
-		LM_ERR("failed to initialize statistics\n");
 		goto error;
 	}
 	/* Init MI */

@@ -41,6 +41,8 @@
 #define SIPS_PORT 5061		/*! default sip port for tls if none specified */
 
 #define CFG_FILE CFG_DIR "opensips.cfg"
+#define MEM_WARMING_DEFAULT_PATTERN_FILE CFG_DIR "mem_warming_pattern"
+#define MEM_WARMING_DEFAULT_PERCENTAGE 85
 
 #define TLS_PKEY_FILE CFG_DIR "tls/cert.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
@@ -119,6 +121,9 @@
 
 #define PKG_MEM_SIZE 2				/*!< Used only if PKG_MALLOC is defined*/
 #define SHM_MEM_SIZE 32				/*!< Used if SH_MEM is defined*/
+#define SHM_MAX_SECONDARY_HASH_SIZE 100
+#define DEFAULT_SHM_HASH_SPLIT_PERCENTAGE 1	/*!< Used if SH_MEM is defined*/
+#define DEFAULT_SHM_SECONDARY_HASH_SIZE 8
 
 #define TIMER_TICK   1  			/*!< one second */
 #define UTIMER_TICK  100*1000			/*!< 100 miliseconds*/

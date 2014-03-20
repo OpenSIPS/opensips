@@ -78,7 +78,9 @@
 #elif defined F_MALLOC
 #	include "f_malloc.h"
 	extern struct fm_block* shm_block;
+#	define MY_MALLOC_UNSAFE fm_malloc
 #	define MY_MALLOC fm_malloc
+#	define MY_FREE_UNSAFE fm_free
 #	define MY_FREE fm_free
 #	define MY_REALLOC fm_realloc
 #	define MY_STATUS fm_status
@@ -92,6 +94,27 @@
 #		define MY_SHM_GET_FRAGS	fm_get_frags
 #	endif
 #	define  shm_malloc_init fm_malloc_init
+#elif defined HP_MALLOC
+#	include "hp_malloc.h"
+	extern struct fm_block* shm_block;
+#	define MY_MALLOC_UNSAFE fm_malloc_unsafe
+#	define MY_MALLOC fm_malloc
+#	define MY_FREE_UNSAFE fm_free_unsafe
+#	define MY_FREE fm_free
+#	define MY_REALLOC fm_realloc
+#	define MY_STATUS fm_status
+#	define MY_MEMINFO	fm_info
+#	ifdef STATISTICS
+#		define MY_SHM_GET_SIZE	fm_get_size
+#		define MY_SHM_GET_USED	fm_get_used
+#		define MY_SHM_GET_RUSED	fm_get_real_used
+#		define MY_SHM_GET_MUSED	fm_get_max_real_used
+#		define MY_SHM_GET_FREE	fm_get_free
+#		define MY_SHM_GET_FRAGS	fm_get_frags
+#	endif
+#	define  shm_malloc_init fm_malloc_init
+#	define  shm_mem_warming fm_mem_warming
+#	define  update_mem_pattern_file fm_update_mem_pattern_file
 #else
 #	include "q_malloc.h"
 	extern struct qm_block* shm_block;
@@ -112,10 +135,11 @@
 #endif
 
 
-	extern gen_lock_t* mem_lock;
+extern gen_lock_t* mem_lock;
 
 
 int shm_mem_init(); /* calls shm_getmem & shm_mem_init_mallocs */
+void update_shm_statistics(void);
 int shm_getmem();   /* allocates the memory (mmap or sysv shmap) */
 int shm_mem_init_mallocs(void* mempool, unsigned long size); /* initialize
 																the mallocs
@@ -165,8 +189,13 @@ inline static void shm_threshold_check(void)
 #endif
 
 
+#ifndef HP_MALLOC
 #define shm_lock()    lock_get(mem_lock)
 #define shm_unlock()  lock_release(mem_lock)
+#else
+#define shm_lock(i)    lock_get(&mem_lock[i])
+#define shm_unlock(i)  lock_release(&mem_lock[i])
+#endif
 
 
 #ifdef DBG_QM_MALLOC
@@ -178,31 +207,34 @@ inline static void shm_threshold_check(void)
 inline static void* _shm_malloc_unsafe(unsigned int size,
 	const char *file, const char *function, int line )
 {
-	void *p = MY_MALLOC(shm_block, size, file, function, line);
+	void *p;
+	
+	p = MY_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
+
 	return p;
 }
 
-inline static void* _shm_malloc(unsigned int size,
+inline static void* _shm_malloc(unsigned int size, 
 	const char *file, const char *function, int line )
 {
 	void *p;
 
-	shm_lock();
-	p=_shm_malloc_unsafe(size, file, function, line );
-	shm_unlock();
-	return p;
+	p = MY_MALLOC(shm_block, size, file, function, line);
+	shm_threshold_check();
+
+	return p; 
 }
 
 
-inline static void* _shm_realloc(void *ptr, unsigned int size,
+inline static void* _shm_realloc(void *ptr, unsigned int size, 
 		const char* file, const char* function, int line )
 {
 	void *p;
-	shm_lock();
-	p=MY_REALLOC(shm_block, ptr, size, file, function, line);
+
+	p = MY_REALLOC(shm_block, ptr, size, file, function, line);
 	shm_threshold_check();
-	shm_unlock();
+
 	return p;
 }
 
@@ -230,7 +262,7 @@ do { \
 		shm_unlock(); \
 }while(0)
 
-
+extern unsigned long long *mem_hash_usage;
 
 void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 					int line);
@@ -243,35 +275,34 @@ void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 #else /*DBQ_QM_MALLOC*/
 
 
-inline static void *shm_malloc_unsafe(unsigned int size)
-{
-	void *p = MY_MALLOC(shm_block, size);
-	shm_threshold_check();
-	return p;
-}
-
-inline static void* shm_malloc(unsigned int size)
+inline static void* shm_malloc_unsafe(unsigned int size)
 {
 	void *p;
 
-	shm_lock();
-	p=shm_malloc_unsafe(size);
-	shm_unlock();
+	p = MY_MALLOC_UNSAFE(shm_block, size);
+	shm_threshold_check();
+
 	return p;
 }
 
+inline static void* shm_malloc(unsigned long size)
+{
+	void *p;
+
+	p = MY_MALLOC(shm_block, size);
+	shm_threshold_check();
+
+	return p;
+}
 
 inline static void* shm_realloc(void *ptr, unsigned int size)
 {
 	void *p;
-	shm_lock();
-	p=MY_REALLOC(shm_block, ptr, size);
+	p = MY_REALLOC(shm_block, ptr, size);
 	shm_threshold_check();
-	shm_unlock();
+
 	return p;
 }
-
-
 
 #define shm_free_unsafe( _p ) \
 do { \
@@ -279,13 +310,25 @@ do { \
 	shm_threshold_check(); \
 } while(0)
 
-#define shm_free(_p) \
-do { \
-		shm_lock(); \
-		shm_free_unsafe(_p); \
-		shm_unlock(); \
-}while(0)
+/**
+ * FIXME: tmp hacks --liviu
+ */
+inline static void shm_free(void *_p)
+{
+#ifndef HP_MALLOC
+	shm_lock();
+#endif
 
+#ifdef HP_MALLOC
+	MY_FREE(shm_block, _p);
+#else
+	shm_free_unsafe( (_p));
+#endif
+
+#ifndef HP_MALLOC
+	shm_unlock();
+#endif
+}
 
 
 void* _shm_resize(void* ptr, unsigned int size);
@@ -296,12 +339,21 @@ void* _shm_resize(void* ptr, unsigned int size);
 #endif
 
 
-#define shm_status() \
-do { \
-		shm_lock(); \
-		MY_STATUS(shm_block); \
-		shm_unlock(); \
-}while(0)
+inline static void shm_status(void)
+{
+#ifdef HP_MALLOC
+		shm_lock(0);
+#else
+		shm_lock();
+#endif
+		MY_STATUS(shm_block);
+
+#ifdef HP_MALLOC
+		shm_unlock(0);
+#else
+		shm_unlock();
+#endif
+}
 
 
 #define shm_info(mi) \

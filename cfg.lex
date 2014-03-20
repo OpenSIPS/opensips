@@ -302,6 +302,8 @@ PORT	port
 MAXBUFFER maxbuffer
 CHILDREN children
 CHECK_VIA	check_via
+SHM_HASH_SPLIT_PERCENTAGE "shm_hash_split_percentage"
+SHM_SECONDARY_HASH_SIZE "shm_secondary_hash_size"
 MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
@@ -607,6 +609,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }
+<INITIAL>{SHM_HASH_SPLIT_PERCENTAGE}	{ count(); yylval.strval=yytext; return SHM_HASH_SPLIT_PERCENTAGE; }
+<INITIAL>{SHM_SECONDARY_HASH_SIZE}	{ count(); yylval.strval=yytext; return SHM_SECONDARY_HASH_SIZE; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }

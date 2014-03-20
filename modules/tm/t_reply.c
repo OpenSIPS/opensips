@@ -261,10 +261,15 @@ inline static int update_totag_set(struct cell *t, struct sip_msg *ok)
 		}
 	}
 	/* that's a new to-tag -- record it */
+#ifndef HP_MALLOC
 	shm_lock();
 	n=(struct totag_elem*) shm_malloc_unsafe(sizeof(struct totag_elem));
 	s=(char *)shm_malloc_unsafe(tag->len);
 	shm_unlock();
+#else
+	n=(struct totag_elem*) shm_malloc(sizeof(struct totag_elem));
+	s=(char *)shm_malloc(tag->len);
+#endif
 	if (!s || !n) {
 		LM_ERR("no more share memory \n");
 		if (n) shm_free(n);

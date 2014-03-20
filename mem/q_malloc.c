@@ -35,7 +35,7 @@
  */
 
 
-#if !defined(q_malloc) && !(defined VQ_MALLOC) && !(defined F_MALLOC)
+#if !defined(q_malloc) && !(defined VQ_MALLOC) && !(defined F_MALLOC) && !defined(HP_MALLOC)
 #define q_malloc
 
 #include <stdlib.h>
