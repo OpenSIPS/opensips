@@ -252,33 +252,6 @@ modparam("dialog", "rr_param", "xyz")
 		</example>
 	</section>
 
-	<section id="timeout-avp-id">
-		<title><varname>timeout_avp</varname> (string)</title>
-		<para>
-		The specification of an AVP to contain a custom timeout (in seconds)
-		for the dialog. It may be used only in a request 
-		(initial or sequential) context.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>none</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>timeout_avp</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "timeout_avp", "$avp(10)")
-...
-</programlisting>
-		</example>
-		<para>
-		<emphasis>
-			Make sure you call this before <function>loose_route()</function>.
-		</emphasis>
-		</para>
-	</section>
-
 	<section id="default-timeout-id">
 		<title><varname>default_timeout</varname> (integer)</title>
 		<para>
