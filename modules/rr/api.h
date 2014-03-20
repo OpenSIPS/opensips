@@ -51,6 +51,8 @@ typedef  int (*is_direction_t)(struct sip_msg*, int);
 typedef  int (*get_route_param_t)(struct sip_msg*, str*, str*);
 typedef  str* (*get_remote_target_t)(struct sip_msg*);
 typedef  str* (*get_route_set_t)(struct sip_msg*,int *nr_routes);
+typedef  int (*loose_route_t)(struct sip_msg*);
+typedef  int (*record_route_t)(struct sip_msg*, str*);
 
 struct rr_binds {
 	add_rr_param_t      add_rr_param;
@@ -63,6 +65,9 @@ struct rr_binds {
 	int                 append_fromtag;
 	int*                removed_routes;
 	int*				routing_type;
+
+	loose_route_t       loose_route;
+	record_route_t      record_route;
 };
 
 typedef  int (*load_rr_f)( struct rr_binds* );

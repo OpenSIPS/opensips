@@ -244,6 +244,37 @@ inline void destroy_dlg(struct dlg_cell *dlg);
 		}\
 	}while(0)
 
+/*
+ * @input - str
+ * @return - integer flag bitmask
+ */
+#define parse_create_dlg_flags(input) \
+	({ \
+		char *___p; \
+		int ___flags = 0; \
+		for (___p=(input).s; ___p < (input).s + (input).len; ___p++) \
+		{ \
+			switch (*___p) \
+			{ \
+				case 'P': \
+					___flags |= DLG_FLAG_PING_CALLER; \
+					LM_DBG("will ping caller\n"); \
+					break; \
+				case 'p': \
+					___flags |= DLG_FLAG_PING_CALLEE; \
+					LM_DBG("will ping callee\n"); \
+					break; \
+				case 'B': \
+					___flags |= DLG_FLAG_BYEONTIMEOUT; \
+					LM_DBG("bye on timeout activated\n"); \
+					break; \
+				default: \
+					LM_DBG("unknown create_dialog flag : [%c] ." \
+						   "Skipping\n", *___p); \
+			} \
+		} \
+		___flags; \
+	})
 
 int dialog_cleanup( struct sip_msg *msg, void *param );
 

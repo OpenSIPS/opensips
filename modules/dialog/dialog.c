@@ -578,6 +578,11 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->store_dlg_value = store_dlg_value;
 	dlgb->fetch_dlg_value = fetch_dlg_value;
 	dlgb->terminate_dlg = terminate_dlg;
+
+	dlgb->match_dialog = w_match_dialog;
+	dlgb->fix_route_dialog = fix_route_dialog;
+	dlgb->validate_dialog = dlg_validate_dialog;
+
 	return 1;
 }
 
@@ -897,8 +902,7 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 {
 	struct cell *t;
 	str res = {0,0};
-	int flags=0;
-	char *p;
+	int flags;
 
 	if (fixup_get_svalue(req, (gparam_p)param, &res) !=0)
 	{
@@ -906,26 +910,7 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 		return -1;
 	}
 
-	for (p=res.s;p<res.s+res.len;p++)
-	{
-		switch (*p)
-		{
-			case 'P':
-				flags |= DLG_FLAG_PING_CALLER;
-				LM_DBG("will ping caller\n");
-				break;
-			case 'p':
-				flags |= DLG_FLAG_PING_CALLEE;
-				LM_DBG("will ping callee\n");
-				break;
-			case 'B':
-				flags |= DLG_FLAG_BYEONTIMEOUT;
-				LM_DBG("bye on timeout activated\n");
-				break;
-			default:
-				LM_DBG("unknown create_dialog flag : [%c] . Skipping\n",*p);
-		}
-	}
+	flags = parse_create_dlg_flags(res);
 
 	/* is the dialog already created? */
 	if (current_dlg_pointer!=NULL)

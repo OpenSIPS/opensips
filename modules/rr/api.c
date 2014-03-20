@@ -53,6 +53,9 @@ int load_rr( struct rr_binds *rrb )
 	rrb->removed_routes    = &removed_routes;
 	rrb->routing_type	   = &routing_type;
 
+	rrb->loose_route       = loose_route;
+	rrb->record_route      = record_route;
+
 	return 1;
 }
 
