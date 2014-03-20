@@ -14,6 +14,10 @@ Edited by
 
 Bogdan-Andrei Iancu
 
+Edited by
+
+Ovidiu Sas
+
    Copyright © 2003 FhG FOKUS
 
    Copyright © 2005-2008 Voice Sistem SRL
@@ -579,19 +583,23 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 
 1.3.18. own_timer_proc (integer)
 
-   If TM module should create its own timer process (timer is used
-   for handling retransmissions, timeouts, etc). If disabled, TM
-   will used the global timer process which may be affected
+   If TM module should create its own timer(s) process (timer is
+   used for handling retransmissions, timeouts, etc). If disabled,
+   TM will used the global timer process which may be affected
    (desynchronized) by the operations performed by other modules
    on that timer (like usrloc flushing memory cash into DB). So,
    on system with high load, to keep accuracy for the TM timer,
    better enabled this.
 
+   The value of the parameter will set the number of timer
+   processes.
+
    Default value is 0 (disabled).
 
    Example 1.18. Set own_timer_proc parameter
 ...
-modparam("tm", "own_timer_proc", 1)
+# Enable two timer processes
+modparam("tm", "own_timer_proc", 2)
 ...
 
 1.4. Exported Functions
@@ -733,8 +741,8 @@ t_reply("404", "Use $rU not found");
 ...
         if(is_method("INVITE"))
         {
-                append_to_reply("Contact: $var(contact)\r\nContent-Type:
- application/sdp\r\n");
+                append_to_reply("Contact: $var(contact)\r\n"
+                                "Content-Type: application/sdp\r\n");
                 t_reply_with_body("200", "Ok", "$var(body)");
                 exit;
         }
@@ -1226,14 +1234,14 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with old cancel_call() function
+   What happened with old cancel_call() function
 
-       The function was replace (as functionality) by
-       cancel_branch("a") - cancel all braches.
+   The function was replace (as functionality) by
+   cancel_branch("a") - cancel all braches.
 
    3.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
