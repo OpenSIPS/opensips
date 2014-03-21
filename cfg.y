@@ -329,6 +329,9 @@ extern int line;
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
 %token SHM_SECONDARY_HASH_SIZE
+%token MEM_WARMING_ENABLED
+%token MEM_WARMING_PATTERN_FILE
+%token MEM_WARMING_PERCENTAGE
 %token MEMLOG
 %token MEMDUMP
 %token EXECMSGTHRESHOLD
@@ -695,6 +698,12 @@ assign_stm: DEBUG EQUAL snumber {
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL error { yyerror("number expected"); }
 		| SHM_SECONDARY_HASH_SIZE EQUAL NUMBER { shm_secondary_hash_size=$3; }
 		| SHM_SECONDARY_HASH_SIZE EQUAL error { yyerror("number expected"); }
+		| MEM_WARMING_ENABLED EQUAL NUMBER { mem_warming_enabled = $3; }
+		| MEM_WARMING_ENABLED EQUAL error { yyerror("number expected"); }
+		| MEM_WARMING_PATTERN_FILE EQUAL STRING { mem_warming_pattern_file = $3; }
+		| MEM_WARMING_PATTERN_FILE EQUAL error { yyerror("string expected"); }
+		| MEM_WARMING_PERCENTAGE EQUAL NUMBER { mem_warming_percentage = $3; }
+		| MEM_WARMING_PERCENTAGE EQUAL error { yyerror("number expected"); }
 		| MEMLOG EQUAL NUMBER { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL NUMBER { memdump=$3; }
