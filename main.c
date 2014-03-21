@@ -347,11 +347,11 @@ unsigned long pkg_mem_size=PKG_MEM_SIZE * 1024 * 1024;
  * used to fragment the shared memory pool at daemon startup
  */
 char *mem_warming_pattern_file;
-int mem_warming_enabled = 1;
+int mem_warming_enabled;
 
 /*
  * percentage of shared memory which will be fragmented at startup
- * values between [0, 75]
+ * common values are between [0, 75]
  */
 int mem_warming_percentage = -1;
 
@@ -387,7 +387,7 @@ void cleanup(int show_status)
 	{
 		int i;
 
-		for (i = 0; i < F_HASH_SIZE; i++)
+		for (i = 0; i < HP_HASH_SIZE; i++)
 			shm_unlock(i);
 	}
 #else
@@ -1454,6 +1454,14 @@ try_again:
 
 
 	time(&startup_time);
+
+	if (mem_warming_enabled) {
+		if (!mem_warming_pattern_file)
+			mem_warming_pattern_file = MEM_WARMING_DEFAULT_PATTERN_FILE;
+
+		if (mem_warming_percentage == -1)
+			mem_warming_percentage = MEM_WARMING_DEFAULT_PERCENTAGE;
+	}
 
 	/*init shm mallocs
 	 *  this must be here

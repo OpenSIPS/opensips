@@ -447,7 +447,7 @@ struct hp_block* hp_malloc_init(char* address, unsigned long size)
 
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
-	LM_DBG("F_OPTIMIZE=%lu, /ROUNDTO=%lu\n",
+	LM_DBG("HP_OPTIMIZE=%lu, /ROUNDTO=%lu\n",
 			HP_MALLOC_OPTIMIZE, HP_MALLOC_OPTIMIZE/ROUNDTO);
 	LM_DBG("HP_HASH_SIZE=%lu, hp_block size=%lu\n",
 			HP_HASH_SIZE, (long)sizeof(struct hp_block));
