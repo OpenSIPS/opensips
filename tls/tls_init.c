@@ -43,8 +43,8 @@
 #include <netinet/ip.h>
 #include <unistd.h>
 
-#define SER_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.2.0")
-#define SER_SSL_SESS_ID_LEN (sizeof(SER_SSL_SESS_ID)-1)
+#define OS_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.11.0")
+#define OS_SSL_SESS_ID_LEN (sizeof(OS_SSL_SESS_ID)-1)
 
 #if OPENSSL_VERSION_NUMBER < 0x10001000L
 	#warning ""
@@ -55,7 +55,7 @@
 	#warning ""
 #endif
 
-SSL_METHOD     *ssl_methods[TLS_USE_SSLv23 + 1];
+SSL_METHOD     *ssl_methods[TLS_USE_TLSv1_2 + 1];
 
 #define VERIFY_DEPTH_S 3
 
@@ -336,6 +336,8 @@ load_ca_dir(SSL_CTX * ctx, char *directory)
         return 0;
 }
 
+
+#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 /*
  * Load and set DH params to be used in ephemeral key exchange from a file.
  */
@@ -366,6 +368,7 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 	return 0;
 }
 
+
 /*
  * Set elliptic curve.
  */
@@ -393,6 +396,8 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
 	}
     return 0;
 }
+#endif
+
 
 /*
  * initialize ssl methods
@@ -403,27 +408,27 @@ init_ssl_methods(void)
 	LM_DBG("entered\n");
 
 #ifndef OPENSSL_NO_SSL2
-	ssl_methods[TLS_USE_SSLv2_cli - 1] = SSLv2_client_method();
-	ssl_methods[TLS_USE_SSLv2_srv - 1] = SSLv2_server_method();
-	ssl_methods[TLS_USE_SSLv2 - 1] = SSLv2_method();
+	ssl_methods[TLS_USE_SSLv2_cli - 1] = (SSL_METHOD*)SSLv2_client_method();
+	ssl_methods[TLS_USE_SSLv2_srv - 1] = (SSL_METHOD*)SSLv2_server_method();
+	ssl_methods[TLS_USE_SSLv2 - 1] = (SSL_METHOD*)SSLv2_method();
 #endif
 
-	ssl_methods[TLS_USE_SSLv3_cli - 1] = SSLv3_client_method();
-	ssl_methods[TLS_USE_SSLv3_srv - 1] = SSLv3_server_method();
-	ssl_methods[TLS_USE_SSLv3 - 1] = SSLv3_method();
+	ssl_methods[TLS_USE_SSLv3_cli - 1] = (SSL_METHOD*)SSLv3_client_method();
+	ssl_methods[TLS_USE_SSLv3_srv - 1] = (SSL_METHOD*)SSLv3_server_method();
+	ssl_methods[TLS_USE_SSLv3 - 1] = (SSL_METHOD*)SSLv3_method();
 
-	ssl_methods[TLS_USE_TLSv1_cli - 1] = TLSv1_client_method();
-	ssl_methods[TLS_USE_TLSv1_srv - 1] = TLSv1_server_method();
-	ssl_methods[TLS_USE_TLSv1 - 1] = TLSv1_method();
+	ssl_methods[TLS_USE_TLSv1_cli - 1] = (SSL_METHOD*)TLSv1_client_method();
+	ssl_methods[TLS_USE_TLSv1_srv - 1] = (SSL_METHOD*)TLSv1_server_method();
+	ssl_methods[TLS_USE_TLSv1 - 1] = (SSL_METHOD*)TLSv1_method();
 
-	ssl_methods[TLS_USE_SSLv23_cli - 1] = SSLv23_client_method();
-	ssl_methods[TLS_USE_SSLv23_srv - 1] = SSLv23_server_method();
-	ssl_methods[TLS_USE_SSLv23 - 1] = SSLv23_method();
+	ssl_methods[TLS_USE_SSLv23_cli - 1] = (SSL_METHOD*)SSLv23_client_method();
+	ssl_methods[TLS_USE_SSLv23_srv - 1] = (SSL_METHOD*)SSLv23_server_method();
+	ssl_methods[TLS_USE_SSLv23 - 1] = (SSL_METHOD*)SSLv23_method();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10001000L
-	ssl_methods[TLS_USE_TLSv1_2_cli - 1] = TLSv1_2_client_method();
-	ssl_methods[TLS_USE_TLSv1_2_srv - 1] = TLSv1_2_server_method();
-	ssl_methods[TLS_USE_TLSv1_2 - 1] = TLSv1_2_method();
+	ssl_methods[TLS_USE_TLSv1_2_cli - 1] = (SSL_METHOD*)TLSv1_2_client_method();
+	ssl_methods[TLS_USE_TLSv1_2_srv - 1] = (SSL_METHOD*)TLSv1_2_server_method();
+	ssl_methods[TLS_USE_TLSv1_2 - 1] = (SSL_METHOD*)TLSv1_2_method();
 #endif
 
 }
@@ -437,11 +442,12 @@ static int
 init_ssl_ctx_behavior( struct tls_domain *d ) {
 	int verify_mode;
 
+#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 	/*
 	 * set dh params
 	 */
 	if (!d->tmp_dh_file) {
-			LM_NOTICE("no DH params file for tls[%s:%d] defined, "
+			LM_DBG("no DH params file for tls[%s:%d] defined, "
 					"using default '%s'\n", ip_addr2a(&d->addr), d->port,
 					tls_tmp_dh_file);
 			d->tmp_dh_file = tls_tmp_dh_file;
@@ -457,6 +463,12 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	else {
 		LM_NOTICE("No EC curve defined\n");
 	}
+#else
+	if (d->tmp_dh_file  || tls_tmp_dh_file)
+		LM_WARN("DH params file discarded as not supported by your openSSL version\n");
+	if (d->tls_ec_curve)
+		LM_WARN("EC params file discarded as not supported by your openSSL version\n");
+#endif
 
 	if( d->ciphers_list != 0 ) {
 		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
@@ -564,8 +576,8 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	SSL_CTX_set_verify_depth( d->ctx, VERIFY_DEPTH_S);
 
 	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
-	SSL_CTX_set_session_id_context( d->ctx, SER_SSL_SESS_ID,
-		SER_SSL_SESS_ID_LEN );
+	SSL_CTX_set_session_id_context( d->ctx, OS_SSL_SESS_ID,
+		OS_SSL_SESS_ID_LEN );
 
 	return 0;
 }
