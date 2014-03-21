@@ -121,6 +121,9 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len);
 #define INIT_REF_UNSAFE(_T_cell) ((_T_cell)->ref_count=1)
 #define IS_REFFED_UNSAFE(_T_cell) ((_T_cell)->ref_count!=0)
 
+#define unset_timeout(timeout) ((timeout) = 0)
+#define is_timeout_set(timeout) ((timeout) != 0)
+
 inline void set_fr_retr(struct retr_buf *rb, int retr );
 inline void start_retr(struct retr_buf *rb);
 inline void force_retr(struct retr_buf *rb);
