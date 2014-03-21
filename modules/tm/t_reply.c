@@ -1609,7 +1609,10 @@ int reply_received( struct sip_msg  *p_msg )
 			 * attempt to restart retransmission any more
 			 */
 			backup_list = set_avp_list(&t->user_avps);
-			timer = t->fr_inv_timeout;
+			timer = is_timeout_set(t->fr_inv_timeout) ?
+				t->fr_inv_timeout :
+				timer_id2timeout[FR_INV_TIMER_LIST];
+
 			LM_DBG("FR_INV_TIMER = %lld\n", timer);
 			set_timer(&uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
 			set_avp_list(backup_list);

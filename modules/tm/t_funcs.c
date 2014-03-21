@@ -271,7 +271,7 @@ inline void _set_fr_retr( struct retr_buf *rb, int retr )
 		set_timer( &rb->retr_timer, RT_T1_TO_1, NULL );
 	}
 
-	if (!rb->my_T || rb->my_T->fr_timeout==0)
+	if (!rb->my_T || !is_timeout_set(rb->my_T->fr_timeout))
 		set_1timer(&rb->fr_timer, FR_TIMER_LIST, NULL);
 	else {
 		timer = rb->my_T->fr_timeout;
