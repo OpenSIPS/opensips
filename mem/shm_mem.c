@@ -73,7 +73,7 @@ static void* shm_mempool=(void*)-1;
 #elif F_MALLOC
 	struct fm_block* shm_block;
 #elif HP_MALLOC
-	struct fm_block* shm_block;
+	struct hp_block* shm_block;
 #else
 	struct qm_block* shm_block;
 #endif
@@ -289,23 +289,23 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 			LM_INFO("skipped memory warming\n");
 	}
 
-	mem_hash_usage = shm_malloc_unsafe(F_HASH_SIZE * sizeof *mem_hash_usage);
+	mem_hash_usage = shm_malloc_unsafe(HP_HASH_SIZE * sizeof *mem_hash_usage);
 	if (!mem_hash_usage) {
 		LM_ERR("failed to allocate statistics array\n");
 		return -1;
 	}
 
-	memset(mem_hash_usage, 0, F_HASH_SIZE * sizeof *mem_hash_usage);
+	memset(mem_hash_usage, 0, HP_HASH_SIZE * sizeof *mem_hash_usage);
 
 	/* lock_alloc cannot be used yet! */
-	mem_lock = shm_malloc_unsafe(F_HASH_SIZE * sizeof *mem_lock);
+	mem_lock = shm_malloc_unsafe(HP_HASH_SIZE * sizeof *mem_lock);
 	if (!mem_lock) {
 		LM_CRIT("could not allocate shm lock array\n");
 		shm_mem_destroy();
 		return -1;
 	}
 
-	for (i = 0; i < F_HASH_SIZE; i++)
+	for (i = 0; i < HP_HASH_SIZE; i++)
 		if (!lock_init(&mem_lock[i])) {
 			LM_CRIT("could not initialize lock\n");
 			shm_mem_destroy();

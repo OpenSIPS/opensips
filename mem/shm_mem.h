@@ -96,25 +96,25 @@
 #	define  shm_malloc_init fm_malloc_init
 #elif defined HP_MALLOC
 #	include "hp_malloc.h"
-	extern struct fm_block* shm_block;
-#	define MY_MALLOC_UNSAFE fm_malloc_unsafe
-#	define MY_MALLOC fm_malloc
-#	define MY_FREE_UNSAFE fm_free_unsafe
-#	define MY_FREE fm_free
-#	define MY_REALLOC fm_realloc
-#	define MY_STATUS fm_status
-#	define MY_MEMINFO	fm_info
+	extern struct hp_block* shm_block;
+#	define MY_MALLOC_UNSAFE hp_malloc_unsafe
+#	define MY_MALLOC hp_malloc
+#	define MY_FREE_UNSAFE hp_free_unsafe
+#	define MY_FREE hp_free
+#	define MY_REALLOC hp_realloc
+#	define MY_STATUS hp_status
+#	define MY_MEMINFO	hp_info
 #	ifdef STATISTICS
-#		define MY_SHM_GET_SIZE	fm_get_size
-#		define MY_SHM_GET_USED	fm_get_used
-#		define MY_SHM_GET_RUSED	fm_get_real_used
-#		define MY_SHM_GET_MUSED	fm_get_max_real_used
-#		define MY_SHM_GET_FREE	fm_get_free
-#		define MY_SHM_GET_FRAGS	fm_get_frags
+#		define MY_SHM_GET_SIZE	hp_get_size
+#		define MY_SHM_GET_USED	hp_get_used
+#		define MY_SHM_GET_RUSED	hp_get_real_used
+#		define MY_SHM_GET_MUSED	hp_get_max_real_used
+#		define MY_SHM_GET_FREE	hp_get_free
+#		define MY_SHM_GET_FRAGS	hp_get_frags
 #	endif
-#	define  shm_malloc_init fm_malloc_init
-#	define  shm_mem_warming fm_mem_warming
-#	define  update_mem_pattern_file fm_update_mem_pattern_file
+#	define  shm_malloc_init hp_malloc_init
+#	define  shm_mem_warming hp_mem_warming
+#	define  update_mem_pattern_file hp_update_mem_pattern_file
 #else
 #	include "q_malloc.h"
 	extern struct qm_block* shm_block;
