@@ -53,7 +53,7 @@
 	#elif defined F_MALLOC
 		struct fm_block* mem_block;
 	#elif defined HP_MALLOC
-		struct fm_block* mem_block;
+		struct hp_block* mem_block;
 	#else
 		struct qm_block* mem_block;
 	#endif
@@ -75,7 +75,7 @@ int init_pkg_mallocs(void)
 	#elif F_MALLOC
 		mem_block=fm_malloc_init(mem_pool, pkg_mem_size);
 	#elif HP_MALLOC
-		mem_block=fm_malloc_init(mem_pool, pkg_mem_size);
+		mem_block=hp_malloc_init(mem_pool, pkg_mem_size);
 	#else
 		mem_block=qm_malloc_init(mem_pool, pkg_mem_size);
 	#endif
