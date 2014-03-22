@@ -426,6 +426,7 @@ fi
 %doc %{_docdir}/opensips/README.benchmark
 %doc %{_docdir}/opensips/README.cachedb_local
 %doc %{_docdir}/opensips/README.cachedb_sql
+%doc %{_docdir}/opensips/README.call_center
 %doc %{_docdir}/opensips/README.call_control
 %doc %{_docdir}/opensips/README.cfgutils
 %doc %{_docdir}/opensips/README.closeddial
@@ -466,8 +467,6 @@ fi
 %doc %{_docdir}/opensips/README.peering
 %doc %{_docdir}/opensips/README.permissions
 %doc %{_docdir}/opensips/README.pike
-%doc %{_docdir}/opensips/README.presence_callinfo
-%doc %{_docdir}/opensips/README.presence_xcapdiff
 %doc %{_docdir}/opensips/README.qos
 %doc %{_docdir}/opensips/README.ratelimit
 %doc %{_docdir}/opensips/README.registrar
@@ -475,6 +474,7 @@ fi
 %doc %{_docdir}/opensips/README.rr
 %doc %{_docdir}/opensips/README.rtpproxy
 %doc %{_docdir}/opensips/README.seas
+%doc %{_docdir}/opensips/README.script_helper
 %doc %{_docdir}/opensips/README.signaling
 %doc %{_docdir}/opensips/README.sipcapture
 %doc %{_docdir}/opensips/README.sipmsgops
@@ -514,6 +514,7 @@ fi
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
+%{_libdir}/opensips/modules/call_center.so
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/cfgutils.so
 %{_libdir}/opensips/modules/closeddial.so
@@ -554,8 +555,6 @@ fi
 %{_libdir}/opensips/modules/peering.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
-%{_libdir}/opensips/modules/presence_callinfo.so
-%{_libdir}/opensips/modules/presence_xcapdiff.so
 %{_libdir}/opensips/modules/python.so
 %{_libdir}/opensips/modules/qos.so
 %{_libdir}/opensips/modules/ratelimit.so
@@ -564,6 +563,7 @@ fi
 %{_libdir}/opensips/modules/rr.so
 %{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/seas.so
+%{_libdir}/opensips/modules/script_helper.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/sipcapture.so
 %{_libdir}/opensips/modules/sipmsgops.so
@@ -652,6 +652,7 @@ fi
 %defattr(-,root,root)
 %doc %{_docdir}/opensips/README.presence
 %doc %{_docdir}/opensips/README.presence_callinfo
+%doc %{_docdir}/opensips/README.b2b_sca
 %doc %{_docdir}/opensips/README.presence_dialoginfo
 %doc %{_docdir}/opensips/README.presence_mwi
 %doc %{_docdir}/opensips/README.presence_xcapdiff
@@ -668,6 +669,7 @@ fi
 
 %{_libdir}/opensips/modules/presence.so
 %{_libdir}/opensips/modules/presence_callinfo.so
+%{_libdir}/opensips/modules/b2b_sca.so
 %{_libdir}/opensips/modules/presence_dialoginfo.so
 %{_libdir}/opensips/modules/presence_mwi.so
 %{_libdir}/opensips/modules/presence_xcapdiff.so
@@ -748,8 +750,10 @@ fi
 %files json
 %defattr(-,root,root)
 %doc %{_docdir}/opensips/README.json
+%doc %{_docdir}/opensips/README.mi_json
 
 %{_libdir}/opensips/modules/json.so
+%{_libdir}/opensips/modules/mi_json.so
 
 
 %files carrierroute
@@ -904,7 +908,11 @@ fi
 
 
 %changelog
-* Tue Aug 06 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+* Tue Aug 23 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+- Some new rpm optional modules are added:
+  b2b_sca,call_center,mi_json,script_helper
+%changelog
+* Tue Mar 06 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   mi_xmlrpc_ng,sngtc,db_cachedb,mathops,rest_client
 %changelog
