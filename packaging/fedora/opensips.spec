@@ -878,6 +878,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_http.so
+%{_libdir}/opensips/modules/mi_json.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/nat_traversal.so
@@ -891,6 +892,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/script_helper.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/sipcapture.so
 %{_libdir}/opensips/modules/sipmsgops.so
@@ -947,6 +949,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
 %doc docdir/README.mi_http
+%doc docdir/README.mi_json
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
@@ -960,6 +963,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.registrar
 %doc docdir/README.rr
 %doc docdir/README.rtpproxy
+%doc docdir/README.script_helper
 %doc docdir/README.signaling
 %doc docdir/README.sipcapture
 %doc docdir/README.sipmsgops
@@ -999,8 +1003,12 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %files b2bua
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
+%{_libdir}/opensips/modules/b2b_sca.so
+%{_libdir}/opensips/modules/call_center.so
 %doc docdir/README.b2b_entities
 %doc docdir/README.b2b_logic
+%doc docdir/README.b2b_sca
+%doc docdir/README.call_center
 
 %files carrierroute
 %{_libdir}/opensips/modules/carrierroute.so
@@ -1257,7 +1265,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.xmpp
 
 %changelog
-* Tue Aug 13 2013 Nick Altmann <nick.altmann@gmail.com> - 1.11.0-1
+* Fri Mar 21 2014 Nick Altmann <nick.altmann@gmail.com> - 1.11.0-1
 - Update to 1.11.0
 
 * Tue Jul 30 2013 Nick Altmann <nick.altmann@gmail.com> - 1.10.0-1
