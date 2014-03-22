@@ -148,7 +148,7 @@ void shm_event_raise(long used, long size, long perc)
 #ifdef HP_MALLOC
 	shm_lock(0);
 #else
-	shm_unlock();
+	shm_lock();
 #endif
 
 	list = 0;
@@ -164,11 +164,22 @@ end:
 inline static void* sh_realloc(void* p, unsigned int size)
 {
 	void *r;
-	//shm_lock(0); 
+
+#ifndef HP_MALLOC
+	shm_lock(); 
+	shm_free_unsafe(p);
+	r = shm_malloc_unsafe(size);
+#else
 	shm_free(p);
-	r=shm_malloc(size);
+	r = shm_malloc(size);
+#endif
+
 	shm_threshold_check();
-	//shm_unlock(0);
+
+#ifndef HP_MALLOC
+	shm_unlock(); 
+#endif
+
 	return r;
 }
 

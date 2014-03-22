@@ -523,10 +523,13 @@ void* hp_malloc_unsafe(struct hp_block* qm, unsigned long size)
 
 	/*search for a suitable free frag*/
 
-	for(hash=GET_HASH(size);hash<HP_HASH_SIZE;hash++){
-		frag=qm->free_hash[hash].first;
-		for( ; frag; frag = frag->u.nxt_free )
-			if ( frag->size >= size ) goto found;
+	for (hash = GET_HASH(size); hash < HP_HASH_SIZE; hash++) {
+		frag = qm->free_hash[hash].first;
+
+		for (; frag; frag = frag->u.nxt_free)
+			if (frag->size >= size)
+				goto found;
+
 		/* try in a bigger bucket */
 	}
 

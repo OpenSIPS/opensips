@@ -78,9 +78,7 @@
 #elif defined F_MALLOC
 #	include "f_malloc.h"
 	extern struct fm_block* shm_block;
-#	define MY_MALLOC_UNSAFE fm_malloc
 #	define MY_MALLOC fm_malloc
-#	define MY_FREE_UNSAFE fm_free
 #	define MY_FREE fm_free
 #	define MY_REALLOC fm_realloc
 #	define MY_STATUS fm_status
@@ -208,8 +206,13 @@ inline static void* _shm_malloc_unsafe(unsigned int size,
 	const char *file, const char *function, int line )
 {
 	void *p;
-	
+
+#ifndef HP_MALLOC
 	p = MY_MALLOC(shm_block, size, file, function, line);
+#else
+	p = MY_MALLOC_UNSAFE(shm_block, size, file, function, line);
+#endif
+
 	shm_threshold_check();
 
 	return p;
@@ -220,8 +223,16 @@ inline static void* _shm_malloc(unsigned int size,
 {
 	void *p;
 
+#ifndef HP_MALLOC
+	shm_lock();
+#endif
+
 	p = MY_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
+
+#ifndef HP_MALLOC
+	shm_unlock();
+#endif
 
 	return p; 
 }
@@ -232,8 +243,16 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 {
 	void *p;
 
+#ifndef HP_MALLOC
+	shm_lock();
+#endif
+
 	p = MY_REALLOC(shm_block, ptr, size, file, function, line);
 	shm_threshold_check();
+
+#ifndef HP_MALLOC
+	shm_unlock();
+#endif
 
 	return p;
 }
@@ -279,7 +298,12 @@ inline static void* shm_malloc_unsafe(unsigned int size)
 {
 	void *p;
 
+#ifndef HP_MALLOC
+	p = MY_MALLOC(shm_block, size);
+#else
 	p = MY_MALLOC_UNSAFE(shm_block, size);
+#endif
+
 	shm_threshold_check();
 
 	return p;
@@ -289,8 +313,16 @@ inline static void* shm_malloc(unsigned long size)
 {
 	void *p;
 
+#ifndef HP_MALLOC
+	shm_lock();
+#endif
+
 	p = MY_MALLOC(shm_block, size);
 	shm_threshold_check();
+
+#ifndef HP_MALLOC
+	shm_unlock();
+#endif
 
 	return p;
 }
@@ -298,8 +330,17 @@ inline static void* shm_malloc(unsigned long size)
 inline static void* shm_realloc(void *ptr, unsigned int size)
 {
 	void *p;
+
+#ifndef HP_MALLOC
+	shm_lock();
+#endif
+
 	p = MY_REALLOC(shm_block, ptr, size);
 	shm_threshold_check();
+
+#ifndef HP_MALLOC
+	shm_unlock();
+#endif
 
 	return p;
 }
