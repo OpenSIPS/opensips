@@ -209,7 +209,7 @@ static int post_iterator (void *cls,
 
 	LM_DBG("post_iterator: cls=%p, kind=%d key=[%p]->'%s'"
 			" filename='%s' content_type='%s' transfer_encoding='%s'"
-			" value=[%p]->'%s' off=%ld size=%ld\n",
+			" value=[%p]->'%s' off=%llu size=%zu\n",
 			cls, kind, key, key,
 			filename, content_type, transfer_encoding,
 			value, value, (long long unsigned int)off, size);
@@ -402,7 +402,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	int accept_type = HTTPD_STD_CNT_TYPE;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-			"versio=%s, upload_data[%ld]=%p, *con_cls=%p\n",
+			"versio=%s, upload_data[%zu]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
 			*upload_data_size, upload_data, *con_cls);
 
@@ -550,7 +550,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				return MHD_YES;
 			}
 			LM_DBG("running MHD_post_process: "
-					"pp=%p status=%d upload_data_size=%ld\n",
+					"pp=%p status=%d upload_data_size=%zu\n",
 					pr->pp, pr->status, *upload_data_size);
 			if (pr->status<0) {
 				slinkedl_list_destroy(pr->p_list);
@@ -561,7 +561,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				return MHD_NO;
 			}
 			ret =MHD_post_process(pr->pp, upload_data, *upload_data_size);
-			LM_DBG("ret=%d upload_data_size=%ld\n", ret, *upload_data_size);
+			LM_DBG("ret=%d upload_data_size=%zu\n", ret, *upload_data_size);
 			if(*upload_data_size != 0) {
 				*upload_data_size = 0;
 				return MHD_YES;
