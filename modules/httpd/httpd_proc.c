@@ -212,7 +212,7 @@ static int post_iterator (void *cls,
 			" value=[%p]->'%s' off=%ld size=%ld\n",
 			cls, kind, key, key,
 			filename, content_type, transfer_encoding,
-			value, value, off, size);
+			value, value, (long long unsigned int)off, size);
 
 
 	pr = (struct post_request*)cls;
