@@ -422,7 +422,6 @@ fi
 %doc %{_docdir}/opensips/README.auth_db
 %doc %{_docdir}/opensips/README.auth_diameter
 %doc %{_docdir}/opensips/README.avpops
-%doc %{_docdir}/opensips/README.b2b_entities
 %doc %{_docdir}/opensips/README.benchmark
 %doc %{_docdir}/opensips/README.cachedb_local
 %doc %{_docdir}/opensips/README.cachedb_sql
@@ -464,7 +463,6 @@ fi
 %doc %{_docdir}/opensips/README.options
 %doc %{_docdir}/opensips/README.path
 %doc %{_docdir}/opensips/README.pdt
-%doc %{_docdir}/opensips/README.peering
 %doc %{_docdir}/opensips/README.permissions
 %doc %{_docdir}/opensips/README.pike
 %doc %{_docdir}/opensips/README.qos
@@ -510,7 +508,6 @@ fi
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/auth_diameter.so
 %{_libdir}/opensips/modules/avpops.so
-%{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
@@ -552,7 +549,6 @@ fi
 %{_libdir}/opensips/modules/options.so
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/pdt.so
-%{_libdir}/opensips/modules/peering.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
 %{_libdir}/opensips/modules/python.so
@@ -652,7 +648,6 @@ fi
 %defattr(-,root,root)
 %doc %{_docdir}/opensips/README.presence
 %doc %{_docdir}/opensips/README.presence_callinfo
-%doc %{_docdir}/opensips/README.b2b_sca
 %doc %{_docdir}/opensips/README.presence_dialoginfo
 %doc %{_docdir}/opensips/README.presence_mwi
 %doc %{_docdir}/opensips/README.presence_xcapdiff
@@ -669,7 +664,6 @@ fi
 
 %{_libdir}/opensips/modules/presence.so
 %{_libdir}/opensips/modules/presence_callinfo.so
-%{_libdir}/opensips/modules/b2b_sca.so
 %{_libdir}/opensips/modules/presence_dialoginfo.so
 %{_libdir}/opensips/modules/presence_mwi.so
 %{_libdir}/opensips/modules/presence_xcapdiff.so
@@ -710,9 +704,11 @@ fi
 %defattr(-,root,root)
 %doc %{_docdir}/opensips/README.b2b_entities
 %doc %{_docdir}/opensips/README.b2b_logic
+%doc %{_docdir}/opensips/README.b2b_sca
 
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
+%{_libdir}/opensips/modules/b2b_sca.so
 
 
 %files ldap
