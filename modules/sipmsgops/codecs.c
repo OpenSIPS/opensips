@@ -561,6 +561,15 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 						found.len++;
 					}
 
+					/* when trimming the very last payload, avoid trailing ws */
+					if (cur == lmp->u.value + lmp->len) {
+						tmp = found.s;
+						while (*(--tmp) == ' ') {
+							found.s--;
+							found.len++;
+						}
+					}
+
 					/* delete the string and update iterators */
 					for(tmp=found.s ; tmp< lmp->u.value + lmp->len ; tmp++ )
 						*tmp  = *(tmp+found.len);
