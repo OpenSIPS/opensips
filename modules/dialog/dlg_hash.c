@@ -63,8 +63,6 @@
 #define MAX_LDG_LOCKS  2048
 #define MIN_LDG_LOCKS  2
 
-#define MI_DATE_BUF_LEN 21
-
 
 extern struct tm_binds d_tmb;
 extern int last_dst_leg;

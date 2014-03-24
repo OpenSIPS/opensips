@@ -65,6 +65,8 @@ struct mi_handler;
 #define MI_MISSING_PARM       MI_MISSING_PARM_S
 #define MI_BAD_PARM           MI_BAD_PARM_S
 
+#define MI_DATE_BUF_LEN 21
+
 struct mi_node {
 	str value;
 	str name;
