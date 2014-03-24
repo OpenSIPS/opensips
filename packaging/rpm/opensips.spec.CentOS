@@ -425,7 +425,6 @@ fi
 %doc %{_docdir}/opensips/README.benchmark
 %doc %{_docdir}/opensips/README.cachedb_local
 %doc %{_docdir}/opensips/README.cachedb_sql
-%doc %{_docdir}/opensips/README.call_center
 %doc %{_docdir}/opensips/README.call_control
 %doc %{_docdir}/opensips/README.cfgutils
 %doc %{_docdir}/opensips/README.closeddial
@@ -511,7 +510,6 @@ fi
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
-%{_libdir}/opensips/modules/call_center.so
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/cfgutils.so
 %{_libdir}/opensips/modules/closeddial.so
@@ -705,10 +703,12 @@ fi
 %doc %{_docdir}/opensips/README.b2b_entities
 %doc %{_docdir}/opensips/README.b2b_logic
 %doc %{_docdir}/opensips/README.b2b_sca
+%doc %{_docdir}/opensips/README.call_center
 
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
 %{_libdir}/opensips/modules/b2b_sca.so
+%{_libdir}/opensips/modules/call_center.so
 
 
 %files ldap
