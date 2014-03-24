@@ -124,6 +124,7 @@ server, namely DIameter Server Client (DISC).
 Summary:  Back-2-Back User Agent
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+Requires: %{name}-pua
 
 %description  b2bua
 B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
