@@ -3141,7 +3141,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 							command->q_keys[j]->len,
 							command->q_keys[j]->s);
 					}
-					PI_HTTP_COPY(p,PI_HTTP_HREF_3);
+					if(link_on) PI_HTTP_COPY(p,PI_HTTP_HREF_3);
 					PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_4d);
 				}
 				PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_tr_2);
