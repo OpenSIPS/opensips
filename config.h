@@ -125,7 +125,7 @@
 #define PKG_MEM_SIZE 2				/*!< Used only if PKG_MALLOC is defined*/
 #endif
 #define SHM_MEM_SIZE 32				/*!< Used if SH_MEM is defined*/
-#define SHM_MAX_SECONDARY_HASH_SIZE 100
+#define SHM_MAX_SECONDARY_HASH_SIZE 32
 #define DEFAULT_SHM_HASH_SPLIT_PERCENTAGE 1	/*!< Used if SH_MEM is defined*/
 #define DEFAULT_SHM_SECONDARY_HASH_SIZE 8
 
