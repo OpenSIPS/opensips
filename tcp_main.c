@@ -2372,6 +2372,9 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	struct mi_node* node;
 	struct mi_attr *attr;
 	struct tcp_connection *conn;
+	time_t _ts;
+	char date_buf[MI_DATE_BUF_LEN];
+	int date_buf_len;
 	unsigned long ctime;
 	unsigned int i,n;
 	char proto[4];
@@ -2429,8 +2432,16 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 				goto error;
 
 			/* add timeout */
-			p = int2str((unsigned long)conn->timeout+ctime, &len);
-			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"), p,len);
+			_ts = (time_t)conn->timeout+ctime;
+			date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
+									"%Y-%m-%d %H:%M:%S", localtime(&_ts));
+			if (date_buf_len != 0) {
+				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"),
+									date_buf, date_buf_len);
+			} else {
+				p = int2str((unsigned long)_ts, &len);
+				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"), p,len);
+			}
 			if (attr==0)
 				goto error;
 
