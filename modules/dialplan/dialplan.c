@@ -1,5 +1,5 @@
 /*
- *  $Id: dialplan.c 9536 2012-12-18 12:35:47Z razvancrainea $
+ *  $Id$
  *
  * Copyright (C)  2007-2008 Voice Sistem SRL
  *

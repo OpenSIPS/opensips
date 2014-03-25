@@ -1,5 +1,5 @@
 /*
- * $Id: dp_repl.c 9273 2012-09-20 14:29:09Z liviuchircu $
+ * $Id$
  *
  * Copyright (C) 2007-2008 Voice Sistem SRL
  *
@@ -452,7 +452,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 
 	/* try to match the input in the regexp bucket */
 	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule; rrulep; rrulep=rrulep->next) {
-
+	
 		// Check for Time Period if Set
 		if((time_rec = parse_time_def(rrulep->timerec.s)) != 0) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rrulep->timerec.len, rrulep->timerec.s);
@@ -462,7 +462,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 				continue;
 			}
 		}
-	
+
 		regexp_res = (test_match(input, rrulep->match_comp, matches, MAX_MATCHES)
 					>= 0 ? 0 : -1);
 
@@ -480,7 +480,10 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 
 	/* pick the rule with lowest table index if both match and prio are equal */
 	if ((string_res | regexp_res) == 0) {
-		if (rrulep->table_id < rulep->table_id) {
+		if (rulep->pr < rrulep->pr) {
+			rulep = rrulep;
+		} else if (rrulep->pr == rulep->pr &&
+		           rrulep->table_id < rulep->table_id) {
 			rulep = rrulep;
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * $Id: dp_db.c 9273 2012-09-20 14:29:09Z liviuchircu $
+ * $Id$
  *
  * Copyright (C)  2007-2008 Voice Sistem SRL
  *
