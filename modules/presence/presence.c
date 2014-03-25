@@ -690,6 +690,9 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 {
 	struct mi_node *node, *node1;
 	struct mi_attr *attr;
+	time_t _ts;
+	char date_buf[MI_DATE_BUF_LEN];
+	int date_buf_len;
 	char *p;
 	int len;
 
@@ -701,11 +704,16 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	attr = add_mi_attr(node, MI_DUP_VALUE, "event_id", 8, s->event_id.s, s->event_id.len);
 	if (attr==NULL) goto error;
 	*/
-	p= int2str((unsigned long)s->status, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "status", 6, p, len);
 	if (attr==NULL) goto error;
-	p= int2str((unsigned long)s->expires, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+	_ts = (time_t)s->expires;
+	date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
+						"%Y-%m-%d %H:%M:%S", localtime(&_ts));
+	if (date_buf_len != 0) {
+		attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, date_buf, date_buf_len);
+	} else {
+		p= int2str((unsigned long)s->expires, &len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+	}
 	if (attr==NULL) goto error;
 	p= int2str((unsigned long)s->db_flag, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "db_flag", 7, p, len);
