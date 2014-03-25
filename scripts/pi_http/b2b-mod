@@ -4,7 +4,7 @@
 			<db_table_id>b2b_entities</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>type</field></col>
 				<col><field>state</field></col>
 				<col><field>ruri</field></col>
@@ -114,7 +114,7 @@
 			<db_table_id>b2b_logic</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>

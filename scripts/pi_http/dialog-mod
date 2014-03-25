@@ -4,7 +4,7 @@
 			<db_table_id>dialog</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>dlg_id</field></col>
+				<col><field>dlg_id</field><link_cmd>update</link_cmd></col>
 				<col><field>callid</field></col>
 				<col><field>from_uri</field></col>
 				<col><field>from_tag</field></col>
