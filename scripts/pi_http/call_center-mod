@@ -5,7 +5,7 @@
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
 				<col><field>id</field></col>
-				<col><field>flowid</field></col>
+				<col><field>flowid</field><link_cmd>update</link_cmd></col>
 				<col><field>priority</field></col>
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
@@ -55,7 +55,7 @@
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
 				<col><field>id</field></col>
-				<col><field>agentid</field></col>
+				<col><field>agentid</field><link_cmd>update</link_cmd></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
@@ -98,7 +98,7 @@
 			<db_table_id>cc_cdrs</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>caller</field></col>
 				<col><field>received_timestamp</field></col>
 				<col><field>wait_time</field></col>
