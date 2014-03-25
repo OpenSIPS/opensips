@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: dp_repl.c 9273 2012-09-20 14:29:09Z liviuchircu $
  *
  * Copyright (C) 2007-2008 Voice Sistem SRL
  *
@@ -25,6 +25,7 @@
  */
 
 #include "../../re.h"
+#include "../../time_rec.h"
 #include "dialplan.h"
 
 #define MAX_REPLACE_WITH	10
@@ -275,11 +276,137 @@ error:
 	return -1;
 }
 
+static inline tmrec_t* parse_time_def(char *time_str) {
+
+	tmrec_p time_rec;
+	char *p,*s;
+
+	p = time_str;
+	time_rec = 0;
+
+	time_rec = tmrec_new(SHM_ALLOC);
+	if (time_rec==0) {
+		LM_ERR("no more shm mem\n");
+		goto error;
+	}
+
+	/* empty definition? */
+	if ( time_str==0 || *time_str==0 )
+		goto done;
+
+	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
+
+	/* success */
+done:
+	return time_rec;
+parse_error:
+	LM_ERR("parse error in <%s> around position %i\n",
+		time_str, (int)(long)(p-time_str));
+error:
+	if (time_rec)
+		tmrec_free( time_rec );
+	return 0;
+}
+
+int timerec_print(tmrec_p _trp)
+{
+	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; 
+	int i;
+	
+	if(!_trp)
+	{
+		LM_DBG("\n(null)\n");
+		return -1;
+	}
+	LM_DBG("Recurrence definition\n-- start time ---\n");
+	LM_DBG("Sys time: %d\n", (int)_trp->dtstart);
+	LM_DBG("Time: %02d:%02d:%02d\n", _trp->ts.tm_hour, 
+				_trp->ts.tm_min, _trp->ts.tm_sec);
+	LM_DBG("Date: %s, %04d-%02d-%02d\n", _wdays[_trp->ts.tm_wday],
+				_trp->ts.tm_year+1900, _trp->ts.tm_mon+1, _trp->ts.tm_mday);
+	LM_DBG("---\n");
+	LM_DBG("End time: %d\n", (int)_trp->dtend);
+	LM_DBG("Duration: %d\n", (int)_trp->duration);
+	LM_DBG("Until: %d\n", (int)_trp->until);
+	LM_DBG("Freq: %d\n", (int)_trp->freq);
+	LM_DBG("Interval: %d\n", (int)_trp->interval);
+	if(_trp->byday)
+	{
+		LM_DBG("Byday: ");
+		for(i=0; i<_trp->byday->nr; i++)
+			LM_DBG(" %d%s", _trp->byday->req[i], _wdays[_trp->byday->xxx[i]]);
+		LM_DBG("\n");
+	}
+	if(_trp->bymday)
+	{
+		LM_DBG("Bymday: %d:", _trp->bymday->nr);
+		for(i=0; i<_trp->bymday->nr; i++)
+			LM_DBG(" %d", _trp->bymday->xxx[i]*_trp->bymday->req[i]);
+		LM_DBG("\n");
+	}
+	if(_trp->byyday)
+	{
+		LM_DBG("Byyday:");
+		for(i=0; i<_trp->byyday->nr; i++)
+			LM_DBG(" %d", _trp->byyday->xxx[i]*_trp->byyday->req[i]);
+		LM_DBG("\n");
+	}
+	if(_trp->bymonth)
+	{
+		LM_DBG("Bymonth: %d:", _trp->bymonth->nr);
+		for(i=0; i< _trp->bymonth->nr; i++)
+			LM_DBG(" %d", _trp->bymonth->xxx[i]*_trp->bymonth->req[i]);
+		LM_DBG("\n");
+	}
+	if(_trp->byweekno)
+	{
+		LM_DBG("Byweekno: ");
+		for(i=0; i<_trp->byweekno->nr; i++)
+			LM_DBG(" %d", _trp->byweekno->xxx[i]*_trp->byweekno->req[i]);
+		LM_DBG("\n");
+	}
+	LM_DBG("Weekstart: %d\n", _trp->wkst);
+	return 0;
+}
+
+// Validate Passed Time Recurrence Instance
+static inline int check_time(tmrec_t *time_rec) {
+	ac_tm_t att;
+
+	// No TimeRec: Rule is Valid
+	if(time_rec->dtstart == 0)
+		return 1;
+
+	// Debug
+	timerec_print(time_rec);
+
+	// Set Current Time
+	memset(&att, 0, sizeof(att));
+	if(ac_tm_set_time(&att, time(0)))
+		return -1;
+
+	// Check_Tmrec will return 0 on successfully time recurrence match
+	if(check_tmrec(time_rec, &att, 0) != 0)
+		return 0;
+
+	// Recurrence Matched -- Validating Rule
+	return 1;
+}
+
 #define DP_MAX_ATTRS_LEN	32
 static char dp_attrs_buf[DP_MAX_ATTRS_LEN+1];
-int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
-																 str * attrs)
-{
+int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * attrs) {
+
+	tmrec_t   *time_rec;
 	dpl_node_p rulep, rrulep;
 	int string_res = -1, regexp_res = -1, bucket;
 
@@ -298,9 +425,19 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 		if(rulep->match_exp.len != input.len)
 			continue;
 
-		LM_DBG("Comparing (input %.*s) with (rule %.*s) [%d]\n",
+		LM_DBG("Comparing (input %.*s) with (rule %.*s) [%d] and timerec %.*s\n",
 				input.len, input.s, rulep->match_exp.len, rulep->match_exp.s,
-				rulep->match_flags);
+				rulep->match_flags, rulep->timerec.len, rulep->timerec.s);
+
+		// Check for Time Period if Set
+		if((time_rec = parse_time_def(rulep->timerec.s)) != 0) {
+			LM_DBG("Timerec exists for rule checking: %.*s\n", rulep->timerec.len, rulep->timerec.s);
+			// Doesn't matches time period continue with next rule
+			if(!check_time(time_rec)) {
+				LM_DBG("Time rule doesn't match: skip next!\n");
+				continue;
+			}
+		}
 
 		if (rulep->match_flags & DP_CASE_INSENSITIVE) {
 			string_res = strncasecmp(rulep->match_exp.s,input.s,input.len);
@@ -314,8 +451,17 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 	}
 
 	/* try to match the input in the regexp bucket */
-	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule;
-		 rrulep; rrulep=rrulep->next) {
+	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule; rrulep; rrulep=rrulep->next) {
+
+		// Check for Time Period if Set
+		if((time_rec = parse_time_def(rrulep->timerec.s)) != 0) {
+			LM_DBG("Timerec exists for rule checking: %.*s\n", rrulep->timerec.len, rrulep->timerec.s);
+			// Doesn't matches time period continue with next rule
+			if(!check_time(time_rec)) {
+				LM_DBG("Time rule doesn't match: skip next!\n");
+				continue;
+			}
+		}
 	
 		regexp_res = (test_match(input, rrulep->match_comp, matches, MAX_MATCHES)
 					>= 0 ? 0 : -1);
@@ -334,10 +480,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp,
 
 	/* pick the rule with lowest table index if both match and prio are equal */
 	if ((string_res | regexp_res) == 0) {
-		if (rulep->pr < rrulep->pr) {
-			rulep = rrulep;
-		} else if (rrulep->pr == rulep->pr &&
-		           rrulep->table_id < rulep->table_id) {
+		if (rrulep->table_id < rulep->table_id) {
 			rulep = rrulep;
 		}
 	}

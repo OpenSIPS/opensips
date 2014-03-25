@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: dialplan.h 9273 2012-09-20 14:29:09Z liviuchircu $
  *
  * Copyright (C)  2007-2008 Voice Sistem SRL
  *
@@ -49,6 +49,7 @@ typedef struct dpl_node{
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp; 
 	str attrs;
+	str timerec;
 
 	struct dpl_node * next; /*next rule*/
 }dpl_node_t, *dpl_node_p;
