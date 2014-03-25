@@ -2375,7 +2375,6 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
-	unsigned long ctime;
 	unsigned int i,n;
 	char proto[4];
 	char *p;
@@ -2387,8 +2386,6 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==NULL)
 		return 0;
-
-	ctime = (long)time(NULL);
 
 	TCPCONN_LOCK;
 
@@ -2432,7 +2429,7 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 				goto error;
 
 			/* add timeout */
-			_ts = (time_t)conn->timeout+ctime;
+			_ts = (time_t)conn->timeout + startup_time;
 			date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 									"%Y-%m-%d %H:%M:%S", localtime(&_ts));
 			if (date_buf_len != 0) {
