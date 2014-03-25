@@ -405,7 +405,7 @@ int hp_mem_warming(struct hp_block *qm)
 			hp_remove_free(qm, big_frag);
 
 			/* trim-insert operation on the big free fragment */
-			hp_split_frag(qm, big_frag, current_frag_size, -1);
+			hp_split_frag_unsafe(qm, big_frag, current_frag_size);
 
 			/*
 			 * "big_frag" now points to a smaller, free and detached frag.
@@ -449,8 +449,8 @@ struct hp_block* hp_malloc_init(char* address, unsigned long size)
 	start=(char*)ROUNDUP((unsigned long) address);
 	LM_DBG("HP_OPTIMIZE=%lu, /ROUNDTO=%lu\n",
 			HP_MALLOC_OPTIMIZE, HP_MALLOC_OPTIMIZE/ROUNDTO);
-	LM_DBG("HP_HASH_SIZE=%lu, hp_block size=%lu\n",
-			HP_HASH_SIZE, (long)sizeof(struct hp_block));
+	LM_DBG("HP_HASH_SIZE=%lu, HP_EXTRA_HASH_SIZE=%lu, hp_block size=%lu\n",
+			HP_HASH_SIZE, HP_EXTRA_HASH_SIZE, (long)sizeof(struct hp_block));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
 
 	if (size<(unsigned long)(start-address)) return 0;
