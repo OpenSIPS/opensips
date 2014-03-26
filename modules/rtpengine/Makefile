@@ -7,7 +7,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=rtpproxy-ng.so
+NAME=rtpengine.so
 LIBS=
 
 include ../../Makefile.modules
