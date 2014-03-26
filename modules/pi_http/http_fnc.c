@@ -261,31 +261,31 @@ do{	\
 		case '<':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_LT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '>':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_GT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '&':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_AMP);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '"':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_QUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '\'':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_SQUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		}	\
