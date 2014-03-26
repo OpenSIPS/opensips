@@ -635,6 +635,22 @@ void print_actions(struct action* a)
 }
 
 
+static int is_mod_func_in_expr(struct expr *e, char *name, int param_no)
+{
+	if (e->type==ELEM_T) {
+		if (e->left.type==ACTION_O)
+			if (is_mod_func_used((struct action*)e->right.v.data,name,param_no)==1)
+				return 1;
+	} else if (e->type==EXP_T) {
+		if (e->left.v.expr && is_mod_func_in_expr(e->left.v.expr,name,param_no)==1)
+			return 1;
+		if (e->right.v.expr && is_mod_func_in_expr(e->right.v.expr,name,param_no)==1)
+			return 1;
+	}
+	return 0;
+}
+
+
 int is_mod_func_used(struct action *a, char *name, int param_no)
 {
 	cmd_export_t *cmd;
@@ -642,10 +658,15 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 		if (a->type==MODULE_T) {
 			/* first param is the name of the function */
 			cmd = (cmd_export_t*)a->elem[0].u.data;
+			LM_DBG("checking %s against %s\n",name,cmd->name);
 			if (strcasecmp(cmd->name, name)==0 &&
 			(param_no==cmd->param_no || param_no==-1) )
 				return 1;
 		}
+
+		if (a->type==IF_T || a->type==WHILE_T)
+			if (is_mod_func_in_expr((struct expr*)a->elem[0].u.data,name,param_no)==1)
+				return 1;
 
 		/* follow all leads from actions than may have sub-blocks of instructions */
 		if (a->elem[0].type==ACTIONS_ST)
