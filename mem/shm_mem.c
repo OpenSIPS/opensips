@@ -294,20 +294,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	}
 
 #ifdef HP_MALLOC
-	/* if memory warming is on, pre-populate the hash with free fragments */
-	if (mem_warming_enabled) {
-		if (shm_mem_warming(shm_block) != 0)
-			LM_INFO("skipped memory warming\n");
-	}
-
-	mem_hash_usage = shm_malloc_unsafe(HP_TOTAL_HASH_SIZE * sizeof *mem_hash_usage);
-	if (!mem_hash_usage) {
-		LM_ERR("failed to allocate statistics array\n");
-		return -1;
-	}
-
-	memset(mem_hash_usage, 0, HP_TOTAL_HASH_SIZE * sizeof *mem_hash_usage);
-
 	/* lock_alloc cannot be used yet! */
 	mem_lock = shm_malloc_unsafe(HP_TOTAL_HASH_SIZE * sizeof *mem_lock);
 	if (!mem_lock) {
@@ -322,6 +308,15 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 			shm_mem_destroy();
 			return -1;
 		}
+
+	mem_hash_usage = shm_malloc_unsafe(HP_TOTAL_HASH_SIZE * sizeof *mem_hash_usage);
+	if (!mem_hash_usage) {
+		LM_ERR("failed to allocate statistics array\n");
+		return -1;
+	}
+
+	memset(mem_hash_usage, 0, HP_TOTAL_HASH_SIZE * sizeof *mem_hash_usage);
+
 #else
 	mem_lock = shm_malloc_unsafe(sizeof *mem_lock);
 	if (!mem_lock) {
