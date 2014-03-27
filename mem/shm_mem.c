@@ -275,8 +275,8 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 
 	/* init it for malloc*/
-	shm_block=shm_malloc_init(mempool, pool_size);
-	if (shm_block==0){
+	shm_block = shm_malloc_init(mempool, pool_size);
+	if (!shm_block){
 		LM_CRIT("could not initialize shared malloc\n");
 		shm_mem_destroy();
 		return -1;
@@ -300,7 +300,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	/* lock_alloc cannot be used yet! */
 	mem_lock = shm_malloc_unsafe(HP_TOTAL_HASH_SIZE * sizeof *mem_lock);
 	if (!mem_lock) {
-		LM_CRIT("could not allocate shm lock array\n");
+		LM_CRIT("could not allocate the shm lock array\n");
 		shm_mem_destroy();
 		return -1;
 	}
@@ -314,7 +314,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #else
 	mem_lock = shm_malloc_unsafe(sizeof *mem_lock);
 	if (!mem_lock) {
-		LM_CRIT("could not allocate shm lock array\n");
+		LM_CRIT("could not allocate the shm lock\n");
 		shm_mem_destroy();
 		return -1;
 	}
@@ -337,7 +337,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		*event_shm_last=0;
 		event_shm_pending=shm_malloc_unsafe(sizeof(int));
 		if (event_shm_pending==0){
-			LM_CRIT("could not allocate shm peinding flags\n");
+			LM_CRIT("could not allocate shm pending flags\n");
 			shm_mem_destroy();
 			return -1;
 		}
