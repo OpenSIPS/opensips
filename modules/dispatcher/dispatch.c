@@ -96,6 +96,8 @@ int init_ds_data(void)
 		return -1;
 	}
 
+	*ds_data = NULL;
+
 	/* create & init lock */
 	if ((ds_lock = lock_init_rw()) == NULL) {
 		LM_CRIT("failed to init reader/writer lock\n");
