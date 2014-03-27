@@ -94,6 +94,64 @@
 		<column><field>value</field><type>DB_STR</type></column>
 		<column><field>last_modified</field><type>DB_DATETIME</type></column>
 	</db_table>
+	<!-- Declaration of b2b_sca table-->
+	<db_table id="b2b_sca">
+		<table_name>b2b_sca</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>shared_line</field><type>DB_STR</type></column>
+		<column><field>watchers</field><type>DB_STR</type></column>
+		<column><field>app1_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app1_call_state</field><type>DB_INT</type></column>
+		<column><field>app1_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app1_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app1_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app2_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app2_call_state</field><type>DB_INT</type></column>
+		<column><field>app2_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app2_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app2_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app3_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app3_call_state</field><type>DB_INT</type></column>
+		<column><field>app3_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app3_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app3_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app4_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app4_call_state</field><type>DB_INT</type></column>
+		<column><field>app4_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app4_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app4_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app5_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app5_call_state</field><type>DB_INT</type></column>
+		<column><field>app5_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app5_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app5_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app6_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app6_call_state</field><type>DB_INT</type></column>
+		<column><field>app6_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app6_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app6_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app7_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app7_call_state</field><type>DB_INT</type></column>
+		<column><field>app7_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app7_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app7_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app8_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app8_call_state</field><type>DB_INT</type></column>
+		<column><field>app8_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app8_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app8_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app9_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app9_call_state</field><type>DB_INT</type></column>
+		<column><field>app9_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app9_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app9_b2bl_key</field><type>DB_STR</type></column>
+		<column><field>app10_shared_entity</field><type>DB_INT</type></column>
+		<column><field>app10_call_state</field><type>DB_INT</type></column>
+		<column><field>app10_call_info_uri</field><type>DB_STR</type></column>
+		<column><field>app10_call_info_appearance_uri</field><type>DB_STR</type></column>
+		<column><field>app10_b2bl_key</field><type>DB_STR</type></column>
+	</db_table>
 	<!-- Declaration of b2b_entities table-->
 	<db_table id="b2b_entities">
 		<table_name>b2b_entities</table_name>
@@ -158,64 +216,6 @@
 		<column><field>e3_to</field><type>DB_STR</type></column>
 		<column><field>e3_key</field><type>DB_STR</type></column>
 	</db_table>
-	<!-- Declaration of b2b_sca table-->
-	<db_table id="b2b_sca">
-		<table_name>b2b_sca</table_name>
-		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>shared_line</field><type>DB_STR</type></column>
-		<column><field>watchers</field><type>DB_STR</type></column>
-		<column><field>app1_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app1_call_state</field><type>DB_INT</type></column>
-		<column><field>app1_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app1_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app1_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app2_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app2_call_state</field><type>DB_INT</type></column>
-		<column><field>app2_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app2_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app2_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app3_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app3_call_state</field><type>DB_INT</type></column>
-		<column><field>app3_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app3_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app3_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app4_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app4_call_state</field><type>DB_INT</type></column>
-		<column><field>app4_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app4_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app4_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app5_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app5_call_state</field><type>DB_INT</type></column>
-		<column><field>app5_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app5_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app5_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app6_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app6_call_state</field><type>DB_INT</type></column>
-		<column><field>app6_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app6_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app6_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app7_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app7_call_state</field><type>DB_INT</type></column>
-		<column><field>app7_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app7_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app7_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app8_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app8_call_state</field><type>DB_INT</type></column>
-		<column><field>app8_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app8_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app8_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app9_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app9_call_state</field><type>DB_INT</type></column>
-		<column><field>app9_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app9_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app9_b2bl_key</field><type>DB_STR</type></column>
-		<column><field>app10_shared_entity</field><type>DB_INT</type></column>
-		<column><field>app10_call_state</field><type>DB_INT</type></column>
-		<column><field>app10_call_info_uri</field><type>DB_STR</type></column>
-		<column><field>app10_call_info_appearance_uri</field><type>DB_STR</type></column>
-		<column><field>app10_b2bl_key</field><type>DB_STR</type></column>
-	</db_table>
 	<!-- Declaration of cachedb table-->
 	<db_table id="cachedb">
 		<table_name>cachedb</table_name>
@@ -260,8 +260,8 @@
 		<column><field>flow_id</field><type>DB_STR</type></column>
 		<column><field>agent_id</field><type>DB_STR</type></column>
 		<column><field>call_type</field><type>DB_INT</type></column>
-		<column><field>call_type</field><type>DB_INT</type></column>
-		<column><field>call_type</field><type>DB_INT</type></column>
+		<column><field>rejected</field><type>DB_INT</type></column>
+		<column><field>fstats</field><type>DB_INT</type></column>
 		<column><field>cid</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of carrierroute table-->
@@ -383,14 +383,6 @@
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
-	<!-- Declaration of domain table-->
-	<db_table id="domain">
-		<table_name>domain</table_name>
-		<db_url_id>mysql</db_url_id>
-		<column><field>id</field><type>DB_INT</type></column>
-		<column><field>domain</field><type>DB_STR</type></column>
-		<column><field>last_modified</field><type>DB_DATETIME</type></column>
-	</db_table>
 	<!-- Declaration of domainpolicy table-->
 	<db_table id="domainpolicy">
 		<table_name>domainpolicy</table_name>
@@ -401,6 +393,14 @@
 		<column><field>att</field><type>DB_STR</type></column>
 		<column><field>val</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
+	</db_table>
+	<!-- Declaration of domain table-->
+	<db_table id="domain">
+		<table_name>domain</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>domain</field><type>DB_STR</type></column>
+		<column><field>last_modified</field><type>DB_DATETIME</type></column>
 	</db_table>
 	<!-- Declaration of dr_gateways table-->
 	<db_table id="dr_gateways">
@@ -1549,8 +1549,8 @@
 			<db_table_id>cc_flows</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
-				<col><field>flowid</field><link_cmd>update</link_cmd></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>flowid</field></col>
 				<col><field>priority</field></col>
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
@@ -1574,10 +1574,10 @@
 			<db_table_id>cc_flows</db_table_id>
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
-				<col><field>flowid</field><operator>=</operator></col>
+				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>flowid</field></col>
 				<col><field>priority</field></col>
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
@@ -1589,7 +1589,7 @@
 			<db_table_id>cc_flows</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
-				<col><field>flowid</field><operator>=</operator></col>
+				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 		</cmd>
 	</mod>
@@ -1599,8 +1599,8 @@
 			<db_table_id>cc_agents</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
-				<col><field>agentid</field><link_cmd>update</link_cmd></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
@@ -1620,10 +1620,10 @@
 			<db_table_id>cc_agents</db_table_id>
 			<cmd_type>DB_UPDATE</cmd_type>
 			<clause_cols>
-				<col><field>agentid</field><operator>=</operator></col>
+				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
@@ -1633,7 +1633,7 @@
 			<db_table_id>cc_agents</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
-				<col><field>agentid</field><operator>=</operator></col>
+				<col><field>id</field><operator>=</operator></col>
 			</clause_cols>
 		</cmd>
 	</mod>
@@ -1652,8 +1652,8 @@
 				<col><field>flow_id</field></col>
 				<col><field>agent_id</field></col>
 				<col><field>call_type</field></col>
-				<col><field>call_type</field></col>
-				<col><field>call_type</field></col>
+				<col><field>rejected</field></col>
+				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
 			</query_cols>
 		</cmd>
@@ -1669,8 +1669,8 @@
 				<col><field>flow_id</field></col>
 				<col><field>agent_id</field></col>
 				<col><field>call_type</field></col>
-				<col><field>call_type</field></col>
-				<col><field>call_type</field></col>
+				<col><field>rejected</field></col>
+				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
 			</query_cols>
 		</cmd>
@@ -1689,8 +1689,8 @@
 				<col><field>flow_id</field></col>
 				<col><field>agent_id</field></col>
 				<col><field>call_type</field></col>
-				<col><field>call_type</field></col>
-				<col><field>call_type</field></col>
+				<col><field>rejected</field></col>
+				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
 			</query_cols>
 		</cmd>

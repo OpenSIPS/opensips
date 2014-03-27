@@ -23,8 +23,7 @@
 		<type>unsigned int</type>
 		<size>&table_id_len;</size>
 		<autoincrement/>
-		<natural/>
-		<unique/>
+		<primary/>
 		<type db="dbtext">int,auto</type>
 		<description>Agent unique ID in DB
 		</description>
@@ -34,7 +33,6 @@
 		<name>agentid</name>
 		<type>string</type>
 		<size>128</size>
-		<primary/>
 		<description>The unique ID of the agent in the
 		Call Center module - to be used to identify the
 		agent in the module and from outside the module;
@@ -65,7 +63,7 @@
 	<column id="skills">
 		<name>skills</name>
 		<type>string</type>
-		<size>512</size>
+		<size>255</size>
 		<description>Comma separated list of skills offered
 		by the agent; these skills must match the skills used
 		in the queues/flows definition; In order to receive
@@ -73,5 +71,11 @@
 		by that flow.
 		</description>
 	</column>
+
+    <index>
+        <name>unique_agentid</name>
+        <colref linkend="agentid"/>
+        <unique/>
+    </index>
 
 </table>
