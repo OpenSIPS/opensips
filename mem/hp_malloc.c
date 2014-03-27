@@ -456,6 +456,12 @@ struct hp_block *hp_malloc_init(char *address, unsigned long size)
 	qm->free_hash[PEEK_HASH_RR(qm, qm->first_frag->size)].total_no++;
 	hp_frag_attach(qm, qm->first_frag);
 
+	/* if memory warming is on, pre-populate the hash with free fragments */
+	if (mem_warming_enabled) {
+		if (shm_mem_warming(qm) != 0)
+			LM_INFO("skipped memory warming\n");
+	}
+
 	hp_stats_lock = hp_malloc_unsafe(qm, sizeof *hp_stats_lock);
 	if (!hp_stats_lock) {
 		LM_ERR("failed to alloc hp statistics lock\n");
