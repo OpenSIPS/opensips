@@ -33,7 +33,7 @@
 		<column><field>flow_id</field><type>DB_STR</type></column>
 		<column><field>agent_id</field><type>DB_STR</type></column>
 		<column><field>call_type</field><type>DB_INT</type></column>
-		<column><field>call_type</field><type>DB_INT</type></column>
-		<column><field>call_type</field><type>DB_INT</type></column>
+		<column><field>rejected</field><type>DB_INT</type></column>
+		<column><field>fstats</field><type>DB_INT</type></column>
 		<column><field>cid</field><type>DB_INT</type></column>
 	</db_table>

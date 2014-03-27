@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) caller(str) received_timestamp(datetime) wait_time(int) pickup_time(int) talk_time(int) flow_id(str) agent_id(str) call_type(int) call_type(int) call_type(int) cid(int)
+id(int) caller(str) received_timestamp(datetime) wait_time(int) pickup_time(int) talk_time(int) flow_id(str) agent_id(str) call_type(int) rejected(int) fstats(int) cid(int)
 METADATA_KEY
 0 
 METADATA_READONLY
