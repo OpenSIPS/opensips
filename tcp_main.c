@@ -154,11 +154,15 @@ int tcp_keepinterval = 0;
 
 static int tcp_connections_no=0;	/*!< current number of open connections */
 
-/*! \brief connection hash table (after ip&port) , includes also aliases */
-struct tcp_conn_alias** tcpconn_aliases_hash=0;
-/*! \brief connection hash table (after connection id) */
-struct tcp_connection** tcpconn_id_hash=0;
-gen_lock_t* tcpconn_lock=0;
+struct tcp_partition {
+	/*! \brief connection hash table (after ip&port), includes also aliases */
+	struct tcp_conn_alias** tcpconn_aliases_hash;
+	/*! \brief connection hash table (after connection id) */
+	struct tcp_connection** tcpconn_id_hash;
+	gen_lock_t* tcpconn_lock;
+};
+
+struct tcp_partition tcp_parts[TCP_PARTITION_SIZE];
 
 struct tcp_child *tcp_children=0;
 static int* connection_id=0; /*!< unique for each connection, used for
@@ -785,21 +789,21 @@ struct tcp_connection*  tcpconn_add(struct tcp_connection *c)
 	unsigned hash;
 
 	if (c){
-		TCPCONN_LOCK;
+		TCPCONN_LOCK(c->id);
 		/* add it at the begining of the list*/
 		hash=tcp_id_hash(c->id);
 		c->id_hash=hash;
-		tcpconn_listadd(tcpconn_id_hash[hash], c, id_next, id_prev);
+		tcpconn_listadd(tcp_parts[c->id].tcpconn_id_hash[hash], c, id_next, id_prev);
 
 		hash=tcp_addr_hash(&c->rcv.src_ip, c->rcv.src_port);
 		/* set the first alias */
 		c->con_aliases[0].port=c->rcv.src_port;
 		c->con_aliases[0].hash=hash;
 		c->con_aliases[0].parent=c;
-		tcpconn_listadd(tcpconn_aliases_hash[hash], &c->con_aliases[0],
+		tcpconn_listadd(tcp_parts[c->id].tcpconn_aliases_hash[hash], &c->con_aliases[0],
 						next, prev);
 		c->aliases++;
-		TCPCONN_UNLOCK;
+		TCPCONN_UNLOCK(c->id);
 		LM_DBG("hashes: %d, %d\n", hash, c->id_hash);
 		return c;
 	}else{
@@ -814,11 +818,12 @@ void _tcpconn_rm(struct tcp_connection* c)
 {
 	int r;
 
-	tcpconn_listrm(tcpconn_id_hash[c->id_hash], c, id_next, id_prev);
+	tcpconn_listrm(tcp_parts[c->id].tcpconn_id_hash[c->id_hash], c,
+		id_next, id_prev);
 	/* remove all the aliases */
 	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(tcpconn_aliases_hash[c->con_aliases[r].hash],
-						&c->con_aliases[r], next, prev);
+		tcpconn_listrm(tcp_parts[c->id].tcpconn_aliases_hash[c->con_aliases[r].hash],
+			&c->con_aliases[r], next, prev);
 	lock_destroy(&c->write_lock);
 #ifdef USE_TLS
 	if (c->type==PROTO_TLS) tls_tcpconn_clean(c);
@@ -836,13 +841,14 @@ void _tcpconn_rm(struct tcp_connection* c)
 void tcpconn_rm(struct tcp_connection* c)
 {
 	int r;
-	TCPCONN_LOCK;
-	tcpconn_listrm(tcpconn_id_hash[c->id_hash], c, id_next, id_prev);
+	TCPCONN_LOCK(c->id);
+	tcpconn_listrm(tcp_parts[c->id].tcpconn_id_hash[c->id_hash], c,
+		id_next, id_prev);
 	/* remove all the aliases */
 	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(tcpconn_aliases_hash[c->con_aliases[r].hash],
-						&c->con_aliases[r], next, prev);
-	TCPCONN_UNLOCK;
+		tcpconn_listrm(tcp_parts[c->id].tcpconn_aliases_hash[c->con_aliases[r].hash],
+			&c->con_aliases[r], next, prev);
+	TCPCONN_UNLOCK(c->id);
 	lock_destroy(&c->write_lock);
 #ifdef USE_TLS
 	if ((c->type==PROTO_TLS)&&(c->extra_data)) tls_tcpconn_clean(c);
@@ -851,40 +857,23 @@ void tcpconn_rm(struct tcp_connection* c)
 }
 
 
-/*! \brief finds a connection, if id=0 uses the ip addr & port (host byte order)
+/*! \brief finds a connection, if id=0 return NULL
  * \note WARNING: unprotected (locks) use tcpconn_get unless you really
  * know what you are doing */
-struct tcp_connection* _tcpconn_find(int id, struct ip_addr* ip, int port)
+static struct tcp_connection* _tcpconn_find(int id)
 {
 
 	struct tcp_connection *c;
-	struct tcp_conn_alias* a;
 	unsigned hash;
 
-#ifdef EXTRA_DEBUG
-	LM_DBG("%d  port %d\n",id, port);
-	if (ip) print_ip("tcpconn_find: ip ", ip, "\n");
-#endif
 	if (id){
 		hash=tcp_id_hash(id);
-		for (c=tcpconn_id_hash[hash]; c; c=c->id_next){
+		for (c=tcp_parts[id].tcpconn_id_hash[hash]; c; c=c->id_next){
 #ifdef EXTRA_DEBUG
 			LM_DBG("c=%p, c->id=%d, port=%d\n",c, c->id, c->rcv.src_port);
 			print_ip("ip=", &c->rcv.src_ip, "\n");
 #endif
 			if ((id==c->id)&&(c->state!=S_CONN_BAD)) return c;
-		}
-	}else if (ip){
-		hash=tcp_addr_hash(ip, port);
-		for (a=tcpconn_aliases_hash[hash]; a; a=a->next){
-#ifdef EXTRA_DEBUG
-			LM_DBG("a=%p, c=%p, c->id=%d, alias port= %d port=%d\n",
-				a, a->parent, a->parent->id, a->port, a->parent->rcv.src_port);
-			print_ip("ip=",&a->parent->rcv.src_ip,"\n");
-#endif
-			if ( (a->parent->state!=S_CONN_BAD) && (port==a->port) &&
-					(ip_addr_cmp(ip, &a->parent->rcv.src_ip)) )
-				return a->parent;
 		}
 	}
 	return 0;
@@ -897,14 +886,50 @@ struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
 									int timeout)
 {
 	struct tcp_connection* c;
-	TCPCONN_LOCK;
-	c=_tcpconn_find(id, ip, port);
-	if (c) {
-			c->refcnt++;
-			c->timeout=get_ticks()+timeout;
+	struct tcp_conn_alias* a;
+	unsigned hash;
+	int part;
+
+	if (id) {
+		part = id;
+		TCPCONN_LOCK(part);
+		if ( (c=_tcpconn_find(part))!=NULL )
+			goto found;
+		TCPCONN_UNLOCK(part);
 	}
-	TCPCONN_UNLOCK;
+
+	/* continue search based on IP + port */
+#ifdef EXTRA_DEBUG
+	LM_DBG("%d  port %d\n",id, port);
+	if (ip) print_ip("tcpconn_find: ip ", ip, "\n");
+#endif
+	if (ip){
+		hash=tcp_addr_hash(ip, port);
+		for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
+			TCPCONN_LOCK(part);
+			for (a=tcp_parts[part].tcpconn_aliases_hash[hash]; a; a=a->next) {
+#ifdef EXTRA_DEBUG
+				LM_DBG("a=%p, c=%p, c->id=%d, alias port= %d port=%d\n",
+					a, a->parent, a->parent->id, a->port, a->parent->rcv.src_port);
+				print_ip("ip=",&a->parent->rcv.src_ip,"\n");
+#endif
+				c = a->parent;
+				if ( (c->state!=S_CONN_BAD) && (port==a->port) &&
+				(ip_addr_cmp(ip, &c->rcv.src_ip)) )
+					goto found;
+			}
+			TCPCONN_UNLOCK(part);
+		}
+	}
+
+	return NULL;
+
+found:
+	c->refcnt++;
+	c->timeout=get_ticks()+timeout;
+	TCPCONN_UNLOCK(part);
 	return c;
+
 }
 
 
@@ -920,13 +945,13 @@ int tcpconn_add_alias(int id, int port, int proto)
 	a=0;
 	/* fix the port */
 	port=port?port:((proto==PROTO_TLS)?SIPS_PORT:SIP_PORT);
-	TCPCONN_LOCK;
+	TCPCONN_LOCK(id);
 	/* check if alias already exists */
-	c=_tcpconn_find(id, 0, 0);
+	c=_tcpconn_find(id);
 	if (c){
 		hash=tcp_addr_hash(&c->rcv.src_ip, port);
 		/* search the aliases for an already existing one */
-		for (a=tcpconn_aliases_hash[hash]; a; a=a->next){
+		for (a=tcp_parts[id].tcpconn_aliases_hash[hash]; a; a=a->next){
 			if ( (a->parent->state!=S_CONN_BAD) && (port==a->port) &&
 					(ip_addr_cmp(&c->rcv.src_ip, &a->parent->rcv.src_ip)) ){
 				/* found */
@@ -938,27 +963,27 @@ int tcpconn_add_alias(int id, int port, int proto)
 		c->con_aliases[c->aliases].parent=c;
 		c->con_aliases[c->aliases].port=port;
 		c->con_aliases[c->aliases].hash=hash;
-		tcpconn_listadd(tcpconn_aliases_hash[hash],
+		tcpconn_listadd(tcp_parts[id].tcpconn_aliases_hash[hash],
 								&c->con_aliases[c->aliases], next, prev);
 		c->aliases++;
 	}else goto error_not_found;
 ok:
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(id);
 #ifdef EXTRA_DEBUG
 	if (a) LM_DBG("alias already present\n");
 	else   LM_DBG("alias port %d for hash %d, id %d\n", port, hash, c->id);
 #endif
 	return 0;
 error_aliases:
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(id);
 	LM_ERR("too many aliases for connection %p (%d)\n", c, c->id);
 	return -1;
 error_not_found:
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(id);
 	LM_ERR("no connection found for id %d\n",id);
 	return -1;
 error_sec:
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(id);
 	LM_ERR("possible port hijack attempt\n");
 	LM_ERR("alias already present and points to another connection "
 			"(%d : %d and %d : %d)\n", a->parent->id,  port, c->id, port);
@@ -969,18 +994,18 @@ error_sec:
 
 void tcpconn_ref(struct tcp_connection* c)
 {
-	TCPCONN_LOCK;
+	TCPCONN_LOCK(c->id);
 	c->refcnt++; /* FIXME: atomic_dec */
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(c->id);
 }
 
 
 
 void tcpconn_put(struct tcp_connection* c)
 {
-	TCPCONN_LOCK;
+	TCPCONN_LOCK(c->id);
 	c->refcnt--; /* FIXME: atomic_dec */
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(c->id);
 }
 
 /* called under the TCP connection write lock */
@@ -1438,6 +1463,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	struct tcp_connection* tcpconn;
 	socklen_t su_len;
 	int new_sock;
+	int id;
 
 	/* got a connection on r */
 	su_len=sizeof(su);
@@ -1471,13 +1497,14 @@ static inline int handle_new_connect(struct socket_info* si)
 		/* pass it to a child */
 		if(send2child(tcpconn,IO_WATCH_READ)<0){
 			LM_ERR("no children available\n");
-			TCPCONN_LOCK;
+			id = tcpconn->id;
+			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
 				close(tcpconn->s);
 				_tcpconn_rm(tcpconn);
 			}else tcpconn->timeout=0; /* force expire */
-			TCPCONN_UNLOCK;
+			TCPCONN_UNLOCK(id);
 		}
 	}else{ /*tcpconn==0 */
 		LM_ERR("tcpconn_new failed, closing socket\n");
@@ -1493,8 +1520,9 @@ static inline int handle_new_connect(struct socket_info* si)
 static void tcpconn_destroy(struct tcp_connection* tcpconn)
 {
 	int fd;
+	int id = tcpconn->id;
 
-	TCPCONN_LOCK; /*avoid races w/ tcp_send*/
+	TCPCONN_LOCK(id); /*avoid races w/ tcp_send*/
 	tcpconn->refcnt--;
 	if (tcpconn->refcnt==0){
 		LM_DBG("destroying connection %p, flags %04x\n",
@@ -1516,7 +1544,7 @@ static void tcpconn_destroy(struct tcp_connection* tcpconn)
 				tcpconn, tcpconn->flags,tcpconn->refcnt);
 
 	}
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(id);
 }
 
 
@@ -1536,6 +1564,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 {
 	int fd;
 	int err;
+	int id;
 	unsigned int err_len;
 
 	/*  is refcnt!=0 really necessary?
@@ -1563,14 +1592,15 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 		tcpconn_ref(tcpconn); /* refcnt ++ */
 		if (send2child(tcpconn,IO_WATCH_READ)<0){
 			LM_ERR("no children available\n");
-			TCPCONN_LOCK;
+			id = tcpconn->id;
+			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
 				fd=tcpconn->s;
 				_tcpconn_rm(tcpconn);
 				close(fd);
 			}else tcpconn->timeout=0; /* force expire*/
-			TCPCONN_UNLOCK;
+			TCPCONN_UNLOCK(id);
 		}
 		return 0; /* we are not interested in possibly queued io events,
 					 the fd was either passed to a child, or closed */
@@ -1610,14 +1640,15 @@ async_write:
 			tcpconn_ref(tcpconn); /* refcnt ++ */
 			if (send2child(tcpconn,IO_WATCH_WRITE)<0){
 				LM_ERR("no children available\n");
-				TCPCONN_LOCK;
+				id = tcpconn->id;
+				TCPCONN_LOCK(id);
 				tcpconn->refcnt--;
 				if (tcpconn->refcnt==0){
 					fd=tcpconn->s;
 					_tcpconn_rm(tcpconn);
 					close(fd);
 				}else tcpconn->timeout=0; /* force expire*/
-				TCPCONN_UNLOCK;
+				TCPCONN_UNLOCK(id);
 			}
 			return 0;
 		}
@@ -1631,14 +1662,14 @@ void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout)
 	struct tcp_connection* con;
 	unsigned int lifetime = get_ticks() + timeout;
 
-	TCPCONN_LOCK;
-	con =_tcpconn_find(rcv->proto_reserved1, 0, 0);
+	TCPCONN_LOCK(rcv->proto_reserved1);
+	con =_tcpconn_find(rcv->proto_reserved1);
 	if (!con) {
 		LM_ERR("Strange, tcp conn not found (id=%d)\n",rcv->proto_reserved1);
 	} else {
 		con->lifetime = lifetime;
 	}
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(rcv->proto_reserved1);
 }
 
 
@@ -1977,40 +2008,44 @@ error:
 static inline void tcpconn_timeout(int force)
 {
 	struct tcp_connection *c, *next;
-	unsigned int ticks;
+	unsigned int ticks,part;
 	unsigned h;
 	int fd;
 
 
 	ticks=get_ticks();
-	TCPCONN_LOCK; /* fixme: we can lock only on delete IMO */
-	for(h=0; h<TCP_ID_HASH_SIZE; h++){
-		c=tcpconn_id_hash[h];
-		while(c){
-			next=c->id_next;
-			if (force ||((c->refcnt==0) && (ticks>c->timeout))) {
-				if (!force)
-					LM_DBG("timeout for hash=%d - %p"
-							" (%d > %d)\n", h, c, ticks, c->timeout);
-				fd=c->s;
+
+	for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
+		TCPCONN_LOCK(part); /* fixme: we can lock only on delete IMO */
+		for(h=0; h<TCP_ID_HASH_SIZE; h++){
+			c=tcp_parts[part].tcpconn_id_hash[h];
+			while(c){
+				next=c->id_next;
+				if (force ||((c->refcnt==0) && (ticks>c->timeout))) {
+					if (!force)
+						LM_DBG("timeout for hash=%d - %p"
+								" (%d > %d)\n", h, c, ticks, c->timeout);
+					fd=c->s;
 #ifdef USE_TLS
-				if (c->type==PROTO_TLS)
-					tls_close(c, fd);
+					if (c->type==PROTO_TLS)
+						tls_close(c, fd);
 #endif
-				_tcpconn_rm(c);
-				if ((!force)&&(fd>0)&&(c->refcnt==0)) {
-					if (!(c->flags & F_CONN_REMOVED)){
-						io_watch_del(&io_h, fd, -1, IO_FD_CLOSING,IO_WATCH_READ|IO_WATCH_WRITE);
-						c->flags|=F_CONN_REMOVED;
+					_tcpconn_rm(c);
+					if ((!force)&&(fd>0)&&(c->refcnt==0)) {
+						if (!(c->flags & F_CONN_REMOVED)){
+							io_watch_del(&io_h, fd, -1, IO_FD_CLOSING,
+								IO_WATCH_READ|IO_WATCH_WRITE);
+							c->flags|=F_CONN_REMOVED;
+						}
+						close(fd);
 					}
-					close(fd);
+					tcp_connections_no--;
 				}
-				tcp_connections_no--;
+				c=next;
 			}
-			c=next;
 		}
+		TCPCONN_UNLOCK(part);
 	}
-	TCPCONN_UNLOCK;
 }
 
 
@@ -2164,24 +2199,31 @@ error:
 /*! \brief cleanup before exit */
 void destroy_tcp(void)
 {
-		if (tcpconn_id_hash){
+	int part;
+
+	if (tcp_parts[0].tcpconn_id_hash)
 			tcpconn_timeout(1); /* force close/expire for all active tcpconns*/
-			shm_free(tcpconn_id_hash);
-			tcpconn_id_hash=0;
+
+	if (connection_id){
+		shm_free(connection_id);
+		connection_id=0;
+	}
+
+	for ( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
+		if (tcp_parts[part].tcpconn_id_hash){
+			shm_free(tcp_parts[part].tcpconn_id_hash);
+			tcp_parts[part].tcpconn_id_hash=0;
 		}
-		if (connection_id){
-			shm_free(connection_id);
-			connection_id=0;
+		if (tcp_parts[part].tcpconn_aliases_hash){
+			shm_free(tcp_parts[part].tcpconn_aliases_hash);
+			tcp_parts[part].tcpconn_aliases_hash=0;
 		}
-		if (tcpconn_aliases_hash){
-			shm_free(tcpconn_aliases_hash);
-			tcpconn_aliases_hash=0;
+		if (tcp_parts[part].tcpconn_lock){
+			lock_destroy(tcp_parts[part].tcpconn_lock);
+			lock_dealloc((void*)tcp_parts[part].tcpconn_lock);
+			tcp_parts[part].tcpconn_lock=0;
 		}
-		if (tcpconn_lock){
-			lock_destroy(tcpconn_lock);
-			lock_dealloc((void*)tcpconn_lock);
-			tcpconn_lock=0;
-		}
+	}
 }
 
 
@@ -2189,19 +2231,8 @@ void destroy_tcp(void)
 int init_tcp(void)
 {
 	char* poll_err;
+	unsigned int i;
 
-	/* init lock */
-	tcpconn_lock=lock_alloc();
-	if (tcpconn_lock==0){
-		LM_CRIT("could not alloc lock\n");
-		goto error;
-	}
-	if (lock_init(tcpconn_lock)==0){
-		LM_CRIT("could not init lock\n");
-		lock_dealloc((void*)tcpconn_lock);
-		tcpconn_lock=0;
-		goto error;
-	}
 	/* init tcp children array */
 	tcp_children = (struct tcp_child*)pkg_malloc
 		( tcp_children_no*sizeof(struct tcp_child) );
@@ -2217,24 +2248,40 @@ int init_tcp(void)
 		goto error;
 	}
 	*connection_id=1;
-	/* alloc hashtables*/
-	tcpconn_aliases_hash=(struct tcp_conn_alias**)
+	memset( &tcp_parts, 0, TCP_PARTITION_SIZE*sizeof(struct tcp_partition));
+	/* init partitions */
+	for( i=0 ; i<TCP_PARTITION_SIZE ; i++ ) {
+		/* init lock */
+		tcp_parts[i].tcpconn_lock=lock_alloc();
+		if (tcp_parts[i].tcpconn_lock==0){
+			LM_CRIT("could not alloc lock\n");
+			goto error;
+		}
+		if (lock_init(tcp_parts[i].tcpconn_lock)==0){
+			LM_CRIT("could not init lock\n");
+			lock_dealloc((void*)tcp_parts[i].tcpconn_lock);
+			tcp_parts[i].tcpconn_lock=0;
+			goto error;
+		}
+		/* alloc hashtables*/
+		tcp_parts[i].tcpconn_aliases_hash=(struct tcp_conn_alias**)
 			shm_malloc(TCP_ALIAS_HASH_SIZE* sizeof(struct tcp_conn_alias*));
-	if (tcpconn_aliases_hash==0){
-		LM_CRIT("could not alloc address hashtable in shm memory\n");
-		goto error;
-	}
-	tcpconn_id_hash=(struct tcp_connection**)shm_malloc(TCP_ID_HASH_SIZE*
+		if (tcp_parts[i].tcpconn_aliases_hash==0){
+			LM_CRIT("could not alloc address hashtable in shm memory\n");
+			goto error;
+		}
+		tcp_parts[i].tcpconn_id_hash=(struct tcp_connection**)shm_malloc(TCP_ID_HASH_SIZE*
 								sizeof(struct tcp_connection*));
-	if (tcpconn_id_hash==0){
-		LM_CRIT("could not alloc id hashtable in shm memory\n");
-		goto error;
-	}
-	/* init hashtables*/
-	memset((void*)tcpconn_aliases_hash, 0,
+		if (tcp_parts[i].tcpconn_id_hash==0){
+			LM_CRIT("could not alloc id hashtable in shm memory\n");
+			goto error;
+		}
+		/* init hashtables*/
+		memset((void*)tcp_parts[i].tcpconn_aliases_hash, 0,
 			TCP_ALIAS_HASH_SIZE * sizeof(struct tcp_conn_alias*));
-	memset((void*)tcpconn_id_hash, 0,
+		memset((void*)tcp_parts[i].tcpconn_id_hash, 0,
 			TCP_ID_HASH_SIZE * sizeof(struct tcp_connection*));
+	}
 
 	/* fix config variables */
 	/* they can have only positive values due the config parser so we can
@@ -2375,7 +2422,7 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
-	unsigned int i,n;
+	unsigned int i,n,part;
 	char proto[4];
 	char *p;
 	int len;
@@ -2387,81 +2434,82 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	if (rpl_tree==NULL)
 		return 0;
 
-	TCPCONN_LOCK;
+	for( part=0 ; part<TCP_PARTITION_SIZE ; part++) {
+		TCPCONN_LOCK(part);
+		for( i=0,n=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
+			for( conn=tcp_parts[part].tcpconn_id_hash[i] ; conn ; conn=conn->id_next ) {
+				/* add one node for each conn */
+				node = add_mi_node_child(&rpl_tree->node, 0,
+					MI_SSTR("Connection"), 0, 0 );
+				if (node==0)
+					goto error;
 
-	for( i=0,n=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
-		for( conn=tcpconn_id_hash[i] ; conn ; conn=conn->id_next ) {
-			/* add one node for each conn */
-			node = add_mi_node_child(&rpl_tree->node, 0,
-				MI_SSTR("Connection"), 0, 0 );
-			if (node==0)
-				goto error;
+				/* add ID */
+				p = int2str((unsigned long)conn->id, &len);
+				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("ID"), p, len);
+				if (attr==0)
+					goto error;
 
-			/* add ID */
-			p = int2str((unsigned long)conn->id, &len);
-			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("ID"), p, len);
-			if (attr==0)
-				goto error;
+				/* add type/proto */
+				p = proto2str(conn->type, proto);
+				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Type"),
+					proto, (int)(long)(p-proto));
+				if (attr==0)
+					goto error;
 
-			/* add type/proto */
-			p = proto2str(conn->type, proto);
-			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Type"),
-				proto, (int)(long)(p-proto));
-			if (attr==0)
-				goto error;
+				/* add state */
+				p = int2str((unsigned long)conn->state, &len);
+				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("State"), p, len);
+				if (attr==0)
+					goto error;
 
-			/* add state */
-			p = int2str((unsigned long)conn->state, &len);
-			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("State"), p, len);
-			if (attr==0)
-				goto error;
+				/* add Source */
+				attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Source"),
+					"%s:%d",ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
+				if (attr==0)
+					goto error;
 
-			/* add Source */
-			attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Source"),
-				"%s:%d",ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
-			if (attr==0)
-				goto error;
+				/* add Destination */
+				attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Destination"),
+					"%s:%d",ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
+				if (attr==0)
+					goto error;
 
-			/* add Destination */
-			attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Destination"),
-				"%s:%d",ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
-			if (attr==0)
-				goto error;
+				/* add timeout */
+				_ts = (time_t)conn->timeout + startup_time;
+				date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
+										"%Y-%m-%d %H:%M:%S", localtime(&_ts));
+				if (date_buf_len != 0) {
+					attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"),
+										date_buf, date_buf_len);
+				} else {
+					p = int2str((unsigned long)_ts, &len);
+					attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"), p,len);
+				}
+				if (attr==0)
+					goto error;
 
-			/* add timeout */
-			_ts = (time_t)conn->timeout + startup_time;
-			date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
-									"%Y-%m-%d %H:%M:%S", localtime(&_ts));
-			if (date_buf_len != 0) {
-				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"),
-									date_buf, date_buf_len);
-			} else {
-				p = int2str((unsigned long)_ts, &len);
-				attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Timeout"), p,len);
+				/* add lifetime */
+				p = int2str((unsigned long)conn->lifetime, &len);
+				attr = add_mi_attr( node, MI_DUP_VALUE,
+					MI_SSTR("Pending lifetime"), p, len);
+				if (attr==0)
+					goto error;
+
+				n++;
+				/* at each 50 conns, flush the tree */
+				if ( (n % 50) == 0 )
+					flush_mi_tree(rpl_tree);
+
 			}
-			if (attr==0)
-				goto error;
-
-			/* add lifetime */
-			p = int2str((unsigned long)conn->lifetime, &len);
-			attr = add_mi_attr( node, MI_DUP_VALUE,
-				MI_SSTR("Pending lifetime"), p, len);
-			if (attr==0)
-				goto error;
-
-			n++;
-			/* at each 50 conns, flush the tree */
-			if ( (n % 50) == 0 )
-				flush_mi_tree(rpl_tree);
-
 		}
-	}
 
-	TCPCONN_UNLOCK;
+		TCPCONN_UNLOCK(part);
+	}
 
 	return rpl_tree;
 error:
-	TCPCONN_UNLOCK;
+	TCPCONN_UNLOCK(part);
 	LM_ERR("failed to add node\n");
 	free_mi_tree(rpl_tree);
 	return 0;
