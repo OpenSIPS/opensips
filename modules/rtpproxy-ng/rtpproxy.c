@@ -974,7 +974,7 @@ mod_init(void)
 		       setid_avp_param);
 		return -1;
 	    }
-	    if (pv_get_avp_name(0, &(avp_spec->pvp), &setid_avp,
+	    if (pv_get_avp_name(0, &(avp_spec->pvp), &(setid_avp.n),
 				&avp_flags) != 0) {
 		LM_ERR("invalid AVP definition <%s>\n", setid_avp_param);
 		return -1;
@@ -1720,7 +1720,7 @@ set_rtp_proxy_set_from_avp(struct sip_msg *msg)
     int_str setid_val;
 
     if ((setid_avp_param == NULL) ||
-	(avp = search_first_avp(setid_avp_type, setid_avp, &setid_val, 0))
+	(avp = search_first_avp(setid_avp_type, setid_avp.n, &setid_val, 0))
 	== NULL)
 	return 1;
 
