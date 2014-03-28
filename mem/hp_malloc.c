@@ -39,7 +39,6 @@
 #include "../locking.h"
 
 #include "hp_malloc.h"
-#include "hp_malloc_stats.h"
 
 extern unsigned long *mem_hash_usage;
 

@@ -81,8 +81,8 @@ void update_shm_stats(struct hp_block *qm)
 				used_mem = in_use_frags * size;
 
 				qm->used            += used_mem;
-				qm->real_used       += used_mem + bucket->total_no * FRAG_OVERHEAD;
-				qm->total_fragments += bucket->total_no;
+				qm->real_used       += used_mem + it->total_no * FRAG_OVERHEAD;
+				qm->total_fragments += it->total_no;
 			}
 		}
 	}
