@@ -968,7 +968,7 @@ mod_init(void)
 
 	if (setid_avp_param) {
 	    s.s = setid_avp_param; s.len = strlen(s.s);
-	    avp_spec = pv_cache_get(&s);
+	    pv_parse_spec(&s, avp_spec);
 	    if (avp_spec==NULL || (avp_spec->type != PVT_AVP)) {
 		LM_ERR("malformed or non AVP definition <%s>\n",
 		       setid_avp_param);
