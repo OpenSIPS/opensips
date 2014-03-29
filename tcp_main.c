@@ -793,14 +793,14 @@ struct tcp_connection*  tcpconn_add(struct tcp_connection *c)
 		/* add it at the begining of the list*/
 		hash=tcp_id_hash(c->id);
 		c->id_hash=hash;
-		tcpconn_listadd(tcp_parts[c->id].tcpconn_id_hash[hash], c, id_next, id_prev);
+		tcpconn_listadd(TCP_PART(c->id).tcpconn_id_hash[hash], c, id_next, id_prev);
 
 		hash=tcp_addr_hash(&c->rcv.src_ip, c->rcv.src_port);
 		/* set the first alias */
 		c->con_aliases[0].port=c->rcv.src_port;
 		c->con_aliases[0].hash=hash;
 		c->con_aliases[0].parent=c;
-		tcpconn_listadd(tcp_parts[c->id].tcpconn_aliases_hash[hash], &c->con_aliases[0],
+		tcpconn_listadd(TCP_PART(c->id).tcpconn_aliases_hash[hash], &c->con_aliases[0],
 						next, prev);
 		c->aliases++;
 		TCPCONN_UNLOCK(c->id);
@@ -818,11 +818,11 @@ void _tcpconn_rm(struct tcp_connection* c)
 {
 	int r;
 
-	tcpconn_listrm(tcp_parts[c->id].tcpconn_id_hash[c->id_hash], c,
+	tcpconn_listrm(TCP_PART(c->id).tcpconn_id_hash[c->id_hash], c,
 		id_next, id_prev);
 	/* remove all the aliases */
 	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(tcp_parts[c->id].tcpconn_aliases_hash[c->con_aliases[r].hash],
+		tcpconn_listrm(TCP_PART(c->id).tcpconn_aliases_hash[c->con_aliases[r].hash],
 			&c->con_aliases[r], next, prev);
 	lock_destroy(&c->write_lock);
 #ifdef USE_TLS
@@ -842,11 +842,11 @@ void tcpconn_rm(struct tcp_connection* c)
 {
 	int r;
 	TCPCONN_LOCK(c->id);
-	tcpconn_listrm(tcp_parts[c->id].tcpconn_id_hash[c->id_hash], c,
+	tcpconn_listrm(TCP_PART(c->id).tcpconn_id_hash[c->id_hash], c,
 		id_next, id_prev);
 	/* remove all the aliases */
 	for (r=0; r<c->aliases; r++)
-		tcpconn_listrm(tcp_parts[c->id].tcpconn_aliases_hash[c->con_aliases[r].hash],
+		tcpconn_listrm(TCP_PART(c->id).tcpconn_aliases_hash[c->con_aliases[r].hash],
 			&c->con_aliases[r], next, prev);
 	TCPCONN_UNLOCK(c->id);
 	lock_destroy(&c->write_lock);
@@ -868,7 +868,7 @@ static struct tcp_connection* _tcpconn_find(int id)
 
 	if (id){
 		hash=tcp_id_hash(id);
-		for (c=tcp_parts[id].tcpconn_id_hash[hash]; c; c=c->id_next){
+		for (c=TCP_PART(id).tcpconn_id_hash[hash]; c; c=c->id_next){
 #ifdef EXTRA_DEBUG
 			LM_DBG("c=%p, c->id=%d, port=%d\n",c, c->id, c->rcv.src_port);
 			print_ip("ip=", &c->rcv.src_ip, "\n");
@@ -907,7 +907,7 @@ struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
 		hash=tcp_addr_hash(ip, port);
 		for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
 			TCPCONN_LOCK(part);
-			for (a=tcp_parts[part].tcpconn_aliases_hash[hash]; a; a=a->next) {
+			for (a=TCP_PART(part).tcpconn_aliases_hash[hash]; a; a=a->next) {
 #ifdef EXTRA_DEBUG
 				LM_DBG("a=%p, c=%p, c->id=%d, alias port= %d port=%d\n",
 					a, a->parent, a->parent->id, a->port, a->parent->rcv.src_port);
@@ -951,7 +951,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 	if (c){
 		hash=tcp_addr_hash(&c->rcv.src_ip, port);
 		/* search the aliases for an already existing one */
-		for (a=tcp_parts[id].tcpconn_aliases_hash[hash]; a; a=a->next){
+		for (a=TCP_PART(id).tcpconn_aliases_hash[hash]; a; a=a->next){
 			if ( (a->parent->state!=S_CONN_BAD) && (port==a->port) &&
 					(ip_addr_cmp(&c->rcv.src_ip, &a->parent->rcv.src_ip)) ){
 				/* found */
@@ -963,7 +963,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 		c->con_aliases[c->aliases].parent=c;
 		c->con_aliases[c->aliases].port=port;
 		c->con_aliases[c->aliases].hash=hash;
-		tcpconn_listadd(tcp_parts[id].tcpconn_aliases_hash[hash],
+		tcpconn_listadd(TCP_PART(id).tcpconn_aliases_hash[hash],
 								&c->con_aliases[c->aliases], next, prev);
 		c->aliases++;
 	}else goto error_not_found;
@@ -2018,7 +2018,7 @@ static inline void tcpconn_timeout(int force)
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
 		TCPCONN_LOCK(part); /* fixme: we can lock only on delete IMO */
 		for(h=0; h<TCP_ID_HASH_SIZE; h++){
-			c=tcp_parts[part].tcpconn_id_hash[h];
+			c=TCP_PART(part).tcpconn_id_hash[h];
 			while(c){
 				next=c->id_next;
 				if (force ||((c->refcnt==0) && (ticks>c->timeout))) {
@@ -2437,7 +2437,7 @@ struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param)
 	for( part=0 ; part<TCP_PARTITION_SIZE ; part++) {
 		TCPCONN_LOCK(part);
 		for( i=0,n=0 ; i<TCP_ID_HASH_SIZE ; i++ ) {
-			for( conn=tcp_parts[part].tcpconn_id_hash[i] ; conn ; conn=conn->id_next ) {
+			for( conn=TCP_PART(part).tcpconn_id_hash[i] ; conn ; conn=conn->id_next ) {
 				/* add one node for each conn */
 				node = add_mi_node_child(&rpl_tree->node, 0,
 					MI_SSTR("Connection"), 0, 0 );

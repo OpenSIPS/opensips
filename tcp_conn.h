@@ -220,6 +220,7 @@ struct tcp_connection{
 	}while(0)
 
 #define TCPCONN_GET_PART(_id)  (_id%TCP_PARTITION_SIZE)
+#define TCP_PART(_id)  (tcp_parts[TCPCONN_GET_PART(_id)])
 
 #define TCPCONN_LOCK(_id) \
 	lock_get(tcp_parts[TCPCONN_GET_PART(_id)].tcpconn_lock);
