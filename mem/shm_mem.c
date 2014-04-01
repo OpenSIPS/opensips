@@ -50,12 +50,25 @@
 
 #ifdef STATISTICS
 stat_export_t shm_stats[] = {
-	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size     },
-	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used     },
-	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused    },
-	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)shm_get_mused    },
-	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free     },
-	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags    },
+	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size  },
+
+#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
+	{"used_size" ,                 0,               &shm_used      },
+	{"real_used_size" ,            0,               &shm_rused     },
+#else
+	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used  },
+	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused },
+#endif
+
+	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)shm_get_mused },
+	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free  },
+
+#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
+	{"fragments" ,                 0,               &shm_frags     },
+#else
+	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags },
+#endif
+
 	{0,0,0}
 };
 #endif
@@ -78,9 +91,11 @@ static void* shm_mempool=(void*)-1;
 	struct qm_block* shm_block;
 #endif
 
-/* 
- * holds the total number of shm_mallocs requested for each
- * bucket of the memory hash since daemon startup (useful for memory warming)
+/*
+ * - the memory fragmentation pattern of OpenSIPS
+ * - holds the total number of shm_mallocs requested for each
+ *   different possible size since daemon startup
+ * - allows memory warming (preserving the fragmentation pattern on restarts)
  */
 unsigned long long *mem_hash_usage;
 
@@ -148,7 +163,7 @@ void shm_event_raise(long used, long size, long perc)
 #ifdef HP_MALLOC
 	shm_lock(0);
 #else
-	shm_unlock();
+	shm_lock();
 #endif
 
 	list = 0;
@@ -164,11 +179,22 @@ end:
 inline static void* sh_realloc(void* p, unsigned int size)
 {
 	void *r;
-	//shm_lock(0); 
+
+#ifndef HP_MALLOC
+	shm_lock(); 
+	shm_free_unsafe(p);
+	r = shm_malloc_unsafe(size);
+#else
 	shm_free(p);
-	r=shm_malloc(size);
+	r = shm_malloc(size);
+#endif
+
 	shm_threshold_check();
-	//shm_unlock(0);
+
+#ifndef HP_MALLOC
+	shm_unlock(); 
+#endif
+
 	return r;
 }
 
@@ -360,6 +386,12 @@ int shm_mem_init(void)
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
+void init_shm_statistics(void)
+{
+	#if defined(SHM_MEM) && defined(HP_MALLOC)
+		hp_init_shm_statistics(shm_block);
+	#endif
+}
 
 void shm_mem_destroy(void)
 {
