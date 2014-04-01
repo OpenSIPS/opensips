@@ -1481,6 +1481,8 @@ try_again:
 		goto error;
 	}
 
+	init_shm_statistics();
+
 	/*init timer, before parsing the cfg!*/
 	if (init_timer()<0){
 		LM_CRIT("could not initialize timer, exiting...\n");

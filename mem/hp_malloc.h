@@ -27,13 +27,19 @@
 #if !defined(HP_MALLOC_H) && !defined(f_malloc_h) && !defined(VQ_MALLOC)
 #define HP_MALLOC_H
 
+#include "../statistics.h"
+#include "../config.h"
+#include "../globals.h"
+
 struct hp_frag;
 struct hp_frag_lnk;
 struct hp_block;
 
-#include "../statistics.h"
-#include "../config.h"
-#include "../globals.h"
+#ifndef HP_MALLOC_FAST_STATS
+extern stat_var *shm_used;
+extern stat_var *shm_rused;
+extern stat_var *shm_frags;
+#endif
 
 #include "hp_malloc_stats.h"
 #include "meminfo.h"
@@ -183,21 +189,23 @@ struct hp_block {
 	struct hp_frag_lnk free_hash[HP_HASH_SIZE + HP_EXTRA_HASH_SIZE];
 };
 
-struct hp_block *hp_malloc_init(char *address, unsigned long size);
-int hp_mem_warming(struct hp_block *fmb);
+struct hp_block *hp_pkg_malloc_init(char *addr, unsigned long size);
+struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size);
+
+int hp_mem_warming(struct hp_block *);
 void hp_update_mem_pattern_file(void);
 
-void *hp_malloc(struct hp_block *, unsigned long size);
-void *hp_malloc_unsafe(struct hp_block *, unsigned long size);
-void *hp_malloc_raw(struct hp_block *, unsigned long size);
+void *hp_shm_malloc(struct hp_block *, unsigned long size);
+void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size);
+void *hp_pkg_malloc(struct hp_block *, unsigned long size);
 
-void  hp_free(struct hp_block *, void *p);
-void  hp_free_unsafe(struct hp_block *qm, void *p);
-void  hp_free_raw(struct hp_block *qm, void *p);
+void hp_shm_free(struct hp_block *, void *p);
+void hp_shm_free_unsafe(struct hp_block *qm, void *p);
+void hp_pkg_free(struct hp_block *, void *p);
 
-void *hp_realloc(struct hp_block *, void *p, unsigned long size);
-void *hp_realloc_unsafe(struct hp_block *qm, void *p, unsigned long size);
-void *hp_realloc_raw(struct hp_block *qm, void *p, unsigned long size);
+void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size);
+void *hp_shm_realloc_unsafe(struct hp_block *qm, void *p, unsigned long size);
+void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
 
 void hp_status(struct hp_block *);
 void hp_info(struct hp_block *, struct mem_info *);

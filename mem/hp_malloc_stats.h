@@ -34,16 +34,86 @@
 
 extern gen_lock_t *hp_stats_lock;
 
+#ifdef STATISTICS
 int stats_are_expired(struct hp_block *qm);
 void update_shm_stats(struct hp_block *qm);
+void hp_init_shm_statistics(struct hp_block *qm);
 
-#ifdef STATISTICS
-unsigned long hp_get_size(struct hp_block *qm);
-unsigned long hp_get_used(struct hp_block *qm);
-unsigned long hp_get_free(struct hp_block *qm);
-unsigned long hp_get_real_used(struct hp_block *qm);
-unsigned long hp_get_max_real_used(struct hp_block *qm);
-unsigned long hp_get_frags(struct hp_block *qm);
-#endif /* STATISTICS */
+unsigned long hp_shm_get_size(struct hp_block *qm);
+unsigned long hp_shm_get_used(struct hp_block *qm);
+unsigned long hp_shm_get_free(struct hp_block *qm);
+unsigned long hp_shm_get_real_used(struct hp_block *qm);
+unsigned long hp_shm_get_max_real_used(struct hp_block *qm);
+unsigned long hp_shm_get_frags(struct hp_block *qm);
+
+unsigned long hp_pkg_get_size(struct hp_block *qm);
+unsigned long hp_pkg_get_used(struct hp_block *qm);
+unsigned long hp_pkg_get_free(struct hp_block *qm);
+unsigned long hp_pkg_get_real_used(struct hp_block *qm);
+unsigned long hp_pkg_get_max_real_used(struct hp_block *qm);
+unsigned long hp_pkg_get_frags(struct hp_block *qm);
+
+#define update_stats_pkg_frag_attach(blk, frag) \
+	do { \
+		(blk)->used -= (frag)->size; \
+		(blk)->real_used -= (frag)->size + FRAG_OVERHEAD; \
+	} while (0)
+
+#define update_stats_pkg_frag_detach(blk, frag) \
+	do { \
+		(blk)->used += (frag)->size; \
+		(blk)->real_used += (frag)->size + FRAG_OVERHEAD; \
+	} while (0)
+
+#define update_stats_pkg_frag_split(blk, ...) \
+	do { \
+		(blk)->real_used += FRAG_OVERHEAD; \
+		(blk)->total_fragments++; \
+	} while (0)
+
+#define update_stats_pkg_frag_merge(blk, ...) \
+	do { \
+		(blk)->real_used -= FRAG_OVERHEAD; \
+		(blk)->total_fragments--; \
+	} while (0)
+
+#ifdef HP_MALLOC_FAST_STATS
+	#define update_stats_shm_frag_attach(frag)
+	#define update_stats_shm_frag_detach(frag)
+	#define update_stats_shm_frag_split()
+
+#else /* HP_MALLOC_FAST_STATS */
+	#define update_stats_shm_frag_attach(frag) \
+		do { \
+			update_stat(shm_used, -(frag)->size); \
+			update_stat(shm_rused, -((frag)->size + FRAG_OVERHEAD)); \
+		} while (0)
+
+	#define update_stats_shm_frag_detach(frag) \
+		do { \
+			update_stat(shm_used, (frag)->size); \
+			update_stat(shm_rused, (frag)->size + FRAG_OVERHEAD); \
+		} while (0)
+
+	#define update_stats_shm_frag_split(...) \
+		do { \
+			update_stat(shm_rused, FRAG_OVERHEAD); \
+			update_stat(shm_frags, 1); \
+		} while (0)
+#endif /* HP_MALLOC_FAST_STATS */
+
+#else /* STATISTICS */
+	#define stats_are_expired(...) 0
+	#define update_shm_stats(...)
+
+	#define hp_init_shm_statistics(...)
+	#define update_stats_pkg_frag_attach(blk, frag)
+	#define update_stats_pkg_frag_detach(blk, frag)
+	#define update_stats_pkg_frag_split(blk, ...)
+	#define update_stats_pkg_frag_merge(blk, ...)
+	#define update_stats_shm_frag_attach(frag)
+	#define update_stats_shm_frag_detach(frag)
+	#define update_stats_shm_frag_split(...)
+#endif
 
 #endif /* HP_MALLOC_STATS_H */

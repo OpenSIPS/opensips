@@ -24,6 +24,9 @@
  *  2014-01-19 initial version (liviu)
  */
 
+#if !defined(q_malloc) && !(defined VQ_MALLOC)  && !(defined F_MALLOC) && \
+	(defined HP_MALLOC)
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,6 +38,8 @@
 #include "hp_malloc_stats.h"
 
 gen_lock_t *hp_stats_lock;
+
+#ifdef STATISTICS
 
 int stats_are_expired(struct hp_block *qm)
 {
@@ -98,12 +103,13 @@ void update_shm_stats(struct hp_block *qm)
 	lock_release(hp_stats_lock);
 }
 
-unsigned long hp_get_size(struct hp_block *qm)
+unsigned long hp_shm_get_size(struct hp_block *qm)
 {
 	return qm->size;
 }
 
-unsigned long hp_get_used(struct hp_block *qm)
+#ifdef HP_MALLOC_FAST_STATS
+unsigned long hp_shm_get_used(struct hp_block *qm)
 {
 	if (stats_are_expired(qm))
 		update_shm_stats(qm);
@@ -111,15 +117,7 @@ unsigned long hp_get_used(struct hp_block *qm)
 	return qm->used;
 }
 
-unsigned long hp_get_free(struct hp_block *qm)
-{
-	if (stats_are_expired(qm))
-		update_shm_stats(qm);
-
-	return qm->size - qm->real_used;
-}
-
-unsigned long hp_get_real_used(struct hp_block *qm)
+unsigned long hp_shm_get_real_used(struct hp_block *qm)
 {
 	if (stats_are_expired(qm))
 		update_shm_stats(qm);
@@ -127,7 +125,7 @@ unsigned long hp_get_real_used(struct hp_block *qm)
 	return qm->real_used;
 }
 
-unsigned long hp_get_max_real_used(struct hp_block *qm)
+unsigned long hp_shm_get_max_real_used(struct hp_block *qm)
 {
 	if (stats_are_expired(qm))
 		update_shm_stats(qm);
@@ -135,10 +133,96 @@ unsigned long hp_get_max_real_used(struct hp_block *qm)
 	return qm->max_real_used;
 }
 
-unsigned long hp_get_frags(struct hp_block *qm)
+unsigned long hp_shm_get_free(struct hp_block *qm)
+{
+	if (stats_are_expired(qm))
+		update_shm_stats(qm);
+
+	return qm->size - qm->real_used;
+}
+
+unsigned long hp_shm_get_frags(struct hp_block *qm)
 {
 	if (stats_are_expired(qm))
 		update_shm_stats(qm);
 
 	return qm->total_fragments;
 }
+
+void hp_init_shm_statistics(struct hp_block *qm)
+{
+	update_shm_stats(qm);
+}
+
+#else /* HP_MALLOC_FAST_STATS */
+
+void hp_init_shm_statistics(struct hp_block *qm)
+{
+	update_stat(shm_used, qm->used);
+	update_stat(shm_rused, qm->real_used);
+	update_stat(shm_frags, qm->total_fragments);
+
+	LM_DBG("initializing atomic shm statistics: "
+	       "[ us: %ld | rus: %ld | frags: %ld ]\n", qm->used, qm->real_used, qm->total_fragments);
+}
+
+unsigned long hp_shm_get_used(struct hp_block *qm)
+{
+	return get_stat_val(shm_used);
+}
+
+unsigned long hp_shm_get_real_used(struct hp_block *qm)
+{
+	return get_stat_val(shm_rused);
+}
+
+unsigned long hp_shm_get_max_real_used(struct hp_block *qm)
+{
+	return qm->max_real_used;
+}
+
+unsigned long hp_shm_get_free(struct hp_block *qm)
+{
+	return qm->size - get_stat_val(shm_rused);
+}
+
+unsigned long hp_shm_get_frags(struct hp_block *qm)
+{
+	return get_stat_val(shm_frags);
+}
+#endif /* HP_MALLOC_FAST_STATS */
+
+
+unsigned long hp_pkg_get_size(struct hp_block *qm)
+{
+	return qm->size;
+}
+
+unsigned long hp_pkg_get_used(struct hp_block *qm)
+{
+	return qm->used;
+}
+
+unsigned long hp_pkg_get_real_used(struct hp_block *qm)
+{
+	return qm->real_used;
+}
+
+unsigned long hp_pkg_get_max_real_used(struct hp_block *qm)
+{
+	return qm->max_real_used;
+}
+
+unsigned long hp_pkg_get_free(struct hp_block *qm)
+{
+	return qm->size - qm->real_used;
+}
+
+unsigned long hp_pkg_get_frags(struct hp_block *qm)
+{
+	return qm->total_fragments;
+}
+
+#endif /* STATISTICS */
+
+#endif
