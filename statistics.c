@@ -53,6 +53,7 @@
 #ifdef STATISTICS
 
 static stats_collector *collector = NULL;
+static int stats_ready;
 
 static struct mi_root *mi_get_stats(struct mi_root *cmd, void *param);
 static struct mi_root *mi_reset_stats(struct mi_root *cmd, void *param);
@@ -228,7 +229,7 @@ static inline module_stats* add_stat_module( char *module)
 	if ( (module==0) || ((len = strlen(module))==0 ) )
 		return 0;
 
-	amods = (module_stats*)shm_realloc( collector->amodules,
+	amods = (module_stats*)shm_realloc_unsafe( collector->amodules,
 			(collector->mod_no+1)*sizeof(module_stats) );
 	if (amods==0) {
 		LM_ERR("no more shm memory\n");
@@ -296,7 +297,7 @@ int init_stats_collector(void)
 	char *s;
 
 	/* init the collector */
-	collector = (stats_collector*)shm_malloc(sizeof(stats_collector));
+	collector = (stats_collector*)shm_malloc_unsafe(sizeof(stats_collector));
 	if (collector==0) {
 		LM_ERR("no more shm mem\n");
 		goto error;
@@ -307,7 +308,7 @@ int init_stats_collector(void)
 	for ( psn=pending_name_list ; psn ; psn=next ) {
 		next = psn->next;
 
-		s = (char*)shm_malloc( psn->name->len );
+		s = (char*)shm_malloc_unsafe( psn->name->len );
 		if (s==NULL) {
 			LM_ERR("no more shm mem (%d)\n", psn->name->len);
 			goto error;
@@ -316,6 +317,12 @@ int init_stats_collector(void)
 		psn->name->s = s;
 
 		pkg_free(psn);
+	}
+
+	/* register sh_mem statistics */
+	if (register_module_stats( "shmem", shm_stats)!=0 ) {
+		LM_ERR("failed to register sh_mem statistics\n");
+		goto error;
 	}
 
 #ifdef NO_ATOMIC_OPS
@@ -344,11 +351,7 @@ int init_stats_collector(void)
 		LM_ERR("failed to register core statistics\n");
 		goto error;
 	}
-	/* register sh_mem statistics */
-	if (register_module_stats( "shmem", shm_stats)!=0 ) {
-		LM_ERR("failed to register sh_mem statistics\n");
-		goto error;
-	}
+
 	/* register sh_mem statistics */
 	if (register_module_stats( "net", net_stats)!=0 ) {
 		LM_ERR("failed to register network statistics\n");
@@ -364,6 +367,7 @@ int init_stats_collector(void)
 	/* mark it as dynamic, so it will require locking */
 	dy_mod->is_dyn = 1 ;
 
+	stats_ready = 1;
 	LM_DBG("statistics manager successfully initialized\n");
 
 	return 0;
@@ -424,6 +428,10 @@ void destroy_stats_collector(void)
 	return;
 }
 
+int stats_are_ready(void)
+{
+	return stats_ready;
+}
 
 /********************* Create/Register STATS functions ***********************/
 
@@ -445,7 +453,8 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	}
 
 	name_len = strlen(name);
-	stat = (stat_var*)shm_malloc(sizeof(stat_var) + ((flags&STAT_SHM_NAME)==0)*name_len);
+	stat = (stat_var*)shm_malloc_unsafe(sizeof(stat_var) +
+	       ((flags&STAT_SHM_NAME)==0)*name_len);
 	if (stat==0) {
 		LM_ERR("no more shm memory\n");
 		goto error;
@@ -453,7 +462,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	memset( stat, 0, sizeof(stat_var) );
 
 	if ( (flags&STAT_IS_FUNC)==0 ) {
-		stat->u.val = (stat_val*)shm_malloc(sizeof(stat_val));
+		stat->u.val = (stat_val*)shm_malloc_unsafe(sizeof(stat_val));
 		if (stat->u.val==0) {
 			LM_ERR("no more shm memory\n");
 			goto error1;
@@ -507,8 +516,8 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 				/* duplicate found -> drop current stat and return the
 				 * found one */
 				lock_stop_write((rw_lock_t *)collector->rwl);
-				if (flags&STAT_SHM_NAME) shm_free(stat->name.s);
-				if ((flags&STAT_IS_FUNC)==0) shm_free(stat->u.val);
+				if (flags&STAT_SHM_NAME) shm_free_unsafe(stat->name.s);
+				if ((flags&STAT_IS_FUNC)==0) shm_free_unsafe(stat->u.val);
 				shm_free(stat);
 				*pvar = it;
 				return 0;
