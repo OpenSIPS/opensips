@@ -1255,8 +1255,8 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
 		<function moreinfo="none">is_from_gw([type], [flag], [gw_attrs_pvar])</function>
 		</title>
 		<para>
-		The function checks if the sender of the message is a gateway
-		from a certain group.
+		The function checks if the sender of the message (its source IP)
+		is a gateway from a certain group.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
