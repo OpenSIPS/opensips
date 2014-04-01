@@ -103,6 +103,7 @@ typedef struct stat_export_ {
 char *build_stat_name( str* prefix, char *var_name);
 
 int init_stats_collector();
+int stats_are_ready(); /* for code which is statistics-dependent */
 
 int register_udp_load_stat(str *name, stat_var **ctx, int children);
 int register_tcp_load_stat(stat_var **ctx);
@@ -153,6 +154,7 @@ extern gen_lock_t *stat_lock;
 	#define get_stat_var_from_num_code( _n_code, _in_code) NULL
 	#define register_udp_load_stat( _a, _b, _c) 0
 	#define register_tcp_load_stat( _a)     0
+	#define stats_are_ready() 0
 	#define clone_pv_stat_name( _name, _clone) 0
 #endif
 
