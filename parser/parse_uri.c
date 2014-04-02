@@ -210,9 +210,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	int i;
 #endif
 
-#define SIP_SCH		0x3a706973
-#define SIPS_SCH	0x73706973
-#define TEL_SCH		0x3a6c6574
+#define SIP_SCH			0x3a706973
+#define SIPS_SCH		0x73706973
+#define TEL_SCH			0x3a6c6574
+#define URN_SERVICE_SCH		0x3a6e7275
+#define URN_SERVICE_STR 	":service:"
+#define URN_SERVICE_STR_LEN	(sizeof(URN_SERVICE_STR) - 1)
 
 #define case_port( ch, var) \
 	case ch: \
@@ -480,6 +483,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		else goto error_bad_uri;
 	}else if (scheme==TEL_SCH){
 		uri->type=TEL_URI_T;
+	}else if (scheme==URN_SERVICE_SCH){
+		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+			p+= URN_SERVICE_STR_LEN-1;
+			uri->type=URN_SERVICE_URI_T;
+		} else goto error_bad_uri;
 	}else goto error_bad_uri;
 
 	s=p;
@@ -1197,6 +1205,9 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->user=uri->host;
 			uri->host.s="";
 			uri->host.len=0;
+			break;
+		case URN_SERVICE_URI_T:
+			/* leave the actual service name in the URI domain part */
 			break;
 		case ERROR_URI_T:
 			LM_ERR("unexpected error (BUG?)\n");
