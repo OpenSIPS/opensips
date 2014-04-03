@@ -260,6 +260,9 @@ void hp_update_mem_pattern_file(void)
 	unsigned long long sum = 0;
 	double verification = 0;
 
+	if (!mem_warming_enabled)
+		return;
+
 	f = fopen(mem_warming_pattern_file, "w+");
 	if (!f) {
 		LM_ERR("failed to open pattern file %s for writing: %d - %s\n",
@@ -292,13 +295,16 @@ void hp_update_mem_pattern_file(void)
 			fprintf(f, "\n");
 	}
 
-	LM_INFO("verification: %lf\n", verification);
+	if (verification < 0.99 || verification > 1.01)
+		LM_INFO("memory pattern file appears to be incorrect: %lf\n", verification);
+
+	LM_INFO("updated memory pattern file %s\n", mem_warming_pattern_file);
 
 	fclose(f);
 	return;
 
 write_error:
-	LM_ERR("failed to write to pattern file\n");
+	LM_ERR("failed to update pattern file %s\n", mem_warming_pattern_file);
 	fclose(f);
 }
 
