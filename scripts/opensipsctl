@@ -2636,7 +2636,7 @@ opensips_trap() {
 		PID=`echo $pid | cut -d '-' -f 1`
 		echo "" >> $LOG_FILE
 		echo "---start $PID -----------------------------------------------------" >> $LOG_FILE
-		$GDB opensips $PID -batch --eval-command="bt full" &>> $LOG_FILE
+		$GDB opensips $PID -batch --eval-command="bt full" 2>&1 >> $LOG_FILE
 		echo "---end $PID -------------------------------------------------------" >> $LOG_FILE
 	done
 	echo "."
