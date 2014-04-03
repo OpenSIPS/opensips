@@ -112,6 +112,9 @@ int  acc_evi_request( struct sip_msg *req, struct sip_msg *rpl);
 int  acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg);
 int  store_evi_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 		struct sip_msg *reply);
+extern event_id_t acc_cdr_event;
+extern event_id_t acc_event;
+extern event_id_t acc_missed_event;
 
 
 
@@ -119,5 +122,6 @@ int  store_evi_extra_values(struct dlg_cell *dlg, struct sip_msg *req,
 int  acc_diam_init();
 int  acc_diam_request( struct sip_msg *req, struct sip_msg *rpl);
 #endif
+
 
 #endif
