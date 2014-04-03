@@ -34,6 +34,7 @@
 #include "../../mi/tree.h"
 
 int xr_writer_init( unsigned int size );
+void xr_writer_reset(void);
 char * xr_build_response( xmlrpc_env * env, struct mi_root * tree );
 char * xr_flush_response( xmlrpc_env * env, struct mi_root * tree );
 int xr_build_response_array( xmlrpc_env * env, struct mi_root * tree );

@@ -177,6 +177,8 @@ xmlrpc_value*  default_method	(xmlrpc_env* 	env,
 
 	LM_DBG("starting up.....\n");
 
+	xr_writer_reset();
+
 	f = lookup_mi_cmd((char*)methodName, strlen(methodName));
 	
 	if ( f == 0 ) {
