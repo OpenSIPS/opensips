@@ -1073,8 +1073,10 @@ void hp_info(struct hp_block *qm, struct mem_info *info)
 	info->total_size = qm->size;
 	info->min_frag = MIN_FRAG_SIZE;
 
+#ifdef HP_MALLOC_FAST_STATS
 	if (stats_are_expired(qm))
 		update_shm_stats(qm);
+#endif
 
 	info->used = qm->used;
 	info->real_used = qm->real_used;
