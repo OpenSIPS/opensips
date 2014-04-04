@@ -994,14 +994,13 @@ void *hp_shm_realloc(struct hp_block *qm, void *p, unsigned long size)
 	size = ROUNDUP(size);
 
 	hash = PEEK_HASH_RR(qm, f->size);
-	SHM_LOCK(hash);
 
+	SHM_LOCK(hash);
 	orig_size = f->size;
 
 	if (orig_size > size) {
 		/* shrink */
 		shm_frag_split_unsafe(qm, f, size);
-		SHM_UNLOCK(hash);
 
 	} else if (orig_size < size) {
 		SHM_UNLOCK(hash);
@@ -1013,9 +1012,10 @@ void *hp_shm_realloc(struct hp_block *qm, void *p, unsigned long size)
 			hp_shm_free(qm, p);
 		}
 
-		p = ptr;
+		return ptr;
 	}
 
+	SHM_UNLOCK(hash);
 	return p;
 }
 
