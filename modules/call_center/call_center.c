@@ -69,6 +69,7 @@ static struct mi_root* mi_reset_stats(struct mi_root *cmd_tree, void *param);
 static int fixup_id(void** param, int param_no);
 
 static int w_handle_call(struct sip_msg *req, char *id);
+static int w_agent_login(struct sip_msg *req, char *agent, char *state);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
 static void cc_timer_cleanup(unsigned int ticks, void* param);
@@ -90,7 +91,9 @@ unsigned int wrapup_time = 30;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call",           (cmd_function)w_handle_call,         1,
-		fixup_id, 0, REQUEST_ROUTE},
+		fixup_id,      0, REQUEST_ROUTE},
+	{"cc_agent_login",           (cmd_function)w_agent_login,         2,
+		fixup_sgp_sgp, 0, REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 	};
 
@@ -838,6 +841,64 @@ error:
 error1:
 	if (call) { free_cc_call( data, call); flow->ongoing_calls--; }
 	return -1;
+}
+
+
+static int w_agent_login(struct sip_msg *req, char *agent_v, char *state_v)
+{
+	struct cc_agent *agent, *prev_agent;
+	str agent_s;
+	int state;
+	unsigned int flags;
+
+
+	/* get state */
+	if (fixup_get_isvalue( req, (gparam_p)state_v, &state, &agent_s,
+	&flags)!=0 || ((flags|GPARAM_INT_VALUE_FLAG)==0) ) {
+		LM_ERR("unable to evaluate state spec \n");
+		return -1;
+	}
+	/* get agent */
+	if (fixup_get_svalue( req, (gparam_p)agent_v, &agent_s)!=0) {
+		LM_ERR("unable to evaluate agent spec \n");
+		return -2;
+	}
+
+	/* block access to data */
+	lock_get( data->lock );
+
+	/* name of the agent */
+	agent = get_agent_by_name( data, &agent_s, &prev_agent);
+	if (agent==NULL) {
+		lock_release( data->lock );
+		LM_DBG("agent <%.*s> not found\n",agent_s.len,agent_s.s);
+		return -3;
+	}
+
+	if (agent->loged_in != state) {
+
+		if(state && (agent->state==CC_AGENT_WRAPUP) &&
+			(get_ticks() - agent->last_call_end > wrapup_time))
+			agent->state = CC_AGENT_FREE;
+
+		if(state && data->agents[CC_AG_ONLINE] == NULL)
+			data->last_online_agent = agent;
+
+		agent_switch_login(data, agent, prev_agent);
+
+		if(state) {
+			data->logedin_agents++;
+			log_agent_to_flows( data, agent, 1);
+		} else {
+			data->logedin_agents--;
+			log_agent_to_flows(data, agent, 0);
+		}
+	}
+
+	/* release access to data */
+	lock_release( data->lock );
+
+	return 1;
 }
 
 
