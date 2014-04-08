@@ -75,15 +75,15 @@ Chapter 1. Admin Guide
 1.1. Overview
 
    The Call Center module implements an inbound call center system
-   with call flows (for queueing the received calls) and agents
+   with call flows (for queuing the received calls) and agents
    (for answering the calls).
 
-   The module implements the queueing system, the call
-   distribution to agents, agents managements, CDRs for the calls,
-   statistics on call distribution and agent's activity -
-   basically everything except the media playback (for the queue).
-   This part must be provided via a third party media server
-   (FreeSwitch, Asterisk or others).
+   The module implements the queuing system, the call distribution
+   to agents, agents managements, CDRs for the calls, statistics
+   on call distribution and agent's activity - basically
+   everything except the media playback (for the queue). This part
+   must be provided via a third party media server (FreeSwitch,
+   Asterisk or others).
 
 1.2. How it works
 
@@ -108,7 +108,7 @@ Chapter 1. Admin Guide
 
 1.2.2. Call Flows
 
-   A flow is defined by a unique alhanumerical ID - the main
+   A flow is defined by a unique alphanumerical ID - the main
    attribute of a flow is the skill - the skill is a capability
    required by the flow for an agent to be able to answer the call
    ; the concept of skills is the link between the flows and the
@@ -121,7 +121,8 @@ Chapter 1. Admin Guide
    multiple flows in the same time (based on skills), you can
    define priorities between the flows - if the flows has a higher
    priority, its calls will be pushed (in deliver to agents and
-   queing) in front of the calls from flows with a lower priority.
+   queuing) in front of the calls from flows with a lower
+   priority.
 
    Optionally, the flow may define a prependcid - a prefix to be
    added to the CLI (Caller ID) when the call is delivered to the
@@ -139,7 +140,7 @@ Chapter 1. Admin Guide
 
 1.2.3. Agents
 
-   An agent is defined by a unique alhanumerical ID - the main
+   An agent is defined by a unique alphanumerical ID - the main
    attribute of an agent is its the set of skills and its SIP
    location. The set of skills will tell what calls to be received
    (from which flows, based on the skill matching); the location
@@ -237,8 +238,8 @@ modparam("call_center", "wrapup_time", 45)
 1.5.1.  cc_handle_call(flowID)
 
    This must be used only for initial INVITE requests - the
-   function pushs the call to be handled by the call center module
-   (via a certain flow/queue).
+   function pushes the call to be handled by the call center
+   module (via a certain flow/queue).
 
    This function can be used from REQUEST_ROUTE.
 

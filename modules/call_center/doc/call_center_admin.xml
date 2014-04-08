@@ -8,11 +8,11 @@
 	<title>Overview</title>
 	<para>
 	The Call Center module implements an inbound call center system with call 
-	flows (for queueing the received calls) and agents (for answering the 
+	flows (for queuing the received calls) and agents (for answering the 
 	calls).
 	</para>
 	<para>
-	The module implements the queueing system, the call distribution 
+	The module implements the queuing system, the call distribution 
 	to agents, agents managements, CDRs for the calls, statistics on 
 	call distribution and agent's activity - basically everything 
 	except the media playback (for the queue). This part must be provided via 
@@ -50,7 +50,7 @@
 		<section>
 		<title>Call Flows</title>
 		<para>
-		A flow is defined by a unique alhanumerical ID - the main attribute 
+		A flow is defined by a unique alphanumerical ID - the main attribute 
 		of a flow is the <emphasis>skill</emphasis> - the skill is a 
 		capability required by the flow for an agent to be able to answer the 
 		call ; the concept of <emphasis>skills</emphasis> is the link between 
@@ -63,7 +63,7 @@
 		Additional, the flow has a <emphasis>priority</emphasis> - as agents 
 		may server multiple flows in the same time (based on skills), you can
 		define priorities between the flows - if the flows has a higher 
-		priority, its calls will be pushed (in deliver to agents and queing) in
+		priority, its calls will be pushed (in deliver to agents and queuing) in
 		front of the calls from flows with a lower priority.
 		</para>
 		<para>
@@ -87,7 +87,7 @@
 		<section>
 		<title>Agents</title>
 		<para>
-		An agent is defined by a unique alhanumerical ID - the main attribute 
+		An agent is defined by a unique alphanumerical ID - the main attribute 
 		of an agent is its the set of <emphasis>skills</emphasis> and its SIP
 		<emphasis>location</emphasis>. The set of skills will tell what calls
 		to be received (from which flows, based on the skill matching); the 
@@ -255,7 +255,7 @@ modparam("call_center", "wrapup_time", 45)
 		</title>
 		<para>
 		This must be used only for initial INVITE requests - the function
-		pushs the call to be handled by the call center module (via a certain
+		pushes the call to be handled by the call center module (via a certain
 		flow/queue).
 		</para>
 		<para>
