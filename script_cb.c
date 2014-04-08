@@ -50,6 +50,8 @@ static struct script_cb *parse_err_cb=0;
 
 static unsigned int cb_id=0;
 
+raw_processing_func pre_processing_cb = NULL; 
+raw_processing_func post_processing_cb = NULL;
 
 static inline int add_callback( struct script_cb **list,
 	cb_function f, void *param, int prio)
@@ -208,4 +210,46 @@ int exec_parse_err_cb( struct sip_msg *msg)
 	return exec_post_cb( msg, parse_err_cb);
 }
 
+/* currently no need for raw processing lists - FIXME to be extended if needed in the future */
+int register_raw_processing_cb(raw_processing_func f,int type)
+{
+	switch (type) {
+		case PRE_RAW_PROCESSING:
+			if (pre_processing_cb != NULL) {
+				LM_WARN("Overwritting the raw pre processing CB \n");
+			}
+			pre_processing_cb = f;
+			return 0;
+		case POST_RAW_PROCESSING:
+			if (post_processing_cb != NULL) {
+				LM_WARN("Overwritting the raw post processing CB \n");
+			}
+			post_processing_cb = f;
+			return 0;
+		default:
+			LM_ERR("Unrecognized raw processing CB type %d \n",type);
+	}
+
+	return -1;
+}
+
+int run_raw_processing_cb(int type,str *data)
+{
+	switch (type) {
+		case PRE_RAW_PROCESSING:
+			if (pre_processing_cb != NULL) {
+				return pre_processing_cb(data);
+			}
+			return 0;
+		case POST_RAW_PROCESSING:
+			if (post_processing_cb != NULL) {
+				return post_processing_cb(data);
+			}
+			return 0;
+		default:
+			LM_ERR("Unrecognized raw processing CB type %d \n",type);
+	}
+
+	return -1;
+}
 

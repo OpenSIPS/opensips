@@ -2797,7 +2797,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 			msg->rcv.bind_address, msg->rcv.proto, MSG_TRANS_NOVIA_FLAG );
 	else
 		obuf.s = build_res_buf_from_sip_res(msg, (unsigned int*)&obuf.len,
-			msg->rcv.bind_address);
+			msg->rcv.bind_address,0);
 
 	if (!obuf.s) {
 		LM_ERR("no more shm mem\n");

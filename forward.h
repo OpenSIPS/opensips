@@ -53,6 +53,9 @@
 #include "sctp_server.h"
 #endif
 
+#include "script_cb.h"
+
+#include "mem/mem.h"
 
 struct socket_info* get_send_socket(struct sip_msg* msg,
 									union sockaddr_union* su, int proto);
@@ -92,6 +95,8 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 							union sockaddr_union* to, int id,
 							char* buf, int len)
 {
+	str out_buff;
+
 	if (send_sock==0)
 		send_sock=get_send_socket(0, to, proto);
 	if (send_sock==0){
@@ -99,8 +104,18 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 		goto error;
 	}
 
+	out_buff.len = len;
+	out_buff.s = buf;
+
+	/* the raw processing callbacks are free to change whatever inside the buffer
+	further use out_buff.s and at the end try to free out_buff.s
+	if changed by callbacks */
+	run_raw_processing_cb(POST_RAW_PROCESSING,&out_buff);
+	/* update the length for further processing */
+	len = out_buff.len;
+
 	if (proto==PROTO_UDP){
-		if (udp_send(send_sock, buf, len, to)==-1){
+		if (udp_send(send_sock, out_buff.s, out_buff.len, to)==-1){
 			LM_ERR("udp_send failed\n");
 			goto error;
 		}
@@ -112,7 +127,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 					" support is disabled\n");
 			goto error;
 		}else{
-			if (tcp_send(send_sock, proto, buf, len, to, id)<0){
+			if (tcp_send(send_sock, proto, out_buff.s, out_buff.len, to, id)<0){
 				LM_ERR("tcp_send failed\n");
 				goto error;
 			}
@@ -125,7 +140,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 					" support is disabled\n");
 			goto error;
 		}else{
-			if (tcp_send(send_sock, proto, buf, len, to, id)<0){
+			if (tcp_send(send_sock, proto, out_buff.s, out_buff.len, to, id)<0){
 				LM_ERR("tcp_send failed\n");
 				goto error;
 			}
@@ -140,7 +155,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 					" support is disabled\n");
 			goto error;
 		}else{
-			if (sctp_server_send(send_sock, buf, len, to)<0){
+			if (sctp_server_send(send_sock, out_buff.s, out_buff.len, to)<0){
 				LM_ERR("sctp_send failed\n");
 				goto error;
 			}
@@ -151,8 +166,15 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 			LM_CRIT("unknown proto %d\n", proto);
 			goto error;
 	}
+
+	/* potentially allocated by the out raw processing */
+	if (out_buff.s != buf)
+		pkg_free(out_buff.s);
+
 	return 0;
 error:
+	if (out_buff.s != buf)
+		pkg_free(out_buff.s);
 	return -1;
 }
 

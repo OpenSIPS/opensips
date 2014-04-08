@@ -615,7 +615,7 @@ int forward_reply(struct sip_msg* msg)
 
 	send_sock = get_send_socket(msg, to, proto);
 
-	new_buf = build_res_buf_from_sip_res( msg, &new_len, send_sock);
+	new_buf = build_res_buf_from_sip_res( msg, &new_len, send_sock,0);
 	if (!new_buf){
 		LM_ERR("failed to build rpl from req failed\n");
 		goto error;

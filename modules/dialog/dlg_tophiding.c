@@ -41,6 +41,9 @@
 extern struct tm_binds d_tmb;
 extern str rr_param;
 
+extern str topo_hiding_prefix;
+extern str topo_hiding_seed;
+
 #define RECORD_ROUTE "Record-Route: "
 #define RECORD_ROUTE_LEN (sizeof(RECORD_ROUTE)-1)
 
@@ -479,6 +482,10 @@ int w_topology_hiding1(struct sip_msg *req,char *param)
 				flags |= DLG_FLAG_TOPH_KEEP_USER;
 				LM_DBG("Will preserve usernames while doing topo hiding \n");
 				break;
+			case 'C':
+				flags |= DLG_FLAG_TOPH_HIDE_CALLID;
+				LM_DBG("Will change callid while doing topo hiding \n");
+				break;
 			default:
 				LM_DBG("unknown topology_hiding flag : [%c] . Skipping\n",*p);
 		}
@@ -567,4 +574,327 @@ int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir)
 	}
 
 	return 0;
+}
+
+int dlg_th_decode_callid(struct sip_msg *msg)
+{
+	struct lump *del;
+	str new_callid;
+	int i,max_size;
+
+	if (msg->callid == NULL) {
+		LM_ERR("Message with no callid \n");
+		return -1;
+	}
+
+	max_size = calc_max_base64_decode_len(msg->callid->body.len - topo_hiding_prefix.len);
+	new_callid.s = pkg_malloc(max_size);
+	if (new_callid.s==NULL) {
+		LM_ERR("No more pkg\n");
+		return -1;
+	}
+		
+	new_callid.len = base64decode((unsigned char *)(new_callid.s),
+			(unsigned char *)(msg->callid->body.s + topo_hiding_prefix.len),
+			msg->callid->body.len - topo_hiding_prefix.len);
+	for (i=0;i<new_callid.len;i++)
+		new_callid.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len]; 
+
+	del=del_lump(msg, msg->callid->body.s-msg->buf, msg->callid->body.len, HDR_CALLID_T);
+	if (del==NULL) {               
+		LM_ERR("Failed to delete old callid \n");
+		pkg_free(new_callid.s);
+		return -1;
+	}
+
+	if (insert_new_lump_after(del,new_callid.s,new_callid.len,HDR_CALLID_T)==NULL) {
+		LM_ERR("Failed to insert new callid\n");
+		pkg_free(new_callid.s);
+		return -1;
+	}
+
+	return 0;
+
+	return 0;
+}
+
+int dlg_th_encode_callid(struct sip_msg *msg)
+{
+	struct lump *del;
+	str new_callid;
+	int i;
+
+	if (msg->callid == NULL) {
+		LM_ERR("Message with no callid \n");
+		return -1;
+	}
+
+	new_callid.len = calc_base64_encode_len(msg->callid->body.len);
+	new_callid.len += topo_hiding_prefix.len;
+	new_callid.s = pkg_malloc(new_callid.len);
+	if (new_callid.s==NULL) {
+		LM_ERR("Failed to alocate callid len\n");
+		return -1;
+	}
+
+	if (new_callid.s == NULL) {
+		LM_ERR("Failed to encode callid \n");
+		return -1;
+	}
+
+	memcpy(new_callid.s,topo_hiding_prefix.s,topo_hiding_prefix.len);
+	for (i=0;i<msg->callid->body.len;i++)
+		msg->callid->body.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len]; 
+
+	base64encode((unsigned char *)(new_callid.s+topo_hiding_prefix.len),
+		     (unsigned char *)(msg->callid->body.s),msg->callid->body.len);
+
+	/* reset the callid back to original value - some might still need it ( eg. post script )
+	FIXME : use bigger buffer here ? mem vs cpu */
+	for (i=0;i<msg->callid->body.len;i++)
+		msg->callid->body.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len]; 
+
+	del=del_lump(msg, msg->callid->body.s-msg->buf, msg->callid->body.len, HDR_CALLID_T);
+	if (del==NULL) {               
+		LM_ERR("Failed to delete old callid \n");
+		pkg_free(new_callid.s);
+		return -1;
+	}
+
+	if (insert_new_lump_after(del,new_callid.s,new_callid.len,HDR_CALLID_T)==NULL) {
+		LM_ERR("Failed to insert new callid\n");
+		pkg_free(new_callid.s);
+		return -1;
+	}
+
+	return 0;
+}
+
+int dlg_th_needs_decoding(struct sip_msg *msg)
+{
+	if (msg->callid == NULL) {
+		LM_ERR("Message with no callid \n");
+		return 0;
+	}
+
+	if (memcmp(msg->callid->body.s,topo_hiding_prefix.s,
+	topo_hiding_prefix.len) == 0)
+		return 1;
+
+	return 0;
+}
+
+static inline char *dlg_th_rebuild_req(struct sip_msg *msg,int *len)
+{
+	return build_req_buf_from_sip_req(msg,(unsigned int*)len,
+			NULL,PROTO_NONE,MSG_TRANS_NOVIA_FLAG);
+}
+
+static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
+{
+	return build_res_buf_from_sip_res(msg,(unsigned int*)len,
+			NULL,MSG_TRANS_NOVIA_FLAG);
+}
+
+
+#define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_NOTIFY|METHOD_SUBSCRIBE)
+int dlg_th_pre_raw(str *data)
+{
+	struct sip_msg msg;
+
+	memset(&msg,0,sizeof(struct sip_msg));
+	msg.buf=data->s;
+	msg.len=data->len;
+
+	if (parse_msg(msg.buf,msg.len,&msg)!=0) {
+		LM_ERR("Invalid SIP msg \n");
+		goto error;
+	}
+
+	if (parse_headers(&msg,HDR_EOH_F,0)<0) {
+		LM_ERR("Failed to parse SIP headers\n");
+		goto error;
+	}
+
+	if (msg.cseq==NULL || get_cseq(&msg)==NULL) {
+		LM_ERR("Failed to parse CSEQ header \n");
+		goto error;
+	}       
+
+	if((get_cseq(&msg)->method_id)&MSG_SKIP_BITMASK) {
+		LM_DBG("Skipping %d for DLG callid topo hiding\n",get_cseq(&msg)->method_id);
+		goto error;
+	}
+
+	if (parse_to_header(&msg)<0 || msg.to==NULL || get_to(&msg)==NULL) {
+		LM_ERR("cannot parse TO header\n");
+		goto error;
+	}
+
+	if (msg.first_line.type==SIP_REQUEST) {
+		if (get_to(&msg)->tag_value.len>0) {
+			/* sequential request, check if callid needs to be unmasked */
+			if (dlg_th_needs_decoding(&msg)) {
+				if (dlg_th_decode_callid(&msg) < 0) {
+					LM_ERR("Failed to decode callid for sequential request \n");
+					goto error;
+				}
+				goto rebuild_msg;
+			}	
+		} else {
+			/* initial request, don't do anything
+			callid masking will be done on the out side */
+		}
+	} else if (msg.first_line.type==SIP_REPLY) {
+		/* we might need to decode callid if mangled */
+		if (dlg_th_needs_decoding(&msg)) {
+			if (dlg_th_decode_callid(&msg) < 0) {
+				LM_ERR("Failed to decode callid for reply \n");
+				goto error;
+			}
+			goto rebuild_rpl;
+		} else {
+			/* encoding will be done on the out side */
+		}	
+	} else {
+		/* non sip, most likely, let it through */
+		return 0;
+	}
+
+	free_sip_msg(&msg);
+	return 0;
+
+rebuild_msg:
+	data->s = dlg_th_rebuild_req(&msg,&data->len);
+	free_sip_msg(&msg);
+	return 0;
+
+rebuild_rpl:
+	data->s = dlg_th_rebuild_rpl(&msg,&data->len);
+	free_sip_msg(&msg);
+	return 0;
+error:
+	free_sip_msg(&msg);
+	return -1;
+}
+
+int dlg_th_post_raw(str *data)
+{
+	struct sip_msg msg;
+	struct dlg_cell *dlg; 
+
+	memset(&msg,0,sizeof(struct sip_msg));
+	msg.buf=data->s;
+	msg.len=data->len;
+
+	if (parse_msg(msg.buf,msg.len,&msg)!=0) {
+		LM_ERR("Invalid SIP msg \n");
+		goto error;
+	}
+
+	if (parse_headers(&msg,HDR_EOH_F,0)<0) {
+		LM_ERR("Failed to parse SIP headers\n");
+		goto error;
+	}
+
+	if (msg.cseq==NULL || get_cseq(&msg)==NULL) {
+		LM_ERR("Failed to parse CSEQ header \n");
+		goto error;
+	}       
+
+	if((get_cseq(&msg)->method_id)&MSG_SKIP_BITMASK) {
+		LM_DBG("Skipping %d for DLG callid topo hiding\n",get_cseq(&msg)->method_id);
+		goto error;
+	}
+
+	if (parse_to_header(&msg)<0 || msg.to==NULL || get_to(&msg)==NULL) {
+		LM_ERR("cannot parse TO header\n");
+		goto error;
+	}
+
+	if (parse_from_header(&msg)<0 || msg.from==NULL || get_from(&msg)==NULL) {
+		LM_ERR("cannot parse TO header\n");
+		goto error;
+	}
+
+	if (msg.first_line.type==SIP_REQUEST) {
+		if (get_to(&msg)->tag_value.len>0) {
+			/* sequential request, check if callid needs to be unmasked */
+			dlg = get_current_dialog(); 
+			if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
+				/* dialog module not involved or not callid topo hiding
+				 - let is pass freely */
+			} else {
+				if (get_from(&msg)->tag_value.len != 0) {
+					if (memcmp(get_from(&msg)->tag_value.s,
+					dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
+						/* request from caller -  need to encode callid */
+						if (dlg_th_encode_callid(&msg) < 0) {
+							LM_ERR("Failed to mask callid for initial request \n");
+							goto error;
+						}
+						goto rebuild_req;
+					} else {
+						/* let request go through - was decoded on the in side */
+					}
+				} else {
+					/* no from tag in request - kinda foobar ? - let it through */
+				}
+			}
+		} else {
+			/* initial request */
+			dlg = get_current_dialog(); 
+			if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
+				/* dialog module not involved or not callid topo hiding
+				 - let is pass freely */
+			} else {
+				/* mask callid */
+				if (dlg_th_encode_callid(&msg) < 0) {
+					LM_ERR("Failed to mask callid for initial request \n");
+					goto error;
+				}
+				goto rebuild_req;
+			}	
+		}
+	} else if (msg.first_line.type==SIP_REPLY) {
+		/* we need to look at the direction */
+		dlg = get_current_dialog(); 
+		if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
+			/* dialog module not involved or not callid topo hiding
+			 - let is pass freely */
+		} else {
+			if (get_from(&msg)->tag_value.len != 0) {
+				if (memcmp(get_from(&msg)->tag_value.s,
+				dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
+					/* reply going to caller - 
+					decode was done on the receiving end, let it unchanged */
+				} else {
+					/* reply going to callee , need to encode callid */
+					if (dlg_th_encode_callid(&msg) < 0) {
+						LM_ERR("Failed to decode callid for reply \n");
+						goto error;
+					}
+					goto rebuild_rpl;
+				}
+			} else {
+				/* no from tag in reply - kinda foobar ? - let it through */
+			}
+		}
+	}
+
+	free_sip_msg(&msg);
+	return 0;
+
+rebuild_req:
+	data->s = dlg_th_rebuild_req(&msg,&data->len);
+	free_sip_msg(&msg);
+	return 0;
+rebuild_rpl:
+	data->s = dlg_th_rebuild_rpl(&msg,&data->len);
+	free_sip_msg(&msg);
+	return 0;
+	
+error:
+	free_sip_msg(&msg);
+	return -1;
 }

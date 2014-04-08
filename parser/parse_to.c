@@ -773,3 +773,43 @@ struct sip_uri *parse_to_uri(struct sip_msg *msg)
 
 	return &tb->parsed_uri;
 }
+
+int parse_to_header( struct sip_msg *msg)
+{
+	struct to_body* to_b;
+
+	if ( !msg->to && ( parse_headers(msg,HDR_TO_F,0)==-1 || !msg->to)) {
+		LM_ERR("bad msg or missing To header\n");
+		goto error;
+	}
+
+	/* maybe the header is already parsed! */
+	if (msg->to->parsed)
+		return 0;
+
+	/* bad luck! :-( - we have to parse it */
+	/* first, get some memory */
+	to_b = pkg_malloc(sizeof(struct to_body));
+	if (to_b == 0) {
+		LM_ERR("out of pkg_memory\n");
+		goto error;
+	}
+
+	/* now parse it!! */
+	memset(to_b, 0, sizeof(struct to_body));
+	parse_to(msg->to->body.s,msg->to->body.s+msg->to->body.len+1,to_b);
+	if (to_b->error == PARSE_ERROR) {
+		LM_ERR("bad to header\n");
+		pkg_free(to_b);
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing too header");
+		set_err_reply(400, "bad header");
+		goto error;
+	}
+
+	msg->to->parsed = to_b;
+
+	return 0;
+error:
+	return -1;
+}

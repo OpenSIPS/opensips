@@ -1560,7 +1560,7 @@ error:
 
 
 char * build_res_buf_from_sip_res( struct sip_msg* msg,
-				unsigned int *returned_len, struct socket_info *sock)
+	unsigned int *returned_len, struct socket_info *sock,int flags)
 {
 	unsigned int new_len, via_len, body_delta, len;
 	char *new_buf, *buf;
@@ -1589,7 +1589,7 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	}
 
 	/* remove the first via*/
-	if (del_lump( msg, via_offset, via_len, HDR_VIA_T)==0){
+	if (!(flags&MSG_TRANS_NOVIA_FLAG) && del_lump( msg, via_offset, via_len, HDR_VIA_T)==0){
 		LM_ERR("failed to remove first via\n");
 		goto error;
 	}

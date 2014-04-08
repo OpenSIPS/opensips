@@ -60,6 +60,8 @@ struct to_body{
  */
 char* parse_to(char* buffer, char *end, struct to_body *to_b);
 
+int parse_to_header( struct sip_msg *msg);
+
 struct sip_uri *parse_to_uri(struct sip_msg *msg);
 
 void free_to(struct to_body* tb);

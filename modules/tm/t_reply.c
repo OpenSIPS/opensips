@@ -1256,7 +1256,7 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			}
 			relayed_code=relayed_msg->REPLY_STATUS;
 			buf = build_res_buf_from_sip_res( relayed_msg, &res_len,
-							uas_rb->dst.send_sock);
+							uas_rb->dst.send_sock,0);
 			/* remove all lumps which are not in shm
 			 * added either by build_res_buf_from_sip_res, or by
 			 * the callbacks that have been called with shmem-ed messages - vlad */

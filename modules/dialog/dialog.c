@@ -119,6 +119,10 @@ extern int last_dst_leg;
 /* cachedb stuff */
 str cdb_url = {0,0};
 
+/* topo hiding callid mangling */
+str topo_hiding_prefix = str_init("DLGCH_");
+str topo_hiding_seed = str_init("OpenSIPS");
+
 /* dialog replication using the bpi interface */
 int accept_replicated_dlg;
 struct replication_dest *replication_dests;
@@ -166,6 +170,7 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
+int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
@@ -275,6 +280,9 @@ static param_export_t mod_params[]={
 	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
 	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
 								(void *)add_replication_dest        },
+	/* dialog topology hiding with callid mangling */
+	{ "topo_hiding_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
+	{ "topo_hiding_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
 	{ 0,0,0 }
 };
 
@@ -324,10 +332,12 @@ static pv_export_t mod_items[] = {
 		pv_set_dlg_val,    pv_parse_name, 0, 0, 0},
 	{ {"DLG_did",     sizeof("DLG_did")-1},      1000, pv_get_dlg_did,
 		0,                 0, 0, 0, 0},
-	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},      1000,
+	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},    1000,
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
 	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000, 
 		pv_get_dlg_timeout, pv_set_dlg_timeout,  0, 0, 0, 0 },
+	{ {"DLG_callee_callid",  sizeof("DLG_callee_callid")-1}, 1000,
+		pv_get_dlg_callee_callid,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -831,6 +841,17 @@ static int mod_init(void)
 
 	destroy_dlg_callbacks( DLGCB_LOADED );
 	destroy_cachedb(0);
+
+	/* set dlg topo hiding callid mangling callbacks ( pre * post ) */
+	if (register_raw_processing_cb(dlg_th_pre_raw,PRE_RAW_PROCESSING) < 0) {
+		LM_ERR("failed to initialize pre raw support\n");
+		return -1;
+	}
+
+	if (register_raw_processing_cb(dlg_th_post_raw,POST_RAW_PROCESSING) < 0) {
+		LM_ERR("failed to initialize post raw support\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -1636,3 +1657,43 @@ static int add_replication_dest(modparam_t type, void *val)
 	return 1;
 }
 
+static char *callid_buf=NULL;
+static int callid_buf_len=0;
+int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct dlg_cell *dlg;
+	int req_len = 0,i;
+
+	if(res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())==NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0) {
+		return pv_get_null( msg, param, res);
+	}
+
+
+	req_len = calc_base64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
+
+	if (req_len*2 > callid_buf_len) {
+		callid_buf = pkg_realloc(callid_buf,req_len*2);	
+		if (callid_buf == NULL) {
+			LM_ERR("No more pkg\n");
+			return pv_get_null( msg, param, res);
+		}
+
+		callid_buf_len = req_len*2;
+	}
+
+	memcpy(callid_buf+req_len,topo_hiding_prefix.s,topo_hiding_prefix.len);	
+	for (i=0;i<dlg->callid.len;i++)
+		callid_buf[i] = dlg->callid.s[i] ^ topo_hiding_seed.s[i%topo_hiding_seed.len];
+
+	base64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
+		     (unsigned char *)(callid_buf),dlg->callid.len);
+	
+	res->rs.s = callid_buf+req_len;
+	res->rs.len = req_len;
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}

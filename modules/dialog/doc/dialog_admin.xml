@@ -1133,6 +1133,45 @@ modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 		</example>
 	</section>
 
+	<section>
+		<title><varname>topo_hiding_callid_passwd</varname> (string)</title>
+		<para>
+			The string password that will be used for encoding/decoding the callid in case of topology_hiding with callid mangling.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"OpenSIPS"</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>topo_hiding_callid_passwd</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "topo_hiding_callid_passwd", "my_topo_hiding_secret")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>topo_hiding_callid_prefix</varname> (string)</title>
+		<para>
+			The prefix that will be used for detecting callids which have been encoded by the dialog topology hiding. Make sure to change this value in case your SIP path contains multiple OpenSIPS boxes with topology hiding.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"DLGCH_"</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>topo_hiding_callid_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "topo_hiding_callid_prefix", "MYCALLIDPREFIX_")
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 
@@ -1804,6 +1843,16 @@ $var(account) = $dlg_val("account_type");
 					<para><emphasis>U</emphasis> - Propagate the Username in the Contact header URI
 					</para>
 				</listitem>
+				<listitem>
+					<para><emphasis>C</emphasis> - Encode the callid header
+					</para>
+					<para>
+					There are many cases where propagating the callid towards the callee side is not a good idea, since sometimes the callid contains the IP of the actual caller side, thus revealing part of the network topology.
+					</para>
+					<para>
+					When using the "C" flag, the callid will be automatically encoded / decoded, transparent for the script writer - inside OpenSIPS (script,MI functions, etc ) all the variables related to the callid will represent the callid value for the caller side. If the callid for the callee side is needed, refer to the $DLG_callee_callid pvar.
+					</para>
+				</listitem>
 			</itemizedlist>
 		</para>
 		<example>
@@ -2367,6 +2416,15 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 			</para>
 		</section>
 
+		<section>
+			<title><varname>$DLG_callee_callid</varname></title>
+			<para>
+				Read only variable that will contain the callid as it is propagated towards the callee side, in case topology_hiding("C") is called.
+			</para>
+			<para>
+			NULL will be returned if there is no dialog for the request or if topology_hiding with callid encoding was not used for the current dialog.
+			</para>
+		</section>
 
 		<section>
 			<title><varname>$dlg_val(name)</varname></title>
