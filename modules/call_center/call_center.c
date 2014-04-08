@@ -725,24 +725,25 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	str leg = {NULL,0};
 	str *dn;
 	int dec;
+	int ret;
 
 	call = NULL;
 	dec = 0;
 
 	/* get the flow name */
 	if (pv_get_spec_value(msg, (pv_spec_p)flow_var, &val)!=0 ) {
-		LM_ERR("xXx failed to avaluate the flow name variable\n");
+		LM_ERR("failed to avaluate the flow name variable\n");
 		return -1;
 	}
 	if ( (val.flags&PV_VAL_STR)==0 || (val.flags&PV_VAL_NULL)!=0) {
-		LM_ERR("xXx non-str val for flow name variable\n");
+		LM_ERR("non-str val for flow name variable\n");
 		return -1;
 	}
 
 	/* parse FROM URI */
 	if (parse_from_uri(msg)==NULL) {
-		LM_ERR("xXx failed to parse from hdr\n");
-		return -1;
+		LM_ERR("failed to parse from hdr\n");
+		return -2;
 	}
 
 	lock_get( data->lock );
@@ -750,15 +751,16 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	/* get the flow ID */
 	flow = get_flow_by_name(data, &val.rs);
 	if (flow==NULL) {
-		LM_ERR("xXx flow <%.*s> does not exists\n", val.rs.len, val.rs.s);
+		LM_ERR("flow <%.*s> does not exists\n", val.rs.len, val.rs.s);
+		ret = -3;
 		goto error;
 	}
 	LM_DBG("using call flow %p\n", flow);
 
 	if (flow->logged_agents==0 /* no logged agents */ ) {
-		LM_NOTICE("xXx flow <%.*s> closed\n",flow->id.len,flow->id.s);
-		lock_release( data->lock );
-		return -2;
+		LM_NOTICE("flow <%.*s> closed\n",flow->id.len,flow->id.s);
+		ret = -4;
+		goto error;
 	}
 
 	update_stat(stg_incalls, 1);
@@ -771,18 +773,20 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	} else {
 		dn = &get_from(msg)->parsed_uri.user;
 	}
-	LM_DBG(" XXdebug - cid=<%.*s>\n",dn->len,dn->s);
+	LM_DBG("cid=<%.*s>\n",dn->len,dn->s);
 
 	call = new_cc_call(data, flow, dn, &get_from(msg)->parsed_uri.user);
 	if (call==NULL) {
 		LM_ERR("failed to create new call\n");
+		ret = -5;
 		goto error;
 	}
 	call->fst_flags |= FSTAT_INCALL;
 
 	/* get estimated wait time */
-	call->eta = (unsigned int) (( flow->avg_call_duration * (float)get_stat_val(flow->st_queued_calls) ) /
-			(float)flow->logged_agents);
+	call->eta = (unsigned int) (( flow->avg_call_duration *
+		(float)get_stat_val(flow->st_queued_calls) ) /
+		(float)flow->logged_agents);
 	
 	LM_DBG("avg_call_duration=%.2f queued_calls=%lu logedin_agents=%u\n",
 		flow->avg_call_duration, get_stat_val(flow->st_queued_calls),
@@ -799,6 +803,7 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	/* get the first state */
 	if (cc_call_state_machine( data, call, &leg )!=0) {
 		LM_ERR("failed to get first call destination \n");
+		ret = -5;
 		goto error;
 	}
 
@@ -837,7 +842,7 @@ error:
 	lock_release( data->lock );
 error1:
 	if (call) { free_cc_call( data, call); flow->ongoing_calls--; }
-	return -1;
+	return ret;
 }
 
 
