@@ -814,6 +814,8 @@ static int fixup_two_options(void ** param, int param_no)
 
 static int fixup_offer_answer(void ** param, int param_no)
 {
+	if (param_no < 1)
+		return 0;
 	if (param_no < 3)
 		return fixup_spve(param);
 	if (param_no == 3)
@@ -928,7 +930,7 @@ static int fixup_engage_warn(void ** param, int param_no)
 
 static int fixup_engage(void** param, int param_no)
 {
-	if (param_no == 1 && !dlg_api.create_dlg) {
+	if (param_no < 2 && !dlg_api.create_dlg) {
 		LM_ERR("Dialog module not loaded. Can't use engage_rtp_proxy function\n");
 		return -1;
 	}
