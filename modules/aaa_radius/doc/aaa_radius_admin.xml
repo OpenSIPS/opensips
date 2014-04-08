@@ -72,7 +72,7 @@
 	<section>
 		<title>Exported Parameters</title>
 		<section>
-		<title><varname>sets</varname></title>
+		<title><varname>sets (string)</varname></title>
 		<para>
 			Sets of Radius AVPs to be used when building custom RADIUS requests (set of input RADIUS AVPs) 
 			or when fetching data from the RADIUS reply (set of output RADIUS AVPs).
@@ -120,7 +120,7 @@ modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 		</section>
 
 		<section>
-		<title><varname>radius_config</varname></title>
+		<title><varname>radius_config (string)</varname></title>
 		<para>
 			Radiusclient configuration file.
 		</para>
@@ -141,7 +141,7 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 		</section>
 
 		<section>
-		<title><varname>syslog_name</varname></title>
+		<title><varname>syslog_name (string)</varname></title>
 		<para>
 		Enable logging of the client library to syslog, using the given log name.
 		</para>
@@ -159,6 +159,28 @@ modparam("aaa_radius", "radius_config", "/etc/radiusclient-ng/radiusclient.conf"
 		<programlisting format="linespecific">
 ...
 modparam("aaa_radius", "syslog_name", "aaa-radius")
+...
+</programlisting>
+		</example>
+		</section>
+
+		<section>
+		<title><varname>fetch_all_values (integer)</varname></title>
+		<para>
+		For the output sets, this parameter controls if all the values (for the same
+		RADIUS AVP) should be returned (otherwise only the first value will be 
+		returned). When enabling this options, be sure that the variable you use
+		to get the RADIUS output can store multiple values (like the AVP variables).
+		</para>
+		<para>
+		By default this parameter is disabled (set to 0) for backward compatibility
+		reasons.
+		</para>
+		<example>
+		<title>Set <varname>fetch_all_values</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("aaa_radius", "fetch_all_values", 1)
 ...
 </programlisting>
 		</example>
