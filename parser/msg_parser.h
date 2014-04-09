@@ -108,7 +108,7 @@ enum request_method {
 									  * callbacks were registered */
 
 /* define the # of unknown URI parameters to parse */
-#define URI_MAX_U_PARAMS 5
+#define URI_MAX_U_PARAMS 10
 
 #define IFISMETHOD(methodname,firstchar)                                  \
 if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
