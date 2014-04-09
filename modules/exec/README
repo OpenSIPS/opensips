@@ -179,7 +179,8 @@ exec_dset("ruri-changer.sh '$ct'");
    unexpected behaviour (e.g. unwanted extra parameters, errors
    due to special bash characters, etc.)
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 
    Example 1.5. exec_msg usage
 ...
@@ -207,7 +208,8 @@ exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
    due to special bash characters, etc.)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   LOCAL_ROUTE, STARTUP_ROUTE.
+   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
+   ONREPLY_ROUTE.
 
    Example 1.6. exec_avp usage
 ...
@@ -232,7 +234,8 @@ model)");
    exec_getenv("'$ct'");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   LOCAL_ROUTE, STARTUP_ROUTE.
+   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
+   ONREPLY_ROUTE.
 
    Example 1.7. exec_getenv usage
 ...
