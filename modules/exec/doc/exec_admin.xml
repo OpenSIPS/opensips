@@ -232,7 +232,8 @@ exec_dset("echo TEST > /tmp/$rU.txt");
 		exec_msg("print-contact.sh '$ct'");
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE,
+		TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">exec_msg</function> usage</title>
@@ -272,7 +273,8 @@ exec_msg("echo TEST > /tmp/$rU.txt");
 		exec_avp("print-contact.sh '$ct'");
 		</para>
 		<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">exec_avp</function> usage</title>
@@ -313,7 +315,8 @@ exec_avp("echo TEST", "$avp(test)");
 		exec_getenv("'$ct'");
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 		</para>
 		<example>
 		<title><function moreinfo="none">exec_getenv</function> usage</title>
