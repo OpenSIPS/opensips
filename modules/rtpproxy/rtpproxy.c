@@ -2977,6 +2977,7 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 	struct dlg_cell *dlg;
 	struct rtpp_set *set = NULL;
 	pv_value_t val1, val2;
+	str aux_str;
 
 	LM_DBG("engage called from script 1:%p 2:%p 3:%p 4:%p\n",
 			param1, param2, param3, param4);
@@ -3014,6 +3015,22 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 	if (!dlg) {
 		LM_ERR("cannot get dialog\n");
 		return -1;
+	}
+
+	if (param1) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param1, &aux_str, 0)<0) {
+			LM_ERR("bogus flags parameter\n");
+			return -1;
+		}
+		param1 = aux_str.s;
+	}
+
+	if (param2) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &aux_str, 1)<0) {
+			LM_ERR("bogus IP addr parameter\n");
+			return -1;
+		}
+		param2 = aux_str.s;
 	}
 
 	/* is this a late negociation scenario? */
