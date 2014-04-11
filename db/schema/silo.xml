@@ -92,7 +92,6 @@
     <column>
         <name>body</name>
         <type>binary</type>
-        <default/>
         <description>Body of the message</description>
     </column>
 
