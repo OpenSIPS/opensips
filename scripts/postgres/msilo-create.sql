@@ -9,7 +9,7 @@ CREATE TABLE silo (
     exp_time INTEGER DEFAULT 0 NOT NULL,
     snd_time INTEGER DEFAULT 0 NOT NULL,
     ctype VARCHAR(32) DEFAULT 'text/plain' NOT NULL,
-    body BYTEA DEFAULT '' NOT NULL
+    body BYTEA NOT NULL
 );
 
 CREATE INDEX silo_account_idx ON silo (username, domain);

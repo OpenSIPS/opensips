@@ -9,7 +9,7 @@ CREATE TABLE silo (
     exp_time NUMBER(10) DEFAULT 0 NOT NULL,
     snd_time NUMBER(10) DEFAULT 0 NOT NULL,
     ctype VARCHAR2(32) DEFAULT 'text/plain',
-    body BLOB DEFAULT ''
+    body BLOB
 );
 
 CREATE OR REPLACE TRIGGER silo_tr
