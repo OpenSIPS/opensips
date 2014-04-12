@@ -5,7 +5,7 @@ NAME=cachedb_cassandra.so
 CXX=g++
 LD=g++
 LIBS=cachedb_cassandra_dbase.o cassandra_constants.o cassandra_types.o Cassandra.o -L/usr/local/lib -lthrift
-CXXFLAGS=$(CFLAGS:-Wno-deprecated option=)
+CXXFLAGS=$(CFLAGS:-Wno-deprecated option=) -DHAVE_NETINET_IN_H 
 # suppress a TON of warnings
 CXXFLAGS+= -Wno-write-strings -Wno-deprecated -Wno-unused-function -Wno-sign-compare -Wno-strict-aliasing
 
