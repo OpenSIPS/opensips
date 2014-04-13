@@ -17,7 +17,7 @@ URL:          http://opensips.org/
 Vendor:       opensips.org
 BuildRoot:    %{_tmppath}/%{name}-%{ver}-buildroot
 Conflicts:    opensips-mysql < %ver, opensips-xmpp < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-presence < %ver, opensips-postgres < %ver, opensips-snmpstats < %ver
-BuildRequires:  make flex bison pcre-devel
+BuildRequires:  make flex bison pcre-devel lua-devel libmemcache-devel OSPToolkit-devel mongo-c-driver-devel
 
 
 %description
@@ -191,7 +191,7 @@ A module which provides routing, balancing and blacklisting capabilities.
 Summary:  opensips cachedb_memcached implementation.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildRequires:  libconfuse-devel
+BuildRequires:  libconfuse-devel libmemcached-devel
 
 %description cachedb_memcached
 This module is an implementation of a cache system designed to work with a memcached server.
@@ -296,6 +296,7 @@ or where data encryption is required.
 Summary:  Cassandra connector
 Group:    System Environment/Daemons
 Requires: opensips = %ver
+BuildRequires:  thrift-cpp-devel
 
 %description  cachedb_cassandra
 Cassandra module is an implementation of a cache system designed to
@@ -373,7 +374,14 @@ parameters.
 %setup -n %{name}-%{ver}-tls
 
 %build
-make all exclude_modules="" ORAVERSION=11.2/client cfg-target=%{_sysconfdir}/opensips/
+ARCH=$(uname -m)
+if [ "$ARCH" == "x86_64" ]; then
+	ORACLIENT=64
+else
+	ORACLIENT=
+fi
+	
+make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysconfdir}/opensips/
 
 
 %install
@@ -903,6 +911,9 @@ fi
 %{_libdir}/opensips/modules/tlsops.so
 
 
+%changelog
+* Sun Apr 13 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+- Fix x64_86 compilation problems
 %changelog
 * Tue Mar 22 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
