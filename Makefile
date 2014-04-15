@@ -393,7 +393,7 @@ dbg: $(NAME)
 
 dist: tar
 
-tar: 
+tar: $(NEWREVISION)
 	$(TAR) -C .. \
 		--exclude=$(notdir $(CURDIR))/tmp* \
 		--exclude=$(notdir $(CURDIR))/debian* \
