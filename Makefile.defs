@@ -324,6 +324,12 @@ ifneq ($(VERSIONTYPE),)
   THISREVISION = unknown
   endif
  
+else
+  # git is the default versioning method
+  VERSIONTYPE = $(shell [ -f ".gitrevision" ] && echo "git")
+  ifneq ($(VERSIONTYPE),)
+    THISREVISION = $(shell cat .gitrevision)
+  endif
 endif
 
 
