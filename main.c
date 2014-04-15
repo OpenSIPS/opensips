@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2006 Voice Sistem S.R.L
  *
@@ -148,7 +146,6 @@
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
 
-static char id[]="@(#) $Id$";
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
 char compiled[]= __TIME__ " " __DATE__ ;
@@ -1268,7 +1265,6 @@ int main(int argc, char** argv)
 					printf("version: %s\n", version);
 					printf("flags: %s\n", flags );
 					print_ct_constants();
-					printf("%s\n",id);
 					printf("%s compiled on %s with %s\n", __FILE__,
 							compiled, COMPILER );
 
