@@ -381,7 +381,7 @@ else
 	ORACLIENT=
 fi
 	
-make all exclude_modules="cachedb_mongodb" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysconfdir}/opensips/
+make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysconfdir}/opensips/
 
 
 %install
