@@ -609,7 +609,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	
 	for(t=lumps;t;t=t->next){
 		/* is this lump still valid? (it must not be anchored in a deleted area */
-		if (s_offset > t->u.offset && t->u.offset!=last_del) {
+		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
 			continue;
@@ -660,8 +660,17 @@ skip_before:
 				break;
 			case LUMP_DEL:
 				last_del=t->u.offset;
-				s_offset=t->u.offset+t->len;
-				new_len-=t->len;
+
+				if (t->u.offset < s_offset) {
+					if (t->u.offset + t->len > s_offset) {
+						new_len -= t->len - (s_offset - t->u.offset);
+						s_offset = t->u.offset + t->len;
+					}
+				} else {
+					new_len -= t->len;
+					s_offset = t->u.offset + t->len;
+				}
+
 				break;
 			case LUMP_NOP:
 				/* do nothing */
@@ -951,7 +960,6 @@ void process_lumps(	struct sip_msg* msg,
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 
-
 	orig=msg->buf;
 	offset=*new_buf_offs;
 	s_offset=*orig_offs;
@@ -959,7 +967,7 @@ void process_lumps(	struct sip_msg* msg,
 	
 	for (t=lumps;t;t=t->next){
 		/* skip this lump if the "offset" is still in a "deleted" area */
-		if (s_offset > t->u.offset && last_del!= t->u.offset) {
+		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
 			continue;
@@ -1092,11 +1100,15 @@ skip_after:
 					}
 				}
 skip_nop_before:
-				/* process main (del only) */
-				if (t->op==LUMP_DEL){
-					/* skip len bytes from orig msg */
-					s_offset+=t->len;
+				if (t->op == LUMP_DEL) {
+					/*
+					 * skip at most len bytes from orig msg
+					 * and properly handle DEL lumps at the same offset --liviu
+					 */
+					if (t->u.offset + t->len > s_offset)
+						s_offset += t->len - (s_offset - t->u.offset);
 				}
+
 				/* process after */
 				for(r=t->after;r;r=r->after){
 					switch (r->op){
