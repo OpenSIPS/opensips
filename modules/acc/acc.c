@@ -679,7 +679,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
 		/* there were no Invite legs */
-		while (nr_bye_vals) {
+		while (!nr_legs && nr_bye_vals) {
 			/* drain all the values */
 			for (j = ret+nr_vals; j<ret+nr_bye_vals+nr_vals; j++)
 				VAL_STR(db_vals+j+1) = val_arr[j];
