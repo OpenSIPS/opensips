@@ -476,9 +476,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	cdb_dbf.close(cdb_db_handle);
-	cdb_db_handle = 0;
-
 	if(cache_clean_period <= 0) {
 			LM_ERR("wrong parameter cache_clean_period - need a postive value\n");
 			return -1;
@@ -511,12 +508,6 @@ static int mod_init(void)
  */
 static int child_init(int rank)
 {
-	cdb_db_handle = cdb_dbf.init(&db_url);
-	if (cdb_db_handle == 0) {
-			LM_ERR("unable to connect to the database\n");
-			return -1;
-	}
-
 	return 0;
 }
 
