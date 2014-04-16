@@ -58,7 +58,12 @@ enum lump_dir { LD_NEXT, LD_BEFORE, LD_AFTER };
 int init_lump_flags = 0;
 
 /*! \brief adds a header to the end
- * \return returns  pointer on success, 0 on error */
+ *  \return returns pointer if success, 0 on error
+ *
+ * WARNING: currently broken! 
+ *   - lumps_len() needs to properly handle LUMP_ADD along the main chain of
+ *     lumps before we can use this
+ */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
 {
@@ -86,7 +91,12 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 
 
 /*! \brief inserts a header to the beginning
- *  \return returns pointer if success, 0 on error */
+ *  \return returns pointer if success, 0 on error
+ *
+ * WARNING: currently broken! 
+ *   - lumps_len() needs to properly handle LUMP_ADD along the main chain of
+ *     lumps before we can use this
+ */
 struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 								unsigned int len, enum _hdr_types_t type)
 {
