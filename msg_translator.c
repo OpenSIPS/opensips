@@ -452,18 +452,14 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_RCV_IP: \
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_address_str->len; \
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme:null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 1"); \
 				break; \
 			case SUBST_RCV_PORT: \
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_port_str->len; \
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme: null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 2"); \
 				break; \
 			case SUBST_RCV_PROTO: \
 				if (msg->rcv.bind_address){ \
@@ -481,10 +477,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 					}\
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme: null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 3"); \
 				break; \
 			case SUBST_RCV_ALL: \
 				if (msg->rcv.bind_address){ \
@@ -509,26 +503,20 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 					}\
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme: null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 4"); \
 				break; \
 			case SUBST_SND_IP: \
 				if (send_sock){ \
 					new_len+=send_address_str->len; \
-				}else{ \
-					LM_CRIT("fixme: lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 1"); \
 				break; \
 			case SUBST_SND_PORT: \
 				if (send_sock){ \
 					new_len+=send_port_str->len; \
-				}else{ \
-					LM_CRIT("lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 2"); \
 				break; \
 			case SUBST_SND_PROTO: \
 				if (send_sock){ \
@@ -546,10 +534,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 					}\
-				}else{ \
-					LM_CRIT("lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 3"); \
 				break; \
 			case SUBST_SND_ALL: \
 				if (send_sock){ \
@@ -575,11 +561,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 					}\
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 4"); \
 				break; \
 			case SUBST_NOP: /* do nothing */ \
 				break; \
