@@ -607,25 +607,18 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 
-	for(t=lumps;t;t=t->next){
+	for (t = lumps; t; t = t->next) {
 		/* is this lump still valid? (it must not be anchored in a deleted area */
 		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
 			continue;
 		}
-		/* if a SKIP lump, go to the last in the list*/
-		if (t->op==LUMP_SKIP) {
-			if (!t->next) break;
-			for(;t->next;t=t->next);
-		}
-		/* skip if this is an OPT lump and the condition is not satisfied */
-		if ((t->op==LUMP_ADD_OPT) && !lump_check_opt(t, msg, send_sock))
-			continue;
-		for(r=t->before;r;r=r->before){
-			switch(r->op){
+
+		for (r = t->before; r; r = r->before) {
+			switch (r->op) {
 				case LUMP_ADD:
-					new_len+=r->len;
+					new_len += r->len;
 					break;
 				case LUMP_ADD_SUBST:
 					SUBST_LUMP_LEN(r);
@@ -638,8 +631,10 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 					break;
 				case LUMP_SKIP:
 					/* if a SKIP lump, go to the last in the list*/
-					if (!r->before || !r->before->before) continue;
-					for(;r->before->before;r=r->before);
+					if (!r->before || !r->before->before)
+						continue;
+					for (; r->before->before; r = r->before)
+						;
 					break;
 				default:
 					/* only ADD allowed for before/after */
@@ -647,17 +642,7 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			}
 		}
 skip_before:
-		switch(t->op){
-			case LUMP_ADD:
-				new_len+=t->len;
-				break;
-			case LUMP_ADD_SUBST:
-				SUBST_LUMP_LEN(t);
-				break;
-			case LUMP_ADD_OPT:
-				/* we don't do anything here, it's only a condition for
-				 * before & after */
-				break;
+		switch (t->op) {
 			case LUMP_DEL:
 				last_del=t->u.offset;
 
@@ -675,11 +660,30 @@ skip_before:
 			case LUMP_NOP:
 				/* do nothing */
 				break;
+			case LUMP_ADD:
+				/* FIXME: inconsistent with process_lumps() */
+				new_len += t->len;
+				break;
+			case LUMP_ADD_OPT:
+				report_programming_bug("LUMP_ADD_OPT");
+				/* we don't do anything here, it's only a condition for
+				 * before & after */
+				break;
+			case LUMP_SKIP:
+				report_programming_bug("LUMP_SKIP");
+				/* we don't do anything here, it's only a condition for
+				 * before & after */
+				break;
+			case LUMP_ADD_SUBST:
+				report_programming_bug("LUMP_ADD_SUBST");
+				SUBST_LUMP_LEN(t);
+				break;
 			default:
-				LM_CRIT("op for data lump (%x)\n", r->op);
+				report_programming_bug("op for data lump (%x)", r->op);
 		}
-		for (r=t->after;r;r=r->after){
-			switch(r->op){
+
+		for (r = t->after; r; r = r->after) {
+			switch (r->op) {
 				case LUMP_ADD:
 					new_len+=r->len;
 					break;
@@ -694,8 +698,10 @@ skip_before:
 					break;
 				case LUMP_SKIP:
 					/* if a SKIP lump, go to the last in the list*/
-					if (!r->after || !r->after->after) continue;
-					for(;r->after->after;r=r->after);
+					if (!r->after || !r->after->after)
+						continue;
+					for (; r->after->after; r = r->after)
+						;
 					break;
 				default:
 					/* only ADD allowed for before/after */
@@ -965,7 +971,7 @@ void process_lumps(	struct sip_msg* msg,
 	s_offset=*orig_offs;
 	last_del=0;
 
-	for (t=lumps;t;t=t->next){
+	for (t = lumps; t; t = t->next) {
 		/* skip this lump if the "offset" is still in a "deleted" area */
 		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
@@ -973,15 +979,94 @@ void process_lumps(	struct sip_msg* msg,
 			continue;
 		}
 
-		switch(t->op){
-			case LUMP_SKIP:
-				/* if a SKIP lump, go to the last in the list*/
-				if (!t->next || !t->next->next) continue;
-				for(;t->next->next;t=t->next);
+		switch (t->op) {
+			case LUMP_NOP:
+			case LUMP_DEL:
+				/* copy till offset (if any) */
+				if (s_offset < t->u.offset) {
+					size = t->u.offset-s_offset;
+					memcpy(new_buf+offset, orig+s_offset, size);
+					offset += size;
+					s_offset += size;
+				}
+
+				if (t->op == LUMP_DEL)
+					last_del = t->u.offset;
+
+				/* process before  */
+				for (r = t->before; r; r = r->before) {
+					switch (r->op) {
+						case LUMP_ADD:
+							/*just add it here*/
+							memcpy(new_buf+offset, r->u.value, r->len);
+							offset += r->len;
+							break;
+						case LUMP_ADD_SUBST:
+							SUBST_LUMP(r);
+							break;
+						case LUMP_ADD_OPT:
+							/* skip if this is an OPT lump and the condition is
+					 		* not satisfied */
+							if (!lump_check_opt(r, msg, send_sock))
+								goto skip_nop_before;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->before || !r->before->before)
+								continue;
+							for (; r->before->before; r = r->before)
+								;
+							break;
+						default:
+							/* only ADD allowed for before/after */
+							report_programming_bug("invalid op 1 (%x)",r->op);
+					}
+				}
+skip_nop_before:
+				if (t->op == LUMP_DEL) {
+					/*
+					 * skip at most len bytes from orig msg
+					 * and properly handle DEL lumps at the same offset --liviu
+					 */
+					if (t->u.offset + t->len > s_offset)
+						s_offset += t->len - (s_offset - t->u.offset);
+				}
+
+				/* process after */
+				for (r = t->after; r; r = r->after) {
+					switch (r->op) {
+						case LUMP_ADD:
+							/*just add it here*/
+							memcpy(new_buf+offset, r->u.value, r->len);
+							offset += r->len;
+							break;
+						case LUMP_ADD_SUBST:
+							SUBST_LUMP(r);
+							break;
+						case LUMP_ADD_OPT:
+							/* skip if this is an OPT lump and the condition is
+					 		* not satisfied */
+							if (!lump_check_opt(r, msg, send_sock))
+								goto skip_nop_after;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->after || !r->after->after)
+								continue;
+							for (; r->after->after; r = r->after)
+								;
+							break;
+						default:
+							/* only ADD allowed for before/after */
+							report_programming_bug("invalid op 2 (%x)", r->op);
+					}
+				}
+skip_nop_after:
 				break;
 			case LUMP_ADD:
 			case LUMP_ADD_SUBST:
 			case LUMP_ADD_OPT:
+				report_programming_bug("ADD|SUBST|OPT");
 				/* skip if this is an OPT lump and the condition is
 				 * not satisfied */
 				if ((t->op==LUMP_ADD_OPT) &&
@@ -1012,7 +1097,7 @@ void process_lumps(	struct sip_msg* msg,
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n", r->op);
+							report_programming_bug("invalid op 3 (%x)", r->op);
 					}
 				}
 skip_before:
@@ -1030,7 +1115,7 @@ skip_before:
 						break;
 					default:
 						/* should not ever get here */
-						LM_CRIT("unhandled data lump op %d\n", t->op);
+						report_programming_bug("invalid op 4 %d", t->op);
 				}
 				/* process after */
 				for(r=t->after;r;r=r->after){
@@ -1056,94 +1141,26 @@ skip_before:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n", r->op);
+							report_programming_bug("invalid op 5 (%x)", r->op);
 					}
 				}
 skip_after:
 				break;
-			case LUMP_NOP:
-			case LUMP_DEL:
-				/* copy till offset (if any) */
-				if (s_offset<t->u.offset){
-					size=t->u.offset-s_offset;
-					memcpy(new_buf+offset, orig+s_offset,size);
-					offset+=size;
-					s_offset+=size;
-				}
-				if (t->op==LUMP_DEL)
-					last_del=t->u.offset;
-				/* process before  */
-				for(r=t->before;r;r=r->before){
-					switch (r->op){
-						case LUMP_ADD:
-							/*just add it here*/
-							memcpy(new_buf+offset, r->u.value, r->len);
-							offset+=r->len;
-							break;
-						case LUMP_ADD_SUBST:
-							SUBST_LUMP(r);
-							break;
-						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is
-					 		* not satisfied */
-							if (!lump_check_opt(r, msg, send_sock))
-								goto skip_nop_before;
-							break;
-						case LUMP_SKIP:
-							/* if a SKIP lump, go to the last in the list*/
-							if (!r->before || !r->before->before) continue;
-							for(;r->before->before;r=r->before);
-							break;
-						default:
-							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n",r->op);
-					}
-				}
-skip_nop_before:
-				if (t->op == LUMP_DEL) {
-					/*
-					 * skip at most len bytes from orig msg
-					 * and properly handle DEL lumps at the same offset --liviu
-					 */
-					if (t->u.offset + t->len > s_offset)
-						s_offset += t->len - (s_offset - t->u.offset);
-				}
-
-				/* process after */
-				for(r=t->after;r;r=r->after){
-					switch (r->op){
-						case LUMP_ADD:
-							/*just add it here*/
-							memcpy(new_buf+offset, r->u.value, r->len);
-							offset+=r->len;
-							break;
-						case LUMP_ADD_SUBST:
-							SUBST_LUMP(r);
-							break;
-						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is
-					 		* not satisfied */
-							if (!lump_check_opt(r, msg, send_sock))
-								goto skip_nop_after;
-							break;
-						case LUMP_SKIP:
-							/* if a SKIP lump, go to the last in the list*/
-							if (!r->after || !r->after->after) continue;
-							for(;r->after->after;r=r->after);
-							break;
-						default:
-							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n", r->op);
-					}
-				}
-skip_nop_after:
+			case LUMP_SKIP:
+				report_programming_bug("LUMP_SKIP");
+				/* if a SKIP lump, go to the last in the list*/
+				if (!t->next || !t->next->next)
+					continue;
+				for (; t->next->next; t = t->next)
+					;
 				break;
 			default:
-					LM_CRIT("unknown op (%x)\n", t->op);
+				report_programming_bug("invalid op 6 (%x)", t->op);
 		}
 	}
-	*new_buf_offs=offset;
-	*orig_offs=s_offset;
+
+	*new_buf_offs = offset;
+	*orig_offs = s_offset;
 }
 
 
