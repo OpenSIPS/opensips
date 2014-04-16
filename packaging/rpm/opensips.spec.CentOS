@@ -914,19 +914,19 @@ fi
 %changelog
 * Sun Apr 13 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Fix x64_86 compilation problems
-%changelog
+
 * Tue Mar 22 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   b2b_sca,call_center,mi_json,script_helper
-%changelog
+
 * Tue Aug 06 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   mi_xmlrpc_ng,sngtc,db_cachedb,mathops,rest_client
-%changelog
+
 * Sun Jul 21 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   cachedb_cassandra,cachedb_mongodb,osp,perl,perlvdb,tlsops
-%changelog
+
 * Sun Jun 02 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - CentOS 6 support
   Remove rpmbuild warning on BuildPrereq now deprecated for BuildRequires
