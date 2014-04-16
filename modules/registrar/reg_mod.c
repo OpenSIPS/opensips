@@ -465,7 +465,7 @@ static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
 		goto error;
 	}
 
-	anchor = anchor_lump( msg, msg->unparsed-msg->buf, 0, 0);
+	anchor = anchor_lump( msg, msg->unparsed-msg->buf, 0);
 	if (anchor==0) {
 		LM_ERR("can't get anchor\n");
 		goto error;

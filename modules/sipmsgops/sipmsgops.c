@@ -690,15 +690,15 @@ static int add_hf_helper(struct sip_msg* msg, str *str1, str *str2,
 
 	if(mode == 0) { /* append */
 		if(hf==0) { /* after last header */
-			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 		} else { /* after hf */
-			anchor = anchor_lump(msg, hf->name.s + hf->len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, hf->name.s + hf->len - msg->buf, 0);
 		}
 	} else { /* insert */
 		if(hf==0) { /* before first header */
-			anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0);
 		} else { /* before hf */
-			anchor = anchor_lump(msg, hf->name.s - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, hf->name.s - msg->buf, 0);
 		}
 	}
 
@@ -1307,7 +1307,7 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 	}
 
 	/* add an add body lump */
-	anchor = anchor_lump(msg, offset, 0, 0);
+	anchor = anchor_lump(msg, offset, 0);
 	if(anchor == 0) {
 		LM_ERR("failed to insert an add new body anchor");
 		return -1;

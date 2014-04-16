@@ -135,7 +135,7 @@ int add_maxfwd_header( struct sip_msg* msg , unsigned int val )
 	len +=CRLF_LEN;
 
 	/*inserts the header at the beginning of the message*/
-	anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0 , 0);
+	anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0);
 	if (anchor == 0) {
 		LM_ERR("add_maxfwd_header: failed to get anchor\n");
 		goto error1;

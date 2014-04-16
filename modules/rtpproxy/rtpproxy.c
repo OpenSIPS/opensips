@@ -1868,7 +1868,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 		return 0;
 
 	if (preserve != 0) {
-		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
@@ -1968,7 +1968,7 @@ alter_mediaport(struct sip_msg *msg, str *body, str *oldport, str *newport,
 #endif
 
 	if (preserve != 0) {
-		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
@@ -3943,7 +3943,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 		while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
 		if (cp1==args->body.s) cp1=args->body.s + args->body.len;
 
-		anchor = anchor_lump(msg, cp1 - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, cp1 - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			pkg_free(cp);

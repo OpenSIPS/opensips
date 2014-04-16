@@ -277,7 +277,7 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *re
 
 	LM_DBG("deleted rr stuff\n");
 	/* add Via headers */
-	lmp = anchor_lump(rpl,rpl->headers->name.s - buf,0,0);
+	lmp = anchor_lump(rpl,rpl->headers->name.s - buf,0);
 	if (lmp == 0)
 	{
 		LM_ERR("failed anchoring new lump\n");

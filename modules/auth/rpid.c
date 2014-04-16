@@ -123,7 +123,7 @@ static inline int append_rpid_helper(struct sip_msg* _m, str *_s)
 		return -1;
 	}
 
-	anchor = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+	anchor = anchor_lump(_m, _m->unparsed - _m->buf, 0);
 	if (!anchor) {
 		LM_ERR("can't get anchor\n");
 		return -2;

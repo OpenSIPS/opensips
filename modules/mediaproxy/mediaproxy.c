@@ -1231,7 +1231,7 @@ insert_element(struct sip_msg *msg, char *position, char *element)
         return False;
     }
 
-    anchor = anchor_lump(msg, position - msg->buf, 0, 0);
+    anchor = anchor_lump(msg, position - msg->buf, 0);
     if (!anchor) {
         LM_ERR("failed to get anchor for new element\n");
         pkg_free(buf);

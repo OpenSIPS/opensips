@@ -1868,7 +1868,7 @@ static int id_add_header(struct sip_msg* msg, char* s, int len)
 {
 	struct lump* anchor;
 
-	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 	if (!anchor) {
 		LM_ERR("can't get anchor\n");
 		return -1;

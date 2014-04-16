@@ -1187,7 +1187,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			/* msg->unparsed should point just before the final crlf
 			 * - whole message was parsed by the above parse_headers
 			 *   which did not find content-length */
-			anchor=anchor_lump(msg, msg->unparsed-msg->buf, 0,
+			anchor=anchor_lump(msg, msg->unparsed-msg->buf,
 												HDR_CONTENTLENGTH_T);
 			if (anchor==0){
 				LM_ERR("cannot set clen anchor\n");
@@ -1215,7 +1215,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			 * - whole message was parsed by the above parse_headers
 			 *   which did not find content-length */
 			if (proto!=PROTO_UDP){
-				anchor=anchor_lump(msg, msg->unparsed-msg->buf, 0,
+				anchor=anchor_lump(msg, msg->unparsed-msg->buf,
 													HDR_CONTENTLENGTH_T);
 				if (anchor==0){
 					LM_ERR("cannot set clen anchor\n");
@@ -1274,18 +1274,18 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 	}
 	if (hf) {
 		/* Route HF found, insert before it */
-		anchor = anchor_lump(msg, hf->name.s - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, hf->name.s - msg->buf, 0);
 	} else if(last_via) {
 		if (last_via->next) {
 			/* Via HF in between, insert after it */
-			anchor = anchor_lump(msg, last_via->next->name.s - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, last_via->next->name.s - msg->buf, 0);
 		} else {
 			/* Via HF is last, so append */
-			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 		}
 	} else {
 		/* None of the above, insert as first */
-		anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0);
 	}
 
 	if (anchor == 0) {
@@ -1462,7 +1462,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	/* add via header to the list */
 	/* try to add it before msg. 1st via */
 	/* add first via, as an anchor for second via*/
-	anchor=anchor_lump(msg, msg->via1->hdr.s-buf, 0, HDR_VIA_T);
+	anchor=anchor_lump(msg, msg->via1->hdr.s-buf, HDR_VIA_T);
 	if (anchor==0) goto error01;
 	if (insert_new_lump_before(anchor, line_buf, via_len, HDR_VIA_T)==0)
 		goto error01;
@@ -1487,7 +1487,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								msg->via1->received->size+1, /*;*/ HDR_VIA_T);
 		}else if (via_insert_param==0){ /* receive not present, ok */
 			via_insert_param=anchor_lump(msg,
-										msg->via1->hdr.s-buf+size,0, HDR_VIA_T);
+										msg->via1->hdr.s-buf+size, HDR_VIA_T);
 		}
 		if (via_insert_param==0) goto error02; /* free received_buf */
 		if (insert_new_lump_after(via_insert_param, received_buf, received_len,
@@ -1502,7 +1502,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		}else if (via_insert_param==0){ /*force rport, no rport present */
 			/* no rport, add it */
 			via_insert_param=anchor_lump(msg,
-									msg->via1->hdr.s-buf+size,0, HDR_VIA_T);
+									msg->via1->hdr.s-buf+size, HDR_VIA_T);
 		}
 		if (via_insert_param==0) goto error03; /* free rport_buf */
 		if (insert_new_lump_after(via_insert_param, rport_buf, rport_len,

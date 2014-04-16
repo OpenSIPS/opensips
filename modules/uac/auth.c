@@ -76,7 +76,7 @@ static inline int apply_urihdr_changes( struct sip_msg *req,
 		goto error;
 	}
 
-	anchor = anchor_lump(req, req->unparsed - req->buf, 0, 0);
+	anchor = anchor_lump(req, req->unparsed - req->buf, 0);
 	if (anchor==0)
 	{
 		LM_ERR("failed to get anchor\n");

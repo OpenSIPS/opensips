@@ -753,7 +753,7 @@ static int append_header(struct sip_msg *msg, const char *header)
 		return(1);
 	}
 
-	if ((anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0)) == 0) {
+	if ((anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0)) == 0) {
 		LM_ERR("failed to get anchor to append header\n");
 		return(1);
 	}

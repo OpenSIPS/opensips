@@ -874,7 +874,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 		return 0;
 
 	if (preserve != 0) {
-		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
@@ -1031,7 +1031,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 		}
 		if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			msg->msg_flags |= FL_FORCE_ACTIVE;
-			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
 			if (anchor == NULL) {
 				LM_ERR("anchor_lump failed\n");
 				return -1;
@@ -1406,10 +1406,10 @@ add_rcv_param_f(struct sip_msg* msg, char* str1, char* str2)
 
 		if (hdr_param) {
 			/* add the param as header param */
-			anchor = anchor_lump(msg, c->name.s + c->len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, c->name.s + c->len - msg->buf, 0);
 		} else {
 			/* add the param as uri param */
-			anchor = anchor_lump(msg, c->uri.s + c->uri.len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, c->uri.s + c->uri.len - msg->buf, 0);
 		}
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");

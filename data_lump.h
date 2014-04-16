@@ -104,7 +104,7 @@ struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
 	unsigned int len, enum _hdr_types_t type);
 /*! \brief set an anchor */
 struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
-	unsigned int len, enum _hdr_types_t type);
+	enum _hdr_types_t type);
 
 
 

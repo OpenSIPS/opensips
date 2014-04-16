@@ -1551,7 +1551,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 
 		if ( leg->route_set.len !=0 && leg->route_set.s) {
 
-			lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+			lmp = anchor_lump(req,req->headers->name.s - buf,0);
 			if (lmp == 0)
 			{
 				LM_ERR("failed anchoring new lump\n");
@@ -1638,7 +1638,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 					return -1;
 				}
 
-				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+				lmp = anchor_lump(req,req->headers->name.s - buf,0);
 				if (lmp == 0) {
 					LM_ERR("failed anchoring new lump\n");
 					free_rr(&head);
@@ -1671,7 +1671,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 			}
 
 			if (lmp == NULL) {
-				lmp = anchor_lump(req,req->headers->name.s - buf,0,0);
+				lmp = anchor_lump(req,req->headers->name.s - buf,0);
 				if (lmp == 0)
 				{
 					LM_ERR("failed anchoring new lump\n");

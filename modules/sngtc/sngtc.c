@@ -1392,7 +1392,7 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 
 	LM_DBG("Duplicated SDP: '%.*s'\n", body.len, body.s);
 
-	lump = anchor_lump(msg, msg->content_length->name.s - msg->buf, 0, 0);
+	lump = anchor_lump(msg, msg->content_length->name.s - msg->buf, 0);
 	if (!lump) {
 		LM_ERR("failed to insert anchor lump\n");
 		return SNGTC_ERR;
@@ -1437,7 +1437,7 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 		return SNGTC_ERR;
 	}
 
-	lump = anchor_lump(msg, msg->len - CRLF_LEN, 0, 0);
+	lump = anchor_lump(msg, msg->len - CRLF_LEN, 0);
 	if (!lump) {
 		LM_ERR("failed to insert anchor lump\n");
 		return SNGTC_ERR;
