@@ -659,7 +659,7 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated</function>,
 		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
