@@ -457,7 +457,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 	<section>
 		<title>
 			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>,
-			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>
+			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
 		</title>
 
 		<para>

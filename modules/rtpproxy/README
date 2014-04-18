@@ -396,7 +396,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 
 1.6.1.  engage_rtp_proxy([flags [, ip_address [, set_id [,
 sock_pvar]]]]) - deprecated, rtpproxy_engage([flags [, ip_address [,
-set_id [, sock_pvar]]]]) - deprecated
+set_id [, sock_pvar]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. It uses the dialog module facilities to keep track when
