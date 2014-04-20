@@ -250,6 +250,7 @@ Summary:  opensips db_oracle implementation.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
 BuildRequires:  oracle-instantclient11.2-devel
+AutoReqProv: no
 
 %description db_oracle
 This is a module which provides Oracle connectivity for OpenSIPS.
