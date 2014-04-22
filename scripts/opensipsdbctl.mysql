@@ -109,6 +109,11 @@ db_charset_test()
 		ALLCHARSETS=`echo "show character set" | $CMD | $AWK '{print $1}' | $SED -e 1d | $GREP -iv  "utf8" | $GREP -iv "ucs2"`
 	fi
 
+	if [ -z "$ALLCHARSETS" -o -z "$CURRCHARSET" ]; then
+		mwarn "Failed to get the available and used character sets"
+		exit 1;
+	fi
+
 	tries=0;
 
 	while [ `echo "$ALLCHARSETS" | $GREP -icw $CURRCHARSET`  = "0" ]
