@@ -226,6 +226,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	if(ci->dst_uri.len)
 		td.obp = ci->dst_uri;
 
+	td.avps = ci->avps;
+
 	tmb.setlocalTholder(&dlg->uac_tran);
 
 	/* send request */
