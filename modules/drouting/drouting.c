@@ -1798,6 +1798,7 @@ search_again:
 	pv_val.flags = PV_VAL_STR;
 
 	if (gw_attrs_spec) {
+		pv_val.flags = PV_VAL_STR;
 		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
 		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
 			LM_ERR("failed to set value for gateway attrs pvar\n");
@@ -1806,6 +1807,7 @@ search_again:
 	}
 
 	if (carrier_attrs_spec) {
+		pv_val.flags = PV_VAL_STR;
 		pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
 		if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0) {
 			LM_ERR("failed to set value for carrier attrs pvar\n");
@@ -1835,6 +1837,7 @@ no_gws:
 		}
 
 		if (rule_attrs_spec) {
+			pv_val.flags = PV_VAL_STR;
 			pv_val.rs = val.s;
 			if (pv_set_value(msg, rule_attrs_spec, 0, &pv_val) != 0) {
 				LM_ERR("failed to set value for rule attrs pvar\n");
@@ -2047,6 +2050,7 @@ static int route2_carrier(struct sip_msg* msg, char* cr_str,
 	pv_val.flags = PV_VAL_STR;
 
 	if (gw_attrs_spec) {
+		pv_val.flags = PV_VAL_STR;
 		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
 		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
 			LM_ERR("failed to set value for gateway attrs pvar\n");
@@ -2055,6 +2059,7 @@ static int route2_carrier(struct sip_msg* msg, char* cr_str,
 	}
 
 	if (carrier_attrs_spec) {
+		pv_val.flags = PV_VAL_STR;
 		pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
 		if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) != 0) {
 			LM_ERR("failed to set value for carrier attrs pvar\n");
@@ -2156,6 +2161,7 @@ static int route2_gw(struct sip_msg* msg, char* gw_str, char* gw_att_pv)
 	}
 
 	if (gw_attrs_spec) {
+		pv_val.flags = PV_VAL_STR;
 		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
 		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
 			LM_ERR("failed to set value for gateway attrs pvar\n");
