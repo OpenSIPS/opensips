@@ -313,7 +313,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info( servaddr, ip, port);
-			LM_ERR("[sever=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
 			goto error;
 		}
 	}else goto end;
@@ -343,7 +343,7 @@ again:
 		if (n<0){
 			if (errno==EINTR) continue;
 			get_su_info( servaddr, ip, port);
-			LM_ERR("poll/select failed:[sever=%s:%d] (%d) %s\n",
+			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
 				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
@@ -362,7 +362,7 @@ again:
 			if ((err==0) && (poll_err==0)) goto end;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info( servaddr, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [sever=%s:%d] (%d) %s\n",
+				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
 					ip, port, err, strerror(err));
 				goto error;
 			}
@@ -606,7 +606,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info(&server->s, ip, port);
-			LM_ERR("[sever=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
 			goto error;
 		}
 	} else goto local_success;
@@ -639,7 +639,7 @@ again:
 		if (n<0){
 			if (errno==EINTR) continue;
 			get_su_info(&server->s, ip, port);
-			LM_ERR("poll/select failed:[sever=%s:%d] (%d) %s\n",
+			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
 				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
@@ -657,7 +657,7 @@ again:
 			if ((err==0) && (poll_err==0)) goto local_success;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [sever=%s:%d] (%d) %s\n",
+				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
 					ip, port, err, strerror(err));
 				goto error;
 			}
