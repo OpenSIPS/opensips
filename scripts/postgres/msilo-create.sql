@@ -13,4 +13,4 @@ CREATE TABLE silo (
 );
 
 CREATE INDEX silo_account_idx ON silo (username, domain);
-
+ALTER SEQUENCE silo_id_seq MAXVALUE 2147483647 CYCLE;
