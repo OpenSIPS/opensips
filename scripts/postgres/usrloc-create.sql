@@ -19,4 +19,4 @@ CREATE TABLE location (
     sip_instance VARCHAR(255) DEFAULT NULL,
     CONSTRAINT location_account_contact_idx UNIQUE (username, domain, contact, callid)
 );
-
+ALTER SEQUENCE location_id_seq MAXVALUE 2147483647 CYCLE;
