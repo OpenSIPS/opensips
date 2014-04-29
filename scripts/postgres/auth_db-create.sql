@@ -12,4 +12,4 @@ CREATE TABLE subscriber (
 );
 
 CREATE INDEX subscriber_username_idx ON subscriber (username);
-
+ALTER SEQUENCE subscriber_id_seq MAXVALUE 2147483647 CYCLE;

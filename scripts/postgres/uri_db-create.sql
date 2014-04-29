@@ -7,4 +7,4 @@ CREATE TABLE uri (
     last_modified TIMESTAMP WITHOUT TIME ZONE DEFAULT '1900-01-01 00:00:01' NOT NULL,
     CONSTRAINT uri_account_idx UNIQUE (username, domain, uri_user)
 );
-
+ALTER SEQUENCE uri_id_seq MAXVALUE 2147483647 CYCLE;
