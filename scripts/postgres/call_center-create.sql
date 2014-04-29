@@ -9,6 +9,7 @@ CREATE TABLE cc_flows (
     message_queue VARCHAR(128) NOT NULL,
     CONSTRAINT cc_flows_unique_flowid UNIQUE (flowid)
 );
+ALTER SEQUENCE cc_flows_id_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('cc_agents','1');
 CREATE TABLE cc_agents (
@@ -35,4 +36,4 @@ CREATE TABLE cc_cdrs (
     fstats INTEGER DEFAULT 0 NOT NULL,
     cid INTEGER DEFAULT 0
 );
-
+ALTER SEQUENCE cc_cdrs_id_seq MAXVALUE 2147483647 CYCLE;

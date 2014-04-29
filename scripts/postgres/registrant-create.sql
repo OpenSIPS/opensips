@@ -13,4 +13,4 @@ CREATE TABLE registrant (
     forced_socket VARCHAR(64) DEFAULT NULL,
     CONSTRAINT registrant_aor_idx UNIQUE (aor)
 );
-
+ALTER SEQUENCE registrant_id_seq MAXVALUE 2147483647 CYCLE;

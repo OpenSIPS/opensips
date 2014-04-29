@@ -5,4 +5,3 @@ CREATE TABLE cachedb (
     counter INTEGER DEFAULT 0 NOT NULL,
     expires INTEGER DEFAULT 0 NOT NULL
 );
-

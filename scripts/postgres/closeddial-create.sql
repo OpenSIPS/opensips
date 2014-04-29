@@ -13,4 +13,4 @@ CREATE TABLE closeddial (
 CREATE INDEX closeddial_cd_idx2 ON closeddial (group_id);
 CREATE INDEX closeddial_cd_idx3 ON closeddial (cd_username);
 CREATE INDEX closeddial_cd_idx4 ON closeddial (username);
-
+ALTER SEQUENCE closeddial_id_seq MAXVALUE 2147483647 CYCLE;

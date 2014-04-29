@@ -3,4 +3,3 @@ CREATE TABLE version (
     table_version INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT version_t_name_idx UNIQUE (table_name)
 );
-

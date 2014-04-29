@@ -10,4 +10,4 @@ CREATE TABLE domainpolicy (
 );
 
 CREATE INDEX domainpolicy_rule_idx ON domainpolicy (rule);
-
+ALTER SEQUENCE domainpolicy_id_seq MAXVALUE 2147483647 CYCLE;

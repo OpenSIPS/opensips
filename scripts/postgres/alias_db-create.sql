@@ -9,4 +9,4 @@ CREATE TABLE dbaliases (
 );
 
 CREATE INDEX dbaliases_target_idx ON dbaliases (username, domain);
-
+ALTER SEQUENCE dbaliases_id_seq MAXVALUE 2147483647 CYCLE;
