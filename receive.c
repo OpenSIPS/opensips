@@ -117,8 +117,6 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	msg->len=len;
 	msg->rcv=*rcv_info;
 	msg->id=msg_no;
-	msg->set_global_address=default_global_address;
-	msg->set_global_port=default_global_port;
 
 	if (parse_msg(in_buff.s,len, msg)!=0){
 		tmp=ip_addr2a(&(rcv_info->src_ip));

@@ -93,8 +93,6 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 		return NULL;
 	}
 	/* populate some special fields in sip_msg */
-	req.set_global_address=default_global_address;
-	req.set_global_port=default_global_port;
 	req.force_send_socket = dialog->send_sock;
 	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
 		LM_ERR("failed to set dst_uri");
