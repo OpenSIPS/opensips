@@ -2409,23 +2409,24 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 														"string expected"); }
 		| SET_ADV_ADDRESS error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_ADV_PORT LPAREN NUMBER RPAREN {
-								$$=0;
-								tmp=int2str($3, &i_tmp);
-								if ((str_tmp=pkg_malloc(sizeof(str)))==0){
+								tstr.s = int2str($3, &tstr.len);
+								if (!(tmp = pkg_malloc(tstr.len + 1))) {
 										LM_CRIT("cfg. parser: out of memory.\n");
-								}else{
-									if ((str_tmp->s=pkg_malloc(i_tmp))==0){
-										LM_CRIT("cfg. parser: out of memory.\n");
-									}else{
-										memcpy(str_tmp->s, tmp, i_tmp);
-										str_tmp->len=i_tmp;
-										mk_action2( $$, SET_ADV_PORT_T, STR_ST,
-													0, str_tmp, 0);
-									}
+										$$ = 0;
+								} else {
+									memcpy(tmp, tstr.s, tstr.len);
+									tmp[tstr.len] = '\0';
+									mk_action2($$, SET_ADV_PORT_T, STR_ST,
+											   0, tmp, 0);
 								}
 								            }
-		| SET_ADV_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-								"string expected"); }
+		| SET_ADV_PORT LPAREN STRING RPAREN {
+								mk_action2($$, SET_ADV_PORT_T,
+										   STR_ST, NOSUBTYPE,
+										   $3, NULL);
+								}
+		| SET_ADV_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument "
+						"(string or integer expected)"); }
 		| SET_ADV_PORT  error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| FORCE_SEND_SOCKET LPAREN phostport RPAREN {
 								mk_action2( $$, FORCE_SEND_SOCKET_T,

@@ -548,12 +548,36 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	faked_req->new_uri.s=pkg_malloc( uac->uri.len+1 );
 	if (!faked_req->new_uri.s) {
 		LM_ERR("no uri/pkg mem\n");
-		goto error;
+		return 0;
 	}
 	faked_req->new_uri.len = uac->uri.len;
 	memcpy( faked_req->new_uri.s, uac->uri.s, uac->uri.len);
 	faked_req->new_uri.s[faked_req->new_uri.len]=0;
 	faked_req->parsed_uri_ok = 0;
+
+	/*
+	 * duplicate the advertised address and port into private mem
+	 * so that they can be changed at script level
+	 */
+	if (shm_msg->set_global_address.s) {
+		faked_req->set_global_address.s = pkg_malloc(shm_msg->set_global_address.len);
+		if (!faked_req->set_global_address.s) {
+			LM_ERR("out of pkg mem\n");
+			goto out;
+		}
+		memcpy(faked_req->set_global_address.s, shm_msg->set_global_address.s,
+			   shm_msg->set_global_address.len);
+	}
+
+	if (shm_msg->set_global_port.s) {
+		faked_req->set_global_port.s = pkg_malloc(shm_msg->set_global_port.len);
+		if (!faked_req->set_global_port.s) {
+			LM_ERR("out of pkg mem\n");
+			goto out1;
+		}
+		memcpy(faked_req->set_global_port.s, shm_msg->set_global_port.s,
+			   shm_msg->set_global_port.len);
+	}
 
 	/* we could also restore dst_uri, but will be confusing from script,
 	 * so let it set to NULL */
@@ -564,7 +588,12 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	setb0flags( uac->br_flags);
 
 	return 1;
-error:
+
+out1:
+	pkg_free(faked_req->set_global_address.s);
+out:
+	pkg_free(faked_req->new_uri.s);
+
 	return 0;
 }
 
@@ -573,15 +602,23 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 {
 	if (faked_req->new_uri.s) {
 		pkg_free(faked_req->new_uri.s);
-		faked_req->new_uri.s = 0;
+		faked_req->new_uri.s = NULL;
 	}
 	if (faked_req->dst_uri.s) {
 		pkg_free(faked_req->dst_uri.s);
-		faked_req->dst_uri.s = 0;
+		faked_req->dst_uri.s = NULL;
 	}
 	if (faked_req->path_vec.s) {
 		pkg_free(faked_req->path_vec.s);
-		faked_req->path_vec.s = 0;
+		faked_req->path_vec.s = NULL;
+	}
+	if (faked_req->set_global_address.s) {
+		pkg_free(faked_req->set_global_address.s);
+		faked_req->set_global_address.s = NULL;
+	}
+	if (faked_req->set_global_port.s) {
+		pkg_free(faked_req->set_global_port.s);
+		faked_req->set_global_port.s = NULL;
 	}
 
 	/* SDP in not cloned into SHM, so if we have one, it means the SDP
@@ -591,7 +628,7 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 
 	if (faked_req->multi) {
 		free_multi_body(faked_req->multi);
-		faked_req->multi = 0;
+		faked_req->multi = NULL;
 	}
 
 	if (faked_req->msg_cb) {

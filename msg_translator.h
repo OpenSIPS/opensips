@@ -67,16 +67,24 @@ struct hostport {
 
 
 #define set_hostport(hp, msg) \
-	do{ \
-		if ((msg) && ((struct sip_msg*)(msg))->set_global_address.len) \
-			(hp)->host=&(((struct sip_msg*)(msg))->set_global_address); \
-		else \
-			(hp)->host=NULL; \
-		if ((msg) && ((struct sip_msg*)(msg))->set_global_port.len) \
-			(hp)->port=&(((struct sip_msg*)(msg))->set_global_port); \
-		else \
-			(hp)->port=NULL; \
-	}while(0)
+	do { \
+		if (!(msg)) \
+			(hp)->host = NULL; \
+		else { \
+			if (((struct sip_msg *)(msg))->set_global_address.s) \
+				(hp)->host = &(((struct sip_msg *)(msg))->set_global_address); \
+			else \
+				(hp)->host = &default_global_address; \
+		} \
+		if (!(msg)) \
+			(hp)->port = NULL; \
+		else { \
+			if (((struct sip_msg *)(msg))->set_global_port.s) \
+				(hp)->port = &(((struct sip_msg *)(msg))->set_global_port); \
+			else \
+				(hp)->port = &default_global_port; \
+		} \
+	} while (0)
 
 char * build_req_buf_from_sip_req (	struct sip_msg* msg,
 				unsigned int *returned_len, struct socket_info* send_sock,

@@ -673,6 +673,14 @@ void free_sip_msg(struct sip_msg* msg)
 {
 	if (msg->msg_cb) { msg_callback_process(msg, MSG_DESTROY, NULL); }
 	if (msg->new_uri.s) { pkg_free(msg->new_uri.s); msg->new_uri.len=0; }
+	if (msg->set_global_address.s) {
+		pkg_free(msg->set_global_address.s);
+		msg->set_global_address.s = NULL;
+	}
+	if (msg->set_global_port.s) {
+		pkg_free(msg->set_global_port.s);
+		msg->set_global_port.s = NULL;
+	}
 	if (msg->dst_uri.s) { pkg_free(msg->dst_uri.s); msg->dst_uri.len=0; }
 	if (msg->path_vec.s) { pkg_free(msg->path_vec.s); msg->path_vec.len=0; }
 	if (msg->headers)     free_hdr_field_lst(msg->headers);
