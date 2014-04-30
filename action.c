@@ -298,6 +298,82 @@ error:
 	return -1;
 }
 
+static int do_action_set_adv_address(struct sip_msg *msg, struct action *a)
+{
+	str adv_addr;
+	int ret = 1; /* continue processing */
+
+	if (a->elem[0].type != STR_ST) {
+		report_programming_bug("set_advertised_address type %d", a->elem[0].type);
+		ret = E_BUG;
+		goto out;
+	}
+
+	if (pv_printf_s(msg, (pv_elem_t *)a->elem[0].u.data, &adv_addr) != 0
+	    || adv_addr.len <= 0) {
+
+		LM_WARN("cannot get string for value\n");
+		ret = E_BUG;
+		goto out;
+	}
+
+	LM_DBG("setting adv address = [%.*s]\n", adv_addr.len, adv_addr.s);
+
+	/* duplicate the advertised address into private memory */
+	if (adv_addr.len > msg->set_global_address.len) {
+		msg->set_global_address.s = pkg_realloc(msg->set_global_address.s,
+											    adv_addr.len);
+		if (!msg->set_global_address.s) {
+			LM_ERR("out of pkg mem\n");
+			ret = E_OUT_OF_MEM;
+			goto out;
+		}
+	}
+	memcpy(msg->set_global_address.s, adv_addr.s, adv_addr.len);
+	msg->set_global_address.len = adv_addr.len;
+
+out:
+	return ret;
+}
+
+static int do_action_set_adv_port(struct sip_msg *msg, struct action *a)
+{
+	str adv_port;
+	int ret = 1;
+
+	if (a->elem[0].type != STR_ST) {
+		report_programming_bug("set_advertised_port type %d", a->elem[0].type);
+		ret = E_BUG;
+		goto out;
+	}
+
+	if (pv_printf_s(msg, (pv_elem_t *)a->elem[0].u.data, &adv_port) != 0
+	    || adv_port.len <= 0) {
+
+		LM_WARN("cannot get string for value\n");
+		ret = E_BUG;
+		goto out;
+	}
+
+	LM_DBG("setting adv port '%.*s'\n", adv_port.len, adv_port.s);
+
+	/* duplicate the advertised port into private memory */
+	if (adv_port.len > msg->set_global_port.len) {
+		msg->set_global_port.s = pkg_realloc(msg->set_global_port.s,
+											 adv_port.len);
+		if (!msg->set_global_port.s) {
+			LM_ERR("out of pkg mem\n");
+			ret = E_OUT_OF_MEM;
+			goto out;
+		}
+	}
+	memcpy(msg->set_global_port.s, adv_port.s, adv_port.len);
+	msg->set_global_port.len = adv_port.len;
+
+out:
+	return ret;
+}
+
 #define update_longest_action() do {	\
 		if (execmsgthreshold) {	\
 			end_time = get_time_diff(&start);	\
@@ -1730,38 +1806,17 @@ next_avp:
 			msg->msg_flags|=FL_FORCE_LOCAL_RPORT;
 			ret=1; /* continue processing */
 			break;
-		case SET_ADV_ADDR_T:
-			script_trace("core", "set_adv_addr", msg, a->line) ;
-			if (a->elem[0].type!=STR_ST){
-				LM_ALERT("BUG in set_advertised_address() "
-						"type %d\n", a->elem[0].type);
-				ret=E_BUG;
-				break;
-			}
-			str adv_addr;
-			pve = (pv_elem_t *)a->elem[0].u.data;
-			if ( pv_printf_s(msg, pve, &adv_addr)!=0 || 
-			adv_addr.len == 0 || adv_addr.s == NULL) {
-				LM_WARN("cannot get string for value\n");
-				ret=E_BUG;
-				break;
-			}
-			LM_DBG("adv address = [%.*s]\n",adv_addr.len,adv_addr.s);
-			msg->set_global_address=adv_addr;
-			ret=1; /* continue processing */
-			break;
-		case SET_ADV_PORT_T:
-			script_trace("core", "set_adv_port", msg, a->line) ;
-			if (a->elem[0].type!=STR_ST){
-				LM_ALERT("BUG in set_advertised_port() "
-						"type %d\n", a->elem[0].type);
-				ret=E_BUG;
-				break;
-			}
 
-			msg->set_global_port=*((str*)a->elem[0].u.data);
-			ret=1; /* continue processing */
+		case SET_ADV_ADDR_T:
+			script_trace("core", "set_adv_addr", msg, a->line);
+			ret = do_action_set_adv_address(msg, a);
 			break;
+
+		case SET_ADV_PORT_T:
+			script_trace("core", "set_adv_port", msg, a->line);
+			ret = do_action_set_adv_port(msg, a);
+			break;
+
 #ifdef USE_TCP
 		case FORCE_TCP_ALIAS_T:
 			script_trace("core", "force_tcp_alias", msg, a->line) ;

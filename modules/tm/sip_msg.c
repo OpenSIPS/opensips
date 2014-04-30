@@ -323,9 +323,21 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len )
 	len = ROUND4(sizeof( struct sip_msg ));
 	/*we will keep only the original msg +ZT */
 	len += ROUND4(org_msg->len + 1);
+
 	/*the new uri (if any)*/
 	if (org_msg->new_uri.s && org_msg->new_uri.len)
-		len+= ROUND4(org_msg->new_uri.len);
+		len += ROUND4(org_msg->new_uri.len);
+
+	if (org_msg->set_global_address.s) {
+		LM_DBG("XXX - have address\n");
+		len += ROUND4(org_msg->set_global_address.len);
+	}
+
+	if (org_msg->set_global_port.s) {
+		LM_DBG("XXX - have port\n");
+		len += ROUND4(org_msg->set_global_port.len);
+	}
+
 	/*all the headers*/
 	for( hdr=org_msg->headers ; hdr ; hdr=hdr->next )
 	{
@@ -465,6 +477,7 @@ do { \
 	p += ROUND4(sizeof(struct sip_msg));
 	new_msg->add_rm = 0;
 	new_msg->body_lumps = 0;
+
 	/* new_uri */
 	if (org_msg->new_uri.s && org_msg->new_uri.len)
 	{
@@ -472,6 +485,21 @@ do { \
 		memcpy( p , org_msg->new_uri.s , org_msg->new_uri.len);
 		p += ROUND4(org_msg->new_uri.len);
 	}
+
+	/* advertised address and port */
+	if (org_msg->set_global_address.s)
+	{
+		new_msg->set_global_address.s = p;
+		memcpy(p, org_msg->set_global_address.s, org_msg->set_global_address.len);
+		p += ROUND4(org_msg->set_global_address.len);
+	}
+	if (org_msg->set_global_port.s)
+	{
+		new_msg->set_global_port.s = p;
+		memcpy(p, org_msg->set_global_port.s, org_msg->set_global_port.len);
+		p += ROUND4(org_msg->set_global_port.len);
+	}
+
 	/* dst_uri to zero */
 	new_msg->dst_uri.s = 0;
 	new_msg->dst_uri.len = 0;

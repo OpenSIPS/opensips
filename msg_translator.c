@@ -592,17 +592,23 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	s_offset=0;
 	new_len=0;
 	last_del=0;
+
 	/* init send_address_str & send_port_str */
 	if(send_sock && send_sock->adv_name_str.len)
 		send_address_str=&(send_sock->adv_name_str);
-	else if (msg->set_global_address.len)
+	else if (msg->set_global_address.s)
 		send_address_str=&(msg->set_global_address);
+	else if (default_global_address.s)
+		send_address_str=&default_global_address;
 	else
 		send_address_str=&(send_sock->address_str);
+
 	if(send_sock && send_sock->adv_port_str.len)
 		send_port_str=&(send_sock->adv_port_str);
-	else if (msg->set_global_port.len)
+	else if (msg->set_global_port.s)
 		send_port_str=&(msg->set_global_port);
+	else if (default_global_port.s)
+		send_port_str=&default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
 
@@ -937,12 +943,16 @@ void process_lumps(	struct sip_msg* msg,
 		send_address_str=&(send_sock->adv_name_str);
 	else if (msg->set_global_address.len)
 		send_address_str=&(msg->set_global_address);
+	else if (default_global_address.s)
+		send_address_str=&default_global_address;
 	else
 		send_address_str=&(send_sock->address_str);
 	if(send_sock && send_sock->adv_port_str.len)
 		send_port_str=&(send_sock->adv_port_str);
 	else if (msg->set_global_port.len)
 		send_port_str=&(msg->set_global_port);
+	else if (default_global_port.s)
+		send_port_str=&default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
 
@@ -1975,7 +1985,7 @@ char* via_builder( unsigned int *len,
 		address_str=hp->host;
 	else if(send_sock->adv_name_str.len)
 		address_str=&(send_sock->adv_name_str);
-	else if (default_global_address.len)
+	else if (default_global_address.s)
 		address_str=&default_global_address;
 	else
 		address_str=&(send_sock->address_str);
@@ -1984,7 +1994,7 @@ char* via_builder( unsigned int *len,
 		port_str=hp->port;
 	else if(send_sock->adv_port_str.len)
 		port_str=&(send_sock->adv_port_str);
-	else if (default_global_port.len)
+	else if (default_global_port.s)
 		port_str=&default_global_port;
 	else
 		port_str=&(send_sock->port_no_str);

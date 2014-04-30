@@ -675,6 +675,21 @@ static int fix_actions(struct action* a)
 				}
 				t->elem[0].u.data = (void*)model;
 				break;
+			case SET_ADV_PORT_T:
+				if (t->elem[0].type == STR_ST) {
+					s.s = (char *)t->elem[0].u.data;
+					s.len = strlen(s.s);
+
+					if (pv_parse_format(&s ,&model) != 0 || !model) {
+							LM_ERR("wrong format for [%.*s] advertised port!\n",
+									t->elem[1].u.s.len, t->elem[1].u.s.s);
+							ret = E_BUG;
+							goto error;
+					}
+
+					t->elem[0].u.data = model;
+				}
+				break;
 			case XDBG_T:
 			case XLOG_T:
 				s.s = (char*)t->elem[1].u.data;
