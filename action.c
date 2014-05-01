@@ -374,8 +374,12 @@ out:
 	return ret;
 }
 
-#define update_longest_action() do {	\
-		if (execmsgthreshold) {	\
+#define should_skip_updating(action_type) \
+	(action_type == IF_T || action_type == ROUTE_T || \
+	 action_type == WHILE_T || action_type == FOR_EACH_T)
+
+#define update_longest_action(a) do {	\
+		if (execmsgthreshold && !should_skip_updating((unsigned char)(a)->type)) { \
 			end_time = get_time_diff(&start);	\
 			if (end_time > min_action_time) {	\
 				for (i=0;i<LONGEST_ACTION_SIZE;i++) {	\
@@ -1993,21 +1997,23 @@ next_avp:
 		return_code = ret;
 /*skip:*/
 
-	update_longest_action();
+	update_longest_action(a);
 	return ret;
 
 error:
 	LM_ERR("error at line: %d\n", a->line);
-	update_longest_action();
+	update_longest_action(a);
 	return ret;
 
 error_uri:
 	LM_ERR("set*: uri too long\n");
-	if (new_uri) pkg_free(new_uri);
-	update_longest_action();
+	if (new_uri)
+		pkg_free(new_uri);
+	update_longest_action(a);
 	return E_UNSPEC;
+
 error_fwd_uri:
-	update_longest_action();
+	update_longest_action(a);
 	return ret;
 }
 
