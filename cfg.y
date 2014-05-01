@@ -130,7 +130,6 @@ static int i_tmp;
 static void* cmd_tmp;
 static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
-static str* str_tmp;
 static str s_tmp;
 static str tstr;
 static struct ip_addr* ip_tmp;
@@ -1057,19 +1056,22 @@ assign_stm: DEBUG EQUAL snumber {
 									default_global_address.len=strlen($3);
 								}
 								}
-		|ADVERTISED_ADDRESS EQUAL error {yyerror("ip address or hostname "
+		| ADVERTISED_ADDRESS EQUAL error {yyerror("ip address or hostname "
 												"expected"); }
 		| ADVERTISED_PORT EQUAL NUMBER {
-								tmp=int2str($3, &i_tmp);
-								if ((default_global_port.s=pkg_malloc(i_tmp))
-										==0){
-										LM_CRIT("cfg. parser: out of memory.\n");
-										default_global_port.len=0;
-								}else{
-									default_global_port.len=i_tmp;
+								tmp = int2str($3, &i_tmp);
+								if (i_tmp > default_global_port.len)
+									default_global_port.s =
+										pkg_realloc(default_global_port.s, i_tmp);
+
+								if (!default_global_port.s) {
+									LM_CRIT("cfg. parser: out of memory.\n");
+									default_global_port.len = 0;
+								} else {
+									default_global_port.len = i_tmp;
 									memcpy(default_global_port.s, tmp,
 											default_global_port.len);
-								};
+								}
 								}
 		|ADVERTISED_PORT EQUAL error {yyerror("ip address or hostname "
 												"expected"); }
