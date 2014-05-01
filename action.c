@@ -347,7 +347,7 @@ out:
 
 #define should_skip_updating(action_type) \
 	(action_type == IF_T || action_type == ROUTE_T || \
-	 action_type == WHILE_T || action_type == FOR_EACH_T)
+	 action_type == WHILE_T)
 
 #define update_longest_action(a) do {	\
 		if (execmsgthreshold && !should_skip_updating((unsigned char)(a)->type)) { \
