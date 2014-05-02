@@ -6,3 +6,4 @@ CREATE TABLE domain (
     CONSTRAINT domain_domain_idx UNIQUE (domain)
 );
 
+ALTER SEQUENCE domain_id_seq MAXVALUE 2147483647 CYCLE;
