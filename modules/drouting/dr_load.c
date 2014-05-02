@@ -439,8 +439,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				}
 
 				/* add the new carrier */
-				if ( add_carrier( int_vals[INT_VALS_ID_DRC_COL],
-						str_vals[STR_VALS_CID_DRC_COL],
+				if ( add_carrier( str_vals[STR_VALS_CID_DRC_COL],
 						int_vals[INT_VALS_FLAGS_DRC_COL],
 						str_vals[STR_VALS_GWLIST_DRC_COL],
 						str_vals[STR_VALS_ATTRS_DRC_COL],
