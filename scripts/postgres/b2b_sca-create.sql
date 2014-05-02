@@ -55,4 +55,4 @@ CREATE TABLE b2b_sca (
     app10_b2bl_key VARCHAR(64) DEFAULT NULL,
     CONSTRAINT b2b_sca_sca_idx UNIQUE (shared_line)
 );
-
+ALTER SEQUENCE b2b_sca_id_seq MAXVALUE 2147483647 CYCLE;

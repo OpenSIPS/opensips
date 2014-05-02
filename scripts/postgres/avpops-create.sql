@@ -13,4 +13,4 @@ CREATE TABLE usr_preferences (
 CREATE INDEX usr_preferences_ua_idx ON usr_preferences (uuid, attribute);
 CREATE INDEX usr_preferences_uda_idx ON usr_preferences (username, domain, attribute);
 CREATE INDEX usr_preferences_value_idx ON usr_preferences (value);
-
+ALTER SEQUENCE usr_preferences_id_seq MAXVALUE 2147483647 CYCLE;

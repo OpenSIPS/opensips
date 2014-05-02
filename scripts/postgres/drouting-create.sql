@@ -13,6 +13,7 @@ CREATE TABLE dr_gateways (
     description VARCHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT dr_gateways_dr_gw_idx UNIQUE (gwid)
 );
+ALTER SEQUENCE dr_gateways_id_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('dr_rules','3');
 CREATE TABLE dr_rules (
@@ -26,6 +27,7 @@ CREATE TABLE dr_rules (
     attrs VARCHAR(255) DEFAULT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
+ALTER SEQUENCE dr_rules_ruleid_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
 CREATE TABLE dr_carriers (
@@ -38,6 +40,7 @@ CREATE TABLE dr_carriers (
     description VARCHAR(128) DEFAULT '' NOT NULL,
     CONSTRAINT dr_carriers_dr_carrier_idx UNIQUE (carrierid)
 );
+ALTER SEQUENCE dr_carriers_id_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('dr_groups','2');
 CREATE TABLE dr_groups (
@@ -47,4 +50,4 @@ CREATE TABLE dr_groups (
     groupid INTEGER DEFAULT 0 NOT NULL,
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
-
+ALTER SEQUENCE dr_groups_id_seq MAXVALUE 2147483647 CYCLE;
