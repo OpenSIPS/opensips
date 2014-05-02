@@ -14,6 +14,7 @@ CREATE TABLE acc (
 );
 
 CREATE INDEX acc_callid_idx ON acc (callid);
+ALTER SEQUENCE acc_id_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('missed_calls','4');
 CREATE TABLE missed_calls (
@@ -28,4 +29,4 @@ CREATE TABLE missed_calls (
 );
 
 CREATE INDEX missed_calls_callid_idx ON missed_calls (callid);
-
+ALTER SEQUENCE missed_calls_id_seq MAXVALUE 2147483647 CYCLE;
