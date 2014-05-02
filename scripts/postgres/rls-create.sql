@@ -13,6 +13,7 @@ CREATE TABLE rls_presentity (
 );
 
 CREATE INDEX rls_presentity_updated_idx ON rls_presentity (updated);
+ALTER SEQUENCE rls_presentity_id_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('rls_watchers','2');
 CREATE TABLE rls_watchers (
@@ -39,4 +40,4 @@ CREATE TABLE rls_watchers (
     local_contact VARCHAR(128) NOT NULL,
     CONSTRAINT rls_watchers_rls_watcher_idx UNIQUE (presentity_uri, callid, to_tag, from_tag)
 );
-
+ALTER SEQUENCE rls_watchers_id_seq MAXVALUE 2147483647 CYCLE;

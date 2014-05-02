@@ -8,6 +8,7 @@ CREATE TABLE userblacklist (
 );
 
 CREATE INDEX userblacklist_userblacklist_idx ON userblacklist (username, domain, prefix);
+ALTER SEQUENCE userblacklist_id_seq MAXVALUE 2147483647 CYCLE;
 
 INSERT INTO version (table_name, table_version) values ('globalblacklist','2');
 CREATE TABLE globalblacklist (
@@ -18,4 +19,4 @@ CREATE TABLE globalblacklist (
 );
 
 CREATE INDEX globalblacklist_globalblacklist_idx ON globalblacklist (prefix);
-
+ALTER SEQUENCE globalblacklist_id_seq MAXVALUE 2147483647 CYCLE;
