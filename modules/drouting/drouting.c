@@ -479,6 +479,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 
 static void dr_state_flusher(void)
 {
+	static db_ps_t cr_ps=NULL, gw_ps=NULL;
 	pgw_t *gw;
 	pcr_t *cr;
 	db_key_t key_cmp;
@@ -490,7 +491,7 @@ static void dr_state_flusher(void)
 	if (!rdata || !(*rdata))
 		return;
 
-	val_cmp.type = DB_INT;
+	val_cmp.type = DB_STR;
 	val_cmp.nul  = 0;
 
 	val_set.type = DB_INT;
@@ -501,7 +502,7 @@ static void dr_state_flusher(void)
 		LM_ERR("cannot select table \"%.*s\"\n", drd_table.len, drd_table.s);
 		return;
 	}
-	key_cmp = &id_drd_col;
+	key_cmp = &gwid_drd_col;
 	key_set = &state_drd_col;
 
 	/* iterate the gateways */
@@ -511,13 +512,14 @@ static void dr_state_flusher(void)
 			continue;
 
 		/* populate the update */
-		val_cmp.val.int_val = gw->_id;
+		val_cmp.val.str_val = gw->id;
 		val_set.val.int_val = (gw->flags&DR_DST_STAT_DSBL_FLAG) ? ((gw->flags&DR_DST_STAT_NOEN_FLAG)?1:2) : (0);
 
 		/* update the state of this gateway */
-		LM_DBG("updating the state of gw %d (%.*s) to %d\n",
-			gw->_id, gw->id.len, gw->id.s, val_set.val.int_val);
+		LM_DBG("updating the state of gw <%.*s> to %d\n",
+			gw->id.len, gw->id.s, val_set.val.int_val);
 
+		CON_PS_REFERENCE(db_hdl) = gw_ps;
 		if ( dr_dbf.update(db_hdl,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
 			LM_ERR("DB update failed\n");
 		} else {
@@ -530,7 +532,7 @@ static void dr_state_flusher(void)
 		LM_ERR("cannot select table \"%.*s\"\n", drc_table.len, drc_table.s);
 		return;
 	}
-	key_cmp = &id_drc_col;
+	key_cmp = &cid_drc_col;
 	key_set = &state_drc_col;
 
 	/* iterate the carriers */
@@ -540,13 +542,14 @@ static void dr_state_flusher(void)
 			continue;
 
 		/* populate the update */
-		val_cmp.val.int_val = cr->db_id;
+		val_cmp.val.str_val = cr->id;
 		val_set.val.int_val = (cr->flags&DR_CR_FLAG_IS_OFF) ? 1 : 0;
 
 		/* update the state of this carrier */
-		LM_DBG("updating the state of cr %d (%.*s) to %d\n",
-			cr->db_id, cr->id.len, cr->id.s, val_set.val.int_val);
+		LM_DBG("updating the state of cr <%.*s> to %d\n",
+			cr->id.len, cr->id.s, val_set.val.int_val);
 
+		CON_PS_REFERENCE(db_hdl) = cr_ps;
 		if ( dr_dbf.update(db_hdl,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
 			LM_ERR("DB update failed\n");
 		} else {
