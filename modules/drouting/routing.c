@@ -214,7 +214,7 @@ error:
 }
 
 
-int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
+int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 													int state, rt_data_t *rd)
 {
 	pcr_t *cr = NULL;
@@ -247,7 +247,6 @@ int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
 	}
 
 	/* copy integer fields */
-	cr->db_id = db_id;
 	cr->flags = flags;
 
 	/* set state */
