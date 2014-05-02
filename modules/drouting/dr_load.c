@@ -175,23 +175,23 @@ error:
 
 
 /* dr_gateways table */
-#define INT_VALS_ID_DRD_COL       0
-#define INT_VALS_STRIP_DRD_COL    1
-#define INT_VALS_TYPE_DRD_COL     2
-#define INT_VALS_PROBE_DRD_COL    3
-#define INT_VALS_STATE_DRD_COL    4
+#define INT_VALS_STRIP_DRD_COL    0
+#define INT_VALS_TYPE_DRD_COL     1
+#define INT_VALS_PROBE_DRD_COL    2
+#define INT_VALS_STATE_DRD_COL    3
 #define STR_VALS_ADDRESS_DRD_COL  0
 #define STR_VALS_PREFIX_DRD_COL   1
 #define STR_VALS_ATTRS_DRD_COL    2
 #define STR_VALS_GWID_DRD_COL     3
+#define STR_VALS_ID_DRD_COL       4
 
 /* dr_carriers table */
-#define INT_VALS_ID_DRC_COL       0
-#define INT_VALS_FLAGS_DRC_COL    1
-#define INT_VALS_STATE_DRC_COL    2
+#define INT_VALS_FLAGS_DRC_COL    0
+#define INT_VALS_STATE_DRC_COL    1
 #define STR_VALS_CID_DRC_COL      0
 #define STR_VALS_GWLIST_DRC_COL   1
 #define STR_VALS_ATTRS_DRC_COL    2
+#define STR_VALS_ID_DRC_COL       3
 
 /* dr_rules table */
 #define INT_VALS_RULE_ID_DRR_COL  0
@@ -225,6 +225,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 	struct socket_info *sock;
 	str s_sock, host;
 	int proto, port;
+	char id_buf[INT2STR_MAX_LEN];
 
 	res = 0;
 	ri = 0;
@@ -273,7 +274,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
+		if ( dr_dbf->query(db_hdl,0,0,0,columns,0,db_cols,0,&res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -287,8 +288,18 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* DB ID column */
-			check_val( id_drd_col, ROW_VALUES(row), DB_INT, 1, 0);
-			int_vals[INT_VALS_ID_DRD_COL] = VAL_INT(ROW_VALUES(row));
+			if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT ) {
+				/* if INT type, convert it to string */
+				check_val( id_drd_col, ROW_VALUES(row), DB_INT, 1, 0);
+				/* int2bstr returns a null terminated string */
+				str_vals[STR_VALS_ID_DRD_COL] =
+					int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
+					id_buf, &int_vals[0]/*useless*/);
+			} else {
+				/* if not INT, accept only STRING type */
+				check_val( id_drd_col, ROW_VALUES(row), DB_STRING, 1, 0);
+				str_vals[STR_VALS_ID_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row));
+			}
 			/* GW ID column */
 			check_val( gwid_drd_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 			str_vals[STR_VALS_GWID_DRD_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
@@ -317,18 +328,18 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 				s_sock.len = strlen(s_sock.s);
 				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
 				&port, &proto)!=0){
-					LM_ERR("GW <%s>(%d): socket description <%.*s> "
+					LM_ERR("GW <%s>(%s): socket description <%.*s> "
 						"is not valid -> ignoring socket\n",
 						str_vals[STR_VALS_GWID_DRD_COL],
-						int_vals[INT_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+						str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					sock = NULL;
 				} else {
 					sock = grep_sock_info( &host, port, proto);
 					if (sock == NULL) {
-						LM_ERR("GW <%s>(%d): socket <%.*s> is not local to"
-						" OpenSIPS (we must listen on it) -> ignoring socket\n",
+						LM_ERR("GW <%s>(%s): socket <%.*s> is not local to "
+						"OpenSIPS (we must listen on it) -> ignoring socket\n",
 						str_vals[STR_VALS_GWID_DRD_COL],
-						int_vals[INT_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+						str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					}
 				}
 			} else {
@@ -352,8 +363,9 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 						int_vals[INT_VALS_PROBE_DRD_COL],
 						sock,
 						int_vals[INT_VALS_STATE_DRD_COL] )<0 ) {
-				LM_ERR("failed to add destination <%s>(%d) -> skipping\n",
-					str_vals[STR_VALS_GWID_DRD_COL],int_vals[INT_VALS_ID_DRD_COL]);
+				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
+					str_vals[STR_VALS_GWID_DRD_COL],
+					str_vals[STR_VALS_ID_DRD_COL]);
 				continue;
 			}
 			n++;
@@ -401,7 +413,7 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, db_cols, 0, &res) < 0) {
+		if ( dr_dbf->query(db_hdl,0,0,0,columns,0,db_cols,0,&res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -415,9 +427,19 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 		do {
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
-				/* ID column */
-				check_val( id_drc_col, ROW_VALUES(row), DB_INT, 1, 0);
-				int_vals[INT_VALS_ID_DRC_COL] = VAL_INT(ROW_VALUES(row));
+				/* DB ID column */
+				if ( VAL_TYPE( ROW_VALUES(row) ) == DB_INT ) {
+					/* if INT type, convert it to string */
+					check_val( id_drc_col, ROW_VALUES(row), DB_INT, 1, 0);
+					/* int2bstr returns a null terminated string */
+					str_vals[STR_VALS_ID_DRC_COL] =
+						int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
+						id_buf, &int_vals[0]/*useless*/);
+				} else {
+					/* if not INT, accept only STRING type */
+					check_val( id_drd_col, ROW_VALUES(row), DB_STRING, 1, 0);
+					str_vals[STR_VALS_ID_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row));
+				}
 				/* CARRIER_ID column */
 				check_val( cid_drc_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 				str_vals[STR_VALS_CID_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+1);
@@ -435,18 +457,18 @@ rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
 					check_val( state_drc_col, ROW_VALUES(row)+5, DB_INT, 1, 0);
 					int_vals[INT_VALS_STATE_DRC_COL] = VAL_INT(ROW_VALUES(row)+5);
 				} else {
-					int_vals[INT_VALS_STATE_DRC_COL] = 0; /* by default enabled */
+					/* by default enabled */
+					int_vals[INT_VALS_STATE_DRC_COL] = 0;
 				}
 
 				/* add the new carrier */
-				if ( add_carrier( int_vals[INT_VALS_ID_DRC_COL],
-						str_vals[STR_VALS_CID_DRC_COL],
+				if ( add_carrier( str_vals[STR_VALS_CID_DRC_COL],
 						int_vals[INT_VALS_FLAGS_DRC_COL],
 						str_vals[STR_VALS_GWLIST_DRC_COL],
 						str_vals[STR_VALS_ATTRS_DRC_COL],
 						int_vals[INT_VALS_STATE_DRC_COL], rdata) != 0 ) {
-					LM_ERR("failed to add carrier db_id %d -> skipping\n",
-						int_vals[INT_VALS_ID_DRC_COL]);
+					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
+						str_vals[STR_VALS_ID_DRC_COL]);
 					continue;
 				}
 			}
