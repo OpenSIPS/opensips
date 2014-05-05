@@ -807,6 +807,26 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 				performed during lookup.
 				</para>
 			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'u' (User-Agent filtering)</emphasis> - this flag 
+				enables regexp filtering by user-agent. It's useful with 
+				enabled append_branches parameter. Regexp must follow 
+				the 'u' flag and must use format like 'u/regexp/'.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'i' (Case insensitive search)</emphasis> - this flag 
+				enables case insensitive filtering for the 'u' flag.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>'e' (Use extended regexp)</emphasis> - this flag 
+				enables using of extended regexp format for the 'u' flag.
+				</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
@@ -844,6 +864,8 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 lookup("location");  # simple lookup
    #or
 lookup("location","m"); # lookup with method filtering
+   #or
+lookup("location","u/phone/i"); # lookup with user-agent filtering
    #or
 lookup("location","","$var(aor)"); # simple lookup with AOR from PV
 switch ($retcode) {
