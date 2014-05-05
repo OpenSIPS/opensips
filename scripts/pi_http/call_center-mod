@@ -59,6 +59,7 @@
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
+				<col><field>last_call_end</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -69,6 +70,7 @@
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
+				<col><field>last_call_end</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -82,6 +84,7 @@
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
+				<col><field>last_call_end</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

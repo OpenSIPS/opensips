@@ -17,6 +17,7 @@ CREATE TABLE cc_agents (
     location CHAR(128) NOT NULL,
     logstate INT(10) UNSIGNED DEFAULT 0 NOT NULL,
     skills CHAR(255) NOT NULL,
+    last_call_end INT(11) DEFAULT 0 NOT NULL,
     CONSTRAINT unique_agentid UNIQUE (agentid)
 ) ENGINE=MyISAM;
 
