@@ -54,6 +54,19 @@
 	( !((_f)&REG_LOOKUP_METHODFILTER_FLAG) || \
 		((_msg)->REQ_METHOD)&((_c)->methods) )
 
+static int ua_check(str ua, regex_t *re)
+{
+	char tmp;
+	regmatch_t ua_match;
+	int result;
+
+	tmp = *(ua.s+ua.len);
+	strncpy(ua_buf, ua.s, ua.len);
+	result = regexec(re, ua_buf, 1, &ua_match, 0);
+	pkg_free(ua_buf);
+	return result;
+}
+
 /*! \brief
  * Lookup contact in the database and rewrite Request-URI
  * \return: -1 : not found
@@ -70,6 +83,9 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	int ret;
 	str path_dst;
 	str flags_s;
+	char* ua = NULL;
+	regex_t ua_re;
+	int regexp_flags = 0;
 	pv_value_t val;
 	int_str istr;
 	str sip_instance = {0,0},call_id = {0,0};
@@ -84,6 +100,26 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 			switch (flags_s.s[res]) {
 				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
+				case 'u':
+					if (flags_s.s[++res] != '/') {
+						LM_ERR("no regexp after 'u' flag");
+						break;
+					}
+					res++;
+					ua = flags_s.s+res;
+					res = flags_s.len - 1;
+					while (res > ua-flags_s.s && flags_s.s[res] != '/') res--;
+					if (flags_s.s[res] == '/') {
+						flags_s.s[res] = '\0';
+					} else {
+						LM_ERR("no regexp after 'u' flag");
+						break;
+					}
+					flags |= REG_LOOKUP_UAFILTER_FLAG;
+					LM_DBG("found regexp /%s/", ua);
+					break;
+				case 'i': regexp_flags |= REG_ICASE; break;
+				case 'e': regexp_flags |= REG_EXTENDED; break;
 				default: LM_WARN("unsuported flag %c \n",flags_s.s[res]);
 			}
 		}
@@ -119,6 +155,13 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		return -1;
 	}
 
+	if (flags & REG_LOOKUP_UAFILTER_FLAG) {
+		if (regcomp(&ua_re, ua, regexp_flags) != 0) {
+			LM_ERR("bad regexp '%s'\n", ua);
+			return -1;
+		}
+	}
+
 	ptr = r->contacts;
 	ret = -1;
 	/* look first for an un-expired and suported contact */
@@ -130,6 +173,14 @@ search_valid_contact:
 		/* nothing found */
 		LM_DBG("nothing found !\n");
 		goto done;
+	}
+
+	if (flags & REG_LOOKUP_UAFILTER_FLAG) {
+		if (ua_check(ptr->user_agent, &ua_re)) {
+			ret = -1;
+			ptr = ptr->next;
+			goto search_valid_contact;
+		}
 	}
 
 	if (sip_instance.len && sip_instance.s) {
@@ -251,6 +302,12 @@ search_valid_contact:
 				continue;
 			}
 
+			if (flags & REG_LOOKUP_UAFILTER_FLAG) {
+				if (ua_check(ptr->user_agent, &ua_re)) {
+					continue;
+				}
+			}
+
 			/* The same as for the first contact applies for branches
 			 * regarding path vs. received. */
 			LM_DBG("setting branch <%.*s>\n",ptr->c.len,ptr->c.s);
@@ -274,6 +331,7 @@ search_valid_contact:
 done:
 	ul.release_urecord(r, 0);
 	ul.unlock_udomain((udomain_t*)_t, &aor);
+	regfree(&ua_re);
 	return ret;
 }
 
