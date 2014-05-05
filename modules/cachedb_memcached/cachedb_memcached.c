@@ -44,6 +44,7 @@
 static str cache_mod_name = str_init("memcached");
 
 struct cachedb_url *memcached_script_urls = NULL;
+static int memcache_exec_threshold=0;
 
 int mc_set_connection(unsigned int type, void *val)
 {
