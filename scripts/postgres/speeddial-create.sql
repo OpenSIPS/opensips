@@ -12,3 +12,4 @@ CREATE TABLE speed_dial (
     CONSTRAINT speed_dial_speed_dial_idx UNIQUE (username, domain, sd_domain, sd_username)
 );
 
+ALTER SEQUENCE speed_dial_id_seq MAXVALUE 2147483647 CYCLE;

@@ -13,6 +13,7 @@ CREATE TABLE acc (
     created TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL
 );
 
+ALTER SEQUENCE acc_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX acc_callid_idx ON acc (callid);
 
 INSERT INTO version (table_name, table_version) values ('missed_calls','4');
@@ -27,5 +28,6 @@ CREATE TABLE missed_calls (
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );
 
+ALTER SEQUENCE missed_calls_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX missed_calls_callid_idx ON missed_calls (callid);
 
