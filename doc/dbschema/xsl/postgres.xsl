@@ -89,7 +89,6 @@
 	    </xsl:when>
 	    <xsl:when test="$type='binary'">
 		<xsl:text>BYTEA</xsl:text>
-		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='text'">
