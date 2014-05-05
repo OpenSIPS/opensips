@@ -10,3 +10,4 @@ CREATE TABLE dispatcher (
     description VARCHAR(64) DEFAULT '' NOT NULL
 );
 
+ALTER SEQUENCE dispatcher_id_seq MAXVALUE 2147483647 CYCLE;

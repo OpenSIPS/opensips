@@ -8,3 +8,4 @@ CREATE TABLE cpl (
     CONSTRAINT cpl_account_idx UNIQUE (username, domain)
 );
 
+ALTER SEQUENCE cpl_id_seq MAXVALUE 2147483647 CYCLE;

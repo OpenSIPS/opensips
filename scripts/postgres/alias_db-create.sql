@@ -8,5 +8,6 @@ CREATE TABLE dbaliases (
     CONSTRAINT dbaliases_alias_idx UNIQUE (alias_username, alias_domain)
 );
 
+ALTER SEQUENCE dbaliases_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX dbaliases_target_idx ON dbaliases (username, domain);
 
