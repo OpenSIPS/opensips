@@ -30,6 +30,7 @@ CREATE TABLE b2b_entities (
     CONSTRAINT b2b_entities_b2b_entities_idx UNIQUE (type, tag0, tag1, callid)
 );
 
+ALTER SEQUENCE b2b_entities_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX b2b_entities_b2b_entities_param ON b2b_entities (param);
 
 INSERT INTO version (table_name, table_version) values ('b2b_logic','2');
@@ -64,3 +65,4 @@ CREATE TABLE b2b_logic (
     CONSTRAINT b2b_logic_b2b_logic_idx UNIQUE (si_key)
 );
 
+ALTER SEQUENCE b2b_logic_id_seq MAXVALUE 2147483647 CYCLE;
