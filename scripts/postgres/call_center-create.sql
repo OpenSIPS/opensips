@@ -18,6 +18,7 @@ CREATE TABLE cc_agents (
     location VARCHAR(128) NOT NULL,
     logstate INTEGER DEFAULT 0 NOT NULL,
     skills VARCHAR(255) NOT NULL,
+    last_call_end INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT cc_agents_unique_agentid UNIQUE (agentid)
 );
 

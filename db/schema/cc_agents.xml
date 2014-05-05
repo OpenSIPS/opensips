@@ -72,6 +72,17 @@
 		</description>
 	</column>
 
+	<column id="last_call_end">
+		<name>last_call_end</name>
+		<type>int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The timestamp of the last call of an agent.
+		If different than 0, the agent will only receive calls after
+		wrapup seconds pass after this timestamp.
+		</description>
+	</column>
+
     <index>
         <name>unique_agentid</name>
         <colref linkend="agentid"/>
