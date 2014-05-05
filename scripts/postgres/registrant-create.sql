@@ -14,3 +14,4 @@ CREATE TABLE registrant (
     CONSTRAINT registrant_aor_idx UNIQUE (aor)
 );
 
+ALTER SEQUENCE registrant_id_seq MAXVALUE 2147483647 CYCLE;
