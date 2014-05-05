@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="cc_calls" xmlns:db="http://docbook.org/ns/docbook">
+	<name>cc_calls</name>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Call Center module to store ongoing calls for restart persitancy.
+			It consists only of runtime data and should not be manually provisioned.
+		More information can be found at: &OPENSIPS_MOD_DOC;call_center.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<type db="dbtext">int,auto</type>
+		<description>unique ID of the call.
+		</description>
+	</column>
+
+	<column id="state">
+		<name>state</name>
+		<type>int</type>
+		<size>11</size>
+		<description>The state of the call.
+		</description>
+	</column>
+
+	<column id="ig_cback">
+		<name>ig_cback</name>
+		<type>int</type>
+		<size>11</size>
+		<description>Indicates if the call should be ignored.
+		</description>
+	</column>
+
+	<column id="no_rej">
+		<name>no_rej</name>
+		<type>int</type>
+		<size>11</size>
+		<description>Indicates whether the call can be rejected or not.
+		</description>
+	</column>
+
+	<column id="setup_time">
+		<name>setup_time</name>
+		<type>int</type>
+		<size>11</size>
+		<description>Stores the call setup time.
+		</description>
+	</column>
+
+	<column id="eta">
+		<name>eta</name>
+		<type>int</type>
+		<size>11</size>
+		<description>The estimated wait time for a call until
+			it is answered by an agent.
+		</description>
+	</column>
+
+	<column id="last_start">
+		<name>last_start</name>
+		<type>int</type>
+		<size>11</size>
+		<description>Stores the timestamp when the last call has started.
+		</description>
+	</column>
+
+	<column id="recv_time">
+		<name>recv_time</name>
+		<type>int</type>
+		<size>11</size>
+		<description>Stores the timestamp when the call was received by the
+			call center.
+		</description>
+	</column>
+
+	<column id="caller_dn">
+		<name>caller_dn</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Caller Display Name.
+		</description>
+	</column>
+
+	<column id="caller_un">
+		<name>caller_un</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Caller User Name.
+		</description>
+	</column>
+
+	<column id="b2buaid">
+		<name>b2buaid</name>
+		<type>string</type>
+		<size>128</size>
+		<default></default>
+		<primary/>
+		<description>The B2B id internally used by the B2B module to identify
+			the call.
+		</description>
+	</column>
+
+	<column id="flow">
+		<name>flow</name>
+		<type>string</type>
+		<size>128</size>
+		<description>The flow/queue this call belongs to.
+		</description>
+	</column>
+
+	<column id="agent">
+		<name>agent</name>
+		<type>string</type>
+		<size>128</size>
+		<description>The agent that handles the call.
+		</description>
+	</column>
+
+	<index>
+		<name>unique_id</name>
+		<colref linkend="id"/>
+		<unique/>
+	</index>
+</table>

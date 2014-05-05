@@ -40,3 +40,21 @@ CREATE TABLE cc_cdrs (
 );
 
 ALTER SEQUENCE cc_cdrs_id_seq MAXVALUE 2147483647 CYCLE;
+CREATE TABLE cc_calls (
+    id SERIAL NOT NULL,
+    state INTEGER NOT NULL,
+    ig_cback INTEGER NOT NULL,
+    no_rej INTEGER NOT NULL,
+    setup_time INTEGER NOT NULL,
+    eta INTEGER NOT NULL,
+    last_start INTEGER NOT NULL,
+    recv_time INTEGER NOT NULL,
+    caller_dn VARCHAR(128) NOT NULL,
+    caller_un VARCHAR(128) NOT NULL,
+    b2buaid VARCHAR(128) PRIMARY KEY DEFAULT '' NOT NULL,
+    flow VARCHAR(128) NOT NULL,
+    agent VARCHAR(128) NOT NULL,
+    CONSTRAINT cc_calls_unique_id UNIQUE (id)
+);
+
+ALTER SEQUENCE cc_calls_id_seq MAXVALUE 2147483647 CYCLE;

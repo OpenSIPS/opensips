@@ -61,3 +61,28 @@ END cc_cdrs_tr;
 /
 BEGIN map2users('cc_cdrs'); END;
 /
+CREATE TABLE cc_calls (
+    id NUMBER(10),
+    state NUMBER(10),
+    ig_cback NUMBER(10),
+    no_rej NUMBER(10),
+    setup_time NUMBER(10),
+    eta NUMBER(10),
+    last_start NUMBER(10),
+    recv_time NUMBER(10),
+    caller_dn VARCHAR2(128),
+    caller_un VARCHAR2(128),
+    b2buaid VARCHAR2(128) PRIMARY KEY DEFAULT '',
+    flow VARCHAR2(128),
+    agent VARCHAR2(128),
+    CONSTRAINT cc_calls_unique_id  UNIQUE (id)
+);
+
+CREATE OR REPLACE TRIGGER cc_calls_tr
+before insert on cc_calls FOR EACH ROW
+BEGIN
+  auto_id(:NEW.id);
+END cc_calls_tr;
+/
+BEGIN map2users('cc_calls'); END;
+/

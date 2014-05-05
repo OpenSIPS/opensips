@@ -1,0 +1,10 @@
+METADATA_COLUMNS
+id(int) state(int) ig_cback(int) no_rej(int) setup_time(int) eta(int) last_start(int) recv_time(int) caller_dn(str) caller_un(str) b2buaid(str) flow(str) agent(str)
+METADATA_KEY
+0 
+METADATA_READONLY
+0
+METADATA_LOGFLAGS
+0
+METADATA_DEFAULTS
+NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|''|NIL|NIL
