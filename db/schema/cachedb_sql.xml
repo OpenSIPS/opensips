@@ -9,7 +9,7 @@
 
 <table id="cachedb" xmlns:db="http://docbook.org/ns/docbook">
 	<name>cachedb</name>
-	<version>1</version>
+	<version>2</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>DB implementation of the CacheDB interface: &OPENSIPS_MOD_DOC;cachedb_sql.html
@@ -20,6 +20,7 @@
 		<name>keyname</name>
 		<type>string</type>
 		<size>255</size>
+		<primary/>
 		<description>The Key</description>
 		
 	</column>
