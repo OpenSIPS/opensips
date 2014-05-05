@@ -637,7 +637,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		 * create new b2bua instance */
 		call->ref_cnt++;
 		id = b2b_api.init( msg, &b2b_scenario, &new_leg, b2bl_callback_customer,
-				(void*)call, 0x0, NULL /* custom_hdrs */ );
+				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to init new b2bua call (empty ID received)\n");
 			return -2;
