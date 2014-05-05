@@ -476,8 +476,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* do not close the connection here - since we're using a
+	global connection instead of relying on the cachedb interface
 	cdb_dbf.close(cdb_db_handle);
 	cdb_db_handle = 0;
+	*/
 
 	if(cache_clean_period <= 0) {
 			LM_ERR("wrong parameter cache_clean_period - need a postive value\n");
