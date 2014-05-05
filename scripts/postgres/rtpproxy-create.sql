@@ -5,3 +5,4 @@ CREATE TABLE rtpproxy_sockets (
     set_id INTEGER NOT NULL
 );
 
+ALTER SEQUENCE rtpproxy_sockets_id_seq MAXVALUE 2147483647 CYCLE;

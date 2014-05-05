@@ -10,6 +10,7 @@ CREATE TABLE cc_flows (
     CONSTRAINT cc_flows_unique_flowid UNIQUE (flowid)
 );
 
+ALTER SEQUENCE cc_flows_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('cc_agents','1');
 CREATE TABLE cc_agents (
     id SERIAL PRIMARY KEY NOT NULL,
@@ -20,6 +21,7 @@ CREATE TABLE cc_agents (
     CONSTRAINT cc_agents_unique_agentid UNIQUE (agentid)
 );
 
+ALTER SEQUENCE cc_agents_id_seq MAXVALUE 2147483647 CYCLE;
 INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
 CREATE TABLE cc_cdrs (
     id SERIAL PRIMARY KEY NOT NULL,
@@ -36,3 +38,4 @@ CREATE TABLE cc_cdrs (
     cid INTEGER DEFAULT 0
 );
 
+ALTER SEQUENCE cc_cdrs_id_seq MAXVALUE 2147483647 CYCLE;

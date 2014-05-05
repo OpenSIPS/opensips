@@ -40,7 +40,12 @@
 	    <xsl:text> Type=</xsl:text>
 	    <xsl:value-of select="normalize-space(type[@db=$db])"/>
 	</xsl:if>
-	<xsl:text>;&#x0A;&#x0A;</xsl:text>	
+	<xsl:text>;&#x0A;&#x0A;</xsl:text>
+	<xsl:for-each select="column">
+	    <xsl:if test="autoincrement">
+	        <xsl:call-template name="alter_sequence"/>
+	    </xsl:if>
+	</xsl:for-each>
     </xsl:template>
 
     <xsl:template name="column.type">
@@ -89,7 +94,6 @@
 	    </xsl:when>
 	    <xsl:when test="$type='binary'">
 		<xsl:text>BYTEA</xsl:text>
-		<xsl:call-template name="column.size"/>
 		<xsl:call-template name="column.trailing"/>
 	    </xsl:when>
 	    <xsl:when test="$type='text'">
@@ -129,5 +133,25 @@
 	<!-- because postgres don't like identical index names, even on table level -->
 	<xsl:value-of select="concat($table.name, '_', $index.name)"/>
 	</xsl:template>
+
+<!-- ################ SEQUENCE (alter) ################  -->
+<!-- ALTER SEQUENCE location_id_seq MAXVALUE 2147483647 CYCLE; -->
+	<xsl:template name="alter_sequence">
+	    <xsl:variable name="table.name">
+		<xsl:call-template name="get-name">
+		    <xsl:with-param name="select" select="parent::table"/>
+		</xsl:call-template>
+	    </xsl:variable>
+	    <xsl:variable name="column.name">
+		<xsl:call-template name="get-name"/>
+	    </xsl:variable>
+
+	    <xsl:text>ALTER SEQUENCE </xsl:text>
+	    <xsl:value-of select="$table.name"/>
+	    <xsl:text>_</xsl:text>
+	    <xsl:value-of select="$column.name"/>
+	    <xsl:text>_seq MAXVALUE 2147483647 CYCLE;&#x0A;</xsl:text>
+	</xsl:template>
+<!-- ################ /SEQUENCE (alter) ################  -->
 
 </xsl:stylesheet>

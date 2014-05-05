@@ -7,3 +7,4 @@ CREATE TABLE pdt (
     CONSTRAINT pdt_sdomain_prefix_idx UNIQUE (sdomain, prefix)
 );
 
+ALTER SEQUENCE pdt_id_seq MAXVALUE 2147483647 CYCLE;

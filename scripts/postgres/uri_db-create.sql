@@ -8,3 +8,4 @@ CREATE TABLE uri (
     CONSTRAINT uri_account_idx UNIQUE (username, domain, uri_user)
 );
 
+ALTER SEQUENCE uri_id_seq MAXVALUE 2147483647 CYCLE;
