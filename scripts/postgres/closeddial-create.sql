@@ -10,6 +10,7 @@ CREATE TABLE closeddial (
     CONSTRAINT closeddial_cd_idx1 UNIQUE (username, domain, cd_domain, cd_username, group_id)
 );
 
+ALTER SEQUENCE closeddial_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX closeddial_cd_idx2 ON closeddial (group_id);
 CREATE INDEX closeddial_cd_idx3 ON closeddial (cd_username);
 CREATE INDEX closeddial_cd_idx4 ON closeddial (username);

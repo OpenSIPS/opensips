@@ -29,5 +29,6 @@ CREATE TABLE dialog (
     flags INTEGER DEFAULT 0 NOT NULL
 );
 
+ALTER SEQUENCE dialog_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX dialog_hash_idx ON dialog (hash_entry, hash_id);
 

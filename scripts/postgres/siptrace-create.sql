@@ -13,6 +13,7 @@ CREATE TABLE sip_trace (
     direction VARCHAR(4) DEFAULT '' NOT NULL
 );
 
+ALTER SEQUENCE sip_trace_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX sip_trace_traced_user_idx ON sip_trace (traced_user);
 CREATE INDEX sip_trace_date_idx ON sip_trace (time_stamp);
 CREATE INDEX sip_trace_fromip_idx ON sip_trace (fromip);

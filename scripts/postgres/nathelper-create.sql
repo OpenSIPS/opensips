@@ -5,3 +5,4 @@ CREATE TABLE nh_sockets (
     set_id INTEGER NOT NULL
 );
 
+ALTER SEQUENCE nh_sockets_id_seq MAXVALUE 2147483647 CYCLE;
