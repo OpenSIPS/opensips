@@ -45,6 +45,12 @@
 		CDR (like call rejected by agent A, and redistributed and accepted by 
 		agent B).
 		</para>
+		<para>
+		The <emphasis>cc_calls</emphasis> table is used to store ongoing calls,
+		regardless it's state (in queue, to the agent, ended). It is populated
+		at runtime by the module and queried at startup. This table should not
+		be manually provisioned.
+		</para>
 		</section>
 
 		<section>
@@ -157,8 +163,8 @@
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		SQL address to the DB server -- database specific. This must be
-		the Database holding the provisioning tables (cc_flows and cc_agents
-		tables).
+		the Database holding the provisioning tables (cc_flows, cc_agents
+		and cc_calls tables).
 		</para>
 		If not explicitly set, the global OpenSIPS DB URL will be used.
 		<para>
