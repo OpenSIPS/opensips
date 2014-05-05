@@ -215,7 +215,7 @@ modparam("call_center", "acc_db_url",
 		<emphasis>b2b_scenario</emphasis> parameter.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>call_center</quote>.
+		<emphasis>Default value is <quote>call center</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -223,7 +223,7 @@ modparam("call_center", "acc_db_url",
 		<programlisting format="linespecific">
 ...
 modparam("b2b_logic", "script_scenario", "/etc/opensips/scenario_callcenter.xml")
-modparam("call_center", "b2b_scenario", "call_center")
+modparam("call_center", "b2b_scenario", "call center")
 ...
 </programlisting>
 		</example>

@@ -214,13 +214,13 @@ modparam("call_center", "acc_db_url",
    name of this scenario from this file (which must be loaded via
    the b2b_logic module) must match the b2b_scenario parameter.
 
-   Default value is “call_center”.
+   Default value is “call center”.
 
    Example 1.3. Set b2b_scenario parameter
 ...
 modparam("b2b_logic", "script_scenario", "/etc/opensips/scenario_callcen
 ter.xml")
-modparam("call_center", "b2b_scenario", "call_center")
+modparam("call_center", "b2b_scenario", "call center")
 ...
 
 1.4.4. wrapup_time (integer)
