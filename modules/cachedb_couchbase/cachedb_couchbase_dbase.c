@@ -484,5 +484,72 @@ int couchbase_sub(cachedb_con *connection,str *attr,int val,int expires,int *new
 
 int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 {
-	return couchbase_add(connection,attr,0,0,val);
+	lcb_t instance;
+	lcb_error_t oprc;
+	lcb_get_cmd_t cmd;
+	const lcb_get_cmd_t *commands[1];
+	struct timeval start;
+
+	start_expire_timer(start,couch_exec_threshold);
+	instance = COUCHBASE_CON(connection);
+
+	commands[0] = &cmd;
+	memset(&cmd, 0, sizeof(cmd));
+	cmd.v.v0.key = attr->s;
+	cmd.v.v0.nkey = attr->len;
+	oprc = lcb_get(instance, NULL, 1, commands);
+
+	if (oprc != LCB_SUCCESS) {
+		/* Key not present, record does not exist */
+		if (oprc == LCB_KEY_ENOENT) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get counter",attr->s,attr->len,0);
+			return -1;
+		}
+
+		//Attempt reconnect
+		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get counter ",attr->s,attr->len,0);
+			return -2;
+		}
+
+		//Try Again
+		instance = COUCHBASE_CON(connection);
+		oprc = lcb_get(instance, NULL, 1, commands);
+		if (oprc != LCB_SUCCESS) {
+			if (oprc == LCB_KEY_ENOENT) {
+				LM_ERR("Get counter command successfully retried\n");
+				stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get counter",attr->s,attr->len,0);
+				return -1;
+			}
+			LM_ERR("Get counter command retry failed - %s\n", lcb_strerror(instance, oprc));
+			stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get counter",attr->s,attr->len,0);
+			return -2;
+		}
+		LM_ERR("Get command successfully retried\n");
+	}
+
+	//Incase of malloc failure
+	if (!get_res.s) {
+		stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase get counter",attr->s,attr->len,0);
+		return -2;
+	}
+
+	stop_expire_timer(start,couch_exec_threshold,
+	"cachedb_couchbase get counter",attr->s,attr->len,0);
+	
+	if (str2sint((str *)&get_res,val)) {
+		LM_ERR("Failued to convert counter [%.*s] to int\n",get_res.len,get_res.s);
+		pkg_free(get_res.s);
+		get_res.s = NULL;
+		return -1;
+	}
+
+	pkg_free(get_res.s);
+	get_res.s = NULL;
+	return 1;
 }
