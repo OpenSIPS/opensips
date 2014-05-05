@@ -88,18 +88,18 @@ static db_func_t cc_acc_dbf;
 extern b2bl_api_t b2b_api;
 
 
-#define check_val( _val, _type, _not_null, _is_empty_str) \
+#define check_val( _val, _type, _not_null, _is_empty_str, _c) \
 	do{\
 		if ((_val)->type!=_type) { \
-			LM_ERR("bad colum type\n");\
+			LM_ERR("bad column type: %s [%d/%d]\n", _c, (_val)->type, _type);\
 			goto error;\
 		} \
 		if (_not_null && (_val)->nul) { \
-			LM_ERR("nul column\n");\
+			LM_ERR("nul column: %s\n", _c);\
 			goto error;\
 		} \
 		if (_is_empty_str && VAL_STRING(_val)==0) { \
-			LM_ERR("empty str column\n");\
+			LM_ERR("empty str column: %s\n", _c);\
 			goto error;\
 		} \
 	}while(0)
@@ -359,7 +359,7 @@ int cc_db_restore_calls( struct cc_data *data)
 		row = RES_ROWS(res) + i;
 
 		/* FLOW_COL */
-		check_val( ROW_VALUES(row)+10, DB_STRING, 1, 1);
+		check_val( ROW_VALUES(row)+10, DB_STRING, 1, 1, "flow");
 		s.s = (char*)VAL_STRING(ROW_VALUES(row)+10);
 		s.len = strlen(s.s);
 		flow = get_flow_by_name(data, &s);
@@ -370,12 +370,12 @@ int cc_db_restore_calls( struct cc_data *data)
 		LM_DBG("using call flow %p\n", flow);
 
 		/* CALLER_DN_COL */
-		check_val( ROW_VALUES(row)+7, DB_STRING, 1, 0);
+		check_val( ROW_VALUES(row)+7, DB_STRING, 1, 0, "caller_dn");
 		dn.s = (char*)VAL_STRING(ROW_VALUES(row)+7);
 		if(dn.s)
 			dn.len = strlen(dn.s);
 		/* CALLER_UN_COL */
-		check_val( ROW_VALUES(row)+8, DB_STRING, 1, 0);
+		check_val( ROW_VALUES(row)+8, DB_STRING, 1, 0, "caller_un");
 		un.s = (char*)VAL_STRING(ROW_VALUES(row)+8);
 		if(un.s)
 			un.len = strlen(un.s);
@@ -387,7 +387,7 @@ int cc_db_restore_calls( struct cc_data *data)
 		}
 
 		/* AGENT_COL */
-		check_val( ROW_VALUES(row)+12, DB_STRING, 0, 0);
+		check_val( ROW_VALUES(row)+11, DB_STRING, 0, 0, "agent");
 		s.s = (char*)VAL_STRING(ROW_VALUES(row)+11);
 		if(s.s && strlen(s.s)) {
 			s.len = strlen(s.s);
@@ -403,28 +403,28 @@ int cc_db_restore_calls( struct cc_data *data)
 		}
 
 		/* STATE_COL */
-		check_val( ROW_VALUES(row), DB_INT, 1, 0);
+		check_val( ROW_VALUES(row), DB_INT, 1, 0, "state");
 		call->state = VAL_INT(ROW_VALUES(row));
 		/* IGCBACK_COL */
-		check_val( ROW_VALUES(row)+1, DB_INT, 1, 0);
+		check_val( ROW_VALUES(row)+1, DB_INT, 1, 0, "ig_cback");
 		call->ign_cback = VAL_INT(ROW_VALUES(row)+1);
 		/* NOREJ_COL */
-		check_val( ROW_VALUES(row)+2, DB_INT, 1, 0);
+		check_val( ROW_VALUES(row)+2, DB_INT, 1, 0, "no_rej");
 		call->no_rejections = VAL_INT(ROW_VALUES(row)+2);
 		/* SETUP_TIME_COL */
-		check_val( ROW_VALUES(row)+3, DB_INT, 1, 0);
+		check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "setup_time");
 		call->setup_time = VAL_INT(ROW_VALUES(row)+3);
 		/* ETA_COL  */
-		check_val( ROW_VALUES(row)+4, DB_INT, 1, 0);
+		check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "eta");
 		call->eta = VAL_INT(ROW_VALUES(row)+4);
 		/* LAST_START_COL */
-		check_val( ROW_VALUES(row)+5, DB_INT, 1, 0);
+		check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "last_start");
 		call->last_start = VAL_INT(ROW_VALUES(row)+5);
 		/* RECV_TIME_COL */
-		check_val( ROW_VALUES(row)+6, DB_INT, 1, 0);
+		check_val( ROW_VALUES(row)+6, DB_INT, 1, 0, "recv_time");
 		call->recv_time = VAL_INT(ROW_VALUES(row)+6);
 		/* B2BUAID_COL */
-		check_val( ROW_VALUES(row)+9, DB_STRING, 1, 1);
+		check_val( ROW_VALUES(row)+9, DB_STRING, 1, 1, "b2buaid");
 		id.s = (char*)VAL_STRING(ROW_VALUES(row)+9);
 		if(id.s) {
 			id.len = strlen(id.s);
@@ -510,18 +510,18 @@ int cc_load_db_data( struct cc_data *data)
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* flowID column */
-			check_val( ROW_VALUES(row), DB_STRING, 1, 1);
+			check_val( ROW_VALUES(row), DB_STRING, 1, 1, "flowid");
 			id.s = (char*)VAL_STRING(ROW_VALUES(row));
 			id.len = strlen(id.s);
 			/* PRIORITY column */
-			check_val( ROW_VALUES(row)+1, DB_INT, 1, 0);
+			check_val( ROW_VALUES(row)+1, DB_INT, 1, 0, "priority");
 			priority = VAL_INT(ROW_VALUES(row)+1);
 			/* SKILL column */
-			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1);
+			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skill");
 			skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
 			skill.len = strlen(skill.s);
 			/* CID column */
-			check_val( ROW_VALUES(row)+3, DB_STRING, 0, 0);
+			check_val( ROW_VALUES(row)+3, DB_STRING, 0, 0, "prependcid");
 			if (VAL_NULL(ROW_VALUES(row)+3)) {
 				cid.s = NULL; cid.len = 0;
 			} else {
@@ -532,7 +532,7 @@ int cc_load_db_data( struct cc_data *data)
 			}
 			for( j=0 ; j<MAX_AUDIO ; j++ ) {
 				/* MESSAGE_XXXX column */
-				check_val( ROW_VALUES(row)+4+j, DB_STRING, 0, 0);
+				check_val( ROW_VALUES(row)+4+j, DB_STRING, 0, 0, "message");
 				if (VAL_NULL(ROW_VALUES(row)+4+j)) {
 					messages[j].s = NULL; messages[j].len = 0;
 				} else {
@@ -604,19 +604,19 @@ int cc_load_db_data( struct cc_data *data)
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 			/* agentID column */
-			check_val( ROW_VALUES(row), DB_STRING, 1, 1);
+			check_val( ROW_VALUES(row), DB_STRING, 1, 1, "agentid");
 			id.s = (char*)VAL_STRING(ROW_VALUES(row));
 			id.len = strlen(id.s);
 			/* LOCATION column */
-			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1);
+			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
 			location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
 			location.len = strlen(location.s);
 			/* SKILLS column */
-			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1);
+			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
 			skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
 			skill.len = strlen(skill.s);
 			/* LOGSTATE column */
-			check_val( ROW_VALUES(row)+3, DB_INT, 1, 0);
+			check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
 			logstate = VAL_INT(ROW_VALUES(row)+3);
 			/* LAST_CALL_END column */
 			last_call_end = VAL_INT(ROW_VALUES(row)+4);
