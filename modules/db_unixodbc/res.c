@@ -236,7 +236,8 @@ static inline int db_unixodbc_convert_rows(const db_con_t* _h, db_res_t* _r)
 		i++;
 		rows = rows->next;
 	}
-	db_unixodbc_list_destroy(rowstart);
+
+	CON_DATA(_h) = rowstart ? rowstart : NULL;
 	return 0;
 }
 
