@@ -2623,6 +2623,10 @@ tls_ca() {
 #
 
 opensips_trap() {
+	if [ -z "$GDB" ] ; then
+		merr "'gdb' tool not found: set GDB variable to correct tool path"
+		exit
+	fi
 	DATE=`/bin/date +%Y%m%d_%H%M%S`
 	LOG_FILE=/tmp/gdb_opensips_$DATE
 	minfo "Trap file: $LOG_FILE"
