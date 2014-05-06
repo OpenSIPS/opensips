@@ -438,7 +438,8 @@ int cc_db_restore_calls( struct cc_data *data)
 			call->ref_cnt++;
 
 			/* restore logic info */
-			if(b2b_api.restore_upper_info(&call->b2bua_id, b2bl_callback_customer, call)< 0)
+			if(b2b_api.restore_upper_info(&call->b2bua_id, b2bl_callback_customer, call,
+					B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB)< 0)
 			{
 				/* delete the call*/
 				LM_ERR("Upper info not found for [%.*s]\n", id.len, id.s);
