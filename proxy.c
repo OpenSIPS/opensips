@@ -137,7 +137,7 @@ int hostent_cpy(struct hostent *dst, struct hostent* src)
 	for (i=0;i<len;i++){
 		len2=strlen(src->h_aliases[i])+1;
 		dst->h_aliases[i]=(char*)pkg_malloc(sizeof(char)*len2);
-		if (dst->h_aliases==0){
+		if (dst->h_aliases[i]==0){
 			ser_error=ret=E_OUT_OF_MEM;
 			pkg_free(dst->h_name);
 			for(r=0; r<i; r++)	pkg_free(dst->h_aliases[r]);
