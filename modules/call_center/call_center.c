@@ -728,7 +728,7 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	str leg = {NULL,0};
 	str *dn;
 	int dec;
-	int ret;
+	int ret = -1;
 
 	call = NULL;
 	dec = 0;
