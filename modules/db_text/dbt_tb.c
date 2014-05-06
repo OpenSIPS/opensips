@@ -149,6 +149,8 @@ dbt_table_p dbt_table_new(const str *_tbname, const str *_dbname, const char *pa
 	dtp = (dbt_table_p)shm_malloc(sizeof(dbt_table_t));
 	if(!dtp)
 		goto done;
+	memset(dtp, 0, sizeof *dtp);
+
 	dtp->name.s = (char*)shm_malloc((_tbname->len+1)*sizeof(char));
 	if(!dtp->name.s)
 	{
@@ -172,14 +174,9 @@ dbt_table_p dbt_table_new(const str *_tbname, const str *_dbname, const char *pa
 	dtp->dbname.s[_dbname->len] = '\0';
 	dtp->dbname.len = _dbname->len;
 
-	dtp->rows = NULL;
-	dtp->cols = NULL;
-	dtp->colv = NULL;
 	dtp->mark = (int)time(NULL);
 	dtp->flag = DBT_TBFL_ZERO;
-	dtp->nrrows = dtp->nrcols = dtp->auto_val = 0;
 	dtp->auto_col = -1;
-	dtp->mt = 0;
 	if(stat(path, &s) == 0)
 	{
 		dtp->mt = s.st_mtime;
