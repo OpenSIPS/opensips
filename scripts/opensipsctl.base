@@ -65,11 +65,11 @@ fi
 if [ -z "$GDB" ] ; then
 	locate_tool gdb
 	if [ -z "$TOOLPATH" ] ; then
-		# now error, but we can look for alternative names if it is the case
-		echo "error: 'gdb' tool not found: set GDB variable to correct tool path"
-		exit
+		# no gdb
+		GDB=""
+	else
+		GDB="$TOOLPATH"
 	fi
-	GDB="$TOOLPATH"
 fi
 if [ -z "$MD5" ]; then
 	locate_tool md5sum md5
