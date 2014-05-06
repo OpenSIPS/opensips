@@ -1618,7 +1618,8 @@ int b2b_logic_bind(b2bl_api_t* api)
 }
 
 
-int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
+int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param,
+														unsigned int cb_mask)
 {
 	b2bl_tuple_t* tuple;
 	unsigned int local_index, hash_index;
@@ -1645,6 +1646,7 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
 		return -1;
 	}
 	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
 	tuple->cb_param = param;
 	lock_release(&b2bl_htable[hash_index].lock);
 
