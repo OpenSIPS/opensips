@@ -215,11 +215,11 @@ void couchbase_destroy(cachedb_con *con)
 }
 
 /*Conditionally reconnect based on the error code*/
-void couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
+int couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 	cachedb_pool_con *tmp;
 	void *newcon;
 
-	if (!con) return;
+	if (!con) return -1;
 
 	switch (err) {
 		/* Error codes to attempt reconnects on */
@@ -229,7 +229,7 @@ void couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 		break;
 		default:
 			/*nothing to do*/
-			return;
+			return 0;
 		break;
 	}
 
@@ -244,7 +244,10 @@ void couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 		tmp->id = NULL;
 		couchbase_free_connection(tmp);
 		con->data = newcon;
+		return 1;
 	}
+
+	return -2;
 }
 
 int couchbase_set(cachedb_con *connection,str *attr,
@@ -413,9 +416,7 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 	lcb_error_t oprc;
 	lcb_get_cmd_t cmd;
 	const lcb_get_cmd_t *commands[1];
-	struct timeval start;
 
-	start_expire_timer(start,couch_exec_threshold);
 	instance = COUCHBASE_CON(connection);
 
 	commands[0] = &cmd;
@@ -427,15 +428,11 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
 		if (oprc == LCB_KEY_ENOENT) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get counter",attr->s,attr->len,0);
 			return -1;
 		}
 
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get counter ",attr->s,attr->len,0);
 			return -2;
 		}
 
@@ -445,13 +442,9 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Get counter command successfully retried\n");
-				stop_expire_timer(start,couch_exec_threshold,
-				"cachedb_couchbase get counter",attr->s,attr->len,0);
 				return -1;
 			}
 			LM_ERR("Get counter command retry failed - %s\n", lcb_strerror(instance, oprc));
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get counter",attr->s,attr->len,0);
 			return -2;
 		}
 		LM_ERR("Get command successfully retried\n");
@@ -459,14 +452,9 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	//Incase of malloc failure
 	if (!get_res.s) {
-		stop_expire_timer(start,couch_exec_threshold,
-		"cachedb_couchbase get counter",attr->s,attr->len,0);
 		return -2;
 	}
 
-	stop_expire_timer(start,couch_exec_threshold,
-	"cachedb_couchbase get counter",attr->s,attr->len,0);
-	
 	if (str2sint((str *)&get_res,val)) {
 		LM_ERR("Failued to convert counter [%.*s] to int\n",get_res.len,get_res.s);
 		pkg_free(get_res.s);

@@ -44,7 +44,6 @@
 static str cache_mod_name = str_init("memcached");
 
 struct cachedb_url *memcached_script_urls = NULL;
-static int memcache_exec_threshold=0;
 
 int mc_set_connection(unsigned int type, void *val)
 {
@@ -257,10 +256,8 @@ int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
 	uint32_t fl;
 	char * err;
 	memcached_con *con;
-	struct timeval start;
 	str rpl;
 
-	start_expire_timer(start,memcache_exec_threshold);
 	con = (memcached_con *)connection->data;
 
 	ret = memcached_get(con->memc,attr->s, attr->len,
@@ -270,16 +267,12 @@ int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
 	{
 		if(rc == MEMCACHED_NOTFOUND)
 		{
-			stop_expire_timer(start,memcache_exec_threshold,
-			"cachedb_memcached counter fetch",attr->s,attr->len,0);
 			return -2;
 		}
 		else
 		{
 			err = (char*)memcached_strerror(con->memc,rc);
 			LM_ERR("Failed to get: %s\n",err );
-			stop_expire_timer(start,memcache_exec_threshold,
-			"cachedb_memcached counter fetch",attr->s,attr->len,0);
 			return -1;
 		}
 	}
@@ -289,15 +282,11 @@ int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
 	
 	if (str2sint(&rpl,res) < 0) {
 		LM_ERR("Failed to convert %.*s to int\n",(int)ret_len,ret);
-		stop_expire_timer(start,memcache_exec_threshold,
-			"cachedb_memcached counter fetch",attr->s,attr->len,0);
 		free(ret);
 		return -1;
 		
 	}
 
-	stop_expire_timer(start,memcache_exec_threshold,
-		"cachedb_memcached counter fetch",attr->s,attr->len,0);
 	free(ret);
 	return 0;
 }
