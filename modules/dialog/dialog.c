@@ -830,7 +830,9 @@ static int mod_init(void)
 
 	/* if profiles should be kept in cachedb's */
 
+	/* do not destroy callbacks - will need them later for syncing new dialogs
 	destroy_dlg_callbacks( DLGCB_LOADED );
+	*/
 	destroy_cachedb(0);
 
 	return 0;
