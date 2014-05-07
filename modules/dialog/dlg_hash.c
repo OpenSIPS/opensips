@@ -1087,7 +1087,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		if(node1 == 0)
 			goto error;
 		if (dlg->vals) {
-			node2 = add_mi_node_child(node1, MI_IS_ARRAY, "values", 6, 0, 0);
+			node2 = add_mi_node_child(node1, 0, "values", 6, 0, 0);
 			if(node2 == 0)
 				goto error;
 			/* print dlg values -> iterate the list */
@@ -1332,6 +1332,7 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		goto error;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if (dlg==NULL) {
 		if ( internal_mi_print_dlgs(rpl_tree, rpl, 1, idx, cnt)!=0 )
