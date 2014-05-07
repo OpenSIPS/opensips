@@ -56,21 +56,6 @@ struct proxy_l* proxies=0;
 
 int disable_dns_failover=0;
 
-/* searches for the proxy named 'name', on port 'port' with
-   proto 'proto'; if proto==0 => proto wildcard (will match any proto)
-   returns: pointer to proxy_l on success or 0 if not found */
-static struct proxy_l* find_proxy(str *name, unsigned short port, int proto)
-{
-	struct proxy_l* t;
-	for(t=proxies; t; t=t->next)
-		if (((t->name.len == name->len) &&
-			 ((proto==PROTO_NONE)||(t->proto==proto))&&
-			(strncasecmp(t->name.s, name->s, name->len)==0)) &&
-				(t->port==port))
-			break;
-	return t;
-}
-
 
 int hostent_shm_cpy(struct hostent *dst, struct hostent* src)
 {
@@ -207,26 +192,7 @@ void free_hostent(struct hostent *dst)
 
 
 
-struct proxy_l* add_proxy( str* name, unsigned short port,
-		unsigned short proto)
-{
-	struct proxy_l* p;
-
-	if ((p=find_proxy(name, port, proto))!=0) return p;
-	if ((p=mk_proxy(name, port, proto, 0))==0) goto error;
-	/* add p to the proxy list */
-	p->next=proxies;
-	proxies=p;
-	return p;
-
-error:
-	return 0;
-}
-
-
-
-
-/* same as add_proxy, but it doesn't add the proxy to the list
+/* Creates a proxy structure out of the host, port and proto
  * uses also SRV if possible & port==0 (quick hack) */
 
 struct proxy_l* mk_proxy(str* name, unsigned short port, unsigned short proto,
@@ -267,7 +233,8 @@ error:
 
 
 
-/* same as mk_proxy, but get the host as an ip*/
+/* same as mk_proxy, but in shared memory
+ * uses also SRV if possible & port==0 (quick hack) */
 struct proxy_l* mk_proxy_from_ip(struct ip_addr* ip, unsigned short port,
 		unsigned short proto)
 {
@@ -359,3 +326,40 @@ struct proxy_l* mk_shm_proxy(str* name, unsigned short port, unsigned short prot
 error:
 	return 0;
 }
+
+/* clones a proxy into pkg memory */
+struct proxy_l* clone_proxy(struct proxy_l *sp)
+{
+	struct proxy_l *dp;
+
+	dp = (struct proxy_l*)pkg_malloc(sizeof(struct proxy_l));
+	if (dp==NULL) {
+		LM_ERR("no more pkg memory\n");
+		return 0;
+	}
+	memset( dp , 0 , sizeof(struct proxy_l));
+
+	dp->port = sp->port;
+	dp->proto = sp->proto;
+	dp->addr_idx = sp->addr_idx;
+
+	/* clone the hostent */
+	if (hostent_cpy( &dp->host, &sp->host)!=0)
+		goto error0;
+
+	/* clone the dns resolver */
+	if (sp->dn) {
+		dp->dn = dns_res_copy(sp->dn);
+		if (dp->dn==NULL)
+			goto error1;
+	}
+
+	return dp;
+error1:
+	free_hostent(&dp->host);
+error0:
+	pkg_free(dp);
+	return 0;
+}
+
+
