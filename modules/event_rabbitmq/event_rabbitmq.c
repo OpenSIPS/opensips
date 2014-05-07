@@ -134,20 +134,20 @@ static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 	p1 = (rmq_params_t *)sock1->params;
 	p2 = (rmq_params_t *)sock2->params;
 	if (!p1 || !p2 ||
-			!(p1->flags & RMQ_PARAM_EXCH) || !(p2->flags & RMQ_PARAM_EXCH) ||
+			!(p1->flags & RMQ_PARAM_RKEY) || !(p2->flags & RMQ_PARAM_RKEY) ||
 			!(p1->flags & RMQ_PARAM_USER) || !(p2->flags & RMQ_PARAM_USER))
 		return 0;
 
 	if (sock1->port == sock2->port &&
 			sock1->address.len == sock2->address.len &&
-			p1->exchange.len == p2->exchange.len &&
+			p1->routing_key.len == p2->routing_key.len &&
 			p1->user.len == p2->user.len &&
 			(p1->user.s == p2->user.s || /* trying the static values */
 			 !memcmp(p1->user.s, p2->user.s, p1->user.len)) &&
 			!memcmp(sock1->address.s, sock2->address.s, sock1->address.len) &&
-			!memcmp(p1->exchange.s, p2->exchange.s, p1->exchange.len)) {
+			!memcmp(p1->routing_key.s, p2->routing_key.s, p1->routing_key.len)) {
 		LM_DBG("socket matched: %s@%s:%hu/%s\n",
-				p1->user.s, sock1->address.s, sock2->port, p1->exchange.s);
+				p1->user.s, sock1->address.s, sock2->port, p1->routing_key.s);
 		return 1;
 	}
 	return 0;
@@ -173,7 +173,7 @@ static inline int dupl_string(str* dst, const char* begin, const char* end)
 /*
  * This is the parsing function
  * The socket grammar should be:
- * 		 [user [':' password '@']] ip [':' port] '/' exchange
+ * 		 [user [':' password] '@'] ip [':' port] '/' routing_key
  */
 static evi_reply_sock* rmq_parse(str socket)
 {
@@ -232,10 +232,10 @@ static evi_reply_sock* rmq_parse(str socket)
 				if (dupl_string(&sock->address, begin, socket.s + i) < 0)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->routing_key, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
-				param->flags |= RMQ_PARAM_EXCH;
+				param->flags |= RMQ_PARAM_RKEY;
 				goto success;
 			}
 			break;
@@ -267,10 +267,10 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				}
 				sock->flags |= EVI_PORT;
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->routing_key, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
-				param->flags |= RMQ_PARAM_EXCH;
+				param->flags |= RMQ_PARAM_RKEY;
 				goto success;
 			}
 			break;
@@ -290,10 +290,10 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
 
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->routing_key, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
-				param->flags |= RMQ_PARAM_EXCH;
+				param->flags |= RMQ_PARAM_RKEY;
 				goto success;
 			}
 			break;
@@ -309,10 +309,10 @@ static evi_reply_sock* rmq_parse(str socket)
 				}
 				sock->flags |= EVI_PORT;
 
-				if (dupl_string(&param->exchange, socket.s + i + 1, 
+				if (dupl_string(&param->routing_key, socket.s + i + 1,
 							socket.s + len) < 0)
 					goto err;
-				param->flags |= RMQ_PARAM_EXCH;
+				param->flags |= RMQ_PARAM_RKEY;
 				goto success;
 			}
 			break;

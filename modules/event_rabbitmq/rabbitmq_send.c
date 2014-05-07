@@ -203,8 +203,8 @@ void rmq_print(evi_reply_sock *sock)
 	}
 	rmqp = (rmq_params_t *)sock->params;
 	LM_DBG("XXX Flags %X : %X\n", sock->flags, rmqp->flags);
-	if (rmqp->flags & RMQ_PARAM_EXCH && rmqp->exchange.s)
-		LM_DBG("XXX Exchange: %s\n", rmqp->exchange.s);
+	if (rmqp->flags & RMQ_PARAM_RKEY && rmqp->routing_key.s)
+		LM_DBG("XXX Exchange: %s\n", rmqp->routing_key.s);
 	else
 		LM_DBG("XXX Exchange not found\n");
 	if (rmqp->flags & RMQ_PARAM_USER && rmqp->user.s)
@@ -230,8 +230,8 @@ void rmq_free_param(rmq_params_t *rmqp)
 	if ((rmqp->flags & RMQ_PARAM_PASS) && rmqp->pass.s &&
 			rmqp->pass.s != (char *)RMQ_DEFAULT_UP)
 		shm_free(rmqp->pass.s);
-	if ((rmqp->flags & RMQ_PARAM_EXCH) && rmqp->exchange.s)
-		shm_free(rmqp->exchange.s);
+	if ((rmqp->flags & RMQ_PARAM_RKEY) && rmqp->routing_key.s)
+		shm_free(rmqp->routing_key.s);
 }
 
 
@@ -272,7 +272,7 @@ static int rmq_reconnect(evi_reply_sock *sock)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)sock->params;
 
-	if (!rmqp || !(rmqp->flags & RMQ_PARAM_EXCH)) {
+	if (!rmqp || !(rmqp->flags & RMQ_PARAM_RKEY)) {
 		LM_ERR("not enough socket info\n");
 		return -1;
 	}
@@ -323,7 +323,7 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 	return amqp_basic_publish(rmqp->conn,
 			rmqp->channel,
 			AMQP_EMPTY_BYTES,
-			amqp_cstring_bytes(rmqp->exchange.s),
+			amqp_cstring_bytes(rmqp->routing_key.s),
 			0,
 			0,
 			0,

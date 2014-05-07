@@ -60,7 +60,7 @@
 	<section>
 	<title>RabbitMQ socket syntax</title>
 	<para>
-		<para><emphasis>'rabbitmq:' [user[':'password] '@' host [':' port] '/' exchange</emphasis></para>
+		<para><emphasis>'rabbitmq:' [user[':'password] '@' host [':' port] '/' routing_key</emphasis></para>
 	</para>
 	<para>
 		Meanings:
@@ -86,9 +86,9 @@
 					default value is '5672'.
 			</para>	</listitem>
 			<listitem><para>
-					<emphasis>exchange</emphasis> - this is the exchange routing 
-					information used by the AMQP protocol. It is also used to
-					identify the queue where the event should be sent.
+					<emphasis>routing_key</emphasis> - this is the routing key
+					used by the AMQP protocol and it is used to identify the queue
+					where the event should be sent.
 					<para>NOTE: if the queue does not exist, this module will not 
 						try to create it.</para>
 			</para>	</listitem>
