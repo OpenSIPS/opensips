@@ -155,13 +155,13 @@ static param_export_t params[]=
 	{"app10_call_info_uri_column",		STR_PARAM,&app_call_info_uri_column[9].s	},
 	{"app10_call_info_appearance_uri_column",STR_PARAM,&app_call_info_appearance_uri_column[9].s},
 	{"app10_b2bl_key_column",		STR_PARAM,&app_b2bl_key_column[9].s		},
-        {0,				0,		0				}
+	{0,				0,		0				}
 };
 
 /** MI commands */
 static mi_export_t mi_cmds[] = {
-	{ "sca_list",	0,	mi_sca_list,	0,  0,  0},
-        { 0,		0,	0,		0,  0,  0}
+	{ "sca_list",   0, mi_sca_list, 0,  0,  0},
+	{ 0,            0,           0, 0,  0,  0}
 };
 
 /** Module interface */
@@ -480,13 +480,14 @@ static struct mi_root* mi_sca_list(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(index = 0; index<b2b_sca_hsize; index++) {
 		lock_get(&b2b_sca_htable[index].lock);
 		rec = b2b_sca_htable[index].first;
 		while(rec) {
-			node = add_mi_node_child(rpl, MI_DUP_VALUE, "shared_line", 11,
-						rec->shared_line.s, rec->shared_line.len);
+			node = add_mi_node_child(rpl, MI_IS_ARRAY|MI_DUP_VALUE,
+				"shared_line", 11,rec->shared_line.s, rec->shared_line.len);
 			if(node == NULL) goto error;
 			watcher = rec->watchers;
 			while (watcher) {

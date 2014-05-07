@@ -103,6 +103,7 @@ struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==0)
 		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	for( i=0 ; i<MAX_IP_BRANCHES ; i++ ) {
 

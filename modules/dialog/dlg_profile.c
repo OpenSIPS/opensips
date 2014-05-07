@@ -1085,6 +1085,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		goto error;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	ret = 0;
 
@@ -1162,6 +1163,7 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* go through the hash and print the dialogs */
 
@@ -1235,6 +1237,7 @@ struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
 		return 0;
 
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	profile = profiles;
 	while (profile) {

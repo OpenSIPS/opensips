@@ -2637,6 +2637,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 		if (rpl_tree==NULL)
 			goto error;
+		rpl_tree->node.flags |= MI_IS_ARRAY;
 
 		for( gw=(*rdata)->pgw_l ; gw ; gw=gw->next ) {
 			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
@@ -2736,6 +2737,7 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param)
 		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 		if (rpl_tree==NULL)
 			goto error;
+		rpl_tree->node.flags |= MI_IS_ARRAY;
 
 		for( cr=(*rdata)->carriers ; cr ; cr=cr->next ) {
 			node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,

@@ -896,7 +896,7 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_root *rpl_tree;
 	struct mi_node *dst_node;
-	struct mi_node *node;
+	struct mi_node *node, *node1;
 	struct mi_attr *attr;
 	struct lb_dst *dst;
 	char *p;
@@ -906,6 +906,7 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL)
 		return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	lock_start_read( ref_lock );
 
@@ -944,23 +945,27 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 		if (attr==0)
 			goto error;
 
+		node = add_mi_node_child( dst_node, 0, "Resources", 9, NULL, 0);
+		if (node==0)
+			goto error;
+
 		/* go through all resources */
 		for( i=0 ; i<dst->rmap_no ; i++) {
 		/* add a resource node */
-			node = add_mi_node_child( dst_node, 0, "Resource", 8,
+			node1 = add_mi_node_child( node, 0, "Resource", 8,
 				dst->rmap[i].resource->name.s,dst->rmap[i].resource->name.len);
-			if (dst_node==0)
+			if (node1==0)
 				goto error;
 
 			/* add some attributes to the destination node */
 			p= int2str((unsigned long)dst->rmap[i].max_load, &len);
-			attr = add_mi_attr( node, MI_DUP_VALUE, "max", 3, p, len);
+			attr = add_mi_attr( node1, MI_DUP_VALUE, "max", 3, p, len);
 			if (attr==0)
 				goto error;
 
 			p= int2str((unsigned long)lb_dlg_binds.get_profile_size
 				(dst->rmap[i].resource->profile, &dst->profile_id), &len);
-			attr = add_mi_attr( node, MI_DUP_VALUE, "load", 4, p, len);
+			attr = add_mi_attr( node1, MI_DUP_VALUE, "load", 4, p, len);
 			if (attr==0)
 				goto error;
 		}

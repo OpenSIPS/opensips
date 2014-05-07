@@ -186,6 +186,7 @@ static struct mi_root *mi_arg(struct mi_root *cmd, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for ( n=0; n<my_argc ; n++ ) {
 		node = add_mi_node_child(rpl, 0, 0, 0, my_argv[n], strlen(my_argv[n]));
@@ -214,6 +215,7 @@ static struct mi_root *mi_which(struct mi_root *cmd, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	get_mi_cmds( &cmds, &size);
 	for ( i=0 ; i<size ; i++ ) {
@@ -245,6 +247,7 @@ static struct mi_root *mi_ps(struct mi_root *cmd, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for ( i=0 ; i<counted_processes ; i++ ) {
 		node = add_mi_node_child(rpl, 0, MI_SSTR("Process"), 0, 0 );

@@ -431,6 +431,7 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
 {
 	struct mi_root *rpl_tree;
 	struct mi_node *node=NULL, *rpl=NULL;
+	struct mi_attr *attr;
 	int len;
 	char * p;
 
@@ -440,15 +441,19 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if (rl_stats(rpl_tree, &node->value)) {
 		LM_ERR("cannoti mi print values\n");
 		goto free;
 	}
 
+	if (!(node = add_mi_node_child(rpl, 0, "PIPE", 4, NULL, 0)))
+		goto free;
+
 	LOCK_GET(rl_lock);
 	p = int2str((unsigned long)(*drop_rate), &len);
-	if (!(node = add_mi_node_child(rpl, MI_DUP_VALUE, "DROP_RATE", 9, p, len))) {
+	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "drop_rate", 9, p, len))) {
 		LOCK_RELEASE(rl_lock);
 		goto free;
 	}

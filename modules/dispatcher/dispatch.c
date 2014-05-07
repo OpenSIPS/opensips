@@ -1848,7 +1848,8 @@ int ds_print_mi_list(struct mi_node* rpl)
 
 	for(list = (*ds_data)->sets ; list!= NULL; list= list->next) {
 		p = int2str(list->id, &len);
-		set_node= add_mi_node_child(rpl, MI_DUP_VALUE,"SET", 3, p, len);
+		set_node= add_mi_node_child(rpl, MI_IS_ARRAY|MI_DUP_VALUE,
+			"SET", 3, p, len);
 		if(set_node == NULL)
 			goto error;
 
