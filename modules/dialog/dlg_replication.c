@@ -249,6 +249,8 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 
 	if_update_stat(dlg_enable_stats, active_dlgs, 1);
 
+	run_load_callback_per_dlg(dlg);
+
 	return 0;
 
 error:

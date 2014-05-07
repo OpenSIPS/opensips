@@ -1686,6 +1686,8 @@ static int sync_dlg_db_mem(void)
 					/* to be later removed by timer */
 					ref_dlg(dlg,1);
 				}
+
+				run_load_callback_per_dlg(dlg);
 			} else {
 				/* we already saw this dialog before
 				 * check which is the newer version */
