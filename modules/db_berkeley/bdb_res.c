@@ -370,7 +370,10 @@ int bdb_is_neq_type(db_type_t _t0, db_type_t _t1)
 	switch(_t1)
 	{
 		case DB_INT:
-			if(_t0==DB_DATETIME || _t0==DB_BITMAP)
+			if(_t0==DB_BIGINT || _t0==DB_DATETIME || _t0==DB_BITMAP)
+				return 0;
+		case DB_BIGINT:
+			if(_t0==DB_INT || _t0==DB_DATETIME || _t0==DB_BITMAP)
 				return 0;
 		case DB_DATETIME:
 			if(_t0==DB_INT)
