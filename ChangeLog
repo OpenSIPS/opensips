@@ -1,3 +1,826 @@
+=========================== Release 1.11.1 ==============================
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [340f2d6] :
+
+	Merge branch 'version-update' into 1.11
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [5b55545] :
+
+	mi_json: complete rework of the module
+	consider the modules MI_IS_ARRAY hints to build a simpler JSON document
+	fixes cases where duplicate keys generate invalid documents
+	(example: ul_show_contacts)
+	(cherry picked from commit 459dffba91ebdda454a250fbad2eed2069eac8e2)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [3b02382] :
+
+	fix previous commit to organize dlg_list_ctx as array too
+	(cherry picked from commit 7b83d0783fd6e67347c84cdc8eca6d7234021c81)
+
+
+2014-05-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [27d3240] :
+
+	When loading new dialogs at runtime ( either via dlg_db_sync or via the bin interface ), also run the load callback ( eg. used by the acc module to write proper CDRs )
+	(cherry picked from commit afee8fe8aaa3d8bc5bec54868404e6a4ab49fa3d)
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [492f939] :
+
+	Fix the structure of MI tree (output).
+	Mark the nodes that contain arrays of subnodes (versus list of differente nodes). This is a must in order to properly structure the MI output via the json backend.
+	(cherry picked from commit 34576f52bcd1351cc7e2f2846e3b37b2e4e35503)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [1dbbe8d] :
+
+	update Makefile defines for 1.11.1
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [b0ac0fb] :
+
+	updated packaging for 1.11
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [ccbe2e2] :
+
+	event_rabbitmq: replace exchange with routing_key
+	Closes #220
+	(cherry picked from commit eb233f894b1364d20e1f3461304d79a077102a3a)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [fe66e6a] :
+
+	utils: ignore db_berkeley versioning
+	(cherry picked from commit 74666b91222bd9df813ec4eeb7959e8ab1b9e18f)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [b874c3e] :
+
+	b2b: restore callbacks mask after reload
+	(cherry picked from commit fc3ca077ead8b85098f77e48ef8bb6b193512847)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [8e9a622] :
+
+	call_center: initialize ret variable
+	(cherry picked from commit e086595b812587ba15895bbf6b7fea9e8cc4ebd7)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [6b5d8df] :
+
+	b2b_logic: do not call the DESTROY callback at shutdown
+	(cherry picked from commit 4ddf1b37cc27a918ba209c06f3cb65f5e3d4342a)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [b496bf8] :
+
+	call_center: fix default scenario readme
+	(cherry picked from commit a5f6e10ae6e780e7569bca7099de8f3b0be57bcd)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [554827c] :
+
+	call_center: add cc_calls table
+	(cherry picked from commit 2f6eb09c19e01043d167fe168ba45ca3d6163e0e)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [ba9c130] :
+
+	call_center: add last_call_end column
+	(cherry picked from commit 4b366c5b3866f1541e073c8799022fbe74e53392)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [65663b5] :
+
+	call_center: add column info when loading calls from db
+	(cherry picked from commit 997ccd335b1ec93397a0d86018ff8543a1cf71ae)
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2aac3c4] :
+
+	Complete documentation added for the Call Center module
+	(cherry picked from commit 8f0a1508729276b8b8057e215e20316039f07079)
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [479d434] :
+
+	Fixed compile warnings
+	(cherry picked from commit 5c27f464f78235d70414661721470e8213624f5f)
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e481ef3] :
+
+	Support for json-c ; Fixed compile warnings
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [611d47f] :
+
+	Fix DB_BIGINT support and unused vars.
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0196aa8] :
+
+	Fix reusage of proxy_l structures.
+	As proxy_l structures contain information about the DNS-based failover (iteration in he struct, which SRV or NAPTR records were used or not), such structure cannot be used more then once for sending a message out.
+	Fixes:
+	- do not use the same proxy_l for multiple functions in script (remove the add_proxy() and find_proxy() )
+	- avoid using the same proxy_l structure for all the calls of same function (when proxy_l is a function parameter)
+
+	Fixes #224
+	Many thanks for Chris Maciejewski ( @l7s ) for support on troublehsooting this.
+	(cherry picked from commit f7f2cb41d6f562d0c3d6748a827d55e12cb05174)
+
+
+2014-05-07  Liviu Chircu  <liviu at opensips dot org>
+	* [a1317bc] :
+
+	lumps processing: a couple of performance optimizations
+	Since we can only have LUMP_DEL or LUMP_NOP along the main lump chain,
+	reordering the switch statements will improve code performance.
+
+	This patch also enhances code readability and improves error reporting.
+	(cherry picked from commit 6f83e15bba66ca1d1f1437fb5afb1ad25a49c430)
+
+
+2014-05-07  Liviu Chircu  <liviu at opensips dot org>
+	* [0f10e2f] :
+
+	lump processing: correct the handling of DEL lumps with identical offsets
+		* for this corner case, only add the _delta_ lengths instead
+	(cherry picked from commit f9d9654e6df6c801f19f774e3960a8d6f806a1ca)
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cb07512] :
+
+	Fix passing the auth AVPs from server to client.
+	Fixes #134, testing still required.
+	(cherry picked from commit 4ccebfe0ddda37b833cb7cabbe691fbf5f31402d)
+
+
+2014-05-06  Ovidiu Sas  <osas at voipembedded dot com>
+	* [0bb0dc2] :
+
+	scripts: fix gdb detection for opensipsctl
+	(cherry picked from commit 92131a48b6bd7768038b0f1d138fa461163652fa)
+
+
+2014-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [af1cbb0] :
+
+	httpd: fix a couple of size_t printing warnings
+	(cherry picked from commit 575c0db9193dbf6a11117d0bdf6e796b78f03a2c)
+
+
+2014-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [fb09369] :
+
+	db_text: properly initialize memory when caching tables
+	(cherry picked from commit 204d08bb18110599317324fefbd64ecc77e6784f)
+
+
+2014-05-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [db17981] :
+
+	Fixed examples in docs (uac versus uac_auth)
+	(cherry picked from commit e1641a4dc82686f2f12051ed22000e54a4b8d846)
+
+
+2014-05-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d335919] :
+
+	Fixed bogus test on memory allocation.
+	(cherry picked from commit d9fe58e721a0e4c53841e91ba766df7bbce2cae5)
+
+
+2014-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [ba3b48b] :
+
+	db_unixodbc: deallocate the results only after they are processed
+		* closes bug #622 on the SF tracker
+	(cherry picked from commit d63ee19a8961b6019eda067c0b439f09d8126901)
+
+
+2014-05-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8ce527e] :
+
+	Postgres schema regenerated.
+
+
+2014-05-05  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [65acf80] :
+
+	Merge pull request #221 from nikbyte/master
+	Fix some PgSQL schema issues
+
+
+2014-05-05  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [721b156] :
+
+	When fetching a counter, do not accidentally create it in case it does not exist
+	(cherry picked from commit 67023e99bad1d0569db53853d935abc480c72c19)
+
+
+2014-05-05  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [860e499] :
+
+	When fetching a counter, do not accidentally create it in case it does not exist
+	(cherry picked from commit 47cd18c007ee24c3a2c2bdf853fdcbb5790a9e95)
+
+
+2014-05-05  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [705bba1] :
+
+	Fixed the connection handling - some modules would want to run cachedb type ops in the mod init Fixed the DB schema & increased version - the keyname must be a primary key for the counter ops to properly work
+	(cherry picked from commit f1fec17d012a54790ce9be47d20cd52daf5a1cbe)
+
+
+2014-05-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ac42df0] :
+
+	Fix compile error following the backport
+
+
+2014-05-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d41d8df] :
+
+	Fixed using internal ID for DB updated operations.
+	Use the DB ID when doing updates instead of the internal ID.
+	(cherry picked from commit d871bc972a4294d0b3ee66eb87a87a811b890659)
+
+
+2014-05-01  Liviu Chircu  <liviu at opensips dot org>
+	* [8a28a98] :
+
+	script statement thresholds: ignore certain statements
+	Motivation:
+		* could lead to behavior such as:
+			"ROUTE, IF, ROUTE, IF and IF took too long..."
+
+		* ignored statements: ROUTE, IF, WHILE, FOR_EACH
+	(cherry picked from commit dee5b3fc278500efe49289f77a0f802805e8d626)
+
+
+2014-05-01  Liviu Chircu  <liviu at opensips dot org>
+	* [b565df3] :
+
+	core: fix compiler warning and a rare mem leak
+		* setting the global advertised port multiple times leaked pkg mem
+	(cherry picked from commit a99688e9bb801fae28a009174b7145688a8b204a)
+
+
+2014-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [04b2510] :
+
+	error.h: add a bug reporting function
+	Motivation:
+		* it seems it can be reused quite a lot
+
+	Examples:
+		* report_programming_bug("invalid pointer: %p", p);
+		* report_programming_bug("we should not process BYEs here!");
+	(cherry picked from commit 9f7ce76403a5ef5db8e9ac8da355d4955059af55)
+
+
+2014-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [29366c0] :
+
+	core: address several advertised address related issues
+		* properly duplicate buffers into shared memory when required
+		* keep the advertised address of the first branch as a default for
+		  future branches
+		* also allow set_advertised_port() to receive any kind of parameter
+		  (int, string, int pvar, str pvar...)
+
+	Credits for reporting and helping with troubleshooting to GitHub user contact2malay
+	(cherry picked from commit ad92fa6ff6f61073270b311475fb9840361b4f2e)
+
+
+2014-04-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0c56339] :
+
+	Fix bug in fetching all values of a RADIUS AVP.
+	Using AVPs from script, you can now retrieve all the values (not only yhe first value of the RADIUS AVP).
+	In order to maintain backward compatibility, the fetch_all_values module parameter was added - by default is off.
+
+	Reported and tested by John Quick.
+
+
+2014-04-29  Liviu Chircu  <liviu at opensips dot org>
+	* [5bcd5b9] :
+
+	stun: fix possible memory corruption
+		* when processing any STUN packet with unknown attributes
+	(Reported by Nick Altmann)
+	(cherry picked from commit 70d282354c59cb1882fa2101fa44a54375b7b7dd)
+
+
+2014-04-28  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [bcb047f] :
+
+	Merge pull request #203 from fabriziopicconi/patch-2
+	thrift 0.9
+
+
+2014-04-27  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [b660610] :
+
+	Update Makefile
+
+
+2014-04-23  Liviu Chircu  <liviu at opensips dot org>
+	* [50fd3bb] :
+
+	drouting: properly set pvar types when setting attribute values
+		* fixes commit d24b10e1f
+	(Reported by Alexander Mustafin)
+	(cherry picked from commit df88864afbfbeb5c415ec63c91ad3920a4fcb227)
+
+
+2014-04-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [313f41a] :
+
+	Merge pull request #130 from dsandras/ds-pua-dbupdate-fix
+	Fixes bug where the pua db elements were deleted too early.
+	Conflicts:
+		modules/pua/pua.c
+
+
+2014-04-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [58311b4] :
+
+	Fixed creating tables for b2b and call_center modules
+
+
+2014-04-20  Nick Altmann  <nikbyte at users.noreply.github dot com>
+	* [d52cb7e] :
+
+	Merge pull request #209 from fabriziopicconi/patch-5
+	RPM spec: fix opensips-db_oracle library installation
+
+
+2014-04-20  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [a37e8c7] :
+
+	Fix opensips-db_oracle library installation
+	libclntsh.so.11.1() and libocci.so.11.1() not exported by oracle-instantclient
+
+
+2014-04-20  Nick Altmann  <nick.altmann at gmail dot com>
+	* [f5e4d59] :
+
+	RPM spec: added dependencies for mysql and postgresql libs
+
+
+2014-04-18  Razvan Crainea  <razvan at opensips dot org>
+	* [862fd5b] :
+
+	rtpproxy: fix another documentation typo
+	rtpproxy_engage() function is not deprecated
+	(cherry picked from commit 49194574554d95e6a99320849f858f2f6dd361cd)
+
+
+2014-04-18  Razvan Crainea  <razvan at opensips dot org>
+	* [0b6a348] :
+
+	rtpproxy: fix documentation typo
+	rtpproxy_unforce() function is not deprecated
+	(cherry picked from commit a9f358e4e34f86df23c7ebd4032cf76b403a2c8a)
+
+
+2014-04-17  Liviu Chircu  <liviu at opensips dot org>
+	* [6b1e171] :
+
+	TLS README: correct spelling and grammar
+	(cherry picked from commit 4f7df942a34162619a9c3b7b6d2d25f7ac8aee2f)
+
+
+2014-04-17  Liviu Chircu  <liviu at opensips dot org>
+	* [2b2092b] :
+
+	regenerate the TLS CA and default certificate
+		* the CA passphrase did not match the one in the README
+	(cherry picked from commit 3a0bca84986d81a8d64037d082b86ae13b5a50f0)
+
+
+2014-04-16  Nick Altmann  <nick.altmann at gmail dot com>
+	* [113693c] :
+
+	RPM spec: corrected changelog section format
+
+
+2014-04-16  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [5555971] :
+
+	RPM spec: fixed x64_86 compilation problems, added some dependencies
+
+
+2014-04-16  Razvan Crainea  <razvan at opensips dot org>
+	* [9ef8684] :
+
+	acc: make sure we we don't write the same record twice
+	this scenario appears when using multi bye leg support and there are no legs
+	(cherry picked from commit 48050eeab8e6c2c496e5a746e07a1092a6a523e0)
+
+
+2014-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [be4c0ca] :
+
+	generate .gitrevision file if it does not exist
+	(cherry picked from commit eb06db1a12ee39cc251f3ff7d7fe6918a6c5898c)
+
+
+2014-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [c4d9368] :
+
+	Makefile: add git revision in the tarballs
+	(cherry picked from commit 8ad936f44b5bb5fbe3cbac4ce015ae7bafaf21fb)
+
+
+2014-04-15  Razvan Crainea  <razvan at opensips dot org>
+	* [07e5847] :
+
+	remove id from version output, since it is no longer used
+	(cherry picked from commit 1f68d9aade9b0eb2ce15d11a82431e3ff53b12ee)
+
+
+2014-04-12  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [c3e0466] :
+
+	thrift 0.9
+	thrift 0.9 support
+
+
+2014-04-11  Liviu Chircu  <liviu at opensips dot org>
+	* [d427267] :
+
+	msilo dbschema: avoid setting a default value for the body field
+		* this causes errors/warnings on backends such as MySQL/MariaDB
+	(cherry picked from commit 5c790aa9431401dc0b906a9a8694dffb6bd1d34b)
+
+
+2014-04-10  Razvan Crainea  <razvan at opensips dot org>
+	* [30fa243] :
+
+	rtpproxy: fix rtpproxy_engage() pvar expansion
+	Reported by Ovidiu Sas
+	Closes #195
+
+
+2014-04-09  Ovidiu Sas  <osas at voipembedded dot com>
+	* [425255b] :
+
+	parser: increase the number of accepted URI unknown params from 5 -> 10
+	(cherry picked from commit a6fd82d2d38b95c8815429dad2d5a25b4d998d68)
+
+
+2014-04-09  Liviu Chircu  <liviu at opensips dot org>
+	* [cdaad30] :
+
+	exec doc: update the OpenSIPS routes for each function
+	(cherry picked from commit 2f47930ce189815bd9793f7304b00a9dae17f7ac)
+
+
+2014-04-08  Razvan Crainea  <razvan at opensips dot org>
+	* [1a5a259] :
+
+	fix engage fixup function when called without any parameters
+	Reported by Ovidiu Sas
+	Closes #192
+	(cherry picked from commit cee47941726c03583eb37ae046a6f5c0293c9913)
+
+
+2014-04-04  Liviu Chircu  <liviu at opensips dot org>
+	* [47e1f90] :
+
+	hp malloc: properly release the hash lock on redundant shm_reallocs
+		* e.g. shm_realloc(shm_malloc(16), 16);
+	(cherry picked from commit 4148c3f19d99919bb06aff3d7370cbfb96c40374)
+
+
+2014-04-04  Liviu Chircu  <liviu at opensips dot org>
+	* [8c1f51d] :
+
+	hp malloc: fix pkg max_real_used computation in hp_info()
+		* update_shm_stats() should not be called at all
+	(cherry picked from commit e56f327aea403aae6982bbb404b2c9f6f4c146a3)
+
+
+2014-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [3155d87] :
+
+	hp malloc: do not write the pattern file when "mem_warming" = 0
+		* also improve the logging at shutdown
+	(cherry picked from commit 19832c6a24a8a3f291b744e739d8c3e3c0670267)
+
+
+2014-04-03  Razvan Crainea  <razvan at opensips dot org>
+	* [ca11afb] :
+
+	opensipsctl: change trapping logging method
+	the operator '&>>' does not exist for all shells, used '2>&1 >>' instead
+
+
+2014-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [4b22509] :
+
+	mi_xmlrpc: fix crash when flushing complex MI trees as strings
+		* crash was replicated with "ul_dump" command at 51+ contacts
+			- "reply_option" must be disabled
+
+	This patch solves a couple of other issues:
+		* properly mark completed nodes when "reply_option" = 0
+		* a rare memory leak when flushing empty "mi_node"s
+	(cherry picked from commit f5da89d27099f405e1242347bdf9e3cb6368423c)
+
+
+2014-04-03  Razvan Crainea  <razvan at opensips dot org>
+	* [bead016] :
+
+	fixed acc to raise the proper event when using acc_evi_request()
+	Credits go to Brett Nemeroff for reporting and testing
+	(cherry picked from commit 24bd3a843f382860a917dc7da0c8af52afb4c9b8)
+
+
+2014-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [84d919f] :
+
+	hp malloc: differentiate the pkg and shm statistics code
+	When HP_MALLOC is defined:
+		* shm statistics are based on 32/64-bit atomic counters
+			- the former logic is still available with HP_MALLOC_FAST_STATS
+			- however, stat aggregation and the shm threshold checks should be done by a single process
+		* pkg statistics are implemented similarly to the other allocators
+		* also re-introduce fragment coalescing for pkg memory
+
+	(cherry-picked from commit 268955ba5af0306e849877aecc87967a0b6c7c3e)
+
+
+2014-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [87cc1ea] :
+
+	core statistics: export a initialization checking function
+		* this allows statistics-dependent code to test initialization
+		* change all "shm_malloc" calls to "shm_malloc_unsafe"
+
+		* ultimately, memory allocators are now able to make use of core stats
+	(cherry picked from commit 42c3d383b1449af42a1ddfb91f4891f28fcbf50b)
+
+
+2014-04-01  Liviu Chircu  <liviu at opensips dot org>
+	* [a09410a] :
+
+	hp malloc statistics: fix incorrect stats when configuring split buckets
+	(cherry picked from commit b68cfbab2716efe9bdcc3bfd1724b228ce84bda2)
+
+
+2014-03-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [30654e5] :
+
+	Fix recalculation of sending socket after local route
+	Take into consideration the "force_send_socket" setting in local route.
+	(cherry picked from commit d37ae664dcfd9a5f83de62a493628ba12d495e75)
+
+
+2014-03-27  Liviu Chircu  <liviu at opensips dot org>
+	* [51c1518] :
+
+	call_center: fix some db schema errors
+		* reduce the cc_agents skills column size
+		* fix some primary key issues in cc_flows and cc_agents
+		* fix a couple of bad column names in cc_cdrs
+	(cherry picked from commit edd872182882536f3cf37bd5c4be633075f265d4)
+
+
+2014-03-27  Liviu Chircu  <liviu at opensips dot org>
+	* [8b8ab79] :
+
+	hp malloc: reorder some initializing operations
+		* hp_mem_warming() fails if anything is allocated before
+			(it cannot access the big fragment anymore)
+	(cherry picked from commit 9f710642b9da0d091d67b79b95b4a89cac954315)
+
+
+2014-03-27  Liviu Chircu  <liviu at opensips dot org>
+	* [5663e41] :
+
+	hp malloc: fix shm statistics
+		* processes now update fragment statistics for each bucket
+		* the MI workers iterate and aggregate all memory information
+		* the built-in maximum sampling rate is 200ms
+			- repeating a fetch in < 200ms will return the same results
+		* this patch also corrects a rare deadlock in hp_realloc
+			- hp_realloc "growth" may deadlock with hp_malloc "shrink"
+			- the best solution is to drop the "growth" realloc operation
+			- this also merges well with the allocator fragmentation requirements
+	(cherry picked from commit 9ad2947eed7add4510b1fa388004524cc50d5bab)
+
+
+2014-03-27  Liviu Chircu  <liviu at opensips dot org>
+	* [5c82191] :
+
+	dispatcher init: initialize the old_data pointer
+		* otherwise, the code will dereference a random pointer
+	(cherry picked from commit dbf1b4bfe98e0d18debaca9c33fc0adc2a1809fe)
+
+
+2014-03-26  Walter Doekes  <walter+github at wjd dot nu>
+	* [fad3491] :
+
+	presence_dialoginfo: Fix bounds checking by using a helper function.
+	Reported by: dsandras
+	> About the bound checking error, the code was cut&pasted from another
+	> place in the same file where the same error is still present:
+	> ...
+
+	Also I replaced a heap str with a stack one in build_dialoginfo. This
+	one wasn't freed either unless an error condition was hit.
+	(cherry picked from commit 6d058ec495c2faa015b24f412e2fe1b55526657e)
+
+
+2014-03-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5cb96e4] :
+
+	Fixed detection of the module functions used in script - we need to look also into the logical expressions (like IF and WHILE conditions) Credits for reportind and helping with the troubleshooting go to Justin Zondagh
+	(cherry picked from commit ab22467a2ed8af97ba89ce53144d4414dbcd5a52)
+
+
+2014-03-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [23dd8e7] :
+
+	pi_http: fix HTTP escaping
+	(cherry picked from commit 980dfc853c411730e07db74242188bc6190aafdf)
+
+
+2014-03-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [0961608] :
+
+	pi_http: fix html output
+	(cherry picked from commit a1f454bcc6e9eb45249eafe1f49726121b792a67)
+
+
+2014-03-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [d5871e2] :
+
+	pi_http: samples regenerated
+	(cherry picked from commit cbf2f118c407aa6549cce43fc6e9b6bcf9ae09fc)
+
+
+2014-03-26  Ovidiu Sas  <osas at voipembedded dot com>
+	* [16bdc3a] :
+
+	pi_http: update pi_framework_mod.xsl to generate new pi_http samples  - add link_cmd to the primary key for DB_UPDATE commands
+	(cherry picked from commit d0ced797fce24c00502a008ab12e88eeeea85b0f)
+
+
+2014-03-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [74c5b3e] :
+
+	core: list_tcp_conns: compute properly the tmeout attr
+	(cherry picked from commit 344cd96ca6e9cef70525b92cd824f44e38476d55)
+
+
+2014-03-25  Ovidiu Sas  <osas at voipembedded dot com>
+	* [24353c6] :
+
+	core: list_tcp_conns: print Timeout attr in human readable format
+	(cherry picked from commit 6ac1dc8251c597b60f0787026d65d95158d00a77)
+
+
+2014-03-25  Liviu Chircu  <liviu at opensips dot org>
+	* [eaea7ff] :
+
+	hp malloc: reduce the built-in maximum split factor
+		* dividing the list into too many smaller ones may actually hurt performance
+		* this also reduces the minimum pkg and shm consumption by 3.4MB when
+		  enabling HP_MALLOC
+	(cherry picked from commit 7d302c18fbd6c4c4d7af64aeddb1e9c65b6c9fc3)
+
+
+2014-03-25  Liviu Chircu  <liviu at opensips dot org>
+	* [22ca1a6] :
+
+	hp malloc: fix the hash size macros
+		* the old ones actually led to bad memory accesses within hp_malloc()
+	(cherry picked from commit faaca742a06d5a1e5f8925a1e95cfafcdd85c709)
+
+
+2014-03-25  Ovidiu Sas  <osas at voipembedded dot com>
+	* [4b90882] :
+
+	presence: subs_phtable_list - print expires attr in human readable format
+	(cherry picked from commit ddaf00470e4f376a572483a3d1e8bf8c2bc98c4e)
+
+
+2014-03-24  Ovidiu Sas  <osas at voipembedded dot com>
+	* [d84ffc8] :
+
+	httpd: fix compiler warning
+	(cherry picked from commit 4e703a579d74587fe8f82fa040e3b39fe4b93b2d)
+
+
+2014-03-24  Ovidiu Sas  <osas at voipembedded dot com>
+	* [0bc24b5] :
+
+	mi: declare/move MI_DATE_BUF_LEN into the mi headers
+	(cherry picked from commit 8925239f47bec295e1b0188c5b8c0deb2903a4ca)
+
+
+2014-03-24  Nick Altmann  <nick.altmann at gmail dot com>
+	* [a345f50] :
+
+	Update CentOS and RHEL/Fedora specs: fixed b2b submodule, added additional dependencies
+
+
+2014-03-24  Liviu Chircu  <liviu at opensips dot org>
+	* [3285be4] :
+
+	sipmsgops: Fix trailing whitespaces when doing "codec_delete_re"
+		* deleting the last payload attribute led to trailing whitespaces
+		* some UAs would return "488 Not Acceptable Here" in this case
+	(cherry picked from commit c9657d4154ebc3ee271e981db036a10d9b9a7922)
+
+
+2014-03-24  Nick Altmann  <nick.altmann at gmail dot com>
+	* [5508a27] :
+
+	Update centos spec file: fixed b2b submodule and removed some odd files from main module
+
+
+2014-03-23  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [bb3c2df] :
+
+	New modules included
+	Some new rpm optional modules are added:
+	b2b_sca,call_center,mi_json,script_helper
+
+
+2014-03-22  Nick Altmann  <nick.altmann at gmail dot com>
+	* [eb2dee6] :
+
+	Update rpm specs for 1.11
+
+
+2014-03-21  Liviu Chircu  <liviu at opensips dot org>
+	* [ea6ab4d] :
+
+	tm: fix fr_inv_timeout bug from commit d244686dc5f
+		* also improve code readability with a couple of macros
+	(cherry picked from commit 2535935327f30a2c004c3f2619c1cc9f0ed0e26c)
+
+
+2014-03-21  Liviu Chircu  <liviu at opensips dot org>
+	* [5973c96] :
+
+	hp malloc: expose memory warming parameters in the script
+	(cherry picked from commit 83c97e8a6f9a3c14dd393722467d701c7d03f87b)
+
+
+2014-03-21  Liviu Chircu  <liviu at opensips dot org>
+	* [3da4c5d] :
+
+	hp malloc: increase built-in PKG mem size to match the larger hash
+		* otherwise, "opensips -V" would fail
+	(cherry picked from commit 6246df172cede302e33bb63e667a4786e2a47c17)
+
+
+2014-03-21  Liviu Chircu  <liviu at opensips dot org>
+	* [f7ab6ce] :
+
+	hp malloc: rename functions, update headers, add some comments
+	(cherry picked from commit d504e9fe6d531b2102133ac56337f17f60accbe8)
+
+
+2014-03-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ec75efb] :
+
+	Fixed DH and EC compiling on openssl < 1.0.1 - credits go to Nick Altmann for reporting and testing the fix
+	(cherry picked from commit aefe6c18319eaf6348695c5865aa2b2a5d451378)
+
+
 =========================== Release 1.11.0 ==============================
 
 2014-03-20  Liviu Chircu  <liviu at opensips dot org>
