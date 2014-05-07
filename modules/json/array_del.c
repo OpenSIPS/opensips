@@ -26,8 +26,8 @@
  *  2009-09-04  first version (andreidragus)
  */
 
-#include <json/json.h>
-#include <json/json_object_private.h>
+#include <json.h>
+#include <json_object_private.h>
 
 void array_list_del_idx( struct array_list * arr, int idx)
 {

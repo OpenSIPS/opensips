@@ -47,8 +47,8 @@
 #include "../rr/api.h"
 
 
-#include <json/json.h>
-#include <json/json_object_private.h>
+#include <json.h>
+#include <json_object_private.h>
 
 
 
@@ -237,8 +237,8 @@ struct json_object* json_parse(const char *str,int len)
 		obj = json_tokener_parse_ex(tok, "", -1);
 	
 	if(tok->err != json_tokener_success)
-		obj = (struct json_object*)error_ptr(-tok->err);
-	
+		obj = (struct json_object*)error_ptr((long)(-tok->err));
+
 	json_tokener_free(tok);
 	return obj;
 }
