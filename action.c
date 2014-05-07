@@ -498,7 +498,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 				pkg_free(p);
 				if (ret==0) ret=1;
 			}else if ((a->elem[0].type==PROXY_ST)) {
-				ret=forward_request(msg,(struct proxy_l*)a->elem[0].u.data);
+				if (0==(p=clone_proxy((struct proxy_l*)a->elem[0].u.data))) {
+					LM_ERR("failed to clone proxy, dropping packet\n");
+					ret=E_OUT_OF_MEM;
+					goto error_fwd_uri;
+				}
+				ret=forward_request(msg, p);
+				free_proxy(p); /* frees only p content, not p itself */
+				pkg_free(p);
 				if (ret==0) ret=1;
 			}else{
 				LM_ALERT("BUG in forward() types %d, %d\n",
@@ -531,9 +538,11 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_OUT_OF_MEM;
 				break;
 			}
-			
-			p=(struct proxy_l*)a->elem[0].u.data;
-			
+			if (0==(p=clone_proxy((struct proxy_l*)a->elem[0].u.data))) {
+				LM_ERR("failed to clone proxy, dropping packet\n");
+				ret=E_OUT_OF_MEM;
+				break;
+			}
 			ret=hostent2su(to, &p->host, p->addr_idx,
 						(p->port)?p->port:SIP_PORT );
 			if (ret==0){
@@ -570,6 +579,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				if (ret!=0 && p->host.h_addr_list[p->addr_idx+1])
 					p->addr_idx++;
 			}
+			free_proxy(p); /* frees only p content, not p itself */
+			pkg_free(p);
 			pkg_free(to);
 			if (ret==0)
 				ret=1;
