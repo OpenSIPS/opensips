@@ -99,7 +99,7 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r, time_t t
 	char *p;
 	int len;
 
-	anode = add_mi_node_child( parent, MI_DUP_VALUE, "AOR", 3,
+	anode = add_mi_node_child( parent, MI_IS_ARRAY|MI_DUP_VALUE, "AOR", 3,
 			r->aor.s, r->aor.len);
 	if (anode==0)
 		return -1;
@@ -365,12 +365,14 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 	if (rpl_tree==NULL)
 		return 0;
 	rpl = &rpl_tree->node;
+	/* all domains go under this node as array */
+	rpl->flags |= MI_IS_ARRAY;
 	t = time(0);
 
 	for( dl=root ; dl ; dl=dl->next ) {
 		/* add a domain node */
-		node = add_mi_node_child( rpl, MI_NOT_COMPLETED, "Domain", 6,
-					dl->name.s, dl->name.len);
+		node = add_mi_node_child( rpl, MI_IS_ARRAY|MI_NOT_COMPLETED,
+					"Domain", 6, dl->name.s, dl->name.len);
 		if (node==0)
 			goto error;
 
@@ -621,6 +623,7 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 				if (rpl_tree==0)
 					goto error;
 				rpl = &rpl_tree->node;
+				rpl->flags |= MI_IS_ARRAY;
 			}
 
 			node = addf_mi_node_child( rpl, 0, "Contact", 7,

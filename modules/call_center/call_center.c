@@ -1099,6 +1099,7 @@ static struct mi_root* mi_cc_list_flows(struct mi_root *cmd, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1166,6 +1167,7 @@ static struct mi_root* mi_cc_list_agents(struct mi_root *cmd_tree, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1233,6 +1235,7 @@ static struct mi_root* mi_cc_list_calls(struct mi_root *cmd_tree, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1409,6 +1412,7 @@ static struct mi_root* mi_cc_list_queue(struct mi_root *cmd_tree, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	n = 0;
 	now = get_ticks();

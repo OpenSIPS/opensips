@@ -665,6 +665,7 @@ static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i= 0; i<phtable_size; i++)
 	{
@@ -763,6 +764,7 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i=0,j=0; i< shtable_size; i++)
 	{

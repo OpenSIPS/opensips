@@ -48,7 +48,8 @@ struct mi_handler;
 #define MI_DUP_NAME   		(1<<0)
 #define MI_DUP_VALUE  		(1<<1)
 #define MI_NOT_COMPLETED  	(1<<2)
-#define MI_WRITTEN		(1<<3)
+#define MI_WRITTEN			(1<<3)
+#define MI_IS_ARRAY			(1<<4)
 
 #define MI_OK_S              "OK"
 #define MI_OK_LEN            (sizeof(MI_OK_S)-1)

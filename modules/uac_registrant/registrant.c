@@ -782,6 +782,7 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);

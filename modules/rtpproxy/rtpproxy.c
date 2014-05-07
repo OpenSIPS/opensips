@@ -1081,6 +1081,7 @@ static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 		return root;
 
 	node = &root->node;
+	node->flags |= MI_IS_ARRAY;
 
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){

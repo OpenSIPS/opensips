@@ -1005,6 +1005,7 @@ struct mi_root* pdt_mi_list(struct mi_root* cmd_tree, void* param)
 	if(rpl_tree == NULL)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if(*_ptree==0)
 		return rpl_tree;

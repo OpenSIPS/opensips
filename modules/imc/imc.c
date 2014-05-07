@@ -690,6 +690,7 @@ static struct mi_root* imc_mi_list_rooms(struct mi_root* cmd_tree, void* param)
 	if(rpl_tree == NULL)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i=0; i<imc_hash_size; i++)
 	{
@@ -780,8 +781,8 @@ static struct mi_root* imc_mi_list_members(struct mi_root* cmd_tree,
 	if(rpl_tree == NULL)
 		return 0;
 
-	node_r = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, "ROOM", 4,
-		room_name.s, room_name.len);
+	node_r = add_mi_node_child( &rpl_tree->node, MI_IS_ARRAY|MI_DUP_VALUE,
+		"ROOM", 4, room_name.s, room_name.len);
 	if(node_r == NULL)
 		goto error;
 

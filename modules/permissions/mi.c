@@ -60,6 +60,7 @@ struct mi_root* mi_address_dump(struct mi_root *cmd_tree, void *param)
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree == NULL) return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	if(hash_mi_print(*hash_table, &rpl_tree->node)< 0) {
 		LM_ERR("failed to add a node\n");
@@ -134,6 +135,7 @@ struct mi_root* mi_subnet_dump(struct mi_root *cmd_tree, void *param)
 
     rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
     if (rpl_tree == NULL) return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
     if (subnet_table_mi_print(*subnet_table, &rpl_tree->node) <  0) {
 	    LM_ERR("failed to add a node\n");

@@ -479,10 +479,11 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
     if (rpl_tree==0)
             return 0;
     rpl = &rpl_tree->node;
+    rpl->flags |= MI_IS_ARRAY;
 
 
     for(i=0; i < global->size; i++ ){
-        node = add_mi_node_child(rpl, 0, MI_SSTR("SET"), 0, 0 );
+        node = add_mi_node_child(rpl, MI_IS_ARRAY, MI_SSTR("SET"), 0, 0 );
         if (node==0)
             goto error;
 

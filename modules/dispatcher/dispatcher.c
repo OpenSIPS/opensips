@@ -917,6 +917,7 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL)
 		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	if( ds_print_mi_list(&rpl_tree->node)< 0 )
 	{
