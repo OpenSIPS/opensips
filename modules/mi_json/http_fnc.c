@@ -110,6 +110,8 @@ static const str MI_JSON_ARRAY_STOP = str_init("]");
 
 static const str MI_JSON_SQUOT =  str_init("\""); /* " */
 
+static int mi_json_recur_write_tree(struct page_buf* pb,
+          struct mi_node *tree, unsigned int flags);
 
 int mi_json_init_async_lock(void)
 {
@@ -421,8 +423,9 @@ static inline int mi_json_write_node(struct page_buf* pb,
 }
 
 /* sync case */
+#if 0
 static int mi_json_recur_write_tree(struct page_buf* pb,
-          struct mi_node *tree)
+          struct mi_node *tree, unsigned int flags)
 {
   int names = 0;
   int values = 0;
@@ -481,7 +484,7 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
     /* Treat as an array of objects */
     MI_JSON_COPY(pb, MI_JSON_ARRAY_START);
     for( t = tree; t; t=t->next ) {
-      mi_json_recur_write_tree(pb,t->kids);
+      mi_json_recur_write_tree(pb,t->kids, t->flags);
       t->flags |= MI_WRITTEN;
       if(t->next) {
         MI_JSON_COPY(pb, MI_JSON_COMMA);
@@ -502,7 +505,7 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
     if (t->kids) {
       MI_JSON_COPY(pb, MI_JSON_COMMA);
       MI_JSON_COPY(pb, MI_JSON_KEY_CHILDREN);
-      mi_json_recur_write_tree(pb, t->kids);
+      mi_json_recur_write_tree(pb, t->kids, t->flags);
     }
     MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
     if(t->next) {
@@ -510,6 +513,123 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
     }
   }
   MI_JSON_COPY(pb, MI_JSON_ARRAY_STOP);
+  LM_DBG("done\n");
+  return pb->status;
+}
+#endif
+
+static void mi_json_recur_write_node(struct page_buf* pb, struct mi_node *node,
+		int dump_name)
+{
+  struct mi_attr *attr;
+  int first = 1;
+
+  /* if we only have name and value, then dump it like hash */
+  if (dump_name && node->name.s && node->value.s && !node->attributes && !node->kids) {
+    mi_json_write_node_hash(pb, node);
+	return;
+  }
+
+  if (dump_name && node->name.s) {
+	MI_JSON_COPY(pb, MI_JSON_SQUOT);
+	MI_JSON_ESC_COPY(pb, node->name);
+	MI_JSON_COPY(pb, MI_JSON_SQUOT);
+	MI_JSON_COPY(pb, MI_JSON_COLON);
+    MI_JSON_COPY(pb, MI_JSON_OBJECT_START);
+  }
+
+  /* value */
+  if (node->value.s) {
+    MI_JSON_COPY(pb, MI_JSON_KEY_VALUE);
+    MI_JSON_COPY(pb, MI_JSON_SQUOT);
+    MI_JSON_ESC_COPY(pb, node->value);
+    MI_JSON_COPY(pb, MI_JSON_SQUOT);
+	first = 0;
+  }
+
+  /* attributes */
+  if (node->attributes) {
+    if (!first)
+      MI_JSON_COPY(pb, MI_JSON_COMMA);
+
+    MI_JSON_COPY(pb, MI_JSON_KEY_ATTRIBUTES);
+	MI_JSON_COPY(pb, MI_JSON_OBJECT_START);
+    for(attr=node->attributes;attr!=NULL;attr=attr->next) {
+      if (attr->name.s!=NULL) {
+        /* attribute name */
+        MI_JSON_COPY(pb, MI_JSON_SQUOT);
+        MI_JSON_ESC_COPY(pb, attr->name);
+        MI_JSON_COPY(pb, MI_JSON_SQUOT);
+        MI_JSON_COPY(pb, MI_JSON_COLON);
+  
+        /* attribute value */
+        if (attr->value.s!=NULL) {
+          MI_JSON_COPY(pb, MI_JSON_SQUOT);
+          MI_JSON_ESC_COPY(pb, attr->value);
+          MI_JSON_COPY(pb, MI_JSON_SQUOT);
+        } else {
+          MI_JSON_COPY(pb, MI_JSON_NULL);
+        }
+      }
+      if (attr->next!=NULL) {
+        MI_JSON_COPY(pb, MI_JSON_COMMA);
+      }
+    }
+	MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
+	first = 0;
+  }
+
+  /* kids */
+  if (node->kids) {
+    if (!first)
+      MI_JSON_COPY(pb, MI_JSON_COMMA);
+    MI_JSON_COPY(pb, MI_JSON_KEY_CHILDREN);
+    mi_json_recur_write_tree(pb, node->kids, node->flags);
+  }
+
+  if (dump_name && node->name.s) {
+    MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
+  }
+}
+
+static int mi_json_recur_write_tree(struct page_buf* pb,
+          struct mi_node *tree, unsigned int flags)
+{
+  struct mi_node* t;
+
+  if (flags & MI_IS_ARRAY) {
+    LM_DBG("Treat as an array\n");
+    MI_JSON_COPY(pb, MI_JSON_OBJECT_START);
+    MI_JSON_COPY(pb, MI_JSON_SQUOT);
+    if (tree->name.s) {
+      MI_JSON_ESC_COPY(pb, tree->name);
+    }
+    MI_JSON_COPY(pb, MI_JSON_SQUOT);
+    MI_JSON_COPY(pb, MI_JSON_COLON);
+    MI_JSON_COPY(pb, MI_JSON_ARRAY_START);
+    for( t = tree; t; t=t->next ) {
+      MI_JSON_COPY(pb, MI_JSON_OBJECT_START);
+      mi_json_recur_write_node(pb,t,0);
+      MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
+      t->flags |= MI_WRITTEN;
+      if(t->next) {
+        MI_JSON_COPY(pb, MI_JSON_COMMA);
+      }
+    }
+    MI_JSON_COPY(pb, MI_JSON_ARRAY_STOP);
+    MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
+  } else {
+    LM_DBG("Treat as a hash\n");
+    MI_JSON_COPY(pb, MI_JSON_OBJECT_START);
+    for( t = tree; t; t=t->next ) {
+      mi_json_recur_write_node(pb,t,1);
+      t->flags |= MI_WRITTEN;
+      if(t->next) {
+        MI_JSON_COPY(pb, MI_JSON_COMMA);
+      }
+    }
+    MI_JSON_COPY(pb, MI_JSON_OBJECT_STOP);
+  }
   LM_DBG("done\n");
   return pb->status;
 }
@@ -527,7 +647,7 @@ int mi_json_build_content(str *page, int max_page_len,
   pb.status = 0;
 
   if (tree) { /* Build mi reply */
-    mi_json_recur_write_tree(&pb, tree->node.kids);
+    mi_json_recur_write_tree(&pb, tree->node.kids, tree->node.flags);
     page->len = pb.current - page->s;
   }
   LM_DBG("done\n");
@@ -556,7 +676,7 @@ static int mi_json_recur_flush_tree(struct page_buf* pb,
     }
   }
 
-  mi_json_recur_write_tree(pb,tree);
+  mi_json_recur_write_tree(pb,tree,0);
   LM_DBG("done\n");
   return pb->status;
 }
