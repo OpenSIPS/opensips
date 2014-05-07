@@ -322,6 +322,8 @@ static inline void su2ip_addr(struct ip_addr* ip, union sockaddr_union* su)
 #endif
 	default:
 		LM_CRIT("Unknown address family %d\n", su->s.sa_family);
+		ip->af=0;
+		ip->len=0;
 	}
 }
 
