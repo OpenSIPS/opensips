@@ -328,7 +328,7 @@ static int fix_actions(struct action* a)
 					ret = E_CFG;
 					goto error;
 				}
-				p = add_proxy( &host,(unsigned short)port, proto);
+				p = mk_proxy( &host,(unsigned short)port, proto, 0);
 				if (p==0) {
 					LM_ERR("forward/send failed to add proxy");
 					ret = E_CFG;
