@@ -117,5 +117,5 @@ int cachedb_bind_mod(str *url,cachedb_funcs *funcs);
 int cachedb_put_connection(str *cachedb_name,cachedb_con *con);
 
 void cachedb_end_connections(str *cachedb_name);
-void free_raw_fetch(cdb_raw_entry **reply,int no_key,int no_val);
+void free_raw_fetch(cdb_raw_entry **reply, int no_val, int no_key);
 #endif
