@@ -101,7 +101,7 @@ int load_qos( struct qos_binds *qosb)
  */
 static int mod_init(void)
 {
-	fix_flag_name(&qos_flag_str, qos_flag);
+	fix_flag_name(qos_flag_str, qos_flag);
 
 	qos_flag = get_flag_id_by_name(FLAG_TYPE_MSG, qos_flag_str);
 

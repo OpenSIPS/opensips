@@ -476,7 +476,7 @@ mod_init(void)
 			return -1;
 		}
 
-		fix_flag_name(&sipping_flag_str, sipping_flag);
+		fix_flag_name(sipping_flag_str, sipping_flag);
 		sipping_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH, sipping_flag_str);
 
 		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);

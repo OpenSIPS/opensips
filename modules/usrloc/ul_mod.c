@@ -304,7 +304,7 @@ static int mod_init(void)
 		}
 	}
 
-	fix_flag_name(&nat_bflag_str, nat_bflag);
+	fix_flag_name(nat_bflag_str, nat_bflag);
 
 	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
 

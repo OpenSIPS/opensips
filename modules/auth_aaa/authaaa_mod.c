@@ -143,7 +143,7 @@ static int mod_init(void)
 	attrs[A_ACCT_SESSION_ID].name		= "Acct-Session-Id";
 	vals[V_SIP_SESSION].name			= "Sip-Session";
 
-	fix_flag_name(&use_ruri_flag_str, use_ruri_flag);
+	fix_flag_name(use_ruri_flag_str, use_ruri_flag);
 	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str);
 
 	if (!aaa_proto_url) {
