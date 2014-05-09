@@ -714,7 +714,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	fix_flag_name(&minor_branch_flag_str, minor_branch_flag);
+	fix_flag_name(minor_branch_flag_str, minor_branch_flag);
 
 	minor_branch_flag =
 		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str);

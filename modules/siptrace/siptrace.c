@@ -288,7 +288,7 @@ static int mod_init(void)
 
 	LM_INFO("initializing...\n");
 
-	fix_flag_name(&trace_flag_str, trace_flag);
+	fix_flag_name(trace_flag_str, trace_flag);
 
 	trace_flag = get_flag_id_by_name(FLAG_TYPE_MSG, trace_flag_str);
 
