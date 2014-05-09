@@ -754,7 +754,7 @@ int cachedb_raw_query(str* cachedb_name, str* attr, cdb_raw_entry*** reply,int e
 	return ret;
 }
 
-void free_raw_fetch(cdb_raw_entry **reply,int no_key,int no_val)
+void free_raw_fetch(cdb_raw_entry **reply, int no_val, int no_key)
 {
 	int i,j;
 
