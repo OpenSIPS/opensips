@@ -160,7 +160,7 @@ static int mod_init(void)
 		exports.stats = 0;
 	}
 
-	fix_flag_name(&sst_flag_str, sst_flag);
+	fix_flag_name(sst_flag_str, sst_flag);
 
 	sst_flag = get_flag_id_by_name(FLAG_TYPE_MSG, sst_flag_str);
 

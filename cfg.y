@@ -867,7 +867,8 @@ assign_stm: DEBUG EQUAL snumber {
 		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
 			#ifdef USE_TCP
-				fix_flag_name(&tmp, $3);
+				tmp = NULL;
+				fix_flag_name(tmp, $3);
 				tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
 				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
 					yyerror("invalid TCP no_new_conn Branch Flag");

@@ -393,14 +393,14 @@ static int mod_init( void )
 
 	/* ----------- GENERIC INIT SECTION  ----------- */
 
-	fix_flag_name(&failed_transaction_string, failed_transaction_flag);
+	fix_flag_name(failed_transaction_string, failed_transaction_flag);
 
 	failed_transaction_flag =
 	    get_flag_id_by_name(FLAG_TYPE_MSG, failed_transaction_string);
 
 	if (flag_idx2mask(&failed_transaction_flag)<0)
 		return -1;
-	fix_flag_name(&cdr_string, cdr_flag);
+	fix_flag_name(cdr_string, cdr_flag);
 
 	cdr_flag = get_flag_id_by_name(FLAG_TYPE_MSG, cdr_string);
 
@@ -466,14 +466,14 @@ static int mod_init( void )
 		return -1;
 	}
 
-	fix_flag_name(&log_string, log_flag);
+	fix_flag_name(log_string, log_flag);
 
 	log_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_string);
 
 	if (flag_idx2mask(&log_flag)<0)
 		return -1;
 
-	fix_flag_name(&log_missed_string, log_missed_flag);
+	fix_flag_name(log_missed_string, log_missed_flag);
 
 	log_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_missed_string);
 
@@ -500,15 +500,15 @@ static int mod_init( void )
 			return -1;
 		}
 		/* fix the flags */
-		fix_flag_name(&db_string, db_flag);
-	
+		fix_flag_name(db_string, db_flag);
+
 		db_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_string);
 
 		if (flag_idx2mask(&db_flag)<0)
 			return -1;
 
-		fix_flag_name(&db_missed_string, db_missed_flag);
-	
+		fix_flag_name(db_missed_string, db_missed_flag);
+
 		db_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_missed_string);
 
 		if (flag_idx2mask(&db_missed_flag)<0)
@@ -546,15 +546,15 @@ static int mod_init( void )
 		}
 
 		/* fix the flags */
-		fix_flag_name(&aaa_string, aaa_flag);
-	
+		fix_flag_name(aaa_string, aaa_flag);
+
 		aaa_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_string);
 
 		if (flag_idx2mask(&aaa_flag)<0)
 			return -1;
 
-		fix_flag_name(&aaa_missed_string, aaa_missed_flag);
-	
+		fix_flag_name(aaa_missed_string, aaa_missed_flag);
+
 		aaa_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_missed_string);
 
 		if (flag_idx2mask(&aaa_missed_flag)<0)
@@ -574,15 +574,15 @@ static int mod_init( void )
 
 #ifdef DIAM_ACC
 	/* fix the flags */
-	fix_flag_name(&diameter_string, diameter_flag);
-	
+	fix_flag_name(diameter_string, diameter_flag);
+
 	diameter_flag = get_flag_id_by_name(FLAG_TYPE_MSG, diameter_string);
 
 	if (flag_idx2mask(&diameter_flag)<0)
 		return -1;
 
-	fix_flag_name(&diameter_missed_string, diameter_missed_flag);
-	
+	fix_flag_name(diameter_missed_string, diameter_missed_flag);
+
 	diameter_missed_flag=get_flag_id_by_name(FLAG_TYPE_MSG, diameter_missed_string);
 
 	if (flag_idx2mask(&diameter_missed_flag)<0)
@@ -614,15 +614,15 @@ static int mod_init( void )
 	}
 
 	/* fix the flags */
-	fix_flag_name(&evi_string, evi_flag);
-	
+	fix_flag_name(evi_string, evi_flag);
+
 	evi_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_string);
 
 	if (flag_idx2mask(&evi_flag)<0)
 		return -1;
 
-	fix_flag_name(&evi_missed_string, evi_missed_flag);
-	
+	fix_flag_name(evi_missed_string, evi_missed_flag);
+
 	evi_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_missed_string);
 
 	if (flag_idx2mask(&evi_missed_flag)<0)

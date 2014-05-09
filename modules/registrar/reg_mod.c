@@ -338,7 +338,7 @@ static int mod_init(void)
 		gruu_secret.len = strlen(gruu_secret.s);
 
 	/* fix the flags */
-	fix_flag_name(&tcp_persistent_flag_s, tcp_persistent_flag);
+	fix_flag_name(tcp_persistent_flag_s, tcp_persistent_flag);
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
 
