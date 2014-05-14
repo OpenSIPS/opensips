@@ -35,7 +35,6 @@ Bogdan-Andrei Iancu
         1.5. Exported Functions
 
               1.5.1. cc_handle_call(flowID)
-              1.5.2. cc_agent_login(agentID, state)
 
         1.6. Exported Statistics
 
@@ -68,7 +67,6 @@ Bogdan-Andrei Iancu
    1.3. Set b2b_scenario parameter
    1.4. Set wrapup_time parameter
    1.5. cc_handle_call usage
-   1.6. cc_agent_login usage
 
 Chapter 1. Admin Guide
 
@@ -272,22 +270,6 @@ if (is_method("INVITE") and !has_totag()) {
                 exit;
         }
 }
-...
-
-1.5.2.  cc_agent_login(agentID, state)
-
-   This function sets the login (on or off) state for an agent.
-
-   This function can be used from REQUEST_ROUTE.
-
-   The agentID mandatory parameter is the ID of the agent and the
-   state is an integer value giving the new state - 0 means logged
-   off, anything else means logged in.
-
-   Example 1.6. cc_agent_login usage
-...
-# log off the 'agentX' agent
-cc_agent_login("agentX","0");
 ...
 
 1.6. Exported Statistics

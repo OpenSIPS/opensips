@@ -315,33 +315,6 @@ if (is_method("INVITE") and !has_totag()) {
 		</example>
 	</section>
 
-	<section>
-		<title>
-		<function>cc_agent_login(agentID, state)</function>
-		</title>
-		<para>
-		This function sets the login (on or off) state for an agent.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<para>
-		The <emphasis role='bold'>agentID</emphasis> mandatory parameter is
-		the ID of the agent and the <emphasis role='bold'>state</emphasis>
-		is an integer value giving the new state - 0 means logged off, 
-		anything else means logged in.
-		</para>
-		<example>
-		<title><function>cc_agent_login</function> usage</title>
-		<programlisting format="linespecific">
-...
-# log off the 'agentX' agent
-cc_agent_login("agentX","0");
-...
-</programlisting>
-		</example>
-	</section>
-
 	</section>
 
 
