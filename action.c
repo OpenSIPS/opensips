@@ -240,8 +240,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
 		if(!((val.flags&PV_VAL_STR)||(val.flags&PV_VAL_INT))) {
-			LM_ERR("no value in right expression\n");
-			goto error;
+			LM_WARN("no value in right expression on line %d\n",a->line);
+			goto error2;
 		}
 	}
 
@@ -294,6 +294,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 
 error:
 	LM_ERR("error at line: %d\n", a->line);
+error2:
 	pv_value_destroy(&val);
 	return -1;
 }
