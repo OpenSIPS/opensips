@@ -66,8 +66,6 @@ static struct mi_root* mi_cc_list_agents(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_cc_list_calls(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_reset_stats(struct mi_root *cmd_tree, void *param);
 
-static int fixup_id(void** param, int param_no);
-
 static int w_handle_call(struct sip_msg *req, char *id);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
@@ -90,7 +88,7 @@ unsigned int wrapup_time = 30;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call",           (cmd_function)w_handle_call,         1,
-		fixup_id, 0, REQUEST_ROUTE},
+		fixup_sgp_null, 0, REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 	};
 
@@ -218,14 +216,6 @@ unsigned long cc_flow_free_agents( void *flow)
 	lock_release( data->lock );
 
 	return free;
-}
-
-
-static int fixup_id(void** param, int param_no)
-{
-	if (param_no)
-		return fixup_pvar(param);
-	return -1;
 }
 
 
@@ -634,7 +624,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		 * create new b2bua instance */
 		call->ref_cnt++;
 		id = b2b_api.init( msg, &b2b_scenario, &new_leg, b2bl_callback_customer,
-				(void*)call, 0x0, NULL /* custom_hdrs */ );
+				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to init new b2bua call (empty ID received)\n");
 			return -2;
@@ -719,11 +709,11 @@ done:
 
 static int w_handle_call(struct sip_msg *msg, char *flow_var)
 {
-	pv_value_t val;
 	struct cc_flow *flow;
 	struct cc_call *call;
 	str leg = {NULL,0};
 	str *dn;
+	str val;
 	int dec;
 	int ret = -1;
 
@@ -731,12 +721,8 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	dec = 0;
 
 	/* get the flow name */
-	if (pv_get_spec_value(msg, (pv_spec_p)flow_var, &val)!=0 ) {
+	if (fixup_get_svalue(msg, (gparam_p)flow_var, &val)!=0) {
 		LM_ERR("failed to avaluate the flow name variable\n");
-		return -1;
-	}
-	if ( (val.flags&PV_VAL_STR)==0 || (val.flags&PV_VAL_NULL)!=0) {
-		LM_ERR("non-str val for flow name variable\n");
 		return -1;
 	}
 
@@ -749,9 +735,9 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	lock_get( data->lock );
 
 	/* get the flow ID */
-	flow = get_flow_by_name(data, &val.rs);
+	flow = get_flow_by_name(data, &val);
 	if (flow==NULL) {
-		LM_ERR("flow <%.*s> does not exists\n", val.rs.len, val.rs.s);
+		LM_ERR("flow <%.*s> does not exists\n", val.len, val.s);
 		ret = -3;
 		goto error;
 	}
