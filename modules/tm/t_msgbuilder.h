@@ -92,6 +92,20 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 		LM_CRIT("BUG - buffer parsing failed!");
 		return NULL;
 	}
+	/* parse all headers, to be sure they get cloned in shm */
+	if (parse_headers(&req, HDR_EOH_F, 0 )<0) {
+		LM_ERR("parse_headers failed\n");
+		free_sip_msg(&req);
+		return NULL;
+	}
+	/* check if we have all necessary headers */
+	if (check_transaction_quadruple(&req)==0) {
+		LM_ERR("too few headers\n");
+		free_sip_msg(&req);
+		/* stop processing */
+		return NULL;
+	}
+
 	/* populate some special fields in sip_msg */
 	req.force_send_socket = dialog->send_sock;
 	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
