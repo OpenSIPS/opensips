@@ -696,8 +696,60 @@ static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
 			NULL,MSG_TRANS_NOVIA_FLAG);
 }
 
-
 #define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_NOTIFY|METHOD_SUBSCRIBE)
+int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
+{
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	int prev_dbg_level;
+#endif
+
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	prev_dbg_level = *debug;
+	*debug = L_ALERT; 
+#endif
+
+	if (parse_msg(msg->buf,msg->len,msg)!=0) {
+		LM_ERR("Invalid SIP msg \n");
+		goto error;
+	}
+
+	if (parse_headers(msg,HDR_EOH_F,0)<0) {
+		LM_ERR("Failed to parse SIP headers\n");
+		goto error;
+	}
+
+	if (msg->cseq==NULL || get_cseq(msg)==NULL) {
+		LM_ERR("Failed to parse CSEQ header \n");
+		goto error;
+	}       
+
+	if((get_cseq(msg)->method_id)&MSG_SKIP_BITMASK) {
+		LM_DBG("Skipping %d for DLG callid topo hiding\n",get_cseq(msg)->method_id);
+		goto error;
+	}
+
+	if (parse_to_header(msg)<0 || msg->to==NULL || get_to(msg)==NULL) {
+		LM_ERR("cannot parse TO header\n");
+		goto error;
+	}
+
+	if (parse_from_header(msg)<0 || msg->from==NULL || get_from(msg)==NULL) {
+		LM_ERR("cannot parse TO header\n");
+		goto error;
+	}
+
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	*debug = prev_dbg_level; 
+#endif
+	return 0;
+
+error:
+#ifdef CHANGEABLE_DEBUG_LEVEL
+	*debug = prev_dbg_level; 
+#endif
+	return -1;
+}
+
 int dlg_th_pre_raw(str *data)
 {
 	struct sip_msg msg;
@@ -705,31 +757,8 @@ int dlg_th_pre_raw(str *data)
 	memset(&msg,0,sizeof(struct sip_msg));
 	msg.buf=data->s;
 	msg.len=data->len;
-
-	if (parse_msg(msg.buf,msg.len,&msg)!=0) {
-		LM_ERR("Invalid SIP msg \n");
-		goto error;
-	}
-
-	if (parse_headers(&msg,HDR_EOH_F,0)<0) {
-		LM_ERR("Failed to parse SIP headers\n");
-		goto error;
-	}
-
-	if (msg.cseq==NULL || get_cseq(&msg)==NULL) {
-		LM_ERR("Failed to parse CSEQ header \n");
-		goto error;
-	}       
-
-	if((get_cseq(&msg)->method_id)&MSG_SKIP_BITMASK) {
-		LM_DBG("Skipping %d for DLG callid topo hiding\n",get_cseq(&msg)->method_id);
-		goto error;
-	}
-
-	if (parse_to_header(&msg)<0 || msg.to==NULL || get_to(&msg)==NULL) {
-		LM_ERR("cannot parse TO header\n");
-		goto error;
-	}
+	if (dlg_th_callid_pre_parse(&msg,0) < 0)
+		goto done;
 
 	if (msg.first_line.type==SIP_REQUEST) {
 		if (get_to(&msg)->tag_value.len>0) {
@@ -761,6 +790,7 @@ int dlg_th_pre_raw(str *data)
 		return 0;
 	}
 
+done:
 	free_sip_msg(&msg);
 	return 0;
 
@@ -783,105 +813,68 @@ int dlg_th_post_raw(str *data)
 	struct sip_msg msg;
 	struct dlg_cell *dlg; 
 
+	dlg = get_current_dialog(); 
+	if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
+		/* dialog module not involved or not callid topo hiding
+		 - let is pass freely */
+		return 0;
+	}
+
 	memset(&msg,0,sizeof(struct sip_msg));
 	msg.buf=data->s;
 	msg.len=data->len;
-
-	if (parse_msg(msg.buf,msg.len,&msg)!=0) {
-		LM_ERR("Invalid SIP msg \n");
-		goto error;
-	}
-
-	if (parse_headers(&msg,HDR_EOH_F,0)<0) {
-		LM_ERR("Failed to parse SIP headers\n");
-		goto error;
-	}
-
-	if (msg.cseq==NULL || get_cseq(&msg)==NULL) {
-		LM_ERR("Failed to parse CSEQ header \n");
-		goto error;
-	}       
-
-	if((get_cseq(&msg)->method_id)&MSG_SKIP_BITMASK) {
-		LM_DBG("Skipping %d for DLG callid topo hiding\n",get_cseq(&msg)->method_id);
-		goto error;
-	}
-
-	if (parse_to_header(&msg)<0 || msg.to==NULL || get_to(&msg)==NULL) {
-		LM_ERR("cannot parse TO header\n");
-		goto error;
-	}
-
-	if (parse_from_header(&msg)<0 || msg.from==NULL || get_from(&msg)==NULL) {
-		LM_ERR("cannot parse TO header\n");
-		goto error;
-	}
+	if (dlg_th_callid_pre_parse(&msg,1) < 0)
+		goto done;
 
 	if (msg.first_line.type==SIP_REQUEST) {
 		if (get_to(&msg)->tag_value.len>0) {
 			/* sequential request, check if callid needs to be unmasked */
-			dlg = get_current_dialog(); 
-			if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
-				/* dialog module not involved or not callid topo hiding
-				 - let is pass freely */
-			} else {
-				if (get_from(&msg)->tag_value.len != 0) {
-					if (memcmp(get_from(&msg)->tag_value.s,
-					dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
-						/* request from caller -  need to encode callid */
-						if (dlg_th_encode_callid(&msg) < 0) {
-							LM_ERR("Failed to mask callid for initial request \n");
-							goto error;
-						}
-						goto rebuild_req;
-					} else {
-						/* let request go through - was decoded on the in side */
-					}
-				} else {
-					/* no from tag in request - kinda foobar ? - let it through */
-				}
-			}
-		} else {
-			/* initial request */
-			dlg = get_current_dialog(); 
-			if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
-				/* dialog module not involved or not callid topo hiding
-				 - let is pass freely */
-			} else {
-				/* mask callid */
-				if (dlg_th_encode_callid(&msg) < 0) {
-					LM_ERR("Failed to mask callid for initial request \n");
-					goto error;
-				}
-				goto rebuild_req;
-			}	
-		}
-	} else if (msg.first_line.type==SIP_REPLY) {
-		/* we need to look at the direction */
-		dlg = get_current_dialog(); 
-		if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
-			/* dialog module not involved or not callid topo hiding
-			 - let is pass freely */
-		} else {
 			if (get_from(&msg)->tag_value.len != 0) {
 				if (memcmp(get_from(&msg)->tag_value.s,
 				dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
-					/* reply going to caller - 
-					decode was done on the receiving end, let it unchanged */
-				} else {
-					/* reply going to callee , need to encode callid */
+					/* request from caller -  need to encode callid */
 					if (dlg_th_encode_callid(&msg) < 0) {
-						LM_ERR("Failed to decode callid for reply \n");
+						LM_ERR("Failed to mask callid for initial request \n");
 						goto error;
 					}
-					goto rebuild_rpl;
+					goto rebuild_req;
+				} else {
+					/* let request go through - was decoded on the in side */
 				}
 			} else {
-				/* no from tag in reply - kinda foobar ? - let it through */
+				/* no from tag in request - kinda foobar ? - let it through */
+				goto done;
 			}
+		} else {
+			/* initial request, mask callid */
+			if (dlg_th_encode_callid(&msg) < 0) {
+				LM_ERR("Failed to mask callid for initial request \n");
+				goto error;
+			}
+			goto rebuild_req;
+		}
+	} else if (msg.first_line.type==SIP_REPLY) {
+		/* we need to look at the direction */
+		if (get_from(&msg)->tag_value.len != 0) {
+			if (memcmp(get_from(&msg)->tag_value.s,
+			dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
+				/* reply going to caller - 
+				decode was done on the receiving end, let it unchanged */
+			} else {
+				/* reply going to callee , need to encode callid */
+				if (dlg_th_encode_callid(&msg) < 0) {
+					LM_ERR("Failed to decode callid for reply \n");
+					goto error;
+				}
+				goto rebuild_rpl;
+			}
+		} else {
+			/* no from tag in reply - kinda foobar ? - let it through */
+			goto done;
 		}
 	}
 
+done:
 	free_sip_msg(&msg);
 	return 0;
 
