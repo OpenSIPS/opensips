@@ -652,6 +652,8 @@ static int mod_init(void)
 	vars_column.len = strlen(vars_column.s);
 	sflags_column.len = strlen(sflags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
+	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
+	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
 
 	/* param checkings */
 
