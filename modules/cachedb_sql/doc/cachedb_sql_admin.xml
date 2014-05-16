@@ -96,17 +96,25 @@
 	<section>
 		<title>Exported Parameters</title>
 		<section>
-		<title><varname>db_url</varname> (string)</title>
+		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
 			The url of the Database  that OpenSIPS will connect to in order
 			to use the from script cache_store,cache_fetch, etc operations.
+		</para>
+
+		<para>
+			The format to follow is : sql:[conn_id]-dburl
+		</para>
+		
+		<para>
+			The parameter can be set multiple times to create multiple connections accessible from the OpenSIPS script.
 		</para>
 		
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("cachedb_sql", "db_url","mysql://localhost/my_database");
+modparam("cachedb_sql", "cachedb_url", "sql:1st-mysql://root:vlad@localhost/opensips_sql")
 ...
 	</programlisting>
 		</example>
@@ -115,8 +123,12 @@ modparam("cachedb_sql", "db_url","mysql://localhost/my_database");
 		<title>Usage example </title>
 		<programlisting format="linespecific">
 ...
-cache_store("sql","key","$ru value");
-cache_add("sql","counter",10);
+modparam("cachedb_sql", "cachedb_url", "sql:1st-mysql://root:vlad@localhost/opensips_sql")
+modparam("cachedb_sql", "cachedb_url", "sql:2nd-postgres://root:vlad@localhost/opensips_pg")
+...
+...
+cache_store("sql:1st-mysql","key","$ru value");
+cache_store("sql:2nd-postgres","counter","10");
 ...
 	</programlisting>
 		</example>
