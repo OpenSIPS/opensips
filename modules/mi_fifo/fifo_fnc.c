@@ -75,7 +75,7 @@ FILE* mi_init_fifo_server(char *fifo_name, int mi_fifo_mode,
 
 	if ((mi_fifo_uid!=-1) || (mi_fifo_gid!=-1)){
 		if (chown(fifo_name, mi_fifo_uid, mi_fifo_gid)<0){
-			LM_ERR("failed to change the owner/group for %s  to %d.%d; %s[%d]\n",
+			LM_ERR("failed to change the owner/group for %s to %d.%d; %s[%d]\n",
 				fifo_name, mi_fifo_uid, mi_fifo_gid, strerror(errno), errno);
 			return 0;
 		}
@@ -272,7 +272,7 @@ retry:
 
 	len=strlen(b);
 	if (len && !(b[len-1]=='\n' || b[len-1]=='\r')) {
-		LM_ERR("request  line too long\n");
+		LM_ERR("request line too long\n");
 		return -1;
 	}
 	*read = len;

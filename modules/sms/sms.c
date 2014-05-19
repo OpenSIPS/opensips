@@ -497,7 +497,7 @@ int parse_config_lines(void)
 
 	return 0;
 parse_error:
-	LM_ERR("SMS %s config: parse error before  chr %d [%.*s]\n",
+	LM_ERR("SMS %s config: parse error before chr %d [%.*s]\n",
 		(step==1)?"modems":(step==2?"networks":"links"),
 		(int)(p - ((step==1)?modems_config:
 				   (step==2?networks_config:links_config))),

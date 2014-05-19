@@ -129,7 +129,7 @@ static int fixup_maxfwd_header(void** param, int param_no)
 			*param=(void*)code;
 			return 0;
 		}else{
-			LM_ERR("bad  number <%s>\n",(char*)(*param));
+			LM_ERR("bad number <%s>\n",(char*)(*param));
 			return E_UNSPEC;
 		}
 	}

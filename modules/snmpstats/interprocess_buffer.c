@@ -201,7 +201,7 @@ void handleContactCallbacks(ucontact_t *contactInfo, int type, void *param)
 	return;
 
 error:
-	LM_ERR("Not enough shared memory for  openserSIPRegUserTable insert."
+	LM_ERR("Not enough shared memory for openserSIPRegUserTable insert."
 			" (%s)\n", contactInfo->c.s);
 }
 

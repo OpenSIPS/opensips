@@ -1775,7 +1775,7 @@ route_name:  ID {
 
 route_stm:  ROUTE LBRACE actions RBRACE {
 						if (rlist[DEFAULT_RT].a!=0) {
-							yyerror("overwritting default "
+							yyerror("overwriting default "
 								"request routing table");
 							YYABORT;
 						}
@@ -1785,7 +1785,7 @@ route_stm:  ROUTE LBRACE actions RBRACE {
 						if ( strtol($3,&tmp,10)==0 && *tmp==0) {
 							/* route[0] detected */
 							if (rlist[DEFAULT_RT].a!=0) {
-								yyerror("overwritting(2) default "
+								yyerror("overwriting(2) default "
 									"request routing table");
 								YYABORT;
 							}
@@ -1810,7 +1810,7 @@ failure_route_stm: ROUTE_FAILURE LBRACK route_name RBRACK LBRACE actions RBRACE 
 
 onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
 						if (onreply_rlist[DEFAULT_RT].a!=0) {
-							yyerror("overwritting default "
+							yyerror("overwriting default "
 								"onreply routing table");
 							YYABORT;
 						}
@@ -1836,7 +1836,7 @@ branch_route_stm: ROUTE_BRANCH LBRACK route_name RBRACK LBRACE actions RBRACE {
 
 error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
 						if (error_rlist.a!=0) {
-							yyerror("overwritting default "
+							yyerror("overwriting default "
 								"error routing table");
 							YYABORT;
 						}

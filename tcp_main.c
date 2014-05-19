@@ -309,7 +309,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info( servaddr, ip, port);
-			LM_ERR("[sever=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
 			goto error;
 		}
 	}else goto end;
@@ -339,7 +339,7 @@ again:
 		if (n<0){
 			if (errno==EINTR) continue;
 			get_su_info( servaddr, ip, port);
-			LM_ERR("poll/select failed:[sever=%s:%d] (%d) %s\n",
+			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
 				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
@@ -358,7 +358,7 @@ again:
 			if ((err==0) && (poll_err==0)) goto end;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info( servaddr, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [sever=%s:%d] (%d) %s\n",
+				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
 					ip, port, err, strerror(err));
 				goto error;
 			}
@@ -602,7 +602,7 @@ again:
 		}
 		if (errno!=EINPROGRESS && errno!=EALREADY){
 			get_su_info(&server->s, ip, port);
-			LM_ERR("[sever=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
+			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
 			goto error;
 		}
 	} else goto local_success;
@@ -635,7 +635,7 @@ again:
 		if (n<0){
 			if (errno==EINTR) continue;
 			get_su_info(&server->s, ip, port);
-			LM_ERR("poll/select failed:[sever=%s:%d] (%d) %s\n",
+			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
 				ip, port, errno, strerror(errno));
 			goto error;
 		}else if (n==0) /* timeout */ continue;
@@ -653,7 +653,7 @@ again:
 			if ((err==0) && (poll_err==0)) goto local_success;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [sever=%s:%d] (%d) %s\n",
+				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
 					ip, port, err, strerror(err));
 				goto error;
 			}
@@ -1513,7 +1513,7 @@ static void tcpconn_destroy(struct tcp_connection* tcpconn)
 		tcpconn->timeout=0;
 		tcpconn->state=S_CONN_BAD;
 		LM_DBG("delaying (%p, flags %04x) ref = %d ...\n",
-				tcpconn, tcpconn->flags,tcpconn->refcnt);
+				tcpconn, tcpconn->flags, tcpconn->refcnt);
 
 	}
 	TCPCONN_UNLOCK;
@@ -1575,7 +1575,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 		return 0; /* we are not interested in possibly queued io events,
 					 the fd was either passed to a child, or closed */
 	} else {
-		LM_DBG("connection %p fd %d is now writeable\n",tcpconn,tcpconn->s);
+		LM_DBG("connection %p fd %d is now writable\n", tcpconn, tcpconn->s);
 		/* we received a write event */
 		if (tcpconn->flags & F_CONN_NOT_CONNECTED) {
 			/* we're coming from an async connect & write
@@ -1595,7 +1595,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 			/* we succesfully connected - further treat this case as if we
 			 * were coming from an async write */
 			tcpconn->flags &=~F_CONN_NOT_CONNECTED;
-			LM_DBG("Succesfully completed previous async connect \n");
+			LM_DBG("Succesfully completed previous async connect\n");
 
 			goto async_write;
 		} else {

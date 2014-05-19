@@ -127,7 +127,7 @@ int get_nr_max(char *s, unsigned char *max)
 			*max = (unsigned char)nr;
 			return 0;
 		}else{
-			LM_ERR("bad  number <%s>\n",s);
+			LM_ERR("bad number <%s>\n",s);
 			return -1;
 		}
 	}

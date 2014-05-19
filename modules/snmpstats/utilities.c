@@ -56,7 +56,7 @@ int stringHandlerSanityCheck( modparam_t type, void *val, char *parameterName)
 
 	/* An empty string was supplied.  We consider this illegal */
 	if (theString==0 || (theString[0])==0) {
-		LM_ERR("the %s parameter was specified  with an empty string\n",
+		LM_ERR("the %s parameter was specified with an empty string\n",
 				parameterName);
 		return 0;
 	}

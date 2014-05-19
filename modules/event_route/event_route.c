@@ -298,7 +298,7 @@ static int scriptroute_add_param(struct sip_msg *msg,
 				break;
 		}
 		if (!it) {
-			LM_WARN("Parameter <%.*s> not found  for event <%.*s>\n",
+			LM_WARN("Parameter <%.*s> not found for event <%.*s>\n",
 					param->name.len, param->name.s,
 					event_name->len, event_name->s);
 			return 0;

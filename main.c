@@ -1567,7 +1567,7 @@ try_again:
 
 	/* init black list engine */
 	if (init_black_lists()!=0) {
-		LM_CRIT("failed to init black lists\n");
+		LM_CRIT("failed to init blacklists\n");
 		goto error;
 	}
 	/* init resolver's blacklist */

@@ -479,7 +479,7 @@ int b2b_entities_restore(void)
 				htable = server_htable;
 				if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index) < 0)
 				{
-					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len,  dlg.tag[1].s);
+					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len, dlg.tag[1].s);
 					goto error;
 				}
 			}
@@ -489,7 +489,7 @@ int b2b_entities_restore(void)
 
 				if(b2b_parse_key(&dlg.callid, &hash_index, &local_index) < 0)
 				{
-					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.callid.len,  dlg.callid.s);
+					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.callid.len, dlg.callid.s);
 					goto error;
 				}
 			}
