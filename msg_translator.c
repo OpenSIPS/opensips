@@ -1762,7 +1762,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	buf = (char*) pkg_malloc( len+1 );
 	if (!buf)
 	{
-		LM_ERR("out of pkg memory  ; needs %d\n",len);
+		LM_ERR("out of pkg memory; needs %d\n",len);
 		goto error01;
 	}
 

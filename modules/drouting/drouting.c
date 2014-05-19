@@ -667,13 +667,13 @@ static int dr_init(void)
 
 	drg_table.len = strlen(drg_table.s);
 	if (drg_table.s[0]==0) {
-		LM_CRIT("mandatory parameter \"DRG_TABLE\"  found empty\n");
+		LM_CRIT("mandatory parameter \"DRG_TABLE\" found empty\n");
 		goto error;
 	}
 
 	drc_table.len = strlen(drc_table.s);
 	if (drc_table.s[0]==0) {
-		LM_CRIT("mandatory parameter \"DRC_TABLE\"  found empty\n");
+		LM_CRIT("mandatory parameter \"DRC_TABLE\" found empty\n");
 		goto error;
 	}
 

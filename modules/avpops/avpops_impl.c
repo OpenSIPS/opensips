@@ -678,7 +678,7 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
 		}
 	} else {
-		LM_WARN("TODO: avp is not a dinamic name <%.*s> name is %d\n", dbp->sa.len, dbp->sa.s, avp_name);
+		LM_WARN("TODO: avp is not a dynamic name <%.*s> name is %d\n", dbp->sa.len, dbp->sa.s, avp_name);
 		avp_name = -1;
 	}
 

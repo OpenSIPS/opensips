@@ -706,7 +706,7 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 
 	/* make the key */
 	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 )
-	{	LM_ERR("Error in bdblib_valtochar  \n");
+	{	LM_ERR("Error in bdblib_valtochar\n");
 		ret = -9;
 		goto error;
 	}
@@ -721,7 +721,7 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 	memset(dbuf, 0, MAX_ROW_SIZE);
 
 	if ( (ret = bdblib_valtochar(_tp, lkey, dbuf, &dlen, _v, _n, BDB_VALUE)) != 0 )
-	{	LM_ERR("Error in bdblib_valtochar \n");
+	{	LM_ERR("Error in bdblib_valtochar\n");
 		ret = -9;
 		goto error;
 	}
