@@ -211,6 +211,8 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
+	/* make sure we do not free this string in case of a further error */
+	prefix = NULL;
 
 	if ((lump = insert_subst_lump_after(lump, SUBST_SND_ALL, HDR_CONTACT_T)) == 0) {
 		LM_ERR("failed inserting SUBST_SND buf\n");
