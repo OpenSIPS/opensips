@@ -186,17 +186,18 @@ static int mod_init(void)
 	}
 
 	if(default_expires<15){
-		LM_ERR("default_expires to short: [%d]<15\n", default_expires);
-		return -1;
-	}
-	if(timer_interval<10){
-		LM_ERR("timer_interval to short: [%d]<10\n", timer_interval);
+		LM_ERR("default_expires too short: [%d]<15\n", default_expires);
 		return -1;
 	}
 	if(reg_hsize<1 || reg_hsize>20) {
 		LM_ERR("Wrong hash size: 20<[%d]<1\n", reg_hsize);
 	}
 	reg_hsize = 1<<reg_hsize;
+	timer_interval = (int)(timer_interval/reg_hsize);
+	if(timer_interval<10){
+		LM_ERR("timer_interval divided on hash_size [%d] too short: [%d]<10\n", reg_hsize, timer_interval);
+		return -1;
+	}
 
 	if(init_reg_htable()<0) {
 		LM_ERR("Failed to initialize registrant hash table\n");
@@ -222,7 +223,7 @@ static int mod_init(void)
 	}
 
 	register_timer("uac_reg_check", timer_check, 0,
-					timer_interval/reg_hsize);
+					timer_interval);
 
 	return 0;
 }
