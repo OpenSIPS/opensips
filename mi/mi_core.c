@@ -547,6 +547,11 @@ static mi_export_t mi_core_cmds[] = {
 		mi_kill,       MI_NO_INPUT_FLAG,  0,  0 },
 	{ "debug", "gets/sets the value of the debug core variable",
 		mi_debug,                     0,  0,  0 },
+#if DBG_QM_MALLOC
+	{ "shm_check", "complete scan of the shared memory pool "
+		"(if any error is found, OpenSIPS will abort!)",
+		mi_shm_check, MI_NO_INPUT_FLAG, 0,  0 },
+#endif
 	{ "cache_store", "stores in a cache system a string value",
 		mi_cachestore,                0,  0,  0 },
 	{ "cache_fetch", "queries for a cache stored value",

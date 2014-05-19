@@ -711,6 +711,21 @@ void qm_info(struct qm_block* qm, struct mem_info* info)
 	info->total_frags=total_frags;
 }
 
+int qm_mem_check(struct qm_block *qm)
+{
+	struct qm_frag *f;
+	int i = 0;
+
+	for (f = qm->first_frag; (char *)f < (char *)qm->last_frag_end;
+	     f = FRAG_NEXT(f), i++) {
+
+		qm_debug_frag(qm, f);
+	}
+
+	LM_DBG("fragments: %d\n", i);
+
+	return i;
+}
 
 
 #endif

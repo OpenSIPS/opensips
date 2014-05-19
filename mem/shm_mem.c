@@ -386,6 +386,31 @@ int shm_mem_init(void)
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
+struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
+{
+#ifdef DBG_QM_MALLOC
+	struct mi_root *root;
+	int ret;
+
+	shm_lock();
+	ret = qm_mem_check(shm_block);
+	shm_unlock();
+
+	/* any return means success; print the number of fragments now */
+	root = init_mi_tree(200, MI_SSTR(MI_OK));
+
+	if (!addf_mi_node_child(&root->node, 0, MI_SSTR("total_fragments"), "%d", ret)) {
+		LM_ERR("failed to add MI node\n");
+		free_mi_tree(root);
+		return NULL;
+	}
+
+	return root;
+#endif
+
+	return NULL;
+}
+
 void init_shm_statistics(void)
 {
 	#if defined(SHM_MEM) && defined(HP_MALLOC)

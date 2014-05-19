@@ -429,6 +429,10 @@ do{\
 	shm_unlock(); \
 }while(0)
 
+/*
+ * performs a full shared memory pool scan for any corruptions or inconsistencies
+ */
+struct mi_root *mi_shm_check(struct mi_root *cmd, void *param);
 
 #ifdef STATISTICS
 extern stat_export_t shm_stats[];

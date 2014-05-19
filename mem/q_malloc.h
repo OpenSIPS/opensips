@@ -144,6 +144,12 @@ void* qm_realloc(struct qm_block*, void* p, unsigned long size);
 void  qm_status(struct qm_block*);
 void  qm_info(struct qm_block*, struct mem_info*);
 
+/*
+ * On success, returns the currrent number of fragments
+ * Internally aborts on failure
+ */
+int qm_mem_check(struct qm_block *qm);
+
 
 #ifdef STATISTICS
 static inline unsigned long qm_get_size(struct qm_block* qm)
