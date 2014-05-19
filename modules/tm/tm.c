@@ -449,7 +449,7 @@ static int fixup_phostport2proxy(void** param, int param_no)
 	str host;
 
 	if (param_no!=1) {
-		LM_CRIT("called with more than  one parameter\n");
+		LM_CRIT("called with more than one parameter\n");
 		return E_BUG;
 	}
 
@@ -1200,7 +1200,7 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 	if (!t || t==T_UNDEFINED) {
 		/* no transaction yet */
 		if (route_type==FAILURE_ROUTE) {
-			LM_CRIT(" BUG - undefined transaction in failure route\n");
+			LM_CRIT("BUG - undefined transaction in failure route\n");
 			return -1;
 		}
 		ret = t_relay_to( p_msg, p, (int)(long)flags );

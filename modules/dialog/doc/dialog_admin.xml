@@ -2325,7 +2325,7 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 		<section>
 			<title><varname>$DLG_flags</varname></title>
 			<para>
-			Returns the dialog flags array (as a single interger value)
+			Returns the dialog flags array (as a single integer value)
 			of the dialog corresponding to the processed sequential request.
 			This PV will be available only for sequential requests, 
 			after doing loose_route().

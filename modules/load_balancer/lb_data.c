@@ -130,7 +130,7 @@ static struct lb_resource *add_lb_resource(struct lb_data *data, str *name)
 		}
 		new_res->profile = lb_dlg_binds.search_profile( &profile_name );
 		if (new_res->profile==NULL) {
-			LM_CRIT("bug -  cannot find just added profile\n");
+			LM_CRIT("bug - cannot find just added profile\n");
 			goto error;
 		}
 	} else {

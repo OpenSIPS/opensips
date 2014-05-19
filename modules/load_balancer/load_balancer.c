@@ -198,7 +198,7 @@ static int fixup_resources(void** param, int param_no)
 			}
 			if (pv_parse_spec(&s, lbgp->grp_pv)==0 ||
 			lbgp->grp_pv->type==PVT_NULL) {
-				LM_ERR("%s is not interger nor PV !\n", (char*)*param);
+				LM_ERR("%s is not integer nor PV !\n", (char*)*param);
 				return E_UNSPEC;
 			}
 		}

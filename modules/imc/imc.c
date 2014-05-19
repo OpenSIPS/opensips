@@ -458,7 +458,7 @@ static int imc_manager(struct sip_msg* msg, char *str1, char *str2)
 
 	if(parse_from_header(msg)<0)
 	{
-		LM_ERR("failed to parse  From header\n");
+		LM_ERR("failed to parse From header\n");
 		goto error;
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
@@ -661,7 +661,7 @@ void destroy(void)
 
 				if(imc_dbf.insert(imc_db, mq_cols, mq_vals, 4)<0)
 				{
-					LM_ERR("failed to insert  into table imc_rooms\n");
+					LM_ERR("failed to insert into table imc_rooms\n");
 					return;
 				}
 				member = member->next;

@@ -566,7 +566,7 @@ int sipcapture_db_init(const str* db_url) {
 
 
         if(db_funcs.init == 0) {
-                LM_CRIT("null dbf \n");
+                LM_CRIT("null dbf\n");
                 goto error;
         }
 

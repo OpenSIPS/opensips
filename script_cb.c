@@ -216,13 +216,13 @@ int register_raw_processing_cb(raw_processing_func f,int type)
 	switch (type) {
 		case PRE_RAW_PROCESSING:
 			if (pre_processing_cb != NULL) {
-				LM_WARN("Overwritting the raw pre processing CB \n");
+				LM_WARN("Overwriting the raw pre processing CB \n");
 			}
 			pre_processing_cb = f;
 			return 0;
 		case POST_RAW_PROCESSING:
 			if (post_processing_cb != NULL) {
-				LM_WARN("Overwritting the raw post processing CB \n");
+				LM_WARN("Overwriting the raw post processing CB \n");
 			}
 			post_processing_cb = f;
 			return 0;

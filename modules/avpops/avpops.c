@@ -697,7 +697,7 @@ static int fixup_pushto_avp(void** param, int param_no)
 			break;
 			case PVT_HDR:
 				/* what's the hdr destination ? request or reply? */
-				LM_ERR("push to header  is obsoleted - use append_hf() "
+				LM_ERR("push to header is obsolete - use append_hf() "
 						"or append_to_reply() from textops module!\n");
 				return E_UNSPEC;
 			break;
