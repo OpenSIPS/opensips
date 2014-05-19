@@ -121,9 +121,17 @@ inline static unsigned long big_hash_idx(unsigned long s)
 
 
 #ifdef DBG_QM_MALLOC
+
+#ifdef __CPU_x86_64
+#define ST_CHECK_PATTERN   0xf0f0f0f0f0f0f0f0
+#define END_CHECK_PATTERN1 0xc0c0c0c0c0c0c0c0
+#define END_CHECK_PATTERN2 0xabcdefedabcdefed
+#else
+#warning "assuming sizeof(long) = 4"
 #define ST_CHECK_PATTERN   0xf0f0f0f0
 #define END_CHECK_PATTERN1 0xc0c0c0c0
 #define END_CHECK_PATTERN2 0xabcdefed
+#endif
 
 
 static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
