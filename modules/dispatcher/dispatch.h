@@ -68,6 +68,7 @@ typedef struct _ds_dest
 	str attrs;
 	int flags;
 	int weight;
+	int priority;
 	struct socket_info *sock;
 	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
@@ -117,6 +118,7 @@ extern str ds_dest_uri_col;
 extern str ds_dest_sock_col;
 extern str ds_dest_state_col;
 extern str ds_dest_weight_col;
+extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
 
 extern int ds_flags;

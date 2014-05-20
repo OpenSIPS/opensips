@@ -70,7 +70,7 @@
 #include "dispatch.h"
 #include "ds_bl.h"
 
-#define DS_TABLE_VERSION	6
+#define DS_TABLE_VERSION	7
 
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
@@ -155,10 +155,11 @@ void ds_destroy_data(void)
 
 
 int add_dest2list(int id, str uri, struct socket_info *sock, int state,
-							int weight, str attrs, ds_data_t *d_data)
+							int weight, int prio, str attrs, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
+	ds_dest_p dp_it, dp_prev;
 	struct sip_uri puri;
 
 	/* For DNS-Lookups */
@@ -249,6 +250,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	hostent2ip_addr( &dp->ips[0], &proxy->host, proxy->addr_idx);
 	dp->ports[0] = proxy->port;
 	dp->ips_cnt = 1;
+	dp->priority = prio;
 	LM_DBG("first gw ip addr [%s]:%d\n",
 		ip_addr2a(&dp->ips[0]), dp->ports[0]);
 	/* get the next available IPs from DNS */
@@ -264,8 +266,21 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	free_proxy(proxy);
 	pkg_free(proxy);
 
-	dp->next = sp->dlist;
-	sp->dlist = dp;
+	/*
+	 * search the proper place based on priority
+	 * put them in reverse order, since they will be reindexed
+	 */
+	for (dp_prev = NULL, dp_it = sp->dlist;
+		 dp_it && dp_it->priority < prio;
+		 dp_prev = dp_it, dp_it = dp_it->next);
+
+	if (!dp_prev) {
+		dp->next = sp->dlist;
+		sp->dlist = dp;
+	} else {
+		dp->next = dp_prev->next;
+		dp_prev->next = dp;
+	}
 
 	LM_DBG("dest [%d/%d] <%.*s> successfully loaded\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
 
@@ -640,6 +655,7 @@ static ds_data_t* ds_load_data(void)
 	int i, id, nr_rows, cnt;
 	int state;
 	int weight;
+	int prio;
 	struct socket_info *sock;
 	str uri;
 	str attrs;
@@ -649,9 +665,9 @@ static ds_data_t* ds_load_data(void)
 	db_val_t * values;
 	db_row_t * rows;
 
-	db_key_t query_cols[6] = {&ds_set_id_col, &ds_dest_uri_col,
+	db_key_t query_cols[7] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_state_col,
-			&ds_dest_weight_col, &ds_dest_attrs_col};
+			&ds_dest_weight_col, &ds_dest_attrs_col, &ds_dest_prio_col};
 
 	if(ds_db_handle == NULL){
 			LM_ERR("invalid DB handler\n");
@@ -671,7 +687,7 @@ static ds_data_t* ds_load_data(void)
 	memset( d_data, 0, sizeof(ds_data_t));
 
 	/*select the whole table and all the columns*/
-	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,6,0,&res) < 0) {
+	if(ds_dbf.query(ds_db_handle,0,0,0,query_cols,0,7,0,&res) < 0) {
 		LM_ERR("error while querying database\n");
 		goto error;
 	}
@@ -738,7 +754,14 @@ static ds_data_t* ds_load_data(void)
 		get_str_from_dbval( "ATTRIBUTES", values+5,
 			0/*not_null*/, 0/*not_empty*/, attrs, error2);
 
-		if (add_dest2list(id, uri, sock, state, weight, attrs, d_data) != 0) {
+		/* priority */
+		if (VAL_NULL(values+6)) {
+			prio = 0;
+		} else {
+			prio = VAL_INT(values+6);
+		}
+
+		if (add_dest2list(id, uri, sock, state, weight, prio, attrs, d_data) != 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",uri.len,uri.s,id);
 			continue;
 		} else {

@@ -64,6 +64,7 @@
 #define DS_DEST_SOCK_COL	"socket"
 #define DS_DEST_STATE_COL	"state"
 #define DS_DEST_WEIGHT_COL	"weight"
+#define DS_DEST_PRIO_COL	"priority"
 #define DS_DEST_ATTRS_COL	"attrs"
 #define DS_TABLE_NAME 		"dispatcher"
 
@@ -106,6 +107,7 @@ str ds_dest_uri_col   = str_init(DS_DEST_URI_COL);
 str ds_dest_sock_col  = str_init(DS_DEST_SOCK_COL);
 str ds_dest_state_col = str_init(DS_DEST_STATE_COL);
 str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
+str ds_dest_prio_col = str_init(DS_DEST_PRIO_COL);
 str ds_dest_attrs_col = str_init(DS_DEST_ATTRS_COL);
 str ds_table_name     = str_init(DS_TABLE_NAME);
 
@@ -189,6 +191,7 @@ static param_export_t params[]={
 	{"socket_col",      STR_PARAM, &ds_dest_sock_col.s},
 	{"state_col",       STR_PARAM, &ds_dest_state_col.s},
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
+	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
 	{"force_dst",       INT_PARAM, &ds_force_dst},
 	{"flags",           INT_PARAM, &ds_flags},

@@ -6,6 +6,7 @@ CREATE TABLE dispatcher (
     socket VARCHAR(128) DEFAULT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
     weight INTEGER DEFAULT 1 NOT NULL,
+    priority INTEGER DEFAULT 0 NOT NULL,
     attrs VARCHAR(128) DEFAULT '' NOT NULL,
     description VARCHAR(64) DEFAULT '' NOT NULL
 );
