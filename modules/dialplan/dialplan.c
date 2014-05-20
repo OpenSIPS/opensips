@@ -192,12 +192,28 @@ static int dp_get_ivalue(struct sip_msg* msg, dp_param_p dp, int *val)
 
 	LM_DBG("searching %d\n",dp->v.sp[0].type);
 
-	if( pv_get_spec_value( msg, &dp->v.sp[0], &value)!=0
-	|| value.flags&(PV_VAL_NULL|PV_VAL_EMPTY) || !(value.flags&PV_VAL_INT)) {
-		LM_ERR("no PV or NULL or non-INT val found (error in script)\n");
+	if (pv_get_spec_value( msg, &dp->v.sp[0], &value)!=0) {
+		LM_ERR("no PV found (error in script)\n");
 		return -1;
 	}
-	*val = value.ri;
+
+	if (value.flags&(PV_VAL_NULL|PV_VAL_EMPTY)) {
+		LM_ERR("NULL or empty val found (error in script)\n");
+		return -1;
+	}
+
+	if (value.flags&PV_VAL_INT) {
+		*val = value.ri;
+	} else if (value.flags&PV_VAL_STR) {
+		if (str2sint(&value.rs, val) != 0) {
+			LM_ERR("Unbale to convert to INT [%.*s]\n", value.rs.len, value.rs.s);
+			return -1;
+		}
+	} else {
+		LM_ERR("non-INT/STR val found (error in script)\n");
+		return -1;
+	}
+
 	return 0;
 }
 
