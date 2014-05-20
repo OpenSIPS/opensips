@@ -594,7 +594,8 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	if (translate(NULL, input, &output, idp, &attrs)!=0){
 		LM_DBG("could not translate %.*s with dpid %i\n",
 			input.len, input.s, idp->dp_id);
-		goto error1;
+		lock_stop_read( table->ref_lock );
+		return init_mi_tree(404, "No translation", 14);
 	}
 	/* we are done reading -> unref the data */
 	lock_stop_read( table->ref_lock );
@@ -617,9 +618,6 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 		goto error;
 
 	return rpl;
-error1:
-	/* we are done reading -> unref the data */
-	lock_stop_read( table->ref_lock );
 
 error:
 	if(rpl)
