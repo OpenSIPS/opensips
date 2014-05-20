@@ -192,9 +192,8 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		sp->next = d_data->sets;
 		d_data->sets = sp;
 		d_data->sets_no++;
+		sp->id = id;
 	}
-	sp->id = id;
-	sp->nr++;
 
 	dp = (ds_dest_p)shm_malloc(sizeof(ds_dest_t));
 	if(dp==NULL)
@@ -281,6 +280,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		dp->next = dp_prev->next;
 		dp_prev->next = dp;
 	}
+	sp->nr++;
 
 	LM_DBG("dest [%d/%d] <%.*s> successfully loaded\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
 
