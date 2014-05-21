@@ -1473,14 +1473,27 @@ error:
 	return -1;
 }
 
-
+/*
+ * iterates through all TCP connections and closes expired ones
+ *
+ * Note: runs once per second at most
+ */
+#define tcpconn_timeout(last_sec, close_all) \
+	do { \
+		int now; \
+		now = get_ticks(); \
+		if (last_sec != now) { \
+			last_sec = now; \
+			__tcpconn_timeout(close_all); \
+		} \
+	} while (0)
 
 /*! \brief very inefficient for now - FIXME
  * keep in sync with tcpconn_destroy, the "delete" part should be
  * the same except for io_watch_del..
  * \todo FIXME (very inefficient for now)
  */
-static inline void tcpconn_timeout(int force)
+static inline void __tcpconn_timeout(int force)
 {
 	struct tcp_connection *c, *next;
 	unsigned int ticks;
@@ -1524,6 +1537,7 @@ static inline void tcpconn_timeout(int force)
 /*! \brief tcp main loop */
 void tcp_main_loop(void)
 {
+	static unsigned int last_sec = 0;
 	int flags;
 	struct socket_info* si;
 	int r;
@@ -1605,14 +1619,14 @@ void tcp_main_loop(void)
 				/* wait and process IO */
 				io_wait_loop_poll(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0); 
 				/* remove old connections */
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 #ifdef HAVE_SELECT
 		case POLL_SELECT:
 			while(1){
 				io_wait_loop_select(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0);
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 #endif
@@ -1620,7 +1634,7 @@ void tcp_main_loop(void)
 		case POLL_SIGIO_RT:
 			while(1){
 				io_wait_loop_sigio_rt(&io_h, TCP_MAIN_SELECT_TIMEOUT);
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 #endif
@@ -1628,13 +1642,13 @@ void tcp_main_loop(void)
 		case POLL_EPOLL_LT:
 			while(1){
 				io_wait_loop_epoll(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0);
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 		case POLL_EPOLL_ET:
 			while(1){
 				io_wait_loop_epoll(&io_h, TCP_MAIN_SELECT_TIMEOUT, 1);
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 #endif
@@ -1642,7 +1656,7 @@ void tcp_main_loop(void)
 		case POLL_KQUEUE:
 			while(1){
 				io_wait_loop_kqueue(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0);
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 #endif
@@ -1650,7 +1664,7 @@ void tcp_main_loop(void)
 		case POLL_DEVPOLL:
 			while(1){
 				io_wait_loop_devpoll(&io_h, TCP_MAIN_SELECT_TIMEOUT, 0);
-				tcpconn_timeout(0);
+				tcpconn_timeout(last_sec, 0);
 			}
 			break;
 #endif
@@ -1671,7 +1685,7 @@ error:
 void destroy_tcp(void)
 {
 		if (tcpconn_id_hash){
-			tcpconn_timeout(1); /* force close/expire for all active tcpconns*/
+			__tcpconn_timeout(1); /* force close/expire for all active tcpconns*/
 			shm_free(tcpconn_id_hash);
 			tcpconn_id_hash=0;
 		}
