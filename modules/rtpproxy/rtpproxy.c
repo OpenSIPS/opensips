@@ -3229,6 +3229,8 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 	struct force_rtpp_args args;
 	struct force_rtpp_args *ap;
 	union sockaddr_union to;
+	struct socket_info *si;
+	struct dlg_cell * dlg;
 	struct ip_addr ip;
 
 	memset(&args, '\0', sizeof(args));
@@ -3319,14 +3321,20 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 						lock_stop_read(nh_lock);
 					continue;
 				} else {
-					if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
-						(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
-						update_sock_struct_from_via(&to, msg, msg->via2) != -1) {
-						su2ip_addr(&ip, &to);
-						args.raddr.s = ip_addr2a(&ip);
-						args.raddr.len = strlen(args.raddr.s);
+					if (((dlg=dlg_api.get_dlg) != 0) && (dlg->flags & DLG_FLAG_TOPHIDING)) {
+						si = dlg->legs[DLG_CALLER_LEG].bind_addr;
+						args.raddr.s = si->name.s;
+						args.raddr.len = si->name.len;
 					} else {
-						LM_ERR("can't extract 2nd via found reply\n");
+						if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
+							(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
+							update_sock_struct_from_via(&to, msg, msg->via2) != -1) {
+							su2ip_addr(&ip, &to);
+							args.raddr.s = ip_addr2a(&ip);
+							args.raddr.len = strlen(args.raddr.s);
+						} else {
+							LM_ERR("can't extract 2nd via from reply\n");
+						}
 					}
 				}
 			}
