@@ -462,12 +462,9 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	db_val_t db_vals[NR_KEYS-1];
 	db_key_t db_cols[1];
 	db_res_t* res = NULL;
-
 	int nr_keys = 0, val, lexpire;
-	content_type_t ctype;
 #define MS_BUF1_SIZE	1024
 	static char ms_buf1[MS_BUF1_SIZE];
-	int mime;
 	str notify_from;
 	str notify_body;
 	str notify_ctype;
@@ -476,20 +473,20 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	int_str        avp_value;
 	struct usr_avp *avp;
 
-	LM_DBG("------------ start ------------\n");
-
 	/* get message body - after that whole SIP MESSAGE is parsed */
-	if ( get_body( msg, &body)!=0 || body.len==0)
+	if ( get_body( msg, &body)!=0 )
 	{
 		LM_ERR("cannot extract body from msg\n");
 		goto error;
 	}
+	/* missing body is not an error here as we can have 
+	 * requests with external bodies (refered from content-type hdr) */
 
 	/* get TO URI */
 	if(!msg->to || !msg->to->body.s)
 	{
-	    LM_ERR("cannot find 'to' header!\n");
-	    goto error;
+		LM_ERR("cannot find 'to' header!\n");
+		goto error;
 	}
 
 	pto = get_to(msg);
@@ -564,19 +561,19 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	}
 
 	if (ms_max_messages > 0) {
-	    db_cols[0] = &sc_inc_time;
-	    if (msilo_dbf.query(db_con, db_keys, 0, db_vals, db_cols,
+		db_cols[0] = &sc_inc_time;
+		if (msilo_dbf.query(db_con, db_keys, 0, db_vals, db_cols,
 				2, 1, 0, &res) < 0 ) {
 			LM_ERR("failed to query the database\n");
 			return -1;
-	    }
-	    if (RES_ROW_N(res) >= ms_max_messages) {
+		}
+		if (RES_ROW_N(res) >= ms_max_messages) {
 			LM_ERR("too many messages for AoR '%.*s@%.*s'\n",
-			    puri.user.len, puri.user.s, puri.host.len, puri.host.s);
- 	        msilo_dbf.free_result(db_con, res);
-		return -1;
-	    }
-	    msilo_dbf.free_result(db_con, res);
+				puri.user.len, puri.user.s, puri.host.len, puri.host.s);
+			msilo_dbf.free_result(db_con, res);
+			return -1;
+		}
+		msilo_dbf.free_result(db_con, res);
 	}
 
 	/* Set To key */
@@ -619,45 +616,29 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	nr_keys++;
 
 	/* add the message's body in SQL query */
-
 	db_keys[nr_keys] = &sc_body;
-
+	/* insert NULL value is body was found empty */
 	db_vals[nr_keys].type = DB_BLOB;
-	db_vals[nr_keys].nul = 0;
+	db_vals[nr_keys].nul = body.len?0:1;
 	db_vals[nr_keys].val.blob_val.s = body.s;
 	db_vals[nr_keys].val.blob_val.len = body.len;
 
 	nr_keys++;
 
-	lexpire = ms_expire_time;
-	/* add 'content-type' -- parse the content-type header */
-	if ((mime=parse_content_type_hdr(msg))<1 )
-	{
-		LM_ERR("cannot parse Content-Type header\n");
+	/* add 'content-type' header (already found) */
+	if (msg->content_type==0) {
+		LM_ERR("missing Content-Type header\n");
 		goto error;
 	}
-
 	db_keys[nr_keys]      = &sc_ctype;
 	db_vals[nr_keys].type = DB_STR;
 	db_vals[nr_keys].nul  = 0;
-	db_vals[nr_keys].val.str_val.s   = "text/plain";
-	db_vals[nr_keys].val.str_val.len = 10;
+	db_vals[nr_keys].val.str_val = msg->content_type->body;
 
-	/** check the content-type value */
-	if( mime!=(TYPE_TEXT<<16)+SUBTYPE_PLAIN
-		&& mime!=(TYPE_MESSAGE<<16)+SUBTYPE_CPIM )
-	{
-		if(m_extract_content_type(msg->content_type->body.s,
-				msg->content_type->body.len, &ctype, CT_TYPE) != -1)
-		{
-			LM_DBG("'content-type' found\n");
-			db_vals[nr_keys].val.str_val.s   = ctype.type.s;
-			db_vals[nr_keys].val.str_val.len = ctype.type.len;
-		}
-	}
 	nr_keys++;
 
 	/* check 'expires' -- no more parsing - already done by get_body() */
+	lexpire = ms_expire_time;
 	if(msg->expires && msg->expires->body.len > 0)
 	{
 		LM_DBG("'expires' found\n");
@@ -835,7 +816,6 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 	db_cols[5]=&sc_inc_time;
 
 
-	LM_DBG("------------ start ------------\n");
 	hdr_str.s=hdr_buf;
 	hdr_str.len=1024;
 	body_str.s=body_buf;
@@ -989,7 +969,7 @@ static int m_dump(struct sip_msg* msg, char* owner, char* str2)
 					&str_vals[1],     /* To */
 					&str_vals[0],     /* From */
 					&hdr_str,         /* Optional headers including CRLF */
-					(n<0)?&str_vals[2]:&body_str, /* Message body */
+					(n<0)?(RES_ROWS(db_res)[i].values[3].nul?NULL:&str_vals[2]):&body_str, /* Message body */
 					(ms_outbound_proxy.s)?&ms_outbound_proxy:0,
 									/* outbound uri */
 					m_tm_callback,    /* Callback function */

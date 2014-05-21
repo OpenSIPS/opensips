@@ -8,7 +8,7 @@ CREATE TABLE silo (
     inc_time INTEGER DEFAULT 0 NOT NULL,
     exp_time INTEGER DEFAULT 0 NOT NULL,
     snd_time INTEGER DEFAULT 0 NOT NULL,
-    ctype VARCHAR(32) DEFAULT 'text/plain' NOT NULL,
+    ctype VARCHAR(255) DEFAULT NULL,
     body BYTEA NOT NULL
 );
 
