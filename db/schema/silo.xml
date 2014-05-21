@@ -84,8 +84,9 @@
     <column>
         <name>ctype</name>
         <type>string</type>
-        <size>32</size>
-        <default>text/plain</default>
+        <size>255</size>
+        <null/>
+        <default><null/></default>
         <description>Content type</description>
     </column>
 
