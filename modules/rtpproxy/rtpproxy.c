@@ -3321,7 +3321,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 						lock_stop_read(nh_lock);
 					continue;
 				} else {
-					if ((dlg=dlg_api.get_dlg != 0) && (dlg->flags & DLG_FLAG_TOPHIDING)) {
+					if (((dlg=dlg_api.get_dlg) != 0) && (dlg->flags & DLG_FLAG_TOPHIDING)) {
 						si = dlg->legs[DLG_CALLER_LEG].bind_addr;
 						args.raddr.s = si->name.s;
 						args.raddr.len = si->name.len;
