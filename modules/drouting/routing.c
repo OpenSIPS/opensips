@@ -524,10 +524,10 @@ add_dst(
 		case 0:
 			break;
 		case 1:
-			pgw->flags =  DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
+			pgw->flags |=  DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
 			break;
 		case 2:
-			pgw->flags =  DR_DST_STAT_DSBL_FLAG;
+			pgw->flags |=  DR_DST_STAT_DSBL_FLAG;
 			break;
 		default:
 			goto err_exit;
