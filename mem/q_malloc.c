@@ -434,11 +434,9 @@ void qm_free(struct qm_block* qm, void* p)
 #endif
 {
 	struct qm_frag* f;
-#ifdef QM_JOIN_FREE
 	struct qm_frag* prev;
 	struct qm_frag* next;
 	unsigned long size;
-#endif
 
 #ifdef DBG_QM_MALLOC
 	LM_GEN1( memlog, "params(%p, %p), called from %s: %s(%d)\n",
@@ -465,7 +463,6 @@ void qm_free(struct qm_block* qm, void* p)
 			f, f->file, f->func, f->line);
 #endif
 
-#ifdef QM_JOIN_FREE
 	size=f->size;
 	/* join packets if possible*/
 	prev=next=0;
@@ -499,7 +496,6 @@ void qm_free(struct qm_block* qm, void* p)
 	}
 	f->size=size;
 	FRAG_END(f)->size=f->size;
-#endif /* QM_JOIN_FREE*/
 #ifdef DBG_QM_MALLOC
 	f->file=file;
 	f->func=func;
