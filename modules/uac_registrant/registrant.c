@@ -174,6 +174,8 @@ struct module_exports exports= {
 /** Module init function */
 static int mod_init(void)
 {
+	unsigned int _timer;
+
 	if(load_uac_auth_api(&uac_auth_api)<0){
 		LM_ERR("Failed to load uac_auth api\n");
 		return -1;
@@ -221,8 +223,13 @@ static int mod_init(void)
 		return -1;
 	}
 
-	register_timer("uac_reg_check", timer_check, 0,
-					timer_interval/reg_hsize);
+	_timer = timer_interval/reg_hsize;
+	if (_timer) {
+		register_timer("uac_reg_check", timer_check, 0, _timer);
+	} else {
+		LM_ERR("timer_interval=[%d] MUST be bigger then reg_hsize=[%d]\n", timer_interval, reg_hsize);
+		return -1;
+	}
 
 	return 0;
 }
