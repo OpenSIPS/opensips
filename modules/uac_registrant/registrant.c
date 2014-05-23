@@ -361,6 +361,12 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 		rec->state = REGISTERED_STATE;
 		if (exp) rec->expires = exp;
+		if (rec->expires <= timer_interval) {
+			LM_ERR("Please decrease timer_interval=[%u]"
+				" - imposed server expires [%u] to small for AOR=[%.*s]\n",
+				timer_interval, rec->expires,
+				rec->td.rem_uri.len, rec->td.rem_uri.s);
+		}
 		rec->registration_timeout = now + rec->expires - timer_interval;
 		break;
 
