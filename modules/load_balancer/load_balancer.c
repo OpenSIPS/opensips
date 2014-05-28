@@ -945,7 +945,7 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 		if (attr==0)
 			goto error;
 
-		node = add_mi_node_child( dst_node, 0, "Resources", 9, NULL, 0);
+		node = add_mi_node_child( dst_node, MI_IS_ARRAY, "Resources", 9, NULL, 0);
 		if (node==0)
 			goto error;
 
