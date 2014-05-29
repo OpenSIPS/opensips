@@ -1583,7 +1583,7 @@ next_avp:
 			{
 				if (xdbg(msg, a->elem[0].u.data, val.rs.s) < 0)
 				{
-					LM_ALERT("Cannot print message");
+					LM_ALERT("Cannot print message\n");
 					break;
 				}
 			}
@@ -1611,7 +1611,7 @@ next_avp:
 				}
 				if (xlog_2(msg,a->elem[0].u.data, a->elem[1].u.data) < 0)
 				{
-					LM_ALERT("Cannot print xlog debug message");
+					LM_ALERT("Cannot print xlog debug message\n");
 					break;
 				}
 			}
@@ -1625,7 +1625,7 @@ next_avp:
 				}
 				if (xlog_1(msg,a->elem[0].u.data, val.rs.s) < 0)
 				{
-					LM_ALERT("Cannot print xlog debug message");
+					LM_ALERT("Cannot print xlog debug message\n");
 					break;
 				}
 			}
