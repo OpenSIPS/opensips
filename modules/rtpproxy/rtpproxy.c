@@ -206,8 +206,10 @@
 #define MI_RTP_PROXY_NOT_FOUND_LEN	(sizeof(MI_RTP_PROXY_NOT_FOUND)-1)
 #define MI_PING_DISABLED			"NATping disabled from script"
 #define MI_PING_DISABLED_LEN		(sizeof(MI_PING_DISABLED)-1)
-#define MI_SET						"set"
+#define MI_SET						"Set"
 #define MI_SET_LEN					(sizeof(MI_SET)-1)
+#define MI_NODE						"node"
+#define MI_NODE_LEN					(sizeof(MI_NODE)-1)
 #define MI_INDEX					"index"
 #define MI_INDEX_LEN				(sizeof(MI_INDEX)-1)
 #define MI_DISABLED					"disabled"
@@ -999,7 +1001,7 @@ error:
 }
 
 
-#define add_rtpp_node_int_info(_parent, _name, _name_len, _value, _child,\
+#define add_rtpp_node_int_info(_parent, _name, _name_len, _value, _attr,\
 								_len, _string, _error)\
 	do {\
 		(_string) = int2str((_value), &(_len));\
@@ -1007,7 +1009,7 @@ error:
 			LM_ERR("cannot convert int value\n");\
 				goto _error;\
 		}\
-		if(((_child) = add_mi_node_child((_parent), MI_DUP_VALUE, (_name), \
+		if(((_attr) = add_mi_attr((_parent), MI_DUP_VALUE, (_name), \
 				(_name_len), (_string), (_len))   ) == 0)\
 			goto _error;\
 	}while(0);
@@ -1061,7 +1063,7 @@ error:
 static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 												void* param)
 {
-	struct mi_node* node, *crt_node, *child;
+	struct mi_node* node, *crt_node, *set_node;
 	struct mi_root* root;
 	struct mi_attr * attr;
 	struct rtpp_set * rtpp_list;
@@ -1086,37 +1088,38 @@ static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){
 
+		id =  int2str(rtpp_list->id_set, &id_len);
+		if(!id){
+			LM_ERR("cannot convert set id\n");
+			goto error;
+		}
+
+		if(!(set_node = add_mi_node_child(node, MI_IS_ARRAY|MI_DUP_VALUE, MI_SET, MI_SET_LEN,
+									id, id_len))) {
+			LM_ERR("cannot add the set node to the tree\n");
+			goto error;
+		}
+
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next){
 
-			id =  int2str(rtpp_list->id_set, &id_len);
-			if(!id){
-				LM_ERR("cannot convert set id\n");
-				goto error;
-			}
-
-			if(!(crt_node = add_mi_node_child(node, 0, crt_rtpp->rn_url.s,
-					crt_rtpp->rn_url.len, 0,0)) ) {
+			if(!(crt_node = add_mi_node_child(set_node, MI_DUP_VALUE,
+					MI_NODE, MI_NODE_LEN,
+					crt_rtpp->rn_url.s,	crt_rtpp->rn_url.len)) ) {
 				LM_ERR("cannot add the child node to the tree\n");
 				goto error;
 			}
 
 			LM_DBG("adding node name %s \n",crt_rtpp->rn_url.s );
 
-			if((attr = add_mi_attr(crt_node, MI_DUP_VALUE, MI_SET, MI_SET_LEN,
-									id, id_len))== 0){
-				LM_ERR("cannot add attributes to the node\n");
-				goto error;
-			}
-
 			add_rtpp_node_int_info(crt_node, MI_INDEX, MI_INDEX_LEN,
-				crt_rtpp->idx, child, len,string,error);
+				crt_rtpp->idx, attr, len,string,error);
 			add_rtpp_node_int_info(crt_node, MI_DISABLED, MI_DISABLED_LEN,
-				crt_rtpp->rn_disabled, child, len,string,error);
+				crt_rtpp->rn_disabled, attr, len,string,error);
 			add_rtpp_node_int_info(crt_node, MI_WEIGHT, MI_WEIGHT_LEN,
-				crt_rtpp->rn_weight,  child, len, string,error);
+				crt_rtpp->rn_weight,  attr, len, string,error);
 			add_rtpp_node_int_info(crt_node, MI_RECHECK_TICKS,MI_RECHECK_T_LEN,
-				crt_rtpp->rn_recheck_ticks, child, len, string, error);
+				crt_rtpp->rn_recheck_ticks, attr, len, string, error);
 		}
 	}
 
