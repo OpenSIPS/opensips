@@ -1878,7 +1878,7 @@ int ds_print_mi_list(struct mi_node* rpl)
 
 		for(j=0; j<list->nr; j++)
 		{
-			node= add_mi_node_child(set_node, 0, "URI", 3,
+			node= add_mi_node_child(set_node, MI_DUP_VALUE, "URI", 3,
 					list->dlist[j].uri.s, list->dlist[j].uri.len);
 			if(node == NULL)
 				goto error;
@@ -1896,7 +1896,8 @@ int ds_print_mi_list(struct mi_node* rpl)
 				p = socket2str(list->dlist[j].sock, NULL, &len, 0);
 				if (p)
 				{
-					node1= add_mi_node_child(node, 0, "socket", 6, p, len);
+					node1= add_mi_node_child(node, MI_DUP_VALUE,
+						"socket", 6, p, len);
 					if(node1 == NULL)
 						goto error;
 				}
@@ -1904,7 +1905,7 @@ int ds_print_mi_list(struct mi_node* rpl)
 
 			if (list->dlist[j].attrs.s)
 			{
-				node1= add_mi_node_child(node, 0, "attr", 4,
+				node1= add_mi_node_child(node, MI_DUP_VALUE, "attr", 4,
 					list->dlist[j].attrs.s, list->dlist[j].attrs.len);
 				if(node1 == NULL)
 					goto error;
