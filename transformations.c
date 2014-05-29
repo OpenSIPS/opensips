@@ -1841,13 +1841,18 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			else {
 				LM_DBG("We have params\n");
 				val->rs.s = topar->name.s;
-				val->rs.len = nameaddr_to_body->last_param->value.s +
-					nameaddr_to_body->last_param->value.len - val->rs.s;
-				/* compensate the len if the value of the last param is
-				 * a quoted value (include the closing quote in the len) */
-				if ( (val->rs.s+val->rs.len<nameaddr_str.len+nameaddr_str.s) &&
-				(val->rs.s[val->rs.len]=='"' || val->rs.s[val->rs.len]=='\'' ) )
-					val->rs.len++;
+				if (nameaddr_to_body->last_param->value.s==NULL) {
+					val->rs.len = nameaddr_to_body->last_param->name.s +
+						nameaddr_to_body->last_param->name.len - val->rs.s;
+				} else {
+					val->rs.len = nameaddr_to_body->last_param->value.s +
+						nameaddr_to_body->last_param->value.len - val->rs.s;
+					/* compensate the len if the value of the last param is
+					 * a quoted value (include the closing quote in the len) */
+					if ( (val->rs.s+val->rs.len<nameaddr_str.len+nameaddr_str.s) &&
+					(val->rs.s[val->rs.len]=='"' || val->rs.s[val->rs.len]=='\'' ) )
+						val->rs.len++;
+				}
 			}
 			break;
 
