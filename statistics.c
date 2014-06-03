@@ -687,29 +687,44 @@ stat_var* get_stat( str *name )
 	return 0;
 }
 
+int mi_print_stat(struct mi_node *rpl, str *mod, str *stat, unsigned long val)
+{
+	static str tmp_buf = {0, 0};
+	char *tmp;
+
+	tmp = pkg_realloc(tmp_buf.s, mod->len + stat->len + 1);
+	if (!tmp) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	tmp_buf.s = tmp;
+
+	memcpy(tmp_buf.s, mod->s, mod->len);
+	tmp_buf.len = mod->len;
+	tmp_buf.s[tmp_buf.len++] = ':';
+	memcpy(tmp_buf.s + tmp_buf.len, stat->s, stat->len);
+	tmp_buf.len += stat->len;
+
+	if (!addf_mi_node_child(rpl, MI_DUP_NAME, tmp_buf.s, tmp_buf.len, "%lu", val)) {
+		LM_ERR("cannot add stat\n");
+		return -1;
+	}
+	return 0;
+}
+
 
 
 /***************************** MI STUFF ********************************/
 
 inline static int mi_add_stat(struct mi_node *rpl, stat_var *stat)
 {
-	struct mi_node *node;
-
-	node = addf_mi_node_child(rpl, 0, 0, 0, "%.*s:%.*s = %lu",
-		collector->amodules[stat->mod_idx].name.len,
-		collector->amodules[stat->mod_idx].name.s,
-		stat->name.len, stat->name.s,
-		get_stat_val(stat) );
-
-	if (node==0)
-		return -1;
-	return 0;
+	return mi_print_stat(rpl, &collector->amodules[stat->mod_idx].name,
+					&stat->name, get_stat_val(stat));
 }
 
 inline static int mi_add_module_stats(struct mi_node *rpl,
 													module_stats *mods)
 {
-	struct mi_node *node;
 	stat_var *stat;
 	int ret = 0;
 
@@ -717,14 +732,10 @@ inline static int mi_add_module_stats(struct mi_node *rpl,
 		lock_start_read((rw_lock_t *)collector->rwl);
 
 	for( stat=mods->head ; stat ; stat=stat->lnext) {
-		node = addf_mi_node_child(rpl, 0, 0, 0, "%.*s:%.*s = %lu",
-			mods->name.len, mods->name.s,
-			stat->name.len, stat->name.s,
-			get_stat_val(stat) );
-		if (node==0) {
-			ret = -1;
+		ret = mi_print_stat(rpl, &mods->name, &stat->name,
+				get_stat_val(stat));
+		if (ret < 0)
 			break;
-		}
 	}
 
 	if (mods->is_dyn)
