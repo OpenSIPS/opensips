@@ -965,6 +965,11 @@ mod_init(void)
 	int i;
 	float timeout;
 
+	if (rtpproxy_autobridge != 0) {
+		LM_WARN("Auto bridging does not properly function when doing "
+			"serial/parallel forking\n");
+	}
+
 	if (nortpproxy_str.s==NULL || nortpproxy_str.s[0]==0) {
 		nortpproxy_str.len = 0;
 		nortpproxy_str.s = NULL;
@@ -1093,13 +1098,13 @@ mod_init(void)
 		LM_DBG("dialog module not loaded.\n");
 	memset(&tm_api, 0, sizeof(struct tm_binds));
 	if (load_tm_api(&tm_api)!=0)
-		LM_DBG("can't load TM API - check if tm module was loaded\n");
+		LM_DBG("TM modules was not found\n");
 
 	if (parse_bavp(&param1_bavp_name, &param1_spec) < 0 ||
 			parse_bavp(&param2_bavp_name, &param2_spec) < 0)
 		LM_DBG("cannot parse bavp's\n");
 
-    if(rtpp_notify_socket.s) {
+	if(rtpp_notify_socket.s) {
 		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
 			rtpp_notify_socket.s += 4;
 		} else {
@@ -1107,13 +1112,13 @@ mod_init(void)
 				rtpp_notify_socket.s += 5;
 			rtpp_notify_socket_un = 1;
 		}
-        /* check if the notify socket parameter is set */
-        rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
-        if(dlg_api.get_dlg == 0) {
-            LM_ERR("You need to load dialog module if you want to use the"
-                    " timeout notification feature\n");
-            return -1;
-        }
+		/* check if the notify socket parameter is set */
+		rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
+		if(dlg_api.get_dlg == 0) {
+			LM_ERR("You need to load dialog module if you want to use the"
+				" timeout notification feature\n");
+			return -1;
+		}
 
 		rtpp_notify_h = (struct rtpp_notify_head *)
 			shm_malloc(sizeof(struct rtpp_notify_head));
@@ -1137,11 +1142,9 @@ mod_init(void)
 			LM_ERR("cannot find any valid rtpproxy to use\n");
 			return -1;
 		}
-    }
-    else
-    {
-        exports.procs = 0;
-    }
+	} else {
+		exports.procs = 0;
+	}
 
 	ei_id = evi_publish_event(event_name); 
 	if (ei_id == EVI_ERROR)
@@ -2831,7 +2834,8 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 	struct force_rtpp_args *ap;
 	union sockaddr_union to;
 	struct ip_addr ip;
-	
+	struct cell *trans;
+
 	memset(&args, '\0', sizeof(args));
 	m = get_all_bodies(msg);
 
@@ -2902,16 +2906,24 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 					msg_callback_add(msg, REQ_PRE_FORWARD, rtpproxy_pre_fwd, ap);
 					msg_callback_add(msg, MSG_DESTROY, rtpproxy_pre_fwd_free, ap);
 					continue;
-				}
-				if (rtpproxy_autobridge && args.node->abr_supported && msg->first_line.type == SIP_REPLY) {
-					if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
-					    (msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
-					    update_sock_struct_from_via(&to, msg, msg->via2) != -1) {
+				} else {
+					/* first try to get the destination of this reply from the
+					 * transaction (as the source of the request) */
+					if (tm_api.t_gett && (trans=tm_api.t_gett())!=0 &&
+					trans!=T_UNDEFINED && trans->uas.request ) {
+						/* we have the request from the transaction this
+						 * reply belongs to */
+						args.raddr.s = ip_addr2a(&trans->uas.request->rcv.src_ip);
+						args.raddr.len = strlen(args.raddr.s);
+					} else if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
+					(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
+					update_sock_struct_from_via(&to, msg, msg->via2)!=-1) {
 						su2ip_addr(&ip, &to);
 						args.raddr.s = ip_addr2a(&ip);
 						args.raddr.len = strlen(args.raddr.s);
 					} else {
-						LM_ERR("can't extract 2nd via found reply\n");
+						LM_ERR("can't extract reply destination from "
+							"transaction/reply_via2\n");
 					}
 				}
 						
