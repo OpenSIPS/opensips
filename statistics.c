@@ -165,7 +165,7 @@ int register_udp_load_stat(str *name, stat_var **s, int children)
 
 	if ( (stat_name = build_stat_name(name,"load")) == 0 ||
 	register_stat2("load",stat_name,(stat_var**)calc_udp_load,
-	STAT_IS_FUNC,*s) != 0) {
+	STAT_IS_FUNC, *s, 0) != 0) {
 		LM_ERR("failed to add load stat\n");
 		return -1;
 	}
@@ -191,7 +191,7 @@ int register_tcp_load_stat(stat_var **s)
 	memset((*s)->u.val,0,sizeof(stat_val));
 
 	if (register_stat2("load","tcp-load",(stat_var**)calc_tcp_load,
-	STAT_IS_FUNC,*s) != 0) {
+	STAT_IS_FUNC, *s, 0) != 0) {
 		LM_ERR("failed to add load stat\n");
 		return -1;
 	}
@@ -219,8 +219,10 @@ static inline module_stats* get_stat_module( str *module)
 	return 0;
 }
 
+#define add_stat_module(module) \
+	__add_stat_module(module, 0)
 
-static inline module_stats* add_stat_module( char *module)
+static inline module_stats* __add_stat_module( char *module, int unsafe)
 {
 	module_stats *amods;
 	module_stats *mods;
@@ -229,8 +231,13 @@ static inline module_stats* add_stat_module( char *module)
 	if ( (module==0) || ((len = strlen(module))==0 ) )
 		return 0;
 
-	amods = (module_stats*)shm_realloc_unsafe( collector->amodules,
-			(collector->mod_no+1)*sizeof(module_stats) );
+	amods = unsafe ?
+		(module_stats*)shm_realloc_unsafe( collector->amodules,
+		(collector->mod_no+1)*sizeof(module_stats))
+		:
+		(module_stats*)shm_realloc( collector->amodules,
+		(collector->mod_no+1)*sizeof(module_stats));
+
 	if (amods==0) {
 		LM_ERR("no more shm memory\n");
 		return 0;
@@ -319,8 +326,12 @@ int init_stats_collector(void)
 		pkg_free(psn);
 	}
 
-	/* register sh_mem statistics */
-	if (register_module_stats( "shmem", shm_stats)!=0 ) {
+	/*
+	 * register shm statistics in an unsafe manner, as some allocators
+	 * would actually attempt to update these statistics
+	 * during their "safe" allocations -- Liviu
+	 */
+	if (__register_module_stats( "shmem", shm_stats, 1) != 0) {
 		LM_ERR("failed to register sh_mem statistics\n");
 		goto error;
 	}
@@ -435,8 +446,12 @@ int stats_are_ready(void)
 
 /********************* Create/Register STATS functions ***********************/
 
+/**
+ * Note: certain statistics (e.g. shm statistics) require different handling,
+ * hence the <unsafe> parameter
+ */
 int register_stat2( char *module, char *name, stat_var **pvar,
-											unsigned short flags, void *ctx)
+					unsigned short flags, void *ctx, int unsafe)
 {
 	module_stats* mods;
 	stat_var **shash;
@@ -453,8 +468,13 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	}
 
 	name_len = strlen(name);
-	stat = (stat_var*)shm_malloc_unsafe(sizeof(stat_var) +
-	       ((flags&STAT_SHM_NAME)==0)*name_len);
+	stat = unsafe ?
+			(stat_var*)shm_malloc_unsafe(sizeof(stat_var) +
+			((flags&STAT_SHM_NAME)==0)*name_len)
+			:
+			(stat_var*)shm_malloc(sizeof(stat_var) +
+			((flags&STAT_SHM_NAME)==0)*name_len);
+
 	if (stat==0) {
 		LM_ERR("no more shm memory\n");
 		goto error;
@@ -462,7 +482,9 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	memset( stat, 0, sizeof(stat_var) );
 
 	if ( (flags&STAT_IS_FUNC)==0 ) {
-		stat->u.val = (stat_val*)shm_malloc_unsafe(sizeof(stat_val));
+		stat->u.val = unsafe ?
+			(stat_val*)shm_malloc_unsafe(sizeof(stat_val)) :
+			(stat_val*)shm_malloc(sizeof(stat_val));
 		if (stat->u.val==0) {
 			LM_ERR("no more shm memory\n");
 			goto error1;
@@ -482,7 +504,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	smodule.len = strlen(module);
 	mods = get_stat_module(&smodule);
 	if (mods==0) {
-		mods = add_stat_module(module);
+		mods = __add_stat_module(module, 1);
 		if (mods==0) {
 			LM_ERR("failed to add new module\n");
 			goto error2;
@@ -516,9 +538,26 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 				/* duplicate found -> drop current stat and return the
 				 * found one */
 				lock_stop_write((rw_lock_t *)collector->rwl);
-				if (flags&STAT_SHM_NAME) shm_free_unsafe(stat->name.s);
-				if ((flags&STAT_IS_FUNC)==0) shm_free_unsafe(stat->u.val);
-				shm_free(stat);
+
+				if (unsafe) {
+					if (flags&STAT_SHM_NAME)
+						shm_free_unsafe(stat->name.s);
+
+					if ((flags&STAT_IS_FUNC)==0)
+						shm_free_unsafe(stat->u.val);
+
+					shm_free_unsafe(stat);
+				
+				} else {
+					if (flags&STAT_SHM_NAME)
+						shm_free(stat->name.s);
+
+					if ((flags&STAT_IS_FUNC)==0)
+						shm_free(stat->u.val);
+
+					shm_free(stat);
+				}
+
 				*pvar = it;
 				return 0;
 			}
@@ -551,15 +590,24 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 		lock_stop_write((rw_lock_t *)collector->rwl);
 
 	return 0;
+
 error2:
 	if ( (flags&STAT_IS_FUNC)==0 ) {
-		shm_free(*pvar);
+		if (unsafe)
+			shm_free_unsafe(*pvar);
+		else
+			shm_free(*pvar);
 		*pvar = 0;
 	}
 error1:
-	shm_free(stat);
+		if (unsafe)
+			shm_free_unsafe(stat);
+		else
+			shm_free(stat);
 error:
-	*pvar = 0;
+	if ( (flags&STAT_IS_FUNC)==0 )
+		*pvar = 0;
+
 	return -1;
 }
 
@@ -580,16 +628,14 @@ int register_dynamic_stat( str *name, stat_var **pvar)
 	memcpy( p, name->s, name->len);
 	p[name->len] = 0;
 
-	ret = register_stat2( DYNAMIC_MODULE_NAME, p, pvar,
-		0/*flags*/, NULL/*ctx*/);
+	ret = register_stat( DYNAMIC_MODULE_NAME, p, pvar, 0/*flags*/);
 
 	pkg_free(p);
 
 	return ret;
 }
 
-
-int register_module_stats(char *module, stat_export_t *stats)
+int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
 {
 	int ret;
 
@@ -597,8 +643,8 @@ int register_module_stats(char *module, stat_export_t *stats)
 		return 0;
 
 	for( ; stats->name ; stats++) {
-		ret = register_stat( module, stats->name, stats->stat_pointer,
-			stats->flags);
+		ret = register_stat2( module, stats->name, stats->stat_pointer,
+			stats->flags, NULL, unsafe);
 		if (ret!=0) {
 			LM_CRIT("failed to add statistic\n");
 			return -1;
