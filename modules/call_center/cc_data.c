@@ -338,28 +338,28 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		s.s = "ccf_etw";s.len = 7 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
 		name, (stat_var **)cc_flow_get_etw, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow)!=0 ) {
+		(void*)flow, 0)!=0) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
 		s.s = "ccf_awt";s.len = 7 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
 		name, (stat_var **)cc_flow_get_awt, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow)!=0 ) {
+		(void*)flow, 0)!=0) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
 		s.s = "ccf_load";s.len = 8 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
 		name, (stat_var **)cc_flow_get_load, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow)!=0 ) {
+		(void*)flow, 0)!=0) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
 		s.s = "ccf_free_agents";s.len = 15 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
 		name, (stat_var **)cc_flow_free_agents, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow)!=0 ) {
+		(void*)flow, 0)!=0) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
@@ -557,7 +557,7 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 		s.s = "cca_att";s.len = 7 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
 		name, (stat_var **)cc_agent_get_att, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)agent)!=0 ) {
+		(void*)agent, 0)!=0) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
