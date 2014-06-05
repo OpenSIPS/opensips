@@ -2690,13 +2690,15 @@ static struct socket_id* mk_listen_id(char* host, int proto, int port)
 	if (l==0){
 		LM_CRIT("cfg. parser: out of memory.\n");
 	}else{
-		l->name=host;
-		l->port=port;
-		l->proto=proto;
-		l->adv_name=NULL;
-		l->adv_port=0;
-		l->next=0;
+		l->name     = host;
+		l->adv_name = NULL;
+		l->adv_port = 0;
+		l->proto    = proto;
+		l->port     = port;
+		l->children = 0;
+		l->next     = NULL;
 	}
+
 	return l;
 }
 
