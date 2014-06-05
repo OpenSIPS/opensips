@@ -299,9 +299,10 @@ destroy_rmqp:
 static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
+	int ret;
 
 	/* all checks should be already done */
-	return amqp_basic_publish(rmqp->conn,
+	ret = amqp_basic_publish(rmqp->conn,
 			rmqp->channel,
 			AMQP_EMPTY_BYTES,
 			amqp_cstring_bytes(rmqp->routing_key.s),
@@ -309,6 +310,38 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 			0,
 			0,
 			amqp_cstring_bytes(rmqs->msg));
+
+	switch (ret) {
+		case AMQP_STATUS_OK:
+			return 0;
+
+		case AMQP_STATUS_HEARTBEAT_TIMEOUT:
+			LM_ERR("heartbeat timeout\n");
+			break;
+
+		case AMQP_STATUS_NO_MEMORY:
+			LM_ERR("no more memory\n");
+			break;
+
+		case AMQP_STATUS_TABLE_TOO_BIG:
+			LM_ERR("A table in the properties was too large to fit in a single frame\n");
+			break;
+
+		case AMQP_STATUS_CONNECTION_CLOSED:
+			LM_ERR("Connection closed\n");
+			break;
+
+		/* this should not happend since we do not use ssl */
+		case AMQP_STATUS_SSL_ERROR:
+			LM_ERR("SSL error\n");
+			break;
+
+		case AMQP_STATUS_TCP_ERROR:
+			LM_ERR("TCP error: %s(%d)\n", strerror(errno), errno);
+			break;
+	}
+
+	return -1;
 }
 
 void rmq_process(int rank)
