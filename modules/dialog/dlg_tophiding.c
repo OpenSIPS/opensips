@@ -679,7 +679,8 @@ int dlg_th_needs_decoding(struct sip_msg *msg)
 		return 0;
 	}
 
-	if (memcmp(msg->callid->body.s,topo_hiding_prefix.s,
+	if (msg->callid->body.len > topo_hiding_prefix.len &&
+        memcmp(msg->callid->body.s,topo_hiding_prefix.s,
 	topo_hiding_prefix.len) == 0)
 		return 1;
 
