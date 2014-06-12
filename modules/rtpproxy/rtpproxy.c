@@ -2878,56 +2878,56 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, int offer)
 				LM_WARN("empty body\n");
 
 			} else {
-				if (rtpproxy_autobridge && args.node->abr_supported && msg->first_line.type == SIP_REQUEST) {
-					ap = pkg_malloc(sizeof(*ap));
-					if (ap == NULL) {
-						LM_ERR("can't allocate memory\n");
-						return (-1);
-					}
-					memcpy(ap, &args, sizeof(*ap));
-					if (str1 != NULL) {
-						ap->arg1 = pkg_strdup(str1);
-						if (ap->arg1 == NULL) {
-							pkg_free(ap);
+				if (rtpproxy_autobridge && args.node->abr_supported) {
+					if (msg->first_line.type == SIP_REQUEST) {
+						ap = pkg_malloc(sizeof(*ap));
+						if (ap == NULL) {
 							LM_ERR("can't allocate memory\n");
 							return (-1);
 						}
-					}
-					if (str2 != NULL) {
-						ap->arg2 = pkg_strdup(str2);
-						if (ap->arg2  == NULL) {
-							if (ap->arg1 != NULL)
-								pkg_free(ap->arg1);
-							pkg_free(ap);
-							LM_ERR("can't allocate memory\n");
-							return (-1);
+						memcpy(ap, &args, sizeof(*ap));
+						if (str1 != NULL) {
+							ap->arg1 = pkg_strdup(str1);
+							if (ap->arg1 == NULL) {
+								pkg_free(ap);
+								LM_ERR("can't allocate memory\n");
+								return (-1);
+							}
 						}
-					}
-					msg_callback_add(msg, REQ_PRE_FORWARD, rtpproxy_pre_fwd, ap);
-					msg_callback_add(msg, MSG_DESTROY, rtpproxy_pre_fwd_free, ap);
-					continue;
-				} else {
-					/* first try to get the destination of this reply from the
-					 * transaction (as the source of the request) */
-					if (tm_api.t_gett && (trans=tm_api.t_gett())!=0 &&
-					trans!=T_UNDEFINED && trans->uas.request ) {
-						/* we have the request from the transaction this
-						 * reply belongs to */
-						args.raddr.s = ip_addr2a(&trans->uas.request->rcv.src_ip);
-						args.raddr.len = strlen(args.raddr.s);
-					} else if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
-					(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
-					update_sock_struct_from_via(&to, msg, msg->via2)!=-1) {
-						su2ip_addr(&ip, &to);
-						args.raddr.s = ip_addr2a(&ip);
-						args.raddr.len = strlen(args.raddr.s);
+						if (str2 != NULL) {
+							ap->arg2 = pkg_strdup(str2);
+							if (ap->arg2  == NULL) {
+								if (ap->arg1 != NULL)
+									pkg_free(ap->arg1);
+								pkg_free(ap);
+								LM_ERR("can't allocate memory\n");
+								return (-1);
+							}
+						}
+						msg_callback_add(msg, REQ_PRE_FORWARD, rtpproxy_pre_fwd, ap);
+						msg_callback_add(msg, MSG_DESTROY, rtpproxy_pre_fwd_free, ap);
+						continue;
 					} else {
-						LM_ERR("can't extract reply destination from "
-							"transaction/reply_via2\n");
+						/* first try to get the destination of this reply from the
+						 * transaction (as the source of the request) */
+						if (tm_api.t_gett && (trans=tm_api.t_gett())!=0 &&
+						trans!=T_UNDEFINED && trans->uas.request ) {
+							/* we have the request from the transaction this
+							 * reply belongs to */
+							args.raddr.s = ip_addr2a(&trans->uas.request->rcv.src_ip);
+							args.raddr.len = strlen(args.raddr.s);
+						} else if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
+						(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
+						update_sock_struct_from_via(&to, msg, msg->via2)!=-1) {
+							su2ip_addr(&ip, &to);
+							args.raddr.s = ip_addr2a(&ip);
+							args.raddr.len = strlen(args.raddr.s);
+						} else {
+							LM_ERR("can't extract reply destination from "
+								"transaction/reply_via2\n");
+						}
 					}
 				}
-						
-					                        
 				LM_DBG("Forcing body:\n[%.*s]\n", args.body.len, args.body.s);
 				ret = force_rtp_proxy_body(msg, &args);
 			}
