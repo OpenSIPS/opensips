@@ -240,15 +240,30 @@ else
 endif
 
 
+.PHONY: tool-docbook2pdf
+tool-docbook2pdf:
+	@if [ -z "$(DBXML2PDF)" ]; then \
+		echo "error: docbook2pdf not found"; exit 1; \
+	fi
+
+.PHONY: tool-lynx
+tool-lynx:
+	@if [ -z "$(DBHTML2TXT)" ]; then \
+		echo "error: lynx not found"; exit 1; \
+	fi
+
+.PHONY: tool-xsltproc
+tool-xsltproc:
+	@if [ -z "$(DBXML2HTML)" ]; then \
+		echo "error: xsltproc not found"; exit 1; \
+	fi
+	@if [ -z "$(DBHTMLXSL)" ]; then \
+		echo "error: docbook.xsl not found (docbook-xsl)"; exit 1; \
+	fi
+
 .PHONY: modules-readme
-modules-readme:
+modules-readme: tool-lynx tool-xsltproc
 	@set -e; \
-	if [ "$(DBXML2HTML)" = "" ]; then \
-		echo "error: xsltproc not found"; exit ; \
-	fi ; \
-	if [ "$(DBHTML2TXT)" = "" ]; then \
-		echo "error: lynx not found"; exit ; \
-	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
@@ -266,17 +281,11 @@ modules-readme:
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
-	done 
+	done
 
 .PHONY: modules-docbook-txt
-modules-docbook-txt:
+modules-docbook-txt: tool-lynx tool-xsltproc
 	@set -e; \
-	if [ "$(DBXML2HTML)" = "" ]; then \
-		echo "error: xsltproc not found"; exit ; \
-	fi ; \
-	if [ "$(DBHTML2TXT)" = "" ]; then \
-		echo "error: lynx not found"; exit ; \
-	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
@@ -292,14 +301,11 @@ modules-docbook-txt:
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
-	done 
+	done
 
 .PHONY: modules-docbook-html
-modules-docbook-html:
+modules-docbook-html: tool-xsltproc
 	@set -e; \
-	if [ "$(DBXML2HTML)" = "" ]; then \
-		echo "error: xsltproc not found"; exit ; \
-	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
@@ -312,14 +318,11 @@ modules-docbook-html:
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
-	done 
+	done
 
 .PHONY: modules-docbook-pdf
-modules-docbook-pdf:
+modules-docbook-pdf: tool-docbook2pdf
 	@set -e; \
-	if [ "$(DBXML2PDF)" = "" ]; then \
-		echo "error: docbook2pdf not found"; exit ; \
-	fi ; \
 	for r in  $(modules_basenames) "" ; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc" ; \
@@ -330,7 +333,7 @@ modules-docbook-pdf:
 			fi ; \
 			cd ../../.. ; \
 		fi ; \
-	done 
+	done
 
 .PHONY: modules-docbook
 modules-docbook: modules-docbook-txt modules-docbook-html modules-docbook-pdf
