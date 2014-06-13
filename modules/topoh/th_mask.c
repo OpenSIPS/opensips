@@ -3,7 +3,8 @@
  *
  * Copyright (C) 2009 SIP-Router.org
  *
- * This file is part of Extensible SIP Router, a free SIP server.
+ * This file is part of opensips, a free SIP server. Ported from kamailio,
+ * another free SIP server, in 2014.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +20,7 @@
  */
 /*!
  * \file
- * \brief SIP-router topoh :: 
+ * \brief OpenSIPS topoh ::
  * \ingroup topoh
  * Module: \ref topoh
  */

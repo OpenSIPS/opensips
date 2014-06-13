@@ -3,7 +3,8 @@
  *
  * Copyright (C) 2009 SIP-Router.org
  *
- * This file is part of Extensible SIP Router, a free SIP server.
+ * This file is part of opensips, a free SIP server. Ported from kamailio,
+ * another free SIP server, in 2014.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -20,12 +21,12 @@
 
 /*!
  * \file
- * \brief SIP-router topoh :: Module interface
+ * \brief OpenSIPS topoh :: Module interface
  * \ingroup topoh
  * Module: \ref topoh
  */
 
-/*! \defgroup topoh SIP-router :: Topology hiding
+/*! \defgroup topoh OpenSIPS :: Topology hiding
  *
  * This module hides the SIP routing headers that show topology details.
  * It it is not affected by the server being transaction stateless or
@@ -56,17 +57,15 @@ str th_cookie_name = {"TH", 0};
 str th_cookie_value = {0, 0};
 str th_ip = {"10.1.1.10", 0};
 str th_uparam_name = {"line", 0};
-str th_uparam_prefix = {"sr-", 0};
+str th_uparam_prefix = {"os-", 0};
 str th_vparam_name = {"branch", 0};
-str th_vparam_prefix = {"z9hG4bKsr-", 0};
+str th_vparam_prefix = {"z9hG4bKos-", 0};
 
 str th_callid_prefix = {"!!:", 3};
 str th_via_prefix = {0, 0};
 str th_uri_prefix = {0, 0};
 
 int th_param_mask_callid = 0;
-
-int th_sanity_checks = 0;
 
 int th_msg_received(str *data);
 int th_msg_sent(str *data);
@@ -83,7 +82,6 @@ static param_export_t params[]={
 	{"vparam_name",		STR_PARAM, &th_vparam_name.s},
 	{"vparam_prefix",	STR_PARAM, &th_vparam_prefix.s},
 	{"callid_prefix",	STR_PARAM, &th_callid_prefix.s},
-	{"sanity_checks",	INT_PARAM, &th_sanity_checks},
 	{0,0,0}
 };
 

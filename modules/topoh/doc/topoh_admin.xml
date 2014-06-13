@@ -1,14 +1,3 @@
-<?xml version="1.0" encoding='ISO-8859-1'?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-
-<!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../docbook/entities.xml">
-%docentities;
-
-]>
-<!-- Module User's Guide -->
-
 <chapter>
 	
 	<title>&adminguide;</title>
@@ -35,7 +24,7 @@
 	<section>
 	<title>Dependencies</title>
 	<section>
-		<title>&kamailio; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -52,7 +41,7 @@
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before running
-		&kamailio; with this module loaded:
+		&osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
 			<para>
@@ -156,7 +145,7 @@ modparam("topoh", "uparam_name", "myparam")
 		</para>
 		<para>
 		<emphasis>
-			Default value is "sr-".
+			Default value is "os-".
 		</emphasis>
 		</para>
 		<example>
@@ -194,7 +183,7 @@ modparam("topoh", "vparam_name", "myv")
 		</para>
 		<para>
 		<emphasis>
-			Default value is "z9hG4bKsr-".
+			Default value is "z9hG4bKos-".
 		</emphasis>
 		</para>
 		<example>
@@ -221,28 +210,6 @@ modparam("topoh", "vparam_prefix", "xyz")
 		<programlisting format="linespecific">
 ...
 modparam("topoh", "callid_prefix", "***")
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
-		<title><varname>sanity_checks</varname> (integer)</title>
-		<para>
-			If set to 1, topoh module will bind to sanity module in order
-			to perform sanity checks over received SIP request. Default
-			sanity checks are done. It is useful to check if received request
-			is well formated before proceeding to encoding/decoding.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (do not bind to sanity module).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>sanity_checks</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("topoh", "sanity_checks", 1)
 ...
 </programlisting>
 		</example>

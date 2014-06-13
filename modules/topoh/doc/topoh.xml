@@ -2,8 +2,11 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
+
+<!ENTITY admin SYSTEM "topoh_admin.xml">
+
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../docbook/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
 %docentities;
 
 ]>
@@ -11,7 +14,7 @@
 <book xmlns:xi="http://www.w3.org/2001/XInclude">
     <bookinfo>
 	<title>topoh Module</title>
-	<productname class="trade">sip-router.org</productname>
+	<productname class="trade">&osipsname;</productname>
 	<authorgroup>
 	    <author>
 		<firstname>Daniel-Constantin</firstname>
@@ -26,12 +29,11 @@
 	</authorgroup>
 	<copyright>
 	    <year>2009</year>
-	    <holder>&fhg;</holder>
+	    <holder>FhG FOKUS</holder>
 	</copyright>
     </bookinfo>
     <toc></toc>
     
-    <xi:include href="topoh_admin.xml"/>
-    
+    &admin;
     
 </book>
