@@ -156,9 +156,19 @@ int th_get_uri_type(str *uri, int *mode, str *value)
 	}
 }
 
-int th_mask_via(sip_msg_t *msg)
+static inline struct hdr_field* next_sibling_hdr(const struct hdr_field* const hf)
 {
-	hdr_field_t *hdr;
+        struct hdr_field *hdr;
+
+        for(hdr = hf->next; hdr; hdr = hdr->next) {
+                if(hdr->type == hf->type) return hdr;
+        }
+        return NULL;
+}
+
+int th_mask_via(struct sip_msg *msg)
+{
+	struct hdr_field *hdr;
 	struct via_body *via;
 	struct lump* l;
 	int i;
@@ -204,7 +214,7 @@ int th_mask_via(sip_msg_t *msg)
 	return 0;
 }
 
-int th_mask_callid(sip_msg_t *msg)
+int th_mask_callid(struct sip_msg *msg)
 {
 	struct lump* l;
 	str out;
@@ -242,7 +252,7 @@ int th_mask_callid(sip_msg_t *msg)
 	return 0;
 }
 
-int th_mask_contact(sip_msg_t *msg)
+int th_mask_contact(struct sip_msg *msg)
 {
 	struct lump* l;
 	str out;
@@ -306,9 +316,9 @@ int th_mask_contact(sip_msg_t *msg)
 	return 0;
 }
 
-int th_mask_record_route(sip_msg_t *msg)
+int th_mask_record_route(struct sip_msg *msg)
 {
-	hdr_field_t *hdr;
+	struct hdr_field *hdr;
 	struct lump* l;
 	int i;
 	rr_t *rr;
@@ -364,9 +374,9 @@ int th_mask_record_route(sip_msg_t *msg)
 	return 0;
 }
 
-int th_unmask_via(sip_msg_t *msg, str *cookie)
+int th_unmask_via(struct sip_msg *msg, str *cookie)
 {
-	hdr_field_t *hdr;
+	struct hdr_field *hdr;
 	struct via_body *via;
 	struct via_body *via2;
 	struct via_param *vp;
@@ -459,7 +469,7 @@ int th_unmask_via(sip_msg_t *msg, str *cookie)
 	return 0;
 }
 
-int th_unmask_callid(sip_msg_t *msg)
+int th_unmask_callid(struct sip_msg *msg)
 {
 	struct lump* l;
 	str out;
@@ -497,9 +507,9 @@ int th_unmask_callid(sip_msg_t *msg)
 	return 0;
 }
 
-int th_flip_record_route(sip_msg_t *msg, int mode)
+int th_flip_record_route(struct sip_msg *msg, int mode)
 {
-	hdr_field_t *hdr;
+	struct hdr_field *hdr;
 	struct lump* l;
 	int i;
 	rr_t *rr;
@@ -596,9 +606,9 @@ int th_flip_record_route(sip_msg_t *msg, int mode)
 	return 0;
 }
 
-int th_unmask_route(sip_msg_t *msg)
+int th_unmask_route(struct sip_msg *msg)
 {
-	hdr_field_t *hdr;
+	struct hdr_field *hdr;
 	struct lump* l;
 	int i;
 	rr_t *rr;
@@ -660,7 +670,7 @@ int th_unmask_route(sip_msg_t *msg)
 	return 0;
 }
 
-int th_unmask_ruri(sip_msg_t *msg)
+int th_unmask_ruri(struct sip_msg *msg)
 {
 	str eval;
 	struct lump* l;
@@ -696,7 +706,7 @@ int th_unmask_ruri(sip_msg_t *msg)
 	return 0;
 }
 
-int th_unmask_refer_to(sip_msg_t *msg)
+int th_unmask_refer_to(struct sip_msg *msg)
 {
 	str eval;
 	str *uri;
@@ -755,7 +765,7 @@ int th_unmask_refer_to(sip_msg_t *msg)
 	return 0;
 }
 
-int th_update_hdr_replaces(sip_msg_t *msg)
+int th_update_hdr_replaces(struct sip_msg *msg)
 {
 	struct hdr_field *hf = NULL;
 	str replaces;
@@ -821,17 +831,13 @@ int th_update_hdr_replaces(sip_msg_t *msg)
 	return 0;
 }
 
-char* th_msg_update(sip_msg_t *msg, unsigned int *olen)
+char* th_msg_update(struct sip_msg *msg, unsigned int *olen)
 {
-	struct dest_info dst;
-
-	init_dest_info(&dst);
-	dst.proto = PROTO_UDP;
-	return build_req_buf_from_sip_req(msg,
-			olen, &dst, BUILD_NO_LOCAL_VIA|BUILD_NO_VIA1_UPDATE);
+	return build_req_buf_from_sip_req(msg, olen, NULL, PROTO_NONE,
+		MSG_TRANS_NOVIA_FLAG);
 }
 
-int th_add_via_cookie(sip_msg_t *msg, struct via_body *via)
+int th_add_via_cookie(struct sip_msg *msg, struct via_body *via)
 {
 	struct lump* l;
 	int viap;
@@ -844,7 +850,7 @@ int th_add_via_cookie(sip_msg_t *msg, struct via_body *via)
 		if (via->port!=0)
 			viap += via->port_str.len + 1; /* +1 for ':'*/
 	}
-	l = anchor_lump(msg, via->hdr.s - msg->buf + viap, 0, 0);
+	l = anchor_lump(msg, via->hdr.s - msg->buf + viap, 0);
 	if (l==0)
 	{
 		LM_ERR("failed adding cookie to via [%p]\n", via);
@@ -872,7 +878,7 @@ int th_add_via_cookie(sip_msg_t *msg, struct via_body *via)
 	return 0;
 }
 
-int th_add_hdr_cookie(sip_msg_t *msg)
+int th_add_hdr_cookie(struct sip_msg *msg)
 {
 	struct lump* anchor;
 	str h;
@@ -884,7 +890,7 @@ int th_add_hdr_cookie(sip_msg_t *msg)
 		LM_ERR("no more pkg\n");
 		return -1;
 	}
-	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 	if(anchor == 0)
 	{
 		LM_ERR("can't get anchor\n");
@@ -907,7 +913,7 @@ int th_add_hdr_cookie(sip_msg_t *msg)
 	return 0;
 }
 
-struct via_param *th_get_via_cookie(sip_msg_t *msg, struct via_body *via)
+struct via_param *th_get_via_cookie(struct sip_msg *msg, struct via_body *via)
 {
 	struct via_param *p;
 	for(p=via->param_lst; p; p=p->next)
@@ -920,9 +926,9 @@ struct via_param *th_get_via_cookie(sip_msg_t *msg, struct via_body *via)
 	return NULL;
 }
 
-hdr_field_t *th_get_hdr_cookie(sip_msg_t *msg)
+struct hdr_field *th_get_hdr_cookie(struct sip_msg *msg)
 {
-	hdr_field_t *hf;
+	struct hdr_field *hf;
 	for (hf=msg->headers; hf; hf=hf->next)
 	{
 		if (hf->name.len==th_cookie_name.len
@@ -933,7 +939,7 @@ hdr_field_t *th_get_hdr_cookie(sip_msg_t *msg)
 	return NULL;
 }
 
-int th_add_cookie(sip_msg_t *msg)
+int th_add_cookie(struct sip_msg *msg)
 {
 	if(th_cookie_value.len<=0)
 		return 0;
@@ -942,9 +948,9 @@ int th_add_cookie(sip_msg_t *msg)
 	return 0;
 }
 
-int th_del_hdr_cookie(sip_msg_t *msg)
+int th_del_hdr_cookie(struct sip_msg *msg)
 {
-	hdr_field_t *hf;
+	struct hdr_field *hf;
 	struct lump* l;
 	for (hf=msg->headers; hf; hf=hf->next)
 	{
@@ -963,7 +969,7 @@ int th_del_hdr_cookie(sip_msg_t *msg)
 	return 0;
 }
 
-int th_del_via_cookie(sip_msg_t *msg, struct via_body *via)
+int th_del_via_cookie(struct sip_msg *msg, struct via_body *via)
 {
 	struct via_param *p;
 	struct lump* l;
@@ -989,7 +995,7 @@ int th_del_via_cookie(sip_msg_t *msg, struct via_body *via)
 	return 0;
 }
 
-int th_del_cookie(sip_msg_t *msg)
+int th_del_cookie(struct sip_msg *msg)
 {
 	th_del_hdr_cookie(msg);
 	if(msg->first_line.type==SIP_REPLY)
@@ -998,9 +1004,9 @@ int th_del_cookie(sip_msg_t *msg)
 }
 
 
-char* th_get_cookie(sip_msg_t *msg, int *clen)
+char* th_get_cookie(struct sip_msg *msg, int *clen)
 {
-	hdr_field_t *hf;
+	struct hdr_field *hf;
 	struct via_param *p;
 
 	hf = th_get_hdr_cookie(msg);
@@ -1020,7 +1026,7 @@ char* th_get_cookie(sip_msg_t *msg, int *clen)
 	return "xxx";
 }
 
-int th_route_direction(sip_msg_t *msg)
+int th_route_direction(struct sip_msg *msg)
 {
 	rr_t *rr;
 	struct sip_uri puri;
@@ -1062,7 +1068,7 @@ int th_route_direction(sip_msg_t *msg)
 	return 0;
 }
 
-int th_skip_msg(sip_msg_t *msg)
+int th_skip_msg(struct sip_msg *msg)
 {
 	if (msg->cseq==NULL || get_cseq(msg)==NULL) {
 		LM_WARN("Invalid/Unparsed CSeq in message. Skipping.");

@@ -39,21 +39,15 @@
 #include <unistd.h>
 
 #include "../../sr_module.h"
-#include "../../events.h"
 #include "../../dprint.h"
-#include "../../tcp_options.h"
 #include "../../ut.h"
 #include "../../forward.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_from.h"
 
-#include "../../modules/sanity/api.h"
-
 #include "th_mask.h"
 #include "th_msg.h"
-
-MODULE_VERSION
 
 
 /** module parameters */
@@ -73,10 +67,9 @@ str th_uri_prefix = {0, 0};
 int th_param_mask_callid = 0;
 
 int th_sanity_checks = 0;
-sanity_api_t scb;
 
-int th_msg_received(void *data);
-int th_msg_sent(void *data);
+int th_msg_received(str *data);
+int th_msg_sent(str *data);
 
 /** module functions */
 static int mod_init(void);
@@ -97,33 +90,27 @@ static param_export_t params[]={
 
 /** module exports */
 struct module_exports exports= {
-	"topoh",
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,
-	params,
-	0,          /* exported statistics */
-	0,          /* exported MI functions */
-	0,          /* exported pseudo-variables */
-	0,          /* extra processes */
-	mod_init,   /* module initialization function */
-	0,
-	0,
-	0           /* per-child init function */
+	"topoh",	/* module's name */
+	MODULE_VERSION,
+	DEFAULT_DLFLAGS,	/* dlopen flags */
+	NULL,		/* exported functions */
+	params,		/* param exports */
+	NULL,		/* exported statistics */
+	NULL,		/* exported MI functions */
+	NULL,		/* exported pseudo-variables */
+	0,		/* extra processes */
+	mod_init,	/* module initialization function */
+	NULL,		/* reply processing function */
+	NULL,
+	NULL		/* per-child init function */
 };
+
 
 /**
  * init module function
  */
 static int mod_init(void)
 {
-	if(th_sanity_checks!=0)
-	{
-		if(sanity_load_api(&scb)<0)
-		{
-			LM_ERR("cannot bind to sanity module\n");
-			goto error;
-		}
-	}
 	th_cookie_name.len = strlen(th_cookie_name.s);
 	th_ip.len = strlen(th_ip.s);
 	if(th_ip.len<=0)
@@ -183,11 +170,19 @@ static int mod_init(void)
 	LM_DBG("URI prefix: [%s]\n", th_uri_prefix.s);
 
 	th_mask_init();
-	sr_event_register_cb(SREV_NET_DATA_IN, th_msg_received);
-	sr_event_register_cb(SREV_NET_DATA_OUT, th_msg_sent);
-#ifdef USE_TCP
-	tcp_set_clone_rcvbuf(1);
-#endif
+
+	if (register_raw_processing_cb(th_msg_received, PRE_RAW_PROCESSING) < 0)
+	{
+		LM_ERR("failed to initialize pre raw support\n");
+		return -1;
+	}
+
+	if (register_raw_processing_cb(th_msg_sent, POST_RAW_PROCESSING) < 0)
+	{
+		LM_ERR("failed to initialize post raw support\n");
+		return -1;
+	}
+
 	return 0;
 error:
 	return -1;
@@ -196,7 +191,7 @@ error:
 /**
  *
  */
-int th_prepare_msg(sip_msg_t *msg)
+int th_prepare_msg(struct sip_msg *msg)
 {
 	if (parse_msg(msg->buf, msg->len, msg)!=0)
 	{
@@ -206,11 +201,7 @@ int th_prepare_msg(sip_msg_t *msg)
 
 	if(msg->first_line.type==SIP_REQUEST)
 	{
-		if(!IS_SIP(msg))
-		{
-			LM_DBG("non sip request message\n");
-			return 1;
-		}
+		/* opensips only does sip, so no extra check is needed */
 	} else if(msg->first_line.type!=SIP_REPLY) {
 		LM_DBG("non sip message\n");
 		return 1;
@@ -253,16 +244,16 @@ int th_prepare_msg(sip_msg_t *msg)
 /**
  *
  */
-int th_msg_received(void *data)
+int th_msg_received(str *data)
 {
-	sip_msg_t msg;
+	struct sip_msg msg;
 	str *obuf;
 	char *nbuf = NULL;
 	int direction;
 	int dialog;
 
 	obuf = (str*)data;
-	memset(&msg, 0, sizeof(sip_msg_t));
+	memset(&msg, 0, sizeof(struct sip_msg));
 	msg.buf = obuf->s;
 	msg.len = obuf->len;
 
@@ -281,14 +272,6 @@ int th_msg_received(void *data)
 	th_cookie_value.len = 2;
 	if(msg.first_line.type==SIP_REQUEST)
 	{
-		if(th_sanity_checks!=0)
-		{
-			if(scb.check_defaults(&msg)<1)
-			{
-				LM_ERR("sanity checks failed\n");
-				goto done;
-			}
-		}
 		dialog = (get_to(&msg)->tag_value.len>0)?1:0;
 		if(dialog)
 		{
@@ -357,16 +340,16 @@ done:
 /**
  *
  */
-int th_msg_sent(void *data)
+int th_msg_sent(str *data)
 {
-	sip_msg_t msg;
+	struct sip_msg msg;
 	str *obuf;
 	int direction;
 	int dialog;
 	int local;
 
 	obuf = (str*)data;
-	memset(&msg, 0, sizeof(sip_msg_t));
+	memset(&msg, 0, sizeof(struct sip_msg));
 	msg.buf = obuf->s;
 	msg.len = obuf->len;
 

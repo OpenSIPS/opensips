@@ -30,25 +30,25 @@
 
 #include "../../parser/msg_parser.h"
 
-int th_mask_via(sip_msg_t *msg);
-int th_mask_callid(sip_msg_t *msg);
-int th_mask_contact(sip_msg_t *msg);
-int th_mask_record_route(sip_msg_t *msg);
-int th_unmask_via(sip_msg_t *msg, str *cookie);
-int th_unmask_callid(sip_msg_t *msg);
-int th_flip_record_route(sip_msg_t *msg, int mode);
-int th_unmask_ruri(sip_msg_t *msg);
-int th_unmask_route(sip_msg_t *msg);
-int th_unmask_refer_to(sip_msg_t *msg);
-int th_update_hdr_replaces(sip_msg_t *msg);
-char* th_msg_update(sip_msg_t *msg, unsigned int *olen);
-int th_add_via_cookie(sip_msg_t *msg, struct via_body *via);
-int th_add_hdr_cookie(sip_msg_t *msg);
-hdr_field_t *th_get_hdr_cookie(sip_msg_t *msg);
-int th_add_cookie(sip_msg_t *msg);
-int th_route_direction(sip_msg_t *msg);
-char* th_get_cookie(sip_msg_t *msg, int *clen);
-int th_del_cookie(sip_msg_t *msg);
-int th_skip_msg(sip_msg_t *msg);
+int th_mask_via(struct sip_msg *msg);
+int th_mask_callid(struct sip_msg *msg);
+int th_mask_contact(struct sip_msg *msg);
+int th_mask_record_route(struct sip_msg *msg);
+int th_unmask_via(struct sip_msg *msg, str *cookie);
+int th_unmask_callid(struct sip_msg *msg);
+int th_flip_record_route(struct sip_msg *msg, int mode);
+int th_unmask_ruri(struct sip_msg *msg);
+int th_unmask_route(struct sip_msg *msg);
+int th_unmask_refer_to(struct sip_msg *msg);
+int th_update_hdr_replaces(struct sip_msg *msg);
+char* th_msg_update(struct sip_msg *msg, unsigned int *olen);
+int th_add_via_cookie(struct sip_msg *msg, struct via_body *via);
+int th_add_hdr_cookie(struct sip_msg *msg);
+struct hdr_field *th_get_hdr_cookie(struct sip_msg *msg);
+int th_add_cookie(struct sip_msg *msg);
+int th_route_direction(struct sip_msg *msg);
+char* th_get_cookie(struct sip_msg *msg, int *clen);
+int th_del_cookie(struct sip_msg *msg);
+int th_skip_msg(struct sip_msg *msg);
 
 #endif
