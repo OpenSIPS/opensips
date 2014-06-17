@@ -349,7 +349,7 @@ static int_str setid_avp;
 
 typedef struct rtpp_set_link {
 	struct rtpp_set *rset;
-	pv_spec_t *rpv;
+	pv_spec_t rpv;
 } rtpp_set_link_t;
 
 /* tm */
@@ -718,12 +718,8 @@ static int fixup_set_id(void ** param, int param_no)
 	s.len = strlen(s.s);
 
 	if(s.s[0] == PV_MARKER) {
-		if ( pv_parse_spec(&s, rtpl->rpv) == NULL ) {
+		if ( pv_parse_spec(&s, &rtpl->rpv) == NULL ) {
 			LM_ERR("invalid parameter %s\n", s.s);
-			return -1;
-		}
-		if(rtpl->rpv == NULL) {
-			LM_ERR("invalid pv parameter %s\n", s.s);
 			return -1;
 		}
 	} else {
@@ -891,7 +887,7 @@ static int
 mod_init(void)
 {
 	int i;
-	pv_spec_t *avp_spec;
+	pv_spec_t avp_spec;
 	unsigned short avp_flags;
 	str s;
 
@@ -929,19 +925,19 @@ mod_init(void)
 	}
 
 	if (setid_avp_param) {
-	    s.s = setid_avp_param; s.len = strlen(s.s);
-	    pv_parse_spec(&s, avp_spec);
-	    if (avp_spec==NULL || (avp_spec->type != PVT_AVP)) {
-		LM_ERR("malformed or non AVP definition <%s>\n",
-		       setid_avp_param);
-		return -1;
-	    }
-	    if (pv_get_avp_name(0, &(avp_spec->pvp), &(setid_avp.n),
-				&avp_flags) != 0) {
-		LM_ERR("invalid AVP definition <%s>\n", setid_avp_param);
-		return -1;
-	    }
-	    setid_avp_type = avp_flags;
+		s.s = setid_avp_param; s.len = strlen(s.s);
+		pv_parse_spec(&s, &avp_spec);
+		if (avp_spec.type != PVT_AVP) {
+			LM_ERR("malformed or non AVP definition <%s>\n",
+					setid_avp_param);
+			return -1;
+		}
+		if (pv_get_avp_name(0, &(avp_spec.pvp), &(setid_avp.n),
+					&avp_flags) != 0) {
+			LM_ERR("invalid AVP definition <%s>\n", setid_avp_param);
+			return -1;
+		}
+		setid_avp_type = avp_flags;
 	}
 
 	if (rtpp_strings)
@@ -1858,7 +1854,7 @@ set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2)
 		current_msg_id = msg->id;
 		selected_rtpp_set = rtpl->rset;
 	} else {
-		if(pv_get_spec_value(msg, rtpl->rpv, &val)<0) {
+		if(pv_get_spec_value(msg, &rtpl->rpv, &val)<0) {
 			LM_ERR("cannot evaluate pv param\n");
 			return -1;
 		}
