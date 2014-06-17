@@ -27,7 +27,7 @@
 		balancing/distribution and control/selection purposes.
 	</para>
 	<para>
-		The module allows definition of several sets of rtpproxies.
+		The module allows definition of several sets of rtpengines.
 		Load-balancing will be performed over a set and the admin has the
 		ability to choose what set should be used. The set is selected via
 		its id - the id being defined with the set. Refer to the
@@ -41,7 +41,7 @@
 	<para>
 		The selection of the set is done from script prior using
 		rtpengine_delete(), rtpengine_offer() or rtpengine_answer()
-		functions - see the set_rtpengine_set() function.
+		functions - see the rtpengine_use_set() function.
 	</para>
 	<para>
 	        Another way to select the set is to define setid_avp
@@ -233,9 +233,9 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 
 	<section>
 	<title>Functions</title>
-	<section id="rtpengine.f.set_rtpengine_set">
+	<section id="rtpengine.f.rtpengine_use_set">
 		<title>
-		<function moreinfo="none">set_rtpengine_set(setid)</function>
+		<function moreinfo="none">rtpengine_use_set(setid)</function>
 		</title>
 		<para>
 		Sets the ID of the &rtp; proxy set to be used for the next
@@ -248,10 +248,10 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 		BRANCH_ROUTE.
 		</para>
 		<example>
-		<title><function>set_rtpengine_set</function> usage</title>
+		<title><function>rtpengine_use_set</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_rtpengine_set("2");
+rtpengine_use_set("2");
 rtpengine_offer();
 ...
 </programlisting>
@@ -615,7 +615,7 @@ rtpengine_manage();
 
 	<section id="rtpengine.f.start_recording">
 		<title>
-		<function moreinfo="none">start_recording()</function>
+		<function moreinfo="none">rtpengine_start_recording()</function>
 		</title>
 		<para>
 		This function will send a signal to the &rtp; proxy to record
@@ -626,10 +626,10 @@ rtpengine_manage();
 		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 		</para>
 		<example>
-		<title><function>start_recording</function> usage</title>
+		<title><function>rtpengine_start_recording</function> usage</title>
 		<programlisting format="linespecific">
 ...
-start_recording();
+rtpengine_start_recording();
 ...
 		</programlisting>
 		</example>
@@ -662,8 +662,8 @@ start_recording();
 
 	<section>
 		<title><acronym>MI</acronym> Commands</title>
-		<section id="rtpengine.m.nh_enable_rtpp">
-			<title><function moreinfo="none">nh_enable_rtpp</function></title>
+		<section id="rtpengine.m.rtpengine_enable">
+			<title><function moreinfo="none">rtpengine_enable</function></title>
 			<para>
 			Enables a &rtp; proxy if parameter value is greater than 0.
 			Disables it if a zero value is given.
@@ -681,17 +681,17 @@ start_recording();
 			</para>
 			<example>
 			<title>
-			<function moreinfo="none">nh_enable_rtpp</function> usage</title>
+			<function moreinfo="none">rtpengine_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ &ctltool; fifo nh_enable_rtpp udp:192.168.2.133:8081 0
+$ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 ...
 			</programlisting>
 			</example>
 		</section>
 
-			<section id="rtpengine.m.nh_show_rtpp">
-			<title><function moreinfo="none">nh_show_rtpp</function></title>
+			<section id="rtpengine.m.rtpengine_show">
+			<title><function moreinfo="none">rtpengine_show</function></title>
 			<para>
 			Displays all the &rtp; proxies and their information: set and
 			status (disabled or not, weight and recheck_ticks).
@@ -701,10 +701,10 @@ $ &ctltool; fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">nh_show_rtpp</function> usage</title>
+				<function moreinfo="none">rtpengine_show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ &ctltool; fifo nh_show_rtpp
+$ opensipsctl fifo rtpengine_show
 ...
 			</programlisting>
 			</example>

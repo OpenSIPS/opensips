@@ -101,7 +101,8 @@
 	</bookinfo>
 	<toc></toc>
 
-	<xi:include href="rtpengine_admin.xml"/>
-	<xi:include href="rtpengine_faq.xml"/>
+	&admin;
+	&faq;
+	
 
 </book>
