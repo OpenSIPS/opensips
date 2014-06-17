@@ -1436,16 +1436,24 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	if(res==NULL)
 		return -1;
 
-	if ( (dlg=get_current_dialog())==NULL )
+	if ( (dlg=get_current_dialog())!=NULL ) {
+
+		dlg_lock_dlg(dlg);
+		if (dlg->state < DLG_STATE_CONFIRMED_NA)
+			l = dlg->lifetime;
+		else
+			l = dlg->tl.timeout - get_ticks();
+		dlg_unlock_dlg(dlg);
+
+	} else if (msg->id == dlg_tmp_timeout_id && dlg_tmp_timeout != -1) {
+		l = dlg_tmp_timeout;
+	} else {
 		return pv_get_null( msg, param, res);
+	}
 
-	dlg_lock_dlg(dlg);
-	l = dlg->tl.timeout - get_ticks();
-	dlg_unlock_dlg(dlg);
-
+	res->ri = l;
 
 	ch = int2str( (unsigned long)res->ri, &l);
-
 	res->rs.s = ch;
 	res->rs.len = l;
 
