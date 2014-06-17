@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -21,10 +19,7 @@
  *
  * History:
  * --------
- *  2003-11-06  body len is computed using the message len (it's
- *               not taken any more from the msg. content-length) (andrei)
- *  2008-08-30  body len is taken from Conent-length header as it is more
- *               reliable (UDP packages may contain garbage at the end)(bogdan)
+ * 2014-06-17 Imported from rtpproxy module
  */
 
 #include <stdio.h>
