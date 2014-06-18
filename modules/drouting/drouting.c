@@ -2646,8 +2646,20 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 			attr = add_mi_attr( node, MI_DUP_VALUE, "IP" , 2,
 				gw->ip_str.s, gw->ip_str.len);
 			if (attr==NULL) goto error;
-			attr = add_mi_attr( node, 0, "Enabled", 7,
-				(gw->flags&DR_DST_STAT_DSBL_FLAG)?"no ":"yes", 3);
+			if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
+				if (gw->flags&DR_DST_STAT_NOEN_FLAG)
+					attr = add_mi_attr( node, 0, "State", 7,
+							"Disabled MI", 11);
+				else if (gw->flags&DR_DST_PING_DSBL_FLAG)
+					attr = add_mi_attr( node, 0, "State", 7,
+							"Probing", 7);
+				else
+					attr = add_mi_attr( node, 0, "State", 7,
+							"Inactive", 8);
+			} else {
+				attr = add_mi_attr( node, 0, "State", 7,
+						"Active", 6);
+			}
 			if (attr==NULL) goto error;
 		}
 
@@ -2672,8 +2684,20 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 		if (rpl_tree==NULL)
 			goto error;
-		node = add_mi_node_child( &rpl_tree->node, 0, "Enabled", 7,
-			(gw->flags&DR_DST_STAT_DSBL_FLAG)?"no ":"yes", 3);
+		if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
+			if (gw->flags&DR_DST_STAT_NOEN_FLAG)
+				node = add_mi_node_child( &rpl_tree->node, 0, "State", 7,
+						"Disabled MI", 11);
+			else if (gw->flags&DR_DST_PING_DSBL_FLAG)
+				node = add_mi_node_child( &rpl_tree->node, 0, "State", 7,
+						"Probing", 7);
+			else
+				node = add_mi_node_child( &rpl_tree->node, 0, "State", 7,
+						"Inactive", 8);
+		} else {
+			node = add_mi_node_child( &rpl_tree->node, 0, "State", 7,
+					"Active", 6);
+		}
 		if (node==NULL)
 			goto error;
 
