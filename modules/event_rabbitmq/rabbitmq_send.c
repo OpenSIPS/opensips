@@ -300,11 +300,13 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
 	int ret;
-
+	
 	/* all checks should be already done */
 	ret = amqp_basic_publish(rmqp->conn,
 			rmqp->channel,
-			AMQP_EMPTY_BYTES,
+			rmqp->flags&RMQ_PARAM_EKEY?
+		 		amqp_cstring_bytes(rmqp->exchange.s) :
+				AMQP_EMPTY_BYTES ,
 			amqp_cstring_bytes(rmqp->routing_key.s),
 			0,
 			0,
