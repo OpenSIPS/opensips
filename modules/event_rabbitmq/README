@@ -78,7 +78,7 @@ Chapter 1. Admin Guide
 1.3. RabbitMQ socket syntax
 
    'rabbitmq:' [user[':'password] '@' host [':' port] '/'
-   routing_key
+   [exchange '?'] routing_key
 
    Meanings:
      * 'rabbitmq:' - informs the Event Interface that the events
@@ -91,6 +91,8 @@ Chapter 1. Admin Guide
      * host - host name of the RabbitMQ server.
      * port - port of the RabbitMQ server. The default value is
        '5672'.
+     * exchange - exchange of the RabbitMQ server. The default
+       value is ''.
      * routing_key - this is the routing key used by the AMQP
        protocol and it is used to identify the queue where the
        event should be sent.
