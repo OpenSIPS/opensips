@@ -1511,10 +1511,12 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<title><function>dr_gw_status</function> usage</title>
 		<programlisting format="linespecific">
 $ ./opensipsctl fifo dr_gw_status 2
-Enabled:: no
-$ ./opensipsctl fifo dr_gw_status 2 1
+State:: Active
+$ ./opensipsctl fifo dr_gw_status 2 0
 $ ./opensipsctl fifo dr_gw_status 2
-Enabled:: yes
+Enabled:: Disabled MI
+$ ./opensipsctl fifo dr_gw_status 3
+Enabled:: Inactive
 </programlisting>
 		</example>
 	</section>

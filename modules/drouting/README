@@ -1011,10 +1011,12 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
    Example 1.32. dr_gw_status usage
 $ ./opensipsctl fifo dr_gw_status 2
-Enabled:: no
-$ ./opensipsctl fifo dr_gw_status 2 1
+State:: Active
+$ ./opensipsctl fifo dr_gw_status 2 0
 $ ./opensipsctl fifo dr_gw_status 2
-Enabled:: yes
+Enabled:: Disabled MI
+$ ./opensipsctl fifo dr_gw_status 3
+Enabled:: Inactive
 
 1.5.3. dr_carrier_status
 
