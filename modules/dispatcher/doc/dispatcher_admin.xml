@@ -526,7 +526,7 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 		<title>Set the <quote>pvar_algo_pattern</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "sock_avp", "$stat(load_%u)")
+modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 ...
 </programlisting>
 		</example>
@@ -596,21 +596,21 @@ modparam("dispatcher", "destination_col", "uri")
 	</section>
 
 	<section>
-		<title><varname>flags_col</varname> (string)</title>
+		<title><varname>state_col</varname> (string)</title>
 		<para>
-			The column's name in the database storing the flags for
+			The column's name in the database storing the state of the
 			destination uri.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>flags</quote>.
+			Default value is <quote>state</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <quote>flags_col</quote> parameter</title>
+		<title>Set <quote>state_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "flags_col", "dstflags")
+modparam("dispatcher", "state_col", "dststate")
 ...
 </programlisting>
 		</example>
