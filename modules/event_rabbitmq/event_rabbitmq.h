@@ -59,9 +59,11 @@
 #define RMQ_PARAM_CHAN	(1 << 3)
 #define RMQ_PARAM_USER	(1 << 4)
 #define RMQ_PARAM_PASS	(1 << 5)
+#define RMQ_PARAM_EKEY	(1 << 6)
 
 typedef struct _rmq_params {
 	str routing_key;
+	str exchange;
 	str user;
 	str pass;
 	amqp_connection_state_t conn;
