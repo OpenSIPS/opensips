@@ -311,6 +311,7 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 			0,
 			amqp_cstring_bytes(rmqs->msg));
 
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
 	switch (ret) {
 		case AMQP_STATUS_OK:
 			return 0;
@@ -340,6 +341,14 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 			LM_ERR("TCP error: %s(%d)\n", strerror(errno), errno);
 			break;
 	}
+#else
+	if (ret != 0) {
+		LM_ERR("Unknown error while sending\n");
+		return -1;
+	} else {
+		return 0;
+	}
+#endif
 
 	return -1;
 }
