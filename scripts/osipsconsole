@@ -695,9 +695,8 @@ if ( not defined $DISPATCHER_TABLE ){
 my %dispatcher_table = ('DISPATCHER_ID_COLUMN' => 'id',
 			'DISPATCHER_SETID_COLUMN' => 'setid',
 			'DISPATCHER_DESTINATION_COLUMN' => 'destination',
-			'DISPATCHER_FLAGS_COLUMN' => 'flags',
 			'DISPATCHER_SOCKET_COLUMN' => 'socket',
-			'DISPATCHER_FLAGS_COLUMN' => 'flags',
+			'DISPATCHER_STATE_COLUMN' => 'state',
 			'DISPATCHER_WEIGHT_COLUMN' => 'weight',
 			'DISPATCHER_ATTRS_COLUMN' => 'attrs',
 			'DISPATCHER_DESCRIPTION_COLUMN' => 'description'
@@ -897,13 +896,13 @@ sub usage_address() {
 #dispatcher
 sub usage_dispatcher() {
    print " -- command 'dispatcher' - manage dispatcher\n" .
-         "* Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 2 50 'og1' 'Outbound Gateway1'\n" .
-         "*            dispatcher addgw 2 sip:1.2.3.4:5050 '' 3 50 'og2' 'Outbound Gateway2'\n" .
+         "* Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 0 50 'og1' 'Outbound Gateway1'\n" .
+         "*            dispatcher addgw 2 sip:1.2.3.4:5050 '' 0 50 'og2' 'Outbound Gateway2'\n" .
          "*            dispatcher rmgw 4\n" .
          "dispatcher show ..................... show dispatcher gateways\n" .
          "dispatcher reload ................... reload dispatcher gateways\n" .
          "dispatcher dump ..................... show in memory dispatcher gateways\n" .
-         "dispatcher addgw <setid> <destination> <socket> <flags> <weight> <attrs> [description]\n" .
+         "dispatcher addgw <setid> <destination> <socket> <state> <weight> <attrs> [description]\n" .
          "           .......................... add gateway\n" .
          "dispatcher rmgw <id> ................ delete gateway\n" .
 }
@@ -2840,7 +2839,7 @@ sub opensips_dispatcher() {
 
 		elsif ($cmd[1] =~ /^addgw$/) {
 
-			my ( $DISPATCHER_SETID, $DISPATCHER_DESTINATION, $DISPATCHER_SOCKET, $DISPATCHER_FLAGS, $DISPATCHER_WEIGHT, $DISPATCHER_ATTRS, $DISPATCHER_DESCRIPTION);
+			my ( $DISPATCHER_SETID, $DISPATCHER_DESTINATION, $DISPATCHER_SOCKET, $DISPATCHER_STATE, $DISPATCHER_WEIGHT, $DISPATCHER_ATTRS, $DISPATCHER_DESCRIPTION);
 	
 			if ( $#cmd lt 7 ) {
 				print "Too few parameters!\n";
@@ -2863,49 +2862,49 @@ sub opensips_dispatcher() {
 			$DISPATCHER_SETID = $cmd[2];
 			$DISPATCHER_DESTINATION = $cmd[3];
 			$DISPATCHER_SOCKET = $cmd[4];
-			$DISPATCHER_FLAGS = $cmd[5];
+			$DISPATCHER_STATE = $cmd[5];
 			$DISPATCHER_WEIGHT = $cmd[6];
 			$DISPATCHER_ATTRS = $cmd[7];
 
 			if ( $DBENGINE =~ /^DB_BERKELEY$/ ) {
-				my $key = join(" ",$DISPATCHER_SETID,$DISPATCHER_FLAGS);
+				my $key = join(" ",$DISPATCHER_SETID,$DISPATCHER_STATE);
 				my $value = join(" ",$DISPATCHER_DESTINATION,$DISPATCHER_DESCRIPTION);
 				&bdb_insert($DISPATCHER_TABLE,$key,$value);								
 			} elsif ( $DBENGINE =~ /^DBTEXT$/ ) {
 				system ("$DBTEXTCMD"," INSERT INTO $DISPATCHER_TABLE ( 
-                    $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
+					$dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
 					$dispatcher_table{'DISPATCHER_DESTINATION_COLUMN'}, 
-                    $dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_FLAGS_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
- 					$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
-				VALUES (
-                      $DISPATCHER_SETID,
-                    \'$DISPATCHER_DESTINATION\',
-                    \'$DISPATCHER_SOCKET\',
-                      $DISPATCHER_FLAGS,
-                      $DISPATCHER_WEIGHT,
-                    \'$DISPATCHER_ATTRS\',
-                    \'$DISPATCHER_DESCRIPTION\') ");
+					$dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
+					$dispatcher_table{'DISPATCHER_STATE_COLUMN'},
+					$dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
+					$dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
+					$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
+					VALUES (
+					$DISPATCHER_SETID,
+					\'$DISPATCHER_DESTINATION\',
+					\'$DISPATCHER_SOCKET\',
+					$DISPATCHER_STATE,
+					$DISPATCHER_WEIGHT,
+					\'$DISPATCHER_ATTRS\',
+					\'$DISPATCHER_DESCRIPTION\') ");
 			} else {
 
 				$sth = $dbh->prepare( " INSERT INTO $DISPATCHER_TABLE ( 
-                    $dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
+					$dispatcher_table{'DISPATCHER_SETID_COLUMN'}, 
 					$dispatcher_table{'DISPATCHER_DESTINATION_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_FLAGS_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
-                    $dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
+					$dispatcher_table{'DISPATCHER_SOCKET_COLUMN'},
+					$dispatcher_table{'DISPATCHER_STATE_COLUMN'},
+					$dispatcher_table{'DISPATCHER_WEIGHT_COLUMN'},
+					$dispatcher_table{'DISPATCHER_ATTRS_COLUMN'},
 					$dispatcher_table{'DISPATCHER_DESCRIPTION_COLUMN'} ) 
 					VALUES (
-                    $DISPATCHER_SETID,
-                  \'$DISPATCHER_DESTINATION\',
-                  \'$DISPATCHER_SOCKET\',
-                    $DISPATCHER_FLAGS,
-                    $DISPATCHER_WEIGHT,
-                  \'$DISPATCHER_ATTRS\',
-                  \'$DISPATCHER_DESCRIPTION\') " );
+					$DISPATCHER_SETID,
+					\'$DISPATCHER_DESTINATION\',
+					\'$DISPATCHER_SOCKET\',
+					$DISPATCHER_STATE,
+					$DISPATCHER_WEIGHT,
+					\'$DISPATCHER_ATTRS\',
+					\'$DISPATCHER_DESCRIPTION\') " );
 
 				#execute the query
 				$sth->execute( );
@@ -2914,7 +2913,7 @@ sub opensips_dispatcher() {
 				$sth->finish();
 			}
 
-			&mi_comm('ds_reload');			
+			&mi_comm('ds_reload');
 
 		}	
 
