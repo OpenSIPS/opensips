@@ -7,8 +7,12 @@ CREATE TABLE sip_trace (
     msg TEXT NOT NULL,
     method VARCHAR(32) DEFAULT '' NOT NULL,
     status VARCHAR(128) DEFAULT NULL,
-    fromip VARCHAR(50) DEFAULT '' NOT NULL,
-    toip VARCHAR(50) DEFAULT '' NOT NULL,
+    from_proto VARCHAR(5) NOT NULL,
+    from_ip VARCHAR(50) DEFAULT '' NOT NULL,
+    from_port INTEGER NOT NULL,
+    to_proto VARCHAR(5) NOT NULL,
+    to_ip VARCHAR(50) DEFAULT '' NOT NULL,
+    to_port INTEGER NOT NULL,
     fromtag VARCHAR(64) DEFAULT '' NOT NULL,
     direction VARCHAR(4) DEFAULT '' NOT NULL
 );
@@ -16,6 +20,6 @@ CREATE TABLE sip_trace (
 ALTER SEQUENCE sip_trace_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX sip_trace_traced_user_idx ON sip_trace (traced_user);
 CREATE INDEX sip_trace_date_idx ON sip_trace (time_stamp);
-CREATE INDEX sip_trace_fromip_idx ON sip_trace (fromip);
+CREATE INDEX sip_trace_fromip_idx ON sip_trace (from_ip);
 CREATE INDEX sip_trace_callid_idx ON sip_trace (callid);
 

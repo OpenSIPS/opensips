@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
@@ -231,9 +231,11 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 	<section>
 		<title><varname>trace_local_ip</varname> (str)</title>
 		<para>
-		The address to be used in fromip field for local generated
-		messages. If not set, the module sets it to the address
-		of the socket that will be used to send the message.
+			The address to be used in the fields that specifiy the source address
+		(protocol, ip and port) for local generated messages. If not set,
+		the module sets it to the address of the socket that will be used to send
+		the message. Protocol and/or port are optional and if omitted will take
+		the default values: udp and 5060.
 		</para>
 		<para>
 		<emphasis>
@@ -244,7 +246,23 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 		<title>Set <varname>trace_local_ip</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
+#Resulting address: udp:10.1.1.1:5064
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5060
+modparam("siptrace, "trace_local_ip", "tcp:10.1.1.1")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5064
+modparam("siptrace", "trace_local_ip", "tcp:10.1.1.1:5064")
+...
+
+...
+#Resulting address: udp:10.1.1.1:5060
+modparam("siptrace", "trace_local_ip", "10.1.1.1")
 ...
 </programlisting>
 		</example>
@@ -269,7 +287,7 @@ modparam("siptrace", "table", "strace")
 		</example>
 	</section>
 	</section>
-	
+
 	<section>
 	<title>Exported Functions</title>
 	<section>
@@ -298,7 +316,7 @@ sip_trace();
 		</title>
 		<para>
 		The function triggers the tracing of all messages belonging to a
-		dialog. The function must be called for the initial request (that 
+		dialog. The function must be called for the initial request (that
 		starts the dialog) and it will automatically take care of tracing
 		evertyhing related to that dialog.
 		</para>
@@ -368,7 +386,7 @@ modparam("siptrace", "duplicate_with_hep", 1)
 	<section>
                 <title><varname>hep_version</varname> (integer)</title>
                 <para>
-                The parameter indicate the version of HEP protocol. 
+                The parameter indicate the version of HEP protocol.
                 Can be 1 or 2. In HEPv2 the timestamp and capture agent ID will
                 be included to HEP header.
                 </para>
@@ -385,11 +403,11 @@ modparam("siptrace", "hep_version", 2)
 ...
 </programlisting>
                 </example>
-        </section>        
+        </section>
         <section>
                 <title><varname>hep_capture_id</varname> (integer)</title>
                 <para>
-                The parameter indicate the capture agent ID for HEPv2 protocol. 
+                The parameter indicate the capture agent ID for HEPv2 protocol.
                 Limitation: 16-bit integer.
                 </para>
                 <para>
@@ -407,7 +425,7 @@ modparam("siptrace", "hep_capture_id", 234)
                 </example>
         </section>
 
-        
+
 	</section>
 
     <section>
@@ -427,11 +445,11 @@ modparam("siptrace", "hep_capture_id", 234)
 			<listitem><para>trace_mode : turns on/off SIP message tracing.
 			Possible values are:</para>
 			<itemizedlist>
-				<listitem><para> on </para></listitem> 
+				<listitem><para> on </para></listitem>
 				<listitem><para> off </para></listitem>
 			</itemizedlist>
 			<para>The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string 
+			return the status of the SIP message tracing (as string
 			<quote>on</quote> or <quote>off</quote> ) without changing
 			anything.</para>
 			</listitem>
@@ -461,13 +479,13 @@ modparam("siptrace", "hep_capture_id", 234)
 			<listitem><para>trace_to_db_mode : turns on/off SIP message tracing into DB.
 			Possible values are:</para>
 			<itemizedlist>
-				<listitem><para> on </para></listitem> 
+				<listitem><para> on </para></listitem>
 				<listitem><para> off </para></listitem>
 			</itemizedlist>
 			<para>The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string 
+			return the status of the SIP message tracing (as string
 			<quote>on</quote> or <quote>off</quote> ) without changing
-			anything. The parameter can be switched from off to on, 
+			anything. The parameter can be switched from off to on,
 			if db connection was before inizialized</para>
 			</listitem>
 		</itemizedlist>
@@ -482,18 +500,18 @@ modparam("siptrace", "hep_capture_id", 234)
 		</programlisting>
 	</section>
 
-	
+
 	</section>
-	
+
 	<section>
 		<title>Database setup</title>
 		<para>
-			Before running &osips; with siptrace, you have to setup the database 
-			tables where the module will store the data. For that, if the 
+			Before running &osips; with siptrace, you have to setup the database
+			tables where the module will store the data. For that, if the
 			table were not created by the installation script or you choose
 			to install everything by yourself you can use the siptrace-create.sql
-			<acronym>SQL</acronym> script in the database directories in the 
-			opensips/scripts folder as template. 
+			<acronym>SQL</acronym> script in the database directories in the
+			opensips/scripts folder as template.
 			You can also find the complete database documentation on the
 			project webpage, &osipsdbdocslink;.
 		</para>
@@ -506,6 +524,6 @@ modparam("siptrace", "hep_capture_id", 234)
 	flag, use sip_trace().
 	</para>
 	</section>
-	
+
 </chapter>
 
