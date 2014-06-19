@@ -280,7 +280,7 @@ modparam("auth_db", "skip_version_check", 1)
 
    Example 1.10. www_authorize usage
 ...
-if (www_authorize("siphub.net", "subscriber")) {
+if (!www_authorize("siphub.net", "subscriber")) {
         www_challenge("siphub.net", "1");
 };
 ...
