@@ -206,8 +206,8 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 
 1.3.8. trace_local_ip (str)
 
-   The address to be used in the fields that specifiy the source
-   address (protocol, ip and port) for local generated messages.
+   The address to be used in the fields that specify the source
+   address (protocol, ip and port) for locally generated messages.
    If not set, the module sets it to the address of the socket
    that will be used to send the message. Protocol and/or port are
    optional and if omitted will take the default values: udp and
