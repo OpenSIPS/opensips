@@ -7,14 +7,18 @@ CREATE TABLE sip_trace (
     msg TEXT NOT NULL,
     method CHAR(32) DEFAULT '' NOT NULL,
     status CHAR(128) DEFAULT NULL,
-    fromip CHAR(50) DEFAULT '' NOT NULL,
-    toip CHAR(50) DEFAULT '' NOT NULL,
+    from_proto CHAR(5) NOT NULL,
+    from_ip CHAR(50) DEFAULT '' NOT NULL,
+    from_port INT(5) UNSIGNED NOT NULL,
+    to_proto CHAR(5) NOT NULL,
+    to_ip CHAR(50) DEFAULT '' NOT NULL,
+    to_port INT(5) UNSIGNED NOT NULL,
     fromtag CHAR(64) DEFAULT '' NOT NULL,
     direction CHAR(4) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 
 CREATE INDEX traced_user_idx ON sip_trace (traced_user);
 CREATE INDEX date_idx ON sip_trace (time_stamp);
-CREATE INDEX fromip_idx ON sip_trace (fromip);
+CREATE INDEX fromip_idx ON sip_trace (from_ip);
 CREATE INDEX callid_idx ON sip_trace (callid);
 

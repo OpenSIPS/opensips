@@ -48,7 +48,7 @@
 
 #include "../sipcapture/sipcapture.h"
 
-#define NR_KEYS 10
+#define NR_KEYS 14
 
 /* trace is completly disabled */
 #define trace_is_off() \
@@ -98,8 +98,10 @@ static void trace_msg_out_w(struct sip_msg* req, str  *buffer,
 static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
 static struct mi_root* trace_to_database_mi(struct mi_root* cmd, void* param );
 
-static int trace_send_hep_duplicate(str *body, str *fromip, str *toip);
-static int pipport2su (str *pipport, union sockaddr_union *tmp_su, unsigned int *proto);
+static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
+		unsigned short fromport, str *toproto, str *toip, unsigned short toport);
+static int pipport2su (str *sproto, str *ip, unsigned short port,
+			union sockaddr_union *tmp_su, unsigned int *proto);
 
 static int do_dlg_siptrace = 0;
 static void siptrace_dlg_created(struct dlg_cell *did, int type,struct dlg_cb_params * params);
@@ -114,10 +116,14 @@ static str traced_user_column = str_init("traced_user"); /* 02 */
 static str msg_column         = str_init("msg");         /* 03 */
 static str method_column      = str_init("method");      /* 04 */
 static str status_column      = str_init("status");      /* 05 */
-static str fromip_column      = str_init("fromip");      /* 06 */
-static str toip_column        = str_init("toip");        /* 07 */
-static str fromtag_column     = str_init("fromtag");     /* 08 */
-static str direction_column   = str_init("direction");   /* 09 */
+static str fromproto_column   = str_init("from_proto");  /* 06 */
+static str fromip_column      = str_init("from_ip");     /* 07 */
+static str fromport_column    = str_init("from_port");   /* 08 */
+static str toproto_column     = str_init("to_proto");    /* 09 */
+static str toip_column        = str_init("to_ip");       /* 10 */
+static str toport_column      = str_init("to_port");     /* 11 */
+static str fromtag_column     = str_init("fromtag");     /* 12 */
+static str direction_column   = str_init("direction");   /* 13 */
 
 static char *trace_flag_str = 0;
 int trace_flag = -1;
@@ -141,7 +147,9 @@ static unsigned short trace_table_avp_type = 0;
 static int trace_table_avp;
 static str trace_table_avp_str = {NULL, 0};
 
+static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
+static unsigned short trace_local_port = 0;
 
 static unsigned int enable_ack_trace = 0;
 
@@ -177,8 +185,12 @@ static param_export_t params[] = {
 	{"msg_column",         STR_PARAM, &msg_column.s         },
 	{"method_column",      STR_PARAM, &method_column.s      },
 	{"status_column",      STR_PARAM, &status_column.s      },
+	{"fromproto_column",   STR_PARAM, &fromproto_column.s   },
 	{"fromip_column",      STR_PARAM, &fromip_column.s      },
+	{"fromport_column",    STR_PARAM, &fromport_column.s    },
+	{"toproto_column",     STR_PARAM, &toproto_column.s     },
 	{"toip_column",        STR_PARAM, &toip_column.s        },
+	{"toport_column",      STR_PARAM, &toport_column.s      },
 	{"fromtag_column",     STR_PARAM, &fromtag_column.s     },
 	{"direction_column",   STR_PARAM, &direction_column.s   },
 	{"trace_flag",         STR_PARAM, &trace_flag_str       },
@@ -260,6 +272,89 @@ static int fixup_trace_dialog(void** param, int param_no)
 }
 
 
+static int parse_trace_local_ip(void){
+	/* We tokenize the trace_local_ip from proto:ip:port to three fields */
+
+	trace_local_ip.len = strlen(trace_local_ip.s);
+	unsigned int port_no;
+	char *c = strchr(trace_local_ip.s, ':');
+	if (c == NULL) {
+		/* Only ip is specified */
+		trace_local_port = SIP_PORT;
+		trace_local_proto.s = "udp";
+		trace_local_proto.len = sizeof("udp") -1;
+	}
+	else {
+		str first_token = {c + 1,
+						trace_local_ip.len - (c - trace_local_ip.s) - 1};
+
+		if (str2int(&first_token, &port_no) == 0){
+
+			/* The first token is the port, so no proto */
+			if (port_no > 65535 || port_no == 0){
+				LM_WARN("trace local_ip: port is out of range (%d). "
+						"Will consider it to be %d\n", port_no, SIP_PORT);
+				trace_local_port = SIP_PORT;
+			}
+			else
+				trace_local_port = (unsigned short) port_no;
+
+			trace_local_proto.s = "udp";
+			trace_local_proto.len = sizeof("udp") - 1;
+			trace_local_ip.len = c - trace_local_ip.s;
+		}
+		else {
+
+			/* The first token is the protocol */
+			trace_local_proto.s = trace_local_ip.s;
+			trace_local_proto.len = c - trace_local_ip.s;
+
+			if (trace_local_proto.len > 4){
+				/* Too many letters for the protocol. Avoiding overflow */
+				LM_ERR("trace_local_ip : wrong protocol\n");
+				return -1;
+			} else if (trace_local_proto.len == 0){
+				trace_local_proto.s = "udp";
+				trace_local_proto.len = sizeof("udp") - 1;
+			}
+
+			char *c2 = strchr(c + 1, ':');
+
+			if (c2 != NULL){
+
+				/* We have a second token */
+				str second_token;
+				second_token.s = c2 + 1;
+				second_token.len = trace_local_ip.len -
+									(c2 - trace_local_ip.s) - 1;
+
+				if (str2int(&second_token, &port_no) != 0) {
+					trace_local_port = SIP_PORT;
+					LM_WARN("trace_local_ip: port is wrongly defined. "
+							"Will consider it as %hd\n", trace_local_port);
+				}
+				else if (port_no > 65535 || port_no == 0){
+					LM_WARN("trace local_ip: port is out of range (%d). "
+							"Will consider it to be %d\n",
+							port_no, SIP_PORT);
+					trace_local_port = SIP_PORT;
+				}
+				else
+					trace_local_port = (unsigned short) port_no;
+				trace_local_ip.s = c + 1;
+				trace_local_ip.len = c2 - c - 1;
+			}
+			else {
+				trace_local_port = SIP_PORT;
+				trace_local_ip.len -= c - trace_local_ip.s + 1;
+				trace_local_ip.s = c + 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int mod_init(void)
 {
 	pv_spec_t avp_spec;
@@ -273,8 +368,12 @@ static int mod_init(void)
 	msg_column.len = strlen(msg_column.s);
 	method_column.len = strlen(method_column.s);
 	status_column.len = strlen(status_column.s);
+	fromproto_column.len = strlen(fromproto_column.s);
 	fromip_column.len = strlen(fromip_column.s);
+	fromport_column.len = strlen(fromport_column.s);
+	toproto_column.len = strlen(toproto_column.s);
 	toip_column.len = strlen(toip_column.s);
+	toport_column.len = strlen(toport_column.s);
 	fromtag_column.len = strlen(fromtag_column.s);
 	direction_column.len = strlen(direction_column.s);
 	if (traced_user_avp_str.s)
@@ -283,8 +382,9 @@ static int mod_init(void)
 		trace_table_avp_str.len = strlen(trace_table_avp_str.s);
 	if (dup_uri_str.s)
 		dup_uri_str.len = strlen(dup_uri_str.s);
+
 	if (trace_local_ip.s)
-		trace_local_ip.len = strlen(trace_local_ip.s);
+		parse_trace_local_ip();
 
 	LM_INFO("initializing...\n");
 
@@ -430,12 +530,16 @@ static int mod_init(void)
 	db_keys[1] = &callid_column;
 	db_keys[2] = &method_column;
 	db_keys[3] = &status_column;
-	db_keys[4] = &fromip_column;
-	db_keys[5] = &toip_column;
-	db_keys[6] = &date_column;
-	db_keys[7] = &direction_column;
-	db_keys[8] = &fromtag_column;
-	db_keys[9] = &traced_user_column;
+	db_keys[4] = &fromproto_column;
+	db_keys[5] = &fromip_column;
+	db_keys[6] = &fromport_column;
+	db_keys[7] = &toproto_column;
+	db_keys[8] = &toip_column;
+	db_keys[9] = &toport_column;
+	db_keys[10] = &date_column;
+	db_keys[11] = &direction_column;
+	db_keys[12] = &fromtag_column;
+	db_keys[13] = &traced_user_column;
 
 	/* init DB values info which is constant ( type, null ) */
 	db_vals[0].type = DB_BLOB;
@@ -444,10 +548,14 @@ static int mod_init(void)
 	db_vals[3].type = DB_STR;
 	db_vals[4].type = DB_STR;
 	db_vals[5].type = DB_STR;
-	db_vals[6].type = DB_DATETIME;
-	db_vals[7].type = DB_STRING;
+	db_vals[6].type = DB_INT;
+	db_vals[7].type = DB_STR;
 	db_vals[8].type = DB_STR;
-	db_vals[9].type = DB_STR;
+	db_vals[9].type = DB_INT;
+	db_vals[10].type = DB_DATETIME;
+	db_vals[11].type = DB_STRING;
+	db_vals[12].type = DB_STR;
+	db_vals[13].type = DB_STR;
 	/* no field can be null */
 	for (i=0;i<NR_KEYS;i++)
 		db_vals[i].nul = 0;
@@ -458,8 +566,8 @@ static int mod_init(void)
 static inline int insert_siptrace_flag(struct sip_msg *msg,
 		db_key_t *keys,db_val_t *vals)
 {
-	db_vals[9].val.str_val.s   = "";
-	db_vals[9].val.str_val.len = 0;
+	db_vals[13].val.str_val.s   = "";
+	db_vals[13].val.str_val.len = 0;
 
 	LM_DBG("storing info 1...\n");
 	if (con_set_inslist(&db_funcs,db_con,&ins_list,keys,NR_KEYS) < 0 )
@@ -489,8 +597,8 @@ static inline int insert_siptrace_avp(struct usr_avp *avp,
 		avp_value = *first_val;
 		LM_DBG("str val [%.*s]\n",avp_value.s.len,avp_value.s.s);
 	}
-	db_vals[9].val.str_val.s = avp_value.s.s;
-	db_vals[9].val.str_val.len = avp_value.s.len;
+	db_vals[13].val.str_val.s = avp_value.s.s;
+	db_vals[13].val.str_val.len = avp_value.s.len;
 
 	LM_DBG("storing info 14...\n");
 	CON_PS_REFERENCE(db_con) = &siptrace_ps;
@@ -506,8 +614,8 @@ static inline int insert_siptrace_avp(struct usr_avp *avp,
 	{
 		if (!is_avp_str_val(avp))
 			avp_value.s.s=int2str(avp_value.n,&avp_value.s.len);
-		db_vals[9].val.str_val.s = avp_value.s.s;
-		db_vals[9].val.str_val.len = avp_value.s.len;
+		db_vals[13].val.str_val.s = avp_value.s.s;
+		db_vals[13].val.str_val.len = avp_value.s.len;
 
 		LM_DBG("### - storing info 15 \n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
@@ -546,8 +654,9 @@ static int save_siptrace(struct sip_msg *msg,struct usr_avp *avp,
 {
 
 	if (duplicate_with_hep)
-		trace_send_hep_duplicate(&db_vals[0].val.blob_val,
-			&db_vals[4].val.str_val, &db_vals[5].val.str_val);
+		trace_send_hep_duplicate(&db_vals[0].val.blob_val, &db_vals[4].val.str_val,
+				&db_vals[5].val.str_val, db_vals[6].val.int_val, &db_vals[7].val.str_val,
+				&db_vals[8].val.str_val, db_vals[9].val.int_val);
 	else
 		trace_send_duplicate(db_vals[0].val.blob_val.s,
 			db_vals[0].val.blob_val.len);
@@ -801,19 +910,32 @@ static int sip_trace_w(struct sip_msg *msg)
 	return sip_trace(msg);
 }
 
-#define set_sock_column( _col,_buff, _ip, _port, _proto) \
+#define set_sock_columns( _col_proto, _col_ip, _col_port, _buff, _ip, _port, _proto) \
 	do { \
-		char *p, *q; \
-		int len; \
-		p = proto2str( _proto, _buff); *(p++) = ':' ; \
-		q = ip_addr2a( _ip ); len = strlen(q); \
-		memcpy( p, q, len); p += len; *(p++) = ':' ; \
-		q = int2str(_port, &len ); \
-		memcpy( p, q, len); p += len; \
-		_col.val.str_val.s = _buff; \
-		_col.val.str_val.len = (int)(p - _buff); \
+		char *nbuff = proto2str( _proto, _buff); \
+		_col_proto.val.str_val.s = _buff; \
+		_col_proto.val.str_val.len = nbuff - _buff; \
+		strcpy(nbuff, ip_addr2a(_ip)); \
+		_col_ip.val.str_val.s = nbuff; \
+		_col_ip.val.str_val.len = strlen(nbuff); \
+		_col_port.val.int_val = _port; \
 	} while (0)
 
+#define set_columns_to_any( _col_proto, _col_ip, _col_port) \
+	do { \
+		_col_proto.val.str_val.s = "any"; \
+		_col_proto.val.str_val.len = sizeof("any") - 1; \
+		_col_ip.val.str_val.s = "255.255.255.255"; \
+		_col_ip.val.str_val.len = sizeof("255.255.255.255") - 1; \
+		_col_port.val.int_val = 9; \
+	} while (0)
+
+#define set_columns_to_trace_local_ip( _col_proto, _col_ip, _col_port) \
+	do { \
+		db_vals[4].val.str_val = trace_local_proto; \
+		db_vals[5].val.str_val = trace_local_ip; \
+		db_vals[6].val.int_val = trace_local_port; \
+	} while (0)
 
 static int sip_trace(struct sip_msg *msg)
 {
@@ -877,18 +999,18 @@ static int sip_trace(struct sip_msg *msg)
 		db_vals[3].val.str_val.len = 0;
 	}
 
-	set_sock_column( db_vals[4], fromip_buff, &msg->rcv.src_ip,
-		 msg->rcv.src_port, msg->rcv.proto);
+	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 
-	set_sock_column( db_vals[5], toip_buff, &msg->rcv.dst_ip,
-		 msg->rcv.dst_port, msg->rcv.proto);
+	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
+		&msg->rcv.dst_ip,  msg->rcv.dst_port, msg->rcv.proto);
 
-	db_vals[6].val.time_val = time(NULL);
+	db_vals[10].val.time_val = time(NULL);
 
-	db_vals[7].val.string_val = "in";
+	db_vals[11].val.string_val = "in";
 
-	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
-	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
+	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
+	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
 	if (save_siptrace(msg,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
@@ -1080,34 +1202,37 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 
-	if (trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[4].val.str_val = trace_local_ip;
+	if (trace_local_ip.s && trace_local_ip.len > 0){
+		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
+	}
 	else {
 		if(send_sock==0 || send_sock->sock_str.s==0)
 		{
-			set_sock_column( db_vals[4], fromip_buff, &msg->rcv.dst_ip,
-		 		msg->rcv.dst_port, msg->rcv.proto);
+			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+					&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 		} else {
-			db_vals[4].val.str_val = send_sock->sock_str;
+			db_vals[4].val.str_val.s = proto2str(send_sock->proto,fromip_buff);
+			db_vals[4].val.str_val.len = strlen(db_vals[4].val.str_val.s);
+			db_vals[5].val.str_val = send_sock->sock_str;
+			db_vals[6].val.int_val = send_sock->port_no;
 		}
 	}
 
 	if(to==0)
 	{
-		db_vals[5].val.str_val.s = "any:255.255.255.255:9";
-		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255:9")-1;
+		set_columns_to_any(db_vals[7], db_vals[8], db_vals[9]);
 	} else {
 		su2ip_addr(&to_ip, to);
-		set_sock_column( db_vals[5], toip_buff, &to_ip,
-			(unsigned long)su_getport(to), proto);
+		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
+			&to_ip, (unsigned short)su_getport(to), proto);
 	}
 
-	db_vals[6].val.time_val = time(NULL);
+	db_vals[10].val.time_val = time(NULL);
 
-	db_vals[7].val.string_val = "out";
+	db_vals[11].val.string_val = "out";
 
-	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
-	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
+	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
+	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
 	if (save_siptrace(msg,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
@@ -1192,22 +1317,23 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
-	set_sock_column( db_vals[4], fromip_buff, &msg->rcv.src_ip,
-		 msg->rcv.src_port, msg->rcv.proto);
+	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+		&msg->rcv.src_ip,  msg->rcv.src_port, msg->rcv.proto);
 
-	if(trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[5].val.str_val = trace_local_ip;
+	if(trace_local_ip.s && trace_local_ip.len > 0){
+		set_columns_to_trace_local_ip(db_vals[7], db_vals[8], db_vals[9]);
+	}
 	else {
-		set_sock_column( db_vals[5], toip_buff, &msg->rcv.dst_ip,
-			msg->rcv.dst_port, msg->rcv.proto);
+		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
+			&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 	}
 
-	db_vals[6].val.time_val = time(NULL);
+	db_vals[10].val.time_val = time(NULL);
 
-	db_vals[7].val.string_val = "in";
+	db_vals[11].val.string_val = "in";
 
-	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
-	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
+	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
+	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
 	if (save_siptrace(req,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
@@ -1313,11 +1439,12 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val.len = t->method.len;
 
 
-	if(trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[4].val.str_val = trace_local_ip;
+	if(trace_local_ip.s && trace_local_ip.len > 0){
+		set_columns_to_trace_local_ip(db_vals[4], db_vals[5], db_vals[6]);
+	}
 	else {
-		set_sock_column( db_vals[4], fromip_buff, &msg->rcv.dst_ip,
-			msg->rcv.dst_port, msg->rcv.proto);
+		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+			&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 	}
 
 	strcpy(statusbuf, int2str(ps->code, &len));
@@ -1328,20 +1455,19 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 	dst = (struct dest_info*)ps->extra2;
 	if(dst==0)
 	{
-		db_vals[5].val.str_val.s = "any:255.255.255.255:9";
-		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255:9")-1;
+		set_columns_to_any( db_vals[7], db_vals[8], db_vals[9]);
 	} else {
 		su2ip_addr(&to_ip, &dst->to);
-		set_sock_column( db_vals[5], toip_buff, &to_ip,
-			(unsigned long)su_getport(&dst->to), dst->proto);
+		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
+			&to_ip, (unsigned long)su_getport(&dst->to), dst->proto);
 	}
 
-	db_vals[6].val.time_val = time(NULL);
+	db_vals[10].val.time_val = time(NULL);
 
-	db_vals[7].val.string_val = "out";
+	db_vals[11].val.string_val = "out";
 
-	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
-	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
+	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
+	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
 	if (save_siptrace(req,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
@@ -1430,11 +1556,12 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	db_vals[2].val.str_val.s = msg->first_line.u.request.method.s;
 	db_vals[2].val.str_val.len = msg->first_line.u.request.method.len;
 
-	if(trace_local_ip.s && trace_local_ip.len > 0)
-		db_vals[4].val.str_val = trace_local_ip;
+	if(trace_local_ip.s && trace_local_ip.len > 0){
+		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
+	}
 	else {
-		set_sock_column( db_vals[4], fromip_buff, &msg->rcv.dst_ip,
-			msg->rcv.dst_port, msg->rcv.proto);
+		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+			&msg->rcv.dst_ip, msg->rcv.dst_port, msg->rcv.proto);
 	}
 
 	strcpy(statusbuf, int2str(sl_param->code, &len));
@@ -1444,20 +1571,19 @@ static void trace_sl_onreply_out( unsigned int types, struct sip_msg* req,
 	memset(&to_ip, 0, sizeof(struct ip_addr));
 	if(sl_param->dst==0)
 	{
-		db_vals[5].val.str_val.s = "any:255.255.255.255";
-		db_vals[5].val.str_val.len = sizeof("any:255.255.255.255")-1;
+		set_columns_to_any(db_vals[7], db_vals[8], db_vals[9]);
 	} else {
 		su2ip_addr(&to_ip, sl_param->dst);
-		set_sock_column( db_vals[5], toip_buff, &to_ip,
-			(unsigned long)su_getport(sl_param->dst), req->rcv.proto);
+		set_sock_columns( db_vals[7], db_vals[8],db_vals[9], toip_buff, &to_ip,
+			(unsigned short)su_getport(sl_param->dst), req->rcv.proto);
 	}
 
-	db_vals[6].val.time_val = time(NULL);
+	db_vals[10].val.time_val = time(NULL);
 
-	db_vals[7].val.string_val = "out";
+	db_vals[11].val.string_val = "out";
 
-	db_vals[8].val.str_val.s = get_from(msg)->tag_value.s;
-	db_vals[8].val.str_val.len = get_from(msg)->tag_value.len;
+	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
+	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
 	if (save_siptrace(msg,avp,&avp_value,db_keys,db_vals) < 0) {
 		LM_ERR("failed to save siptrace\n");
@@ -1632,7 +1758,8 @@ static int trace_send_duplicate(char *buf, int len)
 	return ret;
 }
 
-static int trace_send_hep_duplicate(str *body, str *fromip, str *toip)
+static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
+		unsigned short fromport, str *toproto, str *toip, unsigned short toport)
 {
 	struct proxy_l * p=NULL /* make gcc happy */;
 	void* buffer = NULL;
@@ -1675,8 +1802,8 @@ static int trace_send_hep_duplicate(str *body, str *fromip, str *toip)
 	}
 
 	/* Convert proto:ip:port to sockaddress union SRC IP */
-	if (pipport2su(fromip, &from_su, &proto)==-1 ||
-	(pipport2su(toip, &to_su, &proto)==-1))
+	if (pipport2su(fromproto, fromip, fromport, &from_su, &proto)==-1 ||
+	(pipport2su(toproto, toip, toport, &to_su, &proto)==-1))
 		goto error;
 
 	/* check if from and to are in the same family*/
@@ -1824,57 +1951,46 @@ error:
  * \param proto uint protocol type
  * \return success / unsuccess
  */
-static int pipport2su (str *pipport, union sockaddr_union *tmp_su,
-														unsigned int *proto)
+static int pipport2su (str *sproto, str *ip, unsigned short port,
+			union sockaddr_union *tmp_su, unsigned int *proto)
 {
-	unsigned int port_no, cutlen = 4;
-	struct ip_addr *ip;
-	char *p;
-	str port_str, host_uri;
+	struct ip_addr *ip_a;
+	str host_uri;
 
 	/*parse protocol */
-	if(strncmp(pipport->s, "udp:",4) == 0) *proto = IPPROTO_UDP;
-	else if(strncmp(pipport->s, "tcp:",4) == 0) *proto = IPPROTO_TCP;
-	else if(strncmp(pipport->s, "tls:",4) == 0) *proto = IPPROTO_IDP; /* fake proto type */
+	if(strncmp(sproto->s, "udp:",4) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(sproto->s, "tcp:",4) == 0) *proto = IPPROTO_TCP;
+	else if(strncmp(sproto->s, "tls:",4) == 0) *proto = IPPROTO_IDP; /* fake proto type */
 #ifdef USE_SCTP
-	else if(strncmp(pipport->s, "sctp:",5) == 0) cutlen = 5, *proto = IPPROTO_SCTP;
+	else if(strncmp(sproto->s, "sctp:",5) == 0) cutlen = 5, *proto = IPPROTO_SCTP;
 #endif
-	else if(strncmp(pipport->s, "any:",4) == 0) *proto = IPPROTO_UDP;
+	else if(strncmp(sproto->s, "any:",4) == 0) *proto = IPPROTO_UDP;
 	else {
-		LM_ERR("bad protocol %.*s\n", pipport->len,pipport->s);
+		LM_ERR("bad protocol %.*s\n", sproto->len, sproto->s);
 		return -1;
 	}
 
-	/*separate proto and host */
-	p = pipport->s + cutlen;
-	if( (*(p)) == '\0') {
+	/*check if ip is not null*/
+	if (ip->len == 0) {
 		LM_ERR("malformed ip address\n");
 		return -1;
 	}
-	host_uri.s = p;
 
-	for (p=pipport->s+pipport->len ; p>=host_uri.s && *p!=':' ; p--);
-	if (*p!=':') {
-		LM_ERR("no port specified\n");
-		return -1;
+	if (port == 0) {
+		port = SIP_PORT;
 	}
+	else{
 	/*the address contains a port number*/
-	port_str.s = p + 1;
-	port_str.len = pipport->len+pipport->s - port_str.s;
-	LM_DBG("the port string is %.*s\n", port_str.len, port_str.s);
-	if(str2int(&port_str, &port_no) != 0 ) {
-		LM_ERR("there is not a valid number port\n");
-		return -1;
+		if (port_no<1024  || port_no>65536)
+		{
+			LM_ERR("invalid port number; must be in [1024,65536]\n");
+			return -1;
+		}
 	}
-	if (port_no<1024  || port_no>65536)
-	{
-		LM_ERR("invalid port number; must be in [1024,65536]\n");
-		return -1;
-	}
-	host_uri.len = p - host_uri.s;
-	LM_DBG("proto %d, host %.*s , port %d \n",*proto,host_uri.len,host_uri.s,port_no );
+	LM_DBG("proto %d, host %.*s , port %d \n",*proto, ip->len, ip->s, port);
 
 	/* now IPv6 address has no brakets. It should be fixed! */
+	host_uri = *ip;
 	if (host_uri.s[0] == '[') {
 		if(host_uri.s[host_uri.len-1] != ']') {
 			LM_ERR("bracket not closed\n");
@@ -1885,12 +2001,12 @@ static int pipport2su (str *pipport, union sockaddr_union *tmp_su,
 	}
 
 	/* check if it's an ip address */
-	if (((ip=str2ip(&host_uri))!=0)
+	if (((ip_a = str2ip(&host_uri)) != 0)
 #ifdef  USE_IPV6
-			|| ((ip=str2ip6(&host_uri))!=0)
+			|| ((ip_a = str2ip6 (&host_uri)) != 0)
 #endif
 	) {
-		ip_addr2su(tmp_su, ip, ntohs(port_no));
+		ip_addr2su(tmp_su, ip_a, ntohs(port));
 		return 0;
 	}
 

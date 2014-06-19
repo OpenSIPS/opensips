@@ -206,15 +206,33 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 
 1.3.8. trace_local_ip (str)
 
-   The address to be used in fromip field for local generated
-   messages. If not set, the module sets it to the address of the
-   socket that will be used to send the message.
+   The address to be used in fromip fields (protocol, ip and port)
+   for local generated messages. If not set, the module sets it to
+   the address of the socket that will be used to send the
+   message. Protocol and/or port ar optional and if ommited will
+   take the default values: udp and 5060.
 
    Default value is "NULL".
 
    Example 1.8. Set trace_local_ip parameter
 ...
+#Resulting address: udp:10.1.1.1:5064
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5060
+modparam("siptrace, "trace_local_ip", "tcp:10.1.1.1")
+...
+
+...
+#Resulting address: tcp:10.1.1.1:5064
+modparam("siptrace", "trace_local_ip", "tcp:10.1.1.1:5064")
+...
+
+...
+#Resulting address: udp:10.1.1.1:5060
+modparam("siptrace", "trace_local_ip", "10.1.1.1")
 ...
 
 1.3.9. table (str)
