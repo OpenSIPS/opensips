@@ -67,6 +67,7 @@
 #define DS_DEST_PRIO_COL	"priority"
 #define DS_DEST_ATTRS_COL	"attrs"
 #define DS_TABLE_NAME 		"dispatcher"
+#define DS_PARTITION_DELIM  ':'
 
 /** parameters */
 int  ds_force_dst   = 0;

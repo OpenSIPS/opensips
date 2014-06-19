@@ -234,7 +234,7 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 			The address to be used in fromip fields (protocol, ip and port)
 		for local generated messages. If not set, the module sets it to the address
 		of the socket that will be used to send the message. Protocol and/or port
-		ar optional and if ommited will take the default values: udp and 5060.
+		are optional and if omitted will take the default values: udp and 5060.
 		</para>
 		<para>
 		<emphasis>
