@@ -311,7 +311,7 @@ modparam("auth", "disable_nonce_check", 1)
 
    Example 1.11. www_challenge usage
 ...
-if (www_authorize("siphub.net", "subscriber")) {
+if (!www_authorize("siphub.net", "subscriber")) {
         www_challenge("siphub.net", "1");
 };
 ...
