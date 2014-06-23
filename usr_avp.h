@@ -85,6 +85,7 @@ int init_global_avps();
 int init_extra_avps();
 
 struct usr_avp* new_avp(unsigned short flags, int name, int_str val);
+struct usr_avp *clone_avp_list(struct usr_avp *old);
 
 /* add functions */
 int add_avp( unsigned short flags, int id, int_str val);
