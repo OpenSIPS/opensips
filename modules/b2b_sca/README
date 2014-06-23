@@ -11,7 +11,7 @@ Ovidiu Sas
    Copyright © 2011-2013 VoIP Embedded, Inc.
    Revision History
    Revision $Rev: 8688 $ $Date: 2012-01-25 13:52:05 -0500 (Wed, 25
-   Jan 2012) $
+                         Jan 2012) $
      __________________________________________________________
 
    Table of Contents
@@ -224,8 +224,8 @@ modparam("b2b_sca", "appearance_name_addr_spec_param", "")
 
    Example 1.6. Set db_url parameter
 ...
-modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[db
-host]/[dbname]")
+modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[dbh
+ost]/[dbname]")
 ...
 
 1.4.7. db_mode(integer)
@@ -293,8 +293,7 @@ modparam("b2b_sca", "watchers_column", "")
    Example 1.11. Set app[index]_shared_entity_column parameter
 ...
 modparam("b2b_sca", "app1_shared_entity_column", "first_shared_entity")
-modparam("b2b_sca", "app2_shared_entity_column", "second_shared_entity"
-)
+modparam("b2b_sca", "app2_shared_entity_column", "second_shared_entity")
 ...
 
 1.4.12. app[index]_call_state_column(string)
@@ -327,8 +326,7 @@ modparam("b2b_sca", "app2_call_state_column", "second_call_state")
    Example 1.13. Set app[index]_call_info_uri_column parameter
 ...
 modparam("b2b_sca", "app1_call_info_uri_column", "first_call_info_uri")
-modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri"
-)
+modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri")
 ...
 
 1.4.14. app[index]_call_info_appearance_uri_column(string)
@@ -344,10 +342,10 @@ modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri"
    Example 1.14. Set app[index]_call_info_appearance_uri_column
    parameter
 ...
-modparam("b2b_sca", "app1_call_info_appearance_uri_column", "first_call
+modparam("b2b_sca", "app1_call_info_appearance_uri_column", "first_call_
+info_appearance_uri")
+modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_call
 _info_appearance_uri")
-modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_cal
-l_info_appearance_uri")
 ...
 
 1.4.15. app[index]_b2bl_key_column(string)

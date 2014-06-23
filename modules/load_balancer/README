@@ -318,8 +318,8 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
    Meaning of the parameters is as follows:
      * ip and port - IP and PORT to be checked (any kind of
        variables are allowed, but take care as the PORT variables
-       should have an interger value); A value 0 for the port
-       means "any" - will match any port.
+       should have an integer value); A value 0 for the port means
+       "any" - will match any port.
      * group - in what LB group the destination should be looked
        for; If not specified, the search will be in all groups.
      * active - if "1", the search will be performed only over

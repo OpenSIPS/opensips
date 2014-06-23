@@ -2,8 +2,6 @@ XCAP_Client Module
 
 Anca-Maria Vamanu
 
-   Voice Sistem SRL
-
 Edited by
 
 Anca-Maria Vamanu
@@ -14,8 +12,7 @@ Saul Ibarra Corretge
 
    Copyright © 2007 Voice Sistem SRL
    Revision History
-   Revision $Revision$ $Date: 2012-11-14 17:46:37 +0100
-                              (Wed, 14 Nov 2012) $
+   Revision $Revision: 9442 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -259,7 +256,8 @@ typedef int (*register_xcapcb_t)(int types, xcap_cb f);
 ...
 
    - 'types' parameter can have a combined value of PRES_RULES,
-   RESOURCE_LIST, RLS_SERVICES and PIDF_MANIPULATION.
+   RESOURCE_LISTS, RLS_SERVICES, OMA_PRES_RULES and
+   PIDF_MANIPULATION.
 
    -the callback function has type :
 ...

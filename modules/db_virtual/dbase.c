@@ -272,9 +272,9 @@ do{                                                                             
 db_con_t* db_virtual_init(const str* _set_url)
 {
 /*
-    find set_url in globla state
+    find set_url in global state
     get index
-    alocate
+    allocate
     populate with db_init
 */
     LM_DBG("INIT set_name, %.*s\n", _set_url->len, _set_url->s);

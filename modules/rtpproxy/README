@@ -51,7 +51,7 @@ Bogdan-Andrei Iancu
               1.6.1. engage_rtp_proxy([flags [, ip_address [,
                       set_id [, sock_pvar]]]]) - deprecated,
                       rtpproxy_engage([flags [, ip_address [,
-                      set_id [, sock_pvar]]]]) - deprecated
+                      set_id [, sock_pvar]]]])
 
               1.6.2. rtpproxy_offer([flags [, ip_address [, set_id
                       [, sock_pvar]]]])

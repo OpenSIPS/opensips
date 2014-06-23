@@ -110,7 +110,7 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 	}
 	LM_DBG("discovered %d resources\n",n);
 
-	/* alocate stuff*/
+	/* allocate stuff*/
 	lb_rl = (struct lb_res_str_list *)pkg_malloc
 		(sizeof(struct lb_res_str_list) + n*sizeof(struct lb_res_str) + len);
 	if (lb_rl==NULL) {
