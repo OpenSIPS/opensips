@@ -295,7 +295,7 @@ inline void get_avp_val(struct usr_avp *avp, int_str *val)
 		val->s = *((str*)data);
 	} else {
 		/* avp type ID, int value */
-			val->n = (long)(avp->data);
+		val->n = (long)(avp->data);
 	}
 }
 
@@ -483,7 +483,7 @@ static inline int __search_avp_map(str *alias, map_t m)
 {
 	int **id = (int **)map_find(m, *alias);
 	LM_DBG("looking for [%.*s] avp %s - found %d\n", alias->len, alias->s,
-			m == avp_map_shm ? "in shm" : "", id ? p2int(*id) : -1);
+			m == avp_map_shm ? "in shm": "", id ? p2int(*id) : -1);
 	return id ? p2int(*id) : -1;
 }
 
@@ -582,3 +582,24 @@ int get_avp_id(str *name)
 	}
 	return id;
 }
+
+
+struct usr_avp *clone_avp_list(struct usr_avp *old)
+{
+	struct usr_avp *a;
+	int_str val;
+
+	if (!old) return NULL;
+
+	/* create a copy of the old AVP */
+	get_avp_val( old, &val );
+	a = new_avp( old->flags, old->id, val);
+	if (a==NULL) {
+		LM_ERR("cloning failed, trunking the list\n");
+		return NULL;
+	}
+
+	a->next = clone_avp_list(old->next);
+	return a;
+}
+

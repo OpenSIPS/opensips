@@ -2640,7 +2640,6 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	qvalue_t q;
 	str from_tag_gen= {0, 0};
 	str new_body={0, 0};
-	struct usr_avp **avp_head;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
@@ -2712,10 +2711,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 	get_local_contact( ci.send_sock, &ci.local_contact);
 	/* grab all AVPs from the server side and push them into the client */
-	avp_head = get_avp_list( );
-	ci.avps = *avp_head;
-	*avp_head = 0;
-
+	ci.avps = clone_avp_list( *get_avp_list() );
 
 	dlginfo = tuple->servers[0]->dlginfo;
 	gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &ci.req_uri, msg, &from_tag_gen);
@@ -2762,6 +2758,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &uri, msg, &from_tag_gen);
 		ci.from_tag = &from_tag_gen;
 		ci.req_uri = uri;
+		ci.avps = clone_avp_list( *get_avp_list() );
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 			b2b_add_dlginfo, b2bl_key);
 		if(client_id == NULL)
@@ -3021,7 +3018,6 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	str to_uri={NULL, 0}, from_uri, from_dname;
 	int eno = 0;
 	str new_body={0, 0};
-	struct usr_avp **avp_head;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
 	b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
@@ -3214,16 +3210,9 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			ci.send_sock     = msg->force_send_socket?
 				msg->force_send_socket:msg->rcv.bind_address;
 			get_local_contact( ci.send_sock, &ci.local_contact);
-			if (clients_no==0) {
-				/* grab all AVPs from the server side and push them 
-				 * into the first client */
-				avp_head = get_avp_list( );
-				ci.avps = *avp_head;
-				*avp_head = 0;
-			}
-
-			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
-			{
+			/* grab all AVPs from the server side */
+			ci.avps = clone_avp_list( *get_avp_list() );
+			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 ) {
 				LM_ERR("cannot parse cseq number\n");
 				goto error;
 			}
