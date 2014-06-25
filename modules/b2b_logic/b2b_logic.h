@@ -82,6 +82,7 @@ enum {
 	B2B_NOTIFY,
 	B2B_REFER,
 	B2B_CANCEL,
+	B2B_UPDATE,
 	B2B_METHODS_NO
 };
 
@@ -155,6 +156,9 @@ static inline int b2b_get_request_id(str* request)
 
 	if(request->len==MESSAGE_LEN &&strncasecmp(request->s, MESSAGE, MESSAGE_LEN)==0)
 		return B2B_MESSAGE;
+
+	if(request->len==UPDATE_LEN &&strncasecmp(request->s, UPDATE, UPDATE_LEN)==0)
+		return B2B_UPDATE;
 
 	return -1;
 }
