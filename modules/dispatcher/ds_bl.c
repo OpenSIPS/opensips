@@ -58,6 +58,7 @@ int set_ds_bl(modparam_t type, void *val)
 
 int init_ds_bls(void)
 {
+	// TODO Parse partition name
 	unsigned int i;
 	struct ds_bl *dsbl;
 	str name;
@@ -157,7 +158,7 @@ void destroy_ds_bls(void)
 }
 
 
-int populate_ds_bls( ds_set_t *sets)
+int populate_ds_bls(ds_set_t *sets, str partition_name)
 {
 	unsigned int i,k;
 	struct ds_bl *dsbl;
@@ -176,7 +177,11 @@ int populate_ds_bls( ds_set_t *sets)
 		for (i = 0; i < dsbl->no_sets; i++) {
 			/* search if any set matches the one above */
 			for( set=sets ; set ; set = set->next) {
-				if (set->id == dsbl->sets[i]) {
+				if (set->id == dsbl->sets[i]
+					&& partition_name.len == dsbl->partition_name.len
+					&& memcmp(partition_name.s, dsbl->partition_name.s,
+								partition_name.len)
+					) {
 					LM_DBG("Set [%d] matches. Adding all destinations:\n", set->id);
 					for (dst = set->dlist; dst; dst = dst->next) {
 						/* and add all IPs for each destination */

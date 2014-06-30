@@ -36,6 +36,8 @@
 struct ds_bl {
 	unsigned int no_sets;
 	unsigned int sets[DS_BL_MAX_SETS];
+
+	str partition_name;
 	struct bl_head *bl;
 	struct ds_bl *next;
 };
@@ -46,6 +48,6 @@ int init_ds_bls(void);
 
 void destroy_ds_bls(void);
 
-int populate_ds_bls(ds_set_t *sets);
+int populate_ds_bls(ds_set_t *sets, str partition_name);
 
 #endif /* _DS_BL_H_ */
