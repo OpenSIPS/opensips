@@ -34,10 +34,12 @@ Saul Ibarra Corretge
    2. Developer Guide
 
         2.1. bind_xcap_api(xcap_api_t* api)
-        2.2. parse_xcap_uri
-        2.3. db_url
-        2.4. xcap_table
-        2.5. integrated_server
+        2.2. normalize_xcap_uri
+        2.3. parse_xcap_uri
+        2.4. get_xcap_doc
+        2.5. db_url
+        2.6. xcap_table
+        2.7. integrated_server
 
    List of Examples
 
@@ -129,15 +131,27 @@ typedef struct xcap_api {
         int integrated_server;
         str db_url;
         str xcap_table;
+        normalize_sip_uri_t normalize_sip_uri;
         parse_xcap_uri_t parse_xcap_uri;
+        get_xcap_doc_t get_xcap_doc;
 } xcap_api_t;
 ...
 
-2.2.  parse_xcap_uri
+2.2.  normalize_xcap_uri
+
+   This function normalizes a SIP URI found in a XCAP document. It
+   un-escapes it and adds the SIP scheme in case it was missing.
+   Returns a statically allocated string buffer containing the
+   normalized form.
+
+   Parameters:
+     * uri- the URI that needs to be normalized
+
+2.3.  parse_xcap_uri
 
    This function parses the given XCAP URI.
 
-   The parameters signification:
+   Parameters:
      * uri- the URI that needs to be parsed in string format
      * xcap_uri- xcap_uri_t structure that will be filled with the
        parsed information
@@ -155,16 +169,36 @@ typedef struct {
 } xcap_uri_t;
 ...
 
-2.3.  db_url
+2.4.  get_xcap_doc
+
+   This function queries the local DB for the required XCAP
+   document. It will return the document and its corresponding
+   etag.
+
+   Parameters:
+     * user- user part od the URI of the document owner
+     * domain- domain part od the URI of the document owner
+     * type- type of the requested document, represents the AUID,
+       can be one of PRES_RULES, RESOURCE_LISTS, RLS_SERVICES,
+       PIDF_MANIPULATION, OMA_PRES_RULES
+     * filename- if specified it will be used to match the
+       document filename, it defaults to 'index'
+     * match_etag- if specified the document is only returned its
+       etag matches this one
+     * doc- reference to the storage for the returned document
+     * etag- reference to the storage for the returned document's
+       etag
+
+2.5.  db_url
 
    URL of the database to which the XCAP mdoules witll connect.
 
-2.4.  xcap_table
+2.6.  xcap_table
 
    Name of the table used to store XCAP documents. Defaults to
    'xcap'.
 
-2.5.  integrated_server
+2.7.  integrated_server
 
    Boolean flag indicating if the XCAP server has access to the
    local database or xcap_client will be used to fetch documents.
