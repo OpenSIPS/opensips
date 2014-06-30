@@ -2,7 +2,7 @@ AAA RADIUS MODULE
 
 Irina-Maria Stanescu
 
-   OpenSIPS Solutions>
+   OpenSIPS Solutions
 
 Edited by
 
@@ -35,9 +35,8 @@ Irina-Maria Stanescu
 
         1.4. Exported Functions
 
-              1.4.1.
-                      radius_send_auth(input_set_name,output_set_nam
-                      e)
+              1.4.1. radius_send_auth(input_set_name,
+                      output_set_name)
 
               1.4.2. radius_send_acct(input_set_name)
 
@@ -173,7 +172,7 @@ modparam("aaa_radius", "fetch_all_values", 1)
 
 1.4. Exported Functions
 
-1.4.1.  radius_send_auth(input_set_name,output_set_name)
+1.4.1.  radius_send_auth(input_set_name, output_set_name)
 
    This function can be used from the script to make custom radius
    authentication request. The function takes two parameters.

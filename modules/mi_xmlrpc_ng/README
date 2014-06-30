@@ -10,8 +10,7 @@ Ovidiu Sas
 
    Copyright © 2013 VoIP Embedded, Inc.
    Revision History
-   Revision $Rev: 9863 $ $Date: 2013-03-05 12:11:07 -0500 (Tue, 05
-   Mar 2013) $
+   Revision $Rev$ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -125,8 +124,8 @@ Content-Length: 236
 Content-Type: text/xml; charset=utf-8
 Date: Mon, 8 Mar 2013 12:00:00 GMT
 
-<?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><v
-alue><string>
+<?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><va
+lue><string>
 :: net:waiting_udp = 0
 :: net:waiting_tcp = 0
 :: uri:positive checks = 0

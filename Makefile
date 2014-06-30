@@ -86,23 +86,24 @@ static_modules_path=$(addprefix modules/, $(static_modules))
 extra_sources=$(wildcard $(addsuffix /*.c, $(static_modules_path)))
 extra_objs=$(extra_sources:.c=.o)
 
-static_defs= $(foreach  mod, $(static_modules), \
+static_defs=$(foreach mod, $(static_modules), \
 		-DSTATIC_$(shell echo $(mod) | tr [:lower:] [:upper:]) )
 
 override extra_defs+=$(static_defs) $(EXTRA_DEFS)
 export extra_defs
 
+all_modules=$(wildcard modules/*)
+all_modules_basenames=$(patsubst modules/%, %, $(all_modules))
+
 modules=$(filter-out $(addprefix modules/, \
 			$(exclude_modules) $(static_modules)), \
-			$(wildcard modules/*))
+			$(all_modules))
 modules:=$(filter-out $(modules), $(addprefix modules/, $(include_modules) )) \
 			$(modules)
-modules_names=$(shell echo $(modules)| \
-				sed -e 's/modules\/\([^/ ]*\)\/*/\1.so/g' )
-modules_basenames=$(shell echo $(modules)| \
-				sed -e 's/modules\/\([^/ ]*\)\/*/\1/g' )
-#modules_names=$(patsubst modules/%, %.so, $(modules))
-modules_full_path=$(join  $(modules), $(addprefix /, $(modules_names)))
+modules_names=$(patsubst modules/%, %.so, $(modules))
+modules_basenames=$(patsubst modules/%, %, $(modules))
+modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
+
 
 ifeq ($(TLS),)
 	tls_configs=""
@@ -264,75 +265,75 @@ tool-xsltproc:
 .PHONY: modules-readme
 modules-readme: tool-lynx tool-xsltproc
 	@set -e; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(all_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to html: $$r.xml" ; \
+				echo ""; \
+				echo "docbook xml to html: $$r.xml"; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml ; \
-				echo  "docbook html to txt: $$r.html" ; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
-				echo  "docbook txt to readme: $$r.txt" ; \
-				rm $$r.html ; \
-				mv $$r.txt ../README ; \
-				echo  "" ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
+							$$r.xml; \
+				echo "docbook html to txt: $$r.html"; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
+				echo "docbook txt to readme: $$r.txt"; \
+				rm $$r.html; \
+				mv $$r.txt ../README; \
+				echo ""; \
+			fi; \
+			cd ../../..; \
+		fi; \
 	done
 
 .PHONY: modules-docbook-txt
 modules-docbook-txt: tool-lynx tool-xsltproc
 	@set -e; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(all_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to html: $$r.xml" ; \
+				echo ""; \
+				echo "docbook xml to html: $$r.xml"; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml ; \
-				echo  "docbook html to txt: $$r.html" ; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
-				rm $$r.html ; \
-				echo  "" ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
+							$$r.xml; \
+				echo "docbook html to txt: $$r.html"; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
+				rm $$r.html; \
+				echo ""; \
+			fi; \
+			cd ../../..; \
+		fi; \
 	done
 
 .PHONY: modules-docbook-html
 modules-docbook-html: tool-xsltproc
 	@set -e; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(all_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to html: $$r.xml" ; \
+				echo ""; \
+				echo "docbook xml to html: $$r.xml"; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml ; \
-				echo  "" ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
+							$$r.xml; \
+				echo ""; \
+			fi; \
+			cd ../../..; \
+		fi; \
 	done
 
 .PHONY: modules-docbook-pdf
 modules-docbook-pdf: tool-docbook2pdf
 	@set -e; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(all_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to pdf: $$r.xml" ; \
-				$(DBXML2PDF) "$$r".xml ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
+				echo ""; \
+				echo "docbook xml to pdf: $$r.xml"; \
+				$(DBXML2PDF) "$$r".xml; \
+			fi; \
+			cd ../../..; \
+		fi; \
 	done
 
 .PHONY: modules-docbook

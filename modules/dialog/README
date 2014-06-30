@@ -1275,7 +1275,7 @@ if (is_dlg_flag_set("16")) {
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
 # or
-$dlg_val("account_type") = "prepaid";
+$dlg_val(account_type) = "prepaid";
 ...
 
 1.7.15.  fetch_dlg_value(name,pvar)
@@ -1301,7 +1301,7 @@ $dlg_val("account_type") = "prepaid";
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
 # or
-$var(account) = $dlg_val("account_type");
+$var(account) = $dlg_val(account_type);
 ...
 
 1.7.16.  topology_hiding()
@@ -1647,7 +1647,7 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
 1.10.4. $DLG_flags
 
-   Returns the dialog flags array (as a single interger value) of
+   Returns the dialog flags array (as a single integer value) of
    the dialog corresponding to the processed sequential request.
    This PV will be available only for sequential requests, after
    doing loose_route().
