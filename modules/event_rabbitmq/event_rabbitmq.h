@@ -29,6 +29,11 @@
 
 #include <amqp.h>
 #include <amqp_framing.h>
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
+  #define AMQP_VERSION_v04
+#include <amqp_tcp_socket.h>
+#endif
+
 
 /* transport protocols name */
 #define RMQ_NAME	"rabbitmq"
@@ -67,7 +72,6 @@ typedef struct _rmq_params {
 	str user;
 	str pass;
 	amqp_connection_state_t conn;
-	int sock;
 	int channel;
 	int flags;
 	int heartbeat;
