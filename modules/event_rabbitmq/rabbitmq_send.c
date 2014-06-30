@@ -344,6 +344,8 @@ static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 {
 	if (r != 0) {
 		LM_ERR("Unknown error while sending\n");
+		/* we close the connection here to be able to re-connect later */
+		rmq_destroy_param(rmqp);
 		return -1;
 	}
 	return 0;
