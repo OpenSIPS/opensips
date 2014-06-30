@@ -1,0 +1,114 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section>
+		<title>Overview</title>
+		<para>
+		This module does Call-ID mangling to bypass Asterisk PBX chan_sip spiral
+		detection.
+		</para>
+		<section>
+			<title>Asterisk PBX chan_sip</title>
+			<para>
+			Asterisk is a telephony switching and private branch exchange.
+			Its chan_sip module handles SIP support. That module features
+			loop/spiral detection solely based on recognising a currently
+			used Call-ID.
+			</para>
+			<para>
+			While that loop detection helps against unwanted loops, it
+			does complicate creating proper billing records. The detection
+			merges what should be two calls (customer X calling out and
+			customer Y getting called) into a single call.
+			</para>
+			<para>
+			The workaround is to ensure that the Call-IDs are mangled in
+			one direction. That way the loop detection is bypassed.
+			</para>
+		</section>
+		<section>
+			<title>Alternative workarounds</title>
+			<para>
+			A different solution would be to use the b2bua module,
+			or the callid hiding feature of the dialog module.
+			</para>
+			<para>
+			However, both solutions require the dialog module to keep state
+			of the open dialogs. This module is more lightweight.
+			</para>
+		</section>
+		<section>
+			<title>Caveats</title>
+			<para>
+			Attempting to combine this with the pua_dialoginfo module may
+			produce unexpected results.
+			</para>
+			<para>
+			The intent of this module is NOT to hide the callid. On the
+			contrary, by only prefixing it with a magic value, the SIP
+			messages can be easily matched together.
+			</para>
+			<para>
+			If your proxy speaks to a second &osips; server that uses this
+			module, you'll need to give both a distinct
+			<quote>callid_mangling_prefix</quote>. This magic string will
+			be considered when deciding in which manner the Call-ID should
+			be rewritten.
+			</para>
+		</section>
+	</section>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				The rr module. Obviously, this proxy should stay in the
+				path of the dialog to be able to rewrite the Call-IDs.
+				Spiral uses the ftag= Route parameter to determine the
+				direction of in-dialog SIP messages.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	
+	<section>
+		<title><varname>callid_mangling_prefix</varname> (string)</title>
+		<para>
+		The string to use as a prefix when rewriting Call-IDs.
+		</para>
+		<para>
+		Look at the SIP RFC for legal character combinations.
+		RFC4475 hints which rare characters are still legal.
+		</para>
+		<para>
+		The default is <quote>~{}~</quote> since it is not used by the
+		Asterisk PBX chan_sip generated Call-IDs. And it has been tested
+		to work with chan_sip.
+		</para>
+		<example>
+		<title>Set <varname>callid_mangling_prefix</varname> parameter</title>
+		<programlisting format="linespecific">
+		
+...
+modparam("spiral", "callid_mangling_prefix", "MAGIC_CALLID-")
+...
+
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>
