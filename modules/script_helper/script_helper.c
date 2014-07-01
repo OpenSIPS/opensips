@@ -128,7 +128,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	str status_500 = str_init("Server Internal Error");
 	int rc, seq_request = 0;
 
-	LM_DBG("running helper logic\n");
+	LM_DBG("running script helper for <%.*s>\n",
+	       msg->first_line.u.request.method.len,
+	       msg->first_line.u.request.method.s);
 
 	if (parse_headers(msg, HDR_TO_F|HDR_CALLID_F, 0) == -1) {
 		LM_ERR("failed to parse To header\n");
@@ -149,7 +151,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 
 			/* attempt a full dialog search (not the usual quick did lookup) */
 			if (use_dialog && dlg_api.match_dialog(msg) < 0)
-				LM_ERR("failed to match dialog, ci '%.*s'\n",
+				LM_DBG("failed to match dialog for <%.*s>, ci '%.*s'\n",
+				       msg->first_line.u.request.method.len,
+				       msg->first_line.u.request.method.s,
 				       msg->callid->body.len, msg->callid->body.s);
 
 			if (msg->REQ_METHOD == METHOD_ACK) {
