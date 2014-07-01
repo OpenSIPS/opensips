@@ -107,10 +107,10 @@ static cmd_export_t cmds[] = {
 		fixup_rl_check, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
 	{"rl_dec_count", (cmd_function)w_rl_dec, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
+		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
 	{"rl_reset_count", (cmd_function)w_rl_reset, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
+		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE},
 	{0,0,0,0,0,0}
 };
