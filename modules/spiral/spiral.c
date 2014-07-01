@@ -188,7 +188,7 @@ static inline int spiral_direction_downstream(struct sip_msg *msg)
 		return 0;
 	}
 	if (fromtag->len == rr_ftag.len
-			&& strncmp(fromtag->s, rr_ftag.s, rr_ftag.len) == 0)
+			&& memcmp(fromtag->s, rr_ftag.s, rr_ftag.len) == 0)
 	{
 		LM_DBG("ftag match, is_downstream\n");
 		return 1;
@@ -341,7 +341,7 @@ static void spiral_del_cookie(struct sip_msg *msg)
 		/* strncasecmp not needed, we put the cookie there with the
 		 * same case */
 		if (hf->name.len == cookie_header_key.len
-				&& strncmp(hf->name.s, cookie_header_key.s,
+				&& memcmp(hf->name.s, cookie_header_key.s,
 					cookie_header_key.len) == 0)
 		{
 			l = del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
@@ -362,7 +362,7 @@ int spiral_get_cookie(struct sip_msg *msg, str *dest)
 		/* strncasecmp not needed, we put the cookie there with the
 		 * same case */
 		if (hf->name.len == cookie_header_key.len
-				&& strncmp(hf->name.s, cookie_header_key.s,
+				&& memcmp(hf->name.s, cookie_header_key.s,
 					cookie_header_key.len) == 0) {
 			/* Copy at most the input length. */
 			if (dest->len > hf->body.len)
