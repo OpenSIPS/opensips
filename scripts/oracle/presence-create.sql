@@ -132,3 +132,7 @@ END pua_tr;
 /
 BEGIN map2users('pua'); END;
 /
+CREATE INDEX pua_del1_idx  ON pua (pres_uri, event);
+CREATE INDEX pua_del2_idx  ON pua (expires);
+CREATE INDEX pua_update_idx  ON pua (pres_uri, pres_id, flag, event);
+
