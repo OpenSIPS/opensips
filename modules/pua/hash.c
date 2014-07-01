@@ -416,6 +416,12 @@ static void pua_db_delete(ua_pres_t* pres)
 	vals[n_query_cols].val.str_val = *pres->pres_uri;
 	n_query_cols++;
 
+	cols[n_query_cols] = &str_event_col;
+	vals[n_query_cols].type = DB_INT;
+	vals[n_query_cols].nul = 0;
+	vals[n_query_cols].val.int_val = pres->event;
+	n_query_cols++;
+
 	if(pres->flag)
 	{
 		cols[n_query_cols] = &str_flag_col;
@@ -424,12 +430,6 @@ static void pua_db_delete(ua_pres_t* pres)
 		vals[n_query_cols].val.int_val = pres->flag;
 		n_query_cols++;
 	}
-
-	cols[n_query_cols] = &str_event_col;
-	vals[n_query_cols].type = DB_INT;
-	vals[n_query_cols].nul = 0;
-	vals[n_query_cols].val.int_val = pres->event;
-	n_query_cols++;
 
 	if(pres->id.s && pres->id.len)
 	{
