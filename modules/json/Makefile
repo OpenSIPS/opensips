@@ -23,7 +23,8 @@ ifeq ($(JSON_BUILDER),)
 	DEFS += -I$(LOCALBASE)/include -I$(SYSBASE)/include
 	LIBS += -L$(LOCALBASE)/lib -ljson
 else
-	DEFS += $(shell $(JSON_BUILDER) --cflags)
+	JSON_LIB_VER = $(shell $(JSON_BUILDER) --modversion | sed  "s/\.\([0-9]\)\./.0\1./g" | sed  "s/\.\([0-9]\)\$$/.0\1/g" | tr -d "." | sed -e "s/^0*//" )
+	DEFS += $(shell $(JSON_BUILDER) --cflags) -DJSON_LIB_VERSION=$(JSON_LIB_VER)
 	LIBS += $(shell $(JSON_BUILDER) --libs)
 endif
 
