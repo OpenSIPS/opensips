@@ -410,7 +410,7 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 	{
 		val->flags = PV_VAL_STR;
 		val->rs.s = (char*)json_object_get_string( obj );
-		val->rs.len = strlen(val->rs.s);
+		val->rs.len = json_object_get_string_len( obj );
 	}
 
 	return 0;
