@@ -167,7 +167,7 @@ fi
 
 for TABLE in $STANDARD_MODULES; do
 	mdbg "Creating core table: $TABLE"
-	sql_query $1 < $DB_SCHEMA/$TABLE-create.sql
+	sql_query $1 < $MYLIBDIR/$DB_SCHEMA/$TABLE-create.sql
 	if [ $? -ne 0 ] ; then
 		merr "Creating core tables failed!"
 		exit 1
@@ -176,10 +176,10 @@ done
 
 minfo "Core OpenSIPS tables succesfully created."
 
-if [ -e $DB_SCHEMA/extensions-create.sql ]
+if [ -e $MYLIBDIR/$DB_SCHEMA/extensions-create.sql ]
 then
 	minfo "Creating custom extensions tables"
-	sql_query $1 < $DB_SCHEMA/extensions-create.sql
+	sql_query $1 < $MYLIBDIR/$DB_SCHEMA/extensions-create.sql
 	if [ $? -ne 0 ] ; then
 		merr "Creating custom extensions tables failed!"
 		exit 1
@@ -208,14 +208,14 @@ fi
 
 minfo "creating presence tables into $1 ..."
 
-sql_query $1 < $DB_SCHEMA/presence-create.sql
+sql_query $1 < $MYLIBDIR/$DB_SCHEMA/presence-create.sql
 
 if [ $? -ne 0 ] ; then
 	merr "Failed to create presence tables!"
 	exit 1
 fi
 
-sql_query $1 < $DB_SCHEMA/rls-create.sql
+sql_query $1 < $MYLIBDIR/$DB_SCHEMA/rls-create.sql
 
 if [ $? -ne 0 ] ; then
 	merr "Failed to create rls-presence tables!"
@@ -237,7 +237,7 @@ minfo "creating extra tables into $1 ..."
 
 for TABLE in $EXTRA_MODULES; do
 	mdbg "Creating extra table: $TABLE"
-	sql_query $1 < $DB_SCHEMA/$TABLE-create.sql
+	sql_query $1 < $MYLIBDIR/$DB_SCHEMA/$TABLE-create.sql
 	if [ $? -ne 0 ] ; then
 		merr "Creating extra tables failed!"
 		exit 1
