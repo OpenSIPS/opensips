@@ -94,11 +94,11 @@ typedef struct _ds_db_head
 	str db_url;
 	str table_name;
 
-	str dst_avp_param;
-	str grp_avp_param;
-	str cnt_avp_param;
-	str sock_avp_param;
-	str attrs_avp_param;
+	str dst_avp;
+	str grp_avp;
+	str cnt_avp;
+	str sock_avp;
+	str attrs_avp;
 
 	struct _ds_db_head *next;
 } ds_db_head_t;
@@ -238,11 +238,11 @@ static param_export_t params[]={
 	{"force_dst",       INT_PARAM, &ds_force_dst},
 	{"flags",           INT_PARAM, &ds_flags},
 	{"use_default",     INT_PARAM, &ds_use_default},
-	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp_param.s},
-	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp_param.s},
-	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp_param.s},
-	{"sock_avp",        STR_PARAM, &default_db_head.sock_avp_param.s},
-	{"attrs_avp",       STR_PARAM, &default_db_head.attrs_avp_param.s},
+	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
+	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
+	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
+	{"sock_avp",        STR_PARAM, &default_db_head.sock_avp.s},
+	{"attrs_avp",       STR_PARAM, &default_db_head.attrs_avp.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
 	{"pvar_algo_pattern",     STR_PARAM, &pvar_algo_param.s},
@@ -286,20 +286,20 @@ struct module_exports exports= {
 
 DEF_GETTER_FUNC(db_url);
 DEF_GETTER_FUNC(table_name);
-DEF_GETTER_FUNC(dst_avp_param);
-DEF_GETTER_FUNC(grp_avp_param);
-DEF_GETTER_FUNC(cnt_avp_param);
-DEF_GETTER_FUNC(sock_avp_param);
-DEF_GETTER_FUNC(attrs_avp_param);
+DEF_GETTER_FUNC(dst_avp);
+DEF_GETTER_FUNC(grp_avp);
+DEF_GETTER_FUNC(cnt_avp);
+DEF_GETTER_FUNC(sock_avp);
+DEF_GETTER_FUNC(attrs_avp);
 
 static partition_specific_param_t partition_params[] = {
-	PARTITION_SPECIFIC_PARAM (db_url, ""),
+	{str_init("db_url"), {NULL, 0}, GETTER_FUNC(db_url)},
 	PARTITION_SPECIFIC_PARAM (table_name, DS_TABLE_NAME),
-	PARTITION_SPECIFIC_PARAM (dst_avp_param, "$avp(ds_dst_failover)"),
-	PARTITION_SPECIFIC_PARAM (grp_avp_param, "$avp(ds_grp_failover)"),
-	PARTITION_SPECIFIC_PARAM (cnt_avp_param, "$avp(ds_cnt_failover)"),
-	PARTITION_SPECIFIC_PARAM (sock_avp_param, "$avp(ds_sock_failover)"),
-	PARTITION_SPECIFIC_PARAM (attrs_avp_param, "")
+	PARTITION_SPECIFIC_PARAM (dst_avp, "$avp(ds_dst_failover)"),
+	PARTITION_SPECIFIC_PARAM (grp_avp, "$avp(ds_grp_failover)"),
+	PARTITION_SPECIFIC_PARAM (cnt_avp, "$avp(ds_cnt_failover)"),
+	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
+	PARTITION_SPECIFIC_PARAM (attrs_avp, "")
 };
 
 static const unsigned int partition_param_count = sizeof (partition_params) /
@@ -484,8 +484,12 @@ static int set_partition_arguments(unsigned int type, void *val)
 static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 {
 
-	/* Load stuff from DB */
-	init_db_url( db_head->db_url, 0 /* cannot be null */);
+	/* Load stuff from DB. URL cannot be null!*/
+	if (db_head->db_url.s == NULL){
+		LM_ERR("[%.*s] DB URL is not defined!\n", db_head->partition_name.len,
+				db_head->partition_name.s);
+		return -1;
+	}
 
 	memset(partition, 0, sizeof(ds_partition_t));
 	partition->name = db_head->partition_name;
@@ -501,70 +505,70 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 	/* handle AVPs spec */
 	pv_spec_t avp_spec;
 
-	if (pv_parse_spec(&db_head->dst_avp_param, &avp_spec)==0
+	if (pv_parse_spec(&db_head->dst_avp, &avp_spec)==0
 	|| avp_spec.type!=PVT_AVP) {
 		LM_ERR("malformed or non AVP %.*s AVP definition\n",
-			db_head->dst_avp_param.len, db_head->dst_avp_param.s);
+			db_head->dst_avp.len, db_head->dst_avp.s);
 		return -1;
 	}
 	if(pv_get_avp_name(0, &(avp_spec.pvp), &partition->dst_avp_name,
 				&partition->dst_avp_type)!=0) {
-		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->dst_avp_param.len,
-			db_head->dst_avp_param.s);
+		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->dst_avp.len,
+			db_head->dst_avp.s);
 		return -1;
 	}
 
-	if (pv_parse_spec(&db_head->grp_avp_param, &avp_spec)==0
+	if (pv_parse_spec(&db_head->grp_avp, &avp_spec)==0
 	|| avp_spec.type!=PVT_AVP) {
 		LM_ERR("malformed or non AVP %.*s AVP definition\n",
-			db_head->grp_avp_param.len, db_head->grp_avp_param.s);
+			db_head->grp_avp.len, db_head->grp_avp.s);
 		return -1;
 	}
 	if(pv_get_avp_name(0, &(avp_spec.pvp), &partition->grp_avp_name,
 				&partition->grp_avp_type)!=0) {
-		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->grp_avp_param.len,
-			db_head->grp_avp_param.s);
+		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->grp_avp.len,
+			db_head->grp_avp.s);
 		return -1;
 	}
 
-	if (pv_parse_spec(&db_head->cnt_avp_param, &avp_spec)==0
+	if (pv_parse_spec(&db_head->cnt_avp, &avp_spec)==0
 	|| avp_spec.type!=PVT_AVP) {
 		LM_ERR("malformed or non AVP %.*s AVP definition\n",
-			db_head->cnt_avp_param.len, db_head->cnt_avp_param.s);
+			db_head->cnt_avp.len, db_head->cnt_avp.s);
 		return -1;
 	}
 	if(pv_get_avp_name(0, &(avp_spec.pvp), &partition->cnt_avp_name,
 				&partition->cnt_avp_type)!=0) {
-		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->cnt_avp_param.len,
-			db_head->cnt_avp_param.s);
+		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->cnt_avp.len,
+			db_head->cnt_avp.s);
 		return -1;
 	}
 
-	if (pv_parse_spec(&db_head->sock_avp_param, &avp_spec)==0
+	if (pv_parse_spec(&db_head->sock_avp, &avp_spec)==0
 	|| avp_spec.type!=PVT_AVP) {
 		LM_ERR("malformed or non AVP %.*s AVP definition\n",
-			db_head->sock_avp_param.len, db_head->sock_avp_param.s);
+			db_head->sock_avp.len, db_head->sock_avp.s);
 		return -1;
 	}
 	if(pv_get_avp_name(0, &(avp_spec.pvp), &partition->sock_avp_name,
 				&partition->sock_avp_type)!=0){
-		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->sock_avp_param.len,
-			db_head->sock_avp_param.s);
+		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->sock_avp.len,
+			db_head->sock_avp.s);
 		return -1;
 	}
 
-	if (db_head->attrs_avp_param.s && db_head->attrs_avp_param.len > 0) {
-		if (pv_parse_spec(&db_head->attrs_avp_param, &avp_spec)==0
+	if (db_head->attrs_avp.s && db_head->attrs_avp.len > 0) {
+		if (pv_parse_spec(&db_head->attrs_avp, &avp_spec)==0
 		|| avp_spec.type!=PVT_AVP) {
 			LM_ERR("malformed or non AVP %.*s AVP definition\n",
-					db_head->attrs_avp_param.len, db_head->attrs_avp_param.s);
+					db_head->attrs_avp.len, db_head->attrs_avp.s);
 			return -1;
 		}
 
 		if (pv_get_avp_name(0, &(avp_spec.pvp), &partition->attrs_avp_name,
 		&partition->attrs_avp_type)!=0){
-			LM_ERR("[%.*s]- invalid AVP definition\n", db_head->attrs_avp_param.len,
-					db_head->attrs_avp_param.s);
+			LM_ERR("[%.*s]- invalid AVP definition\n", db_head->attrs_avp.len,
+					db_head->attrs_avp.s);
 			return -1;
 		}
 	} else {
@@ -587,9 +591,9 @@ static int inherit_from_default_head(ds_db_head_t *head)
 		str *def_param = partition_params[i].getter_func(&default_db_head);
 		str *p_param = partition_params[i].getter_func(head);
 
-		if (p_param->len == 0) {
+		if (p_param->len == 0 && def_param->len > 0) {
 			/* Paramater not specified for function */
-			if (strstr(partition_params[i].name.s, "avp_param")
+			if (strstr(partition_params[i].name.s, "avp")
 				&& def_param->len > 0) {
 
 				char *avp_end = q_memrchr(def_param->s, ')', def_param->len);
@@ -654,13 +658,11 @@ static int mod_init(void)
 
 	LM_DBG("initializing ...\n");
 
-	int default_head_ok = check_if_default_head_is_ok();
-	set_default_head_values(&default_db_head);
-
-	if (default_head_ok) {
+	if (check_if_default_head_is_ok()) {
 		default_db_head.next = ds_db_heads;
 		ds_db_heads = &default_db_head;
 	}
+	set_default_head_values(&default_db_head);
 
 	ds_set_id_col.len = strlen(ds_set_id_col.s);
 	ds_dest_uri_col.len = strlen(ds_dest_uri_col.s);
@@ -705,8 +707,6 @@ static int mod_init(void)
 		if (inherit_from_default_head(head_it) != 0)
 			return -1;
 
-		head_it->db_url.s[head_it->db_url.len] = 0; //just to use the db_macro
-		init_db_url( head_it->db_url, 0 /* cannot be null */);
 		ds_partition_t *partition = shm_malloc (sizeof(ds_partition_t));
 		if (partition_init(head_it, partition) != 0)
 			return -1;
@@ -860,10 +860,16 @@ static void destroy(void)
 	/* flush the state of the destinations */
 	ds_flusher_routine(0, NULL);
 
-	ds_partition_t *part_it;
+	ds_partition_t *part_it = partitions, *aux;
 
-	for (part_it = partitions; part_it; part_it = part_it->next)
+	while (part_it) {
 		ds_destroy_data(part_it);
+		aux = part_it;
+		part_it = part_it->next;
+
+		pkg_free(aux->db_handle);
+		shm_free(aux);
+	}
 
 	/* destroy blacklists */
 	destroy_ds_bls();
