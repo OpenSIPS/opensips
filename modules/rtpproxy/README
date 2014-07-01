@@ -657,14 +657,23 @@ rtpproxy_start_recording();
    The first parameter is the rtp proxy url (exactly as defined in
    the config file).
 
-   The second parameter value must be a number in decimal.
+   The next parameter (optional) is the rtpproxy set ID (used for
+   better indentification of the rtpproxy instance to be enabled,
+   for example when a rtpproxy is used in multiple sets).
+
+   The last parameter must be a number in decimal representing the
+   new enabled/disabled state.
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
-   diferente sete), all its instances will be enables/disabled.
+   diferente sete), all its instances will be enables/disabled IF
+   no set ID provided (as second param).
 
    Example 1.18.  rtpproxy_enable usage
 ...
+## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+## disable a RTPProxy by URL and set ID (3)
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 
 1.7.2. rtpproxy_show
