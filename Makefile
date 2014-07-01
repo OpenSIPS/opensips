@@ -92,18 +92,29 @@ static_defs=$(foreach mod, $(static_modules), \
 override extra_defs+=$(static_defs) $(EXTRA_DEFS)
 export extra_defs
 
-all_modules=$(wildcard modules/*)
-all_modules_basenames=$(patsubst modules/%, %, $(all_modules))
+# If modules is supplied, only do those. If not, use all modules when
+# building documentation.
+ifeq ($(modules),)
+	doc_modules=$(all_modules)
+else
+	doc_modules=$(modules)
+endif
 
+# Take subset of all modules, excluding the exclude_modules and the
+# static_modules.
 modules=$(filter-out $(addprefix modules/, \
 			$(exclude_modules) $(static_modules)), \
-			$(all_modules))
+			$(wildcard modules/*))
+# Let modules consist of modules and include_modules (but remove
+# duplicates).
 modules:=$(filter-out $(modules), $(addprefix modules/, $(include_modules) )) \
 			$(modules)
+
 modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
+doc_modules_basenames=$(patsubst modules/%, %, $(doc_modules))
 
 ifeq ($(TLS),)
 	tls_configs=""
@@ -265,7 +276,7 @@ tool-xsltproc:
 .PHONY: modules-readme
 modules-readme: tool-lynx tool-xsltproc
 	@set -e; \
-	for r in $(all_modules_basenames) ""; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
@@ -287,7 +298,7 @@ modules-readme: tool-lynx tool-xsltproc
 .PHONY: modules-docbook-txt
 modules-docbook-txt: tool-lynx tool-xsltproc
 	@set -e; \
-	for r in $(all_modules_basenames) ""; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
@@ -307,7 +318,7 @@ modules-docbook-txt: tool-lynx tool-xsltproc
 .PHONY: modules-docbook-html
 modules-docbook-html: tool-xsltproc
 	@set -e; \
-	for r in $(all_modules_basenames) ""; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
@@ -324,7 +335,7 @@ modules-docbook-html: tool-xsltproc
 .PHONY: modules-docbook-pdf
 modules-docbook-pdf: tool-docbook2pdf
 	@set -e; \
-	for r in $(all_modules_basenames) ""; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
 			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
