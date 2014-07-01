@@ -448,9 +448,9 @@ get_cseq_number(struct sip_msg *msg, str *cseq)
 {
     struct cell *trans = tm_api.t_gett();
 
-    if (msg->first_line.type == SIP_REPLY && trans != NULL && trans != T_UNDEFINED) {
-        cseq->s = trans->cseq_n.s+CSEQ_LEN;
-        cseq->len = trans->cseq_n.len-CSEQ_LEN;
+    if (msg->first_line.type == SIP_REPLY && trans != NULL && trans != T_UNDEFINED &&
+    trans->uas.request!=NULL ) {
+        *cseq = get_cseq(trans->uas.request)->number;
     } else {
         if (msg->cseq == NULL) {
             if (parse_headers(msg, HDR_CSEQ_F, 0)==-1) {
@@ -463,11 +463,6 @@ get_cseq_number(struct sip_msg *msg, str *cseq)
             }
         }
         *cseq = get_cseq(msg)->number;
-    }
-
-    if (cseq->s==NULL || cseq->len==0) {
-        LM_ERR("missing CSeq number\n");
-        return False;
     }
 
     return True;
