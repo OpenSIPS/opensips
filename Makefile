@@ -110,6 +110,10 @@ modules=$(filter-out $(addprefix modules/, \
 modules:=$(filter-out $(modules), $(addprefix modules/, $(include_modules) )) \
 			$(modules)
 
+ifneq ($(module),)
+	modules:=$(addprefix modules/, $(module))
+endif
+
 modules_names=$(patsubst modules/%, %.so, $(modules))
 modules_basenames=$(patsubst modules/%, %, $(modules))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
