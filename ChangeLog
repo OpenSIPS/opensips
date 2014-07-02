@@ -1,3 +1,503 @@
+=========================== Release 1.11.2 ==============================
+
+2014-07-02  Razvan Crainea  <razvan at opensips dot org>
+	* [286c72f] :
+
+	increase version to 1.11.2
+
+
+2014-07-01  Bill Hau  <zytron at gmail dot com>
+	* [a25f8b4] :
+
+	ratelimit: Allow FAILURE_ROUTE instead of duplicate LOCAL_ROUTE
+	(cherry picked from commit 633b1b8f637a7a099ea89a6803a94e8f3df70e63)
+
+
+2014-07-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [add3371] :
+
+	Added detection for the version of libjson used in the system Also, fixed printing of entire json objects
+	(cherry picked from commit 6f9c8c383d6026293ddc095dc3abcef488cd266d)
+
+
+2014-07-01  jalung  <sevpal at msn dot com>
+	* [2cb8bc7] :
+
+	Update cachedb_redis_utils.c
+	Opensips 1.11 fails to connect to Redis Cluster (beta6) running three masters. This change should be backwards compatible.
+	(cherry picked from commit cba857000cb3f0c9108760cde0a4cba2e5d86525)
+
+
+2014-07-01  Liviu Chircu  <liviu at opensips dot org>
+	* [a8d8d3c] :
+
+	script_helper: minor logging improvements
+	Do not report errors when ACKs to 487 responses fail to match any on-going dialogues
+	Reported by Gary Nyquist
+	(cherry picked from commit a1b0495c6b1eacd9643e9ccfd78d376e6b398ec6)
+
+
+2014-07-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e15757f] :
+
+	Add index on the pua table for peformance reasons.
+	Credits go to "lirakin" on IRC
+	(cherry picked from commit 59061f158db03c6d00f0d3121e8db1536ec43aba)
+
+
+2014-07-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [4586045] :
+
+	Fixed JSON fetching of array string fields
+	(cherry picked from commit 843fdde91e55b5a8234f86fdf496bc27aeec7e15)
+
+
+2014-07-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4f73717] :
+
+	Fix fetching cseq number for replies.
+	Closes #165.
+	(cherry picked from commit acb1b378e59fc2f7608e566347ceebd5f4159210)
+
+
+2014-07-01  Razvan Crainea  <razvan at opensips dot org>
+	* [3724503] :
+
+	change default prefix to /usr/local
+	(cherry picked from commit 84cfab282ad4e8edaa517ef72651a5f6021e70f5)
+
+
+2014-07-01  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [535601a] :
+
+	Fix spelling in Makefile messages
+
+
+2014-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c652e9a] :
+
+	README files re-generated (thanks to Walter Doekes)
+
+
+2014-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7472a7b] :
+
+	Fix bogus trailing dot char in SQL syntax.
+	(cherry picked from commit b611ee639c94af69b2ef4acea88ffa383861a6dd)
+
+
+2014-06-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6c15387] :
+
+	Add missing UPDATE method in rules.
+	(cherry picked from commit 35f9d98eab84b2ac90aa83f9ba85511058316ab5)
+
+
+2014-06-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [dbc8653] :
+
+	Fix moving the AVP list from UAS to UAC in B2B.
+	Closes issue #230
+	Many thanks to Ovidiu Sas for report and debugging.
+	(cherry picked from commit c760b69cb4f1b56b91112ab457fef232b5753fbd)
+
+
+2014-06-23  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [e5c6bbf] :
+
+	Fixed empty tree bug
+	(cherry picked from commit b36da5ec0ba5cf4a21d23edc8fe0484f586fb286)
+
+
+2014-06-20  Răzvan Crainea  <razvan at opensips dot org>
+	* [f259215] :
+
+	fixed auth README typo
+	(cherry picked from commit 7cbe8a7bdf1eb4680bb3dc274d2abdb070d580b1)
+
+
+2014-06-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e63eedf] :
+
+	Fix typo in the doc examples
+	(cherry picked from commit a550b90d6d4eda70a4e26f696eb4a216625813ff)
+
+
+2014-06-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [817f956] :
+
+	Replace "flags" with "state" in the ds_list output
+	(cherry picked from commit 45afa00fb425ec1e36887fa237438f25c06dc07b)
+
+
+2014-06-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [84fad89] :
+
+	Replace FLAGS with STATE columns in dispatcher
+	(cherry picked from commit 3d9bb5ad30dbe3c6a439bc7ec60da10a845e8dce)
+
+
+2014-06-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [641cfd3] :
+
+	Readme file re-generated
+
+
+2014-06-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [88105bd] :
+
+	Fix docs - replace "flags_col" with "state_col".
+	(cherry picked from commit 3e71b9bc5b90aa0afd7f7f2a3140c24c42cee61a)
+
+
+2014-06-17  Razvan Crainea  <razvan at opensips dot org>
+	* [6a11ad4] :
+
+	dialog: fix $DLG_timeout printing
+	(cherry picked from commit dba4810151dd21ade089ac36aacd766db58b9805)
+
+
+2014-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [70de442] :
+
+	Removed obsolete file.
+
+
+2014-06-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [022b1a8] :
+
+	Fixed handling of REJECT return code.
+	(cherry picked from commit 8e42553e44be1b054d2f6e9b84b3632e83e4a0bd)
+
+
+2014-06-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f48c953] :
+
+	Fixed dbschema doc to point to right modules doc.
+
+
+2014-06-05  Liviu Chircu  <liviu at opensips dot org>
+	* [32b5ce8] :
+
+	core statistics: revert to safe allocations
+	Commit 42c3d383 is incomplete since some statistics are allocated
+	in multi-process environments (e.g. udp/tcp load statistics)
+
+	This patch fixes this issue, while maintaining the logic behind 42c3d383
+	(cherry picked from commit b54afe38bb869cca1c061a1db17abc4869d708c2)
+
+
+2014-06-05  Liviu Chircu  <liviu at opensips dot org>
+	* [9e27541] :
+
+	core: Fix uninitialized number of interface listeners
+	Closes issue #246, reported by cityant
+	(cherry picked from commit 53e48e1b935b4dfbba11fb54ee105d995c4524db)
+
+
+2014-06-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a2db8d7] :
+
+	Fixed autobridging in combination with TopoHiding.
+	Get information about the next hop from the Transaction layer (when Topo Hiding is used), as we have no second VIA present in the SIP replies.
+	Based on an original fix from Nick Altmann, related to push request #238.
+	(cherry picked from commit 20d1fe67de5c70ff1ff8a56912c515f1b88ae6bb)
+
+
+2014-05-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [3754c5f] :
+
+	dialplan: dp_translate(): accept "id" param as STR PVAR  - convert it to INT "id" STR PVAR (if possible)
+	(cherry picked from commit 2923d4178484af48d1f3f30c9fa1b8b7464c72f9)
+
+
+2014-05-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [52532d6] :
+
+	dialplan: return "404 No translation" for failed MI dp_translate command
+	(cherry picked from commit f517529a86a2d77a9645e341153b76384e56f4fb)
+
+
+2014-05-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [424882f] :
+
+	uac_registrant: documentation updates
+	(cherry picked from commit cca642b54c8fb6f5324bad65e24b39b1ae2ee010)
+
+
+2014-05-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [e90adea] :
+
+	uac_registrant: print an error if registrar imposed expires to small
+	(cherry picked from commit c616b080da6bac0101b69361fec60bf14cd6ae8a)
+
+
+2014-05-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [4a9a4a9] :
+
+	uac_registrant: add some sanity checks during db record(s) loading
+	(cherry picked from commit 0181bec67c925c2682e92b1d4dafdbf4d2b38a09)
+
+
+2014-05-30  Ovidiu Sas  <osas at voipembedded dot com>
+	* [38089b7] :
+
+	uac_registrant: add some sanity checks during module init
+	(cherry picked from commit 2998f06e766e8ce8a1427539ecdddf9c851949c5)
+
+
+2014-05-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ec10686] :
+
+	Fix ds_list MI command output.
+	The values added to the MI tree must be either persistent, either duplicated into the tree.
+	Closes issue #243, reported by Ovidiu Sas.
+	(cherry picked from commit dd788ff8118c0f0251463b81d50ddecea75262e5)
+
+
+2014-05-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5b9c010] :
+
+	Fix nameaddr.params if last param has no value.
+	Closes again #228 .
+	(cherry picked from commit dd109699e2d3fecc744e3aeaa74fbf21227f9288)
+
+
+2014-05-29  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9500e9b] :
+
+	Fixed missing \n in log messages.
+	(cherry picked from commit 07448cb70f13265dc3b1bd1ff12b1996361589a7)
+
+
+2014-05-29  Razvan Crainea  <razvan at opensips dot org>
+	* [6d44577] :
+
+	rtpproxy: restructure rtpproxy_mi show command
+	Due to the initial structure, some useful information was stripped by the mi_json module.
+	Added the "Set" as root node, followed by a child for each node
+	(cherry picked from commit 213e77758351cd5f4c9b65c70fbd08c42a9c146e)
+
+
+2014-05-28  Razvan Crainea  <razvan at opensips dot org>
+	* [1fd5c74] :
+
+	lb: mark resources as array
+	(cherry picked from commit 20c17539f1e77ad75463a8a75c4d6f7171da6237)
+
+
+2014-05-22  Liviu Chircu  <liviu at opensips dot org>
+	* [fce034e] :
+
+	drouting: document the "persistent_state" parameter
+	(cherry picked from commit 24517fd9a7fa427dd56e23753418b1bfc3cd1791)
+
+
+2014-05-21  Liviu Chircu  <liviu at opensips dot org>
+	* [3a8fdd9] :
+
+	core: improve CPU usage of the TCP_MAIN process
+		* iterate through and close connections at most once per second
+	(cherry picked from commit 3ac3b042c7b74cc6c84af0a987ac65cde17f8e6b)
+
+	Conflicts:
+
+		tcp_main.c
+
+
+2014-05-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1d3f8d1] :
+
+	Fixed setting the pinging flags at start.
+	Related to issue #233
+	(cherry picked from commit d5ff4c9ce34e348866381ba26c0a58da242242cc)
+
+
+2014-05-21  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [7bac6d8] :
+
+	Merge pull request #232 from wdoekes/wjd-misc_typos
+	Fix a few typo's and double spaces in LM_* messages.
+	(cherry picked from commit 3452fbfb7c075fe0eca6bae516eb40337d0d5b75)
+
+	Conflicts:
+		script_cb.c
+
+
+2014-05-20  Razvan Crainea  <razvan at opensips dot org>
+	* [46327c1] :
+
+	dispatcher: fix possible bogus gateways
+	In case the domain name can not be resolved, the destination should
+	be droped and the number of destinations within the set should not be
+	increased.
+	(cherry picked from commit 310dafa013b1f127c9cf60b4f7a5efac639b1aed)
+
+	Conflicts:
+		modules/dispatcher/dispatch.c
+
+
+2014-05-19  Liviu Chircu  <liviu at opensips dot org>
+	* [7b21e35] :
+
+	QM_MALLOC: proper fragment debugging patterns for x86_64
+	(cherry picked from commit cd201b680102ffcbe554851d1e6f44ace3c72daa)
+
+
+2014-05-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0e1eb40] :
+
+	Fixed output redirect for "which"
+	Credits go to @jalung . Closes #231 .
+	(cherry picked from commit f89838976d3b11424cb649cd2b6f376579c42d0e)
+
+
+2014-05-19  Razvan Crainea  <razvan at opensips dot org>
+	* [fb8005d] :
+
+	dialog: prevent double free in case of errors
+	(cherry picked from commit eef59c1d7b47ecc35438c01e7dcbdfeea903115a)
+
+
+2014-05-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f6fd848] :
+
+	Reduce log level for script ops. Better err logging
+	(cherry picked from commit e9b17579a00cc9bd4bb04e576d6b10b1c434d80c)
+
+
+2014-05-14  Razvan Crainea  <razvan at opensips dot org>
+	* [21bcff6] :
+
+	call_center: remove cc_agent_login() function from doc
+
+
+2014-05-14  Razvan Crainea  <razvan at opensips dot org>
+	* [c814829] :
+
+	call_center: cc_handle_call() accept strings
+	(cherry picked from commit b252b472a58172767d4b3c015f9ef5ec3c2a09ca)
+
+	Conflicts:
+		modules/call_center/call_center.c
+
+
+2014-05-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5669370] :
+
+	Clone in shm requests with all headers parsed.
+	For the UAC transactions, when adding the fake msg in the UAS side, be sure all the needed headers are parsed and ready for cloning into SHM.
+
+	Reported by Nick Altmann. Also many thanks for the support with the troubleshooting.
+
+
+2014-05-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cf1ae2a] :
+
+	Fix calculating len of params in nameaddr trans.
+	If the value of the last parameter is a quoted string, we need to include in the len calculation the closing quote too (quotes are not included in the actual value).
+
+	Closing #228.
+
+
+2014-05-14  Liviu Chircu  <liviu at opensips dot org>
+	* [63e4f63] :
+
+	tls: allow free(NULL) with DBG_QM_MALLOC enabled
+	(cherry picked from commit 99b049b1a04e3619e0aedde45a2209972e299d9c)
+
+
+2014-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [0f26cc5] :
+
+	cachedb core: properly free raw query results
+		* freeing more than 1 result leaked pkg mem
+
+	Fixes #226
+	(cherry picked from commit 0338917a979a3280273145b2b3a73400bc90a476)
+
+
+2014-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [7dca7b5] :
+
+	tcp_no_new_conn_bflag: fix incorrect behaviour when using integer flags
+		* also fix some redundant pointer ref/dereferencing
+	(cherry picked from commit 0be4225b2bb0ac1081d0c3d5bc886569b9510a13)
+
+
+2014-05-08  Razvan Crainea  <razvan at opensips dot org>
+	* [effd4b5] :
+
+	acc: register dialog loaded callbacks after flags init
+	This solves the bug when CDRs were not written in DB after restart
+	Reported by Mayama Takeshi, who also provided testing environment
+	(cherry picked from commit ff839b85d1e7b9122f348d6277d8f93a9bafca9f)
+
+
+2014-05-08  Razvan Crainea  <razvan at opensips dot org>
+	* [fd4d3a7] :
+
+	update ChangeLog for 1.11.1
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [340f2d6] :
+
+	Merge branch 'version-update' into 1.11
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [5b55545] :
+
+	mi_json: complete rework of the module
+	consider the modules MI_IS_ARRAY hints to build a simpler JSON document
+	fixes cases where duplicate keys generate invalid documents
+	(example: ul_show_contacts)
+	(cherry picked from commit 459dffba91ebdda454a250fbad2eed2069eac8e2)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [3b02382] :
+
+	fix previous commit to organize dlg_list_ctx as array too
+	(cherry picked from commit 7b83d0783fd6e67347c84cdc8eca6d7234021c81)
+
+
+2014-05-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [27d3240] :
+
+	When loading new dialogs at runtime ( either via dlg_db_sync or via the bin interface ), also run the load callback ( eg. used by the acc module to write proper CDRs )
+	(cherry picked from commit afee8fe8aaa3d8bc5bec54868404e6a4ab49fa3d)
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [492f939] :
+
+	Fix the structure of MI tree (output).
+	Mark the nodes that contain arrays of subnodes (versus list of differente nodes). This is a must in order to properly structure the MI output via the json backend.
+	(cherry picked from commit 34576f52bcd1351cc7e2f2846e3b37b2e4e35503)
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [1dbbe8d] :
+
+	update Makefile defines for 1.11.1
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [b0ac0fb] :
+
+	updated packaging for 1.11
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [ccbe2e2] :
+
+	event_rabbitmq: replace exchange with routing_key
+	Closes #220
+	(cherry picked from commit eb233f894b1364d20e1f3461304d79a077102a3a)
+
+
 =========================== Release 1.11.1 ==============================
 
 2014-05-07  Razvan Crainea  <razvan at opensips dot org>
