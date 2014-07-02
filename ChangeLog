@@ -1,3 +1,470 @@
+=========================== Release 1.8.5 ==============================
+
+2014-07-02  Razvan Crainea  <razvan at opensips dot org>
+	* [56b2180] :
+
+	increase version to 1.8.5
+
+
+2014-07-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [aefed35] :
+
+	ratelimit: Allow FAILURE_ROUTE instead of duplicate LOCAL_ROUTE
+
+
+2014-07-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [7ea67f1] :
+
+	Added detection for the version of libjson used in the system Also, fixed printing of entire json objects (cherry picked from commit 6f9c8c383d6026293ddc095dc3abcef488cd266d)
+	Conflicts:
+		modules/json/json.c
+
+
+2014-07-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e491c8c] :
+
+	Add index on the pua table for peformance reasons.
+	Credits go to "lirakin" on IRC
+	(cherry picked from commit 59061f158db03c6d00f0d3121e8db1536ec43aba)
+
+
+2014-07-01  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [c2c70d0] :
+
+	Fixed JSON fetching of array string fields
+	(cherry picked from commit 843fdde91e55b5a8234f86fdf496bc27aeec7e15)
+
+
+2014-07-01  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a59bf46] :
+
+	Fix fetching cseq number for replies.
+	Closes #165.
+	(cherry picked from commit acb1b378e59fc2f7608e566347ceebd5f4159210)
+
+
+2014-07-01  Razvan Crainea  <razvan at opensips dot org>
+	* [fb7c080] :
+
+	change default prefix to /usr/local
+
+
+2014-06-20  Răzvan Crainea  <razvan at opensips dot org>
+	* [d6e7db7] :
+
+	fixed auth README typo
+	(cherry picked from commit 7cbe8a7bdf1eb4680bb3dc274d2abdb070d580b1)
+
+
+2014-06-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cee3c29] :
+
+	Fix typo in the doc examples
+	(cherry picked from commit a550b90d6d4eda70a4e26f696eb4a216625813ff)
+
+
+2014-06-12  Razvan Crainea  <razvan at opensips dot org>
+	* [81b9933] :
+
+	rtpproxy: try to fetch via2 info only for replies
+	(cherry picked from commit 6b798d9ca7bf417ba8db2597201c125a8a13822d)
+
+
+2014-06-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8e42553] :
+
+	Fixed handling of REJECT return code.
+
+
+2014-06-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d537d53] :
+
+	Fixed autobridging in combination with TopoHiding.
+	Get information about the next hop from the Transaction layer (when Topo Hiding is used), as we have no second VIA present in the SIP replies.
+	Based on an original fix from Nick Altmann, related to push request #238.
+	(cherry picked from commit 20d1fe67de5c70ff1ff8a56912c515f1b88ae6bb)
+
+	Conflicts:
+		modules/rtpproxy/rtpproxy.c
+
+	(cherry picked from commit ff5cdfa98c19db6a064f14d660d2945ed7f39031)
+
+	Conflicts:
+		modules/rtpproxy/rtpproxy.c
+
+
+2014-06-05  Liviu Chircu  <liviu at opensips dot org>
+	* [0aa099b] :
+
+	core: Fix uninitialized number of interface listeners
+	Closes issue #246, reported by cityant
+	(cherry picked from commit 53e48e1b935b4dfbba11fb54ee105d995c4524db)
+
+
+2014-05-21  Liviu Chircu  <liviu at opensips dot org>
+	* [0410817] :
+
+	core: improve CPU usage of the TCP_MAIN process
+		* iterate through and close connections at most once per second
+	(cherry picked from commit 3ac3b042c7b74cc6c84af0a987ac65cde17f8e6b)
+
+	Conflicts:
+
+		tcp_main.c
+	(cherry picked from commit 3a8fdd9470d36e867b9f4ee0346efe3a7b03250c)
+
+
+2014-05-19  Liviu Chircu  <liviu at opensips dot org>
+	* [9f512ce] :
+
+	QM_MALLOC: proper fragment debugging patterns for x86_64
+	(cherry picked from commit cd201b680102ffcbe554851d1e6f44ace3c72daa)
+
+
+2014-05-19  Razvan Crainea  <razvan at opensips dot org>
+	* [4da5f3a] :
+
+	dialog: prevent double free in case of errors
+	(cherry picked from commit eef59c1d7b47ecc35438c01e7dcbdfeea903115a)
+
+
+2014-05-14  Liviu Chircu  <liviu at opensips dot org>
+	* [8b3c5ea] :
+
+	tls: allow free(NULL) with DBG_QM_MALLOC enabled
+	(cherry picked from commit 99b049b1a04e3619e0aedde45a2209972e299d9c)
+
+
+2014-05-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [2d7ab0a] :
+
+	When loading new dialogs at runtime ( via dlg_db_sync MI ), also run the load callback ( eg. used by the acc module to write proper CDRs )
+
+
+2014-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [3cc0601] :
+
+	event_rabbitmq: replace exchange with routing_key
+	Closes #220
+	(cherry picked from commit eb233f894b1364d20e1f3461304d79a077102a3a)
+
+	Conflicts:
+		modules/event_rabbitmq/event_rabbitmq.c
+
+	(cherry picked from commit 5ea61c0e085dd4398717d1810773ef89446470dd)
+
+	Conflicts:
+		modules/event_rabbitmq/event_rabbitmq.c
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9112b5b] :
+
+	Fixed compile warnings
+	(cherry picked from commit 5c27f464f78235d70414661721470e8213624f5f)
+
+	Conflicts:
+		utils/db_berkeley/bdb_recover.c
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d0734a5] :
+
+	Support for json-c ; Fixed compile warnings
+	(cherry picked from commit e481ef3895c5cc679ae94676e433a3b522c8b95f)
+
+	Conflicts:
+		modules/json/json.c
+
+	(cherry picked from commit b1ac844e616064666ec807b08c3407f7fb113a24)
+
+	Conflicts:
+		modules/json/Makefile
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b8daa64] :
+
+	Fix DB_BIGINT support and unused vars.
+	(cherry picked from commit 611d47f5ac3ed36bcf3cfa233e25586b29616e88)
+
+	Conflicts:
+		modules/db_berkeley/db_berkeley.c
+
+
+2014-05-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b383994] :
+
+	Fix reusage of proxy_l structures.
+	As proxy_l structures contain information about the DNS-based failover (iteration in he struct, which SRV or NAPTR records were used or not), such structure cannot be used more then once for sending a message out.
+	Fixes:
+	- do not use the same proxy_l for multiple functions in script (remove the add_proxy() and find_proxy() )
+	- avoid using the same proxy_l structure for all the calls of same function (when proxy_l is a function parameter)
+
+	Fixes #224
+	Many thanks for Chris Maciejewski ( @l7s ) for support on troublehsooting this.
+	(cherry picked from commit f7f2cb41d6f562d0c3d6748a827d55e12cb05174)
+
+	Conflicts:
+		action.c
+		proxy.c
+
+
+2014-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [a084b69] :
+
+	db_text: properly initialize memory when caching tables
+	(cherry picked from commit 204d08bb18110599317324fefbd64ecc77e6784f)
+
+
+2014-05-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d9fe58e] :
+
+	Fixed bogus test on memory allocation.
+
+
+2014-05-05  Liviu Chircu  <liviu at opensips dot org>
+	* [336d848] :
+
+	db_unixodbc: deallocate the results only after they are processed
+		* closes bug #622 on the SF tracker
+	(cherry picked from commit d63ee19a8961b6019eda067c0b439f09d8126901)
+
+
+2014-05-05  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2ef546f] :
+
+	Postgres schema regenerated.
+
+
+2014-05-05  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [643ec6c] :
+
+	Merge pull request #221 from nikbyte/master
+	Fix some PgSQL schema issues
+	(cherry picked from commit 671a5bb7af35833fbf1e634e8bd321417ef5aa6a)
+
+
+2014-05-01  Liviu Chircu  <liviu at opensips dot org>
+	* [df37499] :
+
+	fix compile error from cherry-picked commit dee5b3fc2785
+	(cherry picked from commit d48150e5a0831577819730ea17ba9c75bd0c019c)
+
+
+2014-05-01  Liviu Chircu  <liviu at opensips dot org>
+	* [41ae71a] :
+
+	script statement thresholds: ignore certain statements
+	Motivation:
+		* could lead to behavior such as:
+			"ROUTE, IF, ROUTE, IF and IF took too long..."
+
+		* ignored statements: ROUTE, IF, WHILE, FOR_EACH
+	(cherry picked from commit dee5b3fc278500efe49289f77a0f802805e8d626)
+
+
+2014-05-01  Liviu Chircu  <liviu at opensips dot org>
+	* [f374d72] :
+
+	core: fix compiler warning and a rare mem leak
+		* setting the global advertised port multiple times leaked pkg mem
+	(cherry picked from commit a99688e9bb801fae28a009174b7145688a8b204a)
+
+
+2014-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [2614cc6] :
+
+	error.h: add a bug reporting function
+	Motivation:
+		* it seems it can be reused quite a lot
+
+	Examples:
+		* report_programming_bug("invalid pointer: %p", p);
+		* report_programming_bug("we should not process BYEs here!");
+	(cherry picked from commit 9f7ce76403a5ef5db8e9ac8da355d4955059af55)
+
+
+2014-04-30  Liviu Chircu  <liviu at opensips dot org>
+	* [787aa50] :
+
+	core: address several advertised address related issues
+		* properly duplicate buffers into shared memory when required
+		* keep the advertised address of the first branch as a default for
+		  future branches
+		* also allow set_advertised_port() to receive any kind of parameter
+		  (int, string, int pvar, str pvar...)
+
+	Credits for reporting and helping with troubleshooting to GitHub user contact2malay
+	(cherry picked from commit ad92fa6ff6f61073270b311475fb9840361b4f2e)
+
+	Conflicts:
+
+		action.c
+		modules/tm/t_msgbuilder.h
+		receive.c
+	(cherry picked from commit faa798cf8cdb20d33503901ad3ae4342b418c7c2)
+
+	Conflicts:
+
+		action.c
+		msg_translator.c
+
+
+2014-04-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a6931f3] :
+
+	Fix bug in fetching all values of a RADIUS AVP.
+	Using AVPs from script, you can now retrieve all the values (not only yhe first value of the RADIUS AVP).
+	In order to maintain backward compatibility, the fetch_all_values module parameter was added - by default is off.
+
+	Reported and tested by John Quick.
+	(cherry picked from commit 0ba0bf059d67fa28e1b9b4f40d4af86db77f5593)
+
+	Conflicts:
+		modules/aaa_radius/README
+		modules/aaa_radius/aaa_radius.c
+		modules/aaa_radius/doc/aaa_radius_admin.xml
+
+
+2014-04-29  Liviu Chircu  <liviu at opensips dot org>
+	* [a0116b8] :
+
+	stun: fix possible memory corruption
+		* when processing any STUN packet with unknown attributes
+	(Reported by Nick Altmann)
+	(cherry picked from commit 70d282354c59cb1882fa2101fa44a54375b7b7dd)
+
+
+2014-04-28  fabriziopicconi  <fabrizio.picconi at alice dot it>
+	* [8da5a91] :
+
+	thrift 0.9
+	thrift 0.9 support
+
+
+2014-04-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [f09656c] :
+
+	Merge pull request #130 from dsandras/ds-pua-dbupdate-fix
+	Fixes bug where the pua db elements were deleted too early.
+
+
+2014-04-20  Nick Altmann  <nick.altmann at gmail dot com>
+	* [c37f31a] :
+
+	RPM spec: added dependencies for mysql and postgresql libs
+
+
+2014-04-17  Liviu Chircu  <liviu at opensips dot org>
+	* [4207bf5] :
+
+	TLS README: correct spelling and grammar
+	(cherry picked from commit 4f7df942a34162619a9c3b7b6d2d25f7ac8aee2f)
+
+
+2014-04-17  Liviu Chircu  <liviu at opensips dot org>
+	* [ee2556a] :
+
+	regenerate the TLS CA and default certificate
+		* the CA passphrase did not match the one in the README
+	(cherry picked from commit 3a0bca84986d81a8d64037d082b86ae13b5a50f0)
+
+
+2014-04-11  Liviu Chircu  <liviu at opensips dot org>
+	* [916d8cf] :
+
+	msilo dbschema: avoid setting a default value for the body field
+		* this causes errors/warnings on backends such as MySQL/MariaDB
+	(cherry picked from commit 5c790aa9431401dc0b906a9a8694dffb6bd1d34b)
+
+
+2014-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [c4be531] :
+
+	mi_xmlrpc: fix crash when flushing complex MI trees as strings
+		* crash was replicated with "ul_dump" command at 51+ contacts
+			- "reply_option" must be disabled
+
+	This patch solves a couple of other issues:
+		* properly mark completed nodes when "reply_option" = 0
+		* a rare memory leak when flushing empty "mi_node"s
+	(cherry picked from commit f5da89d27099f405e1242347bdf9e3cb6368423c)
+
+	Conflicts:
+
+		modules/mi_xmlrpc/xr_writer.c
+	(cherry picked from commit 61254fc3bf8f3b1914091540e6354af22e9e331d)
+
+
+2014-03-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [72c2cd3] :
+
+	Fix recalculation of sending socket after local route
+	Take into consideration the "force_send_socket" setting in local route.
+	(cherry picked from commit d37ae664dcfd9a5f83de62a493628ba12d495e75)
+
+	Conflicts:
+		modules/tm/uac.c
+
+	(cherry picked from commit c8a7e26d3c7b5bdfda06dacdc036bedc44f1e2cb)
+
+
+2014-03-26  Walter Doekes  <walter+github at wjd dot nu>
+	* [9c3fdda] :
+
+	Fix two mem corruptions.
+	Closes github issue #176
+
+
+2014-03-26  Walter Doekes  <walter+github at wjd dot nu>
+	* [2d1e4a8] :
+
+	presence_dialoginfo: Fix bounds checking by using a helper function.
+	Reported by: dsandras
+	> About the bound checking error, the code was cut&pasted from another
+	> place in the same file where the same error is still present:
+	> ...
+
+	Also I replaced a heap str with a stack one in build_dialoginfo. This
+	one wasn't freed either unless an error condition was hit.
+	(cherry picked from commit 6d058ec495c2faa015b24f412e2fe1b55526657e)
+
+
+2014-03-24  Liviu Chircu  <liviu at opensips dot org>
+	* [a3338fe] :
+
+	sipmsgops: Fix trailing whitespaces when doing "codec_delete_re"
+		* deleting the last payload attribute led to trailing whitespaces
+		* some UAs would return "488 Not Acceptable Here" in this case
+	(cherry picked from commit c9657d4154ebc3ee271e981db036a10d9b9a7922)
+
+
+2014-03-18  Răzvan Crainea  <razvan at opensips dot org>
+	* [4df8a64] :
+
+	Merge pull request #74 from wdoekes/wjd-timeout_avp_and_publish
+	Set the dialog lifetime before running the callbacks.
+
+
+2014-03-12  Razvan Crainea  <razvan at opensips dot org>
+	* [500b72e] :
+
+	update specs for 1.8.4
+
+
+2014-03-12  Razvan Crainea  <razvan at opensips dot org>
+	* [3d888f3] :
+
+	update Makefile.defs for 1.8.4
+
+
+2014-03-12  Razvan Crainea  <razvan at opensips dot org>
+	* [b850f67] :
+
+	update changelog file for 1.8.4
+
+
 =========================== Release 1.8.4 ==============================
 
 2014-03-12  Vlad Paiu  <vladpaiu at opensips dot org>
