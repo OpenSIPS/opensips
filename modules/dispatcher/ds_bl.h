@@ -33,6 +33,12 @@
 
 #define DS_BL_MAX_SETS		32
 
+typedef struct _ds_bl_temp {
+	char *text;
+	str partition_name;
+	struct _ds_bl_temp *next;
+} ds_bl_temp_t;
+
 struct ds_bl {
 	unsigned int no_sets;
 	unsigned int sets[DS_BL_MAX_SETS];
@@ -43,6 +49,7 @@ struct ds_bl {
 };
 
 int set_ds_bl(modparam_t type, void *val);
+int set_ds_bl_partition(char *val, str partition_name);
 
 int init_ds_bls(void);
 

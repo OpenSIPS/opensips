@@ -430,6 +430,7 @@ static int set_partition_arguments(unsigned int type, void *val)
 {
 	static const char end_pair_delim = ';';
 	static const char eq_val_delim = '=';
+	static const str blacklist_param = str_init("ds_define_blacklist");
 	unsigned int i;
 
 	str raw_line = {(char*)val, strlen(val)};
@@ -468,9 +469,16 @@ static int set_partition_arguments(unsigned int type, void *val)
 			}
 
 		if ( i == partition_param_count) {
-			/* No paramater found */
-			LM_ERR("No such parameter known: %.*s\n", arg.len, arg.s);
-			return -1;
+			if (str_strcmp(&blacklist_param, &arg) == 0) {
+				value.s[value.len] = 0;
+				if (set_ds_bl_partition(value.s, head->partition_name) != 0)
+					return -1;
+			}
+			else{
+				/* No paramater found */
+				LM_ERR("No such parameter known: %.*s\n", arg.len, arg.s);
+				return -1;
+			}
 		}
 
 		raw_line.s = end_pair_pos + 1;

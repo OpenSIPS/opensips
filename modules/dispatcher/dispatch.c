@@ -1656,6 +1656,7 @@ int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 }
 
 /* event parameters */
+static str partition_str = str_init("partition");
 static str group_str = str_init("group");
 static str address_str = str_init("address");
 static str status_str = str_init("status");
@@ -1734,6 +1735,12 @@ int ds_set_state(int group, str *address, int state, int type,
 				LM_ERR("event not registered %d\n", dispatch_evi_id);
 			} else if (evi_probe_event(dispatch_evi_id)) {
 				if (!(list = evi_get_params())) {
+					lock_stop_read( partition->lock );
+					return 0;
+				}
+				if (evi_param_add_str(list, &partition_str, &partition->name)){
+					LM_ERR("unable to add partition parameter\n");
+					evi_free_params(list);
 					lock_stop_read( partition->lock );
 					return 0;
 				}
@@ -2009,6 +2016,7 @@ static void ds_options_callback( struct cell *t, int type,
  */
 void ds_check_timer(unsigned int ticks, void* param)
 {
+	//TODO corectly free cb param
 	dlg_t *dlg;
 	ds_set_p list;
 	int j;
