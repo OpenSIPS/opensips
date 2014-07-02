@@ -1701,9 +1701,11 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
             unsigned int priority = (ice_data == NULL)?get_ice_candidate_priority(priority_str):ice_data->priority;
             port = strtoint(&tokens[j]);
             candidate.s = buf;
-            candidate.len = sprintf(candidate.s, "a=candidate:R%x 1 UDP %u %.*s %i typ relay%.*s",
+            candidate.len = sprintf(candidate.s, "a=candidate:R%x 1 UDP %u %.*s %i typ relay raddr %.*s rport %i%.*s",
                                     hexip.s_addr,
                                     priority,
+                                    tokens[0].len, tokens[0].s,
+                                    port,
                                     tokens[0].len, tokens[0].s,
                                     port,
                                     session.separator.len, session.separator.s);
@@ -1715,9 +1717,11 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
 
             if (stream.has_rtcp_ice) {
                 candidate.s = buf;
-                candidate.len = sprintf(candidate.s, "a=candidate:R%x 2 UDP %u %.*s %i typ relay%.*s",
+                candidate.len = sprintf(candidate.s, "a=candidate:R%x 2 UDP %u %.*s %i typ relay raddr %.*s rport %i%.*s",
                                         hexip.s_addr,
                                         priority-1,
+                                        tokens[0].len, tokens[0].s,
+                                        port+1,
                                         tokens[0].len, tokens[0].s,
                                         port+1,
                                         session.separator.len, session.separator.s);
