@@ -145,10 +145,11 @@ struct module_exports exports= {
 	child_init		/* per-child init function */
 };
 
-static void dp_str_copy(str* dest, str* source)
+static inline void dp_str_copy(str* dest, str* source)
 {
 	dest->len = source->len;
-	dest->s   = source->s;
+	dest->s   = pkg_malloc(source->len);
+	memcpy(dest->s, source->s, source->len);
 
 }
 
@@ -188,9 +189,9 @@ static dp_head_p dp_get_head(str part_name){
 
 	dp_head_p start;
 
-	for (start = dp_hlist; start && part_name.len != start->partition.len
-			&& memcmp( part_name.s, start->partition.s, 
-				start->partition.len); start = start->next);
+	for (start = dp_hlist; start && 
+				str_strcmp(&part_name, &start->partition); 
+							  start = start->next);
 
 	return start;
 
@@ -253,7 +254,8 @@ static int dp_head_insert(int dp_insert_type, str content,
 			 &tmp->dp_table_name, &content);
 	start->next = (dp_head_p)tmp;
 	return 0;
-	
+#undef h_insert
+
 }
 
 
@@ -261,15 +263,16 @@ static str* str_n_dup(const str* src, int size){
 
 	str* res;
 
-	if (!(res = pkg_malloc(sizeof(str)))) {
+	if (!(res = pkg_malloc(sizeof(str) + size))) {
 		LM_ERR("No more pkg mem\n");
 		return NULL;
 	}
 
-	if (!(res->s = pkg_malloc(size))) {
-		LM_ERR("No more pkg mem\n");
-	}
+//	if (!(res->s = pkg_malloc(size))) {
+//		LM_ERR("No more pkg mem\n");
+//	}
 
+	res->s = (char *)(res + sizeof(str));
 	memcpy(res->s, src->s, size);
 	res->len = size;
 
@@ -350,6 +353,11 @@ static int dp_create_head(str part_desc)
 	} while(tmp.len > 0);
 
 	return 0;
+#undef is_space
+#undef invalid_def
+#undef trim_left
+#undef trim_right
+#undef get_param
 }
 
 

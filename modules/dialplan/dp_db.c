@@ -105,6 +105,8 @@ error:
 	dp_disconnect_db(dp_connection);
 	return -1;
 }
+
+
 int init_db_data(dp_connection_list_p dp_connection)
 {
 	if (dp_connection->partition.s == 0) {
@@ -223,6 +225,14 @@ int dp_load_db(dp_connection_list_p dp_conn)
 	dpl_node_t *rule;
 	int no_rows = 10;
 
+	lock_start_write( dp_conn->ref_lock );
+
+	/*if hash already populated no need for reload*/
+	if( dp_conn->hash[dp_conn->crt_index]){
+		lock_stop_write( dp_conn->ref_lock );
+		return 0;
+	}
+
 	if( dp_conn->crt_index != dp_conn->next_index){
 		LM_WARN("a load command already generated, aborting reload...\n");
 		return 0;
@@ -266,7 +276,6 @@ int dp_load_db(dp_connection_list_p dp_conn)
 
 	nr_rows = RES_ROW_N(res);
 
-	lock_start_write( dp_conn->ref_lock );
 
 	dp_conn->next_index = dp_conn->crt_index == 0 ? 1 : 0;
 
