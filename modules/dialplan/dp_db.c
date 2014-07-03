@@ -31,8 +31,6 @@
 #include "../../ut.h"
 
 #include "dp_db.h"
-//#include "dialplan.h"
-
 
 dp_head_p dp_hlist = NULL;
 
@@ -166,14 +164,27 @@ void dp_disconnect_db(dp_connection_list_p dp_conn)
 
 int init_data(void)
 {
-	dp_head_p start; 
+	dp_head_p start, tmp = NULL; 
 
 	/*Pentru default connection*/
 	for (start = dp_hlist ; start; start = start->next) {
+		if(tmp)
+			pkg_free(tmp);
+
 		LM_DBG("Adding partition with name [%.*s]\n", 
 				start->partition.len, start->partition.s);
 		dp_add_connection(start);
+
+		if(start->partition.s)
+			pkg_free(start->partition.s);
+		if(start->dp_db_url.s)
+			pkg_free(start->dp_db_url.s);
+		if(start->dp_table_name.s)
+			pkg_free(start->dp_table_name.s);
+
+		tmp = start;
 	}
+	pkg_free(tmp);
 
 	return 0;
 }
@@ -187,6 +198,13 @@ void destroy_data(void)
 		destroy_hash(&el->hash[0]);
 		destroy_hash(&el->hash[1]);
 		lock_destroy_rw(el->ref_lock);
+		if(el->partition.s)
+			shm_free(el->partition.s);
+		if(el->table_name.s)
+			shm_free(el->table_name.s);
+		if(el->db_url.s)
+			shm_free(el->db_url.s);
+		
 		shm_free(el);
 		el = 0;
 	}
@@ -497,7 +515,6 @@ int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 	new_id = 0;
 
 	crt_idp = select_dpid(conn, rule->dpid, index);
-
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
 		crt_idp = shm_malloc(sizeof(dpl_id_t)	+
@@ -704,17 +721,21 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 {
 	dp_connection_list_t *el;
 
-	if ((el = dp_get_connection(&head->partition)) != NULL)
+	if ((el = dp_get_connection(&head->partition)) != NULL){
 		return el;
+	}
 
-	el = shm_malloc(sizeof(*el));
+	int all_size = sizeof(dp_connection_list_t) +head->dp_table_name.len
+				+ head->partition.len + head->dp_db_url.len; 
+	el = shm_malloc(all_size);
+	
+	if(!el)
+		LM_ERR("No more shm\n");
 
 	if (!el) {
 		LM_ERR("No more shm mem\n");
 		return NULL;
 	}
-
-	memset(el, 0, sizeof(*el));
 
 	/* create & init lock */
 	if((el->ref_lock = lock_init_rw()) == NULL) {
@@ -725,29 +746,18 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 
 
 	/*Set table name*/
-	el->table_name.s = shm_malloc(head->dp_table_name.len);
-	if (!el->table_name.s){
-		LM_ERR("No more shm mem\n");
-		return NULL;
-	}
+	el->table_name.s = (char*)el + sizeof(*el);
 	el->table_name.len = head->dp_table_name.len;
 	memcpy(el->table_name.s, head->dp_table_name.s, head->dp_table_name.len);
 
+
 	/*Set partition*/
-	el->partition.s = shm_malloc(head->partition.len);
-	if (!el->partition.s){
-		LM_ERR("No more shm mem\n");
-		return NULL;
-	}
+	el->partition.s = el->table_name.s + el->table_name.len;
 	el->partition.len = head->partition.len;
 	memcpy(el->partition.s, head->partition.s, head->partition.len);
 
 	/*Set db_url*/
-	el->db_url.s = shm_malloc(head->dp_db_url.len);
-	if (!el->db_url.s){
-		LM_ERR("No more shm mem\n");
-		return NULL;
-	}
+	el->db_url.s = el->partition.s + el->partition.len;
 	el->db_url.len = head->dp_db_url.len;
 	memcpy(el->db_url.s, head->dp_db_url.s, head->dp_db_url.len);
 

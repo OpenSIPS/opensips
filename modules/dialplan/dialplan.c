@@ -212,11 +212,12 @@ static int dp_head_insert(int dp_insert_type, str content,
 	}while(0);
 
 	dp_head_p start = dp_hlist;
-	dp_head_p tmp;
+	dp_head_p tmp = NULL;
 
 	/*First Insertion*/
 	if (!dp_hlist) {
 		dp_hlist = pkg_malloc(sizeof(dp_head_t));
+
 		if(!dp_hlist){
 			LM_ERR("No more pkg mem\n");
 			return -1;
@@ -225,15 +226,15 @@ static int dp_head_insert(int dp_insert_type, str content,
 
 		h_insert( dp_insert_type, &dp_hlist->dp_db_url,
 				 &dp_hlist->dp_table_name, &content);
+		dp_hlist->next = NULL;
 		return 0;
 	}
 
 	while (start != NULL) {
-		if (partition.len == start->partition.len &&
-		     !memcmp(start->partition.s, partition.s, partition.len)) {
-
+		if (!str_strcmp(&partition, &start->partition)) {
 			h_insert( dp_insert_type, &start->dp_db_url,
 					 &start->dp_table_name, &content);
+			start->next = NULL;
 			return 0;
 		}
 		if (!start->next) {
@@ -243,6 +244,7 @@ static int dp_head_insert(int dp_insert_type, str content,
 	}
 
 	tmp = pkg_malloc(sizeof(dp_head_t));
+
 	if (!tmp) {
 		LM_ERR("No more pkg mem\n");
 		return -1;
@@ -263,16 +265,12 @@ static str* str_n_dup(const str* src, int size){
 
 	str* res;
 
-	if (!(res = pkg_malloc(sizeof(str) + size))) {
+	if (!(res = pkg_malloc(sizeof(str) + size + 1))) {
 		LM_ERR("No more pkg mem\n");
 		return NULL;
 	}
 
-//	if (!(res->s = pkg_malloc(size))) {
-//		LM_ERR("No more pkg mem\n");
-//	}
-
-	res->s = (char *)(res + sizeof(str));
+	res->s = (char*)res + sizeof(str);
 	memcpy(res->s, src->s, size);
 	res->len = size;
 
@@ -396,7 +394,7 @@ static void dp_print_list(void)
 static int mod_init(void)
 {
 	str def_str = str_init(DEFAULT_PARTITION);
-	dp_head_p el = dp_get_head(def_str);;
+	dp_head_p el = dp_get_head(def_str);
 
 	LM_INFO("initializing module...\n");
 
@@ -462,7 +460,8 @@ static int mod_init(void)
 				LM_ERR("No more pkg mem\n");
 				return -1;
 			}
-			el->dp_table_name.s = DP_TABLE_NAME;
+			memcpy(el->dp_table_name.s, DP_TABLE_NAME,
+							 el->dp_table_name.len);
 		}
 	}
 
@@ -485,6 +484,7 @@ static int mod_init(void)
 		return -1;
 	}
 
+	dp_print_list();
 	if(init_data() != 0) {
 		LM_ERR("could not initialize data\n");
 		return -1;
@@ -506,7 +506,7 @@ static int child_init(int rank)
 			return -1;
 		}
 	}
-	
+
 	return 0;
 }
 
