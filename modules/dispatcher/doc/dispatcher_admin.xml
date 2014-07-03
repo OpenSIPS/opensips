@@ -408,7 +408,7 @@ modparam("dispatcher", "ds_probing_mode", 1)
 		</emphasis>
 		</para>
 		<example>
-			<title>Set the 'default' partition's<quote>ds_define_blacklist</quote>
+			<title>Set the 'default' partition's <quote>ds_define_blacklist</quote>
 				parameter</title>
 <programlisting format="linespecific">
 ...
@@ -608,13 +608,14 @@ modparam("dispatcher", "table_name", "my_dispatcher")
 		<title><varname>partition</varname> (string)</title>
 		<para>
 		Using this parameter the partition specific parameters (db_url, table_name, dst_avp,
-		grp_avp, cnt_avp, sock_avp, attrs_avp) can be defined.
+		grp_avp, cnt_avp, sock_avp, attrs_avp, ds_define_blacklist) can be defined.
 		</para>
 		<para>
 		The syntax is: "partition_name: param1 = value1; param2 = value2; param3 = value3".
+		Each value format is the same as the one used to define a specific parameter using modparam.
 		</para>
 		<para>
-		Whenever a new partition_name is provided a new partition will be automatically created.
+		Whenever a new partition_name is provided, a new partition will be automatically created.
 		The 'default' partition can also be defined using this parameter.
 		</para>
 		<example>
@@ -937,7 +938,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		<function moreinfo="none">ds_mark_dst()</function>
 		</title>
 		<para>
-		Mark the last used address from the 'default 'partition's destination
+		Mark the last used address from the 'default' partition's destination
 		set as inactive, in order to be ingnored in the future. In this way it
 		can be implemented an automatic detection of failed gateways.
 		When an address is marked as inactive, it will be ignored by

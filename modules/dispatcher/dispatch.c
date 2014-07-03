@@ -2005,8 +2005,12 @@ static void ds_options_callback( struct cell *t, int type,
 		}
 	}
 
-	shm_free(cb_param);
 	return;
+}
+
+void shm_free_cb_param(void *param)
+{
+	shm_free(param);
 }
 
 /*
@@ -2016,7 +2020,6 @@ static void ds_options_callback( struct cell *t, int type,
  */
 void ds_check_timer(unsigned int ticks, void* param)
 {
-	//TODO corectly free cb param
 	dlg_t *dlg;
 	ds_set_p list;
 	int j;
@@ -2069,7 +2072,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 							dlg,
 							ds_options_callback,
 							(void*)cb_param,
-							NULL) < 0) {
+							shm_free_cb_param) < 0) {
 						LM_ERR("unable to execute dialog\n");
 					}
 					tmb.free_dlg(dlg);
