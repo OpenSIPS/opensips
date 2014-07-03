@@ -76,6 +76,7 @@ extern ds_partition_t *partitions;
 
 extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
+extern ds_partition_t *default_partition;
 
 extern int ds_force_dst;
 
@@ -607,7 +608,7 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 					&partition->table_name) < 0) {
 			LM_ERR("cannot select table \"%.*s\"\n",
 				partition->table_name.len, partition->table_name.s);
-			return;
+			continue;
 		}
 		key_cmp = &ds_dest_uri_col;
 		key_set = &ds_dest_state_col;
@@ -784,6 +785,7 @@ load_done:
 
 error:
 	ds_destroy_data_set( d_data );
+	return NULL;
 error2:
 	partition->dbf.free_result(*partition->db_handle, res);
 	return NULL;
@@ -1738,7 +1740,8 @@ int ds_set_state(int group, str *address, int state, int type,
 					lock_stop_read( partition->lock );
 					return 0;
 				}
-				if (evi_param_add_str(list, &partition_str, &partition->name)){
+				if (partition != default_partition
+					&& evi_param_add_str(list, &partition_str, &partition->name)){
 					LM_ERR("unable to add partition parameter\n");
 					evi_free_params(list);
 					lock_stop_read( partition->lock );

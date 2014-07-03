@@ -321,7 +321,7 @@ static int split_partition_argument(str *arg, str *partition_name)
 		return 0;
 	} else if (delim_pos - arg->s + 1 == arg->len){
 
-		LM_WARN("possibly empty parameter %.*s", arg->len, arg->s);
+		LM_WARN("possibly empty parameter %.*s\n", arg->len, arg->s);
 		return 0;
 	} else {
 
@@ -747,7 +747,8 @@ static int mod_init(void)
 			default_partition = partition;
 
 		head_it = head_it->next;
-		pkg_free(aux);
+		if (aux != &default_db_head)
+			pkg_free(aux);
 	}
 
 	/* Only, if the Probing-Timer is enabled the TM-API needs to be loaded: */
@@ -875,6 +876,7 @@ static void destroy(void)
 		aux = part_it;
 		part_it = part_it->next;
 
+		ds_disconnect_db(aux);
 		pkg_free(aux->db_handle);
 		shm_free(aux);
 	}
@@ -1497,7 +1499,7 @@ static int w_ds_count(struct sip_msg* msg, char *set, const char *cmp, char *res
 	str s_set;
 
 	if (partition_arg_from_gparam(msg, (gparam_p)set, &partition, &s_set) != 0
-		|| str2int(&s_set, &s) != 0) {
+		|| str2int(&s_set, &s) != 0 || s_set.len == 0) {
 		LM_ERR("wrong format for set argument\n");
 		return -1;
 	}

@@ -131,11 +131,6 @@ int init_ds_bls(void)
 			dsbl->no_sets++;
 		} while(p != NULL);
 
-		pkg_free(bs_it->text);
-		aux = bs_it;
-		bs_it = bs_it->next;
-		pkg_free(aux);
-
 		/* create backlist for it */
 		dsbl->bl = create_bl_head( 313131, 0/*flags*/, NULL, NULL, &name);
 		if (dsbl->bl == NULL) {
@@ -143,6 +138,10 @@ int init_ds_bls(void)
 			shm_free(dsbl);
 			return -1;
 		}
+
+		aux = bs_it;
+		bs_it = bs_it->next;
+		pkg_free(aux);
 
 		/* link it */
 		dsbl->next = dsbl_lists;
