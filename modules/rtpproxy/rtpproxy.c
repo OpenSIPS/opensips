@@ -945,6 +945,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 {	struct mi_node* node;
 	str rtpp_url;
 	unsigned int enable;
+	unsigned int set_id;
 	struct rtpp_set * rtpp_list;
 	struct rtpp_node * crt_rtpp;
 	int found;
@@ -958,11 +959,13 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
+	/* RTPP URL node */
 	if(node->value.s == NULL || node->value.len ==0)
 		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
 	rtpp_url = node->value;
 
+	/* enable/disable node */
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -971,8 +974,25 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if( strno2int( &node->value, &enable) <0)
 		goto error;
 
+	/* set id ?? */
+	node = node->next;
+	if(node != NULL) {
+		/* shift params -> move enable over set id */
+		set_id = enable;
+		/* read again the disable */
+		enable = 0;
+		if( strno2int( &node->value, &enable) <0)
+			goto error;
+	} else {
+		set_id = (unsigned int)(-1);
+	}
+
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){
+
+		/* if set_id given, check only the list with the matching set_id */
+		if ( (set_id!=(unsigned int)(-1)) && set_id!=rtpp_list->id_set )
+			continue;
 
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next){

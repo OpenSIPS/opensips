@@ -41,7 +41,7 @@ extern WINDOW *menu_window;
 
 #define MAKE_CONF_FILE	"Makefile.conf"
 #define MAKE_TEMP_FILE	"Makefile.conf.template"
-#define DEFAULT_INSTALL_PREFIX	"/usr/"
+#define DEFAULT_INSTALL_PREFIX	"/usr/local/"
 
 #define CONF_COMPILE_OPT	"Configure Compile Options"
 	#define CONF_EXCLUDED_MODS		"Configure Excluded Modules"

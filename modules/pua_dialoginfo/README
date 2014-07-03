@@ -405,8 +405,8 @@ modparam("pua_dialoginfo", "nopublish_flag", 5)
 
    Example 1.8. Set presence_server parameter
 ...
-modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060
-")
+modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060"
+)
 ...
 
 1.3.8. caller_spec_param (string)

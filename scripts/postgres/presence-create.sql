@@ -97,3 +97,7 @@ CREATE TABLE pua (
 );
 
 ALTER SEQUENCE pua_id_seq MAXVALUE 2147483647 CYCLE;
+CREATE INDEX pua_del1_idx ON pua (pres_uri, event);
+CREATE INDEX pua_del2_idx ON pua (expires);
+CREATE INDEX pua_update_idx ON pua (pres_uri, pres_id, flag, event);
+
