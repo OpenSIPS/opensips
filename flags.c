@@ -155,13 +155,18 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 		return -1;
 	}
 
+	fn.s = flag_name;
+	fn.len = strlen(flag_name);
+
+	if (fn.len == 0) {
+		LM_WARN("found empty string flag modparam! possible scripting error?\n");
+		return -1;
+	}
+
 	if (flag_type < 0 || flag_type > FLAG_LIST_COUNT) {
 		LM_ERR("Invalid flag list: %d\n", flag_type);
 		return -2;
 	}
-
-	fn.s = flag_name;
-	fn.len = strlen(flag_name);
 
 	flag_list = flag_lists + flag_type;
 
