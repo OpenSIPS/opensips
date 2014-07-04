@@ -33,11 +33,11 @@ endif
 
 
 # normal rules
-$(NAME): $(NEWREVISION) $(objs) $(ALLDEP)
+$(NAME): $(NEWREVISION) $(objs) $(extra_objs) $(ALLDEP)
 ifeq (,$(FASTER))
 	@echo "Linking $(NAME)"
 endif
-	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
+	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME)
 
 
 .PHONY: all
