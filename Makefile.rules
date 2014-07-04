@@ -31,9 +31,9 @@ all_utils:=$(addprefix utils/, $(all_utils))
 
 
 # normal rules
-$(NAME): $(NEWSVNREVISION) $(objs) $(ALLDEP)
+$(NAME): $(NEWSVNREVISION) $(objs) $(extra_objs) $(ALLDEP)
 	@echo "Linking $(NAME)"
-	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME) 
+	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME)
 
 
 .PHONY: all
