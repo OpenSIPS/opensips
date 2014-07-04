@@ -144,7 +144,7 @@ int dp_connect_db(dp_connection_list_p conn)
 		return -1;
 	}
 
-	if ((*conn->dp_db_handle = conn->dp_dbf.init(&conn->db_url)) == 0){
+	if ((*conn->dp_db_handle = conn->dp_dbf.init(&conn->db_url)) == 0) {
 		LM_ERR("unable to connect to the database\n");
 		return -1;
 	}
@@ -166,7 +166,6 @@ int init_data(void)
 {
 	dp_head_p start, tmp = NULL; 
 
-	/*Pentru default connection*/
 	for (start = dp_hlist ; start; start = start->next) {
 		if(tmp)
 			pkg_free(tmp);
@@ -175,11 +174,11 @@ int init_data(void)
 				start->partition.len, start->partition.s);
 		dp_add_connection(start);
 
-		if(start->partition.s)
+		if (start->partition.s)
 			pkg_free(start->partition.s);
-		if(start->dp_db_url.s)
+		if (start->dp_db_url.s)
 			pkg_free(start->dp_db_url.s);
-		if(start->dp_table_name.s)
+		if (start->dp_table_name.s)
 			pkg_free(start->dp_table_name.s);
 
 		tmp = start;
@@ -198,6 +197,7 @@ void destroy_data(void)
 		destroy_hash(&el->hash[0]);
 		destroy_hash(&el->hash[1]);
 		lock_destroy_rw(el->ref_lock);
+
 		if(el->partition.s)
 			shm_free(el->partition.s);
 		if(el->table_name.s)
@@ -205,7 +205,7 @@ void destroy_data(void)
 		if(el->db_url.s)
 			shm_free(el->db_url.s);
 		
-		shm_free(el);
+		shm_free(el)       ;
 		el = 0;
 	}
 }
@@ -243,22 +243,22 @@ int dp_load_db(dp_connection_list_p dp_conn)
 	dpl_node_t *rule;
 	int no_rows = 10;
 
+
 	lock_start_write( dp_conn->ref_lock );
 
-	/*if hash already populated no need for reload*/
-	if( dp_conn->hash[dp_conn->crt_index]){
+	if( dp_conn->crt_index != dp_conn->next_index){
+		LM_WARN("a load command already generated, aborting reload...\n");
 		lock_stop_write( dp_conn->ref_lock );
 		return 0;
 	}
 
-	if( dp_conn->crt_index != dp_conn->next_index){
-		LM_WARN("a load command already generated, aborting reload...\n");
-		return 0;
-	}
+	dp_conn->next_index = dp_conn->crt_index == 0 ? 1 : 0;
+
+	lock_stop_write( dp_conn->ref_lock );
 
 	if (dp_conn->dp_dbf.use_table(*dp_conn->dp_db_handle, &dp_conn->table_name) < 0){
 		LM_ERR("error in use_table\n");
-		return -1;
+		goto err1;
 	}
 
 	VAL_TYPE(cond_val) = DB_INT;
@@ -270,7 +270,8 @@ int dp_load_db(dp_connection_list_p dp_conn)
 				0,cond_val,query_cols,1,
 					DP_TABLE_COL_NO, order, 0) < 0){
 			LM_ERR("failed to query database!\n");
-			return -1;
+
+			goto err1;
 		}
 		no_rows = estimate_available_rows( 4+4+4+64+4+64+64+128,
 			DP_TABLE_COL_NO);
@@ -280,7 +281,8 @@ int dp_load_db(dp_connection_list_p dp_conn)
 			LM_ERR("failed to fetch\n");
 			if (res)
 				dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
-			return -1;
+
+			goto err1;
 		}
 	} else {
 		/*select the whole table and all the columns*/
@@ -288,14 +290,14 @@ int dp_load_db(dp_connection_list_p dp_conn)
 				cond_cols,0,cond_val,query_cols,1,
 			DP_TABLE_COL_NO, order, &res) < 0){
 				LM_ERR("failed to query database\n");
-			return -1;
+
+			goto err1;
 		}
 	}
 
 	nr_rows = RES_ROW_N(res);
 
 
-	dp_conn->next_index = dp_conn->crt_index == 0 ? 1 : 0;
 
 	if(nr_rows == 0){
 		LM_WARN("no data in the db\n");
@@ -307,7 +309,7 @@ int dp_load_db(dp_connection_list_p dp_conn)
 			rows = RES_ROWS(res);
 			values = ROW_VALUES(rows+i);
 
-			if ((rule = build_rule(values)) == NULL ) {
+			if ((rule = build_rule(values)) == NULL) {
 				LM_WARN(" failed to build rule -> skipping\n");
 				continue;
 			}
@@ -327,20 +329,24 @@ int dp_load_db(dp_connection_list_p dp_conn)
 				LM_ERR("failure while fetching!\n");
 				if (res)
 					dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
-				lock_stop_write( dp_conn->ref_lock );
-				return -1;
+				goto err1;
 			}
 		} else {
 			break;
 		}
 	}  while(RES_ROW_N(res)>0);
 
+
 end:
+
+
 	destroy_hash(&dp_conn->hash[dp_conn->crt_index]);
 	/*update data*/
+
+	lock_start_write( dp_conn->ref_lock );
+
 	dp_conn->crt_index = dp_conn->next_index;
 
-	/* release the exclusive writing access */
 	lock_stop_write( dp_conn->ref_lock );
 
 	list_hash(dp_conn->hash[dp_conn->crt_index], dp_conn->ref_lock);
@@ -348,15 +354,27 @@ end:
 	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
 	return 0;
 
+err1:
+
+	lock_start_write( dp_conn->ref_lock );
+
+	dp_conn->next_index = dp_conn->crt_index;
+
+	lock_stop_write( dp_conn->ref_lock );
+
+	return -1;
+
 err2:
 	if(rule)	destroy_rule(rule);
 	destroy_hash(&dp_conn->hash[dp_conn->next_index]);
 	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+
+	lock_start_write( dp_conn->ref_lock );
+
 	dp_conn->next_index = dp_conn->crt_index;
 	/* if lock defined - release the exclusive writing access */
-	if(dp_conn->ref_lock)
-		/* release the readers */
-		lock_stop_write( dp_conn->ref_lock );
+
+	lock_stop_write( dp_conn->ref_lock );
 	return -1;
 }
 

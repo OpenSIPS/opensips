@@ -55,26 +55,10 @@
 #define DP_CHAR_SLASH      '/'
 #define DP_CHAR_EQUAL      '='
 #define DP_CHAR_SCOLON     ';'
-#define DP_TYPE_URL 0
-#define DP_TYPE_TABLE 1
-#define DP_MIN(a, b) (((a) < (b))? (a) : (b) )
-#define init_db_url_part(_db_url , _can_be_null, _partition) \
-	do{\
-		if (_db_url.s==NULL) {\
-			if (db_default_url==NULL) { \
-				if (!_can_be_null) {\
-					LM_ERR("DB URL is not defined for partition %.*s!\n"\
-								, _partition.len,_partition.s); \
-					return -1; \
-				} \
-			} else { \
-				_db_url.s = db_default_url; \
-				_db_url.len = strlen(_db_url.s); \
-			} \
-		} else {\
-			_db_url.len = strlen(_db_url.s); \
-		} \
-	}while(0)
+#define DP_TYPE_URL 	    0
+#define DP_TYPE_TABLE 	    1
+#define is_space(p) (*(p) == ' ' || *(p) == '\t' || \
+		             *(p) == '\r' || *(p) == '\n')
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -147,13 +131,14 @@ struct module_exports exports= {
 
 static inline void dp_str_copy(str* dest, str* source)
 {
+
 	dest->len = source->len;
 	dest->s   = pkg_malloc(source->len);
 	memcpy(dest->s, source->s, source->len);
 
 }
 
-char* strchrchr(char* str, char c1, char c2)
+static inline char* strchrchr(char* str, char c1, char c2)
 {
 
 	char* ret = NULL;
@@ -167,7 +152,7 @@ char* strchrchr(char* str, char c1, char c2)
 	return ret;
 }
 
-static char* memchrchr(char* str, char c1, char c2, int len)
+static inline char* memchrchr(char* str, char c1, char c2, int len)
 {
 
 	int i;
@@ -184,6 +169,7 @@ static char* memchrchr(char* str, char c1, char c2, int len)
 	return NULL;
 
 }
+
 
 static dp_head_p dp_get_head(str part_name){
 
@@ -218,7 +204,7 @@ static int dp_head_insert(int dp_insert_type, str content,
 	if (!dp_hlist) {
 		dp_hlist = pkg_malloc(sizeof(dp_head_t));
 
-		if(!dp_hlist){
+		if (!dp_hlist) {
 			LM_ERR("No more pkg mem\n");
 			return -1;
 		}
@@ -278,38 +264,41 @@ static str* str_n_dup(const str* src, int size){
 }
 
 
+static inline str* get_param(const char ch_type, str* main_str)
+{
+	str* dst = NULL;
+	char* end;
+	int ptr;
+
+	
+	while ( is_space( main_str->s )) {
+		main_str->s++;
+		main_str->len--;
+	}
+	end = memchr(main_str->s, ch_type, main_str->len);
+
+	if (!end) {
+		LM_ERR("Invalid partition string definition\n");
+		return NULL;
+	}
+
+	ptr = end - main_str->s;
+	main_str->len -= ptr + 1;
+
+	while (is_space(main_str->s + ptr - 1)) {
+		ptr--;
+	}
+
+	dst = str_n_dup(main_str, ptr);
+
+	main_str->s = end + 1;
+
+	return dst;
+}
+
+
 static int dp_create_head(str part_desc)
 {
-
-	#define is_space(p) (*(p) == ' ' || *(p) == '\t' || \
-			             *(p) == '\r' || *(p) == '\n')
-	#define invalid_def() \
-		do{  LM_ERR("Invalid partition string definition\n"); \
-				   return -1; \
-		}while(0); \
-
-	#define trim_left(_str) \
-		while( is_space(_str.s)){ \
-			_str.s++; \
-			_str.len--; \
-		} \
-
-	#define trim_right(_str, _ptr)\
-		while ( is_space( _str.s + _ptr - 1)) \
-			_ptr--; \
-
-	#define get_param(_str, CH_TYPE, _end, _ptr, _dest) \
-		do { \
-			trim_left(_str); \
-			end = memchr( _str.s, CH_TYPE, _str.len); \
-			if (!end) \
-				invalid_def(); \
-			_ptr = _end - _str.s; \
-			_str.len -= _ptr + 1; \
-			trim_right( _str, _ptr); \
-			_dest = str_n_dup( &_str, ptr); \
-			_str.s = _end + 1; \
-		} while(0); \
 
 	str tmp = { part_desc.s, part_desc.len };
 	str* partition = NULL, *param_type = NULL, *param_value = NULL;
@@ -317,33 +306,45 @@ static int dp_create_head(str part_desc)
 	char* end;
 	int ptr, ulen = strlen(PARAM_URL), tlen = strlen(PARAM_TABLE);
 
-	trim_left(tmp);
+	while (is_space( tmp.s)) {
+		tmp.s++;
+		tmp.len--;
+	}
 
 	end = memchr( tmp.s, DP_CHAR_COLON, tmp.len);
 	ptr = end - part_desc.s;
 
 	tmp.len -= ptr+1;
 
-	trim_right(part_desc, ptr);
+	while ( is_space( part_desc.s + ptr - 1))
+		ptr--; 
+
 	partition = str_n_dup( &tmp, ptr);
 
 	tmp.s = end;
 
-	if (!tmp.s)
-		invalid_def();
+	if (!tmp.s) {
+		LM_ERR("Invalid partition string definition\n");
+		return -1;
+	}
 
 	tmp.s++;
 
 	do {
-		get_param(tmp, DP_CHAR_EQUAL, end, ptr, param_type);
-		get_param(tmp, DP_CHAR_SCOLON, end, ptr, param_value);
+		if(! (param_type = get_param(DP_CHAR_EQUAL , &tmp))){
+			LM_ERR("In getting parameter type\n");
+			return -1;
+		}
+		if(! (param_value = get_param(DP_CHAR_SCOLON, &tmp))){
+			LM_ERR("In getting parameter value\n");
+		}
 
 		if ( !memcmp(param_type->s, PARAM_URL, ulen)) {
 			dp_head_insert( DP_TYPE_URL, *param_value,
-							*partition);
+								*partition);
 		} else if ( !memcmp( param_type->s, PARAM_TABLE, tlen)) {
 			dp_head_insert( DP_TYPE_TABLE, *param_value, 
-							*partition);
+								*partition);
 		} else {
 			LM_ERR("Invalid parameter type\n");
 			return -1;
@@ -351,11 +352,6 @@ static int dp_create_head(str part_desc)
 	} while(tmp.len > 0);
 
 	return 0;
-#undef is_space
-#undef invalid_def
-#undef trim_left
-#undef trim_right
-#undef get_param
 }
 
 
@@ -378,7 +374,7 @@ static int dp_set_partition(modparam_t type, void* val)
 static void dp_print_list(void)
 {
 	dp_head_p start = dp_hlist;
-	
+
 	if (!start)
 		LM_DBG("List is empty\n");
 
@@ -393,6 +389,24 @@ static void dp_print_list(void)
 
 static int mod_init(void)
 {
+	#define init_db_url_part(_db_url , _can_be_null, _partition) \
+		do{\
+			if (_db_url.s==NULL) {\
+				if (db_default_url==NULL) { \
+					if (!_can_be_null) {\
+					LM_ERR("DB URL is not defined for partition %.*s!\n"\
+								, _partition.len,_partition.s); \
+					return -1; \
+				} \
+			} else { \
+				_db_url.s = db_default_url; \
+				_db_url.len = strlen(_db_url.s); \
+			} \
+		} else {\
+			_db_url.len = strlen(_db_url.s); \
+		} \
+	}while(0)
+
 	str def_str = str_init(DEFAULT_PARTITION);
 	dp_head_p el = dp_get_head(def_str);
 
@@ -489,24 +503,13 @@ static int mod_init(void)
 		LM_ERR("could not initialize data\n");
 		return -1;
 	}
-	
-	return 0;
-}
 
+	return 0;
+#undef init_db_url_part
+}
 
 static int child_init(int rank)
 {
-
-	dp_connection_list_p el;
-
-	for(el = dp_conns; el; el = el->next){
-		if (init_db_data(el) != 0) {
-			LM_ERR("Unable to init db data\n");
-			shm_free(el);
-			return -1;
-		}
-	}
-
 	return 0;
 }
 
@@ -523,6 +526,7 @@ static void mod_destroy(void)
 	LM_DBG("Disconnecting from all databases\n");
 	for(el = dp_conns; el ; el = el->next){
 		dp_disconnect_db(el);
+		
 		LM_DBG("Succesful disconnect from DB %.*s\n" ,
 						 el->db_url.len, el->db_url.s);
 	}
@@ -534,6 +538,17 @@ static void mod_destroy(void)
 
 static int mi_child_init(void)
 {
+
+	dp_connection_list_p el;
+
+	/*Connect to DB s and get rules*/
+	for(el = dp_conns; el; el = el->next){
+		if (init_db_data(el) != 0) {
+			LM_ERR("Unable to init db data\n");
+			shm_free(el);
+			return -1;
+		}
+	}
 
 	return 0;
 }
@@ -705,8 +720,6 @@ error:
 
 static char *parse_dp_command(char * p, int len, str * partition_name)
 {
-	#define is_space(p) (*(p) == ' ' || *(p) == '\t' || \
-			             *(p) == '\r' || *(p) == '\n')
 	char *s, *q;
 
 	while (is_space(p)) {
@@ -743,6 +756,8 @@ static char *parse_dp_command(char * p, int len, str * partition_name)
 
 	return p;
 }
+
+#undef is_space
 
 /* first param: DPID: type: INT, AVP, SVAR
  * second param: SRC/DST type: RURI, RURI_USERNAME, AVP, SVAR
