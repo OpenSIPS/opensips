@@ -259,7 +259,6 @@ while ( $#content gt -1 ){
 		}
 	}
 	elsif ( $arr[0] eq "MI_CONNECTOR" ) {
-		print "bla";
 		$MI_CONNECTOR = $arr[1];
 		@list = split(":",$arr[1]);
 	 	$CTLENGINE = $list[0]; 
@@ -904,7 +903,7 @@ sub usage_dispatcher() {
          "dispatcher dump ..................... show in memory dispatcher gateways\n" .
          "dispatcher addgw <setid> <destination> <socket> <state> <weight> <attrs> [description]\n" .
          "           .......................... add gateway\n" .
-         "dispatcher rmgw <id> ................ delete gateway\n" .
+         "dispatcher rmgw <id> ................ delete gateway\n";
 }
 
 
