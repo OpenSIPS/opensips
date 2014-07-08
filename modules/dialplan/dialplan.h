@@ -105,8 +105,6 @@ typedef struct dp_param{
 		dp_pv_int_t pv_id;
 	} v;
 
-//	pv_spec_t partition;
-
 	dp_connection_list_p hash;
 }dp_param_t, *dp_param_p;
 
