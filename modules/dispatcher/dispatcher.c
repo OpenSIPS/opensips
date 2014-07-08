@@ -57,6 +57,7 @@
 
 #include "dispatch.h"
 #include "ds_bl.h"
+#include "ds_fixups.h"
 
 
 #define DS_SET_ID_COL		"setid"
@@ -169,16 +170,13 @@ static int w_ds_select_domain_limited(struct sip_msg*, char*, char*, char*);
 static int w_ds_next_dst(struct sip_msg*, char*);
 static int w_ds_next_domain(struct sip_msg*, char*);
 static int w_ds_mark_dst(struct sip_msg*, char*, char*);
+static int w_ds_mark_dst1(struct sip_msg*, char *);
 static int w_ds_count(struct sip_msg*, char*, const char *, char*);
 
 static int w_ds_is_in_list(struct sip_msg*, char*, char*, char*, char*);
 
 
 static void destroy(void);
-
-static int in_list_fixup(void** param, int param_no);
-static int ds_count_fixup(void** param, int param_no);
-static int ds_select_fixup(void** param, int param_no);
 
 static struct mi_root* ds_mi_set(struct mi_root* cmd, void* param);
 static struct mi_root* ds_mi_list(struct mi_root* cmd, void* param);
@@ -200,17 +198,17 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, NULL        , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      1, fixup_spve_null, 0,
+	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      1, ds_next_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   0, NULL          , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   1, fixup_spve_null, 0,
+	{"ds_next_domain",   (cmd_function)w_ds_next_domain,   1, ds_next_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      0, NULL           , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      1, fixup_spve_spve, 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst1,     1, fixup_sgp_null, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      2, fixup_spve_spve, 0,
+	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst,      2, ds_mark_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list,    2, in_list_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -885,79 +883,33 @@ static void destroy(void)
 	destroy_ds_bls();
 }
 
+#define CHECK_AND_EXPAND_LIST(_list_) \
+	do{\
+		if (_list_->type == GPARAM_TYPE_PVS) { \
+			_list_ ## _exp_end = _list_->next; \
+			_list_ ## _exp_start = set_list_from_pvs(msg, _list_->v.pvs,\
+					_list_->next);\
+			if (_list_ ## _exp_start == NULL) {\
+				LM_ERR("error when expanding " #_list_ " variable\n");\
+				return -1;\
+			}\
+			_list_ = _list_ ## _exp_start;\
+		}\
+	} while (0)
 
-#define GET_VALUE(param_name,param,s_value) do{ \
-	if(fixup_get_svalue(msg, (gparam_p)(param), &(s_value))!=0) { \
-		LM_ERR("no %s value\n", (param_name)); \
-		return -1; \
-	} \
-}while(0)
-
-#define CHECK_INVALID_PARAM(param) do{ \
-	str_trim_spaces_lr(param); \
-	if ((param).s[0] == ',' || (param).s[(param).len-1]==',') { \
-		LM_ERR("Empty slot in param [%.*s]\n", (param).len, (param).s); \
-		return -1; \
-	} \
-}while(0)
-
-#define PARSE_PARAM(param_name,param,ctl_param) do{ \
-	p = q_memrchr( (param).s , ',' , (param).len); \
-	_param.s = (p==NULL)?(param).s:p+1; \
-	_param.len = (p==NULL)?(param).len:((param).s+(param).len-p-1); \
-	(param).len -= _param.len + (p?1:0); \
-	if (_param.len<=0) { \
-		LM_ERR("empty slot\n"); \
-		goto error; \
-	} else { \
-		str_trim_spaces_lr(_param); \
-		if (_param.len<=0) { \
-			LM_ERR("empty %s slot after trimming\n", (param_name)); \
-			goto error; \
-		} \
-		if (str2sint(&_param, &(ctl_param))!=0) { \
-			LM_ERR("bogus %s slot [%.*s]\n", (param_name), _param.len,_param.s); \
-			goto error; \
-		} \
-	} \
-}while(0)
-
-#define DBG_PARSE_PARAM(param_name,param,ctl_param) do{ \
-	p = q_memrchr( (param).s , ',' , (param).len); \
-	_param.s = (p==NULL)?(param).s:p+1; \
-	_param.len = (p==NULL)?(param).len:((param).s+(param).len-p-1); \
-	(param).len -= _param.len + (p?1:0); \
-	LM_DBG("got %s slot [%p][%d]->[%.*s]\n", (param_name), _param.s,_param.len, _param.len,_param.s); \
-	if (_param.len<=0) { \
-		LM_ERR("empty slot\n"); \
-		goto error; \
-	} else { \
-		str_trim_spaces_lr(_param); \
-		if (_param.len<=0) { \
-			LM_ERR("empty %s slot after trimming\n", (param_name)); \
-			goto error; \
-		} \
-		if (str2sint(&_param, &(ctl_param))!=0) { \
-			LM_ERR("bogus %s slot [%.*s]\n", (param_name), _param.len,_param.s); \
-			goto error; \
-		} \
-		LM_DBG("found %s    [%p][%d]->[%.*s] => [%d]\n", \
-				(param_name), _param.s,_param.len, _param.len,_param.s, (ctl_param)); \
-	} \
-}while(0)
-
+#define TRY_FREE_EXPANDED_LIST(_list_) \
+	do {\
+		if (_list_ ## _exp_start && _list_ == _list_ ## _exp_end) {\
+			free_int_list(_list_ ## _exp_start, _list_ ## _exp_end);\
+			_list_ ## _exp_start = NULL; \
+		}\
+	} while (0);
 
 /**
  *
  */
-static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
+static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results, int mode)
 {
-	str s_algo = {NULL, 0};
-	str s_set = {NULL, 0};
-	str s_max = {NULL, 0};
-	str s_partition_name = {NULL, 0};
-	str _param;
-	char *p;
 	int ret;
 	int run_prev_ds_select = 0;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
@@ -971,32 +923,24 @@ static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_resu
 	ds_select_ctl.set_destination = 1;
 
 	/* Retrieve dispatcher set */
-	GET_VALUE("destination set", set, s_set);
-	if (split_partition_argument(&s_set, &s_partition_name) != 0) {
-		LM_ERR("destination set: wrongly specified argument:\"%.*s\n\"",
-				s_set.len, s_set.s);
+	ds_param_t *part_set_param = (ds_param_t*)part_set;
+
+	if (fixup_get_partition(msg, &part_set_param->partition,
+			&ds_select_ctl.partition) != 0 ||ds_select_ctl.partition == NULL) {
+		LM_ERR("unknown partition\n");
 		return -1;
 	}
 
-	ds_select_ctl.partition = find_partition_by_name(&s_partition_name);
-	if (ds_select_ctl.partition == NULL) {
-		LM_ERR("unknown partition: %.*s", s_partition_name.len,
-				s_partition_name.s);
-		return -1;
-	}
-
+	int_list_t *set_list = part_set_param->sets;
+	int_list_t *set_list_exp_start = NULL, *set_list_exp_end = NULL;
 
 	/* Retrieve dispatcher algorithm */
-	GET_VALUE("algorithm", alg, s_algo);
+	int_list_t *alg_list = (int_list_t *)alg;
+	int_list_t *alg_list_exp_start = NULL, *alg_list_exp_end = NULL;
 
 	/* Retrieve dispatcher max results */
-	if (max_results) {
-		GET_VALUE("max results", max_results, s_max);
-	}
-
-	CHECK_INVALID_PARAM(s_set);
-	CHECK_INVALID_PARAM(s_algo);
-	if (max_results) CHECK_INVALID_PARAM(s_max);
+	int_list_t *max_list = (int_list_t *)max_results;
+	int_list_t *max_list_exp_start = NULL, *max_list_exp_end = NULL;
 
 	/* Avoid compiler warning */
 	memset(&prev_ds_select_ctl, 0, sizeof(ds_select_ctl_t));
@@ -1008,9 +952,15 @@ static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_resu
 	 * On the first ds_select_dst run we need to reset AVPs.
 	 * On the last ds_select_dst run we need to set destination.  */
 	do {
-		PARSE_PARAM("set", s_set,  ds_select_ctl.set);
-		PARSE_PARAM("alg", s_algo, ds_select_ctl.alg);
-		if (max_results) PARSE_PARAM("max", s_max, ds_select_ctl.max_results);
+		CHECK_AND_EXPAND_LIST(set_list);
+		ds_select_ctl.set = set_list->v.ival;
+
+		CHECK_AND_EXPAND_LIST(alg_list);
+		ds_select_ctl.alg = alg_list->v.ival;
+		if (max_results) {
+			CHECK_AND_EXPAND_LIST(max_list);
+			ds_select_ctl.max_results = max_list->v.ival;
+		}
 
 		if (run_prev_ds_select) {
 			LM_DBG("ds_select: %d %d %d %d %d\n",
@@ -1025,20 +975,30 @@ static int w_ds_select(struct sip_msg* msg, char* set, char* alg, char* max_resu
 			run_prev_ds_select = 1;
 		}
 		prev_ds_select_ctl = ds_select_ctl;
-	} while (s_set.len>0 && s_algo.len>0);
 
-	if (max_results && s_max.len>0) {
-		LM_ERR("extra max slot(s) [%.*s]\n", s_max.len,s_max.s);
+		set_list = set_list->next;
+		alg_list = alg_list->next;
+		if (max_results)
+			max_list = max_list->next;
+
+		TRY_FREE_EXPANDED_LIST(set_list);
+		TRY_FREE_EXPANDED_LIST(alg_list);
+		TRY_FREE_EXPANDED_LIST(max_list);
+
+	} while (set_list && alg_list && (max_results ? max_list : set_list));
+
+	if (max_results && max_list != NULL) {
+		LM_ERR("extra max slot(s)\n");
 		goto error;
 	}
 
-	if (s_set.len > 0) {
-		LM_ERR("extra set(s) [%.*s]\n", s_set.len,s_set.s);
+	if (set_list != NULL) {
+		LM_ERR("extra set(s)\n");
 		goto error;
 	}
 
-	if (s_algo.len > 0) {
-		LM_ERR("extra algorithm(s) [%.*s]\n", s_algo.len,s_algo.s);
+	if (alg_list != NULL) {
+		LM_ERR("extra algorithm(s)\n");
 		goto error;
 	}
 
@@ -1104,84 +1064,39 @@ static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg,
 	return w_ds_select_limited(msg, set, alg, max_results, 1);
 }
 
-inline static int partition_from_gparam(struct sip_msg *msg,
-		gparam_p param, ds_partition_t **partition)
-{
-	str s_part_name = str_init(DS_DEFAULT_PARTITION_NAME);
-	if (param == NULL) {
-		*partition = default_partition;
-	}
-	else {
-		if (fixup_get_svalue(msg, param, &s_part_name) != 0) {
-			LM_ERR("could not get partition name.\n");
-			return -1;
-		}
-		str_trim_spaces_lr(s_part_name);
-		*partition = find_partition_by_name(&s_part_name);
-	}
-	if (*partition == NULL) {
-		LM_ERR("wrong partition %.*s name\n", s_part_name.len,
-				s_part_name.s);
-		return -1;
-	}
-
-	return 0;
-}
-
-inline static int partition_arg_from_gparam(struct sip_msg *msg,
-		gparam_p param, ds_partition_t **partition, str *arg)
-{
-	if (param == NULL) {
-		*partition = default_partition;
-		arg->s = NULL;
-		arg->len = 0;
-		goto part_found;
-	}
-
-	if (fixup_get_svalue(msg, param, arg) != 0) {
-		LM_ERR("could not get partition name.\n");
-		return -1;
-	}
-
-	str partition_name;
-	if (split_partition_argument(arg, &partition_name) != 0)
-		return -1;
-
-	*partition = find_partition_by_name(&partition_name);
-
-part_found:
-	if (*partition == NULL) {
-		LM_ERR("wrong partition %.*s name\n", partition_name.len,
-				partition_name.s);
-		return -1;
-	}
-
-	return 0;
-}
+#define GET_AND_CHECK_PARTITION(_param_, _part_) \
+	do {\
+		if (_param_ == NULL) \
+			_part_ = default_partition; \
+		else if (fixup_get_partition(msg, (gpartition_t *)_param_, &_part_) != 0) \
+			return -1; \
+		if (_part_ == NULL) { \
+			LM_ERR("Unknown partition\n"); \
+			return -1; \
+		} \
+	} while (0)
 
 /**
  *
  */
-static int w_ds_next_dst(struct sip_msg *msg, char *partition_name)
+static int w_ds_next_dst(struct sip_msg *msg, char *part_param)
 {
 	ds_partition_t *partition;
-	if (partition_from_gparam(msg, (gparam_p)partition_name, &partition) != 0)
-		return - 1;
-	else
-		return ds_next_dst(msg, 0, partition);
+
+	GET_AND_CHECK_PARTITION(part_param, partition);
+	return ds_next_dst(msg, 0, partition);
 }
 
 
 /**
  *
  */
-static int w_ds_next_domain(struct sip_msg *msg, char *partition_name)
+static int w_ds_next_domain(struct sip_msg *msg, char *part_param)
 {
 	ds_partition_t *partition;
-	if (partition_from_gparam(msg, (gparam_p)partition_name, &partition) != 0)
-		return -1;
-	else
-		return ds_next_dst(msg, 1, partition);
+
+	GET_AND_CHECK_PARTITION(part_param, partition);
+	return ds_next_dst(msg, 1, partition);
 }
 
 
@@ -1195,9 +1110,8 @@ static int w_ds_mark_dst(struct sip_msg *msg, char *str1, char *str2)
 
 	if (str2 != NULL) {
 		/* We have two args */
-		if (str1 != NULL &&
-				partition_from_gparam(msg, (gparam_p)str1, &partition) != 0)
-			goto error;
+		if (str1 != NULL)
+			GET_AND_CHECK_PARTITION(str1, partition);
 
 		if (fixup_get_svalue(msg, (gparam_p)str2, &arg) != 0)
 			goto error;
@@ -1234,99 +1148,12 @@ error:
 	return -1;
 }
 
-static int in_list_fixup(void** param, int param_no)
+
+static int w_ds_mark_dst1(struct sip_msg *msg, char *flags)
 {
-	if (param_no==1) {
-		/* the ip to test */
-		return fixup_pvar(param);
-	} else if (param_no==2) {
-		/* the port to test */
-		if (*param==NULL) {
-			return 0;
-		} else if ( *((char*)*param)==0 ) {
-			pkg_free(*param);
-			*param = NULL;
-			return 0;
-		}
-		return fixup_pvar(param);
-	} else if (param_no==3) {
-		/* the group to check in */
-		return fixup_spve(param);
-	} else if (param_no==4) {
-		/*  active only check ? */
-		return fixup_uint(param);
-	} else {
-		LM_CRIT("bug - too many params (%d) in is_in_list()\n",param_no);
-		return -1;
-	}
+	return w_ds_mark_dst(msg, flags, NULL);
 }
 
-
-static int ds_select_fixup(void** param, int param_no)
-{
-	if (param_no > 3) {
-		LM_CRIT("Too many params for ds_select_*\n");
-		return -1;
-	}
-
-	return fixup_spve(param);
-}
-
-
-static int ds_count_fixup(void** param, int param_no)
-{
-	char *s;
-	int i, code = 0;
-
-	if (param_no > 3)
-		return 0;
-
-	s = (char *)*param;
-	i = strlen(s);
-
-	switch (param_no)
-	{
-		case 1:
-			return fixup_spve(param);
-		case 2:
-
-		while (i--)
-		{
-			switch (s[i])
-			{
-				/* active */
-				case 'a':
-				case 'A':
-				case '1':
-					code |= DS_COUNT_ACTIVE;
-					break;
-
-				/* inactive */
-				case 'i':
-				case 'I':
-				case '0':
-					code |= DS_COUNT_INACTIVE;
-					break;
-
-				/* probing */
-				case 'p':
-				case 'P':
-				case '2':
-					code |= DS_COUNT_PROBING;
-					break;
-			}
-		}
-		break;
-
-		case 3:
-			return fixup_igp(param);
-	}
-
-	s[0] = (char)code;
-	s[1] = '\0';
-
-	return 0;
-}
 
 
 /************************** MI STUFF ************************/
@@ -1447,38 +1274,41 @@ static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 static int w_ds_is_in_list(struct sip_msg *msg,char *ip,char *port,char *set,
 															char *active_only)
 {
-	ds_partition_t *partition;
-	str s_set;
-	str partition_name = {NULL, 0};
-	unsigned int u_set;
+	ds_partition_t *partition = default_partition;
 	int i_set = -1;
 
 	if (set != NULL) {
-		if (fixup_get_svalue(msg, (gparam_p)set, &s_set) != 0)
+		ds_param_t *setparam = (ds_param_t*)set;
+		if (fixup_get_partition(msg, &setparam->partition, &partition) != 0)
 			goto wrong_set_arg;
 
-		if (str2int(&s_set, &u_set) != 0) {
-			/* We have partition_name or partition:set_id */
-			if (split_partition_argument(&s_set, &partition_name) != 0)
-				goto wrong_set_arg;
-
-			if (partition_name.len == 0) {
-				partition_name = s_set;
+		if (setparam->sets == NULL)
+			i_set = -1;
+		else
+			if (setparam->sets->type == GPARAM_TYPE_INT) {
+				if (setparam->sets->next == NULL)
+					i_set = setparam->sets->v.ival;
+				else {
+					LM_ERR("Only one set is allowed\n");
+					return -1;
+				}
 			}
-			else if (s_set.len > 0) {
-				if (str2int(&s_set, &u_set) != 0)
-					goto wrong_set_arg;
-				else
-					i_set = (int)u_set;
+			else {
+				int_list_t *tmp_lst = set_list_from_pvs(msg, setparam->sets->v.pvs, NULL);
+				if (tmp_lst == NULL){
+					LM_ERR("Wrong set var value\n");
+					return -1;
+				}
+				if (tmp_lst->next != NULL) {
+					LM_ERR("Only one set is allowd\n");
+					return -1;
+				}
+				i_set = tmp_lst->v.ival;
+				free_int_list(tmp_lst, NULL);
 			}
-			else
-				i_set = -1;
-		}
 	}
-	partition = find_partition_by_name(&partition_name);
 	if (partition == NULL) {
-		LM_ERR ("unknown partition <%.*s>\n", partition_name.len,
-				partition_name.s);
+		LM_ERR ("unknown partition\n");
 		return -1;
 	}
 
@@ -1496,11 +1326,9 @@ static int w_ds_count(struct sip_msg* msg, char *set, const char *cmp, char *res
 	unsigned int s = 0;
 	gparam_p ret = (gparam_p) res;
 	ds_partition_t *partition;
-	str s_set;
 
-	if (partition_arg_from_gparam(msg, (gparam_p)set, &partition, &s_set) != 0
-		|| str2int(&s_set, &s) != 0 || s_set.len == 0) {
-		LM_ERR("wrong format for set argument\n");
+	if (fixup_get_partition_set(msg, (ds_param_t*)set, &partition, &s) != 0){
+		LM_ERR("wrong format for set argument. Only one set is accepted\n");
 		return -1;
 	}
 
