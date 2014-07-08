@@ -193,20 +193,13 @@ void destroy_data(void)
 {
 	dp_connection_list_t *el, *next;
 
+	LM_ERR("Destroying data\n");
 	for (el = dp_conns; el && (next = el->next, 1); el = next) {
 		destroy_hash(&el->hash[0]);
 		destroy_hash(&el->hash[1]);
 		lock_destroy_rw(el->ref_lock);
 
-		if(el->partition.s)
-			shm_free(el->partition.s);
-		if(el->table_name.s)
-			shm_free(el->table_name.s);
-		if(el->db_url.s)
-			shm_free(el->db_url.s);
-		
-		shm_free(el)       ;
-		el = 0;
+		shm_free(el);
 	}
 }
 
