@@ -41,15 +41,6 @@
 #define DP_INDEX_HASH_SIZE		16
 
 
-/**/
-//typedef struct dp_head_t{
-//	str partition;/*Attribute that uniquely identifies head*/
-//	str dp_db_url;
-//	str dp_table_name;
-//	struct dp_head_t* next;
-//} dp_head; 
-
-/**/
 
 typedef struct dpl_node{
 	int dpid;
@@ -98,13 +89,24 @@ typedef struct dp_connection_list {
 
 #define DP_VAL_INT		0
 #define DP_VAL_SPEC		1
+#define DP_VAL_STR		2
+#define DP_VAL_STR_SPEC		3
+
+typedef struct dp_pv_int {
+	int id;
+	pv_spec_t partition;
+} dp_pv_int_t;
 
 typedef struct dp_param{
 	int type;
 	union {
 		int id;
 		pv_spec_t sp[2];
+		dp_pv_int_t pv_id;
 	} v;
+
+//	pv_spec_t partition;
+
 	dp_connection_list_p hash;
 }dp_param_t, *dp_param_p;
 

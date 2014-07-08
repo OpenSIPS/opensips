@@ -288,13 +288,23 @@
 		This can be used to define new db_url and table_name parameters from which
 		to load the translation rules. These parameters will be held in partitions. 
 		The db_url parameter is mandatory. The order of the parameters does not matter. 
-		Multiple partitions can be defined.
+		Multiple partitions can be defined and you can also define the default partition
+		here. The name of this partition is "default".
 		</para>
 		<exmaple>
 		<title> Set <varname>partition</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db")
+...
+		</programlisting>
+		</example>
+
+		<exmaple>
+		<title> Set <varname>default partition</varname> with partition parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "partition", "   default : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db")
 ...
 		</programlisting>
 		</example>
@@ -545,7 +555,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
 			<para><emphasis>integer</emphasis> - the dialplan id is statically 
 			assigned </para>
 			</listitem>
-			
+
 			<listitem>
 			<para><emphasis>pvar</emphasis> - the dialplan id is the value of an
 			existing pseudo-variable (as integer value)
@@ -567,6 +577,13 @@ modparam("dialplan", "disabled_col", "disabled_column")
 			<para><emphasis>string</emphasis> - the table name is statically 
 			assigned </para>
 			</listitem>
+
+			<listitem>
+			<para><emphasis>pvar</emphasis> - the partition name is the value of an
+			existing pseudo-variable (as string value)
+			</para>
+			</listitem>
+
 		</itemizedlist>
 	</listitem>
 
@@ -625,6 +642,17 @@ xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
 ...
 	</programlisting>
 	</example>
+	<example>
+	<title><function>dp_translate</function> usage</title>
+	<programlisting format="linespecific">
+...
+$var(partition) = "default";
+$var(id)	= 10;
+dp_translate("$var(partition):$var(id)", "$avp(src)/$var(y)");
+xlog("translate to var $var(y) partition $var(partition)")
+...
+	</programlisting>
+	</example>
 
 	</section>
 
@@ -645,9 +673,9 @@ xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
 		<para>Parameters: <emphasis>1</emphasis></para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>table_name</emphasis> - Table to be realoaded.
-				If no table is specified, the table specified in the "table_name"
-				parameter (default dialplan) will be reloaded.</para>
+				<para><emphasis>table_name</emphasis> - Partition to be reloaded.
+				If no table is specified, the table specified in the "partition"
+				parameter (default "default") will be reloaded.</para>
 				</listitem>
 			</itemizedlist>
  		<para>

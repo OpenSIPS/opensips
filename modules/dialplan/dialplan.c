@@ -527,7 +527,7 @@ static void mod_destroy(void)
 	for(el = dp_conns; el ; el = el->next){
 		dp_disconnect_db(el);
 		
-		LM_DBG("Succesful disconnect from DB %.*s\n" ,
+		LM_DBG("Succesfully disconnected from DB %.*s\n" ,
 						 el->db_url.len, el->db_url.s);
 	}
 	
@@ -558,9 +558,15 @@ static int dp_get_ivalue(struct sip_msg* msg, dp_param_p dp, int *val)
 {
 	pv_value_t value;
 
-	if(dp->type==DP_VAL_INT) {
-		*val = dp->v.id;
-		return 0;
+	switch (dp->type) {
+		case DP_VAL_STR :
+			*val = dp->v.id;
+			return 0;
+		case DP_VAL_INT :
+			*val = dp->v.pv_id.id;
+			return 0;
+		default :
+			break;
 	}
 
 	LM_DBG("searching %d\n",dp->v.sp[0].type);
@@ -625,7 +631,6 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 	return 0;
 }
 
-
 static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
                           char *attr_spec)
 {
@@ -637,19 +642,48 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 	str attrs, *attrs_par;
 	dp_connection_list_p connection;
 	pv_value_t pval;
+	str partition_name;
 
 	if (!msg)
 		return -1;
 
 	/* verify first param's value */
 	id_par = (dp_param_p) str1;
+
 	if (dp_get_ivalue(msg, id_par, &dpid) != 0){
 		LM_ERR("no dpid value\n");
 		return -1;
 	}
-	LM_DBG("dpid is %i\n", dpid);
 
-	repl_par = (str2!=NULL)? ((dp_param_p)str2):default_par2;
+	switch( id_par->type ) {
+		case DP_VAL_INT :
+			if (dp_get_svalue(msg, id_par->v.pv_id.partition, 
+							    &partition_name)) {
+				LM_ERR("invalid partition\n");
+				return -1;
+			}
+			goto GET_CONN;
+		case DP_VAL_SPEC :
+			if (dp_get_svalue(msg, id_par->v.sp[1], 
+							    &partition_name)) {
+				LM_ERR("invalid partition\n");
+				return -1;
+			}
+		GET_CONN:
+			if (!(id_par->hash = dp_get_connection(&partition_name))) {
+				LM_ERR("invalid partition\n");
+				return -1;
+			}
+			pkg_free(partition_name.s);
+			break;
+		default :
+			break;
+	}
+
+	LM_DBG("dpid is %i partition is %.*s\n", dpid, 
+			id_par->hash->partition.len, id_par->hash->partition.s);
+
+	repl_par = (str2!=NULL) ? ((dp_param_p)str2) : default_par2;
 	if (dp_get_svalue(msg, repl_par->v.sp[0], &input)!=0){
 		LM_ERR("invalid param 2\n");
 		return -1;
@@ -801,16 +835,21 @@ static int dp_trans_fixup(void ** param, int param_no){
 			partition_name.len = sizeof(DEFAULT_PARTITION) - 1;
 		}
 
-		list = dp_get_connection(&partition_name);
+		if (*partition_name.s != PV_MARKER) {
+			list = dp_get_connection(&partition_name);
 
-		if(!list){
-			LM_ERR("Partition with name [%.*s] is not defined\n",
-					partition_name.len, partition_name.s );
-			return -1;
+			if(!list){
+				LM_ERR("Partition with name [%.*s] is not defined\n",
+						partition_name.len, partition_name.s );
+				return -1;
+			}
+			dp_par->type = DP_VAL_STR;
+
+		} else {
+			dp_par->type = DP_VAL_SPEC;
 		}
 
 		if (*p != PV_MARKER) {
-			dp_par->type = DP_VAL_INT;
 			lstr.s = p; lstr.len = strlen(p);
 			if(str2sint(&lstr, &dpid) != 0) {
 				LM_ERR("bad number <%s>\n",(char *)(*param));
@@ -818,16 +857,35 @@ static int dp_trans_fixup(void ** param, int param_no){
 				return E_CFG;
 			}
 
-			dp_par->type = DP_VAL_INT;
-			dp_par->v.id = dpid;
-
+			if(dp_par->type == DP_VAL_SPEC){
+				/*int dpid and pv partition_name*/
+				dp_par->type = DP_VAL_INT;
+				dp_par->v.pv_id.id = dpid;
+				if( !pv_parse_spec( &partition_name,
+						&dp_par->v.pv_id.partition))
+					goto error;
+			} else {
+				/*DP_VAL_STR remains DP_VAL_STR
+					   ( int dpid and str partition_name)*/
+				dp_par->v.id = dpid;
+			}
 		} else {
+			if (dp_par->type == DP_VAL_STR) {
+				/*pv dpid and str partition_name*/
+				dp_par->type = DP_VAL_STR_SPEC; 
+			} else { 
+				/*DP_VAL_SPEC remains DP_VAL_SPEC
+					    ( pv dpid and pv partition_name) */
+				if( !pv_parse_spec( &partition_name,
+							 &dp_par->v.sp[1]))
+					goto error;
+			}
+
 			lstr.s = p; lstr.len = strlen(p);
 			if (pv_parse_spec( &lstr, &dp_par->v.sp[0])==NULL)
 				goto error;
 
 			verify_par_type(dp_par->v.sp[0]);
-			dp_par->type = DP_VAL_SPEC;
 		}
 
 		dp_par->hash = list;
