@@ -291,7 +291,8 @@
 		Multiple partitions can be defined and you can also define the default partition
 		here. The name of this partition is "default".
 		</para>
-		<exmaple>
+
+		<example>
 		<title> Set <varname>partition</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
@@ -300,7 +301,7 @@ modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mys
 		</programlisting>
 		</example>
 
-		<exmaple>
+		<example>
 		<title> Set <varname>default partition</varname> with partition parameter</title>
 		<programlisting format="linespecific">
 ...
