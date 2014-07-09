@@ -95,8 +95,8 @@ static param_export_t mod_params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "dp_reload",  0, mi_reload_rules,   MI_NO_INPUT_FLAG,  0,  mi_child_init},
-	{ "dp_translate",  0, mi_translate,   0,                 0,  0},
+	{ "dp_reload",  0, mi_reload_rules,   0,       0,  mi_child_init},
+	{ "dp_translate",  0, mi_translate,   0,       0,              0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
