@@ -903,7 +903,7 @@ static void destroy(void)
 			free_int_list(_list_ ## _exp_start, _list_ ## _exp_end);\
 			_list_ ## _exp_start = NULL; \
 		}\
-	} while (0);
+	} while (0)
 
 /**
  *
@@ -1259,9 +1259,22 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 #define MI_ERR_RELOAD_LEN 		(sizeof(MI_ERR_RELOAD)-1)
 #define MI_NOT_SUPPORTED		"DB mode not configured"
 #define MI_NOT_SUPPORTED_LEN 	(sizeof(MI_NOT_SUPPORTED)-1)
+#define MI_UNK_PARTITION		"ERROR Unknown partition"
+#define MI_UNK_PARTITION_LEN	(sizeof(MI_UNK_PARTITION) - 1)
 
 static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 {
+	struct mi_node* node = cmd_tree->node.kids;
+	if(node != NULL){
+		ds_partition_t *partition = find_partition_by_name(&node->value);
+		if (partition == NULL)
+			return init_mi_tree(500, MI_UNK_PARTITION, MI_UNK_PARTITION_LEN);
+		if (ds_reload_db(partition) < 0)
+			return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
+		else
+			return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	}
+
 	ds_partition_t *part_it;
 	for (part_it = partitions; part_it; part_it = part_it->next)
 		if (ds_reload_db(part_it)<0)

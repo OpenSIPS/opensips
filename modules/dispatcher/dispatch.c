@@ -181,9 +181,6 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		}
 
 		memset(sp, 0, sizeof(ds_set_t));
-		sp->next = d_data->sets;
-		d_data->sets = sp;
-		d_data->sets_no++;
 		sp->id = id;
 	}
 
@@ -274,6 +271,11 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	}
 	sp->nr++;
 
+
+	sp->next = d_data->sets;
+	d_data->sets = sp;
+	d_data->sets_no++;
+
 	LM_DBG("dest [%d/%d] <%.*s> successfully loaded\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
 
 	return 0;
@@ -285,6 +287,10 @@ err:
 			shm_free(dp->uri.s);
 		shm_free(dp);
 	}
+
+	if (sp != NULL)
+		shm_free(sp);
+
 	return -1;
 }
 
@@ -771,7 +777,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition)
 	}
 
 	if (cnt==0) {
-		LM_WARN("No record loaded from db, running on empty set\n");
+		LM_WARN("No record loaded from db, running on empty sets\n");
 	} else {
 		if(reindex_dests( d_data )!=0) {
 			LM_ERR("error on reindex\n");
@@ -787,6 +793,7 @@ error:
 	ds_destroy_data_set( d_data );
 	return NULL;
 error2:
+	ds_destroy_data_set( d_data );
 	partition->dbf.free_result(*partition->db_handle, res);
 	return NULL;
 }
