@@ -105,7 +105,11 @@ int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val)
 		}
 	}
 
-	/* not found -> simply add a new one */
+	/* not found */
+	if (val==NULL)
+		return 0;
+
+	/* has value ? -> simply add a new one */
 
 	/* insert at the beginning of the list */
 	dv->next = dlg->vals;
