@@ -337,6 +337,7 @@ static int dp_create_head(str part_desc)
 		}
 		if(! (param_value = get_param(DP_CHAR_SCOLON, &tmp))){
 			LM_ERR("In getting parameter value\n");
+			return -1;
 		}
 
 		if ( !memcmp(param_type->s, PARAM_URL, ulen)) {
@@ -389,23 +390,6 @@ static void dp_print_list(void)
 
 static int mod_init(void)
 {
-	#define init_db_url_part(_db_url , _can_be_null, _partition) \
-		do{\
-			if (_db_url.s==NULL) {\
-				if (db_default_url==NULL) { \
-					if (!_can_be_null) {\
-					LM_ERR("DB URL is not defined for partition %.*s!\n"\
-								, _partition.len,_partition.s); \
-					return -1; \
-				} \
-			} else { \
-				_db_url.s = db_default_url; \
-				_db_url.len = strlen(_db_url.s); \
-			} \
-		} else {\
-			_db_url.len = strlen(_db_url.s); \
-		} \
-	}while(0)
 
 	str def_str = str_init(DEFAULT_PARTITION);
 	dp_head_p el = dp_get_head(def_str);
@@ -463,9 +447,12 @@ static int mod_init(void)
 	el = dp_hlist;
 
 	for (el = dp_hlist; el ; el = el->next) {
-		//init_db_url
-		init_db_url_part( el->dp_db_url , 0 /*cannot be null*/,
-					 el->partition);
+		//db_url must be set
+		if (!el->dp_db_url.s) {
+			LM_ERR("DB URL is not defined for partition %.*s!\n",
+					      el->_partition.len,_partition.s);
+			return -1;
+		}
 
 		if (!el->dp_table_name.s) {
 			el->dp_table_name.len = sizeof(DP_TABLE_NAME) - 1;
