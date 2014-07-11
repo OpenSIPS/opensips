@@ -450,7 +450,7 @@ static int mod_init(void)
 		//db_url must be set
 		if (!el->dp_db_url.s) {
 			LM_ERR("DB URL is not defined for partition %.*s!\n",
-					      el->_partition.len,_partition.s);
+					    el->partition.len,el->partition.s);
 			return -1;
 		}
 
