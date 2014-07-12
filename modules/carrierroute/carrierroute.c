@@ -208,8 +208,10 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"carrierroute",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version*/
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Export parameters */
 	0,          /* exported statistics */

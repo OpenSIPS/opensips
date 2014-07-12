@@ -219,8 +219,10 @@ static param_export_t parameters[] = {
 
 struct module_exports exports = {
     "mediaproxy",    // module name
+    MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,  // module name
     DEFAULT_DLFLAGS, // dlopen flags
+    NULL,            /* OpenSIPS module dependencies */
     commands,        // exported functions
     parameters,      // exported parameters
     NULL,            // exported statistics

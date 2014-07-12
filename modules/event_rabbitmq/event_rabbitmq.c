@@ -75,8 +75,10 @@ static param_export_t mod_params[] = {
  */
 struct module_exports exports= {
 	"event_rabbitmq",			/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,							/* exported functions */
 	mod_params,							/* exported parameters */
 	0,							/* exported statistics */

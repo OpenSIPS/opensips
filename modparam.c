@@ -35,10 +35,10 @@
 #include "modparam.h"
 #include "dprint.h"
 #include "mem/mem.h"
+#include "ut.h"
 #include <sys/types.h>
 #include <regex.h>
 #include <string.h>
-
 
 int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 {
@@ -100,6 +100,12 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 										(int)(long)val;
 									break;
 							}
+						}
+
+						/* register any module deps imposed by this parameter */
+						if (add_modparam_dependencies(t, param) != 0) {
+							LM_ERR("failed to add modparam dependencies!\n");
+							return E_BUG;
 						}
 
 						break;

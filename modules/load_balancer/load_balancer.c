@@ -148,8 +148,10 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports= {
 	"load_balancer",  /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */
 	0,               /* exported statistics */

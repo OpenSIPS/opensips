@@ -68,8 +68,10 @@ static param_export_t params[] =
 struct module_exports exports =
 {
 	"script_helper",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	NULL,

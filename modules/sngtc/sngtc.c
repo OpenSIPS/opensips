@@ -150,8 +150,10 @@ static cmd_export_t cmds[] = {
 
 struct module_exports exports= {
 	"sngtc",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,

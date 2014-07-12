@@ -78,8 +78,10 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"pua_mi",					/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	 0,							/* exported functions */
 	 params,					/* exported parameters */
 	 0,							/* exported statistics */

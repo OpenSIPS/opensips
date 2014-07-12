@@ -109,8 +109,10 @@ static param_export_t params[]={
 
 struct module_exports exports= {
 	"sms",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,          /* exported statistics */

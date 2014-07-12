@@ -77,8 +77,10 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
     "peering",
+    MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,  /* module version */
     DEFAULT_DLFLAGS, /* dlopen flags */
+    NULL,            /* OpenSIPS module dependencies */
     cmds,       /* Exported functions */
     params,     /* Exported parameters */
     0,          /* exported statistics */

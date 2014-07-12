@@ -234,8 +234,10 @@ static stat_export_t msilo_stats[] = {
 /** module exports */
 struct module_exports exports= {
 	"msilo",    /* module id */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* module's exported functions */
 	params,     /* module's exported parameters */
 #ifdef STATISTICS

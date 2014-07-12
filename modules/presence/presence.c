@@ -172,8 +172,10 @@ static mi_export_t mi_cmds[] = {
 /** module exports */
 struct module_exports exports= {
 	"presence",					/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */

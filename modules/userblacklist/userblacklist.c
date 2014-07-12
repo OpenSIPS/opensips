@@ -105,8 +105,10 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports= {
 	"userblacklist",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,

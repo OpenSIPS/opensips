@@ -75,8 +75,10 @@ static param_export_t params[]= {
 /** Module interface */
 struct module_exports exports= {
 	"uac_auth",			/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,		/* module version */
 	DEFAULT_DLFLAGS,	/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,				/* exported functions */
 	params,				/* exported parameters */
 	NULL,				/* exported statistics */

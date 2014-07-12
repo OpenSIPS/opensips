@@ -106,8 +106,10 @@ static param_export_t params[] = {
 
 struct module_exports exports= {
 	"aaa_radius",				/* module name */
+	MOD_TYPE_AAA,				/* class of this module */
 	MODULE_VERSION,				/* module version */
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,						/* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */

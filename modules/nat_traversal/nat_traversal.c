@@ -270,8 +270,10 @@ static stat_export_t statistics[] = {
 
 struct module_exports exports = {
     "nat_traversal", // module name
+    MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,  // module version
     DEFAULT_DLFLAGS, // dlopen flags
+    NULL,            /* OpenSIPS module dependencies */
     commands,        // exported functions
     parameters,      // exported parameters
     NULL,            // exported statistics (initialized early in mod_init)

@@ -200,8 +200,10 @@ static stat_export_t uridb_stats[] = {
  */
 struct module_exports exports = {
 	"uri",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */
 	uridb_stats, /* exported statistics */

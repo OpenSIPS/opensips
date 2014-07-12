@@ -125,8 +125,6 @@ int register_builtin_modules(void)
 	return ret;
 }
 
-
-
 /* registers a module,  register_f= module register  functions
  * returns <0 on error, 0 on success */
 int register_module(struct module_exports* e, char* path, void* handle)
@@ -157,6 +155,15 @@ int register_module(struct module_exports* e, char* path, void* handle)
 				e->name);
 			pkg_free(mod);
 			return -1;
+		}
+	}
+
+	/* register all module dependencies */
+	if (e->deps) {
+		ret = add_module_dependencies(mod);
+		if (ret != 0) {
+			LM_CRIT("failed to add module dependencies [%d]\n", ret);
+			return ret;
 		}
 	}
 
@@ -445,23 +452,38 @@ int init_child(int rank)
    which modules are loaded in config file
 */
 
-static int init_mod( struct sr_module* m )
+static int init_mod( struct sr_module* m, int skip_others)
 {
+	struct sr_module_dep *dep;
+
 	if (m) {
 		/* iterate through the list; if error occurs,
 		   propagate it up the stack
 		 */
-		if (init_mod(m->next)!=0) return -1;
-		if (m->exports==0)
+		if (!skip_others && init_mod(m->next, 0) != 0)
+			return -1;
+
+		/* our module might have been already loaded through dependencies! */
+		if (m->is_loaded)
 			return 0;
+
+		if (!m->exports)
+			return 0;
+
+		/* make sure certain modules get loaded before this one */
+		for (dep = m->sr_deps; dep; dep = dep->next) {
+			if (!dep->mod->is_loaded)
+				init_mod(dep->mod, 1);
+		}
+
 		if (m->exports->init_f) {
 			LM_DBG("initializing module %s\n", m->exports->name);
 			if (m->exports->init_f()!=0) {
-				LM_ERR("failed to initialize"
-					" module %s\n", m->exports->name);
+				LM_ERR("failed to initialize module %s\n", m->exports->name);
 				return -1;
 			}
 		}
+
 		/* no init function -- proceed further */
 #ifdef STATISTICS
 		if (m->exports->stats) {
@@ -482,6 +504,8 @@ static int init_mod( struct sr_module* m )
 			}
 		}
 
+		m->is_loaded = 1;
+
 		/* proceed with success */
 		return 0;
 	} else {
@@ -496,7 +520,12 @@ static int init_mod( struct sr_module* m )
  */
 int init_modules(void)
 {
-	return init_mod(modules);
+	if (solve_module_dependencies() != 0) {
+		LM_ERR("failed to solve module dependencies\n");
+		return -1;
+	}
+
+	return init_mod(modules, 0);
 }
 
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */

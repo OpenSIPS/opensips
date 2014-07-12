@@ -109,18 +109,20 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"db_virtual",
+	MOD_TYPE_SQLDB,   /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,            /* dlopen flags */
+	DEFAULT_DLFLAGS,  /* dlopen flags */
+	NULL,             /* OpenSIPS module dependencies */
 	cmds,
-	params,                     /*  module parameters */
-	0,                          /* exported statistics */
-	mi_cmds,                    /* exported MI functions */
-	0,                          /* exported pseudo-variables */
-	0,                          /* extra processes */
-	virtual_mod_init,           /* module initialization function */
-	0,                          /* response function*/
-	(destroy_function) destroy, /* destroy function */
-	0                           /* per-child init function */
+	params,           /*  module parameters */
+	0,                /* exported statistics */
+	mi_cmds,          /* exported MI functions */
+	0,                /* exported pseudo-variables */
+	0,                /* extra processes */
+	virtual_mod_init, /* module initialization function */
+	0,                /* response function*/
+	destroy,          /* destroy function */
+	0                 /* per-child init function */
 };
 
 

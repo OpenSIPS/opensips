@@ -64,8 +64,10 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"db_perlvdb",
+	MOD_TYPE_SQLDB,/* class of this module */
 	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL, /* dlopen flags */
+	NULL,        /* OpenSIPS module dependencies */
 	cmds,
 	params,      /*  module parameters */
 	0,           /* exported statistics */

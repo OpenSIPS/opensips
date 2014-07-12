@@ -214,8 +214,10 @@ static stat_export_t mod_stats[] = {
  */
 struct module_exports exports = {
 	"registrar",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */
 	mod_stats,   /* exported statistics */

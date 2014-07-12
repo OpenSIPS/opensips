@@ -65,8 +65,10 @@ static param_export_t mi_params[] = {
 /* module exports */
 struct module_exports exports = {
 	"mi_xmlrpc_ng",                     /* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,                    /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	NULL,                               /* exported functions */
 	mi_params,                          /* exported parameters */
 	NULL,                               /* exported statistics */
