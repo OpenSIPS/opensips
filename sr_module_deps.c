@@ -212,14 +212,8 @@ int solve_module_dependencies(void)
 			this = md->mod;
 			dep_type = md->dep_type;
 
-			if (this->exports->type == dep_type) {
-				LM_BUG("%s: generic self-dependency found",
-						md->mod->exports->name);
-				return -1;
-			}
-
 			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
-				if (mod->exports->type == dep_type) {
+				if (mod != this && mod->exports->type == dep_type) {
 					if (!md) {
 						md = pkg_malloc(sizeof *md);
 						if (!md) {
@@ -250,6 +244,12 @@ int solve_module_dependencies(void)
 		} else {
 			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
 				if (memcmp(mod->exports->name, md->dep.s, md->dep.len) == 0) {
+
+					/* quick sanity check */
+					if (mod->exports->type != md->dep_type)
+						LM_BUG("[%.*s %d] -> [%s %d]\n", md->dep.len, md->dep.s,
+								md->dep_type, mod->exports->name,
+								mod->exports->type);
 
 					/* same re-purposing technique as above */
 					md->next = md->mod->sr_deps;
