@@ -48,7 +48,6 @@
 #include <string.h>
 
 #include "../../sr_module.h"
-#include "../../sr_module_deps.h"
 #include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../tm/tm_load.h"
@@ -290,16 +289,6 @@ static param_export_t params[] = {
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_db_url(param_export_t *param)
-{
-	char *db_url = *(char **)param->param_pointer;
-
-	if (!db_url || strlen(db_url) == 0)
-		return NULL;
-
-	return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
-}
-
 static module_dependency_t *get_deps_aaa_url(param_export_t *param)
 {
 	char *aaa_url = *(char **)param->param_pointer;
@@ -336,7 +325,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL },
 	},
 	{ /* modparam dependencies */
-		{ "db_url",           get_deps_db_url     },
+		{ "db_url",           get_deps_sqldb_url  },
 		{ "aaa_url",          get_deps_aaa_url    },
 		{ "detect_direction", get_deps_detect_dir },
 		{ "cdr_flag",         get_deps_cdr_flag   },

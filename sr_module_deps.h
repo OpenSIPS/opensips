@@ -84,6 +84,17 @@ typedef struct modparam_dependency {
 /* helps to avoid duplicate code when writing "get_deps_f" functions */
 module_dependency_t *alloc_module_dep(enum module_type dep_type, char *mod_name);
 
+/* commonly used modparam dependency functions */
+
+/**
+ * get_deps_sqldb_url - commonly used by modules which use SQL DB URLs
+ *
+ * Behaviour:
+ *	- imposes a generic MOD_TYPE_SQLDB dependency only when the URL is set
+ *	  (strlen(url) > 0)
+ */
+module_dependency_t *get_deps_sqldb_url(param_export_t *param);
+
 /* core level structures and functions */
 struct sr_module_dep {
 	struct sr_module *mod;
