@@ -82,12 +82,12 @@ static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep
 
 	len = dep->mod_name ? strlen(dep->mod_name) : 0;
 
-	md = pkg_malloc(sizeof *md + len);
+	md = pkg_malloc(sizeof *md + len + 1);
 	if (!md) {
 		LM_CRIT("out of pkg mem\n");
 		return -1;
 	}
-	memset(md, 0, sizeof *md);
+	memset(md, 0, sizeof *md + len + 1);
 
 	md->mod = mod;
 	md->dep_type = dep->mod_type;
@@ -243,7 +243,7 @@ int solve_module_dependencies(void)
 			}
 		} else {
 			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
-				if (memcmp(mod->exports->name, md->dep.s, md->dep.len) == 0) {
+				if (strcmp(mod->exports->name, md->dep.s) == 0) {
 
 					/* quick sanity check */
 					if (mod->exports->type != md->dep_type)
