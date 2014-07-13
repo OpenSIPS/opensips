@@ -342,12 +342,48 @@ static pv_export_t mod_items[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
+static module_dependency_t *get_deps_db_mode(param_export_t *param)
+{
+	int db_mode = *(int *)param->param_pointer;
+
+	if (db_mode == DB_MODE_NONE ||
+		(db_mode != DB_MODE_REALTIME &&
+		 db_mode != DB_MODE_DELAYED &&
+		 db_mode != DB_MODE_SHUTDOWN))
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
+}
+
+static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
+{
+	char *cdb_url = *(char **)param->param_pointer;
+
+	if (!cdb_url || strlen(cdb_url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm" },
+		{ MOD_TYPE_DEFAULT, "rr" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "db_mode",     get_deps_db_mode     },
+		{ "cachedb_url", get_deps_cachedb_url },
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
 	"dialog",        /* module's name */
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */

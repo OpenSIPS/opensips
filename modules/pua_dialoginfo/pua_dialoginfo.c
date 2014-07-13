@@ -119,12 +119,23 @@ static param_export_t params[]={
 	{0, 0, 0 }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "pua"    },
+		{ MOD_TYPE_DEFAULT, "dialog" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
 	"pua_dialoginfo",		/* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	MOD_TYPE_DEFAULT,       /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,                  /* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	params,					/* exported parameters */
 	0,						/* exported statistics */

@@ -108,13 +108,26 @@ static mi_export_t mi_cmds[] = {
 	{ "b2be_list", 0, mi_b2be_list, 0,  0,  0},
 	{  0,          0, 0,            0,  0,  0}
 };
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm"       },
+		{ MOD_TYPE_DEFAULT, "uac_auth" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
+
 /** Module interface */
 struct module_exports exports= {
 	"b2b_entities",                 /* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	MOD_TYPE_DEFAULT,               /* class of this module */
 	MODULE_VERSION,                 /* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,                          /* OpenSIPS module dependencies */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */
 	0,                              /* exported statistics */

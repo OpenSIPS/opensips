@@ -229,13 +229,25 @@ static stat_export_t siptrace_stats[] = {
 };
 #endif
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm" },
+		{ MOD_TYPE_DEFAULT, "sl" },
+		{ MOD_TYPE_SQLDB, NULL },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /* module exports */
 struct module_exports exports = {
 	"siptrace",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 #ifdef STATISTICS

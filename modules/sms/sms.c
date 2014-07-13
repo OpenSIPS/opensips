@@ -93,6 +93,15 @@ static cmd_export_t cmds[]={
 	{0,0,0,0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 static param_export_t params[]={
 	{"networks",        STR_PARAM, &networks_config },
@@ -112,7 +121,7 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,          /* exported statistics */

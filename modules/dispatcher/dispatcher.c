@@ -249,6 +249,13 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
+static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm");
+}
 
 static mi_export_t mi_cmds[] = {
 	{ "ds_set_state",   0, ds_mi_set,     0,                 0,  0            },
@@ -257,6 +264,16 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "ds_ping_interval", get_deps_ds_ping_interval },
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
@@ -264,7 +281,7 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,          /* exported statistics */

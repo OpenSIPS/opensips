@@ -60,14 +60,22 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "perl" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"db_perlvdb",
 	MOD_TYPE_SQLDB,/* class of this module */
 	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL, /* dlopen flags */
-	NULL,        /* OpenSIPS module dependencies */
+	&deps,       /* OpenSIPS module dependencies */
 	cmds,
 	params,      /*  module parameters */
 	0,           /* exported statistics */

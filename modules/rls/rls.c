@@ -197,13 +197,36 @@ static mi_export_t mi_cmds[] = {
 	{  0, 0, 0, 0,  0, 0}
 };
 
+static module_dependency_t *get_deps_presence_server(param_export_t *param)
+{
+	if (! *(char **)param->param_pointer)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "xcap");
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm"        },
+		{ MOD_TYPE_DEFAULT, "signaling" },
+		{ MOD_TYPE_DEFAULT, "presence"  },
+		{ MOD_TYPE_DEFAULT, "pua"       },
+		{ MOD_TYPE_SQLDB, NULL },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "presence_server", get_deps_presence_server },
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"rls",                      /* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */

@@ -87,13 +87,24 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "dialog"   },
+		{ MOD_TYPE_DEFAULT, "presence" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /* module exports */
 struct module_exports exports= {
 	"presence_callinfo",	/* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	MOD_TYPE_DEFAULT,       /* class of this module */
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,                  /* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	params,					/* exported parameters */
 	0,						/* exported statistics */

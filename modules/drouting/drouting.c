@@ -427,14 +427,31 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_probing_interval(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
 
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm");
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "probing_interval", get_deps_probing_interval },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"drouting",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* Exported functions */
 	params,          /* Exported parameters */
 	0,               /* exported statistics */

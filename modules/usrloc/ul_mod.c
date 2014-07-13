@@ -208,13 +208,30 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_db_mode(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == NO_DB)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "db_mode", get_deps_db_mode },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"usrloc",
-	MOD_TYPE_DEFAULT,/* class of this module */
+	MOD_TYPE_DEFAULT,/*!< class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /*!< OpenSIPS module dependencies */
 	cmds,       /*!< Exported functions */
 	params,     /*!< Export parameters */
 	mod_stats,  /*!< exported statistics */

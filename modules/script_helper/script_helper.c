@@ -65,13 +65,34 @@ static param_export_t params[] =
 	{ NULL, 0, NULL },
 };
 
+static module_dependency_t *get_deps_use_dialog(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog");
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "rr" },
+		{ MOD_TYPE_DEFAULT, "sl" },
+		{ MOD_TYPE_DEFAULT, "tm" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "use_dialog", get_deps_use_dialog },
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports =
 {
 	"script_helper",
-	MOD_TYPE_DEFAULT,/* class of this module */
+	MOD_TYPE_DEFAULT, /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	NULL,

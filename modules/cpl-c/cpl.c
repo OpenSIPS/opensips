@@ -166,15 +166,34 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_lookup_domain(param_export_t *param)
+{
+	char *domain = *(char **)param->param_pointer;
+	if (!domain || strlen(domain) == 0)
+		return NULL;
 
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc");
+}
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm"        },
+		{ MOD_TYPE_DEFAULT, "signaling" },
+		{ MOD_TYPE_SQLDB,   NULL },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ "lookup_domain", get_deps_lookup_domain },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"cpl-c",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */
 	0,        /* exported statistics */

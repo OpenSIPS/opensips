@@ -130,8 +130,15 @@ static mi_export_t mi_cmds[] = {
 
 };
 
-
-
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "signaling" },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module info
@@ -155,7 +162,7 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL,
-	NULL,       /* OpenSIPS module dependencies */
+	&deps,      /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */

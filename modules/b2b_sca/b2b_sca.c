@@ -164,13 +164,25 @@ static mi_export_t mi_cmds[] = {
 	{ 0,            0,           0, 0,  0,  0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "pua"       },
+		{ MOD_TYPE_DEFAULT, "b2b_logic" },
+		{ MOD_TYPE_SQLDB,   NULL        },
+		{ MOD_TYPE_NULL, NULL },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** Module interface */
 struct module_exports exports= {
         "b2b_sca",                      /* module name */
-        MOD_TYPE_DEFAULT,/* class of this module */
+        MOD_TYPE_DEFAULT,               /* class of this module */
         MODULE_VERSION,                 /* module version */
         DEFAULT_DLFLAGS,                /* dlopen flags */
-        NULL,            /* OpenSIPS module dependencies */
+        &deps,                          /* OpenSIPS module dependencies */
         cmds,                           /* exported functions */
         params,                         /* exported parameters */
         0,                              /* exported statistics */
