@@ -333,10 +333,10 @@ int dp_load_db(dp_connection_list_p dp_conn)
 end:
 
 
-	destroy_hash(&dp_conn->hash[dp_conn->crt_index]);
 	/*update data*/
-
 	lock_start_write( dp_conn->ref_lock );
+
+	destroy_hash(&dp_conn->hash[dp_conn->crt_index]);
 
 	dp_conn->crt_index = dp_conn->next_index;
 

@@ -661,7 +661,7 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 				LM_ERR("invalid partition\n");
 				return -1;
 			}
-			pkg_free(partition_name.s);
+
 			break;
 		default :
 			break;
