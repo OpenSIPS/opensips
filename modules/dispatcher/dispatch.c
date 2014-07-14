@@ -151,6 +151,7 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
+	short new_set = 0;
 	ds_dest_p dp_it, dp_prev;
 	struct sip_uri puri;
 
@@ -177,9 +178,10 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		if(sp==NULL)
 		{
 			LM_ERR("no more memory.\n");
-			goto err;
+			return -1;
 		}
 
+		new_set = 1;
 		memset(sp, 0, sizeof(ds_set_t));
 		sp->id = id;
 	}
@@ -272,9 +274,11 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	sp->nr++;
 
 
-	sp->next = d_data->sets;
-	d_data->sets = sp;
-	d_data->sets_no++;
+	if (new_set) {
+		sp->next = d_data->sets;
+		d_data->sets = sp;
+		d_data->sets_no++;
+	}
 
 	LM_DBG("dest [%d/%d] <%.*s> successfully loaded\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
 
@@ -288,7 +292,7 @@ err:
 		shm_free(dp);
 	}
 
-	if (sp != NULL)
+	if (sp != NULL && new_set)
 		shm_free(sp);
 
 	return -1;
