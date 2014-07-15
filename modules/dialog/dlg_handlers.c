@@ -1246,6 +1246,7 @@ after_unlock5:
 		run_dlg_callbacks( DLGCB_REQ_WITHIN, dlg, req, dir, 0);
 
 		/* update timer during sequential request? */
+		timeout = get_dlg_timeout_update(req);
 		if (timeout != 0) {
 			if (update_dlg_timer( &dlg->tl, dlg->lifetime )==-1)
 				LM_ERR("failed to update dialog lifetime\n");
