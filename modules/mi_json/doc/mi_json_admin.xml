@@ -47,7 +47,7 @@
 		<title>Set <varname>mi_json_root</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_xmlrpc_ng", "mi_json_root", "opensips_mi_json")
+modparam("mi_json", "mi_json_root", "opensips_mi_json")
 ...
 </programlisting>
 		</example>

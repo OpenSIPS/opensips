@@ -66,7 +66,7 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set mi_json_root parameter
 ...
-modparam("mi_xmlrpc_ng", "mi_json_root", "opensips_mi_json")
+modparam("mi_json", "mi_json_root", "opensips_mi_json")
 ...
 
 1.4. Exported Functions
