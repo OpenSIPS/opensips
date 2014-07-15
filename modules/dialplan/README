@@ -89,7 +89,7 @@ Chapter 1. Admin Guide
    At startup, the module will load a set of transformation rules
    from multiple databases. Each database will be stored in a
    partition which will have db_url and table_name parameters.
-   Every database raw will be stored in memory as a translation
+   Every database row will be stored in memory as a translation
    rule. Each rule will describe how the matching should be made,
    how the input value should be modified and which attributes
    should be set for the matching transformation.
@@ -222,13 +222,13 @@ Chapter 1. Admin Guide
    Example 1.1.  Set partition parameter
 ...
 modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_u
-rl = mysql://user:passwb@localhost/db")
+rl = mysql://user:passwb@localhost/db;")
 ...
 
    Example 1.2.  Set default partition with partition parameter
 ...
 modparam("dialplan", "partition", "   default : table_name = dialplan ;
-db_url = mysql://user:passwb@localhost/db")
+db_url = mysql://user:passwb@localhost/db;")
 ...
 
 1.6.2. db_url (string)
@@ -270,7 +270,7 @@ modparam("dialplan", "dpid_col", "column_name")
 1.6.5. pr_col (string)
 
    The column name to store the priority of the corresponding rule
-   from the database raw.
+   from the database row.
 
    Default value is “pr”.
 
@@ -374,7 +374,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
             pseudo-variable (as integer value)
      * partition - Specifies the partition where the search will
        take place. This parameter can be ommited. If the paramater
-       is omitted the default partititon will be used if exists.
+       is omitted the default partition will be used if exists.
        The partition parameter can have the following types:
           + string - the table name is statically assigned
           + pvar - the partition name is the value of an existing
@@ -385,7 +385,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
        request uri.
        The “src” variable can be any type of pseudo-variable.
        The “dest” variable can be also any type of
-       pseudo-variable, but it must be a writtable one.
+       pseudo-variable, but it must be a writable one.
      * attrs_pvar (output, optional) - a pseudo-variable which
        will hold the attributes of the matched translation rule.
 
