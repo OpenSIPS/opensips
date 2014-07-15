@@ -17,7 +17,7 @@
 		guarantee of fair distribution.
 	</para>
 	<para>
-		For the distribution algotrithm, the module allows the definition of
+		For the distribution algorithm, the module allows the definition of
 		weights for the destination. This is useful in order to get a different
 		ratio of traffic between destinations.
 	</para>
@@ -97,7 +97,7 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 	<section>
 		<title><varname>flags</varname> (int)</title>
 		<para>
-		Various flags that affect dispatcher's behaviour. The flags are defined
+		Various flags that affect dispatcher's behavior. The flags are defined
 		as a bitmask on an integer value.
 		If flag 1 is set only the username
 		part of the uri will be used when computing an uri based hash.
@@ -152,7 +152,7 @@ modparam("dispatcher", "force_dst", 1)
 		<para>
 		If the parameter is set to 1, the last address in destination set
 		is used as last option to send the message. For example, it is good
-		when wanting to send the call to an anouncement server saying:
+		when wanting to send the call to an announcement server saying:
 		"the gateways are full, try later".
 		</para>
 		<para>
@@ -939,7 +939,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		</title>
 		<para>
 		Mark the last used address from the 'default' partition's destination
-		set as inactive, in order to be ingnored in the future. In this way it
+		set as inactive, in order to be ignored in the future. In this way it
 		can be implemented an automatic detection of failed gateways.
 		When an address is marked as inactive, it will be ignored by
 		'ds_select_dst' and 'ds_select_domain'.
@@ -969,7 +969,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 			<para><emphasis>"a", "A" or "1"</emphasis> - the last destination should be set to active.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>"p", "P" or "2"</emphasis> - the last destination will be set to probing. Note: You will need to call this function "threshhold"-times, before it will be actually set to probing.</para>
+			<para><emphasis>"p", "P" or "2"</emphasis> - the last destination will be set to probing. Note: You will need to call this function "threshold"-times, before it will be actually set to probing.</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -1059,7 +1059,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
 		</listitem>
 		<listitem>
 			<para><emphasis>set</emphasis> (optional) - a partition name followed
-			by colon and the set ID of a dispatcher list to test agaist.
+			by colon and the set ID of a dispatcher list to test against.
 			If the partition name is omitted the default partition will be used.
 			If the set id is missing, all the dispatching
 			sets will the checked. If a partition name is specified then it must

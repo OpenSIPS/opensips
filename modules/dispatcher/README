@@ -147,7 +147,7 @@ Chapter 1. Admin Guide
    The module can be used as a stateless load balancer, having no
    guarantee of fair distribution.
 
-   For the distribution algotrithm, the module allows the
+   For the distribution algorithm, the module allows the
    definition of weights for the destination. This is useful in
    order to get a different ratio of traffic between destinations.
 
@@ -202,7 +202,7 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database
 
 1.3.2. flags (int)
 
-   Various flags that affect dispatcher's behaviour. The flags are
+   Various flags that affect dispatcher's behavior. The flags are
    defined as a bitmask on an integer value. If flag 1 is set only
    the username part of the uri will be used when computing an uri
    based hash. If no flags are set the username, hostname and port
@@ -237,7 +237,7 @@ modparam("dispatcher", "force_dst", 1)
 
    If the parameter is set to 1, the last address in destination
    set is used as last option to send the message. For example, it
-   is good when wanting to send the call to an anouncement server
+   is good when wanting to send the call to an announcement server
    saying: "the gateways are full, try later".
 
    Default value is “0”.
@@ -714,7 +714,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
 1.4.5.  ds_mark_dst()
 
    Mark the last used address from the 'default' partition's
-   destination set as inactive, in order to be ingnored in the
+   destination set as inactive, in order to be ignored in the
    future. In this way it can be implemented an automatic
    detection of failed gateways. When an address is marked as
    inactive, it will be ignored by 'ds_select_dst' and
@@ -739,7 +739,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
        active.
      * "p", "P" or "2" - the last destination will be set to
        probing. Note: You will need to call this function
-       "threshhold"-times, before it will be actually set to
+       "threshold"-times, before it will be actually set to
        probing.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -790,7 +790,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
        - in this case the port will excluded from the matching of
        IP against the dispatcher list.
      * set (optional) - a partition name followed by colon and the
-       set ID of a dispatcher list to test agaist. If the
+       set ID of a dispatcher list to test against. If the
        partition name is omitted the default partition will be
        used. If the set id is missing, all the dispatching sets
        will the checked. If a partition name is specified then it
@@ -964,7 +964,7 @@ Chapter 2. Frequently Asked Questions
 
    2.3.
 
-       What happend with the ds_is_from_list() function?
+       What happened with the ds_is_from_list() function?
 
        The function was replaced by the more generic ds_is_in_list()
        function that takes as parameters the IP and PORT to test
@@ -974,7 +974,7 @@ Chapter 2. Frequently Asked Questions
 
    2.4.
 
-       What happend with the list_file module parameter ?
+       What happened with the list_file module parameter ?
 
        The support for text file (for provisioning destinations) was
        dropped. Only the DB support (provisioning via a DB table) is
