@@ -43,6 +43,8 @@
 #include "../../pvar.h"
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
+#include "../../db/db.h"
+#include "../../rw_locking.h"
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
@@ -61,6 +63,9 @@
 #define DS_COUNT_ACTIVE     1
 #define DS_COUNT_INACTIVE   2
 #define DS_COUNT_PROBING    4
+
+#define DS_PARTITION_DELIM ':'
+#define DS_DEFAULT_PARTITION_NAME "default"
 
 typedef struct _ds_dest
 {
@@ -100,19 +105,54 @@ typedef struct _ds_pvar_param
 	int value;
 } ds_pvar_param_t, *ds_pvar_param_p;
 
+
+typedef struct _ds_partition
+{
+	str name;              /* Partition name */
+	str table_name;        /* Table name */
+	str db_url;            /* DB url */
+
+	db_con_t **db_handle;
+	db_func_t dbf;
+	ds_data_t **data;      /* dispatching data holder */
+	rw_lock_t *lock;       /* reader-writers lock for reloading the data */
+
+	int dst_avp_name;
+	unsigned short dst_avp_type;
+
+	int grp_avp_name;
+	unsigned short grp_avp_type;
+
+	int cnt_avp_name;
+	unsigned short cnt_avp_type;
+
+	int sock_avp_name;
+	unsigned short sock_avp_type;
+
+	int attrs_avp_name;
+	unsigned short attrs_avp_type;
+
+	struct _ds_partition *next;
+} ds_partition_t;
+
+
 typedef struct _ds_select_ctl
 {
-	int set;			/* set id to process */
-	int alg;			/* algorith to aply */
-	int mode;			/* set destination uri */
-	int max_results;	/* max destinaitons to process */
-	int reset_AVP;		/* reset AVPs flag */
-	int set_destination;/* set destination flag */
+	int set;					/* set id to process */
+	ds_partition_t *partition;  /* partition of set_id */
+	int alg;					/* algorith to aply */
+	int mode;					/* set destination uri */
+	int max_results;			/* max destinaitons to process */
+	int reset_AVP;				/* reset AVPs flag */
+	int set_destination;		/* set destination flag */
 } ds_select_ctl_t, *ds_select_ctl_p;
 
+typedef struct
+{
+	ds_partition_t *partition;
+	int set_id;
+} ds_options_callback_param_t;
 
-extern str ds_db_url;
-extern str ds_table_name;
 extern str ds_set_id_col;
 extern str ds_dest_uri_col;
 extern str ds_dest_sock_col;
@@ -123,17 +163,6 @@ extern str ds_dest_attrs_col;
 
 extern int ds_flags;
 extern int ds_use_default;
-
-extern int dst_avp_name;
-extern unsigned short dst_avp_type;
-extern int grp_avp_name;
-extern unsigned short grp_avp_type;
-extern int cnt_avp_name;
-extern unsigned short cnt_avp_type;
-extern int sock_avp_name;
-extern unsigned short sock_avp_type;
-extern int attrs_avp_name;
-extern unsigned short attrs_avp_type;
 
 extern pv_elem_t * hash_param_model;
 
@@ -149,23 +178,25 @@ extern int probing_threshhold; /* number of failed requests,
 extern int ds_probing_mode;
 
 
-int init_ds_db();
-int ds_connect_db();
-void ds_disconnect_db();
-int ds_reload_db();
+int init_ds_db(ds_partition_t *partition);
+int ds_connect_db(ds_partition_t *partition);
+void ds_disconnect_db(ds_partition_t *partition);
+int ds_reload_db(ds_partition_t *partition);
 
-int init_ds_data();
-void ds_destroy_data();
+int init_ds_data(ds_partition_t *partition);
+void ds_destroy_data(ds_partition_t *partition);
 
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p p);
-int ds_next_dst(struct sip_msg *msg, int mode);
-int ds_set_state(int group, str *address, int state, int type);
-int ds_mark_dst(struct sip_msg *msg, int mode);
-int ds_print_mi_list(struct mi_node* rpl);
-int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret);
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl);
+int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
+int ds_set_state(int group, str *address, int state, int type,
+		ds_partition_t *partition);
+int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
+int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition);
+int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
+				ds_partition_t *partition);
 
 int ds_is_in_list(struct sip_msg *_m, pv_spec_t *addr, pv_spec_t *port,
-		int set, int active_only);
+		int set, int active_only, ds_partition_t *partition);
 /*
  * Timer for checking inactive destinations
  */
