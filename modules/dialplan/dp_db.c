@@ -30,6 +30,7 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../db/db.h"
+#include "../../time_rec.h"
 #include "dp_db.h"
 #include "dialplan.h"
 
@@ -67,7 +68,6 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index);
 
 void list_rule(dpl_node_t * );
 void list_hash(dpl_id_t * , rw_lock_t *);
-
 
 dp_table_list_p dp_tables = NULL;
 dp_table_list_p dp_default_table = NULL;
@@ -321,10 +321,51 @@ int str_to_shm(str src, str * dest)
 	return 0;
 }
 
+static inline tmrec_t* parse_time_def(char *time_str) {
+
+	tmrec_p time_rec;
+	char *p,*s;
+
+	p = time_str;
+	time_rec = 0;
+
+	time_rec = tmrec_new(SHM_ALLOC);
+	if (time_rec==0) {
+		LM_ERR("no more shm mem\n");
+		goto error;
+	}
+
+	/* empty definition? */
+	if ( time_str==0 || *time_str==0 )
+		goto done;
+
+	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
+
+	/* success */
+done:
+	return time_rec;
+parse_error:
+	LM_ERR("parse error in <%s> around position %i\n",
+		time_str, (int)(long)(p-time_str));
+error:
+	if (time_rec)
+		tmrec_free( time_rec );
+	return 0;
+}
 
 /*compile the expressions, and if ok, build the rule */
 dpl_node_t * build_rule(db_val_t * values)
 {
+	tmrec_t *parsed_timerec;
 	pcre * match_comp, *subst_comp;
 	struct subst_expr * repl_comp;
 	dpl_node_t * new_rule;
@@ -339,7 +380,8 @@ dpl_node_t * build_rule(db_val_t * values)
 		return NULL;
 	}
 
-	match_comp = subst_comp =0;
+	parsed_timerec = 0;
+	match_comp = subst_comp = 0;
 	repl_comp = 0;
 	new_rule = 0;
 
@@ -425,12 +467,24 @@ dpl_node_t * build_rule(db_val_t * values)
 	LM_DBG("attrs are %.*s\n", 
 		new_rule->attrs.len, new_rule->attrs.s);
 
+	/* Retrieve and Parse Timerec Matching Pattern */
 	GET_STR_VALUE(timerec, values, 8);
-	if(str_to_shm(timerec, &new_rule->timerec) != 0)
-		goto err;
+	if(timerec.len && timerec.s) {
+		parsed_timerec = parse_time_def(timerec.s);
+		if(!parsed_timerec) {
+			LM_ERR("failed to parse timerec pattern %.*s\n",
+				timerec.len, timerec.s);
+			goto err;
+		}
 
-	LM_DBG("timerecs are %.*s\n", 
-		new_rule->timerec.len, new_rule->timerec.s);
+		if(str_to_shm(timerec, &new_rule->timerec) != 0)
+			goto err;
+
+		new_rule->parsed_timerec = parsed_timerec;
+	
+		LM_DBG("timerecs are %.*s\n", 
+			new_rule->timerec.len, new_rule->timerec.s);
+	}
 
 	if (match_comp)
 		new_rule->match_comp = match_comp;

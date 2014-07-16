@@ -276,47 +276,6 @@ error:
 	return -1;
 }
 
-static inline tmrec_t* parse_time_def(char *time_str) {
-
-	tmrec_p time_rec;
-	char *p,*s;
-
-	p = time_str;
-	time_rec = 0;
-
-	time_rec = tmrec_new(SHM_ALLOC);
-	if (time_rec==0) {
-		LM_ERR("no more shm mem\n");
-		goto error;
-	}
-
-	/* empty definition? */
-	if ( time_str==0 || *time_str==0 )
-		goto done;
-
-	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
-
-	/* success */
-done:
-	return time_rec;
-parse_error:
-	LM_ERR("parse error in <%s> around position %i\n",
-		time_str, (int)(long)(p-time_str));
-error:
-	if (time_rec)
-		tmrec_free( time_rec );
-	return 0;
-}
-
 int timerec_print(tmrec_p _trp)
 {
 	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; 
@@ -386,8 +345,8 @@ static inline int check_time(tmrec_t *time_rec) {
 	if(time_rec->dtstart == 0)
 		return 1;
 
-	// Debug
-	timerec_print(time_rec);
+	// Uncomment to enable Debug
+	// timerec_print(time_rec);
 
 	// Set Current Time
 	memset(&att, 0, sizeof(att));
@@ -406,7 +365,6 @@ static inline int check_time(tmrec_t *time_rec) {
 static char dp_attrs_buf[DP_MAX_ATTRS_LEN+1];
 int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * attrs) {
 
-	tmrec_t   *time_rec;
 	dpl_node_p rulep, rrulep;
 	int string_res = -1, regexp_res = -1, bucket;
 
@@ -430,10 +388,10 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 				rulep->match_flags, rulep->timerec.len, rulep->timerec.s);
 
 		// Check for Time Period if Set
-		if((time_rec = parse_time_def(rulep->timerec.s)) != 0) {
+		if(rulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rulep->timerec.len, rulep->timerec.s);
 			// Doesn't matches time period continue with next rule
-			if(!check_time(time_rec)) {
+			if(!check_time(rulep->parsed_timerec)) {
 				LM_DBG("Time rule doesn't match: skip next!\n");
 				continue;
 			}
@@ -452,12 +410,12 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 
 	/* try to match the input in the regexp bucket */
 	for (rrulep = idp->rule_hash[DP_INDEX_HASH_SIZE].first_rule; rrulep; rrulep=rrulep->next) {
-	
+
 		// Check for Time Period if Set
-		if((time_rec = parse_time_def(rrulep->timerec.s)) != 0) {
+		if(rrulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rrulep->timerec.len, rrulep->timerec.s);
 			// Doesn't matches time period continue with next rule
-			if(!check_time(time_rec)) {
+			if(!check_time(rrulep->parsed_timerec)) {
 				LM_DBG("Time rule doesn't match: skip next!\n");
 				continue;
 			}
