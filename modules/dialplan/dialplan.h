@@ -29,6 +29,7 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../rw_locking.h"
+#include "../../time_rec.h"
 
 #include "../../re.h"
 #include <pcre.h>
@@ -49,6 +50,8 @@ typedef struct dpl_node{
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp; 
 	str attrs;
+	str timerec;
+	tmrec_t *parsed_timerec;
 
 	struct dpl_node * next; /*next rule*/
 }dpl_node_t, *dpl_node_p;

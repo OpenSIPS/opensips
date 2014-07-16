@@ -65,18 +65,19 @@ str default_param_s = str_init(DEFAULT_PARAM);
 dp_param_p default_par2 = NULL;
 
 static param_export_t mod_params[]={
-	{ "db_url",			STR_PARAM,	&dp_db_url.s },
+	{ "db_url",		STR_PARAM,	&dp_db_url.s },
 	{ "table_name",		STR_PARAM,	&dp_table_name.s },
 	{ "dpid_col",		STR_PARAM,	&dpid_column.s },
-	{ "pr_col",			STR_PARAM,	&pr_column.s },
+	{ "pr_col",		STR_PARAM,	&pr_column.s },
 	{ "match_op_col",	STR_PARAM,	&match_op_column.s },
 	{ "match_exp_col",	STR_PARAM,	&match_exp_column.s },
-	{ "match_flags_col",STR_PARAM,	&match_flags_column.s },
+	{ "match_flags_col",	STR_PARAM,	&match_flags_column.s },
 	{ "subst_exp_col",	STR_PARAM,	&subst_exp_column.s },
 	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
+	{ "timerec_col",	STR_PARAM,	&timerec_column.s },
 	{ "disabled_col",	STR_PARAM,	&disabled_column.s},
-	{ "attrs_pvar",	    STR_PARAM,	&attr_pvar_s.s},
+	{ "attrs_pvar",	    	STR_PARAM,	&attr_pvar_s.s},
 	{ "attribute_pvar",	STR_PARAM,	&attr_pvar_s.s},
 	{0,0,0}
 };
@@ -120,7 +121,7 @@ static int mod_init(void)
 
 	init_db_url( dp_db_url , 0 /*cannot be null*/);
 	dp_table_name.len   	= strlen(dp_table_name.s);
-	dpid_column.len     	= strlen( dpid_column.s);
+	dpid_column.len     	= strlen(dpid_column.s);
 	pr_column.len       	= strlen(pr_column.s);
 	match_op_column.len 	= strlen(match_op_column.s);
 	match_exp_column.len	= strlen(match_exp_column.s);
@@ -128,6 +129,7 @@ static int mod_init(void)
 	subst_exp_column.len	= strlen(subst_exp_column.s);
 	repl_exp_column.len 	= strlen(repl_exp_column.s);
 	attrs_column.len    	= strlen(attrs_column.s);
+	timerec_column.len    	= strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
 	if(attr_pvar_s.s) {
@@ -273,7 +275,6 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 	return 0;
 }
 
-
 static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 {
 	int dpid;
@@ -292,7 +293,6 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 		LM_ERR("no dpid value\n");
 		return -1;
 	}
-	LM_DBG("dpid is %i\n", dpid);
 
 	repl_par = (str2!=NULL)? ((dp_param_p)str2):default_par2;
 	if (dp_get_svalue(msg, repl_par->v.sp[0], &input)!=0){
@@ -311,12 +311,16 @@ static int dp_translate_f(struct sip_msg* msg, char* str1, char* str2)
 		goto error;
 	}
 
+	LM_DBG("Checking %.*s with dpid %i => output %.*s\n",
+			input.len, input.s, idp->dp_id, output.len, output.s);
+
 	attrs_par = (!attr_pvar)?NULL:&attrs;
 	if (translate(msg, input, &output, idp, attrs_par)!=0){
 		LM_DBG("could not translate %.*s "
 			"with dpid %i\n", input.len, input.s, idp->dp_id);
 		goto error;
 	}
+
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
 

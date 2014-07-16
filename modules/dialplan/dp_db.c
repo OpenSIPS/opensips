@@ -30,6 +30,7 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../db/db.h"
+#include "../../time_rec.h"
 #include "dp_db.h"
 #include "dialplan.h"
 
@@ -44,6 +45,7 @@ str subst_exp_column    =   str_init(SUBST_EXP_COL);
 str repl_exp_column     =   str_init(REPL_EXP_COL);
 str disabled_column     =   str_init(DISABLED_COL);
 str attrs_column        =   str_init(ATTRS_COL); 
+str timerec_column      =   str_init(TIMEREC_COL); 
 
 static db_con_t* dp_db_handle    = 0; /* database connection handle */
 static db_func_t dp_dbf;
@@ -66,7 +68,6 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index);
 
 void list_rule(dpl_node_t * );
 void list_hash(dpl_id_t * , rw_lock_t *);
-
 
 dp_table_list_p dp_tables = NULL;
 dp_table_list_p dp_default_table = NULL;
@@ -187,7 +188,7 @@ int dp_load_db(dp_table_list_p dp_table)
 	db_key_t query_cols[DP_TABLE_COL_NO] = {
 		&dpid_column,		&pr_column,
 		&match_op_column,	&match_exp_column,	&match_flags_column,
-		&subst_exp_column,	&repl_exp_column,	&attrs_column };
+		&subst_exp_column,	&repl_exp_column,	&attrs_column,	&timerec_column };
 	db_key_t order = &pr_column;
 	/* disabled condition */
 	db_key_t cond_cols[1] = { &disabled_column };
@@ -320,14 +321,55 @@ int str_to_shm(str src, str * dest)
 	return 0;
 }
 
+static inline tmrec_t* parse_time_def(char *time_str) {
+
+	tmrec_p time_rec;
+	char *p,*s;
+
+	p = time_str;
+	time_rec = 0;
+
+	time_rec = tmrec_new(SHM_ALLOC);
+	if (time_rec==0) {
+		LM_ERR("no more shm mem\n");
+		goto error;
+	}
+
+	/* empty definition? */
+	if ( time_str==0 || *time_str==0 )
+		goto done;
+
+	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
+	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
+
+	/* success */
+done:
+	return time_rec;
+parse_error:
+	LM_ERR("parse error in <%s> around position %i\n",
+		time_str, (int)(long)(p-time_str));
+error:
+	if (time_rec)
+		tmrec_free( time_rec );
+	return 0;
+}
 
 /*compile the expressions, and if ok, build the rule */
 dpl_node_t * build_rule(db_val_t * values)
 {
+	tmrec_t *parsed_timerec;
 	pcre * match_comp, *subst_comp;
 	struct subst_expr * repl_comp;
 	dpl_node_t * new_rule;
-	str match_exp, subst_exp, repl_exp, attrs;
+	str match_exp, subst_exp, repl_exp, attrs, timerec;
 	int matchop;
 	int namecount;
 
@@ -338,7 +380,8 @@ dpl_node_t * build_rule(db_val_t * values)
 		return NULL;
 	}
 
-	match_comp = subst_comp =0;
+	parsed_timerec = 0;
+	match_comp = subst_comp = 0;
 	repl_comp = 0;
 	new_rule = 0;
 
@@ -416,12 +459,32 @@ dpl_node_t * build_rule(db_val_t * values)
 	new_rule->pr            =	VAL_INT(values+1);
 	new_rule->match_flags   =	VAL_INT(values+4);
 	new_rule->matchop       =	matchop;
+
 	GET_STR_VALUE(attrs, values, 7);
 	if(str_to_shm(attrs, &new_rule->attrs)!=0)
 		goto err;
 
 	LM_DBG("attrs are %.*s\n", 
 		new_rule->attrs.len, new_rule->attrs.s);
+
+	/* Retrieve and Parse Timerec Matching Pattern */
+	GET_STR_VALUE(timerec, values, 8);
+	if(timerec.len && timerec.s) {
+		parsed_timerec = parse_time_def(timerec.s);
+		if(!parsed_timerec) {
+			LM_ERR("failed to parse timerec pattern %.*s\n",
+				timerec.len, timerec.s);
+			goto err;
+		}
+
+		if(str_to_shm(timerec, &new_rule->timerec) != 0)
+			goto err;
+
+		new_rule->parsed_timerec = parsed_timerec;
+	
+		LM_DBG("timerecs are %.*s\n", 
+			new_rule->timerec.len, new_rule->timerec.s);
+	}
 
 	if (match_comp)
 		new_rule->match_comp = match_comp;
@@ -459,14 +522,12 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
-		crt_idp = shm_malloc(sizeof(dpl_id_t)	+
-							(DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
+		crt_idp = shm_malloc(sizeof(dpl_id_t) + (DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		if(!crt_idp){
 			LM_ERR("out of shm memory (crt_idp)\n");
 			return -1;
 		}
-		memset(crt_idp, 0, sizeof(dpl_id_t)	+
-							(DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
+		memset(crt_idp, 0, sizeof(dpl_id_t) + (DP_INDEX_HASH_SIZE+1) * sizeof(dpl_index_t));
 		crt_idp->dp_id = rule->dpid;
 		crt_idp->rule_hash = (dpl_index_t*)(crt_idp + 1);
 		new_id = 1;
@@ -502,13 +563,12 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 	indexp->last_rule = rule;
 
 	if(new_id){
-			crt_idp->next = table->hash[table->next_index];
-			table->hash[table->next_index] = crt_idp;
+		crt_idp->next = table->hash[table->next_index];
+		table->hash[table->next_index] = crt_idp;
 	}
+
 	LM_DBG("added the rule id %i pr %i next %p to the "
-		" %i bucket\n", rule->dpid,
-		rule->pr, rule->next, rule->matchop == REGEX_OP?
-								DP_INDEX_HASH_SIZE : bucket);
+		" %i bucket\n", rule->dpid, rule->pr, rule->next, rule->matchop == REGEX_OP ? DP_INDEX_HASH_SIZE : bucket);
 
 	return 0;
 
@@ -583,6 +643,9 @@ void destroy_rule(dpl_node_t * rule){
 	
 	if(rule->attrs.s)
 		shm_free(rule->attrs.s);
+
+	if(rule->timerec.s)
+		shm_free(rule->timerec.s);
 }
 
 
@@ -636,13 +699,14 @@ void list_hash(dpl_id_t * hash, rw_lock_t * ref_lock)
 void list_rule(dpl_node_t * rule)
 {
 	LM_DBG("RULE %p: pr %i next %p match_exp %.*s match_flags %d, "
-		"subst_exp %.*s, repl_exp %.*s and attrs %.*s\n", rule,
+		"subst_exp %.*s, repl_exp %.*s, attrs %.*s and timerec %.*s\n", rule,
 		rule->pr, rule->next,
-		rule->match_exp.len, rule->match_exp.s, 
+		rule->match_exp.len,	rule->match_exp.s, 
 		rule->match_flags, 
-		rule->subst_exp.len, rule->subst_exp.s,
-		rule->repl_exp.len, rule->repl_exp.s,
-		rule->attrs.len,	rule->attrs.s);
+		rule->subst_exp.len,	rule->subst_exp.s,
+		rule->repl_exp.len,	rule->repl_exp.s,
+		rule->attrs.len,	rule->attrs.s,
+		rule->timerec.len,	rule->timerec.s);
 }
 
 /* Retrieves the corresponding entry of the given table name */

@@ -31,18 +31,19 @@
 #include "../../db/db.h"
 
 #define DP_TABLE_NAME			"dialplan"
-#define DPID_COL				"dpid"
-#define PR_COL					"pr"
+#define DPID_COL			"dpid"
+#define PR_COL				"pr"
 #define MATCH_OP_COL			"match_op"
 #define MATCH_EXP_COL			"match_exp"
 #define MATCH_FLAGS_COL			"match_flags"
 #define SUBST_EXP_COL			"subst_exp"
 #define REPL_EXP_COL			"repl_exp"
 #define DISABLED_COL			"disabled"
-#define ATTRS_COL				"attrs"
+#define ATTRS_COL			"attrs"
+#define TIMEREC_COL			"timerec"
 
 #define DP_TABLE_VERSION		4
-#define DP_TABLE_COL_NO 		8
+#define DP_TABLE_COL_NO 		9
 
 extern str dp_db_url;
 extern str dp_table_name;
@@ -54,6 +55,7 @@ extern str match_flags_column;
 extern str subst_exp_column; 
 extern str repl_exp_column; 
 extern str attrs_column; 
+extern str timerec_column; 
 extern str disabled_column; 
 
 struct dp_param_list;
