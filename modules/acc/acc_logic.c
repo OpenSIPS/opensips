@@ -596,7 +596,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	} else {
 		/* do old accounting */
 		if ( is_evi_acc_on(req) ) {
-			env_set_event(acc_cdr_event);
+			env_set_event(acc_event);
 			acc_evi_request( req, reply );
 		}
 
