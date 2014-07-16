@@ -717,7 +717,7 @@ skip_after:
 
 
 /*! \brief another helper functions, adds/Removes the lump,
-	code moved form build_req_from_req  */
+	code moved from build_req_from_req  */
 
 void process_lumps(	struct sip_msg* msg,
 					struct lump* lumps,

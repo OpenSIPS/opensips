@@ -1,7 +1,7 @@
 <!-- Module FAQ -->
 
 <chapter>
-    
+
 	<title>&faqguide;</title>
 	<qandaset defaultlabel="number">
 
@@ -35,13 +35,13 @@
 
 	<qandaentry>
 		<question>
-			<para>What happend with the <emphasis>ds_is_from_list()</emphasis> 
+			<para>What happened with the <emphasis>ds_is_from_list()</emphasis>
 			function?</para>
 		</question>
 		<answer>
 			<para>
-			The function was replaced by the more generic 
-			<emphasis>ds_is_in_list()</emphasis> function that takes as 
+			The function was replaced by the more generic
+			<emphasis>ds_is_in_list()</emphasis> function that takes as
 			parameters the IP and PORT to test against the dispatcher list.
 			</para>
 			<para>
@@ -52,7 +52,7 @@
 
 	<qandaentry>
 		<question>
-			<para>What happend with the <emphasis>list_file</emphasis> 
+			<para>What happened with the <emphasis>list_file</emphasis>
 			module parameter ?</para>
 		</question>
 		<answer>
@@ -82,7 +82,7 @@
 		<answer>
 		<para>
 			First at all check if your question was already answered on one of
-			our mailing lists: 
+			our mailing lists:
 		</para>
 		<itemizedlist>
 			<listitem>
@@ -93,8 +93,8 @@
 			</listitem>
 		</itemizedlist>
 		<para>
-			E-mails regarding any stable version should be sent to 
-			&osipsusersmail; and e-mail regarding development versions or SVN 
+			E-mails regarding any stable version should be sent to
+			&osipsusersmail; and e-mail regarding development versions or SVN
 			snapshots should be send to &osipsdevmail;.
 		</para>
 		<para>

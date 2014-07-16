@@ -328,15 +328,11 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len )
 	if (org_msg->new_uri.s && org_msg->new_uri.len)
 		len += ROUND4(org_msg->new_uri.len);
 
-	if (org_msg->set_global_address.s) {
-		LM_DBG("XXX - have address\n");
+	if (org_msg->set_global_address.s)
 		len += ROUND4(org_msg->set_global_address.len);
-	}
 
-	if (org_msg->set_global_port.s) {
-		LM_DBG("XXX - have port\n");
+	if (org_msg->set_global_port.s)
 		len += ROUND4(org_msg->set_global_port.len);
-	}
 
 	/*all the headers*/
 	for( hdr=org_msg->headers ; hdr ; hdr=hdr->next )

@@ -111,7 +111,7 @@ static int mod_init(void)
 
 	if(!tm_loaded && !sl_loaded)
 	{
-		LM_ERR("nighter 'tm' nor 'sl' module loaded! Sipreply module requires"
+		LM_ERR("neither 'tm' nor 'sl' module loaded! Sipreply module requires"
 				" loading at least one of these two\n");
 		return -1;
 	}
