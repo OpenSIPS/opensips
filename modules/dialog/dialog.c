@@ -839,11 +839,7 @@ static int mod_init(void)
 		run_load_callbacks();
 	}
 
-	/* if profiles should be kept in cachedb's */
-
-	/* do not destroy callbacks - will need them later for syncing new dialogs
-	destroy_dlg_callbacks( DLGCB_LOADED );
-	*/
+	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
 
 	/* set dlg topo hiding callid mangling callbacks ( pre * post ) */
