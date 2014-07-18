@@ -30,6 +30,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../rw_locking.h"
 
+#include "../../db/db.h"
 #include "../../re.h"
 #include <pcre.h>
 
@@ -38,6 +39,8 @@
 
 #define DP_CASE_INSENSITIVE		1
 #define DP_INDEX_HASH_SIZE		16
+
+
 
 typedef struct dpl_node{
 	int dpid;
@@ -68,34 +71,49 @@ typedef struct dpl_id{
 	struct dpl_id * next;
 }dpl_id_t,*dpl_id_p;
 
-typedef struct dp_table_list {
+typedef struct dp_connection_list {
+
 	dpl_id_t *hash[2];
 	str table_name;
+	str partition;
+	str db_url;
 	int crt_index, next_index;
+
+	db_con_t** dp_db_handle;
+	db_func_t dp_dbf;
 
 	rw_lock_t *ref_lock;
 
-	struct dp_table_list * next;
-} dp_table_list_t, *dp_table_list_p;
+	struct dp_connection_list * next;
+} dp_connection_list_t, *dp_connection_list_p;
 
 #define DP_VAL_INT		0
 #define DP_VAL_SPEC		1
+#define DP_VAL_STR		2
+#define DP_VAL_STR_SPEC		3
+
+typedef struct dp_pv_int {
+	int id;
+	pv_spec_t partition;
+} dp_pv_int_t;
 
 typedef struct dp_param{
 	int type;
 	union {
 		int id;
 		pv_spec_t sp[2];
+		dp_pv_int_t pv_id;
 	} v;
-	dp_table_list_p hash;
+
+	dp_connection_list_p hash;
 }dp_param_t, *dp_param_p;
 
 int init_data();
 void destroy_data();
-int dp_load_db(dp_table_list_p dp_table);
+int dp_load_db(dp_connection_list_p dp_table);
 int dp_load_all_db(void);
 
-dpl_id_p select_dpid(dp_table_list_p table, int id, int index);
+dpl_id_p select_dpid(dp_connection_list_p table, int id, int index);
 
 struct subst_expr* repl_exp_parse(str subst);
 void repl_expr_free(struct subst_expr *se);

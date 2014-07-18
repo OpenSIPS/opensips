@@ -29,21 +29,22 @@ Andreea-Ancuta Onofrei
 
         1.6. Exported Parameters
 
-              1.6.1. db_url (string)
-              1.6.2. table_name (string)
-              1.6.3. dpid_col (string)
-              1.6.4. pr_col (string)
-              1.6.5. match_op_col (string)
-              1.6.6. match_exp_col (string)
-              1.6.7. match_flags_col (string)
-              1.6.8. subst_exp_col (string)
-              1.6.9. repl_exp_col (string)
-              1.6.10. attrs_col (string)
-              1.6.11. disabled_col (integer)
+              1.6.1. partition (string)
+              1.6.2. db_url (string)
+              1.6.3. table_name (string)
+              1.6.4. dpid_col (string)
+              1.6.5. pr_col (string)
+              1.6.6. match_op_col (string)
+              1.6.7. match_exp_col (string)
+              1.6.8. match_flags_col (string)
+              1.6.9. subst_exp_col (string)
+              1.6.10. repl_exp_col (string)
+              1.6.11. attrs_col (string)
+              1.6.12. disabled_col (integer)
 
         1.7. Exported Functions
 
-              1.7.1. dp_translate([table/]id, src/dest[,
+              1.7.1. dp_translate([partition:]id, src/dest[,
                       attrs_pvar])
 
         1.8. Exported MI Functions
@@ -57,20 +58,23 @@ Andreea-Ancuta Onofrei
 
    List of Examples
 
-   1.1. Set db_url parameter
-   1.2. Set table_name parameter
-   1.3. Set dpid_col parameter
-   1.4. Set pr_col parameter
-   1.5. Set match_op_col parameter
-   1.6. Set match_exp_col parameter
-   1.7. Set match_flags_col parameter
-   1.8. Set subs_exp_col parameter
-   1.9. Set repl_exp_col parameter
-   1.10. Set attrs_col parameter
-   1.11. Set disabled_col parameter
-   1.12. dp_translate usage
-   1.13. dp_translate usage
+   1.1. Set partition parameter
+   1.2. Set default partition with partition parameter
+   1.3. Set db_url parameter
+   1.4. Set table_name parameter
+   1.5. Set dpid_col parameter
+   1.6. Set pr_col parameter
+   1.7. Set match_op_col parameter
+   1.8. Set match_exp_col parameter
+   1.9. Set match_flags_col parameter
+   1.10. Set subs_exp_col parameter
+   1.11. Set repl_exp_col parameter
+   1.12. Set attrs_col parameter
+   1.13. Set disabled_col parameter
    1.14. dp_translate usage
+   1.15. dp_translate usage
+   1.16. dp_translate usage
+   1.17. dp_translate usage
 
 Chapter 1. Admin Guide
 
@@ -83,10 +87,12 @@ Chapter 1. Admin Guide
 1.2. How it works
 
    At startup, the module will load a set of transformation rules
-   from a database. Every database raw will be stored in memory as
-   a translation rule. Each rule will describe how the matching
-   should be made, how the input value should be modified and
-   which attributes should be set for the matching transformation.
+   from multiple databases. Each database will be stored in a
+   partition which will have db_url and table_name parameters.
+   Every database row will be stored in memory as a translation
+   rule. Each rule will describe how the matching should be made,
+   how the input value should be modified and which attributes
+   should be set for the matching transformation.
 
    The module expects an input value which will be matched against
    a rules via regexp or string matching. Overlapping matching
@@ -204,135 +210,158 @@ Chapter 1. Admin Guide
 
 1.6. Exported Parameters
 
-1.6.1. db_url (string)
+1.6.1. partition (string)
 
-   The translation rules will be loaded using this database url.
+   This can be used to define new db_url and table_name parameters
+   from which to load the translation rules. These parameters will
+   be held in partitions. The db_url parameter is mandatory. The
+   order of the parameters does not matter. Multiple partitions
+   can be defined and you can also define the default partition
+   here. The name of this partition is "default".
 
-   Default value is
-   “mysql://opensips:opensipsrw@localhost/opensips”.
+   Example 1.1.  Set partition parameter
+...
+modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_u
+rl = mysql://user:passwb@localhost/db;")
+...
 
-   Example 1.1. Set db_url parameter
+   Example 1.2.  Set default partition with partition parameter
+...
+modparam("dialplan", "partition", "   default : table_name = dialplan ;
+db_url = mysql://user:passwb@localhost/db;")
+...
+
+1.6.2. db_url (string)
+
+   The translation rules will be loaded using this database
+   url.This will be the db_url parameter value for the default
+   partition.
+
+   Example 1.3. Set db_url parameter
 ...
 modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 ...
 
-1.6.2. table_name (string)
+1.6.3. table_name (string)
 
-   The table's name from which to load the translation rules.
+   The table's name from which to load the translation rules.This
+   will be the table_name parameter value for the default
+   partition. The db_url must be defined for the default partition
+   in order to be able to define it's table name.
 
    Default value is “dialplan”.
 
-   Example 1.2. Set table_name parameter
+   Example 1.4. Set table_name parameter
 ...
 modparam("dialplan", "table_name", "my_table")
 ...
 
-1.6.3. dpid_col (string)
+1.6.4. dpid_col (string)
 
    The column name to store the dialplan ID group.
 
    Default value is “dpid”.
 
-   Example 1.3. Set dpid_col parameter
+   Example 1.5. Set dpid_col parameter
 ...
 modparam("dialplan", "dpid_col", "column_name")
 ...
 
-1.6.4. pr_col (string)
+1.6.5. pr_col (string)
 
    The column name to store the priority of the corresponding rule
-   from the database raw.
+   from the database row.
 
    Default value is “pr”.
 
-   Example 1.4. Set pr_col parameter
+   Example 1.6. Set pr_col parameter
 ...
 modparam("dialplan", "pr_col", "column_name")
 ...
 
-1.6.5. match_op_col (string)
+1.6.6. match_op_col (string)
 
    The column name to store the type of matching of the rule.
 
    Default value is “match_op”.
 
-   Example 1.5. Set match_op_col parameter
+   Example 1.7. Set match_op_col parameter
 ...
 modparam("dialplan", "match_op_col", "column_name")
 ...
 
-1.6.6. match_exp_col (string)
+1.6.7. match_exp_col (string)
 
    The column name to store the rule match expression.
 
    Default value is “match_exp”.
 
-   Example 1.6. Set match_exp_col parameter
+   Example 1.8. Set match_exp_col parameter
 ...
 modparam("dialplan", "match_exp_col", "column_name")
 ...
 
-1.6.7. match_flags_col (string)
+1.6.8. match_flags_col (string)
 
    The column name to store various matching flags. Currently 0 -
    case sensitive matching, 1 - case insensitive matching.
 
    Default value is “match_flags”.
 
-   Example 1.7. Set match_flags_col parameter
+   Example 1.9. Set match_flags_col parameter
 ...
 modparam("dialplan", "match_flags_col", "column_name")
 ...
 
-1.6.8. subst_exp_col (string)
+1.6.9. subst_exp_col (string)
 
    The column name to store the rule's substitution expression.
 
    Default value is “subst_exp”.
 
-   Example 1.8. Set subs_exp_col parameter
+   Example 1.10. Set subs_exp_col parameter
 ...
 modparam("dialplan", "subst_exp_col", "column_name")
 ...
 
-1.6.9. repl_exp_col (string)
+1.6.10. repl_exp_col (string)
 
    The column name to store the rule's replacement expression.
 
    Default value is “repl_exp”.
 
-   Example 1.9. Set repl_exp_col parameter
+   Example 1.11. Set repl_exp_col parameter
 ...
 modparam("dialplan", "repl_exp_col", "column_name")
 ...
 
-1.6.10. attrs_col (string)
+1.6.11. attrs_col (string)
 
    The column name to store the rule's attributes to be set to the
    message.
 
    Default value is “attrs”.
 
-   Example 1.10. Set attrs_col parameter
+   Example 1.12. Set attrs_col parameter
 ...
 modparam("dialplan", "attrs_col", "column_name")
 ...
 
-1.6.11. disabled_col (integer)
+1.6.12. disabled_col (integer)
 
    The column name that indicates if the dialplan rule is
    disabled.
 
    Default value is “disabled”.
 
-   Example 1.11. Set disabled_col parameter
+   Example 1.13. Set disabled_col parameter
 ...
 modparam("dialplan", "disabled_col", "disabled_column")
 ...
 
 1.7. Exported Functions
 
-1.7.1.  dp_translate([table/]id, src/dest[, attrs_pvar])
+1.7.1.  dp_translate([partition:]id, src/dest[, attrs_pvar])
 
    Will try to translate the src string into dest string according
    to the translation rules with dialplan ID equal to id.
@@ -343,41 +372,52 @@ modparam("dialplan", "disabled_col", "disabled_column")
           + integer - the dialplan id is statically assigned
           + pvar - the dialplan id is the value of an existing
             pseudo-variable (as integer value)
-     * table - Specifies the table where the search will take
-       place. This parameter can be ommited. The default table is
-       dialplan. The table parameter can have the following types:
+     * partition - Specifies the partition where the search will
+       take place. This parameter can be ommited. If the paramater
+       is omitted the default partition will be used if exists.
+       The partition parameter can have the following types:
           + string - the table name is statically assigned
+          + pvar - the partition name is the value of an existing
+            pseudo-variable (as string value)
      * src/dest - input and output of the function. If this
        parameter is missing the default parameter
        “ruri.user/ruri.user” will be used, thus translating the
        request uri.
        The “src” variable can be any type of pseudo-variable.
        The “dest” variable can be also any type of
-       pseudo-variable, but it must be a writtable one.
+       pseudo-variable, but it must be a writable one.
      * attrs_pvar (output, optional) - a pseudo-variable which
        will hold the attributes of the matched translation rule.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
-   Example 1.12. dp_translate usage
+   Example 1.14. dp_translate usage
 ...
 dp_translate("240", "$ruri.user/$avp(dest)");
 xlog("translated to var $avp(dest) \n");
 ...
 
-   Example 1.13. dp_translate usage
+   Example 1.15. dp_translate usage
 ...
 $avp(src) = $ruri.user;
 dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
 xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 
-   Example 1.14. dp_translate usage
+   Example 1.16. dp_translate usage
 ...
 $avp(src) = $uri.user;
-dp_translate("example_table/$var(x)", "$avp(src)/$var(y)", "$avp(attrs)"
-);
+dp_translate("example_partition:$var(x)", "$avp(src)/$var(y)", "$avp(att
+rs)");
 xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
+...
+
+   Example 1.17. dp_translate usage
+...
+$var(partition) = "default";
+$var(id)        = 10;
+dp_translate("$var(partition):$var(id)", "$avp(src)/$var(y)");
+xlog("translate to var $var(y) partition $var(partition)")
 ...
 
 1.8. Exported MI Functions
@@ -390,9 +430,9 @@ xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
    Name: dp_reload
 
    Parameters: 1
-     * table_name - Table to be realoaded. If no table is
-       specified, the table specified in the "table_name"
-       parameter (default dialplan) will be reloaded.
+     * table_name - Partition to be reloaded. If no table is
+       specified, the table specified in the "partition" parameter
+       (default "default") will be reloaded.
 
    MI DATAGRAM Command Format:
                 :dp_reload:
@@ -406,9 +446,9 @@ xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
    Name: dp_translate
 
    Parameters: 2
-     * [Table Name/]Dialplan ID - The dpid of the rules used to
-       match the input string. The table name can be ommited. The
-       default table is dialplan.
+     * [Partition Name:]Dialplan ID - The dpid of the rules used
+       to match the input string. The table name can be ommited.
+       The default table is dialplan.
      * Input String
 
    MI DATAGRAM Command Format:
