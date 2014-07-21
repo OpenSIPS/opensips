@@ -184,6 +184,12 @@ static int mod_init(void)
 	/* Load dialog hooks */
 	dialog_st.register_dlgcb(NULL, DLGCB_CREATED, sst_dialog_created_CB, NULL, NULL);
 
+	if (dialog_st.register_dlgcb(NULL, DLGCB_LOADED, sst_dialog_loaded_CB,
+				NULL, NULL) != 0) {
+		LM_ERR("cannot register dialog_loaded callback\n");
+		return -1;
+	}
+
 	/*
 	 * We are GOOD-TO-GO.
 	 */
