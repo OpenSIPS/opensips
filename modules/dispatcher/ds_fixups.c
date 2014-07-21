@@ -539,6 +539,28 @@ int in_list_fixup(void** param, int param_no)
 	}
 }
 
+static int ds_fixup_flags(void **param) {
+	#define is_space( c ) ( (c) == ' ' || (c) == '\t' || \
+					(c) == '\n' )
+
+	char* param_p = *param;
+
+	for ( ;*param_p != '\0'; param_p++) {
+		switch (*param_p) {
+			case PV_MARKER:
+				LM_ERR("PVs not supported for flags\n");
+				return -1;
+			case '\t':
+			case ' ' :
+			case '\n':
+				break;
+			default  :
+				*param = param_p;
+				return ds_parse_fixup_param(param);
+		}
+	}
+	return -1;
+}
 /*
  * Function that finds out if the third param of ds_select is max_results or flags
  */
@@ -630,9 +652,12 @@ int ds_select_fixup(void** param, int param_no)
 			return fixup_partition_sets(param);
 		case 2:
 			return fixup_int_list(param);
-		default:
+		case 3:
 			return ds_parse_fixup_param(param);
+		case 4:
+			return ds_fixup_flags(param);
 	}
+	return 0;
 }
 
 /* Fixup function for ds_count command */
