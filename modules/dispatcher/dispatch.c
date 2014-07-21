@@ -962,7 +962,7 @@ error:
 /**
  *
  */
-int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash)
+int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash, int ds_flags)
 {
 	str from;
 	str key1;
@@ -1000,7 +1000,7 @@ int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash)
 /**
  *
  */
-int ds_hash_touri(struct sip_msg *msg, unsigned int *hash)
+int ds_hash_touri(struct sip_msg *msg, unsigned int *hash, int ds_flags)
 {
 	str to;
 	str key1;
@@ -1061,7 +1061,7 @@ int ds_hash_callid(struct sip_msg *msg, unsigned int *hash)
 
 
 
-int ds_hash_ruri(struct sip_msg *msg, unsigned int *hash)
+int ds_hash_ruri(struct sip_msg *msg, unsigned int *hash, int ds_flags)
 {
 	str* uri;
 	str key1;
@@ -1288,7 +1288,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags)
 {
 	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
@@ -1301,7 +1301,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 	ds_dest_p dest = NULL;
 	ds_dest_p selected = NULL;
 	static ds_dest_p *sorted_set = NULL;
-
 	if(msg==NULL) {
 		LM_ERR("bad parameters\n");
 		return -1;
@@ -1345,21 +1344,21 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 			}
 		break;
 		case 1:
-			if(ds_hash_fromuri(msg, &ds_hash)!=0)
+			if(ds_hash_fromuri(msg, &ds_hash, ds_flags)!=0)
 			{
 				LM_ERR("can't get From uri hash\n");
 				goto error;
 			}
 		break;
 		case 2:
-			if(ds_hash_touri(msg, &ds_hash)!=0)
+			if(ds_hash_touri(msg, &ds_hash, ds_flags)!=0)
 			{
 				LM_ERR("can't get To uri hash\n");
 				goto error;
 			}
 		break;
 		case 3:
-			if (ds_hash_ruri(msg, &ds_hash)!=0)
+			if (ds_hash_ruri(msg, &ds_hash, ds_flags)!=0)
 			{
 				LM_ERR("can't get ruri hash\n");
 				goto error;
@@ -1432,7 +1431,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 					break;
 		}
 	}
-
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
@@ -1480,7 +1478,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
-
 	if(ds_select_ctl->reset_AVP)
 	{
 		/* do some AVP cleanup before start populating new ones */
@@ -1488,12 +1485,23 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		destroy_avps( 0 /*all types*/, ds_select_ctl->partition->grp_avp_name, 1);
 		destroy_avps( 0 /*all types*/, ds_select_ctl->partition->cnt_avp_name, 1);
 		destroy_avps( 0 /*all types*/,ds_select_ctl->partition->sock_avp_name, 1);
+		destroy_avps( 0 /*all types*/,ds_select_ctl->partition->flags_avp_name, 1);
 		if (ds_select_ctl->partition->attrs_avp_name>0)
 			destroy_avps( 0 /*all types*/,
 					ds_select_ctl->partition->attrs_avp_name, 1 /*all*/);
 		ds_select_ctl->reset_AVP = 0;
 	}
 
+
+	/*Add ds_flags value to partition avp*/
+	int_str avp_int_val;
+	avp_int_val.n = ds_flags;
+
+	if(add_avp(ds_select_ctl->partition->flags_avp_type,
+			ds_select_ctl->partition->flags_avp_name, avp_int_val)!=0) {
+		LM_ERR("failed to add FLAGS avp\n");
+		return -1;
+	}
 
 	if(ds_use_default!=0 && ds_id!=idx->nr-1)
 	{
@@ -1574,8 +1582,17 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	struct usr_avp *attr_avp;
 	int_str avp_value;
 	int_str sock_avp_value;
+	int_str flags_avp_value;
 
-	if(!(ds_flags&DS_FAILOVER_ON) || partition->dst_avp_name < 0)
+	tmp_avp = search_first_avp(partition->flags_avp_type, partition->flags_avp_name,
+				&flags_avp_value, 0);
+
+	if (!tmp_avp) {
+		LM_WARN("failover support disabled\n");
+		return -1;
+	}
+
+	if(!(flags_avp_value.n&DS_FAILOVER_ON) || partition->dst_avp_name < 0)
 	{
 		LM_WARN("failover support disabled\n");
 		return -1;
@@ -1589,6 +1606,7 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	/* get AVP with next destination URI */
 	avp = search_next_avp(tmp_avp, &avp_value);
 	destroy_avp(tmp_avp);
+
 
 	/* remove old attribute AVP (from prev destination) */
 	if (partition->attrs_avp_name >= 0) {
@@ -1628,9 +1646,19 @@ int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 {
 	int group, ret;
 	struct usr_avp *prev_avp;
+	struct usr_avp *tmp_avp;
 	int_str avp_value;
+	int_str flags_avp_value;
 
-	if(!(ds_flags&DS_FAILOVER_ON))
+	tmp_avp = search_first_avp(partition->flags_avp_type, partition->flags_avp_name,
+				&flags_avp_value, 0);
+
+	if (!tmp_avp) {
+		LM_WARN("failover support disabled\n");
+		return -1;
+	}
+
+	if(!(flags_avp_value.n&DS_FAILOVER_ON) || partition->dst_avp_name < 0)
 	{
 		LM_WARN("failover support disabled\n");
 		return -1;

@@ -72,7 +72,6 @@
 
 /** parameters */
 int  ds_force_dst   = 0;
-int  ds_flags       = 0;
 int  ds_use_default = 0;
 static str pvar_algo_param = str_init("");
 str hash_pvar_param = {NULL, 0};
@@ -100,6 +99,7 @@ typedef struct _ds_db_head
 	str cnt_avp;
 	str sock_avp;
 	str attrs_avp;
+	str flags_avp;
 
 	struct _ds_db_head *next;
 } ds_db_head_t;
@@ -111,6 +111,7 @@ ds_db_head_t default_db_head = {
 	{NULL, 0},
 
 
+	{NULL, 0},
 	{NULL, 0},
 	{NULL, 0},
 	{NULL, 0},
@@ -165,8 +166,10 @@ static int ds_child_init(int rank);
 
 static int w_ds_select_dst(struct sip_msg*, char*, char*);
 static int w_ds_select_dst_limited(struct sip_msg*, char*, char*, char*);
+static int w_ds_select_dst_limited_flags(struct sip_msg*, char*, char*, char*, char*);
 static int w_ds_select_domain(struct sip_msg*, char*, char*);
 static int w_ds_select_domain_limited(struct sip_msg*, char*, char*, char*);
+static int w_ds_select_domain_limited_flags(struct sip_msg*, char*, char*, char*,char*);
 static int w_ds_next_dst(struct sip_msg*, char*);
 static int w_ds_next_domain(struct sip_msg*, char*);
 static int w_ds_mark_dst(struct sip_msg*, char*, char*);
@@ -192,9 +195,16 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited, 3, ds_select_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
+
+	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited_flags, 4, ds_select_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+
 	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2, ds_select_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited, 3, ds_select_fixup, 0,
+
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited_flags, 4, ds_select_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, NULL        , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
@@ -234,13 +244,13 @@ static param_export_t params[]={
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
 	{"force_dst",       INT_PARAM, &ds_force_dst},
-	{"flags",           INT_PARAM, &ds_flags},
 	{"use_default",     INT_PARAM, &ds_use_default},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
 	{"sock_avp",        STR_PARAM, &default_db_head.sock_avp.s},
 	{"attrs_avp",       STR_PARAM, &default_db_head.attrs_avp.s},
+	{"flags_avp",	    STR_PARAM, &default_db_head.flags_avp.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
 	{"pvar_algo_pattern",     STR_PARAM, &pvar_algo_param.s},
@@ -289,6 +299,7 @@ DEF_GETTER_FUNC(grp_avp);
 DEF_GETTER_FUNC(cnt_avp);
 DEF_GETTER_FUNC(sock_avp);
 DEF_GETTER_FUNC(attrs_avp);
+DEF_GETTER_FUNC(flags_avp);
 
 static partition_specific_param_t partition_params[] = {
 	{str_init("db_url"), {NULL, 0}, GETTER_FUNC(db_url)},
@@ -297,7 +308,8 @@ static partition_specific_param_t partition_params[] = {
 	PARTITION_SPECIFIC_PARAM (grp_avp, "$avp(ds_grp_failover)"),
 	PARTITION_SPECIFIC_PARAM (cnt_avp, "$avp(ds_cnt_failover)"),
 	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
-	PARTITION_SPECIFIC_PARAM (attrs_avp, "")
+	PARTITION_SPECIFIC_PARAM (attrs_avp, ""),
+	PARTITION_SPECIFIC_PARAM (flags_avp, "$avp(ds_flags)")
 };
 
 static const unsigned int partition_param_count = sizeof (partition_params) /
@@ -582,6 +594,20 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 		partition->attrs_avp_type = 0;
 	}
 
+	if (pv_parse_spec(&db_head->flags_avp, &avp_spec)==0
+	|| avp_spec.type!=PVT_AVP) {
+		LM_ERR("malformed or non AVP %.*s AVP definition\n",
+			db_head->flags_avp.len, db_head->flags_avp.s);
+		return -1;
+	}
+
+	if(pv_get_avp_name(0, &(avp_spec.pvp), &partition->flags_avp_name,
+				&partition->flags_avp_type)!=0){
+		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->flags_avp.len,
+			db_head->flags_avp.s);
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -655,6 +681,7 @@ static inline int check_if_default_head_is_ok(void)
 
 	return 0;
 }
+
 
 /**
  * init module function
@@ -908,12 +935,12 @@ static void destroy(void)
 /**
  *
  */
-static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results, int mode)
+static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results, char* flags, int mode)
 {
 	int ret;
 	int run_prev_ds_select = 0;
+	int ds_flags;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
-
 	if(msg==NULL)
 		return -1;
 
@@ -939,8 +966,21 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	int_list_t *alg_list_exp_start = NULL, *alg_list_exp_end = NULL;
 
 	/* Retrieve dispatcher max results */
+	int_list_t *max_results_ptr  = (int_list_t *)max_results;
 	int_list_t *max_list = (int_list_t *)max_results;
 	int_list_t *max_list_exp_start = NULL, *max_list_exp_end = NULL;
+
+	/* Retrieve dispatcher flags */
+	if (!flags) {
+		if (max_results_ptr && max_list->type == GPARAM_TYPE_FLAGS) {
+			ds_flags = ((int_list_t *)max_list)->v.ival;
+			max_results_ptr = NULL;
+		} else {
+			ds_flags = 0;
+		}
+	} else {
+		ds_flags = ((int_list_t *)flags)->v.ival;
+	}
 
 	/* Avoid compiler warning */
 	memset(&prev_ds_select_ctl, 0, sizeof(ds_select_ctl_t));
@@ -957,7 +997,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		CHECK_AND_EXPAND_LIST(alg_list);
 		ds_select_ctl.alg = alg_list->v.ival;
-		if (max_results) {
+		if (max_results_ptr) {
 			CHECK_AND_EXPAND_LIST(max_list);
 			ds_select_ctl.max_results = max_list->v.ival;
 		}
@@ -966,7 +1006,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 			LM_DBG("ds_select: %d %d %d %d %d\n",
 				prev_ds_select_ctl.set, prev_ds_select_ctl.alg, prev_ds_select_ctl.max_results,
 				prev_ds_select_ctl.reset_AVP, prev_ds_select_ctl.set_destination);
-			ret = ds_select_dst(msg, &prev_ds_select_ctl);
+			ret = ds_select_dst(msg, &prev_ds_select_ctl, ds_flags);
 			if (ret<0) return ret;
 			/* stop resetting AVPs. */
 			ds_select_ctl.reset_AVP = 0;
@@ -978,16 +1018,18 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		set_list = set_list->next;
 		alg_list = alg_list->next;
-		if (max_results)
+		if (max_results_ptr) {
 			max_list = max_list->next;
+		}
 
 		TRY_FREE_EXPANDED_LIST(set_list);
 		TRY_FREE_EXPANDED_LIST(alg_list);
 		TRY_FREE_EXPANDED_LIST(max_list);
 
-	} while (set_list && alg_list && (max_results ? max_list : set_list));
+	} while (set_list && alg_list &&
+			(max_results_ptr ? max_list : set_list));
 
-	if (max_results && max_list != NULL) {
+	if (max_results_ptr &&  max_list != NULL) {
 		LM_ERR("extra max slot(s)\n");
 		goto error;
 	}
@@ -1002,12 +1044,12 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 		goto error;
 	}
 
-	/* las ds_select_dst run: setting destination. */
+	/* last ds_select_dst run: setting destination. */
 	ds_select_ctl.set_destination = 1;
 	LM_DBG("ds_select: %d %d %d %d %d\n",
 		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
 		ds_select_ctl.reset_AVP, ds_select_ctl.set_destination);
-	return ds_select_dst(msg, &ds_select_ctl);
+	return ds_select_dst(msg, &ds_select_ctl, ds_flags);
 
 error:
 	return -1;
@@ -1018,15 +1060,23 @@ error:
  */
 static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
 {
-	return w_ds_select(msg, set, alg, NULL, mode);
+	return w_ds_select(msg, set, alg, NULL, NULL, mode);
+}
+
+/**
+ * max_results can also mean the flags parameter
+ */
+static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
+{
+	return w_ds_select(msg, set, alg, max_results, NULL, mode);
 }
 
 /**
  *
  */
-static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
+static int w_ds_select_limited_flags(struct sip_msg* msg, char* set, char* alg, char* max_results, char* flags, int mode)
 {
-	return w_ds_select(msg, set, alg, max_results, mode);
+	return w_ds_select(msg, set, alg, max_results, flags, mode);
 }
 
 /**
@@ -1040,12 +1090,20 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 
 /**
  * same wrapper as w_ds_select_dst, but it allows cutting down the result set
+ * max_results can also mean flags
  */
 static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
 	return w_ds_select_limited(msg, set, alg, max_results, 0);
 }
 
+/**
+ *
+ */
+static int w_ds_select_dst_limited_flags(struct sip_msg* msg, char* set, char* alg, char* max_results, char* flags)
+{
+	return w_ds_select_limited_flags(msg, set, alg, max_results, flags, 0);
+}
 
 /**
  *
@@ -1058,10 +1116,17 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 
 /**
  * same wrapper as w_ds_select_domain, but it allows cutting down the result set
+ * max_results can also mean the flags parameter
  */
 static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
 	return w_ds_select_limited(msg, set, alg, max_results, 1);
+}
+
+
+static int w_ds_select_domain_limited_flags(struct sip_msg* msg, char* set, char* alg, char* max_results, char* flags)
+{
+	return w_ds_select_limited_flags(msg, set, alg, max_results, flags, 1);
 }
 
 #define GET_AND_CHECK_PARTITION(_param_, _part_) \
@@ -1117,7 +1182,6 @@ static int w_ds_mark_dst(struct sip_msg *msg, char *str1, char *str2)
 			goto error;
 	}
 	else {
-
 		if (str1 != NULL && fixup_get_svalue(msg, (gparam_p)str1, &arg) != 0)
 				goto error;
 	}
