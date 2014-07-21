@@ -133,6 +133,9 @@ typedef struct _ds_partition
 	int attrs_avp_name;
 	unsigned short attrs_avp_type;
 
+	int flags_avp_name;
+	unsigned short flags_avp_type;
+
 	struct _ds_partition *next;
 } ds_partition_t;
 
@@ -162,7 +165,6 @@ extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
 
-extern int ds_flags;
 extern int ds_use_default;
 
 extern pv_elem_t * hash_param_model;
@@ -187,7 +189,7 @@ int ds_reload_db(ds_partition_t *partition);
 int init_ds_data(ds_partition_t *partition);
 void ds_destroy_data(ds_partition_t *partition);
 
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl);
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags);
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_set_state(int group, str *address, int state, int type,
 		ds_partition_t *partition);

@@ -35,6 +35,7 @@
 
 extern ds_partition_t *default_partition;
 extern ds_partition_t *partitions;
+static int ds_parse_fixup_param(void**);
 
 /*
  * Expand a pvar into a list of ints
@@ -489,6 +490,7 @@ int ds_next_fixup(void **param, int param_no)
 		LM_CRIT ("Too many parameters for ds_next_dst/ds_next_domain\n");
 		return -1;
 	}
+
 	return fixup_partition(param);
 }
 
@@ -537,18 +539,100 @@ int in_list_fixup(void** param, int param_no)
 	}
 }
 
+/*
+ * Function that finds out if the third param of ds_select is max_results or flags
+ */
+static int ds_parse_fixup_param(void** param)
+{
+	#define is_space( c ) ( (c) == ' ' || (c) == '\t' || \
+					(c) == '\n' )
+	int_list_t* res = NULL;
+
+	char *param_p = (char*)*param;
+	for ( ;*param_p != '\0' ; param_p++) {
+		switch (*param_p) {
+			case 'u' :
+			case 'U' :
+				if(!res) {
+					res = pkg_malloc(sizeof(res));
+					if (!res) {
+						LM_ERR("No more pkg mem");
+						return -1;
+					}
+					res->type = GPARAM_TYPE_FLAGS;
+					res->v.ival = DS_HASH_USER_ONLY;
+				} else {
+					if (res->v.ival & DS_HASH_USER_ONLY) {
+						LM_ERR("Multiple flags defined\n");
+						return -1;
+					}
+					res->v.ival |= DS_HASH_USER_ONLY;
+				}
+				break;
+			case 'f' :
+			case 'F' :
+				if (!res) {
+					res = pkg_malloc(sizeof(res));
+					if (!res) {
+						LM_ERR("No more pkg mem");
+						return -1;
+					}
+					res->type = GPARAM_TYPE_FLAGS;
+					res->v.ival = DS_FAILOVER_ON;
+				} else {
+					if (res->v.ival & DS_FAILOVER_ON) {
+						LM_ERR("Multiple flags defined\n");
+						return -1;
+					}
+					res->v.ival |= DS_FAILOVER_ON;
+				}
+				break;
+			case ' ' :
+			case '\t':
+			case '\n':
+				if (res) {
+					*param = (void *)res;
+					return 0;
+				}
+				break;
+			case PV_MARKER:
+				return fixup_int_list(param);
+			case 'M' :
+				if (res) {
+					LM_ERR("Use next parameter to"
+							" define flags\n");
+					return -1;
+				}
+				/*Jumping over 'M'*/
+				++param_p;
+				*param = param_p;
+				return fixup_int_list(param);
+			default :
+				LM_ERR("Incorrect parameter definition\n");
+				return -1;
+		}
+	}
+	*param = (void *)res;
+	return 0;
+}
+
 /* Fixup function for ds_select_dst and ds_select_domain commands */
 int ds_select_fixup(void** param, int param_no)
 {
-	if (param_no > 3) {
+
+	if (param_no > 4) {
 		LM_CRIT("Too many params for ds_select_*\n");
 		return -1;
 	}
 
-	if (param_no == 1)
-		return fixup_partition_sets(param);
-	else
-		return fixup_int_list(param);
+	switch (param_no) {
+		case 1:
+			return fixup_partition_sets(param);
+		case 2:
+			return fixup_int_list(param);
+		default:
+			return ds_parse_fixup_param(param);
+	}
 }
 
 /* Fixup function for ds_count command */
