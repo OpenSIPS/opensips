@@ -63,6 +63,9 @@ typedef struct sst_info_st {
 void sst_dialog_created_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params * params);
 
+void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
+		struct dlg_cb_params *params);
+
 /**
  * The script function
  */
