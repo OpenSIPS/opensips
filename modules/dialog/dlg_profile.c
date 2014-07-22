@@ -859,7 +859,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 			if (dlg_fill_name(&profile->name) < 0)
 				goto failed;
 
-			if (cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n) == -1) {
+			if (cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n) < 0) {
 				LM_ERR("cannot fetch profile from CacheDB\n");
 				goto failed;
 			}
@@ -887,7 +887,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_size(&profile->name) < 0)
 					goto failed;
 
-				if (cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n) == -1) {
+				if (cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n) < 0) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
@@ -914,7 +914,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_value(&profile->name, value) < 0)
 					goto failed;
 
-				if (cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n) == -1) {
+				if (cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n) < 0) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
