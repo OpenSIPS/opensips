@@ -758,7 +758,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_dst(set, alg [, max_results][,flags])</function>
+		<function moreinfo="none">ds_select_dst(set, alg [, "[flags] [M max_results]"])</function>
 		</title>
 		<para>
 		The method selects a destination from the given set of addresses. It will
@@ -847,22 +847,21 @@ modparam("dispatcher", "socket_col", "my_sock")
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>max_results</emphasis> - If specified, only that many results
-			will be put into the specified avp for failover. This allows having many
-			destinations but limit the useless traffic in case of a number that is
-			bound to fail everywhere. It can accept variables. The definition must 
-			begin with 'M' character or you can use PVs. In case you use PVs it is not
-			necessary to use the 'M' delimiter.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
 			<emphasis>flags</emphasis> - If specified, this will be the flags which
 			in previous versions were specified at startup. The flags are the failover
 			support flag which can be specified using 'f' or 'F' letters and the 
 			user only flag which can be specified using 'u' or 'U' and will specify
-			that only the uri user part will be used for hashing. The flags cannot
-			be specified using PVs.
+			that only the uri user part will be used for hashing. You can also specify
+			these flags using PVs. The flags are being kept per partition.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis> max_results</emphasis> - If specified, only that many results
+			will be put into the specified avp for failover. This allows having many
+			destinations but limit the useless traffic in case of a number that is
+			bound to fail everywhere. It can accept variables. The definition must
+			begin with 'M' character either you use static definition or PVs.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -887,21 +886,22 @@ ds_select_dst("part2 : 1", "0", "M 5");
 ...
 ds_select_dst("part3 : 1", "0", "fU");
 ...
-ds_select_dst("part4 : 2", "0", "M 3", "f");
+ds_select_dst("part4 : 2", "0", "fu M 5,2");
 ...
 # dispatch over multiple dispatching groups
 $var(partition_name) = "p4"
 $var(setid) = "1, 2";
 $var(alg) = "4, 2";
 $var(max) = "2,3";
-ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)", "fu");
+$var(flags) = " FU";
+ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(flags) M $var(max)");
 ...
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_domain(set, alg [, max_results][,flags])</function>
+		<function moreinfo="none">ds_select_domain(set, alg [, "[flags] [M max_results]"])</function>
 		</title>
 		<para>
 		The method selects a destination from addresses set  and rewrites the

@@ -72,11 +72,11 @@ Carsten Bock
 
         1.4. Exported Functions
 
-              1.4.1. ds_select_dst(set, alg [,
-                      max_results][,flags])
+              1.4.1. ds_select_dst(set, alg [, "[flags] [M
+                      max_results]"])
 
-              1.4.2. ds_select_domain(set, alg [,
-                      max_results][,flags])
+              1.4.2. ds_select_domain(set, alg [, "[flags] [M
+                      max_results]"])
 
               1.4.3. ds_next_dst([partition_name])
               1.4.4. ds_next_domain([partition_name])
@@ -620,7 +620,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 
 1.4. Exported Functions
 
-1.4.1.  ds_select_dst(set, alg [, max_results][,flags])
+1.4.1.  ds_select_dst(set, alg [, "[flags] [M max_results]"])
 
    The method selects a destination from the given set of
    addresses. It will overwrite the "destination URI" of a SIP
@@ -651,20 +651,20 @@ modparam("dispatcher", "socket_col", "my_sock")
             chosen.
           + “X” - if the algorithm is not implemented, the first
             entry in set is chosen.
-     * max_results - If specified, only that many results will be
-       put into the specified avp for failover. This allows having
-       many destinations but limit the useless traffic in case of
-       a number that is bound to fail everywhere. It can accept
-       variables. The definition must begin with 'M' character or
-       you can use PVs. In case you use PVs it is not necessary to
-       use the 'M' delimiter.
      * flags - If specified, this will be the flags which in
        previous versions were specified at startup. The flags are
        the failover support flag which can be specified using 'f'
        or 'F' letters and the user only flag which can be
        specified using 'u' or 'U' and will specify that only the
-       uri user part will be used for hashing. The flags cannot be
-       specified using PVs.
+       uri user part will be used for hashing. You can also
+       specify these flags using PVs. The flags are being kept per
+       partition.
+     * max_results - If specified, only that many results will be
+       put into the specified avp for failover. This allows having
+       many destinations but limit the useless traffic in case of
+       a number that is bound to fail everywhere. It can accept
+       variables. The definition must begin with 'M' character
+       either you use static definition or PVs.
 
    If the character 'f' in 'flags' is set, the rest of the
    addresses from the destination set is stored in AVP list. You
@@ -684,18 +684,19 @@ ds_select_dst("part2 : 1", "0", "M 5");
 ...
 ds_select_dst("part3 : 1", "0", "fU");
 ...
-ds_select_dst("part4 : 2", "0", "M 3", "f");
+ds_select_dst("part4 : 2", "0", "fu M 5,2");
 ...
 # dispatch over multiple dispatching groups
 $var(partition_name) = "p4"
 $var(setid) = "1, 2";
 $var(alg) = "4, 2";
 $var(max) = "2,3";
-ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
-)", "fu");
+$var(flags) = " FU";
+ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(fla
+gs) M $var(max)");
 ...
 
-1.4.2.  ds_select_domain(set, alg [, max_results][,flags])
+1.4.2.  ds_select_domain(set, alg [, "[flags] [M max_results]"])
 
    The method selects a destination from addresses set and
    rewrites the host and port from R-URI. The parameters have same
