@@ -1645,7 +1645,6 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	avp = search_next_avp(tmp_avp, &avp_value);
 	destroy_avp(tmp_avp);
 
-
 	/* remove old attribute AVP (from prev destination) */
 	if (partition->attrs_avp_name >= 0) {
 		attr_avp = search_first_avp(partition->attrs_avp_type,

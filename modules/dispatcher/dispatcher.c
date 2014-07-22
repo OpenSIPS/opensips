@@ -166,10 +166,8 @@ static int ds_child_init(int rank);
 
 static int w_ds_select_dst(struct sip_msg*, char*, char*);
 static int w_ds_select_dst_limited(struct sip_msg*, char*, char*, char*);
-static int w_ds_select_dst_limited_flags(struct sip_msg*, char*, char*, char*, char*);
 static int w_ds_select_domain(struct sip_msg*, char*, char*);
 static int w_ds_select_domain_limited(struct sip_msg*, char*, char*, char*);
-static int w_ds_select_domain_limited_flags(struct sip_msg*, char*, char*, char*,char*);
 static int w_ds_next_dst(struct sip_msg*, char*);
 static int w_ds_next_domain(struct sip_msg*, char*);
 static int w_ds_mark_dst(struct sip_msg*, char*, char*);
@@ -195,16 +193,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited, 3, ds_select_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
-
-	{"ds_select_dst",    (cmd_function)w_ds_select_dst_limited_flags, 4, ds_select_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE},
-
 	{"ds_select_domain", (cmd_function)w_ds_select_domain, 2, ds_select_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited, 3, ds_select_fixup, 0,
-
-		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"ds_select_domain", (cmd_function)w_ds_select_domain_limited_flags, 4, ds_select_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
 	{"ds_next_dst",      (cmd_function)w_ds_next_dst,      0, NULL        , 0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
@@ -910,6 +901,39 @@ static void destroy(void)
 	destroy_ds_bls();
 }
 
+static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
+
+	/*Get flags literal value*/
+	pv_value_t value;
+	int ds_flags = 0;
+	if (pv_get_spec_value(msg, pvs, &value)) {
+		LM_ERR("no valid PV value found(error in scripts)\n");
+		return -1;
+	}
+
+	/*Parse string and get flags integer value*/
+
+	for ( ; value.rs.len > 0; value.rs.s++, value.rs.len--) {
+		switch (*value.rs.s) {
+			case '\t':
+			case ' ' :
+			case '\n':
+				break;
+			case 'f' :
+			case 'F' :
+				ds_flags |= DS_FAILOVER_ON;
+				break;
+			case 'u' :
+			case 'U' :
+				ds_flags |= DS_HASH_USER_ONLY;
+				break;
+			default :
+				LM_ERR("Invalid flags PV value\n");
+				return -1;
+		}
+	}
+	return ds_flags;
+}
 #define CHECK_AND_EXPAND_LIST(_list_) \
 	do{\
 		if (_list_->type == GPARAM_TYPE_PVS) { \
@@ -935,11 +959,11 @@ static void destroy(void)
 /**
  *
  */
-static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results, char* flags, int mode)
+static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results_flags, int mode)
 {
 	int ret;
 	int run_prev_ds_select = 0;
-	int ds_flags;
+	int ds_flags = 0;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
 	if(msg==NULL)
 		return -1;
@@ -966,20 +990,31 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	int_list_t *alg_list_exp_start = NULL, *alg_list_exp_end = NULL;
 
 	/* Retrieve dispatcher max results */
-	int_list_t *max_results_ptr  = (int_list_t *)max_results;
-	int_list_t *max_list = (int_list_t *)max_results;
+
+	/*Pointer to the start of the list*/
+	flags_int_list_t* lst_flgs_param = (flags_int_list_t *)max_results_flags;
+
+	int_list_t *max_results_ptr = NULL;
+	/*In case this parameter is not specified*/
+	if (max_results_flags)
+		max_results_ptr  = lst_flgs_param->list;
+
+	int_list_t *max_list = max_results_ptr;
 	int_list_t *max_list_exp_start = NULL, *max_list_exp_end = NULL;
 
 	/* Retrieve dispatcher flags */
-	if (!flags) {
-		if (max_results_ptr && max_list->type == GPARAM_TYPE_FLAGS) {
-			ds_flags = ((int_list_t *)max_list)->v.ival;
-			max_results_ptr = NULL;
+
+	if (max_results_flags) {
+		ds_flags_t* flags= lst_flgs_param->flags;
+		if (flags->type == DS_FLAGS_TYPE_INT) {
+			ds_flags = flags->v.ival;
 		} else {
-			ds_flags = 0;
+			ds_flags = get_flags_int_value(msg, flags->v.pvs);
+			if (ds_flags < 0) {
+				LM_ERR("Invalid value in flags PV\n");
+				return -1;
+			}
 		}
-	} else {
-		ds_flags = ((int_list_t *)flags)->v.ival;
 	}
 
 	/* Avoid compiler warning */
@@ -1060,7 +1095,7 @@ error:
  */
 static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
 {
-	return w_ds_select(msg, set, alg, NULL, NULL, mode);
+	return w_ds_select(msg, set, alg, NULL, mode);
 }
 
 /**
@@ -1068,15 +1103,7 @@ static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
  */
 static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
 {
-	return w_ds_select(msg, set, alg, max_results, NULL, mode);
-}
-
-/**
- *
- */
-static int w_ds_select_limited_flags(struct sip_msg* msg, char* set, char* alg, char* max_results, char* flags, int mode)
-{
-	return w_ds_select(msg, set, alg, max_results, flags, mode);
+	return w_ds_select(msg, set, alg, max_results, mode);
 }
 
 /**
@@ -1086,7 +1113,6 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 {
 	return w_ds_select_all(msg, set, alg, 0);
 }
-
 
 /**
  * same wrapper as w_ds_select_dst, but it allows cutting down the result set
@@ -1100,19 +1126,10 @@ static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, ch
 /**
  *
  */
-static int w_ds_select_dst_limited_flags(struct sip_msg* msg, char* set, char* alg, char* max_results, char* flags)
-{
-	return w_ds_select_limited_flags(msg, set, alg, max_results, flags, 0);
-}
-
-/**
- *
- */
 static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 {
 	return w_ds_select_all(msg, set, alg, 1);
 }
-
 
 /**
  * same wrapper as w_ds_select_domain, but it allows cutting down the result set
@@ -1121,12 +1138,6 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
 	return w_ds_select_limited(msg, set, alg, max_results, 1);
-}
-
-
-static int w_ds_select_domain_limited_flags(struct sip_msg* msg, char* set, char* alg, char* max_results, char* flags)
-{
-	return w_ds_select_limited_flags(msg, set, alg, max_results, flags, 1);
 }
 
 #define GET_AND_CHECK_PARTITION(_param_, _part_) \
