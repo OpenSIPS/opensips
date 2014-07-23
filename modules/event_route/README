@@ -62,9 +62,9 @@ Chapter 1. Admin Guide
    [ param_name= ] pvar [; [ param_name= ] pvar ]*
 
    Example:
-fetch_even_params("$avp(first_param)");
-fetch_even_params("ip=$avp(pike_ip)");
-fetch_even_params("source=$avp(src);destination=$avp(dst)");
+fetch_event_params("$avp(first_param)");
+fetch_event_params("ip=$avp(pike_ip)");
+fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
    If the name of the parameter is not specified, the avp will be
    populated according to the order of the parameters, as exported
@@ -136,11 +136,11 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 
    Example 1.2. fetch_event_params usage
 ...
-fetch_even_params("$avp(first_param)"); # fetch the first parameter of a
-n event
-fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_even_params("source=$avp(src);destination=$avp(dst)"); # fetch the
- source and destination parameters
+fetch_event_params("$avp(first_param)"); # fetch the first parameter of
+an event
+fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
+fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch th
+e source and destination parameters
 ...
 
 Chapter 2. Frequently Asked Questions

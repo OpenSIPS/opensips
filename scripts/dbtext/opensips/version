@@ -41,7 +41,7 @@ rls_watchers:2
 route_tree:2
 rtpproxy_sockets:0
 silo:6
-sip_trace:3
+sip_trace:4
 speed_dial:3
 subscriber:7
 uri:2

@@ -1757,7 +1757,7 @@ if (is_dlg_flag_set("16")) {
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
 # or
-$dlg_val("account_type") = "prepaid";
+$dlg_val(account_type) = "prepaid";
 ...
 </programlisting>
 		</example>
@@ -1796,7 +1796,7 @@ $dlg_val("account_type") = "prepaid";
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
 # or
-$var(account) = $dlg_val("account_type");
+$var(account) = $dlg_val(account_type);
 ...
 </programlisting>
 		</example>

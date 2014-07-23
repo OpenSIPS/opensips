@@ -254,7 +254,7 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 
 	/* save the previous parameters */
 	backup_params = parameters;
-	backup_name = ev_name;
+	backup_name = event_name;
 
 	parameters = params;
 	event_name = ev_name;

@@ -596,6 +596,9 @@ static int mi_json_recur_write_tree(struct page_buf* pb,
           struct mi_node *tree, unsigned int flags)
 {
   struct mi_node* t;
+  if (!tree)
+    return pb->status;
+    
 
   if (flags & MI_IS_ARRAY) {
     LM_DBG("Treat as an array\n");

@@ -194,7 +194,7 @@ modparam("aaa_radius", "fetch_all_values", 1)
 		<section>
 
 		<title>
-		<function moreinfo="none">radius_send_auth(input_set_name,output_set_name)</function>
+		<function moreinfo="none">radius_send_auth(input_set_name, output_set_name)</function>
 		</title>
 		<para>
 			This function can be used from the script to make custom 

@@ -342,7 +342,7 @@ modparam("auth_db", "skip_version_check", 1)
 		<title><function moreinfo="none">www_authorize</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (www_authorize("siphub.net", "subscriber")) {
+if (!www_authorize("siphub.net", "subscriber")) {
 	www_challenge("siphub.net", "1");
 };
 ...

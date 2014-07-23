@@ -252,8 +252,8 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
        grouped in several groups you can you for differnet
        scenarios; this can be a number or a variable containing a
        numerical value.
-     * resources - string containing a semi-colon list of
-       resources required by the current call.
+     * resources - string containing a semi-colon separated list
+       of resources required by the current call.
      * algorithm - algorithm used for computing the available load
        on the system:
           + 0 - Absolute value - the effective available load (
@@ -318,8 +318,8 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
    Meaning of the parameters is as follows:
      * ip and port - IP and PORT to be checked (any kind of
        variables are allowed, but take care as the PORT variables
-       should have an interger value); A value 0 for the port
-       means "any" - will match any port.
+       should have an integer value); A value 0 for the port means
+       "any" - will match any port.
      * group - in what LB group the destination should be looked
        for; If not specified, the search will be in all groups.
      * active - if "1", the search will be performed only over
@@ -346,8 +346,8 @@ if (lb_is_destination("$si","$sp") ) {
        call has to be counted for.
      * grp - group id for the destinations; if no knows, "-1" will
        mean all groups.
-     * resources - string containing a semi-colon list of
-       resources required by the current call.
+     * resources - string containing a semi-colon separated list
+       of resources required by the current call.
 
    Function returns true if the call was properly taken into
    consideration for estimating the load on the destination.

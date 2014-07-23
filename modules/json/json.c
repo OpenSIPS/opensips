@@ -225,7 +225,7 @@ int fixup_json_bind(void** param, int param_no)
 
 
 
-struct json_object* json_parse(const char *str,int len)
+struct json_object* json_parse(const char *str,int len,enum json_tokener_error *status)
 {
 	struct json_tokener* tok;
 	struct json_object* obj;
@@ -236,8 +236,11 @@ struct json_object* json_parse(const char *str,int len)
 	if( tok-> err == json_tokener_continue )
 		obj = json_tokener_parse_ex(tok, "", -1);
 
-	if(tok->err != json_tokener_success)
-		obj = (struct json_object*)error_ptr((long)(-tok->err));
+	if(tok->err != json_tokener_success) {
+		obj = NULL;
+		if (status)
+			*status = tok->err;
+	}
 
 	json_tokener_free(tok);
 	return obj;
@@ -297,10 +300,16 @@ json_t * get_object(pv_json_t * var, pv_param_t* pvp ,  json_tag ** tag,
 				!json_object_is_type( cur_obj, json_type_object ) )
 				goto error;
 
+#if JSON_LIB_VERSION < 10
 			cur_obj = json_object_object_get( cur_obj, buff );
 
 			if( cur_obj == NULL && tag == NULL)
 				goto error;
+#else
+			if (!json_object_object_get_ex( cur_obj,buff, &cur_obj ) &&
+				tag == NULL)
+				goto error;
+#endif
 
 
 
@@ -406,10 +415,18 @@ int pv_get_json (struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 		val->flags |= PV_VAL_INT|PV_TYPE_INT;
 
 	}
-	else
+	else if( json_object_is_type(obj, json_type_string))
 	{
 		val->flags = PV_VAL_STR;
 		val->rs.s = (char*)json_object_get_string( obj );
+#if JSON_LIB_VERSION >= 10
+		val->rs.len = json_object_get_string_len( obj );
+#else
+		val->rs.len = strlen(val->rs.s);
+#endif
+	} else {
+		val->flags = PV_VAL_STR;
+		val->rs.s = (char*)json_object_to_json_string( obj );
 		val->rs.len = strlen(val->rs.s);
 	}
 
@@ -543,6 +560,7 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 {
 
 	json_t * obj;
+	enum json_tokener_error parse_status;
 
 
 	if( expand_tag_list( msg, ((json_name *)pvp->pvn.u.dname)->tags ) < 0)
@@ -568,12 +586,17 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 			return -1;
 		}
 
-		obj = json_parse( val->rs.s, val->rs.len);
+		obj = json_parse( val->rs.s, val->rs.len,&parse_status);
 
-		if (is_error(obj))
+		if (obj == NULL)
 		{
 			LM_ERR("Error parsing json: %s\n",
-			       json_tokener_errors[-(unsigned long)obj]);
+#if JSON_LIB_VERSION >= 10
+				json_tokener_error_desc(parse_status)
+#else
+				json_tokener_errors[(unsigned long)obj]
+#endif
+			);
 			return -1;
 
 		}

@@ -31,9 +31,9 @@
 
 		Example:
 		<programlisting format="linespecific">
-fetch_even_params("$avp(first_param)");
-fetch_even_params("ip=$avp(pike_ip)");
-fetch_even_params("source=$avp(src);destination=$avp(dst)");
+fetch_event_params("$avp(first_param)");
+fetch_event_params("ip=$avp(pike_ip)");
+fetch_event_params("source=$avp(src);destination=$avp(dst)");
 </programlisting>
 
 		If the name of the parameter is not specified, the avp will be populated
@@ -153,9 +153,9 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 		<title><function>fetch_event_params</function> usage</title>
 		<programlisting format="linespecific">
 ...
-fetch_even_params("$avp(first_param)"); # fetch the first parameter of an event
-fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_even_params("source=$avp(src);destination=$avp(dst)"); # fetch the source and destination parameters
+fetch_event_params("$avp(first_param)"); # fetch the first parameter of an event
+fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
+fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch the source and destination parameters
 ...
 </programlisting>
 		</example>

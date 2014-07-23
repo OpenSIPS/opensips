@@ -750,7 +750,7 @@ static int mod_init(void)
 	}
 
 	if (register_script_cb( dialog_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB,0)<0) {
-		LM_ERR("cannot regsiter script callback");
+		LM_ERR("cannot register script callback");
 		return -1;
 	}
 
@@ -770,19 +770,19 @@ static int mod_init(void)
 		}
 		if (append_timer_to_process("dlg-pinger", dlg_ping_routine, NULL,
 							ping_interval,dlg_own_timer_proc) < 0) {
-				LM_ERR("Failed to append ping timer \n");
+				LM_ERR("Failed to append ping timer\n");
 				return -1;
 		}
 	}
 	else {
 		if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1)<0 ) {
-			LM_ERR("failed to register timer \n");
+			LM_ERR("failed to register timer\n");
 			return -1;
 		}
 
 		if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
 		ping_interval)<0) {
-			LM_ERR("failed to register timer 2 \n");
+			LM_ERR("failed to register timer 2\n");
 			return -1;
 		}
 	}
@@ -839,11 +839,7 @@ static int mod_init(void)
 		run_load_callbacks();
 	}
 
-	/* if profiles should be kept in cachedb's */
-
-	/* do not destroy callbacks - will need them later for syncing new dialogs
-	destroy_dlg_callbacks( DLGCB_LOADED );
-	*/
+	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
 
 	/* set dlg topo hiding callid mangling callbacks ( pre * post ) */
@@ -990,7 +986,7 @@ static int w_match_dialog(struct sip_msg *msg)
 		for (i=0;i<r_uri->u_params_no;i++)
 			if (r_uri->u_name[i].len == rr_param.len &&
 				memcmp(rr_param.s,r_uri->u_name[i].s,rr_param.len)==0) {
-				LM_DBG("We found DID param in R-URI with value of %.*s \n",
+				LM_DBG("We found DID param in R-URI with value of %.*s\n",
 					r_uri->u_val[i].len,r_uri->u_val[i].s);
 				/* pass the param value to the matching funcs */
 				match_param = (void *)(&r_uri->u_val[i]);

@@ -15,9 +15,10 @@
 	<section>
 	<title>How it works</title>
 	<para>
-	At startup, the module will load a set of transformation rules from a 
-	database. Every database raw will be stored in memory as a translation 
-	rule. Each rule will describe how the matching should be made, how the 
+	At startup, the module will load a set of transformation rules from multiple 
+	databases. Each database will be stored in a partition which will have db_url
+	and table_name parameters. Every database row will be stored in memory as a 
+	translation rule. Each rule will describe how the matching should be made, how the 
 	input value should be modified and which attributes should be set for 
 	the matching transformation.
 	</para>
@@ -280,16 +281,41 @@
 
 	<section>
 	<title>Exported Parameters</title>
+
+	<section>
+		<title><varname>partition</varname> (string)</title>
+		<para>
+		This can be used to define new db_url and table_name parameters from which
+		to load the translation rules. These parameters will be held in partitions. 
+		The db_url parameter is mandatory. The order of the parameters does not matter. 
+		Multiple partitions can be defined and you can also define the default partition
+		here. The name of this partition is "default".
+		</para>
+
+		<example>
+		<title> Set <varname>partition</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "partition", " part2 : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db;")
+...
+		</programlisting>
+		</example>
+
+		<example>
+		<title> Set <varname>default partition</varname> with partition parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialplan", "partition", "   default : table_name = dialplan ; db_url = mysql://user:passwb@localhost/db;")
+...
+		</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		The translation rules will be loaded using this database url.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 
-				<quote>&defaultdb;</quote>.
-		</emphasis>
+		The translation rules will be loaded using this database url.This
+		will be the db_url parameter value for the default partition.
 		</para>
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
@@ -304,7 +330,10 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 	<section>
 		<title><varname>table_name</varname> (string)</title>
 		<para>
-		The table's name from which to load the translation rules.
+		The table's name from which to load the translation rules.This
+		will be the table_name parameter value for the default partition.
+		The db_url must be defined for the default partition in order to 
+		be able to define it's table name.
 		</para>
 		<para>
 		<emphasis>
@@ -344,7 +373,7 @@ modparam("dialplan", "dpid_col", "column_name")
 	<section>
 		<title><varname>pr_col</varname> (string)</title>
 		<para>
-		The column name to store the priority of the corresponding rule from the 		database raw.
+		The column name to store the priority of the corresponding rule from the 		database row.
 		</para>
 		<para>
 		<emphasis>
@@ -509,7 +538,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
 	
 	<section>
 	<title>
-		<function moreinfo="none">dp_translate([table/]id, src/dest[, attrs_pvar])</function>
+		<function moreinfo="none">dp_translate([partition:]id, src/dest[, attrs_pvar])</function>
 	</title>
 	<para>
 	Will try to translate the src string into dest string according to 
@@ -527,7 +556,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
 			<para><emphasis>integer</emphasis> - the dialplan id is statically 
 			assigned </para>
 			</listitem>
-			
+
 			<listitem>
 			<para><emphasis>pvar</emphasis> - the dialplan id is the value of an
 			existing pseudo-variable (as integer value)
@@ -539,15 +568,23 @@ modparam("dialplan", "disabled_col", "disabled_column")
 
 	<listitem>
 		<para>
-		<emphasis>table</emphasis> - Specifies the table where the search will
-		take place. This parameter can be ommited. The default table is dialplan.
-		The <emphasis>table</emphasis> parameter can have the following types:
+		<emphasis>partition</emphasis> - Specifies the partition where the search will
+		take place. This parameter can be ommited. If the paramater is omitted the default
+		partition will be used if exists. 
+		The <emphasis>partition</emphasis> parameter can have the following types:
 		</para>
 		<itemizedlist>
 			<listitem>
 			<para><emphasis>string</emphasis> - the table name is statically 
 			assigned </para>
 			</listitem>
+
+			<listitem>
+			<para><emphasis>pvar</emphasis> - the partition name is the value of an
+			existing pseudo-variable (as string value)
+			</para>
+			</listitem>
+
 		</itemizedlist>
 	</listitem>
 
@@ -563,7 +600,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
 		</para>
 		<para>
 		The <quote>dest</quote> variable  can be also any type of 
-		pseudo-variable, but it must be a writtable one.
+		pseudo-variable, but it must be a writable one.
 		</para>
 	</listitem>
 
@@ -601,8 +638,19 @@ xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 	<programlisting format="linespecific">
 ...
 $avp(src) = $uri.user;
-dp_translate("example_table/$var(x)", "$avp(src)/$var(y)", "$avp(attrs)");
+dp_translate("example_partition:$var(x)", "$avp(src)/$var(y)", "$avp(attrs)");
 xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
+...
+	</programlisting>
+	</example>
+	<example>
+	<title><function>dp_translate</function> usage</title>
+	<programlisting format="linespecific">
+...
+$var(partition) = "default";
+$var(id)	= 10;
+dp_translate("$var(partition):$var(id)", "$avp(src)/$var(y)");
+xlog("translate to var $var(y) partition $var(partition)")
 ...
 	</programlisting>
 	</example>
@@ -626,9 +674,9 @@ xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
 		<para>Parameters: <emphasis>1</emphasis></para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>table_name</emphasis> - Table to be realoaded.
-				If no table is specified, the table specified in the "table_name"
-				parameter (default dialplan) will be reloaded.</para>
+				<para><emphasis>table_name</emphasis> - Partition to be reloaded.
+				If no table is specified, the table specified in the "partition"
+				parameter (default "default") will be reloaded.</para>
 				</listitem>
 			</itemizedlist>
  		<para>
@@ -652,7 +700,7 @@ xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
         <para>Parameters: <emphasis>2</emphasis></para>
         	<itemizedlist>
                 <listitem>
-                <para><emphasis>[Table Name/]Dialplan ID</emphasis> - The dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
+                <para><emphasis>[Partition Name:]Dialplan ID</emphasis> - The dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
                 </listitem>
                 <listitem>
                 <para><emphasis>Input String</emphasis></para>

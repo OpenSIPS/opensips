@@ -238,12 +238,15 @@ void rmq_destroy(evi_reply_sock *sock)
 static int rmq_reconnect(evi_reply_sock *sock)
 {
 	rmq_params_t * rmqp = (rmq_params_t *)sock->params;
+#if defined AMQP_VERSION_v04
+	amqp_socket_t *amqp_sock;
+#endif
+	int socket;
 
 	if (!rmqp || !(rmqp->flags & RMQ_PARAM_RKEY)) {
 		LM_ERR("not enough socket info\n");
 		return -1;
 	}
-//	rmq_print(sock);
 	if (!(rmqp->flags & RMQ_PARAM_CONN) || !rmqp->conn) {
 		/* init new connection */
 		if (!(rmqp->conn = amqp_new_connection())) {
@@ -251,25 +254,25 @@ static int rmq_reconnect(evi_reply_sock *sock)
 			return -1;
 		}
 		rmqp->flags |= RMQ_PARAM_CONN;
-		rmqp->sock = amqp_open_socket(sock->address.s, sock->port);
-		if (rmqp->sock < 0) {
-			LM_ERR("cannot opens socket\n");
+#if defined AMQP_VERSION_v04
+		amqp_sock = amqp_tcp_socket_new(rmqp->conn);
+		if (!amqp_sock) {
+			LM_ERR("cannot create AMQP socket\n");
 			goto destroy_rmqp;
 		}
-		amqp_set_sockfd(rmqp->conn, rmqp->sock);
-
-/*
-librabbitmq-0.1-0.2 amqp.h
-RABBITMQ_EXPORT amqp_rpc_reply_t amqp_login(amqp_connection_state_t state,
-                                        char const *vhost,
-                                        int channel_max,
-                                        int frame_max,
-                                        int heartbeat,
-                                        amqp_sasl_method_enum sasl_method, ...);
-
-channel_max: the maximum number of channels per connection
-frame_max: maximum AMQP frame size for client
-*/
+		socket = amqp_socket_open(amqp_sock, sock->address.s, sock->port);
+		if (socket < 0) {
+			LM_ERR("cannot open AMQP socket\n");
+			goto destroy_rmqp;
+		}
+#else
+		socket = amqp_open_socket(sock->address.s, sock->port);
+		if (socket < 0) {
+			LM_ERR("cannot open AMQP socket\n");
+			goto destroy_rmqp;
+		}
+		amqp_set_sockfd(rmqp->conn, socket);
+#endif
 
 		if (rmq_error("Logging in", amqp_login(
 				rmqp->conn,
@@ -295,37 +298,23 @@ destroy_rmqp:
 	return -1;
 }
 
-/* sends the buffer */
-static int rmq_sendmsg(rmq_send_t *rmqs)
+#ifdef AMQP_VERSION_v04
+static inline int amqp_check_status(rmq_params_t *rmqp, int r)
 {
-	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
-	int ret;
-
-	/* all checks should be already done */
-	ret = amqp_basic_publish(rmqp->conn,
-			rmqp->channel,
-			AMQP_EMPTY_BYTES,
-			amqp_cstring_bytes(rmqp->routing_key.s),
-			0,
-			0,
-			0,
-			amqp_cstring_bytes(rmqs->msg));
-
-#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
-	switch (ret) {
+	switch (r) {
 		case AMQP_STATUS_OK:
 			return 0;
 
-		case AMQP_STATUS_HEARTBEAT_TIMEOUT:
-			LM_ERR("heartbeat timeout\n");
-			break;
-
 		case AMQP_STATUS_NO_MEMORY:
 			LM_ERR("no more memory\n");
-			break;
+			goto no_close;
 
 		case AMQP_STATUS_TABLE_TOO_BIG:
 			LM_ERR("A table in the properties was too large to fit in a single frame\n");
+			goto no_close;
+
+		case AMQP_STATUS_HEARTBEAT_TIMEOUT:
+			LM_ERR("heartbeat timeout\n");
 			break;
 
 		case AMQP_STATUS_CONNECTION_CLOSED:
@@ -340,17 +329,51 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 		case AMQP_STATUS_TCP_ERROR:
 			LM_ERR("TCP error: %s(%d)\n", strerror(errno), errno);
 			break;
+
+		default:
+			LM_ERR("Unknown error: %s(%d)\n", strerror(errno), errno);
+			break;
 	}
+	/* we close the connection here to be able to re-connect later */
+	rmq_destroy_param(rmqp);
+no_close:
+	return r;
+}
 #else
-	if (ret != 0) {
+static inline int amqp_check_status(rmq_params_t *rmqp, int r)
+{
+	if (r != 0) {
 		LM_ERR("Unknown error while sending\n");
+		/* we close the connection here to be able to re-connect later */
+		rmq_destroy_param(rmqp);
 		return -1;
-	} else {
-		return 0;
 	}
+	return 0;
+}
 #endif
 
-	return -1;
+/* sends the buffer */
+static int rmq_sendmsg(rmq_send_t *rmqs)
+{
+	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
+	int ret;
+
+	if (!(rmqp->flags & RMQ_PARAM_CONN))
+		return 0;
+	
+	/* all checks should be already done */
+	ret = amqp_basic_publish(rmqp->conn,
+			rmqp->channel,
+			rmqp->flags&RMQ_PARAM_EKEY?
+		 		amqp_cstring_bytes(rmqp->exchange.s) :
+				AMQP_EMPTY_BYTES ,
+			amqp_cstring_bytes(rmqp->routing_key.s),
+			0,
+			0,
+			0,
+			amqp_cstring_bytes(rmqs->msg));
+
+	return amqp_check_status(rmqp, ret);
 }
 
 void rmq_process(int rank)

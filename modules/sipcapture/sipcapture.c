@@ -347,6 +347,8 @@ static int mod_init(void) {
 
 	struct ip_addr *ip = NULL;
 
+	init_db_url(db_url, 0);
+
 #ifdef STATISTICS
 	/* register statistics */
 	if (register_module_stats(exports.name, sipcapture_stats)!=0)

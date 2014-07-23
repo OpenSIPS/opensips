@@ -239,7 +239,8 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	if(a->elem[1].type != NULLV_ST)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
-		if(!((val.flags&PV_VAL_STR)||(val.flags&PV_VAL_INT))) {
+		if(!(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL))) 
+		{
 			LM_WARN("no value in right expression on line %d\n",a->line);
 			goto error2;
 		}
@@ -268,7 +269,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 				(unsigned char)a->type == BOREQ_T   ? "b-or-eq":"b-xor-eq",
 				msg, a->line);
 
-			if(a->elem[1].type == NULLV_ST)
+			if(a->elem[1].type == NULLV_ST || (val.flags & PV_VAL_NULL))
 			{
 				if(pv_set_value(msg, dspec, (int)a->type, 0)<0)
 				{

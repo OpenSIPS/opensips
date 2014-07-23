@@ -40,7 +40,7 @@
  */
 enum sst_flags {
 	SST_UNDF=0,             /* 0 - --- */
-	SST_UAC=2,              /* 1 - 2^0 */
+	SST_UAC=1,              /* 1 - 2^0 */
 	SST_UAS=2,              /* 2 - 2^1 */
 	SST_PXY=4,              /* 4 - 2^2 */
 	SST_NSUP=8              /* 8 - 2^3 */
