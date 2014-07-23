@@ -62,25 +62,32 @@ Anca-Maria Vamanu
               1.3.21. drg_user_col (str)
               1.3.22. drg_domain_col (str)
               1.3.23. drg_grpid_col (str)
+              1.3.24. use_partitions (int)
+              1.3.25. db_partitions_url (int)
+              1.3.26. db_partitions_table (int)
 
         1.4. Exported Functions
 
-              1.4.1. do_routing([groupID], [flags],
+              1.4.1. do_routing([part_and_or_groupID], [flags],
                       [gw_whitelist], [rule_attrs_pvar],
                       [gw_attrs_pvar], [carrier_attrs_pvar])
 
-              1.4.2. route_to_carrier(carrier_id, [gw_attrs_pvar],
-                      [carrier_attrs_pvar])
+              1.4.2. route_to_carrier(part_and_or_carrier_id,
+                      [gw_attrs_pvar], [carrier_attrs_pvar])
 
               1.4.3. route_to_gw(gw_id, [gw_attrs_pvar])
-              1.4.4. use_next_gw([rule_attrs_pvar],
+              1.4.4. use_next_gw([partition','] [rule_attrs_pvar],
                       [gw_attrs_pvar],
                       [carrier_attrs_pvar])/next_routing()
 
-              1.4.5. goes_to_gw([type], [flags], [gw_attrs_pvar])
-              1.4.6. is_from_gw([type], [flag], [gw_attrs_pvar])
-              1.4.7. dr_is_gw(src_avp, [type], [flag],
+              1.4.5. goes_to_gw([partition','] [type], [flags],
                       [gw_attrs_pvar])
+
+              1.4.6. is_from_gw([partition','] [type], [flag],
+                      [gw_attrs_pvar])
+
+              1.4.7. dr_is_gw([partition,] src_avp, [type],
+                      [flag], [gw_attrs_pvar])
 
               1.4.8. dr_disable()
 
@@ -119,16 +126,31 @@ Anca-Maria Vamanu
    1.21. Set drg_user_col parameter
    1.22. Set drg_domain_col parameter
    1.23. Set drg_grpid_col parameter
-   1.24. do_routing usage
-   1.25. route_to_carrier usage
-   1.26. route_to_gw usage
-   1.27. use_next_gw usage
-   1.28. goes_to_gw usage
-   1.29. is_from_gw usage
-   1.30. dr_is_gw usage
-   1.31. dr_disable() usage
-   1.32. dr_gw_status usage
-   1.33. dr_carrier_status usage
+   1.24. Set use_partitions parameter
+   1.25. Set db_partitions_url parameter
+   1.26. Set db_partitions_table parameter
+   1.27. do_routing usage
+   1.28. route_to_carrier usage when use_partitions parameter is 0
+   1.29. route_to_carrier usage when use_partitions parameter is 1
+   1.30. route_to_carrier usage when use_partitions parameter is 1
+          with pseudovariables
+
+   1.31. route_to_gw usage when use_partition parameter is 0
+   1.32. route_to_gw usage when use_partition parameter is 1
+   1.33. use_next_gw usage
+   1.34. use_next_gw usage when use_partition parameter is 1
+   1.35. goes_to_gw usage when use_partitions parameter is 0
+   1.36. goes_to_gw usage, when use_partitions parameter is 1
+   1.37. is_from_gw usage when use_partitions is 0
+   1.38. is_from_gw usage when use_partitions is 1
+   1.39. dr_is_gw usage when use_partitions is 0
+   1.40. dr_is_gw usage when use_partitions is 1
+   1.41. dr_disable() usage when use_partitions is 0
+   1.42. dr_disable() usage when use_partitions is 1
+   1.43. dr_gw_status usage when use_partitions is set to 0
+   1.44. dr_gw_status usage when use_partitionsis set to 1
+   1.45. dr_carrier_status usage when use_partitions is 0
+   1.46. dr_carrier_status usage when use_partitions is 1
 
 Chapter 1. Admin Guide
 
@@ -181,6 +203,10 @@ Chapter 1. Admin Guide
        used to prevent malicious forwarding to GWs (based on DNS
        lookups) when the script logic does none-GE forwarding
        (like foreign domains).
+     * provisioning from multiple databases - the gateways, rules,
+       groups and carriers can be grouped by partitions, and each
+       partition may be loaded from different databases/tables.
+       This makes the routing process partition based.
 
 1.1.3. Performance
 
@@ -674,9 +700,51 @@ modparam("drouting", "drg_domain_col", "host")
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
+1.3.24. use_partitions (int)
+
+   Flag to configure whether to use partitions for routing. If
+   this flag is set then the db_partitions_url and
+   db_partitions_table variables become mandatory.
+
+   Default value is “0”.
+
+   Example 1.24. Set use_partitions parameter
+...
+modparam("drouting", "use_partitions", 1)
+...
+
+1.3.25. db_partitions_url (int)
+
+   The url to the database containing partition-specific
+   information. (partition-specific information includes partition
+   name, url to the database where information about the partition
+   is preserved, the names of the tables in which it is preserved
+   and the AVPs that can be accessed using the .cfg script). The
+   use_partitions parameter must be set to 1.
+
+   Default value is “"NULL"”.
+
+   Example 1.25. Set db_partitions_url parameter
+...
+modparam("drouting", "db_partitions_url", "mysql://user:password@localho
+st/opensips_partitions")
+...
+
+1.3.26. db_partitions_table (int)
+
+   The name of the table containing partition definitions. To be
+   used with use_partitions and db_partitions_url.
+
+   Default value is “"dr_partitions"”.
+
+   Example 1.26. Set db_partitions_table parameter
+...
+modparam("drouting", "db_partitions_table", "partition_defs")
+...
+
 1.4. Exported Functions
 
-1.4.1.  do_routing([groupID], [flags], [gw_whitelist],
+1.4.1.  do_routing([part_and_or_groupID], [flags], [gw_whitelist],
 [rule_attrs_pvar], [gw_attrs_pvar], [carrier_attrs_pvar])
 
    Function to trigger routing of the message according to the
@@ -685,14 +753,28 @@ modparam("drouting", "drg_grpid_col", "grpid")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE.
 
+   If you set use_partitions to 1 the part_or_groupID parameter
+   becomes mandatory.
+
    All parameters are optional. Any of them may be ignored,
    provided the necessary separation marks "," are properly
    placed.
-     * groupID - the routing group the caller belongs to - this
-       may be a static numerical value or an AVP specification
-       (value must be numerical type, string types are ignored!).
-       If none specified, the function will automatically try to
-       query the dr_group table to get this information;
+     * part_and_or_groupID - Specifies the group of the caller for
+       routing purposes. Depending on the value of the
+       use_partitions parameter, it contains:
+          + the routing group the caller belongs to if
+            use_partitions is 0 - this may be a statical numerical
+            value or an AVP specification (value must be numerical
+            type, string types are ignored!). If none specified
+            the function will automatically try to query the
+            dr_group table to get this information
+          + the partition and routing group the caller belongs to,
+            the format is: "partition':'[groupID]" if
+            use_partitions parameter is 1 - both the partition
+            name and the groupId may be statical values or AVP
+            specifications. If no group is specified the function
+            will try to query the dr_group table for the given
+            partition to get this information.
      * flags - Controls the behavior of the function. Possible
        flags are:
           + W - Instead of using the destination (from the rule
@@ -724,38 +806,59 @@ modparam("drouting", "drg_grpid_col", "grpid")
        pseudo-variable which will be populated with the attributes
        of the matched carrier.
 
-   Example 1.24. do_routing usage
+   Example 1.27. do_routing usage
 ...
-# all groups, sort on order
+# all groups, sort on order, use_partitions is 0
 do_routing();
 ...
-# group id 0, sort on order
+# all groups, sort on order, use_partitions is 1, route by partition nam
+ed "part"
+do_routing("part:");
+...
+# group id 0, sort on order, use_partitions is 0
 do_routing("0");
 ...
-# group id from $avp(10), sort on order
+# group id 0, sort on order, use_partitions is 1, route by partition nam
+ed "part"
+do_routing("part:0");
+...
+# group id from $avp(10), sort on order, use_partitions is 0
 do_routing("$avp(10)");
 ...
-# all groups, sort on weights
+# all groups, sort on weights, use_partitions is 0
 do_routing("", "W");
+...
+# all groups, use_partitions is 1, partition and group supplied by AVPs,
+ do strict length matching
+do_routing("$avp(partition):$avp(grp)","L")
 ...
 # group id 2, sort on order, fallback rule and also return the gateway a
 ttributes
 do_routing("2", "F", , , "$var(gw_attributes)");
 ...
 
-1.4.2.  route_to_carrier(carrier_id, [gw_attrs_pvar],
+1.4.2.  route_to_carrier(part_and_or_carrier_id, [gw_attrs_pvar],
 [carrier_attrs_pvar])
 
    Function to trigger the direct routing to a given carrier. In
    this case the routing is not done prefix based, but carrier
    based (call will be sent to the GWs of that carrier, based on
-   carrier policy)
+   carrier policy).
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE..
 
-     * carrier_id (mandatory) - the ID (name) of the carrier to be
-       used; pseudo-variables are accepted
+   If you set use_partitions parameter to 1 you must supply the
+   partition in which the carrier has beend defined.
+
+     * part_and_or_carrier_id (mandatory):
+          + the ID (name) of the carrier to be used, if
+            use_partitions parameter is 0; pseudo-variables are
+            accepted.
+          + the partition and carrier to be used, if
+            use_partitions parameter is 1. The format is
+            "partition_name':'carrierId"; pseudo-variables are
+            accepted.
      * gw_attrs_pvar (output, optional) - a writable
        pseudo-variable which will be populated with the attributes
        of the currently matched gateway of this carrier.
@@ -763,9 +866,33 @@ do_routing("2", "F", , , "$var(gw_attributes)");
        pseudo-variable which will be populated with the attributes
        of this carrier.
 
-   Example 1.25. route_to_carrier usage
+   Example 1.28. route_to_carrier usage when use_partitions
+   parameter is 0
 ...
 if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
+        xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
+        t_on_failure("next_gw");
+        t_relay();
+        exit;
+}
+...
+
+   Example 1.29. route_to_carrier usage when use_partitions
+   parameter is 1
+...
+if ( route_to_carrier("my_partition:my_top_carrier", , "$var(carrier_att
+)") ) {
+        xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
+        t_on_failure("next_gw");
+        t_relay();
+        exit;
+}
+...
+
+   Example 1.30. route_to_carrier usage when use_partitions
+   parameter is 1 with pseudovariables
+...
+if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
         xlog("Routing to \"my_top_carrier\" - $var(carrier_att)\n");
         t_on_failure("next_gw");
         t_relay();
@@ -782,13 +909,24 @@ if ( route_to_carrier("my_top_carrier", , "$var(carrier_att)") ) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    LOCAL_ROUTE.
 
-     * gw_id (mandatory) - the ID / comma-separated list of IDs of
-       the gateway(s) to be used. pseudo-variables are accepted
+   If you set use_partitions parameter to 1 you must supply the
+   partition in which the gateway has beend defined.
+
+     * gw_id (mandatory) - the list of gateways to be used.
+          + a comma separated list of gateway ID's to be used, if
+            no use_partition parameter is 0. Pseudo-variables are
+            accepted.
+          + the desired partition, followed by a comma separated
+            list of gateway ID's from that partition to be used,
+            if use_partition parameter is 1. The format is:
+            "partition_name':'gwId1, gwId2, gwId3".
+            Pseudo-variables are accepted.
      * gw_attrs_pvar (output, optional) - a writable
        pseudo-variable which will be populated with the attributes
        of the currently matched gateway.
 
-   Example 1.26. route_to_gw usage
+   Example 1.31. route_to_gw usage when use_partition parameter is
+   0
 ...
 if ( route_to_gw("gw_europe") ) {
         t_relay();
@@ -803,8 +941,24 @@ if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
 }
 ...
 
-1.4.4.  use_next_gw([rule_attrs_pvar], [gw_attrs_pvar],
-[carrier_attrs_pvar])/next_routing()
+   Example 1.32. route_to_gw usage when use_partition parameter is
+   1
+...
+if ( route_to_gw("my_partition:gw_europe") ) {
+        t_relay();
+        exit;
+}
+...
+if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
+        xlog("Relaying to first gateway from our list - $var(gw_attrs)\n
+");
+        t_relay();
+        exit;
+}
+...
+
+1.4.4.  use_next_gw([partition','] [rule_attrs_pvar],
+[gw_attrs_pvar], [carrier_attrs_pvar])/next_routing()
 
    The function takes the next available destination (set by
    do_routing, as alternative destinations) and pushes it into the
@@ -821,6 +975,13 @@ if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
    case of an internal processing error. It may take the following
    optional parameters:
 
+   If you set use_partitions parameter to 1 you must supply the
+   partition (the partition becomes mandatory) in which the
+   gateways have beend defined.
+
+     * partition (mandatory if use_partitions parameter is 1,
+       otherwise it will be omitted altogether) It is the
+       partition in which the gateways have been defined.
      * rule_attrs_pvar (output, optional) - a writable
        pseudo-variable which will be populated with the attributes
        of the matched dynamic routing rule.
@@ -831,7 +992,7 @@ if ( route_to_gw("gw1,gw2,gw3", "$var(gw_attrs)") ) {
        pseudo-variable which will be populated with the attributes
        of the matched carrier.
 
-   Example 1.27. use_next_gw usage
+   Example 1.33. use_next_gw usage
 ...
 if (use_next_gw()) {
         t_relay();
@@ -847,7 +1008,24 @@ if (use_next_gw(, , "$var(carrier_attrs)")) {
 }
 ...
 
-1.4.5.  goes_to_gw([type], [flags], [gw_attrs_pvar])
+   Example 1.34. use_next_gw usage when use_partition parameter is
+   1
+...
+if (use_next_gw("my_partition")) {
+        t_relay();
+        exit;
+}
+...
+# Also fetch the carrier attributes, if any
+if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
+        xlog("Carrier attributes of current gateway: $var(carrier_attrs)
+\n");
+        t_relay();
+        exit;
+}
+...
+
+1.4.5.  goes_to_gw([partition','] [type], [flags], [gw_attrs_pvar])
 
    Function returns true if the destination of the current request
    (destination URI or Request URI) points (as IP) to one of the
@@ -859,12 +1037,23 @@ if (use_next_gw(, , "$var(carrier_attrs)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   All parameters are optional. Any of them may be ignored,
-   provided the necessary separation marks "," are properly
-   placed.
+   If you set use_partitions parameter to 1 you must supply the
+   partition (the partition becomes mandatory) in which the
+   gateways have beend defined.
+
+   If use_partitions parameter is 0 all parameters are optional.
+   Any of them may be ignored, provided the necessary separation
+   marks "," are properly placed.
+     * partition (mandatory if use_partitions parameter is 1,
+       otherwise it will be omitted altogether) - the name of the
+       partition containing the gateway/destination to be checked.
      * type (optional) - GW/destination type to be checked; when
        ommiting this parameter or specifying a negative value i.e.
-       "-1", matching will be done against all groups
+       "-1", matching will be done against all groups (in a given
+       partition if use_partition parameter is 1; if
+       use_partitions is 1 the partition being mandatory at this
+       point, it is not possible to do matching against all the
+       partitions)
      * flags (optional) - what operations should be performed when
        a GW matches:
           + 's' (Strip) - apply to the username of RURI the strip
@@ -881,7 +1070,8 @@ if (use_next_gw(, , "$var(carrier_attrs)")) {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.28. goes_to_gw usage
+   Example 1.35. goes_to_gw usage when use_partitions parameter is
+   0
 ...
 if (goes_to_gw("1", , "$var(gw_attrs)")) {
         sl_send_reply("403","Forbidden");
@@ -889,7 +1079,16 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
 }
 ...
 
-1.4.6.  is_from_gw([type], [flag], [gw_attrs_pvar])
+   Example 1.36. goes_to_gw usage, when use_partitions parameter
+   is 1
+...
+if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
+        sl_send_reply("403","Forbidden");
+        exit;
+}
+...
+
+1.4.6.  is_from_gw([partition','] [type], [flag], [gw_attrs_pvar])
 
    The function checks if the sender of the message (its source
    IP) is a gateway from a certain group.
@@ -897,9 +1096,16 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and
    ONREPLY_ROUTE.
 
-   All parameters are optional. Any of them may be ignored,
-   provided the necessary separation marks "," are properly
-   placed.
+   If you set use_partitions parameter to 1 you must supply the
+   partition (the partition becomes mandatory) in which the
+   gateways have beend defined.
+
+   If use_partitions parameter is 0 all parameters are optional.
+   Any of them may be ignored, provided the necessary separation
+   marks "," are properly placed.
+     * partition (mandatory if use_partitions parameter is 1,
+       otherwise it will be omitted altogether) - Partition
+       containing the destination/gw to be checked.
      * type (optional) - GW/destination type to be checked; when
        ommiting this parameter or specifying a negative value i.e.
        "-1", matching will be done against all groups
@@ -919,13 +1125,20 @@ if (goes_to_gw("1", , "$var(gw_attrs)")) {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.29. is_from_gw usage
+   Example 1.37. is_from_gw usage when use_partitions is 0
 ...
 if (is_from_gw("3","1") {
 }
 ...
 
-1.4.7.  dr_is_gw(src_avp, [type], [flag], [gw_attrs_pvar])
+   Example 1.38. is_from_gw usage when use_partitions is 1
+...
+if (is_from_gw("my_partition","3","1") {
+}
+...
+
+1.4.7.  dr_is_gw([partition,] src_avp, [type], [flag],
+[gw_attrs_pvar])
 
    The function checks if the ip address in pvar src_pv is a
    gateway from a certain group.
@@ -934,7 +1147,14 @@ if (is_from_gw("3","1") {
    FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
    TIMER_ROUTE and EVENT_ROUTE.
 
+   If you set use_partitions parameter to 1 you must supply the
+   partition (the partition becomes mandatory) in which the
+   gateways have beend defined.
+
    Meaning of the parameters is as follows:
+     * partition (mandatory if use_partitions parameter is 1,
+       otherwise it will be omitted altogether) - Partition
+       containing the destinations/gateways to be checked.
      * src_avp (mandatory) - avp containing a SIP URI. Does not
        support other OpenSIPS pseudo-variables.
      * type (optional) - GW/destination type to be checked; when
@@ -955,9 +1175,15 @@ if (is_from_gw("3","1") {
        pseudo-variable which will be populated with the attributes
        of the matched gateway.
 
-   Example 1.30. dr_is_gw usage
+   Example 1.39. dr_is_gw usage when use_partitions is 0
 ...
 if (dr_is_gw("$avp(uac)","3") {
+}
+...
+
+   Example 1.40. dr_is_gw usage when use_partitions is 1
+...
+if (dr_is_gw("my_partition","$avp(uac)","3") {
 }
 ...
 
@@ -971,10 +1197,26 @@ if (dr_is_gw("$avp(uac)","3") {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.31. dr_disable() usage
+   If you set use_partitions parameter to 1 you must supply the
+   partition (the partition becomes mandatory) in which the
+   gateway to be disabled is defined.
+     * partition (mandatory if use_partitions parameter is 1,
+       otherwise it will be omitted altogether) - Partition
+       containing the destination/gateway to be disabled.
+
+   Example 1.41. dr_disable() usage when use_partitions is 0
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
+
+}
+
+...
+
+   Example 1.42. dr_disable() usage when use_partitions is 1
+...
+if (t_check_status("(408)|(5[0-9][0-9])")) {
+        dr_disable("my_partition");
 
 }
 
@@ -984,32 +1226,49 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 1.5.1.  dr_reload
 
-   Command to reload routing rules from database.
+   Command to reload routing rules from database. If
+   use_partitions is set to 1 you can reload just a partition
+   given a parameter, if no parameter is supplied then all the
+   partitions will be reloaded.
 
-   It takes no parameter.
+   If use_partitions is 0 it takes no parameter.
 
    MI FIFO Command Format:
                 :dr_reload:fifo_reply
+                partition_name (optional)
                 _empty_line_
 
 1.5.2. dr_gw_status
 
    Gets or sets the status (enabled or disabled) of a gateway. The
-   function may take from 0 to 2 parameters. If none, it will list
-   all gateways along with their status. If one parameter is
-   provided, that must be the id of a gateway and the function
-   will return the status of that gateway. If 2 parameters are
-   provided, first must be the ID of the ID of a GW and the second
-   must be the new status to be forced for that GW (0 - disable, 1
-   - enable).
+   function may take from 0 to 3 parameters.
+     * if use_partitions is set to 0 - if no parameter is
+       provided, it will list all gateways along with their
+       status. If one parameter is provided, that must be the id
+       of a gateway and the function will return the status of
+       that gateway. If 2 parameters are provided, first must be
+       the ID of the ID of a GW and the second must be the new
+       status to be forced for that GW (0 - disable, 1 - enable).
+     * if use_partitions is set to 1 - the first paramter must be
+       the partition (the partition is mandatory). If just one
+       parameter is provided it will the display the statuses of
+       all the gateways in the given partition. If two parameters
+       are provided, the first must be the partition, and the
+       second must be the gateway Id. If three parameters are
+       provided, the first must be the partition, the second must
+       be the gateway and the third will be the new status to be
+       forced for tat GW (0 - disable, 1 - enable)
 
    MI FIFO Command Format:
                 :dr_gw_status:_reply_fifo_file_
+                partition_name (mandatory if use_partitions is 1, otherw
+ise will be omitted altogether)
                 GW_id
                 status (optional)
                 _empty_line_
 
-   Example 1.32. dr_gw_status usage
+   Example 1.43. dr_gw_status usage when use_partitions is set to
+   0
 $ ./opensipsctl fifo dr_gw_status 2
 State:: Active
 $ ./opensipsctl fifo dr_gw_status 2 0
@@ -1018,28 +1277,57 @@ Enabled:: Disabled MI
 $ ./opensipsctl fifo dr_gw_status 3
 Enabled:: Inactive
 
+   Example 1.44. dr_gw_status usage when use_partitionsis set to 1
+$ ./opensipsctl fifo dr_gw_status part_1 my_gw
+State:: Active
+$ ./opensipsctl fifo dr_gw_status my_partition 3 0
+$ ./opensipsctl fifo dr_gw_status partition7 dsbl_gw 2
+Enabled:: Disabled MI
+$ ./opensipsctl fifo dr_gw_status partition8 gw3
+Enabled:: Inactive
+
 1.5.3. dr_carrier_status
 
    Gets or sets the status (enabled or disabled) of a carrier. The
-   function may take from 0 to 2 parameters. If none, it will list
-   all carriers along with their status. If one parameter is
-   provided, that must be the id of a carrier and the function
-   will return the status of that carrier. If 2 parameters are
-   provided, first must be the ID of the ID of a carrier and the
-   second must be the new status to be forced for that carrier (0
-   - disable, 1 - enable).
+   function may take from 0 to 3 parameters.
+     * if use_partition is set to 0 - if no parameter is provided
+       it will list all the carriers along with their status. If
+       one parameter is provided, that must be the id of carrier
+       and the function will return the status of that carrier. If
+       2 parameters are provided, first must be the Id of a
+       carrier and the second must be the new status to be forced
+       for that carrier
+     * if use_partition is set to 1 - the first parameter must be
+       the partition (the partition becomes mandatory). If one
+       parameter is supplied, it will be the partition, and it
+       will display the statuses of the carriers contained in that
+       partition. If two parameters are supplied, the second must
+       be the carrierId, and the command will display the status
+       of the selected carrier. If three parameters are supplied,
+       the first two will be the partition name and the carrierId
+       while the third parameter will be the new status to be
+       forced for that carrier.
 
    MI FIFO Command Format:
                 :dr_carrier_status:_reply_fifo_file_
+                partition_name (mandatory if use_partition is 1, otherwi
+se it will be omitted)
                 carrier_id
                 status (optional)
                 _empty_line_
 
-   Example 1.33. dr_carrier_status usage
+   Example 1.45. dr_carrier_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1
 $ ./opensipsctl fifo dr_carrier_status CR1
+Enabled:: yes
+
+   Example 1.46. dr_carrier_status usage when use_partitions is 1
+$ ./opensipsctl fifo dr_carrier_status my_partition CR1
+Enabled:: no
+$ ./opensipsctl fifo dr_carrier_status partition_1 CR1 1
+$ ./opensipsctl fifo dr_carrier_status partition_3 CR1
 Enabled:: yes
 
 1.6. Installation

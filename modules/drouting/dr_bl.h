@@ -35,19 +35,21 @@
 #include "../../sr_module.h"
 #include "../../blacklists.h"
 #include "prefix_tree.h"
+#include "dr_partitions.h"
 
 #define MAX_TYPES_PER_BL 32
 
 struct dr_bl {
 	unsigned int no_types;
 	unsigned int types[MAX_TYPES_PER_BL];
+    struct head_db * part;
 	struct bl_head *bl;
 	struct dr_bl *next;
 };
 
 int set_dr_bl( modparam_t type, void* val);
 
-int init_dr_bls(void);
+int init_dr_bls( struct head_db *);
 
 void destroy_dr_bls(void);
 
