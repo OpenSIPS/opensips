@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2012 OpenSIPS Solutions
+ * Copyright (C) 2014 VoIP Embedded, Inc.
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,27 +21,28 @@
  *
  * history:
  * ---------
- *  2012-12-xx  created (razvancrainea)
+ *  2014-06-27  created (osas)
  */
 
 
-#ifndef _EV_ROUTE_H_
-#define _EV_ROUTE_H_
+#ifndef _ROUTE_SEND_H_
+#define _ROUTE_SEND_H_
 
 
-void event_route_handler(int rank);
+#define ROUTE_SEND_RETRY 3
 
-/* transport protocol name */
-#define SCRIPTROUTE_NAME		"route"
-#define SCRIPTROUTE_NAME_STR	{ SCRIPTROUTE_NAME, sizeof(SCRIPTROUTE_NAME)-1}
+typedef struct _route_send {
+	struct action *a;
+	str event;
+	evi_params_t params;
+} route_send_t;
 
-/* module flag */
-#define SCRIPTROUTE_FLAG		(1 << 26)
+int create_pipe(void);
+void destroy_pipe(void);
+int init_writer(void);
 
-/* separation char */
-#define COLON_C				':'
-
-/* maximum length of the socket */
-#define EV_SCRIPTROUTE_MAX_SOCK	256
+int route_build_buffer(str *event_name, evi_reply_sock *sock,
+		evi_params_t *params, route_send_t **msg);
+int route_send(route_send_t *route_s);
 
 #endif

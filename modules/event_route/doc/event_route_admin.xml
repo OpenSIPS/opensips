@@ -125,10 +125,27 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 	<section>
 	<title>Exported Parameters</title>
 	<section>
+		<title><varname>synch_mode</varname> (integer)</title>
 		<para>
-		No parameter exported by this module.
-			This module doesn't export any parameter
+		Sets the default event handling method:
+		<itemizedlist>
+		<listitem>
+		<para>0 : handle events in asynch mode (in a dedicated process)</para>
+		</listitem>
+		<listitem>
+		<para>1 : handle events in synch mode (in the same process)</para>
+		</listitem>
+		</itemizedlist>
 		</para>
+		<para><emphasis>Default value is 1.</emphasis></para>
+		<example>
+		<title>Set <varname>synch_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_route", "synch_mode", 0)
+...
+</programlisting>
+		</example>
 	</section>
 	</section>
 

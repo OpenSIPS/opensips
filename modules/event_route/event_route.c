@@ -28,6 +28,7 @@
 #include "../../evi/evi_modules.h"
 #include "../../ut.h"
 #include "event_route.h"
+#include "route_send.h"
 #include <string.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
@@ -38,9 +39,12 @@
  * module functions
  */
 static int mod_init(void);
+static void destroy(void);
 static int child_init(int rank);
 static int scriptroute_fetch(struct sip_msg *msg, char *list);
 static int fixup_scriptroute_fetch(void **param, int param_no);
+
+static int synch_mode = 1;
 
 /**
  * exported functions
@@ -54,6 +58,13 @@ static str scriptroute_print(evi_reply_sock *sock);
 #define SR_SOCK_ROUTE(_s) ((int)(unsigned long)(_s->params))
 
 /**
+ *  * module process
+ *   */
+static proc_export_t procs[] = {
+	{"event-route handler",  0,  0, event_route_handler, 1, 0},
+	{0,0,0,0,0,0}
+};
+/**
  * module exported functions
  */
 static cmd_export_t cmds[]={
@@ -62,6 +73,10 @@ static cmd_export_t cmds[]={
 	{0,0,0,0,0,0}
 };
 
+static param_export_t params[] = {
+	{"synch_mode",	INT_PARAM,	&synch_mode},
+	{0, 0, 0}
+};
 
 /**
  * module exports
@@ -71,14 +86,14 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	cmds,					/* exported functions */
-	0,						/* exported parameters */
+	params,						/* exported parameters */
 	0,						/* exported statistics */
 	0,						/* exported MI functions */
 	0,						/* exported pseudo-variables */
-	0,						/* extra processes */
+	procs,					/* extra processes */
 	mod_init,				/* module initialization function */
 	0,						/* response handling function */
-	0,						/* destroy function */
+	destroy,				/* destroy function */
 	child_init				/* per-child init function */
 };
 
@@ -107,8 +122,25 @@ static int mod_init(void)
 		LM_ERR("cannot register transport functions for SCRIPTROUTE\n");
 		return -1;
 	}
+
+	if (create_pipe() < 0) {
+		LM_ERR("cannot create communication pipe\n");
+		return -1;
+	}
+
 	return 0;
 }
+
+/*
+ * destroy function
+ */
+static void destroy(void)
+{
+	LM_NOTICE("destroy module ...\n");
+	/* closing sockets */
+	destroy_pipe();
+}
+
 
 static int child_init(int rank)
 {
@@ -116,6 +148,11 @@ static int child_init(int rank)
 	str sock_name;
 	str event_name;
 	int idx;
+
+	if (init_writer() < 0) {
+		LM_ERR("cannot init writing pipe\n");
+		return -1;
+	}
 
 	/*
 	 * Only the first process registers the subscribers
@@ -232,7 +269,7 @@ static str scriptroute_print(evi_reply_sock *sock)
 }
 
 /* static parameters list retrieved by the fetch_event_params */
-static evi_params_t *parameters = NULL;
+evi_params_t *parameters = NULL;
 str *event_name = NULL; // mostly used for debugging
 
 static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
@@ -240,6 +277,7 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 {
 	evi_params_t * backup_params;
 	str * backup_name;
+	route_send_t *buf = NULL;
 
 	if (!sock || !(sock->flags & EVI_PARAMS)) {
 		LM_ERR("no socket found\n");
@@ -252,18 +290,25 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 	}
 
-	/* save the previous parameters */
-	backup_params = parameters;
-	backup_name = event_name;
+	if (synch_mode) {
+		/* save the previous parameters */
+		backup_params = parameters;
+		backup_name = event_name;
 
-	parameters = params;
-	event_name = ev_name;
+		parameters = params;
+		event_name = ev_name;
 
-	run_top_route(event_rlist[SR_SOCK_ROUTE(sock)].a, msg);
+		run_top_route(event_rlist[SR_SOCK_ROUTE(sock)].a, msg);
 
-	/* restore previous parameters */
-	parameters = backup_params;
-	event_name = backup_name;
+		/* restore previous parameters */
+		parameters = backup_params;
+		event_name = backup_name;
+	} else {
+		if (route_build_buffer(ev_name, sock, params, &buf) < 0) return -1;
+		buf->a = event_rlist[SR_SOCK_ROUTE(sock)].a;
+
+		if (route_send(buf) < 0) return -1;
+	}
 
 	return 0;
 }
