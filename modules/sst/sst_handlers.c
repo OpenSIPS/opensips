@@ -385,10 +385,8 @@ void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 	}
 
 	str raw_info = {(char*)info, sizeof(sst_info_t)};
-	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0){
-		LM_ERR ("No sst_info found!\n");
+	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0)
 		return;
-	}
 
 	setup_dialog_callbacks(did, info);
 }
