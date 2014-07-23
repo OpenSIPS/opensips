@@ -22,13 +22,9 @@ if [ -f ~/.opensipsctlrc ]; then
 	. ~/.opensipsctlrc
 fi
 
-if [ -z $MYDIR ] ; then
-	MYDIR=`dirname $0`
-fi
-
 if [ $TEST = "true" ]; then
-	if [ -f "$MYDIR/opensipsctlrc" ]; then
-		. "$MYDIR/opensipsctlrc"
+	if [ -f ./opensipsctlrc ]; then
+		. ./opensipsctlrc
 	fi
 fi
 
@@ -52,6 +48,10 @@ fi
 
 ### version for this script
 VERSION='$Revision: 4448 $'
+
+if [ -z $MYDIR ] ; then
+	MYDIR=`dirname $0`
+fi
 
 if [ -z $MYLIBDIR ] ; then
 	MYLIBDIR="/usr/local/lib/opensips/opensipsctl"
