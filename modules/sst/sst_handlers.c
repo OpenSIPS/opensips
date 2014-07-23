@@ -378,7 +378,7 @@ void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 
 	str raw_info = {(char*)info, sizeof(sst_info_t)};
 	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0)
-		LM_DBG("Cannot fetch sst info from dialog! Probably not a sst dialog\n");
+		return;
 
 	setup_dialog_callbacks(did, info);
 }
