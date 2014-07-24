@@ -54,6 +54,9 @@ struct dlg_binds {
 	match_dialog_f       match_dialog;
 	validate_dialog_f    validate_dialog;
 	fix_route_dialog_f   fix_route_dialog;
+
+	set_mod_flag_f       set_mod_flag;
+	is_mod_flag_set_f    is_mod_flag_set;
 };
 
 

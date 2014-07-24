@@ -264,6 +264,7 @@ static param_export_t mod_params[]={
 	{ "profiles_column",       STR_PARAM, &profiles_column.s        },
 	{ "vars_column",           STR_PARAM, &vars_column.s            },
 	{ "sflags_column",         STR_PARAM, &sflags_column.s          },
+	{ "mflags_column",         STR_PARAM, &mflags_column.s          },
 	{ "db_update_period",      INT_PARAM, &db_update_period         },
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
@@ -334,7 +335,7 @@ static pv_export_t mod_items[] = {
 		0,                 0, 0, 0, 0},
 	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},    1000,
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
-	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000, 
+	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000,
 		pv_get_dlg_timeout, pv_set_dlg_timeout,  0, 0, 0, 0 },
 	{ {"DLG_callee_callid",  sizeof("DLG_callee_callid")-1}, 1000,
 		pv_get_dlg_callee_callid,0,0, 0, 0, 0},
@@ -575,6 +576,16 @@ static int create_dialog_wrapper(struct sip_msg *req,int flags)
 	return 1;
 }
 
+static void set_mod_flag_wrapper (struct dlg_cell *dlg, unsigned int flags)
+{
+	dlg->mod_flags |= flags;
+}
+
+static int is_mod_flag_set_wrapper (struct dlg_cell *dlg, unsigned int flags)
+{
+	return (dlg->mod_flags & flags) > 0;
+}
+
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
@@ -592,6 +603,9 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->match_dialog = w_match_dialog;
 	dlgb->fix_route_dialog = fix_route_dialog;
 	dlgb->validate_dialog = dlg_validate_dialog;
+
+	dlgb->set_mod_flag = set_mod_flag_wrapper;
+	dlgb->is_mod_flag_set = is_mod_flag_set_wrapper;
 
 	return 1;
 }
@@ -651,6 +665,7 @@ static int mod_init(void)
 	profiles_column.len = strlen(profiles_column.s);
 	vars_column.len = strlen(vars_column.s);
 	sflags_column.len = strlen(sflags_column.s);
+	mflags_column.len = strlen(mflags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
@@ -1683,7 +1698,7 @@ int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t 
 	req_len = calc_base64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
 
 	if (req_len*2 > callid_buf_len) {
-		callid_buf = pkg_realloc(callid_buf,req_len*2);	
+		callid_buf = pkg_realloc(callid_buf,req_len*2);
 		if (callid_buf == NULL) {
 			LM_ERR("No more pkg\n");
 			return pv_get_null( msg, param, res);
@@ -1692,13 +1707,13 @@ int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t 
 		callid_buf_len = req_len*2;
 	}
 
-	memcpy(callid_buf+req_len,topo_hiding_prefix.s,topo_hiding_prefix.len);	
+	memcpy(callid_buf+req_len,topo_hiding_prefix.s,topo_hiding_prefix.len);
 	for (i=0;i<dlg->callid.len;i++)
 		callid_buf[i] = dlg->callid.s[i] ^ topo_hiding_seed.s[i%topo_hiding_seed.len];
 
 	base64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
 		     (unsigned char *)(callid_buf),dlg->callid.len);
-	
+
 	res->rs.s = callid_buf+req_len;
 	res->rs.len = req_len;
 	res->flags = PV_VAL_STR;

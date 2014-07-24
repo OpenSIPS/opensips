@@ -119,6 +119,7 @@ struct dlg_cell
 	unsigned int         flags;
 	unsigned int         from_rr_nb;
 	unsigned int         user_flags;
+	unsigned int         mod_flags;
 	unsigned int         initial_t_hash_index;
 	unsigned int         initial_t_label;
 	struct dlg_tl        tl;

@@ -86,6 +86,8 @@
 		}												   \
 }
 
+#define SST_DIALOG_FLAG (1 << 3)
+
 #ifndef MIN
 #define MIN(a, b) (a<b?a:b)
 #endif
@@ -359,6 +361,8 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 				"This dialog won't be considered after restart!\n");
 	}
 
+	dlg_binds->set_mod_flag(did, SST_DIALOG_FLAG);
+
 	setup_dialog_callbacks(did, info);
 	/* Early setup of default timeout */
 	set_dialog_lifetime(did, info->interval);
@@ -367,6 +371,10 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 
 void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params *params){
+
+	/* Check if this is previously marked by sst module */
+	if (!dlg_binds->is_mod_flag_set(did, SST_DIALOG_FLAG))
+		return;
 
 	/* We try to get the original sst info back */
 	sst_info_t *info = (sst_info_t *)shm_malloc(sizeof(sst_info_t));
@@ -377,8 +385,10 @@ void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 	}
 
 	str raw_info = {(char*)info, sizeof(sst_info_t)};
-	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0)
+	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0){
+		LM_ERR ("No sst_info found!\n");
 		return;
+	}
 
 	setup_dialog_callbacks(did, info);
 }
