@@ -58,6 +58,9 @@ typedef struct _dlg_cseq dlg_cseq_wrapper;
 
 typedef int (*create_dlg_f)(struct sip_msg *req,int flags);
 
+typedef void (*set_mod_flag_f)(struct dlg_cell *dlg, unsigned int flags);
+typedef int (*is_mod_flag_set_f)(struct dlg_cell *dlg, unsigned int flags);
+
 void init_dlg_handlers(int default_timeout);
 
 void destroy_dlg_handlers();

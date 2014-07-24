@@ -595,15 +595,15 @@ int dlg_th_decode_callid(struct sip_msg *msg)
 		LM_ERR("No more pkg\n");
 		return -1;
 	}
-		
+
 	new_callid.len = base64decode((unsigned char *)(new_callid.s),
 			(unsigned char *)(msg->callid->body.s + topo_hiding_prefix.len),
 			msg->callid->body.len - topo_hiding_prefix.len);
 	for (i=0;i<new_callid.len;i++)
-		new_callid.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len]; 
+		new_callid.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len];
 
 	del=del_lump(msg, msg->callid->body.s-msg->buf, msg->callid->body.len, HDR_CALLID_T);
-	if (del==NULL) {               
+	if (del==NULL) {
 		LM_ERR("Failed to delete old callid\n");
 		pkg_free(new_callid.s);
 		return -1;
@@ -646,7 +646,7 @@ int dlg_th_encode_callid(struct sip_msg *msg)
 
 	memcpy(new_callid.s,topo_hiding_prefix.s,topo_hiding_prefix.len);
 	for (i=0;i<msg->callid->body.len;i++)
-		msg->callid->body.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len]; 
+		msg->callid->body.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len];
 
 	base64encode((unsigned char *)(new_callid.s+topo_hiding_prefix.len),
 		     (unsigned char *)(msg->callid->body.s),msg->callid->body.len);
@@ -654,10 +654,10 @@ int dlg_th_encode_callid(struct sip_msg *msg)
 	/* reset the callid back to original value - some might still need it ( eg. post script )
 	FIXME : use bigger buffer here ? mem vs cpu */
 	for (i=0;i<msg->callid->body.len;i++)
-		msg->callid->body.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len]; 
+		msg->callid->body.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len];
 
 	del=del_lump(msg, msg->callid->body.s-msg->buf, msg->callid->body.len, HDR_CALLID_T);
-	if (del==NULL) {               
+	if (del==NULL) {
 		LM_ERR("Failed to delete old callid\n");
 		pkg_free(new_callid.s);
 		return -1;
@@ -702,15 +702,6 @@ static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
 #define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_NOTIFY|METHOD_SUBSCRIBE)
 int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 {
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	int prev_dbg_level;
-#endif
-
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	prev_dbg_level = *debug;
-	*debug = L_ALERT; 
-#endif
-
 	if (parse_msg(msg->buf,msg->len,msg)!=0) {
 		LM_ERR("Invalid SIP msg\n");
 		goto error;
@@ -724,7 +715,7 @@ int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 	if (msg->cseq==NULL || get_cseq(msg)==NULL) {
 		LM_ERR("Failed to parse CSEQ header\n");
 		goto error;
-	}       
+	}
 
 	if((get_cseq(msg)->method_id)&MSG_SKIP_BITMASK) {
 		LM_DBG("Skipping %d for DLG callid topo hiding\n",get_cseq(msg)->method_id);
@@ -741,15 +732,9 @@ int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 		goto error;
 	}
 
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	*debug = prev_dbg_level; 
-#endif
 	return 0;
 
 error:
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	*debug = prev_dbg_level; 
-#endif
 	return -1;
 }
 
@@ -772,7 +757,7 @@ int dlg_th_pre_raw(str *data)
 					goto error;
 				}
 				goto rebuild_msg;
-			}	
+			}
 		} else {
 			/* initial request, don't do anything
 			callid masking will be done on the out side */
@@ -787,7 +772,7 @@ int dlg_th_pre_raw(str *data)
 			goto rebuild_rpl;
 		} else {
 			/* encoding will be done on the out side */
-		}	
+		}
 	} else {
 		/* non sip, most likely, let it through */
 		return 0;
@@ -814,9 +799,9 @@ error:
 int dlg_th_post_raw(str *data)
 {
 	struct sip_msg msg;
-	struct dlg_cell *dlg; 
+	struct dlg_cell *dlg;
 
-	dlg = get_current_dialog(); 
+	dlg = get_current_dialog();
 	if (dlg == NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0 ) {
 		/* dialog module not involved or not callid topo hiding
 		 - let is pass freely */
@@ -861,7 +846,7 @@ int dlg_th_post_raw(str *data)
 		if (get_from(&msg)->tag_value.len != 0) {
 			if (memcmp(get_from(&msg)->tag_value.s,
 			dlg->legs[0].tag.s,dlg->legs[0].tag.len) == 0) {
-				/* reply going to caller - 
+				/* reply going to caller -
 				decode was done on the receiving end, let it unchanged */
 			} else {
 				/* reply going to callee , need to encode callid */
@@ -889,7 +874,7 @@ rebuild_rpl:
 	data->s = dlg_th_rebuild_rpl(&msg,&data->len);
 	free_sip_msg(&msg);
 	return 0;
-	
+
 error:
 	free_sip_msg(&msg);
 	return -1;

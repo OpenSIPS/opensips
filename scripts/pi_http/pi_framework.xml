@@ -372,6 +372,7 @@
 		<column><field>vars</field><type>DB_BLOB</type></column>
 		<column><field>profiles</field><type>DB_BLOB</type></column>
 		<column><field>script_flags</field><type>DB_INT</type></column>
+		<column><field>module_flags</field><type>DB_INT</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of dialplan table-->
@@ -2099,6 +2100,7 @@
 				<col><field>vars</field></col>
 				<col><field>profiles</field></col>
 				<col><field>script_flags</field></col>
+				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
 			</query_cols>
 		</cmd>
@@ -2130,6 +2132,7 @@
 				<col><field>vars</field></col>
 				<col><field>profiles</field></col>
 				<col><field>script_flags</field></col>
+				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
 			</query_cols>
 		</cmd>
@@ -2163,6 +2166,7 @@
 				<col><field>vars</field></col>
 				<col><field>profiles</field></col>
 				<col><field>script_flags</field></col>
+				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
 			</query_cols>
 		</cmd>
