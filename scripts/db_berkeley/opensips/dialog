@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-dlg_id(int) callid(str) from_uri(str) from_tag(str) to_uri(str) to_tag(str) mangled_from_uri(str) mangled_to_uri(str) caller_cseq(str) callee_cseq(str) caller_ping_cseq(int) callee_ping_cseq(int) caller_route_set(str) callee_route_set(str) caller_contact(str) callee_contact(str) caller_sock(str) callee_sock(str) state(int) start_time(int) timeout(int) vars(str) profiles(str) script_flags(int) flags(int)
+dlg_id(int) callid(str) from_uri(str) from_tag(str) to_uri(str) to_tag(str) mangled_from_uri(str) mangled_to_uri(str) caller_cseq(str) callee_cseq(str) caller_ping_cseq(int) callee_ping_cseq(int) caller_route_set(str) callee_route_set(str) caller_contact(str) callee_contact(str) caller_sock(str) callee_sock(str) state(int) start_time(int) timeout(int) vars(str) profiles(str) script_flags(int) module_flags(int) flags(int)
 METADATA_KEY
 
 METADATA_READONLY
@@ -7,4 +7,4 @@ METADATA_READONLY
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|NIL|NIL|NIL|NIL|NIL|NULL|NULL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NULL|NULL|0|0
+NIL|NIL|NIL|NIL|NIL|NIL|NULL|NULL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NULL|NULL|0|0|0

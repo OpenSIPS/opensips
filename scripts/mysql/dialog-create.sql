@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','9');
+INSERT INTO version (table_name, table_version) values ('dialog','10');
 CREATE TABLE dialog (
     dlg_id BIGINT(10) UNSIGNED PRIMARY KEY NOT NULL,
     callid CHAR(255) NOT NULL,
@@ -24,6 +24,7 @@ CREATE TABLE dialog (
     vars BLOB(4096) DEFAULT NULL,
     profiles TEXT(512) DEFAULT NULL,
     script_flags INT(10) UNSIGNED DEFAULT 0 NOT NULL,
+    module_flags INT(10) UNSIGNED DEFAULT 0 NOT NULL,
     flags INT(10) UNSIGNED DEFAULT 0 NOT NULL
 ) ENGINE=MyISAM;
 

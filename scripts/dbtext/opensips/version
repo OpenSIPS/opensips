@@ -15,7 +15,7 @@ cc_flows:1
 closeddial:1
 cpl:2
 dbaliases:2
-dialog:9
+dialog:10
 dialplan:4
 dispatcher:7
 domain:2

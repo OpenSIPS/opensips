@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','9');
+INSERT INTO version (table_name, table_version) values ('dialog','10');
 CREATE TABLE dialog (
     dlg_id BIGINT(10) PRIMARY KEY,
     callid VARCHAR2(255),
@@ -24,6 +24,7 @@ CREATE TABLE dialog (
     vars BLOB(4096) DEFAULT NULL,
     profiles CLOB(512) DEFAULT NULL,
     script_flags NUMBER(10) DEFAULT 0 NOT NULL,
+    module_flags NUMBER(10) DEFAULT 0 NOT NULL,
     flags NUMBER(10) DEFAULT 0 NOT NULL
 );
 
