@@ -49,6 +49,7 @@
 #include "../sipcapture/sipcapture.h"
 
 #define NR_KEYS 14
+#define SIPTRACE_TABLE_VERSION 4
 
 /* trace is completly disabled */
 #define trace_is_off() \
@@ -403,7 +404,7 @@ static int mod_init(void)
 
 	*trace_to_database_flag = trace_to_database;
 
-        if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
+	if(trace_to_database_flag!=NULL && *trace_to_database_flag!=0) {
 		/* Find a database module */
 		if (db_bind_mod(&db_url, &db_funcs))
 		{
@@ -415,6 +416,20 @@ static int mod_init(void)
 			LM_ERR("database modules does not provide all functions needed by module\n");
 			return -1;
 		}
+
+		if ((db_con = db_funcs.init(&db_url)) == 0) {
+			LM_CRIT("Cannot connect to DB\n");
+			return -1;
+		}
+
+		if(db_check_table_version(&db_funcs, db_con,
+				&siptrace_table, SIPTRACE_TABLE_VERSION) < 0) {
+			LM_ERR("error during table version check.\n");
+			return -1;
+		}
+
+		db_funcs.close(db_con);
+		db_con = 0;
 	}
 
 	trace_on_flag = (int*)shm_malloc(sizeof(int));
