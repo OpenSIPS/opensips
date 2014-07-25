@@ -437,6 +437,32 @@ int fixup_int_list(void **param)
 }
 
 /*
+ * Set the given flag in the flags structure integer value
+ */
+static int ds_set_flag(ds_flags_t* flags, int ds_flag)
+{
+
+	if (flags->type == DS_FLAGS_TYPE_PVS)
+		goto err;
+
+	flags->type = DS_FLAGS_TYPE_INT;
+	if (!(flags->v.ival & ds_flag))
+		flags->v.ival |= ds_flag;
+	else {
+		LM_ERR("more than one flag with the same meaning given\n");
+		return -1;
+	}
+
+	return 0;
+
+	err:
+		LM_ERR("Invalid flags parameter\n");
+		shm_free(flags);
+		return -1;
+}
+
+
+/*
  * Fixup for flags
  */
 
@@ -444,40 +470,38 @@ int fixup_flags(void **param, ds_flags_t* flags)
 {
 
 	#define PV_DELIM ')'
+	#define FLAG_ERR(_flag_msg_)\
+		do{\
+			LM_ERR("Cannot set " #_flag_msg_  " flag\n");\
+			return -1;\
+		} while(0);
+
 	char* param_p = (char *)(*param);
 
 	for( ; *param_p != '\0' ; param_p++) {
 		switch (*param_p) {
 			case ' ':
-			case '\t':
-			case '\n':
 				(*param)++;
 				break;
 			case 'f':
 			case 'F':
-				if (flags->type == DS_FLAGS_TYPE_PVS)
-					goto err;
-
-				flags->type = DS_FLAGS_TYPE_INT;
-				if (!(flags->v.ival & DS_FAILOVER_ON))
-					flags->v.ival |= DS_FAILOVER_ON;
-				else {
-					LM_ERR("Only one flag is required\n");
-					return -1;
-				}
+				if (ds_set_flag(flags, DS_FAILOVER_ON))
+					FLAG_ERR(failover (F));
 				break;
 			case 'u':
 			case 'U':
-				if (flags->type == DS_FLAGS_TYPE_PVS)
-					goto err;
-
-				flags->type = DS_FLAGS_TYPE_INT;
-				if (!(flags->v.ival & DS_HASH_USER_ONLY))
-					flags->v.ival |= DS_HASH_USER_ONLY;
-				else {
-					LM_ERR("Only one flag is required\n");
-					return -1;
-				}
+				if (ds_set_flag(flags, DS_HASH_USER_ONLY))
+					FLAG_ERR(hash user (U));
+				break;
+			case 'd':
+			case 'D':
+				if (ds_set_flag(flags, DS_USE_DEFAULT))
+					FLAG_ERR(use default (D));
+				break;
+			case 's':
+			case 'S':
+				if (ds_set_flag(flags, DS_FORCE_DST))
+					FLAG_ERR(force dst (S));
 				break;
 			case PV_MARKER:
 
@@ -520,10 +544,6 @@ int fixup_flags(void **param, ds_flags_t* flags)
 	*param = param_p;
 	return 0;
 
-	err:
-		LM_ERR("Invalid flags parameter\n");
-		shm_free(flags);
-		return -1;
 	mem:
 		LM_ERR("No more shm\n");
 		return -1;
@@ -532,6 +552,7 @@ int fixup_flags(void **param, ds_flags_t* flags)
 		shm_free(flags->v.pvs);
 		shm_free(flags);
 		return -1;
+	#undef FLAG_ERR
 }
 
 /*

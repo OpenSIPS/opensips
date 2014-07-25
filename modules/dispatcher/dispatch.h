@@ -48,6 +48,9 @@
 
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
+#define DS_USE_DEFAULT		4  /* use last address in destination set as last option */
+#define DS_FORCE_DST		8  /* if not set it will force overwriting the destination address 
+					if already set */
 
 #define DS_INACTIVE_DST		1  /* inactive destination */
 #define DS_PROBING_DST		2  /* checking destination */
@@ -133,9 +136,6 @@ typedef struct _ds_partition
 	int attrs_avp_name;
 	unsigned short attrs_avp_type;
 
-	int flags_avp_name;
-	unsigned short flags_avp_type;
-
 	struct _ds_partition *next;
 } ds_partition_t;
 
@@ -164,8 +164,6 @@ extern str ds_dest_state_col;
 extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
-
-extern int ds_use_default;
 
 extern pv_elem_t * hash_param_model;
 
