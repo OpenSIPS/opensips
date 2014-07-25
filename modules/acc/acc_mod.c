@@ -485,11 +485,6 @@ static int mod_init( void )
 	/* ------------ SQL INIT SECTION ----------- */
 
 	if (db_url.s) {
-		if (acc_db_init(&db_url)<0){
-			LM_ERR("failed! bad db url / missing db module ?\n");
-			return -1;
-		}
-
 		/* parse the extra string, if any */
 		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str, 1))==0 ) {
 			LM_ERR("failed to parse db_extra param\n");
@@ -498,6 +493,11 @@ static int mod_init( void )
 		if (db_extra_bye_str &&
 				(db_extra_bye=parse_acc_extra(db_extra_bye_str, 0))==0 ) {
 			LM_ERR("failed to parse db_extra_bye param\n");
+			return -1;
+		}
+
+		if (acc_db_init(&db_url)<0){
+			LM_ERR("failed! bad db url / missing db module ?\n");
 			return -1;
 		}
 
