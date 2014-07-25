@@ -196,14 +196,29 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 
 	/* store uri and attrs strings */
 	dp->uri.s = (char*)shm_malloc( (uri.len+1+attrs.len+1)*sizeof(char));
+	dp->uri.s = shm_malloc( (puri.host.len)
+							+ (puri.port.len ? puri.port.len + 1 : 0)
+							+ 1 + attrs.len + 1 );
 	if(dp->uri.s==NULL)
 	{
 		LM_ERR("no more shm memory!\n");
 		goto err;
 	}
-	memcpy(dp->uri.s, uri.s, uri.len);
-	dp->uri.s[uri.len]='\0';
-	dp->uri.len = uri.len;
+
+	dp->uri.len = 0;
+	char *p = dp->uri.s;
+
+	memcpy(p, puri.host.s, puri.host.len);
+	dp->uri.len += puri.host.len;
+	p += puri.host.len;
+
+	if (puri.port.len) {
+		*(p++) = ':';
+		memcpy(p, puri.port.s, puri.port.len);
+		dp->uri.len += puri.port.len + 1;
+	}
+	dp->uri.s[dp->uri.len]='\0';
+
 	if (attrs.len) {
 		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
 		memcpy(dp->attrs.s, attrs.s, attrs.len);
