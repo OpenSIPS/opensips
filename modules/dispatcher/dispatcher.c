@@ -71,8 +71,6 @@
 #define DS_PARTITION_DELIM  ':'
 
 /** parameters */
-int  ds_force_dst   = 0;
-int  ds_use_default = 0;
 static str pvar_algo_param = str_init("");
 str hash_pvar_param = {NULL, 0};
 
@@ -99,7 +97,6 @@ typedef struct _ds_db_head
 	str cnt_avp;
 	str sock_avp;
 	str attrs_avp;
-	str flags_avp;
 
 	struct _ds_db_head *next;
 } ds_db_head_t;
@@ -111,7 +108,6 @@ ds_db_head_t default_db_head = {
 	{NULL, 0},
 
 
-	{NULL, 0},
 	{NULL, 0},
 	{NULL, 0},
 	{NULL, 0},
@@ -234,14 +230,11 @@ static param_export_t params[]={
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
-	{"force_dst",       INT_PARAM, &ds_force_dst},
-	{"use_default",     INT_PARAM, &ds_use_default},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
 	{"sock_avp",        STR_PARAM, &default_db_head.sock_avp.s},
 	{"attrs_avp",       STR_PARAM, &default_db_head.attrs_avp.s},
-	{"flags_avp",	    STR_PARAM, &default_db_head.flags_avp.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
 	{"pvar_algo_pattern",     STR_PARAM, &pvar_algo_param.s},
@@ -290,7 +283,6 @@ DEF_GETTER_FUNC(grp_avp);
 DEF_GETTER_FUNC(cnt_avp);
 DEF_GETTER_FUNC(sock_avp);
 DEF_GETTER_FUNC(attrs_avp);
-DEF_GETTER_FUNC(flags_avp);
 
 static partition_specific_param_t partition_params[] = {
 	{str_init("db_url"), {NULL, 0}, GETTER_FUNC(db_url)},
@@ -300,7 +292,6 @@ static partition_specific_param_t partition_params[] = {
 	PARTITION_SPECIFIC_PARAM (cnt_avp, "$avp(ds_cnt_failover)"),
 	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
 	PARTITION_SPECIFIC_PARAM (attrs_avp, ""),
-	PARTITION_SPECIFIC_PARAM (flags_avp, "$avp(ds_flags)")
 };
 
 static const unsigned int partition_param_count = sizeof (partition_params) /
@@ -583,20 +574,6 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 	} else {
 		partition->attrs_avp_name = -1;
 		partition->attrs_avp_type = 0;
-	}
-
-	if (pv_parse_spec(&db_head->flags_avp, &avp_spec)==0
-	|| avp_spec.type!=PVT_AVP) {
-		LM_ERR("malformed or non AVP %.*s AVP definition\n",
-			db_head->flags_avp.len, db_head->flags_avp.s);
-		return -1;
-	}
-
-	if(pv_get_avp_name(0, &(avp_spec.pvp), &partition->flags_avp_name,
-				&partition->flags_avp_type)!=0){
-		LM_ERR("[%.*s]- invalid AVP definition\n", db_head->flags_avp.len,
-			db_head->flags_avp.s);
-		return -1;
 	}
 
 	return 0;
@@ -915,9 +892,7 @@ static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
 
 	for ( ; value.rs.len > 0; value.rs.s++, value.rs.len--) {
 		switch (*value.rs.s) {
-			case '\t':
 			case ' ' :
-			case '\n':
 				break;
 			case 'f' :
 			case 'F' :
@@ -926,6 +901,14 @@ static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
 			case 'u' :
 			case 'U' :
 				ds_flags |= DS_HASH_USER_ONLY;
+				break;
+			case 'd' :
+			case 'D' :
+				ds_flags |= DS_USE_DEFAULT;
+				break;
+			case 's' :
+			case 'S' :
+				ds_flags |= DS_FORCE_DST;
 				break;
 			default :
 				LM_ERR("Invalid flags PV value\n");
