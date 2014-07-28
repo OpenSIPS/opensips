@@ -195,7 +195,6 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	memset(dp, 0, sizeof(ds_dest_t));
 
 	/* store uri and attrs strings */
-	dp->uri.s = (char*)shm_malloc( (uri.len+1+attrs.len+1)*sizeof(char));
 	dp->uri.s = shm_malloc( (puri.host.len)
 							+ (puri.port.len ? puri.port.len + 1 : 0)
 							+ 1 + attrs.len + 1 );
