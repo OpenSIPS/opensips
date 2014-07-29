@@ -51,6 +51,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
 #include "../tm/tm_load.h"
+#include "../../evi/evi.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
@@ -199,6 +200,11 @@ static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
+
+
+/* event */
+static str dr_event = str_init("E_DR_STATUS");
+event_id_t dr_evi_id;
 
 
 /*
@@ -363,6 +369,62 @@ static int check_options_rplcode(int code)
 }
 
 
+static str dr_gwid_str = str_init("gwid");
+static str dr_address_str = str_init("address");
+static str dr_state_str = str_init("state");
+static str dr_inactive_str = str_init("inactive");
+static str dr_active_str = str_init("active");
+static str dr_disabled_str = str_init("disabled MI");
+static str dr_probing_str = str_init("probing");
+
+static void dr_raise_event(pgw_t *gw)
+{
+	evi_params_p list = NULL;
+	str *txt;
+	if (dr_evi_id == EVI_ERROR || !evi_probe_event(dr_evi_id))
+		return;
+
+	list = evi_get_params();
+	if (!list) {
+		LM_ERR("cannot create event params\n");
+		return;
+	}
+
+	if (evi_param_add_str(list, &dr_gwid_str, &gw->id) < 0) {
+		LM_ERR("cannot add gwid\n");
+		goto error;
+	}
+
+	if (evi_param_add_str(list, &dr_address_str, &gw->ip_str) < 0) {
+		LM_ERR("cannot add address\n");
+		goto error;
+	}
+
+	if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
+		if (gw->flags&DR_DST_STAT_NOEN_FLAG)
+			txt = &dr_disabled_str;
+		else if (gw->flags&DR_DST_PING_DSBL_FLAG)
+			txt = &dr_probing_str;
+		else
+			txt = &dr_inactive_str;
+	} else {
+		txt = &dr_active_str;
+	}
+
+	if (evi_param_add_str(list, &dr_state_str, txt) < 0) {
+		LM_ERR("cannot add state\n");
+		goto error;
+	}
+
+	if (evi_raise_event(dr_evi_id, list)) {
+		LM_ERR("unable to send dr event\n");
+	}
+
+error:
+	evi_free_params(list);
+}
+
+
 static int dr_disable(struct sip_msg *req)
 {
 	struct usr_avp *avp;
@@ -379,8 +441,10 @@ static int dr_disable(struct sip_msg *req)
 	}
 
 	gw = get_gw_by_id( (*rdata)->pgw_l, &id_val.s );
-	if (gw!=NULL && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0)
+	if (gw!=NULL && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
+		dr_raise_event(gw);
+	}
 
 	lock_stop_read( ref_lock );
 
@@ -412,11 +476,14 @@ static void dr_probing_callback( struct cell *t, int type,
 			goto end;
 		gw->flags &= ~DR_DST_STAT_DSBL_FLAG;
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
+		dr_raise_event(gw);
 		goto end;
 	}
 
 	if (code>=400 && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
+		dr_raise_event(gw);
+		goto end;
 	}
 
 
@@ -814,6 +881,10 @@ static int dr_init(void)
 			return -1;
 		}
 	}
+
+	dr_evi_id = evi_publish_event(dr_event);
+	if (dr_evi_id == EVI_ERROR)
+		LM_ERR("cannot register %.*s event\n", dr_event.len, dr_event.s);
 
 	return 0;
 error:
@@ -2722,8 +2793,10 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
 	} else {
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
 	}
-	if (old_flags!=gw->flags)
+	if (old_flags!=gw->flags) {
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
+		dr_raise_event(gw);
+	}
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
