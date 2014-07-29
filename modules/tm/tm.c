@@ -683,8 +683,8 @@ static int script_init( struct sip_msg *foo, void *bar)
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
-	unset_timeout(fr_timeout);
-	unset_timeout(fr_inv_timeout);
+	fr_timeout = timer_id2timeout[FR_TIMER_LIST];
+	fr_inv_timeout = timer_id2timeout[FR_INV_TIMER_LIST];
 
 	/* reset the kill reason status */
 	reset_kr();
