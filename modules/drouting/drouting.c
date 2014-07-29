@@ -203,8 +203,8 @@ static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
 
 
 /* event */
-static str dr_event = str_init("E_DR_STATUS");
-event_id_t dr_evi_id;
+static str dr_event = str_init("E_DROUTING_STATUS");
+static event_id_t dr_evi_id;
 
 
 /*
@@ -371,7 +371,7 @@ static int check_options_rplcode(int code)
 
 static str dr_gwid_str = str_init("gwid");
 static str dr_address_str = str_init("address");
-static str dr_state_str = str_init("state");
+static str dr_status_str = str_init("status");
 static str dr_inactive_str = str_init("inactive");
 static str dr_active_str = str_init("active");
 static str dr_disabled_str = str_init("disabled MI");
@@ -411,7 +411,7 @@ static void dr_raise_event(pgw_t *gw)
 		txt = &dr_active_str;
 	}
 
-	if (evi_param_add_str(list, &dr_state_str, txt) < 0) {
+	if (evi_param_add_str(list, &dr_status_str, txt) < 0) {
 		LM_ERR("cannot add state\n");
 		goto error;
 	}
@@ -419,6 +419,7 @@ static void dr_raise_event(pgw_t *gw)
 	if (evi_raise_event(dr_evi_id, list)) {
 		LM_ERR("unable to send dr event\n");
 	}
+	return;
 
 error:
 	evi_free_params(list);
@@ -883,8 +884,10 @@ static int dr_init(void)
 	}
 
 	dr_evi_id = evi_publish_event(dr_event);
-	if (dr_evi_id == EVI_ERROR)
+	if (dr_evi_id == EVI_ERROR) {
 		LM_ERR("cannot register %.*s event\n", dr_event.len, dr_event.s);
+		goto error;
+	}
 
 	return 0;
 error:
