@@ -608,12 +608,31 @@ enable:: yes
 
 
 	<section>
-	<title>Exported pseudo-variables</title>
-	<para>
-	NONE
-	</para>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_LOAD_BALANCER_STATUS</function>
+		</title>
+		<para>
+			This event is raised when the module changes the state of a destination,
+			either through MI or probing.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>group</emphasis> - the group of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>uri</emphasis> - the URI of the destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>disabled</emphasis> if
+				the destination was disabled or <emphasis>enabled</emphasis> if 
+				the destination is being used.
+			</para></listitem>
+		</itemizedlist>
 	</section>
-
+	</section>
 
 
 </chapter>

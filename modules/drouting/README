@@ -90,7 +90,11 @@ Anca-Maria Vamanu
               1.5.2. dr_gw_status
               1.5.3. dr_carrier_status
 
-        1.6. Installation
+        1.6. Exported Events
+
+              1.6.1. E_DROUTING_STATUS
+
+        1.7. Installation
 
    2. Developer Guide
 
@@ -1042,7 +1046,22 @@ $ ./opensipsctl fifo dr_carrier_status CR1 1
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: yes
 
-1.6. Installation
+1.6. Exported Events
+
+1.6.1.  E_DROUTING_STATUS
+
+   This event is raised when the module changes the state of a
+   gateway, either through MI or probing.
+
+   Parameters:
+     * gwid - the gateway identifier.
+     * address - the address of the gateway.
+     * status - disabled MI if the gateway was disabled using MI
+       commands, probing if the gateway is being pinged, inactive
+       if it was disabled from the script or active if the gateway
+       is enabled.
+
+1.7. Installation
 
    The module requires 4 tables in the OpenSIPS database:
    dr_groups, dr_gateways, dr_carriers, dr_rules. The SQL syntax

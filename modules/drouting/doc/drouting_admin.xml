@@ -1557,6 +1557,36 @@ Enabled:: yes
 </section>
 
 <section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_DROUTING_STATUS</function>
+		</title>
+		<para>
+			This event is raised when the module changes the state of a gateway,
+			either through MI or probing.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>gwid</emphasis> - the gateway identifier.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - the address of the gateway.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>disabled MI</emphasis> if
+				the gateway was disabled using MI commands,
+				<emphasis>probing</emphasis> if the gateway is being pinged,
+				<emphasis>inactive</emphasis> if it was disabled from the script or
+				<emphasis>active</emphasis> if the gateway is enabled.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+</section>
+
+
+<section>
 	<title>Installation</title>
 	<para>
 	The module requires 4 tables in the OpenSIPS database: dr_groups,
