@@ -227,10 +227,9 @@ static inline struct mi_handler* mi_json_build_async_handler(void)
   return hdl;
 }
 
-struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
-    str *page, str *buffer, struct mi_handler **async_hdl)
+struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
+	const str* params, str *page, str *buffer, struct mi_handler **async_hdl)
 {
-  struct mi_cmd *f;
   struct mi_node *node;
   struct mi_root *mi_cmd;
   struct mi_root *mi_rpl;
@@ -239,12 +238,6 @@ struct mi_root* mi_json_run_mi_cmd(const str* miCmd, const str* params,
   int i, j;
 
   LM_DBG("got command=%.*s\n", miCmd->len, miCmd->s);
-
-  f = lookup_mi_cmd(miCmd->s, miCmd->len);
-  if (f == NULL) {
-    LM_ERR("unable to find mi command [%.*s]\n", miCmd->len, miCmd->s);
-    goto error;
-  }
 
   if (f->flags&MI_ASYNC_RPL_FLAG) {
     LM_DBG("command=%.*s is async\n", miCmd->len, miCmd->s);

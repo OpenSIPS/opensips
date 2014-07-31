@@ -50,6 +50,8 @@ static const str MI_HTTP_U_ERROR = str_init("{\"error\":"
 "\"Internal server error\"}");
 static const str MI_HTTP_U_METHOD = str_init("{\"error\":"
 "\"Unexpected method\"}");
+static const str MI_HTTP_U_NOT_FOUND = str_init("{\"error\":"
+"\"Command not found\"}");
 
 
 /* module parameters */
@@ -178,51 +180,60 @@ void mi_json_answer_to_connection (void *cls, void *connection,
     size_t *upload_data_size, void **con_cls,
     str *buffer, str *page)
 {
-  str command = {NULL, 0};
-  str params = {NULL, 0};
-  struct mi_root *tree = NULL;
-  struct mi_handler *async_hdl;
+	str command = {NULL, 0};
+	str params = {NULL, 0};
+	struct mi_cmd *f = NULL;
+	struct mi_root *tree = NULL;
+	struct mi_handler *async_hdl;
 
-  LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
-    "versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
-      cls, connection, url, method, version,
-      (int)*upload_data_size, upload_data, *con_cls);
-  if (strncmp(method, "GET", 3)==0) {
-    if(url && url[0] == '/' && url[1] != '\0') {
-      command.s = (char*)url+1;
-      command.len = strlen(command.s);
-    }
-    httpd_api.lookup_arg(connection, "params", *con_cls, &params);
-    if (command.s) {
-      tree = mi_json_run_mi_cmd(&command,&params,
-            page, buffer, &async_hdl);
-      if (tree == NULL) {
-        LM_ERR("no reply\n");
-        *page = MI_HTTP_U_ERROR;
-      } else if (tree == MI_ROOT_ASYNC_RPL) {
-        LM_DBG("got an async reply\n");
-        tree = NULL;
-      } else {
-        LM_DBG("building on page [%p:%d]\n",
-          page->s, page->len);
-        if(0!=mi_json_build_page(page, buffer->len, tree)){
-          LM_ERR("unable to build response\n");
-          *page = MI_HTTP_U_ERROR;
-        }
-      }
-    } else {
-      page->s = buffer->s;
-      LM_ERR("unable to build response for empty request\n");
-      *page = MI_HTTP_U_ERROR;
-    }
-    if (tree) {
-      free_mi_tree(tree);
-      tree = NULL;
-    }
-  } else {
-    LM_ERR("unexpected method [%s]\n", method);
-    *page = MI_HTTP_U_METHOD;
-  }
+	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
+			"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
+			cls, connection, url, method, version,
+			(int)*upload_data_size, upload_data, *con_cls);
+	if (strncmp(method, "GET", 3)==0) {
+		if(url && url[0] == '/' && url[1] != '\0') {
+			command.s = (char*)url+1;
+			command.len = strlen(command.s);
+		}
+		httpd_api.lookup_arg(connection, "params", *con_cls, &params);
+		if (command.s) {
 
-  return;
+			f = lookup_mi_cmd(command.s, command.len);
+			if (f == NULL) {
+				LM_ERR("unable to find mi command [%.*s]\n", command.len, command.s);
+				*page = MI_HTTP_U_NOT_FOUND;
+			} else {
+
+				tree = mi_json_run_mi_cmd(f, &command,&params,
+						page, buffer, &async_hdl);
+				if (tree == NULL) {
+					LM_ERR("no reply\n");
+					*page = MI_HTTP_U_ERROR;
+				} else if (tree == MI_ROOT_ASYNC_RPL) {
+					LM_DBG("got an async reply\n");
+					tree = NULL;
+				} else {
+					LM_DBG("building on page [%p:%d]\n",
+							page->s, page->len);
+					if(0!=mi_json_build_page(page, buffer->len, tree)){
+						LM_ERR("unable to build response\n");
+						*page = MI_HTTP_U_ERROR;
+					}
+				}
+			}
+		} else {
+			page->s = buffer->s;
+			LM_ERR("unable to build response for empty request\n");
+			*page = MI_HTTP_U_ERROR;
+		}
+		if (tree) {
+			free_mi_tree(tree);
+			tree = NULL;
+		}
+	} else {
+		LM_ERR("unexpected method [%s]\n", method);
+		*page = MI_HTTP_U_METHOD;
+	}
+
+	return;
 }
