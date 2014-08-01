@@ -35,6 +35,8 @@
 		will now take a set number preceded by a partition name and colon(i.e "part_name: 5").
 		If a set is not preceded by any partition name the default partition will be used.
 		Thus, the following arguments are equivalent: "default : 4" vs "4".
+		Remember that in order to be able to use a table from a partition, its name must be
+		found in the "version" table belonging to the database defined in the partition's db_url.
 	</para>
 	</section>
 	<section>
