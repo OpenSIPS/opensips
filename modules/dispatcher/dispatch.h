@@ -70,6 +70,7 @@
 typedef struct _ds_dest
 {
 	str uri;
+	str dst_uri;    /* Actual uri used in ds_select_dst ds_select_domain */
 	str attrs;
 	int flags;
 	int weight;
