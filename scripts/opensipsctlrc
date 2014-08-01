@@ -24,6 +24,9 @@ DBHOST=localhost
 ## database name (for ORACLE this is TNS name)
 DBNAME=opensips
 
+# DB server TCP port. If not defined, the client will skip the "-P" option
+# DBPORT=3306
+
 # database path used by dbtext or db_berkeley
 # DB_PATH="/usr/local/etc/opensips/dbtext"
 

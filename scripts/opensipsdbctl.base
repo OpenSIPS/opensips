@@ -8,6 +8,9 @@ DBNAME=${DBNAME:-opensips}
 # address of database server
 DBHOST=${DBHOST:-localhost}
 
+# port of database server
+DBPORT=${DBPORT:-3306}
+
 # user with full privileges over DBNAME database
 DBRWUSER=${DBRWUSER:-opensips}
 
