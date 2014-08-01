@@ -42,38 +42,39 @@ Carsten Bock
         1.3. Exported Parameters
 
               1.3.1. db_url (string)
-              1.3.2. flags (int)
-              1.3.3. force_dst (int)
-              1.3.4. use_default (int)
-              1.3.5. attrs_avp (str)
-              1.3.6. hash_pvar (str)
-              1.3.7. setid_pvar (str)
-              1.3.8. ds_ping_method (string)
-              1.3.9. ds_ping_from (string)
-              1.3.10. ds_ping_interval (int)
-              1.3.11. ds_probing_sock (str)
-              1.3.12. ds_probing_threshhold (int)
-              1.3.13. ds_probing_mode (int)
-              1.3.14. ds_define_blacklist (str)
-              1.3.15. options_reply_codes (str)
-              1.3.16. dst_avp (str)
-              1.3.17. grp_avp (str)
-              1.3.18. cnt_avp (str)
-              1.3.19. sock_avp (str)
-              1.3.20. pvar_algo_pattern (str)
-              1.3.21. table_name (string)
-              1.3.22. partition (string)
-              1.3.23. setid_col (string)
-              1.3.24. destination_col (string)
-              1.3.25. state_col (string)
-              1.3.26. weight_col (string)
-              1.3.27. attrs_col (string)
-              1.3.28. socket_col (string)
+              1.3.2. attrs_avp (str)
+              1.3.3. hash_pvar (str)
+              1.3.4. setid_pvar (str)
+              1.3.5. ds_ping_method (string)
+              1.3.6. ds_ping_from (string)
+              1.3.7. ds_ping_interval (int)
+              1.3.8. ds_probing_sock (str)
+              1.3.9. ds_probing_threshhold (int)
+              1.3.10. ds_probing_mode (int)
+              1.3.11. ds_define_blacklist (str)
+              1.3.12. options_reply_codes (str)
+              1.3.13. dst_avp (str)
+              1.3.14. grp_avp (str)
+              1.3.15. cnt_avp (str)
+              1.3.16. sock_avp (str)
+              1.3.17. pvar_algo_pattern (str)
+              1.3.18. table_name (string)
+              1.3.19. partition (string)
+              1.3.20. setid_col (string)
+              1.3.21. destination_col (string)
+              1.3.22. state_col (string)
+              1.3.23. weight_col (string)
+              1.3.24. attrs_col (string)
+              1.3.25. socket_col (string)
 
         1.4. Exported Functions
 
-              1.4.1. ds_select_dst(set, alg [, max_results])
-              1.4.2. ds_select_domain(set, alg [, max_results])
+              1.4.1. ds_select_dst(set, alg [, "[flags] [M
+                      max_results]"])
+
+              1.4.2. ds_select_domain(set, alg [, "[flags] [M
+                      max_results]"])
+
               1.4.3. ds_next_dst([partition_name])
               1.4.4. ds_next_domain([partition_name])
               1.4.5. ds_mark_dst()
@@ -100,40 +101,37 @@ Carsten Bock
    List of Examples
 
    1.1. Set the 'default' partition's“db_url” parameter
-   1.2. Set the “flags” parameter
-   1.3. Set the “force_dst” parameter
-   1.4. Set the “use_default” parameter
-   1.5. Set the 'default' partition's “attrs_avp” parameter
-   1.6. Use $avp(273) for hashing:
-   1.7. Use combination of PVs for hashing:
-   1.8. Set the “setid_pvar” parameter
-   1.9. Set the “ds_ping_method” parameter
-   1.10. Set the “ds_ping_from” parameter
-   1.11. Set the “ds_ping_interval” parameter
-   1.12. Set the “ds_probing_sock” parameter
-   1.13. Set the “ds_probing_threshhold” parameter
-   1.14. Set the “ds_probing_mode” parameter
-   1.15. Set the 'default' partition's “ds_define_blacklist”
+   1.2. Set the 'default' partition's “attrs_avp” parameter
+   1.3. Use $avp(273) for hashing:
+   1.4. Use combination of PVs for hashing:
+   1.5. Set the “setid_pvar” parameter
+   1.6. Set the “ds_ping_method” parameter
+   1.7. Set the “ds_ping_from” parameter
+   1.8. Set the “ds_ping_interval” parameter
+   1.9. Set the “ds_probing_sock” parameter
+   1.10. Set the “ds_probing_threshhold” parameter
+   1.11. Set the “ds_probing_mode” parameter
+   1.12. Set the 'default' partition's “ds_define_blacklist”
           parameter
 
-   1.16. Set the “options_reply_codes” parameter
-   1.17. Set the 'default' partition's “dst_avp” parameter
-   1.18. Set the 'default' partition's “grp_avp” parameter
-   1.19. Set the 'default' partition's “cnt_avp” parameter
-   1.20. Set the 'default' partition's “sock_avp” parameter
-   1.21. Set the “pvar_algo_pattern” parameter
-   1.22. Set the 'default' partition's “table_name” parameter
-   1.23. Create a new partition called 'part2'
-   1.24. Set “setid_col” parameter
-   1.25. Set “destination_col” parameter
-   1.26. Set “state_col” parameter
-   1.27. Set “weight_col” parameter
-   1.28. Set “attrs_col” parameter
-   1.29. Set “socket_col” parameter
-   1.30. ds_select_dst usage
-   1.31. ds_count usage
-   1.32. ds_is_in_list usage
-   1.33. OpenSIPS config script - sample dispatcher usage
+   1.13. Set the “options_reply_codes” parameter
+   1.14. Set the 'default' partition's “dst_avp” parameter
+   1.15. Set the 'default' partition's “grp_avp” parameter
+   1.16. Set the 'default' partition's “cnt_avp” parameter
+   1.17. Set the 'default' partition's “sock_avp” parameter
+   1.18. Set the “pvar_algo_pattern” parameter
+   1.19. Set the 'default' partition's “table_name” parameter
+   1.20. Create a new partition called 'part2'
+   1.21. Set “setid_col” parameter
+   1.22. Set “destination_col” parameter
+   1.23. Set “state_col” parameter
+   1.24. Set “weight_col” parameter
+   1.25. Set “attrs_col” parameter
+   1.26. Set “socket_col” parameter
+   1.27. ds_select_dst usage
+   1.28. ds_count usage
+   1.29. ds_is_in_list usage
+   1.30. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -168,7 +166,10 @@ Chapter 1. Admin Guide
    now take a set number preceded by a partition name and
    colon(i.e "part_name: 5"). If a set is not preceded by any
    partition name the default partition will be used. Thus, the
-   following arguments are equivalent: "default : 4" vs "4".
+   following arguments are equivalent: "default : 4" vs "4".Also,
+   in version 1.12 the "flags" parameter has been moved to to
+   ds_select_dst and ds_select_domain along with "force_dst" and
+   "use_default" flags.
 
 1.2. Dependencies
 
@@ -200,54 +201,7 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database
 ")
 ...
 
-1.3.2. flags (int)
-
-   Various flags that affect dispatcher's behavior. The flags are
-   defined as a bitmask on an integer value. If flag 1 is set only
-   the username part of the uri will be used when computing an uri
-   based hash. If no flags are set the username, hostname and port
-   will be used The port is used only if different from 5060
-   (normal sip uri) or 5061 (in the sips case).
-
-   If flag 2 is set, then the failover support is enabled. The
-   functions exported by the module will store the rest of
-   addresses from the destination set in AVP, and use these AVPs
-   to contact next address when the current-tried fails.
-
-   Default value is “0”.
-
-   Example 1.2. Set the “flags” parameter
-...
-modparam("dispatcher", "flags", 3)
-...
-
-1.3.3. force_dst (int)
-
-   If set to 1, force overwriting of destination address when that
-   is already set.
-
-   Default value is “0”.
-
-   Example 1.3. Set the “force_dst” parameter
-...
-modparam("dispatcher", "force_dst", 1)
-...
-
-1.3.4. use_default (int)
-
-   If the parameter is set to 1, the last address in destination
-   set is used as last option to send the message. For example, it
-   is good when wanting to send the call to an announcement server
-   saying: "the gateways are full, try later".
-
-   Default value is “0”.
-
-   Example 1.4. Set the “use_default” parameter
-...
-modparam("dispatcher", "use_default", 1)
-...
-
-1.3.5. attrs_avp (str)
+1.3.2. attrs_avp (str)
 
    The name of the avp to contain the attributes string of the
    current destination. When a destination is selected,
@@ -262,13 +216,13 @@ Note
 
    Default value is “null” - don't provide ATTRIBUTEs.
 
-   Example 1.5. Set the 'default' partition's “attrs_avp”
+   Example 1.2. Set the 'default' partition's “attrs_avp”
    parameter
 ...
 modparam("dispatcher", "attrs_avp", "$avp(272)")
 ...
 
-1.3.6. hash_pvar (str)
+1.3.3. hash_pvar (str)
 
    String with PVs used for the hashing algorithm 7.
 
@@ -279,17 +233,17 @@ Note
 
    Default value is “null” - disabled.
 
-   Example 1.6. Use $avp(273) for hashing:
+   Example 1.3. Use $avp(273) for hashing:
 ...
 modparam("dispatcher", "hash_pvar", "$avp(273)")
 ...
 
-   Example 1.7. Use combination of PVs for hashing:
+   Example 1.4. Use combination of PVs for hashing:
 ...
 modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 ...
 
-1.3.7. setid_pvar (str)
+1.3.4. setid_pvar (str)
 
    The name of the PV where to store the set ID (group ID) when
    calling ds_is_in_list() without group parameter (third
@@ -297,12 +251,12 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 
    Default value is “null” - don't set PV.
 
-   Example 1.8. Set the “setid_pvar” parameter
+   Example 1.5. Set the “setid_pvar” parameter
 ...
 modparam("dispatcher", "setid_pvar", "$var(setid)")
 ...
 
-1.3.8. ds_ping_method (string)
+1.3.5. ds_ping_method (string)
 
    With this Method you can define, with which method you want to
    probe the failed gateways. This method is only available, if
@@ -310,12 +264,12 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
 
    Default value is “OPTIONS”.
 
-   Example 1.9. Set the “ds_ping_method” parameter
+   Example 1.6. Set the “ds_ping_method” parameter
 ...
 modparam("dispatcher", "ds_ping_method", "INFO")
 ...
 
-1.3.9. ds_ping_from (string)
+1.3.6. ds_ping_from (string)
 
    With this Method you can define the "From:"-Line for the
    request, sent to the failed gateways. This method is only
@@ -324,12 +278,12 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 
    Default value is “sip:dispatcher@localhost”.
 
-   Example 1.10. Set the “ds_ping_from” parameter
+   Example 1.7. Set the “ds_ping_from” parameter
 ...
 modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 ...
 
-1.3.10. ds_ping_interval (int)
+1.3.7. ds_ping_interval (int)
 
    With this Method you can define the interval for sending a
    request to a failed gateway. This parameter is only used, when
@@ -338,12 +292,12 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 
    Default value is “0” (disabled).
 
-   Example 1.11. Set the “ds_ping_interval” parameter
+   Example 1.8. Set the “ds_ping_interval” parameter
 ...
 modparam("dispatcher", "ds_ping_interval", 30)
 ...
 
-1.3.11. ds_probing_sock (str)
+1.3.8. ds_probing_sock (str)
 
    A socket description [proto:]host[:port] of the local socket
    (which is used by OpenSIPS for SIP traffic) to be used (if
@@ -351,12 +305,12 @@ modparam("dispatcher", "ds_ping_interval", 30)
 
    Default value is “NULL(none)”.
 
-   Example 1.12. Set the “ds_probing_sock” parameter
+   Example 1.9. Set the “ds_probing_sock” parameter
 ...
 modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
 
-1.3.12. ds_probing_threshhold (int)
+1.3.9. ds_probing_threshhold (int)
 
    If you want to set a gateway into probing mode, you will need a
    specific number of requests until it will change from "active"
@@ -365,12 +319,12 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 
    Default value is “3”.
 
-   Example 1.13. Set the “ds_probing_threshhold” parameter
+   Example 1.10. Set the “ds_probing_threshhold” parameter
 ...
 modparam("dispatcher", "ds_probing_threshhold", 10)
 ...
 
-1.3.13. ds_probing_mode (int)
+1.3.10. ds_probing_mode (int)
 
    Controls what gateways are tested to see if they are reachable.
    If set to 0, only the gateways with state PROBING are tested,
@@ -380,12 +334,12 @@ modparam("dispatcher", "ds_probing_threshhold", 10)
 
    Default value is “0”.
 
-   Example 1.14. Set the “ds_probing_mode” parameter
+   Example 1.11. Set the “ds_probing_mode” parameter
 ...
 modparam("dispatcher", "ds_probing_mode", 1)
 ...
 
-1.3.14. ds_define_blacklist (str)
+1.3.11. ds_define_blacklist (str)
 
    Defines a blacklist based on a dispatching setid from the
    'default' partition. This list will contain the IPs (no port,
@@ -397,14 +351,14 @@ modparam("dispatcher", "ds_probing_mode", 1)
 
    Default value is “NULL”.
 
-   Example 1.15. Set the 'default' partition's
+   Example 1.12. Set the 'default' partition's
    “ds_define_blacklist” parameter
 ...
 modparam("dispatcher", "ds_define_blacklist", "list= 1,4,3")
 modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
 ...
 
-1.3.15. options_reply_codes (str)
+1.3.12. options_reply_codes (str)
 
    This parameter must contain a list of SIP reply codes separated
    by comma. The codes defined here will be considered as valid
@@ -413,12 +367,12 @@ modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
 
    Default value is “NULL”.
 
-   Example 1.16. Set the “options_reply_codes” parameter
+   Example 1.13. Set the “options_reply_codes” parameter
 ...
 modparam("dispatcher", "options_reply_codes", "501, 403")
 ...
 
-1.3.16. dst_avp (str)
+1.3.13. dst_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp which will hold the list with addresses, in the order
@@ -435,12 +389,12 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
    “$avp(ds_dst_failover)”. For any other partition, the default
    value is “$avp(ds_dst_failover_partitionname)”.
 
-   Example 1.17. Set the 'default' partition's “dst_avp” parameter
+   Example 1.14. Set the 'default' partition's “dst_avp” parameter
 ...
 modparam("dispatcher", "dst_avp", "$avp(271)")
 ...
 
-1.3.17. grp_avp (str)
+1.3.14. grp_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp storing the group id of the destination set. Good to
@@ -452,12 +406,12 @@ modparam("dispatcher", "dst_avp", "$avp(271)")
    “$avp(ds_grp_failover)”. For any other partition, the default
    value is “$avp(ds_grp_failover_partitionname)”.
 
-   Example 1.18. Set the 'default' partition's “grp_avp” parameter
+   Example 1.15. Set the 'default' partition's “grp_avp” parameter
 ...
 modparam("dispatcher", "grp_avp", "$avp(273)")
 ...
 
-1.3.18. cnt_avp (str)
+1.3.15. cnt_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp storing the number of destination addresses kept in
@@ -469,12 +423,12 @@ modparam("dispatcher", "grp_avp", "$avp(273)")
    “$avp(ds_cnt_failover)”. For any other partition, the default
    value is “$avp(ds_cnt_failover_partitionname)”.
 
-   Example 1.19. Set the 'default' partition's “cnt_avp” parameter
+   Example 1.16. Set the 'default' partition's “cnt_avp” parameter
 ...
 modparam("dispatcher", "cnt_avp", "$avp(274)")
 ...
 
-1.3.19. sock_avp (str)
+1.3.16. sock_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp storing the sockets to be used for the destination
@@ -486,13 +440,13 @@ modparam("dispatcher", "cnt_avp", "$avp(274)")
    “$avp(ds_sock_failover)”. For any other partition, the default
    value is “$avp(ds_sock_failover_partitionname)”.
 
-   Example 1.20. Set the 'default' partition's “sock_avp”
+   Example 1.17. Set the 'default' partition's “sock_avp”
    parameter
 ...
 modparam("dispatcher", "sock_avp", "$avp(275)")
 ...
 
-1.3.20. pvar_algo_pattern (str)
+1.3.17. pvar_algo_pattern (str)
 
    This parameter is used by the PVAR(9) algorithm to specify the
    pseudovariable pattern used to detect the load of each
@@ -502,12 +456,12 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 
    Default value is “none”.
 
-   Example 1.21. Set the “pvar_algo_pattern” parameter
+   Example 1.18. Set the “pvar_algo_pattern” parameter
 ...
 modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 ...
 
-1.3.21. table_name (string)
+1.3.18. table_name (string)
 
    If you want to load the sets of gateways from the database you
    must set this parameter as the database name. Setting this
@@ -517,13 +471,13 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 
    For every partition the default value is “dispatcher”.
 
-   Example 1.22. Set the 'default' partition's “table_name”
+   Example 1.19. Set the 'default' partition's “table_name”
    parameter
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
 ...
 
-1.3.22. partition (string)
+1.3.19. partition (string)
 
    Using this parameter the partition specific parameters (db_url,
    table_name, dst_avp, grp_avp, cnt_avp, sock_avp, attrs_avp,
@@ -537,88 +491,88 @@ modparam("dispatcher", "table_name", "my_dispatcher")
    be automatically created. The 'default' partition can also be
    defined using this parameter.
 
-   Example 1.23.  Create a new partition called 'part2'
+   Example 1.20.  Create a new partition called 'part2'
 ...
 modparam("dispatcher", "partition", "part2 : db_url=mysql://user:passwd@
 localhost/database; table_name = ds_table; ds_define_blacklist= list2= 4
 ,6;")
 ...
 
-1.3.23. setid_col (string)
+1.3.20. setid_col (string)
 
    The column's name in the database storing the gateway's group
    id.
 
    Default value is “setid”.
 
-   Example 1.24. Set “setid_col” parameter
+   Example 1.21. Set “setid_col” parameter
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
 
-1.3.24. destination_col (string)
+1.3.21. destination_col (string)
 
    The column's name in the database storing the destination's sip
    uri.
 
    Default value is “destination”.
 
-   Example 1.25. Set “destination_col” parameter
+   Example 1.22. Set “destination_col” parameter
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
 
-1.3.25. state_col (string)
+1.3.22. state_col (string)
 
    The column's name in the database storing the state of the
    destination uri.
 
    Default value is “state”.
 
-   Example 1.26. Set “state_col” parameter
+   Example 1.23. Set “state_col” parameter
 ...
 modparam("dispatcher", "state_col", "dststate")
 ...
 
-1.3.26. weight_col (string)
+1.3.23. weight_col (string)
 
    The column's name in the database storing the weight for
    destination uri.
 
    Default value is “weight”.
 
-   Example 1.27. Set “weight_col” parameter
+   Example 1.24. Set “weight_col” parameter
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
 
-1.3.27. attrs_col (string)
+1.3.24. attrs_col (string)
 
    The column's name in the database storing the attributes
    (opaque string) for destination uri.
 
    Default value is “attrs”.
 
-   Example 1.28. Set “attrs_col” parameter
+   Example 1.25. Set “attrs_col” parameter
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
 
-1.3.28. socket_col (string)
+1.3.25. socket_col (string)
 
    The column's name in the database storing the socket (as
    string) for destination uri.
 
    Default value is “socket”.
 
-   Example 1.29. Set “socket_col” parameter
+   Example 1.26. Set “socket_col” parameter
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
 
 1.4. Exported Functions
 
-1.4.1.  ds_select_dst(set, alg [, max_results])
+1.4.1.  ds_select_dst(set, alg [, "[flags] [M max_results]"])
 
    The method selects a destination from the given set of
    addresses. It will overwrite the "destination URI" of a SIP
@@ -649,47 +603,63 @@ modparam("dispatcher", "socket_col", "my_sock")
             chosen.
           + “X” - if the algorithm is not implemented, the first
             entry in set is chosen.
+     * flags - If specified, this will be the flags which in
+       previous versions were specified at startup. The flags are
+       the failover support flag('f'/'F') letters, the user only
+       flag('u'/'U') and will specify that only the uri user part
+       will be used for hashing, the force destination
+       flag('S'/'s') which will Skip overwriting the destination
+       address if it is already set and the use default flag('D',
+       'd') which will use the last address in destination set as
+       last option to send the message.You can also specify these
+       flags using PVs. The flags are being kept per partition.
      * max_results - If specified, only that many results will be
        put into the specified avp for failover. This allows having
        many destinations but limit the useless traffic in case of
        a number that is bound to fail everywhere. It can accept
-       variables.
+       variables. The definition must begin with 'M' character
+       either you use static definition or PVs.
 
-   If the bit 2 in 'flags' is set, the rest of the addresses from
-   the destination set is stored in AVP list. You can use
-   'ds_next_dst()' to use next address to achieve serial forking
-   to all possible destinations. If multiple dispatching groups
-   are used, the AVP list is constructed based on the position of
-   each dispatching id in the list: first one has the higher
-   priority, followed by the second one and so on.
+   If the character 'f' in 'flags' is set, the rest of the
+   addresses from the destination set is stored in AVP list. You
+   can use 'ds_next_dst()' to use next address to achieve serial
+   forking to all possible destinations. If multiple dispatching
+   groups are used, the AVP list is constructed based on the
+   position of each dispatching id in the list: first one has the
+   higher priority, followed by the second one and so on.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.30. ds_select_dst usage
+   Example 1.27. ds_select_dst usage
 ...
 ds_select_dst("1", "0");
 ...
-ds_select_dst("part2 : 1", "0", "5");
+ds_select_dst("part2 : 1", "0", "M 5");
+...
+ds_select_dst("part3 : 1", "0", "fUsD");
+...
+ds_select_dst("part4 : 2", "0", "fuD M 5,2");
 ...
 # dispatch over multiple dispatching groups
 $var(partition_name) = "p4"
 $var(setid) = "1, 2";
 $var(alg) = "4, 2";
 $var(max) = "2,3";
-ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
-)");
+$var(flags) = " sFDU";
+ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(fla
+gs) M $var(max)");
 ...
 
-1.4.2.  ds_select_domain(set, alg [, max_results])
+1.4.2.  ds_select_domain(set, alg [, "[flags] [M max_results]"])
 
    The method selects a destination from addresses set and
    rewrites the host and port from R-URI. The parameters have same
    meaning as for ds_select_dst().
 
-   If the bit 2 in 'flags' is set, the rest of the addresses from
-   the destination set is stored in AVP list. You can use
-   'ds_next_domain()' to use next address to achieve serial
-   forking to all possible destinations.
+   If the character 'f' in 'flags' is set, the rest of the
+   addresses from the destination set is stored in AVP list. You
+   can use 'ds_next_domain()' to use next address to achieve
+   serial forking to all possible destinations.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -698,7 +668,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
    Takes the next destination address from the AVPs with id
    partition.'dst_avp_id' and sets the dst_uri (outbound proxy
    address). If partition_name is omitted, the default partition
-   will be used.
+   will be used.This function is using the flags set in
+   ds_select_dst or ds_select_domain.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -707,7 +678,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
    Takes the next destination address from the AVPs with id
    partition.'dst_avp_id' and sets the domain part of the request
    uri. If partition_name is omitted, the default partition will
-   be used.
+   be used.This function is using the flags set in ds_select_dst
+   or ds_select_domain.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -718,7 +690,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
    future. In this way it can be implemented an automatic
    detection of failed gateways. When an address is marked as
    inactive, it will be ignored by 'ds_select_dst' and
-   'ds_select_domain'.
+   'ds_select_domain'. This function is using the flags set in
+   ds_select_dst or ds_select_domain.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -730,7 +703,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
    failed gateways can be implemented. When an address is marked
    as inactive or probing, it will be ignored by 'ds_select_dst'
    and 'ds_select_domain'. If partition_name is omitted, the
-   default partition will be used.
+   default partition will be used. This function is using the
+   flags set in ds_select_dst or ds_select_domain.
 
    possible parameters:
      * "i", "I" or "0" - the last destination should be set to
@@ -766,7 +740,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.31. ds_count usage
+   Example 1.28. ds_count usage
 ...
 if (ds_count("1", "a", "$avp(result)")) {
         ...
@@ -803,7 +777,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.32. ds_is_in_list usage
+   Example 1.29. ds_is_in_list usage
 ...
 if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
@@ -891,7 +865,7 @@ _empty_line_
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.33. OpenSIPS config script - sample dispatcher usage
+   Example 1.30. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # $Id$

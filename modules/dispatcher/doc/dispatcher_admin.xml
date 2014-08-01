@@ -34,7 +34,9 @@
 		specified in the parameter's description will be used. Functions taking set arguments
 		will now take a set number preceded by a partition name and colon(i.e "part_name: 5").
 		If a set is not preceded by any partition name the default partition will be used.
-		Thus, the following arguments are equivalent: "default : 4" vs "4".
+		Thus, the following arguments are equivalent: "default : 4" vs "4".Also, in version 1.12
+		the "flags" parameter has been moved to to ds_select_dst and ds_select_domain along with
+		"force_dst" and "use_default" flags.
 	</para>
 	</section>
 	<section>
@@ -89,82 +91,6 @@
 <programlisting format="linespecific">
 ...
 modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>flags</varname> (int)</title>
-		<para>
-		Various flags that affect dispatcher's behavior. The flags are defined
-		as a bitmask on an integer value.
-		If flag 1 is set only the username
-		part of the uri will be used when computing an uri based hash.
-		If no flags are set the username, hostname and port will be used
-		The port is used only if different from 5060 (normal sip uri) or 5061
-		(in the sips case).
-		</para>
-		<para>
-		If flag 2 is set, then the failover support is enabled. The functions
-		exported by the module will store the rest of addresses from the
-		destination set in AVP, and use these AVPs to contact next address when
-		the current-tried fails.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>flags</quote> parameter</title>
-<programlisting format="linespecific">
-...
-modparam("dispatcher", "flags", 3)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>force_dst</varname> (int)</title>
-		<para>
-		If set to 1, force overwriting of destination address when that is
-		already set.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>force_dst</quote> parameter</title>
-<programlisting format="linespecific">
-...
-modparam("dispatcher", "force_dst", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title><varname>use_default</varname> (int)</title>
-		<para>
-		If the parameter is set to 1, the last address in destination set
-		is used as last option to send the message. For example, it is good
-		when wanting to send the call to an announcement server saying:
-		"the gateways are full, try later".
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>use_default</quote> parameter</title>
-<programlisting format="linespecific">
-...
-modparam("dispatcher", "use_default", 1)
 ...
 </programlisting>
 		</example>
@@ -763,7 +689,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_dst(set, alg [, max_results])</function>
+		<function moreinfo="none">ds_select_dst(set, alg [, "[flags] [M max_results]"])</function>
 		</title>
 		<para>
 		The method selects a destination from the given set of addresses. It will
@@ -852,15 +778,28 @@ modparam("dispatcher", "socket_col", "my_sock")
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>max_results</emphasis> - If specified, only that many results
+			<emphasis>flags</emphasis> - If specified, this will be the flags which
+			in previous versions were specified at startup. The flags are the failover
+			support flag('f'/'F') letters, the user only flag('u'/'U') and will specify
+			that only the uri user part will be used for hashing, the force destination
+			flag('S'/'s') which will Skip overwriting the destination address if it is
+			already set and the use default flag('D', 'd') which will use the last address
+			in destination set as last option to send the message.You can also specify
+			these flags using PVs. The flags are being kept per partition.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis> max_results</emphasis> - If specified, only that many results
 			will be put into the specified avp for failover. This allows having many
 			destinations but limit the useless traffic in case of a number that is
-			bound to fail everywhere. It can accept variables.
+			bound to fail everywhere. It can accept variables. The definition must
+			begin with 'M' character either you use static definition or PVs.
 			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
-		If the bit 2 in 'flags' is set, the rest of the addresses from the
+		If the character 'f' in 'flags' is set, the rest of the addresses from the
 		destination set is stored in AVP list. You can use 'ds_next_dst()' to
 		use next address to achieve serial forking to all possible
 		destinations.  If multiple dispatching groups are used, the AVP list
@@ -876,21 +815,26 @@ modparam("dispatcher", "socket_col", "my_sock")
 ...
 ds_select_dst("1", "0");
 ...
-ds_select_dst("part2 : 1", "0", "5");
+ds_select_dst("part2 : 1", "0", "M 5");
+...
+ds_select_dst("part3 : 1", "0", "fUsD");
+...
+ds_select_dst("part4 : 2", "0", "fuD M 5,2");
 ...
 # dispatch over multiple dispatching groups
 $var(partition_name) = "p4"
 $var(setid) = "1, 2";
 $var(alg) = "4, 2";
 $var(max) = "2,3";
-ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
+$var(flags) = " sFDU";
+ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(flags) M $var(max)");
 ...
 </programlisting>
 		</example>
 	</section>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_domain(set, alg [, max_results])</function>
+		<function moreinfo="none">ds_select_domain(set, alg [, "[flags] [M max_results]"])</function>
 		</title>
 		<para>
 		The method selects a destination from addresses set  and rewrites the
@@ -898,7 +842,7 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		ds_select_dst().
 		</para>
 		<para>
-		If the bit 2 in 'flags' is set, the rest of the addresses from the
+		If the character 'f' in 'flags' is set, the rest of the addresses from the
 		destination set is stored in AVP list. You can use 'ds_next_domain()'
 		to use next address to achieve serial forking to all possible
 		destinations.
@@ -914,7 +858,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		<para>
 		Takes the next destination address from the AVPs with id
 		partition.'dst_avp_id' and sets the dst_uri (outbound proxy address).
-		If partition_name is omitted, the default partition will be used.
+		If partition_name is omitted, the default partition will be used.This
+		function is using the flags set in ds_select_dst or ds_select_domain.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -927,7 +872,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		<para>
 		Takes the next destination address from the AVPs with id
 		partition.'dst_avp_id' and sets the domain part of the request uri.
-		If partition_name is omitted, the default partition will be used.
+		If partition_name is omitted, the default partition will be used.This
+		function is using the flags set in ds_select_dst or ds_select_domain.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -942,7 +888,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		set as inactive, in order to be ignored in the future. In this way it
 		can be implemented an automatic detection of failed gateways.
 		When an address is marked as inactive, it will be ignored by
-		'ds_select_dst' and 'ds_select_domain'.
+		'ds_select_dst' and 'ds_select_domain'. This function is using the flags
+		set in ds_select_dst or ds_select_domain.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -958,7 +905,8 @@ ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(max)");
 		With this function, an automatic detection of failed gateways can be implemented.
 		When an address is marked as inactive or probing, it will be ignored by
 		'ds_select_dst' and 'ds_select_domain'.
-		If partition_name is omitted, the default partition will be used.
+		If partition_name is omitted, the default partition will be used. This function
+		is using the flags set in ds_select_dst or ds_select_domain.
 		</para>
 		<para>possible parameters:</para>
 		<itemizedlist>
