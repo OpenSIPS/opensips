@@ -1496,3 +1496,48 @@ headers_check:
 	compare_uri_val(headers,strncasecmp);
 	return 0;
 }
+
+static const str uri_type_names[6] = {
+	{NULL, 0}, /*This is the error type*/
+	str_init("sip"),
+	str_init("sips"),
+	str_init("tel"),
+	str_init("tels"),
+	str_init("urn:service")
+};
+
+char* uri_type2str(const uri_type type, char *result)
+{
+	if (type == ERROR_URI_T)
+		return NULL;
+
+	memcpy(result, uri_type_names[type].s, uri_type_names[type].len);
+	return result + uri_type_names[type].len;
+}
+
+int uri_typestrlen(const uri_type type)
+{
+	return uri_type_names[type].len;
+}
+
+uri_type str2uri_type(char * buf)
+{
+	int scheme = 0;
+	uri_type type = ERROR_URI_T;
+	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme|=0x20202020;
+	if (scheme==SIP_SCH){
+		type=SIP_URI_T;
+	}else if(scheme==SIPS_SCH){
+		if(buf[4]==':')
+			type=SIPS_URI_T;
+		else type = ERROR_URI_T;
+	}else if (scheme==TEL_SCH){
+		type=TEL_URI_T;
+	}else if (scheme==URN_SERVICE_SCH){
+		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+			type=URN_SERVICE_URI_T;
+		}
+	}
+	return type;
+}

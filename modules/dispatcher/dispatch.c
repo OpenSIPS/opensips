@@ -195,35 +195,52 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	memset(dp, 0, sizeof(ds_dest_t));
 
 	/* store uri and attrs strings */
-	dp->uri.s = shm_malloc( (puri.host.len)
-							+ (puri.port.len ? puri.port.len + 1 : 0)
-							+ 1 + attrs.len + 1 );
-	if(dp->uri.s==NULL)
-	{
-		LM_ERR("no more shm memory!\n");
-		goto err;
+
+	dp->uri.len = uri.len;
+	if (puri.user.len == 0 && puri.passwd.len == 0 && puri.params.len == 0
+			&& puri.headers.len == 0) {
+
+		/* The uri from db is good for ds_select_dst */
+		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1);
+		if(dp->uri.s==NULL){
+			LM_ERR("no more shm memory!\n");
+			goto err;
+		}
+		dp->dst_uri = dp->uri;
+		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
 	}
+	else {
+		dp->dst_uri.len = uri_typestrlen(puri.type) + 1 + puri.host.len
+						+ (puri.port.len ? puri.port.len + 1 : 0);
+		dp->uri.s = shm_malloc(uri.len + 1 + dp->dst_uri.len + 1 + attrs.len + 1);
+		if(dp->uri.s==NULL){
+			LM_ERR("no more shm memory!\n");
+			goto err;
+		}
 
-	dp->uri.len = 0;
-	char *p = dp->uri.s;
-
-	memcpy(p, puri.host.s, puri.host.len);
-	dp->uri.len += puri.host.len;
-	p += puri.host.len;
-
-	if (puri.port.len) {
+		dp->attrs.s = dp->uri.s + dp->uri.len + 1 + dp->dst_uri.len + 1;
+		dp->dst_uri.s = dp->uri.s + dp->uri.len + 1;
+		char *p = uri_type2str(puri.type, dp->dst_uri.s);
 		*(p++) = ':';
-		memcpy(p, puri.port.s, puri.port.len);
-		dp->uri.len += puri.port.len + 1;
+
+		memcpy(p, puri.host.s, puri.host.len);
+		p += puri.host.len;
+
+		if (puri.port.len) {
+			*(p++) = ':';
+			memcpy(p, puri.port.s, puri.port.len);
+		}
+		dp->dst_uri.s[dp->dst_uri.len]='\0';
 	}
-	dp->uri.s[dp->uri.len]='\0';
+
+	memcpy(dp->uri.s, uri.s, dp->uri.len);
 
 	if (attrs.len) {
-		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
 		memcpy(dp->attrs.s, attrs.s, attrs.len);
 		dp->attrs.s[attrs.len]='\0';
 		dp->attrs.len = attrs.len;
 	}
+	else dp->attrs.s = NULL;
 
 	/* copy state, weight & socket */
 	dp->sock = sock;
@@ -294,7 +311,8 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		d_data->sets_no++;
 	}
 
-	LM_DBG("dest [%d/%d] <%.*s> successfully loaded\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
+	LM_DBG("dest [%d/%d] <%.*s> <%.*s> successfully loaded\n", sp->id, sp->nr,
+			dp->uri.len, dp->uri.s, dp->dst_uri.len, dp->dst_uri.s);
 
 	return 0;
 err:
@@ -1220,17 +1238,23 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri,
 										struct socket_info *sock, int mode)
 {
 	struct action act;
+	uri_type utype;
+	int typelen;
 
 	switch(mode)
 	{
 		case 1:
 			act.type = SET_HOSTPORT_T;
 			act.elem[0].type = STR_ST;
-			act.elem[0].u.s = *uri;
-			if (uri->len>4 && strncasecmp(uri->s,"sip:",4)==0) {
-				act.elem[0].u.s.s += 4;
-				act.elem[0].u.s.len -= 4;
+
+			utype = str2uri_type(uri->s);
+			if (utype == ERROR_URI_T) {
+				LM_ERR("Uknown uri type\n");
+				return -1;
 			}
+			typelen = uri_typestrlen(utype);
+			act.elem[0].u.s.s = uri->s + typelen + 1;
+			act.elem[0].u.s.len = uri->len - typelen - 1;
 			act.next = 0;
 
 			if (do_action(&act, msg) < 0) {
@@ -1280,7 +1304,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 		return -1;
 	}
 
-	avp_val.s = ds->uri;
+	avp_val.s = ds->dst_uri;
 	if(add_avp(AVP_VAL_STR| partition->dst_avp_type,
 				partition->dst_avp_name, avp_val)!=0) {
 		LM_ERR("failed to add DST avp\n");
@@ -1480,7 +1504,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 	}
 
 	if(ds_select_ctl->set_destination
-		&& ds_update_dst(msg, &selected->uri, selected->sock, ds_select_ctl->mode)!=0)
+		&& ds_update_dst(msg, &selected->dst_uri, selected->sock, ds_select_ctl->mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		goto error;
@@ -1490,7 +1514,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		idx->last = (ds_id+1) % idx->nr;
 
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n", ds_select_ctl->alg, ds_select_ctl->set, ds_id,
-			selected->uri.len, selected->uri.s);
+			selected->dst_uri.len, selected->dst_uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
