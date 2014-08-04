@@ -30,9 +30,10 @@ Juha Heinanen
 
         1.4. Exported Functions
 
-              1.4.1. is_from_local()
-              1.4.2. is_uri_host_local()
-              1.4.3. is_domain_local(pseudo_variable)
+              1.4.1. is_from_local([attrs_pvar])
+              1.4.2. is_uri_host_local([attrs_pvar])
+              1.4.3. is_domain_local(pseudo_variable [,
+                      attrs_pvar])
 
         1.5. Exported MI Functions
 
@@ -128,10 +129,13 @@ modparam("domain", "domain_col", "domain_name")
 
 1.4. Exported Functions
 
-1.4.1. is_from_local()
+1.4.1. is_from_local([attrs_pvar])
 
    Checks based on domain table if host part of From header uri is
-   one of the local domains that the proxy is responsible for
+   one of the local domains that the proxy is responsible for. The
+   argument is optional and if present it should contain a
+   writable pseudo variable that will be populated with the
+   attributes from the database.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -141,15 +145,22 @@ if (is_from_local()) {
         ...
 };
 ...
+if (is_from_local("$var(attrs)")) {
+        xlog("Domain attributes are $var(attrs)\n");
+        ...
+};
+...
 
-1.4.2. is_uri_host_local()
+1.4.2. is_uri_host_local([attrs_pvar])
 
    If called from route or failure route block, checks based on
    domain table if host part of Request-URI is one of the local
    domains that the proxy is responsible for. If called from
    branch route, the test is made on host part of URI of first
    branch, which thus must have been appended to the transaction
-   before is_uri_host_local() is called.
+   before is_uri_host_local() is called. The argument is optional
+   and if present it should contain a writable pseudo variable
+   that will be populated with the attributes from the database.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
@@ -160,8 +171,12 @@ if (is_uri_host_local()) {
         ...
 };
 ...
+if (is_uri_host_local("$var(attrs)")) {
+        xlog("Domain attributes are $var(attrs)\n");
+        ...
+};
 
-1.4.3. is_domain_local(pseudo_variable)
+1.4.3. is_domain_local(pseudo_variable [, attrs_pvar])
 
    This function checks if the domain contained in the
    pseudo_variable is local.
@@ -173,6 +188,10 @@ if (is_uri_host_local()) {
    equivalences exist:
      * is_domain_local("$rd") is same as is_uri_host_local()
      * is_domain_local("$fd") is same as is_from_local()
+
+   The second argument is optional and if present it should
+   contain a writable pseudo variable that will be populated with
+   the attributes from the database.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
@@ -192,6 +211,10 @@ if (is_domain_local("$avp(850)")) {
         ...
 };
 if (is_domain_local("$avp(some_avp)")) {
+        ...
+};
+if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
+        xlog("Domain attributes are $avp(attrs)\n");
         ...
 };
 ...

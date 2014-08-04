@@ -18,7 +18,7 @@ dbaliases:2
 dialog:10
 dialplan:4
 dispatcher:7
-domain:2
+domain:3
 domainpolicy:3
 dr_carriers:2
 dr_gateways:6
