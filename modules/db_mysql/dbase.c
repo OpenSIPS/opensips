@@ -74,7 +74,7 @@ static inline void mysql_raise_event(const db_con_t *conn)
 {
 	evi_params_p list = NULL;
 	if (mysql_evi_id == EVI_ERROR) {
-		LM_ERR("event not registered %d\n", mysql_evi_id);
+		LM_DBG("event not registered %d\n", mysql_evi_id);
 		return;
 	}
 
