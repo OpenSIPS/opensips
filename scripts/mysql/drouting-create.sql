@@ -48,3 +48,21 @@ CREATE TABLE dr_groups (
     description CHAR(128) DEFAULT '' NOT NULL
 ) ENGINE=MyISAM;
 
+INSERT INTO version (table_name, table_version) values ('dr_partitions','1');
+CREATE TABLE dr_partitions (
+    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    partition_name CHAR(255) NOT NULL,
+    db_url CHAR(255) NOT NULL,
+    drd_table CHAR(255),
+    drr_table CHAR(255),
+    drg_table CHAR(255),
+    drc_table CHAR(255),
+    ruri_avp CHAR(255),
+    gw_id_avp CHAR(255),
+    gw_priprefix_avp CHAR(255),
+    gw_sock_avp CHAR(255),
+    rule_id_avp CHAR(255),
+    rule_prefix_avp CHAR(255),
+    carrier_id_avp CHAR(255)
+) ENGINE=MyISAM;
+

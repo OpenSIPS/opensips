@@ -48,8 +48,13 @@
 #define DR_PARAM_ONLY_CHECK         (1<<3)
 #define DR_PARAM_INTERNAL_TRIGGERED (1<<30)
 
+#define DRD_TABLE_VER 6
+#define DRR_TABLE_VER 3
+#define DRG_TABLE_VER 2
+#define DRC_TABLE_VER 2
+#define PART_TABLE_VER 1
 
-#define MAX_LEN_NAME_W_PART 100 /* max len of variable containing
+#define MAX_LEN_NAME_W_PART 510 /* max len of variable containing
                                     avp_spec and partition name */
 
 
@@ -103,6 +108,7 @@ static str carrier_id_avp_spec = {NULL, 0};
 /* internal AVP used to store CARRIER ATTRs */
 static str carrier_attrs_avp_spec = str_init("$avp(___dr_cr_att__)");
 
+
 /*
  * global pointers for faster parameter passing between functions
  * meaning: current script pvar to dump attrs in (NULL to ignore)
@@ -126,8 +132,9 @@ int unode = 0;
 static str attrs_empty = str_init("");
 
 /* configuration loader from db specific stuff */
-static str db_partitions_table; /* default url */
-static str db_partitions_url = str_init("dr_partitions");
+static str db_partitions_table = str_init("dr_partitions"); /* default url */
+static str db_partitions_url;
+
 
 //static int use_db_config = 0;
 // int use_db_config = 0; /* by default don't use db for config */
@@ -773,30 +780,44 @@ static inline int dr_reload_data( void ) {
 }
 
 
+#define dr_fix_avp_def_w_default( _pv_spec, _avp_id, _default, _p_name, _name)\
+        if(_pv_spec.s == NULL) { \
+            if(use_db_config) {\
+            _pv_spec.len = _default.len + _p_name.len;\
+            _pv_spec.s = shm_malloc((_pv_spec.len)*sizeof(char));\
+            memcpy(_pv_spec.s, _default.s, _default.len-1);\
+            memcpy(_pv_spec.s + _default.len - 1, _p_name.s, _p_name.len);\
+            _pv_spec.s[_pv_spec.len-1] = ')';\
+            LM_DBG("name with partition:%.*s\n",_pv_spec.len, _pv_spec.s);\
+            }\
+            else { \
+               shm_str_dup(&_pv_spec, &_default);\
+            }\
+        }\
+        dr_fix_avp_definition(_pv_spec, _avp_id, _name);
+
 #define dr_fix_avp_definition( _pv_spec, _avp_id, _name) \
     do { \
-        _pv_spec.len = strlen(_pv_spec.s); \
         if (pv_parse_spec( &_pv_spec, &avp_spec)==0 \
                 || avp_spec.type!=PVT_AVP) { \
+            _pv_spec.len = strlen(_pv_spec.s); \
             LM_ERR("malformed or non AVP [%.*s] for %s AVP definition\n",\
                     _pv_spec.len, _pv_spec.s, _name); \
-            cleanup_head_db(head_db_end);\
-            memset( head_db_end, 0, sizeof(struct head_db) );\
+            head_db_end->db_url.s = 0;\
+            goto skip;\
         } \
         if( pv_get_avp_name(0, &(avp_spec.pvp), &_avp_id, &dummy )!=0) { \
             LM_ERR("[%.*s]- invalid AVP definition for %s AVP\n", \
                     _pv_spec.len, _pv_spec.s, _name); \
-            cleanup_head_db(head_db_end);\
-            memset( head_db_end, 0, sizeof(struct head_db) );\
+            head_db_end->db_url.s = 0;\
+            goto skip;\
         } \
     } while(0)
 
 #define add_partition_to_avp_name( _spec, _p_name, _name_w_part ) \
     _name_w_part.len = _spec.len + _p_name.len; \
-memcpy(_name_w_part.s, _spec.s, _spec.len);\
-memcpy(_name_w_part.s + _spec.len, _p_name.s, _p_name.len);\
-
-
+    memcpy(_name_w_part.s, _spec.s, _spec.len);\
+    memcpy(_name_w_part.s + _spec.len, _p_name.s, _p_name.len);
 
 static int cleanup_head_config( struct head_config *hd) {
     LM_DBG("Cleanup started\n");
@@ -874,17 +895,17 @@ static int cleanup_head_db( struct head_db *hd) {
             hd->drd_table.len = 0;
         }
         if( hd->drr_table.s && hd->drr_table.s != drr_table.s) {
-            shm_free(hd->drd_table.s);
+            shm_free(hd->drr_table.s);
             hd->drr_table.s = 0;
             hd->drr_table.len = 0;
         }
         if( hd->drc_table.s && hd->drc_table.s != drc_table.s) {
-            shm_free(hd->drd_table.s);
+            shm_free(hd->drc_table.s);
             hd->drc_table.s = 0;
             hd->drc_table.len = 0;
         }
         if( hd->drg_table.s && hd->drg_table.s != drg_table.s) {
-            shm_free(hd->drd_table.s);
+            shm_free(hd->drg_table.s);
             hd->drg_table.s = 0;
             hd->drg_table.len = 0;
         }
@@ -964,10 +985,10 @@ static int dr_init(void)
 
     name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of 
                                                        fixed string */);
-        if( name_w_part.s == 0 ) {
-            LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
-            goto error;
-        } 
+    if( name_w_part.s == 0 ) {
+        LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
+        goto error;
+    } 
 
     if( use_db_config == 1 ) { /* loading configurations from db */
         if( get_config_from_db() == -1 ) {
@@ -1047,7 +1068,6 @@ static int dr_init(void)
 
         head_start->partition.s = "Default";
         head_start->partition.len = strlen("Default\0");
-        LM_DBG(" Head for .cfg configuration added successfully\n");
     }
 
     it_head_config = head_start;
@@ -1057,13 +1077,11 @@ static int dr_init(void)
     drg_grpid_col.len = strlen(drg_grpid_col.s);
 
     while(it_head_config != NULL) {
-        LM_DBG(" Next head_db is initialized\n");
         /* check if last head was ok, if not overwrite it */
         if( head_db_start==NULL || (head_db_start!=NULL && 
                     head_db_end->db_url.s!=NULL) ) {
             add_head_db();
         }
-        LM_DBG(" After add_head_db\n");
 
         if( it_head_config->db_url.s==0 )
             continue;
@@ -1071,53 +1089,54 @@ static int dr_init(void)
         if( shm_str_dup( &( head_db_end->db_url ), 
                     &(it_head_config->db_url))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue; 
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
         if( shm_str_dup( &( head_db_end->partition ), 
                     &(it_head_config->partition))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue; 
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
-        if( shm_str_dup( &( head_db_end->drd_table ), 
+        if(!it_head_config->drd_table.s) {
+            head_db_end->drd_table.s = drd_table.s;
+            head_db_end->drd_table.len = drd_table.len;
+        }else if( shm_str_dup( &( head_db_end->drd_table ), 
                     &(it_head_config->drd_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue; 
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-
-        if( shm_str_dup( &( head_db_end->drr_table ), 
+        
+        if(!it_head_config->drr_table.s) {
+            head_db_end->drr_table.s = drr_table.s;
+            head_db_end->drr_table.len = drr_table.len;
+        }else if( shm_str_dup( &( head_db_end->drr_table ), 
                     &(it_head_config->drr_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue; 
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-        if( shm_str_dup( &( head_db_end->drc_table ), 
+
+        if(!it_head_config->drc_table.s) {
+            head_db_end->drc_table.s = drc_table.s;
+            head_db_end->drc_table.len = drc_table.len;
+        } else if( shm_str_dup( &( head_db_end->drc_table ), 
                     &(it_head_config->drc_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue; 
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-        if( shm_str_dup( &( head_db_end->drg_table ), 
+        if(!it_head_config->drg_table.s) {
+            head_db_end->drg_table.s = drg_table.s;
+            head_db_end->drg_table.len = drg_table.len;
+        } else if( shm_str_dup( &( head_db_end->drg_table ), 
                     &(it_head_config->drg_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue; 
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
 
@@ -1130,61 +1149,44 @@ static int dr_init(void)
 
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_ruri))!=0 ) {
             LM_ERR("failed to init internal AVP for ruri\n");
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db));
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-        LM_DBG("AVP-SPEC with partition name: %.*s\n", name_w_part.len,
-                name_w_part.s);
 
         name.s = "_dr_fb_prefix_"; name.len=14;
         add_partition_to_avp_name( name, it_head_config->partition, 
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_prefix))!=0 ) {
             LM_ERR("failed to init internal AVP for prefix\n");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-        LM_DBG("AVP-SPEC with partition name: %.*s\n", name_w_part.len,
-                name_w_part.s);
 
         name.s = "_dr_fb_index_"; name.len=13;
         add_partition_to_avp_name( name, it_head_config->partition, 
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_index))!=0 ) {
             LM_ERR("failed to init internal AVP for index\n");
-            cleanup_head_db( head_db_end ); /* to avoid overlalpping with avp's of other head */
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-        LM_DBG("AVP-SPEC with partition name: %.*s\n", name_w_part.len,
-                name_w_part.s);
 
         name.s = "_dr_fb_whitelist_"; name.len=17;
         add_partition_to_avp_name( name, it_head_config->partition, 
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_whitelist))!=0 ) {
             LM_ERR("failed to init internal AVP for whitelist\n");
-            cleanup_head_db( head_db_end );
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
-        LM_DBG("AVP-SPEC with partition name: %.*s\n", name_w_part.len,
-                name_w_part.s);
 
         name.s = "_dr_fb_group_"; name.len=13;
         add_partition_to_avp_name( name, it_head_config->partition, 
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_group))!=0 ) {
             LM_ERR("failed to init internal AVP for group\n");
-            cleanup_head_db( head_db_end );
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
         name.s = "_dr_fb_flags_"; name.len=13;
@@ -1192,30 +1194,34 @@ static int dr_init(void)
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_flags))!=0 ) {
             LM_ERR("failed to init internal AVP for flags\n");
-            cleanup_head_db( head_db_end );
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }   
 
         /* fix AVP specs for parameters */
-        dr_fix_avp_definition( it_head_config->ruri_avp_spec,
-                head_db_end->ruri_avp, "RURI"); 
+        dr_fix_avp_def_w_default( it_head_config->ruri_avp_spec, 
+                head_db_end->ruri_avp, ruri_avp_spec, 
+                it_head_config->partition, "RURI"); 
 
-        dr_fix_avp_definition( it_head_config->gw_id_avp_spec, 
-                head_db_end->gw_id_avp, "GW ID");
+        dr_fix_avp_def_w_default( it_head_config->gw_id_avp_spec, 
+                head_db_end->gw_id_avp, gw_id_avp_spec,
+                it_head_config->partition, "GW ID");
 
-        dr_fix_avp_definition( it_head_config->gw_sock_avp_spec,
-                head_db_end->gw_sock_avp, "GW SOCKET");
+        dr_fix_avp_def_w_default( it_head_config->gw_sock_avp_spec,
+                head_db_end->gw_sock_avp, gw_sock_avp_spec, 
+                it_head_config->partition, "GW SOCKET");
 
-        dr_fix_avp_definition( it_head_config->gw_attrs_avp_spec, 
-                head_db_end->gw_attrs_avp, "GW ATTRS");
+        dr_fix_avp_def_w_default( it_head_config->gw_attrs_avp_spec, 
+                head_db_end->gw_attrs_avp, gw_attrs_avp_spec,
+                it_head_config->partition, "GW ATTRS");
 
-        dr_fix_avp_definition( it_head_config->rule_attrs_avp_spec,
-                head_db_end->rule_attrs_avp, "RULE ATTRS");
+        dr_fix_avp_def_w_default( it_head_config->rule_attrs_avp_spec,
+                head_db_end->rule_attrs_avp, rule_attrs_avp_spec, 
+                it_head_config->partition, "RULE ATTRS");
 
-        dr_fix_avp_definition( it_head_config->carrier_attrs_avp_spec,
-                head_db_end->carrier_attrs_avp,"CARRIER ATTRS");
+        dr_fix_avp_def_w_default( it_head_config->carrier_attrs_avp_spec,
+                head_db_end->carrier_attrs_avp, carrier_attrs_avp_spec,
+                it_head_config->partition, "CARRIER ATTRS");
 
         if (it_head_config->gw_priprefix_avp_spec.s ) {
             dr_fix_avp_definition( it_head_config->gw_priprefix_avp_spec, 
@@ -1244,10 +1250,8 @@ static int dr_init(void)
         head_db_end->rdata = (rt_data_t**)shm_malloc( sizeof(rt_data_t*) );
         if ( head_db_end->rdata==0 ) {
             LM_CRIT("failed to get shm mem for data ptr\n");
-            cleanup_head_db( head_db_end ); 
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }   
 
         *(head_db_end->rdata) = 0;
@@ -1255,10 +1259,8 @@ static int dr_init(void)
         /* create & init lock */
         if ((head_db_end->ref_lock = lock_init_rw()) == NULL) {
             LM_CRIT("failed to init lock\n");
-            cleanup_head_db(head_db_end); 
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
         head_db_end->db_con = pkg_malloc(sizeof(db_con_t **));
@@ -1269,23 +1271,70 @@ static int dr_init(void)
             LM_CRIT("cannot bind to database module! "
                     "Did you forget to load a database module ? (%.*s)\n",
                     db_url.len, db_url.s);
-            cleanup_head_db(head_db_end); 
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
+        if( (*head_db_end->db_con = 
+                    head_db_end->db_funcs.init(&head_db_end->db_url)) == 0) {
+            LM_ERR("Cand't load db ulr %.*s", head_db_end->db_url.len,
+                    head_db_end->db_url.s);
+            return -1;
+        }
 
         if (!DB_CAPABILITY( head_db_end->db_funcs, DB_CAP_QUERY)) {
             LM_CRIT( "database modules does not "
                     "provide QUERY functions needed by DRounting module\n");
-            cleanup_head_db(head_db_end);
-            it_head_config = it_head_config->next;
-            memset( head_db_end, 0, sizeof(struct head_db) );
-            continue;
+            head_db_end->db_url.s = 0;
+            goto skip;
         }
 
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+                    &head_db_end->drd_table, DRD_TABLE_VER) < 0) {
+            LM_ERR("error during table version check<dr_gateways table \'%.*s\',"
+                    " for partition \'%.*s\'>\n", head_db_end->drd_table.len,
+                    head_db_end->drd_table.s, head_db_end->partition.len,
+                    head_db_end->partition.s);
+            return -1;
+        }
+
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+                    &head_db_end->drr_table, DRR_TABLE_VER) < 0) {
+            LM_ERR("error during table version check<dr_rules table \'%.*s\',"
+                    " for partition \'%.*s\'>\n", head_db_end->drr_table.len,
+                    head_db_end->drr_table.s, head_db_end->partition.len,
+                    head_db_end->partition.s);
+            return -1;
+        }
+
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+                    &head_db_end->drg_table, DRG_TABLE_VER) < 0) {
+            LM_ERR("error during table version check<dr_groups table \'%.*s\',"
+                    " for partition \'%.*s\'>\n", head_db_end->drg_table.len,
+                    head_db_end->drg_table.s, head_db_end->partition.len,
+                    head_db_end->partition.s);
+            return -1;
+        }
+
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+                    &head_db_end->drc_table, DRC_TABLE_VER) < 0) {
+            LM_ERR("error during table version check<dr_carriers table \'%.*s\',"
+                    " for partition \'%.*s\'>\n", head_db_end->drc_table.len,
+                    head_db_end->drc_table.s, head_db_end->partition.len,
+                    head_db_end->partition.s);
+            return -1;
+        }
+        
+        (head_db_end->db_funcs).close(*head_db_end->db_con);
+        *head_db_end->db_con = 0;
+
+
+skip:
         it_head_config = it_head_config->next;
+        if(head_db_end->db_url.s == 0) {
+            cleanup_head_db(head_db_end);
+            memset( head_db_end, 0, sizeof(struct head_db) );
+        }
     } 
 
     if( name_w_part.s ) {
@@ -1429,38 +1478,6 @@ error:
     return -1;
 }
 
-static int delete_head_db(struct head_db *x) {
-    struct head_db *it_head_db = head_db_start;
-    if( x==0 ) 
-        goto not_present;
-    if( head_db_end==head_db_start ) { 
-        if( x==head_db_start ) {
-            memset( x, 0, sizeof(struct head_db) );
-            shm_free(x);
-            x = 0;
-        } else {
-            goto not_present;
-        }
-    } else {
-        while( it_head_db->next!=NULL &&
-                it_head_db->next!=x ) {
-            it_head_db = it_head_db->next;
-        }
-        if( it_head_db->next==NULL ) {
-            goto not_present;
-        }
-        if ( x->next==NULL ) { /* it was the last element */
-            head_db_end = it_head_db;
-        }
-        it_head_db->next = x->next;
-        memset( x, 0, sizeof(struct head_db));
-        shm_free(x);
-        x = 0;
-    }
-    return 0;
-not_present:
-    return -1;
-}
 
 static int db_load_head(struct head_db *x) {
 
@@ -4278,7 +4295,7 @@ int add_head_config(void) { /* expand linked list */
 #define set_head_config_value(head_param, db_param)\
     if(db_param.len > 0) {\
         shm_str_dup(&(head_param), &(db_param));\
-    }
+    }\
 
 
 static int populate_head_config(struct head_config *current, str attr, int index) {
@@ -4338,7 +4355,7 @@ static int get_config_from_db(void) {
     db_res_t * query_res;
     db_con_t * db_con = 0;
     /* columns needed from db_confgir_url for query */
-    str partition_col = str_init("partition");
+    str partition_col = str_init("partition_name");
     str db_url_col = str_init("db_url");
     str drd_col = str_init("drd_table");
     str drr_col = str_init("drr_table");
@@ -4385,6 +4402,14 @@ static int get_config_from_db(void) {
         goto error;
     }
 
+
+    if(db_check_table_version(&db_funcs, db_con, 
+                &db_partitions_table, PART_TABLE_VER) < 0) {
+        LM_ERR("error during table version check <partitions table:\'%.*s\'>.\n",
+                db_partitions_table.len, db_partitions_table.s);
+        return -1;
+    }
+
     if( db_funcs.use_table( db_con, &db_partitions_table) < 0) {
         LM_ERR("Cannot use the partitions table "
                 "<table containing partition defs = %.*s ( in db %.*s "
@@ -4412,7 +4437,7 @@ static int get_config_from_db(void) {
         add_head_config();
         for( j=0; j<nr_cols_db_config; j++) {
             if( VAL_NULL(value+j) ) {
-                LM_DBG("Row %d is NULL", i);
+                LM_DBG("Row %d is NULL\n", i);
             } else if( VAL_TYPE(value+j) == DB_STR || VAL_TYPE(value+j) == DB_STRING ) {
                 if(VAL_TYPE(value+j) == DB_STR) {
                     ans_col = VAL_STR(value+j);

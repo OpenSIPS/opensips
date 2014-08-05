@@ -87,7 +87,7 @@
 
 	<listitem>
 	<para>
-	blacklisting - the module allows definition of backlists based on the
+	blacklisting - the module allows definition of blacklists based on the
 	destination IPs. This blacklists are to be used to prevent malicious 
 	forwarding to GWs (based on DNS lookups) when the script logic does
 	none-GE forwarding (like foreign domains).
@@ -96,10 +96,12 @@
 	
 	<listitem>
 	<para>
-	provisioning from multiple databases - the gateways, rules, groups and
+	loading routing information from multiple databases - the gateways, rules, groups and
 	carriers can be grouped by partitions, and each partition may be loaded
 	from different databases/tables. This makes the routing process partition
-	based.
+	based. In order to be able to use a table from a partition, its name must 
+	be found in the "version" table belonging to the database defined in the 
+	partition's db_url.
 	</para>
 	</listitem>
 
@@ -138,7 +140,7 @@
 	<title>Dynamic Routing Concepts</title>
 	<para>
 	DR engine uses several concepts in order to define how the routing
-	should be done (describing all the dependecies between destinations
+	should be done (describing all the dependencies between destinations
 	and routing rules).
 	</para>
 
@@ -352,7 +354,7 @@
 	</listitem>
 	<listitem>
 		<para><emphasis>(1)</emphasis> - probing only when the destination is
-		in disabled mode (disabling via MI command will competely stop the
+		in disabled mode (disabling via MI command will completely stop the
 		probing also). The destination will be automatically re-enabled
 		when the probing will succeed next time;</para>
 	</listitem>
@@ -528,7 +530,9 @@ modparam("drouting", "drc_table", "my_dr_carriers")
 		(alternative destiantions for the current one).
 		</para>
 		<para>
-		<emphasis>Default value is <quote>$avp(0xad346b2f)</quote>.
+		<emphasis>Default value is <quote>$avp(___dr_ruri__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_ruri__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
 		</emphasis>
 		</para>
 		<example>
@@ -552,7 +556,9 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 		new selected gateway/destination.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>$avp(0xad346b30)</quote>.
+		<emphasis>Default value is <quote>$avp(___dr_gw_id__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_gw_id__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
 		</emphasis>
 		</para>
 		<example>
@@ -651,10 +657,80 @@ modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 		</example>
 	</section>
 
+
+	<section>
+		<title><varname>gw_sock_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing sockets for alternative destinations
+		defined by ruri_avp.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>$avp(___dr_sock__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_sock__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_sock_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "gw_sock_avp", '$avp(dr_sock)')
+modparam("drouting", "gw_sock_avp", '$avp(77)')
+...
+	</programlisting>
+		</example>
+	</section>
+	
+		<section>
+		<title><varname>gw_attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing GW attrs in case they are requested at least
+		once in the script.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>$avp(___dr_gw_att__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_gw_att__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "gw_attrs_avp", '$avp(dr_attrs_gw)')
+modparam("drouting", "gw_attrs_avp", '$avp(11)')
+...
+	</programlisting>
+		</example>
+	</section>
+	
+			<section>
+		<title><varname>rule_attrs_avp</varname> (str)</title>
+		<para>
+		The name of the avp for storing rule attrs in case they are requested at least
+		once in the script.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>$avp(___dr_ru_att__)</quote> if <varname>use_partitions</varname> parameter is 0
+		or <quote>$avp(___dr_ru_att__partition_name)</quote> where partition_name is the name of the partition
+		containing the AVP (as fetched from the database) if <varname>use_partitions</varname> parameter is 1.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>rule_attrs_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "rule_attrs_avp", '$avp(dr_rule_attr)')
+modparam("drouting", "rule_attrs_avp", '$avp(11)')
+...
+	</programlisting>
+		</example>
+	</section>
+
 	<section>
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
-		Defines a backlist based on a list of GW types - the list will contain
+		Defines a blacklist based on a list of GW types - the list will contain
 		the IPs (no port, all protocols) of the GWs with the specified types.
 		</para>
 		<para>
@@ -954,7 +1030,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opens
 		used with <varname>use_partitions</varname> and <varname>db_partitions_url</varname>.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>"dr_partitions"</quote>.
+		<emphasis>Default value is <quote>dr_partitions</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -1041,7 +1117,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 					<listitem>
 					<para>
 						<emphasis role='bold'>L</emphasis> - Do strict length matching over the
-						prefix - actually DR engine will do full number maching and 
+						prefix - actually DR engine will do full number matching and 
 						not prefix matching anymore.
 					</para>
 					</listitem>
@@ -1132,7 +1208,7 @@ do_routing("2", "F", , , "$var(gw_attributes)");
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must supply
-		the partition in which the carrier has beend defined.
+		the partition in which the carrier has been defined.
 		</para>
 		<para>
 		<itemizedlist>
@@ -1223,14 +1299,14 @@ if ( route_to_carrier("$var(my_partition):$var(carrierId)") ) {
 		</title>
 		<para>
 		Function to trigger the direct routing to a given gateway (or list of gateways).
-		Attributes and per-gw preocessing will be available.
+		Attributes and per-gw processing will be available.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must supply
-		the partition in which the gateway has beend defined.
+		the partition in which the gateway has been defined.
 		</para>
 		<para>
 		<itemizedlist>
@@ -1329,7 +1405,7 @@ if ( route_to_gw("my_partition:gw1,gw2,gw3", "$var(gw_attrs)") ) {
 		</para>
 		<para>
 			If you set <varname>use_partitions</varname> parameter to 1 you must supply
-			the partition (the partition becomes mandatory) in which the gateways have beend defined.
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
 		</para>
 		<para>
 		<itemizedlist>
@@ -1423,7 +1499,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
 		</para>
 		<para>
 			If you set <varname>use_partitions</varname> parameter to 1 you must supply
-			the partition (the partition becomes mandatory) in which the gateways have beend defined.
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
 		</para>
 		<para>
 			If <varname>use_partitions</varname> parameter is 0 
@@ -1440,7 +1516,7 @@ if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
 				<listitem>
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination 
-					type to be checked; when ommiting this parameter or specifying
+					type to be checked; when omitting this parameter or specifying
 					a negative value i.e. "-1", matching will be done against all groups
 					(in a given partition if <varname>use_partition</varname> parameter is 1; if 
 					<varname>use_partitions</varname> is 1 the partition being mandatory at this
@@ -1532,7 +1608,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 		</para>
 		<para>
 			If you set <varname>use_partitions</varname> parameter to 1 you must supply
-			the partition (the partition becomes mandatory) in which the gateways have beend defined.
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
 		</para>
 		<para>
 			If <varname>use_partitions</varname> parameter is 0 
@@ -1549,7 +1625,7 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 				<listitem>
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
-					type to be checked; when ommiting this parameter or specifying
+					type to be checked; when omitting this parameter or specifying
 					a negative value i.e. "-1", matching will be done against all groups
 					</para>
 				</listitem>
@@ -1635,7 +1711,7 @@ if (is_from_gw("my_partition","3","1") {
 		</para>
 		<para>
 			If you set <varname>use_partitions</varname> parameter to 1 you must supply
-			the partition (the partition becomes mandatory) in which the gateways have beend defined.
+			the partition (the partition becomes mandatory) in which the gateways have been defined.
 		</para>
 		<para>
 			Meaning of the parameters is as follows:
@@ -1656,7 +1732,7 @@ if (is_from_gw("my_partition","3","1") {
 				<listitem>
 					<para>
 					<emphasis role='bold'>type</emphasis> (optional) - GW/destination
-					type to be checked; when ommiting this parameter or specifying
+					type to be checked; when omitting this parameter or specifying
 					a negative value i.e. "-1", matching will be done against all groups
 					</para>
 				</listitem>
@@ -1824,7 +1900,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 			</listitem>
 			<listitem>
 				<para>
-				if <varname>use_partitions</varname> is set to 1 - the first paramter
+				if <varname>use_partitions</varname> is set to 1 - the first parameter
 				must be the partition (the partition is mandatory). If just one parameter
 				is provided it will the display the statuses of all the gateways in the
 				given partition. If two parameters are provided,
