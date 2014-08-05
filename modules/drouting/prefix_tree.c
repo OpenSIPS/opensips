@@ -243,14 +243,19 @@ add_prefix(
 {
 	char* tmp=NULL;
 	int res = 0;
-	if(NULL==ptree)
+	if(NULL==ptree) {
+        LM_ERR("ptree is null\n");
 		goto err_exit;
+    }
 	tmp = prefix->s;
 	while(tmp < (prefix->s+prefix->len)) {
-		if(NULL == tmp)
+		if(NULL == tmp) {
+            LM_ERR("prefix became null\n");
 			goto err_exit;
+        }
 		if( !IS_DECIMAL_DIGIT(*tmp) ) {
 			/* unknown character in the prefix string */
+            LM_ERR("is not decimal digit\n");
 			goto err_exit;
 		}
 		if( tmp == (prefix->s+prefix->len-1) ) {
@@ -258,8 +263,10 @@ add_prefix(
 			LM_DBG("adding info %p, %d at: "
 				"%p (%d)\n", r, rg, &(ptree->ptnode[*tmp-'0']), *tmp-'0');
 			res = add_rt_info(&(ptree->ptnode[*tmp-'0']), r,rg);
-			if(res < 0 )
+			if(res < 0 ) {
+                LM_ERR("adding rt info doesn't work\n");
 				goto err_exit;
+            }
 			unode++;
 			res = 1;
 			goto ok_exit;

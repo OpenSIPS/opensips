@@ -476,6 +476,25 @@
 		<column><field>groupid</field><type>DB_INT</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
+	<!-- Declaration of dr_partitions table-->
+	<db_table id="dr_partitions">
+		<table_name>dr_partitions</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>partition_name</field><type>DB_STR</type></column>
+		<column><field>db_url</field><type>DB_STR</type></column>
+		<column><field>drd_table</field><type>DB_STR</type></column>
+		<column><field>drr_table</field><type>DB_STR</type></column>
+		<column><field>drg_table</field><type>DB_STR</type></column>
+		<column><field>drc_table</field><type>DB_STR</type></column>
+		<column><field>ruri_avp</field><type>DB_STR</type></column>
+		<column><field>gw_id_avp</field><type>DB_STR</type></column>
+		<column><field>gw_priprefix_avp</field><type>DB_STR</type></column>
+		<column><field>gw_sock_avp</field><type>DB_STR</type></column>
+		<column><field>rule_id_avp</field><type>DB_STR</type></column>
+		<column><field>rule_prefix_avp</field><type>DB_STR</type></column>
+		<column><field>carrier_id_avp</field><type>DB_STR</type></column>
+	</db_table>
 	<!-- Declaration of grp table-->
 	<db_table id="grp">
 		<table_name>grp</table_name>
@@ -2588,6 +2607,77 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>dr_groups</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- dr_partitions provisionning -->
+	<mod><mod_name>dr_partitions</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>partition_name</field></col>
+				<col><field>db_url</field></col>
+				<col><field>drd_table</field></col>
+				<col><field>drr_table</field></col>
+				<col><field>drg_table</field></col>
+				<col><field>drc_table</field></col>
+				<col><field>ruri_avp</field></col>
+				<col><field>gw_id_avp</field></col>
+				<col><field>gw_priprefix_avp</field></col>
+				<col><field>gw_sock_avp</field></col>
+				<col><field>rule_id_avp</field></col>
+				<col><field>rule_prefix_avp</field></col>
+				<col><field>carrier_id_avp</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>partition_name</field></col>
+				<col><field>db_url</field></col>
+				<col><field>drd_table</field></col>
+				<col><field>drr_table</field></col>
+				<col><field>drg_table</field></col>
+				<col><field>drc_table</field></col>
+				<col><field>ruri_avp</field></col>
+				<col><field>gw_id_avp</field></col>
+				<col><field>gw_priprefix_avp</field></col>
+				<col><field>gw_sock_avp</field></col>
+				<col><field>rule_id_avp</field></col>
+				<col><field>rule_prefix_avp</field></col>
+				<col><field>carrier_id_avp</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>partition_name</field></col>
+				<col><field>db_url</field></col>
+				<col><field>drd_table</field></col>
+				<col><field>drr_table</field></col>
+				<col><field>drg_table</field></col>
+				<col><field>drc_table</field></col>
+				<col><field>ruri_avp</field></col>
+				<col><field>gw_id_avp</field></col>
+				<col><field>gw_priprefix_avp</field></col>
+				<col><field>gw_sock_avp</field></col>
+				<col><field>rule_id_avp</field></col>
+				<col><field>rule_prefix_avp</field></col>
+				<col><field>carrier_id_avp</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>dr_partitions</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>
