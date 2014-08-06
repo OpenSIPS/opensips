@@ -99,8 +99,6 @@ int init_dr_bls(struct head_db * head_db_start)
             p = strchr(it_blk->def, ':');
             part_name.s = it_blk->def;
             part_name.len = p-part_name.s;
-            LM_INFO("partition name for blacklist:%.*s\n", part_name.len,
-                    part_name.s); /* FIXME: testing purpose only */
             if( p==NULL || p==it_blk->def ) {
                 LM_ERR("blacklist definition <%s> has no partition name\n", 
                         it_blk->def);
@@ -114,13 +112,9 @@ int init_dr_bls(struct head_db * head_db_start)
                         it_blk->def);
                 return -1;
             }
-            LM_INFO(" current_partition = %p - name: %.*s\n", current_partition,
-                    current_partition->partition.len, current_partition->partition.s);
-                    /*FIXME: testing purpose */
 
         } else {
             current_partition = head_db_start;
-            LM_INFO("current_partition = %p\n",current_partition); /* FIXME: testing purpose */
             if( current_partition == 0 ) {
                 LM_CRIT("Default partition not registered\n");
             }
@@ -259,7 +253,6 @@ int populate_dr_bls(pgw_t *pgwa)
                                     0/*flags*/) != 0) {
                                 LM_ERR("Something went wrong in add_rule_to_list\n");
                             } else {
-                                LM_INFO("Rule added successfuly\n"); /* FIXME: testing */
                             }
                             pkg_free(gw_net);
                         }
