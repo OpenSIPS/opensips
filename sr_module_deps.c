@@ -65,6 +65,9 @@ module_dependency_t *get_deps_sqldb_url(param_export_t *param)
 {
 	char *db_url = *(char **)param->param_pointer;
 
+	if (param->type & USE_FUNC_PARAM)
+		return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
+
 	if (!db_url || strlen(db_url) == 0)
 		return NULL;
 

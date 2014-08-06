@@ -180,22 +180,12 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static module_dependency_t *get_deps_db_url(param_export_t *param)
-{
-	char *db_url = *(char **)param->param_pointer;
-
-	if (!db_url || strlen(db_url) == 0)
-		return NULL;
-
-	return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
-}
-
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL },
 	},
 	{ /* modparam dependencies */
-		{ "db_url", get_deps_db_url },
+		{ "db_url", get_deps_sqldb_url },
 		{ NULL, NULL },
 	},
 };
