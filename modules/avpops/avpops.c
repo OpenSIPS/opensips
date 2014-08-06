@@ -182,7 +182,7 @@ static param_export_t params[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "db_url", get_deps_sqldb_url },

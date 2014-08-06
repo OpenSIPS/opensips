@@ -154,9 +154,9 @@ static mi_export_t mi_cmds[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm"       },
-		{ MOD_TYPE_DEFAULT, "uac_auth" },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ NULL, NULL },

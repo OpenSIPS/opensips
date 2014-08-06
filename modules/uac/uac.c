@@ -134,17 +134,18 @@ static module_dependency_t *get_deps_restore_mode(param_export_t *param)
 	if (!mode || strlen(mode) == 0)
 		return NULL;
 
-	if (strcmp(mode, "manual") == 0 || strcmp(mode, "auto") == 0)
-		return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog");
+	if (strcmp(mode, "none") != 0)
+		return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
 
 	return NULL;
 }
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm"       },
-		{ MOD_TYPE_DEFAULT, "uac_auth" },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "dialog",   DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "restore_mode", get_deps_restore_mode },

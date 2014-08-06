@@ -352,7 +352,7 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 		 db_mode != DB_MODE_SHUTDOWN))
 		return NULL;
 
-	return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
 static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
@@ -362,14 +362,14 @@ static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
 	if (!cdb_url || strlen(cdb_url) == 0)
 		return NULL;
 
-	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL);
+	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
 }
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm" },
-		{ MOD_TYPE_DEFAULT, "rr" },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "rr", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "db_mode",     get_deps_db_mode     },

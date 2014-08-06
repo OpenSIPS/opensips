@@ -197,25 +197,16 @@ static mi_export_t mi_cmds[] = {
 	{  0, 0, 0, 0,  0, 0}
 };
 
-static module_dependency_t *get_deps_presence_server(param_export_t *param)
-{
-	if (! *(char **)param->param_pointer)
-		return NULL;
-
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "xcap");
-}
-
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm"        },
-		{ MOD_TYPE_DEFAULT, "signaling" },
-		{ MOD_TYPE_DEFAULT, "presence"  },
-		{ MOD_TYPE_DEFAULT, "pua"       },
-		{ MOD_TYPE_SQLDB, NULL },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "xcap",      DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "pua",       DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "presence",  DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "presence_server", get_deps_presence_server },
 		{ NULL, NULL },
 	},
 };

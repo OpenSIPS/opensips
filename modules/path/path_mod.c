@@ -95,12 +95,12 @@ static module_dependency_t *get_deps_use_received(param_export_t *param)
 	if (! *(int *)param->param_pointer)
 		return NULL;
 
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr");
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
 }
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "use_received", get_deps_use_received },

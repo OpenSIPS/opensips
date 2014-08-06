@@ -69,9 +69,17 @@ enum module_type {
 	MOD_TYPE_AAA,
 };
 
+/* behaviour at startup if the dependency is not met */
+enum dep_type {
+	DEP_SILENT, /* load re-ordering only if possible */
+	DEP_WARN,   /* load re-ordering, and a warning if module not found */
+	DEP_ABORT,  /* load re-ordering, and shut down if module not found */
+};
+
 typedef struct module_dependency {
 	enum module_type mod_type;
 	char *mod_name; /* as found in "module_exports" */
+	enum dep_type type;
 } module_dependency_t;
 
 typedef struct modparam_dependency {
@@ -82,7 +90,8 @@ typedef struct modparam_dependency {
 } modparam_dependency_t;
 
 /* helps to avoid duplicate code when writing "get_deps_f" functions */
-module_dependency_t *alloc_module_dep(enum module_type dep_type, char *mod_name);
+module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
+									  enum dep_type dep_type);
 
 /* commonly used modparam dependency functions */
 
@@ -99,7 +108,8 @@ module_dependency_t *get_deps_sqldb_url(param_export_t *param);
 struct sr_module_dep {
 	struct sr_module *mod;
 	char *script_param;
-	enum module_type dep_type;
+	enum module_type mod_type;
+	enum dep_type type;
 	str dep;
 
 	struct sr_module_dep *next;

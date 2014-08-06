@@ -231,10 +231,10 @@ static stat_export_t siptrace_stats[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm" },
-		{ MOD_TYPE_DEFAULT, "sl" },
-		{ MOD_TYPE_SQLDB, NULL },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "sl", DEP_ABORT },
+		{ MOD_TYPE_SQLDB, NULL,   DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ NULL, NULL },

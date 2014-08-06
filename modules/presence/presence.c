@@ -171,9 +171,9 @@ static mi_export_t mi_cmds[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm"        },
-		{ MOD_TYPE_DEFAULT, "signaling" },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "db_url", get_deps_sqldb_url },

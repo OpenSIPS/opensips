@@ -34,16 +34,18 @@
 
 #include "sr_module_deps.h"
 
-/* list of unsolved module dependencies: struct sr_module ----> "module_name" */
-static struct sr_module_dep *unsolved_deps;
+/* the list head of unsolved module dependencies: struct sr_module ----> "module_name" */
+static struct sr_module_dep unsolved_deps;
 
 #define mod_type_to_string(type) \
 	(type == MOD_TYPE_NULL ? NULL : \
 	 type == MOD_TYPE_SQLDB ? "sqldb module" : \
 	 type == MOD_TYPE_CACHEDB ? "cachedb module" : \
+	 type == MOD_TYPE_AAA ? "aaa module" : \
 	 "module")
 
-module_dependency_t *alloc_module_dep(enum module_type dep_type, char *mod_name)
+module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
+									  enum dep_type dep_type)
 {
 	module_dependency_t *md;
 
@@ -55,8 +57,9 @@ module_dependency_t *alloc_module_dep(enum module_type dep_type, char *mod_name)
 	}
 
 	memset(md, 0, 2 * sizeof *md);
-	md->mod_type = dep_type;
+	md->mod_type = mod_type;
 	md->mod_name = mod_name;
+	md->type = dep_type;
 
 	return md;
 }
@@ -66,12 +69,12 @@ module_dependency_t *get_deps_sqldb_url(param_export_t *param)
 	char *db_url = *(char **)param->param_pointer;
 
 	if (param->type & USE_FUNC_PARAM)
-		return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
+		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_WARN);
 
 	if (!db_url || strlen(db_url) == 0)
 		return NULL;
 
-	return alloc_module_dep(MOD_TYPE_SQLDB, NULL);
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_WARN);
 }
 
 static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep,
@@ -80,8 +83,9 @@ static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep
 	struct sr_module_dep *md;
 	int len;
 
-	LM_DBG("adding dependency %s - (%s %s)\n", mod->exports->name,
-			mod_type_to_string(dep->mod_type), dep->mod_name);
+	LM_DBG("adding type %d dependency %s - (%s %s)\n", dep->type,
+			mod->exports->name, mod_type_to_string(dep->mod_type),
+			dep->mod_name);
 
 	len = dep->mod_name ? strlen(dep->mod_name) : 0;
 
@@ -93,7 +97,8 @@ static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep
 	memset(md, 0, sizeof *md + len + 1);
 
 	md->mod = mod;
-	md->dep_type = dep->mod_type;
+	md->mod_type = dep->mod_type;
+	md->type = dep->type;
 	if (dep->mod_name) {
 		md->dep.s = (char *)(md + 1);
 		md->dep.len = len;
@@ -103,8 +108,8 @@ static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep
 	if (script_param)
 		md->script_param = script_param;
 
-	md->next = unsolved_deps;
-	unsolved_deps = md;
+	md->next = unsolved_deps.next;
+	unsolved_deps.next = md;
 
 	return 0;
 }
@@ -133,8 +138,8 @@ int add_modparam_dependencies(struct sr_module *mod, param_export_t *param)
 		return 0;
 
 	/* clear previous entries in case this parameter is set multiple times */
-	for (it = unsolved_deps; it && it->next; it = it->next) {
-		if (strcmp(it->mod->exports->name, mod->exports->name) == 0 &&
+	for (it = &unsolved_deps; it->next; it = it->next) {
+		if (strcmp(it->next->mod->exports->name, mod->exports->name) == 0 &&
 			(it->next->script_param &&
 			 strcmp(it->next->script_param, param->name) == 0)) {
 
@@ -142,16 +147,6 @@ int add_modparam_dependencies(struct sr_module *mod, param_export_t *param)
 			it->next = it->next->next;
 			pkg_free(tmp);
 		}
-	}
-
-	if (unsolved_deps &&
-		strcmp(unsolved_deps->mod->exports->name, mod->exports->name) == 0 &&
-		(unsolved_deps->script_param &&
-		 strcmp(unsolved_deps->script_param, param->name) == 0)) {
-
-		tmp = unsolved_deps;
-		unsolved_deps = unsolved_deps->next;
-		pkg_free(tmp);
 	}
 
 	md = get_deps_f(param);
@@ -193,19 +188,22 @@ int solve_module_dependencies(void)
 {
 	struct sr_module_dep *md, *it;
 	struct sr_module *this, *mod;
-	enum module_type dep_type;
+	enum module_type mod_type;
+	enum dep_type dep_type;
 	int dep_solved;
 
 	/*
 	 * now that we've loaded all shared libraries,
-	 * we can solve each dependency
+	 * we can attempt to solve each dependency
 	 */
-	for (it = unsolved_deps; it; ) {
+	for (it = unsolved_deps.next; it; ) {
 		md = it;
 		it = it->next;
 
 		LM_DBG("solving dependency %s -> %s %.*s\n", md->mod->exports->name,
-				 mod_type_to_string(md->dep_type), md->dep.len, md->dep.s);
+				 mod_type_to_string(md->mod_type), md->dep.len, md->dep.s);
+
+		dep_type = md->type;
 
 		/*
 		 * for generic dependencies (e.g. dialog depends on MOD_TYPE_SQLDB),
@@ -213,10 +211,10 @@ int solve_module_dependencies(void)
 		 */
 		if (!md->dep.s) {
 			this = md->mod;
-			dep_type = md->dep_type;
+			mod_type = md->mod_type;
 
 			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
-				if (mod != this && mod->exports->type == dep_type) {
+				if (mod != this && mod->exports->type == mod_type) {
 					if (!md) {
 						md = pkg_malloc(sizeof *md);
 						if (!md) {
@@ -249,9 +247,9 @@ int solve_module_dependencies(void)
 				if (strcmp(mod->exports->name, md->dep.s) == 0) {
 
 					/* quick sanity check */
-					if (mod->exports->type != md->dep_type)
+					if (mod->exports->type != md->mod_type)
 						LM_BUG("[%.*s %d] -> [%s %d]\n", md->dep.len, md->dep.s,
-								md->dep_type, mod->exports->name,
+								md->mod_type, mod->exports->name,
 								mod->exports->type);
 
 					/* same re-purposing technique as above */
@@ -265,14 +263,39 @@ int solve_module_dependencies(void)
 			}
 		}
 
-		/*
-		 * since dependencies are meant to solve load ordering issues,
-		 * we should not throw an error in this case
-		 */
-		if (!dep_solved)
-			LM_WARN("module %s depends on %s %.*s, but it was not loaded!\n",
-					md->mod->exports->name, mod_type_to_string(md->dep_type),
-					md->dep.len, md->dep.s);
+		/* treat unmet dependencies using the intended behaviour */
+		if (!dep_solved) {
+			switch (dep_type) {
+			case DEP_SILENT:
+				LM_DBG("module %s depends on %s%s%s%.*s, but %s loaded!\n",
+						md->mod->exports->name,
+						md->dep.len == 0 ?
+							((md->mod_type == MOD_TYPE_SQLDB ||
+							  md->mod_type == MOD_TYPE_AAA) ? "an " :
+							md->mod_type == MOD_TYPE_CACHEDB ? "a " : "") : "",
+						mod_type_to_string(md->mod_type),
+						md->dep.len == 0 ? "" : " ",
+						md->dep.len, md->dep.s,
+						md->dep.len == 0 ? "none was" : "it was not");
+				break;
+			case DEP_WARN:
+			case DEP_ABORT:
+				LM_WARN("module %s depends on %s%s%s%.*s, but %s loaded!\n",
+						md->mod->exports->name,
+						md->dep.len == 0 ?
+							((md->mod_type == MOD_TYPE_SQLDB ||
+							  md->mod_type == MOD_TYPE_AAA) ? "an " :
+							md->mod_type == MOD_TYPE_CACHEDB ? "a " : "") : "",
+						mod_type_to_string(md->mod_type),
+						md->dep.len == 0 ? "" : " ",
+						md->dep.len, md->dep.s,
+						md->dep.len == 0 ? "none was" : "it was not");
+				break;
+			}
+
+			if (dep_type == DEP_ABORT)
+				return -1;
+		}
 	}
 
 	return 0;

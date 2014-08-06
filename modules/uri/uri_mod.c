@@ -201,12 +201,12 @@ static module_dependency_t *get_deps_aaa_url(param_export_t *param)
 	if (url || strlen(url) == 0)
 		return NULL;
 
-	return alloc_module_dep(MOD_TYPE_AAA, NULL);
+	return alloc_module_dep(MOD_TYPE_AAA, NULL, DEP_SILENT);
 }
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "aaa_url", get_deps_aaa_url   },

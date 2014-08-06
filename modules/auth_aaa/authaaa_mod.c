@@ -91,9 +91,9 @@ static param_export_t params[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "auth" },
-		{ MOD_TYPE_AAA,     NULL   },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
+		{ MOD_TYPE_AAA,     NULL,   DEP_WARN  },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ NULL, NULL },

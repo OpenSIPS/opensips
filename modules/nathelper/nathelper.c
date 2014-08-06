@@ -247,13 +247,12 @@ static module_dependency_t *get_deps_natping_interval(param_export_t *param)
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;
 
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc");
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT);
 }
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_SQLDB, NULL },
-		{ MOD_TYPE_NULL, NULL },
+		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "natping_interval", get_deps_natping_interval },
