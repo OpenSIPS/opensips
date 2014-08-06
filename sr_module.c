@@ -520,12 +520,18 @@ static int init_mod( struct sr_module* m, int skip_others)
  */
 int init_modules(void)
 {
-	if (solve_module_dependencies() != 0) {
+	int ret;
+
+	if (solve_module_dependencies(modules) != 0) {
 		LM_ERR("failed to solve module dependencies\n");
 		return -1;
 	}
 
-	return init_mod(modules, 0);
+	ret = init_mod(modules, 0);
+
+	free_module_dependencies(modules);
+
+	return ret;
 }
 
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */

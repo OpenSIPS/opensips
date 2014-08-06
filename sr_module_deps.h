@@ -118,6 +118,7 @@ struct sr_module_dep {
 int add_modparam_dependencies(struct sr_module *mod, param_export_t *param);
 int add_module_dependencies(struct sr_module *mod);
 
-int solve_module_dependencies(void);
+int solve_module_dependencies(struct sr_module *modules);
+void free_module_dependencies(struct sr_module *modules);
 
 #endif

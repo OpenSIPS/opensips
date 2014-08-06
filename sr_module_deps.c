@@ -184,7 +184,7 @@ int add_module_dependencies(struct sr_module *mod)
 	return 0;
 }
 
-int solve_module_dependencies(void)
+int solve_module_dependencies(struct sr_module *modules)
 {
 	struct sr_module_dep *md, *it;
 	struct sr_module *this, *mod;
@@ -293,10 +293,26 @@ int solve_module_dependencies(void)
 				break;
 			}
 
+			pkg_free(md);
 			if (dep_type == DEP_ABORT)
 				return -1;
 		}
 	}
 
 	return 0;
+}
+
+/* after all modules are properly loaded, free all sr_module_dep structures */
+void free_module_dependencies(struct sr_module *modules)
+{
+	struct sr_module_dep *aux;
+	struct sr_module *mod;
+
+	for (mod = modules; mod; mod = mod->next) {
+		while (mod->sr_deps) {
+			aux = mod->sr_deps;
+			mod->sr_deps = aux->next;
+			pkg_free(aux);
+		}
+	}
 }
