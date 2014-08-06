@@ -543,6 +543,8 @@ static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partit
 
 	gw = get_gw_by_id( (*current_partition->rdata)->pgw_l, &id_val.s );
 	if (gw!=NULL && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
+        LM_INFO(" partition : %.*s\n", current_partition->partition.len,
+                current_partition->partition.s);
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
 		dr_raise_event(gw);
 	}
