@@ -95,11 +95,10 @@ int domain_db_ver(str* name, int version)
 }
 
 
-
 /*
- * Check if domain is local
+ * Check if domain is local and store attributes in a pvar
  */
-int is_domain_local(struct sip_msg *msg, str* _host, char *pvar)
+int is_domain_local_pvar(struct sip_msg *msg, str* _host, char *pvar)
 {
 	pv_spec_t *pv = (pv_spec_t *)pvar;
 	pv_value_t val;
@@ -166,6 +165,15 @@ int is_domain_local(struct sip_msg *msg, str* _host, char *pvar)
 }
 
 /*
+ * Check if domain is local
+ */
+int is_domain_local(str* _host)
+{
+	return is_domain_local_pvar(NULL, _host, NULL);
+}
+
+
+/*
  * Check if host in From uri is local
  */
 int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2)
@@ -177,7 +185,7 @@ int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2)
 		return -2;
 	}
 
-	return is_domain_local(_msg, &(puri->host), _s1);
+	return is_domain_local_pvar(_msg, &(puri->host), _s1);
 
 }
 
@@ -190,7 +198,7 @@ int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2)
 		LM_ERR("Error while parsing R-URI\n");
 		return -1;
 	}
-	return is_domain_local(_msg, &(_msg->parsed_uri.host), _s1);
+	return is_domain_local_pvar(_msg, &(_msg->parsed_uri.host), _s1);
 }
 
 
@@ -204,13 +212,13 @@ int w_is_domain_local(struct sip_msg* _msg, char* _sp, char* _s2)
 
     sp = (pv_spec_t *)_sp;
 
-    if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
+	if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
 	if (pv_val.flags & PV_VAL_STR) {
 	    if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
 		LM_DBG("Missing domain name\n");
 		return -1;
 	    }
-	    return is_domain_local(_msg, &(pv_val.rs), _s2);
+	    return is_domain_local_pvar(_msg, &(pv_val.rs), _s2);
 	} else {
 	   LM_DBG("Pseudo variable value is not string\n");
 	   return -1;
