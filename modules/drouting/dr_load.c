@@ -205,10 +205,12 @@ error:
 #define STR_VALS_DSTLIST_DRR_COL  4
 #define STR_VALS_ATTRS_DRR_COL    5
 
+/* loads routing info for given partition; if partition_name is NULL
+ * loads all partitions
+ */
 
-
-rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
-		str *drd_table, str *drc_table, str* drr_table, int persistent_state)
+rt_data_t* dr_load_routing_info(db_func_t *dr_dbf, db_con_t* db_hdl,
+		str *drd_table, str *drc_table, str *drr_table, int persistent_state)
 {
 	int    int_vals[5];
 	char * str_vals[6];

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="dr_partitions" xmlns:db="http://docbook.org/ns/docbook">
+	<name>dr_partitions</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Dynamic Routing module to store
+		information about the partitions used in routing (url to database, 
+		table names and AVP names for each partition).
+		More information can be found at: &OPENSIPS_MOD_DOC;drouting.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Partition unique ID
+		</description>
+	</column>
+
+	<column id="partition_name">
+		<name>partition_name</name>
+		<type>string</type>
+		<size>255</size>
+		<description>The name of the partition.
+		</description>
+	</column>
+
+	<column id="db_url">
+		<name>db_url</name>
+		<type>string</type>
+		<size>255</size>
+		<description>The url to the database containing the tables: dr_rules, dr_groups,
+		dr_carriers and dr_gateways</description>
+	</column>
+
+	<column id="drd_table">
+		<name>drd_table</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of the dr_gateways table in the given database (for the given partition).</description>
+	</column>
+
+	<column id="drr_table">
+		<name>drr_table</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of the dr_rules table in the given database (for the given partition).</description>
+	</column>
+
+	<column id="drg_table">
+		<name>drg_table</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of the dr_groups table in the given database (for the given partition).</description>
+	</column>
+
+	<column id="drc_table">
+		<name>drc_table</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of the dr_carriers table in the given database (for the given partition).</description>
+	</column>
+
+	<column id="ruri_avp">
+		<name>ruri_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of ruri_avp AVP.</description>
+	</column>
+
+	<column id="gw_id_avp">
+		<name>gw_id_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of gw_id_avp AVP</description>
+	</column>
+
+	<column id="gw_priprefix_avp">
+		<name>gw_priprefix_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of gw_priprefix_avp AVP.</description>
+	</column>
+
+	<column id="gw_sock_avp">
+		<name>gw_sock_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of gw_sock_avp AVP.</description>
+	</column>
+	
+	<column id="rule_id_avp">
+		<name>rule_id_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of rule_id_avp AVP.</description>
+	</column>
+	
+	<column id="rule_prefix_avp">
+		<name>rule_prefix_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of rule_prefix_avp AVP.</description>
+	</column>
+	
+	<column id="carrier_id_avp">
+		<name>carrier_id_avp</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<description>The name of carrier_id_avp AVP.</description>
+	</column>
+
+</table>

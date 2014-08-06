@@ -16,28 +16,25 @@
 ## by default none is loaded
 # If you want to setup a database with opensipsdbctl, you must at least specify
 # this parameter.
-DBENGINE=MYSQL
+# DBENGINE=MYSQL
 
 ## database host
-DBHOST=localhost
+# DBHOST=localhost
 
 ## database name (for ORACLE this is TNS name)
-DBNAME=opensips
-
-# DB server TCP port. If not defined, the client will skip the "-P" option
-# DBPORT=3306
+# DBNAME=opensips
 
 # database path used by dbtext or db_berkeley
 # DB_PATH="/usr/local/etc/opensips/dbtext"
 
 ## database read/write user
-DBRWUSER=opensips
+# DBRWUSER=opensips
 
 ## password for database read/write user
-DBRWPW="opensipsrw"
+# DBRWPW="opensipsrw"
 
 ## database super user (for ORACLE this is 'scheme-creator' user)
-DBROOTUSER="root"
+# DBROOTUSER="root"
 
 # user name column
 # USERCOL="username"
@@ -139,3 +136,4 @@ DBROOTUSER="root"
 ## Extra start options - default is: not set
 # example: start opensips with 64MB share memory: STARTOPTIONS="-m 64"
 # STARTOPTIONS=
+

@@ -52,3 +52,22 @@ CREATE TABLE dr_groups (
 );
 
 ALTER SEQUENCE dr_groups_id_seq MAXVALUE 2147483647 CYCLE;
+INSERT INTO version (table_name, table_version) values ('dr_partitions','1');
+CREATE TABLE dr_partitions (
+    id SERIAL PRIMARY KEY NOT NULL,
+    partition_name VARCHAR(255) NOT NULL,
+    db_url VARCHAR(255) NOT NULL,
+    drd_table VARCHAR(255),
+    drr_table VARCHAR(255),
+    drg_table VARCHAR(255),
+    drc_table VARCHAR(255),
+    ruri_avp VARCHAR(255),
+    gw_id_avp VARCHAR(255),
+    gw_priprefix_avp VARCHAR(255),
+    gw_sock_avp VARCHAR(255),
+    rule_id_avp VARCHAR(255),
+    rule_prefix_avp VARCHAR(255),
+    carrier_id_avp VARCHAR(255)
+);
+
+ALTER SEQUENCE dr_partitions_id_seq MAXVALUE 2147483647 CYCLE;

@@ -80,3 +80,29 @@ END dr_groups_tr;
 /
 BEGIN map2users('dr_groups'); END;
 /
+INSERT INTO version (table_name, table_version) values ('dr_partitions','1');
+CREATE TABLE dr_partitions (
+    id NUMBER(10) PRIMARY KEY,
+    partition_name VARCHAR2(255),
+    db_url VARCHAR2(255),
+    drd_table VARCHAR2(255),
+    drr_table VARCHAR2(255),
+    drg_table VARCHAR2(255),
+    drc_table VARCHAR2(255),
+    ruri_avp VARCHAR2(255),
+    gw_id_avp VARCHAR2(255),
+    gw_priprefix_avp VARCHAR2(255),
+    gw_sock_avp VARCHAR2(255),
+    rule_id_avp VARCHAR2(255),
+    rule_prefix_avp VARCHAR2(255),
+    carrier_id_avp VARCHAR2(255)
+);
+
+CREATE OR REPLACE TRIGGER dr_partitions_tr
+before insert on dr_partitions FOR EACH ROW
+BEGIN
+  auto_id(:NEW.id);
+END dr_partitions_tr;
+/
+BEGIN map2users('dr_partitions'); END;
+/

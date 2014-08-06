@@ -58,6 +58,8 @@ dr_gateways|
 dr_gateways|6
 dr_groups|
 dr_groups|2
+dr_partitions|
+dr_partitions|1
 dr_rules|
 dr_rules|3
 globalblacklist|
