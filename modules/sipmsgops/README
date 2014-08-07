@@ -516,6 +516,10 @@ add_body("Hello World!", "text/plain");
      * 'm' - don't check the Max-Forwards header.
      * 'r' - checks the R-URI and whether the domain contains
        valid characters.
+     * 'f' - checks the URI of the 'From' field and whether the
+       domain contains valid characters.
+     * 't' - checks the URI of the 'To' field and whether the
+       domain contains valid characters.
 
    The result_pvar parameter sets resulting pvar with text error
    reason in case of negative result ( easy for logging or
@@ -547,6 +551,10 @@ add_body("Hello World!", "text/plain");
      * -19 - No Unsupported header in 420 reply.
      * -20 - No WWW-Authorize header in 401 reply.
      * -21 - No Content-Type header
+     * -22 - To header parse error
+     * -23 - From header parse error
+     * -24 - Bad hostname in To header
+     * -25 - Bad hostname in From header
      * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

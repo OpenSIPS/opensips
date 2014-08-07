@@ -722,6 +722,12 @@ add_body("Hello World!", "text/plain");
 				<listitem><para><emphasis>'r'</emphasis> - checks the R-URI
 						and whether the domain contains valid characters.
 				</para></listitem>
+				<listitem><para><emphasis>'f'</emphasis> - checks the URI of the 'From' field
+						and whether the domain contains valid characters.
+				</para></listitem>
+				<listitem><para><emphasis>'t'</emphasis> - checks the URI of the 'To' field
+						and whether the domain contains valid characters.
+				</para></listitem>
 			</itemizedlist>
 		</para>
 		<para>The result_pvar parameter sets resulting pvar with text error reason in case of
@@ -774,6 +780,14 @@ add_body("Hello World!", "text/plain");
 				<listitem><para><emphasis>-20</emphasis> - No WWW-Authorize header in 401 reply.
 				</para></listitem>
 				<listitem><para><emphasis>-21</emphasis> - No Content-Type header
+				</para></listitem>
+				<listitem><para><emphasis>-22</emphasis> - To header parse error
+				</para></listitem>
+				<listitem><para><emphasis>-23</emphasis> - From header parse error
+				</para></listitem>
+				<listitem><para><emphasis>-24</emphasis> - Bad hostname in To header
+				</para></listitem>
+				<listitem><para><emphasis>-25</emphasis> - Bad hostname in From header
 				</para></listitem>
 				<listitem><para><emphasis>-255</emphasis> - undefined errors.
 				</para></listitem>

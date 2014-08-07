@@ -1413,6 +1413,8 @@ static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 #define SIP_PARSE_HDR	0x2
 #define SIP_PARSE_NOMF	0x4
 #define SIP_PARSE_RURI	0x8
+#define SIP_PARSE_TO 0x10
+#define SIP_PARSE_FROM 0x20
 
 static int fixup_sip_validate(void** param, int param_no)
 {
@@ -1449,6 +1451,16 @@ static int fixup_sip_validate(void** param, int param_no)
 				case 'R':
 					flags |= SIP_PARSE_RURI;
 					break;
+
+                case 't':
+                case 'T':
+                    flags |= SIP_PARSE_TO;
+                    break;
+                    
+                case 'f':
+                case 'F':
+                    flags |= SIP_PARSE_FROM;
+                    break;
 
 				default:
 					LM_DBG("unknown option \'%c\'\n", *flags_s);
@@ -1796,6 +1808,10 @@ enum sip_validation_failures {
 	SV_NO_UNSUPPORTED=-19,
 	SV_NO_WWW_AUTH=-20,
 	SV_NO_CONTENT_TYPE=-21,
+    SV_TO_PARSE_ERROR=-22,
+    SV_FROM_PARSE_ERROR=-23,
+    SV_TO_DOMAIN_ERROR=-24,
+    SV_FROM_DOMAIN_ERROR=-25,
 	SV_GENERIC_FAILURE=-255
 };
 
@@ -1805,6 +1821,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 	int method;
 	str body;
 	struct cseq_body * cbody;
+    struct to_body *from, *to;
 	unsigned long flags;
 	pv_elem_t* pv_res = (pv_elem_t*)pv_result;
 	pv_value_t pv_val;
@@ -1905,6 +1922,60 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 	/* check only if Via1 is present */
 	ret = SV_NO_VIA1;
 	CHECK_HEADER("", via1);
+	
+	/* test to header uri */
+    if(flags & SIP_PARSE_TO) {
+        if(!msg->to->parsed) {
+            if(parse_to_header(msg) < 0) {
+                strcpy(reason, "failed to parse \'To\' field URI");
+                ret = SV_TO_PARSE_ERROR;
+                goto failed;
+            }
+        }
+    
+        to = (struct to_body*)msg->to->parsed;
+        
+        if(to->error == PARSE_ERROR || 
+                parse_uri(to->uri.s, to->uri.len, &to->parsed_uri) < 0) {
+            strcpy(reason, "failed to parse \'To\' field URI");
+            ret = SV_TO_PARSE_ERROR;
+            goto failed;
+        } 
+
+        /* check for valid domain format */
+        if(check_hostname(&to->parsed_uri.host) < 0) {
+            strcpy(reason, "invalid domain for \'To\' field");
+            ret = SV_TO_DOMAIN_ERROR;
+            goto failed;
+        }
+    }
+    
+    /* test from header uri */
+    if(flags & SIP_PARSE_FROM) {
+        if(!msg->from->parsed) {
+            if(parse_from_header(msg) < 0) {
+                strcpy(reason, "failed to parse \'From\' field URI");
+                ret = SV_FROM_PARSE_ERROR;
+                goto failed;
+            }
+        }
+
+        from = (struct to_body*)msg->from->parsed;
+
+        if(from->error == PARSE_ERROR || 
+                parse_uri(from->uri.s, from->uri.len, &from->parsed_uri) < 0) {
+            strcpy(reason, "failed to parse \'From\' field URI");
+            ret = SV_FROM_PARSE_ERROR;
+            goto failed;
+        }
+
+        /* check for valid domain format */
+        if(check_hostname(&from->parsed_uri.host) < 0) {
+            strcpy(reason, "invalid domain for \'From\' field");
+            ret = SV_FROM_DOMAIN_ERROR;
+            goto failed;
+        }
+    }
 
 	/* request or reply */
 	switch (msg->first_line.type) {
