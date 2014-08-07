@@ -108,6 +108,21 @@ modparam("domain", "domain_col", "domain_name")
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>attrs_col</varname> (string)</title>
+		<para>
+		Name of column containing attributes in domain table.
+		</para>
+		<para>
+		Default value is <quote>attrs</quote>.
+		</para>
+		<example>
+		<title>Setting attrs_col parameter</title>
+		<programlisting format="linespecific">
+modparam("domain", "attrs_col", "attributes")
+</programlisting>
+		</example>
+	</section>
 	
 	</section>
 	<section>
