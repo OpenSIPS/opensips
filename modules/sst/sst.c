@@ -117,6 +117,11 @@ static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog",    DEP_ABORT },
+		/*
+		 * FIXME: silent module load ordering, due to Session-Expires updates from sst
+		 *        proper fix should involve dialog callback ordering
+		 */
+		{ MOD_TYPE_DEFAULT, "pua_dialoginfo", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
