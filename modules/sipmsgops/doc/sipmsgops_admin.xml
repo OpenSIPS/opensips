@@ -728,6 +728,8 @@ add_body("Hello World!", "text/plain");
 				<listitem><para><emphasis>'t'</emphasis> - checks the URI of the 'To' field
 						and whether the domain contains valid characters.
 				</para></listitem>
+				<listitem><para><emphasis>'c'</emphasis> - checks the URI of the 'Contact' field.
+				</para></listitem>
 			</itemizedlist>
 		</para>
 		<para>The result_pvar parameter sets resulting pvar with text error reason in case of
@@ -788,6 +790,8 @@ add_body("Hello World!", "text/plain");
 				<listitem><para><emphasis>-24</emphasis> - Bad hostname in To header
 				</para></listitem>
 				<listitem><para><emphasis>-25</emphasis> - Bad hostname in From header
+				</para></listitem>
+				<listitem><para><emphasis>-26</emphasis> - Contact header parse error
 				</para></listitem>
 				<listitem><para><emphasis>-255</emphasis> - undefined errors.
 				</para></listitem>

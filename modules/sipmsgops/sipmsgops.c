@@ -1415,6 +1415,7 @@ static int is_audio_on_hold_f(struct sip_msg *msg, char *str1, char *str2 )
 #define SIP_PARSE_RURI	0x8
 #define SIP_PARSE_TO 0x10
 #define SIP_PARSE_FROM 0x20
+#define SIP_PARSE_CONTACT 0x40
 
 static int fixup_sip_validate(void** param, int param_no)
 {
@@ -1460,6 +1461,11 @@ static int fixup_sip_validate(void** param, int param_no)
                 case 'f':
                 case 'F':
                     flags |= SIP_PARSE_FROM;
+                    break;
+
+                case 'c':
+                case 'C':
+                    flags |= SIP_PARSE_CONTACT;
                     break;
 
 				default:
@@ -1809,9 +1815,10 @@ enum sip_validation_failures {
 	SV_NO_WWW_AUTH=-20,
 	SV_NO_CONTENT_TYPE=-21,
     SV_TO_PARSE_ERROR=-22,
-    SV_FROM_PARSE_ERROR=-23,
-    SV_TO_DOMAIN_ERROR=-24,
+    SV_TO_DOMAIN_ERROR=-23,
+    SV_FROM_PARSE_ERROR=-24,
     SV_FROM_DOMAIN_ERROR=-25,
+    SV_CONTACT_PARSE_ERROR=-26,
 	SV_GENERIC_FAILURE=-255
 };
 
@@ -1820,8 +1827,11 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 	unsigned int hdrs_len;
 	int method;
 	str body;
+    struct hdr_field * ptr;
+    contact_t * contacts;
+    struct sip_uri test_contacts;
 	struct cseq_body * cbody;
-    struct to_body *from, *to;
+    struct to_body *from, *to; 
 	unsigned long flags;
 	pv_elem_t* pv_res = (pv_elem_t*)pv_result;
 	pv_value_t pv_val;
@@ -1927,7 +1937,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
     if(flags & SIP_PARSE_TO) {
         if(!msg->to->parsed) {
             if(parse_to_header(msg) < 0) {
-                strcpy(reason, "failed to parse \'To\' field URI");
+                strcpy(reason, "failed to parse \'To\' header");
                 ret = SV_TO_PARSE_ERROR;
                 goto failed;
             }
@@ -1935,16 +1945,15 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
     
         to = (struct to_body*)msg->to->parsed;
         
-        if(to->error == PARSE_ERROR || 
-                parse_uri(to->uri.s, to->uri.len, &to->parsed_uri) < 0) {
-            strcpy(reason, "failed to parse \'To\' field URI");
+        if(parse_uri(to->uri.s, to->uri.len, &to->parsed_uri) < 0) {
+            strcpy(reason, "failed to parse \'To\' header");
             ret = SV_TO_PARSE_ERROR;
             goto failed;
         } 
 
         /* check for valid domain format */
         if(check_hostname(&to->parsed_uri.host) < 0) {
-            strcpy(reason, "invalid domain for \'To\' field");
+            strcpy(reason, "invalid domain for \'To\' header");
             ret = SV_TO_DOMAIN_ERROR;
             goto failed;
         }
@@ -1954,7 +1963,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
     if(flags & SIP_PARSE_FROM) {
         if(!msg->from->parsed) {
             if(parse_from_header(msg) < 0) {
-                strcpy(reason, "failed to parse \'From\' field URI");
+                strcpy(reason, "failed to parse \'From\' header");
                 ret = SV_FROM_PARSE_ERROR;
                 goto failed;
             }
@@ -1962,16 +1971,15 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 
         from = (struct to_body*)msg->from->parsed;
 
-        if(from->error == PARSE_ERROR || 
-                parse_uri(from->uri.s, from->uri.len, &from->parsed_uri) < 0) {
-            strcpy(reason, "failed to parse \'From\' field URI");
+        if(parse_uri(from->uri.s, from->uri.len, &from->parsed_uri) < 0) {
+            strcpy(reason, "failed to parse \'From\' header");
             ret = SV_FROM_PARSE_ERROR;
             goto failed;
         }
 
         /* check for valid domain format */
         if(check_hostname(&from->parsed_uri.host) < 0) {
-            strcpy(reason, "invalid domain for \'From\' field");
+            strcpy(reason, "invalid domain for \'From\' header");
             ret = SV_FROM_DOMAIN_ERROR;
             goto failed;
         }
@@ -1989,7 +1997,7 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 					goto failed;
 				}
 				if (check_hostname(&msg->parsed_uri.host) < 0) {
-					strcpy(reason, "invalid domain");
+					strcpy(reason, "invalid domain for R-URI");
 					ret = SV_BAD_HOSTNAME;
 					goto failed;
 				}
@@ -2003,124 +2011,154 @@ static int w_sip_validate(struct sip_msg *msg, char *flags_s, char* pv_result)
 			if (msg->REQ_METHOD == METHOD_INVITE) {
 				ret = SV_NO_CONTACT;
 				CHECK_HEADER("INVITE", contact);
-			}
+                if(flags & SIP_PARSE_CONTACT) {
+                    /* iterate through Contact headers */
+                    for(ptr = msg->contact; ptr; ptr = ptr->sibling) {
+                        /* parse Contact header */
+                        if(!ptr->parsed && (parse_contact(ptr) < 0 
+                                    || !ptr->parsed)) {
+                            strcpy(reason, "failed to parse \'Contact\' header");
+                            ret = SV_CONTACT_PARSE_ERROR;
+                            goto failed;
+                        }
+                        contacts = ((contact_body_t*)ptr->parsed)->contacts;
+                        /* empty contacts header - something must be wrong */
+                        if(contacts == NULL) {
+                            strcpy(reason, "emtpy body for \'Contact\' header");
+                            ret = SV_CONTACT_PARSE_ERROR;
+                            goto failed;
+                        }
+                        /* iterate through URIs and check validty */
+                        for(; contacts; contacts = contacts->next) {
+                            if(parse_uri(contacts->uri.s, contacts->uri.len, 
+                                        &test_contacts) < 0 
+                                    || test_contacts.host.len < 0) {
+                                strcpy(reason, "failed to parse \'Contact\' header");
+                                ret = SV_CONTACT_PARSE_ERROR;
+                                goto failed;
+                            }
+                        }
+                    }
 
-			if (msg->REQ_METHOD != METHOD_REGISTER && msg->path) {
-				strcpy(reason, "PATH header supported only for REGISTERs");
-				ret = SV_PATH_NONREGISTER;
-				goto failed;
-			}
+                }
+            }
 
-			method = msg->REQ_METHOD;
+            if (msg->REQ_METHOD != METHOD_REGISTER && msg->path) {
+                strcpy(reason, "PATH header supported only for REGISTERs");
+                ret = SV_PATH_NONREGISTER;
+                goto failed;
+            }
 
-			break;
+            method = msg->REQ_METHOD;
 
-		case SIP_REPLY:
-			/* checking the reply's message type */
-			cbody = (struct cseq_body *)msg->cseq->parsed;
-			if (!cbody) {
-				strcpy(reason, "cseq not parsed properly");
-				ret = SV_NO_CSEQ;
-				goto failed;
-			}
-			method = cbody->method_id;
-			if (method != METHOD_CANCEL) {
-				switch (msg->first_line.u.reply.statuscode) {
-				case 405:
-					ret = SV_NOALLOW_405;
-					CHECK_HEADER("", allow);
-					break;
+            break;
 
-				case 423:
-					if (method == METHOD_REGISTER) {
-						ret = SV_NOMINEXP_423;
-						CHECK_HEADER("REGISTER", min_expires);
-					}
-					break;
+        case SIP_REPLY:
+            /* checking the reply's message type */
+            cbody = (struct cseq_body *)msg->cseq->parsed;
+            if (!cbody) {
+                strcpy(reason, "cseq not parsed properly");
+                ret = SV_NO_CSEQ;
+                goto failed;
+            }
+            method = cbody->method_id;
+            if (method != METHOD_CANCEL) {
+                switch (msg->first_line.u.reply.statuscode) {
+                    case 405:
+                        ret = SV_NOALLOW_405;
+                        CHECK_HEADER("", allow);
+                        break;
 
-				case 407:
-					ret = SV_NO_PROXY_AUTH;
-					CHECK_HEADER("", proxy_authenticate);
-					break;
+                    case 423:
+                        if (method == METHOD_REGISTER) {
+                            ret = SV_NOMINEXP_423;
+                            CHECK_HEADER("REGISTER", min_expires);
+                        }
+                        break;
 
-				case 420:
-					ret = SV_NO_UNSUPPORTED;
-					CHECK_HEADER("", unsupported);
-					break;
+                    case 407:
+                        ret = SV_NO_PROXY_AUTH;
+                        CHECK_HEADER("", proxy_authenticate);
+                        break;
 
-				case 401:
-					ret = SV_NO_WWW_AUTH;
-					CHECK_HEADER("", www_authenticate);
-					break;
-				}
-			}
+                    case 420:
+                        ret = SV_NO_UNSUPPORTED;
+                        CHECK_HEADER("", unsupported);
+                        break;
 
-			break;
+                    case 401:
+                        ret = SV_NO_WWW_AUTH;
+                        CHECK_HEADER("", www_authenticate);
+                        break;
+                }
+            }
 
-		default:
-			strcpy(reason, "invalid message type");
-			ret = SV_GENERIC_FAILURE;
-			goto failed;
-	}
-	/* check for body */
-	if (method != METHOD_CANCEL) {
-		if (!msg->unparsed) {
-			strcpy(reason, "invalid parsing");
-			ret = SV_HDR_PARSE_ERROR;
-			goto failed;
-		}
-		hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
+            break;
 
-		if ((hdrs_len+2<=msg->len) && (strncmp(CRLF,msg->unparsed,CRLF_LEN)==0) )
-			body.s = msg->unparsed + CRLF_LEN;
-		else if ( (hdrs_len+1<=msg->len) &&
-				(*(msg->unparsed)=='\n' || *(msg->unparsed)=='\r' ) )
-			body.s = msg->unparsed + 1;
-		else {
-			/* no body */
-			body.s = NULL;
-			body.len = 0;
-		}
+        default:
+            strcpy(reason, "invalid message type");
+            ret = SV_GENERIC_FAILURE;
+            goto failed;
+    }
+    /* check for body */
+    if (method != METHOD_CANCEL) {
+        if (!msg->unparsed) {
+            strcpy(reason, "invalid parsing");
+            ret = SV_HDR_PARSE_ERROR;
+            goto failed;
+        }
+        hdrs_len=(unsigned int)(msg->unparsed-msg->buf);
 
-		/* determine the length of the body */
-		body.len = msg->buf + msg->len - body.s;
+        if ((hdrs_len+2<=msg->len) && (strncmp(CRLF,msg->unparsed,CRLF_LEN)==0) )
+            body.s = msg->unparsed + CRLF_LEN;
+        else if ( (hdrs_len+1<=msg->len) &&
+                (*(msg->unparsed)=='\n' || *(msg->unparsed)=='\r' ) )
+            body.s = msg->unparsed + 1;
+        else {
+            /* no body */
+            body.s = NULL;
+            body.len = 0;
+        }
 
-		if (get_content_length(msg) != body.len) {
-			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different then "
-				"actual body %d\n", get_content_length(msg), body.len);
-			ret = SV_INVALID_CONTENT_LENGTH;
-			goto failed;
-		}
+        /* determine the length of the body */
+        body.len = msg->buf + msg->len - body.s;
 
-		if (body.len && body.s) {
-			/* if it really has body, check for content type */
-			ret = SV_NO_CONTENT_TYPE;
-			CHECK_HEADER("", content_type);
-		}
-	}
+        if (get_content_length(msg) != body.len) {
+            snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different then "
+                    "actual body %d\n", get_content_length(msg), body.len);
+            ret = SV_INVALID_CONTENT_LENGTH;
+            goto failed;
+        }
 
-	if ((flags & SIP_PARSE_HDR) && sip_validate_hdrs(msg) < 0) {
-		strcpy(reason, "failed to parse headers");
-		ret = SV_HDR_PARSE_ERROR;
-		goto failed;
-	}
+        if (body.len && body.s) {
+            /* if it really has body, check for content type */
+            ret = SV_NO_CONTENT_TYPE;
+            CHECK_HEADER("", content_type);
+        }
+    }
 
-	return 1;
+    if ((flags & SIP_PARSE_HDR) && sip_validate_hdrs(msg) < 0) {
+        strcpy(reason, "failed to parse headers");
+        ret = SV_HDR_PARSE_ERROR;
+        goto failed;
+    }
+
+    return 1;
 failed:
-	LM_DBG("message does not comply with SIP RFC3261 : (%s)\n", reason);
+    LM_DBG("message does not comply with SIP RFC3261 : (%s)\n", reason);
 
-	if (pv_result != NULL)
-	{
-		pv_val.rs.len = strlen(reason);
-		pv_val.rs.s = reason;
-		pv_val.flags = PV_VAL_STR;
-		if (pv_set_value(msg, &pv_res->spec, 0, &pv_val) != 0)
-		{
-			LM_ERR("cannot populate parameter\n");
-			return SV_GENERIC_FAILURE;
-		}
-	}
-	return ret;
+    if (pv_result != NULL)
+    {
+        pv_val.rs.len = strlen(reason);
+        pv_val.rs.s = reason;
+        pv_val.flags = PV_VAL_STR;
+        if (pv_set_value(msg, &pv_res->spec, 0, &pv_val) != 0)
+        {
+            LM_ERR("cannot populate parameter\n");
+            return SV_GENERIC_FAILURE;
+        }
+    }
+    return ret;
 }
 
 #undef CHECK_HEADER
@@ -2130,73 +2168,73 @@ failed:
 /* Change_reply_status config parsing function (supports AVPs) */
 static int change_reply_status_fixup(void** param, int param_no)
 {
-	if(param_no == 1)
-		return fixup_igp(param);
+    if(param_no == 1)
+        return fixup_igp(param);
 
-	if(param_no == 2)
-		return fixup_spve(param);
+    if(param_no == 2)
+        return fixup_spve(param);
 
-	return 0;
+    return 0;
 }
 
 /* Function to change  the reply status in reply route */
 static int change_reply_status_f(struct sip_msg* msg, char* str1, char* str2)
 {
-	int code_i;
-	str code_s;
-	struct lump *l;
-	char *ch;
+    int code_i;
+    str code_s;
+    struct lump *l;
+    char *ch;
 
-	if(fixup_get_ivalue(msg, (gparam_p)str1, &code_i) < 0) {
-		LM_ERR("Wrong param 1, expected integer\n");
-		return -1;
-	}
+    if(fixup_get_ivalue(msg, (gparam_p)str1, &code_i) < 0) {
+        LM_ERR("Wrong param 1, expected integer\n");
+        return -1;
+    }
 
-	if ( fixup_get_svalue(msg, (gparam_p) str2, &code_s) < 0) {
-		LM_ERR("Wrong param 2, expected string\n");
-		return -1;
-	}
+    if ( fixup_get_svalue(msg, (gparam_p) str2, &code_s) < 0) {
+        LM_ERR("Wrong param 2, expected string\n");
+        return -1;
+    }
 
-	if ((code_i < 100) || (code_i > 699)) {
-		LM_ERR("wrong status code: %d\n", code_i);
-		return -1;
-	}
+    if ((code_i < 100) || (code_i > 699)) {
+        LM_ERR("wrong status code: %d\n", code_i);
+        return -1;
+    }
 
-	if (((code_i < 300) || (msg->REPLY_STATUS < 300))
-		&& (code_i/100 != msg->REPLY_STATUS/100)) {
-		LM_ERR("the class of provisional or positive final replies"
-				" cannot be changed\n");
-		return -1;
-	}
+    if (((code_i < 300) || (msg->REPLY_STATUS < 300))
+            && (code_i/100 != msg->REPLY_STATUS/100)) {
+        LM_ERR("the class of provisional or positive final replies"
+                " cannot be changed\n");
+        return -1;
+    }
 
-	/* rewrite the status code directly in the message buffer */
-	msg->first_line.u.reply.statuscode = code_i;
-	msg->first_line.u.reply.status.s[2] = code_i % 10 + '0'; code_i /= 10;
-	msg->first_line.u.reply.status.s[1] = code_i % 10 + '0'; code_i /= 10;
-	msg->first_line.u.reply.status.s[0] = code_i + '0';
+    /* rewrite the status code directly in the message buffer */
+    msg->first_line.u.reply.statuscode = code_i;
+    msg->first_line.u.reply.status.s[2] = code_i % 10 + '0'; code_i /= 10;
+    msg->first_line.u.reply.status.s[1] = code_i % 10 + '0'; code_i /= 10;
+    msg->first_line.u.reply.status.s[0] = code_i + '0';
 
-	l = del_lump(msg,
-			 msg->first_line.u.reply.reason.s - msg->buf,
-			 msg->first_line.u.reply.reason.len,
-			 0);
-	if (!l) {
-		LM_ERR("Failed to add del lump\n");
-		return -1;
-	}
-	/* clone the reason phrase, the lumps need to be pkg allocated */
-	ch = (char *)pkg_malloc(code_s.len);
-	if (!ch) {
-		LM_ERR("Not enough memory\n");
-		return -1;
-	}
+    l = del_lump(msg,
+            msg->first_line.u.reply.reason.s - msg->buf,
+            msg->first_line.u.reply.reason.len,
+            0);
+    if (!l) {
+        LM_ERR("Failed to add del lump\n");
+        return -1;
+    }
+    /* clone the reason phrase, the lumps need to be pkg allocated */
+    ch = (char *)pkg_malloc(code_s.len);
+    if (!ch) {
+        LM_ERR("Not enough memory\n");
+        return -1;
+    }
 
-	memcpy(ch, code_s.s, code_s.len);
-	if (insert_new_lump_after(l, ch, code_s.len, 0)==0){
-		LM_ERR("failed to add new lump: %.*s\n", code_s.len, ch);
-		pkg_free(ch);
-		return -1;
-	}
+    memcpy(ch, code_s.s, code_s.len);
+    if (insert_new_lump_after(l, ch, code_s.len, 0)==0){
+        LM_ERR("failed to add new lump: %.*s\n", code_s.len, ch);
+        pkg_free(ch);
+        return -1;
+    }
 
-	return 1;
+    return 1;
 }
 

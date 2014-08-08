@@ -520,6 +520,7 @@ add_body("Hello World!", "text/plain");
        domain contains valid characters.
      * 't' - checks the URI of the 'To' field and whether the
        domain contains valid characters.
+     * 'c' - checks the URI of the 'Contact' field.
 
    The result_pvar parameter sets resulting pvar with text error
    reason in case of negative result ( easy for logging or
@@ -555,6 +556,7 @@ add_body("Hello World!", "text/plain");
      * -23 - From header parse error
      * -24 - Bad hostname in To header
      * -25 - Bad hostname in From header
+     * -26 - Contact header parse error
      * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
