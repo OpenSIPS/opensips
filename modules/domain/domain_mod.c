@@ -220,6 +220,7 @@ static int mod_init(void)
 	init_db_url( db_url , 0 /*cannot be null*/);
 	domain_table.len = strlen(domain_table.s);
 	domain_col.len = strlen(domain_col.s);
+	domain_attrs_col.len = strlen(domain_attrs_col.s);
 
 	/* Check if database module has been loaded */
 	if (domain_db_bind(&db_url) < 0)  return -1;
