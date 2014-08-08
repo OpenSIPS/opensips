@@ -70,7 +70,7 @@ static inline int mi_parse_node( FILE *stream, str *buf, str *name, str *value)
 
 	/* read one line */
 	do {
-		if (mi_read_line( buf->s, buf->len, stream, &line_len)<0) {
+		if (mi_read_line( buf->s, buf->len, &stream, &line_len)<0) {
 			LM_ERR("failed to read from fifo\n");
 			return -1;
 		}
@@ -185,7 +185,7 @@ static inline int mi_parse_node( FILE *stream, str *buf, str *name, str *value)
 		buf->s = p;
 
 		/*read one more line */
-		if (mi_read_line( buf->s, buf->len, stream, &line_len)<0) {
+		if (mi_read_line( buf->s, buf->len, &stream, &line_len)<0) {
 			LM_ERR("failed to re-read from fifo\n");
 			return -1;
 		}
@@ -248,7 +248,7 @@ struct mi_root * mi_parse_tree(FILE *stream) {
 	if (ret==-1) {
 		/* consume the rest of the fifo request */
 		do {
-			mi_read_line(mi_parse_buffer,mi_parse_buffer_len,stream,&ret);
+			mi_read_line(mi_parse_buffer,mi_parse_buffer_len,&stream,&ret);
 		}while(ret>1);
 	}
 

@@ -52,4 +52,7 @@
 /* size of buffer used by parser to read and build the MI tree */
 #define MAX_MI_FIFO_READ 8192
 
+/* we are waiting for a while between fifo file checks */
+#define FIFO_CHECK_WAIT 30
+
 #endif /* _MI_FIFO */
