@@ -60,7 +60,7 @@
 
 
 /* probing related stuff */
-static unsigned int dr_prob_interval = 30; 
+static unsigned int dr_prob_interval = 30;
 static str dr_probe_replies = {NULL,0};
 struct tm_binds dr_tmb;
 str dr_probe_method = str_init("OPTIONS");
@@ -147,16 +147,16 @@ static struct head_config {
     str drc_table; /* drc_table name extracted from database */
     str drg_table; /* drg_table name extracted from database */
     str gw_priprefix_avp_spec; /* extracted from database - it can be NULL */
-    str rule_id_avp_spec;      /* extracted from database - it can be NULL */ 
+    str rule_id_avp_spec;      /* extracted from database - it can be NULL */
     str rule_prefix_avp_spec;  /* extracted from database - it can be NULL */
     str carrier_id_avp_spec;   /* extracted from database - it can be NULL */
     str ruri_avp_spec;  /* extracted from database - has default value */
-    str gw_id_avp_spec; /* extracted from database - has default value */ 
+    str gw_id_avp_spec; /* extracted from database - has default value */
     str gw_sock_avp_spec; /* extracted from database - has default value */
     str gw_attrs_avp_spec; /* extracted from database - has default value */
     str rule_attrs_avp_spec; /* extracted from database - has default value */
     str carrier_attrs_avp_spec; /* extracted from database - has default value */
-    struct head_config *next; 
+    struct head_config *next;
 }* head_start = NULL,* head_end = NULL;
 
 struct head_db * head_db_start = NULL,* head_db_end = NULL;
@@ -185,7 +185,7 @@ typedef struct dr_part_group {
 static dr_part_group_t * default_part; /* for do_routing, used when
                                              use_partitions = 0 */
 
-typedef struct dr_part_old { 
+typedef struct dr_part_old {
     dr_partition_t *dr_part;
     gparam_p gw_or_cr; /* gateway or carrier */
 } dr_part_old_t;
@@ -214,10 +214,10 @@ static int _is_dr_gw_w_part(struct sip_msg* , char * , char* ,
 static int use_next_gw_w_part( struct sip_msg*, struct head_db *, char *, char *, char *);
 static int dr_disable(struct sip_msg *req, char * current_partition);
 static int dr_disable_w_part(struct sip_msg *req, struct head_db *current_partition);
-static int to_partition(struct sip_msg*, dr_partition_t *, 
-        struct head_db **);  
-static inline int init_part_grp(dr_part_group_t **, struct head_db *, 
-        dr_group_t*); 
+static int to_partition(struct sip_msg*, dr_partition_t *,
+        struct head_db **);
+static inline int init_part_grp(dr_part_group_t **, struct head_db *,
+        dr_group_t*);
 
 
 /* reader-writers lock for reloading the data */
@@ -256,6 +256,7 @@ static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
+static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param);
 
 
 /* event */
@@ -400,10 +401,14 @@ static param_export_t params[] = {
 #define HLP3 "Params: [ carrier_id [ status ]] ; Sets/gets the status of a " \
 	"carrier; If no carrier_id is given, all carrier will be listed; if a " \
 	"new status is give, it will be pushed to the given carrier."
+#define HLP4 "Params: [partition] [group_id] number ; List the gateways a "\
+    "number will match when searching through the rules from a specific group. "\
+    "The partition parameter must be defined only if use_partitions = 1."
 static mi_export_t mi_cmds[] = {
 	{ "dr_reload",         HLP1, dr_reload_cmd,    0, 0,  0},
 	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
 	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
+    { "dr_test_number",    HLP4, mi_dr_test_number, 0,               0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -443,7 +448,7 @@ static int check_options_rplcode(int code)
 static int dr_disable(struct sip_msg *req, char * param_part_name) {
     str part_name;
     struct head_db * current_partition = 0;
-    if( param_part_name!=NULL && fixup_get_svalue(req, 
+    if( param_part_name!=NULL && fixup_get_svalue(req,
                 (gparam_p)param_part_name,
                 &part_name)==0 ) {
         if( (current_partition = get_partition(&part_name))!= NULL) {
@@ -453,7 +458,7 @@ static int dr_disable(struct sip_msg *req, char * param_part_name) {
             return -1;
         }
     } else {
-        if( use_db_config ) { 
+        if( use_db_config ) {
             LM_ERR("Partition name is mandatory <%*.s>\n", part_name.len
                     ,part_name.s);
             return -1;
@@ -574,14 +579,14 @@ static void dr_probing_callback( struct cell *t, int type,
     }
 
     current_partition = ( (param_prob_callback_t*) *ps->param)->current_partition;
-    
+
 
 
 	lock_start_read( current_partition->ref_lock );
 
-    _id = ((param_prob_callback_t*)*ps->param)->_id; 
+    _id = ((param_prob_callback_t*)*ps->param)->_id;
 
-	gw = get_gw_by_internal_id( (*(current_partition->rdata))->pgw_l, _id); 
+	gw = get_gw_by_internal_id( (*(current_partition->rdata))->pgw_l, _id);
 	if (gw==NULL)
 		goto end;
 
@@ -640,7 +645,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
                         )
                         )
                ) {
-                    continue; 
+                    continue;
                  }
 
             memcpy(buff + 4, dst->ip_str.s, dst->ip_str.len);
@@ -658,7 +663,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
             params = shm_malloc(sizeof(param_prob_callback_t));
             if( params==0 ) {
                 LM_ERR("no more shm memory!\n");
-                return; 
+                return;
             }
             params->_id = dst->_id;
             params->current_partition = it;
@@ -780,8 +785,8 @@ static void dr_state_timer(unsigned int ticks, void* param)
     }
 }
 
-/* 
- * if none is succesfully loaded return 
+/*
+ * if none is succesfully loaded return
  * -1, else return 0
  */
 
@@ -841,7 +846,7 @@ static inline int dr_reload_data( void ) {
     struct head_db * it_head_db;
     int ret_val = 0;
 
-    for( it_head_db=head_db_start; it_head_db!=NULL; 
+    for( it_head_db=head_db_start; it_head_db!=NULL;
             it_head_db=it_head_db->next ) {
         if( dr_reload_data_head( it_head_db )!=0 )
             ret_val = -1;
@@ -900,7 +905,7 @@ static int cleanup_head_config( struct head_config *hd) {
         shm_free( hd->db_url.s );
         hd->db_url.s = 0;
     }
-    
+
     if( hd->drd_table.s && hd->drd_table.s != drd_table.s) {
         shm_free( hd->drd_table.s );
     }
@@ -913,7 +918,7 @@ static int cleanup_head_config( struct head_config *hd) {
     if( hd->drg_table.s && hd->drg_table.s != drg_table.s) {
         shm_free( hd->drg_table.s );
     }
-    
+
     if(hd->gw_priprefix_avp_spec.s)
         shm_free(hd->gw_priprefix_avp_spec.s);
     if(hd->rule_id_avp_spec.s)
@@ -979,7 +984,7 @@ static int cleanup_head_db( struct head_db *hd) {
             hd->drg_table.s = 0;
             hd->drg_table.len = 0;
         }
-        
+
         hd->avpID_store_ruri = -1;
         hd->avpID_store_prefix = -1;
         hd->avpID_store_index = -1;
@@ -1053,12 +1058,12 @@ static int dr_init(void)
 
     LM_INFO("Dynamic-Routing - initializing\n");
 
-    name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of 
+    name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of
                                                        fixed string */);
     if( name_w_part.s == 0 ) {
         LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
         goto error;
-    } 
+    }
 
     if( use_db_config == 1 ) { /* loading configurations from db */
         if( get_config_from_db() == -1 ) {
@@ -1148,7 +1153,7 @@ static int dr_init(void)
 
     while(it_head_config != NULL) {
         /* check if last head was ok, if not overwrite it */
-        if( head_db_start==NULL || (head_db_start!=NULL && 
+        if( head_db_start==NULL || (head_db_start!=NULL &&
                     head_db_end->db_url.s!=NULL) ) {
             add_head_db();
         }
@@ -1156,14 +1161,14 @@ static int dr_init(void)
         if( it_head_config->db_url.s==0 )
             continue;
 
-        if( shm_str_dup( &( head_db_end->db_url ), 
+        if( shm_str_dup( &( head_db_end->db_url ),
                     &(it_head_config->db_url))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
             head_db_end->db_url.s = 0;
             goto skip;
         }
 
-        if( shm_str_dup( &( head_db_end->partition ), 
+        if( shm_str_dup( &( head_db_end->partition ),
                     &(it_head_config->partition))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
             head_db_end->db_url.s = 0;
@@ -1173,17 +1178,17 @@ static int dr_init(void)
         if(!it_head_config->drd_table.s) {
             head_db_end->drd_table.s = drd_table.s;
             head_db_end->drd_table.len = drd_table.len;
-        }else if( shm_str_dup( &( head_db_end->drd_table ), 
+        }else if( shm_str_dup( &( head_db_end->drd_table ),
                     &(it_head_config->drd_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
             head_db_end->db_url.s = 0;
             goto skip;
         }
-        
+
         if(!it_head_config->drr_table.s) {
             head_db_end->drr_table.s = drr_table.s;
             head_db_end->drr_table.len = drr_table.len;
-        }else if( shm_str_dup( &( head_db_end->drr_table ), 
+        }else if( shm_str_dup( &( head_db_end->drr_table ),
                     &(it_head_config->drr_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
             head_db_end->db_url.s = 0;
@@ -1193,7 +1198,7 @@ static int dr_init(void)
         if(!it_head_config->drc_table.s) {
             head_db_end->drc_table.s = drc_table.s;
             head_db_end->drc_table.len = drc_table.len;
-        } else if( shm_str_dup( &( head_db_end->drc_table ), 
+        } else if( shm_str_dup( &( head_db_end->drc_table ),
                     &(it_head_config->drc_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
             head_db_end->db_url.s = 0;
@@ -1202,7 +1207,7 @@ static int dr_init(void)
         if(!it_head_config->drg_table.s) {
             head_db_end->drg_table.s = drg_table.s;
             head_db_end->drg_table.len = drg_table.len;
-        } else if( shm_str_dup( &( head_db_end->drg_table ), 
+        } else if( shm_str_dup( &( head_db_end->drg_table ),
                     &(it_head_config->drg_table))!=0 ) {
             LM_CRIT("shm_str_dup failed for db_url");
             head_db_end->db_url.s = 0;
@@ -1214,7 +1219,7 @@ static int dr_init(void)
         /* partition name is added to AVP name */
 
         name.s = "_dr_fb_ruri_"; name.len=12;
-        add_partition_to_avp_name( name, it_head_config->partition, 
+        add_partition_to_avp_name( name, it_head_config->partition,
                 name_w_part);
 
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_ruri))!=0 ) {
@@ -1224,7 +1229,7 @@ static int dr_init(void)
         }
 
         name.s = "_dr_fb_prefix_"; name.len=14;
-        add_partition_to_avp_name( name, it_head_config->partition, 
+        add_partition_to_avp_name( name, it_head_config->partition,
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_prefix))!=0 ) {
             LM_ERR("failed to init internal AVP for prefix\n");
@@ -1233,7 +1238,7 @@ static int dr_init(void)
         }
 
         name.s = "_dr_fb_index_"; name.len=13;
-        add_partition_to_avp_name( name, it_head_config->partition, 
+        add_partition_to_avp_name( name, it_head_config->partition,
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_index))!=0 ) {
             LM_ERR("failed to init internal AVP for index\n");
@@ -1242,7 +1247,7 @@ static int dr_init(void)
         }
 
         name.s = "_dr_fb_whitelist_"; name.len=17;
-        add_partition_to_avp_name( name, it_head_config->partition, 
+        add_partition_to_avp_name( name, it_head_config->partition,
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_whitelist))!=0 ) {
             LM_ERR("failed to init internal AVP for whitelist\n");
@@ -1251,7 +1256,7 @@ static int dr_init(void)
         }
 
         name.s = "_dr_fb_group_"; name.len=13;
-        add_partition_to_avp_name( name, it_head_config->partition, 
+        add_partition_to_avp_name( name, it_head_config->partition,
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_group))!=0 ) {
             LM_ERR("failed to init internal AVP for group\n");
@@ -1260,33 +1265,33 @@ static int dr_init(void)
         }
 
         name.s = "_dr_fb_flags_"; name.len=13;
-        add_partition_to_avp_name( name, it_head_config->partition, 
+        add_partition_to_avp_name( name, it_head_config->partition,
                 name_w_part);
         if ( parse_avp_spec( &name_w_part, &(head_db_end->avpID_store_flags))!=0 ) {
             LM_ERR("failed to init internal AVP for flags\n");
             head_db_end->db_url.s = 0;
             goto skip;
-        }   
+        }
 
         /* fix AVP specs for parameters */
-        dr_fix_avp_def_w_default( it_head_config->ruri_avp_spec, 
-                head_db_end->ruri_avp, ruri_avp_spec, 
-                it_head_config->partition, "RURI"); 
+        dr_fix_avp_def_w_default( it_head_config->ruri_avp_spec,
+                head_db_end->ruri_avp, ruri_avp_spec,
+                it_head_config->partition, "RURI");
 
-        dr_fix_avp_def_w_default( it_head_config->gw_id_avp_spec, 
+        dr_fix_avp_def_w_default( it_head_config->gw_id_avp_spec,
                 head_db_end->gw_id_avp, gw_id_avp_spec,
                 it_head_config->partition, "GW ID");
 
         dr_fix_avp_def_w_default( it_head_config->gw_sock_avp_spec,
-                head_db_end->gw_sock_avp, gw_sock_avp_spec, 
+                head_db_end->gw_sock_avp, gw_sock_avp_spec,
                 it_head_config->partition, "GW SOCKET");
 
-        dr_fix_avp_def_w_default( it_head_config->gw_attrs_avp_spec, 
+        dr_fix_avp_def_w_default( it_head_config->gw_attrs_avp_spec,
                 head_db_end->gw_attrs_avp, gw_attrs_avp_spec,
                 it_head_config->partition, "GW ATTRS");
 
         dr_fix_avp_def_w_default( it_head_config->rule_attrs_avp_spec,
-                head_db_end->rule_attrs_avp, rule_attrs_avp_spec, 
+                head_db_end->rule_attrs_avp, rule_attrs_avp_spec,
                 it_head_config->partition, "RULE ATTRS");
 
         dr_fix_avp_def_w_default( it_head_config->carrier_attrs_avp_spec,
@@ -1294,22 +1299,22 @@ static int dr_init(void)
                 it_head_config->partition, "CARRIER ATTRS");
 
         if (it_head_config->gw_priprefix_avp_spec.s ) {
-            dr_fix_avp_definition( it_head_config->gw_priprefix_avp_spec, 
+            dr_fix_avp_definition( it_head_config->gw_priprefix_avp_spec,
                     head_db_end->gw_priprefix_avp, "GW PRI PREFIX");
         }
 
         if (it_head_config->rule_id_avp_spec.s) {
-            dr_fix_avp_definition( it_head_config->rule_id_avp_spec, 
+            dr_fix_avp_definition( it_head_config->rule_id_avp_spec,
                     head_db_end->rule_id_avp, "RULE ID");
         }
 
         if (it_head_config->rule_prefix_avp_spec.s) {
-            dr_fix_avp_definition( it_head_config->rule_prefix_avp_spec, 
+            dr_fix_avp_definition( it_head_config->rule_prefix_avp_spec,
                     head_db_end->rule_prefix_avp, "RULE PREFIX");
         }
 
         if (it_head_config->carrier_id_avp_spec.s) {
-            dr_fix_avp_definition( it_head_config->carrier_id_avp_spec, 
+            dr_fix_avp_definition( it_head_config->carrier_id_avp_spec,
                     head_db_end->carrier_id_avp, "CARRIER ID");
         }
 
@@ -1322,7 +1327,7 @@ static int dr_init(void)
             LM_CRIT("failed to get shm mem for data ptr\n");
             head_db_end->db_url.s = 0;
             goto skip;
-        }   
+        }
 
         *(head_db_end->rdata) = 0;
 
@@ -1345,7 +1350,7 @@ static int dr_init(void)
             goto skip;
         }
 
-        if( (*head_db_end->db_con = 
+        if( (*head_db_end->db_con =
                     head_db_end->db_funcs.init(&head_db_end->db_url)) == 0) {
             LM_ERR("Cand't load db ulr %.*s", head_db_end->db_url.len,
                     head_db_end->db_url.s);
@@ -1359,7 +1364,7 @@ static int dr_init(void)
             goto skip;
         }
 
-        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
                     &head_db_end->drd_table, DRD_TABLE_VER) < 0) {
             LM_ERR("error during table version check<dr_gateways table \'%.*s\',"
                     " for partition \'%.*s\'>\n", head_db_end->drd_table.len,
@@ -1368,7 +1373,7 @@ static int dr_init(void)
             return -1;
         }
 
-        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
                     &head_db_end->drr_table, DRR_TABLE_VER) < 0) {
             LM_ERR("error during table version check<dr_rules table \'%.*s\',"
                     " for partition \'%.*s\'>\n", head_db_end->drr_table.len,
@@ -1377,7 +1382,7 @@ static int dr_init(void)
             return -1;
         }
 
-        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
                     &head_db_end->drg_table, DRG_TABLE_VER) < 0) {
             LM_ERR("error during table version check<dr_groups table \'%.*s\',"
                     " for partition \'%.*s\'>\n", head_db_end->drg_table.len,
@@ -1386,7 +1391,7 @@ static int dr_init(void)
             return -1;
         }
 
-        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con, 
+        if(db_check_table_version(&head_db_end->db_funcs, *head_db_end->db_con,
                     &head_db_end->drc_table, DRC_TABLE_VER) < 0) {
             LM_ERR("error during table version check<dr_carriers table \'%.*s\',"
                     " for partition \'%.*s\'>\n", head_db_end->drc_table.len,
@@ -1394,7 +1399,7 @@ static int dr_init(void)
                     head_db_end->partition.s);
             return -1;
         }
-        
+
         (head_db_end->db_funcs).close(*head_db_end->db_con);
         *head_db_end->db_con = 0;
 
@@ -1405,10 +1410,10 @@ skip:
             cleanup_head_db(head_db_end);
             memset( head_db_end, 0, sizeof(struct head_db) );
         }
-    } 
+    }
 
     if( name_w_part.s ) {
-        shm_free(name_w_part.s); 
+        shm_free(name_w_part.s);
         name_w_part.s = 0;
     }
 
@@ -1428,8 +1433,8 @@ skip:
                 it_head_db = it_head_db->next;
             to_clean = head_db_end;
             head_db_end = it_head_db;
-            head_db_end->next = NULL; 
-            cleanup_head_db( to_clean ); 
+            head_db_end->next = NULL;
+            cleanup_head_db( to_clean );
             memset( to_clean, 0, sizeof(struct head_db) );
             if( to_clean ) {
                 shm_free( to_clean );
@@ -1438,7 +1443,7 @@ skip:
 
         }
     }
-    
+
     if (init_dr_bls(head_db_start)!=0) {
         LM_ERR("failed to init DR blacklists\n");
         return E_CFG;
@@ -1449,7 +1454,7 @@ skip:
         last_cleaned = it_head_config;
         it_head_config = it_head_config->next;
 
-        memset( last_cleaned, 0 , sizeof( struct head_config )); 
+        memset( last_cleaned, 0 , sizeof( struct head_config ));
 
         if( last_cleaned ) {
             shm_free( last_cleaned );
@@ -1499,7 +1504,7 @@ skip:
         }
     }
     LM_DBG("All in place in the init. Will return 0\n");
-    
+
     /* init the the default partition for do_routing */
     default_part = pkg_malloc(sizeof(dr_part_group_t));
     if(default_part == NULL) {
@@ -1529,7 +1534,7 @@ skip:
 error:
     /* clean-up -> only when we used extern_params
      * from the cfg*/
-    if( head_db_end==head_db_start) { /* sanity check: should contain 
+    if( head_db_end==head_db_start) { /* sanity check: should contain
                                          only one head */
         cleanup_head_db( head_db_end );
         if( head_db_end!=0 ) {
@@ -1544,7 +1549,7 @@ error:
         }
 
 
-        if (name_w_part.s) { 
+        if (name_w_part.s) {
             shm_free(name_w_part.s);
             name_w_part.s = NULL;
         }
@@ -1563,15 +1568,15 @@ static int db_load_head(struct head_db *x) {
         return -1;
     }
     if( x->db_url.s && (*(x->db_con) = x->db_funcs.init(&(x->db_url)))==0 ) {
-        LM_ERR("cannot initialize database connection" 
+        LM_ERR("cannot initialize database connection"
                 "(partition:%.*s, db_url:%.*s, len:%d)\n", x->partition.len,
                 x->partition.s, x->db_url.len, x->db_url.s, x->db_url.len);
         return -1;
     }
-    if( x->db_con && *(x->db_con) && 
+    if( x->db_con && *(x->db_con) &&
             x->db_funcs.use_table( *(x->db_con), &(x->drg_table)) <0 ) {
-        LM_ERR("cannot select table (partition:%.*s, drg_table:%.*s\n", 
-                x->partition.len, x->partition.s, (x->drg_table).len, 
+        LM_ERR("cannot select table (partition:%.*s, drg_table:%.*s\n",
+                x->partition.len, x->partition.s, (x->drg_table).len,
                 (x->drg_table).s);
         return -1;
     }
@@ -1598,14 +1603,14 @@ static int dr_child_init(int rank)
         head_db_it = head_db_it->next;
 
         LM_DBG("Child iterates\n");
-    } 
+    }
 
     /* child 1 load the routing info */
     if ( (rank==1) && dr_reload_data()!=0 ) {
         LM_CRIT("failed to load routing data\n");
         return -1;
     }
-    srand(getpid()+time(0)+rank); 
+    srand(getpid()+time(0)+rank);
     return 0;
 }
 
@@ -1663,7 +1668,7 @@ static int dr_exit(void)
     }
 
     /* destroy blacklists */
-    destroy_dr_bls(); 
+    destroy_dr_bls();
 
     return 0;
 }
@@ -1687,7 +1692,7 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param)
         if ( (n=dr_reload_data())!=0 ) { /* load the data for all the partitions */
             LM_CRIT("failed to load routing data\n");
             goto error;
-        } 
+        }
     } else {
         part_name = &(node->value);
         if( (part = get_partition(part_name))==NULL) {
@@ -1708,7 +1713,7 @@ error:
 
 
 
-static inline int get_group_id(struct sip_uri *uri, struct head_db * 
+static inline int get_group_id(struct sip_uri *uri, struct head_db *
         current_partition)
 {
     db_key_t keys_ret[1];
@@ -1738,8 +1743,8 @@ static inline int get_group_id(struct sip_uri *uri, struct head_db *
 
     if( (current_partition->db_funcs).use_table(*(current_partition->db_con),
                 &(current_partition->drg_table))<0 ) {
-        LM_ERR("cannot select table \"%.*s\"\n", 
-                (current_partition->drg_table).len, 
+        LM_ERR("cannot select table \"%.*s\"\n",
+                (current_partition->drg_table).len,
                 (current_partition->drg_table).s);
         goto error;
     }
@@ -1875,12 +1880,12 @@ static int do_routing_0(struct sip_msg* msg)
         LM_ERR("Partition name is mandatory");
         return -1;
     }
-    return -1; 
+    return -1;
 }
 
 
-static int do_routing_1(struct sip_msg* msg, char *part_grp, char* grp_flags, 
-        char* flags_wlst, char* wlst_rule, char* rule_gw, 
+static int do_routing_1(struct sip_msg* msg, char *part_grp, char* grp_flags,
+        char* flags_wlst, char* wlst_rule, char* rule_gw,
         char* gw_carr, char* carr)
 {
     str res = {0,0};
@@ -1953,7 +1958,7 @@ static int do_routing_1(struct sip_msg* msg, char *part_grp, char* grp_flags,
     return do_routing(msg, (dr_part_group_t*)dr_part_group, flags, (gparam_t*)wlst);
 }
 
-static int use_next_gw(struct sip_msg* msg, char* rule_or_part, 
+static int use_next_gw(struct sip_msg* msg, char* rule_or_part,
         char * rule_or_gw, char *gw_carr, char * carr) {
     dr_partition_t * part = 0;
     struct head_db * current_partition = 0;
@@ -1967,7 +1972,7 @@ static int use_next_gw(struct sip_msg* msg, char* rule_or_part,
                 if(to_partition(msg, part, &current_partition) < 0) {
                     return -1;
                 }
-            } 
+            }
             return use_next_gw_w_part(msg, current_partition, rule_or_gw,
                     gw_carr, carr);
         } else {
@@ -1987,7 +1992,7 @@ static int use_next_gw(struct sip_msg* msg, char* rule_or_part,
 }
 
 
-static int use_next_gw_w_part(struct sip_msg* msg, 
+static int use_next_gw_w_part(struct sip_msg* msg,
         struct head_db * current_partition,
         char* rule_att, char* gw_att, char* carr_att)
 {
@@ -2083,7 +2088,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
         avp = NULL;
         do {
             if (avp) destroy_avp(avp);
-            avp = search_first_avp( 0, current_partition->gw_id_avp, 
+            avp = search_first_avp( 0, current_partition->gw_id_avp,
                     NULL, NULL);
         }while (avp && (avp->flags&AVP_VAL_STR)==0 );
         if (!avp) {
@@ -2092,7 +2097,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
         }
         do {
             if (avp) destroy_avp(avp);
-            avp = search_first_avp( 0, current_partition->gw_id_avp, 
+            avp = search_first_avp( 0, current_partition->gw_id_avp,
                     NULL, NULL);
         }while (avp && (avp->flags&AVP_VAL_STR)==0 );
         /* any GW found ? */
@@ -2103,7 +2108,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
         avp_ru = NULL;
         do {
             if (avp_ru) destroy_avp(avp_ru);
-            avp_ru = search_first_avp( 0, current_partition->ruri_avp, 
+            avp_ru = search_first_avp( 0, current_partition->ruri_avp,
                     &val, NULL);
         }while (avp_ru && (avp_ru->flags&AVP_VAL_STR)==0 );
 
@@ -2115,7 +2120,7 @@ static int use_next_gw_w_part(struct sip_msg* msg,
         avp_sk = NULL;
         do {
             if (avp_sk) destroy_avp(avp_sk);
-            avp_sk = search_first_avp( 0, current_partition->gw_sock_avp, 
+            avp_sk = search_first_avp( 0, current_partition->gw_sock_avp,
                     &val, NULL);
         }while (avp_sk && (avp_sk->flags&AVP_VAL_STR)==0 );
         if (!avp_sk) {
@@ -2165,7 +2170,7 @@ rule_fallback:
     LM_DBG("using rule fallback\n");
 
     /* check if a "flags" AVP is there and if fallback allowed */
-    avp = search_first_avp( 0, current_partition->avpID_store_flags, 
+    avp = search_first_avp( 0, current_partition->avpID_store_flags,
             &val, NULL);
     if (avp==NULL || !(val.n & DR_PARAM_RULE_FALLBACK) )
         return -1;
@@ -2173,7 +2178,7 @@ rule_fallback:
     /* fallback allowed, fetch the rest of data from AVPs */
     flags = val.n | DR_PARAM_INTERNAL_TRIGGERED;
 
-    if (!search_first_avp( 0, current_partition->avpID_store_group, 
+    if (!search_first_avp( 0, current_partition->avpID_store_group,
                 &val, NULL)) {
         LM_ERR("Cannot find group AVP during a fallback\n");
         goto fallback_failed;
@@ -2181,7 +2186,7 @@ rule_fallback:
     grp.type = 0;
     grp.u.grp_id = val.n;
 
-    if (!search_first_avp( AVP_VAL_STR, current_partition->avpID_store_whitelist, 
+    if (!search_first_avp( AVP_VAL_STR, current_partition->avpID_store_whitelist,
                 &val, NULL)) {
         wl_list.type = 0;
     } else {
@@ -2325,7 +2330,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
     if (populate_gw_attrs) {
         val.s = gw->attrs.s? gw->attrs : attrs_empty;
         LM_DBG("setting GW attr [%.*s] as avp\n", val.s.len, val.s.s);
-        if (add_avp_last(AVP_VAL_STR, current_partition->gw_attrs_avp, 
+        if (add_avp_last(AVP_VAL_STR, current_partition->gw_attrs_avp,
                     val)!=0){
             LM_ERR("failed to insert gw attrs avp\n");
             goto error;
@@ -2382,7 +2387,7 @@ static inline int is_dst_in_list(void* dst, pgw_list_t *list, unsigned short len
     return 0;
 }
 
-struct head_db * get_partition(const str *name) { 
+struct head_db * get_partition(const str *name) {
     struct head_db * it = head_db_start;
 
     while( it!= NULL) {
@@ -2397,7 +2402,7 @@ struct head_db * get_partition(const str *name) {
 }
 
 
-static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group, 
+static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
         int flags, gparam_t* whitelist)
 {
     unsigned short dsts_idx[DR_MAX_GWLIST];
@@ -2455,7 +2460,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 
 
     /* allow no GWs if we're only trying to use DR for checking purposes */
-    if ( *(current_partition->rdata)==0 || ((flags & DR_PARAM_ONLY_CHECK) == 0 
+    if ( *(current_partition->rdata)==0 || ((flags & DR_PARAM_ONLY_CHECK) == 0
                 && (*(current_partition->rdata))->pgw_l==0 )) {
         LM_DBG("empty routing table\n");
         goto error1;
@@ -2470,7 +2475,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
     destroy_avps( 0, current_partition->gw_attrs_avp, 1);
     destroy_avps( 0, current_partition->carrier_attrs_avp, 1);
 
-    if ((current_partition->gw_priprefix_avp)!=-1) 
+    if ((current_partition->gw_priprefix_avp)!=-1)
         destroy_avps( 0, current_partition->gw_priprefix_avp, 1);
     if ((current_partition->rule_id_avp)!=-1)
         destroy_avps( 0, current_partition->rule_id_avp, 1);
@@ -2538,7 +2543,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
     } else {
 
         /* resume index on the rule under same prefix */
-        avp_index = search_first_avp( 0, current_partition->avpID_store_index, 
+        avp_index = search_first_avp( 0, current_partition->avpID_store_index,
                 &val, 0);
         if (avp_index==NULL) {
             LM_ERR("Cannot find index AVP during a fallback\n");
@@ -2547,7 +2552,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
         rule_idx = val.n;
 
         /* prefix to resume with */
-        avp_prefix = search_first_avp( AVP_VAL_STR, 
+        avp_prefix = search_first_avp( AVP_VAL_STR,
                 current_partition->avpID_store_prefix, &val, 0);
         if (avp_prefix==NULL) {
             LM_ERR("Cannot find prefix AVP during a fallback\n");
@@ -2594,7 +2599,7 @@ search_again:
     }
 
     /* search a prefix */
-    rt_info = get_prefix( (*(current_partition->rdata))->pt, &username, 
+    rt_info = get_prefix( (*(current_partition->rdata))->pt, &username,
             (unsigned int)grp_id,&prefix_len, &rule_idx);
 
     if (flags & DR_PARAM_STRICT_LEN) {
@@ -2606,7 +2611,7 @@ search_again:
         LM_DBG("no matching for prefix \"%.*s\"\n",
                 username.len, username.s);
         /* try prefixless rules */
-        rt_info = check_rt( &(*(current_partition->rdata))->noprefix, 
+        rt_info = check_rt( &(*(current_partition->rdata))->noprefix,
                 (unsigned int)grp_id);
         if (rt_info==0) {
             LM_DBG("no prefixless matching for "
@@ -2663,7 +2668,7 @@ search_again:
         } else {
             tmp = parsed_whitelist.s[parsed_whitelist.len];
             parsed_whitelist.s[parsed_whitelist.len] = 0;
-            if (parse_destination_list( *(current_partition->rdata), 
+            if (parse_destination_list( *(current_partition->rdata),
                         parsed_whitelist.s, &wl_list, &wl_len, 1)!=0) {
                 LM_ERR("invalid format in whitelist-> ignoring...\n");
                 wl_list = NULL;
@@ -2738,7 +2743,7 @@ search_again:
                 continue;
 
             /* add gateway to usage list */
-            if ( push_gw_for_usage(msg, current_partition, &uri, 
+            if ( push_gw_for_usage(msg, current_partition, &uri,
                         dst->dst.gw, NULL, NULL, n) ) {
                 LM_ERR("failed to use gw <%.*s>, skipping\n",
                         dst->dst.gw->id.len, dst->dst.gw->id.s);
@@ -2776,7 +2781,7 @@ search_again:
     if (carrier_attrs_spec) {
         pv_val.flags = PV_VAL_STR;
         pv_val.rs = !next_carrier_attrs.s ? attrs_empty : next_carrier_attrs;
-        if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val) 
+        if (pv_set_value(msg, carrier_attrs_spec, 0, &pv_val)
                 != 0) {
             LM_ERR("failed to set value for carrier attrs pvar - do_routing\n");
             goto error2;
@@ -2796,7 +2801,7 @@ no_gws:
     }
 
     /* add internal RULE attrs avp if requested at least once in the script */
-    if (populate_rule_attrs) { 
+    if (populate_rule_attrs) {
         val.s = !rt_info->attrs.s ? attrs_empty : rt_info->attrs;
         LM_DBG("setting RULE attr [%.*s] \n", val.s.len, val.s.s);
         if (add_avp( AVP_VAL_STR, current_partition->rule_attrs_avp, val) != 0) {
@@ -2807,7 +2812,7 @@ no_gws:
         if (rule_attrs_spec) {
             pv_val.flags = PV_VAL_STR;
             pv_val.rs = val.s;
-            if (pv_set_value(msg, rule_attrs_spec, 0, 
+            if (pv_set_value(msg, rule_attrs_spec, 0,
                         &pv_val) != 0) {
                 LM_ERR("failed to set value for rule attrs pvar\n");
                 goto error2;
@@ -2844,7 +2849,7 @@ no_gws:
                prefix in the DR tree */
             val.s.s = username.s ;
             val.s.len = prefix_len - (rule_idx?0:1);
-            if (add_avp( AVP_VAL_STR, current_partition->avpID_store_prefix, 
+            if (add_avp( AVP_VAL_STR, current_partition->avpID_store_prefix,
                         val) ) {
                 LM_ERR("failed to insert prefix avp for fallback\n");
                 flags = flags & ~DR_PARAM_RULE_FALLBACK;
@@ -2860,7 +2865,7 @@ no_gws:
             if (wl_list) {
                 val.s = parsed_whitelist ;
                 val.s.len++; /* we need extra space to place \0 when using */
-                if (add_avp( AVP_VAL_STR, 
+                if (add_avp( AVP_VAL_STR,
                             current_partition->avpID_store_whitelist, val) ) {
                     LM_ERR("failed to insert whitelist avp for fallback\n");
                     flags = flags & ~DR_PARAM_RULE_FALLBACK;
@@ -3095,7 +3100,7 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
         if(part_gw->dr_part->type == DR_PTR_PART) {
             current_partition = part_gw->dr_part->v.part;
         } else if(part_gw->dr_part->type == DR_GPARAM_PART) {
-            if(to_partition(msg, part_gw->dr_part, &current_partition) < 0) 
+            if(to_partition(msg, part_gw->dr_part, &current_partition) < 0)
                 return -1;
         }
     } else {
@@ -3229,12 +3234,12 @@ int fxup_get_partition(void ** part_name, dr_partition_t ** x) {
     }
 
 
-    if( fixup_sgp((void**)part_name)!=0 ) { 
+    if( fixup_sgp((void**)part_name)!=0 ) {
         LM_CRIT("Failed to get partition name\n");
-        return -1; 
+        return -1;
     }
 
-    if( ((gparam_p)(*part_name))->type==GPARAM_TYPE_STR ) { /* was 
+    if( ((gparam_p)(*part_name))->type==GPARAM_TYPE_STR ) { /* was
                                                                defined statically */
         str_part_name = (( (gparam_p) (*part_name))->v.sval);
         if((part = get_partition(&str_part_name)) == NULL) {
@@ -3252,10 +3257,10 @@ int fxup_get_partition(void ** part_name, dr_partition_t ** x) {
 }
 
 /* gets partition name from avp, and searches for that partition */
-static int to_partition(struct sip_msg* msg, dr_partition_t *part, 
-        struct head_db ** current_partition) { 
+static int to_partition(struct sip_msg* msg, dr_partition_t *part,
+        struct head_db ** current_partition) {
     str part_name;
-    if(fixup_get_svalue(msg, part->v.part_name, 
+    if(fixup_get_svalue(msg, part->v.part_name,
                 &part_name) < 0) {
         LM_ERR("Failed to parse avp/pve.\n");
         return -1;
@@ -3355,7 +3360,7 @@ static int fixup_do_routing(void** param, int param_no)
             }
             s = scnd_param;
             trim_char(&s);
-            if ( s==NULL || s[0]==0 ) { 
+            if ( s==NULL || s[0]==0 ) {
                 *param = (void*)part_param;
                 return 0;
             }
@@ -3377,7 +3382,7 @@ static int fixup_do_routing(void** param, int param_no)
                     return E_CFG;
                 }
 
-                if( pv_get_avp_name(0, &(avp_spec.pvp), 
+                if( pv_get_avp_name(0, &(avp_spec.pvp),
                             &drg->u.avp_name, &dummy )!=0) {
                     LM_ERR("[%s]- invalid AVP definition\n", s);
                     return E_CFG;
@@ -3557,7 +3562,7 @@ static int fixup_is_gw( void** param, int param_no)
     } else {
         switch (param_no) {
             case 1:
-                part = pkg_malloc(sizeof(dr_partition_t)); 
+                part = pkg_malloc(sizeof(dr_partition_t));
                 if(part == NULL) {
                     LM_CRIT("No more pkg memory!");
                     return -1;
@@ -3641,7 +3646,7 @@ static int fixup_route2_carrier( void** param, int param_no)
                 return -1;
             }
             rc = fixup_sgp((void**)&scnd_param);
-            part_param->gw_or_cr = (gparam_p)scnd_param; 
+            part_param->gw_or_cr = (gparam_p)scnd_param;
             *param = (void*)part_param;
 
             return rc;
@@ -3665,7 +3670,7 @@ static int fixup_route2_gw( void** param, int param_no)
 {
     int rc;
     char *gw = 0;
-    dr_part_old_t * part_param; /* partition and gateway */ 
+    dr_part_old_t * part_param; /* partition and gateway */
     switch (param_no) {
         /* gateway / gateways (csv) */
         case 1:
@@ -3767,8 +3772,8 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
 #define DR_IFG_CARRIERID_FLAG  (1<<5)
 
 
-static int _is_dr_gw(struct sip_msg* msg, char * part, 
-        char * flags_pv, int type, struct ip_addr *ip, 
+static int _is_dr_gw(struct sip_msg* msg, char * part,
+        char * flags_pv, int type, struct ip_addr *ip,
         unsigned int port) {
     struct head_db * it;
     if(use_db_config) {
@@ -3776,7 +3781,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
             LM_ERR("Partition is mandatory!\n");
             return -1;
         } else if(((dr_partition_t*)part)->type == DR_PTR_PART) {
-            return _is_dr_gw_w_part(msg, (char*)((dr_partition_t*)part)->v.part, 
+            return _is_dr_gw_w_part(msg, (char*)((dr_partition_t*)part)->v.part,
                     flags_pv, type, ip, port);
         } else if(((dr_partition_t*)part)->type == DR_GPARAM_PART) {
             if(to_partition(msg, (dr_partition_t*)part, &it) < 0) {
@@ -3788,7 +3793,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
         if( head_db_start == NULL ) {
             LM_ERR("Error loading config.");
             return -1;
-        } 
+        }
         return _is_dr_gw_w_part(msg, (char*)head_db_start, flags_pv, (int)type,
                 (struct ip_addr *)ip, (unsigned int)port);
     }
@@ -3812,7 +3817,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
     int i;
     struct head_db *current_partition = (struct head_db *)part;
 
-    if(current_partition == NULL || current_partition->rdata==NULL 
+    if(current_partition == NULL || current_partition->rdata==NULL
             || *current_partition->rdata==NULL || msg==NULL)
         return -1;
 
@@ -3820,7 +3825,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
     if (flags_pv && flags_pv[0]) {
         if (fixup_get_svalue( msg, (gparam_p)flags_pv, &flags_s)!=0) {
             LM_ERR("invalid flags parameter");
-            return -1; 
+            return -1;
         }
         for( i=0 ; i < flags_s.len ; i++ ) {
             switch (flags_s.s[i]) {
@@ -3854,7 +3859,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
                 }
 
                 /* attrs ? */
-                if (gw_attrs_spec) { 
+                if (gw_attrs_spec) {
                     pv_val.flags = PV_VAL_STR;
                     pv_val.rs = pgwa->attrs.s ? pgwa->attrs : attrs_empty;
                     if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0)
@@ -3876,7 +3881,7 @@ static int _is_dr_gw_w_part(struct sip_msg* msg, char * part, char* flags_pv,
                                 /* found our carrier */
                                 if (current_partition->carrier_id_avp!=-1) {
                                     val.s = pcr->id;
-                                    if (add_avp_last(AVP_VAL_STR, 
+                                    if (add_avp_last(AVP_VAL_STR,
                                                 current_partition->carrier_id_avp, val)!=0) {
                                         LM_ERR("failed to add carrier id AVP\n");
                                     }
@@ -3910,7 +3915,7 @@ static int is_from_gw_1(struct sip_msg* msg, char * part)
         return _is_dr_gw( msg, part, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port);
     } else {
         return _is_dr_gw(msg, NULL, NULL, (!part? -1:(int)(long)part), &msg->rcv.src_ip,
-                msg->rcv.src_port); 
+                msg->rcv.src_port);
     }
 }
 
@@ -3924,13 +3929,13 @@ static int is_from_gw_2(struct sip_msg* msg, char * part, char* type_s)
         return _is_dr_gw(msg, part, NULL, (!type_s ? -1 : (int)(long)type_s),
                 &msg->rcv.src_ip , msg->rcv.src_port);
     } else {
-        return _is_dr_gw(msg, NULL, type_s, (!part ? -1: (int)(long)part), 
-                &msg->rcv.src_ip, msg->rcv.src_port); 
+        return _is_dr_gw(msg, NULL, type_s, (!part ? -1: (int)(long)part),
+                &msg->rcv.src_ip, msg->rcv.src_port);
     }
 }
 
 
-static int is_from_gw_3(struct sip_msg* msg, char * part,char* type_s, 
+static int is_from_gw_3(struct sip_msg* msg, char * part,char* type_s,
         char* flags_pv) {
     if(use_db_config) {
         return _is_dr_gw(msg, part, flags_pv, (!type_s ? -1:(int)(long)type_s),
@@ -3952,7 +3957,7 @@ static int is_from_gw_4(struct sip_msg* msg, char * part,char* type_s, char* fla
 
     if(use_db_config) {
         return _is_dr_gw( msg, part, flags_pv,
-            (!type_s ? -1 : (int)(long)type_s), &msg->rcv.src_ip , 
+            (!type_s ? -1 : (int)(long)type_s), &msg->rcv.src_ip ,
             msg->rcv.src_port);
     } else {
         LM_ERR("Too many parameters\n");
@@ -4030,7 +4035,7 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
 
     if(use_db_config) {
         gw_attrs_spec = (pv_spec_p)gw_att;
-        if ( pv_get_spec_value(msg, (pv_spec_p)src_pv, &src)!=0 || 
+        if ( pv_get_spec_value(msg, (pv_spec_p)src_pv, &src)!=0 ||
                 (src.flags&PV_VAL_STR)==0 || src.rs.len<=0) {
             LM_ERR("failed to get string value for src\n");
             return -1;
@@ -4038,14 +4043,14 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
         return _is_dr_uri_gw(msg, part, flags_pv, !type_s ? -1:(int)(long)type_s, &src.rs);
     }
     else {
-        if ( pv_get_spec_value(msg, (pv_spec_p)part, &src)!=0 || 
+        if ( pv_get_spec_value(msg, (pv_spec_p)part, &src)!=0 ||
                 (src.flags&PV_VAL_STR)==0 || src.rs.len<=0) {
             LM_ERR("failed to get string value for src\n");
             return -1;
         }
         gw_attrs_spec = (pv_spec_p)flags_pv;
-        return _is_dr_uri_gw(msg, NULL, type_s ,!src_pv ? -1:(int)(long)src_pv 
-                ,&src.rs); 
+        return _is_dr_uri_gw(msg, NULL, type_s ,!src_pv ? -1:(int)(long)src_pv
+                ,&src.rs);
     }
 }
 
@@ -4059,7 +4064,7 @@ static struct mi_root* mi_w_partition(struct mi_node **node, struct head_db **
                 LM_ERR("Partition not found\n");
                 rpl_tree = init_mi_tree( 404, MI_SSTR("Partition not found\n"));
                 return rpl_tree;
-            } 
+            }
             *node = (*node)->next; /* advance to next param */
             return NULL; /* everything is ok */
         } else {
@@ -4071,7 +4076,7 @@ static struct mi_root* mi_w_partition(struct mi_node **node, struct head_db **
         *current_partition = head_db_start;
         return NULL; /* everything is ok */
     }
-    rpl_tree = init_mi_tree( 400, 
+    rpl_tree = init_mi_tree( 400,
             MI_SSTR("Unexpected outcome while parsing param for opensisctl\n"));
     return rpl_tree;
 }
@@ -4092,7 +4097,7 @@ static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param)
     node = cmd->node.kids;
 
 
-    if( (rpl_tree = mi_w_partition(&node, &current_partition))!=NULL ) 
+    if( (rpl_tree = mi_w_partition(&node, &current_partition))!=NULL )
         return rpl_tree; /* something went wrong: bad command format */
 
     lock_start_read( current_partition->ref_lock );
@@ -4348,7 +4353,7 @@ int add_head_config(void) { /* expand linked list */
     struct head_config *new;
     new = ( struct head_config* )shm_malloc( sizeof( struct head_config ) );
     if( new == NULL ) {
-        LM_ERR("no more shm memory\n"); 
+        LM_ERR("no more shm memory\n");
         return -1;
     }
     memset(new, 0, sizeof( struct head_config ) ); /* ->next will be null too */
@@ -4361,7 +4366,7 @@ int add_head_config(void) { /* expand linked list */
         head_end = new;
     }
     return 0;
-} 
+}
 
 #define init_head_config_value( from_head, external, default_val)\
     if( external.len!=0 ) {\
@@ -4381,7 +4386,7 @@ static int populate_head_config(struct head_config *current, str attr, int index
         case 0:
             if(shm_str_dup( &(current->partition), &attr) < 0) {
                 LM_ERR("no more shm memory for partition_name in head_config\n");
-            } 
+            }
             break;
         case 1:
             if( shm_str_dup(&(current->db_url), &attr) < 0) {
@@ -4421,7 +4426,7 @@ static int populate_head_config(struct head_config *current, str attr, int index
         case 12:
             set_head_config_value( current->carrier_id_avp_spec, attr);
             break;
-        default: 
+        default:
             LM_DBG("Column from db_config not_known\n");
             return -1;
     }
@@ -4443,14 +4448,14 @@ static int get_config_from_db(void) {
     str gw_id_avp_col = str_init("gw_id_avp");
     str gw_priprefix_avp_col = str_init("gw_priprefix_avp");
     str gw_sock_avp_col = str_init("gw_sock_avp");
-    str rule_id_avp_col = str_init("rule_id_avp"); 
+    str rule_id_avp_col = str_init("rule_id_avp");
     str rule_prefix_avp_col = str_init("rule_prefix_avp");
     str carrier_id_avp_col = str_init("carrier_id_avp");
     int n_query_col = 13;
     db_key_t query_cols[] = {&partition_col, &db_url_col, &drd_col, &drr_col,
         &drg_col, &drc_col, &ruri_avp_col, &gw_id_avp_col,
-        &gw_priprefix_avp_col, &gw_sock_avp_col, 
-        &rule_id_avp_col, &rule_prefix_avp_col, &carrier_id_avp_col}; 
+        &gw_priprefix_avp_col, &gw_sock_avp_col,
+        &rule_id_avp_col, &rule_prefix_avp_col, &carrier_id_avp_col};
     /* query result processing stuff */
     int nr_rows_db_config = 0 ;
     int nr_cols_db_config = 0 ;
@@ -4467,8 +4472,8 @@ static int get_config_from_db(void) {
 
 
     if(db_bind_mod( &db_partitions_url, &db_funcs) < 0) {
-        LM_ERR("Unable to bind to database driver (partition definitions) " 
-                "<db url = %.*s>\n", db_partitions_url.len, 
+        LM_ERR("Unable to bind to database driver (partition definitions) "
+                "<db url = %.*s>\n", db_partitions_url.len,
                 db_partitions_url.s);
         goto error;
     }
@@ -4481,7 +4486,7 @@ static int get_config_from_db(void) {
     }
 
 
-    if(db_check_table_version(&db_funcs, db_con, 
+    if(db_check_table_version(&db_funcs, db_con,
                 &db_partitions_table, PART_TABLE_VER) < 0) {
         LM_ERR("error during table version check <partitions table:\'%.*s\'>.\n",
                 db_partitions_table.len, db_partitions_table.s);
@@ -4497,11 +4502,11 @@ static int get_config_from_db(void) {
     }
 
     /* query for populating head_config structure */
-    if( db_funcs.query( db_con, NULL, NULL, NULL, query_cols, 0, n_query_col, 
+    if( db_funcs.query( db_con, NULL, NULL, NULL, query_cols, 0, n_query_col,
                 NULL, &query_res) < 0 ) {
         LM_ERR("Failed to query the table containing the partition definitions "
                 "<db url = %.*s , partitions table = %.*s>\n",
-                db_partitions_url.len, db_partitions_url.s, 
+                db_partitions_url.len, db_partitions_url.s,
                 db_partitions_table.len, db_partitions_table.s);
         goto error;
     }
@@ -4511,7 +4516,7 @@ static int get_config_from_db(void) {
     rows_db_config = RES_ROWS(query_res);
 
     for( i=0; i<nr_rows_db_config; i++) {
-        value = ROW_VALUES(rows_db_config+i); 
+        value = ROW_VALUES(rows_db_config+i);
         add_head_config();
         for( j=0; j<nr_cols_db_config; j++) {
             if( VAL_NULL(value+j) ) {
@@ -4534,7 +4539,7 @@ static int get_config_from_db(void) {
 
 
 
-    db_funcs.free_result(db_con, query_res); 
+    db_funcs.free_result(db_con, query_res);
     if( db_con != 0 ) {
         db_funcs.close(db_con);
         db_con = 0;
@@ -4548,6 +4553,106 @@ error:
     }
     return -1;
 
-} 	
+}
 
+rt_info_t* find_rule_by_prefix(struct head_db *partition,
+		str prefix, int grp_id)
+{
+    unsigned int matched_len, rule_idx = 0;
+    rt_info_t *rt_info;
 
+    if (grp_id < 0) {
+        struct sip_uri uri;
+        memset(&uri, 0, sizeof (struct sip_uri));
+        uri.user = prefix;
+        grp_id = get_group_id( &uri, partition);
+    }
+
+    lock_start_read( partition->ref_lock );
+    rt_info = get_prefix( (*(partition->rdata))->pt,
+            &prefix, (unsigned int)grp_id,&matched_len, &rule_idx);
+
+    if (rt_info==NULL) {
+        LM_DBG("no matching for prefix \"%.*s\"\n",
+                prefix.len, prefix.s);
+
+        /* try prefixless rules */
+        rt_info = check_rt( &(*(partition->rdata))->noprefix,
+                (unsigned int)grp_id);
+        if (rt_info == NULL)
+            LM_DBG("no prefixless matching for "
+                    "grp %d\n", grp_id);
+    }
+    lock_stop_read(partition->ref_lock );
+    return rt_info;
+}
+
+static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param)
+{
+    struct mi_node *node = cmd_tree->node.kids;
+    struct head_db *partition;
+    str s;
+    int grp_id;
+    rt_info_t *route;
+
+    if (node == NULL)
+        return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+    if (use_db_config) {
+        s = node->value;
+        if((partition = get_partition(&s)) == NULL) {
+            LM_CRIT("Partition <%.*s> was not found.\n", s.len, s.s);
+            return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+        }
+
+        node = node->next;
+    }
+    else partition = head_db_start;
+
+    if (node == NULL)
+        return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+    if (node->next == NULL) {
+        grp_id = -1;
+    } else {
+        unsigned int ugrp_id;
+        if (str2int(&node->value, &ugrp_id) != 0)
+            return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+        grp_id = ugrp_id;
+        node = node->next;
+    }
+
+    route = find_rule_by_prefix(partition, node->value, grp_id);
+    if (route == NULL)
+        return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+
+    struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+    if (rpl_tree == NULL)
+        return 0;
+
+    unsigned int i;
+    static const str gw_str = str_init("GATEWAY");
+    static const str carrier_str = str_init("CARRIER");
+    str chosen_desc;
+    str chosen_id;
+    for (i = 0; i < route->pgwa_len; ++i){
+        if (route->pgwl[i].is_carrier) {
+            chosen_desc = carrier_str;
+            chosen_id = route->pgwl[i].dst.carrier->id;
+        }
+        else {
+            chosen_desc = gw_str;
+            chosen_id = route->pgwl[i].dst.gw->id;
+        }
+
+        if (add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, chosen_desc.s,
+                chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
+
+            LM_ERR("failed to add node\n");
+            free_mi_tree(rpl_tree);
+            return 0;
+        }
+    }
+
+    return rpl_tree;
+}
