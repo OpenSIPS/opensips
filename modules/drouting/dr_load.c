@@ -209,13 +209,20 @@ error:
  * loads all partitions
  */
 
-rt_data_t* dr_load_routing_info(db_func_t *dr_dbf, db_con_t* db_hdl,
-		str *drd_table, str *drc_table, str *drr_table, int persistent_state)
+rt_data_t* dr_load_routing_info(struct head_db *current_partition
+        , int persistent_state)
 {
 	int    int_vals[5];
 	char * str_vals[6];
 	str tmp;
+    db_func_t *dr_dbf = &current_partition->db_funcs; 
+    db_con_t* db_hdl = *current_partition->db_con;
+	str *drd_table = &current_partition->drd_table; 
+    str *drc_table = &current_partition->drc_table;
+    str *drr_table = &current_partition->drr_table;
 	db_key_t columns[10];
+    time_t rawtime;
+    struct tm * timeinfo;
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
@@ -620,6 +627,16 @@ rt_data_t* dr_load_routing_info(db_func_t *dr_dbf, db_con_t* db_hdl,
 
 	LM_DBG("%d total records loaded from table %.*s\n", n,
 		drr_table->len, drr_table->s);
+    /* update time of reload */
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    current_partition->time_last_update.s = asctime(timeinfo);
+    current_partition->time_last_update.len = strlen(current_partition->time_last_update.s);
+
+    LM_DBG("time: %.*s\n", current_partition->time_last_update.len, 
+            current_partition->time_last_update.s);
+    
 
 	return rdata;
 error:
