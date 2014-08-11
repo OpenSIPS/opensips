@@ -256,6 +256,7 @@ static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
+static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param);
 
 
 /* event */
@@ -400,10 +401,14 @@ static param_export_t params[] = {
 #define HLP3 "Params: [ carrier_id [ status ]] ; Sets/gets the status of a " \
 	"carrier; If no carrier_id is given, all carrier will be listed; if a " \
 "new status is give, it will be pushed to the given carrier."
+#define HLP4 "Params: [partition] [group_id] number ; List the gateways a "\
+	"number will match when searching through the rules from a specific group. "\
+"The partition parameter must be defined only if use_partitions = 1."
 static mi_export_t mi_cmds[] = {
 	{ "dr_reload",         HLP1, dr_reload_cmd,    0, 0,  0},
 	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
 	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
+	{ "dr_number_routing", HLP4, mi_dr_number_routing, 0,            0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -4546,7 +4551,107 @@ error:
 		db_con = 0;
 	}
 	return -1;
-
 }
 
+rt_info_t* find_rule_by_prefix(struct head_db *partition,
+		str prefix, int grp_id)
+{
+	unsigned int matched_len, rule_idx = 0;
+	rt_info_t *rt_info;
 
+	if (grp_id < 0) {
+		struct sip_uri uri;
+		memset(&uri, 0, sizeof (struct sip_uri));
+		uri.user = prefix;
+		grp_id = get_group_id( &uri, partition);
+	}
+
+	lock_start_read( partition->ref_lock );
+	rt_info = get_prefix( (*(partition->rdata))->pt,
+			&prefix, (unsigned int)grp_id,&matched_len, &rule_idx);
+
+	if (rt_info==NULL) {
+		LM_DBG("no matching for prefix \"%.*s\"\n",
+				prefix.len, prefix.s);
+
+		/* try prefixless rules */
+		rt_info = check_rt( &(*(partition->rdata))->noprefix,
+				(unsigned int)grp_id);
+		if (rt_info == NULL)
+			LM_DBG("no prefixless matching for "
+					"grp %d\n", grp_id);
+	}
+	lock_stop_read(partition->ref_lock );
+	return rt_info;
+}
+
+static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param)
+{
+	struct mi_node *node = cmd_tree->node.kids;
+	struct head_db *partition;
+	str s;
+	int grp_id;
+	rt_info_t *route;
+
+	if (node == NULL)
+		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	if (use_db_config) {
+		s = node->value;
+		if((partition = get_partition(&s)) == NULL) {
+			LM_WARN("Partition <%.*s> was not found.\n", s.len, s.s);
+			return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		}
+
+		node = node->next;
+	}
+	else partition = head_db_start;
+
+	if (node == NULL)
+		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	if (node->next == NULL) {
+		grp_id = -1;
+	} else {
+		unsigned int ugrp_id;
+		if (str2int(&node->value, &ugrp_id) != 0)
+			return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		grp_id = ugrp_id;
+		node = node->next;
+	}
+
+	route = find_rule_by_prefix(partition, node->value, grp_id);
+	if (route == NULL)
+		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+
+	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree == NULL)
+		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
+
+	unsigned int i;
+	static const str gw_str = str_init("GATEWAY");
+	static const str carrier_str = str_init("CARRIER");
+	str chosen_desc;
+	str chosen_id;
+	for (i = 0; i < route->pgwa_len; ++i){
+		if (route->pgwl[i].is_carrier) {
+			chosen_desc = carrier_str;
+			chosen_id = route->pgwl[i].dst.carrier->id;
+		}
+		else {
+			chosen_desc = gw_str;
+			chosen_id = route->pgwl[i].dst.gw->id;
+		}
+
+		if (add_mi_node_child(&rpl_tree->node, 0, chosen_desc.s,
+					chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
+
+			LM_ERR("failed to add node\n");
+			free_mi_tree(rpl_tree);
+			return 0;
+		}
+	}
+
+	return rpl_tree;
+}

@@ -77,13 +77,13 @@ static inline tmrec_t* parse_time_def(char *time_str)
 	p = time_str;
 	time_rec = 0;
 
-/*	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t)); */
+	/*	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t)); */
 	time_rec = tmrec_new(SHM_ALLOC);
 	if (time_rec==0) {
 		LM_ERR("no more shm mem\n");
 		goto error;
 	}
-/*	memset( time_rec, 0, sizeof(tmrec_t)); */
+	/*	memset( time_rec, 0, sizeof(tmrec_t)); */
 
 	/* empty definition? */
 	if ( time_str==0 || *time_str==0 )
@@ -105,7 +105,7 @@ done:
 	return time_rec;
 parse_error:
 	LM_ERR("parse error in <%s> around position %i\n",
-		time_str, (int)(long)(p-time_str));
+			time_str, (int)(long)(p-time_str));
 error:
 	if (time_rec)
 		tmrec_free( time_rec );
@@ -128,7 +128,7 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 		t = strtol(tmp, &ep, 10);
 		if (ep == tmp) {
 			LM_ERR("bad grp id '%c' (%d)[%s]\n",
-				*ep, (int)(ep-grplst), grplst);
+					*ep, (int)(ep-grplst), grplst);
 			goto error;
 		}
 		if ((!IS_SPACE(*ep)) && (*ep != SEP) && (*ep != SEP1) && (*ep!=0)) {
@@ -146,12 +146,12 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 			/* add the routing rule */
 			if ( add_prefix(rdata->pt, prefix, rule, (unsigned int)t)!=0 ) {
 				LM_ERR("failed to add prefix route\n");
-					goto error;
+				goto error;
 			}
 		} else {
 			if ( add_rt_info( &rdata->noprefix, rule, (unsigned int)t)!=0 ) {
 				LM_ERR("failed to add prefixless route\n");
-					goto error;
+				goto error;
 			}
 		}
 		/* keep parsing */
@@ -164,7 +164,7 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 
 	if(n==0) {
 		LM_ERR("no id in grp list [%s]\n",
-			grplst);
+				grplst);
 		goto error;
 	}
 
@@ -210,19 +210,19 @@ error:
  */
 
 rt_data_t* dr_load_routing_info(struct head_db *current_partition
-        , int persistent_state)
+		, int persistent_state)
 {
 	int    int_vals[5];
 	char * str_vals[6];
 	str tmp;
-    db_func_t *dr_dbf = &current_partition->db_funcs; 
-    db_con_t* db_hdl = *current_partition->db_con;
-	str *drd_table = &current_partition->drd_table; 
-    str *drc_table = &current_partition->drc_table;
-    str *drr_table = &current_partition->drr_table;
+	db_func_t *dr_dbf = &current_partition->db_funcs;
+	db_con_t* db_hdl = *current_partition->db_con;
+	str *drd_table = &current_partition->drd_table;
+	str *drc_table = &current_partition->drc_table;
+	str *drr_table = &current_partition->drr_table;
 	db_key_t columns[10];
-    time_t rawtime;
-    struct tm * timeinfo;
+	time_t rawtime;
+	struct tm * timeinfo;
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
@@ -290,7 +290,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	}
 
 	LM_DBG("%d records found in %.*s\n",
-		RES_ROW_N(res), drd_table->len,drd_table->s);
+			RES_ROW_N(res), drd_table->len,drd_table->s);
 
 	n = 0;
 	do {
@@ -303,7 +303,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				/* int2bstr returns a null terminated string */
 				str_vals[STR_VALS_ID_DRD_COL] =
 					int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
-					id_buf, &int_vals[0]/*useless*/);
+							id_buf, &int_vals[0]/*useless*/);
 			} else {
 				/* if not INT, accept only STRING type */
 				check_val( id_drd_col, ROW_VALUES(row), DB_STRING, 1, 0);
@@ -333,22 +333,22 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			/*SOCKET column */
 			check_val( sock_drd_col, ROW_VALUES(row)+8, DB_STRING, 0, 0);
 			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
-			(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
+					(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
 				s_sock.len = strlen(s_sock.s);
 				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
-				&port, &proto)!=0){
+							&port, &proto)!=0){
 					LM_ERR("GW <%s>(%s): socket description <%.*s> "
-						"is not valid -> ignoring socket\n",
-						str_vals[STR_VALS_GWID_DRD_COL],
-						str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+							"is not valid -> ignoring socket\n",
+							str_vals[STR_VALS_GWID_DRD_COL],
+							str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					sock = NULL;
 				} else {
 					sock = grep_sock_info( &host, port, proto);
 					if (sock == NULL) {
 						LM_ERR("GW <%s>(%s): socket <%.*s> is not local to "
-						"OpenSIPS (we must listen on it) -> ignoring socket\n",
-						str_vals[STR_VALS_GWID_DRD_COL],
-						str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+								"OpenSIPS (we must listen on it) -> ignoring socket\n",
+								str_vals[STR_VALS_GWID_DRD_COL],
+								str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					}
 				}
 			} else {
@@ -373,8 +373,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 						sock,
 						int_vals[INT_VALS_STATE_DRD_COL] )<0 ) {
 				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
-					str_vals[STR_VALS_GWID_DRD_COL],
-					str_vals[STR_VALS_ID_DRD_COL]);
+						str_vals[STR_VALS_GWID_DRD_COL],
+						str_vals[STR_VALS_ID_DRD_COL]);
 				continue;
 			}
 			n++;
@@ -432,7 +432,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 		LM_DBG("table \"%.*s\" empty\n", drc_table->len,drc_table->s );
 	} else {
 		LM_DBG("%d records found in %.*s\n",
-			RES_ROW_N(res), drc_table->len,drc_table->s);
+				RES_ROW_N(res), drc_table->len,drc_table->s);
 		do {
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
@@ -443,7 +443,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 					/* int2bstr returns a null terminated string */
 					str_vals[STR_VALS_ID_DRC_COL] =
 						int2bstr((unsigned long)VAL_INT(ROW_VALUES(row)),
-						id_buf, &int_vals[0]/*useless*/);
+								id_buf, &int_vals[0]/*useless*/);
 				} else {
 					/* if not INT, accept only STRING type */
 					check_val( id_drd_col, ROW_VALUES(row), DB_STRING, 1, 0);
@@ -472,12 +472,12 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 
 				/* add the new carrier */
 				if ( add_carrier( str_vals[STR_VALS_CID_DRC_COL],
-						int_vals[INT_VALS_FLAGS_DRC_COL],
-						str_vals[STR_VALS_GWLIST_DRC_COL],
-						str_vals[STR_VALS_ATTRS_DRC_COL],
-						int_vals[INT_VALS_STATE_DRC_COL], rdata) != 0 ) {
+							int_vals[INT_VALS_FLAGS_DRC_COL],
+							str_vals[STR_VALS_GWLIST_DRC_COL],
+							str_vals[STR_VALS_ATTRS_DRC_COL],
+							int_vals[INT_VALS_STATE_DRC_COL], rdata) != 0 ) {
 					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
-						str_vals[STR_VALS_ID_DRC_COL]);
+							str_vals[STR_VALS_ID_DRC_COL]);
 					continue;
 				}
 			}
@@ -533,7 +533,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	}
 
 	LM_DBG("initial %d records found in %.*s\n", RES_ROW_N(res),
-		drr_table->len, drr_table->s);
+			drr_table->len, drr_table->s);
 
 	n = 0;
 	do {
@@ -575,7 +575,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				time_rec = NULL;
 			else if ((time_rec=parse_time_def(str_vals[STR_VALS_TIME_DRR_COL]))==0) {
 				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
-					str_vals[STR_VALS_TIME_DRR_COL], int_vals[INT_VALS_RULE_ID_DRR_COL]);
+						str_vals[STR_VALS_TIME_DRR_COL], int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				continue;
 			}
 			/* lookup for the script route ID */
@@ -584,7 +584,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 					get_script_route_ID_by_name( str_vals[STR_VALS_ROUTEID_DRR_COL], rlist, RT_NO);
 				if (int_vals[INT_VALS_SCRIPT_ROUTE_ID]==-1) {
 					LM_WARN("route <%s> does not exist\n",
-						str_vals[STR_VALS_ROUTEID_DRR_COL]);
+							str_vals[STR_VALS_ROUTEID_DRR_COL]);
 					int_vals[INT_VALS_SCRIPT_ROUTE_ID] = 0;
 				}
 			} else {
@@ -592,19 +592,19 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			}
 			/* build the routing rule */
 			if ((ri = build_rt_info( int_vals[INT_VALS_RULE_ID_DRR_COL],
-					int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
-					int_vals[INT_VALS_SCRIPT_ROUTE_ID],
-					str_vals[STR_VALS_DSTLIST_DRR_COL],
-					str_vals[STR_VALS_ATTRS_DRR_COL], rdata))== 0 ) {
+							int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
+							int_vals[INT_VALS_SCRIPT_ROUTE_ID],
+							str_vals[STR_VALS_DSTLIST_DRR_COL],
+							str_vals[STR_VALS_ATTRS_DRR_COL], rdata))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "
-					"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
+						"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				tmrec_free( time_rec );
 				continue;
 			}
 			/* add the rule */
 			if (add_rule( rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri)!=0) {
 				LM_ERR("failed to add rule id %d -> skipping\n",
-					int_vals[INT_VALS_RULE_ID_DRR_COL]);
+						int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				free_rt_info( ri );
 				continue;
 			}
@@ -616,7 +616,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				goto error;
 			}
 			LM_DBG("additional %d records found in %.*s\n", RES_ROW_N(res),
-				drr_table->len, drr_table->s);
+					drr_table->len, drr_table->s);
 		} else {
 			break;
 		}
@@ -626,18 +626,16 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	res = 0;
 
 	LM_DBG("%d total records loaded from table %.*s\n", n,
-		drr_table->len, drr_table->s);
-    /* update time of reload */
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+			drr_table->len, drr_table->s);
+	/* update time of reload */
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
 
-    current_partition->time_last_update.s = asctime(timeinfo);
-    current_partition->time_last_update.len = strlen(current_partition->time_last_update.s);
+	current_partition->time_last_update.s = asctime(timeinfo);
+	current_partition->time_last_update.len = strlen(current_partition->time_last_update.s);
 
-    LM_DBG("time: %.*s\n", current_partition->time_last_update.len, 
-            current_partition->time_last_update.s);
-    
-
+	LM_DBG("time: %.*s\n", current_partition->time_last_update.len,
+			current_partition->time_last_update.s);
 	return rdata;
 error:
 	if (res)
