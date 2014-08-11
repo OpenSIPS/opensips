@@ -256,7 +256,7 @@ static int route2_gw(struct sip_msg* msg, char* gw, char* gw_att_pv);
 static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
-static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param);
 
 
 /* event */
@@ -408,7 +408,7 @@ static mi_export_t mi_cmds[] = {
 	{ "dr_reload",         HLP1, dr_reload_cmd,    0, 0,  0},
 	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
 	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
-    { "dr_test_number",    HLP4, mi_dr_test_number, 0,               0,  0},
+    { "dr_number_routing", HLP4, mi_dr_number_routing, 0,            0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -4587,7 +4587,7 @@ rt_info_t* find_rule_by_prefix(struct head_db *partition,
     return rt_info;
 }
 
-static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param)
+static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param)
 {
     struct mi_node *node = cmd_tree->node.kids;
     struct head_db *partition;
@@ -4601,7 +4601,7 @@ static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param)
     if (use_db_config) {
         s = node->value;
         if((partition = get_partition(&s)) == NULL) {
-            LM_CRIT("Partition <%.*s> was not found.\n", s.len, s.s);
+            LM_WARN("Partition <%.*s> was not found.\n", s.len, s.s);
             return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
         }
 
@@ -4629,6 +4629,7 @@ static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param)
     struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
     if (rpl_tree == NULL)
         return 0;
+    rpl_tree->node.flags |= MI_IS_ARRAY;
 
     unsigned int i;
     static const str gw_str = str_init("GATEWAY");
@@ -4645,7 +4646,7 @@ static struct mi_root* mi_dr_test_number(struct mi_root *cmd_tree, void *param)
             chosen_id = route->pgwl[i].dst.gw->id;
         }
 
-        if (add_mi_node_child(&rpl_tree->node, MI_IS_ARRAY, chosen_desc.s,
+        if (add_mi_node_child(&rpl_tree->node, 0, chosen_desc.s,
                 chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
 
             LM_ERR("failed to add node\n");
