@@ -57,7 +57,10 @@
 
 #define MAX_LEN_NAME_W_PART 510 /* max len of variable containing
 								   avp_spec and partition name */
+#define  MI_NO_PART_S "Too many arguments (use_partitions is 0 so no parameter"\
+	" should be supplied to the MI function)"
 
+#define MI_NO_PART_LEN (strlen(MI_NO_PART_S))
 
 /* probing related stuff */
 static unsigned int dr_prob_interval = 30;
@@ -257,6 +260,7 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_dr_gw_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_cr_status(struct mi_root *cmd, void *param);
 static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param);
 
 
 /* event */
@@ -404,11 +408,16 @@ static param_export_t params[] = {
 #define HLP4 "Params: [partition] [group_id] number ; List the gateways a "\
 	"number will match when searching through the rules from a specific group. "\
 "The partition parameter must be defined only if use_partitions = 1."
+#define HLP5 "Params: [partition]; List the time of the last dr_reload"\
+	" (load from database) for all partitions if no parameter is supplied, or"\
+" for a partition given as parameter. If use_partitions is 0, you should"\
+" not specify a partition."
 static mi_export_t mi_cmds[] = {
 	{ "dr_reload",         HLP1, dr_reload_cmd,    0, 0,  0},
 	{ "dr_gw_status",      HLP2, mi_dr_gw_status,  0,                0,  0},
 	{ "dr_carrier_status", HLP3, mi_dr_cr_status,  0,                0,  0},
 	{ "dr_number_routing", HLP4, mi_dr_number_routing, 0,            0,  0},
+	{ "dr_reload_status", HLP5, mi_dr_reload_status,   0,            0,  0},
 	{ 0, 0, 0, 0, 0, 0}
 };
 
@@ -796,6 +805,7 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	rt_data_t *old_data;
 	pgw_t *gw, *old_gw;
 	pcr_t *cr, *old_cr;
+	time_t rawtime;
 
 	new_data = dr_load_routing_info(hd, dr_persistent_state);
 	if ( new_data==0 ) {
@@ -808,6 +818,9 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	/* no more activ readers -> do the swapping */
 	old_data = *(hd->rdata);
 	*(hd->rdata) = new_data;
+	/* update the time of the last reload for the current partition */
+	time(&rawtime);
+	hd->time_last_update = rawtime;
 
 	lock_stop_write( (hd->ref_lock) );
 
@@ -4654,4 +4667,58 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	}
 
 	return rpl_tree;
+}
+
+
+static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param) {
+	struct mi_node *node = cmd_tree->node.kids;
+	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	struct head_db * partition;
+	struct head_db *it;
+	str part_name;
+	char * ch_time;
+
+	if(node != NULL) {
+		if (use_db_config) {
+			part_name = node->value;
+			if((partition = get_partition(&part_name)) == NULL) {
+				LM_WARN("Partition <%.*s> was not found.\n", part_name.len,
+						part_name.s);
+				return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+			}
+			/* display just for given partition */
+			lock_start_read(partition->ref_lock);
+			ch_time = ctime(&partition->time_last_update);
+			if(add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
+						partition->partition.s,partition->partition.len, ch_time,
+						strlen(ch_time)) == NULL) {
+				LM_ERR("failed to add node\n");
+				lock_stop_read(partition->ref_lock);
+				free_mi_tree(rpl_tree);
+				return 0;
+			}
+			lock_stop_read(partition->ref_lock);
+		} else {
+			return init_mi_tree(400, MI_NO_PART_S, MI_NO_PART_LEN);
+		}
+	}
+	else {
+		/* display for all partitions */
+		for(it = head_db_start; it; it = it->next) {
+			lock_start_read(it->ref_lock);
+			ch_time = ctime(&it->time_last_update);
+			LM_DBG("partitions %.*s was last updated:%s\n", it->partition.len,
+					it->partition.s, ch_time);
+			if(add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE, it->partition.s,
+						it->partition.len, ch_time, strlen(ch_time)) == NULL) {
+				LM_ERR("failed to add node\n");
+				lock_stop_read(it->ref_lock);
+				free_mi_tree(rpl_tree);
+				return 0;
+			}
+			lock_stop_read(it->ref_lock);
+		}
+	}
+	return rpl_tree;
+
 }

@@ -221,8 +221,6 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	str *drc_table = &current_partition->drc_table;
 	str *drr_table = &current_partition->drr_table;
 	db_key_t columns[10];
-	time_t rawtime;
-	struct tm * timeinfo;
 	db_res_t* res;
 	db_row_t* row;
 	rt_info_t *ri;
@@ -627,15 +625,6 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 
 	LM_DBG("%d total records loaded from table %.*s\n", n,
 			drr_table->len, drr_table->s);
-	/* update time of reload */
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-
-	current_partition->time_last_update.s = asctime(timeinfo);
-	current_partition->time_last_update.len = strlen(current_partition->time_last_update.s);
-
-	LM_DBG("dr_load_routing_info time: %.*s\n", current_partition->time_last_update.len,
-			current_partition->time_last_update.s);
 	return rdata;
 error:
 	if (res)
