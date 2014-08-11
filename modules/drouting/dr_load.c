@@ -634,7 +634,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	current_partition->time_last_update.s = asctime(timeinfo);
 	current_partition->time_last_update.len = strlen(current_partition->time_last_update.s);
 
-	LM_DBG("time: %.*s\n", current_partition->time_last_update.len,
+	LM_DBG("dr_load_routing_info time: %.*s\n", current_partition->time_last_update.len,
 			current_partition->time_last_update.s);
 	return rdata;
 error:
