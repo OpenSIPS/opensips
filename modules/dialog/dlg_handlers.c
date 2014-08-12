@@ -1073,25 +1073,32 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 					return;
 				}
 				if (match_dialog(dlg,&callid,&ftag,&ttag,&dir, &dst_leg )==0){
-					LM_WARN("tight matching failed for %.*s with "
-						"callid='%.*s'/%d,"
-						" ftag='%.*s'/%d, ttag='%.*s'/%d and direction=%d\n",
-						req->first_line.u.request.method.len,
-						req->first_line.u.request.method.s,
-						callid.len, callid.s, callid.len,
-						ftag.len, ftag.s, ftag.len,
-						ttag.len, ttag.s, ttag.len, dir);
-					LM_WARN("dialog identification elements are "
-						"callid='%.*s'/%d, "
-						"caller tag='%.*s'/%d, callee tag='%.*s'/%d\n",
-						dlg->callid.len, dlg->callid.s, dlg->callid.len,
-						dlg->legs[DLG_CALLER_LEG].tag.len,
-						dlg->legs[DLG_CALLER_LEG].tag.s,
-						dlg->legs[DLG_CALLER_LEG].tag.len,
-						dlg->legs[callee_idx(dlg)].tag.len,
-						ZSW(dlg->legs[callee_idx(dlg)].tag.s),
-						dlg->legs[callee_idx(dlg)].tag.len);
+					if (!accept_replicated_dlg) {
+						/* not an error when accepting replicating dialogs -
+						   we might have generated a different h_id when
+						   accepting the replicated dialog */
+						LM_WARN("tight matching failed for %.*s with "
+							"callid='%.*s'/%d,"
+							" ftag='%.*s'/%d, ttag='%.*s'/%d and direction=%d\n",
+							req->first_line.u.request.method.len,
+							req->first_line.u.request.method.s,
+							callid.len, callid.s, callid.len,
+							ftag.len, ftag.s, ftag.len,
+							ttag.len, ttag.s, ttag.len, dir);
+						LM_WARN("dialog identification elements are "
+							"callid='%.*s'/%d, "
+							"caller tag='%.*s'/%d, callee tag='%.*s'/%d\n",
+							dlg->callid.len, dlg->callid.s, dlg->callid.len,
+							dlg->legs[DLG_CALLER_LEG].tag.len,
+							dlg->legs[DLG_CALLER_LEG].tag.s,
+							dlg->legs[DLG_CALLER_LEG].tag.len,
+							dlg->legs[callee_idx(dlg)].tag.len,
+							ZSW(dlg->legs[callee_idx(dlg)].tag.s),
+							dlg->legs[callee_idx(dlg)].tag.len);
+					}
 					unref_dlg(dlg, 1);
+					/* potentially fall through to SIP-wise dialog matching,
+					   depending on seq_match_mode */
 					dlg = NULL;
 				}
 			}
