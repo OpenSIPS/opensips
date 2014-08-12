@@ -4572,7 +4572,8 @@ error:
 	return -1;
 }
 
-rt_info_t* find_rule_by_prefix(struct head_db *partition,
+/* Warning this function assumes the lock is already taken */
+rt_info_t* find_rule_by_prefix_unsafe(struct head_db *partition,
 		str prefix, int grp_id)
 {
 	unsigned int matched_len, rule_idx = 0;
@@ -4585,7 +4586,6 @@ rt_info_t* find_rule_by_prefix(struct head_db *partition,
 		grp_id = get_group_id( &uri, partition);
 	}
 
-	lock_start_read( partition->ref_lock );
 	rt_info = get_prefix( (*(partition->rdata))->pt,
 			&prefix, (unsigned int)grp_id,&matched_len, &rule_idx);
 
@@ -4639,13 +4639,18 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 		node = node->next;
 	}
 
-	route = find_rule_by_prefix(partition, node->value, grp_id);
-	if (route == NULL)
+	lock_start_read( partition->ref_lock );
+	route = find_rule_by_prefix_unsafe(partition, node->value, grp_id);
+	if (route == NULL){
+		lock_stop_read( partition->ref_lock );
 		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	}
 
 	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree == NULL)
+	if (rpl_tree == NULL){
+		lock_stop_read( partition->ref_lock );
 		return 0;
+	}
 	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	unsigned int i;
@@ -4667,10 +4672,12 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 					chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
 
 			LM_ERR("failed to add node\n");
+			lock_stop_read( partition->ref_lock );
 			free_mi_tree(rpl_tree);
 			return 0;
 		}
 	}
+	lock_stop_read( partition->ref_lock );
 
 	return rpl_tree;
 }
