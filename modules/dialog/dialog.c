@@ -124,8 +124,8 @@ str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
 
 /* dialog replication using the bpi interface */
-int accept_replicated_dlg;
-struct replication_dest *replication_dests;
+int accept_replicated_dlg=0;
+struct replication_dest *replication_dests=NULL;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
