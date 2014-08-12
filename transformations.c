@@ -189,9 +189,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(val->flags&PV_VAL_INT)
 				break; /* already converted */
 			s = NULL;
-			errno = 0;
-			i = strtol(val->rs.s, &s, 16);
-			if (!s || *s || errno == ERANGE)
+			if (hexstr2int(val->rs.s, val->rs.len, (unsigned int *)&i) < 0)
 				return -1;
 			val->rs.s = int2str(i, &val->rs.len);
 			val->ri = i;
