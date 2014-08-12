@@ -1427,14 +1427,14 @@ is 0 it must be omitted)
 
    Example 1.50. dr_reload_status usage when use_partitions is 0
 $ ./opensipsctl fifo dr_reload_status
-Default:: Mon Aug 11 17:22:21 2014
+Date:: Tue Aug 12 12:26:00 2014
 
    Example 1.51. dr_reload_status usage when use_partitions is 1
 $ ./opensipsctl fifo dr_reload_status
-part_test:: Mon Aug 11 17:36:36 2014
-part_2:: Mon Aug 11 17:36:36 2014
-$ ./opensipsctl fifo dr_reload_status part_2
-part_2:: Mon Aug 11 17:38:34 2014
+Partition:: part_test Date=Tue Aug 12 12:24:13 2014
+Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
+$ ./opensipsctl fifo dr_reload_status part_test
+Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
 1.6. Exported Events
 

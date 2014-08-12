@@ -62,6 +62,12 @@
 
 #define MI_NO_PART_LEN (strlen(MI_NO_PART_S))
 
+#define MI_PART_NAME_S "Partition"
+#define MI_PART_NAME_LEN (strlen(MI_PART_NAME_S))
+
+#define MI_LAST_UPDATE_S "Date"
+#define MI_LAST_UPDATE_LEN (strlen(MI_LAST_UPDATE_S))
+
 /* probing related stuff */
 static unsigned int dr_prob_interval = 30;
 static str dr_probe_replies = {NULL,0};
@@ -140,8 +146,8 @@ static str db_partitions_table = str_init("dr_partitions"); /* default url */
 static str db_partitions_url;
 
 
-//static int use_db_config = 0;
-// int use_db_config = 0; /* by default don't use db for config */
+//static int use_partitions = 0;
+// int use_partitions = 0; /* by default don't use db for config */
 static struct head_config {
 	str partition; /* partition name extracted from database */
 	str db_url;
@@ -363,7 +369,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
-	{"use_partitions",    INT_PARAM, &use_db_config    },
+	{"use_partitions",    INT_PARAM, &use_partitions    },
 	{"db_partitions_url",    STR_PARAM, &db_partitions_url.s },
 	{"db_partitions_table", STR_PARAM, &db_partitions_table.s },
 	{"db_url",           STR_PARAM, &db_url.s         },
@@ -467,7 +473,7 @@ static int dr_disable(struct sip_msg *req, char * param_part_name) {
 			return -1;
 		}
 	} else {
-		if( use_db_config ) {
+		if( use_partitions ) {
 			LM_ERR("Partition name is mandatory <%*.s>\n", part_name.len
 					,part_name.s);
 			return -1;
@@ -869,7 +875,7 @@ static inline int dr_reload_data( void ) {
 
 #define dr_fix_avp_def_w_default( _pv_spec, _avp_id, _default, _p_name, _name)\
 	if(_pv_spec.s == NULL) { \
-		if(use_db_config) {\
+		if(use_partitions) {\
 			_pv_spec.len = _default.len + _p_name.len;\
 			_pv_spec.s = shm_malloc((_pv_spec.len)*sizeof(char));\
 			memcpy(_pv_spec.s, _default.s, _default.len-1);\
@@ -1077,7 +1083,7 @@ static int dr_init(void)
 			goto error;
 		}
 
-	if( use_db_config == 1 ) { /* loading configurations from db */
+	if( use_partitions == 1 ) { /* loading configurations from db */
 		if( get_config_from_db() == -1 ) {
 			LM_ERR("Failed to get configuration from db_config\n");
 			goto error;
@@ -1699,7 +1705,7 @@ static struct mi_root* dr_reload_cmd(struct mi_root *cmd_tree, void *param)
 	if(cmd_tree!=NULL)
 		node = cmd_tree->node.kids;
 
-	if(node==NULL || use_db_config==0) { /* no parameter supplied */
+	if(node==NULL || use_partitions==0) { /* no parameter supplied */
 
 		if ( (n=dr_reload_data())!=0 ) { /* load the data for all the partitions */
 			LM_CRIT("failed to load routing data\n");
@@ -1880,7 +1886,7 @@ static int do_routing_0(struct sip_msg* msg)
 {
 	rule_attrs_spec = gw_attrs_spec = carrier_attrs_spec = NULL;
 	dr_part_group_t * part_w_no_grp;
-	if(use_db_config == 0) {
+	if(use_partitions == 0) {
 		if(head_db_start == NULL) {
 			LM_ERR("Error while loading configuration\n");
 			return -1;
@@ -1906,7 +1912,7 @@ static int do_routing_1(struct sip_msg* msg, char *part_grp, char* grp_flags,
 	char *p;
 	char * _flags, * wlst, * rule_att, * gw_att, * carr_att;
 
-	if (use_db_config == 0) {
+	if (use_partitions == 0) {
 		if(head_db_start == NULL) {
 			LM_CRIT("Can't load configuration.\n");
 			return -1;
@@ -1975,7 +1981,7 @@ static int use_next_gw(struct sip_msg* msg, char* rule_or_part,
 	dr_partition_t * part = 0;
 	struct head_db * current_partition = 0;
 
-	if( use_db_config ) { /* first argument is partition name */
+	if( use_partitions ) { /* first argument is partition name */
 		part = (dr_partition_t*)rule_or_part;
 		if(part != NULL) {
 			if(part->type == DR_PTR_PART) {
@@ -2448,7 +2454,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	wl_list = NULL;
 	rt_info = NULL;
 
-	if(use_db_config) {
+	if(use_partitions) {
 		if(part_group == NULL || part_group->dr_part == NULL || part_group->dr_part->type == DR_NO_PART) {
 			LM_ERR("Partition name is mandatory for do_routing\n");
 			return -1;
@@ -2935,7 +2941,7 @@ static int route2_carrier(struct sip_msg* msg, char* part_carrier,
 	struct head_db * current_partition = 0;
 
 	part_cr = (dr_part_old_t*)part_carrier;
-	if(use_db_config) {
+	if(use_partitions) {
 		if(part_cr == NULL) {
 			LM_ERR("Partition is mandatory for route2_carrier.\n");
 			return -1;
@@ -3104,7 +3110,7 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 		return -1;
 	}
 
-	if(use_db_config) {
+	if(use_partitions) {
 		if(part_gw == NULL) {
 			LM_ERR("Partition is mandatory for route2_gw.\n");
 			return -1;
@@ -3293,7 +3299,7 @@ gparam_t * fixup_get_partition(void** param) {
 	if( s==NULL || s[0]==0 ) {
 		return NULL;
 	}
-	if( use_db_config==0 ) /* partition will be omitted */
+	if( use_partitions==0 ) /* partition will be omitted */
 		return NULL;
 	for( ch_it=s; (*ch_it)!=0 && (*ch_it)!=':'; ch_it++);
 	separator = ch_it;
@@ -3324,7 +3330,7 @@ gparam_t * fixup_get_partition(void** param) {
 }
 
 static int fixup_dr_disable(void ** param, int param_no) {
-	if(use_db_config) {
+	if(use_partitions) {
 		switch(param_no) {
 			case 1:
 				trim_char((char**)param);
@@ -3356,7 +3362,7 @@ static int fixup_do_routing(void** param, int param_no)
 				return -1;
 			}
 			memset(part_param, 0, sizeof(dr_part_group_t));
-			if(use_db_config == 1) {
+			if(use_partitions == 1) {
 				if(fxup_split_param(param, (void **)&scnd_param) < 0) {
 					return -1;
 				}
@@ -3441,7 +3447,7 @@ static int fixup_do_routing(void** param, int param_no)
 static int fixup_next_gw( void** param, int param_no)
 {
 	dr_partition_t * part;
-	if( !use_db_config ) { /* partition not needed */
+	if( !use_partitions ) { /* partition not needed */
 		switch (param_no) {
 			/* rule attrs pvar */
 			case 1: /* first param can be partition name */
@@ -3498,7 +3504,7 @@ static int fixup_next_gw( void** param, int param_no)
 static int fixup_from_gw( void** param, int param_no)
 {
 	dr_partition_t * part;
-	if(use_db_config == 0) {
+	if(use_partitions == 0) {
 		switch (param_no) {
 			/* GW type*/
 			case 1:
@@ -3550,7 +3556,7 @@ static int fixup_from_gw( void** param, int param_no)
 static int fixup_is_gw( void** param, int param_no)
 {
 	dr_partition_t * part;
-	if(use_db_config == 0) {
+	if(use_partitions == 0) {
 		switch (param_no) {
 			/* SIP URI pseudo-var */
 			case 1:
@@ -3634,7 +3640,7 @@ static int fixup_route2_carrier( void** param, int param_no)
 				return -1;
 			}
 			memset(part_param, 0, sizeof(dr_part_old_t));
-			if(use_db_config == 1) {
+			if(use_partitions == 1) {
 				if(fxup_split_param(param, (void**)&scnd_param) < 0) {
 					return -1;
 				}
@@ -3692,7 +3698,7 @@ static int fixup_route2_gw( void** param, int param_no)
 				return -1;
 			}
 			memset(part_param, 0, sizeof(dr_part_old_t));
-			if(use_db_config == 1) {
+			if(use_partitions == 1) {
 				if(fxup_split_param(param, (void**)&gw) < 0) {
 					return -1;
 				}
@@ -3788,7 +3794,7 @@ static int _is_dr_gw(struct sip_msg* msg, char * part,
 		char * flags_pv, int type, struct ip_addr *ip,
 		unsigned int port) {
 	struct head_db * it;
-	if(use_db_config) {
+	if(use_partitions) {
 		if(part == NULL || ((dr_partition_t*)part)->type == DR_NO_PART) {
 			LM_ERR("Partition is mandatory!\n");
 			return -1;
@@ -3923,7 +3929,7 @@ static int is_from_gw_0(struct sip_msg* msg) {
  */
 static int is_from_gw_1(struct sip_msg* msg, char * part)
 {
-	if(use_db_config) {
+	if(use_partitions) {
 		return _is_dr_gw( msg, part, NULL, -1, &msg->rcv.src_ip , msg->rcv.src_port);
 	} else {
 		return _is_dr_gw(msg, NULL, NULL, (!part? -1:(int)(long)part), &msg->rcv.src_ip,
@@ -3937,7 +3943,7 @@ static int is_from_gw_1(struct sip_msg* msg, char * part)
  */
 static int is_from_gw_2(struct sip_msg* msg, char * part, char* type_s)
 {
-	if(use_db_config) {
+	if(use_partitions) {
 		return _is_dr_gw(msg, part, NULL, (!type_s ? -1 : (int)(long)type_s),
 				&msg->rcv.src_ip , msg->rcv.src_port);
 	} else {
@@ -3949,7 +3955,7 @@ static int is_from_gw_2(struct sip_msg* msg, char * part, char* type_s)
 
 static int is_from_gw_3(struct sip_msg* msg, char * part,char* type_s,
 		char* flags_pv) {
-	if(use_db_config) {
+	if(use_partitions) {
 		return _is_dr_gw(msg, part, flags_pv, (!type_s ? -1:(int)(long)type_s),
 				&msg->rcv.src_ip, msg->rcv.src_port);
 	} else {
@@ -3967,7 +3973,7 @@ static int is_from_gw_4(struct sip_msg* msg, char * part,char* type_s, char* fla
 {
 	gw_attrs_spec = (pv_spec_p)gw_att;
 
-	if(use_db_config) {
+	if(use_partitions) {
 		return _is_dr_gw( msg, part, flags_pv,
 				(!type_s ? -1 : (int)(long)type_s), &msg->rcv.src_ip ,
 				msg->rcv.src_port);
@@ -4016,7 +4022,7 @@ static int goes_to_gw_1(struct sip_msg* msg, char * part, char* _type, char* fla
 		char* gw_att)
 {
 
-	if(use_db_config) {
+	if(use_partitions) {
 		gw_attrs_spec = (pv_spec_p)gw_att;
 		return _is_dr_uri_gw(msg, part, flags_pv, (!_type ? -1 : (int)(long)_type),
 				GET_NEXT_HOP(msg));
@@ -4045,7 +4051,7 @@ static int dr_is_gw(struct sip_msg* msg, char * part, char* src_pv, char* type_s
 {
 	pv_value_t src;
 
-	if(use_db_config) {
+	if(use_partitions) {
 		gw_attrs_spec = (pv_spec_p)gw_att;
 		if ( pv_get_spec_value(msg, (pv_spec_p)src_pv, &src)!=0 ||
 				(src.flags&PV_VAL_STR)==0 || src.rs.len<=0) {
@@ -4070,7 +4076,7 @@ static struct mi_root* mi_w_partition(struct mi_node **node, struct head_db **
 		current_partition) {
 	struct mi_root *rpl_tree;
 
-	if( use_db_config ) {
+	if( use_partitions ) {
 		if( node!=NULL && (*node)!=NULL ) {
 			if( (*current_partition = get_partition(&((*node)->value))) == NULL) {
 				LM_ERR("Partition not found\n");
@@ -4360,7 +4366,7 @@ int add_head_db(void) {
 	return 0;
 }
 
-/* use_db_config: use configurations from database */
+/* use_partitions: use configurations from database */
 int add_head_config(void) { /* expand linked list */
 	struct head_config *new;
 	new = ( struct head_config* )shm_malloc( sizeof( struct head_config ) );
@@ -4609,7 +4615,7 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	if (node == NULL)
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	if (use_db_config) {
+	if (use_partitions) {
 		s = node->value;
 		if((partition = get_partition(&s)) == NULL) {
 			LM_WARN("Partition <%.*s> was not found.\n", s.len, s.s);
@@ -4672,14 +4678,14 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 
 static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param) {
 	struct mi_node *node = cmd_tree->node.kids;
-	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	struct mi_root *rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	struct mi_node *ans;
 	struct head_db * partition;
-	struct head_db *it;
 	str part_name;
 	char * ch_time;
 
 	if(node != NULL) {
-		if (use_db_config) {
+		if (use_partitions) {
 			part_name = node->value;
 			if((partition = get_partition(&part_name)) == NULL) {
 				LM_WARN("Partition <%.*s> was not found.\n", part_name.len,
@@ -4689,36 +4695,64 @@ static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param
 			/* display just for given partition */
 			lock_start_read(partition->ref_lock);
 			ch_time = ctime(&partition->time_last_update);
-			if(add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
-						partition->partition.s,partition->partition.len, ch_time,
-						strlen(ch_time)) == NULL) {
-				LM_ERR("failed to add node\n");
-				lock_stop_read(partition->ref_lock);
-				free_mi_tree(rpl_tree);
-				return 0;
+			if((ans = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
+						MI_PART_NAME_S, MI_PART_NAME_LEN, partition->partition.s,
+						partition->partition.len)) == NULL) {
+				LM_ERR("failed to add mi_node\n");
+				goto error;
+			}
+			if(add_mi_attr(ans, 0, MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
+						ch_time, strlen(ch_time)) == NULL) {
+				LM_ERR("failed to add mi_attr\n");
+				goto error;
 			}
 			lock_stop_read(partition->ref_lock);
 		} else {
 			return init_mi_tree(400, MI_NO_PART_S, MI_NO_PART_LEN);
 		}
 	}
-	else {
+	else if(use_partitions){
+		rpl_tree->node.flags |= MI_IS_ARRAY;
+
 		/* display for all partitions */
-		for(it = head_db_start; it; it = it->next) {
-			lock_start_read(it->ref_lock);
-			ch_time = ctime(&it->time_last_update);
-			LM_DBG("partitions %.*s was last updated:%s\n", it->partition.len,
-					it->partition.s, ch_time);
-			if(add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE, it->partition.s,
-						it->partition.len, ch_time, strlen(ch_time)) == NULL) {
-				LM_ERR("failed to add node\n");
-				lock_stop_read(it->ref_lock);
-				free_mi_tree(rpl_tree);
-				return 0;
+		for(partition = head_db_start; partition; partition = partition->next) {
+			lock_start_read(partition->ref_lock);
+			ch_time = ctime(&partition->time_last_update);
+			LM_DBG("partition  %.*s was last updated:%s\n",
+					partition->partition.len, partition->partition.s,
+					ch_time);
+			if((ans = add_mi_node_child(&rpl_tree->node, 0, MI_PART_NAME_S,
+						MI_PART_NAME_LEN, partition->partition.s,
+						partition->partition.len))  == NULL) {
+				LM_ERR("failed to add mi_node\n");
+				goto error;
 			}
-			lock_stop_read(it->ref_lock);
+			if(add_mi_attr(ans, 0, MI_LAST_UPDATE_S, MI_LAST_UPDATE_LEN,
+						ch_time, strlen(ch_time)) == NULL) {
+				LM_ERR("failed to add attr to mi_node\n");
+				goto error;
+			}
+			lock_stop_read(partition->ref_lock);
 		}
 	}
+	else {
+		/* just one partition */
+		partition = head_db_start;
+
+		lock_start_read(partition->ref_lock);
+		ch_time = ctime(&partition->time_last_update);
+		if((ans = add_mi_node_child(&rpl_tree->node, 0, MI_LAST_UPDATE_S,
+						MI_LAST_UPDATE_LEN, ch_time, strlen(ch_time))) == NULL) {
+			LM_ERR("failed to add mi_node\n");
+			goto error;
+		}
+		lock_stop_read(partition->ref_lock);
+
+	}
 	return rpl_tree;
+error:
+	lock_stop_read(partition->ref_lock);
+	free_mi_tree(rpl_tree);
+	return 0;
 
 }

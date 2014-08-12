@@ -47,7 +47,7 @@
  * obtained via modparam
  */
 
-//extern int use_db_config;
+//extern int use_partitions;
 typedef struct blk_list_raw {
 	char * def;
 	struct blk_list_raw * next;
@@ -95,7 +95,7 @@ int init_dr_bls(struct head_db * head_db_start)
 	while( it_blk!=NULL ) {
 		LM_DBG("processing bl definition <%s>\n",it_blk->def);
 		/* get name */
-		if( use_db_config ) {
+		if( use_partitions ) {
 			p = strchr(it_blk->def, ':');
 			part_name.s = it_blk->def;
 			part_name.len = p-part_name.s;
