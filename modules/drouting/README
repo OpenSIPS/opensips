@@ -99,6 +99,7 @@ Anca-Maria Vamanu
               1.5.1. dr_reload
               1.5.2. dr_gw_status
               1.5.3. dr_carrier_status
+              1.5.4. dr_reload_status
 
         1.6. Exported Events
 
@@ -161,6 +162,8 @@ Anca-Maria Vamanu
    1.47. dr_gw_status usage when use_partitionsis set to 1
    1.48. dr_carrier_status usage when use_partitions is 0
    1.49. dr_carrier_status usage when use_partitions is 1
+   1.50. dr_reload_status usage when use_partitions is 0
+   1.51. dr_reload_status usage when use_partitions is 1
 
 Chapter 1. Admin Guide
 
@@ -1401,6 +1404,37 @@ Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status partition_1 CR1 1
 $ ./opensipsctl fifo dr_carrier_status partition_3 CR1
 Enabled:: yes
+
+1.5.4. dr_reload_status
+
+   Gets the time of the last reload for any partition. The
+   function may take at most one parameter.
+     * if use_partition is set to 0 - the function doesn't receive
+       any parameter. It will list the date of the last reload for
+       the default (and only) partition.
+     * if use_partition is set to 1 - if no parameter is supplied
+       it will list the time of the last update for every
+       partition. If one parameter is supplied, then this must be
+       the partition name, and the function will list the time of
+       the last reload for that given partition.
+
+   MI FIFO Command Format:
+                :dr_reload_status:_reply_fifo_file_
+                partition_name (if use_partition is 1 it may be omitted,
+ but if use_partition
+is 0 it must be omitted)
+                _empty_line_
+
+   Example 1.50. dr_reload_status usage when use_partitions is 0
+$ ./opensipsctl fifo dr_reload_status
+Date:: Tue Aug 12 12:26:00 2014
+
+   Example 1.51. dr_reload_status usage when use_partitions is 1
+$ ./opensipsctl fifo dr_reload_status
+Partition:: part_test Date=Tue Aug 12 12:24:13 2014
+Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
+$ ./opensipsctl fifo dr_reload_status part_test
+Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
 1.6. Exported Events
 
