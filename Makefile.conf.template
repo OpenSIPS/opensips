@@ -62,7 +62,6 @@ DEFS+= -DUSE_IPV6 #Compile in support for IPv6
 DEFS+= -DUSE_MCAST #Compile in support for IP Multicast
 DEFS+= -DDISABLE_NAGLE #Disabled the TCP NAgle Algorithm ( lower delay )
 DEFS+= -DSTATISTICS #Enables the statistics manager
-DEFS+= -DCHANGEABLE_DEBUG_LEVEL #Enables support for changeable debug level at runtime
 DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
 #DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DF_MALLOC #An even faster allocator. Not recommended for debugging

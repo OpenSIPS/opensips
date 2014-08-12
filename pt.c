@@ -170,6 +170,8 @@ pid_t internal_fork(char *proc_desc)
 		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);
+		init_debug();
+
 		/* set attributes */
 		set_proc_attrs(proc_desc);
 		/* set TCP communication */
@@ -244,4 +246,15 @@ skip_listeners:
 
 	LM_DBG("%d children are going to be inited\n",ret);
 	return ret;
+}
+
+int id_of_pid(pid_t pid)
+{
+	int i;
+
+	for (i = 0; i < counted_processes; i++)
+		if (pt[i].pid == pid)
+			return i;
+
+	return -1;
 }
