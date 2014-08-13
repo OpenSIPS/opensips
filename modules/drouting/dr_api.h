@@ -44,11 +44,15 @@ typedef void* (*match_number_f) (dr_head_p partition, int gr_id,
 
 typedef dr_head_p (*create_head_f) (void);
 typedef void (*free_head_f)(dr_head_p partition);
+typedef int (*add_rule_f)(dr_head_p partition,
+		str *prefix, unsigned int gr_id, unsigned int priority,
+		tmrec_t *time_rec, void *attr);
 
 struct dr_binds {
-	create_head_f create_head;
-	free_head_f   free_head;
-	match_number_f     match_number;
+	create_head_f  create_head;
+	free_head_f    free_head;
+	match_number_f match_number;
+	add_rule_f     add_rule;
 };
 
 typedef int (*load_dr_api_f)(struct dr_binds *drb);
