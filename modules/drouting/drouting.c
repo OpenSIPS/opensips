@@ -41,6 +41,8 @@
 #include "dr_bl.h"
 #include "dr_db_def.h"
 #include "dr_partitions.h"
+#include "dr_api.h"
+#include "dr_api_internal.h"
 
 
 #define DR_PARAM_USE_WEIGTH         (1<<0)
@@ -445,6 +447,22 @@ static dep_export_t deps = {
 		{ NULL, NULL },
 	},
 };
+
+struct module_exports exports = {
+	"drouting",
+	MOD_TYPE_DEFAULT,/* class of this module */
+	MODULE_VERSION,
+	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
+	cmds,            /* Exported functions */
+	params,          /* Exported parameters */
+	0,               /* exported statistics */
+	mi_cmds,         /* exported MI functions */
+	0,               /* exported pseudo-variables */
+	0,               /* additional processes */
+	dr_init,         /* Module initialization function */
+	(response_function) 0,
+	(destroy_function) dr_exit,
 
 struct module_exports exports = {
 	"drouting",
@@ -4590,36 +4608,6 @@ error:
 	return -1;
 }
 
-/* Warning this function assumes the lock is already taken */
-rt_info_t* find_rule_by_prefix_unsafe(struct head_db *partition,
-		str prefix, int grp_id,unsigned int * matched_len)
-{
-	unsigned int rule_idx = 0;
-	rt_info_t *rt_info;
-
-	if (grp_id < 0) {
-		struct sip_uri uri;
-		memset(&uri, 0, sizeof (struct sip_uri));
-		uri.user = prefix;
-		grp_id = get_group_id( &uri, partition);
-	}
-
-	rt_info = get_prefix( (*(partition->rdata))->pt,
-			&prefix, (unsigned int)grp_id,matched_len, &rule_idx);
-
-	if (rt_info==NULL) {
-		LM_DBG("no matching for prefix \"%.*s\"\n",
-				prefix.len, prefix.s);
-
-		/* try prefixless rules */
-		rt_info = check_rt( &(*(partition->rdata))->noprefix,
-				(unsigned int)grp_id);
-		if (rt_info == NULL)
-			LM_DBG("no prefixless matching for "
-					"grp %d\n", grp_id);
-	}
-	return rt_info;
-}
 
 static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param)
 {
@@ -4629,6 +4617,10 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	int grp_id;
 	unsigned int matched_len;
 	struct mi_node *prefix_node;
+	rt_info_t *route;
+
+	if (node == NULL)
+		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 	rt_info_t *route;
 
 	if (node == NULL)
@@ -4649,12 +4641,19 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
 	if (node->next == NULL) {
-		grp_id = -1;
-	} else {
-		unsigned int ugrp_id;
-		if (str2int(&node->value, &ugrp_id) != 0)
+		struct sip_uri uri;
+		memset(&uri, 0, sizeof (struct sip_uri));
+		uri.user = node->value;
+		igrp_id = get_group_id( &uri, partition);
+		if (igrp_id < 0) {
+			LM_WARN("No group was specified and the group cannot be "
+					"retrieved from db\n");
 			return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-		grp_id = ugrp_id;
+		}
+		grp_id = (unsigned int)igrp_id;
+	} else {
+		if (str2int(&node->value, &grp_id) != 0)
+			return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 		node = node->next;
 	}
 
@@ -4667,7 +4666,7 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 
 	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree == NULL){
-		lock_stop_read( partition->ref_lock );
+		lock_stop_read(partition->ref_lock );
 		return 0;
 	}
 
@@ -4701,16 +4700,15 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 					chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
 
 			LM_ERR("failed to add node\n");
-			lock_stop_read( partition->ref_lock );
 			free_mi_tree(rpl_tree);
+			lock_stop_read(partition->ref_lock );
 			return 0;
 		}
 	}
-	lock_stop_read( partition->ref_lock );
 
+	lock_stop_read(partition->ref_lock );
 	return rpl_tree;
 }
-
 
 static struct mi_root* mi_dr_reload_status(struct mi_root *cmd_tree, void *param) {
 	struct mi_node *node = cmd_tree->node.kids;
