@@ -119,7 +119,8 @@ extern int last_dst_leg;
 /* cachedb stuff */
 str cdb_url = {0,0};
 
-/* topo hiding callid mangling */
+/* topo hiding */
+str topo_hiding_ct_params = {0,0};
 str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
 
@@ -282,8 +283,9 @@ static param_export_t mod_params[]={
 	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
 								(void *)add_replication_dest        },
 	/* dialog topology hiding with callid mangling */
-	{ "topo_hiding_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
-	{ "topo_hiding_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
+	{ "th_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
+	{ "th_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
+	{ "th_passed_contact_params",STR_PARAM, &topo_hiding_ct_params.s },
 	{ 0,0,0 }
 };
 
@@ -707,6 +709,10 @@ static int mod_init(void)
 	dialog_table_name.len = strlen(dialog_table_name.s);
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
+	if (topo_hiding_ct_params.s) {
+		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
+		dlg_parse_passed_ct_params(&topo_hiding_ct_params);
+	}
 
 	/* param checkings */
 

@@ -1134,7 +1134,7 @@ modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 	</section>
 
 	<section>
-		<title><varname>topo_hiding_callid_passwd</varname> (string)</title>
+		<title><varname>th_callid_passwd</varname> (string)</title>
 		<para>
 			The string password that will be used for encoding/decoding the callid in case of topology_hiding with callid mangling.
 		</para>
@@ -1144,17 +1144,17 @@ modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>topo_hiding_callid_passwd</varname> parameter</title>
+		<title>Set <varname>th_callid_passwd</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "topo_hiding_callid_passwd", "my_topo_hiding_secret")
+modparam("dialog", "th_callid_passwd", "my_topo_hiding_secret")
 ...
 </programlisting>
 		</example>
 	</section>
 
 	<section>
-		<title><varname>topo_hiding_callid_prefix</varname> (string)</title>
+		<title><varname>th_callid_prefix</varname> (string)</title>
 		<para>
 			The prefix that will be used for detecting callids which have been encoded by the dialog topology hiding. Make sure to change this value in case your SIP path contains multiple OpenSIPS boxes with topology hiding.
 		</para>
@@ -1164,10 +1164,30 @@ modparam("dialog", "topo_hiding_callid_passwd", "my_topo_hiding_secret")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>topo_hiding_callid_prefix</varname> parameter</title>
+		<title>Set <varname>th_callid_prefix</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "topo_hiding_callid_prefix", "MYCALLIDPREFIX_")
+modparam("dialog", "th_callid_prefix", "MYCALLIDPREFIX_")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>th_passed_contact_params</varname> (string)</title>
+		<para>
+			List of semicolon-separated Contact URI parameters that will be passed from one side to the other for topology hiding calls. To be used when end-to-end functionality uses such Contact parameters. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote> - do not pass any parameters
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_passed_contact_params</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "th_passed_contact_params", "paramname1;myparam;custom_param")
 ...
 </programlisting>
 		</example>

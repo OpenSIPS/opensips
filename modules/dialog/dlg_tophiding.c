@@ -79,6 +79,51 @@ int dlg_del_vias(struct sip_msg* req)
 	return 0;
 }
 
+struct th_ct_params {
+	str param_name;
+	struct th_ct_params *next;
+}; 
+
+#define init_new_ct_node(start,len) \
+	do { \
+		el = pkg_malloc(sizeof(struct th_ct_params));\
+		if (!el) { \
+			LM_ERR("No more pkg mem\n"); \
+			return -1; \
+		} \
+		el->param_name.len = len; \
+		el->param_name.s = start; \
+		el->next = th_param_list; \
+		th_param_list = el; \
+	} while (0)
+
+struct th_ct_params *th_param_list=NULL;
+int dlg_parse_passed_ct_params(str *params)
+{
+	char *p,*s,*end;
+	struct th_ct_params* el;
+	int len;
+
+	p = params->s;
+	end = p+params->len;
+	while (1) {
+		s = memchr(p,';',end-p);
+		if (!s) {
+			len = end-p;
+			if (len > 0)
+				init_new_ct_node(p,len);
+			break;
+		}
+
+		len = s-p;
+		if (len > 0)
+			init_new_ct_node(p,len);
+		p=s+1;
+	}
+
+	return 0;
+}
+
 int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 {
 	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
@@ -88,6 +133,8 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	int prefix_len,suffix_len,ct_username_len=0;
 	struct sip_uri ctu;
 	str contact;
+	struct th_ct_params* el;
+	int i;
 
 	if(!msg->contact)
 	{
@@ -129,6 +176,30 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	}
 
 	suffix_len = RR_DLG_PARAM_SIZE+1; /* > */
+	if (th_param_list) {
+		if ( parse_contact(msg->contact)<0 ||
+			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
+			((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
+			LM_ERR("bad Contact HDR\n");
+		} else {
+			contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+			if(parse_uri(contact.s, contact.len, &ctu) < 0) {
+				LM_ERR("Bad Contact URI\n");
+			} else {
+				for (el=th_param_list;el;el=el->next) {
+					/* we just iterate over the unknown params */
+					for (i=0;i<ctu.u_params_no;i++) {
+						if (el->param_name.len == ctu.u_name[i].len &&
+						memcmp(el->param_name.s,ctu.u_name[i].s,
+						       el->param_name.len) == 0)
+							suffix_len += ctu.u_name[i].len +
+							ctu.u_val[i].len + 2; /* ; and = */
+					}
+				}
+			}
+		}
+	} 
+
 	suffix = pkg_malloc(suffix_len);
 	if (!suffix) {
 		LM_ERR("no more pkg\n");
@@ -156,6 +227,24 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	n = RR_DLG_PARAM_SIZE - (p-p_init);
 	if (int2reverse_hex( &p, &n, dlg->h_id)==-1)
 		return -1;
+
+	if (th_param_list) {
+		for (el=th_param_list;el;el=el->next) {
+			/* we just iterate over the unknown params */
+			for (i=0;i<ctu.u_params_no;i++) {
+				if (el->param_name.len == ctu.u_name[i].len &&
+				memcmp(el->param_name.s,ctu.u_name[i].s,
+				       el->param_name.len) == 0) {
+					*p++ = ';';
+					memcpy(p,ctu.u_name[i].s,ctu.u_name[i].len);
+					p+=ctu.u_name[i].len;
+					*p++ = '=';
+					memcpy(p,ctu.u_val[i].s,ctu.u_val[i].len);
+					p+=ctu.u_val[i].len;
+				}
+			}
+		}
+	}
 
 	*p++ = '>';
 	suffix_len = p - p_init;
@@ -226,7 +315,6 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		LM_ERR("failed inserting '<sip:'\n");
 		goto error;
 	}
-
 
 	return 0;
 error:
