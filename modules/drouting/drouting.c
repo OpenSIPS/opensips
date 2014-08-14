@@ -363,6 +363,7 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"route_to_gw",     (cmd_function)route2_gw,     2,fixup_route2_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"load_dr",  (cmd_function)load_dr,   0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
