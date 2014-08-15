@@ -71,9 +71,6 @@
 #define DS_PARTITION_DELIM  ':'
 
 /** parameters */
-int  ds_force_dst   = 0;
-int  ds_flags       = 0;
-int  ds_use_default = 0;
 static str pvar_algo_param = str_init("");
 str hash_pvar_param = {NULL, 0};
 
@@ -233,9 +230,6 @@ static param_export_t params[]={
 	{"weight_col",      STR_PARAM, &ds_dest_weight_col.s},
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
-	{"force_dst",       INT_PARAM, &ds_force_dst},
-	{"flags",           INT_PARAM, &ds_flags},
-	{"use_default",     INT_PARAM, &ds_use_default},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
@@ -255,6 +249,13 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
+static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
+}
 
 static mi_export_t mi_cmds[] = {
 	{ "ds_set_state",   0, ds_mi_set,     0,                 0,  0            },
@@ -263,12 +264,24 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "ds_ping_interval", get_deps_ds_ping_interval },
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
 	"dispatcher",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,          /* exported statistics */
@@ -297,7 +310,7 @@ static partition_specific_param_t partition_params[] = {
 	PARTITION_SPECIFIC_PARAM (grp_avp, "$avp(ds_grp_failover)"),
 	PARTITION_SPECIFIC_PARAM (cnt_avp, "$avp(ds_cnt_failover)"),
 	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
-	PARTITION_SPECIFIC_PARAM (attrs_avp, "")
+	PARTITION_SPECIFIC_PARAM (attrs_avp, ""),
 };
 
 static const unsigned int partition_param_count = sizeof (partition_params) /
@@ -656,6 +669,7 @@ static inline int check_if_default_head_is_ok(void)
 	return 0;
 }
 
+
 /**
  * init module function
  */
@@ -883,6 +897,45 @@ static void destroy(void)
 	destroy_ds_bls();
 }
 
+static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
+
+	/*Get flags literal value*/
+	pv_value_t value;
+	int ds_flags = 0;
+	if (pv_get_spec_value(msg, pvs, &value)) {
+		LM_ERR("no valid PV value found(error in scripts)\n");
+		return -1;
+	}
+
+	/*Parse string and get flags integer value*/
+
+	for ( ; value.rs.len > 0; value.rs.s++, value.rs.len--) {
+		switch (*value.rs.s) {
+			case ' ' :
+				break;
+			case 'f' :
+			case 'F' :
+				ds_flags |= DS_FAILOVER_ON;
+				break;
+			case 'u' :
+			case 'U' :
+				ds_flags |= DS_HASH_USER_ONLY;
+				break;
+			case 'd' :
+			case 'D' :
+				ds_flags |= DS_USE_DEFAULT;
+				break;
+			case 's' :
+			case 'S' :
+				ds_flags |= DS_FORCE_DST;
+				break;
+			default :
+				LM_ERR("Invalid flags PV value\n");
+				return -1;
+		}
+	}
+	return ds_flags;
+}
 #define CHECK_AND_EXPAND_LIST(_list_) \
 	do{\
 		if (_list_->type == GPARAM_TYPE_PVS) { \
@@ -908,12 +961,12 @@ static void destroy(void)
 /**
  *
  */
-static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results, int mode)
+static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results_flags, int mode)
 {
 	int ret;
 	int run_prev_ds_select = 0;
+	int ds_flags = 0;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
-
 	if(msg==NULL)
 		return -1;
 
@@ -939,8 +992,32 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	int_list_t *alg_list_exp_start = NULL, *alg_list_exp_end = NULL;
 
 	/* Retrieve dispatcher max results */
-	int_list_t *max_list = (int_list_t *)max_results;
+
+	/*Pointer to the start of the list*/
+	flags_int_list_t* lst_flgs_param = (flags_int_list_t *)max_results_flags;
+
+	int_list_t *max_results_ptr = NULL;
+	/*In case this parameter is not specified*/
+	if (max_results_flags)
+		max_results_ptr  = lst_flgs_param->list;
+
+	int_list_t *max_list = max_results_ptr;
 	int_list_t *max_list_exp_start = NULL, *max_list_exp_end = NULL;
+
+	/* Retrieve dispatcher flags */
+
+	if (max_results_flags) {
+		ds_flags_t* flags= lst_flgs_param->flags;
+		if (flags->type == DS_FLAGS_TYPE_INT) {
+			ds_flags = flags->v.ival;
+		} else {
+			ds_flags = get_flags_int_value(msg, flags->v.pvs);
+			if (ds_flags < 0) {
+				LM_ERR("Invalid value in flags PV\n");
+				return -1;
+			}
+		}
+	}
 
 	/* Avoid compiler warning */
 	memset(&prev_ds_select_ctl, 0, sizeof(ds_select_ctl_t));
@@ -957,7 +1034,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		CHECK_AND_EXPAND_LIST(alg_list);
 		ds_select_ctl.alg = alg_list->v.ival;
-		if (max_results) {
+		if (max_results_ptr) {
 			CHECK_AND_EXPAND_LIST(max_list);
 			ds_select_ctl.max_results = max_list->v.ival;
 		}
@@ -966,7 +1043,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 			LM_DBG("ds_select: %d %d %d %d %d\n",
 				prev_ds_select_ctl.set, prev_ds_select_ctl.alg, prev_ds_select_ctl.max_results,
 				prev_ds_select_ctl.reset_AVP, prev_ds_select_ctl.set_destination);
-			ret = ds_select_dst(msg, &prev_ds_select_ctl);
+			ret = ds_select_dst(msg, &prev_ds_select_ctl, ds_flags);
 			if (ret<0) return ret;
 			/* stop resetting AVPs. */
 			ds_select_ctl.reset_AVP = 0;
@@ -978,16 +1055,18 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		set_list = set_list->next;
 		alg_list = alg_list->next;
-		if (max_results)
+		if (max_results_ptr) {
 			max_list = max_list->next;
+		}
 
 		TRY_FREE_EXPANDED_LIST(set_list);
 		TRY_FREE_EXPANDED_LIST(alg_list);
 		TRY_FREE_EXPANDED_LIST(max_list);
 
-	} while (set_list && alg_list && (max_results ? max_list : set_list));
+	} while (set_list && alg_list &&
+			(max_results_ptr ? max_list : set_list));
 
-	if (max_results && max_list != NULL) {
+	if (max_results_ptr &&  max_list != NULL) {
 		LM_ERR("extra max slot(s)\n");
 		goto error;
 	}
@@ -1002,12 +1081,12 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 		goto error;
 	}
 
-	/* las ds_select_dst run: setting destination. */
+	/* last ds_select_dst run: setting destination. */
 	ds_select_ctl.set_destination = 1;
 	LM_DBG("ds_select: %d %d %d %d %d\n",
 		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
 		ds_select_ctl.reset_AVP, ds_select_ctl.set_destination);
-	return ds_select_dst(msg, &ds_select_ctl);
+	return ds_select_dst(msg, &ds_select_ctl, ds_flags);
 
 error:
 	return -1;
@@ -1022,7 +1101,7 @@ static int w_ds_select_all(struct sip_msg* msg, char* set, char* alg, int mode)
 }
 
 /**
- *
+ * max_results can also mean the flags parameter
  */
 static int w_ds_select_limited(struct sip_msg* msg, char* set, char* alg, char* max_results, int mode)
 {
@@ -1037,15 +1116,14 @@ static int w_ds_select_dst(struct sip_msg* msg, char* set, char* alg)
 	return w_ds_select_all(msg, set, alg, 0);
 }
 
-
 /**
  * same wrapper as w_ds_select_dst, but it allows cutting down the result set
+ * max_results can also mean flags
  */
 static int w_ds_select_dst_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
 	return w_ds_select_limited(msg, set, alg, max_results, 0);
 }
-
 
 /**
  *
@@ -1055,9 +1133,9 @@ static int w_ds_select_domain(struct sip_msg* msg, char* set, char* alg)
 	return w_ds_select_all(msg, set, alg, 1);
 }
 
-
 /**
  * same wrapper as w_ds_select_domain, but it allows cutting down the result set
+ * max_results can also mean the flags parameter
  */
 static int w_ds_select_domain_limited(struct sip_msg* msg, char* set, char* alg, char* max_results)
 {
@@ -1117,7 +1195,6 @@ static int w_ds_mark_dst(struct sip_msg *msg, char *str1, char *str2)
 			goto error;
 	}
 	else {
-
 		if (str1 != NULL && fixup_get_svalue(msg, (gparam_p)str1, &arg) != 0)
 				goto error;
 	}

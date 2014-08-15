@@ -81,15 +81,17 @@ static param_export_t params[] = {
 
 struct module_exports exports = {
 	"db_http",
+	MOD_TYPE_SQLDB,  /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,          /*  module parameters */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */
 	0,               /* exported pseudo-variables */
 	0,               /* extra processes */
-	http_mod_init,  /* module initialization function */
+	http_mod_init,   /* module initialization function */
 	0,               /* response function*/
 	0,               /* destroy function */
 	0                /* per-child init function */

@@ -127,12 +127,38 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static module_dependency_t *get_deps_restore_mode(param_export_t *param)
+{
+	char *mode = *(char **)param->param_pointer;
 
+	if (!mode || strlen(mode) == 0)
+		return NULL;
+
+	if (strcmp(mode, "none") != 0)
+		return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
+
+	return NULL;
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "dialog",   DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "restore_mode", get_deps_restore_mode },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"uac",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	params,     /* param exports */
 	0,          /* exported statistics */

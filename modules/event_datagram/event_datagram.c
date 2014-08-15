@@ -69,8 +69,10 @@ static str datagram_print(evi_reply_sock *sock);
  */
 struct module_exports exports= {
 	"event_datagram",				/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,							/* exported functions */
 	0,							/* exported parameters */
 	0,							/* exported statistics */

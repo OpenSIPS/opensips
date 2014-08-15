@@ -48,7 +48,9 @@ Bogdan-Andrei Iancu
               1.8.3. lb_list
               1.8.4. lb_status
 
-        1.9. Exported pseudo-variables
+        1.9. Exported Events
+
+              1.9.1. E_LOAD_BALANCER_STATUS
 
    2. Developer Guide
 
@@ -444,9 +446,18 @@ $ ./opensipsctl fifo lb_status 2 1
 $ ./opensipsctl fifo lb_status 2
 enable:: yes
 
-1.9. Exported pseudo-variables
+1.9. Exported Events
 
-   NONE
+1.9.1.  E_LOAD_BALANCER_STATUS
+
+   This event is raised when the module changes the state of a
+   destination, either through MI or probing.
+
+   Parameters:
+     * group - the group of the destination.
+     * uri - the URI of the destination.
+     * status - disabled if the destination was disabled or
+       enabled if the destination is being used.
 
 Chapter 2. Developer Guide
 

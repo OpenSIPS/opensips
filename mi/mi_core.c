@@ -294,36 +294,78 @@ static struct mi_root *mi_debug(struct mi_root *cmd, void *param)
 	struct mi_node *node;
 	char *p;
 	int len;
-	int new_debug;
-
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	node = cmd->node.kids;
-	if (node!=NULL) {
-		if (str2sint( &node->value, &new_debug) < 0)
-			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-	} else
-		new_debug = *debug;
-#else
-		new_debug = debug;
-#endif
+	int new_debug, i;
+	pid_t pid = 0;
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
 	if (rpl_tree==0)
 		return 0;
 
-	p = sint2str((long)new_debug, &len);
-	node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
-		MI_SSTR("DEBUG"),p, len);
-	if (node==0) {
-		free_mi_tree(rpl_tree);
-		return 0;
+	node = cmd->node.kids;
+	if (node!=NULL) {
+		if (str2sint( &node->value, &new_debug) < 0)
+			goto out_bad_param;
+
+		node = node->next;
+		if (node && str2sint( &node->value, &pid) < 0)
+			goto out_bad_param;
+
+	/* if called without arguments, print the table and exit */
+	} else {
+		rpl_tree->node.flags |= MI_IS_ARRAY;
+
+		for (i = 0; i < counted_processes; i++) {
+			node = add_mi_node_child(&rpl_tree->node, 0, MI_SSTR("Process"), 0, 0);
+			if (node==0)
+				goto out;
+
+			p = int2str((unsigned long)pt[i].pid, &len);
+			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("PID"), p, len))
+				goto out;
+
+			p = sint2str((unsigned long)pt[i].debug, &len);
+			if (!add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Debug"), p, len))
+				goto out;
+
+			if (!add_mi_attr( node, 0, MI_SSTR("Type"), pt[i].desc,
+							  strlen(pt[i].desc)))
+				goto out;
+		}
+
+		return rpl_tree;
 	}
 
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	*debug = new_debug;
-#endif
+	p = sint2str((long)new_debug, &len);
+	if (pid)
+		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+			MI_SSTR("New debug"), p, len);
+	else
+		node = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE,
+			MI_SSTR("New global debug"), p, len);
+
+	if (node==0)
+		goto out;
+
+	if (pid) {
+		/* convert pid to OpenSIPS id */
+		i = id_of_pid(pid);
+		if (i == -1)
+			goto out_bad_param;
+
+		__set_proc_default_debug(i, new_debug);
+		__set_proc_debug_level(i, new_debug);
+	} else
+		set_global_debug_level(new_debug);
 
 	return rpl_tree;
+
+out_bad_param:
+	free_mi_tree(rpl_tree);
+	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+
+out:
+	free_mi_tree(rpl_tree);
+	return NULL;
 }
 
 

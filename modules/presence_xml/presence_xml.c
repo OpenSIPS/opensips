@@ -107,12 +107,25 @@ static param_export_t params[]={
 	{  0,                       0,                                          0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "xcap",      DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "presence",  DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
 	"presence_xml",				/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,				/* module version */
 	 DEFAULT_DLFLAGS,           /* dlopen flags */
+	 &deps,                     /* OpenSIPS module dependencies */
 	 0,  						/* exported functions */
 	 params,					/* exported parameters */
 	 0,							/* exported statistics */

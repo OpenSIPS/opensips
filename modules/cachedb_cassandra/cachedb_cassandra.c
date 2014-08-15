@@ -74,8 +74,10 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"cachedb_cassandra",
+	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	NULL,            /* OpenSIPS module dependencies */
 	0,
 	params,
 	0,

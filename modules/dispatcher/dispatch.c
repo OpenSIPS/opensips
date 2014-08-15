@@ -78,8 +78,6 @@ extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 extern ds_partition_t *default_partition;
 
-extern int ds_force_dst;
-
 int init_ds_data(ds_partition_t *partition)
 {
 	partition->data = (ds_data_t**)shm_malloc( sizeof(ds_data_t*) );
@@ -195,36 +193,52 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 	memset(dp, 0, sizeof(ds_dest_t));
 
 	/* store uri and attrs strings */
-	dp->uri.s = (char*)shm_malloc( (uri.len+1+attrs.len+1)*sizeof(char));
-	dp->uri.s = shm_malloc( (puri.host.len)
-							+ (puri.port.len ? puri.port.len + 1 : 0)
-							+ 1 + attrs.len + 1 );
-	if(dp->uri.s==NULL)
-	{
-		LM_ERR("no more shm memory!\n");
-		goto err;
+
+	dp->uri.len = uri.len;
+	if (puri.user.len == 0 && puri.passwd.len == 0 && puri.params.len == 0
+			&& puri.headers.len == 0) {
+
+		/* The uri from db is good for ds_select_dst */
+		dp->uri.s = shm_malloc(uri.len + 1 + attrs.len + 1);
+		if(dp->uri.s==NULL){
+			LM_ERR("no more shm memory!\n");
+			goto err;
+		}
+		dp->dst_uri = dp->uri;
+		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
 	}
+	else {
+		dp->dst_uri.len = uri_typestrlen(puri.type) + 1 + puri.host.len
+						+ (puri.port.len ? puri.port.len + 1 : 0);
+		dp->uri.s = shm_malloc(uri.len + 1 + dp->dst_uri.len + 1 + attrs.len + 1);
+		if(dp->uri.s==NULL){
+			LM_ERR("no more shm memory!\n");
+			goto err;
+		}
 
-	dp->uri.len = 0;
-	char *p = dp->uri.s;
-
-	memcpy(p, puri.host.s, puri.host.len);
-	dp->uri.len += puri.host.len;
-	p += puri.host.len;
-
-	if (puri.port.len) {
+		dp->attrs.s = dp->uri.s + dp->uri.len + 1 + dp->dst_uri.len + 1;
+		dp->dst_uri.s = dp->uri.s + dp->uri.len + 1;
+		char *p = uri_type2str(puri.type, dp->dst_uri.s);
 		*(p++) = ':';
-		memcpy(p, puri.port.s, puri.port.len);
-		dp->uri.len += puri.port.len + 1;
+
+		memcpy(p, puri.host.s, puri.host.len);
+		p += puri.host.len;
+
+		if (puri.port.len) {
+			*(p++) = ':';
+			memcpy(p, puri.port.s, puri.port.len);
+		}
+		dp->dst_uri.s[dp->dst_uri.len]='\0';
 	}
-	dp->uri.s[dp->uri.len]='\0';
+
+	memcpy(dp->uri.s, uri.s, dp->uri.len);
 
 	if (attrs.len) {
-		dp->attrs.s = dp->uri.s + dp->uri.len + 1;
 		memcpy(dp->attrs.s, attrs.s, attrs.len);
 		dp->attrs.s[attrs.len]='\0';
 		dp->attrs.len = attrs.len;
 	}
+	else dp->attrs.s = NULL;
 
 	/* copy state, weight & socket */
 	dp->sock = sock;
@@ -295,7 +309,8 @@ int add_dest2list(int id, str uri, struct socket_info *sock, int state,
 		d_data->sets_no++;
 	}
 
-	LM_DBG("dest [%d/%d] <%.*s> successfully loaded\n", sp->id, sp->nr, dp->uri.len, dp->uri.s);
+	LM_DBG("dest [%d/%d] <%.*s> <%.*s> successfully loaded\n", sp->id, sp->nr,
+			dp->uri.len, dp->uri.s, dp->dst_uri.len, dp->dst_uri.s);
 
 	return 0;
 err:
@@ -349,9 +364,6 @@ int reindex_dests( ds_data_t *d_data)
 
 		/* updated the weights (pre-calculate the weight limits)*/
 		for( j=0,weight=0 ; j<sp->nr ; j++ ) {
-			if (ds_use_default && dp0[j].next==NULL)
-				/* skip the last default record */
-				break;
 			dp0[j].weight += weight;
 			weight = dp0[j].weight;
 		}
@@ -432,7 +444,7 @@ ds_pvar_param_p ds_get_pvar_param(str uri)
 }
 
 
-int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set)
+int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set, int ds_use_default)
 {
 	pv_value_t val;
 	int i, j, k, end_idx, cnt;
@@ -977,7 +989,7 @@ error:
 /**
  *
  */
-int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash)
+int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash, int ds_flags)
 {
 	str from;
 	str key1;
@@ -1015,7 +1027,7 @@ int ds_hash_fromuri(struct sip_msg *msg, unsigned int *hash)
 /**
  *
  */
-int ds_hash_touri(struct sip_msg *msg, unsigned int *hash)
+int ds_hash_touri(struct sip_msg *msg, unsigned int *hash, int ds_flags)
 {
 	str to;
 	str key1;
@@ -1076,7 +1088,7 @@ int ds_hash_callid(struct sip_msg *msg, unsigned int *hash)
 
 
 
-int ds_hash_ruri(struct sip_msg *msg, unsigned int *hash)
+int ds_hash_ruri(struct sip_msg *msg, unsigned int *hash, int ds_flags)
 {
 	str* uri;
 	str key1;
@@ -1221,17 +1233,23 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri,
 										struct socket_info *sock, int mode)
 {
 	struct action act;
+	uri_type utype;
+	int typelen;
 
 	switch(mode)
 	{
 		case 1:
 			act.type = SET_HOSTPORT_T;
 			act.elem[0].type = STR_ST;
-			act.elem[0].u.s = *uri;
-			if (uri->len>4 && strncasecmp(uri->s,"sip:",4)==0) {
-				act.elem[0].u.s.s += 4;
-				act.elem[0].u.s.len -= 4;
+
+			utype = str2uri_type(uri->s);
+			if (utype == ERROR_URI_T) {
+				LM_ERR("Uknown uri type\n");
+				return -1;
 			}
+			typelen = uri_typestrlen(utype);
+			act.elem[0].u.s.s = uri->s + typelen + 1;
+			act.elem[0].u.s.len = uri->len - typelen - 1;
 			act.next = 0;
 
 			if (do_action(&act, msg) < 0) {
@@ -1251,17 +1269,17 @@ static inline int ds_update_dst(struct sip_msg *msg, str *uri,
 	return 0;
 }
 
-static int is_default_destination_entry(ds_set_p idx, int i) {
+static int is_default_destination_entry(ds_set_p idx, int i, int ds_use_default) {
 	return ds_use_default!=0 && i==(idx->nr-1);
 }
 
-static int count_inactive_destinations(ds_set_p idx) {
+static int count_inactive_destinations(ds_set_p idx, int ds_use_default) {
 	int count = 0, i;
 
 	for(i=0; i<idx->nr; i++)
 		if(idx->dlist[i].flags & DS_INACTIVE_DST)
 			/* only count inactive entries that are not default */
-			if(!is_default_destination_entry(idx, i))
+			if(!is_default_destination_entry(idx, i, ds_use_default))
 				count++;
 
 	return count;
@@ -1281,7 +1299,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 		return -1;
 	}
 
-	avp_val.s = ds->uri;
+	avp_val.s = ds->dst_uri;
 	if(add_avp(AVP_VAL_STR| partition->dst_avp_type,
 				partition->dst_avp_name, avp_val)!=0) {
 		LM_ERR("failed to add DST avp\n");
@@ -1303,7 +1321,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags)
 {
 	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
@@ -1316,7 +1334,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 	ds_dest_p dest = NULL;
 	ds_dest_p selected = NULL;
 	static ds_dest_p *sorted_set = NULL;
-
 	if(msg==NULL) {
 		LM_ERR("bad parameters\n");
 		return -1;
@@ -1327,7 +1344,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		return -1;
 	}
 
-	if((ds_select_ctl->mode==0) && (ds_force_dst==0)
+	if((ds_select_ctl->mode==0) && (ds_flags&DS_FORCE_DST)
 			&& (msg->dst_uri.s!=NULL || msg->dst_uri.len>0))
 	{
 		LM_ERR("destination already set [%.*s]\n", msg->dst_uri.len,
@@ -1360,21 +1377,21 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 			}
 		break;
 		case 1:
-			if(ds_hash_fromuri(msg, &ds_hash)!=0)
+			if(ds_hash_fromuri(msg, &ds_hash, ds_flags)!=0)
 			{
 				LM_ERR("can't get From uri hash\n");
 				goto error;
 			}
 		break;
 		case 2:
-			if(ds_hash_touri(msg, &ds_hash)!=0)
+			if(ds_hash_touri(msg, &ds_hash, ds_flags)!=0)
 			{
 				LM_ERR("can't get To uri hash\n");
 				goto error;
 			}
 		break;
 		case 3:
-			if (ds_hash_ruri(msg, &ds_hash)!=0)
+			if (ds_hash_ruri(msg, &ds_hash, ds_flags)!=0)
 			{
 				LM_ERR("can't get ruri hash\n");
 				goto error;
@@ -1421,7 +1438,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 				ds_select_ctl->alg = 8;
 				break;
 			}
-			if ((ds_id = ds_pvar_algo(msg, idx, &sorted_set)) <= 0)
+			if ((ds_id = ds_pvar_algo(msg, idx, &sorted_set, ds_flags&DS_USE_DEFAULT)) <= 0)
 			{
 				LM_ERR("can't get destination index\n");
 				goto error;
@@ -1447,7 +1464,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 					break;
 		}
 	}
-
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
@@ -1455,7 +1471,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		i=ds_id;
 		while ( idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST) )
 		{
-			if(ds_use_default!=0) {
+			if(ds_flags&DS_USE_DEFAULT) {
 				if (idx->nr>1)
 					i = (i+1)%(idx->nr-1);
 			} else {
@@ -1463,7 +1479,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 			}
 			if(i==ds_id)
 			{
-				if(ds_use_default!=0)
+				if(ds_flags&DS_USE_DEFAULT)
 				{
 					i = idx->nr-1;
 					if (idx->dlist[i].flags&(DS_INACTIVE_DST|DS_PROBING_DST))
@@ -1481,7 +1497,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 	}
 
 	if(ds_select_ctl->set_destination
-		&& ds_update_dst(msg, &selected->uri, selected->sock, ds_select_ctl->mode)!=0)
+		&& ds_update_dst(msg, &selected->dst_uri, selected->sock, ds_select_ctl->mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		goto error;
@@ -1491,11 +1507,10 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		idx->last = (ds_id+1) % idx->nr;
 
 	LM_DBG("selected [%d-%d/%d] <%.*s>\n", ds_select_ctl->alg, ds_select_ctl->set, ds_id,
-			selected->uri.len, selected->uri.s);
+			selected->dst_uri.len, selected->dst_uri.s);
 
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
-
 	if(ds_select_ctl->reset_AVP)
 	{
 		/* do some AVP cleanup before start populating new ones */
@@ -1509,17 +1524,16 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		ds_select_ctl->reset_AVP = 0;
 	}
 
-
-	if(ds_use_default!=0 && ds_id!=idx->nr-1)
+	if((ds_flags&DS_USE_DEFAULT) && ds_id!=idx->nr-1)
 	{
 		if (push_ds_2_avps( &idx->dlist[idx->nr-1], ds_select_ctl->partition ) != 0 )
 			goto error;
 		cnt++;
 	}
 
-	inactive_dst_count = count_inactive_destinations(idx);
+	inactive_dst_count = count_inactive_destinations(idx, ds_flags&DS_USE_DEFAULT);
 	/* don't count inactive and default entries into total */
-	destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_use_default!=0);
+	destination_entries_to_skip = idx->nr - inactive_dst_count - (ds_flags&DS_USE_DEFAULT?1:0);
 	destination_entries_to_skip -= ds_select_ctl->max_results;
 
 	/* add to avp */
@@ -1529,7 +1543,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl)
 		dest = (ds_select_ctl->alg == 9 ? sorted_set[i] : &idx->dlist[i]);
 
 		if((dest->flags & DS_INACTIVE_DST)
-				|| (ds_use_default!=0 && i==(idx->nr-1)))
+				|| ((ds_flags&DS_USE_DEFAULT) && i==(idx->nr-1)))
 			continue;
 		if(destination_entries_to_skip > 0) {
 			LM_DBG("skipped entry [%d/%d] (would create more than %i results)\n",
@@ -1590,12 +1604,6 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	int_str avp_value;
 	int_str sock_avp_value;
 
-	if(!(ds_flags&DS_FAILOVER_ON) || partition->dst_avp_name < 0)
-	{
-		LM_WARN("failover support disabled\n");
-		return -1;
-	}
-
 	tmp_avp = search_first_avp(partition->dst_avp_type, partition->dst_avp_name,
 			NULL, 0);
 	if(tmp_avp==NULL)
@@ -1644,12 +1652,6 @@ int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	int group, ret;
 	struct usr_avp *prev_avp;
 	int_str avp_value;
-
-	if(!(ds_flags&DS_FAILOVER_ON))
-	{
-		LM_WARN("failover support disabled\n");
-		return -1;
-	}
 
 	prev_avp = search_first_avp(partition->grp_avp_type, partition->grp_avp_name,
 			&avp_value, 0);

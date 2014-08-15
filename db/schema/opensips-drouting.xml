@@ -13,4 +13,5 @@
 	<xi:include href="dr_rules.xml"/>
 	<xi:include href="dr_carriers.xml"/>
 	<xi:include href="dr_groups.xml"/>
+	<xi:include href="dr_partitions.xml"/>
 </database>

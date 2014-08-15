@@ -289,11 +289,56 @@ static param_export_t params[] = {
 	{0,0,0}
 };
 
+static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+{
+	char *aaa_url = *(char **)param->param_pointer;
+
+	if (!aaa_url || strlen(aaa_url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_AAA, NULL, DEP_WARN);
+}
+
+static module_dependency_t *get_deps_detect_dir(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_cdr_flag(param_export_t *param)
+{
+	if (param->type == STR_PARAM) {
+		char *str_flag = *(char **)param->param_pointer;
+
+		if (!str_flag || strlen(str_flag) == 0)
+			return NULL;
+	}
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_WARN);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT  },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url",           get_deps_sqldb_url  },
+		{ "aaa_url",          get_deps_aaa_url    },
+		{ "detect_direction", get_deps_detect_dir },
+		{ "cdr_flag",         get_deps_cdr_flag   },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"acc",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	params,     /* exported params */
 	0,          /* exported statistics */

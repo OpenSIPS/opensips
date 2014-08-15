@@ -144,12 +144,32 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_probing_interval(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
 
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_SQLDB,   NULL,     DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "probing_interval", get_deps_probing_interval },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"load_balancer",  /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */
 	0,               /* exported statistics */
@@ -417,6 +437,11 @@ static int mod_init(void)
 	}
 	if (parse_avp_spec(&id_avp_name_s, &id_avp_name)) {
 		LM_ERR("cannot parse id avp\n");
+		return -1;
+	}
+
+	if (lb_init_event() < 0) {
+		LM_ERR("cannot init event\n");
 		return -1;
 	}
 
@@ -691,6 +716,7 @@ static int check_options_rplcode(int code)
 void set_dst_state_from_rplcode( int id, int code)
 {
 	struct lb_dst *dst;
+	int old_flags;
 
 	lock_start_read( ref_lock );
 
@@ -706,13 +732,19 @@ void set_dst_state_from_rplcode( int id, int code)
 			lock_stop_read( ref_lock );
 			return;
 		}
+		old_flags = dst->flags;
 		dst->flags &= ~LB_DST_STAT_DSBL_FLAG;
+		if (dst->flags != old_flags)
+			lb_raise_event(dst);
 		lock_stop_read( ref_lock );
 		return;
 	}
 
 	if (code>=400) {
+		old_flags = dst->flags;
 		dst->flags |= LB_DST_STAT_DSBL_FLAG;
+		if (dst->flags != old_flags)
+			lb_raise_event(dst);
 	}
 
 	lock_stop_read( ref_lock );
@@ -824,6 +856,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 	struct lb_dst *dst;
 	struct mi_node *node;
 	unsigned int  id, stat;
+	unsigned int old_flags;
 
 	node = cmd->node.kids;
 	if (node==NULL)
@@ -871,6 +904,7 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 					MI_SSTR("Destination ID not found"));
 			} else {
 				/* set the disable/enable */
+				old_flags = dst->flags;
 				if (stat) {
 					dst->flags &=
 						~ (LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
@@ -878,6 +912,8 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 					dst->flags |=
 						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
 				}
+				if (old_flags != dst->flags)
+					lb_raise_event(dst);
 				lock_stop_read( ref_lock );
 				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 			}

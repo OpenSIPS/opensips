@@ -113,10 +113,28 @@ static stat_export_t mod_stats[] = {
 	{0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "dialog",    DEP_ABORT },
+		/*
+		 * FIXME: silent module load ordering, due to Session-Expires updates from sst
+		 *        proper fix should involve dialog callback ordering
+		 */
+		{ MOD_TYPE_DEFAULT, "pua_dialoginfo", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
 	"sst",        /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,         /* exported functions */
 	mod_params,   /* param exports */
 	mod_stats,    /* exported statistics */

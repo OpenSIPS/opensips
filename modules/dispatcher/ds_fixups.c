@@ -437,6 +437,125 @@ int fixup_int_list(void **param)
 }
 
 /*
+ * Set the given flag in the flags structure integer value
+ */
+static int ds_set_flag(ds_flags_t* flags, int ds_flag)
+{
+
+	if (flags->type == DS_FLAGS_TYPE_PVS)
+		goto err;
+
+	flags->type = DS_FLAGS_TYPE_INT;
+	if (!(flags->v.ival & ds_flag))
+		flags->v.ival |= ds_flag;
+	else {
+		LM_ERR("more than one flag with the same meaning given\n");
+		return -1;
+	}
+
+	return 0;
+
+	err:
+		LM_ERR("Invalid flags parameter\n");
+		shm_free(flags);
+		return -1;
+}
+
+
+/*
+ * Fixup for flags
+ */
+
+int fixup_flags(void **param, ds_flags_t* flags)
+{
+
+	#define PV_DELIM ')'
+	#define FLAG_ERR(_flag_msg_)\
+		do{\
+			LM_ERR("Cannot set " #_flag_msg_  " flag\n");\
+			return -1;\
+		} while(0);
+
+	char* param_p = (char *)(*param);
+
+	for( ; *param_p != '\0' ; param_p++) {
+		switch (*param_p) {
+			case ' ':
+				(*param)++;
+				break;
+			case 'f':
+			case 'F':
+				if (ds_set_flag(flags, DS_FAILOVER_ON))
+					FLAG_ERR(failover (F));
+				break;
+			case 'u':
+			case 'U':
+				if (ds_set_flag(flags, DS_HASH_USER_ONLY))
+					FLAG_ERR(hash user (U));
+				break;
+			case 'd':
+			case 'D':
+				if (ds_set_flag(flags, DS_USE_DEFAULT))
+					FLAG_ERR(use default (D));
+				break;
+			case 's':
+			case 'S':
+				if (ds_set_flag(flags, DS_FORCE_DST))
+					FLAG_ERR(force dst (S));
+				break;
+			case PV_MARKER:
+
+				if (flags->type == DS_FLAGS_TYPE_PVS) {
+					LM_ERR("M letter must come before "
+						"the max_results PV\n");
+					return -1;
+				}
+				flags->type = DS_FLAGS_TYPE_PVS;
+				flags->v.pvs = shm_malloc(sizeof(pv_spec_t));
+				if (!flags->v.pvs)
+					goto mem;
+
+				char* end = memchr(param_p, PV_DELIM,strlen(param_p));
+				if (!end)
+					goto pv_err;
+				str input = {param_p, end - param_p+1};
+
+				if (!pv_parse_spec(&input, flags->v.pvs))
+					goto pv_err;
+
+				param_p = ++end;
+				break;
+			case 'M':
+
+				if ((char*)(*param) == param_p) {
+					/*No flags defined.Default value 0*/
+					flags->type = DS_FLAGS_TYPE_INT;
+					flags->v.ival = 0;
+				}
+				*param = ++param_p;
+
+				return 0;
+			default :
+				LM_ERR("Invalid definition\n");
+				return -1;
+		}
+	}
+
+	*param = param_p;
+	return 0;
+
+	mem:
+		LM_ERR("No more shm\n");
+		return -1;
+	pv_err:
+		LM_ERR("Invalid pv definition\n");
+		shm_free(flags->v.pvs);
+		shm_free(flags);
+		return -1;
+	#undef FLAG_ERR
+}
+
+/*
  * Free an expanded list (obtained with set_list_from_pvs)
  * Delete everything in the range [start, end).
  * Do not use this function to erase any other lists
@@ -489,6 +608,7 @@ int ds_next_fixup(void **param, int param_no)
 		LM_CRIT ("Too many parameters for ds_next_dst/ds_next_domain\n");
 		return -1;
 	}
+
 	return fixup_partition(param);
 }
 
@@ -537,18 +657,48 @@ int in_list_fixup(void** param, int param_no)
 	}
 }
 
+
 /* Fixup function for ds_select_dst and ds_select_domain commands */
 int ds_select_fixup(void** param, int param_no)
 {
+	ds_flags_t* flags;
+	flags_int_list_t* result;
+
 	if (param_no > 3) {
 		LM_CRIT("Too many params for ds_select_*\n");
 		return -1;
 	}
 
-	if (param_no == 1)
-		return fixup_partition_sets(param);
-	else
-		return fixup_int_list(param);
+	switch (param_no) {
+		case 1:
+			return fixup_partition_sets(param);
+		case 2:
+			return fixup_int_list(param);
+		case 3:
+			result = shm_malloc(sizeof(flags_int_list_t));
+			flags = shm_malloc(sizeof(ds_flags_t));
+			/*Fixing flags*/
+			int rc = fixup_flags(param, flags);
+			if (rc) {
+				LM_ERR("Cannot fixup flags\n");
+				return -1;
+			}
+			/*Fixing max_results list*/
+			if (((char *)(*param))[0] != '\0') {
+				rc = fixup_int_list(param);
+				if (rc) {
+					LM_ERR("Cannot fixup list\n");
+					return -1;
+				}
+			}
+
+			result->flags = flags;
+			result->list = (int_list_t*)(*param);
+			*param = result;
+			return 0;
+	}
+
+	return 0;
 }
 
 /* Fixup function for ds_count command */

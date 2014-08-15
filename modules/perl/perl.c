@@ -130,8 +130,15 @@ static mi_export_t mi_cmds[] = {
 
 };
 
-
-
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module info
@@ -152,8 +159,10 @@ static mi_export_t mi_cmds[] = {
  */
 struct module_exports exports = {
 	"perl",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	RTLD_NOW | RTLD_GLOBAL,
+	&deps,      /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */

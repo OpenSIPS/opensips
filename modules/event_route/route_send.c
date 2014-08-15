@@ -73,6 +73,8 @@ int route_send(route_send_t *route_s)
 
 	do {
 		rc = write(route_pipe[1], &route_s, sizeof(route_send_t *));
+		if (rc == sizeof(route_send_t *))
+			break;
 	} while ((rc < 0 && (IS_ERR(EINTR)||IS_ERR(EAGAIN)||IS_ERR(EWOULDBLOCK)))
 			|| retries-- > 0);
 
@@ -88,24 +90,38 @@ int route_send(route_send_t *route_s)
 	return 0;
 }
 
+static union tmp_route_send_t {
+	route_send_t *ptr;
+	char buf[sizeof(route_send_t *)];
+} recv_buf;
+
 static route_send_t * route_receive(void)
 {
-	static route_send_t * recv;
 	int rc;
 	int retries = ROUTE_SEND_RETRY;
+	int len = sizeof(route_send_t*);
+	int bytes_read = 0;
 
 	if (route_pipe[0] == -1)
 		return NULL;
 
 	do {
-		rc = read(route_pipe[0], &recv, sizeof(route_send_t*));
-	} while ((rc < 0 && IS_ERR(EINTR)) || retries-- > 0);
+		rc = read(route_pipe[0], recv_buf.buf + bytes_read, len);
+		if (rc > 0) {
+			bytes_read += rc;
+			len -= rc;
+		} else if (rc < 0 && IS_ERR(EINTR)) {
+			continue;
+		} else if (retries-- <= 0) {
+			break;
+		}
+	} while (len);
 
 	if (rc < 0) {
 		LM_ERR("cannot receive send param\n");
 		return NULL;
 	}
-	return recv;
+	return recv_buf.ptr;
 }
 
 int init_writer(void)

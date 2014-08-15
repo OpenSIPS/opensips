@@ -194,14 +194,36 @@ static stat_export_t uridb_stats[] = {
 	{0,0,0}
 };
 
+static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+{
+	char *url = *(char **)param->param_pointer;
+
+	if (url || strlen(url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_AAA, NULL, DEP_SILENT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "aaa_url", get_deps_aaa_url   },
+		{ "db_url",  get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
 	"uri",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,      /* Exported functions */
 	params,    /* Exported parameters */
 	uridb_stats, /* exported statistics */

@@ -66,6 +66,21 @@ typedef struct
 	int_list_t *sets;
 } ds_param_t;
 
+/*Structure that will keep the flags as an integer or PV*/
+typedef struct
+{
+	union {
+		int ival;
+		pv_spec_t *pvs;
+	} v;
+	enum flagstype_t {DS_FLAGS_TYPE_INT, DS_FLAGS_TYPE_PVS} type;
+} ds_flags_t;
+
+typedef struct flags_int_list {
+	int_list_t* list;
+	ds_flags_t* flags;
+} flags_int_list_t;
+
 int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *end);
 void free_int_list(int_list_t *start, int_list_t *end);
 

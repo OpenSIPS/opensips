@@ -166,14 +166,26 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_AAA, NULL, DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
 	"group",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */

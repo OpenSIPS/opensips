@@ -230,12 +230,25 @@ static stat_export_t msilo_stats[] = {
 	{0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_SQLDB,   NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 #endif
 /** module exports */
 struct module_exports exports= {
 	"msilo",    /* module id */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* module's exported functions */
 	params,     /* module's exported parameters */
 #ifdef STATISTICS

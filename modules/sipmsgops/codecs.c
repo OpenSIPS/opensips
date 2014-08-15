@@ -70,7 +70,7 @@ int fixup_codec(void** param, int param_no)
 
 int fixup_codec_regexp(void** param, int param_no)
 {
-	return fixup_regexp_null(param, param_no);
+	return fixup_regexp_dynamic_null(param, param_no);
 }
 
 
@@ -697,11 +697,24 @@ int codec_find (struct sip_msg* msg, char* str1 )
 
 int codec_find_re (struct sip_msg* msg, char* str1 )
 {
+	regex_t *re;
+	int do_free;
 
-	if( do_for_all_streams(msg, NULL, NULL, (regex_t*)str1,
-		FIND, DESC_REGEXP) == 0)
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
 		return -1;
+	}
 
+	if( do_for_all_streams(msg, NULL, NULL, re,
+		FIND, DESC_REGEXP) == 0) {
+		if (do_free)
+			fixup_free_regexp((void **)&re);
+		return -1;
+	}
+	
+	if (do_free)
+		fixup_free_regexp((void **)&re);
 	return 1;
 }
 
@@ -754,18 +767,48 @@ int codec_delete (struct sip_msg* msg, char* str1 )
 
 int codec_delete_re (struct sip_msg* msg, char* str1 )
 {
-	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
-		DELETE, DESC_REGEXP) == 0)
+	regex_t *re;
+	int do_free;
+
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
 		return -1;
+	}
+
+	if( do_for_all_streams( msg, NULL, NULL, re,
+		DELETE, DESC_REGEXP) == 0) {
+		if (do_free)
+			fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (do_free)
+		fixup_free_regexp((void **)&re);
 	return 1;
 }
 
 
 int codec_delete_except_re (struct sip_msg* msg, char* str1 )
 {
-	if( do_for_all_streams( msg, NULL, NULL, (regex_t*) str1,
-		DELETE, DESC_REGEXP_COMPLEMENT) == 0)
+	regex_t *re;
+	int do_free;
+
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
 		return -1;
+	}
+
+	if( do_for_all_streams( msg, NULL, NULL, re,
+		DELETE, DESC_REGEXP_COMPLEMENT) == 0) {
+		if (do_free)
+			fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (do_free)
+		fixup_free_regexp((void **)&re);
 	return 1;
 }
 
@@ -817,9 +860,24 @@ int codec_move_up (struct sip_msg* msg, char* str1)
 
 int codec_move_up_re (struct sip_msg* msg, char* str1)
 {
-	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
-		ADD_TO_FRONT, DESC_REGEXP) == 0)
+	regex_t *re;
+	int do_free;
+
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
 		return -1;
+	}
+
+	if( do_for_all_streams( msg, NULL, NULL, re,
+		ADD_TO_FRONT, DESC_REGEXP) == 0) {
+		if (do_free)
+			fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (do_free)
+		fixup_free_regexp((void **)&re);
 	return 1;
 }
 
@@ -871,9 +929,24 @@ int codec_move_down (struct sip_msg* msg, char* str1)
 
 int codec_move_down_re (struct sip_msg* msg, char* str1)
 {
-	if( do_for_all_streams( msg, NULL, NULL, (regex_t*)str1,
-		ADD_TO_BACK, DESC_REGEXP) == 0)
+	regex_t *re;
+	int do_free;
+
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
 		return -1;
+	}
+
+	if( do_for_all_streams( msg, NULL, NULL, re,
+		ADD_TO_BACK, DESC_REGEXP) == 0) {
+		if (do_free)
+			fixup_free_regexp((void **)&re);
+		return -1;
+	}
+
+	if (do_free)
+		fixup_free_regexp((void **)&re);
 	return 1;
 }
 
@@ -1000,15 +1073,41 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 }
 
 
-int stream_find (struct sip_msg* msg, char* re )
+int stream_find (struct sip_msg* msg, char* str1 )
 {
-	return handle_streams(msg, (regex_t*)re, 0);
+	regex_t *re;
+	int do_free,ret;
+
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
+		return -1;
+	}
+
+	ret = handle_streams(msg, re, 0);
+	if (do_free)
+		fixup_free_regexp((void **)&re);
+
+	return ret;
 }
 
 
-int stream_delete (struct sip_msg* msg, char* re )
+int stream_delete (struct sip_msg* msg, char* str1 )
 {
-	return handle_streams(msg, (regex_t*)re, 1);
+	regex_t *re;
+	int do_free,ret;
+
+	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
+	if (!re) {
+		LM_ERR("Failed to get regular expression \n");
+		return -1;
+	}
+
+	ret = handle_streams(msg, re, 1);
+	if (do_free)
+		fixup_free_regexp((void **)&re);
+
+	return ret;
 }
 
 

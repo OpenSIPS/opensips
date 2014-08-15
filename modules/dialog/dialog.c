@@ -119,13 +119,14 @@ extern int last_dst_leg;
 /* cachedb stuff */
 str cdb_url = {0,0};
 
-/* topo hiding callid mangling */
+/* topo hiding */
+str topo_hiding_ct_params = {0,0};
 str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
 
 /* dialog replication using the bpi interface */
-int accept_replicated_dlg;
-struct replication_dest *replication_dests;
+int accept_replicated_dlg=0;
+struct replication_dest *replication_dests=NULL;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -282,8 +283,9 @@ static param_export_t mod_params[]={
 	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
 								(void *)add_replication_dest        },
 	/* dialog topology hiding with callid mangling */
-	{ "topo_hiding_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
-	{ "topo_hiding_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
+	{ "th_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
+	{ "th_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
+	{ "th_passed_contact_params",STR_PARAM, &topo_hiding_ct_params.s },
 	{ 0,0,0 }
 };
 
@@ -342,10 +344,48 @@ static pv_export_t mod_items[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
+static module_dependency_t *get_deps_db_mode(param_export_t *param)
+{
+	int db_mode = *(int *)param->param_pointer;
+
+	if (db_mode == DB_MODE_NONE ||
+		(db_mode != DB_MODE_REALTIME &&
+		 db_mode != DB_MODE_DELAYED &&
+		 db_mode != DB_MODE_SHUTDOWN))
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
+{
+	char *cdb_url = *(char **)param->param_pointer;
+
+	if (!cdb_url || strlen(cdb_url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "rr", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_mode",     get_deps_db_mode     },
+		{ "cachedb_url", get_deps_cachedb_url },
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
 	"dialog",        /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */
@@ -669,6 +709,10 @@ static int mod_init(void)
 	dialog_table_name.len = strlen(dialog_table_name.s);
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
+	if (topo_hiding_ct_params.s) {
+		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
+		dlg_parse_passed_ct_params(&topo_hiding_ct_params);
+	}
 
 	/* param checkings */
 

@@ -286,10 +286,12 @@
 		<title><varname>partition</varname> (string)</title>
 		<para>
 		This can be used to define new db_url and table_name parameters from which
-		to load the translation rules. These parameters will be held in partitions. 
-		The db_url parameter is mandatory. The order of the parameters does not matter. 
+		to load the translation rules. These parameters will be held in partitions.
+		The db_url parameter is mandatory. The order of the parameters does not matter.
 		Multiple partitions can be defined and you can also define the default partition
-		here. The name of this partition is "default".
+		here. The name of this partition is "default". In order to be able to use a table
+		from a partition, its name must be found in the "version" table belonging to the
+		database defined in the partition's db_url.
 		</para>
 
 		<example>

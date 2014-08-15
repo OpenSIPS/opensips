@@ -38,9 +38,14 @@ fi
 # automatic testing.
 #PW=""
 
+if ! [ -z "$DBPORT" ]; then
+	PORT_OPT="-P$DBPORT"
+else
+	PORT_OPT=
+fi
 
-CMD="mysql -h $DBHOST -u$DBROOTUSER "
-DUMP_CMD="mysqldump -h $DBHOST -u$DBROOTUSER -c -t "
+CMD="mysql -h $DBHOST $PORT_OPT -u$DBROOTUSER "
+DUMP_CMD="mysqldump -h $DBHOST $PORT_OPT -u$DBROOTUSER -c -t "
 #################################################################
 
 

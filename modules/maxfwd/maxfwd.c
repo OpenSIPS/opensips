@@ -78,8 +78,10 @@ struct module_exports maxfwd_exports = {
 struct module_exports exports= {
 #endif
 	"maxfwd",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,          /* exported statistics */

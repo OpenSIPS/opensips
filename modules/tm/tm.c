@@ -329,8 +329,10 @@ struct module_exports tm_exports = {
 struct module_exports exports= {
 #endif
 	"tm",      /* module name*/
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,      /* exported functions */
 	params,    /* exported variables */
 	mod_stats, /* exported statistics */
@@ -683,8 +685,8 @@ static int script_init( struct sip_msg *foo, void *bar)
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
-	unset_timeout(fr_timeout);
-	unset_timeout(fr_inv_timeout);
+	fr_timeout = timer_id2timeout[FR_TIMER_LIST];
+	fr_inv_timeout = timer_id2timeout[FR_INV_TIMER_LIST];
 
 	/* reset the kill reason status */
 	reset_kr();

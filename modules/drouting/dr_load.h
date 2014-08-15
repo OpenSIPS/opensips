@@ -35,9 +35,9 @@
 
 #include "../../str.h"
 #include "../../db/db.h"
+#include "dr_partitions.h"
 #include "routing.h"
 
-rt_data_t* dr_load_routing_info( db_func_t *dr_dbf, db_con_t* db_hdl,
-		str *drd_table, str *drl_table, str* str_table, int persistent_state);
+rt_data_t* dr_load_routing_info(struct head_db * ,int persistent_state);
 
 #endif

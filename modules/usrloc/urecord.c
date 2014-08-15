@@ -45,11 +45,15 @@
 #include "utime.h"
 #include "ul_callback.h"
 #include "ureplication.h"
+#include "udomain.h"
 
 
 int matching_mode = CONTACT_ONLY;
 
 int cseq_delay = 20;
+
+extern event_id_t ei_c_ins_id;
+extern event_id_t ei_c_del_id;
 
 /*! \brief
  * Create and initialize new record structure
@@ -172,6 +176,8 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 		_r->contacts = c;
 	}
 
+	ul_raise_contact_event(ei_c_ins_id, &c->c, &c->callid, &c->received,
+			c->cseq);
 	return c;
 }
 
@@ -192,6 +198,8 @@ void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 			_c->next->prev = 0;
 		}
 	}
+	ul_raise_contact_event(ei_c_del_id, &_c->c, &_c->callid, &_c->received,
+			_c->cseq);
 }
 
 

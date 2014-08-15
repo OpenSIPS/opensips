@@ -90,12 +90,23 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /* Module interface */
 struct module_exports exports = {
 	"speeddial",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */

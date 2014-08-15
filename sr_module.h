@@ -54,6 +54,10 @@
 #include "version.h"
 #include "route.h"
 
+typedef struct param_export_ param_export_t;
+
+#include "sr_module_deps.h"
+
 typedef  struct module_exports* (*module_register)();
 typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*, char*, char*);
 typedef  int (*fixup_function)(void** param, int param_no);
@@ -130,16 +134,37 @@ struct proc_export_ {
 	unsigned int flags;
 };
 
+typedef struct dep_export_ {
+	module_dependency_t md[MAX_MOD_DEPS];
+	modparam_dependency_t mpd[];
+} dep_export_t;
 
 typedef struct cmd_export_ cmd_export_t;
 typedef struct param_export_ param_export_t;
 typedef struct proc_export_ proc_export_t;
 
+
+struct sr_module{
+	char* path;
+	void* handle;
+	int is_loaded;
+	struct module_exports* exports;
+
+	/* a list of module dependencies */
+	struct sr_module_dep *sr_deps;
+
+	struct sr_module* next;
+};
+
+
 struct module_exports{
 	char* name;                     /*!< null terminated module name */
+	enum module_type type;
 	char *version;                  /*!< module version */
 	char *compile_flags;            /*!< compile flags used on the module */
 	unsigned int dlflags;           /*!< flags for dlopen */
+
+	dep_export_t *deps;             /*!< module and modparam dependencies */
 
 	cmd_export_t* cmds;             /*!< null terminated array of the exported
 	                                   commands */
@@ -165,17 +190,6 @@ struct module_exports{
 	                                   be "destroyed", e.g: on opensips exit */
 	child_init_function init_child_f;/*!< function called by all processes
 	                                    after the fork */
-};
-
-
-
-
-
-struct sr_module{
-	char* path;
-	void* handle;
-	struct module_exports* exports;
-	struct sr_module* next;
 };
 
 

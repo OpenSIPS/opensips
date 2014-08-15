@@ -33,6 +33,7 @@
 #include "../../proxy.h"
 #include "../../parser/parse_uri.h"
 #include "../../mem/shm_mem.h"
+#include "../../evi/evi.h"
 #include "lb_parser.h"
 #include "lb_data.h"
 #include "lb_db.h"
@@ -593,12 +594,71 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	return dst?0:-2;
 }
 
+/* events */
+static event_id_t lb_evi_id;
+static str lb_event = str_init("E_LOAD_BALANCER_STATUS");
+static str lb_group_str = str_init("group");
+static str lb_uri_str = str_init("uri");
+static str lb_state_str = str_init("status");
+static str lb_disabled_str = str_init("disabled");
+static str lb_enabled_str = str_init("enabled");
+
+int lb_init_event(void)
+{
+	lb_evi_id = evi_publish_event(lb_event);
+	if (lb_evi_id == EVI_ERROR) {
+		LM_ERR("cannot register %.*s event\n", lb_event.len, lb_event.s);
+		return -1;
+	}
+	return 0;
+}
+
+void lb_raise_event(struct lb_dst *dst)
+{
+	evi_params_p list = NULL;
+
+	if (lb_evi_id == EVI_ERROR || !evi_probe_event(lb_evi_id))
+		return;
+
+	list = evi_get_params();
+	if (!list) {
+		LM_ERR("cannot create event params\n");
+		return;
+	}
+
+	if (evi_param_add_int(list, &lb_group_str, &dst->group) < 0) {
+		LM_ERR("cannot add destination group\n");
+		goto error;
+	}
+
+	if (evi_param_add_str(list, &lb_uri_str, &dst->uri) < 0) {
+		LM_ERR("cannot add destination uri\n");
+		goto error;
+	}
+
+	if (evi_param_add_str(list, &lb_state_str,
+			dst->flags&LB_DST_STAT_DSBL_FLAG ? &lb_disabled_str : &lb_enabled_str) < 0) {
+		LM_ERR("cannot add destination state\n");
+		goto error;
+	}
+
+	if (evi_raise_event(lb_evi_id, list)) {
+		LM_ERR("unable to send %.*s event\n", lb_event.len, lb_event.s);
+	}
+	return;
+
+error:
+	evi_free_params(list);
+}
+
+
 
 int do_lb_disable(struct sip_msg *req, struct lb_data *data)
 {
 	struct usr_avp *id_avp;
 	int_str id_val;
 	struct lb_dst *dst;
+	unsigned int old_flags;
 
 	id_avp = search_first_avp( 0, id_avp_name, &id_val, 0);
 	if (id_avp==NULL) {
@@ -608,7 +668,10 @@ int do_lb_disable(struct sip_msg *req, struct lb_data *data)
 
 	for( dst=data->dsts ; dst ; dst=dst->next) {
 		if (dst->id==id_val.n) {
+			old_flags = dst->flags;
 			dst->flags |= LB_DST_STAT_DSBL_FLAG;
+			if (dst->flags != old_flags)
+				lb_raise_event(dst);
 		}
 	}
 

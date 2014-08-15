@@ -83,8 +83,10 @@ static param_export_t params[] = {
  */
 struct module_exports exports= {
 	"event_route",			/* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	params,						/* exported parameters */
 	0,						/* exported statistics */
@@ -123,7 +125,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (create_pipe() < 0) {
+	if (synch_mode) {
+		exports.procs = 0;
+	} else if (create_pipe() < 0) {
 		LM_ERR("cannot create communication pipe\n");
 		return -1;
 	}
@@ -138,7 +142,8 @@ static void destroy(void)
 {
 	LM_NOTICE("destroy module ...\n");
 	/* closing sockets */
-	destroy_pipe();
+	if (!synch_mode)
+		destroy_pipe();
 }
 
 
@@ -149,7 +154,7 @@ static int child_init(int rank)
 	str event_name;
 	int idx;
 
-	if (init_writer() < 0) {
+	if (!synch_mode && init_writer() < 0) {
 		LM_ERR("cannot init writing pipe\n");
 		return -1;
 	}

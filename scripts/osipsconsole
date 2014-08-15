@@ -396,6 +396,10 @@ if ( $DBHOST eq "" ) {
 	$DBHOST = "localhost";
 }
 
+if ( $DBPORT eq "" ) {
+	$DBPORT = "3306";
+}
+
 if ( $DBRWUSER  eq "" ) {
 	$DBRWUSER = "opensips";
 }
@@ -1356,11 +1360,11 @@ sub db_load() {
 				print "Used database is mysql\n";
 				&validate_dbdata("mysql");
 				#Connect to the database.
-				$dbh = DBI->connect("DBI:mysql:database=$DBNAME;host=$DBHOST",
+				$dbh = DBI->connect("DBI:mysql:database=$DBNAME;host=$DBHOST;port=$DBPORT",
 						"$DBRWUSER", "$DBRWPW", {'PrintError' => 0} );
 				if ($dbh==NULL) {
 					print "Failed to connect the configured Database ".
-						"(database=$DBNAME;host=$DBHOST;user=$DBRWUSER)";
+						"(database=$DBNAME;host=$DBHOST;port=$DBPORT;user=$DBRWUSER)";
 					$DBENGINELOADED = 0;
 					return 0;
 				}
@@ -6363,7 +6367,7 @@ sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_c
 	$src_cols=`echo $src_cols | sed s/?/$src_table./g `;
 
 	if ( $PW eq "" ) {
-		$X = system("mysql -h $DBHOST -u$DBROOTUSER -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
+		$X = system("mysql -h $DBHOST -P $DBPORT -u$DBROOTUSER -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
 			if ( $? != 0 ) {
@@ -6377,7 +6381,7 @@ sub mysql_migrate_table(){ # 4 paremeters (dst_table, dst_cols, src_table, src_c
 			}
 		}
 	} else {
-		$X = system("mysql -h $DBHOST -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
+		$X = system("mysql -h $DBHOST -P $DBPORT -u$DBROOTUSER -p$PW -e \"INSERT INTO $dst_table ($dst_cols) SELECT $src_cols FROM $src_table\"");
 		if ( $? != 0 ) {
 			system("echo $X | $EGREP \"ERROR 1146\" > /dev/null");
 			if ( $? != 0 ) {
@@ -6411,7 +6415,7 @@ sub opensips_dump() {
 	
 	if ( $DBENGINE =~ /^mysql$/ ) {
 		if ( $PW eq "" ) {
-			system("mysqldump -h $DBHOST -u$DBROOTUSER -c -t $_[0] > $_[1]");
+			system("mysqldump -h $DBHOST -P $DBPORT -u$DBROOTUSER -c -t $_[0] > $_[1]");
 			if ( $? != 0 ) {
 				print "db dump failed\n";
 				return;
@@ -6420,7 +6424,7 @@ sub opensips_dump() {
 				return;
 			}
 		} else {
-                        system("mysqldump -h $DBHOST -u$DBROOTUSER -p$PW -c -t $_[0] > $_[1]");
+                        system("mysqldump -h $DBHOST -P $DBPORT -u$DBROOTUSER -p$PW -c -t $_[0] > $_[1]");
                         if ( $? != 0 ) {
                                 print "db dump failed\n";
 				return;
@@ -6480,7 +6484,7 @@ sub opensips_restore() { #pars: <database name> <filename>
 #
 sub mysql_query() {
 
-	my $MYSQL_CMD="mysql -h $DBHOST -u$DBROOTUSER ";
+	my $MYSQL_CMD="mysql -h $DBHOST -P $DBPORT -u$DBROOTUSER ";
 	if ( $#_ > 0 ) {
 		if ( $PW eq "") {
 			system("$MYSQL_CMD -D $_[0] -e \"$_[1]\"");
@@ -6564,7 +6568,7 @@ sub db_mysql_query() {
 	
 	# if password not yet queried, query it now
 	#&prompt_pw(); "MySQL password for user '$DBRWUSER@$DBHOST'"
-	system("$MYSQL -h $DBHOST -u$DBRWUSER \"-p$DBRWPW\" -D $DBNAME -e \"$query\";");
+	system("$MYSQL -h $DBHOST -P $DBPORT -u$DBRWUSER \"-p$DBRWPW\" -D $DBNAME -e \"$query\";");
 	if ( $? != 0 ) {		
 		return 1;
 	} else {

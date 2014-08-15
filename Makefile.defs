@@ -498,8 +498,6 @@ export CC_NAME
 # -DSTATISTICS
 #		enables statistics manager - support for collecting statistics
 #		from core and all modules; all info may be fetch via FIFO/UNIX_SOCK
-# -DCHANGEABLE_DEBUG_LEVEL
-#		enables support for changeable debug level at runtime
 # -DORACLE_USRLOC
 #		use oracle compatible SQL in the the get_all_ucontacts function in usrloc,
 #		needed for example from the nathelper module
