@@ -140,7 +140,6 @@ typedef struct dep_export_ {
 } dep_export_t;
 
 typedef struct cmd_export_ cmd_export_t;
-typedef struct param_export_ param_export_t;
 typedef struct proc_export_ proc_export_t;
 
 
