@@ -145,6 +145,78 @@
     ]]>
   </send>
 
+  <recv request="INVITE" rrs="true"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <pause milliseconds="100"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 180 Ringing
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv request="CANCEL" rrs="true"/>
+
+  <send>
+    <!-- "The general rule is that the final consonant is doubled if
+          the final syllable is stressed." CANceling => one l. -->
+    <![CDATA[
+
+      SIP/2.0 200 Canceling
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      [last_Call-ID:]
+      CSeq: [cseq] CANCEL
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <pause milliseconds="100"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 487 Request Terminated
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      [last_Call-ID:]
+      CSeq: [cseq] INVITE
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv request="ACK" rrs="true"/>
+
   <timewait milliseconds="500"/><!-- keep open for retransmits -->
 
 </scenario><!-- vim: set ts=8 sw=2 sts=2 et ai: -->
