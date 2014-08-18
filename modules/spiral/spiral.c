@@ -28,6 +28,11 @@
 
 #include <stdio.h>
 
+#include "../../sr_module.h"
+#ifndef MAX_MOD_DEPS
+# define PRE_1_12_MODULE_DEPS
+#endif
+
 #include "../../data_lump.h"
 #include "../../mod_fix.h"
 #include "../../msg_translator.h"
@@ -35,7 +40,6 @@
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../script_cb.h"
-#include "../../sr_module.h"
 #include "../../ut.h"
 
 #include "../rr/api.h"
@@ -63,10 +67,29 @@ static param_export_t mod_params[] = {
 	{0, 0, 0}
 };
 
+#ifndef PRE_1_12_MODULE_DEPS
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "rr",   DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tm",   DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+#endif
+
 struct module_exports exports= {
 	"spiral",        /* module's name */
+#ifndef PRE_1_12_MODULE_DEPS
+	MOD_TYPE_DEFAULT,/* class of this module */
+#endif
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+#ifndef PRE_1_12_MODULE_DEPS
+	&deps,           /* OpenSIPS module dependencies */
+#endif
 	NULL,            /* exported functions */
 	mod_params,      /* param exports */
 	NULL,            /* exported statistics */
