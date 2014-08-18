@@ -2724,7 +2724,8 @@ search_again:
 
 			/* is carrier turned off ? */
 			if( dst->dst.carrier->flags & DR_CR_FLAG_IS_OFF
-					|| !is_dst_in_list( (void*)dst, wl_list, wl_len) )
+					|| !is_dst_in_list( (void*)dst->dst.carrier,
+						wl_list, wl_len) )
 				continue;
 
 			/* any gws for this carrier ? */
@@ -2776,7 +2777,7 @@ search_again:
 
 			/* is gateway disabled ? */
 			if (dst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG
-					|| !is_dst_in_list( (void*)dst, wl_list, wl_len) )
+					|| !is_dst_in_list( (void*)dst->dst.gw, wl_list, wl_len) )
 				continue;
 
 			/* add gateway to usage list */
