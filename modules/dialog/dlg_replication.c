@@ -107,8 +107,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 			dlg_lock(d_table, d_entry);
 
 		if (dlg) {
-			/* TODO: change to LM_DBG */
-			LM_ERR("Dialog with ci '%.*s' is already created\n",
+			LM_DBG("Dialog with ci '%.*s' is already created\n",
 			       callid.len, callid.s);
 			unref_dlg_unsafe(dlg, 1, d_entry);
 			dlg_unlock(d_table, d_entry);
@@ -118,7 +117,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 		dlg = build_new_dlg(&callid, &from_uri, &to_uri, &from_tag);
 		if (!dlg) {
 			LM_ERR("Failed to create replicated dialog!\n");
-			goto error;
+			goto pre_linking_error;
 		}
 	} else {
 		h_entry = dlg_hash(&cell->callid);
@@ -132,18 +131,6 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 		dlg = cell;
 	}
 
-	/* link the dialog into the hash */
-	dlg->h_id = d_entry->next_id++;
-	if (!d_entry->first)
-		d_entry->first = d_entry->last = dlg;
-	else {
-		d_entry->last->next = dlg;
-		dlg->prev = d_entry->last;
-		d_entry->last = dlg;
-	}
-	dlg->ref++;
-	d_entry->cnt++;
-
 	bin_pop_int(&dlg->h_id);
 	bin_pop_int(&dlg->start_ts);
 	bin_pop_int(&dlg->state);
@@ -154,18 +141,18 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 		(next_id < dlg->h_id) ? (dlg->h_id + 1) : next_id;
 
 	if (bin_pop_str(&sock))
-		goto packet_error;
+		goto pre_linking_error;
 
 	caller_sock = fetch_socket_info(&sock);
 
 	if (bin_pop_str(&sock))
-		goto packet_error;
+		goto pre_linking_error;
 
 	callee_sock = fetch_socket_info(&sock);
 
 	if (!caller_sock || !callee_sock) {
 		LM_ERR("Dialog in DB doesn't match any listening sockets\n");
-		goto packet_error;
+		goto pre_linking_error;
 	}
 
 	bin_pop_str(&cseq1);
@@ -183,10 +170,22 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 		dlg_add_leg_info(dlg, &to_tag, &rroute2, &contact2,
 				&cseq2, callee_sock, &mangled_fu, &mangled_tu) != 0) {
 		LM_ERR("dlg_set_leg_info failed\n");
-		goto error;
+		goto pre_linking_error;
 	}
 
 	dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
+
+	/* link the dialog into the hash */
+	dlg->h_id = d_entry->next_id++;
+	if (!d_entry->first)
+		d_entry->first = d_entry->last = dlg;
+	else {
+		d_entry->last->next = dlg;
+		dlg->prev = d_entry->last;
+		d_entry->last = dlg;
+	}
+	dlg->ref++;
+	d_entry->cnt++;
 
 	bin_pop_str(&vars);
 	bin_pop_str(&profiles);
@@ -256,17 +255,18 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 
 	return 0;
 
+pre_linking_error:
+	dlg_unlock(d_table, d_entry);
+	if (dlg)
+		destroy_dlg(dlg);
+	return -1;
+
 error:
 	dlg_unlock(d_table, d_entry);
 	if (dlg)
 		unref_dlg(dlg, 1);
 
 	return -1;
-
-packet_error:
-	dlg_unlock(d_table, d_entry);
-	LM_ERR("Received malformed UDP binary packet!\n");
-	return -2;
 }
 
 /**
