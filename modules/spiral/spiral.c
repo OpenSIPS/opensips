@@ -151,34 +151,34 @@ static inline int spiral_has_totag(struct sip_msg *msg)
 /* Return 1 if the parameter `name` was found, value is placed in `value`. */
 static int spiral_get_param_value(str *in, const str *name, str *value)
 {
-        param_t *params = NULL;
-        param_t *p = NULL;
-        param_hooks_t phooks;
-        if (parse_params(in, CLASS_ANY, &phooks, &params) < 0) {
-                return -1;
+	param_t *params = NULL;
+	param_t *p = NULL;
+	param_hooks_t phooks;
+	if (parse_params(in, CLASS_ANY, &phooks, &params) < 0) {
+		return -1;
 	}
-        for (p = params; p; p = p->next) {
-                if (p->name.len == name->len
-                                && strncasecmp(p->name.s, name->s, name->len) == 0) {
-                        *value = p->body;
-                        free_params(params);
-                        return 0;
-                }
-        }
+	for (p = params; p; p = p->next) {
+		if (p->name.len == name->len &&
+				strncasecmp(p->name.s, name->s, name->len) == 0) {
+			*value = p->body;
+			free_params(params);
+			return 0;
+		}
+	}
 
-        if (params) {
+	if (params) {
 		free_params(params);
 	}
-        return 1;
+	return 1;
 }
 
 /* Return 1 if the packet is from the CALLER to CALLEE. */
 static inline int spiral_direction_downstream(struct sip_msg *msg)
 {
-        rr_t *rr;
-        struct sip_uri puri;
-        const str ftag = {"ftag", 4}; /* hardcoded ftag equal to the RR one */
-        str rr_ftag = {0, 0};
+	rr_t *rr;
+	struct sip_uri puri;
+	const str ftag = {"ftag", 4}; /* hardcoded ftag equal to the RR one */
+	str rr_ftag = {0, 0};
 	const str *fromtag;
 
 	if (!msg->route) {
@@ -210,9 +210,8 @@ static inline int spiral_direction_downstream(struct sip_msg *msg)
 	if (spiral_get_param_value(&puri.params, &ftag, &rr_ftag) != 0) {
 		return 0;
 	}
-	if (fromtag->len == rr_ftag.len
-			&& memcmp(fromtag->s, rr_ftag.s, rr_ftag.len) == 0)
-	{
+	if (fromtag->len == rr_ftag.len &&
+			memcmp(fromtag->s, rr_ftag.s, rr_ftag.len) == 0) {
 		LM_DBG("ftag match, is_downstream\n");
 		return 1;
 	}
@@ -230,8 +229,8 @@ static int spiral_needs_unmangling(struct sip_msg *msg)
 	}
 
 	callid = &msg->callid->body;
-	if (callid->len > callid_mangling_prefix.len
-			&& memcmp(callid->s, callid_mangling_prefix.s,
+	if (callid->len > callid_mangling_prefix.len &&
+			memcmp(callid->s, callid_mangling_prefix.s,
 				callid_mangling_prefix.len) == 0) {
 		return 1;
 	}
@@ -321,18 +320,20 @@ int spiral_unmangle_callid(struct sip_msg *msg)
 static int spiral_add_cookie(struct sip_msg *msg, const str *cookie_header_value)
 {
 	struct lump* anchor;
-	str h;
+	int pos;
+	str h, v;
 
+	/* Add header cookie */
 	h.len = cookie_header_key.len + 2 + cookie_header_value->len + CRLF_LEN;
 	h.s = (char*)pkg_malloc(h.len + 1);
-	if(h.s == 0) {
+	if (h.s == 0) {
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
 
 	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
-	if(anchor == 0) {
-		LM_ERR("can't get anchor\n");
+	if (anchor == 0) {
+		LM_ERR("can't get header anchor\n");
 		pkg_free(h.s);
 		return -1;
 	}
@@ -343,35 +344,90 @@ static int spiral_add_cookie(struct sip_msg *msg, const str *cookie_header_value
 	memcpy(h.s + cookie_header_key.len + 2 + cookie_header_value->len, CRLF, CRLF_LEN);
 	h.s[h.len] = '\0';
 
-	if (insert_new_lump_before(anchor, h.s, h.len, 0) == 0)
-	{
-		LM_ERR("can't insert lump\n");
+	if (insert_new_lump_before(anchor, h.s, h.len, 0) == 0)	{
+		LM_ERR("can't insert header lump\n");
 		pkg_free(h.s);
 		return -1;
 	}
-	LM_DBG("spiral: added cookie header %.*s [%.*s]\n",
+
+	/* Add Via cookie as well */
+	if (msg->via1->params.s) {
+		pos = msg->via1->params.s - msg->via1->hdr.s - 1;
+	} else {
+		pos = msg->via1->host.s - msg->via1->hdr.s + msg->via1->host.len;
+		if (msg->via1->port != 0)
+			pos += msg->via1->port_str.len + 1; /* +1 for ':' */
+	}
+	anchor = anchor_lump(msg, msg->via1->hdr.s - msg->buf + pos, 0);
+	if (anchor == 0) {
+		LM_ERR("can't get Via anchor\n");
+		return -1;
+	}
+
+	v.len = 1 + cookie_header_key.len + 1 + cookie_header_value->len;
+	v.s = (char*)pkg_malloc(v.len + 1);
+	if (v.s == 0) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	v.s[0] = ';';
+	memcpy(v.s + 1, cookie_header_key.s, cookie_header_key.len);
+	v.s[cookie_header_key.len + 1] = '=';
+	memcpy(v.s + cookie_header_key.len + 2, cookie_header_value->s, cookie_header_value->len);
+	v.s[v.len] = '\0';
+
+	if (insert_new_lump_after(anchor, v.s, v.len, 0) == 0) {
+		LM_ERR("can't insert Via lump\n");
+		pkg_free(h.s);
+		return -1;
+	}
+
+	LM_DBG("spiral: added cookie in header/Via %.*s [%.*s]\n",
 			cookie_header_key.len, cookie_header_key.s, h.len, h.s);
 	return 0;
 }
 
 static void spiral_del_cookie(struct sip_msg *msg)
 {
+	struct lump* anchor;
 	struct hdr_field *hf;
-	struct lump* l;
+	struct via_param *p;
 
-	for (hf = msg->headers; hf; hf = hf->next)
-	{
+	/* Remove cooke from headers */
+	for (hf = msg->headers; hf; hf = hf->next) {
 		/* strncasecmp not needed, we put the cookie there with the
 		 * same case */
-		if (hf->name.len == cookie_header_key.len
-				&& memcmp(hf->name.s, cookie_header_key.s,
-					cookie_header_key.len) == 0)
-		{
-			l = del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
-			if (l == 0) {
-				LM_ERR("spiral: unable to delete cookie header\n");
+		if (hf->name.len == cookie_header_key.len &&
+				memcmp(hf->name.s, cookie_header_key.s,
+					cookie_header_key.len) == 0) {
+			anchor = del_lump(msg, hf->name.s-msg->buf, hf->len, 0);
+			if (anchor == 0) {
+				LM_ERR("spiral: unable to delete header cookie\n");
 			}
-			return;
+			break;
+		}
+	}
+
+	/* Remove cookie from Via as well */
+	if (msg->via1 == NULL) {
+		LM_DBG("no via header\n"); /* XXX: when does this happen? */
+	}
+
+	/* For requests, it is in via2, for replies it is in via1 */
+	if (msg->first_line.type == SIP_REQUEST) {
+		p = msg->via2->param_lst;
+	} else {
+		p = msg->via1->param_lst;
+	}
+	for (; p; p = p->next) {
+		if (p->name.len == cookie_header_key.len &&
+				memcmp(p->name.s, cookie_header_key.s,
+					cookie_header_key.len) == 0) {
+			anchor = del_lump(msg, p->start-msg->buf - 1, p->size + 1, 0);
+			if (anchor == 0) {
+				LM_ERR("spiral: unable to delete Via cookie\n");
+			}
+			break;
 		}
 	}
 }
@@ -379,26 +435,46 @@ static void spiral_del_cookie(struct sip_msg *msg)
 int spiral_get_cookie(struct sip_msg *msg, str *dest)
 {
 	struct hdr_field *hf;
+	struct via_param *p;
 
-	for (hf = msg->headers; hf; hf = hf->next)
-	{
+	/* Get header cookie */
+	for (hf = msg->headers; hf; hf = hf->next) {
 		/* strncasecmp not needed, we put the cookie there with the
 		 * same case */
-		if (hf->name.len == cookie_header_key.len
-				&& memcmp(hf->name.s, cookie_header_key.s,
+		if (hf->name.len == cookie_header_key.len &&
+				memcmp(hf->name.s, cookie_header_key.s,
 					cookie_header_key.len) == 0) {
 			/* Copy at most the input length. */
-			if (dest->len > hf->body.len)
-				dest->len = hf->body.len;
-			memcpy(dest->s, hf->body.s, dest->len);
-			LM_DBG("spiral: got cookie header %.*s [%.*s]\n", cookie_header_key.len,
+			if (dest->len > hf->body.len + 1)
+				dest->len = hf->body.len + 1;
+			dest->s[0] = 'h';
+			memcpy(dest->s + 1, hf->body.s, dest->len);
+			LM_DBG("spiral: got header cookie %.*s [%.*s]\n", cookie_header_key.len,
 					cookie_header_key.s, dest->len, dest->s);
 			return 1;
 		}
 	}
-
-	LM_DBG("spiral: no cookie header %.*s found\n",
+	LM_DBG("spiral: no header cookie %.*s found\n",
 			cookie_header_key.len, cookie_header_key.s);
+
+	/* Get Via cookie if no header cookie can be found */
+	for (p = msg->via1->param_lst; p; p = p->next) {
+		if (p->name.len == cookie_header_key.len &&
+				memcmp(p->name.s, cookie_header_key.s,
+					cookie_header_key.len) == 0) {
+			/* Copy at most the input length. */
+			if (dest->len > p->value.len + 1)
+				dest->len = p->value.len + 1;
+			dest->s[0] = 'v';
+			memcpy(dest->s + 1, p->value.s, dest->len + 1);
+			LM_DBG("spiral: got Via cookie %.*s [%.*s]\n", cookie_header_key.len,
+					cookie_header_key.s, dest->len, dest->s);
+			return 1;
+		}
+	}
+	LM_DBG("spiral: no Via cookie %.*s found\n",
+			cookie_header_key.len, cookie_header_key.s);
+
 	return 0;
 }
 
@@ -428,8 +504,8 @@ int spiral_parse_msg(struct sip_msg *msg)
 	}
 #if 0
 	/* 2nd via parsing here so we can do msg.via2 checking later. */
-	if (parse_headers(msg, HDR_VIA2_F, 0) == -1
-			|| (msg->via2 == 0) || (msg->via2->error != PARSE_OK)) {
+	if (parse_headers(msg, HDR_VIA2_F, 0) == -1 ||
+			(msg->via2 == 0) || (msg->via2->error != PARSE_OK)) {
 		LM_DBG("no second via in this message\n");
 	}
 #endif
@@ -570,11 +646,12 @@ error:
 static int spiral_post_raw(str *data)
 {
 	struct sip_msg msg = { 0, };
-	char cookiebuf[3] = ".."; /* writable buffer for cookie */
-	str cookie = {cookiebuf, 2};
-	int in_dialog;
-	int is_downstream;
-	int is_local;
+	/* The cookiebuf will hold three characters:
+	 * [.hv] unset, Header, Via
+	 * [.du] unset, Downstream, Upstream
+	 * [.ic] unset, Initial, Continue */
+	char cookiebuf[3] = "...";
+	str cookie = {cookiebuf, 3};
 
 	msg.buf = data->s;
 	msg.len = data->len;
@@ -589,15 +666,18 @@ static int spiral_post_raw(str *data)
 	if (spiral_get_cookie(&msg, &cookie)) {
 		spiral_del_cookie(&msg);
 	}
-	is_local = (cookie.s[0] == '.'); /* upstream nor downstream */
 
 	if (msg.first_line.type == SIP_REQUEST) {
+		int in_dialog;
+		int is_downstream;
+		int is_local = (cookie.s[1] == '.'); /* upstream nor downstream */
+
 		/* Locally generated requests */
 		if (is_local) {
 			/* ACK and CANCEL go downstream
 			 * (only followups to initial requests, e2e ack is not is_local) */
-			if(get_cseq(&msg)->method_id == METHOD_ACK
-					|| get_cseq(&msg)->method_id == METHOD_CANCEL) {
+			if (get_cseq(&msg)->method_id == METHOD_ACK ||
+					get_cseq(&msg)->method_id == METHOD_CANCEL) {
 				if (spiral_mangle_callid(&msg) != 0)
 					goto error;
 			} else {
@@ -610,7 +690,7 @@ static int spiral_post_raw(str *data)
 		} else {
 			in_dialog = spiral_has_totag(&msg);
 			if (in_dialog) {
-				is_downstream = (cookie.s[0] == 'd'); /* upstream/downstream */
+				is_downstream = (cookie.s[1] == 'd'); /* upstream/downstream */
 				if (is_downstream) {
 					if (spiral_mangle_callid(&msg) != 0)
 						goto error;
@@ -623,19 +703,32 @@ static int spiral_post_raw(str *data)
 		}
 
 	} else /*if (msg.first_line.type == SIP_REPLY)*/ {
+		int is_downstream;
+		int is_local = (cookie.s[0] == '.' || cookie.s[0] == 'v');
+
 		/* Locally generated response */
 		if (is_local) {
-			/* This happens for hop-by-hop replies (100) and
-			 * e.g. 401/407 that we send. These are directed
-			 * upstream, so we don't need to mangle them. */
-			goto done;
-		}
-
+			if (cookie.s[1] == '.') {
+				/* No cookies at all? This is something
+				 * unrelated to us. Don't touch. */
+				goto done;
+			}
+			if (cookie.s[1] == 'u') {
+				/* The transaction was upstream, this is e.g. a
+				 * provisional reply back down. */
+				if (spiral_mangle_callid(&msg) != 0)
+					goto error;
+			} else {
+				/* The transaction was downstream and this is
+				 * e.g. a generated 100/401/407 that we reply. */
+			}
 		/* Non-local responses */
-		is_downstream = (cookie.s[0] == 'd'); /* upstream/downstream */
-		if (is_downstream) {
-			if (spiral_mangle_callid(&msg) != 0)
-				goto error;
+		} else {
+			is_downstream = (cookie.s[1] == 'd'); /* upstream/downstream */
+			if (is_downstream) {
+				if (spiral_mangle_callid(&msg) != 0)
+					goto error;
+			}
 		}
 	}
 
