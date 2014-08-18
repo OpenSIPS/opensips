@@ -1,0 +1,8 @@
+TESTING
+
+pkill opensips; sleep 1; opensips -f ./test-opensips.cfg
+sudo ngrep -qtldlo -Wbyline udp and '(port 5060 or port 5061 or port 5062)'
+
+sipp -m 1 -sf test-alice-5061.xml -p 5061 127.0.0.1
+
+sipp -m 1 -sf test-bob-5062.xml -p 5062 127.0.0.1

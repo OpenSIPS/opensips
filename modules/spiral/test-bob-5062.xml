@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+<scenario name="Test for the OpenSIPS spiral module, Bob, Walter Doekes 2014">
+  <!--
+
+  See test-alice-5061.xml for why.
+
+  Usage:
+    sipp -m 1 -sf test-bob-5062.xml -p 5062 127.0.0.1
+
+  -->
+
+  <recv request="INVITE" rrs="true"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <pause milliseconds="100"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 180 Ringing
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <pause milliseconds="100"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:];tag=[pid]Bob[call_number]
+      Contact: sip:bob@[local_ip]:[local_port]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=bob 1 1 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 8 0
+      a=rtpmap:8 PCMA/8000
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+  <recv request="ACK" rrs="true">
+    <action>
+      <ereg regexp=": (.*)" search_in="hdr" header="From" check_it="false" assign_to="_,alice"/>
+      <ereg regexp=": (.*)" search_in="hdr" header="To" check_it="false" assign_to="_,bob"/>
+    </action>
+  </recv>
+
+  <send start_txn="hold">
+    <![CDATA[
+
+      INVITE [next_url] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      [routes]
+      From: [$bob]
+      To: [$alice]
+      Contact: sip:bob@[local_ip]:[local_port]
+      Call-ID: [call_id]
+      CSeq: [cseq] INVITE
+      Max-Forwards: 70
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=bob 2 2 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] 0.0.0.0
+      t=0 0
+      m=audio [media_port] RTP/AVP 8 0
+      a=rtpmap:8 PCMA/8000
+      a=rtpmap:0 PCMU/8000
+      a=sendonly
+
+    ]]>
+  </send>
+
+  <recv response="100" response_txn="hold"/>
+
+  <recv response="200" rrs="true" response_txn="hold"/>
+
+  <send ack_txn="hold">
+    <![CDATA[
+
+      ACK [next_url] SIP/2.0
+      [last_Via:]
+      [routes]
+      [last_From:]
+      [last_To:]
+      Contact: <sip:bob@[local_ip]:[local_port];transport=[transport]>
+      Call-ID: [call_id]
+      CSeq: [cseq] ACK
+      Max-Forwards: 70
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv request="BYE"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_Record-Route:]
+      [last_From:]
+      [last_To:]
+      Contact: <sip:bob@[local_ip]:[local_port];transport=[transport]>
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <timewait milliseconds="500"/><!-- keep open for retransmits -->
+
+</scenario><!-- vim: set ts=8 sw=2 sts=2 et ai: -->
