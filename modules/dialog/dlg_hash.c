@@ -910,8 +910,11 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 
 	dlg_unlock( d_table, d_entry);
 
-	if (!is_replicated && replication_dests && dlg->state == DLG_STATE_DELETED)
+	 if (!is_replicated && replication_dests &&
+	(*old_state == DLG_STATE_CONFIRMED_NA || *old_state == DLG_STATE_CONFIRMED) &&
+	dlg->state == DLG_STATE_DELETED)
 		replicate_dialog_deleted(dlg);
+
 
 	LM_DBG("dialog %p changed from state %d to "
 		"state %d, due event %d\n",dlg,*old_state,*new_state,event);
