@@ -119,7 +119,7 @@
       [routes]
       [last_From:]
       [last_To:]
-      Contact: <sip:bob@[local_ip]:[local_port];transport=[transport]>
+      Contact: sip:bob@[local_ip]:[local_port]
       Call-ID: [call_id]
       CSeq: [cseq] ACK
       Max-Forwards: 70
@@ -138,7 +138,6 @@
       [last_Record-Route:]
       [last_From:]
       [last_To:]
-      Contact: <sip:bob@[local_ip]:[local_port];transport=[transport]>
       [last_Call-ID:]
       [last_CSeq:]
       Content-Length: 0

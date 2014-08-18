@@ -9,6 +9,7 @@
   - alice INVITEs bob, bob picks up
   - bob reINVITEs alice, alice OKs
   - alice hangs up
+  - alice INVITEs charlie, gets 404
 
   Usage:
     sipp -m 1 -sf test-alice-5061.xml -p 5061 127.0.0.1
@@ -59,17 +60,7 @@
       Call-ID: [call_id]
       CSeq: [cseq] ACK
       Max-Forwards: 70
-      Content-Type: application/sdp
-      Content-Length: [len]
-
-      v=0
-      o=alice 1 1 IN IP[local_ip_type] [local_ip]
-      s=-
-      c=IN IP[media_ip_type] [media_ip]
-      t=0 0
-      m=audio [media_port] RTP/AVP 8 0
-      a=rtpmap:8 PCMA/8000
-      a=rtpmap:0 PCMU/8000
+      Content-Length: 0
 
     ]]>
   </send>
@@ -140,4 +131,49 @@
 
   <recv response="200" response_txn="bye"/>
 
+  <send start_txn="failinvite">
+    <![CDATA[
+
+      INVITE sip:charlie@[remote_ip]:[remote_port] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: sip:alice@[local_ip]:[local_port];tag=[pid]Alice[call_number]
+      To: sip:charlie@[remote_ip]:[remote_port]
+      Contact: sip:alice@[local_ip]:[local_port]
+      Call-ID: [call_id]
+      CSeq: [cseq] INVITE
+      Max-Forwards: 70
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=alice 3 3 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 8 0
+      a=rtpmap:8 PCMA/8000
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+  <recv response="100" response_txn="failinvite"/>
+
+  <recv response="404" response_txn="failinvite"/>
+
+  <send ack_txn="failinvite">
+    <![CDATA[
+
+      ACK sip:charlie@[remote_ip]:[remote_port] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From: sip:alice@[local_ip]:[local_port];tag=[pid]Alice[call_number]
+      To: sip:charlie@[remote_ip]:[remote_port][peer_tag_param]
+      Contact: sip:alice@[local_ip]:[local_port]
+      Call-ID: [call_id]
+      CSeq: [cseq] ACK
+      Max-Forwards: 70
+      Content-Length: 0
+
+    ]]>
+  </send>
 </scenario>
