@@ -410,11 +410,17 @@ static void spiral_del_cookie(struct sip_msg *msg)
 
 	/* Remove cookie from Via as well */
 	if (msg->via1 == NULL) {
-		LM_DBG("no via header\n"); /* XXX: when does this happen? */
+		/* If the 487 to a CANCELed call is misconstructed with
+		 * a single Via, that Via gets stripped and now we end
+		 * up here without any Via at all. Don't die. */
+		LM_DBG("spiral: no Via header to remove cookie from\n");
+		return;
 	}
 
 	/* For requests, it is in via2, for replies it is in via1 */
 	if (msg->first_line.type == SIP_REQUEST) {
+		/* There must be a via2, if there wasn't a via1, we
+		 * wouldn't be here. And we add the via2. */
 		p = msg->via2->param_lst;
 	} else {
 		p = msg->via1->param_lst;
@@ -676,8 +682,7 @@ static int spiral_post_raw(str *data)
 		if (is_local) {
 			/* ACK and CANCEL go downstream
 			 * (only followups to initial requests, e2e ack is not is_local) */
-			if (get_cseq(&msg)->method_id == METHOD_ACK ||
-					get_cseq(&msg)->method_id == METHOD_CANCEL) {
+			if (get_cseq(&msg)->method_id & (METHOD_ACK|METHOD_CANCEL)) {
 				if (spiral_mangle_callid(&msg) != 0)
 					goto error;
 			} else {

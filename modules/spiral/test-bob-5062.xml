@@ -74,8 +74,8 @@
 
   <recv request="ACK" rrs="true">
     <action>
-      <ereg regexp=": (.*)" search_in="hdr" header="From" check_it="false" assign_to="_,alice"/>
-      <ereg regexp=": (.*)" search_in="hdr" header="To" check_it="false" assign_to="_,bob"/>
+      <ereg regexp=".*" search_in="hdr" header="From:" check_it="false" assign_to="alice"/>
+      <ereg regexp=".*" search_in="hdr" header="To:" check_it="false" assign_to="bob"/>
     </action>
   </recv>
 
@@ -145,7 +145,12 @@
     ]]>
   </send>
 
-  <recv request="INVITE" rrs="true"/>
+  <recv request="INVITE" rrs="true">
+    <action>
+      <ereg regexp=".*" search_in="hdr" header="Via:" occurrence="1" check_it="false" assign_to="invitevia1"/>
+      <ereg regexp=".*" search_in="hdr" header="Via:" occurrence="2" check_it="false" assign_to="invitevia2"/>
+    </action>
+  </recv>
 
   <send>
     <![CDATA[
@@ -204,7 +209,7 @@
     <![CDATA[
 
       SIP/2.0 487 Request Terminated
-      [last_Via:]
+      Via: [$invitevia1], [$invitevia2]
       [last_Record-Route:]
       [last_From:]
       [last_To:];tag=[pid]Bob[call_number]

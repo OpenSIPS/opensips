@@ -9,10 +9,17 @@
   - alice INVITEs bob, bob picks up
   - bob reINVITEs alice, alice OKs
   - alice hangs up
+
   - alice INVITEs charlie, gets 404
+
+  - alice INVITEs bob, gets 180
+  - alice CANCELs, gets 487
 
   Usage:
     sipp -m 1 -sf test-alice-5061.xml -p 5061 127.0.0.1
+
+  (Note: we require a post 3.4 version of sipp that has get_peer_tag
+  patched to properly read tags from addr-spec (no name-addr) From.)
 
   -->
 
@@ -232,7 +239,7 @@
     <![CDATA[
 
       ACK sip:bob@[remote_ip]:[remote_port] SIP/2.0
-      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      [last_Via:]
       From: sip:alice@[local_ip]:[local_port];tag=[pid]Alice[call_number]
       To: sip:bob@[remote_ip]:[remote_port][peer_tag_param]
       Contact: sip:alice@[local_ip]:[local_port]
