@@ -1584,21 +1584,13 @@ error:
 char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	unsigned int *returned_len, struct socket_info *sock,int flags)
 {
-	unsigned int new_len, via_len, body_delta, len;
+	unsigned int new_len, body_delta, len;
 	char *new_buf, *buf;
-	unsigned offset, s_offset, via_offset;
+	unsigned int offset, s_offset;
 
 	buf=msg->buf;
 	len=msg->len;
 	new_buf=0;
-	/* we must remove the first via */
-	if (msg->via1->next) {
-		via_len=msg->via1->bsize;
-		via_offset=msg->h_via1->body.s-buf;
-	} else {
-		via_len=msg->h_via1->len;
-		via_offset=msg->h_via1->name.s-buf;
-	}
 
 	/* Calculate message body difference and adjust
 	 * Content-Length
@@ -1610,10 +1602,22 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		goto error;
 	}
 
-	/* remove the first via*/
-	if (!(flags&MSG_TRANS_NOVIA_FLAG) && del_lump( msg, via_offset, via_len, HDR_VIA_T)==0){
-		LM_ERR("failed to remove first via\n");
-		goto error;
+	/* remove the first via */
+	if (!(flags & MSG_TRANS_NOVIA_FLAG)) {
+		unsigned int via_len, via_offset;
+
+		if (msg->via1->next) {
+			via_len = msg->via1->bsize;
+			via_offset = msg->h_via1->body.s-buf;
+		} else {
+			via_len = msg->h_via1->len;
+			via_offset = msg->h_via1->name.s-buf;
+		}
+
+		if (del_lump(msg, via_offset, via_len, HDR_VIA_T) == 0) {
+			LM_ERR("failed to remove first via\n");
+			goto error;
+		}
 	}
 
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock);
