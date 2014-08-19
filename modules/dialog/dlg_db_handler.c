@@ -582,7 +582,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			next_id = d_table->entries[dlg->h_entry].next_id;
 
 			d_table->entries[dlg->h_entry].next_id =
-				(next_id < dlg->h_id) ? (dlg->h_id+1) : next_id;
+				(next_id <= dlg->h_id) ? (dlg->h_id+1) : next_id;
 
 			GET_STR_VALUE(to_tag, values, 5, 1, 1);
 
@@ -1580,7 +1580,7 @@ static int sync_dlg_db_mem(void)
 				next_id = d_table->entries[dlg->h_entry].next_id;
 
 				d_table->entries[dlg->h_entry].next_id =
-					(next_id < dlg->h_id) ? (dlg->h_id+1) : next_id;
+					(next_id <= dlg->h_id) ? (dlg->h_id+1) : next_id;
 
 				dlg->start_ts	= VAL_INT(values+6);
 
