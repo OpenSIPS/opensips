@@ -189,7 +189,6 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 				for (el=th_param_list;el;el=el->next) {
 					/* we just iterate over the unknown params */
 					for (i=0;i<ctu.u_params_no;i++) {
-						LM_INFO("ZZZ - found param [%.*s]=[%.*s]\n",ctu.u_name[i].len,ctu.u_name[i].s,ctu.u_val[i].len,ctu.u_val[i].s);
 						if (el->param_name.len == ctu.u_name[i].len &&
 						(memcmp(el->param_name.s,ctu.u_name[i].s,
 						       el->param_name.len) == 0)) {
