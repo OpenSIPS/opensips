@@ -435,6 +435,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	return new_rule;
 
 err:
+	if(match_comp)	wrap_pcre_free(match_comp);
 	if(subst_comp)	wrap_pcre_free(subst_comp);
 	if(repl_comp)	repl_expr_free(repl_comp);
 	if(new_rule)	destroy_rule(new_rule);
