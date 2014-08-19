@@ -138,7 +138,7 @@ int dlg_replicated_create(struct dlg_cell *cell, str *ftag, str *ttag, int safe)
 	next_id = d_table->entries[dlg->h_entry].next_id;
 
 	d_table->entries[dlg->h_entry].next_id =
-		(next_id < dlg->h_id) ? (dlg->h_id + 1) : next_id;
+		(next_id <= dlg->h_id) ? (dlg->h_id + 1) : next_id;
 
 	if (bin_pop_str(&sock))
 		goto pre_linking_error;
