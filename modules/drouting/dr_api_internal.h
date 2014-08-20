@@ -32,6 +32,6 @@
 
 int load_dr (struct dr_binds *drb);
 rt_info_t* find_rule_by_prefix_unsafe(ptree_t *pt, ptree_node_t *noprefix,
-		str prefix, unsigned int grp_id);
+		str prefix, unsigned int grp_id, unsigned int *matched_len);
 
 #endif

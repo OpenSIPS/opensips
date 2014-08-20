@@ -42,12 +42,12 @@ static int add_rule_api(dr_head_p partition,
 
 /* Warning this function assumes the lock is already taken */
 rt_info_t* find_rule_by_prefix_unsafe(ptree_t *pt, ptree_node_t *noprefix,
-		str prefix, unsigned int grp_id)
+		str prefix, unsigned int grp_id, unsigned int *matched_len)
 {
-	unsigned int matched_len, rule_idx = 0;
+	unsigned int rule_idx = 0;
 	rt_info_t *rt_info;
 
-	rt_info = get_prefix(pt, &prefix, grp_id,&matched_len, &rule_idx);
+	rt_info = get_prefix(pt, &prefix, grp_id,matched_len, &rule_idx);
 
 	if (rt_info==NULL) {
 		LM_DBG("no matching for prefix \"%.*s\"\n",
@@ -75,9 +75,11 @@ int load_dr (struct dr_binds *drb)
 static void *match_number (dr_head_p partition, int grp_id, const str *number)
 {
 	rt_info_t *route;
+	unsigned int matched_len;
 
 	lock_start_read( partition->ref_lock );
-	route = find_rule_by_prefix_unsafe(partition->pt, &(partition->noprefix), *number, grp_id);
+	route = find_rule_by_prefix_unsafe(partition->pt, &(partition->noprefix),
+			*number, grp_id, &matched_len);
 	if (route == NULL) {
 		lock_stop_read(partition->ref_lock );
 		return NULL;
@@ -120,7 +122,6 @@ error:
 static void free_dr_head(dr_head_p partition)
 {
 	int j;
-	lock_start_read(partition->ref_lock);
 	del_tree(partition->pt);
 	if(NULL!=partition->noprefix.rg) {
 		for(j=0;j<partition->noprefix.rg_pos;j++) {
@@ -132,7 +133,6 @@ static void free_dr_head(dr_head_p partition)
 		shm_free(partition->noprefix.rg);
 		partition->noprefix.rg = 0;
 	}
-	lock_stop_read(partition->ref_lock);
 	lock_destroy_rw(partition->ref_lock);
 	shm_free(partition);
 }
