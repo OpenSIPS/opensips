@@ -1067,6 +1067,9 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
+		SET_BIGINT_VALUE(values, (((long long)cell->h_entry << 32) |
+					 cell->h_id));
+
 		set_final_update_cols(values+18, cell, 0);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
