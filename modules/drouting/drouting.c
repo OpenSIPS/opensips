@@ -2454,7 +2454,7 @@ static int do_routing(struct sip_msg* msg, dr_part_group_t * part_group,
 	pgw_list_t *wl_list;
 	unsigned int prefix_len;
 	unsigned int rule_idx;
-	struct head_db * current_partition;
+	struct head_db *current_partition=NULL;
 	unsigned short wl_len;
 	dr_group_t * drg;
 	str username;
