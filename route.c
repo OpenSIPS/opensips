@@ -447,7 +447,7 @@ static int fix_actions(struct action* a)
 				break;
 			case MODULE_T:
 				cmd = (cmd_export_t*)t->elem[0].u.data;
-				LM_DBG("fixing %s, line %d\n", cmd->name, t->line);
+				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
 				if (cmd->fixup){
 					if (cmd->param_no==0){
 						ret=cmd->fixup( 0, 0);
@@ -873,7 +873,7 @@ static int fix_actions(struct action* a)
 	}
 	return 0;
 error:
-	LM_ERR("fixing failed (code=%d) at cfg line %d\n", ret, t->line);
+	LM_ERR("fixing failed (code=%d) at %s:%d\n", ret, t->file, t->line);
 	return ret;
 }
 
