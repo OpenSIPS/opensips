@@ -865,25 +865,30 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 	if(sp.len<=0 || !sp.s)
 	{
 		LM_ERR("bad state value\n");
-		return init_mi_tree( 500, "bad state value", 15);
+		return init_mi_tree( 500, MI_SSTR("Bad state value") );
 	}
 
-	state = 1;
 	if(sp.s[0]=='0' || sp.s[0]=='I' || sp.s[0]=='i')
 		state = 0;
+	else if(sp.s[0]=='p' || sp.s[0]=='P' || sp.s[0]=='2')
+		state = 2;
+	else if(sp.s[0]=='a' || sp.s[0]=='A' || sp.s[0]=='1')
+		state = 1;
+	else
+		return init_mi_tree( 500, MI_SSTR("Bad state value") );
+
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 	sp = node->value;
 	if(sp.s == NULL)
 	{
-		return init_mi_tree(500, "group not found", 15);
+		return init_mi_tree(500, MI_SSTR("group not found"));
 	}
-
 	if(str2int(&sp, &group))
 	{
 		LM_ERR("bad group value\n");
-		return init_mi_tree( 500, "bad group value", 16);
+		return init_mi_tree( 500, MI_SSTR("bad group value"));
 	}
 
 	node= node->next;
@@ -893,18 +898,26 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 	sp = node->value;
 	if(sp.s == NULL)
 	{
-		return init_mi_tree(500,"address not found", 18 );
+		return init_mi_tree(500, MI_SSTR("address not found"));
 	}
 
-	if(state==1)
-		ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 0);
-	else
+	if (state==1) {
+		/* set active */
+		ret = ds_set_state(group, &sp, DS_INACTIVE_DST|DS_PROBING_DST, 0);
+	} else if (state==2) {
+		/* set probing */
+		ret = ds_set_state(group, &sp, DS_PROBING_DST, 1);
+		if (ret==0)
+			ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 0);
+	} else {
+		/* set inactive */
 		ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 1);
+		if (ret == 0)
+			ret = ds_set_state(group, &sp, DS_PROBING_DST, 0);
+	}
 
 	if(ret!=0)
-	{
-		return init_mi_tree(404, "destination not found", 21);
-	}
+		return init_mi_tree(404, MI_SSTR("destination not found"));
 
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
@@ -931,15 +944,12 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 
 #define MI_ERR_RELOAD 			"ERROR Reloading data"
 #define MI_ERR_RELOAD_LEN 		(sizeof(MI_ERR_RELOAD)-1)
-#define MI_NOT_SUPPORTED		"DB mode not configured"
-#define MI_NOT_SUPPORTED_LEN 	(sizeof(MI_NOT_SUPPORTED)-1)
-
 static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 {
 	if (ds_reload_db()<0)
 		return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
 
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	return init_mi_tree(200, MI_SSTR(MI_OK_S));
 }
 
 
