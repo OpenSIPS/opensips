@@ -1235,6 +1235,10 @@ static int w_ds_mark_dst1(struct sip_msg *msg, char *flags)
 
 /************************** MI STUFF ************************/
 
+#define MI_ERR_RELOAD 			"ERROR Reloading data"
+#define MI_NOT_SUPPORTED		"DB mode not configured"
+#define MI_UNK_PARTITION		"ERROR Unknown partition"
+
 static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 {
 	str sp, partition_name;
@@ -1250,36 +1254,42 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 	if(sp.len<=0 || !sp.s)
 	{
 		LM_ERR("bad state value\n");
-		return init_mi_tree( 500, "bad state value", 15);
+		return init_mi_tree( 500, MI_SSTR("Bad state value") );
 	}
 
-	state = 1;
 	if(sp.s[0]=='0' || sp.s[0]=='I' || sp.s[0]=='i')
 		state = 0;
+	else if(sp.s[0]=='p' || sp.s[0]=='P' || sp.s[0]=='2')
+		state = 2;
+	else if(sp.s[0]=='a' || sp.s[0]=='A' || sp.s[0]=='1')
+		state = 1;
+	else
+		return init_mi_tree( 500, MI_SSTR("Bad state value") );
+
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 	sp = node->value;
 	if(sp.s == NULL)
 	{
-		return init_mi_tree(500, "group not found", 15);
+		return init_mi_tree(500, MI_SSTR("group not found"));
 	}
 
 	if (split_partition_argument(&sp, &partition_name) != 0) {
 		LM_ERR("bad group format\n");
-		return init_mi_tree(500, "bad group format", 17);
+		return init_mi_tree(500, MI_SSTR("bad group format"));
 	}
 
 	partition = find_partition_by_name(&partition_name);
 	if (partition == NULL) {
 		LM_ERR("partition does not exist\n");
-		return init_mi_tree(500, "partition does not exist", 25);
+		return init_mi_tree(404, MI_SSTR(MI_UNK_PARTITION) );
 	}
 
 	if(str2int(&sp, &group))
 	{
 		LM_ERR("bad group value\n");
-		return init_mi_tree( 500, "bad group value", 16);
+		return init_mi_tree( 500, MI_SSTR("bad group value"));
 	}
 
 	node= node->next;
@@ -1289,18 +1299,27 @@ static struct mi_root* ds_mi_set(struct mi_root* cmd_tree, void* param)
 	sp = node->value;
 	if(sp.s == NULL)
 	{
-		return init_mi_tree(500,"address not found", 18 );
+		return init_mi_tree(500, MI_SSTR("address not found"));
 	}
 
-	if(state==1)
-		ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 0, partition);
-	else
+	if (state==1) {
+		/* set active */
+		ret = ds_set_state(group, &sp, DS_INACTIVE_DST|DS_PROBING_DST,
+			0, partition);
+	} else if (state==2) {
+		/* set probing */
+		ret = ds_set_state(group, &sp, DS_PROBING_DST, 1, partition);
+		if (ret==0)
+			ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 0, partition);
+	} else {
+		/* set inactive */
 		ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 1, partition);
+		if (ret == 0)
+			ret = ds_set_state(group, &sp, DS_PROBING_DST, 0, partition);
+	}
 
 	if(ret!=0)
-	{
-		return init_mi_tree(404, "destination not found", 21);
-	}
+		return init_mi_tree(404, MI_SSTR("destination not found"));
 
 	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 }
@@ -1332,12 +1351,6 @@ static struct mi_root* ds_mi_list(struct mi_root* cmd_tree, void* param)
 	return rpl_tree;
 }
 
-#define MI_ERR_RELOAD 			"ERROR Reloading data"
-#define MI_ERR_RELOAD_LEN 		(sizeof(MI_ERR_RELOAD)-1)
-#define MI_NOT_SUPPORTED		"DB mode not configured"
-#define MI_NOT_SUPPORTED_LEN 	(sizeof(MI_NOT_SUPPORTED)-1)
-#define MI_UNK_PARTITION		"ERROR Unknown partition"
-#define MI_UNK_PARTITION_LEN	(sizeof(MI_UNK_PARTITION) - 1)
 
 static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 {
@@ -1345,19 +1358,19 @@ static struct mi_root* ds_mi_reload(struct mi_root* cmd_tree, void* param)
 	if(node != NULL){
 		ds_partition_t *partition = find_partition_by_name(&node->value);
 		if (partition == NULL)
-			return init_mi_tree(500, MI_UNK_PARTITION, MI_UNK_PARTITION_LEN);
+			return init_mi_tree(500, MI_SSTR(MI_UNK_PARTITION) );
 		if (ds_reload_db(partition) < 0)
-			return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
+			return init_mi_tree(500, MI_SSTR(MI_ERR_RELOAD));
 		else
-			return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+			return init_mi_tree(200, MI_SSTR(MI_OK_S) );
 	}
 
 	ds_partition_t *part_it;
 	for (part_it = partitions; part_it; part_it = part_it->next)
 		if (ds_reload_db(part_it)<0)
-			return init_mi_tree(500, MI_ERR_RELOAD, MI_ERR_RELOAD_LEN);
+			return init_mi_tree(500, MI_SSTR(MI_ERR_RELOAD));
 
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	return init_mi_tree(200, MI_SSTR(MI_OK_S));
 }
 
 

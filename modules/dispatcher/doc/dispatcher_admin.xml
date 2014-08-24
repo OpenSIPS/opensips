@@ -1063,11 +1063,11 @@ if (ds_is_in_list("$rd", "$rp", "part2:2")) {
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>_state_ : state of the destination address</para>
-				  <itemizedlist>
-					 <listitem><para> <quote>a</quote>: active </para></listitem>
-					 <listitem><para> <quote>i</quote>: inactive </para></listitem>
-				<listitem><para> <quote>p</quote>: probing </para></listitem>
-				  </itemizedlist>
+				<itemizedlist>
+					<listitem><para> <quote>a</quote>: active </para></listitem>
+					<listitem><para> <quote>i</quote>: inactive </para></listitem>
+					<listitem><para> <quote>p</quote>: probing </para></listitem>
+				</itemizedlist>
 			</listitem>
 
 			<listitem><para>_group_: partition name followed by colon
