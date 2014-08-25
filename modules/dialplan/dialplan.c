@@ -214,12 +214,14 @@ static int dp_head_insert(int dp_insert_type, str content,
 
 	/*First Insertion*/
 	if (!dp_hlist) {
-		dp_hlist = pkg_malloc(sizeof(dp_head_t));
-
+		dp_hlist = pkg_malloc(sizeof *dp_hlist + partition.len);
 		if (!dp_hlist) {
 			LM_ERR("No more pkg mem\n");
 			return -1;
 		}
+		memset(dp_hlist, 0, sizeof *dp_hlist);
+
+		dp_hlist->partition.s = (char *) (dp_hlist + 1);
 		dp_str_copy(&dp_hlist->partition, &partition);
 
 		h_insert( dp_insert_type, &dp_hlist->dp_db_url,
