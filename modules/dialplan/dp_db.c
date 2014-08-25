@@ -174,13 +174,6 @@ int init_data(void)
 				start->partition.len, start->partition.s);
 		dp_add_connection(start);
 
-		if (start->partition.s)
-			pkg_free(start->partition.s);
-		if (start->dp_db_url.s)
-			pkg_free(start->dp_db_url.s);
-		if (start->dp_table_name.s)
-			pkg_free(start->dp_table_name.s);
-
 		tmp = start;
 	}
 	pkg_free(tmp);
@@ -783,7 +776,7 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 
 	if (test_db(el) != 0) {
 		LM_ERR("Unable to test db\n");
-		pkg_free(el);
+		shm_free(el);
 		return NULL;
 	}
 
