@@ -186,7 +186,7 @@ void destroy_data(void)
 {
 	dp_connection_list_t *el, *next;
 
-	LM_ERR("Destroying data\n");
+	LM_DBG("Destroying data\n");
 	for (el = dp_conns; el && (next = el->next, 1); el = next) {
 		destroy_hash(&el->hash[0]);
 		destroy_hash(&el->hash[1]);
