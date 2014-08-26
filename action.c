@@ -443,6 +443,31 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 	ret=E_BUG;
 	switch ((unsigned char)a->type){
+		case ASSERT_T:
+				if (enable_asserts) {
+					/* if null expr => ignore if? */
+					if ((a->elem[0].type==EXPR_ST)&&a->elem[0].u.data){
+						v=eval_expr((struct expr*)a->elem[0].u.data, msg, 0);
+
+						ret=1;  /*default is continue */
+
+						if (v<=0) {
+							ret=0;
+
+							LM_CRIT("ASSERTION FAILED - %s\n", a->elem[1].u.string);
+
+							if (abort_on_assert) {
+								abort();
+							} else {
+								set_err_info(OSER_EC_ASSERT, OSER_EL_CRITIC, "assertion failed");
+								set_err_reply(500, "server error");
+
+								run_error_route(msg,0);
+							}
+						}
+					}
+				}
+			break;
 		case DROP_T:
 				script_trace("core", "drop", msg, a->file, a->line) ;
 				action_flags |= ACT_FL_DROP;

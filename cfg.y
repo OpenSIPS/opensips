@@ -221,6 +221,7 @@ extern char *finame;
 %token FORWARD
 %token SEND
 %token DROP
+%token ASSERT
 %token EXIT
 %token RETURN
 %token LOG_TOK
@@ -316,6 +317,8 @@ extern char *finame;
 
 /* config vars. */
 %token DEBUG
+%token ENABLE_ASSERTS
+%token ABORT_ON_ASSERT
 %token FORK
 %token LOGSTDERROR
 %token LOGFACILITY
@@ -658,6 +661,10 @@ assign_stm: DEBUG EQUAL snumber {
 					*debug=$3;
 			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
+		| ENABLE_ASSERTS EQUAL NUMBER  { enable_asserts=$3; }
+		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
+		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
+		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
 		| FORK  EQUAL NUMBER { dont_fork= !dont_fork ? ! $3:1; }
 		| FORK  EQUAL error  { yyerror("boolean value expected"); }
 		| LOGSTDERROR EQUAL NUMBER { if (!config_check) log_stderr=$3; }
@@ -2530,6 +2537,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
 													"argument"); }
+		| ASSERT LPAREN exp COMMA STRING RPAREN	{mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5); }
 		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }

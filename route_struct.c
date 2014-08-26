@@ -414,6 +414,9 @@ void print_action(struct action* t)
 		case SEND_T:
 				LM_DBG("send(");
 				break;
+		case ASSERT_T:
+				LM_DBG("assert(");
+				break;
 		case DROP_T:
 				LM_DBG("drop(");
 				break;

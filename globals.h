@@ -171,4 +171,7 @@ extern char *db_version_table;
 extern char *db_default_url;
 
 extern int disable_503_translation;
+
+extern int enable_asserts;
+extern int abort_on_assert;
 #endif
