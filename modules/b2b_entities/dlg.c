@@ -2526,16 +2526,15 @@ dummy_reply:
 				if(leg)
 				{
 					LM_DBG("Found existing leg  - Nothing to update\n");
-					goto done;
+				} else {
+					leg = b2b_add_leg(dlg, msg, &to_tag);
+					if(leg == NULL)
+					{
+						LM_ERR("Failed to add dialog leg\n");
+						goto error;
+					}
+					UPDATE_DBFLAG(dlg);
 				}
-
-				leg = b2b_add_leg(dlg, msg, &to_tag);
-				if(leg == NULL)
-				{
-					LM_ERR("Failed to add dialog leg\n");
-					goto error;
-				}
-				UPDATE_DBFLAG(dlg);
 				/* PRACK handling */
 				/* if the provisional reply contains a
 				 * Require: 100rel header -> send PRACK */
