@@ -218,6 +218,10 @@ int sig_flag = 0;              /* last signal received */
 
 int dont_fork = 0;
 int no_daemon_mode = 0;
+/* assertion statements in script. disabled by default */
+int enable_asserts = 0;
+/* abort process on failed assertion. disabled by default */
+int abort_on_assert = 0;
 /* start by logging to stderr */
 int log_stderr = 1;
 /* log facility (see syslog(3)) */
