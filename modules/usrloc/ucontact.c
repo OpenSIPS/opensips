@@ -301,7 +301,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		        _c->next_hop.name.len, _c->next_hop.name.s);
 
 	ul_raise_contact_event(ei_c_update_id, &_c->c, &_c->callid,
-			&_c->received, _c->cseq);
+			&_c->received, _c->aor, _c->cseq);
 
 	return 0;
 }

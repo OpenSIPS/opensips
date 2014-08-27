@@ -140,6 +140,7 @@ static evi_params_p ul_event_params;
 static evi_param_p ul_aor_param;
 static evi_params_p ul_contact_event_params;
 static evi_param_p ul_c_addr_param, ul_c_callid_param;
+static evi_param_p ul_c_aor_param;
 static evi_param_p ul_c_recv_param;
 static evi_param_p ul_c_cseq_param;
 
@@ -203,6 +204,12 @@ int ul_event_init(void)
 		return -1;
 	}
 
+	ul_c_aor_param = evi_param_create(ul_contact_event_params, &ei_aor_name);
+	if (!ul_c_aor_param) {
+		LM_ERR("cannot create contact aor parameter\n");
+		return -1;
+	}
+
 	ul_c_callid_param = evi_param_create(ul_contact_event_params, &ei_callid_name);
 	if (!ul_c_callid_param) {
 		LM_ERR("cannot create callid parameter\n");
@@ -242,7 +249,7 @@ static void ul_raise_event(event_id_t _e, struct urecord* _r)
 }
 
 void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
-		int cseq)
+		str *aor, int cseq)
 {
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
@@ -250,6 +257,11 @@ void ul_raise_contact_event(event_id_t _e, str *addr, str *callid, str *recv,
 	}
 	if (evi_param_set_str(ul_c_addr_param, addr) < 0) {
 		LM_ERR("cannot set contact address parameter\n");
+		return;
+	}
+
+	if (evi_param_set_str(ul_c_aor_param, aor) < 0) {
+		LM_ERR("cannot set contact aor parameter\n");
 		return;
 	}
 
