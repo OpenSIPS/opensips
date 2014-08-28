@@ -1520,21 +1520,21 @@ static int do_routing(struct sip_msg* msg, dr_group_t *drg, int flags,
 	if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 		/* not internally triggered, so get data from SIP msg */
 
-		/* get the username from FROM_HDR */
-		if (parse_from_header(msg)!=0) {
-			LM_ERR("unable to parse from hdr\n");
-			goto error1;
-		}
-		from = (struct to_body*)msg->from->parsed;
-		/* parse uri */
-		if (parse_uri( from->uri.s, from->uri.len, &uri)!=0) {
-			LM_ERR("unable to parse from uri\n");
-			goto error1;
-		}
-
 		/* get user's routing group */
 		if(drg==NULL)
 		{
+			/* get the username from FROM_HDR */
+			if (parse_from_header(msg)!=0) {
+				LM_ERR("unable to parse from hdr\n");
+				goto error1;
+			}
+			from = (struct to_body*)msg->from->parsed;
+			/* parse uri */
+			if (parse_uri( from->uri.s, from->uri.len, &uri)!=0) {
+				LM_ERR("unable to parse from uri\n");
+				goto error1;
+			}
+
 			grp_id = get_group_id( &uri );
 			if (grp_id<0) {
 				LM_ERR("failed to get group id\n");
