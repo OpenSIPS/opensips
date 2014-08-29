@@ -465,6 +465,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		}
 		return;
 	}
+	if (type==TMCB_RESPONSE_OUT) {
+		if (dlg->state == DLG_STATE_CONFIRMED_NA && replication_dests)
+			replicate_dialog_created(dlg);
+	}
 
 	if (type==TMCB_TRANS_DELETED)
 		event = DLG_EVENT_TDEL;
@@ -531,9 +535,6 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog confirmed */
 		run_dlg_callbacks( DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM, 0);
-
-		if (replication_dests)
-			replicate_dialog_created(dlg);
 
 		if (old_state==DLG_STATE_EARLY)
 			if_update_stat(dlg_enable_stats, early_dlgs, -1);
@@ -836,7 +837,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 {
 	struct dlg_cell *dlg;
 	str s;
-	int extra_ref;
+	int extra_ref,types;
 
 	/* module is stricly designed for dialog calls */
 	if (req->first_line.u.request.method_value!=METHOD_INVITE)
@@ -900,9 +901,14 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		goto error;
 	}
 
-	if ( d_tmb.register_tmcb( req, t,
-				TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED|TMCB_TRANS_CANCELLED,
-				dlg_onreply, (void*)dlg, unreference_dialog_create)<0 ) {
+	types = TMCB_RESPONSE_PRE_OUT|TMCB_RESPONSE_FWDED|TMCB_TRANS_CANCELLED;
+	/* replicate dialogs after the 200 OK was fwded - speed & after all msg
+	 * processing was done ( eg. ACC ) */
+	if (replication_dests)
+		types |= TMCB_RESPONSE_OUT;
+
+	if ( d_tmb.register_tmcb( req, t,types,dlg_onreply, 
+	(void*)dlg, unreference_dialog_create)<0 ) {
 		LM_ERR("failed to register TMCB\n");
 		goto error;
 	}
