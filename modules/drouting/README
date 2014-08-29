@@ -1439,14 +1439,15 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
 1.5.5. dr_number_routing
 
-   Gets the list of the gateways / carriers to which a number
-   would be routed when using the do_routing function
-     * if use_partition is set to 0 the function will have 3
+   Gets the matched prefix along with the list of the gateways /
+   carriers to which a number would be routed when using the
+   do_routing function
+     * if use_partition is set to 1 the function will have 3
        parameters:
           + partition name
           + group id - the group id of the rules to check against
           + number - the number to test against
-     * if use_partition is set to 1 the function will have 2
+     * if use_partition is set to 0 the function will have 2
        parameters:
           + group id - the group id of the rules to check against
           + number - the number to test against

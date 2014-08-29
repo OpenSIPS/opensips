@@ -2065,13 +2065,13 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 	<section>
 		<title><varname>dr_number_routing</varname></title>
 		<para>
-			Gets the list of the gateways / carriers to which a number would be routed when using
-			the do_routing function
+			Gets the matched prefix along with the  list of the gateways / carriers to which a number 
+			would be routed when using the do_routing function
 		</para>
 		<itemizedlist>
 			<listitem>
 				<para>
-					if <varname>use_partition</varname> is set to 0 the function
+					if <varname>use_partition</varname> is set to 1 the function
 					will have 3 parameters:
 					<itemizedlist>
 						<listitem>
@@ -2088,7 +2088,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 			</listitem>
 			<listitem>
 				<para>
-					if <varname>use_partition</varname> is set to 1 the function will have 2 parameters:
+					if <varname>use_partition</varname> is set to 0 the function will have 2 parameters:
 					<itemizedlist>
 						<listitem>
 							group id - the group id of the rules to check against

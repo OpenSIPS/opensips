@@ -4592,9 +4592,9 @@ error:
 
 /* Warning this function assumes the lock is already taken */
 rt_info_t* find_rule_by_prefix_unsafe(struct head_db *partition,
-		str prefix, int grp_id)
+		str prefix, int grp_id,unsigned int * matched_len)
 {
-	unsigned int matched_len, rule_idx = 0;
+	unsigned int rule_idx = 0;
 	rt_info_t *rt_info;
 
 	if (grp_id < 0) {
@@ -4605,7 +4605,7 @@ rt_info_t* find_rule_by_prefix_unsafe(struct head_db *partition,
 	}
 
 	rt_info = get_prefix( (*(partition->rdata))->pt,
-			&prefix, (unsigned int)grp_id,&matched_len, &rule_idx);
+			&prefix, (unsigned int)grp_id,matched_len, &rule_idx);
 
 	if (rt_info==NULL) {
 		LM_DBG("no matching for prefix \"%.*s\"\n",
@@ -4618,7 +4618,6 @@ rt_info_t* find_rule_by_prefix_unsafe(struct head_db *partition,
 			LM_DBG("no prefixless matching for "
 					"grp %d\n", grp_id);
 	}
-	lock_stop_read(partition->ref_lock );
 	return rt_info;
 }
 
@@ -4628,6 +4627,8 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	struct head_db *partition;
 	str s;
 	int grp_id;
+	unsigned int matched_len;
+	struct mi_node *prefix_node;
 	rt_info_t *route;
 
 	if (node == NULL)
@@ -4658,7 +4659,7 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	}
 
 	lock_start_read( partition->ref_lock );
-	route = find_rule_by_prefix_unsafe(partition, node->value, grp_id);
+	route = find_rule_by_prefix_unsafe(partition, node->value, grp_id,&matched_len);
 	if (route == NULL){
 		lock_stop_read( partition->ref_lock );
 		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
@@ -4669,13 +4670,23 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 		lock_stop_read( partition->ref_lock );
 		return 0;
 	}
-	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	unsigned int i;
 	static const str gw_str = str_init("GATEWAY");
 	static const str carrier_str = str_init("CARRIER");
+	static const str matched_str = str_init("Matched Prefix");
 	str chosen_desc;
 	str chosen_id;
+	if ((prefix_node = add_mi_node_child(&rpl_tree->node, 0, matched_str.s,
+		matched_str.len, node->value.s, matched_len)) == NULL) {
+		LM_ERR("failed to add node\n");
+		lock_stop_read( partition->ref_lock );
+		free_mi_tree(rpl_tree);
+		return 0;
+	}
+
+	prefix_node->flags |= MI_IS_ARRAY;
+
 	for (i = 0; i < route->pgwa_len; ++i){
 		if (route->pgwl[i].is_carrier) {
 			chosen_desc = carrier_str;
@@ -4686,7 +4697,7 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 			chosen_id = route->pgwl[i].dst.gw->id;
 		}
 
-		if (add_mi_node_child(&rpl_tree->node, 0, chosen_desc.s,
+		if (add_mi_node_child(prefix_node, 0, chosen_desc.s,
 					chosen_desc.len, chosen_id.s, chosen_id.len) == NULL) {
 
 			LM_ERR("failed to add node\n");
