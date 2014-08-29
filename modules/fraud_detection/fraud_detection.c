@@ -5,12 +5,47 @@
 
 #include "frd_stats.h"
 
+
+#define FRD_PID_COL                   "profileid"
+#define FRD_PREFIX_COL                "prefix"
+#define FRD_START_H_COL               "start_hour"
+#define FRD_END_H_COL                 "end_hour"
+#define FRD_DAYS_COL                  "daysoftheweek"
+#define FRD_CPM_THRESH_WARN_COL       "cpm_warning"
+#define FRD_CPM_THRESH_CRIT_COL       "cpm_critical"
+#define FRD_CALLDUR_THRESH_WARN_COL   "call_duration_warning"
+#define FRD_CALLDUR_THRESH_CRIT_COL   "call_duration_critical"
+#define FRD_TOTALC_THRESH_WARN_COL    "total_calls_warning"
+#define FRD_TOTALC_THRESH_CRIT_COL    "total_calls_critical"
+#define FRD_CONCALLS_THRESH_WARN_COL  "concurrent_calls_warning"
+#define FRD_CONCALLS_THRESH_CRIT_COL  "concurrent_calls_critical"
+#define FRD_SEQCALLS_THRESH_WARN_COL  "sequential_calls_warning"
+#define FRD_SEQCALLS_THRESH_CRIT_COL  "sequential_calls_critical"
+
+
+static str db_url;
+static str table_name = str_init("fraud_detection");
+
+static str pid_col = str_init(FRD_PID_COL);
+static str prefix_col = str_init(FRD_PREFIX_COL);
+static str start_h_col = str_init(FRD_START_H_COL);
+static str end_h_col = str_init(FRD_END_H_COL);
+static str days_col = str_init(FRD_DAYS_COL);
+static str cpm_thresh_warn_col = str_init(FRD_CPM_THRESH_WARN_COL);
+static str cpm_thresh_crit_col = str_init(FRD_CPM_THRESH_CRIT_COL);
+static str calldur_thresh_warn_col = str_init(FRD_CALLDUR_THRESH_WARN_COL);
+static str calldur_thresh_crit_col = str_init(FRD_CALLDUR_THRESH_CRIT_COL);
+static str totalc_thresh_warn_col = str_init(FRD_TOTALC_THRESH_WARN_COL);
+static str totalc_thresh_crit_col = str_init(FRD_TOTALC_THRESH_CRIT_COL);
+static str concalls_thresh_warn_col = str_init(FRD_CONCALLS_THRESH_WARN_COL);
+static str concalls_thresh_crit_col = str_init(FRD_CONCALLS_THRESH_CRIT_COL);
+static str seqcalls_thresh_warn_col = str_init(FRD_SEQCALLS_THRESH_WARN_COL);
+static str seqcalls_thresh_crit_col = str_init(FRD_SEQCALLS_THRESH_CRIT_COL);
+
 static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-static str db_url;
-static str table_name=str_init("new_module");
 
 static db_func_t db_funcs;
 static db_con_t *db_con;
@@ -24,7 +59,22 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
-	{ "db_url",     STR_PARAM, &db_url.s},
+	{"db_url",                      STR_PARAM, &db_url.s},
+	{"pid_col",                     STR_PARAM, &pid_col.s},
+	{"prefix_col",                  STR_PARAM, &prefix_col.s},
+	{"start_h_col",                 STR_PARAM, &start_h_col.s},
+	{"end_h_col",                   STR_PARAM, &end_h_col.s},
+	{"days_col",                    STR_PARAM, &days_col.s},
+	{"cpm_thresh_warn_col",         STR_PARAM, &cpm_thresh_warn_col.s},
+	{"cpm_thresh_crit_col",         STR_PARAM, &cpm_thresh_crit_col.s},
+	{"calldur_thresh_warn_col",     STR_PARAM, &calldur_thresh_warn_col.s},
+	{"calldur_thresh_crit_col",     STR_PARAM, &calldur_thresh_crit_col.s},
+	{"totalc_thresh_warn_col",      STR_PARAM, &totalc_thresh_warn_col.s},
+	{"totalc_thresh_crit_col",      STR_PARAM, &totalc_thresh_crit_col.s},
+	{"concalls_thresh_warn_col",    STR_PARAM, &concalls_thresh_warn_col.s},
+	{"concalls_thresh_crit_col",    STR_PARAM, &concalls_thresh_crit_col.s},
+	{"seqcalls_thresh_warn_col",    STR_PARAM, &seqcalls_thresh_warn_col.s},
+	{"seqcalls_thresh_crit_col",    STR_PARAM, &seqcalls_thresh_crit_col.s},
 	{0,0,0}
 };
 
