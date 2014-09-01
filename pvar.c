@@ -126,6 +126,9 @@ static str str_startup_route    = { _str_startup_route_hlp, 13 };
 static char _str_timer_route_hlp[] = {'t','i','m','e','r','_','r','o','u','t','e',0};
 static str str_timer_route    = { _str_timer_route_hlp, 11 };
 
+static char _str_event_route_hlp[] = {'e','v','e','n','t','_','r','o','u','t','e',0};
+static str str_event_route    = { _str_event_route_hlp, 11 };
+
 int _pv_pid = 0;
 
 #define PV_FIELD_DELIM ", "
@@ -1187,6 +1190,8 @@ static int pv_get_route_type(struct sip_msg *msg, pv_param_t *param,
 		case TIMER_ROUTE:
 			s = str_timer_route;
 			break;
+		case EVENT_ROUTE:
+			s = str_event_route;
 		default:
 			s = str_null;
 	}
