@@ -38,13 +38,13 @@ typedef unsigned int flag_t;
 #define NAMED_FLAG_ERROR          33
 #define FLAG_DELIM                ' '
 
-#define fix_flag_name(_s, _flag)                         \
-     do {                                                \
-		if (!*_s && _flag > 0) {                         \
+#define fix_flag_name(_s, _flag) \
+     do { \
+		if (!_s && _flag > 0) { \
 			LM_WARN("Integer flags are now deprecated! " \
-			        "Use unique quoted strings!\n");     \
-			*_s = int2str(_flag, NULL);                  \
-		}                                                \
+			        "Use unique quoted strings!\n"); \
+			_s = int2str(_flag, NULL); \
+		} \
 	 } while (0)
 
 enum flag_type {

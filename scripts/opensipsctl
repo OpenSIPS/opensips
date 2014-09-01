@@ -1304,13 +1304,13 @@ dispatcher() {
 			DISPATCHER_SETID=$1
 			DISPATCHER_DESTINATION=$2
 			DISPATCHER_SOCKET=$3
-			DISPATCHER_FLAGS=$4
+			DISPATCHER_STATE=$4
 			DISPATCHER_WEIGHT=$5
 			DISPATCHER_ATTRS=$6
 
-	        QUERY="insert into $DISPATCHER_TABLE ($DISPATCHER_SETID_COLUMN, $DISPATCHER_DESTINATION_COLUMN, $DISPATCHER_SOCKET_COLUMN, $DISPATCHER_FLAGS_COLUMN, $DISPATCHER_WEIGHT_COLUMN, $DISPATCHER_ATTRS_COLUMN, $DISPATCHER_DESCRIPTION_COLUMN) VALUES ($DISPATCHER_SETID, '$DISPATCHER_DESTINATION', '$DISPATCHER_SOCKET', $DISPATCHER_FLAGS, $DISPATCHER_WEIGHT, '$DISPATCHER_ATTRS', '$DISPATCHER_DESCRIPTION');"
+			QUERY="insert into $DISPATCHER_TABLE ($DISPATCHER_SETID_COLUMN, $DISPATCHER_DESTINATION_COLUMN, $DISPATCHER_SOCKET_COLUMN, $DISPATCHER_STATE_COLUMN, $DISPATCHER_WEIGHT_COLUMN, $DISPATCHER_ATTRS_COLUMN, $DISPATCHER_DESCRIPTION_COLUMN) VALUES ($DISPATCHER_SETID, '$DISPATCHER_DESTINATION', '$DISPATCHER_SOCKET', $DISPATCHER_STATE, $DISPATCHER_WEIGHT, '$DISPATCHER_ATTRS', '$DISPATCHER_DESCRIPTION');"
 
-            $DBCMD "$QUERY"
+			$DBCMD "$QUERY"
 
 			if [ $? -ne 0 ] ; then
 				merr "dispatcher - SQL Error"
@@ -2623,6 +2623,10 @@ tls_ca() {
 #
 
 opensips_trap() {
+	if [ -z "$GDB" ] ; then
+		merr "'gdb' tool not found: set GDB variable to correct tool path"
+		exit
+	fi
 	DATE=`/bin/date +%Y%m%d_%H%M%S`
 	LOG_FILE=/tmp/gdb_opensips_$DATE
 	minfo "Trap file: $LOG_FILE"
@@ -2636,7 +2640,7 @@ opensips_trap() {
 		PID=`echo $pid | cut -d '-' -f 1`
 		echo "" >> $LOG_FILE
 		echo "---start $PID -----------------------------------------------------" >> $LOG_FILE
-		$GDB opensips $PID -batch --eval-command="bt full" &>> $LOG_FILE
+		$GDB opensips $PID -batch --eval-command="bt full" 2>&1 >> $LOG_FILE
 		echo "---end $PID -------------------------------------------------------" >> $LOG_FILE
 	done
 	echo "."

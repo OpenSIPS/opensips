@@ -189,9 +189,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			if(val->flags&PV_VAL_INT)
 				break; /* already converted */
 			s = NULL;
-			errno = 0;
-			i = strtol(val->rs.s, &s, 16);
-			if (!s || *s || errno == ERANGE)
+			if (hexstr2int(val->rs.s, val->rs.len, (unsigned int *)&i) < 0)
 				return -1;
 			val->rs.s = int2str(i, &val->rs.len);
 			val->ri = i;
@@ -1841,8 +1839,18 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			else {
 				LM_DBG("We have params\n");
 				val->rs.s = topar->name.s;
-				val->rs.len = nameaddr_to_body->last_param->value.s +
-					nameaddr_to_body->last_param->value.len - val->rs.s;
+				if (nameaddr_to_body->last_param->value.s==NULL) {
+					val->rs.len = nameaddr_to_body->last_param->name.s +
+						nameaddr_to_body->last_param->name.len - val->rs.s;
+				} else {
+					val->rs.len = nameaddr_to_body->last_param->value.s +
+						nameaddr_to_body->last_param->value.len - val->rs.s;
+					/* compensate the len if the value of the last param is
+					 * a quoted value (include the closing quote in the len) */
+					if ( (val->rs.s+val->rs.len<nameaddr_str.len+nameaddr_str.s) &&
+					(val->rs.s[val->rs.len]=='"' || val->rs.s[val->rs.len]=='\'' ) )
+						val->rs.len++;
+				}
 			}
 			break;
 

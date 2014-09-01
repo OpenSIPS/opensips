@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2005-2006 Voice Sistem S.R.L
  *
@@ -148,7 +146,6 @@
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
 
-static char id[]="@(#) $Id$";
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
 char compiled[]= __TIME__ " " __DATE__ ;
@@ -218,14 +215,13 @@ int tls_disable = 1; /* 1 if tls is disabled */
 int sctp_disable = 0; /* 1 if sctp is disabled */
 #endif
 int sig_flag = 0;              /* last signal received */
-#ifdef CHANGEABLE_DEBUG_LEVEL
-int debug_init = L_NOTICE;
-int *debug = &debug_init;
-#else
-int debug = L_NOTICE;
-#endif
+
 int dont_fork = 0;
 int no_daemon_mode = 0;
+/* assertion statements in script. disabled by default */
+int enable_asserts = 0;
+/* abort process on failed assertion. disabled by default */
+int abort_on_assert = 0;
 /* start by logging to stderr */
 int log_stderr = 1;
 /* log facility (see syslog(3)) */
@@ -408,14 +404,6 @@ void cleanup(int show_status)
 	pv_free_extra_list();
 	destroy_argv_list();
 	destroy_black_lists();
-#ifdef CHANGEABLE_DEBUG_LEVEL
-	if (debug!=&debug_init) {
-		reset_proc_debug_level();
-		debug_init = *debug;
-		shm_free(debug);
-		debug = &debug_init;
-	}
-#endif
 #ifdef PKG_MALLOC
 	if (show_status){
 		LM_GEN1(memdump, "Memory status (pkg):\n");
@@ -423,12 +411,15 @@ void cleanup(int show_status)
 	}
 #endif
 #ifdef SHM_MEM
+	cleanup_debug();
+
 	if (pt) shm_free(pt);
 	pt=0;
 	if (show_status){
 			LM_GEN1(memdump, "Memory status (shm):\n");
 			shm_status();
 	}
+
 	/* zero all shmem alloc vars that we still use */
 	shm_mem_destroy();
 #endif
@@ -728,6 +719,11 @@ static int main_loop(void)
 	stat_var *load_p = NULL;
 
 	chd_rank=0;
+
+	if (init_debug() != 0) {
+		LM_ERR("failed to init logging levels\n");
+		goto error;
+	}
 
 	if (dont_fork){
 
@@ -1212,11 +1208,7 @@ int main(int argc, char** argv)
 			case 'R':
 					received_dns|=DO_REV_DNS;
 			case 'd':
-#ifdef CHANGEABLE_DEBUG_LEVEL
 					(*debug)++;
-#else
-					debug++;
-#endif
 					break;
 			case 'D':
 					dont_fork=1;
@@ -1268,7 +1260,6 @@ int main(int argc, char** argv)
 					printf("version: %s\n", version);
 					printf("flags: %s\n", flags );
 					print_ct_constants();
-					printf("%s\n",id);
 					printf("%s compiled on %s with %s\n", __FILE__,
 							compiled, COMPILER );
 
@@ -1481,6 +1472,8 @@ try_again:
 		goto error;
 	}
 
+	init_shm_statistics();
+
 	/*init timer, before parsing the cfg!*/
 	if (init_timer()<0){
 		LM_CRIT("could not initialize timer, exiting...\n");
@@ -1517,20 +1510,6 @@ try_again:
 		LM_ERR("could not install the signal handlers\n");
 		goto error;
 	}
-
-#ifdef CHANGEABLE_DEBUG_LEVEL
-#ifdef SHM_MEM
-	debug=shm_malloc(sizeof(int));
-	if (debug==0) {
-		LM_ERR("ERROR: out of memory\n");
-		goto error;
-	}
-	*debug = debug_init;
-#else
-	LM_WARN("no shm mem support compiled -> changeable debug "
-		"level turned off\n");
-#endif
-#endif
 
 	if (disable_core_dump) set_core_dump(0, 0);
 	else set_core_dump(1, shm_mem_size+pkg_mem_size+4*1024*1024);
@@ -1569,7 +1548,7 @@ try_again:
 
 	/* init black list engine */
 	if (init_black_lists()!=0) {
-		LM_CRIT("failed to init black lists\n");
+		LM_CRIT("failed to init blacklists\n");
 		goto error;
 	}
 	/* init resolver's blacklist */

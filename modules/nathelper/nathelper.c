@@ -242,10 +242,30 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static module_dependency_t *get_deps_natping_interval(param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "natping_interval", get_deps_natping_interval },
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
 	"nathelper",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,           /* exported statistics */
@@ -476,7 +496,7 @@ mod_init(void)
 			return -1;
 		}
 
-		fix_flag_name(&sipping_flag_str, sipping_flag);
+		fix_flag_name(sipping_flag_str, sipping_flag);
 		sipping_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH, sipping_flag_str);
 
 		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);
@@ -874,7 +894,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 		return 0;
 
 	if (preserve != 0) {
-		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
@@ -1031,7 +1051,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 		}
 		if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			msg->msg_flags |= FL_FORCE_ACTIVE;
-			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
 			if (anchor == NULL) {
 				LM_ERR("anchor_lump failed\n");
 				return -1;
@@ -1406,10 +1426,10 @@ add_rcv_param_f(struct sip_msg* msg, char* str1, char* str2)
 
 		if (hdr_param) {
 			/* add the param as header param */
-			anchor = anchor_lump(msg, c->name.s + c->len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, c->name.s + c->len - msg->buf, 0);
 		} else {
 			/* add the param as uri param */
-			anchor = anchor_lump(msg, c->uri.s + c->uri.len - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, c->uri.s + c->uri.len - msg->buf, 0);
 		}
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");

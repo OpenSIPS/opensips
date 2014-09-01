@@ -107,20 +107,32 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
 	"db_virtual",
+	MOD_TYPE_SQLDB,   /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,            /* dlopen flags */
+	DEFAULT_DLFLAGS,  /* dlopen flags */
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,
-	params,                     /*  module parameters */
-	0,                          /* exported statistics */
-	mi_cmds,                    /* exported MI functions */
-	0,                          /* exported pseudo-variables */
-	0,                          /* extra processes */
-	virtual_mod_init,           /* module initialization function */
-	0,                          /* response function*/
-	(destroy_function) destroy, /* destroy function */
-	0                           /* per-child init function */
+	params,           /*  module parameters */
+	0,                /* exported statistics */
+	mi_cmds,          /* exported MI functions */
+	0,                /* exported pseudo-variables */
+	0,                /* extra processes */
+	virtual_mod_init, /* module initialization function */
+	0,                /* response function*/
+	destroy,          /* destroy function */
+	0                 /* per-child init function */
 };
 
 
@@ -479,10 +491,11 @@ struct mi_root *db_get_info(struct mi_root *cmd, void *param){
     if (rpl_tree==0)
             return 0;
     rpl = &rpl_tree->node;
+    rpl->flags |= MI_IS_ARRAY;
 
 
     for(i=0; i < global->size; i++ ){
-        node = add_mi_node_child(rpl, 0, MI_SSTR("SET"), 0, 0 );
+        node = add_mi_node_child(rpl, MI_IS_ARRAY, MI_SSTR("SET"), 0, 0 );
         if (node==0)
             goto error;
 

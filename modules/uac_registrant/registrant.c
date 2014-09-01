@@ -152,12 +152,24 @@ static mi_export_t mi_cmds[] = {
 	{0,            0, 0,             0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** Module interface */
 struct module_exports exports= {
 	"uac_registrant",		/* module name */
+	MOD_TYPE_DEFAULT,       /* class of this module */
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
+	&deps,                  /* OpenSIPS module dependencies */
 	cmds,				/* exported functions */
 	params,				/* exported parameters */
 	NULL,				/* exported statistics */
@@ -174,6 +186,8 @@ struct module_exports exports= {
 /** Module init function */
 static int mod_init(void)
 {
+	unsigned int _timer;
+
 	if(load_uac_auth_api(&uac_auth_api)<0){
 		LM_ERR("Failed to load uac_auth api\n");
 		return -1;
@@ -221,8 +235,13 @@ static int mod_init(void)
 		return -1;
 	}
 
-	register_timer("uac_reg_check", timer_check, 0,
-					timer_interval/reg_hsize);
+	_timer = timer_interval/reg_hsize;
+	if (_timer) {
+		register_timer("uac_reg_check", timer_check, 0, _timer);
+	} else {
+		LM_ERR("timer_interval=[%d] MUST be bigger then reg_hsize=[%d]\n", timer_interval, reg_hsize);
+		return -1;
+	}
 
 	return 0;
 }
@@ -354,6 +373,12 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 		rec->state = REGISTERED_STATE;
 		if (exp) rec->expires = exp;
+		if (rec->expires <= timer_interval) {
+			LM_ERR("Please decrease timer_interval=[%u]"
+				" - imposed server expires [%u] to small for AOR=[%.*s]\n",
+				timer_interval, rec->expires,
+				rec->td.rem_uri.len, rec->td.rem_uri.s);
+		}
 		rec->registration_timeout = now + rec->expires - timer_interval;
 		break;
 
@@ -782,6 +807,7 @@ static struct mi_root* mi_reg_list(struct mi_root* cmd, void* param)
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	for(i=0; i<reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);

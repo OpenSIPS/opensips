@@ -44,9 +44,13 @@ struct process_table {
 	int pid;
 #ifdef USE_TCP
 	int unix_sock; /* unix socket on which tcp main listens */
-	int idx; /* tcp child index, -1 for other processes */
+	int idx;       /* tcp child index, -1 for other processes */
 #endif
 	char desc[MAX_PT_DESC];
+
+	int default_debug; /* used when resetting the log level */
+	int debug;         /* logging level of this process */
+
 	stat_var *load;
 };
 
@@ -60,6 +64,9 @@ int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 pid_t internal_fork(char *proc_desc);
 int count_init_children(int flags);
+
+/* @return: -1 or the index of the given process */
+int id_of_pid(pid_t pid);
 
 /* return processes pid */
 inline static int my_pid(void)

@@ -232,7 +232,7 @@ int init_rl_table(unsigned int size)
 	LM_DBG("default algorithm is %.*s [ %d ]\n",
 			rl_default_algo_s.len, rl_default_algo_s.s, rl_default_algo);
 
-	/* if at least 25% of the size locks can't be alocated
+	/* if at least 25% of the size locks can't be allocated
 	 * we return an error */
 	for ( i = size; i > size / 4; i--) {
 		rl_htable.locks = lock_set_alloc(i);

@@ -148,10 +148,22 @@ static cmd_export_t cmds[] = {
 	{ 0, 0, 0, 0, 0, 0 }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports= {
 	"sngtc",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,
@@ -1392,7 +1404,7 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 
 	LM_DBG("Duplicated SDP: '%.*s'\n", body.len, body.s);
 
-	lump = anchor_lump(msg, msg->content_length->name.s - msg->buf, 0, 0);
+	lump = anchor_lump(msg, msg->content_length->name.s - msg->buf, 0);
 	if (!lump) {
 		LM_ERR("failed to insert anchor lump\n");
 		return SNGTC_ERR;
@@ -1437,7 +1449,7 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 		return SNGTC_ERR;
 	}
 
-	lump = anchor_lump(msg, msg->len - CRLF_LEN, 0, 0);
+	lump = anchor_lump(msg, msg->len - CRLF_LEN, 0);
 	if (!lump) {
 		LM_ERR("failed to insert anchor lump\n");
 		return SNGTC_ERR;

@@ -206,8 +206,10 @@
 #define MI_RTP_PROXY_NOT_FOUND_LEN	(sizeof(MI_RTP_PROXY_NOT_FOUND)-1)
 #define MI_PING_DISABLED			"NATping disabled from script"
 #define MI_PING_DISABLED_LEN		(sizeof(MI_PING_DISABLED)-1)
-#define MI_SET						"set"
+#define MI_SET						"Set"
 #define MI_SET_LEN					(sizeof(MI_SET)-1)
+#define MI_NODE						"node"
+#define MI_NODE_LEN					(sizeof(MI_NODE)-1)
 #define MI_INDEX					"index"
 #define MI_INDEX_LEN				(sizeof(MI_INDEX)-1)
 #define MI_DISABLED					"disabled"
@@ -528,11 +530,24 @@ static proc_export_t procs[] = {
 	{0,0,0,0,0,0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",     DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"rtpproxy",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,           /* exported statistics */
@@ -814,6 +829,8 @@ static int fixup_two_options(void ** param, int param_no)
 
 static int fixup_offer_answer(void ** param, int param_no)
 {
+	if (param_no < 1)
+		return 0;
 	if (param_no < 3)
 		return fixup_spve(param);
 	if (param_no == 3)
@@ -928,7 +945,7 @@ static int fixup_engage_warn(void ** param, int param_no)
 
 static int fixup_engage(void** param, int param_no)
 {
-	if (param_no == 1 && !dlg_api.create_dlg) {
+	if (param_no < 2 && !dlg_api.create_dlg) {
 		LM_ERR("Dialog module not loaded. Can't use engage_rtp_proxy function\n");
 		return -1;
 	}
@@ -941,6 +958,7 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 {	struct mi_node* node;
 	str rtpp_url;
 	unsigned int enable;
+	unsigned int set_id;
 	struct rtpp_set * rtpp_list;
 	struct rtpp_node * crt_rtpp;
 	int found;
@@ -954,11 +972,13 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
+	/* RTPP URL node */
 	if(node->value.s == NULL || node->value.len ==0)
 		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 
 	rtpp_url = node->value;
 
+	/* enable/disable node */
 	node = node->next;
 	if(node == NULL)
 		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
@@ -967,8 +987,25 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if( strno2int( &node->value, &enable) <0)
 		goto error;
 
+	/* set id ?? */
+	node = node->next;
+	if(node != NULL) {
+		/* shift params -> move enable over set id */
+		set_id = enable;
+		/* read again the disable */
+		enable = 0;
+		if( strno2int( &node->value, &enable) <0)
+			goto error;
+	} else {
+		set_id = (unsigned int)(-1);
+	}
+
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){
+
+		/* if set_id given, check only the list with the matching set_id */
+		if ( (set_id!=(unsigned int)(-1)) && set_id!=rtpp_list->id_set )
+			continue;
 
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next){
@@ -997,7 +1034,7 @@ error:
 }
 
 
-#define add_rtpp_node_int_info(_parent, _name, _name_len, _value, _child,\
+#define add_rtpp_node_int_info(_parent, _name, _name_len, _value, _attr,\
 								_len, _string, _error)\
 	do {\
 		(_string) = int2str((_value), &(_len));\
@@ -1005,7 +1042,7 @@ error:
 			LM_ERR("cannot convert int value\n");\
 				goto _error;\
 		}\
-		if(((_child) = add_mi_node_child((_parent), MI_DUP_VALUE, (_name), \
+		if(((_attr) = add_mi_attr((_parent), MI_DUP_VALUE, (_name), \
 				(_name_len), (_string), (_len))   ) == 0)\
 			goto _error;\
 	}while(0);
@@ -1059,7 +1096,7 @@ error:
 static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 												void* param)
 {
-	struct mi_node* node, *crt_node, *child;
+	struct mi_node* node, *crt_node, *set_node;
 	struct mi_root* root;
 	struct mi_attr * attr;
 	struct rtpp_set * rtpp_list;
@@ -1079,41 +1116,43 @@ static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
 		return root;
 
 	node = &root->node;
+	node->flags |= MI_IS_ARRAY;
 
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){
 
+		id =  int2str(rtpp_list->id_set, &id_len);
+		if(!id){
+			LM_ERR("cannot convert set id\n");
+			goto error;
+		}
+
+		if(!(set_node = add_mi_node_child(node, MI_IS_ARRAY|MI_DUP_VALUE, MI_SET, MI_SET_LEN,
+									id, id_len))) {
+			LM_ERR("cannot add the set node to the tree\n");
+			goto error;
+		}
+
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next){
 
-			id =  int2str(rtpp_list->id_set, &id_len);
-			if(!id){
-				LM_ERR("cannot convert set id\n");
-				goto error;
-			}
-
-			if(!(crt_node = add_mi_node_child(node, 0, crt_rtpp->rn_url.s,
-					crt_rtpp->rn_url.len, 0,0)) ) {
+			if(!(crt_node = add_mi_node_child(set_node, MI_DUP_VALUE,
+					MI_NODE, MI_NODE_LEN,
+					crt_rtpp->rn_url.s,	crt_rtpp->rn_url.len)) ) {
 				LM_ERR("cannot add the child node to the tree\n");
 				goto error;
 			}
 
 			LM_DBG("adding node name %s \n",crt_rtpp->rn_url.s );
 
-			if((attr = add_mi_attr(crt_node, MI_DUP_VALUE, MI_SET, MI_SET_LEN,
-									id, id_len))== 0){
-				LM_ERR("cannot add attributes to the node\n");
-				goto error;
-			}
-
 			add_rtpp_node_int_info(crt_node, MI_INDEX, MI_INDEX_LEN,
-				crt_rtpp->idx, child, len,string,error);
+				crt_rtpp->idx, attr, len,string,error);
 			add_rtpp_node_int_info(crt_node, MI_DISABLED, MI_DISABLED_LEN,
-				crt_rtpp->rn_disabled, child, len,string,error);
+				crt_rtpp->rn_disabled, attr, len,string,error);
 			add_rtpp_node_int_info(crt_node, MI_WEIGHT, MI_WEIGHT_LEN,
-				crt_rtpp->rn_weight,  child, len, string,error);
+				crt_rtpp->rn_weight,  attr, len, string,error);
 			add_rtpp_node_int_info(crt_node, MI_RECHECK_TICKS,MI_RECHECK_T_LEN,
-				crt_rtpp->rn_recheck_ticks, child, len, string, error);
+				crt_rtpp->rn_recheck_ticks, attr, len, string, error);
 		}
 	}
 
@@ -1148,7 +1187,8 @@ mod_init(void)
 	float timeout;
 
 	if (rtpproxy_autobridge != 0) {
-		LM_WARN("Auto bridging does not properly function when doing serial/parallel forking\n");
+		LM_WARN("Auto bridging does not properly function when doing "
+			"serial/parallel forking\n");
 	}
 
 	if (nortpproxy_str.s==NULL || nortpproxy_str.s[0]==0) {
@@ -1279,14 +1319,14 @@ mod_init(void)
 		LM_DBG("dialog module not loaded.\n");
 	memset(&tm_api, 0, sizeof(struct tm_binds));
 	if (load_tm_api(&tm_api)!=0)
-		LM_DBG("can't load TM API - check if tm module was loaded\n");
+		LM_DBG("TM modules was not found\n");
 
 	if (parse_bavp(&param1_bavp_name, &param1_spec) < 0 ||
 			parse_bavp(&param2_bavp_name, &param2_spec) < 0 ||
 			parse_bavp(&param3_bavp_name, &param3_spec) < 0)
 		LM_DBG("cannot parse bavps\n");
 
-    if(rtpp_notify_socket.s) {
+	if(rtpp_notify_socket.s) {
 		if (strncmp("tcp:", rtpp_notify_socket.s, 4) == 0) {
 			rtpp_notify_socket.s += 4;
 		} else {
@@ -1294,13 +1334,13 @@ mod_init(void)
 				rtpp_notify_socket.s += 5;
 			rtpp_notify_socket_un = 1;
 		}
-        /* check if the notify socket parameter is set */
-        rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
-        if(dlg_api.get_dlg == 0) {
-            LM_ERR("You need to load dialog module if you want to use the"
-                    " timeout notification feature\n");
-            return -1;
-        }
+		/* check if the notify socket parameter is set */
+		rtpp_notify_socket.len = strlen(rtpp_notify_socket.s);
+		if(dlg_api.get_dlg == 0) {
+			LM_ERR("You need to load dialog module if you want to use the"
+				" timeout notification feature\n");
+			return -1;
+		}
 
 		rtpp_notify_h = (struct rtpp_notify_head *)
 			shm_malloc(sizeof(struct rtpp_notify_head));
@@ -1324,11 +1364,9 @@ mod_init(void)
 			LM_ERR("cannot find any valid rtpproxy to use\n");
 			return -1;
 		}
-    }
-    else
-    {
-        exports.procs = 0;
-    }
+	} else {
+		exports.procs = 0;
+	}
 
 	ei_id = evi_publish_event(event_name);
 	if (ei_id == EVI_ERROR)
@@ -1866,7 +1904,7 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 		return 0;
 
 	if (preserve != 0) {
-		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
@@ -1966,7 +2004,7 @@ alter_mediaport(struct sip_msg *msg, str *body, str *oldport, str *newport,
 #endif
 
 	if (preserve != 0) {
-		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, body->s + body->len - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			return -1;
@@ -2975,6 +3013,7 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 	struct dlg_cell *dlg;
 	struct rtpp_set *set = NULL;
 	pv_value_t val1, val2;
+	str aux_str;
 
 	LM_DBG("engage called from script 1:%p 2:%p 3:%p 4:%p\n",
 			param1, param2, param3, param4);
@@ -3012,6 +3051,22 @@ engage_rtp_proxy4_f(struct sip_msg *msg, char *param1, char *param2, char *param
 	if (!dlg) {
 		LM_ERR("cannot get dialog\n");
 		return -1;
+	}
+
+	if (param1) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param1, &aux_str, 0)<0) {
+			LM_ERR("bogus flags parameter\n");
+			return -1;
+		}
+		param1 = aux_str.s;
+	}
+
+	if (param2) {
+		if (rtpp_get_var_svalue(msg, (gparam_p)param2, &aux_str, 1)<0) {
+			LM_ERR("bogus IP addr parameter\n");
+			return -1;
+		}
+		param2 = aux_str.s;
 	}
 
 	/* is this a late negociation scenario? */
@@ -3210,6 +3265,7 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 	struct force_rtpp_args *ap;
 	union sockaddr_union to;
 	struct ip_addr ip;
+	struct cell *trans;
 
 	memset(&args, '\0', sizeof(args));
 	m = get_all_bodies(msg);
@@ -3299,14 +3355,23 @@ force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, char *setid, char *
 						lock_stop_read(nh_lock);
 					continue;
 				} else {
-					if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
-						(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
-						update_sock_struct_from_via(&to, msg, msg->via2) != -1) {
+					/* first try to get the destination of this reply from the
+					 * transaction (as the source of the request) */
+					if (tm_api.t_gett && (trans=tm_api.t_gett())!=0 &&
+					trans!=T_UNDEFINED && trans->uas.request ) {
+						/* we have the request from the transaction this
+						 * reply belongs to */
+						args.raddr.s = ip_addr2a(&trans->uas.request->rcv.src_ip);
+						args.raddr.len = strlen(args.raddr.s);
+					} else if (parse_headers(msg, HDR_VIA2_F, 0) != -1 &&
+					(msg->via2 != NULL) && (msg->via2->error == PARSE_OK) &&
+					update_sock_struct_from_via(&to, msg, msg->via2)!=-1) {
 						su2ip_addr(&ip, &to);
 						args.raddr.s = ip_addr2a(&ip);
 						args.raddr.len = strlen(args.raddr.s);
 					} else {
-						LM_ERR("can't extract 2nd via found reply\n");
+						LM_ERR("can't extract reply destination from "
+							"transaction/reply_via2\n");
 					}
 				}
 			}
@@ -3924,7 +3989,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args, pv_spec_
 		while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
 		if (cp1==args->body.s) cp1=args->body.s + args->body.len;
 
-		anchor = anchor_lump(msg, cp1 - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, cp1 - msg->buf, 0);
 		if (anchor == NULL) {
 			LM_ERR("anchor_lump failed\n");
 			pkg_free(cp);

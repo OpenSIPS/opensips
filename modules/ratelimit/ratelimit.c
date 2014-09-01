@@ -104,13 +104,13 @@ static cmd_export_t cmds[] = {
 		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_check", (cmd_function)w_rl_check_3, 3,
-		fixup_rl_check, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
+		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_dec_count", (cmd_function)w_rl_dec, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
+		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_reset_count", (cmd_function)w_rl_reset, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|LOCAL_ROUTE|ONREPLY_ROUTE|
+		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{0,0,0,0,0,0}
 };
@@ -142,8 +142,10 @@ static mi_export_t mi_cmds [] = {
 
 struct module_exports exports= {
 	"ratelimit",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,	/* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	0,					/* exported statistics */
@@ -431,6 +433,7 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
 {
 	struct mi_root *rpl_tree;
 	struct mi_node *node=NULL, *rpl=NULL;
+	struct mi_attr *attr;
 	int len;
 	char * p;
 
@@ -440,15 +443,19 @@ struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if (rl_stats(rpl_tree, &node->value)) {
 		LM_ERR("cannoti mi print values\n");
 		goto free;
 	}
 
+	if (!(node = add_mi_node_child(rpl, 0, "PIPE", 4, NULL, 0)))
+		goto free;
+
 	LOCK_GET(rl_lock);
 	p = int2str((unsigned long)(*drop_rate), &len);
-	if (!(node = add_mi_node_child(rpl, MI_DUP_VALUE, "DROP_RATE", 9, p, len))) {
+	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "drop_rate", 9, p, len))) {
 		LOCK_RELEASE(rl_lock);
 		goto free;
 	}

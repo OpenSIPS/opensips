@@ -6,7 +6,7 @@ aliases:1007
 b2b_entities:1
 b2b_logic:2
 b2b_sca:1
-cachedb:1
+cachedb:2
 carrierfailureroute:2
 carrierroute:3
 cc_agents:1
@@ -15,14 +15,15 @@ cc_flows:1
 closeddial:1
 cpl:2
 dbaliases:2
-dialog:9
+dialog:10
 dialplan:4
-dispatcher:6
-domain:2
+dispatcher:7
+domain:3
 domainpolicy:3
 dr_carriers:2
 dr_gateways:6
 dr_groups:2
+dr_partitions:1
 dr_rules:3
 globalblacklist:2
 grp:3
@@ -41,7 +42,7 @@ rls_watchers:2
 route_tree:2
 rtpproxy_sockets:0
 silo:6
-sip_trace:3
+sip_trace:4
 speed_dial:3
 subscriber:7
 uri:2

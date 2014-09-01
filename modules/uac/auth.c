@@ -40,12 +40,14 @@
 #include "../../parser/parse_authenticate.h"
 #include "../tm/tm_load.h"
 #include "../uac_auth/uac_auth.h"
+#include "auth.h"
 
 
 
 extern struct tm_binds uac_tmb;
 extern uac_auth_api_t uac_auth_api;
-
+extern str rr_uac_cseq_param;
+extern struct rr_binds uac_rrb;
 
 static inline int apply_urihdr_changes( struct sip_msg *req,
 													str *uri, str *hdr)
@@ -76,7 +78,7 @@ static inline int apply_urihdr_changes( struct sip_msg *req,
 		goto error;
 	}
 
-	anchor = anchor_lump(req, req->unparsed - req->buf, 0, 0);
+	anchor = anchor_lump(req, req->unparsed - req->buf, 0);
 	if (anchor==0)
 	{
 		LM_ERR("failed to get anchor\n");
@@ -95,7 +97,86 @@ error:
 	return -1;
 }
 
+int apply_cseq_op(struct sip_msg *msg,int val)
+{
+	int offset,len,olen;
+	struct lump *tmp;
+	char *buf,*obuf;
+	unsigned int cseq_no;
+	str pkg_cseq;
 
+	if (!msg) {
+		LM_ERR("null pointer provided\n");
+		return -1;
+	}
+
+	if(parse_headers(msg, HDR_CSEQ_F, 0) <0 ) {
+		LM_ERR("failed to parse headers \n");
+		return -1;
+	}
+
+	if (str2int(&(((struct cseq_body *)msg->cseq->parsed)->number),&cseq_no) < 0) {
+		LM_ERR("Failed to convert cseq to integer \n");
+		return -1;
+	}
+
+	cseq_no=cseq_no+val;
+	obuf = int2str(cseq_no,&olen);
+	if (obuf == NULL) {
+		LM_ERR("Failed to convert new integer to string \n");
+		return -1;
+	}
+
+	pkg_cseq.s = pkg_malloc(olen);
+	if (!pkg_cseq.s) {
+		LM_ERR("No more pkg mem \n");
+		return -1;
+	}
+
+	memcpy(pkg_cseq.s,obuf,olen);
+	pkg_cseq.len = olen;
+	
+	buf = msg->buf;
+	len = ((struct cseq_body *)msg->cseq->parsed)->number.len;
+	offset = ((struct cseq_body *)msg->cseq->parsed)->number.s - buf;
+
+	if ((tmp = del_lump(msg,offset,len,0)) == 0)
+	{
+		LM_ERR("failed to remove the existing CSEQ\n");
+		pkg_free(pkg_cseq.s);
+		return -1;
+	}
+
+	if (insert_new_lump_after(tmp,pkg_cseq.s,pkg_cseq.len,0) == 0)
+	{
+		LM_ERR("failed to insert new CSEQ\n");
+		pkg_free(pkg_cseq.s);
+		return -1;
+	}
+
+	LM_DBG("Message CSEQ translated from [%.*s] to [%.*s]\n",
+			((struct cseq_body *)msg->cseq->parsed)->number.len,
+			((struct cseq_body *)msg->cseq->parsed)->number.s,pkg_cseq.len,
+			pkg_cseq.s);
+	
+	return 0;
+}
+
+void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
+{
+	struct sip_msg *req;
+	struct sip_msg *rpl;
+
+	if ( !t || !t->uas.request || !p->rpl )
+		return;
+
+	req = t->uas.request;
+	rpl = p->rpl;
+	if (req == FAKED_REPLY || rpl == FAKED_REPLY)
+		return;
+
+	apply_cseq_op(rpl,-1);
+}
 
 int uac_auth( struct sip_msg *msg)
 {
@@ -107,6 +188,8 @@ int uac_auth( struct sip_msg *msg)
 	struct cell *t;
 	HASHHEX response;
 	str *new_hdr;
+	str param;
+	char *p;
 
 	/* get transaction */
 	t = uac_tmb.t_gett();
@@ -176,7 +259,7 @@ int uac_auth( struct sip_msg *msg)
 	}
 
 	/* so far, so good -> add the header and set the proper RURI */
-	if ( apply_urihdr_changes( msg, &t->uac[branch].uri, new_hdr)<0 )
+	if (apply_urihdr_changes( msg, &t->uac[branch].uri, new_hdr)<0)
 	{
 		LM_ERR("failed to apply changes\n");
 		pkg_free(new_hdr->s);
@@ -184,9 +267,77 @@ int uac_auth( struct sip_msg *msg)
 		goto error;
 	}
 
+	if ( apply_cseq_op(msg,1) < 0) {
+		LM_WARN("Failure to increment the CSEQ header - continue \n");
+		goto error;
+	}
+
+	/* only register the TMCB once per transaction */
+	if (!(msg->msg_flags & FL_USE_UAC_CSEQ || 
+	t->uas.request->msg_flags & FL_USE_UAC_CSEQ)) {
+		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
+		apply_cseq_decrement,0,0)!=1) {
+			LM_ERR("Failed to register TMCB response fwded - continue \n");
+			goto error;
+		}
+	}
+
+	param.len=rr_uac_cseq_param.len+3;
+	param.s=pkg_malloc(param.len);
+	if (!param.s) {
+		LM_ERR("No more pkg mem \n");
+		goto error;
+	}
+
+	p = param.s;
+	*p++=';';
+	memcpy(p,rr_uac_cseq_param.s,rr_uac_cseq_param.len);
+	p+=rr_uac_cseq_param.len;
+	*p++='=';
+	*p++='1';
+
+	if (uac_rrb.add_rr_param( msg, &param)!=0) {
+		LM_ERR("add_RR_param failed\n");
+		pkg_free(param.s);
+		goto error;
+	}
+
+	msg->msg_flags |= FL_USE_UAC_CSEQ;
+	t->uas.request->msg_flags |= FL_USE_UAC_CSEQ;
+
+	pkg_free(param.s);
 	new_hdr->s = NULL; new_hdr->len = 0;
 	return 0;
 error:
 	return -1;
 }
 
+void rr_uac_auth_checker(struct sip_msg *msg, str *r_param, void *cb_param)
+{
+	str param_val;
+
+	LM_DBG("getting '%.*s' Route param\n",
+		rr_uac_cseq_param.len,rr_uac_cseq_param.s);
+
+	/* do we have the uac auth marker ? */
+	if (uac_rrb.get_route_param( msg, &rr_uac_cseq_param, &param_val)!=0) {
+		LM_DBG("route param '%.*s' not found\n",
+			rr_uac_cseq_param.len,rr_uac_cseq_param.s);
+		return;
+	}
+
+	/* we don't change anything upstream */
+	if (uac_rrb.is_direction( msg, RR_FLOW_UPSTREAM)==0)
+		return;
+
+	if (apply_cseq_op(msg,1) < 0) {
+		LM_WARN("Failure to increment the CSEQ header - continue \n");
+		return;
+	}
+
+	if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
+	apply_cseq_decrement,0,0)!=1) {
+		LM_ERR("Failed to register TMCB response fwded - continue \n");
+		return;
+	}
+}

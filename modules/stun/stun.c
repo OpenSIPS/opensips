@@ -82,8 +82,10 @@ static proc_export_t mod_procs[] = {
 
 struct module_exports exports = {
 	"stun",             /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,     /* module version */
 	DEFAULT_DLFLAGS,    /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,                  /* exported functions */
 	params,             /* module parameters */
 	0,                  /* exported statistics */
@@ -564,7 +566,7 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
 		b2 = (T16*) msg->unknownAttributes->buffer;
 		if(msg->unknownAttributes->size / sizeof(T16)
 			< MAX_UNKNOWN_ATTRIBUTES){
-		    b2[msg->unknownAttributes->size] = type;
+		    b2[msg->unknownAttributes->size / sizeof(T16)] = type;
 		    msg->unknownAttributes->size += sizeof(T16);
 		}
 	    }else{

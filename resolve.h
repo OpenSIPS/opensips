@@ -357,7 +357,7 @@ error_colons:
 
 error_char:
 	/*
-	DBG("str2ip6: WARNING: unexpected char %c in  [%.*s]\n", *s, st->len,
+	DBG("str2ip6: WARNING: unexpected char %c in [%.*s]\n", *s, st->len,
 			st->s);*/
 	return 0;
 }

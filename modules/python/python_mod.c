@@ -67,8 +67,10 @@ static cmd_export_t cmds[] = {
 /** module exports */
 struct module_exports exports = {
     "python",                       /* module name */
+    MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,
     RTLD_NOW | RTLD_GLOBAL,         /* dlopen flags */
+    NULL,                           /* OpenSIPS module dependencies */
     cmds,                           /* exported functions */
     params,                         /* exported parameters */
     0,                              /* exported statistics */

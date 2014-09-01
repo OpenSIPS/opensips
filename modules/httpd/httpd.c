@@ -93,8 +93,10 @@ static mi_export_t mi_cmds[] = {
 /** Module exports */
 struct module_exports exports = {
 	"httpd",                    /* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */
 	NULL,                       /* exported statistics */
@@ -224,6 +226,7 @@ static struct mi_root* mi_list_root_path(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 	while(cb) {
 		node = add_mi_node_child(rpl, 0, "http_root", 9,
 				cb->http_root->s, cb->http_root->len);

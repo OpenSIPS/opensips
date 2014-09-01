@@ -29,24 +29,24 @@
 
 #include "../../dprint.h"
 #include "../../ut.h"
-#include "../../db/db.h"
+
 #include "dp_db.h"
-#include "dialplan.h"
 
-str dp_db_url           =   {NULL, 0};
-str dp_table_name       =   str_init(DP_TABLE_NAME);
-str dpid_column         =   str_init(DPID_COL);
-str pr_column           =   str_init(PR_COL);
-str match_op_column     =   str_init(MATCH_OP_COL);
-str match_exp_column    =   str_init(MATCH_EXP_COL);
-str match_flags_column  =   str_init(MATCH_FLAGS_COL);
-str subst_exp_column    =   str_init(SUBST_EXP_COL);
-str repl_exp_column     =   str_init(REPL_EXP_COL);
-str disabled_column     =   str_init(DISABLED_COL);
-str attrs_column        =   str_init(ATTRS_COL);
+dp_head_p dp_hlist = NULL;
 
-static db_con_t* dp_db_handle    = 0; /* database connection handle */
-static db_func_t dp_dbf;
+str default_dp_db_url           =   {NULL, 0};
+str default_dp_table		=   {NULL, 0};
+str dp_table_name       	=   str_init(DP_TABLE_NAME);
+str dpid_column         	=   str_init(DPID_COL);
+str pr_column           	=   str_init(PR_COL);
+str match_op_column     	=   str_init(MATCH_OP_COL);
+str match_exp_column    	=   str_init(MATCH_EXP_COL);
+str match_flags_column  	=   str_init(MATCH_FLAGS_COL);
+str subst_exp_column    	=   str_init(SUBST_EXP_COL);
+str repl_exp_column     	=   str_init(REPL_EXP_COL);
+str disabled_column     	=   str_init(DISABLED_COL);
+str attrs_column        	=   str_init(ATTRS_COL);
+
 
 #define GET_STR_VALUE(_res, _values, _index)\
 	do{\
@@ -58,69 +58,93 @@ static db_func_t dp_dbf;
 		(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
 	}while(0);
 
+int dp_connect_db(dp_connection_list_p conn);
 void destroy_rule(dpl_node_t * rule);
 void destroy_hash(dpl_id_t **rules_hash);
 
 dpl_node_t * build_rule(db_val_t * values);
-int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index);
+int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *table, int index);
 
 void list_rule(dpl_node_t * );
 void list_hash(dpl_id_t * , rw_lock_t *);
 
 
-dp_table_list_p dp_tables = NULL;
-dp_table_list_p dp_default_table = NULL;
+dp_connection_list_p dp_conns = NULL;
 
-dp_table_list_p dp_get_default_table(void)
-{
-	return dp_default_table;
-}
+int test_db(dp_connection_list_p dp_connection){
 
-int init_db_data(dp_table_list_p dp_table)
-{
-	if(dp_table_name.s == 0){
-		LM_ERR("invalid database table name\n");
+	if (dp_connection->partition.s == 0) {
+		LM_ERR("invalid partition name\n");
 		return -1;
 	}
 
-	/* Find a database module */
-	if (db_bind_mod(&dp_db_url, &dp_dbf) < 0){
+	if (db_bind_mod(&dp_connection->db_url, &dp_connection->dp_dbf) < 0){
 		LM_ERR("unable to bind to a database driver\n");
 		return -1;
 	}
 
-	if(dp_connect_db() !=0)
+	if (dp_connect_db(dp_connection) !=0)
 		return -1;
 
-	if(db_check_table_version(&dp_dbf, dp_db_handle, &dp_table->table_name,
-	DP_TABLE_VERSION) < 0) {
+
+	if (db_check_table_version(&dp_connection->dp_dbf, 
+		 *dp_connection->dp_db_handle, &dp_connection->table_name,
+			 DP_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
 		goto error;
 	}
 
-	if(dp_load_db(dp_table) != 0){
-		LM_ERR("failed to load database data\n");
-		goto error;
-	}
-
-	dp_disconnect_db();
+	dp_disconnect_db(dp_connection);
 
 	return 0;
+
 error:
 
-	dp_disconnect_db();
+	dp_disconnect_db(dp_connection);
 	return -1;
 }
 
 
-int dp_connect_db(void)
+int init_db_data(dp_connection_list_p dp_connection)
 {
-	if(dp_db_handle){
+	if (dp_connection->partition.s == 0) {
+		LM_ERR("invalid partition name\n");
+		return -1;
+	}
+
+	if (dp_connect_db(dp_connection) !=0)
+		return -1;
+
+
+	if (db_check_table_version(&dp_connection->dp_dbf, 
+		*dp_connection->dp_db_handle, &dp_connection->table_name,
+			DP_TABLE_VERSION) < 0) {
+		LM_ERR("error during table version check.\n");
+		goto error;
+	}
+
+
+	if(dp_load_db(dp_connection) != 0){
+		LM_ERR("failed to load database data\n");
+		goto error;
+	}
+
+	return 0;
+error:
+
+	dp_disconnect_db(dp_connection);
+	return -1;
+}
+
+
+int dp_connect_db(dp_connection_list_p conn)
+{
+	if (*conn->dp_db_handle) {
 		LM_CRIT("BUG: connection to DB already open\n");
 		return -1;
 	}
 
-	if ((dp_db_handle = dp_dbf.init(&dp_db_url)) == 0){
+	if ((*conn->dp_db_handle = conn->dp_dbf.init(&conn->db_url)) == 0) {
 		LM_ERR("unable to connect to the database\n");
 		return -1;
 	}
@@ -129,22 +153,30 @@ int dp_connect_db(void)
 }
 
 
-void dp_disconnect_db(void)
+void dp_disconnect_db(dp_connection_list_p dp_conn)
 {
-	if(dp_db_handle){
-		dp_dbf.close(dp_db_handle);
-		dp_db_handle = 0;
+	if (*dp_conn->dp_db_handle) {
+		dp_conn->dp_dbf.close(*dp_conn->dp_db_handle);
+		*dp_conn->dp_db_handle = 0;
 	}
 }
 
 
 int init_data(void)
 {
-	dp_default_table = dp_add_table(&dp_table_name);
-	if (!dp_default_table) {
-		LM_ERR("couldn't add the default table\n");
-		return -1;
+	dp_head_p start, tmp = NULL; 
+
+	for (start = dp_hlist ; start; start = start->next) {
+		if(tmp)
+			pkg_free(tmp);
+
+		LM_DBG("Adding partition with name [%.*s]\n", 
+				start->partition.len, start->partition.s);
+		dp_add_connection(start);
+
+		tmp = start;
 	}
+	pkg_free(tmp);
 
 	return 0;
 }
@@ -152,22 +184,23 @@ int init_data(void)
 
 void destroy_data(void)
 {
-	dp_table_list_t *el, *next;
+	dp_connection_list_t *el, *next;
 
-	for (el = dp_tables; el && (next = el->next, 1); el = next) {
+	LM_DBG("Destroying data\n");
+	for (el = dp_conns; el && (next = el->next, 1); el = next) {
 		destroy_hash(&el->hash[0]);
 		destroy_hash(&el->hash[1]);
 		lock_destroy_rw(el->ref_lock);
+
 		shm_free(el);
-		el = 0;
 	}
 }
 
 int dp_load_all_db(void)
 {
-	dp_table_list_t *el;
+	dp_connection_list_t *el;
 
-	for (el = dp_tables; el; el = el->next) {
+	for (el = dp_conns; el; el = el->next) {
 			if (dp_load_db(el) < 0) {
 					LM_ERR("unable to load %.*s table\n",
 							el->table_name.len, el->table_name.s);
@@ -178,7 +211,7 @@ int dp_load_all_db(void)
 }
 
 /*load rules from DB*/
-int dp_load_db(dp_table_list_p dp_table)
+int dp_load_db(dp_connection_list_p dp_conn)
 {
 	int i, nr_rows;
 	db_res_t * res = 0;
@@ -196,49 +229,61 @@ int dp_load_db(dp_table_list_p dp_table)
 	dpl_node_t *rule;
 	int no_rows = 10;
 
-	if( dp_table->crt_index != dp_table->next_index){
+
+	lock_start_write( dp_conn->ref_lock );
+
+	if( dp_conn->crt_index != dp_conn->next_index){
 		LM_WARN("a load command already generated, aborting reload...\n");
+		lock_stop_write( dp_conn->ref_lock );
 		return 0;
 	}
 
-	if (dp_dbf.use_table(dp_db_handle, &dp_table->table_name) < 0){
+	dp_conn->next_index = dp_conn->crt_index == 0 ? 1 : 0;
+
+	lock_stop_write( dp_conn->ref_lock );
+
+	if (dp_conn->dp_dbf.use_table(*dp_conn->dp_db_handle, &dp_conn->table_name) < 0){
 		LM_ERR("error in use_table\n");
-		return -1;
+		goto err1;
 	}
 
 	VAL_TYPE(cond_val) = DB_INT;
 	VAL_NULL(cond_val) = 0;
 	VAL_INT(cond_val) = 0;
 
-	if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
-		if(dp_dbf.query(dp_db_handle,cond_cols,0,cond_val,query_cols,1,
-				DP_TABLE_COL_NO, order, 0) < 0){
+	if (DB_CAPABILITY(dp_conn->dp_dbf, DB_CAP_FETCH)) {
+		if(dp_conn->dp_dbf.query(*dp_conn->dp_db_handle,cond_cols,
+				0,cond_val,query_cols,1,
+					DP_TABLE_COL_NO, order, 0) < 0){
 			LM_ERR("failed to query database!\n");
-			return -1;
+
+			goto err1;
 		}
 		no_rows = estimate_available_rows( 4+4+4+64+4+64+64+128,
 			DP_TABLE_COL_NO);
 		if (no_rows==0) no_rows = 10;
-		if(dp_dbf.fetch_result(dp_db_handle, &res, no_rows)<0) {
+		if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle, 
+						&res, no_rows)<0) {
 			LM_ERR("failed to fetch\n");
 			if (res)
-				dp_dbf.free_result(dp_db_handle, res);
-			return -1;
+				dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+
+			goto err1;
 		}
 	} else {
 		/*select the whole table and all the columns*/
-		if(dp_dbf.query(dp_db_handle,cond_cols,0,cond_val,query_cols,1,
+		if(dp_conn->dp_dbf.query(*dp_conn->dp_db_handle,
+				cond_cols,0,cond_val,query_cols,1,
 			DP_TABLE_COL_NO, order, &res) < 0){
 				LM_ERR("failed to query database\n");
-			return -1;
+
+			goto err1;
 		}
 	}
 
 	nr_rows = RES_ROW_N(res);
 
-	lock_start_write( dp_table->ref_lock );
 
-	dp_table->next_index = dp_table->crt_index == 0 ? 1 : 0;
 
 	if(nr_rows == 0){
 		LM_WARN("no data in the db\n");
@@ -250,65 +295,83 @@ int dp_load_db(dp_table_list_p dp_table)
 			rows = RES_ROWS(res);
 			values = ROW_VALUES(rows+i);
 
-			if ((rule = build_rule(values)) == NULL ) {
+			if ((rule = build_rule(values)) == NULL) {
 				LM_WARN(" failed to build rule -> skipping\n");
 				continue;
 			}
 
 			rule->table_id = i;
 
-			if(add_rule2hash(rule , dp_table, dp_table->next_index) != 0) {
+			if(add_rule2hash(rule , dp_conn, dp_conn->next_index) != 0) {
 				LM_ERR("add_rule2hash failed\n");
 				goto err2;
 			}
 		}
 
-		if (DB_CAPABILITY(dp_dbf, DB_CAP_FETCH)) {
-			if(dp_dbf.fetch_result(dp_db_handle, &res, no_rows)<0) {
+
+		if (DB_CAPABILITY(dp_conn->dp_dbf, DB_CAP_FETCH)) {
+			if(dp_conn->dp_dbf.fetch_result(*dp_conn->dp_db_handle, 
+							&res, no_rows)<0) {
 				LM_ERR("failure while fetching!\n");
 				if (res)
-					dp_dbf.free_result(dp_db_handle, res);
-				lock_stop_write( dp_table->ref_lock );
-				return -1;
+					dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+				goto err1;
 			}
 		} else {
 			break;
 		}
 	}  while(RES_ROW_N(res)>0);
 
+
 end:
-	destroy_hash(&dp_table->hash[dp_table->crt_index]);
+
+
 	/*update data*/
-	dp_table->crt_index = dp_table->next_index;
+	lock_start_write( dp_conn->ref_lock );
 
-	/* release the exclusive writing access */
-	lock_stop_write( dp_table->ref_lock );
+	destroy_hash(&dp_conn->hash[dp_conn->crt_index]);
 
-	list_hash(dp_table->hash[dp_table->crt_index], dp_table->ref_lock);
+	dp_conn->crt_index = dp_conn->next_index;
 
-	dp_dbf.free_result(dp_db_handle, res);
+	lock_stop_write( dp_conn->ref_lock );
+
+	list_hash(dp_conn->hash[dp_conn->crt_index], dp_conn->ref_lock);
+
+	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
 	return 0;
+
+err1:
+
+	lock_start_write( dp_conn->ref_lock );
+
+	dp_conn->next_index = dp_conn->crt_index;
+
+	lock_stop_write( dp_conn->ref_lock );
+
+	return -1;
 
 err2:
 	if(rule)	destroy_rule(rule);
-	destroy_hash(&dp_table->hash[dp_table->next_index]);
-	dp_dbf.free_result(dp_db_handle, res);
-	dp_table->next_index = dp_table->crt_index;
+	destroy_hash(&dp_conn->hash[dp_conn->next_index]);
+	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
+
+	lock_start_write( dp_conn->ref_lock );
+
+	dp_conn->next_index = dp_conn->crt_index;
 	/* if lock defined - release the exclusive writing access */
-	if(dp_table->ref_lock)
-		/* release the readers */
-		lock_stop_write( dp_table->ref_lock );
+
+	lock_stop_write( dp_conn->ref_lock );
 	return -1;
 }
 
 
 int str_to_shm(str src, str * dest)
 {
-	if(src.len ==0 || src.s ==0)
+	if (src.len ==0 || src.s ==0)
 		return 0;
 
 	dest->s = (char*)shm_malloc((src.len+1) * sizeof(char));
-	if(!dest->s){
+	if (!dest->s) {
 		LM_ERR("out of shm memory\n");
 		return -1;
 	}
@@ -435,6 +498,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	return new_rule;
 
 err:
+	if(match_comp)	wrap_pcre_free(match_comp);
 	if(subst_comp)	wrap_pcre_free(subst_comp);
 	if(repl_comp)	repl_expr_free(repl_comp);
 	if(new_rule)	destroy_rule(new_rule);
@@ -442,21 +506,20 @@ err:
 }
 
 
-int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
+int add_rule2hash(dpl_node_t * rule, dp_connection_list_t *conn, int index)
 {
 	dpl_id_p crt_idp;
 	dpl_index_p indexp;
 	int new_id, bucket = 0;
 
-	if(!table){
+	if(!conn){
 		LM_ERR("data not allocated\n");
 		return -1;
 	}
 
 	new_id = 0;
 
-	crt_idp = select_dpid(table, rule->dpid, index);
-
+	crt_idp = select_dpid(conn, rule->dpid, index);
 	/*didn't find a dpl_id*/
 	if(!crt_idp){
 		crt_idp = shm_malloc(sizeof(dpl_id_t)	+
@@ -502,8 +565,8 @@ int add_rule2hash(dpl_node_t * rule, dp_table_list_t *table, int index)
 	indexp->last_rule = rule;
 
 	if(new_id){
-			crt_idp->next = table->hash[table->next_index];
-			table->hash[table->next_index] = crt_idp;
+			crt_idp->next = conn->hash[conn->next_index];
+			conn->hash[conn->next_index] = crt_idp;
 	}
 	LM_DBG("added the rule id %i pr %i next %p to the "
 		" %i bucket\n", rule->dpid,
@@ -586,14 +649,14 @@ void destroy_rule(dpl_node_t * rule){
 }
 
 
-dpl_id_p select_dpid(dp_table_list_p table, int id, int index)
+dpl_id_p select_dpid(dp_connection_list_p conn, int id, int index)
 {
 	dpl_id_p idp;
 
-	if(!table || !table->hash[index])
+	if(!conn || !conn->hash[index])
 		return NULL;
 
-	for(idp = table->hash[index]; idp!=NULL; idp = idp->next)
+	for(idp = conn->hash[index]; idp!=NULL; idp = idp->next)
 		if(idp->dp_id == id)
 			return idp;
 
@@ -645,35 +708,39 @@ void list_rule(dpl_node_t * rule)
 		rule->attrs.len,	rule->attrs.s);
 }
 
-/* Retrieves the corresponding entry of the given table name */
-dp_table_list_p dp_get_table(str * table)
+/* Retrieves the corresponding entry of the given partition name */
+dp_connection_list_p dp_get_connection(str * partition)
 {
-	dp_table_list_t *el;
+	dp_connection_list_t *el;
 
-	el = dp_tables;
-	while (el && str_strcmp(table, &el->table_name)) {
+	el = dp_conns;
+	while (el && str_strcmp(partition, &el->partition)) {
 		el = el->next;
 	}
 
 	return el;
 }
 
-/* Adds a new separate table and loads all its rules in shm */
-dp_table_list_p dp_add_table(str * table)
+/* Adds a new separate partition and loads all rules from database in shm */
+dp_connection_list_p dp_add_connection(dp_head_p head)
 {
-	dp_table_list_t *el;
+	dp_connection_list_t *el;
 
-	if ((el = dp_get_table(table)) != NULL)
+	if ((el = dp_get_connection(&head->partition)) != NULL){
 		return el;
+	}
 
-	el = shm_malloc(sizeof(*el) + table->len);
+	int all_size = sizeof(dp_connection_list_t) +head->dp_table_name.len
+				+ head->partition.len + head->dp_db_url.len; 
+	el = shm_malloc(all_size);
+	
+	if(!el)
+		LM_ERR("No more shm\n");
 
-	if (el == NULL) {
+	if (!el) {
 		LM_ERR("No more shm mem\n");
 		return NULL;
 	}
-
-	memset(el, 0, sizeof(*el));
 
 	/* create & init lock */
 	if((el->ref_lock = lock_init_rw()) == NULL) {
@@ -682,20 +749,45 @@ dp_table_list_p dp_add_table(str * table)
 		return NULL;
 	}
 
-	el->table_name.s = (char *)(el + 1);
-	el->table_name.len = table->len;
-	memcpy(el->table_name.s, table->s, table->len);
 
-	if (init_db_data(el) != 0) {
-		LM_ERR("Unable to init db data\n");
+	/*Set table name*/
+	el->table_name.s = (char*)el + sizeof(*el);
+	el->table_name.len = head->dp_table_name.len;
+	memcpy(el->table_name.s, head->dp_table_name.s, head->dp_table_name.len);
+
+
+	/*Set partition*/
+	el->partition.s = el->table_name.s + el->table_name.len;
+	el->partition.len = head->partition.len;
+	memcpy(el->partition.s, head->partition.s, head->partition.len);
+
+	/*Set db_url*/
+	el->db_url.s = el->partition.s + el->partition.len;
+	el->db_url.len = head->dp_db_url.len;
+	memcpy(el->db_url.s, head->dp_db_url.s, head->dp_db_url.len);
+
+	el->dp_db_handle = pkg_malloc(sizeof(db_con_t*));
+	if (!el->dp_db_handle) {
+		LM_ERR("No more shm mem\n");
+		return NULL;
+	}
+
+	*el->dp_db_handle = 0;
+
+	if (test_db(el) != 0) {
+		LM_ERR("Unable to test db\n");
 		shm_free(el);
 		return NULL;
 	}
 
-	el->next = dp_tables;
-	dp_tables = el;
+	*el->dp_db_handle = 0;
 
-	LM_DBG("Added dialplan table [%.*s].\n", table->len, table->s);
+	el->next = dp_conns;
+	dp_conns = el;
+
+	LM_DBG("Added dialplan partition [%.*s] table [%.*s].\n",
+		 head->partition.len, head->partition.s, 
+				head->dp_table_name.len, head->dp_table_name.s);
 
 	return el;
 }

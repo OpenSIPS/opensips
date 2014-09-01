@@ -92,3 +92,7 @@ CREATE TABLE pua (
     extra_headers TEXT
 ) ENGINE=MyISAM;
 
+CREATE INDEX del1_idx ON pua (pres_uri, event);
+CREATE INDEX del2_idx ON pua (expires);
+CREATE INDEX update_idx ON pua (pres_uri, pres_id, flag, event);
+

@@ -9,8 +9,12 @@
 		<column><field>msg</field><type>DB_BLOB</type></column>
 		<column><field>method</field><type>DB_STR</type></column>
 		<column><field>status</field><type>DB_STR</type></column>
-		<column><field>fromip</field><type>DB_STR</type></column>
-		<column><field>toip</field><type>DB_STR</type></column>
+		<column><field>from_proto</field><type>DB_STR</type></column>
+		<column><field>from_ip</field><type>DB_STR</type></column>
+		<column><field>from_port</field><type>DB_INT</type></column>
+		<column><field>to_proto</field><type>DB_STR</type></column>
+		<column><field>to_ip</field><type>DB_STR</type></column>
+		<column><field>to_port</field><type>DB_INT</type></column>
 		<column><field>fromtag</field><type>DB_STR</type></column>
 		<column><field>direction</field><type>DB_STR</type></column>
 	</db_table>

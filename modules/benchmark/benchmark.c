@@ -156,8 +156,10 @@ static pv_export_t mod_items[] = {
  */
 struct module_exports exports = {
 	"benchmark",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
@@ -677,6 +679,7 @@ static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param)
 		LM_ERR("Could not allocate the reply mi tree");
 		return NULL;
 	}
+	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	for(bmt = bm_mycfg->timers; bmt!=NULL; bmt=bmt->next) {
 		lock_get(bmt->lock);

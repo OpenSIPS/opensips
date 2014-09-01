@@ -282,8 +282,8 @@ int record_route(struct sip_msg* _m, str *params)
 		rr_param_buf.len = 0;
 	}
 
-	l = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, HDR_RECORDROUTE_T);
-	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
+	l = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
+	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0);
 	if (!l || !l2) {
 		LM_ERR("failed to create an anchor\n");
 		return -3;
@@ -295,8 +295,8 @@ int record_route(struct sip_msg* _m, str *params)
 	}
 
 	if (enable_double_rr) {
-		l = anchor_lump(_m, _m->headers->name.s - _m->buf,0,HDR_RECORDROUTE_T);
-		l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
+		l = anchor_lump(_m, _m->headers->name.s - _m->buf,HDR_RECORDROUTE_T);
+		l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0);
 		if (!l || !l2) {
 			LM_ERR("failed to create an anchor\n");
 			return -5;
@@ -405,8 +405,8 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 
 	memcpy(term, RR_TERM, RR_TERM_LEN);
 
-	l = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, HDR_RECORDROUTE_T);
-	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0, 0);
+	l = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
+	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0);
 	if (!l || !l2) {
 		LM_ERR("failed to create lump anchor\n");
 		goto error;

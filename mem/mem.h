@@ -98,14 +98,6 @@ void set_pkg_stats(pkg_status_holder*);
 #			define pkg_realloc(p, s) fm_realloc(mem_block, (p), (s),__FILE__, \
 				__FUNCTION__, __LINE__)
 #                       define pkg_info(i) fm_info(mem_block,i)
-#		elif defined HP_MALLOC
-#			define pkg_malloc(s) hp_malloc_unsafe(mem_block, (s),__FILE__, \
-				__FUNCTION__, __LINE__)
-#			define pkg_free(p)   hp_free_unsafe(mem_block, (p), __FILE__,  \
-				__FUNCTION__, __LINE__)
-#			define pkg_realloc(p, s) hp_realloc_unsafe(mem_block, (p), (s),__FILE__, \
-				__FUNCTION__, __LINE__)
-#                       define pkg_info(i) hp_info(mem_block,i)
 #		else
 #			define pkg_malloc(s) qm_malloc(mem_block, (s),__FILE__, \
 				__FUNCTION__, __LINE__)
@@ -125,9 +117,9 @@ void set_pkg_stats(pkg_status_holder*);
 #			define pkg_free(p)   fm_free(mem_block, (p))
 #                       define pkg_info(i) fm_info(mem_block,i)
 #		elif defined HP_MALLOC
-#			define pkg_malloc(s) hp_malloc_unsafe(mem_block, (s))
-#			define pkg_realloc(p, s) hp_realloc_unsafe(mem_block, (p), (s))
-#			define pkg_free(p)   hp_free_unsafe(mem_block, (p))
+#			define pkg_malloc(s) hp_pkg_malloc(mem_block, (s))
+#			define pkg_realloc(p, s) hp_pkg_realloc(mem_block, (p), (s))
+#			define pkg_free(p)   hp_pkg_free(mem_block, (p))
 #                       define pkg_info(i) hp_info(mem_block,i)
 #		else
 #			define pkg_malloc(s) qm_malloc(mem_block, (s))
@@ -148,12 +140,12 @@ void set_pkg_stats(pkg_status_holder*);
 #		define MY_PKG_GET_FRAGS()  fm_get_frags(mem_block)
 #	elif defined HP_MALLOC
 #		define pkg_status()        hp_status(mem_block)
-#		define MY_PKG_GET_SIZE()   hp_get_size(mem_block)
-#		define MY_PKG_GET_USED()   hp_get_used(mem_block)
-#		define MY_PKG_GET_RUSED()  hp_get_real_used(mem_block)
-#		define MY_PKG_GET_MUSED()  hp_get_max_real_used(mem_block)
-#		define MY_PKG_GET_FREE()   hp_get_free(mem_block)
-#		define MY_PKG_GET_FRAGS()  hp_get_frags(mem_block)
+#		define MY_PKG_GET_SIZE()   hp_pkg_get_size(mem_block)
+#		define MY_PKG_GET_USED()   hp_pkg_get_used(mem_block)
+#		define MY_PKG_GET_RUSED()  hp_pkg_get_real_used(mem_block)
+#		define MY_PKG_GET_MUSED()  hp_pkg_get_max_real_used(mem_block)
+#		define MY_PKG_GET_FREE()   hp_pkg_get_free(mem_block)
+#		define MY_PKG_GET_FRAGS()  hp_pkg_get_frags(mem_block)
 #	else
 #		define pkg_status()  qm_status(mem_block)
 #		define MY_PKG_GET_SIZE()   qm_get_size(mem_block)

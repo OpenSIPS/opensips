@@ -2,7 +2,7 @@ AAA RADIUS MODULE
 
 Irina-Maria Stanescu
 
-   OpenSIPS
+   OpenSIPS Solutions
 
 Edited by
 
@@ -13,8 +13,7 @@ Irina-Maria Stanescu
 
    Copyright © 2009 Voice Sistem SRL
    Revision History
-   Revision $Revision: 5908 $ $Date: 2009-07-21 16:56:23 +0300
-                              (Tue, 21 Jul 2009) $
+   Revision $Revision: 5908 $ $Date$
      __________________________________________________________
 
    Table of Contents
@@ -29,15 +28,15 @@ Irina-Maria Stanescu
 
         1.3. Exported Parameters
 
-              1.3.1. sets
-              1.3.2. radius_config
-              1.3.3. syslog_name
+              1.3.1. sets (string)
+              1.3.2. radius_config (string)
+              1.3.3. syslog_name (string)
+              1.3.4. fetch_all_values (integer)
 
         1.4. Exported Functions
 
-              1.4.1.
-                      radius_send_auth(input_set_name,output_set_nam
-                      e)
+              1.4.1. radius_send_auth(input_set_name,
+                      output_set_name)
 
               1.4.2. radius_send_acct(input_set_name)
 
@@ -46,8 +45,9 @@ Irina-Maria Stanescu
    1.1. Set sets parameter
    1.2. Set radius_config parameter
    1.3. Set syslog_name parameter
-   1.4. radius_send_auth usage
-   1.5. radius_send_acct usage
+   1.4. Set fetch_all_values parameter
+   1.5. radius_send_auth usage
+   1.6. radius_send_acct usage
 
 Chapter 1. Admin Guide
 
@@ -85,7 +85,7 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. sets
+1.3.1. sets (string)
 
    Sets of Radius AVPs to be used when building custom RADIUS
    requests (set of input RADIUS AVPs) or when fetching data from
@@ -121,7 +121,7 @@ modparam("aaa_radius","sets","set2 = (Sip-Group = $var(sipgrup)) ")
 ...
 
 
-1.3.2. radius_config
+1.3.2. radius_config (string)
 
    Radiusclient configuration file.
 
@@ -136,7 +136,7 @@ nt.conf")
 ...
 
 
-1.3.3. syslog_name
+1.3.3. syslog_name (string)
 
    Enable logging of the client library to syslog, using the given
    log name.
@@ -154,9 +154,25 @@ nt.conf")
 modparam("aaa_radius", "syslog_name", "aaa-radius")
 ...
 
+1.3.4. fetch_all_values (integer)
+
+   For the output sets, this parameter controls if all the values
+   (for the same RADIUS AVP) should be returned (otherwise only
+   the first value will be returned). When enabling this options,
+   be sure that the variable you use to get the RADIUS output can
+   store multiple values (like the AVP variables).
+
+   By default this parameter is disabled (set to 0) for backward
+   compatibility reasons.
+
+   Example 1.4. Set fetch_all_values parameter
+...
+modparam("aaa_radius", "fetch_all_values", 1)
+...
+
 1.4. Exported Functions
 
-1.4.1.  radius_send_auth(input_set_name,output_set_name)
+1.4.1.  radius_send_auth(input_set_name, output_set_name)
 
    This function can be used from the script to make custom radius
    authentication request. The function takes two parameters.
@@ -180,7 +196,7 @@ modparam("aaa_radius", "syslog_name", "aaa-radius")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
 
-   Example 1.4. radius_send_auth usage
+   Example 1.5. radius_send_auth usage
 
 ...
 radius_send_auth("set1","set2");
@@ -213,7 +229,7 @@ switch ($rc) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE and LOCAL_ROUTE.
 
-   Example 1.5. radius_send_acct usage
+   Example 1.6. radius_send_acct usage
 
 ...
 radius_send_acct("set1");

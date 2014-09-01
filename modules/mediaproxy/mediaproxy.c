@@ -217,10 +217,23 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",     DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
     "mediaproxy",    // module name
+    MOD_TYPE_DEFAULT,// class of this module
     MODULE_VERSION,  // module name
     DEFAULT_DLFLAGS, // dlopen flags
+    &deps,           // OpenSIPS module dependencies
     commands,        // exported functions
     parameters,      // exported parameters
     NULL,            // exported statistics
@@ -448,9 +461,9 @@ get_cseq_number(struct sip_msg *msg, str *cseq)
 {
     struct cell *trans = tm_api.t_gett();
 
-    if (msg->first_line.type == SIP_REPLY && trans != NULL && trans != T_UNDEFINED) {
-        cseq->s = trans->cseq_n.s+CSEQ_LEN;
-        cseq->len = trans->cseq_n.len-CSEQ_LEN;
+    if (msg->first_line.type == SIP_REPLY && trans != NULL && trans != T_UNDEFINED &&
+    trans->uas.request!=NULL ) {
+        *cseq = get_cseq(trans->uas.request)->number;
     } else {
         if (msg->cseq == NULL) {
             if (parse_headers(msg, HDR_CSEQ_F, 0)==-1) {
@@ -463,11 +476,6 @@ get_cseq_number(struct sip_msg *msg, str *cseq)
             }
         }
         *cseq = get_cseq(msg)->number;
-    }
-
-    if (cseq->s==NULL || cseq->len==0) {
-        LM_ERR("missing CSeq number\n");
-        return False;
     }
 
     return True;
@@ -1231,7 +1239,7 @@ insert_element(struct sip_msg *msg, char *position, char *element)
         return False;
     }
 
-    anchor = anchor_lump(msg, position - msg->buf, 0, 0);
+    anchor = anchor_lump(msg, position - msg->buf, 0);
     if (!anchor) {
         LM_ERR("failed to get anchor for new element\n");
         pkg_free(buf);

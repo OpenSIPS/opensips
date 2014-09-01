@@ -183,12 +183,12 @@ static int prepend_path(struct sip_msg* _m, str *user, int recv)
 
 	if (hf) {
 		/* path found, add ours in front of that */
-		l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
-		l2 = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+		l = anchor_lump(_m, hf->name.s - _m->buf, 0);
+		l2 = anchor_lump(_m, hf->name.s - _m->buf, 0);
 	} else {
 		/* no path, append to message */
-		l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
-		l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+		l = anchor_lump(_m, _m->unparsed - _m->buf, 0);
+		l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0);
 	}
 
 	if (!l || !l2) {
@@ -204,12 +204,12 @@ static int prepend_path(struct sip_msg* _m, str *user, int recv)
 	if (enable_double_path) {
 		if (hf) {
 			/* path found, add ours in front of that */
-			l = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
-			l2 = anchor_lump(_m, hf->name.s - _m->buf, 0, 0);
+			l = anchor_lump(_m, hf->name.s - _m->buf, 0);
+			l2 = anchor_lump(_m, hf->name.s - _m->buf, 0);
 		} else {
 			/* no path, append to message */
-			l = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
-			l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+			l = anchor_lump(_m, _m->unparsed - _m->buf, 0);
+			l2 = anchor_lump(_m, _m->unparsed - _m->buf, 0);
 		}
 
 		if (!l || !l2) {

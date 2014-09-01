@@ -2710,6 +2710,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.body          = (body.s?&body:NULL);
 	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 	get_local_contact( ci.send_sock, &ci.local_contact);
+	/* grab all AVPs from the server side and push them into the client */
+	ci.avps = clone_avp_list( *get_avp_list() );
 
 	dlginfo = tuple->servers[0]->dlginfo;
 	gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &ci.req_uri, msg, &from_tag_gen);
@@ -2756,6 +2758,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		gen_fromtag(&dlginfo->callid, &dlginfo->fromtag, &uri, msg, &from_tag_gen);
 		ci.from_tag = &from_tag_gen;
 		ci.req_uri = uri;
+		ci.avps = clone_avp_list( *get_avp_list() );
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 			b2b_add_dlginfo, b2bl_key);
 		if(client_id == NULL)
@@ -3207,9 +3210,9 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			ci.send_sock     = msg->force_send_socket?
 				msg->force_send_socket:msg->rcv.bind_address;
 			get_local_contact( ci.send_sock, &ci.local_contact);
-
-			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
-			{
+			/* grab all AVPs from the server side */
+			ci.avps = clone_avp_list( *get_avp_list() );
+			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 ) {
 				LM_ERR("cannot parse cseq number\n");
 				goto error;
 			}

@@ -8,6 +8,10 @@ Edited by
 
 Razvan Crainea
 
+Edited by
+
+Ovidiu Sas
+
    Copyright © 2012 www.opensips-solutions.com
      __________________________________________________________
 
@@ -26,7 +30,7 @@ Razvan Crainea
 
         1.6. Exported Parameters
 
-              1.6.1.
+              1.6.1. synch_mode (integer)
 
         1.7. Exported Functions
 
@@ -37,7 +41,8 @@ Razvan Crainea
    List of Examples
 
    1.1. EVENT_ROUTE usage
-   1.2. fetch_event_params usage
+   1.2. Set synch_mode parameter
+   1.3. fetch_event_params usage
 
 Chapter 1. Admin Guide
 
@@ -62,9 +67,9 @@ Chapter 1. Admin Guide
    [ param_name= ] pvar [; [ param_name= ] pvar ]*
 
    Example:
-fetch_even_params("$avp(first_param)");
-fetch_even_params("ip=$avp(pike_ip)");
-fetch_even_params("source=$avp(src);destination=$avp(dst)");
+fetch_event_params("$avp(first_param)");
+fetch_event_params("ip=$avp(pike_ip)");
+fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
    If the name of the parameter is not specified, the avp will be
    populated according to the order of the parameters, as exported
@@ -119,8 +124,18 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 
 1.6. Exported Parameters
 
-   No parameter exported by this module. This module doesn't
-   export any parameter
+1.6.1. synch_mode (integer)
+
+   Sets the default event handling method:
+     * 0 : handle events in asynch mode (in a dedicated process)
+     * 1 : handle events in synch mode (in the same process)
+
+   Default value is 1.
+
+   Example 1.2. Set synch_mode parameter
+...
+modparam("event_route", "synch_mode", 0)
+...
 
 1.7. Exported Functions
 
@@ -134,51 +149,51 @@ fetch_even_params("source=$avp(src);destination=$avp(dst)");
 
    This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
 
-   Example 1.2. fetch_event_params usage
+   Example 1.3. fetch_event_params usage
 ...
-fetch_even_params("$avp(first_param)"); # fetch the first parameter of a
-n event
-fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_even_params("source=$avp(src);destination=$avp(dst)"); # fetch the
- source and destination parameters
+fetch_event_params("$avp(first_param)"); # fetch the first parameter of
+ an event
+fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
+fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch t
+he source and destination parameters
 ...
 
 Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Can I declare more routes for handling the same event?
+   Can I declare more routes for handling the same event?
 
-       No, only a single event_route can be used for a particular
-       event.
+   No, only a single event_route can be used for a particular
+   event.
 
    2.2.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+   Take a look at http://www.opensips.org/.
 
    2.3.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.4.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.

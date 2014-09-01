@@ -67,6 +67,8 @@ extern str forced_socket_column;
 
 extern str reg_table_name;
 
+extern unsigned int timer_interval;
+
 int init_reg_db(const str *db_url);
 int connect_reg_db(const str *db_url);
 int load_reg_info_from_db(unsigned int plist);

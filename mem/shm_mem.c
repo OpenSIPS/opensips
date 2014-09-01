@@ -50,12 +50,25 @@
 
 #ifdef STATISTICS
 stat_export_t shm_stats[] = {
-	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size     },
-	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used     },
-	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused    },
-	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)shm_get_mused    },
-	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free     },
-	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags    },
+	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size  },
+
+#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
+	{"used_size" ,                 0,               &shm_used      },
+	{"real_used_size" ,            0,               &shm_rused     },
+#else
+	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used  },
+	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused },
+#endif
+
+	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)shm_get_mused },
+	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free  },
+
+#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
+	{"fragments" ,                 0,               &shm_frags     },
+#else
+	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags },
+#endif
+
 	{0,0,0}
 };
 #endif
@@ -78,9 +91,11 @@ static void* shm_mempool=(void*)-1;
 	struct qm_block* shm_block;
 #endif
 
-/* 
- * holds the total number of shm_mallocs requested for each
- * bucket of the memory hash since daemon startup (useful for memory warming)
+/*
+ * - the memory fragmentation pattern of OpenSIPS
+ * - holds the total number of shm_mallocs requested for each
+ *   different possible size since daemon startup
+ * - allows memory warming (preserving the fragmentation pattern on restarts)
  */
 unsigned long long *mem_hash_usage;
 
@@ -286,46 +301,41 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 
 	/* init it for malloc*/
-	shm_block=shm_malloc_init(mempool, pool_size);
-	if (shm_block==0){
+	shm_block = shm_malloc_init(mempool, pool_size);
+	if (!shm_block){
 		LM_CRIT("could not initialize shared malloc\n");
 		shm_mem_destroy();
 		return -1;
 	}
 
 #ifdef HP_MALLOC
-	/* if memory warming is on, pre-populate the hash with free fragments */
-	if (mem_warming_enabled) {
-		if (shm_mem_warming(shm_block) != 0)
-			LM_INFO("skipped memory warming\n");
-	}
-
-	mem_hash_usage = shm_malloc_unsafe(HP_HASH_SIZE * sizeof *mem_hash_usage);
-	if (!mem_hash_usage) {
-		LM_ERR("failed to allocate statistics array\n");
-		return -1;
-	}
-
-	memset(mem_hash_usage, 0, HP_HASH_SIZE * sizeof *mem_hash_usage);
-
 	/* lock_alloc cannot be used yet! */
-	mem_lock = shm_malloc_unsafe(HP_HASH_SIZE * sizeof *mem_lock);
+	mem_lock = shm_malloc_unsafe(HP_TOTAL_HASH_SIZE * sizeof *mem_lock);
 	if (!mem_lock) {
-		LM_CRIT("could not allocate shm lock array\n");
+		LM_CRIT("could not allocate the shm lock array\n");
 		shm_mem_destroy();
 		return -1;
 	}
 
-	for (i = 0; i < HP_HASH_SIZE; i++)
+	for (i = 0; i < HP_TOTAL_HASH_SIZE; i++)
 		if (!lock_init(&mem_lock[i])) {
 			LM_CRIT("could not initialize lock\n");
 			shm_mem_destroy();
 			return -1;
 		}
+
+	mem_hash_usage = shm_malloc_unsafe(HP_TOTAL_HASH_SIZE * sizeof *mem_hash_usage);
+	if (!mem_hash_usage) {
+		LM_ERR("failed to allocate statistics array\n");
+		return -1;
+	}
+
+	memset(mem_hash_usage, 0, HP_TOTAL_HASH_SIZE * sizeof *mem_hash_usage);
+
 #else
 	mem_lock = shm_malloc_unsafe(sizeof *mem_lock);
 	if (!mem_lock) {
-		LM_CRIT("could not allocate shm lock array\n");
+		LM_CRIT("could not allocate the shm lock\n");
 		shm_mem_destroy();
 		return -1;
 	}
@@ -348,7 +358,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		*event_shm_last=0;
 		event_shm_pending=shm_malloc_unsafe(sizeof(int));
 		if (event_shm_pending==0){
-			LM_CRIT("could not allocate shm peinding flags\n");
+			LM_CRIT("could not allocate shm pending flags\n");
 			shm_mem_destroy();
 			return -1;
 		}
@@ -376,6 +386,37 @@ int shm_mem_init(void)
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
+struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
+{
+#ifdef DBG_QM_MALLOC
+	struct mi_root *root;
+	int ret;
+
+	shm_lock();
+	ret = qm_mem_check(shm_block);
+	shm_unlock();
+
+	/* any return means success; print the number of fragments now */
+	root = init_mi_tree(200, MI_SSTR(MI_OK));
+
+	if (!addf_mi_node_child(&root->node, 0, MI_SSTR("total_fragments"), "%d", ret)) {
+		LM_ERR("failed to add MI node\n");
+		free_mi_tree(root);
+		return NULL;
+	}
+
+	return root;
+#endif
+
+	return NULL;
+}
+
+void init_shm_statistics(void)
+{
+	#if defined(SHM_MEM) && defined(HP_MALLOC)
+		hp_init_shm_statistics(shm_block);
+	#endif
+}
 
 void shm_mem_destroy(void)
 {

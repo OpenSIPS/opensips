@@ -261,31 +261,31 @@ do{	\
 		case '<':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_LT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '>':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_GT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '&':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_AMP);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '"':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_QUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '\'':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			PI_HTTP_COPY_2(p, (temp_holder), PI_HTTP_ESC_SQUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		}	\
@@ -899,7 +899,7 @@ int ph_getColVals(ph_mod_t *module, ph_cmd_t *cmd,
 			if(vals==NULL||ids==NULL) {LM_ERR("oom\n"); return -1;}
 			col_vals = vals; col_ids = ids;
 			vals = &col_vals[size]; ids = &col_ids[size];
-			memset(vals, 0, sizeof(str*)); memset(ids, 0, sizeof(str*));
+			memset(vals, 0, sizeof *vals); memset(ids, 0, sizeof *ids);
 			/* Retrieve the node attribute */
 			attr.s = ph_xmlNodeGetAttrContentByName(node,
 							PI_HTTP_XML_ID_ATTR);
@@ -3141,7 +3141,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 							command->q_keys[j]->len,
 							command->q_keys[j]->s);
 					}
-					PI_HTTP_COPY(p,PI_HTTP_HREF_3);
+					if(link_on) PI_HTTP_COPY(p,PI_HTTP_HREF_3);
 					PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_4d);
 				}
 				PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_tr_2);

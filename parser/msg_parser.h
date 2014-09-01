@@ -108,7 +108,7 @@ enum request_method {
 									  * callbacks were registered */
 
 /* define the # of unknown URI parameters to parse */
-#define URI_MAX_U_PARAMS 5
+#define URI_MAX_U_PARAMS 10
 
 #define IFISMETHOD(methodname,firstchar)                                  \
 if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
@@ -143,7 +143,7 @@ if (  (*tmp==(firstchar) || *tmp==((firstchar) | 32)) &&                  \
 (((m)->new_uri.s && (m)->new_uri.len) ? (&(m)->new_uri) : (&(m)->first_line.u.request.uri))
 
 
-enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T};
+enum _uri_type{ERROR_URI_T=0, SIP_URI_T, SIPS_URI_T, TEL_URI_T, TELS_URI_T, URN_SERVICE_URI_T};
 typedef enum _uri_type uri_type;
 
 struct sip_uri {

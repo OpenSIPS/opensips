@@ -306,7 +306,7 @@ static inline int save_ruri(struct sip_msg* _m)
 	}
 
 	     /* Create an anchor */
-	anchor = anchor_lump(_m, _m->unparsed - _m->buf, 0, 0);
+	anchor = anchor_lump(_m, _m->unparsed - _m->buf, 0);
 	if (anchor == 0) {
 		LM_ERR("failed to get anchor\n");
 		return -2;

@@ -61,11 +61,24 @@ static cmd_export_t cmds[]=
 	{0,						0,	0,						0,	0,				0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "sl", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"signaling",				/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
 	0,							/* exported parameters */
 	0,							/* exported statistics */
@@ -111,7 +124,7 @@ static int mod_init(void)
 
 	if(!tm_loaded && !sl_loaded)
 	{
-		LM_ERR("nighter 'tm' nor 'sl' module loaded! Sipreply module requires"
+		LM_ERR("neither 'tm' nor 'sl' module loaded! Sipreply module requires"
 				" loading at least one of these two\n");
 		return -1;
 	}

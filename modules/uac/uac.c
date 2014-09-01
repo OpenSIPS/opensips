@@ -50,6 +50,7 @@
 #include "../dialog/dlg_load.h"
 
 #include "replace.h"
+#include "auth.h"
 
 
 
@@ -63,6 +64,7 @@ str rr_from_param = str_init("vsf");
 str rr_from_param_new = str_init("739823");
 str store_from_bavp = str_init("$bavp(739825)");
 str rr_to_param = str_init("vst");
+str rr_uac_cseq_param = str_init("aci");
 str rr_to_param_new = str_init("739824");
 str store_to_bavp = str_init("$bavp(739826)");
 pv_spec_t from_bavp_spec;
@@ -127,12 +129,38 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static module_dependency_t *get_deps_restore_mode(param_export_t *param)
+{
+	char *mode = *(char **)param->param_pointer;
 
+	if (!mode || strlen(mode) == 0)
+		return NULL;
+
+	if (strcmp(mode, "none") != 0)
+		return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
+
+	return NULL;
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "dialog",   DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "restore_mode", get_deps_restore_mode },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"uac",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	params,     /* param exports */
 	0,          /* exported statistics */
@@ -167,6 +195,7 @@ inline static int parse_store_bavp(str *s, pv_spec_t *bavp)
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
+	int rr_api_loaded=0;
 
 	if ( is_script_func_used("uac_auth", -1) ) {
 		/* load the UAC_AUTH API as uac_auth() is invoked from script */
@@ -218,6 +247,7 @@ static int mod_init(void)
 				LM_ERR("can't load RR API\n");
 				goto error;
 			}
+			rr_api_loaded=1;
 
 			if (restore_mode==UAC_AUTO_RESTORE) {
 				/* we need the append_fromtag on in RR */
@@ -259,7 +289,25 @@ static int mod_init(void)
 
 		/* init from replacer */
 		init_from_replacer();
+	}
 
+	if (is_script_func_used("uac_auth", -1)) {
+		if (!rr_api_loaded) {
+			if (load_rr_api(&uac_rrb)!=0) {
+				LM_ERR("can't load RR API\n");
+				goto error;
+			}
+		}
+		if (!uac_rrb.append_fromtag) {
+			LM_ERR("'append_fromtag' RR param is not enabled!"
+			" - required by uac_auth() restore mode\n");
+			goto error;
+		}
+
+		if (uac_rrb.register_rrcb( rr_uac_auth_checker, 0, 2)!=0) {
+			LM_ERR("failed to install RR callback\n");
+			goto error;
+		}
 	}
 
 	return 0;

@@ -29,6 +29,11 @@
 
 #include <amqp.h>
 #include <amqp_framing.h>
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
+  #define AMQP_VERSION_v04
+#include <amqp_tcp_socket.h>
+#endif
+
 
 /* transport protocols name */
 #define RMQ_NAME	"rabbitmq"
@@ -54,18 +59,19 @@
 #define RMQ_DEFAULT_VHOST	"/"
 #define RMQ_DEFAULT_PORT	5672
 
-#define RMQ_PARAM_EXCH	(1 << 1)
+#define RMQ_PARAM_RKEY	(1 << 1)
 #define RMQ_PARAM_CONN	(1 << 2)
 #define RMQ_PARAM_CHAN	(1 << 3)
 #define RMQ_PARAM_USER	(1 << 4)
 #define RMQ_PARAM_PASS	(1 << 5)
+#define RMQ_PARAM_EKEY	(1 << 6)
 
 typedef struct _rmq_params {
+	str routing_key;
 	str exchange;
 	str user;
 	str pass;
 	amqp_connection_state_t conn;
-	int sock;
 	int channel;
 	int flags;
 	int heartbeat;

@@ -50,6 +50,7 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 
 #define lock_start_write(_lock) \
 	do { \
+		__label__ again; \
 		again: \
 			lock_get((_lock)->lock); \
 			/* wait for the other writers */ \
@@ -72,6 +73,7 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 
 #define lock_start_read(_lock) \
 	do { \
+		__label__ again; \
 		again: \
 			lock_get((_lock)->lock); \
 			if ((_lock)->w_flag) { \

@@ -90,6 +90,17 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	struct timeval start;
 	int rc;
 	char *tmp;
+	str in_buff;
+
+	in_buff.len = len;
+	in_buff.s = buf;
+
+	/* the raw processing callbacks can change the buffer,
+	further use in_buff.s and at the end try to free in_buff.s
+	if changed by callbacks */
+	run_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff);
+	/* update the length for further processing */
+	len = in_buff.len;
 
 	msg=pkg_malloc(sizeof(struct sip_msg));
 	if (msg==0) {
@@ -102,14 +113,12 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 	memset(msg,0, sizeof(struct sip_msg)); /* init everything to 0 */
 	/* fill in msg */
-	msg->buf=buf;
+	msg->buf=in_buff.s;
 	msg->len=len;
 	msg->rcv=*rcv_info;
 	msg->id=msg_no;
-	msg->set_global_address=default_global_address;
-	msg->set_global_port=default_global_port;
 
-	if (parse_msg(buf,len, msg)!=0){
+	if (parse_msg(in_buff.s,len, msg)!=0){
 		tmp=ip_addr2a(&(rcv_info->src_ip));
 		LM_ERR("Unable to parse msg received from [%s:%d]\n", tmp, rcv_info->src_port);
 		/* if a REQUEST msg was detected (first line was succesfully parsed) we
@@ -232,12 +241,16 @@ end:
 	LM_DBG("cleaning up\n");
 	free_sip_msg(msg);
 	pkg_free(msg);
+	if (in_buff.s != buf)
+		pkg_free(in_buff.s);
 	return 0;
 parse_error:
 	exec_parse_err_cb(msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 error:
+	if (in_buff.s != buf)
+		pkg_free(in_buff.s);
 	return -1;
 }
 

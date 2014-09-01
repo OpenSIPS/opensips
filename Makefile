@@ -86,23 +86,39 @@ static_modules_path=$(addprefix modules/, $(static_modules))
 extra_sources=$(wildcard $(addsuffix /*.c, $(static_modules_path)))
 extra_objs=$(extra_sources:.c=.o)
 
-static_defs= $(foreach  mod, $(static_modules), \
+static_defs=$(foreach mod, $(static_modules), \
 		-DSTATIC_$(shell echo $(mod) | tr [:lower:] [:upper:]) )
 
 override extra_defs+=$(static_defs) $(EXTRA_DEFS)
 export extra_defs
 
+# If modules is supplied, only do those. If not, use all modules when
+# building documentation.
+ifeq ($(modules),)
+	doc_modules=$(all_modules)
+else
+	doc_modules=$(modules)
+endif
+
+# Take subset of all modules, excluding the exclude_modules and the
+# static_modules.
 modules=$(filter-out $(addprefix modules/, \
 			$(exclude_modules) $(static_modules)), \
 			$(wildcard modules/*))
+# Let modules consist of modules and include_modules (but remove
+# duplicates).
 modules:=$(filter-out $(modules), $(addprefix modules/, $(include_modules) )) \
 			$(modules)
-modules_names=$(shell echo $(modules)| \
-				sed -e 's/modules\/\([^/ ]*\)\/*/\1.so/g' )
-modules_basenames=$(shell echo $(modules)| \
-				sed -e 's/modules\/\([^/ ]*\)\/*/\1/g' )
-#modules_names=$(patsubst modules/%, %.so, $(modules))
-modules_full_path=$(join  $(modules), $(addprefix /, $(modules_names)))
+
+ifneq ($(module),)
+	modules:=$(addprefix modules/, $(module))
+endif
+
+modules_names=$(patsubst modules/%, %.so, $(modules))
+modules_basenames=$(patsubst modules/%, %, $(modules))
+modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
+
+doc_modules_basenames=$(patsubst modules/%, %, $(doc_modules))
 
 ifeq ($(TLS),)
 	tls_configs=""
@@ -240,97 +256,100 @@ else
 endif
 
 
+.PHONY: tool-docbook2pdf
+tool-docbook2pdf:
+	@if [ -z "$(DBXML2PDF)" ]; then \
+		echo "error: docbook2pdf not found"; exit 1; \
+	fi
+
+.PHONY: tool-lynx
+tool-lynx:
+	@if [ -z "$(DBHTML2TXT)" ]; then \
+		echo "error: lynx not found"; exit 1; \
+	fi
+
+.PHONY: tool-xsltproc
+tool-xsltproc:
+	@if [ -z "$(DBXML2HTML)" ]; then \
+		echo "error: xsltproc not found"; exit 1; \
+	fi
+	@if [ -z "$(DBHTMLXSL)" ]; then \
+		echo "error: docbook.xsl not found (docbook-xsl)"; exit 1; \
+	fi
+
 .PHONY: modules-readme
-modules-readme:
+modules-readme: tool-lynx tool-xsltproc
 	@set -e; \
-	if [ "$(DBXML2HTML)" = "" ]; then \
-		echo "error: xsltproc not found"; exit ; \
-	fi ; \
-	if [ "$(DBHTML2TXT)" = "" ]; then \
-		echo "error: lynx not found"; exit ; \
-	fi ; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to html: $$r.xml" ; \
+				echo ""; \
+				echo "docbook xml to html: $$r.xml"; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml ; \
-				echo  "docbook html to txt: $$r.html" ; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
-				echo  "docbook txt to readme: $$r.txt" ; \
-				rm $$r.html ; \
-				mv $$r.txt ../README ; \
-				echo  "" ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
-	done 
+							$$r.xml; \
+				echo "docbook html to txt: $$r.html"; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
+				echo "docbook txt to readme: $$r.txt"; \
+				rm $$r.html; \
+				mv $$r.txt ../README; \
+				echo ""; \
+			fi; \
+			cd ../../..; \
+		fi; \
+	done
 
 .PHONY: modules-docbook-txt
-modules-docbook-txt:
+modules-docbook-txt: tool-lynx tool-xsltproc
 	@set -e; \
-	if [ "$(DBXML2HTML)" = "" ]; then \
-		echo "error: xsltproc not found"; exit ; \
-	fi ; \
-	if [ "$(DBHTML2TXT)" = "" ]; then \
-		echo "error: lynx not found"; exit ; \
-	fi ; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to html: $$r.xml" ; \
+				echo ""; \
+				echo "docbook xml to html: $$r.xml"; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml ; \
-				echo  "docbook html to txt: $$r.html" ; \
-				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt ; \
-				rm $$r.html ; \
-				echo  "" ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
-	done 
+							$$r.xml; \
+				echo "docbook html to txt: $$r.html"; \
+				$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
+				rm $$r.html; \
+				echo ""; \
+			fi; \
+			cd ../../..; \
+		fi; \
+	done
 
 .PHONY: modules-docbook-html
-modules-docbook-html:
+modules-docbook-html: tool-xsltproc
 	@set -e; \
-	if [ "$(DBXML2HTML)" = "" ]; then \
-		echo "error: xsltproc not found"; exit ; \
-	fi ; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to html: $$r.xml" ; \
+				echo ""; \
+				echo "docbook xml to html: $$r.xml"; \
 				$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-							$$r.xml ; \
-				echo  "" ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
-	done 
+							$$r.xml; \
+				echo ""; \
+			fi; \
+			cd ../../..; \
+		fi; \
+	done
 
 .PHONY: modules-docbook-pdf
-modules-docbook-pdf:
+modules-docbook-pdf: tool-docbook2pdf
 	@set -e; \
-	if [ "$(DBXML2PDF)" = "" ]; then \
-		echo "error: docbook2pdf not found"; exit ; \
-	fi ; \
-	for r in  $(modules_basenames) "" ; do \
+	for r in $(doc_modules_basenames) ""; do \
 		if [ -d "modules/$$r/doc" ]; then \
-			cd "modules/$$r/doc" ; \
+			cd "modules/$$r/doc"; \
 			if [ -f "$$r".xml ]; then \
-				echo  "" ; \
-				echo  "docbook xml to pdf: $$r.xml" ; \
-				$(DBXML2PDF) "$$r".xml ; \
-			fi ; \
-			cd ../../.. ; \
-		fi ; \
-	done 
+				echo ""; \
+				echo "docbook xml to pdf: $$r.xml"; \
+				$(DBXML2PDF) "$$r".xml; \
+			fi; \
+			cd ../../..; \
+		fi; \
+	done
 
 .PHONY: modules-docbook
 modules-docbook: modules-docbook-txt modules-docbook-html modules-docbook-pdf
@@ -393,12 +412,13 @@ dbg: $(NAME)
 
 dist: tar
 
-tar: 
+tar: $(NEWREVISION)
 	$(TAR) -C .. \
 		--exclude=$(notdir $(CURDIR))/tmp* \
 		--exclude=$(notdir $(CURDIR))/debian* \
 		--exclude=.svn* \
-		--exclude=.git* \
+		--exclude=.git \
+		--exclude=.gitignore \
 		--exclude=*.[do] \
 		--exclude=*.so \
 		--exclude=*.il \

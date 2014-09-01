@@ -180,11 +180,22 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"avpops",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
@@ -697,7 +708,7 @@ static int fixup_pushto_avp(void** param, int param_no)
 			break;
 			case PVT_HDR:
 				/* what's the hdr destination ? request or reply? */
-				LM_ERR("push to header  is obsoleted - use append_hf() "
+				LM_ERR("push to header is obsolete - use append_hf() "
 						"or append_to_reply() from textops module!\n");
 				return E_UNSPEC;
 			break;

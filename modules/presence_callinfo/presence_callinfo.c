@@ -87,11 +87,34 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static module_dependency_t *get_deps_dialog_support(param_export_t *param)
+{
+	int no_dialog_support = *(int *)param->param_pointer;
+
+	if (no_dialog_support)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "presence", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "disable_dialog_support_for_sca", get_deps_dialog_support },
+		{ NULL, NULL },
+	},
+};
+
 /* module exports */
 struct module_exports exports= {
 	"presence_callinfo",	/* module name */
+	MOD_TYPE_DEFAULT,       /* class of this module */
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
+	&deps,                  /* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	params,					/* exported parameters */
 	0,						/* exported statistics */

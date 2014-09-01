@@ -66,9 +66,9 @@ do {\
 
 /* list of PSTN gw */
 typedef struct pgw_ {
-	/* internal numerical ID */
+	/* internal numerical ID, not DB related */
 	unsigned int _id;
-	/* GW ID*/
+	/* GW ID from DB */
 	str id;
 	/* type of gateway */
 	int type;
@@ -105,9 +105,7 @@ typedef struct pgw_list_ {
 
 /* list of carriers */
 struct pcr_ {
-	/* id matching the one in db */
-	unsigned int db_id;
-	/* carrier ID/name */
+	/* carrier ID/name from DB */
 	str id;
 	/* flags */
 	unsigned int flags;

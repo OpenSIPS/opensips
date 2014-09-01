@@ -95,11 +95,13 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	}
 
 	LM_DBG("parsing [%.*s]\n",url->len,url->s);
-
 	/* Initialize all attributes to 0 */
 	memset(id, 0, sizeof(struct cachedb_id));
 	st = ST_SCHEME;
 	begin = url->s;
+
+	if (dupl_string(&id->initial_url,url->s,url->s+url->len) < 0)
+		goto err;
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -267,6 +269,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	return 0;
 
  err:
+	if (id->initial_url) pkg_free(id->initial_url);
 	if (id->scheme) pkg_free(id->scheme);
 	if (id->username) pkg_free(id->username);
 	if (id->password) pkg_free(id->password);
@@ -373,6 +376,7 @@ void free_cachedb_id(struct cachedb_id* id)
 {
 	if (!id) return;
 
+	if (id->initial_url) pkg_free(id->initial_url);
 	if (id->scheme) pkg_free(id->scheme);
 	if (id->group_name) pkg_free(id->group_name);
 	if (id->username) pkg_free(id->username);

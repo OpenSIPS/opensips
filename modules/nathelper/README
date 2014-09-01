@@ -327,7 +327,7 @@ if (search("User-Agent: Cisco ATA.*") {
             source address of the message or the provided IP
             address (the provide IP address take precedence over
             the source address).
-     * ip_address - IP to be used for rewritting SDP. If not
+     * ip_address - IP to be used for rewriting SDP. If not
        specified, the received signalling IP will be used. The
        parameter allows pseudo-variables usage. NOTE: For the IP
        to be used, you need to use 0x02 or 0x08 flags, otherwise
@@ -390,8 +390,8 @@ fix_nated_register();
        RFC1918 / RFC6598 addresses.
      * 2 - the "received" test is used: address in Via is compared
        against source IP address of signaling
-     * 4 - Top Most VIA is searched for occurrence of RFC1918
-       / RFC6598 addresses
+     * 4 - Top Most VIA is searched for occurrence of RFC1918 /
+       RFC6598 addresses
      * 8 - SDP is searched for occurrence of RFC1918 / RFC6598
        addresses
      * 16 - test if the source port is different from the port in

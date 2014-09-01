@@ -88,11 +88,23 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",  DEP_ABORT   },
+		{ MOD_TYPE_DEFAULT, "acc", DEP_SILENT  },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports = {
 	"uac_redirect",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */
 	0,        /* exported statistics */
@@ -127,7 +139,7 @@ int get_nr_max(char *s, unsigned char *max)
 			*max = (unsigned char)nr;
 			return 0;
 		}else{
-			LM_ERR("bad  number <%s>\n",s);
+			LM_ERR("bad number <%s>\n",s);
 			return -1;
 		}
 	}

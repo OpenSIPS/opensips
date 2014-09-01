@@ -38,9 +38,14 @@ fi
 # automatic testing.
 #PW=""
 
+if ! [ -z "$DBPORT" ]; then
+	PORT_OPT="-P$DBPORT"
+else
+	PORT_OPT=
+fi
 
-CMD="mysql -h $DBHOST -u$DBROOTUSER "
-DUMP_CMD="mysqldump -h $DBHOST -u$DBROOTUSER -c -t "
+CMD="mysql -h $DBHOST $PORT_OPT -u$DBROOTUSER "
+DUMP_CMD="mysqldump -h $DBHOST $PORT_OPT -u$DBROOTUSER -c -t "
 #################################################################
 
 
@@ -107,6 +112,11 @@ db_charset_test()
 	else
 		CURRCHARSET=`echo "show variables like '%character_set_server%'" | $CMD | $AWK '{print $2}' | $SED -e 1d`
 		ALLCHARSETS=`echo "show character set" | $CMD | $AWK '{print $1}' | $SED -e 1d | $GREP -iv  "utf8" | $GREP -iv "ucs2"`
+	fi
+
+	if [ -z "$ALLCHARSETS" -o -z "$CURRCHARSET" ]; then
+		mwarn "Failed to get the available and used character sets"
+		exit 1;
 	fi
 
 	tries=0;
@@ -260,7 +270,7 @@ if [ $? -ne 0 ] ; then
 		echo " -- Migrating $3 to $1.....SKIPPED (no source)"
 		return 0
 	fi
-	echo "ERROR: failed to migrate $3 to $1!!!"
+	echo "ERROR: failed to migrate $3 to $1 ($X)!!!"
 	echo -n "Skip it and continue (y/n)? "
 	read INPUT
 	if [ "$INPUT" = "y" ] || [ "$INPUT" = "Y" ]
@@ -306,7 +316,7 @@ migrate_table ${dst_db}.dbaliases \
 migrate_table ${dst_db}.subscriber \
 	"id,username,domain,password,email_address,ha1,ha1b,rpid" \
 	${src_db}.subscriber \
-	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid" 
+	"?id,?username,?domain,?password,?email_address,?ha1,?ha1b,?rpid"
 
 ## AVPOPS module
 migrate_table ${dst_db}.usr_preferences \
@@ -327,7 +337,7 @@ migrate_table ${dst_db}.cachedb \
 migrate_table ${dst_db}.closeddial \
 	"id,username,domain,cd_username,cd_domain,group_id,new_uri" \
 	${src_db}.closeddial \
-	"?id,?username,?domain,?cd_username,?cd_domain,?group_id,?new_uri".
+	"?id,?username,?domain,?cd_username,?cd_domain,?group_id,?new_uri"
 
 ## DIALOG modules
 #  runtime data, nothing to migrate

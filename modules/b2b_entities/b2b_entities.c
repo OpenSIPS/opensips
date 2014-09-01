@@ -108,11 +108,26 @@ static mi_export_t mi_cmds[] = {
 	{ "b2be_list", 0, mi_b2be_list, 0,  0,  0},
 	{  0,          0, 0,            0,  0,  0}
 };
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_WARN  },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
+
 /** Module interface */
 struct module_exports exports= {
 	"b2b_entities",                 /* module name */
+	MOD_TYPE_DEFAULT,               /* class of this module */
 	MODULE_VERSION,                 /* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
+	&deps,                          /* OpenSIPS module dependencies */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */
 	0,                              /* exported statistics */
@@ -499,7 +514,7 @@ static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsig
 	char* p;
 	b2b_dlg_t* dlg;
 	dlg_leg_t* leg;
-	struct mi_node *node=NULL, *node1=NULL;
+	struct mi_node *node=NULL, *node1=NULL, *node_l=NULL;
 	struct mi_attr* attr;
 
 	for(i = 0; i< hsize; i++)
@@ -625,29 +640,32 @@ static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsig
 					if(attr == NULL) goto error;
 			}
 
-			leg=dlg->legs;
-			while(leg)
-			{
-				p = int2str((unsigned long)(leg->id), &len);
-				node1 = add_mi_node_child(node, MI_DUP_VALUE, "leg", 3, p, len);
-				if(node1 == NULL) goto error;
-				attr = add_mi_attr(node1, MI_DUP_VALUE, "tag", 3,
-						leg->tag.s, leg->tag.len);
-				if(attr == NULL) goto error;
-				p = int2str((unsigned long)(leg->cseq), &len);
-				attr = add_mi_attr(node1, MI_DUP_VALUE, "cseq", 4, p, len);
-				if(attr == NULL) goto error;
-				attr = add_mi_attr(node1, MI_DUP_VALUE, "contact", 7,
-						leg->contact.s, leg->contact.len);
-				if(attr == NULL) goto error;
-				if(leg->route_set.len)
+			if ( (leg=dlg->legs)!=NULL ) {
+				node_l = add_mi_node_child(node, MI_IS_ARRAY, "LEGS", 4, NULL, 0);
+				if(node_l == NULL) goto error;
+				while(leg)
 				{
-					attr = add_mi_attr(node1, MI_DUP_VALUE, "route_set", 8,
-						leg->route_set.s, leg->route_set.len);
+					p = int2str((unsigned long)(leg->id), &len);
+					node1 = add_mi_node_child(node_l, MI_DUP_VALUE, "leg", 3, p, len);
+					if(node1 == NULL) goto error;
+					attr = add_mi_attr(node1, MI_DUP_VALUE, "tag", 3,
+							leg->tag.s, leg->tag.len);
 					if(attr == NULL) goto error;
-				}
+					p = int2str((unsigned long)(leg->cseq), &len);
+					attr = add_mi_attr(node1, MI_DUP_VALUE, "cseq", 4, p, len);
+					if(attr == NULL) goto error;
+					attr = add_mi_attr(node1, MI_DUP_VALUE, "contact", 7,
+							leg->contact.s, leg->contact.len);
+					if(attr == NULL) goto error;
+					if(leg->route_set.len)
+					{
+						attr = add_mi_attr(node1, MI_DUP_VALUE, "route_set", 8,
+							leg->route_set.s, leg->route_set.len);
+						if(attr == NULL) goto error;
+					}
 
-				leg=leg->next;
+					leg=leg->next;
+				}
 			}
 
 			dlg = dlg->next;
@@ -669,6 +687,7 @@ static struct mi_root* mi_b2be_list(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if (server_htable)
 		if (mi_print_b2be_dlg(rpl, server_htable, server_hsize)!=0)

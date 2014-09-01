@@ -8,8 +8,8 @@ CREATE TABLE silo (
     inc_time INT DEFAULT 0 NOT NULL,
     exp_time INT DEFAULT 0 NOT NULL,
     snd_time INT DEFAULT 0 NOT NULL,
-    ctype CHAR(32) DEFAULT 'text/plain' NOT NULL,
-    body BLOB DEFAULT '' NOT NULL
+    ctype CHAR(255) DEFAULT NULL,
+    body BLOB NOT NULL
 ) ENGINE=MyISAM;
 
 CREATE INDEX account_idx ON silo (username, domain);

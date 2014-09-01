@@ -24,32 +24,37 @@
  *  2014-01-19 initial version (liviu)
  */
 
-#if !defined(f_malloc_h) && !defined(VQ_MALLOC) && !defined(hp_malloc_h)
-#define hp_malloc_h
+#if !defined(HP_MALLOC_H) && !defined(f_malloc_h) && !defined(VQ_MALLOC)
+#define HP_MALLOC_H
 
-#include "meminfo.h"
 #include "../statistics.h"
 #include "../config.h"
 #include "../globals.h"
 
-/* defs*/
+struct hp_frag;
+struct hp_frag_lnk;
+struct hp_block;
 
-#ifdef DBG_F_MALLOC
-#if defined(__CPU_sparc64) || defined(__CPU_sparc)
-/* tricky, on sun in 32 bits mode long long must be 64 bits aligned
- * but long can be 32 bits aligned => malloc should return long long
- * aligned memory */
-	#define ROUNDTO		sizeof(long long)
-#else
-	#define ROUNDTO		sizeof(void*) /* size we round to, must be = 2^n, and
-                      sizeof(hp_frag) must be multiple of ROUNDTO !*/
+#ifndef HP_MALLOC_FAST_STATS
+extern stat_var *shm_used;
+extern stat_var *shm_rused;
+extern stat_var *shm_frags;
 #endif
-#else /* DBG_F_MALLOC */
-	#define ROUNDTO 8UL
-#endif
+
+#include "hp_malloc_stats.h"
+#include "meminfo.h"
+
+#define ROUNDTO 8UL
 #define MIN_FRAG_SIZE	ROUNDTO
 
+#define FRAG_NEXT(f) ((struct hp_frag *) \
+		((char *)(f) + sizeof(struct hp_frag) + ((struct hp_frag *)(f))->size))
 
+/* get the fragment which corresponds to a pointer */
+#define FRAG_OF(p) \
+	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
+
+#define FRAG_OVERHEAD	(sizeof(struct hp_frag))
 
 #define HP_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 #define HP_MALLOC_OPTIMIZE  (1UL << HP_MALLOC_OPTIMIZE_FACTOR)
@@ -60,9 +65,10 @@
 #define HP_LINEAR_HASH_SIZE (HP_MALLOC_OPTIMIZE/ROUNDTO)
 #define HP_EXPONENTIAL_HASH_SIZE ((sizeof(long)*8-HP_MALLOC_OPTIMIZE_FACTOR)+1)
 
-#define HP_HASH_SIZE (HP_LINEAR_HASH_SIZE + HP_EXPONENTIAL_HASH_SIZE + \
-					  HP_LINEAR_HASH_SIZE * SHM_MAX_SECONDARY_HASH_SIZE)
-#define HP_EXTRA_HASH_SIZE  (HP_LINEAR_HASH_SIZE * SHM_MAX_SECONDARY_HASH_SIZE)
+#define HP_HASH_SIZE       (HP_LINEAR_HASH_SIZE + HP_EXPONENTIAL_HASH_SIZE)
+#define HP_EXTRA_HASH_SIZE (HP_LINEAR_HASH_SIZE * SHM_MAX_SECONDARY_HASH_SIZE)
+
+#define HP_TOTAL_HASH_SIZE (HP_HASH_SIZE + HP_EXTRA_HASH_SIZE)
 
 /* hash structure:
  * 0 .... HP_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
@@ -132,45 +138,49 @@ unsigned int optimized_put_indexes[HP_HASH_SIZE];
 #define UN_HASH(h)	(((unsigned long)(h) <= (HP_MALLOC_OPTIMIZE/ROUNDTO)) ?\
 						(unsigned long)(h)*ROUNDTO: \
 						1UL<<((unsigned long)(h)-HP_MALLOC_OPTIMIZE/ROUNDTO+\
-							HP_MALLOC_OPTIMIZE_FACTOR-1)\
+							HP_MALLOC_OPTIMIZE_FACTOR - 1)\
 					)
 
-struct hp_frag{
+struct hp_frag {
 	unsigned long size;
-	union{
-		struct hp_frag* nxt_free;
+	union {
+		struct hp_frag *nxt_free;
 		long reserved;
-	}u;
-        struct hp_frag ** prev;
-#ifdef DBG_F_MALLOC
-	const char* file;
-	const char* func;
-	unsigned long line;
-	unsigned long check;
-#endif
+	} u;
+	struct hp_frag **prev;
 };
 
-struct hp_frag_lnk{
-	/* optimized buckets are further split into X buckets */
+struct hp_frag_lnk {
+	/*
+	 * optimized buckets are further split into
+	 * "shm_secondary_hash_size" buckets
+	 */
 	char is_optimized;
 
-	struct hp_frag* first;
-	unsigned long no;
+	struct hp_frag *first;
+
+	/*
+	 * no - current number of free fragments in this bucket
+	 * total_no - (no + allocated) free fragments in this bucket
+	 */
+	long no;
+	long total_no;
 };
 
-struct hp_block{
+struct hp_block {
 	unsigned long size; /* total size */
-        unsigned long large_space;
-        unsigned long large_limit;
+	unsigned long large_space;
+	unsigned long large_limit;
 
-#if defined(DBG_F_MALLOC) || defined(STATISTICS)
-	unsigned long used; /* alloc'ed size*/
-	unsigned long real_used; /* used+malloc overhead*/
+	unsigned long used; /* alloc'ed size */
+	unsigned long real_used; /* used+malloc overhead */
 	unsigned long max_real_used;
-#endif
+	unsigned long total_fragments;
 
-	struct hp_frag* first_frag;
-	struct hp_frag* last_frag;
+	struct timeval last_updated;
+
+	struct hp_frag *first_frag;
+	struct hp_frag *last_frag;
 
 	/* 
 	 * the extra hash further divides the heavily used buckets
@@ -179,72 +189,25 @@ struct hp_block{
 	struct hp_frag_lnk free_hash[HP_HASH_SIZE + HP_EXTRA_HASH_SIZE];
 };
 
-struct hp_block* hp_malloc_init(char* address, unsigned long size);
-int hp_mem_warming(struct hp_block *fmb);
+struct hp_block *hp_pkg_malloc_init(char *addr, unsigned long size);
+struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size);
+
+int hp_mem_warming(struct hp_block *);
 void hp_update_mem_pattern_file(void);
 
-#ifdef DBG_F_MALLOC
-void* hp_malloc(struct hp_block*, unsigned long size,
-					const char* file, const char* func, unsigned int line);
-#else
-void* hp_malloc(struct hp_block*, unsigned long size);
-#endif
-void* hp_malloc_unsafe(struct hp_block*, unsigned long size);
-void* hp_malloc_raw(struct hp_block*, unsigned long size);
+void *hp_shm_malloc(struct hp_block *, unsigned long size);
+void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size);
+void *hp_pkg_malloc(struct hp_block *, unsigned long size);
 
-#ifdef DBG_F_MALLOC
-void  hp_free(struct hp_block*, void* p, const char* file, const char* func, 
-				unsigned int line);
-#else
-void  hp_free(struct hp_block*, void* p);
-#endif
-void  hp_free_unsafe(struct hp_block *qm, void *p);
-void  hp_free_raw(struct hp_block *qm, void *p);
+void hp_shm_free(struct hp_block *, void *p);
+void hp_shm_free_unsafe(struct hp_block *qm, void *p);
+void hp_pkg_free(struct hp_block *, void *p);
 
-#ifdef DBG_F_MALLOC
-void*  hp_realloc(struct hp_block*, void* p, unsigned long size, 
-					const char* file, const char* func, unsigned int line);
-#else
-void *hp_realloc(struct hp_block*, void* p, unsigned long size);
-#endif
-void *hp_realloc_unsafe(struct hp_block *qm, void *p, unsigned long size);
-void *hp_realloc_raw(struct hp_block *qm, void *p, unsigned long size);
+void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size);
+void *hp_shm_realloc_unsafe(struct hp_block *qm, void *p, unsigned long size);
+void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
 
-void  hp_status(struct hp_block*);
-void  hp_info(struct hp_block*, struct mem_info*);
+void hp_status(struct hp_block *);
+void hp_info(struct hp_block *, struct mem_info *);
 
-
-#ifdef STATISTICS
-static inline unsigned long hp_get_size(struct hp_block* qm)
-{
-	return qm->size;
-}
-static inline unsigned long hp_get_used(struct hp_block* qm)
-{
-	return qm->used;
-}
-static inline unsigned long hp_get_free(struct hp_block* qm)
-{
-	return qm->size-qm->real_used;
-}
-static inline unsigned long hp_get_real_used(struct hp_block* qm)
-{
-	return qm->real_used;
-}
-static inline unsigned long hp_get_max_real_used(struct hp_block* qm)
-{
-	return qm->max_real_used;
-}
-static inline unsigned long hp_get_frags(struct hp_block* qm)
-{
-	unsigned long frags;
-	unsigned int r;
-	for(r=0,frags=0;r<HP_HASH_SIZE; r++){
-		frags+=qm->free_hash[r].no;
-	}
-	return frags;
-}
-#endif /*STATISTICS*/
-
-
-#endif
+#endif /* HP_MALLOC_H */

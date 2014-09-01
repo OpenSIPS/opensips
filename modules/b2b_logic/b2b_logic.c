@@ -170,11 +170,24 @@ static mi_export_t mi_cmds[] = {
 	{  0,                  0, 0,                        0,  0,  0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url",           get_deps_sqldb_url  },
+		{ NULL, NULL },
+	},
+};
+
 /** Module interface */
 struct module_exports exports= {
 	"b2b_logic",                    /* module name */
+	MOD_TYPE_DEFAULT,               /* class of this module */
 	MODULE_VERSION,                 /* module version */
 	DEFAULT_DLFLAGS,                /* dlopen flags */
+	&deps,                          /* OpenSIPS module dependencies */
 	cmds,                           /* exported functions */
 	params,                         /* exported parameters */
 	0,                              /* exported statistics */
@@ -1460,12 +1473,13 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 	char* p;
 	b2bl_tuple_t* tuple;
 	struct mi_root *rpl_tree;
-	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL;
+	struct mi_node *node=NULL, *node1=NULL, *rpl=NULL, *node_a=NULL;
 	struct mi_attr* attr;
 
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i = 0; i< b2bl_hsize; i++)
 	{
@@ -1500,39 +1514,54 @@ static struct mi_root* mi_b2b_list(struct mi_root* cmd, void* param)
 				if(attr == NULL) goto error;
 			}
 
-			for (index = 0; index < MAX_B2BL_ENT; index++)
+			for (node_a=NULL,index=0; index < MAX_B2BL_ENT; index++)
 			{
 				if (tuple->servers[index] != NULL)
 				{
+					if (node_a==NULL) {
+						node_a = add_mi_node_child(node, MI_IS_ARRAY,
+							"SERVERS", 7, NULL, 0);
+						if (node_a==NULL) goto error;
+					}
 					p = int2str((unsigned long)(index), &len);
-					node1 = add_mi_node_child(node, MI_DUP_VALUE,
-						"servers", 7, p, len);
+					node1 = add_mi_node_child(node_a, MI_DUP_VALUE,
+						"server", 6, p, len);
 					if(node1 == NULL) goto error;
 					if (internal_mi_print_b2bl_entity_id(node1,
 							tuple->servers[index])!=0)
 						goto error;
 				}
 			}
-			for (index = 0; index < MAX_B2BL_ENT; index++)
+			for (node_a=NULL,index=0; index < MAX_B2BL_ENT; index++)
 			{
 				if (tuple->clients[index] != NULL)
 				{
+					if (node_a==NULL) {
+						node_a = add_mi_node_child(node, MI_IS_ARRAY,
+							"CLIENTS", 7, NULL, 0);
+						if (node_a==NULL) goto error;
+					}
 					p = int2str((unsigned long)(index), &len);
-					node1 = add_mi_node_child(node, MI_DUP_VALUE,
-						"clients", 7, p, len);
+					node1 = add_mi_node_child(node_a, MI_DUP_VALUE,
+						"client", 6, p, len);
 					if(node1 == NULL) goto error;
 					if (internal_mi_print_b2bl_entity_id(node1,
 							tuple->clients[index])!=0)
 						goto error;
 				}
 			}
-			for (index = 0; index < MAX_BRIDGE_ENT; index++)
+			for (node_a=NULL,index=0; index < MAX_BRIDGE_ENT; index++)
 			{
 				if (tuple->bridge_entities[index] != NULL)
 				{
+					if (node_a==NULL) {
+						node_a = add_mi_node_child(node, MI_IS_ARRAY,
+							"BRIDGE_ENTITIES", 15, NULL, 0);
+						if (node_a==NULL) goto error;
+					}
 					p = int2str((unsigned long)(index), &len);
-					node1 = add_mi_node_child(node, MI_DUP_VALUE,
-							"bridge_entities", 15, p, len);
+					node1 = add_mi_node_child(node_a, MI_DUP_VALUE,
+							"bridge_entitie", 14, p, len);
 					if(node1 == NULL) goto error;
 					if (internal_mi_print_b2bl_entity_id(node1,
 							tuple->bridge_entities[index])!=0)
@@ -1618,7 +1647,8 @@ int b2b_logic_bind(b2bl_api_t* api)
 }
 
 
-int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
+int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param,
+														unsigned int cb_mask)
 {
 	b2bl_tuple_t* tuple;
 	unsigned int local_index, hash_index;
@@ -1645,6 +1675,7 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param)
 		return -1;
 	}
 	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
 	tuple->cb_param = param;
 	lock_release(&b2bl_htable[hash_index].lock);
 

@@ -25,6 +25,7 @@
 
 
 #include "../dprint.h"
+#include "../mem/mem.h"
 #include "cachedb_pool.h"
 #include <string.h>
 
@@ -41,6 +42,34 @@ cachedb_pool_con* cachedb_pool_get(struct cachedb_id *id)
 		}
 
 	return 0;
+}
+
+cachedb_pool_con** filter_pool_by_scheme(str *scheme,int* lst_size)
+{
+	cachedb_pool_con *it;
+	cachedb_pool_con **lst=NULL;
+	int size = 0;
+	int alloc_size = 0;
+	
+	for (it=cachedb_pool;it;it=it->next) {
+		if (memcmp(scheme->s,it->id->scheme,scheme->len) == 0) {
+			if (alloc_size - size == 0) {
+				alloc_size=(alloc_size==0)?2:2*alloc_size;
+				lst = pkg_realloc(lst,alloc_size * sizeof(cachedb_pool_con*));
+				if (lst == NULL) {
+					LM_ERR("No more pkg \n");
+					*lst_size = 0;
+					return NULL;
+				}
+			}
+
+			lst[size]=it;
+			size++;
+		}
+	}
+
+	*lst_size = size;
+	return lst;
 }
 
 void cachedb_pool_insert(cachedb_pool_con *con)

@@ -36,6 +36,14 @@
 #include <stdio.h>
 #include <strings.h>
 
+static int debug_init = L_NOTICE;
+
+/* current logging level for this process */
+int *debug = &debug_init;
+
+/* used when resetting the logging level of this process */
+static int *default_debug;
+
 static char* str_fac[]={"LOG_AUTH","LOG_CRON","LOG_DAEMON",
 					"LOG_KERN","LOG_LOCAL0","LOG_LOCAL1",
 					"LOG_LOCAL2","LOG_LOCAL3","LOG_LOCAL4","LOG_LOCAL5",
@@ -87,43 +95,54 @@ void dprint(char * format, ...)
 	va_end(ap);
 }
 
-
-#ifndef CHANGEABLE_DEBUG_LEVEL
-static int old_proc_level;
-#else
-static int *old_proc_level=NULL;
-#endif
-
-void set_proc_debug_level(int level)
+int init_debug(void)
 {
-#ifndef CHANGEABLE_DEBUG_LEVEL
-	static int proc_level_saved=0;
+	debug = &pt[process_no].debug;
+	*debug = debug_init;
+	default_debug = &pt[process_no].default_debug;
+	*default_debug = debug_init;
 
-	if (!proc_level_saved) {
-		old_proc_level = debug;
-		proc_level_saved = 1;
-	}
-	debug = level;
-#else
-	static int proc_level;
-
-	proc_level = level;
-	if (old_proc_level==NULL) {
-		old_proc_level = debug;
-		debug = &proc_level;
-	}
-#endif
+	return 0;
 }
 
-
-void reset_proc_debug_level(void)
+/* call before pt is freed */
+void cleanup_debug(void)
 {
-#ifndef CHANGEABLE_DEBUG_LEVEL
-	debug = old_proc_level;
-#else
-	if (old_proc_level) {
-		debug = old_proc_level;
-		old_proc_level = NULL;
+	static int debug_level;
+
+	debug_level = *debug;
+	debug = &debug_level;
+}
+
+/* change the default log level of a given process */
+inline void __set_proc_default_debug(int proc_idx, int level)
+{
+	pt[proc_idx].default_debug = level;
+}
+
+/* change the actual log level of the current process */
+inline void set_proc_debug_level(int level)
+{
+	__set_proc_debug_level(process_no, level);
+}
+
+/* change the actual log level of a given process */
+inline void __set_proc_debug_level(int proc_idx, int level)
+{
+	pt[proc_idx].debug = level;
+}
+
+inline void set_global_debug_level(int level)
+{
+	int i;
+
+	for (i = 0; i < counted_processes; i++) {
+		__set_proc_default_debug(i, level);
+		__set_proc_debug_level(i, level);
 	}
-#endif
+}
+
+inline void reset_proc_debug_level(void)
+{
+	*debug = *default_debug;
 }

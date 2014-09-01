@@ -173,10 +173,24 @@ static param_export_t params[]={
     { 0,0,0 }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "rr",   DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tm",   DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
     "osp",
+    MOD_TYPE_DEFAULT,   /* class of this module */
     MODULE_VERSION,     /* module version */
     DEFAULT_DLFLAGS,    /* dlopen flags */
+    &deps,              /* OpenSIPS module dependencies */
     cmds,               /* exported functions */
     params,             /* exported params */
     0,                  /* exported statistics */

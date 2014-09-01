@@ -679,7 +679,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg)
 			nr_bye_vals = legs2strar(leg_bye_info,msg,val_arr+ret+nr_vals, 0);
 		}
 		/* there were no Invite legs */
-		while (nr_bye_vals) {
+		while (!nr_legs && nr_bye_vals) {
 			/* drain all the values */
 			for (j = ret+nr_vals; j<ret+nr_bye_vals+nr_vals; j++)
 				VAL_STR(db_vals+j+1) = val_arr[j];
@@ -1417,22 +1417,18 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
 	int n;
 	int i;
 	int backup_idx = -1, ret = -1;
-	event_id_t event = EVI_ERROR;
 
 	/*
 	 * if the code is not set, choose the missed calls event
 	 * otherwise, check if the code is negative
 	 */
-	event = (!acc_env.code || acc_env.code > 300) ?
-		acc_missed_event : acc_event;
-
-	if (event == EVI_ERROR) {
+	if (acc_env.event == EVI_ERROR) {
 		LM_ERR("event not registered %d\n", acc_event);
 		return -1;
 	}
 
 	/* check if someone is interested in this event */
-	if (!evi_probe_event(event))
+	if (!evi_probe_event(acc_env.event))
 		return 1;
 
 	m = core2strar( rq, val_arr );
@@ -1466,7 +1462,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
 		backup_idx = m - 1;
 		evi_params[backup_idx]->next = NULL;
 
-		if (evi_raise_event(event, acc_event_params) < 0) {
+		if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
 			LM_ERR("cannot raise ACC event\n");
 			goto end;
 		}
@@ -1482,7 +1478,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl)
 			backup_idx = i - 1;
 			evi_params[backup_idx]->next = NULL;
 
-			if (evi_raise_event(event, acc_event_params) < 0) {
+			if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
 				LM_ERR("cannot raise ACC event\n");
 				goto end;
 			}

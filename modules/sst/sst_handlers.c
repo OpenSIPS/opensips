@@ -62,6 +62,7 @@
 #include "../../dprint.h"
 #include "../../sr_module.h" /* Needed for find_export() */
 #include "../signaling/signaling.h"
+#include "../dialog/dlg_vals.h"
 
 #include "sst_handlers.h"
 #include "sst_mi.h"
@@ -85,12 +86,28 @@
 		}												   \
 }
 
+#define SST_DIALOG_FLAG (1 << 3)
+
 #ifndef MIN
 #define MIN(a, b) (a<b?a:b)
 #endif
 #ifndef MAX
 #define MAX(a, b) (a>b?a:b)
 #endif
+
+#define CHECK_AND_UPDATE_SST_INFO(info, field, value, dirty) \
+	do {\
+		if (info-> field != value) { \
+			info-> field = value; \
+			dirty = 1;\
+		}\
+	} while (0)
+
+#define CHECK_AND_UPDATE_SST_INFO_TMP(info, field, value, dirty, tmp) \
+	do {\
+		tmp.field = value; \
+		CHECK_AND_UPDATE_SST_INFO(info, field, tmp.field, dirty); \
+	} while (0)
 
 
 /**
@@ -162,6 +179,7 @@ static unsigned int sst_interval = 0;
 
 
 static str sst_422_rpl = str_init("Session Timer Too Small");
+static str info_val_name = str_init("sst_info");
 
 
 /**
@@ -335,10 +353,44 @@ void sst_dialog_created_CB(struct dlg_cell *did, int type,
 			return; /* Nothing we can do! */
 		}
 	}
+	/* We keep the sst_info in the dialog's vals in case of restarting */
+	/* No const here because of store_dlg_value's definition */
+	str raw_info = {(char*)info, sizeof(sst_info_t)};
+	if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info) != 0) {
+		LM_ERR("No sst_info can be added to the dialog."
+				"This dialog won't be considered after restart!\n");
+	}
+
+	dlg_binds->set_mod_flag(did, SST_DIALOG_FLAG);
+
 	setup_dialog_callbacks(did, info);
 	/* Early setup of default timeout */
 	set_dialog_lifetime(did, info->interval);
 	return;
+}
+
+void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
+		struct dlg_cb_params *params){
+
+	/* Check if this is previously marked by sst module */
+	if (!dlg_binds->is_mod_flag_set(did, SST_DIALOG_FLAG))
+		return;
+
+	/* We try to get the original sst info back */
+	sst_info_t *info = (sst_info_t *)shm_malloc(sizeof(sst_info_t));
+
+	if (info == NULL) {
+		LM_ERR ("No more shared memory!\n");
+		return;
+	}
+
+	str raw_info = {(char*)info, sizeof(sst_info_t)};
+	if (dlg_binds->fetch_dlg_value(did, &info_val_name, &raw_info, 1) != 0){
+		LM_ERR ("No sst_info found!\n");
+		return;
+	}
+
+	setup_dialog_callbacks(did, info);
 }
 
 #ifdef USE_CONFIRM_CALLBACK
@@ -413,8 +465,10 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 		struct dlg_cb_params * params)
 {
 	sst_info_t *info = (sst_info_t *)*(params->param);
+	sst_info_t tmp_info;
 	sst_msg_info_t minfo = {0,0,0,0};
 	struct sip_msg* msg = params->msg;
+	short info_dirty = 0;
 
 	if (msg->first_line.type == SIP_REQUEST) {
 		if ((msg->first_line.u.request.method_value == METHOD_INVITE ||
@@ -430,11 +484,13 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 			/* Early resetting of the value here */
 			if (minfo.se > 0) {
 				if (sst_interval > minfo.min_se)
-					info->interval = sst_interval;
+					CHECK_AND_UPDATE_SST_INFO(info, interval, sst_interval, info_dirty);
 				else
-					info->interval = MAX(minfo.se, sst_min_se);
+					CHECK_AND_UPDATE_SST_INFO_TMP(info, interval,
+							MAX(minfo.se, sst_min_se), info_dirty, tmp_info);
 			}
-			info->supported = (minfo.supported?SST_UAC:SST_UNDF);
+			CHECK_AND_UPDATE_SST_INFO_TMP(info, supported,
+					(minfo.supported?SST_UAC:SST_UNDF), info_dirty, tmp_info);
 			set_dialog_lifetime(did, info->interval);
 		}
 		else if (msg->first_line.u.request.method_value == METHOD_PRACK
@@ -466,8 +522,16 @@ static void sst_dialog_request_within_CB(struct dlg_cell* did, int type,
 				return;
 			}
 			set_dialog_lifetime(did, minfo.se);
-	info->supported = (minfo.supported?SST_UAC:SST_UNDF);
-			info->interval = minfo.se;
+			CHECK_AND_UPDATE_SST_INFO_TMP(info, supported,
+					(minfo.supported?SST_UAC:SST_UNDF), info_dirty, tmp_info);
+			CHECK_AND_UPDATE_SST_INFO(info, interval, minfo.se, info_dirty);
+		}
+	}
+
+	if (info_dirty){
+		str raw_info = {(char*)info, sizeof(sst_info_t)};
+		if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info) != 0) {
+			LM_ERR("sst_info can't be updated\n");
 		}
 	}
 }
@@ -486,104 +550,123 @@ static void sst_dialog_response_fwded_CB(struct dlg_cell* did, int type,
 {
 	struct sip_msg* msg = params->msg;
 	int *param;
+	short info_dirty = 0;
 
 	/*
 	 * This test to see if the message is a response sould ALWAYS be
 	 * true. This callback should not get called for requests. But
 	 * lets be safe.
 	 */
-	if (msg->first_line.type == SIP_REPLY) {
-		sst_msg_info_t minfo = {0,0,0,0};
-		sst_info_t *info = (sst_info_t *)*(params->param);
 
-		LM_DBG("Dialog seen REPLY %d %.*s\n",
-				msg->first_line.u.reply.statuscode,
-				msg->first_line.u.reply.reason.len,
-				msg->first_line.u.reply.reason.s);
-		/*
-		 * Need to check to see if it is a 422 response. If it is,
-		 * make sure our Min-SE: for this dialog is set at least as
-		 * large as in the Min-SE: in the reply 422 message. If not,
-		 * we will create an INVITE, 422 loop.
-		 */
-		if (msg->first_line.u.reply.statuscode == 422) {
-			if (parse_msg_for_sst_info(msg, &minfo)) {
-				LM_ERR("failed to prase sst information for thr 422 reply\n");
-				return;
-			}
-			/* Make sure we do not try to use anything smaller */
-			info->interval = MAX(info->interval, minfo.min_se);
-			return; /* There is nothing else to do with this */
-		}
-		/*
-		 * We need to get the method this reply is for from the CSEQ
-		 * body. The RFC states we can only play with 2XX from the
-		 * INVITE or reINVTE/UPDATE.
-		 */
-		if (!msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) == -1) || !msg->cseq)) {
-			LM_ERR("failed to parse CSeq\n");
+	if (msg->first_line.type != SIP_REPLY)
+		return;
+
+	sst_msg_info_t minfo = {0,0,0,0};
+	sst_info_t *info = (sst_info_t *)*(params->param);
+	sst_info_t tmp_info;
+
+	LM_DBG("Dialog seen REPLY %d %.*s\n",
+			msg->first_line.u.reply.statuscode,
+			msg->first_line.u.reply.reason.len,
+			msg->first_line.u.reply.reason.s);
+	/*
+	 * Need to check to see if it is a 422 response. If it is,
+	 * make sure our Min-SE: for this dialog is set at least as
+	 * large as in the Min-SE: in the reply 422 message. If not,
+	 * we will create an INVITE, 422 loop.
+	 */
+	if (msg->first_line.u.reply.statuscode == 422) {
+		if (parse_msg_for_sst_info(msg, &minfo)) {
+			LM_ERR("failed to prase sst information for thr 422 reply\n");
 			return;
 		}
+		/* Make sure we do not try to use anything smaller */
+		if (info->interval < minfo.min_se)
+			CHECK_AND_UPDATE_SST_INFO(info, interval, minfo.min_se, info_dirty);
 
-		/* 2XX replies to INVITES only !*/
-		if (msg->first_line.u.reply.statuscode > 199 &&
-				msg->first_line.u.reply.statuscode < 300 &&
-				(get_cseq(msg)->method_id == METHOD_INVITE ||
-						get_cseq(msg)->method_id == METHOD_UPDATE)) {
-			if (parse_msg_for_sst_info(msg, &minfo)) {
-				LM_ERR("failed to parse sst information for the 2XX reply\n");
-				return;
-			}
-			LM_DBG("parsing 200 OK response %d / %d\n", minfo.supported, minfo.se);
-			if (info->supported != SST_UAC) {
-				info->supported = (minfo.supported?SST_UAS:SST_UNDF);
-			}
-			if (minfo.se != 0) {
+		goto update_info; /* There is nothing else to do with this */
+	}
+	/*
+	 * We need to get the method this reply is for from the CSEQ
+	 * body. The RFC states we can only play with 2XX from the
+	 * INVITE or reINVTE/UPDATE.
+	 */
+	if (!msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) == -1) || !msg->cseq)) {
+		LM_ERR("failed to parse CSeq\n");
+		return;
+	}
+
+	/* 2XX replies to INVITES only !*/
+	if (msg->first_line.u.reply.statuscode > 199 &&
+			msg->first_line.u.reply.statuscode < 300 &&
+			(get_cseq(msg)->method_id == METHOD_INVITE ||
+					get_cseq(msg)->method_id == METHOD_UPDATE)) {
+		if (parse_msg_for_sst_info(msg, &minfo)) {
+			LM_ERR("failed to parse sst information for the 2XX reply\n");
+			return;
+		}
+		LM_DBG("parsing 200 OK response %d / %d\n", minfo.supported, minfo.se);
+		if (info->supported != SST_UAC) {
+			CHECK_AND_UPDATE_SST_INFO_TMP(info, supported,
+					(minfo.supported?SST_UAS:SST_UNDF),info_dirty, tmp_info);
+		}
+		if (minfo.se != 0) {
+			if (sst_interval > minfo.min_se)
+				CHECK_AND_UPDATE_SST_INFO(info, interval, sst_interval, info_dirty);
+			else
+				CHECK_AND_UPDATE_SST_INFO_TMP(info, interval,
+						MAX(minfo.se, sst_min_se), info_dirty, tmp_info);
+			LM_DBG("UAS supports timer\n");
+			set_dialog_lifetime(did, info->interval);
+		}
+		else {
+			/* no se header found, we want to resquest it. */
+			if (info->supported == SST_UAC) {
+				char se_buf[80];
+
+				LM_DBG("UAC supports timer\n");
+				LM_DBG("appending the Session-Expires: header to the 2XX reply."
+						" UAC will deal with it.\n");
+				/*
+				 * GOOD! we can just insert the Session-Expires:
+				 * header and forward back to the UAC and it will
+				 * deal with refreshing the session.
+				 */
 				if (sst_interval > minfo.min_se)
-					info->interval = sst_interval;
+					CHECK_AND_UPDATE_SST_INFO(info, interval, sst_interval,
+							info_dirty);
 				else
-					info->interval = MAX(minfo.se, sst_min_se);
-				LM_DBG("UAS supports timer\n");
+					CHECK_AND_UPDATE_SST_INFO_TMP(info, interval,
+						MAX(minfo.se, sst_min_se), info_dirty, tmp_info);
+				snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n",
+						info->interval);
+				if (append_header(msg, se_buf)) {
+					LM_ERR("failed to append Session-Expires header\n");
+					return;
+				}
+				/* Set the dialog timeout HERE */
 				set_dialog_lifetime(did, info->interval);
 			}
 			else {
-				/* no se header found, we want to resquest it. */
-				if (info->supported == SST_UAC) {
-					char se_buf[80];
-
-					LM_DBG("UAC supports timer\n");
-					LM_DBG("appending the Session-Expires: header to the 2XX reply."
-							" UAC will deal with it.\n");
-					/*
-					 * GOOD! we can just insert the Session-Expires:
-					 * header and forward back to the UAC and it will
-					 * deal with refreshing the session.
-					 */
-					if (sst_interval > minfo.min_se)
-						info->interval = sst_interval;
-					else
-						info->interval = MAX(minfo.se, sst_min_se);
-					snprintf(se_buf, 80, "Session-Expires: %d;refresher=uac\r\n",
-							info->interval);
-					if (append_header(msg, se_buf)) {
-						LM_ERR("failed to append Session-Expires header\n");
-						return;
-					}
-					/* Set the dialog timeout HERE */
-					set_dialog_lifetime(did, info->interval);
-				}
-				else {
-					/* We are sunk, uac did not request it, and it
-					 * does not support it */
-					LM_DBG("UAC and UAS do not support timers!"
-							" No session timers for this session.\n");
-					param = find_param_export("dialog", "default_timeout", INT_PARAM);
-					info->interval = param?*param:12*3600;
-					set_dialog_lifetime(did, info->interval);
-				}
+				/* We are sunk, uac did not request it, and it
+				 * does not support it */
+				LM_DBG("UAC and UAS do not support timers!"
+						" No session timers for this session.\n");
+				param = find_param_export("dialog", "default_timeout", INT_PARAM);
+				CHECK_AND_UPDATE_SST_INFO_TMP(info, interval,
+						param?*param:12*3600, info_dirty, tmp_info);
+				set_dialog_lifetime(did, info->interval);
 			}
-		} /* End of 2XX for an INVITE */
-	} /* If the msg is a repsonse and not a request */
+		}
+	} /* End of 2XX for an INVITE */
+
+update_info:
+	if (info_dirty){
+		str raw_info = {(char*)info, sizeof(sst_info_t)};
+		if (dlg_binds->store_dlg_value(did, &info_val_name, &raw_info) != 0) {
+			LM_ERR("sst_info can't be updated\n");
+		}
+	}
 }
 
 /**
@@ -753,7 +836,7 @@ static int append_header(struct sip_msg *msg, const char *header)
 		return(1);
 	}
 
-	if ((anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0)) == 0) {
+	if ((anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0)) == 0) {
 		LM_ERR("failed to get anchor to append header\n");
 		return(1);
 	}
@@ -921,9 +1004,11 @@ static void setup_dialog_callbacks(struct dlg_cell *did, sst_info_t *info)
 
 	LM_DBG("Adding callback "
 			"DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED\n");
-	dlg_binds->register_dlgcb(did,
+	if (dlg_binds->register_dlgcb(did,
 			DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED,
-			sst_dialog_terminate_CB, (void *)info, NULL);
+			sst_dialog_terminate_CB, (void *)info, NULL) != 0)
+		LM_ERR("could not add the DLGCB_TERMINATED callback\n");
+
 	LM_DBG("Adding callback DLGCB_REQ_WITHIN\n");
 	/* This is for the reINVITE/UPDATE requests */
 	dlg_binds->register_dlgcb(did, DLGCB_REQ_WITHIN,

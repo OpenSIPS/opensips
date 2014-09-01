@@ -457,7 +457,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 	<section>
 		<title>
 			<function moreinfo="none">engage_rtp_proxy([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>,
-			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]]) - deprecated</function>
+			<function moreinfo="none">rtpproxy_engage([flags [, ip_address [, set_id [, sock_pvar]]]])</function>
 		</title>
 
 		<para>
@@ -659,7 +659,7 @@ onreply_route[2]
         </section>
 	<section>
 		<title>
-		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]]) - deprecated</function>,
+		<function moreinfo="none">unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated</function>,
 		<function moreinfo="none">rtpproxy_unforce([set_id [, sock_pvar]])</function>
 		</title>
 		<para>
@@ -832,18 +832,28 @@ rtpproxy_start_recording();
 			the config file).
 			</para>
 			<para>
-			The second parameter value must be a number in decimal.
+			The next parameter (optional) is the rtpproxy set ID (used for better
+			indentification of the rtpproxy instance to be enabled, for example
+			when a rtpproxy is used in multiple sets).
+			</para>
+			<para>
+			The last parameter must be a number in decimal representing the new
+			enabled/disabled state.
 			</para>
 			<para>
 			NOTE: if a rtpproxy is defined multiple times (in the same or
-			diferente sete), all its instances will be enables/disabled.
+			diferente sete), all its instances will be enables/disabled IF
+			no set ID provided (as second param).
 			</para>
 			<example>
 			<title>
 				<function moreinfo="none">rtpproxy_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
+## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+## disable a RTPProxy by URL and set ID (3)
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 			</programlisting>
 			</example>

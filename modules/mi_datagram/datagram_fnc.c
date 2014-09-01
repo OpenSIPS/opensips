@@ -120,7 +120,7 @@ int  mi_init_datagram_server(sockaddr_dtgram *addr, unsigned int socket_domain,
 			/* change ownership */
 			if ((uid!=-1) || (gid!=-1)){
 				if (chown(socket_name, uid, gid)<0){
-					LM_ERR("failed to change the owner/group for %s  to %d.%d;"
+					LM_ERR("failed to change the owner/group for %s to %d.%d;"
 					"%s[%d]\n",socket_name, uid, gid, strerror(errno), errno);
 					goto err_rx;
 				}
@@ -274,17 +274,17 @@ static int identify_command(datagram_stream * dtgram, struct mi_cmd * *f)
 	/* default offset for the command: 0 */
 	p= dtgram->start;
 	if (!p){
-		LM_ERR("null pointer  \n");
+		LM_ERR("null pointer\n");
 		return -1;
 	}
 
 	/*if no command*/
 	if ( dtgram->len ==0 ){
-		LM_DBG("command empty case1 \n");
+		LM_DBG("command empty case1\n");
 		goto error;
 	}
 	if (*p != MI_CMD_SEPARATOR){
-		LM_ERR("command must begin with: %c \n", MI_CMD_SEPARATOR);
+		LM_ERR("command must begin with: %c\n", MI_CMD_SEPARATOR);
 		goto error;
 	}
 	command = p+1;
@@ -348,7 +348,7 @@ static void datagram_close_async(struct mi_root *mi_rpl,struct mi_handler *hdl,
 			}
 			/*build the response*/
 			if(mi_datagram_write_tree(&dtgram , mi_rpl) != 0){
-				LM_ERR("failed to build the response \n");
+				LM_ERR("failed to build the response\n");
 				goto err1;
 			}
 			LM_DBG("the response is %s", dtgram.start);
@@ -495,7 +495,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 			hdl = 0;
 		}
 
-		LM_DBG("after identifing the command, the received datagram is  %s\n",
+		LM_DBG("after identifing the command, the received datagram is %s\n",
 				dtgram.current);
 
 		/*if no params required*/

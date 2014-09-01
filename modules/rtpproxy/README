@@ -51,7 +51,7 @@ Bogdan-Andrei Iancu
               1.6.1. engage_rtp_proxy([flags [, ip_address [,
                       set_id [, sock_pvar]]]]) - deprecated,
                       rtpproxy_engage([flags [, ip_address [,
-                      set_id [, sock_pvar]]]]) - deprecated
+                      set_id [, sock_pvar]]]])
 
               1.6.2. rtpproxy_offer([flags [, ip_address [, set_id
                       [, sock_pvar]]]])
@@ -59,7 +59,7 @@ Bogdan-Andrei Iancu
               1.6.3. rtpproxy_answer([flags [, ip_address [,
                       set_id [, sock_pvar]]]])
 
-              1.6.4. rtpproxy_unforce([set_id [, sock_pvar]]) -
+              1.6.4. unforce_rtp_proxy([set_id [, sock_pvar]]) -
                       deprecated, rtpproxy_unforce([set_id [,
                       sock_pvar]])
 
@@ -396,7 +396,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 
 1.6.1.  engage_rtp_proxy([flags [, ip_address [, set_id [,
 sock_pvar]]]]) - deprecated, rtpproxy_engage([flags [, ip_address [,
-set_id [, sock_pvar]]]]) - deprecated
+set_id [, sock_pvar]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. It uses the dialog module facilities to keep track when
@@ -544,7 +544,7 @@ sock_pvar]]]])
 
    See rtpproxy_offer() function example above for example.
 
-1.6.4.  rtpproxy_unforce([set_id [, sock_pvar]]) - deprecated,
+1.6.4.  unforce_rtp_proxy([set_id [, sock_pvar]]) - deprecated,
 rtpproxy_unforce([set_id [, sock_pvar]])
 
    Tears down the RTPProxy session for the current call.
@@ -657,14 +657,23 @@ rtpproxy_start_recording();
    The first parameter is the rtp proxy url (exactly as defined in
    the config file).
 
-   The second parameter value must be a number in decimal.
+   The next parameter (optional) is the rtpproxy set ID (used for
+   better indentification of the rtpproxy instance to be enabled,
+   for example when a rtpproxy is used in multiple sets).
+
+   The last parameter must be a number in decimal representing the
+   new enabled/disabled state.
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
-   diferente sete), all its instances will be enables/disabled.
+   diferente sete), all its instances will be enables/disabled IF
+   no set ID provided (as second param).
 
    Example 1.18.  rtpproxy_enable usage
 ...
+## disable a RTPProxy by URL only
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+## disable a RTPProxy by URL and set ID (3)
+$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 
 1.7.2. rtpproxy_show

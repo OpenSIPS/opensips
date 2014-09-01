@@ -66,9 +66,8 @@ static struct mi_root* mi_cc_list_agents(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_cc_list_calls(struct mi_root *cmd_tree, void *param);
 static struct mi_root* mi_reset_stats(struct mi_root *cmd_tree, void *param);
 
-static int fixup_id(void** param, int param_no);
-
 static int w_handle_call(struct sip_msg *req, char *id);
+static int w_agent_login(struct sip_msg *req, char *agent, char *state);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
 static void cc_timer_cleanup(unsigned int ticks, void* param);
@@ -90,7 +89,9 @@ unsigned int wrapup_time = 30;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call",           (cmd_function)w_handle_call,         1,
-		fixup_id, 0, REQUEST_ROUTE},
+		fixup_sgp_null, 0, REQUEST_ROUTE},
+	{"cc_agent_login",           (cmd_function)w_agent_login,         2,
+		fixup_sgp_sgp, 0, REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 	};
 
@@ -128,13 +129,23 @@ static stat_export_t mod_stats[] = {
 	{0,0,0}
 };
 
-
-
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "b2b_logic", DEP_ABORT },
+		{ MOD_TYPE_SQLDB,   NULL,        DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"call_center",   /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */
@@ -218,14 +229,6 @@ unsigned long cc_flow_free_agents( void *flow)
 	lock_release( data->lock );
 
 	return free;
-}
-
-
-static int fixup_id(void** param, int param_no)
-{
-	if (param_no)
-		return fixup_pvar(param);
-	return -1;
 }
 
 
@@ -634,7 +637,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		 * create new b2bua instance */
 		call->ref_cnt++;
 		id = b2b_api.init( msg, &b2b_scenario, &new_leg, b2bl_callback_customer,
-				(void*)call, 0x0, NULL /* custom_hdrs */ );
+				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to init new b2bua call (empty ID received)\n");
 			return -2;
@@ -719,46 +722,44 @@ done:
 
 static int w_handle_call(struct sip_msg *msg, char *flow_var)
 {
-	pv_value_t val;
 	struct cc_flow *flow;
 	struct cc_call *call;
 	str leg = {NULL,0};
 	str *dn;
+	str val;
 	int dec;
+	int ret = -1;
 
 	call = NULL;
 	dec = 0;
 
 	/* get the flow name */
-	if (pv_get_spec_value(msg, (pv_spec_p)flow_var, &val)!=0 ) {
-		LM_ERR("xXx failed to avaluate the flow name variable\n");
-		return -1;
-	}
-	if ( (val.flags&PV_VAL_STR)==0 || (val.flags&PV_VAL_NULL)!=0) {
-		LM_ERR("xXx non-str val for flow name variable\n");
+	if (fixup_get_svalue(msg, (gparam_p)flow_var, &val)!=0) {
+		LM_ERR("failed to avaluate the flow name variable\n");
 		return -1;
 	}
 
 	/* parse FROM URI */
 	if (parse_from_uri(msg)==NULL) {
-		LM_ERR("xXx failed to parse from hdr\n");
-		return -1;
+		LM_ERR("failed to parse from hdr\n");
+		return -2;
 	}
 
 	lock_get( data->lock );
 
 	/* get the flow ID */
-	flow = get_flow_by_name(data, &val.rs);
+	flow = get_flow_by_name(data, &val);
 	if (flow==NULL) {
-		LM_ERR("xXx flow <%.*s> does not exists\n", val.rs.len, val.rs.s);
+		LM_ERR("flow <%.*s> does not exists\n", val.len, val.s);
+		ret = -3;
 		goto error;
 	}
 	LM_DBG("using call flow %p\n", flow);
 
 	if (flow->logged_agents==0 /* no logged agents */ ) {
-		LM_NOTICE("xXx flow <%.*s> closed\n",flow->id.len,flow->id.s);
-		lock_release( data->lock );
-		return -2;
+		LM_NOTICE("flow <%.*s> closed\n",flow->id.len,flow->id.s);
+		ret = -4;
+		goto error;
 	}
 
 	update_stat(stg_incalls, 1);
@@ -771,18 +772,20 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	} else {
 		dn = &get_from(msg)->parsed_uri.user;
 	}
-	LM_DBG(" XXdebug - cid=<%.*s>\n",dn->len,dn->s);
+	LM_DBG("cid=<%.*s>\n",dn->len,dn->s);
 
 	call = new_cc_call(data, flow, dn, &get_from(msg)->parsed_uri.user);
 	if (call==NULL) {
 		LM_ERR("failed to create new call\n");
+		ret = -5;
 		goto error;
 	}
 	call->fst_flags |= FSTAT_INCALL;
 
 	/* get estimated wait time */
-	call->eta = (unsigned int) (( flow->avg_call_duration * (float)get_stat_val(flow->st_queued_calls) ) /
-			(float)flow->logged_agents);
+	call->eta = (unsigned int) (( flow->avg_call_duration *
+		(float)get_stat_val(flow->st_queued_calls) ) /
+		(float)flow->logged_agents);
 	
 	LM_DBG("avg_call_duration=%.2f queued_calls=%lu logedin_agents=%u\n",
 		flow->avg_call_duration, get_stat_val(flow->st_queued_calls),
@@ -799,6 +802,7 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	/* get the first state */
 	if (cc_call_state_machine( data, call, &leg )!=0) {
 		LM_ERR("failed to get first call destination \n");
+		ret = -5;
 		goto error;
 	}
 
@@ -837,7 +841,65 @@ error:
 	lock_release( data->lock );
 error1:
 	if (call) { free_cc_call( data, call); flow->ongoing_calls--; }
-	return -1;
+	return ret;
+}
+
+
+static int w_agent_login(struct sip_msg *req, char *agent_v, char *state_v)
+{
+	struct cc_agent *agent, *prev_agent;
+	str agent_s;
+	int state;
+	unsigned int flags;
+
+
+	/* get state */
+	if (fixup_get_isvalue( req, (gparam_p)state_v, &state, &agent_s,
+	&flags)!=0 || ((flags|GPARAM_INT_VALUE_FLAG)==0) ) {
+		LM_ERR("unable to evaluate state spec \n");
+		return -1;
+	}
+	/* get agent */
+	if (fixup_get_svalue( req, (gparam_p)agent_v, &agent_s)!=0) {
+		LM_ERR("unable to evaluate agent spec \n");
+		return -2;
+	}
+
+	/* block access to data */
+	lock_get( data->lock );
+
+	/* name of the agent */
+	agent = get_agent_by_name( data, &agent_s, &prev_agent);
+	if (agent==NULL) {
+		lock_release( data->lock );
+		LM_DBG("agent <%.*s> not found\n",agent_s.len,agent_s.s);
+		return -3;
+	}
+
+	if (agent->loged_in != state) {
+
+		if(state && (agent->state==CC_AGENT_WRAPUP) &&
+			(get_ticks() - agent->last_call_end > wrapup_time))
+			agent->state = CC_AGENT_FREE;
+
+		if(state && data->agents[CC_AG_ONLINE] == NULL)
+			data->last_online_agent = agent;
+
+		agent_switch_login(data, agent, prev_agent);
+
+		if(state) {
+			data->logedin_agents++;
+			log_agent_to_flows( data, agent, 1);
+		} else {
+			data->logedin_agents--;
+			log_agent_to_flows(data, agent, 0);
+		}
+	}
+
+	/* release access to data */
+	lock_release( data->lock );
+
+	return 1;
 }
 
 
@@ -1033,6 +1095,7 @@ static struct mi_root* mi_cc_list_flows(struct mi_root *cmd, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1100,6 +1163,7 @@ static struct mi_root* mi_cc_list_agents(struct mi_root *cmd_tree, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1167,6 +1231,7 @@ static struct mi_root* mi_cc_list_calls(struct mi_root *cmd_tree, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* block access to data */
 	lock_get( data->lock );
@@ -1343,6 +1408,7 @@ static struct mi_root* mi_cc_list_queue(struct mi_root *cmd_tree, void *param)
 	if ( rpl_tree==NULL)
 		return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	n = 0;
 	now = get_ticks();

@@ -208,14 +208,27 @@ static stat_export_t mod_stats[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "usrloc",    DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*! \brief
  * Module exports structure
  */
 struct module_exports exports = {
 	"registrar",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,        /* Exported functions */
 	params,      /* Exported parameters */
 	mod_stats,   /* exported statistics */
@@ -343,7 +356,7 @@ static int mod_init(void)
 		gruu_secret.len = strlen(gruu_secret.s);
 
 	/* fix the flags */
-	fix_flag_name(&tcp_persistent_flag_s, tcp_persistent_flag);
+	fix_flag_name(tcp_persistent_flag_s, tcp_persistent_flag);
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
 
@@ -465,7 +478,7 @@ static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
 		goto error;
 	}
 
-	anchor = anchor_lump( msg, msg->unparsed-msg->buf, 0, 0);
+	anchor = anchor_lump( msg, msg->unparsed-msg->buf, 0);
 	if (anchor==0) {
 		LM_ERR("can't get anchor\n");
 		goto error;

@@ -29,7 +29,9 @@
 
 #include "../../str.h"
 #include "../../db/db.h"
+#include "dialplan.h"
 
+#define DP_PARTITION 			"default"
 #define DP_TABLE_NAME			"dialplan"
 #define DPID_COL				"dpid"
 #define PR_COL					"pr"
@@ -41,10 +43,22 @@
 #define DISABLED_COL			"disabled"
 #define ATTRS_COL				"attrs"
 
+
 #define DP_TABLE_VERSION		4
 #define DP_TABLE_COL_NO 		8
 
-extern str dp_db_url;
+typedef struct dp_head{
+	str partition;/*Attribute that uniquely identifies head*/
+	str dp_db_url;
+	str dp_table_name;
+	struct dp_head* next;
+} dp_head_t, *dp_head_p;
+
+
+extern dp_head_p dp_hlist;
+extern dp_connection_list_p dp_conns;
+extern str default_dp_db_url;
+extern str default_dp_table;
 extern str dp_table_name;
 extern str dpid_column;
 extern str pr_column;
@@ -59,10 +73,10 @@ extern str disabled_column;
 struct dp_param_list;
 
 int init_db_data();
-int dp_connect_db();
-struct dp_table_list * dp_add_table(str * table);
-struct dp_table_list * dp_get_table(str * table);
-struct dp_table_list * dp_get_default_table();
+//int dp_connect_db(dp_connection_list_p conn, dp_head_p head);
+struct dp_connection_list * dp_add_connection(dp_head_p head );
+struct dp_connection_list * dp_get_connection(str * partition);
+struct dp_connection_list * dp_get_default_connection();
 void dp_disconnect_db();
 
 #endif

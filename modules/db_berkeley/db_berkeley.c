@@ -94,8 +94,10 @@ static mi_export_t mi_cmds[] = {
 
 struct module_exports exports = {
 	"db_berkeley",
+	MOD_TYPE_SQLDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,     /* Exported functions */
 	params,   /* Exported parameters */
 	0,        /* exported statistics */
@@ -706,7 +708,7 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 
 	/* make the key */
 	if ( (ret = bdblib_valtochar(_tp, lkey, kbuf, &klen, _v, _n, BDB_KEY)) != 0 )
-	{	LM_ERR("Error in bdblib_valtochar  \n");
+	{	LM_ERR("Error in bdblib_valtochar\n");
 		ret = -9;
 		goto error;
 	}
@@ -721,7 +723,7 @@ int bdb_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 	memset(dbuf, 0, MAX_ROW_SIZE);
 
 	if ( (ret = bdblib_valtochar(_tp, lkey, dbuf, &dlen, _v, _n, BDB_VALUE)) != 0 )
-	{	LM_ERR("Error in bdblib_valtochar \n");
+	{	LM_ERR("Error in bdblib_valtochar\n");
 		ret = -9;
 		goto error;
 	}
@@ -779,13 +781,13 @@ int bdb_delete(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, int _n)
 	tbl_cache_p _tbc = NULL;
 	table_p _tp = NULL;
 	char kbuf[MAX_ROW_SIZE];
-	int i, j, ret, klen;
+	int ret, klen;
 	int *lkey=NULL;
 	DBT key,data;
 	DB *db;
 	DBC *dbcp;
 
-	i = j = ret = 0;
+	ret = 0;
 	klen=MAX_ROW_SIZE;
 
 	if (_op)
@@ -908,13 +910,13 @@ int _bdb_delete_cursor(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v, i
 	db_res_t* _r   = NULL;
 	char kbuf[MAX_ROW_SIZE];
 	char dbuf[MAX_ROW_SIZE];
-	int i, ret, klen=MAX_ROW_SIZE;
+	int ret, klen=MAX_ROW_SIZE;
 	DBT key, data;
 	DB *db;
 	DBC *dbcp;
 	int *lkey=NULL;
 
-	i = ret = 0;
+	ret = 0;
 
 	if ((!_h) || !CON_TABLE(_h))
 		return -1;

@@ -35,6 +35,7 @@
 #define OSER_EC_PARSER	1 /*!< parse error */
 #define OSER_EC_PMEMORY	2 /*!< private memory error */
 #define OSER_EC_SMEMORY	3 /*!< share memory error */
+#define OSER_EC_ASSERT	4 /*!< assertion error */
 
 #define OSER_EL_CRITIC	1
 #define OSER_EL_HIGH	2

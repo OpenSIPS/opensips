@@ -210,9 +210,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	int i;
 #endif
 
-#define SIP_SCH		0x3a706973
-#define SIPS_SCH	0x73706973
-#define TEL_SCH		0x3a6c6574
+#define SIP_SCH			0x3a706973
+#define SIPS_SCH		0x73706973
+#define TEL_SCH			0x3a6c6574
+#define URN_SERVICE_SCH		0x3a6e7275
+#define URN_SERVICE_STR 	":service:"
+#define URN_SERVICE_STR_LEN	(sizeof(URN_SERVICE_STR) - 1)
 
 #define case_port( ch, var) \
 	case ch: \
@@ -480,6 +483,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		else goto error_bad_uri;
 	}else if (scheme==TEL_SCH){
 		uri->type=TEL_URI_T;
+	}else if (scheme==URN_SERVICE_SCH){
+		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+			p+= URN_SERVICE_STR_LEN-1;
+			uri->type=URN_SERVICE_URI_T;
+		} else goto error_bad_uri;
 	}else goto error_bad_uri;
 
 	s=p;
@@ -1198,6 +1206,9 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->host.s="";
 			uri->host.len=0;
 			break;
+		case URN_SERVICE_URI_T:
+			/* leave the actual service name in the URI domain part */
+			break;
 		case ERROR_URI_T:
 			LM_ERR("unexpected error (BUG?)\n");
 			goto error_bad_uri;
@@ -1267,7 +1278,7 @@ error_bad_port:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_uri:
-	LM_ERR("bad uri,  state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
+	LM_ERR("bad uri, state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len,
 			 ZSW(buf), len);
 	goto error_exit;
@@ -1277,7 +1288,7 @@ error_headers:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bug:
-	LM_CRIT("bad  state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
+	LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
 error_exit:
 	ser_error=E_BAD_URI;
@@ -1484,4 +1495,49 @@ headers_check:
 	 /* XXX Do we really care ? */
 	compare_uri_val(headers,strncasecmp);
 	return 0;
+}
+
+static const str uri_type_names[6] = {
+	{NULL, 0}, /*This is the error type*/
+	str_init("sip"),
+	str_init("sips"),
+	str_init("tel"),
+	str_init("tels"),
+	str_init("urn:service")
+};
+
+char* uri_type2str(const uri_type type, char *result)
+{
+	if (type == ERROR_URI_T)
+		return NULL;
+
+	memcpy(result, uri_type_names[type].s, uri_type_names[type].len);
+	return result + uri_type_names[type].len;
+}
+
+int uri_typestrlen(const uri_type type)
+{
+	return uri_type_names[type].len;
+}
+
+uri_type str2uri_type(char * buf)
+{
+	int scheme = 0;
+	uri_type type = ERROR_URI_T;
+	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme|=0x20202020;
+	if (scheme==SIP_SCH){
+		type=SIP_URI_T;
+	}else if(scheme==SIPS_SCH){
+		if(buf[4]==':')
+			type=SIPS_URI_T;
+		else type = ERROR_URI_T;
+	}else if (scheme==TEL_SCH){
+		type=TEL_URI_T;
+	}else if (scheme==URN_SERVICE_SCH){
+		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+			type=URN_SERVICE_URI_T;
+		}
+	}
+	return type;
 }

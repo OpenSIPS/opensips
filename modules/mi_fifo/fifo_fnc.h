@@ -47,7 +47,7 @@ FILE* mi_init_fifo_server(char *fifo_name, int mode, int uid, int gid,
 
 void  mi_fifo_server(FILE *fifostream);
 
-int   mi_read_line( char *b, int max, FILE *stream, int *read);
+int   mi_read_line( char *b, int max, FILE **stream, int *read);
 
 static inline int mi_fifo_reply( FILE *stream, char *reply_fmt, ... )
 {

@@ -486,6 +486,8 @@ struct mi_root * mi_events_list(struct mi_root *cmd_tree, void *param)
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
+
 	for (i = 0; i < events_no; i++) {
 		node = add_mi_node_child(rpl, 0, "Event", 5,
 				events[i].name.s, events[i].name.len);
@@ -564,7 +566,8 @@ static int evi_print_event(struct evi_mi_param *param,
 	if (!subs && !ev->subscribers)
 		return 0;
 
-	node = add_mi_node_child(rpl, 0, "Event", 5, ev->name.s, ev->name.len);
+	node = add_mi_node_child(rpl, MI_IS_ARRAY, "Event", 5,
+		ev->name.s, ev->name.len);
 	if(node == NULL)
 		goto error;
 
@@ -651,6 +654,7 @@ struct mi_root * mi_subscribers_list(struct mi_root *cmd_tree, void *param)
 	memset(&prm, 0, sizeof(struct evi_mi_param));
 
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 	node = cmd_tree->node.kids;
 	prm.node = rpl;
 	prm.root = rpl_tree;

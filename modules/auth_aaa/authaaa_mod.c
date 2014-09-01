@@ -89,14 +89,26 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
+		{ MOD_TYPE_AAA,     NULL,   DEP_WARN  },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*
  * Module interface
  */
 struct module_exports exports = {
 	"auth_aaa",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
@@ -143,7 +155,7 @@ static int mod_init(void)
 	attrs[A_ACCT_SESSION_ID].name		= "Acct-Session-Id";
 	vals[V_SIP_SESSION].name			= "Sip-Session";
 
-	fix_flag_name(&use_ruri_flag_str, use_ruri_flag);
+	fix_flag_name(use_ruri_flag_str, use_ruri_flag);
 	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str);
 
 	if (!aaa_proto_url) {

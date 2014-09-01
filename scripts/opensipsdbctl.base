@@ -8,6 +8,9 @@ DBNAME=${DBNAME:-opensips}
 # address of database server
 DBHOST=${DBHOST:-localhost}
 
+# port of database server
+DBPORT=${DBPORT:-3306}
+
 # user with full privileges over DBNAME database
 DBRWUSER=${DBRWUSER:-opensips}
 
@@ -58,7 +61,7 @@ SED=${SED:-sed}
 
 # define what modules should be installed
 STANDARD_MODULES=${STANDARD_MODULES:-standard acc domain group permissions registrar usrloc msilo alias_db uri_db rtpproxy speeddial avpops auth_db pdt dialog dispatcher dialplan drouting load_balancer }
-EXTRA_MODULES=${EXTRA_MODULES:-imc cpl siptrace domainpolicy carrierroute userblacklist registrant call_center}
+EXTRA_MODULES=${EXTRA_MODULES:-imc cpl siptrace domainpolicy carrierroute userblacklist b2b registrant call_center}
 
 ############################################################
 

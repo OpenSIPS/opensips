@@ -267,7 +267,7 @@ int daemonize(char* name, int * own_pgid)
 		}
 		/* fork again to drop group  leadership */
 		if ((pid=fork())<0){
-			LM_CRIT("Cannot  fork:%s\n", strerror(errno));
+			LM_CRIT("Cannot fork: %s\n", strerror(errno));
 			goto error;
 		}else if (pid!=0){
 			/*parent process => exit */

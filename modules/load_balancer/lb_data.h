@@ -30,7 +30,6 @@
 
 #ifndef LB_LB_DATA_H_
 #define LB_LB_DATA_H_
-
 #include "../../str.h"
 #include "../../locking.h"
 #include "../../parser/msg_parser.h"
@@ -101,6 +100,9 @@ int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
 
 int lb_count_call(struct lb_data *data, struct sip_msg *req,
 		struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl);
+
+int lb_init_event(void);
+void lb_raise_event(struct lb_dst *dst);
 
 /* failover stuff */
 extern int grp_avp_name;

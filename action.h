@@ -54,12 +54,13 @@ int run_top_route(struct action* a, struct sip_msg* msg);
 int run_action_list(struct action* a, struct sip_msg* msg);
 void run_error_route(struct sip_msg* msg, int force_reset);
 
-#define script_trace(class, action, msg, line) \
+#define script_trace(class, action, msg, file, line) \
 	do { \
 		if (use_script_trace) \
-			__script_trace(class, action, msg, line); \
+			__script_trace(class, action, msg, file, line); \
 	} while (0)
 
-void __script_trace(char *class, char *action, struct sip_msg *msg, int line);
+void __script_trace(char *class, char *action, struct sip_msg *msg,
+		char *file, int line);
 
 #endif

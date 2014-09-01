@@ -859,7 +859,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 			if (dlg_fill_name(&profile->name) < 0)
 				goto failed;
 
-			if (cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n) == -1) {
+			if (cdbf.get_counter(cdbc, &dlg_prof_noval_buf, (int *)&n) < 0) {
 				LM_ERR("cannot fetch profile from CacheDB\n");
 				goto failed;
 			}
@@ -887,7 +887,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_size(&profile->name) < 0)
 					goto failed;
 
-				if (cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n) == -1) {
+				if (cdbf.get_counter(cdbc, &dlg_prof_size_buf, (int *)&n) < 0) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
@@ -914,7 +914,7 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 				if (dlg_fill_value(&profile->name, value) < 0)
 					goto failed;
 
-				if (cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n) == -1) {
+				if (cdbf.get_counter(cdbc, &dlg_prof_val_buf, (int *)&n) < 0) {
 					LM_ERR("cannot fetch profile from CacheDB\n");
 					goto failed;
 				}
@@ -1085,6 +1085,7 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		goto error;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	ret = 0;
 
@@ -1162,6 +1163,7 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	/* go through the hash and print the dialogs */
 
@@ -1235,6 +1237,7 @@ struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
 		return 0;
 
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	profile = profiles;
 	while (profile) {

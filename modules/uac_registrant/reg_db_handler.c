@@ -289,6 +289,13 @@ int load_reg_info_from_db(unsigned int plist)
 
 			/* Get the expiration param */
 			uac_param.expires = values[expiry_col].val.int_val;
+			if (uac_param.expires <= timer_interval) {
+				LM_ERR("Please decrease timer_interval=[%u]"
+					" - requested expires=[%u] to small for AOR=[%.*s]\n",
+					timer_interval, uac_param.expires,
+					uac_param.to_uri.len, uac_param.to_uri.s);
+				continue;
+			}
 
 			/* Get the socket */
 			if (values[forced_socket_col].val.string_val &&

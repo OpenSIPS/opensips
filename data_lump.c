@@ -58,7 +58,12 @@ enum lump_dir { LD_NEXT, LD_BEFORE, LD_AFTER };
 int init_lump_flags = 0;
 
 /*! \brief adds a header to the end
- * \return returns  pointer on success, 0 on error */
+ *  \return returns pointer if success, 0 on error
+ *
+ * WARNING: currently broken! 
+ *   - lumps_len() needs to properly handle LUMP_ADD along the main chain of
+ *     lumps before we can use this
+ */
 struct lump* append_new_lump(struct lump** list, char* new_hdr,
 							unsigned int len, enum _hdr_types_t type)
 {
@@ -86,7 +91,12 @@ struct lump* append_new_lump(struct lump** list, char* new_hdr,
 
 
 /*! \brief inserts a header to the beginning
- *  \return returns pointer if success, 0 on error */
+ *  \return returns pointer if success, 0 on error
+ *
+ * WARNING: currently broken! 
+ *   - lumps_len() needs to properly handle LUMP_ADD along the main chain of
+ *     lumps before we can use this
+ */
 struct lump* insert_new_lump(struct lump** list, char* new_hdr,
 								unsigned int len, enum _hdr_types_t type)
 {
@@ -375,7 +385,7 @@ struct lump* del_lump(struct sip_msg* msg, unsigned int offset,
  * so msg->eoh must be parsed (parse with HDR_EOH) if you think your lump
  *  might affect the body!! */
 struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
-		int unsigned len, enum _hdr_types_t type)
+						 enum _hdr_types_t type)
 {
 	struct lump* tmp;
 	struct lump* prev, *t;
@@ -387,12 +397,6 @@ struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 		LM_CRIT("offset exceeds message size (%d > %d)"
 					" aborting...\n", offset, msg->len);
 		abort();
-	}
-	if (len){
-		LM_WARN("called with len !=0 (%d)\n", len);
-		if (offset+len>msg->len)
-			LM_WARN("offset + len exceeds message"
-					" size (%d + %d > %d)\n", offset, len,  msg->len);
 	}
 
 	tmp=pkg_malloc(sizeof(struct lump));
@@ -406,7 +410,6 @@ struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 	tmp->type=type;
 	tmp->flags=init_lump_flags;
 	tmp->u.offset=offset;
-	tmp->len=len;
 	prev=0;
 	/* check to see whether this might be a body lump */
 	if ((msg->eoh) && (offset> (unsigned long)(msg->eoh-msg->buf)))

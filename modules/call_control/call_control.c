@@ -180,10 +180,22 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
     "call_control",  // module name
+    MOD_TYPE_DEFAULT,// class of this module
     MODULE_VERSION,  // module version
     DEFAULT_DLFLAGS, // dlopen flags
+    &deps,           // OpenSIPS module dependencies
     commands,        // exported functions
     parameters,      // exported parameters
     NULL,            // exported statistics
@@ -1184,7 +1196,7 @@ mod_init(void)
         LM_CRIT("cannot register callback for dialogs loaded from the database\n");
     }
 
-	fix_flag_name(&prepaid_account_str, prepaid_account_flag);
+	fix_flag_name(prepaid_account_str, prepaid_account_flag);
 
 	prepaid_account_flag = get_flag_id_by_name(FLAG_TYPE_MSG, prepaid_account_str);
 

@@ -264,6 +264,41 @@ static int flat_prepare_iovec(const int n)
 		FLAT_INC(aux.len); \
 	} while(0)
 
+#define FLAT_COPY(_i, _s, _l) \
+	do { \
+		str aux; \
+		int len = 0; \
+		int l = _l; \
+		const char *s = _s; \
+		const char *p = _s; \
+		while (l--) { \
+			if ( !(isprint((int)*s) && *s != '\\' && *s != flat_delimiter[0])) { \
+				aux.len = snprintf(FLAT_BUF, FLAT_LEN,"%.*s\\x%02X", \
+						(int)(s-p),p,(*s & 0xff)); \
+				p = s+1; \
+				if (aux.len < 0) { \
+					LM_ERR("error while writing blob %d\n", i); \
+					aux.len = 0; \
+				} \
+				len += aux.len; \
+				FLAT_INC(aux.len); \
+			} \
+			++s; \
+		} \
+		if (p!=s) { \
+			aux.len = snprintf(FLAT_BUF, FLAT_LEN,"%.*s", (int)(s-p), p); \
+			if (aux.len < 0) { \
+				LM_ERR("error while writing blob %d\n", i); \
+				aux.len = 0; \
+			} \
+			len += aux.len; \
+			FLAT_INC(aux.len); \
+		} \
+		FLAT_SET_LEN(i, len); \
+	} while (0)
+
+
+
 
 /*
  * Insert a row into specified table
@@ -277,9 +312,8 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 {
 	FILE* f;
 	int i;
-	int l, len;
+	int auxl;
 	str aux;
-	char *s, *p;
 	char * begin = flat_iov_buf.s;
 
 	if (local_timestamp < *flat_rotate) {
@@ -326,13 +360,14 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 			break;
 
 		case DB_STRING:
-			FLAT_SET_STR(i, (char *)VAL_STRING(v + i));
-			FLAT_SET_LEN(i, strlen(VAL_STRING(v + i)));
+			auxl = strlen(VAL_STRING(v + i));
+			FLAT_ALLOC(auxl * 4);
+			FLAT_COPY(i, VAL_STRING(v + i), auxl);
 			break;
 
 		case DB_STR:
-			FLAT_SET_STR(i, VAL_STR(v + i).s);
-			FLAT_SET_LEN(i, VAL_STR(v + i).len);
+			FLAT_ALLOC(VAL_STR(v + i).len * 4);
+			FLAT_COPY(i, VAL_STR(v + i).s, VAL_STR(v + i).len);
 			break;
 
 		case DB_DATETIME:
@@ -342,35 +377,10 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 			break;
 
 		case DB_BLOB:
-			l = VAL_BLOB(v+i).len;
-			s = p = VAL_BLOB(v+i).s;
+			auxl = VAL_BLOB(v+i).len;
 			/* the maximum size is 4l - if all chars were not printable */
-			FLAT_ALLOC(4 * l);
-			len = 0;
-			while (l--) {
-				if ( !(isprint((int)*s) && *s != '\\' && *s != '|')) {
-					aux.len = snprintf(FLAT_BUF, FLAT_LEN,"%.*s\\x%02X",
-							(int)(s-p),p,(*s & 0xff));
-					p = s+1;
-					if (aux.len < 0) {
-						LM_ERR("error while writing blob %d\n", i);
-						aux.len = 0;
-					}
-					len += aux.len;
-					FLAT_INC(aux.len);
-				}
-				++s;
-			}
-			if (p!=s) {
-				aux.len = snprintf(FLAT_BUF, FLAT_LEN,"%.*s", (int)(s-p), p);
-				if (aux.len < 0) {
-					LM_ERR("error while writing blob %d\n", i);
-					aux.len = 0;
-				}
-				len += aux.len;
-				FLAT_INC(aux.len);
-			}
-			FLAT_SET_LEN(i, len);
+			FLAT_ALLOC(4 * auxl);
+			FLAT_COPY(i, VAL_BLOB(v+i).s, auxl);
 			break;
 
 		case DB_BITMAP:
@@ -384,8 +394,7 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 	if (flat_iov_buf.s != begin && flat_iov_buf.len) {
 		FLAT_RESET();
 		for (i = 0; i < n; i++) {
-			if (!VAL_NULL(v + i) && VAL_TYPE(v + i) != DB_STRING &&
-					VAL_TYPE(v + i) != DB_STR) {
+			if (!VAL_NULL(v + i)) {
 				FLAT_SET_STR(i, FLAT_BUF);
 				FLAT_INC(FLAT_GET_LEN(i));
 			}
@@ -393,10 +402,10 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 	}
 
 	do {
-		l = writev(fileno(f), flat_iov, 2 * n);
-	} while (l < 0 && errno == EINTR);
+		auxl = writev(fileno(f), flat_iov, 2 * n);
+	} while (auxl < 0 && errno == EINTR);
 
-	if (l < 0) {
+	if (auxl < 0) {
 		LM_ERR("unable to write to file: %s - %d\n", strerror(errno), errno);
 		return -1;
 	}

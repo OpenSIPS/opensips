@@ -268,10 +268,24 @@ static stat_export_t statistics[] = {
 };
 #endif
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "sl",     DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "tm",     DEP_ABORT  },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
     "nat_traversal", // module name
+    MOD_TYPE_DEFAULT,// class of this module
     MODULE_VERSION,  // module version
     DEFAULT_DLFLAGS, // dlopen flags
+    &deps,           // OpenSIPS module dependencies
     commands,        // exported functions
     parameters,      // exported parameters
     NULL,            // exported statistics (initialized early in mod_init)

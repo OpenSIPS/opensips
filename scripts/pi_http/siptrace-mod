@@ -4,15 +4,19 @@
 			<db_table_id>sip_trace</db_table_id>
 			<cmd_type>DB_QUERY</cmd_type>
 			<query_cols>
-				<col><field>id</field></col>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>time_stamp</field></col>
 				<col><field>callid</field></col>
 				<col><field>traced_user</field></col>
 				<col><field>msg</field></col>
 				<col><field>method</field></col>
 				<col><field>status</field></col>
-				<col><field>fromip</field></col>
-				<col><field>toip</field></col>
+				<col><field>from_proto</field></col>
+				<col><field>from_ip</field></col>
+				<col><field>from_port</field></col>
+				<col><field>to_proto</field></col>
+				<col><field>to_ip</field></col>
+				<col><field>to_port</field></col>
 				<col><field>fromtag</field></col>
 				<col><field>direction</field></col>
 			</query_cols>
@@ -27,8 +31,12 @@
 				<col><field>msg</field></col>
 				<col><field>method</field></col>
 				<col><field>status</field></col>
-				<col><field>fromip</field></col>
-				<col><field>toip</field></col>
+				<col><field>from_proto</field></col>
+				<col><field>from_ip</field></col>
+				<col><field>from_port</field></col>
+				<col><field>to_proto</field></col>
+				<col><field>to_ip</field></col>
+				<col><field>to_port</field></col>
 				<col><field>fromtag</field></col>
 				<col><field>direction</field></col>
 			</query_cols>
@@ -46,8 +54,12 @@
 				<col><field>msg</field></col>
 				<col><field>method</field></col>
 				<col><field>status</field></col>
-				<col><field>fromip</field></col>
-				<col><field>toip</field></col>
+				<col><field>from_proto</field></col>
+				<col><field>from_ip</field></col>
+				<col><field>from_port</field></col>
+				<col><field>to_proto</field></col>
+				<col><field>to_ip</field></col>
+				<col><field>to_port</field></col>
 				<col><field>fromtag</field></col>
 				<col><field>direction</field></col>
 			</query_cols>

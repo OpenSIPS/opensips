@@ -17,7 +17,7 @@ URL:          http://opensips.org/
 Vendor:       opensips.org
 BuildRoot:    %{_tmppath}/%{name}-%{ver}-buildroot
 Conflicts:    opensips-mysql < %ver, opensips-xmpp < %ver, opensips-radius < %ver, opensips-cpl < %ver, opensips-unixodbc < %ver, opensips-presence < %ver, opensips-postgres < %ver, opensips-snmpstats < %ver
-BuildRequires:  make flex bison pcre-devel
+BuildRequires:  make flex bison pcre-devel lua-devel libmemcache-devel OSPToolkit-devel mongo-c-driver-devel
 
 
 %description
@@ -191,7 +191,7 @@ A module which provides routing, balancing and blacklisting capabilities.
 Summary:  opensips cachedb_memcached implementation.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
-BuildRequires:  libconfuse-devel
+BuildRequires:  libconfuse-devel libmemcached-devel
 
 %description cachedb_memcached
 This module is an implementation of a cache system designed to work with a memcached server.
@@ -250,6 +250,7 @@ Summary:  opensips db_oracle implementation.
 Group:    System Environment/Daemons
 Requires: opensips = %ver
 BuildRequires:  oracle-instantclient11.2-devel
+AutoReqProv: no
 
 %description db_oracle
 This is a module which provides Oracle connectivity for OpenSIPS.
@@ -296,6 +297,7 @@ or where data encryption is required.
 Summary:  Cassandra connector
 Group:    System Environment/Daemons
 Requires: opensips = %ver
+BuildRequires:  thrift-cpp-devel
 
 %description  cachedb_cassandra
 Cassandra module is an implementation of a cache system designed to
@@ -373,7 +375,14 @@ parameters.
 %setup -n %{name}-%{ver}-tls
 
 %build
-make all exclude_modules="" ORAVERSION=11.2/client cfg-target=%{_sysconfdir}/opensips/
+ARCH=$(uname -m)
+if [ "$ARCH" == "x86_64" ]; then
+	ORACLIENT=64
+else
+	ORACLIENT=
+fi
+	
+make all exclude_modules="" ORAVERSION=11.2/client$ORACLIENT cfg-target=%{_sysconfdir}/opensips/
 
 
 %install
@@ -904,18 +913,21 @@ fi
 
 
 %changelog
+* Sun Apr 13 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
+- Fix x64_86 compilation problems
+
 * Tue Mar 22 2014 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   b2b_sca,call_center,mi_json,script_helper
-%changelog
+
 * Tue Aug 06 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   mi_xmlrpc_ng,sngtc,db_cachedb,mathops,rest_client
-%changelog
+
 * Sun Jul 21 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - Some new rpm optional modules are added:
   cachedb_cassandra,cachedb_mongodb,osp,perl,perlvdb,tlsops
-%changelog
+
 * Sun Jun 02 2013 Fabrizio Picconi <fabrizio.picconi@tiscali.it>
 - CentOS 6 support
   Remove rpmbuild warning on BuildPrereq now deprecated for BuildRequires

@@ -328,7 +328,7 @@ static int fix_actions(struct action* a)
 					ret = E_CFG;
 					goto error;
 				}
-				p = add_proxy( &host,(unsigned short)port, proto);
+				p = mk_proxy( &host,(unsigned short)port, proto, 0);
 				if (p==0) {
 					LM_ERR("forward/send failed to add proxy");
 					ret = E_CFG;
@@ -447,7 +447,7 @@ static int fix_actions(struct action* a)
 				break;
 			case MODULE_T:
 				cmd = (cmd_export_t*)t->elem[0].u.data;
-				LM_DBG("fixing %s, line %d\n", cmd->name, t->line);
+				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
 				if (cmd->fixup){
 					if (cmd->param_no==0){
 						ret=cmd->fixup( 0, 0);
@@ -699,6 +699,21 @@ static int fix_actions(struct action* a)
 				}
 				t->elem[0].u.data = (void*)model;
 				break;
+			case SET_ADV_PORT_T:
+				if (t->elem[0].type == STR_ST) {
+					s.s = (char *)t->elem[0].u.data;
+					s.len = strlen(s.s);
+
+					if (pv_parse_format(&s ,&model) != 0 || !model) {
+							LM_ERR("wrong format for [%.*s] advertised port!\n",
+									t->elem[1].u.s.len, t->elem[1].u.s.s);
+							ret = E_BUG;
+							goto error;
+					}
+
+					t->elem[0].u.data = model;
+				}
+				break;
 			case XDBG_T:
 			case XLOG_T:
 				s.s = (char*)t->elem[1].u.data;
@@ -858,7 +873,7 @@ static int fix_actions(struct action* a)
 	}
 	return 0;
 error:
-	LM_ERR("fixing failed (code=%d) at cfg line %d\n", ret, t->line);
+	LM_ERR("fixing failed (code=%d) at %s:%d\n", ret, t->file, t->line);
 	return ret;
 }
 
@@ -1290,6 +1305,97 @@ inline static int comp_n2n(int op, int n1, int n2)
 }
 
 
+static inline const char *op_id_2_string(int op_id)
+{
+	switch (op_id) {
+		case EQUAL_OP:
+			return "EQUAL";
+		case MATCH_OP:
+			return "REGEXP_MATCH";
+		case NOTMATCH_OP:
+			return "REGEXP_NO_MATCH";
+		case MATCHD_OP:
+			return "DYN_REGEXP_MATCH";
+		case NOTMATCHD_OP:
+			return "DYN_REGEXP_NO_MATCH";
+		case GT_OP:
+			return "GREATER_THAN";
+		case LT_OP:
+			return "LESS_THAN";
+		case GTE_OP:
+			return "GREATER_OR_EQUAL";
+		case LTE_OP:
+			return "LESS_OR_EQUAL";
+		case DIFF_OP:
+			return "DIFFERENT_THAN";
+		case VALUE_OP:
+			return "VALUE";
+		case NO_OP:
+		default:
+			return "NONE";
+	}
+}
+
+
+static inline const char *expr_type_2_string(int expr_type)
+{
+	switch (expr_type) {
+		case STRING_ST:
+			return "STRING";
+		case NET_ST:
+			return "NET_MASK";
+		case NUMBER_ST:
+			return "NUMBER";
+		case IP_ST:
+			return "IP";
+		case RE_ST:
+			return "REGEXP";
+		case PROXY_ST:
+			return "PROXY";
+		case EXPR_ST:
+			return "EXPRESION";
+		case ACTIONS_ST:
+			return "ACTION";
+		case CMD_ST:
+			return "FUNCTION";
+		case MODFIXUP_ST:
+			return "MOD_FIXUP";
+		case MYSELF_ST:
+			return "MYSELF";
+		case STR_ST:
+			return "STR";
+		case SOCKID_ST:
+			return "SOCKET";
+		case SOCKETINFO_ST:
+			return "SOCKET_INFO";
+		case SCRIPTVAR_ST:
+			return "VARIABLE";
+		case NULLV_ST:
+			return "NULL";
+		case BLACKLIST_ST:
+			return "BLACKLIST";
+		case SCRIPTVAR_ELEM_ST:
+			return "VARIABLE_ELEMENT";
+		case NOSUBTYPE:
+		default:
+			return"NONE";
+	}
+}
+
+static inline const char *val_type_2_string(int val_type)
+{
+	if (val_type&PV_VAL_STR)
+		return "STRING_VAL";
+	if (val_type&PV_VAL_INT)
+		return "INTEGER_VAL";
+	if (val_type&PV_VAL_NULL)
+		return "NULL_VAL";
+	if (val_type&PV_VAL_EMPTY)
+		return "EMPTY_VAL";
+	return "NO_VAL";
+}
+
+
 inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		operand_t *right)
 {
@@ -1306,7 +1412,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	ln = 0; rn =0;
 	if(pv_get_spec_value(msg, left->v.spec, &lvalue)!=0)
 	{
-		LM_CRIT("cannot get left var value\n");
+		LM_ERR("cannot get left var value\n");
 		goto error;
 	}
 	if(right->type==NULLV_ST)
@@ -1326,12 +1432,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	lstr = lvalue.rs;
 	ln   = lvalue.ri;
 	type = 0;
+	rvalue.flags = 0; /*just for err printing purposes */
 
 	if(right->type == SCRIPTVAR_ST)
 	{
 		if(pv_get_spec_value(msg, right->v.spec, &rvalue)!=0)
 		{
-			LM_CRIT("cannot get right var value\n");
+			LM_ERR("cannot get right var value\n");
 			goto error;
 		}
 		if(rvalue.flags&PV_VAL_NULL || lvalue.flags&PV_VAL_NULL ) {
@@ -1343,10 +1450,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		if(op==MATCH_OP||op==NOTMATCH_OP)
 		{
 			if(!((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)))
-			{
-				LM_CRIT("invalid operation %d/%d\n", op, right->type);
-				goto error;
-			}
+				goto error_op;
 			if(op==MATCH_OP)
 				return comp_s2s(MATCHD_OP, &lstr, &rvalue.rs);
 			else
@@ -1361,11 +1465,8 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			/* comparing string */
 			rstr = rvalue.rs;
 			type =1;
-		} else {
-			LM_CRIT("invalid operation %d/%d!\n", op,
-					right->type);
-			goto error;
-		}
+		} else
+			goto error_op;
 	} else {
 		/* null against a not-null constant */
 		if(lvalue.flags&PV_VAL_NULL)
@@ -1373,20 +1474,13 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 
 		if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
-			{
-				LM_CRIT("invalid operation %d/%d/%d!!\n", op,
-						right->type, lvalue.flags);
-				goto error;
-			}
+				goto error_op;
 			/* comparing int */
 			type =2;
 			rn = right->v.n;
 		} else if(right->type == STR_ST) {
 			if(!(lvalue.flags&PV_VAL_STR))
-			{
-				LM_CRIT("invalid operation %d/%d!!!\n", op,	right->type);
-				goto error;
-			}
+				goto error_op;
 			/* comparing string */
 			type =1;
 			rstr = right->v.s;
@@ -1394,10 +1488,7 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 			if(op==MATCH_OP || op==NOTMATCH_OP)
 			{
 				if(!(lvalue.flags&PV_VAL_STR) || right->type != RE_ST)
-				{
-					LM_CRIT("invalid operation %d/%d\n", op, right->type);
-					goto error;
-				}
+					goto error_op;
 				return comp_s2s(op, &lstr, (str*)right->v.expr);
 			}
 			/* comparing others */
@@ -1411,10 +1502,14 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 	} else if(type==2) {
 		LM_DBG("int %d : %d / %d\n", op, ln, rn);
 		return comp_n2n(op, ln, rn);
-	} else {
-		LM_CRIT("invalid operation %d/%d\n", op, right->type);
 	}
+	/* default is error */
 
+error_op:
+	LM_WARN("invalid %s operation: left is %s/%s, right is %s/%s\n",
+		op_id_2_string(op),
+		expr_type_2_string(left->type), val_type_2_string(lvalue.flags),
+		expr_type_2_string(right->type), val_type_2_string(rvalue.flags) );
 error:
 	return -1;
 }

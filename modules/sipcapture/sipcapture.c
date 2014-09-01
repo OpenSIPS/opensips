@@ -317,14 +317,23 @@ stat_export_t sipcapture_stats[] = {
 };
 #endif
 
-
-
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /*! \brief module exports */
 struct module_exports exports = {
 	"sipcapture",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /*!< Exported functions */
 	params,     /*!< Exported parameters */
 #ifdef STATISTICS
@@ -346,6 +355,8 @@ struct module_exports exports = {
 static int mod_init(void) {
 
 	struct ip_addr *ip = NULL;
+
+	init_db_url(db_url, 0);
 
 #ifdef STATISTICS
 	/* register statistics */
@@ -566,7 +577,7 @@ int sipcapture_db_init(const str* db_url) {
 
 
         if(db_funcs.init == 0) {
-                LM_CRIT("null dbf \n");
+                LM_CRIT("null dbf\n");
                 goto error;
         }
 

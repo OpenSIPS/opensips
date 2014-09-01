@@ -219,12 +219,18 @@ struct tcp_connection{
 		if ((c)->prev) (c)->prev->next=(c)->next; \
 	}while(0)
 
+#define TCPCONN_GET_PART(_id)  (_id%TCP_PARTITION_SIZE)
+#define TCP_PART(_id)  (tcp_parts[TCPCONN_GET_PART(_id)])
 
-#define TCPCONN_LOCK lock_get(tcpconn_lock);
-#define TCPCONN_UNLOCK lock_release(tcpconn_lock);
+#define TCPCONN_LOCK(_id) \
+	lock_get(tcp_parts[TCPCONN_GET_PART(_id)].tcpconn_lock);
+#define TCPCONN_UNLOCK(_id) \
+	lock_release(tcp_parts[TCPCONN_GET_PART(_id)].tcpconn_lock);
 
 #define TCP_ALIAS_HASH_SIZE 1024
 #define TCP_ID_HASH_SIZE 1024
+
+#define TCP_PARTITION_SIZE 32
 
 static inline unsigned tcp_addr_hash(struct ip_addr* ip, unsigned short port)
 {

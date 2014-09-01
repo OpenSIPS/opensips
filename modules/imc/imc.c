@@ -129,13 +129,23 @@ static mi_export_t mi_cmds[] = {
 	{ 0, 0, 0, 0, 0, 0}
 };
 
-
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
 	"imc",      /* module name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* exported commands */
 	params,     /* exported parameters */
 #ifdef STATISTICS
@@ -458,7 +468,7 @@ static int imc_manager(struct sip_msg* msg, char *str1, char *str2)
 
 	if(parse_from_header(msg)<0)
 	{
-		LM_ERR("failed to parse  From header\n");
+		LM_ERR("failed to parse From header\n");
 		goto error;
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
@@ -661,7 +671,7 @@ void destroy(void)
 
 				if(imc_dbf.insert(imc_db, mq_cols, mq_vals, 4)<0)
 				{
-					LM_ERR("failed to insert  into table imc_rooms\n");
+					LM_ERR("failed to insert into table imc_rooms\n");
 					return;
 				}
 				member = member->next;
@@ -690,6 +700,7 @@ static struct mi_root* imc_mi_list_rooms(struct mi_root* cmd_tree, void* param)
 	if(rpl_tree == NULL)
 		return 0;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i=0; i<imc_hash_size; i++)
 	{
@@ -780,8 +791,8 @@ static struct mi_root* imc_mi_list_members(struct mi_root* cmd_tree,
 	if(rpl_tree == NULL)
 		return 0;
 
-	node_r = add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, "ROOM", 4,
-		room_name.s, room_name.len);
+	node_r = add_mi_node_child( &rpl_tree->node, MI_IS_ARRAY|MI_DUP_VALUE,
+		"ROOM", 4, room_name.s, room_name.len);
 	if(node_r == NULL)
 		goto error;
 

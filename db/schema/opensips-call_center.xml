@@ -12,4 +12,5 @@
 	<xi:include href="cc_flows.xml"/>
 	<xi:include href="cc_agents.xml"/>
 	<xi:include href="cc_cdrs.xml"/>
+	<xi:include href="cc_calls.xml"/>
 </database>

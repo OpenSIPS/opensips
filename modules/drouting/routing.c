@@ -214,7 +214,7 @@ error:
 }
 
 
-int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
+int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 													int state, rt_data_t *rd)
 {
 	pcr_t *cr = NULL;
@@ -247,7 +247,6 @@ int add_carrier(int db_id, char *id, int flags, char *gwlist, char *attrs,
 	}
 
 	/* copy integer fields */
-	cr->db_id = db_id;
 	cr->flags = flags;
 
 	/* set state */
@@ -525,10 +524,10 @@ add_dst(
 		case 0:
 			break;
 		case 1:
-			pgw->flags =  DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
+			pgw->flags |=  DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_NOEN_FLAG;
 			break;
 		case 2:
-			pgw->flags =  DR_DST_STAT_DSBL_FLAG;
+			pgw->flags |=  DR_DST_STAT_DSBL_FLAG;
 			break;
 		default:
 			goto err_exit;

@@ -38,6 +38,7 @@
 
 static struct dlg_head_cbl* create_cbs = 0;
 
+static int dlg_load_cbs_run = 0;
 static struct dlg_head_cbl* load_cbs = 0;
 
 static struct dlg_cb_params params = {NULL, DLG_DIR_NONE, NULL, NULL};
@@ -79,6 +80,11 @@ void destroy_dlg_callbacks_list(struct dlg_callback *cb)
 		}
 		shm_free(cb_t);
 	}
+}
+
+void mark_dlg_loaded_callbacks_run(void)
+{
+	dlg_load_cbs_run = 1;
 }
 
 
@@ -151,10 +157,9 @@ int register_dlgcb(struct dlg_cell *dlg, int types, dialog_cb f,
 		create_cbs->first = cb;
 		create_cbs->types |= types;
 	} else if (types==DLGCB_LOADED) {
-		if (load_cbs==POINTER_CLOSED_MARKER) {
+		if (dlg_load_cbs_run) {
 			/* run the callback on the spot */
 			run_load_callback(cb);
-			destroy_dlg_callbacks_list(cb);
 			return 0;
 		}
 		if (load_cbs==0) {
@@ -210,6 +215,22 @@ void run_load_callbacks( void )
 	return;
 }
 
+void run_load_callback_per_dlg(struct dlg_cell *dlg)
+{
+	struct dlg_callback *cb;
+
+	params.msg = NULL;
+	params.direction = DLG_DIR_NONE;
+
+	if (load_cbs && load_cbs!=POINTER_CLOSED_MARKER) {
+		for ( cb=load_cbs->first; cb; cb=cb->next ) {
+			params.param = &cb->param;
+			cb->callback( dlg, DLGCB_LOADED, &params );
+		}
+	}
+
+	return;
+}
 
 void run_create_callbacks(struct dlg_cell *dlg, struct sip_msg *msg)
 {

@@ -289,11 +289,56 @@ static param_export_t params[] = {
 	{0,0,0}
 };
 
+static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+{
+	char *aaa_url = *(char **)param->param_pointer;
+
+	if (!aaa_url || strlen(aaa_url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_AAA, NULL, DEP_WARN);
+}
+
+static module_dependency_t *get_deps_detect_dir(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_cdr_flag(param_export_t *param)
+{
+	if (param->type == STR_PARAM) {
+		char *str_flag = *(char **)param->param_pointer;
+
+		if (!str_flag || strlen(str_flag) == 0)
+			return NULL;
+	}
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_WARN);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT  },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url",           get_deps_sqldb_url  },
+		{ "aaa_url",          get_deps_aaa_url    },
+		{ "detect_direction", get_deps_detect_dir },
+		{ "cdr_flag",         get_deps_cdr_flag   },
+		{ NULL, NULL },
+	},
+};
 
 struct module_exports exports= {
 	"acc",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	params,     /* exported params */
 	0,          /* exported statistics */
@@ -393,14 +438,14 @@ static int mod_init( void )
 
 	/* ----------- GENERIC INIT SECTION  ----------- */
 
-	fix_flag_name(&failed_transaction_string, failed_transaction_flag);
+	fix_flag_name(failed_transaction_string, failed_transaction_flag);
 
 	failed_transaction_flag =
 	    get_flag_id_by_name(FLAG_TYPE_MSG, failed_transaction_string);
 
 	if (flag_idx2mask(&failed_transaction_flag)<0)
 		return -1;
-	fix_flag_name(&cdr_string, cdr_flag);
+	fix_flag_name(cdr_string, cdr_flag);
 
 	cdr_flag = get_flag_id_by_name(FLAG_TYPE_MSG, cdr_string);
 
@@ -440,13 +485,6 @@ static int mod_init( void )
 		return -1;
 	}
 
-	/* load callbacks */
-	if (cdr_flag && dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
-				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
-			LM_ERR("cannot register callback for dialog loaded - accounting "
-					"for ongoing calls will be lost after restart\n");
-
-
 	/* init the extra engine */
 	init_acc_extra();
 
@@ -473,14 +511,14 @@ static int mod_init( void )
 		return -1;
 	}
 
-	fix_flag_name(&log_string, log_flag);
+	fix_flag_name(log_string, log_flag);
 
 	log_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_string);
 
 	if (flag_idx2mask(&log_flag)<0)
 		return -1;
 
-	fix_flag_name(&log_missed_string, log_missed_flag);
+	fix_flag_name(log_missed_string, log_missed_flag);
 
 	log_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, log_missed_string);
 
@@ -491,7 +529,7 @@ static int mod_init( void )
 
 	/* ------------ SQL INIT SECTION ----------- */
 
-	if (db_url.s && db_url.len > 0) {
+	if (db_url.s) {
 		/* parse the extra string, if any */
 		if (db_extra_str && (db_extra=parse_acc_extra(db_extra_str, 1))==0 ) {
 			LM_ERR("failed to parse db_extra param\n");
@@ -502,19 +540,21 @@ static int mod_init( void )
 			LM_ERR("failed to parse db_extra_bye param\n");
 			return -1;
 		}
+
 		if (acc_db_init(&db_url)<0){
-			LM_ERR("failed...did you load a database module?\n");
+			LM_ERR("failed! bad db url / missing db module ?\n");
 			return -1;
 		}
+
 		/* fix the flags */
-		fix_flag_name(&db_string, db_flag);
+		fix_flag_name(db_string, db_flag);
 
 		db_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_string);
 
 		if (flag_idx2mask(&db_flag)<0)
 			return -1;
 
-		fix_flag_name(&db_missed_string, db_missed_flag);
+		fix_flag_name(db_missed_string, db_missed_flag);
 
 		db_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, db_missed_string);
 
@@ -553,14 +593,14 @@ static int mod_init( void )
 		}
 
 		/* fix the flags */
-		fix_flag_name(&aaa_string, aaa_flag);
+		fix_flag_name(aaa_string, aaa_flag);
 
 		aaa_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_string);
 
 		if (flag_idx2mask(&aaa_flag)<0)
 			return -1;
 
-		fix_flag_name(&aaa_missed_string, aaa_missed_flag);
+		fix_flag_name(aaa_missed_string, aaa_missed_flag);
 
 		aaa_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, aaa_missed_string);
 
@@ -581,14 +621,14 @@ static int mod_init( void )
 
 #ifdef DIAM_ACC
 	/* fix the flags */
-	fix_flag_name(&diameter_string, diameter_flag);
+	fix_flag_name(diameter_string, diameter_flag);
 
 	diameter_flag = get_flag_id_by_name(FLAG_TYPE_MSG, diameter_string);
 
 	if (flag_idx2mask(&diameter_flag)<0)
 		return -1;
 
-	fix_flag_name(&diameter_missed_string, diameter_missed_flag);
+	fix_flag_name(diameter_missed_string, diameter_missed_flag);
 
 	diameter_missed_flag=get_flag_id_by_name(FLAG_TYPE_MSG, diameter_missed_string);
 
@@ -621,14 +661,14 @@ static int mod_init( void )
 	}
 
 	/* fix the flags */
-	fix_flag_name(&evi_string, evi_flag);
+	fix_flag_name(evi_string, evi_flag);
 
 	evi_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_string);
 
 	if (flag_idx2mask(&evi_flag)<0)
 		return -1;
 
-	fix_flag_name(&evi_missed_string, evi_missed_flag);
+	fix_flag_name(evi_missed_string, evi_missed_flag);
 
 	evi_missed_flag = get_flag_id_by_name(FLAG_TYPE_MSG, evi_missed_string);
 
@@ -639,6 +679,14 @@ static int mod_init( void )
 		LM_ERR("cannot init acc events\n");
 		return -1;
 	}
+
+	/* load callbacks */
+	if (cdr_flag && dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
+				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
+			LM_ERR("cannot register callback for dialog loaded - accounting "
+					"for ongoing calls will be lost after restart\n");
+
+
 	return 0;
 }
 

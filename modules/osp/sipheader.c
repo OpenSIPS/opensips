@@ -431,7 +431,7 @@ static int ospAppendHeader(
         return -1;
     }
 
-    anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+    anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
     if (anchor == 0) {
         LM_ERR("failed to get anchor\n");
         return -1;

@@ -158,6 +158,11 @@ static inline void env_set_comment(struct acc_param *accp)
 	acc_env.reason = accp->reason;
 }
 
+static inline void env_set_event(event_id_t ev)
+{
+	acc_env.event = ev;
+}
+
 
 static inline int acc_preparse_req(struct sip_msg *req)
 {
@@ -422,6 +427,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	 */
 
 	if (is_evi_mc_on(req)) {
+		env_set_event(acc_missed_event);
 		acc_evi_request( req, reply );
 		flags_to_reset |= evi_missed_flag;
 	}
@@ -589,8 +595,10 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		}
 	} else {
 		/* do old accounting */
-		if ( is_evi_acc_on(req) )
+		if ( is_evi_acc_on(req) ) {
+			env_set_event(acc_event);
 			acc_evi_request( req, reply );
+		}
 
 		if ( is_log_acc_on(req) ) {
 			env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
@@ -631,7 +639,7 @@ static void acc_dlg_callback(struct dlg_cell *dlg, int type,
 	flags = (unsigned int)(long)(*_params->param);
 
 	if (flags & evi_flag) {
-
+		env_set_event(acc_cdr_event);
 		if (acc_evi_cdrs(dlg, _params->msg) < 0) {
 			LM_ERR("cannot send accounting events\n");
 			return;

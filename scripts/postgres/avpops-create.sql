@@ -10,6 +10,7 @@ CREATE TABLE usr_preferences (
     last_modified TIMESTAMP WITHOUT TIME ZONE DEFAULT '1900-01-01 00:00:01' NOT NULL
 );
 
+ALTER SEQUENCE usr_preferences_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX usr_preferences_ua_idx ON usr_preferences (uuid, attribute);
 CREATE INDEX usr_preferences_uda_idx ON usr_preferences (username, domain, attribute);
 CREATE INDEX usr_preferences_value_idx ON usr_preferences (value);

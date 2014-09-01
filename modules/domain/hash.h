@@ -30,8 +30,8 @@
 #include "domain_mod.h"
 #include "../../mi/mi.h"
 
-int hash_table_install (struct domain_list **hash_table, char *domain);
-int hash_table_lookup (str *domain);
+int hash_table_install (struct domain_list **hash_table, str *d, str *a);
+int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv);
 int hash_table_mi_print(struct domain_list **hash_table, struct mi_node* rpl);
 void hash_table_free (struct domain_list **hash_table);
 

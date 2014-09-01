@@ -61,7 +61,7 @@ enum { METHOD_O=1, URI_O, FROM_URI_O, TO_URI_O, SRCIP_O, SRCPORT_O,
 	   DSTIP_O, DSTPORT_O, PROTO_O, AF_O, MSGLEN_O, DEFAULT_O, ACTION_O,
 	   EXPR_O, NUMBER_O, NUMBERV_O, STRINGV_O, RETCODE_O, SCRIPTVAR_O};
 
-enum { FORWARD_T=1, SEND_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
+enum { FORWARD_T=1, SEND_T, ASSERT_T, DROP_T, LOG_T, ERROR_T, ROUTE_T, EXEC_T,
 		SET_HOST_T, SET_HOSTPORT_T, SET_USER_T, SET_USERPASS_T,
 		SET_PORT_T, SET_URI_T, IF_T, MODULE_T, SET_DEBUG_T,
 		SETFLAG_T, RESETFLAG_T, ISFLAGSET_T ,
@@ -142,6 +142,7 @@ struct action{
 	int type;  /* forward, drop, log, send ...*/
 	action_elem_t elem[MAX_ACTION_ELEMS];
 	int line;
+	char *file;
 	struct action* next;
 };
 
@@ -149,7 +150,8 @@ struct action{
 
 struct expr* mk_exp(int op, struct expr* left, struct expr* right);
 struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd);
-struct action* mk_action(int type, int n, action_elem_t *elem, int line);
+struct action* mk_action(int type, int n, action_elem_t *elem,
+		int line, char *file);
 struct action* append_action(struct action* a, struct action* b);
 
 

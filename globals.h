@@ -99,7 +99,6 @@ extern int dont_fork;
 extern int no_daemon_mode;
 extern int check_via;
 extern int received_dns;
-/* extern int process_no; */
 extern int sip_warning;
 extern int server_signature;
 extern str server_header;
@@ -172,4 +171,7 @@ extern char *db_version_table;
 extern char *db_default_url;
 
 extern int disable_503_translation;
+
+extern int enable_asserts;
+extern int abort_on_assert;
 #endif

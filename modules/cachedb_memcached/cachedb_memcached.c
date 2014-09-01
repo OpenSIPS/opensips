@@ -79,8 +79,10 @@ static param_export_t params[]={
 /** module exports */
 struct module_exports exports= {
 	"cachedb_memcached",        /* module name */
+	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	0,                          /* exported functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
@@ -293,7 +295,55 @@ int wrap_memcached_sub(cachedb_con *connection,str* attr,int val,
 
 int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
 {
-	return wrap_memcached_add(connection,attr,0,0,res);
+	memcached_return  rc;
+	char * ret;
+	size_t ret_len;
+	uint32_t fl;
+	char * err;
+	memcached_con *con;
+	struct timeval start;
+	str rpl;
+
+	start_expire_timer(start,memcache_exec_threshold);
+	con = (memcached_con *)connection->data;
+
+	ret = memcached_get(con->memc,attr->s, attr->len,
+				&ret_len,&fl,&rc);
+
+	if(ret == NULL)
+	{
+		if(rc == MEMCACHED_NOTFOUND)
+		{
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached counter fetch",attr->s,attr->len,0);
+			return -2;
+		}
+		else
+		{
+			err = (char*)memcached_strerror(con->memc,rc);
+			LM_ERR("Failed to get: %s\n",err );
+			stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached counter fetch",attr->s,attr->len,0);
+			return -1;
+		}
+	}
+
+	rpl.len = (int)ret_len;
+	rpl.s = ret;
+	
+	if (str2sint(&rpl,res) < 0) {
+		LM_ERR("Failed to convert %.*s to int\n",(int)ret_len,ret);
+		stop_expire_timer(start,memcache_exec_threshold,
+			"cachedb_memcached counter fetch",attr->s,attr->len,0);
+		free(ret);
+		return -1;
+		
+	}
+
+	stop_expire_timer(start,memcache_exec_threshold,
+		"cachedb_memcached counter fetch",attr->s,attr->len,0);
+	free(ret);
+	return 0;
 }
 
 #define MAX_HOSTPORT_SIZE 22

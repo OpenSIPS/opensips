@@ -301,29 +301,34 @@ ifneq ($(VERSIONTYPE),)
     GETVERSIONOPTS = rev-parse --short HEAD
     endif
   endif
- 
+
   ifeq ($(OLDREVISION),)
   OLDREVISION = $(shell if [ -f ".$(VERSIONTYPE)revision" ] ; then \
- 					 cat .$(VERSIONTYPE)revision ;\
- 				 fi )
+					 cat .$(VERSIONTYPE)revision ;\
+				 fi )
   endif
- 
+
   ifeq ($(THISREVISION),)
   THISREVISION = $(shell if [ -f main.c -a -f Makefile.defs ] ; then \
- 				if [ -x "$(GETVERSION)" ] ; then \
- 					$(GETVERSION) $(GETVERSIONOPTS) ;\
- 				fi ;\
- 		fi )
+				if [ -x "$(GETVERSION)" ] ; then \
+					$(GETVERSION) $(GETVERSIONOPTS) ;\
+				fi ;\
+		fi )
   endif
- 
-  ifneq ($(THISREVISION),)
+else
+  # git is the default versioning method
+  VERSIONTYPE = $(shell [ -f ".gitrevision" ] && echo "git")
+  ifneq ($(VERSIONTYPE),)
+    THISREVISION = $(shell cat .gitrevision)
+  endif
+endif
+
+ifneq ($(THISREVISION),)
   NEWREVISION = $(shell if [ "$(THISREVISION)" != "$(OLDREVISION)" ] ; then \
-  						echo "dosetrev" ; \
-  					fi )
-  else
+						echo "dosetrev" ; \
+					fi )
+else
   THISREVISION = unknown
-  endif
- 
 endif
 
 
@@ -493,8 +498,6 @@ export CC_NAME
 # -DSTATISTICS
 #		enables statistics manager - support for collecting statistics
 #		from core and all modules; all info may be fetch via FIFO/UNIX_SOCK
-# -DCHANGEABLE_DEBUG_LEVEL
-#		enables support for changeable debug level at runtime
 # -DORACLE_USRLOC
 #		use oracle compatible SQL in the the get_all_ucontacts function in usrloc,
 #		needed for example from the nathelper module

@@ -452,18 +452,14 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			case SUBST_RCV_IP: \
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_address_str->len; \
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme:null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 1"); \
 				break; \
 			case SUBST_RCV_PORT: \
 				if (msg->rcv.bind_address){ \
 					new_len+=rcv_port_str->len; \
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme: null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 2"); \
 				break; \
 			case SUBST_RCV_PROTO: \
 				if (msg->rcv.bind_address){ \
@@ -481,10 +477,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 					}\
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme: null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 3"); \
 				break; \
 			case SUBST_RCV_ALL: \
 				if (msg->rcv.bind_address){ \
@@ -509,26 +503,20 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								msg->rcv.bind_address->proto); \
 					}\
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("fixme: null bind_address\n"); \
-				}; \
+				} else \
+					report_programming_bug("null bind adress 4"); \
 				break; \
 			case SUBST_SND_IP: \
 				if (send_sock){ \
 					new_len+=send_address_str->len; \
-				}else{ \
-					LM_CRIT("fixme: lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 1"); \
 				break; \
 			case SUBST_SND_PORT: \
 				if (send_sock){ \
 					new_len+=send_port_str->len; \
-				}else{ \
-					LM_CRIT("lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 2"); \
 				break; \
 			case SUBST_SND_PROTO: \
 				if (send_sock){ \
@@ -546,10 +534,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 					}\
-				}else{ \
-					LM_CRIT("lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 3"); \
 				break; \
 			case SUBST_SND_ALL: \
 				if (send_sock){ \
@@ -575,11 +561,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 						LM_CRIT("unknown proto %d\n", \
 								send_sock->proto); \
 					}\
-				}else{ \
-					/* FIXME */ \
-					LM_CRIT("lumps_len called with" \
-							" null send_sock\n"); \
-				}; \
+				} else \
+					report_programming_bug("null send_socket 4"); \
 				break; \
 			case SUBST_NOP: /* do nothing */ \
 				break; \
@@ -592,17 +575,23 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	s_offset=0;
 	new_len=0;
 	last_del=0;
+
 	/* init send_address_str & send_port_str */
 	if(send_sock && send_sock->adv_name_str.len)
 		send_address_str=&(send_sock->adv_name_str);
-	else if (msg->set_global_address.len)
+	else if (msg->set_global_address.s)
 		send_address_str=&(msg->set_global_address);
+	else if (default_global_address.s)
+		send_address_str=&default_global_address;
 	else
 		send_address_str=&(send_sock->address_str);
+
 	if(send_sock && send_sock->adv_port_str.len)
 		send_port_str=&(send_sock->adv_port_str);
-	else if (msg->set_global_port.len)
+	else if (msg->set_global_port.s)
 		send_port_str=&(msg->set_global_port);
+	else if (default_global_port.s)
+		send_port_str=&default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
 
@@ -618,25 +607,18 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 
-	for(t=lumps;t;t=t->next){
+	for (t = lumps; t; t = t->next) {
 		/* is this lump still valid? (it must not be anchored in a deleted area */
-		if (s_offset > t->u.offset && t->u.offset!=last_del) {
+		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
 			continue;
 		}
-		/* if a SKIP lump, go to the last in the list*/
-		if (t->op==LUMP_SKIP) {
-			if (!t->next) break;
-			for(;t->next;t=t->next);
-		}
-		/* skip if this is an OPT lump and the condition is not satisfied */
-		if ((t->op==LUMP_ADD_OPT) && !lump_check_opt(t, msg, send_sock))
-			continue;
-		for(r=t->before;r;r=r->before){
-			switch(r->op){
+
+		for (r = t->before; r; r = r->before) {
+			switch (r->op) {
 				case LUMP_ADD:
-					new_len+=r->len;
+					new_len += r->len;
 					break;
 				case LUMP_ADD_SUBST:
 					SUBST_LUMP_LEN(r);
@@ -649,8 +631,10 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 					break;
 				case LUMP_SKIP:
 					/* if a SKIP lump, go to the last in the list*/
-					if (!r->before || !r->before->before) continue;
-					for(;r->before->before;r=r->before);
+					if (!r->before || !r->before->before)
+						continue;
+					for (; r->before->before; r = r->before)
+						;
 					break;
 				default:
 					/* only ADD allowed for before/after */
@@ -658,30 +642,48 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 			}
 		}
 skip_before:
-		switch(t->op){
-			case LUMP_ADD:
-				new_len+=t->len;
-				break;
-			case LUMP_ADD_SUBST:
-				SUBST_LUMP_LEN(t);
-				break;
-			case LUMP_ADD_OPT:
-				/* we don't do anything here, it's only a condition for
-				 * before & after */
-				break;
+		switch (t->op) {
 			case LUMP_DEL:
 				last_del=t->u.offset;
-				s_offset=t->u.offset+t->len;
-				new_len-=t->len;
+
+				if (t->u.offset < s_offset) {
+					if (t->u.offset + t->len > s_offset) {
+						new_len -= t->len - (s_offset - t->u.offset);
+						s_offset = t->u.offset + t->len;
+					}
+				} else {
+					new_len -= t->len;
+					s_offset = t->u.offset + t->len;
+				}
+
 				break;
 			case LUMP_NOP:
 				/* do nothing */
 				break;
+			case LUMP_ADD:
+				/* FIXME: inconsistent with process_lumps() */
+				new_len += t->len;
+				break;
+			case LUMP_ADD_OPT:
+				report_programming_bug("LUMP_ADD_OPT");
+				/* we don't do anything here, it's only a condition for
+				 * before & after */
+				break;
+			case LUMP_SKIP:
+				report_programming_bug("LUMP_SKIP");
+				/* we don't do anything here, it's only a condition for
+				 * before & after */
+				break;
+			case LUMP_ADD_SUBST:
+				report_programming_bug("LUMP_ADD_SUBST");
+				SUBST_LUMP_LEN(t);
+				break;
 			default:
-				LM_CRIT("op for data lump (%x)\n", r->op);
+				report_programming_bug("op for data lump (%x)", r->op);
 		}
-		for (r=t->after;r;r=r->after){
-			switch(r->op){
+
+		for (r = t->after; r; r = r->after) {
+			switch (r->op) {
 				case LUMP_ADD:
 					new_len+=r->len;
 					break;
@@ -696,8 +698,10 @@ skip_before:
 					break;
 				case LUMP_SKIP:
 					/* if a SKIP lump, go to the last in the list*/
-					if (!r->after || !r->after->after) continue;
-					for(;r->after->after;r=r->after);
+					if (!r->after || !r->after->after)
+						continue;
+					for (; r->after->after; r = r->after)
+						;
 					break;
 				default:
 					/* only ADD allowed for before/after */
@@ -713,7 +717,7 @@ skip_after:
 
 
 /*! \brief another helper functions, adds/Removes the lump,
-	code moved form build_req_from_req  */
+	code moved from build_req_from_req  */
 
 void process_lumps(	struct sip_msg* msg,
 					struct lump* lumps,
@@ -937,12 +941,16 @@ void process_lumps(	struct sip_msg* msg,
 		send_address_str=&(send_sock->adv_name_str);
 	else if (msg->set_global_address.len)
 		send_address_str=&(msg->set_global_address);
+	else if (default_global_address.s)
+		send_address_str=&default_global_address;
 	else
 		send_address_str=&(send_sock->address_str);
 	if(send_sock && send_sock->adv_port_str.len)
 		send_port_str=&(send_sock->adv_port_str);
 	else if (msg->set_global_port.len)
 		send_port_str=&(msg->set_global_port);
+	else if (default_global_port.s)
+		send_port_str=&default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
 
@@ -958,29 +966,107 @@ void process_lumps(	struct sip_msg* msg,
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
 
-
 	orig=msg->buf;
 	offset=*new_buf_offs;
 	s_offset=*orig_offs;
 	last_del=0;
 
-	for (t=lumps;t;t=t->next){
+	for (t = lumps; t; t = t->next) {
 		/* skip this lump if the "offset" is still in a "deleted" area */
-		if (s_offset > t->u.offset && last_del!= t->u.offset) {
+		if (t->u.offset < s_offset && t->u.offset != last_del) {
 			LM_DBG("skip a %d, buffer offset=%d, lump offset=%d, last_del=%d\n",
 				t->op,s_offset, t->u.offset,last_del);
 			continue;
 		}
 
-		switch(t->op){
-			case LUMP_SKIP:
-				/* if a SKIP lump, go to the last in the list*/
-				if (!t->next || !t->next->next) continue;
-				for(;t->next->next;t=t->next);
+		switch (t->op) {
+			case LUMP_NOP:
+			case LUMP_DEL:
+				/* copy till offset (if any) */
+				if (s_offset < t->u.offset) {
+					size = t->u.offset-s_offset;
+					memcpy(new_buf+offset, orig+s_offset, size);
+					offset += size;
+					s_offset += size;
+				}
+
+				if (t->op == LUMP_DEL)
+					last_del = t->u.offset;
+
+				/* process before  */
+				for (r = t->before; r; r = r->before) {
+					switch (r->op) {
+						case LUMP_ADD:
+							/*just add it here*/
+							memcpy(new_buf+offset, r->u.value, r->len);
+							offset += r->len;
+							break;
+						case LUMP_ADD_SUBST:
+							SUBST_LUMP(r);
+							break;
+						case LUMP_ADD_OPT:
+							/* skip if this is an OPT lump and the condition is
+					 		* not satisfied */
+							if (!lump_check_opt(r, msg, send_sock))
+								goto skip_nop_before;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->before || !r->before->before)
+								continue;
+							for (; r->before->before; r = r->before)
+								;
+							break;
+						default:
+							/* only ADD allowed for before/after */
+							report_programming_bug("invalid op 1 (%x)",r->op);
+					}
+				}
+skip_nop_before:
+				if (t->op == LUMP_DEL) {
+					/*
+					 * skip at most len bytes from orig msg
+					 * and properly handle DEL lumps at the same offset --liviu
+					 */
+					if (t->u.offset + t->len > s_offset)
+						s_offset += t->len - (s_offset - t->u.offset);
+				}
+
+				/* process after */
+				for (r = t->after; r; r = r->after) {
+					switch (r->op) {
+						case LUMP_ADD:
+							/*just add it here*/
+							memcpy(new_buf+offset, r->u.value, r->len);
+							offset += r->len;
+							break;
+						case LUMP_ADD_SUBST:
+							SUBST_LUMP(r);
+							break;
+						case LUMP_ADD_OPT:
+							/* skip if this is an OPT lump and the condition is
+					 		* not satisfied */
+							if (!lump_check_opt(r, msg, send_sock))
+								goto skip_nop_after;
+							break;
+						case LUMP_SKIP:
+							/* if a SKIP lump, go to the last in the list*/
+							if (!r->after || !r->after->after)
+								continue;
+							for (; r->after->after; r = r->after)
+								;
+							break;
+						default:
+							/* only ADD allowed for before/after */
+							report_programming_bug("invalid op 2 (%x)", r->op);
+					}
+				}
+skip_nop_after:
 				break;
 			case LUMP_ADD:
 			case LUMP_ADD_SUBST:
 			case LUMP_ADD_OPT:
+				report_programming_bug("ADD|SUBST|OPT");
 				/* skip if this is an OPT lump and the condition is
 				 * not satisfied */
 				if ((t->op==LUMP_ADD_OPT) &&
@@ -1011,7 +1097,7 @@ void process_lumps(	struct sip_msg* msg,
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n", r->op);
+							report_programming_bug("invalid op 3 (%x)", r->op);
 					}
 				}
 skip_before:
@@ -1029,7 +1115,7 @@ skip_before:
 						break;
 					default:
 						/* should not ever get here */
-						LM_CRIT("unhandled data lump op %d\n", t->op);
+						report_programming_bug("invalid op 4 %d", t->op);
 				}
 				/* process after */
 				for(r=t->after;r;r=r->after){
@@ -1055,90 +1141,26 @@ skip_before:
 							break;
 						default:
 							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n", r->op);
+							report_programming_bug("invalid op 5 (%x)", r->op);
 					}
 				}
 skip_after:
 				break;
-			case LUMP_NOP:
-			case LUMP_DEL:
-				/* copy till offset (if any) */
-				if (s_offset<t->u.offset){
-					size=t->u.offset-s_offset;
-					memcpy(new_buf+offset, orig+s_offset,size);
-					offset+=size;
-					s_offset+=size;
-				}
-				if (t->op==LUMP_DEL)
-					last_del=t->u.offset;
-				/* process before  */
-				for(r=t->before;r;r=r->before){
-					switch (r->op){
-						case LUMP_ADD:
-							/*just add it here*/
-							memcpy(new_buf+offset, r->u.value, r->len);
-							offset+=r->len;
-							break;
-						case LUMP_ADD_SUBST:
-							SUBST_LUMP(r);
-							break;
-						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is
-					 		* not satisfied */
-							if (!lump_check_opt(r, msg, send_sock))
-								goto skip_nop_before;
-							break;
-						case LUMP_SKIP:
-							/* if a SKIP lump, go to the last in the list*/
-							if (!r->before || !r->before->before) continue;
-							for(;r->before->before;r=r->before);
-							break;
-						default:
-							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n",r->op);
-					}
-				}
-skip_nop_before:
-				/* process main (del only) */
-				if (t->op==LUMP_DEL){
-					/* skip len bytes from orig msg */
-					s_offset+=t->len;
-				}
-				/* process after */
-				for(r=t->after;r;r=r->after){
-					switch (r->op){
-						case LUMP_ADD:
-							/*just add it here*/
-							memcpy(new_buf+offset, r->u.value, r->len);
-							offset+=r->len;
-							break;
-						case LUMP_ADD_SUBST:
-							SUBST_LUMP(r);
-							break;
-						case LUMP_ADD_OPT:
-							/* skip if this is an OPT lump and the condition is
-					 		* not satisfied */
-							if (!lump_check_opt(r, msg, send_sock))
-								goto skip_nop_after;
-							break;
-						case LUMP_SKIP:
-							/* if a SKIP lump, go to the last in the list*/
-							if (!r->after || !r->after->after) continue;
-							for(;r->after->after;r=r->after);
-							break;
-						default:
-							/* only ADD allowed for before/after */
-							LM_CRIT("invalid op for data lump (%x)\n", r->op);
-					}
-				}
-skip_nop_after:
+			case LUMP_SKIP:
+				report_programming_bug("LUMP_SKIP");
+				/* if a SKIP lump, go to the last in the list*/
+				if (!t->next || !t->next->next)
+					continue;
+				for (; t->next->next; t = t->next)
+					;
 				break;
 			default:
-					LM_CRIT("unknown op (%x)\n", t->op);
+				report_programming_bug("invalid op 6 (%x)", t->op);
 		}
 	}
-	*new_buf_offs=offset;
-	*orig_offs=s_offset;
+
+	*new_buf_offs = offset;
+	*orig_offs = s_offset;
 }
 
 
@@ -1175,7 +1197,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			/* msg->unparsed should point just before the final crlf
 			 * - whole message was parsed by the above parse_headers
 			 *   which did not find content-length */
-			anchor=anchor_lump(msg, msg->unparsed-msg->buf, 0,
+			anchor=anchor_lump(msg, msg->unparsed-msg->buf,
 												HDR_CONTENTLENGTH_T);
 			if (anchor==0){
 				LM_ERR("cannot set clen anchor\n");
@@ -1203,7 +1225,7 @@ static inline int adjust_clen(struct sip_msg* msg, int body_delta, int proto)
 			 * - whole message was parsed by the above parse_headers
 			 *   which did not find content-length */
 			if (proto!=PROTO_UDP){
-				anchor=anchor_lump(msg, msg->unparsed-msg->buf, 0,
+				anchor=anchor_lump(msg, msg->unparsed-msg->buf,
 													HDR_CONTENTLENGTH_T);
 				if (anchor==0){
 					LM_ERR("cannot set clen anchor\n");
@@ -1262,18 +1284,18 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 	}
 	if (hf) {
 		/* Route HF found, insert before it */
-		anchor = anchor_lump(msg, hf->name.s - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, hf->name.s - msg->buf, 0);
 	} else if(last_via) {
 		if (last_via->next) {
 			/* Via HF in between, insert after it */
-			anchor = anchor_lump(msg, last_via->next->name.s - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, last_via->next->name.s - msg->buf, 0);
 		} else {
 			/* Via HF is last, so append */
-			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0, 0);
+			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 		}
 	} else {
 		/* None of the above, insert as first */
-		anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, msg->headers->name.s - msg->buf, 0);
 	}
 
 	if (anchor == 0) {
@@ -1450,7 +1472,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 	/* add via header to the list */
 	/* try to add it before msg. 1st via */
 	/* add first via, as an anchor for second via*/
-	anchor=anchor_lump(msg, msg->via1->hdr.s-buf, 0, HDR_VIA_T);
+	anchor=anchor_lump(msg, msg->via1->hdr.s-buf, HDR_VIA_T);
 	if (anchor==0) goto error01;
 	if (insert_new_lump_before(anchor, line_buf, via_len, HDR_VIA_T)==0)
 		goto error01;
@@ -1475,7 +1497,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 								msg->via1->received->size+1, /*;*/ HDR_VIA_T);
 		}else if (via_insert_param==0){ /* receive not present, ok */
 			via_insert_param=anchor_lump(msg,
-										msg->via1->hdr.s-buf+size,0, HDR_VIA_T);
+										msg->via1->hdr.s-buf+size, HDR_VIA_T);
 		}
 		if (via_insert_param==0) goto error02; /* free received_buf */
 		if (insert_new_lump_after(via_insert_param, received_buf, received_len,
@@ -1490,7 +1512,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		}else if (via_insert_param==0){ /*force rport, no rport present */
 			/* no rport, add it */
 			via_insert_param=anchor_lump(msg,
-									msg->via1->hdr.s-buf+size,0, HDR_VIA_T);
+									msg->via1->hdr.s-buf+size, HDR_VIA_T);
 		}
 		if (via_insert_param==0) goto error03; /* free rport_buf */
 		if (insert_new_lump_after(via_insert_param, rport_buf, rport_len,
@@ -1560,23 +1582,15 @@ error:
 
 
 char * build_res_buf_from_sip_res( struct sip_msg* msg,
-				unsigned int *returned_len, struct socket_info *sock)
+	unsigned int *returned_len, struct socket_info *sock,int flags)
 {
-	unsigned int new_len, via_len, body_delta, len;
+	unsigned int new_len, body_delta, len;
 	char *new_buf, *buf;
-	unsigned offset, s_offset, via_offset;
+	unsigned int offset, s_offset;
 
 	buf=msg->buf;
 	len=msg->len;
 	new_buf=0;
-	/* we must remove the first via */
-	if (msg->via1->next) {
-		via_len=msg->via1->bsize;
-		via_offset=msg->h_via1->body.s-buf;
-	} else {
-		via_len=msg->h_via1->len;
-		via_offset=msg->h_via1->name.s-buf;
-	}
 
 	/* Calculate message body difference and adjust
 	 * Content-Length
@@ -1588,10 +1602,22 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 		goto error;
 	}
 
-	/* remove the first via*/
-	if (del_lump( msg, via_offset, via_len, HDR_VIA_T)==0){
-		LM_ERR("failed to remove first via\n");
-		goto error;
+	/* remove the first via */
+	if (!(flags & MSG_TRANS_NOVIA_FLAG)) {
+		unsigned int via_len, via_offset;
+
+		if (msg->via1->next) {
+			via_len = msg->via1->bsize;
+			via_offset = msg->h_via1->body.s-buf;
+		} else {
+			via_len = msg->h_via1->len;
+			via_offset = msg->h_via1->name.s-buf;
+		}
+
+		if (del_lump(msg, via_offset, via_len, HDR_VIA_T) == 0) {
+			LM_ERR("failed to remove first via\n");
+			goto error;
+		}
 	}
 
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock);
@@ -1740,7 +1766,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	buf = (char*) pkg_malloc( len+1 );
 	if (!buf)
 	{
-		LM_ERR("out of pkg memory  ; needs %d\n",len);
+		LM_ERR("out of pkg memory; needs %d\n",len);
 		goto error01;
 	}
 
@@ -1975,7 +2001,7 @@ char* via_builder( unsigned int *len,
 		address_str=hp->host;
 	else if(send_sock->adv_name_str.len)
 		address_str=&(send_sock->adv_name_str);
-	else if (default_global_address.len)
+	else if (default_global_address.s)
 		address_str=&default_global_address;
 	else
 		address_str=&(send_sock->address_str);
@@ -1984,7 +2010,7 @@ char* via_builder( unsigned int *len,
 		port_str=hp->port;
 	else if(send_sock->adv_port_str.len)
 		port_str=&(send_sock->adv_port_str);
-	else if (default_global_port.len)
+	else if (default_global_port.s)
 		port_str=&default_global_port;
 	else
 		port_str=&(send_sock->port_no_str);

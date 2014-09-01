@@ -2526,16 +2526,15 @@ dummy_reply:
 				if(leg)
 				{
 					LM_DBG("Found existing leg  - Nothing to update\n");
-					goto done;
+				} else {
+					leg = b2b_add_leg(dlg, msg, &to_tag);
+					if(leg == NULL)
+					{
+						LM_ERR("Failed to add dialog leg\n");
+						goto error;
+					}
+					UPDATE_DBFLAG(dlg);
 				}
-
-				leg = b2b_add_leg(dlg, msg, &to_tag);
-				if(leg == NULL)
-				{
-					LM_ERR("Failed to add dialog leg\n");
-					goto error;
-				}
-				UPDATE_DBFLAG(dlg);
 				/* PRACK handling */
 				/* if the provisional reply contains a
 				 * Require: 100rel header -> send PRACK */
@@ -2797,7 +2796,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 			msg->rcv.bind_address, msg->rcv.proto, MSG_TRANS_NOVIA_FLAG );
 	else
 		obuf.s = build_res_buf_from_sip_res(msg, (unsigned int*)&obuf.len,
-			msg->rcv.bind_address);
+			msg->rcv.bind_address,0);
 
 	if (!obuf.s) {
 		LM_ERR("no more shm mem\n");

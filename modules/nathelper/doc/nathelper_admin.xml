@@ -423,7 +423,7 @@ if (search("User-Agent: Cisco ATA.*") {
 			</itemizedlist>
 			</listitem>
 			<listitem><para>
-			<emphasis>ip_address</emphasis> - IP to be used for rewritting SDP.
+			<emphasis>ip_address</emphasis> - IP to be used for rewriting SDP.
 			If not specified, the received signalling IP will be used. The
 			parameter allows pseudo-variables usage. NOTE: For the IP to be
 			used, you need to use 0x02 or 0x08 flags, otherwise it will have

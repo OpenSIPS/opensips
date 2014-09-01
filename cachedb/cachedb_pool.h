@@ -36,6 +36,7 @@ typedef struct cachedb_pool_con_t{
 } cachedb_pool_con;
 
 cachedb_pool_con* cachedb_pool_get(struct cachedb_id* id);
+cachedb_pool_con** filter_pool_by_scheme(str *scheme,int *size); 
 void cachedb_pool_insert(cachedb_pool_con *con);
 int cachedb_pool_remove(cachedb_pool_con *con);
 

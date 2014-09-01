@@ -189,7 +189,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
 
 	if (*p2=='<') {
 		/* is quoted */
-		l = anchor_lump( msg, p2 - msg->buf, 0, 0);
+		l = anchor_lump( msg, p2 - msg->buf, 0);
 		if (l==0) {
 			LM_ERR("unable to build lump anchor\n");
 			return 0;
@@ -199,7 +199,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
 	}
 
 	/* not quoted - more complicated....must place the closing bracket */
-	l = anchor_lump( msg, (body->uri.s+body->uri.len) - msg->buf, 0, 0);
+	l = anchor_lump( msg, (body->uri.s+body->uri.len) - msg->buf, 0);
 	if (l==0) {
 		LM_ERR("unable to build lump anchor\n");
 		return 0;
@@ -216,7 +216,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
 		return 0;
 	}
 	/* build anchor for display */
-	l = anchor_lump( msg, body->uri.s - msg->buf, 0, 0);
+	l = anchor_lump( msg, body->uri.s - msg->buf, 0);
 	if (l==0) {
 		LM_ERR("unable to build lump anchor\n");
 		return 0;

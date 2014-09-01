@@ -132,8 +132,10 @@ static cmd_export_t cmds[]={
 
 struct module_exports exports= {
 	"textops",  /* module name*/
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	0,          /* module parameters */
 	0,          /* exported statistics */
@@ -200,7 +202,7 @@ static int search_append_f(struct sip_msg* msg, char* key, char* str2)
 
 	if (regexec((regex_t*) key, begin, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
-		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0, 0))==0)
+		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
 		len=strlen(str2);
 		s=pkg_malloc(len);
@@ -237,7 +239,7 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 
 	if (regexec((regex_t*) key, body.s, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
-		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0, 0))==0)
+		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
 		len=strlen(str2);
 		s=pkg_malloc(len);

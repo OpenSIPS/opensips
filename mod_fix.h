@@ -29,11 +29,14 @@
 #define _mod_fix_h_
 
 #include "pvar.h"
+#include <regex.h>
 
 #define GPARAM_TYPE_INT		0
 #define GPARAM_TYPE_STR		1
 #define GPARAM_TYPE_PVS		2
 #define GPARAM_TYPE_PVE		3
+#define GPARAM_TYPE_FLAGS	4
+#define GPARAM_TYPE_REGEX	5
 
 #define GPARAM_INT_VALUE_FLAG	(1U<<0)
 #define GPARAM_STR_VALUE_FLAG	(1U<<1)
@@ -50,6 +53,7 @@ typedef struct _gparam
 		str sval;
 		pv_spec_t *pvs;
 		pv_elem_t *pve;
+		regex_t *re;
 	} v;
 } gparam_t, *gparam_p;
 
@@ -70,11 +74,13 @@ int fixup_uint_sint(void** param, int param_no);
 #endif
 
 int fixup_regexp_null(void** param, int param_no);
+int fixup_regexp_dynamic_null(void** param, int param_no);
 int fixup_regexpNL_null(void** param, int param_no);
 int fixup_free_regexp_null(void** param, int param_no);
 int fixup_regexp_none(void** param, int param_no);
 int fixup_regexpNL_none(void** param, int param_no);
 int fixup_free_regexp_none(void** param, int param_no);
+int fixup_free_regexp(void** param);
 
 int fixup_pvar_null(void **param, int param_no);
 int fixup_free_pvar_null(void** param, int param_no);
@@ -103,8 +109,9 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val);
 
 int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
 			int *i_val, str *s_val, unsigned int *flags);
-
+regex_t* fixup_get_regex(struct sip_msg* msg, gparam_p gp,int *do_free);
 int fixup_spve(void** param);
+
 int fixup_pvar(void **param);
 int fixup_str(void **param);
 int fixup_uint(void** param);

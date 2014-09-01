@@ -74,6 +74,9 @@ Vladut-Stefan Paiu
               1.6.42. profile_timeout (int)
               1.6.43. accept_replicated_dialogs (int)
               1.6.44. replicate_dialogs_to (string)
+              1.6.45. th_callid_passwd (string)
+              1.6.46. th_callid_prefix (string)
+              1.6.47. th_passed_contact_params (string)
 
         1.7. Exported Functions
 
@@ -130,7 +133,8 @@ Vladut-Stefan Paiu
               1.10.6. $DLG_did
               1.10.7. $DLG_end_reason
               1.10.8. $DLG_timeout
-              1.10.9. $dlg_val(name)
+              1.10.9. $DLG_callee_callid
+              1.10.10. $dlg_val(name)
 
    2. Developer Guide
 
@@ -187,23 +191,26 @@ Vladut-Stefan Paiu
    1.42. Set profile_timeout parameter
    1.43. Set accept_replicated_dialogs parameter
    1.44. Set replicate_dialogs_to parameter
-   1.45. create_dialog() usage
-   1.46. match_dialog() usage
-   1.47. validate_dialog() usage
-   1.48. fix_route_dialog() usage
-   1.49. get_dialog_info usage
-   1.50. set_dlg_profile usage
-   1.51. unset_dlg_profile usage
-   1.52. is_in_profile usage
-   1.53. get_profile_size usage
-   1.54. set_dlg_flag usage
-   1.55. test_and_set_dlg_flag usage
-   1.56. reset_dlg_flag usage
-   1.57. is_dlg_flag_set usage
-   1.58. store_dlg_value usage
-   1.59. fetch_dlg_value usage
-   1.60. topology_hiding usage
-   1.61. calling match_dialog() function for topology hiding
+   1.45. Set th_callid_passwd parameter
+   1.46. Set th_callid_prefix parameter
+   1.47. Set th_passed_contact_params parameter
+   1.48. create_dialog() usage
+   1.49. match_dialog() usage
+   1.50. validate_dialog() usage
+   1.51. fix_route_dialog() usage
+   1.52. get_dialog_info usage
+   1.53. set_dlg_profile usage
+   1.54. unset_dlg_profile usage
+   1.55. is_in_profile usage
+   1.56. get_profile_size usage
+   1.57. set_dlg_flag usage
+   1.58. test_and_set_dlg_flag usage
+   1.59. reset_dlg_flag usage
+   1.60. is_dlg_flag_set usage
+   1.61. store_dlg_value usage
+   1.62. fetch_dlg_value usage
+   1.63. topology_hiding usage
+   1.64. calling match_dialog() function for topology hiding
           sequential requests
 
 Chapter 1. Admin Guide
@@ -874,6 +881,47 @@ modparam("dialog", "accept_replicated_dialogs", 1)
 modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 ...
 
+1.6.45. th_callid_passwd (string)
+
+   The string password that will be used for encoding/decoding the
+   callid in case of topology_hiding with callid mangling.
+
+   Default value is “"OpenSIPS"”
+
+   Example 1.45. Set th_callid_passwd parameter
+...
+modparam("dialog", "th_callid_passwd", "my_topo_hiding_secret")
+...
+
+1.6.46. th_callid_prefix (string)
+
+   The prefix that will be used for detecting callids which have
+   been encoded by the dialog topology hiding. Make sure to change
+   this value in case your SIP path contains multiple OpenSIPS
+   boxes with topology hiding.
+
+   Default value is “"DLGCH_"”
+
+   Example 1.46. Set th_callid_prefix parameter
+...
+modparam("dialog", "th_callid_prefix", "MYCALLIDPREFIX_")
+...
+
+1.6.47. th_passed_contact_params (string)
+
+   List of semicolon-separated Contact URI parameters that will be
+   passed from one side to the other for topology hiding calls. To
+   be used when end-to-end functionality uses such Contact
+   parameters.
+
+   Default value is “empty” - do not pass any parameters
+
+   Example 1.47. Set th_passed_contact_params parameter
+...
+modparam("dialog", "th_passed_contact_params", "paramname1;myparam;custo
+m_param")
+...
+
 1.7. Exported Functions
 
 1.7.1.  create_dialog()
@@ -894,7 +942,7 @@ modparam("dialog", "replicate_dialogs_to", "10.0.0.150:5062")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.45. create_dialog() usage
+   Example 1.48. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -929,7 +977,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.46. match_dialog() usage
+   Example 1.49. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -959,7 +1007,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.47. validate_dialog() usage
+   Example 1.50. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -981,7 +1029,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.48. fix_route_dialog() usage
+   Example 1.51. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1019,7 +1067,7 @@ create_dialog("B");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.49. get_dialog_info usage
+   Example 1.52. get_dialog_info usage
 ...
 if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
         xlog("caller $fU has another ongoing, talking to callee $var(x)\
@@ -1052,7 +1100,7 @@ $dlg_val(callee) = $ru;
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.50. set_dlg_profile usage
+   Example 1.53. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
@@ -1074,7 +1122,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.51. unset_dlg_profile usage
+   Example 1.54. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
@@ -1101,7 +1149,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.52. is_in_profile usage
+   Example 1.55. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1132,7 +1180,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.53. get_profile_size usage
+   Example 1.56. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
@@ -1155,7 +1203,7 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.54. set_dlg_flag usage
+   Example 1.57. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
@@ -1176,7 +1224,7 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.55. test_and_set_dlg_flag usage
+   Example 1.58. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
@@ -1195,7 +1243,7 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.56. reset_dlg_flag usage
+   Example 1.59. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
@@ -1214,7 +1262,7 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.57. is_dlg_flag_set usage
+   Example 1.60. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
@@ -1239,12 +1287,12 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.58. store_dlg_value usage
+   Example 1.61. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
 # or
-$dlg_val("account_type") = "prepaid";
+$dlg_val(account_type) = "prepaid";
 ...
 
 1.7.15.  fetch_dlg_value(name,pvar)
@@ -1265,12 +1313,12 @@ $dlg_val("account_type") = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.59. fetch_dlg_value usage
+   Example 1.62. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
 # or
-$var(account) = $dlg_val("account_type");
+$var(account) = $dlg_val(account_type);
 ...
 
 1.7.16.  topology_hiding()
@@ -1306,8 +1354,19 @@ $var(account) = $dlg_val("account_type");
    Optionally,the function also receives a string parameter, which
    holds string flags. Current options for the string flags are :
      * U - Propagate the Username in the Contact header URI
+     * C - Encode the callid header
+       There are many cases where propagating the callid towards
+       the callee side is not a good idea, since sometimes the
+       callid contains the IP of the actual caller side, thus
+       revealing part of the network topology.
+       When using the "C" flag, the callid will be automatically
+       encoded / decoded, transparent for the script writer -
+       inside OpenSIPS (script,MI functions, etc ) all the
+       variables related to the callid will represent the callid
+       value for the caller side. If the callid for the callee
+       side is needed, refer to the $DLG_callee_callid pvar.
 
-   Example 1.60. topology_hiding usage
+   Example 1.63. topology_hiding usage
 ...
 if(!has_totag() && is_method("INVITE")) {
         topology_hiding();
@@ -1319,7 +1378,7 @@ if(!has_totag() && is_method("INVITE")) {
 }
 ...
 
-   Example 1.61. calling match_dialog() function for topology
+   Example 1.64. calling match_dialog() function for topology
    hiding sequential requests
 ...
 if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
@@ -1605,7 +1664,7 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
 
 1.10.4. $DLG_flags
 
-   Returns the dialog flags array (as a single interger value) of
+   Returns the dialog flags array (as a single integer value) of
    the dialog corresponding to the processed sequential request.
    This PV will be available only for sequential requests, after
    doing loose_route().
@@ -1660,7 +1719,17 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
    NULL will be returned if there is no dialog for the request,
    otherwise the number of seconds until the dialog expiration.
 
-1.10.9. $dlg_val(name)
+1.10.9. $DLG_callee_callid
+
+   Read only variable that will contain the callid as it is
+   propagated towards the callee side, in case
+   topology_hiding("C") is called.
+
+   NULL will be returned if there is no dialog for the request or
+   if topology_hiding with callid encoding was not used for the
+   current dialog.
+
+1.10.10. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
    attribute named name. This PV will be available only for

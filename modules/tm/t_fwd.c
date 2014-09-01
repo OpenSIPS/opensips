@@ -752,7 +752,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 	if (!t || t==T_UNDEFINED) {
 		/* no transaction yet */
 		if (route_type==FAILURE_ROUTE) {
-			LM_CRIT(" BUG - undefined transaction in failure route\n");
+			LM_CRIT("BUG - undefined transaction in failure route\n");
 			return -1;
 		}
 		return t_relay_to( p_msg, NULL, flags|TM_T_REPLY_repl_FLAG);

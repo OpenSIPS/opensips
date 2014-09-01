@@ -90,8 +90,10 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"diversion",
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
@@ -154,7 +156,7 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 	}
 
 	if (!anchor) {
-		anchor = anchor_lump(msg, ptr - msg->buf, 0, 0);
+		anchor = anchor_lump(msg, ptr - msg->buf, 0);
 		if (!anchor) {
 			LM_ERR("can't get anchor\n");
 			return -2;

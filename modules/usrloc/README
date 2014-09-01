@@ -86,6 +86,9 @@ Bogdan-Andrei Iancu
 
               1.7.1. E_UL_AOR_INSERT
               1.7.2. E_UL_AOR_DELETE
+              1.7.3. E_UL_CONTACT_INSERT
+              1.7.4. E_UL_CONTACT_DELETE
+              1.7.5. E_UL_CONTACT_UPDATE
 
    2. Developer Guide
 
@@ -753,6 +756,52 @@ modparam("usrloc", "hash_size", 10)
 
    Parameters:
      * aor - The AOR of the deleted record.
+
+1.7.3.  E_UL_CONTACT_INSERT
+
+   This event is raised when a new contact is inserted in any of
+   the existing AOR's contact list. For each new contact, if its
+   AOR does not exist in the memory, then both the E_UL_AOR_CREATE
+   and E_UL_CONTACT_INSERT events will be raised.
+
+   Parameters:
+     * address - The address of the inserted contact.
+     * callid - The Call-ID header of the registration message.
+     * received - IP, port and protocol the registration message
+       was received from. If these have the same value as the
+       contact's address (see the address parameter) then the
+       received parameter will be an empty string.
+     * cseq - The cseq number as an int value.
+
+1.7.4.  E_UL_CONTACT_DELETE
+
+   This event is raised when a contact is deleted from an existing
+   AOR's contact list. If the contact is the only one in the list
+   then both the E_UL_AOR_DELETE and E_UL_CONTACT_DELETE events
+   will be raised.
+
+   Parameters:
+     * address - The address of the inserted contact.
+     * callid - The Call-ID header of the registration message.
+     * received - IP, port and protocol the registration message
+       was received from. If these have the same value as the
+       contact's address (see the address parameter) then the
+       received parameter will be an empty string.
+     * cseq - The cseq number as an int value.
+
+1.7.5.  E_UL_CONTACT_UPDATE
+
+   This event is raised when a contact's info is updated by
+   receiving another registration message.
+
+   Parameters:
+     * address - The address of the inserted contact.
+     * callid - The Call-ID header of the registration message.
+     * received - IP, port and protocol the registration message
+       was received from. If these have the same value as the
+       contact's address (see the address parameter) then the
+       received parameter will be an empty string.
+     * cseq - The cseq number as an int value.
 
 Chapter 2. Developer Guide
 

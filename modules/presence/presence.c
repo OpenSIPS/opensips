@@ -169,11 +169,25 @@ static mi_export_t mi_cmds[] = {
 	{  0,                  0, 0,                     0,  0,  0}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_url", get_deps_sqldb_url },
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"presence",					/* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
 	params,						/* exported parameters */
 	0,							/* exported statistics */
@@ -665,6 +679,7 @@ static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i= 0; i<phtable_size; i++)
 	{
@@ -690,6 +705,9 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 {
 	struct mi_node *node, *node1;
 	struct mi_attr *attr;
+	time_t _ts;
+	char date_buf[MI_DATE_BUF_LEN];
+	int date_buf_len;
 	char *p;
 	int len;
 
@@ -701,11 +719,16 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	attr = add_mi_attr(node, MI_DUP_VALUE, "event_id", 8, s->event_id.s, s->event_id.len);
 	if (attr==NULL) goto error;
 	*/
-	p= int2str((unsigned long)s->status, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "status", 6, p, len);
 	if (attr==NULL) goto error;
-	p= int2str((unsigned long)s->expires, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+	_ts = (time_t)s->expires;
+	date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
+						"%Y-%m-%d %H:%M:%S", localtime(&_ts));
+	if (date_buf_len != 0) {
+		attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, date_buf, date_buf_len);
+	} else {
+		p= int2str((unsigned long)s->expires, &len);
+		attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+	}
 	if (attr==NULL) goto error;
 	p= int2str((unsigned long)s->db_flag, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "db_flag", 7, p, len);
@@ -755,6 +778,7 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree==NULL) return NULL;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	for(i=0,j=0; i< shtable_size; i++)
 	{

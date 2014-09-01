@@ -65,11 +65,34 @@ static param_export_t params[] =
 	{ NULL, 0, NULL },
 };
 
+static module_dependency_t *get_deps_use_dialog(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "rr", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "sl", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "use_dialog", get_deps_use_dialog },
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports =
 {
 	"script_helper",
+	MOD_TYPE_DEFAULT, /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	&deps,            /* OpenSIPS module dependencies */
 	cmds,
 	params,
 	NULL,
@@ -128,7 +151,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	str status_500 = str_init("Server Internal Error");
 	int rc, seq_request = 0;
 
-	LM_DBG("running helper logic\n");
+	LM_DBG("running script helper for <%.*s>\n",
+	       msg->first_line.u.request.method.len,
+	       msg->first_line.u.request.method.s);
 
 	if (parse_headers(msg, HDR_TO_F|HDR_CALLID_F, 0) == -1) {
 		LM_ERR("failed to parse To header\n");
@@ -149,7 +174,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 
 			/* attempt a full dialog search (not the usual quick did lookup) */
 			if (use_dialog && dlg_api.match_dialog(msg) < 0)
-				LM_ERR("failed to match dialog, ci '%.*s'\n",
+				LM_DBG("failed to match dialog for <%.*s>, ci '%.*s'\n",
+				       msg->first_line.u.request.method.len,
+				       msg->first_line.u.request.method.s,
 				       msg->callid->body.len, msg->callid->body.s);
 
 			if (msg->REQ_METHOD == METHOD_ACK) {

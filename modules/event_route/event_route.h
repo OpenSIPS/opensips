@@ -27,6 +27,9 @@
 #ifndef _EV_ROUTE_H_
 #define _EV_ROUTE_H_
 
+
+void event_route_handler(int rank);
+
 /* transport protocol name */
 #define SCRIPTROUTE_NAME		"route"
 #define SCRIPTROUTE_NAME_STR	{ SCRIPTROUTE_NAME, sizeof(SCRIPTROUTE_NAME)-1}

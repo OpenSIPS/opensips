@@ -91,7 +91,8 @@
 #                   dispatcher dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
-# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist b2b registrant"
+# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist 
+#                 b2b registrant call_center"
 
 
 ## type of aliases used: DB - database aliases; UL - usrloc aliases
@@ -135,3 +136,4 @@
 ## Extra start options - default is: not set
 # example: start opensips with 64MB share memory: STARTOPTIONS="-m 64"
 # STARTOPTIONS=
+

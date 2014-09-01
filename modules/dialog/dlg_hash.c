@@ -910,8 +910,11 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 
 	dlg_unlock( d_table, d_entry);
 
-	if (!is_replicated && replication_dests && dlg->state == DLG_STATE_DELETED)
+	 if (!is_replicated && replication_dests &&
+	(*old_state == DLG_STATE_CONFIRMED_NA || *old_state == DLG_STATE_CONFIRMED) &&
+	dlg->state == DLG_STATE_DELETED)
 		replicate_dialog_deleted(dlg);
+
 
 	LM_DBG("dialog %p changed from state %d to "
 		"state %d, due event %d\n",dlg,*old_state,*new_state,event);
@@ -1039,38 +1042,46 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 			goto error;
 	}
 
+	node1 = add_mi_node_child(node, MI_IS_ARRAY, "CALLEES", 7, NULL, 0);
+	if(node1 == 0)
+		goto error;
+
 	for( i=1 ; i < dlg->legs_no[DLG_LEGS_USED] ; i++  ) {
 
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "callee_tag", 10,
+		node2 = add_mi_node_child(node1, 0, "callee", 6, NULL, 0);
+		if(node2 == 0)
+			goto error;
+
+		node3 = add_mi_node_child(node2, MI_DUP_VALUE, "callee_tag", 10,
 				dlg->legs[i].tag.s, dlg->legs[i].tag.len);
-		if(node1 == 0)
+		if(node3 == 0)
 			goto error;
 
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "callee_contact", 14,
+		node3 = add_mi_node_child(node2, MI_DUP_VALUE, "callee_contact", 14,
 				dlg->legs[i].contact.s, dlg->legs[i].contact.len);
-		if(node1 == 0)
+		if(node3 == 0)
 			goto error;
 
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "caller_cseq", 11,
+		node3 = add_mi_node_child(node2, MI_DUP_VALUE, "caller_cseq", 11,
 				dlg->legs[i].r_cseq.s, dlg->legs[i].r_cseq.len);
-		if(node1 == 0)
+		if(node3 == 0)
 			goto error;
 
-		node1 = add_mi_node_child(node, MI_DUP_VALUE,"callee_route_set",16,
+		node3 = add_mi_node_child(node2, MI_DUP_VALUE,"callee_route_set",16,
 				dlg->legs[i].route_set.s, dlg->legs[i].route_set.len);
-		if(node1 == 0)
+		if(node3 == 0)
 			goto error;
 
 		if (dlg->legs[i].bind_addr) {
-			node1 = add_mi_node_child(node, 0,
+			node3 = add_mi_node_child(node2, 0,
 				"callee_bind_addr",16,
 				dlg->legs[i].bind_addr->sock_str.s,
 				dlg->legs[i].bind_addr->sock_str.len);
 		} else {
-			node1 = add_mi_node_child(node, 0,
+			node3 = add_mi_node_child(node2, 0,
 				"callee_bind_addr",16,0,0);
 		}
-		if(node1 == 0)
+		if(node3 == 0)
 			goto error;
 	}
 
@@ -1116,7 +1127,7 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 		}
 		/* print dlg profiles */
 		if (dlg->profile_links) {
-			node3 = add_mi_node_child(node1, 0, "profiles", 8, 0, 0);
+			node3 = add_mi_node_child(node1, MI_IS_ARRAY, "profiles", 8, 0, 0);
 			if(node3 == 0)
 				goto error;
 			for( dl=dlg->profile_links ; dl ; dl=dl->next) {
@@ -1286,6 +1297,7 @@ struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		goto error;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if (dlg==NULL) {
 		if ( internal_mi_print_dlgs(rpl_tree, rpl, 0, idx, cnt)!=0 )
@@ -1323,6 +1335,7 @@ struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
 	if (rpl_tree==0)
 		goto error;
 	rpl = &rpl_tree->node;
+	rpl->flags |= MI_IS_ARRAY;
 
 	if (dlg==NULL) {
 		if ( internal_mi_print_dlgs(rpl_tree, rpl, 1, idx, cnt)!=0 )

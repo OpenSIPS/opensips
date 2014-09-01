@@ -115,14 +115,27 @@ static param_export_t params[]={
 	{"caller_spec_param",   STR_PARAM, &caller_spec_param.s },
 	{"callee_spec_param",   STR_PARAM, &callee_spec_param.s },
 	{"osips_ps",            INT_PARAM, &osips_ps },
-	{"nopublish_flag",	        INT_PARAM, &nopublish_flag	},
+	{"nopublish_flag",      INT_PARAM, &nopublish_flag },
 	{0, 0, 0 }
+};
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
 };
 
 struct module_exports exports= {
 	"pua_dialoginfo",		/* module name */
+	MOD_TYPE_DEFAULT,       /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
+	&deps,                  /* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	params,					/* exported parameters */
 	0,						/* exported statistics */
@@ -505,7 +518,7 @@ static int mod_init(void)
 		LM_ERR("invalid nopublish flag %d!!\n", nopublish_flag);
 		return -1;
 	}
-        nopublish_flag = (nopublish_flag!=-1)?(1<<nopublish_flag):0;
+	nopublish_flag = (nopublish_flag!=-1)?(1<<nopublish_flag):0;
 
 	if(!osips_ps)
 		evp = dialoginfo_process_body;
@@ -522,10 +535,10 @@ static int mod_init(void)
 		return -1;
 	}
 
-        // register dialog loading callback
-        if (dlg_api.register_dlgcb(NULL, DLGCB_LOADED, __dialog_loaded, NULL, NULL) != 0) {
-                LM_CRIT("cannot register callback for dialogs loaded from the database\n");
-        }
+	/* register dialog loading callback */
+	if (dlg_api.register_dlgcb(NULL, DLGCB_LOADED, __dialog_loaded, NULL, NULL) != 0) {
+		LM_CRIT("cannot register callback for dialogs loaded from the database\n");
+	}
 
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);

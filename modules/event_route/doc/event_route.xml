@@ -31,9 +31,12 @@
 		<editor>
 		<firstname>Razvan</firstname>
 		<surname>Crainea</surname>
-		<address>
-			<email>razvancrainea@opensips.org</email>
-		</address>
+		<address><email>razvancrainea@opensips.org</email></address>
+		</editor>
+		<editor>
+		<firstname>Ovidiu</firstname>
+		<surname>Sas</surname>
+		<address><email>osas@voipembedded.com</email></address>
 		</editor>
 	</authorgroup>
 	<copyright>

@@ -136,7 +136,6 @@ static int i_tmp;
 static void* cmd_tmp;
 static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
-static str* str_tmp;
 static str s_tmp;
 static str tstr;
 static struct ip_addr* ip_tmp;
@@ -159,16 +158,28 @@ static char mpath_buf[256];
 static int  mpath_len = 0;
 
 extern int line;
+extern int column;
+extern int startcolumn;
+extern char *finame;
 
+#define get_cfg_file_name \
+	((finame) ? finame : cfg_file ? cfg_file : "default")
+
+
+
+#define mk_action_(_res, _type, _no, _elems) \
+	do { \
+		_res = mk_action(_type, _no, _elems, line, get_cfg_file_name); \
+	} while(0)
 #define mk_action0(_res, _type, _p1_type, _p2_type, _p1, _p2) \
 	do { \
-		_res = mk_action(_type, 0, 0, line); \
+		_res = mk_action(_type, 0, 0, line, get_cfg_file_name); \
 	} while(0)
 #define mk_action1(_res, _type, _p1_type, _p1) \
 	do { \
 		elems[0].type = _p1_type; \
 		elems[0].u.data = _p1; \
-		_res = mk_action(_type, 1, elems, line); \
+		_res = mk_action(_type, 1, elems, line, get_cfg_file_name); \
 	} while(0)
 #define	mk_action2(_res, _type, _p1_type, _p2_type, _p1, _p2) \
 	do { \
@@ -176,7 +187,7 @@ extern int line;
 		elems[0].u.data = _p1; \
 		elems[1].type = _p2_type; \
 		elems[1].u.data = _p2; \
-		_res = mk_action(_type, 2, elems, line); \
+		_res = mk_action(_type, 2, elems, line, get_cfg_file_name); \
 	} while(0)
 #define mk_action3(_res, _type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3) \
 	do { \
@@ -186,7 +197,7 @@ extern int line;
 		elems[1].u.data = _p2; \
 		elems[2].type = _p3_type; \
 		elems[2].u.data = _p3; \
-		_res = mk_action(_type, 3, elems, line); \
+		_res = mk_action(_type, 3, elems, line, get_cfg_file_name); \
 	} while(0)
 
 %}
@@ -210,6 +221,7 @@ extern int line;
 %token FORWARD
 %token SEND
 %token DROP
+%token ASSERT
 %token EXIT
 %token RETURN
 %token LOG_TOK
@@ -305,6 +317,8 @@ extern int line;
 
 /* config vars. */
 %token DEBUG
+%token ENABLE_ASSERTS
+%token ABORT_ON_ASSERT
 %token FORK
 %token LOGSTDERROR
 %token LOGFACILITY
@@ -644,13 +658,13 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 
 
 assign_stm: DEBUG EQUAL snumber { 
-#ifdef CHANGEABLE_DEBUG_LEVEL
 					*debug=$3;
-#else
-					debug=$3;
-#endif
 			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
+		| ENABLE_ASSERTS EQUAL NUMBER  { enable_asserts=$3; }
+		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
+		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
+		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
 		| FORK  EQUAL NUMBER { dont_fork= !dont_fork ? ! $3:1; }
 		| FORK  EQUAL error  { yyerror("boolean value expected"); }
 		| LOGSTDERROR EQUAL NUMBER { if (!config_check) log_stderr=$3; }
@@ -897,7 +911,8 @@ assign_stm: DEBUG EQUAL snumber {
 		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
 			#ifdef USE_TCP
-				fix_flag_name(&tmp, $3);
+				tmp = NULL;
+				fix_flag_name(tmp, $3);
 				tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
 				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
 					yyerror("invalid TCP no_new_conn Branch Flag");
@@ -1265,19 +1280,22 @@ assign_stm: DEBUG EQUAL snumber {
 									default_global_address.len=strlen($3);
 								}
 								}
-		|ADVERTISED_ADDRESS EQUAL error {yyerror("ip address or hostname "
+		| ADVERTISED_ADDRESS EQUAL error {yyerror("ip address or hostname "
 												"expected"); }
 		| ADVERTISED_PORT EQUAL NUMBER {
-								tmp=int2str($3, &i_tmp);
-								if ((default_global_port.s=pkg_malloc(i_tmp))
-										==0){
-										LM_CRIT("cfg. parser: out of memory.\n");
-										default_global_port.len=0;
-								}else{
-									default_global_port.len=i_tmp;
+								tmp = int2str($3, &i_tmp);
+								if (i_tmp > default_global_port.len)
+									default_global_port.s =
+										pkg_realloc(default_global_port.s, i_tmp);
+
+								if (!default_global_port.s) {
+									LM_CRIT("cfg. parser: out of memory.\n");
+									default_global_port.len = 0;
+								} else {
+									default_global_port.len = i_tmp;
 									memcpy(default_global_port.s, tmp,
 											default_global_port.len);
-								};
+								}
 								}
 		|ADVERTISED_PORT EQUAL error {yyerror("ip address or hostname "
 												"expected"); }
@@ -1772,7 +1790,7 @@ route_name:  ID {
 
 route_stm:  ROUTE LBRACE actions RBRACE {
 						if (rlist[DEFAULT_RT].a!=0) {
-							yyerror("overwritting default "
+							yyerror("overwriting default "
 								"request routing table");
 							YYABORT;
 						}
@@ -1782,7 +1800,7 @@ route_stm:  ROUTE LBRACE actions RBRACE {
 						if ( strtol($3,&tmp,10)==0 && *tmp==0) {
 							/* route[0] detected */
 							if (rlist[DEFAULT_RT].a!=0) {
-								yyerror("overwritting(2) default "
+								yyerror("overwriting(2) default "
 									"request routing table");
 								YYABORT;
 							}
@@ -1807,7 +1825,7 @@ failure_route_stm: ROUTE_FAILURE LBRACK route_name RBRACK LBRACE actions RBRACE 
 
 onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
 						if (onreply_rlist[DEFAULT_RT].a!=0) {
-							yyerror("overwritting default "
+							yyerror("overwriting default "
 								"onreply routing table");
 							YYABORT;
 						}
@@ -1833,7 +1851,7 @@ branch_route_stm: ROUTE_BRANCH LBRACK route_name RBRACK LBRACE actions RBRACE {
 
 error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
 						if (error_rlist.a!=0) {
-							yyerror("overwritting default "
+							yyerror("overwriting default "
 								"error routing table");
 							YYABORT;
 						}
@@ -2519,6 +2537,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
 													"argument"); }
+		| ASSERT LPAREN exp COMMA STRING RPAREN	{mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5); }
 		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
@@ -2835,23 +2854,24 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 														"string expected"); }
 		| SET_ADV_ADDRESS error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| SET_ADV_PORT LPAREN NUMBER RPAREN {
-								$$=0;
-								tmp=int2str($3, &i_tmp);
-								if ((str_tmp=pkg_malloc(sizeof(str)))==0){
+								tstr.s = int2str($3, &tstr.len);
+								if (!(tmp = pkg_malloc(tstr.len + 1))) {
 										LM_CRIT("cfg. parser: out of memory.\n");
-								}else{
-									if ((str_tmp->s=pkg_malloc(i_tmp))==0){
-										LM_CRIT("cfg. parser: out of memory.\n");
-									}else{
-										memcpy(str_tmp->s, tmp, i_tmp);
-										str_tmp->len=i_tmp;
-										mk_action2( $$, SET_ADV_PORT_T, STR_ST,
-													0, str_tmp, 0);
-									}
+										$$ = 0;
+								} else {
+									memcpy(tmp, tstr.s, tstr.len);
+									tmp[tstr.len] = '\0';
+									mk_action2($$, SET_ADV_PORT_T, STR_ST,
+											   0, tmp, 0);
 								}
 								            }
-		| SET_ADV_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-								"string expected"); }
+		| SET_ADV_PORT LPAREN STRING RPAREN {
+								mk_action2($$, SET_ADV_PORT_T,
+										   STR_ST, NOSUBTYPE,
+										   $3, NULL);
+								}
+		| SET_ADV_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument "
+						"(string or integer expected)"); }
 		| SET_ADV_PORT  error {$$=0; yyerror("missing '(' or ')' ?"); }
 		| FORCE_SEND_SOCKET LPAREN phostport RPAREN {
 								mk_action2( $$, FORCE_SEND_SOCKET_T,
@@ -2911,7 +2931,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7; 
 								elems[3].type = NUMBER_ST; 
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
+								mk_action_($$, CACHE_STORE_T, 4, elems);
 							}
 		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA script_var
 								RPAREN { 
@@ -2923,7 +2943,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7; 
 								elems[3].type = SCRIPTVAR_ST; 
 								elems[3].u.data = $9;
-								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
+								mk_action_($$, CACHE_STORE_T, 4, elems);
 							}
 
 		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN { 
@@ -2960,7 +2980,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_ADD_T, 4, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 4, elems);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
@@ -2971,7 +2991,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_ADD_T, 4, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 4, elems);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -2984,7 +3004,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_ADD_T, 5, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 5, elems);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -2997,7 +3017,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_ADD_T, 5, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 5, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3008,7 +3028,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_SUB_T, 4, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 4, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3019,7 +3039,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_SUB_T, 4, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 4, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3032,7 +3052,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_SUB_T, 5, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 5, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3045,7 +3065,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_SUB_T, 5, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 5, elems);
 							}
 		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING COMMA STRING RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3054,14 +3074,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[1].u.data = $5; 
 								elems[2].type = STR_ST; 
 								elems[2].u.data = $7;
-								$$ = mk_action(CACHE_RAW_QUERY_T, 3, elems, line); 
+								mk_action_($$, CACHE_RAW_QUERY_T, 3, elems);
 							}
 		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING RPAREN { 
 								elems[0].type = STR_ST; 
 								elems[0].u.data = $3; 
 								elems[1].type = STR_ST; 
 								elems[1].u.data = $5; 
-								$$ = mk_action(CACHE_RAW_QUERY_T, 2, elems, line); 
+								mk_action_($$, CACHE_RAW_QUERY_T, 2, elems);
 							}
 		| ID LPAREN RPAREN		{
 						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
@@ -3077,7 +3097,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}else{
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										$$ = mk_action(MODULE_T, 1, elems, line);
+										mk_action_($$, MODULE_T, 1, elems);
 									}
 								}
 		| ID LPAREN module_func_param RPAREN		{
@@ -3094,7 +3114,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}else{
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										$$ = mk_action(MODULE_T, $3+1, elems, line);
+										mk_action_($$, MODULE_T, $3+1, elems);
 									}
 								}
 		| ID LPAREN error RPAREN { $$=0; yyerrorf("bad arguments for "
@@ -3130,13 +3150,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				elems[4].u.data = $11;
 				elems[5].type = SCRIPTVAR_ST; 
 				elems[5].u.data = $13;
-				$$ = mk_action(CONSTRUCT_URI_T,6,elems,line); }
+				mk_action_($$, CONSTRUCT_URI_T,6,elems); }
 		| GET_TIMESTAMP LPAREN script_var COMMA script_var RPAREN {
 				elems[0].type = SCRIPTVAR_ST;
 				elems[0].u.data = $3;
 				elems[1].type = SCRIPTVAR_ST;
 				elems[1].u.data = $5; 
-				$$ = mk_action(GET_TIMESTAMP_T,2,elems,line); }
+				mk_action_($$, GET_TIMESTAMP_T,2,elems); }
 		| SCRIPT_TRACE LPAREN RPAREN {
 				mk_action2($$, SCRIPT_TRACE_T, 0, 0, 0, 0); }
 		| SCRIPT_TRACE LPAREN NUMBER COMMA STRING RPAREN {
@@ -3160,13 +3180,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 
 %%
-
-extern int column;
-extern int startcolumn;
-extern char *finame;
-
-#define get_cfg_file_name \
-	((finame) ? finame : cfg_file ? cfg_file : "default")
 
 static inline void warn(char* s)
 {
@@ -3203,13 +3216,15 @@ static struct socket_id* mk_listen_id(char* host, int proto, int port)
 	if (l==0){
 		LM_CRIT("cfg. parser: out of memory.\n");
 	}else{
-		l->name=host;
-		l->port=port;
-		l->proto=proto;
-		l->adv_name=NULL;
-		l->adv_port=0;
-		l->next=0;
+		l->name     = host;
+		l->adv_name = NULL;
+		l->adv_port = 0;
+		l->proto    = proto;
+		l->port     = port;
+		l->children = 0;
+		l->next     = NULL;
 	}
+
 	return l;
 }
 

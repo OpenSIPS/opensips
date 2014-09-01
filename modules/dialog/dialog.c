@@ -119,9 +119,14 @@ extern int last_dst_leg;
 /* cachedb stuff */
 str cdb_url = {0,0};
 
+/* topo hiding */
+str topo_hiding_ct_params = {0,0};
+str topo_hiding_prefix = str_init("DLGCH_");
+str topo_hiding_seed = str_init("OpenSIPS");
+
 /* dialog replication using the bpi interface */
-int accept_replicated_dlg;
-struct replication_dest *replication_dests;
+int accept_replicated_dlg=0;
+struct replication_dest *replication_dests=NULL;
 
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -166,6 +171,7 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
+int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
@@ -259,6 +265,7 @@ static param_export_t mod_params[]={
 	{ "profiles_column",       STR_PARAM, &profiles_column.s        },
 	{ "vars_column",           STR_PARAM, &vars_column.s            },
 	{ "sflags_column",         STR_PARAM, &sflags_column.s          },
+	{ "mflags_column",         STR_PARAM, &mflags_column.s          },
 	{ "db_update_period",      INT_PARAM, &db_update_period         },
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
@@ -275,6 +282,10 @@ static param_export_t mod_params[]={
 	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
 	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
 								(void *)add_replication_dest        },
+	/* dialog topology hiding with callid mangling */
+	{ "th_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
+	{ "th_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
+	{ "th_passed_contact_params",STR_PARAM, &topo_hiding_ct_params.s },
 	{ 0,0,0 }
 };
 
@@ -324,17 +335,57 @@ static pv_export_t mod_items[] = {
 		pv_set_dlg_val,    pv_parse_name, 0, 0, 0},
 	{ {"DLG_did",     sizeof("DLG_did")-1},      1000, pv_get_dlg_did,
 		0,                 0, 0, 0, 0},
-	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},      1000,
+	{ {"DLG_end_reason",     sizeof("DLG_end_reason")-1},    1000,
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
-	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000, 
+	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000,
 		pv_get_dlg_timeout, pv_set_dlg_timeout,  0, 0, 0, 0 },
+	{ {"DLG_callee_callid",  sizeof("DLG_callee_callid")-1}, 1000,
+		pv_get_dlg_callee_callid,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+static module_dependency_t *get_deps_db_mode(param_export_t *param)
+{
+	int db_mode = *(int *)param->param_pointer;
+
+	if (db_mode == DB_MODE_NONE ||
+		(db_mode != DB_MODE_REALTIME &&
+		 db_mode != DB_MODE_DELAYED &&
+		 db_mode != DB_MODE_SHUTDOWN))
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_cachedb_url(param_export_t *param)
+{
+	char *cdb_url = *(char **)param->param_pointer;
+
+	if (!cdb_url || strlen(cdb_url) == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
+}
+
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "rr", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "db_mode",     get_deps_db_mode     },
+		{ "cachedb_url", get_deps_cachedb_url },
+		{ NULL, NULL },
+	},
 };
 
 struct module_exports exports= {
 	"dialog",        /* module's name */
+	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */
@@ -565,6 +616,16 @@ static int create_dialog_wrapper(struct sip_msg *req,int flags)
 	return 1;
 }
 
+static void set_mod_flag_wrapper (struct dlg_cell *dlg, unsigned int flags)
+{
+	dlg->mod_flags |= flags;
+}
+
+static int is_mod_flag_set_wrapper (struct dlg_cell *dlg, unsigned int flags)
+{
+	return (dlg->mod_flags & flags) > 0;
+}
+
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
@@ -582,6 +643,9 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->match_dialog = w_match_dialog;
 	dlgb->fix_route_dialog = fix_route_dialog;
 	dlgb->validate_dialog = dlg_validate_dialog;
+
+	dlgb->set_mod_flag = set_mod_flag_wrapper;
+	dlgb->is_mod_flag_set = is_mod_flag_set_wrapper;
 
 	return 1;
 }
@@ -641,7 +705,14 @@ static int mod_init(void)
 	profiles_column.len = strlen(profiles_column.s);
 	vars_column.len = strlen(vars_column.s);
 	sflags_column.len = strlen(sflags_column.s);
+	mflags_column.len = strlen(mflags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
+	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
+	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
+	if (topo_hiding_ct_params.s) {
+		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
+		dlg_parse_passed_ct_params(&topo_hiding_ct_params);
+	}
 
 	/* param checkings */
 
@@ -738,7 +809,7 @@ static int mod_init(void)
 	}
 
 	if (register_script_cb( dialog_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB,0)<0) {
-		LM_ERR("cannot regsiter script callback");
+		LM_ERR("cannot register script callback");
 		return -1;
 	}
 
@@ -758,19 +829,19 @@ static int mod_init(void)
 		}
 		if (append_timer_to_process("dlg-pinger", dlg_ping_routine, NULL,
 							ping_interval,dlg_own_timer_proc) < 0) {
-				LM_ERR("Failed to append ping timer \n");
+				LM_ERR("Failed to append ping timer\n");
 				return -1;
 		}
 	}
 	else {
 		if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1)<0 ) {
-			LM_ERR("failed to register timer \n");
+			LM_ERR("failed to register timer\n");
 			return -1;
 		}
 
 		if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
 		ping_interval)<0) {
-			LM_ERR("failed to register timer 2 \n");
+			LM_ERR("failed to register timer 2\n");
 			return -1;
 		}
 	}
@@ -827,10 +898,19 @@ static int mod_init(void)
 		run_load_callbacks();
 	}
 
-	/* if profiles should be kept in cachedb's */
-
-	destroy_dlg_callbacks( DLGCB_LOADED );
+	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
+
+	/* set dlg topo hiding callid mangling callbacks ( pre * post ) */
+	if (register_raw_processing_cb(dlg_th_pre_raw,PRE_RAW_PROCESSING) < 0) {
+		LM_ERR("failed to initialize pre raw support\n");
+		return -1;
+	}
+
+	if (register_raw_processing_cb(dlg_th_post_raw,POST_RAW_PROCESSING) < 0) {
+		LM_ERR("failed to initialize post raw support\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -965,7 +1045,7 @@ static int w_match_dialog(struct sip_msg *msg)
 		for (i=0;i<r_uri->u_params_no;i++)
 			if (r_uri->u_name[i].len == rr_param.len &&
 				memcmp(rr_param.s,r_uri->u_name[i].s,rr_param.len)==0) {
-				LM_DBG("We found DID param in R-URI with value of %.*s \n",
+				LM_DBG("We found DID param in R-URI with value of %.*s\n",
 					r_uri->u_val[i].len,r_uri->u_val[i].s);
 				/* pass the param value to the matching funcs */
 				match_param = (void *)(&r_uri->u_val[i]);
@@ -1411,16 +1491,24 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	if(res==NULL)
 		return -1;
 
-	if ( (dlg=get_current_dialog())==NULL )
+	if ( (dlg=get_current_dialog())!=NULL ) {
+
+		dlg_lock_dlg(dlg);
+		if (dlg->state < DLG_STATE_CONFIRMED_NA)
+			l = dlg->lifetime;
+		else
+			l = dlg->tl.timeout - get_ticks();
+		dlg_unlock_dlg(dlg);
+
+	} else if (msg->id == dlg_tmp_timeout_id && dlg_tmp_timeout != -1) {
+		l = dlg_tmp_timeout;
+	} else {
 		return pv_get_null( msg, param, res);
+	}
 
-	dlg_lock_dlg(dlg);
-	l = dlg->tl.timeout - get_ticks();
-	dlg_unlock_dlg(dlg);
-
+	res->ri = l;
 
 	ch = int2str( (unsigned long)res->ri, &l);
-
 	res->rs.s = ch;
 	res->rs.len = l;
 
@@ -1636,3 +1724,43 @@ static int add_replication_dest(modparam_t type, void *val)
 	return 1;
 }
 
+static char *callid_buf=NULL;
+static int callid_buf_len=0;
+int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct dlg_cell *dlg;
+	int req_len = 0,i;
+
+	if(res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())==NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0) {
+		return pv_get_null( msg, param, res);
+	}
+
+
+	req_len = calc_base64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
+
+	if (req_len*2 > callid_buf_len) {
+		callid_buf = pkg_realloc(callid_buf,req_len*2);
+		if (callid_buf == NULL) {
+			LM_ERR("No more pkg\n");
+			return pv_get_null( msg, param, res);
+		}
+
+		callid_buf_len = req_len*2;
+	}
+
+	memcpy(callid_buf+req_len,topo_hiding_prefix.s,topo_hiding_prefix.len);
+	for (i=0;i<dlg->callid.len;i++)
+		callid_buf[i] = dlg->callid.s[i] ^ topo_hiding_seed.s[i%topo_hiding_seed.len];
+
+	base64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
+		     (unsigned char *)(callid_buf),dlg->callid.len);
+
+	res->rs.s = callid_buf+req_len;
+	res->rs.len = req_len;
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}

@@ -122,11 +122,23 @@ static param_export_t params[]={
 	{0,                          0,         0           }
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 /** module exports */
 struct module_exports exports= {
 	"pua",                      /* module name */
+	MOD_TYPE_DEFAULT,           /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	&deps,                      /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
@@ -911,14 +923,7 @@ static void db_update(unsigned int ticks,void *param)
 		return ;
 	}
 
-	db_vals[0].val.int_val= (int)time(NULL)- 10;
-	db_ops[0]= OP_LT;
-	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
-	{
-		LM_ERR("while deleting from db table pua\n");
-	}
-
-	for(i=0; i<HASH_SIZE; i++)
+	for(i=0; i<HASH_SIZE; i++) 
 	{
 		if(!no_lock)
 			lock_get(&HashT->p_records[i].lock);
@@ -1036,6 +1041,13 @@ static void db_update(unsigned int ticks,void *param)
 		}
 		if(!no_lock)
 			lock_release(&HashT->p_records[i].lock);
+	}
+
+	db_vals[0].val.int_val= (int)time(NULL)- 10;
+	db_ops[0]= OP_LT;
+	if(pua_dbf.delete(pua_db, db_cols, db_ops, db_vals, 1) < 0)
+	{
+		LM_ERR("while deleting from db table pua\n");
 	}
 
 	return ;

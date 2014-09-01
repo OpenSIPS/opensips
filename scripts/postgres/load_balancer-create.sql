@@ -8,5 +8,6 @@ CREATE TABLE load_balancer (
     description VARCHAR(128) DEFAULT '' NOT NULL
 );
 
+ALTER SEQUENCE load_balancer_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX load_balancer_dsturi_idx ON load_balancer (dst_uri);
 

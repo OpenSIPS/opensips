@@ -243,7 +243,7 @@ int bdb_val2str(db_val_t* _v, char* _s, int* _len)
 
 	case DB_DOUBLE:
 		if (db_double2str(VAL_DOUBLE(_v), _s, _len) < 0) {
-			LM_ERR("Error while converting double  to string\n");
+			LM_ERR("Error while converting double to string\n");
 			return -3;
 		} else {
 			LM_DBG("Converted double to string\n");
