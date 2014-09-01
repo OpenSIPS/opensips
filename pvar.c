@@ -102,6 +102,30 @@ static str str_tls    = { _str_tls_hlp, 3 };
 static char _str_sctp_hlp[5]  = {'s','c','t','p',0};
 static str str_sctp    = { _str_sctp_hlp, 4 };
 
+static char _str_request_route_hlp[] = {'r','e','q','u','e','s','t','_','r','o','u','t','e',0};
+static str str_request_route    = { _str_request_route_hlp, 13 };
+
+static char _str_failure_route_hlp[] = {'f','a','i','l','u','r','e','_','r','o','u','t','e',0};
+static str str_failure_route    = { _str_failure_route_hlp, 13 };
+
+static char _str_onreply_route_hlp[] = {'o','n','r','e','p','l','y','_','r','o','u','t','e',0};
+static str str_onreply_route    = { _str_onreply_route_hlp, 13 };
+
+static char _str_branch_route_hlp[] = {'b','r','a','n','c','h','_','r','o','u','t','e',0};
+static str str_branch_route    = { _str_branch_route_hlp, 12 };
+
+static char _str_error_route_hlp[] = {'e','r','r','o','r','_','r','o','u','t','e',0};
+static str str_error_route    = { _str_error_route_hlp, 11 };
+
+static char _str_local_route_hlp[] = {'l','o','c','a','l','_','r','o','u','t','e',0};
+static str str_local_route    = { _str_local_route_hlp, 11 };
+
+static char _str_startup_route_hlp[] = {'s','t','a','r','t','u','p','_','r','o','u','t','e',0};
+static str str_startup_route    = { _str_startup_route_hlp, 13 };
+
+static char _str_timer_route_hlp[] = {'t','i','m','e','r','_','r','o','u','t','e',0};
+static str str_timer_route    = { _str_timer_route_hlp, 11 };
+
 int _pv_pid = 0;
 
 #define PV_FIELD_DELIM ", "
@@ -1130,6 +1154,44 @@ static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 
 	return pv_get_strval(msg, param, res, &(get_refer_to(msg)->uri));
+}
+
+static int pv_get_route_type(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	str s;
+
+	switch(route_type)
+	{
+		case REQUEST_ROUTE:
+			s = str_request_route;
+			break;
+		case FAILURE_ROUTE:
+			s = str_failure_route;
+			break;
+		case ONREPLY_ROUTE:
+			s = str_onreply_route;
+			break;
+		case BRANCH_ROUTE:
+			s = str_branch_route;
+			break;
+		case ERROR_ROUTE:
+			s = str_error_route;
+			break;
+		case LOCAL_ROUTE:
+			s = str_local_route;
+			break;
+		case STARTUP_ROUTE:
+			s = str_startup_route;
+			break;
+		case TIMER_ROUTE:
+			s = str_timer_route;
+			break;
+		default:
+			s = str_null;
+	}
+
+	return pv_get_strval(msg, param, res, &s);
 }
 
 static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
@@ -3210,6 +3272,9 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"rt", (sizeof("rt")-1)}, /* */
 		PVT_REFER_TO, pv_get_refer_to, 0,
+		0, 0, 0, 0},
+	{{"rT", (sizeof("rt")-1)}, /* */
+		PVT_ROUTE_TYPE, pv_get_route_type, 0,
 		0, 0, 0, 0},
 	{{"ru", (sizeof("ru")-1)}, /* */
 		PVT_RURI, pv_get_ruri, pv_set_ruri,
