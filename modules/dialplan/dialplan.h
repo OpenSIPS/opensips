@@ -29,6 +29,7 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../rw_locking.h"
+#include "../../time_rec.h"
 
 #include "../../db/db.h"
 #include "../../re.h"
@@ -40,8 +41,6 @@
 #define DP_CASE_INSENSITIVE		1
 #define DP_INDEX_HASH_SIZE		16
 
-
-
 typedef struct dpl_node{
 	int dpid;
 	int table_id; /*choose between matching regexp/strings with same priority*/
@@ -52,6 +51,8 @@ typedef struct dpl_node{
 	pcre * match_comp, * subst_comp; /*compiled patterns*/
 	struct subst_expr * repl_comp;
 	str attrs;
+	str timerec;
+	tmrec_t *parsed_timerec;
 
 	struct dpl_node * next; /*next rule*/
 }dpl_node_t, *dpl_node_p;
