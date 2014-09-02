@@ -708,8 +708,11 @@ void destroy_rule(dpl_node_t * rule){
 	if(rule->attrs.s)
 		shm_free(rule->attrs.s);
 
-	 if(rule->timerec.s)
+	if(rule->timerec.s)
 		shm_free(rule->timerec.s);
+
+	if(rule->parsed_timerec)
+		shm_free(rule->parsed_timerec);
 }
 
 
