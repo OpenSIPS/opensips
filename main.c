@@ -129,8 +129,8 @@
 #include "statistics.h"
 #include "core_stats.h"
 #include "pvar.h"
-#ifdef USE_TCP
 #include "poll_types.h"
+#ifdef USE_TCP
 #include "tcp_init.h"
 #include "tcp_conn.h"
 #ifdef USE_TLS
@@ -162,9 +162,7 @@ void print_ct_constants(void)
 			" MAX_URI_SIZE %d, BUF_SIZE %d\n",
 		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE,
 		BUF_SIZE );
-#ifdef USE_TCP
 	printf("poll method support: %s.\n", poll_support);
-#endif
 #ifdef VERSIONTYPE
 	printf("%s revision: %s\n", VERSIONTYPE, THISREVISION);
 #endif
@@ -180,6 +178,7 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  auto-probing procedure; may
 												  be re-configured */
 int children_no = 0;			/* number of children processing requests */
+enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
 #ifdef USE_TCP
 int tcp_children_no = 0;
 int tcp_disable = 0; /* 1 if tcp is disabled */
@@ -1245,16 +1244,12 @@ int main(int argc, char** argv)
 #endif
 					break;
 			case 'W':
-#ifdef USE_TCP
-					tcp_poll_method=get_poll_type(optarg);
-					if (tcp_poll_method==POLL_NONE){
+					io_poll_method=get_poll_type(optarg);
+					if (io_poll_method==POLL_NONE){
 						LM_ERR("bad poll method name: -W %s\ntry "
 							"one of %s.\n", optarg, poll_support);
 						goto error00;
 					}
-#else
-					LM_WARN("tcp support not compiled in\n");
-#endif
 					break;
 			case 'V':
 					printf("version: %s\n", version);
@@ -1473,6 +1468,8 @@ try_again:
 	}
 
 	init_shm_statistics();
+
+	fix_poll_method( &io_poll_method );
 
 	/*init timer, before parsing the cfg!*/
 	if (init_timer()<0){

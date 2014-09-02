@@ -57,9 +57,12 @@
 #include "mem/mem.h"
 #include "ip_addr.h"
 #include "pt.h"
-
+#include "reactor.h"
 
 static callback_list* cb_list = NULL;
+
+#define UDP_SELECT_TIMEOUT  1
+
 
 int register_udprecv_cb(callback_f* func, void* param, char a, char b)
 {
@@ -227,6 +230,17 @@ int udp_init(struct socket_info* sock_info)
 		LM_ERR("socket: %s\n", strerror(errno));
 		goto error;
 	}
+	/* make socket non-blocking */
+	optval=fcntl(sock_info->socket, F_GETFL);
+	if (optval==-1){
+		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		goto error;
+	}
+	if (fcntl(sock_info->socket,F_SETFL,optval|O_NONBLOCK)==-1){
+		LM_ERR("set non-blocking failed: (%d) %s\n",
+			errno, strerror(errno));
+		goto error;
+	}
 	/* set sock opts? */
 	optval=1;
 	if (setsockopt(sock_info->socket, SOL_SOCKET, SO_REUSEADDR ,
@@ -317,6 +331,114 @@ error:
 }
 
 
+inline static int handle_udp_sip_msg(struct socket_info *si,
+				union sockaddr_union* from, struct receive_info *ri, int idx)
+{
+	int len;
+#ifdef DYN_BUF
+	char* buf;
+#else
+	static char buf [BUF_SIZE+1];
+#endif
+	char *tmp;
+	unsigned int fromlen;
+	callback_list* p;
+	str msg;
+
+#ifdef DYN_BUF
+	buf=pkg_malloc(BUF_SIZE+1);
+	if (buf==0){
+		LM_ERR("could not allocate receive buffer\n");
+		goto error;
+	}
+#endif
+
+	LM_DBG("triggered....\n");
+
+	fromlen=sockaddru_len(si->su);
+	len=recvfrom(bind_address->socket, buf, BUF_SIZE, 0, &from->s, &fromlen);
+	if (len==-1){
+		if (errno==EAGAIN)
+			return 0;
+		if ((errno==EINTR)||(errno==EWOULDBLOCK)|| (errno==ECONNREFUSED))
+			return -1;
+		LM_ERR("recvfrom:[%d] %s\n", errno, strerror(errno));
+		return -2;
+	}
+	LM_DBG("....read done\n");
+
+#ifndef NO_ZERO_CHECKS
+	if (len<MIN_UDP_PACKET) {
+		LM_DBG("probing packet received len = %d\n", len);
+		return 0;
+	}
+#endif
+
+	/* we must 0-term the messages, receive_msg expects it */
+	buf[len]=0; /* no need to save the previous char */
+
+	ri->src_su=*from;
+	su2ip_addr(&ri->src_ip, from);
+	ri->src_port=su_getport(from);
+
+	msg.s = buf;
+	msg.len = len;
+
+	/* run callbacks if looks like non-SIP message*/
+	if( !isalpha(msg.s[0]) ){    /* not-SIP related */
+		for(p = cb_list; p; p = p->next){
+			if(p->b == msg.s[1]){
+				if (p->func(bind_address->socket, ri, &msg, p->param)==0){
+					/* buffer consumed by callback */
+					break;
+				}
+			}
+		}
+		if (p) return 0;
+	}
+
+#ifdef DBG_MSG_QA
+	if (!dbg_msg_qa(msg.s, msg.len)) {
+		LM_WARN("an incoming message didn't pass test,"
+					"  drop it: %.*s\n", msg.len, msg.s );
+		return 0;
+	}
+#endif
+
+	if (ri->src_port==0){
+		tmp=ip_addr2a(&ri->src_ip);
+		LM_INFO("dropping 0 port packet from %s\n", tmp);
+		return 0;
+	}
+
+	update_stat( pt[process_no].load, +1 );
+
+	/* receive_msg must free buf too!*/
+	receive_msg( msg.s, msg.len, ri);
+
+	update_stat( pt[process_no].load, -1 );
+
+	return 0;
+}
+
+
+inline static int handle_io(struct fd_map* fm, int idx,int event_type)
+{
+	switch(fm->type){
+		case F_UDP_READ:
+			return handle_udp_sip_msg(
+					((struct worker_io_data*)fm->data)->si,
+					((struct worker_io_data*)fm->data)->from_sa,
+					&((struct worker_io_data*)fm->data)->ri,
+					idx );
+		default:
+			LM_CRIT("uknown fd type %d in UDP worker\n", fm->type);
+			return -1;
+	}
+	return -1;
+}
+
+
 /**
  * Main UDP receiver loop, processes data from the network, does some error
  * checking and save it in an allocated buffer. This data is then forwarded
@@ -328,108 +450,46 @@ error:
  */
 int udp_rcv_loop(void)
 {
-	int len;
-#ifdef DYN_BUF
-	char* buf;
-#else
-	static char buf [BUF_SIZE+1];
-#endif
-	char *tmp;
-	union sockaddr_union* from;
-	unsigned int fromlen;
-	struct receive_info ri;
-	callback_list* p;
-	str msg;
+	static struct worker_io_data io_data;
 
-	from=(union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
-	if (from==0){
+	/* create the UDP reactor */
+	if ( init_worker_reactor( 100/*max_fd*/, 0/*async*/) ) {
+		LM_ERR("failed to init reactor\n");
+		goto error;
+	}
+
+	io_data.from_sa = (union sockaddr_union*) pkg_malloc(sizeof(union sockaddr_union));
+	if (io_data.from_sa==0){
 		LM_ERR("out of pkg memory\n");
 		goto error;
 	}
-	memset(from, 0 , sizeof(union sockaddr_union));
-	ri.bind_address=bind_address; /* this will not change, we do it only once */
-	ri.dst_port=bind_address->port_no;
-	ri.dst_ip=bind_address->address;
-	ri.proto=PROTO_UDP;
-	ri.proto_reserved1=ri.proto_reserved2=0;
-	for(;;){
-#ifdef DYN_BUF
-		buf=pkg_malloc(BUF_SIZE+1);
-		if (buf==0){
-			LM_ERR("could not allocate receive buffer\n");
-			goto error;
-		}
-#endif
-		fromlen=sockaddru_len(bind_address->su);
-		len=recvfrom(bind_address->socket, buf, BUF_SIZE, 0, &from->s,
-											&fromlen);
-		if (len==-1){
-			if (errno==EAGAIN){
-				LM_DBG("packet with bad checksum received\n");
-				continue;
-			}
-			LM_ERR("recvfrom:[%d] %s\n", errno, strerror(errno));
-			if ((errno==EINTR)||(errno==EWOULDBLOCK)|| (errno==ECONNREFUSED))
-				continue; /* goto skip;*/
-			else goto error;
-		}
+	memset(io_data.from_sa, 0 , sizeof(union sockaddr_union));
 
-#ifndef NO_ZERO_CHECKS
-		if (len<MIN_UDP_PACKET) {
-			LM_DBG("probing packet received len = %d\n", len);
-			continue;
-		}
-#endif
+	/* this will not change, we do it only once */
+	io_data.ri.bind_address=bind_address;
+	io_data.ri.dst_port=bind_address->port_no;
+	io_data.ri.dst_ip=bind_address->address;
+	io_data.ri.proto=PROTO_UDP;
+	io_data.ri.proto_reserved1=io_data.ri.proto_reserved2=0;
 
-		/* we must 0-term the messages, receive_msg expects it */
-		buf[len]=0; /* no need to save the previous char */
+	/* for consistency reasons, even if duplicated */
+	io_data.si = bind_address;
 
-		ri.src_su=*from;
-		su2ip_addr(&ri.src_ip, from);
-		ri.src_port=su_getport(from);
-
-		msg.s = buf;
-		msg.len = len;
-
-		/* run callbacks if looks like non-SIP message*/
-		if( !isalpha(msg.s[0]) ){    /* not-SIP related */
-			for(p = cb_list; p; p = p->next){
-				if(p->b == msg.s[1]){
-					if (p->func(bind_address->socket, &ri, &msg, p->param)==0){
-						/* buffer consumed by callback */
-						break;
-					}
-				}
-			}
-			if (p) continue;
-		}
-
-#ifdef DBG_MSG_QA
-		if (!dbg_msg_qa(msg.s, msg.len)) {
-			LM_WARN("an incoming message didn't pass test,"
-						"  drop it: %.*s\n", msg.len, msg.s );
-			continue;
-		}
-#endif
-
-		if (ri.src_port==0){
-			tmp=ip_addr2a(&ri.src_ip);
-			LM_INFO("dropping 0 port packet from %s\n", tmp);
-			continue;
-		}
-
-		update_stat( pt[process_no].load, +1 );
-
-		/* receive_msg must free buf too!*/
-		receive_msg( msg.s, msg.len, &ri);
-
-		update_stat( pt[process_no].load, -1 );
+	/* init: start watching the SIP UDP fd */
+	if (reactor_add_reader( bind_address->socket, F_UDP_READ, &io_data)) {
+		LM_CRIT("failed to add UDP listen socket to reactor\n");
+		goto error;
 	}
 
+	/* launch the reactor */
+	reactor_main_loop( UDP_SELECT_TIMEOUT, error );
+
 error:
-	if (from) pkg_free(from);
+	if (io_data.from_sa) pkg_free(io_data.from_sa);
+	destroy_worker_reactor();
 	return -1;
 }
+
 
 
 /**

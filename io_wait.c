@@ -29,11 +29,8 @@
 /*!
  * \file
  * \brief OpenSIPS TCP IO wait common functions
- * Used by tcp_main.c and tcp_read.c
  */
 
-
-#ifdef USE_TCP /*!< for now it make sense only with tcp */
 
 #ifdef HAVE_EPOLL
 #include <unistd.h> /* close() */
@@ -527,7 +524,7 @@ enum poll_types get_poll_type(char* s)
  * \param  max_fd - maximum allowed fd number
  * \param  poll_method - poll method (0 for automatic best fit)
  */
-int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
+int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method, int async)
 {
 	char * poll_err;
 
@@ -560,10 +557,10 @@ int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method)
 
 	if (h->poll_method != POLL_POLL && h->poll_method != POLL_EPOLL_LT &&
 		h->poll_method != POLL_EPOLL_ET) {
-		if (tcp_async)
-			LM_WARN("Tried to enable async TCP but current poll method is %d."
+		if (async)
+			LM_WARN("Tried to enable async polling but current poll method is %d."
 				" Currently we only support POLL and EPOLL \n",h->poll_method);
-		tcp_async=0;
+		async=0;
 	}
 
 	/* common stuff, everybody has fd_hash */
@@ -718,4 +715,31 @@ void destroy_io_wait(io_wait_h* h)
 }
 
 
-#endif
+void fix_poll_method( enum poll_types *poll_method )
+{
+	char* poll_err;
+
+	/* fix config variables */
+	/* they can have only positive values due the config parser so we can
+	 * ignore most of them */
+	poll_err=check_poll_method(*poll_method);
+
+	/* set an appropiate poll method */
+	if (poll_err || (*poll_method==0)){
+		*poll_method=choose_poll_method();
+		if (poll_err){
+			LM_ERR("%s, using %s instead\n",
+					poll_err, poll_method_name(*poll_method));
+		}else{
+			LM_INFO("using %s as the IO watch method"
+					" (auto detected)\n", poll_method_name(*poll_method));
+		}
+	}else{
+			LM_INFO("using %s as the IO watch method (config)\n",
+					poll_method_name(*poll_method));
+	}
+
+	return;
+}
+
+

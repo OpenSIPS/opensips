@@ -63,7 +63,7 @@
 #endif
 
 #define HANDLE_IO_INLINE
-#include "io_wait.h"
+#include "io_wait_loop.h"
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 #include "forward.h"
 #include "pt.h"
@@ -1103,7 +1103,7 @@ void tcp_receive_loop(int unix_sock)
 
 	/* init */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if (init_io_wait(&io_w, tcp_max_fd_no, tcp_poll_method)<0)
+	if (init_io_wait(&io_w, tcp_max_fd_no, io_poll_method, tcp_async)<0)
 		goto error;
 	/* add the unix socket */
 	if (io_watch_add(&io_w, tcpmain_sock, F_TCPMAIN, 0,IO_WATCH_READ)<0){
@@ -1112,6 +1112,7 @@ void tcp_receive_loop(int unix_sock)
 	}
 
 	/* main loop */
+	//io_wait_loop(io_w, TCP_CHILD_SELECT_TIMEOUT, tcp_receive_timeout(), error);
 	switch(io_w.poll_method){
 		case POLL_POLL:
 				while(1){
@@ -1170,6 +1171,7 @@ void tcp_receive_loop(int unix_sock)
 					poll_method_name(io_w.poll_method), io_w.poll_method);
 			goto error;
 	}
+
 error:
 	destroy_io_wait(&io_w);
 	LM_CRIT("exiting...");
