@@ -39,6 +39,8 @@
 #define QR_STATUS_DIRTY (1<<0)
 #define QR_STATUS_DSBL (1<<1)
 #define QR_STATUS_SKIP (1<<2)
+#define MIN_DEST 4
+
 
 int qr_n; /* number of intervals in history */
 
@@ -57,7 +59,7 @@ typedef struct qr_calls {
 
 typedef struct qr_stats {
 	qr_n_calls_t n;
-	qr_calls_t call_stats;
+	qr_calls_t stats;
 } qr_stats_t;
 
 /* sample interval */
@@ -97,32 +99,24 @@ typedef struct qr_grp {
 typedef struct qr_dst {
 	union {
 		qr_gw_t  * gw;
-		qr_grp_t * grp;
+		qr_grp_t  grp;
 	} dst;
 	char type;
 } qr_dst_t;
 
 /* destinations associated with a rule */
 typedef struct qr_rule {
-	qr_dst_t **dest;
+	qr_dst_t *dest;
 	qr_thresholds_t threshold;
 	struct qr_rule *next;
 } qr_rule_t;
 
-#define qr_init_rule {\
-	shm_malloc(sizeof(qr_rule));\
-}
-
-#define qr_create_destinations(n) {\
-	shm_malloc(n * sizeof(qr_dst_t))\
-}
-
 qr_gw_t * qr_create_gw(void);
 void qr_free_gw(qr_gw_t *);
-inline void qr_add_200OK(qr_gw_t * gw);
+int qr_dst_is_grp(void *, int, int);
+void *qr_create_rule(int);
+void qr_add_rule(void*);
 
-qr_rule_t * qr_rules_end; /* used when adding rules */
-qr_rule_t * qr_rules_start; /* used when updating statistics */
 
 
 #endif
