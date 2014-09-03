@@ -99,20 +99,18 @@ static int qr_init(void){
 												intervals in history */
 
 	if(load_tm_api(&tmb) == -1) {
-		LM_ERR("failed to load tm functions\n");
+		LM_ERR("failed to load tm functions. Tm module loaded?\n");
+		return -1;
+	}
+	if(load_dlg_api(&dlgcb) == -1) {
+		LM_ERR("failed to load dlg functions. Dialog module loaded?\n");
+		return -1;
 	}
 
 	/* FIXME:testing purpose */
 	my_rule = qr_create_rule(1);
 	qr_add_rule(my_rule);
 	qr_rules_start->dest[0].dst.gw = qr_create_gw();
-
-	/* AVP for storing the time when the INVITE was recvd
-	 * for computing PDD*/
-	if(parse_avp_spec(&avp_invite_time_name_pdd, &avp_invite_time_pdd) < 0) {
-		LM_ERR("failed to get avp id\n");
-		return -1;
-	}
 
 	return 0;
 }
