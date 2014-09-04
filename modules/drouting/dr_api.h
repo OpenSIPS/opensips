@@ -38,7 +38,7 @@ typedef struct _dr_head_t {
 	ptree_node_t noprefix;
 } dr_head_t, *dr_head_p; /*Easier to spot outside dr */
 
-typedef void* (*match_number_f) (dr_head_p partition, unsigned int gr_id,
+typedef rt_info_t* (*match_number_f) (dr_head_p partition, unsigned int gr_id,
 		const str *number);
 
 typedef dr_head_p (*create_head_f) (void);
