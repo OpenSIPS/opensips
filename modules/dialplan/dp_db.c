@@ -174,7 +174,11 @@ int init_data(void)
 
 		LM_DBG("Adding partition with name [%.*s]\n", 
 				start->partition.len, start->partition.s);
-		dp_add_connection(start);
+		if (!dp_add_connection(start)) {
+			LM_ERR("failed to initialize partition '%.*s'\n",
+					start->partition.len, start->partition.s);
+			return -1;
+		}
 
 		tmp = start;
 	}
