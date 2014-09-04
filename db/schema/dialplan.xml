@@ -76,6 +76,13 @@
         <description>Replacement expresion (sed like).</description>
     </column>
 
+    <column id="timerec">
+        <name>timerec</name>
+        <type>string</type>
+        <size>255</size>
+        <description>Time recurrence used to match this rule.</description>
+    </column>
+
     <column id="disabled">
         <name>disabled</name>
         <type>int</type>

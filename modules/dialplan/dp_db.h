@@ -45,7 +45,7 @@
 #define TIMEREC_COL			"timerec"
 
 
-#define DP_TABLE_VERSION		4
+#define DP_TABLE_VERSION		5
 #define DP_TABLE_COL_NO 		9
 
 typedef struct dp_head{
