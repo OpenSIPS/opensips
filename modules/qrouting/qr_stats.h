@@ -46,7 +46,7 @@ int qr_n; /* number of intervals in history */
 
 /* number of calls accounted for each statistic */
 typedef struct qr_n_calls {
-	int ok, pdd, setup, completed;
+	int ok, pdd, setup, cd;
 } qr_n_calls_t;
 
 typedef struct qr_calls {

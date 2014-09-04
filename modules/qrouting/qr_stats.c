@@ -64,23 +64,27 @@ qr_gw_t * qr_create_gw(void){
 	qr_gw_t *gw;
 	if ((gw = shm_malloc(sizeof(qr_gw_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
-		return NULL;
+		goto error;
 	}
 	memset(gw, 0, sizeof(qr_gw_t));
 	gw->acc_lock = (gen_lock_t*)lock_alloc();
 	if (!lock_init(gw->acc_lock)) {
 		LM_ERR("failed to init lock\n");
-		return NULL;
+		goto error;
 	}
 	if ((gw->ref_lock = lock_init_rw()) == NULL) {
 		LM_ERR("failed to init RW lock\n");
-		return NULL;
+		goto error;
 	}
 	if( (gw->next_interval = create_history()) == NULL) {
 		LM_ERR("failed to create history\n");
-		return NULL;
+		goto error;
 	}
 	return gw;
+error:
+	if(gw)
+		qr_free_gw(gw);
+	return NULL;
 }
 
 /* free all the samples in a gateway's history */
@@ -113,20 +117,27 @@ void * qr_create_rule(int n_dest) {
 
 	if((new = (qr_rule_t*)shm_malloc(sizeof(qr_rule_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
-		return NULL;
+		goto error;
 	}
 	memset(new, 0, sizeof(qr_rule_t));
 
 	/* prepare an array for adding gateways */
 	if((new->dest = (qr_dst_t*)shm_malloc(n_dest*sizeof(qr_dst_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
-		return NULL;
+		goto error;
 	}
 
 	for(i=0; i<n_dest; i++) {
 		new->dest[i].type |= QR_DST_GW;
 	}
 	return new;
+error:
+	if(new != NULL) {
+		if(new->dest != NULL)
+			shm_free(new->dest);
+		shm_free(new);
+	}
+	return NULL;
 }
 
 /* marks index_grp destination from the rule as group and creates the gw array */
@@ -144,10 +155,14 @@ int qr_dst_is_grp(void *rule_v, int index_grp, int n_gw) {
 			sizeof(qr_gw_t*));
 	if(rule->dest[index_grp].dst.grp.gw == NULL) {
 		LM_ERR("no more shm memory\n");
-		return -1;
+		goto error;
 	}
 
 	return 0;
+error:
+	if(rule->dest[index_grp].dst.grp.gw != NULL)
+		shm_free(rule->dest[index_grp].dst.grp.gw);
+	return -1;
 
 }
 

@@ -20,12 +20,17 @@ typedef struct qr_trans_prop {
 	char state;
 } qr_trans_prop_t;
 
+typedef struct qr_dialog_prop {
+	qr_gw_t *gw;
+	struct timespec *time_200OK;
+} qr_dialog_prop_t;
+
 
 int test_acc(struct sip_msg*);
 inline void qr_add_200OK(qr_gw_t * gw);
 inline void qr_add_4xx(qr_gw_t*);
 void qr_check_reply_tmcb(struct cell*, int ,struct tmcb_params*);
-void call_ended(struct dlg_cell* dlg, int type,
-		struct dlg_cb_params * params);
+
+
 
 #endif
