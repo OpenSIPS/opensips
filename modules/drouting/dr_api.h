@@ -34,17 +34,16 @@
 #include "../../sr_module.h"
 
 typedef struct _dr_head_t {
-	rw_lock_t *ref_lock;
 	ptree_t *pt;
 	ptree_node_t noprefix;
 } dr_head_t, *dr_head_p; /*Easier to spot outside dr */
 
-typedef void* (*match_number_f) (dr_head_p partition, int gr_id,
+typedef void* (*match_number_f) (dr_head_p partition, unsigned int gr_id,
 		const str *number);
 
 typedef dr_head_p (*create_head_f) (void);
 typedef void (*free_head_f)(dr_head_p partition);
-typedef int (*add_rule_f)(dr_head_p partition,
+typedef int (*add_rule_f)(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr);
 

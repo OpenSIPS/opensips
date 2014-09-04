@@ -31,11 +31,11 @@
 
 #include "../../str.h"
 
-static void* match_number (dr_head_t *partition, int grp_id,
+static void* match_number (dr_head_t *partition, unsigned int grp_id,
 		const str *number);
 static dr_head_p create_dr_head(void);
 static void free_dr_head(dr_head_p partition);
-static int add_rule_api(dr_head_p partition,
+static int add_rule_api(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr);
 
@@ -72,26 +72,22 @@ int load_dr (struct dr_binds *drb)
 }
 
 /* Function which will try to match a number and return the rule id */
-static void *match_number (dr_head_p partition, int grp_id, const str *number)
+static void *match_number (dr_head_p partition, unsigned int grp_id, const str *number)
 {
 	rt_info_t *route;
 	unsigned int matched_len;
 
-	lock_start_read( partition->ref_lock );
 	route = find_rule_by_prefix_unsafe(partition->pt, &(partition->noprefix),
 			*number, grp_id, &matched_len);
-	if (route == NULL) {
-		lock_stop_read(partition->ref_lock );
+	if (route == NULL)
 		return NULL;
-	}
 	void * attr = (void*)route->attrs.s;
-	lock_stop_read(partition->ref_lock );
 	return attr;
 }
 
 static dr_head_p create_dr_head(void)
 {
-	dr_head_p new = shm_malloc(sizeof(dr_head_p));
+	dr_head_p new = shm_malloc(sizeof(dr_head_t));
 	if( new == NULL ) {
 		LM_ERR(" no more shm memory\n");
 		return NULL;
@@ -106,12 +102,6 @@ static dr_head_p create_dr_head(void)
 		return NULL;
 	}
 	memset(new->pt, 0, sizeof(ptree_t));
-
-	/* create & init lock */
-	if ((new->ref_lock = lock_init_rw()) == NULL) {
-		LM_CRIT("failed to init lock\n");
-		goto error;
-	}
 
 	return new;
 error:
@@ -133,15 +123,13 @@ static void free_dr_head(dr_head_p partition)
 		shm_free(partition->noprefix.rg);
 		partition->noprefix.rg = 0;
 	}
-	lock_destroy_rw(partition->ref_lock);
 	shm_free(partition);
 }
 
-static int add_rule_api(dr_head_p partition,
+static int add_rule_api(dr_head_p partition,unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr)
 {
-	static unsigned int autoinc = 0;
 	rt_info_t * rule = shm_malloc(sizeof(rt_info_t));
 	if (rule == NULL){
 		LM_ERR("no more shm mem(1)\n");
@@ -149,7 +137,7 @@ static int add_rule_api(dr_head_p partition,
 	}
 
 	memset(rule, 0, sizeof(rt_info_t));
-	rule->id = autoinc++;
+	rule->id = rid;
 	rule->priority = priority;
 	rule->time_rec = time_rec;
 	rule->attrs.s = (char*) attr;
