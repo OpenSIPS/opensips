@@ -104,9 +104,6 @@ static dr_head_p create_dr_head(void)
 	memset(new->pt, 0, sizeof(ptree_t));
 
 	return new;
-error:
-	shm_free(new);
-	return NULL;
 }
 
 static void free_dr_head(dr_head_p partition)
