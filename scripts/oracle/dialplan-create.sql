@@ -8,6 +8,7 @@ CREATE TABLE dialplan (
     match_flags NUMBER(10),
     subst_exp VARCHAR2(64),
     repl_exp VARCHAR2(32),
+    timerec VARCHAR2(255),
     disabled NUMBER(10) DEFAULT 0 NOT NULL,
     attrs VARCHAR2(32)
 );

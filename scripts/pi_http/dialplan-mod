@@ -12,6 +12,7 @@
 				<col><field>match_flags</field></col>
 				<col><field>subst_exp</field></col>
 				<col><field>repl_exp</field></col>
+				<col><field>timerec</field></col>
 				<col><field>disabled</field></col>
 				<col><field>attrs</field></col>
 			</query_cols>
@@ -27,6 +28,7 @@
 				<col><field>match_flags</field></col>
 				<col><field>subst_exp</field></col>
 				<col><field>repl_exp</field></col>
+				<col><field>timerec</field></col>
 				<col><field>disabled</field></col>
 				<col><field>attrs</field></col>
 			</query_cols>
@@ -45,6 +47,7 @@
 				<col><field>match_flags</field></col>
 				<col><field>subst_exp</field></col>
 				<col><field>repl_exp</field></col>
+				<col><field>timerec</field></col>
 				<col><field>disabled</field></col>
 				<col><field>attrs</field></col>
 			</query_cols>
