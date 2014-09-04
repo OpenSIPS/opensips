@@ -83,13 +83,14 @@ static param_export_t mod_params[]={
 	{ "db_url",		STR_PARAM,	&default_dp_db_url.s},
 	{ "table_name",		STR_PARAM,	&default_dp_table.s },
 	{ "dpid_col",		STR_PARAM,	&dpid_column.s },
-	{ "pr_col",			STR_PARAM,	&pr_column.s },
+	{ "pr_col",		STR_PARAM,	&pr_column.s },
 	{ "match_op_col",	STR_PARAM,	&match_op_column.s },
 	{ "match_exp_col",	STR_PARAM,	&match_exp_column.s },
-	{ "match_flags_col",STR_PARAM,	&match_flags_column.s },
+	{ "match_flags_col",	STR_PARAM,	&match_flags_column.s },
 	{ "subst_exp_col",	STR_PARAM,	&subst_exp_column.s },
 	{ "repl_exp_col",	STR_PARAM,	&repl_exp_column.s },
 	{ "attrs_col",		STR_PARAM,	&attrs_column.s },
+	{ "timerec_col",        STR_PARAM,      &timerec_column.s },
 	{ "disabled_col",	STR_PARAM,	&disabled_column.s},
 	{0,0,0}
 };
@@ -410,7 +411,7 @@ static int mod_init(void)
 
 	LM_INFO("initializing module...\n");
 
-	dpid_column.len     	= strlen( dpid_column.s);
+	dpid_column.len     	= strlen(dpid_column.s);
 	pr_column.len       	= strlen(pr_column.s);
 	match_op_column.len 	= strlen(match_op_column.s);
 	match_exp_column.len	= strlen(match_exp_column.s);
@@ -418,6 +419,7 @@ static int mod_init(void)
 	subst_exp_column.len	= strlen(subst_exp_column.s);
 	repl_exp_column.len 	= strlen(repl_exp_column.s);
 	attrs_column.len    	= strlen(attrs_column.s);
+	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
 	if (default_dp_db_url.s) {
@@ -700,6 +702,9 @@ static int dp_translate_f(struct sip_msg *msg, char *str1, char *str2,
 		LM_DBG("no information available for dpid %i\n", dpid);
 		goto error;
 	}
+
+	LM_DBG("Checking %.*s with dpid %i => output %.*s\n",
+		input.len, input.s, idp->dp_id, output.len, output.s);
 
 	attrs_par =  attr_spec ? &attrs : NULL;
 	if (translate(msg, input, &output, idp, attrs_par) != 0) {
