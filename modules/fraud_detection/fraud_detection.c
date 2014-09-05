@@ -72,12 +72,24 @@ static mi_export_t mi_cmds[] = {
 	{0,0,0,0,0,0}
 };
 
+static dep_export_t deps = {
+	{
+		{MOD_TYPE_SQLDB, NULL, DEP_ABORT},
+		{MOD_TYPE_DEFAULT, "drouting", DEP_ABORT},
+		{MOD_TYPE_NULL, NULL, 0},
+	},
+	{
+		{NULL, NULL},
+	},
+};
 
 /** module exports */
 struct module_exports exports= {
 	"fraud_detection",               /* module name */
+	MOD_TYPE_DEFAULT,
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,            /* dlopen flags */
+	&deps,
 	cmds,                       /* exported functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
@@ -131,6 +143,20 @@ static int mod_init(void)
 
 	frd_init_db();
 	frd_reload_data();
+
+	str number = str_init("0754565");
+	rt_info_t *test = drb.match_number(dr_head, 1, &number);
+
+	if (test) {
+		frd_thresholds_t *thr = (frd_thresholds_t*)test->attrs.s;
+
+		LM_INFO("xxx - <%u> matched: %d %d %d %d %d\n", test->id, thr->cpm_thr.warning,
+				thr->call_duration_thr.critical, thr->total_calls_thr.warning,
+				thr->concurrent_calls_thr.critical, thr->seq_calls_thr.warning);
+	}
+	else
+		LM_INFO("no match\n");
+
 	return 0;
 }
 

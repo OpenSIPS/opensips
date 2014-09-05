@@ -210,6 +210,8 @@ static int create_time_rec(const str *time_start, const str *time_end,
 
 	trec->duration = (end_h * 3600 + end_m * 60) -
 		(trec->ts.tm_hour * 3600 + trec->ts.tm_min * 60);
+	trec->ts.tm_isdst = -1 /*daylight*/;
+	trec->dtstart = trec->duration;
 	trec->freq = FREQ_DAILY;
 
 	unsigned short day_set = 0;
@@ -243,7 +245,7 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 {
 	static const size_t col_count = 16;
 	db_res_t *res = NULL;
-	unsigned int no_rows, row_count, i;
+	unsigned int no_rows = 0, row_count, i;
 	db_row_t *rows;
 	db_val_t *values;
 
@@ -350,7 +352,7 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 			}
 
 			/* Rule OK, time to put it in DR */
-			if (drb.add_rule(drp, &prefix, pid, 0, fl_it->trec + 1,
+			if (drb.add_rule(drp, rid, &prefix, pid, 0, fl_it->trec + i,
 						(void*)(&fl_it->thr[i])) != 0) {
 
 				LM_ERR("Cannot add rule in dr <%u>. Skipping...\n", rid);
