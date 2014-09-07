@@ -337,6 +337,8 @@ int dlg_replicated_update(void)
 
 	bin_pop_int(&timeout);
 	bin_skip_int(2);
+
+	timeout -= time(0);
 	LM_DBG("Received updated timeout of %d for dialog %.*s\n",timeout,call_id.len,call_id.s);
 
 	if (dlg->lifetime != timeout) {
