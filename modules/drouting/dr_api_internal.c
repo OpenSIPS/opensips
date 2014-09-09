@@ -31,8 +31,8 @@
 
 #include "../../str.h"
 
-static rt_info_t* match_number (dr_head_t *partition, unsigned int grp_id,
-		const str *number);
+static rt_info_t *match_number (dr_head_p partition, unsigned int grp_id,
+		const str *number, unsigned int *matched_len);
 static dr_head_p create_dr_head(void);
 static void free_dr_head(dr_head_p partition);
 static int add_rule_api(dr_head_p partition, unsigned int rid,
@@ -72,12 +72,12 @@ int load_dr (struct dr_binds *drb)
 }
 
 /* Function which will try to match a number and return the rule id */
-static rt_info_t *match_number (dr_head_p partition, unsigned int grp_id, const str *number)
+static rt_info_t *match_number (dr_head_p partition, unsigned int grp_id,
+		const str *number, unsigned int *matched_len)
 {
-	unsigned int matched_len;
 
 	return find_rule_by_prefix_unsafe(partition->pt, &(partition->noprefix),
-			*number, grp_id, &matched_len);
+			*number, grp_id, matched_len);
 }
 
 static dr_head_p create_dr_head(void)

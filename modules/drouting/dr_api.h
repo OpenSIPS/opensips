@@ -39,7 +39,7 @@ typedef struct _dr_head_t {
 } dr_head_t, *dr_head_p; /*Easier to spot outside dr */
 
 typedef rt_info_t* (*match_number_f) (dr_head_p partition, unsigned int gr_id,
-		const str *number);
+		const str *number, unsigned int *matched_len);
 
 typedef dr_head_p (*create_head_f) (void);
 typedef void (*free_head_f)(dr_head_p partition);
