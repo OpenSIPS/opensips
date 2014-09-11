@@ -328,31 +328,6 @@ modparam("cpl-c","realm_prefix","sip.")
 			</example>
 		</section>
 		<section>
-			<title><varname>timer_avp</varname> (string)</title>
-			<para>
-				Full specification (ID, NAME, ALIAS) of the AVP to be used to 
-				set the value of the Final Response INVITE timeout - it's 
-				used by the TIMEOUT attribute from the PROXY tag.
-			</para>
-			<para>
-				NOTE: take care and syncronize this value with the similar
-				parameters in TM module.
-			</para>
-			<para>
-				<emphasis>
-					Default value of this parameter is NULL.
-				</emphasis>
-			</para>
-			<example>
-				<title>Set <varname>timer_avp</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("cpl-c","timer_avp","$avp(14)")
-...
-</programlisting>
-			</example>
-		</section>
-		<section>
 			<title><varname>lookup_domain</varname> (string)</title>
 			<para>
 				Used by lookup tag to indicate where to perform user location.
