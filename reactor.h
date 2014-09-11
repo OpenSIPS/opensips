@@ -45,7 +45,7 @@
 #define reactor_SELECT_CASE(_timeout) \
 		case POLL_SELECT: \
 			while(1){ \
-				io_wait_loop_select(_worker_io, _timeout, 0); \
+				io_wait_loop_select(&_worker_io, _timeout, 0); \
 			} \
 			break;
 #else
@@ -57,7 +57,7 @@
 #define reactor_SIGIORT_CASE(_timeout) \
 		case POLL_SIGIO_RT: \
 			while(1){ \
-				io_wait_loop_sigio_rt(_worker_io, _timeout); \
+				io_wait_loop_sigio_rt(&_worker_io, _timeout); \
 			} \
 			break;
 #else
@@ -69,12 +69,12 @@
 #define reactor_EPOLL_CASE(_timeout) \
 		case POLL_EPOLL_LT: \
 			while(1){ \
-				io_wait_loop_epoll(_worker_io, _timeout, 0); \
+				io_wait_loop_epoll(&_worker_io, _timeout, 0); \
 			} \
 			break; \
 		case POLL_EPOLL_ET: \
 			while(1){ \
-				io_wait_loop_epoll(_worker_io, _timeout, 1); \
+				io_wait_loop_epoll(&_worker_io, _timeout, 1); \
 			} \
 			break;
 #else
@@ -86,7 +86,7 @@
 #define reactor_KQUEUE_CASE(_timeout) \
 		case POLL_KQUEUE: \
 			while(1){ \
-				io_wait_loop_kqueue(_worker_io, _timeout, 0); \
+				io_wait_loop_kqueue(&_worker_io, _timeout, 0); \
 			} \
 			break;
 #else
@@ -98,7 +98,7 @@
 #define reactor_DEVPOLL_CASE(_timeout) \
 		case POLL_DEVPOLL: \
 			while(1){ \
-				io_wait_loop_devpoll(_worker_io, _timeout, 0); \
+				io_wait_loop_devpoll(&_worker_io, _timeout, 0); \
 			} \
 			break;
 #else
@@ -107,10 +107,10 @@
 
 
 #define reactor_main_loop( _timeout, _err) \
-	switch(_worker_io->poll_method) { \
+	switch(_worker_io.poll_method) { \
 		case POLL_POLL: \
 			while(1){ \
-				io_wait_loop_poll(_worker_io, _timeout, 0); \
+				io_wait_loop_poll(&_worker_io, _timeout, 0); \
 			} \
 			break; \
 		reactor_SELECT_CASE(_timeout) \
@@ -120,8 +120,8 @@
 		reactor_DEVPOLL_CASE(_timeout) \
 		default:\
 			LM_CRIT("no support for poll method %s (%d)\n", \
-				poll_method_name(_worker_io->poll_method), \
-				_worker_io->poll_method);\
+				poll_method_name(_worker_io.poll_method), \
+				_worker_io.poll_method);\
 			goto _err; \
 	}
 

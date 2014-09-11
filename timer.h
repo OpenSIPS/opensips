@@ -47,7 +47,9 @@ typedef void (utimer_function)(utime_t uticks, void* param);
 
 struct sr_timer{
 	/* unique ID in the list of timer handlers - not really used */
-	int id;
+	unsigned short id;
+	/* is utimer or timer? */
+	unsigned short is_utimer;
 	/* string label identifying the handler (what module and what for was registered) */
 	char *label;
 	/* handler function */
@@ -61,6 +63,8 @@ struct sr_timer{
 	unsigned int interval;
 	/* internal time for the next triggering */
 	utime_t expires;
+	/* time of the current triggering */
+	utime_t current_time;
 	/* next element in the timer list (per timer process) */
 	struct sr_timer* next;
 };
@@ -75,6 +79,8 @@ struct sr_timer_process {
 #define TIMER_PROC_INIT_FLAG  (1<<0)
 
 extern struct sr_timer_process *timer_proc_list;
+
+extern int timer_fd_out;
 
 int init_timer(void);
 
@@ -105,5 +111,7 @@ unsigned int get_ticks(void);
 utime_t get_uticks(void);
 
 int register_route_timers(void);
+
+void handle_timer_job(void);
 
 #endif

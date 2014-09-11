@@ -23,8 +23,7 @@
  *  2014-08-23  created (bogdan)
  */
 
+#include "io_wait.h"
 
-typedef struct io_wait_handler io_wait_h;
-
-io_wait_h *_worker_io;
+io_wait_h _worker_io;
 

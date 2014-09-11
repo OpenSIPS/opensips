@@ -35,7 +35,6 @@
  *  the reactor.h file directly !!!
  */
 
-//#include "globals.h"
 
 #include "io_wait.h"
 
@@ -48,18 +47,18 @@ struct worker_io_data {
 	struct socket_info *si;
 };
 
-enum fd_types { F_NONE=0, F_UDP_READ=1 };
+enum fd_types { F_NONE=0, F_UDP_READ=1, F_TIMER_JOB=2};
 
-extern io_wait_h *_worker_io;
+extern io_wait_h _worker_io;
 
 #define init_worker_reactor( _max_fd, _async) \
-	init_io_wait(_worker_io, _max_fd, io_poll_method, _async)
+	init_io_wait(&_worker_io, _max_fd, io_poll_method, _async)
 
 #define reactor_add_reader( _fd, _type, _data) \
-	io_watch_add(_worker_io, _fd, _type, _data, IO_WATCH_READ)
+	io_watch_add(&_worker_io, _fd, _type, _data, IO_WATCH_READ)
 
 #define destroy_worker_reactor() \
-	destroy_io_wait(_worker_io)
+	destroy_io_wait(&_worker_io)
 
 #endif
 

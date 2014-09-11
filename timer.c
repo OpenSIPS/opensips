@@ -33,6 +33,7 @@
  */
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -55,11 +56,13 @@
 
 struct sr_timer_process *timer_proc_list = 0;
 
-static unsigned int *jiffies=0;
-static utime_t      *ujiffies=0;
-static utime_t      *ijiffies=0;
-static unsigned int  timer_id=0;
+static unsigned int  *jiffies=0;
+static utime_t       *ujiffies=0;
+static utime_t       *ijiffies=0;
+static unsigned short timer_id=0;
+static int            timer_pipe[2];
 
+int timer_fd_out = -1 ;
 
 
 static struct sr_timer_process* new_timer_process_list(unsigned int flags)
@@ -90,6 +93,8 @@ static struct sr_timer_process* new_timer_process_list(unsigned int flags)
 /* ret 0 on success, <0 on error*/
 int init_timer(void)
 {
+	int optval;
+
 #ifdef SHM_MEM
 	jiffies  = shm_malloc(sizeof(unsigned int));
 	ujiffies = shm_malloc(sizeof(utime_t));
@@ -126,6 +131,25 @@ int init_timer(void)
 		return E_OUT_OF_MEM;
 	}
 
+	/* create the pipe for dispatching the timer jobs */
+	if ( pipe(timer_pipe)!=0 ) {
+		LM_ERR("failed to create time pipe (%s)!\n",strerror(errno));
+		return E_UNSPEC;
+	}
+	/* make reading fd non-blocking */
+	optval=fcntl(timer_pipe[0], F_GETFL);
+	if (optval==-1){
+		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		return E_UNSPEC;
+	}
+	if (fcntl(timer_pipe[0],F_SETFL,optval|O_NONBLOCK)==-1){
+		LM_ERR("set non-blocking failed: (%d) %s\n",
+			errno, strerror(errno));
+		return E_UNSPEC;
+	}
+	/* make vizible the "read" part of the pipe */
+	timer_fd_out = timer_pipe[0];
+
 	return 0;
 }
 
@@ -146,20 +170,21 @@ void destroy_timer(void)
 
 
 
-static inline struct sr_timer* new_sr_timer(char *label, timer_function f,
-										void* param, unsigned int interval)
+static inline struct sr_timer* new_sr_timer(char *label, unsigned short is_ut,
+						timer_function f, void* param, unsigned int interval)
 {
 	struct sr_timer* t;
 
 	if (label==NULL)
 		label = "n/a";
 
-	t=pkg_malloc( sizeof(struct sr_timer) + strlen(label)+1 );
+	t=shm_malloc( sizeof(struct sr_timer) + strlen(label)+1 );
 	if (t==0){
 		LM_ERR("out of pkg memory\n");
 		return NULL;
 	}
 	t->id=timer_id++;
+	t->is_utimer = is_ut;
 	t->label = (char*)(t+1);
 	strcpy( t->label, label);
 	t->u.timer_f=f;
@@ -179,7 +204,7 @@ int register_timer(char *label, timer_function f, void* param,
 {
 	struct sr_timer* t;
 
-	t = new_sr_timer( label, f, param, interval);
+	t = new_sr_timer( label, 0, f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the default timer process list*/
@@ -195,7 +220,7 @@ int register_utimer(char *label, utimer_function f, void* param,
 {
 	struct sr_timer* t;
 
-	t = new_sr_timer( label, (timer_function*)f, param, interval);
+	t = new_sr_timer( label, 1, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the list*/
@@ -243,30 +268,31 @@ void route_timer_f(unsigned int ticks, void* param)
 int register_route_timers(void)
 {
 	struct sr_timer* t;
-	struct sr_timer_process* tpl;
+	//struct sr_timer_process* tpl;
 	int i;
 
 	if(timer_rlist[0].a == NULL)
 		return 0;
 
-	/* create new process list */
+	/* create new process list
 	tpl = new_timer_process_list(TIMER_PROC_INIT_FLAG);
 	if (tpl==NULL)
 		return E_OUT_OF_MEM;
+	*/
 
 	/* register the routes */
 	for(i = 0; i< TIMER_RT_NO; i++)
 	{
 		if(timer_rlist[i].a == NULL)
 			return 0;
-		t = new_sr_timer( "timer_route", route_timer_f, timer_rlist[i].a,
+		t = new_sr_timer( "timer_route", 0, route_timer_f, timer_rlist[i].a,
 				timer_rlist[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;
 
 		/* insert it into the list*/
-		t->next = tpl->timer_list;
-		tpl->timer_list = t;
+		t->next = timer_proc_list->timer_list;
+		timer_proc_list->timer_list = t;
 	}
 
 	return 1;
@@ -275,6 +301,7 @@ int register_route_timers(void)
 void* register_timer_process(char *label, timer_function f, void* param,
 									unsigned int interval, unsigned int flags)
 {
+#if 0
 	struct sr_timer* t;
 	struct sr_timer_process* tpl;
 
@@ -289,7 +316,8 @@ void* register_timer_process(char *label, timer_function f, void* param,
 	/* insert it into the list*/
 	t->next = tpl->timer_list;
 	tpl->timer_list = t;
-	return (void*)tpl;
+#endif
+	return (void*)timer_proc_list;
 }
 
 
@@ -302,7 +330,7 @@ int append_timer_to_process( char *label, timer_function f, void* param,
 	if (tpl==NULL)
 		return -1;
 
-	t = new_sr_timer( label, f, param, interval);
+	t = new_sr_timer( label, 0, f, param, interval);
 	if (t==NULL)
 		return -1;
 	/* insert it into the list*/
@@ -321,7 +349,7 @@ int append_utimer_to_process( char *label, utimer_function f, void* param,
 	if (tpl==NULL)
 		return -1;
 
-	t = new_sr_timer( label, (timer_function*)f, param, interval);
+	t = new_sr_timer( label, 1, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return -1;
 	/* insert it into the list*/
@@ -367,30 +395,42 @@ static inline void timer_ticker(struct sr_timer *timer_list, utime_t *drift)
 {
 	struct sr_timer* t;
 	unsigned int j;
-	utime_t ij;
-	utime_t ij_marker;
+	ssize_t l;
+	/*utime_t ij;
+	utime_t ij_marker;*/
 
 	/* we need to store the original time as while executing the
 	   the handlers, the time may progress, affecting the way we
 	   calculate the new expire (expire will include the time
 	   taken to run handlers) -bogdan */
 	j = *jiffies;
-	ij = *ijiffies;
+	/*ij = *ijiffies;*/
 
 	for (t=timer_list;t; t=t->next){
 		if (j>=t->expires){
+			if (t->current_time) {
+				LM_WARN("timer task <%s> already schedualed for %d s, skipping..\n",
+					t->label,j);
+				continue;
+			}
 			t->expires = j + t->interval;
-			ij_marker = *ijiffies;
-			t->u.timer_f( j, t->t_param);
-			if ( (*ijiffies - ij_marker) / 1000000 > TIMER_TICK )
-				LM_CRIT("timer handler <%s> lasted (%d us) for more than "
-					"timer tick (%d us) -> potential timer shifting\n",
-					t->label, (int)(*ijiffies-ij_marker), TIMER_TICK*1000000);
+			t->current_time = j;
+			/* push the jobs for execution */
+			LM_DBG("activating timer task <%s> at %d s\n",
+				t->label,j);
+again:
+			l = write( timer_pipe[1], &t, sizeof(t));
+			if (l==-1) {
+				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+					goto again;
+				LM_ERR("writing failed:[%d] %s, skipiping job <%s> at %d s\n",
+					errno, strerror(errno),t->label, j);
+			}
 		}
 	}
 
-	/* update time drifting due handlers execution */
-	*drift += *ijiffies - ij;
+	/* update time drifting due handlers execution 
+	*drift += *ijiffies - ij;*/
 }
 
 
@@ -399,27 +439,39 @@ static inline void utimer_ticker(struct sr_timer *utimer_list, utime_t *drift)
 {
 	struct sr_timer* t;
 	utime_t uj;
-	utime_t ij;
-	utime_t ij_marker;
+	ssize_t l;
+	/*utime_t ij;
+	utime_t ij_marker;*/
 
 	/* see comment on timer_ticket */
 	uj = *ujiffies;
-	ij = *ijiffies;
+	/*ij = *ijiffies;*/
 
 	for ( t=utimer_list ; t ; t=t->next){
 		if (uj>=t->expires){
+			if (t->current_time) {
+				LM_WARN("utimer task <%s>%p already schedualed for %lld us, skipping..\n",
+					t->label,t,uj);
+				continue;
+			}
 			t->expires = uj + t->interval;
-			ij_marker = *ijiffies;
-			t->u.utimer_f( uj, t->t_param);
-			if ( (*ijiffies - ij_marker) > UTIMER_TICK )
-				LM_CRIT("utimer handler <%s> lasted (%d us) for more than "
-					"timer tick (%d us) -> potential timer shifting\n",
-					t->label, (int)(*ijiffies-ij_marker), UTIMER_TICK);
+			t->current_time = uj;
+			/* push the jobs for execution */
+			LM_DBG("activating utimer task <%s>%p at %lld us\n",
+				t->label,t,uj);
+again:
+			l = write( timer_pipe[1], &t, sizeof(t));
+			if (l==-1) {
+				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+					goto again;
+				LM_ERR("writing failed:[%d] %s, skipiping job <%s> at %lld us\n",
+					errno, strerror(errno),t->label, uj);
+			}
 		}
 	}
 
-	/* update time drifting due handlers execution */
-	*drift += *ijiffies - ij;
+	/* update time drifting due handlers execution
+	*drift += *ijiffies - ij;*/
 }
 
 
@@ -640,5 +692,48 @@ int count_timer_procs(void)
 	}
 
 	return n;
+}
+
+
+void handle_timer_job(void)
+{
+	struct sr_timer *t;
+	ssize_t l;
+
+	/* read one "sr_timer" pointer from the pipe (non-blocking) */
+	l = read( timer_fd_out, &t, sizeof(t) );
+	if (l==-1) {
+		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+			return;
+		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
+		return;
+	}
+
+	/* run the handler */
+	if (t->is_utimer) {
+
+		LM_DBG("running utimer job <%s> at %lld us\n",
+			t->label, t->current_time);
+
+		if (t->current_time!=*ujiffies)
+			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
+				t->label, *ujiffies-t->current_time);
+		t->u.utimer_f( t->current_time , t->t_param);
+		t->current_time = 0;
+
+	} else {
+
+		LM_DBG("running timer job <%s> at %lld s\n",
+			t->label, t->current_time);
+
+		if ((unsigned int)t->current_time!=*jiffies)
+			LM_WARN("timer job <%s> has a %d s delay in execution\n",
+				t->label, *jiffies-(unsigned int)t->current_time);
+		t->u.timer_f( (unsigned int)t->current_time , t->t_param);
+		t->current_time = 0;
+
+	}
+
+	return;
 }
 

@@ -58,6 +58,7 @@
 #include "ip_addr.h"
 #include "pt.h"
 #include "reactor.h"
+#include "timer.h"
 
 static callback_list* cb_list = NULL;
 
@@ -431,6 +432,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 					((struct worker_io_data*)fm->data)->from_sa,
 					&((struct worker_io_data*)fm->data)->ri,
 					idx );
+		case F_TIMER_JOB:
+			handle_timer_job();
+			return 0;
 		default:
 			LM_CRIT("uknown fd type %d in UDP worker\n", fm->type);
 			return -1;
@@ -475,9 +479,15 @@ int udp_rcv_loop(void)
 	/* for consistency reasons, even if duplicated */
 	io_data.si = bind_address;
 
+	/* init: start watching for the timer jobs */
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, NULL)) {
+		LM_CRIT("failed to add UDP listen socket to reactor\n");
+		goto error;
+	}
+
 	/* init: start watching the SIP UDP fd */
 	if (reactor_add_reader( bind_address->socket, F_UDP_READ, &io_data)) {
-		LM_CRIT("failed to add UDP listen socket to reactor\n");
+		LM_CRIT("failed to add timer pipe_out to reactor\n");
 		goto error;
 	}
 
