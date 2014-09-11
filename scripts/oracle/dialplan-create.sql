@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialplan','4');
+INSERT INTO version (table_name, table_version) values ('dialplan','5');
 CREATE TABLE dialplan (
     id NUMBER(10) PRIMARY KEY,
     dpid NUMBER(10),
