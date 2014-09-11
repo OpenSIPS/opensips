@@ -35,10 +35,9 @@ Bogdan-Andrei Iancu
               1.3.10. proxy_route (string)
               1.3.11. case_sensitive (int)
               1.3.12. realm_prefix (string)
-              1.3.13. timer_avp (string)
-              1.3.14. lookup_domain (string)
-              1.3.15. lookup_append_branches (int)
-              1.3.16. use_domain (integer)
+              1.3.13. lookup_domain (string)
+              1.3.14. lookup_append_branches (int)
+              1.3.15. use_domain (integer)
 
         1.4. Exported Functions
 
@@ -70,13 +69,12 @@ Bogdan-Andrei Iancu
    1.10. Set proxy_route parameter
    1.11. Set case_sensitive parameter
    1.12. Set realm_prefix parameter
-   1.13. Set timer_avp parameter
-   1.14. Set lookup_domain parameter
-   1.15. Set lookup_append_branches parameter
-   1.16. Set use_domain parameter
-   1.17. cpl_run_script usage
-   1.18. cpl_process_register usage
-   1.19. cpl_process_register_norpl usage
+   1.13. Set lookup_domain parameter
+   1.14. Set lookup_append_branches parameter
+   1.15. Set use_domain parameter
+   1.16. cpl_run_script usage
+   1.17. cpl_process_register usage
+   1.18. cpl_process_register_norpl usage
 
 Chapter 1. Admin Guide
 
@@ -268,23 +266,7 @@ modparam("cpl-c","case_sensitive",1)
 modparam("cpl-c","realm_prefix","sip.")
 ...
 
-1.3.13. timer_avp (string)
-
-   Full specification (ID, NAME, ALIAS) of the AVP to be used to
-   set the value of the Final Response INVITE timeout - it's used
-   by the TIMEOUT attribute from the PROXY tag.
-
-   NOTE: take care and syncronize this value with the similar
-   parameters in TM module.
-
-   Default value of this parameter is NULL.
-
-   Example 1.13. Set timer_avp parameter
-...
-modparam("cpl-c","timer_avp","$avp(14)")
-...
-
-1.3.14. lookup_domain (string)
+1.3.13. lookup_domain (string)
 
    Used by lookup tag to indicate where to perform user location.
    Basically this is the name of the usrloc domain (table) where
@@ -295,12 +277,12 @@ modparam("cpl-c","timer_avp","$avp(14)")
 
    Default value of this parameter is NULL.
 
-   Example 1.14. Set lookup_domain parameter
+   Example 1.13. Set lookup_domain parameter
 ...
 modparam("cpl-c","lookup_domain","location")
 ...
 
-1.3.15. lookup_append_branches (int)
+1.3.14. lookup_append_branches (int)
 
    Tells if the lookup tag should append branches (to do parallel
    forking) if user_location lookup returns more than one contact.
@@ -309,19 +291,19 @@ modparam("cpl-c","lookup_domain","location")
 
    Default value of this parameter is 0.
 
-   Example 1.15. Set lookup_append_branches parameter
+   Example 1.14. Set lookup_append_branches parameter
 ...
 modparam("cpl-c","lookup_append_branches",1)
 ...
 
-1.3.16. use_domain (integer)
+1.3.15. use_domain (integer)
 
    Indicates if the domain part of the URI should be used in user
    identification (otherwise only username part will be used).
 
    Default value is “0 (disabled)”.
 
-   Example 1.16. Set use_domain parameter
+   Example 1.15. Set use_domain parameter
 ...
 modparam("cpl-c","use_domain",1)
 ...
@@ -387,7 +369,7 @@ modparam("cpl-c","use_domain",1)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.17. cpl_run_script usage
+   Example 1.16. cpl_run_script usage
 ...
 cpl_run_script("incoming","force_stateful");
 ...
@@ -415,7 +397,7 @@ cpl_run_script("incoming","force_stateful");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.18. cpl_process_register usage
+   Example 1.17. cpl_process_register usage
 ...
 if (method=="REGISTER") {
     cpl_process_register();
@@ -433,7 +415,7 @@ if (method=="REGISTER") {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.19. cpl_process_register_norpl usage
+   Example 1.18. cpl_process_register_norpl usage
 ...
 if (method=="REGISTER") {
     cpl_process_register();
