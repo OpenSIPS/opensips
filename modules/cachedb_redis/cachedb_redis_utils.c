@@ -187,6 +187,7 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 	int masters = 1, count	= 0;
 	char *ip, *block = NULL;
 	unsigned short port,start_slot,end_slot;
+	int len;
 
 	// Define **pointers for new structures 
 	struct datavalues **newret1 = pkg_malloc(sizeof(struct datavalues *));
@@ -269,14 +270,16 @@ int build_cluster_nodes(redis_con *con,char *info,int size)
 
 				if ( ip == NULL || !(port > 0) || (start_slot > end_slot) || !(end_slot > 0) ) {block = ":processing row"; goto error;}
 
-				new = pkg_malloc(sizeof(cluster_node));
+				len = strlen(ip);
+				new = pkg_malloc(sizeof(cluster_node) + len + 1);
 				if (!new) {
 					LM_ERR("no more pkg\n");
 					goto error;
 				}
 
-				memset(new,0,sizeof(cluster_node));
+				memset(new,0,sizeof(cluster_node) + len + 1);
 
+				new->ip = (char *)(new + 1);
 				strcpy(new->ip,ip);
 				new->port = port;
 				new->start_slot = start_slot;

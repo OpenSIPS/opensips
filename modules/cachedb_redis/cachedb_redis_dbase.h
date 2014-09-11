@@ -30,7 +30,7 @@
 #include "../../cachedb/cachedb.h"
 
 typedef struct cluster_nodes {
-	char ip[16];					/* ip of this cluster node */
+	char *ip;							/* ip of this cluster node */
 	short port;						/* port of this cluster node */
 	unsigned short start_slot;		/* first slot for this server */
 	unsigned short end_slot;		/* last slot for this server */
