@@ -31,7 +31,6 @@
 #ifndef DB_MOD_H
 #define DB_MOD_H
 
-extern unsigned int db_mysql_ping_interval;
 extern unsigned int db_mysql_timeout_interval;
 extern unsigned int db_mysql_exec_query_threshold;
 
