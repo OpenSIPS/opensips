@@ -31,7 +31,6 @@
 #ifndef DB_MOD_H
 #define DB_MOD_H
 
-extern int ping_interval;
 extern int auto_reconnect;
 extern int use_escape_common;
 

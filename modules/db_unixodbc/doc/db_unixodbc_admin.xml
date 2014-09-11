@@ -56,26 +56,6 @@
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>ping_interval</varname> (int)</title>
-		<para>
-		Sets the ping time interval.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>300</quote> seconds.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set the <quote>ping_interval</quote> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("db_unixodbc", "ping_interval", 600)
-...
-</programlisting>
-		</example>
-	</section>
-
-    <section>
 		<title><varname>auto_reconnect</varname> (int)</title>
 		<para>
 		Turns on or off the auto_reconnect mode.

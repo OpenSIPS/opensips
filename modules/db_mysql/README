@@ -27,9 +27,8 @@ Daniel-Constantin Mierla
 
         1.3. Exported Parameters
 
-              1.3.1. ping_interval (integer)
-              1.3.2. exec_query_threshold (integer)
-              1.3.3. timeout_interval (integer)
+              1.3.1. exec_query_threshold (integer)
+              1.3.2. timeout_interval (integer)
 
         1.4. Exported Functions
         1.5. Installation
@@ -39,9 +38,8 @@ Daniel-Constantin Mierla
 
    List of Examples
 
-   1.1. Set ping_interval parameter
-   1.2. Set exec_query_threshold parameter
-   1.3. Set timeout_interval parameter
+   1.1. Set exec_query_threshold parameter
+   1.2. Set timeout_interval parameter
 
 Chapter 1. Admin Guide
 
@@ -66,19 +64,7 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. ping_interval (integer)
-
-   Time interval to send ping messages to MySQL server in order to
-   keep the connection open.
-
-   Default value is 300 (5 min).
-
-   Example 1.1. Set ping_interval parameter
-...
-modparam("db_mysql", "ping_interval", 600)
-...
-
-1.3.2. exec_query_threshold (integer)
+1.3.1. exec_query_threshold (integer)
 
    If queries take longer than 'exec_query_threshold'
    microseconds, warning messages will be written to logging
@@ -86,12 +72,12 @@ modparam("db_mysql", "ping_interval", 600)
 
    Default value is 0 - disabled.
 
-   Example 1.2. Set exec_query_threshold parameter
+   Example 1.1. Set exec_query_threshold parameter
 ...
 modparam("db_mysql", "exec_query_threshold", 60000)
 ...
 
-1.3.3. timeout_interval (integer)
+1.3.2. timeout_interval (integer)
 
    Time interval after that an connection attempt, read or write
    request is aborted. The value counts three times, as several
@@ -104,7 +90,7 @@ modparam("db_mysql", "exec_query_threshold", 60000)
 
    Default value is 2 (6 sec).
 
-   Example 1.3. Set timeout_interval parameter
+   Example 1.2. Set timeout_interval parameter
 ...
 modparam("db_mysql", "timeout_interval", 2)
 ...

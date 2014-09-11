@@ -45,26 +45,6 @@
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>ping_interval</varname> (integer)</title>
-		<para>
-		Time interval to send ping messages to MySQL server in order to keep
-		the connection open.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 300 (5 min).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>ping_interval</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("db_mysql", "ping_interval", 600)
-...
-</programlisting>
-		</example>
-	</section>
-	<section>
 		<title><varname>exec_query_threshold</varname> (integer)</title>
 		<para>
 		If queries take longer than 'exec_query_threshold' microseconds, warning
