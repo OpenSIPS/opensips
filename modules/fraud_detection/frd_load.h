@@ -6,5 +6,6 @@ int frd_connect_db(void);
 void frd_disconnect_db(void);
 
 int frd_reload_data(void);
+void frd_destroy_data(void);
 
 #endif

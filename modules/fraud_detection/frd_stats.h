@@ -7,12 +7,17 @@
 
 #define FRD_USER_HASH_SIZE 1000
 #define FRD_PREFIX_HASH_SIZE 10
+#define FRD_SECS_PER_WINDOW 60
 
 typedef struct {
 	unsigned int cpm;
 	unsigned int total_calls;
 	unsigned int concurrent_calls;
 	unsigned int seq_calls;
+
+	unsigned int last_matched_rule;
+	time_t last_matched_time;
+	unsigned short calls_window[FRD_SECS_PER_WINDOW];
 } frd_stats_t;
 
 typedef struct _frd_hash_item {
@@ -21,7 +26,7 @@ typedef struct _frd_hash_item {
 } frd_stats_entry_t;
 
 int init_stats_table(void);
-frd_stats_entry_t* get_stats(str user, str prefix);
+frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user);
 void free_stats_table(void);
 
 

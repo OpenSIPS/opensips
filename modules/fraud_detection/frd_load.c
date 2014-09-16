@@ -47,6 +47,7 @@ str seqcalls_thresh_warn_col = str_init(FRD_SEQCALLS_THRESH_WARN_COL);
 str seqcalls_thresh_crit_col = str_init(FRD_SEQCALLS_THRESH_CRIT_COL);
 
 
+unsigned int frd_data_rev;
 
 static db_con_t *db_handle;
 static db_func_t dbf;
@@ -64,7 +65,7 @@ typedef struct _free_list_t{
 	struct _free_list_t *next;
 } free_list_t;
 
-free_list_t *free_list;
+static free_list_t *free_list;
 
 
 /*
@@ -386,7 +387,7 @@ error:
 }
 
 /* This function assumes no one is using the dr_head anymore */
-void frd_destroy_data_unsafe(dr_head_p dr_head, free_list_t *fl)
+static void frd_destroy_data_unsafe(dr_head_p dr_head, free_list_t *fl)
 {
 	if (dr_head == NULL && fl == NULL)
 		return;
@@ -407,6 +408,15 @@ void frd_destroy_data_unsafe(dr_head_p dr_head, free_list_t *fl)
 	}
 }
 
+/* Function to be called in mod_destroy
+ * Still unsafe!!!
+*/
+
+void frd_destroy_data(void)
+{
+	frd_destroy_data_unsafe(dr_head, free_list);
+}
+
 int frd_reload_data(void)
 {
 	dr_head_p new_head, old_head;
@@ -425,6 +435,7 @@ int frd_reload_data(void)
 
 	old_head = dr_head;
 	old_list = free_list;
+	++frd_data_rev;
 	lock_start_write(frd_data_lock);
 	dr_head = new_head;
 	free_list = new_list;

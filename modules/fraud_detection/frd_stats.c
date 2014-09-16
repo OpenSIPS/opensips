@@ -1,9 +1,22 @@
 #include <string.h>
 #include "frd_stats.h"
 #include "frd_hashmap.h"
+#include "../../ut.h"
 
 
-hash_map_t stats_table;
+/* Struct used for the first level of the hashmap
+ * the user is kept in shm for two reasons :
+ *     a) to keep using core's map
+ *     b) to pass it for the dialog_end callback
+*/
+
+typedef struct {
+
+	hash_map_t *numbers_hm;
+	str user;
+} frd_users_map_item_t;
+
+static hash_map_t stats_table;
 
 /*
  * Function to init the stats hash table
@@ -16,28 +29,37 @@ int init_stats_table(void)
 }
 
 
-frd_stats_entry_t* get_stats(str user, str prefix)
+frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 {
 	/* First go one level below using the user key */
-	hash_map_t **hm = (hash_map_t **)get_item(&stats_table, user);
+	frd_users_map_item_t **hm =
+		(frd_users_map_item_t **)get_item(&stats_table, user);
 
 	if (*hm == NULL) {
 		/* First time the user is seen, we must create a hashmap */
-		*hm = shm_malloc(sizeof(hash_map_t));
+		*hm = shm_malloc(sizeof(frd_users_map_item_t));
 		if (*hm == NULL) {
 			LM_ERR("no more shm memory\n");
 			return NULL;
 		}
 
-		(*hm)->size = FRD_PREFIX_HASH_SIZE;
-		if (init_hash_map(*hm) != 0) {
+		(*hm)->numbers_hm->size = FRD_PREFIX_HASH_SIZE;
+		if (init_hash_map((*hm)->numbers_hm) != 0) {
 			LM_ERR("cannot init hashmap\n");
+			shm_free(*hm);
+			return NULL;
+		}
+
+		if (shm_str_dup(&(*hm)->user, &user) != 0) {
 			shm_free(*hm);
 			return NULL;
 		}
 	}
 
-	frd_stats_entry_t **stats_entry = (frd_stats_entry_t**)get_item(*hm, prefix);
+	*shm_user = (*hm)->user;
+
+	frd_stats_entry_t **stats_entry =
+		(frd_stats_entry_t**)get_item((*hm)->numbers_hm, prefix);
 	if (*stats_entry == NULL) {
 		/* First time the prefix is seen for this user */
 		*stats_entry = shm_malloc(sizeof(frd_stats_entry_t));
@@ -65,11 +87,13 @@ frd_stats_entry_t* get_stats(str user, str prefix)
 static void destroy_stats_entry(void *e)
 {
 	lock_destroy( &((frd_stats_entry_t*)e)->lock );
+	shm_free(e);
 }
 
 static void destroy_users(void *u)
 {
-	free_hash_map((hash_map_t*)u, destroy_stats_entry);
+	free_hash_map(((frd_users_map_item_t*)u)->numbers_hm, destroy_stats_entry);
+	shm_free(u);
 }
 
 void free_stats_table(void)
