@@ -1100,7 +1100,10 @@ modparam("usrloc", "hash_size", 10)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>address</emphasis> - The address of the inserted contact.
+				<emphasis>aor</emphasis> - The AOR of the inserted contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - The binding address of the inserted contact.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
@@ -1129,7 +1132,10 @@ modparam("usrloc", "hash_size", 10)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>address</emphasis> - The address of the inserted contact.
+				<emphasis>aor</emphasis> - The AOR of the deleted contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - The binding address of the deleted contact.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
@@ -1156,7 +1162,10 @@ modparam("usrloc", "hash_size", 10)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>address</emphasis> - The address of the inserted contact.
+				<emphasis>aor</emphasis> - The AOR of the updated contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>address</emphasis> - The binding address of the updated contact.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>callid</emphasis> - The Call-ID header of the registration message.
