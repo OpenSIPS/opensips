@@ -84,7 +84,7 @@ struct th_ct_params {
 	struct th_ct_params *next;
 }; 
 
-#define init_new_ct_node(start,len) \
+#define init_new_ct_node(start,len,list) \
 	do { \
 		el = pkg_malloc(sizeof(struct th_ct_params));\
 		if (!el) { \
@@ -93,12 +93,13 @@ struct th_ct_params {
 		} \
 		el->param_name.len = len; \
 		el->param_name.s = start; \
-		el->next = th_param_list; \
-		th_param_list = el; \
+		el->next = *list; \
+		*list = el; \
 	} while (0)
 
 struct th_ct_params *th_param_list=NULL;
-int dlg_parse_passed_ct_params(str *params)
+struct th_ct_params *th_hdr_param_list=NULL;
+int dlg_parse_passed_params(str *params,struct th_ct_params **lst)
 {
 	char *p,*s,*end;
 	struct th_ct_params* el;
@@ -111,17 +112,27 @@ int dlg_parse_passed_ct_params(str *params)
 		if (!s) {
 			len = end-p;
 			if (len > 0)
-				init_new_ct_node(p,len);
+				init_new_ct_node(p,len,lst);
 			break;
 		}
 
 		len = s-p;
 		if (len > 0)
-			init_new_ct_node(p,len);
+			init_new_ct_node(p,len,lst);
 		p=s+1;
 	}
 
 	return 0;
+}
+
+int dlg_parse_passed_ct_params(str *params)
+{
+	return dlg_parse_passed_params(params,&th_param_list);
+}
+
+int dlg_parse_passed_hdr_ct_params(str *params)
+{
+	return dlg_parse_passed_params(params,&th_hdr_param_list);
 }
 
 int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
@@ -135,6 +146,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	str contact;
 	struct th_ct_params* el;
 	int i;
+	param_t *it;
 
 	if(!msg->contact)
 	{
@@ -205,6 +217,27 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 		}
 	} 
 
+	if (th_hdr_param_list) {
+		if ( parse_contact(msg->contact)<0 ||
+			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
+			((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
+			LM_ERR("bad Contact HDR\n");
+		} else {
+			for (el=th_hdr_param_list;el;el=el->next) {
+				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
+					if (it->name.len == el->param_name.len &&
+					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
+						if (it->body.len) 
+							suffix_len += 1 /* ; */ + it->name.len +
+							it->body.len + 1; /* = and value */
+						else
+							suffix_len += 1 /* ; */ + it->name.len;
+					} 
+				}
+			}
+		}
+	}
+
 	suffix = pkg_malloc(suffix_len);
 	if (!suffix) {
 		LM_ERR("no more pkg\n");
@@ -254,6 +287,29 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 	}
 
 	*p++ = '>';
+	if (th_hdr_param_list) {
+		if ( parse_contact(msg->contact)<0 ||
+			((contact_body_t *)msg->contact->parsed)->contacts==NULL ||
+			((contact_body_t *)msg->contact->parsed)->contacts->next!=NULL ) {
+			LM_ERR("bad Contact HDR\n");
+		} else {
+			for (el=th_hdr_param_list;el;el=el->next) {
+				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
+					if (it->name.len == el->param_name.len &&
+					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
+						*p++ = ';';
+						memcpy(p,it->name.s,it->name.len);
+						p += it->name.len;
+						if (it->body.len) { 
+							*p++ = '=';
+							memcpy(p,it->body.s,it->body.len);
+							p += it->body.len;
+						}
+					} 
+				}
+			}
+		}
+	}
 	suffix_len = p - p_init;
 
 	offset = msg->contact->body.s - msg->buf;

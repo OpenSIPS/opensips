@@ -76,7 +76,8 @@ Vladut-Stefan Paiu
               1.6.44. replicate_dialogs_to (string)
               1.6.45. th_callid_passwd (string)
               1.6.46. th_callid_prefix (string)
-              1.6.47. th_passed_contact_params (string)
+              1.6.47. th_passed_contact_uri_params (string)
+              1.6.48. th_passed_contact_params (string)
 
         1.7. Exported Functions
 
@@ -193,24 +194,25 @@ Vladut-Stefan Paiu
    1.44. Set replicate_dialogs_to parameter
    1.45. Set th_callid_passwd parameter
    1.46. Set th_callid_prefix parameter
-   1.47. Set th_passed_contact_params parameter
-   1.48. create_dialog() usage
-   1.49. match_dialog() usage
-   1.50. validate_dialog() usage
-   1.51. fix_route_dialog() usage
-   1.52. get_dialog_info usage
-   1.53. set_dlg_profile usage
-   1.54. unset_dlg_profile usage
-   1.55. is_in_profile usage
-   1.56. get_profile_size usage
-   1.57. set_dlg_flag usage
-   1.58. test_and_set_dlg_flag usage
-   1.59. reset_dlg_flag usage
-   1.60. is_dlg_flag_set usage
-   1.61. store_dlg_value usage
-   1.62. fetch_dlg_value usage
-   1.63. topology_hiding usage
-   1.64. calling match_dialog() function for topology hiding
+   1.47. Set th_passed_contact_uri_params parameter
+   1.48. Set th_passed_contact_params parameter
+   1.49. create_dialog() usage
+   1.50. match_dialog() usage
+   1.51. validate_dialog() usage
+   1.52. fix_route_dialog() usage
+   1.53. get_dialog_info usage
+   1.54. set_dlg_profile usage
+   1.55. unset_dlg_profile usage
+   1.56. is_in_profile usage
+   1.57. get_profile_size usage
+   1.58. set_dlg_flag usage
+   1.59. test_and_set_dlg_flag usage
+   1.60. reset_dlg_flag usage
+   1.61. is_dlg_flag_set usage
+   1.62. store_dlg_value usage
+   1.63. fetch_dlg_value usage
+   1.64. topology_hiding usage
+   1.65. calling match_dialog() function for topology hiding
           sequential requests
 
 Chapter 1. Admin Guide
@@ -907,16 +909,31 @@ modparam("dialog", "th_callid_passwd", "my_topo_hiding_secret")
 modparam("dialog", "th_callid_prefix", "MYCALLIDPREFIX_")
 ...
 
-1.6.47. th_passed_contact_params (string)
+1.6.47. th_passed_contact_uri_params (string)
 
    List of semicolon-separated Contact URI parameters that will be
    passed from one side to the other for topology hiding calls. To
-   be used when end-to-end functionality uses such Contact
+   be used when end-to-end functionality uses such Contact URI
    parameters.
 
    Default value is “empty” - do not pass any parameters
 
-   Example 1.47. Set th_passed_contact_params parameter
+   Example 1.47. Set th_passed_contact_uri_params parameter
+...
+modparam("dialog", "th_passed_contact_uri_params", "paramname1;myparam;c
+ustom_param")
+...
+
+1.6.48. th_passed_contact_params (string)
+
+   List of semicolon-separated Contact header parameters that will
+   be passed from one side to the other for topology hiding calls.
+   To be used when end-to-end functionality uses such Contact
+   header parameters.
+
+   Default value is “empty” - do not pass any parameters
+
+   Example 1.48. Set th_passed_contact_params parameter
 ...
 modparam("dialog", "th_passed_contact_params", "paramname1;myparam;custo
 m_param")
@@ -942,7 +959,7 @@ m_param")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.48. create_dialog() usage
+   Example 1.49. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -977,7 +994,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.49. match_dialog() usage
+   Example 1.50. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1007,7 +1024,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.50. validate_dialog() usage
+   Example 1.51. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1029,7 +1046,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.51. fix_route_dialog() usage
+   Example 1.52. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1067,7 +1084,7 @@ create_dialog("B");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
-   Example 1.52. get_dialog_info usage
+   Example 1.53. get_dialog_info usage
 ...
 if ( get_dialog_info("callee","$var(x)","caller","$fu") ) {
         xlog("caller $fU has another ongoing, talking to callee $var(x)\
@@ -1100,7 +1117,7 @@ $dlg_val(callee) = $ru;
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.53. set_dlg_profile usage
+   Example 1.54. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller","$fu");
@@ -1122,7 +1139,7 @@ set_dlg_profile("caller","$fu");
    This function can be used from BRANCH_ROUTE, REPLY_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.54. unset_dlg_profile usage
+   Example 1.55. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller","$fu");
@@ -1149,7 +1166,7 @@ unset_dlg_profile("caller","$fu");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.55. is_in_profile usage
+   Example 1.56. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1180,7 +1197,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.56. get_profile_size usage
+   Example 1.57. get_profile_size usage
 ...
 get_profile_size("inbound_call","$avp(size)");
 xlog("currently there are $avp(size) inbound calls\n");
@@ -1203,7 +1220,7 @@ xlog("currently, the user %fu has $avp(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.57. set_dlg_flag usage
+   Example 1.58. set_dlg_flag usage
 ...
 set_dlg_flag("3");
 ...
@@ -1224,7 +1241,7 @@ set_dlg_flag("3");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.58. test_and_set_dlg_flag usage
+   Example 1.59. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag("3", "0");
 ...
@@ -1243,7 +1260,7 @@ test_and_set_dlg_flag("3", "0");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.59. reset_dlg_flag usage
+   Example 1.60. reset_dlg_flag usage
 ...
 reset_dlg_flag("16");
 ...
@@ -1262,7 +1279,7 @@ reset_dlg_flag("16");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.60. is_dlg_flag_set usage
+   Example 1.61. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set("16")) {
         xlog("dialog flag 16 is set\n");
@@ -1287,7 +1304,7 @@ if (is_dlg_flag_set("16")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. store_dlg_value usage
+   Example 1.62. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip","$si");
 store_dlg_value("account type","prepaid");
@@ -1313,7 +1330,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. fetch_dlg_value usage
+   Example 1.63. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip","$avp(2)");
 fetch_dlg_value("account type","$var(account)");
@@ -1366,7 +1383,7 @@ $var(account) = $dlg_val(account_type);
        value for the caller side. If the callid for the callee
        side is needed, refer to the $DLG_callee_callid pvar.
 
-   Example 1.63. topology_hiding usage
+   Example 1.64. topology_hiding usage
 ...
 if(!has_totag() && is_method("INVITE")) {
         topology_hiding();
@@ -1378,7 +1395,7 @@ if(!has_totag() && is_method("INVITE")) {
 }
 ...
 
-   Example 1.64. calling match_dialog() function for topology
+   Example 1.65. calling match_dialog() function for topology
    hiding sequential requests
 ...
 if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE

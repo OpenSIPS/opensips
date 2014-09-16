@@ -40,5 +40,6 @@ int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
 int dlg_th_pre_raw(str *data);
 int dlg_th_post_raw(str *data);
 int dlg_parse_passed_ct_params(str *params);
+int dlg_parse_passed_hdr_ct_params(str *params);
 
 #endif

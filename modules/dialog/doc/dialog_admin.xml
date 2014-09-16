@@ -1174,9 +1174,29 @@ modparam("dialog", "th_callid_prefix", "MYCALLIDPREFIX_")
 	</section>
 
 	<section>
+		<title><varname>th_passed_contact_uri_params</varname> (string)</title>
+		<para>
+			List of semicolon-separated Contact URI parameters that will be passed from one side to the other for topology hiding calls. To be used when end-to-end functionality uses such Contact URI parameters. 
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>empty</quote> - do not pass any parameters
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_passed_contact_uri_params</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "th_passed_contact_uri_params", "paramname1;myparam;custom_param")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
 		<title><varname>th_passed_contact_params</varname> (string)</title>
 		<para>
-			List of semicolon-separated Contact URI parameters that will be passed from one side to the other for topology hiding calls. To be used when end-to-end functionality uses such Contact parameters. 
+			List of semicolon-separated Contact header parameters that will be passed from one side to the other for topology hiding calls. To be used when end-to-end functionality uses such Contact header parameters. 
 		</para>
 		<para>
 		<emphasis>
