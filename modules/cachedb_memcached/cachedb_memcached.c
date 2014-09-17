@@ -344,7 +344,7 @@ int wrap_memcached_get_counter(cachedb_con *connection,str* attr, int* res)
 	return 0;
 }
 
-#define MAX_HOSTPORT_SIZE 22
+#define MAX_HOSTPORT_SIZE 80
 static char host_buff[MAX_HOSTPORT_SIZE];
 
 memcached_con* memcached_new_connection(struct cachedb_id *id)
