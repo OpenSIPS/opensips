@@ -47,7 +47,7 @@ struct worker_io_data {
 	struct socket_info *si;
 };
 
-enum fd_types { F_NONE=0, F_UDP_READ=1, F_TIMER_JOB=2};
+enum fd_types { F_NONE=0, F_TIMER_JOB=1, F_UDP_READ=2, F_TCPMAIN=4, F_TCPCONN=8 };
 
 extern io_wait_h _worker_io;
 
@@ -56,6 +56,13 @@ extern io_wait_h _worker_io;
 
 #define reactor_add_reader( _fd, _type, _data) \
 	io_watch_add(&_worker_io, _fd, _type, _data, IO_WATCH_READ)
+
+#define reactor_del_reader( _fd, _idx, _io_flags) \
+	io_watch_del(&_worker_io, _fd, _idx, _io_flags, IO_WATCH_READ)
+
+#define reactor_del_all( _fd, _idx, _io_flags) \
+	io_watch_del(&_worker_io, _fd, _idx, _io_flags, IO_WATCH_READ|IO_WATCH_WRITE)
+
 
 #define destroy_worker_reactor() \
 	destroy_io_wait(&_worker_io)
