@@ -1471,12 +1471,6 @@ try_again:
 
 	fix_poll_method( &io_poll_method );
 
-	/*init timer, before parsing the cfg!*/
-	if (init_timer()<0){
-		LM_CRIT("could not initialize timer, exiting...\n");
-		goto error;
-	}
-
 #ifdef USE_TCP
 	if (!tcp_disable){
 		/*init tcp*/
@@ -1525,6 +1519,12 @@ try_again:
 	LM_INFO("using %ld Mb shared memory\n", ((shm_mem_size/1024)/1024));
 #endif
 	LM_INFO("using %ld Mb private memory per process\n", ((pkg_mem_size/1024)/1024));
+
+	/* init timer */
+	if (init_timer()<0){
+		LM_CRIT("could not initialize timer, exiting...\n");
+		goto error;
+	}
 
 	/* init serial forking engine */
 	if (init_serialization()!=0) {

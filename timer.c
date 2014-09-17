@@ -416,8 +416,8 @@ static inline void timer_ticker(struct sr_timer *timer_list, utime_t *drift)
 			t->expires = j + t->interval;
 			t->current_time = j;
 			/* push the jobs for execution */
-			LM_DBG("activating timer task <%s> at %d s\n",
-				t->label,j);
+			//LM_DBG("activating timer task <%s> at %d s\n",
+			//	t->label,j);
 again:
 			l = write( timer_pipe[1], &t, sizeof(t));
 			if (l==-1) {
@@ -457,8 +457,8 @@ static inline void utimer_ticker(struct sr_timer *utimer_list, utime_t *drift)
 			t->expires = uj + t->interval;
 			t->current_time = uj;
 			/* push the jobs for execution */
-			LM_DBG("activating utimer task <%s>%p at %lld us\n",
-				t->label,t,uj);
+			//LM_DBG("activating utimer task <%s>%p at %lld us\n",
+			//	t->label,t,uj);
 again:
 			l = write( timer_pipe[1], &t, sizeof(t));
 			if (l==-1) {
@@ -712,8 +712,8 @@ void handle_timer_job(void)
 	/* run the handler */
 	if (t->is_utimer) {
 
-		LM_DBG("running utimer job <%s> at %lld us\n",
-			t->label, t->current_time);
+		//LM_DBG("running utimer job <%s> at %lld us\n",
+		//	t->label, t->current_time);
 
 		if (t->current_time!=*ujiffies)
 			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
@@ -723,8 +723,8 @@ void handle_timer_job(void)
 
 	} else {
 
-		LM_DBG("running timer job <%s> at %lld s\n",
-			t->label, t->current_time);
+		//LM_DBG("running timer job <%s> at %lld s\n",
+		//	t->label, t->current_time);
 
 		if ((unsigned int)t->current_time!=*jiffies)
 			LM_WARN("timer job <%s> has a %d s delay in execution\n",
