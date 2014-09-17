@@ -101,14 +101,49 @@ static dr_head_p create_dr_head(void)
 	return new;
 }
 
+static void del_rt_list_api(rt_info_wrp_t *rwl)
+{
+	rt_info_wrp_t* t=rwl;
+	while(rwl!=NULL) {
+		t=rwl;
+		rwl=rwl->next;
+		if ( (--t->rtl->ref_cnt)==0)
+			shm_free(t->rtl);
+		shm_free(t);
+	}
+}
+
+static void del_tree_api(ptree_t* t)
+{
+	int i,j;
+	if(NULL == t)
+		return;
+	/* delete all the children */
+	for(i=0; i< PTREE_CHILDREN; i++) {
+		/* shm_free the rg array of rt_info */
+		if(NULL!=t->ptnode[i].rg) {
+			for(j=0;j<t->ptnode[i].rg_pos;j++) {
+				/* if non intermediate delete the routing info */
+				if(t->ptnode[i].rg[j].rtlw !=NULL)
+					del_rt_list_api(t->ptnode[i].rg[j].rtlw);
+			shm_free(t->ptnode[i].rg);
+			}
+		}
+		/* if non leaf delete all the children */
+		if(t->ptnode[i].next != NULL)
+			del_tree_api(t->ptnode[i].next);
+	}
+	shm_free(t);
+}
+
 static void free_dr_head(dr_head_p partition)
 {
 	int j;
-	del_tree(partition->pt);
+	del_tree_api(partition->pt);
 	if(NULL!=partition->noprefix.rg) {
 		for(j=0;j<partition->noprefix.rg_pos;j++) {
 			if(partition->noprefix.rg[j].rtlw !=NULL) {
-				del_rt_list(partition->noprefix.rg[j].rtlw);
+				del_rt_list_api(partition->noprefix.rg[j].rtlw);
 				partition->noprefix.rg[j].rtlw = 0;
 			}
 		}
