@@ -135,6 +135,10 @@ void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
 					&frdparam->user, &frdparam->number, &frdparam->ruleid);
 	}
 
+	lock_get(&frdparam->stats->lock);
+	--frdparam->stats->stats.concurrent_calls;
+	lock_release(&frdparam->stats->lock);
+
 	shm_free(frdparam->number.s);
 	shm_free(frdparam);
 }

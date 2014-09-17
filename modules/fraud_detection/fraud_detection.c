@@ -30,7 +30,7 @@ extern str seqcalls_thresh_warn_col;
 extern str seqcalls_thresh_crit_col;
 
 
-dr_head_p dr_head;
+dr_head_p *dr_head;
 struct dr_binds drb;
 rw_lock_t *frd_data_lock;
 gen_lock_t *frd_seq_calls_lock;
@@ -50,7 +50,7 @@ static cmd_export_t cmds[]={
 	{"get_mapping",(cmd_function)get_mapping0,0,0,
 		0, REQUEST_ROUTE|ONREPLY_ROUTE},*/
 	{"check_fraud", (cmd_function)check_fraud, 3, fixup_check_fraud, 0,
-		REQUEST_ROUTE},
+		REQUEST_ROUTE | ONREPLY_ROUTE},
 	{0,0,0,0,0,0}
 };
 
@@ -85,6 +85,7 @@ static dep_export_t deps = {
 	{
 		{MOD_TYPE_SQLDB, NULL, DEP_ABORT},
 		{MOD_TYPE_DEFAULT, "drouting", DEP_ABORT},
+		{MOD_TYPE_DEFAULT, "dialog", DEP_ABORT},
 		{MOD_TYPE_NULL, NULL, 0},
 	},
 	{
@@ -162,6 +163,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	dr_head = shm_malloc(sizeof(dr_head_p));
+	if (dr_head == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+
 	set_lengths();
 	if (init_stats_table() != 0)
 		return -1;
@@ -175,12 +182,14 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	if (rank == 1 && frd_connect_db() && frd_reload_data() != 0) {
-		LM_ERR ("cannot load data from db\n");
-		return -1;
-	}
+	if (rank == 1) {
 
-	frd_disconnect_db();
+		if (frd_connect_db() != 0 || frd_reload_data() != 0) {
+			LM_ERR ("cannot load data from db\n");
+			return -1;
+		}
+		frd_disconnect_db();
+	}
 	return 0;
 }
 
@@ -229,15 +238,15 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	/* Get the actual params */
 
-	if (fixup_get_svalue(msg, (gparam_p) _user, &user) == 0) {
+	if (fixup_get_svalue(msg, (gparam_p) _user, &user) != 0) {
 		LM_ERR("Cannot get user value\n");
 		return rc_error;
 	}
-	if (fixup_get_svalue(msg, (gparam_p) _number, &number) == 0) {
+	if (fixup_get_svalue(msg, (gparam_p) _number, &number) != 0) {
 		LM_ERR("Cannot get number value\n");
 		return rc_error;
 	}
-	if (fixup_get_ivalue(msg, (gparam_p)_pid, (int*)&pid) == 0) {
+	if (fixup_get_ivalue(msg, (gparam_p)_pid, (int*)&pid) != 0) {
 		LM_ERR("Cannot get the profile-id value\n");
 		return rc_error;
 	}
@@ -246,7 +255,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	unsigned int matched_len;
 	lock_start_read(frd_data_lock);
-	rt_info_t *rule = drb.match_number(dr_head, pid, &number, &matched_len);
+	rt_info_t *rule = drb.match_number(*dr_head, pid, &number, &matched_len);
 
 	if (rule == NULL) {
 		/* No match */
@@ -328,15 +337,15 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	int rc = rc_no_rule;
 
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
-	if (se->stats.cpm > thr->cpm_thr.critical
-			|| se->stats.total_calls > thr->total_calls_thr.critical
-			|| se->stats.concurrent_calls > thr->concurrent_calls_thr.critical
-			|| se->stats.seq_calls > thr->seq_calls_thr.critical)
+	if (se->stats.cpm >= thr->cpm_thr.critical
+			|| se->stats.total_calls >= thr->total_calls_thr.critical
+			|| se->stats.concurrent_calls >= thr->concurrent_calls_thr.critical
+			|| se->stats.seq_calls >= thr->seq_calls_thr.critical)
 		rc = rc_critical_thr;
-	else if (se->stats.cpm > thr->cpm_thr.warning
-			|| se->stats.total_calls > thr->total_calls_thr.warning
-			|| se->stats.concurrent_calls > thr->concurrent_calls_thr.warning
-			|| se->stats.seq_calls > thr->seq_calls_thr.warning)
+	else if (se->stats.cpm >= thr->cpm_thr.warning
+			|| se->stats.total_calls >= thr->total_calls_thr.warning
+			|| se->stats.concurrent_calls >= thr->concurrent_calls_thr.warning
+			|| se->stats.seq_calls >= thr->seq_calls_thr.warning)
 		rc = rc_warning_thr;
 
 	lock_release(&se->lock);
@@ -361,10 +370,12 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 			param->data_rev = frd_data_rev;
 
 			/* Register the dlg_terminate cb */
-			if (shm_str_dup(&param->number, &number) == 0 &&
-					dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED,
+			if (shm_str_dup(&param->number, &number) != 0)
+				shm_free(param);
+			else if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED,
 						dialog_terminate_CB, NULL, NULL) != 0) {
 				LM_ERR("cannot register dialog callback\n");
+				shm_free(param->number.s);
 				shm_free(param);
 			}
 		}

@@ -14,6 +14,7 @@ void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
 /* Dialog callback */
 
 typedef struct {
+	frd_stats_entry_t *stats;
 	frd_thresholds_t *thr;
 	str user;
 	str number;

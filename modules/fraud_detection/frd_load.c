@@ -52,7 +52,7 @@ unsigned int frd_data_rev;
 static db_con_t *db_handle;
 static db_func_t dbf;
 
-extern dr_head_p dr_head;
+extern dr_head_p *dr_head;
 extern struct dr_binds drb;
 extern rw_lock_t *frd_data_lock;
 
@@ -414,7 +414,8 @@ static void frd_destroy_data_unsafe(dr_head_p dr_head, free_list_t *fl)
 
 void frd_destroy_data(void)
 {
-	frd_destroy_data_unsafe(dr_head, free_list);
+	LM_INFO("xxx-deleting <%p>\n", *dr_head);
+	frd_destroy_data_unsafe(*dr_head, free_list);
 }
 
 int frd_reload_data(void)
@@ -433,14 +434,14 @@ int frd_reload_data(void)
 		return -1;
 	}
 
-	old_head = dr_head;
+	old_head = *dr_head;
 	old_list = free_list;
 	++frd_data_rev;
+	LM_INFO("xxx-old=<%p>;new<%p>\n", old_head, new_head);
 	lock_start_write(frd_data_lock);
-	dr_head = new_head;
+	*dr_head = new_head;
 	free_list = new_list;
 	lock_stop_write(frd_data_lock);
-
 	frd_destroy_data_unsafe(old_head, old_list);
 	return 0;
 }
