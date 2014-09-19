@@ -51,8 +51,8 @@ enum fd_types { F_NONE=0, F_TIMER_JOB=1, F_UDP_READ=2, F_TCPMAIN=4, F_TCPCONN=8 
 
 extern io_wait_h _worker_io;
 
-#define init_worker_reactor( _max_fd, _async) \
-	init_io_wait(&_worker_io, _max_fd, io_poll_method, _async)
+#define init_worker_reactor( _name, _max_fd, _async) \
+	init_io_wait(&_worker_io, _name, _max_fd, io_poll_method, _async)
 
 #define reactor_add_reader( _fd, _type, _data) \
 	io_watch_add(&_worker_io, _fd, _type, _data, IO_WATCH_READ)

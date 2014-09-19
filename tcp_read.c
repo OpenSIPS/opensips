@@ -1103,8 +1103,9 @@ void tcp_receive_loop(int unix_sock)
 
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if ( init_worker_reactor( tcp_max_fd_no, tcp_async)<0 ) {
+	if ( init_worker_reactor( "TCP_worker", tcp_max_fd_no, tcp_async)<0 ) {
 		goto error;
+	}
 
 	/* start watching for the timer jobs */
 	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, NULL)<0) {
@@ -1113,7 +1114,7 @@ void tcp_receive_loop(int unix_sock)
 	}
 
 	/* add the unix socket */
-	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, NULL)<0)
+	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, NULL)<0) {
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}

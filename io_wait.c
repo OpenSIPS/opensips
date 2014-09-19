@@ -524,11 +524,13 @@ enum poll_types get_poll_type(char* s)
  * \param  max_fd - maximum allowed fd number
  * \param  poll_method - poll method (0 for automatic best fit)
  */
-int init_io_wait(io_wait_h* h, int max_fd, enum poll_types poll_method, int async)
+int init_io_wait(io_wait_h* h, char *name, int max_fd,
+									enum poll_types poll_method, int async)
 {
 	char * poll_err;
 
 	memset(h, 0, sizeof(*h));
+	h->name = name;
 	h->max_fd_no=max_fd;
 #ifdef HAVE_EPOLL
 	h->epfd=-1;

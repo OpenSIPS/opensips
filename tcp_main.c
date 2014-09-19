@@ -2075,7 +2075,7 @@ void tcp_main_loop(void)
 	 * the tcp_main process) */
 
 	/*! \todo FIXME: TODO: make tcp_max_fd_no a config param */
-	if  (init_io_wait(&io_h, tcp_max_fd_no, tcp_poll_method, tcp_async)<0)
+	if  (init_io_wait(&io_h, "TCP_main", tcp_max_fd_no, tcp_poll_method, tcp_async)<0)
 		goto error;
 	/* init: start watching all the fds*/
 

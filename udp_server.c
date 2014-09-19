@@ -457,7 +457,7 @@ int udp_rcv_loop(void)
 	static struct worker_io_data io_data;
 
 	/* create the reactor for UDP proc */
-	if ( init_worker_reactor( 100/*max_fd*/, 0/*async*/)<0 ) {
+	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/, 0/*async*/)<0 ) {
 		LM_ERR("failed to init reactor\n");
 		goto error;
 	}
