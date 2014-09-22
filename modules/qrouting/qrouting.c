@@ -36,13 +36,16 @@
 #include "../../timer.h"
 
 #include "qr_stats.h"
+#include "qr_sort.h"
 #include "qr_acc.h"
+#include "qrouting.h"
 
 #define T_PROC_LABEL "[qrouting]:sampling interval"
+#define MAX_HISTORY 1000 /* TODO:*/
 
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
-extern qr_rule_t * qr_rules_start;
+extern qr_rule_t * qr_rules_start, *qr_rules_end;
 
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
 str avp_invite_time_name_ast = str_init("$avp(qr_invite_time_ast)");
@@ -63,6 +66,13 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+
+#define HLP1 "Params: [rule_name] [gw_name]; List the QR statistics for gateways"
+static mi_export_t mi_cmds[] = {
+	{ "qr_status",         HLP1, qr_status_cmd,    0, 0,  0},
+	{ 0, 0, 0, 0, 0, 0}
+};
+
 static int qr_init(void);
 static int qr_child_init(int rank);
 static int qr_exit(void);
@@ -79,7 +89,7 @@ struct module_exports exports = {
 	cmds,            /* Exported functions */
 	params,          /* Exported parameters */
 	0,               /* exported statistics */
-	0,         /* exported MI functions */
+	mi_cmds,         /* exported MI functions */
 	0,               /* exported pseudo-variables */
 	0,               /* additional processes */
 	qr_init,         /* Module initialization function */
@@ -89,6 +99,7 @@ struct module_exports exports = {
 };
 
 static int qr_init(void){
+	int i;
 	qr_rule_t *my_rule; /* FIXME: testing purpose */
 	LM_INFO("QR module\n");
 	LM_DBG("history = %d, sampling_interval = %d\n", history,
@@ -111,7 +122,35 @@ static int qr_init(void){
 	my_rule = qr_create_rule(1);
 	qr_add_rule(my_rule);
 	qr_rules_start->dest[0].dst.gw = qr_create_gw();
+	my_rule->name.s = shm_malloc(10);
+	memset(my_rule->name.s, 0, 10);
+	memcpy(my_rule->name.s, "name", 4);
+	my_rule->name.len = 4;
 
+	/*my_rule = qr_create_rule(1);
+	qr_add_rule(my_rule);
+	my_rule->dest[0].dst.gw = qr_create_gw();
+
+	my_rule = qr_create_rule(4);
+	qr_add_rule(my_rule);
+	for(i = 0;i < 4;i++)
+		my_rule->dest[i].dst.gw = qr_create_gw();
+	my_rule->name.s = shm_malloc(10);
+	memset(my_rule->name.s, 0, 10);
+	memcpy(my_rule->name.s, "smth", 4);
+	my_rule->name.len = 4;
+
+	my_rule = qr_create_rule(1);
+	qr_add_rule(my_rule);
+	qr_dst_is_grp(my_rule, 0, 4);
+	for(i = 0; i <4; i++) {
+		my_rule->dest[0].dst.grp.gw[i] = qr_create_gw();
+	}
+	my_rule->name.s = shm_malloc(10);
+	memset(my_rule->name.s, 0, 10);
+	memcpy(my_rule->name.s, "last", 4);
+	my_rule->name.len = 4;
+*/
 	return 0;
 }
 
@@ -124,5 +163,214 @@ static int qr_exit(void) {
 }
 
 static void timer_func(void) {
+	qr_rule_t *it;
+	int i;
+
+	for(it = qr_rules_start; it != NULL; it = it->next) {
+		for(i = 0; i < it->n; i++) {
+			if(it->dest[i].type == QR_DST_GW) {
+				update_gw_stats(it->dest[i].dst.gw);
+			} else {
+				update_grp_stats(it->dest[i].dst.grp);
+			}
+		}
+	}
+}
+
+/* searches for a given rule in the QR list */
+static qr_rule_t * qr_search_rule(str * name) {
+	qr_rule_t * rule_it;
+
+	for(rule_it = qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
+		if(rule_it->name.len == name->len && memcmp(rule_it->name.s, name->s,
+					name->len) == 0) {
+			return rule_it;
+		}
+	}
+	return NULL;
+}
+
+static str * qr_get_dst_name(qr_dst_t * dst) {
+	if(dst->type == QR_DST_GW) {
+		return NULL; /* TODO: extract the name from the pgw_t using dr_api function */
+	} else {
+		return &dst->dst.grp.name;
+	}
+}
+
+/* searches for a given gw inside a rule */
+static qr_dst_t * qr_search_dst(qr_rule_t * rule, str *dst_name) {
+	int i;
+	str *cur_dst_name;
+	if(dst_name == NULL)
+		return NULL;
+	for(i = 0; i < rule->n; i++) {
+		cur_dst_name = qr_get_dst_name(&rule->dest[i]);
+		/* TODO: cur_dst_name != NULL because no dr_api */
+		if(cur_dst_name != NULL && cur_dst_name->len == dst_name->len && memcmp(cur_dst_name->s,
+					dst_name->s, dst_name->len) == 0) {
+			return &rule->dest[i];
+		}
+	}
+	return NULL;
 
 }
+
+static void qr_gw_attr(struct mi_node **node, qr_gw_t *gw) {
+	struct mi_node *gw_node = NULL;
+	struct mi_attr *attr = NULL;
+
+	str tmp;
+	tmp.s = (char*)shm_malloc(20*sizeof(char));
+	memset(tmp.s, 0, 20*sizeof(char));
+
+	gw_node = add_mi_node_child(*node, 0, "Gw", 2,
+			"nume_gw", strlen("nume_gw")); /* TODO: gw_name from dr_api */
+	sprintf(tmp.s, "%lf", asr(gw));
+	tmp.len = strlen(tmp.s);
+	attr = add_mi_attr(gw_node, MI_DUP_VALUE, "ASR", 3,
+			tmp.s, tmp.len);
+	if(attr == NULL)
+		goto error;
+	memset(tmp.s, 0, 20*sizeof(char));
+	sprintf(tmp.s, "%lf", ccr(gw));
+	tmp.len = strlen(tmp.s);
+	attr = add_mi_attr(gw_node, MI_DUP_VALUE, "CCR", 3,
+			tmp.s, tmp.len);
+	if(attr == NULL)
+		goto error;
+	memset(tmp.s, 0, 20*sizeof(char));
+	sprintf(tmp.s, "%lf", pdd(gw));
+	tmp.len = strlen(tmp.s);
+	attr = add_mi_attr(gw_node, MI_DUP_VALUE, "PDD", 3,
+			tmp.s, tmp.len);
+	if(attr == NULL)
+		goto error;
+	memset(tmp.s, 0, 20*sizeof(char));
+	sprintf(tmp.s, "%lf", ast(gw));
+	tmp.len = strlen(tmp.s);
+	attr = add_mi_attr(gw_node, MI_DUP_VALUE, "AST", 3,
+			tmp.s, tmp.len);
+	if(attr == NULL)
+		goto error;
+	memset(tmp.s, 0, 20*sizeof(char));
+	sprintf(tmp.s, "%lf", acd(gw));
+	tmp.len = strlen(tmp.s);
+	attr = add_mi_attr(gw_node, MI_DUP_VALUE, "ACD", 3,
+			tmp.s, tmp.len);
+	if(attr == NULL)
+		goto error;
+
+	return ;
+error:
+	*node = NULL;
+}
+
+static void qr_grp_attr(struct mi_node **node, qr_grp_t * grp) {
+	int i;
+	struct mi_node *gw_node;
+	gw_node = add_mi_node_child(*node, 0, "Group", 5, "group_name",
+			strlen("group_name"));
+	if(*node == NULL)
+		goto error;
+	for(i = 0; i<grp->n; i++) {
+		qr_gw_attr(&gw_node, grp->gw[i]);
+		if(gw_node == NULL) {
+			goto error;
+		}
+	}
+
+	return ;
+error:
+	node = NULL;
+}
+
+static void qr_dst_attr(struct mi_node ** node, qr_dst_t * dst) {
+	if(dst->type == QR_DST_GW) {
+		qr_gw_attr(node, dst->dst.gw);
+	} else {
+		qr_grp_attr(node, &dst->dst.grp);
+	}
+}
+
+
+static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
+	/* TODO protected from adding */
+	int i;
+	qr_rule_t *rule_it, *rule;
+	qr_dst_t *dst;
+	str rule_name, gw_name, error_str;
+	struct mi_node * node = NULL, *rule_node = NULL;
+	struct mi_root *rpl_tree = NULL, *error_tree = NULL;
+
+
+	LM_INFO("qr_status command received\n");
+
+	if(cmd_tree != NULL)
+		node = cmd_tree->node.kids;
+
+	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	if(rpl_tree == NULL) {
+		error_tree = init_mi_tree(500,"Failed to init reply tree",
+				strlen("Failed to init reply tree"));
+		goto error;
+	}
+	rpl_tree->node.flags |= MI_IS_ARRAY;
+
+	if(node == NULL) { /* mi_tree with all the destinations (and rules) */
+		for(rule_it = qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
+			if(rule_it->name.s != 0) {
+				rule_node = add_mi_node_child(&rpl_tree->node, 0,
+						"Rule", 4, rule_it->name.s, rule_it->name.len);
+			} else {
+				rule_node = add_mi_node_child(&rpl_tree->node, 0,
+						"Rule", 4, 0, 0);
+
+			}
+			for(i = 0;i < rule_it->n; i++) {
+				qr_dst_attr(&rule_node, &rule_it->dest[i]);
+			}
+
+		}
+	} else { /* mi_tree with a single destination (group/gateway) */
+		rule_name = node->value;
+		rule = qr_search_rule(&rule_name);
+		if(rule == NULL) {
+			error_str.len = rule_name.len + 17;
+			error_str.s = shm_malloc(error_str.len*sizeof(char));
+			snprintf(error_str.s, error_str.len, "Rule '%.*s' not found",
+					rule_name.len, rule_name.s);
+			error_tree = init_mi_tree(400, error_str.s, error_str.len);
+			goto error;
+		}
+		rule_node = add_mi_node_child(&rpl_tree->node, 0,
+				"Rule", 4, rule_name.s, rule_name.len);
+
+		if(node->next != NULL) {
+			node = node->next;
+			gw_name = node->value;
+			dst = qr_search_dst(rule, &gw_name);
+			if(dst == NULL) {
+				error_str.len = gw_name.len+21;
+				error_str.s = shm_malloc(error_str.len*sizeof(char));
+				snprintf(error_str.s, error_str.len, "Gateway '%.*s' not found",
+						gw_name.len, gw_name.s);
+				error_tree = init_mi_tree(400, error_str.s, error_str.len);
+				goto error;
+			}
+			qr_dst_attr(&rule_node, dst);
+
+		} else { /* mi_tree with all the destinations for a rule */
+			for(i = 0; i < rule->n; i++) {
+				qr_dst_attr(&rule_node, &rule->dest[i]);
+			}
+		}
+	}
+
+	return rpl_tree;
+
+error:
+	return error_tree;
+
+}
+

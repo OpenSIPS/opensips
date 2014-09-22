@@ -31,6 +31,7 @@
 
 #include "../../rw_locking.h"
 #include "../../locking.h"
+#include "../drouting/prefix_tree.h"
 
 /* type of destinations */
 #define QR_DST_GW (1<<0)
@@ -39,6 +40,8 @@
 #define QR_STATUS_DIRTY (1<<0)
 #define QR_STATUS_DSBL (1<<1)
 #define QR_STATUS_SKIP (1<<2)
+/* sort methods */
+#define QR_SORT_QR (1<<0)
 #define MIN_DEST 4
 
 
@@ -52,9 +55,9 @@ typedef struct qr_n_calls {
 typedef struct qr_calls {
 	int as; /* calls that returned 200OK */
 	int cc; /* calls that returned 200OK + 4XX */
-	int pdd; /* total post dial delay for sampled interval */
-	int st; /* total setup time for sampled interval */
-	int cd; /* total call duration for sampled interval */
+	double pdd; /* total post dial delay for sampled interval */
+	double st; /* total setup time for sampled interval */
+	double cd; /* total call duration for sampled interval */
 } qr_calls_t;
 
 typedef struct qr_stats {
@@ -70,28 +73,32 @@ typedef struct qr_sample {
 
 /* thresholds */
 typedef struct qr_thresholds {
-	int as1, as2;
-	int cc1, cc2;
+	int asr1, asr2;
+	int ccr1, ccr2;
 	int pdd1, pdd2;
-	int st1, st2;
-	int cd1, cd2;
+	int ast1, ast2;
+	int acd1, acd2;
 } qr_thresholds_t;
 
 /* history for gateway: sum of sampled intervals */
 typedef struct qr_gw {
-	qr_sample_t * next_interval;
-	int n_sampled;
-	qr_stats_t current_interval;
-	qr_stats_t last_interval;
-	qr_stats_t history_stats;
-	char state;
-	rw_lock_t *ref_lock;
-	gen_lock_t *acc_lock;
+	qr_sample_t * next_interval; /* sampled intervals */
+	int n_sampled; /* number of intervals sampled */
+	void  *dr_gw; /* pointer to the gateway from drouting*/
+	qr_stats_t current_interval; /* the current interval */
+	qr_stats_t history_stats; /* the statistcs for all the intervals */
+	char state; /* the state of the gateway: dirty/disabled */
+	int score; /* the score of the gateway (based on thresholds) */
+	rw_lock_t *ref_lock; /* lock for protecting the overall statistics (history) */
+	gen_lock_t *acc_lock; /* lock for protecting the current interval */
 } qr_gw_t;
 
 /* destination that are grouped (e.g.: carriers) */
 typedef struct qr_grp {
 	qr_gw_t **gw;
+	char sort_method; /* sorting for the group */
+	str name;
+	int n; /* TODO: add to init */
 } qr_grp_t;
 
 
@@ -107,7 +114,10 @@ typedef struct qr_dst {
 /* destinations associated with a rule */
 typedef struct qr_rule {
 	qr_dst_t *dest;
-	qr_thresholds_t threshold;
+	qr_thresholds_t thresholds;
+	str name;
+	char sort_method; /* sorting for the rule */
+	int n;
 	struct qr_rule *next;
 } qr_rule_t;
 

@@ -40,6 +40,7 @@
 qr_rule_t * qr_rules_end = NULL; /* used when adding rules */
 qr_rule_t * qr_rules_start = NULL; /* used when updating statistics */
 
+
 /* create the samples for a gateway's history */
 qr_sample_t * create_history(void) {
 	qr_sample_t * history, *tmp;
@@ -126,6 +127,7 @@ void * qr_create_rule(int n_dest) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
+	new->n = n_dest;
 
 	for(i=0; i<n_dest; i++) {
 		new->dest[i].type |= QR_DST_GW;
@@ -157,6 +159,7 @@ int qr_dst_is_grp(void *rule_v, int index_grp, int n_gw) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
+	rule->dest[index_grp].dst.grp.n = n_gw;
 
 	return 0;
 error:
