@@ -45,9 +45,10 @@ int frd_event_init(void)
 		return -1;
 	}
 
-	event_params = evi_get_params();
+	event_params = pkg_malloc(sizeof(evi_params_t));
 	if (event_params == NULL)
 		return -1;
+	memset(event_params, 0, sizeof(evi_params_t));
 
 #define CREATE_PARAM(pname) \
 	pname ## _p = evi_param_create(event_params, &ei_ ## pname ## _name);\
@@ -60,6 +61,7 @@ int frd_event_init(void)
 	CREATE_PARAM(user);
 	CREATE_PARAM(number);
 	CREATE_PARAM(ruleid);
+#undef CREATE_PARAM
 
 	return 0;
 
@@ -92,8 +94,10 @@ static void raise_event(event_id_t e,
 	SET_PARAM(user, str);
 	SET_PARAM(number, str);
 	SET_PARAM(ruleid, int);
+#undef SET_PARAM
 
-	//extern struct qm_block* shm_block;
+	//extern struct qm_block* shm_block;*/
+	qm_mem_check(mem_block);
 	qm_mem_check(shm_block);
 	if (evi_raise_event(e, event_params) < 0)
 		LM_ERR("cannot raise event\n");
