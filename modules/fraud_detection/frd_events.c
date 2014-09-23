@@ -3,6 +3,7 @@
 
 #include "../dialog/dlg_load.h"
 #include "frd_events.h"
+#include "../../mem/shm_mem.h"
 
 
 /* Events name and ids */
@@ -11,7 +12,7 @@ static event_id_t ei_warn_id = EVI_ERROR;
 static event_id_t ei_crit_id = EVI_ERROR;
 
 static str ei_warn_name = str_init("E_FRD_WARNING");
-static str ei_crit_name = str_init("E_FRD_CRITICIAL");
+static str ei_crit_name = str_init("E_FRD_CRITICAL");
 static evi_params_p event_params;
 
 /* Events' parameters name and pointers*/
@@ -77,7 +78,7 @@ void frd_event_destroy(void)
 */
 static void raise_event(event_id_t e,
 		str *param, unsigned int *val, unsigned int *thr, str *user,
-		str *number, int *ruleid)
+		str *number, unsigned int *ruleid)
 {
 #define SET_PARAM(pname, ptype) \
 	if (evi_param_set_ ##ptype (pname ## _p, pname) < 0) { \
@@ -92,18 +93,20 @@ static void raise_event(event_id_t e,
 	SET_PARAM(number, str);
 	SET_PARAM(ruleid, int);
 
+	//extern struct qm_block* shm_block;
+	qm_mem_check(shm_block);
 	if (evi_raise_event(e, event_params) < 0)
 		LM_ERR("cannot raise event\n");
 }
 
 void raise_warning_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, int *ruleid)
+		str *user, str *number, unsigned int *ruleid)
 {
 	raise_event(ei_warn_id, param, val, thr, user, number, ruleid);
 }
 
 void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, int *ruleid)
+		str *user, str *number, unsigned int *ruleid)
 {
 	raise_event(ei_crit_id, param, val, thr, user, number, ruleid);
 }

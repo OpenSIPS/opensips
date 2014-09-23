@@ -158,6 +158,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (frd_event_init() != 0) {
+		LM_ERR("cannot register events\n");
+		return -1;
+	}
+
 	if (load_dr_api(&drb) != 0) {
 		LM_ERR("cannot load dr_api\n");
 		return -1;
@@ -272,6 +277,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	str shm_user;
 	frd_stats_entry_t *se = get_stats(user, prefix, &shm_user);
 
+	LM_INFO("xxx - matched %u\n", rule->id);
 	/* Check if we need to reset the stats */
 
 	struct tm now, then;
@@ -336,17 +342,31 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	int rc = rc_no_rule;
 
+#define DEF_PARAM_STR_NAME(pname, strname)\
+	static str pname ## _name = str_init(strname)
+
+	DEF_PARAM_STR_NAME(cpm, "calls per minute");
+	DEF_PARAM_STR_NAME(total_calls, "total calls");
+	DEF_PARAM_STR_NAME(concurrent_calls, "concurrent calls");
+	DEF_PARAM_STR_NAME(seq_calls, "sequential calls");
+
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
-	if (se->stats.cpm >= thr->cpm_thr.critical
-			|| se->stats.total_calls >= thr->total_calls_thr.critical
-			|| se->stats.concurrent_calls >= thr->concurrent_calls_thr.critical
-			|| se->stats.seq_calls >= thr->seq_calls_thr.critical)
-		rc = rc_critical_thr;
-	else if (se->stats.cpm >= thr->cpm_thr.warning
-			|| se->stats.total_calls >= thr->total_calls_thr.warning
-			|| se->stats.concurrent_calls >= thr->concurrent_calls_thr.warning
-			|| se->stats.seq_calls >= thr->seq_calls_thr.warning)
-		rc = rc_warning_thr;
+
+#define CHECK_AND_RAISE(pname, type) \
+	(se->stats.pname >= thr->pname ## _thr.type) { \
+		raise_ ## type ## _event(&pname ## _name, &se->stats.pname,\
+				&thr->pname ## _thr.type, &user, &number, &rule->id);\
+		rc = rc_ ## type ## _thr;\
+	}
+
+	if CHECK_AND_RAISE(cpm, critical)
+	else if CHECK_AND_RAISE(total_calls, critical)
+	else if CHECK_AND_RAISE(concurrent_calls, critical)
+	else if CHECK_AND_RAISE(seq_calls, critical)
+	else if CHECK_AND_RAISE(cpm, warning)
+	else if CHECK_AND_RAISE(total_calls, warning)
+	else if CHECK_AND_RAISE(concurrent_calls, warning)
+	else if CHECK_AND_RAISE(seq_calls, warning);
 
 	lock_release(&se->lock);
 
@@ -364,6 +384,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		if (param == NULL)
 			LM_ERR("no more shm memory");
 		else if (shm_str_dup(&param->number, &number) == 0){
+			param->stats = se;
 			param->thr = thr;
 			param->user = shm_user;
 			param->ruleid = rule->id;
@@ -373,7 +394,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 			if (shm_str_dup(&param->number, &number) != 0)
 				shm_free(param);
 			else if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED,
-						dialog_terminate_CB, NULL, NULL) != 0) {
+						dialog_terminate_CB, param, NULL) != 0) {
 				LM_ERR("cannot register dialog callback\n");
 				shm_free(param->number.s);
 				shm_free(param);

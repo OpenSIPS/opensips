@@ -6,9 +6,9 @@
 int frd_event_init(void);
 void frd_event_destroy(void);
 void raise_warning_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, int *ruleid);
+		str *user, str *number, unsigned int *ruleid);
 void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
-		str *user, str *number, int *ruleid);
+		str *user, str *number, unsigned int *ruleid);
 
 
 /* Dialog callback */
@@ -18,7 +18,7 @@ typedef struct {
 	frd_thresholds_t *thr;
 	str user;
 	str number;
-	int ruleid;
+	unsigned int ruleid;
 	unsigned int data_rev;
 } frd_dlg_param;
 

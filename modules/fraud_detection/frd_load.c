@@ -437,7 +437,6 @@ int frd_reload_data(void)
 	old_head = *dr_head;
 	old_list = free_list;
 	++frd_data_rev;
-	LM_INFO("xxx-old=<%p>;new<%p>\n", old_head, new_head);
 	lock_start_write(frd_data_lock);
 	*dr_head = new_head;
 	free_list = new_list;
