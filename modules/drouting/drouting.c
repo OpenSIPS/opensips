@@ -41,6 +41,8 @@
 #include "dr_bl.h"
 #include "dr_db_def.h"
 #include "dr_partitions.h"
+#include "dr_api.h"
+#include "dr_api_internal.h"
 
 
 #define DR_PARAM_USE_WEIGTH         (1<<0)
@@ -361,6 +363,7 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"route_to_gw",     (cmd_function)route2_gw,     2,fixup_route2_gw, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"load_dr",  (cmd_function)load_dr,   0, 0, 0, 0},
 	{0, 0, 0, 0, 0, 0}
 };
 
@@ -4590,37 +4593,6 @@ error:
 	return -1;
 }
 
-/* Warning this function assumes the lock is already taken */
-rt_info_t* find_rule_by_prefix_unsafe(struct head_db *partition,
-		str prefix, int grp_id,unsigned int * matched_len)
-{
-	unsigned int rule_idx = 0;
-	rt_info_t *rt_info;
-
-	if (grp_id < 0) {
-		struct sip_uri uri;
-		memset(&uri, 0, sizeof (struct sip_uri));
-		uri.user = prefix;
-		grp_id = get_group_id( &uri, partition);
-	}
-
-	rt_info = get_prefix( (*(partition->rdata))->pt,
-			&prefix, (unsigned int)grp_id,matched_len, &rule_idx);
-
-	if (rt_info==NULL) {
-		LM_DBG("no matching for prefix \"%.*s\"\n",
-				prefix.len, prefix.s);
-
-		/* try prefixless rules */
-		rt_info = check_rt( &(*(partition->rdata))->noprefix,
-				(unsigned int)grp_id);
-		if (rt_info == NULL)
-			LM_DBG("no prefixless matching for "
-					"grp %d\n", grp_id);
-	}
-	return rt_info;
-}
-
 static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *param)
 {
 	struct mi_node *node = cmd_tree->node.kids;
@@ -4659,7 +4631,8 @@ static struct mi_root* mi_dr_number_routing(struct mi_root *cmd_tree, void *para
 	}
 
 	lock_start_read( partition->ref_lock );
-	route = find_rule_by_prefix_unsafe(partition, node->value, grp_id,&matched_len);
+	route = find_rule_by_prefix_unsafe((*(partition->rdata))->pt,
+			&(*(partition->rdata))->noprefix, node->value, grp_id, &matched_len);
 	if (route == NULL){
 		lock_stop_read( partition->ref_lock );
 		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
