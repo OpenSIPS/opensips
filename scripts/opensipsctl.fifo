@@ -50,17 +50,34 @@ fifo_cmd()
 		merr "fifo_cmd must take at least command name as parameter"
 		exit 1
 	fi
-	name=opensips_receiver_$$
-	path=$CHROOT_DIR/tmp/$name
-	if [ ! -w $OSIPS_FIFO ]; then
-		merr "Error opening OpenSIPS's FIFO $OSIPS_FIFO"
+
+	if [ ! -r $(dirname $OSIPS_FIFO) ]; then
+		merr "No read permission for $(dirname $OSIPS_FIFO)"
+		if [ ! -z $CHROOT_DIR ]; then
+			merr "[chrooted environment] Check that $OSIPS_FIFO is symlinked to ${CHROOT_DIR}${OSIPS_FIFO}"
+		fi
+
+		exit 2
+	fi
+
+	if [ ! -e $OSIPS_FIFO ]; then
+		merr "$OSIPS_FIFO does not exist"
 		merr "Make sure you have the line 'modparam(\"mi_fifo\", \"fifo_name\", \"$OSIPS_FIFO\")' in your config"
 		merr "and also have loaded the mi_fifo module."
 		if [ ! -z $CHROOT_DIR ]; then
 			merr "[chrooted environment] Check that $OSIPS_FIFO is symlinked to ${CHROOT_DIR}${OSIPS_FIFO}"
 		fi
-		exit 2
+		exit 3
 	fi
+
+	if [ ! -w $OSIPS_FIFO ]; then
+		merr "No write permission for $OSIPS_FIFO"
+		exit 4
+	fi
+
+	name=opensips_receiver_$$
+	path=$CHROOT_DIR/tmp/$name
+
 	if ! test -p $path; then
 		mkfifo $path
 		if [ $? -ne 0 ] ; then
