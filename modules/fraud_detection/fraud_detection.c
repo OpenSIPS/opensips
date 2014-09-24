@@ -29,6 +29,15 @@ extern str concalls_thresh_crit_col;
 extern str seqcalls_thresh_warn_col;
 extern str seqcalls_thresh_crit_col;
 
+#define DEF_PARAM_STR_NAME(pname, strname)\
+	static str pname ## _name = str_init(strname)
+
+DEF_PARAM_STR_NAME(cpm, "calls per minute");
+DEF_PARAM_STR_NAME(total_calls, "total calls");
+DEF_PARAM_STR_NAME(concurrent_calls, "concurrent calls");
+DEF_PARAM_STR_NAME(seq_calls, "sequential calls");
+#undef DEF_PARAM_STR_NAME
+
 
 dr_head_p *dr_head;
 struct dr_binds drb;
@@ -43,12 +52,9 @@ static void destroy(void);
 
 static int check_fraud(struct sip_msg *msg, char *user, char *number, char *pid);
 static int fixup_check_fraud(void **param, int param_no);
+static struct mi_root* mi_show_stats(struct mi_root *cmd_tree, void *param);
 
 static cmd_export_t cmds[]={
-/*	{"get_mapping",(cmd_function)get_mapping,1,fixup_pvar_null,
-		0, REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"get_mapping",(cmd_function)get_mapping0,0,0,
-		0, REQUEST_ROUTE|ONREPLY_ROUTE},*/
 	{"check_fraud", (cmd_function)check_fraud, 3, fixup_check_fraud, 0,
 		REQUEST_ROUTE | ONREPLY_ROUTE},
 	{0,0,0,0,0,0}
@@ -78,6 +84,8 @@ static param_export_t params[]={
 
 static mi_export_t mi_cmds[] = {
 	//{ "get_maps","return all mappings",mi_get_maps,MI_NO_INPUT_FLAG,0,0},
+	{"show_fraud_stats", "print current stats for a particular user",
+		mi_show_stats, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -277,7 +285,6 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	str shm_user;
 	frd_stats_entry_t *se = get_stats(user, prefix, &shm_user);
 
-	LM_INFO("xxx - matched %u\n", rule->id);
 	/* Check if we need to reset the stats */
 
 	struct tm now, then;
@@ -342,14 +349,6 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	int rc = rc_no_rule;
 
-#define DEF_PARAM_STR_NAME(pname, strname)\
-	static str pname ## _name = str_init(strname)
-
-	DEF_PARAM_STR_NAME(cpm, "calls per minute");
-	DEF_PARAM_STR_NAME(total_calls, "total calls");
-	DEF_PARAM_STR_NAME(concurrent_calls, "concurrent calls");
-	DEF_PARAM_STR_NAME(seq_calls, "sequential calls");
-
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
 
 #define CHECK_AND_RAISE(pname, type) \
@@ -367,6 +366,8 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	else if CHECK_AND_RAISE(total_calls, warning)
 	else if CHECK_AND_RAISE(concurrent_calls, warning)
 	else if CHECK_AND_RAISE(seq_calls, warning);
+
+#undef CHECK_AND_RAISE
 
 	lock_release(&se->lock);
 
@@ -408,4 +409,74 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	lock_stop_read(frd_data_lock);
 
 	return rc;
+}
+
+static struct mi_root* mi_show_stats(struct mi_root *cmd_tree, void *param)
+{
+	/* User, number, pid */
+
+	struct mi_node *node = cmd_tree->node.kids;
+	str user, prefix;
+	unsigned int pid;
+
+	if (node == NULL)
+		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	user = node->value;
+	node = node->next;
+
+	if (node == NULL)
+		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	prefix = node->value;
+	node = node->next;
+
+	if (node == NULL)
+		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+
+	if (str2int(&node->value, &pid) != 0) {
+		LM_WARN("Wrong value for profile id. Token <%.*s>\n", node->value.len,
+				node->value.s);
+		return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	}
+
+	if (!stats_exist(user, prefix)) {
+		LM_WARN("There is no data for user<%.*s> and prefix=<%.*s>\n",
+				user.len, user.s, prefix.len, prefix.s);
+		return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	}
+
+
+	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	if (rpl_tree == NULL)
+		return 0;
+	rpl_tree->node.flags |= MI_IS_ARRAY;
+
+	frd_stats_entry_t *se = get_stats(user, prefix, NULL);
+	lock_get(&se->lock);
+
+#define ADD_STAT_CHILD(pname, pval) do {\
+	int val_len;\
+	char *cval = int2str(pval, &val_len);\
+	LM_INFO("xxx - %u <%.*s>\n", pval, val_len,cval);\
+	if (add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,\
+			pname ## _name.s, pname ## _name.len, cval, val_len) == 0)\
+		goto add_error;\
+} while (0)
+
+	ADD_STAT_CHILD(cpm, se->stats.cpm);
+	ADD_STAT_CHILD(total_calls, se->stats.total_calls);
+	ADD_STAT_CHILD(concurrent_calls, se->stats.concurrent_calls);
+	ADD_STAT_CHILD(seq_calls, se->stats.seq_calls);
+
+#undef ADD_STAT_CHILD
+
+	lock_release(&se->lock);
+	return rpl_tree;
+
+add_error:
+	lock_release(&se->lock);
+	LM_ERR("failed to add node\n");
+	free_mi_tree(rpl_tree);
+	return 0;
 }

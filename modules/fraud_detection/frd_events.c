@@ -96,9 +96,6 @@ static void raise_event(event_id_t e,
 	SET_PARAM(ruleid, int);
 #undef SET_PARAM
 
-	//extern struct qm_block* shm_block;*/
-	qm_mem_check(mem_block);
-	qm_mem_check(shm_block);
 	if (evi_raise_event(e, event_params) < 0)
 		LM_ERR("cannot raise event\n");
 }

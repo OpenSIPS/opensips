@@ -27,6 +27,7 @@ typedef struct _frd_hash_item {
 
 int init_stats_table(void);
 frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user);
+int stats_exist(str user, str prefix);
 void free_stats_table(void);
 
 
