@@ -53,6 +53,7 @@ static void destroy(void);
 static int check_fraud(struct sip_msg *msg, char *user, char *number, char *pid);
 static int fixup_check_fraud(void **param, int param_no);
 static struct mi_root* mi_show_stats(struct mi_root *cmd_tree, void *param);
+static struct mi_root* mi_reload(struct mi_root *cmd_tree, void *param);
 
 static cmd_export_t cmds[]={
 	{"check_fraud", (cmd_function)check_fraud, 3, fixup_check_fraud, 0,
@@ -86,6 +87,7 @@ static mi_export_t mi_cmds[] = {
 	//{ "get_maps","return all mappings",mi_get_maps,MI_NO_INPUT_FLAG,0,0},
 	{"show_fraud_stats", "print current stats for a particular user",
 		mi_show_stats, 0, 0, 0},
+	{"fraud_reload", "reload fraud profiles from db", mi_reload, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -458,7 +460,6 @@ static struct mi_root* mi_show_stats(struct mi_root *cmd_tree, void *param)
 #define ADD_STAT_CHILD(pname, pval) do {\
 	int val_len;\
 	char *cval = int2str(pval, &val_len);\
-	LM_INFO("xxx - %u <%.*s>\n", pval, val_len,cval);\
 	if (add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,\
 			pname ## _name.s, pname ## _name.len, cval, val_len) == 0)\
 		goto add_error;\
@@ -479,4 +480,16 @@ add_error:
 	LM_ERR("failed to add node\n");
 	free_mi_tree(rpl_tree);
 	return 0;
+}
+
+static struct mi_root* mi_reload(struct mi_root *cmd_tree, void *param)
+{
+	if (frd_connect_db() != 0 || frd_reload_data() != 0) {
+			LM_ERR ("cannot load data from db\n");
+			return init_mi_tree(500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+	}
+	else {
+		frd_disconnect_db();
+		return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	}
 }

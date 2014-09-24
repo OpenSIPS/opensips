@@ -414,7 +414,6 @@ static void frd_destroy_data_unsafe(dr_head_p dr_head, free_list_t *fl)
 
 void frd_destroy_data(void)
 {
-	LM_INFO("xxx-deleting <%p>\n", *dr_head);
 	frd_destroy_data_unsafe(*dr_head, free_list);
 }
 
