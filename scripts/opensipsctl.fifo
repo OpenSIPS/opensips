@@ -45,14 +45,20 @@ USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_fifo"
 fifo_cmd()
 {
 	mdbg "entering fifo_cmd $*"
-	
+
 	if [ "$#" -lt 1 ]; then
 		merr "fifo_cmd must take at least command name as parameter"
 		exit 1
 	fi
 
 	if [ ! -r $(dirname $OSIPS_FIFO) ]; then
-		merr "No read permission for $(dirname $OSIPS_FIFO)"
+
+		if [ ! -e $(dirname $OSIPS_FIFO) ]; then
+			merr "$(dirname $OSIPS_FIFO) does not exist"
+		else
+			merr "No read permission for $(dirname $OSIPS_FIFO)"
+		fi
+
 		if [ ! -z $CHROOT_DIR ]; then
 			merr "[chrooted environment] Check that $OSIPS_FIFO is symlinked to ${CHROOT_DIR}${OSIPS_FIFO}"
 		fi
