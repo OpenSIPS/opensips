@@ -287,7 +287,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 	str s;
 
 	if (msg->id == last_rr_msg) {
-		LM_ERR("Duble attempt to record-route\n");
+		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
 	if (key2 && !enable_double_rr) {
