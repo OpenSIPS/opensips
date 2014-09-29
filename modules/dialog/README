@@ -135,6 +135,10 @@ Vladut-Stefan Paiu
               1.10.9. $DLG_callee_callid
               1.10.10. $dlg_val(name)
 
+        1.11. Exported Events
+
+              1.11.1. E_DLG_STATE_CHANGED
+
    2. Developer Guide
 
         2.1. Available Functions
@@ -1719,6 +1723,16 @@ if (has_totag()  && (uri == myself)  && is_method("INVITE|ACK|BYE|UPDATE
    sequential requests, after doing loose_route().
 
    NULL will be returned if there is no dialog for the request.
+
+1.11. Exported Events
+
+1.11.1.  E_DLG_STATE_CHANGED
+
+   This event is raised when the dialog state is changed.
+
+   Parameters:
+     * ostate - the old state of the dialog.
+     * nstate - the new state of the dialog.
 
 Chapter 2. Developer Guide
 
