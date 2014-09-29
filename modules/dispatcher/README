@@ -760,12 +760,12 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
    to a host from the dispatcher-list; otherwise false.
 
    Meaning of the parameters:
-     * ip - a PV (pseudo-variable) containing (as string) the IP
+     * ip - string / pseudo-variable (as string) containing the IP
        to test against the dispatcher list. This cannot be empty.
-     * port - a PV (pseudo-variable) containing (as integer) the
-       PORT to test against the dispatcher list. This can be empty
-       - in this case the port will excluded from the matching of
-       IP against the dispatcher list.
+     * port - int / pseudo-variable (as int) containing the PORT
+       to test against the dispatcher list. This can be empty - in
+       this case the port will excluded from the matching of IP
+       against the dispatcher list.
      * set (optional) - a partition name followed by colon and the
        set ID of a dispatcher list to test against. If the
        partition name is omitted the default partition will be

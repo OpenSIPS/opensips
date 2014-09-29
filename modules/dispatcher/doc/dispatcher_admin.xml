@@ -997,15 +997,15 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>ip</emphasis> - a PV (pseudo-variable) containing
-			(as string) the IP to test against the dispatcher list. This cannot
+			<para><emphasis>ip</emphasis> - string / pseudo-variable (as string)
+			containing the IP to test against the dispatcher list. This cannot
 			be empty.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>port</emphasis> - a PV (pseudo-variable) containing
-			 (as integer) the PORT to test against the dispatcher list. This
-			 can be empty - in this case the port will excluded from the
-			 matching of IP against the dispatcher list.</para>
+			<para><emphasis>port</emphasis> - int / pseudo-variable (as int)
+			containing the PORT to test against the dispatcher list. This
+			can be empty - in this case the port will excluded from the
+			matching of IP against the dispatcher list.</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>set</emphasis> (optional) - a partition name followed
