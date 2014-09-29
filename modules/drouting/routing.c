@@ -43,6 +43,7 @@
 #include "../../time_rec.h"
 #include "prefix_tree.h"
 #include "parse.h"
+#include "dr_cb.h"
 
 #define is_valid_gw_char(_c) \
 	(isalpha(_c) || isdigit(_c) || (_c)=='_' || (_c)=='-' || (_c)=='.')
@@ -89,11 +90,13 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 		unsigned short *len, int no_resize, osips_malloc_f mf)
 {
 #define PGWL_SIZE 32
-	pgw_list_t *pgwl=NULL, *p=NULL;
+	pgw_list_t *pgwl=NULL, *p = NULL;
 	unsigned int size, pgwl_size;
 	long int t;
 	char *tmp, *ep;
+	int i;
 	str id;
+
 
 	/* temporary list of gw while parsing */
 	pgwl_size = PGWL_SIZE;
@@ -185,6 +188,10 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 			size++;
 		}
 
+
+
+
+
 		/* separator */
 		if ( (*tmp==SEP) || (*tmp==SEP1) ) {
 			tmp++;
@@ -216,6 +223,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 		goto error;
 	}
 	memcpy( p, pgwl, size*sizeof(pgw_list_t));
+
 	pkg_free(pgwl);
 	*len = size;
 	*pgwl_ret = p;
@@ -320,6 +328,15 @@ build_rt_info(
 {
 	rt_info_t* rt = NULL;
 
+	/* callback parameters for the QR module */
+	int i;
+	void * qr_rule;
+	struct dr_callback *dr_cb_it;
+	struct dr_cb_params *cb_params;
+	struct dr_reg_gw_params *reg_gw_params;
+	struct dr_reg_init_rule_params *init_rule_params;
+	pgw_list_t *p = NULL;
+
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
 		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
 	if (rt==NULL) {
@@ -347,6 +364,54 @@ build_rt_info(
 			goto err_exit;
 		}
 	}
+
+	/* call the create rule callbacks */
+	init_rule_params = (struct dr_reg_init_rule_params *) shm_malloc(
+			sizeof(struct dr_reg_init_rule_params));
+	cb_params = (struct dr_cb_params *) shm_malloc(sizeof(struct dr_cb_params));
+	if(init_rule_params != NULL && cb_params != NULL) {
+		memset(init_rule_params, 0, sizeof(struct dr_reg_init_rule_params));
+		init_rule_params->n_dst = rt->pgwa_len;
+		init_rule_params->r_id = id; /* name of the rule */
+		cb_params->param = (void*)&init_rule_params;
+		if(dr_reg_cbs != NULL && (dr_reg_cbs->types & DRCB_REG_INIT_RULE)) {
+			dr_cb_it = dr_reg_cbs->first;
+			while(dr_cb_it) {
+				if(dr_cb_it->types & DRCB_REG_INIT_RULE) {
+					dr_cb_it->callback(dr_cb_it->types, cb_params);
+					break; /* execute just the first callback */
+				}
+				dr_cb_it = dr_cb_it->next;
+			}
+		} else {
+			LM_ERR("No callback list to match the given type\n");
+		}
+		qr_rule = (void*)((struct dr_reg_init_rule_params*)*cb_params->param)->rule;
+
+		p = rt->pgwl;
+
+
+		/* TODO: should check if qr loaded */
+		for(i = 0; i < rt->pgwa_len; i++) {
+			if(p[i].is_carrier) {
+
+			} else {
+				reg_gw_params = (struct dr_reg_gw_params *) shm_malloc(sizeof(struct
+							dr_reg_gw_params));
+				if(reg_gw_params == NULL) {
+					LM_ERR("no more shm memory\n");
+					/* TODO: should we crash all together? */
+				} else {
+					reg_gw_params->rule = qr_rule;
+					reg_gw_params->n_dst = i;
+					reg_gw_params->gw = p[i].dst.gw;
+
+					run_callbacks(dr_reg_cbs, DRCB_REG_GW, (void*)reg_gw_params);
+				}
+			}
+		}
+	}
+	run_callbacks(dr_reg_cbs, DRCB_REG_ADD_RULE, (void*)qr_rule);
 
 	return rt;
 
@@ -513,7 +578,7 @@ add_dst(
 	if( sip_prefix==0 ) {
 		if(l_ip+4>=GWABUF_MAX_SIZE) {
 			LM_ERR("GW address (%d) longer "
-				"than %d\n",l_ip+4,GWABUF_MAX_SIZE);
+					"than %d\n",l_ip+4,GWABUF_MAX_SIZE);
 			goto err_exit;
 		}
 		memcpy(gwabuf, "sip:", 4);
@@ -528,7 +593,7 @@ add_dst(
 	memset(&uri, 0, sizeof(struct sip_uri));
 	if(parse_uri(gwas.s, gwas.len, &uri)!=0) {
 		LM_ERR("invalid uri <%.*s>\n",
-			gwas.len, gwas.s);
+				gwas.len, gwas.s);
 		goto err_exit;
 	}
 	/* update the sip_prefix to skip to domain part */
@@ -540,7 +605,7 @@ add_dst(
 		l_pri + l_attrs);
 	if (NULL==pgw) {
 		LM_ERR("no more shm mem (%u)\n",
-			(unsigned int)(sizeof(pgw_t)+l_id+l_ip-sip_prefix+l_pri +l_attrs));
+				(unsigned int)(sizeof(pgw_t)+l_id+l_ip-sip_prefix+l_pri +l_attrs));
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
@@ -604,7 +669,7 @@ add_dst(
 	if (proxy==NULL) {
 		if(dr_force_dns) {
 			LM_ERR("cannot resolve <%.*s>\n",
-				uri.host.len, uri.host.s);
+					uri.host.len, uri.host.s);
 			goto err_exit;
 		} else {
 			LM_DBG("cannot resolve <%.*s> - won't be used"
@@ -624,7 +689,7 @@ add_dst(
 		pgw->ports[pgw->ips_no] = proxy->port;
 		pgw->protos[pgw->ips_no] = proxy->proto;
 		LM_DBG("additional gw ip addr [%s]\n",
-			ip_addr2a( &pgw->ips[pgw->ips_no] ) );
+				ip_addr2a( &pgw->ips[pgw->ips_no] ) );
 		pgw->ips_no++;
 	}
 
@@ -692,7 +757,7 @@ void del_carriers_list(
 				destroy_pcr_rpm_w:destroy_pcr_shm_w));
 }
 
-void
+	void
 free_rt_data(
 		rt_data_t* rt_data,
 		osips_free_f free_f

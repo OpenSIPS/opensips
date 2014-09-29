@@ -1,6 +1,33 @@
+/**
+ *
+ * qrouting module:qr_acc.c
+ *
+ * Copyright (C) 2004-2005 FhG Fokus
+ * Copyright (C) 2006-2010 Voice Sistem SRL
+ * Copyright (C) 2014 OpenSIPS Foundation
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History
+ * -------
+ *  2014-08-28  initial version (Mihai Tiganus)
+ */
 #include "qr_acc.h"
 
-extern qr_rule_t * qr_rules_start;
 int myn = 0;
 
 /* free the parameter of the dialog callback */
@@ -53,10 +80,9 @@ int test_acc(struct sip_msg* msg) {
 
 	if(msg->first_line.type != SIP_REQUEST ||
 			msg->first_line.u.request.method_value != METHOD_INVITE) {
-		LM_INFO("it is not an invite!\n");
+		/*TODO: check if works only on invite (as it should) */
 		return -1;/* it is not an invite */
 	}
-	LM_INFO("it is an invite!\n");
 
 	trans_prop = (qr_trans_prop_t*)shm_malloc(sizeof(qr_trans_prop_t));
 	if(trans_prop == NULL) {
@@ -72,9 +98,7 @@ int test_acc(struct sip_msg* msg) {
 	}
 
 	/* save transaction properties */
-	trans_prop->gw = qr_rules_start->dest[0].dst.gw;
-	LM_INFO("Nume qr_rules_start:%*.s\n", qr_rules_start->name.len,
-			qr_rules_start->name.s);
+	trans_prop->gw = (*qr_rules_start)->dest[0].dst.gw;
 
 	/* get the time of INVITE */
 	if(clock_gettime(CLOCK_REALTIME, trans_prop->invite) < 0) {

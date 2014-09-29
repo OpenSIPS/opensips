@@ -35,10 +35,13 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 
-#include "qr_stats.h"
+#include "../drouting/dr_cb.h"
 
-qr_rule_t * qr_rules_end = NULL; /* used when adding rules */
-qr_rule_t * qr_rules_start = NULL; /* used when updating statistics */
+#include "qr_stats.h"
+#include "qr_acc.h"
+
+
+qr_rule_t ** qr_rules_start = NULL;
 
 
 /* create the samples for a gateway's history */
@@ -61,9 +64,29 @@ qr_sample_t * create_history(void) {
 }
 
 /* create a gateway */
-qr_gw_t * qr_create_gw(void){
-	qr_gw_t *gw;
-	if ((gw = shm_malloc(sizeof(qr_gw_t))) == NULL) {
+void qr_dst_is_gw(int type, struct dr_cb_params *param){
+	qr_gw_t *gw = NULL; /* internal gw for qr */
+	void *dst; /* pgw_t received from dr */
+	qr_rule_t *rule; /* qr_rule that was initialised with the qr callback from dr */
+	int   n_dst; /* the number of the destination within the dr rule */
+	str *gw_name;
+
+	/* extract the parameters from dr */
+	rule = (qr_rule_t*)((struct dr_reg_gw_params *)(*param->param))->rule;
+	dst = ((struct dr_reg_gw_params *)*param->param)->gw;
+	n_dst = ((struct dr_reg_gw_params *)*param->param)->n_dst;
+
+	gw_name = drb.get_gw_name(dst);
+	LM_DBG("Adding gw '%.*s' to rule id: %d\n", gw_name->len, gw_name->s,
+			rule->r_id);
+
+
+	if(rule == 0) {
+		LM_ERR("no rule to add gw to\n");
+		goto error;
+	}
+
+	if ((gw = (qr_gw_t*)shm_malloc(sizeof(qr_gw_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
 		goto error;
 	}
@@ -77,15 +100,21 @@ qr_gw_t * qr_create_gw(void){
 		LM_ERR("failed to init RW lock\n");
 		goto error;
 	}
+
 	if( (gw->next_interval = create_history()) == NULL) {
 		LM_ERR("failed to create history\n");
 		goto error;
 	}
-	return gw;
+
+	gw->dr_gw = dst; /* save the pointer to the dr gateway */
+
+	/* save gateway to rule */
+	rule->dest[n_dst].type = QR_DST_GW;
+	rule->dest[n_dst].dst.gw = gw;
+	return ;
 error:
 	if(gw)
 		qr_free_gw(gw);
-	return NULL;
 }
 
 /* free all the samples in a gateway's history */
@@ -112,34 +141,29 @@ void qr_free_gw(qr_gw_t * gw) {
 }
 
 /* creates a rule n_dest destinations (by default marked as gws) */
-void * qr_create_rule(int n_dest) {
-	qr_rule_t *new;
-	int i;
+void qr_create_rule(int type, struct dr_cb_params * param) {
+	qr_rule_t *new = NULL;
+	int i, r_id;
+	struct dr_reg_init_rule_params *init_rule_params = NULL;
+	init_rule_params = (struct dr_reg_init_rule_params *)*param->param;
+
+	r_id = init_rule_params->r_id;
 
 	if((new = (qr_rule_t*)shm_malloc(sizeof(qr_rule_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
-		goto error;
 	}
 	memset(new, 0, sizeof(qr_rule_t));
 
 	/* prepare an array for adding gateways */
-	if((new->dest = (qr_dst_t*)shm_malloc(n_dest*sizeof(qr_dst_t))) == NULL) {
+	if((new->dest = (qr_dst_t*)shm_malloc(init_rule_params->n_dst*
+					sizeof(qr_dst_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
-		goto error;
-	}
-	new->n = n_dest;
-
-	for(i=0; i<n_dest; i++) {
-		new->dest[i].type |= QR_DST_GW;
-	}
-	return new;
-error:
-	if(new != NULL) {
-		if(new->dest != NULL)
-			shm_free(new->dest);
 		shm_free(new);
 	}
-	return NULL;
+	new->n = init_rule_params->n_dst; /* save the number of destinations for
+										 this rule, as rcvd from dr*/
+	new->r_id = r_id;
+	init_rule_params->rule = new; /* send the rule to the dr */
 }
 
 /* marks index_grp destination from the rule as group and creates the gw array */
@@ -170,15 +194,17 @@ error:
 }
 
 /* add rule to internal rule list */
-void qr_add_rule(void *rule) {
-	/*TODO: lock per rule */
-	qr_rule_t *new = (qr_rule_t*)rule;
+void qr_add_rule(int type, struct dr_cb_params * param) {
+	qr_rule_t *new = (qr_rule_t*)*param->param;
 
-	if(qr_rules_end == NULL) {
-		qr_rules_start = new;
-	} else {
-		qr_rules_end->next = new;
+	if(new != NULL) {
+		if(*qr_rules_start == NULL) {
+			*qr_rules_start = new;
+		} else {
+			new->next = *qr_rules_start;
+			*qr_rules_start = new;
+		}
+		LM_DBG("rule '%d' added to qr rule list\n", new->r_id);
 	}
-	qr_rules_end = new;
 }
 

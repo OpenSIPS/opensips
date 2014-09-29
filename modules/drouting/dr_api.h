@@ -32,6 +32,7 @@
 #include "../../lock_ops.h"
 #include "../../rw_locking.h"
 #include "../../sr_module.h"
+#include "dr_cb.h"
 
 typedef struct _dr_head_t {
 	ptree_t *pt;
@@ -46,6 +47,7 @@ typedef void (*free_head_f)(dr_head_p partition);
 typedef int (*add_rule_f)(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr);
+typedef str * (*get_gw_name_f) (pgw_t *gw);
 
 struct dr_binds {
 	create_head_f   create_head;
@@ -53,6 +55,7 @@ struct dr_binds {
 	match_number_f  match_number;
 	add_rule_f      add_rule;
 	register_drcb_f register_drcb;
+	get_gw_name_f   get_gw_name;
 };
 
 typedef int (*load_dr_api_f)(struct dr_binds *drb);

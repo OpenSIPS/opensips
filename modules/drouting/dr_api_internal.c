@@ -26,6 +26,7 @@
 
 #include "dr_api_internal.h"
 #include "dr_api.h"
+#include "dr_cb.h"
 
 
 #include "../../str.h"
@@ -38,6 +39,13 @@ static int add_rule_api(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr);
 
+
+static str * get_gw_name(pgw_t * gw);
+
+
+static str * get_gw_name(pgw_t *gw) {
+	return &gw->id;
+}
 
 /* Warning this function assumes the lock is already taken */
 rt_info_t* find_rule_by_prefix_unsafe(ptree_t *pt, ptree_node_t *noprefix,
@@ -68,6 +76,7 @@ int load_dr (struct dr_binds *drb)
 	drb->free_head = free_dr_head;
 	drb->add_rule = add_rule_api;
 	drb->register_drcb = register_dr_cb;
+	drb->get_gw_name = get_gw_name;
 	return 0;
 }
 

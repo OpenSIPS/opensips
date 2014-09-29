@@ -32,6 +32,7 @@
 #include "../../rw_locking.h"
 #include "../../locking.h"
 #include "../drouting/prefix_tree.h"
+#include "../drouting/dr_cb.h"
 
 /* type of destinations */
 #define QR_DST_GW (1<<0)
@@ -98,7 +99,7 @@ typedef struct qr_grp {
 	qr_gw_t **gw;
 	char sort_method; /* sorting for the group */
 	str name;
-	int n; /* TODO: add to init */
+	int n;
 } qr_grp_t;
 
 
@@ -115,18 +116,21 @@ typedef struct qr_dst {
 typedef struct qr_rule {
 	qr_dst_t *dest;
 	qr_thresholds_t thresholds;
-	str name;
+	int r_id;/* rule_id */
 	char sort_method; /* sorting for the rule */
 	int n;
 	struct qr_rule *next;
 } qr_rule_t;
 
+extern qr_rule_t ** qr_rules_start; /* used when updating statistics */
+
 qr_gw_t * qr_create_gw(void);
 void qr_free_gw(qr_gw_t *);
 int qr_dst_is_grp(void *, int, int);
-void *qr_create_rule(int);
-void qr_add_rule(void*);
-
+void qr_create_rule(int, struct dr_cb_params*);
+void qr_add_rule(int , struct dr_cb_params*);
+void test_callback(int types, struct dr_cb_params *param);
+void qr_dst_is_gw(int type, struct dr_cb_params *param);
 
 
 #endif

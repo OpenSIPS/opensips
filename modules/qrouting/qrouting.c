@@ -45,7 +45,6 @@
 
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
-extern qr_rule_t * qr_rules_start, *qr_rules_end;
 
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
 str avp_invite_time_name_ast = str_init("$avp(qr_invite_time_ast)");
@@ -67,7 +66,7 @@ static param_export_t params[] = {
 };
 
 
-#define HLP1 "Params: [rule_name] [gw_name]; List the QR statistics for gateways"
+#define HLP1 "Params: [ rule_name [ gw_name ] ]; List the QR statistics for gateways"
 static mi_export_t mi_cmds[] = {
 	{ "qr_status",         HLP1, qr_status_cmd,    0, 0,  0},
 	{ 0, 0, 0, 0, 0, 0}
@@ -117,40 +116,35 @@ static int qr_init(void){
 		LM_ERR("failed to load dlg functions. Dialog module loaded?\n");
 		return -1;
 	}
-
-	/* FIXME:testing purpose */
-	my_rule = qr_create_rule(1);
-	qr_add_rule(my_rule);
-	qr_rules_start->dest[0].dst.gw = qr_create_gw();
-	my_rule->name.s = shm_malloc(10);
-	memset(my_rule->name.s, 0, 10);
-	memcpy(my_rule->name.s, "name", 4);
-	my_rule->name.len = 4;
-
-	/*my_rule = qr_create_rule(1);
-	qr_add_rule(my_rule);
-	my_rule->dest[0].dst.gw = qr_create_gw();
-
-	my_rule = qr_create_rule(4);
-	qr_add_rule(my_rule);
-	for(i = 0;i < 4;i++)
-		my_rule->dest[i].dst.gw = qr_create_gw();
-	my_rule->name.s = shm_malloc(10);
-	memset(my_rule->name.s, 0, 10);
-	memcpy(my_rule->name.s, "smth", 4);
-	my_rule->name.len = 4;
-
-	my_rule = qr_create_rule(1);
-	qr_add_rule(my_rule);
-	qr_dst_is_grp(my_rule, 0, 4);
-	for(i = 0; i <4; i++) {
-		my_rule->dest[0].dst.grp.gw[i] = qr_create_gw();
+	if(load_dr_api(&drb) == -1) {
+		LM_ERR("Failed to load dr functions. DR modules loaded\n");
+		return -1;
 	}
-	my_rule->name.s = shm_malloc(10);
-	memset(my_rule->name.s, 0, 10);
-	memcpy(my_rule->name.s, "last", 4);
-	my_rule->name.len = 4;
-*/
+
+	qr_rules_start = (qr_rule_t **)shm_malloc(sizeof(qr_rule_t*));
+	if(qr_rules_start == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	*qr_rules_start = NULL;
+
+
+	if(drb.register_drcb(DRCB_REG_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_INIT_RULE callback to DR\n");
+		return -1;
+	}
+	if(drb.register_drcb(DRCB_REG_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
+		return -1;
+	}
+	if(drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
+		return -1;
+	}
+	LM_DBG("[QR] callbacks in DR were registered\n");
+
+
+
 	return 0;
 }
 
@@ -166,7 +160,7 @@ static void timer_func(void) {
 	qr_rule_t *it;
 	int i;
 
-	for(it = qr_rules_start; it != NULL; it = it->next) {
+	for(it = *qr_rules_start; it != NULL; it = it->next) {
 		for(i = 0; i < it->n; i++) {
 			if(it->dest[i].type == QR_DST_GW) {
 				update_gw_stats(it->dest[i].dst.gw);
@@ -178,12 +172,11 @@ static void timer_func(void) {
 }
 
 /* searches for a given rule in the QR list */
-static qr_rule_t * qr_search_rule(str * name) {
+static qr_rule_t * qr_search_rule(int r_id) {
 	qr_rule_t * rule_it;
 
-	for(rule_it = qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
-		if(rule_it->name.len == name->len && memcmp(rule_it->name.s, name->s,
-					name->len) == 0) {
+	for(rule_it = *qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
+		if(rule_it->r_id == r_id) {
 			return rule_it;
 		}
 	}
@@ -192,7 +185,7 @@ static qr_rule_t * qr_search_rule(str * name) {
 
 static str * qr_get_dst_name(qr_dst_t * dst) {
 	if(dst->type == QR_DST_GW) {
-		return NULL; /* TODO: extract the name from the pgw_t using dr_api function */
+		return drb.get_gw_name(dst->dst.gw->dr_gw);
 	} else {
 		return &dst->dst.grp.name;
 	}
@@ -221,11 +214,13 @@ static void qr_gw_attr(struct mi_node **node, qr_gw_t *gw) {
 	struct mi_attr *attr = NULL;
 
 	str tmp;
+	str *p_tmp;
 	tmp.s = (char*)shm_malloc(20*sizeof(char));
 	memset(tmp.s, 0, 20*sizeof(char));
 
+	p_tmp = drb.get_gw_name(gw->dr_gw);
 	gw_node = add_mi_node_child(*node, 0, "Gw", 2,
-			"nume_gw", strlen("nume_gw")); /* TODO: gw_name from dr_api */
+			p_tmp->s, p_tmp->len);
 	sprintf(tmp.s, "%lf", asr(gw));
 	tmp.len = strlen(tmp.s);
 	attr = add_mi_attr(gw_node, MI_DUP_VALUE, "ASR", 3,
@@ -300,6 +295,7 @@ static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 	qr_rule_t *rule_it, *rule;
 	qr_dst_t *dst;
 	str rule_name, gw_name, error_str;
+	unsigned int rule_id;
 	struct mi_node * node = NULL, *rule_node = NULL;
 	struct mi_root *rpl_tree = NULL, *error_tree = NULL;
 
@@ -318,10 +314,17 @@ static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	if(node == NULL) { /* mi_tree with all the destinations (and rules) */
-		for(rule_it = qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
-			if(rule_it->name.s != 0) {
+		for(rule_it = *qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
+			if(rule_it->r_id != 0) { /* TODO: maybe -1 */
+				rule_name.s = (char*)shm_malloc(10*sizeof(char));
+				if(rule_name.s == NULL) {
+					LM_ERR("no more shm memory\n");
+					goto error;
+				}
+				memset(rule_name.s, 0, 10*sizeof(char));
+				rule_name.len = snprintf(rule_name.s, 10,"%d", rule_it->r_id);
 				rule_node = add_mi_node_child(&rpl_tree->node, 0,
-						"Rule", 4, rule_it->name.s, rule_it->name.len);
+						"Rule", 4, rule_name.s, rule_name.len);
 			} else {
 				rule_node = add_mi_node_child(&rpl_tree->node, 0,
 						"Rule", 4, 0, 0);
@@ -334,9 +337,19 @@ static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 		}
 	} else { /* mi_tree with a single destination (group/gateway) */
 		rule_name = node->value;
-		rule = qr_search_rule(&rule_name);
+		if(str2int(&node->value, &rule_id) < 0) {
+			error_str.len = rule_name.len + 36;
+			error_str.s = (char *)shm_malloc(error_str.len*sizeof(char));
+			snprintf(error_str.s, error_str.len,
+					"Failed to parse rule name '%.*s' to int", rule_name.len,
+					rule_name.s);
+			error_tree = init_mi_tree(500,error_str.s, error_str.len);
+			goto error;
+		}
+		LM_DBG("searching for rule_id %d\n", rule_id);
+		rule = qr_search_rule(rule_id);
 		if(rule == NULL) {
-			error_str.len = rule_name.len + 17;
+			error_str.len = rule_name.len + 18;
 			error_str.s = shm_malloc(error_str.len*sizeof(char));
 			snprintf(error_str.s, error_str.len, "Rule '%.*s' not found",
 					rule_name.len, rule_name.s);
