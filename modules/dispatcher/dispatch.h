@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include "../../pvar.h"
+#include "../../mod_fix.h"
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
 #include "../../db/db.h"
@@ -196,7 +197,7 @@ int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition);
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 				ds_partition_t *partition);
 
-int ds_is_in_list(struct sip_msg *_m, pv_spec_t *addr, pv_spec_t *port,
+int ds_is_in_list(struct sip_msg *_m, gparam_t *addr, gparam_t *port,
 		int set, int active_only, ds_partition_t *partition);
 /*
  * Timer for checking inactive destinations

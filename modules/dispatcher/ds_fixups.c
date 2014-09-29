@@ -628,7 +628,7 @@ int in_list_fixup(void** param, int param_no)
 {
 	if (param_no==1) {
 		/* the ip to test */
-		return fixup_pvar(param);
+		return fixup_sgp(param);
 	} else if (param_no==2) {
 		/* the port to test */
 		if (*param==NULL) {
@@ -638,7 +638,7 @@ int in_list_fixup(void** param, int param_no)
 			*param = NULL;
 			return 0;
 		}
-		return fixup_pvar(param);
+		return fixup_igp(param);
 	} else if (param_no==3) {
 		if (fixup_partition_sets_null(param) != 0)
 			return -1;

@@ -1815,7 +1815,7 @@ int ds_set_state(int group, str *address, int state, int type,
 /* Checks, if the request (sip_msg *_m) comes from a host in a set
  * (set-id or -1 for all sets)
  */
-int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
+int ds_is_in_list(struct sip_msg *_m, gparam_t *gp_ip, gparam_t *gp_port,
 					int set, int active_only, ds_partition_t *partition)
 {
 	pv_value_t val;
@@ -1826,29 +1826,23 @@ int ds_is_in_list(struct sip_msg *_m, pv_spec_t *pv_ip, pv_spec_t *pv_port,
 	int j,k;
 
 	/* get the address to test */
-	if (pv_get_spec_value( _m, pv_ip, &val)!=0) {
-		LM_ERR("failed to get IP value from PV\n");
+	if (fixup_get_svalue(_m, gp_ip, &val.rs) != 0) {
+		LM_ERR("bad IP pseudo-variable!\n");
 		return -1;
 	}
-	if ( (val.flags&PV_VAL_STR)==0 ) {
-		LM_ERR("IP PV val is not string\n");
-		return -1;
-	}
+
 	if ( (ip=str2ip( &val.rs ))==NULL ) {
 		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
 		return -1;
 	}
 
 	/* get the port to test */
-	if (pv_port) {
-		if (pv_get_spec_value( _m, pv_port, &val)!=0) {
-			LM_ERR("failed to get PORT value from PV\n");
+	if (gp_port) {
+		if (fixup_get_ivalue(_m, gp_port, &val.ri) != 0) {
+			LM_ERR("bad port pseudo-variable!\n");
 			return -1;
 		}
-		if ( (val.flags&PV_VAL_INT)==0 ) {
-			LM_ERR("PORT PV val is not integer\n");
-			return -1;
-		}
+
 		port = val.ri;
 	} else {
 		port = 0;

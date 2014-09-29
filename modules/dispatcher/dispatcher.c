@@ -1415,7 +1415,7 @@ static int w_ds_is_in_list(struct sip_msg *msg,char *ip,char *port,char *set,
 		return -1;
 	}
 
-	return ds_is_in_list(msg,(pv_spec_t*)ip,(pv_spec_t*)port, i_set,
+	return ds_is_in_list(msg, (gparam_t *)ip, (gparam_t *)port, i_set,
 			(int)(long)active_only, partition);
 
 wrong_set_arg:
