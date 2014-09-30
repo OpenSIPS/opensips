@@ -1882,15 +1882,68 @@ timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actio
 		| ROUTE_TIMER error { yyerror("invalid timer_route statement"); }
 	;
 
+
 event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
-						i_tmp = get_script_route_idx($3,event_rlist,
-								EVENT_RT_NO,1);
-						if (i_tmp==-1) YYABORT;
+						i_tmp = 1;
+						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
+							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
+								LM_ERR("Script route <%s> redefined\n", $3);
+								YYABORT;
+							}
+							i_tmp++;
+						}
+
+						if (i_tmp == EVENT_RT_NO) {
+							yyerror("Too many event routes defined\n");
+							YYABORT;
+						}
+
+						event_rlist[i_tmp].name = $3;
+						event_rlist[i_tmp].mode = EVENT_ROUTE_SYNC;
+
 						push($6, &event_rlist[i_tmp].a);
+					}
+		| ROUTE_EVENT LBRACK route_name COMMA STRING RBRACK LBRACE actions RBRACE {
+						int len;
+						i_tmp = 1;
+						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
+							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
+								LM_ERR("Script route <%s> redefined\n", $3);
+								YYABORT;
+							}
+							i_tmp++;
+						}
+
+						if (i_tmp == EVENT_RT_NO) {
+							yyerror("Too many event routes defined\n");
+							YYABORT;
+						}
+
+						event_rlist[i_tmp].name = $3;
+
+						len = strlen($5);
+
+						if (len < 4 /*"sync"*/ ||
+							len > 5 /*"async"*/) {
+							yyerror("Invalid event route mode definition "
+									"[sync/async]");
+							YYABORT;
+						}
+
+						if (len == 4 && !strcmp($5, "sync")) {
+							event_rlist[i_tmp].mode = EVENT_ROUTE_SYNC;
+						} else if (len == 5 && !strcmp($5, "async")) {
+							event_rlist[i_tmp].mode = EVENT_ROUTE_ASYNC;
+						} else {
+							yyerror("Invalid event route mode definition "
+									"[sync/async]");
+							YYABORT;
+						}
+
+						push($8, &event_rlist[i_tmp].a);
 					}
 		| ROUTE_EVENT error { yyerror("invalid event_route statement"); }
 	;
-
 
 
 exp:	exp AND exp 	{ $$=mk_exp(AND_OP, $1, $3); }

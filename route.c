@@ -94,7 +94,7 @@ struct script_route startup_rlist;
 /* timer route */
 struct script_timer_route timer_rlist[TIMER_RT_NO];
 /* event route */
-struct script_route event_rlist[EVENT_RT_NO];
+struct script_event_route event_rlist[EVENT_RT_NO];
 
 int route_type = REQUEST_ROUTE;
 

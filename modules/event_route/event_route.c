@@ -50,8 +50,12 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 							 evi_reply_sock *sock, evi_params_t * params);
 static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str scriptroute_print(evi_reply_sock *sock);
+static inline int get_script_event_route_ID_by_name(char* name, struct script_event_route *sr, int size);
 
 #define SR_SOCK_ROUTE(_s) ((int)(unsigned long)(_s->params))
+#define EVENT_ROUTE_MODE_SEP '/'
+#define EVENT_ROUTE_SYNC  0
+#define EVENT_ROUTE_ASYNC 1
 
 /**
  * module exported functions
@@ -110,8 +114,10 @@ static int mod_init(void)
 	return 0;
 }
 
+
 static int child_init(int rank)
 {
+
 	char buffer[EV_SCRIPTROUTE_MAX_SOCK];
 	str sock_name;
 	str event_name;
@@ -133,7 +139,6 @@ static int child_init(int rank)
 
 	/* subscribe the route events - idx starts at 1 */
 	for (idx = 1; event_rlist[idx].a && event_rlist[idx].name; idx++) {
-
 		/* build the socket */
 		event_name.s = event_rlist[idx].name;
 		event_name.len = strlen(event_rlist[idx].name);
@@ -154,6 +159,15 @@ static int child_init(int rank)
 		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
 		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
 
+		if (sock_name.len < EV_SCRIPTROUTE_MAX_SOCK - 6) {
+			sock_name.s[sock_name.len++] = EVENT_ROUTE_MODE_SEP;
+			//memcpy(sock_name.s+sock_name.len, event_rlist[idx].mode
+		} else {
+			LM_ERR("not enough room in socket name buffer\n");
+			return -1;
+		}
+
+		LM_INFO("NAMEEEEE %.*s\n", sock_name.len, sock_name.s);
 		/* register the subscriber - does not expire */
 		if (evi_event_subscribe(event_name, sock_name, 0, 0) < 0) {
 			LM_ERR("cannot subscribe to event %s\n", event_name.s);
@@ -179,14 +193,19 @@ static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 
 static evi_reply_sock* scriptroute_parse(str socket)
 {
+	#define SET_MSB(value, type) ((type)value << (sizeof(type) * 8 /*BYTE SIZE*/ - 1))
+
 	evi_reply_sock *sock = NULL;
 	static char *dummy_buffer = 0, *name;
-	int idx;
+	int idx, mode;
 
 	if (!socket.len || !socket.s) {
 		LM_ERR("no socket specified\n");
 		return NULL;
 	}
+
+	mode = (int)(socket.s[socket.len-1] - '0'); /* Last value represents
+							sync/async */
 
 	/* try to normalize the route name */
 	name = pkg_realloc(dummy_buffer, socket.len + 1);
@@ -195,11 +214,11 @@ static evi_reply_sock* scriptroute_parse(str socket)
 		return NULL;
 	}
 	memcpy(name, socket.s, socket.len);
-	name[socket.len] = '\0';
+	name[socket.len - 2] = '\0'; /* already got sync/async value */
 	dummy_buffer = name;
 
 	/* try to "resolve" the name of the route */
-	idx = get_script_route_ID_by_name(name,event_rlist,EVENT_RT_NO);
+	idx = get_script_event_route_ID_by_name(name,event_rlist,EVENT_RT_NO);
 	if (idx < 0) {
 		LM_ERR("cannot found route %.*s\n", socket.len, socket.s);
 		return NULL;
@@ -217,12 +236,17 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	memcpy(sock->address.s, name, socket.len + 1);
 
 	sock->params = (void *)(unsigned long)idx;
+	sock->params = (void *)((unsigned long)sock->params |
+					SET_MSB(mode, unsigned long));
+
 	sock->flags |= EVI_PARAMS;
 
-	LM_DBG("route is <%.*s> idx %d\n", sock->address.len, sock->address.s, idx);
+	LM_DBG("route is <%.*s> idx %d mode %s\n", sock->address.len, sock->address.s, idx);
 	sock->flags |= EVI_ADDRESS;
 
 	return sock;
+
+	#undef SET_MSB
 }
 
 static str scriptroute_print(evi_reply_sock *sock)
@@ -452,4 +476,18 @@ error:
 		shm_free(elem);
 	}
 	return E_CFG;
+}
+
+static inline int get_script_event_route_ID_by_name(char* name, struct script_event_route *sr, int size)
+{
+	unsigned int i;
+
+	for (i=1;i<size;i++) {
+		if (sr[i].name==0)
+			return -1;
+		if (strcmp(sr[i].name, name) == 0)
+			return i;
+	}
+
+	return -1;
 }

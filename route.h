@@ -52,6 +52,15 @@ struct script_timer_route{
 	struct action* a;
 };
 
+#define EVENT_ROUTE_SYNC  0
+#define EVENT_ROUTE_ASYNC 1
+
+struct script_event_route{
+	char *name;
+	int mode;
+	struct action *a;
+};
+
 extern struct script_route rlist[RT_NO];			/*!< main "script table" */
 extern struct script_route onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
 extern struct script_route failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
@@ -60,7 +69,7 @@ extern struct script_route local_rlist;			/*!< Local route table */
 extern struct script_route error_rlist;			/*!< Error route table */
 extern struct script_route startup_rlist;		/*!< Startup route table */
 extern struct script_timer_route timer_rlist[TIMER_RT_NO];	/*!< Timer route table */
-extern struct script_route event_rlist[EVENT_RT_NO];	/*!< Events route table */
+extern struct script_event_route event_rlist[EVENT_RT_NO];	/*!< Events route table */
 
 #define REQUEST_ROUTE 1   /*!< Request route block */
 #define FAILURE_ROUTE 2   /*!< Negative-reply route block */
