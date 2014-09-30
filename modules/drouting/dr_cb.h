@@ -30,6 +30,13 @@
 #ifndef _DR_CB_H_
 #define _DR_CB_H_
 
+/* parameters needed for the registration of a gw */
+struct dr_reg_param {
+	void *rule;
+	int n_dst; /* the index of the destination within the rule */
+	void *cr_or_gw;
+};
+
 /* callback types used on top of DRouting */
 enum drcb_types {
 	DRCB_REG_CREATE_PARTS_LIST /* create a partitions list */,

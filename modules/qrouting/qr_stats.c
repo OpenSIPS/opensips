@@ -63,28 +63,12 @@ qr_sample_t * create_history(void) {
 	return history;
 }
 
-/* create a gateway */
-void qr_dst_is_gw(int type, struct dr_cb_params *param){
+qr_gw_t * qr_create_gw(void *dst) {
 	qr_gw_t *gw = NULL; /* internal gw for qr */
-	void *dst; /* pgw_t received from dr */
-	qr_rule_t *rule; /* qr_rule that was initialised with the qr callback from dr */
-	int   n_dst; /* the number of the destination within the dr rule */
 	str *gw_name;
-
-	/* extract the parameters from dr */
-	rule = (qr_rule_t*)((struct dr_reg_gw_params *)(*param->param))->rule;
-	dst = ((struct dr_reg_gw_params *)*param->param)->gw;
-	n_dst = ((struct dr_reg_gw_params *)*param->param)->n_dst;
-
 	gw_name = drb.get_gw_name(dst);
-	LM_DBG("Adding gw '%.*s' to rule id: %d\n", gw_name->len, gw_name->s,
-			rule->r_id);
 
-
-	if(rule == 0) {
-		LM_ERR("no rule to add gw to\n");
-		goto error;
-	}
+	LM_DBG("Creating gw '%.*s'\n", gw_name->len, gw_name->s);
 
 	if ((gw = (qr_gw_t*)shm_malloc(sizeof(qr_gw_t))) == NULL) {
 		LM_ERR("no more shm memory\n");
@@ -109,12 +93,34 @@ void qr_dst_is_gw(int type, struct dr_cb_params *param){
 	gw->dr_gw = dst; /* save the pointer to the dr gateway */
 
 	/* save gateway to rule */
-	rule->dest[n_dst].type = QR_DST_GW;
-	rule->dest[n_dst].dst.gw = gw;
-	return ;
+	//rule->dest[n_dst].type = QR_DST_GW;
+	//rule->dest[n_dst].dst.gw = gw;
+	return gw;
 error:
 	if(gw)
 		qr_free_gw(gw);
+	return NULL;
+
+}
+
+/* make gateway a given destination - to be registered as callback */
+void qr_dst_is_gw(int type, struct dr_cb_params *param){
+	void *dst; /* pgw_t received from dr */
+	qr_rule_t *rule; /* qr_rule that was initialised with the qr callback from dr */
+	int   n_dst; /* the number of the destination within the dr rule */
+
+	/* extract the parameters from dr */
+	rule = (qr_rule_t*)((struct dr_reg_param *)(*param->param))->rule;
+	dst = ((struct dr_reg_param *)*param->param)->cr_or_gw;
+	n_dst = ((struct dr_reg_param *)*param->param)->n_dst;
+	LM_DBG("Adding gw to rule %d\n", rule->r_id);
+
+	if(rule != NULL) {
+		rule->dest[n_dst].type = QR_DST_GW;
+		rule->dest[n_dst].dst.gw = qr_create_gw(dst);
+	} else {
+		LM_ERR("no rule to add the gateway to\n");
+	}
 }
 
 /* free all the samples in a gateway's history */
@@ -143,7 +149,7 @@ void qr_free_gw(qr_gw_t * gw) {
 /* creates a rule n_dest destinations (by default marked as gws) */
 void qr_create_rule(int type, struct dr_cb_params * param) {
 	qr_rule_t *new = NULL;
-	int i, r_id;
+	int r_id;
 	struct dr_reg_init_rule_params *init_rule_params = NULL;
 	init_rule_params = (struct dr_reg_init_rule_params *)*param->param;
 
@@ -164,33 +170,47 @@ void qr_create_rule(int type, struct dr_cb_params * param) {
 										 this rule, as rcvd from dr*/
 	new->r_id = r_id;
 	init_rule_params->rule = new; /* send the rule to the dr */
+	LM_DBG("Rule %d created\n", r_id);
 }
 
 /* marks index_grp destination from the rule as group and creates the gw array */
-int qr_dst_is_grp(void *rule_v, int index_grp, int n_gw) {
-	qr_rule_t *rule = (qr_rule_t*)rule_v;
+void qr_dst_is_grp(int type, struct dr_cb_params *params) {
+	qr_rule_t *rule = (qr_rule_t*)((struct dr_reg_param *)*params->param)
+		->rule;
+	void * dr_gw;
+	str *cr_name, *gw_name;
+	int i;
+	int n_dst = ((struct dr_reg_param*)*params->param)->n_dst;
+	int n_gws ;
+	void *grp = ((struct dr_reg_param*)*params->param)->cr_or_gw;
+	n_gws = drb.get_cr_n_gw(grp);
+	cr_name = drb.get_cr_name(grp);
+	LM_DBG("Carrier '%.*s' with  %d gateways added to rule %d\n", cr_name->len,
+			cr_name->s, n_gws, rule->r_id);
 
-	if(rule == NULL) {
+
+	if(rule != NULL) {
+		rule->dest[n_dst].type = QR_DST_GRP;
+		rule->dest[n_dst].dst.grp.gw = (qr_gw_t**)shm_malloc(n_gws *
+				sizeof(qr_gw_t*));
+		if(rule->dest[n_dst].dst.grp.gw != NULL) {
+			rule->dest[n_dst].dst.grp.n = n_gws;
+			rule->dest[n_dst].dst.grp.id = cr_name;
+			for(i = 0; i < n_gws; i++) {
+				dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
+															  as pgw_t from dr */
+				rule->dest[n_dst].dst.grp.gw[i] = qr_create_gw(dr_gw);
+				gw_name = drb.get_gw_name(rule->dest[n_dst].dst.grp.gw[i]->dr_gw);
+				LM_DBG("Gw '%.*s' added to carrier '%.*s' from rule %d\n",
+						gw_name->len, gw_name->s, cr_name->len, cr_name->s,
+						rule->r_id);
+			}
+		} else {
+			LM_ERR("no more shm memory\n");
+		}
+	} else {
 		LM_ERR("bad rule\n");
-		return -1;
 	}
-	rule->dest[index_grp].type = 0;
-	rule->dest[index_grp].type |= QR_DST_GRP;
-
-	rule->dest[index_grp].dst.grp.gw = (qr_gw_t**)shm_malloc(n_gw *
-			sizeof(qr_gw_t*));
-	if(rule->dest[index_grp].dst.grp.gw == NULL) {
-		LM_ERR("no more shm memory\n");
-		goto error;
-	}
-	rule->dest[index_grp].dst.grp.n = n_gw;
-
-	return 0;
-error:
-	if(rule->dest[index_grp].dst.grp.gw != NULL)
-		shm_free(rule->dest[index_grp].dst.grp.gw);
-	return -1;
-
 }
 
 /* add rule to internal rule list */

@@ -330,11 +330,11 @@ build_rt_info(
 
 	/* callback parameters for the QR module */
 	int i;
-	void * qr_rule;
+	void * qr_rule = NULL;
 	struct dr_callback *dr_cb_it;
 	struct dr_cb_params *cb_params;
-	struct dr_reg_gw_params *reg_gw_params;
 	struct dr_reg_init_rule_params *init_rule_params;
+	struct dr_reg_param *reg_dst_param;
 	pgw_list_t *p = NULL;
 
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
@@ -394,19 +394,30 @@ build_rt_info(
 		/* TODO: should check if qr loaded */
 		for(i = 0; i < rt->pgwa_len; i++) {
 			if(p[i].is_carrier) {
+				reg_dst_param = (struct dr_reg_param *) shm_malloc(
+						sizeof(struct dr_reg_param));
+				if(reg_dst_param == NULL) {
+					LM_ERR("no more shm memory\n");
+				} else {
+					reg_dst_param->rule = qr_rule;
+					reg_dst_param->n_dst = i;
+					reg_dst_param->cr_or_gw = p[i].dst.carrier;
+
+					run_callbacks(dr_reg_cbs, DRCB_REG_CR, (void*)reg_dst_param);
+				}
 
 			} else {
-				reg_gw_params = (struct dr_reg_gw_params *) shm_malloc(sizeof(struct
-							dr_reg_gw_params));
-				if(reg_gw_params == NULL) {
+				reg_dst_param = (struct dr_reg_param *) shm_malloc(sizeof(struct
+							dr_reg_param));
+				if(reg_dst_param == NULL) {
 					LM_ERR("no more shm memory\n");
 					/* TODO: should we crash all together? */
 				} else {
-					reg_gw_params->rule = qr_rule;
-					reg_gw_params->n_dst = i;
-					reg_gw_params->gw = p[i].dst.gw;
+					reg_dst_param->rule = qr_rule;
+					reg_dst_param->n_dst = i;
+					reg_dst_param->cr_or_gw = p[i].dst.gw;
 
-					run_callbacks(dr_reg_cbs, DRCB_REG_GW, (void*)reg_gw_params);
+					run_callbacks(dr_reg_cbs, DRCB_REG_GW, (void*)reg_dst_param);
 				}
 			}
 		}

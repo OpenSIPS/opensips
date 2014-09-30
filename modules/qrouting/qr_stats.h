@@ -98,9 +98,10 @@ typedef struct qr_gw {
 typedef struct qr_grp {
 	qr_gw_t **gw;
 	char sort_method; /* sorting for the group */
-	str name;
+	str *id;
 	int n;
 } qr_grp_t;
+/* TODO: add weights */
 
 
 /* two types of destination */
@@ -124,9 +125,9 @@ typedef struct qr_rule {
 
 extern qr_rule_t ** qr_rules_start; /* used when updating statistics */
 
-qr_gw_t * qr_create_gw(void);
+qr_gw_t *  qr_create_gw(void *);
 void qr_free_gw(qr_gw_t *);
-int qr_dst_is_grp(void *, int, int);
+void qr_dst_is_grp(int, struct dr_cb_params*);
 void qr_create_rule(int, struct dr_cb_params*);
 void qr_add_rule(int , struct dr_cb_params*);
 void test_callback(int types, struct dr_cb_params *param);

@@ -41,10 +41,27 @@ static int add_rule_api(dr_head_p partition, unsigned int rid,
 
 
 static str * get_gw_name(pgw_t * gw);
+static str * get_cr_name(pcr_t * cr);
+static int get_cr_n_gw(pcr_t * cr); /* gets the number of gateways from a carrier */
+static  pgw_t * get_gw_from_cr (pcr_t *cr, int n);
 
 
 static str * get_gw_name(pgw_t *gw) {
 	return &gw->id;
+}
+
+static int get_cr_n_gw(pcr_t * cr) {
+	return cr->pgwa_len;
+}
+
+static pgw_t * get_gw_from_cr(pcr_t *cr, int n) {
+	if(cr->pgwa_len > n)
+		return cr->pgwl[n].dst.gw; /* a carrier cannot contain another carrier */
+	return NULL; /* provided index was bigger than the vector */
+}
+
+static str *get_cr_name(pcr_t * cr) {
+	return &cr->id;
 }
 
 /* Warning this function assumes the lock is already taken */
@@ -77,6 +94,9 @@ int load_dr (struct dr_binds *drb)
 	drb->add_rule = add_rule_api;
 	drb->register_drcb = register_dr_cb;
 	drb->get_gw_name = get_gw_name;
+	drb->get_cr_n_gw = get_cr_n_gw;
+	drb->get_cr_name = get_cr_name;
+	drb->get_gw_from_cr = get_gw_from_cr;
 	return 0;
 }
 

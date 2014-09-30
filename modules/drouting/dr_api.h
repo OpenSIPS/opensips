@@ -48,14 +48,21 @@ typedef int (*add_rule_f)(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr);
 typedef str * (*get_gw_name_f) (pgw_t *gw);
-
+typedef int (*get_cr_n_gw_f) (pcr_t *cr);
+typedef str * (*get_cr_name_f) (pcr_t *cr);
+typedef  pgw_t * (*get_gw_from_cr_f) (pcr_t *cr, int n); /* gets the n-th
+															gateway from the
+															carrier */
 struct dr_binds {
-	create_head_f   create_head;
-	free_head_f     free_head;
-	match_number_f  match_number;
-	add_rule_f      add_rule;
-	register_drcb_f register_drcb;
-	get_gw_name_f   get_gw_name;
+	create_head_f    create_head;
+	free_head_f      free_head;
+	match_number_f   match_number;
+	add_rule_f       add_rule;
+	register_drcb_f  register_drcb;
+	get_gw_name_f    get_gw_name;
+	get_cr_name_f    get_cr_name;
+	get_cr_n_gw_f    get_cr_n_gw;
+	get_gw_from_cr_f get_gw_from_cr;
 };
 
 typedef int (*load_dr_api_f)(struct dr_binds *drb);

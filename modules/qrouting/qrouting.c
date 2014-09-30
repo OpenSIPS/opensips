@@ -98,8 +98,6 @@ struct module_exports exports = {
 };
 
 static int qr_init(void){
-	int i;
-	qr_rule_t *my_rule; /* FIXME: testing purpose */
 	LM_INFO("QR module\n");
 	LM_DBG("history = %d, sampling_interval = %d\n", history,
 			sampling_interval);
@@ -134,6 +132,10 @@ static int qr_init(void){
 		return -1;
 	}
 	if(drb.register_drcb(DRCB_REG_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
+		return -1;
+	}
+	if(drb.register_drcb(DRCB_REG_CR, &qr_dst_is_grp, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
 		return -1;
 	}
@@ -187,7 +189,7 @@ static str * qr_get_dst_name(qr_dst_t * dst) {
 	if(dst->type == QR_DST_GW) {
 		return drb.get_gw_name(dst->dst.gw->dr_gw);
 	} else {
-		return &dst->dst.grp.name;
+		return dst->dst.grp.id;
 	}
 }
 
