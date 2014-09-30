@@ -85,6 +85,81 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val)
 	return 0;
 }
 
+static void trans_fill_left(pv_value_t *val, str pad, int len)
+{
+	char *p;
+	int r;
+
+	/* fill with a single char */
+	if (pad.len == 1) {
+		memset(_tr_buffer, pad.s[0], len);
+		memcpy(_tr_buffer + len, val->rs.s, val->rs.len);
+
+		val->flags = PV_VAL_STR;
+		val->rs.s = _tr_buffer;
+		val->rs.len += len;
+
+	/* fill with a string */
+	} else {
+		p = _tr_buffer;
+		r = len % pad.len;
+		/* handle the first non-even pad */
+		if (r != 0) {
+			memcpy(p, pad.s + (pad.len - r), r);
+			p += r;
+			len -= r;
+			val->rs.len += r;
+		}
+
+		/* save initial string len */
+		r = val->rs.len;
+
+		while (len > 0) {
+			memcpy(p, pad.s, pad.len);
+			p += pad.len;
+			val->rs.len += pad.len;
+			len -= pad.len;
+		}
+
+		memcpy(p + len, val->rs.s, r);
+
+		val->flags = PV_VAL_STR;
+		val->rs.s = _tr_buffer;
+	}
+}
+
+static void trans_fill_right(pv_value_t *val, str pad, int len)
+{
+	char *p;
+	int r;
+
+	memcpy(_tr_buffer, val->rs.s, val->rs.len);
+
+	/* fill with a single char */
+	if (pad.len == 1) {
+		memset(_tr_buffer + val->rs.len, pad.s[0], len);
+
+		val->flags = PV_VAL_STR;
+		val->rs.s = _tr_buffer;
+		val->rs.len += len;
+
+	/* fill with a string */
+	} else {
+		p = _tr_buffer + val->rs.len;
+
+		while (len > 0) {
+			r = len < pad.len ? len : pad.len;
+			memcpy(p, pad.s, r);
+			p += r;
+			val->rs.len += r;
+			len -= pad.len;
+		}
+
+		val->flags = PV_VAL_STR;
+		val->rs.s = _tr_buffer;
+	}
+}
+
 int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
@@ -605,6 +680,34 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
 			val->ri = -1;
 			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
+		case TR_S_FILL_LEFT:
+		case TR_S_FILL_RIGHT:
+
+			/* padding string parameter */
+			st = tp->v.s;
+
+			/* padded final length parameter */
+			i = tp->next->v.n;
+
+			if (val->flags & PV_VAL_INT)
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				i -= val->rs.len;
+			} else if (val->flags & PV_VAL_STR)
+			{
+				i -= val->rs.len;
+			}
+
+			/* no need for padding */
+			if (i < 0)
+				return 0;
+
+			if (subtype == TR_S_FILL_LEFT)
+				trans_fill_left(val, st, i);
+			else
+				trans_fill_right(val, st, i);
+			
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
@@ -2350,6 +2453,55 @@ char* tr_parse_string(str* in, trans_t *t)
 		{
 			LM_ERR("invalid select transformation: %.*s!!\n",
 				in->len, in->s);
+			goto error;
+		}
+		return p;
+	} else if ((name.len==9 && strncasecmp(name.s, "fill.left", 9)==0) ||
+			  (name.len==10 && strncasecmp(name.s, "fill.right", 10)==0)) {
+
+		t->subtype = (name.len == 9 ? TR_S_FILL_LEFT : TR_S_FILL_RIGHT);
+		if (*p != TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid fill transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_sparam(p, p0, tp, spec, ps, in, s);
+		if (tp->type == TR_PARAM_SPEC)
+		{
+			LM_ERR("fill transformation does not allow PVs: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		t->params = tp;
+		if (tp->v.s.len > 1) {
+			/* support for quoted chars/strings */
+			if ((tp->v.s.s[0] == '\'' && tp->v.s.s[tp->v.s.len - 1] == '\'') ||
+				(tp->v.s.s[0] == '\"' && tp->v.s.s[tp->v.s.len - 1] == '\"') ) {
+				tp->v.s.len -= 2;
+				tp->v.s.s++;
+			}
+		}
+		tp = 0;
+		while (*p && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if (*p != TR_PARAM_MARKER || *(p+1) == '\0')
+		{
+			LM_ERR("invalid fill transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		_tr_parse_nparam(p, p0, tp, spec, n, sign, in, s);
+		if (tp->type == TR_PARAM_SPEC)
+		{
+			LM_ERR("fill transformation does not allow PVs: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		t->params->next = tp;
+
+		tp = 0;
+		while(is_in_str(p, in) && (*p==' ' || *p=='\t' || *p=='\n')) p++;
+		if (*p != TR_RBRACKET)
+		{
+			LM_ERR("invalid fill transformation: %.*s!!\n", in->len, in->s);
 			goto error;
 		}
 		return p;
