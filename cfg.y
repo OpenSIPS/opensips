@@ -158,16 +158,28 @@ static char mpath_buf[256];
 static int  mpath_len = 0;
 
 extern int line;
+extern int column;
+extern int startcolumn;
+extern char *finame;
 
+#define get_cfg_file_name \
+	((finame) ? finame : cfg_file ? cfg_file : "default")
+
+
+
+#define mk_action_(_res, _type, _no, _elems) \
+	do { \
+		_res = mk_action(_type, _no, _elems, line, get_cfg_file_name); \
+	} while(0)
 #define mk_action0(_res, _type, _p1_type, _p2_type, _p1, _p2) \
 	do { \
-		_res = mk_action(_type, 0, 0, line); \
+		_res = mk_action(_type, 0, 0, line, get_cfg_file_name); \
 	} while(0)
 #define mk_action1(_res, _type, _p1_type, _p1) \
 	do { \
 		elems[0].type = _p1_type; \
 		elems[0].u.data = _p1; \
-		_res = mk_action(_type, 1, elems, line); \
+		_res = mk_action(_type, 1, elems, line, get_cfg_file_name); \
 	} while(0)
 #define	mk_action2(_res, _type, _p1_type, _p2_type, _p1, _p2) \
 	do { \
@@ -175,7 +187,7 @@ extern int line;
 		elems[0].u.data = _p1; \
 		elems[1].type = _p2_type; \
 		elems[1].u.data = _p2; \
-		_res = mk_action(_type, 2, elems, line); \
+		_res = mk_action(_type, 2, elems, line, get_cfg_file_name); \
 	} while(0)
 #define mk_action3(_res, _type, _p1_type, _p2_type, _p3_type, _p1, _p2, _p3) \
 	do { \
@@ -185,7 +197,7 @@ extern int line;
 		elems[1].u.data = _p2; \
 		elems[2].type = _p3_type; \
 		elems[2].u.data = _p3; \
-		_res = mk_action(_type, 3, elems, line); \
+		_res = mk_action(_type, 3, elems, line, get_cfg_file_name); \
 	} while(0)
 
 %}
@@ -209,6 +221,7 @@ extern int line;
 %token FORWARD
 %token SEND
 %token DROP
+%token ASSERT
 %token EXIT
 %token RETURN
 %token LOG_TOK
@@ -304,6 +317,8 @@ extern int line;
 
 /* config vars. */
 %token DEBUG
+%token ENABLE_ASSERTS
+%token ABORT_ON_ASSERT
 %token FORK
 %token LOGSTDERROR
 %token LOGFACILITY
@@ -643,13 +658,13 @@ blst_elem_list: blst_elem_list COMMA blst_elem {}
 
 
 assign_stm: DEBUG EQUAL snumber { 
-#ifdef CHANGEABLE_DEBUG_LEVEL
 					*debug=$3;
-#else
-					debug=$3;
-#endif
 			}
 		| DEBUG EQUAL error  { yyerror("number  expected"); }
+		| ENABLE_ASSERTS EQUAL NUMBER  { enable_asserts=$3; }
+		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
+		| ABORT_ON_ASSERT EQUAL NUMBER  { abort_on_assert=$3; }
+		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
 		| FORK  EQUAL NUMBER { dont_fork= !dont_fork ? ! $3:1; }
 		| FORK  EQUAL error  { yyerror("boolean value expected"); }
 		| LOGSTDERROR EQUAL NUMBER { if (!config_check) log_stderr=$3; }
@@ -2575,6 +2590,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
 													"argument"); }
+		| ASSERT LPAREN exp COMMA STRING RPAREN	{mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5); }
 		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
 		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
@@ -2968,7 +2984,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7; 
 								elems[3].type = NUMBER_ST; 
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
+								mk_action_($$, CACHE_STORE_T, 4, elems);
 							}
 		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA script_var
 								RPAREN { 
@@ -2980,7 +2996,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7; 
 								elems[3].type = SCRIPTVAR_ST; 
 								elems[3].u.data = $9;
-								$$ = mk_action(CACHE_STORE_T, 4, elems, line); 
+								mk_action_($$, CACHE_STORE_T, 4, elems);
 							}
 
 		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN { 
@@ -3017,7 +3033,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_ADD_T, 4, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 4, elems);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3028,7 +3044,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_ADD_T, 4, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 4, elems);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3041,7 +3057,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_ADD_T, 5, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 5, elems);
 							}
 		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3054,7 +3070,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_ADD_T, 5, elems, line); 
+								mk_action_($$, CACHE_ADD_T, 5, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3065,7 +3081,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.number = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_SUB_T, 4, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 4, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3076,7 +3092,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[2].u.data = $7;
 								elems[3].type = NUMBER_ST;
 								elems[3].u.number = $9;
-								$$ = mk_action(CACHE_SUB_T, 4, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 4, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3089,7 +3105,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_SUB_T, 5, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 5, elems);
 							}
 		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3102,7 +3118,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[3].u.number = $9;
 								elems[4].type = SCRIPTVAR_ST;
 								elems[4].u.data = $11;
-								$$ = mk_action(CACHE_SUB_T, 5, elems, line); 
+								mk_action_($$, CACHE_SUB_T, 5, elems);
 							}
 		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING COMMA STRING RPAREN { 
 								elems[0].type = STR_ST; 
@@ -3111,14 +3127,14 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[1].u.data = $5; 
 								elems[2].type = STR_ST; 
 								elems[2].u.data = $7;
-								$$ = mk_action(CACHE_RAW_QUERY_T, 3, elems, line); 
+								mk_action_($$, CACHE_RAW_QUERY_T, 3, elems);
 							}
 		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING RPAREN { 
 								elems[0].type = STR_ST; 
 								elems[0].u.data = $3; 
 								elems[1].type = STR_ST; 
 								elems[1].u.data = $5; 
-								$$ = mk_action(CACHE_RAW_QUERY_T, 2, elems, line); 
+								mk_action_($$, CACHE_RAW_QUERY_T, 2, elems);
 							}
 		| ID LPAREN RPAREN		{
 						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
@@ -3134,7 +3150,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}else{
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										$$ = mk_action(MODULE_T, 1, elems, line);
+										mk_action_($$, MODULE_T, 1, elems);
 									}
 								}
 		| ID LPAREN module_func_param RPAREN		{
@@ -3151,7 +3167,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									}else{
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										$$ = mk_action(MODULE_T, $3+1, elems, line);
+										mk_action_($$, MODULE_T, $3+1, elems);
 									}
 								}
 		| ID LPAREN error RPAREN { $$=0; yyerrorf("bad arguments for "
@@ -3187,13 +3203,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				elems[4].u.data = $11;
 				elems[5].type = SCRIPTVAR_ST; 
 				elems[5].u.data = $13;
-				$$ = mk_action(CONSTRUCT_URI_T,6,elems,line); }
+				mk_action_($$, CONSTRUCT_URI_T,6,elems); }
 		| GET_TIMESTAMP LPAREN script_var COMMA script_var RPAREN {
 				elems[0].type = SCRIPTVAR_ST;
 				elems[0].u.data = $3;
 				elems[1].type = SCRIPTVAR_ST;
 				elems[1].u.data = $5; 
-				$$ = mk_action(GET_TIMESTAMP_T,2,elems,line); }
+				mk_action_($$, GET_TIMESTAMP_T,2,elems); }
 		| SCRIPT_TRACE LPAREN RPAREN {
 				mk_action2($$, SCRIPT_TRACE_T, 0, 0, 0, 0); }
 		| SCRIPT_TRACE LPAREN NUMBER COMMA STRING RPAREN {
@@ -3217,13 +3233,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 
 
 %%
-
-extern int column;
-extern int startcolumn;
-extern char *finame;
-
-#define get_cfg_file_name \
-	((finame) ? finame : cfg_file ? cfg_file : "default")
 
 static inline void warn(char* s)
 {
