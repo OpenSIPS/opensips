@@ -250,13 +250,13 @@ static int dbcache_get(cachedb_con *con, str* attr, str* res)
 			goto out_err;
 	}
 
-	if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
+	if (cdb_dbf.free_result(cdb_db_handle, db_res) < 0)
 		LM_DBG("failed to free result of query\n");
 
 	return 1;
 
 out_err:
-	if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
+	if (cdb_dbf.free_result(cdb_db_handle, db_res) < 0)
 		LM_DBG("failed to free result of query\n");
 
 	return -1;
