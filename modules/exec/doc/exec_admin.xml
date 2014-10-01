@@ -107,18 +107,23 @@
 	<section>
 		<title><varname>setvars</varname> (integer)</title>
 		<para>
-		Turn off to disable setting environment variables for executed commands.
+		Set to 0 to disable setting all above-mentioned environment variables
+		for all executed commands.
+		</para>
+		<para>
+		<emphasis role='bold'>WARNING: If left enabled, make sure your
+		"/bin/sh" is safe from the Shellshock bash vulnerability!!! </emphasis>
 		</para>
 		<para>
 		<emphasis>
-			Default value is 1.
+			Default value is 1 (enabled).
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <quote>setvars</quote> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("exec", "setvars", 1)
+modparam("exec", "setvars", 0)
 ...
 </programlisting>
 		</example>
