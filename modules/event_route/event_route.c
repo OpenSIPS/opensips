@@ -246,7 +246,7 @@ static evi_reply_sock* scriptroute_parse(str socket)
 
 	evi_reply_sock *sock = NULL;
 	static char *dummy_buffer = 0, *name;
-	int idx, mode=-1;
+	int idx, mode=-1, name_len;
 	char* mode_pos;
 
 	if (!socket.len || !socket.s) {
@@ -255,9 +255,11 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	}
 
 	mode_pos = q_memrchr(socket.s, EVENT_ROUTE_MODE_SEP, socket.len);
-	mode_pos++;
+	if (mode_pos == NULL)
+		mode = 0; /*default 'sync'*/
 
-	if (mode_pos == NULL || !strncmp(mode_pos, "sync", 4)) {
+	mode_pos++;
+	if (!strncmp(mode_pos, "sync", 4)) {
 		mode = 0;
 	} else if (!strncmp(mode_pos, "async", 5)) {
 		mode = 1;
@@ -266,20 +268,25 @@ static evi_reply_sock* scriptroute_parse(str socket)
 		return NULL;
 	}
 
+	name_len = socket.len-(mode/*if async add 1*/+4/*sync len*/+1/*'/'*/);
+
 	/* try to normalize the route name */
-	name = pkg_realloc(dummy_buffer, socket.len + 1);
+	name = pkg_realloc(dummy_buffer, name_len + 1);
 	if (!name) {
 		LM_ERR("no more pkg memory\n");
 		return NULL;
 	}
-	memcpy(name, socket.s, socket.len-(mode/*if async add 1*/+4/*sync len*/
-						+1/*'/'*/));
+
+
+	memcpy(name, socket.s, name_len);
+	name[name_len] = '\0';
+
 	dummy_buffer = name;
 
 	/* try to "resolve" the name of the route */
 	idx = get_script_event_route_ID_by_name(name,event_rlist,EVENT_RT_NO);
 	if (idx < 0) {
-		LM_ERR("cannot found route %.*s\n", socket.len, socket.s);
+		LM_ERR("cannot find route %s\n", name);
 		return NULL;
 	}
 
