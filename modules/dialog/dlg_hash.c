@@ -59,6 +59,8 @@
 #include "dlg_hash.h"
 #include "dlg_profile.h"
 #include "dlg_replication.h"
+#include "../../evi/evi_params.h"
+#include "../../evi/evi_modules.h"
 
 #define MAX_LDG_LOCKS  2048
 #define MIN_LDG_LOCKS  2
@@ -70,6 +72,17 @@ extern int last_dst_leg;
 
 struct dlg_table *d_table = NULL;
 struct dlg_cell  *current_dlg_pointer = NULL ;
+
+static inline void raise_state_changed_event(unsigned int ostate, unsigned int nstate);
+static str ei_st_ch_name = str_init("E_DLG_STATE_CHANGED");
+static evi_params_p event_params;
+
+static str ei_old_state = str_init("old_state");
+static str ei_new_state = str_init("new_state");
+
+static event_id_t ei_st_ch_id = EVI_ERROR;
+
+static evi_param_p ostate_p, nstate_p;
 
 
 int dialog_cleanup( struct sip_msg *msg, void *param )
@@ -747,6 +760,67 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 	dlg_unlock( d_table, d_entry);
 }
 
+/*
+ * create DLG_STATE_CHANGED_EVENT
+ */
+int state_changed_event_init(void)
+{
+	/* publish the event */
+	ei_st_ch_id = evi_publish_event(ei_st_ch_name);
+	if (ei_st_ch_id == EVI_ERROR) {
+		LM_ERR("cannot register dialog state changed event\n");
+		return -1;
+	}
+
+	event_params = pkg_malloc(sizeof(evi_params_t));
+	if (event_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(event_params, 0, sizeof(evi_params_t));
+
+	ostate_p = evi_param_create(event_params, &ei_old_state);
+	if (event_params == NULL)
+		goto create_error;
+
+	nstate_p = evi_param_create(event_params, &ei_new_state);
+	if (event_params == NULL)
+		goto create_error;
+
+	return 0;
+
+create_error:
+	LM_ERR("cannot create event parameter\n");
+	return -1;
+}
+
+/*
+ * destroy DLG_STATE_CHANGED event
+ */
+void state_changed_event_destroy(void)
+{
+	evi_free_params(event_params);
+}
+
+/*
+ * raise DLG_STATE_CHANGED event
+ */
+static void raise_state_changed_event(unsigned int ostate, unsigned int nstate)
+{
+	if (evi_param_set_int(ostate_p, &ostate) < 0) {
+		LM_ERR("cannot set old state parameter\n");
+		return;
+	}
+
+	if (evi_param_set_int(nstate_p, &nstate) < 0) {
+		LM_ERR("cannot set new state parameter\n");
+		return;
+	}
+
+	if (evi_raise_event(ei_st_ch_id, event_params) < 0)
+		LM_ERR("cannot raise event\n");
+
+}
 
 /**
  * Small logging helper functions for next_state_dlg.
@@ -907,6 +981,10 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 				dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 	*new_state = dlg->state;
+
+	if (*old_state != *new_state)
+		raise_state_changed_event((unsigned int)(*old_state),
+							(unsigned int)(*new_state));
 
 	dlg_unlock( d_table, d_entry);
 

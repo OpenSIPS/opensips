@@ -2481,6 +2481,26 @@ if (has_totag()  &amp;&amp; (uri == myself)  &amp;&amp; is_method("INVITE|ACK|BY
 
 	</section>
 
+	<section>
+	<title>Exported Events</title>
+	<section>
+		<title>
+		<function moreinfo="none">E_DLG_STATE_CHANGED</function>
+		</title>
+		<para>
+			This event is raised when the dialog state is changed.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>ostate</emphasis> - the old state of the dialog.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>nstate</emphasis> - the new state of the dialog.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
 
 
 </chapter>

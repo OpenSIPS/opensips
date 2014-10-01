@@ -778,6 +778,12 @@ static int mod_init(void)
 		cdb_size_prefix.len = strlen(cdb_size_prefix.s);
 	}
 
+	/* create dialog state changed event */
+	if (state_changed_event_init() < 0) {
+		LM_ERR("cannot create dialog state changed event\n");
+		return -1;
+	}
+
 	/* create profile hashes */
 	if (add_profile_definitions( profiles_nv_s, 0)!=0 ) {
 		LM_ERR("failed to add profiles without value\n");
@@ -967,6 +973,9 @@ static void mod_destroy(void)
 	destroy_dlg_profiles();
 
 	destroy_cachedb(1);
+
+	/* free DLG_STATE_CHANGED event */
+	state_changed_event_destroy();
 }
 
 
