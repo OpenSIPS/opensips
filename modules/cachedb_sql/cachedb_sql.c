@@ -285,9 +285,7 @@ static int dbcache_get(cachedb_con *con, str* attr, str* res)
 
 			if (res->s == NULL) {
 				LM_ERR("no more pkg\n");
-				if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
-					LM_ERR("failed to free result of query\n");
-				return -1;
+				goto out_err;
 			}
 
 			memcpy(res->s, (char*)RES_ROWS(db_res)[0].values[0].val.string_val, res->len);
@@ -298,9 +296,7 @@ static int dbcache_get(cachedb_con *con, str* attr, str* res)
 
 			if (res->s == NULL) {
 				LM_ERR("no more pkg\n");
-				if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
-					LM_DBG("failed to free result of query\n");
-				return -1;
+				goto out_err;
 			}
 
 			memcpy(res->s, (char*)RES_ROWS(db_res)[0].values[0].val.str_val.s, res->len);
@@ -310,20 +306,25 @@ static int dbcache_get(cachedb_con *con, str* attr, str* res)
 			res->s = pkg_malloc(res->len + 1);
 			if (res->s == NULL) {
 				LM_ERR("no more pkg\n");
-				if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
-					LM_DBG("failed to free result of query\n");
-				return -1;
+				goto out_err;
 			}
 			memcpy(res->s, (char*)RES_ROWS(db_res)[0].values[0].val.blob_val.s, res->len);
 			break;
 		default:
 			LM_ERR("unknown type of DB user column\n");
-			if (db_res != NULL && CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
-				LM_DBG("failed to freeing result of query\n");
-				return -1;
+			goto out_err;
 	}
 
+	if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
+		LM_DBG("failed to free result of query\n");
+
 	return 1;
+
+out_err:
+	if (CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
+		LM_DBG("failed to free result of query\n");
+
+	return -1;
 }
 
 static int dbcache_remove(cachedb_con *con, str* attr)
