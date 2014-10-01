@@ -108,4 +108,5 @@ void lb_raise_event(struct lb_dst *dst);
 extern int grp_avp_name;
 extern int mask_avp_name;
 extern int id_avp_name;
+extern int prfs_avp_name;
 #endif

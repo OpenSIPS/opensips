@@ -75,9 +75,11 @@ static int mi_child_init();
 static str grp_avp_name_s = str_init("lb_grp");
 static str mask_avp_name_s = str_init("lb_mask");
 static str id_avp_name_s = str_init("lb_id");
+static str prfs_avp_name_s = str_init("lb_prfs");
 int grp_avp_name;
 int mask_avp_name;
 int id_avp_name;
+int prfs_avp_name;
 
 
 
@@ -90,7 +92,7 @@ static int fixup_resources(void** param, int param_no);
 static int fixup_is_dst(void** param, int param_no);
 static int fixup_cnt_call(void** param, int param_no);
 
-static int w_load_balance(struct sip_msg *req, char *grp,  char *rl, char* al);
+static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char* al);
 static int w_lb_disable(struct sip_msg *req);
 static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port);
 static int w_lb_is_dst3(struct sip_msg *msg, char *ip, char *port, char *grp);
@@ -442,6 +444,10 @@ static int mod_init(void)
 
 	if (lb_init_event() < 0) {
 		LM_ERR("cannot init event\n");
+		return -1;
+	}
+	if (parse_avp_spec(&prfs_avp_name_s, &prfs_avp_name)) {
+		LM_ERR("cannot parse resources avp\n");
 		return -1;
 	}
 
