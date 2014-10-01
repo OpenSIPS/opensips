@@ -105,6 +105,7 @@ struct dlg_leg {
 #define DLG_LEGS_ALLOCED   1
 #define DLG_LEG_200OK      2
 
+
 struct dlg_cell
 {
 	volatile int         ref;
@@ -453,5 +454,8 @@ static inline void init_dlg_term_reason(struct dlg_cell *dlg,char *reason,int re
 			LM_ERR("Failed to initialize the terminate reason \n");
 	}
 }
+
+int state_changed_event_init(void);
+void state_changed_event_destroy(void);
 
 #endif
