@@ -733,6 +733,78 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 }
 
 
+int do_lb_reset(struct sip_msg *req, struct lb_data *data)
+{
+	struct usr_avp *id_avp;
+	struct usr_avp *prfs_avp, *del_prfs_avp;
+	int_str id_val;
+	int_str prfs_val;
+
+	struct lb_dst *it_d, *last_dst;
+	struct lb_resource *it_r;
+	struct dlg_profile_table *it_p;
+
+
+	/* get previous iteration destination, if any */
+	last_dst = NULL;
+	id_avp = search_first_avp(0, id_avp_name, &id_val, 0);
+	if( id_avp ) {
+		if( is_avp_str_val(id_avp) == 0 ) {
+			for( it_d=data->dsts ; it_d ; it_d=it_d->next ) {
+				if( it_d->id == id_val.n ) {
+					last_dst = it_d;
+					LM_DBG("sequential call of LB - use previous dst %d [%.*s]\n", last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
+					break;
+				}
+			}
+		}
+		destroy_avp(id_avp);
+	}
+
+	/* search and clean up previous iteration profiles, if any */
+	for( del_prfs_avp=NULL,prfs_avp=search_first_avp(0, prfs_avp_name, &prfs_val, 0) ; ; prfs_avp=search_next_avp(prfs_avp, &prfs_val) ) {
+		if( del_prfs_avp != NULL ) {
+			destroy_avp(del_prfs_avp);
+			del_prfs_avp = NULL;
+		};
+		if( prfs_avp == NULL ) break;
+
+		/* process AVPs if we have last_dst and AVP of the right type */
+		if( (last_dst != NULL) && (is_avp_str_val(prfs_avp) != 0) ) {
+			it_p = NULL;
+
+			/* first try: check in existing data->resources */
+			for( it_r=data->resources ; it_r ; it_r=it_r->next ) {
+				if( (it_r->profile->name.len == prfs_val.s.len) && (memcmp(it_r->profile->name.s, prfs_val.s.s, prfs_val.s.len) == 0) ) {
+					it_p = it_r->profile;
+					break;
+				}
+			}
+			/* second try: search in dialog module */
+			if( it_p == NULL ) {
+				it_p = lb_dlg_binds.search_profile(&prfs_val.s);
+			}
+			/* else: complain and ignore */
+			if( it_p == NULL ) {
+				LM_WARN("sequential call of LB - ignore previous unknown profile [%.*s]\n", prfs_val.s.len, prfs_val.s.s);
+				continue;
+			}
+
+			/* remove profile */
+			if( lb_dlg_binds.unset_profile(req, &last_dst->profile_id, it_p) != 1 )
+				LM_ERR("failed to remove from profile [%.*s] -> [%.*s]\n", it_p->name.len, it_p->name.s, last_dst->profile_id.len, last_dst->profile_id.s);
+		}
+		del_prfs_avp = prfs_avp;
+	}
+
+	/* remove any saved AVPs */
+	destroy_avps(0, grp_avp_name, 0);
+	destroy_avps(0, mask_avp_name, 0);
+
+	return 0;
+}
+
+
 /* events */
 static event_id_t lb_evi_id;
 static str lb_event = str_init("E_LOAD_BALANCER_STATUS");

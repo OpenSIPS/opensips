@@ -94,6 +94,7 @@ static int fixup_cnt_call(void** param, int param_no);
 
 static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char* al);
 static int w_lb_disable(struct sip_msg *req);
+static int w_lb_reset(struct sip_msg *req);
 static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port);
 static int w_lb_is_dst3(struct sip_msg *msg, char *ip, char *port, char *grp);
 static int w_lb_is_dst4(struct sip_msg *msg, char *ip, char *port, char *grp,
@@ -113,6 +114,8 @@ static cmd_export_t cmds[]={
 	{"load_balance",     (cmd_function)w_load_balance,   3, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_disable",       (cmd_function)w_lb_disable,     0,               0,
+		0, REQUEST_ROUTE|FAILURE_ROUTE},
+	{"lb_reset",         (cmd_function)w_lb_reset,       0,               0,
 		0, REQUEST_ROUTE|FAILURE_ROUTE},
 	{"lb_is_destination",(cmd_function)w_lb_is_dst2,     2,    fixup_is_dst,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -559,6 +562,23 @@ static int w_lb_disable(struct sip_msg *req)
 
 	/* do lb */
 	ret = do_lb_disable( req , *curr_data);
+
+	lock_stop_read( ref_lock );
+
+	if (ret<0)
+		return ret;
+	return 1;
+}
+
+
+static int w_lb_reset(struct sip_msg *req)
+{
+	int ret;
+
+	lock_start_read( ref_lock );
+
+	/* do lb */
+	ret = do_lb_reset( req , *curr_data);
 
 	lock_stop_read( ref_lock );
 

@@ -95,6 +95,8 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 
 int do_lb_disable(struct sip_msg *req, struct lb_data *data);
 
+int do_lb_reset(struct sip_msg *req, struct lb_data *data);
+
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
 		pv_spec_t *pv_ip, pv_spec_t *pv_port, int grp, int active);
 
