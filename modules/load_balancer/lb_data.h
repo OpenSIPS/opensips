@@ -36,8 +36,10 @@
 #include "../dialog/dlg_load.h"
 #include "lb_parser.h"
 
-#define LB_ABSOLUTE_LOAD_ALG    0
-#define LB_RELATIVE_LOAD_ALG    1
+#define LB_ALG_ABS              0
+#define LB_ALG_REL              1
+#define LB_ALG_ABS_NEG          2
+#define LB_ALG_REL_NEG          3
 
 #define LB_DST_PING_DSBL_FLAG   (1<<0)
 #define LB_DST_PING_PERM_FLAG   (1<<1)

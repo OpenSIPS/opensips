@@ -372,44 +372,39 @@ void free_lb_data(struct lb_data *data)
 }
 
 
-static unsigned int get_dst_load(struct lb_resource **res, unsigned int res_no,
-										struct lb_dst *dst, unsigned int alg)
+static int get_dst_load(struct lb_resource **res, unsigned int res_no,
+								struct lb_dst *dst, unsigned int alg, int *load)
 {
-	int k,l;
-	unsigned int available;
-	int av;
+	int k, l, av;
 
-	available = (unsigned int)(-1);
 	/* iterate through requested resources */
 	for( k=0 ; k<res_no ; k++ ) {
-		for ( l=0 ; l<dst->rmap_no ; l++)
-			if (res[k]==dst->rmap[l].resource)
+		for (l=0 ; l<dst->rmap_no ; l++ )
+			if( res[k] == dst->rmap[l].resource )
 				break;
-		if (l==dst->rmap_no) {
+		if( l == dst->rmap_no ) {
 			LM_CRIT("bug - cannot find request resource in dst\n");
 			return 0;
 		}
 
-		if (alg==LB_RELATIVE_LOAD_ALG) {
-			if (dst->rmap[l].max_load) {
-				av = 100 - ( 100*lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id) / dst->rmap[l].max_load );
-			} else {
-				av = 0;
+		av = 0;
+		if( (alg == LB_ALG_REL) || (alg == LB_ALG_REL_NEG) ) {
+			if( dst->rmap[l].max_load ) {
+				av = 100 - (100 * lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id) / dst->rmap[l].max_load);
 			}
-		} else {
-			/* LB_ABSOLUTE_LOAD_ALG */
-			av = dst->rmap[l].max_load -
-			lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
 		}
-		if (av < 0) {
-			LM_WARN("negative availability for resource in dst\n");
-			av = 0;
+		else if( (alg == LB_ALG_ABS) || (alg == LB_ALG_ABS_NEG) ) {
+			av = dst->rmap[l].max_load - lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
 		}
-		if (av < available) /* computing a minimum */
-			available = av;
-	}
 
-	return available;
+		if( (k == 0/*first iteration*/) || (av < *load ) )
+			*load = av;
+		/*
+		we possibly could have negative avaliability for any resource,
+		because we could use ALG=2,3 or manually increment resource with lb_count_call()
+		*/
+	}
+	return (k > 0); /* load initialized */
 }
 
 
@@ -591,18 +586,30 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 
 
 	/* do the load-balancing */
-	load = 0;
+	again = 0;
+	load = it_l = 0;
 	dst = NULL;
 	for( it_d=data->dsts,i=0,j=0 ; it_d ; it_d=it_d->next ) {
 		if( it_d->group == grp ) {
 			if( (used_dst_bitmap[i] & (1 << j)) && ((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
 				/* valid destination (group & resources & status) */
-				if( (it_l = get_dst_load(call_res, call_res_n, it_d, alg)) > load ) {
-					/* computing a max */
-					load = it_l;
-					dst = it_d;
+				if( get_dst_load(call_res, call_res_n, it_d, alg, &it_l) ) {
+					if(
+						(((alg == LB_ALG_REL_NEG) || (alg == LB_ALG_ABS_NEG)) || (it_l > 0)) &&
+						(!again || (it_l > load))
+					) {
+						/* computing a max, or first iteration */
+						load = it_l;
+						dst = it_d;
+						again = 1;
+					};
+					LM_DBG("destination %d <%.*s> selected for LB set with free=%d\n", it_d->id, it_d->uri.len, it_d->uri.s, it_l);
 				}
-				LM_DBG("destination %d <%.*s> selected for LB set with free=%d\n", it_d->id, it_d->uri.len, it_d->uri.s, it_l);
+				else {
+					LM_WARN("skipping destination %d <%.*s> - unable to calculate free resources\n",
+						it_d->id, it_d->uri.len, it_d->uri.s
+					);
+				}
 			}
 			else {
 				LM_DBG("skipping destination %d <%.*s> (used=%d , disabled=%d)\n",
