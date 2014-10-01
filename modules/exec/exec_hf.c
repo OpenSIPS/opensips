@@ -52,7 +52,7 @@
 #include "exec_hf.h"
 
 /* should be environment variables set by header fields ? */
-unsigned int setvars=1;
+unsigned int setvars=0;
 
 /* insert a new header field into the structure; */
 static int insert_hf( struct hf_wrapper **list, struct hdr_field *hf )

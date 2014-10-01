@@ -107,11 +107,16 @@
 	<section>
 		<title><varname>setvars</varname> (integer)</title>
 		<para>
-		Turn off to disable setting environment variables for executed commands.
+		Set to 1 to enable setting all above-mentioned environment variables
+		for all executed commands.
+		</para>
+		<para>
+		<emphasis role='bold'>WARNING: Before enabling this parameter, make sure
+		your "/bin/sh" is safe from the Shellshock bash vulnerability!!! </emphasis>
 		</para>
 		<para>
 		<emphasis>
-			Default value is 1.
+			Default value is 0 (disabled).
 		</emphasis>
 		</para>
 		<example>
