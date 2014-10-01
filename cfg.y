@@ -433,6 +433,8 @@ extern char *finame;
 %token DB_VERSION_TABLE
 %token DB_DEFAULT_URL
 %token DISABLE_503_TRANSLATION
+%token EVENT_ROUTE_SYNC
+%token EVENT_ROUTE_ASYNC
 
 
 
@@ -1914,12 +1916,12 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						}
 
 						event_rlist[i_tmp].name = $3;
-						event_rlist[i_tmp].mode = EVENT_ROUTE_SYNC;
+						event_rlist[i_tmp].mode = EV_ROUTE_SYNC;
 
 						push($6, &event_rlist[i_tmp].a);
 					}
-		| ROUTE_EVENT LBRACK route_name COMMA STRING RBRACK LBRACE actions RBRACE {
-						int len;
+		| ROUTE_EVENT LBRACK route_name COMMA EVENT_ROUTE_SYNC RBRACK LBRACE actions RBRACE {
+
 						i_tmp = 1;
 						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
 							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
@@ -1935,25 +1937,28 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						}
 
 						event_rlist[i_tmp].name = $3;
+						event_rlist[i_tmp].mode = EV_ROUTE_SYNC;
 
-						len = strlen($5);
+						push($8, &event_rlist[i_tmp].a);
+					}
+		| ROUTE_EVENT LBRACK route_name COMMA EVENT_ROUTE_ASYNC RBRACK LBRACE actions RBRACE {
 
-						if (len < 4 /*"sync"*/ ||
-							len > 5 /*"async"*/) {
-							yyerror("Invalid event route mode definition "
-									"[sync/async]");
+						i_tmp = 1;
+						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
+							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
+								LM_ERR("Script route <%s> redefined\n", $3);
+								YYABORT;
+							}
+							i_tmp++;
+						}
+
+						if (i_tmp == EVENT_RT_NO) {
+							yyerror("Too many event routes defined\n");
 							YYABORT;
 						}
 
-						if (len == 4 && !strcmp($5, "sync")) {
-							event_rlist[i_tmp].mode = EVENT_ROUTE_SYNC;
-						} else if (len == 5 && !strcmp($5, "async")) {
-							event_rlist[i_tmp].mode = EVENT_ROUTE_ASYNC;
-						} else {
-							yyerror("Invalid event route mode definition "
-									"[sync/async]");
-							YYABORT;
-						}
+						event_rlist[i_tmp].name = $3;
+						event_rlist[i_tmp].mode = EV_ROUTE_ASYNC;
 
 						push($8, &event_rlist[i_tmp].a);
 					}

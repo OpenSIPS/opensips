@@ -52,8 +52,8 @@ struct script_timer_route{
 	struct action* a;
 };
 
-#define EVENT_ROUTE_SYNC  0
-#define EVENT_ROUTE_ASYNC 1
+#define EV_ROUTE_SYNC  0
+#define EV_ROUTE_ASYNC 1
 
 struct script_event_route{
 	char *name;
