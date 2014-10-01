@@ -101,7 +101,7 @@ int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
 		pv_spec_t *pv_ip, pv_spec_t *pv_port, int grp, int active);
 
 int lb_count_call(struct lb_data *data, struct sip_msg *req,
-		struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl);
+		struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl, int mode);
 
 int lb_init_event(void);
 void lb_raise_event(struct lb_dst *dst);

@@ -100,7 +100,7 @@ static int w_lb_is_dst3(struct sip_msg *msg, char *ip, char *port, char *grp);
 static int w_lb_is_dst4(struct sip_msg *msg, char *ip, char *port, char *grp,
 		char *active);
 static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
-		char *rl);
+		char *rl, char *mode);
 
 
 static void lb_prob_handler(unsigned int ticks, void* param);
@@ -124,6 +124,8 @@ static cmd_export_t cmds[]={
 	{"lb_is_destination",(cmd_function)w_lb_is_dst4,     4,    fixup_is_dst,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"lb_count_call",    (cmd_function)w_count_call,     4,  fixup_cnt_call,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_count_call",    (cmd_function)w_count_call,     5,  fixup_cnt_call,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 	};
@@ -317,6 +319,9 @@ static int fixup_cnt_call(void** param, int param_no)
 	if (param_no==4)
 		/* resources */
 		return fixup_resources(param, 2);
+	if (param_no==5)
+		/* count or un-count */
+		return fixup_uint(param);
 	return -1;
 }
 
@@ -634,7 +639,7 @@ static int w_lb_is_dst4(struct sip_msg *msg,char *ip,char *port,char *grp,
 
 
 static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
-																	char *rl)
+														char *rl, char *mode)
 {
 	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
 	struct lb_res_str_list *lb_rl;
@@ -709,7 +714,8 @@ static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 
 	lock_start_read( ref_lock );
 
-	ret = lb_count_call( *curr_data, req, ipa, port_no, grp_no, lb_rl);
+	ret = lb_count_call( *curr_data, req, ipa, port_no, grp_no, lb_rl,
+			(unsigned int)(long)mode);
 
 	lock_stop_read( ref_lock );
 

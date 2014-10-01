@@ -951,7 +951,7 @@ int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
 
 
 int lb_count_call(struct lb_data *data, struct sip_msg *req,
-			struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl)
+			struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl, int mode)
 {
 	static struct lb_resource **call_res = NULL;
 	static unsigned int call_res_no = 0;
@@ -1014,9 +1014,16 @@ end_search:
 
 	/* add to the profiles */
 	for( i=0 ; i<rl->n ; i++) {
-		if (lb_dlg_binds.set_profile( req, &dst->profile_id,
-		call_res[i]->profile, 0)!=0)
-			LM_ERR("failed to add to profile\n");
+		if( !mode ) {
+			if (lb_dlg_binds.set_profile( req, &dst->profile_id,
+			call_res[i]->profile, 0)!=0)
+				LM_ERR("failed to add to profile\n");
+		}
+		else {
+			if (lb_dlg_binds.unset_profile( req, &dst->profile_id,
+			call_res[i]->profile)!=1)
+				LM_ERR("failed to remove from profile\n");
+		}
 	}
 
 	/* unlock the resources*/
