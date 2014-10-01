@@ -13,7 +13,9 @@
 		(<emphasis>event_route</emphasis>) has to be declared in the script, and
 		should contain the code that handles the event. The route is executed by
 		the module when the corresponding event is raised by the &osips; Event
-		Interface.
+		Interface.Since version 1.12, the way an event is handlend (sync/async)
+		should be specified from the configuration script with the desired keyword
+		following the name of the event (<emphasis>event_route[e, "sync"]</emphasis>).
 	</para>
 	</section>
 
@@ -124,29 +126,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
 	<section>
 	<title>Exported Parameters</title>
-	<section>
-		<title><varname>synch_mode</varname> (integer)</title>
-		<para>
-		Sets the default event handling method:
-		<itemizedlist>
-		<listitem>
-		<para>0 : handle events in asynch mode (in a dedicated process)</para>
-		</listitem>
-		<listitem>
-		<para>1 : handle events in synch mode (in the same process)</para>
-		</listitem>
-		</itemizedlist>
-		</para>
-		<para><emphasis>Default value is 1.</emphasis></para>
-		<example>
-		<title>Set <varname>synch_mode</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("event_route", "synch_mode", 0)
-...
-</programlisting>
-		</example>
-	</section>
+	<para>The module does not export parameters to be used in configuration script.</para>
 	</section>
 
 	<section>
