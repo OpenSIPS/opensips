@@ -53,7 +53,7 @@ Chapter 1. Admin Guide
    raised by the OpenSIPS Event Interface.Since version 1.12, the
    way an event is handlend (sync/async) should be specified from
    the configuration script with the desired keyword following the
-   name of the event (event_route[e, "sync"]).
+   name of the event (event_route[e, sync]).
 
 1.2. ROUTE events parameters
 
