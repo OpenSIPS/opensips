@@ -258,8 +258,11 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 
 	char* ptr;
 
-	/* No need to update Callid as it is constant
-	 * per ucontact (set at insert time)  -bogdan */
+	/* RFC 3261 states 'All registrations from a UAC SHOULD use
+	 * the same Call-ID header field value for registrations sent
+	 * to a particular registrar.', but it is not a 'MUST'. So
+	 * always update the call ID to be safe. */
+	update_str( &_c->callid, _ci->callid);
 
 	update_str( &_c->user_agent, _ci->user_agent);
 
