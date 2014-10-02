@@ -54,6 +54,15 @@ enum drcb_types {
 	DRCB_MAX /*keep this at the end*/
 };
 
+struct dr_acc_call_params {
+	void *rule; /* qr_handler/rule */
+	int cr_id; /* destination id */
+	int gw_id; /* in the case the destination is a carrier */
+	struct sip_msg *msg;
+};
+
+
+
 /* callback function prototype */
 typedef void (dr_cb) (void *param);
 /* function to free callback param */

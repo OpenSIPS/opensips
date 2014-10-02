@@ -61,7 +61,7 @@ inline double asr(qr_gw_t *gw) {
 		lock_stop_read(gw->ref_lock);
 		return 0;
 	}
-	asr = gw->history_stats.stats.as/gw->history_stats.n.ok;
+	asr = (double)gw->history_stats.stats.as/gw->history_stats.n.ok;
 	lock_stop_read(gw->ref_lock);
 	return asr;
 }
@@ -74,7 +74,7 @@ inline double ccr(qr_gw_t *gw) {
 		lock_stop_read(gw->ref_lock);
 		return 0;
 	}
-	ccr = gw->history_stats.stats.cc/gw->history_stats.n.ok;
+	ccr = (double)gw->history_stats.stats.cc/gw->history_stats.n.ok;
 	lock_stop_read(gw->ref_lock);
 	return ccr;
 }
@@ -87,7 +87,7 @@ inline double pdd(qr_gw_t *gw) {
 		lock_stop_read(gw->ref_lock);
 		return 0;
 	}
-	pdd = gw->history_stats.stats.pdd/gw->history_stats.n.pdd;
+	pdd = (double)gw->history_stats.stats.pdd/gw->history_stats.n.pdd;
 	lock_stop_read(gw->ref_lock);
 	return pdd;
 }
@@ -100,7 +100,7 @@ inline double ast(qr_gw_t *gw) {
 		lock_stop_read(gw->ref_lock);
 		return 0;
 	}
-	ast = gw->history_stats.stats.st/gw->history_stats.n.setup;
+	ast = (double)gw->history_stats.stats.st/gw->history_stats.n.setup;
 	lock_stop_read(gw->ref_lock);
 	return ast;
 }
@@ -113,7 +113,7 @@ inline double acd(qr_gw_t *gw) {
 		lock_stop_read(gw->ref_lock);
 		return 0;
 	}
-	acd = gw->history_stats.stats.cd/gw->history_stats.n.cd;
+	acd = (double)gw->history_stats.stats.cd/gw->history_stats.n.cd;
 	lock_stop_read(gw->ref_lock);
 	return acd;
 }

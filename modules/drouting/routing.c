@@ -94,7 +94,6 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 	unsigned int size, pgwl_size;
 	long int t;
 	char *tmp, *ep;
-	int i;
 	str id;
 
 
@@ -387,6 +386,7 @@ build_rt_info(
 			LM_ERR("No callback list to match the given type\n");
 		}
 		qr_rule = (void*)((struct dr_reg_init_rule_params*)*cb_params->param)->rule;
+		rt->qr_handler = qr_rule;
 
 		p = rt->pgwl;
 

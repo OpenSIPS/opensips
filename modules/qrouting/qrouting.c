@@ -55,8 +55,6 @@ str avp_invite_time_name_ast = str_init("$avp(qr_invite_time_ast)");
 struct sr_timer_process t_proc;
 
 static cmd_export_t cmds[] = {
-	{"test_acc",  (cmd_function)test_acc,   0,  0, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
 static param_export_t params[] = {
@@ -141,6 +139,10 @@ static int qr_init(void){
 	}
 	if(drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
+		return -1;
+	}
+	if(drb.register_drcb(DRCB_ACC_CALL, &qr_acc, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
 		return -1;
 	}
 	LM_DBG("[QR] callbacks in DR were registered\n");

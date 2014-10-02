@@ -50,12 +50,12 @@ int qr_n; /* number of intervals in history */
 
 /* number of calls accounted for each statistic */
 typedef struct qr_n_calls {
-	int ok, pdd, setup, cd;
+	double ok, pdd, setup, cd;
 } qr_n_calls_t;
 
 typedef struct qr_calls {
-	int as; /* calls that returned 200OK */
-	int cc; /* calls that returned 200OK + 4XX */
+	double as; /* calls that returned 200OK */
+	double cc; /* calls that returned 200OK + 4XX */
 	double pdd; /* total post dial delay for sampled interval */
 	double st; /* total setup time for sampled interval */
 	double cd; /* total call duration for sampled interval */
@@ -74,11 +74,11 @@ typedef struct qr_sample {
 
 /* thresholds */
 typedef struct qr_thresholds {
-	int asr1, asr2;
-	int ccr1, ccr2;
-	int pdd1, pdd2;
-	int ast1, ast2;
-	int acd1, acd2;
+	double asr1, asr2;
+	double ccr1, ccr2;
+	double pdd1, pdd2;
+	double ast1, ast2;
+	double acd1, acd2;
 } qr_thresholds_t;
 
 /* history for gateway: sum of sampled intervals */

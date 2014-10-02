@@ -2452,16 +2452,37 @@ err:
 }
 
 
-inline static int push_gw_for_usage(struct sip_msg *msg,
-		struct head_db *current_partition,
-		struct sip_uri *uri, pgw_t *gw , str *c_id, str *c_attrs, int idx)
+inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current_partition,
+		struct sip_uri *uri, rt_info_t *rt, pgw_list_t * dst, int cr_id, int gw_id/* pgw_t *gw , str *c_id, str *c_attrs */, int idx)
 {
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	str *ruri;
+	pgw_t *gw = NULL;
+	str *c_id = NULL;
+	str *c_attrs = NULL;
 	int_str val;
-
+	struct dr_acc_call_params * acc_call_params = NULL;
 	if( current_partition==NULL ) {
 		return -1;
+	}
+
+	if(rt != NULL) { /* qrouting is requested => called from drouting */
+		if(cr_id == -1) { /* it is not a carrier */
+			gw = rt->pgwl[gw_id].dst.gw;
+		} else if(gw_id == -1){ /* destination is a carrier */
+			c_id = &rt->pgwl[cr_id].dst.carrier->id;
+			c_attrs = &rt->pgwl[cr_id].dst.carrier->attrs;
+			gw = rt->pgwl[cr_id].dst.carrier->pgwl[gw_id].dst.gw;
+		}
+	} else if(dst != NULL) { /* routing was not done rule-based => don't use
+							qrouting : called from route_2gw or route_2cr */
+		if(dst->is_carrier) {
+			gw = dst->dst.carrier->pgwl[gw_id].dst.gw;
+			c_id = &dst->dst.carrier->id;
+			c_attrs = &dst->dst.carrier->attrs;
+		} else {
+			gw = dst->dst.gw;
+		}
 	}
 
 	/* build uri*/
@@ -2485,6 +2506,25 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		/* set socket to be used */
 		if (gw->sock)
 			msg->force_send_socket = gw->sock;
+
+		if(rt != NULL) { /* if routing was done rule based */
+			acc_call_params = (struct dr_acc_call_params*)pkg_malloc(
+					sizeof(struct dr_acc_call_params));
+			if(acc_call_params == NULL) {
+				LM_ERR("no more pkg memory!\n");
+				goto error;
+			}
+			memset(acc_call_params, 0, sizeof(struct dr_acc_call_params));
+			/* save callback parameters */
+			acc_call_params->rule = (void*)rt->qr_handler;
+			acc_call_params->cr_id = cr_id;
+			acc_call_params->gw_id = gw_id;
+			acc_call_params->msg = msg;
+			LM_INFO("RUN CALL\n");
+
+			run_callbacks(dr_acc_cbs, DRCB_ACC_CALL, acc_call_params); /* qr
+																		 accouting */
+		}
 
 	} else {
 
@@ -2897,9 +2937,8 @@ search_again:
 					/*ignore it*/
 				} else {
 					/* add gateway to usage list */
-					if ( push_gw_for_usage(msg, current_partition,
-					&uri, cdst->dst.gw ,
-					&dst->dst.carrier->id, &dst->dst.carrier->attrs, n ) ) {
+					if ( push_gw_for_usage(msg, current_partition, &uri, rt_info ,
+								NULL, dsts_idx[i], carrier_idx[j], n) ) {
 						LM_ERR("failed to use gw <%.*s>, skipping\n",
 								cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
@@ -2931,7 +2970,7 @@ search_again:
 
 			/* add gateway to usage list */
 			if ( push_gw_for_usage(msg, current_partition, &uri,
-						dst->dst.gw, NULL, NULL, n) ) {
+						rt_info, NULL, -1, dsts_idx[i], n) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 						dst->dst.gw->id.len, dst->dst.gw->id.s);
 			} else {
@@ -3110,6 +3149,7 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 	static unsigned short carrier_idx_size;
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
+	pgw_list_t tmp;
 	pcr_t *cr;
 	pv_value_t pv_val;
 	str ruri, id;
@@ -3221,14 +3261,17 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 			continue;
 		}
 
-		/* iterate through the list of GWs provided by carrier */
-		for ( j=0 ; j<cr->pgwa_len ; j++ ) {
-
-			cdst = &cr->pgwl[carrier_idx[j]];
-
-			/* is gateway disabled ? */
-			if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
-				/*ignore it*/
+		/* is gateway disabled ? */
+		if (cdst->dst.gw->flags & DR_DST_STAT_DSBL_FLAG ) {
+			/*ignore it*/
+		} else {
+			/* add gateway to usage list */
+			tmp.is_carrier = 1;
+			tmp.dst.carrier = cr;
+			if ( push_gw_for_usage(msg, current_partition, &uri, NULL,
+						&tmp, -1, carrier_idx[j], n ) ) {
+				LM_ERR("failed to use gw <%.*s>, skipping\n",
+						cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 			} else {
 				/* add gateway to usage list */
 				if ( push_gw_for_usage(msg, current_partition, &uri,
@@ -3305,6 +3348,7 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
+	pgw_list_t tmp;
 	pv_value_t pv_val;
 	str ruri, id;
 	str next_gw_attrs = {NULL, 0};

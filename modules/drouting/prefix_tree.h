@@ -140,6 +140,8 @@ typedef struct rt_info_ {
 	unsigned short pgwa_len;
 	/* how many lists link this element */
 	unsigned short ref_cnt;
+	/* handler used by qr for accouting (actually qr_rule_t*) */
+	void *qr_handler;
 } rt_info_t;
 
 typedef struct rt_info_wrp_ {

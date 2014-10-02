@@ -60,10 +60,11 @@ typedef struct qr_dialog_prop {
 
 void update_gw_stats(qr_gw_t *);
 void update_grp_stats(qr_grp_t );
-int test_acc(struct sip_msg*);
+void qr_acc(int type, struct dr_cb_params *);
 inline void qr_add_200OK(qr_gw_t * gw);
 inline void qr_add_4xx(qr_gw_t*);
 void qr_check_reply_tmcb(struct cell*, int ,struct tmcb_params*);
+void show_stats(qr_gw_t *gw);
 
 
 

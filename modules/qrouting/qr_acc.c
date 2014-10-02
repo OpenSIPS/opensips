@@ -28,6 +28,8 @@
  */
 #include "qr_acc.h"
 
+#include "../drouting/dr_cb.h"
+
 int myn = 0;
 
 /* free the parameter of the dialog callback */
@@ -75,64 +77,72 @@ static void release_trans_prop(void *param) {
 	shm_free(to_free);
 }
 
-int test_acc(struct sip_msg* msg) {
+void qr_acc(int type, struct dr_cb_params * params) {
 	qr_trans_prop_t *trans_prop;
+	qr_rule_t *rule;
+	int gw_id, cr_id;
+	struct sip_msg *msg = NULL;
 
-	if(msg->first_line.type != SIP_REQUEST ||
-			msg->first_line.u.request.method_value != METHOD_INVITE) {
+	msg = ((struct dr_acc_call_params*)(*params->param))->msg;
+
+	if(/*msg->first_line.type != SIP_REQUEST ||*/
+			msg->first_line.u.request.method_value == METHOD_INVITE) {
 		/*TODO: check if works only on invite (as it should) */
-		return -1;/* it is not an invite */
+
+		rule = ((struct dr_acc_call_params*)(*params->param))->rule;
+		gw_id = ((struct dr_acc_call_params*)(*params->param))->gw_id;
+		cr_id = ((struct dr_acc_call_params*)(*params->param))->cr_id;
+
+		trans_prop = (qr_trans_prop_t*)shm_malloc(sizeof(qr_trans_prop_t));
+		if(trans_prop == NULL) {
+			LM_ERR("no more shm memory\n");
+			goto error;
+		}
+
+		memset(trans_prop, 0, sizeof(qr_trans_prop_t));
+
+		if(init_trans_prop(trans_prop) < 0) {
+			LM_ERR("failed to init transaction properties (for qrouting)\n");
+			goto error;
+		}
+
+		/* save transaction properties */
+		if(cr_id == -1) { /* if the destination is not within a carrier */
+			trans_prop->gw = rule->dest[gw_id].dst.gw;
+		} else { /* if the destination is within a carrier */
+			trans_prop->gw = rule->dest[cr_id].dst.grp.gw[gw_id];
+		}
+		/* get the time of INVITE */
+		if(clock_gettime(CLOCK_REALTIME, trans_prop->invite) < 0) {
+			LM_ERR("failed to get system time\n");
+			goto error;
+		}
+
+		if(dlgcb.create_dlg(msg, 0) < 0) { /* for call duration */
+			LM_ERR("failed to create dialog\n");
+			goto error;
+		}
+		/* register callback for the responses to this INVITE */
+		if(tmb.register_tmcb(msg, 0,TMCB_RESPONSE_IN, qr_check_reply_tmcb,
+					(void*)trans_prop, release_trans_prop) <= 0) {
+			LM_ERR("cannot register TMCB_RESPONSE_IN\n");
+			goto error;
+		}
 	}
 
-	trans_prop = (qr_trans_prop_t*)shm_malloc(sizeof(qr_trans_prop_t));
-	if(trans_prop == NULL) {
-		LM_ERR("no more shm memory\n");
-		goto error;
-	}
-
-	memset(trans_prop, 0, sizeof(qr_trans_prop_t));
-
-	if(init_trans_prop(trans_prop) < 0) {
-		LM_ERR("failed to init transaction properties (for qrouting)\n");
-		goto error;
-	}
-
-	/* save transaction properties */
-	trans_prop->gw = (*qr_rules_start)->dest[0].dst.gw;
-
-	/* get the time of INVITE */
-	if(clock_gettime(CLOCK_REALTIME, trans_prop->invite) < 0) {
-		LM_ERR("failed to get system time\n");
-		goto error;
-	}
-
-	if(dlgcb.create_dlg(msg, 0) < 0) { /* for call duration */
-		LM_ERR("failed to create dialog\n");
-		goto error;
-	}
-	/* register callback for the responses to this INVITE */
-	if(tmb.register_tmcb(msg, 0,TMCB_RESPONSE_IN, qr_check_reply_tmcb,
-				(void*)trans_prop, release_trans_prop) <= 0) {
-		LM_ERR("cannot register TMCB_RESPONSE_IN\n");
-		goto error;
-	}
-
-	return 1;
+	return ;
 error:
 	if(trans_prop != NULL) {
 		release_trans_prop(trans_prop); /* cur_time is released here */
 	}
 
-	return -1;
 }
 
 /* a call for this gateway returned 200OK */
 inline void qr_add_200OK(qr_gw_t * gw) {
 	lock_get(gw->acc_lock);
-	LM_INFO("200OK - inside lock\n");
 	++(gw->current_interval.stats.as);
 	++(gw->current_interval.stats.cc);
-	LM_INFO("200OK %d\n", gw->current_interval.stats.as);
 	lock_release(gw->acc_lock);
 }
 
@@ -144,17 +154,17 @@ inline void qr_add_4xx(qr_gw_t * gw) {
 }
 
 inline void qr_add_pdd(qr_gw_t *gw, double pdd_tm) {
-		lock_get(gw->acc_lock); /* protect the statistics */
-		++(gw->current_interval.n.pdd);
-		gw->current_interval.stats.pdd += pdd_tm;
-		lock_release(gw->acc_lock);
+	lock_get(gw->acc_lock); /* protect the statistics */
+	++(gw->current_interval.n.pdd);
+	gw->current_interval.stats.pdd += pdd_tm;
+	lock_release(gw->acc_lock);
 }
 
 inline void qr_add_setup(qr_gw_t *gw, double st) {
-		lock_get(gw->acc_lock); /* protect the statistics */
-		++(gw->current_interval.n.setup);
-		gw->current_interval.stats.st += st;
-		lock_release(gw->acc_lock);
+	lock_get(gw->acc_lock); /* protect the statistics */
+	++(gw->current_interval.n.setup);
+	gw->current_interval.stats.st += st;
+	lock_release(gw->acc_lock);
 }
 
 /*
@@ -175,7 +185,7 @@ static double get_elapsed_time(struct timespec * start, char mu) {
 	seconds = difftime(now.tv_sec, start->tv_sec); /* seconds elapsed betwen
 													  now and the initial invite */
 	if(seconds < 0) {
-		LM_ERR("negative time elapsed from INVITE\n");
+		LM_ERR("negative time elapsed\n");
 		return -1;
 	}
 	if(mu == 'm') {
@@ -199,16 +209,16 @@ static double get_elapsed_time(struct timespec * start, char mu) {
 static void call_ended(struct dlg_cell* dlg, int type,
 		struct dlg_cb_params * params) {
 	double cd;
-	qr_dialog_prop_t *dialog_prop = (qr_dialog_prop_t*)params;
-	struct timespec *time_200OK = (struct timespec*)*params->param;
+	qr_dialog_prop_t *dialog_prop = (qr_dialog_prop_t*)*params->param;
+	struct timespec *time_200OK = dialog_prop->time_200OK;
 	if((cd = get_elapsed_time(time_200OK,'s')) < 0) {
+		LM_ERR("call duration negative\n");
 		return;
 	}
 	lock_get(dialog_prop->gw->acc_lock); /* protect the statistics */
 	++(dialog_prop->gw->current_interval.n.cd);
 	dialog_prop->gw->current_interval.stats.cd += cd;
 	lock_release(dialog_prop->gw->acc_lock);
-	LM_DBG("call duration = %lf", cd);
 }
 
 /*
@@ -278,6 +288,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps) {
 				LM_ERR("failed to register callback for call termination\n");
 				goto error;
 			}
+			LM_INFO("callback for call duration registered\n");
 		} else if (ps->code != 408 || (ps->code == 408 && (cell->flags &
 						T_UAC_HAS_RECV_REPLY) )){ /* if it's 408 it must have
 													 one provisional response */
@@ -285,7 +296,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps) {
 		}
 	}
 	if(ps->code >= 200) { /* 1XX should not be accounted -
-								provisional responses */
+							 provisional responses */
 		lock_get(trans_prop->gw->acc_lock);
 		++(trans_prop->gw->current_interval.n.ok);
 		lock_release(trans_prop->gw->acc_lock);
@@ -340,15 +351,15 @@ static inline void add_stats(qr_stats_t *x, qr_stats_t *y, char op) {
 /* testing purpose only */
 void show_stats(qr_gw_t *gw) {
 	LM_INFO("*****************************\n");
-	LM_INFO("ans seizure: %d / %d\n", gw->history_stats.stats.as,
+	LM_INFO("ans seizure: %lf / %lf\n", gw->history_stats.stats.as,
 			gw->history_stats.n.ok);
-	LM_INFO("completed calls: %d / %d\n", gw->history_stats.stats.cc,
+	LM_INFO("completed calls: %lf / %lf\n", gw->history_stats.stats.cc,
 			gw->history_stats.n.ok);
-	LM_INFO("post dial delay: %lf / %d\n", gw->history_stats.stats.pdd,
+	LM_INFO("post dial delay: %lf / %lf\n", gw->history_stats.stats.pdd,
 			gw->history_stats.n.pdd);
-	LM_INFO("setup time: %lf / %d\n", gw->history_stats.stats.st,
+	LM_INFO("setup time: %lf / %lf\n", gw->history_stats.stats.st,
 			gw->history_stats.n.setup);
-	LM_INFO("call duration: %lf / %d\n", gw->history_stats.stats.cd,
+	LM_INFO("call duration: %lf / %lf\n", gw->history_stats.stats.cd,
 			gw->history_stats.n.cd);
 	LM_INFO("*****************************\n");
 }
@@ -365,11 +376,11 @@ void update_gw_stats(qr_gw_t *gw) {
 	gw->state |= QR_STATUS_DIRTY;
 	lock_stop_write(gw->ref_lock);
 	gw->next_interval->calls = gw->current_interval;
+	show_stats(gw);
 	memset(&gw->current_interval, 0, sizeof(qr_stats_t));
 	gw->next_interval = gw->next_interval->next; /* the 'oldest' sample interval
 													becomes the 'newest' */
 	lock_release(gw->acc_lock);
-	show_stats(gw);
 }
 
 
