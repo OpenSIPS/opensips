@@ -165,6 +165,7 @@ static inline struct sr_timer* new_sr_timer(char *label, unsigned short is_ut,
 	t->t_param=param;
 	t->interval=interval;
 	t->expires=*jiffies+interval;
+	t->current_time = 0;
 	return t;
 }
 
