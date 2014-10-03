@@ -1,4 +1,3 @@
-# $Id$
 #
 # makefile defs (CC, LD,a.s.o)
 #
@@ -61,8 +60,8 @@ export makefile_defs
 MAIN_NAME=opensips
 
 #version number
-VERSION = 1
-PATCHLEVEL = 12
+VERSION = 2
+PATCHLEVEL = 1
 SUBLEVEL = 0
 EXTRAVERSION = dev
 

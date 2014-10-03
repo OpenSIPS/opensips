@@ -1,6 +1,5 @@
-# $Id$
 #
-# sip_router makefile
+# OpenSIPS makefile
 #
 # WARNING: requires gmake (GNU Make)
 #  Arch supported: Linux, FreeBSD, SunOS (tested on Solaris 8), OpenBSD (3.2),
