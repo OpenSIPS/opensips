@@ -15,7 +15,7 @@
 		the module when the corresponding event is raised by the &osips; Event
 		Interface.Since version 1.12, the way an event is handlend (sync/async)
 		should be specified from the configuration script with the desired keyword
-		following the name of the event (<emphasis>event_route[e, "sync"]</emphasis>).
+		following the name of the event (<emphasis>event_route[e, sync]</emphasis>).
 	</para>
 	</section>
 

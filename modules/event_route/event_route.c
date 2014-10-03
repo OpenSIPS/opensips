@@ -257,8 +257,9 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	mode_pos = q_memrchr(socket.s, EVENT_ROUTE_MODE_SEP, socket.len);
 	if (mode_pos == NULL)
 		mode = 0; /*default 'sync'*/
+	else
+		mode_pos++;
 
-	mode_pos++;
 	if (!strncmp(mode_pos, "sync", 4)) {
 		mode = 0;
 	} else if (!strncmp(mode_pos, "async", 5)) {
@@ -271,15 +272,23 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	name_len = socket.len-(mode/*if async add 1*/+4/*sync len*/+1/*'/'*/);
 
 	/* try to normalize the route name */
-	name = pkg_realloc(dummy_buffer, name_len + 1);
+	if (mode_pos)
+		name = pkg_realloc(dummy_buffer, name_len + 1);
+	else
+		name = pkg_realloc(dummy_buffer, socket.len+1);
+
 	if (!name) {
 		LM_ERR("no more pkg memory\n");
 		return NULL;
 	}
 
 
-	memcpy(name, socket.s, name_len);
-	name[name_len] = '\0';
+	if (mode_pos) {
+		memcpy(name, socket.s, name_len);
+		name[name_len] = '\0';
+	} else {
+		memcpy(name, socket.s, socket.len + 1);
+	}
 
 	dummy_buffer = name;
 
@@ -290,7 +299,11 @@ static evi_reply_sock* scriptroute_parse(str socket)
 		return NULL;
 	}
 
-	sock = shm_malloc(sizeof(evi_reply_sock) + socket.len + 1);
+	if (mode_pos)
+		sock = shm_malloc(sizeof(evi_reply_sock) + name_len + 1);
+	else
+		sock = shm_malloc(sizeof(evi_reply_sock) + socket.len + 1);
+
 	if (!sock) {
 		LM_ERR("no more memory for socket\n");
 		return NULL;
@@ -298,8 +311,14 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	memset(sock, 0, sizeof(evi_reply_sock));
 
 	sock->address.s = (char *)(sock + 1);
-	sock->address.len = socket.len;
-	memcpy(sock->address.s, name, socket.len + 1);
+
+	if (mode_pos) {
+		memcpy(sock->address.s, name, name_len + 1);
+		sock->address.len = name_len;
+	} else {
+		memcpy(sock->address.s, name, socket.len + 1);
+		sock->address.len = socket.len;
+	}
 
 	sock->params = (void *)(unsigned long)idx;
 	sock->params = (void *)((unsigned long)sock->params |
