@@ -253,14 +253,24 @@ void bson_to_json_generic(struct json_object *obj,bson_iterator *it,int type)
 						obj2 = json_object_new_array();
 						bson_iterator_subiterator(it, &it2 );
 						bson_to_json_generic(obj2,&it2,BSON_ARRAY);
-						json_object_object_add(obj,curr_key,obj2);
-						//json_object_put(obj2);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,obj2);
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,obj2);
+						break;
+					case BSON_OBJECT:
+						LM_DBG("Found key %s with type object\n",curr_key);
+						obj2 = json_object_new_object();
+						bson_iterator_subiterator(it, &it2 );
+						bson_to_json_generic(obj2,&it2,BSON_OBJECT);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,obj2);
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,obj2);
 						break;
 					default:
-						/* TODO - support embedded documents */
 						LM_DBG("Unsupported type %d for key %s - skipping\n",
 								bson_iterator_type(it),curr_key);
-						break;
 			}
 		}
 }
