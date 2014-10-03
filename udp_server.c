@@ -1,7 +1,6 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2014 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -30,6 +29,7 @@
  *  2004-07-05  udp_rcv_loop: drop packets with 0 src port + error msg.
  *              cleanups (andrei)
  *  2005-03-10  multicast options are now set for all the udp sockets (andrei)
+ *  2014-09-xx  reactor support added; handle timer tasks (bogdan)
  */
 
 
@@ -354,8 +354,6 @@ inline static int handle_udp_sip_msg(struct socket_info *si,
 	}
 #endif
 
-	LM_DBG("triggered....\n");
-
 	fromlen=sockaddru_len(si->su);
 	len=recvfrom(bind_address->socket, buf, BUF_SIZE, 0, &from->s, &fromlen);
 	if (len==-1){
@@ -366,7 +364,6 @@ inline static int handle_udp_sip_msg(struct socket_info *si,
 		LM_ERR("recvfrom:[%d] %s\n", errno, strerror(errno));
 		return -2;
 	}
-	LM_DBG("....read done\n");
 
 #ifndef NO_ZERO_CHECKS
 	if (len<MIN_UDP_PACKET) {

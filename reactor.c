@@ -25,5 +25,6 @@
 
 #include "io_wait.h"
 
+/* one reactor per process variable */
 io_wait_h _worker_io;
 

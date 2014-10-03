@@ -160,7 +160,7 @@ struct usr_avp** get_bavp_list(void);
 
 /* module parameteres */
 int tm_enable_stats = 1;
-static int own_timer_proc = 0;
+static int timer_partitions = 1;
 
 /* statistic variables */
 stat_var *tm_rcv_rpls;
@@ -272,8 +272,8 @@ static param_export_t params[]={
 		&minor_branch_flag_str },
 	{ "minor_branch_flag",        INT_PARAM,
 		&minor_branch_flag },
-	{ "own_timer_proc",           INT_PARAM,
-		&own_timer_proc },
+	{ "timer_partitions",         INT_PARAM,
+		&timer_partitions },
 	{0,0,0}
 };
 
@@ -702,7 +702,6 @@ static int script_init( struct sip_msg *foo, void *bar)
 
 static int mod_init(void)
 {
-	void *timer;
 	unsigned int timer_sets,set;
 	unsigned int roundto_init;
 
@@ -745,7 +744,7 @@ static int mod_init(void)
 	}
 
 	/* how many timer sets do we need to create? */
-	timer_sets = (own_timer_proc<=1)?1:own_timer_proc ;
+	timer_sets = (timer_partitions<=1)?1:timer_partitions ;
 
 	/* try first allocating all the structures needed for syncing */
 	if (lock_initialize( timer_sets )==-1)
@@ -780,27 +779,15 @@ static int mod_init(void)
 
 
 	/* register the timer functions */
-	if (own_timer_proc) {
-		for ( set=0 ; set<timer_sets ; set++ ) {
-			timer = register_timer_process( "tm-timer", timer_routine,
-				(void*)(long)set, 1, TIMER_PROC_INIT_FLAG);
-			if (timer==NULL) {
-				LM_ERR("failed to register timer for set %d\n",set);
-				return -1;
-			}
-			if (append_utimer_to_process( "tm-utimer", utimer_routine,
-			(void*)(long)set, 100*1000, timer)<0) {
-				LM_ERR("failed to register utimer for set %d\n",set);
-				return -1;
-			}
-		}
-	} else {
-		if (register_timer( "tm-timer", timer_routine , 0, 1 )<0) {
-			LM_ERR("failed to register timer\n");
+	for ( set=0 ; set<timer_sets ; set++ ) {
+		if (register_timer( "tm-timer", timer_routine,
+		(void*)(long)set, 1) < 0 ) {
+			LM_ERR("failed to register timer for set %d\n",set);
 			return -1;
 		}
-		if (register_utimer( "tm-utimer", utimer_routine , 0, 100*1000 )<0) {
-			LM_ERR("failed to register utimer\n");
+		if (register_utimer( "tm-utimer", utimer_routine,
+		(void*)(long)set, 100*1000)<0) {
+			LM_ERR("failed to register utimer for set %d\n",set);
 			return -1;
 		}
 	}

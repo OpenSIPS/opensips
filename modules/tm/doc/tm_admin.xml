@@ -661,29 +661,27 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 	</section>
 
 	<section>
-		<title><varname>own_timer_proc</varname> (integer)</title>
+		<title><varname>timer_partitions</varname> (integer)</title>
 		<para>
-		If TM module should create its own timer process(es) (timer is used for 
-		handling retransmissions, timeouts, etc). If disabled, TM will used
-		the global timer process which may be affected (desynchronized) by
-		the operations performed by other modules on that timer (like usrloc
-		flushing memory cash into DB). So, on system with high load, to keep
-		accuracy for the TM timer, better enabled this.
+		The number of partitions for the internal TM timers (retransmissions,
+		delete, wait, etc). Partitioning the timers increase the throughput
+		under heavly load by handling timer events in parallel, rather than
+		all serial.
 		</para>
 		<para>
-		The value of the parameter will set the number of timer processes.
+		Recomanded range for timer partitions is max 16 (soft limit).
 		</para>
 		<para>
 		<emphasis>
-			Default value is 0 (disabled).
+			Default value is 1 (disabled).
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>own_timer_proc</varname> parameter</title>
+		<title>Set <varname>timer_partitions</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# Enable two timer processes
-modparam("tm", "own_timer_proc", 2)
+# Enable two timer partitions
+modparam("tm", "timer_partitions", 2)
 ...
 </programlisting>
 		</example>

@@ -59,7 +59,7 @@ Ovidiu Sas
               1.3.15. disable_6xx_block (integer)
               1.3.16. enable_stats (integer)
               1.3.17. minor_branch_flag (string/integer)
-              1.3.18. own_timer_proc (integer)
+              1.3.18. timer_partitions (integer)
 
         1.4. Exported Functions
 
@@ -139,7 +139,7 @@ Ovidiu Sas
    1.15. Set disable_6xx_block parameter
    1.16. Set enable_stats parameter
    1.17. Set minor_branch_flag parameter
-   1.18. Set own_timer_proc parameter
+   1.18. Set timer_partitions parameter
    1.19. t_newtran usage
    1.20. t_relay usage
    1.21. t_relay usage
@@ -581,25 +581,21 @@ modparam("tm", "enable_stats", 0)
 modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 ...
 
-1.3.18. own_timer_proc (integer)
+1.3.18. timer_partitions (integer)
 
-   If TM module should create its own timer process(es) (timer is
-   used for handling retransmissions, timeouts, etc). If disabled,
-   TM will used the global timer process which may be affected
-   (desynchronized) by the operations performed by other modules
-   on that timer (like usrloc flushing memory cash into DB). So,
-   on system with high load, to keep accuracy for the TM timer,
-   better enabled this.
+   The number of partitions for the internal TM timers
+   (retransmissions, delete, wait, etc). Partitioning the timers
+   increase the throughput under heavly load by handling timer
+   events in parallel, rather than all serial.
 
-   The value of the parameter will set the number of timer
-   processes.
+   Recomanded range for timer partitions is max 16 (soft limit).
 
-   Default value is 0 (disabled).
+   Default value is 1 (disabled).
 
-   Example 1.18. Set own_timer_proc parameter
+   Example 1.18. Set timer_partitions parameter
 ...
-# Enable two timer processes
-modparam("tm", "own_timer_proc", 2)
+# Enable two timer partitions
+modparam("tm", "timer_partitions", 2)
 ...
 
 1.4. Exported Functions

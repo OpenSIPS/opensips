@@ -178,7 +178,7 @@ static char *force_socket_str = 0;
 static int sipping_flag = -1;
 static char *sipping_flag_str = 0;
 static int natping_tcp = 0;
-static int natping_processes = 1;
+static int natping_partitions = 1;
 
 static char* rcv_avp_param = NULL;
 static unsigned short rcv_avp_type = 0;
@@ -232,7 +232,7 @@ static param_export_t params[] = {
 	{"sipping_bflag",         STR_PARAM, &sipping_flag_str      },
 	{"sipping_bflag",         INT_PARAM, &sipping_flag          },
 	{"natping_tcp",           INT_PARAM, &natping_tcp           },
-	{"natping_processes",     INT_PARAM, &natping_processes     },
+	{"natping_partitions",    INT_PARAM, &natping_partitions    },
 	{"natping_socket",        STR_PARAM, &natping_socket        },
 	{0, 0, 0}
 };
@@ -490,9 +490,9 @@ mod_init(void)
 				" set in usrloc module\n");
 			return -1;
 		}
-		if (natping_processes>8) {
+		if (natping_partitions>8) {
 			LM_ERR("too many natping processes (%d) max=8\n",
-				natping_processes);
+				natping_partitions);
 			return -1;
 		}
 
@@ -517,10 +517,10 @@ mod_init(void)
 			init_sip_ping();
 		}
 
-		for( i=0 ; i<natping_processes ; i++ ) {
-			if (register_timer_process( "nh-timer", nh_timer,
-			(void*)(unsigned long)i, 1, TIMER_PROC_INIT_FLAG)==NULL) {
-				LM_ERR("failed to register timer routine as process\n");
+		for( i=0 ; i<natping_partitions ; i++ ) {
+			if (register_timer( "nh-timer", nh_timer,
+			(void*)(unsigned long)i, 1)<0) {
+				LM_ERR("failed to register timer routine\n");
 				return -1;
 			}
 		}
@@ -1194,7 +1194,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	}
 	rval = ul.get_all_ucontacts(buf, cblen, (ping_nated_only?ul.nat_flag:0),
 		((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-		natping_processes*natping_interval);
+		natping_partitions*natping_interval);
 	if (rval<0) {
 		LM_ERR("failed to fetch contacts\n");
 		goto done;
@@ -1210,7 +1210,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 		}
 		rval = ul.get_all_ucontacts(buf,cblen,(ping_nated_only?ul.nat_flag:0),
 		   ((unsigned int)(unsigned long)timer_idx)*natping_interval+iteration,
-		   natping_processes*natping_interval);
+		   natping_partitions*natping_interval);
 		if (rval != 0) {
 			goto done;
 		}

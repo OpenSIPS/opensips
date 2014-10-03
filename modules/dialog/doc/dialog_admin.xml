@@ -937,29 +937,6 @@ modparam("dialog", "db_flush_vals_profiles", 1)
 	</section>
 
 	<section>
-		<title><varname>own_timer_proc</varname> (int)</title>
-		<para>
-			Whether the dialog timer should be a 
-			separate process or if the tasks should be done in the
-			global timer process.
-		</para>
-		<para>
-		<emphasis>
-			Default value is <quote>0</quote>, run the timer in the
-			global process.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>own_timer_proc</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "own_timer_proc", 1)
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
 		<title><varname>timer_bulk_del_no</varname> (int)</title>
 		<para>
 			The number of dialogs that should be attempted to be

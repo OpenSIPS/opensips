@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2013-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
