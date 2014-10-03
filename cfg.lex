@@ -574,7 +574,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{EVENT_ROUTE_SYNC}		{ count(); yylval.strval=yytext;
 									return EVENT_ROUTE_SYNC;}
 <INITIAL>{EVENT_ROUTE_ASYNC}		{ count(); yylval.strval=yytext;
-									return EVENT_ROUTE_SYNC;}
+									return EVENT_ROUTE_ASYNC;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
