@@ -283,8 +283,8 @@ error:
 
 static int child_init(int rank)
 {
-	/* Check if database is needed by child */
-	if ( db_mode==0 && (rank>0 || rank==PROC_TIMER) ) {
+	/* Check if database is needed by worker processes only */
+	if ( db_mode==0 && (rank>PROC_MAIN) ) {
 		if (domain_db_init(&db_url)<0) {
 			LM_ERR("Unable to connect to the database\n");
 			return -1;

@@ -296,7 +296,7 @@ static int mod_init(void)
 static int child_init( int rank )
 {
 	/* init DB connection */
-	if ( rank<PROC_TIMER)
+	if ( rank<PROC_MAIN)
 		return 0;
 	if ( cc_connect_db(&db_url)!=0 ) {
 		LM_CRIT("cannot initialize database connection\n");

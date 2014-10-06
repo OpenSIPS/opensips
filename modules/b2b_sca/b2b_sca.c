@@ -344,7 +344,7 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	if (sca_db_mode==DB_MODE_REALTIME &&  (rank>=0 || rank==PROC_TIMER || rank==PROC_MODULE)) {
+	if (sca_db_mode==DB_MODE_REALTIME &&  (rank>PROC_MAIN || rank==PROC_MODULE)) {
 		if (connect_sca_db(&db_url)) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;

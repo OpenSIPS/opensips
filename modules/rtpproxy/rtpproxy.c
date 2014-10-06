@@ -1478,7 +1478,8 @@ error:
 static int
 child_init(int rank)
 {
-	if (rank<=0 && rank!=PROC_TIMER)
+	/* we need DB conn in the worker processes only */
+	if (rank<=PROC_MAIN)
 		return 0;
 
 	if(*rtpp_set_list==NULL )

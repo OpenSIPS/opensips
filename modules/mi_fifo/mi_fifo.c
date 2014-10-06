@@ -173,7 +173,7 @@ static int mi_mod_init(void)
 
 static int mi_child_init(int rank)
 {
-	if (rank==PROC_TIMER || rank>0 ) {
+	if (rank>PROC_MAIN ) {
 		if ( mi_writer_init(read_buf_size, mi_reply_indent)!=0 ) {
 			LM_CRIT("failed to init the reply writer\n");
 			return -1;

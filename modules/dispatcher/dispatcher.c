@@ -837,9 +837,9 @@ static int mod_init(void)
 #include "../../pt.h"
 static int ds_child_init(int rank)
 {
-	/* we need DB connection from the timer procs (for the flushing)
+	/* we need DB connection from the worker procs (for the flushing)
 	 * and from the main proc (for final flush on shutdown) */
-	if ( (process_no==0 || rank==PROC_TIMER) ) {
+	if ( rank>=PROC_MAIN ) {
 
 		ds_partition_t *partition_it;
 
