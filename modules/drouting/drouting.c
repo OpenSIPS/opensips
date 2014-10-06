@@ -37,6 +37,7 @@
 #include "dr_clustering.h"
 #include "dr_api.h"
 #include "dr_api_internal.h"
+#include "dr_cb.h"
 
 #include "../../mem/rpm_mem.h"
 
@@ -44,6 +45,7 @@
 #define DR_PARAM_RULE_FALLBACK      (1<<1)
 #define DR_PARAM_STRICT_LEN         (1<<2)
 #define DR_PARAM_ONLY_CHECK         (1<<3)
+#define DR_PARAM_USE_QR             (1<<4)
 #define DR_PARAM_INTERNAL_TRIGGERED (1<<30)
 
 #define DRD_TABLE_VER 6
@@ -304,6 +306,13 @@ mi_response_t *mi_dr_enable_probing_1(const mi_params_t *params,
 
 /*0-> disabled, 1 ->enabled*/
 unsigned int *dr_enable_probing_state=0;
+
+/* sorting functions used by dr */
+static void  no_sort(int type, struct dr_cb_params *param);
+static void weight_based_sort(int type, struct dr_cb_params *params);
+static int sort_rt_dst(pgw_list_t *pgwl, int size, int type,
+		unsigned short *idx);
+
 
 /* event */
 static str dr_event = str_init("E_DROUTING_STATUS");
@@ -1386,6 +1395,25 @@ static int dr_init(void)
 			LM_INFO("starting drouting with cache head=%p\n", dr_cache);
 	}
 
+	/* register dr callbacks for sorting */
+	if(register_drcb(DRCB_SORT_DST, &no_sort, (void*)NO_SORT, NULL) < 0) {
+		LM_ERR("[DR] failed to register DRCB_SORT_DST callback [no_sort] to dr\n");
+		return -1;
+	}
+	if(register_drcb(DRCB_SORT_DST, &weight_based_sort,
+				(void*)WEIGHT_BASED_SORT, NULL) < 0) {
+		LM_ERR("[DR] failed to register DRCB_SORT_DST callback" \
+				" [weight_based_sort] to dr\n");
+		return -1;
+
+	}
+
+	name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of
+													   fixed string */);
+		if( name_w_part.s == 0 ) {
+			LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
+			goto error;
+
 	if( use_partitions == 1 ) { /* loading configurations from db */
 		if (get_config_from_db() == -1) {
 			LM_ERR("Failed to get configuration from db_config\n");
@@ -2397,19 +2425,65 @@ fallback_failed:
 		} \
 	}while(0) \
 
-static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
-		int weight, unsigned short *idx)
+/* don't sort anything let the list as it is */
+static void no_sort(int type, struct dr_cb_params *param) {
+	int i;
+	unsigned short *sorted_dst;
+	int size;
+
+	size = ((struct dr_sort_params*)*param->param)->size;
+	sorted_dst = ((struct dr_sort_params*)*param->param)->sorted_dst;
+
+	for(i = 0; i < size; i++) {
+		sorted_dst[i] = i; /* leave the gw list as itis */
+	}
+	((struct dr_sort_params*)*param->param)->sorted_dst = sorted_dst;
+	((struct dr_sort_params*)*param->param)->rc = 0; /* everything ok */
+}
+#define DR_MAX_GWLIST	64
+
+static int sort_rt_dst(pgw_list_t *pgwl, int size, int type, unsigned short *idx) {
+	struct dr_sort_params * sort_params;
+
+	sort_params = (struct dr_sort_params *)pkg_malloc(
+			sizeof(struct dr_sort_params));
+	if(sort_params == NULL) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	sort_params->pgwl = pgwl;
+	sort_params->size = size;
+	sort_params->sorted_dst = idx;
+	if(!pgwl->is_carrier && (type & DR_PARAM_USE_WEIGTH)) {
+		run_indexed_callback(dr_sort_cbs, WEIGHT_BASED_SORT, (void*)sort_params
+				,N_MAX_SORT_CBS);
+	} else if(pgwl->is_carrier && (type & DR_CR_FLAG_WEIGHT)) {
+		run_indexed_callback(dr_sort_cbs, WEIGHT_BASED_SORT, (void*)sort_params
+				,N_MAX_SORT_CBS);
+	} else {
+		run_indexed_callback(dr_sort_cbs, NO_SORT, (void*)sort_params
+				,N_MAX_SORT_CBS);
+	}
+	return 0;
+}
+/* sort based on the weight of the gws */
+static void weight_based_sort(int type, struct dr_cb_params *params)
 {
 	static unsigned short *running_sum = NULL;
 	static unsigned short sum_buf_size = 0;
 	unsigned int i, first, weight_sum, rand_no;
+	pgw_list_t *pgwl;
+	int size;
+	unsigned short *idx;
+
+	pgwl = ((struct dr_sort_params*)*params->param)->pgwl;
+	size = ((struct dr_sort_params*)*params->param)->size;
+	idx = ((struct dr_sort_params*)*params->param)->sorted_dst;
+
 
 	/* populate the index array */
 	for( i=0 ; i<size ; i++ ) idx[i] = i;
 	first = 0;
-
-	if (weight==0)
-		return 0;
 
 	while (size-first>1) {
 		resize_dr_sort_buffer( running_sum, sum_buf_size, size, err);
@@ -2429,6 +2503,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 				if (running_sum[i]>rand_no) break;
 			if (i==size) {
 				LM_CRIT("bug in weight sort\n");
+				((struct dr_sort_params*)*params->param)->rc = -1;
 				goto err;
 			}
 		} else {
@@ -2446,14 +2521,12 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		first ++;
 	}
 
-	return 0;
-err:
-	return -1;
+	((struct dr_sort_params*)*params->param)->rc = 0;
 }
 
 
 inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current_partition,
-		struct sip_uri *uri, rt_info_t *rt, pgw_list_t * dst, int cr_id, int gw_id/* pgw_t *gw , str *c_id, str *c_attrs */, int idx)
+		struct sip_uri *uri, rt_info_t *rt, pgw_list_t * dst, int cr_id, int gw_id, int idx)
 {
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	str *ruri;
@@ -2475,7 +2548,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 			gw = rt->pgwl[cr_id].dst.carrier->pgwl[gw_id].dst.gw;
 		}
 	} else if(dst != NULL) { /* routing was not done rule-based => don't use
-							qrouting : called from route_2gw or route_2cr */
+qrouting : called from route_2gw or route_2cr */
 		if(dst->is_carrier) {
 			gw = dst->dst.carrier->pgwl[gw_id].dst.gw;
 			c_id = &dst->dst.carrier->id;
@@ -2523,7 +2596,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 			LM_INFO("RUN CALL\n");
 
 			run_callbacks(dr_acc_cbs, DRCB_ACC_CALL, acc_call_params); /* qr
-																		 accouting */
+																		  accouting */
 		}
 
 	} else {
@@ -2879,7 +2952,7 @@ search_again:
 	/* sort the destination elements in the rule */
 	resize_dr_sort_buffer( dsts_idx, dsts_idx_size, rt_info->pgwa_len, error2);
 	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len,
-			flags&DR_PARAM_USE_WEIGTH, dsts_idx);
+			flags, dsts_idx);
 	if (i!=0) {
 		LM_ERR("failed to sort destinations in rule\n");
 		goto error2;
@@ -2920,7 +2993,7 @@ search_again:
 			resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
 				dst->dst.carrier->pgwa_len, skip);
 			j = sort_rt_dst(dst->dst.carrier->pgwl, dst->dst.carrier->pgwa_len,
-					dst->dst.carrier->flags&DR_CR_FLAG_WEIGHT, carrier_idx);
+					dst->dst.carrier->flags, carrier_idx);
 			if (j!=0) {
 				LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
 						dst->dst.carrier->id.len, dst->dst.carrier->id.s);

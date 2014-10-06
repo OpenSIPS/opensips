@@ -191,26 +191,37 @@ void qr_dst_is_grp(int type, struct dr_cb_params *params) {
 
 	if(rule != NULL) {
 		rule->dest[n_dst].type = QR_DST_GRP;
+		memset(&rule->dest[n_dst].dst.grp, 0, sizeof(qr_grp_t));
+		rule->dest[n_dst].dst.grp.state |= QR_STATUS_DIRTY;
 		rule->dest[n_dst].dst.grp.gw = (qr_gw_t**)shm_malloc(n_gws *
 				sizeof(qr_gw_t*));
-		if(rule->dest[n_dst].dst.grp.gw != NULL) {
-			rule->dest[n_dst].dst.grp.n = n_gws;
-			rule->dest[n_dst].dst.grp.id = cr_name;
-			for(i = 0; i < n_gws; i++) {
-				dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
-															  as pgw_t from dr */
-				rule->dest[n_dst].dst.grp.gw[i] = qr_create_gw(dr_gw);
-				gw_name = drb.get_gw_name(rule->dest[n_dst].dst.grp.gw[i]->dr_gw);
-				LM_DBG("Gw '%.*s' added to carrier '%.*s' from rule %d\n",
-						gw_name->len, gw_name->s, cr_name->len, cr_name->s,
-						rule->r_id);
-			}
-		} else {
+		if(rule->dest[n_dst].dst.grp.gw == NULL) {
 			LM_ERR("no more shm memory\n");
+			goto error;
+		}
+		if ((rule->dest[n_dst].dst.grp.ref_lock = lock_init_rw()) == NULL) {
+			LM_ERR("failed to init RW lock\n");
+			goto error;
+		}
+
+		rule->dest[n_dst].dst.grp.n = n_gws;
+		rule->dest[n_dst].dst.grp.id = cr_name;
+		for(i = 0; i < n_gws; i++) {
+			dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
+														  as pgw_t from dr */
+			rule->dest[n_dst].dst.grp.gw[i] = qr_create_gw(dr_gw);
+			gw_name = drb.get_gw_name(rule->dest[n_dst].dst.grp.gw[i]->dr_gw);
+			LM_DBG("Gw '%.*s' added to carrier '%.*s' from rule %d\n",
+					gw_name->len, gw_name->s, cr_name->len, cr_name->s,
+					rule->r_id);
 		}
 	} else {
 		LM_ERR("bad rule\n");
 	}
+	return ;
+error:
+	if(rule->dest[n_dst].dst.grp.gw != NULL)
+		shm_free(rule->dest[n_dst].dst.grp.gw);
 }
 
 /* add rule to internal rule list */

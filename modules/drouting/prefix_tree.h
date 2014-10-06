@@ -104,6 +104,7 @@ typedef struct pgw_list_ {
 #define DR_CR_FLAG_FIRST  (1<<1)
 #define DR_CR_FLAG_IS_OFF (1<<2)
 #define DR_CR_FLAG_DIRTY  (1<<3)
+#define DR_CR_FLAG_QR (1<<4)
 
 /* list of carriers */
 struct pcr_ {

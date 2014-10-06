@@ -99,9 +99,11 @@ typedef struct qr_grp {
 	qr_gw_t **gw;
 	char sort_method; /* sorting for the group */
 	str *id;
+	int score;
+	char state;
+	rw_lock_t *ref_lock;
 	int n;
 } qr_grp_t;
-/* TODO: add weights */
 
 
 /* two types of destination */

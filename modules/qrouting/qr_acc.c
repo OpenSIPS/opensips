@@ -219,6 +219,9 @@ static void call_ended(struct dlg_cell* dlg, int type,
 	++(dialog_prop->gw->current_interval.n.cd);
 	dialog_prop->gw->current_interval.stats.cd += cd;
 	lock_release(dialog_prop->gw->acc_lock);
+	if(dialog_prop != NULL) {
+		release_dialog_prop(dialog_prop);
+	}
 }
 
 /*
@@ -288,7 +291,6 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps) {
 				LM_ERR("failed to register callback for call termination\n");
 				goto error;
 			}
-			LM_INFO("callback for call duration registered\n");
 		} else if (ps->code != 408 || (ps->code == 408 && (cell->flags &
 						T_UAC_HAS_RECV_REPLY) )){ /* if it's 408 it must have
 													 one provisional response */
@@ -301,6 +303,12 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps) {
 		++(trans_prop->gw->current_interval.n.ok);
 		lock_release(trans_prop->gw->acc_lock);
 	}
+
+	/* transaction properties are no longer needed */
+	if(trans_prop != NULL) {
+		release_trans_prop(trans_prop);
+	}
+
 	return ;
 error:
 	if(dialog_prop != NULL) {
@@ -387,8 +395,11 @@ void update_gw_stats(qr_gw_t *gw) {
 /* update the statistics for a group of gateways */
 void update_grp_stats(qr_grp_t grp) {
 	int i;
+
 	for(i = 0; i < grp.n; i++) {
 		update_gw_stats(grp.gw[i]);
 	}
+	grp.state |= QR_STATUS_DIRTY;
 }
+
 

@@ -28,6 +28,9 @@
  */
 #include "qr_sort.h"
 
+#define QR_PENALTY_THRESHOLD_1 1
+#define QR_PENALTY_THRESHOLD_2 1
+
 
 int qr_add_gw_to_list(qr_sorted_list_t **sorted_list, qr_gw_t *gw) {
 	qr_sorted_elem_t *new_elem = (qr_sorted_elem_t*)shm_malloc(
@@ -41,9 +44,12 @@ int qr_add_gw_to_list(qr_sorted_list_t **sorted_list, qr_gw_t *gw) {
 	memset(new_elem, 0, sizeof(qr_sorted_elem_t));
 	new_elem->dr_gw = gw->dr_gw;
 
+	lock_start_read(gw->ref_lock);
 	if(sorted_list[gw->score]->start == NULL) { /* list was empty */
+		lock_stop_read(gw->ref_lock);
 		sorted_list[gw->score]->start = new_elem;
 	} else { /* list was not empty */
+		lock_stop_read(gw->ref_lock);
 		sorted_list[gw->score]->end->next = new_elem;
 	}
 
@@ -117,32 +123,92 @@ inline double acd(qr_gw_t *gw) {
 	lock_stop_read(gw->ref_lock);
 	return acd;
 }
+
+static inline void qr_mark_gw_dsbl(qr_gw_t *gw) {
+	lock_start_write(gw->ref_lock);
+	gw->state |= QR_STATUS_DSBL; /* mark the gateway as disabled */
+	lock_stop_write(gw->ref_lock);
+}
 /*
  * computes the score of the gateway using the warning
  * thresholds
  */
-void qr_score(qr_gw_t *gw, qr_thresholds_t * thresholds) {
-	int score = 0;
+int qr_score_gw(qr_gw_t *gw, qr_thresholds_t * thresholds) {
+	int score = 0, asr_v, ccr_v, pdd_v, ast_v, acd_v;
 	/* FIXME: might be better under a single lock
 	 * because of possible changes between lock ( a
 	 * new sampling interval might bring new statistics)
 	 */
-	if(asr(gw)<thresholds->asr1)
-		++score;
-	if(ccr(gw)<thresholds->ccr1)
-		++score;
-	if(pdd(gw)>thresholds->pdd1)
-		++score;
-	if(ast(gw)>thresholds->ast1)
-		++score;
-	if(acd(gw)>thresholds->acd1)
-		++score;
+	asr_v = asr(gw);
+	if(asr_v < thresholds->asr1) {
+		score += QR_PENALTY_THRESHOLD_2;
+		if(asr_v < thresholds->asr2) {
+			score += QR_PENALTY_THRESHOLD_2;
+			qr_mark_gw_dsbl(gw);
+		}
+	}
+	ccr_v = ccr(gw);
+	if(ccr_v < thresholds->ccr1) {
+		score += QR_PENALTY_THRESHOLD_1;
+		if(ccr_v < thresholds->ccr2) {
+			score += QR_PENALTY_THRESHOLD_2;
+			qr_mark_gw_dsbl(gw);
+		}
+	}
+	pdd_v = pdd(gw);
+	if(pdd_v > thresholds->pdd1) {
+		score += QR_PENALTY_THRESHOLD_1;
+		if(pdd_v > thresholds->pdd2) {
+			score += QR_PENALTY_THRESHOLD_2;
+			qr_mark_gw_dsbl(gw);
+		}
+	}
+	ast_v = ast(gw);
+	if(ast_v > thresholds->ast1) {
+		score += QR_PENALTY_THRESHOLD_1;
+		if(ast_v > thresholds->ast2) {
+			score +=QR_PENALTY_THRESHOLD_2;
+			qr_mark_gw_dsbl(gw);
+		}
+	}
+	acd_v = acd(gw);
+	if(acd_v > thresholds->acd1) {
+		score += QR_PENALTY_THRESHOLD_1;
+		if(ast_v > thresholds->acd2) {
+			score += QR_PENALTY_THRESHOLD_2;
+			qr_mark_gw_dsbl(gw);
+		}
+	}
 
 	/* update gw score and status */
 	lock_start_write(gw->ref_lock);
 	gw->score = score;
 	gw->state &= ~QR_STATUS_DIRTY;
 	lock_stop_write(gw->ref_lock);
+
+	return 0;
+}
+
+void qr_score_grp(qr_grp_t *grp, qr_thresholds_t * thresholds) {
+	int i;
+	int mean = 0;
+
+	for(i = 0; i < grp->n; i++) {
+		lock_start_read(grp->gw[i]->ref_lock);
+		if(grp->gw[i]->state & QR_STATUS_DIRTY) {
+			lock_stop_read(grp->gw[i]->ref_lock);
+			mean += qr_score_gw(grp->gw[i], thresholds);
+
+		} else {
+			lock_stop_read(grp->gw[i]->ref_lock);
+		}
+	}
+	mean /= grp->n;
+	lock_start_write(grp->ref_lock);
+	grp->score = mean;
+	grp->state &= ~QR_STATUS_DIRTY;
+	lock_stop_write(grp->ref_lock);
+
 }
 /*
  * inserts destination in sorted list
@@ -151,14 +217,14 @@ inline int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		int dst_id) {
 	if(rule->dest[dst_id].type & QR_DST_GRP) {
 		return -1; /* TODO group support
-						should accept multiple
-						sorting methods*/
+					  should accept multiple
+					  sorting methods*/
 	}
 	lock_start_read(rule->dest[dst_id].dst.gw->ref_lock);
 	if(rule->dest[dst_id].dst.gw->state & QR_STATUS_DIRTY) {
 		lock_stop_read(rule->dest[dst_id].dst.gw->ref_lock);
-		qr_score(rule->dest[dst_id].dst.gw, &rule->thresholds); /* compute the
-																   score */
+		qr_score_gw(rule->dest[dst_id].dst.gw, &rule->thresholds); /* compute the
+																	  score */
 		rule->dest[dst_id].dst.gw->state &= ~QR_STATUS_DIRTY;
 	} else {
 		lock_stop_read(rule->dest[dst_id].dst.gw->ref_lock);
