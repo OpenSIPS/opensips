@@ -45,7 +45,7 @@ extern int query_flush_time; /* if the query contains inserts older
 typedef struct query_list {
 	str url;			/* url for the connection - needed by timer */
 	db_func_t dbf;		/* func handlers that will be used by timer */
-	db_con_t *conn;		/* connection that will be used by timer */
+	db_con_t **conn;	/* connection that will be used by timer */
 	str table;			/* table that query is targetting */
 	db_key_t *cols;		/* columns for the insert */
 	int col_no;			/* number of columns */
