@@ -2,7 +2,7 @@ table_name(string) table_version(int)
 acc:6
 active_watchers:10
 address:5
-aliases:1007
+aliases:1009
 b2b_entities:1
 b2b_logic:2
 b2b_sca:1
