@@ -475,9 +475,6 @@ static inline char *run_proxy( struct cpl_interpreter *intr )
 			}
 		}
 
-		if (timeout>0)
-			cpl_fct.tmb.t_gett()->fr_inv_timeout = timeout;
-
 		/* as I am interested in getting the responses back - I need to install
 		 * some callback functions for replies  */
 		if (cpl_fct.tmb.register_tmcb(intr->msg,0,
@@ -487,6 +484,10 @@ static inline char *run_proxy( struct cpl_interpreter *intr )
 		}
 		intr->flags |= CPL_DO_NOT_FREE;
 	}
+
+	if (timeout>0)
+		cpl_fct.tmb.t_gett()->fr_inv_timeout = timeout;
+
 
 	switch (intr->proxy.ordering) {
 		case FIRSTONLY_VAL:
