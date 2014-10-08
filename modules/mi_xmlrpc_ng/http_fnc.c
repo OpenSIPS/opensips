@@ -192,31 +192,31 @@ do{	\
 		case '<':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_LT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '>':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_GT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '&':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_AMP);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '"':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_QUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		case '\'':	\
 			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
 			MI_XMLRPC_HTTP_COPY_2(p, (temp_holder), MI_XMLRPC_HTTP_ESC_SQUOT);	\
-			(temp_holder).s += (temp_counter) + 1;	\
+			(temp_holder).s += (temp_holder).len + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
 		}	\
@@ -599,7 +599,8 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 					temp_holder, temp_counter);
 		}
 	}
-	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR);
+	/* There is no real need for this - bogdan
+	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR); */
 	return 0;
 error:
 	LM_ERR("buffer 2 small: *pointer=[%p] buf=[%p] max_page_len=[%d]\n",
