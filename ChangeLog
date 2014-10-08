@@ -1,3 +1,327 @@
+2014-10-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [76da2bf] :
+
+	Fix escaping of XML chars in the MI output.
+	Credits go to Razvan.
+	(cherry picked from commit ae84ff06bcb886f6b169f0fa13fd928f9cb11c4e)
+
+
+2014-10-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bb257ce] :
+
+	Fix how the contact URI is build.
+	Do not add transport info to URI when storing it, but rather when using it - avoid double "transport" param.
+	(cherry picked from commit bef1f938b8e6479b563c1164e0110c76753b7b02)
+
+
+2014-10-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f461ba2] :
+
+	Fix parsing of the SIP URI in db_get_auth_id() .
+	Closes #340.
+	(cherry picked from commit 465a978b812a1eae6a219e26f9a55d1d985a176b)
+
+
+2014-10-06  Razvan Crainea  <razvan at opensips dot org>
+	* [38a1440] :
+
+	fix aliases db schema
+	(cherry picked from commit 1572ed099c30ac4f8a21c150b25e0252404e6937)
+
+	Conflicts:
+		scripts/pi_http/pi_framework.xml
+
+
+2014-10-03  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [4af02dd] :
+
+	Fixed arrays processing ( arrays can be part of arrays or object ) Fixed processing of sub-objects
+	(cherry picked from commit aec12602da85078374135b31a69281d914b5776e)
+
+
+2014-10-03  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [eee4e30] :
+
+	Merge pull request #346 from dsanders11/patch-1
+	Always update the call ID when updating a contact in usrloc table
+	(cherry picked from commit e13ab398d8b14bffa2acb6145b253aec030fdaab)
+
+	Conflicts:
+		modules/usrloc/ucontact.c
+
+
+2014-10-01  Liviu Chircu  <liviu at opensips dot org>
+	* [abf823e] :
+
+	exec: disable 'setvars' on all OpenSIPS versions
+	We break backwards-compatibility while improving security
+	on the larger proportion of existing OpenSIPS installations.
+	(cherry picked from commit 100ecaf8de390582eab0d6110b6a0f813d7e28a1)
+
+
+2014-10-01  Liviu Chircu  <liviu at opensips dot org>
+	* [84954c6] :
+
+	exec: reduce impact of the Shellshock bash exploit
+	Improve documentation awareness for Shellshock
+	(cherry picked from commit 2456295ffb23ddbe219c14571ec2e9d34969f5d9)
+
+
+2014-10-01  Liviu Chircu  <liviu at opensips dot org>
+	* [23ea164] :
+
+	cachedb_sql: properly fix git conflict (from f7d30b6e)
+	(cherry picked from commit b0deb69be94633472681eb91dddb3b63f0be8bd5)
+
+
+2014-10-01  Liviu Chircu  <liviu at opensips dot org>
+	* [2e7ba71] :
+
+	cachedb_sql: fix pkg memory leak
+	When fetching a key, the db_res_t structure would not be properly freed.
+	(cherry picked from commit e5ccde131eb72debd9aa400ced2e1e31bd61612d)
+
+	Conflicts:
+
+		modules/cachedb_sql/cachedb_sql.c
+	(cherry picked from commit f7d30b6e6ec8a6bea58bccc99b6b107a8dd0c340)
+
+
+2014-09-17  Liviu Chircu  <liviu at opensips dot org>
+	* [5c7756d] :
+
+	cachedb_memcached: extend the host+port printing buffer
+	(cherry picked from commit 32f2c2434e99802e90e6166de18ad7523f19a603)
+
+
+2014-09-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [50273ff] :
+
+	Removed useless "ping_interval" parameter.
+	Closes  #320, reported by @hydrosine .
+	(cherry picked from commit c529bb142b455a0db87c9661208e9271f912a4ec)
+
+
+2014-09-07  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [c19fc9c] :
+
+	Fixed the dialog timeout that gets replicated via BIN for updates
+	(cherry picked from commit 4c08b62cdabb3549ac99c4dc9cae8485d1f40e68)
+
+
+2014-08-29  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [fdefa84] :
+
+	Fixed CDR writing for replicated dialogs
+	(cherry picked from commit 128d3777f4a11a21eabb3e94a720c223bf0cf654)
+
+
+2014-08-28  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [c7fea11] :
+
+	Avoid useless from header parsing in case the dr group was passed from script Backported from trunk
+	(cherry picked from commit 79a97ad3efb9fb19fcba91b34fffb5a53c0b5902)
+
+
+2014-08-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a0d5829] :
+
+	Fix sending PRACK for multiple provisional replies.
+	Reported by Giuseppe Cardone.
+	(cherry picked from commit 3cd6db2be3728e14343697b886cdcfabd4353d51)
+
+
+2014-08-26  Liviu Chircu  <liviu at opensips dot org>
+	* [a50060f] :
+
+	db_text: fix issues when database file is missing an ending newline
+	* do not crash if file contains columns only and is missing the ending newline
+	* do not skip the last row of a database file if it lacks an ending newline
+
+	Reported by gergelypeli on GitHub
+	Closes issue #308
+	(cherry picked from commit a2172b256fd19aa56b352665a9d598d6a91b36a3)
+
+
+2014-08-25  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [9827ee5] :
+
+	Fixed simplified callid parser
+	(cherry picked from commit 3316a2a518a2ac27401408369e4bd3adc70b4e48)
+
+
+2014-08-21  Liviu Chircu  <liviu at opensips dot org>
+	* [9e8258b] :
+
+	core: fix mem statistics when DBG_QM_MALLOC is on (cherry picked from commit ffb0cb6d2c3a224ce37b575a7f956cfa881bf63b)
+	Conflicts:
+
+		mem/q_malloc.c
+
+
+2014-08-21  Liviu Chircu  <liviu at opensips dot org>
+	* [7a5763e] :
+
+	dialog: fix primary key when updating dialogs in REALTIME db mode
+	When updating rows in the dialog table in REALTIME db mode, the dlg_id
+	update key is not properly initialized (actually contains random data).
+
+	Reported by miko95 on GitHub
+	Closes issue #306
+	(cherry picked from commit 0ad3e4f949e1d669d53cd584e48b7d2eff740a22)
+
+
+2014-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [60cc7e1] :
+
+	dialplan: fix shm leak when parsing invalid regex
+	Upon (re)load, if the subst or repl columns contain expressions which
+	fail to compile, OpenSIPS will leak shared memory.
+
+	Reported by miko95 on GitHub
+	Closes issue #307
+	(cherry picked from commit 72028d26bef361b6c99f6ad3653f0e1dbb07c767)
+	(cherry picked from commit f57025fa90431ae080a91d54ae92564b919da52f)
+
+
+2014-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [6580c70] :
+
+	dialog: fix possible hash id conflict on restart
+	When restarting the proxy, the auto-generated next_id of each
+	hash entry is not properly incremented if a loaded dialog happens to
+	have this same next_id as hash id. This will soon lead to duplicate hash ids.
+
+	Reported by miko95 on GitHub.
+	(cherry picked from commit b7c3686c176e7c15b806e50f9743ab91656a8da3)
+
+
+2014-08-18  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [4e8f273] :
+
+	Do not crash on replicated update if replicated create has failed Free dlg memory in case replicated create fails
+	(cherry picked from commit c9b39731c4669bc2d91182bb6130cc1e88286b8a)
+
+
+2014-08-18  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [e71c19b] :
+
+	Do not replicate dialog termination if dialog creation was not done ( failed calls )
+	(cherry picked from commit 0705a29de1fdf865f7fa11cd3b68c43ccb9e9671)
+
+
+2014-08-18  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [837032b] :
+
+	Fixed deadlock when replicating dialog which has pinging enabled. Remove pinging entirely for replicated dialogs, since it might cause issues when running in active-backup mode Properly set the dialog timeout for update bin requests
+
+
+2014-08-14  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [ddc8cbf] :
+
+	Fix iteration of to be sent MSILO messages Fixes issue #291 Thanks to Nick Altmann for reporting & testing (cherry picked from commit 1dd4ea2b16f6a2f9f46a7e947052da2e1e591d04)
+	Conflicts:
+		modules/msilo/ms_msg_list.c
+
+
+2014-08-12  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [9481c72] :
+
+	Fixed error reporting for dialog DID matching when dealing with BIN interface replication
+	(cherry picked from commit 246d3d8ad7f79c76e05ad74721b5e852208f9aa1)
+
+
+2014-08-12  Razvan Crainea  <razvan at opensips dot org>
+	* [b7dd3b7] :
+
+	consider string size in hex2dec transformation
+	Reported by gergelypeli on GitHub
+	Closes #296
+	(cherry picked from commit 9b79b1bca1fc7fcfac751275de045e08728ddd00)
+
+
+2014-08-04  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3316071] :
+
+	Don't report an error if no event registered
+	(cherry picked from commit 4669637db8956b72f6078eb0b9858cf76d1ca222)
+
+
+2014-07-29  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3b9c136] :
+
+	Do not crash if script locks were not initialized ( eg - OpenSIPS failed to start )
+	(cherry picked from commit b7bd5b5df9dd61d734cb2ec14fb4b8d970df9628)
+
+
+2014-07-22  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [3ba12dd] :
+
+	Check for all negative values when fetching cachedb counter
+	(cherry picked from commit 17bc5d970d18a01c4e08a512691264ce3a8c4a80)
+
+
+2014-07-18  Razvan Crainea  <razvan at opensips dot org>
+	* [7d56d70] :
+
+	dialog: run loaded callbacks after dialog mod_init()
+	(cherry picked from commit ea5e7f1c7c5f5eef4032a6869fd80a8c7295f948)
+
+
+2014-07-16  Razvan Crainea  <razvan at opensips dot org>
+	* [c1f5d84] :
+
+	acc: trigger the proper event when doing old-style accounting
+	(cherry picked from commit 61d8b2c93db5372313c66e5893a6a7fb3b3320dd)
+
+
+2014-07-15  Razvan Crainea  <razvan at opensips dot org>
+	* [eadcbe5] :
+
+	dialog: re-evaluate the AVP after running callbacks
+	The SST module callbacks might change the dialog lifetime
+
+
+2014-07-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f4f9c2e] :
+
+	Fix broken dlg_val assigment when value is NULL.
+	(cherry picked from commit 2c7e33e67c82ce54addf97e558f5f8b8473bab19)
+
+
+2014-07-07  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [8dcbea9] :
+
+	Merge pull request #265 from jalung/patch-2
+	Update osipsconsole
+	(cherry picked from commit b573ae6733ee4775a8c236bfa1e85f587efe3a74)
+
+
+2014-07-04  Liviu Chircu  <liviu at opensips dot org>
+	* [b06b6f1] :
+
+	flags.c: drop empty-string flags
+	Also issue a scripting error warning
+	(cherry picked from commit 2a547f6929459e3cdaa1e7c8dc3a8980f2ae4ca8)
+
+
+2014-07-04  Razvan Crainea  <razvan at opensips dot org>
+	* [2887553] :
+
+	Makefile: add extra_objs to opensips dependencies
+	(cherry picked from commit 81b19cb5d24430b5e2ea129a2b0d4b07d8a74c98)
+
+	Conflicts:
+		Makefile.rules
+
+
+2014-07-03  Razvan Crainea  <razvan at opensips dot org>
+	* [75ab8fe] :
+
+	event_route: properly backup the event's name
+	Reported and fixed by Ovidiu Sas
+	(cherry picked from commit 924531666462cc90fa68b5e12932894ae56575ad)
+
 =========================== Release 1.10.2 ==============================
 
 2014-07-02  Razvan Crainea  <razvan at opensips dot org>
