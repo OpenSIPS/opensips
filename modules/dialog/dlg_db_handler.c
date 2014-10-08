@@ -53,7 +53,6 @@ str to_tag_column			=	str_init(TO_TAG_COL);
 str h_id_column				=	str_init(HASH_ID_COL);
 str h_entry_column			=	str_init(HASH_ENTRY_COL);
 str state_column			=	str_init(STATE_COL);
-str user_flags_column		=	str_init(USER_FLAGS_COL); /* FIXME - is this used anywhere ? no reference to it */
 str start_time_column		=	str_init(START_TIME_COL);
 str timeout_column			=	str_init(TIMEOUT_COL);
 str to_cseq_column			=	str_init(TO_CSEQ_COL);
