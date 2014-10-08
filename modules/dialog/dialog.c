@@ -259,6 +259,7 @@ static param_export_t mod_params[]={
 	{ "profiles_column",       STR_PARAM, &profiles_column.s        },
 	{ "vars_column",           STR_PARAM, &vars_column.s            },
 	{ "sflags_column",         STR_PARAM, &sflags_column.s          },
+	{ "flags_column",          STR_PARAM, &flags_column.s           },
 	{ "db_update_period",      INT_PARAM, &db_update_period         },
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
@@ -641,6 +642,7 @@ static int mod_init(void)
 	profiles_column.len = strlen(profiles_column.s);
 	vars_column.len = strlen(vars_column.s);
 	sflags_column.len = strlen(sflags_column.s);
+	flags_column.len = strlen(flags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
 
 	/* param checkings */
