@@ -264,6 +264,7 @@ static param_export_t mod_params[]={
 	{ "vars_column",           STR_PARAM, &vars_column.s            },
 	{ "sflags_column",         STR_PARAM, &sflags_column.s          },
 	{ "mflags_column",         STR_PARAM, &mflags_column.s          },
+	{ "flags_column",          STR_PARAM, &flags_column.s           },
 	{ "db_update_period",      INT_PARAM, &db_update_period         },
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
@@ -704,6 +705,7 @@ static int mod_init(void)
 	vars_column.len = strlen(vars_column.s);
 	sflags_column.len = strlen(sflags_column.s);
 	mflags_column.len = strlen(mflags_column.s);
+	flags_column.len = strlen(flags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);

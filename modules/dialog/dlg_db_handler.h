@@ -96,6 +96,7 @@ extern str profiles_column;
 extern str vars_column;
 extern str sflags_column;
 extern str mflags_column;
+extern str flags_column;
 extern str th_column;
 extern str dialog_table_name;
 extern int dlg_db_mode;
