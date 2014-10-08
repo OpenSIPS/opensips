@@ -1645,14 +1645,12 @@ int reply_received( struct sip_msg  *p_msg )
 			/* invite: change FR to longer FR_INV, do not
 			 * attempt to restart retransmission any more
 			 */
-			backup_list = set_avp_list(&t->user_avps);
 			timer = is_timeout_set(t->fr_inv_timeout) ?
 				t->fr_inv_timeout :
 				timer_id2timeout[FR_INV_TIMER_LIST];
 
 			LM_DBG("FR_INV_TIMER = %lld\n", timer);
 			set_timer(&uac->request.fr_timer, FR_INV_TIMER_LIST, &timer);
-			set_avp_list(backup_list);
 		} else {
 			/* non-invite: restart retransmissions (slow now) */
 			uac->request.retr_list = RT_T2;
