@@ -485,8 +485,7 @@ static inline char *run_proxy( struct cpl_interpreter *intr )
 		intr->flags |= CPL_DO_NOT_FREE;
 	}
 
-	if (timeout>0)
-		cpl_fct.tmb.t_gett()->fr_inv_timeout = timeout;
+	cpl_fct.tmb.t_gett()->fr_inv_timeout = timeout;
 
 
 	switch (intr->proxy.ordering) {
