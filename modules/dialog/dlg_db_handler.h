@@ -39,7 +39,6 @@
 #define TO_TAG_COL				"to_tag"
 #define HASH_ID_COL				"hash_id"
 #define HASH_ENTRY_COL			"hash_entry"
-#define USER_FLAGS_COL			"user_flags"
 #define STATE_COL				"state"
 #define START_TIME_COL			"start_time"
 #define TIMEOUT_COL				"timeout"
@@ -94,6 +93,7 @@ extern str from_sock_column;
 extern str profiles_column;
 extern str vars_column;
 extern str sflags_column;
+extern str flags_column;
 extern str th_column;
 extern str dialog_table_name;
 extern int dlg_db_mode;
