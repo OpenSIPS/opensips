@@ -683,6 +683,11 @@ int ds_select_fixup(void** param, int param_no)
 				LM_ERR("Cannot fixup flags\n");
 				return -1;
 			}
+
+			/* Trim whitespaces if exist */
+			while (((char*)(*param))[0] == ' ')
+				(*param)++;
+
 			/*Fixing max_results list*/
 			if (((char *)(*param))[0] != '\0') {
 				rc = fixup_int_list(param);
@@ -690,11 +695,14 @@ int ds_select_fixup(void** param, int param_no)
 					LM_ERR("Cannot fixup list\n");
 					return -1;
 				}
+				result->list = (int_list_t*)(*param);
+			} else {
+				result->list = NULL;
 			}
 
 			result->flags = flags;
-			result->list = (int_list_t*)(*param);
 			*param = result;
+
 			return 0;
 	}
 
