@@ -90,6 +90,7 @@ int redis_connect(redis_con *con)
 	redisContext *ctx;
 	redisReply *rpl;
 	cluster_node *it;
+	int len;
 
 	/* connect to redis DB */
 	ctx = redisConnect(con->id->host,con->id->port);
@@ -116,13 +117,15 @@ int redis_connect(redis_con *con)
 	if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 		/* single instace mode */
 		con->type |= REDIS_SINGLE_INSTANCE;
-		con->nodes = pkg_malloc(sizeof(cluster_node));
+		len = strlen(con->id->host);
+		con->nodes = pkg_malloc(sizeof(cluster_node) + len + 1);
 		if (con->nodes == NULL) {
 			LM_ERR("no more pkg\n");
 			freeReplyObject(rpl);
 			redisFree(ctx);
 			return -1;
 		}
+		con->nodes->ip = (char *)(con->nodes + 1);
 
 		strcpy(con->nodes->ip,con->id->host);
 		con->nodes->port = con->id->port;
