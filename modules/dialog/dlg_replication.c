@@ -388,8 +388,10 @@ int dlg_replicated_delete(void)
 	        return -1;
 	}
 
+	dlg_lock_dlg(dlg);
 	destroy_linkers(dlg->profile_links, 1);
 	dlg->profile_links = NULL;
+	dlg_unlock_dlg(dlg);
 
 	/* simulate BYE received from caller */
 	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
