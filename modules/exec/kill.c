@@ -164,6 +164,51 @@ pid_t __popen(const char *cmd, const char *type, FILE **stream)
 	return ret;
 }
 
+pid_t __rw_popen(const char* cmd, FILE** stream_in, FILE** stream_out)
+{
+	#define READ  0
+	#define WRITE 1
+
+	pid_t ret;
+	int r_fds[2], w_fds[2];
+
+	if (pipe(r_fds) != 0) {
+		LM_ERR("failed to create reading pipe (%d: %s)\n", errno, strerror(errno));
+		return -1;
+	}
+
+	if (pipe(w_fds) != 0) {
+		LM_ERR("failed to writing create pipe (%d: %s)\n", errno, strerror(errno));
+		return -1;
+	}
+
+	ret = fork();
+	if (ret == 0) {
+		/* reading pipe */
+		close(r_fds[READ]);
+		dup2(r_fds[WRITE], 1);
+		close(r_fds[WRITE]);
+
+		/* writing pipe */
+		close(w_fds[WRITE]);
+		dup2(w_fds[READ], 0);
+		close(w_fds[READ]);
+
+		execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
+
+		exit(-1);
+	}
+
+	close(w_fds[READ]);
+	*stream_in = fdopen(w_fds[WRITE], "w");
+
+	close(r_fds[WRITE]);
+	*stream_out = fdopen(r_fds[READ], "r");
+
+	return ret;
+
+}
+
 int schedule_to_kill( int pid )
 {
 	struct timer_link *tl;

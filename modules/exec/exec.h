@@ -30,6 +30,7 @@
 
 typedef struct _exec_cmd {
 	char *cmd;
+	str input;
 	int pid;
 	struct _exec_cmd *next;
 } exec_cmd_t;
@@ -45,12 +46,13 @@ extern exec_list_p exec_async_list;
 
 /* process that waits for asyncronous executions */
 void exec_async_proc(int rank);
-int exec_async(struct sip_msg *msg, char *cmd );
+int exec_async(struct sip_msg *msg, char *cmd, str* input );
 
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len);
 int exec_msg(struct sip_msg *msg, char *cmd );
 int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl);
 int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl);
+int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar);
 
 #endif
 

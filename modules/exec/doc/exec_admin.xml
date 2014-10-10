@@ -148,9 +148,9 @@ modparam("exec", "time_to_kill", 20)
 	<section>
 		<title><varname>async</varname> (integer)</title>
 		<para>
-		Turns on the asynchronous mode for the 'exec_msg' function. All commands
-		will be executed by a different process and the caller will continue
-		its flow, without waiting for a response.
+		Turns on the asynchronous mode for the 'exec_msg' and 'exec' functions.
+		All commands will be executed by a different process and the caller will
+		continue its flow, without waiting for a response.
 		</para>
 		<para>
 		<emphasis>
@@ -331,6 +331,66 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">exec(command, [output], [input], [envavp])</function>
+		</title>
+		<para>
+		Executes an external command. The input is passed to the standard input of the new
+		process, if specified, and the output is saved in the output variable.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - command to be executed.It can include
+			pseudovariables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>output</emphasis> - pseudovariable where to store the output
+			from the standard output of the command. Keep in mind that if this parameter
+			is set, the async paramater will not be taken in consideration.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>input</emphasis> - String to be passed to the standard input
+			of the command. The string can be given as a pseudovariable.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>envavp</emphasis> - Avp where to store the values for the
+			environment variables to be passed for the command. The names of the environment
+			variables will be "OSIPS_EXEC_#" where # will start from 0. For example if you
+			store 2 values into an avp ("a" and "b") OSIPS_EXEC_0 will contain the first value
+			and OSIPS_EXEC_1 the second value.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		WARNING: any OpenSIPS pseudo-vars which may contain special bash
+		characters should be placed inside quotes, e.g. exec_getenv("'$ct'");
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">exec</function> usage</title>
+		<programlisting format="linespecific">
+...
+$avp(env) = "a";
+$avp(env) = "b";
+exec("ls -l", "$var(out)",, "$avp(env)");
+xlog("The output is $var(out)\n");
+...
+$var(input) = "input";
+exec("/home/../myscript.sh",, "this is my $var(input) for exec\n", "$avp(env)");
+...
+</programlisting>
+		</example>
+	</section>
+
 
 
 
