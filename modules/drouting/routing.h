@@ -93,6 +93,7 @@ int
 add_carrier(
 	char *id,
 	int flags,
+	char *sort_alg,
 	char *gwlist,
 	char *attrs,
 	int state,
@@ -137,6 +138,8 @@ build_rt_info(
 	char* route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
+	char* sort_alg,
+	int sort_profile,
 	char* attr,
 	rt_data_t* rd,
 	osips_malloc_f mf,

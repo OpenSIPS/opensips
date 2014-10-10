@@ -145,6 +145,11 @@ static int qr_init(void){
 		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
 		return -1;
 	}
+
+	if(drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
+		return -1;
+	}
 	LM_DBG("[QR] callbacks in DR were registered\n");
 
 
@@ -191,7 +196,7 @@ static str * qr_get_dst_name(qr_dst_t * dst) {
 	if(dst->type == QR_DST_GW) {
 		return drb.get_gw_name(dst->dst.gw->dr_gw);
 	} else {
-		return dst->dst.grp.id;
+		return drb.get_cr_name(dst->dst.grp.dr_cr);
 	}
 }
 

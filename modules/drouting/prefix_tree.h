@@ -100,11 +100,11 @@ typedef struct pgw_list_ {
 	unsigned int weight;
 }pgw_list_t;
 
-#define DR_CR_FLAG_WEIGHT (1<<0)
-#define DR_CR_FLAG_FIRST  (1<<1)
-#define DR_CR_FLAG_IS_OFF (1<<2)
-#define DR_CR_FLAG_DIRTY  (1<<3)
-#define DR_CR_FLAG_QR (1<<4)
+//#define DR_CR_FLAG_WEIGHT (1<<0)
+#define DR_CR_FLAG_FIRST  (1<<0)
+#define DR_CR_FLAG_IS_OFF (1<<1)
+#define DR_CR_FLAG_DIRTY  (1<<2)
+//#define DR_CR_FLAG_QR (1<<4)
 
 /* list of carriers */
 struct pcr_ {
@@ -112,6 +112,8 @@ struct pcr_ {
 	str id;
 	/* flags */
 	unsigned int flags;
+	/* the id of the sorting algorithm from the sort_cb_type enum */
+	unsigned char sort_alg;
 	/* array of pointers into the PSTN gw list */
 	pgw_list_t *pgwl;
 	/* length of the PSTN gw array */
@@ -143,6 +145,8 @@ typedef struct rt_info_ {
 	unsigned short ref_cnt;
 	/* handler used by qr for accouting (actually qr_rule_t*) */
 	void *qr_handler;
+	/* sorting algorithm for the destinations inside rule */
+	unsigned char sort_alg;
 } rt_info_t;
 
 typedef struct rt_info_wrp_ {

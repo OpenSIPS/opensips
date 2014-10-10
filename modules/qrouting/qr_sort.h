@@ -37,16 +37,12 @@
  * dictionary-like-structure which contains
  * a sorted list of gateways
  */
-typedef struct qr_sorted_elem {
-	pgw_t *dr_gw; /* destination */
-	struct qr_sorted_elem *next; /* next destination with the same score */
-} qr_sorted_elem_t;
-
 typedef struct qr_sorted_list {
-	qr_sorted_elem_t *start, *end;
+	int dst_id;
+	struct qr_sorted_list *next;
 }qr_sorted_list_t;
 
-int qr_add_gw_to_list(qr_sorted_list_t **sorted_list, qr_gw_t *gw);
+int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_id, int score);
 
 /* compute answer seizure ratio for gw */
 inline double asr(qr_gw_t *gw);
@@ -69,7 +65,8 @@ inline double acd(qr_gw_t *gw);
 void qr_score(qr_gw_t *gw, qr_thresholds_t * thresholds);/*
  * inserts destination in sorted list
  */
-inline int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
+void qr_sort(int type, struct dr_cb_params *params);
+int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		int dst_id);
 #endif
 

@@ -132,10 +132,7 @@ void qr_acc(int type, struct dr_cb_params * params) {
 
 	return ;
 error:
-	if(trans_prop != NULL) {
-		release_trans_prop(trans_prop); /* cur_time is released here */
-	}
-
+	return;
 }
 
 /* a call for this gateway returned 200OK */
@@ -175,7 +172,7 @@ inline void qr_add_setup(qr_gw_t *gw, double st) {
  */
 static double get_elapsed_time(struct timespec * start, char mu) {
 	struct timespec now;
-	double seconds, elapsed = 0, milisec_start, milisec_now;
+	double seconds, elapsed = 0;
 
 	if(clock_gettime(CLOCK_REALTIME, &now) < 0) {
 		LM_ERR("failed to get the current time[RESPONSE]\n");
@@ -191,9 +188,7 @@ static double get_elapsed_time(struct timespec * start, char mu) {
 	if(mu == 'm') {
 		/* compute the difference in miliseconds */
 		elapsed += (seconds * 1000);
-		milisec_start = start->tv_nsec/1000000;
-		milisec_now = now.tv_nsec/1000000;
-		elapsed += (milisec_now - milisec_start);
+		elapsed += (now.tv_nsec - start->tv_nsec)/1000000;
 		return elapsed;
 	} else if(mu == 's') {
 		/* return seconds elapsed */
@@ -219,9 +214,6 @@ static void call_ended(struct dlg_cell* dlg, int type,
 	++(dialog_prop->gw->current_interval.n.cd);
 	dialog_prop->gw->current_interval.stats.cd += cd;
 	lock_release(dialog_prop->gw->acc_lock);
-	if(dialog_prop != NULL) {
-		release_dialog_prop(dialog_prop);
-	}
 }
 
 /*
@@ -253,7 +245,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps) {
 
 	} else if(ps->code >= 200 && ps->code<500) { /* completed calls */
 		if(ps->code == 200) { /* calee answered */
-			if((st = get_elapsed_time(trans_prop->invite,'s'))
+			if((st = get_elapsed_time(trans_prop->invite,'m'))
 					< 0) {
 				LM_ERR("negative setup time\n");
 				goto error;
@@ -305,15 +297,10 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps) {
 	}
 
 	/* transaction properties are no longer needed */
-	if(trans_prop != NULL) {
-		release_trans_prop(trans_prop);
-	}
 
 	return ;
 error:
-	if(dialog_prop != NULL) {
-		release_dialog_prop(dialog_prop);
-	}
+	LM_ERR("error\n");
 }
 
 /* adds/removes two qr_n_calls_t structures */
@@ -384,7 +371,7 @@ void update_gw_stats(qr_gw_t *gw) {
 	gw->state |= QR_STATUS_DIRTY;
 	lock_stop_write(gw->ref_lock);
 	gw->next_interval->calls = gw->current_interval;
-	show_stats(gw);
+//	show_stats(gw);
 	memset(&gw->current_interval, 0, sizeof(qr_stats_t));
 	gw->next_interval = gw->next_interval->next; /* the 'oldest' sample interval
 													becomes the 'newest' */

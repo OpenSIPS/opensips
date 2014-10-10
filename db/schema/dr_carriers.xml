@@ -9,7 +9,7 @@
 
 <table id="dr_carriers" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dr_carriers</name>
-	<version>2</version>
+	<version>3</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Dynamic Routing module to define
@@ -50,7 +50,20 @@
 		<type>unsigned int</type>
 		<size>&flag_len;</size>
 		<default>0</default>
-		<description>Flags (for different purposes) of the carriers
+		<description>Flags of the carriers (for different purposes: 
+					use only first gw from cr (set the first bit of the flag); 
+					disable gateway (set the second bit of the flag);
+		</description>
+	</column>
+	
+	<column id="sorting_alg">
+		<name>sort_alg</name>
+		<type>CHAR</type>
+		<default>0</default>
+		<description>The sorting algorithm to be employed inside the carrier  
+			(if set) when do_routing is called. Possible values: 'O'/'o' - no sorting should be done,
+			'W'/'w' - weight based sorting should be done and 'Q'/'q' quality-based sorting should be done (quality
+			based sorting is provided by the qrouting module)
 		</description>
 	</column>
 

@@ -98,7 +98,7 @@ typedef struct qr_gw {
 typedef struct qr_grp {
 	qr_gw_t **gw;
 	char sort_method; /* sorting for the group */
-	str *id;
+	void *dr_cr;
 	int score;
 	char state;
 	rw_lock_t *ref_lock;

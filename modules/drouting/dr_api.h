@@ -53,6 +53,7 @@ typedef str * (*get_cr_name_f) (pcr_t *cr);
 typedef  pgw_t * (*get_gw_from_cr_f) (pcr_t *cr, int n); /* gets the n-th
 															gateway from the
 															carrier */
+typedef void * (*get_qr_rule_handle_f) (rt_info_t *);
 struct dr_binds {
 	create_head_f    create_head;
 	free_head_f      free_head;
@@ -63,6 +64,7 @@ struct dr_binds {
 	get_cr_name_f    get_cr_name;
 	get_cr_n_gw_f    get_cr_n_gw;
 	get_gw_from_cr_f get_gw_from_cr;
+	get_qr_rule_handle_f get_qr_rule_handle;
 };
 
 typedef int (*load_dr_api_f)(struct dr_binds *drb);

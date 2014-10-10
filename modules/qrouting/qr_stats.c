@@ -205,7 +205,7 @@ void qr_dst_is_grp(int type, struct dr_cb_params *params) {
 		}
 
 		rule->dest[n_dst].dst.grp.n = n_gws;
-		rule->dest[n_dst].dst.grp.id = cr_name;
+		rule->dest[n_dst].dst.grp.dr_cr = grp;
 		for(i = 0; i < n_gws; i++) {
 			dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
 														  as pgw_t from dr */

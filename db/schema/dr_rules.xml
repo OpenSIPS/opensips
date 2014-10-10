@@ -9,7 +9,7 @@
 
 <table id="dr_rules" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dr_rules</name>
-	<version>3</version>
+	<version>4</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Dynamic Routing module to store
@@ -80,6 +80,26 @@
 		<size>255</size>
 		<description>Reference to the GWs/destinations to be used when
 		rule matches.</description>
+	</column>
+	
+	<column id="sorting_alg">
+		<name>sort_alg</name>
+		<type>CHAR</type>
+		<default>0</default>
+		<description>The sorting algorithm to be employed inside the rule (if set) 
+			when do_routing is called. Possible values: 'O'/'o' - no sorting should be done,
+			'W'/'w' - weight based sorting should be done and 'Q'/'q' quality-based sorting should be done (quality
+			based sorting is provided by the qrouting module). More options may be available in the future.
+		</description>
+	</column>
+	<column id="sorting_profile">
+		<name>sort_profile</name>
+		<type>unsigned int</type>
+		<size>10</size>
+		<default>0</default>
+		<description>The id of the sorting profile employed by the chosen algorithm. Available
+			only for qrouting now, the sorting_profile id is found in qr_profiles table.
+		</description>
 	</column>
 
 	<column id="attrs">

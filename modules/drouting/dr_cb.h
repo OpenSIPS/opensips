@@ -63,6 +63,17 @@ struct dr_sort_params {
 };
 
 
+#include "prefix_tree.h"
+#include "dr_sorting_cbs.h"
+
+#define POINTER_CLOSED_MARKER  ((void *)(-1))
+
+
+
+struct dr_cb_params {
+	void **param; /* parameter passed at callback registration*/
+};
+
 
 /* callback function prototype */
 typedef void (dr_cb) (void *param);

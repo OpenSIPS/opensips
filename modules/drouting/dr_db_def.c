@@ -60,6 +60,17 @@ str state_drd_col = str_init(STATE_DRD_COL);
 #define PRIORITY_DRR_COL  "priority"
 #define ROUTEID_DRR_COL   "routeid"
 #define DSTLIST_DRR_COL   "gwlist"
+#define SORT_ALG_DRR_COL "sort_alg"
+#define SORT_PROFILE_DRR_COL "sort_profile"
+/*TODO: gotoqr */
+#define WARN_TH_ASR_DRR_COL "warn_threshold_asr"
+#define WARN_TH_CCR_DRR_COL "warn_threshold_ccr"
+#define WARN_TH_AST_DRR_COL "warn_threshold_ast"
+#define WARN_TH_ACD_DRR_COL "warn_threshold_acd"
+#define DSBL_TH_ASR_DRR_COL "dsbl_threshold_asr"
+#define DSBL_TH_CCR_DRR_COL "dsbl_threshold_ccr"
+#define DSBL_TH_AST_DRR_COL "dsbl_threshold_ast"
+#define DSBL_TH_ACD_DRR_COL "dsbl_threshold_acd"
 #define ATTRS_DRR_COL     "attrs"
 str drr_table = str_init("dr_rules");
 str rule_id_drr_col = str_init(RULE_ID_DRR_COL);
@@ -69,12 +80,15 @@ str time_drr_col = str_init(TIME_DRR_COL);
 str priority_drr_col = str_init(PRIORITY_DRR_COL);
 str routeid_drr_col = str_init(ROUTEID_DRR_COL);
 str dstlist_drr_col = str_init(DSTLIST_DRR_COL);
+str sort_alg_drr_col = str_init(SORT_ALG_DRR_COL);
+str sort_profile_drr_col = str_init(SORT_PROFILE_DRR_COL);
 str attrs_drr_col = str_init(ATTRS_DRR_COL);
 
 /* DR carrier table related defs */
 #define ID_DRC_COL     "id"
 #define CID_DRC_COL    "carrierid"
 #define FLAGS_DRC_COL  "flags"
+#define SORT_ALG_DRC_COL "sort_alg"
 #define GWLIST_DRC_COL "gwlist"
 #define ATTRS_DRC_COL  "attrs"
 #define STATE_DRC_COL  "state"
@@ -82,6 +96,7 @@ str drc_table = str_init("dr_carriers");
 str id_drc_col = str_init(ID_DRC_COL);
 str cid_drc_col = str_init(CID_DRC_COL);
 str flags_drc_col = str_init(FLAGS_DRC_COL);
+str sort_alg_drc_col = str_init(SORT_ALG_DRC_COL);
 str gwlist_drc_col = str_init(GWLIST_DRC_COL);
 str attrs_drc_col = str_init(ATTRS_DRC_COL);
 str state_drc_col = str_init(STATE_DRC_COL);

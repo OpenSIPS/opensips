@@ -33,6 +33,9 @@
 #include "../../mem/mem.h"
 #include "dr_cb.h"
 
+unsigned char sort_algs[N_MAX_SORT_CBS] = {0,'O','W','Q'};
+
+
 
 #define POINTER_CLOSED_MARKER  ((void *)(-1))
 
@@ -243,9 +246,9 @@ int run_indexed_callback(struct dr_callback **dr_sort_cbs_lst, sort_cb_type type
 		return -1;
 	}
 	if(params != NULL) {
-		param = (struct dr_cb_params *) shm_malloc(sizeof(struct dr_cb_params));
+		param = (struct dr_cb_params *) pkg_malloc(sizeof(struct dr_cb_params));
 		if(param == NULL) {
-			LM_ERR("no more shm memory\n");
+			LM_ERR("no more pkg memory\n");
 			return -1;
 		}
 	}

@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <string.h>
 #include <ctype.h>
 
 #include "dr_partitions.h"
@@ -44,6 +45,8 @@
 #include "prefix_tree.h"
 #include "parse.h"
 #include "dr_cb.h"
+#include "dr_sorting_cbs.h"
+
 
 #define is_valid_gw_char(_c) \
 	(isalpha(_c) || isdigit(_c) || (_c)=='_' || (_c)=='-' || (_c)=='.')
@@ -242,6 +245,7 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 {
 	pcr_t *cr = NULL;
 	unsigned int i;
+	unsigned char * sort_p, n_alg;
 
 	str key;
 
@@ -273,6 +277,20 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 
 	/* copy integer fields */
 	cr->flags = flags;
+
+	sort_p = memchr(sort_algs, sort_alg[0], N_MAX_SORT_CBS);
+	if(sort_p == NULL) {
+		n_alg = 1;
+	} else {
+		n_alg = (unsigned char)(sort_p - sort_algs);
+
+		if(n_alg == 0) {
+			n_alg = 1;
+		}
+	}
+
+	cr->sort_alg = n_alg;
+
 
 	/* set state */
 	if (state!=0)
@@ -315,10 +333,12 @@ build_rt_info(
 	int id,
 	int priority,
 	tmrec_t *trec,
-	/* script route name */
-	char* route_idx,
+	/* script routing table index */
+	int route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
+	char* sort_alg,
+	int sort_profile,
 	char* attrs,
 	rt_data_t* rd,
 	osips_malloc_f mf,
@@ -336,6 +356,8 @@ build_rt_info(
 	struct dr_reg_param *reg_dst_param;
 	pgw_list_t *p = NULL;
 
+	unsigned char * sort_p, n_alg;
+
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
 		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
 	if (rt==NULL) {
@@ -347,6 +369,20 @@ build_rt_info(
 	rt->id = id;
 	rt->priority = priority;
 	rt->time_rec = trec;
+
+	rt->route_idx = route_idx;
+	sort_p = memchr(sort_algs, sort_alg[0], N_MAX_SORT_CBS);
+	if(sort_p == NULL) {
+		n_alg = 1;
+	} else {
+		n_alg = (unsigned char)(sort_p - sort_algs);
+		if(n_alg == 0) {
+			n_alg = 1;
+		}
+	}
+
+	rt->sort_alg = n_alg;
+
 	if (attrs && strlen(attrs)) {
 		rt->attrs.s = (char*)(rt+1);
 		rt->attrs.len = strlen(attrs);
@@ -391,33 +427,36 @@ build_rt_info(
 		p = rt->pgwl;
 
 
-		/* TODO: should check if qr loaded */
-		for(i = 0; i < rt->pgwa_len; i++) {
-			if(p[i].is_carrier) {
-				reg_dst_param = (struct dr_reg_param *) shm_malloc(
-						sizeof(struct dr_reg_param));
-				if(reg_dst_param == NULL) {
-					LM_ERR("no more shm memory\n");
+		if(n_alg == 3) { /* if the sorting algorithm for this rule is qr sorting */
+			/* TODO: params should be pkg - and freed in the cbs */
+			/* TODO: should check if qr loaded */
+			for(i = 0; i < rt->pgwa_len; i++) {
+				if(p[i].is_carrier) {
+					reg_dst_param = (struct dr_reg_param *) shm_malloc(
+							sizeof(struct dr_reg_param));
+					if(reg_dst_param == NULL) {
+						LM_ERR("no more shm memory\n");
+					} else {
+						reg_dst_param->rule = qr_rule;
+						reg_dst_param->n_dst = i;
+						reg_dst_param->cr_or_gw = p[i].dst.carrier;
+
+						run_callbacks(dr_reg_cbs, DRCB_REG_CR, (void*)reg_dst_param);
+					}
+
 				} else {
-					reg_dst_param->rule = qr_rule;
-					reg_dst_param->n_dst = i;
-					reg_dst_param->cr_or_gw = p[i].dst.carrier;
+					reg_dst_param = (struct dr_reg_param *) shm_malloc(sizeof(struct
+								dr_reg_param));
+					if(reg_dst_param == NULL) {
+						LM_ERR("no more shm memory\n");
+						/* TODO: should we crash all together? */
+					} else {
+						reg_dst_param->rule = qr_rule;
+						reg_dst_param->n_dst = i;
+						reg_dst_param->cr_or_gw = p[i].dst.gw;
 
-					run_callbacks(dr_reg_cbs, DRCB_REG_CR, (void*)reg_dst_param);
-				}
-
-			} else {
-				reg_dst_param = (struct dr_reg_param *) shm_malloc(sizeof(struct
-							dr_reg_param));
-				if(reg_dst_param == NULL) {
-					LM_ERR("no more shm memory\n");
-					/* TODO: should we crash all together? */
-				} else {
-					reg_dst_param->rule = qr_rule;
-					reg_dst_param->n_dst = i;
-					reg_dst_param->cr_or_gw = p[i].dst.gw;
-
-					run_callbacks(dr_reg_cbs, DRCB_REG_GW, (void*)reg_dst_param);
+						run_callbacks(dr_reg_cbs, DRCB_REG_GW, (void*)reg_dst_param);
+					}
 				}
 			}
 		}
