@@ -25,6 +25,7 @@ dr_gateways:6
 dr_groups:2
 dr_partitions:1
 dr_rules:3
+fraud_detection:1
 globalblacklist:2
 grp:3
 imc_members:2

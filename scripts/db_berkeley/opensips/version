@@ -62,6 +62,8 @@ dr_partitions|
 dr_partitions|1
 dr_rules|
 dr_rules|3
+fraud_detection|
+fraud_detection|1
 globalblacklist|
 globalblacklist|2
 grp|
