@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="fraud_detection" xmlns:db="http://docbook.org/ns/docbook">
+	<name>fraud_detection</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Fraud Detection module to store
+		information about fraud-profiles.
+		More information can be found at: &OPENSIPS_MOD_DOC;fraud_detection.html.
+		</db:para>
+	</description>
+
+	<column id="ruleid">
+		<name>ruleid</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Rule unique ID
+		</description>
+	</column>
+
+	<column id="profileid">
+		<name>profileid</name>
+		<type>unsigned int</type>
+		<description>The ID of the profile the current rule is part of
+		</description>
+	</column>
+
+	<column id="prefix">
+		<name>prefix</name>
+		<type>string</type>
+		<size>64</size>
+		<description>Numerical prefix to match this rule</description>
+	</column>
+
+	<column id="start_hour">
+		<name>start_hour</name>
+		<type>string</type>
+		<size>5</size>
+		<description>Start of the interval in which the rule should be matched.
+		</description>
+	</column>
+
+	<column id="end_hour">
+		<name>end_hour</name>
+		<type>string</type>
+		<size>5</size>
+		<description>End of the interval in which the rule should be matched.
+		</description>
+	</column>
+
+	<column id="daysoftheweek">
+		<name>daysoftheweek</name>
+		<type>string</type>
+		<size>64</size>
+		<description>List/interval of days in which the rule is available.
+		</description>
+	</column>
+
+	<column id="cpm_warning">
+		<name>cpm_warning</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Warning threshold for calls per minute.</description>
+	</column>
+	
+	<column id="cpm_critical">
+		<name>cpm_critical</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Crtical threshold for calls per minute.</description>
+	</column>
+	
+	<column id="call_duration_warning">
+		<name>call_duration_warning</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Warning threshold for calls per minute.</description>
+	</column>
+	
+	<column id="call_duration_critical">
+		<name>call_duration_critical</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Crtical threshold for call duration.</description>
+	</column>
+		
+	<column id="total_calls_warning">
+		<name>total_calls_warning</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Warning threshold for total calls.</description>
+	</column>
+	
+	<column id="total_calls_critical">
+		<name>total_calls_critical</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Crtical threshold for total calls.</description>
+	</column>
+			
+	<column id="concurrent_calls_warning">
+		<name>concurrent_calls_warning</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Warning threshold for concurrent calls.</description>
+	</column>
+	
+	<column id="concurrent_calls_critical">
+		<name>concurrent_calls_critical</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Crtical threshold for concurrent calls.</description>
+	</column>
+			
+	<column id="sequential_calls_warning">
+		<name>sequential_calls_warning</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Warning threshold for sequential calls.</description>
+	</column>
+	
+	<column id="sequential_calls_critical">
+		<name>sequential_calls_critical</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>Crtical threshold for sequential calls.</description>
+	</column>
+
+</table>
