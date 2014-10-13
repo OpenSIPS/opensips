@@ -492,6 +492,7 @@ static inline int after_strict(struct sip_msg* _m)
 	char* rem_off;
 	str uri;
 	struct socket_info *si;
+	unsigned short port, proto;
 
 	hdr = _m->route;
 	rt = (rr_t*)hdr->parsed;
@@ -551,6 +552,17 @@ static inline int after_strict(struct sip_msg* _m)
 		if (parse_uri(uri.s, uri.len, &puri) < 0) {
 			LM_ERR("failed to parse URI\n");
 			return RR_ERROR;
+		}
+	} else {
+		port = _m->parsed_uri.port_no;
+		proto = _m->parsed_uri.proto;
+		set_sip_defaults(port, proto);
+		si = grep_sock_info( &_m->parsed_uri.host, port, proto);
+		if (si) {
+			_m->force_send_socket = si;
+		} else {
+			if (enable_socket_mismatch_warning)
+				LM_WARN("no socket found for match second RR\n");
 		}
 	}
 
@@ -682,6 +694,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 {
 	struct hdr_field* hdr;
 	struct sip_uri puri;
+	struct sip_uri puri2;
 	rr_t* rt;
 	int res;
 	int status;
@@ -690,6 +703,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 #endif
 	str uri;
 	struct socket_info *si;
+	int force_ss = 0;
 
 	hdr = _m->route;
 	rt = (rr_t*)hdr->parsed;
@@ -742,6 +756,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 
 				/*same case as LL , if there is no next route*/
 				routing_type = ROUTING_LL;
+				force_ss = 1;
 
 				goto done;
 			}
@@ -749,6 +764,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 		} else rt = rt->next;
 		
 		if (enable_double_rr && is_2rr(&puri.params)) {
+			force_ss = 0;
 			/* double route may occure due different IP and port, so force as
 			 * send interface the one advertise in second Route */
 			if (parse_uri(rt->nameaddr.uri.s,rt->nameaddr.uri.len,&puri)<0) {
@@ -791,10 +807,12 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				}
 				rt = (rr_t*)hdr->parsed;
 			} else rt = rt->next;
+		} else {
+			force_ss = 1;
 		}
 		
 		uri = rt->nameaddr.uri;
-		if (parse_uri(uri.s, uri.len, &puri) < 0) {
+		if (parse_uri(uri.s, uri.len, &puri2) < 0) {
 			LM_ERR("failed to parse the first route URI\n");
 			return RR_ERROR;
 		}
@@ -805,10 +823,11 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 			return NOT_RR_DRIVEN;
 #endif
 		LM_DBG("Topmost URI is NOT myself\n");
+		memcpy(&puri2, &puri, sizeof(struct sip_uri));
 	}
 
 	LM_DBG("URI to be processed: '%.*s'\n", uri.len, ZSW(uri.s));
-	if (is_strict(&puri.params)) {
+	if (is_strict(&puri2.params)) {
 		LM_DBG("Next URI is a strict router\n");
 
 		routing_type = ROUTING_LS;
@@ -822,7 +841,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 
 		routing_type = ROUTING_LL;
 
-		if(get_maddr_uri(&uri, &puri)!=0) {
+		if(get_maddr_uri(&uri, &puri2)!=0) {
 			LM_ERR("checking maddr failed\n");
 			return RR_ERROR;
 		}
@@ -846,6 +865,16 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	status = RR_DRIVEN;
 
 done:
+	if (force_ss) {
+		set_sip_defaults( puri.port_no, puri.proto);
+		si = grep_sock_info( &puri.host, puri.port_no, puri.proto);
+		if (si) {
+			_m->force_send_socket = si;
+		} else {
+			if (enable_socket_mismatch_warning)
+				LM_WARN("no socket found for match second RR\n");
+		}
+	}
 	/* run RR callbacks -bogdan */
 	run_rr_callbacks( _m, &routed_params );
 	return status;
