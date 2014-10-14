@@ -1229,8 +1229,7 @@ static inline int ds_get_index(int group, ds_set_p *index, ds_partition_t *parti
 }
 
 
-static inline int ds_update_dst(struct sip_msg *msg, str *uri,
-										struct socket_info *sock, int mode)
+int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode)
 {
 	struct action act;
 	uri_type utype;
@@ -1321,7 +1320,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags)
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags)
 {
 	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
@@ -1502,6 +1501,23 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_fla
 		LM_ERR("cannot set dst addr\n");
 		goto error;
 	}
+
+	/* Save the selected destination for multilist failover */
+	if (selected_dst->uri.s != NULL) {
+		pkg_free(selected_dst->uri.s);
+		memset(&selected_dst->uri, 0, sizeof(str));
+	}
+	if (pkg_str_dup(&selected_dst->uri, &selected->dst_uri) != 0) {
+		LM_ERR("cannot set selected_dst uri\n");
+		goto error;
+	}
+	if (selected->sock) {
+		selected_dst->socket.len = 1 + snprintf( selected_dst->socket.s, PTR_STR_SIZE, "%p", selected->sock );
+	}
+	else {
+		selected_dst->socket.len = 0;
+	}
+
 	/* if alg is round-robin then update the shortcut to next to be used */
 	if(ds_select_ctl->alg==4)
 		idx->last = (ds_id+1) % idx->nr;

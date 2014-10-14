@@ -963,10 +963,15 @@ static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
  */
 static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results_flags, int mode)
 {
-	int ret;
+	int ret = -1;
+	int _ret;
 	int run_prev_ds_select = 0;
 	int ds_flags = 0;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
+	char selected_dst_sock_buf[PTR_STRING_SIZE]; /* a hexa string */
+	ds_selected_dst selected_dst;
+	struct socket_info *sock = NULL;
+
 	if(msg==NULL)
 		return -1;
 
@@ -974,6 +979,9 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	ds_select_ctl.max_results = 1000;
 	ds_select_ctl.reset_AVP = 1;
 	ds_select_ctl.set_destination = 1;
+
+	memset(&selected_dst, 0, sizeof(ds_selected_dst));
+	selected_dst.socket.s = selected_dst_sock_buf;
 
 	/* Retrieve dispatcher set */
 	ds_param_t *part_set_param = (ds_param_t*)part_set;
@@ -1043,8 +1051,8 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 			LM_DBG("ds_select: %d %d %d %d %d\n",
 				prev_ds_select_ctl.set, prev_ds_select_ctl.alg, prev_ds_select_ctl.max_results,
 				prev_ds_select_ctl.reset_AVP, prev_ds_select_ctl.set_destination);
-			ret = ds_select_dst(msg, &prev_ds_select_ctl, ds_flags);
-			if (ret<0) return ret;
+			_ret = ds_select_dst(msg, &prev_ds_select_ctl, &selected_dst, ds_flags);
+			if (_ret>=0) ret = _ret;
 			/* stop resetting AVPs. */
 			ds_select_ctl.reset_AVP = 0;
 		} else {
@@ -1068,16 +1076,19 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 	if (max_results_ptr &&  max_list != NULL) {
 		LM_ERR("extra max slot(s)\n");
+		ret = -2;
 		goto error;
 	}
 
 	if (set_list != NULL) {
 		LM_ERR("extra set(s)\n");
+		ret = -2;
 		goto error;
 	}
 
 	if (alg_list != NULL) {
 		LM_ERR("extra algorithm(s)\n");
+		ret = -2;
 		goto error;
 	}
 
@@ -1086,10 +1097,34 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	LM_DBG("ds_select: %d %d %d %d %d\n",
 		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
 		ds_select_ctl.reset_AVP, ds_select_ctl.set_destination);
-	return ds_select_dst(msg, &ds_select_ctl, ds_flags);
+	_ret = ds_select_dst(msg, &ds_select_ctl, &selected_dst, ds_flags);
+	if (_ret>=0) {
+		ret = _ret;
+	}
+	else {
+		if (selected_dst.uri.s != NULL) {
+			if (selected_dst.socket.len != 0) {
+				if (sscanf( selected_dst.socket.s, "%p", (void**)&sock ) != 1) {
+					LM_ERR("unable to read forced destination socket\n");
+					ret = -4;
+					goto error;
+				}
+			}
+			if (ds_update_dst(msg, &selected_dst.uri, sock, ds_select_ctl.mode) != 0) {
+				LM_ERR("cannot set dst addr\n");
+				ret = -3;
+				goto error;
+			}
+		}
+		else {
+			ret = -1;
+			goto error;
+		}
+	}
 
 error:
-	return -1;
+	if (selected_dst.uri.s != NULL) pkg_free(selected_dst.uri.s);
+	return ret;
 }
 
 /**
