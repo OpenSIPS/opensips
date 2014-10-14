@@ -98,6 +98,9 @@ struct sip_msg;
 		((_via)->hdr.s+(_via)->hdr.len)))
 
 
+#define PTR_STRING_SIZE  2+16+1
+#define PTR_STR_SIZE     2+16
+
 /* char to hex conversion table */
 static char fourbits2char[16] = { '0', '1', '2', '3', '4', '5',
 	'6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
