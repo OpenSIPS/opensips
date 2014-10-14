@@ -2309,7 +2309,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current_partition,
 		struct sip_uri *uri, pgw_t *gw , str *c_id, str *c_attrs, int idx)
 {
-	char buf[2+16+1]; /* a hexa string */
+	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	str *ruri;
 	int_str val;
 	if( current_partition==NULL ) {
@@ -2348,7 +2348,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 		}
 
 		/* add GW sock avp */
-		val.s.len = 1 + sprintf( buf, "%p", gw->sock );
+		val.s.len = 1 + snprintf( buf, PTR_STR_SIZE, "%p", gw->sock );
 		val.s.s = buf;
 		LM_DBG("setting GW sock [%.*s] as avp\n",val.s.len, val.s.s);
 		if (add_avp_last( AVP_VAL_STR, current_partition->gw_sock_avp, val)!=0 ) {
