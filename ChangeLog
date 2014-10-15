@@ -1,3 +1,37 @@
+=========================== Release 1.10.3 ==============================
+
+2014-10-15  Razvan Crainea  <razvan at opensips dot org>
+	* [7501cc9] :
+
+	increase version to 1.10.3
+
+
+2014-10-15  Razvan Crainea  <razvan at opensips dot org>
+	* [ba3fa45] :
+
+	fix rr force_send_socket when using mhomed
+	(cherry picked from commit 56ca96a8d25724d74fc6cd31a1125933dfc62f1c)
+
+
+2014-10-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [9d951b0] :
+
+	Compatibility fix for add_body() with new body.
+	When computing the new content-len, accept the case when there is no pre-existing body and a newly added body.
+	Reported by Antonis Psaras via LinkedIn
+	(cherry picked from commit 8054dbfb4d0c5c621d35db6bc886da41d3a05294)
+
+	Conflicts:
+		msg_translator.c
+
+
+2014-10-09  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [10a584b] :
+
+	Do profile freeing under lock - avoid double free issues
+	(cherry picked from commit b7928cf62e4f13f4709114a972018016e58d91e9)
+
+
 2014-10-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
 	* [76da2bf] :
 
