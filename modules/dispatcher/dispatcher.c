@@ -811,14 +811,16 @@ static int mod_init(void)
 			return -1;
 		}
 		/* Register the PING-Timer */
-		if (register_timer("ds-pinger",ds_check_timer,NULL,ds_ping_interval)<0){
+		if (register_timer("ds-pinger", ds_check_timer, NULL,
+		ds_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register timer for probing!\n");
 			return -1;
 		}
 	}
 
 	/* register timer to flush the state of destination back to DB */
-	if (register_timer("ds-flusher",ds_flusher_routine,NULL, 30)<0){
+	if (register_timer("ds-flusher",ds_flusher_routine,NULL, 30 ,
+	TIMER_FLAG_SKIP_ON_DELAY)<0) {
 		LM_ERR("failed to register timer for DB flushing!\n");
 		return -1;
 	}

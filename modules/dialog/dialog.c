@@ -829,13 +829,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1)<0 ) {
+	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,
+	TIMER_FLAG_DELAY_ON_DELAY)<0 ) {
 		LM_ERR("failed to register timer\n");
 		return -1;
 	}
 
 	if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
-	ping_interval)<0) {
+	ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register timer 2\n");
 		return -1;
 	}

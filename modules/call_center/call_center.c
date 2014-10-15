@@ -246,12 +246,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (register_timer( "cc_agents", cc_timer_agents, NULL, 1)<0) {
+	if (register_timer( "cc_agents", cc_timer_agents, NULL, 1,
+	TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register agents timer function\n");
 		return -1;
 	}
 
-	if (register_timer( "cc_cleanup", cc_timer_cleanup, NULL, 5)<0) {
+	if (register_timer( "cc_cleanup", cc_timer_cleanup, NULL, 5,
+	TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register cleaup timer function\n");
 		return -1;
 	}

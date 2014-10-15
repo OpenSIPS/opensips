@@ -237,9 +237,11 @@ static int mod_init(void)
 
 	_timer = timer_interval/reg_hsize;
 	if (_timer) {
-		register_timer("uac_reg_check", timer_check, 0, _timer);
+		register_timer("uac_reg_check", timer_check, 0, _timer,
+			TIMER_FLAG_DELAY_ON_DELAY);
 	} else {
-		LM_ERR("timer_interval=[%d] MUST be bigger then reg_hsize=[%d]\n", timer_interval, reg_hsize);
+		LM_ERR("timer_interval=[%d] MUST be bigger then reg_hsize=[%d]\n",
+			timer_interval, reg_hsize);
 		return -1;
 	}
 

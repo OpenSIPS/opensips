@@ -314,7 +314,7 @@ static int mod_init(void)
 
 	/* register timer to reset counters */
 	if (register_timer("rl-timer", rl_timer, NULL,
-	rl_timer_interval) < 0 ) {
+	rl_timer_interval, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
 		LM_ERR("could not register timer function\n");
 		return -1;
 	}

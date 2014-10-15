@@ -370,7 +370,8 @@ int virtual_mod_init(void){
 
             if(db_reconnect_with_timer){
                 if (register_timer("db_virtual-reconnect",
-                        reconnect_timer, NULL, db_probe_time)<0) {
+                        reconnect_timer, NULL, db_probe_time,
+                        TIMER_FLAG_DELAY_ON_DELAY)<0) {
                     LM_ERR("failed to register keepalive timer\n");
                 }
             }

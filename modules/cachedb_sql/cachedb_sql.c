@@ -544,7 +544,8 @@ static int mod_init(void)
 	}
 
 	/* register timer to delete the expired entries */
-	register_timer("cachedb_sql",dbcache_clean, 0, cache_clean_period);
+	register_timer("cachedb_sql",dbcache_clean, 0, cache_clean_period,
+		TIMER_FLAG_DELAY_ON_DELAY);
 
 	return 0;
 }

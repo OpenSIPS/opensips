@@ -294,7 +294,8 @@ static int mod_init(void)
 	}
 
 	/* Register cache timer */
-	register_timer( "ul-timer", timer, 0, timer_interval);
+	register_timer( "ul-timer", timer, 0, timer_interval,
+		TIMER_FLAG_DELAY_ON_DELAY);
 
 	/* init the callbacks list */
 	if ( init_ulcb_list() < 0) {

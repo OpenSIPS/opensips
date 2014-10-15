@@ -1519,7 +1519,7 @@ skip:
 
 		/* register pinger function */
 		if (register_timer( "dr-pinger", dr_prob_handler, NULL,
-					dr_prob_interval)<0) {
+					dr_prob_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register probing handler\n");
 			return -1;
 		}
@@ -1538,7 +1538,8 @@ skip:
 
 	if (dr_persistent_state) {
 		/* register function to flush changes in state */
-		if (register_timer("dr-flush", dr_state_timer, NULL, 30)<0) {
+		if (register_timer("dr-flush", dr_state_timer, NULL, 30,
+		TIMER_FLAG_SKIP_ON_DELAY)<0) {
 			LM_ERR("failed to register state flush handler\n");
 			return -1;
 		}

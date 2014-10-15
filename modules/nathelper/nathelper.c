@@ -519,7 +519,7 @@ mod_init(void)
 
 		for( i=0 ; i<natping_partitions ; i++ ) {
 			if (register_timer( "nh-timer", nh_timer,
-			(void*)(unsigned long)i, 1)<0) {
+			(void*)(unsigned long)i, 1, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 				LM_ERR("failed to register timer routine\n");
 				return -1;
 			}

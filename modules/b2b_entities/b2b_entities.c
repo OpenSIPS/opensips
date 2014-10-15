@@ -280,7 +280,7 @@ static int mod_init(void)
 	}
 	if(b2be_db_mode == WRITE_BACK)
 		register_timer("b2be-dbupdate", b2be_db_timer_update, 0,
-			b2b_update_period);
+			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 	//register_timer("b2b2-clean", b2be_clean,  0, b2b_update_period);
 
 	return 0;

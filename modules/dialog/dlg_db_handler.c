@@ -191,7 +191,7 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		if (register_timer("dlg-dbupdate",dialog_update_db, 0,
-		db_update_period)<0 ) {
+		db_update_period, TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
 			LM_ERR("failed to register update db\n");
 			return -1;
 		}
