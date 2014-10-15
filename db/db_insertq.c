@@ -86,7 +86,8 @@ int init_ql_support(void)
 	{
 		if  (init_query_list() != 0 ||
 			register_timer("querydb-flush", ql_timer_routine,NULL,
-				query_flush_time>0?query_flush_time:DEF_FLUSH_TIME) < 0 )
+				query_flush_time>0?query_flush_time:DEF_FLUSH_TIME,
+				TIMER_FLAG_DELAY_ON_DELAY) < 0 )
 		{
 			LM_ERR("failed initializing ins list support\n");
 			return -1;

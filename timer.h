@@ -46,11 +46,15 @@ typedef void (utimer_function)(utime_t uticks, void* param);
 /* define internal timer to 10 miliseconds */
 #define ITIMER_TICK 10000
 
-struct sr_timer{
+#define TIMER_FLAG_IS_UTIMER       (1<<0)
+#define TIMER_FLAG_SKIP_ON_DELAY   (1<<1)
+#define TIMER_FLAG_DELAY_ON_DELAY  (1<<2)
+
+struct os_timer{
 	/* unique ID in the list of timer handlers - not really used */
 	unsigned short id;
 	/* is utimer or timer? */
-	unsigned short is_utimer;
+	unsigned short flags;
 	/* string label identifying the handler (what module and what for was registered) */
 	char *label;
 	/* handler function */
@@ -67,7 +71,7 @@ struct sr_timer{
 	/* time of the current triggering */
 	utime_t current_time;
 	/* next element in the timer list */
-	struct sr_timer* next;
+	struct os_timer* next;
 };
 
 
@@ -79,9 +83,11 @@ void destroy_timer(void);
 
 /*! \brief register a periodic timer;
  * ret: <0 on error*/
-int register_timer(char *label, timer_function f, void* param, unsigned int interval);
+int register_timer(char *label, timer_function f, void* param,
+		unsigned int interval, unsigned short flags);
 
-int register_utimer(char *label, utimer_function f, void* param, unsigned int interval);
+int register_utimer(char *label, utimer_function f, void* param,
+		unsigned int interval, unsigned short flags);
 
 unsigned int get_ticks(void);
 

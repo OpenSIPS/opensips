@@ -56,10 +56,10 @@
 #include <stdlib.h>
 
 /* list with all the registered timers */
-static struct sr_timer *timer_list = NULL;
+static struct os_timer *timer_list = NULL;
 
 /* list with all the registered utimers */
-static struct sr_timer *utimer_list = NULL;
+static struct os_timer *utimer_list = NULL;
 
 static unsigned int  *jiffies=0;
 static utime_t       *ujiffies=0;
@@ -144,21 +144,21 @@ void destroy_timer(void)
 
 
 
-static inline struct sr_timer* new_sr_timer(char *label, unsigned short is_ut,
+static inline struct os_timer* new_os_timer(char *label, unsigned short flags,
 						timer_function f, void* param, unsigned int interval)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 
 	if (label==NULL)
 		label = "n/a";
 
-	t=shm_malloc( sizeof(struct sr_timer) + strlen(label)+1 );
+	t=shm_malloc( sizeof(struct os_timer) + strlen(label)+1 );
 	if (t==0){
 		LM_ERR("out of pkg memory\n");
 		return NULL;
 	}
 	t->id=timer_id++;
-	t->is_utimer = is_ut;
+	t->flags = flags;
 	t->label = (char*)(t+1);
 	strcpy( t->label, label);
 	t->u.timer_f=f;
@@ -175,11 +175,12 @@ static inline struct sr_timer* new_sr_timer(char *label, unsigned short is_ut,
  * Hint: if you need it in a module, register it from mod_init or it
  * won't work otherwise*/
 int register_timer(char *label, timer_function f, void* param,
-													unsigned int interval)
+								unsigned int interval, unsigned short flags)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 
-	t = new_sr_timer( label, 0, f, param, interval);
+	flags = flags & (~TIMER_FLAG_IS_UTIMER); /* just to be sure */
+	t = new_os_timer( label, flags, f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the timer list*/
@@ -190,11 +191,12 @@ int register_timer(char *label, timer_function f, void* param,
 
 
 int register_utimer(char *label, utimer_function f, void* param,
-													unsigned int interval)
+								unsigned int interval, unsigned short flags)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 
-	t = new_sr_timer( label, 1, (timer_function*)f, param, interval);
+	flags = flags | TIMER_FLAG_IS_UTIMER; /* just to be sure */
+	t = new_os_timer( label, 1, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
 	/* insert it into the utimer list*/
@@ -241,7 +243,7 @@ void route_timer_f(unsigned int ticks, void* param)
 
 int register_route_timers(void)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 	int i;
 
 	if(timer_rlist[0].a == NULL)
@@ -252,7 +254,7 @@ int register_route_timers(void)
 	{
 		if(timer_rlist[i].a == NULL)
 			return 0;
-		t = new_sr_timer( "timer_route", 0, route_timer_f, timer_rlist[i].a,
+		t = new_os_timer( "timer_route", 0, route_timer_f, timer_rlist[i].a,
 				timer_rlist[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;
@@ -297,9 +299,9 @@ utime_t get_uticks(void)
 
 
 
-static inline void timer_ticker(struct sr_timer *timer_list, utime_t *drift)
+static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 	unsigned int j;
 	ssize_t l;
 
@@ -312,9 +314,20 @@ static inline void timer_ticker(struct sr_timer *timer_list, utime_t *drift)
 	for (t=timer_list;t; t=t->next){
 		if (j>=t->expires){
 			if (t->current_time) {
-				LM_WARN("timer task <%s> already schedualed for %d s, skipping..\n",
+				LM_WARN("timer task <%s> already schedualed for %d s, it may overlap..\n",
 					t->label,j);
-				continue;
+				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
+					/* skip this execution of the timer handler */
+					t->expires = j + t->interval;
+					continue;
+				} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
+					/* delay the execution of the timer handler
+					   until the prev one is done */
+					continue;
+				} else {
+					/* launch the task now, even if overlaping with the 
+					   already running one */
+				}
 			}
 			t->expires = j + t->interval;
 			t->current_time = j;
@@ -333,9 +346,9 @@ again:
 
 
 
-static inline void utimer_ticker(struct sr_timer *utimer_list, utime_t *drift)
+static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 	utime_t uj;
 	ssize_t l;
 
@@ -347,7 +360,18 @@ static inline void utimer_ticker(struct sr_timer *utimer_list, utime_t *drift)
 			if (t->current_time) {
 				LM_WARN("utimer task <%s>%p already schedualed for %lld us, skipping..\n",
 					t->label,t,uj);
-				continue;
+				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
+					/* skip this execution of the timer handler */
+					t->expires = uj + t->interval;
+					continue;
+				} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
+					/* delay the execution of the timer handler
+					   until the prev one is done */
+					continue;
+				} else {
+					/* launch the task now, even if overlaping with the 
+					   already running one */
+				}
 			}
 			t->expires = uj + t->interval;
 			t->current_time = uj;
@@ -537,10 +561,10 @@ error:
 
 void handle_timer_job(void)
 {
-	struct sr_timer *t;
+	struct os_timer *t;
 	ssize_t l;
 
-	/* read one "sr_timer" pointer from the pipe (non-blocking) */
+	/* read one "os_timer" pointer from the pipe (non-blocking) */
 	l = read( timer_fd_out, &t, sizeof(t) );
 	if (l==-1) {
 		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
@@ -550,7 +574,7 @@ void handle_timer_job(void)
 	}
 
 	/* run the handler */
-	if (t->is_utimer) {
+	if (t->flags&TIMER_FLAG_IS_UTIMER) {
 
 		if (t->current_time!=*ujiffies)
 			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
