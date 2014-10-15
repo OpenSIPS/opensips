@@ -60,7 +60,6 @@ struct my_con
 	SQLHSTMT stmt_handle;			  /* Actual result */
 	SQLHDBC dbc;					  /* Connection representation */
 	char** row;						  /* Actual row in the result */
-	void *data;
 	time_t timestamp;				  /* Timestamp of last query */
 };
 
@@ -73,7 +72,6 @@ struct my_con
 #define CON_TIMESTAMP(db_con)  (((struct my_con*)((db_con)->tail))->timestamp)
 #define CON_ID(db_con) 		(((struct my_con*)((db_con)->tail))->id)
 #define CON_ENV(db_con)		(((struct my_con*)((db_con)->tail))->env)
-#define CON_DATA(db_con)	(((struct my_con*)((db_con)->tail))->data)
 
 #define MAX_CONN_STR_LEN 2048
 
