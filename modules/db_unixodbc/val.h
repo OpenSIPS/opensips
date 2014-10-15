@@ -43,7 +43,7 @@
 /*
  * Does not copy strings
  */
-int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, const char* _s, const int _l);
+int db_unixodbc_str2val(const db_type_t _t, db_val_t* _v, char* _s, const int _l);
 
 
 /*
