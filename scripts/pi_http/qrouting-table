@@ -1,0 +1,17 @@
+	<!-- Declaration of qr_profiles table-->
+	<db_table id="qr_profiles">
+		<table_name>qr_profiles</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>profile_name</field><type>DB_STR</type></column>
+		<column><field>warn_threshold_asr</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_ccr</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_pdd</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_ast</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_acd</field><type>DB_DOUBLE</type></column>
+		<column><field>dsbl_threshold_asr</field><type>DB_DOUBLE</type></column>
+		<column><field>dsbl_threshold_ccr</field><type>DB_DOUBLE</type></column>
+		<column><field>dsbl_threshold_pdd</field><type>DB_DOUBLE</type></column>
+		<column><field>dsbl_threshold_ast</field><type>DB_DOUBLE</type></column>
+		<column><field>dsbl_threshold_acd</field><type>DB_DOUBLE</type></column>
+	</db_table>

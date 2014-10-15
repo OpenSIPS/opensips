@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="qr_profiles" xmlns:db="http://docbook.org/ns/docbook">
+	<name>qr_profiles</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is used by the Quality Routing module to store
+		information about the thresholds for warnings and disabling destinations. A profile is
+		associated with a drouting rule.
+		More information can be found at: &OPENSIPS_MOD_DOC;qrouting.html.
+		</db:para>
+	</description>
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Table primary key
+		</description>
+	</column>
+	<column id="profile_name">
+		<name>profile_name</name>
+		<type>string</type>
+		<size>64</size>
+		<description> The name of the profile</description>
+	</column>
+	<column id="warn_threshold_asr">
+        <name>warn_threshold_asr</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The warning threshold for answer seizure ratio</description>
+    </column>
+    <column id="warn_threshold_ccr">
+        <name>warn_threshold_ccr</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The warning threshold for call completion ratio</description>
+    </column>
+    <column id="warn_threshold_pdd">
+        <name>warn_threshold_pdd</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The warning threshold for post dial delay</description>
+    </column>
+    <column id="warn_threshold_ast">
+        <name>warn_threshold_ast</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The warning threshold for average setup time</description>
+    </column>
+    <column id="warn_threshold_acd">
+        <name>warn_threshold_acd</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The warning threshold for average call duration</description>
+    </column>
+    <column id="dsbl_threshold_asr">
+        <name>dsbl_threshold_asr</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The disable threshold for answer seizure ratio</description>
+    </column>
+    <column id="dsbl_threshold_ccr">
+        <name>dsbl_threshold_ccr</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The disable threshold for call completion ratio</description>
+    </column>
+    <column id="dsbl_threshold_pdd">
+        <name>dsbl_threshold_pdd</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The disable threshold for post dial delay</description>
+    </column>
+    <column id="dsbl_threshold_ast">
+        <name>dsbl_threshold_ast</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The disable threshold for average setup time</description>
+    </column>
+    <column id="dsbl_threshold_acd">
+        <name>dsbl_threshold_acd</name>
+        <type>double</type>
+        <default>-1</default>
+        <description>The disable threshold for average call duration</description>
+    </column>
+
+</table>

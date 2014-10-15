@@ -339,10 +339,6 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 		goto error;
 	}
 
-	if (db_check_table_version(dr_dbf, db_hdl, drd_table, 6/*version*/ )!= 0) {
-		goto error;
-	}
-
 	/* read the destinations */
 	if (dr_dbf->use_table( db_hdl, drd_table) < 0) {
 		LM_ERR("cannot select table \"%.*s\"\n", drd_table->len,drd_table->s);

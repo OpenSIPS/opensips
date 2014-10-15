@@ -39,13 +39,17 @@
 #include "qr_sort.h"
 #include "qr_acc.h"
 #include "qrouting.h"
+#include "qr_load.h"
 
 #define T_PROC_LABEL "[qrouting]:sampling interval"
 #define MAX_HISTORY 1000 /* TODO:*/
 
+/* modparam */
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
+str db_url;
 
+/* avps */
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
 str avp_invite_time_name_ast = str_init("$avp(qr_invite_time_ast)");
 
@@ -60,6 +64,7 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"history", INT_PARAM, &history},
 	{"sampling_interval", INT_PARAM, &sampling_interval},
+	{"db_url", STR_PARAM, &db_url.s},
 	{0, 0, 0}
 };
 
@@ -99,10 +104,48 @@ static int qr_init(void){
 	LM_INFO("QR module\n");
 	LM_DBG("history = %d, sampling_interval = %d\n", history,
 			sampling_interval);
+	db_func_t qr_dbf;
+	db_con_t *qr_db_hdl = 0;
 	register_timer_process(T_PROC_LABEL, (void*)timer_func, NULL,
 			sampling_interval, 0);
 	qr_n = (history * 60)/sampling_interval; /* the number of sampling
 												intervals in history */
+
+	if(db_url.s != NULL) {
+		db_url.len = strlen(db_url.s);
+	} else {
+		LM_ERR("db_url param not provided for qr module\n");
+		return -1;
+	}
+
+	/* test the db */
+	if(db_bind_mod(&db_url, &qr_dbf)) {
+		LM_CRIT("cannot bind to database module! "
+				"Did you forget to load a database module ? (%.*s)\n",
+				db_url.len, db_url.s);
+		return -1;
+
+	}
+
+	if((qr_db_hdl = qr_dbf.init(&db_url)) == 0) {
+		LM_ERR("failed to load db url %.*s", db_url.len, db_url.s);
+
+	}
+
+	if(!DB_CAPABILITY(qr_dbf, DB_CAP_QUERY)) {
+		LM_ERR("database modules does not provide"\
+				" QUERY functions needed by QRouting\n");
+	}
+
+	if(db_check_table_version(&qr_dbf, qr_db_hdl, &qr_profiles_table, 1) != 0) {
+		LM_ERR("Not the expected table version for table <%.*s>\n",
+				qr_profiles_table.len, qr_profiles_table.s);
+		return -1;
+	}
+
+	/* close the connection to the db */
+	qr_dbf.close(qr_db_hdl);
+	qr_db_hdl = 0;
 
 	if(load_tm_api(&tmb) == -1) {
 		LM_ERR("failed to load tm functions. Tm module loaded?\n");
@@ -113,7 +156,7 @@ static int qr_init(void){
 		return -1;
 	}
 	if(load_dr_api(&drb) == -1) {
-		LM_ERR("Failed to load dr functions. DR modules loaded\n");
+		LM_ERR("Failed to load dr functions. DR modules loaded?\n");
 		return -1;
 	}
 
@@ -158,6 +201,34 @@ static int qr_init(void){
 }
 
 static int qr_child_init(int rank) {
+	db_func_t qr_dbf;
+	db_con_t *qr_db_hdl = 0;
+
+	if(rank == PROC_TCP_MAIN || rank == PROC_BIN)
+		return 0;
+
+	/* re-connect to the db */
+	if(db_bind_mod(&db_url, &qr_dbf)) {
+		LM_CRIT("cannot bind to database module! "
+				"Did you forget to load a database module ? (%.*s)\n",
+				db_url.len, db_url.s);
+		return -1;
+
+	}
+
+	if((qr_db_hdl = qr_dbf.init(&db_url)) == 0) {
+		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
+
+	}
+
+	/* do not change the rank of the process loading
+	 * the db, because it must match the rank of the
+	 * corespoding drouting process to ensure the qr db
+	 * is loaded before the dr db */
+	if(rank == 1 && qr_load(&qr_dbf, qr_db_hdl) < 0) {
+		LM_ERR("failed to load data from db\n");
+	}
+
 	return 0;
 }
 

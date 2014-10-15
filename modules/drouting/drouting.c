@@ -49,9 +49,9 @@
 #define DR_PARAM_INTERNAL_TRIGGERED (1<<30)
 
 #define DRD_TABLE_VER 6
-#define DRR_TABLE_VER 3
+#define DRR_TABLE_VER 4
 #define DRG_TABLE_VER 2
-#define DRC_TABLE_VER 2
+#define DRC_TABLE_VER 3
 #define PART_TABLE_VER 1
 
 #define MAX_LEN_NAME_W_PART 510 /* max len of variable containing
@@ -526,6 +526,7 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "qrouting", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
