@@ -35,11 +35,16 @@
 #include "../../db/db_res.h"
 #include "../../db/db_row.h"
 
+#include "con.h"
+
+/*
+ * Duplicate result columns in pkg memory, stack them linearly
+ */
+str *db_unixodbc_dup_row(strn *in, int row, int columns);
 
 /*
  * Convert a row from result into db API representation
  */
-int db_unixodbc_convert_row(const db_con_t* _h, const db_res_t* _res, db_row_t* _r,
-		const unsigned long* lengths);
+int db_unixodbc_convert_row(const str *row, const db_res_t *_res, db_row_t *_r);
 
 #endif /* ROW_H */
