@@ -1,3 +1,219 @@
+=========================== Release 1.8.6 ==============================
+
+2014-10-15  Razvan Crainea  <razvan at opensips dot org>
+	* [69e26e5] :
+
+	increase version to 1.8.6
+
+
+2014-10-15  Razvan Crainea  <razvan at opensips dot org>
+	* [d0549ba] :
+
+	fix rr force_send_socket when using mhomed
+	(cherry picked from commit 56ca96a8d25724d74fc6cd31a1125933dfc62f1c)
+
+
+2014-10-15  Liviu Chircu  <liviu at opensips dot org>
+	* [17532b1] :
+
+	db_unixodbc: fix query result handling and improve performance
+	Until now, query rows were incrementally stored in a list with
+	separately allocated length and string buffers, along with a great deal
+	of useless pointer dereferencing, effectively wasting CPU cycles and pkg
+	mem usage.
+
+	This patch eliminates the linked list logic with a global buffer of
+	pointers (doubling in size when required) meant to hold each result column.
+	Each column is transparently freed by the DB backend. This completes
+	commit d63ee19a8.
+	(cherry picked from commit 683dfaa63df0af317f7485042539bdacf8646eab)
+
+	Conflicts:
+
+		modules/db_unixodbc/list.c
+		modules/db_unixodbc/list.h
+		modules/db_unixodbc/row.c
+	(cherry picked from commit baa9c36421bc62ef1f1a389fd33d3a5ce0ab3522)
+
+
+2014-10-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fb52ed3] :
+
+	Compatibility fix for add_body() with new body.
+	When computing the new content-len, accept the case when there is no pre-existing body and a newly added body.
+	Reported by Antonis Psaras via LinkedIn
+	(cherry picked from commit 8054dbfb4d0c5c621d35db6bc886da41d3a05294)
+
+	Conflicts:
+		msg_translator.c
+
+
+2014-10-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [3671230] :
+
+	Merge pull request #352 from wdoekes/wjd-dialog-modparam-columns-1.8
+	dialog: Fix dialog_admin documentation regarding column names.
+
+
+2014-10-08  Walter Doekes  <walter+github at wjd dot nu>
+	* [96aaaf0] :
+
+	dialog: Fix dialog_admin documentation regarding column names.
+	(backport from b519d6997e6faa654ff4a513843359008f8cb66e)
+
+
+2014-10-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e0b0aeb] :
+
+	Fix how the contact URI is build.
+	Do not add transport info to URI when storing it, but rather when using it - avoid double "transport" param.
+	(cherry picked from commit bef1f938b8e6479b563c1164e0110c76753b7b02)
+
+
+2014-10-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7540af4] :
+
+	Fix parsing of the SIP URI in db_get_auth_id() .
+	Closes #340.
+	(cherry picked from commit 465a978b812a1eae6a219e26f9a55d1d985a176b)
+
+
+2014-10-03  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [f9f1703] :
+
+	Merge pull request #346 from dsanders11/patch-1
+	Always update the call ID when updating a contact in usrloc table
+	(cherry picked from commit e13ab398d8b14bffa2acb6145b253aec030fdaab)
+
+	Conflicts:
+		modules/usrloc/ucontact.c
+
+
+2014-10-01  Liviu Chircu  <liviu at opensips dot org>
+	* [a501d05] :
+
+	exec: disable 'setvars' on all OpenSIPS versions
+	We break backwards-compatibility while improving security
+	on the larger proportion of existing OpenSIPS installations.
+	(cherry picked from commit 100ecaf8de390582eab0d6110b6a0f813d7e28a1)
+
+
+2014-10-01  Liviu Chircu  <liviu at opensips dot org>
+	* [c394203] :
+
+	exec: reduce impact of the Shellshock bash exploit
+	Improve documentation awareness for Shellshock
+	(cherry picked from commit 2456295ffb23ddbe219c14571ec2e9d34969f5d9)
+
+
+2014-09-17  Liviu Chircu  <liviu at opensips dot org>
+	* [d7e3d37] :
+
+	cachedb_memcached: extend the host+port printing buffer
+	(cherry picked from commit 32f2c2434e99802e90e6166de18ad7523f19a603)
+
+
+2014-09-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [811a125] :
+
+	Removed useless "ping_interval" parameter.
+	Closes  #320, reported by @hydrosine .
+	(cherry picked from commit c529bb142b455a0db87c9661208e9271f912a4ec)
+
+
+2014-08-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fa87efa] :
+
+	Fix sending PRACK for multiple provisional replies.
+	Reported by Giuseppe Cardone.
+	(cherry picked from commit 3cd6db2be3728e14343697b886cdcfabd4353d51)
+
+
+2014-08-26  Liviu Chircu  <liviu at opensips dot org>
+	* [e27d798] :
+
+	db_text: fix issues when database file is missing an ending newline
+	* do not crash if file contains columns only and is missing the ending newline
+	* do not skip the last row of a database file if it lacks an ending newline
+
+	Reported by gergelypeli on GitHub
+	Closes issue #308
+	(cherry picked from commit a2172b256fd19aa56b352665a9d598d6a91b36a3)
+
+
+2014-08-21  Liviu Chircu  <liviu at opensips dot org>
+	* [0a87803] :
+
+	core: fix mem statistics when DBG_QM_MALLOC is on (cherry picked from commit ffb0cb6d2c3a224ce37b575a7f956cfa881bf63b)
+	Conflicts:
+
+		mem/q_malloc.c
+
+
+2014-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [df1bff8] :
+
+	dialplan: fix shm leak when parsing invalid regex
+	Upon (re)load, if the subst or repl columns contain expressions which
+	fail to compile, OpenSIPS will leak shared memory.
+
+	Reported by miko95 on GitHub
+	Closes issue #307
+	(cherry picked from commit 72028d26bef361b6c99f6ad3653f0e1dbb07c767)
+	(cherry picked from commit f57025fa90431ae080a91d54ae92564b919da52f)
+
+
+2014-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [9d5caa5] :
+
+	dialog: fix possible hash id conflict on restart
+	When restarting the proxy, the auto-generated next_id of each
+	hash entry is not properly incremented if a loaded dialog happens to
+	have this same next_id as hash id. This will soon lead to duplicate hash ids.
+
+	Reported by miko95 on GitHub.
+	(cherry picked from commit b7c3686c176e7c15b806e50f9743ab91656a8da3)
+
+	Conflicts:
+
+		modules/dialog/dlg_replication.c
+
+
+2014-07-18  Razvan Crainea  <razvan at opensips dot org>
+	* [1d2b54c] :
+
+	dialog: run loaded callbacks after dialog mod_init()
+	(cherry picked from commit ea5e7f1c7c5f5eef4032a6869fd80a8c7295f948)
+
+
+2014-07-15  Razvan Crainea  <razvan at opensips dot org>
+	* [6dc0552] :
+
+	dialog: re-evaluate the AVP after running callbacks
+	The SST module callbacks might change the dialog lifetime
+
+
+2014-07-15  Razvan Crainea  <razvan at opensips dot org>
+	* [1c601a3] :
+
+	Makefile: add extra_objs to opensips dependencies
+	(cherry picked from commit 81b19cb5d24430b5e2ea129a2b0d4b07d8a74c98)
+
+	Conflicts:
+		Makefile.rules
+
+	(cherry picked from commit 45d526c2c2780fd01639c96a30be8a88819db01c)
+
+	Conflicts:
+		Makefile.rules
+
+
+2014-07-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [51ba68a] :
+
+	Fix broken dlg_val assigment when value is NULL.
+	(cherry picked from commit 2c7e33e67c82ce54addf97e558f5f8b8473bab19)
+
 =========================== Release 1.8.5 ==============================
 
 2014-07-02  Razvan Crainea  <razvan at opensips dot org>
