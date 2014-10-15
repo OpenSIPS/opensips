@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.11.2
+Version:  1.11.3
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1268,8 +1268,8 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.xmpp
 
 %changelog
-* Fri Mar 21 2014 Nick Altmann <nick.altmann@gmail.com> - 1.11.2-1
-- Update to 1.11.2
+* Fri Mar 21 2014 Nick Altmann <nick.altmann@gmail.com> - 1.11.3-1
+- Update to 1.11.3
 
 * Tue Jul 30 2013 Nick Altmann <nick.altmann@gmail.com> - 1.10.0-1
 - Update to 1.10.0
