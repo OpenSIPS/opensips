@@ -1,3 +1,65 @@
+=========================== Release 1.11.3 ==============================
+
+2014-10-15  Razvan Crainea  <razvan at opensips dot org>
+	* [175de6c] :
+
+	increase version to 1.11.3
+
+
+2014-10-15  Liviu Chircu  <liviu at opensips dot org>
+	* [e0c1fea] :
+
+	db_unixodbc: fix query result handling and improve performance
+	Until now, query rows were incrementally stored in a list with
+	separately allocated length and string buffers, along with a great deal
+	of useless pointer dereferencing, effectively wasting CPU cycles and pkg
+	mem usage.
+
+	This patch eliminates the linked list logic with a global buffer of
+	pointers (doubling in size when required) meant to hold each result column.
+	Each column is transparently freed by the DB backend. This completes
+	commit d63ee19a8.
+	(cherry picked from commit 683dfaa63df0af317f7485042539bdacf8646eab)
+
+
+2014-10-15  Razvan Crainea  <razvan at opensips dot org>
+	* [fb13b39] :
+
+	fix rr force_send_socket when using mhomed
+	(cherry picked from commit 56ca96a8d25724d74fc6cd31a1125933dfc62f1c)
+
+
+2014-10-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5b02a7e] :
+
+	Compatibility fix for add_body() with new body.
+	When computing the new content-len, accept the case when there is no pre-existing body and a newly added body.
+	Reported by Antonis Psaras via LinkedIn
+	(cherry picked from commit 8054dbfb4d0c5c621d35db6bc886da41d3a05294)
+
+
+2014-10-09  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [6045055] :
+
+	Do profile freeing under lock - avoid double free issues
+	(cherry picked from commit b7928cf62e4f13f4709114a972018016e58d91e9)
+
+
+2014-10-09  Razvan Crainea  <razvan at opensips dot org>
+	* [7db6d99] :
+
+	fix redis FQDN URL when using a single node cluster
+	(cherry picked from commit 5ee8ec52179aefba17d6435f9c516c23d1ebef67)
+
+
+2014-10-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c7066fe] :
+
+	Fix validation of the send_sock in t_uac().
+	If a send_sock is already provided, no need to do socket discovery again. We need just the protocol (from mk_proxy) in order to validate (or not) the already given send_sock. Do socket discovery only if there no send_sock given or the protocol does not match.
+	(cherry picked from commit c95ddd8f282c8809a0fae233bdb57b4dddb3c628)
+
+
 2014-10-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
 	* [67e7e41] :
 
