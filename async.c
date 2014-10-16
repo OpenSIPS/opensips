@@ -26,17 +26,19 @@
 #include "dprint.h"
 #include "async.h"
 
-static async_function *async_f = NULL;
+async_start_function  *async_start_f  = NULL;
+async_resume_function *async_resume_f = NULL;
 
 
-int register_async_handler( async_function *f)
+int register_async_handlers(async_start_function *f1, async_resume_function *f2)
 {
-	if (async_f) {
+	if (async_start_f) {
 		LM_ERR("aync handler already registered, it cannot be override\n");
 		return -1;
 	}
 
-	async_f = f;
+	async_start_f = f1;
+	async_resume_f = f2;
 
 	return 0;
 }

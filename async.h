@@ -30,6 +30,7 @@
 #include "route_struct.h"
 #include "parser/msg_parser.h"
 
+
 /* function to handle script function in async mode.
    Input: the sip message, the function/action (MODULE_T) and the ID of
           the resume route (where to continue after the I/O is done).
@@ -38,10 +39,18 @@
           -1 some error happened and the async call did not happened.
  */
 
-typedef int (async_function)(struct sip_msg *msg, struct action* a , int resume_route);
+typedef int (async_start_function)
+	(struct sip_msg *msg, struct action* a , int resume_route);
+
+typedef int (async_resume_function)
+	(int fd, void *param);
 
 
-int register_async_handler( async_function *f);
+extern async_start_function  *async_start_f;
+extern async_resume_function *async_resume_f;
+
+
+int register_async_handlers(async_start_function *f1, async_resume_function *f2);
 
 
 #endif
