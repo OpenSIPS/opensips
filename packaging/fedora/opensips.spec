@@ -9,7 +9,7 @@
 
 Summary:  Open Source SIP Server
 Name:     opensips
-Version:  1.10.2
+Version:  1.10.3
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -47,16 +47,16 @@ BuildRequires:  curl-devel
 BuildRequires:  GeoIP-devel
 BuildRequires:  pcre-devel
 BuildRequires:  python-devel
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
 %endif
 BuildRequires:  libxslt
 BuildRequires:  lynx
 BuildRequires:  ncurses-devel
-BuildRequireS:  json-c-devel
+BuildRequires:  json-c-devel
 
 #Initscripts
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # Users and groups
 Requires(pre): shadow-utils
 Requires(post): systemd
@@ -124,6 +124,7 @@ server, namely DIameter Server Client (DISC).
 Summary:  Back-2-Back User Agent
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+
 
 %description  b2bua
 B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
@@ -326,7 +327,7 @@ BuildRequires:  perl(ExtUtils::MakeMaker)
 %if 0%{?rhel}
 BuildRequires:  perl(ExtUtils::Embed)
 %else
-%if 0%{?redhat} == 5
+%if 0%{?rhel} == 5
 BuildRequires:  perl(ExtUtils::Embed), perl-devel
 %else
 BuildRequires:  perl(ExtUtils::Embed)
@@ -702,7 +703,7 @@ for i in docdir/*; do
   rm -f $i.old
 done
 
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
 install -D -m 0644 -p packaging/fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
 install -D -m 0644 -p packaging/fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
@@ -728,7 +729,7 @@ useradd -r -g %{name} -d %{_localstatedir}/run/%{name} -s /sbin/nologin \
 -c "OpenSIPS SIP Server" %{name} 2>/dev/null || :
 
 %post
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 if [ $1 -eq 1 ] ; then
 	# Initial installation
 	/bin/systemctl daemon-reload >/dev/null 2>&1 || :
@@ -738,7 +739,7 @@ fi
 %endif
 
 %preun
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 if [ $1 -eq 0 ] ; then
 	# Package removal, not upgrade
 	/bin/systemctl --no-reload disable %{name}.service > /dev/null 2>&1 || :
@@ -751,7 +752,7 @@ if [ $1 = 0 ]; then
 fi
 %endif
 
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 %triggerun -- %{name} < 1.7.2-1
 # Save the current service runlevel info
 # User must manually run systemd-sysv-convert --apply opensips
@@ -785,7 +786,7 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %dir %{_libdir}/opensips/opensipsctl/
 %dir %{_libdir}/opensips/opensipsctl/dbtextdb/
 
-%if 0%{?fedora} > 16
+%if 0%{?fedora} > 16 || 0%{?rhel} > 6
 %{_unitdir}/%{name}.service
 %{_sysconfdir}/tmpfiles.d/%{name}.conf
 %{_sbindir}/%{name}-m4cfg
@@ -1259,8 +1260,8 @@ chown -R %{name}:%{name} %{_sysconfdir}/%{name}
 %doc docdir/README.xmpp
 
 %changelog
-* Tue Jul 30 2013 Nick Altmann <nick.altmann@gmail.com> - 1.10.2-1
-- Update to 1.10.2
+* Tue Jul 30 2013 Nick Altmann <nick.altmann@gmail.com> - 1.10.3-1
+- Update to 1.10.3
 
 * Wed May 22 2013 Nick Altmann <nick.altmann@gmail.com> - 1.9.1-1
 - Rebuild specification, add new modules and dependencies
