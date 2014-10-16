@@ -77,6 +77,7 @@
 #include "t_fifo.h"
 #include "mi.h"
 #include "tm_load.h"
+#include "async.h"
 
 
 /* item functions */
@@ -831,6 +832,11 @@ static int mod_init(void)
 
 	if ( parse_avp_spec( &uac_ctx_avp, &uac_ctx_avp_id)<0 ) {
 		LM_ERR("failed to register AVP name <%s>\n",uac_ctx_avp.s);
+		return -1;
+	}
+
+	if ( register_async_handlers( t_handle_async, t_resume_async )<0 ) {
+		LM_ERR("failed to register async handler to core \n");
 		return -1;
 	}
 
