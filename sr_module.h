@@ -53,13 +53,17 @@
 #include "pvar.h"
 #include "version.h"
 #include "route.h"
+#include "async.h"
 
 typedef struct param_export_ param_export_t;
 
 #include "sr_module_deps.h"
 
 typedef  struct module_exports* (*module_register)();
-typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*, char*, char*);
+typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
+					char*, char*);
+typedef  int (*acmd_function)(struct sip_msg*, char*, char*, char*, char*,
+					char*, char*, async_holder* );
 typedef  int (*fixup_function)(void** param, int param_no);
 typedef  int (*free_fixup_function)(void** param, int param_no);
 typedef  int (*response_function)(struct sip_msg*);
