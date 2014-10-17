@@ -122,6 +122,15 @@ struct cmd_export_ {
 };
 
 
+struct acmd_export_ {
+	char* name;              /* null terminated command name */
+	acmd_function function;  /* pointer to the corresponding function */
+	int param_no;            /* number of parameters used by the function */
+	fixup_function fixup;    /* pointer to the function called to "fix" the
+							    parameters */
+};
+
+
 struct param_export_ {
 	char* name;             /*!< null terminated param. name */
 	modparam_t type;        /*!< param. type */
@@ -143,7 +152,8 @@ typedef struct dep_export_ {
 	modparam_dependency_t mpd[];
 } dep_export_t;
 
-typedef struct cmd_export_ cmd_export_t;
+typedef struct cmd_export_  cmd_export_t;
+typedef struct acmd_export_ acmd_export_t;
 typedef struct proc_export_ proc_export_t;
 
 
