@@ -74,6 +74,8 @@ typedef struct qr_sample {
 
 /* thresholds */
 typedef struct qr_thresholds {
+	int id;
+	str name;
 	double asr1, asr2;
 	double ccr1, ccr2;
 	double pdd1, pdd2;
@@ -118,7 +120,7 @@ typedef struct qr_dst {
 /* destinations associated with a rule */
 typedef struct qr_rule {
 	qr_dst_t *dest;
-	qr_thresholds_t thresholds;
+	qr_thresholds_t *thresholds;
 	int r_id;/* rule_id */
 	char sort_method; /* sorting for the rule */
 	int n;
@@ -126,6 +128,8 @@ typedef struct qr_rule {
 } qr_rule_t;
 
 extern qr_rule_t ** qr_rules_start; /* used when updating statistics */
+extern qr_thresholds_t **qr_profiles;/* profiles from db */
+extern int *n_qr_profiles; /* the number of profiles from db */
 
 qr_gw_t *  qr_create_gw(void *);
 void qr_free_gw(qr_gw_t *);
@@ -134,6 +138,7 @@ void qr_create_rule(int, struct dr_cb_params*);
 void qr_add_rule(int , struct dr_cb_params*);
 void test_callback(int types, struct dr_cb_params *param);
 void qr_dst_is_gw(int type, struct dr_cb_params *param);
+void qr_search_profile(int type, struct dr_cb_params *param);
 
 
 #endif

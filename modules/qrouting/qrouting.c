@@ -48,6 +48,8 @@
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
 str db_url;
+int *n_qr_profiles = 0;
+qr_thresholds_t **qr_profiles = 0;
 
 /* avps */
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
@@ -193,9 +195,29 @@ static int qr_init(void){
 		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
 		return -1;
 	}
+
+	if(drb.register_drcb(DRCB_SET_PROFILE, &qr_search_profile, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_SET_PROFILE callback to DR\n");
+		return -1;
+	}
 	LM_DBG("[QR] callbacks in DR were registered\n");
 
+	qr_profiles = (qr_thresholds_t**) shm_malloc(sizeof(qr_thresholds_t *));
 
+	if(qr_profiles == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+
+	*qr_profiles = 0;
+
+	n_qr_profiles = (int*)shm_malloc(sizeof(int));
+
+	if(n_qr_profiles == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	*n_qr_profiles = 0;
 
 	return 0;
 }

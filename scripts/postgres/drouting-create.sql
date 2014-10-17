@@ -24,7 +24,7 @@ CREATE TABLE dr_rules (
     priority INTEGER DEFAULT 0 NOT NULL,
     routeid VARCHAR(255) DEFAULT NULL,
     gwlist VARCHAR(255) NOT NULL,
-    sort_alg SMALLINT DEFAULT 0 NOT NULL,
+    sort_alg VARCHAR(1) DEFAULT 0 NOT NULL,
     sort_profile INTEGER DEFAULT 0 NOT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
     description VARCHAR(128) DEFAULT NULL

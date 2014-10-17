@@ -231,7 +231,7 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		lock_start_read(rule->dest[dst_id].dst.grp.ref_lock);
 		if(rule->dest[dst_id].dst.grp.state & QR_STATUS_DIRTY) {
 			lock_stop_read(rule->dest[dst_id].dst.grp.ref_lock);
-			cur_dst_score = qr_score_grp(&rule->dest[dst_id].dst.grp, &rule->thresholds);
+			cur_dst_score = qr_score_grp(&rule->dest[dst_id].dst.grp, rule->thresholds);
 		} else {
 			cur_dst_score = rule->dest[dst_id].dst.grp.score;
 			lock_stop_read(rule->dest[dst_id].dst.grp.ref_lock);
@@ -240,7 +240,7 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		lock_start_read(rule->dest[dst_id].dst.gw->ref_lock);
 		if(rule->dest[dst_id].dst.gw->state & QR_STATUS_DIRTY) {
 			lock_stop_read(rule->dest[dst_id].dst.gw->ref_lock);
-			cur_dst_score = qr_score_gw(rule->dest[dst_id].dst.gw, &rule->thresholds); /* compute the
+			cur_dst_score = qr_score_gw(rule->dest[dst_id].dst.gw, rule->thresholds); /* compute the
 																						  score */
 		} else {
 			cur_dst_score = rule->dest[dst_id].dst.gw->score;

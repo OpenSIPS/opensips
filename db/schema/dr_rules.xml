@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
   "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
 
 <!ENTITY % entities SYSTEM "entities.xml">
@@ -34,7 +34,7 @@
 		<name>groupid</name>
 		<type>string</type>
 		<size>255</size>
-		<description>The ID(s) of the routing group(s) this rule is to be 
+		<description>The ID(s) of the routing group(s) this rule is to be
 		used for - comma separeted list of numerical Ids
 		</description>
 	</column>
@@ -60,7 +60,7 @@
 		<type>int</type>
 		<size>11</size>
 		<default>0</default>
-		<description>Priority of this rule (among rules with same prefix 
+		<description>Priority of this rule (among rules with same prefix
 		and timerec).</description>
 	</column>
 
@@ -70,7 +70,7 @@
 		<size>255</size>
 		<null/>
 		<default><null/></default>
-		<description>Route block (from cfg script) to be called when rule 
+		<description>Route block (from cfg script) to be called when rule
 		matches.</description>
 	</column>
 
@@ -81,12 +81,13 @@
 		<description>Reference to the GWs/destinations to be used when
 		rule matches.</description>
 	</column>
-	
+
 	<column id="sorting_alg">
 		<name>sort_alg</name>
-		<type>CHAR</type>
+		<type>string</type>
 		<default>0</default>
-		<description>The sorting algorithm to be employed inside the rule (if set) 
+		<size>1</size>
+		<description>The sorting algorithm to be employed inside the rule (if set)
 			when do_routing is called. Possible values: 'O'/'o' - no sorting should be done,
 			'W'/'w' - weight based sorting should be done and 'Q'/'q' quality-based sorting should be done (quality
 			based sorting is provided by the qrouting module). More options may be available in the future.

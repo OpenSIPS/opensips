@@ -239,3 +239,29 @@ void qr_add_rule(int type, struct dr_cb_params * param) {
 	}
 }
 
+void qr_search_profile(int type, struct dr_cb_params *param) {
+	qr_rule_t *rule = (qr_rule_t*)
+		((struct dr_set_profile_params *)*param->param)->qr_rule;
+	unsigned int profile = ((struct dr_set_profile_params*)*param->param)
+		->profile;
+	unsigned int current_id;
+	int m, left,right, found = 0;
+	left = 0;
+	right = *n_qr_profiles - 1;
+	while(left<=right && !found) {
+		m = left + (right-left)/2;
+		current_id = ((*qr_profiles)[m]).id;
+		if(current_id == profile) {
+			rule->thresholds = &(*qr_profiles)[m];
+			found = 1;
+		} else if(current_id > profile) {
+			right = m-1;
+		} else {
+			left = m+1;
+		}
+
+	}
+	if(left>right) {
+		LM_WARN("profile '%d' not found\n", profile);
+	}
+}

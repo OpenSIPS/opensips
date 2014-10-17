@@ -65,6 +65,28 @@ str dsbl_pdd_qp_col = str_init(DSBL_PDD_QP_COL);
 str dsbl_ast_qp_col = str_init(DSBL_AST_QP_COL);
 str dsbl_acd_qp_col = str_init(DSBL_ACD_QP_COL);
 
+void add_profile(int id, char *name, double warn_asr, double warn_ccr,
+		double warn_pdd, double warn_ast, double warn_acd, double dsbl_asr,
+		double dsbl_ccr, double dsbl_pdd, double dsbl_ast, double dsbl_acd) {
+
+	((*qr_profiles)[*n_qr_profiles]).id = id;
+	((*qr_profiles)[*n_qr_profiles]).name.s = name;
+	((*qr_profiles)[*n_qr_profiles]).name.len = strlen(name);
+
+	(*qr_profiles)[*n_qr_profiles].asr1 = warn_asr;
+	(*qr_profiles)[*n_qr_profiles].ccr1 = warn_ccr;
+	(*qr_profiles)[*n_qr_profiles].pdd1 = warn_pdd;
+	(*qr_profiles)[*n_qr_profiles].ast1 = warn_ast;
+	(*qr_profiles)[*n_qr_profiles].acd1 = warn_acd;
+
+	(*qr_profiles)[*n_qr_profiles].asr2 = dsbl_asr;
+	(*qr_profiles)[*n_qr_profiles].ccr2 = dsbl_ccr;
+	(*qr_profiles)[*n_qr_profiles].pdd2 = dsbl_pdd;
+	(*qr_profiles)[*n_qr_profiles].ast2 = dsbl_ast;
+	(*qr_profiles)[*n_qr_profiles].acd2 = dsbl_acd;
+	(*n_qr_profiles)++;
+}
+
 int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 	int int_vals[N_INT_VALS];
 	char *str_vals[N_STR_VALS];
@@ -124,6 +146,14 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 			RES_ROW_N(res), qr_profiles_table.len,qr_profiles_table.s);
 
 	n = 0;
+
+	*qr_profiles = (qr_thresholds_t*)shm_malloc(RES_ROW_N(res)*
+			sizeof(qr_thresholds_t));
+
+	if(*qr_profiles == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
 	do {
 		for(i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
@@ -164,7 +194,15 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 			check_val(dsbl_acd_qp_col, ROW_VALUES(row)+11, DB_DOUBLE, 1, 1);
 			double_vals[DOUBLE_VALS_DSBL_ACD] = VAL_DOUBLE(ROW_VALUES(row)+11);
 			n++;
+
 			LM_DBG("qr_profile row: %d %s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
+					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
+					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
+					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_DSBL_ASR],
+					double_vals[DOUBLE_VALS_DSBL_CCR], double_vals[DOUBLE_VALS_DSBL_PDD],
+					double_vals[DOUBLE_VALS_DSBL_AST], double_vals[DOUBLE_VALS_DSBL_ACD]);
+			add_profile(
 					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
 					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
 					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
@@ -182,6 +220,7 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 		}
 
 	} while(RES_ROW_N(res));
+
 	return 0;
 error:
 	return -1;

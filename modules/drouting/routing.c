@@ -354,6 +354,7 @@ build_rt_info(
 	struct dr_cb_params *cb_params;
 	struct dr_reg_init_rule_params *init_rule_params;
 	struct dr_reg_param *reg_dst_param;
+	struct dr_set_profile_params *profile_params;
 	pgw_list_t *p = NULL;
 
 	unsigned char * sort_p, n_alg;
@@ -401,9 +402,9 @@ build_rt_info(
 	}
 
 	/* call the create rule callbacks */
-	init_rule_params = (struct dr_reg_init_rule_params *) shm_malloc(
+	init_rule_params = (struct dr_reg_init_rule_params *) pkg_malloc(
 			sizeof(struct dr_reg_init_rule_params));
-	cb_params = (struct dr_cb_params *) shm_malloc(sizeof(struct dr_cb_params));
+	cb_params = (struct dr_cb_params *) pkg_malloc(sizeof(struct dr_cb_params));
 	if(init_rule_params != NULL && cb_params != NULL) {
 		memset(init_rule_params, 0, sizeof(struct dr_reg_init_rule_params));
 		init_rule_params->n_dst = rt->pgwa_len;
@@ -430,12 +431,24 @@ build_rt_info(
 		if(n_alg == 3) { /* if the sorting algorithm for this rule is qr sorting */
 			/* TODO: params should be pkg - and freed in the cbs */
 			/* TODO: should check if qr loaded */
+
+			profile_params = (struct dr_set_profile_params *) pkg_malloc(
+					sizeof(struct dr_set_profile_params));
+			if(profile_params == NULL) {
+				LM_ERR("no more pkg memory");
+				return NULL;
+			}
+			profile_params->qr_rule = qr_rule;
+			profile_params->profile = sort_profile;
+			run_callbacks(dr_set_profile_cbs, DRCB_SET_PROFILE,
+					(void*)profile_params); /* save the threholds from qr
+											   to the rule */
 			for(i = 0; i < rt->pgwa_len; i++) {
 				if(p[i].is_carrier) {
-					reg_dst_param = (struct dr_reg_param *) shm_malloc(
+					reg_dst_param = (struct dr_reg_param *) pkg_malloc(
 							sizeof(struct dr_reg_param));
 					if(reg_dst_param == NULL) {
-						LM_ERR("no more shm memory\n");
+						LM_ERR("no more pkg memory\n");
 					} else {
 						reg_dst_param->rule = qr_rule;
 						reg_dst_param->n_dst = i;
@@ -445,10 +458,10 @@ build_rt_info(
 					}
 
 				} else {
-					reg_dst_param = (struct dr_reg_param *) shm_malloc(sizeof(struct
+					reg_dst_param = (struct dr_reg_param *) pkg_malloc(sizeof(struct
 								dr_reg_param));
 					if(reg_dst_param == NULL) {
-						LM_ERR("no more shm memory\n");
+						LM_ERR("no more pkg memory\n");
 						/* TODO: should we crash all together? */
 					} else {
 						reg_dst_param->rule = qr_rule;

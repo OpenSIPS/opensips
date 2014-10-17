@@ -177,6 +177,9 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 					DRCB_REG_CR | DRCB_REG_ADD_RULE)) {
 			if(insert_drcb(&dr_reg_cbs, cb, types) == -1)
 				goto error;
+		} else if(types & (DRCB_SET_PROFILE)) {
+			if(insert_drcb(&dr_set_profile_cbs, cb, types) == -1)
+				goto error;
 		}
 
 	cb->callback = f;

@@ -39,8 +39,9 @@
 #define DRCB_REG_ADD_RULE (1<<3)
 #define DRCB_ACC_CALL (1<<4)
 #define DRCB_SORT_DST (1<<5)
+#define DRCB_SET_PROFILE (1<<6)
 
-struct dr_head_cbl *dr_reg_cbs, *dr_acc_cbs;
+struct dr_head_cbl *dr_reg_cbs, *dr_acc_cbs, *dr_set_profile_cbs;
 
 /* if new callbacks are added you must increase the N_MAX_SORT_CBS
  * constant accordingly, add the letter which will be provided in the db
@@ -83,6 +84,12 @@ struct dr_sort_params {
 	int dst_id; /* the size of pgwl */
 	unsigned short *sorted_dst; /* returns an array with the indexes of the sorted dest */
 	int rc; /* return code for the funciton */
+};
+
+struct dr_set_profile_params {
+	void *qr_rule; /* qr_rule_t * to which the profile will be added. provided
+					  by dr */
+	unsigned int profile; /* profile id, sent by dr to qr */
 };
 
 #endif

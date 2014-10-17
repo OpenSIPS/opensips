@@ -526,7 +526,7 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "qrouting", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "qrouting", DEP_WARN },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */

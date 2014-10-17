@@ -1,1 +1,2 @@
 id(int,auto) rtpproxy_sock(string) set_id(int) 
+rtpproxy_sockets:0
