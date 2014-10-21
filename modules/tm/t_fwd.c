@@ -152,10 +152,15 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
 			_tm_branch_index = 0;
+			/* restore the route type */
+			set_route_type( backup_route_type );
+			/* restore original avp list */
+			set_avp_list( backup_list );
 			goto error;
 		}
-		_tm_branch_index = 0;
 
+		_tm_branch_index = 0;
+		/* restore the route type */
 		set_route_type( backup_route_type );
 		/* restore original avp list */
 		set_avp_list( backup_list );
