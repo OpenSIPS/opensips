@@ -400,8 +400,6 @@ SCTP		"sctp"|"SCTP"
 INET		"inet"|"INET"
 INET6		"inet6"|"INET6"
 SSLv23			"sslv23"|"SSLv23"|"SSLV23"
-SSLv2			"sslv2"|"SSLv2"|"SSLV2"
-SSLv3			"sslv3"|"SSLv3"|"SSLV3"
 TLSv1			"tlsv1"|"TLSv1"|"TLSV1"
 TLSv1_2			"tlsv1_2"|"TLSv1_2"|"TLSV1_2"
 NULLV			"null"|"NULL"
@@ -798,8 +796,6 @@ IMPORTFILE      "import_file"
 						#endif
 						  return NUMBER; }
 <INITIAL>{SSLv23}		{ count(); yylval.strval=yytext; return SSLv23; }
-<INITIAL>{SSLv2}		{ count(); yylval.strval=yytext; return SSLv2; }
-<INITIAL>{SSLv3}		{ count(); yylval.strval=yytext; return SSLv3; }
 <INITIAL>{TLSv1}		{ count(); yylval.strval=yytext; return TLSv1; }
 <INITIAL>{TLSv1_2}		{ count(); yylval.strval=yytext; return TLSv1_2; }
 

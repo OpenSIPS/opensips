@@ -452,17 +452,10 @@ tls_port_no = 5062
 
    Sets the TLS protocol method which can be:
 
-     * TLSv1 - means OpenSIPS will accept only TLSv1 connections
+     * TLSv1 - means OpenSIPS will accept only TLSv1 (1.0) connections
        (rfc3261 conformant).
-     * SSLv3 - means OpenSIPS will accept only SSLv3 connections
-     * SSLv2 - means OpenSIPS will accept only SSLv2 connections
-       (almost all old clients support this).
-     * SSLv23 - means OpenSIPS will accept any of the above
-       methods, but the initial SSL hello must be v2 (in the
-       initial hello all the supported protocols are advertised
-       enabling switching to a higher and more secure version).
-       The initial v2 hello means it will not accept connections
-       from SSLv3 or TLSv1 only clients.
+     * SSLv23 - means OpenSIPS will accept TLSv1, TLSv1.1 or TLSv1.2
+       connections. (SSLv2 and SSLv3 are disabled).
 
    It's usable only if TLS support was compiled.
 
@@ -472,8 +465,7 @@ tls_port_no = 5062
 
    Best is to use SSLv23, for extended compatibility. Using any
    of the other will restrict the version to just that one
-   version. In fact, SSLv2 is disabled in the source code; to use
-   it, you need to edit tls/tls_init.c
+   version.
 
    If you want RFC3261 conformance and all your clients support
    TLSv1 (or you are planning to use encrypted "tunnels" only

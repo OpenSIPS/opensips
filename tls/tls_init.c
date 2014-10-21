@@ -402,16 +402,6 @@ init_ssl_methods(void)
 {
 	LM_DBG("entered\n");
 
-#ifndef OPENSSL_NO_SSL2
-	ssl_methods[TLS_USE_SSLv2_cli - 1] = (SSL_METHOD*)SSLv2_client_method();
-	ssl_methods[TLS_USE_SSLv2_srv - 1] = (SSL_METHOD*)SSLv2_server_method();
-	ssl_methods[TLS_USE_SSLv2 - 1] = (SSL_METHOD*)SSLv2_method();
-#endif
-
-	ssl_methods[TLS_USE_SSLv3_cli - 1] = (SSL_METHOD*)SSLv3_client_method();
-	ssl_methods[TLS_USE_SSLv3_srv - 1] = (SSL_METHOD*)SSLv3_server_method();
-	ssl_methods[TLS_USE_SSLv3 - 1] = (SSL_METHOD*)SSLv3_method();
-
 	ssl_methods[TLS_USE_TLSv1_cli - 1] = (SSL_METHOD*)TLSv1_client_method();
 	ssl_methods[TLS_USE_TLSv1_srv - 1] = (SSL_METHOD*)TLSv1_server_method();
 	ssl_methods[TLS_USE_TLSv1 - 1] = (SSL_METHOD*)TLSv1_method();
@@ -478,12 +468,12 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	}
 
 	/* Set a bunch of options:
-	 *     do not accept SSLv2
+	 *     do not accept SSLv2 / SSLv3
 	 *     no session resumption
 	 *     choose cipher according to server's preference's*/
 
 	SSL_CTX_set_options(d->ctx,
-		SSL_OP_ALL | SSL_OP_NO_SSLv2 |
+		SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
 		SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
 		SSL_OP_CIPHER_SERVER_PREFERENCE);
 
