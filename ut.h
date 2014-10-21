@@ -257,7 +257,7 @@ inline static int reverse_hex2int( char *c, int len )
 	return r;
 }
 
-inline static int int2reverse_hex( char **c, int *size, int nr )
+inline static int int2reverse_hex( char **c, int *size, unsigned int nr )
 {
 	unsigned short digit;
 
