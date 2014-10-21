@@ -403,8 +403,6 @@ extern char *finame;
 %token TLS_CLIENT_DOMAIN
 %token TLS_CLIENT_DOMAIN_AVP
 %token SSLv23
-%token SSLv2
-%token SSLv3
 %token TLSv1
 %token TLSv1_2
 %token TLS_VERIFY_CLIENT
@@ -1018,26 +1016,6 @@ assign_stm: DEBUG EQUAL snumber {
 										warn("tls support not compiled in");
 									#endif
 									}
-		| TLS_METHOD EQUAL SSLv2 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_SSLv2;
-										tls_default_client_domain->method =
-											TLS_USE_SSLv2;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_METHOD EQUAL SSLv3 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_SSLv3;
-										tls_default_client_domain->method =
-											TLS_USE_SSLv3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
 		| TLS_METHOD EQUAL TLSv1 {
 									#ifdef USE_TLS
 										tls_default_server_domain->method =
@@ -1060,8 +1038,7 @@ assign_stm: DEBUG EQUAL snumber {
 									}
 		| TLS_METHOD EQUAL error {
 									#ifdef USE_TLS
-										yyerror("SSLv23, SSLv2, SSLv3, TLSv1 or TLSv1_2"
-													" expected");
+										yyerror("SSLv23, TLSv1 or TLSv1_2 expected");
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -1554,20 +1531,6 @@ tls_server_var : TLS_METHOD EQUAL SSLv23 {
 									warn("tls support not compiled in");
 						#endif
 								}
-	| TLS_METHOD EQUAL SSLv2 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_SSLv2;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL SSLv3 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_SSLv3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
 	| TLS_METHOD EQUAL TLSv1 { 
 						#ifdef USE_TLS
 									tls_server_domains->method=TLS_USE_TLSv1;
@@ -1582,7 +1545,7 @@ tls_server_var : TLS_METHOD EQUAL SSLv23 {
 									warn("tls support not compiled in");
 						#endif
 								}
-	| TLS_METHOD EQUAL error { yyerror("SSLv23, SSLv2, SSLv3, TLSv1 or TLSV1_2 expected"); }
+	| TLS_METHOD EQUAL error { yyerror("SSLv23, TLSv1 or TLSV1_2 expected"); }
 	| TLS_CERTIFICATE EQUAL STRING { 
 						#ifdef USE_TLS
 									tls_server_domains->cert_file=$3;
@@ -1667,20 +1630,6 @@ tls_client_var : TLS_METHOD EQUAL SSLv23 {
 									warn("tls support not compiled in");
 						#endif
 								}
-	| TLS_METHOD EQUAL SSLv2 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_SSLv2;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL SSLv3 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_SSLv3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
 	| TLS_METHOD EQUAL TLSv1 { 
 						#ifdef USE_TLS
 									tls_client_domains->method=TLS_USE_TLSv1;
@@ -1696,7 +1645,7 @@ tls_client_var : TLS_METHOD EQUAL SSLv23 {
 						#endif
 								}
 	| TLS_METHOD EQUAL error {
-						yyerror("SSLv23, SSLv2, SSLv3, TLSv1 or TLSv1_2 expected"); }
+						yyerror("SSLv23, TLSv1 or TLSv1_2 expected"); }
 	| TLS_CERTIFICATE EQUAL STRING { 
 						#ifdef USE_TLS
 									tls_client_domains->cert_file=$3;
