@@ -861,7 +861,7 @@ IMPORTFILE      "import_file"
 				svar_tlen = yyleng;
 			}
 		}
-<SCRIPTVARS>{SEMICOLON}|{ASSIGNOP}|{ARITHOP}|{BITOP}|{LOGOP} {
+<SCRIPTVARS>{SEMICOLON}|{COMMA}|{ASSIGNOP}|{ARITHOP}|{BITOP}|{LOGOP} {
 						count();
 						if(np==0) {
 							addstr(&s_buf, yytext, svar_tlen);
