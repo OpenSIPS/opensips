@@ -42,6 +42,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../proxy.h"
 #include "../../md5utils.h"
+#include "../../async.h"
 #include "../../usr_avp.h"
 #include "config.h"
 
@@ -297,6 +298,9 @@ typedef struct cell
 
 	/* extra T headers */
 	str extra_hdrs;
+
+	/* info for async resume */
+	async_holder a_data;
 }cell_type;
 
 

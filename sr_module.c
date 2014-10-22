@@ -324,17 +324,15 @@ acmd_export_t* find_acmd_export_t(char* name, int param_no)
 	acmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
-		/*
-		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
+		for(cmd=t->exports->acmds; cmd && cmd->name; cmd++){
 			if((strcmp(name, cmd->name)==0)&&
-			   (cmd->param_no==param_no) &&
-			   ((cmd->flags & flags) == flags)
+			   (cmd->param_no==param_no)
 			  ){
 				LM_DBG("found async <%s>(%d) in module %s [%s]\n",
 					name, param_no, t->exports->name, t->path);
 				return cmd;
 			}
-		}*/
+		}
 	}
 	LM_DBG("async <%s> not found \n", name);
 	return 0;

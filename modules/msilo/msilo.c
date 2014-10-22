@@ -250,6 +250,7 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* module's exported functions */
+	0,          /* module's exported async functions */
 	params,     /* module's exported parameters */
 #ifdef STATISTICS
 	msilo_stats,

@@ -181,6 +181,8 @@ struct module_exports{
 
 	cmd_export_t* cmds;             /*!< null terminated array of the exported
 	                                   commands */
+	acmd_export_t* acmds;           /*!< null terminated array of the exported
+	                                   async commands */
 	param_export_t* params;         /*!< null terminated array of the exported
 	                                   module parameters */
 
