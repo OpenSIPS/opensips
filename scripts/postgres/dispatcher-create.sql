@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dispatcher','7');
+INSERT INTO version (table_name, table_version) values ('dispatcher','6');
 CREATE TABLE dispatcher (
     id SERIAL PRIMARY KEY NOT NULL,
     setid INTEGER DEFAULT 0 NOT NULL,
