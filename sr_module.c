@@ -313,6 +313,35 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 
 
 
+/* searches the module list and returns pointer to the async "name" cmd_export_t
+ * structure or 0 if not found
+ * In order to find the module the name, flags parameter number in the config
+ * must match to the module export
+ */
+acmd_export_t* find_acmd_export_t(char* name, int param_no)
+{
+	struct sr_module* t;
+	acmd_export_t* cmd;
+
+	for(t=modules;t;t=t->next){
+		/*
+		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
+			if((strcmp(name, cmd->name)==0)&&
+			   (cmd->param_no==param_no) &&
+			   ((cmd->flags & flags) == flags)
+			  ){
+				LM_DBG("found async <%s>(%d) in module %s [%s]\n",
+					name, param_no, t->exports->name, t->path);
+				return cmd;
+			}
+		}*/
+	}
+	LM_DBG("async <%s> not found \n", name);
+	return 0;
+}
+
+
+
 /*
  * searches the module list and returns pointer to "name" function in module
  * "mod" or 0 if not found
@@ -341,7 +370,6 @@ cmd_function find_mod_export(char* mod, char* name, int param_no, int flags)
 	LM_DBG("<%s> in module %s not found\n", name, mod);
 	return 0;
 }
-
 
 
 

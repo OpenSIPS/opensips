@@ -212,6 +212,7 @@ int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
 int sr_load_module(char* path);
 cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags);
+acmd_export_t* find_acmd_export_t(char* name, int param_no);
 cmd_function find_export(char* name, int param_no, int flags);
 cmd_function find_mod_export(char* mod, char* name, int param_no, int flags);
 void destroy_modules();

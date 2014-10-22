@@ -212,8 +212,8 @@ SUBSCRIBE_EVENT	"subscribe_event"
 CONSTRUCT_URI	"construct_uri"
 GET_TIMESTAMP	"get_timestamp"
 SCRIPT_TRACE    "script_trace"
-EVENT_ROUTE_SYNC		sync
-EVENT_ROUTE_ASYNC		async
+SYNC_TOKEN      "sync"
+ASYNC_TOKEN     "async"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -571,10 +571,10 @@ IMPORTFILE      "import_file"
 									return GET_TIMESTAMP;}
 <INITIAL>{SCRIPT_TRACE}	{	count(); yylval.strval=yytext;
 									return SCRIPT_TRACE;}
-<INITIAL>{EVENT_ROUTE_SYNC}		{ count(); yylval.strval=yytext;
-									return EVENT_ROUTE_SYNC;}
-<INITIAL>{EVENT_ROUTE_ASYNC}		{ count(); yylval.strval=yytext;
-									return EVENT_ROUTE_ASYNC;}
+<INITIAL>{SYNC_TOKEN}		{ count(); yylval.strval=yytext;
+									return SYNC_TOKEN;}
+<INITIAL>{ASYNC_TOKEN}		{ count(); yylval.strval=yytext;
+									return ASYNC_TOKEN;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
