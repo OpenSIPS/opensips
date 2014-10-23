@@ -1293,7 +1293,7 @@ static int add_body_f(struct sip_msg *msg, gparam_p nbody, gparam_p ctype )
 		/* delete old body */
 		offset = body.s - msg->buf;
 		if(del_lump(msg, offset, body.len, HDR_EOH_T) == 0) {
-			LM_ERR("failed to add lump to delete body");
+			LM_ERR("failed to add lump to delete body\n");
 			return -1;
 		}
 	}

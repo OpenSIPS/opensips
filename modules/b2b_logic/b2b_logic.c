@@ -963,7 +963,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 			//LM_DBG("got PV_SPEC b2bl_from [%.*s]\n",
 			//	b2bl_from_tok.rs.len, b2bl_from_tok.rs.s);
 			if(b2bl_from_tok.rs.len+CRLF_LEN > B2BL_FROM_BUF_LEN) {
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				return NULL;
 			}
 			trim(&b2bl_from_tok.rs);

@@ -356,7 +356,7 @@ static int mod_init(void)
 
 	/* Load dialog API */
 	if (load_dlg_api(&lb_dlg_binds) != 0) {
-		LM_ERR("Can't load dialog hooks");
+		LM_ERR("Can't load dialog hooks\n");
 		return -1;
 	}
 

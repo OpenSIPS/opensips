@@ -704,7 +704,7 @@ int do_http_op (  const db_con_t* h, const db_key_t* k, const db_op_t* op,
 
 	if( h->table->s == NULL)
 	{
-		LM_ERR("No table selected for op");
+		LM_ERR("No table selected for op\n");
 		goto error;
 	}
 

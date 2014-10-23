@@ -439,7 +439,7 @@ struct to_body* get_appearance_name_addr(struct sip_msg* msg)
 			//LM_DBG("got PV_SPEC appearance_name_addr [%.*s]\n",
 			//	appearance_name_addr_tok.rs.len, appearance_name_addr_tok.rs.s);
 			if(appearance_name_addr_tok.rs.len+CRLF_LEN > APPEARANCE_NAME_ADDR_BUF_LEN) {
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				return NULL;
 			}
 			trim(&appearance_name_addr_tok.rs);
