@@ -109,7 +109,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 	/* populate some special fields in sip_msg */
 	req.force_send_socket = dialog->send_sock;
 	if (set_dst_uri(&req, dialog->hooks.next_hop)) {
-		LM_ERR("failed to set dst_uri");
+		LM_ERR("failed to set dst_uri\n");
 		free_sip_msg(&req);
 		return NULL;
 	}

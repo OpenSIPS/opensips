@@ -65,7 +65,7 @@ void bla_cb(ucontact_t* c, int type, void* param)
 
 	uri.s = (char*)pkg_malloc(sizeof(char)*(c->aor->len+default_domain.len+6));
 	if(uri.s == NULL) {
-		LM_ERR( "pkg_malloc uri failed" );
+		LM_ERR( "pkg_malloc uri failed\n" );
 		goto error;
 	}
 
