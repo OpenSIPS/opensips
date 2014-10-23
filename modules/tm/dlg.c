@@ -694,7 +694,7 @@ static inline int request2dlg(struct sip_msg* _m, dlg_t* _d)
 	str contact, rtag, callid;
 
 	if (parse_headers(_m, HDR_EOH_F, 0) == -1) {
-		LM_ERR("failed to parse headers");
+		LM_ERR("failed to parse headers\n");
 		return -1;
 	}
 

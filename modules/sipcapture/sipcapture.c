@@ -567,7 +567,7 @@ static int child_init(int rank)
         if (db_url.s)
 	          return sipcapture_db_init(&db_url);
 
-        LM_ERR("db_url is empty");
+        LM_ERR("db_url is empty\n");
 
 	return 0;
 }
