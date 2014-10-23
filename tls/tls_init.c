@@ -46,6 +46,10 @@
 #define OS_SSL_SESS_ID ((unsigned char*)"opensips-tls-1.11.0")
 #define OS_SSL_SESS_ID_LEN (sizeof(OS_SSL_SESS_ID)-1)
 
+#if OPENSSL_VERSION_NUMBER < 0x00908000L
+        #error "using an unsupported version of OpenSSL (< 0.9.8)"
+#endif
+
 #if OPENSSL_VERSION_NUMBER < 0x10001000L
 	#warning ""
 	#warning "=============================================================="
@@ -159,7 +163,6 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 static int
 passwd_cb(char *buf, int size, int rwflag, void *filename)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x00907000L
 	UI             *ui;
 	const char     *prompt;
 
@@ -178,15 +181,6 @@ err:
 	if (ui)
 		UI_free(ui);
 	return 0;
-
-#else
-	if( des_read_pw_string(buf, size-1, "Enter Private Key password:", 0) ) {
-		LM_ERR("passwd_cb failed\n");
-		return 0;
-	}
-	return strlen( buf );
-
-#endif
 }
 
 
@@ -408,16 +402,6 @@ init_ssl_methods(void)
 {
 	LM_DBG("entered\n");
 
-#ifndef OPENSSL_NO_SSL2
-	ssl_methods[TLS_USE_SSLv2_cli - 1] = (SSL_METHOD*)SSLv2_client_method();
-	ssl_methods[TLS_USE_SSLv2_srv - 1] = (SSL_METHOD*)SSLv2_server_method();
-	ssl_methods[TLS_USE_SSLv2 - 1] = (SSL_METHOD*)SSLv2_method();
-#endif
-
-	ssl_methods[TLS_USE_SSLv3_cli - 1] = (SSL_METHOD*)SSLv3_client_method();
-	ssl_methods[TLS_USE_SSLv3_srv - 1] = (SSL_METHOD*)SSLv3_server_method();
-	ssl_methods[TLS_USE_SSLv3 - 1] = (SSL_METHOD*)SSLv3_method();
-
 	ssl_methods[TLS_USE_TLSv1_cli - 1] = (SSL_METHOD*)TLSv1_client_method();
 	ssl_methods[TLS_USE_TLSv1_srv - 1] = (SSL_METHOD*)TLSv1_server_method();
 	ssl_methods[TLS_USE_TLSv1 - 1] = (SSL_METHOD*)TLSv1_method();
@@ -484,19 +468,14 @@ init_ssl_ctx_behavior( struct tls_domain *d ) {
 	}
 
 	/* Set a bunch of options:
-	 *     do not accept SSLv2
+	 *     do not accept SSLv2 / SSLv3
 	 *     no session resumption
 	 *     choose cipher according to server's preference's*/
 
-#if OPENSSL_VERSION_NUMBER >= 0x000907000
 	SSL_CTX_set_options(d->ctx,
-		SSL_OP_ALL | SSL_OP_NO_SSLv2 |
+		SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
 		SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
 		SSL_OP_CIPHER_SERVER_PREFERENCE);
-#else
-	SSL_CTX_set_options(d->ctx,
-		SSL_OP_ALL | SSL_OP_NO_SSLv2 );
-#endif
 
 	/* Set verification procedure
 	 * The verification can be made null with SSL_VERIFY_NONE, or
@@ -701,15 +680,8 @@ int
 init_tls(void)
 {
 	int i;
-#if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
-	STACK_OF(SSL_COMP)* comp_methods;
-#endif
 
 	LM_DBG("entered\n");
-
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
-	LM_WARN("using an old version of OpenSSL (< 0.9.7). Upgrade!\n");
-#endif
 
 	/*
 	* this has to be called before any function calling CRYPTO_malloc,
@@ -720,7 +692,8 @@ init_tls(void)
 		return -1;
 	}
 
-#if (OPENSSL_VERSION_NUMBER >= 0x00908000L) && !defined(OPENSSL_NO_COMP)
+#if !defined(OPENSSL_NO_COMP)
+	STACK_OF(SSL_COMP)* comp_methods;
 	/* disabling compression */
 	LM_WARN("disabling compression due ZLIB problems\n");
 	comp_methods = SSL_COMP_get_compression_methods();

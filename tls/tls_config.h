@@ -28,12 +28,6 @@
 
 enum tls_method {
 	TLS_METHOD_UNSPEC = 0,
-	TLS_USE_SSLv2_cli,
-	TLS_USE_SSLv2_srv,
-	TLS_USE_SSLv2,
-	TLS_USE_SSLv3_cli,
-	TLS_USE_SSLv3_srv,
-	TLS_USE_SSLv3,
 	TLS_USE_TLSv1_cli,
 	TLS_USE_TLSv1_srv,
 	TLS_USE_TLSv1,
