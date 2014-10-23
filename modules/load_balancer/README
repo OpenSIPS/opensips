@@ -68,7 +68,7 @@ Bogdan-Andrei Iancu
    1.8. load_balance usage
    1.9. lb_disable() usage
    1.10. lb_is_destination usage
-   1.11. lb_count_count usage
+   1.11. lb_count_call usage
    1.12. lb_list usage
    1.13. lb_status usage
 
@@ -355,12 +355,12 @@ if (lb_is_destination("$si","$sp") ) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.11. lb_count_count usage
+   Example 1.11. lb_count_call usage
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {
         # inbound call from destination
-        lb_count_count("$si","$sp","-1","conference");
+        lb_count_call("$si","$sp","-1","conference");
 } else {
         # outbound call to destinations
         if ( !load_balance("1","conference") ) {
