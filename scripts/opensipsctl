@@ -638,7 +638,7 @@ avpops() {
 		minfo "see '$0 avp help'"
 		exit 1
 	fi
-	if [ $1 = "avp" ] ; then
+	if [ "$1" = "avp" ] ; then
 		shift
 	else
 		merr "avp - unknown command $1"
@@ -2358,19 +2358,19 @@ usrloc() {
 
 	require_ctlengine
 
-	if [ $1 = "alias" ] ; then
+	if [ "$1" = "alias" ] ; then
 		USRLOC_TABLE="$ALS_TABLE"
 		if [ -z "$USRLOC_TABLE" ] ; then
 			USRLOC_TABLE=aliases
 		fi
 		CHECK_SUB=1
-	elif [ $1 = "ul" ] ; then
+	elif [ "$1" = "ul" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
 		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
 		fi
 		CHECK_SUB=0
-	elif [ $1 = "usrloc" ] ; then
+	elif [ "$1" = "usrloc" ] ; then
 		USRLOC_TABLE="$UL_TABLE"
 		if [ -z $USRLOC_TABLE ] ; then
 			USRLOC_TABLE=location
@@ -2383,10 +2383,10 @@ usrloc() {
 	fi
 	shift
 
-	case $1 in 
+	case "$1" in 
 		show)
 			if [ $# -eq 2 ] ; then
-				if [ $2 = "--brief" ] ; then
+				if [ "$2" = "--brief" ] ; then
 					$CTLCMD ul_dump brief
 				else
 					set_user $2
@@ -2484,7 +2484,7 @@ usrloc() {
 
 tls_ca() {
 
-	if [ $1 = "rootCA" ] ; then
+	if [ "$1" = "rootCA" ] ; then
 		if [ -z $2 ] ; then
 			# use default
 			CA_BASE=$ETCDIR/tls
@@ -2539,7 +2539,7 @@ tls_ca() {
 		minfo "Private key can be found in $CA_PATH/private/cakey.pem"
 		minfo "Certificate can be found in $CA_PATH/cacert.pem"
 
-	elif [ $1 = "userCERT" ] ; then
+	elif [ "$1" = "userCERT" ] ; then
 
 		if [ -z $2 ] ; then
 			merr "Missing user name parameter"
