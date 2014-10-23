@@ -474,13 +474,13 @@ if (lb_is_destination("$si","$sp") ) {
 		FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>lb_count_count</function> usage</title>
+		<title><function>lb_count_call</function> usage</title>
 		<programlisting format="linespecific">
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {
 	# inbound call from destination
-	lb_count_count("$si","$sp","-1","conference");
+	lb_count_call("$si","$sp","-1","conference");
 } else {
 	# outbound call to destinations
 	if ( !load_balance("1","conference") ) {
