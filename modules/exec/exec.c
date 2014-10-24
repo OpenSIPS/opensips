@@ -576,8 +576,12 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar)
 	wait(&exit_status);
 
 	if (outvar) {
-		while (fgets(tmpbuf, MAX_LINE_SIZE, pout)) {
-			tmplen = strlen(tmpbuf);
+		while ((tmplen = fread(tmpbuf, 1, MAX_LINE_SIZE, pout))) {
+
+			if ((buflen + tmplen) >= MAX_BUF_SIZE) {
+				LM_WARN("no more space in output buffer\n");
+				break;
+			}
 			memcpy(buf+buflen, tmpbuf, tmplen);
 			buflen += tmplen;
 		}

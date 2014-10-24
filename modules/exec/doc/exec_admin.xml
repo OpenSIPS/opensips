@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
@@ -16,23 +16,23 @@
 	<itemizedlist>
 		<listitem>
 		<para>
-			SIP_HF_&lt;hf_name&gt; contains value of each header field in 
-			request. If a header field occurred multiple times, values are 
-			concatenated and comma-separated. &lt;hf_name&gt; is in capital 
-			letters. Ff a header-field name occurred in compact form, 
+			SIP_HF_&lt;hf_name&gt; contains value of each header field in
+			request. If a header field occurred multiple times, values are
+			concatenated and comma-separated. &lt;hf_name&gt; is in capital
+			letters. Ff a header-field name occurred in compact form,
 			&lt;hf_name&gt; is canonical.
 		</para>
 		</listitem>
 		<listitem>
 		<para>
-			SIP_TID is transaction identifier. All request retransmissions or 
-			CANCELs/ACKs associated with a previous INVITE result in the same 
+			SIP_TID is transaction identifier. All request retransmissions or
+			CANCELs/ACKs associated with a previous INVITE result in the same
 			value.
 		</para>
 		</listitem>
 		<listitem>
 		<para>
-			SIP_DID is dialog identifier, which is the same as to-tag. 
+			SIP_DID is dialog identifier, which is the same as to-tag.
 			Initially, it is empty.
 		</para>
 		</listitem>
@@ -48,7 +48,7 @@
 		</listitem>
 		<listitem>
 		<para>
-			SIP_RURI is <emphasis>current</emphasis> request &uri; (if 
+			SIP_RURI is <emphasis>current</emphasis> request &uri; (if
 			unchanged, equal to original).
 		</para>
 		</listitem>
@@ -217,7 +217,7 @@ exec_dset("ruri-changer.sh '$ct'");
 		of the command is ignored.
 		</para>
 		<para>
-		See sip-server/modules/exec/etc/exec.cfg in the source tarball for 
+		See sip-server/modules/exec/etc/exec.cfg in the source tarball for
 		information on usage.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -369,7 +369,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		</itemizedlist>
 		<para>
 		WARNING: any OpenSIPS pseudo-vars which may contain special bash
-		characters should be placed inside quotes, e.g. exec_getenv("'$ct'");
+		characters should be placed inside quotes, e.g. exec("update-stats.sh '$ct'");
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,

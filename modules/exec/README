@@ -270,7 +270,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 
    WARNING: any OpenSIPS pseudo-vars which may contain special
    bash characters should be placed inside quotes, e.g.
-   exec_getenv("'$ct'");
+   exec("update-stats.sh '$ct'");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
