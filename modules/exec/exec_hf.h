@@ -117,5 +117,8 @@ extern char **environ;
 
 environment_t *set_env(struct sip_msg *msg);
 void unset_env(environment_t *backup_env);
+void release_hf_struct ( struct hf_wrapper *list);
+void release_vars(struct hf_wrapper* list);
+environment_t *replace_env(struct hf_wrapper *list);
 
 #endif

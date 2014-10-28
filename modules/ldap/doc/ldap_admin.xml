@@ -5,7 +5,7 @@
       <title>Overview</title>
 
       <para>The LDAP module implements an LDAP search interface for OpenSIPS. It exports script functions to perform an LDAP search operation and to store the search results as OpenSIPS AVPs. This allows for using LDAP directory data in the OpenSIPS SIP message routing script.</para>
-      
+
       <para>The following features are offered by the LDAP module:</para>
       <itemizedlist>
         <listitem>
@@ -29,12 +29,15 @@
 		<listitem>
             <para>Module API for LDAP search operations that can be used by other OpenSIPS modules</para>
         </listitem>
-      </itemizedlist> 
-      
+		<listitem>
+            <para>StartTLS support</para>
+        </listitem>
+      </itemizedlist>
+
       <para>The module implementation makes use of the open source OpenLDAP library available on most UNIX/Linux platforms. Besides LDAP server failover and automatic reconnect, this module can handle multiple LDAP sessions concurrently allowing to access data stored on different LDAP servers. Each OpenSIPS worker process maintains one LDAP TCP connection per configured LDAP server. This enables parallel execution of LDAP requests and offloads LDAP concurrency control to the LDAP server(s).</para>
-      
-      <para>An LDAP search module API is provided that can be used by other OpenSIPS modules. A module using this API does not have to implement LDAP connection management and configuration, while still having access to the full OpenLDAP API for searching and result handling.</para> 
-      
+
+      <para>An LDAP search module API is provided that can be used by other OpenSIPS modules. A module using this API does not have to implement LDAP connection management and configuration, while still having access to the full OpenLDAP API for searching and result handling.</para>
+
       <para>Since LDAP server implementations are optimized for fast read access they are a good choice to store SIP provisioning data. Performance tests have shown that this module achieves lower data access times and higher call rates than other database modules like e.g. the OpenSIPS MYSQL module.</para>
 
       <section>
@@ -47,11 +50,11 @@
         <para>
 			The <varname>ldap_search</varname> function (<xref linkend="ldap-search-fn"/>) performs an LDAP search operation. It expects an LDAP URL as input which includes the LDAP session name and search parameters. <xref linkend="ldap-urls"/>  provides a quick overview on LDAP URLs.
         </para>
-        
+
         <para>
 			The result of an LDAP search is stored internally and can be accessed with one of the <varname>ldap_result*</varname> functions. <varname>ldap_result</varname> (<xref linkend="ldap-result-fn"/>) stores resulting LDAP attribute value as AVPs. <varname>ldap_result_check</varname> (<xref linkend="ldap-result-check-fn"/>) is a convenience function to compare a string with LDAP attribute values using regular expression matching. Finally, <varname>ldap_result_next</varname> (<xref linkend="ldap-result-next-fn"/>) allows to handle LDAP search queries that return more than one LDAP entry.
         </para>
-        
+
         <para>
         All <varname>ldap_result*</varname> functions do always access the LDAP result set from the last <varname>ldap_search</varname> call. This should be kept in mind when calling <varname>ldap_search</varname> more than once in the OpenSIPS configuration script.
         </para>
@@ -160,10 +163,10 @@
 
         <note>
           <para>Non-URL characters in an LDAP URL have to be escaped using
-          percent-encoding (refer to section 2.1 of RFC 4516). In particular 
+          percent-encoding (refer to section 2.1 of RFC 4516). In particular
 	  this means that any "?" character in an LDAP URL component must be
 	  written as "%3F", since "?" is used as a URL delimiter.</para>
-  <para>The exported function <varname>ldap_filter_url_encode</varname> (<xref linkend="ldap-filter-url-encode-fn"/>) 
+  <para>The exported function <varname>ldap_filter_url_encode</varname> (<xref linkend="ldap-filter-url-encode-fn"/>)
 	  implements RFC 4515/4516 LDAP search filter and URL escaping
 	  rules.</para>
         </note>
@@ -231,6 +234,10 @@ ldap_bind_dn               = "cn=sip_proxy,ou=accounts,dc=example,dc=com"
 ldap_bind_password         = "pwd"
 ldap_network_timeout       = 500
 ldap_client_bind_timeout   = 500
+ldap_ca_cert_file		   = "/usr/share/ca-certificates/mycert.pem"
+ldap_cert_file			   = "/var/my-certificate/certificate.pem"
+ldap_key_file			   = "/var/my-certificate/key.pem"
+ldap_require_certificate   = "ALLOW"
 </programlisting>
         The configuration keys are
         explained in the following section. This LDAP session can be referred
@@ -259,7 +266,7 @@ ldap_client_bind_timeout   = 500
                 <programlisting format="linespecific">
 ldap_server_url = "ldap://localhost"
 ldap_server_url = "ldap://ldap.example.com:7777"
-ldap_server_url = "ldap://ldap1.example.com, 
+ldap_server_url = "ldap://ldap1.example.com,
                    ldap://ldap2.example.com:80389"
 				</programlisting>
               </example>
@@ -353,6 +360,75 @@ ldap_server_url = "ldap://ldap1.example.com,
             </listitem>
           </varlistentry>
 
+          <varlistentry>
+            <term>ldap_ca_cert_file (optional)</term>
+
+            <listitem>
+              <para>LDAP full path of the CA certificate file.</para>
+
+              <para>No default value. It is mandatory in case you wish to use StartTLS</para>
+
+              <example>
+                <title><varname>ldap_ca_cert_file</varname>
+                example</title>
+
+			<programlisting format="linespecific">ldap_ca_cert_file = "/usr/local/CAcert.pem"</programlisting>
+              </example>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>ldap_cert_file (optional)</term>
+
+            <listitem>
+              <para>LDAP full path of the certificate file.</para>
+
+              <para>No default value. It is mandatory in case you wish to use StartTLS</para>
+
+              <example>
+                <title><varname>ldap_cert_file</varname>
+                example</title>
+
+			<programlisting format="linespecific">ldap_cert_file = "/usr/local/mycert.pem"</programlisting>
+              </example>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>ldap_key_file (optional)</term>
+
+            <listitem>
+              <para>LDAP full path of the key file.</para>
+
+              <para>No default value. It is mandatory in case you wish to use StartTLS</para>
+
+              <example>
+                <title><varname>ldap_key_file</varname>
+                example</title>
+
+			<programlisting format="linespecific">ldap_key_file = "/usr/local/mykey.pem"</programlisting>
+              </example>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>ldap_require_certificate (optional)</term>
+
+            <listitem>
+				<para>LDAP peer certificate checking strategy, one of "NEVER", "HARD", "DEMAND", "ALLOW", "TRY".
+						Lower case letters are also accepted.</para>
+
+              <para>Default value "NEVER".</para>
+
+              <example>
+                <title><varname>ldap_require_certificate</varname>
+                example</title>
+
+			<programlisting format="linespecific">ldap_require_certificate = "NEVER"</programlisting>
+              </example>
+            </listitem>
+          </varlistentry>
+
         </variablelist>
       </section>
 
@@ -378,6 +454,11 @@ ldap_bind_dn = "cn=sip_proxy,ou=accounts,dc=example,dc=com"
 ldap_bind_password = "pwd"
 ldap_network_timeout = 500
 ldap_client_bind_timeout = 500
+#using StartTLS
+ldap_ca_cert_file = "/ldap/path/to/ca/certificate.pem"
+ldap_cert_file = "/ldap/path/to/certificate.pem"
+ldap_key_file = "/ldap/path/to/key/file.pem"
+ldap_require_certificate = "NEVER"
 
 
 # LDAP session "campus":
@@ -523,7 +604,7 @@ ldap://ldap_1/dc=example,dc=com?
 	<para>
         This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE, and ONREPLY_ROUTE.
 	</para>
-	
+
         <example>
           <title>Example Usage</title>
 
@@ -568,9 +649,9 @@ ldap_result("telephoneNumber/$avp(tel_number)");
         part of an attribute value should be stored as AVP.</para>
 
 		<para>
-			An AVP can either be of type string or integer. As default, <varname>ldap_result</varname> stores LDAP attribute values as AVP of type string. The optional <varname>avp_type</varname> parameter can be used to explicitly specify the type of the AVP. It can be either <varname>str</varname> for string, or <varname>int</varname> for integer. If <varname>avp_type</varname> is specified as <varname>int</varname> then <varname>ldap_result</varname> tries to convert the LDAP attribute values to integer. In this case, the values are only stored as AVP if the conversion to integer is succesfull. 
+			An AVP can either be of type string or integer. As default, <varname>ldap_result</varname> stores LDAP attribute values as AVP of type string. The optional <varname>avp_type</varname> parameter can be used to explicitly specify the type of the AVP. It can be either <varname>str</varname> for string, or <varname>int</varname> for integer. If <varname>avp_type</varname> is specified as <varname>int</varname> then <varname>ldap_result</varname> tries to convert the LDAP attribute values to integer. In this case, the values are only stored as AVP if the conversion to integer is succesfull.
 		</para>
-		
+
         <variablelist>
           <title>Function Parameters:</title>
 
@@ -593,7 +674,7 @@ ldap_result("telephoneNumber/$avp(tel_number)");
               <varname>$avp(12)</varname></para>
             </listitem>
           </varlistentry>
-		  
+
 		  <varlistentry>
             <term>avp_type</term>
 
@@ -650,7 +731,7 @@ ldap_result("telephoneNumber/$avp(tel_number)");
 	<para>
         This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE, and ONREPLY_ROUTE.
 	</para>
-	
+
         <example>
           <title>Example Usage</title>
 
@@ -673,7 +754,7 @@ if (!ldap_result("SIPIdentityServiceLevel/$avp(service_level)"))
         # internal error
         sl_send_reply("500", "Internal server error");
         exit;
-    default: 
+    default:
         exit;
     }
 }
@@ -767,7 +848,7 @@ ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
 	<para>
         This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE, and ONREPLY_ROUTE.
         </para>
-	
+
         <example>
           <title>Example Usage</title>
 
@@ -861,7 +942,7 @@ if (ldap_result_next())
 if (ldap_result_next())
 {
 	ldap_result("telephonenumber/$avp(tel4)");
-}	
+}
 ...
 			</programlisting>
         </example>
@@ -873,7 +954,7 @@ if (ldap_result_next())
 	<para>This function applies the following escaping rules to
         <varname>string</varname> and stores the result in AVP
         <varname>avp_spec</varname>:</para>
-	
+
         <table>
           <title>ldap_filter_url_encode() escaping rules</title>
 
@@ -934,7 +1015,7 @@ if (ldap_result_next())
         </table>
 
 	<para>The string stored in AVP <varname>avp_spec</varname> can be safely used in an LDAP
-        URL filter string.</para>	
+        URL filter string.</para>
 
 	<variablelist>
           <title>Function Parameters:</title>
@@ -1000,7 +1081,7 @@ if (!ldap_filter_url_encode("cn=$avp(name)", "$avp(name_esc)"))
 xlog("L_INFO", "encoded LDAP filter component: [$avp(name_esc)]\n");
 
 if (ldap_search(
-     "ldap://h350/ou=commObjects,dc=example,dc=com??sub?($avp(name_esc))")) 
+     "ldap://h350/ou=commObjects,dc=example,dc=com??sub?($avp(name_esc))"))
     { ... }
 ...
 			</programlisting>

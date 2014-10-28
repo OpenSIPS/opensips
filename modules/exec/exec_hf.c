@@ -92,7 +92,7 @@ static int insert_hf( struct hf_wrapper **list, struct hdr_field *hf )
 	return 1;
 }
 
-static void release_hf_struct( struct hf_wrapper *list )
+void release_hf_struct( struct hf_wrapper *list )
 {
 	struct hf_wrapper *i, *j, *nexts, *nexto;
 
@@ -287,7 +287,7 @@ static int print_var(struct hf_wrapper *w, int offset)
 	}
 }
 
-static void release_vars(struct hf_wrapper *list)
+void release_vars(struct hf_wrapper *list)
 {
 	while(list) {
 		if (list->envvar) {
