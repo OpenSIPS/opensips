@@ -1,9 +1,9 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section>
 	<title>Overview</title>
 	<para>
@@ -16,23 +16,23 @@
 	<itemizedlist>
 		<listitem>
 		<para>
-			SIP_HF_&lt;hf_name&gt; contains value of each header field in 
-			request. If a header field occurred multiple times, values are 
-			concatenated and comma-separated. &lt;hf_name&gt; is in capital 
-			letters. Ff a header-field name occurred in compact form, 
+			SIP_HF_&lt;hf_name&gt; contains value of each header field in
+			request. If a header field occurred multiple times, values are
+			concatenated and comma-separated. &lt;hf_name&gt; is in capital
+			letters. Ff a header-field name occurred in compact form,
 			&lt;hf_name&gt; is canonical.
 		</para>
 		</listitem>
 		<listitem>
 		<para>
-			SIP_TID is transaction identifier. All request retransmissions or 
-			CANCELs/ACKs associated with a previous INVITE result in the same 
+			SIP_TID is transaction identifier. All request retransmissions or
+			CANCELs/ACKs associated with a previous INVITE result in the same
 			value.
 		</para>
 		</listitem>
 		<listitem>
 		<para>
-			SIP_DID is dialog identifier, which is the same as to-tag. 
+			SIP_DID is dialog identifier, which is the same as to-tag.
 			Initially, it is empty.
 		</para>
 		</listitem>
@@ -48,7 +48,7 @@
 		</listitem>
 		<listitem>
 		<para>
-			SIP_RURI is <emphasis>current</emphasis> request &uri; (if 
+			SIP_RURI is <emphasis>current</emphasis> request &uri; (if
 			unchanged, equal to original).
 		</para>
 		</listitem>
@@ -148,9 +148,9 @@ modparam("exec", "time_to_kill", 20)
 	<section>
 		<title><varname>async</varname> (integer)</title>
 		<para>
-		Turns on the asynchronous mode for the 'exec_msg' function. All commands
-		will be executed by a different process and the caller will continue
-		its flow, without waiting for a response.
+		Turns on the asynchronous mode for the 'exec_msg' and 'exec' functions.
+		All commands will be executed by a different process and the caller will
+		continue its flow, without waiting for a response.
 		</para>
 		<para>
 		<emphasis>
@@ -217,7 +217,7 @@ exec_dset("ruri-changer.sh '$ct'");
 		of the command is ignored.
 		</para>
 		<para>
-		See sip-server/modules/exec/etc/exec.cfg in the source tarball for 
+		See sip-server/modules/exec/etc/exec.cfg in the source tarball for
 		information on usage.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
@@ -331,6 +331,76 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 </programlisting>
 		</example>
 	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">exec(command, [output], [input], [error],[envavp])</function>
+		</title>
+		<para>
+		Executes an external command. The input is passed to the standard input of the new
+		process, if specified, and the output is saved in the output variable.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>command</emphasis> - command to be executed.It can include
+			pseudovariables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>output</emphasis> - pseudovariable where to store the output
+			from the standard output of the process. Keep in mind that if this parameter
+			is set, the async paramater will not be taken in consideration.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>input</emphasis> - String to be passed to the standard input
+			of the command. The string can be given as a pseudovariable.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>error</emphasis> - pseudovariable where to store the error from
+			the standard error of the process.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>envavp</emphasis> - Avp where to store the values for the
+			environment variables to be passed for the command. The names of the environment
+			variables will be "OSIPS_EXEC_#" where # will start from 0. For example if you
+			store 2 values into an avp ("a" and "b") OSIPS_EXEC_0 will contain the first value
+			and OSIPS_EXEC_1 the second value.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		WARNING: any OpenSIPS pseudo-vars which may contain special bash
+		characters should be placed inside quotes, e.g. exec("update-stats.sh '$ct'");
+		</para>
+		<para>
+		WARNING: "input"/"output"/"error" parameters are not designed for a large amount of
+		data so one should be careful when using them because server could considerably be
+		slowed down.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">exec</function> usage</title>
+		<programlisting format="linespecific">
+...
+$avp(env) = "a";
+$avp(env) = "b";
+exec("ls -l", "$var(out)",, "$avp(env)");
+xlog("The output is $var(out)\n");
+...
+$var(input) = "input";
+exec("/home/../myscript.sh",, "this is my $var(input) for exec\n", "$avp(env)");
+...
+</programlisting>
+		</example>
+	</section>
+
 
 
 
