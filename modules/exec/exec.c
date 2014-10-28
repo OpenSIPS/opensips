@@ -49,6 +49,7 @@
 #include "../../usr_avp.h"
 #include "../../ut.h"
 #include "../../trim.h"
+#include "../../mod_fix.h"
 
 #include "exec.h"
 #include "kill.h"
@@ -106,10 +107,33 @@ error01:
 	return ret;
 }
 
+int exec_write_input(FILE** stream, str* input)
+{
+	if (fwrite(input->s, 1, input->len, *stream) != input->len) {
+		LM_ERR("failed to write to pipe\n");
+		ser_error=E_EXEC;
+		return -1;
+	}
+
+	if (ferror(*stream)) {
+		LM_ERR("writing pipe: %s\n", strerror(errno));
+		ser_error=E_EXEC;
+		return -1;
+	}
+
+	pclose(*stream);
+
+	return 0;
+}
+
 void exec_async_proc(int rank)
 {
-	int pid, status;
+	#define READ 0
+	#define WRITE 1
+
+	int pid, status, fds[2];
 	exec_cmd_t *cmd, *prev;
+	FILE* stream;
 
 	LM_DBG("started asyncronous process with rank %d\n", rank);
 
@@ -120,14 +144,32 @@ void exec_async_proc(int rank)
 		for (cmd = exec_async_list->first; cmd && cmd->pid; cmd = cmd->next);
 		lock_release(exec_async_list->lock);
 
+		if (cmd && cmd->input.len && cmd->input.s) {
+			if (pipe(fds) != 0) {
+				LM_ERR("failed to create pipe (%d: %s)\n",
+					errno, strerror(errno));
+			}
+		}
+
 		if (cmd) {
 			if ((pid = fork()) < 0) {
 				LM_ERR("failed to fork\n");
 			} else if (pid) {
 				exec_async_list->active_childs++;
 				cmd->pid = pid;
+
+				if (cmd->input.s && cmd->input.len) {
+					close(fds[READ]);
+					stream = fdopen(fds[WRITE], "w");
+					exec_write_input(&stream, &cmd->input);
+				}
+
 				schedule_to_kill(pid);
 			} else {
+				close(fds[WRITE]);
+				dup2(fds[READ], 0);
+				close(fds[READ]);
+
 				LM_DBG("running command %s (%d)\n", cmd->cmd, getpid());
 				execl("/bin/sh", "/bin/sh", "-c", cmd->cmd, NULL);
 
@@ -175,14 +217,23 @@ void exec_async_proc(int rank)
 		if (!exec_async_list->first && !exec_async_list->active_childs)
 			usleep(SLEEP_INTERVAL);
 	}
+
+	#undef READ
+	#undef WRITE
+
 }
 
-int exec_async(struct sip_msg *msg, char *cmd )
+int exec_async(struct sip_msg *msg, char *cmd, str* input)
 {
 	exec_cmd_t *elem;
 
 	/* alloc memory for command */
-	elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1);
+	if (input == NULL)
+		elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1);
+	else
+		elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1
+					+ input->len);
+
 	if (!elem) {
 		LM_ERR("no more shm memory\n");
 		goto error;
@@ -190,6 +241,12 @@ int exec_async(struct sip_msg *msg, char *cmd )
 	memset(elem, 0, sizeof(exec_cmd_t));
 	elem->cmd = (char *)(elem + 1);
 	memcpy(elem->cmd, cmd, strlen(cmd) + 1);
+
+	if (input) {
+		elem->input.s = (char*)elem->cmd + strlen(cmd) + 1;
+		memcpy(elem->input.s, input->s, input->len);
+		elem->input.len = input->len;
+	}
 
 	/* add command in list at the end */
 	lock_get(exec_async_list->lock);
@@ -470,5 +527,121 @@ int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	ret=1;
 
 error:
+	return ret;
+}
+
+
+static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
+{
+	#define MAX_LINE_SIZE 1024
+	#define MAX_BUF_SIZE 32 * MAX_LINE_SIZE
+
+	int buflen=0, tmplen;
+	pv_value_t outval;
+	char buf[MAX_BUF_SIZE], tmpbuf[MAX_LINE_SIZE];
+
+	while((tmplen=fread(tmpbuf, 1, MAX_LINE_SIZE, *strm))) {
+		if ((buflen + tmplen) >= MAX_BUF_SIZE) {
+			LM_WARN("no more space in output buffer\n");
+			break;
+		}
+		memcpy(buf+buflen, tmpbuf, tmplen);
+		buflen += tmplen;
+
+		outval.flags = PV_VAL_STR;
+		outval.rs.s = buf;
+		outval.rs.len = buflen;
+
+		if (buflen &&
+			pv_set_value(msg, &outvar->v.pve->spec, 0, &outval) < 0) {
+			LM_ERR("cannot set output pv value\n");
+			return -1;
+		}
+	}
+
+	return 0;
+
+	#undef MAX_LINE_SIZE
+	#undef MAX_BUF_SIZE
+}
+
+int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gparam_p errvar)
+{
+
+	pid_t pid;
+	int exit_status, ret;
+	FILE *pin, *pout, *perr;
+
+	if (input || outvar || errvar) {
+		pid =  ___popen(command->s, input ? &pin : NULL,
+									outvar ? &pout : NULL,
+									errvar ? &perr : NULL);
+	} else {
+		pid = fork();
+		if (pid == 0) {
+			execl("/bin/sh", "/bin/sh", "-c", command->s, NULL);
+			exit(-1);
+		}
+	}
+
+	if (input->len) {
+		if (fwrite(input->s, 1, input->len, pin) != input->len) {
+			LM_ERR("failed to write to pipe\n");
+			ser_error=E_EXEC;
+			goto error;
+		}
+
+		if (ferror(pin)) {
+			ser_error=E_EXEC;
+			goto error;
+		}
+		pclose(pin);
+	}
+
+	schedule_to_kill(pid);
+	wait(&exit_status);
+
+	if (outvar) {
+		if (read_and_write2var(msg, &pout, outvar) < 0) {
+			LM_ERR("failed reading from pipe\n");
+			return -1;
+		}
+	}
+
+	if (errvar) {
+		if (read_and_write2var(msg, &perr, errvar) < 0) {
+			LM_ERR("failed reading stderr from pipe\n");
+			return -1;
+		}
+	}
+
+	ret=1;
+
+error:
+	if (outvar && ferror(pout)) {
+		LM_ERR("reading pipe: %s\n", strerror(errno));
+		ser_error=E_EXEC;
+		ret=-1;
+	}
+
+	if (errvar && ferror(perr)) {
+		LM_ERR("err pipe: %s\n", strerror(errno));
+		ser_error=E_EXEC;
+		ret=-1;
+	}
+
+	if (outvar)
+		pclose(pout);
+	if (errvar)
+		pclose(perr);
+
+	if (WIFEXITED(exit_status)) {
+		if (WEXITSTATUS(exit_status)!=0) ret=-1;
+	} else {
+		LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
+			command->s, exit_status, errno, strerror(errno));
+		ret=-1;
+	}
+
 	return ret;
 }
