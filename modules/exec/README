@@ -73,6 +73,8 @@ Chapter 1. Admin Guide
        original).
      * SIP_USER is userpart of current request URI.
      * SIP_OUSER is userpart of original request URI.
+     * SIP_REPLY_CODE is the code of the current reply.
+     * SIP_REPLY_REASON is the reason of the current reply.
 
    NOTE: The envirnment variables must be specified with double $
    (e.g., $$SIP_OUSER) in the parameters given to exec functions.
