@@ -50,6 +50,10 @@ struct ld_session {
 	char*                   bind_dn;
 	char*                   bind_pwd;
 	int                     calculate_ha1;
+	char*					cacertfile;
+	char*					certfile;
+	char*					keyfile;
+	char*					req_cert;
 	struct ld_session*      next;
 };
 
@@ -63,6 +67,11 @@ struct ld_session {
 #define CFG_N_LDAP_BIND_PWD "ldap_bind_password"
 #define CFG_N_CALCULATE_HA1 "calculate_ha1"
 
+#define CFG_N_LDAP_CACERTFILE "ldap_ca_cert_file"
+#define CFG_N_LDAP_CERTFILE "ldap_cert_file"
+#define CFG_N_LDAP_KEYFILE "ldap_key_file"
+#define CFG_N_LDAP_REQCERT "ldap_require_certificate"
+
 
 #define CFG_DEF_HOST_NAME ""
 #define CFG_DEF_LDAP_SERVER_URL NULL
@@ -75,6 +84,11 @@ struct ld_session {
 #define CFG_DEF_CALCULATE_HA1 1
 
 #define CFG_LDAP_CLIENT_SEARCH_TIMEOUT_MIN 2000
+
+#define CFG_DEF_LDAP_CACERTFILE ""
+#define CFG_DEF_LDAP_CERTFILE ""
+#define CFG_DEF_LDAP_KEYFILE ""
+#define CFG_DEF_LDAP_REQCERT "NEVER"
 
 extern int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d);
 extern struct ld_session* get_ld_session(char* _name);

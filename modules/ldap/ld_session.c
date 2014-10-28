@@ -43,7 +43,8 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 {
 	struct ld_session* current = ld_sessions;
 	struct ld_session* new_lds = NULL;
-	char *host_name, *bind_dn, *bind_pwd;
+	char *host_name, *bind_dn, *bind_pwd, *bind_cacert, *bind_cert, *bind_key,
+			*bind_req_cert;
 	int client_search_timeout_ms, client_bind_timeout_ms, network_timeout_ms;
 
 	new_lds = (struct ld_session*)pkg_malloc(sizeof(struct ld_session));
@@ -139,11 +140,65 @@ int add_ld_session(char* _name, LDAP* _ldh, dictionary* _d)
 	memset(new_lds->bind_pwd, 0, strlen(bind_pwd)+1);
 	strcpy(new_lds->bind_pwd, bind_pwd);
 
+	/* bind_cacert*/
+	bind_cacert = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_CACERTFILE),
+		CFG_DEF_LDAP_CACERTFILE);
+	new_lds->cacertfile = (char*)pkg_malloc(strlen(bind_cacert)+1);
+	if (new_lds->cacertfile == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->cacertfile, 0, strlen(bind_cacert)+1);
+	strcpy(new_lds->cacertfile, bind_cacert);
+
+	/* bind_certfile */
+	bind_cert = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_CERTFILE),
+		CFG_DEF_LDAP_CERTFILE);
+	new_lds->certfile = (char*)pkg_malloc(strlen(bind_cert)+1);
+	if (new_lds->certfile == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->certfile, 0, strlen(bind_cert)+1);
+	strcpy(new_lds->certfile, bind_cert);
+
+	/* bind_key */
+	bind_key = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_KEYFILE),
+		CFG_DEF_LDAP_KEYFILE);
+	new_lds->keyfile = (char*)pkg_malloc(strlen(bind_key)+1);
+	if (new_lds->keyfile == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->keyfile, 0, strlen(bind_key)+1);
+	strcpy(new_lds->keyfile, bind_key);
+
+	/* bind_req_cert */
+	bind_req_cert = iniparser_getstring(
+		_d,
+		get_ini_key_name(_name, CFG_N_LDAP_REQCERT),
+		CFG_DEF_LDAP_REQCERT);
+	new_lds->req_cert = (char*)pkg_malloc(strlen(bind_req_cert)+1);
+	if (new_lds->req_cert == NULL) {
+		LM_ERR("no memory\n");
+		return -1;
+	}
+	memset(new_lds->req_cert, 0, strlen(bind_req_cert)+1);
+	strcpy(new_lds->req_cert, bind_req_cert);
+
+
 	/* calculate_ha1 */
 	new_lds->calculate_ha1 = iniparser_getboolean(
 		_d,
 		get_ini_key_name(_name, CFG_N_CALCULATE_HA1),
 		CFG_DEF_CALCULATE_HA1);
+
 
 
 	if (current == NULL)

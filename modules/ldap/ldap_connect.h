@@ -36,6 +36,12 @@
 #include "../../str.h"
 #include "../../dprint.h"
 
+#define NEVE 0x4556454E
+#define DEMA 0x414D4544
+#define ALLO 0x4F4C4C41
+#define HARD 0x44524148
+#define  TRY 0x00595254
+
 extern int ldap_connect(char* _ld_name);
 extern int ldap_disconnect(char* _ld_name);
 extern int ldap_reconnect(char* _ld_name);
