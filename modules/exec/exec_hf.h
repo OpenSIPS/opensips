@@ -37,6 +37,8 @@
 #define EV_OUSER SIP "OUSER"
 #define EV_TID SIP "TID"
 #define EV_DID SIP "DID"
+#define EV_REPLY_CODE SIP "REPLY_CODE"
+#define EV_REPLY_REASON SIP "REPLY_REASON"
 /* env var assignment operator */
 #define EV_ASSIGN '='
 /* header field separator */
