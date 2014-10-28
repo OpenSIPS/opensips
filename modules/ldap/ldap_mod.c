@@ -84,6 +84,7 @@ static int w_ldap_result_check_2(struct sip_msg* msg,
 * Default module parameter values
 */
 #define DEF_LDAP_CONFIG "/usr/local/etc/opensips/ldap.cfg"
+#define DEF_REQ_CERT	"NEVER"
 
 /*
 * Module parameter variables
@@ -128,7 +129,7 @@ static cmd_export_t cmds[] = {
 */
 static param_export_t params[] = {
 
-	{"config_file",          STR_PARAM, &ldap_config},
+	{"config_file",          STR_PARAM, &ldap_config.s},
 	{0, 0, 0}
 };
 

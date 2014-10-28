@@ -42,10 +42,83 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 
+static inline int ldap_word2upper(char* input)
+{
+	int index=0;
+
+	while (input[index] == ' ')
+		input++;
+
+	while (input[index] != '\0') {
+		if (input[index] >= 'a' && input[index] <= 'z') {
+			input[index++] -= 32;
+			continue;
+		}
+
+		if (input[index] <= 'A' && input[index] >= 'Z') {
+			LM_ERR("invalid req_cert parameter!"
+					" must contain only letters\n");
+			return -1;
+		}
+
+		index++;
+	}
+
+	return 0;
+}
+
+static inline int get_req_cert_param(char* req_cert)
+{
+	#define DWORD(s) ( *s + (*(s+1) << 8) + (*(s+2) << 16) + (*(s+3) << 24))
+
+	switch (DWORD(req_cert)) {
+		case NEVE:
+			if (*(req_cert+4) != 'R' || *(req_cert+5) != '\0')
+				goto error;
+			return LDAP_OPT_X_TLS_NEVER;
+		case DEMA:
+			if (*(req_cert+4) != 'N' || *(req_cert+5) != 'D' ||
+					*(req_cert+6) != '\0')
+				goto error;
+			return LDAP_OPT_X_TLS_DEMAND;
+		case ALLO:
+			if (*(req_cert+4) != 'W' || *(req_cert+5) != '\0')
+				goto error;
+			return LDAP_OPT_X_TLS_ALLOW;
+		case HARD:
+			if (*(req_cert+4) != '\0')
+				goto error;
+			return LDAP_OPT_X_TLS_HARD;
+		case  TRY:
+			return LDAP_OPT_X_TLS_TRY;
+		default	 :
+			goto error;
+
+	}
+
+error:
+	LM_ERR("invalid req_cert parameter [%s]!"
+		"OPTIONS: NEVER|DEMAND|ALLOW|HARD|TRY\n", req_cert);
+	return -1;
+	#undef DWORD
+}
+
+
 int ldap_connect(char* _ld_name)
 {
+	#define W_SET_OPTION(handle, opt, str, name) \
+		do { \
+			if (ldap_set_option( handle, opt, str) \
+				!= LDAP_OPT_SUCCESS) { \
+				LM_ERR("[%s]: could not set " # opt " [%s]\n" \
+						, name, str); \
+				return -1; \
+			} \
+		} while (0);
+
 	int rc;
 	int ldap_proto_version;
+	int req_cert_value;
 	struct ld_session* lds;
 	struct berval ldap_cred;
 	struct berval* ldap_credp;
@@ -175,6 +248,47 @@ int ldap_connect(char* _ld_name)
 	    ldap_credp = NULL;
 	}else{
 	    ldap_credp = &ldap_cred;
+	}
+
+	/* configure tls */
+	if (*lds->cacertfile && *lds->certfile && *lds->keyfile) {
+
+		W_SET_OPTION(lds->handle, LDAP_OPT_X_TLS_CACERTFILE,
+				lds->cacertfile, _ld_name);
+
+		W_SET_OPTION(lds->handle, LDAP_OPT_X_TLS_CERTFILE,
+				lds->certfile, _ld_name);
+
+		W_SET_OPTION(lds->handle, LDAP_OPT_X_TLS_KEYFILE,
+				lds->keyfile, _ld_name);
+
+		if (ldap_word2upper(lds->req_cert) != 0)
+			return -1;
+
+		if ((req_cert_value = get_req_cert_param(lds->req_cert)) < 0)
+			return -1;
+
+		if (ldap_set_option( lds->handle, LDAP_OPT_X_TLS_REQUIRE_CERT,
+					&req_cert_value) != LDAP_OPT_SUCCESS) {
+				LM_ERR("[%s]: could not set LDAP_OPT_X_TLS_REQUIRE_CERT [%s]\n"
+						, _ld_name, lds->req_cert);
+				return -1;
+		}
+
+		int ret =
+		ldap_start_tls_s(lds->handle, NULL, NULL);
+		if (ret != LDAP_SUCCESS) {
+			LM_ERR("ERROR %d %s\n", ret, ldap_err2string(ret));
+			LM_ERR("cannot start tls! Check certificates and"
+				" keyfile path and access rights\n");
+			return -1;
+		}
+
+		LM_INFO("Using StartTLS for session [%s]\n", _ld_name);
+	} else if (*lds->cacertfile || *lds->certfile || *lds->keyfile) {
+		LM_WARN("ldap_ca_certfile, ldap_cert_file and ldap_key_file"
+				" must be set in order to use StartTLS. "
+				"No StartTLS configured!\n");
 	}
 
 	/*
