@@ -51,7 +51,7 @@ int schedule_to_kill( int pid );
  * @stream: stream to be returned to the caller
  */
 pid_t __popen(const char *cmd, const char *type, FILE **stream);
-pid_t __rw_popen(const char *cmd, FILE **stream_in, FILE** stream_out);
+pid_t ___popen(const char *cmd, FILE **, FILE**, FILE**);
 
 
 #endif

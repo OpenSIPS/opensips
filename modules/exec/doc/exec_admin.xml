@@ -334,7 +334,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 
 	<section>
 		<title>
-		<function moreinfo="none">exec(command, [output], [input], [envavp])</function>
+		<function moreinfo="none">exec(command, [output], [input], [error],[envavp])</function>
 		</title>
 		<para>
 		Executes an external command. The input is passed to the standard input of the new
@@ -349,13 +349,18 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		</listitem>
 		<listitem>
 			<para><emphasis>output</emphasis> - pseudovariable where to store the output
-			from the standard output of the command. Keep in mind that if this parameter
+			from the standard output of the process. Keep in mind that if this parameter
 			is set, the async paramater will not be taken in consideration.
 			</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>input</emphasis> - String to be passed to the standard input
 			of the command. The string can be given as a pseudovariable.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>error</emphasis> - pseudovariable where to store the error from
+			the standard error of the process.
 			</para>
 		</listitem>
 		<listitem>
@@ -370,6 +375,11 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		<para>
 		WARNING: any OpenSIPS pseudo-vars which may contain special bash
 		characters should be placed inside quotes, e.g. exec("update-stats.sh '$ct'");
+		</para>
+		<para>
+		WARNING: "input"/"output"/"error" parameters are not designed for a large amount of
+		data so one should be careful when using them because server could considerably be
+		slowed down.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,

@@ -164,48 +164,78 @@ pid_t __popen(const char *cmd, const char *type, FILE **stream)
 	return ret;
 }
 
-pid_t __rw_popen(const char* cmd, FILE** stream_in, FILE** stream_out)
+pid_t ___popen(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
 {
-	#define READ  0
-	#define WRITE 1
+#define OPEN_PIPE(strm, fds) \
+	do { \
+		if (strm) { \
+			if (pipe(fds) != 0) { \
+				LM_ERR("failed to create reading pipe (%d: %s)\n", \
+							errno, strerror(errno)); \
+				return -1; \
+			} \
+		} \
+	} while (0);
+
+/*
+ * cl - pipe end to be closed
+ * op - pipe end to be redirected
+ * re - fds where to redirect 'op'
+ */
+#define CLOSE_AND_REDIRECT(strm, fds, cl, op, re) \
+	do { \
+		if (strm) { \
+			close(fds[cl]); \
+			dup2(fds[op], re); \
+			close(fds[op]); \
+		} \
+	} while (0);
+
+#define CLOSE_END_AND_OPEN_STREAM(strm, way, fds, end2close) \
+	do { \
+		if (strm) { \
+			close(fds[end2close]); \
+			*strm = fdopen(fds[(1^end2close)], way); \
+		} \
+	}while (0);
 
 	pid_t ret;
-	int r_fds[2], w_fds[2];
+	int r_fds[2], w_fds[2], e_fds[2];
 
-	if (pipe(r_fds) != 0) {
-		LM_ERR("failed to create reading pipe (%d: %s)\n", errno, strerror(errno));
-		return -1;
+	if (strm_r == NULL && strm_w == NULL && strm_e == NULL) {
+		LM_WARN("no descriptor redirect required\n");
 	}
 
-	if (pipe(w_fds) != 0) {
-		LM_ERR("failed to writing create pipe (%d: %s)\n", errno, strerror(errno));
-		return -1;
-	}
+	OPEN_PIPE(strm_w, w_fds);
+	OPEN_PIPE(strm_r, r_fds);
+	OPEN_PIPE(strm_e, e_fds);
 
-	ret = fork();
-	if (ret == 0) {
-		/* reading pipe */
-		close(r_fds[READ]);
-		dup2(r_fds[WRITE], 1);
-		close(r_fds[WRITE]);
+	ret=fork();
 
-		/* writing pipe */
-		close(w_fds[WRITE]);
-		dup2(w_fds[READ], 0);
-		close(w_fds[READ]);
+	if (ret==0) {
+		/* write pipe */
+		CLOSE_AND_REDIRECT(strm_w, w_fds, 1, 0 ,0);
+
+		/* read pipe  */
+		CLOSE_AND_REDIRECT(strm_r, r_fds, 0, 1, 1);
+
+		/* error pipe */
+		CLOSE_AND_REDIRECT(strm_e, e_fds, 0, 1, 2);
 
 		execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
 
 		exit(-1);
 	}
 
-	close(w_fds[READ]);
-	*stream_in = fdopen(w_fds[WRITE], "w");
-
-	close(r_fds[WRITE]);
-	*stream_out = fdopen(r_fds[READ], "r");
+	CLOSE_END_AND_OPEN_STREAM(strm_w, "w", w_fds, 0);
+	CLOSE_END_AND_OPEN_STREAM(strm_r, "r", r_fds, 1);
+	CLOSE_END_AND_OPEN_STREAM(strm_e, "r", e_fds, 1);
 
 	return ret;
+
+#undef OPEN_PIPE
+#undef CLOSE_AND_REDIRECT
+#undef CLOSE_AND_OPEN_STREAM
 
 }
 

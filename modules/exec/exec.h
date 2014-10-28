@@ -52,7 +52,7 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len);
 int exec_msg(struct sip_msg *msg, char *cmd );
 int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl);
 int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl);
-int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar);
+int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gparam_p errvar);
 
 #endif
 

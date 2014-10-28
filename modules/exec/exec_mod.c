@@ -56,7 +56,7 @@ inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
 inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
-inline static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* avp_env);
+inline static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* err, char* avp_env);
 
 static int exec_avp_fixup(void** param, int param_no);
 static int exec_fixup(void** param, int param_no);
@@ -77,7 +77,7 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
 	{"exec_getenv",  (cmd_function)w_exec_getenv,  2, exec_avp_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
-	{"exec",  (cmd_function)w_exec,  4, exec_fixup, 0,
+	{"exec",  (cmd_function)w_exec,  5, exec_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -337,6 +337,7 @@ static int exec_fixup(void** param, int param_no)
 		case 1: /* cmd */
 			return fixup_spve(param);
 		case 2: /* output var */
+		case 4: /* error  var */
 			if (fixup_spve(param)) {
 				LM_ERR("cannot fix output var\n");
 				return -1;
@@ -366,7 +367,7 @@ static int exec_fixup(void** param, int param_no)
 			*param = (void *)model;
 
 			return 0;
-		case 4: /* environment avp */
+		case 5: /* environment avp */
 			if (fixup_spve(param)) {
 				LM_ERR("cannot fix output var\n");
 				return -1;
@@ -475,10 +476,8 @@ memerr:
 }
 
 
-static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* avp_env)
+static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* err ,char* avp_env)
 {
-	#define MAX_LINE_SIZE 1024
-	#define MAX_BUF_SIZE 128 * MAX_LINE_SIZE
 
 	str command;
 	str input = {NULL, 0};
@@ -486,6 +485,7 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* avp
 	struct hf_wrapper *hf=0;
 	environment_t* backup_env=0;
 	gparam_p outvar = (gparam_p)out;
+	gparam_p errvar = (gparam_p)err;
 
 
 	if (msg == 0 || cmd == 0)
@@ -519,7 +519,7 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* avp
 	if (!out && async) {
 		ret = exec_async(msg, command.s, &input);
 	} else {
-		ret = exec_sync(msg, &command, &input, outvar);
+		ret = exec_sync(msg, &command, &input, outvar, errvar);
 	}
 
 	if (backup_env)
