@@ -439,38 +439,51 @@ static int append_fixed_vars(struct sip_msg *msg, struct hf_wrapper **list)
 		return 0;
 	}
 	/* request URI */
-	uri=msg->new_uri.s && msg->new_uri.len ?
-		&msg->new_uri : &msg->first_line.u.request.uri;
-	if (!append_var(EV_RURI, uri->s, uri->len, list )) {
-		LM_ERR("append_var URI failed\n");
-		return 0;
-	}
-	/* userpart of request URI */
-	if (parse_uri(uri->s, uri->len, &parsed_uri)<0) {
-		LM_WARN("uri not parsed\n");
-	} else {
-		if (!append_var(EV_USER, parsed_uri.user.s,
-					parsed_uri.user.len, list)) {
-			LM_ERR("append_var USER failed\n");
+	if (msg->first_line.type == SIP_REQUEST) {
+		uri=msg->new_uri.s && msg->new_uri.len ?
+			&msg->new_uri : &msg->first_line.u.request.uri;
+		if (!append_var(EV_RURI, uri->s, uri->len, list )) {
+			LM_ERR("append_var URI failed\n");
+			return 0;
+		}
+		/* userpart of request URI */
+		if (parse_uri(uri->s, uri->len, &parsed_uri)<0) {
+			LM_WARN("uri not parsed\n");
+		} else {
+			if (!append_var(EV_USER, parsed_uri.user.s,
+						parsed_uri.user.len, list)) {
+				LM_ERR("append_var USER failed\n");
+				goto error;
+			}
+		}
+		/* original URI */
+		if (!append_var(EV_ORURI, msg->first_line.u.request.uri.s,
+					msg->first_line.u.request.uri.len, list)) {
+			LM_ERR("append_var O-URI failed\n");
 			goto error;
 		}
-	}
-	/* original URI */
-	if (!append_var(EV_ORURI, msg->first_line.u.request.uri.s,
-				msg->first_line.u.request.uri.len, list)) {
-		LM_ERR("append_var O-URI failed\n");
-		goto error;
-	}
-	/* userpart of request URI */
-	if (parse_uri(msg->first_line.u.request.uri.s,
-				msg->first_line.u.request.uri.len,
-				&oparsed_uri)<0) {
-		LM_WARN("orig URI not parsed\n");
+		/* userpart of request URI */
+		if (parse_uri(msg->first_line.u.request.uri.s,
+					msg->first_line.u.request.uri.len,
+					&oparsed_uri)<0) {
+			LM_WARN("orig URI not parsed\n");
+		} else {
+			if (!append_var(EV_OUSER, oparsed_uri.user.s,
+						oparsed_uri.user.len, list)) {
+				LM_ERR("ppend_var OUSER failed\n");
+				goto error;
+			}
+		}
 	} else {
-		if (!append_var(EV_OUSER, oparsed_uri.user.s,
-					oparsed_uri.user.len, list)) {
-			LM_ERR("ppend_var OUSER failed\n");
-			goto error;
+		if (!append_var(EV_REPLY_CODE, msg->first_line.u.reply.status.s,
+					msg->first_line.u.reply.status.len, list )) {
+			LM_ERR("append_var REPLY_CODE failed\n");
+			return 0;
+		}
+		if (!append_var(EV_REPLY_REASON, msg->first_line.u.reply.reason.s,
+					msg->first_line.u.reply.reason.len, list )) {
+			LM_ERR("append_var REPLY_REASON failed\n");
+			return 0;
 		}
 	}
 	/* tid, transaction id == via/branch */

@@ -62,6 +62,16 @@
 			SIP_OUSER is userpart of original request &uri;.
 		</para>
 		</listitem>
+		<listitem>
+		<para>
+			SIP_REPLY_CODE is the code of the <emphasis>current</emphasis> reply.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			SIP_REPLY_REASON is the reason of the <emphasis>current</emphasis> reply.
+		</para>
+		</listitem>
 	</itemizedlist>
 	<para>
 		NOTE: Any environment variables which are given to the exec module
