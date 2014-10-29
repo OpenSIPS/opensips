@@ -37,7 +37,7 @@ CREATE TABLE dr_carriers (
     carrierid VARCHAR(64) NOT NULL,
     gwlist VARCHAR(255) NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
-    sort_alg SMALLINT DEFAULT 0 NOT NULL,
+    sort_alg VARCHAR(1) DEFAULT 0 NOT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
     description VARCHAR(128) DEFAULT NULL,

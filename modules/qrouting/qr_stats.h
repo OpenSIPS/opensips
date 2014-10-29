@@ -46,7 +46,8 @@
 #define MIN_DEST 4
 
 
-int qr_n; /* number of intervals in history */
+extern int* qr_n; /* number of intervals in history */
+extern int* n_sampled;
 
 /* number of calls accounted for each statistic */
 typedef struct qr_n_calls {
@@ -86,7 +87,6 @@ typedef struct qr_thresholds {
 /* history for gateway: sum of sampled intervals */
 typedef struct qr_gw {
 	qr_sample_t * next_interval; /* sampled intervals */
-	int n_sampled; /* number of intervals sampled */
 	void  *dr_gw; /* pointer to the gateway from drouting*/
 	qr_stats_t current_interval; /* the current interval */
 	qr_stats_t history_stats; /* the statistcs for all the intervals */

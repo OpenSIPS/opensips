@@ -1,2 +1,1 @@
 id(int,auto) name(string) domain(string) flag(int) 
-imc_rooms:2

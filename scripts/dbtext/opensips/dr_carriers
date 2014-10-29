@@ -1,2 +1,1 @@
-id(int,auto) carrierid(string) gwlist(string) flags(int) sort_alg(int) state(int) attrs(string,null) description(string) 
-dr_carriers:3
+id(int,auto) carrierid(string) gwlist(string) flags(int) sort_alg(string) state(int) attrs(string,null) description(string) 

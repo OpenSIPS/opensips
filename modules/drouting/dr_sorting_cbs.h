@@ -81,7 +81,7 @@ struct dr_acc_call_params {
 
 struct dr_sort_params {
 	rt_info_t *dr_rule; /* dr_rule which contains the dst to be sorted */
-	int dst_id; /* the size of pgwl */
+	unsigned short dst_id; /* the size of pgwl */
 	unsigned short *sorted_dst; /* returns an array with the indexes of the sorted dest */
 	int rc; /* return code for the funciton */
 };

@@ -55,6 +55,7 @@ struct head_db {
 	str drc_table; /* drc_table name extracted from database */
 	str drg_table; /* drg_table name extracted from database */
 	time_t time_last_update;
+	int acc_call_params_avp;
 	int avpID_store_ruri;       /* from parse_avp_spec */
 	int avpID_store_prefix;    /* from parse_avp_spec */
 	int avpID_store_index;     /* from parse_avp_spec */

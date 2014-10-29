@@ -1,2 +1,1 @@
 id(int,auto) uuid(string) username(string) domain(string) attribute(string) type(int) value(string) last_modified(int) 
-usr_preferences:3

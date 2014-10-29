@@ -50,6 +50,9 @@ static int sampling_interval = 5; /* the sampling interval in seconds */
 str db_url;
 int *n_qr_profiles = 0;
 qr_thresholds_t **qr_profiles = 0;
+int * qr_n;
+int * n_sampled;
+
 
 /* avps */
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
@@ -110,8 +113,14 @@ static int qr_init(void){
 	db_con_t *qr_db_hdl = 0;
 	register_timer_process(T_PROC_LABEL, (void*)timer_func, NULL,
 			sampling_interval, 0);
-	qr_n = (history * 60)/sampling_interval; /* the number of sampling
+
+	qr_n = (int*)shm_malloc(sizeof(int));
+	/*TODO history in minutes */
+	*qr_n = (history*60)/sampling_interval; /* the number of sampling
 												intervals in history */
+
+	n_sampled = (int*)shm_malloc(sizeof(int));
+	*n_sampled = 0;
 
 	if(db_url.s != NULL) {
 		db_url.len = strlen(db_url.s);
@@ -261,6 +270,10 @@ static int qr_exit(void) {
 static void timer_func(void) {
 	qr_rule_t *it;
 	int i;
+
+	if(*n_sampled < *qr_n) {
+		++(*n_sampled); /* the number of intervals sampled */
+	}
 
 	for(it = *qr_rules_start; it != NULL; it = it->next) {
 		for(i = 0; i < it->n; i++) {

@@ -67,6 +67,6 @@ void qr_score(qr_gw_t *gw, qr_thresholds_t * thresholds);/*
  */
 void qr_sort(int type, struct dr_cb_params *params);
 int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
-		int dst_id);
+		int cr_id, int gw_id);
 #endif
 
