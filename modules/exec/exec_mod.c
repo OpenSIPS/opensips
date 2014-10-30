@@ -56,7 +56,7 @@ inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
 inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
-inline static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* err, char* avp_env);
+inline static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err, char* avp_env);
 
 static int exec_avp_fixup(void** param, int param_no);
 static int exec_fixup(void** param, int param_no);
@@ -337,7 +337,19 @@ static int exec_fixup(void** param, int param_no)
 	switch (param_no) {
 		case 1: /* cmd */
 			return fixup_spve(param);
-		case 2: /* output var */
+		case 2: /* input vars */
+			s.s = *param;
+			s.len = strlen(s.s);
+			if (pv_parse_format(&s, &model)) {
+				LM_ERR("wrong format [%s] for param no %d!\n",
+						(char*)*param, param_no);
+				pkg_free(s.s);
+				return E_UNSPEC;
+			}
+			*param = (void *)model;
+
+			return 0;
+		case 3: /* output var */
 		case 4: /* error  var */
 			if (fixup_spve(param)) {
 				LM_ERR("cannot fix output var\n");
@@ -354,18 +366,6 @@ static int exec_fixup(void** param, int param_no)
 				LM_ERR("output var must be writable\n");
 				return -1;
 			}
-
-			return 0;
-		case 3: /* input vars */
-			s.s = *param;
-			s.len = strlen(s.s);
-			if (pv_parse_format(&s, &model)) {
-				LM_ERR("wrong format [%s] for param no %d!\n",
-						(char*)*param, param_no);
-				pkg_free(s.s);
-				return E_UNSPEC;
-			}
-			*param = (void *)model;
 
 			return 0;
 		case 5: /* environment avp */
@@ -477,7 +477,7 @@ memerr:
 }
 
 
-static int w_exec(struct sip_msg* msg, char* cmd, char* out, char* in, char* err ,char* avp_env)
+static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err ,char* avp_env)
 {
 
 	str command;

@@ -67,7 +67,7 @@ int exec_msg(struct sip_msg *msg, char *cmd )
 	pid_t pid;
 
 	ret=-1; /* pessimist: assume error */
-	pid = __popen(cmd, "w", &pipe);
+	pid = __popen3(cmd, &pipe, NULL, NULL);
 	if (pid < 0) {
 		LM_ERR("cannot open pipe: %s\n", cmd);
 		ser_error=E_EXEC;
@@ -305,7 +305,7 @@ int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 		cmd_line[l1] = 0;
 	}
 
-	pid = __popen(cmd_line, "r", &pipe);
+	pid = __popen3(cmd_line, NULL, &pipe, NULL);
 	if (pid < 0) {
 		LM_ERR("failed to run command: %s\n", cmd_line);
 		ser_error=E_EXEC;
@@ -388,7 +388,7 @@ int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
 	/* pessimist: assume error by default */
 	ret=-1;
 
-	pid = __popen(cmd, "r", &pipe);
+	pid = __popen3(cmd, NULL, &pipe, NULL);
 	if (pid < 0) {
 		LM_ERR("failed to run command: %s\n", cmd);
 		ser_error=E_EXEC;

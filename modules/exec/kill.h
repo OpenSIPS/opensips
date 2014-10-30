@@ -44,14 +44,14 @@ int initialize_kill();
 int schedule_to_kill( int pid );
 
 /**
- * __popen - a wrapper function over execvp
+ * __popen3 - a wrapper function over execl
  *
  * @cmd:    the command string to be executed
- * @type:   denotes a read-only or write-only stream
- * @stream: stream to be returned to the caller
+ * @strm_w: stream to STDIN of cmd process
+ * @strm_r: stream to STDOUT of cmd process
+ * @strm_w: stream to STDERR of cmd process
  */
-pid_t __popen(const char *cmd, const char *type, FILE **stream);
-pid_t __popen3(const char *cmd, FILE **, FILE**, FILE**);
+pid_t __popen3(const char *cmd, FILE **strm_w, FILE** strm_r, FILE** strm_e);
 
 
 #endif

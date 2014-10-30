@@ -116,54 +116,6 @@ static void timer_routine(unsigned int ticks , void * attr)
 	}
 }
 
-pid_t __popen(const char *cmd, const char *type, FILE **stream)
-{
-	#define READ  0
-	#define WRITE 1
-
-	pid_t ret;
-	int fds[2];
-
-	if (*type != 'r' && *type != 'w')
-		return -1;
-
-	if (pipe(fds) != 0) {
-		LM_ERR("failed to create pipe (%d: %s)\n", errno, strerror(errno));
-		return -1;
-	}
-
-	ret = fork();
-
-	if (ret == 0) {
-
-		if (*type == 'r') {
-			close(fds[READ]);
-			dup2(fds[WRITE], 1);
-			close(fds[WRITE]);
-		} else {
-			close(fds[WRITE]);
-			dup2(fds[READ], 0);
-			close(fds[READ]);
-		}
-
-		execl("/bin/sh", "/bin/sh", "-c", cmd, NULL);
-
-		exit(-1);
-	}
-
-	if (*type == 'r') {
-		close(fds[WRITE]);
-		if (stream)
-			*stream = fdopen(fds[READ], "r");
-	} else {
-		close(fds[READ]);
-		if (stream)
-			*stream = fdopen(fds[WRITE], "w");
-	}
-
-	return ret;
-}
-
 pid_t __popen3(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
 {
 #define OPEN_PIPE(strm, fds) \

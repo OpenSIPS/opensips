@@ -339,7 +339,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 
 	<section>
 		<title>
-		<function moreinfo="none">exec(command, [stdout], [stdin], [stderr], [envavp])</function>
+		<function moreinfo="none">exec(command, [stdin], [stdout], [stderr], [envavp])</function>
 		</title>
 		<para>
 		Executes an external command. The input is passed to the standard input of the new
@@ -353,14 +353,14 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>stdout</emphasis> - pseudovariable where to store the output
-			from the standard output of the process. Keep in mind that if this parameter
-			is set, the async paramater will not be taken in consideration.
+			<para><emphasis>stdin</emphasis> - String to be passed to the standard input
+			of the command. The string can be given as a pseudovariable.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>stdin</emphasis> - String to be passed to the standard input
-			of the command. The string can be given as a pseudovariable.
+			<para><emphasis>stdout</emphasis> - pseudovariable where to store the output
+			from the standard output of the process. Keep in mind that if this parameter
+			is set, the async paramater will not be taken in consideration.
 			</para>
 		</listitem>
 		<listitem>
@@ -396,12 +396,12 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 $avp(env) = "a";
 $avp(env) = "b";
-exec("ls -l", "$var(out)",,"$var(err)", "$avp(env)");
+exec("ls -l", , "$var(out)", "$var(err)", "$avp(env)");
 xlog("The output is $var(out)\n");
 xlog("Received the following error\n$var(err)");
 ...
 $var(input) = "input";
-exec("/home/../myscript.sh",, "this is my $var(input) for exec\n",, "$avp(env)");
+exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , "$avp(env)");
 ...
 </programlisting>
 		</example>
