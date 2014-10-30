@@ -60,6 +60,7 @@
 #include "usr_avp.h"
 #include "core_stats.h"
 #include "ut.h"
+#include "context.h"
 
 
 #include "tcp_server.h" /* for tcpconn_add_alias */
@@ -102,7 +103,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	/* update the length for further processing */
 	len = in_buff.len;
 
-	msg=pkg_malloc(sizeof(struct sip_msg));
+	msg=pkg_malloc(sizeof(struct sip_msg) + context_size(CONTEXT_MSG));
 	if (msg==0) {
 		LM_ERR("no pkg mem left for sip_msg\n");
 		goto error;
