@@ -77,7 +77,7 @@
 #include "t_fifo.h"
 #include "mi.h"
 #include "tm_load.h"
-#include "async.h"
+#include "t_ctx.h"
 
 
 /* item functions */
@@ -654,6 +654,19 @@ int load_tm( struct tm_binds *tmb)
 	tmb->print_dlg = print_dlg;
 	tmb->setlocalTholder = setlocalTholder;
 	tmb->get_branch_index = get_branch_index;
+
+	/* tm context functions */
+	tmb->t_ctx_register_int = t_ctx_register_int;
+	tmb->t_ctx_register_str = t_ctx_register_str;
+	tmb->t_ctx_register_ptr = t_ctx_register_ptr;
+
+	tmb->t_ctx_put_int = t_ctx_put_int;
+	tmb->t_ctx_put_str = t_ctx_put_str;
+	tmb->t_ctx_put_ptr = t_ctx_put_ptr;
+
+	tmb->t_ctx_get_int = t_ctx_get_int;
+	tmb->t_ctx_get_str = t_ctx_get_str;
+	tmb->t_ctx_get_ptr = t_ctx_get_ptr;
 
 	return 1;
 }
