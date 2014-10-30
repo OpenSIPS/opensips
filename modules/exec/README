@@ -99,10 +99,13 @@ Chapter 1. Admin Guide
 
 1.3.1. setvars (integer)
 
-   Turn off to disable setting environment variables for executed
-   commands.
+   Set to 1 to enable setting all above-mentioned environment
+   variables for all executed commands.
 
-   Default value is 1.
+   WARNING: Before enabling this parameter, make sure your
+   "/bin/sh" is safe from the Shellshock bash vulnerability!!!
+
+   Default value is 0 (disabled).
 
    Example 1.1. Set “setvars” parameter
 ...

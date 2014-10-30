@@ -344,7 +344,7 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	if (sca_db_mode==DB_MODE_REALTIME &&  (rank>=0 || rank==PROC_TIMER || rank==PROC_MODULE)) {
+	if (sca_db_mode==DB_MODE_REALTIME &&  (rank>PROC_MAIN || rank==PROC_MODULE)) {
 		if (connect_sca_db(&db_url)) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;
@@ -438,7 +438,7 @@ struct to_body* get_appearance_name_addr(struct sip_msg* msg)
 			//LM_DBG("got PV_SPEC appearance_name_addr [%.*s]\n",
 			//	appearance_name_addr_tok.rs.len, appearance_name_addr_tok.rs.s);
 			if(appearance_name_addr_tok.rs.len+CRLF_LEN > APPEARANCE_NAME_ADDR_BUF_LEN) {
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				return NULL;
 			}
 			trim(&appearance_name_addr_tok.rs);

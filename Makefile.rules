@@ -1,6 +1,4 @@
 #
-# $Id$
-#
 #
 # common Makefile rules, included by main Makefile & the  modules
 #

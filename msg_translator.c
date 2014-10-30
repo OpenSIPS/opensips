@@ -327,7 +327,7 @@ char* clen_builder(struct sip_msg* msg, int *clen_len, int diff)
 	int len, value, value_len;
 	str body;
 
-	if ( (get_body(msg,&body)!=0) || body.len==0 ) {
+	if ( (get_body(msg,&body)!=0) ) {
 		ser_error=E_BAD_REQ;
 		LM_ERR("no message body found (missing crlf?)");
 		return 0;

@@ -374,6 +374,7 @@ extern char *finame;
 %token CHROOT
 %token WDIR
 %token MHOMED
+%token POLL_METHOD
 %token DISABLE_TCP
 %token ASYNC_TCP
 %token ASYNC_TCP_LOCAL_CON_TIMEOUT
@@ -385,7 +386,6 @@ extern char *finame;
 %token TCP_SEND_TIMEOUT
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
-%token TCP_POLL_METHOD
 %token TCP_MAX_CONNECTIONS
 %token TCP_OPT_CRLF_PINGPONG
 %token TCP_NO_NEW_CONN_BFLAG
@@ -405,8 +405,6 @@ extern char *finame;
 %token TLS_CLIENT_DOMAIN
 %token TLS_CLIENT_DOMAIN_AVP
 %token SSLv23
-%token SSLv2
-%token SSLv3
 %token TLSv1
 %token TLSv1_2
 %token TLS_VERIFY_CLIENT
@@ -778,6 +776,27 @@ assign_stm: DEBUG EQUAL snumber {
 		| WDIR EQUAL error      { yyerror("string value expected"); }
 		| MHOMED EQUAL NUMBER { mhomed=$3; }
 		| MHOMED EQUAL error { yyerror("boolean value expected"); }
+		| POLL_METHOD EQUAL ID {
+									io_poll_method=get_poll_type($3);
+									if (io_poll_method==POLL_NONE){
+										LM_CRIT("bad poll method name:"
+											" %s\n, try one of %s.\n",
+											$3, poll_support);
+										yyerror("bad poll_method "
+											"value");
+									}
+								}
+		| POLL_METHOD EQUAL STRING {
+									io_poll_method=get_poll_type($3);
+									if (io_poll_method==POLL_NONE){
+										LM_CRIT("bad poll method name:"
+											" %s\n, try one of %s.\n",
+											$3, poll_support);
+										yyerror("bad poll_method "
+											"value");
+									}
+									}
+		| POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
 		| DISABLE_TCP EQUAL NUMBER {
 									#ifdef USE_TCP
 										tcp_disable=$3;
@@ -866,35 +885,6 @@ assign_stm: DEBUG EQUAL snumber {
 									#endif
 									}
 		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
-		| TCP_POLL_METHOD EQUAL ID {
-									#ifdef USE_TCP
-										tcp_poll_method=get_poll_type($3);
-										if (tcp_poll_method==POLL_NONE){
-											LM_CRIT("bad poll method name:"
-												" %s\n, try one of %s.\n",
-												$3, poll_support);
-											yyerror("bad tcp_poll_method "
-												"value");
-										}
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| TCP_POLL_METHOD EQUAL STRING {
-									#ifdef USE_TCP
-										tcp_poll_method=get_poll_type($3);
-										if (tcp_poll_method==POLL_NONE){
-											LM_CRIT("bad poll method name:"
-												" %s\n, try one of %s.\n",
-												$3, poll_support);
-											yyerror("bad tcp_poll_method "
-												"value");
-										}
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| TCP_POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
 		| TCP_MAX_CONNECTIONS EQUAL NUMBER {
 									#ifdef USE_TCP
 										tcp_max_connections=$3;
@@ -1028,26 +1018,6 @@ assign_stm: DEBUG EQUAL snumber {
 										warn("tls support not compiled in");
 									#endif
 									}
-		| TLS_METHOD EQUAL SSLv2 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_SSLv2;
-										tls_default_client_domain->method =
-											TLS_USE_SSLv2;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
-		| TLS_METHOD EQUAL SSLv3 {
-									#ifdef USE_TLS
-										tls_default_server_domain->method =
-											TLS_USE_SSLv3;
-										tls_default_client_domain->method =
-											TLS_USE_SSLv3;
-									#else
-										warn("tls support not compiled in");
-									#endif
-									}
 		| TLS_METHOD EQUAL TLSv1 {
 									#ifdef USE_TLS
 										tls_default_server_domain->method =
@@ -1070,8 +1040,7 @@ assign_stm: DEBUG EQUAL snumber {
 									}
 		| TLS_METHOD EQUAL error {
 									#ifdef USE_TLS
-										yyerror("SSLv23, SSLv2, SSLv3, TLSv1 or TLSv1_2"
-													" expected");
+										yyerror("SSLv23, TLSv1 or TLSv1_2 expected");
 									#else
 										warn("tls support not compiled in");
 									#endif
@@ -1564,20 +1533,6 @@ tls_server_var : TLS_METHOD EQUAL SSLv23 {
 									warn("tls support not compiled in");
 						#endif
 								}
-	| TLS_METHOD EQUAL SSLv2 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_SSLv2;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL SSLv3 { 
-						#ifdef USE_TLS
-									tls_server_domains->method=TLS_USE_SSLv3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
 	| TLS_METHOD EQUAL TLSv1 { 
 						#ifdef USE_TLS
 									tls_server_domains->method=TLS_USE_TLSv1;
@@ -1592,7 +1547,7 @@ tls_server_var : TLS_METHOD EQUAL SSLv23 {
 									warn("tls support not compiled in");
 						#endif
 								}
-	| TLS_METHOD EQUAL error { yyerror("SSLv23, SSLv2, SSLv3, TLSv1 or TLSV1_2 expected"); }
+	| TLS_METHOD EQUAL error { yyerror("SSLv23, TLSv1 or TLSV1_2 expected"); }
 	| TLS_CERTIFICATE EQUAL STRING { 
 						#ifdef USE_TLS
 									tls_server_domains->cert_file=$3;
@@ -1677,20 +1632,6 @@ tls_client_var : TLS_METHOD EQUAL SSLv23 {
 									warn("tls support not compiled in");
 						#endif
 								}
-	| TLS_METHOD EQUAL SSLv2 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_SSLv2;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
-	| TLS_METHOD EQUAL SSLv3 { 
-						#ifdef USE_TLS
-									tls_client_domains->method=TLS_USE_SSLv3;
-						#else
-									warn("tls support not compiled in");
-						#endif
-								}
 	| TLS_METHOD EQUAL TLSv1 { 
 						#ifdef USE_TLS
 									tls_client_domains->method=TLS_USE_TLSv1;
@@ -1706,7 +1647,7 @@ tls_client_var : TLS_METHOD EQUAL SSLv23 {
 						#endif
 								}
 	| TLS_METHOD EQUAL error {
-						yyerror("SSLv23, SSLv2, SSLv3, TLSv1 or TLSv1_2 expected"); }
+						yyerror("SSLv23, TLSv1 or TLSv1_2 expected"); }
 	| TLS_CERTIFICATE EQUAL STRING { 
 						#ifdef USE_TLS
 									tls_client_domains->cert_file=$3;

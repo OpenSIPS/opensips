@@ -355,7 +355,7 @@ static int mod_init(void)
 
 	/* Load dialog API */
 	if (load_dlg_api(&lb_dlg_binds) != 0) {
-		LM_ERR("Can't load dialog hooks");
+		LM_ERR("Can't load dialog hooks\n");
 		return -1;
 	}
 
@@ -409,7 +409,7 @@ static int mod_init(void)
 
 		/* register pinger function */
 		if (register_timer( "lb-pinger", lb_prob_handler , NULL,
-		lb_prob_interval)<0) {
+		lb_prob_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register probing handler\n");
 			return -1;
 		}

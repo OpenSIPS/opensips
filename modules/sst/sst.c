@@ -195,7 +195,7 @@ static int mod_init(void)
 	 * Register the main (static) dialog call back.
 	 */
 	if (load_dlg_api(&dialog_st) != 0) {
-		LM_ERR("failed to load dialog hooks");
+		LM_ERR("failed to load dialog hooks\n");
 		return(-1);
 	}
 

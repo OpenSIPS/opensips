@@ -252,7 +252,7 @@ static int mod_init(void)
 
 	/* Register the alarm checking function to run periodically */
 	register_timer( "snmp-alarm", run_alarm_check, 0,
-		ALARM_AGENT_FREQUENCY_IN_SECONDS);
+		ALARM_AGENT_FREQUENCY_IN_SECONDS, TIMER_FLAG_DELAY_ON_DELAY);
 
 	return 0;
 }

@@ -343,14 +343,14 @@ static int mod_init(void)
 	if(clean_period>0)
 	{
 		register_timer("presence-pclean", msg_presentity_clean, 0,
-			clean_period);
+			clean_period, TIMER_FLAG_DELAY_ON_DELAY);
 		register_timer("presence-wclean", msg_watchers_clean, 0,
-			watchers_clean_period);
+			watchers_clean_period, TIMER_FLAG_DELAY_ON_DELAY);
 	}
 
 	if(db_update_period>0)
 		register_timer("presence-dbupdate", timer_db_update, 0,
-			db_update_period);
+			db_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 
 	if (pa_dbf.use_table(pa_db, &watchers_table) < 0)
 	{

@@ -118,7 +118,7 @@
 #define local_free   pkg_free
 
 #define HANDLE_IO_INLINE
-#include "io_wait.h"
+#include "io_wait_loop.h"
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 
 enum fd_types { F_NONE=0, F_SOCKINFO=1 /* a tcp_listen fd */,
@@ -2075,7 +2075,7 @@ void tcp_main_loop(void)
 	 * the tcp_main process) */
 
 	/*! \todo FIXME: TODO: make tcp_max_fd_no a config param */
-	if  (init_io_wait(&io_h, tcp_max_fd_no, tcp_poll_method)<0)
+	if  (init_io_wait(&io_h, "TCP_main", tcp_max_fd_no, tcp_poll_method, tcp_async)<0)
 		goto error;
 	/* init: start watching all the fds*/
 
@@ -2244,7 +2244,6 @@ void destroy_tcp(void)
 
 int init_tcp(void)
 {
-	char* poll_err;
 	unsigned int i;
 
 	/* init tcp children array */
@@ -2295,26 +2294,6 @@ int init_tcp(void)
 			TCP_ALIAS_HASH_SIZE * sizeof(struct tcp_conn_alias*));
 		memset((void*)tcp_parts[i].tcpconn_id_hash, 0,
 			TCP_ID_HASH_SIZE * sizeof(struct tcp_connection*));
-	}
-
-	/* fix config variables */
-	/* they can have only positive values due the config parser so we can
-	 * ignore most of them */
-		poll_err=check_poll_method(tcp_poll_method);
-
-	/* set an appropiate poll method */
-	if (poll_err || (tcp_poll_method==0)){
-		tcp_poll_method=choose_poll_method();
-		if (poll_err){
-			LM_ERR("%s, using %s instead\n",
-					poll_err, poll_method_name(tcp_poll_method));
-		}else{
-			LM_INFO("using %s as the TCP io watch method"
-					" (auto detected)\n", poll_method_name(tcp_poll_method));
-		}
-	}else{
-			LM_INFO("using %s as the TCP io watch method (config)\n",
-					poll_method_name(tcp_poll_method));
 	}
 
 	return 0;

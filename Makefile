@@ -1,6 +1,5 @@
-# $Id$
 #
-# sip_router makefile
+# OpenSIPS makefile
 #
 # WARNING: requires gmake (GNU Make)
 #  Arch supported: Linux, FreeBSD, SunOS (tested on Solaris 8), OpenBSD (3.2),
@@ -46,6 +45,10 @@ skip_cfg_install?=
 
 #extra modules to exclude
 skip_modules?=
+
+# whether or not to overwrite TLS certificates
+tls_overwrite_certs?=
+
 
 makefile_defs=0
 DEFS:=
@@ -577,11 +580,14 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/rootCA/private ; \
 			mkdir -p $(cfg-prefix)/$(cfg-dir)/tls/user ; \
 			for FILE in $(tls_configs) ; do \
-				if [ -f etc/$$FILE ] ; then \
-					$(INSTALL_TOUCH) etc/$$FILE \
-						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
-					$(INSTALL_CFG) etc/$$FILE \
-						$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+				if [ -f etc/$$FILE ]; then \
+					if [ "$(tls_overwrite_certs)" != "" -o \
+							 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE] ; then \
+						$(INSTALL_TOUCH) etc/$$FILE \
+							$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+						$(INSTALL_CFG) etc/$$FILE \
+							$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
+					fi; \
 				fi ;\
 			done ; \
 		fi

@@ -153,8 +153,10 @@ static int pike_init(void)
 	timer->next = timer->prev = timer;
 
 	/* registering timing functions  */
-	register_timer( "pike-clean", clean_routine , 0, 1 );
-	register_timer( "pike-swap", swap_routine , 0, time_unit );
+	register_timer( "pike-clean", clean_routine , 0, 1 ,
+		TIMER_FLAG_DELAY_ON_DELAY);
+	register_timer( "pike-swap", swap_routine , 0, time_unit,
+		TIMER_FLAG_DELAY_ON_DELAY );
 
 	if (pike_route_s && *pike_route_s) {
 		rt = get_script_route_ID_by_name( pike_route_s, rlist, RT_NO);

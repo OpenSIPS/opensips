@@ -1084,16 +1084,12 @@ static int validateCert(X509 * cert, STACK_OF(X509) * certchain)
 
 	/* X509_STORE_CTX_init did not return an error condition
 	   in prior versions */
-	#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
 	if(X509_STORE_CTX_init(verify_ctx, store, cert, certchain) != 1)
 	{
 		X509_STORE_CTX_cleanup(verify_ctx);
 		LM_ERR("Error initializing verification context\n");
 		return 0;
 	}
-	#else
-	X509_STORE_CTX_init(verify_ctx, store, cert, certchain);
-	#endif
 
 	result = X509_verify_cert(verify_ctx);
 	X509_STORE_CTX_cleanup(verify_ctx);
@@ -1127,11 +1123,7 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 	char * extstr;
 	X509V3_EXT_METHOD * meth;
 	void * ext_str = NULL;
-	#if (OPENSSL_VERSION_NUMBER > 0x00908000L)
 	const unsigned char * data;
-	#else
-	unsigned char * data;
-	#endif
 	STACK_OF(CONF_VALUE) * val;
 	CONF_VALUE * nval;
 
@@ -1187,7 +1179,6 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 				return 0;
 			}
 			data = cext->value->data;
-			#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
 			if(meth->it)
 			{
 				ext_str = ASN1_item_d2i(NULL, &data,
@@ -1197,9 +1188,6 @@ static int checkAuthority(X509 * cert, struct sip_msg * msg)
 			{
 				 ext_str = meth->d2i(NULL, &data, cext->value->length);
 			}
-			#else
-			ext_str = meth->d2i(NULL, &data, cext->value->length);
-			#endif
 
 			val = meth->i2v(meth, ext_str, NULL);
 
@@ -1691,11 +1679,9 @@ static int prepareCertValidation(void)
 		}
 		/* enabling verification against CRLs is
 		   not possible in prior versions */
- 		#if (OPENSSL_VERSION_NUMBER > 0x00907000L)
 		/* set the flags of the store so that CRLs are consulted */
 		X509_STORE_set_flags(store,
 				X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
-		#endif
 	}
 
 	/* create a verification context and initialize it */

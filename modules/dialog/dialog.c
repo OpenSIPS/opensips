@@ -83,9 +83,6 @@ static int ping_interval = 30; /* seconds */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
 
-int dlg_have_own_timer_proc=0;	/* by default use the global timer proc */
-void *dlg_own_timer_proc=NULL;	/* point to the own timer proc, if used*/
-
 int dlg_bulk_del_no = 1; /* delete one by one */
 int seq_match_mode = SEQ_MATCH_STRICT_ID;
 str dlg_extra_hdrs = {NULL,0};
@@ -267,11 +264,11 @@ static param_export_t mod_params[]={
 	{ "vars_column",           STR_PARAM, &vars_column.s            },
 	{ "sflags_column",         STR_PARAM, &sflags_column.s          },
 	{ "mflags_column",         STR_PARAM, &mflags_column.s          },
+	{ "flags_column",          STR_PARAM, &flags_column.s           },
 	{ "db_update_period",      INT_PARAM, &db_update_period         },
 	{ "profiles_with_value",   STR_PARAM, &profiles_wv_s            },
 	{ "profiles_no_value",     STR_PARAM, &profiles_nv_s            },
 	{ "db_flush_vals_profiles",INT_PARAM, &db_flush_vp              },
-	{ "own_timer_proc",        INT_PARAM, &dlg_have_own_timer_proc  },
 	{ "timer_bulk_del_no",     INT_PARAM, &dlg_bulk_del_no          },
 	/* distributed profiles stuff */
 	{ "cachedb_url",           STR_PARAM, &cdb_url.s                },
@@ -708,6 +705,7 @@ static int mod_init(void)
 	vars_column.len = strlen(vars_column.s);
 	sflags_column.len = strlen(sflags_column.s);
 	mflags_column.len = strlen(mflags_column.s);
+	flags_column.len = strlen(flags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
@@ -831,31 +829,16 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (dlg_have_own_timer_proc) {
-		LM_INFO("Running with dedicated dialog timer process\n");
-		dlg_own_timer_proc = register_timer_process( "dlg-timer",
-			dlg_timer_routine, NULL,1,TIMER_PROC_INIT_FLAG );
-		if (dlg_own_timer_proc == NULL) {
-			LM_ERR("Failed to init dialog own timer proc\n");
-			return -1;
-		}
-		if (append_timer_to_process("dlg-pinger", dlg_ping_routine, NULL,
-							ping_interval,dlg_own_timer_proc) < 0) {
-				LM_ERR("Failed to append ping timer\n");
-				return -1;
-		}
+	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,
+	TIMER_FLAG_DELAY_ON_DELAY)<0 ) {
+		LM_ERR("failed to register timer\n");
+		return -1;
 	}
-	else {
-		if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1)<0 ) {
-			LM_ERR("failed to register timer\n");
-			return -1;
-		}
 
-		if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
-		ping_interval)<0) {
-			LM_ERR("failed to register timer 2\n");
-			return -1;
-		}
+	if ( register_timer( "dlg-pinger", dlg_ping_routine, NULL,
+	ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+		LM_ERR("failed to register timer 2\n");
+		return -1;
 	}
 
 	/* init handlers */
@@ -938,11 +921,11 @@ static int child_init(int rank)
 	}
 
 	if ( (dlg_db_mode==DB_MODE_REALTIME &&
-		(rank>=0 || rank==PROC_TIMER || rank==PROC_MODULE)) ||
+		(rank>=PROC_MAIN || rank==PROC_MODULE)) ||
 	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==(dont_fork?1:PROC_MAIN) ||
 		rank==PROC_MODULE) ) ||
-	(dlg_db_mode==DB_MODE_DELAYED && (rank==PROC_MAIN || rank==PROC_MODULE ||
-		rank==PROC_TIMER || rank>0) )){
+	(dlg_db_mode==DB_MODE_DELAYED && (rank>=PROC_MAIN || rank==PROC_MODULE) )
+	){
 		if ( dlg_connect_db(&db_url) ) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;

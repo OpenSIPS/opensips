@@ -261,7 +261,7 @@ static int mi_mod_init(void)
 
 static int mi_child_init(int rank)
 {
-	if (rank==PROC_TIMER || rank>0 ) {
+	if ( rank>PROC_MAIN ) {
 		if(mi_datagram_writer_init( DATAGRAM_SOCK_BUF_SIZE ,
 		mi_reply_indent )!= 0){
 			LM_CRIT("failed to initiate mi_datagram_writer\n");

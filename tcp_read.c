@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2013-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -28,6 +27,7 @@
  *              parameter & they set c->state to S_CONN_EOF on eof (andrei)
  * 2003-07-04  fixed tcp EOF handling (possible infinite loop) (andrei)
  * 2005-07-05  migrated to the new io_wait code (andrei)
+ * 2014-00-17  migrated to the reactor code (bogdan)
  */
 
 /*!
@@ -62,16 +62,13 @@
 #include "tls/tls_server.h"
 #endif
 
-#define HANDLE_IO_INLINE
-#include "io_wait.h"
+#include "reactor.h"
+#include "timer.h"
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 #include "forward.h"
 #include "pt.h"
 
-enum fd_types { F_NONE=0, F_TCPMAIN=1, F_TCPCONN=2 };		/*!< types used in io_wait* */
-
 static struct tcp_connection* tcp_conn_lst=0;		/*!< list of tcp connections handled by this process */
-static io_wait_h io_w; /* io_wait handler*/
 static int tcpmain_sock=-1;
 
 /* buffer to be used for reading all TCP SIP messages
@@ -660,7 +657,7 @@ again:
 
 			if (!size) {
 				/* we can release the connection */
-				io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
+				reactor_del_reader( con->fd, -1, IO_FD_CLOSING);
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 				if (con->state==S_CONN_EOF)
 					release_tcpconn(con, CONN_EOF, tcpmain_sock);
@@ -682,7 +679,7 @@ again:
 					con->con_req = NULL;
 				}
 
-				io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
+				reactor_del_reader( con->fd, -1, IO_FD_CLOSING);
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 				/* if we have EOF, signal that to MAIN as well
 				 * otherwise - just pass it back */
@@ -933,7 +930,7 @@ skip:
 
 /*! \brief
  *  handle io routine, based on the fd_map type
- * (it will be called from io_wait_loop* )
+ * (it will be called from reactor_main_loop )
  * params:  fm  - pointer to a fd hash entry
  *          idx - index in the fd_array (or -1 if not known)
  * return: -1 on error, or when we are not interested any more on reads
@@ -955,6 +952,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	long response[2];
 
 	switch(fm->type){
+		case F_TIMER_JOB:
+			handle_timer_job();
+			break;
 		case F_TCPMAIN:
 again:
 			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);
@@ -1000,13 +1000,13 @@ again:
 				/* 0 attempts so far for this SIP MSG */
 				con->msg_attempts = 0;
 
-				/* must be before io_watch_add, io_watch_add might catch some
+				/* must be before reactor_add, as the add might catch some
 				 * already existing events => might call handle_io and
 				 * handle_io might decide to del. the new connection =>
 				 * must be in the list */
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
 				con->timeout=get_ticks()+tcp_max_msg_time;
-				if (io_watch_add(&io_w, s, F_TCPCONN, con,IO_WATCH_READ)<0){
+				if (reactor_add_reader( s, F_TCPCONN, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
@@ -1033,8 +1033,7 @@ again:
 				resp=tcp_read_req(con, &ret);
 				if (resp<0) {
 					ret=-1; /* some error occured */
-					io_watch_del(&io_w, con->fd, idx, IO_FD_CLOSING,
-								 IO_WATCH_READ|IO_WATCH_WRITE);
+					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->state=S_CONN_BAD;
 					release_tcpconn(con, resp, tcpmain_sock);
@@ -1043,8 +1042,8 @@ again:
 			}
 			break;
 		case F_NONE:
-			LM_CRIT("empty fd map %p (%d): "
-						"{%d, %d, %p}\n", fm, (int)(fm-io_w.fd_hash),
+			LM_CRIT("empty fd map %p: "
+						"{%d, %d, %p}\n", fm,
 						fm->fd, fm->type, fm->data);
 			goto error;
 		default:
@@ -1076,7 +1075,7 @@ static inline void tcp_receive_timeout(void)
 		if (con->state<0){   /* kill bad connections */
 			/* S_CONN_BAD or S_CONN_ERROR, remove it */
 			/* fd will be closed in release_tcpconn */
-			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
+			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->state=S_CONN_BAD;
 			release_tcpconn(con, CONN_ERROR, tcpmain_sock);
@@ -1086,7 +1085,7 @@ static inline void tcp_receive_timeout(void)
 			LM_DBG("%p expired - (%d, %d) lt=%d\n",
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */
-			io_watch_del(&io_w, con->fd, -1, IO_FD_CLOSING,IO_WATCH_READ);
+			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			if (con->msg_attempts)
 				release_tcpconn(con, CONN_ERROR, tcpmain_sock);
@@ -1101,77 +1100,29 @@ static inline void tcp_receive_timeout(void)
 void tcp_receive_loop(int unix_sock)
 {
 
-	/* init */
+	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if (init_io_wait(&io_w, tcp_max_fd_no, tcp_poll_method)<0)
+	if ( init_worker_reactor( "TCP_worker", tcp_max_fd_no, tcp_async)<0 ) {
 		goto error;
+	}
+
+	/* start watching for the timer jobs */
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, NULL)<0) {
+		LM_CRIT("failed to add timer pipe_out to reactor\n");
+		goto error;
+	}
+
 	/* add the unix socket */
-	if (io_watch_add(&io_w, tcpmain_sock, F_TCPMAIN, 0,IO_WATCH_READ)<0){
+	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, NULL)<0) {
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
 
 	/* main loop */
-	switch(io_w.poll_method){
-		case POLL_POLL:
-				while(1){
-					io_wait_loop_poll(&io_w, TCP_CHILD_SELECT_TIMEOUT, 0);
-					tcp_receive_timeout();
-				}
-				break;
-#ifdef HAVE_SELECT
-		case POLL_SELECT:
-			while(1){
-				io_wait_loop_select(&io_w, TCP_CHILD_SELECT_TIMEOUT, 0);
-				tcp_receive_timeout();
-			}
-			break;
-#endif
-#ifdef HAVE_SIGIO_RT
-		case POLL_SIGIO_RT:
-			while(1){
-				io_wait_loop_sigio_rt(&io_w, TCP_CHILD_SELECT_TIMEOUT);
-				tcp_receive_timeout();
-			}
-			break;
-#endif
-#ifdef HAVE_EPOLL
-		case POLL_EPOLL_LT:
-			while(1){
-				io_wait_loop_epoll(&io_w, TCP_CHILD_SELECT_TIMEOUT, 0);
-				tcp_receive_timeout();
-			}
-			break;
-		case POLL_EPOLL_ET:
-			while(1){
-				io_wait_loop_epoll(&io_w, TCP_CHILD_SELECT_TIMEOUT, 1);
-				tcp_receive_timeout();
-			}
-			break;
-#endif
-#ifdef HAVE_KQUEUE
-		case POLL_KQUEUE:
-			while(1){
-				io_wait_loop_kqueue(&io_w, TCP_CHILD_SELECT_TIMEOUT, 0);
-				tcp_receive_timeout();
-			}
-			break;
-#endif
-#ifdef HAVE_DEVPOLL
-		case POLL_DEVPOLL:
-			while(1){
-				io_wait_loop_devpoll(&io_w, TCP_CHILD_SELECT_TIMEOUT, 0);
-				tcp_receive_timeout();
-			}
-			break;
-#endif
-		default:
-			LM_CRIT("no support for poll method %s (%d)\n",
-					poll_method_name(io_w.poll_method), io_w.poll_method);
-			goto error;
-	}
+	reactor_main_loop( TCP_CHILD_SELECT_TIMEOUT, error , tcp_receive_timeout());
+
 error:
-	destroy_io_wait(&io_w);
+	destroy_worker_reactor();
 	LM_CRIT("exiting...");
 	exit(-1);
 }

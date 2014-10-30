@@ -158,6 +158,12 @@ typedef struct
 	int set_id;
 } ds_options_callback_param_t;
 
+typedef struct _ds_selected_dst
+{
+	str uri;
+	str socket;
+} ds_selected_dst, *ds_selected_dst_p;
+
 extern str ds_set_id_col;
 extern str ds_dest_uri_col;
 extern str ds_dest_sock_col;
@@ -188,7 +194,8 @@ int ds_reload_db(ds_partition_t *partition);
 int init_ds_data(ds_partition_t *partition);
 void ds_destroy_data(ds_partition_t *partition);
 
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags);
+int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode);
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags);
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_set_state(int group, str *address, int state, int type,
 		ds_partition_t *partition);

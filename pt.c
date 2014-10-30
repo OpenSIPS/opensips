@@ -35,7 +35,6 @@
 #include "socket_info.h"
 #include "sr_module.h"
 #include "dprint.h"
-#include "timer.h"
 #include "pt.h"
 #include "bin_interface.h"
 
@@ -82,7 +81,7 @@ int init_multi_proc_support(void)
 	proc_no += bin ? bin_children : 0;
 
 	/* timer processes */
-	proc_no += count_timer_procs();
+	proc_no += 2 /* timer keeper + timer trigger */;
 
 	/* count the processes requested by modules */
 	proc_no += count_module_procs();

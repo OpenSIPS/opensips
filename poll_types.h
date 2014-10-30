@@ -48,4 +48,7 @@ char* check_poll_method(enum poll_types poll_method);
 char* poll_method_name(enum poll_types poll_method);
 enum poll_types get_poll_type(char* s);
 
+void fix_poll_method( enum poll_types *poll_method );
+
+
 #endif

@@ -520,7 +520,7 @@ int ospGetOspHeader(
     int result = -1;
 
     if (parse_headers(msg, HDR_EOH_F, 0) != 0) {
-        LM_ERR("failed to parse all headers");
+        LM_ERR("failed to parse all headers\n");
     } else {
         hf = get_header_by_name(msg, OSP_TOKEN_HEADER, OSP_HEADER_SIZE);
         if (hf) {

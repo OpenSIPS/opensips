@@ -38,7 +38,6 @@
 #include "../../dprint.h"
 #include "../../db/db_query.h"
 #include "val.h"
-#include "list.h"
 #include "con.h"
 #include "res.h"
 #include "db_unixodbc.h"
@@ -247,12 +246,9 @@ int db_unixodbc_free_result(db_con_t* _h, db_res_t* _r)
 		return -1;
 	}
 
-	/* free the duplicated list of results */
-	if (CON_DATA(_h))
-		db_unixodbc_list_destroy((list *)CON_DATA(_h));
-
 	SQLFreeHandle(SQL_HANDLE_STMT, CON_RESULT(_h));
-	CON_RESULT(_h) = 0;
+	CON_RESULT(_h) = NULL;
+
 	return 0;
 }
 

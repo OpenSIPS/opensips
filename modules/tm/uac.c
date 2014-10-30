@@ -179,7 +179,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	int backup_route_type;
 	int sip_msg_len;
 	unsigned int hi;
-	struct socket_info *send_sock, *new_send_sock;
+	struct socket_info *new_send_sock;
 	str h_to, h_from, h_cseq, h_callid;
 	struct proxy_l *proxy, *new_proxy;
 	unsigned short dst_changed;
@@ -207,18 +207,23 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	/* use the first address */
 	hostent2su( &to_su,
 		&proxy->host, proxy->addr_idx, proxy->port ? proxy->port:SIP_PORT);
-	/* get the send socket */
-	send_sock = get_send_socket( NULL/*msg*/, &to_su, proxy->proto);
-	if (!send_sock) {
-		LM_ERR("no corresponding socket for af %d\n", to_su.s.sa_family);
-		ser_error = E_NO_SOCKET;
-		goto error2;
-	}
 
-	/* if a send socket defined verify if the same protocol */
-	if (dialog->send_sock==NULL ||
-	send_sock->proto != dialog->send_sock->proto)
-		dialog->send_sock = send_sock;
+	/* check/discover the send socket */
+	if (dialog->send_sock) {
+		/* if already set, the protocol of send sock must have the 
+		   the same type as the proto required by destination URI */
+		if (proxy->proto != dialog->send_sock->proto)
+			dialog->send_sock = NULL;
+	}
+	if (dialog->send_sock==NULL) {
+		/* get the send socket */
+		dialog->send_sock = get_send_socket( NULL/*msg*/, &to_su, proxy->proto);
+		if (!dialog->send_sock) {
+			LM_ERR("no corresponding socket for af %d\n", to_su.s.sa_family);
+			ser_error = E_NO_SOCKET;
+			goto error2;
+		}
+	}
 	LM_DBG("sending socket is %.*s \n",
 		dialog->send_sock->name.len,dialog->send_sock->name.s);
 
@@ -352,12 +357,12 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 					req->add_to_branch_len = req->via1->branch->value.len;
 
 					/* update also info about new destination and send sock */
-					dialog->send_sock = send_sock = new_send_sock;
+					dialog->send_sock = new_send_sock;
 					free_proxy( proxy );
 					pkg_free( proxy );
 					proxy = new_proxy;
-					request->dst.send_sock = send_sock;
-					request->dst.proto = send_sock->proto;
+					request->dst.send_sock = new_send_sock;
+					request->dst.proto = new_send_sock->proto;
 					request->dst.proto_reserved1 = 0;
 
 					/* build the shm buffer now */

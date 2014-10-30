@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2014 OpenSIPS Solutions
  * Copyright (C) 2007 Voice Sistem SRL
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -25,6 +24,8 @@
  *  2003-03-19  replaced all the mallocs/frees w/ pkg_malloc/pkg_free (andrei)
  *  2003-03-29  cleaning pkg_mallocs introduced (jiri)
  *  2007-02-02  timer with resolution of microseconds added (bogdan)
+ *  2014-09-11  timer tasks distributed via reactors (bogdan)
+ *  2014-10-03  drop all timer processes (aside keeper) (bogdan)
  */
 
 /*!
@@ -33,6 +34,7 @@
  */
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -53,43 +55,26 @@
 
 #include <stdlib.h>
 
-struct sr_timer_process *timer_proc_list = 0;
+/* list with all the registered timers */
+static struct os_timer *timer_list = NULL;
 
-static unsigned int *jiffies=0;
-static utime_t      *ujiffies=0;
-static utime_t      *ijiffies=0;
-static unsigned int  timer_id=0;
+/* list with all the registered utimers */
+static struct os_timer *utimer_list = NULL;
 
+static unsigned int  *jiffies=0;
+static utime_t       *ujiffies=0;
+static utime_t       *ijiffies=0;
+static unsigned short timer_id=0;
+static int            timer_pipe[2];
 
-
-static struct sr_timer_process* new_timer_process_list(unsigned int flags)
-{
-	struct sr_timer_process *tpl;
-	struct sr_timer_process *tpl_it;
-
-	tpl = pkg_malloc( sizeof(struct sr_timer_process) );
-	if (tpl==NULL) {
-		LM_ERR("no more pkg memory\n");
-		return 0;
-	}
-	memset( tpl, 0, sizeof(struct sr_timer_process));
-	tpl->flags = flags;
-
-	if (timer_proc_list==NULL) {
-		timer_proc_list = tpl;
-	} else {
-		for(tpl_it=timer_proc_list ; tpl_it->next ; tpl_it=tpl_it->next);
-		tpl_it->next = tpl;
-	}
-
-	return tpl;
-}
-
+int timer_fd_out = -1 ;
 
 
 /* ret 0 on success, <0 on error*/
 int init_timer(void)
 {
+	int optval;
+
 #ifdef SHM_MEM
 	jiffies  = shm_malloc(sizeof(unsigned int));
 	ujiffies = shm_malloc(sizeof(utime_t));
@@ -120,11 +105,24 @@ int init_timer(void)
 	*ujiffies=0;
 	*ijiffies=0;
 
-	/* create the default time process list */
-	if (new_timer_process_list(TIMER_PROC_INIT_FLAG)==NULL) {
-		LM_ERR("failed to create default timer process list\n");
-		return E_OUT_OF_MEM;
+	/* create the pipe for dispatching the timer jobs */
+	if ( pipe(timer_pipe)!=0 ) {
+		LM_ERR("failed to create time pipe (%s)!\n",strerror(errno));
+		return E_UNSPEC;
 	}
+	/* make reading fd non-blocking */
+	optval=fcntl(timer_pipe[0], F_GETFL);
+	if (optval==-1){
+		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		return E_UNSPEC;
+	}
+	if (fcntl(timer_pipe[0],F_SETFL,optval|O_NONBLOCK)==-1){
+		LM_ERR("set non-blocking failed: (%d) %s\n",
+			errno, strerror(errno));
+		return E_UNSPEC;
+	}
+	/* make vizible the "read" part of the pipe */
+	timer_fd_out = timer_pipe[0];
 
 	return 0;
 }
@@ -146,26 +144,28 @@ void destroy_timer(void)
 
 
 
-static inline struct sr_timer* new_sr_timer(char *label, timer_function f,
-										void* param, unsigned int interval)
+static inline struct os_timer* new_os_timer(char *label, unsigned short flags,
+						timer_function f, void* param, unsigned int interval)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 
 	if (label==NULL)
 		label = "n/a";
 
-	t=pkg_malloc( sizeof(struct sr_timer) + strlen(label)+1 );
+	t=shm_malloc( sizeof(struct os_timer) + strlen(label)+1 );
 	if (t==0){
 		LM_ERR("out of pkg memory\n");
 		return NULL;
 	}
 	t->id=timer_id++;
+	t->flags = flags;
 	t->label = (char*)(t+1);
 	strcpy( t->label, label);
 	t->u.timer_f=f;
 	t->t_param=param;
 	t->interval=interval;
 	t->expires=*jiffies+interval;
+	t->current_time = 0;
 	return t;
 }
 
@@ -175,34 +175,36 @@ static inline struct sr_timer* new_sr_timer(char *label, timer_function f,
  * Hint: if you need it in a module, register it from mod_init or it
  * won't work otherwise*/
 int register_timer(char *label, timer_function f, void* param,
-													unsigned int interval)
+								unsigned int interval, unsigned short flags)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 
-	t = new_sr_timer( label, f, param, interval);
+	flags = flags & (~TIMER_FLAG_IS_UTIMER); /* just to be sure */
+	t = new_os_timer( label, flags, f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
-	/* insert it into the default timer process list*/
-	t->next = timer_proc_list->timer_list;
-	timer_proc_list->timer_list = t;
+	/* insert it into the timer list*/
+	t->next = timer_list;
+	timer_list = t;
 	return t->id;
 }
-
 
 
 int register_utimer(char *label, utimer_function f, void* param,
-													unsigned int interval)
+								unsigned int interval, unsigned short flags)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 
-	t = new_sr_timer( label, (timer_function*)f, param, interval);
+	flags = flags | TIMER_FLAG_IS_UTIMER; /* just to be sure */
+	t = new_os_timer( label, 1, (timer_function*)f, param, interval);
 	if (t==NULL)
 		return E_OUT_OF_MEM;
-	/* insert it into the list*/
-	t->next = timer_proc_list->utimer_list;
-	timer_proc_list->utimer_list = t;
+	/* insert it into the utimer list*/
+	t->next = utimer_list;
+	utimer_list = t;
 	return t->id;
 }
+
 
 void route_timer_f(unsigned int ticks, void* param)
 {
@@ -239,95 +241,30 @@ void route_timer_f(unsigned int ticks, void* param)
 }
 
 
-
 int register_route_timers(void)
 {
-	struct sr_timer* t;
-	struct sr_timer_process* tpl;
+	struct os_timer* t;
 	int i;
 
 	if(timer_rlist[0].a == NULL)
 		return 0;
-
-	/* create new process list */
-	tpl = new_timer_process_list(TIMER_PROC_INIT_FLAG);
-	if (tpl==NULL)
-		return E_OUT_OF_MEM;
 
 	/* register the routes */
 	for(i = 0; i< TIMER_RT_NO; i++)
 	{
 		if(timer_rlist[i].a == NULL)
 			return 0;
-		t = new_sr_timer( "timer_route", route_timer_f, timer_rlist[i].a,
+		t = new_os_timer( "timer_route", 0, route_timer_f, timer_rlist[i].a,
 				timer_rlist[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;
 
 		/* insert it into the list*/
-		t->next = tpl->timer_list;
-		tpl->timer_list = t;
+		t->next = timer_list;
+		timer_list = t;
 	}
 
 	return 1;
-}
-
-void* register_timer_process(char *label, timer_function f, void* param,
-									unsigned int interval, unsigned int flags)
-{
-	struct sr_timer* t;
-	struct sr_timer_process* tpl;
-
-	/* create new process list */
-	tpl = new_timer_process_list(flags);
-	if (tpl==NULL)
-		return NULL;
-
-	t = new_sr_timer(label, f, param, interval);
-	if (t==NULL)
-		return NULL;
-	/* insert it into the list*/
-	t->next = tpl->timer_list;
-	tpl->timer_list = t;
-	return (void*)tpl;
-}
-
-
-int append_timer_to_process( char *label, timer_function f, void* param,
-										unsigned int interval, void *timer)
-{
-	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
-	struct sr_timer* t;
-
-	if (tpl==NULL)
-		return -1;
-
-	t = new_sr_timer( label, f, param, interval);
-	if (t==NULL)
-		return -1;
-	/* insert it into the list*/
-	t->next = tpl->timer_list;
-	tpl->timer_list = t;
-	return 0;
-}
-
-
-int append_utimer_to_process( char *label, utimer_function f, void* param,
-										unsigned int interval, void *timer)
-{
-	struct sr_timer_process* tpl = (struct sr_timer_process*)timer;
-	struct sr_timer* t;
-
-	if (tpl==NULL)
-		return -1;
-
-	t = new_sr_timer( label, (timer_function*)f, param, interval);
-	if (t==NULL)
-		return -1;
-	/* insert it into the list*/
-	t->next = tpl->utimer_list;
-	tpl->utimer_list = t;
-	return 0;
 }
 
 
@@ -346,7 +283,6 @@ unsigned int get_ticks(void)
 }
 
 
-
 utime_t get_uticks(void)
 {
 	if (ujiffies==0){
@@ -363,67 +299,97 @@ utime_t get_uticks(void)
 
 
 
-static inline void timer_ticker(struct sr_timer *timer_list, utime_t *drift)
+static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 	unsigned int j;
-	utime_t ij;
-	utime_t ij_marker;
+	ssize_t l;
 
 	/* we need to store the original time as while executing the
 	   the handlers, the time may progress, affecting the way we
 	   calculate the new expire (expire will include the time
 	   taken to run handlers) -bogdan */
 	j = *jiffies;
-	ij = *ijiffies;
 
 	for (t=timer_list;t; t=t->next){
 		if (j>=t->expires){
+			if (t->current_time) {
+				LM_WARN("timer task <%s> already schedualed for %d s, it may overlap..\n",
+					t->label,j);
+				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
+					/* skip this execution of the timer handler */
+					t->expires = j + t->interval;
+					continue;
+				} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
+					/* delay the execution of the timer handler
+					   until the prev one is done */
+					continue;
+				} else {
+					/* launch the task now, even if overlaping with the 
+					   already running one */
+				}
+			}
 			t->expires = j + t->interval;
-			ij_marker = *ijiffies;
-			t->u.timer_f( j, t->t_param);
-			if ( (*ijiffies - ij_marker) / 1000000 > TIMER_TICK )
-				LM_CRIT("timer handler <%s> lasted (%d us) for more than "
-					"timer tick (%d us) -> potential timer shifting\n",
-					t->label, (int)(*ijiffies-ij_marker), TIMER_TICK*1000000);
+			t->current_time = j;
+			/* push the jobs for execution */
+again:
+			l = write( timer_pipe[1], &t, sizeof(t));
+			if (l==-1) {
+				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+					goto again;
+				LM_ERR("writing failed:[%d] %s, skipiping job <%s> at %d s\n",
+					errno, strerror(errno),t->label, j);
+			}
 		}
 	}
-
-	/* update time drifting due handlers execution */
-	*drift += *ijiffies - ij;
 }
 
 
 
-static inline void utimer_ticker(struct sr_timer *utimer_list, utime_t *drift)
+static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 {
-	struct sr_timer* t;
+	struct os_timer* t;
 	utime_t uj;
-	utime_t ij;
-	utime_t ij_marker;
+	ssize_t l;
 
 	/* see comment on timer_ticket */
 	uj = *ujiffies;
-	ij = *ijiffies;
 
 	for ( t=utimer_list ; t ; t=t->next){
 		if (uj>=t->expires){
+			if (t->current_time) {
+				LM_WARN("utimer task <%s>%p already schedualed for %lld us, skipping..\n",
+					t->label,t,uj);
+				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
+					/* skip this execution of the timer handler */
+					t->expires = uj + t->interval;
+					continue;
+				} else if (t->flags&TIMER_FLAG_DELAY_ON_DELAY) {
+					/* delay the execution of the timer handler
+					   until the prev one is done */
+					continue;
+				} else {
+					/* launch the task now, even if overlaping with the 
+					   already running one */
+				}
+			}
 			t->expires = uj + t->interval;
-			ij_marker = *ijiffies;
-			t->u.utimer_f( uj, t->t_param);
-			if ( (*ijiffies - ij_marker) > UTIMER_TICK )
-				LM_CRIT("utimer handler <%s> lasted (%d us) for more than "
-					"timer tick (%d us) -> potential timer shifting\n",
-					t->label, (int)(*ijiffies-ij_marker), UTIMER_TICK);
+			t->current_time = uj;
+			/* push the jobs for execution */
+again:
+			l = write( timer_pipe[1], &t, sizeof(t));
+			if (l==-1) {
+				if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+					goto again;
+				LM_ERR("writing failed:[%d] %s, skipiping job <%s> at %lld us\n",
+					errno, strerror(errno),t->label, uj);
+			}
 		}
 	}
-
-	/* update time drifting due handlers execution */
-	*drift += *ijiffies - ij;
 }
 
 
-static void run_timer_process(struct sr_timer_process *tpl)
+static void run_timer_process( void )
 {
 	unsigned int multiple;
 	unsigned int cnt;
@@ -447,7 +413,7 @@ static void run_timer_process(struct sr_timer_process *tpl)
 	}while(0)
 
 
-	if ( (tpl->utimer_list==NULL) || ((TIMER_TICK*1000000) == UTIMER_TICK) ) {
+	if ( (utimer_list==NULL) || ((TIMER_TICK*1000000) == UTIMER_TICK) ) {
 		o_tv.tv_sec = TIMER_TICK;
 		o_tv.tv_usec = 0;
 		multiple = 1;
@@ -457,33 +423,27 @@ static void run_timer_process(struct sr_timer_process *tpl)
 		multiple = (( TIMER_TICK * 1000000 ) / UTIMER_TICK ) / 1000000;
 	}
 
-	if (tpl->utimer_list && tpl->utimer_list->label) {
-		set_proc_attrs("timer: %s", tpl->utimer_list->label);
-	} else if (tpl->timer_list && tpl->timer_list->label) {
-		set_proc_attrs("timer: %s", tpl->timer_list->label);
-	}
-
 	LM_DBG("tv = %ld, %ld , m=%d\n",
 		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
 
 	drift = 0;
 	uinterval = o_tv.tv_sec * 1000000 + o_tv.tv_usec;
 
-	if (tpl->utimer_list==NULL) {
+	if (utimer_list==NULL) {
 		/* only TIMERs, ticking at TIMER_TICK */
 		for( ; ; ) {
 			compute_wait_with_drift( tv, 0);
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker( tpl->timer_list, &drift);
+			timer_ticker( timer_list, &drift);
 		}
 
 	} else
-	if (tpl->timer_list==NULL) {
+	if (timer_list==NULL) {
 		/* only UTIMERs, ticking at UTIMER_TICK */
 		for( ; ; ) {
 			compute_wait_with_drift( tv, 1);
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker( tpl->utimer_list, &drift);
+			utimer_ticker( utimer_list, &drift);
 		}
 
 	} else
@@ -492,8 +452,8 @@ static void run_timer_process(struct sr_timer_process *tpl)
 		for( ; ; ) {
 			compute_wait_with_drift( tv, 2);
 			select( 0, 0, 0, 0, &tv);
-			timer_ticker( tpl->timer_list, &drift);
-			utimer_ticker( tpl->utimer_list, &drift);
+			timer_ticker( timer_list, &drift);
+			utimer_ticker( utimer_list, &drift);
 		}
 
 	} else {
@@ -501,15 +461,14 @@ static void run_timer_process(struct sr_timer_process *tpl)
 		for( cnt=1 ; ; cnt++ ) {
 			compute_wait_with_drift( tv, 3);
 			select( 0, 0, 0, 0, &tv);
-			utimer_ticker(tpl->utimer_list, &drift);
+			utimer_ticker(utimer_list, &drift);
 			if (cnt==multiple) {
-				timer_ticker(tpl->timer_list, &drift);
+				timer_ticker(timer_list, &drift);
 				cnt = 0;
 			}
 		}
 	}
 }
-
 
 
 static void run_timer_process_jif(void)
@@ -555,10 +514,8 @@ static void run_timer_process_jif(void)
 }
 
 
-
 int start_timer_processes(void)
 {
-	struct sr_timer_process *tpl;
 	pid_t pid;
 
 	/*
@@ -584,38 +541,16 @@ int start_timer_processes(void)
 		exit(-1);
 	}
 
-	for( tpl=timer_proc_list ; tpl ; tpl=tpl->next ) {
-		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
-			continue;
-		/* fork a new process */
-		if ( (pid=internal_fork("timer"))<0 ) {
-			LM_CRIT("cannot fork timer process\n");
-			goto error;
-		} else if (pid==0) {
-			/* new process */
-			/* run init if required */
-			if ( tpl->flags&TIMER_PROC_INIT_FLAG ) {
-				LM_DBG("initializing timer\n");
-				inc_init_timer();
-				if (init_child(PROC_TIMER)<0 ){
-					LM_ERR("init_child failed for timer proc\n");
+	/* fork a timer-trigger process */
+	if ( (pid=internal_fork("timer"))<0 ) {
+		LM_CRIT("cannot fork timer process\n");
+		goto error;
+	} else if (pid==0) {
+		/* new process */
+		clean_write_pipeend();
 
-					if (send_status_code(-1) < 0)
-						LM_ERR("failed to send status code\n");
-					clean_write_pipeend();
-
-					exit(-1);
-				}
-
-				if (!no_daemon_mode && send_status_code(0) < 0)
-					LM_ERR("failed to send status code\n");
-				clean_write_pipeend();
-			} else
-				clean_write_pipeend();
-
-			run_timer_process( tpl );
-			exit(-1);
-		}
+		run_timer_process( );
+		exit(-1);
 	}
 
 	return 0;
@@ -624,21 +559,39 @@ error:
 }
 
 
-/* Counts the timer processes that needs to be created */
-int count_timer_procs(void)
+void handle_timer_job(void)
 {
-	struct sr_timer_process *tpl;
-	int n;
+	struct os_timer *t;
+	ssize_t l;
 
-	/* we have the time keeper process */
-	n = 1;
-	/* and the timer handler procs */
-	for( tpl=timer_proc_list; tpl ; tpl=tpl->next ) {
-		if (tpl->timer_list==NULL && tpl->utimer_list==NULL)
-			continue;
-		n++;
+	/* read one "os_timer" pointer from the pipe (non-blocking) */
+	l = read( timer_fd_out, &t, sizeof(t) );
+	if (l==-1) {
+		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+			return;
+		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
+		return;
 	}
 
-	return n;
+	/* run the handler */
+	if (t->flags&TIMER_FLAG_IS_UTIMER) {
+
+		if (t->current_time!=*ujiffies)
+			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
+				t->label, *ujiffies-t->current_time);
+		t->u.utimer_f( t->current_time , t->t_param);
+		t->current_time = 0;
+
+	} else {
+
+		if ((unsigned int)t->current_time!=*jiffies)
+			LM_WARN("timer job <%s> has a %d s delay in execution\n",
+				t->label, *jiffies-(unsigned int)t->current_time);
+		t->u.timer_f( (unsigned int)t->current_time , t->t_param);
+		t->current_time = 0;
+
+	}
+
+	return;
 }
 

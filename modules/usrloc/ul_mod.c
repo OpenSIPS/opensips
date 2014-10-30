@@ -294,7 +294,8 @@ static int mod_init(void)
 	}
 
 	/* Register cache timer */
-	register_timer( "ul-timer", timer, 0, timer_interval);
+	register_timer( "ul-timer", timer, 0, timer_interval,
+		TIMER_FLAG_DELAY_ON_DELAY);
 
 	/* init the callbacks list */
 	if ( init_ulcb_list() < 0) {
@@ -364,15 +365,9 @@ static int child_init(int _rank)
 			return 0;
 		case DB_ONLY:
 		case WRITE_THROUGH:
-			/* we need connection from working SIP, BIN, TIMER and MAIN procs */
-			if (_rank <= 0 && _rank != PROC_BIN &&
-			    _rank != PROC_TIMER && _rank != PROC_MAIN)
-				return 0;
-			break;
 		case WRITE_BACK:
-			/* connect only from TIMER (for flush), from MAIN (for
-			 * final flush() and from child 1 for preload */
-			if (_rank!=PROC_TIMER && _rank!=PROC_MAIN && _rank!=1)
+			/* we need connection from SIP workers, BIN and MAIN procs */
+			if (_rank < PROC_MAIN && _rank != PROC_BIN )
 				return 0;
 			break;
 	}

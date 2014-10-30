@@ -1432,7 +1432,7 @@ static int _add_proxies_from_database(void) {
 
 	if(result == NULL)
 	{
-		LM_ERR("mysql query failed - NULL result");
+		LM_ERR("mysql query failed - NULL result\n");
 		return -1;
 	}
 
@@ -1478,7 +1478,8 @@ error:
 static int
 child_init(int rank)
 {
-	if (rank<=0 && rank!=PROC_TIMER)
+	/* we need DB conn in the worker processes only */
+	if (rank<=PROC_MAIN)
 		return 0;
 
 	if(*rtpp_set_list==NULL )
@@ -2859,12 +2860,12 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 
 	/* parse cseq header */
 	if(parse_headers(msg,HDR_CSEQ_F,0) < 0) {
-		LM_ERR("cannot parse cseq header");
+		LM_ERR("cannot parse cseq header\n");
 		goto error;
 	}
 
 	if(msg->cseq==NULL || msg->cseq->body.s==NULL) {
-		LM_ERR("cseq header empty");
+		LM_ERR("cseq header empty\n");
 		goto error;
 	}
 

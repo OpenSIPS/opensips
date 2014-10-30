@@ -272,7 +272,7 @@ int initialize_kill(void)
 		return 0;
 
 	if (register_timer("exec_kill", timer_routine, NULL /* param */,
-	    1 /* period */) < 0) {
+	    1 /* period */, TIMER_FLAG_SKIP_ON_DELAY) < 0) {
 		LM_ERR("no exec timer registered\n");
 		return -1;
 	}

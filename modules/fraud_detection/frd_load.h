@@ -1,10 +1,8 @@
-/*
- * $Id$
+/**
  *
- * UNIXODBC module
+ * Fraud Detection Module
  *
- * Copyright (C) 2005-2006 Marco Lorrai
- * Copyright (C) 2008 1&1 Internet AG
+ * Copyright (C) 2014 OpenSIPS Foundation
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -22,30 +20,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- *
- * History:
- * --------
- *  2005-12-01  initial commit (chgen)
- *  2006-04-04  simplified link list (sgupta)
- *  2006-05-05  removed static allocation of 1k per column data (sgupta)
- */
+ * History
+ * -------
+ *  2014-09-26  initial version (Andrei Datcu)
+*/
 
-#ifndef _UNIXODBC_LIST_H_
-#define _UNIXODBC_LIST_H_
+#ifndef __FRD_LOAD_H__
+#define __FRD_LOAD_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "con.h"
+int frd_init_db(void);
+int frd_connect_db(void);
+void frd_disconnect_db(void);
 
-typedef struct list
-{
-	struct list* next;
-	char** data;
-	unsigned long* lengths;
-	int rownum;
-} list;
-
-int db_unixodbc_list_insert(list** start, list** link, int n, strn* value);
-void db_unixodbc_list_destroy(list* link);
+int frd_reload_data(void);
+void frd_destroy_data(void);
 
 #endif

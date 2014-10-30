@@ -330,6 +330,7 @@ GROUP		"group"|"gid"
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 MHOMED		mhomed
+POLL_METHOD		"poll_method"
 DISABLE_TCP		"disable_tcp"
 ASYNC_TCP		"tcp_async"
 ASYNC_TCP_LOCAL_CON_TIMEOUT		"tcp_async_local_connect_timeout"
@@ -341,7 +342,6 @@ TCP_SEND_TIMEOUT	"tcp_send_timeout"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
-TCP_POLL_METHOD     "tcp_poll_method"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_OPT_CRLF_PINGPONG   "tcp_crlf_pingpong"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
@@ -399,9 +399,7 @@ TLS			"tls"|"TLS"
 SCTP		"sctp"|"SCTP"
 INET		"inet"|"INET"
 INET6		"inet6"|"INET6"
-SSLv23			"sslv23"|"SSLv23"|"SSLV23"
-SSLv2			"sslv2"|"SSLv2"|"SSLV2"
-SSLv3			"sslv3"|"SSLv3"|"SSLV3"
+SSLv23			"sslv23"|"SSLv23"|"SSLV23"|"TLSany"|"TLSAny"
 TLSv1			"tlsv1"|"TLSv1"|"TLSV1"
 TLSv1_2			"tlsv1_2"|"TLSv1_2"|"TLSV1_2"
 NULLV			"null"|"NULL"
@@ -574,7 +572,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{EVENT_ROUTE_SYNC}		{ count(); yylval.strval=yytext;
 									return EVENT_ROUTE_SYNC;}
 <INITIAL>{EVENT_ROUTE_ASYNC}		{ count(); yylval.strval=yytext;
-									return EVENT_ROUTE_SYNC;}
+									return EVENT_ROUTE_ASYNC;}
 <INITIAL>{MAX_LEN}	{ count(); yylval.strval=yytext; return MAX_LEN; }
 
 <INITIAL>{METHOD}	{ count(); yylval.strval=yytext; return METHOD; }
@@ -664,8 +662,8 @@ IMPORTFILE      "import_file"
 									return TCP_CON_LIFETIME; }
 <INITIAL>{TCP_LISTEN_BACKLOG}   { count(); yylval.strval=yytext;
 									return TCP_LISTEN_BACKLOG; }
-<INITIAL>{TCP_POLL_METHOD}		{ count(); yylval.strval=yytext;
-									return TCP_POLL_METHOD; }
+<INITIAL>{POLL_METHOD}			{ count(); yylval.strval=yytext;
+									return POLL_METHOD; }
 <INITIAL>{TCP_MAX_CONNECTIONS}  { count(); yylval.strval=yytext;
 									return TCP_MAX_CONNECTIONS; }
 <INITIAL>{TCP_KEEPALIVE}       { count(); yylval.strval=yytext; return TCP_KEEPALIVE; }
@@ -798,8 +796,6 @@ IMPORTFILE      "import_file"
 						#endif
 						  return NUMBER; }
 <INITIAL>{SSLv23}		{ count(); yylval.strval=yytext; return SSLv23; }
-<INITIAL>{SSLv2}		{ count(); yylval.strval=yytext; return SSLv2; }
-<INITIAL>{SSLv3}		{ count(); yylval.strval=yytext; return SSLv3; }
 <INITIAL>{TLSv1}		{ count(); yylval.strval=yytext; return TLSv1; }
 <INITIAL>{TLSv1_2}		{ count(); yylval.strval=yytext; return TLSv1_2; }
 
@@ -865,7 +861,7 @@ IMPORTFILE      "import_file"
 				svar_tlen = yyleng;
 			}
 		}
-<SCRIPTVARS>{SEMICOLON}|{ASSIGNOP}|{ARITHOP}|{BITOP}|{LOGOP} {
+<SCRIPTVARS>{SEMICOLON}|{COMMA}|{ASSIGNOP}|{ARITHOP}|{BITOP}|{LOGOP} {
 						count();
 						if(np==0) {
 							addstr(&s_buf, yytext, svar_tlen);

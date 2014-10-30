@@ -445,10 +445,11 @@ next_hdr:
 	if(init_callid_hdr.s)
 		init_callid_hdr.len = strlen(init_callid_hdr.s);
 
-	register_timer("b2bl-clean", b2bl_clean, 0, b2b_clean_period);
+	register_timer("b2bl-clean", b2bl_clean, 0, b2b_clean_period,
+		TIMER_FLAG_DELAY_ON_DELAY);
 	if(b2bl_db_mode == WRITE_BACK)
 		register_timer("b2bl-dbupdate", b2bl_db_timer_update, 0,
-			b2b_update_period);
+			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 
 	return 0;
 }
@@ -961,7 +962,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 			//LM_DBG("got PV_SPEC b2bl_from [%.*s]\n",
 			//	b2bl_from_tok.rs.len, b2bl_from_tok.rs.s);
 			if(b2bl_from_tok.rs.len+CRLF_LEN > B2BL_FROM_BUF_LEN) {
-				LM_ERR("Buffer overflow");
+				LM_ERR("Buffer overflow\n");
 				return NULL;
 			}
 			trim(&b2bl_from_tok.rs);

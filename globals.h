@@ -65,6 +65,7 @@ extern int auto_aliases;
 
 extern unsigned int maxbuffer;
 extern int children_no;
+extern enum poll_types io_poll_method;
 #ifdef USE_TCP
 extern int tcp_children_no;
 extern int tcp_disable;
@@ -73,7 +74,6 @@ extern int tcp_connect_timeout;
 extern int tcp_send_timeout;
 extern int tcp_con_lifetime; /*!< connection lifetime */
 extern int tcp_listen_backlog;
-extern enum poll_types tcp_poll_method;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
 extern int tcp_crlf_pingpong;

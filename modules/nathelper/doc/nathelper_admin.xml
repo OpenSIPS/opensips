@@ -150,10 +150,11 @@ modparam("nathelper", "ping_nated_only", 1)
 		</example>
 	</section>
 	<section>
-		<title><varname>natping_processes</varname> (integer)</title>
+		<title><varname>natping_partitions</varname> (integer)</title>
 		<para>
-		How many timer processes should be created by the module for the
-		exclusive task of sending the NAT pings.
+		How many partitions/chunks to be used for sending the pingings.
+		One partition means sending all pingings together. Two partitions
+		means to send half pings and second half at a time.
 		</para>
 		<para>
 		<emphasis>
@@ -161,10 +162,10 @@ modparam("nathelper", "ping_nated_only", 1)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>natping_processes</varname> parameter</title>
+		<title>Set <varname>natping_partitions</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("nathelper", "natping_processes", 3)
+modparam("nathelper", "natping_processes", 4)
 ...
 </programlisting>
 		</example>

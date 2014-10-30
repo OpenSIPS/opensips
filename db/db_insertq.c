@@ -26,6 +26,7 @@
 #include "db_insertq.h"
 #include "db_cap.h"
 #include "../timer.h"
+#include "../pt.h"
 
 int query_buffer_size = 0;
 int query_flush_time = 0;
@@ -84,9 +85,9 @@ int init_ql_support(void)
 	if (query_buffer_size > 1)
 	{
 		if  (init_query_list() != 0 ||
-			register_timer_process("querydb-flush", ql_timer_routine,NULL,
+			register_timer("querydb-flush", ql_timer_routine,NULL,
 				query_flush_time>0?query_flush_time:DEF_FLUSH_TIME,
-				TIMER_PROC_INIT_FLAG) < 0 )
+				TIMER_FLAG_DELAY_ON_DELAY) < 0 )
 		{
 			LM_ERR("failed initializing ins list support\n");
 			return -1;
@@ -116,25 +117,25 @@ void flush_query_list(void)
 				continue;
 			}
 
-			it->conn = it->dbf.init(&it->url);
-			if (it->conn == 0)
+			it->conn[process_no] = it->dbf.init(&it->url);
+			if (it->conn[process_no] == 0)
 			{
 				LM_ERR("unable to connect to DB at shutdown\n");
 				lock_release(it->lock);
 				continue;
 			}
 
-			it->dbf.use_table(it->conn,&it->table);
+			it->dbf.use_table(it->conn[process_no],&it->table);
 
 			//Reset prepared statement between query lists/connections
 			my_ps = NULL;
 
-			CON_PS_REFERENCE(it->conn) = &my_ps;
+			CON_PS_REFERENCE(it->conn[process_no]) = &my_ps;
 
 			/* and let's insert the rows */
 			for (i=0;i<it->no_rows;i++)
 			{
-				if (it->dbf.insert(it->conn,it->cols,it->rows[i],
+				if (it->dbf.insert(it->conn[process_no],it->cols,it->rows[i],
 							it->col_no) < 0)
 					LM_ERR("failed to insert into DB\n");
 
@@ -142,8 +143,8 @@ void flush_query_list(void)
 			}
 
 			/* no longer need this connection */
-			if (it->conn && it->dbf.close)
-				it->dbf.close(it->conn);
+			if (it->conn[process_no] && it->dbf.close)
+				it->dbf.close(it->conn[process_no]);
 		}
 	}
 }
@@ -336,8 +337,9 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 		key_size += cols[i]->len;
 
 	row_q_size = sizeof(db_val_t *) * query_buffer_size;
-	size = sizeof(query_list_t) + con->table->len + key_size +
-					row_q_size + con->url.len;
+	size = sizeof(query_list_t) +
+		counted_processes * sizeof(db_con_t *) +
+		con->table->len + key_size + row_q_size + con->url.len;
 
 	entry = shm_malloc(size);
 	if (entry == NULL)
@@ -395,6 +397,10 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 					con->table->len + key_size + row_q_size;
 	entry->url.len = con->url.len;
 	memcpy(entry->url.s,con->url.s,con->url.len);
+
+	/* build array of connections per process */
+	entry->conn = (db_con_t**)((char *)entry + sizeof(query_list_t) +
+					con->table->len + key_size + row_q_size + con->url.len);
 
 	LM_DBG("initialized query list for table [%.*s]\n",entry->table.len,entry->table.s);
 	return entry;
@@ -559,7 +565,7 @@ void ql_timer_routine(unsigned int ticks,void *param)
 		{
 			LM_DBG("insert timer kicking in for query %p [%d]\n",it, it->no_rows);
 
-			if (it->conn == NULL)
+			if (it->dbf.init == NULL)
 			{
 				/* first time timer kicked in for this query */
 				if (db_bind_mod(&it->url,&it->dbf) < 0)
@@ -568,9 +574,12 @@ void ql_timer_routine(unsigned int ticks,void *param)
 					lock_release(it->lock);
 					continue;
 				}
+			}
 
-				it->conn = it->dbf.init(&it->url);
-				if (it->conn == 0)
+			if (it->conn[process_no] == NULL)
+			{
+				it->conn[process_no] = it->dbf.init(&it->url);
+				if (it->conn[process_no] == 0)
 				{
 					LM_ERR("unable to connect to DB\n");
 					lock_release(it->lock);
@@ -580,15 +589,15 @@ void ql_timer_routine(unsigned int ticks,void *param)
 				LM_DBG("timer has init conn for query %p\n",it);
 			}
 
-			it->dbf.use_table(it->conn,&it->table);
+			it->dbf.use_table(it->conn[process_no],&it->table);
 
 			/* simulate the finding of the right query list */
-			it->conn->ins_list = it;
+			it->conn[process_no]->ins_list = it;
 			/* tell the core that this is the insert timer handler */
-			CON_FLUSH_UNSAFE(it->conn);
+			CON_FLUSH_UNSAFE(it->conn[process_no]);
 
 			/* no actual new row to provide, flush existing ones */
-			if (it->dbf.insert(it->conn,it->cols,(db_val_t *)-1,
+			if (it->dbf.insert(it->conn[process_no],it->cols,(db_val_t *)-1,
 						it->col_no) < 0)
 				LM_ERR("failed to insert rows to DB\n");
 		}
