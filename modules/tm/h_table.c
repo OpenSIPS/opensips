@@ -276,7 +276,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 	unsigned short set;
 
 	/* allocs a new cell */
-	new_cell = (struct cell*)shm_malloc( sizeof( struct cell ) );
+	new_cell = (struct cell*)shm_malloc(sizeof(struct cell) + context_size(CONTEXT_TRAN));
 	if  ( !new_cell ) {
 		ser_error=E_OUT_OF_MEM;
 		return NULL;
