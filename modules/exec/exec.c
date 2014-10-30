@@ -540,6 +540,7 @@ static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
 	pv_value_t outval;
 	char buf[MAX_BUF_SIZE], tmpbuf[MAX_LINE_SIZE];
 
+
 	while((tmplen=fread(tmpbuf, 1, MAX_LINE_SIZE, *strm))) {
 		if ((buflen + tmplen) >= MAX_BUF_SIZE) {
 			LM_WARN("no more space in output buffer\n");
@@ -547,16 +548,16 @@ static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
 		}
 		memcpy(buf+buflen, tmpbuf, tmplen);
 		buflen += tmplen;
+	}
 
-		outval.flags = PV_VAL_STR;
-		outval.rs.s = buf;
-		outval.rs.len = buflen;
+	outval.flags = PV_VAL_STR;
+	outval.rs.s = buf;
+	outval.rs.len = buflen;
 
-		if (buflen &&
-			pv_set_value(msg, &outvar->v.pve->spec, 0, &outval) < 0) {
-			LM_ERR("cannot set output pv value\n");
-			return -1;
-		}
+	if (buflen &&
+		pv_set_value(msg, &outvar->v.pve->spec, 0, &outval) < 0) {
+		LM_ERR("cannot set output pv value\n");
+		return -1;
 	}
 
 	return 0;
@@ -573,7 +574,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 	FILE *pin, *pout, *perr;
 
 	if (input || outvar || errvar) {
-		pid =  ___popen(command->s, input ? &pin : NULL,
+		pid =  __popen3(command->s, input ? &pin : NULL,
 									outvar ? &pout : NULL,
 									errvar ? &perr : NULL);
 	} else {
@@ -603,7 +604,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 
 	if (outvar) {
 		if (read_and_write2var(msg, &pout, outvar) < 0) {
-			LM_ERR("failed reading from pipe\n");
+			LM_ERR("failed reading stdout from pipe\n");
 			return -1;
 		}
 	}
@@ -619,13 +620,13 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 
 error:
 	if (outvar && ferror(pout)) {
-		LM_ERR("reading pipe: %s\n", strerror(errno));
+		LM_ERR("stdout reading pipe: %s\n", strerror(errno));
 		ser_error=E_EXEC;
 		ret=-1;
 	}
 
 	if (errvar && ferror(perr)) {
-		LM_ERR("err pipe: %s\n", strerror(errno));
+		LM_ERR("stderr reading pipe: %s\n", strerror(errno));
 		ser_error=E_EXEC;
 		ret=-1;
 	}

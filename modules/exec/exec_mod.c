@@ -417,9 +417,9 @@ static inline int setenvvar(struct hf_wrapper** hf, int_str* value, int idx)
 
 	(*hf)->envvar[len++] = '=';
 
-	memcpy((*hf)->envvar+len, (*value).s.s, (*value).s.len);
+	memcpy((*hf)->envvar+len, value->s.s, value->s.len);
 
-	(*hf)->envvar[len+(*value).s.len] = '\0';
+	(*hf)->envvar[len+ value->s.len] = '\0';
 
 	(*hf)->next_other=(*hf)->next_same=NULL;
 

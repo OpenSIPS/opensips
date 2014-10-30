@@ -35,8 +35,8 @@ Jan Janak
               1.4.2. exec_msg(command)
               1.4.3. exec_avp(command[, avplist])
               1.4.4. exec_getenv(environment_variable[, avp])
-              1.4.5. exec(command, [output], [input],
-                      [error],[envavp])
+              1.4.5. exec(command, [stdout], [stdin], [stderr],
+                      [envavp])
 
         1.5. Known Issues
 
@@ -250,7 +250,7 @@ exec_getenv("HOSTNAME");
 exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 
-1.4.5.  exec(command, [output], [input], [error],[envavp])
+1.4.5.  exec(command, [stdout], [stdin], [stderr], [envavp])
 
    Executes an external command. The input is passed to the
    standard input of the new process, if specified, and the output
@@ -259,13 +259,13 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
    Meaning of the parameters is as follows:
      * command - command to be executed.It can include
        pseudovariables.
-     * output - pseudovariable where to store the output from the
+     * stdout - pseudovariable where to store the output from the
        standard output of the process. Keep in mind that if this
        parameter is set, the async paramater will not be taken in
        consideration.
-     * input - String to be passed to the standard input of the
+     * stdin - String to be passed to the standard input of the
        command. The string can be given as a pseudovariable.
-     * error - pseudovariable where to store the error from the
+     * stderr - pseudovariable where to store the error from the
        standard error of the process.
      * envavp - Avp where to store the values for the environment
        variables to be passed for the command. The names of the
@@ -278,7 +278,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
    bash characters should be placed inside quotes, e.g.
    exec("update-stats.sh '$ct'");
 
-   WARNING: "input"/"output"/"error" parameters are not designed
+   WARNING: "stdin"/"stdout"/"stderr" parameters are not designed
    for a large amount of data so one should be careful when using
    them because server could considerably be slowed down.
 
@@ -290,12 +290,13 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 $avp(env) = "a";
 $avp(env) = "b";
-exec("ls -l", "$var(out)",, "$avp(env)");
+exec("ls -l", "$var(out)",,"$var(err)", "$avp(env)");
 xlog("The output is $var(out)\n");
+xlog("Received the following error\n$var(err)");
 ...
 $var(input) = "input";
-exec("/home/../myscript.sh",, "this is my $var(input) for exec\n", "$avp
-(env)");
+exec("/home/../myscript.sh",, "this is my $var(input) for exec\n",, "$av
+p(env)");
 ...
 
 1.5. Known Issues

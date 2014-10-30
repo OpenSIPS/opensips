@@ -164,7 +164,7 @@ pid_t __popen(const char *cmd, const char *type, FILE **stream)
 	return ret;
 }
 
-pid_t ___popen(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
+pid_t __popen3(const char* cmd, FILE** strm_w, FILE** strm_r, FILE** strm_e)
 {
 #define OPEN_PIPE(strm, fds) \
 	do { \

@@ -339,7 +339,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 
 	<section>
 		<title>
-		<function moreinfo="none">exec(command, [output], [input], [error],[envavp])</function>
+		<function moreinfo="none">exec(command, [stdout], [stdin], [stderr], [envavp])</function>
 		</title>
 		<para>
 		Executes an external command. The input is passed to the standard input of the new
@@ -353,18 +353,18 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>output</emphasis> - pseudovariable where to store the output
+			<para><emphasis>stdout</emphasis> - pseudovariable where to store the output
 			from the standard output of the process. Keep in mind that if this parameter
 			is set, the async paramater will not be taken in consideration.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>input</emphasis> - String to be passed to the standard input
+			<para><emphasis>stdin</emphasis> - String to be passed to the standard input
 			of the command. The string can be given as a pseudovariable.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>error</emphasis> - pseudovariable where to store the error from
+			<para><emphasis>stderr</emphasis> - pseudovariable where to store the error from
 			the standard error of the process.
 			</para>
 		</listitem>
@@ -382,7 +382,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		characters should be placed inside quotes, e.g. exec("update-stats.sh '$ct'");
 		</para>
 		<para>
-		WARNING: "input"/"output"/"error" parameters are not designed for a large amount of
+		WARNING: "stdin"/"stdout"/"stderr" parameters are not designed for a large amount of
 		data so one should be careful when using them because server could considerably be
 		slowed down.
 		</para>
@@ -396,11 +396,12 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 $avp(env) = "a";
 $avp(env) = "b";
-exec("ls -l", "$var(out)",, "$avp(env)");
+exec("ls -l", "$var(out)",,"$var(err)", "$avp(env)");
 xlog("The output is $var(out)\n");
+xlog("Received the following error\n$var(err)");
 ...
 $var(input) = "input";
-exec("/home/../myscript.sh",, "this is my $var(input) for exec\n", "$avp(env)");
+exec("/home/../myscript.sh",, "this is my $var(input) for exec\n",, "$avp(env)");
 ...
 </programlisting>
 		</example>
