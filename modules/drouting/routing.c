@@ -341,6 +341,7 @@ build_rt_info(
 	int sort_profile,
 	char* attrs,
 	rt_data_t* rd,
+	void **qr_rule_list,
 	osips_malloc_f mf,
 	osips_free_f ff
 	)
@@ -355,6 +356,7 @@ build_rt_info(
 	struct dr_reg_init_rule_params *init_rule_params;
 	struct dr_reg_param *reg_dst_param;
 	struct dr_set_profile_params *profile_params;
+	struct dr_add_rule_params *add_rule_params = NULL;
 	pgw_list_t *p = NULL;
 
 	unsigned char * sort_p, n_alg;
@@ -401,36 +403,38 @@ build_rt_info(
 		}
 	}
 
-	/* call the create rule callbacks */
-	init_rule_params = (struct dr_reg_init_rule_params *) pkg_malloc(
-			sizeof(struct dr_reg_init_rule_params));
-	cb_params = (struct dr_cb_params *) pkg_malloc(sizeof(struct dr_cb_params));
-	if(init_rule_params != NULL && cb_params != NULL) {
-		memset(init_rule_params, 0, sizeof(struct dr_reg_init_rule_params));
-		init_rule_params->n_dst = rt->pgwa_len;
-		init_rule_params->r_id = id; /* name of the rule */
-		cb_params->param = (void*)&init_rule_params;
-		if(dr_reg_cbs != NULL && (dr_reg_cbs->types & DRCB_REG_INIT_RULE)) {
-			dr_cb_it = dr_reg_cbs->first;
-			while(dr_cb_it) {
-				if(dr_cb_it->types & DRCB_REG_INIT_RULE) {
-					dr_cb_it->callback(dr_cb_it->types, cb_params);
-					break; /* execute just the first callback */
+	if(n_alg == 3) { /* if the sorting algorithm for this rule is qr sorting */
+
+		/* call the create rule callbacks */
+		init_rule_params = (struct dr_reg_init_rule_params *) pkg_malloc(
+				sizeof(struct dr_reg_init_rule_params));
+		cb_params = (struct dr_cb_params *) pkg_malloc(sizeof(struct dr_cb_params));
+		if(init_rule_params != NULL && cb_params != NULL) {
+			memset(init_rule_params, 0, sizeof(struct dr_reg_init_rule_params));
+			init_rule_params->n_dst = rt->pgwa_len;
+			init_rule_params->r_id = id; /* name of the rule */
+			cb_params->param = (void*)&init_rule_params;
+			if(dr_reg_cbs != NULL && (dr_reg_cbs->types & DRCB_REG_INIT_RULE)) {
+				dr_cb_it = dr_reg_cbs->first;
+				while(dr_cb_it) {
+					if(dr_cb_it->types & DRCB_REG_INIT_RULE) {
+						dr_cb_it->callback(dr_cb_it->types, cb_params);
+						break; /* execute just the first callback */
+					}
+					dr_cb_it = dr_cb_it->next;
 				}
-				dr_cb_it = dr_cb_it->next;
+			} else {
+				LM_ERR("No callback list to match the given type\n");
 			}
-		} else {
-			LM_ERR("No callback list to match the given type\n");
-		}
-		qr_rule = (void*)((struct dr_reg_init_rule_params*)*cb_params->param)->rule;
-		rt->qr_handler = qr_rule;
+			qr_rule = (void*)((struct dr_reg_init_rule_params*)*cb_params->param)->rule;
+			rt->qr_handler = qr_rule;
 
-		p = rt->pgwl;
+			p = rt->pgwl;
 
 
-		if(n_alg == 3) { /* if the sorting algorithm for this rule is qr sorting */
 			/* TODO: params should be pkg - and freed in the cbs */
 			/* TODO: should check if qr loaded */
+
 
 			profile_params = (struct dr_set_profile_params *) pkg_malloc(
 					sizeof(struct dr_set_profile_params));
@@ -438,8 +442,10 @@ build_rt_info(
 				LM_ERR("no more pkg memory");
 				return NULL;
 			}
+
 			profile_params->qr_rule = qr_rule;
 			profile_params->profile = sort_profile;
+
 			run_callbacks(dr_set_profile_cbs, DRCB_SET_PROFILE,
 					(void*)profile_params); /* save the threholds from qr
 											   to the rule */
@@ -471,10 +477,22 @@ build_rt_info(
 						run_callbacks(dr_reg_cbs, DRCB_REG_GW, (void*)reg_dst_param);
 					}
 				}
+
 			}
 		}
+		/* add rule to the partition list */
+		add_rule_params = (struct dr_add_rule_params *) pkg_malloc(
+				sizeof(struct dr_add_rule_params));
+		if(add_rule_params == NULL) {
+			LM_ERR("no more pkg memory\n");
+		}
+
+		add_rule_params->qr_rule = qr_rule;
+		add_rule_params->rule_list = qr_rule_list;
+		run_callbacks(dr_reg_cbs, DRCB_REG_ADD_RULE, add_rule_params);
+		pkg_free(add_rule_params);
 	}
-	run_callbacks(dr_reg_cbs, DRCB_REG_ADD_RULE, (void*)qr_rule);
+
 
 	return rt;
 

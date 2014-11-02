@@ -174,7 +174,9 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 			if(insert_drcb(&dr_acc_cbs, cb, types) == -1)
 				goto error;
 		} else if(types & (DRCB_REG_INIT_RULE | DRCB_REG_GW |
-					DRCB_REG_CR | DRCB_REG_ADD_RULE)) {
+					DRCB_REG_CR | DRCB_REG_ADD_RULE
+					| DRCB_REG_MARK_AS_RULE_LIST | DRCB_REG_LINK_LISTS
+					| DRCB_REG_FREE_LIST)) {
 			if(insert_drcb(&dr_reg_cbs, cb, types) == -1)
 				goto error;
 		} else if(types & (DRCB_SET_PROFILE)) {
@@ -263,18 +265,22 @@ int run_indexed_callback(struct dr_callback **dr_sort_cbs_lst, sort_cb_type type
 int run_dr_cbs(struct dr_head_cbl *dr_cb_lst, int type, void *params) {
 	struct dr_callback * dr_cb_it;
 	struct dr_cb_params *param = NULL;
-	if(params != NULL) {
-		param = (struct dr_cb_params *) shm_malloc(sizeof(struct dr_cb_params));
-		if(param == NULL) {
-			LM_ERR("no more shm memory\n");
-			return -1;
-		}
+
+	param = (struct dr_cb_params *) shm_malloc(sizeof(struct dr_cb_params));
+	if(param == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
 	}
+
 	if(dr_cb_lst != NULL && (dr_cb_lst->types & type)) {
 		dr_cb_it = dr_cb_lst->first;
 		while(dr_cb_it) {
 			if(dr_cb_it->types & type) {
-				param->param = &params;
+				if(params != NULL) {
+					param->param = &params;
+				} else {
+					param->param = NULL;
+				}
 				dr_cb_it->callback(dr_cb_it->types, param);
 			}
 			dr_cb_it = dr_cb_it->next;

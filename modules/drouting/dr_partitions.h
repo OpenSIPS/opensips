@@ -44,6 +44,7 @@
 #include "../tm/tm_load.h"
 
 extern int use_partitions;
+extern rw_lock_t *reload_lock;
 
 struct head_db {
 	str db_url;

@@ -136,6 +136,7 @@ void free_history(qr_sample_t * history) {
 /* free gateway information */
 void qr_free_gw(qr_gw_t * gw) {
 	free_history(gw->next_interval);
+	gw->next_interval = NULL;
 	if(gw->acc_lock) {
 		lock_destroy(gw->acc_lock);
 		lock_dealloc(gw->acc_lock);
@@ -145,6 +146,64 @@ void qr_free_gw(qr_gw_t * gw) {
 	}
 	shm_free(gw);
 }
+
+void qr_free_grp(qr_grp_t *grp) {
+	int i;
+
+	for(i = 0; i < grp->n; i++) {
+		qr_free_gw(grp->gw[i]);
+		grp->gw[i] = NULL;
+	}
+
+	if(grp->ref_lock) {
+		lock_destroy_rw(grp->ref_lock);
+	}
+
+}
+
+void qr_free_dst(qr_dst_t *dst) {
+	if(dst->type & QR_DST_GW) {
+		qr_free_gw(dst->dst.gw);
+	} else {
+		qr_free_grp(&dst->dst.grp);
+	}
+}
+void qr_free_rule(qr_rule_t *rule) {
+	int i;
+
+	for(i = 0; i < rule->n; i++) {
+		qr_free_dst(&rule->dest[i]);
+	}
+	shm_free(rule->dest);
+
+}
+
+void free_qr_list(qr_rule_t *list) {
+	qr_rule_t * rule_it, *next;
+
+	/* free the rules from the given list */
+		rule_it = list;
+
+	while(rule_it != NULL) {
+		next = rule_it->next;
+		qr_free_rule(rule_it);
+		rule_it->next = NULL;
+		rule_it = next;
+	}
+
+}
+
+void free_qr_cb(int type, struct dr_cb_params *param) {
+	struct dr_free_qr_list_params * free_params = (struct dr_free_qr_list_params *)
+		*param->param;
+	LM_DBG("freeing the old rules...\n");
+
+	qr_rule_t * old_list = free_params->old_list;
+	free_qr_list(old_list);
+}
+
+
+/* TODO: thresholds must be freed separatley */
 
 /* creates a rule n_dest destinations (by default marked as gws) */
 void qr_create_rule(int type, struct dr_cb_params * param) {
@@ -224,19 +283,56 @@ error:
 		shm_free(rule->dest[n_dst].dst.grp.gw);
 }
 
-/* add rule to internal rule list */
-void qr_add_rule(int type, struct dr_cb_params * param) {
-	qr_rule_t *new = (qr_rule_t*)*param->param;
+/* add rule to list. if the list is NULL a new list is created */
+void qr_add_rule_to_list(int type, struct dr_cb_params * param) {
+	struct dr_add_rule_params  *add_rule_params =
+		(struct dr_add_rule_params*)*param->param;
+	qr_rule_t **rule_list = (qr_rule_t**)add_rule_params->rule_list;
+	qr_rule_t *new = add_rule_params->qr_rule;
 
 	if(new != NULL) {
-		if(*qr_rules_start == NULL) {
-			*qr_rules_start = new;
+		if(*rule_list == NULL) {
+			*rule_list = new;
 		} else {
-			new->next = *qr_rules_start;
-			*qr_rules_start = new;
+			new->next = *rule_list;
+			*rule_list = new;
 		}
-		LM_DBG("rule '%d' added to qr rule list\n", new->r_id);
+		LM_DBG("rule '%d' added to qr rule list \n", new->r_id);
 	}
+}
+
+/* TODO: add lock */
+/* saves rule list rcvd as parameter, to the main rule list used
+ * by the QR module */
+void qr_mark_as_main_list(int type, struct dr_cb_params * param) {
+	struct dr_mark_as_main_list_params * mark_as_main_list =
+		(struct dr_mark_as_main_list_params*) *param->param;
+	qr_rule_t *rule_list = (qr_rule_t*)mark_as_main_list->new_list;
+
+	LM_DBG("Mark main QR rule list\n");
+	*mark_as_main_list->old_list = *qr_rules_start; /* save old list so it can be freed */
+	*qr_rules_start = rule_list; /* the new list that the QR will work with */
+}
+
+/* copy link two rule lists together => used for dr_reload and partitions
+ * (every partition will create a separate list) */
+void qr_link_rule_list(int type, struct dr_cb_params *param) {
+	struct dr_link_rule_list_params * rule_lists =
+		(struct dr_link_rule_list_params *)*param->param;
+	qr_rule_t **first_list = (qr_rule_t**)rule_lists->first_list;
+	qr_rule_t *second_list = (qr_rule_t*)rule_lists->second_list;
+	qr_rule_t *rule_it;
+
+	if(*first_list == NULL) {
+		*first_list = second_list;
+	} else {
+		for(rule_it = *first_list; rule_it->next != NULL;
+				rule_it = rule_it->next) { /* go to the last rule from the first
+											 list */
+		}
+		rule_it->next = second_list; /* link it to the second list */
+	}
+
 }
 
 void qr_search_profile(int type, struct dr_cb_params *param) {

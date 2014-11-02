@@ -142,6 +142,7 @@ build_rt_info(
 	int sort_profile,
 	char* attr,
 	rt_data_t* rd,
+	void **qr_rule_list,
 	osips_malloc_f mf,
 	osips_free_f ff
 	);

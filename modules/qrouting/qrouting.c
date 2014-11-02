@@ -45,6 +45,7 @@
 #define MAX_HISTORY 1000 /* TODO:*/
 
 /* modparam */
+rw_lock_t **rw_lock_qr;
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
 str db_url;
@@ -111,6 +112,13 @@ static int qr_init(void){
 			sampling_interval);
 	db_func_t qr_dbf;
 	db_con_t *qr_db_hdl = 0;
+
+	/* lock to protect from reloading */
+	rw_lock_qr = (rw_lock_t**)shm_malloc(sizeof(rw_lock_t*));
+	if ((*rw_lock_qr = lock_init_rw()) == NULL) {
+		LM_ERR("failed to init rw lock\n");
+	}
+
 	register_timer_process(T_PROC_LABEL, (void*)timer_func, NULL,
 			sampling_interval, 0);
 
@@ -191,7 +199,7 @@ static int qr_init(void){
 		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
 		return -1;
 	}
-	if(drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule, NULL, NULL) < 0) {
+	if(drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule_to_list, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
 		return -1;
 	}
@@ -209,6 +217,22 @@ static int qr_init(void){
 		LM_ERR("[QR] failed to register DRCB_SET_PROFILE callback to DR\n");
 		return -1;
 	}
+
+	if(drb.register_drcb(DRCB_REG_MARK_AS_RULE_LIST, &qr_mark_as_main_list, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_MARK_AS_QR_RULE_LIST callback to DR\n");
+		return -1;
+	}
+
+	if(drb.register_drcb(DRCB_REG_LINK_LISTS, &qr_link_rule_list, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_LINK_QR_LISTS callback to DR\n");
+		return -1;
+	}
+
+	if(drb.register_drcb(DRCB_REG_FREE_LIST, &free_qr_cb, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_FREE_LIST callback to DR\n");
+		return -1;
+	}
+
 	LM_DBG("[QR] callbacks in DR were registered\n");
 
 	qr_profiles = (qr_thresholds_t**) shm_malloc(sizeof(qr_thresholds_t *));
@@ -264,6 +288,14 @@ static int qr_child_init(int rank) {
 }
 
 static int qr_exit(void) {
+	free_qr_list(*qr_rules_start);
+
+	/* free the thresholds */
+	*n_qr_profiles = 0;
+	shm_free(*qr_profiles);
+	shm_free(qr_profiles);
+	shm_free(n_qr_profiles);
+	qr_profiles = NULL;
 	return 0;
 }
 
@@ -274,6 +306,7 @@ static void timer_func(void) {
 	if(*n_sampled < *qr_n) {
 		++(*n_sampled); /* the number of intervals sampled */
 	}
+
 
 	for(it = *qr_rules_start; it != NULL; it = it->next) {
 		for(i = 0; i < it->n; i++) {
@@ -430,6 +463,7 @@ static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 
 	if(node == NULL) { /* mi_tree with all the destinations (and rules) */
 		for(rule_it = *qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
+			LM_INFO("RULE#INFO\n");
 			if(rule_it->r_id != 0) { /* TODO: maybe -1 */
 				rule_name.s = (char*)shm_malloc(10*sizeof(char));
 				if(rule_name.s == NULL) {
@@ -446,6 +480,7 @@ static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 
 			}
 			for(i = 0;i < rule_it->n; i++) {
+				LM_INFO("adding dst to rule\n");
 				qr_dst_attr(&rule_node, &rule_it->dest[i]);
 			}
 

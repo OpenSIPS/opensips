@@ -153,6 +153,7 @@ static str attrs_empty = str_init("");
 /* configuration loader from db specific stuff */
 static str db_partitions_table = str_init("dr_partitions"); /* default url */
 static str db_partitions_url;
+rw_lock_t *reload_lock; /* lock to protect the partitions while reloading */
 
 
 //static int use_partitions = 0;
@@ -958,7 +959,8 @@ static void dr_state_timer(unsigned int ticks, void* param)
  * -1, else return 0
  */
 
-static inline int dr_reload_data_head(struct head_db *hd, int initial)
+static inline int dr_reload_data_head( struct head_db *hd,
+		void **part_rule_list )
 {
 	rt_data_t *new_data;
 	rt_data_t *old_data;
@@ -988,7 +990,7 @@ static inline int dr_reload_data_head(struct head_db *hd, int initial)
 	}
 
 	LM_INFO("loading drouting data!\n");
-	new_data = dr_load_routing_info(hd, dr_persistent_state);
+	new_data = dr_load_routing_info(hd, dr_persistent_state, part_rule_list);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
 		goto error;
@@ -1067,12 +1069,64 @@ error:
 static inline int dr_reload_data(int initial) {
 	struct head_db * it_head_db;
 	int ret_val = 0;
+	void *qr_main_list = NULL;
+	struct dr_link_rule_list_params *link_lists_param;
+	void *part_rule_list = NULL;
+	void *old_list = NULL;
+	struct dr_mark_as_main_list_params * mark_as_main_list;
+	struct dr_free_qr_list_params *free_list_params;
 
+	link_lists_param = (struct dr_link_rule_list_params*)pkg_malloc(
+			sizeof(struct dr_link_rule_list_params));
+	if(link_lists_param == NULL) {
+		LM_ERR("No more pkg memory");
+		ret_val = -1;
+	}
+	link_lists_param->first_list = &qr_main_list;
+
+	/* TODO will atomize operations  under lock (rt_info_t vector) */
+	lock_start_write(reload_lock);
 	for( it_head_db=head_db_start; it_head_db!=NULL;
 			it_head_db=it_head_db->next ) {
-		if( dr_reload_data_head(it_head_db, initial)!=0 )
+		if( dr_reload_data_head(it_head_db, initial, &part_rule_list)!=0 )
 			ret_val = -1;
+
+		link_lists_param->second_list = part_rule_list;
+
+		run_callbacks(dr_reg_cbs, DRCB_REG_LINK_LISTS,
+				(void*)link_lists_param); /* link the lists for the partitions */
 	}
+
+	pkg_free(link_lists_param);
+
+	mark_as_main_list = (struct dr_mark_as_main_list_params*)
+		pkg_malloc(sizeof(struct dr_mark_as_main_list_params));
+
+	if(mark_as_main_list == NULL) {
+		LM_ERR("no more pkg memory\n");
+		ret_val = -1; /* TODO */
+	}
+	/* TODO: only this should be under lock */
+	mark_as_main_list->new_list = qr_main_list;
+	mark_as_main_list->old_list = &old_list;
+	/* make the new list the main list used by the QR */
+	run_callbacks(dr_reg_cbs, DRCB_REG_MARK_AS_RULE_LIST, mark_as_main_list);
+	lock_stop_write(reload_lock);
+
+	pkg_free(mark_as_main_list); /* free the parameters for the callback */
+
+	free_list_params = (struct dr_free_qr_list_params*)
+		pkg_malloc(sizeof(struct dr_free_qr_list_params));
+	if(free_list_params == NULL) {
+		LM_ERR("No more pkg memory");
+		ret_val = -1;
+	}
+
+	free_list_params->old_list = old_list;
+	/* free the old QR list */
+	run_callbacks(dr_reg_cbs, DRCB_REG_FREE_LIST, free_list_params);
+	pkg_free(free_list_params);
+
 	return ret_val;
 }
 
@@ -1384,6 +1438,10 @@ static int dr_init(void)
 	head_start = NULL; //empty head list
 
 	LM_INFO("Dynamic-Routing - initializing\n");
+	reload_lock = lock_init_rw();
+	if(reload_lock == NULL) {
+		LM_ERR("failed to init rw lock for dr_reload\n");
+	}
 
 	drd_table.len = strlen(drd_table.s);
 	drg_table.len = strlen(drg_table.s);
@@ -2034,6 +2092,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 {
 	struct head_db * part;
 	mi_response_t *resp;
+	void *rule_list;
 
 	LM_INFO("dr_reload MI command received!\n");
 
@@ -2041,7 +2100,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	if (resp)
 		return resp;
 
-	if( dr_reload_data_head(part, 0)<0 ) {
+	if( dr_reload_data_head(part, 0, &rule_list)<0 ) {
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
@@ -2443,7 +2502,8 @@ static int use_next_gw(struct sip_msg* msg,
 		} else {
 			acc_call_params = (struct dr_acc_call_params*)
 				(*(struct dr_acc_call_params**)val.s.s);
-			run_callbacks(dr_acc_cbs, DRCB_ACC_CALL, acc_call_params);
+			run_callbacks(dr_acc_cbs, DRCB_ACC_CALL, acc_call_params); /* do accouting
+																		  for the call */
 			destroy_avp(avp_sk);
 		}
 		if(acc_call_params != NULL) {

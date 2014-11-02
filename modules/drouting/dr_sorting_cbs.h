@@ -40,6 +40,9 @@
 #define DRCB_ACC_CALL (1<<4)
 #define DRCB_SORT_DST (1<<5)
 #define DRCB_SET_PROFILE (1<<6)
+#define DRCB_REG_MARK_AS_RULE_LIST (1<<7)
+#define DRCB_REG_LINK_LISTS (1<<8)
+#define DRCB_REG_FREE_LIST (1<<9)
 
 struct dr_head_cbl *dr_reg_cbs, *dr_acc_cbs, *dr_set_profile_cbs;
 
@@ -90,6 +93,25 @@ struct dr_set_profile_params {
 	void *qr_rule; /* qr_rule_t * to which the profile will be added. provided
 					  by dr */
 	unsigned int profile; /* profile id, sent by dr to qr */
+};
+
+struct dr_add_rule_params {
+	void *qr_rule; /* rule to be added to list */
+	void **rule_list; /* the list to which the rule will be added */
+};
+
+struct dr_link_rule_list_params {
+	void **first_list; /* list to be appended to */
+	void *second_list; /* list to be appended */
+};
+
+struct dr_mark_as_main_list_params{
+	void *new_list; /* list to become qr rules list */
+	void **old_list; /* old list: to be freed */
+};
+
+struct dr_free_qr_list_params {
+	void *old_list;
 };
 
 #endif
