@@ -298,9 +298,6 @@ typedef struct cell
 
 	/* extra T headers */
 	str extra_hdrs;
-
-	/* info for async resume */
-	async_holder a_data;
 }cell_type;
 
 

@@ -2511,7 +2511,7 @@ async_func: ID LPAREN RPAREN {
 				}else{
 					elems[0].type = ACMD_ST;
 					elems[0].u.data = cmd_tmp;
-					mk_action_($$, MODULE_T, 1, elems);
+					mk_action_($$, AMODULE_T, 1, elems);
 				}
 			}
 			| ID LPAREN module_func_param RPAREN {
@@ -2523,7 +2523,7 @@ async_func: ID LPAREN RPAREN {
 				}else{
 					elems[0].type = ACMD_ST;
 					elems[0].u.data = cmd_tmp;
-					mk_action_($$, MODULE_T, $3+1, elems);
+					mk_action_($$, AMODULE_T, $3+1, elems);
 				}
 			}
 			| ID LPAREN error RPAREN {
@@ -3209,7 +3209,8 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
 				i_tmp = get_script_route_idx( $5, rlist, RT_NO, 0);
 				if (i_tmp==-1) yyerror("too many script routes");
-
+				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
+						   $3, (void*)(long)i_tmp);
 				}
 
 	;

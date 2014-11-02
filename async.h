@@ -46,12 +46,6 @@ typedef int (async_resume_function)
 	(int fd, void *param);
 
 
-typedef struct _async_holder {
-	async_resume_function *resume_f;
-	void *resume_param;
-} async_holder;
-
-
 extern async_start_function  *async_start_f;
 extern async_resume_function *async_resume_f;
 
