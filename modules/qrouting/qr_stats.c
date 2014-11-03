@@ -178,18 +178,27 @@ void qr_free_rule(qr_rule_t *rule) {
 
 }
 
-void free_qr_list(qr_rule_t *list) {
+void free_qr_list(qr_partitions_t *qr_parts) {
 	qr_rule_t * rule_it, *next;
+	int i;
 
-	/* free the rules from the given list */
-		rule_it = list;
-
-	while(rule_it != NULL) {
-		next = rule_it->next;
-		qr_free_rule(rule_it);
-		rule_it->next = NULL;
-		rule_it = next;
+	if(qr_parts == NULL) {
+		return ;
 	}
+	for(i = 0; i < qr_parts->n_parts; i++) {
+		rule_it = qr_parts->qr_rules_start[i];
+		/* free the rules from the given list */
+		while(rule_it != NULL) {
+			next = rule_it->next;
+			qr_free_rule(rule_it);
+			rule_it->next = NULL;
+			rule_it = next;
+		}
+	}
+	if(qr_parts->rw_lock != NULL)
+		lock_destroy_rw(qr_parts->rw_lock);
+	shm_free(qr_parts->qr_rules_start);
+	shm_free(qr_parts);
 
 }
 
@@ -198,7 +207,7 @@ void free_qr_cb(int type, struct dr_cb_params *param) {
 		*param->param;
 	LM_DBG("freeing the old rules...\n");
 
-	qr_rule_t * old_list = free_params->old_list;
+	qr_partitions_t * old_list = free_params->old_list;
 	free_qr_list(old_list);
 }
 
@@ -283,21 +292,74 @@ error:
 		shm_free(rule->dest[n_dst].dst.grp.gw);
 }
 
+void qr_create_partition_list(int type, struct dr_cb_params *param) {
+	struct dr_create_partition_list_params *partition_list_params;
+	partition_list_params = (struct dr_create_partition_list_params*)*param->param;
+	qr_partitions_t **part_list =
+		(qr_partitions_t**)partition_list_params->part_list;
+	int n_partitions = partition_list_params->n_parts;
+
+	*part_list = (qr_partitions_t*)shm_malloc(sizeof(qr_partitions_t));
+	memset(*part_list, 0, sizeof(qr_partitions_t));
+	if (part_list == NULL) {
+		LM_ERR("no more shm memory");
+		return;
+	}
+	if(((*part_list)->rw_lock = lock_init_rw()) == NULL) {
+		LM_ERR("failed to init rw lock");
+		goto error;
+	}
+	(*part_list)->qr_rules_start = (qr_rule_t**)shm_malloc(
+			n_partitions * sizeof(qr_rule_t*));
+	if((*part_list)->qr_rules_start == NULL) {
+		LM_ERR("no more shm memory");
+		goto error;
+	}
+
+	(*part_list)->part_name = (str*)shm_malloc(n_partitions*sizeof(str));
+	(*part_list)->n_parts = n_partitions;
+
+	memset((*part_list)->part_name, 0, n_partitions*sizeof(str));
+	memset((*part_list)->qr_rules_start, 0,n_partitions*sizeof(qr_rule_t*));
+
+	return ;
+error:
+	if((*part_list)->rw_lock != NULL) {
+		lock_destroy_rw((*part_list)->rw_lock);
+
+	}
+
+	if((*part_list)->qr_rules_start) {
+		shm_free((*part_list)->qr_rules_start);
+	}
+
+	if(part_list != NULL) {
+		shm_free(part_list);
+		part_list = NULL;
+	}
+
+}
+
 /* add rule to list. if the list is NULL a new list is created */
 void qr_add_rule_to_list(int type, struct dr_cb_params * param) {
 	struct dr_add_rule_params  *add_rule_params =
 		(struct dr_add_rule_params*)*param->param;
-	qr_rule_t **rule_list = (qr_rule_t**)add_rule_params->rule_list;
+	qr_partitions_t *qr_parts = (qr_partitions_t*)add_rule_params->qr_parts;
 	qr_rule_t *new = add_rule_params->qr_rule;
+	int part_index = add_rule_params->part_index;
+	qr_rule_t **rule_list = &qr_parts->qr_rules_start[part_index];
+	str part_name = add_rule_params->part_name;
 
 	if(new != NULL) {
 		if(*rule_list == NULL) {
 			*rule_list = new;
+			qr_parts->part_name[part_index] = part_name;
 		} else {
 			new->next = *rule_list;
 			*rule_list = new;
 		}
-		LM_DBG("rule '%d' added to qr rule list \n", new->r_id);
+		LM_DBG("rule '%d' added to qr rule list for partition index '%d' \n",
+				new->r_id, part_index);
 	}
 }
 
@@ -307,11 +369,14 @@ void qr_add_rule_to_list(int type, struct dr_cb_params * param) {
 void qr_mark_as_main_list(int type, struct dr_cb_params * param) {
 	struct dr_mark_as_main_list_params * mark_as_main_list =
 		(struct dr_mark_as_main_list_params*) *param->param;
-	qr_rule_t *rule_list = (qr_rule_t*)mark_as_main_list->new_list;
+	qr_partitions_t *qr_parts_new = (qr_partitions_t*)mark_as_main_list
+		->qr_parts_new_list;
 
 	LM_DBG("Mark main QR rule list\n");
-	*mark_as_main_list->old_list = *qr_rules_start; /* save old list so it can be freed */
-	*qr_rules_start = rule_list; /* the new list that the QR will work with */
+	*mark_as_main_list->qr_parts_old_list = *qr_main_list; /* save old list so it can be freed */
+	lock_start_write(*rw_lock_qr);
+	*qr_main_list = qr_parts_new; /* the new list that the QR will work with */
+	lock_stop_write(*rw_lock_qr);
 }
 
 /* copy link two rule lists together => used for dr_reload and partitions
@@ -328,7 +393,7 @@ void qr_link_rule_list(int type, struct dr_cb_params *param) {
 	} else {
 		for(rule_it = *first_list; rule_it->next != NULL;
 				rule_it = rule_it->next) { /* go to the last rule from the first
-											 list */
+											  list */
 		}
 		rule_it->next = second_list; /* link it to the second list */
 	}

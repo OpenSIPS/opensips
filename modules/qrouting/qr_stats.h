@@ -127,9 +127,19 @@ typedef struct qr_rule {
 	struct qr_rule *next;
 } qr_rule_t;
 
+typedef struct qr_partitions {
+	qr_rule_t **qr_rules_start; /* an array of partition - each partition
+								   contains rules */
+	int n_parts; /* the number of partitions */
+	str *part_name;
+	rw_lock_t *rw_lock; /* protect the partitions for reloading */
+}qr_partitions_t;
+
 extern qr_rule_t ** qr_rules_start; /* used when updating statistics */
+extern rw_lock_t ** rw_lock_qr;
 extern qr_thresholds_t **qr_profiles;/* profiles from db */
 extern int *n_qr_profiles; /* the number of profiles from db */
+extern qr_partitions_t **qr_main_list;
 
 qr_gw_t *  qr_create_gw(void *);
 void qr_free_gw(qr_gw_t *);
@@ -141,8 +151,9 @@ void qr_dst_is_gw(int type, struct dr_cb_params *param);
 void qr_search_profile(int type, struct dr_cb_params *param);
 void qr_mark_as_main_list(int type, struct dr_cb_params * param);
 void qr_link_rule_list(int type, struct dr_cb_params *param);
+void qr_create_partition_list(int type, struct dr_cb_params *param);
 void free_qr_cb(int type, struct dr_cb_params *param);
-void free_qr_list(qr_rule_t *list);
+void free_qr_list(qr_partitions_t *qr_parts);
 
 
 #endif

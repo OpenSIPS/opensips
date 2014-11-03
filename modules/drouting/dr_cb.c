@@ -176,7 +176,7 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 		} else if(types & (DRCB_REG_INIT_RULE | DRCB_REG_GW |
 					DRCB_REG_CR | DRCB_REG_ADD_RULE
 					| DRCB_REG_MARK_AS_RULE_LIST | DRCB_REG_LINK_LISTS
-					| DRCB_REG_FREE_LIST)) {
+					| DRCB_REG_FREE_LIST | DRCB_REG_CREATE_PARTS_LIST)) {
 			if(insert_drcb(&dr_reg_cbs, cb, types) == -1)
 				goto error;
 		} else if(types & (DRCB_SET_PROFILE)) {

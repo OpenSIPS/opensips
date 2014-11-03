@@ -45,11 +45,12 @@
 #define MAX_HISTORY 1000 /* TODO:*/
 
 /* modparam */
-rw_lock_t **rw_lock_qr;
+rw_lock_t **rw_lock_qr; /* used to protect the qr_main_list */
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
 str db_url;
 int *n_qr_profiles = 0;
+qr_partitions_t **qr_main_list; /* the history itself */
 qr_thresholds_t **qr_profiles = 0;
 int * qr_n;
 int * n_sampled;
@@ -113,11 +114,21 @@ static int qr_init(void){
 	db_func_t qr_dbf;
 	db_con_t *qr_db_hdl = 0;
 
+	/* TODO: should become obsolete */
 	/* lock to protect from reloading */
 	rw_lock_qr = (rw_lock_t**)shm_malloc(sizeof(rw_lock_t*));
 	if ((*rw_lock_qr = lock_init_rw()) == NULL) {
 		LM_ERR("failed to init rw lock\n");
 	}
+
+	qr_main_list = (qr_partitions_t**)shm_malloc(sizeof(qr_partitions_t*));
+
+	if(qr_main_list == NULL) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+
+	*qr_main_list = NULL; /* mark main list as empty */
 
 	register_timer_process(T_PROC_LABEL, (void*)timer_func, NULL,
 			sampling_interval, 0);
@@ -233,6 +244,12 @@ static int qr_init(void){
 		return -1;
 	}
 
+	if(drb.register_drcb(DRCB_REG_CREATE_PARTS_LIST, &qr_create_partition_list,
+				NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_CREATE_PARTS_LIST callback to DR\n");
+		return -1;
+	}
+
 	LM_DBG("[QR] callbacks in DR were registered\n");
 
 	qr_profiles = (qr_thresholds_t**) shm_malloc(sizeof(qr_thresholds_t *));
@@ -288,7 +305,7 @@ static int qr_child_init(int rank) {
 }
 
 static int qr_exit(void) {
-	free_qr_list(*qr_rules_start);
+	free_qr_list(*qr_main_list);
 
 	/* free the thresholds */
 	*n_qr_profiles = 0;
@@ -301,31 +318,52 @@ static int qr_exit(void) {
 
 static void timer_func(void) {
 	qr_rule_t *it;
-	int i;
+	int i, j;
 
 	if(*n_sampled < *qr_n) {
 		++(*n_sampled); /* the number of intervals sampled */
 	}
 
 
-	for(it = *qr_rules_start; it != NULL; it = it->next) {
-		for(i = 0; i < it->n; i++) {
-			if(it->dest[i].type == QR_DST_GW) {
-				update_gw_stats(it->dest[i].dst.gw);
-			} else {
-				update_grp_stats(it->dest[i].dst.grp);
+
+	lock_start_read(*rw_lock_qr);
+	if(*qr_main_list != NULL) { /* if there is a list */
+		for(j = 0; j < (*qr_main_list)->n_parts; j++) { /* for every partition */
+			for(it = (*qr_main_list)->qr_rules_start[j];
+					it != NULL; it = it->next) { /* for every rule */
+				for(i = 0; i < it->n; i++) { /* for every destination */
+					if(it->dest[i].type == QR_DST_GW) {
+						update_gw_stats(it->dest[i].dst.gw);
+					} else {
+						update_grp_stats(it->dest[i].dst.grp);
+					}
+				}
 			}
 		}
 	}
+	lock_stop_read(*rw_lock_qr);
 }
 
 /* searches for a given rule in the QR list */
-static qr_rule_t * qr_search_rule(int r_id) {
+static qr_rule_t * qr_search_rule(qr_rule_t *list, int r_id) {
 	qr_rule_t * rule_it;
 
-	for(rule_it = *qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
+	for(rule_it = list; rule_it != NULL; rule_it = rule_it->next) {
 		if(rule_it->r_id == r_id) {
 			return rule_it;
+		}
+	}
+	return NULL;
+}
+
+/* returns the linked list of rules for a certain partition */
+static qr_rule_t * qr_search_partition(str part_name) {
+	int i;
+	for(i = 0; i < (*qr_main_list)->n_parts; i++) {
+		if(part_name.len == (*qr_main_list)->part_name[i].len &&
+				memcmp(part_name.s, (*qr_main_list)->part_name[i].s,
+				part_name.len) == 0){
+			return (*qr_main_list)->qr_rules_start[i];
 		}
 	}
 	return NULL;
@@ -409,11 +447,11 @@ error:
 	*node = NULL;
 }
 
-static void qr_grp_attr(struct mi_node **node, qr_grp_t * grp) {
+static void qr_grp_attr(struct mi_node **node, qr_grp_t * grp, str *group_name) {
 	int i;
 	struct mi_node *gw_node;
-	gw_node = add_mi_node_child(*node, 0, "Group", 5, "group_name",
-			strlen("group_name"));
+	gw_node = add_mi_node_child(*node, 0, "Group", 5, group_name->s,
+			group_name->len);
 	if(*node == NULL)
 		goto error;
 	for(i = 0; i<grp->n; i++) {
@@ -432,20 +470,22 @@ static void qr_dst_attr(struct mi_node ** node, qr_dst_t * dst) {
 	if(dst->type == QR_DST_GW) {
 		qr_gw_attr(node, dst->dst.gw);
 	} else {
-		qr_grp_attr(node, &dst->dst.grp);
+		qr_grp_attr(node, &dst->dst.grp, qr_get_dst_name(dst));
 	}
 }
 
-
 static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 	/* TODO protected from adding */
-	int i;
+	int i,j;
 	qr_rule_t *rule_it, *rule;
 	qr_dst_t *dst;
-	str rule_name, gw_name, error_str;
+	str part_name, rule_name, gw_name, error_str;
 	unsigned int rule_id;
-	struct mi_node * node = NULL, *rule_node = NULL;
+	qr_rule_t * qr_part;
+	struct mi_node * node = NULL, *rule_node = NULL, *partition_node = NULL;
 	struct mi_root *rpl_tree = NULL, *error_tree = NULL;
+
+	memset(&part_name, 0, sizeof(str));
 
 
 	LM_INFO("qr_status command received\n");
@@ -462,70 +502,109 @@ static struct mi_root* qr_status_cmd(struct mi_root *cmd_tree, void *param) {
 	rpl_tree->node.flags |= MI_IS_ARRAY;
 
 	if(node == NULL) { /* mi_tree with all the destinations (and rules) */
-		for(rule_it = *qr_rules_start; rule_it != NULL; rule_it = rule_it->next) {
-			LM_INFO("RULE#INFO\n");
-			if(rule_it->r_id != 0) { /* TODO: maybe -1 */
-				rule_name.s = (char*)shm_malloc(10*sizeof(char));
-				if(rule_name.s == NULL) {
-					LM_ERR("no more shm memory\n");
-					goto error;
+		for(j = 0; j < (*qr_main_list)->n_parts; j++) { /* for every partition */
+			partition_node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
+					"Partition", 9, (*qr_main_list)->part_name[j].s,
+					(*qr_main_list)->part_name[j].len);
+
+			for(rule_it = (*qr_main_list)->qr_rules_start[j]; rule_it != NULL;
+					rule_it = rule_it->next) {
+				if(rule_it->r_id != 0) { /* TODO: maybe -1 */
+					rule_name.s = (char*)shm_malloc(10*sizeof(char));
+					if(rule_name.s == NULL) {
+						LM_ERR("no more shm memory\n");
+						goto error;
+					}
+					memset(rule_name.s, 0, 10*sizeof(char));
+					rule_name.len = snprintf(rule_name.s, 10,"%d", rule_it->r_id);
+					rule_node = add_mi_node_child(partition_node, 0,
+							"Rule", 4, rule_name.s, rule_name.len);
+				} else {
+					rule_node = add_mi_node_child(partition_node, 0,
+							"Rule", 4, 0, 0);
+
 				}
-				memset(rule_name.s, 0, 10*sizeof(char));
-				rule_name.len = snprintf(rule_name.s, 10,"%d", rule_it->r_id);
-				rule_node = add_mi_node_child(&rpl_tree->node, 0,
-						"Rule", 4, rule_name.s, rule_name.len);
-			} else {
-				rule_node = add_mi_node_child(&rpl_tree->node, 0,
-						"Rule", 4, 0, 0);
+				for(i = 0;i < rule_it->n; i++) {
+					qr_dst_attr(&rule_node, &rule_it->dest[i]);
+				}
 
 			}
-			for(i = 0;i < rule_it->n; i++) {
-				LM_INFO("adding dst to rule\n");
-				qr_dst_attr(&rule_node, &rule_it->dest[i]);
-			}
-
 		}
 	} else { /* mi_tree with a single destination (group/gateway) */
-		rule_name = node->value;
-		if(str2int(&node->value, &rule_id) < 0) {
-			error_str.len = rule_name.len + 36;
-			error_str.s = (char *)shm_malloc(error_str.len*sizeof(char));
-			snprintf(error_str.s, error_str.len,
-					"Failed to parse rule name '%.*s' to int", rule_name.len,
-					rule_name.s);
-			error_tree = init_mi_tree(500,error_str.s, error_str.len);
-			goto error;
-		}
-		LM_DBG("searching for rule_id %d\n", rule_id);
-		rule = qr_search_rule(rule_id);
-		if(rule == NULL) {
-			error_str.len = rule_name.len + 18;
-			error_str.s = shm_malloc(error_str.len*sizeof(char));
-			snprintf(error_str.s, error_str.len, "Rule '%.*s' not found",
-					rule_name.len, rule_name.s);
-			error_tree = init_mi_tree(400, error_str.s, error_str.len);
-			goto error;
-		}
-		rule_node = add_mi_node_child(&rpl_tree->node, 0,
-				"Rule", 4, rule_name.s, rule_name.len);
-
-		if(node->next != NULL) {
+		if((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
+											 the partition */
+			part_name = node->value;
+			qr_part = qr_search_partition(part_name);
 			node = node->next;
-			gw_name = node->value;
-			dst = qr_search_dst(rule, &gw_name);
-			if(dst == NULL) {
-				error_str.len = gw_name.len+21;
+
+		} else {
+			qr_part = (*qr_main_list)->qr_rules_start[0]; /* use the default
+															 partition */
+			part_name = (*qr_main_list)->part_name[0];
+		}
+		if(qr_part == NULL) {
+			error_str.len = part_name.len + 23;
+			error_str.s = (char*)shm_malloc(error_str.len*sizeof(char));
+			snprintf(error_str.s, error_str.len,
+					"Partition '%.*s' not found", part_name.len, part_name.s);
+			goto error;
+		}
+		partition_node = add_mi_node_child(&rpl_tree->node, 0,
+						"Partition", 9, part_name.s, part_name.len);
+		if(node!= NULL) {
+			rule_name = node->value;
+			if(str2int(&node->value, &rule_id) < 0) {
+				error_str.len = rule_name.len + 36;
+				error_str.s = (char *)shm_malloc(error_str.len*sizeof(char));
+				snprintf(error_str.s, error_str.len,
+						"Failed to parse rule name '%.*s' to int", rule_name.len,
+						rule_name.s);
+				error_tree = init_mi_tree(500,error_str.s, error_str.len);
+				goto error;
+			}
+			LM_DBG("searching for rule_id %d\n", rule_id);
+			rule = qr_search_rule(qr_part, rule_id);
+			if(rule == NULL) {
+				error_str.len = rule_name.len + 18;
 				error_str.s = shm_malloc(error_str.len*sizeof(char));
-				snprintf(error_str.s, error_str.len, "Gateway '%.*s' not found",
-						gw_name.len, gw_name.s);
+				snprintf(error_str.s, error_str.len, "Rule '%.*s' not found",
+						rule_name.len, rule_name.s);
 				error_tree = init_mi_tree(400, error_str.s, error_str.len);
 				goto error;
 			}
-			qr_dst_attr(&rule_node, dst);
+			rule_node = add_mi_node_child(partition_node, 0,
+					"Rule", 4, rule_name.s, rule_name.len);
 
-		} else { /* mi_tree with all the destinations for a rule */
-			for(i = 0; i < rule->n; i++) {
-				qr_dst_attr(&rule_node, &rule->dest[i]);
+			if(node->next != NULL) {
+				node = node->next;
+				gw_name = node->value;
+				dst = qr_search_dst(rule, &gw_name);
+				if(dst == NULL) {
+					error_str.len = gw_name.len+21;
+					error_str.s = shm_malloc(error_str.len*sizeof(char));
+					snprintf(error_str.s, error_str.len, "Gateway '%.*s' not found",
+							gw_name.len, gw_name.s);
+					error_tree = init_mi_tree(400, error_str.s, error_str.len);
+					goto error;
+				}
+				qr_dst_attr(&rule_node, dst);
+
+			} else { /* mi_tree with all the destinations for a rule */
+				for(i = 0; i < rule->n; i++) {
+					qr_dst_attr(&rule_node, &rule->dest[i]);
+				}
+				//qr_rule_attr(&rule_node, rule);
+			}
+		} else {
+			for(rule_it = qr_part; rule_it != NULL; rule_it = rule_it->next) {
+				rule_name.len = 0;
+				rule_name.s = (char*)shm_malloc(10*sizeof(char));
+				rule_name.len = snprintf(rule_name.s, 10,"%d", rule_it->r_id);
+				rule_node = add_mi_node_child(partition_node, 0, "Rule", 4,
+						rule_name.s, rule_name.len);
+				for(i = 0; i < rule_it->n; i++) {
+					qr_dst_attr(&rule_node, &rule_it->dest[i]);
+				}
 			}
 		}
 	}

@@ -305,7 +305,7 @@ void dr_update_head_cache(struct head_db *head)
  */
 
 rt_data_t* dr_load_routing_info(struct head_db *current_partition
-		, int persistent_state, void **part_rule_list)
+		, int persistent_state, void *qr_parts, int part_index, str part_name)
 {
 	int    int_vals[5];
 	char * str_vals[7];
@@ -728,7 +728,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 							str_vals[STR_VALS_SORT_ALG_DRR_COL],
 							int_vals[INT_VALS_SORT_PROFILE_DRR_COL],
 							str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
-							part_rule_list,
+							qr_parts, part_index, part_name,
 							current_partition->malloc,
 							current_partition->free))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "

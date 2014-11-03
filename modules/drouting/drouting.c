@@ -176,7 +176,10 @@ static struct head_config {
 	str rule_attrs_avp_spec; /* extracted from database - has default value */
 	str carrier_attrs_avp_spec; /* extracted from database - has default value */
 	struct head_config *next;
-}* head_start = NULL;
+}* head_start = NULL,* head_end = NULL;
+int *n_partitions; /* the number of partitions accepted by modules init */
+
+struct head_db * head_db_start = NULL,* head_db_end = NULL;
 
 struct head_db * head_db_start = NULL;
 
@@ -960,7 +963,7 @@ static void dr_state_timer(unsigned int ticks, void* param)
  */
 
 static inline int dr_reload_data_head( struct head_db *hd,
-		void **part_rule_list )
+		void *qr_parts, int part_index, str part_name)
 {
 	rt_data_t *new_data;
 	rt_data_t *old_data;
@@ -990,7 +993,8 @@ static inline int dr_reload_data_head( struct head_db *hd,
 	}
 
 	LM_INFO("loading drouting data!\n");
-	new_data = dr_load_routing_info(hd, dr_persistent_state, part_rule_list);
+	new_data = dr_load_routing_info(hd, dr_persistent_state, qr_parts,
+			part_index, part_name);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
 		goto error;
@@ -1069,35 +1073,36 @@ error:
 static inline int dr_reload_data(int initial) {
 	struct head_db * it_head_db;
 	int ret_val = 0;
-	void *qr_main_list = NULL;
-	struct dr_link_rule_list_params *link_lists_param;
-	void *part_rule_list = NULL;
-	void *old_list = NULL;
+	void *old_list = NULL; /* list to be freed */
+	void *qr_parts_data = NULL; /* all the partitions */
+	int part_index;
 	struct dr_mark_as_main_list_params * mark_as_main_list;
 	struct dr_free_qr_list_params *free_list_params;
+	struct dr_create_partition_list_params *create_parts_list_params;
 
-	link_lists_param = (struct dr_link_rule_list_params*)pkg_malloc(
-			sizeof(struct dr_link_rule_list_params));
-	if(link_lists_param == NULL) {
-		LM_ERR("No more pkg memory");
+
+	create_parts_list_params = (struct dr_create_partition_list_params*)
+		pkg_malloc(sizeof(struct dr_create_partition_list_params));
+
+	if(create_parts_list_params == NULL) {
+		LM_ERR("no more pkg memory");
 		ret_val = -1;
 	}
-	link_lists_param->first_list = &qr_main_list;
+	create_parts_list_params->part_list = &qr_parts_data;
+	create_parts_list_params->n_parts = *n_partitions;
+	run_callbacks(dr_reg_cbs, DRCB_REG_CREATE_PARTS_LIST,
+			create_parts_list_params ); /* create the QR list for
+										   all the partitions */
 
 	/* TODO will atomize operations  under lock (rt_info_t vector) */
 	lock_start_write(reload_lock);
 	for( it_head_db=head_db_start; it_head_db!=NULL;
 			it_head_db=it_head_db->next ) {
-		if( dr_reload_data_head(it_head_db, initial, &part_rule_list)!=0 )
+		if( dr_reload_data_head(it_head_db, initial, qr_parts_data, part_index,
+					it_head_db->partition)!=0 )
 			ret_val = -1;
 
-		link_lists_param->second_list = part_rule_list;
-
-		run_callbacks(dr_reg_cbs, DRCB_REG_LINK_LISTS,
-				(void*)link_lists_param); /* link the lists for the partitions */
 	}
-
-	pkg_free(link_lists_param);
 
 	mark_as_main_list = (struct dr_mark_as_main_list_params*)
 		pkg_malloc(sizeof(struct dr_mark_as_main_list_params));
@@ -1107,8 +1112,8 @@ static inline int dr_reload_data(int initial) {
 		ret_val = -1; /* TODO */
 	}
 	/* TODO: only this should be under lock */
-	mark_as_main_list->new_list = qr_main_list;
-	mark_as_main_list->old_list = &old_list;
+	mark_as_main_list->qr_parts_new_list = qr_parts_data;
+	mark_as_main_list->qr_parts_old_list = &old_list;
 	/* make the new list the main list used by the QR */
 	run_callbacks(dr_reg_cbs, DRCB_REG_MARK_AS_RULE_LIST, mark_as_main_list);
 	lock_stop_write(reload_lock);
@@ -1442,6 +1447,8 @@ static int dr_init(void)
 	if(reload_lock == NULL) {
 		LM_ERR("failed to init rw lock for dr_reload\n");
 	}
+	n_partitions = (int*)shm_malloc(sizeof(int));
+	*n_partitions = 0;
 
 	drd_table.len = strlen(drd_table.s);
 	drg_table.len = strlen(drg_table.s);
@@ -2092,6 +2099,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 {
 	struct head_db * part;
 	mi_response_t *resp;
+	str x;
 	void *rule_list;
 
 	LM_INFO("dr_reload MI command received!\n");
@@ -2100,7 +2108,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	if (resp)
 		return resp;
 
-	if( dr_reload_data_head(part, 0, &rule_list)<0 ) {
+	if( dr_reload_data_head(part, 0, &rule_list, 0, x)<0 ) {
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}

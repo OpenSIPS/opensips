@@ -341,7 +341,9 @@ build_rt_info(
 	int sort_profile,
 	char* attrs,
 	rt_data_t* rd,
-	void **qr_rule_list,
+	void *qr_parts_data,
+	int part_index,
+	str part_name,
 	osips_malloc_f mf,
 	osips_free_f ff
 	)
@@ -488,7 +490,9 @@ build_rt_info(
 		}
 
 		add_rule_params->qr_rule = qr_rule;
-		add_rule_params->rule_list = qr_rule_list;
+		add_rule_params->qr_parts = qr_parts_data;
+		add_rule_params->part_name = part_name;
+		add_rule_params->part_index = part_index;
 		run_callbacks(dr_reg_cbs, DRCB_REG_ADD_RULE, add_rule_params);
 		pkg_free(add_rule_params);
 	}
