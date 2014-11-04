@@ -1463,6 +1463,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 					break;
 		}
 	}
+
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
@@ -1652,12 +1653,12 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 		destroy_avp(tmp_avp);
 	}
 
+	LM_DBG("using [%.*s]\n", avp_value.s.len, avp_value.s.s);
 	if(ds_update_dst(msg, &avp_value.s, sock, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
 	}
-	LM_DBG("using [%.*s]\n", avp_value.s.len, avp_value.s.s);
 
 	return 1;
 }
