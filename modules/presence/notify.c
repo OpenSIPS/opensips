@@ -2147,7 +2147,7 @@ void p_tm_callback( struct cell *t, int type, struct tmcb_params *ps)
 			ps->code, cb?cb->to_tag.len:0, cb?cb->to_tag.s:"", t->cseq_n.len, t->cseq_n.s);
 	}
 
-	if(ps->code == 481 || ps->code==408)
+	if(ps->code == 481 || (end_sub_on_timeout && (ps->code==408)) )
 	{
 		unsigned int hash_code;
 

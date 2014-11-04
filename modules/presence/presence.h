@@ -27,8 +27,8 @@
  *  2006-10-09  first version (Anca Vamanu)
  */
 
-#ifndef PA_MOD_H
-#define PA_MOD_H
+#ifndef PRESENCE_MOD_H
+#define PRESENCE_MOD_H
 
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
@@ -65,6 +65,7 @@ extern int shtable_size;
 extern shtable_t subs_htable;
 extern int mix_dialog_presence;
 extern int notify_offline_body;
+extern int end_sub_on_timeout;
 
 extern int phtable_size;
 extern phtable_t* pres_htable;
