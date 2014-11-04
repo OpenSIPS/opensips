@@ -121,7 +121,7 @@ pres_ev_t** pres_event_p= NULL;
 pres_ev_t** dialog_event_p= NULL;
 
 int phtable_size= 9;
-phtable_t* pres_htable;
+phtable_t* pres_htable = NULL;
 unsigned int waiting_subs_daysno = 0;
 unsigned long waiting_subs_time = 3*24*3600;
 str bla_presentity_spec_param = {0, 0};
@@ -199,9 +199,6 @@ static int mod_init(void)
 
 	LM_NOTICE("initializing module ...\n");
 
-	if(db_url.s== NULL)
-		library_mode= 1;
-
 	EvList= init_evlist();
 	if(!EvList)
 	{
@@ -218,9 +215,11 @@ static int mod_init(void)
 	}
 	*dialog_event_p = *pres_event_p = NULL;
 
-	if(library_mode== 1)
-	{
+	if(db_url.s== NULL) {
+		library_mode= 1;
 		LM_DBG("presence module used for library purpose only\n");
+		/* disable all MI commands (loading MI cmds is done after init) */
+		exports.mi_cmds = NULL;
 		return 0;
 	}
 
