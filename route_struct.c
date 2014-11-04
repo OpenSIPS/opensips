@@ -92,14 +92,16 @@ error:
 
 
 
-struct action* mk_action(int type, int n, action_elem_t *elem, int line)
+struct action* mk_action(int type, int n, action_elem_t *elem,
+														int line, char *file)
 {
 	int i;
 	struct action* a;
 
 	if(n>MAX_ACTION_ELEMS)
 	{
-		LM_ERR("too many action elements at line %d for %d", line, type);
+		LM_ERR("too many action elements at %s:%d for %d",
+			file, line, type);
 		return 0;
 	}
 
@@ -117,6 +119,7 @@ struct action* mk_action(int type, int n, action_elem_t *elem, int line)
 	}
 
 	a->line = line;
+	a->file = file;
 	a->next=0;
 	return a;
 

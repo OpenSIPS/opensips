@@ -142,6 +142,7 @@ struct action{
 	int type;  /* forward, drop, log, send ...*/
 	action_elem_t elem[MAX_ACTION_ELEMS];
 	int line;
+	char *file;
 	struct action* next;
 };
 
@@ -149,7 +150,8 @@ struct action{
 
 struct expr* mk_exp(int op, struct expr* left, struct expr* right);
 struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd);
-struct action* mk_action(int type, int n, action_elem_t *elem, int line);
+struct action* mk_action(int type, int n, action_elem_t *elem,
+		int line, char *file);
 struct action* append_action(struct action* a, struct action* b);
 
 
