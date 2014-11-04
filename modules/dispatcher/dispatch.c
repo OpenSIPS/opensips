@@ -1229,8 +1229,7 @@ static inline int ds_get_index(int group, ds_set_p *index, ds_partition_t *parti
 }
 
 
-static inline int ds_update_dst(struct sip_msg *msg, str *uri,
-										struct socket_info *sock, int mode)
+int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode)
 {
 	struct action act;
 	uri_type utype;
@@ -1288,10 +1287,10 @@ static int count_inactive_destinations(ds_set_p idx, int ds_use_default) {
 
 static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 {
-	char buf[2+16+1]; /* a hexa string */
+	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	int_str avp_val;
 
-	avp_val.s.len = 1 + sprintf( buf, "%p", ds->sock );
+	avp_val.s.len = 1 + snprintf( buf, PTR_STR_SIZE, "%p", ds->sock );
 	avp_val.s.s = buf;
 	if(add_avp(AVP_VAL_STR| partition->sock_avp_type,
 				partition->sock_avp_name, avp_val)!=0) {
@@ -1321,7 +1320,7 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 /**
  *
  */
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags)
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags)
 {
 	int i, cnt, i_unwrapped;
 	unsigned int ds_hash;
@@ -1464,6 +1463,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_fla
 					break;
 		}
 	}
+
 	LM_DBG("alg hash [%u], id [%u]\n", ds_hash, ds_id);
 	cnt = 0;
 
@@ -1502,6 +1502,23 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_fla
 		LM_ERR("cannot set dst addr\n");
 		goto error;
 	}
+
+	/* Save the selected destination for multilist failover */
+	if (selected_dst->uri.s != NULL) {
+		pkg_free(selected_dst->uri.s);
+		memset(&selected_dst->uri, 0, sizeof(str));
+	}
+	if (pkg_str_dup(&selected_dst->uri, &selected->dst_uri) != 0) {
+		LM_ERR("cannot set selected_dst uri\n");
+		goto error;
+	}
+	if (selected->sock) {
+		selected_dst->socket.len = 1 + snprintf( selected_dst->socket.s, PTR_STR_SIZE, "%p", selected->sock );
+	}
+	else {
+		selected_dst->socket.len = 0;
+	}
+
 	/* if alg is round-robin then update the shortcut to next to be used */
 	if(ds_select_ctl->alg==4)
 		idx->last = (ds_id+1) % idx->nr;
@@ -1636,12 +1653,12 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 		destroy_avp(tmp_avp);
 	}
 
+	LM_DBG("using [%.*s]\n", avp_value.s.len, avp_value.s.s);
 	if(ds_update_dst(msg, &avp_value.s, sock, mode)!=0)
 	{
 		LM_ERR("cannot set dst addr\n");
 		return -1;
 	}
-	LM_DBG("using [%.*s]\n", avp_value.s.len, avp_value.s.s);
 
 	return 1;
 }

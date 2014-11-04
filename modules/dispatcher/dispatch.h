@@ -50,7 +50,7 @@
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
 #define DS_USE_DEFAULT		4  /* use last address in destination set as last option */
-#define DS_FORCE_DST		8  /* if not set it will force overwriting the destination address 
+#define DS_FORCE_DST		8  /* if not set it will force overwriting the destination address
 					if already set */
 
 #define DS_INACTIVE_DST		1  /* inactive destination */
@@ -150,6 +150,7 @@ typedef struct _ds_select_ctl
 	int max_results;			/* max destinaitons to process */
 	int reset_AVP;				/* reset AVPs flag */
 	int set_destination;		/* set destination flag */
+	int ds_flags;
 } ds_select_ctl_t, *ds_select_ctl_p;
 
 typedef struct
@@ -157,6 +158,12 @@ typedef struct
 	ds_partition_t *partition;
 	int set_id;
 } ds_options_callback_param_t;
+
+typedef struct _ds_selected_dst
+{
+	str uri;
+	str socket;
+} ds_selected_dst, *ds_selected_dst_p;
 
 extern str ds_set_id_col;
 extern str ds_dest_uri_col;
@@ -188,7 +195,8 @@ int ds_reload_db(ds_partition_t *partition);
 int init_ds_data(ds_partition_t *partition);
 void ds_destroy_data(ds_partition_t *partition);
 
-int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, int ds_flags);
+int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int mode);
+int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags);
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_set_state(int group, str *address, int state, int type,
 		ds_partition_t *partition);

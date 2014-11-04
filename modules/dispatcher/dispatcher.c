@@ -811,14 +811,16 @@ static int mod_init(void)
 			return -1;
 		}
 		/* Register the PING-Timer */
-		if (register_timer("ds-pinger",ds_check_timer,NULL,ds_ping_interval)<0){
+		if (register_timer("ds-pinger", ds_check_timer, NULL,
+		ds_ping_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register timer for probing!\n");
 			return -1;
 		}
 	}
 
 	/* register timer to flush the state of destination back to DB */
-	if (register_timer("ds-flusher",ds_flusher_routine,NULL, 30)<0){
+	if (register_timer("ds-flusher",ds_flusher_routine,NULL, 30 ,
+	TIMER_FLAG_SKIP_ON_DELAY)<0) {
 		LM_ERR("failed to register timer for DB flushing!\n");
 		return -1;
 	}
@@ -837,9 +839,9 @@ static int mod_init(void)
 #include "../../pt.h"
 static int ds_child_init(int rank)
 {
-	/* we need DB connection from the timer procs (for the flushing)
+	/* we need DB connection from the worker procs (for the flushing)
 	 * and from the main proc (for final flush on shutdown) */
-	if ( (process_no==0 || rank==PROC_TIMER) ) {
+	if ( rank>=PROC_MAIN ) {
 
 		ds_partition_t *partition_it;
 
@@ -897,45 +899,6 @@ static void destroy(void)
 	destroy_ds_bls();
 }
 
-static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
-
-	/*Get flags literal value*/
-	pv_value_t value;
-	int ds_flags = 0;
-	if (pv_get_spec_value(msg, pvs, &value)) {
-		LM_ERR("no valid PV value found(error in scripts)\n");
-		return -1;
-	}
-
-	/*Parse string and get flags integer value*/
-
-	for ( ; value.rs.len > 0; value.rs.s++, value.rs.len--) {
-		switch (*value.rs.s) {
-			case ' ' :
-				break;
-			case 'f' :
-			case 'F' :
-				ds_flags |= DS_FAILOVER_ON;
-				break;
-			case 'u' :
-			case 'U' :
-				ds_flags |= DS_HASH_USER_ONLY;
-				break;
-			case 'd' :
-			case 'D' :
-				ds_flags |= DS_USE_DEFAULT;
-				break;
-			case 's' :
-			case 'S' :
-				ds_flags |= DS_FORCE_DST;
-				break;
-			default :
-				LM_ERR("Invalid flags PV value\n");
-				return -1;
-		}
-	}
-	return ds_flags;
-}
 #define CHECK_AND_EXPAND_LIST(_list_) \
 	do{\
 		if (_list_->type == GPARAM_TYPE_PVS) { \
@@ -963,10 +926,14 @@ static int get_flags_int_value(struct sip_msg* msg, pv_spec_t* pvs){
  */
 static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max_results_flags, int mode)
 {
-	int ret;
+	int ret = -1;
+	int _ret;
 	int run_prev_ds_select = 0;
-	int ds_flags = 0;
 	ds_select_ctl_t prev_ds_select_ctl, ds_select_ctl;
+	char selected_dst_sock_buf[PTR_STRING_SIZE]; /* a hexa string */
+	ds_selected_dst selected_dst;
+	struct socket_info *sock = NULL;
+
 	if(msg==NULL)
 		return -1;
 
@@ -974,6 +941,9 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	ds_select_ctl.max_results = 1000;
 	ds_select_ctl.reset_AVP = 1;
 	ds_select_ctl.set_destination = 1;
+
+	memset(&selected_dst, 0, sizeof(ds_selected_dst));
+	selected_dst.socket.s = selected_dst_sock_buf;
 
 	/* Retrieve dispatcher set */
 	ds_param_t *part_set_param = (ds_param_t*)part_set;
@@ -991,32 +961,22 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	int_list_t *alg_list = (int_list_t *)alg;
 	int_list_t *alg_list_exp_start = NULL, *alg_list_exp_end = NULL;
 
-	/* Retrieve dispatcher max results */
+	/* In case this parameter is not specified */
+	max_list_param_p max_param = (max_list_param_p)max_results_flags;
+	str max_list_str;
 
-	/*Pointer to the start of the list*/
-	flags_int_list_t* lst_flgs_param = (flags_int_list_t *)max_results_flags;
-
-	int_list_t *max_results_ptr = NULL;
-	/*In case this parameter is not specified*/
-	if (max_results_flags)
-		max_results_ptr  = lst_flgs_param->list;
-
-	int_list_t *max_list = max_results_ptr;
-	int_list_t *max_list_exp_start = NULL, *max_list_exp_end = NULL;
-
-	/* Retrieve dispatcher flags */
-
-	if (max_results_flags) {
-		ds_flags_t* flags= lst_flgs_param->flags;
-		if (flags->type == DS_FLAGS_TYPE_INT) {
-			ds_flags = flags->v.ival;
-		} else {
-			ds_flags = get_flags_int_value(msg, flags->v.pvs);
-			if (ds_flags < 0) {
-				LM_ERR("Invalid value in flags PV\n");
-				return -1;
-			}
+	int_list_t *max_list=NULL, *max_list_free;
+	if (max_param->type == MAX_LIST_TYPE_STR) {
+		max_list = (int_list_t*)max_param->lst.list;
+	} else if (max_param->type == MAX_LIST_TYPE_PV) {
+		if (pv_printf_s(msg, max_param->lst.elem, &max_list_str) != 0) {
+			LM_ERR("cannot get max list from pv\n");
+			return -1;
 		}
+
+		if (set_list_from_string(max_list_str, &max_list) != 0
+				|| max_list == NULL)
+			return -1;
 	}
 
 	/* Avoid compiler warning */
@@ -1034,17 +994,18 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		CHECK_AND_EXPAND_LIST(alg_list);
 		ds_select_ctl.alg = alg_list->v.ival;
-		if (max_results_ptr) {
-			CHECK_AND_EXPAND_LIST(max_list);
+
+		if (max_results_flags) {
 			ds_select_ctl.max_results = max_list->v.ival;
+			ds_select_ctl.ds_flags    = max_list->flags;
 		}
 
 		if (run_prev_ds_select) {
 			LM_DBG("ds_select: %d %d %d %d %d\n",
 				prev_ds_select_ctl.set, prev_ds_select_ctl.alg, prev_ds_select_ctl.max_results,
 				prev_ds_select_ctl.reset_AVP, prev_ds_select_ctl.set_destination);
-			ret = ds_select_dst(msg, &prev_ds_select_ctl, ds_flags);
-			if (ret<0) return ret;
+			_ret = ds_select_dst(msg, &prev_ds_select_ctl, &selected_dst, prev_ds_select_ctl.ds_flags);
+			if (_ret>=0) ret = _ret;
 			/* stop resetting AVPs. */
 			ds_select_ctl.reset_AVP = 0;
 		} else {
@@ -1055,29 +1016,35 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 
 		set_list = set_list->next;
 		alg_list = alg_list->next;
-		if (max_results_ptr) {
+		if (max_results_flags) {
+			max_list_free = max_list;
 			max_list = max_list->next;
+
+			if (max_param->type == MAX_LIST_TYPE_PV)
+				shm_free(max_list_free);
 		}
 
 		TRY_FREE_EXPANDED_LIST(set_list);
 		TRY_FREE_EXPANDED_LIST(alg_list);
-		TRY_FREE_EXPANDED_LIST(max_list);
 
 	} while (set_list && alg_list &&
-			(max_results_ptr ? max_list : set_list));
+			(max_results_flags ? max_list : set_list));
 
-	if (max_results_ptr &&  max_list != NULL) {
+	if (max_results_flags &&  max_list != NULL) {
 		LM_ERR("extra max slot(s)\n");
+		ret = -2;
 		goto error;
 	}
 
 	if (set_list != NULL) {
 		LM_ERR("extra set(s)\n");
+		ret = -2;
 		goto error;
 	}
 
 	if (alg_list != NULL) {
 		LM_ERR("extra algorithm(s)\n");
+		ret = -2;
 		goto error;
 	}
 
@@ -1086,10 +1053,34 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	LM_DBG("ds_select: %d %d %d %d %d\n",
 		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
 		ds_select_ctl.reset_AVP, ds_select_ctl.set_destination);
-	return ds_select_dst(msg, &ds_select_ctl, ds_flags);
+	_ret = ds_select_dst(msg, &ds_select_ctl, &selected_dst, ds_select_ctl.ds_flags);
+	if (_ret>=0) {
+		ret = _ret;
+	}
+	else {
+		if (selected_dst.uri.s != NULL) {
+			if (selected_dst.socket.len != 0) {
+				if (sscanf( selected_dst.socket.s, "%p", (void**)&sock ) != 1) {
+					LM_ERR("unable to read forced destination socket\n");
+					ret = -4;
+					goto error;
+				}
+			}
+			if (ds_update_dst(msg, &selected_dst.uri, sock, ds_select_ctl.mode) != 0) {
+				LM_ERR("cannot set dst addr\n");
+				ret = -3;
+				goto error;
+			}
+		}
+		else {
+			ret = -1;
+			goto error;
+		}
+	}
 
 error:
-	return -1;
+	if (selected_dst.uri.s != NULL) pkg_free(selected_dst.uri.s);
+	return ret;
 }
 
 /**

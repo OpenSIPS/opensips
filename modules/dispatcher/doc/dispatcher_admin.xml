@@ -691,7 +691,7 @@ modparam("dispatcher", "socket_col", "my_sock")
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">ds_select_dst(set, alg [, "[flags] [M max_results]"])</function>
+		<function moreinfo="none">ds_select_dst(set, alg [, (flags M max_results)*])</function>
 		</title>
 		<para>
 		The method selects a destination from the given set of addresses. It will
@@ -780,23 +780,20 @@ modparam("dispatcher", "socket_col", "my_sock")
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> - If specified, this will be the flags which
+			<emphasis>flags M max_results</emphasis> - If specified, this will be the flags which
 			in previous versions were specified at startup. The flags are the failover
 			support flag('f'/'F') letters, the user only flag('u'/'U') and will specify
 			that only the uri user part will be used for hashing, the force destination
 			flag('S'/'s') which will Skip overwriting the destination address if it is
 			already set and the use default flag('D', 'd') which will use the last address
 			in destination set as last option to send the message.You can also specify
-			these flags using PVs. The flags are being kept per partition.
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-			<emphasis> max_results</emphasis> - If specified, only that many results
-			will be put into the specified avp for failover. This allows having many
-			destinations but limit the useless traffic in case of a number that is
-			bound to fail everywhere. It can accept variables. The definition must
-			begin with 'M' character either you use static definition or PVs.
+			these flags using PVs. The flags are being kept per partition. The second paramater,
+			max_results represents that only a maximum of max_results will be put into the
+			specified avp for failover. This allows having many destinations but limit the
+			useless traffic in case of a number that is bound to fail everywhere. Since version
+			1.12, the last paramater cand be represented by a list of flags and max_results,
+			separated by comma. If the 'M' character is not specified, there will be no search
+			for the flags, but you cand specify the max_results paramater (flags will be 0).
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -819,9 +816,9 @@ ds_select_dst("1", "0");
 ...
 ds_select_dst("part2 : 1", "0", "M 5");
 ...
-ds_select_dst("part3 : 1", "0", "fUsD");
+ds_select_dst("part3 : 1", "0", "fUsD M");
 ...
-ds_select_dst("part4 : 2", "0", "fuD M 5,2");
+ds_select_dst("part4 : 2,3", "0,1", "fuD M 5, fuS M 2");
 ...
 # dispatch over multiple dispatching groups
 $var(partition_name) = "p4"
