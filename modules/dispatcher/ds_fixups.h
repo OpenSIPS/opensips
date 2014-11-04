@@ -35,6 +35,9 @@
 #include "dispatch.h"
 #include "../../mod_fix.h"
 
+#define MAX_LIST_TYPE_STR (1<<0)
+#define MAX_LIST_TYPE_PV (1<<1)
+
 /* Structure that contains a general description of a partition:
  * either its name through a pv_spec or a pointer to the coresponding
  * ds_partition_t partition
@@ -56,6 +59,9 @@ typedef struct _int_list_t
 		pv_spec_t *pvs;
 	} v;
 	int type;
+
+	int flags;
+
 	struct _int_list_t *next;
 } int_list_t;
 
@@ -66,20 +72,13 @@ typedef struct
 	int_list_t *sets;
 } ds_param_t;
 
-/*Structure that will keep the flags as an integer or PV*/
-typedef struct
-{
+typedef struct max_list_param {
 	union {
-		int ival;
-		pv_spec_t *pvs;
-	} v;
-	enum flagstype_t {DS_FLAGS_TYPE_INT, DS_FLAGS_TYPE_PVS} type;
-} ds_flags_t;
-
-typedef struct flags_int_list {
-	int_list_t* list;
-	ds_flags_t* flags;
-} flags_int_list_t;
+		int_list_t* list;
+		pv_elem_t* elem;
+	} lst;
+	int type;
+} max_list_param_t, *max_list_param_p;
 
 int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *end);
 void free_int_list(int_list_t *start, int_list_t *end);
@@ -97,5 +96,7 @@ int ds_mark_fixup(void **param, int param_no);
 int in_list_fixup(void** param, int param_no);
 int ds_select_fixup(void** param, int param_no);
 int ds_count_fixup(void** param, int param_no);
+int fixup_flags(str* param);
+int set_list_from_string(str input, int_list_t **result);
 
 #endif

@@ -50,7 +50,7 @@
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
 #define DS_USE_DEFAULT		4  /* use last address in destination set as last option */
-#define DS_FORCE_DST		8  /* if not set it will force overwriting the destination address 
+#define DS_FORCE_DST		8  /* if not set it will force overwriting the destination address
 					if already set */
 
 #define DS_INACTIVE_DST		1  /* inactive destination */
@@ -150,6 +150,7 @@ typedef struct _ds_select_ctl
 	int max_results;			/* max destinaitons to process */
 	int reset_AVP;				/* reset AVPs flag */
 	int set_destination;		/* set destination flag */
+	int ds_flags;
 } ds_select_ctl_t, *ds_select_ctl_p;
 
 typedef struct
