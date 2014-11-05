@@ -89,6 +89,8 @@
 #define MI_PING_DISABLED			"NATping disabled from script"
 #define MI_PING_DISABLED_LEN		(sizeof(MI_PING_DISABLED)-1)
 
+#define SKIP_OLDORIGIP		(1<<0)
+#define SKIP_OLDMEDIAIP		(1<<1)
 
 
 static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
@@ -98,6 +100,7 @@ static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int fixup_fix_nated_register(void** param, int param_no);
 static int fixup_fix_sdp(void** param, int param_no);
 static int add_rcv_param_f(struct sip_msg *, char *, char *);
+static int get_oldip_fields_value(modparam_t type, void* val);
 
 static void nh_timer(unsigned int, void *);
 static int mod_init(void);
@@ -188,6 +191,7 @@ static char *natping_socket = 0;
 static int raw_sock = -1;
 static unsigned int raw_ip = 0;
 static unsigned short raw_port = 0;
+int skip_oldip=0;
 
 /*0-> disabled, 1 ->enabled*/
 unsigned int *natping_state=0;
@@ -234,6 +238,9 @@ static param_export_t params[] = {
 	{"natping_tcp",           INT_PARAM, &natping_tcp           },
 	{"natping_partitions",    INT_PARAM, &natping_partitions    },
 	{"natping_socket",        STR_PARAM, &natping_socket        },
+	{"oldip_skip",			  STR_PARAM|USE_FUNC_PARAM,
+								   (void*)get_oldip_fields_value},
+
 	{0, 0, 0}
 };
 
@@ -278,6 +285,31 @@ struct module_exports exports = {
 	0
 };
 
+
+static int
+get_oldip_fields_value(modparam_t type, void* val)
+{
+	char* flags = (char*)val;
+
+	while (*flags != '\0') {
+		switch (*flags) {
+			case ' ':
+				break;
+			case 'c':
+				skip_oldip |= SKIP_OLDMEDIAIP;
+				break;
+			case 'o':
+				skip_oldip |= SKIP_OLDORIGIP;
+				break;
+			default:
+				LM_ERR("invalid old ip's fields to skip flag\n");
+				return -1;
+		}
+		flags++;
+	}
+
+	return 0;
+}
 
 static int
 fixup_fix_sdp(void** param, int param_no)
@@ -871,15 +903,21 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 #define	ADIRECTION	"a=direction:active"
 #define	ADIRECTION_LEN	(sizeof(ADIRECTION) - 1)
 
-#define	AOLDMEDIP	"a=oldmediaip:"
-#define	AOLDMEDIP_LEN	(sizeof(AOLDMEDIP) - 1)
+#define AOLDMEDIP	"a=oldcip:"
+#define AOLDMEDIP_LEN	(sizeof(AOLDMEDIP) - 1)
 
-#define	AOLDMEDIP6	"a=oldmediaip6:"
-#define	AOLDMEDIP6_LEN	(sizeof(AOLDMEDIP6) - 1)
+#define AOLDMEDIP6 "a=oldcip6:"
+#define AOLDMEDIP6_LEN (sizeof(AOLDMEDIP6) - 1)
+
+#define AOLDORIGIP "a=oldoip:"
+#define AOLDORIGIP_LEN (sizeof(AOLDORIGIP) - 1)
+
+#define AOLDORIGIP6 "a=oldoip6:"
+#define AOLDORIGIP6_LEN (sizeof(AOLDORIGIP6) - 1)
 
 static int
 alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
-  str *newip, int newpf, int preserve)
+  str *newip, int newpf, int preserve, char type)
 {
 	char *buf;
 	int offset;
@@ -900,11 +938,33 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 			return -1;
 		}
 		if (oldpf == AF_INET6) {
-			omip.s = AOLDMEDIP6;
-			omip.len = AOLDMEDIP6_LEN;
+			switch (type) {
+				case 'c':
+					omip.s   = AOLDMEDIP6;
+					omip.len = AOLDMEDIP6_LEN;
+					break;
+				case 'o':
+					omip.s   = AOLDORIGIP6;
+					omip.len = AOLDORIGIP6_LEN;
+					break;
+				default:
+					LM_ERR("IPv6: invalid field\n");
+					return -1;
+			}
 		} else {
-			omip.s = AOLDMEDIP;
-			omip.len = AOLDMEDIP_LEN;
+			switch (type) {
+				case 'c':
+					omip.s   = AOLDMEDIP;
+					omip.len = AOLDMEDIP_LEN;
+					break;
+				case 'o':
+					omip.s   = AOLDORIGIP;
+					omip.len = AOLDORIGIP_LEN;
+					break;
+				default:
+					LM_ERR("IPv4: invalid field\n");
+					return -1;
+			}
 		}
 		buf = pkg_malloc(omip.len + oldip->len + CRLF_LEN);
 		if (buf == NULL) {
@@ -966,6 +1026,20 @@ alter_mediaip(struct sip_msg *msg, str *body, str *oldip, int oldpf,
 }
 
 static inline int
+get_field_flag(char value)
+{
+	switch (value) {
+		case 'c':
+			return SKIP_OLDMEDIAIP;
+		case 'o':
+			return SKIP_OLDORIGIP;
+		default :
+			return -1;
+	}
+	return -1;
+}
+
+static inline int
 replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
 {
 	str body1, oldip, newip;
@@ -998,7 +1072,10 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip)
 		}
 		body2.s = oldip.s + oldip.len;
 		body2.len = bodylimit - body2.s;
-		if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf,1) == -1) {
+		if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf,
+					! (get_field_flag(line[0])&skip_oldip) /*if flag set do not
+															 set oldmediaip field*/,
+					line[0]) == -1) {
 			LM_ERR("can't alter '%s' IP\n",line);
 			return -1;
 		}
@@ -1086,17 +1163,17 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2)
 			}
 		}
 
+		if (level & FIX_ORGIP) {
+			/* Iterate all o= and replace ips in them. */
+			if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0)==-1)
+				return -1;
+		}
 		if (level & FIX_MEDIP) {
 			/* Iterate all c= and replace ips in them. */
 			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0)==-1)
 				return -1;
 		}
 
-		if (level & FIX_ORGIP) {
-			/* Iterate all o= and replace ips in them. */
-			if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0)==-1)
-				return -1;
-		}
 		p= p->next;
 	}
 
