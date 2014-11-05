@@ -44,6 +44,7 @@
 #include "t_cancel.h"
 #include "dlg.h"
 #include "h_table.h"
+#include "t_ctx.h"
 
 
 struct tm_binds {
@@ -79,6 +80,18 @@ struct tm_binds {
 	setkr_f            t_setkr;
 	set_localT_holder_f setlocalTholder;
 	tgetbranch_f       get_branch_index;
+
+	t_ctx_register_int_f t_ctx_register_int;
+	t_ctx_register_str_f t_ctx_register_str;
+	t_ctx_register_ptr_f t_ctx_register_ptr;
+
+	t_ctx_put_int_f t_ctx_put_int;
+	t_ctx_put_str_f t_ctx_put_str;
+	t_ctx_put_ptr_f t_ctx_put_ptr;
+
+	t_ctx_get_int_f t_ctx_get_int;
+	t_ctx_get_str_f t_ctx_get_str;
+	t_ctx_get_ptr_f t_ctx_get_ptr;
 };
 
 
