@@ -267,7 +267,8 @@ int moduleFunc(struct sip_msg *m, char *func,
 	act = mk_action(	MODULE_T,
 				3,
 				elems,
-				0);
+				0,
+				"perl");
 
 
 	if (!act) {
@@ -1199,7 +1200,8 @@ append_branch(self, branch = NULL, qval = NULL)
 				act = mk_action(APPEND_BRANCH_T,
 						2,
 						elems,
-						0);
+						0,
+						"perl");
 			}
 		} else {
 			if (branch) { /* branch set, qval unset */
@@ -1210,7 +1212,8 @@ append_branch(self, branch = NULL, qval = NULL)
 				act = mk_action(APPEND_BRANCH_T,
 						2,
 						elems,
-						0);
+						0,
+						"perl");
 			} else { /* neither branch nor qval set */
 				elems[0].type = STR_ST;
 				elems[0].u.data = NULL;
@@ -1219,7 +1222,8 @@ append_branch(self, branch = NULL, qval = NULL)
 				act = mk_action(APPEND_BRANCH_T,
 						2,
 						elems,
-						0);
+						0,
+						"perl");
 			}
 		}
 
