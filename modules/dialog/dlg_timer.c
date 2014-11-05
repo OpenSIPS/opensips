@@ -315,7 +315,7 @@ int remove_dlg_timer(struct dlg_tl *tl)
 		return 1;
 	}
 
-	if (tl->prev==NULL || tl->next==NULL) {
+	if (tl->prev==NULL || tl->next==NULL || tl->next == FAKE_DIALOG_TL) {
 		LM_CRIT("bogus tl=%p tl->prev=%p tl->next=%p\n",
 			tl, tl->prev, tl->next);
 		lock_release( d_timer->lock);
@@ -323,7 +323,8 @@ int remove_dlg_timer(struct dlg_tl *tl)
 	}
 
 	remove_dlg_timer_unsafe(tl);
-	tl->next = NULL;
+	/* mark that this dialog was one a part of the timer list */
+	tl->next = FAKE_DIALOG_TL;
 	tl->prev = NULL;
 	tl->timeout = 0;
 
@@ -376,6 +377,12 @@ int remove_ping_timer(struct dlg_cell *dlg)
 int update_dlg_timer( struct dlg_tl *tl, int timeout )
 {
 	lock_get( d_timer->lock);
+
+	if ( tl->next == FAKE_DIALOG_TL ) {
+		/* previously removed from timer list - we will not add it again */
+		lock_release( d_timer->lock);
+		return 0;
+	}
 
 	if ( tl->next ) {
 		if (tl->prev==0) {
