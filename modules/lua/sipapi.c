@@ -800,7 +800,7 @@ static int l_siplua_moduleFunc(lua_State *L)
       elems[i + 1].type = STRING_ST;
       elems[i + 1].u.data = str; /* elems[].u.string */
     }
-  act = mk_action(MODULE_T, n - 2 + 1, elems, 0);
+  act = mk_action(MODULE_T, n - 2 + 1, elems, 0, "lua");
   if (!act)
     {
       siplua_moduleFunc_free(func, exp_func_struct, elems, nargs);
