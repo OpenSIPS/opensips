@@ -222,7 +222,7 @@ msg_call_function(msgobject *self, PyObject *args)
     elems[1].u.data = arg1;
     elems[2].type = STRING_ST;
     elems[2].u.data = arg2;
-    act = mk_action(MODULE_T, 3, elems, 0);
+    act = mk_action(MODULE_T, 3, elems, 0, "python");
 
     if (act == NULL) {
         PyErr_SetString(PyExc_RuntimeError,
