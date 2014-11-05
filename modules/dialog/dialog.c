@@ -1646,7 +1646,6 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 	if ((dlg = get_current_dialog()) != NULL) {
-
 		dlg_lock_dlg(dlg);
 		dlg->lifetime = timeout;
 		/* update now only if realtime and the dialog is confirmed */
@@ -1654,8 +1653,11 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 			db_update = 1;
 		else
 			dlg->flags |= DLG_FLAG_CHANGED;
-		if (dlg->state >= DLG_STATE_CONFIRMED_NA)
+
+		if (dlg->state == DLG_STATE_CONFIRMED_NA || 
+		dlg->state == DLG_STATE_CONFIRMED)
 			timer_update = 1;
+
 		dlg_unlock_dlg(dlg);
 
 		if (db_update)
