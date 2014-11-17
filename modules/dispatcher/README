@@ -622,9 +622,10 @@ modparam("dispatcher", "socket_col", "my_sock")
        limit the useless traffic in case of a number that is bound
        to fail everywhere. Since version 1.12, the last paramater
        cand be represented by a list of flags and max_results,
-       separated by comma. If the 'M' character is not specified,
-       there will be no search for the flags, but you cand specify
-       the max_results paramater (flags will be 0).
+       separated by comma. You can specify either only the flags,
+       either only the max_results paramater, but if you want to
+       specify them together you have to use the 'M' character
+       like this: flags M max_results.
 
    If the character 'f' in 'flags' is set, the rest of the
    addresses from the destination set is stored in AVP list. You
@@ -640,9 +641,9 @@ modparam("dispatcher", "socket_col", "my_sock")
 ...
 ds_select_dst("1", "0");
 ...
-ds_select_dst("part2 : 1", "0", "M 5");
+ds_select_dst("part2 : 1", "0", "5");
 ...
-ds_select_dst("part3 : 1", "0", "fUsD M");
+ds_select_dst("part3 : 1", "0", "fUsD");
 ...
 ds_select_dst("part4 : 2,3", "0,1", "fuD M 5, fuS M 2");
 ...
