@@ -941,6 +941,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	ds_select_ctl.max_results = 1000;
 	ds_select_ctl.reset_AVP = 1;
 	ds_select_ctl.set_destination = 1;
+	ds_select_ctl.ds_flags = 0;
 
 	memset(&selected_dst, 0, sizeof(ds_selected_dst));
 	selected_dst.socket.s = selected_dst_sock_buf;
@@ -966,9 +967,10 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	str max_list_str;
 
 	int_list_t *max_list=NULL, *max_list_free;
-	if (max_param->type == MAX_LIST_TYPE_STR) {
+	if (max_param && max_param->type == MAX_LIST_TYPE_STR) {
 		max_list = (int_list_t*)max_param->lst.list;
-	} else if (max_param->type == MAX_LIST_TYPE_PV) {
+	} else if (max_param && max_param->type == MAX_LIST_TYPE_PV) {
+		LM_INFO("A\n");
 		if (pv_printf_s(msg, max_param->lst.elem, &max_list_str) != 0) {
 			LM_ERR("cannot get max list from pv\n");
 			return -1;

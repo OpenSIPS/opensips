@@ -687,7 +687,9 @@ int ds_select_fixup(void** param, int param_no)
 			s.s = *param;
 			s.len = strlen(s.s);
 
-			str_trim_spaces_lr(s);
+			trim_spaces_lr(s);
+
+			if (s.len == 0) { *param=NULL; return 0;}
 
 			if (pv_parse_format(&s, &elem)) {
 				LM_ERR("wrong format [%s] for param no %d!\n",
