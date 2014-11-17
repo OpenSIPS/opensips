@@ -155,7 +155,6 @@ int set_list_from_string(str input, int_list_t **result)
 
 	char * delim, *pvdelim, *flagsdelim=NULL;
 	str flg_tok;
-	int is_pv=0, fnd_brk=0;
 
 	unsigned int u_num;
 	do{
@@ -163,43 +162,34 @@ int set_list_from_string(str input, int_list_t **result)
 		str s_tok = {input.s, delim ? delim - input.s : input.len};
 		int full_tok_len = s_tok.len;
 
-		/*search for flags flags/maxlist delimiter*/
-		flagsdelim=s_tok.s;
-		while ((*flagsdelim != '\0'?
-					1 : (flagsdelim=NULL, 0))) {
-			/* consider both cases: variables which contain their names in brackets
-			 * and variables which have predefined names and might contain
-			 * flags-max_value delimiter */
-			if (*flagsdelim == PV_MARKER) {
-				is_pv=1;
-				flagsdelim++;
-				continue;
-			}
-			if (*flagsdelim == '(') {
-				fnd_brk=1;
-				flagsdelim++;
-				continue;
-			}
-			if (*flagsdelim == ')' && fnd_brk) {
-				fnd_brk=0;
-				flagsdelim++;
-				continue;
-			}
-			if ((*flagsdelim == ' ' || *flagsdelim == '\t') && is_pv) {
-				is_pv=0;
-				flagsdelim++;
-				continue;
-			}
-			if (*flagsdelim == 'M')
-				break;
-			flagsdelim++;
+		str_trim_spaces_lr(s_tok);
+
+		/* search if only max results */
+		if (s_tok.s[0] >= '0' && s_tok.s[0] <= '9') {
+			flags = 0;
+			goto only_max_res;
 		}
 
+		/*search for flags flags/maxlist delimiter*/
+		flagsdelim=q_memchr(s_tok.s, FLAGS_DELIM, s_tok.len);
+		if (flagsdelim == NULL) {
+			/* search for only flags */
+			if ((s_tok.s[0] >= 'a' && s_tok.s[0] <= 'z') ||
+					(s_tok.s[0] >= 'A' && s_tok.s[0] <= 'Z')) {
+				flg_tok.s = s_tok.s;
+				flg_tok.len=0;
+				while ((flg_tok.s[flg_tok.len] >= 'a' && flg_tok.s[flg_tok.len] <= 'z') ||
+							(flg_tok.s[flg_tok.len] >= 'A' && flg_tok.s[flg_tok.len] <= 'Z'))
+					flg_tok.len++;
+				goto only_flags00;
+			}
+		}
 		/* if found parse the flags */
 		if (flagsdelim != NULL) {
 			flg_tok.s = s_tok.s;
 			flg_tok.len = flagsdelim - s_tok.s;
 
+only_flags00:
 			/* update list token */
 			s_tok.s += flg_tok.len +1;
 			s_tok.len -= (flg_tok.len +1);
@@ -217,11 +207,18 @@ int set_list_from_string(str input, int_list_t **result)
 				LM_ERR("cannot fixup flags\n");
 				return -1;
 			}
+
+			str_trim_spaces_lr(s_tok);
 		}
 
-		str_trim_spaces_lr(s_tok);
-		if (s_tok.len == 0)
-			goto wrong_value;
+only_max_res:
+		if (s_tok.len == 0) {
+			if (flags > 0) {
+				u_num = 0;
+				goto only_flags01;
+			} else
+				goto wrong_value;
+		}
 		else if (s_tok.s[0] == PV_MARKER) {
 			new_el = shm_malloc(sizeof(int_list_t));
 			if (new_el == NULL)
@@ -260,6 +257,7 @@ int set_list_from_string(str input, int_list_t **result)
 			if (new_el == NULL)
 				goto no_memory;
 
+only_flags01:
 			new_el->v.ival = u_num;
 			new_el->type = GPARAM_TYPE_INT;
 			if (flags>0)
