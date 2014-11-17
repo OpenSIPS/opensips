@@ -582,6 +582,9 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 		if (pid == 0) {
 			execl("/bin/sh", "/bin/sh", "-c", command->s, NULL);
 			exit(-1);
+		} else if (pid < 0) {
+			LM_ERR("fork failed\n");
+			return -1;
 		}
 	}
 
