@@ -62,8 +62,8 @@ typedef struct param_export_ param_export_t;
 typedef  struct module_exports* (*module_register)();
 typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
 			char*, char*);
-typedef  int (*acmd_function)(struct sip_msg*, char*, char*, char*, char*,
-			char*, char*, async_resume_function **, void **);
+typedef  int (*acmd_function)(struct sip_msg*, async_resume_module **, void **,
+			char*, char*, char*, char*, char*, char*);
 typedef  int (*fixup_function)(void** param, int param_no);
 typedef  int (*free_fixup_function)(void** param, int param_no);
 typedef  int (*response_function)(struct sip_msg*);

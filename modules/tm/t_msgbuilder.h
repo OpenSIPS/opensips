@@ -30,6 +30,10 @@
 
 #include "../../ip_addr.h"
 #include "../../receive.h"
+#include "../../dset.h"
+#include "../../msg_callbacks.h"
+#include "../../data_lump.h"
+#include "../../data_lump_rpl.h"
 #include "dlg.h"
 
 
@@ -120,5 +124,123 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 
 	return &req;
 }
+
+
+static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
+		struct ua_server *uas, struct ua_client *uac)
+{
+	/* on_negative_reply faked msg now copied from shmem msg (as opposed
+	 * to zero-ing) -- more "read-only" actions (exec in particular) will
+	 * work from reply_route as they will see msg->from, etc.; caution,
+	 * rw actions may append some pkg stuff to msg, which will possibly be
+	 * never released (shmem is released in a single block) */
+	memcpy( faked_req, shm_msg, sizeof(struct sip_msg));
+
+	/* if we set msg_id to something different from current's message
+	 * id, the first t_fork will properly clean new branch URIs */
+	faked_req->id = get_next_msg_no();
+	/* msg->parsed_uri_ok must be reset since msg_parsed_uri is
+	 * not cloned (and cannot be cloned) */
+	faked_req->parsed_uri_ok = 0;
+
+	/* new_uri can change -- make a private copy */
+	faked_req->new_uri.s=pkg_malloc( uac->uri.len+1 );
+	if (!faked_req->new_uri.s) {
+		LM_ERR("no uri/pkg mem\n");
+		return 0;
+	}
+	faked_req->new_uri.len = uac->uri.len;
+	memcpy( faked_req->new_uri.s, uac->uri.s, uac->uri.len);
+	faked_req->new_uri.s[faked_req->new_uri.len]=0;
+	faked_req->parsed_uri_ok = 0;
+
+	/*
+	 * duplicate the advertised address and port into private mem
+	 * so that they can be changed at script level
+	 */
+	if (shm_msg->set_global_address.s) {
+		faked_req->set_global_address.s = pkg_malloc(shm_msg->set_global_address.len);
+		if (!faked_req->set_global_address.s) {
+			LM_ERR("out of pkg mem\n");
+			goto out;
+		}
+		memcpy(faked_req->set_global_address.s, shm_msg->set_global_address.s,
+			   shm_msg->set_global_address.len);
+	}
+
+	if (shm_msg->set_global_port.s) {
+		faked_req->set_global_port.s = pkg_malloc(shm_msg->set_global_port.len);
+		if (!faked_req->set_global_port.s) {
+			LM_ERR("out of pkg mem\n");
+			goto out1;
+		}
+		memcpy(faked_req->set_global_port.s, shm_msg->set_global_port.s,
+			   shm_msg->set_global_port.len);
+	}
+
+	/* we could also restore dst_uri, but will be confusing from script,
+	 * so let it set to NULL */
+
+	/* set as flags the global flags and the branch flags from the
+	 * elected branch */
+	faked_req->flags = uas->request->flags;
+	setb0flags( uac->br_flags);
+
+	return 1;
+
+out1:
+	pkg_free(faked_req->set_global_address.s);
+out:
+	pkg_free(faked_req->new_uri.s);
+
+	return 0;
+}
+
+
+inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
+{
+	if (faked_req->new_uri.s) {
+		pkg_free(faked_req->new_uri.s);
+		faked_req->new_uri.s = NULL;
+	}
+	if (faked_req->dst_uri.s) {
+		pkg_free(faked_req->dst_uri.s);
+		faked_req->dst_uri.s = NULL;
+	}
+	if (faked_req->path_vec.s) {
+		pkg_free(faked_req->path_vec.s);
+		faked_req->path_vec.s = NULL;
+	}
+	if (faked_req->set_global_address.s) {
+		pkg_free(faked_req->set_global_address.s);
+		faked_req->set_global_address.s = NULL;
+	}
+	if (faked_req->set_global_port.s) {
+		pkg_free(faked_req->set_global_port.s);
+		faked_req->set_global_port.s = NULL;
+	}
+
+	/* SDP in not cloned into SHM, so if we have one, it means the SDP
+	 * was parsed in the fake environment, so we have to free it */
+	if (faked_req->sdp)
+		free_sdp(&(faked_req->sdp));
+
+	if (faked_req->multi) {
+		free_multi_body(faked_req->multi);
+		faked_req->multi = NULL;
+	}
+
+	if (faked_req->msg_cb) {
+		msg_callback_process(faked_req, MSG_DESTROY, NULL);
+	}
+
+	/* free all types of lump that were added in failure handlers */
+	del_notflaged_lumps( &(faked_req->add_rm), LUMPFLAG_SHMEM );
+	del_notflaged_lumps( &(faked_req->body_lumps), LUMPFLAG_SHMEM );
+	del_nonshm_lump_rpl( &(faked_req->reply_lump) );
+
+	clean_msg_clone( faked_req, t->uas.request, t->uas.end_request);
+}
+
 
 #endif

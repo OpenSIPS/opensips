@@ -39,19 +39,27 @@
           -1 some error happened and the async call did not happened.
  */
 
+
+/* internal used functions to start (from script) and
+ * to continue (from reactor) async I/O ops */
 typedef int (async_start_function)
 	(struct sip_msg *msg, struct action* a , int resume_route);
 
 typedef int (async_resume_function)
 	(int fd, void *param);
 
-
 extern async_start_function  *async_start_f;
 extern async_resume_function *async_resume_f;
 
-
 int register_async_handlers(async_start_function *f1, async_resume_function *f2);
 
+
+/* async related functions to be used by the 
+ * functions exported by modules */
+enum async_ret_code {ASYNC_DONE, ASYNC_CONTINUE, ASYNC_ERROR};
+
+typedef enum async_ret_code (async_resume_module)
+	(int fd, struct sip_msg *msg, void *param);
 
 #endif
 
