@@ -82,7 +82,7 @@ int route_send(route_send_t *route_s)
 		LM_ERR("unable to send route send struct to worker\n");
 		return -1;
 	} else if (rc != sizeof(route_send_t *)){
-		LM_ERR("Incomplete write [%d/%lu]\n", rc, sizeof(route_send_t *));
+		LM_ERR("Incomplete write [%d/%zu]\n", rc, sizeof(route_send_t *));
 		return -1;
 	}
 	/* give a change to the writer :) */
