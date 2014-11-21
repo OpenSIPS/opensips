@@ -178,9 +178,10 @@ int set_list_from_string(str input, int_list_t **result)
 					(s_tok.s[0] >= 'A' && s_tok.s[0] <= 'Z')) {
 				flg_tok.s = s_tok.s;
 				flg_tok.len=0;
-				while ((flg_tok.s[flg_tok.len] >= 'a' && flg_tok.s[flg_tok.len] <= 'z') ||
+				if ((flg_tok.s[flg_tok.len] >= 'a' && flg_tok.s[flg_tok.len] <= 'z') ||
 							(flg_tok.s[flg_tok.len] >= 'A' && flg_tok.s[flg_tok.len] <= 'Z'))
-					flg_tok.len++;
+					flg_tok.len=s_tok.len;
+				//	flg_tok.len++;
 				goto only_flags00;
 			}
 		}
@@ -689,7 +690,10 @@ int ds_select_fixup(void** param, int param_no)
 
 			trim_spaces_lr(s);
 
-			if (s.len == 0) { *param=NULL; return 0;}
+			if (s.len == 0) {
+				LM_ERR("3rd parameter (flags max_results) is empty\n");
+				return -1;
+			}
 
 			if (pv_parse_format(&s, &elem)) {
 				LM_ERR("wrong format [%s] for param no %d!\n",

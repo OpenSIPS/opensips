@@ -970,7 +970,6 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 	if (max_param && max_param->type == MAX_LIST_TYPE_STR) {
 		max_list = (int_list_t*)max_param->lst.list;
 	} else if (max_param && max_param->type == MAX_LIST_TYPE_PV) {
-		LM_INFO("A\n");
 		if (pv_printf_s(msg, max_param->lst.elem, &max_list_str) != 0) {
 			LM_ERR("cannot get max list from pv\n");
 			return -1;
@@ -1033,7 +1032,7 @@ static int w_ds_select(struct sip_msg* msg, char* part_set, char* alg, char* max
 			(max_results_flags ? max_list : set_list));
 
 	if (max_results_flags &&  max_list != NULL) {
-		LM_ERR("extra max slot(s)\n");
+		LM_ERR("extra max slot(s) and/or flag(s)\n");
 		ret = -2;
 		goto error;
 	}
