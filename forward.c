@@ -441,7 +441,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 		LM_DBG("orig. len=%d, new_len=%d, proto=%d\n",
 			msg->len, len, p->proto );
 
-		if (msg_send(send_sock, p->proto, &to, 0, buf, len)<0){
+		if (msg_send(send_sock, p->proto, &to, 0, buf, len, (void*)msg)<0){
 			ser_error=E_SEND;
 			continue;
 		}
@@ -621,7 +621,7 @@ int forward_reply(struct sip_msg* msg)
 		goto error;
 	}
 
-	if (msg_send(send_sock, proto, to, id, new_buf, new_len)<0) {
+	if (msg_send(send_sock, proto, to, id, new_buf, new_len, (void*)msg)<0) {
 		update_stat( drp_rpls, 1);
 		goto error0;
 	}

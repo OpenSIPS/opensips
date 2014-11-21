@@ -903,7 +903,7 @@ int forward_sl_request(struct sip_msg *msg,struct proxy_l *proxy,int proto)
 			continue;
 		}
 		LM_DBG("Sending:\n%.*s.\n", (int)msg->len,msg->buf);
-		if (msg_send(send_sock, proto, to, 0, msg->buf,msg->len)<0){
+		if (msg_send(send_sock, proto, to, 0, msg->buf,msg->len, NULL)<0){
 			LM_ERR("ERROR:seas:forward_msg: Error sending message !!\n");
 			continue;
 		}

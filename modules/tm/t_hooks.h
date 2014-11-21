@@ -50,7 +50,8 @@ struct cell;
 #define TMCB_REQUEST_BUILT      (1<<10)
 #define TMCB_TRANS_CANCELLED    (1<<11)
 #define TMCB_TRANS_DELETED      (1<<12)
-#define TMCB_MAX                ((1<<13)-1)
+#define TMCB_PRE_SEND_BUFFER	(1<<13)
+#define TMCB_MAX                ((1<<14)-1)
 
 /*
  *  Caution: most of the callbacks work with shmem-ized messages
@@ -162,6 +163,20 @@ struct tmcb_params {
 	void *extra2;
 };
 
+
+typedef int (*tm_context_cb)(char*, void*);
+typedef void (*tm_context_loader_cb)(struct sip_msg*, void**);
+
+struct tm_context_loaders_cbs {
+	tm_context_loader_cb cb;
+	struct tm_context_loaders_cbs *next;
+};
+
+struct tm_context_params_list {
+	void* ctx;
+	struct tm_context_params_list* next;
+};
+
 /* callback function prototype */
 typedef void (transaction_cb) (struct cell* t, int type, struct tmcb_params*);
 /* function to release the callback param */
@@ -224,5 +239,8 @@ void run_trans_callbacks_locked( int type , struct cell *trans,
 
 /* run all REQUEST_IN callbacks */
 void run_reqin_callbacks( struct cell *trans, struct sip_msg *req, int code );
+
+
+typedef int (*ctx_load_register_func)(void*);
 
 #endif

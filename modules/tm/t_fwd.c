@@ -678,10 +678,13 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 					LM_DBG("blocked by blacklists\n");
 					ser_error=E_IP_BLOCKED;
 				} else {
+					run_trans_callbacks(TMCB_PRE_SEND_BUFFER, t, p_msg, 0, i);
+
 					if (SEND_BUFFER( &t->uac[i].request)==0) {
 						ser_error = 0;
 						break;
 					}
+
 					LM_ERR("sending request failed\n");
 					ser_error=E_SEND;
 				}

@@ -87,17 +87,24 @@ extern int noisy_ctimer;
 */
 #ifdef EXTRA_DEBUG
 int send_pr_buffer( struct retr_buf *rb,
-	void *buf, int len, char* file, const char *function, int line );
+	void *buf, int len, char* file, const char *function, int line, void* ctx);
 #define SEND_PR_BUFFER(_rb,_bf,_le ) \
 	send_pr_buffer( (_rb), (_bf), (_le), __FILE__,  __FUNCTION__, __LINE__ )
+#define SEND_PR_CONTEXTS_BUFFER(_rb,_bf,_le, _ctx ) \
+	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION, __LINE__ ,_ctx)
 #else
-int send_pr_buffer( struct retr_buf *rb, void *buf, int len);
+int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx);
 #define SEND_PR_BUFFER(_rb,_bf,_le ) \
-	send_pr_buffer( (_rb), (_bf), (_le))
+	send_pr_buffer( (_rb), (_bf), (_le), NULL)
+#define SEND_PR_CONTEXTS_BUFFER(_rb,_bf,_le, _ctx ) \
+	send_pr_buffer( (_rb), (_bf), (_le), _ctx)
 #endif
 
 #define SEND_BUFFER( _rb ) \
 	SEND_PR_BUFFER( (_rb) , (_rb)->buffer.s , (_rb)->buffer.len )
+
+#define SEND_CONTEXTS_BUFFER( _rb, ctx) \
+	SEND_PR_CONTEXTS_BUFFER( (_rb) , (_rb)->buffer.s, (_rb)->buffer.len, ctx)
 
 
 #define UNREF_UNSAFE(_T_cell) do { \

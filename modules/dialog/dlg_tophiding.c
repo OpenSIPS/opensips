@@ -82,7 +82,7 @@ int dlg_del_vias(struct sip_msg* req)
 struct th_ct_params {
 	str param_name;
 	struct th_ct_params *next;
-}; 
+};
 
 #define init_new_ct_node(start,len,list) \
 	do { \
@@ -210,12 +210,12 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 							else
 								suffix_len += 1 /* ; */ + ctu.u_name[i].len;
 						}
-				
+
 					}
 				}
 			}
 		}
-	} 
+	}
 
 	if (th_hdr_param_list) {
 		if ( parse_contact(msg->contact)<0 ||
@@ -227,12 +227,12 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
 					if (it->name.len == el->param_name.len &&
 					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
-						if (it->body.len) 
+						if (it->body.len)
 							suffix_len += 1 /* ; */ + it->name.len +
 							it->body.len + 1; /* = and value */
 						else
 							suffix_len += 1 /* ; */ + it->name.len;
-					} 
+					}
 				}
 			}
 		}
@@ -300,12 +300,12 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 						*p++ = ';';
 						memcpy(p,it->name.s,it->name.len);
 						p += it->name.len;
-						if (it->body.len) { 
+						if (it->body.len) {
 							*p++ = '=';
 							memcpy(p,it->body.s,it->body.len);
 							p += it->body.len;
 						}
-					} 
+					}
 				}
 			}
 		}
@@ -894,7 +894,7 @@ error:
 	return -1;
 }
 
-int dlg_th_pre_raw(str *data)
+int dlg_th_pre_raw(str *data, void* foo)
 {
 	struct sip_msg msg;
 
@@ -952,7 +952,7 @@ error:
 	return -1;
 }
 
-int dlg_th_post_raw(str *data)
+int dlg_th_post_raw(str *data, void* foo)
 {
 	struct sip_msg msg;
 	struct dlg_cell *dlg;

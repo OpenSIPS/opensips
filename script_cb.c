@@ -50,8 +50,8 @@ static struct script_cb *parse_err_cb=0;
 
 static unsigned int cb_id=0;
 
-raw_processing_func pre_processing_cb = NULL; 
-raw_processing_func post_processing_cb = NULL;
+struct raw_processing_cb_list* pre_processing_cb_list = NULL;
+struct raw_processing_cb_list* post_processing_cb_list = NULL;
 
 static inline int add_callback( struct script_cb **list,
 	cb_function f, void *param, int prio)
@@ -210,46 +210,99 @@ int exec_parse_err_cb( struct sip_msg *msg)
 	return exec_post_cb( msg, parse_err_cb);
 }
 
-/* currently no need for raw processing lists - FIXME to be extended if needed in the future */
-int register_raw_processing_cb(raw_processing_func f,int type)
+static inline int insert_raw_processing_cb(raw_processing_func f, int type)
 {
+	struct raw_processing_cb_list *elem, *list=NULL;
+
+	if (f == NULL) {
+		LM_ERR("null callback\n");
+		return -1;
+	}
+
 	switch (type) {
 		case PRE_RAW_PROCESSING:
-			if (pre_processing_cb != NULL) {
-				LM_WARN("Overwriting the raw pre processing CB \n");
-			}
-			pre_processing_cb = f;
-			return 0;
+			list = pre_processing_cb_list;
+			break;
 		case POST_RAW_PROCESSING:
-			if (post_processing_cb != NULL) {
-				LM_WARN("Overwriting the raw post processing CB \n");
-			}
-			post_processing_cb = f;
-			return 0;
+			list = post_processing_cb_list;
+			break;
 		default:
 			LM_ERR("Unrecognized raw processing CB type %d \n",type);
 	}
 
-	return -1;
+	elem = pkg_malloc(sizeof(struct raw_processing_cb_list));
+	if (elem == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+
+	elem->f = f;
+	elem->next = NULL;
+
+	if (list == NULL) {
+		list = elem;
+		return !(type==PRE_RAW_PROCESSING ? (pre_processing_cb_list=list)
+										  : (post_processing_cb_list=list));
+	} else {
+		while (list->next != NULL)
+			list = list->next;
+		list->next=elem;
+	}
+
+	return 0;
+
 }
 
-int run_raw_processing_cb(int type,str *data)
+/* currently no need for raw processing lists - FIXME to be extended if needed in the future */
+int register_raw_processing_cb(raw_processing_func f, int type)
 {
+	return insert_raw_processing_cb(f, type);
+}
+
+int run_raw_processing_cb(int type,str *data, void* helper)
+{
+
+	struct raw_processing_cb_list *list=NULL, *foo=NULL;
+	char *initial_data = data->s, *input_data;
+
+
 	switch (type) {
 		case PRE_RAW_PROCESSING:
-			if (pre_processing_cb != NULL) {
-				return pre_processing_cb(data);
-			}
-			return 0;
+			list = pre_processing_cb_list;
+			break;
 		case POST_RAW_PROCESSING:
-			if (post_processing_cb != NULL) {
-				return post_processing_cb(data);
-			}
-			return 0;
+			list = post_processing_cb_list;
+			break;
 		default:
 			LM_ERR("Unrecognized raw processing CB type %d \n",type);
 	}
 
-	return -1;
+	if (list == NULL)
+		return 0;
+
+	while (list) {
+		if (foo != NULL)
+			pkg_free(foo);
+
+		input_data = data->s;
+		if (list->f(data, helper) < 0) {
+			LM_ERR("failed to run callback\n");
+			return -1;
+		}
+
+		if (input_data != initial_data && input_data != data->s)
+			pkg_free(input_data);
+
+		foo = list;
+		list = list->next;
+	}
+
+	if (foo != NULL)
+		pkg_free(foo);
+
+
+
+	return !(type==PRE_RAW_PROCESSING?(pre_processing_cb_list=NULL)
+										:(post_processing_cb_list=NULL));
 }
 

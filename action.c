@@ -239,7 +239,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 	if(a->elem[1].type != NULLV_ST)
 	{
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
-		if(!(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL))) 
+		if(!(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL)))
 		{
 			LM_WARN("no value in right expression at %s:%d\n",
 				a->file, a->line);
@@ -599,11 +599,11 @@ int do_action(struct action* a, struct sip_msg* msg)
 					memcpy(tmp + len + name_s.len,
 							msg->buf + len, msg->len - len);
 					ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
-							tmp, msg->len + name_s.len);
+							tmp, msg->len + name_s.len, (void*)msg);
 					pkg_free(tmp);
 				} else {
 					ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
-							msg->buf, msg->len);
+							msg->buf, msg->len, (void*)msg);
 				}
 				if (ret!=0 && p->host.h_addr_list[p->addr_idx+1])
 					p->addr_idx++;

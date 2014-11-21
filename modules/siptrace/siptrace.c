@@ -1772,7 +1772,7 @@ static int trace_send_duplicate(char *buf, int len)
 			continue;
 		}
 
-		if (msg_send(send_sock, proto, to, 0, buf, len)<0){
+		if (msg_send(send_sock, proto, to, 0, buf, len, NULL)<0){
 			LM_ERR("cannot send duplicate message\n");
 			continue;
 		}
@@ -1947,7 +1947,7 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 			continue;
 		}
 
-		if (msg_send(send_sock, proto, to, 0, buffer, buflen)<0){
+		if (msg_send(send_sock, proto, to, 0, buffer, buflen, NULL)<0){
 			LM_ERR("cannot send duplicate message\n");
 			continue;
 		}

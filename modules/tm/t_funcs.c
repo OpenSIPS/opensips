@@ -59,15 +59,15 @@ static str relay_reason_100 = str_init("Giving a try");
 
 
 /* ----------------------------------------------------- */
-int send_pr_buffer( struct retr_buf *rb, void *buf, int len
+int send_pr_buffer( struct retr_buf *rb, void *buf, int len,
 #ifdef EXTRA_DEBUG
-						, char* file, const char *function, int line
+						, char* file, const char *function, int line,
 #endif
-					)
+					void* ctx)
 {
 	if (buf && len && rb )
 		return msg_send( rb->dst.send_sock, rb->dst.proto, &rb->dst.to,
-				         rb->dst.proto_reserved1, buf, len);
+				         rb->dst.proto_reserved1, buf, len, ctx);
 	else {
 #ifdef EXTRA_DEBUG
 		LM_CRIT("sending an empty buffer from %s: %s (%d)\n",file,
