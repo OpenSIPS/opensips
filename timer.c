@@ -314,8 +314,9 @@ static inline void timer_ticker(struct os_timer *timer_list, utime_t *drift)
 	for (t=timer_list;t; t=t->next){
 		if (j>=t->expires){
 			if (t->current_time) {
-				LM_WARN("timer task <%s> already schedualed for %d s, it may overlap..\n",
-					t->label,j);
+				LM_WARN("timer task <%s> already schedualed for %lld s"
+					" (now %d), it may overlap..\n",
+					t->label, t->current_time, j);
 				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
 					/* skip this execution of the timer handler */
 					t->expires = j + t->interval;
@@ -358,8 +359,8 @@ static inline void utimer_ticker(struct os_timer *utimer_list, utime_t *drift)
 	for ( t=utimer_list ; t ; t=t->next){
 		if (uj>=t->expires){
 			if (t->current_time) {
-				LM_WARN("utimer task <%s>%p already schedualed for %lld us, skipping..\n",
-					t->label,t,uj);
+				LM_WARN("utimer task <%s>%p already schedualed for %lld us (now %lld),"
+					" skipping..\n", t->label,t,t->current_time,uj);
 				if (t->flags&TIMER_FLAG_SKIP_ON_DELAY) {
 					/* skip this execution of the timer handler */
 					t->expires = uj + t->interval;
