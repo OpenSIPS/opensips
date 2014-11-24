@@ -78,6 +78,7 @@
 #include "mi.h"
 #include "tm_load.h"
 #include "t_ctx.h"
+#include "async.h"
 
 
 /* item functions */
