@@ -59,6 +59,7 @@ struct lb_data **curr_data = NULL;
 
 /* probing related stuff */
 static unsigned int lb_prob_interval = 30;
+static unsigned int lb_prob_verbose = 0;
 static str lb_probe_replies = {NULL,0};
 struct tm_binds lb_tmb;
 str lb_probe_method = str_init("OPTIONS");
@@ -72,14 +73,16 @@ static void mod_destroy(void);
 static int mi_child_init();
 
 /* failover stuff */
-static str grp_avp_name_s = str_init("lb_grp");
+static str group_avp_name_s = str_init("lb_grp");
+static str flags_avp_name_s = str_init("lb_flg");
 static str mask_avp_name_s = str_init("lb_mask");
 static str id_avp_name_s = str_init("lb_id");
-static str prfs_avp_name_s = str_init("lb_prfs");
-int grp_avp_name;
+static str res_avp_name_s = str_init("lb_res");
+int group_avp_name;
+int flags_avp_name;
 int mask_avp_name;
 int id_avp_name;
-int prfs_avp_name;
+int res_avp_name;
 
 
 
@@ -92,15 +95,18 @@ static int fixup_resources(void** param, int param_no);
 static int fixup_is_dst(void** param, int param_no);
 static int fixup_cnt_call(void** param, int param_no);
 
-static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char* al);
-static int w_lb_disable(struct sip_msg *req);
+static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl);
+static int w_lb_next(struct sip_msg *req);
+static int w_lb_start_and_next(struct sip_msg *req, char *grp, char *rl, char *fl);
 static int w_lb_reset(struct sip_msg *req);
+static int w_lb_is_started(struct sip_msg *req);
+static int w_lb_disable_dst(struct sip_msg *req);
 static int w_lb_is_dst2(struct sip_msg *msg, char *ip, char *port);
 static int w_lb_is_dst3(struct sip_msg *msg, char *ip, char *port, char *grp);
 static int w_lb_is_dst4(struct sip_msg *msg, char *ip, char *port, char *grp,
 		char *active);
-static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
-		char *rl, char *mode);
+static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
+		char *rl, char *dir);
 
 
 static void lb_prob_handler(unsigned int ticks, void* param);
@@ -109,23 +115,31 @@ static void lb_prob_handler(unsigned int ticks, void* param);
 
 
 static cmd_export_t cmds[]={
-	{"load_balance",     (cmd_function)w_load_balance,   2, fixup_resources,
+	{"lb_start",         (cmd_function)w_lb_start,         2, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"load_balance",     (cmd_function)w_load_balance,   3, fixup_resources,
+	{"lb_start",         (cmd_function)w_lb_start,         3, fixup_resources,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_disable",       (cmd_function)w_lb_disable,     0,               0,
+	{"lb_start_and_next",(cmd_function)w_lb_start_and_next,2, fixup_resources,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_start_and_next",(cmd_function)w_lb_start_and_next,3, fixup_resources,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_next",          (cmd_function)w_lb_next,          0,               0,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_reset",         (cmd_function)w_lb_reset,         0,               0,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_is_started",    (cmd_function)w_lb_is_started,    0,               0,
+		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"lb_disable_dst",   (cmd_function)w_lb_disable_dst,   0,               0,
 		0, REQUEST_ROUTE|FAILURE_ROUTE},
-	{"lb_reset",         (cmd_function)w_lb_reset,       0,               0,
-		0, REQUEST_ROUTE|FAILURE_ROUTE},
-	{"lb_is_destination",(cmd_function)w_lb_is_dst2,     2,    fixup_is_dst,
+	{"lb_is_destination",(cmd_function)w_lb_is_dst2,       2,    fixup_is_dst,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"lb_is_destination",(cmd_function)w_lb_is_dst3,     3,    fixup_is_dst,
+	{"lb_is_destination",(cmd_function)w_lb_is_dst3,       3,    fixup_is_dst,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"lb_is_destination",(cmd_function)w_lb_is_dst4,     4,    fixup_is_dst,
+	{"lb_is_destination",(cmd_function)w_lb_is_dst4,       4,    fixup_is_dst,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"lb_count_call",    (cmd_function)w_count_call,     4,  fixup_cnt_call,
+	{"lb_count_call",    (cmd_function)w_lb_count_call,    4,  fixup_cnt_call,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_count_call",    (cmd_function)w_count_call,     5,  fixup_cnt_call,
+	{"lb_count_call",    (cmd_function)w_lb_count_call,    5,  fixup_cnt_call,
 		0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,0,0,0,0}
 	};
@@ -135,6 +149,7 @@ static param_export_t mod_params[]={
 	{ "db_url",                STR_PARAM, &db_url.s                 },
 	{ "db_table",              STR_PARAM, &table_name               },
 	{ "probing_interval",      INT_PARAM, &lb_prob_interval         },
+	{ "probing_verbose",       INT_PARAM, &lb_prob_verbose          },
 	{ "probing_method",        STR_PARAM, &lb_probe_method.s        },
 	{ "probing_from",          STR_PARAM, &lb_probe_from.s          },
 	{ "probing_reply_codes",   STR_PARAM, &lb_probe_replies.s       },
@@ -269,7 +284,8 @@ static int fixup_resources(void** param, int param_no)
 
 	} else if (param_no==3) {
 
-		fixup_uint(param);
+		/* string with flags */
+		return fixup_sgp(param);
 
 	}
 
@@ -433,12 +449,15 @@ static int mod_init(void)
 				return -1;
 			}
 		}
-
 	}
 
 	/* parse avps */
-	if (parse_avp_spec(&grp_avp_name_s, &grp_avp_name)) {
+	if (parse_avp_spec(&group_avp_name_s, &group_avp_name)) {
 		LM_ERR("cannot parse group avp\n");
+		return -1;
+	}
+	if (parse_avp_spec(&flags_avp_name_s, &flags_avp_name)) {
+		LM_ERR("cannot parse flags avp\n");
 		return -1;
 	}
 	if (parse_avp_spec(&mask_avp_name_s, &mask_avp_name)) {
@@ -449,13 +468,13 @@ static int mod_init(void)
 		LM_ERR("cannot parse id avp\n");
 		return -1;
 	}
+	if (parse_avp_spec(&res_avp_name_s, &res_avp_name)) {
+		LM_ERR("cannot parse resources avp\n");
+		return -1;
+	}
 
 	if (lb_init_event() < 0) {
 		LM_ERR("cannot init event\n");
-		return -1;
-	}
-	if (parse_avp_spec(&prfs_avp_name_s, &prfs_avp_name)) {
-		LM_ERR("cannot parse resources avp\n");
 		return -1;
 	}
 
@@ -502,16 +521,39 @@ static void mod_destroy(void)
 }
 
 
-static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
+static int w_lb_next(struct sip_msg *req)
 {
 	int ret;
+
+	lock_start_read(ref_lock);
+
+	/* do lb */
+	ret = do_lb_next(req, *curr_data);
+
+	lock_stop_read(ref_lock);
+
+	if( ret < 0 )
+		return ret;
+	return 1;
+}
+
+
+static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl)
+{
+	int ret;
+
 	int grp_no;
 	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
 	pv_value_t val;
+
 	struct lb_res_str_list *lb_rl;
 	struct lb_res_parse *lbp;
 	pv_elem_t *model;
 	str dest;
+
+	str flstr = {0,0};
+	int flags=LB_FLAGS_DEFAULT;
+	char *f;
 
 	if (lbgp->grp_pv) {
 		if (pv_get_spec_value( req, (pv_spec_p)lbgp->grp_pv, &val)!=0) {
@@ -542,11 +584,31 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 	} else
 		lb_rl = (struct lb_res_str_list *)lbp->param;
 
+	if( fl ) {
+		if( fixup_get_svalue(req, (gparam_p)fl, &flstr) != 0 ) {
+			LM_ERR("failed to extract flags\n");
+			return -1;
+		}
+		for( f=flstr.s ; f<flstr.s+flstr.len ; f++ ) {
+			switch( *f ) {
+				case 'r':
+					flags |= LB_FLAGS_RELATIVE;
+					LM_DBG("using relative versus absolute estimation\n");
+					break;
+				case 'n':
+					flags |= LB_FLAGS_NEGATIVE;
+					LM_DBG("do not skip negative loads\n");
+					break;
+				default:
+					LM_DBG("skipping unknown flag: [%c]\n", *f);
+			}
+		}
+	}
+
 	lock_start_read( ref_lock );
 
 	/* do lb */
-	ret = do_load_balance(req, grp_no, lb_rl,
-			(unsigned int)(long)al, *curr_data);
+	ret = do_lb_start(req, grp_no, lb_rl, flags, *curr_data);
 
 	lock_stop_read( ref_lock );
 
@@ -559,20 +621,12 @@ static int w_load_balance(struct sip_msg *req, char *grp, char *rl, char *al)
 }
 
 
-static int w_lb_disable(struct sip_msg *req)
+static int w_lb_start_and_next(struct sip_msg *req, char *grp, char *rl, char *fl)
 {
-	int ret;
-
-	lock_start_read( ref_lock );
-
-	/* do lb */
-	ret = do_lb_disable( req , *curr_data);
-
-	lock_stop_read( ref_lock );
-
-	if (ret<0)
-		return ret;
-	return 1;
+	return (do_lb_is_started(req) > 0) ?
+		w_lb_next(req) :
+		w_lb_start(req, grp, rl, fl)
+	;
 }
 
 
@@ -580,14 +634,44 @@ static int w_lb_reset(struct sip_msg *req)
 {
 	int ret;
 
-	lock_start_read( ref_lock );
+	lock_start_read(ref_lock);
 
 	/* do lb */
-	ret = do_lb_reset( req , *curr_data);
+	ret = do_lb_reset(req, *curr_data);
 
-	lock_stop_read( ref_lock );
+	lock_stop_read(ref_lock);
 
-	if (ret<0)
+	if( ret < 0 )
+		return ret;
+	return 1;
+}
+
+
+static int w_lb_is_started(struct sip_msg *req)
+{
+	int ret;
+
+	/* do lb, do not need a lock, since do not use '*curr_data' */
+	ret = do_lb_is_started(req);
+
+	if( ret < 0 )
+		return ret;
+	return 1;
+}
+
+
+static int w_lb_disable_dst(struct sip_msg *req)
+{
+	int ret;
+
+	lock_start_read(ref_lock);
+
+	/* do lb */
+	ret = do_lb_disable_dst(req, *curr_data);
+
+	lock_stop_read(ref_lock);
+
+	if( ret < 0 )
 		return ret;
 	return 1;
 }
@@ -638,8 +722,8 @@ static int w_lb_is_dst4(struct sip_msg *msg,char *ip,char *port,char *grp,
 }
 
 
-static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
-														char *rl, char *mode)
+static int w_lb_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
+			char *rl, char *dir)
 {
 	struct lb_grp_param *lbgp = (struct lb_grp_param *)grp;
 	struct lb_res_str_list *lb_rl;
@@ -715,7 +799,7 @@ static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 	lock_start_read( ref_lock );
 
 	ret = lb_count_call( *curr_data, req, ipa, port_no, grp_no, lb_rl,
-			(unsigned int)(long)mode);
+			(unsigned int)(long)dir);
 
 	lock_stop_read( ref_lock );
 
@@ -726,6 +810,7 @@ static int w_count_call(struct sip_msg *req, char *ip, char *port, char *grp,
 		return ret;
 	return 1;
 }
+
 
 
 /******************** PROBING Stuff ***********************/
@@ -766,8 +851,11 @@ void set_dst_state_from_rplcode( int id, int code)
 		}
 		old_flags = dst->flags;
 		dst->flags &= ~LB_DST_STAT_DSBL_FLAG;
-		if (dst->flags != old_flags)
+		if (dst->flags != old_flags) {
 			lb_raise_event(dst);
+			if (lb_prob_verbose)
+				LM_INFO("re-enable destination %d <%.*s> after %d reply on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
+		}
 		lock_stop_read( ref_lock );
 		return;
 	}
@@ -775,8 +863,11 @@ void set_dst_state_from_rplcode( int id, int code)
 	if (code>=400) {
 		old_flags = dst->flags;
 		dst->flags |= LB_DST_STAT_DSBL_FLAG;
-		if (dst->flags != old_flags)
+		if (dst->flags != old_flags) {
 			lb_raise_event(dst);
+			if (lb_prob_verbose)
+				LM_INFO("disable destination %d <%.*s> after %d reply on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
+		}
 	}
 
 	lock_stop_read( ref_lock );
@@ -944,8 +1035,14 @@ static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
 					dst->flags |=
 						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
 				}
-				if (old_flags != dst->flags)
+				if (old_flags != dst->flags) {
 					lb_raise_event(dst);
+					if( lb_prob_verbose )
+						LM_INFO("manually %s destination %d <%.*s>\n",
+							(stat ? "enable" : "disable"),
+							dst->id, dst->uri.len, dst->uri.s
+						);
+				}
 				lock_stop_read( ref_lock );
 				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 			}
@@ -1006,9 +1103,9 @@ static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
 			goto error;
 
 		if (dst->flags&LB_DST_STAT_NOEN_FLAG) {
-			attr = add_mi_attr( dst_node, 0, "auto-reenable", 7, "off", 3);
+			attr = add_mi_attr( dst_node, 0, "auto-reenable", 13, "off", 3);
 		} else {
-			attr = add_mi_attr( dst_node, 0, "auto-reenable", 7, "on", 2);
+			attr = add_mi_attr( dst_node, 0, "auto-reenable", 13, "on", 2);
 		}
 		if (attr==0)
 			goto error;
