@@ -181,7 +181,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 		/* exec the routing script */
 		if (rc & SCB_RUN_TOP_ROUTE)
-			run_top_route(rlist[DEFAULT_RT].a, msg);
+			/* run the main request route and skip post_script callbacks
+			 * if the TOBE_CONTINUE flag is returned */
+			if ( run_top_route(rlist[DEFAULT_RT].a, msg) & ACT_FL_TBCONT )
+				goto end;
 
 		/* execute post request-script callbacks */
 		if (rc & SCB_RUN_POST_CBS)
