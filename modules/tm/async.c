@@ -41,6 +41,16 @@ typedef struct _async_ctx {
 extern int return_code; /* from action.c, return code */
 
 
+
+static inline void run_resume_route( int resume_route, struct sip_msg *msg)
+{
+	/* run the resume route and if it ends the msg handling (no other aysnc
+	 * started), run the post script callbacks. */
+	if ( (run_top_route(rlist[resume_route].a, msg) & ACT_FL_TBCONT) == 0 )
+		exec_post_req_cb(msg);
+}
+
+
 /* function triggered from reactor in order to continue the processing
  */
 int t_resume_async(int fd, void *param)
@@ -92,7 +102,7 @@ int t_resume_async(int fd, void *param)
 	close(fd);
 
 	/* run the resume_route[] */
-	run_top_route( rlist[ctx->resume_route].a, &faked_req);
+	run_resume_route( ctx->resume_route, &faked_req);
 
 restore:
 	/* restore original environment */
@@ -176,8 +186,6 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->resume_route = resume_route;
 	ctx->t = t;
 
-	set_kr(REQ_FWDED);
-
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, (void*)ctx)<0 ) {
 		LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
@@ -193,7 +201,7 @@ sync:
 	/* run the resume function */
 	ctx_f( fd, msg, ctx_p );
 	/* run the resume route in sync mode */
-	run_top_route(rlist[resume_route].a, msg);
+	run_resume_route( resume_route, msg);
 	/* break original script */
 	return 0;
 
@@ -202,7 +210,7 @@ failure:
 	/* execute here the resume route with failure indication */
 	return_code = -1; /* FIXME */
 	/* run the resume route */
-	run_top_route(rlist[resume_route].a, msg);
+	run_resume_route( resume_route, msg);
 	/* the triggering route is terminated and whole script ended */
 	return 0;
 }

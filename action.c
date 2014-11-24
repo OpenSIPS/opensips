@@ -1881,6 +1881,8 @@ next_avp:
 					msg, a->file, a->line) ;
 				ret = async_start_f( msg, aitem, a->elem[1].u.number);
 			}
+			action_flags |= ACT_FL_TBCONT;
+			ret = 0;
 			break;
 		case FORCE_RPORT_T:
 			script_trace("core", "force_rport", msg, a->file, a->line) ;
