@@ -642,7 +642,7 @@ static void trace_transaction(struct dlg_cell* dlg, int type,
 	}while(1);
 
 	/* set the flag */
-	if ( dlgb.fetch_dlg_value( dlg, &st_flag_val, &avp_value.s, 0)!=0 )
+	if ( dlgb.fetch_dlg_value( dlg, &st_flag_val, &avp_value.s, 0)==0 )
 		params->msg->flags |= trace_flag;
 	params->msg->msg_flags |= FL_USE_SIPTRACE;
 	/* trace current request */
@@ -692,8 +692,8 @@ static int trace_dialog(struct sip_msg *msg)
 	}
 
 	/* any need to do tracing here ? check the triggers */
-	avp=search_first_avp(traced_user_avp_type, traced_user_avp,
-			&avp_value, 0);
+	avp = traced_user_avp<0 ? NULL : search_first_avp(traced_user_avp_type,
+			traced_user_avp, &avp_value, 0);
 	if (avp==NULL && (msg->flags&trace_flag)==0) {
 		LM_DBG("Nothing to trace here\n");
 		return -1;
