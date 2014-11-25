@@ -434,7 +434,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			}
 abort_update:
 			/* save the SIP message into transaction */
-			new_cell->uas.request = sip_msg_cloner( req, &sip_msg_len);
+			new_cell->uas.request = sip_msg_cloner( req, &sip_msg_len, 1);
 			if (new_cell->uas.request==NULL) {
 				/* reset any T triggering */
 				new_cell->on_negative = 0;

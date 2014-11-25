@@ -654,7 +654,7 @@ static inline int do_dns_failover(struct cell *t)
 			return -1;
 		}
 		/* now do the actual cloning of the SIP message */
-		t->uas.request = sip_msg_cloner( req, &sip_msg_len);
+		t->uas.request = sip_msg_cloner( req, &sip_msg_len, 1);
 		if (t->uas.request==NULL) {
 			LM_ERR("cloning failed\n");
 			free_sip_msg(req);
@@ -1079,7 +1079,7 @@ static int store_reply( struct cell *trans, int branch, struct sip_msg *rpl)
 		if (rpl==FAKED_REPLY)
 			trans->uac[branch].reply=FAKED_REPLY;
 		else
-			trans->uac[branch].reply = sip_msg_cloner( rpl, 0 );
+			trans->uac[branch].reply = sip_msg_cloner( rpl, 0, 0 );
 
 		if (! trans->uac[branch].reply ) {
 			LM_ERR("failed to alloc' clone memory\n");
@@ -1267,7 +1267,7 @@ error03:
 error02:
 	if (save_clone) {
 		if (t->uac[branch].reply!=FAKED_REPLY)
-			sip_msg_free( t->uac[branch].reply );
+			free_cloned_msg( t->uac[branch].reply );
 		t->uac[branch].reply = NULL;
 	}
 error01:
