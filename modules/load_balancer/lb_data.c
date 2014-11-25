@@ -470,7 +470,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		for( it_r=data->resources,i=0 ; it_r ; it_r=it_r->next ) {
 			if( search_resource_str(rl, &it_r->name) ) {
 				res_new[i++] = it_r;
-				/*LM_DBG*/LM_ERR("initial call of LB - found requested %d/%d resource [%.*s]\n", i, res_new_n, it_r->name.len, it_r->name.s);
+				LM_DBG("initial call of LB - found requested %d/%d resource [%.*s]\n", i, res_new_n, it_r->name.len, it_r->name.s);
 			}
 		}
 		if( i != res_new_n ) {
@@ -500,7 +500,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		for( it_d=data->dsts ; it_d ; it_d=it_d->next ) {
 			if( it_d->id == id_val.n ) {
 				last_dst = it_d;
-				/*LM_DBG*/LM_ERR("%s call of LB - found previous dst %d [%.*s]\n", (reuse ? "sequential" : "initial"), last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
+				LM_DBG("%s call of LB - found previous dst %d [%.*s]\n", (reuse ? "sequential" : "initial"), last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
 				break;
 			}
 		}
@@ -528,7 +528,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 				/* fill buffer only if buffer size not exeeded */
 				if( res_prev_n < res_prev_size ) {
 					res_prev[res_prev_n] = it_r;
-					/*LM_DBG*/LM_ERR("%s call of LB - found previous resource [%.*s]\n", (reuse ? "sequential" : "initial"), it_r->name.len, it_r->name.s);
+					LM_DBG("%s call of LB - found previous resource [%.*s]\n", (reuse ? "sequential" : "initial"), it_r->name.len, it_r->name.s);
 				}
 				res_prev_n++;
 			}
@@ -571,7 +571,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		else
 			flags = LB_FLAGS_DEFAULT;
 
-		/*LM_DBG*/LM_ERR("sequential call of LB - found previous group %d and flags 0x%x\n", group, flags);
+		LM_DBG("sequential call of LB - found previous group %d and flags 0x%x\n", group, flags);
 	}
 
 
@@ -674,7 +674,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 						dst = it_d;
 						cond = 1;
 					}
-					/*LM_DBG*/LM_ERR("%s call of LB - destination %d <%.*s> selected for LB set with free=%d\n",
+					LM_DBG("%s call of LB - destination %d <%.*s> selected for LB set with free=%d\n",
 						(reuse ? "sequential" : "initial"),
 						it_d->id, it_d->uri.len, it_d->uri.s, it_l
 					);
@@ -687,7 +687,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 				}
 			}
 			else {
-				/*LM_DBG*/LM_ERR("%s call of LB - skipping destination %d <%.*s> (filtered=%d , disabled=%d)\n",
+				LM_DBG("%s call of LB - skipping destination %d <%.*s> (filtered=%d , disabled=%d)\n",
 					(reuse ? "sequential" : "initial"),
 					it_d->id, it_d->uri.len, it_d->uri.s,
 					((dst_bitmap_cur[i] & (1 << j)) ? 0 : 1), ((it_d->flags & LB_DST_STAT_DSBL_FLAG) ? 1 : 0)
@@ -699,7 +699,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 
 
 	if( dst != NULL ) {
-		/*LM_DBG*/LM_ERR("%s call of LB - winning destination %d <%.*s> selected for LB set with free=%d\n",
+		LM_DBG("%s call of LB - winning destination %d <%.*s> selected for LB set with free=%d\n",
 			(reuse ? "sequential" : "initial"),
 			dst->id, dst->uri.len, dst->uri.s, load
 		);
@@ -720,7 +720,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		}
 	}
 	else {
-		/*LM_DBG*/LM_ERR("%s call of LB - no destination found\n", (reuse ? "sequential" : "initial"));
+		LM_DBG("%s call of LB - no destination found\n", (reuse ? "sequential" : "initial"));
 	}
 
 
@@ -729,7 +729,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		lock_release(res_cur[i]->lock);
 
 
-	/* we're done with load-ballancing from here, now save state */
+	/* we're done with load-balancing, now save state */
 
 
 	/* save state - group */
@@ -742,7 +742,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 	else if( group_val.n != group ) {
 		group_avp->data = (void *)(long)group;
 	}
-	/* save state - flags, only if they are set */
+	/* save state - flags, save only if they are set */
 	if( flags_avp == NULL ) {
 		if( flags != LB_FLAGS_DEFAULT ) {
 			flags_val.n = flags;
@@ -766,7 +766,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 			LM_ERR("failed to add MASK AVP\n");
 		}
 	}
-	/* save state - dst, only save if we have one */
+	/* save state - dst, save only if we have one */
 	if( id_avp == NULL ) {
 		if( dst != NULL ) {
 			id_val.n = dst->id;
@@ -832,12 +832,12 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 
 int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigned int flags, struct lb_data *data)
 {
-	return lb_route(req, group, rl, flags, data, 0/* should NOT reuse previous data */);
+	return lb_route(req, group, rl, flags, data, 0/*should NOT reuse previous data*/);
 }
 
 int do_lb_next(struct sip_msg *req, struct lb_data *data)
 {
-	return lb_route(req, -1, NULL, 0, data, 1/* reuse previous data */);
+	return lb_route(req, -1, NULL, 0, data, 1/*reuse previous data*/);
 }
 
 
@@ -864,7 +864,7 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 		for( it_d=data->dsts ; it_d ; it_d=it_d->next ) {
 			if( it_d->id == id_val.n ) {
 				last_dst = it_d;
-				/*LM_DBG*/LM_ERR("reset LB - found previous dst %d [%.*s]\n", last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
+				LM_DBG("reset LB - found previous dst %d [%.*s]\n", last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
 				break;
 			}
 		}
@@ -883,7 +883,7 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 		if( (last_dst != NULL) && (is_avp_str_val(res_avp) != 0) ) {
 			for( it_r=data->resources ; it_r ; it_r=it_r->next ) {
 				if( (it_r->name.len == res_val.s.len) && (memcmp(it_r->name.s, res_val.s.s, res_val.s.len) == 0) ) {
-					/*LM_DBG*/LM_ERR("reset LB - found previous resource [%.*s]\n", it_r->name.len, it_r->name.s);
+					LM_DBG("reset LB - found previous resource [%.*s]\n", it_r->name.len, it_r->name.s);
 					break;
 				}
 			}
