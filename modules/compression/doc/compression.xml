@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding='ISO-8859-1'?>
+<!DOCTYPE Book PUBLIC "-//OASIS//DTD DocBook V4.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "compression_admin.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+	<bookinfo>
+	<title>compression Module</title>
+	<productname class="trade">&osipsname;</productname>
+	<authorgroup>
+		<author>
+		<firstname>Ionut-Razvan</firstname>
+		<surname>Ionita</surname>
+		</author>
+		<editor>
+		<firstname>Ionut-Razvan</firstname>
+		<surname>Ionita</surname>
+		</editor>
+	</authorgroup>
+	<copyright>
+		<year>2014</year>
+		<holder>&voicesystem;</holder>
+	</copyright>
+	<revhistory>
+		<revision>
+		<revnumber>$Revision: 5895 $</revnumber>
+		<date>$Date$</date>
+		</revision>
+	</revhistory>
+	</bookinfo>
+	<toc></toc>
+	
+	&admin;
+	
+</book>
