@@ -37,8 +37,8 @@ int dlg_th_onroute(struct dlg_cell *dlg, struct sip_msg *req, int dir);
 int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
 		struct sip_msg *req,int init_req, int dir);
 
-int dlg_th_pre_raw(str *data, void* foo);
-int dlg_th_post_raw(str *data, void* foo);
+int dlg_th_pre_raw(str *data, struct sip_msg* foo);
+int dlg_th_post_raw(str *data, struct sip_msg* foo);
 int dlg_parse_passed_ct_params(str *params);
 int dlg_parse_passed_hdr_ct_params(str *params);
 

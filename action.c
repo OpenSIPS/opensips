@@ -599,11 +599,11 @@ int do_action(struct action* a, struct sip_msg* msg)
 					memcpy(tmp + len + name_s.len,
 							msg->buf + len, msg->len - len);
 					ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
-							tmp, msg->len + name_s.len, (void*)msg);
+							tmp, msg->len + name_s.len, msg);
 					pkg_free(tmp);
 				} else {
 					ret = msg_send(0/*send_sock*/, p->proto, to, 0/*id*/,
-							msg->buf, msg->len, (void*)msg);
+							msg->buf, msg->len, msg);
 				}
 				if (ret!=0 && p->host.h_addr_list[p->addr_idx+1])
 					p->addr_idx++;

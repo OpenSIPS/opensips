@@ -93,7 +93,7 @@ int forward_reply( struct sip_msg* msg);
  */
 static inline int msg_send( struct socket_info* send_sock, int proto,
 							union sockaddr_union* to, int id,
-							char* buf, int len, void* arg)
+							char* buf, int len, struct sip_msg* msg)
 {
 	str out_buff;
 
@@ -110,7 +110,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	/* the raw processing callbacks are free to change whatever inside the buffer
 	further use out_buff.s and at the end try to free out_buff.s
 	if changed by callbacks */
-	run_raw_processing_cb(POST_RAW_PROCESSING,&out_buff, arg);
+	run_post_raw_processing_cb(POST_RAW_PROCESSING,&out_buff, msg);
 
 	/* update the length for further processing */
 	len = out_buff.len;

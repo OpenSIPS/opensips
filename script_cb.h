@@ -56,13 +56,18 @@ typedef int (cb_function)( struct sip_msg *msg, void *param );
 #define PARSE_ERR_CB     (1<<4)
 
 /* helper is any type of data that can be used in further processing */
-typedef int (*raw_processing_func)(str *data, void* helper);
+typedef int (*raw_processing_func)(str *data, struct sip_msg* msg);
 #define PRE_RAW_PROCESSING  (1<<0)
 #define POST_RAW_PROCESSING (1<<1)
 
 struct raw_processing_cb_list {
 	raw_processing_func f;
 	struct raw_processing_cb_list* next;
+	char freeable; /* set this parameter if you want to register your
+						callback per message( registration at every message)
+						else put it 0, register callback only once and callback
+						will be called for every message that reaches msg_send
+						*/
 };
 
 struct script_cb {
@@ -88,8 +93,13 @@ int exec_post_rpl_cb( struct sip_msg *msg);
 
 int exec_parse_err_cb( struct sip_msg *msg);
 
-int register_raw_processing_cb(raw_processing_func f, int type);
-int run_raw_processing_cb(int type,str *data, void* helper);
+int register_pre_raw_processing_cb(raw_processing_func f, int type, char freeable);
+int register_post_raw_processing_cb(raw_processing_func f, int type, char freeable);
+
+int run_pre_raw_processing_cb(int type, str* data, struct sip_msg* msg);
+int run_post_raw_processing_cb(int type, str* data, struct sip_msg* msg);
+
+int run_raw_processing_cb(int type,str *data, struct sip_msg* msg, struct raw_processing_cb_list* list);
 
 #endif
 

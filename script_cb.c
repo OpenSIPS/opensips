@@ -210,24 +210,13 @@ int exec_parse_err_cb( struct sip_msg *msg)
 	return exec_post_cb( msg, parse_err_cb);
 }
 
-static inline int insert_raw_processing_cb(raw_processing_func f, int type)
+static inline int insert_raw_processing_cb(raw_processing_func f, int type, struct raw_processing_cb_list* list, char freeable)
 {
-	struct raw_processing_cb_list *elem, *list=NULL;
+	struct raw_processing_cb_list *elem;
 
 	if (f == NULL) {
 		LM_ERR("null callback\n");
 		return -1;
-	}
-
-	switch (type) {
-		case PRE_RAW_PROCESSING:
-			list = pre_processing_cb_list;
-			break;
-		case POST_RAW_PROCESSING:
-			list = post_processing_cb_list;
-			break;
-		default:
-			LM_ERR("Unrecognized raw processing CB type %d \n",type);
 	}
 
 	elem = pkg_malloc(sizeof(struct raw_processing_cb_list));
@@ -237,6 +226,7 @@ static inline int insert_raw_processing_cb(raw_processing_func f, int type)
 	}
 
 	elem->f = f;
+	elem->freeable = freeable;
 	elem->next = NULL;
 
 	if (list == NULL) {
@@ -253,39 +243,42 @@ static inline int insert_raw_processing_cb(raw_processing_func f, int type)
 
 }
 
-/* currently no need for raw processing lists - FIXME to be extended if needed in the future */
-int register_raw_processing_cb(raw_processing_func f, int type)
+int register_pre_raw_processing_cb(raw_processing_func f, int type, char freeable)
 {
-	return insert_raw_processing_cb(f, type);
+	return  insert_raw_processing_cb(f, type, pre_processing_cb_list, freeable);
 }
 
-int run_raw_processing_cb(int type,str *data, void* helper)
+int register_post_raw_processing_cb(raw_processing_func f, int type, char freeable)
+{
+	return  insert_raw_processing_cb(f, type, post_processing_cb_list, freeable);
+}
+
+
+
+
+
+int run_pre_raw_processing_cb(int type, str* data, struct sip_msg* msg)
+{
+	return run_raw_processing_cb(type, data, msg, pre_processing_cb_list);
+}
+
+int run_post_raw_processing_cb(int type, str* data, struct sip_msg* msg)
+{
+	return run_raw_processing_cb(type, data, msg, post_processing_cb_list);
+}
+
+int run_raw_processing_cb(int type, str *data, struct sip_msg* msg, struct raw_processing_cb_list* list)
 {
 
-	struct raw_processing_cb_list *list=NULL, *foo=NULL;
+	struct raw_processing_cb_list *foo=NULL, *last_good=NULL, *head=NULL;
 	char *initial_data = data->s, *input_data;
-
-
-	switch (type) {
-		case PRE_RAW_PROCESSING:
-			list = pre_processing_cb_list;
-			break;
-		case POST_RAW_PROCESSING:
-			list = post_processing_cb_list;
-			break;
-		default:
-			LM_ERR("Unrecognized raw processing CB type %d \n",type);
-	}
 
 	if (list == NULL)
 		return 0;
 
 	while (list) {
-		if (foo != NULL)
-			pkg_free(foo);
-
 		input_data = data->s;
-		if (list->f(data, helper) < 0) {
+		if (list->f(data, msg) < 0) {
 			LM_ERR("failed to run callback\n");
 			return -1;
 		}
@@ -295,14 +288,27 @@ int run_raw_processing_cb(int type,str *data, void* helper)
 
 		foo = list;
 		list = list->next;
+
+		if (foo != NULL) {
+			if (foo->freeable) {
+				/* foo will be gone so link the last good element
+				 * to the next one */
+				if (last_good)
+					last_good->next=list;
+
+				pkg_free(foo);
+			} else {
+				/* keep the first element not to be freed */
+				if (head == NULL)
+					head = foo;
+				/* and keep track of the last viable element to link with the
+				 * next viable element */
+				last_good = foo;
+			}
+		}
 	}
 
-	if (foo != NULL)
-		pkg_free(foo);
-
-
-
-	return !(type==PRE_RAW_PROCESSING?(pre_processing_cb_list=NULL)
-										:(post_processing_cb_list=NULL));
+	return !(type==PRE_RAW_PROCESSING?(pre_processing_cb_list=head)
+										:(post_processing_cb_list=head));
 }
 

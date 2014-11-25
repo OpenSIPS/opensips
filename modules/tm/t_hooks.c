@@ -38,10 +38,6 @@
 #include "t_lookup.h"
 #include "t_funcs.h"
 
-
-struct tm_context_loaders_cbs* context_loaders=0;
-struct tm_context_params_list* context_params=0;
-
 struct tmcb_head_list* req_in_tmcb_hl = 0;
 
 struct tmcb_head_list tmcb_pending_hl = {0,0};

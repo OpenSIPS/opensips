@@ -99,7 +99,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	/* the raw processing callbacks can change the buffer,
 	further use in_buff.s and at the end try to free in_buff.s
 	if changed by callbacks */
-	run_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff,NULL);
+	run_pre_raw_processing_cb(PRE_RAW_PROCESSING,&in_buff,NULL);
 	/* update the length for further processing */
 	len = in_buff.len;
 

@@ -897,12 +897,12 @@ static int mod_init(void)
 	destroy_cachedb(0);
 
 	/* set dlg topo hiding callid mangling callbacks ( pre * post ) */
-	if (register_raw_processing_cb(dlg_th_pre_raw, PRE_RAW_PROCESSING) < 0) {
+	if (register_pre_raw_processing_cb(dlg_th_pre_raw, PRE_RAW_PROCESSING, 0/*no free*/) < 0) {
 		LM_ERR("failed to initialize pre raw support\n");
 		return -1;
 	}
 
-	if (register_raw_processing_cb(dlg_th_post_raw, POST_RAW_PROCESSING) < 0) {
+	if (register_post_raw_processing_cb(dlg_th_post_raw, POST_RAW_PROCESSING, 0/*no free*/) < 0) {
 		LM_ERR("failed to initialize post raw support\n");
 		return -1;
 	}

@@ -894,7 +894,7 @@ error:
 	return -1;
 }
 
-int dlg_th_pre_raw(str *data, void* foo)
+int dlg_th_pre_raw(str *data, struct sip_msg* foo)
 {
 	struct sip_msg msg;
 
@@ -952,7 +952,7 @@ error:
 	return -1;
 }
 
-int dlg_th_post_raw(str *data, void* foo)
+int dlg_th_post_raw(str *data, struct sip_msg* foo)
 {
 	struct sip_msg msg;
 	struct dlg_cell *dlg;
