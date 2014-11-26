@@ -115,7 +115,7 @@ int compress_ctx_pos, compact_ctx_pos;
 static int sh_fixup(void**, int);
 
 static int mc_compact(struct sip_msg*, char*);
-static int mc_compact_cb(char** buf, void* param, int);
+static int mc_compact_cb(char** buf, void* param, int, int*);
 
 static int mc_compress_fixup(void**, int);
 static int mc_compress(struct sip_msg*, char*, char*, char*);
@@ -267,7 +267,7 @@ void wrap_tm_compact(struct cell*t, int type, struct tmcb_params* p)
 void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 {
 	char* buf = t->uac[p->code].request.buffer.s;
-	int olen;
+	int olen = t->uac[p->code].request.buffer.len;
 
 	switch (type) {
 		case COMPRESS_CB:
@@ -277,7 +277,7 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 			}
 			break;
 		case COMPACT_CB:
-			if (mc_compact_cb(&buf, *p->param, TM_CB) < 0) {
+			if (mc_compact_cb(&buf, *p->param, TM_CB, &olen) < 0) {
 				LM_ERR("compaction failed\n");
 				return;
 			}
@@ -298,7 +298,7 @@ int wrap_msg_compact(str* buf, struct sip_msg* p_msg) {
 int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 {
 	void* args;
-	int olen;
+	int olen=buf->len;
 
 	/* tm operation */
 	if (p_msg == NULL)
@@ -326,8 +326,7 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 			LM_DBG("compact null args. Probably not requested message\n");
 			return 0;
 		}
-
-		if (mc_compact_cb(&buf->s, args, PROCESSING_CB) < 0) {
+		if (mc_compact_cb(&buf->s, args, PROCESSING_CB, &olen) < 0) {
 			LM_ERR("compaction failed\n");
 			return -1;
 		}
@@ -584,7 +583,7 @@ err00:
 
 }
 
-static int mc_compact_cb(char** buf_p, void* param, int type)
+static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 {
 	int i;
 	int msg_total_len;
@@ -597,7 +596,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type)
 
 	char *buf=*buf_p;
 	char *buf_cpy;
-	char *end=buf+strlen(buf);
+	char *end=buf+*olen;
 
 	struct hdr_field *hf;
 	struct hdr_field** hdr_mask;
@@ -682,17 +681,14 @@ static int mc_compact_cb(char** buf_p, void* param, int type)
 	if (!frg)
 		goto memerr;
 
-	frg->begin = frg->end = 0;
+	frg->begin = 0;
+	frg->end = CRLF_LEN;
 	frg->next = NULL;
 	/* parse the body and extract fragments */
-	while (*buf_cpy != '\0') {
+	while (buf_cpy != end) {
 		if (*buf_cpy != 'a') {
 			/* Jump over the entire row*/
-		row_jump:
-			while (*buf_cpy != '\n')
-				(buf_cpy++, frg->end++);
-
-			(buf_cpy++, frg->end++);
+			goto row_jump;
 		}
 		else if (strncmp(buf_cpy, "a=rtpmap:", 9))
 			goto row_jump;
@@ -700,7 +696,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type)
 		else {
 			buf_cpy += 9;
 			frg->end--; /* already on 'a' char */
-			rtpmap_len = 0;
+			rtpmap_len = rtpmap_val = 0;
 
 			while (*buf_cpy >= '0' && *buf_cpy <= '9') {
 				rtpmap_val = rtpmap_val*10 + (*buf_cpy - '0');
@@ -713,25 +709,28 @@ static int mc_compact_cb(char** buf_p, void* param, int type)
 				if (!frg->next)
 					goto memerr;
 
-				frg->next->begin = frg->end + 9 + rtpmap_len;
 				frg = frg->next;
 				frg->next = NULL;
 
-				while (*buf_cpy != '\n')
-					(frg->begin++, buf_cpy++);
+				/* find the next line and set the start of the next fragment */
+				while (*buf_cpy != '\n') buf_cpy++;
+				buf_cpy++;
 
-				(frg->begin++, buf_cpy++);
-
-				frg->end = frg->begin;
+				frg->end = frg->begin = buf_cpy - buf;
+				continue;
 			} else {
-				frg->end += 9 + rtpmap_len;
-				buf_cpy  += rtpmap_len;
+				/*currently on \n before rtpmap. Need to jump over \nrtpmap:RT_VAL */
+				frg->end += 9 + rtpmap_len + 1;
 			}
 		}
+
+		row_jump:
+			while (*buf_cpy != '\n')
+				(buf_cpy++, frg->end++);
+		(buf_cpy++, frg->end++);
 	}
 
 	frg->end++; /* '\0' */
-
 	msg_total_len += frg->end - frg->begin + 1;
 
 	new_body_len = msg_total_len - hdr_len;
@@ -843,7 +842,6 @@ again:
 		if (i == HDR_OTHER_T)
 			break;
 	}
-
 	/* Copy the body of the message */
 	frg = frg_head;
 	while (frg) {
@@ -877,6 +875,7 @@ again:
 
 	memcpy(*buf_p, new_buf.s, new_buf.len);
 	(*buf_p)[new_buf.len] = '\0';
+	*olen = new_buf.len;
 
 	/* Free the arguments structure */
 	pkg_free(param);
@@ -1572,7 +1571,6 @@ only_body:
 	(*buf_p)[buf2send.len] = '\0';
 	*olen = buf2send.len;
 
-
 	free_hdr_list(&mnd_hdrs_head);
 	free_hdr_list(&non_mnd_hdrs_head);
 	/* free arguments structure */
@@ -1703,7 +1701,6 @@ static int mc_decompress(struct sip_msg* msg)
 							2 Headers-Algo
 							3 Content-Encoding*/
 
-
 	memset(hdr_vec, 0, HDRS_TO_SKIP * sizeof(struct hdr_field*));
 
 	if (parse_headers(msg, HDR_EOH_F, 0) != 0) {
@@ -1711,6 +1708,7 @@ static int mc_decompress(struct sip_msg* msg)
 		return -1;
 	}
 
+	/*If compressed with this module there are great chances that Content-Encoding is last*/
 	hdr_vec[3] = msg->last_header;
 
 	if (!is_content_encoding(hdr_vec[3])) {
@@ -1756,11 +1754,11 @@ static int mc_decompress(struct sip_msg* msg)
 	/* Only if content-encoding present, Content-Length will be replaced
 		with the one in the compressed body or in compressed headers*/
 
-
 	if (hdr_vec[3]) {
 		char* delim=NULL;
 		str s_tok;
 
+		hdr_vec[0] = msg->content_length;
 		s_tok.s = hdr_vec[3]->body.s;
 		s_tok.len = hdr_vec[3]->body.len;
 
