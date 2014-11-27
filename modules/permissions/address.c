@@ -448,6 +448,9 @@ int check_addr_6(struct sip_msg* msg,
 			LM_ERR("cannot get str_ip string\n");
 			return -1;
 		}
+	} else {
+		LM_ERR("source ip not provided!\n");
+		return -1;
 	}
 	if (str_ip.len <= 0 || !str_ip.s) {
 		LM_ERR("source ip is not set!\n");
@@ -456,7 +459,7 @@ int check_addr_6(struct sip_msg* msg,
 
 	ip = str2ip(&str_ip);
 	if (!ip) {
-		LM_ERR("source ip is not set!\n");
+		LM_ERR("invalid ip set <%.*s>!\n", str_ip.len, str_ip.s);
 		return -1;
 	}
 
