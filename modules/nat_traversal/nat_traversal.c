@@ -359,9 +359,11 @@ SIP_Dialog_end(SIP_Dialog *dialog)
 static INLINE void
 SIP_Registration_update(NAT_Contact *contact, time_t expire)
 {
-    if (contact->registration_expire == 0)
-        update_stat(registered_endpoints, 1);
-    contact->registration_expire = expire;
+    if (expire > contact->registration_expire) {
+        if (contact->registration_expire == 0)
+            update_stat(registered_endpoints, 1);
+        contact->registration_expire = expire;
+    }
 }
 
 static INLINE void
@@ -875,10 +877,10 @@ get_register_expire(struct sip_msg *request, struct sip_msg *reply)
         return 0;
     }
 
-    now = time(NULL);
-
     if (!reply->contact)
-        return now;
+        return 0;
+
+    now = time(NULL);
 
     // request may be R/O (if we are called from the TM callback),
     // thus we copy the hdr_field structures before parsing them
@@ -927,11 +929,7 @@ get_register_expire(struct sip_msg *request, struct sip_msg *reply)
 
     LM_DBG("maximum expire for all contacts: %u\n", (unsigned)expire);
 
-    // If no contacts were found in the reply which match the contact
-    // address being registered, then it was an unregister. As such,
-    // we return 'now' as the expiration time, to stop keepalives
-
-    return (expire ? expire + now : now);
+    return (expire ? expire + now : 0);
 }
 
 
