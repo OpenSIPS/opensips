@@ -667,7 +667,7 @@ static int w_lb_disable_dst(struct sip_msg *req)
 	lock_start_read(ref_lock);
 
 	/* do lb */
-	ret = do_lb_disable_dst(req, *curr_data);
+	ret = do_lb_disable_dst(req, *curr_data, lb_prob_verbose);
 
 	lock_stop_read(ref_lock);
 

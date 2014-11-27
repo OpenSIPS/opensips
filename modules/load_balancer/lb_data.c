@@ -917,18 +917,26 @@ int do_lb_is_started(struct sip_msg *req)
 }
 
 
-int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data)
+int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int verbose)
 {
 	struct usr_avp *id_avp;
 	int_str id_val;
 
 	struct lb_dst *dst;
+	int old_flags;
 
 	id_avp = search_first_avp( 0, id_avp_name, &id_val, NULL);
 	if( id_avp && (is_avp_str_val(id_avp) == 0) ) {
 		for( dst=data->dsts ; dst ; dst=dst->next ) {
 			if( dst->id == id_val.n ) {
+				old_flags = dst->flags;
 				dst->flags |= LB_DST_STAT_DSBL_FLAG;
+
+				if( dst->flags != old_flags ) {
+					lb_raise_event(dst);
+					if( verbose )
+						LM_INFO("manually disable destination %d <%.*s> from script\n", dst->id, dst->uri.len, dst->uri.s);
+				}
 				return 0;
 			}
 		}
