@@ -86,7 +86,6 @@
 #define veclen(_vec_, _type_) (sizeof(_vec_)/sizeof(_type_))
 
 
-#define DUMB_VAL 50
 #define PARSE_CRLF 0x0a0d
 #define WORD(p) (*(p + 0) + (*(p + 1) << 8))
 #define DWORD(p) (*(p+0) + (*(p+1) << 8) + (*(p+2) << 16) + (*(p+3) << 24))
@@ -158,23 +157,12 @@ static cmd_export_t cmds[]={
 	{0,0,0,0,0,0}
 };
 
-static dep_export_t deps = {
-	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
-		{ MOD_TYPE_NULL, NULL, 0},
-	},
-	{ /* modparam dependencies */
-		{ NULL, NULL },
-	},
-};
-
-
 struct module_exports exports= {
 	"compression",			/* module's name */
 	MOD_TYPE_DEFAULT, /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
-	&deps,				/* module dependencies */
+	NULL,				/* module dependencies */
 	cmds,			/* exported functions */
 	mod_params,		/* param exports */
 	0,			/* exported statistics */
