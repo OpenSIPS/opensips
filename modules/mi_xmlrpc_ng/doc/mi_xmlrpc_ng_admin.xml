@@ -59,7 +59,7 @@
 		http://[opensips_IP]:[opensips_httpd_port]/[mi_xmlrpc_ng_root]
 		</para>
 		<para>
-		<emphasis>The default value is "xmlrpc".</emphasis>
+		<emphasis>The default value is "RPC2".</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>mi_xmlrpc_ng_root</varname> parameter</title>

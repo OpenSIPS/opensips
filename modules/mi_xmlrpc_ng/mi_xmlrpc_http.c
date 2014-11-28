@@ -44,7 +44,7 @@ void mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		str *buffer, str *page);
 static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
-str http_root = str_init("xmlrpc");
+str http_root = str_init("RPC2");
 httpd_api_t httpd_api;
 
 

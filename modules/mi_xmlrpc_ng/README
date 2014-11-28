@@ -72,7 +72,7 @@ Chapter 1. Admin Guide
    Specifies the root path for xmlrpc requests:
    http://[opensips_IP]:[opensips_httpd_port]/[mi_xmlrpc_ng_root]
 
-   The default value is "xmlrpc".
+   The default value is "RPC2".
 
    Example 1.1. Set mi_xmlrpc_ng_root parameter
 ...
