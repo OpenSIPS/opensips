@@ -130,4 +130,6 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 
 void free_contenttype(content_t ** con);
 
+char* convert_mime2string_CT(int contenttype);
+
 #endif

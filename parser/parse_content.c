@@ -222,6 +222,7 @@ static type_node_t subtype_tree[] = {
 				{'p',SUBTYPE_ISUP,0,-1},
 
         };
+char str_contenttype[50];
 
 
 
@@ -562,4 +563,107 @@ void free_contenttype(content_t ** con)
 	}
 	*con = 0;
 }
+
+char* convert_mime2string_CT(int contenttype)
+{
+	#define SET_TYPE_PTRS(_type_) \
+		do { \
+			subtype_start = type_start + sizeof(_type_) - 1; \
+			memcpy(type_start, _type_, sizeof(_type_) - 1); \
+		} while(0);
+
+	#define SET_SUBTYPE_PTR(_subtype_) memcpy(subtype_start, _subtype_, sizeof(_subtype_))
+
+	/* last 16 bits */
+	int type = contenttype >> 16;
+	/* only first 16 bits */
+	int subtype = contenttype & (0xFF);
+	char* type_start;
+	char* subtype_start;
+
+	memset(str_contenttype, 0 , sizeof(str_contenttype));
+	type_start = str_contenttype;
+
+	switch (type) {
+		case TYPE_TEXT:
+			SET_TYPE_PTRS("text/");
+			break;
+		case TYPE_MESSAGE:
+			SET_TYPE_PTRS("message/");
+			break;
+		case TYPE_APPLICATION:
+			SET_TYPE_PTRS("application/");
+			break;
+		case TYPE_MULTIPART:
+			SET_TYPE_PTRS("multipart/");
+			break;
+		case TYPE_ALL:
+			SET_TYPE_PTRS("*/");
+			break;
+		case TYPE_UNKNOWN:
+			SET_TYPE_PTRS("unknown/");
+			break;
+	}
+
+	switch (subtype) {
+		case SUBTYPE_PLAIN:
+			SET_SUBTYPE_PTR("plain");
+			break;
+		case SUBTYPE_CPIM:
+			SET_SUBTYPE_PTR("cpim");
+			break;
+		case SUBTYPE_SDP:
+			SET_SUBTYPE_PTR("sdp");
+			break;
+		case SUBTYPE_CPLXML:
+			SET_SUBTYPE_PTR("cplxml");
+			break;
+		case SUBTYPE_PIDFXML:
+			SET_SUBTYPE_PTR("pidfxml");
+			break;
+		case SUBTYPE_RLMIXML:
+			SET_SUBTYPE_PTR("rlmixml");
+			break;
+		case SUBTYPE_RELATED:
+			SET_SUBTYPE_PTR("related");
+			break;
+		case SUBTYPE_LPIDFXML:
+			SET_SUBTYPE_PTR("lpidfxml");
+			break;
+		case SUBTYPE_XPIDFXML:
+			SET_SUBTYPE_PTR("xpidfxml");
+			break;
+		case SUBTYPE_WATCHERINFOXML:
+			SET_SUBTYPE_PTR("watcherinfoxml");
+			break;
+		case SUBTYPE_EXTERNAL_BODY:
+			SET_SUBTYPE_PTR("external_body");
+			break;
+		case SUBTYPE_XML_MSRTC_PIDF:
+			SET_SUBTYPE_PTR("xmlmsrtcpidf");
+			break;
+		case SUBTYPE_SMS:
+			SET_SUBTYPE_PTR("sms");
+			break;
+		case SUBTYPE_MIXED:
+			SET_SUBTYPE_PTR("mixed");
+			break;
+		case SUBTYPE_ISUP:
+			SET_SUBTYPE_PTR("isup");
+			break;
+		case SUBTYPE_ALL:
+			SET_SUBTYPE_PTR("*");
+			break;
+		case SUBTYPE_UNKNOWN:
+			SET_SUBTYPE_PTR("unknown");
+			break;
+	}
+
+	return str_contenttype;
+
+#undef SET_TYPE_PTRS
+#undef SET_SUBTYPE_PTR
+}
+
+
 

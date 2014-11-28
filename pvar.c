@@ -1445,18 +1445,114 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
+#define BUFLEN 1024
+
+	str s;
+	int idx=-1;
+	int idxf=-1;
+	int distance=0;
+	char buf[BUFLEN];
+	struct multi_body* multi;
+	struct part* body_part;
+	struct part* neg_index[2];
+
 	if(msg==NULL)
 		return -1;
 
-	if(msg->content_type==NULL
-			&& ((parse_headers(msg, HDR_CONTENTTYPE_F, 0)==-1)
-			 || (msg->content_type==NULL)))
-	{
-		LM_DBG("no Content-Type header\n");
-		return pv_get_null(msg, param, res);
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
 	}
 
-	return pv_get_strval(msg, param, res, &msg->content_type->body);
+	/* no index or all contenttypes */
+	if (param->pvi.type==0 || idxf == PV_IDX_ALL) {
+		if(msg->content_type==NULL
+				&& ((parse_headers(msg, HDR_CONTENTTYPE_F, 0)==-1)
+				 || (msg->content_type==NULL)))
+		{
+			LM_DBG("no Content-Type header\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		/* only the main contenttype requested*/
+		if (param->pvi.type==0)
+			return pv_get_strval(msg, param, res, &msg->content_type->body);
+	}
+
+	if ((multi=get_all_bodies(msg)) == 0 || multi->first == 0) {
+		LM_ERR("cannot get multi body\n");
+		return pv_get_null(msg, param, res);
+
+	}
+
+	/* one contenttype request */
+	if (idxf != PV_IDX_ALL) {
+		if (idx< 0) {
+			neg_index[0] = neg_index[1] = multi->first;
+			/*distance=last_body_postition-searched_body_position*/
+			distance -= idx+1;
+			while (neg_index[1]->next) {
+				if (distance == 0) {
+					neg_index[0] = neg_index[0]->next;
+				} else {
+					distance--;
+				}
+				neg_index[1] = neg_index[1]->next;
+			}
+
+			if (distance>0) {
+				LM_ERR("Index too low [%d]\n", idx);
+				return pv_get_null(msg, param, res);
+			}
+
+			s.s = convert_mime2string_CT(neg_index[0]->content_type);
+			s.len = strlen(s.s);
+		} else {
+			body_part = multi->first;
+			distance = idx;
+			while (distance && body_part->next) {
+				distance--;
+				body_part=body_part->next;
+			}
+
+			if (distance > 0) {
+				LM_ERR("Index too big [%d]\n", idx);
+				return pv_get_null(msg, param, res);
+			}
+
+			s.s = convert_mime2string_CT(body_part->content_type);
+			s.len = strlen(s.s);
+		}
+	} else {
+		/* copy main content type */
+		memcpy(buf, msg->content_type->body.s, msg->content_type->body.len);
+		buf[msg->content_type->body.len] = ',';
+		s.len = msg->content_type->body.len+1;
+
+		/* copy all the other contenttypes */
+		body_part = multi->first;
+		while (body_part) {
+			s.s = convert_mime2string_CT(body_part->content_type);
+			if (s.len + strlen(s.s) >= BUFLEN) {
+				LM_CRIT("buffer overflow! Too many contenttypes!\n");
+				return pv_get_null(msg, param, res);
+			}
+
+			memcpy( buf+s.len, s.s, strlen(s.s));
+			s.len += strlen(s.s);
+
+			/* delimiter only if something follows */
+			if(body_part->next)
+				buf[s.len++] = ',';
+
+			body_part = body_part->next;
+		}
+		s.s = buf;
+	}
+
+	return pv_get_strval(msg, param, res, &s);
+
+#undef BUFLEN
 }
 
 static int pv_get_content_length(struct sip_msg *msg, pv_param_t *param,
@@ -1481,16 +1577,74 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	str s;
+	int idx=-1;
+	int idxf=-1;
+	int distance=0;
+	struct multi_body* multi;
+	struct part* body_part;
+	struct part* neg_index[2];
 
 	if(msg==NULL)
 		return -1;
 
-	if (get_body( msg, &s)!=0 || s.len==0 )
-	{
-		LM_DBG("no message body\n");
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	/* if no index specified or index requests all bodies*/
+	if (param->pvi.type==0 || idxf==PV_IDX_ALL) {
+		if (get_body( msg, &s)!=0 || s.len==0 )
+		{
+			LM_DBG("no message body\n");
+			return pv_get_null(msg, param, res);
+		}
+		goto end;
+	}
+
+	if ((multi=get_all_bodies(msg)) == 0 || multi->first == 0) {
+		LM_ERR("cannot get multi body\n");
 		return pv_get_null(msg, param, res);
 	}
 
+	if (idx<0) {
+		neg_index[0] = neg_index[1] = multi->first;
+		/*distance=last_body_postition-searched_body_position*/
+		distance -= idx+1;
+		while (neg_index[1]->next) {
+			if (distance == 0) {
+				neg_index[0] = neg_index[0]->next;
+			} else {
+				distance--;
+			}
+			neg_index[1] = neg_index[1]->next;
+		}
+
+		if (distance>0) {
+			LM_ERR("Index too low [%d]\n", idx);
+			return pv_get_null(msg, param, res);
+		}
+
+		s.s = neg_index[0]->body.s;
+		s.len = neg_index[0]->body.len;
+	} else {
+		body_part = multi->first;
+		distance = idx;
+		while (distance && body_part->next) {
+			distance--;
+			body_part=body_part->next;
+		}
+
+		if (distance > 0) {
+			LM_ERR("Index too big [%d]\n", idx);
+			return pv_get_null(msg, param, res);
+		}
+
+		s.s = body_part->body.s;
+		s.len = body_part->body.len;
+	}
+
+end:
 	return pv_get_strval(msg, param, res, &s);
 }
 
@@ -3118,7 +3272,7 @@ static pv_export_t _pv_names_table[] = {
 		pv_parse_ct_name, pv_parse_index, 0, 0},
 	{{"cT", (sizeof("cT")-1)}, /* */
 		PVT_CONTENT_TYPE, pv_get_content_type, 0,
-		0, 0, 0, 0},
+		0, pv_parse_index, 0, 0},
 	{{"dd", (sizeof("dd")-1)}, /* */
 		PVT_DSTURI_DOMAIN, pv_get_dsturi_attr, pv_set_dsturi_host,
 		0, 0, pv_init_iname, 1},
@@ -3244,7 +3398,7 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, pv_init_iname, 2},
 	{{"rb", (sizeof("rb")-1)}, /* */
 		PVT_MSG_BODY, pv_get_msg_body, 0,
-		0, 0, 0, 0},
+		0, pv_parse_index, 0, 0},
 	{{"rc", (sizeof("rc")-1)}, /* */
 		PVT_RETURN_CODE, pv_get_return_code, 0,
 		0, 0, 0, 0},
