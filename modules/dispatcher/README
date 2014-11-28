@@ -652,12 +652,11 @@ ds_select_dst("part3 : 1", "0", "fUsD");
 ds_select_dst("part4 : 2,3", "0,1", "fuD M 5, fuS M 2");
 ...
 # dispatch over multiple dispatching groups
-$var(partition_name) = "p4"
+$var(part_name) = "p4"
 $var(setid) = "1, 2";
 $var(alg) = "4, 2";
 $var(flags) = " sFDU M 2, fuS M 3";
-ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(fla
-gs)");
+ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
 ...
 
 1.4.2.  ds_select_domain(set, alg [, "[flags] [M max_results]"])
