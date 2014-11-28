@@ -587,8 +587,7 @@ static inline int mi_xmlrpc_http_write_node(char** pointer, char* buf, int max_p
 					temp_holder, temp_counter);
 		}
 	}
-	/* There is no real need for this - bogdan
-	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR); */
+	MI_XMLRPC_HTTP_COPY(*pointer, MI_XMLRPC_HTTP_CR);
 	return 0;
 error:
 	LM_ERR("buffer 2 small: *pointer=[%p] buf=[%p] max_page_len=[%d]\n",
