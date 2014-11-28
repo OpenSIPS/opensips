@@ -608,14 +608,18 @@ modparam("dispatcher", "socket_col", "my_sock")
             entry in set is chosen.
      * flags M max_results - If specified, this will be the flags
        which in previous versions were specified at startup. The
-       flags are the failover support flag('f'/'F') letters, the
-       user only flag('u'/'U') and will specify that only the uri
-       user part will be used for hashing, the force destination
-       flag('S'/'s') which will Skip overwriting the destination
-       address if it is already set and the use default flag('D',
-       'd') which will use the last address in destination set as
-       last option to send the message.You can also specify these
-       flags using PVs. The flags are being kept per partition.
+       flags are:
+          + 'f'/'F' - the failover support flag,
+          + 'u'/'U' - the user only flag - will specify that only
+            the uri user part will be used for hashing,
+          + 'S'/'s' - the force destination flag - which will skip
+            overwriting the destination address if it is already
+            set,
+          + 'D'/'d' - the use default flag('D','d') - which will
+            use the last address in destination set as last option
+            to send the message.
+       You can also specify these flags using PVs. The flags are
+       being kept per partition.
        The second paramater, max_results represents that only a
        maximum of max_results will be put into the specified avp
        for failover. This allows having many destinations but
@@ -651,10 +655,9 @@ ds_select_dst("part4 : 2,3", "0,1", "fuD M 5, fuS M 2");
 $var(partition_name) = "p4"
 $var(setid) = "1, 2";
 $var(alg) = "4, 2";
-$var(max) = "2,3";
-$var(flags) = " sFDU";
+$var(flags) = " sFDU M 2, fuS M 3";
 ds_select_dst("$var(partition_name):$var(setid)", "$var(alg)", "$var(fla
-gs) M $var(max)");
+gs)");
 ...
 
 1.4.2.  ds_select_domain(set, alg [, "[flags] [M max_results]"])
