@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -112,21 +110,21 @@ static int child_init(int rank);
 
 
 /* exported functions */
-inline static int w_t_newtran(struct sip_msg* p_msg, char* , char* );
+inline static int w_t_newtran(struct sip_msg* p_msg);
 inline static int w_t_reply(struct sip_msg *msg, char* code, char* text);
 inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text);
 inline static int w_t_relay(struct sip_msg *p_msg , char *proxy, char* flags);
 inline static int w_t_replicate(struct sip_msg *p_msg, char *dst,char* );
-inline static int w_t_on_negative(struct sip_msg* msg, char *go_to, char* );
-inline static int w_t_on_reply(struct sip_msg* msg, char *go_to, char* );
-inline static int w_t_on_branch(struct sip_msg* msg, char *go_to, char* );
-inline static int t_check_status(struct sip_msg* msg, char *regexp, char* );
-inline static int t_flush_flags(struct sip_msg* msg, char*, char* );
-inline static int t_local_replied(struct sip_msg* msg, char *type, char* );
-inline static int t_check_trans(struct sip_msg* msg, char* , char* );
-inline static int t_was_cancelled(struct sip_msg* msg, char* , char* );
-inline static int w_t_cancel_branch(struct sip_msg* msg, char* );
-inline static int w_t_add_hdrs(struct sip_msg* msg, char* );
+inline static int w_t_on_negative(struct sip_msg* msg, char *go_to);
+inline static int w_t_on_reply(struct sip_msg* msg, char *go_to);
+inline static int w_t_on_branch(struct sip_msg* msg, char *go_to);
+inline static int t_check_status(struct sip_msg* msg, char *regexp);
+inline static int t_flush_flags(struct sip_msg* msg);
+inline static int t_local_replied(struct sip_msg* msg, char *type);
+inline static int t_check_trans(struct sip_msg* msg);
+inline static int t_was_cancelled(struct sip_msg* msg);
+inline static int w_t_cancel_branch(struct sip_msg* msg, char *sflags );
+inline static int w_t_add_hdrs(struct sip_msg* msg, char *val );
 int t_cancel_trans(struct cell *t, str *hdrs);
 inline static int w_t_new_request(struct sip_msg* msg, char*, char*, char*, char*, char*, char*);
 
@@ -625,7 +623,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_reply_with_body = t_reply_with_body;
 
 	/* transaction location/status functions */
-	tmb->t_newtran = t_newtran;
+	tmb->t_newtran = w_t_newtran;
 	tmb->t_is_local = t_is_local;
 	tmb->t_check_trans = (cmd_function)t_check_trans;
 	tmb->t_get_trans_ident = t_get_trans_ident;
@@ -873,7 +871,7 @@ static int child_init(int rank)
 
 
 /**************************** wrapper functions ***************************/
-static int t_check_status(struct sip_msg* msg, char *regexp, char *foo)
+static int t_check_status(struct sip_msg* msg, char *regexp)
 {
 	regmatch_t pmatch;
 	struct cell *t;
@@ -926,7 +924,7 @@ static int t_check_status(struct sip_msg* msg, char *regexp, char *foo)
 }
 
 
-inline static int t_check_trans(struct sip_msg* msg, char *foo, char *bar)
+inline static int t_check_trans(struct sip_msg* msg)
 {
 	struct cell *trans;
 
@@ -969,7 +967,7 @@ inline static int t_check_trans(struct sip_msg* msg, char *foo, char *bar)
 }
 
 
-static int t_flush_flags(struct sip_msg* msg, char *foo, char *bar)
+static int t_flush_flags(struct sip_msg* msg)
 {
 	struct cell *t;
 
@@ -987,7 +985,7 @@ static int t_flush_flags(struct sip_msg* msg, char *foo, char *bar)
 }
 
 
-inline static int t_local_replied(struct sip_msg* msg, char *type, char *bar)
+inline static int t_local_replied(struct sip_msg* msg, char *type)
 {
 	struct cell *t;
 	int branch;
@@ -1041,7 +1039,7 @@ inline static int t_local_replied(struct sip_msg* msg, char *type, char *bar)
 }
 
 
-static int t_was_cancelled(struct sip_msg* msg, char *foo, char *bar)
+static int t_was_cancelled(struct sip_msg* msg)
 {
 	struct cell *t;
 
@@ -1079,7 +1077,7 @@ inline static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 		case REQUEST_ROUTE:
 			t=get_t();
 			if ( t==0 || t==T_UNDEFINED ) {
-				r = t_newtran( msg );
+				r = t_newtran( msg , 0/*no full UAS cloning*/ );
 				if (r==0) {
 					/* retransmission -> break the script */
 					return 0;
@@ -1122,29 +1120,29 @@ inline static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
 }
 
 
-inline static int w_t_newtran( struct sip_msg* p_msg, char* foo, char* bar )
+inline static int w_t_newtran( struct sip_msg* p_msg)
 {
 	/* t_newtran returns 0 on error (negative value means
 	   'transaction exists' */
-	return t_newtran( p_msg );
+	return t_newtran( p_msg , 0 /*no full UAS cloning*/);
 }
 
 
-inline static int w_t_on_negative( struct sip_msg* msg, char *go_to, char *foo)
+inline static int w_t_on_negative( struct sip_msg* msg, char *go_to)
 {
 	t_on_negative( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_on_reply( struct sip_msg* msg, char *go_to, char *foo )
+inline static int w_t_on_reply( struct sip_msg* msg, char *go_to)
 {
 	t_on_reply( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-inline static int w_t_on_branch( struct sip_msg* msg, char *go_to, char *foo )
+inline static int w_t_on_branch( struct sip_msg* msg, char *go_to)
 {
 	t_on_branch( (unsigned int )(long) go_to );
 	return 1;
@@ -1233,6 +1231,8 @@ inline static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 			t->flags|=T_NO_DNS_FAILOVER_FLAG;
 		if (((int)(long)flags)&TM_T_REPLY_reason_FLAG)
 			t->flags|=T_CANCEL_REASON_FLAG;
+
+		update_cloned_msg_from_msg( t->uas.request, p_msg);
 
 		ret = t_forward_nonack( t, p_msg, p);
 		if (ret<=0 ) {

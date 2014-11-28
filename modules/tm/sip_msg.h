@@ -114,5 +114,7 @@ static inline void clean_msg_clone(struct sip_msg *msg,void *min, void *max)
 }
 
 
+int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg);
+
 
 #endif

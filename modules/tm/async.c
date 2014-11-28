@@ -134,19 +134,18 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	t=get_t();
 	if ( t==0 || t==T_UNDEFINED ) {
 		/* create transaction */
-		r = t_newtran( msg );
+		r = t_newtran( msg , 1 /*full uas clone*/ );
 		if (r==0) {
 			/* retransmission -> break the script, no follow up */
 			return 0;
 		} else if (r<0) {
 			LM_ERR("could not create a new transaction\n");
-			goto failure; /* FIXME - should we try to go sync here ?? */
+			goto failure;
 		}
 		t=get_t();
 	} else {
-		/* update transaction */
-		t->uas.request->flags = msg->flags;
-		// FIXME what about RURI, DSTURI, callbacks, path, global_address/port, lumps ???
+		/* update the cloned UAS (from transaction) with data from current msg */
+		update_cloned_msg_from_msg( t->uas.request, msg);
 	}
 
 	/* run the function (the action) and get back from it the FD, resume function and param */
@@ -208,7 +207,7 @@ sync:
 
 failure:
 	/* execute here the resume route with failure indication */
-	return_code = -1; /* FIXME */
+	return_code = -1; /* FIXME - may be err or not */
 	/* run the resume route */
 	run_resume_route( resume_route, msg);
 	/* the triggering route is terminated and whole script ended */

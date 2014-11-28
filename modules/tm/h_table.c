@@ -252,7 +252,7 @@ static inline void init_branches(struct cell *t, unsigned int set)
 }
 
 
-struct cell*  build_cell( struct sip_msg* p_msg )
+struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 {
 	struct cell* new_cell;
 	int          sip_msg_len;
@@ -312,7 +312,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 		/* clean possible previous added vias/clen header or else they would
 		 * get propagated in the failure routes */
 		free_via_clen_lump(&p_msg->add_rm);
-		new_cell->uas.request = sip_msg_cloner(p_msg,&sip_msg_len,1);
+		new_cell->uas.request = sip_msg_cloner(p_msg,&sip_msg_len,full_uas?1:2);
 		if (!new_cell->uas.request)
 			goto error;
 		new_cell->uas.end_request=((char*)new_cell->uas.request)+sip_msg_len;

@@ -229,7 +229,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 
 	/* ***** Create TRANSACTION and all related  ***** */
-	new_cell = build_cell(0);
+	new_cell = build_cell( NULL/*msg*/, 1/*full UAS clone*/);
 	if (!new_cell) {
 		ret=E_OUT_OF_MEM;
 		LM_ERR("short of cell shmem\n");

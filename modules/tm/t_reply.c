@@ -1597,7 +1597,7 @@ int w_t_reply_body(struct sip_msg* msg, str* code, str *text,
 
 	t=get_t();
 	if ( t==0 || t==T_UNDEFINED ) {
-		r = t_newtran( msg );
+		r = t_newtran( msg, 0/*no full uas cloning*/ );
 		if (r==0) {
 			/* retransmission -> break the script */
 			return 0;
