@@ -696,37 +696,6 @@ modparam("tm", "own_timer_proc", 2)
 	<title>Exported Functions</title>
 	<section>
 		<title>
-		<function moreinfo="none">t_newtran()</function>
-		</title>
-		<para>
-		Creates a new transaction, returns a negative value on error. This is 
-		the only way a script can add a new transaction in an atomic way. 
-		Typically, it is used to deploy a &uas;.
-		</para>
-		<warning>
-			<para>
-			NOTE that the changes on the request that are made after this 
-			function call will not be saved into transaction!!!
-			</para>
-		</warning>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function>t_newtran</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (t_newtran()) { 
-	log("UAS logic"); 
-	t_reply("999","hello"); 
-} else sl_reply_error();
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
 		<function moreinfo="none">t_relay([flags])</function>
 		</title>
 		<para>
@@ -943,155 +912,32 @@ t_reply("404", "Use $rU not found");
 		</example>
 	</section>
 
-
-	<section id="treplicate">
-		<title>
-		<function moreinfo="none">t_replicate(URI,[flags])</function>
-		</title>
-		<para>
-		Replicates a request to another destination. No information due the
-		replicated request (like reply code) will be forwarded to the 
-		original SIP UAC.
-		</para>
-		<para>
-		The destination is specified by a SIP URI. If multiple destinations are
-		to be used, the additional SIP URIs have to be set as branches.
-		</para>
-		<para>
-		The function may take as parameter an optional set of flags for 
-		controlling the internal behaviour - for description see the above 
-		<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
-		applicable here.
-		</para>
-		<para>
-		This functions can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function>t_replicate</function> usage</title>
-		<programlisting format="linespecific">
-...
-t_replicate("sip:1.2.3.4:5060");
-t_replicate("sip:1.2.3.4:5060;transport=tcp");
-t_replicate("sip:1.2.3.4","0x4");
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section>
 		<title>
-		<function moreinfo="none">t_check_status(re)</function>
+		<function moreinfo="none">t_newtran()</function>
 		</title>
 		<para>
-		Returns true if the regualr expresion <quote>re</quote> match the 
-		reply code of the response message as follows:
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>in routing block</emphasis> - the code of the
-			last sent reply.
+		Creates a new transaction, returns a negative value on error. This is 
+		the only way a script can add a new transaction in an atomic way. 
+		Typically, it is used to deploy a &uas;.
+		</para>
+		<warning>
+			<para>
+			NOTE that the changes on the request that are made after this 
+			function call will not be saved into transaction!!!
 			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>in on_reply block</emphasis> - the code of the
-			current received reply.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>in on_failure block</emphasis> - the code of the
-			selected negative final reply.
-			</para>
-		</listitem>
-		</itemizedlist>
-		</para>
+		</warning>
 		<para>
-		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE and BRANCH_ROUTE .
+		This function can be used from REQUEST_ROUTE.
 		</para>
 		<example>
-		<title><function>t_check_status</function> usage</title>
+		<title><function>t_newtran</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (t_check_status("(487)|(408)")) {
-    log("487 or 408 negative reply\n");
-}
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">t_flush_flags()</function>
-		</title>
-		<para>
-		Flush the flags from current request into the already created 
-		transaction. It make sense only in routing block if the transaction was
-		created via t_newtran() and the flags have been altered since.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
-		</para>
-		<example>
-		<title><function>t_flush_flags</function> usage</title>
-		<programlisting format="linespecific">
-...
-t_flush_flags();
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">t_local_replied(reply)</function>
-		</title>
-		<para>
-		Returns true if all or last (depending of the parameter) reply(es) were
-		local generated (and not received).
-		</para>
-		<para>
-		Parameter may be <quote>all</quote> or <quote>last</quote>.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-		FAILURE_ROUTE and ONREPLY_ROUTE.
-		</para>
-		<example>
-		<title><function>t_local_replied</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (t_local_replied("all")) {
-	log ("no reply received\n");
-}
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section>
-		<title>
-		<function moreinfo="none">t_write_req(info,fifo)</function>
-		<function moreinfo="none">t_write_unix(info,sock)</function>
-		</title>
-		<para>
-		Write via FIFO file or UNIX socket a lot of information regarding the
-		request. Which information should be written may be control via the
-		<quote>tw_append</quote> parameter.
-		</para>
-		<para>
-		This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
-		BRANCH_ROUTE.
-		</para>
-		<example>
-		<title><function>t_write_req/unix</function> usage</title>
-		<programlisting format="linespecific">
-...
-modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
-modparam("tm","tw_append","append2:body=$rb")
-...
-t_write_req("voicemail/append1","/tmp/appx_fifo");
-...
-t_write_unix("logger/append2","/var/run/logger.sock");
+if (t_newtran()) { 
+	log("UAS logic"); 
+	t_reply("999","hello"); 
+} else sl_reply_error();
 ...
 </programlisting>
 		</example>
@@ -1145,6 +991,74 @@ if ( is_method("CANCEL") ) {
 	if ( t_check_trans() )
 		t_relay();
 	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_check_status(re)</function>
+		</title>
+		<para>
+		Returns true if the regualr expresion <quote>re</quote> match the 
+		reply code of the response message as follows:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>in routing block</emphasis> - the code of the
+			last sent reply.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>in on_reply block</emphasis> - the code of the
+			current received reply.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>in on_failure block</emphasis> - the code of the
+			selected negative final reply.
+			</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
+		FAILURE_ROUTE and BRANCH_ROUTE .
+		</para>
+		<example>
+		<title><function>t_check_status</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (t_check_status("(487)|(408)")) {
+    log("487 or 408 negative reply\n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_local_replied(reply)</function>
+		</title>
+		<para>
+		Returns true if all or last (depending of the parameter) reply(es) were
+		local generated (and not received).
+		</para>
+		<para>
+		Parameter may be <quote>all</quote> or <quote>last</quote>.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+		FAILURE_ROUTE and ONREPLY_ROUTE.
+		</para>
+		<example>
+		<title><function>t_local_replied</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (t_local_replied("all")) {
+	log ("no reply received\n");
 }
 ...
 </programlisting>
@@ -1222,6 +1136,59 @@ onreply_route[3] {
 	}
 ...
 }
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_new_request(method,RURI,from,to[,body[,ctx]])</function>
+		</title>
+		<para>
+		This function generates and sends out a new SIP request (in a stateful way).
+		The new request is completly unrelated to the currently processed SIP message.
+		</para>
+		<para>Meaning of the parameters is as follows (all do accept variables):</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>method</emphasis> - the SIP method
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>RURI</emphasis> - the SIP Request URI (the request 
+			will be sent out to this destination)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>from</emphasis> - the SIP From hdr information as
+			"[display ]URI"
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>from</emphasis> - the SIP To hdr information as
+			"[display ]URI"
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>body</emphasis> - (optional) the SIP body content
+			starting with the content type string: "conten_type body"
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>ctx</emphasis> - a context string that will be added to the
+			new transaction as an AVP with name "uac_ctx" (it may be visible in local
+			route)
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<example>
+		<title><function>t_new_request</function> usage</title>
+		<programlisting format="linespecific">
+...
+	# send a MESSAGE request
+	t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@mydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!")) {
+...
 </programlisting>
 		</example>
 	</section>
@@ -1420,6 +1387,110 @@ branch_route[1] {
 		append_rpid();
 	}
 }
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_add_hdrs("sip_hdrs")</function>
+		</title>
+		<para>
+		Attach a set of headers to the existing transaction - these headers
+		will be appended to all requests related to the transaction (outgoing
+		branches, local ACKS, CANCELs).
+		</para>
+		<example>
+		<title><function>t_add_hdrs</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_add_hdrs("X-origin: 1.1.1.1\r\n");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="treplicate">
+		<title>
+		<function moreinfo="none">t_replicate(URI,[flags])</function>
+		</title>
+		<para>
+		Replicates a request to another destination. No information due the
+		replicated request (like reply code) will be forwarded to the 
+		original SIP UAC.
+		</para>
+		<para>
+		The destination is specified by a SIP URI. If multiple destinations are
+		to be used, the additional SIP URIs have to be set as branches.
+		</para>
+		<para>
+		The function may take as parameter an optional set of flags for 
+		controlling the internal behaviour - for description see the above 
+		<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
+		applicable here.
+		</para>
+		<para>
+		This functions can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>t_replicate</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_replicate("sip:1.2.3.4:5060");
+t_replicate("sip:1.2.3.4:5060;transport=tcp");
+t_replicate("sip:1.2.3.4","0x4");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_write_req(info,fifo)</function>
+		<function moreinfo="none">t_write_unix(info,sock)</function>
+		</title>
+		<para>
+		Write via FIFO file or UNIX socket a lot of information regarding the
+		request. Which information should be written may be control via the
+		<quote>tw_append</quote> parameter.
+		</para>
+		<para>
+		This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
+		BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>t_write_req/unix</function> usage</title>
+		<programlisting format="linespecific">
+...
+modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
+modparam("tm","tw_append","append2:body=$rb")
+...
+t_write_req("voicemail/append1","/tmp/appx_fifo");
+...
+t_write_unix("logger/append2","/var/run/logger.sock");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title>
+		<function moreinfo="none">t_flush_flags()</function>
+		</title>
+		<para>
+		Flush the flags from current request into the already created 
+		transaction. It make sense only in routing block if the transaction was
+		created via t_newtran() and the flags have been altered since.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
+		</para>
+		<example>
+		<title><function>t_flush_flags</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_flush_flags();
 ...
 </programlisting>
 		</example>
