@@ -582,7 +582,7 @@ install-cfg: $(cfg-prefix)/$(cfg-dir)
 			for FILE in $(tls_configs) ; do \
 				if [ -f etc/$$FILE ]; then \
 					if [ "$(tls_overwrite_certs)" != "" -o \
-							 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE] ; then \
+							 ! -f $(cfg-prefix)/$(cfg-dir)/$$FILE ] ; then \
 						$(INSTALL_TOUCH) etc/$$FILE \
 							$(cfg-prefix)/$(cfg-dir)/$$FILE ; \
 						$(INSTALL_CFG) etc/$$FILE \
