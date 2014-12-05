@@ -603,6 +603,9 @@ char* convert_mime2string_CT(int contenttype)
 		case TYPE_UNKNOWN:
 			SET_TYPE_PTRS("unknown/");
 			break;
+		default:
+			LM_ERR("invalid type\n");
+			return 0;
 	}
 
 	switch (subtype) {
@@ -657,6 +660,9 @@ char* convert_mime2string_CT(int contenttype)
 		case SUBTYPE_UNKNOWN:
 			SET_SUBTYPE_PTR("unknown");
 			break;
+		default:
+			LM_ERR("invalid subtype\n");
+			return 0;
 	}
 
 	return str_contenttype;
