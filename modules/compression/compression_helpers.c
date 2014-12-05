@@ -175,6 +175,9 @@ int parse_whitelist(void** param, mc_whitelist_p* wh_list_p, unsigned char* def_
 	else
 		memset(wh_list->hdr_mask, 0, HDR_MASK_SIZE);
 
+	if (param == NULL)
+		goto end;
+
 	sparam = *param;
 	for ( ; *sparam != '\0'; sparam++) {
 		switch (*sparam) {
@@ -227,6 +230,7 @@ int parse_whitelist(void** param, mc_whitelist_p* wh_list_p, unsigned char* def_
 	if (head)
 		wh_list->other_hdr = head;
 
+end:
 	*wh_list_p = wh_list;
 	return 0;
 }
@@ -241,8 +245,12 @@ int mc_get_whitelist(struct sip_msg* msg, mc_param_p* wh_param_p,
 	mc_param_p wh_param = *wh_param_p;
 	pv_value_t value;
 
-	if (wh_param == NULL)
+	if (wh_param == NULL) {
+		if (parse_whitelist(NULL, wh_list_p, def_hdrs_mask) != 0)
+			return-1;
+
 		return 0;
+	}
 
 	/* Get the whitelist value*/
 	if (wh_param->type == WH_TYPE_PVS) {

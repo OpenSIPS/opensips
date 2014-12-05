@@ -113,6 +113,7 @@ int compress_ctx_pos, compact_ctx_pos;
 
 static int sh_fixup(void**, int);
 
+static int mc_compact_no_args(struct sip_msg*);
 static int mc_compact(struct sip_msg*, char*);
 static int mc_compact_cb(char** buf, void* param, int, int*);
 
@@ -146,6 +147,9 @@ static mi_export_t mi_cmds[]= {
 };
 
 static cmd_export_t cmds[]={
+	{"mc_compact",	  (cmd_function)mc_compact_no_args, 0, NULL,
+				0,
+		REQUEST_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
 	{"mc_compact",	  (cmd_function)mc_compact,	1,	sh_fixup,
 			    0,
 		REQUEST_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
@@ -514,6 +518,14 @@ static int append_hf2lst(struct hdr_field** lst, struct hdr_field* hf,
 }
 
 /*
+ * wrapper for mc_compact with zero arguments
+ */
+static int mc_compact_no_args(struct sip_msg* msg)
+{
+	return mc_compact(msg, NULL);
+}
+
+/*
  * Test function to parse message with
  * parse_hname2
  * 1) Headers of same type will be put together
@@ -564,7 +576,7 @@ static int mc_compact(struct sip_msg* msg, char* whitelist)
 	return 1;
 
 err00:
-	if (wh_param->type == WH_TYPE_PVS)
+	if (wh_param && wh_param->type == WH_TYPE_PVS)
 		free_whitelist(&wh_list);
 	return -1;
 
@@ -872,7 +884,7 @@ again:
 	pkg_free(hdr_mask);
 
 	/* Free the whitelist if pvs */
-	if (wh_param->type == WH_TYPE_PVS)
+	if (wh_param && wh_param->type == WH_TYPE_PVS)
 		free_whitelist(&wh_list);
 
 	return 0;
@@ -1050,7 +1062,7 @@ skip_parse:
 
 	args = pkg_malloc(sizeof(struct mc_comp_args));
 	if (args == NULL) {
-		if (wh_param->type == WH_TYPE_PVS)
+		if (wh_param && wh_param->type == WH_TYPE_PVS)
 			free_whitelist(&hdr2compress_list);
 		LM_ERR("no more pkg mem\n");
 		return -1;
@@ -1119,11 +1131,7 @@ int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 	flags = args->flags;
 	wh_param = args->wh_param;
 
-	if (hdr2compress_list == NULL || wh_param == NULL)
-		LM_WARN("null parameters\n");
-
 	mc_parse_first_line(&msg_start, &buf);
-
 
 	uncompress_len = msg_start.len;
 
@@ -1564,7 +1572,7 @@ only_body:
 	/* free arguments structure */
 	pkg_free(args);
 
-	if (wh_param->type == WH_TYPE_PVS)
+	if (wh_param && wh_param->type == WH_TYPE_PVS)
 		free_whitelist(&hdr2compress_list);
 
 	return 0;
@@ -1572,7 +1580,7 @@ only_body:
 free_mem_full:
 	free_hdr_list(&mnd_hdrs_head);
 	free_hdr_list(&non_mnd_hdrs_head);
-	if (wh_param->type == WH_TYPE_PVS)
+	if (wh_param && wh_param->type == WH_TYPE_PVS)
 		free_whitelist(&hdr2compress_list);
 
 	return -1;
