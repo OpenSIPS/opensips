@@ -739,7 +739,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 	}
 
 	/* not storing '\0' at the end of the message */
-	(buf_cpy++, frg->end++);
+	(buf_cpy--, frg->end--);
 
 	msg_total_len += frg->end - frg->begin + 1;
 
