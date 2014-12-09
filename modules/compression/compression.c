@@ -572,7 +572,6 @@ static int mc_compact(struct sip_msg* msg, char* whitelist)
 		return -1;
 	}
 
-
 	return 1;
 
 err00:
@@ -684,8 +683,12 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 	frg->begin = 0;
 	frg->end = CRLF_LEN;
 	frg->next = NULL;
+
 	/* parse the body and extract fragments */
 	while (buf_cpy != end) {
+		while (*buf_cpy == ' ' || *buf_cpy == '\t')
+				(buf_cpy++, frg->end++);
+
 		if (*buf_cpy != 'a') {
 			/* Jump over the entire row*/
 			goto row_jump;
@@ -725,12 +728,17 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 		}
 
 		row_jump:
-			while (*buf_cpy != '\n')
+			while (*buf_cpy != '\n') {
+				if (*buf_cpy == '\0') {
+					LM_ERR("BUG! Message body not containing '\\n' in the end\n");
+					return -1;
+				}
 				(buf_cpy++, frg->end++);
+			}
 		(buf_cpy++, frg->end++);
 	}
 
-	frg->end++; /* '\0' */
+
 	msg_total_len += frg->end - frg->begin + 1;
 
 	new_body_len = msg_total_len - hdr_len;
@@ -854,14 +862,14 @@ again:
 
 	switch (type) {
 		case TM_CB:
-			*buf_p = shm_malloc(new_buf.len+1);
+			*buf_p = shm_malloc(new_buf.len);
 			if (*buf_p == NULL) {
 				LM_ERR("no more sh mem\n");
 				goto free_mem;
 			}
 			break;
 		case PROCESSING_CB:
-			*buf_p = pkg_malloc(new_buf.len+1);
+			*buf_p = pkg_malloc(new_buf.len);
 			if (*buf_p == NULL) {
 				LM_ERR("no more pkg mem\n");
 				goto free_mem;
@@ -872,9 +880,7 @@ again:
 			goto free_mem;
 	}
 
-
 	memcpy(*buf_p, new_buf.s, new_buf.len);
-	(*buf_p)[new_buf.len] = '\0';
 	*olen = new_buf.len;
 
 	/* Free the arguments structure */
