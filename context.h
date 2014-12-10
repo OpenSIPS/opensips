@@ -54,9 +54,6 @@ enum osips_context {
 extern context_p current_ctx;
 extern unsigned int context_sizes[];
 
-/* called once, after all modules are initialized */
-int context_init(void);
-
 /*
  * allocate a new GLOBAL context in pkg mem
  *
