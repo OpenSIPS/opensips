@@ -463,6 +463,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	if (type==TMCB_RESPONSE_OUT) {
 		if (dlg->state == DLG_STATE_CONFIRMED_NA && replication_dests)
 			replicate_dialog_created(dlg);
+		return;
 	}
 
 	if (type==TMCB_TRANS_DELETED)
