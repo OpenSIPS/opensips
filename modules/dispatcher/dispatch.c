@@ -338,6 +338,11 @@ int reindex_dests( ds_data_t *d_data)
 
 	for( sp=d_data->sets ; sp!= NULL ; sp->dlist=dp0, sp=sp->next )
 	{
+		if (sp->nr == 0) {
+			dp0 = NULL;
+			continue;
+		}
+
 		dp0 = (ds_dest_p)shm_malloc(sp->nr*sizeof(ds_dest_t));
 		if(dp0==NULL)
 		{
@@ -1359,6 +1364,11 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selecte
 	if(ds_get_index(ds_select_ctl->set, &idx, ds_select_ctl->partition)!=0)
 	{
 		LM_ERR("destination set [%d] not found\n", ds_select_ctl->set);
+		goto error;
+	}
+
+	if (idx->nr == 0) {
+		LM_DBG("destination set [%d] is empty!\n", idx->id);
 		goto error;
 	}
 
