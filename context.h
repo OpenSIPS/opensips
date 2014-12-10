@@ -23,16 +23,15 @@
  */
 
 /*
- * This header defines the basic operations with an OpenSIPS context.
- * It should only be included in order to define operations on a new context.
+ * This header exposes the basic operations with an OpenSIPS context.
  *
  * A "context" is:
  *		- a data storage buffer
- *		- visible across different processes (stored in shared memory)
  *		- typically allocated next to the intended structure
- *			e.g. | struct sip_msg | CONTEXT_BUFFER |
- * 
- * All data registrations must be done in the pre-forking phase (e.g. mod_init)
+ *			e.g. | struct cell | CONTEXT_BUFFER |
+ *
+ * !! All data registrations must be done in the pre-forking phases !!
+ *		(see the register functions below)
  */
 
 #ifndef __CONTEXT_H
@@ -40,116 +39,51 @@
 
 #include <stdlib.h>
 
+typedef void * context_p;
 enum osips_context {
+	CONTEXT_GLOBAL,
 	CONTEXT_MSG,
 	CONTEXT_TRAN,
+
 	CONTEXT_COUNT,
 };
 
-unsigned int context_sizes[CONTEXT_COUNT];
-unsigned int type_sizes[CONTEXT_COUNT][3];
-unsigned int type_offsets[CONTEXT_COUNT][3];
+#define context_of(entity_p) ((context_p)((entity_p) + 1))
+#define context_size(enum_ctx) (context_sizes[enum_ctx])
 
-#define context_of(entity) ((void *)((entity) + 1))
-#define context_size(ctx) (context_sizes[ctx])
+extern context_p current_ctx;
+extern unsigned int context_sizes[];
 
-static inline int __context_register_int(enum osips_context ctx)
-{
-	context_sizes[ctx] += sizeof(int);
-	type_offsets[ctx][1] += sizeof(int);
-	type_offsets[ctx][2] += sizeof(int);
+/* called once, after all modules are initialized */
+int context_init(void);
 
-	return type_sizes[ctx][0]++;
-}
+/*
+ * allocate a new GLOBAL context in pkg mem
+ *
+ * Note: this will not change the "current_ctx"
+ */
+context_p context_alloc(void);
+#define   context_free(context_p) pkg_free(context_p)
 
-static inline int __context_register_str(enum osips_context ctx)
-{
-	context_sizes[ctx] += sizeof(str);
-	type_offsets[ctx][2] += sizeof(str);
+/*
+ * - the register functions should be called before any forks are made
+ *		(mod_init(), function fixups)
+ *
+ * - they reserve and return a position in the context buffer of the given type
+ */
+inline int context_register_int(enum osips_context type);
+inline int context_register_str(enum osips_context type);
+inline int context_register_ptr(enum osips_context type);
 
-	return type_sizes[ctx][1]++;
-}
+inline void context_put_int(enum osips_context type, context_p ctx,
+									 int pos, int data);
+inline void context_put_str(enum osips_context type, context_p ctx,
+									 int pos, str *data);
+inline void context_put_ptr(enum osips_context type, context_p ctx,
+									 int pos, void *data);
 
-static inline int __context_register_ptr(enum osips_context ctx)
-{
-	context_sizes[ctx] += sizeof(void *);
-
-	return type_sizes[ctx][2]++;
-}
-
-static inline void __context_put_int(enum osips_context ctx, void *block,
-									 int pos, int data)
-{
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[ctx][0]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[ctx][0]);
-		abort();
-	}
-#endif
-
-	((int *)block)[pos] = data;
-}
-
-static inline void __context_put_str(enum osips_context ctx, void *block,
-									 int pos, str *data)
-{
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[ctx][1]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[ctx][1]);
-		abort();
-	}
-#endif
-
-	((str *)((char *)block + type_offsets[ctx][1]))[pos] = *data;
-}
-
-static inline void __context_put_ptr(enum osips_context ctx, void *block,
-									 int pos, void *data)
-{
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[ctx][2]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[ctx][2]);
-		abort();
-	}
-#endif
-
-	((void **)((char *)block + type_offsets[ctx][2]))[pos] = data;
-}
-
-static inline int __context_get_int(enum osips_context ctx, void *block, int pos)
-{
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[ctx][0]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[ctx][0]);
-		abort();
-	}
-#endif
-
-	return ((int *)block)[pos];
-}
-
-static inline str *__context_get_str(enum osips_context ctx, void *block, int pos)
-{
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[ctx][1]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[ctx][1]);
-		abort();
-	}
-#endif
-
-	return &((str *)((char *)block + type_offsets[ctx][1]))[pos];
-}
-
-static inline void *__context_get_ptr(enum osips_context ctx, void *block, int pos)
-{
-#ifdef DBG_QM_MALLOC
-	if (pos < 0 || pos >= type_sizes[ctx][2]) {
-		LM_CRIT("Bad pos: %d (%d)\n", pos, type_sizes[ctx][2]);
-		abort();
-	}
-#endif
-
-	return ((void **)((char *)block + type_offsets[ctx][2]))[pos];
-}
+inline int   context_get_int(enum osips_context type, context_p ctx, int pos);
+inline str  *context_get_str(enum osips_context type, context_p ctx, int pos);
+inline void *context_get_ptr(enum osips_context type, context_p ctx, int pos);
 
 #endif /* __CONTEXT_H */

@@ -2133,45 +2133,45 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 
 int msg_ctx_register_int(void)
 {
-	return __context_register_int(CONTEXT_MSG);
+	return context_register_int(CONTEXT_MSG);
 }
 
 int msg_ctx_register_str(void)
 {
-	return __context_register_str(CONTEXT_MSG);
+	return context_register_str(CONTEXT_MSG);
 }
 
 int msg_ctx_register_ptr(void)
 {
-	return __context_register_ptr(CONTEXT_MSG);
+	return context_register_ptr(CONTEXT_MSG);
 }
 
 void msg_ctx_put_int(struct sip_msg *sip_msg, int pos, int data)
 {
-	__context_put_int(CONTEXT_MSG, context_of(sip_msg), pos, data);
+	context_put_int(CONTEXT_MSG, context_of(sip_msg), pos, data);
 }
 
 void msg_ctx_put_str(struct sip_msg *sip_msg, int pos, str *data)
 {
-	__context_put_str(CONTEXT_MSG, context_of(sip_msg), pos, data);
+	context_put_str(CONTEXT_MSG, context_of(sip_msg), pos, data);
 }
 
 void msg_ctx_put_ptr(struct sip_msg *sip_msg, int pos, void *data)
 {
-	__context_put_ptr(CONTEXT_MSG, context_of(sip_msg), pos, data);
+	context_put_ptr(CONTEXT_MSG, context_of(sip_msg), pos, data);
 }
 
 int msg_ctx_get_int(struct sip_msg *sip_msg, int pos)
 {
-	return __context_get_int(CONTEXT_MSG, context_of(sip_msg), pos);
+	return context_get_int(CONTEXT_MSG, context_of(sip_msg), pos);
 }
 
 str *msg_ctx_get_str(struct sip_msg *sip_msg, int pos)
 {
-	return __context_get_str(CONTEXT_MSG, context_of(sip_msg), pos);
+	return context_get_str(CONTEXT_MSG, context_of(sip_msg), pos);
 }
 
 void *msg_ctx_get_ptr(struct sip_msg *sip_msg, int pos)
 {
-	return __context_get_ptr(CONTEXT_MSG, context_of(sip_msg), pos);
+	return context_get_ptr(CONTEXT_MSG, context_of(sip_msg), pos);
 }

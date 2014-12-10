@@ -127,6 +127,7 @@
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
+#include "context.h"
 #include "core_stats.h"
 #include "pvar.h"
 #include "poll_types.h"
@@ -1557,6 +1558,12 @@ try_again:
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
+		goto error;
+	}
+
+	/* init global data context */
+	if (context_init() != 0) {
+		LM_ERR("error while initializing global context\n");
 		goto error;
 	}
 
