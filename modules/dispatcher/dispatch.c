@@ -267,6 +267,11 @@ int reindex_dests(int list_idx, int setn)
 
 	for( sp=ds_lists[list_idx] ; sp!= NULL ; sp->dlist=dp0, sp=sp->next )
 	{
+		if (sp->nr == 0) {
+			dp0 = NULL;
+			continue;
+		}
+
 		dp0 = (ds_dest_p)shm_malloc(sp->nr*sizeof(ds_dest_t));
 		if(dp0==NULL)
 		{
@@ -1053,6 +1058,11 @@ int ds_select_dst(struct sip_msg *msg, int set, int alg, int mode, int max_resul
 	if(ds_get_index(set, &idx)!=0)
 	{
 		LM_ERR("destination set [%d] not found\n", set);
+		return -1;
+	}
+
+	if (idx->nr == 0) {
+		LM_DBG("destination set [%d] is empty!\n", idx->id);
 		return -1;
 	}
 	
