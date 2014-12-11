@@ -51,7 +51,7 @@ enum osips_context {
 #define context_of(entity_p) ((context_p)((entity_p) + 1))
 #define context_size(enum_ctx) (context_sizes[enum_ctx])
 
-extern context_p current_ctx;
+extern context_p current_processing_ctx;
 extern unsigned int context_sizes[];
 
 /*

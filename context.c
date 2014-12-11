@@ -26,7 +26,9 @@
 #include "mem/mem.h"
 #include "context.h"
 
-context_p current_ctx;
+/* Pointer to the current processing context */
+context_p current_processing_ctx = NULL;
+
 unsigned int context_sizes[CONTEXT_COUNT];
 
 static unsigned int type_sizes[CONTEXT_COUNT][3];
