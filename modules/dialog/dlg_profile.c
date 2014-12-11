@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2008 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -616,7 +615,6 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 }
 
 
-
 inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 										struct dlg_profile_table *profile )
 {
@@ -630,9 +628,8 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 }
 
 
-
 static void link_dlg_profile(struct dlg_profile_link *linker,
-                             struct dlg_cell *dlg, char is_replicated)
+									struct dlg_cell *dlg, char is_replicated)
 {
 	unsigned int hash;
 	map_t p_entry;
@@ -715,15 +712,12 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 }
 
 
-
-int set_dlg_profile(struct sip_msg *msg, str *value,
-                    struct dlg_profile_table *profile, char is_replicated)
+int set_dlg_profile(struct dlg_cell *dlg, str *value,
+						struct dlg_profile_table *profile, char is_replicated)
 {
-	struct dlg_cell *dlg;
 	struct dlg_profile_link *linker;
 
 	/* get current dialog */
-	dlg = get_current_dialog();
 	if (dlg==NULL) {
 		LM_ERR("dialog was not yet created - script error\n");
 		return -1;
@@ -756,16 +750,14 @@ int set_dlg_profile(struct sip_msg *msg, str *value,
 }
 
 
-int unset_dlg_profile(struct sip_msg *msg, str *value,
-									struct dlg_profile_table *profile)
+int unset_dlg_profile(struct dlg_cell *dlg, str *value,
+											struct dlg_profile_table *profile)
 {
-	struct dlg_cell *dlg;
 	struct dlg_profile_link *linker;
 	struct dlg_profile_link *linker_prev;
 	struct dlg_entry *d_entry;
 
 	/* get current dialog */
-	dlg = get_current_dialog();
 	if (dlg==NULL) {
 		LM_ERR("dialog was not yet created - script error\n");
 		return -1;
@@ -809,16 +801,13 @@ found:
 }
 
 
-
-int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
+int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 																str *value)
 {
-	struct dlg_cell *dlg;
 	struct dlg_profile_link *linker;
 	struct dlg_entry *d_entry;
 
 	/* get current dialog */
-	dlg = get_current_dialog();
 	if (dlg==NULL)
 		return -1;
 

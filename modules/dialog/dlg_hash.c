@@ -71,7 +71,7 @@ extern int last_dst_leg;
 
 
 struct dlg_table *d_table = NULL;
-struct dlg_cell  *current_dlg_pointer = NULL ;
+int ctx_dlg_idx = 0;
 
 static inline void raise_state_changed_event(unsigned int ostate, unsigned int nstate);
 static str ei_st_ch_name = str_init("E_DLG_STATE_CHANGED");
@@ -87,9 +87,9 @@ static evi_param_p ostate_p, nstate_p;
 
 int dialog_cleanup( struct sip_msg *msg, void *param )
 {
-	if (current_dlg_pointer) {
-		unref_dlg( current_dlg_pointer, 1);
-		current_dlg_pointer = NULL;
+	if (current_processing_ctx && ctx_dialog_get()) {
+		unref_dlg( ctx_dialog_get(), 1);
+		ctx_dialog_set(NULL);
 	}
 	last_dst_leg = -1;
 	dlg_tmp_timeout = -1;
@@ -104,16 +104,15 @@ struct dlg_cell *get_current_dialog(void)
 {
 	struct cell *trans;
 
-	if (route_type==REQUEST_ROUTE || route_type==LOCAL_ROUTE) {
-		/* use the per-process static holder */
-		return current_dlg_pointer;
+	if (current_processing_ctx) {
+		/* use the processing context */
+		return ctx_dialog_get();
 	} else {
 		/* use current transaction to get dialog */
 		trans = d_tmb.t_gett();
 		if (trans==NULL || trans==T_UNDEFINED) {
-			/* no transaction - perhaps internally terminated
-			dialog - trust the module */
-			return current_dlg_pointer;
+			/* no transaction */
+			return NULL;
 		}
 		return (struct dlg_cell*)trans->dialog_ctx;
 	}

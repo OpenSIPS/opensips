@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2006-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -458,10 +457,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	if (type==TMCB_TRANS_CANCELLED) {
 		/* only if we did force match the Cancel to the
 		 * dialog before ( from the script ) */
-		if (current_dlg_pointer == NULL) {
+		if ( ctx_dialog_get()==NULL) {
 			/* reference and attached to script */
 			ref_dlg(dlg,1);
-			current_dlg_pointer = t->dialog_ctx;
+			ctx_dialog_set(t->dialog_ctx);
 		}
 		return;
 	}
@@ -795,40 +794,41 @@ static void tmcb_unreference_dialog(struct cell* t, int type,
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
+	struct dlg_cell *dlg;
+
 	/* is the dialog already created? */
-	if (current_dlg_pointer!=NULL) {
+	if ( (dlg=ctx_dialog_get())!=NULL ) {
 		/* new, un-initialized dialog ? */
-		if ( current_dlg_pointer->flags & DLG_FLAG_ISINIT ) {
+		if ( dlg->flags & DLG_FLAG_ISINIT ) {
 			/* fully init dialog -> check if attached to the transaction */
 			if (t->dialog_ctx==NULL) {
-
 				/* set a callback to remove the ref when transaction
 				 * is destroied */
 				if ( d_tmb.register_tmcb( NULL, t, TMCB_TRANS_DELETED,
-				tmcb_unreference_dialog, (void*)current_dlg_pointer, NULL)<0){
+				tmcb_unreference_dialog, (void*)dlg, NULL)<0){
 					LM_ERR("failed to register TMCB\n");
 					return;
 				}
 				/* and attached the dialog to the transaction */
-				t->dialog_ctx = (void*)current_dlg_pointer;
+				t->dialog_ctx = (void*)dlg;
 				/* and keep a reference on it */
-				ref_dlg( current_dlg_pointer , 1);
+				ref_dlg( dlg , 1);
 			}
 			return;
 		}
 
 		/* dialog was previously created by create_dialog()
 		   -> just do the last settings */
-		run_create_callbacks( current_dlg_pointer, param->req);
+		run_create_callbacks( dlg, param->req);
 
 		LM_DBG("t hash_index = %u, t label = %u\n",t->hash_index,t->label);
-		current_dlg_pointer->initial_t_hash_index = t->hash_index;
-		current_dlg_pointer->initial_t_label = t->label;
+		dlg->initial_t_hash_index = t->hash_index;
+		dlg->initial_t_label = t->label;
 
-		t->dialog_ctx = (void*)current_dlg_pointer;
+		t->dialog_ctx = (void*)dlg;
 
 		/* dialog is fully initialized */
-		current_dlg_pointer->flags |= DLG_FLAG_ISINIT;
+		dlg->flags |= DLG_FLAG_ISINIT;
 	}
 }
 
@@ -887,7 +887,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	}
 
 	/* set current dialog */
-	set_current_dialog(dlg);
+	ctx_dialog_set(dlg);
 	last_dst_leg = DLG_FIRST_CALLEE_LEG;
 
 	extra_ref=2; /* extra ref for the callback and current dlg hook */
@@ -1016,7 +1016,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	/* as this callback is triggered from loose_route, which can be
 	   accidentaly called more than once from script, we need to be sure
 	   we do this only once !*/
-	if (current_dlg_pointer)
+	if (ctx_dialog_get())
 		return;
 
 	/* skip initial requests - they may end up here because of the
@@ -1129,7 +1129,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	next_state_dlg( dlg, event, dir, &old_state, &new_state, &unref, 0);
 
 	/* set current dialog - it will keep a ref! */
-	set_current_dialog(dlg);
+	ctx_dialog_set(dlg);
 	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
 

@@ -207,10 +207,62 @@ error:
 }
 
 
+static int push_new_processing_context( struct dlg_cell *dlg,
+								context_p *old_ctx, struct sip_msg **fake_msg)
+{
+	static context_p my_ctx = NULL;
+	static struct sip_msg *my_msg = NULL;
+
+	*old_ctx = current_processing_ctx;
+	if (my_ctx) {
+		my_ctx = context_alloc();
+		if (my_ctx==NULL) {
+			LM_ERR("failed to alloc new ctx in pkg\n");
+			return -1;
+		}
+	}
+	if (current_processing_ctx==my_ctx) {
+		LM_CRIT("BUG - nested setting of my_ctx\n");
+		return -1;
+	}
+
+	if (fake_msg) {
+		if (my_msg==NULL) {
+			my_msg = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+			if (my_msg==NULL) {
+				LM_ERR("No more pkg memory for a a fake msg\n");
+				return -1;
+			}
+		} else {
+			free_sip_msg(my_msg);
+		}
+		memset(my_msg, 0, sizeof(struct sip_msg));
+		my_msg->first_line.type = SIP_REQUEST;
+		my_msg->first_line.u.request.method.s= "DUMMY";
+		my_msg->first_line.u.request.method.len= 5;
+		my_msg->first_line.u.request.uri.s= "sip:user@domain.com";
+		my_msg->first_line.u.request.uri.len= 19;
+		*fake_msg = my_msg;
+	}
+
+	/* reset the new to-be-used CTX */
+	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
+
+	/* set the new CTX as current one */
+	current_processing_ctx = my_ctx;
+
+	/* set this dialog in the ctx */
+	ctx_dialog_set(dlg);
+
+	return 0;
+}
+
+
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
 {
 	int event, old_state, new_state, unref, ret;
-	struct dlg_cell *curr;
+	struct sip_msg *fake_msg;
+	context_p old_ctx;
 
 	event = DLG_EVENT_REQBYE;
 	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
@@ -250,11 +302,19 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 			unref++;
 		}
 
-		curr = current_dlg_pointer;
-		current_dlg_pointer = dlg;
-		/* dialog terminated (BYE) */
-		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
-		current_dlg_pointer = curr;
+		if (req==NULL) {
+			/* set new msg & processing context */
+			if (push_new_processing_context( dlg, &old_ctx, &fake_msg)==0) {
+				/* dialog terminated (BYE) */
+				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg, DLG_DIR_NONE, 0);
+				/* reset the processing contect */
+				current_processing_ctx = old_ctx;
+			} /* no CB run in case of failure FIXME */
+		} else {
+			/* we should have the msg and context from upper levels */
+			/* dialog terminated (BYE) */
+			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
+		}
 
 		LM_DBG("first final reply\n");
 		/* derefering the dialog */
@@ -339,8 +399,8 @@ error:
 static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 														str *extra_hdrs)
 {
+	context_p old_ctx;
 	dlg_t* dialog_info;
-	struct dlg_cell *old_cell;
 	str met = {"BYE", 3};
 	int result;
 
@@ -352,10 +412,11 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 	LM_DBG("sending BYE to %s (%d)\n",
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
-	ref_dlg(cell, 1);
+	/* set new processing context */
+	if (push_new_processing_context( cell, &old_ctx, NULL)!=0)
+		goto err;
 
-	old_cell = current_dlg_pointer;
-	current_dlg_pointer = cell;
+	ref_dlg(cell, 1);
 
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
@@ -366,7 +427,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		(void*)cell,   /* callback parameter*/
 		NULL);         /* release function*/
 
-	current_dlg_pointer = old_cell;
+	/* reset the processing contect */
+	current_processing_ctx = old_ctx;
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");
@@ -506,8 +568,8 @@ error:
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release)
 {
+	context_p old_ctx;
 	dlg_t* dialog_info;
-	struct dlg_cell *old_cell;
 	int result;
 	unsigned int method_type;
 
@@ -533,8 +595,9 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	LM_DBG("sending [%.*s] to %s (%d)\n",method->len,method->s,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
-	old_cell = current_dlg_pointer;
-	current_dlg_pointer = dlg;
+	/* set new processing context */
+	if (push_new_processing_context( dlg, &old_ctx, NULL)!=0)
+		return -1;
 
 	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
@@ -547,7 +610,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		param,   /* callback parameter*/
 		release);         /* release function*/
 
-	current_dlg_pointer = old_cell;
+	/* reset the processing contect */
+	current_processing_ctx = old_ctx;
 
 	if(result < 0)
 	{

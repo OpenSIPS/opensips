@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2006-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -41,6 +40,7 @@
 #define _DIALOG_DLG_HASH_H_
 
 #include "../../locking.h"
+#include "../../context.h"
 #include "../../mi/mi.h"
 #include "dlg_timer.h"
 #include "dlg_cb.h"
@@ -158,7 +158,8 @@ struct dlg_table
 
 
 extern struct dlg_table *d_table;
-extern struct dlg_cell  *current_dlg_pointer;
+extern int ctx_dlg_idx;
+
 extern int dlg_tmp_timeout;
 extern int dlg_tmp_timeout_id;
 
@@ -166,8 +167,11 @@ extern int dlg_tmp_timeout_id;
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
 		DLG_FIRST_CALLEE_LEG : (_dlg)->legs_no[DLG_LEG_200OK])
 
-#define set_current_dialog(_dlg) \
-		current_dlg_pointer = _dlg
+#define ctx_dialog_get() \
+	((struct dlg_cell*)context_get_ptr(CONTEXT_GLOBAL,current_processing_ctx,ctx_dlg_idx) )
+
+#define ctx_dialog_set(_dlg) \
+	context_put_ptr(CONTEXT_GLOBAL,current_processing_ctx, ctx_dlg_idx, _dlg)
 
 struct dlg_cell *get_current_dialog();
 
