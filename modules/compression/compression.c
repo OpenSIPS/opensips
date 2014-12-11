@@ -187,7 +187,10 @@ int mnd_hdrs[]={
 	HDR_TO_T,
 	HDR_CSEQ_T,
 	HDR_ROUTE_T,
+	HDR_RECORDROUTE_T,
+	HDR_CONTENTTYPE_T,
 	HDR_CALLID_T
+
 };
 
 int compact_form_hdrs[]={
@@ -526,8 +529,7 @@ static int mc_compact_no_args(struct sip_msg* msg)
 }
 
 /*
- * Test function to parse message with
- * parse_hname2
+ * Test function to parse message
  * 1) Headers of same type will be put together
  * 2) Header names with compact forms will be transformed to
  * compact form
@@ -738,6 +740,8 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 		(buf_cpy++, frg->end++);
 	}
 
+	int foo;
+
 	/* not storing '\0' at the end of the message */
 	(buf_cpy--, frg->end--);
 
@@ -755,11 +759,22 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 	hf->name.s = COMPACT_FORMS + get_compact_form(hf);
 	hf->name.len = 1;
 
+	if (new_body_len <= CRLF_LEN)
+		new_body_len = 0;
+
 	hf->body.len = mc_ndigits(new_body_len);
-	hf->body.s = int2str( new_body_len, &new_body_len/* no need for it */);
+	hf->body.s = int2str( new_body_len, &foo);
 	if (hf->body.s == 0) {
 		LM_ERR("failed to convert int to string\n");
 		goto memerr;
+	}
+
+	/*
+	 * If body is empty Content-Type is not necessary anymore
+	 */
+	if (new_body_len == 0) {
+		clean_hdr_field(hdr_mask[HDR_CONTENTTYPE_T]);
+		hdr_mask[HDR_CONTENTTYPE_T] = NULL;
 	}
 
 	msg_total_len += hf->name.len + DELIM_LEN + hf->body.len + CRLF_LEN;
@@ -936,7 +951,7 @@ static int mc_compress_fixup(void** param, int param_no)
 static inline int mc_ndigits(int x)
 {
 	if (x == 0)
-		return 0;
+		return 1;
 
 	if (x > 10)
 		return 1 + mc_ndigits(x/10);
