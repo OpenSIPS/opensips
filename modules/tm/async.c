@@ -25,6 +25,7 @@
 
 #include "../../dprint.h"
 #include "../../async.h"
+#include "../../context.h"
 #include "../../reactor_defs.h"
 #include "h_table.h"
 #include "t_lookup.h"
@@ -32,9 +33,15 @@
 
 
 typedef struct _async_ctx {
+	/* the resume function to be called when data to read is available */
 	async_resume_module *resume_f;
+	/* parameter registered to the resume function */
 	void *resume_param;
+	/* the script route to be used to continue after the resume function */
 	int resume_route;
+	/* the processing context for the handled message */
+	context_p msg_ctx;
+	/* the transaction for the handled message */
 	struct cell *t;
 } async_ctx;
 
@@ -62,15 +69,21 @@ int t_resume_async(int fd, void *param)
 	struct usr_avp **backup_list;
 	struct socket_info* backup_si;
 	enum async_ret_code ret;
+	struct cell *t= ctx->t;
 
-	LM_DBG("resuming on fd %d, transaction %p \n",fd,ctx->t);
+	LM_DBG("resuming on fd %d, transaction %p \n",fd, t);
+
+	if (current_processing_ctx) {
+		LM_CRIT("BUG - a context already set!\n");
+		abort();
+	}
 
 	/* prepare for resume route */
 	uac.br_flags = 0 ; /* FIXME - we do not have them stored !! */
-	uac.uri = *GET_RURI( ctx->t->uas.request );
+	uac.uri = *GET_RURI( t->uas.request );
 	if (!fake_req( &faked_req /* the fake msg to be built*/,
-		ctx->t->uas.request, /* the template msg saved in transaction */
-		&ctx->t->uas, /*the UAS side of the transaction*/
+		t->uas.request, /* the template msg saved in transaction */
+		&t->uas, /*the UAS side of the transaction*/
 		&uac /* the fake UAC */)
 	) {
 		LM_ERR("fake_req failed\n");
@@ -78,14 +91,15 @@ int t_resume_async(int fd, void *param)
 	}
 
 	/* enviroment setting */
+	current_processing_ctx = ctx->msg_ctx;
 	backup_t = get_t();
 	/* fake transaction */
-	set_t(ctx->t);
+	set_t( t );
 	/* make available the avp list from transaction */
-	backup_list = set_avp_list( &ctx->t->user_avps );
+	backup_list = set_avp_list( &t->user_avps );
 	/* set default send address to the saved value */
 	backup_si = bind_address;
-	bind_address = ctx->t->uac[0].request.dst.send_sock;
+	bind_address = t->uac[0].request.dst.send_sock;
 
 	/* call the resume function in order to read and handle data */
 	ret = ctx->resume_f( fd, &faked_req, ctx->resume_param );
@@ -93,7 +107,6 @@ int t_resume_async(int fd, void *param)
 		/* do not run the resume route */
 		goto restore;
 	} else if (ret==ASYNC_ERROR) {
-		shm_free(ctx);
 		/* FIXME set some error indication for the route */
 	}
 
@@ -104,6 +117,9 @@ int t_resume_async(int fd, void *param)
 	/* run the resume_route[] */
 	run_resume_route( ctx->resume_route, &faked_req);
 
+	/* no need for the context anymore */
+	shm_free(ctx);
+
 restore:
 	/* restore original environment */
 	set_t(backup_t);
@@ -111,11 +127,8 @@ restore:
 	set_avp_list( backup_list );
 	bind_address = backup_si;
 
-	free_faked_req( &faked_req, ctx->t);
-
-	/* FIXME - we need to do complete update on the transaction,
-	  likr RURI, DURI, flags, path, etc */
-	ctx->t->uas.request->flags = faked_req.flags;
+	free_faked_req( &faked_req, t);
+	current_processing_ctx = NULL;
 
 	return 0;
 }
@@ -183,6 +196,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->resume_f = ctx_f;
 	ctx->resume_param = ctx_p;
 	ctx->resume_route = resume_route;
+	ctx->msg_ctx = current_processing_ctx;
 	ctx->t = t;
 
 	/* place the FD + resume function (as param) into reactor */
@@ -193,6 +207,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	}
 
 	/* done, break the script */
+	current_processing_ctx = NULL;
 	return 0;
 
 
