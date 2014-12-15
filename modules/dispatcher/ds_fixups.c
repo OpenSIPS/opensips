@@ -82,8 +82,8 @@ int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *e
 		sval.s = delim + 1;
 		str_trim_spaces_lr(s_num);
 
-		unsigned int u_num;
-		if (s_num.len == 0 || str2int(&s_num, &u_num) != 0)
+		int u_num;
+		if (s_num.len == 0 || str2sint(&s_num, &u_num) != 0)
 			goto wrong_value;
 
 		new_el = pkg_malloc(sizeof(int_list_t));
@@ -136,13 +136,13 @@ int set_list_from_string(str input, int_list_t **result)
 	str original_input = input;
 	int_list_t *new_el=NULL;
 	int flags=0;
-	unsigned int uset;
+	int uset;
 
 	*result = NULL;
 	if (input.s == NULL || input.len == 0)
 		return 0;
 
-	if (str2int(&input, &uset) == 0) {
+	if (str2sint(&input, &uset) == 0) {
 		/* Just one set in the list */
 		*result = shm_malloc(sizeof(int_list_t));
 		if (*result == NULL)
@@ -658,7 +658,7 @@ int in_list_fixup(void** param, int param_no)
 		return 0;
 	} else if (param_no==4) {
 		/*  active only check ? */
-		return fixup_uint(param);
+		return fixup_sint(param);
 	} else {
 		LM_CRIT("bug - too many params (%d) in is_in_list()\n",param_no);
 		return -1;

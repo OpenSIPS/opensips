@@ -1030,7 +1030,9 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
 			If the partition name is omitted the default partition will be used.
 			If the set id is missing, all the dispatching
 			sets will the checked. If a partition name is specified then it must
-			be followed by colon regardless of the set id being specified or not.</para>
+			be followed by colon regardless of the set id being specified or not.
+			<quote>-1</quote> can be used as a wildcard to check in all sets.
+			</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>active_only</emphasis> (optional) - search only

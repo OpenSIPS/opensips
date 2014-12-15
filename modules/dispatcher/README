@@ -778,7 +778,8 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
        used. If the set id is missing, all the dispatching sets
        will the checked. If a partition name is specified then it
        must be followed by colon regardless of the set id being
-       specified or not.
+       specified or not. “-1” can be used as a wildcard to check
+       in all sets.
      * active_only (optional) - search only through the active
        destinations (ignore the ones in probing and inactive
        mode).
