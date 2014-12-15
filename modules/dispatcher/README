@@ -709,7 +709,8 @@ if (ds_count("$avp(set)", "ip", "$avp(result)")) {
        IP against the dispatcher list.
      * set (optional) - the set ID of a dispatcher list to test
        agaist - if missing, all the dispatching sets will the
-       checked.
+       checked. “-1” can be used as a wildcard to check in all
+       sets.
      * active_only (optional) - search only through the active
        destinations (ignore the ones in probing and inactive
        mode).

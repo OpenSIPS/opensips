@@ -782,7 +782,7 @@ static int in_list_fixup(void** param, int param_no)
 		return fixup_pvar(param);
 	} else if (param_no==3) {
 		/* the group to check in */
-		return fixup_uint(param);
+		return fixup_sint(param);
 	} else if (param_no==4) {
 		/*  active only check ? */
 		return fixup_uint(param);
