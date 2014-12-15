@@ -1615,7 +1615,7 @@ struct sip_msg* tm_pv_context_reply(struct sip_msg* msg)
 	struct cell* trans = get_t();
 	int branch;
 
-	if(trans == NULL)
+	if(trans == NULL || trans == T_UNDEFINED)
 	{
 		LM_ERR("No transaction found\n");
 		return NULL;
@@ -1636,7 +1636,7 @@ struct sip_msg* tm_pv_context_request(struct sip_msg* msg)
 	struct cell* trans = get_t();
 
 	LM_DBG("in fct din tm\n");
-	if(trans == NULL)
+	if(trans == NULL || trans == T_UNDEFINED)
 	{
 		LM_ERR("No transaction found\n");
 		return NULL;
