@@ -2725,6 +2725,7 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 	unsigned int ip_found = 0;
 	unsigned int set_found = 0;
 	pv_value_t val1, val2, val3;
+	str param3_val;
 
 	if (!msg || !dlg || msg->first_line.type != SIP_REPLY)
 		goto not_moved;
@@ -2782,8 +2783,11 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 		}
 
 		if (set_found) {
-			if (dlg_api.store_dlg_value(dlg, &param3_name, &val3.rs) < 0) {
-				LM_ERR("cannot store set-id value\n");
+			/* Store Set ID INT value correcty in dlg */
+			param3_val.s = (char*)&val3.ri;
+			param3_val.len = sizeof(unsigned int);
+			if (dlg_api.store_dlg_value(dlg, &param3_name, &param3_val) < 0) {
+				LM_ERR("cannot store setid value\n");
 				goto error;
 			}
 		} else {
