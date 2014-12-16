@@ -2964,7 +2964,7 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip, enable_notification;
 	int pf, pf1, force, err;
-	struct options opts, rep_opts, pt_opts;
+	struct options opts, rep_opts, pt_opts, m_opts;
 	char *cp, *cp1;
 	char  *cpend, *next;
 	char **ap, *argv[10];
@@ -3190,8 +3190,6 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 	}
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
-	v[1].iov_base = opts.s.s;
-	v[1].iov_len = opts.oidx;
 	STR2IOVEC(args->callid, v[5]);
 	STR2IOVEC(from_tag, v[11]);
 	STR2IOVEC(to_tag, v[15]);
@@ -3232,6 +3230,8 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 		STR2IOVEC(notify_tag, v[21]);
 	}
 
+	m_opts = opts;
+
 	for(;;) {
 		/* Per-session iteration. */
 		v1p = v2p;
@@ -3262,10 +3262,13 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 		/* Have session. Iterate media descriptions in session */
 		m2p = m1p;
 		for (;;) {
+			m_opts.oidx = opts.oidx;
+
 			m1p = m2p;
 			if (m1p == NULL || m1p >= v2p)
 				break;
 			m2p = find_next_sdp_line(m1p, v2p, 'm', v2p);
+
 			/* c2p will point to per-media "c=" */
 			c2p = find_sdp_line(m1p, m2p, 'c');
 			/* Extract address and port */
@@ -3294,10 +3297,12 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 			} else {
 				newip.s = ip_addr2a(&msg->rcv.src_ip);
 				newip.len = strlen(newip.s);
+				/* update the AF */
+				pf = msg->rcv.src_ip.af;
 			}
 			/* XXX must compare address families in all addresses */
 			if (pf == AF_INET6) {
-				if (append_opts(&opts, '6') == -1) {
+				if (append_opts(&m_opts, '6') == -1) {
 					LM_ERR("out of pkg memory\n");
 					goto error;
 				}
@@ -3364,12 +3369,14 @@ force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args)
 					v[3].iov_len = 0;
 				}
 				if(enable_notification && opts.s.s[0] == 'U')
-  					vcnt = 22;
-  				else
-  				{
-  					vcnt = (to_tag.len > 0) ? 18 : 14;
-  				}
-  				cp = send_rtpp_command(args->node, v, vcnt);
+					vcnt = 22;
+				else
+				{
+					vcnt = (to_tag.len > 0) ? 18 : 14;
+				}
+				v[1].iov_base = m_opts.s.s;
+				v[1].iov_len = m_opts.oidx;
+				cp = send_rtpp_command(args->node, v, vcnt);
 				if (!cp && !create) {
 					LM_ERR("cannot lookup a session on a different RTPProxy\n");
 					goto error;
