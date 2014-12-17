@@ -104,9 +104,6 @@ static int trace_send_hep_duplicate(str *body, str *fromproto, str *fromip,
 static int pipport2su (str *sproto, str *ip, unsigned short port,
 			union sockaddr_union *tmp_su, unsigned int *proto);
 
-static int do_dlg_siptrace = 0;
-static void siptrace_dlg_created(struct dlg_cell *did, int type,struct dlg_cb_params * params);
-static int siptrace_cleanup( struct sip_msg *msg, void *param );
 static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param);
 
 static str db_url             = {NULL, 0};
@@ -273,16 +270,6 @@ static int fixup_trace_dialog(void** param, int param_no)
 	/* register callback to dialog */
 	if (load_dlg_api(&dlgb)!=0) {
 		LM_ERR("can't load dialog api\n");
-		return -1;
-	}
-
-	if (dlgb.register_dlgcb(NULL, DLGCB_CREATED, siptrace_dlg_created, NULL, NULL) < 0) {
-		LM_ERR("Failed to register dialog created callback \n");
-		return -1;
-	}
-
-	if (register_script_cb( siptrace_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB,0)<0) {
-		LM_ERR("Failed to register postcript cleanup cb\n");
 		return -1;
 	}
 
@@ -649,7 +636,7 @@ static inline int insert_siptrace_avp(struct usr_avp *avp,
 		db_vals[13].val.str_val.s = avp_value.s.s;
 		db_vals[13].val.str_val.len = avp_value.s.len;
 
-		LM_DBG("### - storing info 15 \n");
+		LM_DBG("### - storing info 14 \n");
 		CON_PS_REFERENCE(db_con) = &siptrace_ps;
 		if (con_set_inslist(&db_funcs,db_con,&ins_list,keys,NR_KEYS) < 0 )
 			CON_RESET_INSLIST(db_con);
@@ -883,49 +870,32 @@ static int trace_dialog(struct sip_msg *msg)
 	/* trace current request */
 	sip_trace(msg);
 
-	do_dlg_siptrace=1;
+	/* we also want to catch the incoming cancel */
+	if ( tmb.register_tmcb( msg, NULL,TMCB_TRANS_CANCELLED,
+				siptrace_dlg_cancel, NULL, NULL)<0 ) {
+		LM_ERR("failed to register trans cancelled TMCB\n");
+	}
+
 	return 1;
 }
 
-static int siptrace_cleanup( struct sip_msg *msg, void *param )
-{
-	do_dlg_siptrace=0;
-
-	return SCB_DROP_MSG;
-}
-
-static void siptrace_dlg_created(struct dlg_cell *did, int type,
-		struct dlg_cb_params * params)
-{
-	struct sip_msg *req;
-	struct cell *t;
-
-	if (do_dlg_siptrace == 1) {
-		req = params->msg;
-		t = tmb.t_gett();
-
-		// we also want to catch the incoming cancel
-		if ( tmb.register_tmcb( req, t,TMCB_TRANS_CANCELLED,
-					siptrace_dlg_cancel, NULL, NULL)<0 ) {
-			LM_ERR("failed to register trans cancelled TMCB\n");
-			return;
-		}
-	}
-}
 
 static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param)
 {
+	int_str avp_value;
 	struct sip_msg *req;
 	req = param->req;
 
 	LM_DBG("Tracing incoming cancel due to trace_dialog() \n");
 
 	/* set the flag */
-	req->flags |= trace_flag;
+	if ( dlgb.fetch_dlg_value( (struct dlg_cell*)t->dialog_ctx, &st_flag_val, &avp_value.s, 0)==0 )
+		req->flags |= trace_flag;
 	req->msg_flags |= FL_USE_SIPTRACE;
 	/* trace current request */
 	sip_trace(req);
 }
+
 
 static inline int siptrace_copy_proto(int proto, char *buf)
 {
