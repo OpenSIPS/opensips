@@ -67,7 +67,6 @@
 
 
 extern struct tm_binds d_tmb;
-extern int last_dst_leg;
 
 
 struct dlg_table *d_table = NULL;
@@ -91,9 +90,6 @@ int dialog_cleanup( struct sip_msg *msg, void *param )
 		unref_dlg( ctx_dialog_get(), 1);
 		ctx_dialog_set(NULL);
 	}
-	last_dst_leg = -1;
-	dlg_tmp_timeout = -1;
-	dlg_tmp_timeout_id = -1;
 
 	return SCB_RUN_ALL;
 }
@@ -104,18 +100,22 @@ struct dlg_cell *get_current_dialog(void)
 {
 	struct cell *trans;
 
-	if (current_processing_ctx) {
+	if (current_processing_ctx && ctx_dialog_get()) {
 		/* use the processing context */
 		return ctx_dialog_get();
-	} else {
-		/* use current transaction to get dialog */
-		trans = d_tmb.t_gett();
-		if (trans==NULL || trans==T_UNDEFINED) {
-			/* no transaction */
-			return NULL;
-		}
-		return (struct dlg_cell*)trans->dialog_ctx;
 	}
+	/* look into transaction */
+	trans = d_tmb.t_gett();
+	if (trans==NULL || trans==T_UNDEFINED) {
+		/* no transaction */
+		return NULL;
+	}
+	if (current_processing_ctx)
+		/* if we have context, but no dlg info, and we 
+		   found dlg info into transaction, populate
+		   the dialog too */
+		ctx_dialog_set(trans->dialog_ctx);
+	return (struct dlg_cell*)trans->dialog_ctx;
 }
 
 
@@ -839,7 +839,7 @@ static inline void log_next_state_dlg(const int event,
 
 
 void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
-					int *new_state, int *unref, char is_replicated)
+		int *new_state, int *unref, int last_dst_leg, char is_replicated)
 {
 	struct dlg_entry *d_entry;
 
@@ -931,7 +931,8 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 			switch (dlg->state) {
 				case DLG_STATE_CONFIRMED_NA:
 				case DLG_STATE_CONFIRMED:
-					if (dir == DLG_DIR_DOWNSTREAM && last_dst_leg!=dlg->legs_no[DLG_LEG_200OK] )
+					if (dir == DLG_DIR_DOWNSTREAM &&
+					last_dst_leg!=dlg->legs_no[DLG_LEG_200OK] )
 						/* to end the call, the BYE must be received
 						 * on the same leg as the 200 OK for INVITE */
 						break;

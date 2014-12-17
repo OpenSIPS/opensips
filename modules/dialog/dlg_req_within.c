@@ -44,10 +44,10 @@
 #include "dlg_req_within.h"
 #include "dlg_db_handler.h"
 #include "dlg_profile.h"
+#include "dlg_handlers.h"
 
 
 extern str dlg_extra_hdrs;
-extern int last_dst_leg;
 
 int free_tm_dlg(dlg_t *td)
 {
@@ -207,67 +207,15 @@ error:
 }
 
 
-static int push_new_processing_context( struct dlg_cell *dlg,
-								context_p *old_ctx, struct sip_msg **fake_msg)
-{
-	static context_p my_ctx = NULL;
-	static struct sip_msg *my_msg = NULL;
-
-	*old_ctx = current_processing_ctx;
-	if (my_ctx) {
-		my_ctx = context_alloc();
-		if (my_ctx==NULL) {
-			LM_ERR("failed to alloc new ctx in pkg\n");
-			return -1;
-		}
-	}
-	if (current_processing_ctx==my_ctx) {
-		LM_CRIT("BUG - nested setting of my_ctx\n");
-		return -1;
-	}
-
-	if (fake_msg) {
-		if (my_msg==NULL) {
-			my_msg = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-			if (my_msg==NULL) {
-				LM_ERR("No more pkg memory for a a fake msg\n");
-				return -1;
-			}
-		} else {
-			free_sip_msg(my_msg);
-		}
-		memset(my_msg, 0, sizeof(struct sip_msg));
-		my_msg->first_line.type = SIP_REQUEST;
-		my_msg->first_line.u.request.method.s= "DUMMY";
-		my_msg->first_line.u.request.method.len= 5;
-		my_msg->first_line.u.request.uri.s= "sip:user@domain.com";
-		my_msg->first_line.u.request.uri.len= 19;
-		*fake_msg = my_msg;
-	}
-
-	/* reset the new to-be-used CTX */
-	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
-
-	/* set the new CTX as current one */
-	current_processing_ctx = my_ctx;
-
-	/* set this dialog in the ctx */
-	ctx_dialog_set(dlg);
-
-	return 0;
-}
-
-
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
 {
 	int event, old_state, new_state, unref, ret;
-	struct sip_msg *fake_msg;
+	struct sip_msg *fake_msg=NULL;
 	context_p old_ctx;
 
 	event = DLG_EVENT_REQBYE;
-	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
 	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
-	               &unref, 0);
+			&unref, dlg->legs_no[DLG_LEG_200OK], 0);
 	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
@@ -416,6 +364,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 	if (push_new_processing_context( cell, &old_ctx, NULL)!=0)
 		goto err;
 
+	ctx_lastdstleg_set(dst_leg);
+
 	ref_dlg(cell, 1);
 
 	result = d_tmb.t_request_within
@@ -484,11 +434,9 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	}
 
 	callee = callee_idx(dlg);
-	last_dst_leg = DLG_CALLER_LEG;
 	if ( send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
 		res--;
 	}
-	last_dst_leg = callee;
 	if (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
 		res--;
 	}

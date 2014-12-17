@@ -111,8 +111,6 @@ struct rr_binds d_rrb;
 static str db_url = {NULL,0};
 static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 
-extern int last_dst_leg;
-
 /* cachedb stuff */
 str cdb_url = {0,0};
 
@@ -779,6 +777,8 @@ static int mod_init(void)
 
 	/* allocate a slot in the processing context */
 	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL);
+	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL);
+	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL);
 
 	/* create dialog state changed event */
 	if (state_changed_event_init() < 0) {
@@ -1509,14 +1509,17 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())!=NULL ) {
 
 		dlg_lock_dlg(dlg);
-		if (dlg->state < DLG_STATE_CONFIRMED_NA)
+		if (dlg->state == DLG_STATE_DELETED)
+			l = 0;
+		else if (dlg->state < DLG_STATE_CONFIRMED_NA)
 			l = dlg->lifetime;
 		else
 			l = dlg->tl.timeout - get_ticks();
 		dlg_unlock_dlg(dlg);
 
-	} else if (msg->id == dlg_tmp_timeout_id && dlg_tmp_timeout != -1) {
-		l = dlg_tmp_timeout;
+	} else if (current_processing_ctx) {
+		if ((l=ctx_timeout_get())==0)
+			return pv_get_null( msg, param, res);
 	} else {
 		return pv_get_null( msg, param, res);
 	}
@@ -1540,10 +1543,10 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 	if(res==NULL)
 		return -1;
 
-	if ( (dlg=get_current_dialog())==NULL || last_dst_leg<0)
+	if ( (dlg=get_current_dialog())==NULL || ctx_lastdstleg_get()<0)
 		return pv_get_null( msg, param, res);
 
-	if (last_dst_leg==0) {
+	if (ctx_lastdstleg_get()==0) {
 		res->rs.s = "upstream";
 		res->rs.len = 8;
 	} else {
@@ -1682,18 +1685,16 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (replication_dests)
 			replicate_dialog_updated(dlg);
 
-		/* make sure we don't update it again later */
-		dlg_tmp_timeout = -1;
-		dlg_tmp_timeout_id = -1;
-
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");
 			return -1;
 		}
-	} else {
+	} else if (current_processing_ctx) {
 		/* store it until we match the dialog */
-		dlg_tmp_timeout = timeout;
-		dlg_tmp_timeout_id = msg->id;
+		ctx_timeout_set( timeout );
+	} else {
+		LM_CRIT("BUG - no proicessing context found !\n");
+		return -1;
 	}
 
 	return 0;

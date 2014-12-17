@@ -85,9 +85,8 @@ extern stat_var *processed_dlgs;
 extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
 
-int  last_dst_leg = -1;
-int  dlg_tmp_timeout = -1;
-int  dlg_tmp_timeout_id = -1;
+int  ctx_lastdstleg_idx = -1;
+int  ctx_timeout_idx = -1;
 
 void init_dlg_handlers(int default_timeout_p)
 {
@@ -469,18 +468,21 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			replicate_dialog_created(dlg);
 	}
 
-	if (type==TMCB_TRANS_DELETED)
+	if (type==TMCB_TRANS_DELETED) {
 		event = DLG_EVENT_TDEL;
-	else if (param->code<200)
+	} else if (param->code<200) {
 		event = DLG_EVENT_RPL1xx;
-	else if (param->code<300)
+		ctx_lastdstleg_set(DLG_CALLER_LEG);
+	} else if (param->code<300) {
 		event = DLG_EVENT_RPL2xx;
-	else
+		ctx_lastdstleg_set(DLG_CALLER_LEG);
+	} else {
 		event = DLG_EVENT_RPL3xx;
+		ctx_lastdstleg_set(DLG_CALLER_LEG);
+	}
 
-	last_dst_leg = DLG_CALLER_LEG;
 	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state,
-	               &unref, 0);
+	               &unref, DLG_CALLER_LEG, 0);
 
 	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
 		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM, 0);
@@ -748,8 +750,8 @@ static void dlg_seq_down_onreply(struct cell* t, int type,
 
 inline static int get_dlg_timeout(struct sip_msg *msg)
 {
-	return ((dlg_tmp_timeout != -1 && dlg_tmp_timeout_id == msg->id) ?
-			dlg_tmp_timeout: default_timeout);
+	return (current_processing_ctx && (ctx_timeout_get()!=0)) ?
+			ctx_timeout_get() : default_timeout;
 }
 
 
@@ -888,7 +890,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 
 	/* set current dialog */
 	ctx_dialog_set(dlg);
-	last_dst_leg = DLG_FIRST_CALLEE_LEG;
+	ctx_lastdstleg_set(DLG_FIRST_CALLEE_LEG);
 
 	extra_ref=2; /* extra ref for the callback and current dlg hook */
 	if (dlg_db_mode == DB_MODE_DELAYED)
@@ -984,10 +986,10 @@ static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
 
 static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
 {
-	if (last_dst_leg>=dlg->legs_no[DLG_LEGS_USED])
+	if (ctx_lastdstleg_get()>=dlg->legs_no[DLG_LEGS_USED])
 		LM_CRIT("bogus dst leg %d in state %d for dlg %p [%u:%u] with "
 			"clid '%.*s' and tags '%.*s' '%.*s'. legs used %d\n",
-			last_dst_leg,dlg->state, dlg, dlg->h_entry, dlg->h_id,
+			ctx_lastdstleg_get(),dlg->state, dlg, dlg->h_entry, dlg->h_id,
 			dlg->callid.len, dlg->callid.s,
 			dlg_leg_print_info( dlg, DLG_CALLER_LEG, tag),
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag),dlg->legs_no[DLG_LEGS_USED]);
@@ -1123,13 +1125,11 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			event = DLG_EVENT_REQ;
 	}
 
-	/* save last_dst_leg before running state machine
-	 * helpful for logging various bogus cases according to the RFC */
-	last_dst_leg = dst_leg;
-	next_state_dlg( dlg, event, dir, &old_state, &new_state, &unref, 0);
+	next_state_dlg( dlg, event, dir, &old_state, &new_state, &unref, dst_leg, 0);
 
 	/* set current dialog - it will keep a ref! */
 	ctx_dialog_set(dlg);
+	ctx_lastdstleg_set(dst_leg);
 	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
 
@@ -1148,13 +1148,13 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		dlg_unlock_dlg(dlg);
 
 		if (!dlg->terminate_reason.s) {
-			if (last_dst_leg == 0)
+			if (dst_leg == 0)
 				init_dlg_term_reason(dlg,"Upstream BYE",sizeof("Upstream BYE")-1);
 			else
 				init_dlg_term_reason(dlg,"Downstream BYE",sizeof("Downstream BYE")-1);
 		}
 
-		LM_DBG("BYE successfully processed - dst_leg = %d\n",last_dst_leg);
+		LM_DBG("BYE successfully processed - dst_leg = %d\n",dst_leg);
 
 		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 			dlg_lock (d_table,d_entry);
@@ -1234,8 +1234,9 @@ after_unlock5:
 		LM_DBG("sequential request successfully processed (dst_leg=%d)\n",
 			dst_leg);
 
-		if (dlg_tmp_timeout != -1 && dlg_tmp_timeout_id == req->id) {
-			dlg->lifetime = dlg_tmp_timeout;
+		/* update the dialog timeout from the processing context */
+		if (current_processing_ctx && (ctx_timeout_get()!=0) ) {
+			dlg->lifetime = ctx_timeout_get();
 			dlg->lifetime_dirty = 1;
 		} else {
 			dlg->lifetime_dirty = 0;
@@ -1414,6 +1415,8 @@ early_check:
  */
 void dlg_ontimeout( struct dlg_tl *tl)
 {
+	struct sip_msg *fake_msg;
+	context_p old_ctx;
 	struct dlg_cell *dlg;
 	int new_state;
 	int old_state;
@@ -1439,9 +1442,8 @@ void dlg_ontimeout( struct dlg_tl *tl)
 	}
 
 	/* act like as if we've received a BYE from caller */
-	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
 	next_state_dlg( dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
-	               &new_state, &unref, 0);
+	               &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
 
 	if (new_state==DLG_STATE_DELETED && old_state!=DLG_STATE_DELETED) {
 		LM_DBG("timeout for dlg with CallID '%.*s' and tags '%.*s' '%.*s'\n",
@@ -1458,7 +1460,11 @@ void dlg_ontimeout( struct dlg_tl *tl)
 		dlg_unlock_dlg(dlg);
 
 		/* dialog timeout */
-		run_dlg_callbacks( DLGCB_EXPIRED, dlg, 0, DLG_DIR_NONE, 0);
+		if (push_new_processing_context( dlg, &old_ctx, &fake_msg)==0) {
+			run_dlg_callbacks( DLGCB_EXPIRED, dlg, fake_msg, DLG_DIR_NONE, 0);
+			/* reset the processing context */
+			current_processing_ctx = old_ctx;
+		}
 
 		/* delete the dialog from DB */
 		if (should_remove_dlg_db())
@@ -1496,13 +1502,13 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 	struct sip_uri fru;
 	int next_strict = 0;
 
-	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
+	if (ctx_lastdstleg_get()<0 || ctx_lastdstleg_get()>=dlg->legs_no[DLG_LEGS_USED]) {
 		log_bogus_dst_leg(dlg);
 		LM_ERR("Script error - validate function before having a dialog\n");
 		return -1;
 	}
 
-	leg = & dlg->legs[ last_dst_leg ];
+	leg = & dlg->legs[ ctx_lastdstleg_get() ];
 
 	if (dlg->state <= DLG_STATE_EARLY && !(dlg->flags & DLG_FLAG_TOPHIDING))
 		return 0;
@@ -1726,13 +1732,13 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	int nr_routes,i,src_leg;
 	str *rr_uri,*route_uris;
 
-	if (last_dst_leg<0 || last_dst_leg>=dlg->legs_no[DLG_LEGS_USED]) {
+	if (ctx_lastdstleg_get()<0 || ctx_lastdstleg_get()>=dlg->legs_no[DLG_LEGS_USED]) {
 		log_bogus_dst_leg(dlg);
 		LM_ERR("Script error - validate function before having a dialog\n");
 		return -4;
 	}
 
-	leg = & dlg->legs[ last_dst_leg ];
+	leg = & dlg->legs[ ctx_lastdstleg_get() ];
 
 	/* first check the cseq */
 	if ( (!req->cseq && parse_headers(req,HDR_CSEQ_F,0)<0) || !req->cseq ||
@@ -1745,7 +1751,7 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 
 	if (req->first_line.u.request.method_value == METHOD_ACK) {
 		/* ACKs should have the same cseq as INVITEs */
-		if (last_dst_leg == DLG_CALLER_LEG)
+		if (ctx_lastdstleg_get() == DLG_CALLER_LEG)
 			src_leg = callee_idx(dlg);
 		else
 			src_leg = DLG_CALLER_LEG;

@@ -160,9 +160,6 @@ struct dlg_table
 extern struct dlg_table *d_table;
 extern int ctx_dlg_idx;
 
-extern int dlg_tmp_timeout;
-extern int dlg_tmp_timeout_id;
-
 #define callee_idx(_dlg) \
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
 		DLG_FIRST_CALLEE_LEG : (_dlg)->legs_no[DLG_LEG_200OK])
@@ -315,8 +312,8 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 
 void ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 
-void next_state_dlg(struct dlg_cell *dlg, int event,
-		int dir, int *old_state, int *new_state, int *unref, char is_replicated);
+void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
+		int *new_state, int *unref, int last_dst_leg, char is_replicated);
 
 struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
 struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
