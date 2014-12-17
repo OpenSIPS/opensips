@@ -776,13 +776,15 @@ static void siptrace_dlg_created(struct dlg_cell *did, int type,
 
 static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param)
 {
+	int_str avp_value;
 	struct sip_msg *req;
 	req = param->req;
 
 	LM_DBG("Tracing incoming cancel due to trace_dialog() \n");
 
 	/* set the flag */
-	req->flags |= trace_flag;
+	if ( dlgb.fetch_dlg_value( (struct dlg_cell*)t->dialog_ctx, &st_flag_val, &avp_value.s, 0)==0 )
+		req->flags |= trace_flag;
 	req->msg_flags |= FL_USE_SIPTRACE;
 	/* trace current request */
 	sip_trace(req);
