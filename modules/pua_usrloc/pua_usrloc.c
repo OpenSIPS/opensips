@@ -33,7 +33,6 @@
 #include <time.h>
 
 #include "../../sr_module.h"
-#include "../../script_cb.h"
 #include "../../parser/parse_expires.h"
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -50,7 +49,6 @@
 
 
 str default_domain= {NULL, 0};
-int pua_ul_publish= 0;
 pua_api_t pua;
 str pres_prefix= {0, 0};
 str presence_server= {0, 0};
@@ -64,7 +62,6 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-int pua_set_publish(struct sip_msg* , char*, char*);
 
 
 static cmd_export_t cmds[]=
@@ -74,10 +71,10 @@ static cmd_export_t cmds[]=
 };
 
 static param_export_t params[]={
-	{"default_domain",	 STR_PARAM, &default_domain.s	},
-	{"entity_prefix",	 STR_PARAM, &pres_prefix.s		},
-	{"presence_server",	 STR_PARAM, &presence_server.s	},
-	{0,							 0,			0			}
+	{"default_domain",   STR_PARAM, &default_domain.s   },
+	{"entity_prefix",    STR_PARAM, &pres_prefix.s      },
+	{"presence_server",  STR_PARAM, &presence_server.s  },
+	{0,                  0,         0                   }
 };
 
 static dep_export_t deps = {
@@ -138,6 +135,9 @@ static int mod_init(void)
 	{
 		presence_server.len= strlen(presence_server.s);
 	}
+
+	/* index in global context to keep the on/off state */
+	pul_status_idx = context_register_int(CONTEXT_GLOBAL);
 
 	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
 	if (!bind_usrloc)
@@ -207,14 +207,6 @@ static int mod_init(void)
 	}
 	pua_send_subscribe= pua.send_subscribe;
 
-	/* register post-script pua_unset_publish unset function */
-	if(register_script_cb(pua_unset_publish, POST_SCRIPT_CB|REQ_TYPE_CB, 0)<0)
-	{
-		LM_ERR("failed to register POST request callback\n");
-		return -1;
-	}
-
-
 	return 0;
 }
 
@@ -230,6 +222,4 @@ static void destroy(void)
 
 	return ;
 }
-
-
 
