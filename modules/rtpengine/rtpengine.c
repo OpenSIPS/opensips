@@ -55,6 +55,7 @@
 #include "../../data_lump_rpl.h"
 #include "../../error.h"
 #include "../../forward.h"
+#include "../../context.h"
 #include "../../mem/mem.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_to.h"
@@ -109,8 +110,16 @@
 #define MI_RECHECK_T_LEN			(sizeof(MI_RECHECK_TICKS)-1)
 
 
-
 #define	CPORT		"22222"
+
+#define ctx_rtpeset_get() \
+	((struct rtpe_set*)context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, ctx_rtpeset_idx))
+
+#define ctx_rtpeset_set(_set) \
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, ctx_rtpeset_idx, _set)
+
+
+
 
 enum rtpe_operation {
 	OP_OFFER = 1,
@@ -148,7 +157,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list, char * rtpengine);
 static int fixup_set_id(void ** param, int param_no);
 static int set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2);
 static struct rtpe_set * select_rtpe_set(int id_set);
-static struct rtpe_node *select_rtpe_node(str, int);
+static struct rtpe_node *select_rtpe_node(str, int, struct rtpe_set *);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -180,10 +189,9 @@ static char *setid_avp_param = NULL;
 static char ** rtpe_strings=0;
 static int rtpe_sets=0; /*used in rtpengine_set_store()*/
 static int rtpe_set_count = 0;
-static unsigned int current_msg_id = (unsigned int)-1;
+static int ctx_rtpeset_idx = -1;
 /* RTP proxy balancing list */
 struct rtpe_set_head * rtpe_set_list =0;
-struct rtpe_set * selected_rtpe_set =0;
 struct rtpe_set * default_rtpe_set=0;
 
 /* array with the sockets used by rtpengine (per process)*/
@@ -751,11 +759,12 @@ mod_init(void)
 	unsigned short avp_flags;
 	str s;
 
-	if(register_mi_mod(exports.name, mi_cmds)!=0)
-	{
+	if(register_mi_mod(exports.name, mi_cmds)!=0) {
 		LM_ERR("failed to register MI commands\n");
 		return -1;
 	}
+
+	ctx_rtpeset_idx = context_register_ptr(CONTEXT_GLOBAL);
 
 	/* any rtpengine configured? */
 	if(rtpe_set_list)
@@ -1194,6 +1203,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	str callid, from_tag, to_tag, body, viabranch, error;
 	int ret;
 	struct rtpe_node *node;
+	struct rtpe_set *set;
 	char *cp;
 
 	/*** get & init basic stuff needed ***/
@@ -1300,11 +1310,11 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		goto error;
 	}
 
-	if(msg->id != current_msg_id)
-		selected_rtpe_set = default_rtpe_set;
+	if ( (set=ctx_rtpeset_get())==NULL )
+		set = default_rtpe_set;
 
 	do {
-		node = select_rtpe_node(callid, 1);
+		node = select_rtpe_node(callid, 1, set);
 		if (!node) {
 			LM_ERR("no available proxies\n");
 			goto error;
@@ -1566,19 +1576,19 @@ static struct rtpe_set * select_rtpe_set(int id_set ){
  * too expensive here.
  */
 static struct rtpe_node *
-select_rtpe_node(str callid, int do_test)
+select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 {
 	unsigned sum, sumcut, weight_sum;
 	struct rtpe_node* node;
 	int was_forced;
 
-	if(!selected_rtpe_set){
+	if(!set){
 		LM_ERR("script error -no valid set selected\n");
 		return NULL;
 	}
 	/* Most popular case: 1 proxy, nothing to calculate */
-	if (selected_rtpe_set->rtpe_node_count == 1) {
-		node = selected_rtpe_set->rn_first;
+	if (set->rtpe_node_count == 1) {
+		node = set->rn_first;
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks())
 			node->rn_disabled = rtpe_test(node, 1, 0);
 		return node->rn_disabled ? NULL : node;
@@ -1592,7 +1602,7 @@ select_rtpe_node(str callid, int do_test)
 	was_forced = 0;
 retry:
 	weight_sum = 0;
-	for (node=selected_rtpe_set->rn_first; node!=NULL; node=node->rn_next) {
+	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
 
 		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks()){
 			/* Try to enable if it's time to try. */
@@ -1606,7 +1616,7 @@ retry:
 		if (was_forced)
 			return NULL;
 		was_forced = 1;
-		for(node=selected_rtpe_set->rn_first; node!=NULL; node=node->rn_next) {
+		for(node=set->rn_first; node!=NULL; node=node->rn_next) {
 			node->rn_disabled = rtpe_test(node, 1, 1);
 		}
 		goto retry;
@@ -1616,7 +1626,7 @@ retry:
 	 * sumcut here lays from 0 to weight_sum-1.
 	 * Scan proxy list and decrease until appropriate proxy is found.
 	 */
-	for (node=selected_rtpe_set->rn_first; node!=NULL; node=node->rn_next) {
+	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
 		if (node->rn_disabled)
 			continue;
 		if (sumcut < node->rn_weight)
@@ -1654,6 +1664,7 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 {
 	struct usr_avp *avp;
 	int_str setid_val;
+	struct rtpe_set *set;
 
 	if ((setid_avp_param == NULL) ||
 			(avp = search_first_avp(setid_avp_type, setid_avp.n, &setid_val, 0))
@@ -1665,15 +1676,13 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 		return -1;
 	}
 
-	selected_rtpe_set = select_rtpe_set(setid_val.n);
-	if(selected_rtpe_set == NULL) {
+	if ( (set=select_rtpe_set(setid_val.n)) == NULL) {
 		LM_ERR("could not locate rtpengine set %d\n", setid_val.n);
 		return -1;
 	}
 
+	ctx_rtpeset_set( set );
 	LM_DBG("using rtpengine set %d\n", setid_val.n);
-
-	current_msg_id = msg->id;
 
 	return 1;
 }
@@ -1704,15 +1713,12 @@ set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2)
 {
 	rtpe_set_link_t *rtpl;
 	pv_value_t val;
+	struct rtpe_set *set;
 
 	rtpl = (rtpe_set_link_t*)str1;
 
-	current_msg_id = 0;
-	selected_rtpe_set = 0;
-
 	if(rtpl->rset != NULL) {
-		current_msg_id = msg->id;
-		selected_rtpe_set = rtpl->rset;
+		ctx_rtpeset_set( rtpl->rset );
 	} else {
 		if(pv_get_spec_value(msg, &rtpl->rpv, &val)<0) {
 			LM_ERR("cannot evaluate pv param\n");
@@ -1722,12 +1728,12 @@ set_rtpengine_set_f(struct sip_msg * msg, char * str1, char * str2)
 			LM_ERR("pv param must hold an integer value\n");
 			return -1;
 		}
-		selected_rtpe_set = select_rtpe_set(val.ri);
-		if(selected_rtpe_set==NULL) {
+		set = select_rtpe_set(val.ri);
+		if(set==NULL) {
 			LM_ERR("could not locate rtpengine set %d\n", val.ri);
 			return -1;
 		}
-		current_msg_id = msg->id;
+		ctx_rtpeset_set( set );
 	}
 	return 1;
 }
