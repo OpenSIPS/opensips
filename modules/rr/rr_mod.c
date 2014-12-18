@@ -64,13 +64,18 @@ str i_user;
 char *ignore_user = NULL;
 #endif
 
+/* module parameters */
 int append_fromtag = 1;
 int enable_double_rr = 1; /* Enable using of 2 RR by default */
 int add_username = 0;     /* Do not add username by default */
 int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
 
-static unsigned int last_rr_msg;
-
+/* index in processing context - if RR was done for the message */
+static int ctx_rrdone_idx = -1;
+#define ctx_rrdone_set(_val) \
+	context_put_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrdone_idx, _val)
+#define ctx_rrdone_get() \
+	context_get_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrdone_idx)
 
 
 static int  mod_init(void);
@@ -174,6 +179,7 @@ static int mod_init(void)
 
 	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL);
 	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL);
+	ctx_rrdone_idx  = context_register_int(CONTEXT_GLOBAL);
 
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
@@ -270,7 +276,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 {
 	str s;
 
-	if (msg->id == last_rr_msg) {
+	if (ctx_rrdone_get()) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -282,7 +288,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 	if ( record_route( msg, key?&s:0 )<0 )
 		return -1;
 
-	last_rr_msg = msg->id;
+	ctx_rrdone_set(1);
 	return 1;
 }
 
@@ -291,7 +297,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 {
 	str s;
 
-	if (msg->id == last_rr_msg) {
+	if (ctx_rrdone_get()) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -319,7 +325,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 		return -1;
 
 done:
-	last_rr_msg = msg->id;
+	ctx_rrdone_set(1);
 	return 1;
 }
 
