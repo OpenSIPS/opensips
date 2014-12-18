@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Route & Record-Route module, loose routing support
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -40,8 +38,8 @@
 #define RR_FLOW_DOWNSTREAM  (1<<0)
 #define RR_FLOW_UPSTREAM    (1<<1)
 
-extern int removed_routes;
-extern int routing_type;
+extern int ctx_rrparam_idx;
+extern int ctx_routing_idx;
 
 
 /*! \brief

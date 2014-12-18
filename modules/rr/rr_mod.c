@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
  * Route & Record-Route module
  *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -50,6 +49,7 @@
 #include "../../ut.h"
 #include "../../error.h"
 #include "../../pvar.h"
+#include "../../context.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
 #include "loose.h"
@@ -171,6 +171,10 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_INFO("rr - initializing\n");
+
+	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL);
+	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL);
+
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
 	{
