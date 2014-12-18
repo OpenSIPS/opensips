@@ -189,8 +189,8 @@ int mnd_hdrs[]={
 	HDR_ROUTE_T,
 	HDR_RECORDROUTE_T,
 	HDR_CONTENTTYPE_T,
-	HDR_CALLID_T
-
+	HDR_CALLID_T,
+	HDR_CONTACT_T
 };
 
 int compact_form_hdrs[]={
