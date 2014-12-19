@@ -413,7 +413,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	char              *p;
 
 	/*computing the length of entire sip_msg structure + its context*/
-	len = ROUND4(sizeof( struct sip_msg )+context_size(CONTEXT_MSG));
+	len = ROUND4(sizeof( struct sip_msg ));
 	/*we will keep only the original msg +ZT */
 	len += ROUND4(org_msg->len + 1);
 
@@ -542,7 +542,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	/* filling up the new structure */
 	new_msg = (struct sip_msg*)p;
 	/* sip msg structure */
-	memcpy( new_msg , org_msg , sizeof(struct sip_msg)+context_size(CONTEXT_MSG) );
+	memcpy( new_msg , org_msg , sizeof(struct sip_msg));
 
 	/* avoid copying pointer to un-clonned structures */
 	new_msg->sdp = 0;
@@ -550,7 +550,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	new_msg->msg_cb = 0;
 
 	new_msg->msg_flags |= FL_SHM_CLONE;
-	p += ROUND4(sizeof(struct sip_msg)+context_size(CONTEXT_MSG));
+	p += ROUND4(sizeof(struct sip_msg));
 
 	/* message buffers(org and scratch pad) */
 	memcpy( p , org_msg->buf, org_msg->len);
@@ -1196,9 +1196,6 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	/* flags */
 	c_msg->flags = msg->flags;
 	c_msg->msg_flags = msg->msg_flags|(FL_SHM_UPDATABLE|FL_SHM_CLONE);
-
-	/* update context */
-	memcpy( ((char*)(c_msg+1)), ((char*)(msg+1)), context_size(CONTEXT_MSG) );
 
 	return 0;
 }

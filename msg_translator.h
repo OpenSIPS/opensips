@@ -124,18 +124,4 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 void process_lumps(	struct sip_msg* msg, struct lump* lumps, char* new_buf,
 		unsigned int* new_buf_offs, unsigned int* orig_offs, struct socket_info* send_sock);
 
-/* sip_msg context operations */
-
-int msg_ctx_register_int(void);
-int msg_ctx_register_str(void);
-int msg_ctx_register_ptr(void);
-
-void msg_ctx_put_int(struct sip_msg *sip_msg, int pos, int data);
-void msg_ctx_put_str(struct sip_msg *sip_msg, int pos, str *data);
-void msg_ctx_put_ptr(struct sip_msg *sip_msg, int pos, void *data);
-
-int   msg_ctx_get_int(struct sip_msg *sip_msg, int pos);
-str  *msg_ctx_get_str(struct sip_msg *sip_msg, int pos);
-void *msg_ctx_get_ptr(struct sip_msg *sip_msg, int pos);
-
 #endif

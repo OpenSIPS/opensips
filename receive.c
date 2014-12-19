@@ -118,7 +118,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	/* update the length for further processing */
 	len = in_buff.len;
 
-	msg=pkg_malloc(sizeof(struct sip_msg) + context_size(CONTEXT_MSG));
+	msg=pkg_malloc(sizeof(struct sip_msg));
 	if (msg==0) {
 		LM_ERR("no pkg mem left for sip_msg\n");
 		goto error;
