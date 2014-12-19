@@ -49,7 +49,6 @@
 #include "../../ut.h"
 #include "../../error.h"
 #include "../../pvar.h"
-#include "../../context.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
 #include "loose.h"
@@ -69,14 +68,6 @@ int append_fromtag = 1;
 int enable_double_rr = 1; /* Enable using of 2 RR by default */
 int add_username = 0;     /* Do not add username by default */
 int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
-
-/* index in processing context - if RR was done for the message */
-static int ctx_rrdone_idx = -1;
-#define ctx_rrdone_set(_val) \
-	context_put_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrdone_idx, _val)
-#define ctx_rrdone_get() \
-	context_get_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrdone_idx)
-
 
 static int  mod_init(void);
 static void mod_destroy(void);
@@ -179,7 +170,7 @@ static int mod_init(void)
 
 	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL);
 	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL);
-	ctx_rrdone_idx  = context_register_int(CONTEXT_GLOBAL);
+	ctx_rrstat_idx  = context_register_int(CONTEXT_GLOBAL);
 
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
@@ -276,7 +267,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 {
 	str s;
 
-	if (ctx_rrdone_get()) {
+	if (ctx_rrstat_get()==2) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -288,7 +279,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 	if ( record_route( msg, key?&s:0 )<0 )
 		return -1;
 
-	ctx_rrdone_set(1);
+	ctx_rrstat_set(2);
 	return 1;
 }
 
@@ -297,7 +288,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 {
 	str s;
 
-	if (ctx_rrdone_get()) {
+	if (ctx_rrstat_get()==2) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -325,7 +316,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 		return -1;
 
 done:
-	ctx_rrdone_set(1);
+	ctx_rrstat_set(2);
 	return 1;
 }
 

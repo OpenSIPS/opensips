@@ -38,6 +38,15 @@
 
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
+#include "../../context.h"
+
+
+/* index in processing context - status of RR */
+extern int ctx_rrstat_idx;
+#define ctx_rrstat_set(_val) \
+	context_put_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrstat_idx, _val)
+#define ctx_rrstat_get() \
+	context_get_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrstat_idx)
 
 
 /*! \brief

@@ -75,13 +75,13 @@
 
 #define RR_PARAM_BUF_SIZE 512
 
+/* index in the processing context for the RR adding :
+      0 - RR not added, params not added 
+      1 - RR not added, params added and buffered 
+      2 - RR added
+*/
+int ctx_rrstat_idx;
 
-/*! \brief RR param buffer
- *  \note used for storing RR param which are added before RR insertion -bogdan
- */
-static char rr_param_buf_ptr[RR_PARAM_BUF_SIZE];
-static str rr_param_buf = {rr_param_buf_ptr,0};
-static unsigned int rr_param_msg;
 
 /*! \brief
  * Extract username from the Request URI
@@ -145,7 +145,7 @@ static inline struct lump *insert_rr_param_lump(struct lump *before,
  * build a Record-Route header field
  */
 static inline int build_rr(struct lump* _l, struct lump* _l2, str* user,
-						str *tag, str *params, int _inbound)
+						str *tag, str *params, struct lump *lp, int _inbound)
 {
 	char* prefix, *suffix, *term, *r2;
 	int suffix_len, prefix_len;
@@ -224,10 +224,9 @@ static inline int build_rr(struct lump* _l, struct lump* _l2, str* user,
 	if (_l2 == 0)
 		goto lump_err;
 	suffix = 0;
-	if (rr_param_buf.len) {
-		_l2 = insert_rr_param_lump(_l2, rr_param_buf.s, rr_param_buf.len);
-		if (_l2 == 0)
-			goto lump_err;
+	if ( lp ) {
+		/* link the pending buffered params and go at the end of the list */
+		for ( _l2->before = lp ; _l2 && _l2->before ; _l2=_l2->before);
 	}
 	if (!(_l2 = insert_new_lump_before(_l2, term, RR_TERM_LEN, 0)))
 		goto lump_err;
@@ -251,13 +250,14 @@ lump_err:
  */
 int record_route(struct sip_msg* _m, str *params)
 {
-	struct lump* l, *l2;
+	struct lump* l, *l2, *lp, *lp2, *ap;
 	str user;
 	struct to_body* from;
 	str* tag;
 
 	from = 0; /* Makes gcc happy */
 	user.len = 0;
+	lp = lp2 = NULL;
 
 	if (add_username) {
 		if (get_username(_m, &user) < 0) {
@@ -277,11 +277,6 @@ int record_route(struct sip_msg* _m, str *params)
 		tag = 0;
 	}
 
-	if (rr_param_buf.len && rr_param_msg!=_m->id) {
-		/* rr_params were set for a different message -> reset buffer */
-		rr_param_buf.len = 0;
-	}
-
 	l = anchor_lump(_m, _m->headers->name.s - _m->buf, HDR_RECORDROUTE_T);
 	l2 = anchor_lump(_m, _m->headers->name.s - _m->buf, 0);
 	if (!l || !l2) {
@@ -289,7 +284,27 @@ int record_route(struct sip_msg* _m, str *params)
 		return -3;
 	}
 
-	if (build_rr(l, l2, &user, tag, params, OUTBOUND) < 0) {
+	if (ctx_rrstat_get()==1) {
+		/* look for pending RR params */
+		for( ap=_m->add_rm ; ap ; ap=ap->next ) {
+			if (ap->type==HDR_RECORDROUTE_T && ap->op==LUMP_NOP)
+				/* found our phony anchor lump */
+				break;
+		}
+		if (ap==NULL || ap->before==NULL || ap->before->before==NULL) {
+			LM_CRIT("BUG: RR state is 1, but no/invalid phony lump found\n");
+			return -1;
+		}
+		/* jump over the anchor and conditional lumps */
+		lp = ap->before->before;
+		ap->before->before = NULL;
+		/* if double routing, make a copy of the buffered lumps for the
+		   second route hdr. */
+		if (enable_double_rr)
+			lp2 = dup_lump_list(lp);
+	}
+
+	if (build_rr(l, l2, &user, tag, params, lp, OUTBOUND) < 0) {
 		LM_ERR("failed to insert inbound Record-Route\n");
 		return -4;
 	}
@@ -307,14 +322,12 @@ int record_route(struct sip_msg* _m, str *params)
 			LM_ERR("failed to insert conditional lump\n");
 			return -6;
 		}
-		if (build_rr(l, l2, &user, tag, params, INBOUND) < 0) {
+		if (build_rr(l, l2, &user, tag, params, lp2, INBOUND) < 0) {
 			LM_ERR("failed to insert outbound Record-Route\n");
 			return -7;
 		}
 	}
 
-	/* reset the rr_param buffer */
-	rr_param_buf.len = 0;
 	return 0;
 }
 
@@ -327,7 +340,7 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 {
 	str user;
 	struct to_body* from;
-	struct lump* l;
+	struct lump* l, *lp, *ap;
 	struct lump* l2;
 	char *hdr, *suffix, *p, *term;
 	int hdr_len, suffix_len;
@@ -349,11 +362,6 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 			return -2;
 		}
 		from = (struct to_body*)_m->from->parsed;
-	}
-
-	if (rr_param_buf.len && rr_param_msg!=_m->id) {
-		/* rr_params were set for a different message -> reset buffer */
-		rr_param_buf.len = 0;
 	}
 
 	hdr_len = RR_PREFIX_LEN;
@@ -425,12 +433,22 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 	}
 	suffix = NULL;
 
-	if (rr_param_buf.len) {
-		l2 = insert_rr_param_lump(l2, rr_param_buf.s, rr_param_buf.len);
-		if (l2==0) {
-			LM_ERR("failed to insert param lump\n");
+	if (ctx_rrstat_get()==1) {
+		/* look for pending RR params */
+		for( ap=_m->add_rm ; ap ; ap=ap->next ) {
+			if (ap->type==HDR_RECORDROUTE_T && ap->op==LUMP_NOP)
+				/* found our phony anchor lump */
+				break;
+		}
+		if (ap==NULL || ap->before==NULL || ap->before->before==NULL) {
+			LM_CRIT("BUG: RR state is 1, but no/invalid phony lump found\n");
 			goto error;
 		}
+		/* jump over the anchor and conditional lumps */
+		lp = ap->before->before;
+		ap->before->before = NULL;
+		/* link the pending buffered params and go at the end of the list */
+		for ( l2->before = lp ; l2 && l2->before ; l2=l2->before);
 	}
 
 	if (!(l2=insert_new_lump_before(l2, term, RR_TERM_LEN, 0))) {
@@ -439,8 +457,6 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 	}
 	term = NULL;
 
-	/* reset the rr_param buffer */
-	rr_param_buf.len = 0;
 	return 1;
 error:
 	if (hdr) pkg_free(hdr);
@@ -474,45 +490,80 @@ static struct lump *get_rr_param_lump( struct lump** root)
  */
 int add_rr_param(struct sip_msg* msg, str* rr_param)
 {
-	struct lump *last_param;
+	struct lump *l, *a;
 	struct lump *root;
 
-	root = msg->add_rm;
-	last_param = get_rr_param_lump( &root );
-	LM_DBG("adding (%.*s) %p\n",rr_param->len,rr_param->s,last_param);
-	if (last_param) {
+	LM_DBG("adding (%.*s) %d\n",rr_param->len,rr_param->s, ctx_rrstat_get());
+
+	switch ( ctx_rrstat_get() ) {
+
+	case 2:
 		/* RR was already done -> have to add a new lump before this one */
-		if (insert_rr_param_lump( last_param, rr_param->s, rr_param->len)==0) {
+		root = msg->add_rm;
+		if ( (l=get_rr_param_lump(&root))==NULL) {
+			LM_CRIT("BUG - RR stat is 2 but no RR lump found\n");
+			return -1;
+		}
+		if (insert_rr_param_lump( l, rr_param->s, rr_param->len)==0) {
 			LM_ERR("failed to add lump\n");
 			goto error;
 		}
 		/* double routing enabled? */
 		if (enable_double_rr) {
-			if (root && (last_param=get_rr_param_lump(&root))!=NULL) {
-				if (insert_rr_param_lump(last_param,rr_param->s,
+			if (root && (l=get_rr_param_lump(&root))!=NULL) {
+				if (insert_rr_param_lump(l,rr_param->s,
 				rr_param->len)==0) {
 					LM_ERR("failed to add 2nd lump\n");
 					goto error;
 				}
 			}
 		}
-	} else {
-		/* RR not done yet -> store the param in the static buffer */
-		if (rr_param_msg!=msg->id) {
-			/* it's about a different message -> reset buffer */
-			rr_param_buf.len = 0;
-			rr_param_msg = msg->id;
+		break;
+
+	case 1:
+		/* RR not done, but some RR params are already buffered -> 
+		   add a before lump to the existing buffering one */
+		for( a=msg->add_rm ; a ; a=a->next ) {
+			if (a->type==HDR_RECORDROUTE_T && a->op==LUMP_NOP)
+				/* found our phony anchor lump */
+				break;
 		}
-		if (rr_param_buf.len+rr_param->len>RR_PARAM_BUF_SIZE) {
-			LM_ERR("maximum size of rr_param_buf exceeded\n");
+		if (a==NULL || a->before==NULL) {
+			LM_CRIT("BUG: RR state is 1, but no phony lump found\n");
 			goto error;
 		}
-		memcpy( rr_param_buf.s+rr_param_buf.len, rr_param->s, rr_param->len);
-		rr_param_buf.len += rr_param->len;
-		LM_DBG("rr_param_buf=<%.*s>\n",rr_param_buf.len, rr_param_buf.s);
-	}
-	return 0;
+		/* get the last param attached on the anchor */
+		for( l=a->before ; l && l->before ; l=l->before);
+		/* add the param */
+		if (insert_rr_param_lump( l, rr_param->s, rr_param->len)==0) {
+			LM_ERR("failed to add buffered lump\n");
+			goto error;
+		}
+		break;
 
+	case 0:
+		/* RR not done, no other RR param added so far ->
+		   create the phony anchor and the lump to it */
+		a = anchor_lump( msg, msg->headers->name.s-msg->buf, HDR_RECORDROUTE_T);
+		if (a==NULL) {
+			LM_ERR("cannot create phony lump for buffering params\n");
+			goto error;
+		}
+		l = insert_cond_lump_before( a, COND_FALSE, 0);
+		if (l==NULL) {
+			LM_ERR("cannot create conditional lump for buffering params\n");
+			goto error;
+		}
+		if (insert_rr_param_lump( l, rr_param->s, rr_param->len)==0) {
+			LM_ERR("failed to add buffered lump\n");
+			goto error;
+		}
+		/* change the RR state, as first buffered RR param was added */
+		ctx_rrstat_set(1);
+		break;
+	}
+
+	return 0;
 error:
 	return -1;
 }
