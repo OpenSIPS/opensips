@@ -162,21 +162,22 @@ static cmd_export_t cmds[]={
 };
 
 struct module_exports exports= {
-	"compression",			/* module's name */
-	MOD_TYPE_DEFAULT, /* class of this module */
+	"compression",		/* module's name */
+	MOD_TYPE_DEFAULT,	/* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,		/* dlopen flags */
+	DEFAULT_DLFLAGS,	/* dlopen flags */
 	NULL,				/* module dependencies */
-	cmds,			/* exported functions */
-	mod_params,		/* param exports */
-	0,			/* exported statistics */
-	mi_cmds,		/* exported MI functions */
-	0,			/* exported pseudo-variables */
-	0,			/* additional processes */
-	mod_init,		/* module initialization function */
-	0,			/* reply processing function */
+	cmds,				/* exported functions */
+	NULL,				/* exported async functions */
+	mod_params,			/* param exports */
+	0,					/* exported statistics */
+	mi_cmds,			/* exported MI functions */
+	0,					/* exported pseudo-variables */
+	0,					/* additional processes */
+	mod_init,			/* module initialization function */
+	0,					/* reply processing function */
 	mod_destroy,
-	child_init		/* pre-child init function */
+	child_init			/* pre-child init function */
 };
 
 
