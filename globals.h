@@ -77,6 +77,7 @@ extern int tcp_listen_backlog;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
 extern int tcp_crlf_pingpong;
+extern int tcp_crlf_drop;
 extern int tcp_keepalive;
 extern int tcp_keepcount;
 extern int tcp_keepidle;

@@ -344,6 +344,7 @@ TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_OPT_CRLF_PINGPONG   "tcp_crlf_pingpong"
+TCP_OPT_CRLF_DROP   "tcp_crlf_drop"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
 TCP_KEEPALIVE           "tcp_keepalive"
 TCP_KEEPCOUNT           "tcp_keepcount"
@@ -643,6 +644,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_OPT_CRLF_PINGPONG}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_PINGPONG; }
+<INITIAL>{TCP_OPT_CRLF_DROP}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_DROP; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
 <INITIAL>{DISABLE_TCP}	{ count(); yylval.strval=yytext; return DISABLE_TCP; }
 <INITIAL>{ASYNC_TCP}	{ count(); yylval.strval=yytext; return ASYNC_TCP; }

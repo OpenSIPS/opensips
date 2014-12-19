@@ -388,6 +388,7 @@ extern char *finame;
 %token TCP_LISTEN_BACKLOG
 %token TCP_MAX_CONNECTIONS
 %token TCP_OPT_CRLF_PINGPONG
+%token TCP_OPT_CRLF_DROP
 %token TCP_NO_NEW_CONN_BFLAG
 %token TCP_KEEPALIVE
 %token TCP_KEEPCOUNT
@@ -901,6 +902,14 @@ assign_stm: DEBUG EQUAL snumber {
 			#endif
 		}
 		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
+		| TCP_OPT_CRLF_DROP EQUAL NUMBER {
+			#ifdef USE_TCP
+				tcp_crlf_drop=$3;
+			#else
+				warn("tcp support not compiled in");
+			#endif
+		}
+		| TCP_OPT_CRLF_DROP EQUAL error { yyerror("boolean value expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
 			#ifdef USE_TCP
 				tmp = NULL;

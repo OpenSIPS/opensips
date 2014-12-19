@@ -423,6 +423,11 @@ int tcp_read_headers(struct tcp_connection *c,struct tcp_req *r)
 				abort();
 		}
 	}
+	if (r->state == H_SKIP_EMPTY_CRLF_FOUND && tcp_crlf_drop) {
+		r->state = H_SKIP_EMPTY;
+		r->complete = 1;
+		r->has_content_len = 1; /* hack to avoid error check */
+	}
 skip:
 	r->parsed=p;
 	return bytes;
