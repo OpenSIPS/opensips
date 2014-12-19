@@ -326,7 +326,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 				if(a->op == LUMP_ADD)
 					LM_DBG("value= %.*s\n", a->len, a->u.value);
 				foo=a; a=a->before;
-				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				if (!(foo->flags&LUMPFLAG_SHMEM))
 					free_lump(foo);
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
@@ -338,7 +338,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 				if(a->op == LUMP_ADD)
 					LM_DBG("value= %.*s\n", a->len, a->u.value);
 				foo=a; a=a->after;
-				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				if (!(foo->flags&LUMPFLAG_SHMEM))
 					free_lump(foo);
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
@@ -347,7 +347,7 @@ int dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 				msg->add_rm = lump->next;
 			else
 				prev_crt->next = lump->next;
-			if (!(lump->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+			if (!(lump->flags&LUMPFLAG_SHMEM))
 				free_lump(lump);
 			if (!(lump->flags&LUMPFLAG_SHMEM))
 				pkg_free(lump);
@@ -558,7 +558,7 @@ static int topology_hiding(struct sip_msg *req,int extra_flags)
 				if(a->op == LUMP_ADD)
 					LM_DBG("value= %.*s\n", a->len, a->u.value);
 				foo=a; a=a->before;
-				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				if (!(foo->flags&LUMPFLAG_SHMEM))
 					free_lump(foo);
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
@@ -570,7 +570,7 @@ static int topology_hiding(struct sip_msg *req,int extra_flags)
 				if(a->op == LUMP_ADD)
 					LM_DBG("value= %.*s\n", a->len, a->u.value);
 				foo=a; a=a->after;
-				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				if (!(foo->flags&LUMPFLAG_SHMEM))
 					free_lump(foo);
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
@@ -579,7 +579,7 @@ static int topology_hiding(struct sip_msg *req,int extra_flags)
 				req->add_rm = lump->next;
 			else
 				prev_crt->next = lump->next;
-			if (!(lump->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+			if (!(lump->flags&LUMPFLAG_SHMEM))
 				free_lump(lump);
 			if (!(lump->flags&LUMPFLAG_SHMEM))
 				pkg_free(lump);

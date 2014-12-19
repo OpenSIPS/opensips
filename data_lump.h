@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * adding/removing headers or any other data chunk from a message
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -107,11 +105,8 @@ struct lump* anchor_lump(struct sip_msg* msg, unsigned int offset,
 	enum _hdr_types_t type);
 
 
-
-/*! \brief duplicates a lump list shallowly in pkg-mem */
+/*! \brief duplicates a lump list in pkg-mem */
 struct lump* dup_lump_list( struct lump *l );
-/*! \brief frees a shallowly duplicated lump list */
-void free_duped_lump_list(struct lump* l);
 
 
 /*! \brief remove all flagged lumps from the list */

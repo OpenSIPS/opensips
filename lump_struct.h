@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -72,7 +70,7 @@ enum lump_conditions {	COND_FALSE,         /*!< always false */
 /*! \brief
  * Flags for lumps, mainly used from the tm module.
  */
-enum lump_flag { LUMPFLAG_NONE=0, LUMPFLAG_DUPED=1,
+enum lump_flag { LUMPFLAG_NONE=0,
 		LUMPFLAG_SHMEM=2 , LUMPFLAG_BRANCH=4, LUMPFLAG_COND_TRUE=8,
 		LUMPFLAG_CODEC=16};
 

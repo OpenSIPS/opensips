@@ -1,5 +1,5 @@
-/* $Id$
- *
+/*
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -435,7 +435,7 @@ void free_lump(struct lump* lmp)
 {
 	if (lmp && (lmp->op==LUMP_ADD)){
 		if (lmp->u.value){
-			if (lmp->flags &(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)){
+			if (lmp->flags &(LUMPFLAG_SHMEM)){
 				LM_CRIT("called on a not free-able lump:"
 					"%p flags=%x\n", lmp, lmp->flags);
 				abort();
@@ -477,25 +477,8 @@ void free_lump_list(struct lump* l)
 	}
 }
 
-/*! \brief free (shallow-ly) a lump and its after/before lists */
-static void free_shallow_lump( struct lump *l )
-{
-	struct lump *r, *foo;
 
-	r=l->before;
-	while(r){
-		foo=r; r=r->before;
-		pkg_free(foo);
-	}
-	r=l->after;
-	while(r){
-		foo=r; r=r->after;
-		pkg_free(foo);
-	}
-	pkg_free(l);
-}
-
-/*! \brief* duplicate (shallow-ly) a lump list into pkg memory */
+/*! \brief* duplicate a lump list into pkg memory */
 static struct lump *dup_lump_list_r( struct lump *l,
 				enum lump_dir dir, int *error)
 {
@@ -510,8 +493,13 @@ static struct lump *dup_lump_list_r( struct lump *l,
 	if (!new_lump) { *error=1; return 0; }
 
 	memcpy(new_lump, l, sizeof(struct lump));
-	new_lump->flags=init_lump_flags|LUMPFLAG_DUPED;
+	new_lump->flags=init_lump_flags;
 	new_lump->next=new_lump->before=new_lump->after=0;
+	if (new_lump->op==LUMP_ADD) {
+		new_lump->u.value = pkg_malloc(l->len);
+		if (!new_lump->u.value) { *error=1; return 0; }
+		memcpy(new_lump->u.value,l->u.value,l->len);
+	}
 
 	switch(dir) {
 		case LD_NEXT:
@@ -543,14 +531,14 @@ static struct lump *dup_lump_list_r( struct lump *l,
 
 deeperror:
 	LM_ERR("out of pkg mem\n");
-	free_shallow_lump(new_lump);
+	free_lump(new_lump);
 	*error=1;
 	return 0;
 }
 
 
 
-/*! \brief shallow pkg copy of a lump list
+/*! \brief full pkg copy of a lump list
  *
  * \return if either original list empty or error occur returns, 0
  * is returned, pointer to the copy otherwise
@@ -561,43 +549,6 @@ struct lump* dup_lump_list( struct lump *l )
 
 	deep_error=0;
 	return dup_lump_list_r(l, LD_NEXT, &deep_error);
-}
-
-
-
-/*! \brief Free duplicated lump list
- */
-void free_duped_lump_list(struct lump* l)
-{
-	struct lump *r, *foo,*crt;
-	while(l){
-		crt=l;
-		l=l->next;
-
-		r=crt->before;
-		while(r){
-			foo=r; r=r->before;
-			/* (+): if a new item was introduced to the shallow-ly
-			 * duped list, remove it completely, preserve it
-			 * otherwise (it is still referred by original list)
-			 */
-			if (foo->flags!=LUMPFLAG_DUPED)
-					free_lump(foo);
-			pkg_free(foo);
-		}
-		r=crt->after;
-		while(r){
-			foo=r; r=r->after;
-			if (foo->flags!=LUMPFLAG_DUPED) /* (+) ... see above */
-				free_lump(foo);
-			pkg_free(foo);
-		}
-
-		/*clean current elem*/
-		if (crt->flags!=LUMPFLAG_DUPED) /* (+) ... see above */
-			free_lump(crt);
-		pkg_free(crt);
-	}
 }
 
 
