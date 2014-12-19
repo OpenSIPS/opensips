@@ -540,7 +540,7 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err
 
 
 static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f, void **resume_param,
-	char* cmd, char* out, char* in, char* err, char* avp_env)
+	char* cmd, char* in, char* out, char* err, char* avp_env)
 {
 	str command;
 	str input = {NULL, 0};
