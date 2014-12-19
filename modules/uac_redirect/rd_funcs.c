@@ -262,7 +262,7 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 				LM_ERR("failed to set new RURI\n");
 				goto restore;
 			}
-			set_ruri_q(sqvalues[i]);
+			set_ruri_q(req, sqvalues[i]);
 		} else {
 			if (append_branch(0,&scontacts[i],0,0,sqvalues[i],0,0)<0) {
 				LM_ERR("failed to add contact to dset\n");

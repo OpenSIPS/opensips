@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2005-2006 Voice Sistem S.R.L.
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -635,11 +634,11 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			if (a->elem[0].u.s.s==NULL) {
 				ret = append_branch(msg, 0, &msg->dst_uri, &msg->path_vec,
-					get_ruri_q(), getb0flags(), msg->force_send_socket);
+					get_ruri_q(msg), getb0flags(msg), msg->force_send_socket);
 				/* reset all branch info */
 				msg->force_send_socket = 0;
-				setb0flags(0);
-				set_ruri_q(Q_UNSPECIFIED);
+				setb0flags(msg,0);
+				set_ruri_q(msg,Q_UNSPECIFIED);
 				if(msg->dst_uri.s!=0)
 					pkg_free(msg->dst_uri.s);
 				msg->dst_uri.s = 0;
@@ -650,7 +649,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				msg->path_vec.len = 0;
 			} else {
 				ret = append_branch(msg, &a->elem[0].u.s, &msg->dst_uri,
-					&msg->path_vec, a->elem[1].u.number, getb0flags(),
+					&msg->path_vec, a->elem[1].u.number, getb0flags(msg),
 					msg->force_send_socket);
 			}
 			break;
@@ -713,15 +712,15 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case SETBFLAG_T:
 			script_trace("core", "setbflag", msg, a->file, a->line) ;
-			ret = setbflag( a->elem[0].u.number, a->elem[1].u.number );
+			ret = setbflag( msg, a->elem[0].u.number, a->elem[1].u.number );
 			break;
 		case RESETBFLAG_T:
 			script_trace("core", "resetbflag", msg, a->file, a->line) ;
-			ret = resetbflag( a->elem[0].u.number, a->elem[1].u.number  );
+			ret = resetbflag( msg, a->elem[0].u.number, a->elem[1].u.number  );
 			break;
 		case ISBFLAGSET_T:
 			script_trace("core", "isbflagset", msg, a->file, a->line) ;
-			ret = isbflagset( a->elem[0].u.number, a->elem[1].u.number  );
+			ret = isbflagset( msg, a->elem[0].u.number, a->elem[1].u.number  );
 			break;
 		case ERROR_T:
 			script_trace("core", "error", msg, a->file, a->line) ;

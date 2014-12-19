@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -184,7 +183,7 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	/* set as flags the global flags and the branch flags from the
 	 * elected branch */
 	faked_req->flags = uas->request->flags;
-	setb0flags( uac->br_flags);
+	setb0flags( faked_req, uac->br_flags);
 
 	return 1;
 

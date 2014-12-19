@@ -49,6 +49,7 @@
 #include "../flags.h"
 #include "../ip_addr.h"
 #include "../md5utils.h"
+#include "../qvalue.h"
 #include "../config.h"
 #include "parse_def.h"
 #include "parse_cseq.h"
@@ -257,12 +258,21 @@ struct sip_msg {
                            *  via, etc. point into it */
 	unsigned int len; /* message len (orig) */
 
-	/* modifications */
-
+	/* attributes of the msg as first/default branch */
 	str new_uri; /* changed first line uri, when you change this
                   * don't forget to set parsed_uri_ok to 0 */
-
 	str dst_uri; /* Destination URI, must be forwarded to this URI if len!=0 */
+
+	qvalue_t ruri_q; /* Q value of RURI */
+
+	unsigned int ruri_bflags; /* per-branch flags for RURI*/
+
+	/* force sending on this socket */
+	struct socket_info* force_send_socket;
+
+	/* path vector to generate Route hdrs */
+	str path_vec;
+	/* end-of-attributes for RURI as first branch*/
 
 	/* current uri */
 	int parsed_uri_ok; /* 1 if parsed_uri is valid, 0 if not, set it to 0
@@ -273,6 +283,7 @@ struct sip_msg {
 	int parsed_orig_ruri_ok;
 	struct sip_uri parsed_orig_ruri;
 
+	/* modifications */
 	struct lump* add_rm;       /* used for all the forwarded requests/replies */
 	struct lump* body_lumps;     /* Lumps that update Content-Length */
 	struct lump_rpl *reply_lump; /* only for localy generated replies !!!*/
@@ -295,12 +306,6 @@ struct sip_msg {
 
 	str set_global_address;
 	str set_global_port;
-
-	/* force sending on this socket */
-	struct socket_info* force_send_socket;
-
-	/* create a route HF out of this path vector */
-	str path_vec;
 
 	struct msg_callback *msg_cb;
 };
@@ -437,6 +442,35 @@ int set_ruri(struct sip_msg* msg, str* uri);
  * Make a private copy of the string and assign it to dst_uri
  */
 int set_dst_uri(struct sip_msg* msg, str* uri);
+
+
+/*
+ * Set the q value of the Request-URI
+ */
+#define set_ruri_q(_msg,_q) \
+	(_msg)->ruri_q = _q
+
+
+/*
+ * Get the q value of the Request-URI
+ */
+#define get_ruri_q(_msg) \
+	(_msg)->ruri_q
+
+
+/*
+ * Get the per branch flags for RURI
+ */
+#define getb0flags(_msg) \
+	(_msg)->ruri_bflags
+
+
+/*
+ * Set the per branch flags for RURI
+ */
+#define setb0flags( _msg, _flags) \
+	(_msg)->ruri_bflags = _flags
+
 
 /*
  * Make a private copy of the string and assign it to path_vec

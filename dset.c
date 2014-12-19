@@ -77,19 +77,12 @@ static unsigned char dset_state = 1 /*enabled*/ ;
 /*! how many of them we have */
 unsigned int nr_branches = 0;
 
-/*! The q parameter of the Request-URI */
-static qvalue_t ruri_q = Q_UNSPECIFIED;
 
 
-/*! Branch flags of the Request-URI */
-static unsigned int ruri_bflags = 0;
-
-
-
-static inline unsigned int* get_ptr_bflags(unsigned int b_idx)
+static inline unsigned int* get_ptr_bflags(struct sip_msg *msg, unsigned int b_idx)
 {
 	if (b_idx==0) {
-		return &ruri_bflags;
+		return &getb0flags(msg);
 	} else {
 		if (b_idx-1<nr_branches) {
 			return &branches[b_idx-1].flags;
@@ -100,27 +93,11 @@ static inline unsigned int* get_ptr_bflags(unsigned int b_idx)
 }
 
 
-/*! \brief
- * Get the per branch flags for RURI
- */
-unsigned int getb0flags(void)
-{
-	return ruri_bflags;
-}
-
-
-unsigned int setb0flags( unsigned int flags)
-{
-	ruri_bflags = flags;
-	return 0;
-}
-
-
-int setbflag(unsigned int b_idx, unsigned int mask)
+int setbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 {
 	unsigned int *flags;
 
-	flags = get_ptr_bflags( b_idx );
+	flags = get_ptr_bflags( msg, b_idx );
 	if (flags==0)
 		return -1;
 
@@ -132,11 +109,11 @@ int setbflag(unsigned int b_idx, unsigned int mask)
 /*! \brief
  * Tests the per branch flags
  */
-int isbflagset(unsigned int b_idx, unsigned int mask)
+int isbflagset(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 {
 	unsigned int *flags;
 
-	flags = get_ptr_bflags( b_idx );
+	flags = get_ptr_bflags( msg, b_idx );
 	if (flags==0)
 		return -1;
 
@@ -147,11 +124,11 @@ int isbflagset(unsigned int b_idx, unsigned int mask)
 /*! \brief
  * Resets the per branch flags
  */
-int resetbflag(unsigned int b_idx, unsigned int mask)
+int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask)
 {
 	unsigned int *flags;
 
-	flags = get_ptr_bflags( b_idx );
+	flags = get_ptr_bflags( msg, b_idx );
 	if (flags==0)
 		return -1;
 
@@ -165,8 +142,6 @@ int resetbflag(unsigned int b_idx, unsigned int mask)
 void set_dset_state(unsigned char enable)
 {
 	static unsigned int bk_nr_branches;
-	static qvalue_t bk_ruri_q;
-	static unsigned int bk_ruri_bflags;
 
 	if (enable) {
 		/* enable dset usage */
@@ -174,10 +149,6 @@ void set_dset_state(unsigned char enable)
 		/* enable read */
 		nr_branches = bk_nr_branches;
 		bk_nr_branches = 0;
-		ruri_q = bk_ruri_q;
-		bk_ruri_q = Q_UNSPECIFIED;
-		ruri_bflags = bk_ruri_bflags;
-		bk_ruri_bflags = 0;
 		/* enable write */
 		dset_state = 1;
 	} else {
@@ -186,10 +157,6 @@ void set_dset_state(unsigned char enable)
 		/* disable read */
 		bk_nr_branches = nr_branches;
 		nr_branches = 0;
-		bk_ruri_q = ruri_q;
-		ruri_q = Q_UNSPECIFIED;
-		bk_ruri_bflags = ruri_bflags;
-		ruri_bflags = 0;
 		/* disabel write */
 		dset_state = 0;
 	}
@@ -242,8 +209,6 @@ char* get_branch(unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
 void clear_branches(void)
 {
 	nr_branches = 0;
-	ruri_q = Q_UNSPECIFIED;
-	ruri_bflags = 0;
 }
 
 
@@ -429,8 +394,8 @@ char* print_dset(struct sip_msg* msg, int* len)
 	if (msg->new_uri.s) {
 		cnt = 1;
 		*len = msg->new_uri.len+2 /*for <>*/;
-		if (ruri_q != Q_UNSPECIFIED) {
-			*len += Q_PARAM_LEN + len_q(ruri_q);
+		if (get_ruri_q(msg) != Q_UNSPECIFIED) {
+			*len += Q_PARAM_LEN + len_q(get_ruri_q(msg));
 		}
 	} else {
 		cnt = 0;
@@ -470,11 +435,11 @@ char* print_dset(struct sip_msg* msg, int* len)
 		p += msg->new_uri.len;
 		*p++ = '>';
 
-		if (ruri_q != Q_UNSPECIFIED) {
+		if (get_ruri_q(msg) != Q_UNSPECIFIED) {
 			memcpy(p, Q_PARAM, Q_PARAM_LEN);
 			p += Q_PARAM_LEN;
 
-			qbuf = q2str(ruri_q, &qlen);
+			qbuf = q2str(get_ruri_q(msg), &qlen);
 			memcpy(p, qbuf, qlen);
 			p += qlen;
 		}
@@ -507,24 +472,6 @@ char* print_dset(struct sip_msg* msg, int* len)
 
 	memcpy(p, CRLF " ", CRLF_LEN + 1);
 	return dset;
-}
-
-
-/*! \brief
- * Sets the q parameter of the Request-URI
- */
-void set_ruri_q(qvalue_t q)
-{
-	ruri_q = q;
-}
-
-
-/*! \brief
- * Return the q value of the Request-URI
- */
-qvalue_t get_ruri_q(void)
-{
-	return ruri_q;
 }
 
 

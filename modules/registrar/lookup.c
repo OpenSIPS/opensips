@@ -218,9 +218,9 @@ search_valid_contact:
 			}
 		}
 
-		set_ruri_q(ptr->q);
+		set_ruri_q( _m, ptr->q);
 
-		setbflag( 0, ptr->cflags);
+		setbflag( _m, 0, ptr->cflags);
 
 		if (ptr->sock)
 			_m->force_send_socket = ptr->sock;

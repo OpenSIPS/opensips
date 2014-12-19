@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -680,7 +679,7 @@ static inline int do_dns_failover(struct cell *t)
 	if ( set_ruri( &faked_req, &uac->uri)!= 0)
 		goto done;
 
-	setb0flags( uac->br_flags );
+	setb0flags( &faked_req, uac->br_flags );
 	faked_req.force_send_socket = shmem_msg->force_send_socket;
 
 	/* send it out */
@@ -1444,7 +1443,7 @@ int reply_received( struct sip_msg  *p_msg )
 		}
 		/* transfer transaction flag to branch context */
 		p_msg->flags = t->uas.request ? t->uas.request->flags : 0;
-		setb0flags(t->uac[branch].br_flags);
+		setb0flags( p_msg, t->uac[branch].br_flags);
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
 		(run_top_route(onreply_rlist[t->uac[branch].on_reply].a,p_msg)
@@ -1466,7 +1465,7 @@ int reply_received( struct sip_msg  *p_msg )
 			goto done;
 		}
 		/* transfer current message context back to t */
-		t->uac[branch].br_flags = getb0flags();
+		t->uac[branch].br_flags = getb0flags(p_msg);
 		if (t->uas.request)
 			t->uas.request->flags = p_msg->flags;
 		if (onreply_avp_mode)

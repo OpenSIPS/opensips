@@ -1,8 +1,7 @@
 /**
- * $Id$
- *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2005-2009 Voice Sistem SRL
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -453,7 +452,7 @@ static int pv_get_ru_q(struct sip_msg *msg, pv_param_t *param,
 	if(msg->first_line.type == SIP_REPLY)
 		return pv_get_null(msg, param, res);
 
-	return pv_get_sintval(msg, param, res, get_ruri_q());
+	return pv_get_sintval(msg, param, res, get_ruri_q(msg));
 }
 
 static int pv_get_ouri(struct sip_msg *msg, pv_param_t *param,
@@ -1032,7 +1031,7 @@ static int pv_get_bflags(struct sip_msg *msg, pv_param_t *param,
 	if (!msg)
 		return -1;
 
-	buf = bitmask_to_flag_list(FLAG_TYPE_BRANCH, getb0flags());
+	buf = bitmask_to_flag_list(FLAG_TYPE_BRANCH, getb0flags(msg));
 
 	return pv_get_strval(msg, param, res, &buf);
 }
@@ -2602,9 +2601,9 @@ int pv_set_ru_q(struct sip_msg* msg, pv_param_t *param,
 	if (val->ri > 1000) {
 		LM_WARN("queue value too big %d - setting queue to "
 				"maximum value (1000)\n", val->ri);
-		set_ruri_q(1000);
+		set_ruri_q(msg, 1000);
 	} else
-		set_ruri_q(val->ri);
+		set_ruri_q(msg, val->ri);
 
 	return 0;
 }

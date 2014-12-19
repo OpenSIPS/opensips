@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -303,7 +302,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			set_route_type( backup_route_type );
 
 			/* transfer current message context back to t */
-			new_cell->uac[0].br_flags = getb0flags();
+			new_cell->uac[0].br_flags = getb0flags(req);
 			/* restore the prevoius active transaction */
 			set_t( backup_cell );
 

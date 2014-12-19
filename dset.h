@@ -84,43 +84,25 @@ void clear_branches(void);
 char* print_dset(struct sip_msg* msg, int* len);
 
 
-/*! \brief
- * Set the q value of the Request-URI
- */
-void set_ruri_q(qvalue_t q);
-
-
-/*! \brief
- * Get the q value of the Request-URI
- */
-qvalue_t get_ruri_q(void);
-
 int branch_uri2dset( str *new_uri );
-
-
-/*! \brief
- * Get/set the per branch flags for the RURI (branch 0)
- */
-unsigned int getb0flags();
-unsigned int setb0flags(unsigned int flags);
 
 
 /*! \brief
  * Set the per branch flag
  */
-int setbflag(unsigned int b_idx, unsigned int mask);
+int setbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
 /*! \brief
  * Test the per branch flag
  */
-int isbflagset(unsigned int b_idx, unsigned int mask);
+int isbflagset(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
 /*! \brief
  * Reset the per branch flag
  */
-int resetbflag(unsigned int b_idx, unsigned int mask);
+int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
 
 
 #endif /* _DSET_H */

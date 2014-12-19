@@ -94,8 +94,8 @@ int serialize_branches(struct sip_msg *msg, int clean_before )
 	}
 
 	ruri = GET_RURI(msg);
-	ruri_q = get_ruri_q();
-	flags = getb0flags();
+	ruri_q = get_ruri_q(msg);
+	flags = getb0flags(msg);
 
 	for (idx = 0; (branch.s = get_branch(idx,&branch.len,&q,0,0,0,0)); idx++) {
 		if (q != ruri_q)
@@ -328,8 +328,8 @@ int next_branches( struct sip_msg *msg)
 		goto error1;
 
 	msg->force_send_socket = sock_info;
-	set_ruri_q( q );
-	setb0flags( flags );
+	set_ruri_q( msg, q );
+	setb0flags( msg, flags );
 
 	LM_DBG("Msg information <%.*s,%.*s,%.*s,%d,%u> (avp flag=%u)\n",
 				uri.len, uri.s,

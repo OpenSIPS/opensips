@@ -79,7 +79,7 @@ int t_resume_async(int fd, void *param)
 	}
 
 	/* prepare for resume route */
-	uac.br_flags = 0 ; /* FIXME - we do not have them stored !! */
+	uac.br_flags = getb0flags( t->uas.request ) ;
 	uac.uri = *GET_RURI( t->uas.request );
 	if (!fake_req( &faked_req /* the fake msg to be built*/,
 		t->uas.request, /* the template msg saved in transaction */

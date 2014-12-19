@@ -400,7 +400,7 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	last_sock = 0;
 
 #ifdef USE_TCP
-	if (getb0flags() & tcp_no_new_conn_bflag)
+	if (getb0flags(msg) & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 #endif
 

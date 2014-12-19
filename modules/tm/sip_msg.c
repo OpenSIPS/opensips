@@ -1196,6 +1196,8 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	/* flags */
 	c_msg->flags = msg->flags;
 	c_msg->msg_flags = msg->msg_flags|(FL_SHM_UPDATABLE|FL_SHM_CLONE);
+	c_msg->ruri_q = msg->ruri_q;
+	c_msg->ruri_bflags = msg->ruri_bflags;
 
 	return 0;
 }

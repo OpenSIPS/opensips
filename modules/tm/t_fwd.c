@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -334,7 +333,7 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
    might interfere with the processes of adding multiple branches
 */
 static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
-							str* next_hop, str* path, struct proxy_l *proxy)
+		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
 {
 	unsigned short branch;
 	int do_free_proxy;
@@ -402,7 +401,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
 	t->uac[branch].uri.s=t->uac[branch].request.buffer.s+
 		request->first_line.u.request.method.len+1;
 	t->uac[branch].uri.len=request->new_uri.len;
-	t->uac[branch].br_flags = getb0flags();
+	t->uac[branch].br_flags = bflags;
 	t->uac[branch].added_rr = count_local_rr( request );
 	t->nr_of_outgoings++;
 
@@ -570,7 +569,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	str dst_uri;
 	struct socket_info *bk_sock;
 	unsigned int br_flags;
-	unsigned int bk_br_flags;
 	int idx;
 	str path;
 	str bk_path;
@@ -601,7 +599,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	backup_uri = p_msg->new_uri;
 	backup_dst = p_msg->dst_uri;
 	bk_sock = p_msg->force_send_socket;
-	bk_br_flags = getb0flags();
 	bk_path = p_msg->path_vec;
 
 	/* check if the UAS retranmission port needs to be updated */
@@ -618,7 +615,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* as first branch, use current uri */
 	current_uri = *GET_RURI(p_msg);
 	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
-		&p_msg->path_vec, proxy);
+		getb0flags(p_msg), &p_msg->path_vec, proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;
 	else
@@ -627,8 +624,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	/* ....and now add the remaining additional branches */
 	for( idx=0; (current_uri.s=get_branch( idx, &current_uri.len, &q,
 	&dst_uri, &path, &br_flags, &p_msg->force_send_socket))!=0 ; idx++ ) {
-		setb0flags(br_flags);
-		branch_ret = add_uac( t, p_msg, &current_uri, &dst_uri, &path, proxy);
+		branch_ret = add_uac( t, p_msg, &current_uri, &dst_uri,
+			br_flags, &path, proxy);
 		/* pick some of the errors in case things go wrong;
 		   note that picking lowest error is just as good as
 		   any other algorithm which picks any other negative
@@ -647,7 +644,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	p_msg->dst_uri = backup_dst;
 	p_msg->force_send_socket = bk_sock;
 	p_msg->path_vec = bk_path;
-	setb0flags(bk_br_flags);
 	/* update on_branch, if modified */
 	t->on_branch = get_on_branch();
 	/* update flags, if changed in branch route */
