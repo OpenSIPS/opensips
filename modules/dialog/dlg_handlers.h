@@ -61,6 +61,25 @@ typedef int (*create_dlg_f)(struct sip_msg *req,int flags);
 typedef void (*set_mod_flag_f)(struct dlg_cell *dlg, unsigned int flags);
 typedef int (*is_mod_flag_set_f)(struct dlg_cell *dlg, unsigned int flags);
 
+extern int ctx_timeout_idx;
+
+#define ctx_timeout_get() \
+	context_get_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_timeout_idx)
+
+#define ctx_timeout_set(_timeout) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_timeout_idx, _timeout)
+
+/* IMPORTANT - as the default value for INT in context is 0, we shift the
+   last leg idx with +1 to avoid having idx 0; this shifting is hidden by the
+   get /  set functions, so transparent for the usage */
+extern int ctx_lastdstleg_idx;
+
+#define ctx_lastdstleg_get() \
+	(context_get_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_lastdstleg_idx)-1)
+
+#define ctx_lastdstleg_set(_lastleg) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_lastdstleg_idx, _lastleg+1)
+
 void init_dlg_handlers(int default_timeout);
 
 void destroy_dlg_handlers();

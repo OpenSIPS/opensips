@@ -247,6 +247,7 @@ static int fix_actions(struct action* a)
 	struct action *t;
 	int ret;
 	cmd_export_t* cmd;
+	acmd_export_t* acmd;
 	struct hostent* he;
 	struct ip_addr ip;
 	struct socket_info* si;
@@ -465,6 +466,32 @@ static int fix_actions(struct action* a)
 					}
 				}
 				break;
+			case ASYNC_T:
+				if ( (t->elem[0].type==ACTIONS_ST)&&(t->elem[0].u.data) ){
+					if ((ret=fix_actions((struct action*)t->elem[0].u.data))<0)
+						return ret;
+				}
+				break;
+			case AMODULE_T:
+				acmd = (acmd_export_t*)t->elem[0].u.data;
+				LM_DBG("fixing async %s, %s:%d\n", acmd->name, t->file, t->line);
+				if (acmd->fixup){
+					if (acmd->param_no==0){
+						ret=acmd->fixup( 0, 0);
+						if (ret<0) goto error;
+					}
+					else {
+						for (i=1; i<=acmd->param_no; i++) {
+							/* we only call the fixup for non-null arguments */
+							if (t->elem[i].type != NULLV_ST) {
+								ret=acmd->fixup(&t->elem[i].u.data, i);
+								t->elem[i].type=MODFIXUP_ST;
+								if (ret<0) goto error;
+							}
+						}
+					}
+				}
+				break;
 			case FORCE_SEND_SOCKET_T:
 				if (t->elem[0].type!=SOCKID_ST){
 					LM_CRIT("invalid subtype %d for force_send_socket\n",
@@ -497,7 +524,7 @@ static int fix_actions(struct action* a)
 				if (t->elem[0].type==NOSUBTYPE)
 					break;
 				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("fix_actions: BUG in setdebug() type %d\n",
+					LM_CRIT("BUG in setdebug() type %d\n",
 						t->elem[0].type );
 					ret=E_BUG;
 					goto error;

@@ -32,9 +32,10 @@
 #include "parser/msg_parser.h"
 #include "route_struct.h"
 
-#define ACT_FL_EXIT		1
-#define ACT_FL_RETURN	2
-#define ACT_FL_DROP		4
+#define ACT_FL_EXIT     (1<<0)
+#define ACT_FL_RETURN   (1<<1)
+#define ACT_FL_DROP     (2<<2)
+#define ACT_FL_TBCONT   (2<<3)
 
 extern int action_flags;
 extern int use_script_trace;

@@ -1,7 +1,6 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2008-2014 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -52,6 +51,7 @@
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 #include "../../ut.h"
+#include "../../context.h"
 #include "../../parser/digest/digest.h"
 
 
@@ -63,6 +63,7 @@
 #define lump_len( _lump) \
 	(ROUND4(sizeof(struct lump)) +\
 	ROUND4(((_lump)->op==LUMP_ADD)?(_lump)->len:0))
+
 #define lump_clone( _new,_old,_ptr) \
 	{\
 		(_new) = (struct lump*)(_ptr);\
@@ -307,32 +308,114 @@ static inline int clone_authorized_hooks(struct sip_msg* new,
 	} while(0)
 
 
-struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len )
+#define LUMP_LIST_LEN(_len, list) \
+do { \
+	struct lump* tmp, *chain; \
+	chain = (list); \
+	while (chain) \
+	{ \
+		(_len) += lump_len(chain); \
+		tmp = chain->before; \
+		while ( tmp ) \
+		{ \
+			(_len) += lump_len( tmp ); \
+			tmp = tmp->before; \
+		} \
+		tmp = chain->after; \
+		while ( tmp ) \
+		{ \
+			(_len) += lump_len( tmp ); \
+			tmp = tmp->after; \
+		} \
+		chain = chain->next; \
+	} \
+} while(0);
+
+
+#define RPL_LUMP_LIST_LEN(_len,_list) \
+do { \
+	struct lump_rpl   *_rpl_lump; \
+	for(_rpl_lump=_list ; _rpl_lump ; _rpl_lump=_rpl_lump->next) \
+			_len+=ROUND4(sizeof(struct lump_rpl))+ROUND4(_rpl_lump->text.len);\
+}while(0)
+
+
+#define CLONE_LUMP_LIST(_p, anchor, list) \
+do { \
+	struct lump* lump_tmp, *l; \
+	struct lump** lump_anchor2, **a; \
+	a = (anchor); \
+	l = (list); \
+	while (l) \
+	{ \
+		lump_clone( (*a) , l , _p ); \
+		/*before list*/ \
+		lump_tmp = l->before; \
+		lump_anchor2 = &((*a)->before); \
+		while ( lump_tmp ) \
+		{ \
+			lump_clone( (*lump_anchor2) , lump_tmp , _p ); \
+			lump_anchor2 = &((*lump_anchor2)->before); \
+			lump_tmp = lump_tmp->before; \
+		} \
+		/*after list*/ \
+		lump_tmp = l->after; \
+		lump_anchor2 = &((*a)->after); \
+		while ( lump_tmp ) \
+		{ \
+			lump_clone( (*lump_anchor2) , lump_tmp , _p ); \
+			lump_anchor2 = &((*lump_anchor2)->after); \
+			lump_tmp = lump_tmp->after; \
+		} \
+		a = &((*a)->next); \
+		l = l->next; \
+	} \
+} while(0)
+
+
+#define CLONE_RPL_LUMP_LIST( _p, _anchor, _list) \
+	do { \
+		struct lump_rpl   *_rpl_lump, **_rpl_lump_anchor; \
+		_rpl_lump_anchor = (_anchor); \
+		for(_rpl_lump=(_list);_rpl_lump;_rpl_lump=_rpl_lump->next) { \
+			*(_rpl_lump_anchor)=(struct lump_rpl*)(_p); \
+			(_p) += ROUND4(sizeof( struct lump_rpl )); \
+			(*_rpl_lump_anchor)->flags = LUMP_RPL_SHMEM | \
+				(_rpl_lump->flags&(~(LUMP_RPL_NODUP|LUMP_RPL_NOFREE))); \
+			(*_rpl_lump_anchor)->text.len = _rpl_lump->text.len; \
+			(*_rpl_lump_anchor)->text.s = (_p); \
+			(_p) += ROUND4(_rpl_lump->text.len); \
+			memcpy((*_rpl_lump_anchor)->text.s,_rpl_lump->text.s,_rpl_lump->text.len);\
+			(*_rpl_lump_anchor)->next=0; \
+			_rpl_lump_anchor = &((*_rpl_lump_anchor)->next); \
+		}\
+	}while(0);
+
+
+
+/* Takes a SIP msg and makes of a clone on it in shared memory; the clone
+ * is in a single memory chunks (all headers, lumps, etc).
+ * Param "updatable" can be :
+ *    0 - msg cannot be updated -> everything in the single mem chunk
+ *    1 - msg can be updated -> new/dst URI, PATH, lumps are in separate
+ *                              mem chunks, so they can be updated later
+ *    2 - msg can be updated, but do not copy updatable part at cloning
+ */
+struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
+																int updatable)
 {
-	unsigned int      len;
+	unsigned int      len, l1_len, l2_len, l3_len;
 	struct hdr_field  *hdr,*new_hdr,*last_hdr;
 	struct via_body   *via;
 	struct via_param  *prm;
 	struct to_param   *to_prm,*new_to_prm;
 	struct sip_msg    *new_msg;
-	struct lump_rpl   *rpl_lump, **rpl_lump_anchor;
 	char              *p;
 
-
-	/*computing the length of entire sip_msg structure*/
-	len = ROUND4(sizeof( struct sip_msg ));
+	/*computing the length of entire sip_msg structure + its context*/
+	len = ROUND4(sizeof( struct sip_msg )+context_size(CONTEXT_MSG));
 	/*we will keep only the original msg +ZT */
 	len += ROUND4(org_msg->len + 1);
-
-	/*the new uri (if any)*/
-	if (org_msg->new_uri.s && org_msg->new_uri.len)
-		len += ROUND4(org_msg->new_uri.len);
-
-	if (org_msg->set_global_address.s)
-		len += ROUND4(org_msg->set_global_address.len);
-
-	if (org_msg->set_global_port.s)
-		len += ROUND4(org_msg->set_global_port.len);
 
 	/*all the headers*/
 	for( hdr=org_msg->headers ; hdr ; hdr=hdr->next )
@@ -419,40 +502,37 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len )
 		}/*switch*/
 	}/*for all headers*/
 
+	/* calculate the "updatable" part of the msg */
+
 	/* length of the data lump structures */
-#define LUMP_LIST_LEN(len, list) \
-do { \
-        struct lump* tmp, *chain; \
-	chain = (list); \
-	while (chain) \
-	{ \
-		(len) += lump_len(chain); \
-		tmp = chain->before; \
-		while ( tmp ) \
-		{ \
-			(len) += lump_len( tmp ); \
-			tmp = tmp->before; \
-		} \
-		tmp = chain->after; \
-		while ( tmp ) \
-		{ \
-			(len) += lump_len( tmp ); \
-			tmp = tmp->after; \
-		} \
-		chain = chain->next; \
-	} \
-} while(0);
+	l1_len = l2_len = l3_len = 0;
+	LUMP_LIST_LEN(l1_len, org_msg->add_rm);
+	LUMP_LIST_LEN(l2_len, org_msg->body_lumps);
+	RPL_LUMP_LIST_LEN(l3_len, org_msg->reply_lump);
 
-	LUMP_LIST_LEN(len, org_msg->add_rm);
-	LUMP_LIST_LEN(len, org_msg->body_lumps);
+	switch (updatable) {
+	case 0: /* no update ever */
+		/* include all the lumps */
+		len += l1_len + l2_len + l3_len;
+		/* the new uri (if any)*/
+		if (org_msg->new_uri.s && org_msg->new_uri.len)
+			len += ROUND4(org_msg->new_uri.len);
+		/* the global address */
+		if (org_msg->set_global_address.s)
+			len += ROUND4(org_msg->set_global_address.len);
+		/* the global port */
+		if (org_msg->set_global_port.s)
+			len += ROUND4(org_msg->set_global_port.len);
+		break;
+	case 1: /* updatable and cloning now */
+	case 2: /* updatable, but no cloning now */
+		/* no additional len processing in these cases */
+		break;
+	}
 
-	/*length of reply lump structures*/
-	for(rpl_lump=org_msg->reply_lump;rpl_lump;rpl_lump=rpl_lump->next)
-			len+=ROUND4(sizeof(struct lump_rpl))+ROUND4(rpl_lump->text.len);
-
+	/* do all mallocs */
 	p=(char *)shm_malloc(len);
-	if (!p)
-	{
+	if (!p) {
 		LM_ERR("no more share memory\n" );
 		return 0;
 	}
@@ -462,7 +542,7 @@ do { \
 	/* filling up the new structure */
 	new_msg = (struct sip_msg*)p;
 	/* sip msg structure */
-	memcpy( new_msg , org_msg , sizeof(struct sip_msg) );
+	memcpy( new_msg , org_msg , sizeof(struct sip_msg)+context_size(CONTEXT_MSG) );
 
 	/* avoid copying pointer to un-clonned structures */
 	new_msg->sdp = 0;
@@ -470,38 +550,8 @@ do { \
 	new_msg->msg_cb = 0;
 
 	new_msg->msg_flags |= FL_SHM_CLONE;
-	p += ROUND4(sizeof(struct sip_msg));
-	new_msg->add_rm = 0;
-	new_msg->body_lumps = 0;
+	p += ROUND4(sizeof(struct sip_msg)+context_size(CONTEXT_MSG));
 
-	/* new_uri */
-	if (org_msg->new_uri.s && org_msg->new_uri.len)
-	{
-		new_msg->new_uri.s = p;
-		memcpy( p , org_msg->new_uri.s , org_msg->new_uri.len);
-		p += ROUND4(org_msg->new_uri.len);
-	}
-
-	/* advertised address and port */
-	if (org_msg->set_global_address.s)
-	{
-		new_msg->set_global_address.s = p;
-		memcpy(p, org_msg->set_global_address.s, org_msg->set_global_address.len);
-		p += ROUND4(org_msg->set_global_address.len);
-	}
-	if (org_msg->set_global_port.s)
-	{
-		new_msg->set_global_port.s = p;
-		memcpy(p, org_msg->set_global_port.s, org_msg->set_global_port.len);
-		p += ROUND4(org_msg->set_global_port.len);
-	}
-
-	/* dst_uri to zero */
-	new_msg->dst_uri.s = 0;
-	new_msg->dst_uri.len = 0;
-	/* path_vec to zero */
-	new_msg->path_vec.s = 0;
-	new_msg->path_vec.len = 0;
 	/* message buffers(org and scratch pad) */
 	memcpy( p , org_msg->buf, org_msg->len);
 	/* ZT to be safer */
@@ -909,67 +959,247 @@ do { \
 		new_msg->last_header = last_hdr;
 	}
 
-	/* cloning data lump */
-#define CLONE_LUMP_LIST(anchor, list) \
-do { \
-	struct lump* lump_tmp, *l; \
-	struct lump** lump_anchor2, **a; \
-	a = (anchor); \
-	l = (list); \
-	while (l) \
-	{ \
-		lump_clone( (*a) , l , p ); \
-		/*before list*/ \
-		lump_tmp = l->before; \
-		lump_anchor2 = &((*a)->before); \
-		while ( lump_tmp ) \
-		{ \
-			lump_clone( (*lump_anchor2) , lump_tmp , p ); \
-			lump_anchor2 = &((*lump_anchor2)->before); \
-			lump_tmp = lump_tmp->before; \
-		} \
-		/*after list*/ \
-		lump_tmp = l->after; \
-		lump_anchor2 = &((*a)->after); \
-		while ( lump_tmp ) \
-		{ \
-			lump_clone( (*lump_anchor2) , lump_tmp , p ); \
-			lump_anchor2 = &((*lump_anchor2)->after); \
-			lump_tmp = lump_tmp->after; \
-		} \
-		a = &((*a)->next); \
-		l = l->next; \
-	} \
-} while(0)
-
-	CLONE_LUMP_LIST(&(new_msg->add_rm), org_msg->add_rm);
-	CLONE_LUMP_LIST(&(new_msg->body_lumps), org_msg->body_lumps);
-
-	/*cloning reply lump structures*/
-	rpl_lump_anchor = &(new_msg->reply_lump);
-	for(rpl_lump=org_msg->reply_lump;rpl_lump;rpl_lump=rpl_lump->next)
-	{
-		*(rpl_lump_anchor)=(struct lump_rpl*)p;
-		p+=ROUND4(sizeof( struct lump_rpl ));
-		(*rpl_lump_anchor)->flags = LUMP_RPL_SHMEM |
-			(rpl_lump->flags&(~(LUMP_RPL_NODUP|LUMP_RPL_NOFREE)));
-		(*rpl_lump_anchor)->text.len = rpl_lump->text.len;
-		(*rpl_lump_anchor)->text.s=p;
-		p+=ROUND4(rpl_lump->text.len);
-		memcpy((*rpl_lump_anchor)->text.s,rpl_lump->text.s,rpl_lump->text.len);
-		(*rpl_lump_anchor)->next=0;
-		rpl_lump_anchor = &((*rpl_lump_anchor)->next);
+	if (clone_authorized_hooks(new_msg, org_msg) < 0) {
+		free_cloned_msg(new_msg);
+		return 0;
 	}
 
-	if (clone_authorized_hooks(new_msg, org_msg) < 0) {
-		shm_free(new_msg);
-		return 0;
+	/* clone the "updatable" part of the msg */
+
+	switch (updatable) {
+	case 0: /* no update ever -> copy in the same chunk */
+		/* new_uri */
+		if (org_msg->new_uri.s && org_msg->new_uri.len) {
+			new_msg->new_uri.s = p;
+			memcpy( p , org_msg->new_uri.s , org_msg->new_uri.len);
+			p += ROUND4(org_msg->new_uri.len);
+		}
+		/* dst_uri to zero */
+		new_msg->dst_uri.s = 0;
+		new_msg->dst_uri.len = 0;
+		/* path_vec to zero */
+		new_msg->path_vec.s = 0;
+		new_msg->path_vec.len = 0;
+
+		/* advertised address and port */
+		if (org_msg->set_global_address.s) {
+			new_msg->set_global_address.s = p;
+			memcpy(p, org_msg->set_global_address.s, org_msg->set_global_address.len);
+			p += ROUND4(org_msg->set_global_address.len);
+		}
+		if (org_msg->set_global_port.s) {
+			new_msg->set_global_port.s = p;
+			memcpy(p, org_msg->set_global_port.s, org_msg->set_global_port.len);
+			p += ROUND4(org_msg->set_global_port.len);
+		}
+
+		/* clone data lump in the same chunk as sip_msg (not updatable) */
+		new_msg->add_rm = 0;
+		CLONE_LUMP_LIST(p, &(new_msg->add_rm), org_msg->add_rm);
+		new_msg->body_lumps = 0;
+		CLONE_LUMP_LIST(p, &(new_msg->body_lumps), org_msg->body_lumps);
+		new_msg->reply_lump = 0;
+		CLONE_RPL_LUMP_LIST( p, &(new_msg->reply_lump), org_msg->reply_lump);
+
+	case 1: /* updatable and cloning now */
+		new_msg->msg_flags |= FL_SHM_UPDATABLE;
+		/* msg is updatable -> the fields that can be updated are allocated in 
+		 * separate memory chunks */
+		tm_shm_lock();
+		if (org_msg->new_uri.len)
+			new_msg->new_uri.s = (char*)tm_shm_malloc_unsafe( org_msg->new_uri.len );
+		if (org_msg->dst_uri.len)
+			new_msg->dst_uri.s = (char*)tm_shm_malloc_unsafe( org_msg->dst_uri.len );
+		if (org_msg->path_vec.len)
+			new_msg->path_vec.s = (char*)tm_shm_malloc_unsafe( org_msg->path_vec.len );
+		if (org_msg->set_global_address.len)
+			new_msg->set_global_address.s = (char*)tm_shm_malloc_unsafe( org_msg->set_global_address.len );
+		if (org_msg->set_global_port.len)
+			new_msg->set_global_port.s = (char*)tm_shm_malloc_unsafe( org_msg->set_global_port.len );
+		if (l1_len)
+			new_msg->add_rm = (struct lump*)tm_shm_malloc_unsafe(l1_len);
+		if (l2_len)
+			new_msg->body_lumps = (struct lump*)tm_shm_malloc_unsafe(l2_len);
+		if (l3_len)
+			new_msg->reply_lump = (struct lump_rpl*)tm_shm_malloc_unsafe(l3_len);
+		tm_shm_unlock();
+		/*check the malloc result*/
+		if ( (org_msg->new_uri.len && new_msg->new_uri.s==NULL)
+		  || (org_msg->dst_uri.len && new_msg->dst_uri.s==NULL)
+		  || (org_msg->path_vec.len && new_msg->path_vec.s==NULL)
+		  || (org_msg->set_global_address.len && new_msg->set_global_address.s==NULL)
+		  || (org_msg->set_global_port.len && new_msg->set_global_port.s==NULL)
+		  || (l1_len && new_msg->add_rm==NULL)
+		  || (l2_len && new_msg->body_lumps==NULL)
+		  || (l3_len && new_msg->reply_lump==NULL) ) {
+			LM_ERR("failed to sh allocate the updatable part of the msg\n");
+			free_cloned_msg(new_msg);
+			return 0;
+		}
+		/* copy data */
+		if (org_msg->new_uri.len)
+			memcpy( new_msg->new_uri.s, org_msg->new_uri.s, org_msg->new_uri.len);
+		if (org_msg->dst_uri.len)
+			memcpy( new_msg->dst_uri.s, org_msg->dst_uri.s, org_msg->dst_uri.len);
+		if (org_msg->path_vec.len)
+			memcpy( new_msg->path_vec.s, org_msg->path_vec.s, org_msg->path_vec.len);
+		if (org_msg->set_global_address.len)
+			memcpy( new_msg->set_global_address.s, org_msg->set_global_address.s, org_msg->set_global_address.len);
+		if (org_msg->set_global_port.len)
+			memcpy( new_msg->set_global_port.s, org_msg->set_global_port.s, org_msg->set_global_port.len);
+		/* clone lumps */
+		p = (char*)new_msg->add_rm;
+		CLONE_LUMP_LIST( p, &(new_msg->add_rm), org_msg->add_rm);
+		p = (char*)new_msg->body_lumps;
+		CLONE_LUMP_LIST( p, &(new_msg->body_lumps), org_msg->body_lumps);
+		p = (char*)new_msg->reply_lump;
+		CLONE_RPL_LUMP_LIST( p, &(new_msg->reply_lump), org_msg->reply_lump);
+		break;
+
+	case 2: /* updatable, but no cloning now */
+		new_msg->msg_flags |= FL_SHM_UPDATABLE;
+		/* new_uri to zero */
+		new_msg->new_uri.s = 0;
+		new_msg->new_uri.len = 0;
+		/* dst_uri to zero */
+		new_msg->dst_uri.s = 0;
+		new_msg->dst_uri.len = 0;
+		/* path_vec to zero */
+		new_msg->path_vec.s = 0;
+		new_msg->path_vec.len = 0;
+		/* set_global_address to zero */
+		new_msg->set_global_address.s = 0;
+		new_msg->set_global_address.len = 0;
+		/* set_global_port to zero */
+		new_msg->set_global_port.s = 0;
+		new_msg->set_global_port.len = 0;
+		/* set lumps to zero */
+		new_msg->add_rm = 0;
+		new_msg->body_lumps = 0;
+		new_msg->reply_lump = 0;
+		break;
 	}
 
 	return new_msg;
 }
 
 
+#define REALLOC_CLONED_FIELD_unsafe( _field, _old, _new, _bit) \
+	do { \
+		if ( _new->_field.len==0) { \
+			if (_old->_field.len!=0) \
+				tm_shm_free_unsafe( _old->_field.s ); \
+		} else { \
+			if ( _old->_field.len==0 ) { \
+				_old->_field.s = (char*)tm_shm_malloc_unsafe(_new->_field.len);\
+			} else if (_old->_field.len<_new->_field.len) { \
+				tm_shm_free_unsafe( _old->_field.s );\
+				_old->_field.s = (char*)tm_shm_malloc_unsafe(_new->_field.len);\
+			} \
+			copy_mask |= (1<<_bit);\
+			LM_DBG(#_field" must be copied old=%d, new=%d\n",_old->_field.len,_new->_field.len);\
+		} \
+	} while(0)
 
 
+#define COPY_CLONED_FIELD( _field, _old, _new, _bit) \
+	do { \
+		if (copy_mask&(1<<_bit)) { \
+			if (_old->_field.s==NULL) { \
+				LM_ERR("Failed to allocated new shm copy for "#_field"\n");\
+				_old->_field.len = 0;\
+			} else { \
+				memcpy( _old->_field.s, _new->_field.s, _new->_field.len); \
+				_old->_field.len = _new->_field.len;\
+			}\
+		} else { \
+			_old->_field.s = NULL; \
+			_old->_field.len = 0; \
+		} \
+	}while(0)
+
+
+int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
+{
+	unsigned char copy_mask = 0;
+	int l1_len, l2_len, l3_len;
+	char *p;
+
+	if ( (c_msg->msg_flags & (FL_SHM_UPDATABLE|FL_SHM_CLONE))==0 ) {
+		LM_CRIT("BUG trying to update a msg not in SHM or not "
+			"UPDATABLE (%d)\n", c_msg->msg_flags);
+		return -1;
+	}
+
+	/* length of the new data lump structures */
+	l1_len = l2_len = l3_len = 0;
+	LUMP_LIST_LEN(l1_len, msg->add_rm);
+	LUMP_LIST_LEN(l2_len, msg->body_lumps);
+	RPL_LUMP_LIST_LEN(l3_len, msg->reply_lump);
+
+	tm_shm_lock();
+	/* SIP related strings */
+	REALLOC_CLONED_FIELD_unsafe( new_uri, c_msg, msg, 0);
+	REALLOC_CLONED_FIELD_unsafe( dst_uri, c_msg, msg, 1);
+	REALLOC_CLONED_FIELD_unsafe( path_vec, c_msg, msg, 2);
+	REALLOC_CLONED_FIELD_unsafe( set_global_address, c_msg, msg, 3);
+	REALLOC_CLONED_FIELD_unsafe( set_global_port, c_msg, msg, 4);
+	/* lumps */
+	if (c_msg->add_rm) tm_shm_free_unsafe(c_msg->add_rm);
+	if (l1_len) c_msg->add_rm = tm_shm_malloc_unsafe(l1_len);
+	if (c_msg->body_lumps) tm_shm_free_unsafe(c_msg->body_lumps);
+	if (l2_len) c_msg->body_lumps = tm_shm_malloc_unsafe(l2_len);
+	if (c_msg->reply_lump) tm_shm_free_unsafe(c_msg->reply_lump);
+	if (l3_len) c_msg->reply_lump = tm_shm_malloc_unsafe(l3_len);
+	/* done with mem ops */
+	tm_shm_unlock();
+
+	/* copy data now */
+	COPY_CLONED_FIELD( new_uri, c_msg, msg, 0);
+	COPY_CLONED_FIELD( dst_uri, c_msg, msg, 1);
+	COPY_CLONED_FIELD( path_vec, c_msg, msg, 2);
+	COPY_CLONED_FIELD( set_global_address, c_msg, msg, 3);
+	COPY_CLONED_FIELD( set_global_port, c_msg, msg, 4);
+
+	/* re-build lumps */
+	if (l1_len) {
+		if (c_msg->add_rm==NULL) {
+			LM_ERR("failed to clone lumps, not updating \n");
+		} else {
+			p = (char*)c_msg->add_rm;
+			CLONE_LUMP_LIST( p, &(c_msg->add_rm), msg->add_rm);
+		}
+	} else {
+		c_msg->add_rm = NULL;
+	}
+	if (l2_len) {
+		if (c_msg->body_lumps==NULL) {
+			LM_ERR("failed to clone body lumps, not updating \n");
+		} else {
+			p = (char*)c_msg->body_lumps;
+			CLONE_LUMP_LIST( p, &(c_msg->body_lumps), msg->body_lumps);
+		}
+	} else {
+		c_msg->body_lumps = NULL;
+	}
+	if (l3_len) {
+		if (c_msg->reply_lump==NULL) {
+			LM_ERR("failed to clone reply lumps, not updating \n");
+		} else {
+			p = (char*)c_msg->reply_lump;
+			CLONE_RPL_LUMP_LIST( p, &(c_msg->reply_lump), msg->reply_lump);
+		}
+	} else {
+		c_msg->reply_lump = NULL;
+	}
+
+	/* flags */
+	c_msg->flags = msg->flags;
+	c_msg->msg_flags = msg->msg_flags|(FL_SHM_UPDATABLE|FL_SHM_CLONE);
+
+	/* update context */
+	memcpy( ((char*)(c_msg+1)), ((char*)(msg+1)), context_size(CONTEXT_MSG) );
+
+	return 0;
+}
 

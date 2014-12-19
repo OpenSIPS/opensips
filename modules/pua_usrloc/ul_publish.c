@@ -38,19 +38,23 @@
 #include "../pua/pua.h"
 #include "pua_usrloc.h"
 
+
+int pul_status_idx = -1;
+
 #define BUF_LEN   256
+
+#define ctx_pul_set(_val) \
+	context_put_int( CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx, _val)
+
+#define ctx_pul_get() \
+	context_get_int( CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx)
+
+
 int pua_set_publish(struct sip_msg* msg , char* s1, char* s2)
 {
 	LM_DBG("set send publish\n");
-	pua_ul_publish= 1;
+	ctx_pul_set(1/*pua UL on*/);
 	return 1;
-}
-
-int pua_unset_publish(struct sip_msg* msg , void* param)
-{
-	pua_ul_publish= 0;
-
-	return SCB_RUN_ALL;
 }
 
 
@@ -195,7 +199,7 @@ void ul_publish(ucontact_t* c, int type, void* param)
 	publ_info_t publ;
 	int error;
 
-	if(pua_ul_publish== 0 && !(type & UL_CONTACT_EXPIRE))
+	if (ctx_pul_get()==0 && !(type & UL_CONTACT_EXPIRE))
 	{
 		return;
 	}
@@ -296,7 +300,6 @@ error:
 
 	if(uri.s)
 		pkg_free(uri.s);
-	pua_ul_publish= 0;
-
+	ctx_pul_set( 0/* pua UL off*/);
 	return;
 }

@@ -1869,6 +1869,21 @@ next_avp:
 				LM_ALERT("BUG in module call\n");
 			}
 			break;
+		case ASYNC_T:
+			/* first param - an ACTIONS_ST containing an ACMD_ST
+			 * second param - a NUMBER_ST pointing to resume route */
+			aitem = (struct action *)(a->elem[0].u.data);
+			if (async_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
+			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
+				LM_ALERT("BUG in async expresion\n");
+			} else {
+				script_trace("async", ((acmd_export_t*)(aitem->elem[0].u.data))->name,
+					msg, a->file, a->line) ;
+				ret = async_start_f( msg, aitem, a->elem[1].u.number);
+			}
+			action_flags |= ACT_FL_TBCONT;
+			ret = 0;
+			break;
 		case FORCE_RPORT_T:
 			script_trace("core", "force_rport", msg, a->file, a->line) ;
 			msg->msg_flags|=FL_FORCE_RPORT;

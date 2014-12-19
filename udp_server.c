@@ -59,6 +59,7 @@
 #include "pt.h"
 #include "reactor.h"
 #include "timer.h"
+#include "async.h"
 
 static callback_list* cb_list = NULL;
 
@@ -431,6 +432,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 					idx );
 		case F_TIMER_JOB:
 			handle_timer_job();
+			return 0;
+		case F_SCRIPT_ASYNC:
+			async_resume_f( fm->fd, fm->data);
 			return 0;
 		default:
 			LM_CRIT("uknown fd type %d in UDP worker\n", fm->type);

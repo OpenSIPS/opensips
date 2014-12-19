@@ -86,6 +86,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,
+	0,
 	params,          /*  module parameters */
 	0,               /* exported statistics */
 	0,               /* exported MI functions */

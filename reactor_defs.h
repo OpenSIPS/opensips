@@ -47,7 +47,7 @@ struct worker_io_data {
 	struct socket_info *si;
 };
 
-enum fd_types { F_NONE=0, F_TIMER_JOB=1, F_UDP_READ=2, F_TCPMAIN=4, F_TCPCONN=8 };
+enum fd_types { F_NONE=0, F_TIMER_JOB=1, F_UDP_READ=2, F_TCPMAIN=4, F_TCPCONN=8, F_SCRIPT_ASYNC=16 };
 
 extern io_wait_h _worker_io;
 

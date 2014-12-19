@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2008 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -79,10 +78,10 @@ struct dlg_profile_table {
 	struct dlg_profile_table *next;
 };
 
-typedef int (*set_dlg_profile_f)(struct sip_msg *msg, str *value,
+typedef int (*set_dlg_profile_f)(struct dlg_cell *dlg, str *value,
                         struct dlg_profile_table *profile, char is_replicated);
 
-typedef int (*unset_dlg_profile_f)(struct sip_msg *msg, str *value,
+typedef int (*unset_dlg_profile_f)(struct dlg_cell *dlg, str *value,
                          struct dlg_profile_table *profile);
 
 typedef unsigned int (*get_profile_size_f)(struct dlg_profile_table *profile,
@@ -107,13 +106,13 @@ struct dlg_profile_table* search_dlg_profile(str *name);
 
 void destroy_linkers(struct dlg_profile_link *linker, char is_replicated);
 
-int set_dlg_profile(struct sip_msg *msg, str *value,
+int set_dlg_profile(struct dlg_cell *dlg, str *value,
 		struct dlg_profile_table *profile, char is_replicated);
 
-int unset_dlg_profile(struct sip_msg *msg, str *value,
+int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 		struct dlg_profile_table *profile);
 
-int is_dlg_in_profile(struct sip_msg *msg, struct dlg_profile_table *profile,
+int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 		str *value);
 
 unsigned int get_profile_size(struct dlg_profile_table *profile, str *value);

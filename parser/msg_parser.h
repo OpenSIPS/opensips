@@ -101,11 +101,13 @@ enum request_method {
 #define FL_USE_MEDIA_PROXY   (1<<11) /* use mediaproxy on all messages during
                                       * a dialog */
 #define FL_USE_RTPPROXY      (1<<12) /* used by rtpproxy to remember if the msg
-				      * callback had already been registered */
+                                      * callback had already been registered */
 #define FL_NAT_TRACK_DIALOG  (1<<13) /* trigger dialog tracking from the
                                       * nat_traversal module */
 #define FL_USE_SIPTRACE      (1<<14) /* used by siptrace to check if the tm
-									  * callbacks were registered */
+                                      * callbacks were registered */
+#define FL_SHM_UPDATABLE     (1<<15) /* a SHM cloned message can be updated
+                                      * (TM used, requires FL_SHM_CLONE) */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10

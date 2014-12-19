@@ -41,6 +41,12 @@ typedef struct _exec_list {
 	exec_cmd_t *first, *last;
 } exec_list_t, *exec_list_p;
 
+typedef struct _exec_async_param {
+	gparam_p outvar;
+	char *buf;
+	int buf_len;
+} exec_async_param;
+
 /* list head */
 extern exec_list_p exec_async_list;
 
@@ -53,6 +59,8 @@ int exec_msg(struct sip_msg *msg, char *cmd );
 int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl);
 int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl);
 int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gparam_p errvar);
+int start_async_exec(struct sip_msg* msg, str* command, str* input, gparam_p outvar);
+enum async_ret_code resume_async_exec(int fd, struct sip_msg *msg, void *param);
 
 #endif
 

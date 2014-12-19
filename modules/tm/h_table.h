@@ -42,6 +42,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../proxy.h"
 #include "../../md5utils.h"
+#include "../../async.h"
 #include "../../usr_avp.h"
 #include "config.h"
 
@@ -372,7 +373,7 @@ struct s_table* get_tm_table( void );
 struct s_table* init_hash_table(unsigned int timer_sets);
 void   free_hash_table( void );
 void   free_cell( struct cell* dead_cell );
-struct cell*  build_cell( struct sip_msg* p_msg );
+struct cell*  build_cell( struct sip_msg* p_msg, int full_uas );
 void   remove_from_hash_table_unsafe( struct cell * p_cell);
 #ifdef OBSOLETED
 void   insert_into_hash_table( struct cell * p_cell, unsigned int _hash);

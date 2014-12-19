@@ -26,45 +26,45 @@
 
 int t_ctx_register_int(void)
 {
-	return __context_register_int(CONTEXT_TRAN);
+	return context_register_int(CONTEXT_TRAN);
 }
 
 int t_ctx_register_str(void)
 {
-	return __context_register_str(CONTEXT_TRAN);
+	return context_register_str(CONTEXT_TRAN);
 }
 
 int t_ctx_register_ptr(void)
 {
-	return __context_register_ptr(CONTEXT_TRAN);
+	return context_register_ptr(CONTEXT_TRAN);
 }
 
 void t_ctx_put_int(struct cell *t, int pos, int data)
 {
-	__context_put_int(CONTEXT_TRAN, context_of(t), pos, data);
+	context_put_int(CONTEXT_TRAN, context_of(t), pos, data);
 }
 
 void t_ctx_put_str(struct cell *t, int pos, str *data)
 {
-	__context_put_str(CONTEXT_TRAN, context_of(t), pos, data);
+	context_put_str(CONTEXT_TRAN, context_of(t), pos, data);
 }
 
 void t_ctx_put_ptr(struct cell *t, int pos, void *data)
 {
-	__context_put_ptr(CONTEXT_TRAN, context_of(t), pos, data);
+	context_put_ptr(CONTEXT_TRAN, context_of(t), pos, data);
 }
 
 int t_ctx_get_int(struct cell *t, int pos)
 {
-	return __context_get_int(CONTEXT_TRAN, context_of(t), pos);
+	return context_get_int(CONTEXT_TRAN, context_of(t), pos);
 }
 
 str *t_ctx_get_str(struct cell *t, int pos)
 {
-	return __context_get_str(CONTEXT_TRAN, context_of(t), pos);
+	return context_get_str(CONTEXT_TRAN, context_of(t), pos);
 }
 
 void *t_ctx_get_ptr(struct cell *t, int pos)
 {
-	return __context_get_ptr(CONTEXT_TRAN, context_of(t), pos);
+	return context_get_ptr(CONTEXT_TRAN, context_of(t), pos);
 }

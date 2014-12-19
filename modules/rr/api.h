@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2005 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -61,13 +59,10 @@ struct rr_binds {
 	get_route_param_t   get_route_param;
 	register_rrcb_t     register_rrcb;
 	get_remote_target_t get_remote_target;
-	get_route_set_t		get_route_set;
-	int                 append_fromtag;
-	int*                removed_routes;
-	int*				routing_type;
-
+	get_route_set_t     get_route_set;
 	loose_route_t       loose_route;
 	record_route_t      record_route;
+	int                 append_fromtag;
 };
 
 typedef  int (*load_rr_f)( struct rr_binds* );

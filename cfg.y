@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  *  cfg grammar
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -432,8 +430,8 @@ extern char *finame;
 %token DB_VERSION_TABLE
 %token DB_DEFAULT_URL
 %token DISABLE_503_TRANSLATION
-%token EVENT_ROUTE_SYNC
-%token EVENT_ROUTE_ASYNC
+%token SYNC_TOKEN
+%token ASYNC_TOKEN
 
 
 
@@ -493,7 +491,7 @@ extern char *finame;
 /*non-terminals */
 %type <expr> exp exp_elem exp_cond assignexp /*, condition*/
 %type <action> action actions cmd if_cmd stm exp_stm assign_cmd while_cmd
-			   foreach_cmd
+			   foreach_cmd async_func
 %type <action> switch_cmd switch_stm case_stms case_stm default_stm
 %type <intval> module_func_param
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
@@ -1870,7 +1868,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 
 						push($6, &event_rlist[i_tmp].a);
 					}
-		| ROUTE_EVENT LBRACK route_name COMMA EVENT_ROUTE_SYNC RBRACK LBRACE actions RBRACE {
+		| ROUTE_EVENT LBRACK route_name COMMA SYNC_TOKEN RBRACK LBRACE actions RBRACE {
 
 						i_tmp = 1;
 						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
@@ -1891,7 +1889,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 
 						push($8, &event_rlist[i_tmp].a);
 					}
-		| ROUTE_EVENT LBRACK route_name COMMA EVENT_ROUTE_ASYNC RBRACK LBRACE actions RBRACE {
+		| ROUTE_EVENT LBRACK route_name COMMA ASYNC_TOKEN RBRACK LBRACE actions RBRACE {
 
 						i_tmp = 1;
 						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
@@ -2510,6 +2508,40 @@ route_param: STRING {
 							route_elems[$1].u.data = $3;
 							$$=$1+1;
 						}
+			}
+	;
+
+async_func: ID LPAREN RPAREN {
+				cmd_tmp=(void*)find_acmd_export_t($1, 0);
+				if (cmd_tmp==0){
+					yyerrorf("unknown async command <%s>, "
+						"missing loadmodule?", $1);
+					$$=0;
+				}else{
+					elems[0].type = ACMD_ST;
+					elems[0].u.data = cmd_tmp;
+					mk_action_($$, AMODULE_T, 1, elems);
+				}
+			}
+			| ID LPAREN module_func_param RPAREN {
+				cmd_tmp=(void*)find_acmd_export_t($1, $3);
+				if (cmd_tmp==0){
+					yyerrorf("unknown async command <%s>, "
+						"missing loadmodule?", $1);
+					$$=0;
+				}else{
+					elems[0].type = ACMD_ST;
+					elems[0].u.data = cmd_tmp;
+					mk_action_($$, AMODULE_T, $3+1, elems);
+				}
+			}
+			| ID LPAREN error RPAREN {
+				$$=0;
+				yyerrorf("bad arguments for command <%s>", $1);
+			}
+			| ID error {
+				$$=0;
+				yyerrorf("bare word <%s> found, command calls need '()'", $1);
 			}
 	;
 
@@ -3183,6 +3215,12 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 					yyerror("error in second parameter");
 				mk_action3($$, SCRIPT_TRACE_T, NUMBER_ST,
 						   SCRIPTVAR_ELEM_ST, STR_ST, (void *)$3, pvmodel, $7); }
+		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
+				i_tmp = get_script_route_idx( $5, rlist, RT_NO, 0);
+				if (i_tmp==-1) yyerror("too many script routes");
+				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
+						   $3, (void*)(long)i_tmp);
+				}
 
 	;
 

@@ -53,13 +53,17 @@
 #include "pvar.h"
 #include "version.h"
 #include "route.h"
+#include "async.h"
 
 typedef struct param_export_ param_export_t;
 
 #include "sr_module_deps.h"
 
 typedef  struct module_exports* (*module_register)();
-typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*, char*, char*);
+typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
+			char*, char*);
+typedef  int (*acmd_function)(struct sip_msg*, async_resume_module **, void **,
+			char*, char*, char*, char*, char*, char*);
 typedef  int (*fixup_function)(void** param, int param_no);
 typedef  int (*free_fixup_function)(void** param, int param_no);
 typedef  int (*response_function)(struct sip_msg*);
@@ -118,6 +122,15 @@ struct cmd_export_ {
 };
 
 
+struct acmd_export_ {
+	char* name;              /* null terminated command name */
+	acmd_function function;  /* pointer to the corresponding function */
+	int param_no;            /* number of parameters used by the function */
+	fixup_function fixup;    /* pointer to the function called to "fix" the
+							    parameters */
+};
+
+
 struct param_export_ {
 	char* name;             /*!< null terminated param. name */
 	modparam_t type;        /*!< param. type */
@@ -139,7 +152,8 @@ typedef struct dep_export_ {
 	modparam_dependency_t mpd[];
 } dep_export_t;
 
-typedef struct cmd_export_ cmd_export_t;
+typedef struct cmd_export_  cmd_export_t;
+typedef struct acmd_export_ acmd_export_t;
 typedef struct proc_export_ proc_export_t;
 
 
@@ -167,6 +181,8 @@ struct module_exports{
 
 	cmd_export_t* cmds;             /*!< null terminated array of the exported
 	                                   commands */
+	acmd_export_t* acmds;           /*!< null terminated array of the exported
+	                                   async commands */
 	param_export_t* params;         /*!< null terminated array of the exported
 	                                   module parameters */
 
@@ -198,6 +214,7 @@ int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
 int sr_load_module(char* path);
 cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags);
+acmd_export_t* find_acmd_export_t(char* name, int param_no);
 cmd_function find_export(char* name, int param_no, int flags);
 cmd_function find_mod_export(char* mod, char* name, int param_no, int flags);
 void destroy_modules();

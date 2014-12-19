@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
  * dialog module - basic support for dialog tracking
  *
+ * Copyright (C) 2008-2014 OpenSIPS Solutions
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -49,6 +48,7 @@
 #include "../../ut.h"
 #include "../../pvar.h"
 #include "../../mod_fix.h"
+#include "../../context.h"
 #include "../../script_cb.h"
 #include "../../script_var.h"
 #include "../../mem/mem.h"
@@ -110,8 +110,6 @@ struct rr_binds d_rrb;
 /* db stuff */
 static str db_url = {NULL,0};
 static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
-
-extern int last_dst_leg;
 
 /* cachedb stuff */
 str cdb_url = {0,0};
@@ -386,6 +384,7 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
+	0,               /* exported async functions */
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */
 	mi_cmds,         /* exported MI functions */
@@ -776,6 +775,11 @@ static int mod_init(void)
 		cdb_size_prefix.len = strlen(cdb_size_prefix.s);
 	}
 
+	/* allocate a slot in the processing context */
+	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL);
+	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL);
+	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL);
+
 	/* create dialog state changed event */
 	if (state_changed_event_init() < 0) {
 		LM_ERR("cannot create dialog state changed event\n");
@@ -978,6 +982,7 @@ static int w_create_dialog(struct sip_msg *req)
 
 static int w_create_dialog2(struct sip_msg *req,char *param)
 {
+	struct dlg_cell *dlg;
 	struct cell *t;
 	str res = {0,0};
 	int flags;
@@ -991,11 +996,11 @@ static int w_create_dialog2(struct sip_msg *req,char *param)
 	flags = parse_create_dlg_flags(res);
 
 	/* is the dialog already created? */
-	if (current_dlg_pointer!=NULL)
+	if ( (dlg=get_current_dialog())!=NULL  )
 	{
 		/*Clear current flags before setting new ones*/
-		current_dlg_pointer->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | DLG_FLAG_BYEONTIMEOUT);
-		current_dlg_pointer->flags |= flags;
+		dlg->flags &= ~(DLG_FLAG_PING_CALLER | DLG_FLAG_PING_CALLEE | DLG_FLAG_BYEONTIMEOUT);
+		dlg->flags |= flags;
 		return 1;
 	}
 
@@ -1055,7 +1060,7 @@ sipwise:
 
 	seq_match_mode = backup;
 
-	return (current_dlg_pointer==NULL)?-1:1;
+	return (get_current_dialog()==NULL)?-1:1;
 }
 
 
@@ -1097,10 +1102,14 @@ static int w_fix_route_dialog(struct sip_msg *req)
 
 static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 {
-	pv_elem_t *pve;
+	struct dlg_cell *dlg;
+	pv_elem_t *pve = (pv_elem_t *)value;
 	str val_s;
 
-	pve = (pv_elem_t *)value;
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_CRIT("BUG - setting profile from script, but no dialog found\n");
+		return -1;
+	}
 
 	if (((struct dlg_profile_table*)profile)->has_value) {
 		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
@@ -1108,13 +1117,13 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		if ( set_dlg_profile( msg, &val_s,
+		if ( set_dlg_profile( dlg, &val_s,
 		(struct dlg_profile_table*)profile, 0) < 0 ) {
 			LM_ERR("failed to set profile\n");
 			return -1;
 		}
 	} else {
-		if ( set_dlg_profile( msg, NULL,
+		if ( set_dlg_profile( dlg, NULL,
 		(struct dlg_profile_table*)profile, 0) < 0 ) {
 			LM_ERR("failed to set profile\n");
 			return -1;
@@ -1126,10 +1135,14 @@ static int w_set_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 
 static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 {
-	pv_elem_t *pve;
+	struct dlg_cell *dlg;
+	pv_elem_t *pve = (pv_elem_t *)value;
 	str val_s;
 
-	pve = (pv_elem_t *)value;
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_CRIT("BUG - setting profile from script, but no dialog found\n");
+		return -1;
+	}
 
 	if (((struct dlg_profile_table*)profile)->has_value) {
 		if ( pve==NULL || pv_printf_s(msg, pve, &val_s)!=0 ||
@@ -1137,13 +1150,13 @@ static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		if ( unset_dlg_profile( msg, &val_s,
+		if ( unset_dlg_profile( dlg, &val_s,
 		(struct dlg_profile_table*)profile) < 0 ) {
 			LM_ERR("failed to unset profile\n");
 			return -1;
 		}
 	} else {
-		if ( unset_dlg_profile( msg, NULL,
+		if ( unset_dlg_profile( dlg, NULL,
 		(struct dlg_profile_table*)profile) < 0 ) {
 			LM_ERR("failed to unset profile\n");
 			return -1;
@@ -1155,10 +1168,14 @@ static int w_unset_dlg_profile(struct sip_msg *msg, char *profile, char *value)
 
 static int w_is_in_profile(struct sip_msg *msg, char *profile, char *value)
 {
-	pv_elem_t *pve;
+	struct dlg_cell *dlg;
+	pv_elem_t *pve = (pv_elem_t *)value;
 	str val_s;
 
-	pve = (pv_elem_t *)value;
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_CRIT("BUG - setting profile from script, but no dialog found\n");
+		return -1;
+	}
 
 	if ( pve!=NULL && ((struct dlg_profile_table*)profile)->has_value) {
 		if ( pv_printf_s(msg, pve, &val_s)!=0 ||
@@ -1166,10 +1183,10 @@ static int w_is_in_profile(struct sip_msg *msg, char *profile, char *value)
 			LM_WARN("cannot get string for value\n");
 			return -1;
 		}
-		return is_dlg_in_profile( msg, (struct dlg_profile_table*)profile,
+		return is_dlg_in_profile( dlg, (struct dlg_profile_table*)profile,
 			&val_s);
 	} else {
-		return is_dlg_in_profile( msg, (struct dlg_profile_table*)profile,
+		return is_dlg_in_profile( dlg, (struct dlg_profile_table*)profile,
 			NULL);
 	}
 }
@@ -1492,14 +1509,17 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())!=NULL ) {
 
 		dlg_lock_dlg(dlg);
-		if (dlg->state < DLG_STATE_CONFIRMED_NA)
+		if (dlg->state == DLG_STATE_DELETED)
+			l = 0;
+		else if (dlg->state < DLG_STATE_CONFIRMED_NA)
 			l = dlg->lifetime;
 		else
 			l = dlg->tl.timeout - get_ticks();
 		dlg_unlock_dlg(dlg);
 
-	} else if (msg->id == dlg_tmp_timeout_id && dlg_tmp_timeout != -1) {
-		l = dlg_tmp_timeout;
+	} else if (current_processing_ctx) {
+		if ((l=ctx_timeout_get())==0)
+			return pv_get_null( msg, param, res);
 	} else {
 		return pv_get_null( msg, param, res);
 	}
@@ -1523,10 +1543,10 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 	if(res==NULL)
 		return -1;
 
-	if ( (dlg=get_current_dialog())==NULL || last_dst_leg<0)
+	if ( (dlg=get_current_dialog())==NULL || ctx_lastdstleg_get()<0)
 		return pv_get_null( msg, param, res);
 
-	if (last_dst_leg==0) {
+	if (ctx_lastdstleg_get()==0) {
 		res->rs.s = "upstream";
 		res->rs.len = 8;
 	} else {
@@ -1665,18 +1685,16 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 		if (replication_dests)
 			replicate_dialog_updated(dlg);
 
-		/* make sure we don't update it again later */
-		dlg_tmp_timeout = -1;
-		dlg_tmp_timeout_id = -1;
-
 		if (timer_update && update_dlg_timer(&dlg->tl, timeout) < 0) {
 			LM_ERR("failed to update timer\n");
 			return -1;
 		}
-	} else {
+	} else if (current_processing_ctx) {
 		/* store it until we match the dialog */
-		dlg_tmp_timeout = timeout;
-		dlg_tmp_timeout_id = msg->id;
+		ctx_timeout_set( timeout );
+	} else {
+		LM_CRIT("BUG - no proicessing context found !\n");
+		return -1;
 	}
 
 	return 0;

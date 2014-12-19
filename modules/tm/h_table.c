@@ -115,17 +115,6 @@ unsigned int transaction_count( void )
 }
 
 
-/* TODO: replace these macros with a more generic approach --liviu */
-#ifdef HP_MALLOC
-	#define __sip_msg_free sip_msg_free
-	#define __shm_free shm_free
-	#define __destroy_avp_list destroy_avp_list
-#else
-	#define __sip_msg_free sip_msg_free_unsafe
-	#define __shm_free shm_free_unsafe
-	#define __destroy_avp_list destroy_avp_list_unsafe
-#endif
-
 void free_cell( struct cell* dead_cell )
 {
 	char *b;
@@ -141,48 +130,46 @@ void free_cell( struct cell* dead_cell )
 
 	release_cell_lock( dead_cell );
 
-#ifndef HP_MALLOC
-	shm_lock();
-#endif
+	tm_shm_lock();
 
 	/* UA Server */
 	if ( dead_cell->uas.request )
-		__sip_msg_free( dead_cell->uas.request );
+		free_cloned_msg_unsafe( dead_cell->uas.request );
 
 	if ( dead_cell->uas.response.buffer.s )
-		__shm_free( dead_cell->uas.response.buffer.s );
+		tm_shm_free_unsafe( dead_cell->uas.response.buffer.s );
 
 	/* UA Clients */
 	for ( i =0 ; i<dead_cell->nr_of_outgoings;  i++ )
 	{
 		/* retransmission buffer */
 		if ( (b=dead_cell->uac[i].request.buffer.s) )
-			__shm_free( b );
+			tm_shm_free_unsafe( b );
 		b=dead_cell->uac[i].local_cancel.buffer.s;
 		if (b!=0 && b!=BUSY_BUFFER)
-			__shm_free( b );
+			tm_shm_free_unsafe( b );
 		rpl=dead_cell->uac[i].reply;
 		if (rpl && rpl!=FAKED_REPLY && rpl->msg_flags&FL_SHM_CLONE) {
-			__sip_msg_free( rpl );
+			free_cloned_msg_unsafe( rpl );
 		}
 		if ( (p=dead_cell->uac[i].proxy)!=NULL ) {
 			if ( p->host.h_addr_list )
-				__shm_free( p->host.h_addr_list );
+				tm_shm_free_unsafe( p->host.h_addr_list );
 			if ( p->dn ) {
 				if ( p->dn->kids )
-					__shm_free( p->dn->kids );
-				__shm_free( p->dn );
+					tm_shm_free_unsafe( p->dn->kids );
+				tm_shm_free_unsafe( p->dn );
 			}
-			__shm_free(p);
+			tm_shm_free_unsafe(p);
 		}
 		if (dead_cell->uac[i].path_vec.s) {
-			__shm_free(dead_cell->uac[i].path_vec.s);
+			tm_shm_free_unsafe(dead_cell->uac[i].path_vec.s);
 		}
 		if (dead_cell->uac[i].duri.s) {
-			__shm_free(dead_cell->uac[i].duri.s);
+			tm_shm_free_unsafe(dead_cell->uac[i].duri.s);
 		}
 		if (dead_cell->uac[i].user_avps) {
-			__destroy_avp_list( &dead_cell->uac[i].user_avps);
+			tm_destroy_avp_list_unsafe( &dead_cell->uac[i].user_avps);
 		}
 	}
 
@@ -190,25 +177,23 @@ void free_cell( struct cell* dead_cell )
 	tt=dead_cell->fwded_totags;
 	while(tt) {
 		foo=tt->next;
-		__shm_free(tt->tag.s);
-		__shm_free(tt);
+		tm_shm_free_unsafe(tt->tag.s);
+		tm_shm_free_unsafe(tt);
 		tt=foo;
 	}
 
 	/* free the avp list */
 	if (dead_cell->user_avps)
-		__destroy_avp_list( &dead_cell->user_avps );
+		tm_destroy_avp_list_unsafe( &dead_cell->user_avps );
 
 	/* extra hdrs */
 	if ( dead_cell->extra_hdrs.s )
-		__shm_free( dead_cell->extra_hdrs.s );
+		tm_shm_free_unsafe( dead_cell->extra_hdrs.s );
 
 	/* the cell's body */
-	__shm_free( dead_cell );
+	tm_shm_free_unsafe( dead_cell );
 
-#ifndef HP_MALLOC
-	shm_unlock();
-#endif
+	tm_shm_unlock();
 }
 
 
@@ -267,7 +252,7 @@ static inline void init_branches(struct cell *t, unsigned int set)
 }
 
 
-struct cell*  build_cell( struct sip_msg* p_msg )
+struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 {
 	struct cell* new_cell;
 	int          sip_msg_len;
@@ -327,7 +312,7 @@ struct cell*  build_cell( struct sip_msg* p_msg )
 		/* clean possible previous added vias/clen header or else they would
 		 * get propagated in the failure routes */
 		free_via_clen_lump(&p_msg->add_rm);
-		new_cell->uas.request = sip_msg_cloner(p_msg,&sip_msg_len);
+		new_cell->uas.request = sip_msg_cloner(p_msg,&sip_msg_len,full_uas?1:2);
 		if (!new_cell->uas.request)
 			goto error;
 		new_cell->uas.end_request=((char*)new_cell->uas.request)+sip_msg_len;

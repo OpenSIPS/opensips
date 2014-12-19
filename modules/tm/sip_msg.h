@@ -28,11 +28,72 @@
 #include "../../parser/msg_parser.h"
 #include "../../mem/shm_mem.h"
 
-#define  sip_msg_free(_p_msg) shm_free( (_p_msg ))
-#define  sip_msg_free_unsafe(_p_msg) shm_free_unsafe( (_p_msg) )
+/* TODO: replace these macros with a more generic approach --liviu */
+#ifdef HP_MALLOC
+	#define tm_shm_malloc_unsafe  shm_malloc
+	#define tm_shm_free_unsafe  shm_free
+	#define tm_destroy_avp_list_unsafe  destroy_avp_list
+	#define tm_shm_lock()
+	#define tm_shm_unlock()
+#else
+	#define tm_shm_malloc_unsafe  shm_malloc_unsafe
+	#define tm_shm_free_unsafe  shm_free_unsafe
+	#define tm_destroy_avp_list_unsafe  destroy_avp_list_unsafe
+	#define tm_shm_lock() shm_lock()
+	#define tm_shm_unlock() shm_unlock()
+#endif
 
 
-struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len );
+#define free_cloned_msg_unsafe( _msg ) \
+	do { \
+		if ((_msg)->msg_flags & FL_SHM_UPDATABLE) { \
+			if ((_msg)->new_uri.s) \
+				tm_shm_free_unsafe((_msg)->new_uri.s);\
+			if ((_msg)->dst_uri.s) \
+				tm_shm_free_unsafe((_msg)->dst_uri.s);\
+			if ((_msg)->path_vec.s) \
+				tm_shm_free_unsafe((_msg)->path_vec.s);\
+			if ((_msg)->set_global_address.s) \
+				tm_shm_free_unsafe((_msg)->set_global_address.s);\
+			if ((_msg)->set_global_port.s) \
+				tm_shm_free_unsafe((_msg)->set_global_port.s);\
+			if ((_msg)->add_rm) \
+				tm_shm_free_unsafe((_msg)->add_rm);\
+			if ((_msg)->body_lumps) \
+				tm_shm_free_unsafe((_msg)->body_lumps);\
+			if ((_msg)->reply_lump) \
+				tm_shm_free_unsafe((_msg)->reply_lump);\
+		}\
+		tm_shm_free_unsafe((_msg));\
+	}while(0)
+
+
+#define free_cloned_msg( _msg ) \
+	do { \
+		if ((_msg)->msg_flags & FL_SHM_UPDATABLE) { \
+			if ((_msg)->new_uri.s) \
+				shm_free((_msg)->new_uri.s);\
+			if ((_msg)->dst_uri.s) \
+				shm_free((_msg)->dst_uri.s);\
+			if ((_msg)->path_vec.s) \
+				shm_free((_msg)->path_vec.s);\
+			if ((_msg)->set_global_address.s) \
+				shm_free((_msg)->set_global_address.s);\
+			if ((_msg)->set_global_port.s) \
+				shm_free((_msg)->set_global_port.s);\
+			if ((_msg)->add_rm) \
+				shm_free((_msg)->add_rm);\
+			if ((_msg)->body_lumps) \
+				shm_free((_msg)->body_lumps);\
+			if ((_msg)->reply_lump) \
+				shm_free((_msg)->reply_lump);\
+		}\
+		shm_free((_msg));\
+	}while(0)
+
+
+struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
+		int updatable );
 
 
 static inline void clean_msg_clone(struct sip_msg *msg,void *min, void *max)
@@ -52,6 +113,8 @@ static inline void clean_msg_clone(struct sip_msg *msg,void *min, void *max)
 	}
 }
 
+
+int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg);
 
 
 #endif

@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
  * Route & Record-Route module
  *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -64,14 +63,11 @@ str i_user;
 char *ignore_user = NULL;
 #endif
 
+/* module parameters */
 int append_fromtag = 1;
 int enable_double_rr = 1; /* Enable using of 2 RR by default */
 int add_username = 0;     /* Do not add username by default */
 int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
-
-static unsigned int last_rr_msg;
-
-
 
 static int  mod_init(void);
 static void mod_destroy(void);
@@ -155,6 +151,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /*!< dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,        /*!< Exported functions */
+	0,           /*!< Exported async functions */
 	params,      /*!< Exported parameters */
 	0,           /*!< exported statistics */
 	0,           /*!< exported MI functions */
@@ -170,6 +167,11 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_INFO("rr - initializing\n");
+
+	ctx_rrparam_idx = context_register_str(CONTEXT_GLOBAL);
+	ctx_routing_idx = context_register_int(CONTEXT_GLOBAL);
+	ctx_rrstat_idx  = context_register_int(CONTEXT_GLOBAL);
+
 #ifdef ENABLE_USER_CHECK
 	if(ignore_user)
 	{
@@ -265,7 +267,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 {
 	str s;
 
-	if (msg->id == last_rr_msg) {
+	if (ctx_rrstat_get()==2) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -277,7 +279,7 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 	if ( record_route( msg, key?&s:0 )<0 )
 		return -1;
 
-	last_rr_msg = msg->id;
+	ctx_rrstat_set(2);
 	return 1;
 }
 
@@ -286,7 +288,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 {
 	str s;
 
-	if (msg->id == last_rr_msg) {
+	if (ctx_rrstat_get()==2) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
@@ -314,7 +316,7 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 		return -1;
 
 done:
-	last_rr_msg = msg->id;
+	ctx_rrstat_set(2);
 	return 1;
 }
 

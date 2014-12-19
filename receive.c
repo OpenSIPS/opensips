@@ -1,6 +1,5 @@
 /*
- *$Id$
- *
+ * Copyright (C) 2010-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -77,16 +76,32 @@ str default_global_port={0,0};
 str default_via_address={0,0};
 str default_via_port={0,0};
 
+
 unsigned int get_next_msg_no(void)
 {
 	return ++msg_no;
 }
+
+
+#define prepare_context( _ctx, _err ) \
+	do { \
+		if (_ctx==NULL) { \
+			_ctx = context_alloc();\
+			if (_ctx==NULL) { \
+				LM_ERR("failed to allocated new context, skipping\n"); \
+				goto _err; \
+			} \
+		} \
+		memset( _ctx, 0, context_size(CONTEXT_GLOBAL)); \
+	}while(0)
+
 
 /*! \note WARNING: buf must be 0 terminated (buf[len]=0) or some things might
  * break (e.g.: modules/textops)
  */
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 {
+	static context_p ctx = NULL;
 	struct sip_msg* msg;
 	struct timeval start;
 	int rc;
@@ -166,6 +181,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 		/* set request route type --bogdan*/
 		set_route_type( REQUEST_ROUTE );
 
+		/* prepare and set a new processing context for this request */
+		prepare_context( ctx, parse_error );
+		current_processing_ctx = ctx;
+
 		/* execute pre-script callbacks, if any;
 		 * if some of the callbacks said not to continue with
 		 * script processing, don't do so;
@@ -181,7 +200,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 		/* exec the routing script */
 		if (rc & SCB_RUN_TOP_ROUTE)
-			run_top_route(rlist[DEFAULT_RT].a, msg);
+			/* run the main request route and skip post_script callbacks
+			 * if the TOBE_CONTINUE flag is returned */
+			if ( run_top_route(rlist[DEFAULT_RT].a, msg) & ACT_FL_TBCONT )
+				goto end;
 
 		/* execute post request-script callbacks */
 		if (rc & SCB_RUN_POST_CBS)
@@ -199,6 +221,10 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 
 		/* set reply route type --bogdan*/
 		set_route_type( ONREPLY_ROUTE );
+
+		/* prepare and set a new processing context for this reply */
+		prepare_context( ctx, parse_error );
+		current_processing_ctx = ctx;
 
 		/* execute pre-script callbacks, if any ;
 		 * if some of the callbacks said not to continue with
@@ -233,6 +259,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 	}
 
 end:
+	current_processing_ctx = NULL;
 	stop_expire_timer( start, execmsgthreshold, "msg processing",
 		msg->buf, msg->len, 0);
 	reset_longest_action_list(execmsgthreshold);

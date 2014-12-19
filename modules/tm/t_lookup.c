@@ -954,7 +954,7 @@ static inline void init_new_t(struct cell *new_cell, struct sip_msg *p_msg)
 	new_cell->on_branch=get_on_branch();
 }
 
-static inline int new_t(struct sip_msg *p_msg)
+static inline int new_t(struct sip_msg *p_msg, int full_uas)
 {
 	struct cell *new_cell;
 
@@ -970,7 +970,7 @@ static inline int new_t(struct sip_msg *p_msg)
 	}
 
 	/* add new transaction */
-	new_cell = build_cell( p_msg ) ;
+	new_cell = build_cell( p_msg , full_uas) ;
 	if  ( !new_cell ){
 		LM_ERR("out of mem\n");
 		return E_OUT_OF_MEM;
@@ -999,7 +999,7 @@ static inline int new_t(struct sip_msg *p_msg)
 
 	0 on retransmission
 */
-int t_newtran( struct sip_msg* p_msg )
+int t_newtran( struct sip_msg* p_msg, int full_uas )
 {
 	int lret, my_err;
 
@@ -1078,7 +1078,7 @@ int t_newtran( struct sip_msg* p_msg )
 	if (p_msg->REQ_METHOD==METHOD_ACK) /* ... unless it is in ACK */
 		return 1;
 
-	my_err=new_t(p_msg);
+	my_err=new_t(p_msg, full_uas);
 	if (my_err<0) {
 		LM_ERR("new_t failed\n");
 		goto new_err;

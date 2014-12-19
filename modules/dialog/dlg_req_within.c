@@ -44,10 +44,10 @@
 #include "dlg_req_within.h"
 #include "dlg_db_handler.h"
 #include "dlg_profile.h"
+#include "dlg_handlers.h"
 
 
 extern str dlg_extra_hdrs;
-extern int last_dst_leg;
 
 int free_tm_dlg(dlg_t *td)
 {
@@ -210,12 +210,12 @@ error:
 static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_unref)
 {
 	int event, old_state, new_state, unref, ret;
-	struct dlg_cell *curr;
+	struct sip_msg *fake_msg=NULL;
+	context_p old_ctx;
 
 	event = DLG_EVENT_REQBYE;
-	last_dst_leg = dlg->legs_no[DLG_LEG_200OK];
 	next_state_dlg(dlg, event, DLG_DIR_DOWNSTREAM, &old_state, &new_state,
-	               &unref, 0);
+			&unref, dlg->legs_no[DLG_LEG_200OK], 0);
 	unref += extra_unref;
 
 	if(new_state == DLG_STATE_DELETED && old_state != DLG_STATE_DELETED){
@@ -250,11 +250,19 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req, int extra_
 			unref++;
 		}
 
-		curr = current_dlg_pointer;
-		current_dlg_pointer = dlg;
-		/* dialog terminated (BYE) */
-		run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
-		current_dlg_pointer = curr;
+		if (req==NULL) {
+			/* set new msg & processing context */
+			if (push_new_processing_context( dlg, &old_ctx, &fake_msg)==0) {
+				/* dialog terminated (BYE) */
+				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg, DLG_DIR_NONE, 0);
+				/* reset the processing contect */
+				current_processing_ctx = old_ctx;
+			} /* no CB run in case of failure FIXME */
+		} else {
+			/* we should have the msg and context from upper levels */
+			/* dialog terminated (BYE) */
+			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req, DLG_DIR_NONE, 0);
+		}
 
 		LM_DBG("first final reply\n");
 		/* derefering the dialog */
@@ -339,8 +347,8 @@ error:
 static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 														str *extra_hdrs)
 {
+	context_p old_ctx;
 	dlg_t* dialog_info;
-	struct dlg_cell *old_cell;
 	str met = {"BYE", 3};
 	int result;
 
@@ -352,10 +360,13 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 	LM_DBG("sending BYE to %s (%d)\n",
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
-	ref_dlg(cell, 1);
+	/* set new processing context */
+	if (push_new_processing_context( cell, &old_ctx, NULL)!=0)
+		goto err;
 
-	old_cell = current_dlg_pointer;
-	current_dlg_pointer = cell;
+	ctx_lastdstleg_set(dst_leg);
+
+	ref_dlg(cell, 1);
 
 	result = d_tmb.t_request_within
 		(&met,         /* method*/
@@ -366,7 +377,8 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		(void*)cell,   /* callback parameter*/
 		NULL);         /* release function*/
 
-	current_dlg_pointer = old_cell;
+	/* reset the processing contect */
+	current_processing_ctx = old_ctx;
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");
@@ -422,11 +434,9 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs)
 	}
 
 	callee = callee_idx(dlg);
-	last_dst_leg = DLG_CALLER_LEG;
 	if ( send_leg_bye( dlg, DLG_CALLER_LEG, callee, &str_hdr)!=0) {
 		res--;
 	}
-	last_dst_leg = callee;
 	if (send_leg_bye( dlg, callee, DLG_CALLER_LEG, &str_hdr)!=0 ) {
 		res--;
 	}
@@ -506,8 +516,8 @@ error:
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		str *hdrs,str *body,dlg_request_callback func,void *param,dlg_release_func release)
 {
+	context_p old_ctx;
 	dlg_t* dialog_info;
-	struct dlg_cell *old_cell;
 	int result;
 	unsigned int method_type;
 
@@ -533,8 +543,9 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	LM_DBG("sending [%.*s] to %s (%d)\n",method->len,method->s,
 		(dst_leg==DLG_CALLER_LEG)?"caller":"callee", dst_leg);
 
-	old_cell = current_dlg_pointer;
-	current_dlg_pointer = dlg;
+	/* set new processing context */
+	if (push_new_processing_context( dlg, &old_ctx, NULL)!=0)
+		return -1;
 
 	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
@@ -547,7 +558,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		param,   /* callback parameter*/
 		release);         /* release function*/
 
-	current_dlg_pointer = old_cell;
+	/* reset the processing contect */
+	current_processing_ctx = old_ctx;
 
 	if(result < 0)
 	{

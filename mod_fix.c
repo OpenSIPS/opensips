@@ -1046,6 +1046,7 @@ int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
 		return 0;
 	}
 
+	LM_CRIT("bogus type %d in gparam\n",gp->type);
 	return -1;
 }
 

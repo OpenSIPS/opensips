@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -132,25 +130,26 @@ void unlink_lump_rpl(struct sip_msg * msg, struct lump_rpl* lump)
 	}
 }
 
+
 void del_nonshm_lump_rpl(struct lump_rpl** list)
 {
-        struct lump_rpl* it, *tmp;
-        struct lump_rpl** pred;
+	struct lump_rpl* it, *tmp;
+	struct lump_rpl** pred;
 
-        it = *list;
-        pred = list;
+	it = *list;
+	pred = list;
 
-        while(it) {
-                if (!(it->flags & LUMP_RPL_SHMEM)) {
-                        tmp = it;
-                        *pred = it->next;
-                        it = it->next;
-                        free_lump_rpl(tmp);
-                        continue;
-                }
+	while(it) {
+		if (!(it->flags & LUMP_RPL_SHMEM)) {
+			tmp = it;
+			*pred = it->next;
+			it = it->next;
+			free_lump_rpl(tmp);
+			continue;
+		}
 
-                pred = &it->next;
-                it = it->next;
-        }
+		pred = &it->next;
+		it = it->next;
+	}
 }
 

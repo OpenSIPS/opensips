@@ -229,7 +229,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 
 	/* ***** Create TRANSACTION and all related  ***** */
-	new_cell = build_cell(0);
+	new_cell = build_cell( NULL/*msg*/, 1/*full UAS clone*/);
 	if (!new_cell) {
 		ret=E_OUT_OF_MEM;
 		LM_ERR("short of cell shmem\n");
@@ -434,7 +434,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			}
 abort_update:
 			/* save the SIP message into transaction */
-			new_cell->uas.request = sip_msg_cloner( req, &sip_msg_len);
+			new_cell->uas.request = sip_msg_cloner( req, &sip_msg_len, 1);
 			if (new_cell->uas.request==NULL) {
 				/* reset any T triggering */
 				new_cell->on_negative = 0;

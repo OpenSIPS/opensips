@@ -1,8 +1,6 @@
 /*
  * execution module
  *
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -57,6 +55,9 @@ inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
 inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
 inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
 inline static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err, char* avp_env);
+inline static int w_async_exec(struct sip_msg* msg,
+		async_resume_module **resume_f, void **resume_param,
+		char *cmd, char* out, char* in, char* err, char* avp_env );
 
 static int exec_avp_fixup(void** param, int param_no);
 static int exec_fixup(void** param, int param_no);
@@ -66,6 +67,15 @@ inline static void exec_shutdown(void);
 /*
  * Exported functions
  */
+static acmd_export_t acmds[] = {
+	{"exec",  (acmd_function)w_async_exec,  5, exec_fixup },
+	{"exec",  (acmd_function)w_async_exec,  4, exec_fixup },
+	{"exec",  (acmd_function)w_async_exec,  3, exec_fixup },
+	{"exec",  (acmd_function)w_async_exec,  2, exec_fixup },
+	{"exec",  (acmd_function)w_async_exec,  1, exec_fixup },
+	{0, 0, 0, 0}
+};
+
 static cmd_export_t cmds[] = {
 	{"exec_dset", (cmd_function)w_exec_dset, 1, fixup_spve_null,  0,
 		REQUEST_ROUTE|FAILURE_ROUTE},
@@ -110,6 +120,7 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS,/* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,           /* Exported functions */
+	acmds,          /* Exported async functions */
 	params,         /* Exported parameters */
 	0,              /* exported statistics */
 	0,              /* exported MI functions */
@@ -478,7 +489,6 @@ memerr:
 
 static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err ,char* avp_env)
 {
-
 	str command;
 	str input = {NULL, 0};
 	int ret;
@@ -527,3 +537,76 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err
 
 	return ret;
 }
+
+
+static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f, void **resume_param,
+	char* cmd, char* out, char* in, char* err, char* avp_env)
+{
+	str command;
+	str input = {NULL, 0};
+	struct hf_wrapper *hf=0;
+	environment_t* backup_env=0;
+	gparam_p outvar = (gparam_p)out;
+	exec_async_param *param;
+	int ret;
+
+	if (msg == 0 || cmd == 0)
+		return -1;
+
+	/* fetch command */
+	if(fixup_get_svalue(msg, (gparam_p)cmd, &command)!=0) {
+		LM_ERR("invalid command parameter\n");
+		return -1;
+	}
+
+	/* fetch input */
+	if (in != NULL) {
+		if (pv_printf_s(msg, (pv_elem_p)in, &input)!=0)
+			return -1;
+	}
+
+	if (avp_env != NULL) {
+		if ((hf=get_avp_values_list(msg, &((gparam_p)avp_env)->v.pve->spec.pvp)) == 0)
+			return -1;
+		backup_env=replace_env(hf);
+		if (!backup_env) {
+			LM_ERR("replace env failed\n");
+			release_vars(hf);
+			release_hf_struct(hf);
+			return -1;
+		}
+		release_hf_struct(hf);
+	}
+
+	/* better do this alloc now (before starting the async) to avoid 
+	 * the unplesant situation of having the async started and have a 
+	 * memory failure -> tricky to recover */
+	param = (exec_async_param*)shm_malloc(sizeof(exec_async_param));
+	if(param==NULL) {
+		LM_ERR("failed to allocate new async param\n");
+		if (backup_env) unset_env(backup_env);
+		return -1;
+	}
+
+	ret = start_async_exec(msg, &command, &input, outvar);
+
+	if (backup_env)
+		unset_env(backup_env);
+
+	/* populate resume point (if async started) */
+	if (ret>0) {
+		param->outvar = outvar;
+		/* that ^^^^ is save as "out" is a in private mem, but in all
+		 * processes (set before forking) */
+		param->buf = NULL;
+		*resume_param = (void*)param;
+		*resume_f = resume_async_exec;
+	} else {
+		shm_free(param);
+		*resume_param = NULL;
+		*resume_f = NULL;
+	}
+
+	return ret;
+}
+

@@ -46,7 +46,7 @@ int init_rb( struct retr_buf *rb, struct sip_msg *msg );
 struct cell* t_lookupOriginalT( struct sip_msg* p_msg );
 int t_reply_matching( struct sip_msg* , int* );
 int t_lookup_request( struct sip_msg* p_msg , int leave_new_locked );
-int t_newtran( struct sip_msg* p_msg );
+int t_newtran( struct sip_msg* p_msg, int full_uas );
 
 int _add_branch_label( struct cell *trans,
     char *str, int *len, int branch );

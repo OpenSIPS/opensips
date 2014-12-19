@@ -67,6 +67,7 @@
 #include <fcntl.h> /* must be included after io_wait.h if SIGIO_RT is used */
 #include "forward.h"
 #include "pt.h"
+#include "async.h"
 
 static struct tcp_connection* tcp_conn_lst=0;		/*!< list of tcp connections handled by this process */
 static int tcpmain_sock=-1;
@@ -960,6 +961,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		case F_TIMER_JOB:
 			handle_timer_job();
 			break;
+		case F_SCRIPT_ASYNC:
+			async_resume_f( fm->fd, fm->data);
+			return 0;
 		case F_TCPMAIN:
 again:
 			ret=n=receive_fd(fm->fd, response, sizeof(response), &s, 0);

@@ -59,7 +59,7 @@ inline static void free_via_clen_lump( struct lump **list )
 	for(lump=*list;lump;lump=next) {
 		next=lump->next;
 		if (lump->type==HDR_VIA_T||lump->type==HDR_CONTENTLENGTH_T) {
-			if (lump->flags & (LUMPFLAG_DUPED|LUMPFLAG_SHMEM)){
+			if (lump->flags & LUMPFLAG_SHMEM){
 				LM_CRIT("free_via_clen_lmp: lump %p, flags %x\n",
 						lump, lump->flags);
 				/* ty to continue */
@@ -67,7 +67,7 @@ inline static void free_via_clen_lump( struct lump **list )
 			a=lump->before;
 			while(a) {
 				foo=a; a=a->before;
-				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				if (!(foo->flags&LUMPFLAG_SHMEM))
 					free_lump(foo);
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
@@ -75,7 +75,7 @@ inline static void free_via_clen_lump( struct lump **list )
 			a=lump->after;
 			while(a) {
 				foo=a; a=a->after;
-				if (!(foo->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+				if (!(foo->flags&LUMPFLAG_SHMEM))
 					free_lump(foo);
 				if (!(foo->flags&LUMPFLAG_SHMEM))
 					pkg_free(foo);
@@ -83,7 +83,7 @@ inline static void free_via_clen_lump( struct lump **list )
 			if (prev_lump) prev_lump->next = lump->next;
 			else *list = lump->next;
 			LM_DBG("Deleted lump [%p]\n", lump);
-			if (!(lump->flags&(LUMPFLAG_DUPED|LUMPFLAG_SHMEM)))
+			if (!(lump->flags&LUMPFLAG_SHMEM))
 				free_lump(lump);
 			if (!(lump->flags&LUMPFLAG_SHMEM))
 				pkg_free(lump);

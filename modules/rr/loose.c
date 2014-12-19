@@ -1,8 +1,7 @@
 /*
- * $Id$
- *
  * Route & Record-Route module, loose routing support
  *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2001-2004 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -43,6 +42,7 @@
 #include "../../ut.h"
 #include "../../str.h"
 #include "../../dprint.h"
+#include "../../context.h"
 #include "../../forward.h"
 #include "../../data_lump.h"
 #include "../../socket_info.h"
@@ -67,17 +67,20 @@
 #define ROUTE_SUFFIX ">\r\n"
 #define ROUTE_SUFFIX_LEN (sizeof(ROUTE_SUFFIX)-1)
 
-/* variables used to hook the param part of the local route -bogdan */
-static unsigned int routed_msg_id;
-static str routed_params = {0,0};
+int ctx_rrparam_idx = -1;
+int ctx_routing_idx = -1;
 
-/* this is hooked into rr API and returns the number of removed
-   routes after doing loose_route() */
-int removed_routes;
+#define ctx_rrparam_get() \
+	context_get_str(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrparam_idx)
 
-/* this is hooked into rr API and returns the type of previous and next hops
- * in terms of loose versus strict routing */
-int routing_type;
+#define ctx_rrparam_set(_param) \
+	context_put_str(CONTEXT_GLOBAL, current_processing_ctx, ctx_rrparam_idx, _param)
+
+#define ctx_routing_get() \
+	context_get_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_routing_idx)
+
+#define ctx_routing_set(_param) \
+	context_put_int(CONTEXT_GLOBAL, current_processing_ctx, ctx_routing_idx, _param)
 
 
 /*
@@ -521,7 +524,6 @@ static inline int after_strict(struct sip_msg* _m)
 			if (enable_socket_mismatch_warning)
 				LM_WARN("no socket found for match second RR\n");
 		}
-		removed_routes++;
 
 		/* mark route hdr as deleted */
 		rt->deleted = 1;
@@ -569,13 +571,11 @@ static inline int after_strict(struct sip_msg* _m)
 	/* set the hooks for the params -bogdan
 	 * important note: RURI is already parsed by the above function, so
 	 * we just used it without any checking */
-	routed_msg_id = _m->id;
-	routed_params = _m->parsed_uri.params;
-	removed_routes++;
+	ctx_rrparam_set( &_m->parsed_uri.params );
 
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next hop: '%.*s' is strict router\n", uri.len, ZSW(uri.s));
-		routing_type = ROUTING_SS;
+		ctx_routing_set( ROUTING_SS );
 		/* Previous hop was a strict router and the next hop is strict
 		 * router too. There is no need to save R-URI again because it
 		 * is saved already. In fact, in this case we will behave exactly
@@ -611,7 +611,7 @@ static inline int after_strict(struct sip_msg* _m)
 		LM_DBG("Next hop: '%.*s' is loose router\n",
 			uri.len, ZSW(uri.s));
 
-		routing_type = ROUTING_SL;
+		ctx_routing_set( ROUTING_SL );
 
 		if(get_maddr_uri(&uri, &puri)!=0) {
 			LM_ERR("failed to check maddr\n");
@@ -684,7 +684,7 @@ static inline int after_strict(struct sip_msg* _m)
 	}
 
 	/* run RR callbacks -bogdan */
-	run_rr_callbacks( _m, &routed_params );
+	run_rr_callbacks( _m, ctx_rrparam_get() );
 
 	return RR_DRIVEN;
 }
@@ -725,9 +725,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 		LM_DBG("Topmost route URI: '%.*s' is me\n",
 			uri.len, ZSW(uri.s));
 		/* set the hooks for the params -bogdan */
-		routed_msg_id = _m->id;
-		routed_params = puri.params;
-		removed_routes++;
+		ctx_rrparam_set( &puri.params );
 
 		/* if last route in header, gonna get del_lumped now,
 		 * if not, it will be taken care of later
@@ -755,7 +753,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				status = (preloaded ? NOT_RR_DRIVEN : RR_DRIVEN);
 
 				/*same case as LL , if there is no next route*/
-				routing_type = ROUTING_LL;
+				ctx_routing_set( ROUTING_LL );
 				force_ss = 1;
 
 				goto done;
@@ -779,7 +777,6 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				if (enable_socket_mismatch_warning)
 					LM_WARN("no socket found for match second RR\n");
 			}
-			removed_routes++;
 
 			rt->deleted = 1;
 
@@ -801,7 +798,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 					status = (preloaded ? NOT_RR_DRIVEN : RR_DRIVEN);
 
 					/* same case as LL , if there is no next route */
-					routing_type = ROUTING_LL;
+					ctx_routing_set( ROUTING_LL );
 
 					goto done;
 				}
@@ -830,7 +827,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	if (is_strict(&puri2.params)) {
 		LM_DBG("Next URI is a strict router\n");
 
-		routing_type = ROUTING_LS;
+		ctx_routing_set( ROUTING_LS );
 		if (handle_sr(_m, hdr, rt) < 0) {
 			LM_ERR("failed to handle strict router\n");
 			return RR_ERROR;
@@ -839,7 +836,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 		/* Next hop is loose router */
 		LM_DBG("Next URI is a loose router\n");
 
-		routing_type = ROUTING_LL;
+		ctx_routing_set( ROUTING_LL );
 
 		if(get_maddr_uri(&uri, &puri2)!=0) {
 			LM_ERR("checking maddr failed\n");
@@ -876,7 +873,7 @@ done:
 		}
 	}
 	/* run RR callbacks -bogdan */
-	run_rr_callbacks( _m, &routed_params );
+	run_rr_callbacks( _m, &puri.params );
 	return status;
 }
 
@@ -888,8 +885,7 @@ int loose_route(struct sip_msg* _m)
 {
 	int ret;
 
-	removed_routes = 0;
-	routing_type = 0;
+	ctx_routing_set(0);
 
 	if (find_first_route(_m) != 0) {
 		LM_DBG("There is no Route HF\n");
@@ -926,12 +922,9 @@ int get_route_params(struct sip_msg *msg, str *val)
 	if(msg==NULL)
 		return -1;
 
-	/* check if the hooked params belong to the same message */
-	if (routed_msg_id != msg->id)
+	/* check if params are present */
+	if ( (val=ctx_rrparam_get())==NULL )
 		return -1;
-
-	val->s = routed_params.s;
-	val->len = routed_params.len;
 
 	return 0;
 }
@@ -942,17 +935,14 @@ int check_route_param(struct sip_msg * msg, regex_t* re)
 	regmatch_t pmatch;
 	char bk;
 	str params;
-
-	/* check if the hooked params belong to the same message */
-	if (routed_msg_id != msg->id)
-		return -1;
+	str *rparams;
 
 	/* check if params are present */
-	if ( !routed_params.s || !routed_params.len )
+	if ( (rparams=ctx_rrparam_get())==NULL || rparams->len==0)
 		return -1;
 
 	/* include also the first ';' */
-	for( params=routed_params ; params.s[0]!=';' ; params.s--,params.len++ );
+	for( params=*rparams ; params.s[0]!=';' ; params.s--,params.len++ );
 
 	/* do the well-known trick to convert to null terminted */
 	bk = params.s[params.len];
@@ -975,22 +965,18 @@ int get_route_param( struct sip_msg *msg, str *name, str *val)
 	char *end;
 	char c;
 	int quoted;
-
-	/* check if the hooked params belong to the same message */
-	if (routed_msg_id != msg->id)
-		goto notfound;
+	str *rparams;
 
 	/* check if params are present */
-	if ( !routed_params.s || !routed_params.len )
+	if ( (rparams=ctx_rrparam_get())==NULL || rparams->len==0)
 		goto notfound;
 
-	end = routed_params.s + routed_params.len;
-	p = routed_params.s;
-
+	end = rparams->s + rparams->len;
+	p = rparams->s;
 
 	/* parse the parameters string and find the "name" param */
 	while ( end-p>name->len+2 ) {
-		if (p!=routed_params.s) {
+		if (p!=rparams->s) {
 			/* go to first ';' char */
 			for( quoted=0 ; p<end && !(*p==';' && !quoted) ; p++ )
 				if ( (*p=='"' || *p=='\'') && *(p-1)!='\\' )
@@ -1099,19 +1085,21 @@ upstream:
 	return (dir==RR_FLOW_UPSTREAM)?0:-1;
 }
 
+
 str* get_remote_target(struct sip_msg *msg)
 {
 	int res;
 	struct hdr_field *hdr;
 	rr_t *rt,*prev;
 	str *uri;
+	int routing_type;
 
-	if (msg == NULL)
-	{
+	if (msg == NULL) {
 		LM_ERR("null sip msg\n");
 		return 0;
 	}
 
+	routing_type = ctx_routing_get();
 	if ((routing_type == ROUTING_LL) || (routing_type == ROUTING_LS))
 		return &msg->first_line.u.request.uri;
 	else if (routing_type == ROUTING_SL)
@@ -1149,6 +1137,7 @@ str* get_remote_target(struct sip_msg *msg)
 	}
 }
 
+
 #define MAX_RR_HDRS 64
 str* get_route_set(struct sip_msg *msg,int *nr_routes)
 {
@@ -1156,6 +1145,7 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 	struct hdr_field *it;
 	rr_t *p;
 	int n = 0;
+	int routing_type;
 
 	if (msg == NULL || msg->route == NULL)
 	{
@@ -1163,6 +1153,7 @@ str* get_route_set(struct sip_msg *msg,int *nr_routes)
 		return 0;
 	}
 
+	routing_type = ctx_routing_get();
 	if (routing_type == ROUTING_SS || routing_type == ROUTING_LS)
 	{
 		/* must manually insert RURI, as it was part

@@ -431,6 +431,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	struct usr_avp *grp_avp;
 	struct usr_avp *mask_avp;
 	struct usr_avp *id_avp;
+	struct dlg_cell *dlg;
 	int_str grp_val;
 	int_str mask_val;
 	int_str id_val;
@@ -507,6 +508,10 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 		}
 	} /* end - first LB run */
 
+	if ( (dlg=lb_dlg_binds.get_dlg())==NULL ) {
+		LM_CRIT("BUG - no dialog found at this stage :(\n");
+		return -1;
+	}
 
 	/* lock the resources */
 	for( i=0 ; i<rl->n ; i++)
@@ -539,7 +544,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	/* if re-trying, remove the dialog from previous profiles */
 	if (last_dst) {
 		for( i=0 ; i<rl->n ; i++) {
-			if (lb_dlg_binds.unset_profile( req, &last_dst->profile_id,
+			if (lb_dlg_binds.unset_profile( dlg, &last_dst->profile_id,
 			call_res[i]->profile)!=1)
 				LM_ERR("failed to remove from profile\n");
 		}
@@ -550,7 +555,7 @@ int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
 	} else {
 		/* add to the profiles */
 		for( i=0 ; i<rl->n ; i++) {
-			if (lb_dlg_binds.set_profile( req, &dst->profile_id,
+			if (lb_dlg_binds.set_profile( dlg, &dst->profile_id,
 			call_res[i]->profile, 0)!=0)
 				LM_ERR("failed to add to profile\n");
 		}
@@ -744,6 +749,7 @@ int lb_count_call(struct lb_data *data, struct sip_msg *req,
 {
 	static struct lb_resource **call_res = NULL;
 	static unsigned int call_res_no = 0;
+	struct dlg_cell *dlg;
 	struct lb_resource *res;
 	struct lb_dst *dst;
 	int i,k;
@@ -797,13 +803,18 @@ end_search:
 		return -1;
 	}
 
+	if ( (dlg=lb_dlg_binds.get_dlg())==NULL ) {
+		LM_CRIT("BUG - no dialog found at this stage :(\n");
+		return -1;
+	}
+
 	/* lock the resources */
 	for( i=0 ; i<rl->n ; i++)
 		lock_get( call_res[i]->lock );
 
 	/* add to the profiles */
 	for( i=0 ; i<rl->n ; i++) {
-		if (lb_dlg_binds.set_profile( req, &dst->profile_id,
+		if (lb_dlg_binds.set_profile( dlg, &dst->profile_id,
 		call_res[i]->profile, 0)!=0)
 			LM_ERR("failed to add to profile\n");
 	}

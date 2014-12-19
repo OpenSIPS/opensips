@@ -1,6 +1,5 @@
 /*
- * $Id$
- *
+ * Copyright (C) 2009-2014 OpenSIPS Solutions
  * Copyright (C) 2007-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -381,7 +380,7 @@ void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 
 
 void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
-                          char is_replicated)
+															char is_replicated)
 {
 	struct dlg_profile_table *profile;
 	struct dlg_profile_link *it;
@@ -393,7 +392,6 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 
 	end = b + l;
 	p = b;
-	current_dlg_pointer = dlg;
 
 	do {
 		/* read a new pair from input string */
@@ -452,15 +450,16 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 				continue;
 			}
 		}
-		if (set_dlg_profile( NULL, profile->has_value ? &val : NULL, profile,
+		if (set_dlg_profile( dlg, profile->has_value ? &val : NULL, profile,
 		    is_replicated) < 0 )
 			LM_ERR("failed to add to profile, skipping....\n");
 		next:
 			;
 	} while(p!=end);
 
-	current_dlg_pointer = NULL;
+	return;
 }
+
 
 int remove_ended_dlgs_from_db(void)
 {

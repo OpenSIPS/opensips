@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * transaction maintenance functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
@@ -189,7 +187,7 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 
 	ret=0;
 
-	new_tran = t_newtran( p_msg );
+	new_tran = t_newtran( p_msg, 1/*full UAS cloning*/ );
 
 	/* parsing error, memory alloc, whatever ... */
 	if (new_tran<0) {
