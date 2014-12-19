@@ -1,8 +1,4 @@
 /*
- *
- * $Id$
- *
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -35,6 +31,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 /*
 #include <sys/resource.h>
 */
@@ -649,3 +646,177 @@ error:
 
 	return ret;
 }
+
+
+int start_async_exec(struct sip_msg* msg, str* command, str* input, gparam_p outvar)
+{
+	pid_t pid;
+	FILE *pin, *pout;
+	int val, fd;
+
+	if (input || outvar) {
+		pid =  __popen3(command->s, input ? &pin : NULL,
+									outvar ? &pout : NULL,
+									NULL);
+	} else {
+		pid = fork();
+		if (pid == 0) {
+			/* child process*/
+			execl("/bin/sh", "/bin/sh", "-c", command->s, NULL);
+			exit(-1);
+		}
+		if (pid<0) {
+			/*error of fork*/
+			LM_ERR("failed to fork (%s)\n",strerror(errno));
+			goto error;
+		}
+	}
+
+	if (input->len) {
+		if ( (val=fwrite(input->s, 1, input->len, pin)) != input->len) {
+			LM_ERR("failed to write all (%d needed, %d written) to input pipe,"
+				" but continuing\n",input->len,val);
+		}
+
+		if (ferror(pin)) {
+			LM_ERR("failure detected (%s), continuing..\n",strerror(errno));
+		}
+		pclose(pin);
+	}
+
+	/* set time to kill on the new process */
+	schedule_to_kill(pid);
+
+	if (outvar==NULL) {
+		/* nothing to wait for, simply return "no-async" indication */
+		return -1;
+	}
+
+	/* prepare the read FD and make it non-blocking */
+	if ( (fd=dup( fileno( pout ) ))<0 ) {
+		LM_ERR("dup failed: (%d) %s\n", errno, strerror(errno));
+		goto error;
+	}
+	val = fcntl( fd, F_GETFL);
+	if (val==-1){
+		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		goto error2;
+	}
+	if (fcntl( fd , F_SETFL, val|O_NONBLOCK)==-1){
+		LM_ERR("set non-blocking failed: (%d) %s\n",
+			errno, strerror(errno));
+		goto error2;
+	}
+
+	fclose(pout);
+
+	/* async started with success */
+	return fd;
+
+error2:
+	close(fd);
+error:
+	/* async failed */
+	if (outvar)
+		pclose(pout);
+	return -1;
+}
+
+
+enum async_ret_code resume_async_exec(int fd, struct sip_msg *msg, void *param)
+{
+	#define MAX_LINE_SIZE 1024
+	char buf[MAX_LINE_SIZE+1];
+	exec_async_param *p = (exec_async_param*)param;
+	pv_value_t outval;
+	char *s1, *s2;
+	int n, len;
+
+	if (p->buf) {
+		memcpy( buf, p->buf, p->buf_len);
+		len = p->buf_len;
+		shm_free(p->buf);
+		p->buf = NULL;
+	} else {
+		len = 0;
+	}
+
+	do {
+		n=read( fd, buf+len, MAX_LINE_SIZE-len);
+		LM_DBG(" read %d [%.*s] \n",n, n<0?0:n,buf+len);
+		if (n<0) {
+			if (errno==EINTR) continue;
+			if (errno==EAGAIN || errno==EWOULDBLOCK) {
+				/* nothing more to read */
+				if (len) {
+					/* store what is left */
+					if ((p->buf=(char*)shm_malloc(len))==NULL) {
+						LM_ERR("failed to allocate buffer\n");
+						goto error;
+					}
+					memcpy( p->buf, buf, len);
+					p->buf_len = len;
+					LM_DBG(" storing %d [%.*s] \n", p->buf_len, p->buf_len, p->buf);
+				}
+				/* async should continue */
+				return ASYNC_CONTINUE;
+			}
+			LM_ERR("read failed with %d (%s)\n",errno, strerror(errno));
+			/* terminate everything */
+			goto error;
+		}
+		/* EOF ? */
+		if (n==0) {
+			if (len) {
+				/* take whatever is left in buffer and push it as var */
+				outval.flags = PV_VAL_STR;
+				outval.rs.s = buf;
+				outval.rs.len = len;
+				LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
+				if (pv_set_value(msg, &p->outvar->v.pve->spec, 0, &outval) < 0) {
+					LM_ERR("failed to set variable :(, continuing \n");
+				}
+			}
+			break;
+		}
+		/* succesful reading  ( n>0 ) */
+		LM_DBG(" having %d [%.*s] \n", len+n, len+n, buf);
+		if (n+len==MAX_LINE_SIZE) {
+			/* we have full buffer, pack it as a line */
+			buf[n+len] = '\n';
+			n++;
+		}
+		/* search for '\n' in the newly read data */
+		s1 = buf;
+		while ( (buf+len+n-s1>0) && ((s2=q_memchr(s1, '\n', buf+len+n-s1))!=NULL) ) {
+			/* push it as var */
+			outval.flags = PV_VAL_STR;
+			outval.rs.s = s1;
+			outval.rs.len = s2-s1;
+			LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
+			if (pv_set_value(msg, &p->outvar->v.pve->spec, 0, &outval) < 0) {
+				LM_ERR("failed to set variable :(, continuing \n");
+			}
+			s1 = s2+1;
+		}
+		/* any data consumed ? */
+		if ( s1!=buf+len ) {
+			/* yes -> shift the whole buffer to left */
+			len = buf+len+n-s1;
+			if (len) memmove( buf, s1, len);
+		} else {
+			/* no -> increase the len of the buffer */
+			len += n;
+		}
+	}while(1);
+
+	/* done with the async */
+	shm_free(param);
+	return ASYNC_DONE;
+
+error:
+	shm_free(param);
+	return ASYNC_ERROR;
+	#undef MAX_LINE_SIZE
+}
+
