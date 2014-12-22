@@ -358,6 +358,9 @@ char **my_argv;
 
 extern FILE* yyin;
 extern int yyparse();
+#ifdef DEBUG_PARSER
+extern int yydebug;
+#endif
 
 
 int is_main = 1; /* flag = is this the  "main" process? */
@@ -1361,6 +1364,10 @@ try_again:
 		goto error;
 	}
 
+	/* used for parser debugging */
+#ifdef DEBUG_PARSER
+	yydebug = 1;
+#endif
 
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */

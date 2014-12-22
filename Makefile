@@ -54,6 +54,7 @@ makefile_defs=0
 DEFS:=
 TLS?=
 SCTP?=
+DEBUG_PARSER?=
 
 # create the template only if the file is not yet created
 ifeq (,$(wildcard Makefile.conf))
