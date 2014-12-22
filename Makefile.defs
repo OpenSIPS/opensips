@@ -1423,6 +1423,12 @@ ifeq ($(YACC),)
 endif
 YACC_FLAGS=-d -b cfg
 
+ifdef DEBUG_PARSER
+	CFLAGS+=-DYYDEBUG -DDEBUG_PARSER
+	YACC_FLAGS+=-t
+endif
+
+
 LDFLAGS+= $(LD_EXTRA_OPTS)
 
 ifneq (,$(findstring CYGWIN, $(OS)))
