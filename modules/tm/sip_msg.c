@@ -412,7 +412,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	struct sip_msg    *new_msg;
 	char              *p;
 
-	/*computing the length of entire sip_msg structure + its context*/
+	/*computing the length of entire sip_msg structure*/
 	len = ROUND4(sizeof( struct sip_msg ));
 	/*we will keep only the original msg +ZT */
 	len += ROUND4(org_msg->len + 1);
