@@ -53,8 +53,8 @@ char* dialog_states[]= {  "trying",
                            "early",
                        "confirmed",
                      "terminated"};
-char* presence_notes[]={ "Calling",
-                         "Calling",
+char* presence_notes[]={ "Proceeding",
+                         "Proceeding",
                     "On the phone",
                                ""};
 
