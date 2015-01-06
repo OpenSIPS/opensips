@@ -61,7 +61,7 @@
 #define E_BAD_SERVER	  -500		/*!< error in server */
 
 #define report_programming_bug(format, args...) \
-	LM_CRIT("\n!!! " format " !!!\nIt seems you have hit a programming bug.\n" \
+	LM_CRIT("\n>>> " format"\nIt seems you have hit a programming bug.\n" \
 			"Please help us make OpenSIPS better by reporting it at " \
 			"https://github.com/OpenSIPS/opensips/issues\n\n", ##args);
 #define LM_BUG report_programming_bug

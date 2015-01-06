@@ -37,6 +37,7 @@
 
 #include "../config.h"
 #include "../dprint.h"
+#include "../stdlib.h"
 
 /* fix debug defines, DBG_F_MALLOC <=> DBG_QM_MALLOC */
 #ifdef F_MALLOC
@@ -50,22 +51,9 @@
 #endif
 
 #ifdef PKG_MALLOC
-#	ifdef VQ_MALLOC
-#		include "vq_malloc.h"
-		extern struct vqm_block* mem_block;
-#	elif defined F_MALLOC
-#		include "f_malloc.h"
-		extern struct fm_block* mem_block;
-#	elif defined HP_MALLOC
-#		include "hp_malloc.h"
-		extern struct hp_block* mem_block;
-#   else
-#		include "q_malloc.h"
-		extern struct qm_block* mem_block;
-#	endif
+#include "common.h"
 
-	extern char *mem_pool;
-
+extern char *mem_pool;
 
 #ifdef STATISTICS
 #define PKG_TOTAL_SIZE_IDX       0
@@ -114,11 +102,46 @@ void set_pkg_stats(pkg_status_holder*);
 #		ifdef VQ_MALLOC
 #			define pkg_malloc(s) vqm_malloc(mem_block, (s))
 #			define pkg_free(p)   vqm_free(mem_block, (p))
+
 #		elif defined F_MALLOC
 #       include "../error.h"
 #			define pkg_malloc(s) fm_malloc(mem_block, (s))
+#		ifdef F_MALLOC_OPTIMIZATIONS
 #			define pkg_realloc(p, s) fm_realloc(mem_block, (p), (s))
-#			define pkg_free(p)   fm_free(mem_block, (p))
+#			define pkg_free(p) fm_free(mem_block, (p))
+#		else
+#			define pkg_free(p) \
+				do { \
+					if (shm_block && \
+						((void *)p >= (void *)shm_block->first_frag && \
+						 (void *)p <= (void *)shm_block->last_frag)) { \
+						LM_BUG("pkg_free() on shm ptr %p - aborting!\n", p); \
+						abort(); \
+					} else if (p && ((void *)p < (void *)mem_block->first_frag || \
+							   (void *)p > (void *)mem_block->last_frag)) { \
+						LM_BUG("pkg_free() on non-pkg ptr %p - aborting!\n", p); \
+						abort(); \
+					} \
+					fm_free(mem_block, (p)); \
+				} while (0)
+
+#			define pkg_realloc(p, s) \
+				({ \
+					if (shm_block && \
+						((void *)p >= (void *)shm_block->first_frag && \
+						 (void *)p <= (void *)shm_block->last_frag)) { \
+						LM_BUG("pkg_realloc(%lu) on shm ptr %p - aborting!\n", \
+							   (unsigned long)s, p); \
+						abort(); \
+					} else if (p && ((void *)p < (void *)mem_block->first_frag || \
+							   (void *)p > (void *)mem_block->last_frag)) { \
+						LM_BUG("pkg_realloc(%lu) on non-pkg ptr %p - abort!\n", \
+							   (unsigned long)s, p); \
+						abort(); \
+					} \
+					fm_realloc(mem_block, (p), (s)); \
+				 })
+#		endif
 #                       define pkg_info(i) fm_info(mem_block,i)
 #		elif defined HP_MALLOC
 #			define pkg_malloc(s) hp_pkg_malloc(mem_block, (s))
