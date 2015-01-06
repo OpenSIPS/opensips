@@ -468,19 +468,26 @@ modparam("presence", "end_sub_on_timeout", 0)
 
 1.4.2.  handle_subscribe(char* force_active)
 
-   The function which handles SUBSCRIBE requests. It stores or
-   updates information in database and calls functions to send
-   Notify messages when a Subscribe which initiate a dialog is
-   received
+   This function is to be used for handling SUBSCRIBE requests. It
+   stores or updates the watcher/subscriber information in
+   database. Additionally, in response to initial SUBSCRIBE
+   requests (creating a new subscription session), the function
+   also sends back the NOTIFY (with the presence information) to
+   the wathcer/subscriber.
 
-   It can take one parameter meaningful when you use a
-   configuration with privacy rules enabled (force_active
-   parameter in presence_xml module not set). Supposing that you
-   have a means to tell that the contact the Subscribe message is
-   destined to( the presentity) can not upload an xcap document
-   with it's privacy rules, you can tell the presence server to
-   consider that subscription allowed(with
-   Subscription-Status:active) by calling handle_subscribe
+   The function may take on parameter that controlls what is the
+   default policy (of the presentity) on accepting new
+   subscriptions (accept or reject) - of course, this paramter
+   makes sense only when using a presence configuration with
+   privacy rules enabled (force_active parameter in presence_xml
+   module is not set).
+
+   There are scenarios where the presentity (the party you
+   subscribe to) can not upload an XCAP document with it's privacy
+   rules (to controll which watchers are allowed to subscribe to
+   it). In such case, from script level, you can force the
+   presence server to consider the current subscription allowed
+   (with Subscription-Status:active) by calling handle_subscribe()
    function with the string parameter "1".
    Ex:
         if(uri =~ "kphone@opensips.org")
