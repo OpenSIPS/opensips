@@ -37,6 +37,7 @@
 
 #include "../config.h"
 #include "../dprint.h"
+#include "../stdlib.h"
 
 /* fix debug defines, DBG_F_MALLOC <=> DBG_QM_MALLOC */
 #ifdef F_MALLOC
