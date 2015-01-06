@@ -66,6 +66,7 @@ DEFS+= -DCHANGEABLE_DEBUG_LEVEL #Enables support for changeable debug level at r
 DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
 #DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DF_MALLOC #An even faster allocator. Not recommended for debugging
+#DEFS+= -DF_MALLOC_OPTIMIZATIONS #Remove all internal checks in F_MALLOC
 DEFS+= -DUSE_TCP #Compiles in TCP support 
 #DEFS+= -DUSE_TLS #Compiles in TLS support
 #DEFS+= -DUSE_SCTP #Compiles in SCTP support

@@ -31,10 +31,12 @@
 #ifdef SHM_MEM
 
 #include "../statistics.h"
+#include "../error.h"
 
 #ifndef shm_mem_h
 #define shm_mem_h
 
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -65,10 +67,10 @@
 
 #include "../dprint.h"
 #include "../lock_ops.h" /* we don't include locking.h on purpose */
+#include "common.h"
 
 #ifdef VQ_MALLOC
 #	include "vq_malloc.h"
-	extern struct vqm_block* shm_block;
 #	define MY_MALLOC vqm_malloc
 #	define MY_FREE vqm_free
 #	define MY_STATUS vqm_status
@@ -76,7 +78,6 @@
 #	warn "no proper vq_realloc implementation, try another memory allocator"
 #elif defined F_MALLOC
 #	include "f_malloc.h"
-	extern struct fm_block* shm_block;
 #	define MY_MALLOC fm_malloc
 #	define MY_FREE fm_free
 #	define MY_REALLOC fm_realloc
@@ -96,7 +97,6 @@
 #	define MY_REALLOC_UNSAFE MY_REALLOC
 #elif defined HP_MALLOC
 #	include "hp_malloc.h"
-	extern struct hp_block* shm_block;
 #	define MY_MALLOC hp_shm_malloc
 #	define MY_MALLOC_UNSAFE hp_shm_malloc_unsafe
 #	define MY_FREE hp_shm_free
@@ -118,7 +118,6 @@
 #	define  update_mem_pattern_file hp_update_mem_pattern_file
 #else
 #	include "q_malloc.h"
-	extern struct qm_block* shm_block;
 #	define MY_MALLOC qm_malloc
 #	define MY_FREE qm_free
 #	define MY_REALLOC qm_realloc
@@ -315,7 +314,6 @@ void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
 
 #else /*DBQ_QM_MALLOC*/
 
-
 inline static void* shm_malloc_unsafe(unsigned int size)
 {
 	void *p;
@@ -351,6 +349,17 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 
 #ifndef HP_MALLOC
 	shm_lock();
+#if (defined F_MALLOC) && !(defined F_MALLOC_OPTIMIZATIONS)
+	if (ptr >= (void *)mem_block->first_frag &&
+		ptr <= (void *)mem_block->last_frag) {
+		LM_BUG("shm_realloc(%u) on pkg ptr %p - aborting!\n", size, ptr);
+		abort();
+	} else if (ptr && (ptr < (void *)shm_block->first_frag ||
+			   ptr > (void *)shm_block->last_frag)) {
+		LM_BUG("shm_realloc(%u) on non-shm ptr %p - aborting!\n", size, ptr);
+		abort();
+	}
+#endif
 #endif
 
 	p = MY_REALLOC(shm_block, ptr, size);
@@ -386,6 +395,17 @@ inline static void shm_free(void *_p)
 {
 #ifndef HP_MALLOC
 	shm_lock();
+#if defined(F_MALLOC) && !defined(F_MALLOC_OPTIMIZATIONS)
+	if (_p >= (void *)mem_block->first_frag &&
+		_p <= (void *)mem_block->last_frag) {
+		LM_BUG("shm_free() on pkg ptr %p - aborting!\n", _p);
+		abort();
+	} else if (_p && (_p < (void *)shm_block->first_frag ||
+					  _p > (void *)shm_block->last_frag)) {
+		LM_BUG("shm_free() on non-shm ptr %p - aborting!\n", _p);
+		abort();
+	}
+#endif
 #endif
 
 #ifdef HP_MALLOC
