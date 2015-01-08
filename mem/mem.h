@@ -32,6 +32,9 @@
 
 #ifndef mem_h
 #define mem_h
+
+#include <stdlib.h>
+
 #include "../config.h"
 #include "../dprint.h"
 #include "../stdlib.h"
