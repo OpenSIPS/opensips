@@ -37,7 +37,6 @@
 
 #include "../config.h"
 #include "../dprint.h"
-#include "../stdlib.h"
 
 /* fix debug defines, DBG_F_MALLOC <=> DBG_QM_MALLOC */
 #ifdef F_MALLOC
@@ -104,7 +103,6 @@ void set_pkg_stats(pkg_status_holder*);
 #			define pkg_free(p)   vqm_free(mem_block, (p))
 
 #		elif defined F_MALLOC
-#       include "shm_mem.h"
 #       include "../error.h"
 #			define pkg_malloc(s) fm_malloc(mem_block, (s))
 #		ifdef F_MALLOC_OPTIMIZATIONS
