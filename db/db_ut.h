@@ -62,6 +62,10 @@
 
 #ifndef _BSD_SOURCE
 #define _BSD_SOURCE
+/**
+ * _BSD_SOURCE has been replaced with the _DEFAULT_SOURCE macro
+ */
+#define _DEFAULT_SOURCE 1
 #endif
 
 #include <time.h>
