@@ -32,6 +32,9 @@
 
 #ifndef mem_h
 #define mem_h
+
+#include <stdlib.h>
+
 #include "../config.h"
 #include "../dprint.h"
 
@@ -112,6 +115,7 @@ void set_pkg_stats(pkg_status_holder*);
 #			define pkg_malloc(s) vqm_malloc(mem_block, (s))
 #			define pkg_free(p)   vqm_free(mem_block, (p))
 #		elif defined F_MALLOC
+#       include "../error.h"
 #			define pkg_malloc(s) fm_malloc(mem_block, (s))
 #			define pkg_realloc(p, s) fm_realloc(mem_block, (p), (s))
 #			define pkg_free(p)   fm_free(mem_block, (p))
