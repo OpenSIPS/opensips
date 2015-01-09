@@ -101,6 +101,12 @@
 #define COMPRESS_CB (1<<0)
 #define COMPACT_CB (1<<1)
 
+#define SET_GLOBAL_CTX(pos, value) \
+	(context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, pos, value))
+
+#define GET_GLOBAL_CTX(pos) \
+	(context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, pos))
+
 static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy();
@@ -110,6 +116,7 @@ unsigned char* mnd_hdrs_mask = NULL;
 unsigned char* compact_form_mask = NULL;
 struct tm_binds tm_api;
 int compress_ctx_pos, compact_ctx_pos;
+int tm_compress_ctx_pos, tm_compact_ctx_pos;
 
 static int sh_fixup(void**, int);
 
@@ -121,6 +128,7 @@ static int mc_compress_fixup(void**, int);
 static int mc_compress(struct sip_msg*, char*, char*, char*);
 int mc_compress_cb(char** buf, void* param, int type, int* olen);
 static inline int mc_ndigits(int x);
+static inline void parse_algo_hdr(struct hdr_field* algo_hdr, int* algo, int* b64_required);
 
 static int mc_decompress(struct sip_msg*);
 void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p);
@@ -128,8 +136,10 @@ int wrap_msg_func(str*, struct sip_msg*, int type);
 
 
 
+
 static char body_buf[BUFLEN];
 static char hdr_buf[BUFLEN/2];
+struct cell* global_tran=NULL;
 
 static str body_in  = {NULL, 0},
 	   body_out = {NULL, 0},
@@ -162,22 +172,22 @@ static cmd_export_t cmds[]={
 };
 
 struct module_exports exports= {
-	"compression",		/* module's name */
-	MOD_TYPE_DEFAULT,	/* class of this module */
+	"compression",			/* module's name */
+	MOD_TYPE_DEFAULT, /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,	/* dlopen flags */
+	DEFAULT_DLFLAGS,		/* dlopen flags */
 	NULL,				/* module dependencies */
-	cmds,				/* exported functions */
-	NULL,				/* exported async functions */
-	mod_params,			/* param exports */
-	0,					/* exported statistics */
-	mi_cmds,			/* exported MI functions */
-	0,					/* exported pseudo-variables */
-	0,					/* additional processes */
-	mod_init,			/* module initialization function */
-	0,					/* reply processing function */
+	cmds,			/* exported functions */
+	0,				/* exported async functions */
+	mod_params,		/* param exports */
+	0,			/* exported statistics */
+	mi_cmds,		/* exported MI functions */
+	0,			/* exported pseudo-variables */
+	0,			/* additional processes */
+	mod_init,		/* module initialization function */
+	0,			/* reply processing function */
 	mod_destroy,
-	child_init			/* pre-child init function */
+	child_init		/* pre-child init function */
 };
 
 
@@ -193,7 +203,6 @@ int mnd_hdrs[]={
 	HDR_CALLID_T,
 	HDR_CONTACT_T
 };
-
 int compact_form_hdrs[]={
 	HDR_CALLID_T,
 	HDR_CONTACT_T,
@@ -249,7 +258,6 @@ mem:
 
 }
 
-
 void wrap_tm_compress(struct cell* t, int type, struct tmcb_params* p)
 {
 	wrap_tm_func( t, COMPRESS_CB, p);
@@ -264,19 +272,38 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 {
 	char* buf = t->uac[p->code].request.buffer.s;
 	int olen = t->uac[p->code].request.buffer.len;
+	void* args;
 
 	switch (type) {
 		case COMPRESS_CB:
-			if (mc_compress_cb(&buf, *p->param, TM_CB, &olen) < 0) {
+			if ((args = GET_GLOBAL_CTX(compress_ctx_pos)) == NULL)
+				break;
+
+			if (mc_compress_cb(&buf, args, TM_CB, &olen) < 0) {
 				LM_ERR("compression failed\n");
 				return;
 			}
+
+			pkg_free(args);
+			SET_GLOBAL_CTX(compress_ctx_pos, NULL);
 			break;
 		case COMPACT_CB:
-			if (mc_compact_cb(&buf, *p->param, TM_CB, &olen) < 0) {
+			/* if not registered yet we take from global context */
+			if ((args = GET_GLOBAL_CTX(compact_ctx_pos)) == NULL)
+				break;
+
+			if (mc_compact_cb(&buf, args, TM_CB, &olen) < 0) {
 				LM_ERR("compaction failed\n");
 				return;
 			}
+
+			pkg_free(args);
+			SET_GLOBAL_CTX(compact_ctx_pos, NULL);
+
+			break;
+		default:
+			LM_BUG("!!! invalid CB type arg!\n");
+			return;
 	}
 
 	t->uac[p->code].request.buffer.s = buf;
@@ -296,36 +323,37 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 	void* args;
 	int olen=buf->len;
 
-	/* tm operation */
-	if (p_msg == NULL)
-		return 0;
+	if (current_processing_ctx == NULL) {
+		LM_DBG("null context. cb shall not be removed\n");
+		return 1;
+	}
 
 	switch (type) {
 	case COMPRESS_CB:
-		args = msg_ctx_get_ptr(p_msg, compress_ctx_pos);
-
-		if (args == NULL) {
-			LM_DBG("compress null args\n");
-			return 0;
-		}
-
+		if ((args = GET_GLOBAL_CTX(compress_ctx_pos))==NULL)
+			break;
 
 		if (mc_compress_cb(&buf->s, args, PROCESSING_CB, &olen) < 0) {
 			LM_ERR("compression failed. Probably not requested message\n");
 			return -1;
 		}
+
+		pkg_free(args);
+		SET_GLOBAL_CTX(compact_ctx_pos, NULL);
+
 		break;
 	case COMPACT_CB:
-		args = msg_ctx_get_ptr(p_msg, compact_ctx_pos);
+		if ((args = GET_GLOBAL_CTX(compact_ctx_pos))==NULL)
+			break;
 
-		if (args == NULL) {
-			LM_DBG("compact null args. Probably not requested message\n");
-			return 0;
-		}
 		if (mc_compact_cb(&buf->s, args, PROCESSING_CB, &olen) < 0) {
 			LM_ERR("compaction failed\n");
 			return -1;
 		}
+
+		pkg_free(args);
+		SET_GLOBAL_CTX(compact_ctx_pos, NULL);
+
 		break;
 	}
 	buf->len = olen;
@@ -333,6 +361,9 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 	return 0;
 }
 
+/*
+ *
+ */
 static int mod_init(void)
 {
 	LM_INFO("Initializing module...\n");
@@ -347,25 +378,30 @@ static int mod_init(void)
 		mc_level = 6;
 	}
 
-	compress_ctx_pos = msg_ctx_register_ptr();
+	compress_ctx_pos = context_register_ptr(CONTEXT_GLOBAL);
 	LM_DBG("received compress context postion %d\n", compress_ctx_pos);
 
-	compact_ctx_pos = msg_ctx_register_ptr();
+	compact_ctx_pos = context_register_ptr(CONTEXT_GLOBAL);
 	LM_DBG("received compact context postion %d\n", compact_ctx_pos);
 
 	memset(&tm_api, 0, sizeof(struct tm_binds));
 	if (load_tm_api(&tm_api) != 0)
 		LM_DBG("TM modules was not found\n");
 
-
 	return 0;
 }
 
+/*
+ *
+ */
 static int child_init(int rank)
 {
 	return 0;
 }
 
+/*
+ *
+ */
 static void mod_destroy(void)
 {
 	return;
@@ -404,6 +440,7 @@ static int set_wh_param(void **param, unsigned char* def_hdrs_mask)
 
 	return 0;
 }
+
 /*
  * Fixup function for 'mc_compact'
  */
@@ -530,7 +567,7 @@ static int mc_compact_no_args(struct sip_msg* msg)
 }
 
 /*
- * Test function to parse message
+ * Compaction function
  * 1) Headers of same type will be put together
  * 2) Header names with compact forms will be transformed to
  * compact form
@@ -539,15 +576,18 @@ static int mc_compact_no_args(struct sip_msg* msg)
  */
 static int mc_compact(struct sip_msg* msg, char* whitelist)
 {
-	mc_param_p wh_param = (mc_param_p)whitelist;
 	mc_whitelist_p wh_list;
 	struct mc_cmpct_args* args;
+	mc_param_p wh_param = (mc_param_p)whitelist;
 
 	if (mc_get_whitelist(msg, &wh_param, &wh_list, mnd_hdrs_mask)) {
 		LM_ERR("Cannot get whitelist\n");
 		return -1;
 	}
 
+
+	/* args shall be created only if global contexts do not exist and
+	 * tm is not present or tm context is empty */
 	args=pkg_malloc(sizeof(struct mc_cmpct_args));
 	if (args==NULL) {
 		LM_ERR("no more pkg mem\n");
@@ -555,24 +595,24 @@ static int mc_compact(struct sip_msg* msg, char* whitelist)
 	}
 	args->wh_param = wh_param;
 	args->wh_list  = wh_list;
-
-	/* register tm and msg callbacks */
-	msg_ctx_put_ptr(msg, compact_ctx_pos, (void*)args);
-
-	LM_DBG("compaction callback registered\n");
-
-	/*register tm callback if tm api */
-	if (tm_api.register_tmcb &&
-			tm_api.register_tmcb( msg, 0, TMCB_PRE_SEND_BUFFER,
-				wrap_tm_compact, (void*)args, 0) != 1) {
-		LM_ERR("failed to add tm callback\n");
-		goto err00;
-	}
+	SET_GLOBAL_CTX(compact_ctx_pos, (void*)args);
 
 	/* register stateless callbacks */
 	if (register_post_raw_processing_cb(wrap_msg_compact, POST_RAW_PROCESSING, 1/*to be freed*/) < 0) {
 		LM_ERR("failed to add raw processing cb\n");
 		return -1;
+	}
+
+	if (tm_api.t_gett && msg->flags&FL_TM_CB_REGISTERED)
+		return 1;
+
+	/*register tm callback if tm api */
+	if (tm_api.register_tmcb &&
+			tm_api.register_tmcb( msg, 0, TMCB_PRE_SEND_BUFFER,
+				wrap_tm_compact, NULL, 0) != 1) {
+		LM_ERR("failed to add tm TMCB_PRE_SEND_BUFFER callback\n");
+		msg->flags |= FL_TM_CB_REGISTERED;
+		goto err00;
 	}
 
 	return 1;
@@ -581,10 +621,11 @@ err00:
 	if (wh_param && wh_param->type == WH_TYPE_PVS)
 		free_whitelist(&wh_list);
 	return -1;
-
-
 }
 
+/*
+ *
+ */
 static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 {
 	int i;
@@ -602,6 +643,7 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 
 	struct hdr_field *hf;
 	struct hdr_field** hdr_mask;
+	struct mc_cmpct_args* args;
 
 	body_frag_p frg;
 	body_frag_p frg_head;
@@ -610,8 +652,11 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 	mc_param_p wh_param;
 	mc_whitelist_p wh_list;
 
-	wh_param = ((struct mc_cmpct_args*)param)->wh_param;
-	wh_list  = ((struct mc_cmpct_args*)param)->wh_list;
+
+	args = (struct mc_cmpct_args*)param;
+
+	wh_param = args->wh_param;
+	wh_list  = args->wh_list;
 
 	hdr_mask = pkg_malloc(HDR_EOH_T * sizeof(struct hdr_field*));
 
@@ -772,8 +817,9 @@ static int mc_compact_cb(char** buf_p, void* param, int type, int* olen)
 
 	/*
 	 * If body is empty Content-Type is not necessary anymore
+	 * But only if Content-Type exists
 	 */
-	if (new_body_len == 0) {
+	if (hdr_mask[HDR_CONTENTTYPE_T] && new_body_len == 0) {
 		clean_hdr_field(hdr_mask[HDR_CONTENTTYPE_T]);
 		hdr_mask[HDR_CONTENTTYPE_T] = NULL;
 	}
@@ -901,9 +947,6 @@ again:
 	memcpy(*buf_p, new_buf.s, new_buf.len);
 	*olen = new_buf.len;
 
-	/* Free the arguments structure */
-	pkg_free(param);
-
 	/* Free the vector */
 	pkg_free(hdr_mask);
 
@@ -919,7 +962,6 @@ free_mem:
 	free_whitelist(&wh_list);
 	return -1;
 }
-
 
 /*
  * Fixup function for mc_compress
@@ -960,8 +1002,7 @@ static inline int mc_ndigits(int x)
 }
 
 /*
- * Test function to parse the message with
- * parse_hname2
+ * Compression function
  * 1) Only mandatory headers will be kept
  * 2) The rest of the headers along with the body
  * will form the new body which will be use for compression
@@ -975,9 +1016,9 @@ static int mc_compress(struct sip_msg* msg, char* param1, char* param2, char* pa
 	int flags=0;
 	int index;
 	pv_value_t value;
+	struct mc_comp_args* args;
 	gparam_p gp_algo  = (gparam_p)param1;
 	gparam_p gp_flags = (gparam_p)param2;
-	struct mc_comp_args* args;
 
 	mc_param_p wh_param = (mc_param_p)param3;
 	mc_whitelist_p hdr2compress_list;
@@ -1037,7 +1078,6 @@ flags:
 			flags = ((gparam_p)value.rs.s)->v.ival;
 			pkg_free(value.rs.s);
 			break;
-
 	}
 
 	if (!(flags&BODY_COMP_FLG) && !(flags&HDR_COMP_FLG)) {
@@ -1083,47 +1123,42 @@ skip_parse:
 		hdr2compress_list->hdr_mask[HDR_CONTENTLENGTH_T/MC_BYTE_SIZE] |=
 					1 << (HDR_CONTENTLENGTH_T%MC_BYTE_SIZE);
 
-
-	args = pkg_malloc(sizeof(struct mc_comp_args));
-	if (args == NULL) {
-		if (wh_param && wh_param->type == WH_TYPE_PVS)
-			free_whitelist(&hdr2compress_list);
+	args=pkg_malloc(sizeof(struct mc_comp_args));
+	if (args==NULL) {
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
-
-	memset(args, 0, sizeof(struct mc_comp_args));
 
 	args->hdr2compress_list = hdr2compress_list;
 	args->flags = flags;
 	args->algo = algo;
 	args->wh_param = wh_param;
+	SET_GLOBAL_CTX(compress_ctx_pos, (void*)args);
 
-	msg_ctx_put_ptr(msg, compress_ctx_pos, (void*)args);
-
-	LM_DBG("compression callback registered\n");
-
-	/*register tm callback if tm api */
-	if (tm_api.register_tmcb &&
-			tm_api.register_tmcb( msg, 0, TMCB_PRE_SEND_BUFFER,
-				wrap_tm_compress, (void*)args, 0) != 1) {
-		LM_ERR("failed to add tm callback\n");
-		return -1;
-	}
-
-	/* register stateless callback */
+	/* register stateless callbacks */
 	if (register_post_raw_processing_cb(wrap_msg_compress, POST_RAW_PROCESSING, 1/*to be freed*/) < 0) {
 		LM_ERR("failed to add raw processing cb\n");
 		return -1;
 	}
 
+	if (tm_api.t_gett && msg->flags&FL_TM_CB_REGISTERED)
+		return 1;
 
-
+	/*register tm callback if tm api */
+	if (tm_api.register_tmcb &&
+			tm_api.register_tmcb( msg, 0, TMCB_PRE_SEND_BUFFER,
+				wrap_tm_compress, NULL, 0) != 1) {
+		LM_ERR("failed to add tm TMCB_PRE_SEND_BUFFER callback\n");
+		msg->flags |= FL_TM_CB_REGISTERED;
+		return -1;
+	}
 
 	return 1;
 }
 
-
+/*
+ *
+ */
 int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 {
 	int rc;
@@ -1135,6 +1170,7 @@ int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 	int hdr_compress_len=0;
 
 	str msg_start;
+
 	char *buf=*buf_p;
 	char *end=buf+strlen(buf);
 	unsigned long temp;
@@ -1149,11 +1185,10 @@ int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 	mc_param_p wh_param;
 	mc_whitelist_p hdr2compress_list;
 
-
+	wh_param = args->wh_param;
 	hdr2compress_list = args->hdr2compress_list;
 	algo = args->algo;
 	flags = args->flags;
-	wh_param = args->wh_param;
 
 	mc_parse_first_line(&msg_start, &buf);
 
@@ -1423,7 +1458,7 @@ only_body:
 		alloc_size += sizeof(HDRS_ENCODING) - 1;
 	}
 
-	/* if budy compressed new content length and content encoding
+	/* if body compressed new content length and content encoding
 	 * plus if required more space for base64 in content encoding header*/
 
 	if (bufencoded.s) {
@@ -1499,6 +1534,13 @@ only_body:
 				hdr_value = str_init(DEFLATE_ALGO);
 			wrap_copy_and_update(&buf2send.s, hdr_name.s,
 						hdr_name.len, &buf2send.len);
+
+			if (flags & B64_ENCODED_FLG) {
+				wrap_copy_and_update(&buf2send.s, BASE64_ALGO,
+						sizeof(BASE64_ALGO)-1, &buf2send.len);
+				wrap_copy_and_update(&buf2send.s, ATTR_DELIM,
+						ATTR_DELIM_LEN, &buf2send.len);
+			}
 			wrap_copy_and_update(&buf2send.s, hdr_value.s,
 						hdr_value.len, &buf2send.len);
 			wrap_copy_and_update(&buf2send.s, CRLF,
@@ -1509,6 +1551,7 @@ only_body:
 		if (bufencoded.s) {
 			wrap_copy_and_update(&buf2send.s, CE_NAME,
 						CE_NAME_LEN, &buf2send.len);
+
 			if (flags & B64_ENCODED_FLG) {
 				wrap_copy_and_update(&buf2send.s, BASE64_ALGO,
 						sizeof(BASE64_ALGO)-1, &buf2send.len);
@@ -1525,6 +1568,12 @@ only_body:
 		if (hdr_bufencoded.s) {
 			str hdr_name = str_init(HDRS_ENCODING),
 				hdr_value = str_init(GZIP_ALGO);
+			if (flags & B64_ENCODED_FLG) {
+				wrap_copy_and_update(&buf2send.s, BASE64_ALGO,
+						sizeof(BASE64_ALGO)-1, &buf2send.len);
+				wrap_copy_and_update(&buf2send.s, ATTR_DELIM,
+						ATTR_DELIM_LEN, &buf2send.len);
+			}
 			wrap_copy_and_update(&buf2send.s, hdr_name.s,
 						hdr_name.len, &buf2send.len);
 			wrap_copy_and_update(&buf2send.s, hdr_value.s,
@@ -1593,8 +1642,6 @@ only_body:
 
 	free_hdr_list(&mnd_hdrs_head);
 	free_hdr_list(&non_mnd_hdrs_head);
-	/* free arguments structure */
-	pkg_free(args);
 
 	if (wh_param && wh_param->type == WH_TYPE_PVS)
 		free_whitelist(&hdr2compress_list);
@@ -1651,7 +1698,6 @@ static int get_algo(str* tok)
 	#define FIRST_THREE(_str_) (_str_ & 0xFFFFFF)
 	#define FIRST_TWO(_str_) (_str_ & 0xFFFF)
 
-
 	switch (DWORD(tok->s)) {
 		case DEFL:
 			break;
@@ -1660,7 +1706,6 @@ static int get_algo(str* tok)
 		case BASE:
 			goto check_b64;
 		default:
-			LM_ERR("not implemented\n");
 			return -1;
 	}
 
@@ -1699,7 +1744,6 @@ static int mc_decompress(struct sip_msg* msg)
 	int hdrs_algo=-1;
 	int b64_required=-1;
 
-	str tok;
 	str msg_body;
 	str msg_final;
 
@@ -1775,42 +1819,10 @@ static int mc_decompress(struct sip_msg* msg)
 		with the one in the compressed body or in compressed headers*/
 
 	if (hdr_vec[3]) {
-		char* delim=NULL;
-		str s_tok;
-
 		hdr_vec[0] = msg->content_length;
-		s_tok.s = hdr_vec[3]->body.s;
-		s_tok.len = hdr_vec[3]->body.len;
-
-		do {
-			delim = q_memchr(s_tok.s, ATTR_DELIM[0], s_tok.len);
-
-			if (delim==NULL) {
-
-				trim_spaces_lr(s_tok);
-				rc = get_algo(&s_tok);
-			} else {
-				tok.s = s_tok.s;
-				tok.len = delim - s_tok.s;
-
-				s_tok.s = delim+1;
-				s_tok.len -= (delim-tok.s+1);
-
-				trim_spaces_lr(tok);
-				rc = get_algo(&tok);
-			}
-
-			if (rc < 2 && rc >= 0)
-				algo = rc;
-			else
-				b64_required=rc;
-
-		} while (delim);
+		parse_algo_hdr(hdr_vec[3], &algo, &b64_required);
 	}
 
-	if (hdr_vec[2]) {
-		hdrs_algo = get_algo(&hdr_vec[2]->body);
-	}
 
 	if (b64_required > 0 && hdr_vec[3]) {
 		msg_body.s = msg->last_header->name.s + msg->last_header->len + CRLF_LEN;
@@ -1839,7 +1851,12 @@ static int mc_decompress(struct sip_msg* msg)
 		b64_decode.len = msg_body.len;
 	}
 
-	if (hdr_vec[1]) {
+	b64_required=0;
+	if (hdr_vec[2]) {
+		parse_algo_hdr(hdr_vec[3], &algo, &b64_required);
+	}
+
+	if (b64_required > 0 &&  hdr_vec[1]) {
 		if (wrap_realloc(&hdr_in, calc_max_base64_decode_len(hdr_vec[1]->body.len)))
 			return -1;
 
@@ -1850,6 +1867,9 @@ static int mc_decompress(struct sip_msg* msg)
 					(unsigned char*)hdr_vec[1]->body.s,
 							hdr_vec[1]->body.len
 					);
+	} else if (hdr_vec[1]) {
+		b64_decode.s = hdr_vec[1]->body.s;
+		b64_decode.len = hdr_vec[1]->body.len;
 	}
 
 	switch (hdrs_algo) {
@@ -1888,7 +1908,6 @@ static int mc_decompress(struct sip_msg* msg)
 		case -1:
 			break;
 		default:
-			LM_ERR("not implemented\n");
 			return -1;
 	}
 
@@ -2070,3 +2089,38 @@ static int mc_decompress(struct sip_msg* msg)
 	return 1;
 }
 
+
+static inline void parse_algo_hdr(struct hdr_field* algo_hdr, int* algo, int* b64_required)
+{
+	int rc;
+	char* delim=NULL;
+
+	str tok;
+	str s_tok;
+
+	s_tok.s = algo_hdr->body.s;
+	s_tok.len = algo_hdr->body.len;
+
+	do {
+		delim = q_memchr(s_tok.s, ATTR_DELIM[0], s_tok.len);
+
+		if (delim==NULL) {
+			trim_spaces_lr(s_tok);
+			rc = get_algo(&s_tok);
+		} else {
+			tok.s = s_tok.s;
+			tok.len = delim - s_tok.s;
+
+			s_tok.s = delim+1;
+			s_tok.len = (delim-tok.s+1);
+
+			trim_spaces_lr(tok);
+			rc = get_algo(&tok);
+		}
+
+		if (rc < 2 && rc >=0)
+			*algo = rc;
+		else
+			*b64_required = rc;
+	} while(delim);
+}
