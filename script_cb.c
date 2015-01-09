@@ -272,13 +272,15 @@ int run_raw_processing_cb(int type, str *data, struct sip_msg* msg, struct raw_p
 
 	struct raw_processing_cb_list *foo=NULL, *last_good=NULL, *head=NULL;
 	char *initial_data = data->s, *input_data;
+	int rc;
 
 	if (list == NULL)
 		return 0;
 
 	while (list) {
 		input_data = data->s;
-		if (list->f(data, msg) < 0) {
+		/* a return code bigger than 0 means you want to keep the callback */
+		if ((rc = list->f(data, msg)) < 0) {
 			LM_ERR("failed to run callback\n");
 			return -1;
 		}
@@ -290,7 +292,7 @@ int run_raw_processing_cb(int type, str *data, struct sip_msg* msg, struct raw_p
 		list = list->next;
 
 		if (foo != NULL) {
-			if (foo->freeable) {
+			if (foo->freeable && rc == 0) {
 				/* foo will be gone so link the last good element
 				 * to the next one */
 				if (last_good)
