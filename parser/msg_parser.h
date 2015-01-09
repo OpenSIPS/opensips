@@ -109,6 +109,10 @@ enum request_method {
                                       * callbacks were registered */
 #define FL_SHM_UPDATABLE     (1<<15) /* a SHM cloned message can be updated
                                       * (TM used, requires FL_SHM_CLONE) */
+#define FL_TM_CB_REGISTERED (1<<16) /* tm callbacks for this message have been
+									 * registered (by setting this flag, you
+									 * will know if any tm callbacks for this
+									 * message have been registered) */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10
