@@ -43,6 +43,8 @@ typedef struct _async_ctx {
 	context_p msg_ctx;
 	/* the transaction for the handled message */
 	struct cell *t;
+
+	enum kill_reason kr;
 } async_ctx;
 
 extern int return_code; /* from action.c, return code */
@@ -95,6 +97,8 @@ int t_resume_async(int fd, void *param)
 	backup_t = get_t();
 	/* fake transaction */
 	set_t( t );
+	reset_kr();
+	set_kr(ctx->kr);
 	/* make available the avp list from transaction */
 	backup_list = set_avp_list( &t->user_avps );
 	/* set default send address to the saved value */
@@ -198,6 +202,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->resume_route = resume_route;
 	ctx->msg_ctx = current_processing_ctx;
 	ctx->t = t;
+	ctx->kr = get_kr();
 
 	/* place the FD + resume function (as param) into reactor */
 	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, (void*)ctx)<0 ) {
