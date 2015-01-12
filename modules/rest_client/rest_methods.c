@@ -24,24 +24,284 @@
  * 2013-02-28: Created (Liviu)
  */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <curl/curl.h>
 
+#include "../../mem/shm_mem.h"
+#include "../../async.h"
 #include "rest_methods.h"
 #include "rest_cb.h"
 
-static char err_buff[CURL_ERROR_SIZE];
 static char print_buff[MAX_CONTENT_TYPE_LEN];
+
+CURLM *multi_handle;
 
 #define w_curl_easy_setopt(h, opt, value) \
 	do { \
 		rc = curl_easy_setopt(h, opt, value); \
 		if (rc != CURLE_OK) { \
-			LM_ERR("setopt operation %d failed (%d)\n", opt, rc); \
-			goto error; \
+			LM_ERR("curl_easy_setopt(%d): (%s)\n", opt, curl_easy_strerror(rc)); \
+			goto cleanup; \
 		} \
 	} while (0)
+
+/* simultaneous ongoing transfers within this process */
+static int transfers;
+static int read_fds[FD_SETSIZE];
+
+/* libcurl's reported running handles */
+static int running_handles;
+
+static inline char is_new_transfer(int fd)
+{
+	int it;
+
+	for (it = 0; it < transfers; it++) {
+		if (fd == read_fds[it])
+			return 0;
+	}
+
+	return 1;
+}
+
+static inline void add_transfer(int fd)
+{
+	read_fds[transfers++] = fd;
+}
+
+static inline char del_transfer(int fd)
+{
+	int it;
+
+	for (it = 0; it < transfers; it++) {
+		if (fd == read_fds[it]) {
+			transfers--;
+			for (; it < transfers; it++)
+				read_fds[it] = read_fds[it + 1];
+
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+/**
+ * start_async_get - performs an HTTP GET request, stores results in pvars
+ *		- TCP connect phase is synchronous, due to libcurl limitations
+ *		- TCP read phase is asynchronous, thanks to the libcurl multi interface
+ *
+ * @msg:		sip message struct
+ * @url:		HTTP URL to be queried
+ * @out_handle: CURL easy handle this request will be based on
+ * @body_pv:	pvar which will hold the result body
+ * @ctype_pv:	NULL / pvar which will hold the reply content type header
+ * @code_pv:	NULL / pvar to hold the HTTP return code
+ */
+int start_async_get(struct sip_msg *msg, char *url, CURL **out_handle,
+					str *body, str *ctype)
+{
+	CURL *handle;
+	CURLcode rc;
+	CURLMcode mrc;
+	fd_set rset, wset, eset;
+	int max_fd, fd, i;
+	long lim, check_time;
+
+	handle = curl_easy_init();
+	if (!handle) {
+		LM_ERR("Init curl handle failed!\n");
+		return -1;
+	}
+
+	w_curl_easy_setopt(handle, CURLOPT_URL, url);
+
+	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+
+	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
+	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
+
+	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
+	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, body);
+
+	if (ctype) {
+		w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
+		w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, ctype);
+	}
+
+	if (ssl_capath)
+		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
+
+	if (!ssl_verifypeer)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0L);
+
+	if (!ssl_verifyhost)
+		w_curl_easy_setopt(handle, CURLOPT_SSL_VERIFYHOST, 0L);
+
+	curl_multi_add_handle(multi_handle, handle);
+
+	check_time = 10000;
+	/* obtain a read fd in "connection_timeout" seconds at worst */
+	for (i = 0, lim = connection_timeout * 1000000L / check_time; i < lim; i++) {
+
+		mrc = curl_multi_perform(multi_handle, &running_handles);
+		if (mrc != CURLM_OK) {
+			LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
+			goto error;
+		}
+		LM_DBG("running handles: %d\n", running_handles);
+		LM_DBG("DATA:\n%.*s\n", body->len, body->s);
+
+		FD_ZERO(&rset);
+		mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
+		if (mrc != CURLM_OK) {
+			LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
+			goto error;
+		}
+
+		LM_DBG("max fd: %d\n", max_fd);
+
+		if (max_fd != -1) {
+			for (fd = 0; fd <= max_fd; fd++) {
+				if (FD_ISSET(fd, &rset)) {
+
+					LM_DBG(" >>>>>>>>>> fd %d ISSET(read)\n", fd);
+					if (is_new_transfer(fd)) {
+						LM_DBG("add fd to read list: %d\n", fd);
+						add_transfer(fd);
+						goto success;
+					}
+				}
+			}
+		}
+
+		/**
+		 * libcurl is currently stuck in internal operations - probably connect()
+		 *    we have to poll it a few times until it gives us a read fd
+		 */
+		usleep(check_time);
+	}
+
+	LM_ERR("timeout while getting read fd! url: '%s'\n", url);
+	goto error;
+
+success:
+	*out_handle = handle;
+	return fd;
+
+error:
+	mrc = curl_multi_remove_handle(multi_handle, handle);
+	if (mrc != CURLM_OK)
+		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
+
+cleanup:
+	curl_easy_cleanup(handle);
+	return -1;
+}
+
+enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *_param)
+{
+	CURLcode rc;
+	CURLMcode mrc;
+	rest_async_param *param = (rest_async_param *)_param;
+	int running, max_fd;
+	long http_rc;
+	fd_set rset, wset, eset;
+	pv_value_t val;
+
+	mrc = curl_multi_perform(multi_handle, &running);
+	if (mrc != CURLM_OK) {
+		LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
+		return -1;
+	}
+	LM_DBG("running handles: %d\n", running);
+	LM_DBG("DATA:\n%.*s\n", param->body.len, param->body.s);
+
+	if (running == running_handles)
+		return ASYNC_CONTINUE;
+
+	if (running > running_handles) {
+		LM_BUG("incremented handles!!");
+		return ASYNC_ERROR;
+	}
+
+	running_handles = running;
+
+	FD_ZERO(&rset);
+	mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
+	if (mrc != CURLM_OK) {
+		LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
+		return ASYNC_ERROR;
+	}
+
+	if (max_fd == -1) {
+		if (running_handles != 0) {
+			LM_BUG("running_handles == %d", running_handles);
+			abort();
+			return ASYNC_ERROR;
+		}
+
+		if (FD_ISSET(fd, &rset)) {
+			LM_BUG("fd %d is still in rset!", fd);
+			abort();
+			return ASYNC_ERROR;
+		}
+
+	} else if (FD_ISSET(fd, &rset)) {
+		LM_DBG("fd %d still transfering...\n", fd);
+		return ASYNC_CONTINUE;
+	}
+
+	if (del_transfer(fd) != 0) {
+		LM_BUG("failed to delete fd %d", fd);
+		abort();
+		return ASYNC_ERROR;
+	}
+
+	mrc = curl_multi_remove_handle(multi_handle, param->handle);
+	if (mrc != CURLM_OK) {
+		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
+		return ASYNC_ERROR;
+	}
+
+	val.flags = PV_VAL_STR;
+	val.rs = param->body;
+	if (pv_set_value(msg, param->body_pv, 0, &val) != 0)
+		LM_ERR("failed to set output body pv\n");
+
+	if (param->ctype_pv) {
+		val.rs = param->ctype;
+		if (pv_set_value(msg, param->ctype_pv, 0, &val) != 0)
+			LM_ERR("failed to set output ctype pv\n");
+	}
+
+	if (param->code_pv) {
+		rc = curl_easy_getinfo(param->handle, CURLINFO_RESPONSE_CODE, &http_rc);
+		if (rc != CURLE_OK) {
+			LM_ERR("curl_easy_getinfo: %s\n", curl_easy_strerror(rc));
+			http_rc = -1;
+		}
+
+		LM_DBG("Last response code: %ld\n", http_rc);
+
+		val.flags = PV_VAL_INT|PV_TYPE_INT;
+		val.ri = (int)http_rc;
+		if (pv_set_value(msg, param->code_pv, 0, &val) != 0)
+			LM_ERR("failed to set output code pv\n");
+	}
+
+	pkg_free(param->body.s);
+	if (param->ctype_pv)
+		pkg_free(param->ctype.s);
+	curl_easy_cleanup(param->handle);
+	shm_free(param);
+
+	return ASYNC_DONE;
+}
 
 /**
  * rest_get_method - performs an HTTP GET request, stores results in pvars
@@ -58,7 +318,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 	CURL *handle = NULL;
 	long http_rc;
 	pv_value_t pv_val;
-	str st = { print_buff, 0 };
+	str st = { 0, 0 };
 	str body = { 0, 0 };
 
 	handle = curl_easy_init();
@@ -74,14 +334,13 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
-	w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &body);
 
 	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	w_curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
 
 	if (ssl_capath)
 		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
@@ -94,10 +353,8 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	rc = curl_easy_perform(handle);
 	if (rc != CURLE_OK) {
-		LM_ERR("Error [%i] while performing curl operation\n", rc);
-		LM_ERR("[%s]\n", err_buff);
-
-		goto error;
+		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
+		goto cleanup;
 	}
 
 	trim(&body);
@@ -107,7 +364,7 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (body.s) {
@@ -119,8 +376,10 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto error;
+			goto cleanup;
 		}
+
+		pkg_free(st.s);
 	}
 
 	if (code_pv) {
@@ -132,14 +391,14 @@ int rest_get_method(struct sip_msg *msg, char *url,
 
 		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set code pv value failed!\n");
-			goto error;
+			goto cleanup;
 		}
 	}
 
 	curl_easy_cleanup(handle);
 	return 1;
 
-error:
+cleanup:
 	curl_easy_cleanup(handle);
 	return -1;
 }
@@ -161,7 +420,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 	CURL *handle = NULL;
 	long http_rc;
 	struct curl_slist *list = NULL;
-	str st = { print_buff, 0 };
+	str st = { 0, 0 };
 	str res_body = { 0, 0 };
 	pv_value_t pv_val;
 
@@ -187,14 +446,13 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
-	w_curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, err_buff);
 	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 1);
 
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, &res_body);
 
 	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-	w_curl_easy_setopt(handle, CURLOPT_WRITEHEADER, &st);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &st);
 
 	if (ssl_capath)
 		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
@@ -209,10 +467,8 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 	curl_slist_free_all(list);
 
 	if (rc != CURLE_OK) {
-		LM_ERR("Error [%i] while performing curl operation\n", rc);
-		LM_ERR("[%s]\n", err_buff);
-
-		goto error;
+		LM_ERR("curl_easy_perform: %s\n", curl_easy_strerror(rc));
+		goto cleanup;
 	}
 
 	trim(&res_body);
@@ -222,7 +478,7 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 
 	if (pv_set_value(msg, body_pv, 0, &pv_val) != 0) {
 		LM_ERR("Set body pv value failed!\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (res_body.s) {
@@ -234,8 +490,10 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 
 		if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set content type pv value failed!\n");
-			goto error;
+			goto cleanup;
 		}
+
+		pkg_free(st.s);
 	}
 
 	if (code_pv) {
@@ -247,14 +505,14 @@ int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
 
 		if (pv_set_value(msg, code_pv, 0, &pv_val) != 0) {
 			LM_ERR("Set code pv value failed!\n");
-			goto error;
+			goto cleanup;
 		}
 	}
 
 	curl_easy_cleanup(handle);
 	return 1;
 
-error:
+cleanup:
 	curl_easy_cleanup(handle);
 	return -1;
 }

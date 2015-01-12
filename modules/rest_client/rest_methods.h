@@ -32,6 +32,8 @@
 #include "../../error.h"
 #include "../../mem/mem.h"
 
+extern CURLM *multi_handle;
+
 extern long connection_timeout;
 extern long curl_timeout;
 
@@ -39,10 +41,24 @@ extern char *ssl_capath;
 extern int ssl_verifypeer;
 extern int ssl_verifyhost;
 
+typedef struct rest_async_param_ {
+	CURL *handle;
+	str body;
+	str ctype;
+
+	pv_spec_p body_pv;
+	pv_spec_p ctype_pv;
+	pv_spec_p code_pv;
+} rest_async_param;
+
 int rest_get_method(struct sip_msg *msg, char *url,
                     pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
 int rest_post_method(struct sip_msg *msg, char *url, char *ctype, char *body,
                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv);
+
+int start_async_get(struct sip_msg *msg, char *url, CURL **out_handle,
+					str *body, str *ctype);
+enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *param);
 
 #endif /* _REST_METHODS_ */
 

@@ -86,6 +86,12 @@ size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 			left--;
 		}
 
+		st->s = pkg_realloc(st->s, left);
+		if (!st->s) {
+			LM_ERR("no more pkg mem\n");
+			return E_OUT_OF_MEM;
+		}
+
 		st->len = left;
 		memcpy(st->s, ptr, left);
 
