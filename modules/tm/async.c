@@ -86,7 +86,8 @@ int t_resume_async(int fd, void *param)
 	if (!fake_req( &faked_req /* the fake msg to be built*/,
 		t->uas.request, /* the template msg saved in transaction */
 		&t->uas, /*the UAS side of the transaction*/
-		&uac /* the fake UAC */)
+		&uac, /* the fake UAC */
+		1 /* copy dst_uri too */)
 	) {
 		LM_ERR("fake_req failed\n");
 		return 0;
