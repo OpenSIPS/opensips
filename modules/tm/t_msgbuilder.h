@@ -126,7 +126,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 
 
 static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
-		struct ua_server *uas, struct ua_client *uac)
+		struct ua_server *uas, struct ua_client *uac, int with_dst)
 {
 	/* on_negative_reply faked msg now copied from shmem msg (as opposed
 	 * to zero-ing) -- more "read-only" actions (exec in particular) will
@@ -153,10 +153,22 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	faked_req->new_uri.s[faked_req->new_uri.len]=0;
 	faked_req->parsed_uri_ok = 0;
 
-	/*
-	 * duplicate the advertised address and port into private mem
-	 * so that they can be changed at script level
-	 */
+	/* duplicate the dst_uri, advertised address and port into private mem
+	 * so that they can be changed at script level */
+	if (with_dst) {
+		if (shm_msg->dst_uri.s) {
+			faked_req->dst_uri.s = pkg_malloc(shm_msg->dst_uri.len);
+			if (!faked_req->dst_uri.s) {
+				LM_ERR("out of pkg mem\n");
+				goto out;
+			}
+			memcpy(faked_req->dst_uri.s, shm_msg->dst_uri.s, shm_msg->dst_uri.len);
+		}
+	} else {
+		faked_req->dst_uri.s = NULL;
+		faked_req->dst_uri.len = 0;
+	}
+
 	if (shm_msg->set_global_address.s) {
 		faked_req->set_global_address.s = pkg_malloc(shm_msg->set_global_address.len);
 		if (!faked_req->set_global_address.s) {
