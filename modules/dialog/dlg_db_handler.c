@@ -951,10 +951,11 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 		VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 		VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
-		VAL_TYPE(values+13) = VAL_TYPE(values+14) =
-		VAL_TYPE(values+18) = VAL_TYPE(values+19) = VAL_TYPE(values+21) =
-		VAL_TYPE(values+22) = VAL_TYPE(values+23) =
+		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
+		VAL_TYPE(values+21) = VAL_TYPE(values+22) = VAL_TYPE(values+23) =
 		VAL_TYPE(values+24) = DB_STR;
+
+		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
 		entry = (d_table->entries)[cell->h_entry];
@@ -1017,8 +1018,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+20) =
 		DB_INT;
 
-		VAL_TYPE(values+13) = VAL_TYPE(values+14) =
-		VAL_TYPE(values+18) = VAL_TYPE(values+19) = DB_STR;
+		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) = DB_STR;
+		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
 		entry = (d_table->entries)[cell->h_entry];
@@ -1051,8 +1052,9 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 	} else if (cell->flags & DLG_FLAG_VP_CHANGED) {
 		VAL_TYPE(values) = DB_BIGINT;
+		VAL_TYPE(values+18) = DB_BLOB;
+		VAL_TYPE(values+19) = DB_STR;
 		VAL_TYPE(values+20) = DB_INT;
-		VAL_TYPE(values+18) = VAL_TYPE(values+19) = DB_STR;
 
 		/* lock the entry */
 		entry = (d_table->entries)[cell->h_entry];
@@ -1292,7 +1294,9 @@ void dialog_update_db(unsigned int ticks, void * param)
 	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-	VAL_TYPE(values+21) = VAL_TYPE(values+22) = DB_STR;
+	VAL_TYPE(values+22) = DB_STR;
+
+	VAL_TYPE(values+21) = DB_BLOB;
 
 	for(index = 0; index< d_table->size; index++){
 
@@ -1946,7 +1950,9 @@ static int restore_dlg_db(void)
 	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-	VAL_TYPE(values+21) = VAL_TYPE(values+22) = DB_STR;
+	VAL_TYPE(values+22) = DB_STR;
+
+	VAL_TYPE(values+21) = DB_BLOB;
 
 	if (remove_all_dialogs_from_db() != 0) {
 		LM_ERR("Failed to truncate dialog table!\n");
