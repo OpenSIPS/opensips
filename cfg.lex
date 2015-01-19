@@ -66,6 +66,7 @@
 	#include "mem/mem.h"
 	#include <string.h>
 	#include <stdlib.h>
+	#include <unistd.h>
 	#include "ip_addr.h"
 
 
