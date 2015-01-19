@@ -50,6 +50,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
 
 struct sr_module* modules=0;
 
@@ -79,6 +84,10 @@ struct sr_module* modules=0;
 #ifdef STATIC_SL
 	extern struct module_exports sl_exports;
 #endif
+
+char *mpath=NULL;
+char mpath_buf[256];
+int  mpath_len = 0;
 
 
 /* initializes statically built (compiled in) modules*/
@@ -267,6 +276,56 @@ skip:
 	return -1;
 }
 
+/* returns 0 on success , <0 on error */
+int load_module(char* name)
+{
+	int i_tmp;
+	struct stat statf;
+
+	if(*name!='/' && mpath!=NULL
+		&& strlen(name)+mpath_len<255)
+	{
+		strcpy(mpath_buf+mpath_len, name);
+		if (stat(mpath_buf, &statf) == -1) {
+			i_tmp = strlen(mpath_buf);
+			if(strchr(name, '/')==NULL &&
+				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
+			{
+				if(i_tmp+strlen(name)<255)
+				{
+					strcpy(mpath_buf+i_tmp-3, "/");
+					strcpy(mpath_buf+i_tmp-2, name);
+					if (stat(mpath_buf, &statf) == -1) {
+						mpath_buf[mpath_len]='\0';
+						LM_ERR("module '%s' not found in '%s'\n",
+								name, mpath_buf);
+						return -1;
+					}
+				} else {
+					LM_ERR("failed to load module - path too long");
+					return -1;
+				}
+			} else {
+				LM_ERR("failed to load module - not found");
+				return -1;
+			}
+		}
+		LM_DBG("loading module %s\n", mpath_buf);
+		if (sr_load_module(mpath_buf)!=0){
+			LM_ERR("failed to load module");
+			return -1;
+		}
+		mpath_buf[mpath_len]='\0';
+	} else {
+		LM_DBG("loading module %s\n", name);
+		if (sr_load_module(name)!=0){
+			LM_ERR("failed to load module");
+			return -1;
+		}
+	}
+	return 0;
+}
+
 
 
 /* searches the module list and returns pointer to the "name" function or
@@ -298,11 +357,11 @@ cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
 			if((strcmp(name, cmd->name)==0)&&
-			   (cmd->param_no==param_no) &&
-			   ((cmd->flags & flags) == flags)
+				(cmd->param_no==param_no) &&
+				((cmd->flags & flags) == flags)
 			  ){
 				LM_DBG("found <%s>(%d) in module %s [%s]\n",
-					name, param_no, t->exports->name, t->path);
+						name, param_no, t->exports->name, t->path);
 				return cmd;
 			}
 		}

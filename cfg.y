@@ -80,9 +80,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -109,6 +107,7 @@
 #include "tcp_conn.h"
 #include "db/db_insertq.h"
 #include "bin_interface.h"
+#include "net/trans.h"
 
 
 #include "config.h"
@@ -136,24 +135,20 @@ static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str s_tmp;
 static str tstr;
+static enum sip_protos p_tmp;
 static struct ip_addr* ip_tmp;
 static pv_spec_t *spec;
 static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
-static struct stat statf;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 static action_elem_t route_elems[MAX_ACTION_ELEMS];
 action_elem_t *a_tmp;
 
 static inline void warn(char* s);
-static struct socket_id* mk_listen_id(char*, int, int);
+static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
-
-static char *mpath=NULL;
-static char mpath_buf[256];
-static int  mpath_len = 0;
 
 extern int line;
 extern int column;
@@ -291,10 +286,6 @@ extern char *finame;
 %token AF
 %token MYSELF
 %token MSGLEN
-%token UDP
-%token TCP
-%token TLS
-%token SCTP
 %token NULLV
 %token CACHE_STORE
 %token CACHE_FETCH
@@ -465,6 +456,7 @@ extern char *finame;
 %token <intval> NUMBER
 %token <intval> ZERO
 %token <strval> ID
+%token <strval> PROTO_NAME
 %token <strval> STRING
 %token <strval> SCRIPTVAR
 %token <strval> IPV6ADDR
@@ -499,7 +491,6 @@ extern char *finame;
 %type <specval> script_var
 %type <strval> host
 %type <strval> listen_id
-%type <sockid> listen_lst
 %type <sockid> listen_def
 %type <sockid> id_lst
 %type <sockid> phostport
@@ -578,25 +569,15 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 						}
 	;
 
-proto:	  UDP	{ $$=PROTO_UDP; }
-		| TCP	{ $$=PROTO_TCP; }
-		| TLS	{
-			#ifdef USE_TLS
-				$$=PROTO_TLS;
-			#else
-				$$=PROTO_TCP;
-				warn("tls support not compiled in");
-			#endif
-			}
-		| SCTP  {
-			#ifdef USE_SCTP
-				$$=PROTO_SCTP;
-			#else
-				yyerror("sctp support not compiled in\n");YYABORT;
-			#endif
-			}
-		| ANY	{ $$=0; }
-		;
+proto:	PROTO_NAME {
+		p_tmp = get_trans_proto($1);
+		if (p_tmp == PROTO_NONE) {
+			yyerrorf("cannot handle protocol <%s>\n", $1);
+			YYABORT;
+		}
+		$$ = p_tmp;
+	 }
+;
 
 port:	  NUMBER	{ $$=$1; }
 		| ANY		{ $$=0; }
@@ -608,8 +589,8 @@ snumber:	NUMBER	{ $$=$1; }
 ;
 
 
-phostport:	listen_id				{ $$=mk_listen_id($1, 0, 0); }
-			| listen_id COLON port	{ $$=mk_listen_id($1, 0, $3); }
+phostport:	listen_id				{ $$=mk_listen_id($1, PROTO_NONE, 0); }
+			| listen_id COLON port	{ $$=mk_listen_id($1, PROTO_NONE, $3); }
 			| proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
 			| listen_id COLON error { $$=0; yyerror(" port number expected"); }
@@ -627,11 +608,6 @@ listen_def:	phostport				{ $$=$1; }
 			| phostport AS listen_id COLON port{ $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); }
 			| phostport AS listen_id COLON port USE_CHILDREN NUMBER { $$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5); $1->children=$7; }
 			;
-
-listen_lst:		listen_def		{  $$=$1 ; }
-		| listen_def listen_lst	{ $$=$1; $$->next=$2; }
-		;
-
 
 blst_elem: LPAREN  proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				s_tmp.s=$8;
@@ -1200,22 +1176,8 @@ assign_stm: DEBUG EQUAL snumber {
 		| XLOG_FORCE_COLOR EQUAL NUMBER { xlog_force_color = $3; }
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
-		| LISTEN EQUAL listen_lst {
-							for(lst_tmp=$3; lst_tmp; lst_tmp=lst_tmp->next){
-								if (add_listen_iface(	lst_tmp->name,
-														lst_tmp->port,
-														lst_tmp->proto,
-														lst_tmp->adv_name,
-														lst_tmp->adv_port,
-														lst_tmp->children,
-														0
-													)!=0){
-									LM_CRIT("cfg. parser: failed"
-											" to add listen address\n");
-									break;
-								}
-							}
-							 }
+		| LISTEN EQUAL listen_def {
+						}
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
@@ -1375,43 +1337,8 @@ assign_stm: DEBUG EQUAL snumber {
 	;
 
 module_stm:	LOADMODULE STRING	{
-			if(*$2!='/' && mpath!=NULL
-					&& strlen($2)+mpath_len<255)
-			{
-				strcpy(mpath_buf+mpath_len, $2);
-				if (stat(mpath_buf, &statf) == -1) {
-					i_tmp = strlen(mpath_buf);
-					if(strchr($2, '/')==NULL &&
-							strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
-					{
-						if(i_tmp+strlen($2)<255)
-						{
-							strcpy(mpath_buf+i_tmp-3, "/");
-							strcpy(mpath_buf+i_tmp-2, $2);
-							if (stat(mpath_buf, &statf) == -1) {
-								mpath_buf[mpath_len]='\0';
-								LM_ERR("module '%s' not found in '%s'\n",
-									$2, mpath_buf);
-								yyerror("failed to load module");
-							}
-						} else {
-							yyerror("failed to load module - path too long");
-						}
-					} else {
-						yyerror("failed to load module - not found");
-					}
-				}
-				LM_DBG("loading module %s\n", mpath_buf);
-				if (sr_load_module(mpath_buf)!=0){
-					yyerror("failed to load module");
-				}
-				mpath_buf[mpath_len]='\0';
-			} else {
-				LM_DBG("loading module %s\n", $2);
-				if (sr_load_module($2)!=0){
-					yyerror("failed to load module");
-				}
-			}
+			if (load_module($2) < 0)
+				yyerrorf("failed to load module %s\n", $2);
 		}
 		| LOADMODULE error	{ yyerror("string expected");  }
 		| MODPARAM LPAREN STRING COMMA STRING COMMA STRING RPAREN {
@@ -3255,7 +3182,7 @@ static void yyerrorf(char *fmt, ...)
 }
 
 
-static struct socket_id* mk_listen_id(char* host, int proto, int port)
+static struct socket_id* mk_listen_id(char* host, enum sip_protos proto, int port)
 {
 	struct socket_id* l;
 	l=pkg_malloc(sizeof(struct socket_id));

@@ -395,10 +395,6 @@ MODPARAM        modparam
 /* values */
 YES			"yes"|"true"|"on"|"enable"
 NO			"no"|"false"|"off"|"disable"
-UDP			"udp"|"UDP"
-TCP			"tcp"|"TCP"
-TLS			"tls"|"TLS"
-SCTP		"sctp"|"SCTP"
 INET		"inet"|"INET"
 INET6		"inet6"|"INET6"
 SSLv23			"sslv23"|"SSLv23"|"SSLV23"|"TLSany"|"TLSAny"
@@ -412,6 +408,7 @@ ALPHANUM	{LETTER}|{DIGIT}|[_]
 NUMBER		0|([1-9]{DIGIT}*)
 /*NUMBER		0|(([-+])?[1-9]{DIGIT}*)*/
 ID			{LETTER}{ALPHANUM}*
+PROTO_NAME	{LETTER}*
 HEX			[0-9a-fA-F]
 HEXNUMBER	0x{HEX}+
 OCTNUMBER	0[0-7]+
@@ -786,10 +783,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{YES}			{ count(); yylval.intval=1; return NUMBER; }
 <INITIAL>{NO}			{ count(); yylval.intval=0; return NUMBER; }
 <INITIAL>{NULLV}		{ count(); yylval.intval=0; return NULLV; }
-<INITIAL>{TCP}			{ count(); return TCP; }
-<INITIAL>{UDP}			{ count(); return UDP; }
-<INITIAL>{TLS}			{ count(); return TLS; }
-<INITIAL>{SCTP}			{ count(); return SCTP; }
 <INITIAL>{INET}			{ count(); yylval.intval=AF_INET; return NUMBER; }
 <INITIAL>{INET6}		{ count();
 						#ifdef USE_IPV6
@@ -932,6 +925,11 @@ IMPORTFILE      "import_file"
 <COMMENT>.|{EAT_ABLE}|{CR}				{ count(); };
 
 <INITIAL>{COM_LINE}.*{CR}	{ count(); }
+
+<INITIAL>{PROTO_NAME}	{ count(); addstr(&s_buf, yytext, yyleng);
+									yylval.strval=s_buf.s;
+									memset(&s_buf, 0, sizeof(s_buf));
+									return PROTO_NAME; }
 
 <INITIAL>{ID}			{ count(); addstr(&s_buf, yytext, yyleng);
 									yylval.strval=s_buf.s;

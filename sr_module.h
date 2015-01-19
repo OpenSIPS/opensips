@@ -207,12 +207,15 @@ struct module_exports{
 	                                    after the fork */
 };
 
+extern char *mpath;
+extern char mpath_buf[];
+extern int  mpath_len;
 
 struct sr_module* modules; /*!< global module list*/
 
 int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
-int sr_load_module(char* path);
+int load_module(char* name);
 cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags);
 acmd_export_t* find_acmd_export_t(char* name, int param_no);
 cmd_function find_export(char* name, int param_no, int flags);

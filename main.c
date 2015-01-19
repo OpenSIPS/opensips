@@ -145,6 +145,7 @@
 #include "version.h"
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
+#include "net/trans.h"
 
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
@@ -1368,6 +1369,12 @@ try_again:
 #ifdef DEBUG_PARSER
 	yydebug = 1;
 #endif
+
+	/* initializes transport interfaces */
+	if (init_trans_interface() < 0) {
+		LM_ERR("cannot initilize transport interface\n");
+		goto error;
+	}
 
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
