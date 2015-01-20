@@ -433,11 +433,11 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		advantages, please refer to the OpenSIPS online Manual.
 		</para>
 		<example>
-		<title><function moreinfo="none">exec</function> usage</title>
+		<title><function moreinfo="none">async exec</function> usage</title>
 		<programlisting format="linespecific">
 {
 ...
-async( exec_dset("ruri-changer.sh","$ru","$ru"), resume );
+async( exec("ruri-changer.sh","$ru","$ru"), resume );
 }
 
 route[resume] {

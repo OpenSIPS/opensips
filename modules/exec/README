@@ -54,7 +54,7 @@ Jan Janak
    1.5. exec_msg usage
    1.6. exec_avp usage
    1.7. exec_getenv usage
-   1.8. exec usage
+   1.8. async exec usage
 
 Chapter 1. Admin Guide
 
@@ -336,10 +336,10 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
    to use them and what are their advantages, please refer to the
    OpenSIPS online Manual.
 
-   Example 1.8. exec usage
+   Example 1.8. async exec usage
 {
 ...
-async( exec_dset("ruri-changer.sh","$ru","$ru"), resume );
+async( exec("ruri-changer.sh","$ru","$ru"), resume );
 }
 
 route[resume] {
