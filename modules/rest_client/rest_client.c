@@ -1,7 +1,5 @@
 /*
- * $Id$
- *
- * Copyright (C) 2013 OpenSIPS Solutions
+ * Copyright (C) 2013-2015 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -335,16 +333,20 @@ static int w_async_rest_get(struct sip_msg *msg, async_resume_module **resume_f,
 	if (read_fd < 0) {
 		*resume_param = NULL;
 		*resume_f = NULL;
-	} else {
-		*resume_f = resume_async_get;
-
-		param->body_pv = (pv_spec_p)body_pv;
-		param->ctype_pv = (pv_spec_p)ctype_pv;
-		param->code_pv = (pv_spec_p)code_pv;
-		*resume_param = param;
+		/* keep default async status of NO_IO */
+		return -1;
 	}
 
-	return read_fd;
+	*resume_f = resume_async_get;
+
+	param->body_pv = (pv_spec_p)body_pv;
+	param->ctype_pv = (pv_spec_p)ctype_pv;
+	param->code_pv = (pv_spec_p)code_pv;
+	*resume_param = param;
+	/* async started with success */
+	async_status = read_fd;
+
+	return 1;
 }
 
 static int w_async_rest_post(struct sip_msg *msg, async_resume_module **resume_f,

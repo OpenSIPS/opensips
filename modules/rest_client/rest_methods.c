@@ -221,12 +221,15 @@ enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *_param)
 	LM_DBG("running handles: %d\n", running);
 	LM_DBG("DATA:\n%.*s\n", param->body.len, param->body.s);
 
-	if (running == running_handles)
-		return ASYNC_CONTINUE;
+	if (running == running_handles) {
+		async_status = ASYNC_CONTINUE;
+		return 1;
+	}
 
 	if (running > running_handles) {
 		LM_BUG("incremented handles!!");
-		return ASYNC_ERROR;
+		/* default async status is DONE */
+		return -1;
 	}
 
 	running_handles = running;
@@ -235,37 +238,43 @@ enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *_param)
 	mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
-		return ASYNC_ERROR;
+		/* default async status is DONE */
+		return -1;
 	}
 
 	if (max_fd == -1) {
 		if (running_handles != 0) {
 			LM_BUG("running_handles == %d", running_handles);
 			abort();
-			return ASYNC_ERROR;
+			/* default async status is DONE */
+			return -1;
 		}
 
 		if (FD_ISSET(fd, &rset)) {
 			LM_BUG("fd %d is still in rset!", fd);
 			abort();
-			return ASYNC_ERROR;
+			/* default async status is DONE */
+			return -1;
 		}
 
 	} else if (FD_ISSET(fd, &rset)) {
 		LM_DBG("fd %d still transfering...\n", fd);
-		return ASYNC_CONTINUE;
+		async_status = ASYNC_CONTINUE;
+		return 1;
 	}
 
 	if (del_transfer(fd) != 0) {
 		LM_BUG("failed to delete fd %d", fd);
 		abort();
-		return ASYNC_ERROR;
+		/* default async status is DONE */
+		return -1;
 	}
 
 	mrc = curl_multi_remove_handle(multi_handle, param->handle);
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_remove_handle: %s\n", curl_multi_strerror(mrc));
-		return ASYNC_ERROR;
+		/* default async status is DONE */
+		return -1;
 	}
 
 	val.flags = PV_VAL_STR;
@@ -300,7 +309,8 @@ enum async_ret_code resume_async_get(int fd, struct sip_msg *msg, void *_param)
 	curl_easy_cleanup(param->handle);
 	shm_free(param);
 
-	return ASYNC_DONE;
+	/* default async status is DONE */
+	return 1;
 }
 
 /**
