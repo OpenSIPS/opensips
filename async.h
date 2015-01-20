@@ -31,6 +31,15 @@
 #include "parser/msg_parser.h"
 
 
+/* The possible values of the status of async operatations (as reported by
+ * module functions, at start and resume)
+ * NOTE: all values in this enum must be negative
+ */
+enum async_ret_code {ASYNC_NO_IO=-1, ASYNC_SYNC=-2, ASYNC_DONE=-3, ASYNC_CONTINUE=-4 };
+
+extern int async_status;
+
+
 /* function to handle script function in async mode.
    Input: the sip message, the function/action (MODULE_T) and the ID of
           the resume route (where to continue after the I/O is done).
@@ -56,9 +65,7 @@ int register_async_handlers(async_start_function *f1, async_resume_function *f2)
 
 /* async related functions to be used by the 
  * functions exported by modules */
-enum async_ret_code {ASYNC_DONE, ASYNC_CONTINUE, ASYNC_ERROR};
-
-typedef enum async_ret_code (async_resume_module)
+typedef int (async_resume_module)
 	(int fd, struct sip_msg *msg, void *param);
 
 #endif

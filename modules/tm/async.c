@@ -70,7 +70,6 @@ int t_resume_async(int fd, void *param)
 	struct cell *backup_t;
 	struct usr_avp **backup_list;
 	struct socket_info* backup_si;
-	enum async_ret_code ret;
 	struct cell *t= ctx->t;
 
 	LM_DBG("resuming on fd %d, transaction %p \n",fd, t);
@@ -106,13 +105,12 @@ int t_resume_async(int fd, void *param)
 	backup_si = bind_address;
 	bind_address = t->uac[0].request.dst.send_sock;
 
+	async_status = ASYNC_DONE; /* assume default status as done */
 	/* call the resume function in order to read and handle data */
-	ret = ctx->resume_f( fd, &faked_req, ctx->resume_param );
-	if (ret==ASYNC_CONTINUE) {
+	return_code = ctx->resume_f( fd, &faked_req, ctx->resume_param );
+	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the resume route */
 		goto restore;
-	} else if (ret==ASYNC_ERROR) {
-		/* FIXME set some error indication for the route */
 	}
 
 	/* remove from reactor, we are done */
@@ -171,19 +169,26 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 		LM_CRIT("BUG - invalid action for async I/O - it must a MODULE_T ACMD_ST \n");
 		goto failure;
 	}
-	fd = ((acmd_export_t*)(a->elem[0].u.data))->function(msg, &ctx_f, &ctx_p,
+
+	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
+	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg, &ctx_f, &ctx_p,
 			 (char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
 			 (char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
 			 (char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
 	/* what to do now ? */
-	if (fd==0) {
-		/* function wants to break script, no follow up */
-		return 0;
-	} else if (fd < 0) {
-		/* async I/O was not launched, go for resume route */
-		goto failure;
+	if (async_status>=0) {
+		/* async I/O was succesfully launched */
+		fd = async_status;
+	} else if (async_status==ASYNC_NO_IO) {
+		/* no IO, so simply go for resume route */
+		goto resume;
+	} else if (async_status==ASYNC_SYNC) {
+		/* IO already done in SYNC'ed way */
+		goto resume;
+	} else {
+		/* generic error, go for resume route */
+		goto resume;
 	}
-	/* async I/O was succesfully launched */
 
 	/* do we have a reactor in this process, to handle this 
 	   asyn I/O ? */
@@ -216,19 +221,20 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	current_processing_ctx = NULL;
 	return 0;
 
-
 sync:
 	/* run the resume function */
-	ctx_f( fd, msg, ctx_p );
+	do {
+		return_code = ctx_f( fd, msg, ctx_p );
+	} while(async_status!=ASYNC_CONTINUE);
 	/* run the resume route in sync mode */
 	run_resume_route( resume_route, msg);
 	/* break original script */
 	return 0;
 
-
 failure:
 	/* execute here the resume route with failure indication */
-	return_code = -1; /* FIXME - may be err or not */
+	return_code = -1;
+resume:
 	/* run the resume route */
 	run_resume_route( resume_route, msg);
 	/* the triggering route is terminated and whole script ended */

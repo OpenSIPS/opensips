@@ -26,6 +26,8 @@
 #include "dprint.h"
 #include "async.h"
 
+int async_status = ASYNC_NO_IO;
+
 async_start_function  *async_start_f  = NULL;
 async_resume_function *async_resume_f = NULL;
 
