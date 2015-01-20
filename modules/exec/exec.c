@@ -53,8 +53,6 @@
 
 #define SLEEP_INTERVAL		300
 
-/* used by async process */
-exec_list_p exec_async_list;
 
 int exec_msg(struct sip_msg *msg, char *cmd )
 {
@@ -123,143 +121,6 @@ int exec_write_input(FILE** stream, str* input)
 	return 0;
 }
 
-void exec_async_proc(int rank)
-{
-	#define READ 0
-	#define WRITE 1
-
-	int pid, status, fds[2];
-	exec_cmd_t *cmd, *prev;
-	FILE* stream;
-
-	LM_DBG("started asyncronous process with rank %d\n", rank);
-
-	/* never stops listening */
-	for (;;) {
-		/* checks to see if there is anything in queue */
-		lock_get(exec_async_list->lock);
-		for (cmd = exec_async_list->first; cmd && cmd->pid; cmd = cmd->next);
-		lock_release(exec_async_list->lock);
-
-		if (cmd && cmd->input.len && cmd->input.s) {
-			if (pipe(fds) != 0) {
-				LM_ERR("failed to create pipe (%d: %s)\n",
-					errno, strerror(errno));
-			}
-		}
-
-		if (cmd) {
-			if ((pid = fork()) < 0) {
-				LM_ERR("failed to fork\n");
-			} else if (pid) {
-				exec_async_list->active_childs++;
-				cmd->pid = pid;
-
-				if (cmd->input.s && cmd->input.len) {
-					close(fds[READ]);
-					stream = fdopen(fds[WRITE], "w");
-					exec_write_input(&stream, &cmd->input);
-				}
-
-				schedule_to_kill(pid);
-			} else {
-				close(fds[WRITE]);
-				dup2(fds[READ], 0);
-				close(fds[READ]);
-
-				LM_DBG("running command %s (%d)\n", cmd->cmd, getpid());
-				execl("/bin/sh", "/bin/sh", "-c", cmd->cmd, NULL);
-
-				LM_ERR("failed to run command\n");
-				exit(0);
-			}
-		}
-
-		/* wait for child processes if any */
-		if (exec_async_list->active_childs) {
-			pid = waitpid(-1, &status, WNOHANG);
-			if (pid > 0) {
-				/* search for ended child and delete it */
-				lock_get(exec_async_list->lock);
-				for (cmd = exec_async_list->first, prev = NULL;
-						cmd && cmd->pid != pid;
-						prev = cmd, cmd = cmd->next);
-				if (!cmd) {
-					LM_ERR("[BUG] child %d not present anymore\n", pid);
-				} else {
-					/* if not the first element */
-					if (prev) {
-						prev->next = cmd->next;
-						if (!prev->next)
-							exec_async_list->last = prev;
-					} else {
-						exec_async_list->first = cmd->next;
-						if (!cmd->next)
-							exec_async_list->last = NULL;
-					}
-					/* check for status */
-					if (!WIFEXITED(status) || WEXITSTATUS(status)) {
-						LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
-									cmd->cmd, status, errno, strerror(errno));
-					} else {
-						LM_DBG("cmd %s successfully ended (%d)\n", cmd->cmd, cmd->pid);
-					}
-					shm_free(cmd);
-					exec_async_list->active_childs--;
-				}
-				lock_release(exec_async_list->lock);
-			}
-		}
-		/* if nothing to do - sleep */
-		if (!exec_async_list->first && !exec_async_list->active_childs)
-			usleep(SLEEP_INTERVAL);
-	}
-
-	#undef READ
-	#undef WRITE
-
-}
-
-int exec_async(struct sip_msg *msg, char *cmd, str* input)
-{
-	exec_cmd_t *elem;
-
-	/* alloc memory for command */
-	if (input == NULL)
-		elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1);
-	else
-		elem = shm_malloc(sizeof(exec_cmd_t) + strlen(cmd) + 1
-					+ input->len);
-
-	if (!elem) {
-		LM_ERR("no more shm memory\n");
-		goto error;
-	}
-	memset(elem, 0, sizeof(exec_cmd_t));
-	elem->cmd = (char *)(elem + 1);
-	memcpy(elem->cmd, cmd, strlen(cmd) + 1);
-
-	if (input) {
-		elem->input.s = (char*)elem->cmd + strlen(cmd) + 1;
-		memcpy(elem->input.s, input->s, input->len);
-		elem->input.len = input->len;
-	}
-
-	/* add command in list at the end */
-	lock_get(exec_async_list->lock);
-	if (exec_async_list->last) {
-		exec_async_list->last->next = elem;
-		exec_async_list->last = elem;
-	} else {
-		exec_async_list->first = exec_async_list->last = elem;
-	}
-	lock_release(exec_async_list->lock);
-
-	return 1;
-error:
-	LM_ERR("cmd %s failed to execute, errno=%d: %s\n", cmd, errno, strerror(errno));
-	return -1;
-}
 
 int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
 
@@ -567,7 +428,7 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 {
 
 	pid_t pid;
-	int exit_status, ret;
+	int ret;
 	FILE *pin, *pout, *perr;
 
 	if (input || outvar || errvar) {
@@ -600,7 +461,6 @@ int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gp
 	}
 
 	schedule_to_kill(pid);
-	wait(&exit_status);
 
 	if (outvar) {
 		if (read_and_write2var(msg, &pout, outvar) < 0) {
@@ -636,23 +496,16 @@ error:
 	if (errvar)
 		pclose(perr);
 
-	if (WIFEXITED(exit_status)) {
-		if (WEXITSTATUS(exit_status)!=0) ret=-1;
-	} else {
-		LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
-			command->s, exit_status, errno, strerror(errno));
-		ret=-1;
-	}
-
 	return ret;
 }
 
 
-int start_async_exec(struct sip_msg* msg, str* command, str* input, gparam_p outvar)
+int start_async_exec(struct sip_msg* msg, str* command, str* input,
+													gparam_p outvar, int *fd)
 {
 	pid_t pid;
 	FILE *pin, *pout;
-	int val, fd;
+	int val;
 
 	if (input || outvar) {
 		pid =  __popen3(command->s, input ? &pin : NULL,
@@ -688,21 +541,21 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input, gparam_p out
 	schedule_to_kill(pid);
 
 	if (outvar==NULL) {
-		/* nothing to wait for, simply return "no-async" indication */
-		return -1;
+		/* nothing to wait for, no I/O */
+		return 2;
 	}
 
 	/* prepare the read FD and make it non-blocking */
-	if ( (fd=dup( fileno( pout ) ))<0 ) {
+	if ( (*fd=dup( fileno( pout ) ))<0 ) {
 		LM_ERR("dup failed: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
-	val = fcntl( fd, F_GETFL);
+	val = fcntl( *fd, F_GETFL);
 	if (val==-1){
 		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
 		goto error2;
 	}
-	if (fcntl( fd , F_SETFL, val|O_NONBLOCK)==-1){
+	if (fcntl( *fd , F_SETFL, val|O_NONBLOCK)==-1){
 		LM_ERR("set non-blocking failed: (%d) %s\n",
 			errno, strerror(errno));
 		goto error2;
@@ -711,10 +564,10 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input, gparam_p out
 	fclose(pout);
 
 	/* async started with success */
-	return fd;
+	return 1;
 
 error2:
-	close(fd);
+	close(*fd);
 error:
 	/* async failed */
 	if (outvar)
@@ -723,7 +576,7 @@ error:
 }
 
 
-enum async_ret_code resume_async_exec(int fd, struct sip_msg *msg, void *param)
+int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 {
 	#define MAX_LINE_SIZE 1024
 	char buf[MAX_LINE_SIZE+1];
@@ -759,7 +612,8 @@ enum async_ret_code resume_async_exec(int fd, struct sip_msg *msg, void *param)
 					LM_DBG(" storing %d [%.*s] \n", p->buf_len, p->buf_len, p->buf);
 				}
 				/* async should continue */
-				return ASYNC_CONTINUE;
+				async_status = ASYNC_CONTINUE;
+				return 1;
 			}
 			LM_ERR("read failed with %d (%s)\n",errno, strerror(errno));
 			/* terminate everything */
@@ -812,11 +666,13 @@ enum async_ret_code resume_async_exec(int fd, struct sip_msg *msg, void *param)
 
 	/* done with the async */
 	shm_free(param);
-	return ASYNC_DONE;
+	/* stay with default async status ASYNC_DONE */
+	return 1;
 
 error:
 	shm_free(param);
-	return ASYNC_ERROR;
+	/* stay with default async status ASYNC_DONE */
+	return -1;
 	#undef MAX_LINE_SIZE
 }
 

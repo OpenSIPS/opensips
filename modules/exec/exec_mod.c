@@ -46,16 +46,15 @@
 
 
 unsigned int time_to_kill=0;
-unsigned int async=0;
 
 static int mod_init( void );
 
-inline static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
-inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
-inline static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
-inline static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
-inline static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err, char* avp_env);
-inline static int w_async_exec(struct sip_msg* msg,
+static int w_exec_dset(struct sip_msg* msg, char* cmd, char* foo);
+static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo);
+static int w_exec_avp(struct sip_msg* msg, char* cmd, char* avpl);
+static int w_exec_getenv(struct sip_msg* msg, char* cmd, char* avpl);
+static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err, char* avp_env);
+static int w_async_exec(struct sip_msg* msg,
 		async_resume_module **resume_f, void **resume_param,
 		char *cmd, char* out, char* in, char* err, char* avp_env );
 
@@ -77,17 +76,25 @@ static acmd_export_t acmds[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{"exec_dset", (cmd_function)w_exec_dset, 1, fixup_spve_null,  0,
-		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"exec_msg",  (cmd_function)w_exec_msg,  1, fixup_spve_null,  0,
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
-	{"exec_avp",  (cmd_function)w_exec_avp,  1, fixup_spve_null,  0,
+	{"exec",         (cmd_function)w_exec,         5, exec_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
-	{"exec_avp",  (cmd_function)w_exec_avp,  2, exec_avp_fixup, 0,
+	{"exec",         (cmd_function)w_exec,         4, exec_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
+	{"exec",         (cmd_function)w_exec,         3, exec_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
+	{"exec",         (cmd_function)w_exec,         2, exec_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
+	{"exec",         (cmd_function)w_exec,         1, exec_fixup, 0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
+	{"exec_dset",    (cmd_function)w_exec_dset,    1, exec_avp_fixup,  0,
+		REQUEST_ROUTE|FAILURE_ROUTE},
+	{"exec_msg",     (cmd_function)w_exec_msg,     1, exec_avp_fixup,  0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
+	{"exec_avp",     (cmd_function)w_exec_avp,     1, exec_avp_fixup,  0,
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
+	{"exec_avp",     (cmd_function)w_exec_avp,     2, exec_avp_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
 	{"exec_getenv",  (cmd_function)w_exec_getenv,  2, exec_avp_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
-	{"exec",  (cmd_function)w_exec,  5, exec_fixup, 0,
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE|ONREPLY_ROUTE},
 	{0, 0, 0, 0, 0, 0}
 };
@@ -99,13 +106,7 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"time_to_kill", INT_PARAM, &time_to_kill},
 	{"setvars",      INT_PARAM, &setvars     },
-	{"async",		 INT_PARAM, &async       },
 	{0, 0, 0}
-};
-
-static proc_export_t procs[] = {
-	{"EXEC asynchronous execution",  0,  0, exec_async_proc, 1, 0},
-	{0,0,0,0,0,0}
 };
 
 
@@ -118,14 +119,14 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,/* dlopen flags */
-	NULL,            /* OpenSIPS module dependencies */
+	NULL,           /* OpenSIPS module dependencies */
 	cmds,           /* Exported functions */
 	acmds,          /* Exported async functions */
 	params,         /* Exported parameters */
 	0,              /* exported statistics */
 	0,              /* exported MI functions */
 	0,              /* exported pseudo-variables */
-	procs,          /* extra processes */
+	0,              /* extra processes */
 	mod_init,       /* initialization module */
 	0,              /* response function */
 	exec_shutdown,  /* destroy function */
@@ -142,35 +143,9 @@ void exec_shutdown(void)
 
 static int mod_init( void )
 {
-
 	LM_INFO("exec - initializing\n");
 	if (time_to_kill)
 		initialize_kill();
-
-	if (async) {
-		/* init exeternal structure if async enabled */
-		exec_async_list = shm_malloc(sizeof(exec_list_t));
-		if (!exec_async_list) {
-			LM_ERR("no more shm memory\n");
-			return -1;
-		}
-		memset(exec_async_list, 0, sizeof(exec_list_t));
-		exec_async_list->lock = lock_alloc();
-		if (!exec_async_list->lock) {
-			LM_ERR("cannot alloc asyncronous lock \n");
-			return -1;
-		}
-		if (!lock_init(exec_async_list->lock)) {
-			LM_ERR("failed to init lock\n");
-			return -1;
-		}
-	} else {
-#ifdef STATIC_EXEC
-		exec_exports.procs = 0;
-#else
-		exports.procs = 0;
-#endif
-	}
 
 	return 0;
 }
@@ -241,10 +216,7 @@ inline static int w_exec_msg(struct sip_msg* msg, char* cmd, char* foo)
 
 	LM_DBG("executing [%s]\n", command.s);
 
-	if(async)
-		ret=exec_async(msg, command.s, NULL);
-	else
-		ret=exec_msg(msg, command.s);
+	ret=exec_msg(msg, command.s);
 	if (setvars) {
 		unset_env(backup);
 	}
@@ -311,6 +283,8 @@ static int exec_avp_fixup(void** param, int param_no)
 	s.s = (char*)(*param);
 	if (param_no==1)
 	{
+		LM_WARN("You are using an obosolete function from the EXEC module!"
+			"Please switch to the new exec() function\n");
 		if(s.s==NULL)
 		{
 			LM_ERR("null format in P%d\n", param_no);
@@ -402,6 +376,7 @@ static int exec_fixup(void** param, int param_no)
 	return 0;
 }
 
+
 static inline int setenvvar(struct hf_wrapper** hf, int_str* value, int idx)
 {
 	#define OSIPS_EXEC "OSIPS_EXEC_"
@@ -483,7 +458,6 @@ static struct hf_wrapper* get_avp_values_list(struct sip_msg* msg, pv_param_p av
 memerr:
 	LM_ERR("no more pkg mem\n");
 	return 0;
-
 }
 
 
@@ -496,7 +470,6 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err
 	environment_t* backup_env=0;
 	gparam_p outvar = (gparam_p)out;
 	gparam_p errvar = (gparam_p)err;
-
 
 	if (msg == 0 || cmd == 0)
 		return -1;
@@ -526,11 +499,7 @@ static int w_exec(struct sip_msg* msg, char* cmd, char* in, char* out, char* err
 		release_hf_struct(hf);
 	}
 
-	if (!out && async) {
-		ret = exec_async(msg, command.s, &input);
-	} else {
-		ret = exec_sync(msg, &command, &input, outvar, errvar);
-	}
+	ret = exec_sync(msg, &command, &input, outvar, errvar);
 
 	if (backup_env)
 		unset_env(backup_env);
@@ -548,7 +517,7 @@ static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f, voi
 	environment_t* backup_env=0;
 	gparam_p outvar = (gparam_p)out;
 	exec_async_param *param;
-	int ret;
+	int ret, fd;
 
 	if (msg == 0 || cmd == 0)
 		return -1;
@@ -588,23 +557,32 @@ static int w_async_exec(struct sip_msg* msg, async_resume_module **resume_f, voi
 		return -1;
 	}
 
-	ret = start_async_exec(msg, &command, &input, outvar);
+	ret = start_async_exec(msg, &command, in?&input:NULL, outvar, &fd);
 
 	if (backup_env)
 		unset_env(backup_env);
 
 	/* populate resume point (if async started) */
-	if (ret>0) {
+	if (ret==1) {
 		param->outvar = outvar;
 		/* that ^^^^ is save as "out" is a in private mem, but in all
 		 * processes (set before forking) */
 		param->buf = NULL;
 		*resume_param = (void*)param;
 		*resume_f = resume_async_exec;
-	} else {
+		async_status = fd;
+	} else if (ret==2) {
+		/* no IO done, but success */
 		shm_free(param);
 		*resume_param = NULL;
 		*resume_f = NULL;
+		async_status = ASYNC_NO_IO;
+	} else {
+		/* error */
+		shm_free(param);
+		*resume_param = NULL;
+		*resume_f = NULL;
+		async_status = ASYNC_NO_IO;
 	}
 
 	return ret;
