@@ -152,6 +152,7 @@ static inline int parse_aaa_avps(char *definition,
 		*avp_def = avp;
 		(*cnt)++;
 		avp = 0;
+		avp_name = -1;
 		/* go to the end */
 		p = e;
 		if (*p==';')
