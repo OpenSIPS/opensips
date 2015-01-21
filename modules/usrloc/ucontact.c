@@ -640,18 +640,43 @@ int db_update_ucontact(ucontact_t* _c)
 	char* dom;
 	db_key_t keys1[4];
 	db_val_t vals1[4];
-
-	db_key_t keys2[12];
-	db_val_t vals2[12];
+	db_key_t keys2[13];
+	db_val_t vals2[13];
+	int keys1_no;
+	int keys2_no;
 
 	if (_c->flags & FL_MEM) {
 		return 0;
 	}
 
-	keys1[0] = &user_col;
-	keys1[1] = &contact_col;
-	keys1[2] = &callid_col;
-	keys1[3] = &domain_col;
+	keys1[0] = &contact_col;
+	vals1[0].type = DB_STR;
+	vals1[0].nul = 0;
+	vals1[0].val.str_val = _c->c;
+
+	keys1[1] = &user_col;
+	vals1[1].type = DB_STR;
+	vals1[1].nul = 0;
+	vals1[1].val.str_val = *_c->aor;
+
+	if (use_domain) {
+		keys1[2] = &domain_col;
+		vals1[2].type = DB_STR;
+		vals1[2].nul = 0;
+		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
+		if (dom==0) {
+			vals1[1].val.str_val.len = 0;
+			vals1[2].val.str_val = *_c->aor;
+		} else {
+			vals1[1].val.str_val.len = dom - _c->aor->s;
+			vals1[2].val.str_val.s = dom + 1;
+			vals1[2].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
+		}
+		keys1_no = 3;
+	} else {
+		keys1_no = 2;
+	}
+
 	keys2[0] = &expires_col;
 	keys2[1] = &q_col;
 	keys2[2] = &cseq_col;
@@ -664,18 +689,6 @@ int db_update_ucontact(ucontact_t* _c)
 	keys2[9] = &methods_col;
 	keys2[10] = &last_mod_col;
 	keys2[11] = &attr_col;
-
-	vals1[0].type = DB_STR;
-	vals1[0].nul = 0;
-	vals1[0].val.str_val = *_c->aor;
-
-	vals1[1].type = DB_STR;
-	vals1[1].nul = 0;
-	vals1[1].val.str_val = _c->c;
-
-	vals1[2].type = DB_STR;
-	vals1[2].nul = 0;
-	vals1[2].val.str_val = _c->callid;
 
 	vals2[0].type = DB_DATETIME;
 	vals2[0].nul = 0;
@@ -745,19 +758,22 @@ int db_update_ucontact(ucontact_t* _c)
 		vals2[11].nul = 0;
 		vals2[11].val.str_val = _c->attr;
 	}
+	keys2_no = 12;
 
-	if (use_domain) {
-		vals1[3].type = DB_STR;
-		vals1[3].nul = 0;
-		dom = q_memchr(_c->aor->s, '@', _c->aor->len);
-		if (dom==0) {
-			vals1[0].val.str_val.len = 0;
-			vals1[3].val.str_val = *_c->aor;
-		} else {
-			vals1[0].val.str_val.len = dom - _c->aor->s;
-			vals1[3].val.str_val.s = dom + 1;
-			vals1[3].val.str_val.len = _c->aor->s + _c->aor->len - dom - 1;
-		}
+	if (matching_mode==CONTACT_CALLID) {
+		/* callid is part of the matching key */
+		keys1[keys1_no] = &callid_col;
+		vals1[keys1_no].type = DB_STR;
+		vals1[keys1_no].nul = 0;
+		vals1[keys1_no].val.str_val = _c->callid;
+		keys1_no++;
+	} else {
+		/* callid is part of the update */
+		keys2[keys2_no] = &callid_col;
+		vals2[keys2_no].type = DB_STR;
+		vals2[keys2_no].nul = 0;
+		vals2[keys2_no].val.str_val = _c->callid;
+		keys2_no++;
 	}
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
@@ -768,7 +784,7 @@ int db_update_ucontact(ucontact_t* _c)
 	CON_PS_REFERENCE(ul_dbh) = &my_ps;
 
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2,
-	(use_domain) ? (4) : (3), 12) < 0) {
+	keys1_no, keys2_no) < 0) {
 		LM_ERR("updating database failed\n");
 		return -1;
 	}
