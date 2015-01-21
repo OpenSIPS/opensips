@@ -77,8 +77,10 @@ typedef struct _ds_dest
 	str dst_uri;    /* Actual uri used in ds_select_dst ds_select_domain */
 	str attrs;
 	int flags;
-	int weight;
-	int priority;
+	unsigned short weight;
+	unsigned short running_weight;
+	unsigned short active_running_weight;
+	unsigned short priority;
 	struct socket_info *sock;
 	struct ip_addr ips[DS_MAX_IPS]; /* IP-Address of the entry */
 	unsigned short int ports[DS_MAX_IPS]; /* Port of the request URI */
@@ -92,8 +94,8 @@ typedef struct _ds_set
 {
 	int id;				/* id of dst set */
 	int nr;				/* number of items in dst set */
+	int active_nr;		/* number of active items in dst set */
 	int last;			/* last used item in dst set */
-	int weight_sum;		/* sum of the weights from dst set */
 	ds_dest_p dlist;
 	struct _ds_set *next;
 } ds_set_t, *ds_set_p;
