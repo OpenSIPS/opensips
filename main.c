@@ -816,7 +816,7 @@ static int main_loop(void)
 		if (!tcp_disable){
 			for(si=tcp_listen; si; si=si->next){
 				/* same thing for tcp */
-				if (tcp_init(si)==-1)  goto error;
+				if (tcp_init_old(si)==-1)  goto error;
 				/* get first ipv4/ipv6 socket*/
 				if ((si->address.af==AF_INET)&
 						((sendipv4_tcp==0)||(sendipv4_tcp->flags&SI_IS_LO)))

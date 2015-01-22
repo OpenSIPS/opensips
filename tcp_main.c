@@ -1307,7 +1307,7 @@ release_c:
 
 
 
-int tcp_init(struct socket_info* sock_info)
+int tcp_init_old(struct socket_info* sock_info)
 {
 	union sockaddr_union* addr;
 	int optval;
