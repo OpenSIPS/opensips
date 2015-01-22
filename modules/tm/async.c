@@ -115,7 +115,9 @@ int t_resume_async(int fd, void *param)
 
 	/* remove from reactor, we are done */
 	reactor_del_reader( fd, -1, IO_FD_CLOSING);
-	close(fd);
+
+	if (async_status == ASYNC_DONE_CLOSE_FD)
+		close(fd);
 
 	/* run the resume_route[] */
 	run_resume_route( ctx->resume_route, &faked_req);

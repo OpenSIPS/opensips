@@ -666,7 +666,9 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 
 	/* done with the async */
 	shm_free(param);
-	/* stay with default async status ASYNC_DONE */
+
+	/* make sure our fd is closed by the async engine */
+	async_status = ASYNC_DONE_CLOSE_FD;
 	return 1;
 
 error:

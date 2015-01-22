@@ -35,7 +35,13 @@
  * module functions, at start and resume)
  * NOTE: all values in this enum must be negative
  */
-enum async_ret_code {ASYNC_NO_IO=-1, ASYNC_SYNC=-2, ASYNC_DONE=-3, ASYNC_CONTINUE=-4 };
+enum async_ret_code {
+	ASYNC_NO_IO = -5,
+	ASYNC_SYNC,
+	ASYNC_CONTINUE,
+	ASYNC_DONE_CLOSE_FD,
+	ASYNC_DONE,
+};
 
 extern int async_status;
 
