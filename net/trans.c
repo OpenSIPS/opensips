@@ -26,6 +26,7 @@
 #include <string.h>
 #include "trans.h"
 #include "proto.h"
+#include "net.h"
 #include "../mem/mem.h"
 #include "../sr_module.h"
 
@@ -48,8 +49,12 @@ int init_trans_interface(void)
 	}
 
 	memset(protos, 0, proto_nr * sizeof(struct proto_info));
-//	for (i = 0; i < proto_nr; i++)
-//		protos[i].id = i + 1;
+
+	if (init_net_interface(proto_nr) < 0) {
+		LM_ERR("cannot init network interface\n");
+		pkg_free(protos);
+		return -1;
+	}
 
 	return 0;
 }
@@ -127,13 +132,14 @@ enum sip_protos get_trans_proto(char *name)
 			LM_ERR("cannot find transport API for protocol %s\n", name);
 			goto end;
 		}
-		if (proto_api(&protos[proto - 1].funcs) < 0) {
+		if (proto_api(&protos[proto - 1].binds,
+				&proto_net_binds[proto - 1]) < 0) {
 			LM_ERR("cannot bind transport API for protocol %s\n", name);
 			goto end;
 		}
 
 		/* initialize the module */
-		if (protos[proto - 1].funcs.init && protos[proto - 1].funcs.init() < 0) {
+		if (protos[proto - 1].binds.init && protos[proto - 1].binds.init() < 0) {
 			LM_ERR("cannot initialzie protocol %s\n", name);
 			goto end;
 		}
@@ -146,3 +152,28 @@ enum sip_protos get_trans_proto(char *name)
 end:
 	return PROTO_NONE;
 }
+
+
+int add_listener(struct socket_id *sock, enum si_flags flags)
+{
+	enum sip_protos proto = sock->proto;
+	int port;
+
+	/* validate the protocol */
+	if (proto < 0 || proto >= proto_nr) {
+		LM_BUG("invalid protocol number %d\n", proto);
+		return -1;
+	}
+	if (protos[proto - 1].id == PROTO_NONE) {
+		LM_BUG("protocol %d not registered\n", proto);
+		return -1;
+	}
+	port = sock->port ? sock->port : protos[proto - 1].binds.default_port;
+	if (protos[proto - 1].binds.add_listener &&
+			protos[proto - 1].binds.add_listener(sock->name, port) < 0) {
+		LM_ERR("cannot add socket");
+		return -1;
+	}
+	return 0;
+}
+

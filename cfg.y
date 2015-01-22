@@ -1177,6 +1177,11 @@ assign_stm: DEBUG EQUAL snumber {
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
 		| LISTEN EQUAL listen_def {
+							if (add_listener($3, 0)!=0){
+								LM_CRIT("cfg. parser: failed"
+										" to add listen address\n");
+								break;
+							}
 						}
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"

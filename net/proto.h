@@ -27,13 +27,18 @@
 #define _PROTO_TI_H_
 
 #include "../ip_addr.h"
+#include "proto_net.h"
 
 typedef int (*proto_init_f)(void);
+typedef int (*proto_add_listener_f)(char *name, int port);
 
-struct proto_funcs {
+struct proto {
+	int						default_port;
 	proto_init_f			init;
+	proto_add_listener_f	add_listener;
 };
 
-typedef int (*proto_bind_api)(struct proto_funcs *funcs);
+typedef int (*proto_bind_api)(struct proto *proto_binds,
+		struct proto_net *net_binds);
 
 #endif /* _PROTO_TI_H_ */

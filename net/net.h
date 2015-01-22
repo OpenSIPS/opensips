@@ -23,39 +23,15 @@
  *  2015-01-xx  created (razvanc)
  */
 
-#ifndef _TRANS_TI_H_
-#define _TRANS_TI_H_
+#ifndef _NET_TI_H_
+#define _NET_TI_H_
 
 #include "../ip_addr.h"
-#include "proto.h"
+#include "proto_net.h"
 
-struct proto_info {
-	/* proto as ID */
-	enum sip_protos id;
+extern struct proto_net *proto_net_binds;
 
-	/* listeners on this proto */
-	struct socket_info *listeners;
+int init_net_interface(int size);
+int destroy_net_interface(int size);
 
-	/* bindings for this protocol */
-	struct proto binds;
-};
-
-extern struct proto_info *protos;
-extern unsigned int proto_nr;
-
-/*
- * initializes transport interface structures
- */
-int init_trans_interface(void);
-
-/*
- * returns the ID of the protocol
- */
-enum sip_protos get_trans_proto(char *name);
-
-/*
- * adds a new listener
- */
-int add_listener(struct socket_id *sock, enum si_flags flags);
-
-#endif /* _TRANS_TI_H_ */
+#endif /* _NET_TI_H_ */

@@ -23,39 +23,22 @@
  *  2015-01-xx  created (razvanc)
  */
 
-#ifndef _TRANS_TI_H_
-#define _TRANS_TI_H_
+#include <string.h>
+#include "net.h"
+#include "../mem/mem.h"
 
-#include "../ip_addr.h"
-#include "proto.h"
+struct proto_net *proto_net_binds;
 
-struct proto_info {
-	/* proto as ID */
-	enum sip_protos id;
+int init_net_interface(int size)
+{
+	proto_net_binds = pkg_malloc(size * sizeof(struct proto_net));
+	if (!proto_net_binds) {
+		LM_ERR("no more memory to allocate protocol bindings\n");
+		return -1;
+	}
 
-	/* listeners on this proto */
-	struct socket_info *listeners;
+	memset(proto_net_binds, 0, size * sizeof(struct proto_net));
 
-	/* bindings for this protocol */
-	struct proto binds;
-};
+	return 0;
+}
 
-extern struct proto_info *protos;
-extern unsigned int proto_nr;
-
-/*
- * initializes transport interface structures
- */
-int init_trans_interface(void);
-
-/*
- * returns the ID of the protocol
- */
-enum sip_protos get_trans_proto(char *name);
-
-/*
- * adds a new listener
- */
-int add_listener(struct socket_id *sock, enum si_flags flags);
-
-#endif /* _TRANS_TI_H_ */
