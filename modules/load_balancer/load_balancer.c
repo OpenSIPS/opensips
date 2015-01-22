@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * load balancer module - complex call load balancing
  *
  * Copyright (C) 2009 Voice Sistem SRL
@@ -97,7 +95,7 @@ static int fixup_cnt_call(void** param, int param_no);
 
 static int w_lb_start(struct sip_msg *req, char *grp, char *rl, char *fl);
 static int w_lb_next(struct sip_msg *req);
-static int w_lb_start_and_next(struct sip_msg *req, char *grp, char *rl, char *fl);
+static int w_lb_start_and_next(struct sip_msg *req,char *grp,char *rl,char *fl);
 static int w_lb_reset(struct sip_msg *req);
 static int w_lb_is_started(struct sip_msg *req);
 static int w_lb_disable_dst(struct sip_msg *req);
@@ -500,7 +498,6 @@ static int mi_child_init( void )
 }
 
 
-
 static void mod_destroy(void)
 {
 	/* destroy data */
@@ -855,7 +852,8 @@ void set_dst_state_from_rplcode( int id, int code)
 		if (dst->flags != old_flags) {
 			lb_raise_event(dst);
 			if (lb_prob_verbose)
-				LM_INFO("re-enable destination %d <%.*s> after %d reply on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
+				LM_INFO("re-enable destination %d <%.*s> after %d reply "
+					"on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
 		}
 		lock_stop_read( ref_lock );
 		return;
@@ -867,7 +865,8 @@ void set_dst_state_from_rplcode( int id, int code)
 		if (dst->flags != old_flags) {
 			lb_raise_event(dst);
 			if (lb_prob_verbose)
-				LM_INFO("disable destination %d <%.*s> after %d reply on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
+				LM_INFO("disable destination %d <%.*s> after %d reply "
+					"on probe\n", dst->id, dst->uri.len, dst->uri.s, code);
 		}
 	}
 

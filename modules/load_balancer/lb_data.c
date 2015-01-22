@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * load balancer module - complex call load balancing
  *
  * Copyright (C) 2009 Voice Sistem SRL
@@ -373,7 +371,7 @@ void free_lb_data(struct lb_data *data)
 
 
 static int get_dst_load(struct lb_resource **res, unsigned int res_no,
-								struct lb_dst *dst, unsigned int flags, int *load)
+							struct lb_dst *dst, unsigned int flags, int *load)
 {
 	unsigned int k, l;
 	int av;
@@ -390,11 +388,9 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 
 		av = 0;
 		if( flags & LB_FLAGS_RELATIVE ) {
-			if( dst->rmap[l].max_load ) {
+			if( dst->rmap[l].max_load )
 				av = 100 - (100 * lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id) / dst->rmap[l].max_load);
-			}
-		}
-		else {
+		} else {
 			av = dst->rmap[l].max_load - lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
 		}
 
@@ -402,14 +398,16 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 			*load = av;
 		/*
 		we possibly could have negative avaliability for any resource,
-		because we could use LB_FLAGS_NEGATIVE or manually increment resource with lb_count_call()
+		because we could use LB_FLAGS_NEGATIVE or manually increment resource
+		with lb_count_call()
 		*/
 	}
 	return (k > 0); /* load initialized */
 }
 
 
-int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigned int flags, struct lb_data *data, int reuse)
+int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
+						unsigned int flags, struct lb_data *data, int reuse)
 {
 	/* resources for previous iteration */
 	static struct lb_resource **res_prev = NULL;
@@ -427,14 +425,14 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 	struct lb_dst *last_dst, *dst;
 	unsigned int *dst_bitmap_cur;
 	unsigned int bitmap_size_cur;
+	struct dlg_cell *dlg;
 
 	/* AVP related vars */
 	struct usr_avp *group_avp;
 	struct usr_avp *flags_avp;
 	struct usr_avp *mask_avp;
 	struct usr_avp *id_avp;
-	struct dlg_cell *dlg;
-	struct usr_avp *res_avp, *del_res_avp;
+	struct usr_avp *res_avp;
 	int_str group_val;
 	int_str flags_val;
 	int_str mask_val;
@@ -444,7 +442,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 	/* iterators, e.t.c. */
 	struct lb_dst *it_d;
 	struct lb_resource *it_r;
-	int it_l, load;
+	int load, it_l;
 	int i, j, cond;
 
 
@@ -454,15 +452,17 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 	last_dst = dst = NULL;
 	dst_bitmap_cur = NULL;
 
-
-	/* search and fill new resources references if we should not reuse previous iteration data */
+	/* search and fill new resources references if we should not reuse
+	   previous iteration data */
 	if( !reuse ) {
 		res_new_n = rl->n;
 		/* adjust size of statically allocated buffer */
 		if( res_new_n > res_new_size ) {
-			res_new = (struct lb_resource **)pkg_realloc(res_new, (res_new_n * sizeof(struct lb_resource *)));
+			res_new = (struct lb_resource **)pkg_realloc
+				(res_new, (res_new_n * sizeof(struct lb_resource *)));
 			if( res_new == NULL ) {
-				LM_ERR("no more pkg mem - resources ptr buffer realloc failure\n");
+				LM_ERR("no more pkg mem - resources ptr buffer realloc "
+					"failure\n");
 				return -1;
 			}
 			res_new_size = res_new_n;
@@ -471,11 +471,14 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		for( it_r=data->resources,i=0 ; it_r ; it_r=it_r->next ) {
 			if( search_resource_str(rl, &it_r->name) ) {
 				res_new[i++] = it_r;
-				LM_DBG("initial call of LB - found requested %d/%d resource [%.*s]\n", i, res_new_n, it_r->name.len, it_r->name.s);
+				LM_DBG("initial call of LB - found requested %d/%d "
+					"resource [%.*s]\n", i, res_new_n,
+					it_r->name.len, it_r->name.s);
 			}
 		}
 		if( i != res_new_n ) {
-			LM_ERR("initial call of LB - unknown resource found in input string\n");
+			LM_ERR("initial call of LB - unknown resource found in "
+				"input string\n");
 			return -1;
 		}
 
@@ -484,64 +487,78 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		res_cur_n = res_new_n;
 	}
 
-
-	/* always search for previous iteration data, no matter will we reuse it or not */
+	/* always search for previous iteration data,
+	   no matter if we will reuse it or not */
 	group_avp = search_first_avp(0, group_avp_name, &group_val, NULL);
 	flags_avp = search_first_avp(0, flags_avp_name, &flags_val, NULL);
 	mask_avp  = search_first_avp(0, mask_avp_name,  &mask_val,  NULL);
 	id_avp    = search_first_avp(0, id_avp_name,    &id_val,    NULL);
 	/* sanity checks for fetched AVPs */
-	if( group_avp && !(is_avp_str_val(group_avp) == 0) ) { destroy_avp(group_avp); group_avp = NULL; }
-	if( flags_avp && !(is_avp_str_val(flags_avp) == 0) ) { destroy_avp(flags_avp); flags_avp = NULL; }
-	if( mask_avp  && !(is_avp_str_val(mask_avp)  != 0) ) { destroy_avp(mask_avp);  mask_avp  = NULL; }
-	if( id_avp    && !(is_avp_str_val(id_avp)    == 0) ) { destroy_avp(id_avp);    id_avp    = NULL; }
+	if( group_avp && !(is_avp_str_val(group_avp) == 0) )
+		{ destroy_avp(group_avp); group_avp = NULL; }
+	if( flags_avp && !(is_avp_str_val(flags_avp) == 0) )
+		{ destroy_avp(flags_avp); flags_avp = NULL; }
+	if( mask_avp  && !(is_avp_str_val(mask_avp)  != 0) )
+		{ destroy_avp(mask_avp);  mask_avp  = NULL; }
+	if( id_avp    && !(is_avp_str_val(id_avp)    == 0) )
+		{ destroy_avp(id_avp);    id_avp    = NULL; }
 
 	/* get previous iteration destination, if any */
 	if( id_avp ) {
 		for( it_d=data->dsts ; it_d ; it_d=it_d->next ) {
 			if( it_d->id == id_val.n ) {
 				last_dst = it_d;
-				LM_DBG("%s call of LB - found previous dst %d [%.*s]\n", (reuse ? "sequential" : "initial"), last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
+				LM_DBG("%s call of LB - found previous dst %d [%.*s]\n",
+					(reuse ? "sequential" : "initial"), last_dst->id,
+					last_dst->profile_id.len, last_dst->profile_id.s);
 				break;
 			}
 		}
 	}
 	/* search and fill previous iteration resources references only if... */
 	if(
-		reuse || /* we should reuse previous resources list */
-		(last_dst != NULL) /* we have 'last_dst', i.e. previous iteration was successfull and we need to clean it up */
+		/* we should reuse previous resources list */
+		reuse ||
+		/* we have 'last_dst', i.e. previous iteration was successfull and
+		 * we need to clean it up */
+		(last_dst != NULL)
 	) {
 		do {
 			cond = 0; /* use it here as a 'start loop again' flag */
 			res_prev_n = 0;
-			for( res_avp=search_first_avp(0, res_avp_name, &res_val, NULL) ; res_avp ; res_avp=search_next_avp(res_avp, &res_val) ) {
+			res_avp = search_first_avp(0, res_avp_name, &res_val, NULL);
+			for( ; res_avp ; res_avp=search_next_avp(res_avp, &res_val) ) {
 				/* ignore AVPs with invalid type */
 				if( !(is_avp_str_val(res_avp) != 0) ) continue;
 
-				for( it_r=data->resources ; it_r ; it_r=it_r->next ) {
-					if( (it_r->name.len == res_val.s.len) && (memcmp(it_r->name.s, res_val.s.s, res_val.s.len) == 0) )
-						break;
-				}
-				if( it_r == NULL ) {
-					LM_WARN("%s call of LB - ignore unknown previous resource [%.*s]\n", (reuse ? "sequential" : "initial"), res_val.s.len, res_val.s.s);
+				if ( (it_r=get_resource_by_name( data, &res_val.s))==NULL ) {
+					LM_WARN("%s call of LB - ignore unknown previous "
+						"resource [%.*s]\n", (reuse?"sequential":"initial"),
+						res_val.s.len, res_val.s.s);
 					continue;
 				}
 				/* fill buffer only if buffer size not exeeded */
 				if( res_prev_n < res_prev_size ) {
 					res_prev[res_prev_n] = it_r;
-					LM_DBG("%s call of LB - found previous resource [%.*s]\n", (reuse ? "sequential" : "initial"), it_r->name.len, it_r->name.s);
+					LM_DBG("%s call of LB - found previous resource [%.*s]\n",
+						(reuse ? "sequential" : "initial"),
+						it_r->name.len, it_r->name.s);
 				}
 				res_prev_n++;
 			}
 			/* adjust size of statically allocated buffer */
 			if( res_prev_n > res_prev_size ) {
-				/* small hack: if we need to adjust 'res_prev' buffer adjust it according to 'res_new' size to minimize future pkg_realloc()'s */
+				/* small hack: if we need to adjust 'res_prev' buffer adjust
+				 * it according to 'res_new' size to minimize 
+				 * future pkg_realloc()'s */
 				if( !reuse && (res_prev_n < res_new_n) )
 					res_prev_n = res_new_n;
 
-				res_prev = (struct lb_resource **)pkg_realloc(res_prev, (res_prev_n * sizeof(struct lb_resource *)));
+				res_prev = (struct lb_resource **)pkg_realloc
+					(res_prev, (res_prev_n * sizeof(struct lb_resource *)));
 				if( res_prev == NULL ) {
-					LM_ERR("no more pkg mem - previous resources ptr buffer realloc failure\n");
+					LM_ERR("no more pkg mem - previous resources ptr "
+						"buffer realloc failure\n");
 					return -1;
 				}
 				res_prev_size = res_prev_n;
@@ -550,7 +567,6 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		}
 		while( cond );
 	}
-
 
 	/* reuse previous iteration resources, group and flags */
 	if( reuse ) {
@@ -572,36 +588,40 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		else
 			flags = LB_FLAGS_DEFAULT;
 
-		LM_DBG("sequential call of LB - found previous group %d and flags 0x%x\n", group, flags);
+		LM_DBG("sequential call of LB - found previous group %d and "
+			"flags 0x%x\n", group, flags);
 	}
-
 
 	/* sanity check - double check that we have a resource list to work with */
 	if( (res_cur == NULL) || (res_cur_n == 0) ) {
-		LM_ERR("%s call of LB - no resources list to work with\n", (reuse ? "sequential" : "initial"));
+		LM_ERR("%s call of LB - no resources list to work with\n",
+			(reuse ? "sequential" : "initial"));
 		return -1;
 	}
 
 
 	/* [re-]initialize/reuse destinations mask */
 
-	/* sanity check - always calculate current iteration res_cur[]->bitmap_size */
+	/* sanity check - always calculate current iteration
+	 * res_cur[]->bitmap_size */
 	bitmap_size_cur=(unsigned int)(-1);
 	for( i=0 ; i<res_cur_n ; i++ ) {
 		if( bitmap_size_cur > res_cur[i]->bitmap_size )
 			bitmap_size_cur = res_cur[i]->bitmap_size;
 	}
-	/* always try to reuse 'mask' buffer from AVP, even if we need to reinitialize it to avoid un-neded AVP ops */
-	if( mask_avp && (mask_val.s.len == (bitmap_size_cur * sizeof(unsigned int))) ) {
+	/* always try to reuse 'mask' buffer from AVP, even if we need 
+	 * to reinitialize it to avoid un-neded AVP ops */
+	if(mask_avp && (mask_val.s.len==(bitmap_size_cur*sizeof(unsigned int)))) {
 		dst_bitmap_cur = (unsigned int *)mask_val.s.s;
-	};
+	}
 	/* ...or use our static buffer */
 	if( dst_bitmap_cur == NULL ) {
 		/* adjust size of statically allocated buffer */
 		if( bitmap_size_cur > bitmap_size ) {
-			dst_bitmap = (unsigned int *)pkg_realloc(dst_bitmap, (bitmap_size_cur * sizeof(unsigned int)));
+			dst_bitmap = (unsigned int *)pkg_realloc
+				(dst_bitmap, (bitmap_size_cur * sizeof(unsigned int)));
 			if( dst_bitmap == NULL ) {
-				LM_ERR("no more pkg mem - dst bitmap buffer realloc failure\n");
+				LM_ERR("no more pkg mem - dst bitmap buffer realloc failed\n");
 				return -1;
 			}
 			bitmap_size = bitmap_size_cur;
@@ -614,7 +634,8 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		!reuse /* should not reuse previous iteration data */
 	) {
 		if( reuse ) {
-			LM_WARN("sequential call of LB - cannot %s previous mask, routing will be re-started", (mask_avp ? "reuse" : "find"));
+			LM_WARN("sequential call of LB - cannot %s previous mask, routing "
+				"will be re-started", (mask_avp ? "reuse" : "find"));
 		}
 
 		memset(dst_bitmap_cur, 0xff, (bitmap_size_cur * sizeof(unsigned int)));
@@ -624,35 +645,29 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		}
 	}
 
+	/* be sure the dialog is created */
 	if ( (dlg=lb_dlg_binds.get_dlg())==NULL ) {
-		LM_CRIT("BUG - no dialog found at this stage :(\n");
-		return -1;
-	}
-
-	/* final initialization stuff */
-	if( (group_avp == NULL) && (mask_avp == NULL) ) {
-		/* no group and mask AVPs are set -> assume it is first LB run */
-		/* create dialog, if needed */
-		if( !lb_dlg_binds.get_dlg() ) {
-			if( lb_dlg_binds.create_dlg(req, 0) != 1 ) {
-				LM_ERR("%s call of LB - failed to create dialog\n", (reuse ? "sequential" : "initial"));
-				return -1;
-			}
+		if( lb_dlg_binds.create_dlg(req, 0) != 1 ) {
+			LM_ERR("%s call of LB - failed to create dialog\n",
+				(reuse ? "sequential" : "initial"));
+			return -1;
 		}
+		/* get the dialog reference */
+		dlg = lb_dlg_binds.get_dlg();
 	}
-
 
 	/* we're initialized from here and no errors could abort us */
 
-
 	/* remove the dialog from previous profiles, if any */
-	if( (last_dst != NULL) && (res_prev_n > 0) ) {
+	if ( (last_dst != NULL) && (res_prev_n > 0) ) {
 		for( i=0 ; i<res_prev_n ; i++ ) {
-			if( lb_dlg_binds.unset_profile(req, &last_dst->profile_id, res_prev[i]->profile) != 1 )
-				LM_ERR("%s call of LB - failed to remove from profile [%.*s]->[%.*s]\n",
-					(reuse ? "sequential" : "initial"),
-					res_prev[i]->profile->name.len, res_prev[i]->profile->name.s, last_dst->profile_id.len, last_dst->profile_id.s
-				);
+			if( lb_dlg_binds.unset_profile(dlg, &last_dst->profile_id,
+			res_prev[i]->profile) != 1 )
+				LM_ERR("%s call of LB - failed to remove from profile [%.*s]"
+					"->[%.*s]\n", (reuse ? "sequential" : "initial"),
+					res_prev[i]->profile->name.len,
+					res_prev[i]->profile->name.s, last_dst->profile_id.len,
+					last_dst->profile_id.s );
 		}
 	}
 
@@ -661,13 +676,13 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 	for( i=0 ; i<res_cur_n ; i++ )
 		lock_get(res_cur[i]->lock);
 
-
 	/* do the load-balancing */
 	cond = 0; /* use it here as a 'first iteration' flag */
 	load = it_l = 0;
 	for( it_d=data->dsts,i=0,j=0 ; it_d ; it_d=it_d->next ) {
 		if( it_d->group == group ) {
-			if( (dst_bitmap_cur[i] & (1 << j)) && ((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
+			if( (dst_bitmap_cur[i] & (1 << j)) &&
+			((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
 				/* valid destination (group & resources & status) */
 				if( get_dst_load(res_cur, res_cur_n, it_d, flags, &it_l) ) {
 					if(
@@ -679,43 +694,46 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 						dst = it_d;
 						cond = 1;
 					}
-					LM_DBG("%s call of LB - destination %d <%.*s> selected for LB set with free=%d\n",
+					LM_DBG("%s call of LB - destination %d <%.*s> selected "
+						"for LB set with free=%d\n",
 						(reuse ? "sequential" : "initial"),
 						it_d->id, it_d->uri.len, it_d->uri.s, it_l
 					);
-				}
-				else {
-					LM_WARN("%s call of LB - skipping destination %d <%.*s> - unable to calculate free resources\n",
+				} else {
+					LM_WARN("%s call of LB - skipping destination %d <%.*s> - "
+						"unable to calculate free resources\n",
 						(reuse ? "sequential" : "initial"),
 						it_d->id, it_d->uri.len, it_d->uri.s
 					);
 				}
 			}
 			else {
-				LM_DBG("%s call of LB - skipping destination %d <%.*s> (filtered=%d , disabled=%d)\n",
+				LM_DBG("%s call of LB - skipping destination %d <%.*s> "
+					"(filtered=%d , disabled=%d)\n",
 					(reuse ? "sequential" : "initial"),
 					it_d->id, it_d->uri.len, it_d->uri.s,
-					((dst_bitmap_cur[i] & (1 << j)) ? 0 : 1), ((it_d->flags & LB_DST_STAT_DSBL_FLAG) ? 1 : 0)
+					((dst_bitmap_cur[i] & (1 << j)) ? 0 : 1),
+					((it_d->flags & LB_DST_STAT_DSBL_FLAG) ? 1 : 0)
 				);
 			}
 		}
 		if( ++j == (8 * sizeof(unsigned int)) ) { i++; j=0; }
 	}
 
-
 	if( dst != NULL ) {
-		LM_DBG("%s call of LB - winning destination %d <%.*s> selected for LB set with free=%d\n",
+		LM_DBG("%s call of LB - winning destination %d <%.*s> selected "
+			"for LB set with free=%d\n",
 			(reuse ? "sequential" : "initial"),
-			dst->id, dst->uri.len, dst->uri.s, load
-		);
+			dst->id, dst->uri.len, dst->uri.s, load );
 
 		/* add to the profiles */
 		for( i=0 ; i<res_cur_n ; i++ ) {
-			if( lb_dlg_binds.set_profile(dlg, &dst->profile_id, res_cur[i]->profile, 0) != 0 )
-				LM_ERR("%s call of LB - failed to add to profile [%.*s]->[%.*s]\n",
-					(reuse ? "sequential" : "initial"),
-					res_cur[i]->profile->name.len, res_cur[i]->profile->name.s, dst->profile_id.len, dst->profile_id.s
-				);
+			if( lb_dlg_binds.set_profile(dlg, &dst->profile_id,
+			res_cur[i]->profile, 0) != 0 )
+				LM_ERR("%s call of LB - failed to add to profile [%.*s]->"
+					"[%.*s]\n", (reuse ? "sequential" : "initial"),
+					res_cur[i]->profile->name.len, res_cur[i]->profile->name.s,
+					dst->profile_id.len, dst->profile_id.s);
 		}
 
 		/* set dst as used (not selected) */
@@ -723,19 +741,16 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 			if( it_d == dst ) { dst_bitmap_cur[i] &= ~(1 << j); break; }
 			if( ++j == (8 * sizeof(unsigned int)) ) { i++; j=0; }
 		}
+	} else {
+		LM_DBG("%s call of LB - no destination found\n",
+			(reuse ? "sequential" : "initial"));
 	}
-	else {
-		LM_DBG("%s call of LB - no destination found\n", (reuse ? "sequential" : "initial"));
-	}
-
 
 	/* unlock resources */
 	for( i=0 ; i<res_cur_n ; i++ )
 		lock_release(res_cur[i]->lock);
 
-
 	/* we're done with load-balancing, now save state */
-
 
 	/* save state - group */
 	if( group_avp == NULL ) {
@@ -743,8 +758,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 		if( add_avp(0, group_avp_name, group_val) != 0 ) {
 			LM_ERR("failed to add GROUP AVP\n");
 		}
-	}
-	else if( group_val.n != group ) {
+	} else if( group_val.n != group ) {
 		group_avp->data = (void *)(long)group;
 	}
 	/* save state - flags, save only if they are set */
@@ -755,12 +769,11 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 				LM_ERR("failed to add FLAGS AVP\n");
 			}
 		}
-	}
-	else if( flags_val.n != flags ) {
+	} else if( flags_val.n != flags ) {
 		flags_avp->data = (void *)(long)flags;
 	}
 	/* save state - dst_bitmap mask */
-	if( (mask_avp != NULL) && (dst_bitmap_cur != (unsigned int *)mask_val.s.s) ) {
+	if( (mask_avp!=NULL) && (dst_bitmap_cur!=(unsigned int *)mask_val.s.s) ) {
 		destroy_avp(mask_avp);
 		mask_avp = NULL;
 	}
@@ -779,51 +792,23 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 				LM_ERR("failed to add ID AVP\n");
 			}
 		}
-	}
-	else {
+	} else {
 		if( dst != NULL ) {
 			id_avp->data = (void *)(long)dst->id;
-		}
-		else {
+		} else {
 			destroy_avp(id_avp);
 			id_avp = NULL;
 		}
 	}
 	/* save state - res */
 	/* iterate AVPs once and delete old resources */
-	for( del_res_avp=NULL,res_avp=search_first_avp(0, res_avp_name, &res_val, NULL) ; ; res_avp=search_next_avp(res_avp, &res_val) ) {
-		if( del_res_avp != NULL ) {
-			destroy_avp(del_res_avp);
-			del_res_avp = NULL;
-		};
-		if( res_avp == NULL ) break;
-
-		if( is_avp_str_val(res_avp) != 0 ) {
-			cond = 0; /* use it here as a 'resource exists' flag */
-			for( i=0 ; i<res_cur_n ; i++ ) {
-				if( res_cur[i] != NULL ) {
-					if( (res_cur[i]->name.len == res_val.s.len) && (memcmp(res_cur[i]->name.s, res_val.s.s, res_val.s.len) == 0) ) {
-						res_cur[i] = NULL;
-						cond = 1;
-						break;
-					}
-				}
-			}
-			if( cond ) continue;
-		}
-		/* wrong type or not exist */
-		del_res_avp = res_avp;
-	}
-	/* add remaining resources */
+	destroy_avps(0, res_avp_name, 1 /*all*/);
+	/* add new resources */
 	for( i=0 ; i<res_cur_n ; i++ ) {
-		if( res_cur[i] != NULL ) {
-			res_val.s = res_cur[i]->name;
-			if( add_avp(AVP_VAL_STR, res_avp_name, res_val) != 0 ) {
-				LM_ERR("failed to add RES AVP\n");
-			}
-		}
+		res_val.s = res_cur[i]->name;
+		if( add_avp(AVP_VAL_STR, res_avp_name, res_val) != 0 )
+			LM_ERR("failed to add RES AVP\n");
 	}
-
 
 	/* outcome: set dst uri */
 	if( (dst != NULL) && (set_dst_uri(req, &dst->uri) != 0) ) {
@@ -835,10 +820,12 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigne
 }
 
 
-int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl, unsigned int flags, struct lb_data *data)
+int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl,
+									unsigned int flags, struct lb_data *data)
 {
-	return lb_route(req, group, rl, flags, data, 0/*should NOT reuse previous data*/);
+	return lb_route(req, group, rl, flags, data, 0/*no data reusage*/);
 }
+
 
 int do_lb_next(struct sip_msg *req, struct lb_data *data)
 {
@@ -852,10 +839,14 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 	struct usr_avp *res_avp, *del_res_avp;
 	int_str id_val;
 	int_str res_val;
-
+	struct dlg_cell *dlg;
 	struct lb_dst *it_d, *last_dst;
 	struct lb_resource *it_r;
 
+	if ( (dlg=lb_dlg_binds.get_dlg())==NULL ) {
+		LM_ERR("no dialog found for this call, LB not started\n");
+		return -1;
+	}
 
 	/* remove any saved AVPs */
 	destroy_avps(0, group_avp_name, 0);
@@ -869,39 +860,38 @@ int do_lb_reset(struct sip_msg *req, struct lb_data *data)
 		for( it_d=data->dsts ; it_d ; it_d=it_d->next ) {
 			if( it_d->id == id_val.n ) {
 				last_dst = it_d;
-				LM_DBG("reset LB - found previous dst %d [%.*s]\n", last_dst->id, last_dst->profile_id.len, last_dst->profile_id.s);
+				LM_DBG("reset LB - found previous dst %d [%.*s]\n",
+					last_dst->id,
+					last_dst->profile_id.len, last_dst->profile_id.s);
 				break;
 			}
 		}
 	}
 	destroy_avps(0, id_avp_name, 0);
 
-	/* search and clean up previous iteration resources, if any */
-	for( del_res_avp=NULL,res_avp=search_first_avp(0, res_avp_name, &res_val, NULL) ; ; res_avp=search_next_avp(res_avp, &res_val) ) {
-		if( del_res_avp != NULL ) {
-			destroy_avp(del_res_avp);
-			del_res_avp = NULL;
-		};
-		if( res_avp == NULL ) break;
+	/* any valid previous iteration ? */
+	if( (last_dst == NULL) ) {
+		/* simply delete all possible resources */
+		destroy_avps(0, res_avp_name, 1);
+	} else {
+		/* search and clean up previous iteration resources, if any */
+		res_avp = search_first_avp(0, res_avp_name, &res_val, NULL);
+		while (res_avp) {
+			if ( (it_r=get_resource_by_name( data, &res_val.s))!=NULL ) {
+				if( lb_dlg_binds.unset_profile(dlg, &last_dst->profile_id,
+				it_r->profile) != 1 )
+					LM_ERR("reset LB - failed to remove from profile [%.*s]->"
+						"[%.*s]\n", res_val.s.len, res_val.s.s,
+						last_dst->profile_id.len, last_dst->profile_id.s );
+			} else {
+					LM_WARN("reset LB - ignore unknown previous resource "
+						"[%.*s]\n", res_val.s.len, res_val.s.s);
+			}
 
-		/* process AVPs if we have last_dst and AVP of the right type */
-		if( (last_dst != NULL) && (is_avp_str_val(res_avp) != 0) ) {
-			for( it_r=data->resources ; it_r ; it_r=it_r->next ) {
-				if( (it_r->name.len == res_val.s.len) && (memcmp(it_r->name.s, res_val.s.s, res_val.s.len) == 0) ) {
-					LM_DBG("reset LB - found previous resource [%.*s]\n", it_r->name.len, it_r->name.s);
-					break;
-				}
-			}
-			if( it_r != NULL ) {
-				if( lb_dlg_binds.unset_profile(req, &last_dst->profile_id, it_r->profile) != 1 )
-					LM_ERR("reset LB - failed to remove from profile [%.*s]->[%.*s]\n",
-						it_r->profile->name.len, it_r->profile->name.s, last_dst->profile_id.len, last_dst->profile_id.s
-					);
-			}
-			else
-				LM_WARN("reset LB - ignore unknown previous resource [%.*s]\n", res_val.s.len, res_val.s.s);
+			del_res_avp = res_avp;
+			res_avp = search_next_avp(del_res_avp, &res_val);
+			destroy_avp(del_res_avp);
 		}
-		del_res_avp = res_avp;
 	}
 
 	return 0;
@@ -915,9 +905,12 @@ int do_lb_is_started(struct sip_msg *req)
 	struct usr_avp *res_avp;
 
 	return (
-		((group_avp = search_first_avp(0, group_avp_name, NULL, NULL)) != NULL) && (is_avp_str_val(group_avp) == 0) &&
-		((mask_avp  = search_first_avp(0, mask_avp_name,  NULL, NULL)) != NULL) && (is_avp_str_val(mask_avp)  != 0) &&
-		((res_avp   = search_first_avp(0, res_avp_name,   NULL, NULL)) != NULL) && (is_avp_str_val(res_avp)   != 0)
+		((group_avp=search_first_avp(0, group_avp_name, NULL, NULL))!=NULL) &&
+			(is_avp_str_val(group_avp) == 0) &&
+		((mask_avp =search_first_avp(0, mask_avp_name,  NULL, NULL))!=NULL) &&
+			(is_avp_str_val(mask_avp)  != 0) &&
+		((res_avp  =search_first_avp(0, res_avp_name,   NULL, NULL))!=NULL) &&
+			(is_avp_str_val(res_avp)   != 0)
 	) ? 1 : -1;
 }
 
@@ -940,13 +933,13 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int ve
 				if( dst->flags != old_flags ) {
 					lb_raise_event(dst);
 					if( verbose )
-						LM_INFO("manually disable destination %d <%.*s> from script\n", dst->id, dst->uri.len, dst->uri.s);
+						LM_INFO("manually disable destination %d <%.*s> "
+							"from script\n",dst->id, dst->uri.len, dst->uri.s);
 				}
 				return 0;
 			}
 		}
-	}
-	else
+	} else
 		LM_DBG("no AVP ID -> nothing to disable\n");
 
 	return -1;
@@ -956,7 +949,7 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int ve
 /* Checks, if the IP PORT is a LB destination
  */
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
-					pv_spec_t *pv_ip, pv_spec_t *pv_port, int group, int active)
+				pv_spec_t *pv_ip, pv_spec_t *pv_port, int group, int active)
 {
 	pv_value_t val;
 	struct ip_addr *ip;
@@ -1013,8 +1006,8 @@ int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
 }
 
 
-int lb_count_call(struct lb_data *data, struct sip_msg *req,
-		struct ip_addr *ip, int port, int group, struct lb_res_str_list *rl, int dir)
+int lb_count_call(struct lb_data *data, struct sip_msg *req,struct ip_addr *ip,
+					int port, int group, struct lb_res_str_list *rl, int dir)
 {
 	static struct lb_resource **call_res = NULL;
 	static unsigned int call_res_no = 0;
@@ -1089,7 +1082,7 @@ end_search:
 				LM_ERR("failed to add to profile\n");
 		}
 		else {
-			if (lb_dlg_binds.unset_profile( req, &dst->profile_id,
+			if (lb_dlg_binds.unset_profile( dlg, &dst->profile_id,
 			call_res[i]->profile)!=1)
 				LM_ERR("failed to remove from profile\n");
 		}
