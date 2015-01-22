@@ -30,14 +30,16 @@
 
 #ifndef LB_LB_DATA_H_
 #define LB_LB_DATA_H_
+
 #include "../../str.h"
 #include "../../locking.h"
 #include "../../parser/msg_parser.h"
 #include "../dialog/dlg_load.h"
 #include "lb_parser.h"
 
-#define LB_ABSOLUTE_LOAD_ALG    0
-#define LB_RELATIVE_LOAD_ALG    1
+#define LB_FLAGS_RELATIVE (1<<0) /* do relative versus absolute estimation. default is absolute */
+#define LB_FLAGS_NEGATIVE (1<<1) /* do not skip negative loads. default to skip */
+#define LB_FLAGS_DEFAULT  0
 
 #define LB_DST_PING_DSBL_FLAG   (1<<0)
 #define LB_DST_PING_PERM_FLAG   (1<<1)
@@ -90,22 +92,30 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 
 void free_lb_data(struct lb_data *data);
 
-int do_load_balance(struct sip_msg *req, int grp, struct lb_res_str_list *rl,
-		unsigned int alg, struct lb_data *data);
+int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl,
+		unsigned int flags, struct lb_data *data);
 
-int do_lb_disable(struct sip_msg *req, struct lb_data *data);
+int do_lb_next(struct sip_msg *req, struct lb_data *data);
+
+int do_lb_reset(struct sip_msg *req, struct lb_data *data);
+
+int do_lb_is_started(struct sip_msg *req);
+
+int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int verbose);
 
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
-		pv_spec_t *pv_ip, pv_spec_t *pv_port, int grp, int active);
+		pv_spec_t *pv_ip, pv_spec_t *pv_port, int group, int active);
 
 int lb_count_call(struct lb_data *data, struct sip_msg *req,
-		struct ip_addr *ip, int port, int grp, struct lb_res_str_list *rl);
+		struct ip_addr *ip, int port, int group, struct lb_res_str_list *rl, int dir);
 
 int lb_init_event(void);
 void lb_raise_event(struct lb_dst *dst);
 
 /* failover stuff */
-extern int grp_avp_name;
+extern int group_avp_name;
+extern int flags_avp_name;
 extern int mask_avp_name;
 extern int id_avp_name;
+extern int res_avp_name;
 #endif
