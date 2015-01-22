@@ -274,6 +274,38 @@ typedef int (*db_last_inserted_id_f) (const db_con_t* _h);
 typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
 				const db_val_t* _v, const int _n);
 
+/**
+ * \brief Asynchronous raw SQL query on a separate TCP connection.
+ *		  Returns immediately.
+ *
+ * If all currently open connections are in use, it will attempt to open a new
+ * one, up to "db_max_async_connections". If maximum is reached, the query is
+ * done synchronously!
+ *
+ * \param _h structure representing the database handle
+ * \param _s the SQL query
+ * \return returns 1 if everything is OK, otherwise returns value < 0
+ */
+typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
+
+/*
+ * \brief Reads data from the given fd's SQL connection. Also fetches all data
+ *			when it resumes fetching data for the last time.
+ *
+ * \param _h structure representing the database handle
+ * \param fd read file descriptor obtained in starting phase
+ * \param _r structure for the result
+ * \return:
+ *		-> 1 on success, negative on failure
+ *		-> also populates the global "async_status": ASYNC_CONTINUE / ASYNC_DONE
+ *
+ * !!! IMPORTANT:
+ *		if data is fully read (async_status == ASYNC_DONE),
+ *		backend-specific results have already been freed!
+ *			You only need to call db_free_result(_r) when done
+ */
+typedef enum async_ret_code (*db_async_raw_resume_f) (db_con_t *_h,
+				int fd, db_res_t **_r);
 
 /**
  * \brief Database module callbacks
@@ -295,9 +327,10 @@ typedef struct db_func {
 	db_delete_f       delete;        /* Delete from table */
 	db_update_f       update;        /* Update table */
 	db_replace_f      replace;       /* Replace row in a table */
-	db_last_inserted_id_f  last_inserted_id;  /* Retrieve the last inserted ID
-	                                            in a table */
-	db_insert_update_f insert_update; /* Insert into table, update on duplicate key */
+	db_last_inserted_id_f last_inserted_id;  /* Retrieve the last inserted ID in a table */
+	db_insert_update_f    insert_update;     /* Insert into table, update on duplicate key */
+	db_async_raw_query_f  async_raw_query;   /* Starts an asynchronous raw query */
+	db_async_raw_resume_f async_raw_resume;  /* Called if there is some data to be read */
 } db_func_t;
 
 

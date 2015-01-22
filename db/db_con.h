@@ -31,17 +31,20 @@
 
 #include "../str.h"
 #include "db_ps.h"
+#include "db_id.h"
+
+typedef int (*get_con_fd_f) (void *con);
 
 /**
  * This structure represents a database connection, pointer to this structure
  * are used as a connection handle from modules uses the db API.
  */
 typedef struct {
-	const str* table;         /**< Default table that should be used        */
+	const str* table;     /**< Default table that should be used */
 	db_ps_t* curr_ps;     /**< Prepared statement to be used for next query */
 	struct query_list *ins_list; /**< Insert list to be used for the next insert */
-	unsigned long tail; /**< Hook to implementation-specific database state */
-	str url;			/**< what is the URL that this connection is bound on */
+	unsigned long tail;   /**< Hook to implementation-specific database state */
+	str url;              /**< URL that this connection is bound on */
 	int flags;
 } db_con_t;
 
@@ -62,6 +65,5 @@ typedef struct {
 	do { \
 		*((int *)&(con)->flags) &= ~CON_OR_OPERATOR; \
 	} while (0)
-
 
 #endif /* DB_CON_H */

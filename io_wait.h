@@ -326,7 +326,7 @@ inline static int io_watch_add(	io_wait_h* h,
 
 	if (e->flags & flags){
 		if (e->data != data) {
-			LM_ERR("[%s] BUG trying to overwrite entry %d"
+			LM_BUG("[%s] BUG trying to overwrite entry %d"
 					" in the hash(%d, %d, %p,%d) with (%d, %d, %p,%d)\n",
 					h->name,fd, e->fd, e->type, e->data,e->flags, fd, type, data,flags);
 			goto error;
