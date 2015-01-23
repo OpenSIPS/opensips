@@ -57,6 +57,10 @@ Ramona-Elena Modroiu
               1.5.13. avp_print()
               1.5.14. avp_insert(avp_name, value, index)
 
+        1.6. Exported Asynchronous Functions
+
+              1.6.1. avp_db_query(query[[,dest],db_id])
+
    List of Examples
 
    1.1. AVP naming examples
@@ -85,6 +89,7 @@ Ramona-Elena Modroiu
    1.24. is_avp_set usage
    1.25. avp_print usage
    1.26. avp_print usage
+   1.27. async avp_db_query usage
 
 Chapter 1. Admin Guide
 
@@ -671,4 +676,60 @@ avp_print();
    Example 1.26. avp_print usage
 ...
 avp_insert("avp(20)", "$hdr(From)", 2);
+...
+
+1.6. Exported Asynchronous Functions
+
+1.6.1.  avp_db_query(query[[,dest],db_id])
+
+   Make a database query and store the result in AVPs.
+
+   The meaning and usage of the parameters:
+     * query - must be a valid SQL query. The parameter can
+       contain pseudo-variables.
+       You must escape any pseudo-variables manually to prevent
+       SQL injection attacks. You can use the existing
+       transformations escape.common and unescape.common to escape
+       and unescape the content of any pseudo-variable. Failing to
+       escape the variables used in the query makes you vulnerable
+       to SQL injection, e.g. make it possible for an outside
+       attacker to alter your database content. The function
+       returns true if the query was succesful, -2 in case the
+       query returned an empty result set, and -1 for all other
+       types of errors
+     * dest - a list with AVP names where to store the result. The
+       format is “$avp(name1);$avp(name2);...”. If this parameter
+       is ommited, the result is stored in “$avp(1);$avp(2);...”.
+       If the result gives many rows, then multiple AVPs with
+       corresponding name will be added. The value type of the AVP
+       (string or integer) will be derived from the type of the
+       columns.
+     * db_id - reference to a defined DB URL (a numerical id) -
+       see the “db_url” module parameter.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+
+   Example 1.27. async avp_db_query usage
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+        avp_db_query(
+                "SELECT table_name, table_version, SLEEP(0.1) from versi
+on",
+                "$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
+        my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free
+*/
+route [my_resume_route]
+{
+        xlog("Results: \n$(avp(tb_name)[*])\n
+-------------------\n$(avp(tb_ver)[*])\n
+-------------------\n$(avp(retcode)[*])\n");
+}
 ...
