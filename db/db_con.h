@@ -33,8 +33,6 @@
 #include "db_ps.h"
 #include "db_id.h"
 
-typedef int (*get_con_fd_f) (void *con);
-
 /**
  * This structure represents a database connection, pointer to this structure
  * are used as a connection handle from modules uses the db API.
