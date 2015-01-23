@@ -117,6 +117,8 @@ int db_mysql_bind_api(const str* mod, db_func_t *dbb)
 	dbb->replace          = db_mysql_replace;
 	dbb->last_inserted_id = db_last_inserted_id;
 	dbb->insert_update    = db_insert_update;
+	dbb->async_raw_query  = db_mysql_async_raw_query;
+	dbb->async_raw_resume = db_mysql_async_raw_resume;
 
 	dbb->cap |= DB_CAP_MULTIPLE_INSERT;
 	return 0;

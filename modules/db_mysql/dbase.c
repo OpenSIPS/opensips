@@ -41,6 +41,7 @@
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../db/db_query.h"
+#include "../../db/db_async.h"
 #include "../../db/db_ut.h"
 #include "../../db/db_insertq.h"
 #include "val.h"
@@ -174,6 +175,32 @@ static inline int wrapper_single_mysql_real_query(const db_con_t *conn,
 		return -1;
 
 	code = mysql_real_query(CON_CONNECTION(conn), query->s, query->len);
+	if (code == 0)
+		return 0;
+
+	error = mysql_errno(CON_CONNECTION(conn));
+	switch (error) {
+		case CR_SERVER_GONE_ERROR:
+		case CR_SERVER_LOST:
+		case CR_COMMANDS_OUT_OF_SYNC:
+			return -1; /* reconnection error -> <0 */
+		default:
+			LM_CRIT("driver error (%i): %s\n", error,
+				mysql_error(CON_CONNECTION(conn)));
+			/* do not rely on libmysqlclient implementation
+			 * specification says non-zero code on error, not positive code */
+			return 1;
+	}
+}
+
+static inline int wrapper_single_mysql_send_query(const db_con_t *conn,
+															const str *query)
+{
+	int code, error;
+	if (CON_DISCON(conn))
+		return -1;
+
+	code = mysql_send_query(CON_CONNECTION(conn), query->s, query->len);
 	if (code == 0)
 		return 0;
 
@@ -1072,6 +1099,126 @@ int db_mysql_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	return db_do_raw_query(_h, _s, _r, db_mysql_submit_query,
 	db_mysql_store_result);
+}
+
+static inline int db_mysql_get_con_fd(void *con)
+{
+	return ((struct my_con *)con)->con->net.fd;
+}
+
+/**
+ * Begins execution of a raw SQL query. Returns immediately.
+ *
+ * \param _h handle for the database
+ * \param _s raw query string
+ * \return
+ *		success: Unix FD for polling
+ *		failure: negative error code
+ */
+int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
+{
+	int *fd_ref;
+	int code, i;
+	struct timeval start;
+	struct my_con *con;
+
+	if (!_h || !_s || !_s->s) {
+		LM_ERR("invalid parameter value\n");
+		return -1;
+	}
+
+	con = (struct my_con *)db_switch_to_async(_h, db_mysql_get_con_fd, &fd_ref,
+											  (void *)db_mysql_new_connection);
+	if (!con)
+		LM_INFO("Failed to open new connection (current: 1 + %d). Running "
+				"in sync mode!\n", ((struct pool_con *)_h->tail)->no_transfers);
+
+	/* no prepared statements support */
+	CON_RESET_CURR_PS(_h);
+
+	for (i = 0; i < 2; i++) {
+		start_expire_timer(start, db_mysql_exec_query_threshold);
+
+		/* async mode */
+		if (con) {
+			code = wrapper_single_mysql_send_query(_h, _s);
+		/* sync mode */
+		} else {
+			code = wrapper_single_mysql_real_query(_h, _s);
+		}
+		stop_expire_timer(start, db_mysql_exec_query_threshold,
+						  "mysql async query", _s->s, _s->len, 0);
+		if (code < 0) {
+			/* got disconnected during call */
+			switch_state_to_disconnected(_h);
+			if (connect_with_retry(_h, 3) != 0) {
+				/* mysql reconnection problem */
+				LM_ERR("failed to reconnect before trying "
+					"mysql_stmt_prepare()\n");
+				break;
+			}
+			/* if reconnected, run the loop again */
+		} else if (code > 0) {
+			/* other problems - error already logged by the wrapper */
+			goto out;
+		} else {
+			/* success */
+			mysql_raise_event(_h);
+
+			if (!con)
+				return -1;
+
+			i = db_mysql_get_con_fd(con);
+			*fd_ref = i;
+			db_switch_to_sync(_h);
+			async_status = i;
+			return 1;
+		}
+	}
+
+	mysql_raise_event(_h);
+	LM_CRIT("too many mysql server reconnection failures\n");
+
+out:
+	if (!con)
+		return -1;
+
+	db_switch_to_sync(_h);
+	db_store_async_con(_h, (struct pool_con *)con);
+
+	return -2;
+}
+
+enum async_ret_code db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
+{
+	struct pool_con *con;
+
+	con = db_match_async_con(fd, _h);
+	if (!con) {
+		LM_BUG("no conn match for fd %d", fd);
+		abort();
+	}
+
+	if (mysql_read_query_result(CON_CONNECTION(_h)) == 0) {
+		if (_r) {
+			if (db_mysql_store_result(_h, _r) != 0) {
+				LM_ERR("failed to store result\n");
+				return -1;
+			}
+		}
+
+		mysql_free_result(CON_RESULT(_h));
+		CON_RESULT(_h) = NULL;
+
+		db_switch_to_sync(_h);
+		db_store_async_con(_h, con);
+		return 1;
+	}
+
+	db_switch_to_sync(_h);
+	db_store_async_con(_h, con);
+	async_status = ASYNC_CONTINUE;
+	return 1;
 }
 
 

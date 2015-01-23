@@ -106,6 +106,26 @@ int db_mysql_replace(const db_con_t* handle, const db_key_t* keys, const db_val_
 int db_last_inserted_id(const db_con_t* _h);
 
 /*
+ * Begins execution of a raw MySQL query. Possibly opens new TCP connections up
+ * to "db_max_async_connections". Returns immediately.
+ *
+ * \return
+ *		success: Unix FD for polling
+ *		failure: negative error code
+ */
+int db_mysql_async_raw_query(db_con_t *_h, const str *_s);
+
+/*
+ * Reads data from the given fd's connection.
+ *
+ * !!! IMPORTANT:
+ *		if data is fully read (async_status == ASYNC_DONE),
+ *		backend-specific results have already been freed!
+ *			You only need to call db_free_result(_r) when done
+ */
+enum async_ret_code db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r);
+
+/*
  * Insert a row into table, update on duplicate key
  */
 int db_insert_update(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
