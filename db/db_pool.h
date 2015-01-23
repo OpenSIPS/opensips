@@ -32,6 +32,12 @@
 #include "db_id.h"
 #include "db_con.h"
 
+extern int db_max_async_connections;
+
+struct db_transfer {
+	int fd;
+	struct pool_con *con;
+};
 
 /**
  * This is a stub that contains all attributes
@@ -44,7 +50,10 @@
 struct pool_con {
 	struct db_id* id;        /**< Connection identifier */
 	unsigned int ref;        /**< Reference count */
-	struct pool_con* next;   /**< Next element in the pool */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
 };
 
 

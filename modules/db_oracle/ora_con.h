@@ -40,7 +40,12 @@ typedef struct query_data query_data_t;
 
 
 struct ora_con {
-	struct pool_con hdr;	/* Standard fields */
+	struct db_id* id;        /**< Connection identifier */
+	unsigned int ref;        /**< Reference count */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
 
 	OCIError *errhp;        /* Error */
 	OCISvcCtx *svchp;	/* Server Context */

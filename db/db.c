@@ -55,6 +55,7 @@
 
 char *db_version_table = VERSION_TABLE;
 char *db_default_url = NULL;
+int   db_max_async_connections = 10;
 
 /** maximal length of a SQL URL */
 static unsigned int MAX_URL_LENGTH = 255;
@@ -144,6 +145,16 @@ int db_check_api(db_func_t* dbf, char *mname)
 	if (dbf->insert_update) {
 		dbf->cap |= DB_CAP_INSERT_UPDATE;
 	}
+
+	if (dbf->async_raw_query || dbf->async_raw_resume) {
+		if (!dbf->async_raw_query || !dbf->async_raw_resume) {
+			LM_BUG("NULL async_raw_query_f or async_raw_resume_f in %s", mname);
+			return -1;
+		}
+
+		dbf->cap |= DB_CAP_ASYNC_RAW_QUERY;
+	}
+
 	return 0;
 error:
 	return -1;
@@ -255,7 +266,7 @@ error:
 db_con_t* db_do_init(const str* url, void* (*new_connection)())
 {
 	struct db_id* id;
-	void* con;
+	struct pool_con* con;
 	db_con_t* res;
 
 	int con_size = sizeof(db_con_t) + sizeof(void *) + url->len;
@@ -297,15 +308,24 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 	if (!con) {
 		LM_DBG("connection %p not found in pool\n", id);
 		/* Not in the pool yet */
-		con = new_connection(id);
+		con = (struct pool_con *)new_connection(id);
 		if (!con) {
 			LM_ERR("could not add connection to the pool\n");
 			goto err;
 		}
-		pool_insert((struct pool_con*)con);
+		pool_insert(con);
 		LM_DBG("connection %p inserted in pool as %p\n", id,con);
 	} else {
 		LM_DBG("connection %p found in pool as %p\n", id,con);
+	}
+
+	if (!con->transfers) {
+		con->transfers = pkg_malloc(db_max_async_connections *
+										sizeof *con->transfers);
+		if (!con->transfers) {
+			LM_ERR("no more pkg\n");
+			goto err;
+		}
 	}
 
 	res->tail = (unsigned long)con;

@@ -70,9 +70,12 @@ struct prep_stmt {
 
 
 struct my_con {
-	struct db_id* id;        /* Connection identifier */
-	unsigned int ref;        /* Reference count */
-	struct pool_con* next;   /* Next connection in the pool */
+	struct db_id* id;        /**< Connection identifier */
+	unsigned int ref;        /**< Reference count */
+	struct pool_con *async_pool; /**< Subpool of identical database handles */
+	int no_transfers;        /**< Number of async queries to this backend */
+	struct db_transfer *transfers; /**< Array of ongoing async operations */
+	struct pool_con *next;   /**< Next element in the pool (different db_id) */
 
 	MYSQL_RES* res;          /* Actual result */
 	MYSQL* con;              /* Connection representation */

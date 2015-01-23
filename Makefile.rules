@@ -31,12 +31,18 @@ endif
 
 
 # normal rules
-$(NAME): $(NEWREVISION) $(objs) $(extra_objs) $(ALLDEP)
+$(NAME): $(objs) $(extra_objs) $(ALLDEP)
 ifeq (,$(FASTER))
 	@echo "Linking $(NAME)"
 endif
 	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME)
 
+
+main.o: main.c $(ALLDEP) $(NEWREVISION)
+ifeq (,$(FASTER))
+	@echo "Compiling $<"
+endif
+	$(Q)$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
 
 .PHONY: all
 all: $(NAME) modules

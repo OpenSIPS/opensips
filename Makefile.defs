@@ -320,6 +320,7 @@ else
   ifneq ($(VERSIONTYPE),)
     THISREVISION = $(shell cat .gitrevision)
   endif
+  OLDREVISION = "$(THISREVISION)"
 endif
 
 ifneq ($(THISREVISION),)

@@ -103,11 +103,11 @@ static int is_preloaded(struct sip_msg* msg)
 
 	tag = get_to(msg)->tag_value;
 	if (tag.s == 0 || tag.len == 0) {
-		LM_DBG("is_preloaded: Yes\n");
+		LM_DBG("Yes\n");
 		return 1;
 	}
 
-	LM_DBG("is_preloaded: No\n");
+	LM_DBG("No\n");
 	return 0;
 }
 
@@ -522,7 +522,8 @@ static inline int after_strict(struct sip_msg* _m)
 			_m->force_send_socket = si;
 		} else {
 			if (enable_socket_mismatch_warning)
-				LM_WARN("no socket found for match second RR\n");
+				LM_WARN("no socket found to match 2nd RR [%d][%.*s:%d]\n",
+					puri.proto, puri.host.len, puri.host.s, puri.port_no);
 		}
 
 		/* mark route hdr as deleted */
@@ -543,7 +544,7 @@ static inline int after_strict(struct sip_msg* _m)
 				return RR_ERROR;
 			}
 			if (res > 0) { /* No next route found */
-				LM_DBG("after_strict: No next URI found\n");
+				LM_DBG("No next URI found\n");
 				return NOT_RR_DRIVEN;
 			}
 			rt = (rr_t*)hdr->parsed;
@@ -564,7 +565,8 @@ static inline int after_strict(struct sip_msg* _m)
 			_m->force_send_socket = si;
 		} else {
 			if (enable_socket_mismatch_warning)
-				LM_WARN("no socket found for match second RR\n");
+				LM_WARN("no socket found to match RR [%d][%.*s:%d]\n",
+					proto, _m->parsed_uri.host.len, _m->parsed_uri.host.s, port);
 		}
 	}
 
@@ -775,7 +777,8 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 				_m->force_send_socket = si;
 			} else {
 				if (enable_socket_mismatch_warning)
-					LM_WARN("no socket found for match second RR\n");
+					LM_WARN("no socket found to match 2nd RR [%d][%.*s:%d]\n",
+						puri.proto, puri.host.len, puri.host.s, puri.port_no);
 			}
 
 			rt->deleted = 1;
@@ -869,7 +872,8 @@ done:
 			_m->force_send_socket = si;
 		} else {
 			if (enable_socket_mismatch_warning)
-				LM_WARN("no socket found for match second RR\n");
+				LM_WARN("no socket found to match RR [%d][%.*s:%d]\n",
+					puri.proto, puri.host.len, puri.host.s, puri.port_no);
 		}
 	}
 	/* run RR callbacks -bogdan */

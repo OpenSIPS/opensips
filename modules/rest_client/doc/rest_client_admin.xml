@@ -148,7 +148,7 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 
 	<section>
 	<title>Exported Functions</title>
-	<section>
+	<section id="rest_get">
 		<title>
 		<function moreinfo="none">rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
 		</function>
@@ -256,7 +256,43 @@ if (!rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(b
 </programlisting>
 		</example>
 	</section>
+	</section>
+
+	<section>
+	<title>Exported Asyncronous Functions</title>
+	<section>
+		<title>
+		<function moreinfo="none">rest_get(url, body_pv[, ctype_pv[, retcode_pv]])
+		</function>
+		</title>
+		<para>
+		Runs a GET HTTP requests. This function does exactly the same as
+		<xref linkend="rest_get"/> (in terms of input, output and processing),
+		but in an asynchronous way. The script execution is suspended until the HTTP
+		response if available for read (the full response).
+		</para>
+		<example>
+		<title><function moreinfo="none">async rest_post</function> usage</title>
+		<programlisting format="linespecific">
+{
+...
+async( rest_post("http://myserver.org/register_user", "$fU", "text/plain", "$var(body)", "$var(ct)", "$var(rcode)"), resume );
+}
+
+route[resume] {
+	if ( $rc &lt; 0 ) {
+		xlog("Error code $var(rcode) in HTTP POST!\n");
+		send_reply("403", "POST Forbidden");
+		exit;
+	}
+	......
+}
+</programlisting>
+		</example>
+	</section>
 
 	</section>
+
+
 </chapter>
 

@@ -617,6 +617,9 @@ void handle_sigs(void)
  */
 static void sig_usr(int signo)
 {
+	int status;
+	pid_t pid;
+
 	if (is_main){
 		if (sig_flag==0) sig_flag=signo;
 		else /*  previous sig. not processed yet, ignoring? */
@@ -657,8 +660,9 @@ static void sig_usr(int signo)
 					/* ignored*/
 					break;
 			case SIGCHLD:
-					LM_DBG("SIGCHLD received: "
-						"we do not worry about grand-children\n");
+					pid = waitpid(-1, &status, WNOHANG);
+					LM_DBG("SIGCHLD received from %ld (status=%d), ignoring\n",
+						(long)pid,status);
 		}
 	}
 }

@@ -602,10 +602,10 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 
 static int inherit_from_default_head(ds_db_head_t *head)
 {
+	unsigned int i;
+
 	if (head == &default_db_head)
 		return 0;
-
-	unsigned int i;
 
 	for (i = 0; i < partition_param_count; ++i) {
 		str *def_param = partition_params[i].getter_func(&default_db_head);
@@ -850,8 +850,10 @@ static int ds_child_init(int rank)
 				partition_it = partition_it->next){
 
 			if (partition_it->db_url.s)
-				if (ds_connect_db(partition_it) != 0)
+				if (ds_connect_db(partition_it) != 0) {
+					LM_ERR("failed to do DB connect\n");
 					return -1;
+				}
 		}
 
 	}

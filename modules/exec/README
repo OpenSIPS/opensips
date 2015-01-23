@@ -27,29 +27,34 @@ Jan Janak
 
               1.3.1. setvars (integer)
               1.3.2. time_to_kill (integer)
-              1.3.3. async (integer)
 
         1.4. Exported Functions
 
-              1.4.1. exec_dset(command)
-              1.4.2. exec_msg(command)
-              1.4.3. exec_avp(command[, avplist])
-              1.4.4. exec_getenv(environment_variable[, avp])
-              1.4.5. exec(command, [stdin], [stdout], [stderr],
+              1.4.1. exec(command, [stdin], [stdout], [stderr],
                       [envavp])
 
-        1.5. Known Issues
+              1.4.2. exec_dset(command) (DEPRECATED)
+              1.4.3. exec_msg(command) (DEPRECATED)
+              1.4.4. exec_avp(command[, avplist]) (DEPRECATED)
+              1.4.5. exec_getenv(environment_variable[, avp])
+                      (DEPRECATED)
+
+        1.5. Exported Asyncronous Functions
+
+              1.5.1. exec(command[,input[,output[,error[,env]]]])
+
+        1.6. Known Issues
 
    List of Examples
 
    1.1. Set “setvars” parameter
    1.2. Set “time_to_kill” parameter
-   1.3. Set “async” parameter
+   1.3. exec usage
    1.4. exec_dset usage
    1.5. exec_msg usage
    1.6. exec_avp usage
    1.7. exec_getenv usage
-   1.8. exec usage
+   1.8. async exec usage
 
 Chapter 1. Admin Guide
 
@@ -124,23 +129,67 @@ modparam("exec", "setvars", 1)
 modparam("exec", "time_to_kill", 20)
 ...
 
-1.3.3. async (integer)
-
-   Turns on the asynchronous mode for the 'exec_msg' and 'exec'
-   functions. All commands will be executed by a different process
-   and the caller will continue its flow, without waiting for a
-   response.
-
-   Default value is 0 (disabled).
-
-   Example 1.3. Set “async” parameter
-...
-modparam("exec", "async", 1)
-...
-
 1.4. Exported Functions
 
-1.4.1.  exec_dset(command)
+1.4.1.  exec(command, [stdin], [stdout], [stderr], [envavp])
+
+   Executes an external command. The input is passed to the
+   standard input of the new process, if specified, and the output
+   is saved in the output variable.
+
+   The function waits for the external script until it provided
+   all its output (not necessary to actually finish). If no output
+   (standard output or standard error) is required by the
+   function, it will not block at all - it will simply launch the
+   external script and continue the script.
+
+   Meaning of the parameters is as follows:
+     * command - command to be executed.It can include
+       pseudovariables.
+     * stdin - String to be passed to the standard input of the
+       command. The string can be given as a pseudovariable.
+     * stdout - pseudovariable where to store the output from the
+       standard output of the process.
+     * stderr - pseudovariable where to store the error from the
+       standard error of the process.
+     * envavp - Avp where to store the values for the environment
+       variables to be passed for the command. The names of the
+       environment variables will be "OSIPS_EXEC_#" where # will
+       start from 0. For example if you store 2 values into an avp
+       ("a" and "b") OSIPS_EXEC_0 will contain the first value and
+       OSIPS_EXEC_1 the second value.
+
+   WARNING: any OpenSIPS pseudo-vars which may contain special
+   bash characters should be placed inside quotes, e.g.
+   exec("update-stats.sh '$ct'");
+
+   WARNING: "stdin"/"stdout"/"stderr" parameters are not designed
+   for a large amount of data so one should be careful when using
+   them because server could considerably be slowed down.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
+   ONREPLY_ROUTE.
+
+   Example 1.3. exec usage
+...
+$avp(env) = "a";
+$avp(env) = "b";
+exec("ls -l", , "$var(out)", "$var(err)", "$avp(env)");
+xlog("The output is $var(out)\n");
+xlog("Received the following error\n$var(err)");
+...
+$var(input) = "input";
+exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , "$
+avp(env)");
+...
+
+1.4.2.  exec_dset(command) (DEPRECATED)
+
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
 
    Executes an external command. The current R-URI is appended to
    the command as its last parameter. The output of the command
@@ -166,7 +215,12 @@ exec_dset("ruri-changer.sh");
 exec_dset("ruri-changer.sh '$ct'");
 ...
 
-1.4.2.  exec_msg(command)
+1.4.3.  exec_msg(command) (DEPRECATED)
+
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
 
    Executes an external command. The current SIP message is passed
    to it in the standard input, no command-line parameters are
@@ -194,7 +248,12 @@ exec_dset("ruri-changer.sh '$ct'");
 exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
 ...
 
-1.4.3.  exec_avp(command[, avplist])
+1.4.4.  exec_avp(command[, avplist]) (DEPRECATED)
+
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
 
    Executes an external command. Each output line of the command
    is saved in its corresponding AVP from avplist. If avplist is
@@ -224,7 +283,12 @@ exec_avp("get-subscriber-details.sh '$rU'", "$avp(credit) $avp(contract_
 model)");
 ...
 
-1.4.4.  exec_getenv(environment_variable[, avp])
+1.4.5.  exec_getenv(environment_variable[, avp]) (DEPRECATED)
+
+   WARNING - this function is deprecated and it will be remove in
+   the next version - please use the exec() function (
+   Section 1.4.1, “ exec(command, [stdin], [stdout], [stderr],
+   [envavp]) ” ).
 
    Obtains the value of a UNIX evironment_variable. The value is
    saved in 'avp'. If 'avp' is missing, output will be stored in
@@ -250,56 +314,39 @@ exec_getenv("HOSTNAME");
 exec_getenv("HOSTNAME", "$avp(localhost)");
 ...
 
-1.4.5.  exec(command, [stdin], [stdout], [stderr], [envavp])
+1.5. Exported Asyncronous Functions
 
-   Executes an external command. The input is passed to the
-   standard input of the new process, if specified, and the output
-   is saved in the output variable.
+1.5.1.  exec(command[,input[,output[,error[,env]]]])
 
-   Meaning of the parameters is as follows:
-     * command - command to be executed.It can include
-       pseudovariables.
-     * stdin - String to be passed to the standard input of the
-       command. The string can be given as a pseudovariable.
-     * stdout - pseudovariable where to store the output from the
-       standard output of the process. Keep in mind that if this
-       parameter is set, the async paramater will not be taken in
-       consideration.
-     * stderr - pseudovariable where to store the error from the
-       standard error of the process.
-     * envavp - Avp where to store the values for the environment
-       variables to be passed for the command. The names of the
-       environment variables will be "OSIPS_EXEC_#" where # will
-       start from 0. For example if you store 2 values into an avp
-       ("a" and "b") OSIPS_EXEC_0 will contain the first value and
-       OSIPS_EXEC_1 the second value.
+   Executes an external command. This function does exactly the
+   same as Section 1.4.1, “ exec(command, [stdin], [stdout],
+   [stderr], [envavp]) ” (in terms of input, output and
+   processing), but in an asynchronous way. The script execution
+   is suspended until the external script provided all its output.
+   OpenSIPS waits for the external script to close its output
+   stream, not necessarily to terminate (so the script may still
+   be running when OpenSIPS resumes the script execution on
+   "seeing" EOF on the the output stream).
 
-   WARNING: any OpenSIPS pseudo-vars which may contain special
-   bash characters should be placed inside quotes, e.g.
-   exec("update-stats.sh '$ct'");
+   NOTE: this function ignore the "error" parameters for now - the
+   asynchronous waiting is done only on the output stream !! This
+   may be fixed in the following versions.
 
-   WARNING: "stdin"/"stdout"/"stderr" parameters are not designed
-   for a large amount of data so one should be careful when using
-   them because server could considerably be slowed down.
+   To read and understand more on the asynchronous functions, how
+   to use them and what are their advantages, please refer to the
+   OpenSIPS online Manual.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE,
-   ONREPLY_ROUTE.
-
-   Example 1.8. exec usage
+   Example 1.8. async exec usage
+{
 ...
-$avp(env) = "a";
-$avp(env) = "b";
-exec("ls -l", , "$var(out)", "$var(err)", "$avp(env)");
-xlog("The output is $var(out)\n");
-xlog("Received the following error\n$var(err)");
-...
-$var(input) = "input";
-exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , "$
-avp(env)");
-...
+async( exec("ruri-changer.sh","$ru","$ru"), resume );
+}
 
-1.5. Known Issues
+route[resume] {
+...
+}
+
+1.6. Known Issues
 
    When imposing an execution timeout using time_to_kill, make
    sure your "/bin/sh" is a shell which does not fork when
