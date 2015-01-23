@@ -284,7 +284,9 @@ typedef int (*db_insert_update_f) (const db_con_t* _h, const db_key_t* _k,
  *
  * \param _h structure representing the database handle
  * \param _s the SQL query
- * \return returns 1 if everything is OK, otherwise returns value < 0
+ * \return
+ *		success: Unix FD for polling
+ *		failure: negative error code
  */
 typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
 
@@ -296,7 +298,7 @@ typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
  * \param fd read file descriptor obtained in starting phase
  * \param _r structure for the result
  * \return:
- *		-> 1 on success, negative on failure
+ *		-> 0 on success, negative on failure
  *		-> also populates the global "async_status": ASYNC_CONTINUE / ASYNC_DONE
  *
  * !!! IMPORTANT:
@@ -304,8 +306,7 @@ typedef int (*db_async_raw_query_f) (db_con_t *_h, const str *_q);
  *		backend-specific results have already been freed!
  *			You only need to call db_free_result(_r) when done
  */
-typedef enum async_ret_code (*db_async_raw_resume_f) (db_con_t *_h,
-				int fd, db_res_t **_r);
+typedef int (*db_async_raw_resume_f) (db_con_t *_h, int fd, db_res_t **_r);
 
 /**
  * \brief Database module callbacks

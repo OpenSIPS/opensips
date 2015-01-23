@@ -1168,11 +1168,9 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s)
 			if (!con)
 				return -1;
 
-			i = db_mysql_get_con_fd(con);
-			*fd_ref = i;
+			*fd_ref = db_mysql_get_con_fd(con);
 			db_switch_to_sync(_h);
-			async_status = i;
-			return 1;
+			return *fd_ref;
 		}
 	}
 
@@ -1189,7 +1187,7 @@ out:
 	return -2;
 }
 
-enum async_ret_code db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
+int db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_r)
 {
 	struct pool_con *con;
 
@@ -1212,13 +1210,13 @@ enum async_ret_code db_mysql_async_raw_resume(db_con_t *_h, int fd, db_res_t **_
 
 		db_switch_to_sync(_h);
 		db_store_async_con(_h, con);
-		return 1;
+		return 0;
 	}
 
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, con);
 	async_status = ASYNC_CONTINUE;
-	return 1;
+	return 0;
 }
 
 

@@ -143,7 +143,7 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rf,
 		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest);
 
-enum async_ret_code resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
+int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
 int ops_delete_avp(struct sip_msg* msg,
 								struct fis_param *ap);

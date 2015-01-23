@@ -836,34 +836,39 @@ int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
 	qstr.len = printbuf_len;
 
 	read_fd = url->dbf.async_raw_query(url->hdl, &qstr);
-
 	if (read_fd < 0)
 	{
 		*rparam = NULL;
 		*rfunc = NULL;
-	} else
-	{
-		*rparam = param;
-		*rfunc = resume_async_dbquery;
-
-		param->output_avps = dest;
-		param->hdl = url->hdl;
-		param->dbf = &url->dbf;
+		return -1;
 	}
 
-	return read_fd;
+	*rparam = param;
+	*rfunc = resume_async_dbquery;
+
+	param->output_avps = dest;
+	param->hdl = url->hdl;
+	param->dbf = &url->dbf;
+
+	async_status = read_fd;
+	return 1;
 }
 
-enum async_ret_code resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 {
-	db_res_t *res;
+	db_res_t *res = NULL;
 	query_async_param *param = (query_async_param *)_param;
-	enum async_ret_code arc;
+	int rc;
 
-	arc = param->dbf->async_raw_resume(param->hdl, fd, &res);
+	rc = param->dbf->async_raw_resume(param->hdl, fd, &res);
 	if (async_status == ASYNC_CONTINUE) {
 		LM_INFO("XXX ASYNC_CONTINUE\n");
-		return ASYNC_CONTINUE;
+		return rc;
+	}
+
+	if (rc != 0) {
+		LM_ERR("Error geting final result: %d\n", rc);
+		return -1;
 	}
 
 	if (db_query_avp_print_results(msg, res, param->output_avps) != 0) {
@@ -875,7 +880,7 @@ enum async_ret_code resume_async_dbquery(int fd, struct sip_msg *msg, void *_par
 	db_free_result(res);
 	pkg_free(param);
 
-	return arc;
+	return 1;
 }
 
 
