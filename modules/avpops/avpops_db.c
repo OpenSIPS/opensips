@@ -399,16 +399,10 @@ int db_delete_avp(struct db_url *url, str *uuid, str *username, str *domain,
 }
 
 
-
 int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 														pvname_list_t* dest)
 {
-	int_str avp_val;
-	int_str avp_name;
-	unsigned short avp_type;
 	db_res_t* db_res = NULL;
-	int i, j;
-	pvname_list_t* crt;
 	static str query_str;
 
 	if(query==NULL)
@@ -435,6 +429,25 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 		db_close_query( url, db_res );
 		return 1;
 	}
+
+	if (db_query_avp_print_results(msg, db_res, dest) != 0) {
+		LM_ERR("failed to print results\n");
+		db_close_query( url, db_res );
+		return -1;
+	}
+
+	db_close_query( url, db_res );
+	return 0;
+}
+
+int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
+								pvname_list_t *dest)
+{
+	int_str avp_val;
+	int_str avp_name;
+	unsigned short avp_type;
+	int i, j;
+	pvname_list_t* crt;
 
 	LM_DBG("rows [%d]\n", RES_ROW_N(db_res));
 	/* reverse order of rows so that first row get's in front of avp list */
@@ -513,7 +526,6 @@ int db_query_avp(struct db_url *url, struct sip_msg *msg, char *query,
 			if(add_avp(avp_type, avp_name.n, avp_val)!=0)
 			{
 				LM_ERR("unable to add avp\n");
-				db_close_query( url, db_res );
 				return -1;
 			}
 next_avp:
@@ -526,6 +538,5 @@ next_avp:
 		}
 	}
 
-	db_close_query( url, db_res );
 	return 0;
 }

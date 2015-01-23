@@ -86,4 +86,7 @@ int avp_add_db_scheme( modparam_t type, void* val);
 
 struct db_scheme *avp_get_db_scheme( str *name );
 
+int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
+								pvname_list_t *dest);
+
 #endif

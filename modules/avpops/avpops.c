@@ -89,6 +89,8 @@ static int w_dbstore_avps(struct sip_msg* msg, char* source,
 		char* param, char* url);
 static int w_dbquery_avps(struct sip_msg* msg, char* query,
 		char* dest, char* url);
+static int w_async_dbquery_avps(struct sip_msg* msg, async_resume_module **rf,
+		void **rparam, char* query, char* dest, char* url);
 static int w_delete_avps(struct sip_msg* msg, char* param, char *foo);
 static int w_copy_avps(struct sip_msg* msg, char* param, char *check);
 static int w_pushto_avps(struct sip_msg* msg, char* destination, char *param);
@@ -96,6 +98,13 @@ static int w_check_avps(struct sip_msg* msg, char* param, char *check);
 static int w_op_avps(struct sip_msg* msg, char* param, char *op);
 static int w_subst(struct sip_msg* msg, char* src, char *subst);
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
+
+static acmd_export_t acmds[] = {
+	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 1, fixup_db_query_avp },
+	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 2, fixup_db_query_avp },
+	{ "avp_db_query", (acmd_function)w_async_dbquery_avps, 3, fixup_db_query_avp },
+	{ 0, 0, 0, 0 }
+};
 
 /*! \brief
  * Exported functions
@@ -197,7 +206,7 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	&deps,           /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
-	0,          /* Exported async functions */
+	acmds,      /* Exported async functions */
 	params,     /* Exported parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
@@ -1190,6 +1199,13 @@ static int w_dbquery_avps(struct sip_msg* msg, char* query,
 	return ops_dbquery_avps ( msg, (pv_elem_t*)query,
 		url?(struct db_url*)url:default_db_url,
 		(pvname_list_t*)dest);
+}
+
+static int w_async_dbquery_avps(struct sip_msg* msg, async_resume_module **rf,
+		void **rparam, char* query, char* dest, char* url)
+{
+	return ops_async_dbquery(msg, rf, rparam, (pv_elem_t *)query,
+			url ? (struct db_url *)url : default_db_url, (pvname_list_t *)dest);
 }
 
 static int w_delete_avps(struct sip_msg* msg, char* param, char* foo)

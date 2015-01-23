@@ -118,6 +118,14 @@ struct db_param
 	struct db_scheme *scheme;  /* DB scheme */
 };
 
+typedef struct _query_async_param
+{
+	pvname_list_t *output_avps;
+	db_con_t      *hdl;
+	db_func_t     *dbf;
+
+} query_async_param;
+
 void init_store_avps(str **db_columns);
 
 int ops_dbload_avps (struct sip_msg* msg, struct fis_param *sp,
@@ -131,6 +139,11 @@ int ops_dbstore_avps(struct sip_msg* msg, struct fis_param *sp,
 
 int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 					struct db_url *url, pvname_list_t* dest);
+
+int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rf,
+		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest);
+
+enum async_ret_code resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
 int ops_delete_avp(struct sip_msg* msg,
 								struct fis_param *ap);

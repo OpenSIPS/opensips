@@ -801,6 +801,84 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 	return 1;
 }
 
+int ops_async_dbquery(struct sip_msg* msg, async_resume_module **rfunc,
+		void **rparam,  pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
+{
+	int printbuf_len;
+	int read_fd;
+	query_async_param *param;
+	str qstr;
+
+	if (!msg || !query)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	printbuf_len = buf_size - 1;
+	if (pv_printf(msg, query, printbuf, &printbuf_len) < 0 || printbuf_len <= 0)
+	{
+		LM_ERR("cannot print the query\n");
+		return -1;
+	}
+
+	LM_DBG("query [%s]\n", printbuf);
+
+	param = pkg_malloc(sizeof *param);
+	if (!param)
+	{
+		LM_ERR("no more pkg mem\n");
+		return E_OUT_OF_MEM;
+	}
+	memset(param, '\0', sizeof *param);
+
+	qstr.s = printbuf;
+	qstr.len = printbuf_len;
+
+	read_fd = url->dbf.async_raw_query(url->hdl, &qstr);
+
+	if (read_fd < 0)
+	{
+		*rparam = NULL;
+		*rfunc = NULL;
+	} else
+	{
+		*rparam = param;
+		*rfunc = resume_async_dbquery;
+
+		param->output_avps = dest;
+		param->hdl = url->hdl;
+		param->dbf = &url->dbf;
+	}
+
+	return read_fd;
+}
+
+enum async_ret_code resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+{
+	db_res_t *res;
+	query_async_param *param = (query_async_param *)_param;
+	enum async_ret_code arc;
+
+	arc = param->dbf->async_raw_resume(param->hdl, fd, &res);
+	if (async_status == ASYNC_CONTINUE) {
+		LM_INFO("XXX ASYNC_CONTINUE\n");
+		return ASYNC_CONTINUE;
+	}
+
+	if (db_query_avp_print_results(msg, res, param->output_avps) != 0) {
+		LM_ERR("failed to print results\n");
+		db_free_result(res);
+		return -1;
+	}
+
+	db_free_result(res);
+	pkg_free(param);
+
+	return arc;
+}
+
+
 
 int ops_delete_avp(struct sip_msg* msg, struct fis_param *ap)
 {
