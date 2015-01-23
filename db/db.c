@@ -310,7 +310,8 @@ db_con_t* db_do_init(const str* url, void* (*new_connection)())
 	}
 
 	if (!con->transfers) {
-		con->transfers = pkg_malloc(db_max_async_connections);
+		con->transfers = pkg_malloc(db_max_async_connections *
+										sizeof *con->transfers);
 		if (!con->transfers) {
 			LM_ERR("no more pkg\n");
 			goto err;
