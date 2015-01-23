@@ -385,6 +385,7 @@ MAX_WHILE_LOOPS "max_while_loops"
 DISABLE_STATELESS_FWD	"disable_stateless_fwd"
 DB_VERSION_TABLE "db_version_table"
 DB_DEFAULT_URL "db_default_url"
+DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
 
 MPATH	mpath
@@ -735,6 +736,8 @@ IMPORTFILE      "import_file"
 									return DB_VERSION_TABLE; }
 <INITIAL>{DB_DEFAULT_URL}	{	count(); yylval.strval=yytext;
 									return DB_DEFAULT_URL; }
+<INITIAL>{DB_MAX_ASYNC_CONNECTIONS}	{	count(); yylval.strval=yytext;
+									return DB_MAX_ASYNC_CONNECTIONS; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
 

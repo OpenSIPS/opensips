@@ -429,6 +429,7 @@ extern char *finame;
 %token DISABLE_STATELESS_FWD
 %token DB_VERSION_TABLE
 %token DB_DEFAULT_URL
+%token DB_MAX_ASYNC_CONNECTIONS
 %token DISABLE_503_TRANSLATION
 %token SYNC_TOKEN
 %token ASYNC_TOKEN
@@ -1367,9 +1368,11 @@ assign_stm: DEBUG EQUAL snumber {
 		| DB_VERSION_TABLE EQUAL error { yyerror("string value expected"); }
 		| DB_DEFAULT_URL EQUAL STRING { db_default_url=$3; }
 		| DB_DEFAULT_URL EQUAL error { yyerror("string value expected"); }
+		| DB_MAX_ASYNC_CONNECTIONS EQUAL NUMBER { db_max_async_connections=$3; }
+		| DB_MAX_ASYNC_CONNECTIONS EQUAL error { yyerror("integer value expected"); }
 		| DISABLE_503_TRANSLATION EQUAL NUMBER { disable_503_translation=$3; }
 		| DISABLE_503_TRANSLATION EQUAL error {
-				yyerror("string value expected");
+				yyerror("integer value expected");
 				}
 		| error EQUAL { yyerror("unknown config variable"); }
 	;

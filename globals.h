@@ -168,8 +168,8 @@ extern int sl_fwd_disabled;
 extern time_t startup_time;
 
 extern char *db_version_table;
-
 extern char *db_default_url;
+extern int db_max_async_connections;
 
 extern int disable_503_translation;
 

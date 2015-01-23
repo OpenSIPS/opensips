@@ -29,10 +29,9 @@
 #ifndef _DB_POOL_H
 #define _DB_POOL_H
 
+#include "../globals.h"
 #include "db_id.h"
 #include "db_con.h"
-
-extern int db_max_async_connections;
 
 struct db_transfer {
 	int fd;
