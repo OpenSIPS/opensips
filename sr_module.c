@@ -286,7 +286,7 @@ int load_module(char* name)
 		&& strlen(name)+mpath_len<255)
 	{
 		strcpy(mpath_buf+mpath_len, name);
-		if (stat(mpath_buf, &statf) == -1) {
+		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
 			i_tmp = strlen(mpath_buf);
 			if(strchr(name, '/')==NULL &&
 				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
@@ -302,24 +302,24 @@ int load_module(char* name)
 						return -1;
 					}
 				} else {
-					LM_ERR("failed to load module - path too long");
+					LM_ERR("failed to load module - path too long\n");
 					return -1;
 				}
 			} else {
-				LM_ERR("failed to load module - not found");
+				LM_ERR("failed to load module - not found\n");
 				return -1;
 			}
 		}
 		LM_DBG("loading module %s\n", mpath_buf);
 		if (sr_load_module(mpath_buf)!=0){
-			LM_ERR("failed to load module");
+			LM_ERR("failed to load module\n");
 			return -1;
 		}
 		mpath_buf[mpath_len]='\0';
 	} else {
 		LM_DBG("loading module %s\n", name);
 		if (sr_load_module(name)!=0){
-			LM_ERR("failed to load module");
+			LM_ERR("failed to load module\n");
 			return -1;
 		}
 	}

@@ -60,7 +60,10 @@ new_sock_info(char* name, unsigned short port, unsigned short proto,
 							char *adv_name, unsigned short adv_port,
 							unsigned short children, enum si_flags flags);
 
-int fix_all_socket_lists();
+int new_sock2list(char* name, unsigned short port, unsigned short proto,
+		char *adv_name, unsigned short adv_port, unsigned short children,
+		enum si_flags flags, struct socket_info** list);
+
 int fix_socket_list(struct socket_info **);
 
 /*
@@ -107,7 +110,6 @@ int get_socket_list_from_proto(int **ipList, int protocol);
  */
 int get_total_bytes_waiting(int only_proto);
 
-void print_all_socket_lists();
 void print_aliases();
 
 struct socket_info* grep_sock_info(str* host, unsigned short port,

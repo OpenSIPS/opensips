@@ -58,6 +58,7 @@
 #include "ut.h"
 #include "resolve.h"
 #include "name_alias.h"
+#include "net/trans.h"
 
 #define MAX_PROC_BUFFER	256
 
@@ -170,6 +171,8 @@ static void free_sock_info(struct socket_info* si)
 
 
 
+#if 0
+/* TODO: update this based on the networking info */
 static char* get_proto_name(unsigned short proto)
 {
 	switch(proto){
@@ -193,6 +196,7 @@ static char* get_proto_name(unsigned short proto)
 			return "unknown";
 	}
 }
+#endif
 
 
 /* checks if the proto: host:port is one of the address we listen on
@@ -561,10 +565,13 @@ int fix_socket_list(struct socket_info **list)
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix the number of processes per interface */
+		/* TODO: what shall we do with these? */
 		if (si->children==0 && (si->proto==PROTO_UDP || si->proto==PROTO_SCTP))
 			si->children = children_no;
 		/* fix port number, port_no should be !=0 here */
+		/* XXX: we should not have port 0 here */
 		if (si->port_no==0){
+			LM_WARN("Port 0 for socket <%.*s>\n", si->name.len, si->name.s);
 #ifdef USE_TLS
 			si->port_no= (si->proto==PROTO_TLS)?tls_port_no:port_no;
 #else
@@ -762,14 +769,8 @@ int fix_socket_list(struct socket_info **list)
 	si=*list;
 	while(si){
 		if ((si->flags & SI_IS_MCAST) &&
-		    ((si->proto == PROTO_TCP)
-#ifdef USE_TLS
-		    || (si->proto == PROTO_TLS)
-#endif /* USE_TLS */
-#ifdef USE_SCTP
-			|| (si->proto == PROTO_SCTP)
-#endif
-		    )){
+		    (si->proto != PROTO_UDP)
+		   ){
 			LM_WARN("removing entry %s:%s [%s]:%s\n",
 			    get_proto_name(si->proto), si->name.s,
 			    si->address_str.s, si->port_no_str.s);
@@ -790,99 +791,6 @@ error:
 
 
 
-/* fix all 3 socket lists
- * return 0 on success, -1 on error */
-int fix_all_socket_lists(void)
-{
-	struct utsname myname;
-
-	if ((udp_listen==0)
-#ifdef USE_TCP
-			&& (tcp_listen==0)
-#ifdef USE_TLS
-			&& (tls_listen==0)
-#endif
-#endif
-#ifdef USE_SCTP
-			&& (sctp_listen==0)
-#endif
-		){
-		/* get all listening ipv4 interfaces */
-		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
-			/* if ok, try to add the others too */
-#ifdef USE_TCP
-			if (!tcp_disable){
-				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, &tcp_listen)!=0)
-					goto error;
-#ifdef USE_TLS
-				if (!tls_disable){
-					if (add_interfaces(0, AF_INET, 0, PROTO_TLS,
-								&tls_listen)!=0)
-					goto error;
-				}
-#endif
-			}
-#endif
-#ifdef USE_SCTP
-			if (!sctp_disable){
-				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
-					goto error;
-			}
-#endif
-		}else{
-			/* if error fall back to get hostname */
-			/* get our address, only the first one */
-			if (uname (&myname) <0){
-				LM_ERR("cannot determine hostname, try -l address\n");
-				goto error;
-			}
-			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0, 0)!=0){
-				LM_ERR("add_listen_iface failed \n");
-				goto error;
-			}
-		}
-	}
-	if (fix_socket_list(&udp_listen)!=0){
-		LM_ERR("fix_socket_list udp failed\n");
-		goto error;
-	}
-#ifdef USE_TCP
-	if (!tcp_disable && (fix_socket_list(&tcp_listen)!=0)){
-		LM_ERR("fix_socket_list tcp failed\n");
-		goto error;
-	}
-#ifdef USE_TLS
-	if (!tls_disable && (fix_socket_list(&tls_listen)!=0)){
-		LM_ERR("fix_socket_list tls failed\n");
-		goto error;
-	}
-#endif
-#endif
-#ifdef USE_SCTP
-	if (!sctp_disable && (fix_socket_list(&sctp_listen)!=0)){
-		LM_ERR("fix_socket_list sctp failed\n");
-		goto error;
-	}
-#endif
-
-	if ((udp_listen==0)
-#ifdef USE_TCP
-			&& (tcp_listen==0 || tcp_disable)
-#ifdef USE_TLS
-			&& (tls_listen==0 || tls_disable)
-#endif
-#endif
-#ifdef USE_SCTP
-			&& (sctp_listen==0 || sctp_disable)
-#endif
-	){
-		LM_ERR("no listening sockets\n");
-		goto error;
-	}
-	return 0;
-error:
-	return -1;
-}
 
 
 /*
@@ -1236,24 +1144,6 @@ int get_total_bytes_waiting(int only_proto)
 	return bytesWaiting;
 }
 
-
-void print_all_socket_lists(void)
-{
-	struct socket_info *si;
-	struct socket_info** list;
-	unsigned short proto;
-
-
-	proto=PROTO_UDP;
-	do{
-		list=get_sock_info_list(proto);
-		for(si=list?*list:0; si; si=si->next){
-			printf("             %s: %s [%s]:%s%s\n", get_proto_name(proto),
-			       si->name.s, si->address_str.s, si->port_no_str.s,
-			       si->flags & SI_IS_MCAST ? " mcast" : "");
-		}
-	}while((proto=next_proto(proto)));
-}
 
 
 void print_aliases(void)

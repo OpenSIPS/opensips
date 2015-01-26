@@ -135,7 +135,6 @@ static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str s_tmp;
 static str tstr;
-static enum sip_protos p_tmp;
 static struct ip_addr* ip_tmp;
 static pv_spec_t *spec;
 static pv_elem_t *pvmodel;
@@ -521,7 +520,12 @@ statements:	statements statement {}
 		| statements error { yyerror(""); YYABORT;}
 	;
 
-statement:	assign_stm
+statement:	assign_stm {
+			/* add the temporary listening interfaces */
+			if (fix_tmp_listeners() < 0) {
+				LM_WARN("cannot fix command line listeners\n");
+			}
+		 }
 		| module_stm
 		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
@@ -570,12 +574,15 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 	;
 
 proto:	PROTO_NAME {
-		p_tmp = get_trans_proto($1);
-		if (p_tmp == PROTO_NONE) {
+		if (parse_proto((unsigned char *)$1, strlen($1), &i_tmp) < 0) {
 			yyerrorf("cannot handle protocol <%s>\n", $1);
 			YYABORT;
 		}
-		$$ = p_tmp;
+		if (load_trans_proto($1, i_tmp) < 0) {
+			yyerrorf("cannot load protocol <%s>\n", $1);
+			YYABORT;
+		}
+		$$ = i_tmp;
 	 }
 ;
 
@@ -589,8 +596,8 @@ snumber:	NUMBER	{ $$=$1; }
 ;
 
 
-phostport:	listen_id				{ $$=mk_listen_id($1, PROTO_NONE, 0); }
-			| listen_id COLON port	{ $$=mk_listen_id($1, PROTO_NONE, $3); }
+phostport:	listen_id				{ $$=mk_listen_id($1, PROTO_UDP, 0); }
+			| listen_id COLON port	{ $$=mk_listen_id($1, PROTO_UDP, $3); }
 			| proto COLON listen_id	{ $$=mk_listen_id($3, $1, 0); }
 			| proto COLON listen_id COLON port	{ $$=mk_listen_id($3, $1, $5);}
 			| listen_id COLON error { $$=0; yyerror(" port number expected"); }

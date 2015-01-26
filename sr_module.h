@@ -243,6 +243,10 @@ void* find_param_export(char* mod, char* name, modparam_t type);
  * \return Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name);
 
+/*! \brief Gets a specific module
+ * \return Returns the module if the module with name 'name' is loaded, and
+ * NULL otherwise */
+
 /*! \brief Counts the additional the number of processes requested by modules */
 int count_module_procs();
 

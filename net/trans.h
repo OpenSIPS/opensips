@@ -49,13 +49,39 @@ extern unsigned int proto_nr;
 int init_trans_interface(void);
 
 /*
- * returns the ID of the protocol
+ * loads the transport protocol
  */
-enum sip_protos get_trans_proto(char *name);
+int load_trans_proto(char *name, enum sip_protos proto);
 
 /*
  * adds a new listener
  */
 int add_listener(struct socket_id *sock, enum si_flags flags);
+
+/*
+ * adds a temporary listener
+ */
+int add_tmp_listener(char *name, int port, int proto);
+
+/*
+ * fixes temporary listeners
+ */
+int fix_tmp_listeners(void);
+
+/*
+ * fixes all socket lists
+ */
+int fix_all_socket_lists(void);
+
+void print_all_socket_lists(void);
+
+static inline char* get_proto_name(unsigned short proto)
+{
+	if (proto == PROTO_NONE)
+		return "*";
+	if (proto >= proto_nr || protos[proto - 1].id == PROTO_NONE)
+		return "unknown";
+	return protos[proto - 1].binds.name;
+}
 
 #endif /* _TRANS_TI_H_ */

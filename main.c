@@ -1152,6 +1152,7 @@ int main(int argc, char** argv)
 		goto error00;
 
 	init_route_lists();
+
 	/* process command line (get port no, cfg. file path etc) */
 	/* first reset getopt */
 	optind = 1;
@@ -1195,7 +1196,7 @@ int main(int argc, char** argv)
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
-					if (add_listen_iface(tmp, port, proto, 0, 0, 0,0 )!=0){
+					if (add_tmp_listener(tmp, port, proto)!=0){
 						LM_ERR("failed to add new listen address\n");
 						goto error00;
 					}
@@ -1374,7 +1375,10 @@ try_again:
 	yydebug = 1;
 #endif
 
-	/* initializes transport interfaces */
+	/*
+	 * initializes transport interfaces - we initialize them here because we
+	 * can have listening interfaces declared in the command line
+	 */
 	if (init_trans_interface() < 0) {
 		LM_ERR("cannot initilize transport interface\n");
 		goto error;

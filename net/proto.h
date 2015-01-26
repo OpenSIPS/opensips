@@ -30,9 +30,10 @@
 #include "proto_net.h"
 
 typedef int (*proto_init_f)(void);
-typedef int (*proto_add_listener_f)(char *name, int port);
+typedef int (*proto_add_listener_f)(struct socket_info *si);
 
 struct proto {
+	char *					name;
 	int						default_port;
 	proto_init_f			init;
 	proto_add_listener_f	add_listener;

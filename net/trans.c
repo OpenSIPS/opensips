@@ -29,6 +29,7 @@
 #include "net.h"
 #include "../mem/mem.h"
 #include "../sr_module.h"
+#include "../socket_info.h"
 
 
 /* we alocate this dinamically because we don't know how when new protocols
@@ -36,10 +37,11 @@
 struct proto_info *protos;
 unsigned int proto_nr;
 
+static struct socket_id *tmp_listeners;
+
 
 int init_trans_interface(void)
 {
-//	unsigned int i;
 
 	proto_nr = PROTO_OTHER - PROTO_NONE - 1;
 	protos = pkg_malloc(proto_nr * sizeof(struct proto_info));
@@ -59,104 +61,82 @@ int init_trans_interface(void)
 	return 0;
 }
 
-enum sip_protos get_proto_id(char *s, int len)
-{
-#define PROTO2UINT(a, b, c) ((	(((unsigned int)(a))<<16)+ \
-								(((unsigned int)(b))<<8)+  \
-								((unsigned int)(c)) ) | 0x20202020)
-	unsigned int i;
-
-	/* must support 3-char arrays for udp, tcp, tls,
-	 * must support 4-char arrays for sctp */
-	if (len < 2 || len > 4)
-		goto error;
-
-	i=PROTO2UINT(s[0], s[1], s[2]);
-	switch(i){
-		case PROTO2UINT('u', 'd', 'p'):
-			if(len == 3)
-				return PROTO_UDP;
-			break;
-#ifdef USE_TCP
-		case PROTO2UINT('t', 'c', 'p'):
-			if(len == 3)
-				return PROTO_TCP;
-			break;
-#ifdef USE_TLS
-		case PROTO2UINT('t', 'l', 's'):
-			if(len == 3)
-				return PROTO_TLS;
-			break;
-#endif
-#endif
-#ifdef USE_SCTP
-		case PROTO2UINT('s', 'c', 't'):
-			if(len == 4 && (s[3]=='p' || s[3]=='P'))
-				return PROTO_SCTP;
-			break;
-#endif
-	}
-error:
-	return PROTO_NONE;
-#undef PROTO2UINT
-}
-
-enum sip_protos get_trans_proto(char *name)
+int load_trans_proto(char *name, enum sip_protos proto)
 {
 	int len = strlen(name);
-	char name_buf[/* net_ */ 4 + len + /* .so */ 3 + /* '\0' */ + 1];
-	enum sip_protos proto = get_proto_id(name, len);
+	char name_buf[/* net_ */ 4 + len + /* '\0' */ 1];
 	int i;
 	proto_bind_api proto_api;
 
 	if (proto == PROTO_NONE) {
 		LM_ERR("unknown protocol %s\n", name);
-		goto end;
+		goto error;
 	}
-	if (protos[proto - 1].id == PROTO_NONE) {
-		/* load the protocol */
-		memcpy(name_buf, "net_", 4);
-		memcpy(name_buf + 4, name, len);
-		memcpy(name_buf + len + 4, ".so", 3);
-		/* lowercase the protocol */
-		for (i = 5; i < 5 + len; i++)
-			name_buf[i] |= 0x20;
-		name_buf[len + 7] = '\0';
+	if (protos[proto - 1].id != PROTO_NONE) {
+		if (proto != protos[proto - 1].id) {
+			LM_BUG("inconsistent protocol id\n");
+			goto error;
+		}
+		return 0;
+	}
 
-		if (load_module(name_buf) < 0) {
+	/* load the protocol */
+	memcpy(name_buf, "net_", 4);
+	memcpy(name_buf + 4, name, len);
+	name_buf[len + 4] = '\0';
+
+	/* lowercase the protocol */
+	for (i = 4; i < 4 + len; i++)
+		name_buf[i] |= 0x20;
+
+	/* load module if not already loaded from script */
+	if (!module_loaded(name_buf)) {
+
+		char module_buf[/* net_ */ 4 + len + /* .so */ 3 + /* '\0' */ 1];
+		strcpy(module_buf, name_buf);
+		strcat(module_buf, ".so");
+
+		if (load_module(module_buf) < 0) {
 			LM_ERR("cannot load module %s\n", name_buf);
-			goto end;
+			goto error;
 		}
-		proto_api = (proto_bind_api)find_export("proto_bind_api", 0, 0);
-		if (!proto_api) {
-			LM_ERR("cannot find transport API for protocol %s\n", name);
-			goto end;
-		}
-		if (proto_api(&protos[proto - 1].binds,
-				&proto_net_binds[proto - 1]) < 0) {
-			LM_ERR("cannot bind transport API for protocol %s\n", name);
-			goto end;
-		}
-
-		/* initialize the module */
-		if (protos[proto - 1].binds.init && protos[proto - 1].binds.init() < 0) {
-			LM_ERR("cannot initialzie protocol %s\n", name);
-			goto end;
-		}
-		protos[proto - 1].id = proto;
-
-		LM_DBG("Loaded <%.*s> protocol handlers\n", len, name_buf + 4);
 	}
 
-	return proto;
-end:
-	return PROTO_NONE;
+	proto_api = (proto_bind_api)find_mod_export(name_buf,
+			"proto_bind_api", 0, 0);
+	if (!proto_api) {
+		LM_ERR("cannot find transport API for protocol %s\n", name);
+		goto error;
+	}
+	if (proto_api(&protos[proto - 1].binds,
+			&proto_net_binds[proto - 1]) < 0) {
+		LM_ERR("cannot bind transport API for protocol %s\n", name);
+		goto error;
+	}
+
+	/* initialize the module */
+	if (protos[proto - 1].binds.init && protos[proto - 1].binds.init() < 0) {
+		LM_ERR("cannot initialzie protocol %s\n", name);
+		goto error;
+	}
+	protos[proto - 1].id = proto;
+
+	LM_DBG("Loaded <%.*s> protocol handlers\n", len, name_buf + 4);
+
+	return 0;
+error:
+	return -1;
 }
 
 
 int add_listener(struct socket_id *sock, enum si_flags flags)
 {
+	/*
+	 * XXX: using the new version, the protocol _MUST_ be specified
+	 * otherwise UDP will be assumed
+	 */
 	enum sip_protos proto = sock->proto;
+	struct proto_info *pi;
 	int port;
 
 	/* validate the protocol */
@@ -164,16 +144,171 @@ int add_listener(struct socket_id *sock, enum si_flags flags)
 		LM_BUG("invalid protocol number %d\n", proto);
 		return -1;
 	}
-	if (protos[proto - 1].id == PROTO_NONE) {
+	pi = &protos[proto - 1];
+	if (pi->id == PROTO_NONE) {
 		LM_BUG("protocol %d not registered\n", proto);
 		return -1;
 	}
-	port = sock->port ? sock->port : protos[proto - 1].binds.default_port;
+	/* fix the socket's protocol */
+	port = sock->port ? sock->port : pi->binds.default_port;
+
+	/* convert to socket_info */
+	if (new_sock2list(sock->name, port, sock->proto, sock->adv_name, sock->adv_port,
+			sock->children, flags, &pi->listeners) < 0) {
+		LM_ERR("cannot add socket to the list\n");
+		return -1;
+	}
+
+/*
+ * TODO: can't add them right away because we first have to resolve the hosts
+ * and the resolver is not yet initialized
+ *
 	if (protos[proto - 1].binds.add_listener &&
 			protos[proto - 1].binds.add_listener(sock->name, port) < 0) {
 		LM_ERR("cannot add socket");
 		return -1;
 	}
+*/
 	return 0;
 }
 
+int add_tmp_listener(char *name, int port, int proto)
+{
+	struct socket_id *tmp = pkg_malloc(sizeof(struct socket_id));
+	if (!tmp) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memset(tmp, 0, sizeof(struct socket_id));
+	tmp->name = name;
+	tmp->port = port;
+	tmp->proto = proto;
+	tmp->next = tmp_listeners;
+	tmp_listeners = tmp;
+
+	return 0;
+}
+
+
+int fix_tmp_listeners(void)
+{
+	struct socket_id *si, *prev;
+	for (si = tmp_listeners; si;) {
+		if (add_listener(si, 0) < 0)
+			LM_ERR("cannot add socket <%s>, skipping...\n", si->name);
+		prev = si;
+		si = si->next;
+		pkg_free(prev);
+	}
+	return 0;
+}
+
+int add_all_listeners(struct socket_info *si, proto_add_listener_f add_func)
+{
+	for (; si; si = si->next)
+		if (add_func(si) < 0) {
+			LM_ERR("cannot add listener %.*s\n", si->name.len, si->name.s);
+			return -1;
+		}
+	return 0;
+}
+
+/*
+ * return 0 on success, -1 on error */
+int fix_all_socket_lists(void)
+{
+	int i;
+	int found = 0;
+#if 0
+	/* TODO: decide what to do with this */
+	struct utsname myname;
+
+	if ((udp_listen==0)
+#ifdef USE_TCP
+			&& (tcp_listen==0)
+#ifdef USE_TLS
+			&& (tls_listen==0)
+#endif
+#endif
+#ifdef USE_SCTP
+			&& (sctp_listen==0)
+#endif
+		){
+		/* get all listening ipv4 interfaces */
+		if (add_interfaces(0, AF_INET, 0,  PROTO_UDP, &udp_listen)==0){
+			/* if ok, try to add the others too */
+#ifdef USE_TCP
+			if (!tcp_disable){
+				if (add_interfaces(0, AF_INET, 0,  PROTO_TCP, &tcp_listen)!=0)
+					goto error;
+#ifdef USE_TLS
+				if (!tls_disable){
+					if (add_interfaces(0, AF_INET, 0, PROTO_TLS,
+								&tls_listen)!=0)
+					goto error;
+				}
+#endif
+			}
+#endif
+#ifdef USE_SCTP
+			if (!sctp_disable){
+				if (add_interfaces(0, AF_INET, 0, PROTO_SCTP, &sctp_listen)!=0)
+					goto error;
+			}
+#endif
+		}else{
+			/* if error fall back to get hostname */
+			/* get our address, only the first one */
+			if (uname (&myname) <0){
+				LM_ERR("cannot determine hostname, try -l address\n");
+				goto error;
+			}
+			if (add_listen_iface(myname.nodename, 0, 0, 0, 0, 0, 0)!=0){
+				LM_ERR("add_listen_iface failed \n");
+				goto error;
+			}
+		}
+	}
+#endif
+
+	for (i = 0; i < proto_nr; i++)
+		if (protos[i].id != PROTO_NONE) {
+			if (fix_socket_list(&protos[i].listeners)!=0) {
+				LM_ERR("fix_socket_list for %d failed\n", protos[i].id);
+				goto error;
+			}
+
+			/* add all sockets to the protocol list */
+			if (add_all_listeners(protos[i].listeners, protos[i].binds.add_listener)!=0) {
+				LM_ERR("cannot add listeners for proto %d\n", protos[i].id);
+				goto error;
+			}
+
+			found++;
+		}
+
+	if (!found){
+		LM_ERR("no listening sockets\n");
+		goto error;
+	}
+	return 0;
+error:
+	return -1;
+}
+
+void print_all_socket_lists(void)
+{
+	struct socket_info *si;
+	int i;
+
+
+	for (i = 0; i < proto_nr; i++) {
+		if (protos[i].id == PROTO_NONE)
+			continue;
+
+		for (si = protos[i].listeners; si; si = si->next)
+			printf("             %s: %s [%s]:%s%s\n", protos[i].binds.name,
+					si->name.s, si->address_str.s, si->port_no_str.s,
+					si->flags & SI_IS_MCAST ? " mcast" : "");
+	}
+}
