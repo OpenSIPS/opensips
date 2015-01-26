@@ -26,7 +26,11 @@
 #ifndef _PROTO_NET_H_
 #define _PROTO_NET_H_
 
+typedef int (*proto_net_bind_f)(struct socket_info *si);
+
 struct proto_net {
+	int						id;
+	proto_net_bind_f		bind;
 };
 
 #endif /*_PROTO_NET_H_ */
