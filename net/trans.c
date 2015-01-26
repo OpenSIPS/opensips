@@ -61,10 +61,13 @@ int init_trans_interface(void)
 	return 0;
 }
 
+#define PROTO_PREFIX "proto_"
+#define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
+
 int load_trans_proto(char *name, enum sip_protos proto)
 {
 	int len = strlen(name);
-	char name_buf[/* net_ */ 4 + len + /* '\0' */ 1];
+	char name_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len + /* '\0' */ 1];
 	int i;
 	proto_bind_api proto_api;
 
@@ -81,18 +84,19 @@ int load_trans_proto(char *name, enum sip_protos proto)
 	}
 
 	/* load the protocol */
-	memcpy(name_buf, "net_", 4);
-	memcpy(name_buf + 4, name, len);
-	name_buf[len + 4] = '\0';
+	memcpy(name_buf, PROTO_PREFIX, PROTO_PREFIX_LEN);
+	memcpy(name_buf + PROTO_PREFIX_LEN, name, len);
+	name_buf[len + PROTO_PREFIX_LEN] = '\0';
 
 	/* lowercase the protocol */
-	for (i = 4; i < 4 + len; i++)
+	for (i = PROTO_PREFIX_LEN; i < PROTO_PREFIX_LEN + len; i++)
 		name_buf[i] |= 0x20;
 
 	/* load module if not already loaded from script */
 	if (!module_loaded(name_buf)) {
 
-		char module_buf[/* net_ */ 4 + len + /* .so */ 3 + /* '\0' */ 1];
+		char module_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len +
+			/* .so */ 3 + /* '\0' */ 1];
 		strcpy(module_buf, name_buf);
 		strcat(module_buf, ".so");
 
@@ -127,6 +131,8 @@ int load_trans_proto(char *name, enum sip_protos proto)
 error:
 	return -1;
 }
+#undef PROTO_PREFIX
+#undef PROTO_PREFIX_LEN
 
 
 int add_listener(struct socket_id *sock, enum si_flags flags)
