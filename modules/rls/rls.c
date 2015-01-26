@@ -478,10 +478,10 @@ static int mod_init(void)
 	register_timer( "rls-notify", timer_send_notify, 0, waitn_time,
 		TIMER_FLAG_DELAY_ON_DELAY);
 
-	register_timer( "rls-pclean", rls_presentity_clean, 0, clean_period
+	register_timer( "rls-pclean", rls_presentity_clean, 0, clean_period,
 		TIMER_FLAG_DELAY_ON_DELAY);
 
-	register_timer( "rls-dbupdate", rlsubs_table_update, 0, clean_period
+	register_timer( "rls-dbupdate", rlsubs_table_update, 0, clean_period,
 		TIMER_FLAG_SKIP_ON_DELAY);
 
 	return 0;
