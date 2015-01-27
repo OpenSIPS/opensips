@@ -62,15 +62,15 @@ int tcp_init_listeners(void)
 	return -1;
 }
 
-// returns the connection identified by either the id or the destination to
-struct connection* tcp_conn_get(int id, union sockaddr_union* to)
+// returns the tcp_connection identified by either the id or the destination to
+struct tcp_connection* tcp_conn_get(int id, union sockaddr_union* to)
 {
 	// TODO: implementation
 	return NULL;
 }
 
-// used to tune the connection attributes
-int tcp_conn_fcntl(struct connection *conn, int attr, void *value)
+// used to tune the tcp_connection attributes
+int tcp_conn_fcntl(struct tcp_connection *conn, int attr, void *value)
 {
 	// TODO: implementation
 	return -1;

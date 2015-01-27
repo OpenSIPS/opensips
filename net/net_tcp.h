@@ -26,7 +26,7 @@
 #ifndef _NET_TCP_H_
 #define _NET_TCP_H_
 
-#include "connection.h"
+#include "tcp_conn.h"
 
 // initializes the TCP structures
 int tcp_init(void);
@@ -45,9 +45,9 @@ struct socket_info* tcp_find_listener(union sockaddr_union* to, int proto);
 int tcp_init_listeners(void);
 
 // returns the connection identified by either the id or the destination to
-struct connection* tcp_conn_get(int id, union sockaddr_union* to);
+struct tcp_connection* tcp_conn_get(int id, union sockaddr_union* to);
 
 // used to tune the connection attributes
-int tcp_conn_fcntl(struct connection *conn, int attr, void *value);
+int tcp_conn_fcntl(struct tcp_connection *conn, int attr, void *value);
 
 #endif /* _NET_TCP_H_ */
