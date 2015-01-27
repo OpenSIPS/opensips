@@ -30,6 +30,7 @@
 #include "../mem/mem.h"
 #include "../sr_module.h"
 #include "../socket_info.h"
+#include "proto_tcp/proto_tcp_handler.h"
 
 
 /* we alocate this dinamically because we don't know how when new protocols
@@ -61,7 +62,6 @@ int init_trans_interface(void)
 	return 0;
 }
 
-#define PROTO_PREFIX "proto_"
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
 int load_trans_proto(char *name, enum sip_protos proto)
@@ -92,18 +92,35 @@ int load_trans_proto(char *name, enum sip_protos proto)
 	for (i = PROTO_PREFIX_LEN; i < PROTO_PREFIX_LEN + len; i++)
 		name_buf[i] |= 0x20;
 
-	/* load module if not already loaded from script */
-	if (!module_loaded(name_buf)) {
 
-		char module_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len +
-			/* .so */ 3 + /* '\0' */ 1];
-		strcpy(module_buf, name_buf);
-		strcat(module_buf, ".so");
-
-		if (load_module(module_buf) < 0) {
-			LM_ERR("cannot load module %s\n", name_buf);
-			goto error;
+	/* check built-in protocols */
+	switch (proto) {
+#ifndef DISABLE_AUTO_TCP
+	case PROTO_TCP:
+		if (register_module(&proto_tcp_exports, "net/proto", 0) < 0) {
+			LM_ERR("cannot load static TCP protocol\n");
+			return -1;
 		}
+		break;
+#endif
+	case PROTO_UDP:
+		/* TODO: handle UDP protocol */
+	default:
+
+		/* load module if not already loaded from script */
+		if (!module_loaded(name_buf)) {
+
+			char module_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len +
+				/* .so */ 3 + /* '\0' */ 1];
+			strcpy(module_buf, name_buf);
+			strcat(module_buf, ".so");
+
+			if (load_module(module_buf) < 0) {
+				LM_ERR("cannot load module %s\n", name_buf);
+				goto error;
+			}
+		}
+		break;
 	}
 
 	proto_api = (proto_bind_api)find_mod_export(name_buf,
@@ -131,7 +148,6 @@ int load_trans_proto(char *name, enum sip_protos proto)
 error:
 	return -1;
 }
-#undef PROTO_PREFIX
 #undef PROTO_PREFIX_LEN
 
 

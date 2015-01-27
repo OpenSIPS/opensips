@@ -16,7 +16,7 @@ sources=$(filter-out $(auto_gen) $(exclude_files), $(wildcard *.c) \
 		$(wildcard parser/sdp/*.c) \
 		$(wildcard parser/contact/*.c) $(wildcard db/*.c) \
 		$(wildcard mi/*.c) $(wildcard evi/*.c) $(wildcard cachedb/*.c) \
-		$(wildcard net/*.c)) $(auto_gen)
+		$(wildcard net/*.c) $(wildcard net/proto*/*.c)) $(auto_gen)
 ifneq ($(TLS),)
 	sources+= $(wildcard tls/*.c)
 endif
