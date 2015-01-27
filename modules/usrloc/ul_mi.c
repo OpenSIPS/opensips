@@ -577,7 +577,7 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	ucontact_t* con;
 	str *aor;
 	int ret;
-	str use_sock_str;
+	time_t t;
 
 	node = cmd->node.kids;
 	if (node==NULL || node->next==NULL || node->next->next!=NULL)
@@ -593,6 +593,8 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	if ( mi_fix_aor(aor)!=0 )
 		return init_mi_tree( 400, "Domain missing in AOR", 21);
 
+	t = time(0);
+
 	lock_udomain( dom, aor);
 
 	ret = get_urecord( dom, aor, &rec);
@@ -606,16 +608,6 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 	rpl = 0;
 
 	for( con=rec->contacts ; con ; con=con->next) {
-		if(con->sock) {
-			if(con->sock->adv_sock_str.len) {
-				use_sock_str = con->sock->adv_sock_str;
-			} else {
-				use_sock_str = con->sock->sock_str;
-			}
-		} else {
-			use_sock_str.s = "NULL";
-			use_sock_str.len = 4;
-		}
 
 		if (VALID_CONTACT( con, act_time)) {
 			if (rpl_tree==0) {
@@ -626,28 +618,7 @@ struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
 				rpl->flags |= MI_IS_ARRAY;
 			}
 
-			node = addf_mi_node_child( rpl, 0, "Contact", 7,
-				"<%.*s>;q=%s;expires=%d;flags=0x%X;cflags=0x%X;socket=<%.*s>;"
-				"callid=<%.*s>;"
-				"methods=0x%X"
-				"%s%.*s%s" /*received*/
-				"%s%.*s%s" /*user-agent*/
-				"%s%.*s%s", /*path*/
-				con->c.len, ZSW(con->c.s),
-				q2str(con->q, 0), (int)(con->expires - act_time),
-				con->flags, con->cflags,
-				use_sock_str.len,use_sock_str.s,
-				con->callid.len, ZSW(con->callid.s),
-				con->methods,
-				con->received.len?";received=<":"",con->received.len,
-					ZSW(con->received.s), con->received.len?">":"",
-				con->user_agent.len?";user_agent=<":"",con->user_agent.len,
-					ZSW(con->user_agent.s), con->user_agent.len?">":"",
-				con->path.len?";path=<":"", con->path.len,
-					ZSW(con->path.s), con->path.len?">":""
-				);
-			if (node==0)
-				goto error;
+			if (mi_add_aor_node(rpl, rec, t, 0)!=0) goto error;
 		}
 	}
 
