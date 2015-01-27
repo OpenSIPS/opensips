@@ -822,7 +822,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (register_script_cb( dialog_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB,0)<0) {
+	if (register_script_cb( dialog_cleanup, POST_SCRIPT_CB|REQ_TYPE_CB|RPL_TYPE_CB,0)<0) {
 		LM_ERR("cannot register script callback");
 		return -1;
 	}
