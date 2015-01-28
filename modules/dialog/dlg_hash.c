@@ -110,7 +110,7 @@ struct dlg_cell *get_current_dialog(void)
 		/* no transaction */
 		return NULL;
 	}
-	if (current_processing_ctx) {
+	if (current_processing_ctx && trans->dialog_ctx) {
 		/* if we have context, but no dlg info, and we 
 		   found dlg info into transaction, populate
 		   the dialog too */
