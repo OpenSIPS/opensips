@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2014-2015 OpenSIPS Solutions
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of opensips, a free SIP server.
