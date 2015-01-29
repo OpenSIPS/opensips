@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2014-2015 OpenSIPS Solutions
  * Copyright (C) 2005 iptelorg GmbH
  *
  * This file is part of opensips, a free SIP server.
@@ -104,7 +105,9 @@ struct fd_map {
 	int fd;               /* fd no */
 	fd_type type;         /* "data" type */
 	void* data;           /* pointer to the corresponding structure */
-	int flags;            /* so far used to indicate whether we should read, write or both */
+	int flags;            /* so far used to indicate whether we should 
+	                       * read, write or both ; last 4 are reserved for 
+	                       * internal usage */
 };
 
 
@@ -127,6 +130,7 @@ struct fd_map {
 /*! \brief handler structure */
 struct io_wait_handler{
 	char *name;
+	int max_prio;
 #ifdef HAVE_EPOLL
 	struct epoll_event* ep_array;
 	int epfd; /* epoll ctrl fd */
@@ -144,6 +148,7 @@ struct io_wait_handler{
 #endif
 #ifdef HAVE_DEVPOLL
 	int dpoll_fd;
+	struct pollfd* dp_changes;
 #endif
 #ifdef HAVE_SELECT
 	fd_set master_set;
@@ -151,6 +156,7 @@ struct io_wait_handler{
 #endif
 	/* common stuff for POLL, SIGIO_RT and SELECT
 	 * since poll support is always compiled => this will always be compiled */
+	int *prio_idx; /* size of max_prio - idxs in fd_array where prio changes*/
 	struct fd_map* fd_hash;
 	struct pollfd* fd_array;
 	int fd_no; /*  current index used in fd_array */
@@ -241,9 +247,23 @@ again:
 #endif
 
 
-#define IO_WATCH_READ	1
-#define IO_WATCH_WRITE	2
-#define IO_WATCH_ERROR	3
+#define IO_WATCH_READ            (1<<0)
+#define IO_WATCH_WRITE           (1<<1)
+#define IO_WATCH_ERROR           (1<<2)
+/* reserved, do not attempt to use */
+#define IO_WATCH_PRV_TRIG_READ   (1<<30)
+#define IO_WATCH_PRV_TRIG_WRITE  (1<<31)
+
+#define fd_array_print \
+	do { \
+		int k;\
+		LM_INFO("[%s] size=%d, fd array is",h->name,h->fd_no);\
+		for(k=0;k<h->fd_no;k++) LM_GEN1(L_INFO," %d",h->fd_array[k].fd);\
+		LM_GEN1(L_INFO,"\n"); \
+		LM_INFO("[%s] size=%d, prio array is",h->name,h->max_prio);\
+		for(k=0;k<h->max_prio;k++) LM_GEN1(L_INFO," %d",h->prio_idx[k]);\
+		LM_GEN1(L_INFO,"\n"); \
+	}while(0)
 
 /*! \brief generic io_watch_add function
  * \return 0 on success, -1 on error
@@ -256,31 +276,38 @@ inline static int io_watch_add(	io_wait_h* h,
 								int fd,
 								fd_type type,
 								void* data,
+								int prio,
 								int flags)
 {
 
 	/* helper macros */
 #define fd_array_setup \
 	do{ \
-		h->fd_array[h->fd_no].fd=fd; \
-		if (!already) \
-			h->fd_array[h->fd_no].events=0; \
+		n = h->prio_idx[prio]; \
+		if (n<h->fd_no)\
+			memmove( &h->fd_array[n+1], &h->fd_array[n],\
+				(h->fd_no-n)*sizeof(*(h->fd_array)) ); \
+		h->fd_array[n].fd=fd; \
+		h->fd_array[n].events=0; \
 		if (flags & IO_WATCH_READ) \
-			h->fd_array[h->fd_no].events|=POLLIN; /* useless for select */ \
+			h->fd_array[n].events|=POLLIN; /* useless for select */ \
 		if (flags & IO_WATCH_WRITE) \
-			h->fd_array[h->fd_no].events|=POLLOUT; /* useless for select */ \
-		h->fd_array[h->fd_no].revents=0;     /* useless for select */ \
+			h->fd_array[n].events|=POLLOUT; /* useless for select */ \
+		h->fd_array[n].revents=0;     /* useless for select */ \
+		for( n=prio ; n<h->max_prio ; n++) \
+			h->prio_idx[n]++; \
+		h->fd_no++; \
 	}while(0)
 
 #define set_fd_flags(f) \
 	do{ \
-			flags=fcntl(fd, F_GETFL); \
-			if (flags==-1){ \
+			ctl_flags=fcntl(fd, F_GETFL); \
+			if (ctl_flags==-1){ \
 				LM_ERR("[%s] fnctl: GETFL failed:" \
 					" %s [%d]\n", h->name, strerror(errno), errno); \
 				goto error; \
 			} \
-			if (fcntl(fd, F_SETFL, flags|(f))==-1){ \
+			if (fcntl(fd, F_SETFL, ctl_flags|(f))==-1){ \
 				LM_ERR("[%s] fnctl: SETFL" \
 					" failed: %s [%d]\n", h->name, strerror(errno), errno);\
 				goto error; \
@@ -296,6 +323,7 @@ inline static int io_watch_add(	io_wait_h* h,
 #ifdef HAVE_DEVPOLL
 	struct pollfd pfd;
 #endif
+	int ctl_flags;
 	int n;  //FIXME
 #if 0 //defined(HAVE_SIGIO_RT) || defined (HAVE_EPOLL) FIXME
 	int n;
@@ -315,8 +343,13 @@ inline static int io_watch_add(	io_wait_h* h,
 	}
 	/* check if not too big */
 	if (h->fd_no>=h->max_fd_no){
-		LM_CRIT("[%s] maximum fd number exceeded:"
-				" %d/%d\n", h->name, h->fd_no, h->max_fd_no);
+		LM_CRIT("[%s] maximum fd number exceeded: %d/%d\n",
+			h->name, h->fd_no, h->max_fd_no);
+		goto error;
+	}
+	if (prio > h->max_prio) {
+		LM_BUG("[%s] priority %d requested (max is %d)\n",
+			h->name, prio, h->max_prio);
 		goto error;
 	}
 	LM_DBG("[%s] io_watch_add op on %d (%p, %d, %d, %p,%d), fd_no=%d\n",
@@ -342,19 +375,16 @@ inline static int io_watch_add(	io_wait_h* h,
 	}
 	switch(h->poll_method){ /* faster then pointer to functions */
 		case POLL_POLL:
-			fd_array_setup;
 			set_fd_flags(O_NONBLOCK);
 			break;
 #ifdef HAVE_SELECT
 		case POLL_SELECT:
-			fd_array_setup;
 			FD_SET(fd, &h->master_set);
 			if (h->max_fd_select<fd) h->max_fd_select=fd;
 			break;
 #endif
 #ifdef HAVE_SIGIO_RT
 		case POLL_SIGIO_RT:
-			fd_array_setup;
 			/* re-set O_ASYNC might be needed, if not done from
 			 * io_watch_del (or if somebody wants to add a fd which has
 			 * already O_ASYNC/F_SETSIG set on a dupplicate)
@@ -474,8 +504,7 @@ again_devpoll:
 	}
 
 	if (!already) {
-		h->fd_no++; /* "activate" changes, for epoll/kqueue/devpoll it
-					   has only informative value */
+		fd_array_setup;
 	}
 
 #if 0 //defined(HAVE_SIGIO_RT) || defined (HAVE_EPOLL) FIXME !!!
@@ -527,10 +556,13 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 							(h->fd_array[idx].fd!=fd); idx++); \
 			} \
 			if (idx<h->fd_no){ \
-				if (erase) \
+				if (erase) { \
 					memmove(&h->fd_array[idx], &h->fd_array[idx+1], \
 						(h->fd_no-(idx+1))*sizeof(*(h->fd_array))); \
-				else { \
+					for( i=0 ; i<h->max_prio && h->prio_idx[i]<=idx ; i++ ); \
+					for( ; i<h->max_prio ; i++ ) h->prio_idx[i]-- ; \
+					h->fd_no--; \
+				} else { \
 					h->fd_array[idx].events = 0; \
 					if (e->flags & IO_WATCH_READ) \
 						h->fd_array[idx].events|=POLLIN; /* useless for select */ \
@@ -553,13 +585,17 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 	int fd_flags;
 #endif
 	int erase = 0;
+	int i;
 
 	if ((fd<0) || (fd>=h->max_fd_no)){
-		LM_CRIT("[%s] invalid fd %d, not in [0, %d) \n", h->name, fd, h->fd_no);
+		LM_CRIT("[%s] invalid fd %d, not in [0, %d)\n", h->name, fd, h->fd_no);
 		goto error;
 	}
-	LM_DBG("[%s] io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) fd_no=%d called\n",
-			h->name,idx,fd, h, fd, idx, flags,sock_flags,h->fd_no);
+	LM_DBG("[%s] io_watch_del op on index %d %d (%p, %d, %d, 0x%x,0x%x) "
+		"fd_no=%d called\n", h->name,idx,fd, h, fd, idx, flags,
+		sock_flags,h->fd_no);
+	fd_array_print;
+
 	e=get_fd_map(h, fd);
 	/* more sanity checks */
 	if (e==0){
@@ -583,11 +619,9 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 
 	switch(h->poll_method){
 		case POLL_POLL:
-			fix_fd_array;
 			break;
 #ifdef HAVE_SELECT
 		case POLL_SELECT:
-			fix_fd_array;
 			FD_CLR(fd, &h->master_set);
 			if (h->max_fd_select && (h->max_fd_select==fd))
 				/* we don't know the prev. max, so we just decrement it */
@@ -596,7 +630,6 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 #endif
 #ifdef HAVE_SIGIO_RT
 		case POLL_SIGIO_RT:
-			fix_fd_array;
 			/* the O_ASYNC flag must be reset all the time, the fd
 			 *  can be changed only if  O_ASYNC is reset (if not and
 			 *  the fd is a duplicate, you will get signals from the dup. fd
@@ -684,9 +717,9 @@ again_devpoll:
 				h->name,poll_method_str[h->poll_method], h->poll_method);
 			goto error;
 	}
-	if (erase) {
-		h->fd_no--;
-	}
+
+	fix_fd_array;
+	fd_array_print;
 
 	return 0;
 error:
@@ -704,7 +737,7 @@ error:
  * \param poll_method poll method (0 for automatic best fit)
  */
 int init_io_wait(io_wait_h* h, char *name, int max_fd,
-									enum poll_types poll_method, int async);
+						enum poll_types poll_method, int max_prio, int async);
 
 /*! \brief destroys everything init_io_wait allocated */
 void destroy_io_wait(io_wait_h* h);

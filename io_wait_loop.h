@@ -78,7 +78,7 @@ again:
 				goto error;
 			}
 		}
-		for (r=0; (r<h->fd_no) && n; r++){
+		for (r=h->fd_no-1; (r>=0) && n; r--){
 			if (h->fd_array[r].revents & POLLOUT) {
 				n--;
 				/* sanity checks */
@@ -134,7 +134,7 @@ again:
 			/* continue */
 		}
 		/* use poll fd array */
-		for(r=0; (r<h->max_fd_no) && n; r++){
+		for(r=h->fd_no-1; (r>=0) && n; r--){
 			if (FD_ISSET(h->fd_array[r].fd, &sel_set)){
 				while((handle_io(get_fd_map(h, h->fd_array[r].fd), r,IO_WATCH_READ)>0)
 						&& repeat);
@@ -150,10 +150,11 @@ again:
 #ifdef HAVE_EPOLL
 inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 {
-	int n, r;
+	int ret, n, r;
+	struct fd_map *e;
 
 again:
-		n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
+		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
 		if (n==-1){
 			if (errno==EINTR) goto again; /* signal, ignore it */
 			else{
@@ -163,27 +164,35 @@ again:
 				goto error;
 			}
 		}
-#if 0
-		if (n>1){
-			for(r=0; r<n; r++){
-				LM_ERR("ep_array[%d]= %x, %p\n",
-						r, h->ep_array[r].events, h->ep_array[r].data.ptr);
-			}
-		}
-#endif
 		for (r=0; r<n; r++) {
 			if (h->ep_array[r].events & EPOLLOUT) {
-				handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_WRITE);
+				((struct fd_map*)h->ep_array[r].data.ptr)->flags |=
+					IO_WATCH_PRV_TRIG_WRITE;
 			} else if (h->ep_array[r].events & (EPOLLIN|EPOLLERR|EPOLLHUP)){
-				while((handle_io((struct fd_map*)h->ep_array[r].data.ptr,-1,IO_WATCH_READ)>0)
-					&& repeat);
+				((struct fd_map*)h->ep_array[r].data.ptr)->flags |=
+					IO_WATCH_PRV_TRIG_READ;
 			}else{
 				LM_ERR("[%s] unexpected event %x on %d/%d, data=%p\n",
-					h->name,h->ep_array[r].events, r+1, n, h->ep_array[r].data.ptr);
+					h->name,h->ep_array[r].events, r+1, n, 
+					h->ep_array[r].data.ptr);
 			}
 		}
+		/* now do the actual running of IO handlers */
+		for(r=h->fd_no-1; (r>=0) && n ; r--) {
+			e = get_fd_map(h, h->fd_array[r].fd);
+			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
+				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
+				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
+				n--;
+			} else if ( e->flags & IO_WATCH_PRV_TRIG_WRITE ){
+				handle_io( e, r, IO_WATCH_WRITE);
+				e->flags &= ~IO_WATCH_PRV_TRIG_WRITE;
+				n--;
+			}
+		}
+
 error:
-	return n;
+	return ret;
 }
 #endif
 
@@ -192,13 +201,14 @@ error:
 #ifdef HAVE_KQUEUE
 inline static int io_wait_loop_kqueue(io_wait_h* h, int t, int repeat)
 {
-	int n, r;
+	int ret, n, r;
 	struct timespec tspec;
+	struct fd_map *e;
 
 	tspec.tv_sec=t;
 	tspec.tv_nsec=0;
 again:
-		n=kevent(h->kq_fd, h->kq_changes, h->kq_nchanges,  h->kq_array,
+		ret=n=kevent(h->kq_fd, h->kq_changes, h->kq_nchanges,  h->kq_array,
 					h->fd_no, &tspec);
 		if (n==-1){
 			if (errno==EINTR) goto again; /* signal, ignore it */
@@ -224,11 +234,21 @@ again:
 					strerror(h->kq_array[r].data),
 					(long)h->kq_array[r].data);
 			}else /* READ/EOF */
-				while((handle_io((struct fd_map*)h->kq_array[r].udata, -1,IO_WATCH_READ)>0)
-						&& repeat);
+				((struct fd_map*)h->kq_array[r].udata)->flags |=
+					IO_WATCH_PRV_TRIG_READ;
 		}
+		/* now do the actual running of IO handlers */
+		for(r=h->fd_no-1; (r>=0) && n ; r--) {
+			e = get_fd_map(h, h->fd_array[r].fd);
+			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
+				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
+				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
+				n--;
+			}
+		}
+
 error:
-	return n;
+	return ret;
 }
 #endif
 
@@ -263,7 +283,8 @@ again:
 			ret=0;
 			goto end;
 		}else{
-			LM_ERR("[%s] sigtimed_wait %s [%d]\n",h->name, strerror(errno), errno);
+			LM_ERR("[%s] sigtimed_wait %s [%d]\n",h->name,
+				strerror(errno), errno);
 			goto error;
 		}
 	}
@@ -355,7 +376,7 @@ inline static int io_wait_loop_devpoll(io_wait_h* h, int t, int repeat)
 
 		dpoll.dp_timeout=t*1000;
 		dpoll.dp_nfds=h->fd_no;
-		dpoll.dp_fds=h->fd_array;
+		dpoll.dp_fds=h->dp_changes;
 again:
 		ret=n=ioctl(h->dpoll_fd, DP_POLL, &dpoll);
 		if (n==-1){
@@ -366,14 +387,24 @@ again:
 			}
 		}
 		for (r=0; r< n; r++){
-			if (h->fd_array[r].revents & (POLLNVAL|POLLERR)){
+			if (h->dp_changes[r].revents & (POLLNVAL|POLLERR)){
 				LM_ERR("[%s] pollinval returned for fd %d, revents=%x\n",
 					h->name,h->fd_array[r].fd, h->fd_array[r].revents);
 			}
 			/* POLLIN|POLLHUP just go through */
-			while((handle_io(get_fd_map(h, h->fd_array[r].fd), r,IO_WATCH_READ) > 0) &&
-						repeat);
+			(get_fd_map(h, h->dp_changes[r].fd))->flags |=
+				IO_WATCH_PRV_TRIG_READ;
 		}
+		/* now do the actual running of IO handlers */
+		for(r=h->fd_no-1; (r>=0) && n ; r--) {
+			e = get_fd_map(h, h->fd_array[r].fd);
+			if ( e->flags & IO_WATCH_PRV_TRIG_READ ) {
+				while((handle_io( e, r, IO_WATCH_READ)>0) && repeat);
+				e->flags &= ~IO_WATCH_PRV_TRIG_READ;
+				n--;
+			}
+		}
+
 error:
 	return ret;
 }

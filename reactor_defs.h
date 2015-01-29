@@ -47,22 +47,23 @@ struct worker_io_data {
 	struct socket_info *si;
 };
 
+enum reactor_prios { RCT_PRIO_NET=0, RCT_PRIO_ASYNC, RCT_PRIO_TIMER, RCT_PRIO_MAX };
+
 enum fd_types { F_NONE=0, F_TIMER_JOB=1, F_UDP_READ=2, F_TCPMAIN=4, F_TCPCONN=8, F_SCRIPT_ASYNC=16 };
 
 extern io_wait_h _worker_io;
 
-#define init_worker_reactor( _name, _max_fd, _async) \
-	init_io_wait(&_worker_io, _name, _max_fd, io_poll_method, _async)
+#define init_worker_reactor( _name, _max_fd, _prio, _async) \
+	init_io_wait(&_worker_io, _name, _max_fd, io_poll_method, _prio, _async)
 
-#define reactor_add_reader( _fd, _type, _data) \
-	io_watch_add(&_worker_io, _fd, _type, _data, IO_WATCH_READ)
+#define reactor_add_reader( _fd, _type, _prio, _data) \
+	io_watch_add(&_worker_io, _fd, _type, _data, _prio, IO_WATCH_READ)
 
 #define reactor_del_reader( _fd, _idx, _io_flags) \
 	io_watch_del(&_worker_io, _fd, _idx, _io_flags, IO_WATCH_READ)
 
 #define reactor_del_all( _fd, _idx, _io_flags) \
 	io_watch_del(&_worker_io, _fd, _idx, _io_flags, IO_WATCH_READ|IO_WATCH_WRITE)
-
 
 #define destroy_worker_reactor() \
 	destroy_io_wait(&_worker_io)

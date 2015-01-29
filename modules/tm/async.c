@@ -213,7 +213,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	ctx->kr = get_kr();
 
 	/* place the FD + resume function (as param) into reactor */
-	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, (void*)ctx)<0 ) {
+	if (reactor_add_reader( fd, F_SCRIPT_ASYNC, RCT_PRIO_ASYNC, (void*)ctx)<0 ) {
 		LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 		shm_free(ctx);
 		goto sync;

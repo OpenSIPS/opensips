@@ -458,7 +458,8 @@ int udp_rcv_loop(void)
 	static struct worker_io_data io_data;
 
 	/* create the reactor for UDP proc */
-	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/, 0/*async*/)<0 ) {
+	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/, RCT_PRIO_MAX,
+	0/*async*/)<0 ) {
 		LM_ERR("failed to init reactor\n");
 		goto error;
 	}
@@ -481,13 +482,15 @@ int udp_rcv_loop(void)
 	io_data.si = bind_address;
 
 	/* init: start watching for the timer jobs */
-	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, NULL)<0) {
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, RCT_PRIO_TIMER,
+	NULL)<0) {
 		LM_CRIT("failed to add timer pipe_out to reactor\n");
 		goto error;
 	}
 
 	/* init: start watching the SIP UDP fd */
-	if (reactor_add_reader( bind_address->socket, F_UDP_READ, &io_data)<0) {
+	if (reactor_add_reader( bind_address->socket, F_UDP_READ, RCT_PRIO_NET,
+	&io_data)<0) {
 		LM_CRIT("failed to add UDP listen socket to reactor\n");
 		goto error;
 	}

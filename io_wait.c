@@ -523,12 +523,13 @@ enum poll_types get_poll_type(char* s)
  * \param  poll_method - poll method (0 for automatic best fit)
  */
 int init_io_wait(io_wait_h* h, char *name, int max_fd,
-									enum poll_types poll_method, int async)
+						enum poll_types poll_method, int max_prio, int async)
 {
 	char * poll_err;
 
 	memset(h, 0, sizeof(*h));
 	h->name = name;
+	h->max_prio = max_prio;
 	h->max_fd_no=max_fd;
 #ifdef HAVE_EPOLL
 	h->epfd=-1;
@@ -558,8 +559,9 @@ int init_io_wait(io_wait_h* h, char *name, int max_fd,
 	if (h->poll_method != POLL_POLL && h->poll_method != POLL_EPOLL_LT &&
 		h->poll_method != POLL_EPOLL_ET) {
 		if (async)
-			LM_WARN("Tried to enable async polling but current poll method is %d."
-				" Currently we only support POLL and EPOLL \n",h->poll_method);
+			LM_WARN("Tried to enable async polling but current poll method "
+				"is %d. Currently we only support POLL and EPOLL \n",
+				h->poll_method);
 		async=0;
 	}
 
@@ -572,44 +574,58 @@ int init_io_wait(io_wait_h* h, char *name, int max_fd,
 	}
 	memset((void*)h->fd_hash, 0, sizeof(*(h->fd_hash))*h->max_fd_no);
 
+	/* init the fd array as needed for priority ordering */
+	h->fd_array=local_malloc(sizeof(*(h->fd_array))*h->max_fd_no);
+	if (h->fd_array==0){
+		LM_CRIT("could not alloc fd array (%ld bytes)\n",
+					(long)sizeof(*(h->fd_hash))*h->max_fd_no);
+		goto error;
+	}
+	memset((void*)h->fd_array, 0, sizeof(*(h->fd_array))*h->max_fd_no);
+	/* array with indexes in fd_array where the priority changes */
+	h->prio_idx=local_malloc(sizeof(*(h->prio_idx))*h->max_prio);
+	if (h->prio_idx==0){
+		LM_CRIT("could not alloc fd array (%ld bytes)\n",
+					(long)sizeof(*(h->prio_idx))*h->max_prio);
+		goto error;
+	}
+	memset((void*)h->prio_idx, 0, sizeof(*(h->prio_idx))*h->max_prio);
+
 	switch(poll_method){
 		case POLL_POLL:
+			break;
 #ifdef HAVE_SELECT
 		case POLL_SELECT:
-#endif
-#ifdef HAVE_SIGIO_RT
-		case POLL_SIGIO_RT:
-#endif
-#ifdef HAVE_DEVPOLL
-		case POLL_DEVPOLL:
-#endif
-			h->fd_array=local_malloc(sizeof(*(h->fd_array))*h->max_fd_no);
-			if (h->fd_array==0){
-				LM_CRIT("could not alloc fd array (%ld bytes)\n",
-							(long)sizeof(*(h->fd_hash))*h->max_fd_no);
-				goto error;
-			}
-			memset((void*)h->fd_array, 0, sizeof(*(h->fd_array))*h->max_fd_no);
-#ifdef HAVE_SIGIO_RT
-			if ((poll_method==POLL_SIGIO_RT) && (init_sigio(h, 0)<0)){
-				LM_CRIT("sigio init failed\n");
-				goto error;
-			}
-#endif
-#ifdef HAVE_DEVPOLL
-			if ((poll_method==POLL_DEVPOLL) && (init_devpoll(h)<0)){
-				LM_CRIT("/dev/poll init failed\n");
-				goto error;
-			}
-#endif
-#ifdef HAVE_SELECT
 			if ((poll_method==POLL_SELECT) && (init_select(h)<0)){
 				LM_CRIT("select init failed\n");
 				goto error;
 			}
-#endif
-
 			break;
+#endif
+#ifdef HAVE_DEVPOLL
+		case POLL_DEVPOLL:
+			if ((poll_method==POLL_DEVPOLL) && (init_devpoll(h)<0)){
+				LM_CRIT("/dev/poll init failed\n");
+				goto error;
+			}
+			h->dp_changes=local_malloc(sizeof(*(h->dp_changes))*h->max_fd_no);
+			if (h->dp_changes==0){
+				LM_CRIT("could not alloc db changes array (%ld bytes)\n",
+							(long)sizeof(*(h->dp_changes))*h->max_fd_no);
+				goto error;
+			}
+			memset((void*)h->dp_changes, 0,
+				sizeof(*(h->dp_changes))*h->max_fd_no);
+			break;
+#endif
+#ifdef HAVE_SIGIO_RT
+		case POLL_SIGIO_RT:
+			if ((poll_method==POLL_SIGIO_RT) && (init_sigio(h, 0)<0)){
+				LM_CRIT("sigio init failed\n");
+				goto error;
+			}
+			break;
+#endif
 #ifdef HAVE_EPOLL
 		case POLL_EPOLL_LT:
 		case POLL_EPOLL_ET:
@@ -699,6 +715,10 @@ void destroy_io_wait(io_wait_h* h)
 #ifdef HAVE_DEVPOLL
 		case POLL_DEVPOLL:
 			destroy_devpoll(h);
+			if (h->dp_changes){
+				local_free(h->dp_changes);
+				h->dp_changes=0;
+			}
 			break;
 #endif
 		default: /*do  nothing*/
@@ -712,6 +732,11 @@ void destroy_io_wait(io_wait_h* h)
 			local_free(h->fd_hash);
 			h->fd_hash=0;
 		}
+		if (h->prio_idx){
+			local_free(h->prio_idx);
+			h->prio_idx=0;
+		}
+
 }
 
 

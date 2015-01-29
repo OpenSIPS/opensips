@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -171,6 +169,7 @@ int unix_tcp_sock = -1;
 
 static int tcp_proto_no=-1; /*!< tcp protocol number as returned by getprotobyname */
 
+enum tcpm_prios {TCPM_PRIO_LISTEN=0, TCPM_PRIO_CONN, TCPM_PRIO_PROC, TCPM_PRIO_MAX};
 static io_wait_h io_h;
 
 int tcp_no_new_conn_bflag = 0; /*!< should a new TCP conn be open if needed? - branch flag to be set in the SIP messages - configuration option */
@@ -1586,7 +1585,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 	if (event_type == IO_WATCH_READ) {
 		/* pass it to child, so remove it from the io watch list */
 		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->s);
-		if (io_watch_del(&io_h, tcpconn->s, fd_i, 0,IO_WATCH_READ)==-1)
+		if (io_watch_del(&io_h, tcpconn->s, fd_i, 0, IO_WATCH_READ)==-1)
 			return -1;
 		tcpconn->flags|=F_CONN_REMOVED;
 		tcpconn_ref(tcpconn); /* refcnt ++ */
@@ -1616,7 +1615,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 				LM_DBG("Failed connection attempt\n");
 				tcpconn_ref(tcpconn);
 				io_watch_del(&io_h, tcpconn->s, -1, IO_FD_CLOSING,
-							 IO_WATCH_READ|IO_WATCH_WRITE);
+					IO_WATCH_READ|IO_WATCH_WRITE);
 				tcpconn->flags|=F_CONN_REMOVED;
 				tcpconn_destroy(tcpconn);
 				return 0;
@@ -1634,7 +1633,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,int
 			 * our TCP chunks */
 async_write:
 			/* no more write events for now */
-			if (io_watch_del(&io_h, tcpconn->s, fd_i, 0,IO_WATCH_WRITE)==-1)
+			if (io_watch_del(&io_h, tcpconn->s, fd_i, 0, IO_WATCH_WRITE)==-1)
 				return -1;
 			tcpconn->flags|=F_CONN_REMOVED;
 			tcpconn_ref(tcpconn); /* refcnt ++ */
@@ -1722,7 +1721,7 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 					" (shutting down?)\n", (int)(tcp_c-&tcp_children[0]),
 					tcp_c->pid, tcp_c->proc_no );
 			/* don't listen on it any more */
-			io_watch_del(&io_h, tcp_c->unix_sock, fd_i, 0,IO_WATCH_READ);
+			io_watch_del(&io_h, tcp_c->unix_sock, fd_i, 0, IO_WATCH_READ);
 			goto error; /* eof. so no more io here, it's ok to return error */
 		}else if (bytes<0){
 			/* EAGAIN is ok if we try to empty the buffer
@@ -1768,7 +1767,8 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 			set_tcp_timeout( tcpconn );
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,IO_WATCH_READ);
+			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,
+				TCPM_PRIO_CONN, IO_WATCH_READ);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		case ASYNC_WRITE:
@@ -1781,7 +1781,8 @@ inline static int handle_tcp_child(struct tcp_child* tcp_c, int fd_i)
 			set_tcp_timeout( tcpconn );
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,IO_WATCH_WRITE);
+			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,
+				TCPM_PRIO_CONN, IO_WATCH_WRITE);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		case CONN_ERROR:
@@ -1848,7 +1849,7 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			LM_DBG("dead child %d, pid %d"
 					" (shutting down?)\n", (int)(p-&pt[0]), p->pid);
 			/* don't listen on it any more */
-			io_watch_del(&io_h, p->unix_sock, fd_i, 0,IO_WATCH_READ);
+			io_watch_del(&io_h, p->unix_sock, fd_i, 0, IO_WATCH_READ);
 			goto error; /* child dead => no further io events from it */
 		}else if (bytes<0){
 			/* EAGAIN is ok if we try to empty the buffer
@@ -1885,7 +1886,7 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 		case CONN_ERROR:
 			if (!(tcpconn->flags & F_CONN_REMOVED) && (tcpconn->s!=-1)){
 				io_watch_del(&io_h, tcpconn->s, -1, IO_FD_CLOSING,
-							 IO_WATCH_READ|IO_WATCH_WRITE);
+					IO_WATCH_READ|IO_WATCH_WRITE);
 				tcpconn->flags|=F_CONN_REMOVED;
 			}
 			tcpconn_destroy(tcpconn); /* will close also the fd */
@@ -1912,7 +1913,8 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			tcpconn_add(tcpconn);
 			/* update the timeout*/
 			tcpconn->timeout=get_ticks()+tcp_con_lifetime;
-			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,IO_WATCH_READ);
+			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,
+				TCPM_PRIO_CONN, IO_WATCH_READ);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		case ASYNC_CONNECT:
@@ -1931,7 +1933,8 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			/* only maintain the socket in the IO_WATCH_WRITE watcher
 			 * while we have stuff to write - otherwise we're going to get
 			 * useless events */
-			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,IO_WATCH_WRITE);
+			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,
+				TCPM_PRIO_CONN, IO_WATCH_WRITE);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		case ASYNC_WRITE:
@@ -1942,7 +1945,8 @@ inline static int handle_ser_child(struct process_table* p, int fd_i)
 			/* update the timeout (lifetime) */
 			set_tcp_timeout( tcpconn );
 			/* must be after the de-ref*/
-			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,IO_WATCH_WRITE);
+			io_watch_add(&io_h, tcpconn->s, F_TCPCONN, tcpconn,
+				TCPM_PRIO_CONN, IO_WATCH_WRITE);
 			tcpconn->flags&=~F_CONN_REMOVED;
 			break;
 		default:
@@ -2075,14 +2079,16 @@ void tcp_main_loop(void)
 	 * the tcp_main process) */
 
 	/*! \todo FIXME: TODO: make tcp_max_fd_no a config param */
-	if  (init_io_wait(&io_h, "TCP_main", tcp_max_fd_no, tcp_poll_method, tcp_async)<0)
+	if  (init_io_wait(&io_h, "TCP_main", tcp_max_fd_no, tcp_poll_method,
+	TCPM_PRIO_MAX, tcp_async)<0)
 		goto error;
 	/* init: start watching all the fds*/
 
 	/* add all the sockets we listens on for connections */
 	for (si=tcp_listen; si; si=si->next){
 		if ((si->proto==PROTO_TCP) &&(si->socket!=-1)){
-			if (io_watch_add(&io_h, si->socket, F_SOCKINFO, si,IO_WATCH_READ)<0){
+			if (io_watch_add(&io_h, si->socket, F_SOCKINFO, si,
+			TCPM_PRIO_LISTEN, IO_WATCH_READ)<0){
 				LM_CRIT("failed to add listen socket to the fd list\n");
 				goto error;
 			}
@@ -2094,7 +2100,8 @@ void tcp_main_loop(void)
 	if (!tls_disable){
 		for (si=tls_listen; si; si=si->next){
 			if ((si->proto==PROTO_TLS) && (si->socket!=-1)){
-				if (io_watch_add(&io_h, si->socket, F_SOCKINFO, si,IO_WATCH_READ)<0){
+				if (io_watch_add(&io_h, si->socket, F_SOCKINFO, si,
+				TCPM_PRIO_LISTEN, IO_WATCH_READ)<0){
 					LM_CRIT("failed to add tls listen socket to the fd list\n");
 					goto error;
 				}
@@ -2110,7 +2117,8 @@ void tcp_main_loop(void)
 		/* skip myslef (as process) and -1 socks (disabled)
 		   (we can't have 0, we never close it!) */
 		if (r!=process_no && pt[r].unix_sock>0)
-			if (io_watch_add(&io_h, pt[r].unix_sock, F_PROC, &pt[r],IO_WATCH_READ)<0){
+			if (io_watch_add(&io_h, pt[r].unix_sock, F_PROC, &pt[r],
+			TCPM_PRIO_PROC, IO_WATCH_READ)<0){
 					LM_CRIT("failed to add process %d (%s) unix socket "
 						"to the fd list\n", r, pt[r].desc);
 					goto error;
@@ -2133,7 +2141,7 @@ void tcp_main_loop(void)
 			}
 			/* add socket for listening */
 			if (io_watch_add(&io_h, tcp_children[r].unix_sock, F_TCPCHILD,
-							&tcp_children[r],IO_WATCH_READ) <0){
+			&tcp_children[r], TCPM_PRIO_PROC, IO_WATCH_READ) <0){
 				LM_CRIT("failed to add tcp child %d unix socket to "
 						"the fd list\n", r);
 				goto error;

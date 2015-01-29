@@ -1015,7 +1015,7 @@ again:
 				 * must be in the list */
 				tcpconn_listadd(tcp_conn_lst, con, c_next, c_prev);
 				con->timeout=get_ticks()+tcp_max_msg_time;
-				if (reactor_add_reader( s, F_TCPCONN, con )<0) {
+				if (reactor_add_reader( s, F_TCPCONN, RCT_PRIO_NET, con )<0) {
 					LM_CRIT("failed to add new socket to the fd list\n");
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					goto con_error;
@@ -1084,7 +1084,7 @@ static inline void tcp_receive_timeout(void)
 		if (con->state<0){   /* kill bad connections */
 			/* S_CONN_BAD or S_CONN_ERROR, remove it */
 			/* fd will be closed in release_tcpconn */
-			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			con->state=S_CONN_BAD;
 			release_tcpconn(con, CONN_ERROR, tcpmain_sock);
@@ -1094,7 +1094,7 @@ static inline void tcp_receive_timeout(void)
 			LM_DBG("%p expired - (%d, %d) lt=%d\n",
 					con, con->timeout, ticks,con->lifetime);
 			/* fd will be closed in release_tcpconn */
-			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/);
 			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 			if (con->msg_attempts)
 				release_tcpconn(con, CONN_ERROR, tcpmain_sock);
@@ -1111,18 +1111,19 @@ void tcp_receive_loop(int unix_sock)
 
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if ( init_worker_reactor( "TCP_worker", tcp_max_fd_no, tcp_async)<0 ) {
+	if ( init_worker_reactor( "TCP_worker", tcp_max_fd_no, RCT_PRIO_MAX,
+	tcp_async)<0 ) {
 		goto error;
 	}
 
 	/* start watching for the timer jobs */
-	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, NULL)<0) {
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, RCT_PRIO_TIMER, NULL)<0) {
 		LM_CRIT("failed to add timer pipe_out to reactor\n");
 		goto error;
 	}
 
 	/* add the unix socket */
-	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, NULL)<0) {
+	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, RCT_PRIO_NET, NULL)<0) {
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
