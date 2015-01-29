@@ -27,12 +27,12 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
-#include "../../globals.h"
 #include "../../sr_module.h"
 #include "../../net/proto.h"
 #include "../../net/proto_net.h"
 #include "../../net/net_tcp.h"
 #include "../../socket_info.h"
+#include "../tcp_utils.h"
 #include "proto_tcp_handler.h"
 
 static int mod_init(void);
@@ -41,6 +41,7 @@ static int net_tcp_bind_api(struct proto *proto_binds,
 		struct proto_net *net_binds);
 static int net_tcp_add_listener(struct socket_info *si);
 static int net_tcp_bind(struct socket_info *si);
+static int net_tcp_recv(void *handler);
 
 #ifdef DISABLE_NAGLE
 static int tcp_proto_no=-1; /*!< tcp protocol number as returned by getprotobyname */
@@ -111,6 +112,7 @@ static struct proto tcp_proto_binds = {
 static struct proto_net tcp_proto_net_binds = {
 	.id				= PROTO_TCP,
 	.bind			= net_tcp_bind,
+	.recv			= net_tcp_recv,
 };
 
 
@@ -285,3 +287,51 @@ error:
 	}
 	return -1;
 }
+
+/*! \brief reads next available bytes
+ * \return number of bytes read, 0 on EOF or -1 on error,
+ * on EOF it also sets c->state to S_CONN_EOF
+ * (to distinguish from reads that would block which could return 0)
+ * sets also r->error
+ */
+int proto_tcp_read(struct tcp_connection *c,struct tcp_req *r)
+{
+	int bytes_free, bytes_read;
+	int fd;
+
+	fd=c->fd;
+	bytes_free=TCP_BUF_SIZE- (int)(r->pos - r->buf);
+
+	if (bytes_free==0){
+		LM_ERR("buffer overrun, dropping\n");
+		r->error=TCP_REQ_OVERRUN;
+		return -1;
+	}
+again:
+	bytes_read=read(fd, r->pos, bytes_free);
+
+	if(bytes_read==-1){
+		if (errno == EWOULDBLOCK || errno == EAGAIN){
+			return 0; /* nothing has been read */
+		}else if (errno == EINTR) goto again;
+		else{
+			LM_ERR("error reading: %s\n",strerror(errno));
+			r->error=TCP_READ_ERROR;
+			return -1;
+		}
+	}else if (bytes_read==0){
+		c->state=S_CONN_EOF;
+		LM_DBG("EOF on %p, FD %d\n", c, fd);
+	}
+#ifdef EXTRA_DEBUG
+	LM_DBG("read %d bytes:\n%.*s\n", bytes_read, bytes_read, r->pos);
+#endif
+	r->pos+=bytes_read;
+	return bytes_read;
+}
+
+static int net_tcp_recv(void *handler)
+{
+	return tcp_utils_read_req(handler, proto_tcp_read);
+}
+

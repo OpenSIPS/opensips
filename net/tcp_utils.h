@@ -26,5 +26,9 @@
 #ifndef _TCP_UTILS_H_
 #define _TCP_UTILS_H_
 
+#include "tcp_conn.h"
+
+int tcp_utils_read_req(struct tcp_connection* con,
+		int (*read_f)(struct tcp_connection *c,struct tcp_req *r));
 
 #endif /* _TCP_UTILS_H_ */

@@ -27,10 +27,12 @@
 #define _PROTO_NET_H_
 
 typedef int (*proto_net_bind_f)(struct socket_info *si);
+typedef int (*proto_net_recv_f)(void *handler);
 
 struct proto_net {
 	int						id;
 	proto_net_bind_f		bind;
+	proto_net_recv_f		recv;
 };
 
 #endif /*_PROTO_NET_H_ */
