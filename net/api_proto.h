@@ -23,25 +23,25 @@
  *  2015-01-xx  created (razvanc)
  */
 
-#ifndef _PROTO_TI_H_
-#define _PROTO_TI_H_
+#ifndef _API_PROTO_TI_H_
+#define _API_PROTO_TI_H_
 
 #include "../ip_addr.h"
-#include "proto_net.h"
+#include "api_proto_net.h"
 
 #define PROTO_PREFIX "proto_"
 
 typedef int (*proto_init_f)(void);
 typedef int (*proto_add_listener_f)(struct socket_info *si);
 
-struct proto {
+struct api_proto {
 	char *					name;
 	int						default_port;
 	proto_init_f			init;
 	proto_add_listener_f	add_listener;
 };
 
-typedef int (*proto_bind_api)(struct proto *proto_binds,
-		struct proto_net *net_binds);
+typedef int (*api_proto_bind)(struct api_proto *ap,
+		struct api_proto_net *apn);
 
-#endif /* _PROTO_TI_H_ */
+#endif /* _api_PROTO_TI_H_ */

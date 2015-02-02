@@ -24,5 +24,5 @@
  */
 
 #include <string.h>
-#include "proto.h"
+#include "api_proto.h"
 #include "../mem/mem.h"

@@ -27,7 +27,7 @@
 #define _TRANS_TI_H_
 
 #include "../ip_addr.h"
-#include "proto.h"
+#include "api_proto.h"
 
 struct proto_info {
 	/* proto as ID */
@@ -37,7 +37,7 @@ struct proto_info {
 	struct socket_info *listeners;
 
 	/* bindings for this protocol */
-	struct proto binds;
+	struct api_proto api;
 };
 
 extern struct proto_info *protos;
@@ -81,7 +81,7 @@ static inline char* get_proto_name(unsigned short proto)
 		return "*";
 	if (proto >= proto_nr || protos[proto - 1].id == PROTO_NONE)
 		return "unknown";
-	return protos[proto - 1].binds.name;
+	return protos[proto - 1].api.name;
 }
 
 #endif /* _TRANS_TI_H_ */

@@ -28,8 +28,8 @@
 #include <netinet/tcp.h>
 
 #include "../../sr_module.h"
-#include "../../net/proto.h"
-#include "../../net/proto_net.h"
+#include "../../net/api_proto.h"
+#include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
 #include "../../socket_info.h"
 #include "../tcp_utils.h"
@@ -37,8 +37,8 @@
 
 static int mod_init(void);
 static int net_tcp_init(void);
-static int net_tcp_bind_api(struct proto *proto_binds,
-		struct proto_net *net_binds);
+static int net_tcp_api_bind(struct api_proto *proto_binds,
+		struct api_proto_net *net_binds);
 static int net_tcp_add_listener(struct socket_info *si);
 static int net_tcp_bind(struct socket_info *si);
 static int net_tcp_recv(void *handler);
@@ -48,7 +48,7 @@ static int tcp_proto_no=-1; /*!< tcp protocol number as returned by getprotobyna
 #endif
 
 static cmd_export_t cmds[] = {
-	{"proto_bind_api", (cmd_function)net_tcp_bind_api, 0, 0, 0, 0},
+	{"proto_bind_api", (cmd_function)net_tcp_api_bind, 0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -102,33 +102,33 @@ static int mod_init(void)
 	return 0;
 }
 
-static struct proto tcp_proto_binds = {
+static struct api_proto tcp_proto_binds = {
 	.name			= "tcp",
 	.default_port	= SIP_PORT,
 	.init			= net_tcp_init,
 	.add_listener	= net_tcp_add_listener,
 };
 
-static struct proto_net tcp_proto_net_binds = {
+static struct api_proto_net tcp_proto_net_binds = {
 	.id				= PROTO_TCP,
 	.bind			= net_tcp_bind,
 	.recv			= net_tcp_recv,
 };
 
 
-static int net_tcp_bind_api(struct proto *proto_binds,
-	struct proto_net *proto_net_binds)
+static int net_tcp_api_bind(struct api_proto *proto_api,
+	struct api_proto_net *proto_net_api)
 {
-	if (!proto_binds || !proto_net_binds)
+	if (!proto_api || !proto_net_api)
 		return -1;
 /*
  * TODO: memset + set or simply copy the structures?
 	memset(funcs, 0, sizeof(struct proto_funcs));
 	funcs.init = net_tcp_init;
  */
-	memcpy(proto_binds, &tcp_proto_binds, sizeof(struct proto));
-	memcpy(proto_net_binds, &tcp_proto_net_binds,
-			sizeof(struct proto_net));
+	memcpy(proto_api, &tcp_proto_binds, sizeof(struct api_proto));
+	memcpy(proto_net_api, &tcp_proto_net_binds,
+			sizeof(struct api_proto_net));
 
 	return 0;
 }

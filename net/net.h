@@ -27,9 +27,9 @@
 #define _NET_TI_H_
 
 #include "../ip_addr.h"
-#include "proto_net.h"
+#include "api_proto_net.h"
 
-extern struct proto_net *proto_net_binds;
+extern struct api_proto_net *proto_net_binds;
 
 int init_net_interface(int size);
 int destroy_net_interface(int size);

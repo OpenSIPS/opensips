@@ -23,16 +23,16 @@
  *  2015-01-xx  created (razvanc)
  */
 
-#ifndef _PROTO_NET_H_
-#define _PROTO_NET_H_
+#ifndef _API_PROTO_NET_H_
+#define _API_PROTO_NET_H_
 
 typedef int (*proto_net_bind_f)(struct socket_info *si);
 typedef int (*proto_net_recv_f)(void *handler);
 
-struct proto_net {
+struct api_proto_net {
 	int						id;
 	proto_net_bind_f		bind;
 	proto_net_recv_f		recv;
 };
 
-#endif /*_PROTO_NET_H_ */
+#endif /*_API_PROTO_NET_H_ */

@@ -25,7 +25,7 @@
 
 #include <string.h>
 #include "trans.h"
-#include "proto.h"
+#include "api_proto.h"
 #include "net.h"
 #include "../mem/mem.h"
 #include "../sr_module.h"
@@ -69,7 +69,7 @@ int load_trans_proto(char *name, enum sip_protos proto)
 	int len = strlen(name);
 	char name_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len + /* '\0' */ 1];
 	int i;
-	proto_bind_api proto_api;
+	api_proto_bind proto_api;
 
 	if (proto == PROTO_NONE) {
 		LM_ERR("unknown protocol %s\n", name);
@@ -123,20 +123,20 @@ int load_trans_proto(char *name, enum sip_protos proto)
 		break;
 	}
 
-	proto_api = (proto_bind_api)find_mod_export(name_buf,
-			"proto_bind_api", 0, 0);
+	proto_api = (api_proto_bind)find_mod_export(name_buf,
+			"api_proto_bind", 0, 0);
 	if (!proto_api) {
 		LM_ERR("cannot find transport API for protocol %s\n", name);
 		goto error;
 	}
-	if (proto_api(&protos[proto - 1].binds,
+	if (proto_api(&protos[proto - 1].api,
 			&proto_net_binds[proto - 1]) < 0) {
 		LM_ERR("cannot bind transport API for protocol %s\n", name);
 		goto error;
 	}
 
 	/* initialize the module */
-	if (protos[proto - 1].binds.init && protos[proto - 1].binds.init() < 0) {
+	if (protos[proto - 1].api.init && protos[proto - 1].api.init() < 0) {
 		LM_ERR("cannot initialzie protocol %s\n", name);
 		goto error;
 	}
@@ -172,7 +172,7 @@ int add_listener(struct socket_id *sock, enum si_flags flags)
 		return -1;
 	}
 	/* fix the socket's protocol */
-	port = sock->port ? sock->port : pi->binds.default_port;
+	port = sock->port ? sock->port : pi->api.default_port;
 
 	/* convert to socket_info */
 	if (new_sock2list(sock->name, port, sock->proto, sock->adv_name, sock->adv_port,
@@ -301,7 +301,7 @@ int fix_all_socket_lists(void)
 			}
 
 			/* add all sockets to the protocol list */
-			if (add_all_listeners(protos[i].listeners, protos[i].binds.add_listener)!=0) {
+			if (add_all_listeners(protos[i].listeners, protos[i].api.add_listener)!=0) {
 				LM_ERR("cannot add listeners for proto %d\n", protos[i].id);
 				goto error;
 			}
@@ -329,7 +329,7 @@ void print_all_socket_lists(void)
 			continue;
 
 		for (si = protos[i].listeners; si; si = si->next)
-			printf("             %s: %s [%s]:%s%s\n", protos[i].binds.name,
+			printf("             %s: %s [%s]:%s%s\n", protos[i].api.name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "");
 	}

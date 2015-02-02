@@ -27,17 +27,17 @@
 #include "net.h"
 #include "../mem/mem.h"
 
-struct proto_net *proto_net_binds;
+struct api_proto_net *proto_net_binds;
 
 int init_net_interface(int size)
 {
-	proto_net_binds = pkg_malloc(size * sizeof(struct proto_net));
+	proto_net_binds = pkg_malloc(size * sizeof(struct api_proto_net));
 	if (!proto_net_binds) {
 		LM_ERR("no more memory to allocate protocol bindings\n");
 		return -1;
 	}
 
-	memset(proto_net_binds, 0, size * sizeof(struct proto_net));
+	memset(proto_net_binds, 0, size * sizeof(struct api_proto_net));
 
 	return 0;
 }
