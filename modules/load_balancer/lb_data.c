@@ -461,6 +461,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 			res_new = (struct lb_resource **)pkg_realloc
 				(res_new, (res_new_n * sizeof(struct lb_resource *)));
 			if( res_new == NULL ) {
+				res_new_size = 0;
 				LM_ERR("no more pkg mem - resources ptr buffer realloc "
 					"failure\n");
 				return -1;
@@ -557,6 +558,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 				res_prev = (struct lb_resource **)pkg_realloc
 					(res_prev, (res_prev_n * sizeof(struct lb_resource *)));
 				if( res_prev == NULL ) {
+					res_prev_size = 0;
 					LM_ERR("no more pkg mem - previous resources ptr "
 						"buffer realloc failure\n");
 					return -1;
@@ -621,6 +623,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 			dst_bitmap = (unsigned int *)pkg_realloc
 				(dst_bitmap, (bitmap_size_cur * sizeof(unsigned int)));
 			if( dst_bitmap == NULL ) {
+				bitmap_size = 0;
 				LM_ERR("no more pkg mem - dst bitmap buffer realloc failed\n");
 				return -1;
 			}
@@ -1042,6 +1045,7 @@ end_search:
 		call_res = (struct lb_resource**)pkg_realloc
 			(call_res, rl->n*sizeof(struct lb_resorce*));
 		if (call_res==NULL) {
+			call_res_no = 0;
 			LM_ERR("no more pkg mem - res ptr realloc\n");
 			return -1;
 		}

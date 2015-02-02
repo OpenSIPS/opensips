@@ -46,6 +46,7 @@ int set_lb_bl(modparam_t type, void *val)
 {
 	blacklists = pkg_realloc( blacklists, (bl_size+1) * sizeof(*blacklists));
 	if (blacklists == NULL) {
+		bl_size = 0;
 		LM_ERR("REALLOC failed.\n");
 		return -1;
 	}
