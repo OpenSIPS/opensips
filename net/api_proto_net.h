@@ -26,11 +26,17 @@
 #ifndef _API_PROTO_NET_H_
 #define _API_PROTO_NET_H_
 
+/* api_proto_net flags */
+#define PROTO_NET_USE_TCP	1 /* set by proto's that are based on TCP */
+#define PROTO_NET_USE_UDP	2 /* set by proto's that are based on UDP */
+
+
 typedef int (*proto_net_bind_f)(struct socket_info *si);
 typedef int (*proto_net_recv_f)(void *handler);
 
 struct api_proto_net {
 	int						id;
+	int						flags;
 	proto_net_bind_f		bind;
 	proto_net_recv_f		recv;
 };

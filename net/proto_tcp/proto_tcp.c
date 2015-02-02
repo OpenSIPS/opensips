@@ -111,6 +111,7 @@ static struct api_proto tcp_proto_binds = {
 
 static struct api_proto_net tcp_proto_net_binds = {
 	.id				= PROTO_TCP,
+	.flags			= PROTO_NET_USE_TCP,
 	.bind			= net_tcp_bind,
 	.recv			= net_tcp_recv,
 };
