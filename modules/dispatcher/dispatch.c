@@ -398,7 +398,7 @@ int ds_load_db(void)
 	str attrs;
 	str host;
 	int port, proto;
-	db_res_t * res;
+	db_res_t * res = NULL;
 	db_val_t * values;
 	db_row_t * rows;
 
