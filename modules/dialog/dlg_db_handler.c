@@ -502,7 +502,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
-		goto end;
+		goto error;
 
 	nr_rows = RES_ROW_N(res);
 
@@ -705,11 +705,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 	}while (nr_rows>0);
 
-end:
 	dialog_dbf.free_result(dialog_db_handle, res);
 	if (found_ended_dlgs)
 		remove_ended_dlgs_from_db();
 	return 0;
+
 error:
 	dialog_dbf.free_result(dialog_db_handle, res);
 	if (found_ended_dlgs)
