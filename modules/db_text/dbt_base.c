@@ -187,14 +187,15 @@ int dbt_query(db_con_t* _h, db_key_t* _k, db_op_t* _op, db_val_t* _v,
 	_tbc = dbt_db_get_table(DBT_CON_CONNECTION(_h), CON_TABLE(_h));
 	if(!_tbc)
 	{
-		LM_ERR("table does not exist!\n");
+		LM_ERR("table '%.*s' does not exist!\n", CON_TABLE(_h)->len,
+				CON_TABLE(_h)->s);
 		return -1;
 	}
 
-
-	if(!_tbc || _tbc->nrcols < _nc)
+	if(_tbc->nrcols < _nc)
 	{
-		LM_ERR("table not loaded!\n");
+		LM_ERR("bad columns for table '%.*s' (have %d, need %d)\n",
+				CON_TABLE(_h)->len, CON_TABLE(_h)->s, _tbc->nrcols, _nc);
 		goto error;
 	}
 	if(_k)
