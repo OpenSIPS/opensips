@@ -250,8 +250,6 @@ int dbt_db_del_table(dbt_cache_p _dc, const str *_s, int sync)
 
 	dbt_table_free(_tbc);
 
-	_dbt_cachetbl[hashidx].dtp = NULL;
-
 	return 0;
 }
 
