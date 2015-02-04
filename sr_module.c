@@ -499,7 +499,8 @@ static int init_mod( struct sr_module* m, int skip_others)
 		/* make sure certain modules get loaded before this one */
 		for (dep = m->sr_deps; dep; dep = dep->next) {
 			if (!dep->mod->is_loaded)
-				init_mod(dep->mod, 1);
+				if (init_mod(dep->mod, 1) != 0)
+					return -1;
 		}
 
 		if (m->exports->init_f) {
