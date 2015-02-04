@@ -436,9 +436,7 @@ int start_bin_receivers(void)
 
 			if (init_child(PROC_BIN) < 0) {
 				LM_ERR("init_child failed for BIN listener\n");
-				if (send_status_code(-1) < 0)
-					LM_ERR("failed to send status code\n");
-				clean_write_pipeend();
+				report_failure_status();
 				exit(-1);
 			}
 

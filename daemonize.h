@@ -39,4 +39,20 @@ void clean_write_pipeend(void);
 int create_status_pipe(void);
 int wait_for_all_children(void);
 inline void inc_init_timer(void);
+
+
+#define report_failure_status() \
+	do { \
+		if (send_status_code(-1) < 0) \
+			LM_ERR("failed to send -1 status code\n"); \
+		clean_write_pipeend(); \
+	}while(0)
+
+#define report_conditional_status(_cond,_status) \
+	do { \
+		if ( (_cond) && send_status_code(_status) < 0) \
+			LM_ERR("failed to send %d status code\n",_status); \
+		clean_write_pipeend(); \
+	}while(0)
+
 #endif

@@ -690,15 +690,11 @@ int start_module_procs(void)
 					if ( m->exports->procs[n].flags&PROC_FLAG_INITCHILD ) {
 						if (init_child(PROC_MODULE) < 0) {
 							LM_ERR("error in init_child for PROC_MODULE\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
+							report_failure_status();
 							exit(-1);
 						}
 
-						if (!no_daemon_mode && send_status_code(0) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
+						report_conditional_status( (!no_daemon_mode), 0);
 					} else
 						clean_write_pipeend();
 
