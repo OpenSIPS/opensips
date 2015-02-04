@@ -118,6 +118,8 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 error:
 	LM_ERR("error while preparing query\n");
 err_exit:
+	if (_r)
+		*_r = NULL;
 	CON_OR_RESET(_h);
 	return -1;
 }
