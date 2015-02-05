@@ -1119,6 +1119,17 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	}while(0)
 
 
+/**
+ * Parameters:
+ *		c_msg - Currently saved SIP request in its initial form (Shared memory)
+ *	  	msg   - Duplicate of "c_msg" (private memory + heap space) that has
+ *				been altered by the script (it is newer than c_msg)
+ *
+ * Handles all realloc() operations needed to update "c_msg" from "msg"
+ *
+ * !! WARNING !!
+ *		"msg" must have been initially created with fake_req() from "c_msg"!
+ */
 int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 {
 	unsigned char copy_mask = 0;
@@ -1144,13 +1155,23 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	REALLOC_CLONED_FIELD_unsafe( path_vec, c_msg, msg, 2);
 	REALLOC_CLONED_FIELD_unsafe( set_global_address, c_msg, msg, 3);
 	REALLOC_CLONED_FIELD_unsafe( set_global_port, c_msg, msg, 4);
-	/* lumps */
-	if (c_msg->add_rm) tm_shm_free_unsafe(c_msg->add_rm);
+
+	/*
+	 * lump reallocation (guaranteed to be equal or greater size).
+	 *
+	 * c_msg lumps:
+	 *		- initial set of SHM lumps
+	 *
+	 * msg lumps:
+	 *		- initial set of SHM lumps (same memory as in c_msg above!)
+	 *		- additional set of PKG lumps (from running various script changes)
+	 *
+	 * That is why mem is not leaked after the following allocations:
+	 */
 	if (l1_len) c_msg->add_rm = tm_shm_malloc_unsafe(l1_len);
-	if (c_msg->body_lumps) tm_shm_free_unsafe(c_msg->body_lumps);
 	if (l2_len) c_msg->body_lumps = tm_shm_malloc_unsafe(l2_len);
-	if (c_msg->reply_lump) tm_shm_free_unsafe(c_msg->reply_lump);
 	if (l3_len) c_msg->reply_lump = tm_shm_malloc_unsafe(l3_len);
+
 	/* done with mem ops */
 	tm_shm_unlock();
 
@@ -1192,6 +1213,21 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	} else {
 		c_msg->reply_lump = NULL;
 	}
+
+	del_notflaged_lumps(&msg->add_rm, LUMPFLAG_SHMEM);
+	del_notflaged_lumps(&msg->body_lumps, LUMPFLAG_SHMEM);
+	del_nonshm_lump_rpl(&msg->reply_lump);
+
+	/* SHM lumps have been duplicated. They can be finally freed */
+	tm_shm_lock();
+	if (msg->add_rm) tm_shm_free_unsafe(msg->add_rm);
+	if (msg->body_lumps) tm_shm_free_unsafe(msg->body_lumps);
+	if (msg->reply_lump) tm_shm_free_unsafe(msg->reply_lump);
+	tm_shm_unlock();
+
+	msg->add_rm = c_msg->add_rm;
+	msg->body_lumps = c_msg->body_lumps;
+	msg->reply_lump = c_msg->reply_lump;
 
 	/* flags */
 	c_msg->flags = msg->flags;
