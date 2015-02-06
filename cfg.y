@@ -103,8 +103,6 @@
 #include "pvar.h"
 #include "blacklists.h"
 #include "xlog.h"
-#include "tcp_server.h"
-#include "tcp_conn.h"
 #include "db/db_insertq.h"
 #include "bin_interface.h"
 #include "net/trans.h"
@@ -578,7 +576,7 @@ proto:	PROTO_NAME {
 			yyerrorf("cannot handle protocol <%s>\n", $1);
 			YYABORT;
 		}
-		if (load_trans_proto($1, i_tmp) < 0) {
+		if (trans_load_proto($1, i_tmp) < 0) {
 			yyerrorf("cannot load protocol <%s>\n", $1);
 			YYABORT;
 		}
@@ -895,20 +893,22 @@ assign_stm: DEBUG EQUAL snumber {
 			#ifdef USE_TCP
 				tmp = NULL;
 				fix_flag_name(tmp, $3);
-				tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
-				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
-					yyerror("invalid TCP no_new_conn Branch Flag");
-				flag_idx2mask( &tcp_no_new_conn_bflag );
+				// FIXME TCP - this flag should be in proto level now
+				//tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
+				//if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
+				//	yyerror("invalid TCP no_new_conn Branch Flag");
+				//flag_idx2mask( &tcp_no_new_conn_bflag );
 			#else
 				warn("tcp support not compiled in");
 			#endif
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL ID {
 			#ifdef USE_TCP
-				tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
-				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
-					yyerror("invalid TCP no_new_conn Branch Flag");
-				flag_idx2mask( &tcp_no_new_conn_bflag );
+				// FIXME TCP
+				//tcp_no_new_conn_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
+				//if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
+				//	yyerror("invalid TCP no_new_conn Branch Flag");
+				//flag_idx2mask( &tcp_no_new_conn_bflag );
 			#else
 				warn("tcp support not compiled in");
 			#endif

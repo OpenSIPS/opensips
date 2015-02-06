@@ -41,7 +41,7 @@ unsigned int proto_nr;
 static struct socket_id *tmp_listeners;
 
 
-int init_trans_interface(void)
+int trans_init(void)
 {
 
 	proto_nr = PROTO_OTHER - PROTO_NONE - 1;
@@ -64,7 +64,7 @@ int init_trans_interface(void)
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
 
-int load_trans_proto(char *name, enum sip_protos proto)
+int trans_load_proto(char *name, enum sip_protos proto)
 {
 	int len = strlen(name);
 	char name_buf[/* PROTO_PREFIX */ PROTO_PREFIX_LEN + len + /* '\0' */ 1];
@@ -225,6 +225,7 @@ int fix_tmp_listeners(void)
 	return 0;
 }
 
+#if 0
 int add_all_listeners(struct socket_info *si, proto_add_listener_f add_func)
 {
 	for (; si; si = si->next)
@@ -234,6 +235,8 @@ int add_all_listeners(struct socket_info *si, proto_add_listener_f add_func)
 		}
 	return 0;
 }
+#endif
+
 
 /*
  * return 0 on success, -1 on error */
@@ -300,11 +303,13 @@ int fix_all_socket_lists(void)
 				goto error;
 			}
 
-			/* add all sockets to the protocol list */
+			/* add all sockets to the protocol list
+			FIXME - why do we need this ??
 			if (add_all_listeners(protos[i].listeners, protos[i].api.add_listener)!=0) {
 				LM_ERR("cannot add listeners for proto %d\n", protos[i].id);
 				goto error;
 			}
+			*/
 
 			found++;
 		}
@@ -316,6 +321,25 @@ int fix_all_socket_lists(void)
 	return 0;
 error:
 	return -1;
+}
+
+
+int trans_init_all_listeners(void)
+{
+	struct socket_info *si;
+	int i;
+
+	for (i = 0; i < proto_nr; i++)
+		if (protos[i].id != PROTO_NONE)
+			for( si=protos[i].listeners ; si ; si=si->next )
+				if (protos[i].api.init_listener(si)<0) {
+					LM_ERR("failed to init listener [%.*s], proto %s\n",
+						si->name.len, si->name.s,
+						protos[i].api.name );
+					return -1;
+				}
+
+	return 0;
 }
 
 void print_all_socket_lists(void)

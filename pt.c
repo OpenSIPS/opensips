@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include "mem/shm_mem.h"
+#include "net/net_tcp.h"
 #include "socket_info.h"
 #include "sr_module.h"
 #include "dprint.h"
@@ -133,9 +134,6 @@ pid_t internal_fork(char *proc_desc)
 	static int process_counter = 1;
 	pid_t pid;
 	unsigned int seed;
-	#ifdef USE_TCP
-	int sockfd[2];
-	#endif
 
 	if (process_counter==CHILD_COUNTER_STOP) {
 		LM_CRIT("buggy call from non-main process!!!");
@@ -146,14 +144,12 @@ pid_t internal_fork(char *proc_desc)
 
 	LM_DBG("forking new process \"%s\"\n",proc_desc);
 
-	#ifdef USE_TCP
-	if(!tcp_disable){
-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-			LM_ERR("socketpair failed: %s\n", strerror(errno));
-			return -1;
-		}
+	/* set TCP communication */
+	if (tcp_pre_connect_proc_to_tcp_main()<0){
+		LM_ERR("failed to connect future proc %d to TCP main\n",
+			process_no);
+		return -1;
 	}
-	#endif
 
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process\n",proc_desc);
@@ -173,26 +169,12 @@ pid_t internal_fork(char *proc_desc)
 
 		/* set attributes */
 		set_proc_attrs(proc_desc);
-		/* set TCP communication */
-		#ifdef USE_TCP
-		if (!tcp_disable){
-			close(sockfd[0]);
-			unix_tcp_sock=sockfd[1];
-			pt[process_no].unix_sock=sockfd[0];
-		}
-		#endif
+		tcp_connect_proc_to_tcp_main(1);
 		return 0;
 	}else{
 		/* parent process */
 		pt[process_counter].pid = pid;
-		#ifdef USE_TCP
-		if (!tcp_disable) {
-			close(sockfd[1]);
-			/* set the fd also in parent to be eliminate any
-			 * races between the parent and child */
-			pt[process_counter].unix_sock=sockfd[0];
-		}
-		#endif
+		tcp_connect_proc_to_tcp_main(0);
 		process_counter++;
 		return pid;
 	}
@@ -221,9 +203,7 @@ int count_init_children(int flags)
 		ret+=si->children;
 	#endif
 
-	#ifdef USE_TCP
 	ret += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
-	#endif
 
 	/* attendent */
 	ret++;

@@ -107,9 +107,7 @@
 #include "bin_interface.h"
 #include "globals.h"
 #include "mem/mem.h"
-#ifdef SHM_MEM
 #include "mem/shm_mem.h"
-#endif
 #include "sr_module.h"
 #include "timer.h"
 #include "parser/msg_parser.h"
@@ -130,12 +128,9 @@
 #include "core_stats.h"
 #include "pvar.h"
 #include "poll_types.h"
-#ifdef USE_TCP
-#include "tcp_init.h"
-#include "tcp_conn.h"
+#include "net/net_tcp.h"
 #ifdef USE_TLS
 #include "tls/tls_init.h"
-#endif
 #endif
 
 #ifdef USE_SCTP
@@ -396,9 +391,7 @@ void cleanup(int show_status)
 
 	handle_ql_shutdown();
 	destroy_modules();
-#ifdef USE_TCP
-	destroy_tcp();
-#endif
+	tcp_destroy();
 #ifdef USE_TLS
 	destroy_tls();
 #endif
@@ -803,67 +796,10 @@ static int main_loop(void)
 		return udp_rcv_loop();
 	} else {  /* don't fork */
 
-		for(si=udp_listen;si;si=si->next){
-			/* create the listening socket (for each address)*/
-			/* udp */
-			if (udp_init(si)==-1) goto error;
-			/* get first ipv4/ipv6 socket*/
-			if ((si->address.af==AF_INET)&&
-					((sendipv4==0)||(sendipv4->flags&SI_IS_LO)))
-				sendipv4=si;
-			#ifdef USE_IPV6
-			if((sendipv6==0)&&(si->address.af==AF_INET6))
-				sendipv6=si;
-			#endif
+		if (trans_init_all_listeners()<0) {
+			LM_ERR("failed to init all SIP listeners, aborting\n");
+			goto error;
 		}
-		#ifdef USE_TCP
-		if (!tcp_disable){
-			for(si=tcp_listen; si; si=si->next){
-				/* same thing for tcp */
-				if (tcp_init_old(si)==-1)  goto error;
-				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&
-						((sendipv4_tcp==0)||(sendipv4_tcp->flags&SI_IS_LO)))
-					sendipv4_tcp=si;
-				#ifdef USE_IPV6
-				if((sendipv6_tcp==0)&&(si->address.af==AF_INET6))
-					sendipv6_tcp=si;
-				#endif
-			}
-		}
-		#ifdef USE_TLS
-		if (!tls_disable){
-			for(si=tls_listen; si; si=si->next){
-				/* same as for tcp*/
-				if (tls_init(si)==-1)  goto error;
-				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&&
-						((sendipv4_tls==0)||(sendipv4_tls->flags&SI_IS_LO)))
-					sendipv4_tls=si;
-				#ifdef USE_IPV6
-				if((sendipv6_tls==0)&&(si->address.af==AF_INET6))
-					sendipv6_tls=si;
-				#endif
-			}
-		}
-		#endif /* USE_TLS */
-		#endif /* USE_TCP */
-		#ifdef USE_SCTP
-		if (!sctp_disable){
-			for(si=sctp_listen; si; si=si->next){
-				/* same thing for sctp */
-				if (sctp_server_init(si)==-1)  goto error;
-				/* get first ipv4/ipv6 socket*/
-				if ((si->address.af==AF_INET)&&
-						((sendipv4_sctp==0)||(sendipv4_sctp->flags&SI_IS_LO)))
-					sendipv4_sctp=si;
-			#ifdef USE_IPV6
-				if((sendipv6_sctp==0)&&(si->address.af==AF_INET6))
-					sendipv6_sctp=si;
-			#endif
-			}
-		}
-		#endif /* USE_SCTP */
 
 		/* all processes should have access to all the sockets (for sending)
 		 * so we open all first*/
@@ -915,10 +851,7 @@ static int main_loop(void)
 							si->sock_str.len, si->sock_str.s);
 						bind_address=si; /* shortcut */
 						if (init_child(chd_rank) < 0) {
-							LM_ERR("init_child failed for UDP listener\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
+							report_failure_status();
 							if (chd_rank == 1 && startup_done)
 								*startup_done = -1;
 							exit(-1);
@@ -928,9 +861,7 @@ static int main_loop(void)
 						if(chd_rank == 1 && startup_done!=NULL) {
 							LM_DBG("runing startup for first UDP\n");
 							if(run_startup_route()< 0) {
-								if (send_status_code(-1) < 0)
-									LM_ERR("failed to send status code\n");
-								clean_write_pipeend();
+								report_failure_status();
 								*startup_done = -1;
 								LM_ERR("Startup route processing failed\n");
 								exit(-1);
@@ -938,10 +869,7 @@ static int main_loop(void)
 							*startup_done = 1;
 						}
 
-						if (!no_daemon_mode && send_status_code(0) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
-
+						report_conditional_status( (!no_daemon_mode), 0);
 
 						/* all UDP listeners on same interface
 						 * have same SHM load pointer */
@@ -977,9 +905,7 @@ static int main_loop(void)
 					bind_address=si; /* shortcut */
 					if (init_child(chd_rank) < 0) {
 						LM_ERR("init_child failed\n");
-						if (send_status_code(-1) < 0)
-							LM_ERR("failed to send status code\n");
-						clean_write_pipeend();
+						report_failure_status();
 						if( (si==sctp_listen && i==0) && startup_done)
 							*startup_done = -1;
 						exit(-1);
@@ -991,18 +917,14 @@ static int main_loop(void)
 						LM_DBG("runing startup for first SCTP\n");
 						if(run_startup_route()< 0) {
 							LM_ERR("Startup route processing failed\n");
-							if (send_status_code(-1) < 0)
-								LM_ERR("failed to send status code\n");
-							clean_write_pipeend();
+							report_failure_status();
 							*startup_done = -1;
 							exit(-1);
 						}
 						*startup_done = 1;
 					}
 
-					if (!no_daemon_mode && send_status_code(0) < 0)
-						LM_ERR("failed to send status code\n");
-					clean_write_pipeend();
+					report_conditional_status( (!no_daemon_mode), 0);
 
 					sctp_server_rcv_loop();
 					exit(-1);
@@ -1025,43 +947,11 @@ static int main_loop(void)
 		goto error;
 	}
 
-	#ifdef USE_TCP
-	if (!tcp_disable){
-		/* start tcp  & tls receivers */
-		if (tcp_init_children(&chd_rank, startup_done)<0) goto error;
-		/* wait for the startup route to be executed */
-		if( startup_done!=NULL)
-			while( !(*startup_done) ) {usleep(5);handle_sigs();}
-		/* start tcp+tls master proc */
-		if ( (pid=internal_fork( "TCP main"))<0 ) {
-			LM_CRIT("cannot fork tcp main process\n");
-			goto error;
-		}else if (pid==0){
-			/* child */
-			/* close the TCP inter-process sockets */
-			close(unix_tcp_sock);
-			unix_tcp_sock = -1;
-			close(pt[process_no].unix_sock);
-			pt[process_no].unix_sock = -1;
-			/* init modules */
-			if (init_child(PROC_TCP_MAIN) < 0) {
-				LM_ERR("error in init_child for tcp main\n");
-				if (send_status_code(-1) < 0)
-					LM_ERR("failed to send status code\n");
-				clean_write_pipeend();
-
-				exit(-1);
-			}
-
-			if (!no_daemon_mode && send_status_code(0) < 0)
-				LM_ERR("failed to send status code\n");
-			clean_write_pipeend();
-
-			tcp_main_loop();
-			exit(-1);
-		}
+	/* fork all processes required by TCP network layer */
+	if (tcp_start_processes( &chd_rank, startup_done)<0) {
+		LM_CRIT("cannot start TCP processes\n");
+		goto error;
 	}
-	#endif
 
 	if (startup_done) {
 		if (*startup_done==0)
@@ -1074,16 +964,12 @@ static int main_loop(void)
 	set_proc_attrs("attendant");
 
 	if (init_child(PROC_MAIN) < 0) {
-		if (send_status_code(-1) < 0)
-			LM_ERR("failed to send status code\n");
-		clean_write_pipeend();
 		LM_ERR("error in init_child for PROC_MAIN\n");
+		report_failure_status();
 		goto error;
 	}
 
-	if (!no_daemon_mode && send_status_code(0) < 0)
-		LM_ERR("failed to send status code\n");
-	clean_write_pipeend();
+	report_conditional_status( (!no_daemon_mode), 0);
 
 	for(;;){
 			handle_sigs();
@@ -1095,10 +981,7 @@ error:
 	is_main=1;  /* if we are here, we are the "main process",
 				  any forked children should exit with exit(-1) and not
 				  ever use return */
-	if (!dont_fork && send_status_code(-1) < 0)
-		LM_ERR("failed to send status code\n");
-	clean_write_pipeend();
-
+	report_conditional_status( (!dont_fork), -1);
 	return -1;
 
 }
@@ -1379,7 +1262,7 @@ try_again:
 	 * initializes transport interfaces - we initialize them here because we
 	 * can have listening interfaces declared in the command line
 	 */
-	if (init_trans_interface() < 0) {
+	if (trans_init() < 0) {
 		LM_ERR("cannot initilize transport interface\n");
 		goto error;
 	}
@@ -1494,10 +1377,9 @@ try_again:
 
 	fix_poll_method( &io_poll_method );
 
-#ifdef USE_TCP
 	if (!tcp_disable){
-		/*init tcp*/
-		if (init_tcp()<0){
+		/*init tcp networking layer*/
+		if (tcp_init()<0){
 			LM_CRIT("could not initialize tcp, exiting...\n");
 			goto error;
 		}
@@ -1511,7 +1393,6 @@ try_again:
 		}
 	}
 #endif /* USE_TLS */
-#endif /* USE_TCP */
 
 	/* init_daemon? */
 	if (!dont_fork){

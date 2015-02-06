@@ -45,9 +45,6 @@
 #include "ip_addr.h"
 
 #include "udp_server.h"
-#ifdef USE_TCP
-#include "tcp_server.h"
-#endif
 
 #ifdef USE_SCTP
 #include "sctp_server.h"
@@ -128,10 +125,11 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 					" support is disabled\n");
 			goto error;
 		}else{
-			if (tcp_send(send_sock, proto, out_buff.s, out_buff.len, to, id)<0){
-				LM_ERR("tcp_send failed\n");
-				goto error;
-			}
+			// FIXME 
+			//if (tcp_send(send_sock, proto, out_buff.s, out_buff.len, to, id)<0){
+			//	LM_ERR("tcp_send failed\n");
+			//	goto error;
+			//}
 		}
 	}
 #ifdef USE_TLS

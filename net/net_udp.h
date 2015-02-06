@@ -34,7 +34,7 @@ void udp_destroy(void);
 
 // looks for the transport protocol that knows how to handle the
 // proto and calls the corresponding add_listener() function
-int udp_add_listener(char* host, int port, int type, void *ctx);
+int udp_init_listener(struct socket_info *si);
 
 // used to return a listener
 struct socket_info* udp_find_listener(union sockaddr_union* to, int proto);

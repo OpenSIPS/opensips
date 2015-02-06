@@ -28,6 +28,7 @@
 #include "../reactor.h"
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
+#include "net.h"
 
 
 /*!< list of tcp connections handled by this process */
@@ -165,9 +166,7 @@ again:
 			} else if (rw & IO_WATCH_WRITE) {
 				LM_DBG("Received con %p ref = %d\n",con,con->refcnt);
 				lock_get(&con->write_lock);
-				// FIXME TCP
-				//resp=tcp_write_async_req(con);
-				resp=-1;
+				resp = proto_net_binds[con->type].write( (void*)con );
 				lock_release(&con->write_lock);
 				if (resp<0) {
 					ret=-1; /* some error occured */
@@ -185,9 +184,7 @@ again:
 		case F_TCPCONN:
 			if (event_type & IO_WATCH_READ) {
 				con=(struct tcp_connection*)fm->data;
-				// FIXME TCP
-				//resp=tcp_read_req(con, &ret);
-				resp=-1;
+				resp = proto_net_binds[con->type].read( (void*)con, &ret );
 				reactor_del_all( con->fd, idx, IO_FD_CLOSING );
 				tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 				if (resp<0) {

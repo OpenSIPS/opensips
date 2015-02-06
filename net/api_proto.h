@@ -32,13 +32,13 @@
 #define PROTO_PREFIX "proto_"
 
 typedef int (*proto_init_f)(void);
-typedef int (*proto_add_listener_f)(struct socket_info *si);
+typedef int (*proto_init_listener_f)(struct socket_info *si);
 
 struct api_proto {
 	char *					name;
 	int						default_port;
 	proto_init_f			init;
-	proto_add_listener_f	add_listener;
+	proto_init_listener_f	init_listener;
 };
 
 typedef int (*api_proto_bind)(struct api_proto *ap,

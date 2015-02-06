@@ -38,16 +38,18 @@
 
 #include "../ip_addr.h"
 
-#define TCP_CON_MAX_ALIASES 4 			/*!< Maximum number of port aliases */
+/*!< Maximum number of port aliases */
+#define TCP_CON_MAX_ALIASES  4
 
-#define TCP_CHILD_MAX_MSG_CHUNK	4		/*!< the max number of chunks that a child accepts
-										  until the message is read completely - anything
-										  above will lead to the connection being closed -
-										  considered an attack */
-#define TCP_CHILD_MAX_MSG_TIME	4		/*!< the max number of seconds that a child waits
-										  until the message is read completely - anything
-										  above will lead to the connection being closed -
-										  considered an attack */
+/*!< the max number of chunks that a child accepts until the message
+ * is read completely - anything above will lead to the connection being
+ * closed - considered an attack */
+#define TCP_CHILD_MAX_MSG_CHUNK  4
+
+/*!< the max number of seconds that a child waits  until the message is 
+ * ead completely - anything above will lead to the connection being closed
+ * and considered an attack */
+#define TCP_CHILD_MAX_MSG_TIME  4
 
 
 /* tcp connection flags */

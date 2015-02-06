@@ -35,16 +35,13 @@
 
 
 
-#ifndef _tcp_conn_h
-#define _tcp_conn_h
+#ifndef _NET_tcp_conn_h
+#define _NET_tcp_conn_h
 
-#include "../ip_addr.h"
 #include "../locking.h"
+#include "tcp_conn_defs.h"
 
 
-#define TCP_CON_MAX_ALIASES 4 			/*!< Maximum number of port aliases */
-
-#define TCP_BUF_SIZE 65535			/*!< TCP buffer size */
 #define DEFAULT_TCP_CONNECTION_LIFETIME 120 	/*!< TCP connection lifetime, in seconds */
 #define DEFAULT_TCP_LISTEN_BACKLOG 10          /*!< TCP listen backlog count */
 #define DEFAULT_TCP_SEND_TIMEOUT 10 		/*!< If a send can't write for more then 10s, timeout */
@@ -54,22 +51,6 @@
 							 the connection to the tcp master process */
 #define TCP_MAIN_SELECT_TIMEOUT 5		/*!< how often "tcp main" checks for timeout*/
 #define TCP_CHILD_SELECT_TIMEOUT 2		/*!< the same as above but for children */
-
-#define TCP_CHILD_MAX_MSG_CHUNK	4		/*!< the max number of chunks that a child accepts
-										  until the message is read completely - anything
-										  above will lead to the connection being closed -
-										  considered an attack */
-#define TCP_CHILD_MAX_MSG_TIME	4		/*!< the max number of seconds that a child waits
-										  until the message is read completely - anything
-										  above will lead to the connection being closed -
-										  considered an attack */
-
-
-/* tcp connection flags */
-#define F_CONN_NON_BLOCKING   1
-#define F_CONN_REMOVED        2 /*!< no longer in "main" listen fd list */
-#define F_CONN_NOT_CONNECTED  4 /*!< a connection in pending state,
-								  waiting to be connected */
 
 
 /* keepalive */
@@ -99,104 +80,11 @@
 #endif
 
 
-enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,
-		TCP_REQ_OVERRUN, TCP_REQ_BAD_LEN };
-enum tcp_req_states {	H_SKIP_EMPTY, H_SKIP, H_LF, H_LFCR,  H_BODY, H_STARTWS,
-		H_CONT_LEN1, H_CONT_LEN2, H_CONT_LEN3, H_CONT_LEN4, H_CONT_LEN5,
-		H_CONT_LEN6, H_CONT_LEN7, H_CONT_LEN8, H_CONT_LEN9, H_CONT_LEN10,
-		H_CONT_LEN11, H_CONT_LEN12, H_CONT_LEN13, H_L_COLON,
-		H_CONT_LEN_BODY, H_CONT_LEN_BODY_PARSE , H_PING_CRLFCRLF,
-		H_SKIP_EMPTY_CR_FOUND, H_SKIP_EMPTY_CRLF_FOUND, H_SKIP_EMPTY_CRLFCR_FOUND
-	};
-
-enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
-		S_CONN_INIT, S_CONN_EOF, S_CONN_ACCEPT, S_CONN_CONNECT };
-
-
-/* fd communication commands */
+/* fd communication commands - internal usage ONLY */
 enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
 		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE };
 /* CONN_RELEASE, EOF, ERROR, DESTROY can be used by "reader" processes
  * CONN_GET_FD, NEW, ERROR only by writers */
-
-struct tcp_req{
-	struct tcp_req* next;
-	/* sockaddr ? */
-	char buf[TCP_BUF_SIZE+1];		/*!< bytes read so far (+0-terminator)*/
-	char* start;					/*!< where the message starts, after all the empty lines are skipped*/
-	char* pos;						/*!< current position in buf */
-	char* parsed;					/*!< last parsed position */
-	char* body;						/*!< body position */
-	unsigned int   content_len;
-	unsigned short has_content_len;	/*!< 1 if content_length was parsed ok*/
-	unsigned short complete;		/*!< 1 if one req has been fully read, 0 otherwise*/
-	unsigned int   bytes_to_go;		/*!< how many bytes we have still to read from the body*/
-	enum tcp_req_errors error;
-	enum tcp_req_states state;
-};
-
-
-
-struct tcp_connection;
-
-/*! \brief TCP port alias structure */
-struct tcp_conn_alias{
-	struct tcp_connection* parent;
-	struct tcp_conn_alias* next;
-	struct tcp_conn_alias* prev;
-	unsigned short port;			/*!< alias port */
-	unsigned short hash;			/*!< hash index in the address hash */
-};
-
-
-struct tcp_send_chunk{
-	char *buf; /* buffer that needs to be sent out */
-	char *pos; /* the position that we should be writing next */
-	int len;   /* length of the buffer */
-	int ticks; /* time at which this chunk was initially
-				  attempted to be written */
-};
-
-/*! \brief TCP connection structure */
-struct tcp_connection{
-	int s;					/*!< socket, used by "tcp main" */
-	int fd;					/*!< used only by "children", don't modify it! private data! */
-	gen_lock_t write_lock;
-	int id;					/*!< id (unique!) used to retrieve a specific connection when reply-ing*/
-	struct receive_info rcv;		/*!< src & dst ip, ports, proto a.s.o*/
-	volatile int refcnt;
-	enum sip_protos type;			/*!< PROTO_TCP or a protocol over it, e.g. TLS */
-	int flags;				/*!< connection related flags */
-	enum tcp_conn_states state;		/*!< connection state */
-	void* extra_data;			/*!< extra data associated to the connection, 0 for tcp*/
-	unsigned int timeout;			/*!< connection timeout, after this it will be removed*/
-	unsigned int lifetime;			/*!< lifetime to be set for the connection */
-	unsigned id_hash;			/*!< hash index in the id_hash */
-	struct tcp_connection* id_next;		/*!< next in id hash table */
-	struct tcp_connection* id_prev;		/*!< prev in id hash table */
-	struct tcp_connection* c_next;		/*!< Child next (use locally) */
-	struct tcp_connection* c_prev;		/*!< Child prev (use locally */
-	struct tcp_conn_alias con_aliases[TCP_CON_MAX_ALIASES];	/*!< Aliases for this connection */
-	int aliases;				/*!< Number of aliases, at least 1 */
-	struct tcp_req *con_req;	/*!< Per connection req buffer */
-	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
-	struct tcp_send_chunk **async_chunks; /*!< the chunks that need to be written on this
-										   connection when it will become writable */
-	int async_chunks_no; /* the total number of chunks pending to be written */
-	int oldest_chunk; /* the oldest chunk in our write list */
-};
-
-
-
-#define init_tcp_req( r) \
-	do{ \
-		(r)->parsed=(r)->pos=(r)->start=(r)->buf; \
-		(r)->error=TCP_REQ_OK;\
-		(r)->state=H_SKIP_EMPTY; \
-		(r)->body=0; \
-		(r)->complete=(r)->content_len=(r)->has_content_len=0; \
-		(r)->bytes_to_go=0; \
-	}while(0)
 
 
 /*! \brief add a tcpconn to a list
@@ -230,8 +118,6 @@ struct tcp_connection{
 #define TCP_ALIAS_HASH_SIZE 1024
 #define TCP_ID_HASH_SIZE 1024
 
-#define TCP_PARTITION_SIZE 32
-
 static inline unsigned tcp_addr_hash(struct ip_addr* ip, unsigned short port)
 {
 	if(ip->len==4) return (ip->u.addr32[0]^port)&(TCP_ALIAS_HASH_SIZE-1);
@@ -246,6 +132,7 @@ static inline unsigned tcp_addr_hash(struct ip_addr* ip, unsigned short port)
 
 #define tcp_id_hash(id) (id&(TCP_ID_HASH_SIZE-1))
 
+void tcpconn_put(struct tcp_connection* c);
 
 #endif
 

@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _pass_fd_h
-#define _pass_fd_h
+#ifndef _tcp_pass_fd_h
+#define _tcp_pass_fd_h
 
 
 int send_fd(int unix_socket, void* data, int data_len, int fd);

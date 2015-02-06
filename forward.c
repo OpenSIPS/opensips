@@ -400,8 +400,9 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	last_sock = 0;
 
 #ifdef USE_TCP
-	if (getb0flags(msg) & tcp_no_new_conn_bflag)
-		tcp_no_new_conn = 1;
+	// FIXME TCP
+	//if (getb0flags(msg) & tcp_no_new_conn_bflag)
+	//	tcp_no_new_conn = 1;
 #endif
 
 	do {
@@ -422,7 +423,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 			if (!buf){
 				LM_ERR("building req buf failed\n");
 #ifdef USE_TCP
-				tcp_no_new_conn = 0;
+				// FIXME TCP
+				//tcp_no_new_conn = 0;
 #endif
 				goto error;
 			}
@@ -454,7 +456,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 	}while( get_next_su( p, &to, (ser_error==E_IP_BLOCKED)?0:1)==0 );
 
 #ifdef USE_TCP
-	tcp_no_new_conn = 0;
+	// FIXME TCP
+	//tcp_no_new_conn = 0;
 #endif
 
 	if (ser_error) {

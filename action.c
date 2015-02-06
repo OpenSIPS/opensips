@@ -67,9 +67,8 @@
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
 #include "mod_fix.h"
-#ifdef USE_TCP
-#include "tcp_server.h"
-#endif
+/* needed by tcpconn_add_alias() */
+#include "net/tcp_conn_defs.h"
 
 #include "script_var.h"
 #include "xlog.h"

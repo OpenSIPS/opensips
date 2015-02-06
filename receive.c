@@ -62,9 +62,6 @@
 #include "context.h"
 
 
-#include "tcp_server.h" /* for tcpconn_add_alias */
-
-
 #ifdef DEBUG_DMALLOC
 #include <mem/dmalloc.h>
 #endif
@@ -170,11 +167,12 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info)
 #endif
 				)
 			){
-			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
-									rcv_info->proto)!=0){
-				LM_ERR("tcp alias failed\n");
-				/* continue */
-			}
+			// FIXME TCP
+			//if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
+			//						rcv_info->proto)!=0){
+			//	LM_ERR("tcp alias failed\n");
+			//	/* continue */
+			//}
 		}
 #endif
 

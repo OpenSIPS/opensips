@@ -46,7 +46,7 @@
 #include "../globals.h"
 #include "../ut.h"
 #include "../pt.h"
-#include "../tcp_server.h"
+#include "../net/net_tcp.h"
 #include "../mem/mem.h"
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
@@ -608,10 +608,8 @@ static mi_export_t mi_core_cmds[] = {
 	{ "subscribers_list", "lists all the Event Interface subscribers; "
 		"Params: [ event [ subscriber ]]",
 		mi_subscribers_list,          0,  0,  0 },
-#if USE_TCP
-	{ "list_tcp_conns", "list all ongoing TCP/TLS connections",
-		mi_list_tcp_conns,MI_NO_INPUT_FLAG,0, 0 },
-#endif
+	{ "list_tcp_conns", "list all ongoing TCP based connections",
+		mi_tcp_list_conns,MI_NO_INPUT_FLAG,0, 0 },
 	{ "help", "prints information about MI commands usage",
 		mi_help,                      0,  0,  0 },
 	{ 0, 0, 0, 0, 0, 0}

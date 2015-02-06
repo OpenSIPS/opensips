@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "dprint.h"
+#include "../dprint.h"
 
 
 

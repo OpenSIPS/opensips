@@ -46,12 +46,12 @@ extern unsigned int proto_nr;
 /*
  * initializes transport interface structures
  */
-int init_trans_interface(void);
+int trans_init(void);
 
 /*
  * loads the transport protocol
  */
-int load_trans_proto(char *name, enum sip_protos proto);
+int trans_load_proto(char *name, enum sip_protos proto);
 
 /*
  * adds a new listener
@@ -72,6 +72,11 @@ int fix_tmp_listeners(void);
  * fixes all socket lists
  */
 int fix_all_socket_lists(void);
+
+/*
+ * init all registered listeners
+ */
+int trans_init_all_listeners(void);
 
 void print_all_socket_lists(void);
 
