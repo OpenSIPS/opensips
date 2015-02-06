@@ -20,15 +20,13 @@
  *
  * history:
  * ---------
- *  2015-01-xx  created (razvanc)
+ *  2015-02-05  created (bogdan)
  */
 
-#ifndef _TCP_UTILS_H_
-#define _TCP_UTILS_H_
+#ifndef _NET_net_tcp_proc_h
+#define _NET_net_tcp_proc_h
 
-#include "tcp_conn.h"
+/* Loop implementing a TCP worker */
+void tcp_worker_proc( int fd, int max_fd, int async);
 
-int tcp_utils_read_req(struct tcp_connection* con,
-		int (*read_f)(struct tcp_connection *c,struct tcp_req *r));
-
-#endif /* _TCP_UTILS_H_ */
+#endif

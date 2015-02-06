@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
@@ -20,31 +18,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*!
- * \brief TCP server
- */
+#ifndef _pass_fd_h
+#define _pass_fd_h
 
 
-#ifndef tcp_server_h
-#define tcp_server_h
+int send_fd(int unix_socket, void* data, int data_len, int fd);
+int receive_fd(int unix_socket, void* data, int data_len, int* fd, int flags);
 
-extern int tcp_no_new_conn_bflag;
-extern int tcp_no_new_conn;
+int recv_all(int socket, void* data, int data_len, int flags);
+int send_all(int socket, void* data, int data_len);
 
-#include "mi/mi.h"
-
-/* "public" functions*/
-
-struct tcp_connection* tcpconn_get(int id, struct ip_addr* ip, int port,
-									int timeout);
-void tcpconn_put(struct tcp_connection* c);
-int tcp_send(struct socket_info* send_sock, int type, char* buf, unsigned len,
-									union sockaddr_union* to, int id);
-
-int tcpconn_add_alias(int id, int port, int proto);
-
-void force_tcp_conn_lifetime(struct receive_info *rcv, unsigned int timeout);
-
-struct mi_root *mi_list_tcp_conns(struct mi_root *cmd, void *param);
 
 #endif
