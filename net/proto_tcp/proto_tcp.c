@@ -45,6 +45,9 @@ static int proto_tcp_api_bind(struct api_proto *proto_binds,
 		struct api_proto_net *net_binds);
 static int proto_tcp_init_listener(struct socket_info *si);
 static int proto_tcp_bind(struct socket_info *si);
+static int proto_tcp_send(struct socket_info* send_sock,
+		char* buf, unsigned int len, union sockaddr_union* to, int id);
+
 static int tcp_write_async_req(struct tcp_connection* con);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
 
@@ -58,7 +61,8 @@ enum tcp_req_states {	H_SKIP_EMPTY, H_SKIP, H_LF, H_LFCR,  H_BODY, H_STARTWS,
 		H_CONT_LEN6, H_CONT_LEN7, H_CONT_LEN8, H_CONT_LEN9, H_CONT_LEN10,
 		H_CONT_LEN11, H_CONT_LEN12, H_CONT_LEN13, H_L_COLON,
 		H_CONT_LEN_BODY, H_CONT_LEN_BODY_PARSE , H_PING_CRLFCRLF,
-		H_SKIP_EMPTY_CR_FOUND, H_SKIP_EMPTY_CRLF_FOUND, H_SKIP_EMPTY_CRLFCR_FOUND
+		H_SKIP_EMPTY_CR_FOUND, H_SKIP_EMPTY_CRLF_FOUND,
+		H_SKIP_EMPTY_CRLFCR_FOUND
 	};
 
 
@@ -140,6 +144,7 @@ static struct api_proto tcp_proto_binds = {
 	.default_port	= SIP_PORT,
 	.init			= proto_tcp_init,
 	.init_listener	= proto_tcp_init_listener,
+	.send			= proto_tcp_send,
 };
 
 static struct api_proto_net tcp_proto_net_binds = {
@@ -689,8 +694,9 @@ poll_loop:
 
 
 /*! \brief Finds a tcpconn & sends on it */
-int tcp_send(struct socket_info* send_sock, char* buf, unsigned len,
-			union sockaddr_union* to, int id)
+static int proto_tcp_send(struct socket_info* send_sock,
+											char* buf, unsigned int len,
+											union sockaddr_union* to, int id)
 {
 	struct tcp_connection *c;
 	struct ip_addr ip;
@@ -1371,7 +1377,7 @@ again:
 
 		if (req->state==H_PING_CRLFCRLF) {
 			/* we send the reply */
-			if (tcp_send( con->rcv.bind_address, CRLF, CRLF_LEN,
+			if (proto_tcp_send( con->rcv.bind_address, CRLF, CRLF_LEN,
 			&(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
 				LM_ERR("CRLF pong - tcp_send() failed\n");
 			}
