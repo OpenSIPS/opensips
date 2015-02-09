@@ -2737,11 +2737,24 @@ error1:
 }
 
 
+static inline int is_CT_present(struct hdr_field* headers)
+{
+	struct hdr_field* hf;
+	for (hf=headers; hf; hf=hf->next) {
+		if (hf->type == HDR_CONTENTTYPE_T) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 		str* local_contact)
 {
-	static char buf[BUF_LEN];
 	str ehdr= {NULL,0};
+	static char buf[BUF_LEN];
+	static struct sip_msg foo_msg;
 
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact->len > BUF_LEN)
 	{
@@ -2758,18 +2771,33 @@ int b2breq_complete_ehdr(str* extra_headers, str* ehdr_out, str* body,
 	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
 		local_contact->len, local_contact->s);
 
+
+
 	/* if not present and body present add content type */
-	if(body && !strstr(ehdr.s, "Content-Type:"))
-	{
-		/* add content type header */
-		if(ehdr.len + 32 > BUF_LEN)
-		{
-			LM_ERR("Buffer too small, can not add Content-Type header\n");
+	if(body) {
+		/* build a fake sip_msg to parse the headers sip-wisely */
+		memset(&foo_msg, 0, sizeof(struct sip_msg));
+		foo_msg.len = ehdr.len;
+		foo_msg.buf = foo_msg.unparsed = ehdr.s;
+
+		if (parse_headers( &foo_msg, HDR_EOH_F, 0) == -1) {
+			LM_ERR("Failed to parse headers\n");
 			return -1;
 		}
-		memcpy(ehdr.s+ ehdr.len, "Content-Type: application/sdp\r\n", 31);
-		ehdr.len += 31;
-		ehdr.s[ehdr.len]= '\0';
+
+		if (!is_CT_present(foo_msg.headers)) {
+			/* add content type header */
+			if(ehdr.len + 32 > BUF_LEN)
+			{
+				LM_ERR("Buffer too small, can not add Content-Type header\n");
+				return -1;
+			}
+			memcpy(ehdr.s+ ehdr.len, "Content-Type: application/sdp\r\n", 31);
+			ehdr.len += 31;
+			ehdr.s[ehdr.len]= '\0';
+		}
+
+		if (foo_msg.headers) free_hdr_field_lst(foo_msg.headers);
 	}
 	*ehdr_out = ehdr;
 
