@@ -597,7 +597,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 
 	a=0;
 	/* fix the port */
-	port=port ? port : protos[proto].default_port ;
+	port=port ? port : protos[proto].api.default_port ;
 	TCPCONN_LOCK(id);
 	/* check if alias already exists */
 	c=_tcpconn_find(id);
@@ -1353,7 +1353,7 @@ void tcp_main_server(void)
 
 	/* we run in a separate, dedicated process, with its own reactor
 	 * (reactors are per process) */
-	if (init_worker_reactor("TCP_main", tcp_max_fd_no, tcp_async)<0)
+	if (init_worker_reactor("TCP_main", tcp_max_fd_no)<0)
 		goto error;
 
 	/* now start watching all the fds*/
@@ -1624,7 +1624,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 			report_conditional_status( (1), 0);
 
-			tcp_worker_proc( reader_fd[1], tcp_max_fd_no, tcp_async);
+			tcp_worker_proc( reader_fd[1], tcp_max_fd_no);
 			exit(-1);
 		}
 	}
@@ -1654,6 +1654,11 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	return 0;
 error:
 	return -1;
+}
+
+int tcp_has_async_write(void)
+{
+	return reactor_has_async();
 }
 
 

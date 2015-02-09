@@ -362,10 +362,6 @@ extern char *finame;
 %token MHOMED
 %token POLL_METHOD
 %token DISABLE_TCP
-%token ASYNC_TCP
-%token ASYNC_TCP_LOCAL_CON_TIMEOUT
-%token ASYNC_TCP_LOCAL_WRITE_TIMEOUT
-%token ASYNC_TCP_MAX_POSTPONED_CHUNKS
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
 %token TCP_CONNECT_TIMEOUT
@@ -373,14 +369,11 @@ extern char *finame;
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
 %token TCP_MAX_CONNECTIONS
-%token TCP_OPT_CRLF_PINGPONG
-%token TCP_OPT_CRLF_DROP
 %token TCP_NO_NEW_CONN_BFLAG
 %token TCP_KEEPALIVE
 %token TCP_KEEPCOUNT
 %token TCP_KEEPIDLE
 %token TCP_KEEPINTERVAL
-%token TCP_MAX_MSG_CHUNKS
 %token TCP_MAX_MSG_TIME
 %token DISABLE_TLS
 %token TLSLOG
@@ -785,38 +778,6 @@ assign_stm: DEBUG EQUAL snumber {
 									#endif
 									}
 		| DISABLE_TCP EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP_LOCAL_CON_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async_local_connect_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP_LOCAL_CON_TIMEOUT EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP_LOCAL_WRITE_TIMEOUT EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async_local_write_timeout=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP_LOCAL_WRITE_TIMEOUT EQUAL error { yyerror("boolean value expected"); }
-		| ASYNC_TCP_MAX_POSTPONED_CHUNKS EQUAL NUMBER {
-									#ifdef USE_TCP
-										tcp_async_max_postponed_chunks=$3;
-									#else
-										warn("tcp support not compiled in");
-									#endif
-									}
-		| ASYNC_TCP_MAX_POSTPONED_CHUNKS EQUAL error { yyerror("boolean value expected"); }
 		| TCP_ACCEPT_ALIASES EQUAL NUMBER {
 									#ifdef USE_TCP
 										tcp_accept_aliases=$3;
@@ -873,22 +834,6 @@ assign_stm: DEBUG EQUAL snumber {
 									#endif
 									}
 		| TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
-		| TCP_OPT_CRLF_PINGPONG EQUAL NUMBER {
-			#ifdef USE_TCP
-				tcp_crlf_pingpong=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
-		}
-		| TCP_OPT_CRLF_PINGPONG EQUAL error { yyerror("boolean value expected"); }
-		| TCP_OPT_CRLF_DROP EQUAL NUMBER {
-			#ifdef USE_TCP
-				tcp_crlf_drop=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
-		}
-		| TCP_OPT_CRLF_DROP EQUAL error { yyerror("boolean value expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER {
 			#ifdef USE_TCP
 				tmp = NULL;
@@ -922,14 +867,6 @@ assign_stm: DEBUG EQUAL snumber {
 			#endif
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
-		| TCP_MAX_MSG_CHUNKS EQUAL NUMBER {
-			#ifdef USE_TCP
-			        tcp_max_msg_chunks=$3;
-			#else
-				warn("tcp support not compiled in");
-			#endif
-		}
-		| TCP_MAX_MSG_CHUNKS EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER {
 			#ifdef USE_TCP
 			        tcp_max_msg_time=$3;

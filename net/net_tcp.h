@@ -39,6 +39,9 @@ int tcp_init(void);
 /* destroys the TCP data */
 void tcp_destroy(void);
 
+/* checks if the TCP layer may provide async write support */
+int tcp_has_async_write(void);
+
 /* creates the communication channel between a generic OpenSIPS process
    and the TCP MAIN process - TO BE called before forking */
 int tcp_pre_connect_proc_to_tcp_main(void);

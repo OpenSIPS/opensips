@@ -76,18 +76,11 @@ extern int tcp_con_lifetime; /*!< connection lifetime */
 extern int tcp_listen_backlog;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
-extern int tcp_crlf_pingpong;
-extern int tcp_crlf_drop;
 extern int tcp_keepalive;
 extern int tcp_keepcount;
 extern int tcp_keepidle;
 extern int tcp_keepinterval;
-extern int tcp_max_msg_chunks;
 extern int tcp_max_msg_time;
-extern int tcp_async;
-extern int tcp_async_local_connect_timeout;
-extern int tcp_async_local_write_timeout;
-extern int tcp_async_max_postponed_chunks;
 #endif
 #ifdef USE_TLS
 extern int tls_disable;

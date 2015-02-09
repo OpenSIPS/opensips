@@ -333,10 +333,6 @@ WDIR		"workdir"|"wdir"
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
 DISABLE_TCP		"disable_tcp"
-ASYNC_TCP		"tcp_async"
-ASYNC_TCP_LOCAL_CON_TIMEOUT		"tcp_async_local_connect_timeout"
-ASYNC_TCP_LOCAL_WRITE_TIMEOUT	"tcp_async_local_write_timeout"
-ASYNC_TCP_MAX_POSTPONED_CHUNKS	"tcp_async_max_postponed_chunks"
 TCP_CHILDREN	"tcp_children"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_SEND_TIMEOUT	"tcp_send_timeout"
@@ -344,14 +340,11 @@ TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
-TCP_OPT_CRLF_PINGPONG   "tcp_crlf_pingpong"
-TCP_OPT_CRLF_DROP   "tcp_crlf_drop"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
 TCP_KEEPALIVE           "tcp_keepalive"
 TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
 TCP_KEEPINTERVAL        "tcp_keepinterval"
-TCP_MAX_MSG_CHUNKS		"tcp_max_msg_chunks"
 TCP_MAX_MSG_TIME		"tcp_max_msg_time"
 DISABLE_TLS		"disable_tls"
 TLSLOG			"tlslog"|"tls_log"
@@ -641,16 +634,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
-<INITIAL>{TCP_OPT_CRLF_PINGPONG}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_PINGPONG; }
-<INITIAL>{TCP_OPT_CRLF_DROP}    { count(); yylval.strval=yytext; return TCP_OPT_CRLF_DROP; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
 <INITIAL>{DISABLE_TCP}	{ count(); yylval.strval=yytext; return DISABLE_TCP; }
-<INITIAL>{ASYNC_TCP}	{ count(); yylval.strval=yytext; return ASYNC_TCP; }
-<INITIAL>{ASYNC_TCP_LOCAL_CON_TIMEOUT}	{ count(); yylval.strval=yytext; return ASYNC_TCP_LOCAL_CON_TIMEOUT; }
-<INITIAL>{ASYNC_TCP_LOCAL_WRITE_TIMEOUT}	{ count(); yylval.strval=yytext;
-	return ASYNC_TCP_LOCAL_WRITE_TIMEOUT; }
-<INITIAL>{ASYNC_TCP_MAX_POSTPONED_CHUNKS}	{ count(); yylval.strval=yytext;
-	return ASYNC_TCP_MAX_POSTPONED_CHUNKS; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
@@ -670,7 +655,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{TCP_KEEPCOUNT}       { count(); yylval.strval=yytext; return TCP_KEEPCOUNT; }
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
 <INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }
-<INITIAL>{TCP_MAX_MSG_CHUNKS}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_CHUNKS; }
 <INITIAL>{TCP_MAX_MSG_TIME}    { count(); yylval.strval=yytext; return TCP_MAX_MSG_TIME; }
 <INITIAL>{DISABLE_TLS}	{ count(); yylval.strval=yytext; return DISABLE_TLS; }
 <INITIAL>{TLSLOG}		{ count(); yylval.strval=yytext; return TLS_PORT_NO; }

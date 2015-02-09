@@ -255,11 +255,11 @@ static inline void tcp_receive_timeout(void)
 
 
 
-void tcp_worker_proc( int unix_sock, int max_fd, int async )
+void tcp_worker_proc( int unix_sock, int max_fd )
 {
 	/* init reactor for TCP worker */
 	tcpmain_sock=unix_sock; /* init com. socket */
-	if ( init_worker_reactor( "TCP_worker", max_fd, async)<0 ) {
+	if ( init_worker_reactor( "TCP_worker", max_fd)<0 ) {
 		goto error;
 	}
 

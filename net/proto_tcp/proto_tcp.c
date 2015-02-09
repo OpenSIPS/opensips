@@ -61,6 +61,32 @@ static void tcp_conn_clean(struct tcp_connection* c);
  * closed - considered an attack */
 #define TCP_CHILD_MAX_MSG_CHUNK  4
 
+/* 1 if TCP connect & write should be async */
+static int tcp_async = 0;
+
+/* Number of microseconds that a worker will block waiting for a local
+ * connect - if connect op exceeds this, it will get passed to TCP main*/
+
+static int tcp_async_local_connect_timeout = 10000;
+/* Number of microseconds that a worker will block waiting for a local
+ * write - if write op exceeds this, it will get passed to TCP main*/
+
+static int tcp_async_local_write_timeout = 10000;
+/* maximum number of write chunks that will be queued per TCP connection - 
+  if we exceed this number, we just drop the connection */
+
+static int tcp_async_max_postponed_chunks = 32;
+
+static int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
+
+/* 0: send CRLF pong to incoming CRLFCRLF ping */
+static int tcp_crlf_pingpong = 1;
+
+/* 0: do not drop single CRLF messages */
+static int tcp_crlf_drop = 0;
+
+
+
 enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,
 		TCP_REQ_OVERRUN, TCP_REQ_BAD_LEN };
 enum tcp_req_states {	H_SKIP_EMPTY, H_SKIP, H_LF, H_LFCR,  H_BODY, H_STARTWS,
@@ -110,14 +136,12 @@ struct tcp_data {
 };
 
 
-//FIXME - expose below as module param
 /*!< should a new TCP conn be open if needed? - branch flag to be set in
  * the SIP messages - configuration option */
 int tcp_no_new_conn_bflag = 0;
 /*!< should a new TCP conn be open if needed? - variable used to used for
  * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
 int tcp_no_new_conn = 0;
-int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
 
 /* buffer to be used for reading all TCP SIP messages
@@ -133,6 +157,21 @@ static cmd_export_t cmds[] = {
 };
 
 
+static param_export_t params[] = {
+	{ "tcp_max_msg_chunks",              INT_PARAM, &tcp_max_msg_chunks     },
+	{ "tcp_crlf_pingpong",               INT_PARAM, &tcp_crlf_pingpong      },
+	{ "tcp_crlf_drop",                   INT_PARAM, &tcp_crlf_drop          },
+	{ "tcp_async",                       INT_PARAM, &tcp_async              },
+	{ "tcp_async_max_postponed_chunks",  INT_PARAM,
+											&tcp_async_max_postponed_chunks },
+	{ "tcp_async_local_connect_timeout", INT_PARAM,
+											&tcp_async_local_connect_timeout},
+	{ "tcp_async_local_write_timeout",   INT_PARAM,
+											&tcp_async_local_write_timeout  },
+	{0, 0, 0}
+};
+
+
 #ifndef DISABLE_AUTO_TCP
 struct module_exports proto_tcp_exports = {
 #else
@@ -145,7 +184,7 @@ struct module_exports exports = {
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
-	0,          /* module parameters */
+	params,     /* module parameters */
 	0,          /* exported statistics */
 	0,          /* exported MI functions */
 	0,          /* exported pseudo-variables */
@@ -178,6 +217,11 @@ static struct api_proto_net tcp_proto_net_binds = {
 static int proto_tcp_init(void)
 {
 	LM_INFO("initializing TCP-plain protocol\n");
+	if (tcp_async && !tcp_has_async_write()) {
+		LM_WARN("TCP network layer does not have suport for ASYNC write, "
+			"disabling it for TCP plain\n");
+		tcp_async = 0;
+	}
 	return 0;
 }
 

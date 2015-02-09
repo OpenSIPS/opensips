@@ -60,8 +60,8 @@ enum fd_types { F_NONE=0,
 
 extern io_wait_h _worker_io;
 
-#define init_worker_reactor( _name, _max_fd, _async) \
-	init_io_wait(&_worker_io, _name, _max_fd, io_poll_method, _async)
+#define init_worker_reactor( _name, _max_fd) \
+	init_io_wait(&_worker_io, _name, _max_fd, io_poll_method)
 
 #define reactor_add_reader( _fd, _type, _data) \
 	io_watch_add(&_worker_io, _fd, _type, _data, IO_WATCH_READ)
@@ -78,9 +78,11 @@ extern io_wait_h _worker_io;
 #define reactor_del_all( _fd, _idx, _io_flags) \
 	io_watch_del(&_worker_io, _fd, _idx, _io_flags, IO_WATCH_READ|IO_WATCH_WRITE)
 
-
 #define destroy_worker_reactor() \
 	destroy_io_wait(&_worker_io)
+
+#define reactor_has_async() \
+	(_worker_io.poll_method==POLL_POLL || _worker_io.poll_method==POLL_EPOLL_LT || _worker_io.poll_method==POLL_EPOLL_ET)
 
 #endif
 
