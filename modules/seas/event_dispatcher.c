@@ -616,34 +616,22 @@ static inline int send_sockinfo(int fd)
    char buffer[300];
    int k=0,j;
    buffer[k++]=16;/*This used to be T_TABLE_POWER in opensips 1.0.1, now its hardcoded in config.h*/
-   for(i=0,s=udp_listen;s;s=s->next,i++);
-#ifdef USE_TCP
-   for(s=tcp_listen;s;s=s->next,i++);
-#endif
-#ifdef USE_TLS
-   for(s=tls_listen;s;s=s->next,i++);
-#endif
+
+	for( j=0,i=0 ; j<PROTO_LAST ; j++ )
+		if (protos[j].id!=PROTO_NONE)
+			for(s=protos[j].listeners ; s ; s=s->next,i++);
    if(i==0){
       LM_ERR("no udp|tcp|tls sockets ?!!\n");
       return -1;
    }
    buffer[k++]=i;
-   for(s=udp_listen;s;s=s->next){
-      if(print_sock_info(buffer,300,&k,s,PROTO_UDP)==-1)
-	 return -1;
-   }
-#ifdef USE_TCP
-   for(s=tcp_listen;s;s=s->next){
-      if(print_sock_info(buffer,300,&k,s,PROTO_TCP)==-1)
-	 return -1;
-   }
-#endif
-#ifdef USE_TLS
-   for(s=tls_listen;s;s=s->next){
-      if(print_sock_info(buffer,300,&k,s,PROTO_TLS)==-1)
-	 return -1;
-   }
-#endif
+
+	for( j=0 ; j<PROTO_LAST ; j++ )
+		if (protos[j].id!=PROTO_NONE)
+			for(s=protos[j].listeners ; s ; s=s->next)
+				if(print_sock_info(buffer,300,&k,s,PROTO_UDP)==-1)
+					return -1;
+
 write_again:
    j=write(fd,buffer,k);
    if(j==-1){
@@ -832,26 +820,7 @@ int process_bind_action(as_p as,char *payload,int len)
    k+=2;
    port=ntohs(port);
    print_ip_buf(&my_addr,buffer,300);
-   switch(proto){
-      case PROTO_UDP:
-	 proto_s="UDP";
-	 xxx_listen=udp_listen;
-	 break;
-#ifdef USE_TCP
-      case PROTO_TCP:
-	 proto_s="TCP";
-	 xxx_listen=tcp_listen;
-	 break;
-#endif
-#ifdef USE_TLS
-      case PROTO_TLS:
-	 proto_s="TLS";
-	 xxx_listen=tls_listen;
-	 break;
-#endif
-      default:
-	 goto error;
-   }
+   xxx_listen = protos[proto].listeners;
    for(si=xxx_listen;si;si=si->next){
       if(my_addr.af==si->address.af &&
 	    my_addr.len==si->address.len &&
@@ -864,7 +833,6 @@ int process_bind_action(as_p as,char *payload,int len)
 	 return 0;
       }
    }
-error:
    LM_ERR("Cannot bind to %s %s %d !!!\n",proto_s,buffer,port);
    return -1;
 }

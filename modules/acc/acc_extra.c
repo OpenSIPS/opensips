@@ -63,24 +63,8 @@ void init_acc_extra(void)
 	int i;
 	/* ugly trick to get the address of the static buffer */
 	static_detector[0] = int2str( (unsigned long)3, &i) + i;
-	if (udp_listen) {
-		static_detector[1] = ip_addr2a(&udp_listen->address);
-#ifdef USE_TCP
-	} else if (tcp_listen) {
-		static_detector[1] = ip_addr2a(&tcp_listen->address);
-#endif
-#ifdef USE_TLS
-	} else if (tls_listen) {
-		static_detector[1] = ip_addr2a(&tls_listen->address);
-#endif
-#ifdef USE_SCTP
-	} else if (sctp_listen) {
-		static_detector[1] = ip_addr2a(&sctp_listen->address);
-#endif
-	} else {
-		LM_CRIT("BUG - no listen interface found!!\n");
-		static_detector[1] = NULL;
-	}
+	/* remember directly the static buffer returned by ip_addr2a()*/
+	static_detector[1] = _ip_addr_A_buff;
 }
 
 
