@@ -255,17 +255,6 @@ int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
 
 int tos = IPTOS_LOWDELAY;
 
-struct socket_info* udp_listen=0;
-#ifdef USE_TCP
-struct socket_info* tcp_listen=0;
-#endif
-#ifdef USE_TLS
-struct socket_info* tls_listen=0;
-#endif
-#ifdef USE_SCTP
-struct socket_info* sctp_listen=0;
-#endif
-
 struct socket_info* bind_address=0; /* pointer to the crt. proc.
 									 listening address*/
 struct socket_info* sendipv4; /* ipv4 socket to use when msg. comes from ipv6*/
@@ -693,11 +682,11 @@ error:
 static int main_loop(void)
 {
 	static int chd_rank;
-	int  i,rc;
-	pid_t pid;
-	struct socket_info* si;
+	int  rc;
+	//pid_t pid;
+	//struct socket_info* si;
 	int* startup_done = NULL;
-	stat_var *load_p = NULL;
+	//stat_var *load_p = NULL;
 
 	chd_rank=0;
 
@@ -713,17 +702,18 @@ static int main_loop(void)
 			goto error;
 		}
 
-		if (udp_listen==0){
+		if (protos[PROTO_UDP].listeners==NULL){
 			LM_ERR("no fork mode requires at least one"
 					" udp listen address, exiting...\n");
 			goto error;
 		}
 		/* only one address, we ignore all the others */
-		if (udp_init(udp_listen)==-1) goto error;
-		bind_address=udp_listen;
+		// FIXME UDP
+		//if (udp_init(udp_listen)==-1) goto error;
+		bind_address=protos[PROTO_UDP].listeners;
 		sendipv4=bind_address;
 		sendipv6=bind_address; /*FIXME*/
-		if (udp_listen->next){
+		if (protos[PROTO_UDP].listeners->next) {
 			LM_WARN("using only the first listen address (no fork)\n");
 		}
 
@@ -759,7 +749,7 @@ static int main_loop(void)
 
 		is_main=1;
 
-		if (register_udp_load_stat(&udp_listen->sock_str,
+		if (register_udp_load_stat(&protos[PROTO_UDP].listeners->sock_str,
 		&pt[process_no].load, 1)!=0) {
 			LM_ERR("failed to init udp load statistics\n");
 			goto error;
@@ -810,6 +800,7 @@ static int main_loop(void)
 			goto error;
 		}
 
+#if 0
 		/* udp processes */
 		for(si=udp_listen; si; si=si->next){
 
@@ -867,6 +858,7 @@ static int main_loop(void)
 			/*parent*/
 			/*close(udp_sock)*/; /*if it's closed=>sendto invalid fd errors?*/
 		}
+#endif
 	}
 
 	#ifdef USE_SCTP
@@ -1314,9 +1306,9 @@ try_again:
 
 	if (dont_fork){
 		LM_WARN("no fork mode %s\n",
-				(udp_listen)?(
-				(udp_listen->next)?" and more than one listen address found"
-				"(will use only the first one)":""
+				(protos[PROTO_UDP].listeners)?(
+				(protos[PROTO_UDP].listeners->next)?" and more than one listen"
+				" address found(will use only the first one)":""
 				):"and no udp listen address found" );
 	}
 	if (config_check){

@@ -49,6 +49,9 @@ int tcp_pre_connect_proc_to_tcp_main(void);
 /* same as above, but to be called after forking, both in child and parent */
 void tcp_connect_proc_to_tcp_main( int chid );
 
+/* tells how many processes the TCP layer will create */
+int tcp_count_processes(void);
+
 /* starts all TCP related processes */
 int tcp_start_processes(int *chd_rank, int *startup_done);
 

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2015 - OpenSIPS Foundation
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -44,7 +45,6 @@ static int proto_tcp_init(void);
 static int proto_tcp_api_bind(struct api_proto *proto_binds,
 		struct api_proto_net *net_binds);
 static int proto_tcp_init_listener(struct socket_info *si);
-static int proto_tcp_bind(struct socket_info *si);
 static int proto_tcp_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
 
@@ -206,7 +206,6 @@ static struct api_proto tcp_proto_binds = {
 static struct api_proto_net tcp_proto_net_binds = {
 	.id				= PROTO_TCP,
 	.flags			= PROTO_NET_USE_TCP,
-	.bind			= proto_tcp_bind,
 	.read			= (proto_net_read_f)tcp_read_req,
 	.write			= (proto_net_write_f)tcp_write_async_req,
 	.conn_init		= tcp_conn_init,
@@ -259,14 +258,6 @@ static int proto_tcp_init_listener(struct socket_info *si)
 	/* we do not do anything particular to TCP plain here, so
 	 * transparently use the generic listener init from net TCP layer */
 	return tcp_init_listener(si);
-}
-
-
-static int proto_tcp_bind(struct socket_info *sock_info)
-{
-	/* FIXME  - for TCP plain, there is nothing extra to do
-	 * but to call the underlaying networking function */
-	return -1;
 }
 
 

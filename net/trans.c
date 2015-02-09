@@ -124,7 +124,7 @@ int trans_load_proto(char *name, enum sip_protos proto)
 	}
 
 	proto_api = (api_proto_bind)find_mod_export(name_buf,
-			"api_proto_bind", 0, 0);
+			"proto_bind_api", 0, 0);
 	if (!proto_api) {
 		LM_ERR("cannot find transport API for protocol %s\n", name);
 		goto error;
@@ -331,13 +331,20 @@ int trans_init_all_listeners(void)
 
 	for (i = 0; i < proto_nr; i++)
 		if (protos[i].id != PROTO_NONE)
-			for( si=protos[i].listeners ; si ; si=si->next )
+			for( si=protos[i].listeners ; si ; si=si->next ) {
 				if (protos[i].api.init_listener(si)<0) {
 					LM_ERR("failed to init listener [%.*s], proto %s\n",
 						si->name.len, si->name.s,
 						protos[i].api.name );
 					return -1;
 				}
+				/* set first IPv4 and IPv6 listeners for this proto */
+				if ((si->address.af==AF_INET) &&
+				(!protos[i].sendipv4 || (protos[i].sendipv4->flags&SI_IS_LO)))
+					protos[i].sendipv4=si;
+				if (!protos[i].sendipv6 && (si->address.af==AF_INET6))
+					protos[i].sendipv6=si;
+			}
 
 	return 0;
 }

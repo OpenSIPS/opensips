@@ -33,7 +33,7 @@
 
 typedef int (*proto_init_f)(void);
 typedef int (*proto_init_listener_f)(struct socket_info *si);
-typedef int (*proto_send_f)(struct socket_info *si, char * buf, int len,
+typedef int (*proto_send_f)(struct socket_info *si, char* buf,unsigned int len,
 		union sockaddr_union* to, int id);
 
 struct api_proto {

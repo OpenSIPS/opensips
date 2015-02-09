@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include "mem/shm_mem.h"
 #include "net/net_tcp.h"
+#include "net/net_udp.h"
 #include "socket_info.h"
 #include "sr_module.h"
 #include "dprint.h"
@@ -51,7 +52,6 @@ unsigned int counted_processes = 0;
 int init_multi_proc_support(void)
 {
 	unsigned short proc_no;
-	struct socket_info* si;
 	#ifdef USE_TCP
 	unsigned int i;
 	#endif
@@ -63,17 +63,10 @@ int init_multi_proc_support(void)
 		/* only one UDP listener */
 		proc_no = 1;
 	} else {
-		#ifdef USE_SCTP
-		/* SCTP listeners */
-		for (si=sctp_listen; si; si=si->next)
-			proc_no+=si->children;
-		#endif
-		/* UDP listeners */
-		for (si=udp_listen; si; si=si->next)
-			proc_no+=si->children;
-		#ifdef USE_TCP
-		proc_no += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
-		#endif
+		/* UDP based listeners */
+		proc_no += udp_count_processes();
+		/* TCP based listeners */
+		proc_no += tcp_count_processes();
 		/* attendent */
 		proc_no++;
 	}
@@ -189,21 +182,13 @@ int count_init_children(int flags)
 {
 	int ret=0,i;
 	struct sr_module *m;
-	struct socket_info* si;
 
 	if (dont_fork)
 		goto skip_listeners;
 
-	/* UDP listening children */
-	for (si=udp_listen;si;si=si->next)
-		ret+=si->children;
-
-	#ifdef USE_SCTP
-	for (si=sctp_listen;si;si=si->next)
-		ret+=si->children;
-	#endif
-
-	ret += ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
+	/* listening children */
+	ret += udp_count_processes();
+	ret += tcp_count_processes();
 
 	/* attendent */
 	ret++;

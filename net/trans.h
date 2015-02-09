@@ -35,6 +35,8 @@ struct proto_info {
 
 	/* listeners on this proto */
 	struct socket_info *listeners;
+	struct socket_info *sendipv4;
+	struct socket_info *sendipv6;
 
 	/* bindings for this protocol */
 	struct api_proto api;

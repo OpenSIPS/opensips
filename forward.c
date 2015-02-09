@@ -223,71 +223,22 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 	/* check if we need to change the socket (different address families -
 	 * eg: ipv4 -> ipv6 or ipv6 -> ipv4) */
 	switch(proto){
-#ifdef USE_TCP
-		case PROTO_TCP:
-		/* on tcp just use the "main address", we don't really now the
-		 * sending address (we can find it out, but we'll need also to see
-		 * if we listen on it, and if yes on which port -> too complicated*/
-			switch(to->s.sa_family){
-				/* FIXME */
-				case AF_INET:	send_sock=sendipv4_tcp;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_tcp;
-								break;
-#endif
-				default:	LM_ERR("don't know how to forward to af %d\n",
-								to->s.sa_family);
-			}
-			break;
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			switch(to->s.sa_family){
-				/* FIXME */
-				case AF_INET:	send_sock=sendipv4_tls;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_tls;
-								break;
-#endif
-				default:	LM_ERR("don't know how"
-									" to forward to af %d\n", to->s.sa_family);
-			}
-			break;
-#endif /* USE_TLS */
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			switch(to->s.sa_family){
-				case AF_INET:	send_sock=sendipv4_sctp;
-								break;
-#ifdef USE_IPV6
-				case AF_INET6:	send_sock=sendipv6_sctp;
-								break;
-#endif
-				default:	LM_ERR("don't know how to forward to af %d\n",
-								to->s.sa_family);
-			}
-			break;
-#endif /* USE_SCTP */
 		case PROTO_UDP:
-			if ((bind_address==0)||(to->s.sa_family!=bind_address->address.af)||
-				  (bind_address->proto!=PROTO_UDP)){
-				switch(to->s.sa_family){
-					case AF_INET:	send_sock=sendipv4;
-									break;
-#ifdef USE_IPV6
-					case AF_INET6:	send_sock=sendipv6;
-									break;
-#endif
-					default:	LM_ERR("don't know how to forward to af %d\n",
-										to->s.sa_family);
-				}
-			}else send_sock = (msg && msg->rcv.bind_address->address.af==bind_address->address.af &&
-				msg->rcv.bind_address->proto==bind_address->proto)? msg->rcv.bind_address : bind_address;
-			break;
+			if ((bind_address)&&(to->s.sa_family==bind_address->address.af)&&
+			(bind_address->proto==PROTO_UDP)) {
+				send_sock = (msg &&
+				msg->rcv.bind_address->address.af==bind_address->address.af &&
+				msg->rcv.bind_address->proto==bind_address->proto) ?
+					msg->rcv.bind_address : bind_address;
+				break;
+			}
+			/* default logic for all protos */
 		default:
-			LM_CRIT("unknown proto %d\n", proto);
+			/* we don't really now the sending address (we can find it out,
+			 * but we'll need also to see if we listen on it, and if yes on
+			 * which port -> too complicated*/
+			send_sock = (to->s.sa_family==AF_INET) ?
+				protos[proto].sendipv4 : protos[proto].sendipv6;
 	}
 	return send_sock;
 }

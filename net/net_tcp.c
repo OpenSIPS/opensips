@@ -1550,6 +1550,12 @@ void tcp_connect_proc_to_tcp_main( int child )
 }
 
 
+int tcp_count_processes(void)
+{
+	return ((!tcp_disable)?( 1/* tcp main */ + tcp_children_no ):0);
+}
+
+
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {
 	int r, n;

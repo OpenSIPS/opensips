@@ -26,11 +26,16 @@
 #ifndef _NET_UDP_H_
 #define _NET_UDP_H_
 
+#include "../socket_info.h"
+
 // initializes the udp structures
 int udp_init(void);
 
 // destroys the udp data
 void udp_destroy(void);
+
+/* tells how mnay processes the UDP layer will create */
+int udp_count_processes(void);
 
 // looks for the transport protocol that knows how to handle the
 // proto and calls the corresponding add_listener() function

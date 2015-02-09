@@ -81,6 +81,8 @@ extern int tcp_keepcount;
 extern int tcp_keepidle;
 extern int tcp_keepinterval;
 extern int tcp_max_msg_time;
+extern int tcp_no_new_conn; // FIXME TCP  - to be removed
+extern int tcp_no_new_conn_bflag;
 #endif
 #ifdef USE_TLS
 extern int tls_disable;

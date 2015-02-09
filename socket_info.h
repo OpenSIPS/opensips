@@ -36,19 +36,9 @@
 #include "ip_addr.h"
 #include "dprint.h"
 #include "globals.h"
+#include "net/trans.h"
 #include "ut.h"
 /* struct socket_info is defined in ip_addr.h */
-
-extern struct socket_info* udp_listen;
-#ifdef USE_TCP
-extern struct socket_info* tcp_listen;
-#endif
-#ifdef USE_TLS
-extern struct socket_info* tls_listen;
-#endif
-#ifdef USE_SCTP
-extern struct socket_info* sctp_listen;
-#endif
 
 #define NUM_IP_OCTETS	4
 
@@ -127,93 +117,16 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 	} while(0)
 
 
-static inline struct socket_info** get_sock_info_list(unsigned short proto)
-{
-
-	switch(proto){
-		case PROTO_UDP:
-			return &udp_listen;
-			break;
-#ifdef USE_TCP
-		case PROTO_TCP:
-			return &tcp_listen;
-			break;
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-			return &tls_listen;
-			break;
-#endif
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			return &sctp_listen;
-			break;
-#endif
-		default:
-			LM_CRIT("invalid proto %d\n", proto);
-	}
-	return 0;
-}
-
 
 /*! \brief helper function:
  * \return next protocol, if the last one is reached return 0
  * \note useful for cycling on the supported protocols */
 static inline int next_proto(unsigned short proto)
 {
-	switch(proto){
-		case PROTO_NONE:
-			return PROTO_UDP;
-		case PROTO_UDP: /* UDP -> [TCP | SCTP] */
-#ifdef	USE_TCP
-			if(!tcp_disable)
-				return PROTO_TCP;
-#ifdef USE_SCTP
-			return (sctp_disable)?0:PROTO_SCTP;
-#else
-			return 0;
-#endif
-#else
-#ifdef USE_SCTP
-			return (sctp_disable)?0:PROTO_SCTP;
-#else
-			return 0;
-#endif
-#endif
-#ifdef USE_TCP
-		case PROTO_TCP: /* TCP -> [TLS | SCTP] */
-#ifdef USE_TLS
-			if (!tls_disable)
-				return PROTO_TLS;
-#ifdef USE_SCTP
-			return (sctp_disable)?0:PROTO_SCTP;
-#else
-			return 0;
-#endif
-#else
-#ifdef USE_SCTP
-			return (sctp_disable)?0:PROTO_SCTP;
-#else
-			return 0;
-#endif
-#endif
-#endif
-#ifdef USE_TLS
-		case PROTO_TLS:
-#ifdef USE_SCTP
-			return (sctp_disable)?0:PROTO_SCTP;
-#else
-			return 0;
-#endif
-#endif
-#ifdef USE_SCTP
-		case PROTO_SCTP:
-			return 0;
-#endif
-		default:
-			LM_ERR("unknown proto %d\n", proto);
-	}
-	return 0;
+	for( proto++ ; proto<PROTO_LAST ; proto++ )
+		if (protos[proto].id!=PROTO_NONE)
+			return proto;
+	return PROTO_NONE;
 }
 
 
@@ -223,17 +136,13 @@ static inline int next_proto(unsigned short proto)
  */
 inline static struct socket_info* get_first_socket(void)
 {
-	if (udp_listen) return udp_listen;
-#ifdef USE_TCP
-	else if (tcp_listen) return tcp_listen;
-#ifdef USE_TLS
-	else if (tls_listen) return tls_listen;
-#endif
-#endif
-#ifdef USE_SCTP
-	else if (sctp_listen) return sctp_listen;
-#endif
-	return 0;
+	int p;
+
+	for( p=0 ; p<PROTO_LAST ; p++ )
+		if (protos[p].listeners)
+			return protos[p].listeners;
+
+	return NULL;
 }
 
 

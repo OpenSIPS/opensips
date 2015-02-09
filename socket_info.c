@@ -102,6 +102,9 @@
 	}while(0)
 
 
+#define get_sock_info_list(_proto) \
+	&protos[_proto].listeners
+
 
 /* another helper function, it just creates a socket_info struct */
 inline struct socket_info* new_sock_info(	char* name,
@@ -229,11 +232,8 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 #endif
 	c_proto=proto?proto:PROTO_UDP;
 	do{
-		/* get the proper sock_list */
-		if (c_proto==PROTO_NONE)
-			list=&udp_listen;
-		else
-			list=get_sock_info_list(c_proto);
+		/* "proto" is all the time valid here */
+		list=get_sock_info_list(c_proto);
 
 		if (list==0){
 			LM_WARN("unknown proto %d\n", c_proto);
@@ -317,10 +317,7 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 	c_proto=proto?proto:PROTO_UDP;
 	do{
 		/* get the proper sock_list */
-		if (c_proto==PROTO_NONE)
-			list=&udp_listen;
-		else
-			list=get_sock_info_list(c_proto);
+		list=get_sock_info_list(c_proto);
 
 		if (list==0){
 			LM_WARN("unknown proto %d\n", c_proto);
@@ -794,14 +791,14 @@ error:
 
 
 /*
- * This function will retrieve a list of all ip addresses and ports that OpenSER
- * is listening on, with respect to the transport protocol specified with
- * 'protocol'.
+ * This function will retrieve a list of all ip addresses and ports that
+ * OpenSIPS is listening on, with respect to the transport protocol specified
+ * with 'protocol'.
  *
- * The first parameter, ipList, is a pointer to a pointer. It will be assigned a
- * new block of memory holding the IP Addresses and ports being listened to with
- * respect to 'protocol'.  The array maps a 2D array into a 1 dimensional space,
- * and is layed out as follows:
+ * The first parameter, ipList, is a pointer to a pointer. It will be assigned
+ * a new block of memory holding the IP Addresses and ports being listened to 
+ * with respect to 'protocol'.  The array maps a 2D array into a 1 dimensional 
+ * space, and is layed out as follows:
  *
  * The first NUM_IP_OCTETS indices will be the IP address, and the next index
  * the port.  So if NUM_IP_OCTETS is equal to 4 and there are two IP addresses
@@ -814,15 +811,15 @@ error:
  *  - iplist[5] will be the first octet of the first ip address,
  *  - and so on.
  *
- * The function will return the number of sockets which were found.  This can be
- * used to index into ipList.
+ * The function will return the number of sockets which were found.  This can
+ * be used to index into ipList.
  *
  * NOTE: This function assigns a block of memory equal to:
  *
  *            returnedValue * (NUM_IP_OCTETS + 1) * sizeof(int);
  *
- *       Therefore it is CRUCIAL that you free ipList when you are done with its
- *       contents, to avoid a nasty memory leak.
+ *       Therefore it is CRUCIAL that you free ipList when you are done with
+ *       its contents, to avoid a nasty memory leak.
  */
 int get_socket_list_from_proto(int **ipList, int protocol) {
 
