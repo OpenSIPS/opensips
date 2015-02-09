@@ -50,9 +50,16 @@ static int proto_tcp_send(struct socket_info* send_sock,
 
 static int tcp_write_async_req(struct tcp_connection* con);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
+static int tcp_conn_init(struct tcp_connection* c);
+static void tcp_conn_clean(struct tcp_connection* c);
 
 
 #define TCP_BUF_SIZE 65535			/*!< TCP buffer size */
+
+/*!< the max number of chunks that a child accepts until the message
+ * is read completely - anything above will lead to the connection being
+ * closed - considered an attack */
+#define TCP_CHILD_MAX_MSG_CHUNK  4
 
 enum tcp_req_errors {	TCP_REQ_INIT, TCP_REQ_OK, TCP_READ_ERROR,
 		TCP_REQ_OVERRUN, TCP_REQ_BAD_LEN };
@@ -82,6 +89,27 @@ struct tcp_req{
 	enum tcp_req_states state;
 };
 
+
+struct tcp_send_chunk {
+	char *buf; /* buffer that needs to be sent out */
+	char *pos; /* the position that we should be writing next */
+	int len;   /* length of the buffer */
+	int ticks; /* time at which this chunk was initially
+				  attempted to be written */
+};
+
+
+struct tcp_data {
+	/* the chunks that need to be written on this
+	 * connection when it will become writable */
+	struct tcp_send_chunk **async_chunks;
+	/* the total number of chunks pending to be written */
+	int async_chunks_no;
+	/* the oldest chunk in our write list */
+	int oldest_chunk;
+};
+
+
 //FIXME - expose below as module param
 /*!< should a new TCP conn be open if needed? - branch flag to be set in
  * the SIP messages - configuration option */
@@ -89,6 +117,8 @@ int tcp_no_new_conn_bflag = 0;
 /*!< should a new TCP conn be open if needed? - variable used to used for
  * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
 int tcp_no_new_conn = 0;
+int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
+
 
 /* buffer to be used for reading all TCP SIP messages
    detached from the actual con - in order to improve
@@ -126,19 +156,6 @@ struct module_exports exports = {
 	0,          /* per-child init function */
 };
 
-static int proto_tcp_init(void)
-{
-	LM_INFO("initializing TCP\n");
-	return 0;
-}
-
-
-static int mod_init(void)
-{
-	LM_INFO("initializing...\n");
-	return 0;
-}
-
 static struct api_proto tcp_proto_binds = {
 	.name			= "tcp",
 	.default_port	= SIP_PORT,
@@ -153,20 +170,27 @@ static struct api_proto_net tcp_proto_net_binds = {
 	.bind			= proto_tcp_bind,
 	.read			= (proto_net_read_f)tcp_read_req,
 	.write			= (proto_net_write_f)tcp_write_async_req,
+	.conn_init		= tcp_conn_init,
+	.conn_clean		= tcp_conn_clean,
 };
 
 
-#define init_tcp_req( r, _size) \
-	do{ \
-		(r)->parsed=(r)->start=(r)->buf; \
-		(r)->pos=(r)->buf + (_size); \
-		(r)->error=TCP_REQ_OK;\
-		(r)->state=H_SKIP_EMPTY; \
-		(r)->body=0; \
-		(r)->complete=(r)->content_len=(r)->has_content_len=0; \
-		(r)->bytes_to_go=0; \
-	}while(0)
+static int proto_tcp_init(void)
+{
+	LM_INFO("initializing TCP-plain protocol\n");
+	return 0;
+}
 
+
+static int mod_init(void)
+{
+	/* without async support, there is nothing to init/clean per conn */
+	if (tcp_async==0) {
+		tcp_proto_net_binds.conn_init = NULL;
+		tcp_proto_net_binds.conn_clean = NULL;
+	}
+	return 0;
+}
 
 static int proto_tcp_api_bind(struct api_proto *proto_api,
 										struct api_proto_net *proto_net_api)
@@ -200,6 +224,53 @@ static int proto_tcp_bind(struct socket_info *sock_info)
 	 * but to call the underlaying networking function */
 	return -1;
 }
+
+
+static int tcp_conn_init(struct tcp_connection* c)
+{
+	struct tcp_data *d;
+
+	/* allocate the tcp_data and the array of chunks as a single mem chunk */
+	d = (struct tcp_data*)shm_malloc( sizeof(*d) +
+		sizeof(struct tcp_send_chunk *) * tcp_async_max_postponed_chunks );
+	if (d==NULL) {
+		LM_ERR("failed to create tcp chunks in shm mem\n");
+		return -1;
+	}
+
+	d->async_chunks = (struct tcp_send_chunk **)(d+1);
+	d->async_chunks_no = 0;
+	d->oldest_chunk = 0;
+
+	c->proto_data = (void*)d;
+	return 0;
+}
+
+
+static void tcp_conn_clean(struct tcp_connection* c)
+{
+	struct tcp_data *d = (struct tcp_data*)c->proto_data;
+	int r;
+
+	for (r=0;r<d->async_chunks_no;r++) {
+		shm_free(d->async_chunks[r]);
+	}
+
+	shm_free(d);
+	c->proto_data = NULL;
+}
+
+
+#define init_tcp_req( r, _size) \
+	do{ \
+		(r)->parsed=(r)->start=(r)->buf; \
+		(r)->pos=(r)->buf + (_size); \
+		(r)->error=TCP_REQ_OK;\
+		(r)->state=H_SKIP_EMPTY; \
+		(r)->body=0; \
+		(r)->complete=(r)->content_len=(r)->has_content_len=0; \
+		(r)->bytes_to_go=0; \
+	}while(0)
 
 
 /*! \brief reads next available bytes
@@ -267,6 +338,7 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 					int lock)
 {
 	struct tcp_send_chunk *c;
+	struct tcp_data *d = (struct tcp_data*)con->proto_data;
 
 	c = shm_malloc(sizeof(struct tcp_send_chunk) + len);
 	if (!c) {
@@ -283,7 +355,7 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 	if (lock)
 		lock_get(&con->write_lock);
 
-	if (con->async_chunks_no == tcp_async_max_postponed_chunks) {
+	if (d->async_chunks_no == tcp_async_max_postponed_chunks) {
 		LM_ERR("We have reached the limit of max async postponed chunks\n");
 		if (lock)
 			lock_release(&con->write_lock);
@@ -291,9 +363,9 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 		return -2;
 	}
 
-	con->async_chunks[con->async_chunks_no++] = c;
-	if (con->async_chunks_no == 1)
-		con->oldest_chunk = c->ticks;
+	d->async_chunks[d->async_chunks_no++] = c;
+	if (d->async_chunks_no == 1)
+		d->oldest_chunk = c->ticks;
 
 	if (lock)
 		lock_release(&con->write_lock);
@@ -841,15 +913,16 @@ static int tcp_write_async_req(struct tcp_connection* con)
 {
 	int n,left;
 	struct tcp_send_chunk *chunk;
+	struct tcp_data *d = (struct tcp_data*)con->proto_data;
 
-	if (con->async_chunks_no == 0) {
+	if (d->async_chunks_no == 0) {
 		LM_DBG("The connection has been triggered "
 		" for a write event - but we have no pending write chunks\n");
 		return 0;
 	}
 
 next_chunk:
-	chunk=con->async_chunks[0];
+	chunk=d->async_chunks[0];
 again:
 	left = (int)((chunk->buf+chunk->len)-chunk->pos);
 	LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
@@ -885,18 +958,18 @@ again:
 	} else {
 		/* written a full chunk - move to the next one, if any */
 		shm_free(chunk);
-		con->async_chunks_no--;
-		if (con->async_chunks_no == 0) {
+		d->async_chunks_no--;
+		if (d->async_chunks_no == 0) {
 			LM_DBG("We have finished writing all our async chunks in %p\n",con);
-			con->oldest_chunk=0;
+			d->oldest_chunk=0;
 			/*  report back everything ok */
 			return 0;
 		} else {
 			LM_DBG("We still have %d chunks pending on %p\n",
-					con->async_chunks_no,con);
-			memmove(&con->async_chunks[0],&con->async_chunks[1],
-					con->async_chunks_no * sizeof(struct tcp_send_chunk*));
-			con->oldest_chunk = con->async_chunks[0]->ticks;
+					d->async_chunks_no,con);
+			memmove(&d->async_chunks[0],&d->async_chunks[1],
+					d->async_chunks_no * sizeof(struct tcp_send_chunk*));
+			d->oldest_chunk = d->async_chunks[0]->ticks;
 			goto next_chunk;
 		}
 	}

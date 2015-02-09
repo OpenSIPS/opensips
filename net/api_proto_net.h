@@ -26,6 +26,8 @@
 #ifndef _API_PROTO_NET_H_
 #define _API_PROTO_NET_H_
 
+#include "tcp_conn_defs.h"
+
 /* api_proto_net flags */
 #define PROTO_NET_USE_TCP	(1<<0) /* set by proto's that are based on TCP */
 #define PROTO_NET_USE_UDP	(1<<1) /* set by proto's that are based on UDP */
@@ -34,6 +36,8 @@
 typedef int (*proto_net_bind_f)(struct socket_info *si);
 typedef int (*proto_net_write_f)(void *src);
 typedef int (*proto_net_read_f)(void *src, int *len);
+typedef int (*proto_net_conn_init_f)(struct tcp_connection *c);
+typedef void (*proto_net_conn_clean_f)(struct tcp_connection *c);
 
 struct api_proto_net {
 	int						id;
@@ -41,6 +45,8 @@ struct api_proto_net {
 	proto_net_bind_f		bind;
 	proto_net_write_f		write;
 	proto_net_read_f		read;
+	proto_net_conn_init_f	conn_init;
+	proto_net_conn_clean_f	conn_clean;
 };
 
 #endif /*_API_PROTO_NET_H_ */

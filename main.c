@@ -180,11 +180,6 @@ int tcp_children_no = 0;
 int tcp_disable = 0; /* 1 if tcp is disabled */
 int tcp_crlf_pingpong = 1; /* 0: send CRLF pong to incoming CRLFCRLF ping */
 int tcp_crlf_drop = 0; /* 0: do not drop single CRLF messages */
-int tcp_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK; /* Max number of chunks that
-													 we except to receive a SIP
-													 message - anything above will
-													 lead to the connection
-													 being treat as broken & closed */
 int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
 												   we except a full SIP message
 												   to arrive in - anything above

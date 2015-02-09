@@ -555,14 +555,9 @@ static void _tcpconn_rm(struct tcp_connection* c)
 		tcpconn_listrm(TCP_PART(c->id).tcpconn_aliases_hash[c->con_aliases[r].hash],
 			&c->con_aliases[r], next, prev);
 	lock_destroy(&c->write_lock);
-#ifdef USE_TLS
-	/* FIXME */
-	if (c->type==PROTO_TLS) tls_tcpconn_clean(c);
-#endif
 
-	for (r=0;r<c->async_chunks_no;r++) {
-		shm_free(c->async_chunks[r]);
-	}
+	if (proto_net_binds[c->type].conn_clean)
+		proto_net_binds[c->type].conn_clean(c);
 
 	shm_free(c);
 }
@@ -572,6 +567,7 @@ static void _tcpconn_rm(struct tcp_connection* c)
 static void tcpconn_rm(struct tcp_connection* c)
 {
 	int r;
+
 	TCPCONN_LOCK(c->id);
 	tcpconn_listrm(TCP_PART(c->id).tcpconn_id_hash[c->id_hash], c,
 		id_next, id_prev);
@@ -582,10 +578,10 @@ static void tcpconn_rm(struct tcp_connection* c)
 			&c->con_aliases[r], next, prev);
 	TCPCONN_UNLOCK(c->id);
 	lock_destroy(&c->write_lock);
-#ifdef USE_TLS
-	/* FIXME TLS*/
-	if ((c->type==PROTO_TLS)&&(c->extra_data)) tls_tcpconn_clean(c);
-#endif
+
+	if (proto_net_binds[c->type].conn_clean)
+		proto_net_binds[c->type].conn_clean(c);
+
 	shm_free(c);
 }
 #endif
@@ -601,7 +597,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 
 	a=0;
 	/* fix the port */
-	port=port?port:((proto==PROTO_TLS)?SIPS_PORT:SIP_PORT);
+	port=port ? port : protos[proto].default_port ;
 	TCPCONN_LOCK(id);
 	/* check if alias already exists */
 	c=_tcpconn_find(id);
@@ -699,33 +695,25 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->rcv.proto_reserved2=0;
 	c->state=state;
 	c->extra_data=0;
-#ifdef USE_TLS
-	/* FIXME - this to be moved up in the proto layer */
-	if (type==PROTO_TLS){
-		if (tls_tcpconn_init(c, sock)==-1) goto error;
-	}else
-#endif /* USE_TLS*/
-	{
-		c->type=PROTO_TCP;
-		c->rcv.proto=PROTO_TCP;
-		c->timeout=get_ticks()+tcp_con_lifetime;
-	}
+	c->type = type;
+	c->rcv.proto = type;
+	c->timeout=get_ticks()+tcp_con_lifetime;
 	c->flags|=F_CONN_REMOVED;
 
-	if (tcp_async) {
-		c->async_chunks = shm_malloc(sizeof(struct tcp_send_chunk *) *
-									 tcp_async_max_postponed_chunks);
-		if (c->async_chunks == NULL) {
-			LM_ERR("No more SHM for send chunks pointers \n");
-			goto error;
-		}
+	if (proto_net_binds[type].conn_init &&
+	proto_net_binds[type].conn_init(c)<0) {
+		LM_ERR("failed to do proto %d specific init for conn %p\n",type,c);
+		goto error;
 	}
 
 	tcp_connections_no++;
 	return c;
 
 error:
-	if (c) shm_free(c);
+	if (c) {
+		if (c->write_lock) lock_destroy(&c->write_lock);
+		shm_free(c);
+	}
 	return 0;
 }
 

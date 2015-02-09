@@ -36,21 +36,16 @@
 #ifndef _NET_tcp_conn_defs_h
 #define _NET_tcp_conn_defs_h
 
+#include "../locking.h"
 #include "../ip_addr.h"
 
 /*!< Maximum number of port aliases */
 #define TCP_CON_MAX_ALIASES  4
 
-/*!< the max number of chunks that a child accepts until the message
- * is read completely - anything above will lead to the connection being
- * closed - considered an attack */
-#define TCP_CHILD_MAX_MSG_CHUNK  4
-
 /*!< the max number of seconds that a child waits  until the message is 
  * ead completely - anything above will lead to the connection being closed
  * and considered an attack */
 #define TCP_CHILD_MAX_MSG_TIME  4
-
 
 /* tcp connection flags */
 #define F_CONN_NON_BLOCKING   1
@@ -72,14 +67,6 @@ struct tcp_conn_alias{
 	unsigned short hash;			/*!< hash index in the address hash */
 };
 
-
-struct tcp_send_chunk{
-	char *buf; /* buffer that needs to be sent out */
-	char *pos; /* the position that we should be writing next */
-	int len;   /* length of the buffer */
-	int ticks; /* time at which this chunk was initially
-				  attempted to be written */
-};
 
 /*! \brief TCP connection structure */
 struct tcp_connection{
@@ -104,10 +91,8 @@ struct tcp_connection{
 	int aliases;				/*!< Number of aliases, at least 1 */
 	struct tcp_req *con_req;	/*!< Per connection req buffer */
 	unsigned int msg_attempts;	/*!< how many read attempts we have done for the last request */
-	struct tcp_send_chunk **async_chunks; /*!< the chunks that need to be written on this
-										   connection when it will become writable */
-	int async_chunks_no; /* the total number of chunks pending to be written */
-	int oldest_chunk; /* the oldest chunk in our write list */
+	/* protocol specific data attached to this connection */
+	void *proto_data;
 };
 
 
