@@ -248,6 +248,14 @@ void bson_to_json_generic(struct json_object *obj,bson_iterator *it,int type)
 						else if (type == BSON_ARRAY)
 							json_object_array_add(obj,json_object_new_int((int)bson_iterator_bool(it)));
 						break;
+					case BSON_DATE:
+						LM_DBG("Found key %s with type date\n",curr_key);
+						if (type == BSON_OBJECT)
+							json_object_object_add(obj,curr_key,
+									json_object_new_int((int)(bson_iterator_date(it)/1000)));
+						else if (type == BSON_ARRAY)
+							json_object_array_add(obj,json_object_new_int((int)(bson_iterator_date(it)/1000)));
+						break;
 					case BSON_ARRAY:
 						LM_DBG("Found key %s with type array\n",curr_key);
 						obj2 = json_object_new_array();
