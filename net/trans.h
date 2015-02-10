@@ -28,18 +28,30 @@
 
 #include "../ip_addr.h"
 #include "api_proto.h"
+#include "api_proto_net.h"
 
 struct proto_info {
 	/* proto as ID */
 	enum sip_protos id;
 
+	/* the name of the protocol */
+	char *name;
+
+	/* the default protocol */
+	unsigned short default_port;
+
+	/* bindings for the transport interface */
+	struct api_proto tran;
+
+	/* bindings for the net interface */
+	struct api_proto_net net;
+
 	/* listeners on this proto */
 	struct socket_info *listeners;
+
+	/* default sending interfaces */
 	struct socket_info *sendipv4;
 	struct socket_info *sendipv6;
-
-	/* bindings for this protocol */
-	struct api_proto api;
 };
 
 extern struct proto_info *protos;
@@ -48,6 +60,11 @@ extern struct proto_info *protos;
  * initializes transport interface structures
  */
 int trans_init(void);
+
+/*
+ * destroys the transport interface structures
+ */
+void trans_destroy(void);
 
 /*
  * loads the transport protocol
@@ -87,7 +104,7 @@ static inline char* get_proto_name(unsigned short proto)
 		return "*";
 	if (proto >= PROTO_LAST || protos[proto].id == PROTO_NONE)
 		return "unknown";
-	return protos[proto].api.name;
+	return protos[proto].name;
 }
 
 #endif /* _TRANS_TI_H_ */

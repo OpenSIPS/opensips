@@ -43,7 +43,7 @@
 static int mod_init(void);
 static int proto_tcp_init(void);
 static int proto_tcp_api_bind(struct api_proto *proto_binds,
-		struct api_proto_net *net_binds);
+		struct api_proto_net *net_binds, unsigned short *port);
 static int proto_tcp_init_listener(struct socket_info *si);
 static int proto_tcp_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
@@ -196,15 +196,12 @@ struct module_exports exports = {
 };
 
 static struct api_proto tcp_proto_binds = {
-	.name			= "tcp",
-	.default_port	= SIP_PORT,
 	.init			= proto_tcp_init,
 	.init_listener	= proto_tcp_init_listener,
 	.send			= proto_tcp_send,
 };
 
 static struct api_proto_net tcp_proto_net_binds = {
-	.id				= PROTO_TCP,
 	.flags			= PROTO_NET_USE_TCP,
 	.read			= (proto_net_read_f)tcp_read_req,
 	.write			= (proto_net_write_f)tcp_write_async_req,
@@ -236,18 +233,12 @@ static int mod_init(void)
 }
 
 static int proto_tcp_api_bind(struct api_proto *proto_api,
-										struct api_proto_net *proto_net_api)
+		struct api_proto_net *net_binds, unsigned short *port)
 {
-	if (!proto_api || !proto_net_api)
-		return -1;
-/*
- * TODO: memset + set or simply copy the structures?
-	memset(funcs, 0, sizeof(struct proto_funcs));
-	funcs.init = net_tcp_init;
- */
 	memcpy(proto_api, &tcp_proto_binds, sizeof(struct api_proto));
-	memcpy(proto_net_api, &tcp_proto_net_binds,
+	memcpy(net_binds, &tcp_proto_net_binds,
 			sizeof(struct api_proto_net));
+	*port = SIP_PORT;
 
 	return 0;
 }

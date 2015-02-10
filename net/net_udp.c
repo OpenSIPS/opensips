@@ -25,7 +25,6 @@
 
 
 
-#include "net.h"
 #include "net_udp.h"
 
 /* tells how many processes the UDP layer will create */
@@ -36,7 +35,7 @@ int udp_count_processes(void)
 
 	for( i=0,n=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE &&
-		proto_net_binds[i].flags&PROTO_NET_USE_UDP )
+				protos[i].net.flags&PROTO_NET_USE_UDP)
 			for( si=protos[i].listeners ; si; si=si->next)
 				n+=si->children;
 

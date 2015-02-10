@@ -51,7 +51,6 @@
 #include "net_tcp_proc.h"
 #include "net_tcp.h"
 #include "tcp_conn.h"
-#include "net.h"
 #include "trans.h"
 
 
@@ -556,8 +555,8 @@ static void _tcpconn_rm(struct tcp_connection* c)
 			&c->con_aliases[r], next, prev);
 	lock_destroy(&c->write_lock);
 
-	if (proto_net_binds[c->type].conn_clean)
-		proto_net_binds[c->type].conn_clean(c);
+	if (protos[c->type].net.conn_clean)
+		protos[c->type].net.conn_clean(c);
 
 	shm_free(c);
 }
@@ -579,8 +578,8 @@ static void tcpconn_rm(struct tcp_connection* c)
 	TCPCONN_UNLOCK(c->id);
 	lock_destroy(&c->write_lock);
 
-	if (proto_net_binds[c->type].conn_clean)
-		proto_net_binds[c->type].conn_clean(c);
+	if (protos[c->type].net.conn_clean)
+		protos[c->type].net.conn_clean(c);
 
 	shm_free(c);
 }
@@ -597,7 +596,7 @@ int tcpconn_add_alias(int id, int port, int proto)
 
 	a=0;
 	/* fix the port */
-	port=port ? port : protos[proto].api.default_port ;
+	port=port ? port : protos[proto].default_port ;
 	TCPCONN_LOCK(id);
 	/* check if alias already exists */
 	c=_tcpconn_find(id);
@@ -700,8 +699,8 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->timeout=get_ticks()+tcp_con_lifetime;
 	c->flags|=F_CONN_REMOVED;
 
-	if (proto_net_binds[type].conn_init &&
-	proto_net_binds[type].conn_init(c)<0) {
+	if (protos[type].net.conn_init &&
+	protos[type].net.conn_init(c)<0) {
 		LM_ERR("failed to do proto %d specific init for conn %p\n",type,c);
 		goto error;
 	}
@@ -1360,7 +1359,7 @@ void tcp_main_server(void)
 
 	/* add all the sockets we listens on for connections */
 	for( n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
-		if (proto_net_binds[n].flags&PROTO_NET_USE_TCP)
+		if (protos[n].net.flags&PROTO_NET_USE_TCP)
 			for( si=protos[n].listeners ; si ; si=si->next ) {
 				if ( (si->socket!=-1) &&
 				reactor_add_reader( si->socket, F_TCP_LISTENER, si)<0 ) {
@@ -1572,7 +1571,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	 *  + 1 udp sock/udp proc + 1 tcp_child sock/tcp child*
 	 *  + no_listen_tcp */
 	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
-		if (proto_net_binds[n].flags&PROTO_NET_USE_TCP)
+		if (protos[n].net.flags&PROTO_NET_USE_TCP)
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
 	tcp_max_fd_no=counted_processes*2 + r - 1/*timer*/ + 3/*stdin/out/err*/;

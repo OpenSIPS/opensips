@@ -39,7 +39,6 @@ typedef int (*proto_net_conn_init_f)(struct tcp_connection *c);
 typedef void (*proto_net_conn_clean_f)(struct tcp_connection *c);
 
 struct api_proto_net {
-	int						id;
 	int						flags;
 	proto_net_write_f		write;
 	proto_net_read_f		read;

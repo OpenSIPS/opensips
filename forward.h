@@ -115,7 +115,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	/* update the length for further processing */
 	len = out_buff.len;
 
-	if (protos[proto].api.send(send_sock, out_buff.s, out_buff.len, to, id)<0){
+	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to, id)<0){
 		LM_ERR("send() for proto %d failed\n",proto);
 		goto error;
 	}

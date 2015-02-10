@@ -26,14 +26,13 @@
 #include <string.h>
 #include "trans.h"
 #include "api_proto.h"
-#include "net.h"
 #include "../mem/mem.h"
 #include "../sr_module.h"
 #include "../socket_info.h"
 #include "proto_tcp/proto_tcp_handler.h"
 
 
-/* we alocate this dinamically because we don't know how when new protocols
+/* we alocate this dynamically because we don't know how when new protocols
  * are developed. Since this is done only once, it's not that bad */
 struct proto_info *protos;
 
@@ -53,13 +52,16 @@ int trans_init(void)
 
 	memset(protos, 0, proto_nr * sizeof(struct proto_info));
 
-	if (init_net_interface(proto_nr) < 0) {
-		LM_ERR("cannot init network interface\n");
-		pkg_free(protos);
-		return -1;
-	}
-
 	return 0;
+}
+
+void trans_destroy(void)
+{
+	int i;
+	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
+		if (protos[i].id != PROTO_NONE)
+			pkg_free(protos[i].name);
+	pkg_free(protos);
 }
 
 #define PROTO_PREFIX_LEN (sizeof(PROTO_PREFIX) - 1)
@@ -129,20 +131,26 @@ int trans_load_proto(char *name, enum sip_protos proto)
 		LM_ERR("cannot find transport API for protocol %s\n", name);
 		goto error;
 	}
-	if (proto_api(&protos[proto].api,
-			&proto_net_binds[proto]) < 0) {
+	if (proto_api(&protos[proto].tran,
+			&protos[proto].net, &protos[proto].default_port) < 0) {
 		LM_ERR("cannot bind transport API for protocol %s\n", name);
 		goto error;
 	}
+	protos[proto].name = pkg_malloc(len + 1);
+	if (!protos[proto].name) {
+		LM_ERR("cannot allocate space for protocol's name\n");
+		goto error;
+	}
+	memcpy(protos[proto].name, name_buf + PROTO_PREFIX_LEN, len + 1);
 
 	/* initialize the module */
-	if (protos[proto].api.init && protos[proto].api.init() < 0) {
+	if (protos[proto].tran.init && protos[proto].tran.init() < 0) {
 		LM_ERR("cannot initialzie protocol %s\n", name);
 		goto error;
 	}
 	protos[proto].id = proto;
 
-	LM_DBG("Loaded <%.*s> protocol handlers\n", len, name_buf + 4);
+	LM_DBG("Loaded <%s> protocol handlers\n", protos[proto].name);
 
 	return 0;
 error:
@@ -172,7 +180,7 @@ int add_listener(struct socket_id *sock, enum si_flags flags)
 		return -1;
 	}
 	/* fix the socket's protocol */
-	port = sock->port ? sock->port : pi->api.default_port;
+	port = sock->port ? sock->port : pi->default_port;
 
 	/* convert to socket_info */
 	if (new_sock2list(sock->name, port, sock->proto, sock->adv_name, sock->adv_port,
@@ -332,10 +340,10 @@ int trans_init_all_listeners(void)
 	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
 		if (protos[i].id != PROTO_NONE)
 			for( si=protos[i].listeners ; si ; si=si->next ) {
-				if (protos[i].api.init_listener(si)<0) {
+				if (protos[i].tran.init_listener(si)<0) {
 					LM_ERR("failed to init listener [%.*s], proto %s\n",
 						si->name.len, si->name.s,
-						protos[i].api.name );
+						protos[i].name );
 					return -1;
 				}
 				/* set first IPv4 and IPv6 listeners for this proto */
@@ -360,7 +368,7 @@ void print_all_socket_lists(void)
 			continue;
 
 		for (si = protos[i].listeners; si; si = si->next)
-			printf("             %s: %s [%s]:%s%s\n", protos[i].api.name,
+			printf("             %s: %s [%s]:%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "");
 	}
