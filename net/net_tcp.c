@@ -433,14 +433,15 @@ found:
 	c->timeout=get_ticks()+timeout;
 	TCPCONN_UNLOCK(part);
 
-	if (c->state!=S_CONN_OK) {
+	LM_DBG("con found in state %d\n",c->state);
+	if (c->state<S_CONN_OK) {
 		/* no need to aquired, just return the conn with an invalid fd */
 		*conn = c;
 		*conn_fd = -1;
 		return 1;
 	}
 
-	/* TODO - check if conn is not already in this process, in this
+	/* FIXME - check if conn is not already in this process, in this
 	 case we do not need to perfrom aquire ! */
 
 	/* aquire the fd for this connection too */
@@ -455,7 +456,7 @@ found:
 		n=-1;
 		goto error;
 	}
-	LM_DBG("c= %p, n=%d\n", c, n);
+	LM_DBG("c= %p, n=%d, Usock=%d\n", c, n, unix_tcp_sock);
 	tmp = c;
 	n=receive_fd(unix_tcp_sock, &c, sizeof(c), &fd, MSG_WAITALL);
 	if (n<=0){
@@ -1516,7 +1517,7 @@ void tcp_destroy(void)
 }
 
 
-int tcp_pre_connect_proc_to_tcp_main(void)
+int tcp_pre_connect_proc_to_tcp_main( int proc_no)
 {
 	int sockfd[2];
 
@@ -1529,19 +1530,19 @@ int tcp_pre_connect_proc_to_tcp_main(void)
 	}
 
 	unix_tcp_sock = sockfd[1];
-	pt[process_no].unix_sock = sockfd[0];
+	pt[proc_no].unix_sock = sockfd[0];
 
 	return 0;
 }
 
 
-void tcp_connect_proc_to_tcp_main( int child )
+void tcp_connect_proc_to_tcp_main( int proc_no, int child )
 {
 	if(tcp_disable)
 		return;
 
 	if (child) {
-		close( pt[process_no].unix_sock );
+		close( pt[proc_no].unix_sock );
 	} else {
 		close(unix_tcp_sock);
 		unix_tcp_sock = -1;

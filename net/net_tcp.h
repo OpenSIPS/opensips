@@ -44,10 +44,10 @@ int tcp_has_async_write(void);
 
 /* creates the communication channel between a generic OpenSIPS process
    and the TCP MAIN process - TO BE called before forking */
-int tcp_pre_connect_proc_to_tcp_main(void);
+int tcp_pre_connect_proc_to_tcp_main( int proc_no );
 
 /* same as above, but to be called after forking, both in child and parent */
-void tcp_connect_proc_to_tcp_main( int chid );
+void tcp_connect_proc_to_tcp_main( int proc_no, int chid );
 
 /* tells how many processes the TCP layer will create */
 int tcp_count_processes(void);

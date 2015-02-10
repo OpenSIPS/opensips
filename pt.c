@@ -138,7 +138,7 @@ pid_t internal_fork(char *proc_desc)
 	LM_DBG("forking new process \"%s\"\n",proc_desc);
 
 	/* set TCP communication */
-	if (tcp_pre_connect_proc_to_tcp_main()<0){
+	if (tcp_pre_connect_proc_to_tcp_main(process_counter)<0){
 		LM_ERR("failed to connect future proc %d to TCP main\n",
 			process_no);
 		return -1;
@@ -162,12 +162,12 @@ pid_t internal_fork(char *proc_desc)
 
 		/* set attributes */
 		set_proc_attrs(proc_desc);
-		tcp_connect_proc_to_tcp_main(1);
+		tcp_connect_proc_to_tcp_main( process_counter, 1);
 		return 0;
 	}else{
 		/* parent process */
 		pt[process_counter].pid = pid;
-		tcp_connect_proc_to_tcp_main(0);
+		tcp_connect_proc_to_tcp_main( process_counter, 0);
 		process_counter++;
 		return pid;
 	}

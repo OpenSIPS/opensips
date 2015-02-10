@@ -887,16 +887,16 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			/* we succesfully added our write chunk - success */
 			tcp_conn_release(c, 0);
 			return len;
+		} else {
+			/* return error, nothing to do about it */
+			tcp_conn_release(c, 0);
+			return -1;
 		}
-	} else {
-		/* return error, nothing to do about it */
-		tcp_conn_release(c, 0);
-		return -1;
 	}
 
 
 send_it:
-	LM_DBG("sending...\n");
+	LM_DBG("sending via fd %d...\n",fd);
 	lock_get(&c->write_lock);
 #ifdef USE_TLS
 	// FIXME TCP
@@ -1401,7 +1401,7 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 again:
 	if(req->error==TCP_REQ_OK){
 		bytes=tcp_read_headers(con,req);
-//#ifdef EXTRA_DEBUG
+#ifdef EXTRA_DEBUG
 					/* if timeout state=0; goto end__req; */
 		LM_DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
 				bytes, (int)(req->parsed-req->start), req->state,
@@ -1409,7 +1409,7 @@ again:
 		LM_DBG("last char=0x%02X, parsed msg=\n%.*s\n",
 				*(req->parsed-1), (int)(req->parsed-req->start),
 				req->start);
-//#endif
+#endif
 		if (bytes==-1){
 			LM_ERR("failed to read \n");
 			goto error;
@@ -1480,8 +1480,8 @@ again:
 			&(con->rcv.src_su), con->rcv.proto_reserved1) < 0) {
 				LM_ERR("CRLF pong - tcp_send() failed\n");
 			}
-			if (!size)
-				goto done;
+			//FIXME if (!size)
+			//	goto done;
 		} else {
 			msg_buf = req->start;
 			msg_len = req->parsed-req->start;
@@ -1497,7 +1497,7 @@ again:
 					 *	detach it , release the conn and free it afterwards */
 					con->con_req = NULL;
 				}
-				goto done;
+				//FIXME goto done;
 			} else {
 				LM_DBG("We still have things on the pipe - "
 					"keeping connection \n");
