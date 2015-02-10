@@ -626,7 +626,7 @@ static inline int send_sockinfo(int fd)
    }
    buffer[k++]=i;
 
-	for( j=PROTO_FIST ; j<PROTO_LAST ; j++ )
+	for( j=PROTO_FIRST ; j<PROTO_LAST ; j++ )
 		if (protos[j].id!=PROTO_NONE)
 			for(s=protos[j].listeners ; s ; s=s->next)
 				if(print_sock_info(buffer,300,&k,s,PROTO_UDP)==-1)
