@@ -1359,7 +1359,7 @@ void tcp_main_server(void)
 	/* now start watching all the fds*/
 
 	/* add all the sockets we listens on for connections */
-	for( n=0 ; n<proto_nr ; n++ )
+	for( n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
 		if (proto_net_binds[n].flags&PROTO_NET_USE_TCP)
 			for( si=protos[n].listeners ; si ; si=si->next ) {
 				if ( (si->socket!=-1) &&
@@ -1571,7 +1571,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	 * 1 tcp send unix socket/all_proc,
 	 *  + 1 udp sock/udp proc + 1 tcp_child sock/tcp child*
 	 *  + no_listen_tcp */
-	for( r=0,n=0 ; n<proto_nr ; n++ )
+	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
 		if (proto_net_binds[n].flags&PROTO_NET_USE_TCP)
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 

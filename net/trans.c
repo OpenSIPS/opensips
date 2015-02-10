@@ -36,15 +36,15 @@
 /* we alocate this dinamically because we don't know how when new protocols
  * are developed. Since this is done only once, it's not that bad */
 struct proto_info *protos;
-unsigned int proto_nr;
 
 static struct socket_id *tmp_listeners;
 
 
 int trans_init(void)
 {
+	unsigned int proto_nr;
 
-	proto_nr = PROTO_OTHER - PROTO_NONE - 1;
+	proto_nr = PROTO_LAST - PROTO_NONE;
 	protos = pkg_malloc(proto_nr * sizeof(struct proto_info));
 	if (!protos) {
 		LM_ERR("no more memory to allocate protocols\n");
@@ -75,8 +75,8 @@ int trans_load_proto(char *name, enum sip_protos proto)
 		LM_ERR("unknown protocol %s\n", name);
 		goto error;
 	}
-	if (protos[proto - 1].id != PROTO_NONE) {
-		if (proto != protos[proto - 1].id) {
+	if (protos[proto].id != PROTO_NONE) {
+		if (proto != protos[proto].id) {
 			LM_BUG("inconsistent protocol id\n");
 			goto error;
 		}
@@ -129,18 +129,18 @@ int trans_load_proto(char *name, enum sip_protos proto)
 		LM_ERR("cannot find transport API for protocol %s\n", name);
 		goto error;
 	}
-	if (proto_api(&protos[proto - 1].api,
-			&proto_net_binds[proto - 1]) < 0) {
+	if (proto_api(&protos[proto].api,
+			&proto_net_binds[proto]) < 0) {
 		LM_ERR("cannot bind transport API for protocol %s\n", name);
 		goto error;
 	}
 
 	/* initialize the module */
-	if (protos[proto - 1].api.init && protos[proto - 1].api.init() < 0) {
+	if (protos[proto].api.init && protos[proto].api.init() < 0) {
 		LM_ERR("cannot initialzie protocol %s\n", name);
 		goto error;
 	}
-	protos[proto - 1].id = proto;
+	protos[proto].id = proto;
 
 	LM_DBG("Loaded <%.*s> protocol handlers\n", len, name_buf + 4);
 
@@ -162,11 +162,11 @@ int add_listener(struct socket_id *sock, enum si_flags flags)
 	int port;
 
 	/* validate the protocol */
-	if (proto < 0 || proto >= proto_nr) {
+	if (proto < PROTO_FIRST || proto >= PROTO_LAST) {
 		LM_BUG("invalid protocol number %d\n", proto);
 		return -1;
 	}
-	pi = &protos[proto - 1];
+	pi = &protos[proto];
 	if (pi->id == PROTO_NONE) {
 		LM_BUG("protocol %d not registered\n", proto);
 		return -1;
@@ -296,7 +296,7 @@ int fix_all_socket_lists(void)
 	}
 #endif
 
-	for (i = 0; i < proto_nr; i++)
+	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
 		if (protos[i].id != PROTO_NONE) {
 			if (fix_socket_list(&protos[i].listeners)!=0) {
 				LM_ERR("fix_socket_list for %d failed\n", protos[i].id);
@@ -329,7 +329,7 @@ int trans_init_all_listeners(void)
 	struct socket_info *si;
 	int i;
 
-	for (i = 0; i < proto_nr; i++)
+	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
 		if (protos[i].id != PROTO_NONE)
 			for( si=protos[i].listeners ; si ; si=si->next ) {
 				if (protos[i].api.init_listener(si)<0) {
@@ -355,7 +355,7 @@ void print_all_socket_lists(void)
 	int i;
 
 
-	for (i = 0; i < proto_nr; i++) {
+	for (i = PROTO_FIRST; i < PROTO_LAST; i++) {
 		if (protos[i].id == PROTO_NONE)
 			continue;
 

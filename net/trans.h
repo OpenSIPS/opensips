@@ -43,7 +43,6 @@ struct proto_info {
 };
 
 extern struct proto_info *protos;
-extern unsigned int proto_nr;
 
 /*
  * initializes transport interface structures
@@ -86,7 +85,7 @@ static inline char* get_proto_name(unsigned short proto)
 {
 	if (proto == PROTO_NONE)
 		return "*";
-	if (proto >= proto_nr || protos[proto - 1].id == PROTO_NONE)
+	if (proto >= PROTO_LAST || protos[proto].id == PROTO_NONE)
 		return "unknown";
 	return protos[proto - 1].api.name;
 }

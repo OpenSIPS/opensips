@@ -617,7 +617,7 @@ static inline int send_sockinfo(int fd)
    int k=0,j;
    buffer[k++]=16;/*This used to be T_TABLE_POWER in opensips 1.0.1, now its hardcoded in config.h*/
 
-	for( j=0,i=0 ; j<PROTO_LAST ; j++ )
+	for( j=PROTO_FIRST,i=0 ; j<PROTO_LAST ; j++ )
 		if (protos[j].id!=PROTO_NONE)
 			for(s=protos[j].listeners ; s ; s=s->next,i++);
    if(i==0){
@@ -626,7 +626,7 @@ static inline int send_sockinfo(int fd)
    }
    buffer[k++]=i;
 
-	for( j=0 ; j<PROTO_LAST ; j++ )
+	for( j=PROTO_FIST ; j<PROTO_LAST ; j++ )
 		if (protos[j].id!=PROTO_NONE)
 			for(s=protos[j].listeners ; s ; s=s->next)
 				if(print_sock_info(buffer,300,&k,s,PROTO_UDP)==-1)
