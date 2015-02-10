@@ -87,7 +87,7 @@ static inline char* get_proto_name(unsigned short proto)
 		return "*";
 	if (proto >= PROTO_LAST || protos[proto].id == PROTO_NONE)
 		return "unknown";
-	return protos[proto - 1].api.name;
+	return protos[proto].api.name;
 }
 
 #endif /* _TRANS_TI_H_ */
