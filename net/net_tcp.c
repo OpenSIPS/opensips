@@ -434,6 +434,7 @@ found:
 	TCPCONN_UNLOCK(part);
 
 	LM_DBG("con found in state %d\n",c->state);
+	// FIXME, this breaks the ASYNC CONNECT + WRITE
 	if (c->state<S_CONN_OK) {
 		/* no need to aquired, just return the conn with an invalid fd */
 		*conn = c;
