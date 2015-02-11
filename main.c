@@ -802,6 +802,12 @@ static int main_loop(void)
 			goto error;
 		}
 
+		/* fork for the timer process*/
+		if (start_timer_processes()!=0) {
+			LM_CRIT("cannot start timer process(es)\n");
+			goto error;
+		}
+
 		/* fork all processes required by UDP network layer */
 		if (udp_start_processes( &chd_rank, startup_done)<0) {
 			LM_CRIT("cannot start TCP processes\n");
@@ -817,12 +823,6 @@ static int main_loop(void)
 
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
-
-	/* fork for the timer process*/
-	if (start_timer_processes()!=0) {
-		LM_CRIT("cannot start timer process(es)\n");
-		goto error;
-	}
 
 	if (startup_done) {
 		if (*startup_done==0)

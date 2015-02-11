@@ -30,6 +30,7 @@
 #include "../sr_module.h"
 #include "../socket_info.h"
 #include "proto_tcp/proto_tcp_handler.h"
+#include "proto_udp/proto_udp_handler.h"
 
 
 /* we alocate this dynamically because we don't know how when new protocols
@@ -97,16 +98,17 @@ int trans_load_proto(char *name, enum sip_protos proto)
 
 	/* check built-in protocols */
 	switch (proto) {
-#ifndef DISABLE_AUTO_TCP
 	case PROTO_TCP:
 		if (register_module(&proto_tcp_exports, "net/proto", 0) < 0) {
 			LM_ERR("cannot load static TCP protocol\n");
 			return -1;
 		}
 		break;
-#endif
 	case PROTO_UDP:
-		/* TODO: handle UDP protocol */
+		if (register_module(&proto_udp_exports, "net/proto", 0) < 0) {
+			LM_ERR("cannot load static UDP protocol\n");
+			return -1;
+		}
 	default:
 
 		/* load module if not already loaded from script */

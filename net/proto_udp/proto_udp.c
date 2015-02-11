@@ -64,7 +64,7 @@ static param_export_t params[] = {
 };
 
 
-struct module_exports exports = {
+struct module_exports proto_udp_exports = {
 	PROTO_PREFIX "udp",  /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,

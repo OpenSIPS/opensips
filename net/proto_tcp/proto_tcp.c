@@ -172,11 +172,7 @@ static param_export_t params[] = {
 };
 
 
-#ifndef DISABLE_AUTO_TCP
 struct module_exports proto_tcp_exports = {
-#else
-struct module_exports exports = {
-#endif
 	PROTO_PREFIX "tcp",  /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
