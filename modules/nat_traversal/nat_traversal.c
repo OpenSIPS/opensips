@@ -1597,7 +1597,7 @@ send_keepalive(NAT_Contact *contact)
     static struct socket_info *last_socket = NULL;
     struct hostent* hostent;
     union sockaddr_union to;
-    int nat_port, len;
+    int nat_port, len, tolen;
     str nat_ip;
 
     if (keepalive_params.from == NULL) {
@@ -1645,7 +1645,13 @@ send_keepalive(NAT_Contact *contact)
     nat_port = strtol(ptr+1, NULL, 10);
     hostent = sip_resolvehost(&nat_ip, NULL, NULL, False, NULL);
     hostent2su(&to, hostent, 0, nat_port);
-    udp_send(contact->socket, buffer, len, &to);
+
+	tolen=sockaddru_len(to);
+again:
+	if (sendto(contact->socket->socket, buffer, len, 0, &to.s, tolen)==-1) {
+		if (errno==EINTR) goto again;
+		LM_ERR("sendto() failed with %s(%d)\n", strerror(errno),errno);
+	}
 }
 
 

@@ -33,7 +33,6 @@
 #include "../../forward.h"
 #include "../../resolve.h"
 #include "../../globals.h"
-#include "../../udp_server.h"
 #include "../../pt.h"
 
 #define CONTACT_PREFIX "Contact: <"

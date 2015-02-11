@@ -56,7 +56,8 @@
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
-#include "../../udp_server.h"
+/*for register_udprecv_cb()*/
+#include "../../net/proto_udp/proto_udp.h"
 #include "../../ut.h"
 #include "../../ip_addr.h"
 #include "../../mem/mem.h"

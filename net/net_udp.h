@@ -28,23 +28,26 @@
 
 #include "../socket_info.h"
 
-// initializes the udp structures
+
+/**************************** Control functions ******************************/
+
+/* initializes the UDP network layer */
 int udp_init(void);
 
-// destroys the udp data
+/* destroys the UDP network layer */
 void udp_destroy(void);
 
 /* tells how mnay processes the UDP layer will create */
 int udp_count_processes(void);
 
-// looks for the transport protocol that knows how to handle the
-// proto and calls the corresponding add_listener() function
-int udp_init_listener(struct socket_info *si);
+/* starts all UDP related processes */
+int udp_start_processes(int *chd_rank, int *startup_done);
 
-// used to return a listener
+/**************************** Listener functions *****************************/
+
 struct socket_info* udp_find_listener(union sockaddr_union* to, int proto);
 
-// initializes the udp listeners
-int udp_init_listeners(void);
+/* initializes an already defined TCP listener */
+int udp_init_listener(struct socket_info *si);
 
 #endif /* _NET_UDP_H_ */

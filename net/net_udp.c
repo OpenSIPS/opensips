@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2015 - OpenSIPS Foundation
+ * Copyright (C) 2014-2015 OpenSIPS Foundation
+ * Copyright (C) 2001-2003 FhG Fokus
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -24,8 +25,29 @@
  */
 
 
+#include <unistd.h>
 
+#include "../pt.h"
+#include "../daemonize.h"
+#include "../reactor.h"
 #include "net_udp.h"
+
+
+#define UDP_SELECT_TIMEOUT  1
+
+
+
+/* initializes the UDP network layer */
+int udp_init(void)
+{
+	return 0;
+}
+
+/* destroys the UDP network layer */
+void udp_destroy(void)
+{
+	return;
+}
 
 /* tells how many processes the UDP layer will create */
 int udp_count_processes(void)
@@ -40,5 +62,316 @@ int udp_count_processes(void)
 				n+=si->children;
 
 	return n;
+}
+
+#ifdef USE_MCAST
+/**
+ * Setup a multicast receiver socket, supports IPv4 and IPv6.
+ * \param sock socket
+ * \param addr receiver address
+ * \return zero on success, -1 otherwise
+ */
+static int setup_mcast_rcvr(int sock, union sockaddr_union* addr)
+{
+	struct ip_mreq mreq;
+#ifdef USE_IPV6
+	struct ipv6_mreq mreq6;
+#endif /* USE_IPV6 */
+
+	if (addr->s.sa_family==AF_INET){
+		memcpy(&mreq.imr_multiaddr, &addr->sin.sin_addr,
+		       sizeof(struct in_addr));
+		mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+		if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&mreq,
+			       sizeof(mreq))==-1){
+			LM_ERR("setsockopt: %s\n", strerror(errno));
+			return -1;
+		}
+
+#ifdef USE_IPV6
+	} else if (addr->s.sa_family==AF_INET6){
+		memcpy(&mreq6.ipv6mr_multiaddr, &addr->sin6.sin6_addr,
+		       sizeof(struct in6_addr));
+		mreq6.ipv6mr_interface = 0;
+#ifdef __OS_linux
+		if (setsockopt(sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6,
+#else
+		if (setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq6,
+#endif
+			       sizeof(mreq6))==-1){
+			LM_ERR("setsockopt:%s\n",  strerror(errno));
+			return -1;
+		}
+
+#endif /* USE_IPV6 */
+	} else {
+		LM_ERR("unsupported protocol family\n");
+		return -1;
+	}
+	return 0;
+}
+
+#endif /* USE_MCAST */
+
+
+/**
+ * Initialize a UDP socket, supports multicast, IPv4 and IPv6.
+ * \param si socket that should be bind
+ * \return zero on success, -1 otherwise
+ */
+int udp_init_listener(struct socket_info *si)
+{
+	union sockaddr_union* addr;
+	int optval;
+#ifdef USE_MCAST
+	unsigned char m_optval;
+#endif
+
+	addr=&si->su;
+	si->proto=PROTO_UDP;
+	if (init_su(addr, &si->address, si->port_no)<0){
+		LM_ERR("could not init sockaddr_union\n");
+		goto error;
+	}
+
+	si->socket = socket(AF2PF(addr->s.sa_family), SOCK_DGRAM, 0);
+	if (si->socket==-1){
+		LM_ERR("socket: %s\n", strerror(errno));
+		goto error;
+	}
+	/* make socket non-blocking */
+	optval=fcntl(si->socket, F_GETFL);
+	if (optval==-1){
+		LM_ERR("fnctl failed: (%d) %s\n", errno, strerror(errno));
+		goto error;
+	}
+	if (fcntl(si->socket,F_SETFL,optval|O_NONBLOCK)==-1){
+		LM_ERR("set non-blocking failed: (%d) %s\n",
+			errno, strerror(errno));
+		goto error;
+	}
+	/* set sock opts? */
+	optval=1;
+	if (setsockopt(si->socket, SOL_SOCKET, SO_REUSEADDR ,
+					(void*)&optval, sizeof(optval)) ==-1){
+		LM_ERR("setsockopt: %s\n", strerror(errno));
+		goto error;
+	}
+	/* tos */
+	optval=tos;
+	if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
+			sizeof(optval)) ==-1){
+		LM_WARN("setsockopt tos: %s\n", strerror(errno));
+		/* continue since this is not critical */
+	}
+#if defined (__linux__) && defined(UDP_ERRORS)
+	optval=1;
+	/* enable error receiving on unconnected sockets */
+	if(setsockopt(si->socket, SOL_IP, IP_RECVERR,
+					(void*)&optval, sizeof(optval)) ==-1){
+		LM_ERR("setsockopt: %s\n", strerror(errno));
+		goto error;
+	}
+#endif
+
+#ifdef USE_MCAST
+	if ((si->flags & SI_IS_MCAST)
+	    && (setup_mcast_rcvr(si->socket, addr)<0)){
+			goto error;
+	}
+	/* set the multicast options */
+	if (addr->s.sa_family==AF_INET){
+		m_optval = mcast_loopback;
+		if (setsockopt(si->socket, IPPROTO_IP, IP_MULTICAST_LOOP,
+						&m_optval, sizeof(m_optval))==-1){
+			LM_WARN("setsockopt(IP_MULTICAST_LOOP): %s\n", strerror(errno));
+			/* it's only a warning because we might get this error if the
+			  network interface doesn't support multicasting */
+		}
+		if (mcast_ttl>=0){
+			m_optval = mcast_ttl;
+			if (setsockopt(si->socket, IPPROTO_IP, IP_MULTICAST_TTL,
+						&m_optval, sizeof(m_optval))==-1){
+				LM_ERR("setsockopt (IP_MULTICAST_TTL): %s\n", strerror(errno));
+				goto error;
+			}
+		}
+#ifdef USE_IPV6
+	} else if (addr->s.sa_family==AF_INET6){
+		if (setsockopt(si->socket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
+						&mcast_loopback, sizeof(mcast_loopback))==-1){
+			LM_WARN("setsockopt (IPV6_MULTICAST_LOOP): %s\n", strerror(errno));
+			/* it's only a warning because we might get this error if the
+			  network interface doesn't support multicasting */
+		}
+		if (mcast_ttl>=0){
+			if (setsockopt(si->socket, IPPROTO_IP, IPV6_MULTICAST_HOPS,
+						&mcast_ttl, sizeof(mcast_ttl))==-1){
+				LM_ERR("setssckopt (IPV6_MULTICAST_HOPS): %s\n",
+						strerror(errno));
+				goto error;
+			}
+		}
+#endif /* USE_IPV6*/
+	} else {
+		LM_ERR("unsupported protocol family %d\n", addr->s.sa_family);
+		goto error;
+	}
+#endif /* USE_MCAST */
+
+	if (probe_max_sock_buff(si->socket,0,MAX_RECV_BUFFER_SIZE,
+				BUFFER_INCREMENT)==-1) goto error;
+
+	if (bind(si->socket,  &addr->s, sockaddru_len(*addr))==-1){
+		LM_ERR("bind(%x, %p, %d) on %s: %s\n", si->socket, &addr->s,
+				(unsigned)sockaddru_len(*addr),	si->address_str.s,
+				strerror(errno));
+	#ifdef USE_IPV6
+		if (addr->s.sa_family==AF_INET6)
+			LM_ERR("might be caused by using a link "
+					" local address, try site local or global\n");
+	#endif
+		goto error;
+	}
+	return 0;
+
+error:
+	return -1;
+}
+
+
+inline static int handle_io(struct fd_map* fm, int idx,int event_type)
+{
+	int n,read;
+
+	switch(fm->type){
+		case F_UDP_READ:
+			update_stat( pt[process_no].load, +1 );
+			n = protos[((struct socket_info*)fm->data)->proto].net.
+				read( fm->data /*si*/, &read);
+			update_stat( pt[process_no].load, -1 );
+			return n;
+		case F_TIMER_JOB:
+			handle_timer_job();
+			return 0;
+		case F_SCRIPT_ASYNC:
+			async_resume_f( fm->fd, fm->data);
+			return 0;
+		default:
+			LM_CRIT("uknown fd type %d in UDP worker\n", fm->type);
+			return -1;
+	}
+	return -1;
+}
+
+
+/**
+ * Main UDP receiver loop, processes data from the network, does some error
+ * checking and save it in an allocated buffer. This data is then forwarded
+ * to the receive_msg function. If an dynamic buffer is used, the buffer
+ * must be freed in later steps.
+ * \see receive_msg
+ * \see main_loop
+ * \return -1 for errors
+ */
+int udp_rcv_loop( struct socket_info *si )
+{
+	/* create the reactor for UDP proc */
+	if ( init_worker_reactor( "UDP_worker", 100/*max_fd*/)<0 ) {
+		LM_ERR("failed to init reactor\n");
+		goto error;
+	}
+
+	/* init: start watching for the timer jobs */
+	if (reactor_add_reader( timer_fd_out, F_TIMER_JOB, NULL)<0) {
+		LM_CRIT("failed to add timer pipe_out to reactor\n");
+		goto error;
+	}
+
+	/* init: start watching the SIP UDP fd */
+	if (reactor_add_reader( si->socket, F_UDP_READ, si)<0) {
+		LM_CRIT("failed to add UDP listen socket to reactor\n");
+		goto error;
+	}
+
+	/* launch the reactor */
+	reactor_main_loop( UDP_SELECT_TIMEOUT, error , );
+
+error:
+	destroy_worker_reactor();
+	return -1;
+}
+
+
+/* starts all UDP related processes */
+int udp_start_processes(int *chd_rank, int *startup_done)
+{
+	struct socket_info *si;
+	stat_var *load_p = NULL;
+	pid_t pid;
+	int i,p;
+
+	for( p=PROTO_FIRST ; p<PROTO_LAST ; p++ ) {
+		if ( (protos[p].net.flags&PROTO_NET_USE_UDP)==0 )
+			continue;
+
+		for(si=protos[p].listeners; si ; si=si->next ) {
+
+			if (register_udp_load_stat(&si->sock_str,&load_p,si->children)!=0){
+				LM_ERR("failed to init load statistics\n");
+				goto error;
+			}
+
+			for (i=0;i<si->children;i++) {
+				(*chd_rank)++;
+				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
+					LM_CRIT("cannot fork UDP process\n");
+					goto error;
+				} else if (pid==0) {
+					/* new UDP process */
+					/* set a more detailed description */
+					set_proc_attrs("SIP receiver %.*s ",
+						si->sock_str.len, si->sock_str.s);
+					bind_address=si; /* shortcut */
+					if (init_child(*chd_rank) < 0) {
+						report_failure_status();
+						if (*chd_rank == 1 && startup_done)
+							*startup_done = -1;
+							exit(-1);
+					}
+
+					/* first UDP proc runs statup_route (if defined) */
+					if(*chd_rank == 1 && startup_done!=NULL) {
+						LM_DBG("runing startup for first UDP\n");
+						if(run_startup_route()< 0) {
+							report_failure_status();
+							*startup_done = -1;
+							LM_ERR("Startup route processing failed\n");
+							exit(-1);
+						}
+						*startup_done = 1;
+					}
+
+					report_conditional_status( (!no_daemon_mode), 0);
+
+					/* all UDP listeners on same interface
+					 * have same SHM load pointer */
+					pt[process_no].load = load_p;
+					udp_rcv_loop( si );
+					exit(-1);
+				} else {
+					/*parent*/
+					/* wait for first proc to finish the startup route */
+					if(*chd_rank == 1 && startup_done!=NULL)
+						while(!(*startup_done)) {usleep(5);/*handle_sigs();*/}
+				}
+			} /* procs per listener */
+		} /* looping through the listeners per proto */
+	} /* looping through the available protos */
+
+	return 0;
+error:
+	return -1;
 }
 

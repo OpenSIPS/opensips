@@ -103,7 +103,6 @@
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"
-#include "udp_server.h"
 #include "bin_interface.h"
 #include "globals.h"
 #include "mem/mem.h"
@@ -129,6 +128,7 @@
 #include "pvar.h"
 #include "poll_types.h"
 #include "net/net_tcp.h"
+#include "net/net_udp.h"
 #ifdef USE_TLS
 #include "tls/tls_init.h"
 #endif
@@ -360,6 +360,7 @@ void cleanup(int show_status)
 
 	handle_ql_shutdown();
 	destroy_modules();
+	udp_destroy();
 	tcp_destroy();
 #ifdef USE_TLS
 	destroy_tls();
@@ -763,7 +764,8 @@ static int main_loop(void)
 			return rc;
 		}
 
-		return udp_rcv_loop();
+		// FIXME return udp_rcv_loop();
+		return -1;
 	} else {  /* don't fork */
 
 		if (trans_init_all_listeners()<0) {
@@ -800,115 +802,18 @@ static int main_loop(void)
 			goto error;
 		}
 
-#if 0
-		/* udp processes */
-		for(si=udp_listen; si; si=si->next){
-
-			if(register_udp_load_stat(&si->sock_str,&load_p,si->children)!=0){
-				LM_ERR("failed to init load statistics\n");
-				goto error;
-			}
-
-			for(i=0;i<si->children;i++){
-				chd_rank++;
-				if ( (pid=internal_fork( "UDP receiver"))<0 ) {
-					LM_CRIT("cannot fork UDP process\n");
-					goto error;
-				} else {
-					if (pid==0) {
-						/* new UDP process */
-						/* set a more detailed description */
-						set_proc_attrs("SIP receiver %.*s ",
-							si->sock_str.len, si->sock_str.s);
-						bind_address=si; /* shortcut */
-						if (init_child(chd_rank) < 0) {
-							report_failure_status();
-							if (chd_rank == 1 && startup_done)
-								*startup_done = -1;
-							exit(-1);
-						}
-
-						/* first UDP proc runs statup_route (if defined) */
-						if(chd_rank == 1 && startup_done!=NULL) {
-							LM_DBG("runing startup for first UDP\n");
-							if(run_startup_route()< 0) {
-								report_failure_status();
-								*startup_done = -1;
-								LM_ERR("Startup route processing failed\n");
-								exit(-1);
-							}
-							*startup_done = 1;
-						}
-
-						report_conditional_status( (!no_daemon_mode), 0);
-
-						/* all UDP listeners on same interface
-						 * have same SHM load pointer */
-						pt[process_no].load = load_p;
-						udp_rcv_loop();
-						exit(-1);
-					}
-					else {
-						/* wait for first proc to finish the startup route */
-						if(chd_rank == 1 && startup_done!=NULL)
-							while( !(*startup_done) ) {usleep(5);handle_sigs();}
-					}
-				}
-			}
-			/*parent*/
-			/*close(udp_sock)*/; /*if it's closed=>sendto invalid fd errors?*/
+		/* fork all processes required by UDP network layer */
+		if (udp_start_processes( &chd_rank, startup_done)<0) {
+			LM_CRIT("cannot start TCP processes\n");
+			goto error;
 		}
-#endif
-	}
 
-	#ifdef USE_SCTP
-	if(!sctp_disable){
-		for(si=sctp_listen; si; si=si->next){
-			for(i=0;i<si->children;i++){
-				chd_rank++;
-				if ( (pid=internal_fork( "SCTP receiver"))<0 ) {
-					LM_CRIT("cannot fork SCTP process\n");
-					goto error;
-				} else if (pid==0){
-					/* new SCTP process */
-					/* set a more detailed description */
-					set_proc_attrs("SIP receiver %.*s ",
-						si->sock_str.len, si->sock_str.s);
-					bind_address=si; /* shortcut */
-					if (init_child(chd_rank) < 0) {
-						LM_ERR("init_child failed\n");
-						report_failure_status();
-						if( (si==sctp_listen && i==0) && startup_done)
-							*startup_done = -1;
-						exit(-1);
-					}
-
-					/* was startup route executed so far ? if not, run it only by the
-					 * first SCTP proc (first proc from first interface) */
-					if( (si==sctp_listen && i==0) && startup_done!=NULL && *startup_done==0) {
-						LM_DBG("runing startup for first SCTP\n");
-						if(run_startup_route()< 0) {
-							LM_ERR("Startup route processing failed\n");
-							report_failure_status();
-							*startup_done = -1;
-							exit(-1);
-						}
-						*startup_done = 1;
-					}
-
-					report_conditional_status( (!no_daemon_mode), 0);
-
-					sctp_server_rcv_loop();
-					exit(-1);
-				} else {
-					/* wait for first proc to finish the startup route */
-					if( (si==sctp_listen && i==0) && startup_done!=NULL)
-						while( !(*startup_done) ) {usleep(5);handle_sigs();}
-				}
-			}
+		/* fork all processes required by TCP network layer */
+		if (tcp_start_processes( &chd_rank, startup_done)<0) {
+			LM_CRIT("cannot start TCP processes\n");
+			goto error;
 		}
 	}
-	#endif /* USE_SCTP */
 
 	/* this is the main process -> it shouldn't send anything */
 	bind_address=0;
@@ -916,12 +821,6 @@ static int main_loop(void)
 	/* fork for the timer process*/
 	if (start_timer_processes()!=0) {
 		LM_CRIT("cannot start timer process(es)\n");
-		goto error;
-	}
-
-	/* fork all processes required by TCP network layer */
-	if (tcp_start_processes( &chd_rank, startup_done)<0) {
-		LM_CRIT("cannot start TCP processes\n");
 		goto error;
 	}
 
@@ -1349,22 +1248,16 @@ try_again:
 
 	fix_poll_method( &io_poll_method );
 
-	if (!tcp_disable){
-		/*init tcp networking layer*/
-		if (tcp_init()<0){
-			LM_CRIT("could not initialize tcp, exiting...\n");
-			goto error;
-		}
+	/*init UDP networking layer*/
+	if (udp_init()<0){
+		LM_CRIT("could not initialize tcp, exiting...\n");
+		goto error;
 	}
-#ifdef USE_TLS
-	if (!tls_disable){
-		/* init tls*/
-		if (init_tls()<0){
-			LM_CRIT("could not initialize tls, exiting...\n");
-			goto error;
-		}
+	/*init TCP networking layer*/
+	if (tcp_init()<0){
+		LM_CRIT("could not initialize tcp, exiting...\n");
+		goto error;
 	}
-#endif /* USE_TLS */
 
 	/* init_daemon? */
 	if (!dont_fork){

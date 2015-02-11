@@ -51,7 +51,6 @@
 #include "dprint.h"
 #include "proxy.h"
 #include "forward.h"
-#include "udp_server.h"
 #include "route.h"
 #include "parser/msg_parser.h"
 #include "parser/parse_uri.h"
