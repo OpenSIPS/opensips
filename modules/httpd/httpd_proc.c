@@ -313,9 +313,9 @@ int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 	}
 	if (strcasecmp("Content-Type", key) == 0) {
 		LM_DBG("Content-Type=%s\n", value);
-		if (strcasecmp("text/xml", value) == 0)
+		if (strncasecmp("text/xml", value, 8) == 0)
 			pr->content_type = HTTPD_TEXT_XML_CNT_TYPE;
-		else if (strcasecmp("application/json", value) == 0)
+		else if (strncasecmp("application/json", value, 16) == 0)
 			pr->content_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
 		else
 			pr->content_type = HTTPD_UNKNOWN_CNT_TYPE;
