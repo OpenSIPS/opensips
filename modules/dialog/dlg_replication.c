@@ -478,7 +478,9 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 	/* XXX: on shutdown only? */
 	vars = write_dialog_vars(dlg->vals);
+	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
+	dlg_unlock_dlg(dlg);
 
 	bin_push_str(vars);
 	bin_push_str(profiles);
@@ -543,7 +545,9 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 	/* XXX: on shutdown only? */
 	vars = write_dialog_vars(dlg->vals);
+	dlg_lock_dlg(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
+	dlg_unlock_dlg(dlg);
 
 	bin_push_str(vars);
 	bin_push_str(profiles);
