@@ -1476,12 +1476,19 @@ int tcp_init(void)
 			TCP_ID_HASH_SIZE * sizeof(struct tcp_connection*));
 	}
 
+	/* now init all TCP based protocols too */
+	for( i=PROTO_FIRST ; i<PROTO_LAST ; i++ )
+		if (protos[i].net.flags&PROTO_NET_USE_TCP && protos[i].id!=PROTO_NONE)
+			if (protos[i].tran.init()<0) {
+				LM_ERR("failed to init protocol %d (%s)\n",
+					protos[i].id, protos[i].name);
+				goto error;
+			}
+
 	return 0;
 error:
 	/* clean-up */
 	tcp_destroy();
-	return -1;
-
 	return -1;
 }
 

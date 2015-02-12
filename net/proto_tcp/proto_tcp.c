@@ -214,19 +214,24 @@ static int proto_tcp_init(void)
 			"disabling it for TCP plain\n");
 		tcp_async = 0;
 	}
+
+	/* without async support, there is nothing to init/clean per conn */
+	if (tcp_async==0) {
+		tcp_proto_net_binds.conn_init = NULL;
+		tcp_proto_net_binds.conn_clean = NULL;
+		protos[PROTO_TCP].net.conn_init = NULL;
+		protos[PROTO_TCP].net.conn_clean = NULL;
+	}
+
 	return 0;
 }
 
 
 static int mod_init(void)
 {
-	/* without async support, there is nothing to init/clean per conn */
-	if (tcp_async==0) {
-		tcp_proto_net_binds.conn_init = NULL;
-		tcp_proto_net_binds.conn_clean = NULL;
-	}
 	return 0;
 }
+
 
 static int proto_tcp_api_bind(struct api_proto *proto_api,
 		struct api_proto_net *net_binds, unsigned short *port)
