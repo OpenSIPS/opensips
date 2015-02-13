@@ -129,9 +129,6 @@
 #include "poll_types.h"
 #include "net/net_tcp.h"
 #include "net/net_udp.h"
-#ifdef USE_TLS
-#include "tls/tls_init.h"
-#endif
 
 #ifdef USE_SCTP
 #include "sctp_server.h"
@@ -183,9 +180,6 @@ int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;	/* Max number of seconds that
 												   to arrive in - anything above
 												   will lead to the connection to
 												   closed */
-#endif
-#ifdef USE_TLS
-int tls_disable = 1; /* 1 if tls is disabled */
 #endif
 #ifdef USE_SCTP
 int sctp_disable = 0; /* 1 if sctp is disabled */
@@ -257,20 +251,6 @@ int tos = IPTOS_LOWDELAY;
 
 struct socket_info* bind_address=0; /* pointer to the crt. proc.
 									 listening address*/
-struct socket_info* sendipv4; /* ipv4 socket to use when msg. comes from ipv6*/
-struct socket_info* sendipv6; /* same as above for ipv6 */
-#ifdef USE_TCP
-struct socket_info* sendipv4_tcp;
-struct socket_info* sendipv6_tcp;
-#endif
-#ifdef USE_TLS
-struct socket_info* sendipv4_tls;
-struct socket_info* sendipv6_tls;
-#endif
-#ifdef USE_SCTP
-struct socket_info* sendipv4_sctp;
-struct socket_info* sendipv6_sctp;
-#endif
 
 
 /* if aliases should be automatically discovered and added
@@ -282,9 +262,6 @@ int auto_aliases=1;
 int sl_fwd_disabled=-1;
 
 unsigned short port_no=0; /* default port*/
-#ifdef USE_TLS
-unsigned short tls_port_no=0; /* default port */
-#endif
 
 /* process number - 0 is the main process */
 int process_no = 0;
@@ -362,9 +339,6 @@ void cleanup(int show_status)
 	destroy_modules();
 	udp_destroy();
 	tcp_destroy();
-#ifdef USE_TLS
-	destroy_tls();
-#endif
 	destroy_timer();
 	destroy_stats_collector();
 	destroy_script_cb();
@@ -684,10 +658,7 @@ static int main_loop(void)
 {
 	static int chd_rank;
 	int  rc;
-	//pid_t pid;
-	//struct socket_info* si;
 	int* startup_done = NULL;
-	//stat_var *load_p = NULL;
 
 	chd_rank=0;
 
@@ -712,8 +683,6 @@ static int main_loop(void)
 		// FIXME UDP
 		//if (udp_init(udp_listen)==-1) goto error;
 		bind_address=protos[PROTO_UDP].listeners;
-		sendipv4=bind_address;
-		sendipv6=bind_address; /*FIXME*/
 		if (protos[PROTO_UDP].listeners->next) {
 			LM_WARN("using only the first listen address (no fork)\n");
 		}
@@ -1104,15 +1073,6 @@ try_again:
 	/*register builtin  modules*/
 	register_builtin_modules();
 
-#ifdef USE_TLS
-	/* initialize default TLS domains,
-	   must be done before reading the config */
-	if (pre_init_tls()<0){
-		LM_CRIT("could not pre_init_tls, exiting...\n");
-		goto error00;
-	}
-#endif /* USE_TLS */
-
 	if (preinit_black_lists()!=0) {
 		LM_CRIT("failed to alloc black list's anchor\n");
 		goto error00;
@@ -1164,10 +1124,6 @@ try_again:
 
 	/* fix parameters */
 	if (port_no<=0) port_no=SIP_PORT;
-#ifdef USE_TLS
-	if (tls_port_no<=0) tls_port_no=SIPS_PORT;
-#endif
-
 
 	if (children_no<=0) children_no=CHILD_NO;
 #ifdef USE_TCP

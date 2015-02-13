@@ -271,7 +271,6 @@ int tcp_init_listener(struct socket_info *si)
 #endif
 
 	addr = &si->su;
-	/* sock_info->proto=PROTO_TCP; */
 	if (init_su(addr, &si->address, si->port_no)<0){
 		LM_ERR("could no init sockaddr_union\n");
 		goto error;

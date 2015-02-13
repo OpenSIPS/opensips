@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  *
@@ -23,8 +21,6 @@
 
 #ifndef tls_config_h
 #define tls_config_h
-
-#include "../tcp_conn.h"
 
 enum tls_method {
 	TLS_METHOD_UNSPEC = 0,

@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  * Copyright (C) 2006 enum.at
@@ -22,7 +20,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "tls_server.h"
+#include "../../mem/mem.h"
 #include "tls_domain.h"
 #include <stdlib.h>
 
