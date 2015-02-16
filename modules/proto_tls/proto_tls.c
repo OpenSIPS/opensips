@@ -47,6 +47,7 @@
 
 #include "tls_config.h"
 #include "tls_domain.h"
+#include "tls_server.h"
 
 
 static int  mod_init(void);
@@ -57,6 +58,19 @@ static int proto_tls_api_bind(struct api_proto *proto_binds,
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to, int id);
+
+struct tcp_req;
+/* buffer to be used for reading all TCP SIP messages
+   detached from the actual con - in order to improve
+   paralelism ( process the SIP message while the con
+   can be sent back to main to do more stuff */
+static struct tcp_req tls_current_req;
+
+/* re-use similar and existing functions from the TCP-plain protocol */
+#define _tcp_common_send proto_tls_send
+#define _tcp_common_current_req tls_current_req
+#include "../../net/proto_tcp/tcp_common.h"
+
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
 static int tls_conn_init(struct tcp_connection* c);
@@ -1123,6 +1137,89 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 {
+	int bytes;
+	int total_bytes;
+	struct tcp_req* req;
+
+	bytes=-1;
+	total_bytes=0;
+
+	if (con->con_req) {
+		req=con->con_req;
+		LM_DBG("Using the per connection buff \n");
+	} else {
+		LM_DBG("Using the global ( per process ) buff \n");
+		init_tcp_req(&tls_current_req, 0);
+		req=&tls_current_req;
+	}
+
+	if (tls_fix_read_conn(con)!=0) {
+		LM_ERR("failed to do pre-tls reading\n");
+		goto error;
+	}
+	if(con->state!=S_CONN_OK)
+		goto done; /* not enough data */
+
+again:
+	if(req->error==TCP_REQ_OK){
+		/* if we still have some unparsed part, parse it first,
+		 * don't do the read*/
+		if (req->parsed<req->pos){
+			bytes=0;
+		}else{
+			bytes=tls_read(con,req);
+			if (bytes<0) {
+				LM_ERR("failed to read \n");
+				goto error;
+			}
+		}
+
+		tcp_parse_headers(req, 0/*crlf_pingpong*/, 0/*crlf_drop*/);
+#ifdef EXTRA_DEBUG
+					/* if timeout state=0; goto end__req; */
+		LM_DBG("read= %d bytes, parsed=%d, state=%d, error=%d\n",
+				bytes, (int)(req->parsed-req->start), req->state,
+				req->error );
+		LM_DBG("last char=0x%02X, parsed msg=\n%.*s\n",
+				*(req->parsed-1), (int)(req->parsed-req->start),
+				req->start);
+#endif
+		total_bytes+=bytes;
+		/* eof check:
+		 * is EOF if eof on fd and req.  not complete yet,
+		 * if req. is complete we might have a second unparsed
+		 * request after it, so postpone release_with_eof
+		 */
+		if ((con->state==S_CONN_EOF) && (req->complete==0)) {
+			LM_DBG("EOF received\n");
+			goto done;
+		}
+	}
+
+	if (req->error!=TCP_REQ_OK){
+		LM_ERR("bad request, state=%d, error=%d "
+				  "buf:\n%.*s\nparsed:\n%.*s\n", req->state, req->error,
+				  (int)(req->pos-req->buf), req->buf,
+				  (int)(req->parsed-req->start), req->start);
+		LM_DBG("- received from: port %d\n", con->rcv.src_port);
+		print_ip("- received from: ip ",&con->rcv.src_ip, "\n");
+		goto error;
+	}
+
+	switch (tcp_handle_req(req, con, 4/*max_msg_chunks*/) ) {
+		case 1:
+			goto again;
+		case -1:
+			goto error;
+	}
+
+	LM_DBG("tls_read_req end\n");
+done:
+	if (bytes_read) *bytes_read=total_bytes;
+	/* connection will be released */
+	return 0;
+error:
+	/* connection will be released as ERROR */
 	return -1;
 }
 

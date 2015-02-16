@@ -1,6 +1,4 @@
 /*
- * $Id$
- *
  * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2004,2005 Free Software Foundation, Inc.
  * Copyright (C) 2006 enum.at
@@ -27,16 +25,16 @@
 #include <string.h>
 #include <errno.h>
 
-#include "../dprint.h"
+#include "../../dprint.h"
+#include "../../ip_addr.h"
+#include "../../mem/shm_mem.h"
+//#include "../timer.h"
+//#include "../usr_avp.h"
+#include "../../net/proto_tcp/tcp_common_defs.h"
+#include "../../ut.h"
 #include "tls_server.h"
 #include "tls_config.h"
-#include "tls_init.h"
 #include "tls_domain.h"
-#include "../ip_addr.h"
-#include "../mem/shm_mem.h"
-#include "../timer.h"
-#include "../usr_avp.h"
-#include "../ut.h"
 
 /*
  * Open questions:
@@ -63,8 +61,7 @@
 /*
  * Update ssl structure with new fd
  */
-static int
-tls_update_fd(struct tcp_connection *c, int fd)
+static int tls_update_fd(struct tcp_connection *c, int fd)
 {
 	/*
 	* must be run from within a lock
@@ -86,8 +83,7 @@ tls_update_fd(struct tcp_connection *c, int fd)
 /*
  * dump ssl error stack
  */
-void
-tls_print_errstack(void)
+static void tls_print_errstack(void)
 {
 	int             code;
 
@@ -497,12 +493,10 @@ tls_write(struct tcp_connection *c, int fd, const void *buf, size_t len, short *
  * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1
  * on error
  */
-static int
-_tls_read(struct tcp_connection *c, void *buf, size_t len)
+static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 {
-	int             ret,
-					err;
-	SSL            *ssl;
+	int ret, err;
+	SSL *ssl;
 
 	ssl = c->extra_data;
 
@@ -514,7 +508,8 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 		case SSL_ERROR_ZERO_RETURN:
-		        LM_INFO("TLS connection to %s:%d closed cleanly\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			LM_DBG("TLS connection to %s:%d closed cleanly\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			/*
 			* mark end of file
 			*/
@@ -528,7 +523,8 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		case SSL_ERROR_SYSCALL:
 			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
 		default:
-		        LM_ERR("TLS connection to %s:%d read failed\n", ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			LM_ERR("TLS connection to %s:%d read failed\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			LM_ERR("TLS read error: %d\n",err);
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
@@ -536,136 +532,11 @@ _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		}
 	}
 
-	LM_ERR("bug\n");
+	LM_BUG("bug\n");
 	return -1;
 }
 
 
-
-/*
- * Called when new tcp connection is accepted or connected, create ssl
- * data structures here, there is no need to acquire any lock, because the
- * connection is being created by a new process and on other process has
- * access to it yet, this is called before adding the tcp_connection
- * structure into the hash
- */
-int
-tls_tcpconn_init(struct tcp_connection *c, int sock)
-{
-	struct tls_domain *dom;
-
-	struct usr_avp *avp;
-	int_str val;
-
-	/*
-	* new connection within a single process, no lock necessary
-	*/
-	LM_DBG("entered: Creating a whole new ssl connection\n");
-
-	/*
-	* do everything tcpconn_new wouldn't do when TLS
-	*/
-	c->type = PROTO_TLS;
-	c->rcv.proto = PROTO_TLS;
-	c->flags = 0;
-	c->timeout = get_ticks() + DEFAULT_TCP_CONNECTION_LIFETIME;
-
-	if (c->state == S_CONN_ACCEPT) {
-		LM_DBG("looking up socket based TLS server "
-			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
-		dom = tls_find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
-		if (dom) {
-			LM_DBG("found socket based TLS server domain "
-				"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
-				c->extra_data = SSL_new(dom->ctx);
-		} else {
-			LM_ERR("no TLS server domain found\n");
-			return -1;
-		}
-	} else if (c->state == S_CONN_CONNECT) {
-		avp = NULL;
-		if (tls_client_domain_avp > 0) {
-			avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
-		} else {
-			LM_DBG("name based TLS client domains are disabled\n");
-		}
-		if (!avp) {
-			LM_DBG("no TLS client doman AVP set, looking "
-				"for socket based TLS client domain\n");
-			dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
-			if (dom) {
-				LM_DBG("found socket based TLS client domain "
-					"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
-					c->extra_data = SSL_new(dom->ctx);
-			} else {
-				LM_ERR("no TLS client domain found\n");
-				return -1;
-			}
-		} else {
-			LM_DBG("TLS client domain AVP found = '%.*s'\n",
-				val.s.len, ZSW(val.s.s));
-			dom = tls_find_client_domain_name(val.s);
-			if (dom) {
-				LM_DBG("found name based TLS client domain "
-					"'%.*s'\n", val.s.len, ZSW(val.s.s));
-				c->extra_data = SSL_new(dom->ctx);
-			} else {
-				LM_DBG("no name based TLS client domain found, "
-					"trying socket based TLS client domains\n");
-				dom = tls_find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
-				if (dom) {
-					LM_DBG("found socket based TLS client domain [%s:%d]\n",
-					ip_addr2a(&dom->addr), dom->port);
-					c->extra_data = SSL_new(dom->ctx);
-				} else {
-					LM_ERR("no TLS client domain found\n");
-					return -1;
-				}
-			}
-		}
-	} else {
-		LM_ERR("invalid connection state (bug in TCP code)\n");
-		return -1;
-	}
-	if (!c->extra_data) {
-		LM_ERR("failed to create SSL structure\n");
-		return -1;
-	}
-
-#ifndef OPENSSL_NO_KRB5
-	if ( ((SSL *)c->extra_data)->kssl_ctx ) {
-		kssl_ctx_free( ((SSL *)c->extra_data)->kssl_ctx );
-		((SSL *)c->extra_data)->kssl_ctx = 0;
-	}
-#endif
-
-	if (c->state == S_CONN_ACCEPT) {
-		LM_DBG("Setting in ACCEPT mode (server)\n");
-		SSL_set_accept_state((SSL *) c->extra_data);
-	} else if (c->state == S_CONN_CONNECT) {
-		LM_DBG("Setting in CONNECT mode (client)\n");
-		SSL_set_connect_state((SSL *) c->extra_data);
-	}
-	return 0;
-}
-
-
-/*
- * clean the extra data upon connection shut down
- */
-void
-tls_tcpconn_clean(struct tcp_connection *c)
-{
-	/*
-	* runs within global tcp lock
-	*/
-	LM_DBG("entered\n");
-
-	if (c->extra_data) {
-		SSL_free((SSL *) c->extra_data);
-		c->extra_data = 0;
-	}
-}
 
 
 /*
@@ -821,8 +692,7 @@ error:
  * connection and attempt write to it which would result in updating the
  * ssl structures
  */
-size_t
-tls_read(struct tcp_connection * c,struct tcp_req *r)
+size_t tls_read(struct tcp_connection * c,struct tcp_req *r)
 {
 	/*
 	* no lock acquired
