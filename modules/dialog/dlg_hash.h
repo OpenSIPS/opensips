@@ -72,8 +72,6 @@
 #define DLG_FLAG_TOPHIDING		(1<<7)
 #define DLG_FLAG_VP_CHANGED		(1<<8)
 #define DLG_FLAG_DB_DELETED		(1<<9)
-#define DLG_FLAG_TOPH_KEEP_USER		(1<<10)
-#define DLG_FLAG_TOPH_HIDE_CALLID	(1<<11)
 
 #define DLG_CALLER_LEG         0
 #define DLG_FIRST_CALLEE_LEG   1
@@ -105,6 +103,13 @@ struct dlg_leg {
 #define DLG_LEGS_ALLOCED   1
 #define DLG_LEG_200OK      2
 
+/* ALL module flags to be listed here - we have to centralize here :
+- in order to make it easier for future modules to use the flags  
+- sometimes, dialog internal behavior changes, depending on whether a certain module is loaded or not ( eg. topology_hiding ) */
+#define SST_DIALOG_FLAG   (1 << 0)
+#define TOPOH_ONGOING     (1 << 1)
+#define TOPOH_KEEP_USER   (1 << 2)
+#define TOPOH_HIDE_CALLID (1 << 3)
 
 struct dlg_cell
 {
