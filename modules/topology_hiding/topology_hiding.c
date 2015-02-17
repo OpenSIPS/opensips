@@ -194,7 +194,7 @@ int w_topology_hiding1(struct sip_msg *req,char *param)
 
 int w_topology_hiding_match(struct sip_msg *req)
 {
-	if (dlg_api.match_dialog(req) < 0)
+	if (dlg_api.match_dialog==NULL ||  dlg_api.match_dialog(req) < 0)
 		return topology_hiding_match(req);
 	else
 		/* we went to the dlg module, which triggered us back, all good */
