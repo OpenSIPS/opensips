@@ -167,6 +167,14 @@ struct socket_id {
 	}while(0)
 
 
+#define get_su_info(_su, _ip_char, _port_no) \
+	do { \
+		struct ip_addr __ip; \
+		sockaddr2ip_addr( &__ip, (struct sockaddr*)_su ); \
+		_ip_char = ip_addr2a(&__ip); \
+		_port_no = su_getport( (union sockaddr_union*)_su); \
+	} while(0)
+
 
 
 /* gets the protocol family corresponding to a specific address family

@@ -299,15 +299,6 @@ again:
 
 /**************  CONNECT related functions ***************/
 
-#define get_su_info(_su, _ip_char, _port_no) \
-	do { \
-		struct ip_addr __ip; \
-		sockaddr2ip_addr( &__ip, (struct sockaddr*)_su ); \
-		_ip_char = ip_addr2a(&__ip); \
-		_port_no = su_getport( (union sockaddr_union*)_su); \
-	} while(0)
-
-
 /* returns :
  * 0  - in case of success
  * -1 - in case there was an internal error
@@ -350,112 +341,6 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 	if (lock)
 		lock_release(&con->write_lock);
 
-	return 0;
-}
-
-
-
-
-
-/*! \brief blocking connect on a non-blocking fd; it will timeout after
- * tcp_connect_timeout
- * if BLOCKING_USE_SELECT and HAVE_SELECT are defined it will internally
- * use select() instead of poll (bad if fd > FD_SET_SIZE, poll is preferred)
- */
-static int tcp_blocking_connect(int fd, const struct sockaddr *servaddr,
-			socklen_t addrlen)
-{
-	int n;
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-	fd_set sel_set;
-	fd_set orig_set;
-	struct timeval timeout;
-#else
-	struct pollfd pf;
-#endif
-	int elapsed;
-	int to;
-	int ticks;
-	int err;
-	unsigned int err_len;
-	int poll_err;
-	char *ip;
-	unsigned short port;
-
-	poll_err=0;
-	to=tcp_connect_timeout;
-	ticks=get_ticks();
-again:
-	n=connect(fd, servaddr, addrlen);
-	if (n==-1){
-		if (errno==EINTR){
-			elapsed=(get_ticks()-ticks)*TIMER_TICK;
-			if (elapsed<to)		goto again;
-			else goto error_timeout;
-		}
-		if (errno!=EINPROGRESS && errno!=EALREADY){
-			get_su_info( servaddr, ip, port);
-			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
-			goto error;
-		}
-	}else goto end;
-
-	/* poll/select loop */
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-		FD_ZERO(&orig_set);
-		FD_SET(fd, &orig_set);
-#else
-		pf.fd=fd;
-		pf.events=POLLOUT;
-#endif
-	while(1){
-		elapsed=(get_ticks()-ticks)*TIMER_TICK;
-		if (elapsed<to)
-			to-=elapsed;
-		else
-			goto error_timeout;
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-		sel_set=orig_set;
-		timeout.tv_sec=to;
-		timeout.tv_usec=0;
-		n=select(fd+1, 0, &sel_set, 0, &timeout);
-#else
-		n=poll(&pf, 1, to*1000);
-#endif
-		if (n<0){
-			if (errno==EINTR) continue;
-			get_su_info( servaddr, ip, port);
-			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
-				ip, port, errno, strerror(errno));
-			goto error;
-		}else if (n==0) /* timeout */ continue;
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-		if (FD_ISSET(fd, &sel_set))
-#else
-		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
-			LM_ERR("poll error: flags %d - %d %d %d %d \n", pf.revents,
-				   POLLOUT,POLLERR,POLLHUP,POLLNVAL);
-			poll_err=1;
-		}
-#endif
-		{
-			err_len=sizeof(err);
-			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if ((err==0) && (poll_err==0)) goto end;
-			if (err!=EINPROGRESS && err!=EALREADY){
-				get_su_info( servaddr, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
-					ip, port, err, strerror(err));
-				goto error;
-			}
-		}
-	}
-error_timeout:
-	/* timeout */
-	LM_ERR("timeout %d s elapsed from %d s\n", elapsed, tcp_connect_timeout);
-error:
-	return -1;
-end:
 	return 0;
 }
 
@@ -650,7 +535,7 @@ static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 		goto error;
 	}
 
-	if (tcp_blocking_connect(s, &server->s, sockaddru_len(*server))<0){
+	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
 		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
@@ -851,24 +736,20 @@ static int proto_tcp_send(struct socket_info* send_sock,
 
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
+
 	lock_get(&c->write_lock);
-#ifdef USE_TLS
-	// FIXME TCP
-	if (c->type==PROTO_TLS)
-		n=tls_blocking_write(c, fd, buf, len);
-	else
-#endif
-	{
-		start_expire_timer(snd,tcpthreshold);
-		if (tcp_async) {
-			n=async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
-		} else {
-			n=tsend_stream(fd, buf, len, tcp_send_timeout*1000);
-		}
-		get_time_difference(snd,tcpthreshold,tcp_timeout_send);
-		stop_expire_timer(get,tcpthreshold,"tcp ops",buf,(int)len,1);
+	start_expire_timer(snd,tcpthreshold);
+
+	if (tcp_async) {
+		n=async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
+	} else {
+		n=tsend_stream(fd, buf, len, tcp_send_timeout*1000);
 	}
+
+	get_time_difference(snd,tcpthreshold,tcp_timeout_send);
+	stop_expire_timer(get,tcpthreshold,"tcp ops",buf,(int)len,1);
 	lock_release(&c->write_lock);
+
 	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
 	if (n<0){

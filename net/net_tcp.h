@@ -58,7 +58,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done);
 /* MI function to list all existing TCP connections */
 struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param);
 
-/********************** TCP conn management functions ************************/
+
+/************************* TCP net helper functions **************************/
 
 /* initializes an already defined TCP listener */
 int tcp_init_listener(struct socket_info *si);
@@ -66,8 +67,15 @@ int tcp_init_listener(struct socket_info *si);
 /* helper function to set all TCP related options to a socket */
 int tcp_init_sock_opt(int s);
 
+/* blocking connect on a non-blocking socket */
+int tcp_connect_blocking(int s, const struct sockaddr *servaddr,
+		socklen_t addrlen);
+
 // used to return a listener
 struct socket_info* tcp_find_listener(union sockaddr_union* to, int proto);
+
+
+/********************** TCP conn management functions ************************/
 
 /* returns the connection identified by either the id or the destination to */
 int tcp_conn_get(int id, struct ip_addr* ip, int port, int timeout,

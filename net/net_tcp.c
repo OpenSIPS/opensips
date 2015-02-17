@@ -207,6 +207,110 @@ error:
 }
 
 
+/*! \brief blocking connect on a non-blocking fd; it will timeout after
+ * tcp_connect_timeout
+ * if BLOCKING_USE_SELECT and HAVE_SELECT are defined it will internally
+ * use select() instead of poll (bad if fd > FD_SET_SIZE, poll is preferred)
+ */
+
+int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
+															socklen_t addrlen)
+{
+	int n;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+	fd_set sel_set;
+	fd_set orig_set;
+	struct timeval timeout;
+#else
+	struct pollfd pf;
+#endif
+	int elapsed;
+	int to;
+	int ticks;
+	int err;
+	unsigned int err_len;
+	int poll_err;
+	char *ip;
+	unsigned short port;
+
+	poll_err=0;
+	to = tcp_connect_timeout;
+	ticks=get_ticks();
+again:
+	n=connect(fd, servaddr, addrlen);
+	if (n==-1){
+		if (errno==EINTR){
+			elapsed=(get_ticks()-ticks)*TIMER_TICK;
+			if (elapsed<to)		goto again;
+			else goto error_timeout;
+		}
+		if (errno!=EINPROGRESS && errno!=EALREADY){
+			get_su_info( servaddr, ip, port);
+			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno, strerror(errno));
+			goto error;
+		}
+	}else goto end;
+
+	/* poll/select loop */
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+		FD_ZERO(&orig_set);
+		FD_SET(fd, &orig_set);
+#else
+		pf.fd=fd;
+		pf.events=POLLOUT;
+#endif
+	while(1){
+		elapsed=(get_ticks()-ticks)*TIMER_TICK;
+		if (elapsed<to)
+			to-=elapsed;
+		else
+			goto error_timeout;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+		sel_set=orig_set;
+		timeout.tv_sec=to;
+		timeout.tv_usec=0;
+		n=select(fd+1, 0, &sel_set, 0, &timeout);
+#else
+		n=poll(&pf, 1, to*1000);
+#endif
+		if (n<0){
+			if (errno==EINTR) continue;
+			get_su_info( servaddr, ip, port);
+			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
+				ip, port, errno, strerror(errno));
+			goto error;
+		}else if (n==0) /* timeout */ continue;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+		if (FD_ISSET(fd, &sel_set))
+#else
+		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
+			LM_ERR("poll error: flags %d - %d %d %d %d \n", pf.revents,
+				   POLLOUT,POLLERR,POLLHUP,POLLNVAL);
+			poll_err=1;
+		}
+#endif
+		{
+			err_len=sizeof(err);
+			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+			if ((err==0) && (poll_err==0)) goto end;
+			if (err!=EINPROGRESS && err!=EALREADY){
+				get_su_info( servaddr, ip, port);
+				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
+					ip, port, err, strerror(err));
+				goto error;
+			}
+		}
+	}
+error_timeout:
+	/* timeout */
+	LM_ERR("timeout %d s elapsed from %d s\n", elapsed, tcp_connect_timeout);
+error:
+	return -1;
+end:
+	return 0;
+}
+
+
 static int send2child(struct tcp_connection* tcpconn,int rw)
 {
 	int i;
