@@ -66,7 +66,6 @@
 #include "dlg_req_within.h"
 #include "dlg_profile.h"
 #include "dlg_vals.h"
-#include "dlg_tophiding.h"
 #include "dlg_replication.h"
 
 static int mod_init(void);
@@ -113,12 +112,6 @@ static unsigned int db_update_period = DB_DEFAULT_UPDATE_PERIOD;
 
 /* cachedb stuff */
 str cdb_url = {0,0};
-
-/* topo hiding */
-str topo_hiding_ct_params = {0,0};
-str topo_hiding_ct_hdr_params = {0,0};
-str topo_hiding_prefix = str_init("DLGCH_");
-str topo_hiding_seed = str_init("OpenSIPS");
 
 /* dialog replication using the bpi interface */
 int accept_replicated_dlg=0;
@@ -167,7 +160,6 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
-int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog,      0,NULL,
@@ -219,10 +211,6 @@ static cmd_export_t cmds[]={
 	{"get_dialog_info",(cmd_function)w_get_dlg_info,      4,fixup_get_info,
 			0, REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE |
 			BRANCH_ROUTE | LOCAL_ROUTE },
-	{"topology_hiding",(cmd_function)w_topology_hiding,0,NULL,
-			0, REQUEST_ROUTE},
-	{"topology_hiding",(cmd_function)w_topology_hiding1,1,fixup_create_dlg2,
-			0, REQUEST_ROUTE},
 	{"match_dialog",  (cmd_function)w_match_dialog,       0,NULL,
 			0, REQUEST_ROUTE},
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
@@ -278,11 +266,6 @@ static param_export_t mod_params[]={
 	{ "accept_replicated_dialogs",INT_PARAM, &accept_replicated_dlg },
 	{ "replicate_dialogs_to",     STR_PARAM|USE_FUNC_PARAM,
 								(void *)add_replication_dest        },
-	/* dialog topology hiding with callid mangling */
-	{ "th_callid_passwd",  STR_PARAM, &topo_hiding_seed.s    },
-	{ "th_callid_prefix",STR_PARAM, &topo_hiding_prefix.s  },
-	{ "th_passed_contact_uri_params",STR_PARAM, &topo_hiding_ct_params.s },
-	{ "th_passed_contact_params",STR_PARAM, &topo_hiding_ct_hdr_params.s },
 	{ 0,0,0 }
 };
 
@@ -336,8 +319,6 @@ static pv_export_t mod_items[] = {
 		pv_get_dlg_end_reason,0,0, 0, 0, 0},
 	{ {"DLG_timeout",        sizeof("DLG_timeout")-1},       1000,
 		pv_get_dlg_timeout, pv_set_dlg_timeout,  0, 0, 0, 0 },
-	{ {"DLG_callee_callid",  sizeof("DLG_callee_callid")-1}, 1000,
-		pv_get_dlg_callee_callid,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -624,6 +605,11 @@ static int is_mod_flag_set_wrapper (struct dlg_cell *dlg, unsigned int flags)
 	return (dlg->mod_flags & flags) > 0;
 }
 
+static str* get_rr_param(void)
+{
+	return &rr_param;
+}
+
 int load_dlg( struct dlg_binds *dlgb )
 {
 	dlgb->register_dlgcb = register_dlgcb;
@@ -644,6 +630,11 @@ int load_dlg( struct dlg_binds *dlgb )
 
 	dlgb->set_mod_flag = set_mod_flag_wrapper;
 	dlgb->is_mod_flag_set = is_mod_flag_set_wrapper;
+
+	dlgb->ref_dlg = ref_dlg;
+	dlgb->unref_dlg = unref_dlg;
+
+	dlgb->get_rr_param = get_rr_param;
 
 	return 1;
 }
@@ -706,16 +697,6 @@ static int mod_init(void)
 	mflags_column.len = strlen(mflags_column.s);
 	flags_column.len = strlen(flags_column.s);
 	dialog_table_name.len = strlen(dialog_table_name.s);
-	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
-	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
-	if (topo_hiding_ct_params.s) {
-		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
-		dlg_parse_passed_ct_params(&topo_hiding_ct_params);
-	}
-	if (topo_hiding_ct_hdr_params.s) {
-		topo_hiding_ct_hdr_params.len = strlen(topo_hiding_ct_hdr_params.s);
-		dlg_parse_passed_hdr_ct_params(&topo_hiding_ct_hdr_params);
-	}
 
 	/* param checkings */
 
@@ -899,17 +880,6 @@ static int mod_init(void)
 
 	mark_dlg_loaded_callbacks_run();
 	destroy_cachedb(0);
-
-	/* set dlg topo hiding callid mangling callbacks ( pre * post ) */
-	if (register_pre_raw_processing_cb(dlg_th_pre_raw, PRE_RAW_PROCESSING, 0/*no free*/) < 0) {
-		LM_ERR("failed to initialize pre raw support\n");
-		return -1;
-	}
-
-	if (register_post_raw_processing_cb(dlg_th_post_raw, POST_RAW_PROCESSING, 0/*no free*/) < 0) {
-		LM_ERR("failed to initialize post raw support\n");
-		return -1;
-	}
 
 	return 0;
 }
@@ -1740,45 +1710,4 @@ static int add_replication_dest(modparam_t type, void *val)
 	replication_dests = rd;
 
 	return 1;
-}
-
-static char *callid_buf=NULL;
-static int callid_buf_len=0;
-int pv_get_dlg_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
-{
-	struct dlg_cell *dlg;
-	int req_len = 0,i;
-
-	if(res==NULL)
-		return -1;
-
-	if ( (dlg=get_current_dialog())==NULL || (dlg->flags & DLG_FLAG_TOPH_HIDE_CALLID) == 0) {
-		return pv_get_null( msg, param, res);
-	}
-
-
-	req_len = calc_base64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
-
-	if (req_len*2 > callid_buf_len) {
-		callid_buf = pkg_realloc(callid_buf,req_len*2);
-		if (callid_buf == NULL) {
-			LM_ERR("No more pkg\n");
-			return pv_get_null( msg, param, res);
-		}
-
-		callid_buf_len = req_len*2;
-	}
-
-	memcpy(callid_buf+req_len,topo_hiding_prefix.s,topo_hiding_prefix.len);
-	for (i=0;i<dlg->callid.len;i++)
-		callid_buf[i] = dlg->callid.s[i] ^ topo_hiding_seed.s[i%topo_hiding_seed.len];
-
-	base64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
-		     (unsigned char *)(callid_buf),dlg->callid.len);
-
-	res->rs.s = callid_buf+req_len;
-	res->rs.len = req_len;
-	res->flags = PV_VAL_STR;
-
-	return 0;
 }

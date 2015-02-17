@@ -68,7 +68,6 @@
 #include "dlg_db_handler.h"
 #include "dlg_profile.h"
 #include "dlg_req_within.h"
-#include "dlg_tophiding.h"
 #include "dlg_replication.h"
 
 extern str       rr_param;
@@ -218,7 +217,7 @@ static int init_leg_info( struct dlg_cell *dlg, struct sip_msg *msg,
 		/* use the same as in invite cseq in caller leg */
 		cseq = dlg->legs[DLG_CALLER_LEG].inv_cseq;
 
-		if ((dlg->flags & DLG_FLAG_TOPHIDING) && (msg->REPLY_STATUS<200 &&
+		if ((dlg->mod_flags & TOPOH_ONGOING) && (msg->REPLY_STATUS<200 &&
 					msg->REPLY_STATUS>100)) {
 			/* save contact && rr_set , may need need to route requests
 			 * before the INVITE transaction terminates */
@@ -385,7 +384,7 @@ routing_info:
 		if (!dlg->legs_no[DLG_LEG_200OK])
 			dlg->legs_no[DLG_LEG_200OK] = leg;
 		/* update routing info */
-		if(dlg->flags & DLG_FLAG_TOPHIDING)
+		if(dlg->mod_flags & TOPOH_ONGOING)
 			skip_rrs = 0; /* changed here for contact - it was 1 */
 		else
 			skip_rrs = dlg->from_rr_nb +
@@ -443,9 +442,6 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				}
 			}
 			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to);
-			if((dlg->flags & DLG_FLAG_TOPHIDING) &&
-					dlg_th_onreply(dlg, rpl,req, 1, DLG_DIR_UPSTREAM) < 0)
-				LM_ERR("Failed to transform the reply for topology hiding\n");
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
 		}
@@ -1134,10 +1130,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
 
-	if(dlg->flags & DLG_FLAG_TOPHIDING) {
-		dlg_th_onroute(dlg, req, dir);
-	}
-
 	/* run actions for the transition */
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
 	old_state!=DLG_STATE_DELETED) {
@@ -1511,9 +1503,6 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 
 	leg = & dlg->legs[ ctx_lastdstleg_get() ];
 
-	if (dlg->state <= DLG_STATE_EARLY && !(dlg->flags & DLG_FLAG_TOPHIDING))
-		return 0;
-
 	/* check in the stored routes */
 	if ( leg->route_set.len && leg->route_set.s) {
 		if(parse_uri(leg->route_uris[0].s, leg->route_uris[0].len, &fru) < 0) {
@@ -1775,7 +1764,8 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	LM_DBG("CSEQ validation passed\n");
 
 	/* because fix_routing was called on the request */
-	if(dlg->flags & DLG_FLAG_TOPHIDING)
+
+	if(dlg->mod_flags & TOPOH_ONGOING)
 		return 0;
 
 	if (dlg->state <= DLG_STATE_EARLY)

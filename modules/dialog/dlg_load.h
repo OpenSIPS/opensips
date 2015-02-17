@@ -57,6 +57,11 @@ struct dlg_binds {
 
 	set_mod_flag_f       set_mod_flag;
 	is_mod_flag_set_f    is_mod_flag_set;
+
+	ref_dlg_f            ref_dlg;
+	unref_dlg_f          unref_dlg;
+
+	get_rr_param_f       get_rr_param;
 };
 
 

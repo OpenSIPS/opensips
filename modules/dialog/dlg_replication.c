@@ -298,8 +298,7 @@ int dlg_replicated_update(void)
 	dlg_lock(d_table, d_entry);
 
 	if (!dlg) {
-		/* TODO: change to LM_DBG */
-		LM_ERR("dialog not found, building new\n");
+		LM_DBG("dialog not found, building new\n");
 
 		dlg = build_new_dlg(&call_id, &from_uri, &to_uri, &from_tag);
 		if (!dlg) {

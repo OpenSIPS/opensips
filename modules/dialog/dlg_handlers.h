@@ -61,6 +61,11 @@ typedef int (*create_dlg_f)(struct sip_msg *req,int flags);
 typedef void (*set_mod_flag_f)(struct dlg_cell *dlg, unsigned int flags);
 typedef int (*is_mod_flag_set_f)(struct dlg_cell *dlg, unsigned int flags);
 
+typedef void (*ref_dlg_f)(struct dlg_cell *dlg, unsigned int cnt);
+typedef void (*unref_dlg_f)(struct dlg_cell *dlg, unsigned int cnt);
+
+typedef str* (*get_rr_param_f)(void);
+
 extern int ctx_timeout_idx;
 
 #define ctx_timeout_get() \

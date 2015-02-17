@@ -86,8 +86,6 @@
 		}												   \
 }
 
-#define SST_DIALOG_FLAG (1 << 3)
-
 #ifndef MIN
 #define MIN(a, b) (a<b?a:b)
 #endif
