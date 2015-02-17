@@ -391,8 +391,8 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 	int n;
 	int m;
 	int i;
-	unsigned int _created;
-	unsigned int _setup_time;
+	unsigned int _created=0;
+	unsigned int _setup_time=0;
 
 	if (cdr_flag && get_timestamps(&_created, &_setup_time)<0) {
 		LM_ERR("cannot get timestamps\n");
