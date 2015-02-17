@@ -880,11 +880,6 @@ static inline void tcpconn_destroy(struct tcp_connection* tcpconn)
 		LM_DBG("destroying connection %p, flags %04x\n",
 				tcpconn, tcpconn->flags);
 		fd=tcpconn->s;
-#ifdef USE_TLS
-		/*FIXME: lock ->writelock ? */
-		if (tcpconn->type==PROTO_TLS)
-			tls_close(tcpconn, fd);
-#endif
 		_tcpconn_rm(tcpconn);
 		close(fd);
 		tcp_connections_no--;
@@ -972,8 +967,8 @@ static inline int handle_new_connect(struct socket_info* si)
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
 			if (tcpconn->refcnt==0){
-				close(tcpconn->s);
 				_tcpconn_rm(tcpconn);
+				close(new_sock/*same as tcpconn->s*/);
 			}else tcpconn->timeout=0; /* force expire */
 			TCPCONN_UNLOCK(id);
 		}
@@ -1424,12 +1419,6 @@ static inline void __tcpconn_timeout(int force)
 						LM_DBG("timeout for hash=%d - %p"
 								" (%d > %d)\n", h, c, ticks, c->timeout);
 					fd=c->s;
-#ifdef USE_TLS
-					/* FIXME - this must go via the proto layer and handled
-					  over therer !!! */
-					if (c->type==PROTO_TLS)
-						tls_close(c, fd);
-#endif
 					_tcpconn_rm(c);
 					if ((!force)&&(fd>0)&&(c->refcnt==0)) {
 						if (!(c->flags & F_CONN_REMOVED)){

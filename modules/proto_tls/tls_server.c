@@ -390,7 +390,7 @@ static int tls_connect(struct tcp_connection *c, short *poll_events)
 /*
  * wrapper around SSL_shutdown, returns -1 on error, 0 on success
  */
-static int tls_shutdown(struct tcp_connection *c)
+int tls_conn_shutdown(struct tcp_connection *c)
 {
 	int             ret,
 					err;
@@ -535,23 +535,6 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 	LM_BUG("bug\n");
 	return -1;
 }
-
-
-
-
-/*
- * perform one-way shutdown, do not wait fro notify from the remote peer
- */
-void tls_close(struct tcp_connection *c, int fd)
-{
-	/*
-	* runs within global tcp lock
-	*/
-	LM_DBG("closing TLS connection\n");
-	tls_update_fd(c, fd);
-	tls_shutdown(c);
-}
-
 
 
 /*

@@ -38,4 +38,7 @@ size_t tls_read(struct tcp_connection *c,struct tcp_req *r);
 
 int tls_fix_read_conn(struct tcp_connection *c);
 
+int tls_conn_shutdown(struct tcp_connection *c);
+
+
 #endif

@@ -1116,6 +1116,7 @@ static void tls_conn_clean(struct tcp_connection* c)
 	LM_DBG("entered\n");
 
 	if (c->extra_data) {
+		tls_conn_shutdown(c);
 		SSL_free((SSL *) c->extra_data);
 		c->extra_data = 0;
 	}
